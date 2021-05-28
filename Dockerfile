@@ -1,7 +1,7 @@
 FROM golang:1.16-buster
 
 RUN apt-get update -y && \
-    apt-get install -y jq time
+    apt-get install -y jq time zip binutils-common
 
 # Install staticcheck
 RUN curl --silent "https://api.github.com/repos/dominikh/go-tools/releases/latest" | \
