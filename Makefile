@@ -1,14 +1,14 @@
 .PHONY: build
 
 build:
-	./script/compile.sh
+	./scripts/compile.sh
 
 build-cross:
-	./script/cross-compile.sh
+	./scripts/cross-compile.sh
 
 tests:
-	./script/tests.sh
+	./scripts/tests.sh
 
 fix:
-	./script/fix.sh
+	./scripts/fix.sh
 

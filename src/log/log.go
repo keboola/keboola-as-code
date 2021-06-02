@@ -27,10 +27,11 @@ func getFileCore(logFile *os.File) zapcore.Core {
 
 	// Log time, level, msg
 	encoder := zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
-		TimeKey:     "ts",
-		LevelKey:    "level",
-		MessageKey:  "msg",
-		EncodeLevel: zapcore.CapitalLevelEncoder,
+		TimeKey:          "ts",
+		LevelKey:         "level",
+		MessageKey:       "msg",
+		EncodeLevel:      zapcore.CapitalLevelEncoder,
+		ConsoleSeparator: "  ",
 	})
 	return zapcore.NewCore(encoder, logFile, fileLevels)
 }

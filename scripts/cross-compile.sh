@@ -1,5 +1,14 @@
 #!/bin/bash
 
+set -o errexit          # Exit on most errors (see the manual)
+set -o errtrace         # Make sure any error trap is inherited
+set -o nounset          # Disallow expansion of unset variables
+set -o pipefail         # Use last non-zero exit code in a pipeline
+#set -o xtrace          # Trace the execution of the script (debug)
+
+# Cd to root dir
+cd `dirname "$0"`/..
+
 binary_name="kbc"
 archive_name="kbc"
 platforms=(
@@ -14,9 +23,6 @@ platforms=(
 
 # Get TARGET_VERSION from env
 TARGET_VERSION="${TARGET_VERSION:-dev}"
-
-# Cd to root dir
-cd `dirname "$0"`
 
 # Create and clear dirs
 mkdir -p ./target/bin
@@ -39,7 +45,7 @@ do
 
     # Compile
     echo -ne "Compiling for ${platform} ... "
-    env GOOS=$GOOS GOARCH=$GOARCH ./compile.sh $binary_path
+    env GOOS=$GOOS GOARCH=$GOARCH ./scripts/compile.sh $binary_path
     if [ $? -ne 0 ]; then
         echo 'An error has occurred!'
         exit 1

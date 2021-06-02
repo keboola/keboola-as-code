@@ -6,7 +6,7 @@
 
 ## Error Reporting
 
-If an unexpected error occurs, the user can submit a generated log file to support email.
+If an unexpected error occurs, the user can submit a generated log file to out support email.
 
 Example error message:
 ```
@@ -46,7 +46,7 @@ cd keboola-as-code
 docker-compose build
 ```
 
-Run the test suite and download the dependencies using this command:
+Run the test suite and download the dependencies using:
 
 ```
 docker-compose run --rm dev make tests
@@ -71,5 +71,42 @@ To compile a binary for all architectures to `./target/bin`, run in the containe
 ```
 make build-cross
 ```
+
+### Functional tests
+
+Each directory in the `src/tests/*` is one functional test.
+
+#### Directory structure
+
+```
+/src/tests
+└─test-name
+  ├─args              - file with command line arguments, used when running the program
+  ├─expected-code     - file with expected exit code, eg. 0 for success
+  ├─expected-stdout   - file with expected stdout
+  ├─expected-stderr   - file with expected stderr
+  ├─in                - dir, initial state of the working directory before program execution
+  └─out               - dir, expected state of the working directory after program execution
+```
+
+#### Wildcards
+
+In files `/expected-stdout`, `/expected-stderr` and `/out/*.*` can be used placeholders for comparing dynamic values:
+- `%e`: Represents a directory separator, for example / on Linux.
+- `%s`: One or more of anything (character or white space) except the end of line character.
+- `%S`: Zero or more of anything (character or white space) except the end of line character.
+- `%a`: One or more of anything (character or white space) including the end of line character.
+- `%A`: Zero or more of anything (character or white space) including the end of line character.
+- `%w`: Zero or more white space characters.
+- `%i`: A signed integer value, for example +3142, -3142.
+- `%d`: An unsigned integer value, for example 123456.
+- `%x`: One or more hexadecimal character. That is, characters in the range 0-9, a-f, A-F.
+- `%f`: A floating point number, for example: 3.142, -3.142, 3.142E-10, 3.142e+10.
+- `%c`: A single character of any sort.
+- `%%`: A literal percent character: %.
+
+Inspired by [PhpUnit](https://phpunit.readthedocs.io/en/9.5/assertions.html#assertstringmatchesformat).
+
+### IDE setup
 
 In IntelliJ IDEA is needed to set project GOPATH to `/go` directory, for code autocompletion to work.

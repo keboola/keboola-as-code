@@ -44,8 +44,6 @@ func (c *commander) Execute() {
 		c.logger.Debug("Command exited with error: ", err)
 		os.Exit(1)
 	}
-
-	panic("error")
 }
 
 // tearDown makes clean-up after command execution
