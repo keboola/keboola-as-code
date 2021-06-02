@@ -48,9 +48,9 @@ func getConsoleCore(verbose bool) zapcore.Core {
 
 	// Info is logged without prefix, other levels with prefix
 	encoder := zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
-		LevelKey:    "level",
-		MessageKey:  "msg",
-		EncodeLevel: func (l zapcore.Level, enc zapcore.PrimitiveArrayEncoder) {
+		LevelKey:   "level",
+		MessageKey: "msg",
+		EncodeLevel: func(l zapcore.Level, enc zapcore.PrimitiveArrayEncoder) {
 			if l != zapcore.InfoLevel {
 				enc.AppendString(l.CapitalString())
 			}

@@ -49,7 +49,7 @@ docker-compose build
 Run the test suite and download the dependencies using this command:
 
 ```
-docker-compose run --rm dev ./test.sh
+docker-compose run --rm dev make tests
 ```
 
 To launch the interactive console in container, you can use:

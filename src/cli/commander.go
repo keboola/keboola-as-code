@@ -52,7 +52,7 @@ func (c *commander) Execute() {
 func (c *commander) tearDown() {
 	if err := recover(); err == nil {
 		// No error -> remove log file if temporary
-		if c.logFile != nil && c.logFileClear == true {
+		if c.logFile != nil && c.logFileClear {
 			if err = c.logFile.Close(); err != nil {
 				panic(fmt.Errorf("cannot close log file \"%s\": %s", c.logFilePath, err))
 			}
@@ -91,7 +91,7 @@ func (c *commander) setupLogger() {
 	c.logFile = logFile
 
 	// Warn if user specified log file and it cannot be opened
-	if logFileErr != nil && c.logFileClear == false {
+	if logFileErr != nil && !c.logFileClear {
 		c.logger.Warnf("Cannot open log file: %s", logFileErr)
 	}
 }

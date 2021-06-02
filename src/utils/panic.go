@@ -30,7 +30,7 @@ We take privacy seriously, and do not perform any automated error collection.
 Thank you kindly!`
 
 type UserError struct {
-	message string
+	message  string
 	exitCode int
 }
 
@@ -64,7 +64,7 @@ func ProcessPanic(err interface{}, logger *zap.SugaredLogger, logFile string) {
 	}
 }
 
-func panicMessage(logFile string) string  {
+func panicMessage(logFile string) string {
 	tmpl, err := template.New("panicMsg").Parse(userFriendlyPanicTmpl)
 	if err != nil {
 		panic(fmt.Errorf("cannot parse panic template: %s", err))
@@ -73,7 +73,7 @@ func panicMessage(logFile string) string  {
 	var output bytes.Buffer
 	err = tmpl.Execute(
 		&output,
-		struct {LogFile string}{logFile},
+		struct{ LogFile string }{logFile},
 	)
 	if err != nil {
 		panic(fmt.Errorf("cannot render panic template: %s", err))
@@ -81,4 +81,3 @@ func panicMessage(logFile string) string  {
 
 	return output.String()
 }
-

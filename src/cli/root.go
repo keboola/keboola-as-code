@@ -6,8 +6,7 @@ import (
 	"path"
 )
 
-const description =
-`
+const description = `
 Keboola Connection pull/push client
 for components configurations.
 
@@ -15,8 +14,7 @@ Configurations can be synchronized in both
 directions [KBC project] <-> [a local directory].
 `
 
-const usageTemplate =
-`Usage:{{if .HasAvailableSubCommands}}
+const usageTemplate = `Usage:{{if .HasAvailableSubCommands}}
   {{.CommandPath}} [command]{{end}}{{if gt (len .Aliases) 0}}
 
 Aliases:
@@ -41,13 +39,13 @@ Use "{{.CommandPath}} [command] --help" for more information about a command.{{e
 `
 
 // rootCommand, parent of all sub-commands
-func (c *commander) rootCommand() *cobra.Command{
+func (c *commander) rootCommand() *cobra.Command {
 	// Define command
 	cmdName := path.Base(os.Args[0])
 	cmd := &cobra.Command{
-		Use:     cmdName,
-		Version: c.version(),
-		Short:   description,
+		Use:          cmdName,
+		Version:      c.version(),
+		Short:        description,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Print help if no command specified
