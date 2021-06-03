@@ -3,10 +3,46 @@ package log
 import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"io"
 	"os"
+	"strings"
 )
 
-func NewLogger(logFile *os.File, verbose bool) *zap.SugaredLogger {
+type InfoWriter struct {
+	logger *zap.SugaredLogger
+}
+
+type WarnWriter struct {
+	logger *zap.SugaredLogger
+}
+
+// Write message wit INFO level to logger
+func (w *InfoWriter) Write(p []byte) (n int, err error) {
+	lines := strings.TrimRight(string(p), "\n")
+	for _, line := range strings.Split(lines, "\n") {
+		w.logger.Info(strings.TrimRight(line, "\n"))
+	}
+	return len(p), nil
+}
+
+// Write message wit WARN level to logger
+func (w *WarnWriter) Write(p []byte) (n int, err error) {
+	lines := strings.TrimRight(string(p), "\n")
+	for _, line := range strings.Split(lines, "\n") {
+		w.logger.Warn(strings.TrimRight(line, "\n"))
+	}
+	return len(p), nil
+}
+
+func ToInfoWriter(l *zap.SugaredLogger) *InfoWriter {
+	return &InfoWriter{l}
+}
+
+func ToWarnWriter(l *zap.SugaredLogger) *WarnWriter {
+	return &WarnWriter{l}
+}
+
+func NewLogger(stdout io.Writer, stderr io.Writer, logFile *os.File, verbose bool) *zap.SugaredLogger {
 	var cores []zapcore.Core
 
 	// Log to file
@@ -14,8 +50,11 @@ func NewLogger(logFile *os.File, verbose bool) *zap.SugaredLogger {
 		cores = append(cores, getFileCore(logFile))
 	}
 
-	// Log to console
-	cores = append(cores, getConsoleCore(verbose))
+	// Log to stdout
+	cores = append(cores, getStdoutCore(stdout, verbose))
+
+	// Log to stderr
+	cores = append(cores, getStderrCore(stderr))
 
 	// Create logger
 	return zap.New(zapcore.NewTee(cores...)).Sugar()
@@ -31,32 +70,35 @@ func getFileCore(logFile *os.File) zapcore.Core {
 		LevelKey:         "level",
 		MessageKey:       "msg",
 		EncodeLevel:      zapcore.CapitalLevelEncoder,
-		ConsoleSeparator: "  ",
+		ConsoleSeparator: "\t",
 	})
 	return zapcore.NewCore(encoder, logFile, fileLevels)
 }
 
-func getConsoleCore(verbose bool) zapcore.Core {
+func getStdoutCore(stdout io.Writer, verbose bool) zapcore.Core {
 	consoleLevels := zap.LevelEnablerFunc(func(l zapcore.Level) bool {
-		// Log all messages, if verbose output enabled
+		// Log debug, info -> if verbose output enabled
 		if verbose {
-			return true
+			return l == zapcore.DebugLevel || l == zapcore.InfoLevel
 		}
 
-		// Otherwise log info+ messages
-		return l >= zapcore.InfoLevel
+		// Log info only
+		return l == zapcore.InfoLevel
 	})
 
 	// Info is logged without prefix, other levels with prefix
 	encoder := zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
-		LevelKey:   "level",
-		MessageKey: "msg",
-		EncodeLevel: func(l zapcore.Level, enc zapcore.PrimitiveArrayEncoder) {
-			if l != zapcore.InfoLevel {
-				enc.AppendString(l.CapitalString())
-			}
-		},
+		MessageKey:       "msg",
+		ConsoleSeparator: "  ",
 	})
 
-	return zapcore.NewCore(encoder, zapcore.AddSync(os.Stderr), consoleLevels)
+	return zapcore.NewCore(encoder, zapcore.AddSync(stdout), consoleLevels)
+}
+
+func getStderrCore(stderr io.Writer) zapcore.Core {
+	encoder := zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
+		MessageKey:       "msg",
+		ConsoleSeparator: "  ",
+	})
+	return zapcore.NewCore(encoder, zapcore.AddSync(stderr), zapcore.WarnLevel)
 }

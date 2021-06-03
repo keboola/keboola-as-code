@@ -1,0 +1,270 @@
+package utils
+
+import (
+	"bytes"
+	"fmt"
+	"github.com/stretchr/testify/assert"
+	"os"
+	"testing"
+)
+
+type mockedT struct {
+	buf *bytes.Buffer
+}
+
+// Implements TestingT for mockedT
+func (t *mockedT) Errorf(format string, args ...interface{}) {
+	s := fmt.Sprintf(format, args...)
+	t.buf.WriteString(s)
+}
+
+func TestAssertDirectoryFileOnlyInExpected(t *testing.T) {
+	expectedDir := t.TempDir()
+	actualDir := t.TempDir()
+
+	// Create file
+	file1, err := os.Create(expectedDir + "/file.txt")
+	assert.NoError(t, err)
+	_, err = file1.WriteString("foo\n")
+	assert.NoError(t, err)
+	err = file1.Close()
+	assert.NoError(t, err)
+
+	// Assert
+	test := &mockedT{buf: bytes.NewBuffer(nil)}
+	AssertDirectoryContentsSame(test, expectedDir, actualDir)
+	assert.Regexp(t, "^Directories are not same:\nonly in expected \".+/file.txt\"$", test.buf.String())
+}
+
+func TestAssertDirectoryDirOnlyInExpected(t *testing.T) {
+	expectedDir := t.TempDir()
+	actualDir := t.TempDir()
+
+	// Create directory
+	err := os.Mkdir(expectedDir+"/myDir", 0600)
+	assert.NoError(t, err)
+
+	// Assert
+	test := &mockedT{buf: bytes.NewBuffer(nil)}
+	AssertDirectoryContentsSame(test, expectedDir, actualDir)
+	assert.Regexp(t, "^Directories are not same:\nonly in expected \".+/myDir\"$", test.buf.String())
+}
+
+func TestAssertDirectoryFileOnlyInActual(t *testing.T) {
+	expectedDir := t.TempDir()
+	actualDir := t.TempDir()
+
+	// Create file
+	file1, err := os.Create(actualDir + "/file.txt")
+	assert.NoError(t, err)
+	_, err = file1.WriteString("foo\n")
+	assert.NoError(t, err)
+	err = file1.Close()
+	assert.NoError(t, err)
+
+	// Assert
+	test := &mockedT{buf: bytes.NewBuffer(nil)}
+	AssertDirectoryContentsSame(test, expectedDir, actualDir)
+	assert.Regexp(t, "^Directories are not same:\nonly in actual \".+/file.txt\"$", test.buf.String())
+}
+
+func TestAssertDirectoryDirOnlyInActual(t *testing.T) {
+	expectedDir := t.TempDir()
+	actualDir := t.TempDir()
+
+	// Create directory
+	err := os.Mkdir(actualDir+"/myDir", 0600)
+	assert.NoError(t, err)
+
+	// Assert
+	test := &mockedT{buf: bytes.NewBuffer(nil)}
+	AssertDirectoryContentsSame(test, expectedDir, actualDir)
+	assert.Regexp(t, "^Directories are not same:\nonly in actual \".+/myDir\"$", test.buf.String())
+}
+
+func TestAssertDirectoryFileDifferentType1(t *testing.T) {
+	expectedDir := t.TempDir()
+	actualDir := t.TempDir()
+
+	// Create file in actual
+	file1, err := os.Create(actualDir + "/myNode")
+	assert.NoError(t, err)
+	_, err = file1.WriteString("foo\n")
+	assert.NoError(t, err)
+	err = file1.Close()
+	assert.NoError(t, err)
+
+	// Create directory in expected
+	err = os.Mkdir(expectedDir+"/myNode", 0600)
+	assert.NoError(t, err)
+
+	test := &mockedT{buf: bytes.NewBuffer(nil)}
+	AssertDirectoryContentsSame(test, expectedDir, actualDir)
+	assert.Contains(t, test.buf.String(), "Directories are not same:\n\"/myNode\" is file in actual, but dir in expected")
+}
+
+func TestAssertDirectoryFileDifferentType2(t *testing.T) {
+	expectedDir := t.TempDir()
+	actualDir := t.TempDir()
+
+	// Create file in expected
+	file1, err := os.Create(expectedDir + "/myNode")
+	assert.NoError(t, err)
+	_, err = file1.WriteString("foo\n")
+	assert.NoError(t, err)
+	err = file1.Close()
+	assert.NoError(t, err)
+
+	// Create directory in actual
+	err = os.Mkdir(actualDir+"/myNode", 0600)
+	assert.NoError(t, err)
+
+	test := &mockedT{buf: bytes.NewBuffer(nil)}
+	AssertDirectoryContentsSame(test, expectedDir, actualDir)
+	assert.Contains(t, test.buf.String(), "Directories are not same:\n\"/myNode\" is dir in actual, but file in expected")
+}
+
+func TestAssertDirectoryDifferentContent(t *testing.T) {
+	expectedDir := t.TempDir()
+	actualDir := t.TempDir()
+
+	// File in expected
+	file1, err := os.Create(expectedDir + "/file.txt")
+	assert.NoError(t, err)
+	_, err = file1.WriteString("foo\n")
+	assert.NoError(t, err)
+	err = file1.Close()
+	assert.NoError(t, err)
+
+	// File in actual - different content
+	file2, err := os.Create(actualDir + "/file.txt")
+	assert.NoError(t, err)
+	_, err = file2.WriteString("bar\n")
+	assert.NoError(t, err)
+	err = file2.Close()
+	assert.NoError(t, err)
+
+	test := &mockedT{buf: bytes.NewBuffer(nil)}
+	AssertDirectoryContentsSame(test, expectedDir, actualDir)
+	assert.Contains(t, test.buf.String(), "Different content of the file \"/file.txt\". Diff:")
+}
+
+func TestAssertDirectoryDifferentContentWildcards(t *testing.T) {
+	expectedDir := t.TempDir()
+	actualDir := t.TempDir()
+
+	// File in expected
+	file1, err := os.Create(expectedDir + "/file.txt")
+	assert.NoError(t, err)
+	_, err = file1.WriteString("%c%c%c%c\n") // 4 chars
+	assert.NoError(t, err)
+	err = file1.Close()
+	assert.NoError(t, err)
+
+	// File in actual - different content
+	file2, err := os.Create(actualDir + "/file.txt")
+	assert.NoError(t, err)
+	_, err = file2.WriteString("foo\n") // 3 chars
+	assert.NoError(t, err)
+	err = file2.Close()
+	assert.NoError(t, err)
+
+	test := &mockedT{buf: bytes.NewBuffer(nil)}
+	AssertDirectoryContentsSame(test, expectedDir, actualDir)
+	assert.Contains(t, test.buf.String(), "Different content of the file \"/file.txt\". Diff:")
+}
+
+func TestAssertDirectorySameEmpty(t *testing.T) {
+	expectedDir := t.TempDir()
+	actualDir := t.TempDir()
+	test := &mockedT{buf: bytes.NewBuffer(nil)}
+	AssertDirectoryContentsSame(test, expectedDir, actualDir)
+	assert.Contains(t, "", test.buf.String())
+}
+
+func TestAssertDirectoryIgnoreHiddenFiles(t *testing.T) {
+	expectedDir := t.TempDir()
+	actualDir := t.TempDir()
+
+	// File in expected
+	err := os.Mkdir(expectedDir+"/myDir", 0600)
+	assert.NoError(t, err)
+	file1, err := os.Create(expectedDir + "/myDir/.hidden")
+	assert.NoError(t, err)
+	_, err = file1.WriteString("foo\n")
+	assert.NoError(t, err)
+	err = file1.Close()
+	assert.NoError(t, err)
+
+	// File in actual
+	err = os.Mkdir(actualDir+"/myDir", 0600)
+	assert.NoError(t, err)
+	file2, err := os.Create(actualDir + "/myDir/.hidden")
+	assert.NoError(t, err)
+	_, err = file2.WriteString("bar\n")
+	assert.NoError(t, err)
+	err = file2.Close()
+	assert.NoError(t, err)
+
+	test := &mockedT{buf: bytes.NewBuffer(nil)}
+	AssertDirectoryContentsSame(test, expectedDir, actualDir)
+	assert.Contains(t, "", test.buf.String())
+}
+
+func TestAssertDirectorySame(t *testing.T) {
+	expectedDir := t.TempDir()
+	actualDir := t.TempDir()
+
+	// File in expected
+	err := os.Mkdir(expectedDir+"/myDir", 0600)
+	assert.NoError(t, err)
+	file1, err := os.Create(expectedDir + "/myDir/file.txt")
+	assert.NoError(t, err)
+	_, err = file1.WriteString("foo\n")
+	assert.NoError(t, err)
+	err = file1.Close()
+	assert.NoError(t, err)
+
+	// File in actual
+	err = os.Mkdir(actualDir+"/myDir", 0600)
+	assert.NoError(t, err)
+	file2, err := os.Create(actualDir + "/myDir/file.txt")
+	assert.NoError(t, err)
+	_, err = file2.WriteString("foo\n")
+	assert.NoError(t, err)
+	err = file2.Close()
+	assert.NoError(t, err)
+
+	test := &mockedT{buf: bytes.NewBuffer(nil)}
+	AssertDirectoryContentsSame(test, expectedDir, actualDir)
+	assert.Contains(t, "", test.buf.String())
+}
+
+func TestAssertDirectorySameWildcards(t *testing.T) {
+	expectedDir := t.TempDir()
+	actualDir := t.TempDir()
+
+	// File in expected
+	err := os.Mkdir(expectedDir+"/myDir", 0600)
+	assert.NoError(t, err)
+	file1, err := os.Create(expectedDir + "/myDir/file.txt")
+	assert.NoError(t, err)
+	_, err = file1.WriteString("%c%c%c\n")
+	assert.NoError(t, err)
+	err = file1.Close()
+	assert.NoError(t, err)
+
+	// File in actual
+	err = os.Mkdir(actualDir+"/myDir", 0600)
+	assert.NoError(t, err)
+	file2, err := os.Create(actualDir + "/myDir/file.txt")
+	assert.NoError(t, err)
+	_, err = file2.WriteString("foo\n")
+	assert.NoError(t, err)
+	err = file2.Close()
+	assert.NoError(t, err)
+
+	test := &mockedT{buf: bytes.NewBuffer(nil)}
+	AssertDirectoryContentsSame(test, expectedDir, actualDir)
+	assert.Contains(t, "", test.buf.String())
+}

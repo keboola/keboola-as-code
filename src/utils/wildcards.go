@@ -7,11 +7,10 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"testing"
 )
 
 // AssertWildcards compares two texts, in expected value can be used wildcards, see WildcardToRegexp function.
-func AssertWildcards(t *testing.T, expected string, actual string, msg string) {
+func AssertWildcards(t assert.TestingT, expected string, actual string, msg string) {
 	expected = strings.TrimSpace(expected)
 	actual = strings.TrimSpace(actual)
 
@@ -56,7 +55,7 @@ func WildcardToRegexp(pattern string) string {
 			return `\s*`
 		// %i: A signed integer value, for example +3142, -3142.
 		case `%i`:
-			return `(+|-)\d+`
+			return `(\+|\-)\d+`
 		// %d: An unsigned integer value, for example 123456.
 		case `%d`:
 			return `\d+`

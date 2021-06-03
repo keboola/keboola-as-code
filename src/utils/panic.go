@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"go.uber.org/zap"
-	"os"
 	"runtime/debug"
 	"text/template"
 )
@@ -30,12 +29,12 @@ We take privacy seriously, and do not perform any automated error collection.
 Thank you kindly!`
 
 type UserError struct {
-	message  string
-	exitCode int
+	Message  string
+	ExitCode int
 }
 
 func (e *UserError) Error() string {
-	return e.message
+	return e.Message
 }
 
 func NewUserError(message string) *UserError {
@@ -46,21 +45,20 @@ func NewUserErrorWithCode(exitCode int, message string) *UserError {
 	return &UserError{message, exitCode}
 }
 
-func ProcessPanic(err interface{}, logger *zap.SugaredLogger, logFile string) {
+func ProcessPanic(err interface{}, logger *zap.SugaredLogger, logFilePath string) int {
 	switch v := err.(type) {
 	case *UserError:
-		logger.Debugf("User error panic: %s", v.message)
+		logger.Debugf("User error panic: %s", v.Message)
 		logger.Debugf("Trace:\n" + string(debug.Stack()))
-		fmt.Println("Error: " + v.message)
-		if len(logFile) > 0 {
-			fmt.Printf("Details can be found in the log file \"%s\".\n", logFile)
+		if len(logFilePath) > 0 {
+			logger.Infof("Details can be found in the log file \"%s\".\n", logFilePath)
 		}
-		os.Exit(v.exitCode)
+		return v.ExitCode
 	default:
 		logger.Debugf("Unexpected panic: %s", err)
 		logger.Debugf("Trace:\n" + string(debug.Stack()))
-		fmt.Println(panicMessage(logFile))
-		os.Exit(1)
+		logger.Info(panicMessage(logFilePath))
+		return 1
 	}
 }
 

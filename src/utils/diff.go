@@ -2,10 +2,10 @@ package utils
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
 	"strings"
-	"testing"
 )
 
 // fileNode is one file/dir in expected or actual directory.
@@ -22,7 +22,7 @@ type fileNodeState struct {
 }
 
 // AssertDirectoryContentsSame compares two directories, in expected file content can be used wildcards.
-func AssertDirectoryContentsSame(t *testing.T, expectedDir string, actualDir string) {
+func AssertDirectoryContentsSame(t assert.TestingT, expectedDir string, actualDir string) {
 	nodesState := compareDirectories(expectedDir, actualDir)
 	var errors []string
 	for _, node := range nodesState {
@@ -33,17 +33,17 @@ func AssertDirectoryContentsSame(t *testing.T, expectedDir string, actualDir str
 			errors = append(errors, fmt.Sprintf("only in actual \"%s\"", node.actual.absPath))
 		} else if node.actual.isDir != node.expected.isDir {
 			if node.actual.isDir {
-				errors = append(errors, fmt.Sprintf("dir in actual, but file in expected \"%s\"", node.relPath))
+				errors = append(errors, fmt.Sprintf("\"%s\" is dir in actual, but file in expected", node.relPath))
 			} else {
-				errors = append(errors, fmt.Sprintf("file in actual, but dir in expected \"%s\"", node.relPath))
+				errors = append(errors, fmt.Sprintf("\"%s\" is file in actual, but dir in expected", node.relPath))
 			}
 		} else {
 			// Compare content
 			if !node.actual.isDir {
 				AssertWildcards(
 					t,
-					GetFileContent(t, node.expected.absPath),
-					GetFileContent(t, node.actual.absPath),
+					GetFileContent(node.expected.absPath),
+					GetFileContent(node.actual.absPath),
 					fmt.Sprintf("Different content of the file \"%s\".", node.relPath),
 				)
 			}
@@ -51,7 +51,7 @@ func AssertDirectoryContentsSame(t *testing.T, expectedDir string, actualDir str
 	}
 
 	if len(errors) > 0 {
-		t.Error("Directories are not same:\n" + strings.Join(errors, "\n"))
+		t.Errorf("Directories are not same:\n" + strings.Join(errors, "\n"))
 	}
 }
 

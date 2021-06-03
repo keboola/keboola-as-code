@@ -1,16 +1,16 @@
-package cli
+package version
 
 import "runtime"
 
 // Defined on build time:
 
-var Version = "dev"
 var GitCommit = "-"
+var BuildVersion = "dev"
 var BuildDate = "-"
 
-// version for --version flag
-func (c *commander) version() string {
-	return "Version:    " + Version + "\n" +
+// Version for --version flag
+func Version() string {
+	return "Version:    " + BuildVersion + "\n" +
 		"Git commit: " + GitCommit + "\n" +
 		"Build date: " + BuildDate + "\n" +
 		"Go version: " + runtime.Version() + "\n" +

@@ -54,7 +54,7 @@ func RunFunctionalTest(t *testing.T, testDir string, binary string) {
 
 	// Load command arguments from file
 	argsFile := testDir + "/args"
-	argsStr := strings.TrimSpace(utils.GetFileContent(t, argsFile))
+	argsStr := strings.TrimSpace(utils.GetFileContent(argsFile))
 	args, err := shlex.Split(argsStr)
 	if err != nil {
 		t.Fatalf("Cannot parse args \"%s\": %s", argsStr, err)
@@ -142,11 +142,11 @@ func AssertExpectations(
 		t.Fatalf("Missing directory \"%s\".", expectedDir)
 	}
 
-	expectedStdout := utils.GetFileContent(t, testDir+"/expected-stdout")
-	expectedStderr := utils.GetFileContent(t, testDir+"/expected-stderr")
+	expectedStdout := utils.GetFileContent(testDir + "/expected-stdout")
+	expectedStderr := utils.GetFileContent(testDir + "/expected-stderr")
 
 	// Assert exit code
-	expectedCodeStr := utils.GetFileContent(t, testDir+"/expected-code")
+	expectedCodeStr := utils.GetFileContent(testDir + "/expected-code")
 	expectedCode, _ := strconv.ParseInt(strings.TrimSpace(expectedCodeStr), 10, 32)
 	assert.Equal(
 		t,

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"testing"
 )
 
 // FileExists returns true if file exists.
@@ -19,16 +18,16 @@ func FileExists(path string) bool {
 }
 
 // GetFileContent in test.
-func GetFileContent(t *testing.T, path string) string {
+func GetFileContent(path string) string {
 	// Return default value if file not exists
 	if _, err := os.Stat(path); err != nil {
-		t.Fatalf("Cannot get file \"%s\" content: %s", path, err)
+		panic(fmt.Errorf("cannot get file \"%s\" content: %s", path, err))
 	}
 
 	// Read content, handle error
 	contentBytes, err := ioutil.ReadFile(path)
 	if err != nil {
-		t.Fatalf("Cannot get file \"%s\" content: %s", path, err)
+		panic(fmt.Errorf("cannot get file \"%s\" content: %s", path, err))
 	}
 
 	return string(contentBytes)
