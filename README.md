@@ -25,4 +25,9 @@ To launch the interactive console in container, you can use:
 docker-compose run --rm dev bash
 ```
 
+In the container, you can run CLI from source code using:
+```
+go run ./src/main.go help init
+```
+
 In IntelliJ IDEA is needed to set project GOPATH to `/go` directory, for code autocompletion to work.

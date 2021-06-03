@@ -1,7 +1,11 @@
 package main
 
-import "fmt"
+import (
+	"keboola-as-code/src/cli"
+)
 
 func main() {
-	fmt.Println("Hello World!")
+	// Run command
+	commander := cli.NewCommander()
+	commander.Execute()
 }

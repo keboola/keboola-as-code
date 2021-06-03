@@ -39,7 +39,7 @@ do
 
     # Compile
     echo -ne "Compiling for ${platform} ... "
-    env GOOS=$GOOS GOARCH=$GOARCH CGO_ENABLED=0 go build -ldflags="-s -w" -o $binary_path ./src/main.go
+    env GOOS=$GOOS GOARCH=$GOARCH ./compile.sh $binary_path
     if [ $? -ne 0 ]; then
         echo 'An error has occurred!'
         exit 1
