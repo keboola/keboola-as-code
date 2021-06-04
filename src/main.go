@@ -2,10 +2,11 @@ package main
 
 import (
 	"keboola-as-code/src/cli"
+	"os"
 )
 
 func main() {
 	// Run command
-	commander := cli.NewCommander()
-	commander.Execute()
+	cmd := cli.NewRootCommand(os.Stdout, os.Stderr)
+	cmd.Execute()
 }

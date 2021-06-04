@@ -1,0 +1,16 @@
+Command "init"
+
+Project structure and component configurations are first time synchronized
+from the Keboola Connection to the working directory.
+
+The project is defined by the Storage API URL and token.
+They can be entered via ENV variables, .env file or as an argument.
+
+Usage:
+  %s init [flags]
+
+Global Flags:
+  -d, --dir string        use other working directory
+  -h, --help              print help for command
+  -l, --log-file string   path to a log file for details
+  -v, --verbose           print details

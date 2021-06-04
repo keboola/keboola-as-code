@@ -1,0 +1,28 @@
+DEBUG	Version:    %s
+DEBUG	Git commit: %s
+DEBUG	Build date: %s
+DEBUG	Go version: %s
+DEBUG	Os/Arch:    %s
+DEBUG	Running command [%s --log-file ./log-file.txt]
+INFO	
+INFO	Keboola Connection pull/push client
+INFO	for components configurations.
+INFO	
+INFO	Configurations can be synchronized in both
+INFO	directions [KBC project] <-> [a local directory].
+INFO	
+INFO	Usage:
+INFO	  %s [command]
+INFO	
+INFO	Available Commands:
+INFO	  help        Help about any command
+INFO	  init        Init directory and perform the first pull
+INFO	
+INFO	Flags:
+INFO	  -d, --dir string        use other working directory
+INFO	  -h, --help              print help for command
+INFO	  -l, --log-file string   path to a log file for details
+INFO	  -v, --verbose           print details
+INFO	      --version           version for bin_func_tests
+INFO	
+INFO	Use "%s [command] --help" for more information about a command.

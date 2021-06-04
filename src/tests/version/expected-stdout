@@ -1,0 +1,5 @@
+Version:    %s
+Git commit: %s
+Build date: %s
+Go version: %s
+Os/Arch:    %s
