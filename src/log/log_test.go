@@ -4,6 +4,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/utils"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -16,7 +17,7 @@ func TestNewLogger(t *testing.T) {
 
 func TestFileCore(t *testing.T) {
 	tempDir := t.TempDir()
-	filePath := tempDir + "/log-file.txt"
+	filePath := filepath.Join(tempDir, "log-file.txt")
 	file, err := os.Create(filePath)
 	assert.NoError(t, err)
 
@@ -29,7 +30,7 @@ func TestFileCore(t *testing.T) {
 	logger.Warn("Warn msg")
 	logger.Error("Error msg")
 
-	// Assert, info is logged without prefix
+	// Assert, all levels logged with the level prefix
 	expected := "DEBUG\tDebug msg\nINFO\tInfo msg\nWARN\tWarn msg\nERROR\tError msg\n"
 	assert.Equal(t, expected, utils.GetFileContent(filePath))
 }
@@ -51,6 +52,8 @@ func TestConsoleCoreVerboseFalse(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Assert
+	// info      -> stdout
+	// warn, err -> stderr
 	expectedOut := "Info msg\n"
 	expectedErr := "Warn msg\nError msg\n"
 	assert.Equal(t, expectedOut, bufferOut.String())
@@ -73,6 +76,8 @@ func TestConsoleCoreVerboseTrue(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Assert
+	// debug (verbose), info -> stdout
+	// warn, err             -> stderr
 	expectedOut := "Debug msg\nInfo msg\n"
 	expectedErr := "Warn msg\nError msg\n"
 	assert.Equal(t, expectedOut, bufferOut.String())
@@ -86,14 +91,15 @@ func TestToInfoWriter(t *testing.T) {
 	// Write
 	logger := NewLogger(writerOut, writerErr, nil, false)
 	_, err := ToInfoWriter(logger).Write([]byte("test\n"))
+	assert.NoError(t, err)
 
 	// Flush
-	assert.NoError(t, err)
 	err = writerOut.Flush()
 	assert.NoError(t, err)
 	err = writerErr.Flush()
 	assert.NoError(t, err)
 
+	// Assert, written to stdout
 	assert.Equal(t, "test\n", bufferOut.String())
 	assert.Equal(t, "", bufferErr.String())
 }
@@ -105,14 +111,15 @@ func TestToWarnWriter(t *testing.T) {
 	// Write
 	logger := NewLogger(writerOut, writerErr, nil, false)
 	_, err := ToWarnWriter(logger).Write([]byte("test\n"))
+	assert.NoError(t, err)
 
 	// Flush
-	assert.NoError(t, err)
 	err = writerOut.Flush()
 	assert.NoError(t, err)
 	err = writerErr.Flush()
 	assert.NoError(t, err)
 
+	// Assert, written to stderr
 	assert.Equal(t, "", bufferOut.String())
 	assert.Equal(t, "test\n", bufferErr.String())
 }

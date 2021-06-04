@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap"
 	"io"
 	"keboola-as-code/src/log"
+	"keboola-as-code/src/params"
 	"keboola-as-code/src/utils"
 	"keboola-as-code/src/version"
 	"os"
@@ -30,27 +31,20 @@ const usageTemplate = `Usage:{{if .HasAvailableSubCommands}}
 
 Aliases:`
 
-// flags from command line
-type flags struct {
-	workingDirectory string
-	logFilePath      string
-	verbose          bool
-}
-
 type rootCommand struct {
-	cmd              *cobra.Command
-	flags            *flags
-	initialized      bool               // init method was called
-	workingDirectory string             // working directory, can be specified by flag
-	logFile          *os.File           // log file instance
-	logFilePath      string             // log file path specified by flag, or generated temp file, or empty string if no log file
-	logFileClear     bool               // is log file temporary? if yes, it will be removed at the end, if no error occurs
-	logger           *zap.SugaredLogger // log to console and logFile
+	cmd          *cobra.Command
+	params       *params.Params     // parsed Flags and env variables
+	flags        *params.Flags      // values of command line Flags
+	initialized  bool               // init method was called
+	logFile      *os.File           // log file instance
+	logFilePath  string             // log file path specified by flag, or generated temp file, or empty string if no log file
+	logFileClear bool               // is log file temporary? if yes, it will be removed at the end, if no error occurs
+	logger       *zap.SugaredLogger // log to console and logFile
 }
 
 // NewRootCommand creates parent of all sub-commands
 func NewRootCommand(stdout io.Writer, stderr io.Writer) *rootCommand {
-	root := &rootCommand{flags: &flags{}}
+	root := &rootCommand{flags: &params.Flags{}}
 	root.cmd = &cobra.Command{
 		Use:          path.Base(os.Args[0]), // name of the binary
 		Version:      version.Version(),
@@ -72,16 +66,22 @@ func NewRootCommand(stdout io.Writer, stderr io.Writer) *rootCommand {
 		regexp.MustCompile(`Usage:(.|\n)*Aliases:`).ReplaceAllString(root.cmd.UsageTemplate(), usageTemplate),
 	)
 
-	// Flags
+	// Persistent flags
 	root.cmd.PersistentFlags().SortFlags = true
+	root.cmd.PersistentFlags().StringVarP(&root.flags.ApiUrl, "api-url", "u", "", "storage API url, eg. \"connection.keboola.com\"")
+	root.cmd.PersistentFlags().StringVarP(&root.flags.WorkingDirectory, "dir", "d", "", "use other working directory")
 	root.cmd.PersistentFlags().BoolP("help", "h", false, "print help for command")
-	root.cmd.PersistentFlags().StringVarP(&root.flags.workingDirectory, "dir", "d", "", "use other working directory")
-	root.cmd.PersistentFlags().StringVarP(&root.flags.logFilePath, "log-file", "l", "", "path to a log file for details")
-	root.cmd.PersistentFlags().BoolVarP(&root.flags.verbose, "verbose", "v", false, "print details")
+	root.cmd.PersistentFlags().StringVarP(&root.flags.LogFilePath, "log-file", "l", "", "path to a log file for details")
+	root.cmd.PersistentFlags().StringVarP(&root.flags.ApiToken, "token", "t", "", "storage API token")
+	root.cmd.PersistentFlags().BoolVarP(&root.flags.Verbose, "verbose", "v", false, "print details")
+
+	// Root flags
+	root.cmd.Flags().SortFlags = true
+	root.cmd.Flags().Bool("version", false, "print version")
 
 	// Init when flags are parsed
-	root.cmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
-		root.init()
+	root.cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		return root.init()
 	}
 
 	// Sub-commands
@@ -96,10 +96,9 @@ func NewRootCommand(stdout io.Writer, stderr io.Writer) *rootCommand {
 func (root *rootCommand) Execute() {
 	defer root.tearDown()
 	if err := root.cmd.Execute(); err != nil {
-		root.init() // init, it can be uninitialized, if error occurred before PersistentPreRun call
-
-		// Error is already logged to STDOUT, log to file
-		root.logger.Debug("Command exited with error: ", err)
+		// Init, it can be uninitialized, if error occurred before PersistentPreRun call
+		_ = root.init()
+		// Error is already logged
 		os.Exit(1)
 	}
 }
@@ -138,23 +137,29 @@ func (root *rootCommand) tearDown() {
 	}
 }
 
-// init sets logger and working directory, must be called after flags are parsed
-func (root *rootCommand) init() {
+// init sets logger and params after flags are parsed
+func (root *rootCommand) init() (err error) {
 	if root.initialized {
 		return
 	}
 
 	root.setupLogger()
-	root.setupWorkingDirectory()
 	root.logVersion()
 	root.logCommand()
+
+	err = root.setupParams()
+	if err != nil {
+		return
+	}
+
 	root.initialized = true
+	return
 }
 
 // setupLogger according to the flags
 func (root *rootCommand) setupLogger() {
 	logFile, logFileErr := root.getLogFile()
-	root.logger = log.NewLogger(root.cmd.OutOrStdout(), root.cmd.ErrOrStderr(), logFile, root.flags.verbose)
+	root.logger = log.NewLogger(root.cmd.OutOrStdout(), root.cmd.ErrOrStderr(), logFile, root.flags.Verbose)
 	root.logFile = logFile
 	root.cmd.SetOut(log.ToInfoWriter(root.logger))
 	root.cmd.SetErr(log.ToWarnWriter(root.logger))
@@ -165,17 +170,9 @@ func (root *rootCommand) setupLogger() {
 	}
 }
 
-// setupWorkingDirectory from flag or current working directory
-func (root *rootCommand) setupWorkingDirectory() {
-	if len(root.flags.workingDirectory) > 0 {
-		root.workingDirectory = root.flags.workingDirectory
-	} else {
-		dir, err := os.Getwd()
-		if err != nil {
-			panic(fmt.Errorf("cannot get current working directory: %s", err))
-		}
-		root.workingDirectory = dir
-	}
+func (root *rootCommand) setupParams() (err error) {
+	root.params, err = params.NewParams(root.logger, root.flags)
+	return
 }
 
 func (root *rootCommand) logVersion() {
@@ -191,8 +188,8 @@ func (root *rootCommand) logCommand() {
 
 // Get log file defined in the flags or create a temp file
 func (root *rootCommand) getLogFile() (logFile *os.File, logFileErr error) {
-	if len(root.flags.logFilePath) > 0 {
-		root.logFilePath = root.flags.logFilePath
+	if len(root.flags.LogFilePath) > 0 {
+		root.logFilePath = root.flags.LogFilePath
 		root.logFileClear = false // log file defined by user will be preserved
 	} else {
 		root.logFilePath = path.Join(os.TempDir(), fmt.Sprintf("keboola-as-code-%d.txt", time.Now().Unix()))

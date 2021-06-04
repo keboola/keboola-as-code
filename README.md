@@ -4,6 +4,39 @@
 - It syncs all [component configurations](https://help.keboola.com/components/) from a [KBC](https://www.keboola.com/) project to a directory, and vice versa.
 - The directory can be versioned in [Git](https://git-scm.com/) or a similar tool.
 
+## Directory structure
+
+```
+Root project folder
+├─ .gitignore
+├─ .env                                         - env variables, it mustn't be versioned/published
+├─ .env.dist                                    - template of the .env file
+├─ .keboola                                     - metadata
+|  └─ manifest.json
+└─ branches
+   └─ [branch-id]-[branch-name]                 - eg. 10715-test
+      ├─ config.json                            - contains branch name, description
+      └─ [component-type]                       - eg. extractor
+         └─ [component-id]                      - eg. keboola.ex-db-oracle
+            └─ [config-id]-[config-name]        - eg. 641226048-oauth-test
+                ├─ config.json                  - contains all config's editable properties
+                └─ rows
+                   └─ [row-id]-[row-name].json  - eg. 28790-prod-fact-table
+```
+
+## Environment variables
+
+Priority of values:
+1. Command line flags
+2. Environment variables set in OS
+3. Environment variables in `.env` file
+
+List of supported variables:
+```
+KBC_STORAGE_API_URL=
+KBC_STORAGE_API_TOKEN=
+```
+
 ## Error Reporting
 
 If an unexpected error occurs, the user can submit a generated log file to out support email.

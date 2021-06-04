@@ -16,7 +16,7 @@ type WarnWriter struct {
 	logger *zap.SugaredLogger
 }
 
-// Write message wit INFO level to logger
+// Write message with INFO level to logger
 func (w *InfoWriter) Write(p []byte) (n int, err error) {
 	lines := strings.TrimRight(string(p), "\n")
 	for _, line := range strings.Split(lines, "\n") {
@@ -25,7 +25,7 @@ func (w *InfoWriter) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-// Write message wit WARN level to logger
+// Write message with WARN level to logger
 func (w *WarnWriter) Write(p []byte) (n int, err error) {
 	lines := strings.TrimRight(string(p), "\n")
 	for _, line := range strings.Split(lines, "\n") {

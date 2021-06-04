@@ -25,7 +25,7 @@ func TestFunctional(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Compile binary, it will be run in the tests
-	projectDir := rootDir + "/../.."
+	projectDir := filepath.Join(rootDir, "..", "..")
 	binary := CompileBinary(t, projectDir, tempDir)
 
 	// Run binary in each data dir
@@ -43,7 +43,7 @@ func RunFunctionalTest(t *testing.T, testDir string, binary string) {
 	workingDir := t.TempDir()
 
 	// Copy all from in dir to runtime dir
-	inDir := testDir + "/in"
+	inDir := filepath.Join(testDir, "in")
 	if !utils.FileExists(inDir) {
 		t.Fatalf("Missing directory \"%s\".", inDir)
 	}
@@ -53,7 +53,7 @@ func RunFunctionalTest(t *testing.T, testDir string, binary string) {
 	}
 
 	// Load command arguments from file
-	argsFile := testDir + "/args"
+	argsFile := filepath.Join(testDir, "args")
 	argsStr := strings.TrimSpace(utils.GetFileContent(argsFile))
 	args, err := shlex.Split(argsStr)
 	if err != nil {
@@ -83,7 +83,7 @@ func RunFunctionalTest(t *testing.T, testDir string, binary string) {
 // CompileBinary compiles component to binary used in this test
 func CompileBinary(t *testing.T, projectDir string, tempDir string) string {
 	var stdout, stderr bytes.Buffer
-	binaryPath := tempDir + "/bin_func_tests"
+	binaryPath := filepath.Join(tempDir, "/bin_func_tests")
 	cmd := exec.Command(projectDir+"/scripts/compile.sh", binaryPath)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -137,16 +137,16 @@ func AssertExpectations(
 	stdout string,
 	stderr string,
 ) {
-	expectedDir := testDir + "/out"
+	expectedDir := filepath.Join(testDir, "out")
 	if !utils.FileExists(expectedDir) {
 		t.Fatalf("Missing directory \"%s\".", expectedDir)
 	}
 
-	expectedStdout := utils.GetFileContent(testDir + "/expected-stdout")
-	expectedStderr := utils.GetFileContent(testDir + "/expected-stderr")
+	expectedStdout := utils.GetFileContent(filepath.Join(testDir, "expected-stdout"))
+	expectedStderr := utils.GetFileContent(filepath.Join(testDir, "expected-stderr"))
 
 	// Assert exit code
-	expectedCodeStr := utils.GetFileContent(testDir + "/expected-code")
+	expectedCodeStr := utils.GetFileContent(filepath.Join(testDir, "expected-code"))
 	expectedCode, _ := strconv.ParseInt(strings.TrimSpace(expectedCodeStr), 10, 32)
 	assert.Equal(
 		t,
