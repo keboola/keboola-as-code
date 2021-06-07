@@ -26,17 +26,19 @@ Root project folder
 
 ## Environment variables
 
-Priority of values:
+### Priority of values
 1. Command line flags
 2. Environment variables set in OS
 3. Environment variables in `.env` file in the working directory
 4. Environment variables in `.env` file in the project directory
 
-List of supported variables:
-```
-KBC_STORAGE_API_URL=
-KBC_STORAGE_API_TOKEN=
-```
+### Naming
+
+- Each environment variable starts with `KBC_` prefix.
+- Each flag (see `help`) can be defined by an environment variable. 
+- Examples:
+  - `--storage-api-token` as `KBC_STORAGE_API_TOKEN`
+  - `--verbose` as `KBC_VERBOSE`
 
 ## Error Reporting
 

@@ -39,6 +39,9 @@ func TestFunctional(t *testing.T) {
 
 // RunFunctionalTest runs one functional test.
 func RunFunctionalTest(t *testing.T, testDir string, binary string) {
+	// Clear env
+	os.Clearenv()
+
 	// Create runtime dir
 	workingDir := t.TempDir()
 

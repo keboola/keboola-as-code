@@ -3,6 +3,7 @@ package options
 import (
 	"fmt"
 	"github.com/iancoleman/strcase"
+	"github.com/spf13/cast"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"os"
@@ -113,8 +114,10 @@ func (o *Options) Load(flags *pflag.FlagSet) (warnings []string, err error) {
 	reflection := reflect.Indirect(reflect.ValueOf(o))
 	types := reflect.TypeOf(*o)
 	for i := 0; i < reflection.NumField(); i++ {
-		if flag := types.Field(i).Tag.Get("flag"); len(flag) > 0 {
-			if value := parser.Get(flag); value != nil {
+		field := types.Field(i)
+		if flag := field.Tag.Get("flag"); len(flag) > 0 {
+			value := castValue(parser.Get(flag), field.Type.Kind())
+			if value != nil {
 				reflection.Field(i).Set(reflect.ValueOf(value))
 			}
 		}
@@ -181,4 +184,27 @@ func getProjectDirectory(workingDir string) (projectDir string, warnings []strin
 	}
 
 	return "", warnings
+}
+
+func castValue(val interface{}, kind reflect.Kind) interface{} {
+	switch kind {
+	case reflect.Bool:
+		return cast.ToBool(val)
+	case reflect.String:
+		return cast.ToString(val)
+	case reflect.Int32, reflect.Int16, reflect.Int8, reflect.Int:
+		return cast.ToInt(val)
+	case reflect.Uint:
+		return cast.ToUint(val)
+	case reflect.Uint32:
+		return cast.ToUint32(val)
+	case reflect.Uint64:
+		return cast.ToUint64(val)
+	case reflect.Int64:
+		return cast.ToInt64(val)
+	case reflect.Float64, reflect.Float32:
+		return cast.ToFloat64(val)
+	default:
+		return val
+	}
 }

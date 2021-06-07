@@ -136,7 +136,16 @@ func (root *rootCommand) init(cmd *cobra.Command) (err error) {
 	if root.initialized {
 		return
 	}
+
+	// Run only once
 	root.initialized = true
+
+	// Logger must always be set up, even if there is a panic somewhere
+	defer func() {
+		if root.logger == nil {
+			root.setupLogger()
+		}
+	}()
 
 	// Load values from flags and envs
 	warnings, err := root.options.Load(cmd.Flags())
