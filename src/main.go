@@ -7,6 +7,7 @@ import (
 
 func main() {
 	// Run command
-	cmd := cli.NewRootCommand(os.Stdin, os.Stdout, os.Stderr)
+	prompt := cli.NewPrompt(os.Stdin, os.Stdout, os.Stderr)
+	cmd := cli.NewRootCommand(os.Stdin, os.Stdout, os.Stderr, prompt)
 	cmd.Execute()
 }

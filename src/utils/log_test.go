@@ -6,18 +6,18 @@ import (
 )
 
 func TestNewBufferWriter(t *testing.T) {
-	writer, buffer := NewBufferWriter()
+	writer := NewBufferWriter()
 	_, err := writer.WriteString("test")
 	assert.NoError(t, err)
 	err = writer.Flush()
 	assert.NoError(t, err)
-	assert.Equal(t, "test", buffer.String())
+	assert.Equal(t, "test", writer.Buffer.String())
 }
 
 func TestNewDebugLogger(t *testing.T) {
-	logger, writer, buffer := NewDebugLogger()
+	logger, writer := NewDebugLogger()
 	logger.Warn("test")
 	err := writer.Flush()
 	assert.NoError(t, err)
-	assert.Equal(t, "WARN  test\n", buffer.String())
+	assert.Equal(t, "WARN  test\n", writer.Buffer.String())
 }

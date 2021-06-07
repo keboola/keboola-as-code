@@ -32,6 +32,7 @@ Aliases:`
 type rootCommand struct {
 	cmd          *cobra.Command
 	options      *options.Options   // parsed flags and env variables
+	prompt       *Prompt            // user interaction
 	initialized  bool               // init method was called
 	logFile      *os.File           // log file instance
 	logFileClear bool               // is log file temporary? if yes, it will be removed at the end, if no error occurs
@@ -39,12 +40,15 @@ type rootCommand struct {
 }
 
 // NewRootCommand creates parent of all sub-commands
-func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer) *rootCommand {
-	root := &rootCommand{options: &options.Options{}}
+func NewRootCommand(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteCloser, prompt *Prompt) *rootCommand {
+	root := &rootCommand{options: &options.Options{}, prompt: prompt}
+
+	// Command definition
 	root.cmd = &cobra.Command{
-		Use:     path.Base(os.Args[0]), // name of the binary
-		Version: version.Version(),
-		Short:   description,
+		Use:          path.Base(os.Args[0]), // name of the binary
+		Version:      version.Version(),
+		Short:        description,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Print help if no command specified
 			return root.cmd.Help()

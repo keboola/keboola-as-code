@@ -1,18 +1,22 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"github.com/spf13/cobra"
+	"net/url"
 )
 
 const shortDescription = `Init directory and perform the first pull`
 const longDescription = `Command "init"
 
-Project structure and component configurations are first time synchronized
-from the Keboola Connection to the working directory.
+Initialize local project's directory
+and first time sync project from the Keboola Connection.
 
-The project is defined by the Storage API URL and token.
-They can be entered via ENV variables, .env file or as an argument.`
+You will be asked to enter the Storage API host
+and Storage API token from your project.
+You can also enter these values
+as flags or environment variables.`
 
 func initCommand(root *rootCommand) *cobra.Command {
 	cmd := &cobra.Command{
@@ -20,8 +24,25 @@ func initCommand(root *rootCommand) *cobra.Command {
 		Short: shortDescription,
 		Long:  longDescription,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			// Ask for the host/token, if they were not specified, to make the first step easier
+			if len(root.options.ApiHost) == 0 {
+				root.options.ApiHost, _ = root.prompt.Ask(&Question{
+					Label:       "API host",
+					Description: "Please enter Keboola Storage API host, eg. \"keboola.connection.com\".",
+					Validator:   apiHostValidator,
+				})
+			}
+			if len(root.options.ApiToken) == 0 {
+				root.options.ApiToken, _ = root.prompt.Ask(&Question{
+					Label:       "API token",
+					Description: "Please enter Keboola Storage API token. The value will not be displayed.",
+					Hidden:      true,
+					Validator:   valueRequired,
+				})
+			}
+
 			// Validate options
-			if err := root.options.Validate([]string{"ApiUrl", "ApiToken"}); len(err) > 0 {
+			if err := root.options.Validate([]string{"ApiHost", "ApiToken"}); len(err) > 0 {
 				root.logger.Warn("Invalid parameters: \n", err)
 				return fmt.Errorf("invalid parameters, see output above")
 			}
@@ -35,4 +56,14 @@ func initCommand(root *rootCommand) *cobra.Command {
 	}
 
 	return cmd
+}
+
+func apiHostValidator(val interface{}) error {
+	str := val.(string)
+	if len(str) == 0 {
+		return errors.New("value is required")
+	} else if _, err := url.Parse(str); err != nil {
+		return errors.New("invalid host")
+	}
+	return nil
 }

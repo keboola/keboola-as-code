@@ -16,7 +16,7 @@ import (
 type Options struct {
 	Verbose          bool   `flag:"verbose"`           // verbose mode, print details to console
 	LogFilePath      string `flag:"log-file"`          // path to the log file
-	ApiUrl           string `flag:"storage-api-url"`   // api url
+	ApiHost          string `flag:"storage-api-host"`  // api host
 	ApiToken         string `flag:"storage-api-token"` // api token
 	WorkingDirectory string // working directory
 	ProjectDirectory string // project directory with ".keboola" metadata dir
@@ -28,7 +28,7 @@ func (o *Options) BindPersistentFlags(flags *pflag.FlagSet) {
 	flags.BoolP("help", "h", false, "print help for command")
 	flags.StringP("log-file", "l", "", "path to a log file for details")
 	flags.StringP("working-dir", "d", "", "use other working directory")
-	flags.StringP("storage-api-url", "u", "", "storage API url, eg. \"connection.keboola.com\"")
+	flags.StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
 	flags.StringP("storage-api-token", "t", "", "storage API token")
 	flags.BoolP("verbose", "v", false, "print details")
 }
@@ -127,8 +127,8 @@ func (o *Options) Load(flags *pflag.FlagSet) (warnings []string, err error) {
 }
 
 func (o *Options) normalize() {
-	o.ApiUrl = strings.TrimRight(o.ApiUrl, "/")
-	o.ApiUrl = strings.TrimPrefix(o.ApiUrl, "https://")
+	o.ApiHost = strings.TrimRight(o.ApiHost, "/")
+	o.ApiHost = strings.TrimPrefix(o.ApiHost, "https://")
 	o.ApiToken = strings.TrimSpace(o.ApiToken)
 }
 

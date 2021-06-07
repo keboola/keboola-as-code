@@ -8,13 +8,13 @@ import (
 	"strings"
 )
 
-type Writer struct {
+type WriteCloser struct {
 	level  zapcore.Level
 	logger *zap.SugaredLogger
 }
 
 // Write message with the level to logger
-func (w *Writer) Write(p []byte) (n int, err error) {
+func (w *WriteCloser) Write(p []byte) (n int, err error) {
 	lines := strings.TrimRight(string(p), "\n")
 	for _, line := range strings.Split(lines, "\n") {
 		msg := strings.TrimRight(line, "\n")
@@ -33,20 +33,24 @@ func (w *Writer) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-func (w *Writer) WriteString(s string) (n int, err error) {
+func (w *WriteCloser) Close() error {
+	return w.logger.Sync()
+}
+
+func (w *WriteCloser) WriteString(s string) (n int, err error) {
 	return w.Write([]byte(s))
 }
 
-func ToDebugWriter(l *zap.SugaredLogger) *Writer {
-	return &Writer{zapcore.DebugLevel, l}
+func ToDebugWriter(l *zap.SugaredLogger) *WriteCloser {
+	return &WriteCloser{zapcore.DebugLevel, l}
 }
 
-func ToInfoWriter(l *zap.SugaredLogger) *Writer {
-	return &Writer{zapcore.InfoLevel, l}
+func ToInfoWriter(l *zap.SugaredLogger) *WriteCloser {
+	return &WriteCloser{zapcore.InfoLevel, l}
 }
 
-func ToWarnWriter(l *zap.SugaredLogger) *Writer {
-	return &Writer{zapcore.WarnLevel, l}
+func ToWarnWriter(l *zap.SugaredLogger) *WriteCloser {
+	return &WriteCloser{zapcore.WarnLevel, l}
 }
 
 func NewLogger(stdout io.Writer, stderr io.Writer, logFile *os.File, verbose bool) *zap.SugaredLogger {

@@ -3,6 +3,9 @@ module keboola-as-code
 go 1.16
 
 require (
+	github.com/ActiveState/vt10x v1.3.1
+	github.com/AlecAivazis/survey/v2 v2.2.12
+	github.com/Netflix/go-expect v0.0.0-20210429232723-e923ed2d1db5 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/iancoleman/strcase v0.1.3
 	github.com/joho/godotenv v1.3.0
