@@ -1,19 +1,17 @@
 package cli
 
 import (
-	"bufio"
 	"fmt"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"io"
 	"keboola-as-code/src/log"
-	"keboola-as-code/src/params"
+	"keboola-as-code/src/options"
 	"keboola-as-code/src/utils"
 	"keboola-as-code/src/version"
 	"os"
 	"path"
 	"regexp"
-	"strings"
 	"time"
 )
 
@@ -33,30 +31,28 @@ Aliases:`
 
 type rootCommand struct {
 	cmd          *cobra.Command
-	params       *params.Params     // parsed Flags and env variables
-	flags        *params.Flags      // values of command line Flags
+	options      *options.Options   // parsed flags and env variables
 	initialized  bool               // init method was called
 	logFile      *os.File           // log file instance
-	logFilePath  string             // log file path specified by flag, or generated temp file, or empty string if no log file
 	logFileClear bool               // is log file temporary? if yes, it will be removed at the end, if no error occurs
 	logger       *zap.SugaredLogger // log to console and logFile
 }
 
 // NewRootCommand creates parent of all sub-commands
-func NewRootCommand(stdout io.Writer, stderr io.Writer) *rootCommand {
-	root := &rootCommand{flags: &params.Flags{}}
+func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer) *rootCommand {
+	root := &rootCommand{options: &options.Options{}}
 	root.cmd = &cobra.Command{
-		Use:          path.Base(os.Args[0]), // name of the binary
-		Version:      version.Version(),
-		Short:        description,
-		SilenceUsage: true,
+		Use:     path.Base(os.Args[0]), // name of the binary
+		Version: version.Version(),
+		Short:   description,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Print help if no command specified
 			return root.cmd.Help()
 		},
 	}
 
-	// Setup outputs
+	// Setup in/out
+	root.cmd.SetIn(stdin)
 	root.cmd.SetOut(stdout)
 	root.cmd.SetErr(stderr)
 
@@ -66,22 +62,16 @@ func NewRootCommand(stdout io.Writer, stderr io.Writer) *rootCommand {
 		regexp.MustCompile(`Usage:(.|\n)*Aliases:`).ReplaceAllString(root.cmd.UsageTemplate(), usageTemplate),
 	)
 
-	// Persistent flags
-	root.cmd.PersistentFlags().SortFlags = true
-	root.cmd.PersistentFlags().StringVarP(&root.flags.ApiUrl, "api-url", "u", "", "storage API url, eg. \"connection.keboola.com\"")
-	root.cmd.PersistentFlags().StringVarP(&root.flags.WorkingDirectory, "dir", "d", "", "use other working directory")
-	root.cmd.PersistentFlags().BoolP("help", "h", false, "print help for command")
-	root.cmd.PersistentFlags().StringVarP(&root.flags.LogFilePath, "log-file", "l", "", "path to a log file for details")
-	root.cmd.PersistentFlags().StringVarP(&root.flags.ApiToken, "token", "t", "", "storage API token")
-	root.cmd.PersistentFlags().BoolVarP(&root.flags.Verbose, "verbose", "v", false, "print details")
+	// Persistent flags for all sub-commands
+	root.options.BindPersistentFlags(root.cmd.PersistentFlags())
 
-	// Root flags
+	// Root command flags
 	root.cmd.Flags().SortFlags = true
 	root.cmd.Flags().Bool("version", false, "print version")
 
 	// Init when flags are parsed
 	root.cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
-		return root.init()
+		return root.init(cmd)
 	}
 
 	// Sub-commands
@@ -97,7 +87,7 @@ func (root *rootCommand) Execute() {
 	defer root.tearDown()
 	if err := root.cmd.Execute(); err != nil {
 		// Init, it can be uninitialized, if error occurred before PersistentPreRun call
-		_ = root.init()
+		_ = root.init(root.cmd)
 		// Error is already logged
 		os.Exit(1)
 	}
@@ -119,47 +109,49 @@ func (root *rootCommand) tearDown() {
 		// No error -> remove log file if temporary
 		if root.logFile != nil && root.logFileClear {
 			if err = root.logFile.Close(); err != nil {
-				panic(fmt.Errorf("cannot close log file \"%s\": %s", root.logFilePath, err))
+				panic(fmt.Errorf("cannot close log file \"%s\": %s", root.options.LogFilePath, err))
 			}
-			if err = os.Remove(root.logFilePath); err != nil {
-				panic(fmt.Errorf("cannot remove temp log file \"%s\": %s", root.logFilePath, err))
+			if err = os.Remove(root.options.LogFilePath); err != nil {
+				panic(fmt.Errorf("cannot remove temp log file \"%s\": %s", root.options.LogFilePath, err))
 			}
 		}
 	} else {
 		// Error -> process and close log file
-		exitCode := utils.ProcessPanic(err, root.logger, root.logFilePath)
+		exitCode := utils.ProcessPanic(err, root.logger, root.options.LogFilePath)
 		if root.logFile != nil {
 			if err = root.logFile.Close(); err != nil {
-				panic(fmt.Errorf("cannot close log file \"%s\": %s", root.logFilePath, err))
+				panic(fmt.Errorf("cannot close log file \"%s\": %s", root.options.LogFilePath, err))
 			}
 		}
 		os.Exit(exitCode)
 	}
 }
 
-// init sets logger and params after flags are parsed
-func (root *rootCommand) init() (err error) {
+// init sets logger and options after flags are parsed
+func (root *rootCommand) init(cmd *cobra.Command) (err error) {
 	if root.initialized {
 		return
 	}
+	root.initialized = true
 
+	// Load values from flags and envs
+	warnings, err := root.options.Load(cmd.Flags())
+
+	// Setup logger and log options load warnings
 	root.setupLogger()
-	root.logVersion()
-	root.logCommand()
-
-	err = root.setupParams()
-	if err != nil {
-		return
+	root.logDebugInfo()
+	for _, msg := range warnings {
+		root.logger.Debug(msg)
 	}
 
-	root.initialized = true
+	// Return load error
 	return
 }
 
-// setupLogger according to the flags
+// setupLogger according to the options
 func (root *rootCommand) setupLogger() {
 	logFile, logFileErr := root.getLogFile()
-	root.logger = log.NewLogger(root.cmd.OutOrStdout(), root.cmd.ErrOrStderr(), logFile, root.flags.Verbose)
+	root.logger = log.NewLogger(root.cmd.OutOrStdout(), root.cmd.ErrOrStderr(), logFile, root.options.Verbose)
 	root.logFile = logFile
 	root.cmd.SetOut(log.ToInfoWriter(root.logger))
 	root.cmd.SetErr(log.ToWarnWriter(root.logger))
@@ -170,35 +162,32 @@ func (root *rootCommand) setupLogger() {
 	}
 }
 
-func (root *rootCommand) setupParams() (err error) {
-	root.params, err = params.NewParams(root.logger, root.flags)
-	return
-}
-
-func (root *rootCommand) logVersion() {
-	versionLines := bufio.NewScanner(strings.NewReader(root.cmd.Version))
-	for versionLines.Scan() {
-		root.logger.Debug(versionLines.Text())
+func (root *rootCommand) logDebugInfo() {
+	// Version
+	_, err := log.ToDebugWriter(root.logger).WriteString(root.cmd.Version)
+	if err != nil {
+		panic(err)
 	}
-}
 
-func (root *rootCommand) logCommand() {
+	// Command
 	root.logger.Debugf("Running command %v", os.Args)
+
+	// Options
+	root.logger.Debug(root.options.Dump())
 }
 
 // Get log file defined in the flags or create a temp file
 func (root *rootCommand) getLogFile() (logFile *os.File, logFileErr error) {
-	if len(root.flags.LogFilePath) > 0 {
-		root.logFilePath = root.flags.LogFilePath
+	if len(root.options.LogFilePath) > 0 {
 		root.logFileClear = false // log file defined by user will be preserved
 	} else {
-		root.logFilePath = path.Join(os.TempDir(), fmt.Sprintf("keboola-as-code-%d.txt", time.Now().Unix()))
+		root.options.LogFilePath = path.Join(os.TempDir(), fmt.Sprintf("keboola-as-code-%d.txt", time.Now().Unix()))
 		root.logFileClear = true // temp log file will be removed. It will be preserved only in case of error
 	}
 
-	logFile, logFileErr = os.OpenFile(root.logFilePath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
+	logFile, logFileErr = os.OpenFile(root.options.LogFilePath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
 	if logFileErr != nil {
-		root.logFilePath = ""
+		root.options.LogFilePath = ""
 	}
 	return
 }

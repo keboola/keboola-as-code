@@ -4,6 +4,7 @@ DEBUG	Build date: %s
 DEBUG	Go version: %s
 DEBUG	Os/Arch:    %s
 DEBUG	Running command [%s --log-file ./log-file.txt]
+DEBUG	Parsed options: &options.Options{Verbose:false, LogFilePath:"./log-file.txt", ApiUrl:"", ApiToken:"", WorkingDirectory:"%s", ProjectDirectory:""}
 INFO	
 INFO	Keboola Connection pull/push client
 INFO	%A

@@ -3,7 +3,6 @@ package cli
 import (
 	"fmt"
 	"github.com/spf13/cobra"
-	"keboola-as-code/src/params"
 )
 
 const shortDescription = `Init directory and perform the first pull`
@@ -21,9 +20,8 @@ func initCommand(root *rootCommand) *cobra.Command {
 		Short: shortDescription,
 		Long:  longDescription,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			// Validate params
-			required := params.Required{ApiUrl: true, ApiToken: true}
-			if err := root.params.Validate(required); len(err) > 0 {
+			// Validate options
+			if err := root.options.Validate([]string{"ApiUrl", "ApiToken"}); len(err) > 0 {
 				root.logger.Warn("Invalid parameters: \n", err)
 				return fmt.Errorf("invalid parameters, see output above")
 			}

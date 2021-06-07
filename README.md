@@ -29,7 +29,8 @@ Root project folder
 Priority of values:
 1. Command line flags
 2. Environment variables set in OS
-3. Environment variables in `.env` file
+3. Environment variables in `.env` file in the working directory
+4. Environment variables in `.env` file in the project directory
 
 List of supported variables:
 ```

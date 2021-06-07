@@ -13,6 +13,12 @@ func NewBufferWriter() (*bufio.Writer, *bytes.Buffer) {
 	return writer, &buffer
 }
 
+func NewBufferReader() (*bufio.Reader, *bytes.Buffer) {
+	var buffer bytes.Buffer
+	reader := bufio.NewReader(&buffer)
+	return reader, &buffer
+}
+
 func NewDebugLogger() (*zap.SugaredLogger, *bufio.Writer, *bytes.Buffer) {
 	writer, buffer := NewBufferWriter()
 	encoderConfig := zapcore.EncoderConfig{

@@ -10,9 +10,9 @@ Usage:
   %s init [flags]
 
 Global Flags:
-  -u, --api-url string    storage API url, eg. "connection.keboola.com"
-  -d, --dir string        use other working directory
-  -h, --help              print help for command
-  -l, --log-file string   path to a log file for details
-  -t, --token string      storage API token
-  -v, --verbose           print details
+  -h, --help                       print help for command
+  -l, --log-file string            path to a log file for details
+  -t, --storage-api-token string   storage API token
+  -u, --storage-api-url string     storage API url, eg. "connection.keboola.com"
+  -v, --verbose                    print details
+  -d, --working-dir string         use other working directory
