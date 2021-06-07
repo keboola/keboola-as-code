@@ -35,7 +35,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 			if len(root.options.ApiToken) == 0 {
 				root.options.ApiToken, _ = root.prompt.Ask(&Question{
 					Label:       "API token",
-					Description: "Please enter Keboola Storage API token. The value will not be displayed.",
+					Description: "Please enter Keboola Storage API token. The value will be hidden.",
 					Hidden:      true,
 					Validator:   valueRequired,
 				})
