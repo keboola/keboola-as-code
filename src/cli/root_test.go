@@ -48,6 +48,7 @@ func TestRootCmdPersistentFlags(t *testing.T) {
 		"storage-api-host",
 		"storage-api-token",
 		"verbose",
+		"verbose-api",
 		"working-dir",
 	}
 	assert.Equal(t, expected, names)

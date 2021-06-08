@@ -17,6 +17,7 @@ import (
 // Options contains parsed flags and ENV variables
 type Options struct {
 	Verbose          bool   `flag:"verbose"`           // verbose mode, print details to console
+	VerboseApi       bool   `flag:"verbose-api"`       // log each API request and response
 	LogFilePath      string `flag:"log-file"`          // path to the log file
 	ApiHost          string `flag:"storage-api-host"`  // api host
 	ApiToken         string `flag:"storage-api-token"` // api token
@@ -33,6 +34,7 @@ func (o *Options) BindPersistentFlags(flags *pflag.FlagSet) {
 	flags.StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
 	flags.StringP("storage-api-token", "t", "", "storage API token from your project")
 	flags.BoolP("verbose", "v", false, "print details")
+	flags.BoolP("verbose-api", "", false, "log each API request and response")
 }
 
 // Validate required options - defined by field name

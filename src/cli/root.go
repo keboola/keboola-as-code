@@ -80,7 +80,7 @@ func NewRootCommand(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteC
 
 	// Root command flags
 	root.cmd.Flags().SortFlags = true
-	root.cmd.Flags().Bool("version", false, "print version")
+	root.cmd.Flags().BoolP("version", "V", false, "print version")
 
 	// Init when flags are parsed
 	root.cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
@@ -167,7 +167,7 @@ func (root *rootCommand) init(cmd *cobra.Command) (err error) {
 	}
 
 	// Http client
-	root.apiClient = api.NewClient(root.ctx, root.logger, root.options.Verbose)
+	root.apiClient = api.NewClient(root.ctx, root.logger, root.options.VerboseApi)
 
 	// Return load error
 	return
