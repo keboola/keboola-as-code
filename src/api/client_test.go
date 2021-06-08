@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/utils"
 	"testing"
+	"time"
 )
 
 func TestNewClient(t *testing.T) {
@@ -16,16 +17,13 @@ func TestNewClient(t *testing.T) {
 }
 
 func TestSimpleRequest(t *testing.T) {
-	logger, out := utils.NewDebugLogger()
-	c := NewClient(context.Background(), logger, false)
-
-	// Enable http mock
-	httpmock.Activate()
+	c, out := getMockedClientAndLogs(false)
 	defer httpmock.DeactivateAndReset()
-	httpmock.ActivateNonDefault(c.http.GetClient())
+
+	// Mocked response
+	httpmock.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(200, `test`))
 
 	// Get
-	httpmock.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(200, `test`))
 	res, err := c.R().Get("https://example.com")
 	assert.NoError(t, err)
 	assert.Equal(t, "test", res.String())
@@ -35,45 +33,80 @@ func TestSimpleRequest(t *testing.T) {
 }
 
 func TestRetry(t *testing.T) {
-	logger, out := utils.NewDebugLogger()
-	c := NewClient(context.Background(), logger, false)
-
-	// Enable http mock
-	httpmock.Activate()
+	c, out := getMockedClientAndLogs(false)
 	defer httpmock.DeactivateAndReset()
-	httpmock.ActivateNonDefault(c.http.GetClient())
+
+	// Mocked response
+	httpmock.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(504, `test`))
 
 	// Get
-	httpmock.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(504, `test`))
 	res, err := c.R().Get("https://example.com")
-	assert.NoError(t, err)
+	assert.NoError(t, err) // no network error
 	assert.Equal(t, "test", res.String())
 	assert.NoError(t, out.Flush())
+	logs := out.Buffer.String()
+
+	// Check number of requests
+	assert.Equal(t, 1+c.http.RetryCount, httpmock.GetCallCountInfo()["GET https://example.com"])
 
 	// Retries are logged
 	assert.Greater(t, c.http.RetryCount, 2)
-	for i := 0; i < c.http.RetryCount; i++ {
+	for i := 1; i <= c.http.RetryCount; i++ {
 		expected := fmt.Sprintf("DEBUG  HTTP-WARN\tGET https://example.com | 504 | %%s | Retrying %dx ...", i)
-		utils.AssertWildcards(t, expected, out.Buffer.String(), "Unexpected log")
+		assert.Regexp(t, utils.WildcardToRegexp(expected), logs)
 	}
+
+	// Error is logged
+	expected := fmt.Sprintf(
+		"DEBUG  HTTP-ERROR\tGET https://example.com | 504 | %%s | Tried %dx",
+		1+c.http.RetryCount,
+	)
+	assert.Regexp(t, utils.WildcardToRegexp(expected), logs)
+}
+
+func TestDoNotRetry(t *testing.T) {
+	c, out := getMockedClientAndLogs(false)
+	defer httpmock.DeactivateAndReset()
+
+	// Short time in tests
+	c.http.RetryWaitTime = 1 * time.Millisecond
+	c.http.RetryMaxWaitTime = 1 * time.Millisecond
+
+	// Mocked response
+	httpmock.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(404, `test`))
+
+	// Get
+	res, err := c.R().Get("https://example.com")
+	assert.NoError(t, err) // no network error
+	assert.Equal(t, "test", res.String())
+	assert.NoError(t, out.Flush())
+	logs := out.Buffer.String()
+
+	// Only one request, HTTP code 404 is not retried
+	assert.Equal(t, 1, httpmock.GetCallCountInfo()["GET https://example.com"])
+
+	// No retry
+	assert.NotContains(t, "Retrying", logs)
+
+	// Error is logged
+	expected := "DEBUG  HTTP-WARN\tGET https://example.com | 404 | %s\n"
+	utils.AssertWildcards(t, expected, logs, "Unexpected log")
 }
 
 func TestVerboseHideSecret(t *testing.T) {
-	logger, out := utils.NewDebugLogger()
-	c := NewClient(context.Background(), logger, true)
-
-	// Enable http mock
-	httpmock.Activate()
+	c, out := getMockedClientAndLogs(true)
 	defer httpmock.DeactivateAndReset()
-	httpmock.ActivateNonDefault(c.http.GetClient())
+
+	// Mocked response
+	httpmock.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(200, `test`))
 
 	// Get
-	httpmock.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(200, `test`))
 	res, err := c.R().SetHeader("X-StorageApi-Token", "my-token").Get("https://example.com")
 	assert.NoError(t, err)
 	assert.Equal(t, "test", res.String())
 	assert.NoError(t, out.Flush())
 
+	// Assert logs
 	expectedLog :=
 		`DEBUG  HTTP	
 ==============================================================================
@@ -96,6 +129,24 @@ HEADERS      :
 BODY         :
 test
 ==============================================================================
+DEBUG  HTTP	GET https://example.com | 200 | %s
+
 `
 	utils.AssertWildcards(t, expectedLog, out.Buffer.String(), "Unexpected log")
+}
+
+func getMockedClientAndLogs(verbose bool) (*Client, *utils.Writer) {
+	// Create
+	logger, out := utils.NewDebugLogger()
+	c := NewClient(context.Background(), logger, verbose)
+
+	// Set short retry delay in tests
+	c.http.RetryWaitTime = 1 * time.Millisecond
+	c.http.RetryMaxWaitTime = 1 * time.Millisecond
+
+	// Mocked http transport
+	httpmock.Activate()
+	httpmock.ActivateNonDefault(c.http.GetClient())
+
+	return c, out
 }

@@ -26,7 +26,7 @@ type Client struct {
 	parentCtx context.Context // context for parallel execution
 	logger    *ClientLogger
 	http      *resty.Client
-	retries   map[*resty.Request]uint
+	isRetying map[*resty.Request]bool
 }
 
 func NewClient(parentCtx context.Context, logger *zap.SugaredLogger, verbose bool) *Client {
@@ -34,7 +34,7 @@ func NewClient(parentCtx context.Context, logger *zap.SugaredLogger, verbose boo
 	client.logger = &ClientLogger{logger}
 	client.parentCtx = parentCtx
 	client.http = createHttpClient(client.logger, verbose)
-	client.retries = make(map[*resty.Request]uint)
+	client.isRetying = make(map[*resty.Request]bool)
 	setupLogs(client, verbose)
 
 	return client
@@ -45,7 +45,6 @@ func (c *Client) R() *resty.Request {
 }
 
 func createHttpClient(logger *ClientLogger, verbose bool) *resty.Client {
-
 	c := resty.New()
 	c.SetLogger(logger)
 	c.SetHeader("User-Agent", fmt.Sprintf("keboola-as-code/%s", version.BuildVersion))
@@ -55,6 +54,12 @@ func createHttpClient(logger *ClientLogger, verbose bool) *resty.Client {
 	c.SetRetryWaitTime(RetryWaitTime)
 	c.SetRetryMaxWaitTime(RetryWaitTimeMax)
 	c.AddRetryCondition(func(response *resty.Response, err error) bool {
+		// On network errors
+		if err != nil {
+			return true
+		}
+
+		// On status codes
 		switch response.StatusCode() {
 		case
 			http.StatusRequestTimeout,
@@ -93,48 +98,52 @@ func createTransport() *http.Transport {
 
 func setupLogs(client *Client, verbose bool) {
 	// Debug full request and response if verbose = true
+	// Secrets are hidden see ClientLogger
 	if verbose {
 		client.http.SetDebug(true)
 		client.http.SetDebugBodyLimit(2 * 1024)
-		return
 	}
 
-	// Log only simple message if verbose = false
+	// Log each retry
 	client.http.AddRetryHook(func(response *resty.Response, err error) {
-		client.retries[response.Request]++
-		attempt := client.retries[response.Request]
-		if int(attempt) <= client.http.RetryCount {
+		if response.Request.Attempt <= client.http.RetryCount {
+			// Log retry
 			msg := responseToLog(response)
-			client.logger.Warnf(fmt.Sprintf("%s | Retrying %dx ..", msg, attempt))
+			client.logger.Warnf(fmt.Sprintf("%s | Retrying %dx ...", msg, response.Request.Attempt))
+
+			// Mark request retrying
+			client.isRetying[response.Request] = true
 		}
 	})
-	client.http.OnAfterResponse(func(c *resty.Client, response *resty.Response) error {
-		if response.IsSuccess() {
-			client.logger.Debugf(responseToLog(response))
+
+	// Log each request when done
+	client.http.OnAfterResponse(func(c *resty.Client, res *resty.Response) error {
+		req := res.Request
+		msg := responseToLog(res)
+		if res.IsSuccess() {
+			// Log success
+			client.logger.Debugf(msg)
+		} else {
+			// Log error after last retry
+			isRetrying := client.isRetying[req]
+			if !isRetrying || req.Attempt > client.http.RetryCount {
+				if req.Attempt > 1 {
+					msg = fmt.Sprintf("%s | Tried %dx", msg, req.Attempt)
+				}
+
+				if isRetrying {
+					client.logger.Errorf(msg)
+				} else {
+					client.logger.Warnf(msg)
+				}
+
+				// Clear
+				delete(client.isRetying, res.Request)
+			}
 		}
+
 		return nil
 	})
-	client.http.OnError(func(request *resty.Request, err error) {
-		client.logger.Debugf("test")
-		var msg string
-		if v, ok := err.(*resty.ResponseError); ok {
-			msg = responseToLog(v.Response)
-		} else {
-			msg = requestToLog(request, err)
-		}
-
-		attempt, retry := client.retries[request]
-		if retry {
-			msg = fmt.Sprintf("%s | Retried %dx", msg, attempt)
-		}
-
-		client.logger.Errorf(msg)
-		delete(client.retries, request)
-	})
-}
-
-func requestToLog(req *resty.Request, err error) string {
-	return fmt.Sprintf("%s %s | %s", req.Method, req.URL, err)
 }
 
 func responseToLog(res *resty.Response) string {

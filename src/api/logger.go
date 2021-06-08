@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go.uber.org/zap"
 	"regexp"
+	"strings"
 )
 
 const ClientLoggerPrefix = "HTTP%s\t"
@@ -27,6 +28,11 @@ func (l *ClientLogger) Errorf(format string, v ...interface{}) {
 func (l *ClientLogger) logWithoutSecrets(level string, format string, v ...interface{}) {
 	v = append([]interface{}{level}, v...)
 	msg := fmt.Sprintf(ClientLoggerPrefix+format, v...)
-	msg = regexp.MustCompile(`(?i)(token:?\s*)[^\s]+`).ReplaceAllString(msg, "$1*****")
+	msg = removeSecrets(msg)
+	msg = strings.TrimSuffix(msg, "\n")
 	l.logger.Debug(msg)
+}
+
+func removeSecrets(str string) string {
+	return regexp.MustCompile(`(?i)(token:?\s*)[^\s]+`).ReplaceAllString(str, "$1*****")
 }

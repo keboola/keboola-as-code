@@ -17,3 +17,10 @@ func TestClientLogger(t *testing.T) {
 	expected := "DEBUG  HTTP\tSome debug\nDEBUG  HTTP-WARN\tSome warning\nDEBUG  HTTP-ERROR\tSome error\n"
 	assert.Equal(t, expected, out.Buffer.String())
 }
+
+func TestRemoveSecrets(t *testing.T) {
+	assert.Equal(t, "token: *****", removeSecrets("token: ABC12345-abc"))
+	assert.Equal(t, "token: ***** ", removeSecrets("token: ABC12345-abc "))
+	assert.Equal(t, "foo1: bar1\ntoken: *****\nfoo2: bar2", removeSecrets("foo1: bar1\ntoken: ABC12345-abc\nfoo2: bar2"))
+	assert.Equal(t, "X-Storageapi-Token: *****", removeSecrets("X-Storageapi-Token: ABC12345-abc"))
+}
