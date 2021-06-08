@@ -17,8 +17,7 @@ func TestNewClient(t *testing.T) {
 }
 
 func TestSimpleRequest(t *testing.T) {
-	c, out := getMockedClientAndLogs(false)
-	defer httpmock.DeactivateAndReset()
+	c, out := getMockedClientAndLogs(t, false)
 
 	// Mocked response
 	httpmock.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(200, `test`))
@@ -33,8 +32,7 @@ func TestSimpleRequest(t *testing.T) {
 }
 
 func TestRetry(t *testing.T) {
-	c, out := getMockedClientAndLogs(false)
-	defer httpmock.DeactivateAndReset()
+	c, out := getMockedClientAndLogs(t, false)
 
 	// Mocked response
 	httpmock.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(504, `test`))
@@ -65,8 +63,7 @@ func TestRetry(t *testing.T) {
 }
 
 func TestDoNotRetry(t *testing.T) {
-	c, out := getMockedClientAndLogs(false)
-	defer httpmock.DeactivateAndReset()
+	c, out := getMockedClientAndLogs(t, false)
 
 	// Short time in tests
 	c.http.RetryWaitTime = 1 * time.Millisecond
@@ -94,8 +91,7 @@ func TestDoNotRetry(t *testing.T) {
 }
 
 func TestVerboseHideSecret(t *testing.T) {
-	c, out := getMockedClientAndLogs(true)
-	defer httpmock.DeactivateAndReset()
+	c, out := getMockedClientAndLogs(t, true)
 
 	// Mocked response
 	httpmock.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(200, `test`))
@@ -135,7 +131,7 @@ DEBUG  HTTP	GET https://example.com | 200 | %s
 	utils.AssertWildcards(t, expectedLog, out.Buffer.String(), "Unexpected log")
 }
 
-func getMockedClientAndLogs(verbose bool) (*Client, *utils.Writer) {
+func getMockedClientAndLogs(t *testing.T, verbose bool) (*Client, *utils.Writer) {
 	// Create
 	logger, out := utils.NewDebugLogger()
 	c := NewClient(context.Background(), logger, verbose)
@@ -147,6 +143,9 @@ func getMockedClientAndLogs(verbose bool) (*Client, *utils.Writer) {
 	// Mocked http transport
 	httpmock.Activate()
 	httpmock.ActivateNonDefault(c.http.GetClient())
+	t.Cleanup(func() {
+		httpmock.DeactivateAndReset()
+	})
 
 	return c, out
 }
