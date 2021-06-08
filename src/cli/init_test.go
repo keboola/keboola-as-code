@@ -3,6 +3,7 @@ package cli
 import (
 	"errors"
 	"github.com/ActiveState/vt10x"
+	"github.com/Netflix/go-expect"
 	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/utils"
 	"sync"
@@ -41,6 +42,7 @@ func TestInteractive(t *testing.T) {
 	defer func() {
 		err := c.Close()
 		assert.NoError(t, err)
+		t.Logf("Console output:\n%s", expect.StripTrailingEmptyLines(state.String()))
 	}()
 
 	// Init prompt and cmd
@@ -65,7 +67,7 @@ func TestInteractive(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = c.SendLine("keboola.connection.com")
 	assert.NoError(t, err)
-	_, err = c.ExpectString("Please enter Keboola Storage API token. The value will not be displayed.")
+	_, err = c.ExpectString("Please enter Keboola Storage API token. The value will be hidden.")
 	assert.NoError(t, err)
 	_, err = c.ExpectString("API token")
 	assert.NoError(t, err)
@@ -76,7 +78,7 @@ func TestInteractive(t *testing.T) {
 	wg.Wait()
 
 	// Assert output
-	out := state.String()
+	out := expect.StripTrailingEmptyLines(state.String())
 	assert.Contains(t, out, "? API host")
 	assert.Contains(t, out, "? API token")
 	assert.Contains(t, out, "Error: TODO")
