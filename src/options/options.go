@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cast"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"keboola-as-code/src/ask"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -30,7 +31,7 @@ func (o *Options) BindPersistentFlags(flags *pflag.FlagSet) {
 	flags.StringP("log-file", "l", "", "path to a log file for details")
 	flags.StringP("working-dir", "d", "", "use other working directory")
 	flags.StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
-	flags.StringP("storage-api-token", "t", "", "storage API token")
+	flags.StringP("storage-api-token", "t", "", "storage API token from your project")
 	flags.BoolP("verbose", "v", false, "print details")
 }
 
@@ -75,6 +76,31 @@ func (o *Options) Validate(required []string) string {
 	}
 
 	return strings.Join(errors, "\n")
+}
+
+// AskUser for value if used interactive terminal
+func (o *Options) AskUser(p *ask.Prompt, fieldName string) {
+	switch fieldName {
+	case "ApiHost":
+		if len(o.ApiHost) == 0 {
+			o.ApiHost, _ = p.Ask(&ask.Question{
+				Label:       "API host",
+				Description: "Please enter Keboola Storage API host, eg. \"keboola.connection.com\".",
+				Validator:   ask.ApiHostValidator,
+			})
+		}
+	case "ApiToken":
+		if len(o.ApiToken) == 0 {
+			o.ApiToken, _ = p.Ask(&ask.Question{
+				Label:       "API token",
+				Description: "Please enter Keboola Storage API token. The value will be hidden.",
+				Hidden:      true,
+				Validator:   ask.ValueRequired,
+			})
+		}
+	default:
+		panic(fmt.Sprintf("unexpected field name \"%s\"", fieldName))
+	}
 }
 
 // Load all sources of Options - flags, envs

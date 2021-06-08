@@ -3,6 +3,7 @@ package cli
 import (
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
+	"keboola-as-code/src/ask"
 	"keboola-as-code/src/utils"
 	"os"
 	"path/filepath"
@@ -15,7 +16,7 @@ import (
 func TestRootSubCommands(t *testing.T) {
 	in := utils.NewBufferReader()
 	out := utils.NewBufferWriter()
-	root := NewRootCommand(in, out, out, NewPrompt(in, out, out))
+	root := NewRootCommand(in, out, out, ask.NewPrompt(in, out, out))
 
 	// Map commands to names
 	var names []string
@@ -32,7 +33,7 @@ func TestRootSubCommands(t *testing.T) {
 func TestRootCmdPersistentFlags(t *testing.T) {
 	in := utils.NewBufferReader()
 	out := utils.NewBufferWriter()
-	root := NewRootCommand(in, out, out, NewPrompt(in, out, out))
+	root := NewRootCommand(in, out, out, ask.NewPrompt(in, out, out))
 
 	// Map flags to names
 	var names []string
@@ -55,7 +56,7 @@ func TestRootCmdPersistentFlags(t *testing.T) {
 func TestRootCmdFlags(t *testing.T) {
 	in := utils.NewBufferReader()
 	out := utils.NewBufferWriter()
-	root := NewRootCommand(in, out, out, NewPrompt(in, out, out))
+	root := NewRootCommand(in, out, out, ask.NewPrompt(in, out, out))
 
 	// Map flags to names
 	var names []string
@@ -73,7 +74,7 @@ func TestRootCmdFlags(t *testing.T) {
 func TestExecute(t *testing.T) {
 	in := utils.NewBufferReader()
 	logger, out := utils.NewDebugLogger()
-	root := NewRootCommand(in, out, out, NewPrompt(in, out, out))
+	root := NewRootCommand(in, out, out, ask.NewPrompt(in, out, out))
 
 	// Execute
 	root.logger = logger
@@ -90,7 +91,7 @@ func TestTearDownRemoveLogFile(t *testing.T) {
 	tempDir := t.TempDir()
 	in := utils.NewBufferReader()
 	out := utils.NewBufferWriter()
-	root := NewRootCommand(in, out, out, NewPrompt(in, out, out))
+	root := NewRootCommand(in, out, out, ask.NewPrompt(in, out, out))
 
 	root.options.LogFilePath = filepath.Join(tempDir, "log-file.txt")
 	root.logFile, _ = os.Create(root.options.LogFilePath)
@@ -103,7 +104,7 @@ func TestTearDownKeepLogFile(t *testing.T) {
 	tempDir := t.TempDir()
 	in := utils.NewBufferReader()
 	out := utils.NewBufferWriter()
-	root := NewRootCommand(in, out, out, NewPrompt(in, out, out))
+	root := NewRootCommand(in, out, out, ask.NewPrompt(in, out, out))
 
 	root.options.LogFilePath = filepath.Join(tempDir, "log-file.txt")
 	root.logFile, _ = os.Create(root.options.LogFilePath)
@@ -115,7 +116,7 @@ func TestTearDownKeepLogFile(t *testing.T) {
 func TestInit(t *testing.T) {
 	in := utils.NewBufferReader()
 	out := utils.NewBufferWriter()
-	root := NewRootCommand(in, out, out, NewPrompt(in, out, out))
+	root := NewRootCommand(in, out, out, ask.NewPrompt(in, out, out))
 	assert.False(t, root.initialized)
 	assert.Nil(t, root.logger)
 	assert.Empty(t, root.options)
@@ -129,7 +130,7 @@ func TestInit(t *testing.T) {
 func TestLogVersion(t *testing.T) {
 	in := utils.NewBufferReader()
 	logger, out := utils.NewDebugLogger()
-	root := NewRootCommand(in, out, out, NewPrompt(in, out, out))
+	root := NewRootCommand(in, out, out, ask.NewPrompt(in, out, out))
 
 	// Log version
 	err := root.init(root.cmd)
@@ -158,7 +159,7 @@ func TestLogVersion(t *testing.T) {
 func TestGetLogFileTempFile(t *testing.T) {
 	in := utils.NewBufferReader()
 	out := utils.NewBufferWriter()
-	root := NewRootCommand(in, out, out, NewPrompt(in, out, out))
+	root := NewRootCommand(in, out, out, ask.NewPrompt(in, out, out))
 	file, err := root.getLogFile()
 	assert.NoError(t, err)
 	assert.NotNil(t, file)
@@ -170,7 +171,7 @@ func TestGetLogFileFromFlags(t *testing.T) {
 	tempDir := t.TempDir()
 	in := utils.NewBufferReader()
 	out := utils.NewBufferWriter()
-	root := NewRootCommand(in, out, out, NewPrompt(in, out, out))
+	root := NewRootCommand(in, out, out, ask.NewPrompt(in, out, out))
 	root.options.LogFilePath = filepath.Join(tempDir, "log-file.txt")
 	file, err := root.getLogFile()
 	assert.NoError(t, err)

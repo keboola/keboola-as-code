@@ -5,6 +5,7 @@ import (
 	"github.com/ActiveState/vt10x"
 	"github.com/Netflix/go-expect"
 	"github.com/stretchr/testify/assert"
+	"keboola-as-code/src/ask"
 	"keboola-as-code/src/utils"
 	"sync"
 	"testing"
@@ -13,7 +14,7 @@ import (
 func TestInitCmdExecute(t *testing.T) {
 	in := utils.NewBufferReader()
 	out := utils.NewBufferWriter()
-	root := NewRootCommand(in, out, out, NewPrompt(in, out, out))
+	root := NewRootCommand(in, out, out, ask.NewPrompt(in, out, out))
 	root.cmd.SetArgs([]string{"init", "--storage-api-host", "foo", "--storage-api-token", "bar"})
 	err := root.cmd.Execute()
 	assert.Error(t, err)
@@ -23,7 +24,7 @@ func TestInitCmdExecute(t *testing.T) {
 func TestMissingParams(t *testing.T) {
 	in := utils.NewBufferReader()
 	out := utils.NewBufferWriter()
-	root := NewRootCommand(in, out, out, NewPrompt(in, out, out))
+	root := NewRootCommand(in, out, out, ask.NewPrompt(in, out, out))
 	root.cmd.SetArgs([]string{"init"})
 	err := root.cmd.Execute()
 	assert.NoError(t, out.Flush())
@@ -46,7 +47,7 @@ func TestInteractive(t *testing.T) {
 	}()
 
 	// Init prompt and cmd
-	prompt := NewPrompt(c.Tty(), c.Tty(), c.Tty())
+	prompt := ask.NewPrompt(c.Tty(), c.Tty(), c.Tty())
 	prompt.Interactive = true
 	root := NewRootCommand(c.Tty(), c.Tty(), c.Tty(), prompt)
 	root.cmd.SetArgs([]string{"init"})
@@ -82,13 +83,4 @@ func TestInteractive(t *testing.T) {
 	assert.Contains(t, out, "? API host")
 	assert.Contains(t, out, "? API token")
 	assert.Contains(t, out, "Error: TODO")
-}
-
-func TestApiHostValidator(t *testing.T) {
-	assert.NoError(t, apiHostValidator("keboola.connection.com"))
-	assert.NoError(t, apiHostValidator("keboola.connection.com/"))
-	assert.NoError(t, apiHostValidator("https://keboola.connection.com"))
-	assert.NoError(t, apiHostValidator("https://keboola.connection.com/"))
-	assert.Equal(t, errors.New("value is required"), apiHostValidator(""))
-	assert.Equal(t, errors.New("invalid host"), apiHostValidator("@#$$%^&%#$&"))
 }
