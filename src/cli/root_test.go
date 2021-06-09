@@ -5,6 +5,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/utils"
 	"os"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
@@ -12,8 +13,9 @@ import (
 )
 
 func TestRootSubCommands(t *testing.T) {
-	writer, _ := utils.NewBufferWriter()
-	root := NewRootCommand(writer, writer)
+	in := utils.NewBufferReader()
+	out := utils.NewBufferWriter()
+	root := NewRootCommand(in, out, out, NewPrompt(in, out, out))
 
 	// Map commands to names
 	var names []string
@@ -28,8 +30,9 @@ func TestRootSubCommands(t *testing.T) {
 }
 
 func TestRootCmdPersistentFlags(t *testing.T) {
-	writer, _ := utils.NewBufferWriter()
-	root := NewRootCommand(writer, writer)
+	in := utils.NewBufferReader()
+	out := utils.NewBufferWriter()
+	root := NewRootCommand(in, out, out, NewPrompt(in, out, out))
 
 	// Map flags to names
 	var names []string
@@ -39,17 +42,20 @@ func TestRootCmdPersistentFlags(t *testing.T) {
 
 	// Assert
 	expected := []string{
-		"dir",
 		"help",
 		"log-file",
+		"storage-api-host",
+		"storage-api-token",
 		"verbose",
+		"working-dir",
 	}
 	assert.Equal(t, expected, names)
 }
 
 func TestRootCmdFlags(t *testing.T) {
-	writer, _ := utils.NewBufferWriter()
-	root := NewRootCommand(writer, writer)
+	in := utils.NewBufferReader()
+	out := utils.NewBufferWriter()
+	root := NewRootCommand(in, out, out, NewPrompt(in, out, out))
 
 	// Map flags to names
 	var names []string
@@ -58,91 +64,81 @@ func TestRootCmdFlags(t *testing.T) {
 	})
 
 	// Assert
-	var expected []string
+	expected := []string{
+		"version",
+	}
 	assert.Equal(t, expected, names)
 }
 
 func TestExecute(t *testing.T) {
-	logger, writer, buffer := utils.NewDebugLogger()
-	root := NewRootCommand(writer, writer)
+	in := utils.NewBufferReader()
+	logger, out := utils.NewDebugLogger()
+	root := NewRootCommand(in, out, out, NewPrompt(in, out, out))
 
 	// Execute
 	root.logger = logger
 	root.Execute()
 
 	// Assert
-	err := writer.Flush()
+	err := out.Flush()
 	assert.NoError(t, err)
-	assert.Contains(t, buffer.String(), "Available Commands:")
+	assert.Contains(t, out.Buffer.String(), "Available Commands:")
 
 }
 
 func TestTearDownRemoveLogFile(t *testing.T) {
 	tempDir := t.TempDir()
-	writer, _ := utils.NewBufferWriter()
-	root := NewRootCommand(writer, writer)
+	in := utils.NewBufferReader()
+	out := utils.NewBufferWriter()
+	root := NewRootCommand(in, out, out, NewPrompt(in, out, out))
 
-	root.logFilePath = tempDir + "/log-file.txt"
-	root.logFile, _ = os.Create(root.logFilePath)
+	root.options.LogFilePath = filepath.Join(tempDir, "log-file.txt")
+	root.logFile, _ = os.Create(root.options.LogFilePath)
 	root.logFileClear = false // <<<<<
 	root.tearDown()
-	assert.FileExists(t, root.logFilePath)
+	assert.FileExists(t, root.options.LogFilePath)
 }
 
 func TestTearDownKeepLogFile(t *testing.T) {
 	tempDir := t.TempDir()
-	writer, _ := utils.NewBufferWriter()
-	root := NewRootCommand(writer, writer)
+	in := utils.NewBufferReader()
+	out := utils.NewBufferWriter()
+	root := NewRootCommand(in, out, out, NewPrompt(in, out, out))
 
-	root.logFilePath = tempDir + "/log-file.txt"
-	root.logFile, _ = os.Create(root.logFilePath)
+	root.options.LogFilePath = filepath.Join(tempDir, "log-file.txt")
+	root.logFile, _ = os.Create(root.options.LogFilePath)
 	root.logFileClear = true // <<<<<
 	root.tearDown()
-	assert.NoFileExists(t, root.logFilePath)
+	assert.NoFileExists(t, root.options.LogFilePath)
 }
 
 func TestInit(t *testing.T) {
-	writer, _ := utils.NewBufferWriter()
-	root := NewRootCommand(writer, writer)
+	in := utils.NewBufferReader()
+	out := utils.NewBufferWriter()
+	root := NewRootCommand(in, out, out, NewPrompt(in, out, out))
 	assert.False(t, root.initialized)
 	assert.Nil(t, root.logger)
-	assert.Empty(t, root.workingDirectory)
-	root.init()
+	assert.Empty(t, root.options)
+	err := root.init(root.cmd)
+	assert.NoError(t, err)
 	assert.True(t, root.initialized)
 	assert.NotNil(t, root.logger)
-	assert.NotEmpty(t, root.workingDirectory)
-}
-
-func TestSetupWorkingDirectory(t *testing.T) {
-	writer, _ := utils.NewBufferWriter()
-	root := NewRootCommand(writer, writer)
-	assert.Empty(t, root.workingDirectory)
-	root.setupWorkingDirectory()
-	wd, err := os.Getwd()
-	assert.NoError(t, err)
-	assert.Equal(t, wd, root.workingDirectory)
-}
-
-func TestSetupWorkingDirectoryFromFlag(t *testing.T) {
-	writer, _ := utils.NewBufferWriter()
-	root := NewRootCommand(writer, writer)
-	root.flags.workingDirectory = "/test/abc"
-	assert.Empty(t, root.workingDirectory)
-	root.setupWorkingDirectory()
-	assert.Equal(t, root.flags.workingDirectory, root.workingDirectory)
+	assert.NotEmpty(t, root.options.WorkingDirectory)
 }
 
 func TestLogVersion(t *testing.T) {
-	logger, writer, buffer := utils.NewDebugLogger()
-	root := NewRootCommand(writer, writer)
+	in := utils.NewBufferReader()
+	logger, out := utils.NewDebugLogger()
+	root := NewRootCommand(in, out, out, NewPrompt(in, out, out))
 
 	// Log version
-	root.init()
+	err := root.init(root.cmd)
+	assert.NoError(t, err)
 	root.logger = logger
-	root.logVersion()
+	root.logDebugInfo()
 
 	// Assert
-	err := writer.Flush()
+	err = out.Flush()
 	assert.NoError(t, err)
 	assert.Regexp(
 		t,
@@ -152,44 +148,33 @@ func TestLogVersion(t *testing.T) {
 			`DEBUG  Build date:.*\n`+
 			`DEBUG  Go version:\s+`+regexp.QuoteMeta(runtime.Version())+`\n`+
 			`DEBUG  Os/Arch:\s+`+regexp.QuoteMeta(runtime.GOOS)+`/`+regexp.QuoteMeta(runtime.GOARCH)+`\n`+
+			`DEBUG  Running command \[.+\]\n`+
+			`DEBUG  Parsed options: .+\n`+
 			`$`,
-		buffer.String(),
+		out.Buffer.String(),
 	)
 }
 
-func TestLogCommand(t *testing.T) {
-	logger, writer, buffer := utils.NewDebugLogger()
-	root := NewRootCommand(writer, writer)
-
-	// Log version
-	root.init()
-	root.logger = logger
-	root.logCommand()
-
-	// Assert
-	err := writer.Flush()
-	assert.NoError(t, err)
-	assert.Regexp(t, `^DEBUG  Running command \[.+\]\n$`, buffer.String())
-}
-
 func TestGetLogFileTempFile(t *testing.T) {
-	writer, _ := utils.NewBufferWriter()
-	root := NewRootCommand(writer, writer)
+	in := utils.NewBufferReader()
+	out := utils.NewBufferWriter()
+	root := NewRootCommand(in, out, out, NewPrompt(in, out, out))
 	file, err := root.getLogFile()
 	assert.NoError(t, err)
 	assert.NotNil(t, file)
-	assert.True(t, strings.HasPrefix(root.logFilePath, os.TempDir()+"/"))
+	assert.True(t, strings.HasPrefix(root.options.LogFilePath, os.TempDir()+"/"))
 	assert.True(t, root.logFileClear)
 }
 
 func TestGetLogFileFromFlags(t *testing.T) {
 	tempDir := t.TempDir()
-	writer, _ := utils.NewBufferWriter()
-	root := NewRootCommand(writer, writer)
-	root.flags.logFilePath = tempDir + "/log-file.txt"
+	in := utils.NewBufferReader()
+	out := utils.NewBufferWriter()
+	root := NewRootCommand(in, out, out, NewPrompt(in, out, out))
+	root.options.LogFilePath = filepath.Join(tempDir, "log-file.txt")
 	file, err := root.getLogFile()
 	assert.NoError(t, err)
 	assert.NotNil(t, file)
-	assert.Equal(t, root.flags.logFilePath, root.logFilePath)
+	assert.Equal(t, root.options.LogFilePath, root.options.LogFilePath)
 	assert.False(t, root.logFileClear)
 }

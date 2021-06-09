@@ -3,12 +3,13 @@ package utils
 import (
 	"github.com/stretchr/testify/assert"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
 func TestFileExists(t *testing.T) {
 	tempDir := t.TempDir()
-	filePath := tempDir + "/file.txt"
+	filePath := filepath.Join(tempDir, "file.txt")
 
 	// Create file
 	file1, err := os.Create(filePath)
@@ -25,7 +26,7 @@ func TestFileExists(t *testing.T) {
 
 func TestGetFileContent(t *testing.T) {
 	tempDir := t.TempDir()
-	filePath := tempDir + "/file.txt"
+	filePath := filepath.Join(tempDir, "file.txt")
 
 	// Create file
 	file1, err := os.Create(filePath)
