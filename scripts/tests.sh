@@ -8,7 +8,7 @@ set -o pipefail         # Use last non-zero exit code in a pipeline
 
 # Check Go files format
 echo "Downloading modules"
-go mod download -x
+go mod download
 echo "Ok."
 echo
 
