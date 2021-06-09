@@ -14,6 +14,7 @@ type ErrorWithResponse interface {
 	IsNotFound() bool
 }
 
+// Error represents Storage API error structure
 type Error struct {
 	Message     string `json:"error"`
 	ErrCode     string `json:"code"`
