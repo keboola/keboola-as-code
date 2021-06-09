@@ -37,7 +37,6 @@ type rootCommand struct {
 	options      *options.Options   // parsed flags and env variables
 	prompt       *ask.Prompt        // user interaction
 	ctx          context.Context    // context for parallel operations
-	apiClient    *api.Client        // api http client
 	initialized  bool               // init method was called
 	logFile      *os.File           // log file instance
 	logFileClear bool               // is log file temporary? if yes, it will be removed at the end, if no error occurs
@@ -116,6 +115,10 @@ func (root *rootCommand) GetCommandByName(name string) *cobra.Command {
 	return nil
 }
 
+func (root *rootCommand) NewStorageApi() (*api.StorageApi, error) {
+	return api.NewStorageApiFromOptions(root.options, root.ctx, root.logger)
+}
+
 // tearDown makes clean-up after command execution
 func (root *rootCommand) tearDown() {
 	if err := recover(); err == nil {
@@ -165,9 +168,6 @@ func (root *rootCommand) init(cmd *cobra.Command) (err error) {
 	for _, msg := range warnings {
 		root.logger.Debug(msg)
 	}
-
-	// Http client
-	root.apiClient = api.NewClient(root.ctx, root.logger, root.options.VerboseApi)
 
 	// Return load error
 	return

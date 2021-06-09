@@ -45,19 +45,13 @@ func TestConsoleCoreVerboseFalse(t *testing.T) {
 	logger.Warn("Warn msg")
 	logger.Error("Error msg")
 
-	// Flush
-	err := stdout.Flush()
-	assert.NoError(t, err)
-	err = stderr.Flush()
-	assert.NoError(t, err)
-
 	// Assert
 	// info      -> stdout
 	// warn, err -> stderr
 	expectedOut := "Info msg\n"
 	expectedErr := "Warn msg\nError msg\n"
-	assert.Equal(t, expectedOut, stdout.Buffer.String())
-	assert.Equal(t, expectedErr, stderr.Buffer.String())
+	assert.Equal(t, expectedOut, stdout.String())
+	assert.Equal(t, expectedErr, stderr.String())
 }
 
 func TestConsoleCoreVerboseTrue(t *testing.T) {
@@ -69,19 +63,13 @@ func TestConsoleCoreVerboseTrue(t *testing.T) {
 	logger.Warn("Warn msg")
 	logger.Error("Error msg")
 
-	// Flush
-	err := stdout.Flush()
-	assert.NoError(t, err)
-	err = stderr.Flush()
-	assert.NoError(t, err)
-
 	// Assert
 	// debug (verbose), info -> stdout
 	// warn, err             -> stderr
 	expectedOut := "DEBUG\tDebug msg\nINFO\tInfo msg\n"
 	expectedErr := "WARN\tWarn msg\nERROR\tError msg\n"
-	assert.Equal(t, expectedOut, stdout.Buffer.String())
-	assert.Equal(t, expectedErr, stderr.Buffer.String())
+	assert.Equal(t, expectedOut, stdout.String())
+	assert.Equal(t, expectedErr, stderr.String())
 }
 
 func TestToInfoWriter(t *testing.T) {
@@ -93,15 +81,9 @@ func TestToInfoWriter(t *testing.T) {
 	_, err := ToInfoWriter(logger).Write([]byte("test\n"))
 	assert.NoError(t, err)
 
-	// Flush
-	err = stdout.Flush()
-	assert.NoError(t, err)
-	err = stderr.Flush()
-	assert.NoError(t, err)
-
 	// Assert, written to stdout
-	assert.Equal(t, "test\n", stdout.Buffer.String())
-	assert.Equal(t, "", stderr.Buffer.String())
+	assert.Equal(t, "test\n", stdout.String())
+	assert.Equal(t, "", stderr.String())
 }
 
 func TestToWarnWriter(t *testing.T) {
@@ -113,13 +95,7 @@ func TestToWarnWriter(t *testing.T) {
 	_, err := ToWarnWriter(logger).Write([]byte("test\n"))
 	assert.NoError(t, err)
 
-	// Flush
-	err = stdout.Flush()
-	assert.NoError(t, err)
-	err = stderr.Flush()
-	assert.NoError(t, err)
-
 	// Assert, written to stderr
-	assert.Equal(t, "", stdout.Buffer.String())
-	assert.Equal(t, "test\n", stderr.Buffer.String())
+	assert.Equal(t, "", stdout.String())
+	assert.Equal(t, "test\n", stderr.String())
 }

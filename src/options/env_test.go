@@ -2,6 +2,7 @@ package options
 
 import (
 	"github.com/stretchr/testify/assert"
+	"keboola-as-code/src/utils"
 	"os"
 	"path/filepath"
 	"sort"
@@ -23,6 +24,8 @@ func TestEnvNamingConventionFlagNameEmpty(t *testing.T) {
 }
 
 func TestLoadDotEnv(t *testing.T) {
+	defer utils.ResetEnv(t, os.Environ())
+
 	temp := t.TempDir()
 	path := filepath.Join(temp, ".env")
 	file, err := os.Create(path)

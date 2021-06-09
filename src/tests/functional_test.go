@@ -39,8 +39,7 @@ func TestFunctional(t *testing.T) {
 
 // RunFunctionalTest runs one functional test.
 func RunFunctionalTest(t *testing.T, testDir string, binary string) {
-	// Clear env
-	os.Clearenv()
+	defer utils.ResetEnv(t, os.Environ())
 
 	// Create runtime dir
 	workingDir := t.TempDir()
@@ -55,9 +54,12 @@ func RunFunctionalTest(t *testing.T, testDir string, binary string) {
 		t.Fatalf("Copy error: %s", err)
 	}
 
+	// Replace all %%ENV_VAR%% in all files in the working directory
+	ReplaceEnvsDir(workingDir)
+
 	// Load command arguments from file
 	argsFile := filepath.Join(testDir, "args")
-	argsStr := strings.TrimSpace(utils.GetFileContent(argsFile))
+	argsStr := ReplaceEnvsString(strings.TrimSpace(utils.GetFileContent(argsFile)))
 	args, err := shlex.Split(argsStr)
 	if err != nil {
 		t.Fatalf("Cannot parse args \"%s\": %s", argsStr, err)
@@ -104,7 +106,7 @@ func GetTestDirs(t *testing.T, root string) []string {
 	var dirs []string
 
 	// Iterate over directory structure
-	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
 		// Stop on error
 		if err != nil {
 			return err
@@ -116,7 +118,7 @@ func GetTestDirs(t *testing.T, root string) []string {
 		}
 
 		// Skip sub-directories
-		if info.IsDir() {
+		if d.IsDir() {
 			dirs = append(dirs, path)
 			return fs.SkipDir
 		}
@@ -145,8 +147,8 @@ func AssertExpectations(
 		t.Fatalf("Missing directory \"%s\".", expectedDir)
 	}
 
-	expectedStdout := utils.GetFileContent(filepath.Join(testDir, "expected-stdout"))
-	expectedStderr := utils.GetFileContent(filepath.Join(testDir, "expected-stderr"))
+	expectedStdout := ReplaceEnvsString(utils.GetFileContent(filepath.Join(testDir, "expected-stdout")))
+	expectedStderr := ReplaceEnvsString(utils.GetFileContent(filepath.Join(testDir, "expected-stderr")))
 
 	// Assert exit code
 	expectedCodeStr := utils.GetFileContent(filepath.Join(testDir, "expected-code"))

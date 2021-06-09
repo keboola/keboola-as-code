@@ -18,9 +18,10 @@ as flags or environment variables.`
 
 func initCommand(root *rootCommand) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "init",
-		Short: shortDescription,
-		Long:  longDescription,
+		Use:          "init",
+		Short:        shortDescription,
+		Long:         longDescription,
+		SilenceUsage: true,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			// Ask for the host/token, if not specified -> to make the first step easier
 			root.options.AskUser(root.prompt, "ApiHost")
@@ -35,6 +36,12 @@ func initCommand(root *rootCommand) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Validate token and get API
+			_, err := root.NewStorageApi()
+			if err != nil {
+				return err
+			}
+
 			// TODO
 			return fmt.Errorf("TODO")
 		},

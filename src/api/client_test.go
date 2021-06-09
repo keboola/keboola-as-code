@@ -2,7 +2,9 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/go-resty/resty/v2"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/utils"
@@ -10,10 +12,26 @@ import (
 	"time"
 )
 
-func TestNewClient(t *testing.T) {
+func TestNewHttpClient(t *testing.T) {
 	logger, _ := utils.NewDebugLogger()
-	c := NewClient(context.Background(), logger, false)
+	c := NewHttpClient(context.Background(), logger, false)
 	assert.NotNil(t, c)
+}
+
+func TestWithHostUrl(t *testing.T) {
+	orgClient, _ := getMockedClientAndLogs(t, false)
+	hostClient := orgClient.WithHostUrl("https://foo.bar")
+
+	// Mocked response
+	httpmock.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(200, `test`))
+
+	// Must be cloned, not modified
+	assert.NotSame(t, orgClient, hostClient)
+	_, err := hostClient.R(resty.MethodGet, "/baz").Send()
+	assert.NoError(t, err)
+
+	// Check request url
+	assert.Equal(t, 1, httpmock.GetCallCountInfo()["GET https://foo.bar/baz"])
 }
 
 func TestSimpleRequest(t *testing.T) {
@@ -23,12 +41,11 @@ func TestSimpleRequest(t *testing.T) {
 	httpmock.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(200, `test`))
 
 	// Get
-	res, err := c.R().Get("https://example.com")
+	res, err := c.R(resty.MethodGet, "https://example.com").Send()
 	assert.NoError(t, err)
 	assert.Equal(t, "test", res.String())
-	assert.NoError(t, out.Flush())
 	expected := "DEBUG  HTTP\tGET https://example.com | 200 | %s"
-	utils.AssertWildcards(t, expected, out.Buffer.String(), "Unexpected log")
+	utils.AssertWildcards(t, expected, out.String(), "Unexpected log")
 }
 
 func TestRetry(t *testing.T) {
@@ -38,26 +55,25 @@ func TestRetry(t *testing.T) {
 	httpmock.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(504, `test`))
 
 	// Get
-	res, err := c.R().Get("https://example.com")
-	assert.NoError(t, err) // no network error
+	res, err := c.R(resty.MethodGet, "https://example.com").Send()
+	assert.Equal(t, errors.New(`GET "https://example.com" returned http code 504`), err)
 	assert.Equal(t, "test", res.String())
-	assert.NoError(t, out.Flush())
-	logs := out.Buffer.String()
+	logs := out.String()
 
 	// Check number of requests
-	assert.Equal(t, 1+c.http.RetryCount, httpmock.GetCallCountInfo()["GET https://example.com"])
+	assert.Equal(t, 1+c.resty.RetryCount, httpmock.GetCallCountInfo()["GET https://example.com"])
 
 	// Retries are logged
-	assert.Greater(t, c.http.RetryCount, 2)
-	for i := 1; i <= c.http.RetryCount; i++ {
-		expected := fmt.Sprintf("DEBUG  HTTP-WARN\tGET https://example.com | 504 | %%s | Retrying %dx ...", i)
+	assert.Greater(t, c.resty.RetryCount, 2)
+	for i := 1; i <= c.resty.RetryCount; i++ {
+		expected := fmt.Sprintf(`DEBUG  HTTP-ERROR	GET "https://example.com" returned http code 504, Attempt %d`, i)
 		assert.Regexp(t, utils.WildcardToRegexp(expected), logs)
 	}
 
 	// Error is logged
 	expected := fmt.Sprintf(
-		"DEBUG  HTTP-ERROR\tGET https://example.com | 504 | %%s | Tried %dx",
-		1+c.http.RetryCount,
+		`DEBUG  HTTP-ERROR	GET "https://example.com" returned http code 504, Attempt %d`,
+		1+c.resty.RetryCount,
 	)
 	assert.Regexp(t, utils.WildcardToRegexp(expected), logs)
 }
@@ -65,28 +81,23 @@ func TestRetry(t *testing.T) {
 func TestDoNotRetry(t *testing.T) {
 	c, out := getMockedClientAndLogs(t, false)
 
-	// Short time in tests
-	c.http.RetryWaitTime = 1 * time.Millisecond
-	c.http.RetryMaxWaitTime = 1 * time.Millisecond
-
 	// Mocked response
 	httpmock.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(404, `test`))
 
 	// Get
-	res, err := c.R().Get("https://example.com")
-	assert.NoError(t, err) // no network error
+	res, err := c.R(resty.MethodGet, "https://example.com").Send()
+	assert.Equal(t, errors.New(`GET "https://example.com" returned http code 404`), err)
 	assert.Equal(t, "test", res.String())
-	assert.NoError(t, out.Flush())
-	logs := out.Buffer.String()
+	logs := out.String()
 
 	// Only one request, HTTP code 404 is not retried
 	assert.Equal(t, 1, httpmock.GetCallCountInfo()["GET https://example.com"])
 
 	// No retry
-	assert.NotContains(t, "Retrying", logs)
+	assert.NotContains(t, "Attempt 2", logs)
 
 	// Error is logged
-	expected := "DEBUG  HTTP-WARN\tGET https://example.com | 404 | %s\n"
+	expected := "DEBUG  HTTP-ERROR\tGET \"https://example.com\" returned http code 404, Attempt 1\n"
 	utils.AssertWildcards(t, expected, logs, "Unexpected log")
 }
 
@@ -97,10 +108,9 @@ func TestVerboseHideSecret(t *testing.T) {
 	httpmock.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(200, `test`))
 
 	// Get
-	res, err := c.R().SetHeader("X-StorageApi-Token", "my-token").Get("https://example.com")
+	res, err := c.R(resty.MethodGet, "https://example.com").SetHeader("X-StorageApi-Token", "my-token").Send()
 	assert.NoError(t, err)
 	assert.Equal(t, "test", res.String())
-	assert.NoError(t, out.Flush())
 
 	// Assert logs
 	expectedLog :=
@@ -128,21 +138,21 @@ test
 DEBUG  HTTP	GET https://example.com | 200 | %s
 
 `
-	utils.AssertWildcards(t, expectedLog, out.Buffer.String(), "Unexpected log")
+	utils.AssertWildcards(t, expectedLog, out.String(), "Unexpected log")
 }
 
 func getMockedClientAndLogs(t *testing.T, verbose bool) (*Client, *utils.Writer) {
 	// Create
 	logger, out := utils.NewDebugLogger()
-	c := NewClient(context.Background(), logger, verbose)
+	c := NewHttpClient(context.Background(), logger, verbose)
 
 	// Set short retry delay in tests
-	c.http.RetryWaitTime = 1 * time.Millisecond
-	c.http.RetryMaxWaitTime = 1 * time.Millisecond
+	c.resty.RetryWaitTime = 1 * time.Millisecond
+	c.resty.RetryMaxWaitTime = 1 * time.Millisecond
 
-	// Mocked http transport
+	// Mocked resty transport
 	httpmock.Activate()
-	httpmock.ActivateNonDefault(c.http.GetClient())
+	httpmock.ActivateNonDefault(c.resty.GetClient())
 	t.Cleanup(func() {
 		httpmock.DeactivateAndReset()
 	})

@@ -6,3 +6,9 @@ services:
     volumes:
       - ./:/code:z
       - ./go:/go:z
+    environment:
+      - TEST_PROJECT_ID
+      - TEST_PROJECT_NAME
+      - TEST_KBC_STORAGE_API_HOST
+      - TEST_KBC_STORAGE_API_TOKEN
+      - TEST_KBC_STORAGE_API_TOKEN_EXPIRED

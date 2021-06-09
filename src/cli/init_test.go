@@ -6,20 +6,11 @@ import (
 	"github.com/Netflix/go-expect"
 	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/ask"
+	"keboola-as-code/src/tests"
 	"keboola-as-code/src/utils"
 	"sync"
 	"testing"
 )
-
-func TestInitCmdExecute(t *testing.T) {
-	in := utils.NewBufferReader()
-	out := utils.NewBufferWriter()
-	root := NewRootCommand(in, out, out, ask.NewPrompt(in, out, out))
-	root.cmd.SetArgs([]string{"init", "--storage-api-host", "foo", "--storage-api-token", "bar"})
-	err := root.cmd.Execute()
-	assert.Error(t, err)
-	assert.Equal(t, "TODO", err.Error())
-}
 
 func TestMissingParams(t *testing.T) {
 	in := utils.NewBufferReader()
@@ -27,13 +18,12 @@ func TestMissingParams(t *testing.T) {
 	root := NewRootCommand(in, out, out, ask.NewPrompt(in, out, out))
 	root.cmd.SetArgs([]string{"init"})
 	err := root.cmd.Execute()
-	assert.NoError(t, out.Flush())
 
 	// Assert
 	assert.Error(t, err)
 	assert.Equal(t, "invalid parameters, see output above", err.Error())
-	assert.Contains(t, out.Buffer.String(), "Missing api host.")
-	assert.Contains(t, out.Buffer.String(), "Missing api token.")
+	assert.Contains(t, out.String(), "Missing api host.")
+	assert.Contains(t, out.String(), "Missing api token.")
 }
 
 func TestInteractive(t *testing.T) {
@@ -66,13 +56,13 @@ func TestInteractive(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = c.ExpectString("API host")
 	assert.NoError(t, err)
-	_, err = c.SendLine("keboola.connection.com")
+	_, err = c.SendLine(tests.TestApiHost())
 	assert.NoError(t, err)
 	_, err = c.ExpectString("Please enter Keboola Storage API token. The value will be hidden.")
 	assert.NoError(t, err)
 	_, err = c.ExpectString("API token")
 	assert.NoError(t, err)
-	_, err = c.SendLine("mytoken")
+	_, err = c.SendLine(tests.TestToken())
 	assert.NoError(t, err)
 	_, err = c.ExpectEOF()
 	assert.NoError(t, err)

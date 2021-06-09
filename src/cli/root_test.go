@@ -80,11 +80,7 @@ func TestExecute(t *testing.T) {
 	// Execute
 	root.logger = logger
 	root.Execute()
-
-	// Assert
-	err := out.Flush()
-	assert.NoError(t, err)
-	assert.Contains(t, out.Buffer.String(), "Available Commands:")
+	assert.Contains(t, out.String(), "Available Commands:")
 
 }
 
@@ -140,8 +136,6 @@ func TestLogVersion(t *testing.T) {
 	root.logDebugInfo()
 
 	// Assert
-	err = out.Flush()
-	assert.NoError(t, err)
 	assert.Regexp(
 		t,
 		`^`+
@@ -153,7 +147,7 @@ func TestLogVersion(t *testing.T) {
 			`DEBUG  Running command \[.+\]\n`+
 			`DEBUG  Parsed options: .+\n`+
 			`$`,
-		out.Buffer.String(),
+		out.String(),
 	)
 }
 

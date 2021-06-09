@@ -47,6 +47,6 @@ echo
 # Run tests
 echo "Running tests ..."
 richgo clean -testcache
-RICHGO_FORCE_COLOR=1 richgo test -timeout 10s -v -race -coverprofile=./target/profile.out ./src/...
+RICHGO_FORCE_COLOR=1 richgo test -timeout 30s -v -race -coverprofile=./target/profile.out ./src/...
 echo "Ok. All tests passed."
 echo

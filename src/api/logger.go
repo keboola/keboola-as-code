@@ -34,5 +34,5 @@ func (l *ClientLogger) logWithoutSecrets(level string, format string, v ...inter
 }
 
 func removeSecrets(str string) string {
-	return regexp.MustCompile(`(?i)(token:?\s*)[^\s]+`).ReplaceAllString(str, "$1*****")
+	return regexp.MustCompile(`(?i)(token[^\w/,]\s*)[^\s/]+`).ReplaceAllString(str, "$1*****")
 }

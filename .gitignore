@@ -1,4 +1,5 @@
 !.gitkeep
 .idea
+.env
 go
 target
