@@ -1,10 +1,8 @@
 package cli
 
 import (
-	"errors"
 	"fmt"
 	"github.com/spf13/cobra"
-	"net/url"
 )
 
 const shortDescription = `Init directory and perform the first pull`
@@ -24,22 +22,9 @@ func initCommand(root *rootCommand) *cobra.Command {
 		Short: shortDescription,
 		Long:  longDescription,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			// Ask for the host/token, if they were not specified, to make the first step easier
-			if len(root.options.ApiHost) == 0 {
-				root.options.ApiHost, _ = root.prompt.Ask(&Question{
-					Label:       "API host",
-					Description: "Please enter Keboola Storage API host, eg. \"keboola.connection.com\".",
-					Validator:   apiHostValidator,
-				})
-			}
-			if len(root.options.ApiToken) == 0 {
-				root.options.ApiToken, _ = root.prompt.Ask(&Question{
-					Label:       "API token",
-					Description: "Please enter Keboola Storage API token. The value will be hidden.",
-					Hidden:      true,
-					Validator:   valueRequired,
-				})
-			}
+			// Ask for the host/token, if not specified -> to make the first step easier
+			root.options.AskUser(root.prompt, "ApiHost")
+			root.options.AskUser(root.prompt, "ApiToken")
 
 			// Validate options
 			if err := root.options.Validate([]string{"ApiHost", "ApiToken"}); len(err) > 0 {
@@ -56,14 +41,4 @@ func initCommand(root *rootCommand) *cobra.Command {
 	}
 
 	return cmd
-}
-
-func apiHostValidator(val interface{}) error {
-	str := val.(string)
-	if len(str) == 0 {
-		return errors.New("value is required")
-	} else if _, err := url.Parse(str); err != nil {
-		return errors.New("invalid host")
-	}
-	return nil
 }

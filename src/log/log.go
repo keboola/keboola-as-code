@@ -65,7 +65,7 @@ func NewLogger(stdout io.Writer, stderr io.Writer, logFile *os.File, verbose boo
 	cores = append(cores, getStdoutCore(stdout, verbose))
 
 	// Log to stderr
-	cores = append(cores, getStderrCore(stderr))
+	cores = append(cores, getStderrCore(stderr, verbose))
 
 	// Create logger
 	return zap.New(zapcore.NewTee(cores...)).Sugar()
@@ -97,19 +97,37 @@ func getStdoutCore(stdout io.Writer, verbose bool) zapcore.Core {
 		return l == zapcore.InfoLevel
 	})
 
-	// Info is logged without prefix, other levels with prefix
+	// Prefix messages with level only when verbose enabled
+	levelKey := ""
+	if verbose {
+		levelKey = "level"
+	}
+
+	// Create encoder
 	encoder := zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
 		MessageKey:       "msg",
-		ConsoleSeparator: "  ",
+		LevelKey:         levelKey,
+		EncodeLevel:      zapcore.CapitalLevelEncoder,
+		ConsoleSeparator: "\t",
 	})
 
 	return zapcore.NewCore(encoder, zapcore.AddSync(stdout), consoleLevels)
 }
 
-func getStderrCore(stderr io.Writer) zapcore.Core {
+func getStderrCore(stderr io.Writer, verbose bool) zapcore.Core {
+	// Prefix messages with level only when verbose enabled
+	levelKey := ""
+	if verbose {
+		levelKey = "level"
+	}
+
+	// Create encoder
 	encoder := zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
 		MessageKey:       "msg",
-		ConsoleSeparator: "  ",
+		LevelKey:         levelKey,
+		EncodeLevel:      zapcore.CapitalLevelEncoder,
+		ConsoleSeparator: "\t",
 	})
+
 	return zapcore.NewCore(encoder, zapcore.AddSync(stderr), zapcore.WarnLevel)
 }

@@ -1,10 +1,11 @@
-package cli
+package ask
 
 import (
 	"errors"
 	"fmt"
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/AlecAivazis/survey/v2/terminal"
+	"net/url"
 	"os"
 )
 
@@ -79,6 +80,24 @@ func (p *Prompt) Ask(q *Question) (result string, ok bool) {
 	return result, true
 }
 
+func ApiHostValidator(val interface{}) error {
+	str := val.(string)
+	if len(str) == 0 {
+		return errors.New("value is required")
+	} else if _, err := url.Parse(str); err != nil {
+		return errors.New("invalid host")
+	}
+	return nil
+}
+
+func ValueRequired(val interface{}) error {
+	str := val.(string)
+	if len(str) == 0 {
+		return errors.New("value is required")
+	}
+	return nil
+}
+
 func isInteractiveTerminal() bool {
 	if fileInfo, _ := os.Stdin.Stat(); (fileInfo.Mode() & os.ModeCharDevice) == 0 {
 		return false
@@ -89,12 +108,4 @@ func isInteractiveTerminal() bool {
 	}
 
 	return true
-}
-
-func valueRequired(val interface{}) error {
-	str := val.(string)
-	if len(str) == 0 {
-		return errors.New("value is required")
-	}
-	return nil
 }

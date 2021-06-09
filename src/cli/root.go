@@ -1,10 +1,13 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"io"
+	"keboola-as-code/src/api"
+	"keboola-as-code/src/ask"
 	"keboola-as-code/src/log"
 	"keboola-as-code/src/options"
 	"keboola-as-code/src/utils"
@@ -32,7 +35,9 @@ Aliases:`
 type rootCommand struct {
 	cmd          *cobra.Command
 	options      *options.Options   // parsed flags and env variables
-	prompt       *Prompt            // user interaction
+	prompt       *ask.Prompt        // user interaction
+	ctx          context.Context    // context for parallel operations
+	apiClient    *api.Client        // api http client
 	initialized  bool               // init method was called
 	logFile      *os.File           // log file instance
 	logFileClear bool               // is log file temporary? if yes, it will be removed at the end, if no error occurs
@@ -40,8 +45,12 @@ type rootCommand struct {
 }
 
 // NewRootCommand creates parent of all sub-commands
-func NewRootCommand(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteCloser, prompt *Prompt) *rootCommand {
-	root := &rootCommand{options: &options.Options{}, prompt: prompt}
+func NewRootCommand(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteCloser, prompt *ask.Prompt) *rootCommand {
+	root := &rootCommand{
+		options: &options.Options{},
+		prompt:  prompt,
+		ctx:     context.Background(),
+	}
 
 	// Command definition
 	root.cmd = &cobra.Command{
@@ -71,7 +80,7 @@ func NewRootCommand(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteC
 
 	// Root command flags
 	root.cmd.Flags().SortFlags = true
-	root.cmd.Flags().Bool("version", false, "print version")
+	root.cmd.Flags().BoolP("version", "V", false, "print version")
 
 	// Init when flags are parsed
 	root.cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
@@ -156,6 +165,9 @@ func (root *rootCommand) init(cmd *cobra.Command) (err error) {
 	for _, msg := range warnings {
 		root.logger.Debug(msg)
 	}
+
+	// Http client
+	root.apiClient = api.NewClient(root.ctx, root.logger, root.options.VerboseApi)
 
 	// Return load error
 	return

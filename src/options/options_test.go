@@ -218,6 +218,7 @@ func TestDump(t *testing.T) {
 	options.ApiToken = "12345-67890123abcd"
 	expected := `Parsed options: &options.Options{` +
 		`Verbose:false, ` +
+		`VerboseApi:false, ` +
 		`LogFilePath:"", ` +
 		`ApiHost:"connection.keboola.com", ` +
 		`ApiToken:"12345-6*****", ` +

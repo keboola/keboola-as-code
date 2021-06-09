@@ -78,8 +78,8 @@ func TestConsoleCoreVerboseTrue(t *testing.T) {
 	// Assert
 	// debug (verbose), info -> stdout
 	// warn, err             -> stderr
-	expectedOut := "Debug msg\nInfo msg\n"
-	expectedErr := "Warn msg\nError msg\n"
+	expectedOut := "DEBUG\tDebug msg\nINFO\tInfo msg\n"
+	expectedErr := "WARN\tWarn msg\nERROR\tError msg\n"
 	assert.Equal(t, expectedOut, stdout.Buffer.String())
 	assert.Equal(t, expectedErr, stderr.Buffer.String())
 }
