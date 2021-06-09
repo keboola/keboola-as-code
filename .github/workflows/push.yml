@@ -1,5 +1,11 @@
 name: GitHub Actions
 on: [ push ]
+env:
+  TEST_PROJECT_ID: 8614
+  TEST_PROJECT_NAME: keboola-as-code-tests
+  TEST_KBC_STORAGE_API_HOST: connection.keboola.com
+  TEST_KBC_STORAGE_API_TOKEN: ${{ secrets.TEST_KBC_STORAGE_API_TOKEN }}
+  TEST_KBC_STORAGE_API_TOKEN_EXPIRED: ${{ secrets.TEST_KBC_STORAGE_API_TOKEN_EXPIRED }}
 jobs:
   Build:
     runs-on: ubuntu-latest
