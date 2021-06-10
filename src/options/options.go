@@ -58,7 +58,8 @@ func (o *Options) HasProjectDirectory() bool {
 
 func (o *Options) SetWorkingDirectory(dir string) error {
 	if !utils.IsDir(dir) {
-		return fmt.Errorf("working directory \"%s\" not found", dir)
+		wd, _ := os.Getwd()
+		return fmt.Errorf("working directory \"%s\" not found, pwd:%s", dir, wd)
 	}
 	o.workingDirectory = utils.AbsPath(dir)
 	return nil
