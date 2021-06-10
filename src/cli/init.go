@@ -3,6 +3,11 @@ package cli
 import (
 	"fmt"
 	"github.com/spf13/cobra"
+	"keboola-as-code/src/manifest"
+	"keboola-as-code/src/options"
+	"keboola-as-code/src/utils"
+	"os"
+	"path/filepath"
 )
 
 const shortDescription = `Init directory and perform the first pull`
@@ -35,14 +40,44 @@ func initCommand(root *rootCommand) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Is project directory already initialized?
+			if root.options.HasProjectDirectory() {
+				projectDir := root.options.ProjectDirectory()
+				metadataDir := root.options.MetadataDirectory()
+				root.logger.Infof(`The path "%s" is already an project directory.`, projectDir)
+				root.logger.Info(`Please use a different directory or synchronize the current with "pull" command.`)
+				return fmt.Errorf(`metadata directory "%s" already exists`, utils.RelPath(projectDir, metadataDir))
+			}
+
 			// Validate token and get API
-			_, err := root.NewStorageApi()
+			api, err := root.NewStorageApi()
 			if err != nil {
 				return err
 			}
 
+			// Create metadata dir
+			projectDir := root.options.WorkingDirectory()
+			metadataDir := filepath.Join(projectDir, options.MetadataDir)
+			if err = os.MkdirAll(metadataDir, 0650); err != nil {
+				return fmt.Errorf("cannot create metadata directory \"%s\": %s", metadataDir, err)
+			}
+			if err = root.options.SetProjectDirectory(projectDir); err != nil {
+				return err
+			}
+			root.logger.Infof("Created metadata dir \"%s\"", utils.RelPath(projectDir, metadataDir))
+
+			// Create and save manifest
+			manifestJson, err := manifest.NewManifest(api.ProjectId(), api.ApiHost())
+			if err != nil {
+				return err
+			}
+			if err = manifestJson.Save(root.options.MetadataDirectory()); err != nil {
+				return err
+			}
+			root.logger.Infof("Created manifest \"%s\"", utils.RelPath(projectDir, manifestJson.Path()))
+
 			// TODO
-			return fmt.Errorf("TODO")
+			return fmt.Errorf("TODO FIRST PULL")
 		},
 	}
 

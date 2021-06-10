@@ -73,6 +73,8 @@ func TestRootCmdFlags(t *testing.T) {
 }
 
 func TestExecute(t *testing.T) {
+	tempDir := t.TempDir()
+	assert.NoError(t, os.Chdir(tempDir))
 	in := utils.NewBufferReader()
 	logger, out := utils.NewDebugLogger()
 	root := NewRootCommand(in, out, out, ask.NewPrompt(in, out, out))
@@ -81,7 +83,6 @@ func TestExecute(t *testing.T) {
 	root.logger = logger
 	root.Execute()
 	assert.Contains(t, out.String(), "Available Commands:")
-
 }
 
 func TestTearDownRemoveLogFile(t *testing.T) {
@@ -111,6 +112,8 @@ func TestTearDownKeepLogFile(t *testing.T) {
 }
 
 func TestInit(t *testing.T) {
+	tempDir := t.TempDir()
+	assert.NoError(t, os.Chdir(tempDir))
 	in := utils.NewBufferReader()
 	out := utils.NewBufferWriter()
 	root := NewRootCommand(in, out, out, ask.NewPrompt(in, out, out))
@@ -125,6 +128,8 @@ func TestInit(t *testing.T) {
 }
 
 func TestLogVersion(t *testing.T) {
+	tempDir := t.TempDir()
+	assert.NoError(t, os.Chdir(tempDir))
 	in := utils.NewBufferReader()
 	logger, out := utils.NewDebugLogger()
 	root := NewRootCommand(in, out, out, ask.NewPrompt(in, out, out))

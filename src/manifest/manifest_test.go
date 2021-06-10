@@ -24,6 +24,12 @@ var cases []test = []test{
 	},
 }
 
+func TestNewManifest(t *testing.T) {
+	manifest, err := NewManifest(123, "connection.keboola.com")
+	assert.NoError(t, err)
+	assert.NotNil(t, manifest)
+}
+
 func TestLoad(t *testing.T) {
 	for _, c := range cases {
 		tempDir := t.TempDir()
@@ -38,6 +44,8 @@ func TestLoad(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Assert
+		manifest.path = ""
+		c.data.path = ""
 		assert.Equal(t, c.data, manifest)
 	}
 }
@@ -94,13 +102,13 @@ func TestValidateBadVersion(t *testing.T) {
 
 func minimalJson() string {
 	return `{
-	"version": 1,
-	"project": {
-		"id": 12345,
-		"apiHost": "keboola.connection.com"
-	},
-	"branches": [],
-	"configurations": []
+  "version": 1,
+  "project": {
+    "id": 12345,
+    "apiHost": "keboola.connection.com"
+  },
+  "branches": [],
+  "configurations": []
 }`
 }
 
@@ -118,55 +126,55 @@ func minimalStruct() *Manifest {
 
 func fullJson() string {
 	return `{
-	"version": 1,
-	"project": {
-		"id": 12345,
-		"apiHost": "keboola.connection.com"
-	},
-	"branches": [
-		{
-			"id": 10,
-			"path": "main"
-		},
-		{
-			"id": 11,
-			"path": "11-dev"
-		}
-	],
-	"configurations": [
-		{
-			"id": 11,
-			"componentId": "keboola.ex-db-oracle",
-			"branchId": 10,
-			"path": "11-raw-data",
-			"rows": [
-				{
-					"id": 101,
-					"path": "101-region-1.json"
-				},
-				{
-					"id": 102,
-					"path": "102-region-2.json"
-				}
-			]
-		},
-		{
-			"id": 12,
-			"componentId": "keboola.wr-db-mysql",
-			"branchId": 11,
-			"path": "12-current-month",
-			"rows": [
-				{
-					"id": 103,
-					"path": "103-all.json"
-				},
-				{
-					"id": 104,
-					"path": "104-sum.json"
-				}
-			]
-		}
-	]
+  "version": 1,
+  "project": {
+    "id": 12345,
+    "apiHost": "keboola.connection.com"
+  },
+  "branches": [
+    {
+      "id": 10,
+      "path": "main"
+    },
+    {
+      "id": 11,
+      "path": "11-dev"
+    }
+  ],
+  "configurations": [
+    {
+      "id": 11,
+      "componentId": "keboola.ex-db-oracle",
+      "branchId": 10,
+      "path": "11-raw-data",
+      "rows": [
+        {
+          "id": 101,
+          "path": "101-region-1.json"
+        },
+        {
+          "id": 102,
+          "path": "102-region-2.json"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "componentId": "keboola.wr-db-mysql",
+      "branchId": 11,
+      "path": "12-current-month",
+      "rows": [
+        {
+          "id": 103,
+          "path": "103-all.json"
+        },
+        {
+          "id": 104,
+          "path": "104-sum.json"
+        }
+      ]
+    }
+  ]
 }`
 }
 

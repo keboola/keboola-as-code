@@ -62,7 +62,7 @@ func ReplaceEnvsDir(root string) {
 
 		// Ignore hidden files except ".env"
 		base := filepath.Base(path)
-		if strings.HasPrefix(base, ".") && base != ".env" {
+		if !d.IsDir() && strings.HasPrefix(base, ".") && base != ".env" {
 			return nil
 		}
 

@@ -142,15 +142,9 @@ func AssertExpectations(
 	stdout string,
 	stderr string,
 ) {
-	expectedDir := filepath.Join(testDir, "out")
-	if !utils.FileExists(expectedDir) {
-		t.Fatalf("Missing directory \"%s\".", expectedDir)
-	}
-
+	// Compare expected values
 	expectedStdout := ReplaceEnvsString(utils.GetFileContent(filepath.Join(testDir, "expected-stdout")))
 	expectedStderr := ReplaceEnvsString(utils.GetFileContent(filepath.Join(testDir, "expected-stderr")))
-
-	// Assert exit code
 	expectedCodeStr := utils.GetFileContent(filepath.Join(testDir, "expected-code"))
 	expectedCode, _ := strconv.ParseInt(strings.TrimSpace(expectedCodeStr), 10, 32)
 	assert.Equal(
@@ -165,6 +159,20 @@ func AssertExpectations(
 	// Assert STDOUT and STDERR
 	utils.AssertWildcards(t, expectedStdout, stdout, "Unexpected STDOUT.")
 	utils.AssertWildcards(t, expectedStderr, stderr, "Unexpected STDERR.")
+
+	// Expected state dir
+	expectedDirOrg := filepath.Join(testDir, "out")
+	if !utils.FileExists(expectedDirOrg) {
+		t.Fatalf("Missing directory \"%s\".", expectedDirOrg)
+	}
+
+	// Copy expected state and replace ENVs
+	expectedDir := t.TempDir()
+	err := copy.Copy(expectedDirOrg, expectedDir)
+	if err != nil {
+		t.Fatalf("Copy error: %s", err)
+	}
+	ReplaceEnvsDir(expectedDir)
 
 	// Compare actual and expected dirs
 	utils.AssertDirectoryContentsSame(t, expectedDir, workingDir)

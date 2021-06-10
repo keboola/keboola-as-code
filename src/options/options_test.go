@@ -22,21 +22,22 @@ func TestWorkingDirFromOs(t *testing.T) {
 	// Assert
 	wd, err := os.Getwd()
 	assert.NoError(t, err)
-	assert.Equal(t, wd, options.WorkingDirectory)
+	assert.Equal(t, wd, options.WorkingDirectory())
 }
 
 func TestWorkingDirFromFlag(t *testing.T) {
+	tempDir := t.TempDir()
 	flags := &pflag.FlagSet{}
 	options := &Options{}
 	options.BindPersistentFlags(flags)
-	assert.NoError(t, flags.Set("working-dir", "/test/abc"))
+	assert.NoError(t, flags.Set("working-dir", tempDir))
 
 	// Load
 	_, err := options.Load(flags)
 	assert.NoError(t, err)
 
 	// Assert
-	assert.Equal(t, "/test/abc", options.WorkingDirectory)
+	assert.Equal(t, tempDir, options.WorkingDirectory())
 }
 
 func TestProjectDirNotFound(t *testing.T) {
@@ -47,7 +48,8 @@ func TestProjectDirNotFound(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Assert
-	assert.Empty(t, options.ProjectDirectory)
+	assert.Empty(t, options.projectDirectory)
+	assert.False(t, options.HasProjectDirectory())
 }
 
 func TestProjectDirExpectedDirButFoundFile(t *testing.T) {
@@ -75,7 +77,7 @@ func TestProjectDirExpectedDirButFoundFile(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Assert
-	assert.Equal(t, projectDir, options.ProjectDirectory)
+	assert.Equal(t, projectDir, options.ProjectDirectory())
 	assert.Equal(t, []string{fmt.Sprintf("Expected dir, but found file at \"%s\"", fakeMetadataFile)}, warnings)
 }
 
@@ -96,7 +98,7 @@ func TestProjectDirSameAsWorkingDir(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Assert
-	assert.Equal(t, projectDir, options.ProjectDirectory)
+	assert.Equal(t, projectDir, options.ProjectDirectory())
 	assert.Empty(t, warnings)
 }
 
@@ -119,7 +121,7 @@ func TestProjectDirIsParentOfWorkingDir(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Assert
-	assert.Equal(t, projectDir, options.ProjectDirectory)
+	assert.Equal(t, projectDir, options.ProjectDirectory())
 	assert.Empty(t, warnings)
 }
 
@@ -142,8 +144,8 @@ func TestValuesPriority(t *testing.T) {
 	warnings, err := options.Load(flags)
 	assert.NoError(t, err)
 	assert.Empty(t, warnings)
-	assert.Equal(t, workingDir, options.WorkingDirectory)
-	assert.Equal(t, "", options.ProjectDirectory)
+	assert.Equal(t, workingDir, options.WorkingDirectory())
+	assert.False(t, options.HasProjectDirectory())
 	assert.Equal(t, "", options.ApiHost)
 
 	// 1. Lowest priority, ".env" file from project dir
@@ -157,8 +159,8 @@ func TestValuesPriority(t *testing.T) {
 	warnings, err = options.Load(flags)
 	assert.NoError(t, err)
 	assert.Empty(t, warnings)
-	assert.Equal(t, workingDir, options.WorkingDirectory)
-	assert.Equal(t, projectDir, options.ProjectDirectory)
+	assert.Equal(t, workingDir, options.WorkingDirectory())
+	assert.Equal(t, projectDir, options.ProjectDirectory())
 	assert.Equal(t, "connection.keboola.com", options.ApiHost)
 
 	// 2. Higher priority, ".env" file from working dir
@@ -171,8 +173,8 @@ func TestValuesPriority(t *testing.T) {
 	warnings, err = options.Load(flags)
 	assert.NoError(t, err)
 	assert.Empty(t, warnings)
-	assert.Equal(t, workingDir, options.WorkingDirectory)
-	assert.Equal(t, projectDir, options.ProjectDirectory)
+	assert.Equal(t, workingDir, options.WorkingDirectory())
+	assert.Equal(t, projectDir, options.ProjectDirectory())
 	assert.Equal(t, "connection.north-europe.azure.keboola.com", options.ApiHost)
 
 	// 3. Higher priority , ENV defined in OS
@@ -181,8 +183,8 @@ func TestValuesPriority(t *testing.T) {
 	warnings, err = options.Load(flags)
 	assert.NoError(t, err)
 	assert.Empty(t, warnings)
-	assert.Equal(t, workingDir, options.WorkingDirectory)
-	assert.Equal(t, projectDir, options.ProjectDirectory)
+	assert.Equal(t, workingDir, options.WorkingDirectory())
+	assert.Equal(t, projectDir, options.ProjectDirectory())
 	assert.Equal(t, "connection.eu-central-1.keboola.com", options.ApiHost)
 
 	// 4. The highest priority, flag
@@ -190,8 +192,8 @@ func TestValuesPriority(t *testing.T) {
 	warnings, err = options.Load(flags)
 	assert.NoError(t, err)
 	assert.Empty(t, warnings)
-	assert.Equal(t, workingDir, options.WorkingDirectory)
-	assert.Equal(t, projectDir, options.ProjectDirectory)
+	assert.Equal(t, workingDir, options.WorkingDirectory())
+	assert.Equal(t, projectDir, options.ProjectDirectory())
 	assert.Equal(t, "connection.keboola.cloud", options.ApiHost)
 }
 
@@ -202,7 +204,7 @@ func TestValidateNoRequired(t *testing.T) {
 
 func TestValidateAllRequired(t *testing.T) {
 	options := &Options{}
-	errors := options.Validate([]string{"ProjectDirectory", "ApiHost", "ApiToken"})
+	errors := options.Validate([]string{"projectDirectory", "ApiHost", "ApiToken"})
 
 	// Assert
 	expected := []string{
@@ -225,8 +227,9 @@ func TestDump(t *testing.T) {
 		`LogFilePath:"", ` +
 		`ApiHost:"connection.keboola.com", ` +
 		`ApiToken:"12345-6*****", ` +
-		`WorkingDirectory:"", ` +
-		`ProjectDirectory:""` +
+		`workingDirectory:"", ` +
+		`projectDirectory:"", ` +
+		`metadataDirectory:""` +
 		`}`
 	assert.Equal(t, expected, options.Dump())
 }

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"github.com/go-resty/resty/v2"
 	"keboola-as-code/src/model"
 )
@@ -9,6 +10,28 @@ func (a StorageApi) WithToken(token *model.Token) *StorageApi {
 	a.token = token
 	a.http.resty.SetHeader("X-StorageApi-Token", token.Token)
 	return &a
+}
+
+func (a *StorageApi) Token() *model.Token {
+	if a.token == nil {
+		panic(fmt.Errorf("token is not set"))
+	}
+
+	return a.token
+}
+
+func (a *StorageApi) ProjectId() int {
+	if a.token == nil {
+		panic(fmt.Errorf("token is not set"))
+	}
+	return a.token.ProjectId()
+}
+
+func (a *StorageApi) ProjectName(token string) string {
+	if a.token == nil {
+		panic(fmt.Errorf("token is not set"))
+	}
+	return a.token.ProjectName()
 }
 
 func (a *StorageApi) GetToken(token string) (*model.Token, error) {

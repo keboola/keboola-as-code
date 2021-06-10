@@ -9,8 +9,10 @@ import (
 )
 
 type StorageApi struct {
-	http  *Client
-	token *model.Token
+	http       *Client
+	apiHost    string
+	apiHostUrl string
+	token      *model.Token
 }
 
 func NewStorageApiFromOptions(options *options.Options, ctx context.Context, logger *zap.SugaredLogger) (*StorageApi, error) {
@@ -40,13 +42,19 @@ func NewStorageApi(apiHost string, ctx context.Context, logger *zap.SugaredLogge
 	apiHostUrl := "https://" + apiHost + "/v2/storage/"
 	http := NewHttpClient(ctx, logger, verbose).WithHostUrl(apiHostUrl)
 	http.resty.SetError(&Error{})
-	return &StorageApi{http: http}
+	return &StorageApi{http: http, apiHost: apiHost, apiHostUrl: apiHostUrl}
 }
 
-func (a *StorageApi) Token() *model.Token {
-	if a.token == nil {
-		panic(fmt.Errorf("token is not set"))
+func (a *StorageApi) ApiHost() string {
+	if len(a.apiHost) == 0 {
+		panic(fmt.Errorf("api host is not set"))
 	}
+	return a.apiHost
+}
 
-	return a.token
+func (a *StorageApi) ApiHostUrl() string {
+	if len(a.apiHost) == 0 {
+		panic(fmt.Errorf("api host is not set"))
+	}
+	return a.apiHostUrl
 }
