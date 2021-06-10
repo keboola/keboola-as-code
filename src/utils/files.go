@@ -5,7 +5,14 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 )
+
+type FileLine struct {
+	Line   string
+	Regexp string
+}
 
 // FileExists returns true if file exists.
 func FileExists(path string) bool {
@@ -59,4 +66,41 @@ func RelPath(base string, path string) string {
 		panic(fmt.Sprintf("cannot get relative path: %s", err))
 	}
 	return rel
+}
+
+func CreateOrUpdateFile(path string, lines []FileLine) (updated bool, err error) {
+	// Read file if exists
+	bytes, err := os.ReadFile(path)
+	if err != nil && !os.IsNotExist(err) {
+		return false, err
+	}
+	updated = err == nil
+
+	// Process expected lines
+	content := string(bytes)
+	for _, line := range lines {
+		newValue := strings.TrimSuffix(line.Line, "\n") + "\n"
+		regExpStr := "(?m)" + line.Regexp // multi-line mode, ^ match line start
+		if len(line.Regexp) == 0 {
+			// No regexp specified, search fo line if already present
+			regExpStr = regexp.QuoteMeta(newValue)
+		}
+
+		regExpStr = strings.TrimSuffix(regExpStr, "$") + ".*$" // match whole line
+		regExp := regexp.MustCompile(regExpStr)
+		if regExp.MatchString(content) {
+			// Replace
+			content = regExp.ReplaceAllString(content, strings.TrimSuffix(newValue, "\n"))
+		} else {
+			// Append
+			if len(content) > 0 {
+				// Add new line, if file has some content
+				content = strings.TrimSuffix(content, "\n") + "\n"
+			}
+			content = fmt.Sprintf("%s%s", content, newValue)
+		}
+	}
+
+	// Write file
+	return updated, os.WriteFile(path, []byte(content), 0600)
 }

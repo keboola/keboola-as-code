@@ -64,7 +64,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 			if err = root.options.SetProjectDirectory(projectDir); err != nil {
 				return err
 			}
-			root.logger.Infof("Created metadata dir \"%s\"", utils.RelPath(projectDir, metadataDir))
+			root.logger.Infof("Created metadata dir \"%s\".", utils.RelPath(projectDir, metadataDir))
 
 			// Create and save manifest
 			manifestJson, err := manifest.NewManifest(api.ProjectId(), api.ApiHost())
@@ -74,7 +74,38 @@ func initCommand(root *rootCommand) *cobra.Command {
 			if err = manifestJson.Save(root.options.MetadataDirectory()); err != nil {
 				return err
 			}
-			root.logger.Infof("Created manifest \"%s\"", utils.RelPath(projectDir, manifestJson.Path()))
+			root.logger.Infof("Created manifest \"%s\".", utils.RelPath(projectDir, manifestJson.Path()))
+
+			// Create or update ".gitignore"
+			gitignorePath := filepath.Join(projectDir, ".gitignore")
+			gitignoreRelPath := utils.RelPath(projectDir, gitignorePath)
+			updated, err := utils.CreateOrUpdateFile(gitignorePath, []utils.FileLine{
+				{Line: "/.env.local"},
+			})
+			if err != nil {
+				return err
+			}
+			if updated {
+				root.logger.Infof("Updated \"%s\".", gitignoreRelPath)
+			} else {
+				root.logger.Infof("Created \"%s\".", gitignoreRelPath)
+			}
+
+			// Create or update ".env.local"
+			envPath := filepath.Join(projectDir, ".env.local")
+			envRelPath := utils.RelPath(projectDir, envPath)
+			updated, err = utils.CreateOrUpdateFile(envPath, []utils.FileLine{
+				{Regexp: "^KBC_STORAGE_API_HOST=", Line: fmt.Sprintf(`KBC_STORAGE_API_HOST="%s"`, api.ApiHost())},
+				{Regexp: "^KBC_STORAGE_API_TOKEN=", Line: fmt.Sprintf(`KBC_STORAGE_API_TOKEN="%s"`, api.Token().Token)},
+			})
+			if err != nil {
+				return err
+			}
+			if updated {
+				root.logger.Infof("Updated \"%s\" with the API token, keep it local.", envRelPath)
+			} else {
+				root.logger.Infof("Created \"%s\" with the API token, keep it local.", envRelPath)
+			}
 
 			// TODO
 			return fmt.Errorf("TODO FIRST PULL")

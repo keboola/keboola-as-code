@@ -95,7 +95,7 @@ func TestAssertDirectoryFileDifferentType1(t *testing.T) {
 
 	test := &mockedT{buf: bytes.NewBuffer(nil)}
 	AssertDirectoryContentsSame(test, expectedDir, actualDir)
-	assert.Contains(t, test.buf.String(), "Directories are not same:\n\"/myNode\" is file in actual, but dir in expected")
+	assert.Contains(t, test.buf.String(), "Directories are not same:\n\"myNode\" is file in actual, but dir in expected")
 }
 
 func TestAssertDirectoryFileDifferentType2(t *testing.T) {
@@ -114,7 +114,7 @@ func TestAssertDirectoryFileDifferentType2(t *testing.T) {
 
 	test := &mockedT{buf: bytes.NewBuffer(nil)}
 	AssertDirectoryContentsSame(test, expectedDir, actualDir)
-	assert.Contains(t, test.buf.String(), "Directories are not same:\n\"/myNode\" is dir in actual, but file in expected")
+	assert.Contains(t, test.buf.String(), "Directories are not same:\n\"myNode\" is dir in actual, but file in expected")
 }
 
 func TestAssertDirectoryDifferentContent(t *testing.T) {
@@ -137,7 +137,7 @@ func TestAssertDirectoryDifferentContent(t *testing.T) {
 
 	test := &mockedT{buf: bytes.NewBuffer(nil)}
 	AssertDirectoryContentsSame(test, expectedDir, actualDir)
-	assert.Contains(t, test.buf.String(), "Different content of the file \"/file.txt\". Diff:")
+	assert.Contains(t, test.buf.String(), "Different content of the file \"file.txt\". Diff:")
 }
 
 func TestAssertDirectoryDifferentContentWildcards(t *testing.T) {
@@ -160,7 +160,7 @@ func TestAssertDirectoryDifferentContentWildcards(t *testing.T) {
 
 	test := &mockedT{buf: bytes.NewBuffer(nil)}
 	AssertDirectoryContentsSame(test, expectedDir, actualDir)
-	assert.Contains(t, test.buf.String(), "Different content of the file \"/file.txt\". Diff:")
+	assert.Contains(t, test.buf.String(), "Different content of the file \"file.txt\". Diff:")
 }
 
 func TestAssertDirectorySameEmpty(t *testing.T) {
