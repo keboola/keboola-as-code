@@ -15,6 +15,7 @@ const (
 )
 
 type Manifest struct {
+	path           string
 	Version        int              `json:"version" validate:"required,min=1,max=1"`
 	Project        *Project         `json:"project" validate:"required"`
 	Branches       []*Branch        `json:"branches"`
@@ -44,6 +45,20 @@ type Row struct {
 	Path string `json:"path" validate:"required"`
 }
 
+func NewManifest(projectId int, apiHost string) (*Manifest, error) {
+	m := &Manifest{
+		Version:        1,
+		Project:        &Project{Id: projectId, ApiHost: apiHost},
+		Branches:       make([]*Branch, 0),
+		Configurations: make([]*Configuration, 0),
+	}
+	err := m.Validate()
+	if err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 func Load(metadataDir string) (*Manifest, error) {
 	// Load file
 	path := filepath.Join(metadataDir, FileName)
@@ -65,6 +80,9 @@ func Load(metadataDir string) (*Manifest, error) {
 		return nil, err
 	}
 
+	// Set path
+	m.path = path
+
 	// Return
 	return m, nil
 }
@@ -77,14 +95,14 @@ func (m *Manifest) Save(metadataDir string) error {
 	}
 
 	// Encode JSON
-	data, err := json.MarshalIndent(m, "", "\t")
+	data, err := json.MarshalIndent(m, "", "  ")
 	if err != nil {
 		return processJsonError(err)
 	}
 
 	// Write file
-	path := filepath.Join(metadataDir, FileName)
-	return os.WriteFile(path, data, 0650)
+	m.path = filepath.Join(metadataDir, FileName)
+	return os.WriteFile(m.path, data, 0650)
 }
 
 func (m *Manifest) Validate() error {
@@ -100,6 +118,13 @@ func (m *Manifest) Validate() error {
 		return processValidateError(err.(validator.ValidationErrors))
 	}
 	return nil
+}
+
+func (m *Manifest) Path() string {
+	if len(m.path) == 0 {
+		panic(fmt.Errorf("path is not set"))
+	}
+	return m.path
 }
 
 func processJsonError(err error) error {

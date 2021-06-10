@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"keboola-as-code/src/ask"
+	"keboola-as-code/src/utils"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -14,15 +15,67 @@ import (
 	"strings"
 )
 
+const (
+	MetadataDir = ".keboola"
+)
+
 // Options contains parsed flags and ENV variables
 type Options struct {
-	Verbose          bool   `flag:"verbose"`           // verbose mode, print details to console
-	VerboseApi       bool   `flag:"verbose-api"`       // log each API request and response
-	LogFilePath      string `flag:"log-file"`          // path to the log file
-	ApiHost          string `flag:"storage-api-host"`  // api host
-	ApiToken         string `flag:"storage-api-token"` // api token
-	WorkingDirectory string // working directory
-	ProjectDirectory string // project directory with ".keboola" metadata dir
+	Verbose           bool   `flag:"verbose"`           // verbose mode, print details to console
+	VerboseApi        bool   `flag:"verbose-api"`       // log each API request and response
+	LogFilePath       string `flag:"log-file"`          // path to the log file
+	ApiHost           string `flag:"storage-api-host"`  // api host
+	ApiToken          string `flag:"storage-api-token"` // api token
+	workingDirectory  string // working directory
+	projectDirectory  string // project directory with ".keboola" metadata dir
+	metadataDirectory string // ".keboola" metadata dir
+}
+
+func (o *Options) WorkingDirectory() string {
+	if len(o.workingDirectory) == 0 {
+		panic(fmt.Errorf("working directory is not set"))
+	}
+	return o.workingDirectory
+}
+
+func (o *Options) ProjectDirectory() string {
+	if len(o.projectDirectory) == 0 {
+		panic(fmt.Errorf("project directory is not set"))
+	}
+	return o.projectDirectory
+}
+
+func (o *Options) MetadataDirectory() string {
+	if len(o.metadataDirectory) == 0 {
+		panic(fmt.Errorf("metadata directory is not set"))
+	}
+	return o.metadataDirectory
+}
+
+func (o *Options) HasProjectDirectory() bool {
+	return len(o.projectDirectory) > 0
+}
+
+func (o *Options) SetWorkingDirectory(dir string) error {
+	if !utils.IsDir(dir) {
+		wd, _ := os.Getwd()
+		return fmt.Errorf("working directory \"%s\" not found, pwd:%s", dir, wd)
+	}
+	o.workingDirectory = utils.AbsPath(dir)
+	return nil
+}
+
+func (o *Options) SetProjectDirectory(projectDir string) error {
+	metadataDir := filepath.Join(projectDir, MetadataDir)
+	if !utils.IsDir(projectDir) {
+		return fmt.Errorf("project directory \"%s\" not found", o.projectDirectory)
+	}
+	if !utils.IsDir(metadataDir) {
+		return fmt.Errorf("metadata directory \"%s\" not found", o.metadataDirectory)
+	}
+	o.projectDirectory = utils.AbsPath(projectDir)
+	o.metadataDirectory = utils.AbsPath(metadataDir)
+	return nil
 }
 
 // BindPersistentFlags for all commands
@@ -58,7 +111,7 @@ func (o *Options) Validate(required []string) string {
 		}
 
 		// Create error message by field type
-		if fieldName == "ProjectDirectory" {
+		if fieldName == "projectDirectory" {
 			errors = append(
 				errors,
 				`- This or any parent directory is not a Keboola project dir.`,
@@ -120,22 +173,27 @@ func (o *Options) Load(flags *pflag.FlagSet) (warnings []string, err error) {
 	parser.AutomaticEnv()
 
 	// Set Working directory + load .env file if present
-	o.WorkingDirectory, err = getWorkingDirectory(parser)
-	o.WorkingDirectory = strings.TrimRight(o.WorkingDirectory, string(os.PathSeparator))
+	workingDir, err := getWorkingDirectory(parser)
 	if err != nil {
 		return
 	}
-	if err = loadDotEnv(o.WorkingDirectory); err != nil {
+	if err = o.SetWorkingDirectory(workingDir); err != nil {
+		return
+	}
+	if err = loadDotEnv(o.workingDirectory); err != nil {
 		return
 	}
 
 	// Set Project directory + load .env file if present
-	var projectDirWarnings []string
-	o.ProjectDirectory, projectDirWarnings = getProjectDirectory(o.WorkingDirectory)
-	o.ProjectDirectory = strings.TrimRight(o.ProjectDirectory, string(os.PathSeparator))
+	projectDir, projectDirWarnings := getProjectDirectory(o.workingDirectory)
 	warnings = append(warnings, projectDirWarnings...)
-	if err = loadDotEnv(o.ProjectDirectory); err != nil {
-		return
+	if len(projectDir) > 0 {
+		if err = o.SetProjectDirectory(strings.TrimRight(projectDir, string(os.PathSeparator))); err != nil {
+			return nil, err
+		}
+		if err = loadDotEnv(o.projectDirectory); err != nil {
+			return
+		}
 	}
 
 	// For each Options struct field with "flag" tag -> load value from parser
@@ -160,6 +218,7 @@ func (o *Options) Load(flags *pflag.FlagSet) (warnings []string, err error) {
 func (o *Options) normalize() {
 	o.ApiHost = strings.TrimRight(o.ApiHost, "/")
 	o.ApiHost = strings.TrimPrefix(o.ApiHost, "https://")
+	o.ApiHost = strings.TrimPrefix(o.ApiHost, "http://")
 	o.ApiToken = strings.TrimSpace(o.ApiToken)
 }
 

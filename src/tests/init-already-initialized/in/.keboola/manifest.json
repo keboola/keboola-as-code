@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "project": {
+    "id": 123,
+    "apiHost": "connection.keboola.com"
+  },
+  "branches": [],
+  "configurations": []
+}
