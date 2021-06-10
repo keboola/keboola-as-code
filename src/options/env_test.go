@@ -25,30 +25,25 @@ func TestEnvNamingConventionFlagNameEmpty(t *testing.T) {
 
 func TestLoadDotEnv(t *testing.T) {
 	defer utils.ResetEnv(t, os.Environ())
-
 	temp := t.TempDir()
-	path := filepath.Join(temp, ".env")
-	file, err := os.Create(path)
-	assert.NoError(t, err)
 
 	// No envs
 	os.Clearenv()
 	assert.Empty(t, os.Environ())
 
 	// Write envs to file
-	_, err = file.WriteString("FOO1=BAR1\nFOO2=BAR2\n")
-	assert.NoError(t, err)
-	err = file.Close()
-	assert.NoError(t, err)
+	assert.NoError(t, os.WriteFile(filepath.Join(temp, ".env.local"), []byte("FOO1=BAR1\nFOO2=BAR2\n"), 0600))
+	assert.NoError(t, os.WriteFile(filepath.Join(temp, ".env"), []byte("FOO1=BAZ\nFOO3=BAR3\n"), 0600))
 
 	// Load envs
-	err = loadDotEnv(temp)
+	err := loadDotEnv(temp)
 	assert.NoError(t, err)
 
 	// Assert
 	actual := os.Environ()
 	sort.Strings(actual)
-	assert.Equal(t, []string{"FOO1=BAR1", "FOO2=BAR2"}, actual)
+	assert.Equal(t, []string{"FOO1=BAR1", "FOO2=BAR2", "FOO3=BAR3"}, actual)
 	assert.Equal(t, "BAR1", os.Getenv("FOO1"))
 	assert.Equal(t, "BAR2", os.Getenv("FOO2"))
+	assert.Equal(t, "BAR3", os.Getenv("FOO3"))
 }

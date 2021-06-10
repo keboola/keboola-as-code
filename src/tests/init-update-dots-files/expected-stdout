@@ -1,0 +1,4 @@
+Created metadata dir ".keboola".
+Created manifest ".keboola/manifest.json".
+Updated ".gitignore".
+Updated ".env.local" with the API token, keep it local.

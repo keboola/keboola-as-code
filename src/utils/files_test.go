@@ -39,3 +39,37 @@ func TestGetFileContent(t *testing.T) {
 	// Assert
 	assert.Equal(t, "foo\n", GetFileContent(filePath))
 }
+
+func TestCreateOrUpdateFile(t *testing.T) {
+	tempDir := t.TempDir()
+	path := filepath.Join(tempDir, "file.txt")
+
+	// Create empty file
+	updated, err := CreateOrUpdateFile(path, []FileLine{})
+	assert.False(t, updated)
+	assert.NoError(t, err)
+	assert.FileExists(t, path)
+	assert.Equal(t, "", GetFileContent(path))
+
+	// Add some lines
+	updated, err = CreateOrUpdateFile(path, []FileLine{
+		{Line: "foo"},
+		{Line: "bar\n"},
+		{Line: "BAZ1=123\n", Regexp: "^BAZ1="},
+		{Line: "BAZ2=456\n", Regexp: "^BAZ2=.*$"},
+	})
+	assert.True(t, updated)
+	assert.NoError(t, err)
+	assert.FileExists(t, path)
+	assert.Equal(t, "foo\nbar\nBAZ1=123\nBAZ2=456\n", GetFileContent(path))
+
+	// Update some lines
+	updated, err = CreateOrUpdateFile(path, []FileLine{
+		{Line: "BAZ1=new123\n", Regexp: "^BAZ1="},
+		{Line: "BAZ2=new456\n", Regexp: "^BAZ2=.*$"},
+	})
+	assert.True(t, updated)
+	assert.NoError(t, err)
+	assert.FileExists(t, path)
+	assert.Equal(t, "foo\nbar\nBAZ1=new123\nBAZ2=new456\n", GetFileContent(path))
+}

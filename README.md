@@ -4,7 +4,15 @@
 - It syncs all [component configurations](https://help.keboola.com/components/) from a [KBC](https://www.keboola.com/) project to a directory, and vice versa.
 - The directory can be versioned in [Git](https://git-scm.com/) or a similar tool.
 
-## Directory structure
+## Installation
+
+- Download the latest release for your architecture from the [Github Releases](https://github.com/keboola/keboola-as-code/releases).
+- Extract archive, eg. `unzip kbc-vx.x.x-linux_arm64.zip`.
+- Make binary executable, eg. `chmod +x ./kbc`.
+- Optionally move the binary to your [PATH](https://en.wikipedia.org/wiki/PATH_(variable)).
+- Run.
+
+## Directory Structure
 
 ```
 Root project folder
@@ -24,13 +32,13 @@ Root project folder
                    └─ [row-id]-[row-name].json  - eg. 28790-prod-fact-table
 ```
 
-## Environment variables
+## Environment Variables
 
-### Priority of values
-1. Command line flags
-2. Environment variables set in OS
-3. Environment variables in `.env` file in the working directory
-4. Environment variables in `.env` file in the project directory
+### Priority Of Values
+1. Command line flags.
+2. Environment variables set in OS.
+3. Environment variables from [.env files](https://github.com/bkeepers/dotenv#what-other-env-files-can-i-use) in the working directory.
+4. Environment variables from [.env files](https://github.com/bkeepers/dotenv#what-other-env-files-can-i-use) in the project directory.
 
 ### Naming
 
@@ -117,11 +125,11 @@ To compile a binary for all architectures to `./target/bin`, run in the containe
 make build-cross
 ```
 
-### Functional tests
+### Functional Tests
 
 Each directory in the `src/tests/*` is one functional test.
 
-#### Directory structure
+#### Directory Structure
 
 ```
 /src/tests
@@ -136,7 +144,7 @@ Each directory in the `src/tests/*` is one functional test.
 
 #### Wildcards
 
-In files `/expected-stdout`, `/expected-stderr` and `/out/*.*` can be used placeholders for comparing dynamic values:
+Wildcards can be used in `/expected-stdout`, `/expected-stderr` and `/out/*.*` for comparing dynamic values:
 - `%e`: Represents a directory separator, for example / on Linux.
 - `%s`: One or more of anything (character or white space) except the end of line character.
 - `%S`: Zero or more of anything (character or white space) except the end of line character.
@@ -151,6 +159,11 @@ In files `/expected-stdout`, `/expected-stderr` and `/out/*.*` can be used place
 - `%%`: A literal percent character: %.
 
 Inspired by [PhpUnit](https://phpunit.readthedocs.io/en/9.5/assertions.html#assertstringmatchesformat).
+
+#### Environment Placeholders
+Environment placeholders can be used in `/expected-stdout`, `/expected-stderr`, `/in/*.*` and `/out/*.*`. 
+
+Eg. `%%TEST_STORAGE_API_HOST%%` will be replaced with a value of the ENV variable `TEST_STORAGE_API_HOST`.
 
 ### IDE setup
 

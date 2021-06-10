@@ -63,8 +63,8 @@ func compareDirectories(expectedDir string, actualDir string) map[string]*fileNo
 	var err error
 
 	// Process actual dir
-	err = filepath.Walk(actualDirAbs, func(path string, info os.FileInfo, err error) error {
-		relPath := strings.TrimPrefix(path, actualDirAbs)
+	err = filepath.WalkDir(actualDirAbs, func(path string, d os.DirEntry, err error) error {
+		relPath := RelPath(actualDirAbs, path)
 
 		// Stop on error
 		if err != nil {
@@ -76,15 +76,15 @@ func compareDirectories(expectedDir string, actualDir string) map[string]*fileNo
 			return nil
 		}
 
-		// Ignore hidden files
-		if strings.HasPrefix(filepath.Base(path), ".") {
+		// Ignore hidden files, except .env*, .gitignore
+		if IsIgnoredFile(path, d) {
 			return nil
 		}
 
 		// Create node
 		hashMap[relPath] = &fileNodeState{
 			relPath: relPath,
-			actual:  &fileNode{info.IsDir(), path},
+			actual:  &fileNode{d.IsDir(), path},
 		}
 
 		return nil
@@ -95,8 +95,8 @@ func compareDirectories(expectedDir string, actualDir string) map[string]*fileNo
 	}
 
 	// Process expected dir
-	err = filepath.Walk(expectedDirAbs, func(path string, info os.FileInfo, err error) error {
-		relPath := strings.TrimPrefix(path, expectedDirAbs)
+	err = filepath.WalkDir(expectedDirAbs, func(path string, d os.DirEntry, err error) error {
+		relPath := RelPath(expectedDirAbs, path)
 
 		// Stop on error
 		if err != nil {
@@ -108,8 +108,8 @@ func compareDirectories(expectedDir string, actualDir string) map[string]*fileNo
 			return nil
 		}
 
-		// Ignore hidden files
-		if strings.HasPrefix(filepath.Base(path), ".") {
+		// Ignore hidden files, except .env*, .gitignore
+		if IsIgnoredFile(path, d) {
 			return nil
 		}
 
@@ -118,7 +118,7 @@ func compareDirectories(expectedDir string, actualDir string) map[string]*fileNo
 			hashMap[relPath] = &fileNodeState{}
 		}
 		hashMap[relPath].relPath = relPath
-		hashMap[relPath].expected = &fileNode{info.IsDir(), path}
+		hashMap[relPath].expected = &fileNode{d.IsDir(), path}
 
 		return nil
 	})
@@ -128,4 +128,12 @@ func compareDirectories(expectedDir string, actualDir string) map[string]*fileNo
 	}
 
 	return hashMap
+}
+
+func IsIgnoredFile(path string, d os.DirEntry) bool {
+	base := filepath.Base(path)
+	return !d.IsDir() &&
+		strings.HasPrefix(base, ".") &&
+		!strings.HasPrefix(base, ".env") &&
+		base != ".gitignore"
 }

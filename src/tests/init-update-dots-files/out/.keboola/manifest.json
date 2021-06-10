@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "project": {
+    "id": %%TEST_PROJECT_ID%%,
+    "apiHost": "%%TEST_KBC_STORAGE_API_HOST%%"
+  },
+  "branches": [],
+  "configurations": []
+}

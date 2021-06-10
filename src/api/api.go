@@ -34,7 +34,7 @@ func NewStorageApiFromOptions(options *options.Options, ctx context.Context, log
 	}
 
 	logger.Debugf("Storage API token is valid.")
-	logger.Debugf(`Project id: "%d", project name: "%s"`, token.ProjectId(), token.ProjectName())
+	logger.Debugf(`Project id: "%d", project name: "%s".`, token.ProjectId(), token.ProjectName())
 	return storageApi.WithToken(token), nil
 }
 
