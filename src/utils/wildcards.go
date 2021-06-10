@@ -19,8 +19,8 @@ func AssertWildcards(t assert.TestingT, expected string, actual string, msg stri
 	} else {
 		expectedRegexp := WildcardToRegexp(strings.TrimSpace(expected))
 		diff := difflib.UnifiedDiff{
-			A: difflib.SplitLines(escapeWhitespaces(expected)),
-			B: difflib.SplitLines(escapeWhitespaces(actual)),
+			A: difflib.SplitLines(EscapeWhitespaces(expected)),
+			B: difflib.SplitLines(EscapeWhitespaces(actual)),
 		}
 		diffStr, _ := difflib.GetUnifiedDiffString(diff)
 		assert.Regexp(t, "^"+expectedRegexp+"$", actual, msg+" Diff:\n"+diffStr)
@@ -77,8 +77,8 @@ func WildcardToRegexp(pattern string) string {
 	})
 }
 
-// escapeWhitespaces escapes all whitespaces except new line -> for better difference in diff output
-func escapeWhitespaces(input string) string {
+// EscapeWhitespaces escapes all whitespaces except new line -> for better difference in diff output
+func EscapeWhitespaces(input string) string {
 	re := regexp.MustCompile(`\s`)
 	return re.ReplaceAllStringFunc(input, func(s string) string {
 		if s == "\n" {
