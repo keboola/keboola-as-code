@@ -1,10 +1,11 @@
-package model
+package remote
 
 // Token https://keboola.docs.apiary.io/#reference/tokens-and-permissions/token-verification/token-verification
 type Token struct {
-	Id    string     `json:"id"`
-	Token string     `json:"token"`
-	Owner TokenOwner `json:"owner"`
+	Id       string     `json:"id"`
+	Token    string     `json:"token"`
+	IsMaster bool       `json:"isMasterToken"`
+	Owner    TokenOwner `json:"owner"`
 }
 
 type TokenOwner struct {

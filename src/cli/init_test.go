@@ -68,7 +68,7 @@ func TestInteractive(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = c.ExpectString("API token")
 	assert.NoError(t, err)
-	_, err = c.SendLine(tests.TestToken())
+	_, err = c.SendLine(tests.TestTokenMaster())
 	assert.NoError(t, err)
 	_, err = c.ExpectEOF()
 	assert.NoError(t, err)

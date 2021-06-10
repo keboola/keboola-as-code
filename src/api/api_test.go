@@ -50,10 +50,9 @@ func newStorageApiWithHost(t *testing.T, apiHost string) (*StorageApi, *utils.Wr
 }
 
 //func newStorageApiWithToken(t *testing.T) (*StorageApi, *utils.Writer) {
-//	apiHost := utils.MustGetEnv("TEST_KBC_STORAGE_API_HOST")
-//	apiToken := utils.MustGetEnv("TEST_KBC_STORAGE_API_TOKEN")
-//	logger, logs := utils.NewDebugLogger()
-//	api := NewStorageApiFromOptions(apiHost, context.Background(), logger, false)
+//	apiHost := tests.TestApiHost()
+//	apiToken := tests.TestTokenMaster()
+//	api, logs := newStorageApiWithHost(t, apiHost)
 //	token, err := api.GetToken(apiToken)
 //	assert.NoError(t, err)
 //	return api.WithToken(token), logs

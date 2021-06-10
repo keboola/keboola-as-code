@@ -18,6 +18,10 @@ func TestToken() string {
 	return utils.MustGetEnv("TEST_KBC_STORAGE_API_TOKEN")
 }
 
+func TestTokenMaster() string {
+	return utils.MustGetEnv("TEST_KBC_STORAGE_API_TOKEN_MASTER")
+}
+
 func TestTokenExpired() string {
 	return utils.MustGetEnv("TEST_KBC_STORAGE_API_TOKEN_EXPIRED")
 }
