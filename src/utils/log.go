@@ -3,26 +3,27 @@ package utils
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"os"
 )
 
 type Writer struct {
-	Writer *bufio.Writer
-	Buffer *bytes.Buffer
+	writer *bufio.Writer
+	buffer *bytes.Buffer
 }
 
 func (w *Writer) Write(p []byte) (n int, err error) {
-	return w.Writer.Write(p)
+	return w.writer.Write(p)
 }
 
 func (w *Writer) WriteString(s string) (n int, err error) {
-	return w.Writer.WriteString(s)
+	return w.writer.WriteString(s)
 }
 
 func (w *Writer) Flush() error {
-	return w.Writer.Flush()
+	return w.writer.Flush()
 }
 
 func (*Writer) Close() error { return nil }
@@ -30,6 +31,14 @@ func (*Writer) Close() error { return nil }
 // Fd fake terminal file descriptor
 func (*Writer) Fd() uintptr {
 	return os.Stdout.Fd()
+}
+
+func (w *Writer) String() string {
+	err := w.writer.Flush()
+	if err != nil {
+		panic(fmt.Errorf("cannot flush utils log writer"))
+	}
+	return w.buffer.String()
 }
 
 type Reader struct {

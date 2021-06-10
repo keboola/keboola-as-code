@@ -8,6 +8,7 @@ import (
 	"keboola-as-code/src/version"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -25,38 +26,50 @@ const (
 type Client struct {
 	parentCtx context.Context // context for parallel execution
 	logger    *ClientLogger
-	http      *resty.Client
-	isRetying map[*resty.Request]bool
+	resty     *resty.Client
 }
 
-func NewClient(parentCtx context.Context, logger *zap.SugaredLogger, verbose bool) *Client {
+func NewHttpClient(ctx context.Context, logger *zap.SugaredLogger, verbose bool) *Client {
 	client := &Client{}
 	client.logger = &ClientLogger{logger}
-	client.parentCtx = parentCtx
-	client.http = createHttpClient(client.logger, verbose)
-	client.isRetying = make(map[*resty.Request]bool)
+	client.parentCtx = ctx
+	client.resty = createHttpClient(client.logger)
 	setupLogs(client, verbose)
-
 	return client
 }
 
-func (c *Client) R() *resty.Request {
-	return c.http.R()
+func (c Client) WithHostUrl(hostUrl string) *Client {
+	c.resty.SetHostURL(hostUrl)
+	return &c
 }
 
-func createHttpClient(logger *ClientLogger, verbose bool) *resty.Client {
-	c := resty.New()
-	c.SetLogger(logger)
-	c.SetHeader("User-Agent", fmt.Sprintf("keboola-as-code/%s", version.BuildVersion))
-	c.SetTimeout(RequestTimeout)
-	c.SetTransport(createTransport())
-	c.SetRetryCount(RetryCount)
-	c.SetRetryWaitTime(RetryWaitTime)
-	c.SetRetryMaxWaitTime(RetryWaitTimeMax)
-	c.AddRetryCondition(func(response *resty.Response, err error) bool {
+// R creates request
+func (c *Client) R(method string, url string) *resty.Request {
+	r := c.resty.R()
+	r.Method = method
+	r.URL = url
+	return r
+}
+
+func createHttpClient(logger *ClientLogger) *resty.Client {
+	r := resty.New()
+	r.SetLogger(logger)
+	r.SetHeader("User-Agent", fmt.Sprintf("keboola-as-code/%s", version.BuildVersion))
+	r.SetTimeout(RequestTimeout)
+	r.SetTransport(createTransport())
+	r.SetRetryCount(RetryCount)
+	r.SetRetryWaitTime(RetryWaitTime)
+	r.SetRetryMaxWaitTime(RetryWaitTimeMax)
+	r.AddRetryCondition(func(response *resty.Response, err error) bool {
 		// On network errors
-		if err != nil {
-			return true
+		if err != nil && response == nil {
+			switch true {
+			case
+				strings.Contains(err.Error(), "No address associated with hostname"):
+				return false
+			default:
+				return true
+			}
 		}
 
 		// On status codes
@@ -76,7 +89,7 @@ func createHttpClient(logger *ClientLogger, verbose bool) *resty.Client {
 		}
 	})
 
-	return c
+	return r
 }
 
 func createTransport() *http.Transport {
@@ -100,46 +113,38 @@ func setupLogs(client *Client, verbose bool) {
 	// Debug full request and response if verbose = true
 	// Secrets are hidden see ClientLogger
 	if verbose {
-		client.http.SetDebug(true)
-		client.http.SetDebugBodyLimit(2 * 1024)
+		client.resty.SetDebug(true)
+		client.resty.SetDebugBodyLimit(2 * 1024)
 	}
 
-	// Log each retry
-	client.http.AddRetryHook(func(response *resty.Response, err error) {
-		if response.Request.Attempt <= client.http.RetryCount {
-			// Log retry
-			msg := responseToLog(response)
-			client.logger.Warnf(fmt.Sprintf("%s | Retrying %dx ...", msg, response.Request.Attempt))
-
-			// Mark request retrying
-			client.isRetying[response.Request] = true
-		}
-	})
-
 	// Log each request when done
-	client.http.OnAfterResponse(func(c *resty.Client, res *resty.Response) error {
+	client.resty.OnAfterResponse(func(c *resty.Client, res *resty.Response) error {
 		req := res.Request
 		msg := responseToLog(res)
 		if res.IsSuccess() {
 			// Log success
 			client.logger.Debugf(msg)
-		} else {
-			// Log error after last retry
-			isRetrying := client.isRetying[req]
-			if !isRetrying || req.Attempt > client.http.RetryCount {
-				if req.Attempt > 1 {
-					msg = fmt.Sprintf("%s | Tried %dx", msg, req.Attempt)
-				}
+		}
 
-				if isRetrying {
-					client.logger.Errorf(msg)
-				} else {
-					client.logger.Warnf(msg)
-				}
-
-				// Clear
-				delete(client.isRetying, res.Request)
+		// Return error if present
+		err := res.Error()
+		if err != nil {
+			// Set response to error if supported
+			if v, ok := err.(ErrorWithResponse); ok {
+				v.SetResponse(res)
 			}
+
+			// Return err, wrap if needed
+			if v, ok := err.(error); ok {
+				return v
+			} else {
+				return fmt.Errorf("%s", err)
+			}
+		}
+
+		// Return error if request failed
+		if res.IsError() {
+			return fmt.Errorf(`%s "%s" returned http code %d`, req.Method, req.URL, res.StatusCode())
 		}
 
 		return nil

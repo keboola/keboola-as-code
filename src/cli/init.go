@@ -35,6 +35,12 @@ func initCommand(root *rootCommand) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Validate token and get API
+			_, err := root.NewStorageApi()
+			if err != nil {
+				return err
+			}
+
 			// TODO
 			return fmt.Errorf("TODO")
 		},

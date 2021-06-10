@@ -9,18 +9,40 @@ import (
 )
 
 type Pool struct {
-	client          *Client         // http client
+	client          *Client         // resty client
 	ctx             context.Context // context of the parallel work
 	workers         *errgroup.Group // error group -> if one worker fails, all will be stopped
 	counter         sync.WaitGroup  // detect when all requests are processed
 	sendersCount    int
 	processorsCount int
-	processor       func(pool *Pool, response *resty.Response) error
+	processor       func(pool *Pool, response *PoolResponse) error
+	done            chan struct{}
 	requests        chan *resty.Request
-	responses       chan *resty.Response
+	responses       chan *PoolResponse
 }
 
-func (c *Client) NewPool(processor func(pool *Pool, response *resty.Response) error) *Pool {
+type PoolResponse struct {
+	response *resty.Response
+	err      error
+}
+
+func (r *PoolResponse) HasResponse() bool {
+	return r.response != nil
+}
+
+func (r *PoolResponse) HasError() bool {
+	return r.err != nil
+}
+
+func (r *PoolResponse) Response() *resty.Response {
+	return r.response
+}
+
+func (r *PoolResponse) Error() error {
+	return r.err
+}
+
+func (c *Client) NewPool(processor func(pool *Pool, response *PoolResponse) error) *Pool {
 	workers, ctx := errgroup.WithContext(c.parentCtx)
 	return &Pool{
 		client:          c,
@@ -30,80 +52,83 @@ func (c *Client) NewPool(processor func(pool *Pool, response *resty.Response) er
 		sendersCount:    MaxIdleConns,
 		processorsCount: runtime.NumCPU(),
 		processor:       processor,
-		requests:        make(chan *resty.Request, 500),
-		responses:       make(chan *resty.Response),
+		done:            make(chan struct{}),
+		requests:        make(chan *resty.Request, 100),
+		responses:       make(chan *PoolResponse, 1),
 	}
 }
 
 // R creates request
 func (p *Pool) R(method string, url string) *resty.Request {
-	r := p.client.R().SetContext(p.ctx)
-	r.Method = method
-	r.URL = url
-	return r
+	return p.client.R(method, url).SetContext(p.ctx)
 }
 
-// Add request to pool
-func (p *Pool) Add(request *resty.Request) {
+// Send adds request to pool
+func (p *Pool) Send(request *resty.Request) {
 	p.counter.Add(1)
 	p.requests <- request
 }
 
 // Wait until all requests done
 func (p *Pool) Wait() error {
+	defer close(p.responses)
+	defer close(p.requests)
 	return p.workers.Wait()
 }
 
 func (p *Pool) Start() {
-	// Close channels when all requests are processed
-	p.workers.Go(func() error {
-		defer close(p.requests)
-		defer close(p.responses)
+	// Work is done -> all responses are processed
+	go func() {
+		defer close(p.done)
 		p.counter.Wait()
-		return nil
-	})
+	}()
 
 	// Start senders
 	for i := 0; i < p.sendersCount; i++ {
 		p.workers.Go(func() error {
-			// Send all requests, stop on error
-			for request := range p.requests {
-				if err := p.send(request); err != nil {
-					return err
+			for {
+				select {
+				case <-p.done:
+					// All done -> end
+					return nil
+				case <-p.ctx.Done():
+					// Context closed -> some error -> end
+					return nil
+				case request := <-p.requests:
+					p.responses <- p.send(request)
 				}
 			}
-
-			return nil
 		})
 	}
 
-	// Start processor
+	// Start processors
 	for i := 0; i < p.processorsCount; i++ {
 		p.workers.Go(func() error {
-			// Process all responses, stop on error
-			for response := range p.responses {
-				if err := p.process(response); err != nil {
-					return err
+			for {
+				select {
+				case <-p.done:
+					// All done -> end
+					return nil
+				case <-p.ctx.Done():
+					// Context closed -> some error -> end
+					return nil
+				case response := <-p.responses:
+					if err := p.process(response); err != nil {
+						// Error when processing response
+						return err
+					}
 				}
 			}
-
-			return nil
 		})
 	}
 }
 
-func (p *Pool) send(request *resty.Request) error {
+func (p *Pool) send(request *resty.Request) *PoolResponse {
 	response, err := request.SetContext(p.ctx).Send()
-	if err != nil {
-		p.counter.Done() // mark request processed
-		return err
-	}
-
-	p.responses <- response
-	return nil
+	return &PoolResponse{response, err}
 }
 
-func (p *Pool) process(response *resty.Response) error {
+func (p *Pool) process(response *PoolResponse) error {
 	defer p.counter.Done() // mark request processed
 	return p.processor(p, response)
 }

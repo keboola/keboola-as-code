@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
+	"keboola-as-code/src/utils"
 	"os"
 	"path/filepath"
 	"strings"
@@ -123,6 +124,8 @@ func TestProjectDirIsParentOfWorkingDir(t *testing.T) {
 }
 
 func TestValuesPriority(t *testing.T) {
+	defer utils.ResetEnv(t, os.Environ())
+
 	// Create working and project dir
 	projectDir := t.TempDir()
 	metadataDir := filepath.Join(projectDir, ".keboola")

@@ -82,6 +82,15 @@ cd keboola-as-code
 docker-compose build
 ```
 
+Create `.env` file:
+```dotenv
+TEST_PROJECT_ID=
+TEST_PROJECT_NAME=
+TEST_KBC_STORAGE_API_HOST=connection.keboola.com
+TEST_KBC_STORAGE_API_TOKEN=
+TEST_KBC_STORAGE_API_TOKEN_EXPIRED=
+```
+
 Run the test suite and download the dependencies using:
 
 ```
