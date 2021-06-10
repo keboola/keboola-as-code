@@ -52,7 +52,7 @@ func TestInteractive(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
-		assert.Equal(t, root.cmd.Execute(), errors.New("TODO FIRST PULL"))
+		assert.Equal(t, root.cmd.Execute(), errors.New("TODO PULL"))
 		assert.NoError(t, c.Tty().Close())
 		wg.Done()
 	}()
@@ -78,5 +78,5 @@ func TestInteractive(t *testing.T) {
 	out := expect.StripTrailingEmptyLines(state.String())
 	assert.Contains(t, out, "? API host")
 	assert.Contains(t, out, "? API token")
-	assert.Contains(t, out, "Error: TODO FIRST PULL")
+	assert.Contains(t, out, "Error: TODO PULL")
 }

@@ -1,26 +1,22 @@
+Command "pull"
 
-Keboola Connection pull/push client
-for components configurations.
+Pull configurations from the Keboola Connection project.
+Local files will be overwritten to match the project's state.
 
-Configurations can be synchronized in both
-directions [KBC project] <-> [a local directory].
+You can use the "--dry-run" flag to see
+what needs to be done without modifying the files.
 
 Usage:
-  %s [command]
-
-Available Commands:
-  help        Help about any command
-  init        Init local project directory and perform the first pull
-  pull        Pull configurations to the local project dir
+  %s pull [flags]
 
 Flags:
+      --dry-run   print what needs to be done
+
+Global Flags:
   -h, --help                       print help for command
   -l, --log-file string            path to a log file for details
   -H, --storage-api-host string    storage API host, eg. "connection.keboola.com"
   -t, --storage-api-token string   storage API token from your project
   -v, --verbose                    print details
       --verbose-api                log each API request and response
-  -V, --version                    print version
   -d, --working-dir string         use other working directory
-
-Use "%s [command] --help" for more information about a command.
