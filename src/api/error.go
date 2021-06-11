@@ -24,7 +24,14 @@ type Error struct {
 
 func (e *Error) Error() string {
 	req := e.response.Request
-	return fmt.Sprintf(`%s, method: "%s", url: "%s", httpCode: "%d", errCode: "%s", exceptionId: "%s"`, e.Message, req.Method, req.URL, e.HttpStatus(), e.ErrCode, e.ExceptionId)
+	msg := fmt.Sprintf(`%s, method: "%s", url: "%s", httpCode: "%d"`, e.Message, req.Method, req.URL, e.HttpStatus())
+	if len(e.ErrCode) > 0 {
+		msg += fmt.Sprintf(`, errCode: "%s"`, e.ErrCode)
+	}
+	if len(e.ExceptionId) > 0 {
+		msg += fmt.Sprintf(`, exceptionId: "%s"`, e.ExceptionId)
+	}
+	return msg
 }
 
 func (e *Error) SetResponse(response *resty.Response) {
