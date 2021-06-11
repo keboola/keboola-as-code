@@ -13,18 +13,22 @@ const (
 	EventsComponentId = "keboola.keboola-as-code"
 )
 
-func (a *StorageApi) SendEvent(level string, message string, duration time.Duration, data map[string]interface{}) (*remote.Event, error) {
-	response, err := a.Send(a.SendEventReq(level, message, duration, data))
+func (a *StorageApi) SendEvent(level string, message string, duration time.Duration, params map[string]interface{}, results map[string]interface{}) (*remote.Event, error) {
+	response, err := a.Send(a.SendEventReq(level, message, duration, params, results))
 	if err == nil {
 		return response.Result().(*remote.Event), nil
 	}
 	return nil, err
 }
 
-func (a *StorageApi) SendEventReq(level string, message string, duration time.Duration, data map[string]interface{}) *client.Request {
-	dataJson, err := json.Marshal(data)
+func (a *StorageApi) SendEventReq(level string, message string, duration time.Duration, params map[string]interface{}, results map[string]interface{}) *client.Request {
+	paramsJson, err := json.Marshal(params)
 	if err != nil {
-		panic(fmt.Errorf("cannot serialize event data to JSON: %s", err))
+		panic(fmt.Errorf(`cannot serialize event "params" key to JSON: %s`, err))
+	}
+	resultsJson, err := json.Marshal(results)
+	if err != nil {
+		panic(fmt.Errorf(`cannot serialize event "results" key to JSON: %s`, err))
 	}
 
 	return client.NewRequest(
@@ -35,7 +39,8 @@ func (a *StorageApi) SendEventReq(level string, message string, duration time.Du
 				"message":   message,
 				"type":      level,
 				"duration":  fmt.Sprintf("%.0f", float64(duration/time.Second)),
-				"results":   string(dataJson),
+				"params":    string(paramsJson),
+				"results":   string(resultsJson),
 			}).
 			SetResult(remote.Event{}),
 	)

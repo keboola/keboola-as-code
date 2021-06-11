@@ -38,6 +38,7 @@ type rootCommand struct {
 	prompt       *ask.Prompt        // user interaction
 	ctx          context.Context    // context for parallel operations
 	api          *api.StorageApi    // GetStorageApi should be used to initialize
+	start        time.Time          // cmd start time
 	initialized  bool               // init method was called
 	logFile      *os.File           // log file instance
 	logFileClear bool               // is log file temporary? if yes, it will be removed at the end, if no error occurs
@@ -50,6 +51,7 @@ func NewRootCommand(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteC
 		options: &options.Options{},
 		prompt:  prompt,
 		ctx:     context.Background(),
+		start:   time.Now(),
 	}
 
 	// Command definition

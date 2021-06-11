@@ -8,7 +8,9 @@ import (
 
 func TestSendEvent(t *testing.T) {
 	api, _ := TestStorageApiWithToken(t)
-	event, err := api.SendEvent("info", "Test event", 123456*time.Millisecond, map[string]interface{}{"foo": "bar"})
+	params := map[string]interface{}{"foo1": "bar1"}
+	results := map[string]interface{}{"foo2": "bar2"}
+	event, err := api.SendEvent("info", "Test event", 123456*time.Millisecond, params, results)
 	assert.NoError(t, err)
 	assert.NotNil(t, event)
 }

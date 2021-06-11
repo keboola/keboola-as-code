@@ -8,6 +8,7 @@ import (
 	"keboola-as-code/src/utils"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 const initShortDescription = `Init local project directory and perform the first pull`
@@ -73,7 +74,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 			if err = manifestJson.Save(root.options.MetadataDirectory()); err != nil {
 				return err
 			}
-			root.logger.Infof("Created manifest \"%s\".", utils.RelPath(projectDir, manifestJson.Path()))
+			root.logger.Infof("Created manifest file \"%s\".", utils.RelPath(projectDir, manifestJson.Path()))
 
 			// Create or update ".gitignore"
 			gitignorePath := filepath.Join(projectDir, ".gitignore")
@@ -85,9 +86,9 @@ func initCommand(root *rootCommand) *cobra.Command {
 				return err
 			}
 			if updated {
-				root.logger.Infof("Updated \"%s\".", gitignoreRelPath)
+				root.logger.Infof("Updated file \"%s\".", gitignoreRelPath)
 			} else {
-				root.logger.Infof("Created \"%s\".", gitignoreRelPath)
+				root.logger.Infof("Created file \"%s\".", gitignoreRelPath)
 			}
 
 			// Create or update ".env.local"
@@ -101,9 +102,25 @@ func initCommand(root *rootCommand) *cobra.Command {
 				return err
 			}
 			if updated {
-				root.logger.Infof("Updated \"%s\" with the API token, keep it local.", envRelPath)
+				root.logger.Infof("Updated file \"%s\" with the API token, keep it local and secret.", envRelPath)
 			} else {
-				root.logger.Infof("Created \"%s\" with the API token, keep it local.", envRelPath)
+				root.logger.Infof("Created file \"%s\" with the API token, keep it local and secret.", envRelPath)
+			}
+
+			// Send event
+			message := "Initialized local project directory."
+			duration := time.Since(root.start)
+			params := map[string]interface{}{
+				"command": "init",
+			}
+			results := map[string]interface{}{
+				"projectId": api.ProjectId(),
+			}
+			event, err := api.SendEvent("info", message, duration, params, results)
+			if err == nil {
+				root.logger.Debugf("Sent \"init\" event id: \"%s\"", event.Id)
+			} else {
+				root.logger.Warnf("Cannot send init event: %s", err)
 			}
 
 			// Make first pull

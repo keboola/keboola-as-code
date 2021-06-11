@@ -9,6 +9,8 @@ DEBUG	HTTP	GET https://%s/v2/storage/tokens/verify | 200 | %s
 DEBUG	Storage API token is valid.
 DEBUG	Project id: "%%TEST_PROJECT_ID%%", project name: "%%TEST_PROJECT_NAME%%".
 INFO	Created metadata dir ".keboola".
-INFO	Created manifest ".keboola/manifest.json".
-INFO	Created ".gitignore".
-INFO	Created ".env.local" with the API token, keep it local.
+INFO	Created manifest file ".keboola/manifest.json".
+INFO	Created file ".gitignore".
+INFO	Created file ".env.local" with the API token, keep it local and secret.
+DEBUG	HTTP	POST https://%s/v2/storage/events | 201 | %s
+DEBUG	Sent "init" event id: "%s"
