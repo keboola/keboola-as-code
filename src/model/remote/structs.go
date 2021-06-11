@@ -48,6 +48,11 @@ type Row struct {
 	Configuration map[string]interface{} `json:"configuration"`
 }
 
+// Event https://keboola.docs.apiary.io/#reference/events/events/create-event
+type Event struct {
+	Id string `json:"id"`
+}
+
 func (t *Token) ProjectId() int {
 	return t.Owner.Id
 }
