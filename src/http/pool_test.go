@@ -1,4 +1,4 @@
-package api
+package http
 
 import (
 	"errors"
@@ -30,7 +30,7 @@ func TestSimple(t *testing.T) {
 		return response.Error()
 	})
 
-	pool.Send(pool.R(resty.MethodGet, "https://example.com"))
+	pool.Send(pool.Req(resty.MethodGet, "https://example.com"))
 	pool.Start()
 
 	assert.NoError(t, pool.Wait())
@@ -47,13 +47,13 @@ func TestSubRequest(t *testing.T) {
 		// Simulate sub-requests
 		// If one request is processed, then start another, until count < 30
 		if c.Inc(); c.Value() < 30 {
-			pool.Send(pool.R(resty.MethodGet, "https://example.com"))
+			pool.Send(pool.Req(resty.MethodGet, "https://example.com"))
 		}
 
 		return response.Error()
 	})
 
-	pool.Send(pool.R(resty.MethodGet, "https://example.com"))
+	pool.Send(pool.Req(resty.MethodGet, "https://example.com"))
 	pool.Start()
 
 	assert.NoError(t, pool.Wait())
@@ -67,7 +67,7 @@ func TestProcessorError(t *testing.T) {
 
 	c := &utils.SafeCounter{}
 	pool := client.NewPool(func(pool *Pool, response *PoolResponse) error {
-		pool.Send(pool.R(resty.MethodGet, "https://example.com"))
+		pool.Send(pool.Req(resty.MethodGet, "https://example.com"))
 		if c.Inc(); c.Value() == 10 {
 			return errors.New("some error in response processor")
 		}
@@ -75,7 +75,7 @@ func TestProcessorError(t *testing.T) {
 		return response.Error()
 	})
 
-	pool.Send(pool.R(resty.MethodGet, "https://example.com"))
+	pool.Send(pool.Req(resty.MethodGet, "https://example.com"))
 	pool.Start()
 
 	assert.Equal(t, errors.New("some error in response processor"), pool.Wait())
@@ -91,14 +91,14 @@ func TestNetworkError(t *testing.T) {
 	c := &utils.SafeCounter{}
 	pool := client.NewPool(func(pool *Pool, response *PoolResponse) error {
 		if c.Inc(); c.Value() == 10 {
-			pool.Send(pool.R(resty.MethodGet, "https://example.com/error"))
+			pool.Send(pool.Req(resty.MethodGet, "https://example.com/error"))
 		} else {
-			pool.Send(pool.R(resty.MethodGet, "https://example.com"))
+			pool.Send(pool.Req(resty.MethodGet, "https://example.com"))
 		}
 		return response.Error()
 	})
 
-	pool.Send(pool.R(resty.MethodGet, "https://example.com"))
+	pool.Send(pool.Req(resty.MethodGet, "https://example.com"))
 	pool.Start()
 
 	assert.Equal(t, errors.New("network error"), pool.Wait().(*url.Error).Unwrap())

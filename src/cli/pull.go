@@ -22,7 +22,7 @@ func pullCommand(root *rootCommand) *cobra.Command {
 		Long:  pullLongDescription,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			// Ask for the host/token, if not specified -> to make the first step easier
-			root.options.AskUser(root.prompt, "ApiHost")
+			root.options.AskUser(root.prompt, "Host")
 			root.options.AskUser(root.prompt, "ApiToken")
 
 			// Validate options

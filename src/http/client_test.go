@@ -1,4 +1,4 @@
-package api
+package http
 
 import (
 	"context"
@@ -27,7 +27,7 @@ func TestWithHostUrl(t *testing.T) {
 
 	// Must be cloned, not modified
 	assert.NotSame(t, orgClient, hostClient)
-	_, err := hostClient.R(resty.MethodGet, "/baz").Send()
+	_, err := hostClient.Req(resty.MethodGet, "/baz").Send()
 	assert.NoError(t, err)
 
 	// Check request url
@@ -41,7 +41,7 @@ func TestSimpleRequest(t *testing.T) {
 	httpmock.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(200, `test`))
 
 	// Get
-	res, err := c.R(resty.MethodGet, "https://example.com").Send()
+	res, err := c.Req(resty.MethodGet, "https://example.com").Send()
 	assert.NoError(t, err)
 	assert.Equal(t, "test", res.String())
 	expected := "DEBUG  HTTP\tGET https://example.com | 200 | %s"
@@ -55,7 +55,7 @@ func TestRetry(t *testing.T) {
 	httpmock.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(504, `test`))
 
 	// Get
-	res, err := c.R(resty.MethodGet, "https://example.com").Send()
+	res, err := c.Req(resty.MethodGet, "https://example.com").Send()
 	assert.Equal(t, errors.New(`GET "https://example.com" returned http code 504`), err)
 	assert.Equal(t, "test", res.String())
 	logs := out.String()
@@ -85,7 +85,7 @@ func TestDoNotRetry(t *testing.T) {
 	httpmock.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(404, `test`))
 
 	// Get
-	res, err := c.R(resty.MethodGet, "https://example.com").Send()
+	res, err := c.Req(resty.MethodGet, "https://example.com").Send()
 	assert.Equal(t, errors.New(`GET "https://example.com" returned http code 404`), err)
 	assert.Equal(t, "test", res.String())
 	logs := out.String()
@@ -108,7 +108,7 @@ func TestVerboseHideSecret(t *testing.T) {
 	httpmock.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(200, `test`))
 
 	// Get
-	res, err := c.R(resty.MethodGet, "https://example.com").SetHeader("X-StorageApi-Token", "my-token").Send()
+	res, err := c.Req(resty.MethodGet, "https://example.com").SetHeader("X-StorageApi-Token", "my-token").Send()
 	assert.NoError(t, err)
 	assert.Equal(t, "test", res.String())
 
