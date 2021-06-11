@@ -1,0 +1,719 @@
+{
+   "Branches": [
+      {
+         "name": "branch-1",
+         "isDefault": false
+      },
+      {
+         "name": "Branch 2",
+         "isDefault": false
+      },
+      {
+         "name": "Main",
+         "isDefault": true
+      }
+   ],
+   "Configurations": [
+      {
+         "branchName": "Main",
+         "componentId": "keboola.ex-db-mysql",
+         "name": "with-rows",
+         "configuration": {
+            "parameters": {
+               "db": {
+                  "#password": "my-secret",
+                  "database": "keboola_testing",
+                  "host": "testing-mysql-wr-ex.cvkpp0ld53zd.us-east-1.rds.amazonaws.com",
+                  "networkCompression": true,
+                  "port": 3306,
+                  "ssh": {
+                     "sshPort": 22
+                  },
+                  "transactionIsolationLevel": "READ UNCOMMITTED",
+                  "user": "keboola"
+               }
+            }
+         },
+         "rows": [
+            {
+               "name": "users",
+               "configuration": {
+                  "parameters": {
+                     "columns": [],
+                     "incremental": false,
+                     "outputTable": "in.c-keboola-ex-db-mysql-717158295.users",
+                     "primaryKey": [],
+                     "table": {
+                        "schema": "keboola_testing",
+                        "tableName": "users"
+                     }
+                  },
+                  "processors": {}
+               }
+            },
+            {
+               "name": "test_view",
+               "configuration": {
+                  "parameters": {
+                     "columns": [
+                        "TABLE_CATALOG",
+                        "TABLE_SCHEMA",
+                        "TABLE_NAME"
+                     ],
+                     "incremental": false,
+                     "outputTable": "in.c-keboola-ex-db-mysql-717158295.test-view",
+                     "primaryKey": [],
+                     "table": {
+                        "schema": "keboola_testing",
+                        "tableName": "test_view"
+                     }
+                  },
+                  "processors": {}
+               }
+            }
+         ]
+      },
+      {
+         "branchName": "Branch 2",
+         "componentId": "ex-generic-v2",
+         "name": "without-rows",
+         "configuration": {
+            "parameters": {
+               "api": {
+                  "baseUrl": "https://jsonplaceholder.typicode.com"
+               },
+               "config": {
+                  "debug": true,
+                  "jobs": [
+                     {
+                        "dataType": "todos",
+                        "endpoint": "/todos"
+                     }
+                  ],
+                  "outputBucket": "test"
+               }
+            }
+         },
+         "rows": null
+      },
+      {
+         "branchName": "branch-1",
+         "componentId": "ex-generic-v2",
+         "name": "empty",
+         "configuration": {},
+         "rows": null
+      },
+      {
+         "branchName": "branch-1",
+         "componentId": "keboola.ex-db-mysql",
+         "name": "only-connection",
+         "configuration": {
+            "parameters": {
+               "db": {
+                  "#password": "my-secret",
+                  "database": "keboola_testing",
+                  "host": "testing-mysql-wr-ex.cvkpp0ld53zd.us-east-1.rds.amazonaws.com",
+                  "networkCompression": true,
+                  "port": 3306,
+                  "ssh": {
+                     "sshPort": 22
+                  },
+                  "transactionIsolationLevel": "READ UNCOMMITTED",
+                  "user": "keboola"
+               }
+            }
+         },
+         "rows": null
+      },
+      {
+         "branchName": "branch-1",
+         "componentId": "keboola.python-transformation-v2",
+         "name": "python-transformation",
+         "configuration": {
+            "parameters": {
+               "blocks": [
+                  {
+                     "codes": [
+                        {
+                           "name": "Code X",
+                           "script": [
+                              "print(100)"
+                           ]
+                        },
+                        {
+                           "name": "Code Y",
+                           "script": [
+                              "print(200)"
+                           ]
+                        }
+                     ],
+                     "name": "Block 1"
+                  },
+                  {
+                     "codes": [
+                        {
+                           "name": "Code Z",
+                           "script": [
+                              "# Sum of natural numbers up to num\n\nnum = 16\n\nif num \u003c 0:\n   print(\"Enter a positive number\")\nelse:\n   sum = 0\n   # use while loop to iterate until zero\n   while(num \u003e 0):\n       sum += num\n       num -= 1\n   print(\"The sum is\", sum)"
+                           ]
+                        }
+                     ],
+                     "name": "Block 2"
+                  }
+               ],
+               "packages": [
+                  "xgboost"
+               ]
+            }
+         },
+         "rows": null
+      },
+      {
+         "branchName": "branch-1",
+         "componentId": "keboola.ex-db-mysql",
+         "name": "empty",
+         "configuration": {},
+         "rows": null
+      },
+      {
+         "branchName": "Main",
+         "componentId": "ex-generic-v2",
+         "name": "empty",
+         "configuration": {},
+         "rows": null
+      },
+      {
+         "branchName": "Main",
+         "componentId": "keboola.ex-azure-cost-management-sp",
+         "name": "test-schema-validation",
+         "configuration": {
+            "parameters": {
+               "servicePrincipal": {
+                  "#password": "my-secret",
+                  "tenant": "67890",
+                  "username": "user"
+               },
+               "subscriptionId": "12345"
+            }
+         },
+         "rows": [
+            {
+               "name": "row-1",
+               "configuration": {
+                  "parameters": {
+                     "export": {
+                        "aggregation": "Cost",
+                        "destination": "table-1",
+                        "granularity": "Daily",
+                        "groupingDimensions": [
+                           "ServiceName",
+                           "ResourceGroupName",
+                           "ResourceLocation",
+                           "Meter"
+                        ],
+                        "incremental": true,
+                        "timeDimension": {
+                           "timeFrame": "WeekToDate"
+                        },
+                        "type": "ActualCost"
+                     }
+                  }
+               }
+            },
+            {
+               "name": "row-2",
+               "configuration": {
+                  "parameters": {
+                     "export": {
+                        "aggregation": "Cost",
+                        "destination": "table-2",
+                        "granularity": "Daily",
+                        "groupingDimensions": [
+                           "ServiceName",
+                           "ResourceGroupName",
+                           "ResourceLocation",
+                           "Meter"
+                        ],
+                        "incremental": true,
+                        "timeDimension": {
+                           "timeFrame": "WeekToDate"
+                        },
+                        "type": "ActualCost"
+                     }
+                  }
+               }
+            }
+         ]
+      },
+      {
+         "branchName": "Main",
+         "componentId": "keboola.snowflake-transformation",
+         "name": "snfk-transformation",
+         "configuration": {
+            "parameters": {
+               "blocks": [
+                  {
+                     "codes": [
+                        {
+                           "name": "Code 1",
+                           "script": [
+                              "CREATE OR REPLACE TABLE \"test\" (\n  \"id\" number default null,\n  \"orderstatus\" varchar(100) default null,\n  \"price\" float\n);",
+                              "INSERT INTO \"test\" (\"id\", \"orderstatus\", \"price\") VALUES(123, 'ok', 12.34);",
+                              "INSERT INTO \"test\" (\"id\", \"orderstatus\", \"price\") VALUES(456, 'ko', 45.67);",
+                              "DROP TABLE IF EXISTS \"test\";"
+                           ]
+                        },
+                        {
+                           "name": "Code 2",
+                           "script": [
+                              "CREATE TABLE \"test2\" AS SELECT $1, $2\nFROM VALUES( 1, 'two' ), ( 3, 'four' ), ( 5, 'six' );"
+                           ]
+                        }
+                     ],
+                     "name": "Block 1"
+                  },
+                  {
+                     "codes": [
+                        {
+                           "name": "Code 3",
+                           "script": [
+                              "CREATE TABLE \"test3\" AS SELECT $1, $2\nFROM VALUES( 123, 'x' ), ( 345, 'y' );"
+                           ]
+                        }
+                     ],
+                     "name": "Block 2 - my name"
+                  }
+               ]
+            }
+         },
+         "rows": null
+      },
+      {
+         "branchName": "Branch 2",
+         "componentId": "keboola.ex-db-mysql",
+         "name": "with-rows",
+         "configuration": {
+            "parameters": {
+               "db": {
+                  "#password": "my-secret",
+                  "database": "keboola_testing",
+                  "host": "testing-mysql-wr-ex.cvkpp0ld53zd.us-east-1.rds.amazonaws.com",
+                  "networkCompression": true,
+                  "port": 3306,
+                  "ssh": {
+                     "sshPort": 22
+                  },
+                  "transactionIsolationLevel": "READ UNCOMMITTED",
+                  "user": "keboola"
+               }
+            }
+         },
+         "rows": [
+            {
+               "name": "users",
+               "configuration": {
+                  "parameters": {
+                     "columns": [],
+                     "incremental": false,
+                     "outputTable": "in.c-keboola-ex-db-mysql-717158295.users",
+                     "primaryKey": [],
+                     "table": {
+                        "schema": "keboola_testing",
+                        "tableName": "users"
+                     }
+                  },
+                  "processors": {}
+               }
+            },
+            {
+               "name": "test_view",
+               "configuration": {
+                  "parameters": {
+                     "columns": [
+                        "TABLE_CATALOG",
+                        "TABLE_SCHEMA",
+                        "TABLE_NAME"
+                     ],
+                     "incremental": false,
+                     "outputTable": "in.c-keboola-ex-db-mysql-717158295.test-view",
+                     "primaryKey": [],
+                     "table": {
+                        "schema": "keboola_testing",
+                        "tableName": "test_view"
+                     }
+                  },
+                  "processors": {}
+               }
+            }
+         ]
+      },
+      {
+         "branchName": "Branch 2",
+         "componentId": "keboola.python-transformation-v2",
+         "name": "python-transformation",
+         "configuration": {
+            "parameters": {
+               "blocks": [
+                  {
+                     "codes": [
+                        {
+                           "name": "Code X",
+                           "script": [
+                              "print(10)"
+                           ]
+                        },
+                        {
+                           "name": "Code Y",
+                           "script": [
+                              "print(20)"
+                           ]
+                        }
+                     ],
+                     "name": "Block 1"
+                  },
+                  {
+                     "codes": [
+                        {
+                           "name": "Code Z",
+                           "script": [
+                              "# Sum of natural numbers up to num\n\nnum = 16\n\nif num \u003c 0:\n   print(\"Enter a positive number\")\nelse:\n   sum = 0\n   # use while loop to iterate until zero\n   while(num \u003e 0):\n       sum += num\n       num -= 1\n   print(\"The sum is\", sum)"
+                           ]
+                        }
+                     ],
+                     "name": "Block 2"
+                  }
+               ],
+               "packages": [
+                  "xgboost"
+               ]
+            }
+         },
+         "rows": null
+      },
+      {
+         "branchName": "Branch 2",
+         "componentId": "keboola.snowflake-transformation",
+         "name": "snfk-transformation",
+         "configuration": {
+            "parameters": {
+               "blocks": [
+                  {
+                     "codes": [
+                        {
+                           "name": "Code 1",
+                           "script": [
+                              "CREATE OR REPLACE TABLE \"test\" (\n  \"id\" number default null,\n  \"orderstatus\" varchar(100) default null,\n  \"price\" float\n);",
+                              "INSERT INTO \"test\" (\"id\", \"orderstatus\", \"price\") VALUES(123, 'ok', 12.34);",
+                              "INSERT INTO \"test\" (\"id\", \"orderstatus\", \"price\") VALUES(456, 'ko', 45.67);",
+                              "DROP TABLE IF EXISTS \"test\";"
+                           ]
+                        },
+                        {
+                           "name": "Code 2",
+                           "script": [
+                              "CREATE TABLE \"test2\" AS SELECT $1, $2\nFROM VALUES( 1, 'two' ), ( 3, 'four' ), ( 5, 'six' );"
+                           ]
+                        }
+                     ],
+                     "name": "Block 1"
+                  },
+                  {
+                     "codes": [
+                        {
+                           "name": "Code 3",
+                           "script": [
+                              "CREATE TABLE \"test3\" AS SELECT $1, $2\nFROM VALUES( 123, 'x' ), ( 345, 'y' );"
+                           ]
+                        }
+                     ],
+                     "name": "Block 2 - my name"
+                  }
+               ]
+            }
+         },
+         "rows": null
+      },
+      {
+         "branchName": "branch-1",
+         "componentId": "keboola.snowflake-transformation",
+         "name": "snfk-transformation",
+         "configuration": {
+            "parameters": {
+               "blocks": [
+                  {
+                     "codes": [
+                        {
+                           "name": "Code 1",
+                           "script": [
+                              "CREATE OR REPLACE TABLE \"test\" (\n  \"id\" number default null,\n  \"orderstatus\" varchar(100) default null,\n  \"price\" float\n);",
+                              "INSERT INTO \"test\" (\"id\", \"orderstatus\", \"price\") VALUES(123, 'ok', 12.34);",
+                              "INSERT INTO \"test\" (\"id\", \"orderstatus\", \"price\") VALUES(456, 'ko', 45.67);",
+                              "DROP TABLE IF EXISTS \"test\";"
+                           ]
+                        },
+                        {
+                           "name": "Code 2",
+                           "script": [
+                              "CREATE TABLE \"test2\" AS SELECT $1, $2\nFROM VALUES( 1, 'two' ), ( 3, 'four' ), ( 5, 'six' );"
+                           ]
+                        }
+                     ],
+                     "name": "Block 1"
+                  },
+                  {
+                     "codes": [
+                        {
+                           "name": "Code 3",
+                           "script": [
+                              "CREATE TABLE \"test3\" AS SELECT $1, $2\nFROM VALUES( 123, 'x' ), ( 345, 'y' );"
+                           ]
+                        }
+                     ],
+                     "name": "Block 2 - my name"
+                  }
+               ]
+            }
+         },
+         "rows": null
+      },
+      {
+         "branchName": "Main",
+         "componentId": "ex-generic-v2",
+         "name": "without-rows",
+         "configuration": {
+            "parameters": {
+               "api": {
+                  "baseUrl": "https://jsonplaceholder.typicode.com"
+               },
+               "config": {
+                  "debug": true,
+                  "jobs": [
+                     {
+                        "dataType": "todos",
+                        "endpoint": "/todos"
+                     }
+                  ],
+                  "outputBucket": "test"
+               }
+            }
+         },
+         "rows": null
+      },
+      {
+         "branchName": "Main",
+         "componentId": "keboola.ex-db-mysql",
+         "name": "only-connection",
+         "configuration": {
+            "parameters": {
+               "db": {
+                  "#password": "my-secret",
+                  "database": "keboola_testing",
+                  "host": "testing-mysql-wr-ex.cvkpp0ld53zd.us-east-1.rds.amazonaws.com",
+                  "networkCompression": true,
+                  "port": 3306,
+                  "ssh": {
+                     "sshPort": 22
+                  },
+                  "transactionIsolationLevel": "READ UNCOMMITTED",
+                  "user": "keboola"
+               }
+            }
+         },
+         "rows": null
+      },
+      {
+         "branchName": "Main",
+         "componentId": "keboola.python-transformation-v2",
+         "name": "python-transformation",
+         "configuration": {
+            "parameters": {
+               "blocks": [
+                  {
+                     "codes": [
+                        {
+                           "name": "Code X",
+                           "script": [
+                              "print(1)"
+                           ]
+                        },
+                        {
+                           "name": "Code Y",
+                           "script": [
+                              "print(2)"
+                           ]
+                        }
+                     ],
+                     "name": "Block 1"
+                  },
+                  {
+                     "codes": [
+                        {
+                           "name": "Code Z",
+                           "script": [
+                              "# Sum of natural numbers up to num\n\nnum = 16\n\nif num \u003c 0:\n   print(\"Enter a positive number\")\nelse:\n   sum = 0\n   # use while loop to iterate until zero\n   while(num \u003e 0):\n       sum += num\n       num -= 1\n   print(\"The sum is\", sum)"
+                           ]
+                        }
+                     ],
+                     "name": "Block 2"
+                  }
+               ],
+               "packages": [
+                  "xgboost"
+               ]
+            }
+         },
+         "rows": null
+      },
+      {
+         "branchName": "Main",
+         "componentId": "transformation",
+         "name": "old-transformation",
+         "configuration": {},
+         "rows": [
+            {
+               "name": "old-transformation-snfk",
+               "configuration": {
+                  "backend": "snowflake",
+                  "disabled": false,
+                  "id": "717513586",
+                  "input": [],
+                  "name": "old-transformation-snfk",
+                  "output": [],
+                  "packages": [],
+                  "phase": 1,
+                  "queries": [
+                     "CREATE TABLE \"test2\" AS SELECT $1, $2\nFROM VALUES( 1, 'two' ), ( 3, 'four' ), ( 5, 'six' );"
+                  ],
+                  "requires": [],
+                  "type": "simple"
+               }
+            }
+         ]
+      },
+      {
+         "branchName": "Branch 2",
+         "componentId": "keboola.ex-db-mysql",
+         "name": "empty",
+         "configuration": {},
+         "rows": null
+      },
+      {
+         "branchName": "branch-1",
+         "componentId": "keboola.ex-db-mysql",
+         "name": "with-rows",
+         "configuration": {
+            "parameters": {
+               "db": {
+                  "#password": "my-secret",
+                  "database": "keboola_testing",
+                  "host": "testing-mysql-wr-ex.cvkpp0ld53zd.us-east-1.rds.amazonaws.com",
+                  "networkCompression": true,
+                  "port": 3306,
+                  "ssh": {
+                     "sshPort": 22
+                  },
+                  "transactionIsolationLevel": "READ UNCOMMITTED",
+                  "user": "keboola"
+               }
+            }
+         },
+         "rows": [
+            {
+               "name": "users",
+               "configuration": {
+                  "parameters": {
+                     "columns": [],
+                     "incremental": false,
+                     "outputTable": "in.c-keboola-ex-db-mysql-717158295.users",
+                     "primaryKey": [],
+                     "table": {
+                        "schema": "keboola_testing",
+                        "tableName": "users"
+                     }
+                  },
+                  "processors": {}
+               }
+            },
+            {
+               "name": "test_view",
+               "configuration": {
+                  "parameters": {
+                     "columns": [
+                        "TABLE_CATALOG",
+                        "TABLE_SCHEMA",
+                        "TABLE_NAME"
+                     ],
+                     "incremental": false,
+                     "outputTable": "in.c-keboola-ex-db-mysql-717158295.test-view",
+                     "primaryKey": [],
+                     "table": {
+                        "schema": "keboola_testing",
+                        "tableName": "test_view"
+                     }
+                  },
+                  "processors": {}
+               }
+            }
+         ]
+      },
+      {
+         "branchName": "Main",
+         "componentId": "keboola.ex-db-mysql",
+         "name": "empty",
+         "configuration": {},
+         "rows": null
+      },
+      {
+         "branchName": "Branch 2",
+         "componentId": "ex-generic-v2",
+         "name": "empty",
+         "configuration": {},
+         "rows": null
+      },
+      {
+         "branchName": "Branch 2",
+         "componentId": "keboola.ex-db-mysql",
+         "name": "only-connection",
+         "configuration": {
+            "parameters": {
+               "db": {
+                  "#password": "my-secret",
+                  "database": "keboola_testing",
+                  "host": "testing-mysql-wr-ex.cvkpp0ld53zd.us-east-1.rds.amazonaws.com",
+                  "networkCompression": true,
+                  "port": 3306,
+                  "ssh": {
+                     "sshPort": 22
+                  },
+                  "transactionIsolationLevel": "READ UNCOMMITTED",
+                  "user": "keboola"
+               }
+            }
+         },
+         "rows": null
+      },
+      {
+         "branchName": "branch-1",
+         "componentId": "ex-generic-v2",
+         "name": "without-rows",
+         "configuration": {
+            "parameters": {
+               "api": {
+                  "baseUrl": "https://jsonplaceholder.typicode.com"
+               },
+               "config": {
+                  "debug": true,
+                  "jobs": [
+                     {
+                        "dataType": "todos",
+                        "endpoint": "/todos"
+                     }
+                  ],
+                  "outputBucket": "test"
+               }
+            }
+         },
+         "rows": null
+      }
+   ]
+}

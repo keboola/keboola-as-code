@@ -1,4 +1,4 @@
-package http
+package client
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"github.com/go-resty/resty/v2"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 	"keboola-as-code/src/utils"
 	"testing"
 	"time"
@@ -14,12 +15,12 @@ import (
 
 func TestNewHttpClient(t *testing.T) {
 	logger, _ := utils.NewDebugLogger()
-	c := NewHttpClient(context.Background(), logger, false)
+	c := NewClient(context.Background(), logger, false)
 	assert.NotNil(t, c)
 }
 
 func TestWithHostUrl(t *testing.T) {
-	orgClient, _ := getMockedClientAndLogs(t, false)
+	orgClient, _, _ := getMockedClientAndLogs(t, false)
 	hostClient := orgClient.WithHostUrl("https://foo.bar")
 
 	// Mocked response
@@ -35,7 +36,7 @@ func TestWithHostUrl(t *testing.T) {
 }
 
 func TestSimpleRequest(t *testing.T) {
-	c, out := getMockedClientAndLogs(t, false)
+	c, _, out := getMockedClientAndLogs(t, false)
 
 	// Mocked response
 	httpmock.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(200, `test`))
@@ -49,7 +50,7 @@ func TestSimpleRequest(t *testing.T) {
 }
 
 func TestRetry(t *testing.T) {
-	c, out := getMockedClientAndLogs(t, false)
+	c, _, out := getMockedClientAndLogs(t, false)
 
 	// Mocked response
 	httpmock.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(504, `test`))
@@ -79,7 +80,7 @@ func TestRetry(t *testing.T) {
 }
 
 func TestDoNotRetry(t *testing.T) {
-	c, out := getMockedClientAndLogs(t, false)
+	c, _, out := getMockedClientAndLogs(t, false)
 
 	// Mocked response
 	httpmock.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(404, `test`))
@@ -102,13 +103,13 @@ func TestDoNotRetry(t *testing.T) {
 }
 
 func TestVerboseHideSecret(t *testing.T) {
-	c, out := getMockedClientAndLogs(t, true)
+	c, _, out := getMockedClientAndLogs(t, true)
 
 	// Mocked response
 	httpmock.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(200, `test`))
 
 	// Get
-	res, err := c.Req(resty.MethodGet, "https://example.com").SetHeader("X-StorageApi-Token", "my-token").Send()
+	res, err := c.Req(resty.MethodGet, "https://example.com").SetHeader("X-StorageApi-Token", "123-my-token").Send()
 	assert.NoError(t, err)
 	assert.Equal(t, "test", res.String())
 
@@ -141,10 +142,10 @@ DEBUG  HTTP	GET https://example.com | 200 | %s
 	utils.AssertWildcards(t, expectedLog, out.String(), "Unexpected log")
 }
 
-func getMockedClientAndLogs(t *testing.T, verbose bool) (*Client, *utils.Writer) {
+func getMockedClientAndLogs(t *testing.T, verbose bool) (*Client, *zap.SugaredLogger, *utils.Writer) {
 	// Create
 	logger, out := utils.NewDebugLogger()
-	c := NewHttpClient(context.Background(), logger, verbose)
+	c := NewClient(context.Background(), logger, verbose)
 
 	// Set short retry delay in tests
 	c.resty.RetryWaitTime = 1 * time.Millisecond
@@ -157,5 +158,5 @@ func getMockedClientAndLogs(t *testing.T, verbose bool) (*Client, *utils.Writer)
 		httpmock.DeactivateAndReset()
 	})
 
-	return c, out
+	return c, logger, out
 }

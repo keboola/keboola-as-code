@@ -106,9 +106,14 @@ Run the test suite and download the dependencies using:
 docker-compose run --rm dev make tests
 ```
 
-To launch the interactive console in container, you can use:
+To start the interactive console in container, you can use:
 ```
 docker-compose run --rm dev bash
+```
+
+To run the one test by name:
+```
+./scripts/tests.sh -run TestFuncName
 ```
 
 In the container, you can run CLI from source code using:

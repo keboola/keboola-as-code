@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"github.com/go-resty/resty/v2"
+	"keboola-as-code/src/client"
 	"keboola-as-code/src/model/remote"
 )
 
@@ -35,16 +36,17 @@ func (a *StorageApi) ProjectName() string {
 }
 
 func (a *StorageApi) GetToken(token string) (*remote.Token, error) {
-	if res, err := a.GetTokenReq(token).Send(); err != nil {
+	if res, err := a.Send(a.GetTokenReq(token)); err != nil {
 		return nil, err
 	} else {
 		return res.Result().(*remote.Token), nil
 	}
 }
 
-func (a *StorageApi) GetTokenReq(token string) *resty.Request {
-	return a.
-		Req(resty.MethodGet, "/tokens/verify").
-		SetHeader("X-StorageApi-Token", token).
-		SetResult(&remote.Token{})
+func (a *StorageApi) GetTokenReq(token string) *client.Request {
+	return client.NewRequest(
+		a.Req(resty.MethodGet, "tokens/verify").
+			SetHeader("X-StorageApi-Token", token).
+			SetResult(&remote.Token{}),
+	)
 }
