@@ -115,8 +115,8 @@ func (o *Options) Validate(required []string) string {
 			errors = append(
 				errors,
 				`- This or any parent directory is not a Keboola project dir.`,
-				`  Project directory must contain ".keboola" metadata directory.`,
-				`  Please change working directory to a project directory or create a new with "init" command.`,
+				`  Project directory must contain the ".keboola" metadata directory.`,
+				`  Please change working directory to a project directory or use the "init" command.`,
 			)
 		} else if len(flag) > 0 {
 			errors = append(errors, fmt.Sprintf(

@@ -37,6 +37,7 @@ type rootCommand struct {
 	options      *options.Options   // parsed flags and env variables
 	prompt       *ask.Prompt        // user interaction
 	ctx          context.Context    // context for parallel operations
+	api          *api.StorageApi    // GetStorageApi should be used to initialize
 	initialized  bool               // init method was called
 	logFile      *os.File           // log file instance
 	logFileClear bool               // is log file temporary? if yes, it will be removed at the end, if no error occurs
@@ -89,6 +90,7 @@ func NewRootCommand(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteC
 	// Sub-commands
 	root.cmd.AddCommand(
 		initCommand(root),
+		pullCommand(root),
 	)
 
 	return root
@@ -115,7 +117,26 @@ func (root *rootCommand) GetCommandByName(name string) *cobra.Command {
 	return nil
 }
 
-func (root *rootCommand) NewStorageApi() (*api.StorageApi, error) {
+func (root *rootCommand) ValidateOptions(required []string) error {
+	if err := root.options.Validate(required); len(err) > 0 {
+		root.logger.Warn("Invalid parameters:\n", err)
+		return fmt.Errorf("invalid parameters, see output above")
+	}
+	return nil
+}
+
+// GetStorageApi returns API and initialize it first time
+func (root *rootCommand) GetStorageApi() (api *api.StorageApi, err error) {
+	if root.api == nil {
+		root.api, err = root.newStorageApi()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return root.api, nil
+}
+
+func (root *rootCommand) newStorageApi() (*api.StorageApi, error) {
 	return api.NewStorageApiFromOptions(root.options, root.ctx, root.logger)
 }
 

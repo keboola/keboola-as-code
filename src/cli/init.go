@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 )
 
-const shortDescription = `Init directory and perform the first pull`
-const longDescription = `Command "init"
+const initShortDescription = `Init local project directory and perform the first pull`
+const initLongDescription = `Command "init"
 
 Initialize local project's directory
 and first time sync project from the Keboola Connection.
@@ -24,17 +24,16 @@ as flags or environment variables.`
 func initCommand(root *rootCommand) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init",
-		Short: shortDescription,
-		Long:  longDescription,
+		Short: initShortDescription,
+		Long:  initLongDescription,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			// Ask for the host/token, if not specified -> to make the first step easier
 			root.options.AskUser(root.prompt, "ApiHost")
 			root.options.AskUser(root.prompt, "ApiToken")
 
 			// Validate options
-			if err := root.options.Validate([]string{"ApiHost", "ApiToken"}); len(err) > 0 {
-				root.logger.Warn("Invalid parameters: \n", err)
-				return fmt.Errorf("invalid parameters, see output above")
+			if err := root.ValidateOptions([]string{"ApiHost", "ApiToken"}); err != nil {
+				return err
 			}
 
 			return nil
@@ -50,7 +49,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 			}
 
 			// Validate token and get API
-			api, err := root.NewStorageApi()
+			api, err := root.GetStorageApi()
 			if err != nil {
 				return err
 			}
@@ -107,8 +106,9 @@ func initCommand(root *rootCommand) *cobra.Command {
 				root.logger.Infof("Created \"%s\" with the API token, keep it local.", envRelPath)
 			}
 
-			// TODO
-			return fmt.Errorf("TODO FIRST PULL")
+			// Make first pull
+			pull := root.GetCommandByName("pull")
+			return pull.RunE(pull, nil)
 		},
 	}
 
