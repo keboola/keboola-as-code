@@ -136,7 +136,7 @@ func (o *Options) Validate(required []string) string {
 // AskUser for value if used interactive terminal
 func (o *Options) AskUser(p *ask.Prompt, fieldName string) {
 	switch fieldName {
-	case "ApiHost":
+	case "Host":
 		if len(o.ApiHost) == 0 {
 			o.ApiHost, _ = p.Ask(&ask.Question{
 				Label:       "API host",

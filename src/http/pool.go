@@ -1,4 +1,4 @@
-package api
+package http
 
 import (
 	"context"
@@ -8,15 +8,16 @@ import (
 	"sync"
 )
 
+// Pool of the asynchronous HTTP requests. When processing a response, a new request can be send.
 type Pool struct {
 	client          *Client         // resty client
 	ctx             context.Context // context of the parallel work
 	workers         *errgroup.Group // error group -> if one worker fails, all will be stopped
-	counter         sync.WaitGroup  // detect when all requests are processed
+	counter         sync.WaitGroup  // detect when all requests are processed (count of the requests = count of the processed responses)
 	sendersCount    int
 	processorsCount int
-	processor       func(pool *Pool, response *PoolResponse) error
-	done            chan struct{}
+	processor       func(pool *Pool, response *PoolResponse) error // callback to process response
+	done            chan struct{}                                  // channel for "all requests are processed" notification
 	requests        chan *resty.Request
 	responses       chan *PoolResponse
 }
@@ -58,9 +59,9 @@ func (c *Client) NewPool(processor func(pool *Pool, response *PoolResponse) erro
 	}
 }
 
-// R creates request
-func (p *Pool) R(method string, url string) *resty.Request {
-	return p.client.R(method, url).SetContext(p.ctx)
+// Req creates request
+func (p *Pool) Req(method string, url string) *resty.Request {
+	return p.client.Req(method, url).SetContext(p.ctx)
 }
 
 // Send adds request to pool

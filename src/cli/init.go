@@ -28,7 +28,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 		Long:  initLongDescription,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			// Ask for the host/token, if not specified -> to make the first step easier
-			root.options.AskUser(root.prompt, "ApiHost")
+			root.options.AskUser(root.prompt, "Host")
 			root.options.AskUser(root.prompt, "ApiToken")
 
 			// Validate options
@@ -66,7 +66,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 			root.logger.Infof("Created metadata dir \"%s\".", utils.RelPath(projectDir, metadataDir))
 
 			// Create and save manifest
-			manifestJson, err := manifest.NewManifest(api.ProjectId(), api.ApiHost())
+			manifestJson, err := manifest.NewManifest(api.ProjectId(), api.Host())
 			if err != nil {
 				return err
 			}
@@ -94,7 +94,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 			envPath := filepath.Join(projectDir, ".env.local")
 			envRelPath := utils.RelPath(projectDir, envPath)
 			updated, err = utils.CreateOrUpdateFile(envPath, []utils.FileLine{
-				{Regexp: "^KBC_STORAGE_API_HOST=", Line: fmt.Sprintf(`KBC_STORAGE_API_HOST="%s"`, api.ApiHost())},
+				{Regexp: "^KBC_STORAGE_API_HOST=", Line: fmt.Sprintf(`KBC_STORAGE_API_HOST="%s"`, api.Host())},
 				{Regexp: "^KBC_STORAGE_API_TOKEN=", Line: fmt.Sprintf(`KBC_STORAGE_API_TOKEN="%s"`, api.Token().Token)},
 			})
 			if err != nil {
