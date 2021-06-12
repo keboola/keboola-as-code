@@ -24,7 +24,7 @@ Please run the command again with the flag "--log-file <path>" to generate a log
 Then please submit email to "support@keboola.com" and include the log file as an attachment.
 {{- end }}
 
-We take privacy seriously, and do not perform any automated error collection.
+We take privacy seriously, and do not perform any automated log file collection.
 
 Thank you kindly!`
 

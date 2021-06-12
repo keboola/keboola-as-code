@@ -13,4 +13,4 @@ INFO	Created manifest file ".keboola/manifest.json".
 INFO	Created file ".gitignore".
 INFO	Created file ".env.local" with the API token, keep it local and secret.
 DEBUG	HTTP	POST https://%s/v2/storage/events | 201 | %s
-DEBUG	Sent "init" event id: "%s"
+DEBUG	Sent "init" successful event id: "%s"

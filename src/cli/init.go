@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"github.com/spf13/cobra"
+	"keboola-as-code/src/api"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/options"
 	"keboola-as-code/src/utils"
@@ -39,7 +40,9 @@ func initCommand(root *rootCommand) *cobra.Command {
 
 			return nil
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			successful := false
+
 			// Is project directory already initialized?
 			if root.options.HasProjectDirectory() {
 				projectDir := root.options.ProjectDirectory()
@@ -50,10 +53,17 @@ func initCommand(root *rootCommand) *cobra.Command {
 			}
 
 			// Validate token and get API
-			api, err := root.GetStorageApi()
+			sApi, err := root.GetStorageApi()
 			if err != nil {
 				return err
 			}
+
+			// Send failed event - we have connection to API
+			defer func() {
+				if err != nil && !successful {
+					sendEventInitFailed(root, sApi, err)
+				}
+			}()
 
 			// Create metadata dir
 			projectDir := root.options.WorkingDirectory()
@@ -67,7 +77,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 			root.logger.Infof("Created metadata dir \"%s\".", utils.RelPath(projectDir, metadataDir))
 
 			// Create and save manifest
-			manifestJson, err := manifest.NewManifest(api.ProjectId(), api.Host())
+			manifestJson, err := manifest.NewManifest(sApi.ProjectId(), sApi.Host())
 			if err != nil {
 				return err
 			}
@@ -95,8 +105,8 @@ func initCommand(root *rootCommand) *cobra.Command {
 			envPath := filepath.Join(projectDir, ".env.local")
 			envRelPath := utils.RelPath(projectDir, envPath)
 			updated, err = utils.CreateOrUpdateFile(envPath, []utils.FileLine{
-				{Regexp: "^KBC_STORAGE_API_HOST=", Line: fmt.Sprintf(`KBC_STORAGE_API_HOST="%s"`, api.Host())},
-				{Regexp: "^KBC_STORAGE_API_TOKEN=", Line: fmt.Sprintf(`KBC_STORAGE_API_TOKEN="%s"`, api.Token().Token)},
+				{Regexp: "^KBC_STORAGE_API_HOST=", Line: fmt.Sprintf(`KBC_STORAGE_API_HOST="%s"`, sApi.Host())},
+				{Regexp: "^KBC_STORAGE_API_TOKEN=", Line: fmt.Sprintf(`KBC_STORAGE_API_TOKEN="%s"`, sApi.Token().Token)},
 			})
 			if err != nil {
 				return err
@@ -107,21 +117,9 @@ func initCommand(root *rootCommand) *cobra.Command {
 				root.logger.Infof("Created file \"%s\" with the API token, keep it local and secret.", envRelPath)
 			}
 
-			// Send event
-			message := "Initialized local project directory."
-			duration := time.Since(root.start)
-			params := map[string]interface{}{
-				"command": "init",
-			}
-			results := map[string]interface{}{
-				"projectId": api.ProjectId(),
-			}
-			event, err := api.SendEvent("info", message, duration, params, results)
-			if err == nil {
-				root.logger.Debugf("Sent \"init\" event id: \"%s\"", event.Id)
-			} else {
-				root.logger.Warnf("Cannot send init event: %s", err)
-			}
+			// Send successful event
+			successful = true
+			sendEventInitSuccessful(root, sApi)
 
 			// Make first pull
 			pull := root.GetCommandByName("pull")
@@ -130,4 +128,39 @@ func initCommand(root *rootCommand) *cobra.Command {
 	}
 
 	return cmd
+}
+
+func sendEventInitSuccessful(root *rootCommand, sApi *api.StorageApi) {
+	message := "Initialized local project directory."
+	duration := time.Since(root.start)
+	params := map[string]interface{}{
+		"command": "init",
+	}
+	results := map[string]interface{}{
+		"projectId": sApi.ProjectId(),
+	}
+	event, err := sApi.SendEvent("info", message, duration, params, results)
+	if err == nil {
+		root.logger.Debugf("Sent \"init\" successful event id: \"%s\"", event.Id)
+	} else {
+		root.logger.Warnf("Cannot send \"init\" successful event: %s", err)
+	}
+}
+
+func sendEventInitFailed(root *rootCommand, sApi *api.StorageApi, err error) {
+	message := "Init command failed."
+	duration := time.Since(root.start)
+	params := map[string]interface{}{
+		"command": "init",
+	}
+	results := map[string]interface{}{
+		"projectId": sApi.ProjectId(),
+		"error":     fmt.Sprintf("%s", err),
+	}
+	event, err := sApi.SendEvent("error", message, duration, params, results)
+	if err == nil {
+		root.logger.Debugf("Sent \"init\" failed event id: \"%s\"", event.Id)
+	} else {
+		root.logger.Warnf("Cannot send \"init\" failed event: %s", err)
+	}
 }
