@@ -139,7 +139,7 @@ func sendEventInitSuccessful(root *rootCommand, sApi *api.StorageApi) {
 	results := map[string]interface{}{
 		"projectId": sApi.ProjectId(),
 	}
-	event, err := sApi.SendEvent("info", message, duration, params, results)
+	event, err := sApi.CreateEvent("info", message, duration, params, results)
 	if err == nil {
 		root.logger.Debugf("Sent \"init\" successful event id: \"%s\"", event.Id)
 	} else {
@@ -157,7 +157,7 @@ func sendEventInitFailed(root *rootCommand, sApi *api.StorageApi, err error) {
 		"projectId": sApi.ProjectId(),
 		"error":     fmt.Sprintf("%s", err),
 	}
-	event, err := sApi.SendEvent("error", message, duration, params, results)
+	event, err := sApi.CreateEvent("error", message, duration, params, results)
 	if err == nil {
 		root.logger.Debugf("Sent \"init\" failed event id: \"%s\"", event.Id)
 	} else {

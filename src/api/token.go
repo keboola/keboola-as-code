@@ -36,17 +36,16 @@ func (a *StorageApi) ProjectName() string {
 }
 
 func (a *StorageApi) GetToken(token string) (*remote.Token, error) {
-	if res, err := a.Send(a.GetTokenReq(token)); err != nil {
-		return nil, err
-	} else {
-		return res.Result().(*remote.Token), nil
+	response := a.GetTokenReq(token).Send().Response()
+	if response.HasResult() {
+		return response.Result().(*remote.Token), nil
 	}
+	return nil, response.Error()
 }
 
 func (a *StorageApi) GetTokenReq(token string) *client.Request {
-	return client.NewRequest(
-		a.Req(resty.MethodGet, "tokens/verify").
-			SetHeader("X-StorageApi-Token", token).
-			SetResult(&remote.Token{}),
-	)
+	return a.
+		Request(resty.MethodGet, "tokens/verify").
+		SetHeader("X-StorageApi-Token", token).
+		SetResult(&remote.Token{})
 }

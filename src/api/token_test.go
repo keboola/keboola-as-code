@@ -3,8 +3,8 @@ package api
 import (
 	"context"
 	"github.com/stretchr/testify/assert"
+	"keboola-as-code/src/fixtures/testEnv"
 	"keboola-as-code/src/model/remote"
-	"keboola-as-code/src/tests"
 	"keboola-as-code/src/utils"
 	"testing"
 )
@@ -22,14 +22,14 @@ func TestApiWithToken(t *testing.T) {
 }
 
 func TestGetToken(t *testing.T) {
-	tokenValue := tests.TestToken()
+	tokenValue := testEnv.TestToken()
 	api, logs := TestStorageApi(t)
 	token, err := api.GetToken(tokenValue)
 	assert.NoError(t, err)
 	assert.Regexp(t, `DEBUG  HTTP      GET https://.*/v2/storage/tokens/verify | 200 | .*`, logs.String())
 	assert.Equal(t, tokenValue, token.Token)
-	assert.Equal(t, tests.TestProjectId(), token.ProjectId())
-	assert.Equal(t, tests.TestProjectName(), token.ProjectName())
+	assert.Equal(t, testEnv.TestProjectId(), token.ProjectId())
+	assert.Equal(t, testEnv.TestProjectName(), token.ProjectName())
 }
 
 func TestGetTokenEmpty(t *testing.T) {
@@ -57,7 +57,7 @@ func TestGetTokenInvalid(t *testing.T) {
 }
 
 func TestGetTokenExpired(t *testing.T) {
-	tokenValue := tests.TestTokenExpired()
+	tokenValue := testEnv.TestTokenExpired()
 	api, _ := TestStorageApi(t)
 	token, err := api.GetToken(tokenValue)
 	assert.Error(t, err)

@@ -6,6 +6,7 @@ import (
 	"github.com/otiai10/copy"
 	"github.com/stretchr/testify/assert"
 	"io/fs"
+	"keboola-as-code/src/fixtures"
 	"keboola-as-code/src/utils"
 	"os"
 	"os/exec"
@@ -37,7 +38,7 @@ func TestFunctional(t *testing.T) {
 	}
 }
 
-// RunFunctionalTest runs one functional test.
+// RunFunctionalTest runs one functional test
 func RunFunctionalTest(t *testing.T, testDir string, binary string) {
 	defer utils.ResetEnv(t, os.Environ())
 
@@ -45,7 +46,7 @@ func RunFunctionalTest(t *testing.T, testDir string, binary string) {
 	workingDir := t.TempDir()
 	assert.NoError(t, os.Chdir(workingDir))
 
-	// Copy all from in dir to runtime dir
+	// Copy all from "in" dir to "runtime" dir
 	inDir := filepath.Join(testDir, "in")
 	if !utils.FileExists(inDir) {
 		t.Fatalf("Missing directory \"%s\".", inDir)
@@ -56,11 +57,17 @@ func RunFunctionalTest(t *testing.T, testDir string, binary string) {
 	}
 
 	// Replace all %%ENV_VAR%% in all files in the working directory
-	ReplaceEnvsDir(workingDir)
+	utils.ReplaceEnvsDir(workingDir)
+
+	// Setup KBC project state
+	projectStateFilePath := filepath.Join(testDir, "project-state.json")
+	if utils.IsFile(projectStateFilePath) {
+		fixtures.SetStateOfTestKbcProject(t, projectStateFilePath)
+	}
 
 	// Load command arguments from file
 	argsFile := filepath.Join(testDir, "args")
-	argsStr := ReplaceEnvsString(strings.TrimSpace(utils.GetFileContent(argsFile)))
+	argsStr := utils.ReplaceEnvsString(strings.TrimSpace(utils.GetFileContent(argsFile)))
 	args, err := shlex.Split(argsStr)
 	if err != nil {
 		t.Fatalf("Cannot parse args \"%s\": %s", argsStr, err)
@@ -144,8 +151,8 @@ func AssertExpectations(
 	stderr string,
 ) {
 	// Compare expected values
-	expectedStdout := ReplaceEnvsString(utils.GetFileContent(filepath.Join(testDir, "expected-stdout")))
-	expectedStderr := ReplaceEnvsString(utils.GetFileContent(filepath.Join(testDir, "expected-stderr")))
+	expectedStdout := utils.ReplaceEnvsString(utils.GetFileContent(filepath.Join(testDir, "expected-stdout")))
+	expectedStderr := utils.ReplaceEnvsString(utils.GetFileContent(filepath.Join(testDir, "expected-stderr")))
 	expectedCodeStr := utils.GetFileContent(filepath.Join(testDir, "expected-code"))
 	expectedCode, _ := strconv.ParseInt(strings.TrimSpace(expectedCodeStr), 10, 32)
 	assert.Equal(
@@ -173,7 +180,7 @@ func AssertExpectations(
 	if err != nil {
 		t.Fatalf("Copy error: %s", err)
 	}
-	ReplaceEnvsDir(expectedDir)
+	utils.ReplaceEnvsDir(expectedDir)
 
 	// Compare actual and expected dirs
 	utils.AssertDirectoryContentsSame(t, expectedDir, workingDir)

@@ -13,15 +13,27 @@ const (
 	EventsComponentId = "keboola.keboola-as-code"
 )
 
-func (a *StorageApi) SendEvent(level string, message string, duration time.Duration, params map[string]interface{}, results map[string]interface{}) (*remote.Event, error) {
-	response, err := a.Send(a.SendEventReq(level, message, duration, params, results))
-	if err == nil {
+func (a *StorageApi) CreateEvent(
+	level string,
+	message string,
+	duration time.Duration,
+	params map[string]interface{},
+	results map[string]interface{},
+) (*remote.Event, error) {
+	response := a.CreatEventReq(level, message, duration, params, results).Send().Response()
+	if response.HasResult() {
 		return response.Result().(*remote.Event), nil
 	}
-	return nil, err
+	return nil, response.Error()
 }
 
-func (a *StorageApi) SendEventReq(level string, message string, duration time.Duration, params map[string]interface{}, results map[string]interface{}) *client.Request {
+func (a *StorageApi) CreatEventReq(
+	level string,
+	message string,
+	duration time.Duration,
+	params map[string]interface{},
+	results map[string]interface{},
+) *client.Request {
 	paramsJson, err := json.Marshal(params)
 	if err != nil {
 		panic(fmt.Errorf(`cannot serialize event "params" key to JSON: %s`, err))
@@ -31,17 +43,16 @@ func (a *StorageApi) SendEventReq(level string, message string, duration time.Du
 		panic(fmt.Errorf(`cannot serialize event "results" key to JSON: %s`, err))
 	}
 
-	return client.NewRequest(
-		a.Req(resty.MethodPost, "events").
-			SetHeader("Content-Type", "application/x-www-form-urlencoded").
-			SetMultipartFormData(map[string]string{
-				"component": EventsComponentId,
-				"message":   message,
-				"type":      level,
-				"duration":  fmt.Sprintf("%.0f", float64(duration/time.Second)),
-				"params":    string(paramsJson),
-				"results":   string(resultsJson),
-			}).
-			SetResult(remote.Event{}),
-	)
+	return a.
+		Request(resty.MethodPost, "events").
+		SetHeader("Content-Type", "application/x-www-form-urlencoded").
+		SetMultipartFormData(map[string]string{
+			"component": EventsComponentId,
+			"message":   message,
+			"type":      level,
+			"duration":  fmt.Sprintf("%.0f", float64(duration/time.Second)),
+			"params":    string(paramsJson),
+			"results":   string(resultsJson),
+		}).
+		SetResult(remote.Event{})
 }

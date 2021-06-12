@@ -8,19 +8,19 @@ import (
 )
 
 func (a *StorageApi) ListComponents(branchId int) ([]*remote.Component, error) {
-	if res, err := a.Send(a.ListComponentsReq(branchId)); err != nil {
-		return nil, err
-	} else {
-		return res.Result().([]*remote.Component), err
+	response := a.ListComponentsReq(branchId).Send().Response()
+	if response.HasResult() {
+		return response.Result().([]*remote.Component), nil
 	}
+	return nil, response.Error()
 }
 
 func (a *StorageApi) ListComponentsReq(branchId int) *client.Request {
-	return client.NewRequestWithDecorator(
-		a.Req(resty.MethodGet, fmt.Sprintf("branch/%d/components", branchId)).
-			SetQueryParam("include", "configuration,rows").
-			SetResult([]*remote.Component{}),
-		func(response *resty.Response, err error) (*resty.Response, error) {
+	return a.
+		Request(resty.MethodGet, fmt.Sprintf("branch/%d/components", branchId)).
+		SetQueryParam("include", "configuration,rows").
+		SetResult([]*remote.Component{}).
+		SetDecorator(func(response *resty.Response, err error) (*resty.Response, error) {
 			if err == nil && response != nil && response.Result() != nil {
 				// Map pointer to slice
 				components := *response.Result().(*[]*remote.Component)
@@ -40,6 +40,5 @@ func (a *StorageApi) ListComponentsReq(branchId int) *client.Request {
 				response.Request.Result = components
 			}
 			return response, err
-		},
-	)
+		})
 }

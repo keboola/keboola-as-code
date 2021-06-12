@@ -2,63 +2,29 @@ package client
 
 import (
 	"context"
-	"github.com/go-resty/resty/v2"
+	"fmt"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	"runtime"
 	"sync"
 )
 
-// Pool of the asynchronous HTTP requests. When processing a response, a new request can be send.
+// Pool of the asynchronous HTTP requestsChan. When processing a response, a new request can be send.
 type Pool struct {
-	client          *Client // resty client
 	logger          *zap.SugaredLogger
+	client          *Client         // resty client
 	ctx             context.Context // context of the parallel work
 	workers         *errgroup.Group // error group -> if one worker fails, all will be stopped
-	counter         sync.WaitGroup  // detect when all requests are processed (count of the requests = count of the processed responses)
-	sendersCount    int
-	processorsCount int
-	processor       func(pool *Pool, response *PoolResponse) error // callback to process response
-	done            chan struct{}                                  // channel for "all requests are processed" notification
-	requests        chan *Request
-	responses       chan *PoolResponse
+	counter         sync.WaitGroup  // detect when all requestsChan are processed (count of the requestsChan = count of the processed responsesChan)
+	sendersCount    int             // number of parallel http connections -> value of MaxIdleConns
+	processorsCount int             // number of processors workers -> number of CPUs
+	requests        []*Request      // to check that the Send () method has been called on all requests
+	doneChan        chan struct{}   // channel for "all requests are processed" notification
+	requestsChan    chan *Request   // channel for requests
+	responsesChan   chan *Response  // channel for outgoing responses
 }
 
-type PoolResponse struct {
-	request  *Request
-	response *resty.Response
-	err      error
-}
-
-func (r *PoolResponse) HasResponse() bool {
-	return r.response != nil
-}
-
-func (r *PoolResponse) HasError() bool {
-	return r.err != nil
-}
-
-func (r *PoolResponse) Request() *Request {
-	return r.request
-}
-
-func (r *PoolResponse) Response() *resty.Response {
-	return r.response
-}
-
-func (r *PoolResponse) Error() error {
-	return r.err
-}
-
-func (r *PoolResponse) Url() string {
-	return r.response.Request.URL
-}
-
-func NewPoolResponse(request *Request, response *resty.Response, err error) *PoolResponse {
-	return &PoolResponse{request, response, err}
-}
-
-func (c *Client) NewPool(logger *zap.SugaredLogger, processor func(pool *Pool, response *PoolResponse) error) *Pool {
+func (c *Client) NewPool(logger *zap.SugaredLogger) *Pool {
 	workers, ctx := errgroup.WithContext(c.parentCtx)
 	return &Pool{
 		client:          c,
@@ -68,43 +34,50 @@ func (c *Client) NewPool(logger *zap.SugaredLogger, processor func(pool *Pool, r
 		counter:         sync.WaitGroup{},
 		sendersCount:    MaxIdleConns,
 		processorsCount: runtime.NumCPU(),
-		processor:       processor,
-		done:            make(chan struct{}),
-		requests:        make(chan *Request, 100),
-		responses:       make(chan *PoolResponse, 1),
+		doneChan:        make(chan struct{}),
+		requestsChan:    make(chan *Request, 100),
+		responsesChan:   make(chan *Response, 1),
 	}
 }
 
-// Req creates request
-func (p *Pool) Req(method string, url string) *Request {
-	return NewRequest(p.client.Req(method, url).SetContext(p.ctx))
+// Request set request sender to pool
+func (p *Pool) Request(request *Request) *Request {
+	request.sender = p
+	p.requests = append(p.requests, request)
+	return request
 }
 
 // Send adds request to pool
 func (p *Pool) Send(request *Request) {
-	p.log("queued \"%s\"", request.Request().URL)
+	request.SetContext(p.ctx)
+	request.sent = true
+	p.logRequestState("queued", request, nil)
 	p.counter.Add(1)
-	p.requests <- request
+	p.requestsChan <- request
 }
 
 func (p *Pool) StartAndWait() error {
 	p.start()
-	return p.wait()
+	err := p.wait()
+	if err == nil {
+		p.checkAllRequestsSent()
+	}
+	return err
 }
 
-// Wait until all requests done
+// Wait until all requestsChan doneChan
 func (p *Pool) wait() error {
-	defer close(p.responses)
-	defer close(p.requests)
+	defer close(p.responsesChan)
+	defer close(p.requestsChan)
 	return p.workers.Wait()
 }
 
 func (p *Pool) start() {
-	// Work is done -> all responses are processed
+	// Work is doneChan -> all responsesChan are processed
 	go func() {
-		defer close(p.done)
+		defer close(p.doneChan)
 		p.counter.Wait()
-		p.log("all done")
+		p.log("all doneChan")
 	}()
 
 	// Start senders
@@ -112,22 +85,22 @@ func (p *Pool) start() {
 		p.workers.Go(func() error {
 			for {
 				select {
-				case <-p.done:
-					// All done -> end
+				case <-p.doneChan:
+					// All doneChan -> end
 					return nil
 				case <-p.ctx.Done():
 					// Context closed -> some error -> end
 					return nil
-				case request := <-p.requests:
-					// Wait for send and write to responses
+				case request := <-p.requestsChan:
+					// Wait for send and write to responsesChan
 					select {
-					case <-p.done:
-						// All done -> end
+					case <-p.doneChan:
+						// All doneChan -> end
 						return nil
 					case <-p.ctx.Done():
 						// Context closed -> some error -> end
 						return nil
-					case p.responses <- p.send(request):
+					case p.responsesChan <- p.send(request):
 						continue
 					}
 				}
@@ -140,13 +113,13 @@ func (p *Pool) start() {
 		p.workers.Go(func() error {
 			for {
 				select {
-				case <-p.done:
-					// All done -> end
+				case <-p.doneChan:
+					// All doneChan -> end
 					return nil
 				case <-p.ctx.Done():
 					// Context closed -> some error -> end
 					return nil
-				case response := <-p.responses:
+				case response := <-p.responsesChan:
 					if err := p.process(response); err != nil {
 						// Error when processing response
 						return err
@@ -157,35 +130,37 @@ func (p *Pool) start() {
 	}
 }
 
-func (p *Pool) send(request *Request) (response *PoolResponse) {
-	defer func() {
-		if !response.HasError() {
-			p.log("finished \"%s\"", request.Url())
-		} else {
-			p.log("failed \"%s\", error:\"%s\"", request.Url(), response.Error())
-		}
-	}()
+func (p *Pool) send(request *Request) *Response {
+	request.sent = true
+	p.logRequestState("started", request, nil)
+	p.client.Send(request)
+	p.logRequestState("finished", request, request.Response().Error())
+	return request.Response()
 
-	p.log("started \"%s\"", request.Url())
-	restyResponse, err := p.client.Send(request.SetContext(p.ctx))
-	response = NewPoolResponse(request, restyResponse, err)
-	return response
 }
 
-func (p *Pool) process(response *PoolResponse) (err error) {
+func (p *Pool) process(response *Response) (err error) {
 	defer p.counter.Done() // mark request processed
-	defer func() {
-		if err == nil {
-			p.log("processed \"%s\"", response.Request().Url())
-		} else {
-			p.log("processed \"%s\", error:\"%s\"", response.Request().Url(), err)
-		}
-	}()
+	defer p.logRequestState("processed", response.Request(), err)
+	return response.Error()
+}
 
-	err = p.processor(p, response)
-	return err
+func (p *Pool) logRequestState(state string, request *Request, err error) {
+	msg := fmt.Sprintf("%s %s \"%s\"", state, request.Method(), request.Url())
+	if err != nil {
+		msg += fmt.Sprintf(", error: \"%s\"", err)
+	}
+	p.log(msg)
 }
 
 func (p *Pool) log(template string, args ...interface{}) {
 	p.logger.Debugf("HTTP-POOL\t"+template, args...)
+}
+
+func (p *Pool) checkAllRequestsSent() {
+	for _, request := range p.requests {
+		if !request.sent {
+			panic(fmt.Errorf("request %s \"%s\" was not sent - Send() method was not called", request.Method(), request.Url()))
+		}
+	}
 }

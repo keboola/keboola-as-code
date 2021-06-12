@@ -25,6 +25,17 @@ func FileExists(path string) bool {
 	return false
 }
 
+// IsFile returns true if fle exists.
+func IsFile(path string) bool {
+	if s, err := os.Stat(path); err == nil {
+		return !s.IsDir()
+	} else if !os.IsNotExist(err) {
+		panic(fmt.Errorf("cannot test if file exists \"%s\": %s", path, err))
+	}
+
+	return false
+}
+
 // IsDir returns true if dir exists.
 func IsDir(path string) bool {
 	if s, err := os.Stat(path); err == nil {

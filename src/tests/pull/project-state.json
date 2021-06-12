@@ -1,49 +1,35 @@
 {
+  "allBranches": {
+    "configurations": [
+      "generic-empty",
+      "generic-without-rows",
+      "mysql-empty",
+      "mysql-only-connection",
+      "mysql-with-rows",
+      "azure-cost-with-schema-validation",
+      "old-transformation",
+      "python-transformation",
+      "snowflake-transformation"
+    ]
+  },
   "branches": [
     {
-      "name": "Main",
-      "isDefault": true,
-      "configurations": [
-        "generic-empty",
-        "generic-without-rows",
-        "mysql-empty",
-        "mysql-only-connection",
-        "mysql-with-rows",
-        "azure-cost-with-schema-validation",
-        "old-transformation",
-        "python-transformation",
-        "snowflake-transformation"
-      ]
+      "branch": {
+        "name": "Main",
+        "isDefault": true
+      }
     },
     {
-      "name": "branch-1",
-      "isDefault": false,
-      "configurations": [
-        "generic-empty",
-        "generic-without-rows",
-        "mysql-empty",
-        "mysql-only-connection",
-        "mysql-with-rows",
-        "azure-cost-with-schema-validation",
-        "old-transformation",
-        "python-transformation",
-        "snowflake-transformation"
-      ]
+      "branch": {
+        "name": "branch-1",
+        "isDefault": false
+      }
     },
     {
-      "name": "branch-2",
-      "isDefault": false,
-      "configurations": [
-        "generic-empty",
-        "generic-without-rows",
-        "mysql-empty",
-        "mysql-only-connection",
-        "mysql-with-rows",
-        "azure-cost-with-schema-validation",
-        "old-transformation",
-        "python-transformation",
-        "snowflake-transformation"
-      ]
+      "branch": {
+        "name": "branch-2",
+        "isDefault": false
+      }
     }
   ]
 }
