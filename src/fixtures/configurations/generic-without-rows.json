@@ -1,0 +1,22 @@
+{
+  "componentId": "ex-generic-v2",
+  "name": "without-rows",
+  "configuration": {
+    "parameters": {
+      "api": {
+        "baseUrl": "https://jsonplaceholder.typicode.com"
+      },
+      "config": {
+        "debug": true,
+        "jobs": [
+          {
+            "dataType": "todos",
+            "endpoint": "/todos"
+          }
+        ],
+        "outputBucket": "test"
+      }
+    }
+  },
+  "rows": null
+}

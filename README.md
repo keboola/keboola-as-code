@@ -106,7 +106,7 @@ Run the test suite and download the dependencies using:
 docker-compose run --rm dev make tests
 ```
 
-To start the interactive console in container, you can use:
+To start the interactive console in the container, you can use:
 ```
 docker-compose run --rm dev bash
 ```
