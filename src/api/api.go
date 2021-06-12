@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"go.uber.org/zap"
-	"keboola-as-code/src/model"
+	"keboola-as-code/src/model/remote"
 	"keboola-as-code/src/options"
 )
 
@@ -12,7 +12,7 @@ type StorageApi struct {
 	http       *Client
 	apiHost    string
 	apiHostUrl string
-	token      *model.Token
+	token      *remote.Token
 }
 
 func NewStorageApiFromOptions(options *options.Options, ctx context.Context, logger *zap.SugaredLogger) (*StorageApi, error) {
@@ -31,6 +31,9 @@ func NewStorageApiFromOptions(options *options.Options, ctx context.Context, log
 		} else {
 			return nil, fmt.Errorf("token verification failed: %s", err)
 		}
+	}
+	if !token.IsMaster {
+		return nil, fmt.Errorf("required master token, but the given token is not master")
 	}
 
 	logger.Debugf("Storage API token is valid.")

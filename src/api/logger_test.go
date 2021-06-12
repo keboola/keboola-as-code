@@ -24,5 +24,5 @@ func TestRemoveSecrets(t *testing.T) {
 	assert.Equal(t, "token: *****", removeSecrets("token: ABC12345-abc"))
 	assert.Equal(t, "token: ***** ", removeSecrets("token: ABC12345-abc "))
 	assert.Equal(t, "foo1: bar1\ntoken: *****\nfoo2: bar2", removeSecrets("foo1: bar1\ntoken: ABC12345-abc\nfoo2: bar2"))
-	assert.Equal(t, "X-Storageapi-Token: *****", removeSecrets("X-Storageapi-Token: ABC12345-abc"))
+	assert.Equal(t, "X-StorageApi-Token: *****", removeSecrets("X-StorageApi-Token: ABC12345-abc"))
 }
