@@ -6,24 +6,50 @@ import (
 	"fmt"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"io"
 	"os"
+	"sync"
 )
 
 type Writer struct {
-	writer *bufio.Writer
-	buffer *bytes.Buffer
+	mutex   *sync.Mutex
+	writers []io.Writer
+	buffer  *bytes.Buffer
+}
+
+// ConnectTo allows write to multiple targets
+func (w *Writer) ConnectTo(writer io.Writer) {
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+	w.writers = append(w.writers, writer)
 }
 
 func (w *Writer) Write(p []byte) (n int, err error) {
-	return w.writer.Write(p)
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+	for _, writer := range w.writers {
+		if _, err = writer.Write(p); err != nil {
+			return 0, err
+		}
+	}
+
+	return len(p), nil
 }
 
 func (w *Writer) WriteString(s string) (n int, err error) {
-	return w.writer.WriteString(s)
+	return w.Write([]byte(s))
 }
 
-func (w *Writer) Flush() error {
-	return w.writer.Flush()
+func (w *Writer) Flush() (err error) {
+	for _, writer := range w.writers {
+		if buffWriter, ok := writer.(*bufio.Writer); ok {
+			if err = buffWriter.Flush(); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 func (*Writer) Close() error { return nil }
@@ -34,7 +60,7 @@ func (*Writer) Fd() uintptr {
 }
 
 func (w *Writer) String() string {
-	err := w.writer.Flush()
+	err := w.Flush()
 	if err != nil {
 		panic(fmt.Errorf("cannot flush utils log writer"))
 	}
@@ -59,7 +85,7 @@ func (*Reader) Fd() uintptr {
 
 func NewBufferWriter() *Writer {
 	var buffer bytes.Buffer
-	return &Writer{bufio.NewWriter(&buffer), &buffer}
+	return &Writer{&sync.Mutex{}, []io.Writer{bufio.NewWriter(&buffer)}, &buffer}
 }
 
 func NewBufferReader() *Reader {

@@ -1,4 +1,4 @@
-package http
+package client
 
 import (
 	"context"
@@ -13,34 +13,25 @@ import (
 )
 
 const (
-	RequestTimeout    = 45 * time.Second
-	ClientHttpTimeout = 30 * time.Second
-	IdleConnTimeout   = 90 * time.Second
-	KeepAlive         = 30 * time.Second
-	MaxIdleConns      = 64
-	RetryCount        = 5
-	RetryWaitTime     = 100 * time.Millisecond
-	RetryWaitTimeMax  = 3 * time.Second
+	RequestTimeout   = 45 * time.Second
+	HttpTimeout      = 30 * time.Second
+	IdleConnTimeout  = 90 * time.Second
+	KeepAlive        = 30 * time.Second
+	MaxIdleConns     = 64
+	RetryCount       = 5
+	RetryWaitTime    = 100 * time.Millisecond
+	RetryWaitTimeMax = 3 * time.Second
 )
 
 type Client struct {
 	parentCtx context.Context // context for parallel execution
-	logger    *ClientLogger
+	logger    *Logger
 	resty     *resty.Client
 }
 
-type ErrorWithResponse interface {
-	SetResponse(response *resty.Response)
-	HttpStatus() int
-	IsBadRequest() bool
-	IsUnauthorized() bool
-	IsForbidden() bool
-	IsNotFound() bool
-}
-
-func NewHttpClient(ctx context.Context, logger *zap.SugaredLogger, verbose bool) *Client {
+func NewClient(ctx context.Context, logger *zap.SugaredLogger, verbose bool) *Client {
 	client := &Client{}
-	client.logger = &ClientLogger{logger}
+	client.logger = &Logger{logger}
 	client.parentCtx = ctx
 	client.resty = createHttpClient(client.logger)
 	setupLogs(client, verbose)
@@ -52,7 +43,12 @@ func (c Client) WithHostUrl(hostUrl string) *Client {
 	return &c
 }
 
-// Req creates request
+func (c *Client) Send(request *Request) (response *resty.Response, err error) {
+	response, err = request.Request().Send()
+	response, err = request.Decorate(response, err)
+	return
+}
+
 func (c *Client) Req(method string, url string) *resty.Request {
 	r := c.resty.R()
 	r.Method = method
@@ -84,7 +80,7 @@ func (c *Client) SetRetry(count int, waitTime time.Duration, maxWaitTime time.Du
 	c.resty.RetryCount = count
 }
 
-func createHttpClient(logger *ClientLogger) *resty.Client {
+func createHttpClient(logger *Logger) *resty.Client {
 	r := resty.New()
 	r.SetLogger(logger)
 	r.SetHeader("User-Agent", fmt.Sprintf("keboola-as-code/%s", version.BuildVersion))
@@ -127,7 +123,7 @@ func createHttpClient(logger *ClientLogger) *resty.Client {
 
 func createTransport() *http.Transport {
 	dialer := &net.Dialer{
-		Timeout:   ClientHttpTimeout,
+		Timeout:   HttpTimeout,
 		KeepAlive: KeepAlive,
 	}
 	return &http.Transport{
@@ -144,7 +140,7 @@ func createTransport() *http.Transport {
 
 func setupLogs(client *Client, verbose bool) {
 	// Debug full request and response if verbose = true
-	// Secrets are hidden see ClientLogger
+	// Secrets are hidden see Logger
 	if verbose {
 		client.resty.SetDebug(true)
 		client.resty.SetDebugBodyLimit(2 * 1024)
@@ -171,7 +167,7 @@ func setupLogs(client *Client, verbose bool) {
 			if v, ok := err.(error); ok {
 				return v
 			} else {
-				return fmt.Errorf("%s", err)
+				return fmt.Errorf("url:\"%s\", error: \"%s\"", req.URL, err)
 			}
 		}
 

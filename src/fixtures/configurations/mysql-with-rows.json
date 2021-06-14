@@ -1,0 +1,58 @@
+{
+  "componentId": "keboola.ex-db-mysql",
+  "name": "with-rows",
+  "configuration": {
+    "parameters": {
+      "db": {
+        "#password": "my-secret",
+        "database": "keboola_testing",
+        "host": "mysql.example.com",
+        "networkCompression": true,
+        "port": 3306,
+        "ssh": {
+          "sshPort": 22
+        },
+        "transactionIsolationLevel": "READ UNCOMMITTED",
+        "user": "keboola"
+      }
+    }
+  },
+  "rows": [
+    {
+      "name": "users",
+      "configuration": {
+        "parameters": {
+          "columns": [],
+          "incremental": false,
+          "outputTable": "in.c-keboola-ex-db-mysql-717158295.users",
+          "primaryKey": [],
+          "table": {
+            "schema": "keboola_testing",
+            "tableName": "users"
+          }
+        },
+        "processors": {}
+      }
+    },
+    {
+      "name": "test_view",
+      "configuration": {
+        "parameters": {
+          "columns": [
+            "TABLE_CATALOG",
+            "TABLE_SCHEMA",
+            "TABLE_NAME"
+          ],
+          "incremental": false,
+          "outputTable": "in.c-keboola-ex-db-mysql-717158295.test-view",
+          "primaryKey": [],
+          "table": {
+            "schema": "keboola_testing",
+            "tableName": "test_view"
+          }
+        },
+        "processors": {}
+      }
+    }
+  ]
+}

@@ -20,11 +20,22 @@ type Branch struct {
 	IsDefault bool   `json:"isDefault"`
 }
 
+// Component https://keboola.docs.apiary.io/#reference/components-and-configurations/get-development-branch-components/get-development-branch-components
+type Component struct {
+	BranchId       int                    `json:"branchId"` // not present in API response, must be set manually
+	Id             string                 `json:"id"`
+	Type           string                 `json:"type"`
+	Name           string                 `json:"name"`
+	Schema         map[string]interface{} `json:"configurationSchema"`
+	SchemaRow      map[string]interface{} `json:"configurationRowSchema"`
+	Configurations []*Configuration       `json:"configurations"`
+}
+
 // Configuration https://keboola.docs.apiary.io/#reference/components-and-configurations/component-configurations/list-configurations
 type Configuration struct {
 	BranchId      int                    `json:"branchId"`    // not present in API response, must be set manually
 	ComponentId   string                 `json:"componentId"` // not present in API response, must be set manually
-	Id            int                    `json:"id"`
+	Id            string                 `json:"id"`
 	Name          string                 `json:"name"`
 	Configuration map[string]interface{} `json:"configuration"`
 	Rows          []Row                  `json:"rows"`
@@ -32,7 +43,7 @@ type Configuration struct {
 
 // Row https://keboola.docs.apiary.io/#reference/components-and-configurations/component-configurations/list-configurations
 type Row struct {
-	Id            int                    `json:"id"`
+	Id            string                 `json:"id"`
 	Name          string                 `json:"name"`
 	Configuration map[string]interface{} `json:"configuration"`
 }

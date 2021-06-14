@@ -6,7 +6,7 @@ import (
 	"github.com/go-resty/resty/v2"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
-	"keboola-as-code/src/http"
+	"keboola-as-code/src/client"
 	"keboola-as-code/src/model/remote"
 	"keboola-as-code/src/options"
 	"keboola-as-code/src/tests"
@@ -18,7 +18,8 @@ import (
 type StorageApi struct {
 	apiHost    string
 	apiHostUrl string
-	client     *http.Client
+	client     *client.Client
+	logger     *zap.SugaredLogger
 	token      *remote.Token
 }
 
@@ -33,7 +34,7 @@ func NewStorageApiFromOptions(options *options.Options, ctx context.Context, log
 	storageApi := NewStorageApi(options.ApiHost, ctx, logger, options.VerboseApi)
 	token, err := storageApi.GetToken(options.ApiToken)
 	if err != nil {
-		if v, ok := err.(http.ErrorWithResponse); ok && v.IsUnauthorized() {
+		if v, ok := err.(client.ErrorWithResponse); ok && v.IsUnauthorized() {
 			return nil, fmt.Errorf("the specified storage API token is not valid")
 		} else {
 			return nil, fmt.Errorf("token verification failed: %s", err)
@@ -50,9 +51,9 @@ func NewStorageApiFromOptions(options *options.Options, ctx context.Context, log
 
 func NewStorageApi(apiHost string, ctx context.Context, logger *zap.SugaredLogger, verbose bool) *StorageApi {
 	apiHostUrl := "https://" + apiHost + "/v2/storage"
-	client := http.NewHttpClient(ctx, logger, verbose).WithHostUrl(apiHostUrl)
-	client.SetError(&Error{})
-	return &StorageApi{client: client, apiHost: apiHost, apiHostUrl: apiHostUrl}
+	c := client.NewClient(ctx, logger, verbose).WithHostUrl(apiHostUrl)
+	c.SetError(&Error{})
+	return &StorageApi{client: c, logger: logger, apiHost: apiHost, apiHostUrl: apiHostUrl}
 }
 
 func (a *StorageApi) Host() string {
@@ -69,9 +70,17 @@ func (a *StorageApi) HostUrl() string {
 	return a.apiHostUrl
 }
 
+func (a *StorageApi) NewPool(processor func(pool *client.Pool, response *client.PoolResponse) error) *client.Pool {
+	return a.client.NewPool(a.logger, processor)
+}
+
 // Req creates request
 func (a *StorageApi) Req(method string, url string) *resty.Request {
 	return a.client.Req(method, url)
+}
+
+func (a *StorageApi) Send(request *client.Request) (response *resty.Response, err error) {
+	return a.client.Send(request)
 }
 
 func (a *StorageApi) SetRetry(count int, waitTime time.Duration, maxWaitTime time.Duration) {
