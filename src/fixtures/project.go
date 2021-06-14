@@ -9,10 +9,10 @@ import (
 	"keboola-as-code/src/fixtures/testEnv"
 	"keboola-as-code/src/model/remote"
 	"keboola-as-code/src/utils"
-	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
+	"time"
 )
 
 type TestProject struct {
@@ -39,6 +39,7 @@ func NewTestProject(t *testing.T, stateFilePath string) *TestProject {
 
 // Clear deletes all project branches (except default) and all configurations
 func (p *TestProject) Clear() {
+	startTime := time.Now()
 	p.log("Clearing project ...")
 	branches := p.loadBranches()
 	pool := p.api.NewPool()
@@ -53,16 +54,17 @@ func (p *TestProject) Clear() {
 	if err := pool.StartAndWait(); err != nil {
 		assert.FailNow(p.t, fmt.Sprintf("cannot delete branches: %s", err))
 	}
-	p.log("Test project cleared.")
+	p.log("Test project cleared | %s", time.Since(startTime))
 }
 
 // InitState crates branches and configurations according stateFile
 func (p *TestProject) InitState() {
+	startTime := time.Now()
 	p.log("Setting project state ...")
 	p.CreateConfigsInDefaultBranch()
 	p.CreateBranches()
 	p.CreateConfigsInBranches()
-	p.log("Project state set.")
+	p.log("Project state set | %s", time.Since(startTime))
 }
 
 func (p *TestProject) DeleteBranch(pool *client.Pool, branch *remote.Branch) *client.Request {
@@ -160,7 +162,6 @@ func (p *TestProject) loadBranches() []*remote.Branch {
 
 func (p *TestProject) createApi() {
 	p.api, p.logs = api.TestStorageApiWithToken(p.t)
-	p.logs.ConnectTo(os.Stdout)
 	if testEnv.TestProjectId() != p.api.ProjectId() {
 		assert.FailNow(p.t, "TEST_PROJECT_ID and token project id are different.")
 	}
