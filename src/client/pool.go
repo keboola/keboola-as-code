@@ -84,6 +84,9 @@ func (p *Pool) start() {
 	for i := 0; i < p.sendersCount; i++ {
 		p.workers.Go(func() error {
 			for {
+				var request *Request
+
+				// Receive request from channel
 				select {
 				case <-p.doneChan:
 					// All done -> end
@@ -91,18 +94,19 @@ func (p *Pool) start() {
 				case <-p.ctx.Done():
 					// Context closed -> some error -> end
 					return nil
-				case request := <-p.requestsChan:
-					// Wait for send and write to responses
-					select {
-					case <-p.doneChan:
-						// All done -> end
-						return nil
-					case <-p.ctx.Done():
-						// Context closed -> some error -> end
-						return nil
-					case p.responsesChan <- p.send(request):
-						continue
-					}
+				case request = <-p.requestsChan:
+				}
+
+				// Send request and write response to channel
+				select {
+				case <-p.doneChan:
+					// All done -> end
+					return nil
+				case <-p.ctx.Done():
+					// Context closed -> some error -> end
+					return nil
+				case p.responsesChan <- p.send(request):
+					continue
 				}
 			}
 		})
