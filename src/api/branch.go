@@ -1,28 +1,38 @@
 package api
 
 import (
+	"fmt"
 	"github.com/go-resty/resty/v2"
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/model/remote"
 )
 
 func (a *StorageApi) ListBranches() ([]*remote.Branch, error) {
-	response, err := a.Send(a.ListBranchesReq())
-	if err == nil {
+	response := a.ListBranchesRequest().Send().Response()
+	if response.HasResult() {
 		return response.Result().([]*remote.Branch), nil
 	}
-	return nil, err
+	return nil, response.Error()
 }
 
-func (a *StorageApi) ListBranchesReq() *client.Request {
-	return client.NewRequestWithDecorator(
-		a.Req(resty.MethodGet, "dev-branches").SetResult([]*remote.Branch{}),
-		func(response *resty.Response, err error) (*resty.Response, error) {
-			if err == nil && response != nil && response.Result() != nil {
+func (a *StorageApi) ListBranchesRequest() *client.Request {
+	return a.
+		Request(resty.MethodGet, "dev-branches").
+		SetResult([]*remote.Branch{}).
+		OnSuccess(func(response *client.Response) *client.Response {
+			if response.Result() != nil {
 				// Map pointer to slice
-				response.Request.Result = *response.Result().(*[]*remote.Branch)
+				response.SetResult(*response.Result().(*[]*remote.Branch))
 			}
-			return response, err
-		},
-	)
+			return response
+		})
+
+}
+
+func (a *StorageApi) DeleteBranch(branchId int) *client.Response {
+	return a.DeleteBranchRequest(branchId).Send().Response()
+}
+
+func (a *StorageApi) DeleteBranchRequest(branchId int) *client.Request {
+	return a.Request(resty.MethodDelete, fmt.Sprintf("dev-branches/%d", branchId))
 }

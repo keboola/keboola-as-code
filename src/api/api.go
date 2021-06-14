@@ -3,15 +3,10 @@ package api
 import (
 	"context"
 	"fmt"
-	"github.com/go-resty/resty/v2"
-	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/model/remote"
 	"keboola-as-code/src/options"
-	"keboola-as-code/src/tests"
-	"keboola-as-code/src/utils"
-	"testing"
 	"time"
 )
 
@@ -70,39 +65,18 @@ func (a *StorageApi) HostUrl() string {
 	return a.apiHostUrl
 }
 
-func (a *StorageApi) NewPool(processor func(pool *client.Pool, response *client.PoolResponse) error) *client.Pool {
-	return a.client.NewPool(a.logger, processor)
+func (a *StorageApi) NewPool() *client.Pool {
+	return a.client.NewPool(a.logger)
 }
 
-// Req creates request
-func (a *StorageApi) Req(method string, url string) *resty.Request {
-	return a.client.Req(method, url)
+func (a *StorageApi) Request(method string, url string) *client.Request {
+	return a.client.Request(method, url)
 }
 
-func (a *StorageApi) Send(request *client.Request) (response *resty.Response, err error) {
-	return a.client.Send(request)
+func (a *StorageApi) Send(request *client.Request) {
+	a.client.Send(request)
 }
 
 func (a *StorageApi) SetRetry(count int, waitTime time.Duration, maxWaitTime time.Duration) {
 	a.client.SetRetry(count, waitTime, maxWaitTime)
-}
-
-// Methods for tests:
-
-func TestStorageApi(t *testing.T) (*StorageApi, *utils.Writer) {
-	return TestStorageApiWithHost(t, tests.TestApiHost())
-}
-
-func TestStorageApiWithHost(t *testing.T, apiHost string) (*StorageApi, *utils.Writer) {
-	logger, logs := utils.NewDebugLogger()
-	a := NewStorageApi(apiHost, context.Background(), logger, false)
-	a.SetRetry(3, 1*time.Millisecond, 1*time.Millisecond)
-	return a, logs
-}
-
-func TestStorageApiWithToken(t *testing.T) (*StorageApi, *utils.Writer) {
-	a, logs := TestStorageApiWithHost(t, tests.TestApiHost())
-	token, err := a.GetToken(tests.TestTokenMaster())
-	assert.NoError(t, err)
-	return a.WithToken(token), logs
 }

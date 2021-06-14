@@ -43,17 +43,17 @@ func (c Client) WithHostUrl(hostUrl string) *Client {
 	return &c
 }
 
-func (c *Client) Send(request *Request) (response *resty.Response, err error) {
-	response, err = request.Request().Send()
-	response, err = request.Decorate(response, err)
-	return
+func (c *Client) Send(request *Request) {
+	restyResponse, err := request.RestyRequest().Send()
+	request.response = NewResponse(request, restyResponse, err)
+	request.invokeListeners()
 }
 
-func (c *Client) Req(method string, url string) *resty.Request {
+func (c *Client) Request(method string, url string) *Request {
 	r := c.resty.R()
 	r.Method = method
 	r.URL = url
-	return r
+	return NewRequest(c, r)
 }
 
 func (c *Client) HostUrl() string {

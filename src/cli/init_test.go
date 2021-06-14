@@ -6,11 +6,12 @@ import (
 	"github.com/Netflix/go-expect"
 	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/ask"
-	"keboola-as-code/src/tests"
+	"keboola-as-code/src/fixtures/testEnv"
 	"keboola-as-code/src/utils"
 	"os"
 	"sync"
 	"testing"
+	"time"
 )
 
 func TestMissingParams(t *testing.T) {
@@ -37,8 +38,7 @@ func TestInteractive(t *testing.T) {
 	c, state, err := vt10x.NewVT10XConsole()
 	assert.NoError(t, err)
 	defer func() {
-		err := c.Close()
-		assert.NoError(t, err)
+		assert.NoError(t, c.Close())
 		t.Logf("Console output:\n%s", expect.StripTrailingEmptyLines(state.String()))
 	}()
 
@@ -48,31 +48,34 @@ func TestInteractive(t *testing.T) {
 	root := NewRootCommand(c.Tty(), c.Tty(), c.Tty(), prompt)
 	root.cmd.SetArgs([]string{"init"})
 
-	// Run cmd in background
+	// Interaction
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
-		assert.Equal(t, root.cmd.Execute(), errors.New("TODO PULL"))
-		assert.NoError(t, c.Tty().Close())
-		wg.Done()
+		defer wg.Done()
+		_, err = c.ExpectString("Please enter Keboola Storage API host, eg. \"keboola.connection.com\".")
+		assert.NoError(t, err)
+		_, err = c.ExpectString("API host ")
+		assert.NoError(t, err)
+		time.Sleep(100 * time.Millisecond)
+		_, err = c.SendLine(testEnv.TestApiHost())
+		assert.NoError(t, err)
+		_, err = c.ExpectString("Please enter Keboola Storage API token. The value will be hidden.")
+		assert.NoError(t, err)
+		_, err = c.ExpectString("API token ")
+		assert.NoError(t, err)
+		time.Sleep(100 * time.Millisecond)
+		_, err = c.SendLine(testEnv.TestTokenMaster())
+		assert.NoError(t, err)
+		_, err = c.ExpectEOF()
+		assert.NoError(t, err)
 	}()
 
-	// Interaction
-	_, err = c.ExpectString("Please enter Keboola Storage API host, eg. \"keboola.connection.com\".")
-	assert.NoError(t, err)
-	_, err = c.ExpectString("API host")
-	assert.NoError(t, err)
-	_, err = c.SendLine(tests.TestApiHost())
-	assert.NoError(t, err)
-	_, err = c.ExpectString("Please enter Keboola Storage API token. The value will be hidden.")
-	assert.NoError(t, err)
-	_, err = c.ExpectString("API token")
-	assert.NoError(t, err)
-	_, err = c.SendLine(tests.TestTokenMaster())
-	assert.NoError(t, err)
-	_, err = c.ExpectEOF()
-	assert.NoError(t, err)
+	// Run cmd
+	assert.Equal(t, root.cmd.Execute(), errors.New("TODO PULL"))
+	assert.NoError(t, c.Tty().Close())
 	wg.Wait()
+	assert.NoError(t, c.Close())
 
 	// Assert output
 	out := expect.StripTrailingEmptyLines(state.String())

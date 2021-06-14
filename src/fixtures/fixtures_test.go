@@ -13,11 +13,8 @@ import (
 )
 
 // TestDumpProjectState dumps test project as JSON file
+// Result file is ignored in .gitignore
 func TestDumpProjectState(t *testing.T) {
-	// Enable to dump actual project state to "project_state_new.json" file
-	// This dumped file was used to prepare "fixtures/configurations" conrwnr
-	t.Skip()
-
 	// Load remote state and convert
 	a, _ := api.TestStorageApiWithToken(t)
 	remoteState, err := api.LoadRemoteState(a)
@@ -35,7 +32,7 @@ func TestDumpProjectState(t *testing.T) {
 	// Write
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filepath.Dir(testFile)
-	filePath := filepath.Join(testDir, "project_state_new.json")
+	filePath := filepath.Join(testDir, "project_state.json")
 	assert.NoError(t, os.WriteFile(filePath, data, 0666))
 	fmt.Printf("Dumped to the file \"%s\"\n", filePath)
 }
