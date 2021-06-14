@@ -131,7 +131,7 @@ func TestNetworkError(t *testing.T) {
 		}
 		return response
 	}
-	client.Request(resty.MethodGet, "https://example.com").
+	pool.Request(client.Request(resty.MethodGet, "https://example.com")).
 		OnSuccess(onSuccess).
 		Send()
 	assert.Equal(t, errors.New("network error"), pool.StartAndWait().(*url.Error).Unwrap())
