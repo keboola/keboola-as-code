@@ -147,7 +147,7 @@ func setupLogs(client *Client, verbose bool) {
 		client.resty.SetDebugBodyLimit(2 * 1024)
 	}
 
-	// Log each request when doneChan
+	// Log each request when done
 	client.resty.OnAfterResponse(func(c *resty.Client, res *resty.Response) error {
 		req := res.Request
 		msg := responseToLog(res)

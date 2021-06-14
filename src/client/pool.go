@@ -65,7 +65,7 @@ func (p *Pool) StartAndWait() error {
 	return err
 }
 
-// Wait until all requestsChan doneChan
+// Wait until all requests done
 func (p *Pool) wait() error {
 	defer close(p.responsesChan)
 	defer close(p.requestsChan)
@@ -73,11 +73,11 @@ func (p *Pool) wait() error {
 }
 
 func (p *Pool) start() {
-	// Work is doneChan -> all responsesChan are processed
+	// Work is done -> all responses are processed
 	go func() {
 		defer close(p.doneChan)
 		p.counter.Wait()
-		p.log("all doneChan")
+		p.log("all done")
 	}()
 
 	// Start senders
@@ -86,7 +86,7 @@ func (p *Pool) start() {
 			for {
 				select {
 				case <-p.doneChan:
-					// All doneChan -> end
+					// All done -> end
 					return nil
 				case <-p.ctx.Done():
 					// Context closed -> some error -> end
@@ -95,7 +95,7 @@ func (p *Pool) start() {
 					// Wait for send and write to responsesChan
 					select {
 					case <-p.doneChan:
-						// All doneChan -> end
+						// All done -> end
 						return nil
 					case <-p.ctx.Done():
 						// Context closed -> some error -> end
@@ -114,7 +114,7 @@ func (p *Pool) start() {
 			for {
 				select {
 				case <-p.doneChan:
-					// All doneChan -> end
+					// All done -> end
 					return nil
 				case <-p.ctx.Done():
 					// Context closed -> some error -> end
