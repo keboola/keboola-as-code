@@ -11,6 +11,7 @@ import (
 	"os"
 	"sync"
 	"testing"
+	"time"
 )
 
 func TestMissingParams(t *testing.T) {
@@ -54,14 +55,16 @@ func TestInteractive(t *testing.T) {
 		defer wg.Done()
 		_, err = c.ExpectString("Please enter Keboola Storage API host, eg. \"keboola.connection.com\".")
 		assert.NoError(t, err)
-		_, err = c.ExpectString("API host")
+		_, err = c.ExpectString("API host ")
 		assert.NoError(t, err)
+		time.Sleep(100 * time.Millisecond)
 		_, err = c.SendLine(testEnv.TestApiHost())
 		assert.NoError(t, err)
 		_, err = c.ExpectString("Please enter Keboola Storage API token. The value will be hidden.")
 		assert.NoError(t, err)
-		_, err = c.ExpectString("API token")
+		_, err = c.ExpectString("API token ")
 		assert.NoError(t, err)
+		time.Sleep(100 * time.Millisecond)
 		_, err = c.SendLine(testEnv.TestTokenMaster())
 		assert.NoError(t, err)
 		_, err = c.ExpectEOF()
