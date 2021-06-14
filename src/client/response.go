@@ -24,6 +24,10 @@ func (r *Response) Request() *Request {
 	return r.request
 }
 
+func (r *Response) RestyRequest() *resty.Request {
+	return r.request.RestyRequest()
+}
+
 func (r *Response) RestyResponse() *resty.Response {
 	return r.response
 }
@@ -35,13 +39,18 @@ func (r *Response) Result() interface{} {
 	return r.response.Result()
 }
 
+func (r *Response) SetResult(result interface{}) *Response {
+	r.RestyRequest().Result = result
+	return r
+}
+
 func (r *Response) Error() error {
 	return r.err
 }
 
-func (r Response) WithError(err error) *Response {
+func (r *Response) SetError(err error) *Response {
 	r.err = err
-	return &r
+	return r
 }
 
 func (r *Response) Url() string {

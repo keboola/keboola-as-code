@@ -29,17 +29,11 @@ type Request struct {
 	url       string
 	sender    sender
 	sent      bool
-	decorator DecoratorFunc
 	listeners []*ResponseListener
 }
 
 func (r *Request) SetResult(result interface{}) *Request {
 	r.request.SetResult(result)
-	return r
-}
-
-func (r *Request) SetDecorator(decorator DecoratorFunc) *Request {
-	r.decorator = decorator
 	return r
 }
 
@@ -97,13 +91,6 @@ func (r *Request) OnError(callback ResponseCallback) *Request {
 func (r *Request) SetContext(ctx context.Context) *Request {
 	r.request.SetContext(ctx)
 	return r
-}
-
-func (r *Request) Decorate(response *resty.Response, err error) (*resty.Response, error) {
-	if r.decorator != nil {
-		response, err = r.decorator(response, err)
-	}
-	return response, err
 }
 
 func (r *Request) invokeListeners() {

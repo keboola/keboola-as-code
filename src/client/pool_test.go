@@ -98,7 +98,7 @@ func TestErrorInCallback(t *testing.T) {
 			Send()
 
 		if c.Inc(); c.Value() == 10 {
-			return response.WithError(errors.New("some error in response listener"))
+			return response.SetError(errors.New("some error in response listener"))
 		}
 		return response
 	}

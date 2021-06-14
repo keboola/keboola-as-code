@@ -20,8 +20,8 @@ func (a *StorageApi) ListComponentsReq(branchId int) *client.Request {
 		Request(resty.MethodGet, fmt.Sprintf("branch/%d/components", branchId)).
 		SetQueryParam("include", "configuration,rows").
 		SetResult([]*remote.Component{}).
-		SetDecorator(func(response *resty.Response, err error) (*resty.Response, error) {
-			if err == nil && response != nil && response.Result() != nil {
+		OnSuccess(func(response *client.Response) *client.Response {
+			if response.Result() != nil {
 				// Map pointer to slice
 				components := *response.Result().(*[]*remote.Component)
 
@@ -37,8 +37,8 @@ func (a *StorageApi) ListComponentsReq(branchId int) *client.Request {
 					}
 				}
 
-				response.Request.Result = components
+				response.SetResult(components)
 			}
-			return response, err
+			return response
 		})
 }

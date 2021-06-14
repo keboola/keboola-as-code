@@ -19,13 +19,14 @@ func (a *StorageApi) ListBranchesReq() *client.Request {
 	return a.
 		Request(resty.MethodGet, "dev-branches").
 		SetResult([]*remote.Branch{}).
-		SetDecorator(func(response *resty.Response, err error) (*resty.Response, error) {
-			if err == nil && response != nil && response.Result() != nil {
+		OnSuccess(func(response *client.Response) *client.Response {
+			if response.Result() != nil {
 				// Map pointer to slice
-				response.Request.Result = *response.Result().(*[]*remote.Branch)
+				response.SetResult(*response.Result().(*[]*remote.Branch))
 			}
-			return response, err
+			return response
 		})
+
 }
 
 func (a *StorageApi) DeleteBranch(branchId int) *client.Response {

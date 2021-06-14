@@ -45,7 +45,6 @@ func (c Client) WithHostUrl(hostUrl string) *Client {
 
 func (c *Client) Send(request *Request) {
 	restyResponse, err := request.RestyRequest().Send()
-	restyResponse, err = request.Decorate(restyResponse, err)
 	request.response = NewResponse(request, restyResponse, err)
 	request.invokeListeners()
 }
