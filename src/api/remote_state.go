@@ -12,13 +12,13 @@ func LoadRemoteState(api *StorageApi) (*remote.State, error) {
 		Request(api.ListBranchesRequest()).
 		OnSuccess(func(response *client.Response) *client.Response {
 			// Save branch + load branch components
-			for _, b := range response.Result().([]*remote.Branch) {
+			for _, b := range *response.Result().(*[]*remote.Branch) {
 				state.AddBranch(b)
 				pool.
 					Request(api.ListComponentsRequest(b.Id)).
 					OnSuccess(func(response *client.Response) *client.Response {
 						// Save component, it contains all configs and rows
-						for _, c := range response.Result().([]*remote.Component) {
+						for _, c := range *response.Result().(*[]*remote.Component) {
 							state.AddComponent(c)
 						}
 						return response

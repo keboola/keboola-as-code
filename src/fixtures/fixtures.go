@@ -20,25 +20,25 @@ type Branch struct {
 }
 
 type BranchState struct {
-	Branch         *Branch          `json:"branch"`
-	Configurations []*Configuration `json:"configurations"`
+	Branch  *Branch   `json:"branch"`
+	Configs []*Config `json:"configurations"`
 }
 
 type BranchStateConfigName struct {
-	Branch         *Branch  `json:"branch"`
-	Configurations []string `json:"configurations"`
+	Branch  *Branch  `json:"branch"`
+	Configs []string `json:"configurations"`
 }
 
-type Configuration struct {
-	ComponentId   string                 `json:"componentId"`
-	Name          string                 `json:"name"`
-	Configuration map[string]interface{} `json:"configuration"`
-	Rows          []*Row                 `json:"rows"`
+type Config struct {
+	ComponentId string                 `json:"componentId"`
+	Name        string                 `json:"name"`
+	Config      map[string]interface{} `json:"configuration"`
+	Rows        []*ConfigRow           `json:"rows"`
 }
 
-type Row struct {
-	Name          string                 `json:"name"`
-	Configuration map[string]interface{} `json:"configuration"`
+type ConfigRow struct {
+	Name   string                 `json:"name"`
+	Config map[string]interface{} `json:"configuration"`
 }
 
 type ProjectState struct {
@@ -73,17 +73,17 @@ func ConvertRemoteStateToFixtures(remote *remote.State) *ProjectState {
 
 		// Map configuration
 		branchName := BranchName(branch.Name)
-		c := &Configuration{}
+		c := &Config{}
 		c.ComponentId = configuration.ComponentId
 		c.Name = configuration.Name
-		c.Configuration = configuration.Configuration
-		branchesByName[branchName].Configurations = append(branchesByName[branchName].Configurations, c)
+		c.Config = configuration.Config
+		branchesByName[branchName].Configs = append(branchesByName[branchName].Configs, c)
 
 		// Map rows
 		for _, row := range configuration.Rows {
-			r := &Row{}
+			r := &ConfigRow{}
 			r.Name = row.Name
-			r.Configuration = row.Configuration
+			r.Config = row.Config
 			c.Rows = append(c.Rows, r)
 		}
 	}
@@ -116,17 +116,17 @@ func clearTestKbcProject(t *testing.T, a *api.StorageApi) {
 	pool.
 		Request(a.ListBranchesRequest()).
 		OnSuccess(func(response *client.Response) *client.Response {
-			for _, branch := range response.Result().([]*remote.Branch) {
+			for _, branch := range *response.Result().(*[]*remote.Branch) {
 				if branch.IsDefault {
 					// Default branch cannot be deleted, so we have to delete all configurations
 					pool.
 						Request(a.ListComponentsRequest(branch.Id)).
 						OnSuccess(func(response *client.Response) *client.Response {
-							for _, component := range response.Result().([]*remote.Component) {
-								for _, configuration := range component.Configurations {
+							for _, component := range *response.Result().(*[]*remote.Component) {
+								for _, configuration := range component.Configs {
 									// Delete each configuration in branch
 									pool.
-										Request(a.DeleteConfigurationRequest(configuration.ComponentId, configuration.Id)).
+										Request(a.DeleteConfigRequest(configuration.ComponentId, configuration.Id)).
 										Send()
 								}
 							}

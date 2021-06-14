@@ -1,8 +1,12 @@
 package client
 
-import "github.com/go-resty/resty/v2"
+import (
+	"github.com/go-resty/resty/v2"
+	"sync"
+)
 
 type Response struct {
+	lock     *sync.Mutex
 	request  *Request
 	response *resty.Response
 	err      error
@@ -49,8 +53,16 @@ func (r *Response) Error() error {
 }
 
 func (r *Response) SetError(err error) *Response {
+	// Sub-request can run in parallel and end in an error, it is set to parent request
+	// ... so locking is required
+	r.lock.Lock()
+	defer r.lock.Unlock()
 	r.err = err
 	return r
+}
+
+func (r *Response) Sender() Sender {
+	return r.request.sender
 }
 
 func (r *Response) Url() string {
@@ -58,5 +70,5 @@ func (r *Response) Url() string {
 }
 
 func NewResponse(request *Request, response *resty.Response, err error) *Response {
-	return &Response{request, response, err}
+	return &Response{lock: &sync.Mutex{}, request: request, response: response, err: err}
 }

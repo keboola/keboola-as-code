@@ -54,5 +54,5 @@ func (a *StorageApi) CreatEventRequest(
 			"params":    string(paramsJson),
 			"results":   string(resultsJson),
 		}).
-		SetResult(remote.Event{})
+		SetResult(&remote.Event{})
 }
