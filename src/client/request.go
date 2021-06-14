@@ -13,7 +13,7 @@ type ResponseListener struct {
 	Type     ResponseEventType
 	Callback ResponseCallback
 }
-type sender interface {
+type Sender interface {
 	Send(r *Request)
 }
 
@@ -27,7 +27,7 @@ type Request struct {
 	request   *resty.Request
 	response  *Response
 	url       string
-	sender    sender
+	sender    Sender
 	sent      bool
 	listeners []*ResponseListener
 }
@@ -122,6 +122,6 @@ func (l *ResponseListener) Invoke(response *Response) *Response {
 	return l.Callback(response)
 }
 
-func NewRequest(sender sender, request *resty.Request) *Request {
+func NewRequest(sender Sender, request *resty.Request) *Request {
 	return &Request{request: request, url: request.URL, sender: sender}
 }

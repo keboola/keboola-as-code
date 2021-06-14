@@ -9,7 +9,7 @@ type State struct {
 	mutex                *sync.Mutex
 	branchesById         map[int]*Branch
 	componentsByBranchId map[int][]*Component
-	configurationsById   map[string]*Configuration
+	configurationsById   map[string]*Config
 }
 
 func NewState() *State {
@@ -17,7 +17,7 @@ func NewState() *State {
 		mutex:                &sync.Mutex{},
 		branchesById:         make(map[int]*Branch),
 		componentsByBranchId: make(map[int][]*Component),
-		configurationsById:   make(map[string]*Configuration),
+		configurationsById:   make(map[string]*Config),
 	}
 }
 
@@ -25,7 +25,7 @@ func (s *State) Branches() map[int]*Branch {
 	return s.branchesById
 }
 
-func (s *State) Configurations() map[string]*Configuration {
+func (s *State) Configurations() map[string]*Config {
 	return s.configurationsById
 }
 
@@ -43,13 +43,13 @@ func (s *State) BranchByName(name string) (*Branch, bool) {
 	return nil, false
 }
 
-func (s *State) ConfigurationById(branchId int, componentId string, configId string) (*Configuration, bool) {
+func (s *State) ConfigurationById(branchId int, componentId string, configId string) (*Config, bool) {
 	id := configurationId(branchId, componentId, configId)
 	configuration, found := s.configurationsById[id]
 	return configuration, found
 }
 
-func (s *State) ConfigurationByName(name string) (*Configuration, bool) {
+func (s *State) ConfigurationByName(name string) (*Config, bool) {
 	for _, configuration := range s.configurationsById {
 		if configuration.Name == name {
 			return configuration, true
@@ -73,13 +73,13 @@ func (s *State) AddComponent(component *Component) {
 		s.componentsByBranchId[bId] = append(s.componentsByBranchId[bId], component)
 	}()
 
-	for _, configuration := range component.Configurations {
+	for _, configuration := range component.Configs {
 		s.AddConfiguration(configuration)
 	}
-	component.Configurations = nil // no more required
+	component.Configs = nil // no more required
 }
 
-func (s *State) AddConfiguration(configuration *Configuration) {
+func (s *State) AddConfiguration(configuration *Config) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	id := configurationId(configuration.BranchId, configuration.ComponentId, configuration.Id)
