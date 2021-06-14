@@ -61,7 +61,7 @@ func TestRetry(t *testing.T) {
 	assert.Equal(t, "test", response.RestyResponse().String())
 	logs := out.String()
 
-	// Check number of requestsChan
+	// Check number of requests
 	assert.Equal(t, 1+c.resty.RetryCount, httpmock.GetCallCountInfo()["GET https://example.com"])
 
 	// Retries are logged

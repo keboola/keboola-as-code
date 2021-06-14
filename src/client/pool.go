@@ -9,13 +9,13 @@ import (
 	"sync"
 )
 
-// Pool of the asynchronous HTTP requestsChan. When processing a response, a new request can be send.
+// Pool of the asynchronous HTTP requests. When processing a response, a new request can be send.
 type Pool struct {
 	logger          *zap.SugaredLogger
 	client          *Client         // resty client
 	ctx             context.Context // context of the parallel work
 	workers         *errgroup.Group // error group -> if one worker fails, all will be stopped
-	counter         sync.WaitGroup  // detect when all requestsChan are processed (count of the requestsChan = count of the processed responsesChan)
+	counter         sync.WaitGroup  // detect when all requests are processed (count of the requests = count of the processed responses)
 	sendersCount    int             // number of parallel http connections -> value of MaxIdleConns
 	processorsCount int             // number of processors workers -> number of CPUs
 	requests        []*Request      // to check that the Send () method has been called on all requests
@@ -92,7 +92,7 @@ func (p *Pool) start() {
 					// Context closed -> some error -> end
 					return nil
 				case request := <-p.requestsChan:
-					// Wait for send and write to responsesChan
+					// Wait for send and write to responses
 					select {
 					case <-p.doneChan:
 						// All done -> end
