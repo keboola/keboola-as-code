@@ -8,12 +8,12 @@ import (
 func LoadRemoteState(api *StorageApi) (*remote.State, error) {
 	state := remote.NewState()
 	pool := api.NewPool()
-	pool.Request(api.ListBranchesReq()).
+	pool.Request(api.ListBranchesRequest()).
 		OnSuccess(func(response *client.Response) *client.Response {
 			// Save branch + load branch components
 			for _, b := range response.Result().([]*remote.Branch) {
 				state.AddBranch(b)
-				pool.Request(api.ListComponentsReq(b.Id)).
+				pool.Request(api.ListComponentsRequest(b.Id)).
 					OnSuccess(func(response *client.Response) *client.Response {
 						// Save component, it contains all configs and rows
 						for _, c := range response.Result().([]*remote.Component) {

@@ -7,9 +7,9 @@ import (
 )
 
 func (a *StorageApi) DeleteConfiguration(componentId string, id string) *client.Response {
-	return a.DeleteConfigurationReq(componentId, id).Send().Response()
+	return a.DeleteConfigurationRequest(componentId, id).Send().Response()
 }
 
-func (a *StorageApi) DeleteConfigurationReq(componentId string, id string) *client.Request {
+func (a *StorageApi) DeleteConfigurationRequest(componentId string, id string) *client.Request {
 	return a.Request(resty.MethodDelete, fmt.Sprintf("components/%s/configs/%s", componentId, id))
 }

@@ -113,17 +113,17 @@ func SetStateOfTestKbcProject(t *testing.T, projectStateFilePath string) {
 func clearTestKbcProject(t *testing.T, a *api.StorageApi) {
 	fmt.Printf("Fixtures: Clearing test project \"%s\", id: \"%d\".\n", a.ProjectName(), a.ProjectId())
 	pool := a.NewPool()
-	a.ListBranchesReq().
+	a.ListBranchesRequest().
 		OnSuccess(func(response *client.Response) *client.Response {
 			for _, branch := range response.Result().([]*remote.Branch) {
 				if branch.IsDefault {
 					// Default branch cannot be deleted, so we have to delete all configurations
-					a.ListComponentsReq(branch.Id).
+					a.ListComponentsRequest(branch.Id).
 						OnSuccess(func(response *client.Response) *client.Response {
 							for _, component := range response.Result().([]*remote.Component) {
 								for _, configuration := range component.Configurations {
 									// Delete each configuration in branch
-									pool.Send(a.DeleteConfigurationReq(configuration.ComponentId, configuration.Id))
+									pool.Send(a.DeleteConfigurationRequest(configuration.ComponentId, configuration.Id))
 								}
 							}
 							return response

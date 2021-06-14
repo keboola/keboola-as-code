@@ -20,14 +20,14 @@ func (a *StorageApi) CreateEvent(
 	params map[string]interface{},
 	results map[string]interface{},
 ) (*remote.Event, error) {
-	response := a.CreatEventReq(level, message, duration, params, results).Send().Response()
+	response := a.CreatEventRequest(level, message, duration, params, results).Send().Response()
 	if response.HasResult() {
 		return response.Result().(*remote.Event), nil
 	}
 	return nil, response.Error()
 }
 
-func (a *StorageApi) CreatEventReq(
+func (a *StorageApi) CreatEventRequest(
 	level string,
 	message string,
 	duration time.Duration,

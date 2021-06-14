@@ -8,14 +8,14 @@ import (
 )
 
 func (a *StorageApi) ListComponents(branchId int) ([]*remote.Component, error) {
-	response := a.ListComponentsReq(branchId).Send().Response()
+	response := a.ListComponentsRequest(branchId).Send().Response()
 	if response.HasResult() {
 		return response.Result().([]*remote.Component), nil
 	}
 	return nil, response.Error()
 }
 
-func (a *StorageApi) ListComponentsReq(branchId int) *client.Request {
+func (a *StorageApi) ListComponentsRequest(branchId int) *client.Request {
 	return a.
 		Request(resty.MethodGet, fmt.Sprintf("branch/%d/components", branchId)).
 		SetQueryParam("include", "configuration,rows").

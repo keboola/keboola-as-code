@@ -8,14 +8,14 @@ import (
 )
 
 func (a *StorageApi) ListBranches() ([]*remote.Branch, error) {
-	response := a.ListBranchesReq().Send().Response()
+	response := a.ListBranchesRequest().Send().Response()
 	if response.HasResult() {
 		return response.Result().([]*remote.Branch), nil
 	}
 	return nil, response.Error()
 }
 
-func (a *StorageApi) ListBranchesReq() *client.Request {
+func (a *StorageApi) ListBranchesRequest() *client.Request {
 	return a.
 		Request(resty.MethodGet, "dev-branches").
 		SetResult([]*remote.Branch{}).
