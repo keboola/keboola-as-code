@@ -1,4 +1,4 @@
-package manifest
+package utils
 
 import (
 	"fmt"
@@ -14,5 +14,5 @@ func TestError(t *testing.T) {
 	e.Add(fmt.Errorf("foo"))
 	e.Add(fmt.Errorf("bar"))
 	assert.Equal(t, 2, e.Len())
-	assert.Equal(t, "Manifest is not valid:\n- foo\n- bar\n", e.Error())
+	assert.Equal(t, "- foo\n- bar\n", e.Error())
 }

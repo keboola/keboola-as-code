@@ -1,4 +1,4 @@
-package manifest
+package local
 
 import (
 	"github.com/stretchr/testify/assert"
@@ -39,7 +39,7 @@ func TestLoad(t *testing.T) {
 		assert.NoError(t, os.WriteFile(path, []byte(c.json), 0600))
 
 		// Load
-		manifest, err := Load(tempDir)
+		manifest, err := LoadManifest(tempDir)
 		assert.NotNil(t, manifest)
 		assert.NoError(t, err)
 
@@ -120,7 +120,7 @@ func minimalStruct() *Manifest {
 			ApiHost: "keboola.connection.com",
 		},
 		Branches:       make([]*Branch, 0),
-		Configurations: make([]*Configuration, 0),
+		Configurations: make([]*Config, 0),
 	}
 }
 
@@ -143,33 +143,33 @@ func fullJson() string {
   ],
   "configurations": [
     {
-      "id": 11,
+      "id": "11",
       "componentId": "keboola.ex-db-oracle",
       "branchId": 10,
       "path": "11-raw-data",
       "rows": [
         {
-          "id": 101,
+          "id": "101",
           "path": "101-region-1.json"
         },
         {
-          "id": 102,
+          "id": "102",
           "path": "102-region-2.json"
         }
       ]
     },
     {
-      "id": 12,
+      "id": "12",
       "componentId": "keboola.wr-db-mysql",
       "branchId": 11,
       "path": "12-current-month",
       "rows": [
         {
-          "id": 103,
+          "id": "103",
           "path": "103-all.json"
         },
         {
-          "id": 104,
+          "id": "104",
           "path": "104-sum.json"
         }
       ]
@@ -195,35 +195,35 @@ func fullStruct() *Manifest {
 				Path: "11-dev",
 			},
 		},
-		Configurations: []*Configuration{
+		Configurations: []*Config{
 			{
-				Id:          11,
+				Id:          "11",
 				ComponentId: "keboola.ex-db-oracle",
 				BranchId:    10,
 				Path:        "11-raw-data",
-				Rows: []*Row{
+				Rows: []*ConfigRow{
 					{
-						Id:   101,
+						Id:   "101",
 						Path: "101-region-1.json",
 					},
 					{
-						Id:   102,
+						Id:   "102",
 						Path: "102-region-2.json",
 					},
 				},
 			},
 			{
-				Id:          12,
+				Id:          "12",
 				ComponentId: "keboola.wr-db-mysql",
 				BranchId:    11,
 				Path:        "12-current-month",
-				Rows: []*Row{
+				Rows: []*ConfigRow{
 					{
-						Id:   103,
+						Id:   "103",
 						Path: "103-all.json",
 					},
 					{
-						Id:   104,
+						Id:   "104",
 						Path: "104-sum.json",
 					},
 				},

@@ -1,6 +1,9 @@
-package manifest
+package utils
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type Error struct {
 	errors []error
@@ -19,9 +22,13 @@ func (e *Error) Error() string {
 		return ""
 	}
 
-	msg := "Manifest is not valid:\n"
+	var msg []string
 	for _, err := range e.errors {
-		msg += fmt.Sprintf("- %s\n", err)
+		msg = append(msg, fmt.Sprintf("- %s", err))
 	}
-	return msg
+
+	if len(msg) == 0 {
+		return ""
+	}
+	return strings.Join(msg, "\n") + "\n"
 }

@@ -4,19 +4,19 @@ import (
 	"fmt"
 	"github.com/go-resty/resty/v2"
 	"keboola-as-code/src/client"
-	"keboola-as-code/src/model/remote"
+	"keboola-as-code/src/model"
 )
 
-func (a *StorageApi) ListComponents(branchId int) (*[]*remote.Component, error) {
+func (a *StorageApi) ListComponents(branchId int) (*[]*model.Component, error) {
 	response := a.ListComponentsRequest(branchId).Send().Response()
 	if response.HasResult() {
-		return response.Result().(*[]*remote.Component), nil
+		return response.Result().(*[]*model.Component), nil
 	}
 	return nil, response.Error()
 }
 
 func (a *StorageApi) ListComponentsRequest(branchId int) *client.Request {
-	components := make([]*remote.Component, 0)
+	components := make([]*model.Component, 0)
 	return a.
 		Request(resty.MethodGet, fmt.Sprintf("branch/%d/components", branchId)).
 		SetQueryParam("include", "configuration,rows").

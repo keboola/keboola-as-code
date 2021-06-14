@@ -4,14 +4,14 @@ import (
 	"context"
 	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/fixtures/testEnv"
-	"keboola-as-code/src/model/remote"
+	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
 	"testing"
 )
 
 func TestApiWithToken(t *testing.T) {
 	logger, _ := utils.NewDebugLogger()
-	token := &remote.Token{Id: "123", Token: "mytoken", Owner: remote.TokenOwner{Id: 456, Name: "name"}}
+	token := &model.Token{Id: "123", Token: "mytoken", Owner: model.TokenOwner{Id: 456, Name: "name"}}
 	orgApi := NewStorageApi("foo.bar.com", context.Background(), logger, false)
 	tokenApi := orgApi.WithToken(token)
 

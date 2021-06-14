@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"keboola-as-code/src/api"
-	"keboola-as-code/src/manifest"
+	"keboola-as-code/src/local"
 	"keboola-as-code/src/options"
 	"keboola-as-code/src/utils"
 	"os"
@@ -77,14 +77,14 @@ func initCommand(root *rootCommand) *cobra.Command {
 			root.logger.Infof("Created metadata dir \"%s\".", utils.RelPath(projectDir, metadataDir))
 
 			// Create and save manifest
-			manifestJson, err := manifest.NewManifest(sApi.ProjectId(), sApi.Host())
+			manifest, err := local.NewManifest(sApi.ProjectId(), sApi.Host())
 			if err != nil {
 				return err
 			}
-			if err = manifestJson.Save(root.options.MetadataDirectory()); err != nil {
+			if err = manifest.Save(root.options.MetadataDirectory()); err != nil {
 				return err
 			}
-			root.logger.Infof("Created manifest file \"%s\".", utils.RelPath(projectDir, manifestJson.Path()))
+			root.logger.Infof("Created manifest file \"%s\".", utils.RelPath(projectDir, manifest.Path()))
 
 			// Create or update ".gitignore"
 			gitignorePath := filepath.Join(projectDir, ".gitignore")
