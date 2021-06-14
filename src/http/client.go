@@ -1,9 +1,9 @@
-package api
+package http
 
 import (
 	"context"
 	"fmt"
-	resty "github.com/go-resty/resty/v2"
+	"github.com/go-resty/resty/v2"
 	"go.uber.org/zap"
 	"keboola-as-code/src/version"
 	"net"
@@ -13,20 +13,29 @@ import (
 )
 
 const (
-	RequestTimeout   = 45 * time.Second
-	HttpTimeout      = 30 * time.Second
-	IdleConnTimeout  = 90 * time.Second
-	KeepAlive        = 30 * time.Second
-	MaxIdleConns     = 64
-	RetryCount       = 5
-	RetryWaitTime    = 100 * time.Millisecond
-	RetryWaitTimeMax = 3 * time.Second
+	RequestTimeout    = 45 * time.Second
+	ClientHttpTimeout = 30 * time.Second
+	IdleConnTimeout   = 90 * time.Second
+	KeepAlive         = 30 * time.Second
+	MaxIdleConns      = 64
+	RetryCount        = 5
+	RetryWaitTime     = 100 * time.Millisecond
+	RetryWaitTimeMax  = 3 * time.Second
 )
 
 type Client struct {
 	parentCtx context.Context // context for parallel execution
 	logger    *ClientLogger
 	resty     *resty.Client
+}
+
+type ErrorWithResponse interface {
+	SetResponse(response *resty.Response)
+	HttpStatus() int
+	IsBadRequest() bool
+	IsUnauthorized() bool
+	IsForbidden() bool
+	IsNotFound() bool
 }
 
 func NewHttpClient(ctx context.Context, logger *zap.SugaredLogger, verbose bool) *Client {
@@ -43,12 +52,36 @@ func (c Client) WithHostUrl(hostUrl string) *Client {
 	return &c
 }
 
-// R creates request
-func (c *Client) R(method string, url string) *resty.Request {
+// Req creates request
+func (c *Client) Req(method string, url string) *resty.Request {
 	r := c.resty.R()
 	r.Method = method
 	r.URL = url
 	return r
+}
+
+func (c *Client) HostUrl() string {
+	return c.resty.HostURL
+}
+
+func (c *Client) SetHeader(header, value string) *Client {
+	c.resty.SetHeader(header, value)
+	return c
+}
+
+func (c *Client) Header() http.Header {
+	return c.resty.Header
+}
+
+func (c *Client) SetError(err interface{}) *Client {
+	c.resty.SetError(err)
+	return c
+}
+
+func (c *Client) SetRetry(count int, waitTime time.Duration, maxWaitTime time.Duration) {
+	c.resty.RetryWaitTime = waitTime
+	c.resty.RetryMaxWaitTime = maxWaitTime
+	c.resty.RetryCount = count
 }
 
 func createHttpClient(logger *ClientLogger) *resty.Client {
@@ -94,7 +127,7 @@ func createHttpClient(logger *ClientLogger) *resty.Client {
 
 func createTransport() *http.Transport {
 	dialer := &net.Dialer{
-		Timeout:   HttpTimeout,
+		Timeout:   ClientHttpTimeout,
 		KeepAlive: KeepAlive,
 	}
 	return &http.Transport{

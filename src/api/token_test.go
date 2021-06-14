@@ -18,12 +18,12 @@ func TestApiWithToken(t *testing.T) {
 	// Must be cloned, not modified
 	assert.NotSame(t, orgApi, tokenApi)
 	assert.Same(t, token, tokenApi.token)
-	assert.Equal(t, "mytoken", tokenApi.http.resty.Header.Get("X-StorageApi-Token"))
+	assert.Equal(t, "mytoken", tokenApi.client.Header().Get("X-StorageApi-Token"))
 }
 
 func TestGetToken(t *testing.T) {
 	tokenValue := tests.TestToken()
-	api, logs := newStorageApi(t)
+	api, logs := TestStorageApi(t)
 	token, err := api.GetToken(tokenValue)
 	assert.NoError(t, err)
 	assert.Regexp(t, `DEBUG  HTTP      GET https://.*/v2/storage/tokens/verify | 200 | .*`, logs.String())
@@ -34,7 +34,7 @@ func TestGetToken(t *testing.T) {
 
 func TestGetTokenEmpty(t *testing.T) {
 	tokenValue := ""
-	api, _ := newStorageApi(t)
+	api, _ := TestStorageApi(t)
 	token, err := api.GetToken(tokenValue)
 	assert.Error(t, err)
 	apiErr := err.(*Error)
@@ -46,7 +46,7 @@ func TestGetTokenEmpty(t *testing.T) {
 
 func TestGetTokenInvalid(t *testing.T) {
 	tokenValue := "mytoken"
-	api, _ := newStorageApi(t)
+	api, _ := TestStorageApi(t)
 	token, err := api.GetToken(tokenValue)
 	assert.Error(t, err)
 	apiErr := err.(*Error)
@@ -58,7 +58,7 @@ func TestGetTokenInvalid(t *testing.T) {
 
 func TestGetTokenExpired(t *testing.T) {
 	tokenValue := tests.TestTokenExpired()
-	api, _ := newStorageApi(t)
+	api, _ := TestStorageApi(t)
 	token, err := api.GetToken(tokenValue)
 	assert.Error(t, err)
 	apiErr := err.(*Error)
