@@ -30,9 +30,9 @@ func (a *StorageApi) ListBranchesRequest() *client.Request {
 }
 
 func (a *StorageApi) DeleteBranch(branchId int) *client.Response {
-	return a.DeleteBranchReq(branchId).Send().Response()
+	return a.DeleteBranchRequest(branchId).Send().Response()
 }
 
-func (a *StorageApi) DeleteBranchReq(branchId int) *client.Request {
+func (a *StorageApi) DeleteBranchRequest(branchId int) *client.Request {
 	return a.Request(resty.MethodDelete, fmt.Sprintf("dev-branches/%d", branchId))
 }

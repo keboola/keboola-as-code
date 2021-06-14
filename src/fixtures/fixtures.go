@@ -136,7 +136,7 @@ func clearTestKbcProject(t *testing.T, a *api.StorageApi) {
 				} else {
 					// Delete dev branch
 					pool.
-						Request(a.DeleteBranchReq(branch.Id)).
+						Request(a.DeleteBranchRequest(branch.Id)).
 						Send()
 				}
 			}
