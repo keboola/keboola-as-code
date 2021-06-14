@@ -6,7 +6,7 @@ import (
 )
 
 func LoadState(api *StorageApi) (*model.State, error) {
-	state := model.NewRemoteState()
+	state := model.NewState()
 	pool := api.NewPool()
 
 	// Load branches

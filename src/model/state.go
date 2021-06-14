@@ -13,7 +13,7 @@ type State struct {
 	configsById    map[string]*Config
 }
 
-func NewRemoteState() *State {
+func NewState() *State {
 	return &State{
 		mutex:          &sync.Mutex{},
 		branchesById:   make(map[int]*Branch),
@@ -26,19 +26,25 @@ func (s *State) Branches() map[int]*Branch {
 	return s.branchesById
 }
 
-func (s *State) Configurations() map[string]*Config {
+func (s *State) Configs() map[string]*Config {
 	return s.configsById
 }
 
-func (s *State) BranchById(id int) (*Branch, bool) {
+func (s *State) BranchById(id int) (*Branch, error) {
 	branch, found := s.branchesById[id]
-	return branch, found
+	if !found {
+		return nil, fmt.Errorf("branch \"%d\" not found", branch.Id)
+	}
+	return branch, nil
 }
 
-func (s *State) ConfigurationById(branchId int, componentId string, id string) (*Config, bool) {
+func (s *State) ConfigurationById(branchId int, componentId string, id string) (*Config, error) {
 	key := configKey(branchId, componentId, id)
 	configuration, found := s.configsById[key]
-	return configuration, found
+	if !found {
+		return nil, fmt.Errorf("config id: \"%s\", componentId: \"%s\", branch id: \"%d\" not found", id, componentId, branchId)
+	}
+	return configuration, nil
 }
 
 func (s *State) AddBranch(branch *Branch) error {
@@ -83,6 +89,11 @@ func (s *State) AddConfig(config *Config) error {
 	if err := validator.Validate(config); err != nil {
 		return fmt.Errorf("config is not valid\n:%s", err)
 	}
+
+	if _, ok := s.branchesById[config.BranchId]; !ok {
+		return fmt.Errorf("branch \"%d\" not found", config.BranchId)
+	}
+
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 

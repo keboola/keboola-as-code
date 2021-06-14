@@ -17,6 +17,10 @@ func (e *Error) Add(err error) {
 	e.errors = append(e.errors, err)
 }
 
+func (e *Error) Errors() []error {
+	return e.errors
+}
+
 func (e *Error) Error() string {
 	if len(e.errors) == 0 {
 		return ""
@@ -30,5 +34,5 @@ func (e *Error) Error() string {
 	if len(msg) == 0 {
 		return ""
 	}
-	return strings.Join(msg, "\n") + "\n"
+	return strings.Join(msg, "\n")
 }

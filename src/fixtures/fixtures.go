@@ -1,51 +1,11 @@
 package fixtures
 
 import (
-	"fmt"
 	"keboola-as-code/src/model"
 	"testing"
 )
 
-type BranchName string
-
-type Branch struct {
-	Name      BranchName `json:"name" validate:"required"`
-	IsDefault bool       `json:"isDefault"`
-}
-
-type BranchState struct {
-	Branch  *Branch   `json:"branch" validate:"required"`
-	Configs []*Config `json:"configs"`
-}
-
-type BranchStateConfigName struct {
-	Branch  *Branch  `json:"branch" validate:"required"`
-	Configs []string `json:"configs"`
-}
-
-type Config struct {
-	ComponentId string                 `json:"componentId" validate:"required"`
-	Name        string                 `json:"name" validate:"required"`
-	Config      map[string]interface{} `json:"configuration"`
-	Rows        []*ConfigRow           `json:"rows"`
-}
-
-type ConfigRow struct {
-	Name       string                 `json:"name" validate:"required"`
-	IsDisabled bool                   `json:"isDisabled"`
-	Config     map[string]interface{} `json:"configuration"`
-}
-
-type ProjectState struct {
-	Branches []*BranchState
-}
-
-type StateFile struct {
-	AllBranchesConfigs []string                 `json:"allBranchesConfigs" validate:"required"`
-	Branches           []*BranchStateConfigName `json:"branches" validate:"required"`
-}
-
-func ConvertRemoteStateToFixtures(model *model.State) *ProjectState {
+func ConvertRemoteStateToFixtures(model *model.State) (*ProjectState, error) {
 	fixtures := &ProjectState{}
 	branchesByName := make(map[BranchName]*BranchState)
 
@@ -59,11 +19,11 @@ func ConvertRemoteStateToFixtures(model *model.State) *ProjectState {
 		branchesByName[b.Name] = bState
 	}
 
-	for _, configuration := range model.Configurations() {
+	for _, configuration := range model.Configs() {
 		branchId := configuration.BranchId
-		branch, found := model.BranchById(branchId)
-		if !found {
-			panic(fmt.Errorf("branch with id \"%d\" not found", branchId))
+		branch, err := model.BranchById(branchId)
+		if err != nil {
+			return nil, err
 		}
 
 		// Map configuration
@@ -83,7 +43,7 @@ func ConvertRemoteStateToFixtures(model *model.State) *ProjectState {
 		}
 	}
 
-	return fixtures
+	return fixtures, nil
 }
 
 func SetStateOfTestProject(t *testing.T, projectStateFilePath string) {

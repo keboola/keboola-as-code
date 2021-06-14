@@ -19,7 +19,10 @@ func TestDumpProjectState(t *testing.T) {
 	a, _ := api.TestStorageApiWithToken(t)
 	remoteState, err := api.LoadState(a)
 	assert.NoError(t, err)
-	fixtures := ConvertRemoteStateToFixtures(remoteState)
+	fixtures, err := ConvertRemoteStateToFixtures(remoteState)
+	if err != nil {
+		assert.FailNow(t, "%s", err)
+	}
 
 	// Convert to JSON
 	data, err := json.Encode(fixtures, false)

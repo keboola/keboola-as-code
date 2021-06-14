@@ -44,6 +44,8 @@ func processJsonError(err error) error {
 	// Custom error message
 	case *json.UnmarshalTypeError:
 		result.Add(fmt.Errorf("key \"%s\" has invalid type \"%s\"", err.Field, err.Value))
+	case *json.SyntaxError:
+		result.Add(fmt.Errorf("%s, offset: %d", err, err.Offset))
 	default:
 		result.Add(err)
 	}

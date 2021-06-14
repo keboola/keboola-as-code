@@ -3,6 +3,7 @@ package local
 import (
 	"fmt"
 	"keboola-as-code/src/json"
+	"keboola-as-code/src/utils"
 	"keboola-as-code/src/validator"
 	"os"
 	"path/filepath"
@@ -13,42 +14,19 @@ const (
 )
 
 type Manifest struct {
-	path           string
-	Version        int       `json:"version" validate:"required,min=1,max=1"`
-	Project        *Project  `json:"project" validate:"required"`
-	Branches       []*Branch `json:"branches"`
-	Configurations []*Config `json:"configurations"`
-}
-
-type Project struct {
-	Id      int    `json:"id" validate:"required,min=1"`
-	ApiHost string `json:"apiHost" validate:"required,hostname"`
-}
-
-type Branch struct {
-	Id   int    `json:"id" validate:"required,min=1"`
-	Path string `json:"path" validate:"required"`
-}
-
-type Config struct {
-	Id          string       `json:"id" validate:"required,min=1"`
-	ComponentId string       `json:"componentId" validate:"required"`
-	BranchId    int          `json:"branchId" validate:"required"`
-	Path        string       `json:"path" validate:"required"`
-	Rows        []*ConfigRow `json:"rows"`
-}
-
-type ConfigRow struct {
-	Id   string `json:"id" validate:"required,min=1"`
-	Path string `json:"path" validate:"required"`
+	path     string
+	Version  int       `json:"version" validate:"required,min=1,max=1"`
+	Project  *Project  `json:"project" validate:"required"`
+	Branches []*Branch `json:"branches"`
+	Configs  []*Config `json:"configurations"`
 }
 
 func NewManifest(projectId int, apiHost string) (*Manifest, error) {
 	m := &Manifest{
-		Version:        1,
-		Project:        &Project{Id: projectId, ApiHost: apiHost},
-		Branches:       make([]*Branch, 0),
-		Configurations: make([]*Config, 0),
+		Version:  1,
+		Project:  &Project{Id: projectId, ApiHost: apiHost},
+		Branches: make([]*Branch, 0),
+		Configs:  make([]*Config, 0),
 	}
 	err := m.Validate()
 	if err != nil {
@@ -58,18 +36,23 @@ func NewManifest(projectId int, apiHost string) (*Manifest, error) {
 }
 
 func LoadManifest(metadataDir string) (*Manifest, error) {
-	// Load file
+	// Exists?
 	path := filepath.Join(metadataDir, FileName)
+	if !utils.IsFile(path) {
+		return nil, fmt.Errorf("manifest file not found \"%s\"", path)
+	}
+
+	// Load file
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cannot read from manifest: %s", err)
 	}
 
 	// Decode JSON
 	m := &Manifest{}
 	err = json.Decode(data, m)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("manifest is not valid:\n%s", err)
 	}
 
 	// Validate
@@ -105,7 +88,7 @@ func (m *Manifest) Save(metadataDir string) error {
 
 func (m *Manifest) Validate() error {
 	if err := validator.Validate(m); err != nil {
-		return fmt.Errorf("Manifest is not valid:\n%s", err)
+		return fmt.Errorf("manifest is not valid:\n%s", err)
 	}
 	return nil
 }

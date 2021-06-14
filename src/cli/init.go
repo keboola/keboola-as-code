@@ -61,7 +61,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 			// Send failed event - we have connection to API
 			defer func() {
 				if err != nil && !successful {
-					sendEventInitFailed(root, sApi, err)
+					sendInitFailedEvent(root, sApi, err)
 				}
 			}()
 
@@ -119,7 +119,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 
 			// Send successful event
 			successful = true
-			sendEventInitSuccessful(root, sApi)
+			sendInitSuccessfulEvent(root, sApi)
 
 			// Make first pull
 			pull := root.GetCommandByName("pull")
@@ -130,7 +130,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 	return cmd
 }
 
-func sendEventInitSuccessful(root *rootCommand, sApi *api.StorageApi) {
+func sendInitSuccessfulEvent(root *rootCommand, sApi *api.StorageApi) {
 	message := "Initialized local project directory."
 	duration := time.Since(root.start)
 	params := map[string]interface{}{
@@ -147,7 +147,7 @@ func sendEventInitSuccessful(root *rootCommand, sApi *api.StorageApi) {
 	}
 }
 
-func sendEventInitFailed(root *rootCommand, sApi *api.StorageApi, err error) {
+func sendInitFailedEvent(root *rootCommand, sApi *api.StorageApi, err error) {
 	message := "Init command failed."
 	duration := time.Since(root.start)
 	params := map[string]interface{}{

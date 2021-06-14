@@ -13,7 +13,7 @@ type test struct {
 	data *Manifest
 }
 
-var cases []test = []test{
+var cases = []test{
 	{
 		json: minimalJson(),
 		data: minimalStruct(),
@@ -70,10 +70,9 @@ func TestValidateEmpty(t *testing.T) {
 	m := &Manifest{}
 	err := m.Validate()
 	assert.NotNil(t, err)
-	expected := `Manifest is not valid:
+	expected := `manifest is not valid:
 - key="version", value="0", failed "required" validation
-- key="project", value="<nil>", failed "required" validation
-`
+- key="project", value="<nil>", failed "required" validation`
 	assert.Equal(t, expected, err.Error())
 }
 
@@ -94,9 +93,8 @@ func TestValidateBadVersion(t *testing.T) {
 	m.Version = 123
 	err := m.Validate()
 	assert.NotNil(t, err)
-	expected := `Manifest is not valid:
-- key="version", value="123", failed "max" validation
-`
+	expected := `manifest is not valid:
+- key="version", value="123", failed "max" validation`
 	assert.Equal(t, expected, err.Error())
 }
 
@@ -119,8 +117,8 @@ func minimalStruct() *Manifest {
 			Id:      12345,
 			ApiHost: "keboola.connection.com",
 		},
-		Branches:       make([]*Branch, 0),
-		Configurations: make([]*Config, 0),
+		Branches: make([]*Branch, 0),
+		Configs:  make([]*Config, 0),
 	}
 }
 
@@ -143,9 +141,9 @@ func fullJson() string {
   ],
   "configurations": [
     {
-      "id": "11",
-      "componentId": "keboola.ex-db-oracle",
       "branchId": 10,
+      "componentId": "keboola.ex-db-oracle",
+      "id": "11",
       "path": "11-raw-data",
       "rows": [
         {
@@ -159,9 +157,9 @@ func fullJson() string {
       ]
     },
     {
-      "id": "12",
-      "componentId": "keboola.wr-db-mysql",
       "branchId": 11,
+      "componentId": "keboola.wr-db-mysql",
+      "id": "12",
       "path": "12-current-month",
       "rows": [
         {
@@ -195,7 +193,7 @@ func fullStruct() *Manifest {
 				Path: "11-dev",
 			},
 		},
-		Configurations: []*Config{
+		Configs: []*Config{
 			{
 				Id:          "11",
 				ComponentId: "keboola.ex-db-oracle",

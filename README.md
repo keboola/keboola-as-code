@@ -23,13 +23,16 @@ Root project folder
 |  └─ manifest.json
 └─ branches
    └─ [branch-id]-[branch-name]                 - eg. 10715-test
-      ├─ config.json                            - contains branch name, description
+      ├─ meta.json                              - contains branch name, description
       └─ [component-type]                       - eg. extractor
          └─ [component-id]                      - eg. keboola.ex-db-oracle
             └─ [config-id]-[config-name]        - eg. 641226048-oauth-test
-                ├─ config.json                  - contains all config's editable properties
+                ├─ meta.json                    - contains name, description, ...
+                ├─ config.json                  - contains configuration
                 └─ rows
-                   └─ [row-id]-[row-name].json  - eg. 28790-prod-fact-table
+                   └─ [row-id]-[row-name]       - eg. 28790-prod-fact-table
+                       ├─ meta.json             - contains name, description, ...
+                       └─ config.json           - contains configuration
 ```
 
 ## Environment Variables
@@ -111,9 +114,9 @@ To start the interactive console in the container, you can use:
 docker-compose run --rm dev bash
 ```
 
-To run the one test by name:
+To run the one or more tests via wildcard:
 ```
-./scripts/tests.sh -run TestFuncName
+./scripts/tests.sh -run TestFuncName*
 ```
 
 In the container, you can run CLI from source code using:
