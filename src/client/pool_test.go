@@ -20,8 +20,8 @@ func TestSimple(t *testing.T) {
 	client, logger, _ := getMockedClientAndLogs(t, false)
 	httpmock.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(200, `test`))
 
-	successCounter := &utils.SafeCounter{}
-	responseCounter := &utils.SafeCounter{}
+	successCounter := utils.NewSafeCounter(0)
+	responseCounter := utils.NewSafeCounter(0)
 	pool := client.NewPool(logger)
 	pool.Request(client.Request(resty.MethodGet, "https://example.com")).
 		OnResponse(func(response *Response) *Response {
@@ -39,8 +39,8 @@ func TestSimple(t *testing.T) {
 		Send()
 
 	assert.NoError(t, pool.StartAndWait())
-	assert.Equal(t, 1, successCounter.Value())
-	assert.Equal(t, 1, responseCounter.Value())
+	assert.Equal(t, 1, successCounter.Get())
+	assert.Equal(t, 1, responseCounter.Get())
 	assert.Equal(t, 1, httpmock.GetCallCountInfo()["GET https://example.com"])
 }
 
@@ -48,8 +48,8 @@ func TestSubRequest(t *testing.T) {
 	client, logger, _ := getMockedClientAndLogs(t, false)
 	httpmock.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(200, `test`))
 
-	successCounter := &utils.SafeCounter{}
-	responseCounter := &utils.SafeCounter{}
+	successCounter := utils.NewSafeCounter(0)
+	responseCounter := utils.NewSafeCounter(0)
 	pool := client.NewPool(logger)
 	onResponse := func(response *Response) *Response {
 		responseCounter.Inc()
@@ -62,7 +62,7 @@ func TestSubRequest(t *testing.T) {
 	var onSuccess ResponseCallback
 	onSuccess = func(response *Response) *Response {
 		successCounter.Inc()
-		if successCounter.Value() < 30 {
+		if successCounter.Get() < 30 {
 			// Send sub-request
 			pool.Request(client.Request(resty.MethodGet, "https://example.com")).
 				OnResponse(onResponse).
@@ -80,8 +80,8 @@ func TestSubRequest(t *testing.T) {
 		Send()
 
 	assert.NoError(t, pool.StartAndWait())
-	assert.Equal(t, 30, successCounter.Value())
-	assert.Equal(t, 30, responseCounter.Value())
+	assert.Equal(t, 30, successCounter.Get())
+	assert.Equal(t, 30, responseCounter.Get())
 	assert.Equal(t, 30, httpmock.GetCallCountInfo()["GET https://example.com"])
 }
 
@@ -89,7 +89,7 @@ func TestErrorInCallback(t *testing.T) {
 	client, logger, _ := getMockedClientAndLogs(t, false)
 	httpmock.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(200, `test`))
 
-	c := &utils.SafeCounter{}
+	c := utils.NewSafeCounter(0)
 	pool := client.NewPool(logger)
 	var onSuccess ResponseCallback
 	onSuccess = func(response *Response) *Response {
@@ -97,7 +97,7 @@ func TestErrorInCallback(t *testing.T) {
 			OnSuccess(onSuccess).
 			Send()
 
-		if c.Inc(); c.Value() == 10 {
+		if c.Inc(); c.Get() == 10 {
 			return response.SetError(errors.New("some error in response listener"))
 		}
 		return response
@@ -107,7 +107,7 @@ func TestErrorInCallback(t *testing.T) {
 		Send()
 
 	assert.Equal(t, errors.New("some error in response listener"), pool.StartAndWait())
-	assert.GreaterOrEqual(t, c.Value(), 10)
+	assert.GreaterOrEqual(t, c.Get(), 10)
 	assert.GreaterOrEqual(t, httpmock.GetCallCountInfo()["GET https://example.com"], 10)
 }
 
@@ -116,11 +116,11 @@ func TestNetworkError(t *testing.T) {
 	httpmock.RegisterResponder("GET", `https://example.com`, httpmock.NewStringResponder(200, `test`))
 	httpmock.RegisterResponder("GET", `https://example.com/error`, httpmock.NewErrorResponder(errors.New("network error")))
 
-	c := &utils.SafeCounter{}
+	c := utils.NewSafeCounter(0)
 	pool := client.NewPool(logger)
 	var onSuccess ResponseCallback
 	onSuccess = func(response *Response) *Response {
-		if c.Inc(); c.Value() == 10 {
+		if c.Inc(); c.Get() == 10 {
 			pool.Request(client.Request(resty.MethodGet, "https://example.com/error")).
 				OnSuccess(onSuccess).
 				Send()
@@ -135,7 +135,7 @@ func TestNetworkError(t *testing.T) {
 		OnSuccess(onSuccess).
 		Send()
 	assert.Equal(t, errors.New("network error"), pool.StartAndWait().(*url.Error).Unwrap())
-	assert.GreaterOrEqual(t, c.Value(), 10)
+	assert.GreaterOrEqual(t, c.Get(), 10)
 	assert.GreaterOrEqual(t, httpmock.GetCallCountInfo()["GET https://example.com"], 10)
 }
 
@@ -213,7 +213,7 @@ func TestSendWasNotCalled(t *testing.T) {
 	client, logger, _ := getMockedClientAndLogs(t, false)
 	pool := client.NewPool(logger)
 	pool.Request(client.Request(resty.MethodGet, "https://example.com"))
-	assert.PanicsWithError(t, `request GET "https://example.com" was not sent - Send() method was not called`, func() {
+	assert.PanicsWithError(t, `request[1] GET "https://example.com" was not sent - Send() method was not called`, func() {
 		pool.StartAndWait()
 	})
 }

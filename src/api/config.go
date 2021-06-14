@@ -88,20 +88,17 @@ func (a *StorageApi) CreateConfigRequest(config *remote.Config) (*client.Request
 	// Create config rows
 	request.OnSuccess(func(response *client.Response) *client.Response {
 		for _, row := range config.Rows {
+			// Set row IDs
+			row.ConfigId = config.Id
+			row.BranchId = config.BranchId
+			row.ComponentId = config.ComponentId
+
 			// Create sub-request for each row
 			rowRequest, err := a.CreateConfigRowRequest(row)
 			if err != nil {
 				response.SetError(err)
 				return response
 			}
-
-			// Set row IDs
-			rowRequest.OnSuccess(func(subResponse *client.Response) *client.Response {
-				row.BranchId = config.BranchId
-				row.ComponentId = config.ComponentId
-				row.ConfigId = config.Id
-				return subResponse
-			})
 
 			// If sub-request fail -> mark parent request failed too
 			rowRequest.OnError(func(subResponse *client.Response) *client.Response {

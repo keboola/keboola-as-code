@@ -7,7 +7,7 @@ import (
 )
 
 func TestSafeCounter(t *testing.T) {
-	c := &SafeCounter{}
+	c := NewSafeCounter(0)
 	wg := sync.WaitGroup{}
 
 	// Increment in goroutines
@@ -29,5 +29,5 @@ func TestSafeCounter(t *testing.T) {
 
 	// Wait for goroutines and assert
 	wg.Wait()
-	assert.Equal(t, 30, c.Value())
+	assert.Equal(t, 30, c.Get())
 }

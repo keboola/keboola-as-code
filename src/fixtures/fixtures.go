@@ -1,14 +1,8 @@
 package fixtures
 
 import (
-	"encoding/json"
 	"fmt"
-	"github.com/stretchr/testify/assert"
-	"keboola-as-code/src/api"
-	"keboola-as-code/src/client"
-	"keboola-as-code/src/fixtures/testEnv"
 	"keboola-as-code/src/model/remote"
-	"keboola-as-code/src/utils"
 	"testing"
 )
 
@@ -21,12 +15,12 @@ type Branch struct {
 
 type BranchState struct {
 	Branch  *Branch   `json:"branch"`
-	Configs []*Config `json:"configurations"`
+	Configs []*Config `json:"configs"`
 }
 
 type BranchStateConfigName struct {
 	Branch  *Branch  `json:"branch"`
-	Configs []string `json:"configurations"`
+	Configs []string `json:"configs"`
 }
 
 type Config struct {
@@ -37,8 +31,9 @@ type Config struct {
 }
 
 type ConfigRow struct {
-	Name   string                 `json:"name"`
-	Config map[string]interface{} `json:"configuration"`
+	Name       string                 `json:"name"`
+	IsDisabled bool                   `json:"isDisabled"`
+	Config     map[string]interface{} `json:"configuration"`
 }
 
 type ProjectState struct {
@@ -46,8 +41,41 @@ type ProjectState struct {
 }
 
 type StateFile struct {
-	AllBranches *BranchStateConfigName   `json:"allBranches"`
-	Branches    []*BranchStateConfigName `json:"branches"`
+	AllBranchesConfigs []string                 `json:"allBranchesConfigs"`
+	Branches           []*BranchStateConfigName `json:"branches"`
+}
+
+// ToRemote maps fixture to remote.Config
+func (c *Config) ToRemote() *remote.Config {
+	config := &remote.Config{}
+	config.ComponentId = c.ComponentId
+	config.Name = c.Name
+	config.Description = "test fixture"
+	config.ChangeDescription = "created by test"
+	config.Config = c.Config
+	for _, r := range c.Rows {
+		row := &remote.ConfigRow{}
+		row.Name = r.Name
+		row.Description = "test fixture"
+		row.ChangeDescription = "created by test"
+		row.IsDisabled = r.IsDisabled
+		row.Config = r.Config
+		config.Rows = append(config.Rows, row)
+	}
+	return config
+}
+
+// ToRemote maps fixture to remote.Branch
+func (b *Branch) ToRemote(defaultBranch *remote.Branch) *remote.Branch {
+	if b.IsDefault {
+		return defaultBranch
+	}
+
+	branch := &remote.Branch{}
+	branch.Name = string(b.Name)
+	branch.Description = "test fixture"
+	branch.IsDefault = b.IsDefault
+	return branch
 }
 
 func ConvertRemoteStateToFixtures(remote *remote.State) *ProjectState {
@@ -92,60 +120,7 @@ func ConvertRemoteStateToFixtures(remote *remote.State) *ProjectState {
 }
 
 func SetStateOfTestKbcProject(t *testing.T, projectStateFilePath string) {
-	a, _ := api.TestStorageApiWithToken(t)
-	if testEnv.TestProjectId() != a.ProjectId() {
-		assert.FailNow(t, "TEST_PROJECT_ID and token project id are different.")
-	}
-
-	// Decode file
-	data := utils.GetFileContent(projectStateFilePath)
-	stateFile := &StateFile{}
-	assert.NoError(t, json.Unmarshal([]byte(data), stateFile))
-
-	// Clear
-	clearTestKbcProject(t, a)
-
-	// Create branches and configurations
-	//setProjectState(t, a, stateFile)
-}
-
-// clearTestKbcProject clears test project using parallel requests pool
-func clearTestKbcProject(t *testing.T, a *api.StorageApi) {
-	fmt.Printf("Fixtures: Clearing test project \"%s\", id: \"%d\".\n", a.ProjectName(), a.ProjectId())
-	pool := a.NewPool()
-	pool.
-		Request(a.ListBranchesRequest()).
-		OnSuccess(func(response *client.Response) *client.Response {
-			for _, branch := range *response.Result().(*[]*remote.Branch) {
-				if branch.IsDefault {
-					// Default branch cannot be deleted, so we have to delete all configurations
-					pool.
-						Request(a.ListComponentsRequest(branch.Id)).
-						OnSuccess(func(response *client.Response) *client.Response {
-							for _, component := range *response.Result().(*[]*remote.Component) {
-								for _, configuration := range component.Configs {
-									// Delete each configuration in branch
-									pool.
-										Request(a.DeleteConfigRequest(configuration.ComponentId, configuration.Id)).
-										Send()
-								}
-							}
-							return response
-						}).
-						Send()
-				} else {
-					// Delete dev branch
-					pool.
-						Request(a.DeleteBranchRequest(branch.Id)).
-						Send()
-				}
-			}
-			return response
-		}).
-		Send()
-
-	if err := pool.StartAndWait(); err != nil {
-		assert.FailNow(t, fmt.Sprintf("cannot clear test project: %s", err))
-	}
-	fmt.Println("Fixtures: Test project cleared.")
+	testProject := NewTestProject(t, projectStateFilePath)
+	testProject.Clear()
+	testProject.InitState()
 }

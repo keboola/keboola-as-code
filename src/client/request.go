@@ -24,6 +24,7 @@ const (
 )
 
 type Request struct {
+	id        int
 	request   *resty.Request
 	response  *Response
 	url       string
@@ -55,6 +56,10 @@ func (r *Request) SetMultipartFormData(data map[string]string) *Request {
 func (r *Request) Send() *Request {
 	r.sender.Send(r)
 	return r
+}
+
+func (r *Request) Id() int {
+	return r.id
 }
 
 func (r *Request) Url() string {
@@ -122,6 +127,6 @@ func (l *ResponseListener) Invoke(response *Response) *Response {
 	return l.Callback(response)
 }
 
-func NewRequest(sender Sender, request *resty.Request) *Request {
-	return &Request{request: request, url: request.URL, sender: sender}
+func NewRequest(id int, sender Sender, request *resty.Request) *Request {
+	return &Request{id: id, request: request, url: request.URL, sender: sender}
 }
