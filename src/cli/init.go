@@ -5,7 +5,6 @@ import (
 	"github.com/spf13/cobra"
 	"keboola-as-code/src/api"
 	"keboola-as-code/src/local"
-	"keboola-as-code/src/options"
 	"keboola-as-code/src/utils"
 	"os"
 	"path/filepath"
@@ -67,7 +66,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 
 			// Create metadata dir
 			projectDir := root.options.WorkingDirectory()
-			metadataDir := filepath.Join(projectDir, options.MetadataDir)
+			metadataDir := filepath.Join(projectDir, local.MetadataDir)
 			if err = os.MkdirAll(metadataDir, 0650); err != nil {
 				return fmt.Errorf("cannot create metadata directory \"%s\": %s", metadataDir, err)
 			}

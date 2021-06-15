@@ -2,12 +2,14 @@ package model
 
 import (
 	"fmt"
+	"keboola-as-code/src/utils"
 	"keboola-as-code/src/validator"
 	"sync"
 )
 
 type State struct {
 	mutex          *sync.Mutex
+	error          *utils.Error
 	branchesById   map[int]*Branch
 	componentsById map[string]*Component
 	configsById    map[string]*Config
@@ -16,10 +18,22 @@ type State struct {
 func NewState() *State {
 	return &State{
 		mutex:          &sync.Mutex{},
+		error:          &utils.Error{},
 		branchesById:   make(map[int]*Branch),
 		componentsById: make(map[string]*Component),
 		configsById:    make(map[string]*Config),
 	}
+}
+
+func (s *State) Error() *utils.Error {
+	if s.error.Len() == 0 {
+		return nil
+	}
+	return s.error
+}
+
+func (s *State) AddError(err error) {
+	s.error.Add(err)
 }
 
 func (s *State) Branches() map[int]*Branch {
@@ -47,20 +61,22 @@ func (s *State) ConfigurationById(branchId int, componentId string, id string) (
 	return configuration, nil
 }
 
-func (s *State) AddBranch(branch *Branch) error {
+func (s *State) AddBranch(branch *Branch) bool {
 	if err := validator.Validate(branch); err != nil {
-		panic(fmt.Errorf("branch is not valid\n:%s", err))
+		s.AddError(fmt.Errorf("branch is not valid:%s", err))
+		return false
 	}
 
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	s.branchesById[branch.Id] = branch
-	return nil
+	return true
 }
 
-func (s *State) AddComponent(component *Component) error {
+func (s *State) AddComponent(component *Component) bool {
 	if err := validator.Validate(component); err != nil {
-		panic(fmt.Errorf("component is not valid\n:%s", err))
+		s.AddError(fmt.Errorf("component is not valid:%s", err))
+		return false
 	}
 
 	func() {
@@ -70,28 +86,31 @@ func (s *State) AddComponent(component *Component) error {
 		s.componentsById[id] = component
 	}()
 
-	if err := s.AddConfigs(component.Configs); err != nil {
-		return err
+	if ok := s.AddConfigs(component.Configs); !ok {
+		return false
 	}
-	return nil
+	return true
 }
 
-func (s *State) AddConfigs(configs []*Config) error {
+func (s *State) AddConfigs(configs []*Config) bool {
+	ok := true
 	for _, config := range configs {
-		if err := s.AddConfig(config); err != nil {
-			return err
+		if cOk := s.AddConfig(config); !cOk {
+			ok = false
 		}
 	}
-	return nil
+	return ok
 }
 
-func (s *State) AddConfig(config *Config) error {
+func (s *State) AddConfig(config *Config) bool {
 	if err := validator.Validate(config); err != nil {
-		return fmt.Errorf("config is not valid\n:%s", err)
+		s.AddError(fmt.Errorf("config is not valid:%s", err))
+		return false
 	}
 
 	if _, ok := s.branchesById[config.BranchId]; !ok {
-		return fmt.Errorf("branch \"%d\" not found", config.BranchId)
+		s.AddError(fmt.Errorf("branch \"%d\" not found", config.BranchId))
+		return false
 	}
 
 	s.mutex.Lock()
@@ -99,5 +118,5 @@ func (s *State) AddConfig(config *Config) error {
 
 	key := configKey(config.BranchId, config.ComponentId, config.Id)
 	s.configsById[key] = config
-	return nil
+	return true
 }

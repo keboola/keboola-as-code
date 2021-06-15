@@ -12,7 +12,10 @@ func TestError(t *testing.T) {
 	assert.Equal(t, "", e.Error())
 
 	e.Add(fmt.Errorf("foo"))
+	assert.Equal(t, 1, e.Len())
+	assert.Equal(t, "foo", e.Error())
+
 	e.Add(fmt.Errorf("bar"))
 	assert.Equal(t, 2, e.Len())
-	assert.Equal(t, "- foo\n- bar", e.Error())
+	assert.Equal(t, "\n- foo\n- bar", e.Error())
 }

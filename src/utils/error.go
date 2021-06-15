@@ -26,13 +26,16 @@ func (e *Error) Error() string {
 		return ""
 	}
 
+	if len(e.errors) == 0 {
+		return ""
+	} else if len(e.errors) == 1 {
+		return e.errors[0].Error()
+	}
+
 	var msg []string
 	for _, err := range e.errors {
 		msg = append(msg, fmt.Sprintf("- %s", err))
 	}
 
-	if len(msg) == 0 {
-		return ""
-	}
-	return strings.Join(msg, "\n")
+	return "\n" + strings.Join(msg, "\n")
 }

@@ -32,14 +32,16 @@ func TestNewManifest(t *testing.T) {
 
 func TestLoad(t *testing.T) {
 	for _, c := range cases {
-		tempDir := t.TempDir()
-		path := filepath.Join(tempDir, FileName)
+		projectDir := t.TempDir()
+		metadataDir := filepath.Join(projectDir, MetadataDir)
+		assert.NoError(t, os.MkdirAll(metadataDir, 0650))
+		path := filepath.Join(metadataDir, FileName)
 
 		// Write file
 		assert.NoError(t, os.WriteFile(path, []byte(c.json), 0600))
 
 		// Load
-		manifest, err := LoadManifest(tempDir)
+		manifest, err := LoadManifest(projectDir, metadataDir)
 		assert.NotNil(t, manifest)
 		assert.NoError(t, err)
 
@@ -70,7 +72,7 @@ func TestValidateEmpty(t *testing.T) {
 	m := &Manifest{}
 	err := m.Validate()
 	assert.NotNil(t, err)
-	expected := `manifest is not valid:
+	expected := `manifest is not valid: 
 - key="version", value="0", failed "required" validation
 - key="project", value="<nil>", failed "required" validation`
 	assert.Equal(t, expected, err.Error())
@@ -93,8 +95,7 @@ func TestValidateBadVersion(t *testing.T) {
 	m.Version = 123
 	err := m.Validate()
 	assert.NotNil(t, err)
-	expected := `manifest is not valid:
-- key="version", value="123", failed "max" validation`
+	expected := `manifest is not valid: key="version", value="123", failed "max" validation`
 	assert.Equal(t, expected, err.Error())
 }
 

@@ -3,7 +3,6 @@ package local
 import (
 	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/model"
-	"keboola-as-code/src/options"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -11,23 +10,23 @@ import (
 
 func TestLoadStateNoManifest(t *testing.T) {
 	state, err := loadState("no-manifest")
-	assert.Nil(t, state)
+	assert.NotNil(t, state)
 	assert.NotNil(t, err)
-	assert.Regexp(t, `^manifest file not found ".*/no-manifest/.keboola/manifest.json"`, err.Error())
+	assert.Equal(t, `manifest ".keboola/manifest.json" not found`, err.Error())
 }
 
 func TestLoadStateInvalidManifest(t *testing.T) {
 	state, err := loadState("invalid-manifest")
-	assert.Nil(t, state)
+	assert.NotNil(t, state)
 	assert.NotNil(t, err)
-	assert.Equal(t, "manifest is not valid:\n- invalid character 'f' looking for beginning of object key string, offset: 3", err.Error())
+	assert.Equal(t, `manifest ".keboola/manifest.json" is not valid: invalid character 'f' looking for beginning of object key string, offset: 3`, err.Error())
 }
 
 func TestLoadStateEmptyManifest(t *testing.T) {
 	state, err := loadState("empty-manifest")
-	assert.Nil(t, state)
+	assert.NotNil(t, state)
 	assert.NotNil(t, err)
-	assert.Regexp(t, "^manifest is not valid:\n.*", err.Error())
+	assert.Regexp(t, "^manifest is not valid:.*", err.Error())
 }
 
 func TestLoadStateMinimal(t *testing.T) {
@@ -48,79 +47,79 @@ func TestLoadStateComplex(t *testing.T) {
 
 func TestLoadStateBranchMissingMetaJson(t *testing.T) {
 	state, err := loadState("branch-missing-meta-json")
-	assert.Nil(t, state)
+	assert.NotNil(t, state)
 	assert.NotNil(t, err)
-	assert.Equal(t, "branch metadata file not found \"main/meta.json\"", err.Error())
+	assert.Equal(t, `branch metadata JSON file "main/meta.json" not found`, err.Error())
 }
 
 func TestLoadStateConfigMissingConfigJson(t *testing.T) {
 	state, err := loadState("config-missing-config-json")
-	assert.Nil(t, state)
+	assert.NotNil(t, state)
 	assert.NotNil(t, err)
-	assert.Equal(t, "config content file not found \"123-branch/keboola.ex-generic/456-todos/config.json\"", err.Error())
+	assert.Equal(t, `config JSON file "123-branch/keboola.ex-generic/456-todos/config.json" not found`, err.Error())
 }
 
 func TestLoadStateConfigMissingMetaJson(t *testing.T) {
 	state, err := loadState("config-missing-meta-json")
-	assert.Nil(t, state)
+	assert.NotNil(t, state)
 	assert.NotNil(t, err)
-	assert.Equal(t, "config metadata file not found \"123-branch/keboola.ex-generic/456-todos/meta.json\"", err.Error())
+	assert.Equal(t, `config metadata JSON file "123-branch/keboola.ex-generic/456-todos/meta.json" not found`, err.Error())
 }
 
 func TestLoadStateConfigRowMissingConfigJson(t *testing.T) {
 	state, err := loadState("config-row-missing-config-json")
-	assert.Nil(t, state)
+	assert.NotNil(t, state)
 	assert.NotNil(t, err)
-	assert.Equal(t, "config row content file not found \"123-branch/keboola.ex-db-mysql/896-tables/rows/12-users/config.json\"", err.Error())
+	assert.Equal(t, `config row JSON file "123-branch/keboola.ex-db-mysql/896-tables/rows/12-users/config.json" not found`, err.Error())
 }
 
 func TestLoadStateConfigRowMissingMetaJson(t *testing.T) {
 	state, err := loadState("config-row-missing-meta-json")
-	assert.Nil(t, state)
+	assert.NotNil(t, state)
 	assert.NotNil(t, err)
-	assert.Equal(t, "config row metadata file not found \"123-branch/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json\"", err.Error())
+	assert.Equal(t, `config row metadata JSON file "123-branch/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json" not found`, err.Error())
 }
 
 func TestLoadStateBranchInvalidMetaJson(t *testing.T) {
 	state, err := loadState("branch-invalid-meta-json")
-	assert.Nil(t, state)
+	assert.NotNil(t, state)
 	assert.NotNil(t, err)
-	assert.Equal(t, "branch metadata file is invalid, invalid JSON file \"main/meta.json\":\n- invalid character 'f' looking for beginning of object key string, offset: 3", err.Error())
+	assert.Equal(t, `branch metadata JSON file "main/meta.json" is invalid: invalid character 'f' looking for beginning of object key string, offset: 3`, err.Error())
 }
 
 func TestLoadStateConfigInvalidConfigJson(t *testing.T) {
 	state, err := loadState("config-invalid-config-json")
-	assert.Nil(t, state)
+	assert.NotNil(t, state)
 	assert.NotNil(t, err)
-	assert.Equal(t, "config content  is invalid, invalid JSON file \"123-branch/keboola.ex-generic/456-todos/config.json\":\n- invalid character 'f' looking for beginning of object key string, offset: 3", err.Error())
+	assert.Equal(t, `config JSON file "123-branch/keboola.ex-generic/456-todos/config.json" is invalid: invalid character 'f' looking for beginning of object key string, offset: 3`, err.Error())
 }
 
 func TestLoadStateConfigInvalidMetaJson(t *testing.T) {
 	state, err := loadState("config-invalid-meta-json")
-	assert.Nil(t, state)
+	assert.NotNil(t, state)
 	assert.NotNil(t, err)
-	assert.Equal(t, "config metadata file is invalid, invalid JSON file \"123-branch/keboola.ex-generic/456-todos/meta.json\":\n- invalid character 'f' looking for beginning of object key string, offset: 3", err.Error())
+	assert.Equal(t, `config metadata JSON file "123-branch/keboola.ex-generic/456-todos/meta.json" is invalid: invalid character 'f' looking for beginning of object key string, offset: 3`, err.Error())
 }
 
 func TestLoadStateConfigRowInvalidConfigJson(t *testing.T) {
 	state, err := loadState("config-row-invalid-config-json")
-	assert.Nil(t, state)
+	assert.NotNil(t, state)
 	assert.NotNil(t, err)
-	assert.Equal(t, "config row content is invalid, invalid JSON file \"123-branch/keboola.ex-db-mysql/896-tables/rows/56-disabled/config.json\":\n- invalid character 'f' looking for beginning of object key string, offset: 3", err.Error())
+	assert.Equal(t, `config row JSON file "123-branch/keboola.ex-db-mysql/896-tables/rows/56-disabled/config.json" is invalid: invalid character 'f' looking for beginning of object key string, offset: 3`, err.Error())
 }
 
 func TestLoadStateConfigRowInvalidMetaJson(t *testing.T) {
 	state, err := loadState("config-row-invalid-meta-json")
-	assert.Nil(t, state)
+	assert.NotNil(t, state)
 	assert.NotNil(t, err)
-	assert.Equal(t, "config row metadata file is invalid, invalid JSON file \"123-branch/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json\":\n- invalid character 'f' looking for beginning of object key string, offset: 3", err.Error())
+	assert.Equal(t, `config row metadata JSON file "123-branch/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json" is invalid: invalid character 'f' looking for beginning of object key string, offset: 3`, err.Error())
 }
 
 func loadState(projectDirName string) (*model.State, error) {
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filepath.Dir(testFile)
 	projectDir := filepath.Join(testDir, "fixtures", projectDirName)
-	metadataDir := filepath.Join(projectDir, options.MetadataDir)
+	metadataDir := filepath.Join(projectDir, MetadataDir)
 	return LoadState(projectDir, metadataDir)
 }
 

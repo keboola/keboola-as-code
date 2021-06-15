@@ -41,9 +41,9 @@ func pullCommand(root *rootCommand) *cobra.Command {
 			}
 
 			// Load local state
-			_, err = local.LoadState(root.options.ProjectDirectory(), root.options.MetadataDirectory())
-			if err != nil {
-				return err
+			_, stateErr := local.LoadState(root.options.ProjectDirectory(), root.options.MetadataDirectory())
+			if stateErr != nil {
+				return stateErr
 			}
 
 			return fmt.Errorf("TODO PULL")

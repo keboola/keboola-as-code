@@ -7,16 +7,13 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"keboola-as-code/src/ask"
+	"keboola-as-code/src/local"
 	"keboola-as-code/src/utils"
 	"os"
 	"path/filepath"
 	"reflect"
 	"regexp"
 	"strings"
-)
-
-const (
-	MetadataDir = ".keboola"
 )
 
 // Options contains parsed flags and ENV variables
@@ -66,7 +63,7 @@ func (o *Options) SetWorkingDirectory(dir string) error {
 }
 
 func (o *Options) SetProjectDirectory(projectDir string) error {
-	metadataDir := filepath.Join(projectDir, MetadataDir)
+	metadataDir := filepath.Join(projectDir, local.MetadataDir)
 	if !utils.IsDir(projectDir) {
 		return fmt.Errorf("project directory \"%s\" not found", o.projectDirectory)
 	}

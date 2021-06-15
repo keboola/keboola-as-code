@@ -3,9 +3,10 @@ package api
 import (
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/model"
+	"keboola-as-code/src/utils"
 )
 
-func LoadState(api *StorageApi) (*model.State, error) {
+func LoadState(api *StorageApi) (*model.State, *utils.Error) {
 	state := model.NewState()
 	pool := api.NewPool()
 
@@ -15,8 +16,8 @@ func LoadState(api *StorageApi) (*model.State, error) {
 		OnSuccess(func(response *client.Response) *client.Response {
 			// Save branch + load branch components
 			for _, branch := range *response.Result().(*[]*model.Branch) {
-				if err := state.AddBranch(branch); err != nil {
-					return response.SetError(err)
+				if ok := state.AddBranch(branch); !ok {
+					continue
 				}
 
 				// Load components
@@ -25,9 +26,7 @@ func LoadState(api *StorageApi) (*model.State, error) {
 					OnSuccess(func(response *client.Response) *client.Response {
 						// Save component, it contains all configs and rows
 						for _, component := range *response.Result().(*[]*model.Component) {
-							if err := state.AddComponent(component); err != nil {
-								return response.SetError(err)
-							}
+							state.AddComponent(component)
 						}
 						return response
 					}).
@@ -38,7 +37,8 @@ func LoadState(api *StorageApi) (*model.State, error) {
 		Send()
 
 	if err := pool.StartAndWait(); err != nil {
-		return nil, err
+		state.AddError(err)
 	}
-	return state, nil
+
+	return state, state.Error()
 }

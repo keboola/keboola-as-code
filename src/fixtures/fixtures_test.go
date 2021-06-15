@@ -17,9 +17,12 @@ import (
 func TestDumpProjectState(t *testing.T) {
 	// Load remote state and convert
 	a, _ := api.TestStorageApiWithToken(t)
-	remoteState, err := api.LoadState(a)
-	assert.NoError(t, err)
-	fixtures, err := ConvertRemoteStateToFixtures(remoteState)
+	state, stateErr := api.LoadState(a)
+	if stateErr != nil {
+		assert.FailNow(t, "%s", stateErr)
+	}
+
+	fixtures, err := ConvertRemoteStateToFixtures(state)
 	if err != nil {
 		assert.FailNow(t, "%s", err)
 	}

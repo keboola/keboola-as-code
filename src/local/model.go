@@ -10,9 +10,10 @@ import (
 )
 
 const (
-	MetaFile   = "meta.json"
-	ConfigFile = "config.json"
-	RowsDir    = "rows"
+	MetadataDir = ".keboola"
+	MetaFile    = "meta.json"
+	ConfigFile  = "config.json"
+	RowsDir     = "rows"
 )
 
 type Project struct {
@@ -79,13 +80,13 @@ func (b *Branch) Meta(projectDir string) (*BranchMeta, error) {
 	// Read meta file
 	path := b.MetaFilePath(projectDir)
 	if !utils.IsFile(path) {
-		return nil, fmt.Errorf("branch metadata file not found \"%s\"", utils.RelPath(projectDir, path))
+		return nil, fmt.Errorf("branch metadata JSON file \"%s\" not found", utils.RelPath(projectDir, path))
 	}
 
 	meta := &BranchMeta{}
 	err := readJsonFile(projectDir, path, meta)
 	if err != nil {
-		return nil, fmt.Errorf("branch metadata file is invalid, %s", err)
+		return nil, fmt.Errorf("branch metadata JSON file \"%s\" is invalid: %s", utils.RelPath(projectDir, path), err)
 	}
 	return meta, err
 }
@@ -93,13 +94,13 @@ func (b *Branch) Meta(projectDir string) (*BranchMeta, error) {
 func (c *Config) Meta(b *Branch, projectDir string) (*ConfigMeta, error) {
 	path := c.MetaFilePath(b, projectDir)
 	if !utils.IsFile(path) {
-		return nil, fmt.Errorf("config metadata file not found \"%s\"", utils.RelPath(projectDir, path))
+		return nil, fmt.Errorf("config metadata JSON file \"%s\" not found", utils.RelPath(projectDir, path))
 	}
 
 	meta := &ConfigMeta{}
 	err := readJsonFile(projectDir, path, meta)
 	if err != nil {
-		return nil, fmt.Errorf("config metadata file is invalid, %s", err)
+		return nil, fmt.Errorf("config metadata JSON file \"%s\" is invalid: %s", utils.RelPath(projectDir, path), err)
 	}
 	return meta, nil
 }
@@ -107,13 +108,13 @@ func (c *Config) Meta(b *Branch, projectDir string) (*ConfigMeta, error) {
 func (r *ConfigRow) Meta(b *Branch, c *Config, projectDir string) (*ConfigRowMeta, error) {
 	path := r.MetaFilePath(b, c, projectDir)
 	if !utils.IsFile(path) {
-		return nil, fmt.Errorf("config row metadata file not found \"%s\"", utils.RelPath(projectDir, path))
+		return nil, fmt.Errorf("config row metadata JSON file \"%s\" not found", utils.RelPath(projectDir, path))
 	}
 
 	meta := &ConfigRowMeta{}
 	err := readJsonFile(projectDir, path, meta)
 	if err != nil {
-		return nil, fmt.Errorf("config row metadata file is invalid, %s", err)
+		return nil, fmt.Errorf("config row metadata JSON file \"%s\" is invalid: %s", utils.RelPath(projectDir, path), err)
 	}
 	return meta, nil
 }
@@ -121,13 +122,13 @@ func (r *ConfigRow) Meta(b *Branch, c *Config, projectDir string) (*ConfigRowMet
 func (c *Config) Config(b *Branch, projectDir string) (map[string]interface{}, error) {
 	path := c.ConfigFilePath(b, projectDir)
 	if !utils.IsFile(path) {
-		return nil, fmt.Errorf("config content file not found \"%s\"", utils.RelPath(projectDir, path))
+		return nil, fmt.Errorf("config JSON file \"%s\" not found", utils.RelPath(projectDir, path))
 	}
 
 	config := make(map[string]interface{})
 	err := readJsonFile(projectDir, path, &config)
 	if err != nil {
-		return nil, fmt.Errorf("config content  is invalid, %s", err)
+		return nil, fmt.Errorf("config JSON file \"%s\" is invalid: %s", utils.RelPath(projectDir, path), err)
 	}
 	return config, nil
 }
@@ -135,13 +136,13 @@ func (c *Config) Config(b *Branch, projectDir string) (map[string]interface{}, e
 func (r *ConfigRow) Config(b *Branch, c *Config, projectDir string) (map[string]interface{}, error) {
 	path := r.ConfigFilePath(b, c, projectDir)
 	if !utils.IsFile(path) {
-		return nil, fmt.Errorf("config row content file not found \"%s\"", utils.RelPath(projectDir, path))
+		return nil, fmt.Errorf("config row JSON file \"%s\" not found", utils.RelPath(projectDir, path))
 	}
 
 	config := make(map[string]interface{})
 	err := readJsonFile(projectDir, path, &config)
 	if err != nil {
-		return nil, fmt.Errorf("config row content is invalid, %s", err)
+		return nil, fmt.Errorf("config row JSON file \"%s\" is invalid: %s", utils.RelPath(projectDir, path), err)
 	}
 	return config, nil
 }
@@ -235,7 +236,7 @@ func readJsonFile(projectDir string, path string, v interface{}) error {
 	// Decode meta file
 	err = json.Decode(content, v)
 	if err != nil {
-		return fmt.Errorf("invalid JSON file \"%s\":\n%s", utils.RelPath(projectDir, path), err)
+		return err
 	}
 	return nil
 }

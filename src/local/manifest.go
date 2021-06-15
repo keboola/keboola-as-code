@@ -35,24 +35,24 @@ func NewManifest(projectId int, apiHost string) (*Manifest, error) {
 	return m, nil
 }
 
-func LoadManifest(metadataDir string) (*Manifest, error) {
+func LoadManifest(projectDir string, metadataDir string) (*Manifest, error) {
 	// Exists?
 	path := filepath.Join(metadataDir, FileName)
 	if !utils.IsFile(path) {
-		return nil, fmt.Errorf("manifest file not found \"%s\"", path)
+		return nil, fmt.Errorf("manifest \"%s\" not found", utils.RelPath(projectDir, path))
 	}
 
 	// Load file
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("cannot read from manifest: %s", err)
+		return nil, fmt.Errorf("cannot read from manifest \"%s\": %s", utils.RelPath(projectDir, path), err)
 	}
 
 	// Decode JSON
 	m := &Manifest{}
 	err = json.Decode(data, m)
 	if err != nil {
-		return nil, fmt.Errorf("manifest is not valid:\n%s", err)
+		return nil, fmt.Errorf("manifest \"%s\" is not valid: %s", utils.RelPath(projectDir, path), err)
 	}
 
 	// Validate
@@ -88,14 +88,14 @@ func (m *Manifest) Save(metadataDir string) error {
 
 func (m *Manifest) Validate() error {
 	if err := validator.Validate(m); err != nil {
-		return fmt.Errorf("manifest is not valid:\n%s", err)
+		return fmt.Errorf("manifest is not valid: %s", err)
 	}
 	return nil
 }
 
 func (m *Manifest) Path() string {
 	if len(m.path) == 0 {
-		panic(fmt.Errorf("path is not set"))
+		panic(fmt.Errorf("manifest path is not set"))
 	}
 	return m.path
 }
