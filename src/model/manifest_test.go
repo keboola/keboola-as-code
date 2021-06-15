@@ -1,4 +1,4 @@
-package local
+package model
 
 import (
 	"github.com/stretchr/testify/assert"
@@ -35,7 +35,7 @@ func TestLoad(t *testing.T) {
 		projectDir := t.TempDir()
 		metadataDir := filepath.Join(projectDir, MetadataDir)
 		assert.NoError(t, os.MkdirAll(metadataDir, 0650))
-		path := filepath.Join(metadataDir, FileName)
+		path := filepath.Join(metadataDir, ManifestFileName)
 
 		// Write file
 		assert.NoError(t, os.WriteFile(path, []byte(c.json), 0600))
@@ -55,7 +55,7 @@ func TestLoad(t *testing.T) {
 func TestSave(t *testing.T) {
 	for _, c := range cases {
 		tempDir := t.TempDir()
-		path := filepath.Join(tempDir, FileName)
+		path := filepath.Join(tempDir, ManifestFileName)
 
 		// Save
 		m := c.data
@@ -114,12 +114,12 @@ func minimalJson() string {
 func minimalStruct() *Manifest {
 	return &Manifest{
 		Version: 1,
-		Project: &Project{
+		Project: &ManifestProject{
 			Id:      12345,
 			ApiHost: "keboola.connection.com",
 		},
-		Branches: make([]*Branch, 0),
-		Configs:  make([]*Config, 0),
+		Branches: make([]*ManifestBranch, 0),
+		Configs:  make([]*ManifestConfig, 0),
 	}
 }
 
@@ -180,11 +180,11 @@ func fullJson() string {
 func fullStruct() *Manifest {
 	return &Manifest{
 		Version: 1,
-		Project: &Project{
+		Project: &ManifestProject{
 			Id:      12345,
 			ApiHost: "keboola.connection.com",
 		},
-		Branches: []*Branch{
+		Branches: []*ManifestBranch{
 			{
 				Id:   10,
 				Path: "main",
@@ -194,13 +194,13 @@ func fullStruct() *Manifest {
 				Path: "11-dev",
 			},
 		},
-		Configs: []*Config{
+		Configs: []*ManifestConfig{
 			{
 				Id:          "11",
 				ComponentId: "keboola.ex-db-oracle",
 				BranchId:    10,
 				Path:        "11-raw-data",
-				Rows: []*ConfigRow{
+				Rows: []*ManifestConfigRow{
 					{
 						Id:   "101",
 						Path: "101-region-1.json",
@@ -216,7 +216,7 @@ func fullStruct() *Manifest {
 				ComponentId: "keboola.wr-db-mysql",
 				BranchId:    11,
 				Path:        "12-current-month",
-				Rows: []*ConfigRow{
+				Rows: []*ManifestConfigRow{
 					{
 						Id:   "103",
 						Path: "103-all.json",

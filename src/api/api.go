@@ -69,8 +69,8 @@ func (a *StorageApi) NewPool() *client.Pool {
 	return a.client.NewPool(a.logger)
 }
 
-func (a *StorageApi) Request(method string, url string) *client.Request {
-	return a.client.Request(method, url)
+func (a *StorageApi) NewRequest(method string, url string) *client.Request {
+	return a.client.NewRequest(method, url)
 }
 
 func (a *StorageApi) Send(request *client.Request) {

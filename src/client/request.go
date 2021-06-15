@@ -15,6 +15,7 @@ type ResponseListener struct {
 }
 type Sender interface {
 	Send(r *Request)
+	Request(request *Request) *Request
 }
 
 const (

@@ -52,7 +52,12 @@ func (c *Client) Send(request *Request) {
 	request.invokeListeners()
 }
 
-func (c *Client) Request(method string, url string) *Request {
+func (c *Client) Request(request *Request) *Request {
+	request.sender = c
+	return request
+}
+
+func (c *Client) NewRequest(method string, url string) *Request {
 	r := c.resty.R()
 	r.Method = method
 	r.URL = url

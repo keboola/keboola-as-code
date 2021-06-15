@@ -1,0 +1,40 @@
+{
+  "componentId": "keboola.ex-db-mysql",
+  "name": "with-rows",
+  "configuration": {
+    "parameters": {
+      "db": {
+        "host": "mysql.example.com"
+      }
+    }
+  },
+  "rows": [
+    {
+      "name": "users",
+      "isDisabled": false,
+      "configuration": {
+        "parameters": {
+          "incremental": false
+        }
+      }
+    },
+    {
+      "name": "test_view",
+      "isDisabled": false,
+      "configuration": {
+        "parameters": {
+          "incremental": false
+        }
+      }
+    },
+    {
+      "name": "disabled",
+      "isDisabled": true,
+      "configuration": {
+        "parameters": {
+          "incremental": false
+        }
+      }
+    }
+  ]
+}

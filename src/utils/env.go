@@ -2,9 +2,11 @@ package utils
 
 import (
 	"fmt"
+	"github.com/spf13/cast"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -15,6 +17,13 @@ func MustGetEnv(key string) string {
 		panic(fmt.Errorf("missing ENV variable \"%s\"", key))
 	}
 	return value
+}
+
+func MustSetEnv(key string, value string) {
+	err := os.Setenv(key, value)
+	if err != nil {
+		panic(fmt.Errorf("cannot set env variable \"%s\": %s", key, err))
+	}
 }
 
 // ResetEnv used from https://golang.org/src/os/env_test.go
@@ -69,4 +78,41 @@ func ReplaceEnvsDir(root string) {
 	if err != nil {
 		panic(fmt.Errorf("cannot walk over dir \"%s\": %s", root, err))
 	}
+}
+
+func TestApiHost() string {
+	return MustGetEnv("TEST_KBC_STORAGE_API_HOST")
+}
+
+func TestToken() string {
+	return MustGetEnv("TEST_KBC_STORAGE_API_TOKEN")
+}
+
+func TestTokenMaster() string {
+	return MustGetEnv("TEST_KBC_STORAGE_API_TOKEN_MASTER")
+}
+
+func TestTokenExpired() string {
+	return MustGetEnv("TEST_KBC_STORAGE_API_TOKEN_EXPIRED")
+}
+
+func TestProjectId() int {
+	str := MustGetEnv("TEST_PROJECT_ID")
+	value, err := strconv.Atoi(str)
+	if err != nil {
+		panic(fmt.Errorf("invalid integer \"%s\": %s", str, err))
+	}
+	return value
+}
+
+func TestProjectName() string {
+	return MustGetEnv("TEST_PROJECT_NAME")
+}
+
+func TestIsVerbose() bool {
+	value := os.Getenv("TEST_VERBOSE")
+	if value == "" {
+		value = "false"
+	}
+	return cast.ToBool(value)
 }

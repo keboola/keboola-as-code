@@ -6,6 +6,7 @@ import (
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/model"
+	"sync"
 )
 
 func (a *StorageApi) GetConfig(branchId int, componentId string, configId string) (*model.Config, error) {
@@ -29,8 +30,8 @@ func (a *StorageApi) CreateConfig(config *model.Config) (*model.Config, error) {
 	return nil, response.Error()
 }
 
-func (a *StorageApi) UpdateConfig(config *model.Config) (*model.Config, error) {
-	request, err := a.UpdateConfigRequest(config)
+func (a *StorageApi) UpdateConfig(config *model.Config, changed []string) (*model.Config, error) {
+	request, err := a.UpdateConfigRequest(config, changed)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +51,7 @@ func (a *StorageApi) DeleteConfig(componentId string, configId string) *client.R
 // GetConfigRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/manage-configurations/development-branch-configuration-detail
 func (a *StorageApi) GetConfigRequest(branchId int, componentId string, configId string) *client.Request {
 	return a.
-		Request(resty.MethodGet, fmt.Sprintf("branch/%d/components/%s/configs/%s", branchId, componentId, configId)).
+		NewRequest(resty.MethodGet, fmt.Sprintf("branch/%d/components/%s/configs/%s", branchId, componentId, configId)).
 		SetResult(&model.Config{
 			BranchId:    branchId,
 			ComponentId: componentId,
@@ -72,7 +73,7 @@ func (a *StorageApi) CreateConfigRequest(config *model.Config) (*client.Request,
 
 	// Create config
 	request := a.
-		Request(resty.MethodPost, fmt.Sprintf("branch/%d/components/%s/configs", config.BranchId, config.ComponentId)).
+		NewRequest(resty.MethodPost, fmt.Sprintf("branch/%d/components/%s/configs", config.BranchId, config.ComponentId)).
 		SetHeader("Content-Type", "application/x-www-form-urlencoded").
 		SetMultipartFormData(map[string]string{
 			"name":              config.Name,
@@ -97,14 +98,36 @@ func (a *StorageApi) CreateConfigRequest(config *model.Config) (*client.Request,
 				return response
 			}
 
-			// If sub-request fail -> mark parent request failed too
-			rowRequest.OnError(func(subResponse *client.Response) *client.Response {
-				response.SetError(subResponse.Error())
-				return subResponse
-			})
-
 			// Sent sync/async according to the Sender type
-			response.Sender().Send(rowRequest)
+			lock := &sync.Mutex{}
+			rowsSortOrderSent := false
+			response.
+				Sender().
+				Request(rowRequest).
+				OnSuccess(func(subResponse *client.Response) *client.Response {
+					// Rows are created async, so we must set order when all rows created
+					lock.Lock()
+					send := config.AllRowsSaved() && !rowsSortOrderSent
+					rowsSortOrderSent = rowsSortOrderSent && send
+					lock.Unlock()
+
+					if send {
+						config.ChangeDescription = "Set rows sort order"
+						if updateReq, err := a.UpdateConfigRequest(config, []string{"changeDescription", "rowsSortOrder"}); err == nil {
+							subResponse.Sender().Request(updateReq).Send()
+						} else {
+							return subResponse.SetError(err)
+						}
+					}
+
+					return subResponse
+				}).
+				// If sub-request fail -> mark parent request failed too
+				OnError(func(subResponse *client.Response) *client.Response {
+					response.SetError(subResponse.Error())
+					return subResponse
+				}).
+				Send()
 		}
 		return response
 	})
@@ -113,7 +136,7 @@ func (a *StorageApi) CreateConfigRequest(config *model.Config) (*client.Request,
 }
 
 // UpdateConfigRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/manage-configurations/update-development-branch-configuration
-func (a *StorageApi) UpdateConfigRequest(config *model.Config) (*client.Request, error) {
+func (a *StorageApi) UpdateConfigRequest(config *model.Config, changed []string) (*client.Request, error) {
 	// Id is required
 	if config.Id == "" {
 		panic("config id must be set")
@@ -125,27 +148,38 @@ func (a *StorageApi) UpdateConfigRequest(config *model.Config) (*client.Request,
 		panic(fmt.Errorf(`cannot JSON encode config configuration: %s`, err))
 	}
 
-	// Generate rows sort order
-	var rowsSortOrder []string
-	for _, row := range config.Rows {
-		rowsSortOrder = append(rowsSortOrder, row.Id)
+	// Data
+	all := map[string]string{
+		"name":              config.Name,
+		"description":       config.Description,
+		"changeDescription": config.ChangeDescription,
+		"configuration":     string(configJson),
+		"rowsSortOrder":     "", // see bellow
 	}
-	rowsSortOrderJson, err := json.Encode(rowsSortOrder, false)
-	if err != nil {
-		panic(fmt.Errorf(`cannot JSON encode config rows sort order: %s`, err))
+
+	// Send changed keys only
+	data := map[string]string{}
+	if changed != nil {
+		for _, key := range changed {
+			data[key] = all[key]
+		}
+	} else {
+		data = all
+	}
+
+	// Set rows sort order array
+	if _, ok := data["rowsSortOrder"]; ok {
+		delete(data, "rowsSortOrder")
+		for index, row := range config.Rows {
+			data[fmt.Sprintf("rowsSortOrder[%d]", index)] = row.Id
+		}
 	}
 
 	// Update config
 	request := a.
-		Request(resty.MethodPut, fmt.Sprintf("branch/%d/components/%s/configs/%s", config.BranchId, config.ComponentId, config.Id)).
+		NewRequest(resty.MethodPut, fmt.Sprintf("branch/%d/components/%s/configs/%s", config.BranchId, config.ComponentId, config.Id)).
 		SetHeader("Content-Type", "application/x-www-form-urlencoded").
-		SetMultipartFormData(map[string]string{
-			"name":              config.Name,
-			"description":       config.Description,
-			"changeDescription": config.ChangeDescription,
-			"configuration":     string(configJson),
-			"rowsSortOrder":     string(rowsSortOrderJson),
-		}).
+		SetMultipartFormData(data).
 		SetResult(config)
 
 	return request, nil
@@ -154,5 +188,20 @@ func (a *StorageApi) UpdateConfigRequest(config *model.Config) (*client.Request,
 // DeleteConfigRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/manage-configurations/delete-configuration
 // Only config in main branch can be deleted!
 func (a *StorageApi) DeleteConfigRequest(componentId string, configId string) *client.Request {
-	return a.Request(resty.MethodDelete, fmt.Sprintf("components/%s/configs/%s", componentId, configId))
+	return a.NewRequest(resty.MethodDelete, fmt.Sprintf("components/%s/configs/%s", componentId, configId))
+}
+
+func (a *StorageApi) DeleteConfigsInBranchRequest(branchId int) *client.Request {
+	return a.ListComponentsRequest(branchId).
+		OnSuccess(func(response *client.Response) *client.Response {
+			for _, component := range *response.Result().(*[]*model.Component) {
+				for _, config := range component.Configs {
+					response.
+						Sender().
+						Request(a.DeleteConfigRequest(config.ComponentId, config.Id)).
+						Send()
+				}
+			}
+			return response
+		})
 }

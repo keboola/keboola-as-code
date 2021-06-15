@@ -1,13 +1,12 @@
-package local
+package model
 
 import (
 	"fmt"
-	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
 )
 
-func LoadState(projectDir string, metadataDir string) (*model.State, *utils.Error) {
-	state := model.NewState()
+func LoadLocalState(projectDir string, metadataDir string) (*State, *utils.Error) {
+	state := NewState()
 
 	// Load manifest
 	manifest, err := LoadManifest(projectDir, metadataDir)
@@ -17,7 +16,7 @@ func LoadState(projectDir string, metadataDir string) (*model.State, *utils.Erro
 	}
 
 	// Add branches
-	var branchById = make(map[int]*Branch)
+	var branchById = make(map[int]*ManifestBranch)
 	for _, b := range manifest.Branches {
 		branch, err := b.ToModel(projectDir)
 		if err == nil {

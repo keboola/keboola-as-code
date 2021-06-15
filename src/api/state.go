@@ -6,13 +6,13 @@ import (
 	"keboola-as-code/src/utils"
 )
 
-func LoadState(api *StorageApi) (*model.State, *utils.Error) {
+func LoadRemoteState(a *StorageApi) (*model.State, *utils.Error) {
 	state := model.NewState()
-	pool := api.NewPool()
+	pool := a.NewPool()
 
 	// Load branches
 	pool.
-		Request(api.ListBranchesRequest()).
+		Request(a.ListBranchesRequest()).
 		OnSuccess(func(response *client.Response) *client.Response {
 			// Save branch + load branch components
 			for _, branch := range *response.Result().(*[]*model.Branch) {
@@ -22,7 +22,7 @@ func LoadState(api *StorageApi) (*model.State, *utils.Error) {
 
 				// Load components
 				pool.
-					Request(api.ListComponentsRequest(branch.Id)).
+					Request(a.ListComponentsRequest(branch.Id)).
 					OnSuccess(func(response *client.Response) *client.Response {
 						// Save component, it contains all configs and rows
 						for _, component := range *response.Result().(*[]*model.Component) {

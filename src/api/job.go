@@ -20,7 +20,7 @@ func (a *StorageApi) GetJob(jobId int) (*model.Job, error) {
 func (a *StorageApi) GetJobRequest(jobId int) *client.Request {
 	job := &model.Branch{}
 	return a.
-		Request(resty.MethodGet, fmt.Sprintf("jobs/%d", jobId)).
+		NewRequest(resty.MethodGet, fmt.Sprintf("jobs/%d", jobId)).
 		SetResult(job)
 }
 

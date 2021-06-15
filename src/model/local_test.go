@@ -1,36 +1,35 @@
-package local
+package model
 
 import (
 	"github.com/stretchr/testify/assert"
-	"keboola-as-code/src/model"
 	"path/filepath"
 	"runtime"
 	"testing"
 )
 
 func TestLoadStateNoManifest(t *testing.T) {
-	state, err := loadState("no-manifest")
+	state, err := loadLocalTestState("no-manifest")
 	assert.NotNil(t, state)
 	assert.NotNil(t, err)
 	assert.Equal(t, `manifest ".keboola/manifest.json" not found`, err.Error())
 }
 
 func TestLoadStateInvalidManifest(t *testing.T) {
-	state, err := loadState("invalid-manifest")
+	state, err := loadLocalTestState("invalid-manifest")
 	assert.NotNil(t, state)
 	assert.NotNil(t, err)
 	assert.Equal(t, `manifest ".keboola/manifest.json" is not valid: invalid character 'f' looking for beginning of object key string, offset: 3`, err.Error())
 }
 
 func TestLoadStateEmptyManifest(t *testing.T) {
-	state, err := loadState("empty-manifest")
+	state, err := loadLocalTestState("empty-manifest")
 	assert.NotNil(t, state)
 	assert.NotNil(t, err)
 	assert.Regexp(t, "^manifest is not valid:.*", err.Error())
 }
 
 func TestLoadStateMinimal(t *testing.T) {
-	state, err := loadState("minimal")
+	state, err := loadLocalTestState("minimal")
 	assert.NotNil(t, state)
 	assert.Nil(t, err)
 	assert.Len(t, state.Branches(), 0)
@@ -38,7 +37,7 @@ func TestLoadStateMinimal(t *testing.T) {
 }
 
 func TestLoadStateComplex(t *testing.T) {
-	state, err := loadState("complex")
+	state, err := loadLocalTestState("complex")
 	assert.NotNil(t, state)
 	assert.Nil(t, err)
 	assert.Equal(t, complexExpectedBranches(), state.Branches())
@@ -46,85 +45,85 @@ func TestLoadStateComplex(t *testing.T) {
 }
 
 func TestLoadStateBranchMissingMetaJson(t *testing.T) {
-	state, err := loadState("branch-missing-meta-json")
+	state, err := loadLocalTestState("branch-missing-meta-json")
 	assert.NotNil(t, state)
 	assert.NotNil(t, err)
 	assert.Equal(t, `branch metadata JSON file "main/meta.json" not found`, err.Error())
 }
 
 func TestLoadStateConfigMissingConfigJson(t *testing.T) {
-	state, err := loadState("config-missing-config-json")
+	state, err := loadLocalTestState("config-missing-config-json")
 	assert.NotNil(t, state)
 	assert.NotNil(t, err)
 	assert.Equal(t, `config JSON file "123-branch/keboola.ex-generic/456-todos/config.json" not found`, err.Error())
 }
 
 func TestLoadStateConfigMissingMetaJson(t *testing.T) {
-	state, err := loadState("config-missing-meta-json")
+	state, err := loadLocalTestState("config-missing-meta-json")
 	assert.NotNil(t, state)
 	assert.NotNil(t, err)
 	assert.Equal(t, `config metadata JSON file "123-branch/keboola.ex-generic/456-todos/meta.json" not found`, err.Error())
 }
 
 func TestLoadStateConfigRowMissingConfigJson(t *testing.T) {
-	state, err := loadState("config-row-missing-config-json")
+	state, err := loadLocalTestState("config-row-missing-config-json")
 	assert.NotNil(t, state)
 	assert.NotNil(t, err)
 	assert.Equal(t, `config row JSON file "123-branch/keboola.ex-db-mysql/896-tables/rows/12-users/config.json" not found`, err.Error())
 }
 
 func TestLoadStateConfigRowMissingMetaJson(t *testing.T) {
-	state, err := loadState("config-row-missing-meta-json")
+	state, err := loadLocalTestState("config-row-missing-meta-json")
 	assert.NotNil(t, state)
 	assert.NotNil(t, err)
 	assert.Equal(t, `config row metadata JSON file "123-branch/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json" not found`, err.Error())
 }
 
 func TestLoadStateBranchInvalidMetaJson(t *testing.T) {
-	state, err := loadState("branch-invalid-meta-json")
+	state, err := loadLocalTestState("branch-invalid-meta-json")
 	assert.NotNil(t, state)
 	assert.NotNil(t, err)
 	assert.Equal(t, `branch metadata JSON file "main/meta.json" is invalid: invalid character 'f' looking for beginning of object key string, offset: 3`, err.Error())
 }
 
 func TestLoadStateConfigInvalidConfigJson(t *testing.T) {
-	state, err := loadState("config-invalid-config-json")
+	state, err := loadLocalTestState("config-invalid-config-json")
 	assert.NotNil(t, state)
 	assert.NotNil(t, err)
 	assert.Equal(t, `config JSON file "123-branch/keboola.ex-generic/456-todos/config.json" is invalid: invalid character 'f' looking for beginning of object key string, offset: 3`, err.Error())
 }
 
 func TestLoadStateConfigInvalidMetaJson(t *testing.T) {
-	state, err := loadState("config-invalid-meta-json")
+	state, err := loadLocalTestState("config-invalid-meta-json")
 	assert.NotNil(t, state)
 	assert.NotNil(t, err)
 	assert.Equal(t, `config metadata JSON file "123-branch/keboola.ex-generic/456-todos/meta.json" is invalid: invalid character 'f' looking for beginning of object key string, offset: 3`, err.Error())
 }
 
 func TestLoadStateConfigRowInvalidConfigJson(t *testing.T) {
-	state, err := loadState("config-row-invalid-config-json")
+	state, err := loadLocalTestState("config-row-invalid-config-json")
 	assert.NotNil(t, state)
 	assert.NotNil(t, err)
 	assert.Equal(t, `config row JSON file "123-branch/keboola.ex-db-mysql/896-tables/rows/56-disabled/config.json" is invalid: invalid character 'f' looking for beginning of object key string, offset: 3`, err.Error())
 }
 
 func TestLoadStateConfigRowInvalidMetaJson(t *testing.T) {
-	state, err := loadState("config-row-invalid-meta-json")
+	state, err := loadLocalTestState("config-row-invalid-meta-json")
 	assert.NotNil(t, state)
 	assert.NotNil(t, err)
 	assert.Equal(t, `config row metadata JSON file "123-branch/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json" is invalid: invalid character 'f' looking for beginning of object key string, offset: 3`, err.Error())
 }
 
-func loadState(projectDirName string) (*model.State, error) {
+func loadLocalTestState(projectDirName string) (*State, error) {
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filepath.Dir(testFile)
-	projectDir := filepath.Join(testDir, "fixtures", projectDirName)
+	projectDir := filepath.Join(testDir, "fixtures", "local", projectDirName)
 	metadataDir := filepath.Join(projectDir, MetadataDir)
-	return LoadState(projectDir, metadataDir)
+	return LoadLocalState(projectDir, metadataDir)
 }
 
-func complexExpectedBranches() map[int]*model.Branch {
-	return map[int]*model.Branch{
+func complexExpectedBranches() map[int]*Branch {
+	return map[int]*Branch{
 		111: {
 			Id:          111,
 			Name:        "Main",
@@ -140,8 +139,8 @@ func complexExpectedBranches() map[int]*model.Branch {
 	}
 }
 
-func complexExpectedConfigs() map[string]*model.Config {
-	return map[string]*model.Config{
+func complexExpectedConfigs() map[string]*Config {
+	return map[string]*Config{
 		"111_keboola.ex-generic_456": {
 			BranchId:          111,
 			ComponentId:       "keboola.ex-generic",
@@ -171,7 +170,7 @@ func complexExpectedConfigs() map[string]*model.Config {
 					},
 				},
 			},
-			Rows: []*model.ConfigRow{
+			Rows: []*ConfigRow{
 				{
 					BranchId:          123,
 					ComponentId:       "keboola.ex-db-mysql",

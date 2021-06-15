@@ -23,7 +23,7 @@ func TestSimple(t *testing.T) {
 	successCounter := utils.NewSafeCounter(0)
 	responseCounter := utils.NewSafeCounter(0)
 	pool := client.NewPool(logger)
-	pool.Request(client.Request(resty.MethodGet, "https://example.com")).
+	pool.Request(client.NewRequest(resty.MethodGet, "https://example.com")).
 		OnResponse(func(response *Response) *Response {
 			responseCounter.Inc()
 			return response
@@ -64,7 +64,7 @@ func TestSubRequest(t *testing.T) {
 		successCounter.Inc()
 		if successCounter.Get() < 30 {
 			// Send sub-request
-			pool.Request(client.Request(resty.MethodGet, "https://example.com")).
+			pool.Request(client.NewRequest(resty.MethodGet, "https://example.com")).
 				OnResponse(onResponse).
 				OnSuccess(onSuccess).
 				OnError(onError).
@@ -73,7 +73,7 @@ func TestSubRequest(t *testing.T) {
 		return response
 	}
 
-	pool.Request(client.Request(resty.MethodGet, "https://example.com")).
+	pool.Request(client.NewRequest(resty.MethodGet, "https://example.com")).
 		OnResponse(onResponse).
 		OnSuccess(onSuccess).
 		OnError(onError).
@@ -93,7 +93,7 @@ func TestErrorInCallback(t *testing.T) {
 	pool := client.NewPool(logger)
 	var onSuccess ResponseCallback
 	onSuccess = func(response *Response) *Response {
-		pool.Request(client.Request(resty.MethodGet, "https://example.com")).
+		pool.Request(client.NewRequest(resty.MethodGet, "https://example.com")).
 			OnSuccess(onSuccess).
 			Send()
 
@@ -102,7 +102,7 @@ func TestErrorInCallback(t *testing.T) {
 		}
 		return response
 	}
-	pool.Request(client.Request(resty.MethodGet, "https://example.com")).
+	pool.Request(client.NewRequest(resty.MethodGet, "https://example.com")).
 		OnSuccess(onSuccess).
 		Send()
 
@@ -121,17 +121,17 @@ func TestNetworkError(t *testing.T) {
 	var onSuccess ResponseCallback
 	onSuccess = func(response *Response) *Response {
 		if c.Inc(); c.Get() == 10 {
-			pool.Request(client.Request(resty.MethodGet, "https://example.com/error")).
+			pool.Request(client.NewRequest(resty.MethodGet, "https://example.com/error")).
 				OnSuccess(onSuccess).
 				Send()
 		} else {
-			pool.Request(client.Request(resty.MethodGet, "https://example.com")).
+			pool.Request(client.NewRequest(resty.MethodGet, "https://example.com")).
 				OnSuccess(onSuccess).
 				Send()
 		}
 		return response
 	}
-	pool.Request(client.Request(resty.MethodGet, "https://example.com")).
+	pool.Request(client.NewRequest(resty.MethodGet, "https://example.com")).
 		OnSuccess(onSuccess).
 		Send()
 	assert.Equal(t, errors.New("network error"), pool.StartAndWait().(*url.Error).Unwrap())
@@ -146,7 +146,7 @@ func TestOnSuccess(t *testing.T) {
 	successCaught := false
 	responseCaught := false
 	pool := client.NewPool(logger)
-	pool.Request(client.Request(resty.MethodGet, "https://example.com")).
+	pool.Request(client.NewRequest(resty.MethodGet, "https://example.com")).
 		OnSuccess(func(response *Response) *Response {
 			successCaught = true
 			return response
@@ -176,9 +176,9 @@ func TestOnError(t *testing.T) {
 	errorCaught := false
 	responseCaught := false
 	pool := client.NewPool(logger)
-	pool.Request(client.Request(resty.MethodGet, "https://example.com")).
+	pool.Request(client.NewRequest(resty.MethodGet, "https://example.com")).
 		OnSuccess(func(response *Response) *Response {
-			pool.Request(client.Request(resty.MethodGet, "https://example.com/error")).
+			pool.Request(client.NewRequest(resty.MethodGet, "https://example.com/error")).
 				OnSuccess(func(response *Response) *Response {
 					assert.Fail(t, "error expected")
 					return response
@@ -212,7 +212,7 @@ func TestOnError(t *testing.T) {
 func TestSendWasNotCalled(t *testing.T) {
 	client, logger, _ := getMockedClientAndLogs(t, false)
 	pool := client.NewPool(logger)
-	pool.Request(client.Request(resty.MethodGet, "https://example.com"))
+	pool.Request(client.NewRequest(resty.MethodGet, "https://example.com"))
 	assert.PanicsWithError(t, `request[1] GET "https://example.com" was not sent - Send() method was not called`, func() {
 		pool.StartAndWait()
 	})

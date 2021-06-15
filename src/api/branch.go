@@ -39,6 +39,14 @@ func (a *StorageApi) CreateBranch(branch *model.Branch) (*model.Job, error) {
 	return nil, response.Error()
 }
 
+func (a *StorageApi) UpdateBranch(branch *model.Branch) (*model.Branch, error) {
+	response := a.UpdateBranchRequest(branch).Send().Response()
+	if response.HasResult() {
+		return response.Result().(*model.Branch), nil
+	}
+	return nil, response.Error()
+}
+
 func (a *StorageApi) ListBranches() (*[]*model.Branch, error) {
 	response := a.ListBranchesRequest().Send().Response()
 	if response.HasResult() {
@@ -59,7 +67,7 @@ func (a *StorageApi) DeleteBranch(branchId int) (*model.Job, error) {
 func (a *StorageApi) GetBranchRequest(branchId int) *client.Request {
 	branch := &model.Branch{}
 	return a.
-		Request(resty.MethodGet, fmt.Sprintf("dev-branches/%d", branchId)).
+		NewRequest(resty.MethodGet, fmt.Sprintf("dev-branches/%d", branchId)).
 		SetResult(branch)
 }
 
@@ -78,7 +86,7 @@ func (a *StorageApi) CreateBranchRequest(branch *model.Branch) *client.Request {
 
 	// Create request
 	request := a.
-		Request(resty.MethodPost, "dev-branches").
+		NewRequest(resty.MethodPost, "dev-branches").
 		SetHeader("Content-Type", "application/x-www-form-urlencoded").
 		SetMultipartFormData(map[string]string{
 			"name":        branch.Name,
@@ -94,11 +102,37 @@ func (a *StorageApi) CreateBranchRequest(branch *model.Branch) *client.Request {
 	return request
 }
 
+// UpdateBranchRequest https://keboola.docs.apiary.io/#reference/development-branches/branches/update-branch
+func (a *StorageApi) UpdateBranchRequest(branch *model.Branch) *client.Request {
+	// Id is required
+	if branch.Id == 0 {
+		panic("branch id must be set")
+	}
+
+	data := map[string]string{
+		"description": branch.Description,
+	}
+
+	// Name of the default branch cannot be changed
+	if !branch.IsDefault {
+		data["name"] = branch.Name
+	}
+
+	// Create request
+	request := a.
+		NewRequest(resty.MethodPut, fmt.Sprintf("dev-branches/%d", branch.Id)).
+		SetHeader("Content-Type", "application/x-www-form-urlencoded").
+		SetMultipartFormData(data).
+		SetResult(branch)
+
+	return request
+}
+
 // ListBranchesRequest https://keboola.docs.apiary.io/#reference/development-branches/branches/list-branches
 func (a *StorageApi) ListBranchesRequest() *client.Request {
 	branches := make([]*model.Branch, 0)
 	return a.
-		Request(resty.MethodGet, "dev-branches").
+		NewRequest(resty.MethodGet, "dev-branches").
 		SetResult(&branches)
 
 }
@@ -106,7 +140,7 @@ func (a *StorageApi) ListBranchesRequest() *client.Request {
 // DeleteBranchRequest https://keboola.docs.apiary.io/#reference/development-branches/branch-manipulation/delete-branch
 func (a *StorageApi) DeleteBranchRequest(branchId int) *client.Request {
 	job := &model.Job{}
-	return a.Request(resty.MethodDelete, fmt.Sprintf("dev-branches/%d", branchId)).
+	return a.NewRequest(resty.MethodDelete, fmt.Sprintf("dev-branches/%d", branchId)).
 		SetResult(job).
 		OnSuccess(waitForSuccessJob(a, job, nil))
 }

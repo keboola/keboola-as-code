@@ -80,6 +80,15 @@ func (t *Token) ProjectName() string {
 	return t.Owner.Name
 }
 
+func (c *Config) AllRowsSaved() bool {
+	for _, row := range c.Rows {
+		if row.Id == "" {
+			return false
+		}
+	}
+	return true
+}
+
 func componentKey(branchId int, componentId string) string {
 	return fmt.Sprintf("%d_%s", branchId, componentId)
 }
