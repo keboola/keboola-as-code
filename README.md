@@ -121,7 +121,7 @@ To run the one or more tests via wildcard:
 
 To run tests with verbose output to see HTTP requests and set ENVs:
 ```
-docker-compose run --rm dev make tests
+docker-compose run --rm dev make tests-verbose
 ```
 
 In the container, you can run CLI from the source code using:
