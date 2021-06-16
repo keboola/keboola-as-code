@@ -123,7 +123,7 @@ func complexExpectedConfigs() string {
     "id": "%s",
     "name": "with-rows",
     "description": "test fixture",
-    "changeDescription": "Set rows sort order",
+    "changeDescription": "created by test",
     "configuration": {
       "parameters": {
         "db": {
@@ -137,10 +137,10 @@ func complexExpectedConfigs() string {
         "componentKey": "keboola.ex-db-mysql",
         "configKey": "%s",
         "id": "%s",
-        "name": "users",
+        "name": "disabled",
         "description": "test fixture",
         "changeDescription": "created by test",
-        "isDisabled": false,
+        "isDisabled": true,
         "configuration": {
           "parameters": {
             "incremental": false
@@ -167,10 +167,10 @@ func complexExpectedConfigs() string {
         "componentKey": "keboola.ex-db-mysql",
         "configKey": "%s",
         "id": "%s",
-        "name": "disabled",
+        "name": "users",
         "description": "test fixture",
         "changeDescription": "created by test",
-        "isDisabled": true,
+        "isDisabled": false,
         "configuration": {
           "parameters": {
             "incremental": false

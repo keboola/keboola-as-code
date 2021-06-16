@@ -26,6 +26,13 @@ func (c *SafeCounter) IncAndGet() int {
 	return c.value
 }
 
+func (c *SafeCounter) GetAndInc() int {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	c.value++
+	return c.value - 1
+}
+
 func NewSafeCounter(value int) *SafeCounter {
 	return &SafeCounter{value: value}
 }

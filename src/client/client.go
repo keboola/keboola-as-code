@@ -50,8 +50,8 @@ func (c *Client) Send(request *Request) {
 	request.sent = true
 	restyResponse, err := request.RestyRequest().Send()
 	request.response = NewResponse(request, restyResponse, err)
-	request.invokeListeners()
 	request.done = true
+	request.invokeListeners()
 }
 
 func (c *Client) Request(request *Request) *Request {

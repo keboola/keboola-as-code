@@ -9,7 +9,7 @@ import (
 func newBackoff() *backoff.ExponentialBackOff {
 	b := backoff.NewExponentialBackOff()
 	b.RandomizationFactor = 0
-	b.InitialInterval = 100 * time.Millisecond
+	b.InitialInterval = 50 * time.Millisecond
 	b.Multiplier = 2
 	b.MaxInterval = 3 * time.Second
 	b.MaxElapsedTime = 30 * time.Second

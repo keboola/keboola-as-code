@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-resty/resty/v2"
+	"sync"
 )
 
 const (
@@ -24,34 +25,21 @@ type Sender interface {
 	Request(request *Request) *Request
 }
 
-type WaitForRequest struct {
-	waitingRequest *Request
-	subRequest     *Request
-	done           bool
-	canceled       bool
-}
-
-func (w *WaitForRequest) Done() {
-	w.done = true
-	if !w.canceled {
-		w.waitingRequest.invokeListeners()
-	}
-}
-
-func (w *WaitForRequest) Cancel() {
-	w.canceled = true
-}
-
 type Request struct {
-	id        int
-	sent      bool
-	done      bool
-	url       string
-	request   *resty.Request
-	response  *Response
-	sender    Sender
-	listeners []*ResponseListener
-	waitFor   *WaitForRequest
+	lock       *sync.Mutex
+	id         int
+	sent       bool
+	done       bool
+	url        string
+	request    *resty.Request
+	response   *Response
+	sender     Sender
+	listeners  []*ResponseListener
+	waitingFor []*Request
+}
+
+func NewRequest(id int, sender Sender, request *resty.Request) *Request {
+	return &Request{lock: &sync.Mutex{}, id: id, request: request, url: request.URL, sender: sender}
 }
 
 func (r *Request) SetResult(result interface{}) *Request {
@@ -127,40 +115,59 @@ func (r *Request) SetContext(ctx context.Context) *Request {
 	return r
 }
 
-// WaitForRequest ensures that all remaining will be deferred until subRequest done
+// WaitFor ensures that all remaining listeners will be deferred until subRequest done
 // See TestWaitForSubRequest test
-func (r *Request) WaitForRequest(subRequest *Request) {
-	// Cancel current waiting
-	if r.waitFor != nil {
-		r.waitFor.Cancel()
-	}
+func (r *Request) WaitFor(subRequest *Request) {
+	r.lock.Lock()
+	r.waitingFor = append(r.waitingFor, subRequest)
+	r.lock.Unlock()
 
-	// Create new
-	waitFor := &WaitForRequest{waitingRequest: r, subRequest: subRequest, canceled: false}
-	r.waitFor = waitFor
-
-	// Invoke listeners when subRequest done
 	subRequest.OnResponse(func(response *Response) *Response {
-		waitFor.Done()
+		r.invokeListeners()
 		return response
 	})
 }
 
+func (r *Request) isWaiting() bool {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	for _, subRequest := range r.waitingFor {
+		if !subRequest.done {
+			return true
+		}
+	}
+	return false
+}
+
+func (r *Request) nextListener() *ResponseListener {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	// No more listeners to invoke
+	if len(r.listeners) == 0 {
+		return nil
+	}
+
+	// Remove listener from slice
+	listener := r.listeners[0]
+	r.listeners = r.listeners[1:]
+	return listener
+}
+
 func (r *Request) invokeListeners() {
 	for {
-		// No more listeners to invoke
-		if len(r.listeners) == 0 {
+		if r.isWaiting() {
+			// Invoke listeners later, when all subRequests will be done, see WaitFor method
 			break
 		}
 
-		// Invoke the remaining listeners later
-		if r.waitFor != nil && (r.waitFor.canceled || !r.waitFor.done) {
+		// Invoke next listener if present
+		listener := r.nextListener()
+		if listener != nil {
+			r.response = listener.Invoke(r.response)
+		} else {
 			break
 		}
-
-		listener := r.listeners[0]
-		r.listeners = r.listeners[1:] // remove listener from slice
-		r.response = listener.Invoke(r.response)
 	}
 }
 
@@ -185,8 +192,4 @@ func (l *ResponseListener) Invoke(response *Response) *Response {
 	}
 
 	return l.Callback(response)
-}
-
-func NewRequest(id int, sender Sender, request *resty.Request) *Request {
-	return &Request{id: id, request: request, url: request.URL, sender: sender}
 }

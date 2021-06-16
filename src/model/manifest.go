@@ -280,6 +280,7 @@ func (c *ManifestConfig) ToModel(b *ManifestBranch, projectDir string) (*Config,
 		}
 		config.Rows = append(config.Rows, row)
 	}
+	config.SortRows()
 
 	return config, nil
 }

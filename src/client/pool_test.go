@@ -233,7 +233,7 @@ func TestWaitForSubRequest(t *testing.T) {
 			subRequest := pool.
 				Request(client.NewRequest(resty.MethodGet, "https://example.com/sub")).
 				OnSuccess(subRequestCallback)
-			mainRequest.WaitForRequest(subRequest) // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+			mainRequest.WaitFor(subRequest) // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 			subRequest.Send()
 		}
 		return response

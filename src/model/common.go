@@ -1,6 +1,9 @@
 package model
 
-import "fmt"
+import (
+	"fmt"
+	"sort"
+)
 
 // Token https://keboola.docs.apiary.io/#reference/tokens-and-permissions/token-verification/token-verification
 type Token struct {
@@ -25,13 +28,12 @@ type Branch struct {
 
 // Component https://keboola.docs.apiary.io/#reference/components-and-configurations/get-development-branch-components/get-development-branch-components
 type Component struct {
-	BranchId  int                    `json:"branchId" validate:"required"` // not present in API response, must be set manually
-	Id        string                 `json:"id" validate:"required"`
-	Type      string                 `json:"type" validate:"required"`
-	Name      string                 `json:"name" validate:"required"`
-	Configs   []*Config              `json:"configurations" validate:"required"`
-	Schema    map[string]interface{} `json:"configurationSchema"`
-	SchemaRow map[string]interface{} `json:"configurationRowSchema"`
+	BranchId int                    `json:"branchId" validate:"required"` // not present in API response, must be set manually
+	Id       string                 `json:"id" validate:"required"`
+	Type     string                 `json:"type" validate:"required"`
+	Name     string                 `json:"name" validate:"required"`
+	Configs  []*Config              `json:"configurations" validate:"required"`
+	Schema   map[string]interface{} `json:"configurationSchema"`
 }
 
 // Config https://keboola.docs.apiary.io/#reference/components-and-configurations/component-configurations/list-configurations
@@ -80,13 +82,10 @@ func (t *Token) ProjectName() string {
 	return t.Owner.Name
 }
 
-func (c *Config) AllRowsSaved() bool {
-	for _, row := range c.Rows {
-		if row.Id == "" {
-			return false
-		}
-	}
-	return true
+func (c *Config) SortRows() {
+	sort.SliceStable(c.Rows, func(i, j int) bool {
+		return c.Rows[i].Name < c.Rows[j].Name
+	})
 }
 
 func componentKey(branchId int, componentId string) string {

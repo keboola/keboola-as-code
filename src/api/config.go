@@ -6,7 +6,6 @@ import (
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/model"
-	"sync"
 )
 
 func (a *StorageApi) GetConfig(branchId int, componentId string, configId string) (*model.Config, error) {
@@ -72,7 +71,8 @@ func (a *StorageApi) CreateConfigRequest(config *model.Config) (*client.Request,
 	}
 
 	// Create config
-	request := a.
+	var configRequest *client.Request
+	configRequest = a.
 		NewRequest(resty.MethodPost, fmt.Sprintf("branch/%d/components/%s/configs", config.BranchId, config.ComponentId)).
 		SetHeader("Content-Type", "application/x-www-form-urlencoded").
 		SetMultipartFormData(map[string]string{
@@ -81,58 +81,25 @@ func (a *StorageApi) CreateConfigRequest(config *model.Config) (*client.Request,
 			"changeDescription": config.ChangeDescription,
 			"configuration":     string(configJson),
 		}).
-		SetResult(config)
-
-	// Create config rows
-	request.OnSuccess(func(response *client.Response) *client.Response {
-		for _, row := range config.Rows {
-			// Set row IDs
-			row.ConfigId = config.Id
-			row.BranchId = config.BranchId
-			row.ComponentId = config.ComponentId
-
-			// Create sub-request for each row
-			rowRequest, err := a.CreateConfigRowRequest(row)
-			if err != nil {
-				response.SetError(err)
-				return response
+		SetResult(config).
+		// Create config rows
+		OnSuccess(func(response *client.Response) *client.Response {
+			for _, row := range config.Rows {
+				row.BranchId = config.BranchId
+				row.ComponentId = config.ComponentId
+				row.ConfigId = config.Id
+				rowRequest, err := a.CreateConfigRowRequest(row)
+				if err != nil {
+					response.SetError(err)
+					return response
+				}
+				configRequest.WaitFor(rowRequest)
+				response.Sender().Request(rowRequest).Send()
 			}
+			return response
+		})
 
-			// Sent sync/async according to the Sender type
-			lock := &sync.Mutex{}
-			rowsSortOrderSent := false
-			response.
-				Sender().
-				Request(rowRequest).
-				OnSuccess(func(subResponse *client.Response) *client.Response {
-					// Rows are created async, so we must set order when all rows created
-					lock.Lock()
-					send := config.AllRowsSaved() && !rowsSortOrderSent
-					rowsSortOrderSent = rowsSortOrderSent && send
-					lock.Unlock()
-
-					if send {
-						config.ChangeDescription = "Set rows sort order"
-						if updateReq, err := a.UpdateConfigRequest(config, []string{"changeDescription", "rowsSortOrder"}); err == nil {
-							subResponse.Sender().Request(updateReq).Send()
-						} else {
-							return subResponse.SetError(err)
-						}
-					}
-
-					return subResponse
-				}).
-				// If sub-request fail -> mark parent request failed too
-				OnError(func(subResponse *client.Response) *client.Response {
-					response.SetError(subResponse.Error())
-					return subResponse
-				}).
-				Send()
-		}
-		return response
-	})
-
-	return request, nil
+	return configRequest, nil
 }
 
 // UpdateConfigRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/manage-configurations/update-development-branch-configuration
@@ -154,23 +121,13 @@ func (a *StorageApi) UpdateConfigRequest(config *model.Config, changed []string)
 		"description":       config.Description,
 		"changeDescription": config.ChangeDescription,
 		"configuration":     string(configJson),
-		"rowsSortOrder":     "", // see bellow
-	}
-
-	// Rows sort order -> array
-	data := getChangedValues(all, changed)
-	if _, ok := data["rowsSortOrder"]; ok {
-		delete(data, "rowsSortOrder")
-		for index, row := range config.Rows {
-			data[fmt.Sprintf("rowsSortOrder[%d]", index)] = row.Id
-		}
 	}
 
 	// Update config
 	request := a.
 		NewRequest(resty.MethodPut, fmt.Sprintf("branch/%d/components/%s/configs/%s", config.BranchId, config.ComponentId, config.Id)).
 		SetHeader("Content-Type", "application/x-www-form-urlencoded").
-		SetMultipartFormData(data).
+		SetMultipartFormData(getChangedValues(all, changed)).
 		SetResult(config)
 
 	return request, nil

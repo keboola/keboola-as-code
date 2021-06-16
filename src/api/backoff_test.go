@@ -36,6 +36,7 @@ func TestBackoff(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, []time.Duration{
+		50 * time.Millisecond,
 		100 * time.Millisecond,
 		200 * time.Millisecond,
 		400 * time.Millisecond,
