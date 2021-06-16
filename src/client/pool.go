@@ -7,6 +7,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"runtime"
 	"sync"
+	"time"
 )
 
 // Pool of the asynchronous HTTP requests. When processing a response, a new request can be send.
@@ -19,6 +20,7 @@ type Pool struct {
 	sendersCount    int             // number of parallel http connections -> value of MaxIdleConns
 	processorsCount int             // number of processors workers -> number of CPUs
 	requests        []*Request      // to check that the Send () method has been called on all requests
+	startTime       time.Time       // time when StartAndWait() called
 	doneChan        chan struct{}   // channel for "all requests are processed" notification
 	requestsChan    chan *Request   // channel for requests
 	responsesChan   chan *Response  // channel for outgoing responses
@@ -50,6 +52,7 @@ func (p *Pool) Request(request *Request) *Request {
 // Send adds request to pool
 func (p *Pool) Send(request *Request) {
 	request.SetContext(p.ctx)
+	request.sender = p
 	request.sent = true
 	p.logRequestState("queued", request, nil)
 	p.counter.Add(1)
@@ -57,6 +60,7 @@ func (p *Pool) Send(request *Request) {
 }
 
 func (p *Pool) StartAndWait() error {
+	p.startTime = time.Now()
 	p.start()
 	err := p.wait()
 	if err == nil {
@@ -77,7 +81,7 @@ func (p *Pool) start() {
 	go func() {
 		defer close(p.doneChan)
 		p.counter.Wait()
-		p.log("all done")
+		p.log("all done | %s", time.Since(p.startTime))
 	}()
 
 	// Start senders
@@ -150,7 +154,7 @@ func (p *Pool) process(response *Response) (err error) {
 }
 
 func (p *Pool) logRequestState(state string, request *Request, err error) {
-	msg := fmt.Sprintf("%s %s \"%s\"", state, request.Method(), request.Url())
+	msg := fmt.Sprintf("[%d] %s %s \"%s\"", request.Id(), state, request.Method(), request.Url())
 	if err != nil {
 		msg += fmt.Sprintf(", error: \"%s\"", err)
 	}
@@ -164,7 +168,7 @@ func (p *Pool) log(template string, args ...interface{}) {
 func (p *Pool) checkAllRequestsSent() {
 	for _, request := range p.requests {
 		if !request.sent {
-			panic(fmt.Errorf("request %s \"%s\" was not sent - Send() method was not called", request.Method(), request.Url()))
+			panic(fmt.Errorf("request[%d] %s \"%s\" was not sent - Send() method was not called", request.Id(), request.Method(), request.Url()))
 		}
 	}
 }

@@ -1,0 +1,62 @@
+{
+  "componentId": "keboola.ex-azure-cost-management-sp",
+  "name": "schema-validation",
+  "configuration": {
+    "parameters": {
+      "servicePrincipal": {
+        "#password": "my-secret",
+        "tenant": "67890",
+        "username": "user"
+      },
+      "subscriptionId": "12345"
+    }
+  },
+  "rows": [
+    {
+      "name": "row-1",
+      "isDisabled": false,
+      "configuration": {
+        "parameters": {
+          "export": {
+            "aggregation": "Cost",
+            "destination": "table-1",
+            "granularity": "Daily",
+            "groupingDimensions": [
+              "ServiceName",
+              "ResourceGroupName",
+              "ResourceLocation",
+              "Meter"
+            ],
+            "incremental": true,
+            "timeDimension": {
+              "timeFrame": "WeekToDate"
+            },
+            "type": "ActualCost"
+          }
+        }
+      }
+    },
+    {
+      "name": "row-2",
+      "isDisabled": false,
+      "configuration": {
+        "parameters": {
+          "export": {
+            "aggregation": "Cost",
+            "destination": "table-2",
+            "granularity": "Daily",
+            "groupingDimensions": [
+              "ServiceName",
+              "ResourceGroupName"
+            ],
+            "incremental": false,
+            "timeDimension": {
+              "timeFrame": "TheLastBillingMonth"
+            },
+            "type": "ActualCost"
+          }
+        }
+      }
+    }
+  ]
+}

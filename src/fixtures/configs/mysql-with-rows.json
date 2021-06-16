@@ -20,6 +20,7 @@
   "rows": [
     {
       "name": "users",
+      "isDisabled": false,
       "configuration": {
         "parameters": {
           "columns": [],
@@ -36,6 +37,7 @@
     },
     {
       "name": "test_view",
+      "isDisabled": false,
       "configuration": {
         "parameters": {
           "columns": [
@@ -49,6 +51,23 @@
           "table": {
             "schema": "keboola_testing",
             "tableName": "test_view"
+          }
+        },
+        "processors": {}
+      }
+    },
+    {
+      "name": "disabled",
+      "isDisabled": true,
+      "configuration": {
+        "parameters": {
+          "columns": [],
+          "incremental": false,
+          "outputTable": "in.c-keboola-ex-db-mysql-717158295.disabled",
+          "primaryKey": [],
+          "table": {
+            "schema": "keboola_testing",
+            "tableName": "users"
           }
         },
         "processors": {}

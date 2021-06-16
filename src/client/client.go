@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/go-resty/resty/v2"
 	"go.uber.org/zap"
+	"keboola-as-code/src/utils"
 	"keboola-as-code/src/version"
 	"net"
 	"net/http"
@@ -24,9 +25,10 @@ const (
 )
 
 type Client struct {
-	parentCtx context.Context // context for parallel execution
-	logger    *Logger
-	resty     *resty.Client
+	parentCtx        context.Context // context for parallel execution
+	logger           *Logger
+	resty            *resty.Client
+	requestIdCounter *utils.SafeCounter
 }
 
 func NewClient(ctx context.Context, logger *zap.SugaredLogger, verbose bool) *Client {
@@ -34,6 +36,7 @@ func NewClient(ctx context.Context, logger *zap.SugaredLogger, verbose bool) *Cl
 	client.logger = &Logger{logger}
 	client.parentCtx = ctx
 	client.resty = createHttpClient(client.logger)
+	client.requestIdCounter = utils.NewSafeCounter(0)
 	setupLogs(client, verbose)
 	return client
 }
@@ -53,7 +56,7 @@ func (c *Client) Request(method string, url string) *Request {
 	r := c.resty.R()
 	r.Method = method
 	r.URL = url
-	return NewRequest(c, r)
+	return NewRequest(c.requestIdCounter.IncAndGet(), c, r)
 }
 
 func (c *Client) HostUrl() string {
@@ -152,7 +155,7 @@ func setupLogs(client *Client, verbose bool) {
 		msg := responseToLog(res)
 		if res.IsSuccess() {
 			// Log success
-			client.logger.Debugf(msg)
+			client.logger.Debugf("%s", msg)
 		}
 
 		// Return error if present

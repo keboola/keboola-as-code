@@ -5,6 +5,7 @@
   "rows": [
     {
       "name": "old-transformation-snfk",
+      "isDisabled": false,
       "configuration": {
         "backend": "snowflake",
         "disabled": false,

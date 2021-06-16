@@ -1,5 +1,6 @@
 {
   "componentId": "keboola.ex-db-mysql",
+  "name": "empty",
   "configuration": {},
   "rows": null
 }

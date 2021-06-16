@@ -15,9 +15,10 @@ type TokenOwner struct {
 
 // Branch https://keboola.docs.apiary.io/#reference/development-branches/branches/list-branches
 type Branch struct {
-	Id        int    `json:"id"`
-	Name      string `json:"name"`
-	IsDefault bool   `json:"isDefault"`
+	Id          int    `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	IsDefault   bool   `json:"isDefault"`
 }
 
 // Component https://keboola.docs.apiary.io/#reference/components-and-configurations/get-development-branch-components/get-development-branch-components
@@ -54,6 +55,14 @@ type ConfigRow struct {
 	ChangeDescription string                 `json:"changeDescription"`
 	IsDisabled        bool                   `json:"isDisabled"`
 	Config            map[string]interface{} `json:"configuration"`
+}
+
+// Job - Storage API job
+type Job struct {
+	Id      int                    `json:"id"`
+	Status  string                 `json:"status"`
+	Url     string                 `json:"url"`
+	Results map[string]interface{} `json:"results"`
 }
 
 // Event https://keboola.docs.apiary.io/#reference/events/events/create-event
