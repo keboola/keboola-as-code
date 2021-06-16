@@ -239,10 +239,17 @@ func TestWaitForSubRequest(t *testing.T) {
 		return response
 	}
 
+	mainDoneCallbackCalled := false
 	allDoneCallback1Called := false
 	allDoneCallback2Called := false
 	mainRequest = pool.
 		Request(client.NewRequest(resty.MethodGet, "https://example.com")).
+		OnSuccess(func(response *Response) *Response {
+			// Should be called as soon as the main request is done
+			mainDoneCallbackCalled = true
+			assert.Equal(t, 0, counter.Get())
+			return response
+		}).
 		OnSuccess(subRequestCallback).
 		OnSuccess(func(response *Response) *Response {
 			// Should be called when all sub-requests are done
@@ -258,10 +265,65 @@ func TestWaitForSubRequest(t *testing.T) {
 		}).
 		Send()
 
+	// No error, all callbacks was called, see asserts in callbacks
 	assert.NoError(t, pool.StartAndWait())
+	assert.True(t, mainDoneCallbackCalled)
 	assert.True(t, allDoneCallback1Called)
 	assert.True(t, allDoneCallback2Called)
+
+	// Assert requests count
 	assert.Equal(t, 11, counter.Get())
 	assert.Equal(t, 1, httpmock.GetCallCountInfo()["GET https://example.com"])
 	assert.Equal(t, 10, httpmock.GetCallCountInfo()["GET https://example.com/sub"])
+}
+
+func TestWaitForSubRequestChain(t *testing.T) {
+	client, logger, _ := getMockedClientAndLogs(t, false)
+	httpmock.RegisterResponder("GET", `https://example.com`, httpmock.NewStringResponder(200, `test`))
+	httpmock.RegisterResponder("GET", `https://example.com/sub`, httpmock.NewStringResponder(200, `test`))
+
+	var invokeOrder []int
+	var subRequestCallback ResponseCallback
+	counter := utils.NewSafeCounter(0)
+	pool := client.NewPool(logger)
+	subRequestCallback = func(response *Response) *Response {
+		if counter.IncAndGet() <= 10 {
+			// Send sub-request
+			subRequest := pool.
+				Request(client.NewRequest(resty.MethodGet, "https://example.com/sub")).
+				OnSuccess(subRequestCallback).
+				OnSuccess(func(response *Response) *Response {
+					invokeOrder = append(invokeOrder, response.Request().Id())
+					return response
+				})
+			response.request.WaitFor(subRequest) // main WaitFor -> sub1 -> sub2 -> sub3 ...
+			subRequest.Send()
+		}
+		return response
+	}
+
+	allDoneCallbackCalled := false
+	pool.
+		Request(client.NewRequest(resty.MethodGet, "https://example.com")).
+		OnSuccess(subRequestCallback).
+		OnSuccess(func(response *Response) *Response {
+			// Should be called when all sub-requests are done
+			allDoneCallbackCalled = true
+			assert.Equal(t, 11, counter.Get())
+			return response
+		}).
+		Send()
+
+	// No error, callback called
+	assert.NoError(t, pool.StartAndWait())
+	assert.True(t, allDoneCallbackCalled)
+
+	// Assert requests count
+	assert.Equal(t, 11, counter.Get())
+	assert.Equal(t, 1, httpmock.GetCallCountInfo()["GET https://example.com"])
+	assert.Equal(t, 10, httpmock.GetCallCountInfo()["GET https://example.com/sub"])
+
+	// Earlier requests are waiting for the next one
+	// ... so callbacks are performed in reverse order
+	assert.Equal(t, []int{11, 10, 9, 8, 7, 6, 5, 4, 3, 2}, invokeOrder)
 }

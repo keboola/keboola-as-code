@@ -119,7 +119,7 @@ To run the one or more tests via wildcard:
 ./scripts/tests.sh -run TestFuncName*
 ```
 
-To run tests with verbose output to see HTTP requests and set ENVs:
+To run tests with verbose output to see HTTP requests, ENVs, etc.:
 ```
 docker-compose run --rm dev make tests-verbose
 ```

@@ -44,7 +44,7 @@ staticcheck ./src/...
 echo "Ok. The code looks good."
 echo
 
-# Run tests, sequentially because the API is accessed
+# Run tests, sequentially because the API is shared resource
 echo "Running tests ..."
 richgo clean -testcache
 RICHGO_FORCE_COLOR=1 richgo test -p 1 -timeout 30s -v -race -coverprofile=./target/profile.out ./src/... $@
