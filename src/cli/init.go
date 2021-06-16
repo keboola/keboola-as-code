@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"keboola-as-code/src/api"
-	"keboola-as-code/src/manifest"
-	"keboola-as-code/src/options"
+	"keboola-as-code/src/local"
 	"keboola-as-code/src/utils"
 	"os"
 	"path/filepath"
@@ -61,13 +60,13 @@ func initCommand(root *rootCommand) *cobra.Command {
 			// Send failed event - we have connection to API
 			defer func() {
 				if err != nil && !successful {
-					sendEventInitFailed(root, sApi, err)
+					sendInitFailedEvent(root, sApi, err)
 				}
 			}()
 
 			// Create metadata dir
 			projectDir := root.options.WorkingDirectory()
-			metadataDir := filepath.Join(projectDir, options.MetadataDir)
+			metadataDir := filepath.Join(projectDir, local.MetadataDir)
 			if err = os.MkdirAll(metadataDir, 0650); err != nil {
 				return fmt.Errorf("cannot create metadata directory \"%s\": %s", metadataDir, err)
 			}
@@ -77,14 +76,14 @@ func initCommand(root *rootCommand) *cobra.Command {
 			root.logger.Infof("Created metadata dir \"%s\".", utils.RelPath(projectDir, metadataDir))
 
 			// Create and save manifest
-			manifestJson, err := manifest.NewManifest(sApi.ProjectId(), sApi.Host())
+			manifest, err := local.NewManifest(sApi.ProjectId(), sApi.Host())
 			if err != nil {
 				return err
 			}
-			if err = manifestJson.Save(root.options.MetadataDirectory()); err != nil {
+			if err = manifest.Save(root.options.MetadataDirectory()); err != nil {
 				return err
 			}
-			root.logger.Infof("Created manifest file \"%s\".", utils.RelPath(projectDir, manifestJson.Path()))
+			root.logger.Infof("Created manifest file \"%s\".", utils.RelPath(projectDir, manifest.Path()))
 
 			// Create or update ".gitignore"
 			gitignorePath := filepath.Join(projectDir, ".gitignore")
@@ -119,7 +118,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 
 			// Send successful event
 			successful = true
-			sendEventInitSuccessful(root, sApi)
+			sendInitSuccessfulEvent(root, sApi)
 
 			// Make first pull
 			pull := root.GetCommandByName("pull")
@@ -130,7 +129,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 	return cmd
 }
 
-func sendEventInitSuccessful(root *rootCommand, sApi *api.StorageApi) {
+func sendInitSuccessfulEvent(root *rootCommand, sApi *api.StorageApi) {
 	message := "Initialized local project directory."
 	duration := time.Since(root.start)
 	params := map[string]interface{}{
@@ -147,7 +146,7 @@ func sendEventInitSuccessful(root *rootCommand, sApi *api.StorageApi) {
 	}
 }
 
-func sendEventInitFailed(root *rootCommand, sApi *api.StorageApi, err error) {
+func sendInitFailedEvent(root *rootCommand, sApi *api.StorageApi, err error) {
 	message := "Init command failed."
 	duration := time.Since(root.start)
 	params := map[string]interface{}{

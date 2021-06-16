@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"go.uber.org/zap"
 	"keboola-as-code/src/client"
-	"keboola-as-code/src/model/remote"
+	"keboola-as-code/src/model"
 	"keboola-as-code/src/options"
 	"time"
 )
@@ -15,7 +15,7 @@ type StorageApi struct {
 	apiHostUrl string
 	client     *client.Client
 	logger     *zap.SugaredLogger
-	token      *remote.Token
+	token      *model.Token
 }
 
 func NewStorageApiFromOptions(options *options.Options, ctx context.Context, logger *zap.SugaredLogger) (*StorageApi, error) {

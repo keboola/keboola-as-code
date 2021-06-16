@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"github.com/spf13/cobra"
+	"keboola-as-code/src/local"
 )
 
 const pullShortDescription = `Pull configurations to the local project dir`
@@ -37,6 +38,12 @@ func pullCommand(root *rootCommand) *cobra.Command {
 			_, err := root.GetStorageApi()
 			if err != nil {
 				return err
+			}
+
+			// Load local state
+			_, stateErr := local.LoadState(root.options.ProjectDirectory(), root.options.MetadataDirectory())
+			if stateErr != nil {
+				return stateErr
 			}
 
 			return fmt.Errorf("TODO PULL")

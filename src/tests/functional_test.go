@@ -62,7 +62,7 @@ func RunFunctionalTest(t *testing.T, testDir string, binary string) {
 	// Setup KBC project state
 	projectStateFilePath := filepath.Join(testDir, "project-state.json")
 	if utils.IsFile(projectStateFilePath) {
-		fixtures.SetStateOfTestKbcProject(t, projectStateFilePath)
+		fixtures.SetStateOfTestProject(t, projectStateFilePath)
 	}
 
 	// Load command arguments from file

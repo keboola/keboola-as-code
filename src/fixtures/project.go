@@ -7,12 +7,12 @@ import (
 	"keboola-as-code/src/api"
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/fixtures/testEnv"
-	"keboola-as-code/src/model/remote"
+	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
-	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
+	"time"
 )
 
 type TestProject struct {
@@ -22,14 +22,14 @@ type TestProject struct {
 	stateFile      *StateFile
 	api            *api.StorageApi
 	logs           *utils.Writer
-	defaultBranch  *remote.Branch
-	branchesByName map[BranchName]*remote.Branch
+	defaultBranch  *model.Branch
+	branchesByName map[BranchName]*model.Branch
 }
 
 func NewTestProject(t *testing.T, stateFilePath string) *TestProject {
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filepath.Dir(testFile)
-	p := &TestProject{t: t, testDir: testDir, stateFilePath: stateFilePath, branchesByName: make(map[BranchName]*remote.Branch)}
+	p := &TestProject{t: t, testDir: testDir, stateFilePath: stateFilePath, branchesByName: make(map[BranchName]*model.Branch)}
 	p.createApi()
 	p.loadDefaultBranch()
 	p.loadStateFile()
@@ -39,6 +39,7 @@ func NewTestProject(t *testing.T, stateFilePath string) *TestProject {
 
 // Clear deletes all project branches (except default) and all configurations
 func (p *TestProject) Clear() {
+	startTime := time.Now()
 	p.log("Clearing project ...")
 	branches := p.loadBranches()
 	pool := p.api.NewPool()
@@ -53,26 +54,27 @@ func (p *TestProject) Clear() {
 	if err := pool.StartAndWait(); err != nil {
 		assert.FailNow(p.t, fmt.Sprintf("cannot delete branches: %s", err))
 	}
-	p.log("Test project cleared.")
+	p.log("Test project cleared | %s", time.Since(startTime))
 }
 
 // InitState crates branches and configurations according stateFile
 func (p *TestProject) InitState() {
+	startTime := time.Now()
 	p.log("Setting project state ...")
 	p.CreateConfigsInDefaultBranch()
 	p.CreateBranches()
 	p.CreateConfigsInBranches()
-	p.log("Project state set.")
+	p.log("Project state set | %s", time.Since(startTime))
 }
 
-func (p *TestProject) DeleteBranch(pool *client.Pool, branch *remote.Branch) *client.Request {
+func (p *TestProject) DeleteBranch(pool *client.Pool, branch *model.Branch) *client.Request {
 	if branch.IsDefault {
 		panic(fmt.Errorf("default branch cannot be deleted"))
 	}
 	return p.api.DeleteBranchRequest(branch.Id).Send()
 }
 
-func (p *TestProject) DeleteAllConfigs(pool *client.Pool, branch *remote.Branch) {
+func (p *TestProject) DeleteAllConfigs(pool *client.Pool, branch *model.Branch) {
 	if !branch.IsDefault {
 		panic(fmt.Errorf("only configs from default branch can be deleted"))
 	}
@@ -80,7 +82,7 @@ func (p *TestProject) DeleteAllConfigs(pool *client.Pool, branch *remote.Branch)
 	pool.
 		Request(p.api.ListComponentsRequest(branch.Id)).
 		OnSuccess(func(response *client.Response) *client.Response {
-			for _, component := range *response.Result().(*[]*remote.Component) {
+			for _, component := range *response.Result().(*[]*model.Component) {
 				for _, config := range component.Configs {
 					// Delete each configuration in branch
 					p.DeleteConfig(pool, config.ComponentId, config.Id)
@@ -104,12 +106,12 @@ func (p *TestProject) CreateBranches() {
 			// Default branch already exists
 			continue
 		}
-		remoteBranch := p.createBranch(branch.Branch, p.defaultBranch)
-		p.branchesByName[BranchName(remoteBranch.Name)] = remoteBranch
+		modelBranch := p.createBranch(branch.Branch, p.defaultBranch)
+		p.branchesByName[BranchName(modelBranch.Name)] = modelBranch
 	}
 }
 
-func (p *TestProject) CreateConfigsInBranch(pool *client.Pool, names []string, branch *remote.Branch) {
+func (p *TestProject) CreateConfigsInBranch(pool *client.Pool, names []string, branch *model.Branch) {
 	for _, name := range names {
 		config := p.getConfigFixture(name)
 		config.BranchId = branch.Id
@@ -137,8 +139,8 @@ func (p *TestProject) CreateConfigsInDefaultBranch() {
 func (p *TestProject) CreateConfigsInBranches() {
 	pool := p.api.NewPool()
 	for _, branch := range p.stateFile.Branches {
-		remoteBranch := p.branchesByName[branch.Branch.Name]
-		p.CreateConfigsInBranch(pool, branch.Configs, remoteBranch)
+		modelBranch := p.branchesByName[branch.Branch.Name]
+		p.CreateConfigsInBranch(pool, branch.Configs, modelBranch)
 	}
 	if err := pool.StartAndWait(); err != nil {
 		assert.FailNow(p.t, fmt.Sprintf("cannot create configurations: %s", err))
@@ -150,7 +152,7 @@ func (p *TestProject) log(format string, a ...interface{}) {
 	fmt.Printf("Fixtures[%s]: "+format+"\n", a...)
 }
 
-func (p *TestProject) loadBranches() []*remote.Branch {
+func (p *TestProject) loadBranches() []*model.Branch {
 	branches, err := p.api.ListBranches()
 	if err != nil {
 		assert.FailNow(p.t, fmt.Sprintf("cannot load branches: %s", err))
@@ -160,7 +162,6 @@ func (p *TestProject) loadBranches() []*remote.Branch {
 
 func (p *TestProject) createApi() {
 	p.api, p.logs = api.TestStorageApiWithToken(p.t)
-	p.logs.ConnectTo(os.Stdout)
 	if testEnv.TestProjectId() != p.api.ProjectId() {
 		assert.FailNow(p.t, "TEST_PROJECT_ID and token project id are different.")
 	}
@@ -198,8 +199,8 @@ func (p *TestProject) loadStateFile() {
 	}
 }
 
-func (p *TestProject) createBranch(fixture *Branch, defaultBranch *remote.Branch) *remote.Branch {
-	branch := fixture.ToRemote(defaultBranch)
+func (p *TestProject) createBranch(fixture *Branch, defaultBranch *model.Branch) *model.Branch {
+	branch := fixture.ToModel(defaultBranch)
 	p.api.
 		CreateBranchRequest(branch).
 		Send()
@@ -207,7 +208,7 @@ func (p *TestProject) createBranch(fixture *Branch, defaultBranch *remote.Branch
 	return branch
 }
 
-func (p *TestProject) getConfigFixture(name string) *remote.Config {
+func (p *TestProject) getConfigFixture(name string) *model.Config {
 	// Load
 	path := filepath.Join(p.testDir, "configs", fmt.Sprintf("%s.json", name))
 	content := utils.GetFileContent(path)
@@ -216,5 +217,5 @@ func (p *TestProject) getConfigFixture(name string) *remote.Config {
 	if err != nil {
 		panic(fmt.Errorf("cannot decode JSON file \"%s\": %s", path, err))
 	}
-	return fixture.ToRemote()
+	return fixture.ToModel()
 }

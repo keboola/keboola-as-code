@@ -1,10 +1,7 @@
 {
   "allBranchesConfigs": [
-    "generic-empty",
-    "generic-without-rows",
     "mysql-empty",
     "mysql-only-connection",
-    "mysql-with-rows",
     "azure-cost-with-schema-validation",
     "old-transformation",
     "python-transformation",
@@ -30,7 +27,11 @@
       "branch": {
         "name": "branch-2",
         "isDefault": false
-      }
+      },
+      "configs": [
+        "generic-empty",
+        "generic-without-rows"
+      ]
     }
   ]
 }

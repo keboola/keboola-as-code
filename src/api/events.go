@@ -1,11 +1,11 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/go-resty/resty/v2"
 	"keboola-as-code/src/client"
-	"keboola-as-code/src/model/remote"
+	"keboola-as-code/src/json"
+	"keboola-as-code/src/model"
 	"time"
 )
 
@@ -19,10 +19,10 @@ func (a *StorageApi) CreateEvent(
 	duration time.Duration,
 	params map[string]interface{},
 	results map[string]interface{},
-) (*remote.Event, error) {
+) (*model.Event, error) {
 	response := a.CreatEventRequest(level, message, duration, params, results).Send().Response()
 	if response.HasResult() {
-		return response.Result().(*remote.Event), nil
+		return response.Result().(*model.Event), nil
 	}
 	return nil, response.Error()
 }
@@ -34,11 +34,11 @@ func (a *StorageApi) CreatEventRequest(
 	params map[string]interface{},
 	results map[string]interface{},
 ) *client.Request {
-	paramsJson, err := json.Marshal(params)
+	paramsJson, err := json.Encode(params, false)
 	if err != nil {
 		panic(fmt.Errorf(`cannot serialize event "params" key to JSON: %s`, err))
 	}
-	resultsJson, err := json.Marshal(results)
+	resultsJson, err := json.Encode(results, false)
 	if err != nil {
 		panic(fmt.Errorf(`cannot serialize event "results" key to JSON: %s`, err))
 	}
@@ -54,5 +54,5 @@ func (a *StorageApi) CreatEventRequest(
 			"params":    string(paramsJson),
 			"results":   string(resultsJson),
 		}).
-		SetResult(&remote.Event{})
+		SetResult(&model.Event{})
 }

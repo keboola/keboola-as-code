@@ -1,10 +1,10 @@
 package fixtures
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/api"
+	"keboola-as-code/src/json"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -17,12 +17,18 @@ import (
 func TestDumpProjectState(t *testing.T) {
 	// Load remote state and convert
 	a, _ := api.TestStorageApiWithToken(t)
-	remoteState, err := api.LoadRemoteState(a)
-	assert.NoError(t, err)
-	fixtures := ConvertRemoteStateToFixtures(remoteState)
+	state, stateErr := api.LoadState(a)
+	if stateErr != nil {
+		assert.FailNow(t, "%s", stateErr)
+	}
+
+	fixtures, err := ConvertRemoteStateToFixtures(state)
+	if err != nil {
+		assert.FailNow(t, "%s", err)
+	}
 
 	// Convert to JSON
-	data, err := json.MarshalIndent(fixtures, "", "   ")
+	data, err := json.Encode(fixtures, false)
 	assert.NoError(t, err)
 
 	// Replace secrets, eg. "#password": "KBC::P..." -> "#password": "my-secret"
