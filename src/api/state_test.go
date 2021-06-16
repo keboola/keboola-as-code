@@ -16,7 +16,6 @@ import (
 )
 
 func TestLoadRemoteStateEmpty(t *testing.T) {
-	testing.Short()
 	setTestProjectState(t, "empty.json")
 	a, _ := TestStorageApiWithToken(t)
 	state, err := LoadRemoteState(a)
@@ -68,12 +67,6 @@ func TestDumpProjectState(t *testing.T) {
 	filePath := filepath.Join(testDir, "fixtures", "current_project_state.json")
 	assert.NoError(t, os.WriteFile(filePath, data, 0666))
 	fmt.Printf("Dumped to the file \"%s\"\n", filePath)
-}
-
-func setTestProjectState(t *testing.T, stateFile string) {
-	_, testFile, _, _ := runtime.Caller(0)
-	testDir := filepath.Dir(testFile)
-	SetStateOfTestProject(t, filepath.Join(testDir, "fixtures", "state", stateFile))
 }
 
 func complexExpectedBranches(t *testing.T) map[int]*model.Branch {
@@ -213,4 +206,10 @@ func complexExpectedConfigs() string {
     "rows": []
   }
 }`
+}
+
+func setTestProjectState(t *testing.T, stateFile string) {
+	_, testFile, _, _ := runtime.Caller(0)
+	testDir := filepath.Dir(testFile)
+	SetStateOfTestProject(t, filepath.Join(testDir, "fixtures", "state", stateFile))
 }

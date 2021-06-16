@@ -80,3 +80,19 @@ func (a *StorageApi) Send(request *client.Request) {
 func (a *StorageApi) SetRetry(count int, waitTime time.Duration, maxWaitTime time.Duration) {
 	a.client.SetRetry(count, waitTime, maxWaitTime)
 }
+
+func getChangedValues(all map[string]string, changed []string) map[string]string {
+	data := map[string]string{}
+	if changed != nil {
+		for _, key := range changed {
+			if v, ok := all[key]; ok {
+				data[key] = v
+			} else {
+				panic(fmt.Errorf(`key "%s" cannot be updated`, key))
+			}
+		}
+	} else {
+		data = all
+	}
+	return data
+}

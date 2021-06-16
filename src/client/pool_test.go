@@ -161,10 +161,9 @@ func TestOnSuccess(t *testing.T) {
 		}).
 		Send()
 
-	err := pool.StartAndWait()
+	assert.NoError(t, pool.StartAndWait())
 	assert.True(t, successCaught)
 	assert.True(t, responseCaught)
-	assert.NoError(t, err)
 	assert.Equal(t, 1, httpmock.GetCallCountInfo()["GET https://example.com"])
 }
 
@@ -216,4 +215,53 @@ func TestSendWasNotCalled(t *testing.T) {
 	assert.PanicsWithError(t, `request[1] GET "https://example.com" was not sent - Send() method was not called`, func() {
 		pool.StartAndWait()
 	})
+}
+
+func TestWaitForSubRequest(t *testing.T) {
+	client, logger, _ := getMockedClientAndLogs(t, false)
+	httpmock.RegisterResponder("GET", `https://example.com`, httpmock.NewStringResponder(200, `test`))
+	httpmock.RegisterResponder("GET", `https://example.com/sub`, httpmock.NewStringResponder(200, `test`))
+
+	counter := utils.NewSafeCounter(0)
+
+	var mainRequest *Request
+	var subRequestCallback ResponseCallback
+	pool := client.NewPool(logger)
+	subRequestCallback = func(response *Response) *Response {
+		if counter.IncAndGet() <= 10 {
+			// Send sub-request
+			subRequest := pool.
+				Request(client.NewRequest(resty.MethodGet, "https://example.com/sub")).
+				OnSuccess(subRequestCallback)
+			mainRequest.WaitForRequest(subRequest) // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+			subRequest.Send()
+		}
+		return response
+	}
+
+	allDoneCallback1Called := false
+	allDoneCallback2Called := false
+	mainRequest = pool.
+		Request(client.NewRequest(resty.MethodGet, "https://example.com")).
+		OnSuccess(subRequestCallback).
+		OnSuccess(func(response *Response) *Response {
+			// Should be called when all sub-requests are done
+			allDoneCallback1Called = true
+			assert.Equal(t, 11, counter.Get())
+			return response
+		}).
+		OnSuccess(func(response *Response) *Response {
+			// Should be called when all sub-requests are done
+			allDoneCallback2Called = true
+			assert.Equal(t, 11, counter.Get())
+			return response
+		}).
+		Send()
+
+	assert.NoError(t, pool.StartAndWait())
+	assert.True(t, allDoneCallback1Called)
+	assert.True(t, allDoneCallback2Called)
+	assert.Equal(t, 11, counter.Get())
+	assert.Equal(t, 1, httpmock.GetCallCountInfo()["GET https://example.com"])
+	assert.Equal(t, 10, httpmock.GetCallCountInfo()["GET https://example.com/sub"])
 }

@@ -6,6 +6,12 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
+const (
+	EventOnSuccess ResponseEventType = iota
+	EventOnError
+	EventOnResponse // always
+)
+
 type DecoratorFunc func(response *resty.Response, err error) (*resty.Response, error)
 type ResponseEventType int
 type ResponseCallback func(response *Response) *Response
@@ -18,20 +24,34 @@ type Sender interface {
 	Request(request *Request) *Request
 }
 
-const (
-	EventOnSuccess ResponseEventType = iota
-	EventOnError
-	EventOnResponse // always
-)
+type WaitForRequest struct {
+	waitingRequest *Request
+	subRequest     *Request
+	done           bool
+	canceled       bool
+}
+
+func (w *WaitForRequest) Done() {
+	w.done = true
+	if !w.canceled {
+		w.waitingRequest.invokeListeners()
+	}
+}
+
+func (w *WaitForRequest) Cancel() {
+	w.canceled = true
+}
 
 type Request struct {
 	id        int
+	sent      bool
+	done      bool
+	url       string
 	request   *resty.Request
 	response  *Response
-	url       string
 	sender    Sender
-	sent      bool
 	listeners []*ResponseListener
+	waitFor   *WaitForRequest
 }
 
 func (r *Request) SetResult(result interface{}) *Request {
@@ -57,6 +77,14 @@ func (r *Request) SetMultipartFormData(data map[string]string) *Request {
 func (r *Request) Send() *Request {
 	r.sender.Send(r)
 	return r
+}
+
+func (r *Request) IsSent() bool {
+	return r.sent
+}
+
+func (r *Request) IsDone() bool {
+	return r.done
 }
 
 func (r *Request) Id() int {
@@ -99,8 +127,39 @@ func (r *Request) SetContext(ctx context.Context) *Request {
 	return r
 }
 
+// WaitForRequest ensures that all remaining will be deferred until subRequest done
+// See TestWaitForSubRequest test
+func (r *Request) WaitForRequest(subRequest *Request) {
+	// Cancel current waiting
+	if r.waitFor != nil {
+		r.waitFor.Cancel()
+	}
+
+	// Create new
+	waitFor := &WaitForRequest{waitingRequest: r, subRequest: subRequest, canceled: false}
+	r.waitFor = waitFor
+
+	// Invoke listeners when subRequest done
+	subRequest.OnResponse(func(response *Response) *Response {
+		waitFor.Done()
+		return response
+	})
+}
+
 func (r *Request) invokeListeners() {
-	for _, listener := range r.listeners {
+	for {
+		// No more listeners to invoke
+		if len(r.listeners) == 0 {
+			break
+		}
+
+		// Invoke the remaining listeners later
+		if r.waitFor != nil && (r.waitFor.canceled || !r.waitFor.done) {
+			break
+		}
+
+		listener := r.listeners[0]
+		r.listeners = r.listeners[1:] // remove listener from slice
 		r.response = listener.Invoke(r.response)
 	}
 }

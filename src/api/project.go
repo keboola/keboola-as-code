@@ -110,7 +110,7 @@ func (p *testProject) InitState() {
 		branchesByName[branch.Name] = branch
 		if branch.IsDefault {
 			p.defaultBranch.Description = fixture.Branch.Description
-			if _, err := p.api.UpdateBranch(p.defaultBranch); err != nil {
+			if _, err := p.api.UpdateBranch(p.defaultBranch, []string{"description"}); err != nil {
 				assert.FailNow(p.t, fmt.Sprintf("cannot set default branch description: %s", err))
 			}
 			p.setEnv(fmt.Sprintf("TEST_BRANCH_%s_ID", branch.Name), strconv.Itoa(branch.Id))

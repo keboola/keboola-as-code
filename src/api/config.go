@@ -157,17 +157,8 @@ func (a *StorageApi) UpdateConfigRequest(config *model.Config, changed []string)
 		"rowsSortOrder":     "", // see bellow
 	}
 
-	// Send changed keys only
-	data := map[string]string{}
-	if changed != nil {
-		for _, key := range changed {
-			data[key] = all[key]
-		}
-	} else {
-		data = all
-	}
-
-	// Set rows sort order array
+	// Rows sort order -> array
+	data := getChangedValues(all, changed)
 	if _, ok := data["rowsSortOrder"]; ok {
 		delete(data, "rowsSortOrder")
 		for index, row := range config.Rows {

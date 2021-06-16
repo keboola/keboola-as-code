@@ -24,31 +24,37 @@ func (a *StorageApi) GetJobRequest(jobId int) *client.Request {
 		SetResult(job)
 }
 
-func waitForSuccessJob(a *StorageApi, job *model.Job, onJobSuccess client.ResponseCallback) client.ResponseCallback {
+func waitForJob(a *StorageApi, parentRequest *client.Request, job *model.Job, onJobSuccess client.ResponseCallback) client.ResponseCallback {
 	// Check job
-	backoff := a.createBackoff()
-	var checkJob client.ResponseCallback
-	checkJob = func(response *client.Response) *client.Response {
+	backoff := newBackoff()
+	var checkJobStatus client.ResponseCallback
+	checkJobStatus = func(response *client.Response) *client.Response {
+		// Check status
 		if job.Status == "success" {
 			if onJobSuccess != nil {
 				onJobSuccess(response)
 			}
 			return response
 		} else if job.Status == "error" {
-			return response.SetError(fmt.Errorf("create branch job failed: %v", job.Results))
+			err := fmt.Errorf("job failed: %v", job.Results)
+			parentRequest.Response().SetError(err)
+			return response.SetError(err)
 		}
 
 		// Wait and check again
 		delay := backoff.NextBackOff()
 		if delay == backoff.Stop {
-			return response.SetError(fmt.Errorf("timeout: checking waiting storage job - create branch"))
+			err := fmt.Errorf("timeout: timeout while waiting for the storage job to complete")
+			parentRequest.Response().SetError(err)
+			return response.SetError(err)
 		}
-		time.Sleep(delay)
 
 		// Try again
-		request := a.GetJobRequest(job.Id).SetResult(job).OnSuccess(checkJob)
-		response.Sender().Send(request)
+		request := a.GetJobRequest(job.Id).SetResult(job).OnSuccess(checkJobStatus)
+		parentRequest.WaitForRequest(request)
+		time.Sleep(delay)
+		response.Sender().Request(request).Send()
 		return response
 	}
-	return checkJob
+	return checkJobStatus
 }
