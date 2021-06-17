@@ -26,9 +26,6 @@ func NewState() *State {
 }
 
 func (s *State) Error() *utils.Error {
-	if s.error.Len() == 0 {
-		return nil
-	}
 	return s.error
 }
 

@@ -2,22 +2,26 @@ package model
 
 import (
 	"fmt"
-	"keboola-as-code/src/utils"
 )
 
-func LoadLocalState(projectDir string, metadataDir string) (*State, *utils.Error) {
+func LoadLocalState(projectDir string, metadataDir string) (*State, *PathsState, error) {
+	// Create structures
 	state := NewState()
+	paths, err := NewPathsState(projectDir)
+	if err != nil {
+		panic(err)
+	}
 
 	// Load manifest
 	manifest, err := LoadManifest(projectDir, metadataDir)
 	if err != nil {
-		state.AddError(err)
-		return state, state.Error()
+		return state, paths, err
 	}
 
 	// Add branches
 	var branchById = make(map[int]*ManifestBranch)
 	for _, b := range manifest.Branches {
+		paths.MarkTracked(b.MetaFilePath(projectDir))
 		branch, err := b.ToModel(projectDir)
 		if err == nil {
 			branchById[b.Id] = b
@@ -29,17 +33,32 @@ func LoadLocalState(projectDir string, metadataDir string) (*State, *utils.Error
 
 	// Add configs
 	for _, c := range manifest.Configs {
-		if branch, ok := branchById[c.BranchId]; ok {
-			config, err := c.ToModel(branch, projectDir)
+		if b, ok := branchById[c.BranchId]; ok {
+			paths.MarkTracked(c.MetaFilePath(b, projectDir))
+			paths.MarkTracked(c.ConfigFilePath(b, projectDir))
+			config, err := c.ToModel(b, projectDir)
 			if err == nil {
 				state.AddConfig(config)
 			} else {
 				state.AddError(err)
 			}
+
+			// Add rows to tracked paths
+			for _, r := range c.Rows {
+				paths.MarkTracked(r.MetaFilePath(b, c, projectDir))
+				paths.MarkTracked(r.ConfigFilePath(b, c, projectDir))
+			}
 		} else {
-			state.AddError(fmt.Errorf("branch \"%d\" not found - referenced from the config \"%s:%s\" in \"%s\"", c.BranchId, c.ComponentId, c.Id, manifest.path))
+			state.AddError(fmt.Errorf("b \"%d\" not found - referenced from the config \"%s:%s\" in \"%s\"", c.BranchId, c.ComponentId, c.Id, manifest.path))
 		}
 	}
 
-	return state, state.Error()
+	// Merge errors
+	for _, err := range paths.Error().Errors() {
+		state.AddError(err)
+	}
+	if state.Error().Len() > 0 {
+		return state, paths, state.Error()
+	}
+	return state, paths, nil
 }
