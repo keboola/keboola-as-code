@@ -6,7 +6,6 @@ import (
 	"github.com/spf13/cast"
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/model"
-	"strconv"
 )
 
 func (a *StorageApi) GetDefaultBranch() (*model.Branch, error) {
@@ -69,7 +68,7 @@ func (a *StorageApi) GetBranchRequest(branchId int) *client.Request {
 	branch := &model.Branch{}
 	return a.
 		NewRequest(resty.MethodGet, "dev-branches/{branchId}").
-		SetPathParam("branchId", strconv.Itoa(branchId)).
+		SetPathParam("branchId", cast.ToString(branchId)).
 		SetResult(branch)
 }
 
@@ -96,7 +95,7 @@ func (a *StorageApi) CreateBranchRequest(branch *model.Branch) *client.Request {
 		SetResult(job)
 
 	request.OnSuccess(waitForJob(a, request, job, func(response *client.Response) *client.Response {
-		// Set branch id from job results
+		// Set branch id from the job results
 		branch.Id = cast.ToInt(job.Results["id"])
 		return response
 	}))
@@ -124,7 +123,7 @@ func (a *StorageApi) UpdateBranchRequest(branch *model.Branch, changed []string)
 	// Create request
 	request := a.
 		NewRequest(resty.MethodPut, "dev-branches/{branchId}").
-		SetPathParam("branchId", strconv.Itoa(branch.Id)).
+		SetPathParam("branchId", cast.ToString(branch.Id)).
 		SetBody(getChangedValues(all, changed)).
 		SetResult(branch)
 
@@ -145,7 +144,7 @@ func (a *StorageApi) DeleteBranchRequest(branchId int) *client.Request {
 	job := &model.Job{}
 	request := a.
 		NewRequest(resty.MethodDelete, "dev-branches/{branchId}").
-		SetPathParam("branchId", strconv.Itoa(branchId)).
+		SetPathParam("branchId", cast.ToString(branchId)).
 		SetResult(job)
 	request.OnSuccess(waitForJob(a, request, job, nil))
 	return request

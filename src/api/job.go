@@ -3,9 +3,9 @@ package api
 import (
 	"fmt"
 	"github.com/go-resty/resty/v2"
+	"github.com/spf13/cast"
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/model"
-	"strconv"
 	"time"
 )
 
@@ -22,7 +22,7 @@ func (a *StorageApi) GetJobRequest(jobId int) *client.Request {
 	job := &model.Branch{}
 	return a.
 		NewRequest(resty.MethodGet, "jobs/{jobId}").
-		SetPathParam("jobId", strconv.Itoa(jobId)).
+		SetPathParam("jobId", cast.ToString(jobId)).
 		SetResult(job)
 }
 

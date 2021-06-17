@@ -2,7 +2,9 @@ package model
 
 import (
 	"fmt"
+	"keboola-as-code/src/json"
 	"sort"
+	"strconv"
 )
 
 // Token https://keboola.docs.apiary.io/#reference/tokens-and-permissions/token-verification/token-verification
@@ -28,12 +30,13 @@ type Branch struct {
 
 // Component https://keboola.docs.apiary.io/#reference/components-and-configurations/get-development-branch-components/get-development-branch-components
 type Component struct {
-	BranchId int                    `json:"branchId" validate:"required"` // not present in API response, must be set manually
-	Id       string                 `json:"id" validate:"required"`
-	Type     string                 `json:"type" validate:"required"`
-	Name     string                 `json:"name" validate:"required"`
-	Configs  []*Config              `json:"configurations" validate:"required"`
-	Schema   map[string]interface{} `json:"configurationSchema"`
+	BranchId  int                    `json:"branchId" validate:"required"` // not present in API response, must be set manually
+	Id        string                 `json:"id" validate:"required"`
+	Type      string                 `json:"type" validate:"required"`
+	Name      string                 `json:"name" validate:"required"`
+	Configs   []*Config              `json:"configurations" validate:"required"`
+	Schema    map[string]interface{} `json:"configurationSchema,omitempty"`
+	SchemaRow map[string]interface{} `json:"configurationRowSchema,omitempty"`
 }
 
 // Config https://keboola.docs.apiary.io/#reference/components-and-configurations/component-configurations/list-configurations
@@ -86,6 +89,37 @@ func (c *Config) SortRows() {
 	sort.SliceStable(c.Rows, func(i, j int) bool {
 		return c.Rows[i].Name < c.Rows[j].Name
 	})
+}
+
+func (c *Config) ToApiValues() (map[string]string, error) {
+	// Encode config
+	configJson, err := json.Encode(c.Config, false)
+	if err != nil {
+		return nil, fmt.Errorf(`cannot JSON encode config configuration: %s`, err)
+	}
+
+	return map[string]string{
+		"name":              c.Name,
+		"description":       c.Description,
+		"changeDescription": c.ChangeDescription,
+		"configuration":     string(configJson),
+	}, nil
+}
+
+func (r *ConfigRow) ToApiValues() (map[string]string, error) {
+	// Encode config
+	configJson, err := json.Encode(r.Config, false)
+	if err != nil {
+		return nil, fmt.Errorf(`cannot JSON encode config configuration: %s`, err)
+	}
+
+	return map[string]string{
+		"name":              r.Name,
+		"description":       r.Description,
+		"changeDescription": r.ChangeDescription,
+		"isDisabled":        strconv.FormatBool(r.IsDisabled),
+		"configuration":     string(configJson),
+	}, nil
 }
 
 func componentKey(branchId int, componentId string) string {
