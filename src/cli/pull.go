@@ -41,7 +41,7 @@ func pullCommand(root *rootCommand) *cobra.Command {
 			}
 
 			// Load local state
-			_, stateErr := model.LoadLocalState(root.options.ProjectDirectory(), root.options.MetadataDirectory())
+			_, _, stateErr := model.LoadLocalState(root.options.ProjectDirectory(), root.options.MetadataDirectory())
 			if stateErr != nil {
 				return stateErr
 			}

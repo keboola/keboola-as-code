@@ -40,5 +40,8 @@ func LoadRemoteState(a *StorageApi) (*model.State, *utils.Error) {
 		state.AddError(err)
 	}
 
-	return state, state.Error()
+	if state.Error().Len() > 0 {
+		return state, state.Error()
+	}
+	return state, nil
 }
