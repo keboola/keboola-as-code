@@ -16,7 +16,7 @@ func TestNewStorageApi(t *testing.T) {
 	assert.Equal(t, "https://foo.bar.com/v2/storage", a.client.HostUrl())
 }
 
-func TestHostnameNotFond(t *testing.T) {
+func TestHostnameNotFound(t *testing.T) {
 	api, logs := TestStorageApiWithHost(t, "foo.bar.com")
 	token, err := api.GetToken("mytoken")
 	assert.Nil(t, token)
@@ -30,6 +30,6 @@ func TestInvalidHost(t *testing.T) {
 	token, err := api.GetToken("mytoken")
 	assert.Nil(t, token)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), `GET "https://google.com/v2/storage/tokens/verify" returned http code 404`)
-	assert.Regexp(t, `DEBUG  HTTP-ERROR	GET "https://google.com/v2/storage/tokens/verify" returned http code 404`, logs.String())
+	assert.Contains(t, err.Error(), `GET https://google.com/v2/storage/tokens/verify | returned http code 404`)
+	assert.Regexp(t, `DEBUG  HTTP-ERROR	GET https://google.com/v2/storage/tokens/verify | returned http code 404`, logs.String())
 }

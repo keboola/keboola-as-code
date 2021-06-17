@@ -5,6 +5,7 @@ import (
 	"github.com/go-resty/resty/v2"
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/model"
+	"strconv"
 	"time"
 )
 
@@ -20,7 +21,8 @@ func (a *StorageApi) GetJob(jobId int) (*model.Job, error) {
 func (a *StorageApi) GetJobRequest(jobId int) *client.Request {
 	job := &model.Branch{}
 	return a.
-		NewRequest(resty.MethodGet, fmt.Sprintf("jobs/%d", jobId)).
+		NewRequest(resty.MethodGet, "jobs/{jobId}").
+		SetPathParam("jobId", strconv.Itoa(jobId)).
 		SetResult(job)
 }
 

@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cast"
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/model"
+	"strconv"
 )
 
 func (a *StorageApi) GetDefaultBranch() (*model.Branch, error) {
@@ -67,7 +68,8 @@ func (a *StorageApi) DeleteBranch(branchId int) (*model.Job, error) {
 func (a *StorageApi) GetBranchRequest(branchId int) *client.Request {
 	branch := &model.Branch{}
 	return a.
-		NewRequest(resty.MethodGet, fmt.Sprintf("dev-branches/%d", branchId)).
+		NewRequest(resty.MethodGet, "dev-branches/{branchId}").
+		SetPathParam("branchId", strconv.Itoa(branchId)).
 		SetResult(branch)
 }
 
@@ -87,8 +89,7 @@ func (a *StorageApi) CreateBranchRequest(branch *model.Branch) *client.Request {
 	// Create request
 	request := a.
 		NewRequest(resty.MethodPost, "dev-branches").
-		SetHeader("Content-Type", "application/x-www-form-urlencoded").
-		SetMultipartFormData(map[string]string{
+		SetBody(map[string]string{
 			"name":        branch.Name,
 			"description": branch.Description,
 		}).
@@ -122,9 +123,9 @@ func (a *StorageApi) UpdateBranchRequest(branch *model.Branch, changed []string)
 
 	// Create request
 	request := a.
-		NewRequest(resty.MethodPut, fmt.Sprintf("dev-branches/%d", branch.Id)).
-		SetHeader("Content-Type", "application/x-www-form-urlencoded").
-		SetMultipartFormData(getChangedValues(all, changed)).
+		NewRequest(resty.MethodPut, "dev-branches/{branchId}").
+		SetPathParam("branchId", strconv.Itoa(branch.Id)).
+		SetBody(getChangedValues(all, changed)).
 		SetResult(branch)
 
 	return request
@@ -143,7 +144,8 @@ func (a *StorageApi) ListBranchesRequest() *client.Request {
 func (a *StorageApi) DeleteBranchRequest(branchId int) *client.Request {
 	job := &model.Job{}
 	request := a.
-		NewRequest(resty.MethodDelete, fmt.Sprintf("dev-branches/%d", branchId)).
+		NewRequest(resty.MethodDelete, "dev-branches/{branchId}").
+		SetPathParam("branchId", strconv.Itoa(branchId)).
 		SetResult(job)
 	request.OnSuccess(waitForJob(a, request, job, nil))
 	return request

@@ -74,9 +74,11 @@ func (a *StorageApi) CreateConfigRowRequest(row *model.ConfigRow) (*client.Reque
 
 	// Create request
 	request := a.
-		NewRequest(resty.MethodPost, fmt.Sprintf("branch/%d/components/%s/configs/%s/rows", row.BranchId, row.ComponentId, row.ConfigId)).
-		SetHeader("Content-Type", "application/x-www-form-urlencoded").
-		SetMultipartFormData(map[string]string{
+		NewRequest(resty.MethodPost, "branch/{branchId}/components/{componentId}/configs/{configId}/rows").
+		SetPathParam("branchId", strconv.Itoa(row.BranchId)).
+		SetPathParam("componentId", row.ComponentId).
+		SetPathParam("configId", row.ConfigId).
+		SetBody(map[string]string{
 			"name":              row.Name,
 			"description":       row.Description,
 			"changeDescription": row.ChangeDescription,
@@ -103,9 +105,12 @@ func (a *StorageApi) UpdateConfigRowRequest(row *model.ConfigRow) (*client.Reque
 
 	// Create request
 	request := a.
-		NewRequest(resty.MethodPut, fmt.Sprintf("branch/%d/components/%s/configs/%s/rows/%s", row.BranchId, row.ComponentId, row.ConfigId, row.Id)).
-		SetHeader("Content-Type", "application/x-www-form-urlencoded").
-		SetMultipartFormData(map[string]string{
+		NewRequest(resty.MethodPut, "branch/{branchId}/components/{componentId}/configs/{configId}/rows/{rowId}").
+		SetPathParam("branchId", strconv.Itoa(row.BranchId)).
+		SetPathParam("componentId", row.ComponentId).
+		SetPathParam("configId", row.ConfigId).
+		SetPathParam("rowId", row.Id).
+		SetBody(map[string]string{
 			"name":              row.Name,
 			"description":       row.Description,
 			"changeDescription": row.ChangeDescription,
@@ -120,5 +125,8 @@ func (a *StorageApi) UpdateConfigRowRequest(row *model.ConfigRow) (*client.Reque
 // DeleteConfigRowRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/manage-configuration-rows/update-row
 // Only config in main branch can be removed!
 func (a *StorageApi) DeleteConfigRowRequest(componentId string, configId string, rowId string) *client.Request {
-	return a.NewRequest(resty.MethodDelete, fmt.Sprintf("components/%s/configs/%s/rows/%s", componentId, configId, rowId))
+	return a.NewRequest(resty.MethodDelete, "components/{componentId}/configs/{configId}/rows/{rowId}").
+		SetPathParam("componentId", componentId).
+		SetPathParam("configId", configId).
+		SetPathParam("rowId", rowId)
 }
