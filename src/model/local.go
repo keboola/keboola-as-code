@@ -2,9 +2,10 @@ package model
 
 import (
 	"fmt"
+	"keboola-as-code/src/utils"
 )
 
-func LoadLocalState(projectDir string, metadataDir string) (*State, *PathsState, error) {
+func LoadLocalState(projectDir string, metadataDir string) (*State, *PathsState, *utils.Error) {
 	// Create structures
 	state := NewState()
 	paths, err := NewPathsState(projectDir)
@@ -15,7 +16,7 @@ func LoadLocalState(projectDir string, metadataDir string) (*State, *PathsState,
 	// Load manifest
 	manifest, err := LoadManifest(projectDir, metadataDir)
 	if err != nil {
-		return state, paths, err
+		return state, paths, utils.WrapError(err)
 	}
 
 	// Add branches
@@ -57,8 +58,5 @@ func LoadLocalState(projectDir string, metadataDir string) (*State, *PathsState,
 	for _, err := range paths.Error().Errors() {
 		state.AddError(err)
 	}
-	if state.Error().Len() > 0 {
-		return state, paths, state.Error()
-	}
-	return state, paths, nil
+	return state, paths, state.Error()
 }

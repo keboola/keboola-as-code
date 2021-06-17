@@ -8,3 +8,8 @@ DEBUG	Parsed options: %s
 DEBUG	HTTP	GET https://%s/v2/storage/tokens/verify | 200 | %s
 DEBUG	Storage API token is valid.
 DEBUG	Project id: "%%TEST_PROJECT_ID%%", project name: "%%TEST_PROJECT_NAME%%".
+%A
+DEBUG	Project local state successfully loaded.
+%A
+DEBUG	Project remote state successfully loaded.
+

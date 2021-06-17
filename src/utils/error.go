@@ -9,6 +9,10 @@ type Error struct {
 	errors []error
 }
 
+func WrapError(err error) *Error {
+	return &Error{errors: []error{err}}
+}
+
 func (e *Error) Len() int {
 	return len(e.errors)
 }

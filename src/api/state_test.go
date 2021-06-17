@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/fixtures"
@@ -16,9 +17,10 @@ import (
 func TestLoadRemoteStateEmpty(t *testing.T) {
 	setTestProjectState(t, "empty.json")
 	a, _ := TestStorageApiWithToken(t)
-	state, err := LoadRemoteState(a)
+	state, err := a.LoadRemoteState(context.Background())
 	assert.NotNil(t, state)
-	assert.Nil(t, err)
+	assert.NotNil(t, err)
+	assert.Equal(t, 0, err.Len())
 	assert.Len(t, state.Branches(), 1)
 	assert.Len(t, state.Configs(), 0)
 }
@@ -26,9 +28,10 @@ func TestLoadRemoteStateEmpty(t *testing.T) {
 func TestLoadRemoteStateComplex(t *testing.T) {
 	setTestProjectState(t, "complex.json")
 	a, _ := TestStorageApiWithToken(t)
-	state, err := LoadRemoteState(a)
+	state, err := a.LoadRemoteState(context.Background())
 	assert.NotNil(t, state)
-	assert.Nil(t, err)
+	assert.NotNil(t, err)
+	assert.Equal(t, 0, err.Len())
 
 	branchesJson, jsonErr := json.EncodeString(state.Branches(), true)
 	assert.NoError(t, jsonErr)
@@ -44,8 +47,9 @@ func TestLoadRemoteStateComplex(t *testing.T) {
 func TestDumpProjectState(t *testing.T) {
 	// Load remote state and convert
 	a, _ := TestStorageApiWithToken(t)
-	state, stateErr := LoadRemoteState(a)
-	if stateErr != nil {
+	state, stateErr := a.LoadRemoteState(context.Background())
+	assert.NotNil(t, stateErr)
+	if stateErr.Len() > 0 {
 		assert.FailNow(t, "%s", stateErr)
 	}
 

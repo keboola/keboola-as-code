@@ -2,6 +2,7 @@ package model
 
 import (
 	"github.com/stretchr/testify/assert"
+	"keboola-as-code/src/utils"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -31,7 +32,8 @@ func TestLoadLocalStateEmptyManifest(t *testing.T) {
 func TestLoadLocalStateMinimal(t *testing.T) {
 	state, paths, err := loadLocalTestState("minimal")
 	assert.NotNil(t, state)
-	assert.Nil(t, err)
+	assert.NotNil(t, err)
+	assert.Equal(t, 0, err.Len())
 	assert.Len(t, state.Branches(), 0)
 	assert.Len(t, state.Configs(), 0)
 	assert.Empty(t, paths.Untracked())
@@ -41,7 +43,8 @@ func TestLoadLocalStateMinimal(t *testing.T) {
 func TestLoadLocalStateComplex(t *testing.T) {
 	state, paths, err := loadLocalTestState("complex")
 	assert.NotNil(t, state)
-	assert.Nil(t, err)
+	assert.NotNil(t, err)
+	assert.Equal(t, 0, err.Len())
 	assert.Equal(t, complexExpectedBranches(), state.Branches())
 	assert.Equal(t, complexExpectedConfigs(), state.Configs())
 	assert.Equal(t, []string{
@@ -149,7 +152,7 @@ func TestLoadLocalStateConfigRowInvalidMetaJson(t *testing.T) {
 	assert.Equal(t, `config row metadata JSON file "123-branch/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json" is invalid: invalid character 'f' looking for beginning of object key string, offset: 3`, err.Error())
 }
 
-func loadLocalTestState(projectDirName string) (*State, *PathsState, error) {
+func loadLocalTestState(projectDirName string) (*State, *PathsState, *utils.Error) {
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filepath.Dir(testFile)
 	projectDir := filepath.Join(testDir, "fixtures", "local", projectDirName)
