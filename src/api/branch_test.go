@@ -13,7 +13,9 @@ func TestBranchApiCalls(t *testing.T) {
 	setTestProjectState(t, "empty.json")
 	a, _ := TestStorageApiWithToken(t)
 
-	var job *model.Job
+	var job1 *model.Job
+	var job2 *model.Job
+	var job3 *model.Job
 	var err error
 
 	// Get default branch
@@ -38,10 +40,10 @@ func TestBranchApiCalls(t *testing.T) {
 		Description: "Foo branch",
 		IsDefault:   false,
 	}
-	job, err = a.CreateBranch(branchFoo)
+	job2, err = a.CreateBranch(branchFoo)
 	assert.NoError(t, err)
-	assert.NotNil(t, job)
-	assert.Equal(t, "success", job.Status)
+	assert.NotNil(t, job2)
+	assert.Equal(t, "success", job2.Status)
 	assert.NotEmpty(t, branchFoo.Id)
 
 	// Create branch with callback
@@ -54,6 +56,7 @@ func TestBranchApiCalls(t *testing.T) {
 	request := a.CreateBranchRequest(branchBar).
 		OnSuccess(func(response *client.Response) *client.Response {
 			// OnSuccess callback called when job is in successful state
+			job := response.Result().(*model.Job)
 			assert.NoError(t, response.Error())
 			assert.NotNil(t, job)
 			assert.Equal(t, "success", job.Status)
@@ -73,8 +76,8 @@ func TestBranchApiCalls(t *testing.T) {
 		Description: "Bar branch",
 		IsDefault:   false,
 	}
-	job, err = a.CreateBranch(branchBarDuplicate)
-	assert.Nil(t, job)
+	job1, err = a.CreateBranch(branchBarDuplicate)
+	assert.Nil(t, job1)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "There already is a branch with name \"Bar\"")
 
@@ -106,16 +109,17 @@ func TestBranchApiCalls(t *testing.T) {
 	utils.AssertWildcards(t, expectedBranchesAll(), encoded, "Unexpected branches state")
 
 	// Delete branch
-	job, err = a.DeleteBranch(branchFoo.Id)
+	job3, err = a.DeleteBranch(branchFoo.Id)
 	assert.NoError(t, err)
-	assert.NotNil(t, job)
-	assert.Equal(t, "success", job.Status)
+	assert.NotNil(t, job3)
+	assert.Equal(t, "success", job3.Status)
 
 	// Delete branch with callback
 	onSuccessCalled = false
 	request = a.DeleteBranchRequest(branchBar.Id).
 		OnSuccess(func(response *client.Response) *client.Response {
 			// OnSuccess callback called when job is in successful state
+			job := response.Result().(*model.Job)
 			assert.NoError(t, response.Error())
 			assert.NotNil(t, job)
 			assert.Equal(t, "success", job.Status)
