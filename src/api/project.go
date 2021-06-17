@@ -157,6 +157,9 @@ func (p *testProject) CreateConfigsInBranch(pool *client.Pool, names []string, b
 				Request(request).
 				OnSuccess(func(response *client.Response) *client.Response {
 					p.setEnv(fmt.Sprintf("%s_%s_ID", envPrefix, config.Name), config.Id)
+					for _, row := range config.Rows {
+						p.setEnv(fmt.Sprintf("%s_%s_ROW_%s_ID", envPrefix, config.Name, row.Name), row.Id)
+					}
 					return response
 				}).
 				Send()

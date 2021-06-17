@@ -324,6 +324,6 @@ func TestWaitForSubRequestChain(t *testing.T) {
 	assert.Equal(t, 10, httpmock.GetCallCountInfo()["GET https://example.com/sub"])
 
 	// Earlier requests are waiting for the next one
-	// ... so callbacks are performed in reverse order
+	// ... so callbacks are performed in reverse order, "1" is main request "2-11" sub requests
 	assert.Equal(t, []int{11, 10, 9, 8, 7, 6, 5, 4, 3, 2}, invokeOrder)
 }

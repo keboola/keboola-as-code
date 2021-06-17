@@ -38,8 +38,8 @@ type Component struct {
 
 // Config https://keboola.docs.apiary.io/#reference/components-and-configurations/component-configurations/list-configurations
 type Config struct {
-	BranchId          int                    `json:"branchId" validate:"required"`     // not present in API response, must be set manually
-	ComponentId       string                 `json:"componentKey" validate:"required"` // not present in API response, must be set manually
+	BranchId          int                    `json:"branchId" validate:"required"`    // not present in API response, must be set manually
+	ComponentId       string                 `json:"componentId" validate:"required"` // not present in API response, must be set manually
 	Id                string                 `json:"id" validate:"required"`
 	Name              string                 `json:"name" validate:"required"`
 	Description       string                 `json:"description"`
@@ -50,9 +50,9 @@ type Config struct {
 
 // ConfigRow https://keboola.docs.apiary.io/#reference/components-and-configurations/component-configurations/list-configurations
 type ConfigRow struct {
-	BranchId          int                    `json:"branchId" validate:"required"`     // not present in API response, must be set manually
-	ComponentId       string                 `json:"componentKey" validate:"required"` // not present in API response, must be set manually
-	ConfigId          string                 `json:"configKey" validate:"required"`    // not present in API response, must be set manually
+	BranchId          int                    `json:"branchId" validate:"required"`    // not present in API response, must be set manually
+	ComponentId       string                 `json:"componentId" validate:"required"` // not present in API response, must be set manually
+	ConfigId          string                 `json:"configId" validate:"required"`    // not present in API response, must be set manually
 	Id                string                 `json:"id" validate:"required"`
 	Name              string                 `json:"name" validate:"required"`
 	Description       string                 `json:"description"`
