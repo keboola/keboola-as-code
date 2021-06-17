@@ -51,7 +51,7 @@ func (a *StorageApi) DeleteConfigRow(componentId string, configId string, rowId 
 // GetConfigRowRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/manage-configuration-rows/row-detail
 func (a *StorageApi) GetConfigRowRequest(branchId int, componentId string, configId string, rowId string) *client.Request {
 	return a.
-		Request(resty.MethodGet, fmt.Sprintf("branch/%d/components/%s/configs/%s/rows/%s", branchId, componentId, configId, rowId)).
+		NewRequest(resty.MethodGet, fmt.Sprintf("branch/%d/components/%s/configs/%s/rows/%s", branchId, componentId, configId, rowId)).
 		SetResult(&model.ConfigRow{
 			BranchId:    branchId,
 			ComponentId: componentId,
@@ -74,7 +74,7 @@ func (a *StorageApi) CreateConfigRowRequest(row *model.ConfigRow) (*client.Reque
 
 	// Create request
 	request := a.
-		Request(resty.MethodPost, fmt.Sprintf("branch/%d/components/%s/configs/%s/rows", row.BranchId, row.ComponentId, row.ConfigId)).
+		NewRequest(resty.MethodPost, fmt.Sprintf("branch/%d/components/%s/configs/%s/rows", row.BranchId, row.ComponentId, row.ConfigId)).
 		SetHeader("Content-Type", "application/x-www-form-urlencoded").
 		SetMultipartFormData(map[string]string{
 			"name":              row.Name,
@@ -83,7 +83,7 @@ func (a *StorageApi) CreateConfigRowRequest(row *model.ConfigRow) (*client.Reque
 			"isDisabled":        strconv.FormatBool(row.IsDisabled),
 			"configuration":     string(configJson),
 		}).
-		SetResult(&model.ConfigRow{})
+		SetResult(row)
 
 	return request, nil
 }
@@ -103,7 +103,7 @@ func (a *StorageApi) UpdateConfigRowRequest(row *model.ConfigRow) (*client.Reque
 
 	// Create request
 	request := a.
-		Request(resty.MethodPut, fmt.Sprintf("branch/%d/components/%s/configs/%s/rows/%s", row.BranchId, row.ComponentId, row.ConfigId, row.Id)).
+		NewRequest(resty.MethodPut, fmt.Sprintf("branch/%d/components/%s/configs/%s/rows/%s", row.BranchId, row.ComponentId, row.ConfigId, row.Id)).
 		SetHeader("Content-Type", "application/x-www-form-urlencoded").
 		SetMultipartFormData(map[string]string{
 			"name":              row.Name,
@@ -120,5 +120,5 @@ func (a *StorageApi) UpdateConfigRowRequest(row *model.ConfigRow) (*client.Reque
 // DeleteConfigRowRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/manage-configuration-rows/update-row
 // Only config in main branch can be removed!
 func (a *StorageApi) DeleteConfigRowRequest(componentId string, configId string, rowId string) *client.Request {
-	return a.Request(resty.MethodDelete, fmt.Sprintf("components/%s/configs/%s/rows/%s", componentId, configId, rowId))
+	return a.NewRequest(resty.MethodDelete, fmt.Sprintf("components/%s/configs/%s/rows/%s", componentId, configId, rowId))
 }

@@ -7,7 +7,10 @@ build-cross:
 	./scripts/cross-compile.sh
 
 tests:
-	./scripts/tests.sh
+	TEST_VERBOSE=false ./scripts/tests.sh
+
+tests-verbose:
+	TEST_VERBOSE=true ./scripts/tests.sh
 
 fix:
 	./scripts/fix.sh

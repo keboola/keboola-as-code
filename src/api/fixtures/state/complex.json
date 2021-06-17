@@ -1,22 +1,19 @@
 {
   "allBranchesConfigs": [
-    "empty",
-    "without-rows",
-    "with-schema",
-    "old-transformation",
-    "python-transformation",
-    "snowflake-transformation"
+    "empty"
   ],
   "branches": [
     {
       "branch": {
         "name": "Main",
+        "description": "Main branch",
         "isDefault": true
       }
     },
     {
       "branch": {
-        "name": "foo",
+        "name": "Foo",
+        "description": "Foo branch",
         "isDefault": false
       },
       "configs": [
@@ -25,12 +22,12 @@
     },
     {
       "branch": {
-        "name": "bar",
+        "name": "Bar",
+        "description": "Bar branch",
         "isDefault": false
       },
       "configs": [
-        "empty",
-        "with-rows"
+        "without-rows"
       ]
     }
   ]

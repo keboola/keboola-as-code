@@ -18,7 +18,7 @@ func (a *StorageApi) ListComponents(branchId int) (*[]*model.Component, error) {
 func (a *StorageApi) ListComponentsRequest(branchId int) *client.Request {
 	components := make([]*model.Component, 0)
 	return a.
-		Request(resty.MethodGet, fmt.Sprintf("branch/%d/components", branchId)).
+		NewRequest(resty.MethodGet, fmt.Sprintf("branch/%d/components", branchId)).
 		SetQueryParam("include", "configuration,rows").
 		SetResult(&components).
 		OnSuccess(func(response *client.Response) *client.Response {

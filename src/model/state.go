@@ -113,6 +113,9 @@ func (s *State) AddConfig(config *Config) bool {
 		return false
 	}
 
+	// The order of the rows does not matter, ... sort for easy testing
+	config.SortRows()
+
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 

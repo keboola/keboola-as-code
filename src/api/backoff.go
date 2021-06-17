@@ -5,12 +5,14 @@ import (
 	"time"
 )
 
-// createBackoff for checking Job status and similar operations
-func (a *StorageApi) createBackoff() *backoff.ExponentialBackOff {
+// newBackoff for checking Job status and similar operations
+func newBackoff() *backoff.ExponentialBackOff {
 	b := backoff.NewExponentialBackOff()
-	b.InitialInterval = 100 * time.Millisecond
+	b.RandomizationFactor = 0
+	b.InitialInterval = 50 * time.Millisecond
 	b.Multiplier = 2
 	b.MaxInterval = 3 * time.Second
 	b.MaxElapsedTime = 30 * time.Second
+	b.Reset()
 	return b
 }

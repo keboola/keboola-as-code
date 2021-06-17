@@ -139,7 +139,6 @@ func (p *Pool) start() {
 }
 
 func (p *Pool) send(request *Request) *Response {
-	request.sent = true
 	p.logRequestState("started", request, nil)
 	p.client.Send(request)
 	p.logRequestState("finished", request, request.Response().Error())

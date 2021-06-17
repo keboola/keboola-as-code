@@ -5,8 +5,8 @@ import (
 	"github.com/ActiveState/vt10x"
 	"github.com/Netflix/go-expect"
 	"github.com/stretchr/testify/assert"
+	"io"
 	"keboola-as-code/src/ask"
-	"keboola-as-code/src/fixtures/testEnv"
 	"keboola-as-code/src/utils"
 	"os"
 	"sync"
@@ -35,12 +35,14 @@ func TestInteractive(t *testing.T) {
 	assert.NoError(t, os.Chdir(tempDir))
 
 	// Create virtual console
-	c, state, err := vt10x.NewVT10XConsole()
+	var stdout io.Writer
+	if utils.TestIsVerbose() {
+		stdout = os.Stdout
+	} else {
+		stdout = io.Discard
+	}
+	c, state, err := vt10x.NewVT10XConsole(expect.WithStdout(stdout))
 	assert.NoError(t, err)
-	defer func() {
-		assert.NoError(t, c.Close())
-		t.Logf("Console output:\n%s", expect.StripTrailingEmptyLines(state.String()))
-	}()
 
 	// Init prompt and cmd
 	prompt := ask.NewPrompt(c.Tty(), c.Tty(), c.Tty())
@@ -58,14 +60,14 @@ func TestInteractive(t *testing.T) {
 		_, err = c.ExpectString("API host ")
 		assert.NoError(t, err)
 		time.Sleep(100 * time.Millisecond)
-		_, err = c.SendLine(testEnv.TestApiHost())
+		_, err = c.SendLine(utils.TestApiHost())
 		assert.NoError(t, err)
 		_, err = c.ExpectString("Please enter Keboola Storage API token. The value will be hidden.")
 		assert.NoError(t, err)
 		_, err = c.ExpectString("API token ")
 		assert.NoError(t, err)
 		time.Sleep(100 * time.Millisecond)
-		_, err = c.SendLine(testEnv.TestTokenMaster())
+		_, err = c.SendLine(utils.TestTokenMaster())
 		assert.NoError(t, err)
 		_, err = c.ExpectEOF()
 		assert.NoError(t, err)

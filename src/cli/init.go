@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"keboola-as-code/src/api"
-	"keboola-as-code/src/local"
+	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
 	"os"
 	"path/filepath"
@@ -66,7 +66,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 
 			// Create metadata dir
 			projectDir := root.options.WorkingDirectory()
-			metadataDir := filepath.Join(projectDir, local.MetadataDir)
+			metadataDir := filepath.Join(projectDir, model.MetadataDir)
 			if err = os.MkdirAll(metadataDir, 0650); err != nil {
 				return fmt.Errorf("cannot create metadata directory \"%s\": %s", metadataDir, err)
 			}
@@ -76,7 +76,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 			root.logger.Infof("Created metadata dir \"%s\".", utils.RelPath(projectDir, metadataDir))
 
 			// Create and save manifest
-			manifest, err := local.NewManifest(sApi.ProjectId(), sApi.Host())
+			manifest, err := model.NewManifest(sApi.ProjectId(), sApi.Host())
 			if err != nil {
 				return err
 			}

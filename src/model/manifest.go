@@ -1,27 +1,35 @@
-package local
+package model
 
 import (
 	"fmt"
 	"keboola-as-code/src/json"
-	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
+	"keboola-as-code/src/validator"
 	"os"
 	"path/filepath"
 )
 
 const (
-	MetadataDir = ".keboola"
-	MetaFile    = "meta.json"
-	ConfigFile  = "config.json"
-	RowsDir     = "rows"
+	MetadataDir      = ".keboola"
+	MetaFile         = "meta.json"
+	ConfigFile       = "config.json"
+	RowsDir          = "rows"
+	ManifestFileName = "manifest.json"
 )
 
-type Project struct {
+type Manifest struct {
+	path     string
+	Version  int               `json:"version" validate:"required,min=1,max=1"`
+	Project  *ManifestProject  `json:"project" validate:"required"`
+	Branches []*ManifestBranch `json:"branches"`
+	Configs  []*ManifestConfig `json:"configurations"`
+}
+type ManifestProject struct {
 	Id      int    `json:"id" validate:"required,min=1"`
 	ApiHost string `json:"apiHost" validate:"required,hostname"`
 }
 
-type Branch struct {
+type ManifestBranch struct {
 	Id   int    `json:"id" validate:"required,min=1"`
 	Path string `json:"path" validate:"required"`
 }
@@ -32,12 +40,12 @@ type BranchMeta struct {
 	IsDefault   bool   `json:"isDefault"`
 }
 
-type Config struct {
-	BranchId    int          `json:"branchId" validate:"required"`
-	ComponentId string       `json:"componentId" validate:"required"`
-	Id          string       `json:"id" validate:"required,min=1"`
-	Path        string       `json:"path" validate:"required"`
-	Rows        []*ConfigRow `json:"rows"`
+type ManifestConfig struct {
+	BranchId    int                  `json:"branchId" validate:"required"`
+	ComponentId string               `json:"componentId" validate:"required"`
+	Id          string               `json:"id" validate:"required,min=1"`
+	Path        string               `json:"path" validate:"required"`
+	Rows        []*ManifestConfigRow `json:"rows"`
 }
 
 type ConfigMeta struct {
@@ -45,7 +53,7 @@ type ConfigMeta struct {
 	Description string `json:"description" validate:"required"`
 }
 
-type ConfigRow struct {
+type ManifestConfigRow struct {
 	Id   string `json:"id" validate:"required,min=1"`
 	Path string `json:"path" validate:"required"`
 }
@@ -56,27 +64,106 @@ type ConfigRowMeta struct {
 	IsDisabled  bool   `json:"IsDisabled"`
 }
 
-func (b *Branch) MetaFilePath(projectDir string) string {
+func NewManifest(projectId int, apiHost string) (*Manifest, error) {
+	m := &Manifest{
+		Version:  1,
+		Project:  &ManifestProject{Id: projectId, ApiHost: apiHost},
+		Branches: make([]*ManifestBranch, 0),
+		Configs:  make([]*ManifestConfig, 0),
+	}
+	err := m.Validate()
+	if err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func LoadManifest(projectDir string, metadataDir string) (*Manifest, error) {
+	// Exists?
+	path := filepath.Join(metadataDir, ManifestFileName)
+	if !utils.IsFile(path) {
+		return nil, fmt.Errorf("manifest \"%s\" not found", utils.RelPath(projectDir, path))
+	}
+
+	// Load file
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("cannot read from manifest \"%s\": %s", utils.RelPath(projectDir, path), err)
+	}
+
+	// Decode JSON
+	m := &Manifest{}
+	err = json.Decode(data, m)
+	if err != nil {
+		return nil, fmt.Errorf("manifest \"%s\" is not valid: %s", utils.RelPath(projectDir, path), err)
+	}
+
+	// Validate
+	err = m.Validate()
+	if err != nil {
+		return nil, err
+	}
+
+	// Set path
+	m.path = path
+
+	// Return
+	return m, nil
+}
+
+func (m *Manifest) Save(metadataDir string) error {
+	// Validate
+	err := m.Validate()
+	if err != nil {
+		return err
+	}
+
+	// Encode JSON
+	data, err := json.Encode(m, true)
+	if err != nil {
+		return err
+	}
+
+	// Write file
+	m.path = filepath.Join(metadataDir, ManifestFileName)
+	return os.WriteFile(m.path, data, 0650)
+}
+
+func (m *Manifest) Validate() error {
+	if err := validator.Validate(m); err != nil {
+		return fmt.Errorf("manifest is not valid: %s", err)
+	}
+	return nil
+}
+
+func (m *Manifest) Path() string {
+	if len(m.path) == 0 {
+		panic(fmt.Errorf("manifest path is not set"))
+	}
+	return m.path
+}
+
+func (b *ManifestBranch) MetaFilePath(projectDir string) string {
 	return filepath.Join(projectDir, b.Path, MetaFile)
 }
 
-func (c *Config) MetaFilePath(b *Branch, projectDir string) string {
+func (c *ManifestConfig) MetaFilePath(b *ManifestBranch, projectDir string) string {
 	return filepath.Join(projectDir, b.Path, c.Path, MetaFile)
 }
 
-func (r *ConfigRow) MetaFilePath(b *Branch, c *Config, projectDir string) string {
+func (r *ManifestConfigRow) MetaFilePath(b *ManifestBranch, c *ManifestConfig, projectDir string) string {
 	return filepath.Join(projectDir, b.Path, c.Path, RowsDir, r.Path, MetaFile)
 }
 
-func (c *Config) ConfigFilePath(b *Branch, projectDir string) string {
+func (c *ManifestConfig) ConfigFilePath(b *ManifestBranch, projectDir string) string {
 	return filepath.Join(projectDir, b.Path, c.Path, ConfigFile)
 }
 
-func (r *ConfigRow) ConfigFilePath(b *Branch, c *Config, projectDir string) string {
+func (r *ManifestConfigRow) ConfigFilePath(b *ManifestBranch, c *ManifestConfig, projectDir string) string {
 	return filepath.Join(projectDir, b.Path, c.Path, RowsDir, r.Path, ConfigFile)
 }
 
-func (b *Branch) Meta(projectDir string) (*BranchMeta, error) {
+func (b *ManifestBranch) Meta(projectDir string) (*BranchMeta, error) {
 	// Read meta file
 	path := b.MetaFilePath(projectDir)
 	if !utils.IsFile(path) {
@@ -91,7 +178,7 @@ func (b *Branch) Meta(projectDir string) (*BranchMeta, error) {
 	return meta, err
 }
 
-func (c *Config) Meta(b *Branch, projectDir string) (*ConfigMeta, error) {
+func (c *ManifestConfig) Meta(b *ManifestBranch, projectDir string) (*ConfigMeta, error) {
 	path := c.MetaFilePath(b, projectDir)
 	if !utils.IsFile(path) {
 		return nil, fmt.Errorf("config metadata JSON file \"%s\" not found", utils.RelPath(projectDir, path))
@@ -105,7 +192,7 @@ func (c *Config) Meta(b *Branch, projectDir string) (*ConfigMeta, error) {
 	return meta, nil
 }
 
-func (r *ConfigRow) Meta(b *Branch, c *Config, projectDir string) (*ConfigRowMeta, error) {
+func (r *ManifestConfigRow) Meta(b *ManifestBranch, c *ManifestConfig, projectDir string) (*ConfigRowMeta, error) {
 	path := r.MetaFilePath(b, c, projectDir)
 	if !utils.IsFile(path) {
 		return nil, fmt.Errorf("config row metadata JSON file \"%s\" not found", utils.RelPath(projectDir, path))
@@ -119,7 +206,7 @@ func (r *ConfigRow) Meta(b *Branch, c *Config, projectDir string) (*ConfigRowMet
 	return meta, nil
 }
 
-func (c *Config) Config(b *Branch, projectDir string) (map[string]interface{}, error) {
+func (c *ManifestConfig) Config(b *ManifestBranch, projectDir string) (map[string]interface{}, error) {
 	path := c.ConfigFilePath(b, projectDir)
 	if !utils.IsFile(path) {
 		return nil, fmt.Errorf("config JSON file \"%s\" not found", utils.RelPath(projectDir, path))
@@ -133,7 +220,7 @@ func (c *Config) Config(b *Branch, projectDir string) (map[string]interface{}, e
 	return config, nil
 }
 
-func (r *ConfigRow) Config(b *Branch, c *Config, projectDir string) (map[string]interface{}, error) {
+func (r *ManifestConfigRow) Config(b *ManifestBranch, c *ManifestConfig, projectDir string) (map[string]interface{}, error) {
 	path := r.ConfigFilePath(b, c, projectDir)
 	if !utils.IsFile(path) {
 		return nil, fmt.Errorf("config row JSON file \"%s\" not found", utils.RelPath(projectDir, path))
@@ -147,7 +234,7 @@ func (r *ConfigRow) Config(b *Branch, c *Config, projectDir string) (map[string]
 	return config, nil
 }
 
-func (b *Branch) ToModel(projectDir string) (*model.Branch, error) {
+func (b *ManifestBranch) ToModel(projectDir string) (*Branch, error) {
 	// Read meta file
 	meta, err := b.Meta(projectDir)
 	if err != nil {
@@ -155,7 +242,7 @@ func (b *Branch) ToModel(projectDir string) (*model.Branch, error) {
 	}
 
 	// Convert
-	branch := &model.Branch{}
+	branch := &Branch{}
 	branch.Id = b.Id
 	branch.Name = meta.Name
 	branch.Description = meta.Description
@@ -163,7 +250,7 @@ func (b *Branch) ToModel(projectDir string) (*model.Branch, error) {
 	return branch, nil
 }
 
-func (c *Config) ToModel(b *Branch, projectDir string) (*model.Config, error) {
+func (c *ManifestConfig) ToModel(b *ManifestBranch, projectDir string) (*Config, error) {
 	// Read meta file
 	meta, err := c.Meta(b, projectDir)
 	if err != nil {
@@ -177,7 +264,7 @@ func (c *Config) ToModel(b *Branch, projectDir string) (*model.Config, error) {
 	}
 
 	// Convert
-	config := &model.Config{}
+	config := &Config{}
 	config.BranchId = c.BranchId
 	config.ComponentId = c.ComponentId
 	config.Id = c.Id
@@ -193,11 +280,12 @@ func (c *Config) ToModel(b *Branch, projectDir string) (*model.Config, error) {
 		}
 		config.Rows = append(config.Rows, row)
 	}
+	config.SortRows()
 
 	return config, nil
 }
 
-func (r *ConfigRow) ToModel(b *Branch, c *Config, projectDir string) (*model.ConfigRow, error) {
+func (r *ManifestConfigRow) ToModel(b *ManifestBranch, c *ManifestConfig, projectDir string) (*ConfigRow, error) {
 	// Read meta file
 	meta, err := r.Meta(b, c, projectDir)
 	if err != nil {
@@ -211,7 +299,7 @@ func (r *ConfigRow) ToModel(b *Branch, c *Config, projectDir string) (*model.Con
 	}
 
 	// Convert
-	row := &model.ConfigRow{}
+	row := &ConfigRow{}
 	row.BranchId = c.BranchId
 	row.ComponentId = c.ComponentId
 	row.ConfigId = c.Id

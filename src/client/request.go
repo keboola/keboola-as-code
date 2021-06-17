@@ -4,6 +4,13 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-resty/resty/v2"
+	"sync"
+)
+
+const (
+	EventOnSuccess ResponseEventType = iota
+	EventOnError
+	EventOnResponse // always
 )
 
 type DecoratorFunc func(response *resty.Response, err error) (*resty.Response, error)
@@ -15,22 +22,24 @@ type ResponseListener struct {
 }
 type Sender interface {
 	Send(r *Request)
+	Request(request *Request) *Request
 }
 
-const (
-	EventOnSuccess ResponseEventType = iota
-	EventOnError
-	EventOnResponse // always
-)
-
 type Request struct {
-	id        int
-	request   *resty.Request
-	response  *Response
-	url       string
-	sender    Sender
-	sent      bool
-	listeners []*ResponseListener
+	lock       *sync.Mutex
+	id         int
+	sent       bool
+	done       bool
+	url        string
+	request    *resty.Request
+	response   *Response
+	sender     Sender
+	listeners  []*ResponseListener
+	waitingFor []*Request
+}
+
+func NewRequest(id int, sender Sender, request *resty.Request) *Request {
+	return &Request{lock: &sync.Mutex{}, id: id, request: request, url: request.URL, sender: sender}
 }
 
 func (r *Request) SetResult(result interface{}) *Request {
@@ -56,6 +65,14 @@ func (r *Request) SetMultipartFormData(data map[string]string) *Request {
 func (r *Request) Send() *Request {
 	r.sender.Send(r)
 	return r
+}
+
+func (r *Request) IsSent() bool {
+	return r.sent
+}
+
+func (r *Request) IsDone() bool {
+	return r.done
 }
 
 func (r *Request) Id() int {
@@ -98,9 +115,59 @@ func (r *Request) SetContext(ctx context.Context) *Request {
 	return r
 }
 
+// WaitFor ensures that all remaining listeners will be deferred until subRequest done
+// See TestWaitForSubRequest test
+func (r *Request) WaitFor(subRequest *Request) {
+	r.lock.Lock()
+	r.waitingFor = append(r.waitingFor, subRequest)
+	r.lock.Unlock()
+
+	subRequest.OnResponse(func(response *Response) *Response {
+		r.invokeListeners()
+		return response
+	})
+}
+
+func (r *Request) isWaiting() bool {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	for _, subRequest := range r.waitingFor {
+		if !subRequest.done {
+			return true
+		}
+	}
+	return false
+}
+
+func (r *Request) nextListener() *ResponseListener {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	// No more listeners to invoke
+	if len(r.listeners) == 0 {
+		return nil
+	}
+
+	// Remove listener from slice
+	listener := r.listeners[0]
+	r.listeners = r.listeners[1:]
+	return listener
+}
+
 func (r *Request) invokeListeners() {
-	for _, listener := range r.listeners {
-		r.response = listener.Invoke(r.response)
+	for {
+		if r.isWaiting() {
+			// Invoke listeners later, when all subRequests will be done, see WaitFor method
+			break
+		}
+
+		// Invoke next listener if present
+		listener := r.nextListener()
+		if listener != nil {
+			r.response = listener.Invoke(r.response)
+		} else {
+			break
+		}
 	}
 }
 
@@ -125,8 +192,4 @@ func (l *ResponseListener) Invoke(response *Response) *Response {
 	}
 
 	return l.Callback(response)
-}
-
-func NewRequest(id int, sender Sender, request *resty.Request) *Request {
-	return &Request{id: id, request: request, url: request.URL, sender: sender}
 }

@@ -1,14 +1,20 @@
 package fixtures
 
 import (
+	"encoding/json"
+	"fmt"
+	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/model"
+	"keboola-as-code/src/utils"
+	"path/filepath"
+	"runtime"
+	"testing"
 )
 
-type BranchName string
-
 type Branch struct {
-	Name      BranchName `json:"name" validate:"required"`
-	IsDefault bool       `json:"isDefault"`
+	Name        string `json:"name" validate:"required"`
+	Description string `json:"description" validate:"required"`
+	IsDefault   bool   `json:"isDefault"`
 }
 
 type BranchState struct {
@@ -50,8 +56,8 @@ func (b *Branch) ToModel(defaultBranch *model.Branch) *model.Branch {
 	}
 
 	branch := &model.Branch{}
-	branch.Name = string(b.Name)
-	branch.Description = "test fixture"
+	branch.Name = b.Name
+	branch.Description = b.Description
 	branch.IsDefault = b.IsDefault
 	return branch
 }
@@ -79,4 +85,86 @@ func (r *ConfigRow) ToModel() *model.ConfigRow {
 	row.IsDisabled = r.IsDisabled
 	row.Config = r.Config
 	return row
+}
+
+func LoadStateFile(path string) (*StateFile, error) {
+	data := utils.GetFileContent(path)
+	stateFile := &StateFile{}
+	err := json.Unmarshal([]byte(data), stateFile)
+	if err != nil {
+		return nil, fmt.Errorf("cannot parse project state file \"%s\": %s", path, err)
+	}
+
+	// Check if main branch defined
+	// Create definition if not exists
+	found := false
+	for _, branch := range stateFile.Branches {
+		if branch.Branch.IsDefault {
+			found = true
+			break
+		}
+	}
+	if !found {
+		stateFile.Branches = append(stateFile.Branches, &BranchStateConfigName{
+			Branch: &Branch{Name: "Main", IsDefault: true},
+		})
+	}
+
+	return stateFile, nil
+}
+
+func ConvertRemoteStateToFixtures(model *model.State) (*ProjectState, error) {
+	fixtures := &ProjectState{}
+	branchesByName := make(map[string]*BranchState)
+
+	for _, branch := range model.Branches() {
+		// Map branch
+		b := &Branch{}
+		b.Name = branch.Name
+		b.IsDefault = branch.IsDefault
+		bState := &BranchState{Branch: b}
+		fixtures.Branches = append(fixtures.Branches, bState)
+		branchesByName[b.Name] = bState
+	}
+
+	for _, configuration := range model.Configs() {
+		branchId := configuration.BranchId
+		branch, err := model.BranchById(branchId)
+		if err != nil {
+			return nil, err
+		}
+
+		// Map configuration
+		branchName := branch.Name
+		c := &Config{}
+		c.ComponentId = configuration.ComponentId
+		c.Name = configuration.Name
+		c.Config = configuration.Config
+		branchesByName[branchName].Configs = append(branchesByName[branchName].Configs, c)
+
+		// Map rows
+		for _, row := range configuration.Rows {
+			r := &ConfigRow{}
+			r.Name = row.Name
+			r.IsDisabled = row.IsDisabled
+			r.Config = row.Config
+			c.Rows = append(c.Rows, r)
+		}
+	}
+
+	return fixtures, nil
+}
+
+// LoadConfig loads config from the JSON file
+func LoadConfig(t *testing.T, name string) *model.Config {
+	_, testFile, _, _ := runtime.Caller(0)
+	testDir := filepath.Dir(testFile)
+	path := filepath.Join(testDir, "configs", name+".json")
+	content := utils.GetFileContent(path)
+	fixture := &Config{}
+	err := json.Unmarshal([]byte(content), fixture)
+	if err != nil {
+		assert.FailNowf(t, "cannot decode JSON file \"%s\": %s", path, err)
+	}
+	return fixture.ToModel()
 }

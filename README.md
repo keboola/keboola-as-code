@@ -119,7 +119,12 @@ To run the one or more tests via wildcard:
 ./scripts/tests.sh -run TestFuncName*
 ```
 
-In the container, you can run CLI from source code using:
+To run tests with verbose output to see HTTP requests, ENVs, etc.:
+```
+docker-compose run --rm dev make tests-verbose
+```
+
+In the container, you can run CLI from the source code using:
 ```
 go run ./src/main.go help init
 ```

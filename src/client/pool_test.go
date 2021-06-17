@@ -23,7 +23,7 @@ func TestSimple(t *testing.T) {
 	successCounter := utils.NewSafeCounter(0)
 	responseCounter := utils.NewSafeCounter(0)
 	pool := client.NewPool(logger)
-	pool.Request(client.Request(resty.MethodGet, "https://example.com")).
+	pool.Request(client.NewRequest(resty.MethodGet, "https://example.com")).
 		OnResponse(func(response *Response) *Response {
 			responseCounter.Inc()
 			return response
@@ -64,7 +64,7 @@ func TestSubRequest(t *testing.T) {
 		successCounter.Inc()
 		if successCounter.Get() < 30 {
 			// Send sub-request
-			pool.Request(client.Request(resty.MethodGet, "https://example.com")).
+			pool.Request(client.NewRequest(resty.MethodGet, "https://example.com")).
 				OnResponse(onResponse).
 				OnSuccess(onSuccess).
 				OnError(onError).
@@ -73,7 +73,7 @@ func TestSubRequest(t *testing.T) {
 		return response
 	}
 
-	pool.Request(client.Request(resty.MethodGet, "https://example.com")).
+	pool.Request(client.NewRequest(resty.MethodGet, "https://example.com")).
 		OnResponse(onResponse).
 		OnSuccess(onSuccess).
 		OnError(onError).
@@ -93,7 +93,7 @@ func TestErrorInCallback(t *testing.T) {
 	pool := client.NewPool(logger)
 	var onSuccess ResponseCallback
 	onSuccess = func(response *Response) *Response {
-		pool.Request(client.Request(resty.MethodGet, "https://example.com")).
+		pool.Request(client.NewRequest(resty.MethodGet, "https://example.com")).
 			OnSuccess(onSuccess).
 			Send()
 
@@ -102,7 +102,7 @@ func TestErrorInCallback(t *testing.T) {
 		}
 		return response
 	}
-	pool.Request(client.Request(resty.MethodGet, "https://example.com")).
+	pool.Request(client.NewRequest(resty.MethodGet, "https://example.com")).
 		OnSuccess(onSuccess).
 		Send()
 
@@ -121,17 +121,17 @@ func TestNetworkError(t *testing.T) {
 	var onSuccess ResponseCallback
 	onSuccess = func(response *Response) *Response {
 		if c.Inc(); c.Get() == 10 {
-			pool.Request(client.Request(resty.MethodGet, "https://example.com/error")).
+			pool.Request(client.NewRequest(resty.MethodGet, "https://example.com/error")).
 				OnSuccess(onSuccess).
 				Send()
 		} else {
-			pool.Request(client.Request(resty.MethodGet, "https://example.com")).
+			pool.Request(client.NewRequest(resty.MethodGet, "https://example.com")).
 				OnSuccess(onSuccess).
 				Send()
 		}
 		return response
 	}
-	pool.Request(client.Request(resty.MethodGet, "https://example.com")).
+	pool.Request(client.NewRequest(resty.MethodGet, "https://example.com")).
 		OnSuccess(onSuccess).
 		Send()
 	assert.Equal(t, errors.New("network error"), pool.StartAndWait().(*url.Error).Unwrap())
@@ -146,7 +146,7 @@ func TestOnSuccess(t *testing.T) {
 	successCaught := false
 	responseCaught := false
 	pool := client.NewPool(logger)
-	pool.Request(client.Request(resty.MethodGet, "https://example.com")).
+	pool.Request(client.NewRequest(resty.MethodGet, "https://example.com")).
 		OnSuccess(func(response *Response) *Response {
 			successCaught = true
 			return response
@@ -161,10 +161,9 @@ func TestOnSuccess(t *testing.T) {
 		}).
 		Send()
 
-	err := pool.StartAndWait()
+	assert.NoError(t, pool.StartAndWait())
 	assert.True(t, successCaught)
 	assert.True(t, responseCaught)
-	assert.NoError(t, err)
 	assert.Equal(t, 1, httpmock.GetCallCountInfo()["GET https://example.com"])
 }
 
@@ -176,9 +175,9 @@ func TestOnError(t *testing.T) {
 	errorCaught := false
 	responseCaught := false
 	pool := client.NewPool(logger)
-	pool.Request(client.Request(resty.MethodGet, "https://example.com")).
+	pool.Request(client.NewRequest(resty.MethodGet, "https://example.com")).
 		OnSuccess(func(response *Response) *Response {
-			pool.Request(client.Request(resty.MethodGet, "https://example.com/error")).
+			pool.Request(client.NewRequest(resty.MethodGet, "https://example.com/error")).
 				OnSuccess(func(response *Response) *Response {
 					assert.Fail(t, "error expected")
 					return response
@@ -212,8 +211,119 @@ func TestOnError(t *testing.T) {
 func TestSendWasNotCalled(t *testing.T) {
 	client, logger, _ := getMockedClientAndLogs(t, false)
 	pool := client.NewPool(logger)
-	pool.Request(client.Request(resty.MethodGet, "https://example.com"))
+	pool.Request(client.NewRequest(resty.MethodGet, "https://example.com"))
 	assert.PanicsWithError(t, `request[1] GET "https://example.com" was not sent - Send() method was not called`, func() {
 		pool.StartAndWait()
 	})
+}
+
+func TestWaitForSubRequest(t *testing.T) {
+	client, logger, _ := getMockedClientAndLogs(t, false)
+	httpmock.RegisterResponder("GET", `https://example.com`, httpmock.NewStringResponder(200, `test`))
+	httpmock.RegisterResponder("GET", `https://example.com/sub`, httpmock.NewStringResponder(200, `test`))
+
+	counter := utils.NewSafeCounter(0)
+
+	var mainRequest *Request
+	var subRequestCallback ResponseCallback
+	pool := client.NewPool(logger)
+	subRequestCallback = func(response *Response) *Response {
+		if counter.IncAndGet() <= 10 {
+			// Send sub-request
+			subRequest := pool.
+				Request(client.NewRequest(resty.MethodGet, "https://example.com/sub")).
+				OnSuccess(subRequestCallback)
+			mainRequest.WaitFor(subRequest) // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+			subRequest.Send()
+		}
+		return response
+	}
+
+	mainDoneCallbackCalled := false
+	allDoneCallback1Called := false
+	allDoneCallback2Called := false
+	mainRequest = pool.
+		Request(client.NewRequest(resty.MethodGet, "https://example.com")).
+		OnSuccess(func(response *Response) *Response {
+			// Should be called as soon as the main request is done
+			mainDoneCallbackCalled = true
+			assert.Equal(t, 0, counter.Get())
+			return response
+		}).
+		OnSuccess(subRequestCallback).
+		OnSuccess(func(response *Response) *Response {
+			// Should be called when all sub-requests are done
+			allDoneCallback1Called = true
+			assert.Equal(t, 11, counter.Get())
+			return response
+		}).
+		OnSuccess(func(response *Response) *Response {
+			// Should be called when all sub-requests are done
+			allDoneCallback2Called = true
+			assert.Equal(t, 11, counter.Get())
+			return response
+		}).
+		Send()
+
+	// No error, all callbacks was called, see asserts in callbacks
+	assert.NoError(t, pool.StartAndWait())
+	assert.True(t, mainDoneCallbackCalled)
+	assert.True(t, allDoneCallback1Called)
+	assert.True(t, allDoneCallback2Called)
+
+	// Assert requests count
+	assert.Equal(t, 11, counter.Get())
+	assert.Equal(t, 1, httpmock.GetCallCountInfo()["GET https://example.com"])
+	assert.Equal(t, 10, httpmock.GetCallCountInfo()["GET https://example.com/sub"])
+}
+
+func TestWaitForSubRequestChain(t *testing.T) {
+	client, logger, _ := getMockedClientAndLogs(t, false)
+	httpmock.RegisterResponder("GET", `https://example.com`, httpmock.NewStringResponder(200, `test`))
+	httpmock.RegisterResponder("GET", `https://example.com/sub`, httpmock.NewStringResponder(200, `test`))
+
+	var invokeOrder []int
+	var subRequestCallback ResponseCallback
+	counter := utils.NewSafeCounter(0)
+	pool := client.NewPool(logger)
+	subRequestCallback = func(response *Response) *Response {
+		if counter.IncAndGet() <= 10 {
+			// Send sub-request
+			subRequest := pool.
+				Request(client.NewRequest(resty.MethodGet, "https://example.com/sub")).
+				OnSuccess(subRequestCallback).
+				OnSuccess(func(response *Response) *Response {
+					invokeOrder = append(invokeOrder, response.Request().Id())
+					return response
+				})
+			response.request.WaitFor(subRequest) // main WaitFor -> sub1 -> sub2 -> sub3 ...
+			subRequest.Send()
+		}
+		return response
+	}
+
+	allDoneCallbackCalled := false
+	pool.
+		Request(client.NewRequest(resty.MethodGet, "https://example.com")).
+		OnSuccess(subRequestCallback).
+		OnSuccess(func(response *Response) *Response {
+			// Should be called when all sub-requests are done
+			allDoneCallbackCalled = true
+			assert.Equal(t, 11, counter.Get())
+			return response
+		}).
+		Send()
+
+	// No error, callback called
+	assert.NoError(t, pool.StartAndWait())
+	assert.True(t, allDoneCallbackCalled)
+
+	// Assert requests count
+	assert.Equal(t, 11, counter.Get())
+	assert.Equal(t, 1, httpmock.GetCallCountInfo()["GET https://example.com"])
+	assert.Equal(t, 10, httpmock.GetCallCountInfo()["GET https://example.com/sub"])
+
+	// Earlier requests are waiting for the next one
+	// ... so callbacks are performed in reverse order, "1" is main request "2-11" sub requests
+	assert.Equal(t, []int{11, 10, 9, 8, 7, 6, 5, 4, 3, 2}, invokeOrder)
 }

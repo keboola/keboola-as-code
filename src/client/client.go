@@ -47,12 +47,19 @@ func (c Client) WithHostUrl(hostUrl string) *Client {
 }
 
 func (c *Client) Send(request *Request) {
+	request.sent = true
 	restyResponse, err := request.RestyRequest().Send()
 	request.response = NewResponse(request, restyResponse, err)
+	request.done = true
 	request.invokeListeners()
 }
 
-func (c *Client) Request(method string, url string) *Request {
+func (c *Client) Request(request *Request) *Request {
+	request.sender = c
+	return request
+}
+
+func (c *Client) NewRequest(method string, url string) *Request {
 	r := c.resty.R()
 	r.Method = method
 	r.URL = url

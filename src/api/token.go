@@ -45,7 +45,7 @@ func (a *StorageApi) GetToken(token string) (*model.Token, error) {
 
 func (a *StorageApi) GetTokenRequest(token string) *client.Request {
 	return a.
-		Request(resty.MethodGet, "tokens/verify").
+		NewRequest(resty.MethodGet, "tokens/verify").
 		SetHeader("X-StorageApi-Token", token).
 		SetResult(&model.Token{})
 }
