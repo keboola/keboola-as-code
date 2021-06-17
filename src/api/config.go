@@ -52,8 +52,8 @@ func (a *StorageApi) UpdateConfig(config *model.Config, changed []string) (*mode
 }
 
 // DeleteConfig - only config in main branch can be deleted!
-func (a *StorageApi) DeleteConfig(componentId string, configId string) *client.Response {
-	return a.DeleteConfigRequest(componentId, configId).Send().Response()
+func (a *StorageApi) DeleteConfig(componentId string, configId string) error {
+	return a.DeleteConfigRequest(componentId, configId).Send().Response().Error()
 }
 
 func (a *StorageApi) ListComponentsRequest(branchId int) *client.Request {
