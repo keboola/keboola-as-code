@@ -85,7 +85,7 @@ func TestConfigApiCalls(t *testing.T) {
 	assert.NoError(t, err)
 	componentsJson, err := json.EncodeString(components, true)
 	assert.NoError(t, err)
-	utils.AssertWildcards(t, expectedComponents(), componentsJson, "Unexpected components")
+	utils.AssertWildcards(t, expectedComponentsConfigTest(), componentsJson, "Unexpected components")
 
 	// Delete configuration
 	err = a.DeleteConfig(config.ComponentId, config.Id)
@@ -98,7 +98,7 @@ func TestConfigApiCalls(t *testing.T) {
 	assert.Len(t, *components, 0)
 }
 
-func expectedComponents() string {
+func expectedComponentsConfigTest() string {
 	return `[
   {
     "branchId": %s,

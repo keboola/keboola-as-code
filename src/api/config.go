@@ -1,11 +1,9 @@
 package api
 
 import (
-	"fmt"
 	"github.com/go-resty/resty/v2"
 	"github.com/spf13/cast"
 	"keboola-as-code/src/client"
-	"keboola-as-code/src/json"
 	"keboola-as-code/src/model"
 )
 
@@ -108,10 +106,10 @@ func (a *StorageApi) CreateConfigRequest(config *model.Config) (*client.Request,
 		panic("config id is set but it should be auto-generated")
 	}
 
-	// Encode config
-	configJson, err := json.Encode(config.Config, false)
+	// Data
+	values, err := config.ToApiValues()
 	if err != nil {
-		panic(fmt.Errorf(`cannot JSON encode config configuration: %s`, err))
+		return nil, err
 	}
 
 	// Create config
@@ -120,12 +118,7 @@ func (a *StorageApi) CreateConfigRequest(config *model.Config) (*client.Request,
 		NewRequest(resty.MethodPost, "branch/{branchId}/components/{componentId}/configs").
 		SetPathParam("branchId", cast.ToString(config.BranchId)).
 		SetPathParam("componentId", config.ComponentId).
-		SetBody(map[string]string{
-			"name":              config.Name,
-			"description":       config.Description,
-			"changeDescription": config.ChangeDescription,
-			"configuration":     string(configJson),
-		}).
+		SetBody(values).
 		SetResult(config).
 		// Create config rows
 		OnSuccess(func(response *client.Response) *client.Response {
@@ -154,18 +147,10 @@ func (a *StorageApi) UpdateConfigRequest(config *model.Config, changed []string)
 		panic("config id must be set")
 	}
 
-	// Encode config to JSON
-	configJson, err := json.Encode(config.Config, false)
-	if err != nil {
-		panic(fmt.Errorf(`cannot JSON encode config configuration: %s`, err))
-	}
-
 	// Data
-	all := map[string]string{
-		"name":              config.Name,
-		"description":       config.Description,
-		"changeDescription": config.ChangeDescription,
-		"configuration":     string(configJson),
+	values, err := config.ToApiValues()
+	if err != nil {
+		return nil, err
 	}
 
 	// Update config
@@ -174,7 +159,7 @@ func (a *StorageApi) UpdateConfigRequest(config *model.Config, changed []string)
 		SetPathParam("branchId", cast.ToString(config.BranchId)).
 		SetPathParam("componentId", config.ComponentId).
 		SetPathParam("configId", config.Id).
-		SetBody(getChangedValues(all, changed)).
+		SetBody(getChangedValues(values, changed)).
 		SetResult(config)
 
 	return request, nil

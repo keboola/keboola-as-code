@@ -5,9 +5,7 @@ import (
 	"github.com/go-resty/resty/v2"
 	"github.com/spf13/cast"
 	"keboola-as-code/src/client"
-	"keboola-as-code/src/json"
 	"keboola-as-code/src/model"
-	"strconv"
 )
 
 func (a *StorageApi) GetConfigRow(branchId int, componentId string, configId string, rowId string) (*model.ConfigRow, error) {
@@ -31,8 +29,8 @@ func (a *StorageApi) CreateConfigRow(row *model.ConfigRow) (*model.ConfigRow, er
 	return nil, response.Error()
 }
 
-func (a *StorageApi) UpdateConfigRow(row *model.ConfigRow) (*model.ConfigRow, error) {
-	request, err := a.UpdateConfigRowRequest(row)
+func (a *StorageApi) UpdateConfigRow(row *model.ConfigRow, changed []string) (*model.ConfigRow, error) {
+	request, err := a.UpdateConfigRowRequest(row, changed)
 	if err != nil {
 		return nil, err
 	}
@@ -45,8 +43,8 @@ func (a *StorageApi) UpdateConfigRow(row *model.ConfigRow) (*model.ConfigRow, er
 }
 
 // DeleteConfigRow - only config row in main branch can be deleted!
-func (a *StorageApi) DeleteConfigRow(componentId string, configId string, rowId string) *client.Response {
-	return a.DeleteConfigRowRequest(componentId, configId, rowId).Send().Response()
+func (a *StorageApi) DeleteConfigRow(componentId string, configId string, rowId string) error {
+	return a.DeleteConfigRowRequest(componentId, configId, rowId).Send().Response().Error()
 }
 
 // GetConfigRowRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/manage-configuration-rows/row-detail
@@ -67,10 +65,10 @@ func (a *StorageApi) CreateConfigRowRequest(row *model.ConfigRow) (*client.Reque
 		panic("config id is set but it should be auto-generated")
 	}
 
-	// Encode config to JSON
-	configJson, err := json.Encode(row.Config, false)
+	// Data
+	values, err := row.ToApiValues()
 	if err != nil {
-		panic(fmt.Errorf(`cannot JSON encode config row configuration: %s`, err))
+		return nil, err
 	}
 
 	// Create request
@@ -79,29 +77,23 @@ func (a *StorageApi) CreateConfigRowRequest(row *model.ConfigRow) (*client.Reque
 		SetPathParam("branchId", cast.ToString(row.BranchId)).
 		SetPathParam("componentId", row.ComponentId).
 		SetPathParam("configId", row.ConfigId).
-		SetBody(map[string]string{
-			"name":              row.Name,
-			"description":       row.Description,
-			"changeDescription": row.ChangeDescription,
-			"isDisabled":        strconv.FormatBool(row.IsDisabled),
-			"configuration":     string(configJson),
-		}).
+		SetBody(values).
 		SetResult(row)
 
 	return request, nil
 }
 
 // UpdateConfigRowRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/manage-configuration-rows/update-row-for-development-branch
-func (a *StorageApi) UpdateConfigRowRequest(row *model.ConfigRow) (*client.Request, error) {
+func (a *StorageApi) UpdateConfigRowRequest(row *model.ConfigRow, changed []string) (*client.Request, error) {
 	// Id is required
 	if row.Id == "" {
 		panic("config row id must be set")
 	}
 
-	// Encode config to JSON
-	configJson, err := json.Encode(row.Config, false)
+	// Data
+	values, err := row.ToApiValues()
 	if err != nil {
-		panic(fmt.Errorf(`cannot JSON encode config row configuration: %s`, err))
+		return nil, err
 	}
 
 	// Create request
@@ -111,14 +103,8 @@ func (a *StorageApi) UpdateConfigRowRequest(row *model.ConfigRow) (*client.Reque
 		SetPathParam("componentId", row.ComponentId).
 		SetPathParam("configId", row.ConfigId).
 		SetPathParam("rowId", row.Id).
-		SetBody(map[string]string{
-			"name":              row.Name,
-			"description":       row.Description,
-			"changeDescription": row.ChangeDescription,
-			"isDisabled":        strconv.FormatBool(row.IsDisabled),
-			"configuration":     string(configJson),
-		}).
-		SetResult(&model.ConfigRow{})
+		SetBody(getChangedValues(values, changed)).
+		SetResult(row)
 
 	return request, nil
 }
