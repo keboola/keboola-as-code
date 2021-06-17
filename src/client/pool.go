@@ -153,7 +153,7 @@ func (p *Pool) process(response *Response) (err error) {
 }
 
 func (p *Pool) logRequestState(state string, request *Request, err error) {
-	msg := fmt.Sprintf("[%d] %s %s \"%s\"", request.Id(), state, request.Method(), request.Url())
+	msg := fmt.Sprintf("[%d] %s %s %s", request.Id(), state, request.Method(), urlForLog(request.RestyRequest()))
 	if err != nil {
 		msg += fmt.Sprintf(", error: \"%s\"", err)
 	}

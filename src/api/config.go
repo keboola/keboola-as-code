@@ -6,6 +6,7 @@ import (
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/model"
+	"strconv"
 )
 
 func (a *StorageApi) GetConfig(branchId int, componentId string, configId string) (*model.Config, error) {
@@ -50,7 +51,10 @@ func (a *StorageApi) DeleteConfig(componentId string, configId string) *client.R
 // GetConfigRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/manage-configurations/development-branch-configuration-detail
 func (a *StorageApi) GetConfigRequest(branchId int, componentId string, configId string) *client.Request {
 	return a.
-		NewRequest(resty.MethodGet, fmt.Sprintf("branch/%d/components/%s/configs/%s", branchId, componentId, configId)).
+		NewRequest(resty.MethodGet, "branch/{branchId}/components/{componentId}/configs/{configId}").
+		SetPathParam("branchId", strconv.Itoa(branchId)).
+		SetPathParam("componentId", componentId).
+		SetPathParam("configId", configId).
 		SetResult(&model.Config{
 			BranchId:    branchId,
 			ComponentId: componentId,
@@ -64,7 +68,7 @@ func (a *StorageApi) CreateConfigRequest(config *model.Config) (*client.Request,
 		panic("config id is set but it should be auto-generated")
 	}
 
-	// Encode config to JSON
+	// Encode config
 	configJson, err := json.Encode(config.Config, false)
 	if err != nil {
 		panic(fmt.Errorf(`cannot JSON encode config configuration: %s`, err))
@@ -73,9 +77,10 @@ func (a *StorageApi) CreateConfigRequest(config *model.Config) (*client.Request,
 	// Create config
 	var configRequest *client.Request
 	configRequest = a.
-		NewRequest(resty.MethodPost, fmt.Sprintf("branch/%d/components/%s/configs", config.BranchId, config.ComponentId)).
-		SetHeader("Content-Type", "application/x-www-form-urlencoded").
-		SetMultipartFormData(map[string]string{
+		NewRequest(resty.MethodPost, "branch/{branchId}/components/{componentId}/configs").
+		SetPathParam("branchId", strconv.Itoa(config.BranchId)).
+		SetPathParam("componentId", config.ComponentId).
+		SetBody(map[string]string{
 			"name":              config.Name,
 			"description":       config.Description,
 			"changeDescription": config.ChangeDescription,
@@ -125,9 +130,11 @@ func (a *StorageApi) UpdateConfigRequest(config *model.Config, changed []string)
 
 	// Update config
 	request := a.
-		NewRequest(resty.MethodPut, fmt.Sprintf("branch/%d/components/%s/configs/%s", config.BranchId, config.ComponentId, config.Id)).
-		SetHeader("Content-Type", "application/x-www-form-urlencoded").
-		SetMultipartFormData(getChangedValues(all, changed)).
+		NewRequest(resty.MethodPut, "branch/{branchId}/components/{componentId}/configs/{configId}").
+		SetPathParam("branchId", strconv.Itoa(config.BranchId)).
+		SetPathParam("componentId", config.ComponentId).
+		SetPathParam("configId", config.Id).
+		SetBody(getChangedValues(all, changed)).
 		SetResult(config)
 
 	return request, nil
@@ -136,7 +143,9 @@ func (a *StorageApi) UpdateConfigRequest(config *model.Config, changed []string)
 // DeleteConfigRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/manage-configurations/delete-configuration
 // Only config in main branch can be deleted!
 func (a *StorageApi) DeleteConfigRequest(componentId string, configId string) *client.Request {
-	return a.NewRequest(resty.MethodDelete, fmt.Sprintf("components/%s/configs/%s", componentId, configId))
+	return a.NewRequest(resty.MethodDelete, "components/{componentId}/configs/{configId}").
+		SetPathParam("componentId", componentId).
+		SetPathParam("configId", configId)
 }
 
 func (a *StorageApi) DeleteConfigsInBranchRequest(branchId int) *client.Request {

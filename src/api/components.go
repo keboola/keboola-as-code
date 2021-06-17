@@ -1,10 +1,10 @@
 package api
 
 import (
-	"fmt"
 	"github.com/go-resty/resty/v2"
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/model"
+	"strconv"
 )
 
 func (a *StorageApi) ListComponents(branchId int) (*[]*model.Component, error) {
@@ -18,7 +18,8 @@ func (a *StorageApi) ListComponents(branchId int) (*[]*model.Component, error) {
 func (a *StorageApi) ListComponentsRequest(branchId int) *client.Request {
 	components := make([]*model.Component, 0)
 	return a.
-		NewRequest(resty.MethodGet, fmt.Sprintf("branch/%d/components", branchId)).
+		NewRequest(resty.MethodGet, "branch/{branchId}/components").
+		SetPathParam("branchId", strconv.Itoa(branchId)).
 		SetQueryParam("include", "configuration,rows").
 		SetResult(&components).
 		OnSuccess(func(response *client.Response) *client.Response {

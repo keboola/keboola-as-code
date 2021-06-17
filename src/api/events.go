@@ -45,8 +45,7 @@ func (a *StorageApi) CreatEventRequest(
 
 	return a.
 		NewRequest(resty.MethodPost, "events").
-		SetHeader("Content-Type", "application/x-www-form-urlencoded").
-		SetMultipartFormData(map[string]string{
+		SetBody(map[string]string{
 			"component": EventsComponentId,
 			"message":   message,
 			"type":      level,

@@ -57,7 +57,7 @@ func TestRetry(t *testing.T) {
 
 	// Get
 	response := c.NewRequest(resty.MethodGet, "https://example.com").Send().Response()
-	assert.Equal(t, errors.New(`GET "https://example.com" returned http code 504`), response.Error())
+	assert.Equal(t, errors.New(`GET https://example.com | returned http code 504`), response.Error())
 	assert.Equal(t, "test", response.RestyResponse().String())
 	logs := out.String()
 
@@ -67,13 +67,13 @@ func TestRetry(t *testing.T) {
 	// Retries are logged
 	assert.Greater(t, c.resty.RetryCount, 2)
 	for i := 1; i <= c.resty.RetryCount; i++ {
-		expected := fmt.Sprintf(`DEBUG  HTTP-ERROR	GET "https://example.com" returned http code 504, Attempt %d`, i)
+		expected := fmt.Sprintf(`DEBUG  HTTP-ERROR	GET https://example.com | returned http code 504, Attempt %d`, i)
 		assert.Regexp(t, utils.WildcardToRegexp(expected), logs)
 	}
 
 	// Error is logged
 	expected := fmt.Sprintf(
-		`DEBUG  HTTP-ERROR	GET "https://example.com" returned http code 504, Attempt %d`,
+		`DEBUG  HTTP-ERROR	GET https://example.com | returned http code 504, Attempt %d`,
 		1+c.resty.RetryCount,
 	)
 	assert.Regexp(t, utils.WildcardToRegexp(expected), logs)
@@ -87,7 +87,7 @@ func TestDoNotRetry(t *testing.T) {
 
 	// Get
 	response := c.NewRequest(resty.MethodGet, "https://example.com").Send().Response()
-	assert.Equal(t, errors.New(`GET "https://example.com" returned http code 404`), response.Error())
+	assert.Equal(t, errors.New(`GET https://example.com | returned http code 404`), response.Error())
 	assert.Equal(t, "test", response.RestyResponse().String())
 	logs := out.String()
 
@@ -98,7 +98,7 @@ func TestDoNotRetry(t *testing.T) {
 	assert.NotContains(t, "Attempt 2", logs)
 
 	// Error is logged
-	expected := "DEBUG  HTTP-ERROR\tGET \"https://example.com\" returned http code 404, Attempt 1\n"
+	expected := "DEBUG  HTTP-ERROR\tGET https://example.com | returned http code 404, Attempt 1\n"
 	utils.AssertWildcards(t, expected, logs, "Unexpected log")
 }
 

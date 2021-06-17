@@ -31,6 +31,8 @@ type Client struct {
 	requestIdCounter *utils.SafeCounter
 }
 
+type contextKey string
+
 func NewClient(ctx context.Context, logger *zap.SugaredLogger, verbose bool) *Client {
 	client := &Client{}
 	client.logger = &Logger{logger}
@@ -47,6 +49,7 @@ func (c Client) WithHostUrl(hostUrl string) *Client {
 }
 
 func (c *Client) Send(request *Request) {
+	// Sent
 	request.sent = true
 	restyResponse, err := request.RestyRequest().Send()
 	request.response = NewResponse(request, restyResponse, err)
@@ -63,7 +66,9 @@ func (c *Client) NewRequest(method string, url string) *Request {
 	r := c.resty.R()
 	r.Method = method
 	r.URL = url
-	return NewRequest(c.requestIdCounter.IncAndGet(), c, r)
+	request := NewRequest(c.requestIdCounter.IncAndGet(), c, r)
+	request.SetContext(c.parentCtx)
+	return request
 }
 
 func (c *Client) HostUrl() string {
@@ -153,7 +158,7 @@ func setupLogs(client *Client, verbose bool) {
 	// Secrets are hidden see Logger
 	if verbose {
 		client.resty.SetDebug(true)
-		client.resty.SetDebugBodyLimit(2 * 1024)
+		client.resty.SetDebugBodyLimit(32 * 1024)
 	}
 
 	// Log each request when done
@@ -177,13 +182,13 @@ func setupLogs(client *Client, verbose bool) {
 			if v, ok := err.(error); ok {
 				return v
 			} else {
-				return fmt.Errorf("url:\"%s\", error: \"%s\"", req.URL, err)
+				return fmt.Errorf("%s | error: \"%s\"", urlForLog(req), err)
 			}
 		}
 
 		// Return error if request failed
 		if res.IsError() {
-			return fmt.Errorf(`%s "%s" returned http code %d`, req.Method, req.URL, res.StatusCode())
+			return fmt.Errorf(`%s %s | returned http code %d`, req.Method, urlForLog(req), res.StatusCode())
 		}
 
 		return nil
@@ -192,5 +197,28 @@ func setupLogs(client *Client, verbose bool) {
 
 func responseToLog(res *resty.Response) string {
 	req := res.Request
-	return fmt.Sprintf("%s %s | %d | %s", req.Method, req.URL, res.StatusCode(), res.Time())
+	return fmt.Sprintf("%s %s | %d | %s", req.Method, urlForLog(req), res.StatusCode(), res.Time())
+}
+
+func urlForLog(request *resty.Request) string {
+	url := request.URL
+
+	// No response -> url contains placeholders
+	if request.RawRequest == nil {
+		pathParams := request.Context().Value(contextKey("pathParams")).(map[string]string)
+		for p, v := range pathParams {
+			url = strings.Replace(url, "{"+p+"}", "{"+p+"=\""+v+"\"}", -1)
+		}
+
+		queryParams := request.Context().Value(contextKey("queryParams")).(map[string]string)
+		var queryPairs []string
+		for p, v := range queryParams {
+			queryPairs = append(queryPairs, fmt.Sprintf("%s=\"%s\"", p, v))
+		}
+		if len(queryPairs) > 0 {
+			url += " | query: " + strings.Join(queryPairs, ", ")
+		}
+	}
+
+	return url
 }

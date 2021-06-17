@@ -26,20 +26,31 @@ type Sender interface {
 }
 
 type Request struct {
-	lock       *sync.Mutex
-	id         int
-	sent       bool
-	done       bool
-	url        string
-	request    *resty.Request
-	response   *Response
-	sender     Sender
-	listeners  []*ResponseListener
-	waitingFor []*Request
+	lock        *sync.Mutex
+	id          int
+	sent        bool
+	done        bool
+	url         string
+	pathParams  map[string]string
+	queryParams map[string]string
+	body        map[string]string
+	request     *resty.Request
+	response    *Response
+	sender      Sender
+	listeners   []*ResponseListener
+	waitingFor  []*Request
 }
 
 func NewRequest(id int, sender Sender, request *resty.Request) *Request {
-	return &Request{lock: &sync.Mutex{}, id: id, request: request, url: request.URL, sender: sender}
+	return &Request{
+		lock:        &sync.Mutex{},
+		id:          id,
+		pathParams:  make(map[string]string),
+		queryParams: make(map[string]string),
+		request:     request,
+		url:         request.URL,
+		sender:      sender,
+	}
 }
 
 func (r *Request) SetResult(result interface{}) *Request {
@@ -54,11 +65,21 @@ func (r *Request) SetHeader(header string, value string) *Request {
 
 func (r *Request) SetQueryParam(param, value string) *Request {
 	r.request.SetQueryParam(param, value)
+	r.queryParams[param] = value
 	return r
 }
 
-func (r *Request) SetMultipartFormData(data map[string]string) *Request {
-	r.request.SetMultipartFormData(data)
+func (r *Request) SetPathParam(param, value string) *Request {
+	r.request.SetPathParam(param, value)
+	r.pathParams[param] = value
+	return r
+}
+
+func (r *Request) SetBody(body map[string]string) *Request {
+	// Storage API use "form-urlencoded", but it can be simply switched to JSON in the future
+	r.body = body
+	r.request.SetHeader("Content-Type", "application/x-www-form-urlencoded")
+	r.request.SetMultipartFormData(body)
 	return r
 }
 
@@ -111,6 +132,9 @@ func (r *Request) OnError(callback ResponseCallback) *Request {
 }
 
 func (r *Request) SetContext(ctx context.Context) *Request {
+	// Store pathParams and queryParams to context for logs
+	ctx = context.WithValue(ctx, contextKey("pathParams"), r.pathParams)
+	ctx = context.WithValue(ctx, contextKey("queryParams"), r.queryParams)
 	r.request.SetContext(ctx)
 	return r
 }
