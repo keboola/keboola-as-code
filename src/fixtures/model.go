@@ -49,6 +49,38 @@ type StateFile struct {
 	Branches           []*BranchStateConfigName `json:"branches" validate:"required"`
 }
 
+func (p *ProjectState) BranchStateByName(name string) *BranchState {
+	for _, f := range p.Branches {
+		if f.Branch.Name == name {
+			return f
+		}
+	}
+	panic(fmt.Errorf("cannot find branch fixture \"%s\"", name))
+}
+
+func BranchFromModel(b *model.Branch) *Branch {
+	f := &Branch{}
+	f.Name = b.Name
+	f.IsDefault = b.IsDefault
+	return f
+}
+
+func ConfigFromModel(c *model.Config) *Config {
+	f := &Config{}
+	f.ComponentId = c.ComponentId
+	f.Name = c.Name
+	f.Config = c.Config
+	return f
+}
+
+func ConfigRowFromModel(r *model.ConfigRow) *ConfigRow {
+	f := &ConfigRow{}
+	f.Name = r.Name
+	f.IsDisabled = r.IsDisabled
+	f.Config = r.Config
+	return f
+}
+
 // ToModel maps fixture to model.Branch
 func (b *Branch) ToModel(defaultBranch *model.Branch) *model.Branch {
 	if b.IsDefault {
@@ -115,40 +147,33 @@ func LoadStateFile(path string) (*StateFile, error) {
 
 func ConvertRemoteStateToFixtures(model *model.State) (*ProjectState, error) {
 	fixtures := &ProjectState{}
-	branchesByName := make(map[string]*BranchState)
+	branchesById := make(map[int]*BranchState)
 
-	for _, branch := range model.Branches() {
-		// Map branch
-		b := &Branch{}
-		b.Name = branch.Name
-		b.IsDefault = branch.IsDefault
-		bState := &BranchState{Branch: b}
-		fixtures.Branches = append(fixtures.Branches, bState)
-		branchesByName[b.Name] = bState
+	for _, s := range model.Branches() {
+		branch := s.Remote
+		if branch == nil {
+			continue
+		}
+		state := &BranchState{Branch: BranchFromModel(branch)}
+		branchesById[branch.Id] = state
+		fixtures.Branches = append(fixtures.Branches, state)
 	}
 
-	for _, configuration := range model.Configs() {
-		branchId := configuration.BranchId
-		branch, err := model.BranchById(branchId)
-		if err != nil {
-			return nil, err
+	for _, s := range model.Configs() {
+		config := s.Remote
+		if config == nil {
+			continue
 		}
 
-		// Map configuration
-		branchName := branch.Name
-		c := &Config{}
-		c.ComponentId = configuration.ComponentId
-		c.Name = configuration.Name
-		c.Config = configuration.Config
-		branchesByName[branchName].Configs = append(branchesByName[branchName].Configs, c)
+		// Map config
+		c := ConfigFromModel(config)
+		branch := branchesById[config.BranchId]
+		branchState := fixtures.BranchStateByName(branch.Branch.Name)
+		branchState.Configs = append(branchState.Configs, c)
 
 		// Map rows
-		for _, row := range configuration.Rows {
-			r := &ConfigRow{}
-			r.Name = row.Name
-			r.IsDisabled = row.IsDisabled
-			r.Config = row.Config
-			c.Rows = append(c.Rows, r)
+		for _, row := range config.Rows {
+			c.Rows = append(c.Rows, ConfigRowFromModel(row))
 		}
 	}
 

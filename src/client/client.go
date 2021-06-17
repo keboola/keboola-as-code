@@ -14,14 +14,17 @@ import (
 )
 
 const (
-	RequestTimeout   = 45 * time.Second
-	HttpTimeout      = 30 * time.Second
-	IdleConnTimeout  = 90 * time.Second
-	KeepAlive        = 30 * time.Second
-	MaxIdleConns     = 64
-	RetryCount       = 5
-	RetryWaitTime    = 100 * time.Millisecond
-	RetryWaitTimeMax = 3 * time.Second
+	RequestTimeout        = 25 * time.Second
+	HttpTimeout           = 30 * time.Second
+	IdleConnTimeout       = 30 * time.Second
+	TLSHandshakeTimeout   = 10 * time.Second
+	ResponseHeaderTimeout = 10 * time.Second
+	ExpectContinueTimeout = 1 * time.Second
+	KeepAlive             = 20 * time.Second
+	MaxIdleConns          = 64
+	RetryCount            = 5
+	RetryWaitTime         = 100 * time.Millisecond
+	RetryWaitTimeMax      = 3 * time.Second
 )
 
 type Client struct {
@@ -100,10 +103,10 @@ func createHttpClient(logger *Logger) *resty.Client {
 	r.SetLogger(logger)
 	r.SetHeader("User-Agent", fmt.Sprintf("keboola-as-code/%s", version.BuildVersion))
 	r.SetTimeout(RequestTimeout)
-	r.SetTransport(createTransport())
 	r.SetRetryCount(RetryCount)
 	r.SetRetryWaitTime(RetryWaitTime)
 	r.SetRetryMaxWaitTime(RetryWaitTimeMax)
+	r.SetTransport(createTransport())
 	r.AddRetryCondition(func(response *resty.Response, err error) bool {
 		// On network errors
 		if err != nil && response == nil {
@@ -147,8 +150,9 @@ func createTransport() *http.Transport {
 		ForceAttemptHTTP2:     true,
 		MaxIdleConns:          MaxIdleConns,
 		IdleConnTimeout:       IdleConnTimeout,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
+		TLSHandshakeTimeout:   TLSHandshakeTimeout,
+		ResponseHeaderTimeout: ResponseHeaderTimeout,
+		ExpectContinueTimeout: ExpectContinueTimeout,
 		MaxIdleConnsPerHost:   MaxIdleConns,
 	}
 }

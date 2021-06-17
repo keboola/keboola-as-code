@@ -1,7 +1,9 @@
 package model
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/assert"
+	"keboola-as-code/src/utils"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -11,26 +13,25 @@ func TestPathsStateDirNotFound(t *testing.T) {
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filepath.Dir(testFile)
 	projectDir := filepath.Join(testDir, "foo", "bar")
-	paths, err := NewPathsState(projectDir)
-	assert.Error(t, err)
-	assert.Regexp(t, `^directory ".+" not found`, err.Error())
-	assert.Nil(t, paths)
+	assert.PanicsWithError(t, fmt.Sprintf(`directory "%s" not found`, projectDir), func() {
+		NewPathsState(projectDir, &utils.Error{})
+	})
 }
 
 func TestPathsStateEmpty(t *testing.T) {
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filepath.Dir(testFile)
 	projectDir := filepath.Join(testDir, "fixtures", "local", "empty")
-	paths, err := NewPathsState(projectDir)
-	assert.NoError(t, err)
+	err := &utils.Error{}
+	paths := NewPathsState(projectDir, err)
 	assert.NotNil(t, paths)
-	assert.Equal(t, 0, paths.Error().Len())
+	assert.Equal(t, 0, err.Len())
 	assert.Empty(t, paths.Tracked())
 	assert.Empty(t, paths.Untracked())
 
 	// Mark tracked some non-existing file -> no change
 	paths.MarkTracked("foo/bar")
-	assert.Equal(t, 0, paths.Error().Len())
+	assert.Equal(t, 0, err.Len())
 	assert.Empty(t, paths.Tracked())
 	assert.Empty(t, paths.Untracked())
 }
@@ -39,10 +40,10 @@ func TestPathsStateComplex(t *testing.T) {
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filepath.Dir(testFile)
 	projectDir := filepath.Join(testDir, "fixtures", "local", "complex")
-	paths, err := NewPathsState(projectDir)
-	assert.NoError(t, err)
+	err := &utils.Error{}
+	paths := NewPathsState(projectDir, err)
 	assert.NotNil(t, paths)
-	assert.Equal(t, 0, paths.Error().Len())
+	assert.Equal(t, 0, err.Len())
 
 	// All untracked + hidden nodes ignored
 	assert.Empty(t, paths.Tracked())

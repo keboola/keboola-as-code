@@ -122,10 +122,18 @@ func (r *ConfigRow) ToApiValues() (map[string]string, error) {
 	}, nil
 }
 
-func componentKey(branchId int, componentId string) string {
-	return fmt.Sprintf("%d_%s", branchId, componentId)
+func (b *Branch) UniqId() string {
+	return fmt.Sprintf("%d", b.Id)
 }
 
-func configKey(branchId int, componentId string, configId string) string {
-	return fmt.Sprintf("%d_%s_%s", branchId, componentId, configId)
+func (c *Component) UniqId() string {
+	return fmt.Sprintf("%d_%s", c.BranchId, c.Id)
+}
+
+func (c *Config) UniqId() string {
+	return fmt.Sprintf("%d_%s_%s", c.BranchId, c.ComponentId, c.Id)
+}
+
+func (r *ConfigRow) UniqId() string {
+	return fmt.Sprintf("%d_%s__%s_%s", r.BranchId, r.ComponentId, r.ConfigId, r.Id)
 }

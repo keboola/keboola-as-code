@@ -7,8 +7,7 @@ import (
 	"keboola-as-code/src/utils"
 )
 
-func (a *StorageApi) LoadRemoteState(ctx context.Context) (*model.State, *utils.Error) {
-	state := model.NewState()
+func (a *StorageApi) LoadRemoteState(state *model.State, ctx context.Context) *utils.Error {
 	pool := a.NewPool()
 
 	// Load branches
@@ -18,9 +17,7 @@ func (a *StorageApi) LoadRemoteState(ctx context.Context) (*model.State, *utils.
 		OnSuccess(func(response *client.Response) *client.Response {
 			// Save branch + load branch components
 			for _, branch := range *response.Result().(*[]*model.Branch) {
-				if ok := state.AddBranch(branch); !ok {
-					continue
-				}
+				state.SetBranchRemoteState(branch)
 
 				// Load components
 				pool.
@@ -29,7 +26,13 @@ func (a *StorageApi) LoadRemoteState(ctx context.Context) (*model.State, *utils.
 					OnSuccess(func(response *client.Response) *client.Response {
 						// Save component, it contains all configs and rows
 						for _, component := range *response.Result().(*[]*model.Component) {
-							state.AddComponent(component)
+							state.SetComponentRemoteState(component)
+							for _, config := range component.Configs {
+								state.SetConfigRemoteState(config)
+								for _, row := range config.Rows {
+									state.SetConfigRowRemoteState(row)
+								}
+							}
 						}
 						return response
 					}).
@@ -40,7 +43,8 @@ func (a *StorageApi) LoadRemoteState(ctx context.Context) (*model.State, *utils.
 		Send()
 
 	if err := pool.StartAndWait(); err != nil {
-		state.AddError(err)
+		state.AddRemoteError(err)
 	}
-	return state, state.Error()
+
+	return state.RemoteErrors()
 }

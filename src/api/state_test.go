@@ -3,21 +3,29 @@ package api
 import (
 	"context"
 	"fmt"
+	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/fixtures"
 	"keboola-as-code/src/json"
+	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
 	"os"
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"sort"
+	"strings"
 	"testing"
 )
 
 func TestLoadRemoteStateEmpty(t *testing.T) {
 	setTestProjectState(t, "empty.json")
+
+	projectDir := t.TempDir()
+	metadataDir := filepath.Join(projectDir, ".keboola")
 	a, _ := TestStorageApiWithToken(t)
-	state, err := a.LoadRemoteState(context.Background())
+	state := model.NewState(projectDir, metadataDir)
+	err := a.LoadRemoteState(state, context.Background())
 	assert.NotNil(t, state)
 	assert.NotNil(t, err)
 	assert.Equal(t, 0, err.Len())
@@ -27,17 +35,52 @@ func TestLoadRemoteStateEmpty(t *testing.T) {
 
 func TestLoadRemoteStateComplex(t *testing.T) {
 	setTestProjectState(t, "complex.json")
+
+	projectDir := t.TempDir()
+	metadataDir := filepath.Join(projectDir, ".keboola")
 	a, _ := TestStorageApiWithToken(t)
-	state, err := a.LoadRemoteState(context.Background())
+	state := model.NewState(projectDir, metadataDir)
+	err := a.LoadRemoteState(state, context.Background())
 	assert.NotNil(t, state)
 	assert.NotNil(t, err)
 	assert.Equal(t, 0, err.Len())
 
-	branchesJson, jsonErr := json.EncodeString(state.Branches(), true)
+	// Assert branches
+	var remoteBranches []*model.Branch
+	for _, branch := range state.Branches() {
+		remoteBranches = append(remoteBranches, branch.Remote)
+	}
+	sort.SliceStable(remoteBranches, func(i, j int) bool {
+		return remoteBranches[i].Id < remoteBranches[j].Id
+	})
+	branchesJson, jsonErr := json.EncodeString(remoteBranches, true)
 	assert.NoError(t, jsonErr)
 	assert.Equal(t, complexExpectedBranches(), branchesJson)
 
-	configsJson, jsonErr := json.EncodeString(state.Configs(), true)
+	// Assert configs
+	var remoteConfigs []*model.Config
+	for _, config := range state.Configs() {
+		remoteConfigs = append(remoteConfigs, config.Remote)
+	}
+	sort.SliceStable(remoteConfigs, func(i, j int) bool {
+		// Sort by: branchId,componentId,name
+		switch strings.Compare(cast.ToString(remoteConfigs[i].BranchId), cast.ToString(remoteConfigs[j].BranchId)) {
+		case -1:
+			return true
+		case 1:
+			return false
+		}
+
+		switch strings.Compare(remoteConfigs[i].ComponentId, remoteConfigs[j].ComponentId) {
+		case -1:
+			return true
+		case 1:
+			return false
+		}
+
+		return remoteConfigs[i].Name < remoteConfigs[j].Name
+	})
+	configsJson, jsonErr := json.EncodeString(remoteConfigs, true)
 	assert.NoError(t, jsonErr)
 	assert.Equal(t, complexExpectedConfigs(), configsJson)
 }
@@ -46,8 +89,11 @@ func TestLoadRemoteStateComplex(t *testing.T) {
 // Result file is ignored in .gitignore
 func TestDumpProjectState(t *testing.T) {
 	// Load remote state and convert
+	projectDir := t.TempDir()
+	metadataDir := filepath.Join(projectDir, ".keboola")
 	a, _ := TestStorageApiWithToken(t)
-	state, stateErr := a.LoadRemoteState(context.Background())
+	state := model.NewState(projectDir, metadataDir)
+	stateErr := a.LoadRemoteState(state, context.Background())
 	assert.NotNil(t, stateErr)
 	if stateErr.Len() > 0 {
 		assert.FailNow(t, "%s", stateErr)
@@ -75,31 +121,31 @@ func TestDumpProjectState(t *testing.T) {
 }
 
 func complexExpectedBranches() string {
-	return utils.ReplaceEnvsString(`{
-  "%%TEST_BRANCH_MAIN_ID%%": {
+	return utils.ReplaceEnvsString(`[
+  {
     "id": %%TEST_BRANCH_MAIN_ID%%,
     "name": "Main",
     "description": "Main branch",
     "isDefault": true
   },
-  "%%TEST_BRANCH_FOO_ID%%": {
+  {
     "id": %%TEST_BRANCH_FOO_ID%%,
     "name": "Foo",
     "description": "Foo branch",
     "isDefault": false
   },
-  "%%TEST_BRANCH_BAR_ID%%": {
+  {
     "id": %%TEST_BRANCH_BAR_ID%%,
     "name": "Bar",
     "description": "Bar branch",
     "isDefault": false
   }
-}`)
+]`)
 }
 
 func complexExpectedConfigs() string {
-	return utils.ReplaceEnvsString(`{
-  "%%TEST_BRANCH_MAIN_ID%%_ex-generic-v2_%%TEST_BRANCH_ALL_CONFIG_EMPTY_ID%%": {
+	return utils.ReplaceEnvsString(`[
+  {
     "branchId": %%TEST_BRANCH_MAIN_ID%%,
     "componentId": "ex-generic-v2",
     "id": "%%TEST_BRANCH_ALL_CONFIG_EMPTY_ID%%",
@@ -109,7 +155,7 @@ func complexExpectedConfigs() string {
     "configuration": {},
     "rows": []
   },
-  "%%TEST_BRANCH_FOO_ID%%_ex-generic-v2_%%TEST_BRANCH_ALL_CONFIG_EMPTY_ID%%": {
+  {
     "branchId": %%TEST_BRANCH_FOO_ID%%,
     "componentId": "ex-generic-v2",
     "id": "%%TEST_BRANCH_ALL_CONFIG_EMPTY_ID%%",
@@ -119,7 +165,7 @@ func complexExpectedConfigs() string {
     "configuration": {},
     "rows": []
   },
-  "%%TEST_BRANCH_FOO_ID%%_keboola.ex-db-mysql_%%TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID%%": {
+  {
     "branchId": %%TEST_BRANCH_FOO_ID%%,
     "componentId": "keboola.ex-db-mysql",
     "id": "%%TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID%%",
@@ -181,7 +227,7 @@ func complexExpectedConfigs() string {
       }
     ]
   },
-  "%%TEST_BRANCH_BAR_ID%%_ex-generic-v2_%%TEST_BRANCH_ALL_CONFIG_EMPTY_ID%%": {
+  {
     "branchId": %%TEST_BRANCH_BAR_ID%%,
     "componentId": "ex-generic-v2",
     "id": "%%TEST_BRANCH_ALL_CONFIG_EMPTY_ID%%",
@@ -191,7 +237,7 @@ func complexExpectedConfigs() string {
     "configuration": {},
     "rows": []
   },
-  "%%TEST_BRANCH_BAR_ID%%_ex-generic-v2_%%TEST_BRANCH_BAR_CONFIG_WITHOUT_ROWS_ID%%": {
+  {
     "branchId": %%TEST_BRANCH_BAR_ID%%,
     "componentId": "ex-generic-v2",
     "id": "%%TEST_BRANCH_BAR_CONFIG_WITHOUT_ROWS_ID%%",
@@ -207,7 +253,7 @@ func complexExpectedConfigs() string {
     },
     "rows": []
   }
-}`)
+]`)
 }
 
 func setTestProjectState(t *testing.T, stateFile string) {
