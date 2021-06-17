@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"github.com/go-resty/resty/v2"
+	"github.com/spf13/cast"
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/model"
@@ -75,7 +76,7 @@ func (a *StorageApi) CreateConfigRowRequest(row *model.ConfigRow) (*client.Reque
 	// Create request
 	request := a.
 		NewRequest(resty.MethodPost, "branch/{branchId}/components/{componentId}/configs/{configId}/rows").
-		SetPathParam("branchId", strconv.Itoa(row.BranchId)).
+		SetPathParam("branchId", cast.ToString(row.BranchId)).
 		SetPathParam("componentId", row.ComponentId).
 		SetPathParam("configId", row.ConfigId).
 		SetBody(map[string]string{
@@ -106,7 +107,7 @@ func (a *StorageApi) UpdateConfigRowRequest(row *model.ConfigRow) (*client.Reque
 	// Create request
 	request := a.
 		NewRequest(resty.MethodPut, "branch/{branchId}/components/{componentId}/configs/{configId}/rows/{rowId}").
-		SetPathParam("branchId", strconv.Itoa(row.BranchId)).
+		SetPathParam("branchId", cast.ToString(row.BranchId)).
 		SetPathParam("componentId", row.ComponentId).
 		SetPathParam("configId", row.ConfigId).
 		SetPathParam("rowId", row.Id).

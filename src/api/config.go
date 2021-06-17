@@ -3,11 +3,19 @@ package api
 import (
 	"fmt"
 	"github.com/go-resty/resty/v2"
+	"github.com/spf13/cast"
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/model"
-	"strconv"
 )
+
+func (a *StorageApi) ListComponents(branchId int) (*[]*model.Component, error) {
+	response := a.ListComponentsRequest(branchId).Send().Response()
+	if response.HasResult() {
+		return response.Result().(*[]*model.Component), nil
+	}
+	return nil, response.Error()
+}
 
 func (a *StorageApi) GetConfig(branchId int, componentId string, configId string) (*model.Config, error) {
 	response := a.GetConfigRequest(branchId, componentId, configId).Send().Response()
@@ -48,11 +56,43 @@ func (a *StorageApi) DeleteConfig(componentId string, configId string) *client.R
 	return a.DeleteConfigRequest(componentId, configId).Send().Response()
 }
 
+func (a *StorageApi) ListComponentsRequest(branchId int) *client.Request {
+	components := make([]*model.Component, 0)
+	return a.
+		NewRequest(resty.MethodGet, "branch/{branchId}/components").
+		SetPathParam("branchId", cast.ToString(branchId)).
+		SetQueryParam("include", "configuration,rows").
+		SetResult(&components).
+		OnSuccess(func(response *client.Response) *client.Response {
+			if response.Result() != nil {
+				// Add missing values
+				for _, component := range components {
+					// Set component.BranchId
+					component.BranchId = branchId
+
+					// Set config IDs
+					for _, config := range component.Configs {
+						config.BranchId = branchId
+						config.ComponentId = component.Id
+
+						// Set rows IDs
+						for _, row := range config.Rows {
+							row.BranchId = branchId
+							row.ComponentId = component.Id
+							row.ConfigId = config.Id
+						}
+					}
+				}
+			}
+			return response
+		})
+}
+
 // GetConfigRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/manage-configurations/development-branch-configuration-detail
 func (a *StorageApi) GetConfigRequest(branchId int, componentId string, configId string) *client.Request {
 	return a.
 		NewRequest(resty.MethodGet, "branch/{branchId}/components/{componentId}/configs/{configId}").
-		SetPathParam("branchId", strconv.Itoa(branchId)).
+		SetPathParam("branchId", cast.ToString(branchId)).
 		SetPathParam("componentId", componentId).
 		SetPathParam("configId", configId).
 		SetResult(&model.Config{
@@ -78,7 +118,7 @@ func (a *StorageApi) CreateConfigRequest(config *model.Config) (*client.Request,
 	var configRequest *client.Request
 	configRequest = a.
 		NewRequest(resty.MethodPost, "branch/{branchId}/components/{componentId}/configs").
-		SetPathParam("branchId", strconv.Itoa(config.BranchId)).
+		SetPathParam("branchId", cast.ToString(config.BranchId)).
 		SetPathParam("componentId", config.ComponentId).
 		SetBody(map[string]string{
 			"name":              config.Name,
@@ -131,7 +171,7 @@ func (a *StorageApi) UpdateConfigRequest(config *model.Config, changed []string)
 	// Update config
 	request := a.
 		NewRequest(resty.MethodPut, "branch/{branchId}/components/{componentId}/configs/{configId}").
-		SetPathParam("branchId", strconv.Itoa(config.BranchId)).
+		SetPathParam("branchId", cast.ToString(config.BranchId)).
 		SetPathParam("componentId", config.ComponentId).
 		SetPathParam("configId", config.Id).
 		SetBody(getChangedValues(all, changed)).

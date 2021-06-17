@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/fixtures"
@@ -10,7 +11,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
-	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -113,13 +113,13 @@ func (p *testProject) InitState() {
 			if _, err := p.api.UpdateBranch(p.defaultBranch, []string{"description"}); err != nil {
 				assert.FailNow(p.t, fmt.Sprintf("cannot set default branch description: %s", err))
 			}
-			p.setEnv(fmt.Sprintf("TEST_BRANCH_%s_ID", branch.Name), strconv.Itoa(branch.Id))
+			p.setEnv(fmt.Sprintf("TEST_BRANCH_%s_ID", branch.Name), cast.ToString(branch.Id))
 		} else {
 			p.api.
 				CreateBranchRequest(branch).
 				OnSuccess(func(response *client.Response) *client.Response {
 					p.log(`crated branch "%s", id: "%d"`, branch.Name, branch.Id)
-					p.setEnv(fmt.Sprintf("TEST_BRANCH_%s_ID", branch.Name), strconv.Itoa(branch.Id))
+					p.setEnv(fmt.Sprintf("TEST_BRANCH_%s_ID", branch.Name), cast.ToString(branch.Id))
 					return response
 				}).
 				Send()
