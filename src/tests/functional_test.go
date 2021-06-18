@@ -6,7 +6,7 @@ import (
 	"github.com/otiai10/copy"
 	"github.com/stretchr/testify/assert"
 	"io/fs"
-	"keboola-as-code/src/api"
+	"keboola-as-code/src/remote"
 	"keboola-as-code/src/utils"
 	"os"
 	"os/exec"
@@ -62,8 +62,8 @@ func RunFunctionalTest(t *testing.T, testDir string, binary string) {
 	// Setup KBC project state
 	projectStateFilePath := filepath.Join(testDir, "project-state.json")
 	if utils.IsFile(projectStateFilePath) {
-		api.SetStateOfTestProject(t, projectStateFilePath)
-		api.SetStateOfTestProject(t, projectStateFilePath)
+		remote.SetStateOfTestProject(t, projectStateFilePath)
+		remote.SetStateOfTestProject(t, projectStateFilePath)
 	}
 
 	// Load command arguments from file

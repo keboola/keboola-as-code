@@ -46,8 +46,8 @@ func TestLoad(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Assert
-		manifest.path = ""
-		c.data.path = ""
+		manifest.Path = ""
+		c.data.Path = ""
 		assert.Equal(t, c.data, manifest)
 	}
 }
@@ -114,12 +114,12 @@ func minimalJson() string {
 func minimalStruct() *Manifest {
 	return &Manifest{
 		Version: 1,
-		Project: &ManifestProject{
+		Project: &ProjectManifest{
 			Id:      12345,
 			ApiHost: "keboola.connection.com",
 		},
-		Branches: make([]*ManifestBranch, 0),
-		Configs:  make([]*ManifestConfig, 0),
+		Branches: make([]*BranchManifest, 0),
+		Configs:  make([]*ConfigManifest, 0),
 	}
 }
 
@@ -149,11 +149,11 @@ func fullJson() string {
       "rows": [
         {
           "id": "101",
-          "path": "101-region-1.json"
+          "path": "101-region-1"
         },
         {
           "id": "102",
-          "path": "102-region-2.json"
+          "path": "102-region-2"
         }
       ]
     },
@@ -165,11 +165,11 @@ func fullJson() string {
       "rows": [
         {
           "id": "103",
-          "path": "103-all.json"
+          "path": "103-all"
         },
         {
           "id": "104",
-          "path": "104-sum.json"
+          "path": "104-sum"
         }
       ]
     }
@@ -180,52 +180,86 @@ func fullJson() string {
 func fullStruct() *Manifest {
 	return &Manifest{
 		Version: 1,
-		Project: &ManifestProject{
+		Project: &ProjectManifest{
 			Id:      12345,
 			ApiHost: "keboola.connection.com",
 		},
-		Branches: []*ManifestBranch{
+		Branches: []*BranchManifest{
 			{
-				Id:   10,
-				Path: "main",
+				Id:           10,
+				Path:         "main",
+				RelativePath: "main",
+				MetadataFile: "main/meta.json",
 			},
 			{
-				Id:   11,
-				Path: "11-dev",
+				Id:           11,
+				Path:         "11-dev",
+				RelativePath: "11-dev",
+				MetadataFile: "11-dev/meta.json",
 			},
 		},
-		Configs: []*ManifestConfig{
+		Configs: []*ConfigManifest{
 			{
-				Id:          "11",
-				ComponentId: "keboola.ex-db-oracle",
 				BranchId:    10,
+				ComponentId: "keboola.ex-db-oracle",
+				Id:          "11",
 				Path:        "11-raw-data",
-				Rows: []*ManifestConfigRow{
+				Rows: []*ConfigRowManifest{
 					{
-						Id:   "101",
-						Path: "101-region-1.json",
+						Id:           "101",
+						Path:         "101-region-1",
+						BranchId:     10,
+						ComponentId:  "keboola.ex-db-oracle",
+						ConfigId:     "11",
+						RelativePath: "main/11-raw-data/rows/101-region-1",
+						MetadataFile: "main/11-raw-data/rows/101-region-1/meta.json",
+						ConfigFile:   "main/11-raw-data/rows/101-region-1/config.json",
 					},
 					{
-						Id:   "102",
-						Path: "102-region-2.json",
+						Id:           "102",
+						Path:         "102-region-2",
+						BranchId:     10,
+						ComponentId:  "keboola.ex-db-oracle",
+						ConfigId:     "11",
+						RelativePath: "main/11-raw-data/rows/102-region-2",
+						MetadataFile: "main/11-raw-data/rows/102-region-2/meta.json",
+						ConfigFile:   "main/11-raw-data/rows/102-region-2/config.json",
 					},
 				},
+				RelativePath: "main/11-raw-data",
+				MetadataFile: "main/11-raw-data/meta.json",
+				ConfigFile:   "main/11-raw-data/config.json",
 			},
 			{
-				Id:          "12",
-				ComponentId: "keboola.wr-db-mysql",
 				BranchId:    11,
+				ComponentId: "keboola.wr-db-mysql",
+				Id:          "12",
 				Path:        "12-current-month",
-				Rows: []*ManifestConfigRow{
+				Rows: []*ConfigRowManifest{
 					{
-						Id:   "103",
-						Path: "103-all.json",
+						Id:           "103",
+						Path:         "103-all",
+						BranchId:     11,
+						ComponentId:  "keboola.wr-db-mysql",
+						ConfigId:     "12",
+						RelativePath: "11-dev/12-current-month/rows/103-all",
+						MetadataFile: "11-dev/12-current-month/rows/103-all/meta.json",
+						ConfigFile:   "11-dev/12-current-month/rows/103-all/config.json",
 					},
 					{
-						Id:   "104",
-						Path: "104-sum.json",
+						Id:           "104",
+						Path:         "104-sum",
+						BranchId:     11,
+						ComponentId:  "keboola.wr-db-mysql",
+						ConfigId:     "12",
+						RelativePath: "11-dev/12-current-month/rows/104-sum",
+						MetadataFile: "11-dev/12-current-month/rows/104-sum/meta.json",
+						ConfigFile:   "11-dev/12-current-month/rows/104-sum/config.json",
 					},
 				},
+				RelativePath: "11-dev/12-current-month",
+				MetadataFile: "11-dev/12-current-month/meta.json",
+				ConfigFile:   "11-dev/12-current-month/config.json",
 			},
 		},
 	}

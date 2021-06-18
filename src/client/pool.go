@@ -20,10 +20,12 @@ type Pool struct {
 	sendersCount    int             // number of parallel http connections -> value of MaxIdleConns
 	processorsCount int             // number of processors workers -> number of CPUs
 	requests        []*Request      // to check that the Send () method has been called on all requests
+	requestsLock    *sync.Mutex     // lock for access to requests slice
 	startTime       time.Time       // time when StartAndWait() called
-	doneChan        chan struct{}   // channel for "all requests are processed" notification
-	requestsChan    chan *Request   // channel for requests
-	responsesChan   chan *Response  // channel for outgoing responses
+	doneChan        chan struct {
+	} // channel for "all requests are processed" notification
+	requestsChan  chan *Request  // channel for requests
+	responsesChan chan *Response // channel for outgoing responses
 }
 
 func (c *Client) NewPool(logger *zap.SugaredLogger) *Pool {
@@ -36,6 +38,7 @@ func (c *Client) NewPool(logger *zap.SugaredLogger) *Pool {
 		counter:         sync.WaitGroup{},
 		sendersCount:    MaxIdleConns,
 		processorsCount: runtime.NumCPU(),
+		requestsLock:    &sync.Mutex{},
 		doneChan:        make(chan struct{}),
 		requestsChan:    make(chan *Request, 100),
 		responsesChan:   make(chan *Response, 1),
@@ -45,7 +48,9 @@ func (c *Client) NewPool(logger *zap.SugaredLogger) *Pool {
 // Request set request sender to pool
 func (p *Pool) Request(request *Request) *Request {
 	request.sender = p
+	p.requestsLock.Lock()
 	p.requests = append(p.requests, request)
+	p.requestsLock.Unlock()
 	return request
 }
 

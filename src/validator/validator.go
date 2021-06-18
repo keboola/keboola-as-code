@@ -13,7 +13,11 @@ func Validate(value interface{}) error {
 	validate := validator.New()
 	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
 		// Use JSON field name in error messages
-		return strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
+		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
+		if name == "-" {
+			return fld.Name
+		}
+		return name
 	})
 
 	// Do

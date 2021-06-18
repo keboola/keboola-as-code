@@ -1,8 +1,11 @@
 package cli
 
 import (
+	"fmt"
 	"github.com/spf13/cobra"
 	"keboola-as-code/src/diff"
+	"keboola-as-code/src/recipe"
+	"keboola-as-code/src/state"
 )
 
 const pullShortDescription = `Pull configurations to the local project dir`
@@ -34,25 +37,31 @@ func pullCommand(root *rootCommand) *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Validate token and get API
-			a, err := root.GetStorageApi()
+			api, err := root.GetStorageApi()
 			if err != nil {
 				return err
 			}
 
 			// Load project remote and local state
-			differ := diff.NewDiffer(root.ctx, a, root.logger, root.options.ProjectDir(), root.options.MetadataDir())
-			if err := differ.LoadState(); err != nil {
-				return err
-			}
-
-			// Diff
-			result, err := differ.Diff()
+			state, err := state.LoadState(root.options.ProjectDir(), root.options.MetadataDir(), root.logger, root.ctx, api)
 			if err != nil {
 				return err
 			}
 
+			// Diff
+			differ := diff.NewDiffer(state)
+			diffResults, err := differ.Diff()
+			if err != nil {
+				return err
+			}
 
-			//return result.ApplyPull(root.logger)
+			// Pull
+			pull := recipe.Pull(diffResults).Log(root.logger)
+			if err := pull.Invoke(root.ctx, root.api, root.logger); err != nil {
+				return err
+			}
+
+			return fmt.Errorf("TODO PULL")
 		},
 	}
 

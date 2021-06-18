@@ -6,10 +6,10 @@ import (
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"io"
-	"keboola-as-code/src/api"
 	"keboola-as-code/src/ask"
 	"keboola-as-code/src/log"
 	"keboola-as-code/src/options"
+	"keboola-as-code/src/remote"
 	"keboola-as-code/src/utils"
 	"keboola-as-code/src/version"
 	"os"
@@ -37,7 +37,7 @@ type rootCommand struct {
 	options      *options.Options   // parsed flags and env variables
 	prompt       *ask.Prompt        // user interaction
 	ctx          context.Context    // context for parallel operations
-	api          *api.StorageApi    // GetStorageApi should be used to initialize
+	api          *remote.StorageApi // GetStorageApi should be used to initialize
 	start        time.Time          // cmd start time
 	initialized  bool               // init method was called
 	logFile      *os.File           // log file instance
@@ -128,7 +128,7 @@ func (root *rootCommand) ValidateOptions(required []string) error {
 }
 
 // GetStorageApi returns API and initialize it first time
-func (root *rootCommand) GetStorageApi() (api *api.StorageApi, err error) {
+func (root *rootCommand) GetStorageApi() (api *remote.StorageApi, err error) {
 	if root.api == nil {
 		root.api, err = root.newStorageApi()
 		if err != nil {
@@ -138,8 +138,8 @@ func (root *rootCommand) GetStorageApi() (api *api.StorageApi, err error) {
 	return root.api, nil
 }
 
-func (root *rootCommand) newStorageApi() (*api.StorageApi, error) {
-	return api.NewStorageApiFromOptions(root.options, root.ctx, root.logger)
+func (root *rootCommand) newStorageApi() (*remote.StorageApi, error) {
+	return remote.NewStorageApiFromOptions(root.options, root.ctx, root.logger)
 }
 
 // tearDown makes clean-up after command execution

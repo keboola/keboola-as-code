@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	RequestTimeout        = 25 * time.Second
+	RequestTimeout        = 30 * time.Second
 	HttpTimeout           = 30 * time.Second
 	IdleConnTimeout       = 30 * time.Second
 	TLSHandshakeTimeout   = 10 * time.Second
@@ -70,7 +70,7 @@ func (c *Client) NewRequest(method string, url string) *Request {
 	r.Method = method
 	r.URL = url
 	request := NewRequest(c.requestIdCounter.IncAndGet(), c, r)
-	request.SetContext(c.parentCtx)
+	//request.SetContext(c.parentCtx)
 	return request
 }
 
@@ -209,18 +209,20 @@ func urlForLog(request *resty.Request) string {
 
 	// No response -> url contains placeholders
 	if request.RawRequest == nil {
-		pathParams := request.Context().Value(contextKey("pathParams")).(map[string]string)
-		for p, v := range pathParams {
-			url = strings.Replace(url, "{"+p+"}", "{"+p+"=\""+v+"\"}", -1)
+		if pathParams, ok := request.Context().Value(contextKey("pathParams")).(map[string]string); ok {
+			for p, v := range pathParams {
+				url = strings.Replace(url, "{"+p+"}", "{"+p+"=\""+v+"\"}", -1)
+			}
 		}
 
-		queryParams := request.Context().Value(contextKey("queryParams")).(map[string]string)
-		var queryPairs []string
-		for p, v := range queryParams {
-			queryPairs = append(queryPairs, fmt.Sprintf("%s=\"%s\"", p, v))
-		}
-		if len(queryPairs) > 0 {
-			url += " | query: " + strings.Join(queryPairs, ", ")
+		if queryParams, ok := request.Context().Value(contextKey("queryParams")).(map[string]string); ok {
+			var queryPairs []string
+			for p, v := range queryParams {
+				queryPairs = append(queryPairs, fmt.Sprintf("%s=\"%s\"", p, v))
+			}
+			if len(queryPairs) > 0 {
+				url += " | query: " + strings.Join(queryPairs, ", ")
+			}
 		}
 	}
 

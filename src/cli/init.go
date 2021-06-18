@@ -3,8 +3,8 @@ package cli
 import (
 	"fmt"
 	"github.com/spf13/cobra"
-	"keboola-as-code/src/api"
 	"keboola-as-code/src/model"
+	"keboola-as-code/src/remote"
 	"keboola-as-code/src/utils"
 	"os"
 	"path/filepath"
@@ -52,7 +52,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 			}
 
 			// Validate token and get API
-			sApi, err := root.GetStorageApi()
+			api, err := root.GetStorageApi()
 			if err != nil {
 				return err
 			}
@@ -60,7 +60,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 			// Send failed event - we have connection to API
 			defer func() {
 				if err != nil && !successful {
-					sendInitFailedEvent(root, sApi, err)
+					sendInitFailedEvent(root, api, err)
 				}
 			}()
 
@@ -76,14 +76,14 @@ func initCommand(root *rootCommand) *cobra.Command {
 			root.logger.Infof("Created metadata dir \"%s\".", utils.RelPath(projectDir, metadataDir))
 
 			// Create and save manifest
-			manifest, err := model.NewManifest(sApi.ProjectId(), sApi.Host())
+			manifest, err := model.NewManifest(api.ProjectId(), api.Host())
 			if err != nil {
 				return err
 			}
 			if err = manifest.Save(root.options.MetadataDir()); err != nil {
 				return err
 			}
-			root.logger.Infof("Created manifest file \"%s\".", utils.RelPath(projectDir, manifest.Path()))
+			root.logger.Infof("Created manifest file \"%s\".", utils.RelPath(projectDir, manifest.Path))
 
 			// Create or update ".gitignore"
 			gitignorePath := filepath.Join(projectDir, ".gitignore")
@@ -104,8 +104,8 @@ func initCommand(root *rootCommand) *cobra.Command {
 			envPath := filepath.Join(projectDir, ".env.local")
 			envRelPath := utils.RelPath(projectDir, envPath)
 			updated, err = utils.CreateOrUpdateFile(envPath, []utils.FileLine{
-				{Regexp: "^KBC_STORAGE_API_HOST=", Line: fmt.Sprintf(`KBC_STORAGE_API_HOST="%s"`, sApi.Host())},
-				{Regexp: "^KBC_STORAGE_API_TOKEN=", Line: fmt.Sprintf(`KBC_STORAGE_API_TOKEN="%s"`, sApi.Token().Token)},
+				{Regexp: "^KBC_STORAGE_API_HOST=", Line: fmt.Sprintf(`KBC_STORAGE_API_HOST="%s"`, api.Host())},
+				{Regexp: "^KBC_STORAGE_API_TOKEN=", Line: fmt.Sprintf(`KBC_STORAGE_API_TOKEN="%s"`, api.Token().Token)},
 			})
 			if err != nil {
 				return err
@@ -118,7 +118,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 
 			// Send successful event
 			successful = true
-			sendInitSuccessfulEvent(root, sApi)
+			sendInitSuccessfulEvent(root, api)
 
 			// Make first pull
 			pull := root.GetCommandByName("pull")
@@ -129,16 +129,16 @@ func initCommand(root *rootCommand) *cobra.Command {
 	return cmd
 }
 
-func sendInitSuccessfulEvent(root *rootCommand, sApi *api.StorageApi) {
+func sendInitSuccessfulEvent(root *rootCommand, api *remote.StorageApi) {
 	message := "Initialized local project directory."
 	duration := time.Since(root.start)
 	params := map[string]interface{}{
 		"command": "init",
 	}
 	results := map[string]interface{}{
-		"projectId": sApi.ProjectId(),
+		"projectId": api.ProjectId(),
 	}
-	event, err := sApi.CreateEvent("info", message, duration, params, results)
+	event, err := api.CreateEvent("info", message, duration, params, results)
 	if err == nil {
 		root.logger.Debugf("Sent \"init\" successful event id: \"%s\"", event.Id)
 	} else {
@@ -146,17 +146,17 @@ func sendInitSuccessfulEvent(root *rootCommand, sApi *api.StorageApi) {
 	}
 }
 
-func sendInitFailedEvent(root *rootCommand, sApi *api.StorageApi, err error) {
+func sendInitFailedEvent(root *rootCommand, api *remote.StorageApi, err error) {
 	message := "Init command failed."
 	duration := time.Since(root.start)
 	params := map[string]interface{}{
 		"command": "init",
 	}
 	results := map[string]interface{}{
-		"projectId": sApi.ProjectId(),
+		"projectId": api.ProjectId(),
 		"error":     fmt.Sprintf("%s", err),
 	}
-	event, err := sApi.CreateEvent("error", message, duration, params, results)
+	event, err := api.CreateEvent("error", message, duration, params, results)
 	if err == nil {
 		root.logger.Debugf("Sent \"init\" failed event id: \"%s\"", event.Id)
 	} else {

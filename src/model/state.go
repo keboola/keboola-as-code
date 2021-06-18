@@ -3,14 +3,13 @@ package model
 import (
 	"fmt"
 	"keboola-as-code/src/utils"
+	"keboola-as-code/src/validator"
 	"sort"
 	"sync"
 )
 
 type State struct {
 	mutex        *sync.Mutex
-	projectDir   string
-	metadataDir  string
 	remoteErrors *utils.Error
 	localErrors  *utils.Error
 	paths        *PathsState
@@ -20,12 +19,19 @@ type State struct {
 	configRows   map[string]*ConfigRowState
 }
 
+type ObjectState interface {
+	Kind() string
+	LocalState() interface{}
+	RemoteState() interface{}
+	ManifestState() interface{}
+	LocalPath() string
+}
+
 type BranchState struct {
-	Id           int
-	Remote       *Branch
-	Local        *Branch
-	Manifest     *ManifestBranch
-	MetadataFile string
+	Id       int
+	Remote   *Branch
+	Local    *Branch
+	Manifest *BranchManifest
 }
 
 type ComponentState struct {
@@ -35,33 +41,41 @@ type ComponentState struct {
 }
 
 type ConfigState struct {
-	BranchId     int
-	ComponentId  string
-	Id           string
-	Remote       *Config
-	Local        *Config
-	Manifest     *ManifestConfig
-	MetadataFile string
-	ConfigFile   string
+	BranchId    int
+	ComponentId string
+	Id          string
+	Remote      *Config
+	Local       *Config
+	Manifest    *ConfigManifest
 }
 
 type ConfigRowState struct {
-	BranchId     int
-	ComponentId  string
-	ConfigId     string
-	Id           string
-	Remote       *ConfigRow
-	Local        *ConfigRow
-	Manifest     *ManifestConfigRow
-	MetadataFile string
-	ConfigFile   string
+	BranchId    int
+	ComponentId string
+	ConfigId    string
+	Id          string
+	Remote      *ConfigRow
+	Local       *ConfigRow
+	Manifest    *ConfigRowManifest
 }
 
-func NewState(projectDir, metadataDir string) *State {
+type stateValidator struct {
+	error *utils.Error
+}
+
+func (s *stateValidator) AddError(err error) {
+	s.error.Add(err)
+}
+
+func (s *stateValidator) validate(kind string, v interface{}) {
+	if err := validator.Validate(v); err != nil {
+		s.AddError(fmt.Errorf("%s is not valid: %s", kind, err))
+	}
+}
+
+func NewState(projectDir string) *State {
 	s := &State{
 		mutex:        &sync.Mutex{},
-		projectDir:   projectDir,
-		metadataDir:  metadataDir,
 		remoteErrors: &utils.Error{},
 		localErrors:  &utils.Error{},
 		branches:     make(map[string]*BranchState),
@@ -73,16 +87,17 @@ func NewState(projectDir, metadataDir string) *State {
 	return s
 }
 
-func (s *State) ProjectDir() string {
-	return s.projectDir
-}
-
-func (s *State) MetadataDir() string {
-	return s.metadataDir
-}
-
 func (s *State) Validate() *utils.Error {
-	return validateState(s)
+	v := &stateValidator{}
+	for _, c := range s.Components() {
+		v.validate("component", c.Remote)
+	}
+	for _, objectState := range s.All() {
+		v.validate(objectState.Kind(), objectState.RemoteState())
+		v.validate(objectState.Kind(), objectState.LocalPath())
+		v.validate(objectState.Kind()+"manifest record", objectState.ManifestState())
+	}
+	return v.error
 }
 
 func (s *State) MarkPathTracked(path string) {
@@ -92,6 +107,7 @@ func (s *State) MarkPathTracked(path string) {
 func (s *State) TrackedPaths() []string {
 	return s.paths.Tracked()
 }
+
 func (s *State) UntrackedPaths() []string {
 	return s.paths.Untracked()
 }
@@ -112,23 +128,21 @@ func (s *State) AddLocalError(err error) {
 	s.localErrors.Add(err)
 }
 
-func (s *State) Branches() map[string]*BranchState {
-	return s.branches
+func (s *State) All() []ObjectState {
+	var all []ObjectState
+	for _, branch := range s.Branches() {
+		all = append(all, branch)
+	}
+	for _, config := range s.Configs() {
+		all = append(all, config)
+	}
+	for _, row := range s.ConfigRows() {
+		all = append(all, row)
+	}
+	return all
 }
 
-func (s *State) Components() map[string]*ComponentState {
-	return s.components
-}
-
-func (s *State) Configs() map[string]*ConfigState {
-	return s.configs
-}
-
-func (s *State) ConfigRows() map[string]*ConfigRowState {
-	return s.configRows
-}
-
-func (s *State) BranchesSlice() []*BranchState {
+func (s *State) Branches() []*BranchState {
 	var branches []*BranchState
 	for _, b := range s.branches {
 		branches = append(branches, b)
@@ -139,7 +153,7 @@ func (s *State) BranchesSlice() []*BranchState {
 	return branches
 }
 
-func (s *State) ComponentsSlice() []*ComponentState {
+func (s *State) Components() []*ComponentState {
 	var components []*ComponentState
 	for _, c := range s.components {
 		components = append(components, c)
@@ -150,7 +164,7 @@ func (s *State) ComponentsSlice() []*ComponentState {
 	return components
 }
 
-func (s *State) ConfigsSlice() []*ConfigState {
+func (s *State) Configs() []*ConfigState {
 	var configs []*ConfigState
 	for _, c := range s.configs {
 		configs = append(configs, c)
@@ -161,7 +175,7 @@ func (s *State) ConfigsSlice() []*ConfigState {
 	return configs
 }
 
-func (s *State) ConfigRowsSlice() []*ConfigRowState {
+func (s *State) ConfigRows() []*ConfigRowState {
 	var configRows []*ConfigRowState
 	for _, r := range s.configRows {
 		configRows = append(configRows, r)
@@ -175,24 +189,26 @@ func (s *State) ConfigRowsSlice() []*ConfigRowState {
 func (s *State) SetBranchRemoteState(branch *Branch) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	state := s.getBranchState(branch)
+	state := s.getBranchState(branch.Id)
 	state.Remote = branch
+	if state.Manifest == nil {
+		state.Manifest = branch.GenerateManifest()
+	}
 }
 
-func (s *State) SetBranchLocalState(branch *Branch, manifest *ManifestBranch, metadataFile string) {
+func (s *State) SetBranchLocalState(branch *Branch, manifest *BranchManifest) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	s.MarkPathTracked(metadataFile)
-	state := s.getBranchState(branch)
+	s.MarkPathTracked(manifest.MetadataFile)
+	state := s.getBranchState(branch.Id)
 	state.Local = branch
 	state.Manifest = manifest
-	state.MetadataFile = metadataFile
 }
 
 func (s *State) SetComponentRemoteState(component *Component) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	state := s.getComponentState(component)
+	state := s.getComponentState(component.BranchId, component.Id)
 	state.Remote = component
 }
 
@@ -200,84 +216,150 @@ func (s *State) SetConfigRemoteState(config *Config) {
 	config.SortRows()
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	state := s.getConfigState(config)
+	state := s.getConfigState(config.BranchId, config.ComponentId, config.Id)
 	state.Remote = config
+	if state.Manifest == nil {
+		branch := s.getBranchState(config.BranchId)
+		state.Manifest = config.GenerateManifest(branch.Manifest)
+	}
 }
 
-func (s *State) SetConfigLocalState(config *Config, manifest *ManifestConfig, metadataFile, configFile string) {
+func (s *State) SetConfigLocalState(config *Config, manifest *ConfigManifest) {
 	config.SortRows()
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	s.MarkPathTracked(metadataFile)
-	s.MarkPathTracked(configFile)
-	state := s.getConfigState(config)
+	s.MarkPathTracked(manifest.MetadataFile)
+	s.MarkPathTracked(manifest.ConfigFile)
+	state := s.getConfigState(config.BranchId, config.ComponentId, config.Id)
 	state.Local = config
 	state.Manifest = manifest
-	state.MetadataFile = metadataFile
-	state.ConfigFile = configFile
 }
 
-func (s *State) SetConfigRowRemoteState(configRow *ConfigRow) {
+func (s *State) SetConfigRowRemoteState(row *ConfigRow) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	state := s.getConfigRowState(configRow)
-	state.Remote = configRow
+	state := s.getConfigRowState(row.BranchId, row.ComponentId, row.ConfigId, row.Id)
+	state.Remote = row
+	if state.Manifest == nil {
+		config := s.getConfigState(row.BranchId, row.ComponentId, row.ConfigId)
+		state.Manifest = row.GenerateManifest(config.Manifest)
+	}
 }
 
-func (s *State) SetConfigRowLocalState(configRow *ConfigRow, manifest *ManifestConfigRow, metadataFile, configFile string) {
+func (s *State) SetConfigRowLocalState(row *ConfigRow, manifest *ConfigRowManifest) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	s.MarkPathTracked(metadataFile)
-	s.MarkPathTracked(configFile)
-	state := s.getConfigRowState(configRow)
-	state.Local = configRow
+	s.MarkPathTracked(manifest.MetadataFile)
+	s.MarkPathTracked(manifest.ConfigFile)
+	state := s.getConfigRowState(row.BranchId, row.ComponentId, row.ConfigId, row.Id)
+	state.Local = row
 	state.Manifest = manifest
 }
 
-func (s *State) getBranchState(branch *Branch) *BranchState {
-	key := branch.UniqId()
+func (s *State) getBranchState(branchId int) *BranchState {
+	key := fmt.Sprintf("%d", branchId)
 	if _, ok := s.branches[key]; !ok {
 		s.branches[key] = &BranchState{
-			Id: branch.Id,
+			Id: branchId,
 		}
 	}
 	return s.branches[key]
 }
 
-func (s *State) getComponentState(component *Component) *ComponentState {
-	key := component.UniqId()
+func (s *State) getComponentState(branchId int, componentId string) *ComponentState {
+	key := fmt.Sprintf("%d_%s", branchId, componentId)
 	if _, ok := s.components[key]; !ok {
 		s.components[key] = &ComponentState{
-			BranchId: component.BranchId,
-			Id:       component.Id,
+			BranchId: branchId,
+			Id:       componentId,
 		}
 	}
 	return s.components[key]
 }
 
-func (s *State) getConfigState(config *Config) *ConfigState {
-	key := config.UniqId()
+func (s *State) getConfigState(branchId int, componentId, configId string) *ConfigState {
+	key := fmt.Sprintf("%d_%s_%s", branchId, componentId, configId)
 	if _, ok := s.configs[key]; !ok {
 		s.configs[key] = &ConfigState{
-			BranchId:    config.BranchId,
-			ComponentId: config.ComponentId,
-			Id:          config.Id,
+			BranchId:    branchId,
+			ComponentId: componentId,
+			Id:          configId,
 		}
 	}
 	return s.configs[key]
 }
 
-func (s *State) getConfigRowState(configRow *ConfigRow) *ConfigRowState {
-	key := configRow.UniqId()
+func (s *State) getConfigRowState(branchId int, componentId, configId, rowId string) *ConfigRowState {
+	key := fmt.Sprintf("%d_%s__%s_%s", branchId, componentId, configId, rowId)
 	if _, ok := s.configRows[key]; !ok {
 		s.configRows[key] = &ConfigRowState{
-			BranchId:    configRow.BranchId,
-			ComponentId: configRow.ComponentId,
-			ConfigId:    configRow.ConfigId,
-			Id:          configRow.Id,
+			BranchId:    branchId,
+			ComponentId: componentId,
+			ConfigId:    configId,
+			Id:          rowId,
 		}
 	}
 	return s.configRows[key]
+}
+
+func (b *BranchState) Kind() string {
+	return "branch"
+}
+
+func (c *ConfigState) Kind() string {
+	return "config"
+}
+
+func (r *ConfigRowState) Kind() string {
+	return "configRow"
+}
+
+func (b *BranchState) LocalState() interface{} {
+	return b.Local
+}
+
+func (c *ConfigState) LocalState() interface{} {
+	return c.Local
+}
+
+func (r *ConfigRowState) LocalState() interface{} {
+	return r.Local
+}
+
+func (b *BranchState) RemoteState() interface{} {
+	return b.Remote
+}
+
+func (c *ConfigState) RemoteState() interface{} {
+	return c.Remote
+}
+
+func (r *ConfigRowState) RemoteState() interface{} {
+	return r.Remote
+}
+
+func (b *BranchState) ManifestState() interface{} {
+	return b.Manifest
+}
+
+func (c *ConfigState) ManifestState() interface{} {
+	return c.Manifest
+}
+
+func (r *ConfigRowState) ManifestState() interface{} {
+	return r.Manifest
+}
+
+func (b *BranchState) LocalPath() string {
+	return b.Manifest.RelativePath
+}
+
+func (c *ConfigState) LocalPath() string {
+	return c.Manifest.RelativePath
+}
+
+func (r *ConfigRowState) LocalPath() string {
+	return r.Manifest.RelativePath
 }
 
 func (b *BranchState) CmpValue() string {
@@ -306,19 +388,4 @@ func (r *ConfigRowState) CmpValue() string {
 		name = r.Local.Name
 	}
 	return fmt.Sprintf("%d_%s_%s", r.BranchId, r.ComponentId, name)
-}
-
-func (b *Branch) UniqId() string {
-	return fmt.Sprintf("%d", b.Id)
-}
-
-func (c *Component) UniqId() string {
-	return fmt.Sprintf("%d_%s", c.BranchId, c.Id)
-}
-func (c *Config) UniqId() string {
-	return fmt.Sprintf("%d_%s_%s", c.BranchId, c.ComponentId, c.Id)
-}
-
-func (r *ConfigRow) UniqId() string {
-	return fmt.Sprintf("%d_%s__%s_%s", r.BranchId, r.ComponentId, r.ConfigId, r.Id)
 }
