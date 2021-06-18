@@ -1,32 +1,38 @@
 package api
 
 import (
+	"context"
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
 )
 
-func LoadRemoteState(a *StorageApi) (*model.State, *utils.Error) {
-	state := model.NewState()
+func (a *StorageApi) LoadRemoteState(state *model.State, ctx context.Context) *utils.Error {
 	pool := a.NewPool()
 
 	// Load branches
 	pool.
 		Request(a.ListBranchesRequest()).
+		SetContext(ctx).
 		OnSuccess(func(response *client.Response) *client.Response {
 			// Save branch + load branch components
 			for _, branch := range *response.Result().(*[]*model.Branch) {
-				if ok := state.AddBranch(branch); !ok {
-					continue
-				}
+				state.SetBranchRemoteState(branch)
 
 				// Load components
 				pool.
 					Request(a.ListComponentsRequest(branch.Id)).
+					SetContext(ctx).
 					OnSuccess(func(response *client.Response) *client.Response {
 						// Save component, it contains all configs and rows
 						for _, component := range *response.Result().(*[]*model.Component) {
-							state.AddComponent(component)
+							state.SetComponentRemoteState(component)
+							for _, config := range component.Configs {
+								state.SetConfigRemoteState(config)
+								for _, row := range config.Rows {
+									state.SetConfigRowRemoteState(row)
+								}
+							}
 						}
 						return response
 					}).
@@ -37,11 +43,8 @@ func LoadRemoteState(a *StorageApi) (*model.State, *utils.Error) {
 		Send()
 
 	if err := pool.StartAndWait(); err != nil {
-		state.AddError(err)
+		state.AddRemoteError(err)
 	}
 
-	if state.Error().Len() > 0 {
-		return state, state.Error()
-	}
-	return state, nil
+	return state.RemoteErrors()
 }

@@ -1,1 +1,4 @@
-{ foo
+{
+  "name": "disabled",
+  "isDisabled": true
+}

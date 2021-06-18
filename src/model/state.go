@@ -1,122 +1,207 @@
 package model
 
 import (
-	"fmt"
 	"keboola-as-code/src/utils"
-	"keboola-as-code/src/validator"
 	"sync"
 )
 
 type State struct {
-	mutex          *sync.Mutex
-	error          *utils.Error
-	branchesById   map[int]*Branch
-	componentsById map[string]*Component
-	configsById    map[string]*Config
+	mutex        *sync.Mutex
+	projectDir   string
+	metadataDir  string
+	remoteErrors *utils.Error
+	localErrors  *utils.Error
+	paths        *PathsState
+	branches     map[string]*BranchState
+	components   map[string]*ComponentState
+	configs      map[string]*ConfigState
+	configRows   map[string]*ConfigRowState
 }
 
-func NewState() *State {
-	return &State{
-		mutex:          &sync.Mutex{},
-		error:          &utils.Error{},
-		branchesById:   make(map[int]*Branch),
-		componentsById: make(map[string]*Component),
-		configsById:    make(map[string]*Config),
+type BranchState struct {
+	Remote       *Branch
+	Local        *Branch
+	Manifest     *ManifestBranch
+	MetadataFile string
+}
+
+type ComponentState struct {
+	Remote *Component
+}
+
+type ConfigState struct {
+	Remote       *Config
+	Local        *Config
+	Manifest     *ManifestConfig
+	MetadataFile string
+	ConfigFile   string
+}
+
+type ConfigRowState struct {
+	Remote       *ConfigRow
+	Local        *ConfigRow
+	Manifest     *ManifestConfigRow
+	MetadataFile string
+	ConfigFile   string
+}
+
+func NewState(projectDir, metadataDir string) *State {
+	s := &State{
+		mutex:        &sync.Mutex{},
+		projectDir:   projectDir,
+		metadataDir:  metadataDir,
+		remoteErrors: &utils.Error{},
+		localErrors:  &utils.Error{},
+		branches:     make(map[string]*BranchState),
+		components:   make(map[string]*ComponentState),
+		configs:      make(map[string]*ConfigState),
+		configRows:   make(map[string]*ConfigRowState),
 	}
+	s.paths = NewPathsState(projectDir, s.localErrors)
+	return s
 }
 
-func (s *State) Error() *utils.Error {
-	return s.error
+func (s *State) ProjectDir() string {
+	return s.projectDir
 }
 
-func (s *State) AddError(err error) {
-	s.error.Add(err)
+func (s *State) MetadataDir() string {
+	return s.metadataDir
 }
 
-func (s *State) Branches() map[int]*Branch {
-	return s.branchesById
+func (s *State) Validate() *utils.Error {
+	return validateState(s)
 }
 
-func (s *State) Configs() map[string]*Config {
-	return s.configsById
+func (s *State) MarkPathTracked(path string) {
+	s.paths.MarkTracked(path)
 }
 
-func (s *State) BranchById(id int) (*Branch, error) {
-	branch, found := s.branchesById[id]
-	if !found {
-		return nil, fmt.Errorf("branch \"%d\" not found", branch.Id)
-	}
-	return branch, nil
+func (s *State) TrackedPaths() []string {
+	return s.paths.Tracked()
+}
+func (s *State) UntrackedPaths() []string {
+	return s.paths.Untracked()
 }
 
-func (s *State) ConfigurationById(branchId int, componentId string, id string) (*Config, error) {
-	key := configKey(branchId, componentId, id)
-	configuration, found := s.configsById[key]
-	if !found {
-		return nil, fmt.Errorf("config id: \"%s\", componentId: \"%s\", branch id: \"%d\" not found", id, componentId, branchId)
-	}
-	return configuration, nil
+func (s *State) RemoteErrors() *utils.Error {
+	return s.remoteErrors
 }
 
-func (s *State) AddBranch(branch *Branch) bool {
-	if err := validator.Validate(branch); err != nil {
-		s.AddError(fmt.Errorf("branch is not valid:%s", err))
-		return false
-	}
+func (s *State) LocalErrors() *utils.Error {
+	return s.localErrors
+}
 
+func (s *State) AddRemoteError(err error) {
+	s.remoteErrors.Add(err)
+}
+
+func (s *State) AddLocalError(err error) {
+	s.localErrors.Add(err)
+}
+
+func (s *State) Branches() map[string]*BranchState {
+	return s.branches
+}
+
+func (s *State) Components() map[string]*ComponentState {
+	return s.components
+}
+
+func (s *State) Configs() map[string]*ConfigState {
+	return s.configs
+}
+
+func (s *State) ConfigRows() map[string]*ConfigRowState {
+	return s.configRows
+}
+
+func (s *State) SetBranchRemoteState(branch *Branch) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	s.branchesById[branch.Id] = branch
-	return true
+	state := s.getBranchStateByKey(branch.UniqId())
+	state.Remote = branch
 }
 
-func (s *State) AddComponent(component *Component) bool {
-	if err := validator.Validate(component); err != nil {
-		s.AddError(fmt.Errorf("component is not valid:%s", err))
-		return false
-	}
-
-	func() {
-		s.mutex.Lock()
-		defer s.mutex.Unlock()
-		id := componentKey(component.BranchId, component.Id)
-		s.componentsById[id] = component
-	}()
-
-	if ok := s.AddConfigs(component.Configs); !ok {
-		return false
-	}
-	return true
+func (s *State) SetBranchLocalState(branch *Branch, manifest *ManifestBranch, metadataFile string) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	s.MarkPathTracked(metadataFile)
+	state := s.getBranchStateByKey(branch.UniqId())
+	state.Local = branch
+	state.Manifest = manifest
+	state.MetadataFile = metadataFile
 }
 
-func (s *State) AddConfigs(configs []*Config) bool {
-	ok := true
-	for _, config := range configs {
-		if cOk := s.AddConfig(config); !cOk {
-			ok = false
-		}
-	}
-	return ok
+func (s *State) SetComponentRemoteState(component *Component) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	state := s.getComponentStateByKey(component.UniqId())
+	state.Remote = component
 }
 
-func (s *State) AddConfig(config *Config) bool {
-	if err := validator.Validate(config); err != nil {
-		s.AddError(fmt.Errorf("config is not valid:%s", err))
-		return false
-	}
-
-	if _, ok := s.branchesById[config.BranchId]; !ok {
-		s.AddError(fmt.Errorf("branch \"%d\" not found", config.BranchId))
-		return false
-	}
-
-	// The order of the rows does not matter, ... sort for easy testing
+func (s *State) SetConfigRemoteState(config *Config) {
 	config.SortRows()
-
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
+	state := s.getConfigStateByKey(config.UniqId())
+	state.Remote = config
+}
 
-	key := configKey(config.BranchId, config.ComponentId, config.Id)
-	s.configsById[key] = config
-	return true
+func (s *State) SetConfigLocalState(config *Config, manifest *ManifestConfig, metadataFile, configFile string) {
+	config.SortRows()
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	s.MarkPathTracked(metadataFile)
+	s.MarkPathTracked(configFile)
+	state := s.getConfigStateByKey(config.UniqId())
+	state.Local = config
+	state.Manifest = manifest
+	state.MetadataFile = metadataFile
+	state.ConfigFile = configFile
+}
+
+func (s *State) SetConfigRowRemoteState(configRow *ConfigRow) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	state := s.getConfigRowStateByKey(configRow.UniqId())
+	state.Remote = configRow
+}
+
+func (s *State) SetConfigRowLocalState(configRow *ConfigRow, manifest *ManifestConfigRow, metadataFile, configFile string) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	s.MarkPathTracked(metadataFile)
+	s.MarkPathTracked(configFile)
+	state := s.getConfigRowStateByKey(configRow.UniqId())
+	state.Local = configRow
+	state.Manifest = manifest
+}
+
+func (s *State) getBranchStateByKey(key string) *BranchState {
+	if _, ok := s.branches[key]; !ok {
+		s.branches[key] = &BranchState{}
+	}
+	return s.branches[key]
+}
+
+func (s *State) getComponentStateByKey(key string) *ComponentState {
+	if _, ok := s.components[key]; !ok {
+		s.components[key] = &ComponentState{}
+	}
+	return s.components[key]
+}
+
+func (s *State) getConfigStateByKey(key string) *ConfigState {
+	if _, ok := s.configs[key]; !ok {
+		s.configs[key] = &ConfigState{}
+	}
+	return s.configs[key]
+}
+
+func (s *State) getConfigRowStateByKey(key string) *ConfigRowState {
+	if _, ok := s.configRows[key]; !ok {
+		s.configRows[key] = &ConfigRowState{}
+	}
+	return s.configRows[key]
 }

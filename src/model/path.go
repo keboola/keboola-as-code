@@ -26,23 +26,19 @@ type PathsState struct {
 	tracked    map[string]bool
 }
 
-func NewPathsState(projectDir string) (*PathsState, error) {
+func NewPathsState(projectDir string, error *utils.Error) *PathsState {
 	if !utils.IsDir(projectDir) {
-		return nil, fmt.Errorf("directory \"%s\" not found", projectDir)
+		panic(fmt.Errorf("directory \"%s\" not found", projectDir))
 	}
 
 	f := &PathsState{
-		error:      &utils.Error{},
+		error:      error,
 		projectDir: projectDir,
 		all:        make(map[string]bool),
 		tracked:    make(map[string]bool),
 	}
 	f.init()
-	return f, nil
-}
-
-func (f *PathsState) Error() *utils.Error {
-	return f.error
+	return f
 }
 
 // State returns state of path

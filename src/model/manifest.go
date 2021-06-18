@@ -272,16 +272,7 @@ func (c *ManifestConfig) ToModel(b *ManifestBranch, projectDir string) (*Config,
 	config.Description = meta.Description
 	config.Config = configJson
 
-	// Rows
-	for _, r := range c.Rows {
-		row, err := r.ToModel(b, c, projectDir)
-		if err != nil {
-			return nil, err
-		}
-		config.Rows = append(config.Rows, row)
-	}
 	config.SortRows()
-
 	return config, nil
 }
 
