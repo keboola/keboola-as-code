@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"fmt"
 	"github.com/spf13/cobra"
 	"keboola-as-code/src/diff"
 )
@@ -46,7 +45,14 @@ func pullCommand(root *rootCommand) *cobra.Command {
 				return err
 			}
 
-			return fmt.Errorf("TODO PULL")
+			// Diff
+			result, err := differ.Diff()
+			if err != nil {
+				return err
+			}
+
+
+			//return result.ApplyPull(root.logger)
 		},
 	}
 

@@ -307,3 +307,18 @@ func (r *ConfigRowState) CmpValue() string {
 	}
 	return fmt.Sprintf("%d_%s_%s", r.BranchId, r.ComponentId, name)
 }
+
+func (b *Branch) UniqId() string {
+	return fmt.Sprintf("%d", b.Id)
+}
+
+func (c *Component) UniqId() string {
+	return fmt.Sprintf("%d_%s", c.BranchId, c.Id)
+}
+func (c *Config) UniqId() string {
+	return fmt.Sprintf("%d_%s_%s", c.BranchId, c.ComponentId, c.Id)
+}
+
+func (r *ConfigRow) UniqId() string {
+	return fmt.Sprintf("%d_%s__%s_%s", r.BranchId, r.ComponentId, r.ConfigId, r.Id)
+}
