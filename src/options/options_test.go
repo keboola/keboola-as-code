@@ -77,7 +77,7 @@ func TestProjectDirExpectedDirButFoundFile(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Assert
-	assert.Equal(t, projectDir, options.ProjectDirectory())
+	assert.Equal(t, projectDir, options.ProjectDir())
 	assert.Equal(t, []string{fmt.Sprintf("Expected dir, but found file at \"%s\"", fakeMetadataFile)}, warnings)
 }
 
@@ -98,7 +98,7 @@ func TestProjectDirSameAsWorkingDir(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Assert
-	assert.Equal(t, projectDir, options.ProjectDirectory())
+	assert.Equal(t, projectDir, options.ProjectDir())
 	assert.Empty(t, warnings)
 }
 
@@ -121,7 +121,7 @@ func TestProjectDirIsParentOfWorkingDir(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Assert
-	assert.Equal(t, projectDir, options.ProjectDirectory())
+	assert.Equal(t, projectDir, options.ProjectDir())
 	assert.Empty(t, warnings)
 }
 
@@ -160,7 +160,7 @@ func TestValuesPriority(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Empty(t, warnings)
 	assert.Equal(t, workingDir, options.WorkingDirectory())
-	assert.Equal(t, projectDir, options.ProjectDirectory())
+	assert.Equal(t, projectDir, options.ProjectDir())
 	assert.Equal(t, "connection.keboola.com", options.ApiHost)
 
 	// 2. Higher priority, ".env" file from working dir
@@ -174,7 +174,7 @@ func TestValuesPriority(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Empty(t, warnings)
 	assert.Equal(t, workingDir, options.WorkingDirectory())
-	assert.Equal(t, projectDir, options.ProjectDirectory())
+	assert.Equal(t, projectDir, options.ProjectDir())
 	assert.Equal(t, "connection.north-europe.azure.keboola.com", options.ApiHost)
 
 	// 3. Higher priority , ENV defined in OS
@@ -184,7 +184,7 @@ func TestValuesPriority(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Empty(t, warnings)
 	assert.Equal(t, workingDir, options.WorkingDirectory())
-	assert.Equal(t, projectDir, options.ProjectDirectory())
+	assert.Equal(t, projectDir, options.ProjectDir())
 	assert.Equal(t, "connection.eu-central-1.keboola.com", options.ApiHost)
 
 	// 4. The highest priority, flag
@@ -193,7 +193,7 @@ func TestValuesPriority(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Empty(t, warnings)
 	assert.Equal(t, workingDir, options.WorkingDirectory())
-	assert.Equal(t, projectDir, options.ProjectDirectory())
+	assert.Equal(t, projectDir, options.ProjectDir())
 	assert.Equal(t, "connection.keboola.cloud", options.ApiHost)
 }
 

@@ -63,6 +63,7 @@ func RunFunctionalTest(t *testing.T, testDir string, binary string) {
 	projectStateFilePath := filepath.Join(testDir, "project-state.json")
 	if utils.IsFile(projectStateFilePath) {
 		api.SetStateOfTestProject(t, projectStateFilePath)
+		api.SetStateOfTestProject(t, projectStateFilePath)
 	}
 
 	// Load command arguments from file

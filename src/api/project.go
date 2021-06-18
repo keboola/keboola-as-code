@@ -28,8 +28,8 @@ type testProject struct {
 	envs          []string
 }
 
-func SetStateOfTestProject(t *testing.T, projectStateFilePath string) {
-	p := newTestProject(t, projectStateFilePath)
+func SetStateOfTestProject(t *testing.T, projectStateFile string) {
+	p := newTestProject(t, projectStateFile)
 	p.Clear()
 	p.InitState()
 }
@@ -38,6 +38,9 @@ func SetStateOfTestProject(t *testing.T, projectStateFilePath string) {
 func newTestProject(t *testing.T, stateFilePath string) *testProject {
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filepath.Dir(testFile)
+	if !filepath.IsAbs(stateFilePath) {
+		stateFilePath = filepath.Join(testDir, "..", "fixtures", "remote", stateFilePath)
+	}
 
 	// Load state file
 	stateFile, err := fixtures.LoadStateFile(stateFilePath)

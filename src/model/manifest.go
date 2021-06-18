@@ -271,8 +271,8 @@ func (c *ManifestConfig) ToModel(b *ManifestBranch, projectDir string) (*Config,
 	config.Name = meta.Name
 	config.Description = meta.Description
 	config.Config = configJson
+	config.Rows = make([]*ConfigRow, 0)
 
-	config.SortRows()
 	return config, nil
 }
 

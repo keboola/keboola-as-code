@@ -44,8 +44,8 @@ func initCommand(root *rootCommand) *cobra.Command {
 
 			// Is project directory already initialized?
 			if root.options.HasProjectDirectory() {
-				projectDir := root.options.ProjectDirectory()
-				metadataDir := root.options.MetadataDirectory()
+				projectDir := root.options.ProjectDir()
+				metadataDir := root.options.MetadataDir()
 				root.logger.Infof(`The path "%s" is already an project directory.`, projectDir)
 				root.logger.Info(`Please use a different directory or synchronize the current with "pull" command.`)
 				return fmt.Errorf(`metadata directory "%s" already exists`, utils.RelPath(projectDir, metadataDir))
@@ -80,7 +80,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if err = manifest.Save(root.options.MetadataDirectory()); err != nil {
+			if err = manifest.Save(root.options.MetadataDir()); err != nil {
 				return err
 			}
 			root.logger.Infof("Created manifest file \"%s\".", utils.RelPath(projectDir, manifest.Path()))
