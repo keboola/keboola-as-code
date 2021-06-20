@@ -4,6 +4,7 @@ import (
 	"github.com/otiai10/copy"
 	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/model"
+	"keboola-as-code/src/remote"
 	"keboola-as-code/src/utils"
 	"os"
 	"path/filepath"
@@ -183,6 +184,8 @@ func loadLocalTestState(t *testing.T, projectDirName string) (*model.State, *uti
 	utils.MustSetEnv("LOCAL_STATE_GENERIC_CONFIG_ID", "456")
 	utils.MustSetEnv("LOCAL_STATE_MYSQL_CONFIG_ID", "896")
 
+	api, _ := remote.TestStorageApiWithToken(t)
+
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filepath.Dir(testFile)
 	stateDir := filepath.Join(testDir, "..", "fixtures", "local", projectDirName)
@@ -194,7 +197,7 @@ func loadLocalTestState(t *testing.T, projectDirName string) (*model.State, *uti
 	}
 	utils.ReplaceEnvsDir(projectDir)
 	state := model.NewState(projectDir)
-	return state, LoadLocalState(state, projectDir, metadataDir)
+	return state, LoadLocalState(state, api, projectDir, metadataDir)
 }
 
 func complexLocalExpectedBranches() []*model.BranchState {

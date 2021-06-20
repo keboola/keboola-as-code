@@ -341,12 +341,12 @@ func (b *Branch) GenerateManifest() *BranchManifest {
 	return manifest
 }
 
-func (c *Config) GenerateManifest(b *BranchManifest) *ConfigManifest {
+func (c *Config) GenerateManifest(b *BranchManifest, component *Component) *ConfigManifest {
 	manifest := &ConfigManifest{}
 	manifest.BranchId = c.BranchId
 	manifest.ComponentId = c.ComponentId
 	manifest.Id = c.Id
-	manifest.Path = generatePath(c.Id, c.Name)
+	manifest.Path = filepath.Join(component.Type, c.ComponentId, generatePath(c.Id, c.Name))
 	manifest.ResolvePaths(b)
 	return manifest
 }

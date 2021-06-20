@@ -13,7 +13,7 @@ func LoadState(projectDir, metadataDir string, logger *zap.SugaredLogger, ctx co
 	state := model.NewState(projectDir)
 	grp, ctx := errgroup.WithContext(ctx)
 	grp.Go(loadRemoteState(state, logger, ctx, api))
-	grp.Go(loadLocalState(state, logger, projectDir, metadataDir))
+	grp.Go(loadLocalState(state, logger, api, projectDir, metadataDir))
 	err := grp.Wait()
 	return state, err
 }
@@ -32,10 +32,10 @@ func loadRemoteState(target *model.State, logger *zap.SugaredLogger, ctx context
 	}
 }
 
-func loadLocalState(target *model.State, logger *zap.SugaredLogger, projectDir, metadataDir string) func() error {
+func loadLocalState(target *model.State, logger *zap.SugaredLogger, api *remote.StorageApi, projectDir, metadataDir string) func() error {
 	return func() error {
 		logger.Debugf("Loading project local state.")
-		localErrors := LoadLocalState(target, projectDir, metadataDir)
+		localErrors := LoadLocalState(target, api, projectDir, metadataDir)
 		if localErrors.Len() > 0 {
 			logger.Debugf("Project local state load failed: %s", localErrors)
 			return fmt.Errorf("cannot load project local state: %s", localErrors)

@@ -35,7 +35,6 @@ type Branch struct {
 
 // Component https://keboola.docs.apiary.io/#reference/components-and-configurations/get-development-branch-components/get-development-branch-components
 type Component struct {
-	BranchId  int                    `json:"branchId" validate:"required"` // not present in API response, must be set manually
 	Id        string                 `json:"id" validate:"required"`
 	Type      string                 `json:"type" validate:"required"`
 	Name      string                 `json:"name" validate:"required"`

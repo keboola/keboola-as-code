@@ -6,7 +6,7 @@ import (
 )
 
 func Pull(diffResults *diff.Results) *Recipe {
-	recipe := &Recipe{}
+	recipe := &Recipe{Name: "pull"}
 	for _, result := range diffResults.Results {
 		switch result.State {
 		case diff.ResultEqual:

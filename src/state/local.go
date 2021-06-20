@@ -2,10 +2,11 @@ package state
 
 import (
 	"keboola-as-code/src/model"
+	"keboola-as-code/src/remote"
 	"keboola-as-code/src/utils"
 )
 
-func LoadLocalState(state *model.State, projectDir, metadataDir string) *utils.Error {
+func LoadLocalState(state *model.State, api *remote.StorageApi, projectDir, metadataDir string) *utils.Error {
 	// Load manifest
 	manifest, err := model.LoadManifest(projectDir, metadataDir)
 	if err != nil {
@@ -29,7 +30,19 @@ func LoadLocalState(state *model.State, projectDir, metadataDir string) *utils.E
 			state.AddLocalError(err)
 			continue
 		}
-		state.SetConfigLocalState(config, configManifest)
+
+		// Load component definition if not present
+		component, found := state.GetComponent(config.ComponentId)
+		if !found {
+			component, err = api.GetComponent(config.ComponentId)
+			if err != nil {
+				state.AddLocalError(err)
+				continue
+			}
+		}
+
+		// Save
+		state.SetConfigLocalState(component, config, configManifest)
 
 		// Add rows
 		for _, rowManifest := range configManifest.Rows {

@@ -73,6 +73,11 @@ func (s *stateValidator) validate(kind string, v interface{}) {
 	}
 }
 
+type keyValuePair struct {
+	key   string
+	state ObjectState
+}
+
 func NewState(projectDir string) *State {
 	s := &State{
 		mutex:        &sync.Mutex{},
@@ -129,17 +134,28 @@ func (s *State) AddLocalError(err error) {
 }
 
 func (s *State) All() []ObjectState {
-	var all []ObjectState
-	for _, branch := range s.Branches() {
-		all = append(all, branch)
+	var all []keyValuePair
+	for key, branch := range s.branches {
+		all = append(all, keyValuePair{key, branch})
 	}
-	for _, config := range s.Configs() {
-		all = append(all, config)
+	for key, config := range s.configs {
+		all = append(all, keyValuePair{key, config})
 	}
-	for _, row := range s.ConfigRows() {
-		all = append(all, row)
+	for key, row := range s.configRows {
+		all = append(all, keyValuePair{key, row})
 	}
-	return all
+
+	// Sort by key: branch -> config -> config_row
+	sort.SliceStable(all, func(i, j int) bool {
+		return all[i].key < all[j].key
+	})
+
+	// Convert to slice
+	var slice []ObjectState
+	for _, pair := range all {
+		slice = append(slice, pair.state)
+	}
+	return slice
 }
 
 func (s *State) Branches() []*BranchState {
@@ -186,6 +202,15 @@ func (s *State) ConfigRows() []*ConfigRowState {
 	return configRows
 }
 
+func (s *State) GetComponent(componentId string) (*Component, bool) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	if s, ok := s.components[componentId]; ok {
+		return s.Remote, true
+	}
+	return nil, false
+}
+
 func (s *State) SetBranchRemoteState(branch *Branch) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
@@ -205,27 +230,31 @@ func (s *State) SetBranchLocalState(branch *Branch, manifest *BranchManifest) {
 	state.BranchManifest = manifest
 }
 
-func (s *State) SetComponentRemoteState(component *Component) {
+func (s *State) setComponentRemoteState(component *Component) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	state := s.getComponentState(component.BranchId, component.Id)
+	state := s.getComponentState(component.Id)
 	state.Remote = component
 }
 
-func (s *State) SetConfigRemoteState(config *Config) {
+func (s *State) SetConfigRemoteState(component *Component, config *Config) {
 	config.SortRows()
+	s.setComponentRemoteState(component)
+
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	state := s.getConfigState(config.BranchId, config.ComponentId, config.Id)
 	state.Remote = config
 	if state.ConfigManifest == nil {
 		branch := s.getBranchState(config.BranchId)
-		state.ConfigManifest = config.GenerateManifest(branch.BranchManifest)
+		state.ConfigManifest = config.GenerateManifest(branch.BranchManifest, component)
 	}
 }
 
-func (s *State) SetConfigLocalState(config *Config, manifest *ConfigManifest) {
+func (s *State) SetConfigLocalState(component *Component, config *Config, manifest *ConfigManifest) {
 	config.SortRows()
+	s.setComponentRemoteState(component)
+
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	s.MarkPathTracked(manifest.MetadataFilePath())
@@ -267,12 +296,11 @@ func (s *State) getBranchState(branchId int) *BranchState {
 	return s.branches[key]
 }
 
-func (s *State) getComponentState(branchId int, componentId string) *ComponentState {
-	key := fmt.Sprintf("%d_%s", branchId, componentId)
+func (s *State) getComponentState(componentId string) *ComponentState {
+	key := componentId
 	if _, ok := s.components[key]; !ok {
 		s.components[key] = &ComponentState{
-			BranchId: branchId,
-			Id:       componentId,
+			Id: componentId,
 		}
 	}
 	return s.components[key]
@@ -312,7 +340,7 @@ func (c *ConfigState) Kind() string {
 }
 
 func (r *ConfigRowState) Kind() string {
-	return "configRow"
+	return "row"
 }
 
 func (b *BranchState) LocalState() interface{} {

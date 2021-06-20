@@ -1,7 +1,6 @@
 package recipe
 
 import (
-	"go.uber.org/zap"
 	"keboola-as-code/src/diff"
 	"strings"
 )
@@ -16,6 +15,7 @@ const (
 )
 
 type Recipe struct {
+	Name    string
 	Actions []*Action
 }
 
@@ -52,12 +52,4 @@ func (a *Action) StringPrefix() string {
 
 func (r *Recipe) Add(d *diff.Result, t ActionType) {
 	r.Actions = append(r.Actions, &Action{d, t})
-}
-
-func (r *Recipe) Log(logger *zap.SugaredLogger) *Recipe {
-	logger.Debugf("Planned actions:")
-	for _, action := range r.Actions {
-		logger.Debugf(action.String())
-	}
-	return r
 }

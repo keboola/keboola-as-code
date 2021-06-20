@@ -118,6 +118,9 @@ func TestDiffEqualConfig(t *testing.T) {
 		IsDefault:   false,
 	}
 	branchManifest := &model.BranchManifest{}
+	component := &model.Component{
+		Id: "foo-bar",
+	}
 	configRemote := &model.Config{
 		BranchId:          123,
 		ComponentId:       "foo",
@@ -137,8 +140,8 @@ func TestDiffEqualConfig(t *testing.T) {
 	configManifest := &model.ConfigManifest{}
 	state.SetBranchRemoteState(branchRemote)
 	state.SetBranchLocalState(branchLocal, branchManifest)
-	state.SetConfigRemoteState(configRemote)
-	state.SetConfigLocalState(configLocal, configManifest)
+	state.SetConfigRemoteState(component, configRemote)
+	state.SetConfigLocalState(component, configLocal, configManifest)
 	d := NewDiffer(state)
 	results, err := d.Diff()
 	assert.NoError(t, err)
@@ -173,6 +176,9 @@ func TestDiffNotEqualConfig(t *testing.T) {
 		IsDefault:   false,
 	}
 	branchManifest := &model.BranchManifest{}
+	component := &model.Component{
+		Id: "foo-bar",
+	}
 	configRemote := &model.Config{
 		BranchId:          123,
 		ComponentId:       "foo",
@@ -192,8 +198,8 @@ func TestDiffNotEqualConfig(t *testing.T) {
 	configManifest := &model.ConfigManifest{}
 	state.SetBranchRemoteState(branchRemote)
 	state.SetBranchLocalState(branchLocal, branchManifest)
-	state.SetConfigRemoteState(configRemote)
-	state.SetConfigLocalState(configLocal, configManifest)
+	state.SetConfigRemoteState(component, configRemote)
+	state.SetConfigLocalState(component, configLocal, configManifest)
 	d := NewDiffer(state)
 	results, err := d.Diff()
 	assert.NoError(t, err)
