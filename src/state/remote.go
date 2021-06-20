@@ -26,9 +26,9 @@ func LoadRemoteState(state *model.State, ctx context.Context, api *remote.Storag
 					SetContext(ctx).
 					OnSuccess(func(response *client.Response) *client.Response {
 						// Save component, it contains all configs and rows
-						for _, component := range *response.Result().(*[]*model.Component) {
+						for _, component := range *response.Result().(*[]*model.ComponentWithConfigs) {
 							for _, config := range component.Configs {
-								state.SetConfigRemoteState(component, config)
+								state.SetConfigRemoteState(component.Component, config)
 								for _, row := range config.Rows {
 									state.SetConfigRowRemoteState(row)
 								}

@@ -25,7 +25,9 @@ func TestLoadState(t *testing.T) {
 	api, _ := remote.TestStorageApiWithToken(t)
 	logger, _ := utils.NewDebugLogger()
 
-	state, err := LoadState(projectDir, metadataDir, logger, context.Background(), api)
+	manifest, err := model.LoadManifest(projectDir, metadataDir)
+	assert.NoError(t, err)
+	state, err := LoadState(manifest, logger, context.Background(), api)
 	assert.NoError(t, err)
 	assert.Empty(t, state.RemoteErrors())
 	assert.Empty(t, state.LocalErrors())
@@ -45,10 +47,11 @@ func TestLoadState(t *testing.T) {
 				IsDefault:   true,
 			},
 			BranchManifest: &model.BranchManifest{
-				Id:           cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
-				Path:         "main",
-				ParentPath:   "",
-				MetadataFile: model.MetaFile,
+				ManifestPaths: model.ManifestPaths{
+					Path:       "main",
+					ParentPath: "",
+				},
+				Id: cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
 			},
 		},
 	}, state.Branches())
@@ -84,14 +87,14 @@ func TestLoadState(t *testing.T) {
 				Rows: []*model.ConfigRow{},
 			},
 			ConfigManifest: &model.ConfigManifest{
-				BranchId:     cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
-				ComponentId:  "ex-generic-v2",
-				Id:           utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
-				Path:         "ex-generic-v2/456-todos",
-				Rows:         []*model.ConfigRowManifest{},
-				ParentPath:   "main",
-				MetadataFile: model.MetaFile,
-				ConfigFile:   model.ConfigFile,
+				ManifestPaths: model.ManifestPaths{
+					Path:       "ex-generic-v2/456-todos",
+					ParentPath: "main",
+				},
+				BranchId:    cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
+				ComponentId: "ex-generic-v2",
+				Id:          utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
+				Rows:        []*model.ConfigRowManifest{},
 			},
 		},
 	}, state.Configs())

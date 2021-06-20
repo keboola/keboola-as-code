@@ -25,9 +25,21 @@ var cases = []test{
 }
 
 func TestNewManifest(t *testing.T) {
-	manifest, err := NewManifest(123, "connection.keboola.com")
+	manifest, err := NewManifest(123, "connection.keboola.com", "foo", "bra")
 	assert.NoError(t, err)
 	assert.NotNil(t, manifest)
+}
+
+func TestLoadNotFound(t *testing.T) {
+	projectDir := t.TempDir()
+	metadataDir := filepath.Join(projectDir, MetadataDir)
+	assert.NoError(t, os.MkdirAll(metadataDir, 0650))
+
+	// Load
+	manifest, err := LoadManifest(projectDir, metadataDir)
+	assert.Nil(t, manifest)
+	assert.Error(t, err)
+	assert.Equal(t, `manifest ".keboola/manifest.json" not found`, err.Error())
 }
 
 func TestLoad(t *testing.T) {
@@ -46,6 +58,8 @@ func TestLoad(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Assert
+		manifest.ProjectDir = "foo"
+		manifest.MetadataDir = "bar"
 		manifest.Path = ""
 		c.data.Path = ""
 		assert.Equal(t, c.data, manifest)
@@ -54,12 +68,16 @@ func TestLoad(t *testing.T) {
 
 func TestSave(t *testing.T) {
 	for _, c := range cases {
-		tempDir := t.TempDir()
-		path := filepath.Join(tempDir, ManifestFileName)
+		projectDir := t.TempDir()
+		metadataDir := filepath.Join(projectDir, MetadataDir)
+		assert.NoError(t, os.MkdirAll(metadataDir, 0655))
+		path := filepath.Join(metadataDir, ManifestFileName)
 
 		// Save
 		m := c.data
-		assert.NoError(t, m.Save(tempDir))
+		m.ProjectDir = projectDir
+		m.MetadataDir = metadataDir
+		assert.NoError(t, m.Save())
 
 		// Load file
 		file, err := os.ReadFile(path)
@@ -69,8 +87,8 @@ func TestSave(t *testing.T) {
 }
 
 func TestValidateEmpty(t *testing.T) {
-	m := &Manifest{}
-	err := m.Validate()
+	m := &Manifest{ProjectDir: "foo", MetadataDir: "bar"}
+	err := m.validate()
 	assert.NotNil(t, err)
 	expected := `manifest is not valid: 
 - key="version", value="0", failed "required" validation
@@ -80,20 +98,20 @@ func TestValidateEmpty(t *testing.T) {
 
 func TestValidateMinimal(t *testing.T) {
 	m := minimalStruct()
-	err := m.Validate()
+	err := m.validate()
 	assert.Nil(t, err)
 }
 
 func TestValidateFull(t *testing.T) {
 	m := fullStruct()
-	err := m.Validate()
+	err := m.validate()
 	assert.Nil(t, err)
 }
 
 func TestValidateBadVersion(t *testing.T) {
 	m := minimalStruct()
 	m.Version = 123
-	err := m.Validate()
+	err := m.validate()
 	assert.NotNil(t, err)
 	expected := `manifest is not valid: key="version", value="123", failed "max" validation`
 	assert.Equal(t, expected, err.Error())
@@ -113,7 +131,9 @@ func minimalJson() string {
 
 func minimalStruct() *Manifest {
 	return &Manifest{
-		Version: 1,
+		ProjectDir:  "foo",
+		MetadataDir: "bar",
+		Version:     1,
 		Project: &ProjectManifest{
 			Id:      12345,
 			ApiHost: "keboola.connection.com",
@@ -179,87 +199,91 @@ func fullJson() string {
 
 func fullStruct() *Manifest {
 	return &Manifest{
-		Version: 1,
+		ProjectDir:  "foo",
+		MetadataDir: "bar",
+		Version:     1,
 		Project: &ProjectManifest{
 			Id:      12345,
 			ApiHost: "keboola.connection.com",
 		},
 		Branches: []*BranchManifest{
 			{
-				Id:           10,
-				Path:         "main",
-				ParentPath:   "",
-				MetadataFile: MetaFile,
+				ManifestPaths: ManifestPaths{
+					Path:       "main",
+					ParentPath: "",
+				},
+				Id: 10,
 			},
 			{
-				Id:           11,
-				Path:         "11-dev",
-				ParentPath:   "",
-				MetadataFile: MetaFile,
+				ManifestPaths: ManifestPaths{
+					Path:       "11-dev",
+					ParentPath: "",
+				},
+				Id: 11,
 			},
 		},
 		Configs: []*ConfigManifest{
 			{
+				ManifestPaths: ManifestPaths{
+					Path:       "11-raw-data",
+					ParentPath: "main",
+				},
 				BranchId:    10,
 				ComponentId: "keboola.ex-db-oracle",
 				Id:          "11",
-				Path:        "11-raw-data",
 				Rows: []*ConfigRowManifest{
 					{
-						Id:           "101",
-						Path:         "101-region-1",
-						BranchId:     10,
-						ComponentId:  "keboola.ex-db-oracle",
-						ConfigId:     "11",
-						ParentPath:   "main/11-raw-data/rows",
-						MetadataFile: MetaFile,
-						ConfigFile:   ConfigFile,
+						ManifestPaths: ManifestPaths{
+							Path:       "101-region-1",
+							ParentPath: "main/11-raw-data/rows",
+						},
+						Id:          "101",
+						BranchId:    10,
+						ComponentId: "keboola.ex-db-oracle",
+						ConfigId:    "11",
 					},
 					{
-						Id:           "102",
-						Path:         "102-region-2",
-						BranchId:     10,
-						ComponentId:  "keboola.ex-db-oracle",
-						ConfigId:     "11",
-						ParentPath:   "main/11-raw-data/rows",
-						MetadataFile: MetaFile,
-						ConfigFile:   ConfigFile,
+						ManifestPaths: ManifestPaths{
+							Path:       "102-region-2",
+							ParentPath: "main/11-raw-data/rows",
+						},
+						Id:          "102",
+						BranchId:    10,
+						ComponentId: "keboola.ex-db-oracle",
+						ConfigId:    "11",
 					},
 				},
-				ParentPath:   "main",
-				MetadataFile: MetaFile,
-				ConfigFile:   ConfigFile,
 			},
 			{
+				ManifestPaths: ManifestPaths{
+					Path:       "12-current-month",
+					ParentPath: "11-dev",
+				},
 				BranchId:    11,
 				ComponentId: "keboola.wr-db-mysql",
 				Id:          "12",
-				Path:        "12-current-month",
 				Rows: []*ConfigRowManifest{
 					{
-						Id:           "103",
-						Path:         "103-all",
-						BranchId:     11,
-						ComponentId:  "keboola.wr-db-mysql",
-						ConfigId:     "12",
-						ParentPath:   "11-dev/12-current-month/rows",
-						MetadataFile: MetaFile,
-						ConfigFile:   ConfigFile,
+						ManifestPaths: ManifestPaths{
+							Path:       "103-all",
+							ParentPath: "11-dev/12-current-month/rows",
+						},
+						Id:          "103",
+						BranchId:    11,
+						ComponentId: "keboola.wr-db-mysql",
+						ConfigId:    "12",
 					},
 					{
-						Id:           "104",
-						Path:         "104-sum",
-						BranchId:     11,
-						ComponentId:  "keboola.wr-db-mysql",
-						ConfigId:     "12",
-						ParentPath:   "11-dev/12-current-month/rows",
-						MetadataFile: MetaFile,
-						ConfigFile:   ConfigFile,
+						ManifestPaths: ManifestPaths{
+							Path:       "104-sum",
+							ParentPath: "11-dev/12-current-month/rows",
+						},
+						Id:          "104",
+						BranchId:    11,
+						ComponentId: "keboola.wr-db-mysql",
+						ConfigId:    "12",
 					},
 				},
-				ParentPath:   "11-dev",
-				MetadataFile: MetaFile,
-				ConfigFile:   ConfigFile,
 			},
 		},
 	}

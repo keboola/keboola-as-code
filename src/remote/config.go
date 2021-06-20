@@ -7,10 +7,10 @@ import (
 	"keboola-as-code/src/model"
 )
 
-func (a *StorageApi) ListComponents(branchId int) (*[]*model.Component, error) {
+func (a *StorageApi) ListComponents(branchId int) (*[]*model.ComponentWithConfigs, error) {
 	response := a.ListComponentsRequest(branchId).Send().Response()
 	if response.HasResult() {
-		return response.Result().(*[]*model.Component), nil
+		return response.Result().(*[]*model.ComponentWithConfigs), nil
 	}
 	return nil, response.Error()
 }
@@ -55,7 +55,7 @@ func (a *StorageApi) DeleteConfig(componentId string, configId string) error {
 }
 
 func (a *StorageApi) ListComponentsRequest(branchId int) *client.Request {
-	components := make([]*model.Component, 0)
+	components := make([]*model.ComponentWithConfigs, 0)
 	return a.
 		NewRequest(resty.MethodGet, "branch/{branchId}/components").
 		SetPathParam("branchId", cast.ToString(branchId)).
@@ -65,6 +65,7 @@ func (a *StorageApi) ListComponentsRequest(branchId int) *client.Request {
 			if response.Result() != nil {
 				// Add missing values
 				for _, component := range components {
+					component.BranchId = branchId
 					// Set config IDs
 					for _, config := range component.Configs {
 						config.BranchId = branchId
@@ -173,7 +174,7 @@ func (a *StorageApi) DeleteConfigRequest(componentId string, configId string) *c
 func (a *StorageApi) DeleteConfigsInBranchRequest(branchId int) *client.Request {
 	return a.ListComponentsRequest(branchId).
 		OnSuccess(func(response *client.Response) *client.Response {
-			for _, component := range *response.Result().(*[]*model.Component) {
+			for _, component := range *response.Result().(*[]*model.ComponentWithConfigs) {
 				for _, config := range component.Configs {
 					response.
 						Sender().

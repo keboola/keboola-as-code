@@ -76,10 +76,12 @@ func (d *Differ) doDiff(state model.ObjectState) (*Result, error) {
 	result := &Result{ObjectState: state}
 	remoteState := state.RemoteState()
 	localState := state.LocalState()
-
-	// Types must be same
 	remoteType := reflect.TypeOf(remoteState).Elem()
 	localType := reflect.TypeOf(localState).Elem()
+	remoteValues := reflect.ValueOf(remoteState)
+	localValues := reflect.ValueOf(localState)
+
+	// Types must be same
 	if remoteType.String() != localType.String() {
 		panic(fmt.Errorf("local(%s) and remote(%s) states must have same data type", remoteType, localType))
 	}
@@ -93,8 +95,6 @@ func (d *Differ) doDiff(state model.ObjectState) (*Result, error) {
 	// Check values
 	result.ChangedFields = make([]string, 0)
 	result.Differences = make(map[string]string)
-	remoteValues := reflect.ValueOf(remoteState)
-	localValues := reflect.ValueOf(localState)
 	if remoteValues.IsNil() && localValues.IsNil() {
 		panic(fmt.Errorf("both local and remote state are not set"))
 	}

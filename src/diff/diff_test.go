@@ -3,6 +3,7 @@ package diff
 import (
 	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/model"
+	"strings"
 	"testing"
 )
 
@@ -20,7 +21,6 @@ func TestDiffOnlyInLocal(t *testing.T) {
 	assert.Equal(t, ResultOnlyInLocal, result.State)
 	assert.Equal(t, []string{}, result.ChangedFields)
 	assert.Same(t, branch, result.ObjectState.LocalState().(*model.Branch))
-	assert.Same(t, manifest, result.ObjectState.Manifest().(*model.BranchManifest))
 }
 
 func TestDiffOnlyInRemote(t *testing.T) {
@@ -65,7 +65,6 @@ func TestDiffEqual(t *testing.T) {
 	assert.Equal(t, []string{}, result.ChangedFields)
 	assert.Same(t, branchRemote, result.ObjectState.RemoteState().(*model.Branch))
 	assert.Same(t, branchLocal, result.ObjectState.LocalState().(*model.Branch))
-	assert.Equal(t, manifest, result.ObjectState.Manifest().(*model.BranchManifest))
 }
 
 func TestDiffNotEqual(t *testing.T) {
@@ -93,13 +92,10 @@ func TestDiffNotEqual(t *testing.T) {
 	result := results.Results[0]
 	assert.Equal(t, ResultNotEqual, result.State)
 	assert.Equal(t, []string{"name", "isDefault"}, result.ChangedFields)
-	assert.Equal(t, map[string]string{
-		"name":      "\u00A0 string(\n- \t\"name\",\n+ \t\"changed\",\n  )\n",
-		"isDefault": "  bool(\n- \tfalse,\n+ \ttrue,\n  )\n",
-	}, result.Differences)
+	assert.Equal(t, "  string(\n- \t\"name\",\n+ \t\"changed\",\n  )\n", strings.ReplaceAll(result.Differences["name"], " ", " "))
+	assert.Equal(t, "  bool(\n- \tfalse,\n+ \ttrue,\n  )\n", strings.ReplaceAll(result.Differences["isDefault"], " ", " "))
 	assert.Same(t, branchRemote, result.ObjectState.RemoteState().(*model.Branch))
 	assert.Same(t, branchLocal, result.ObjectState.LocalState().(*model.Branch))
-	assert.Equal(t, manifest, result.ObjectState.Manifest().(*model.BranchManifest))
 }
 
 func TestDiffEqualConfig(t *testing.T) {
@@ -151,13 +147,11 @@ func TestDiffEqualConfig(t *testing.T) {
 	assert.Equal(t, []string{}, result1.ChangedFields)
 	assert.Same(t, branchRemote, result1.ObjectState.RemoteState().(*model.Branch))
 	assert.Same(t, branchLocal, result1.ObjectState.LocalState().(*model.Branch))
-	assert.Equal(t, branchManifest, result1.ObjectState.Manifest().(*model.BranchManifest))
 	result2 := results.Results[1]
 	assert.Equal(t, ResultEqual, result2.State)
 	assert.Equal(t, []string{}, result2.ChangedFields)
 	assert.Same(t, configRemote, result2.ObjectState.RemoteState().(*model.Config))
 	assert.Same(t, configLocal, result2.ObjectState.LocalState().(*model.Config))
-	assert.Equal(t, configManifest, result2.ObjectState.Manifest().(*model.ConfigManifest))
 }
 
 func TestDiffNotEqualConfig(t *testing.T) {
@@ -209,11 +203,9 @@ func TestDiffNotEqualConfig(t *testing.T) {
 	assert.Equal(t, []string{}, result1.ChangedFields)
 	assert.Same(t, branchRemote, result1.ObjectState.RemoteState().(*model.Branch))
 	assert.Same(t, branchLocal, result1.ObjectState.LocalState().(*model.Branch))
-	assert.Equal(t, branchManifest, result1.ObjectState.Manifest().(*model.BranchManifest))
 	result2 := results.Results[1]
 	assert.Equal(t, ResultNotEqual, result2.State)
 	assert.Equal(t, []string{"name", "description"}, result2.ChangedFields)
 	assert.Same(t, configRemote, result2.ObjectState.RemoteState().(*model.Config))
 	assert.Same(t, configLocal, result2.ObjectState.LocalState().(*model.Config))
-	assert.Equal(t, configManifest, result2.ObjectState.Manifest().(*model.ConfigManifest))
 }

@@ -1,11 +1,12 @@
 package cli
 
 import (
-	"fmt"
 	"github.com/spf13/cobra"
 	"keboola-as-code/src/diff"
+	"keboola-as-code/src/model"
 	"keboola-as-code/src/recipe"
 	"keboola-as-code/src/state"
+	"keboola-as-code/src/utils"
 )
 
 const pullShortDescription = `Pull configurations to the local project dir`
@@ -42,8 +43,16 @@ func pullCommand(root *rootCommand) *cobra.Command {
 				return err
 			}
 
+			// Load manifest
+			projectDir := root.options.ProjectDir()
+			metadataDir := root.options.MetadataDir()
+			manifest, err := model.LoadManifest(projectDir, metadataDir)
+			if err != nil {
+				return err
+			}
+
 			// Load project remote and local state
-			state, err := state.LoadState(root.options.ProjectDir(), root.options.MetadataDir(), root.logger, root.ctx, api)
+			state, err := state.LoadState(manifest, root.logger, root.ctx, api)
 			if err != nil {
 				return err
 			}
@@ -57,11 +66,19 @@ func pullCommand(root *rootCommand) *cobra.Command {
 
 			// Pull
 			pull := recipe.Pull(diffResults).Log(root.logger)
-			if err := pull.Invoke(root.ctx, root.api, root.logger); err != nil {
+			if err := pull.Invoke(root.ctx, manifest, root.api, root.logger); err != nil {
 				return err
 			}
 
-			return fmt.Errorf("TODO PULL")
+			// Save manifest
+			if err = manifest.Save(); err != nil {
+				return err
+			}
+			root.logger.Debugf("Saved manifest file \"%s\".", utils.RelPath(projectDir, manifest.Path))
+
+			// Done
+			root.logger.Info("Pull done.")
+			return nil
 		},
 	}
 

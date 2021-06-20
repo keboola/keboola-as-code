@@ -76,11 +76,11 @@ func initCommand(root *rootCommand) *cobra.Command {
 			root.logger.Infof("Created metadata dir \"%s\".", utils.RelPath(projectDir, metadataDir))
 
 			// Create and save manifest
-			manifest, err := model.NewManifest(api.ProjectId(), api.Host())
+			manifest, err := model.NewManifest(api.ProjectId(), api.Host(), projectDir, metadataDir)
 			if err != nil {
 				return err
 			}
-			if err = manifest.Save(root.options.MetadataDir()); err != nil {
+			if err = manifest.Save(); err != nil {
 				return err
 			}
 			root.logger.Infof("Created manifest file \"%s\".", utils.RelPath(projectDir, manifest.Path))

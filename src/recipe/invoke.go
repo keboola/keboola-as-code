@@ -6,18 +6,19 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	"keboola-as-code/src/local"
+	"keboola-as-code/src/model"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/utils"
 )
 
-func (r *Recipe) Invoke(ctx context.Context, api *remote.StorageApi, logger *zap.SugaredLogger) error {
+func (r *Recipe) Invoke(ctx context.Context, manifest *model.Manifest, api *remote.StorageApi, logger *zap.SugaredLogger) error {
 	errors := &utils.Error{}
 	workers, _ := errgroup.WithContext(ctx)
 	pool := api.NewPool()
 	for _, action := range r.Actions {
 		switch action.Type {
 		case ActionSaveLocal:
-			if err := local.Save(action.Result, logger, workers); err != nil {
+			if err := local.SaveLocal(action.ObjectState, manifest, logger, workers); err != nil {
 				errors.Add(err)
 			}
 		case ActionSaveRemote:
@@ -25,7 +26,7 @@ func (r *Recipe) Invoke(ctx context.Context, api *remote.StorageApi, logger *zap
 				errors.Add(err)
 			}
 		case ActionDeleteLocal:
-			if err := local.Delete(action.Result, logger, workers); err != nil {
+			if err := local.DeleteLocal(action.ObjectState, manifest, logger, workers); err != nil {
 				errors.Add(err)
 			}
 		case ActionDeleteRemote:

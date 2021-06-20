@@ -6,16 +6,10 @@ import (
 	"keboola-as-code/src/utils"
 )
 
-func LoadLocalState(state *model.State, api *remote.StorageApi, projectDir, metadataDir string) *utils.Error {
-	// Load manifest
-	manifest, err := model.LoadManifest(projectDir, metadataDir)
-	if err != nil {
-		return utils.WrapError(err)
-	}
-
+func LoadLocalState(state *model.State, manifest *model.Manifest, api *remote.StorageApi) *utils.Error {
 	// Add branches
 	for _, branchManifest := range manifest.Branches {
-		branch, err := branchManifest.ToModel(projectDir)
+		branch, err := branchManifest.ToModel(manifest)
 		if err != nil {
 			state.AddLocalError(err)
 			continue
@@ -25,7 +19,7 @@ func LoadLocalState(state *model.State, api *remote.StorageApi, projectDir, meta
 
 	// Add configs
 	for _, configManifest := range manifest.Configs {
-		config, err := configManifest.ToModel(projectDir)
+		config, err := configManifest.ToModel(manifest)
 		if err != nil {
 			state.AddLocalError(err)
 			continue
@@ -46,7 +40,7 @@ func LoadLocalState(state *model.State, api *remote.StorageApi, projectDir, meta
 
 		// Add rows
 		for _, rowManifest := range configManifest.Rows {
-			row, err := rowManifest.ToModel(projectDir)
+			row, err := rowManifest.ToModel(manifest)
 			if err != nil {
 				state.AddLocalError(err)
 				continue
