@@ -41,8 +41,8 @@ func TestLoadRemoteStateComplex(t *testing.T) {
 	assert.NotNil(t, state)
 	assert.NotNil(t, err)
 	assert.Equal(t, 0, err.Len())
-	assert.Equal(t, complexExpectedBranches(), state.Branches())
-	assert.Equal(t, complexExpectedConfigs(), state.Configs())
+	assert.Equal(t, complexRemoteExpectedBranches(), state.Branches())
+	assert.Equal(t, complexRemoteExpectedConfigs(), state.Configs())
 }
 
 // TestDumpProjectState dumps test project as JSON file
@@ -79,7 +79,7 @@ func TestDumpProjectState(t *testing.T) {
 	fmt.Printf("Dumped to the file \"%s\"\n", filePath)
 }
 
-func complexExpectedBranches() []*model.BranchState {
+func complexRemoteExpectedBranches() []*model.BranchState {
 	return []*model.BranchState{
 		{
 			Id: cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
@@ -88,6 +88,13 @@ func complexExpectedBranches() []*model.BranchState {
 				Name:        "Main",
 				Description: "Main branch",
 				IsDefault:   true,
+			},
+			// Generated manifest
+			BranchManifest: &model.BranchManifest{
+				Id:           cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
+				Path:         "main",
+				ParentPath:   "",
+				MetadataFile: model.MetaFile,
 			},
 		},
 		{
@@ -98,6 +105,13 @@ func complexExpectedBranches() []*model.BranchState {
 				Description: "Foo branch",
 				IsDefault:   false,
 			},
+			// Generated manifest
+			BranchManifest: &model.BranchManifest{
+				Id:           cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_FOO_ID`)),
+				Path:         utils.MustGetEnv(`TEST_BRANCH_FOO_ID`) + "-foo",
+				ParentPath:   "",
+				MetadataFile: model.MetaFile,
+			},
 		},
 		{
 			Id: cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_BAR_ID`)),
@@ -107,11 +121,18 @@ func complexExpectedBranches() []*model.BranchState {
 				Description: "Bar branch",
 				IsDefault:   false,
 			},
+			// Generated manifest
+			BranchManifest: &model.BranchManifest{
+				Id:           cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_BAR_ID`)),
+				Path:         utils.MustGetEnv(`TEST_BRANCH_BAR_ID`) + "-bar",
+				ParentPath:   "",
+				MetadataFile: model.MetaFile,
+			},
 		},
 	}
 }
 
-func complexExpectedConfigs() []*model.ConfigState {
+func complexRemoteExpectedConfigs() []*model.ConfigState {
 	return []*model.ConfigState{
 		{
 			BranchId:    cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
@@ -127,6 +148,16 @@ func complexExpectedConfigs() []*model.ConfigState {
 				Config:            map[string]interface{}{},
 				Rows:              []*model.ConfigRow{},
 			},
+			// Generated manifest
+			ConfigManifest: &model.ConfigManifest{
+				BranchId:     cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
+				ComponentId:  "ex-generic-v2",
+				Id:           utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
+				Path:         utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`) + "-empty",
+				ParentPath:   "main",
+				MetadataFile: model.MetaFile,
+				ConfigFile:   model.ConfigFile,
+			},
 		},
 		{
 			BranchId:    cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_FOO_ID`)),
@@ -141,6 +172,16 @@ func complexExpectedConfigs() []*model.ConfigState {
 				ChangeDescription: fmt.Sprintf(`Copied from default branch configuration "empty" (%s) version 1`, utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
 				Config:            map[string]interface{}{},
 				Rows:              []*model.ConfigRow{},
+			},
+			// Generated manifest
+			ConfigManifest: &model.ConfigManifest{
+				BranchId:     cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_FOO_ID`)),
+				ComponentId:  "ex-generic-v2",
+				Id:           utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
+				Path:         utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`) + "-empty",
+				ParentPath:   utils.MustGetEnv(`TEST_BRANCH_FOO_ID`) + "-foo",
+				MetadataFile: model.MetaFile,
+				ConfigFile:   model.ConfigFile,
 			},
 		},
 		{
@@ -209,6 +250,48 @@ func complexExpectedConfigs() []*model.ConfigState {
 					},
 				},
 			},
+			// Generated manifest
+			ConfigManifest: &model.ConfigManifest{
+				BranchId:     cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_FOO_ID`)),
+				ComponentId:  "keboola.ex-db-mysql",
+				Id:           utils.MustGetEnv(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`),
+				Path:         utils.MustGetEnv(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`) + "-with-rows",
+				ParentPath:   utils.MustGetEnv(`TEST_BRANCH_FOO_ID`) + "-foo",
+				MetadataFile: model.MetaFile,
+				ConfigFile:   model.ConfigFile,
+				Rows: []*model.ConfigRowManifest{
+					{
+						BranchId:     cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_FOO_ID`)),
+						ComponentId:  "keboola.ex-db-mysql",
+						ConfigId:     utils.MustGetEnv(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`),
+						Id:           utils.MustGetEnv(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_DISABLED_ID`),
+						Path:         utils.MustGetEnv(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_DISABLED_ID`) + "-disabled",
+						ParentPath:   utils.MustGetEnv(`TEST_BRANCH_FOO_ID`) + "-foo/" + utils.MustGetEnv(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`) + "-with-rows/rows",
+						MetadataFile: model.MetaFile,
+						ConfigFile:   model.ConfigFile,
+					},
+					{
+						BranchId:     cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_FOO_ID`)),
+						ComponentId:  "keboola.ex-db-mysql",
+						ConfigId:     utils.MustGetEnv(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`),
+						Id:           utils.MustGetEnv(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_TEST_VIEW_ID`),
+						Path:         utils.MustGetEnv(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_TEST_VIEW_ID`) + "-test-view",
+						ParentPath:   utils.MustGetEnv(`TEST_BRANCH_FOO_ID`) + "-foo/" + utils.MustGetEnv(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`) + "-with-rows/rows",
+						MetadataFile: model.MetaFile,
+						ConfigFile:   model.ConfigFile,
+					},
+					{
+						BranchId:     cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_FOO_ID`)),
+						ComponentId:  "keboola.ex-db-mysql",
+						ConfigId:     utils.MustGetEnv(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`),
+						Id:           utils.MustGetEnv(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_USERS_ID`),
+						Path:         utils.MustGetEnv(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_USERS_ID`) + "-users",
+						ParentPath:   utils.MustGetEnv(`TEST_BRANCH_FOO_ID`) + "-foo/" + utils.MustGetEnv(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`) + "-with-rows/rows",
+						MetadataFile: model.MetaFile,
+						ConfigFile:   model.ConfigFile,
+					},
+				},
+			},
 		},
 		{
 			BranchId:    cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_BAR_ID`)),
@@ -223,6 +306,16 @@ func complexExpectedConfigs() []*model.ConfigState {
 				ChangeDescription: fmt.Sprintf(`Copied from default branch configuration "empty" (%s) version 1`, utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
 				Config:            map[string]interface{}{},
 				Rows:              []*model.ConfigRow{},
+			},
+			// Generated manifest
+			ConfigManifest: &model.ConfigManifest{
+				BranchId:     cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_BAR_ID`)),
+				ComponentId:  "ex-generic-v2",
+				Id:           utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
+				Path:         utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`) + "-empty",
+				ParentPath:   utils.MustGetEnv(`TEST_BRANCH_BAR_ID`) + "-bar",
+				MetadataFile: model.MetaFile,
+				ConfigFile:   model.ConfigFile,
 			},
 		},
 		{
@@ -244,6 +337,16 @@ func complexExpectedConfigs() []*model.ConfigState {
 					},
 				},
 				Rows: []*model.ConfigRow{},
+			},
+			// Generated manifest
+			ConfigManifest: &model.ConfigManifest{
+				BranchId:     cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_BAR_ID`)),
+				ComponentId:  "ex-generic-v2",
+				Id:           utils.MustGetEnv(`TEST_BRANCH_BAR_CONFIG_WITHOUT_ROWS_ID`),
+				Path:         utils.MustGetEnv(`TEST_BRANCH_BAR_CONFIG_WITHOUT_ROWS_ID`) + "-without-rows",
+				ParentPath:   utils.MustGetEnv(`TEST_BRANCH_BAR_ID`) + "-bar",
+				MetadataFile: model.MetaFile,
+				ConfigFile:   model.ConfigFile,
 			},
 		},
 	}

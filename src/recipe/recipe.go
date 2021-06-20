@@ -3,6 +3,7 @@ package recipe
 import (
 	"go.uber.org/zap"
 	"keboola-as-code/src/diff"
+	"strings"
 )
 
 type ActionType int
@@ -23,28 +24,28 @@ type Action struct {
 	Type ActionType
 }
 
-//SaveRemote(logger *zap.SugaredLogger, workers *errgroup.Group, pool *client.Pool, a *api.StorageApi) error
-//DeleteRemote(logger *zap.SugaredLogger, workers *errgroup.Group, pool *client.Pool, a *api.StorageApi) error
-//DeleteLocal(logger *zap.SugaredLogger, workers *errgroup.Group) error
-//SaveLocal(logger *zap.SugaredLogger, workers *errgroup.Group) error
-
 func (a *Action) String() string {
-	return a.StringPrefix() + " " + a.LocalPath()
+	kindAbb := strings.ToUpper(string(a.Kind()[0]))
+	msg := a.StringPrefix() + " " + kindAbb + " " + a.RelativePath()
+	if len(a.ChangedFields) > 0 {
+		msg += "changed: " + strings.Join(a.ChangedFields, ", ")
+	}
+	return msg
 }
 
 func (a *Action) StringPrefix() string {
 	switch a.Result.State {
 	case diff.ResultNotSet:
-		return "? "
+		return "? "
 	case diff.ResultNotEqual:
 		return "CH"
 	case diff.ResultEqual:
-		return "= "
+		return "= "
 	default:
 		if a.Type == ActionSaveLocal || a.Type == ActionSaveRemote {
-			return "+ "
+			return "+ "
 		} else {
-			return "- "
+			return "- "
 		}
 	}
 }

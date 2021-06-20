@@ -207,11 +207,11 @@ func complexLocalExpectedBranches() []*model.BranchState {
 				Description: "Main branch",
 				IsDefault:   true,
 			},
-			Manifest: &model.BranchManifest{
+			BranchManifest: &model.BranchManifest{
 				Path:         "main",
 				Id:           111,
-				RelativePath: "main",
-				MetadataFile: "main/meta.json",
+				ParentPath:   "",
+				MetadataFile: model.MetaFile,
 			},
 		},
 		{
@@ -222,11 +222,11 @@ func complexLocalExpectedBranches() []*model.BranchState {
 				Description: "My branch",
 				IsDefault:   false,
 			},
-			Manifest: &model.BranchManifest{
+			BranchManifest: &model.BranchManifest{
 				Path:         "123-branch",
 				Id:           123,
-				RelativePath: "123-branch",
-				MetadataFile: "123-branch/meta.json",
+				ParentPath:   "",
+				MetadataFile: model.MetaFile,
 			},
 		},
 	}
@@ -254,15 +254,15 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 				},
 				Rows: []*model.ConfigRow{},
 			},
-			Manifest: &model.ConfigManifest{
+			ConfigManifest: &model.ConfigManifest{
 				BranchId:     111,
 				ComponentId:  "keboola.ex-generic",
 				Path:         "keboola.ex-generic/456-todos",
 				Id:           "456",
 				Rows:         []*model.ConfigRowManifest{},
-				RelativePath: "main/keboola.ex-generic/456-todos",
-				MetadataFile: "main/keboola.ex-generic/456-todos/meta.json",
-				ConfigFile:   "main/keboola.ex-generic/456-todos/config.json",
+				ParentPath:   "main",
+				MetadataFile: model.MetaFile,
+				ConfigFile:   model.ConfigFile,
 			},
 		},
 		{
@@ -331,7 +331,7 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 					},
 				},
 			},
-			Manifest: &model.ConfigManifest{
+			ConfigManifest: &model.ConfigManifest{
 				BranchId:    123,
 				ComponentId: "keboola.ex-db-mysql",
 				Path:        "keboola.ex-db-mysql/896-tables",
@@ -343,9 +343,9 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 						BranchId:     123,
 						ComponentId:  "keboola.ex-db-mysql",
 						ConfigId:     "896",
-						RelativePath: "123-branch/keboola.ex-db-mysql/896-tables/rows/12-users",
-						MetadataFile: "123-branch/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json",
-						ConfigFile:   "123-branch/keboola.ex-db-mysql/896-tables/rows/12-users/config.json",
+						ParentPath:   "123-branch/keboola.ex-db-mysql/896-tables/rows",
+						MetadataFile: model.MetaFile,
+						ConfigFile:   model.ConfigFile,
 					},
 					{
 						Path:         "34-test-view",
@@ -353,9 +353,9 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 						BranchId:     123,
 						ComponentId:  "keboola.ex-db-mysql",
 						ConfigId:     "896",
-						RelativePath: "123-branch/keboola.ex-db-mysql/896-tables/rows/34-test-view",
-						MetadataFile: "123-branch/keboola.ex-db-mysql/896-tables/rows/34-test-view/meta.json",
-						ConfigFile:   "123-branch/keboola.ex-db-mysql/896-tables/rows/34-test-view/config.json",
+						ParentPath:   "123-branch/keboola.ex-db-mysql/896-tables/rows",
+						MetadataFile: model.MetaFile,
+						ConfigFile:   model.ConfigFile,
 					},
 					{
 						Path:         "56-disabled",
@@ -363,14 +363,14 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 						BranchId:     123,
 						ComponentId:  "keboola.ex-db-mysql",
 						ConfigId:     "896",
-						RelativePath: "123-branch/keboola.ex-db-mysql/896-tables/rows/56-disabled",
-						MetadataFile: "123-branch/keboola.ex-db-mysql/896-tables/rows/56-disabled/meta.json",
-						ConfigFile:   "123-branch/keboola.ex-db-mysql/896-tables/rows/56-disabled/config.json",
+						ParentPath:   "123-branch/keboola.ex-db-mysql/896-tables/rows",
+						MetadataFile: model.MetaFile,
+						ConfigFile:   model.ConfigFile,
 					},
 				},
-				RelativePath: "123-branch/keboola.ex-db-mysql/896-tables",
-				MetadataFile: "123-branch/keboola.ex-db-mysql/896-tables/meta.json",
-				ConfigFile:   "123-branch/keboola.ex-db-mysql/896-tables/config.json",
+				ParentPath:   "123-branch",
+				MetadataFile: model.MetaFile,
+				ConfigFile:   model.ConfigFile,
 			},
 		},
 		{
@@ -393,15 +393,15 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 				},
 				Rows: []*model.ConfigRow{},
 			},
-			Manifest: &model.ConfigManifest{
+			ConfigManifest: &model.ConfigManifest{
 				BranchId:     123,
 				ComponentId:  "keboola.ex-generic",
 				Path:         "keboola.ex-generic/456-todos",
 				Id:           "456",
 				Rows:         []*model.ConfigRowManifest{},
-				RelativePath: "123-branch/keboola.ex-generic/456-todos",
-				MetadataFile: "123-branch/keboola.ex-generic/456-todos/meta.json",
-				ConfigFile:   "123-branch/keboola.ex-generic/456-todos/config.json",
+				ParentPath:   "123-branch",
+				MetadataFile: model.MetaFile,
+				ConfigFile:   model.ConfigFile,
 			},
 		},
 	}

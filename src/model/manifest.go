@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"github.com/iancoleman/strcase"
+	"github.com/spf13/cast"
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/utils"
 	"keboola-as-code/src/validator"
@@ -34,7 +35,7 @@ type ProjectManifest struct {
 type BranchManifest struct {
 	Id           int    `json:"id" validate:"required,min=1"`
 	Path         string `json:"path" validate:"required"`
-	RelativePath string `json:"-" validate:"required"` // generated, not in JSON
+	ParentPath   string `json:"-" validate:"required"` // generated, not in JSON
 	MetadataFile string `json:"-" validate:"required"` // generated, not in JSON
 }
 
@@ -50,7 +51,7 @@ type ConfigManifest struct {
 	Id           string               `json:"id" validate:"required,min=1"`
 	Path         string               `json:"path" validate:"required"`
 	Rows         []*ConfigRowManifest `json:"rows"`
-	RelativePath string               `json:"-" validate:"required"` // generated, not in JSON
+	ParentPath   string               `json:"-" validate:"required"` // generated, not in JSON
 	MetadataFile string               `json:"-" validate:"required"` // generated, not in JSON
 	ConfigFile   string               `json:"-" validate:"required"` // generated, not in JSON
 }
@@ -66,7 +67,7 @@ type ConfigRowManifest struct {
 	BranchId     int    `json:"-" validate:"required"`
 	ComponentId  string `json:"-" validate:"required"` // generated, not in JSON
 	ConfigId     string `json:"-" validate:"required"` // generated, not in JSON
-	RelativePath string `json:"-" validate:"required"` // generated, not in JSON
+	ParentPath   string `json:"-" validate:"required"` // generated, not in JSON
 	MetadataFile string `json:"-" validate:"required"` // generated, not in JSON
 	ConfigFile   string `json:"-" validate:"required"` // generated, not in JSON
 }
@@ -111,10 +112,10 @@ func LoadManifest(projectDir string, metadataDir string) (*Manifest, error) {
 		return nil, fmt.Errorf("manifest \"%s\" is not valid: %s", utils.RelPath(projectDir, path), err)
 	}
 
-	// Resolve paths
+	// Resolve paths and set parents
 	branchById := make(map[int]*BranchManifest)
 	for _, branch := range m.Branches {
-		branch.Resolve()
+		branch.ResolvePaths()
 		branchById[branch.Id] = branch
 	}
 	for _, config := range m.Configs {
@@ -122,9 +123,12 @@ func LoadManifest(projectDir string, metadataDir string) (*Manifest, error) {
 		if !found {
 			return nil, fmt.Errorf("branch \"%d\" not found in manifest - referenced from the config \"%s:%s\" in \"%s\"", config.BranchId, config.ComponentId, config.Id, m.Path)
 		}
-		config.Resolve(branch)
+		config.ResolvePaths(branch)
 		for _, row := range config.Rows {
-			row.Resolve(config)
+			row.BranchId = config.BranchId
+			row.ComponentId = config.ComponentId
+			row.ConfigId = config.Id
+			row.ResolvePaths(config)
 		}
 	}
 
@@ -168,9 +172,33 @@ func (m *Manifest) Validate() error {
 	return nil
 }
 
+func (b *BranchManifest) RelativePath() string {
+	return filepath.Join(b.ParentPath, b.Path)
+}
+
+func (c *ConfigManifest) RelativePath() string {
+	return filepath.Join(c.ParentPath, c.Path)
+}
+
+func (r *ConfigRowManifest) RelativePath() string {
+	return filepath.Join(r.ParentPath, r.Path)
+}
+
+func (b *BranchManifest) MetadataFilePath() string {
+	return filepath.Join(b.RelativePath(), b.MetadataFile)
+}
+
+func (c *ConfigManifest) MetadataFilePath() string {
+	return filepath.Join(c.RelativePath(), c.MetadataFile)
+}
+
+func (r *ConfigRowManifest) MetadataFilePath() string {
+	return filepath.Join(r.RelativePath(), r.MetadataFile)
+}
+
 func (b *BranchManifest) Metadata(projectDir string) (*BranchMetadata, error) {
 	meta := &BranchMetadata{}
-	if err := readMetadataFile("branch", projectDir, b.MetadataFile, meta); err != nil {
+	if err := readMetadataFile("branch", projectDir, b.MetadataFilePath(), meta); err != nil {
 		return nil, err
 	}
 	return meta, nil
@@ -178,7 +206,7 @@ func (b *BranchManifest) Metadata(projectDir string) (*BranchMetadata, error) {
 
 func (c *ConfigManifest) Metadata(projectDir string) (*ConfigMetadata, error) {
 	meta := &ConfigMetadata{}
-	if err := readMetadataFile("config", projectDir, c.MetadataFile, meta); err != nil {
+	if err := readMetadataFile("config", projectDir, c.MetadataFilePath(), meta); err != nil {
 		return nil, err
 	}
 	return meta, nil
@@ -186,15 +214,23 @@ func (c *ConfigManifest) Metadata(projectDir string) (*ConfigMetadata, error) {
 
 func (r *ConfigRowManifest) Metadata(projectDir string) (*ConfigRowMetadata, error) {
 	meta := &ConfigRowMetadata{}
-	if err := readMetadataFile("config row", projectDir, r.MetadataFile, meta); err != nil {
+	if err := readMetadataFile("config row", projectDir, r.MetadataFilePath(), meta); err != nil {
 		return nil, err
 	}
 	return meta, nil
 }
 
+func (c *ConfigManifest) ConfigFilePath() string {
+	return filepath.Join(c.RelativePath(), c.ConfigFile)
+}
+
+func (r *ConfigRowManifest) ConfigFilePath() string {
+	return filepath.Join(r.RelativePath(), r.ConfigFile)
+}
+
 func (c *ConfigManifest) ConfigContent(projectDir string) (map[string]interface{}, error) {
 	config := make(map[string]interface{})
-	if err := readConfigFile("config", projectDir, c.ConfigFile, &config); err != nil {
+	if err := readConfigFile("config", projectDir, c.ConfigFilePath(), &config); err != nil {
 		return nil, err
 	}
 	return config, nil
@@ -202,30 +238,27 @@ func (c *ConfigManifest) ConfigContent(projectDir string) (map[string]interface{
 
 func (r *ConfigRowManifest) ConfigContent(projectDir string) (map[string]interface{}, error) {
 	config := make(map[string]interface{})
-	if err := readConfigFile("config row", projectDir, r.ConfigFile, &config); err != nil {
+	if err := readConfigFile("config row", projectDir, r.ConfigFilePath(), &config); err != nil {
 		return nil, err
 	}
 	return config, nil
 }
 
-func (b *BranchManifest) Resolve() {
-	b.RelativePath = b.Path
-	b.MetadataFile = filepath.Join(b.RelativePath, MetaFile)
+func (b *BranchManifest) ResolvePaths() {
+	b.ParentPath = ""
+	b.MetadataFile = MetaFile
 }
 
-func (c *ConfigManifest) Resolve(b *BranchManifest) {
-	c.RelativePath = filepath.Join(b.RelativePath, c.Path)
-	c.MetadataFile = filepath.Join(c.RelativePath, MetaFile)
-	c.ConfigFile = filepath.Join(c.RelativePath, ConfigFile)
+func (c *ConfigManifest) ResolvePaths(b *BranchManifest) {
+	c.ParentPath = filepath.Join(b.ParentPath, b.Path)
+	c.MetadataFile = MetaFile
+	c.ConfigFile = ConfigFile
 }
 
-func (r *ConfigRowManifest) Resolve(c *ConfigManifest) {
-	r.BranchId = c.BranchId
-	r.ComponentId = c.ComponentId
-	r.ConfigId = c.Id
-	r.RelativePath = filepath.Join(c.RelativePath, RowsDir, r.Path)
-	r.MetadataFile = filepath.Join(r.RelativePath, MetaFile)
-	r.ConfigFile = filepath.Join(r.RelativePath, ConfigFile)
+func (r *ConfigRowManifest) ResolvePaths(c *ConfigManifest) {
+	r.ParentPath = filepath.Join(c.ParentPath, c.Path, RowsDir)
+	r.MetadataFile = MetaFile
+	r.ConfigFile = ConfigFile
 }
 
 func (b *BranchManifest) ToModel(projectDir string) (*Branch, error) {
@@ -299,24 +332,33 @@ func (r *ConfigRowManifest) ToModel(projectDir string) (*ConfigRow, error) {
 func (b *Branch) GenerateManifest() *BranchManifest {
 	manifest := &BranchManifest{}
 	manifest.Id = b.Id
-	manifest.Path = nameToPath(b.Name)
-	manifest.Resolve()
+	if b.IsDefault {
+		manifest.Path = "main"
+	} else {
+		manifest.Path = generatePath(cast.ToString(b.Id), b.Name)
+	}
+	manifest.ResolvePaths()
 	return manifest
 }
 
 func (c *Config) GenerateManifest(b *BranchManifest) *ConfigManifest {
 	manifest := &ConfigManifest{}
+	manifest.BranchId = c.BranchId
+	manifest.ComponentId = c.ComponentId
 	manifest.Id = c.Id
-	manifest.Path = nameToPath(c.Name)
-	manifest.Resolve(b)
+	manifest.Path = generatePath(c.Id, c.Name)
+	manifest.ResolvePaths(b)
 	return manifest
 }
 
 func (r *ConfigRow) GenerateManifest(c *ConfigManifest) *ConfigRowManifest {
 	manifest := &ConfigRowManifest{}
+	manifest.BranchId = r.BranchId
+	manifest.ComponentId = r.ComponentId
+	manifest.ConfigId = r.ConfigId
 	manifest.Id = r.Id
-	manifest.Path = nameToPath(r.Name)
-	manifest.Resolve(c)
+	manifest.Path = generatePath(r.Id, r.Name)
+	manifest.ResolvePaths(c)
 	return manifest
 }
 
@@ -362,6 +404,9 @@ func readJsonFile(projectDir string, path string, v interface{}) error {
 	return nil
 }
 
-func nameToPath(name string) string {
-	return regexp.MustCompile(`[^a-zA-Z0-9-]]`).ReplaceAllString(strcase.ToDelimited(name, '-'), "-")
+func generatePath(id string, name string) string {
+	name = regexp.
+		MustCompile(`[^a-zA-Z0-9-]]`).
+		ReplaceAllString(strcase.ToDelimited(name, '-'), "-")
+	return id + "-" + name
 }

@@ -44,11 +44,11 @@ func TestLoadState(t *testing.T) {
 				Description: "Main branch",
 				IsDefault:   true,
 			},
-			Manifest: &model.BranchManifest{
+			BranchManifest: &model.BranchManifest{
 				Id:           cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
 				Path:         "main",
-				RelativePath: "main",
-				MetadataFile: "main/meta.json",
+				ParentPath:   "",
+				MetadataFile: model.MetaFile,
 			},
 		},
 	}, state.Branches())
@@ -83,15 +83,15 @@ func TestLoadState(t *testing.T) {
 				},
 				Rows: []*model.ConfigRow{},
 			},
-			Manifest: &model.ConfigManifest{
+			ConfigManifest: &model.ConfigManifest{
 				BranchId:     cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
 				ComponentId:  "ex-generic-v2",
 				Id:           utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
 				Path:         "ex-generic-v2/456-todos",
 				Rows:         []*model.ConfigRowManifest{},
-				RelativePath: "main/ex-generic-v2/456-todos",
-				MetadataFile: "main/ex-generic-v2/456-todos/meta.json",
-				ConfigFile:   "main/ex-generic-v2/456-todos/config.json",
+				ParentPath:   "main",
+				MetadataFile: model.MetaFile,
+				ConfigFile:   model.ConfigFile,
 			},
 		},
 	}, state.Configs())

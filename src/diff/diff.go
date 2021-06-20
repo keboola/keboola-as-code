@@ -11,10 +11,15 @@ import (
 
 type typeName string
 
+type structField struct {
+	name    string
+	reflect reflect.StructField
+}
+
 type Differ struct {
 	state     *model.State
 	results   []*Result
-	typeCache map[typeName]map[string]reflect.StructField
+	typeCache map[typeName][]structField
 	error     *utils.Error
 }
 
@@ -42,7 +47,7 @@ type Results struct {
 func NewDiffer(state *model.State) *Differ {
 	return &Differ{
 		state:     state,
-		typeCache: make(map[typeName]map[string]reflect.StructField),
+		typeCache: make(map[typeName][]structField),
 	}
 }
 
@@ -111,16 +116,17 @@ func (d *Differ) doDiff(state model.ObjectState) (*Result, error) {
 	}
 
 	// Diff
-	for name, field := range diffFields {
+	for _, field := range diffFields {
 		difference := cmp.Diff(
-			remoteValues.FieldByName(field.Name).Interface(),
-			localValues.FieldByName(field.Name).Interface(),
+			remoteValues.FieldByName(field.reflect.Name).Interface(),
+			localValues.FieldByName(field.reflect.Name).Interface(),
 		)
 		if len(difference) > 0 {
-			result.ChangedFields = append(result.ChangedFields, name)
-			result.Differences[name] = difference
+			result.ChangedFields = append(result.ChangedFields, field.name)
+			result.Differences[field.name] = difference
 		}
 	}
+
 	if len(result.ChangedFields) > 0 {
 		result.State = ResultNotEqual
 	} else {
@@ -130,11 +136,11 @@ func (d *Differ) doDiff(state model.ObjectState) (*Result, error) {
 	return result, nil
 }
 
-func (d *Differ) getDiffFields(t reflect.Type) map[string]reflect.StructField {
+func (d *Differ) getDiffFields(t reflect.Type) []structField {
 	if v, ok := d.typeCache[typeName(t.Name())]; ok {
 		return v
 	} else {
-		diffFields := make(map[string]reflect.StructField)
+		diffFields := make([]structField, 0)
 		numFields := t.NumField()
 		for i := 0; i < numFields; i++ {
 			fieldType := t.Field(i)
@@ -149,10 +155,11 @@ func (d *Differ) getDiffFields(t reflect.Type) map[string]reflect.StructField {
 			// Field must be marked with tag `diff:"true"`
 			tag := fieldType.Tag.Get("diff")
 			if tag == "true" {
-				diffFields[name] = fieldType
+				diffFields = append(diffFields, structField{name, fieldType})
 			}
 		}
-		d.typeCache[typeName(t.Name())] = diffFields
+		name := typeName(t.Name())
+		d.typeCache[name] = diffFields
 		return diffFields
 	}
 }

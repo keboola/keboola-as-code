@@ -23,15 +23,15 @@ type ObjectState interface {
 	Kind() string
 	LocalState() interface{}
 	RemoteState() interface{}
-	ManifestState() interface{}
-	LocalPath() string
+	Manifest() interface{}
+	RelativePath() string
 }
 
 type BranchState struct {
-	Id       int
-	Remote   *Branch
-	Local    *Branch
-	Manifest *BranchManifest
+	*BranchManifest
+	Id     int
+	Remote *Branch
+	Local  *Branch
 }
 
 type ComponentState struct {
@@ -41,22 +41,22 @@ type ComponentState struct {
 }
 
 type ConfigState struct {
+	*ConfigManifest
 	BranchId    int
 	ComponentId string
 	Id          string
 	Remote      *Config
 	Local       *Config
-	Manifest    *ConfigManifest
 }
 
 type ConfigRowState struct {
+	*ConfigRowManifest
 	BranchId    int
 	ComponentId string
 	ConfigId    string
 	Id          string
 	Remote      *ConfigRow
 	Local       *ConfigRow
-	Manifest    *ConfigRowManifest
 }
 
 type stateValidator struct {
@@ -94,8 +94,8 @@ func (s *State) Validate() *utils.Error {
 	}
 	for _, objectState := range s.All() {
 		v.validate(objectState.Kind(), objectState.RemoteState())
-		v.validate(objectState.Kind(), objectState.LocalPath())
-		v.validate(objectState.Kind()+"manifest record", objectState.ManifestState())
+		v.validate(objectState.Kind(), objectState.RelativePath())
+		v.validate(objectState.Kind()+" manifest record", objectState.Manifest())
 	}
 	return v.error
 }
@@ -191,18 +191,18 @@ func (s *State) SetBranchRemoteState(branch *Branch) {
 	defer s.mutex.Unlock()
 	state := s.getBranchState(branch.Id)
 	state.Remote = branch
-	if state.Manifest == nil {
-		state.Manifest = branch.GenerateManifest()
+	if state.BranchManifest == nil {
+		state.BranchManifest = branch.GenerateManifest()
 	}
 }
 
 func (s *State) SetBranchLocalState(branch *Branch, manifest *BranchManifest) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	s.MarkPathTracked(manifest.MetadataFile)
+	s.MarkPathTracked(manifest.MetadataFilePath())
 	state := s.getBranchState(branch.Id)
 	state.Local = branch
-	state.Manifest = manifest
+	state.BranchManifest = manifest
 }
 
 func (s *State) SetComponentRemoteState(component *Component) {
@@ -218,9 +218,9 @@ func (s *State) SetConfigRemoteState(config *Config) {
 	defer s.mutex.Unlock()
 	state := s.getConfigState(config.BranchId, config.ComponentId, config.Id)
 	state.Remote = config
-	if state.Manifest == nil {
+	if state.ConfigManifest == nil {
 		branch := s.getBranchState(config.BranchId)
-		state.Manifest = config.GenerateManifest(branch.Manifest)
+		state.ConfigManifest = config.GenerateManifest(branch.BranchManifest)
 	}
 }
 
@@ -228,11 +228,11 @@ func (s *State) SetConfigLocalState(config *Config, manifest *ConfigManifest) {
 	config.SortRows()
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	s.MarkPathTracked(manifest.MetadataFile)
-	s.MarkPathTracked(manifest.ConfigFile)
+	s.MarkPathTracked(manifest.MetadataFilePath())
+	s.MarkPathTracked(manifest.ConfigFilePath())
 	state := s.getConfigState(config.BranchId, config.ComponentId, config.Id)
 	state.Local = config
-	state.Manifest = manifest
+	state.ConfigManifest = manifest
 }
 
 func (s *State) SetConfigRowRemoteState(row *ConfigRow) {
@@ -240,20 +240,21 @@ func (s *State) SetConfigRowRemoteState(row *ConfigRow) {
 	defer s.mutex.Unlock()
 	state := s.getConfigRowState(row.BranchId, row.ComponentId, row.ConfigId, row.Id)
 	state.Remote = row
-	if state.Manifest == nil {
+	if state.ConfigRowManifest == nil {
 		config := s.getConfigState(row.BranchId, row.ComponentId, row.ConfigId)
-		state.Manifest = row.GenerateManifest(config.Manifest)
+		state.ConfigRowManifest = row.GenerateManifest(config.ConfigManifest)
+		config.ConfigManifest.Rows = append(config.ConfigManifest.Rows, state.ConfigRowManifest)
 	}
 }
 
 func (s *State) SetConfigRowLocalState(row *ConfigRow, manifest *ConfigRowManifest) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	s.MarkPathTracked(manifest.MetadataFile)
-	s.MarkPathTracked(manifest.ConfigFile)
+	s.MarkPathTracked(manifest.MetadataFilePath())
+	s.MarkPathTracked(manifest.ConfigFilePath())
 	state := s.getConfigRowState(row.BranchId, row.ComponentId, row.ConfigId, row.Id)
 	state.Local = row
-	state.Manifest = manifest
+	state.ConfigRowManifest = manifest
 }
 
 func (s *State) getBranchState(branchId int) *BranchState {
@@ -338,28 +339,16 @@ func (r *ConfigRowState) RemoteState() interface{} {
 	return r.Remote
 }
 
-func (b *BranchState) ManifestState() interface{} {
-	return b.Manifest
+func (b *BranchState) Manifest() interface{} {
+	return b.BranchManifest
 }
 
-func (c *ConfigState) ManifestState() interface{} {
-	return c.Manifest
+func (c *ConfigState) Manifest() interface{} {
+	return c.ConfigManifest
 }
 
-func (r *ConfigRowState) ManifestState() interface{} {
-	return r.Manifest
-}
-
-func (b *BranchState) LocalPath() string {
-	return b.Manifest.RelativePath
-}
-
-func (c *ConfigState) LocalPath() string {
-	return c.Manifest.RelativePath
-}
-
-func (r *ConfigRowState) LocalPath() string {
-	return r.Manifest.RelativePath
+func (r *ConfigRowState) Manifest() interface{} {
+	return r.ConfigRowManifest
 }
 
 func (b *BranchState) CmpValue() string {
