@@ -29,7 +29,7 @@ func TestConfigApiCalls(t *testing.T) {
 		Description:       "Row1 description",
 		ChangeDescription: "Row1 test",
 		IsDisabled:        false,
-		Config: utils.PairsToOrderedMap([]utils.Pair{
+		Content: utils.PairsToOrderedMap([]utils.Pair{
 			{Key: "row1", Value: "value1"},
 		}),
 	}
@@ -38,24 +38,26 @@ func TestConfigApiCalls(t *testing.T) {
 		Description:       "Row2 description",
 		ChangeDescription: "Row2 test",
 		IsDisabled:        true,
-		Config: utils.PairsToOrderedMap([]utils.Pair{
+		Content: utils.PairsToOrderedMap([]utils.Pair{
 			{Key: "row2", Value: "value2"},
 		}),
 	}
-	config := &model.Config{
-		BranchId:          branch.Id,
-		ComponentId:       "ex-generic-v2",
-		Name:              "Test",
-		Description:       "Test description",
-		ChangeDescription: "My test",
-		Config: utils.PairsToOrderedMap([]utils.Pair{
-			{
-				Key: "foo",
-				Value: utils.PairsToOrderedMap([]utils.Pair{
-					{Key: "bar", Value: "baz"},
-				}),
-			},
-		}),
+	config := &model.ConfigWithRows{
+		Config: &model.Config{
+			BranchId:          branch.Id,
+			ComponentId:       "ex-generic-v2",
+			Name:              "Test",
+			Description:       "Test description",
+			ChangeDescription: "My test",
+			Content: utils.PairsToOrderedMap([]utils.Pair{
+				{
+					Key: "foo",
+					Value: utils.PairsToOrderedMap([]utils.Pair{
+						{Key: "bar", Value: "baz"},
+					}),
+				},
+			}),
+		},
 		Rows: []*model.ConfigRow{row1, row2},
 	}
 	resConfig, err := a.CreateConfig(config)
@@ -73,7 +75,7 @@ func TestConfigApiCalls(t *testing.T) {
 	config.Name = "Test modified"
 	config.Description = "Test description modified"
 	config.ChangeDescription = "updated"
-	config.Config = utils.PairsToOrderedMap([]utils.Pair{
+	config.Content = utils.PairsToOrderedMap([]utils.Pair{
 		{
 			Key: "foo",
 			Value: utils.PairsToOrderedMap([]utils.Pair{
@@ -81,9 +83,9 @@ func TestConfigApiCalls(t *testing.T) {
 			}),
 		},
 	})
-	resConfig, err = a.UpdateConfig(config, []string{"name", "description", "changeDescription", "configuration"})
+	resConfigUpdate, err := a.UpdateConfig(config.Config, []string{"name", "description", "changeDescription", "configuration"})
 	assert.NoError(t, err)
-	assert.Same(t, config, resConfig)
+	assert.Same(t, config.Config, resConfigUpdate)
 
 	// List components
 	components, err = a.ListComponents(branch.Id)

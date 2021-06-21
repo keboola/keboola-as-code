@@ -46,7 +46,7 @@ type Component struct {
 type ComponentWithConfigs struct {
 	BranchId int `json:"branchId" validate:"required"` // not present in API response, must be set manually
 	*Component
-	Configs []*Config `json:"configurations" validate:"required"`
+	Configs []*ConfigWithRows `json:"configurations" validate:"required"`
 }
 
 // Config https://keboola.docs.apiary.io/#reference/components-and-configurations/component-configurations/list-configurations
@@ -57,11 +57,15 @@ type Config struct {
 	Name              string                 `json:"name" validate:"required" diff:"true" metaFile:"true"`
 	Description       string                 `json:"description" diff:"true" metaFile:"true"`
 	ChangeDescription string                 `json:"changeDescription"`
-	Config            *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
-	Rows              []*ConfigRow           `json:"rows"`
+	Content           *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
 }
 
-func (c *Config) SortRows() {
+type ConfigWithRows struct {
+	*Config
+	Rows []*ConfigRow `json:"rows"`
+}
+
+func (c *ConfigWithRows) SortRows() {
 	sort.SliceStable(c.Rows, func(i, j int) bool {
 		return c.Rows[i].Name < c.Rows[j].Name
 	})
@@ -77,7 +81,7 @@ type ConfigRow struct {
 	Description       string                 `json:"description" diff:"true" metaFile:"true"`
 	ChangeDescription string                 `json:"changeDescription"`
 	IsDisabled        bool                   `json:"isDisabled" diff:"true" metaFile:"true"`
-	Config            *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
+	Content           *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
 }
 
 // Job - Storage API job

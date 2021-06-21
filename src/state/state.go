@@ -41,6 +41,7 @@ func loadLocalState(target *model.State, logger *zap.SugaredLogger, api *remote.
 			return fmt.Errorf("cannot load project local state: %s", localErrors)
 		} else {
 			logger.Debugf("Project local state successfully loaded.")
+			logger.Debugf("%d", len(target.All()))
 		}
 		return nil
 	}

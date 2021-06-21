@@ -1,0 +1,101 @@
+{
+  "Branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true
+      },
+      "configs": [
+        {
+          "componentId": "ex-generic-v2",
+          "name": "empty",
+          "configuration": {},
+          "rows": null
+        }
+      ]
+    },
+    {
+      "branch": {
+        "name": "Foo",
+        "description": "",
+        "isDefault": false
+      },
+      "configs": [
+        {
+          "componentId": "ex-generic-v2",
+          "name": "empty",
+          "configuration": {},
+          "rows": null
+        },
+        {
+          "componentId": "keboola.ex-db-mysql",
+          "name": "with-rows",
+          "configuration": {
+            "parameters": {
+              "db": {
+                "host": "mysql.example.com"
+              }
+            }
+          },
+          "rows": [
+            {
+              "name": "disabled",
+              "isDisabled": true,
+              "configuration": {
+                "parameters": {
+                  "incremental": false
+                }
+              }
+            },
+            {
+              "name": "test_view",
+              "isDisabled": false,
+              "configuration": {
+                "parameters": {
+                  "incremental": false
+                }
+              }
+            },
+            {
+              "name": "users",
+              "isDisabled": false,
+              "configuration": {
+                "parameters": {
+                  "incremental": false
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "branch": {
+        "name": "Bar",
+        "description": "",
+        "isDefault": false
+      },
+      "configs": [
+        {
+          "componentId": "ex-generic-v2",
+          "name": "empty",
+          "configuration": {},
+          "rows": null
+        },
+        {
+          "componentId": "ex-generic-v2",
+          "name": "without-rows",
+          "configuration": {
+            "parameters": {
+              "api": {
+                "baseUrl": "https://jsonplaceholder.typicode.com"
+              }
+            }
+          },
+          "rows": null
+        }
+      ]
+    }
+  ]
+}

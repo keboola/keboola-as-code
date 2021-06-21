@@ -41,6 +41,7 @@ func TestLoadLocalStateComplex(t *testing.T) {
 	assert.Equal(t, 0, err.Len())
 	assert.Equal(t, complexLocalExpectedBranches(), state.Branches())
 	assert.Equal(t, complexLocalExpectedConfigs(), state.Configs())
+	assert.Equal(t, complexLocalExpectedConfigRows(), state.ConfigRows())
 	assert.Equal(t, []string{
 		"123-branch/keboola.ex-db-mysql/untrackedDir",
 		"123-branch/keboola.ex-db-mysql/untrackedDir/untracked2",
@@ -188,7 +189,6 @@ func loadLocalTestState(t *testing.T, projectDirName string) (*model.State, *uti
 func complexLocalExpectedBranches() []*model.BranchState {
 	return []*model.BranchState{
 		{
-			Id: 111,
 			Local: &model.Branch{
 				Id:          111,
 				Name:        "Main",
@@ -204,7 +204,6 @@ func complexLocalExpectedBranches() []*model.BranchState {
 			},
 		},
 		{
-			Id: 123,
 			Local: &model.Branch{
 				Id:          123,
 				Name:        "Branch",
@@ -225,9 +224,6 @@ func complexLocalExpectedBranches() []*model.BranchState {
 func complexLocalExpectedConfigs() []*model.ConfigState {
 	return []*model.ConfigState{
 		{
-			BranchId:    111,
-			ComponentId: "keboola.ex-generic",
-			Id:          "456",
 			Local: &model.Config{
 				BranchId:          111,
 				ComponentId:       "keboola.ex-generic",
@@ -235,13 +231,13 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 				Name:              "todos",
 				Description:       "todos config",
 				ChangeDescription: "",
-				Config: utils.PairsToOrderedMap([]utils.Pair{
+				Content: utils.PairsToOrderedMap([]utils.Pair{
 					{
 						Key: "parameters",
-						Value: utils.PairsToOrderedMap([]utils.Pair{
+						Value: *utils.PairsToOrderedMap([]utils.Pair{
 							{
 								Key: "api",
-								Value: utils.PairsToOrderedMap([]utils.Pair{
+								Value: *utils.PairsToOrderedMap([]utils.Pair{
 									{
 										Key:   "baseUrl",
 										Value: "https://jsonplaceholder.typicode.com",
@@ -251,23 +247,18 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 						}),
 					},
 				}),
-				Rows: []*model.ConfigRow{},
 			},
 			ConfigManifest: &model.ConfigManifest{
+				BranchId:    111,
+				ComponentId: "keboola.ex-generic",
+				Id:          "456",
 				ManifestPaths: model.ManifestPaths{
 					Path:       "keboola.ex-generic/456-todos",
 					ParentPath: "main",
 				},
-				BranchId:    111,
-				ComponentId: "keboola.ex-generic",
-				Id:          "456",
-				Rows:        []*model.ConfigRowManifest{},
 			},
 		},
 		{
-			BranchId:    123,
-			ComponentId: "keboola.ex-db-mysql",
-			Id:          "896",
 			Local: &model.Config{
 				BranchId:          123,
 				ComponentId:       "keboola.ex-db-mysql",
@@ -275,117 +266,34 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 				Name:              "tables",
 				Description:       "tables config",
 				ChangeDescription: "",
-				Config: utils.PairsToOrderedMap([]utils.Pair{
+				Content: utils.PairsToOrderedMap([]utils.Pair{
 					{
 						Key: "parameters",
-						Value: utils.PairsToOrderedMap([]utils.Pair{
-							{Key: "incremental", Value: "false"},
+						Value: *utils.PairsToOrderedMap([]utils.Pair{
+							{
+								Key: "db",
+								Value: *utils.PairsToOrderedMap([]utils.Pair{
+									{
+										Key:   "host",
+										Value: "mysql.example.com",
+									},
+								}),
+							},
 						}),
 					},
 				}),
-				Rows: []*model.ConfigRow{
-					{
-						BranchId:          123,
-						ComponentId:       "keboola.ex-db-mysql",
-						ConfigId:          "896",
-						Id:                "56",
-						Name:              "disabled",
-						Description:       "",
-						ChangeDescription: "",
-						IsDisabled:        true,
-						Config: utils.PairsToOrderedMap([]utils.Pair{
-							{
-								Key: "parameters",
-								Value: utils.PairsToOrderedMap([]utils.Pair{
-									{Key: "incremental", Value: "false"},
-								}),
-							},
-						}),
-					},
-					{
-						BranchId:          123,
-						ComponentId:       "keboola.ex-db-mysql",
-						ConfigId:          "896",
-						Id:                "34",
-						Name:              "test_view",
-						Description:       "row description",
-						ChangeDescription: "",
-						IsDisabled:        false,
-						Config: utils.PairsToOrderedMap([]utils.Pair{
-							{
-								Key: "parameters",
-								Value: utils.PairsToOrderedMap([]utils.Pair{
-									{Key: "incremental", Value: "false"},
-								}),
-							},
-						}),
-					},
-					{
-						BranchId:          123,
-						ComponentId:       "keboola.ex-db-mysql",
-						ConfigId:          "896",
-						Id:                "12",
-						Name:              "users",
-						Description:       "",
-						ChangeDescription: "",
-						IsDisabled:        false,
-						Config: utils.PairsToOrderedMap([]utils.Pair{
-							{
-								Key: "parameters",
-								Value: utils.PairsToOrderedMap([]utils.Pair{
-									{Key: "incremental", Value: "false"},
-								}),
-							},
-						}),
-					},
-				},
 			},
 			ConfigManifest: &model.ConfigManifest{
+				BranchId:    123,
+				ComponentId: "keboola.ex-db-mysql",
+				Id:          "896",
 				ManifestPaths: model.ManifestPaths{
 					Path:       "keboola.ex-db-mysql/896-tables",
 					ParentPath: "123-branch",
 				},
-				BranchId:    123,
-				ComponentId: "keboola.ex-db-mysql",
-				Id:          "896",
-				Rows: []*model.ConfigRowManifest{
-					{
-						ManifestPaths: model.ManifestPaths{
-							Path:       "12-users",
-							ParentPath: "123-branch/keboola.ex-db-mysql/896-tables/rows",
-						},
-						Id:          "12",
-						BranchId:    123,
-						ComponentId: "keboola.ex-db-mysql",
-						ConfigId:    "896",
-					},
-					{
-						ManifestPaths: model.ManifestPaths{
-							Path:       "34-test-view",
-							ParentPath: "123-branch/keboola.ex-db-mysql/896-tables/rows",
-						},
-						Id:          "34",
-						BranchId:    123,
-						ComponentId: "keboola.ex-db-mysql",
-						ConfigId:    "896",
-					},
-					{
-						ManifestPaths: model.ManifestPaths{
-							Path:       "56-disabled",
-							ParentPath: "123-branch/keboola.ex-db-mysql/896-tables/rows",
-						},
-						Id:          "56",
-						BranchId:    123,
-						ComponentId: "keboola.ex-db-mysql",
-						ConfigId:    "896",
-					},
-				},
 			},
 		},
 		{
-			BranchId:    123,
-			ComponentId: "keboola.ex-generic",
-			Id:          "456",
 			Local: &model.Config{
 				BranchId:          123,
 				ComponentId:       "keboola.ex-generic",
@@ -393,13 +301,13 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 				Name:              "todos",
 				Description:       "todos config",
 				ChangeDescription: "",
-				Config: utils.PairsToOrderedMap([]utils.Pair{
+				Content: utils.PairsToOrderedMap([]utils.Pair{
 					{
 						Key: "parameters",
-						Value: utils.PairsToOrderedMap([]utils.Pair{
+						Value: *utils.PairsToOrderedMap([]utils.Pair{
 							{
 								Key: "api",
-								Value: utils.PairsToOrderedMap([]utils.Pair{
+								Value: *utils.PairsToOrderedMap([]utils.Pair{
 									{
 										Key:   "baseUrl",
 										Value: "https://jsonplaceholder.typicode.com",
@@ -409,17 +317,110 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 						}),
 					},
 				}),
-				Rows: []*model.ConfigRow{},
 			},
 			ConfigManifest: &model.ConfigManifest{
+				BranchId:    123,
+				ComponentId: "keboola.ex-generic",
+				Id:          "456",
 				ManifestPaths: model.ManifestPaths{
 					Path:       "keboola.ex-generic/456-todos",
 					ParentPath: "123-branch",
 				},
+			},
+		},
+	}
+}
+
+func complexLocalExpectedConfigRows() []*model.ConfigRowState {
+	return []*model.ConfigRowState{
+		{
+			Local: &model.ConfigRow{
+				BranchId:          123,
+				ComponentId:       "keboola.ex-db-mysql",
+				ConfigId:          "896",
+				Id:                "56",
+				Name:              "disabled",
+				Description:       "",
+				ChangeDescription: "",
+				IsDisabled:        true,
+				Content: utils.PairsToOrderedMap([]utils.Pair{
+					{
+						Key: "parameters",
+						Value: *utils.PairsToOrderedMap([]utils.Pair{
+							{Key: "incremental", Value: false},
+						}),
+					},
+				}),
+			},
+			ConfigRowManifest: &model.ConfigRowManifest{
+				Id:          "56",
 				BranchId:    123,
-				ComponentId: "keboola.ex-generic",
-				Id:          "456",
-				Rows:        []*model.ConfigRowManifest{},
+				ComponentId: "keboola.ex-db-mysql",
+				ConfigId:    "896",
+				ManifestPaths: model.ManifestPaths{
+					Path:       "56-disabled",
+					ParentPath: "123-branch/keboola.ex-db-mysql/896-tables/rows",
+				},
+			},
+		},
+		{
+			Local: &model.ConfigRow{
+				BranchId:          123,
+				ComponentId:       "keboola.ex-db-mysql",
+				ConfigId:          "896",
+				Id:                "34",
+				Name:              "test_view",
+				Description:       "row description",
+				ChangeDescription: "",
+				IsDisabled:        false,
+				Content: utils.PairsToOrderedMap([]utils.Pair{
+					{
+						Key: "parameters",
+						Value: *utils.PairsToOrderedMap([]utils.Pair{
+							{Key: "incremental", Value: false},
+						}),
+					},
+				}),
+			},
+			ConfigRowManifest: &model.ConfigRowManifest{
+				Id:          "34",
+				BranchId:    123,
+				ComponentId: "keboola.ex-db-mysql",
+				ConfigId:    "896",
+				ManifestPaths: model.ManifestPaths{
+					Path:       "34-test-view",
+					ParentPath: "123-branch/keboola.ex-db-mysql/896-tables/rows",
+				},
+			},
+		},
+		{
+			Local: &model.ConfigRow{
+				BranchId:          123,
+				ComponentId:       "keboola.ex-db-mysql",
+				ConfigId:          "896",
+				Id:                "12",
+				Name:              "users",
+				Description:       "",
+				ChangeDescription: "",
+				IsDisabled:        false,
+				Content: utils.PairsToOrderedMap([]utils.Pair{
+					{
+						Key: "parameters",
+						Value: *utils.PairsToOrderedMap([]utils.Pair{
+							{Key: "incremental", Value: false},
+						}),
+					},
+				}),
+			},
+			ConfigRowManifest: &model.ConfigRowManifest{
+				Id:          "12",
+				BranchId:    123,
+				ComponentId: "keboola.ex-db-mysql",
+				ConfigId:    "896",
+				ManifestPaths: model.ManifestPaths{
+					Path:       "12-users",
+					ParentPath: "123-branch/keboola.ex-db-mysql/896-tables/rows",
+				},
 			},
 		},
 	}

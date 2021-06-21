@@ -10,7 +10,7 @@ import (
 
 type test struct {
 	json string
-	data *Manifest
+	data *ManifestContent
 }
 
 var cases = []test{
@@ -30,7 +30,7 @@ func TestNewManifest(t *testing.T) {
 	assert.NotNil(t, manifest)
 }
 
-func TestLoadNotFound(t *testing.T) {
+func TestManifestLoadNotFound(t *testing.T) {
 	projectDir := t.TempDir()
 	metadataDir := filepath.Join(projectDir, MetadataDir)
 	assert.NoError(t, os.MkdirAll(metadataDir, 0650))
@@ -42,7 +42,7 @@ func TestLoadNotFound(t *testing.T) {
 	assert.Equal(t, `manifest ".keboola/manifest.json" not found`, err.Error())
 }
 
-func TestLoad(t *testing.T) {
+func TestManifestLoad(t *testing.T) {
 	for _, c := range cases {
 		projectDir := t.TempDir()
 		metadataDir := filepath.Join(projectDir, MetadataDir)
@@ -58,25 +58,32 @@ func TestLoad(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Assert
-		manifest.ProjectDir = "foo"
-		manifest.MetadataDir = "bar"
-		manifest.Path = ""
-		c.data.Path = ""
-		assert.Equal(t, c.data, manifest)
+		assert.Equal(t, c.data, manifest.Content)
 	}
 }
 
-func TestSave(t *testing.T) {
+func TestManifestSave(t *testing.T) {
+	logger, _ := utils.NewDebugLogger()
 	for _, c := range cases {
 		projectDir := t.TempDir()
 		metadataDir := filepath.Join(projectDir, MetadataDir)
 		assert.NoError(t, os.MkdirAll(metadataDir, 0655))
 		path := filepath.Join(metadataDir, ManifestFileName)
 
+		// Create
+		m := newManifest(c.data.Version, c.data.Project.ApiHost, projectDir, metadataDir)
+		m.Content.Project.Id = c.data.Project.Id
+		for _, branch := range c.data.Branches {
+			assert.NoError(t, m.SaveModel(branch, utils.EmptyOrderedMap(), logger))
+		}
+		for _, config := range c.data.Configs {
+			assert.NoError(t, m.SaveModel(config.ConfigManifest, utils.EmptyOrderedMap(), logger))
+			for _, row := range config.Rows {
+				assert.NoError(t, m.SaveModel(row, utils.EmptyOrderedMap(), logger))
+			}
+		}
+
 		// Save
-		m := c.data
-		m.ProjectDir = projectDir
-		m.MetadataDir = metadataDir
 		assert.NoError(t, m.Save())
 
 		// Load file
@@ -86,8 +93,8 @@ func TestSave(t *testing.T) {
 	}
 }
 
-func TestValidateEmpty(t *testing.T) {
-	m := &Manifest{ProjectDir: "foo", MetadataDir: "bar"}
+func TestManifestValidateEmpty(t *testing.T) {
+	m := &Manifest{ProjectDir: "foo", MetadataDir: "bar", Content: &ManifestContent{}}
 	err := m.validate()
 	assert.NotNil(t, err)
 	expected := `manifest is not valid: 
@@ -96,21 +103,24 @@ func TestValidateEmpty(t *testing.T) {
 	assert.Equal(t, expected, err.Error())
 }
 
-func TestValidateMinimal(t *testing.T) {
-	m := minimalStruct()
+func TestManifestValidateMinimal(t *testing.T) {
+	m := newManifest(0, "", "foo", "bar")
+	m.Content = minimalStruct()
 	err := m.validate()
 	assert.Nil(t, err)
 }
 
-func TestValidateFull(t *testing.T) {
-	m := fullStruct()
+func TestManifestValidateFull(t *testing.T) {
+	m := newManifest(0, "", "foo", "bar")
+	m.Content = fullStruct()
 	err := m.validate()
 	assert.Nil(t, err)
 }
 
-func TestValidateBadVersion(t *testing.T) {
-	m := minimalStruct()
-	m.Version = 123
+func TestManifestValidateBadVersion(t *testing.T) {
+	m := newManifest(0, "", "foo", "bar")
+	m.Content = minimalStruct()
+	m.Content.Version = 123
 	err := m.validate()
 	assert.NotNil(t, err)
 	expected := `manifest is not valid: key="version", value="123", failed "max" validation`
@@ -129,17 +139,15 @@ func minimalJson() string {
 }`
 }
 
-func minimalStruct() *Manifest {
-	return &Manifest{
-		ProjectDir:  "foo",
-		MetadataDir: "bar",
-		Version:     1,
+func minimalStruct() *ManifestContent {
+	return &ManifestContent{
+		Version: 1,
 		Project: &ProjectManifest{
 			Id:      12345,
 			ApiHost: "keboola.connection.com",
 		},
 		Branches: make([]*BranchManifest, 0),
-		Configs:  make([]*ConfigManifest, 0),
+		Configs:  make([]*ConfigManifestWithRows, 0),
 	}
 }
 
@@ -197,11 +205,9 @@ func fullJson() string {
 }`
 }
 
-func fullStruct() *Manifest {
-	return &Manifest{
-		ProjectDir:  "foo",
-		MetadataDir: "bar",
-		Version:     1,
+func fullStruct() *ManifestContent {
+	return &ManifestContent{
+		Version: 1,
 		Project: &ProjectManifest{
 			Id:      12345,
 			ApiHost: "keboola.connection.com",
@@ -222,15 +228,17 @@ func fullStruct() *Manifest {
 				Id: 11,
 			},
 		},
-		Configs: []*ConfigManifest{
+		Configs: []*ConfigManifestWithRows{
 			{
-				ManifestPaths: ManifestPaths{
-					Path:       "11-raw-data",
-					ParentPath: "main",
+				ConfigManifest: &ConfigManifest{
+					ManifestPaths: ManifestPaths{
+						Path:       "11-raw-data",
+						ParentPath: "main",
+					},
+					BranchId:    10,
+					ComponentId: "keboola.ex-db-oracle",
+					Id:          "11",
 				},
-				BranchId:    10,
-				ComponentId: "keboola.ex-db-oracle",
-				Id:          "11",
 				Rows: []*ConfigRowManifest{
 					{
 						ManifestPaths: ManifestPaths{
@@ -255,13 +263,15 @@ func fullStruct() *Manifest {
 				},
 			},
 			{
-				ManifestPaths: ManifestPaths{
-					Path:       "12-current-month",
-					ParentPath: "11-dev",
+				ConfigManifest: &ConfigManifest{
+					ManifestPaths: ManifestPaths{
+						Path:       "12-current-month",
+						ParentPath: "11-dev",
+					},
+					BranchId:    11,
+					ComponentId: "keboola.wr-db-mysql",
+					Id:          "12",
 				},
-				BranchId:    11,
-				ComponentId: "keboola.wr-db-mysql",
-				Id:          "12",
 				Rows: []*ConfigRowManifest{
 					{
 						ManifestPaths: ManifestPaths{

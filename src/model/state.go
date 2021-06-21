@@ -29,7 +29,6 @@ type ObjectState interface {
 
 type BranchState struct {
 	*BranchManifest
-	Id     int
 	Remote *Branch
 	Local  *Branch
 }
@@ -42,21 +41,14 @@ type ComponentState struct {
 
 type ConfigState struct {
 	*ConfigManifest
-	BranchId    int
-	ComponentId string
-	Id          string
-	Remote      *Config
-	Local       *Config
+	Remote *Config
+	Local  *Config
 }
 
 type ConfigRowState struct {
 	*ConfigRowManifest
-	BranchId    int
-	ComponentId string
-	ConfigId    string
-	Id          string
-	Remote      *ConfigRow
-	Local       *ConfigRow
+	Remote *ConfigRow
+	Local  *ConfigRow
 }
 
 type stateValidator struct {
@@ -238,9 +230,7 @@ func (s *State) setComponentRemoteState(component *Component) {
 }
 
 func (s *State) SetConfigRemoteState(component *Component, config *Config) {
-	config.SortRows()
 	s.setComponentRemoteState(component)
-
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	state := s.getConfigState(config.BranchId, config.ComponentId, config.Id)
@@ -252,9 +242,7 @@ func (s *State) SetConfigRemoteState(component *Component, config *Config) {
 }
 
 func (s *State) SetConfigLocalState(component *Component, config *Config, manifest *ConfigManifest) {
-	config.SortRows()
 	s.setComponentRemoteState(component)
-
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	s.MarkPathTracked(manifest.MetadataFilePath())
@@ -272,7 +260,6 @@ func (s *State) SetConfigRowRemoteState(row *ConfigRow) {
 	if state.ConfigRowManifest == nil {
 		config := s.getConfigState(row.BranchId, row.ComponentId, row.ConfigId)
 		state.ConfigRowManifest = row.GenerateManifest(config.ConfigManifest)
-		config.ConfigManifest.Rows = append(config.ConfigManifest.Rows, state.ConfigRowManifest)
 	}
 }
 
@@ -289,9 +276,7 @@ func (s *State) SetConfigRowLocalState(row *ConfigRow, manifest *ConfigRowManife
 func (s *State) getBranchState(branchId int) *BranchState {
 	key := fmt.Sprintf("%d", branchId)
 	if _, ok := s.branches[key]; !ok {
-		s.branches[key] = &BranchState{
-			Id: branchId,
-		}
+		s.branches[key] = &BranchState{}
 	}
 	return s.branches[key]
 }
@@ -309,11 +294,7 @@ func (s *State) getComponentState(componentId string) *ComponentState {
 func (s *State) getConfigState(branchId int, componentId, configId string) *ConfigState {
 	key := fmt.Sprintf("%d_%s_%s", branchId, componentId, configId)
 	if _, ok := s.configs[key]; !ok {
-		s.configs[key] = &ConfigState{
-			BranchId:    branchId,
-			ComponentId: componentId,
-			Id:          configId,
-		}
+		s.configs[key] = &ConfigState{}
 	}
 	return s.configs[key]
 }
@@ -321,12 +302,7 @@ func (s *State) getConfigState(branchId int, componentId, configId string) *Conf
 func (s *State) getConfigRowState(branchId int, componentId, configId, rowId string) *ConfigRowState {
 	key := fmt.Sprintf("%d_%s__%s_%s", branchId, componentId, configId, rowId)
 	if _, ok := s.configRows[key]; !ok {
-		s.configRows[key] = &ConfigRowState{
-			BranchId:    branchId,
-			ComponentId: componentId,
-			ConfigId:    configId,
-			Id:          rowId,
-		}
+		s.configRows[key] = &ConfigRowState{}
 	}
 	return s.configRows[key]
 }

@@ -1,55 +1,59 @@
 package state
 
 import (
+	"fmt"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/utils"
 )
 
 func LoadLocalState(state *model.State, manifest *model.Manifest, api *remote.StorageApi) *utils.Error {
-	// Add branches
-	for _, branchManifest := range manifest.Branches {
-		branch, err := branchManifest.ToModel(manifest)
-		if err != nil {
-			state.AddLocalError(err)
-			continue
-		}
-		state.SetBranchLocalState(branch, branchManifest)
-	}
-
-	// Add configs
-	for _, configManifest := range manifest.Configs {
-		config, err := configManifest.ToModel(manifest)
-		if err != nil {
-			state.AddLocalError(err)
-			continue
-		}
-
-		// Load component definition if not present
-		component, found := state.GetComponent(config.ComponentId)
-		if !found {
-			component, err = api.GetComponent(config.ComponentId)
-			if err != nil {
+	for _, key := range manifest.Registry.Keys() {
+		item, _ := manifest.Registry.Get(key)
+		switch itemManifest := item.(type) {
+		// Add branch
+		case *model.BranchManifest:
+			if branch, err := itemManifest.ToModel(manifest); err == nil {
+				state.SetBranchLocalState(branch, itemManifest)
+			} else {
 				state.AddLocalError(err)
-				continue
 			}
-		}
-
-		// Save
-		state.SetConfigLocalState(component, config, configManifest)
-
-		// Add rows
-		for _, rowManifest := range configManifest.Rows {
-			row, err := rowManifest.ToModel(manifest)
-			if err != nil {
+		// Add config
+		case *model.ConfigManifest:
+			if config, err := itemManifest.ToModel(manifest); err == nil {
+				if component, err := getComponent(state, api, config.ComponentId); err == nil {
+					state.SetConfigLocalState(component, config, itemManifest)
+				} else {
+					state.AddLocalError(err)
+				}
+			} else {
 				state.AddLocalError(err)
-				continue
 			}
-			config.Rows = append(config.Rows, row)
-			state.SetConfigRowLocalState(row, rowManifest)
+		// Add config row
+		case *model.ConfigRowManifest:
+			if row, err := itemManifest.ToModel(manifest); err == nil {
+				state.SetConfigRowLocalState(row, itemManifest)
+			} else {
+				state.AddLocalError(err)
+			}
+		default:
+			panic(fmt.Errorf(`unexpected type "%T"`, item))
 		}
-		config.SortRows()
 	}
 
 	return state.LocalErrors()
+}
+
+func getComponent(state *model.State, api *remote.StorageApi, componentId string) (*model.Component, error) {
+	// Load component from state if present
+	if component, found := state.GetComponent(componentId); found {
+		return component, nil
+	}
+
+	// Or by API
+	if component, err := api.GetComponent(componentId); err == nil {
+		return component, nil
+	} else {
+		return nil, err
+	}
 }

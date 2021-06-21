@@ -2,7 +2,6 @@ package state
 
 import (
 	"context"
-	"github.com/iancoleman/orderedmap"
 	"github.com/otiai10/copy"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
@@ -34,7 +33,6 @@ func TestLoadState(t *testing.T) {
 	assert.Empty(t, state.LocalErrors())
 	assert.Equal(t, []*model.BranchState{
 		{
-			Id: cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
 			Remote: &model.Branch{
 				Id:          cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
 				Name:        "Main",
@@ -58,9 +56,6 @@ func TestLoadState(t *testing.T) {
 	}, state.Branches())
 	assert.Equal(t, []*model.ConfigState{
 		{
-			BranchId:    cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
-			ComponentId: "ex-generic-v2",
-			Id:          utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
 			Remote: &model.Config{
 				BranchId:          cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
 				ComponentId:       "ex-generic-v2",
@@ -68,8 +63,7 @@ func TestLoadState(t *testing.T) {
 				Name:              "empty",
 				Description:       "test fixture",
 				ChangeDescription: "created by test",
-				Config:            orderedmap.New(),
-				Rows:              []*model.ConfigRow{},
+				Content:           utils.EmptyOrderedMap(),
 			},
 			Local: &model.Config{
 				BranchId:          cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
@@ -78,13 +72,13 @@ func TestLoadState(t *testing.T) {
 				Name:              "todos",
 				Description:       "todos config",
 				ChangeDescription: "",
-				Config: utils.PairsToOrderedMap([]utils.Pair{
+				Content: utils.PairsToOrderedMap([]utils.Pair{
 					{
 						Key: "parameters",
-						Value: utils.PairsToOrderedMap([]utils.Pair{
+						Value: *utils.PairsToOrderedMap([]utils.Pair{
 							{
 								Key: "api",
-								Value: utils.PairsToOrderedMap([]utils.Pair{
+								Value: *utils.PairsToOrderedMap([]utils.Pair{
 									{
 										Key:   "baseUrl",
 										Value: "https://jsonplaceholder.typicode.com",
@@ -94,7 +88,6 @@ func TestLoadState(t *testing.T) {
 						}),
 					},
 				}),
-				Rows: []*model.ConfigRow{},
 			},
 			ConfigManifest: &model.ConfigManifest{
 				ManifestPaths: model.ManifestPaths{
@@ -104,10 +97,10 @@ func TestLoadState(t *testing.T) {
 				BranchId:    cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
 				ComponentId: "ex-generic-v2",
 				Id:          utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
-				Rows:        []*model.ConfigRowManifest{},
 			},
 		},
 	}, state.Configs())
+	assert.Empty(t, state.ConfigRows())
 }
 
 func initLocalState(t *testing.T, localState string) (string, string) {

@@ -43,9 +43,7 @@ func RunFunctionalTest(t *testing.T, testDir string, binary string) {
 	defer utils.ResetEnv(t, os.Environ())
 
 	// Create runtime dir
-	//workingDir := t.TempDir()
-	workingDir := filepath.Join("/tmp/test-out", t.Name())
-	assert.NoError(t, os.MkdirAll(workingDir, 0650))
+	workingDir := t.TempDir()
 	assert.NoError(t, os.Chdir(workingDir))
 
 	// Copy all from "in" dir to "runtime" dir

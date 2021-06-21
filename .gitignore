@@ -1,6 +1,5 @@
 !.gitkeep
 /.idea
 /.env
-/src/fixtures/remote/current_project_state.json
 go
 target

@@ -52,13 +52,13 @@ func pullCommand(root *rootCommand) *cobra.Command {
 			}
 
 			// Load project remote and local state
-			state, err := state.LoadState(manifest, root.logger, root.ctx, api)
+			s, err := state.LoadState(manifest, root.logger, root.ctx, api)
 			if err != nil {
 				return err
 			}
 
 			// Diff
-			differ := diff.NewDiffer(state)
+			differ := diff.NewDiffer(s)
 			diffResults, err := differ.Diff()
 			if err != nil {
 				return err
@@ -74,7 +74,7 @@ func pullCommand(root *rootCommand) *cobra.Command {
 			if err = manifest.Save(); err != nil {
 				return err
 			}
-			root.logger.Debugf("Saved manifest file \"%s\".", utils.RelPath(projectDir, manifest.Path))
+			root.logger.Debugf("Saved manifest file \"%s\".", utils.RelPath(projectDir, manifest.Path()))
 
 			// Done
 			root.logger.Info("Pull done.")

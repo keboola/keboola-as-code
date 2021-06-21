@@ -4,6 +4,11 @@
     "id": %%TEST_PROJECT_ID%%,
     "apiHost": "%%TEST_KBC_STORAGE_API_HOST%%"
   },
-  "branches": [],
+  "branches": [
+    {
+      "id": %s,
+      "path": "main"
+    }
+  ],
   "configurations": []
 }

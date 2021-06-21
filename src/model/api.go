@@ -8,7 +8,7 @@ import (
 
 func (r *ConfigRow) ToApiValues() (map[string]string, error) {
 	// Encode config
-	configJson, err := json.Encode(r.Config, false)
+	configJson, err := json.Encode(r.Content, false)
 	if err != nil {
 		return nil, fmt.Errorf(`cannot JSON encode config configuration: %s`, err)
 	}
@@ -24,7 +24,7 @@ func (r *ConfigRow) ToApiValues() (map[string]string, error) {
 
 func (c *Config) ToApiValues() (map[string]string, error) {
 	// Encode config
-	configJson, err := json.Encode(c.Config, false)
+	configJson, err := json.Encode(c.Content, false)
 	if err != nil {
 		return nil, fmt.Errorf(`cannot JSON encode config configuration: %s`, err)
 	}

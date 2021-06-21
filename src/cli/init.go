@@ -83,7 +83,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 			if err = manifest.Save(); err != nil {
 				return err
 			}
-			root.logger.Infof("Created manifest file \"%s\".", utils.RelPath(projectDir, manifest.Path))
+			root.logger.Infof("Created manifest file \"%s\".", utils.RelPath(projectDir, manifest.Path()))
 
 			// Create or update ".gitignore"
 			gitignorePath := filepath.Join(projectDir, ".gitignore")
