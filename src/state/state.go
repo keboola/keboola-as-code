@@ -10,7 +10,7 @@ import (
 )
 
 func LoadState(manifest *model.Manifest, logger *zap.SugaredLogger, ctx context.Context, api *remote.StorageApi) (*model.State, error) {
-	state := model.NewState(manifest.ProjectDir)
+	state := model.NewState(manifest.ProjectDir, manifest.Content.Naming)
 	grp, ctx := errgroup.WithContext(ctx)
 	grp.Go(loadRemoteState(state, logger, ctx, api))
 	grp.Go(loadLocalState(state, logger, api, manifest))

@@ -16,7 +16,7 @@ func TestLoadRemoteStateEmpty(t *testing.T) {
 
 	projectDir := t.TempDir()
 	api, _ := remote.TestStorageApiWithToken(t)
-	state := model.NewState(projectDir)
+	state := model.NewState(projectDir, model.DefaultNaming())
 	err := LoadRemoteState(state, context.Background(), api)
 	assert.NotNil(t, state)
 	assert.NotNil(t, err)
@@ -30,7 +30,7 @@ func TestLoadRemoteStateComplex(t *testing.T) {
 
 	projectDir := t.TempDir()
 	api, _ := remote.TestStorageApiWithToken(t)
-	state := model.NewState(projectDir)
+	state := model.NewState(projectDir, model.DefaultNaming())
 	err := LoadRemoteState(state, context.Background(), api)
 	assert.NotNil(t, state)
 	assert.NotNil(t, err)

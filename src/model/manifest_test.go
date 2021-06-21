@@ -99,7 +99,8 @@ func TestManifestValidateEmpty(t *testing.T) {
 	assert.NotNil(t, err)
 	expected := `manifest is not valid: 
 - key="version", value="0", failed "required" validation
-- key="project", value="<nil>", failed "required" validation`
+- key="project", value="<nil>", failed "required" validation
+- key="naming", value="<nil>", failed "required" validation`
 	assert.Equal(t, expected, err.Error())
 }
 
@@ -134,6 +135,11 @@ func minimalJson() string {
     "id": 12345,
     "apiHost": "keboola.connection.com"
   },
+  "naming": {
+    "branch": "{branch_id}-{branch_name}",
+    "config": "{component_type}/{component_id}/{config_id}-{config_name}",
+    "configRow": "{config_row_id}-{config_row_name}"
+  },
   "branches": [],
   "configurations": []
 }`
@@ -146,6 +152,7 @@ func minimalStruct() *ManifestContent {
 			Id:      12345,
 			ApiHost: "keboola.connection.com",
 		},
+		Naming:   DefaultNaming(),
 		Branches: make([]*BranchManifest, 0),
 		Configs:  make([]*ConfigManifestWithRows, 0),
 	}
@@ -157,6 +164,11 @@ func fullJson() string {
   "project": {
     "id": 12345,
     "apiHost": "keboola.connection.com"
+  },
+  "naming": {
+    "branch": "{branch_id}-{branch_name}",
+    "config": "{component_type}/{component_id}/{config_id}-{config_name}",
+    "configRow": "{config_row_id}-{config_row_name}"
   },
   "branches": [
     {
@@ -212,6 +224,7 @@ func fullStruct() *ManifestContent {
 			Id:      12345,
 			ApiHost: "keboola.connection.com",
 		},
+		Naming: DefaultNaming(),
 		Branches: []*BranchManifest{
 			{
 				ManifestPaths: ManifestPaths{

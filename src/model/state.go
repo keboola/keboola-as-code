@@ -13,6 +13,7 @@ type State struct {
 	remoteErrors *utils.Error
 	localErrors  *utils.Error
 	paths        *PathsState
+	naming       *LocalNaming
 	branches     map[string]*BranchState
 	components   map[string]*ComponentState
 	configs      map[string]*ConfigState
@@ -70,11 +71,12 @@ type keyValuePair struct {
 	state ObjectState
 }
 
-func NewState(projectDir string) *State {
+func NewState(projectDir string, naming *LocalNaming) *State {
 	s := &State{
 		mutex:        &sync.Mutex{},
 		remoteErrors: &utils.Error{},
 		localErrors:  &utils.Error{},
+		naming:       naming,
 		branches:     make(map[string]*BranchState),
 		components:   make(map[string]*ComponentState),
 		configs:      make(map[string]*ConfigState),
@@ -209,7 +211,7 @@ func (s *State) SetBranchRemoteState(branch *Branch) {
 	state := s.getBranchState(branch.Id)
 	state.Remote = branch
 	if state.BranchManifest == nil {
-		state.BranchManifest = branch.GenerateManifest()
+		state.BranchManifest = branch.GenerateManifest(s.naming)
 	}
 }
 
@@ -237,7 +239,7 @@ func (s *State) SetConfigRemoteState(component *Component, config *Config) {
 	state.Remote = config
 	if state.ConfigManifest == nil {
 		branch := s.getBranchState(config.BranchId)
-		state.ConfigManifest = config.GenerateManifest(branch.BranchManifest, component)
+		state.ConfigManifest = config.GenerateManifest(s.naming, branch.BranchManifest, component)
 	}
 }
 
@@ -259,7 +261,7 @@ func (s *State) SetConfigRowRemoteState(row *ConfigRow) {
 	state.Remote = row
 	if state.ConfigRowManifest == nil {
 		config := s.getConfigState(row.BranchId, row.ComponentId, row.ConfigId)
-		state.ConfigRowManifest = row.GenerateManifest(config.ConfigManifest)
+		state.ConfigRowManifest = row.GenerateManifest(s.naming, config.ConfigManifest)
 	}
 }
 

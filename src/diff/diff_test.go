@@ -9,7 +9,7 @@ import (
 
 func TestDiffOnlyInLocal(t *testing.T) {
 	projectDir := t.TempDir()
-	state := model.NewState(projectDir)
+	state := model.NewState(projectDir, model.DefaultNaming())
 	branch := &model.Branch{}
 	manifest := &model.BranchManifest{}
 	state.SetBranchLocalState(branch, manifest)
@@ -25,7 +25,7 @@ func TestDiffOnlyInLocal(t *testing.T) {
 
 func TestDiffOnlyInRemote(t *testing.T) {
 	projectDir := t.TempDir()
-	state := model.NewState(projectDir)
+	state := model.NewState(projectDir, model.DefaultNaming())
 	branch := &model.Branch{}
 	state.SetBranchRemoteState(branch)
 	d := NewDiffer(state)
@@ -40,7 +40,7 @@ func TestDiffOnlyInRemote(t *testing.T) {
 
 func TestDiffEqual(t *testing.T) {
 	projectDir := t.TempDir()
-	state := model.NewState(projectDir)
+	state := model.NewState(projectDir, model.DefaultNaming())
 	branchRemote := &model.Branch{
 		Id:          123,
 		Name:        "name",
@@ -69,7 +69,7 @@ func TestDiffEqual(t *testing.T) {
 
 func TestDiffNotEqual(t *testing.T) {
 	projectDir := t.TempDir()
-	state := model.NewState(projectDir)
+	state := model.NewState(projectDir, model.DefaultNaming())
 	branchRemote := &model.Branch{
 		Id:          123,
 		Name:        "name",
@@ -100,7 +100,7 @@ func TestDiffNotEqual(t *testing.T) {
 
 func TestDiffEqualConfig(t *testing.T) {
 	projectDir := t.TempDir()
-	state := model.NewState(projectDir)
+	state := model.NewState(projectDir, model.DefaultNaming())
 	branchRemote := &model.Branch{
 		Id:          123,
 		Name:        "name",
@@ -156,7 +156,7 @@ func TestDiffEqualConfig(t *testing.T) {
 
 func TestDiffNotEqualConfig(t *testing.T) {
 	projectDir := t.TempDir()
-	state := model.NewState(projectDir)
+	state := model.NewState(projectDir, model.DefaultNaming())
 	branchRemote := &model.Branch{
 		Id:          123,
 		Name:        "name",

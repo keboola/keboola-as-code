@@ -1,11 +1,6 @@
 {
   "allBranchesConfigs": [
     "empty",
-    "without-rows",
-    "with-schema",
-    "old-transformation",
-    "python-transformation",
-    "snowflake-transformation"
   ],
   "branches": [
     {
@@ -20,7 +15,8 @@
         "isDefault": false
       },
       "configs": [
-        "with-rows"
+        "old-transformation",
+        "without-rows"
       ]
     },
     {
@@ -29,8 +25,9 @@
         "isDefault": false
       },
       "configs": [
-        "empty",
-        "with-rows"
+        "with-rows",
+        "python-transformation",
+        "snowflake-transformation"
       ]
     }
   ]

@@ -177,7 +177,7 @@ func loadLocalTestState(t *testing.T, projectDirName string) (*model.State, *uti
 	}
 	utils.ReplaceEnvsDir(projectDir)
 
-	state := model.NewState(projectDir)
+	state := model.NewState(projectDir, model.DefaultNaming())
 	manifest, err := model.LoadManifest(projectDir, metadataDir)
 	if err != nil {
 		assert.FailNow(t, err.Error())

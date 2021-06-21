@@ -3,8 +3,6 @@ package model
 import (
 	"fmt"
 	"github.com/iancoleman/orderedmap"
-	"github.com/iancoleman/strcase"
-	"github.com/spf13/cast"
 	"go.uber.org/zap"
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/utils"
@@ -12,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -37,6 +34,7 @@ type Manifest struct {
 type ManifestContent struct {
 	Version  int                       `json:"version" validate:"required,min=1,max=1"`
 	Project  *ProjectManifest          `json:"project" validate:"required"`
+	Naming   *LocalNaming              `json:"naming" validate:"required"`
 	Branches []*BranchManifest         `json:"branches"`
 	Configs  []*ConfigManifestWithRows `json:"configurations"`
 }
@@ -99,6 +97,7 @@ func newManifest(projectId int, apiHost string, projectDir, metadataDir string) 
 		Registry:    utils.EmptyOrderedMap(),
 		Content: &ManifestContent{
 			Version:  1,
+			Naming:   DefaultNaming(),
 			Project:  &ProjectManifest{Id: projectId, ApiHost: apiHost},
 			Branches: make([]*BranchManifest, 0),
 			Configs:  make([]*ConfigManifestWithRows, 0),
@@ -461,28 +460,28 @@ func (r *ConfigRowManifest) ToModel(m *Manifest) (*ConfigRow, error) {
 	return row, nil
 }
 
-func (b *Branch) GenerateManifest() *BranchManifest {
+func (b *Branch) GenerateManifest(naming *LocalNaming) *BranchManifest {
 	manifest := &BranchManifest{Id: b.Id}
 	if b.IsDefault {
 		manifest.Path = "main"
 	} else {
-		manifest.Path = generatePath(cast.ToString(b.Id), b.Name)
+		manifest.Path = naming.BranchPath(b)
 	}
 	manifest.ResolvePaths()
 	return manifest
 }
 
-func (c *Config) GenerateManifest(b *BranchManifest, component *Component) *ConfigManifest {
+func (c *Config) GenerateManifest(naming *LocalNaming, branchManifest *BranchManifest, component *Component) *ConfigManifest {
 	manifest := &ConfigManifest{BranchId: c.BranchId, ComponentId: c.ComponentId, Id: c.Id}
-	manifest.Path = filepath.Join(component.Type, c.ComponentId, generatePath(c.Id, c.Name))
-	manifest.ResolvePaths(b)
+	manifest.Path = naming.ConfigPath(component, c)
+	manifest.ResolvePaths(branchManifest)
 	return manifest
 }
 
-func (r *ConfigRow) GenerateManifest(c *ConfigManifest) *ConfigRowManifest {
+func (r *ConfigRow) GenerateManifest(naming *LocalNaming, configManifest *ConfigManifest) *ConfigRowManifest {
 	manifest := &ConfigRowManifest{BranchId: r.BranchId, ComponentId: r.ComponentId, ConfigId: r.ConfigId, Id: r.Id}
-	manifest.Path = generatePath(r.Id, r.Name)
-	manifest.ResolvePaths(c)
+	manifest.Path = naming.ConfigRowPath(r)
+	manifest.ResolvePaths(configManifest)
 	return manifest
 }
 
@@ -502,11 +501,4 @@ func readJsonFile(projectDir string, path string, v interface{}, errPrefix strin
 		return fmt.Errorf("%s JSON file \"%s\" is invalid: %s", errPrefix, utils.RelPath(projectDir, path), err)
 	}
 	return nil
-}
-
-func generatePath(id string, name string) string {
-	name = regexp.
-		MustCompile(`[^a-zA-Z0-9-]]`).
-		ReplaceAllString(strcase.ToDelimited(name, '-'), "-")
-	return id + "-" + name
 }
