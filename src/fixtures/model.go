@@ -3,6 +3,7 @@ package fixtures
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/iancoleman/orderedmap"
 	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
@@ -30,14 +31,14 @@ type BranchStateConfigName struct {
 type Config struct {
 	ComponentId string                 `json:"componentId" validate:"required"`
 	Name        string                 `json:"name" validate:"required"`
-	Config      map[string]interface{} `json:"configuration"`
+	Config      *orderedmap.OrderedMap `json:"configuration"`
 	Rows        []*ConfigRow           `json:"rows"`
 }
 
 type ConfigRow struct {
 	Name       string                 `json:"name" validate:"required"`
 	IsDisabled bool                   `json:"isDisabled"`
-	Config     map[string]interface{} `json:"configuration"`
+	Config     *orderedmap.OrderedMap `json:"configuration"`
 }
 
 type ProjectState struct {

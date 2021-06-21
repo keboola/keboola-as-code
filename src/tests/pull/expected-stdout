@@ -12,44 +12,46 @@ DEBUG	Project id: "%%TEST_PROJECT_ID%%", project name: "%%TEST_PROJECT_NAME%%".
 DEBUG	Project local state successfully loaded.
 %A
 DEBUG	Project remote state successfully loaded.
-%A
-DEBUG	Recipe for "pull":
+DEBUG	Recipe for "pull" operation:
 DEBUG	+  B main
-DEBUG	+  C main/%s-empty
-DEBUG	+  C main/%s-without-rows
-DEBUG	+  C main/%s-with-schema
-DEBUG	+  R main/%s-with-schema/rows/720726947-row-1
-DEBUG	+  R main/%s-with-schema/rows/720726948-row-2
-DEBUG	+  C main/%s-python-transformation
-DEBUG	+  C main/%s-snowflake-transformation
-DEBUG	+  C main/%s-old-transformation
-DEBUG	+  R main/%s-old-transformation/rows/720726946-old-transformation-snfk
+DEBUG	+  C main/extractor/ex-generic-v2/%s-%s
+DEBUG	+  C main/extractor/ex-generic-v2/%s-%s
+DEBUG	+  C main/extractor/keboola.ex-azure-cost-management-sp/%s-with-schema
+DEBUG	+  C main/extractor/keboola.ex-azure-cost-management-sp/%s-with-schema/rows/%s-%s
+DEBUG	+  C main/extractor/keboola.ex-azure-cost-management-sp/%s-with-schema/rows/%s-%s
+DEBUG	+  C main/transformation/keboola.python-transformation-v2/%s-python-transformation
+DEBUG	+  C main/transformation/keboola.snowflake-transformation/%s-snowflake-transformation
+DEBUG	+  C main/other/transformation/%s-old-transformation
+DEBUG	+  C main/other/transformation/%s-old-transformation/rows/%s-old-transformation-snfk
 DEBUG	+  B %s-foo
-DEBUG	+  C %s-foo/%s-empty
-DEBUG	+  C %s-foo/%s-without-rows
-DEBUG	+  C %s-foo/%s-with-schema
-DEBUG	+  R %s-foo/%s-with-schema/rows/%s-row-1
-DEBUG	+  R %s-foo/%s-with-schema/rows/%s-row-2
-DEBUG	+  C %s-foo/%s-with-rows
-DEBUG	+  R %s-foo/%s-with-rows/rows/%s-disabled
-DEBUG	+  R %s-foo/%s-with-rows/rows/%s-test-view
-DEBUG	+  R %s-foo/%s-with-rows/rows/%s-users
-DEBUG	+  C %s-foo/%s-python-transformation
-DEBUG	+  C %s-foo/%s-snowflake-transformation
-DEBUG	+  C %s-foo/%s-old-transformation
-DEBUG	+  R %s-foo/%s-old-transformation/rows/720726946-old-transformation-snfk
+DEBUG	+  C %s-foo/extractor/ex-generic-v2/%s-%s
+DEBUG	+  C %s-foo/extractor/ex-generic-v2/%s-%s
+DEBUG	+  C %s-foo/extractor/keboola.ex-azure-cost-management-sp/%s-with-schema
+DEBUG	+  C %s-foo/extractor/keboola.ex-azure-cost-management-sp/%s-with-schema/rows/%s-%s
+DEBUG	+  C %s-foo/extractor/keboola.ex-azure-cost-management-sp/%s-with-schema/rows/%s-%s
+DEBUG	+  C %s-foo/extractor/keboola.ex-db-mysql/%s-with-rows
+DEBUG	+  C %s-foo/extractor/keboola.ex-db-mysql/%s-with-rows/rows/%s-%s
+DEBUG	+  C %s-foo/extractor/keboola.ex-db-mysql/%s-with-rows/rows/%s-%s
+DEBUG	+  C %s-foo/extractor/keboola.ex-db-mysql/%s-with-rows/rows/%s-%s
+DEBUG	+  C %s-foo/transformation/keboola.python-transformation-v2/%s-python-transformation
+DEBUG	+  C %s-foo/transformation/keboola.snowflake-transformation/%s-snowflake-transformation
+DEBUG	+  C %s-foo/other/transformation/%s-old-transformation
+DEBUG	+  C %s-foo/other/transformation/%s-old-transformation/rows/%s-old-transformation-snfk
 DEBUG	+  B %s-bar
-DEBUG	+  C %s-bar/%s-empty
-DEBUG	+  C %s-bar/%s-without-rows
-DEBUG	+  C %s-bar/%s-empty
-DEBUG	+  C %s-bar/%s-with-schema
-DEBUG	+  R %s-bar/%s-with-schema/rows/%s-row-1
-DEBUG	+  R %s-bar/%s-with-schema/rows/%s-row-2
-DEBUG	+  C %s-bar/%s-with-rows
-DEBUG	+  R %s-bar/%s-with-rows/rows/%s-disabled
-DEBUG	+  R %s-bar/%s-with-rows/rows/%s-test-view
-DEBUG	+  R %s-bar/%s-with-rows/rows/%s-users
-DEBUG	+  C %s-bar/%s-python-transformation
-DEBUG	+  C %s-bar/%s-snowflake-transformation
-DEBUG	+  C %s-bar/%s-old-transformation
-DEBUG	+  R %s-bar/%s-old-transformation/rows/%s-old-transformation-snfk
+DEBUG	+  C %s-bar/extractor/ex-generic-v2/%s-%s
+DEBUG	+  C %s-bar/extractor/ex-generic-v2/%s-%s
+DEBUG	+  C %s-bar/extractor/ex-generic-v2/%s-%s
+DEBUG	+  C %s-bar/extractor/keboola.ex-azure-cost-management-sp/%s-with-schema
+DEBUG	+  C %s-bar/extractor/keboola.ex-azure-cost-management-sp/%s-with-schema/rows/%s-%s
+DEBUG	+  C %s-bar/extractor/keboola.ex-azure-cost-management-sp/%s-with-schema/rows/%s-%s
+DEBUG	+  C %s-bar/extractor/keboola.ex-db-mysql/%s-with-rows
+DEBUG	+  C %s-bar/extractor/keboola.ex-db-mysql/%s-with-rows/rows/%s-%s
+DEBUG	+  C %s-bar/extractor/keboola.ex-db-mysql/%s-with-rows/rows/%s-%s
+DEBUG	+  C %s-bar/extractor/keboola.ex-db-mysql/%s-with-rows/rows/%s-%s
+DEBUG	+  C %s-bar/transformation/keboola.python-transformation-v2/%s-python-transformation
+DEBUG	+  C %s-bar/transformation/keboola.snowflake-transformation/%s-snowflake-transformation
+DEBUG	+  C %s-bar/other/transformation/%s-old-transformation
+DEBUG	+  C %s-bar/other/transformation/%s-old-transformation/rows/%s-old-transformation-snfk
+%A
+DEBUG	Saved manifest file ".keboola/manifest.json".
+INFO	Pull done.

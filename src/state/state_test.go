@@ -2,6 +2,7 @@ package state
 
 import (
 	"context"
+	"github.com/iancoleman/orderedmap"
 	"github.com/otiai10/copy"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
@@ -67,7 +68,7 @@ func TestLoadState(t *testing.T) {
 				Name:              "empty",
 				Description:       "test fixture",
 				ChangeDescription: "created by test",
-				Config:            map[string]interface{}{},
+				Config:            orderedmap.New(),
 				Rows:              []*model.ConfigRow{},
 			},
 			Local: &model.Config{
@@ -77,13 +78,22 @@ func TestLoadState(t *testing.T) {
 				Name:              "todos",
 				Description:       "todos config",
 				ChangeDescription: "",
-				Config: map[string]interface{}{
-					"parameters": map[string]interface{}{
-						"api": map[string]interface{}{
-							"baseUrl": "https://jsonplaceholder.typicode.com",
-						},
+				Config: utils.PairsToOrderedMap([]utils.Pair{
+					{
+						Key: "parameters",
+						Value: utils.PairsToOrderedMap([]utils.Pair{
+							{
+								Key: "api",
+								Value: utils.PairsToOrderedMap([]utils.Pair{
+									{
+										Key:   "baseUrl",
+										Value: "https://jsonplaceholder.typicode.com",
+									},
+								}),
+							},
+						}),
 					},
-				},
+				}),
 				Rows: []*model.ConfigRow{},
 			},
 			ConfigManifest: &model.ConfigManifest{

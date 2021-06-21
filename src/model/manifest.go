@@ -291,7 +291,7 @@ func (m *Manifest) toMetadataFile(model interface{}) *orderedmap.OrderedMap {
 	return target
 }
 
-func (m *Manifest) toConfigFile(model interface{}) map[string]interface{} {
+func (m *Manifest) toConfigFile(model interface{}) *orderedmap.OrderedMap {
 	modelType := reflect.TypeOf(model).Elem()
 	modelValue := reflect.ValueOf(model).Elem()
 	fields := utils.GetFieldsWithTag("configFile", "true", modelType, model)
@@ -304,7 +304,7 @@ func (m *Manifest) toConfigFile(model interface{}) map[string]interface{} {
 	}
 
 	// Ok, return map
-	return modelValue.FieldByName(fields[0].Name).Interface().(map[string]interface{})
+	return modelValue.FieldByName(fields[0].Name).Interface().(*orderedmap.OrderedMap)
 }
 
 func (o ManifestPaths) Paths() ManifestPaths {

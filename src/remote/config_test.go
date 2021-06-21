@@ -29,18 +29,18 @@ func TestConfigApiCalls(t *testing.T) {
 		Description:       "Row1 description",
 		ChangeDescription: "Row1 test",
 		IsDisabled:        false,
-		Config: map[string]interface{}{
-			"row1": "value1",
-		},
+		Config: utils.PairsToOrderedMap([]utils.Pair{
+			{Key: "row1", Value: "value1"},
+		}),
 	}
 	row2 := &model.ConfigRow{
 		Name:              "Row2",
 		Description:       "Row2 description",
 		ChangeDescription: "Row2 test",
 		IsDisabled:        true,
-		Config: map[string]interface{}{
-			"row1": "value1",
-		},
+		Config: utils.PairsToOrderedMap([]utils.Pair{
+			{Key: "row2", Value: "value2"},
+		}),
 	}
 	config := &model.Config{
 		BranchId:          branch.Id,
@@ -48,11 +48,14 @@ func TestConfigApiCalls(t *testing.T) {
 		Name:              "Test",
 		Description:       "Test description",
 		ChangeDescription: "My test",
-		Config: map[string]interface{}{
-			"foo": map[string]interface{}{
-				"bar": "baz",
+		Config: utils.PairsToOrderedMap([]utils.Pair{
+			{
+				Key: "foo",
+				Value: utils.PairsToOrderedMap([]utils.Pair{
+					{Key: "bar", Value: "baz"},
+				}),
 			},
-		},
+		}),
 		Rows: []*model.ConfigRow{row1, row2},
 	}
 	resConfig, err := a.CreateConfig(config)
@@ -70,11 +73,14 @@ func TestConfigApiCalls(t *testing.T) {
 	config.Name = "Test modified"
 	config.Description = "Test description modified"
 	config.ChangeDescription = "updated"
-	config.Config = map[string]interface{}{
-		"foo": map[string]interface{}{
-			"bar": "modified",
+	config.Config = utils.PairsToOrderedMap([]utils.Pair{
+		{
+			Key: "foo",
+			Value: utils.PairsToOrderedMap([]utils.Pair{
+				{Key: "bar", Value: "modified"},
+			}),
 		},
-	}
+	})
 	resConfig, err = a.UpdateConfig(config, []string{"name", "description", "changeDescription", "configuration"})
 	assert.NoError(t, err)
 	assert.Same(t, config, resConfig)
@@ -142,7 +148,7 @@ func expectedComponentsConfigTest() string {
             "changeDescription": "Row2 test",
             "isDisabled": true,
             "configuration": {
-              "row1": "value1"
+              "row2": "value2"
             }
           }
         ]

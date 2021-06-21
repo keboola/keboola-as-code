@@ -235,13 +235,22 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 				Name:              "todos",
 				Description:       "todos config",
 				ChangeDescription: "",
-				Config: map[string]interface{}{
-					"parameters": map[string]interface{}{
-						"api": map[string]interface{}{
-							"baseUrl": "https://jsonplaceholder.typicode.com",
-						},
+				Config: utils.PairsToOrderedMap([]utils.Pair{
+					{
+						Key: "parameters",
+						Value: utils.PairsToOrderedMap([]utils.Pair{
+							{
+								Key: "api",
+								Value: utils.PairsToOrderedMap([]utils.Pair{
+									{
+										Key:   "baseUrl",
+										Value: "https://jsonplaceholder.typicode.com",
+									},
+								}),
+							},
+						}),
 					},
-				},
+				}),
 				Rows: []*model.ConfigRow{},
 			},
 			ConfigManifest: &model.ConfigManifest{
@@ -266,13 +275,14 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 				Name:              "tables",
 				Description:       "tables config",
 				ChangeDescription: "",
-				Config: map[string]interface{}{
-					"parameters": map[string]interface{}{
-						"db": map[string]interface{}{
-							"host": "mysql.example.com",
-						},
+				Config: utils.PairsToOrderedMap([]utils.Pair{
+					{
+						Key: "parameters",
+						Value: utils.PairsToOrderedMap([]utils.Pair{
+							{Key: "incremental", Value: "false"},
+						}),
 					},
-				},
+				}),
 				Rows: []*model.ConfigRow{
 					{
 						BranchId:          123,
@@ -283,11 +293,14 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 						Description:       "",
 						ChangeDescription: "",
 						IsDisabled:        true,
-						Config: map[string]interface{}{
-							"parameters": map[string]interface{}{
-								"incremental": false,
+						Config: utils.PairsToOrderedMap([]utils.Pair{
+							{
+								Key: "parameters",
+								Value: utils.PairsToOrderedMap([]utils.Pair{
+									{Key: "incremental", Value: "false"},
+								}),
 							},
-						},
+						}),
 					},
 					{
 						BranchId:          123,
@@ -298,11 +311,14 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 						Description:       "row description",
 						ChangeDescription: "",
 						IsDisabled:        false,
-						Config: map[string]interface{}{
-							"parameters": map[string]interface{}{
-								"incremental": false,
+						Config: utils.PairsToOrderedMap([]utils.Pair{
+							{
+								Key: "parameters",
+								Value: utils.PairsToOrderedMap([]utils.Pair{
+									{Key: "incremental", Value: "false"},
+								}),
 							},
-						},
+						}),
 					},
 					{
 						BranchId:          123,
@@ -313,11 +329,14 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 						Description:       "",
 						ChangeDescription: "",
 						IsDisabled:        false,
-						Config: map[string]interface{}{
-							"parameters": map[string]interface{}{
-								"incremental": false,
+						Config: utils.PairsToOrderedMap([]utils.Pair{
+							{
+								Key: "parameters",
+								Value: utils.PairsToOrderedMap([]utils.Pair{
+									{Key: "incremental", Value: "false"},
+								}),
 							},
-						},
+						}),
 					},
 				},
 			},
@@ -374,13 +393,22 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 				Name:              "todos",
 				Description:       "todos config",
 				ChangeDescription: "",
-				Config: map[string]interface{}{
-					"parameters": map[string]interface{}{
-						"api": map[string]interface{}{
-							"baseUrl": "https://jsonplaceholder.typicode.com",
-						},
+				Config: utils.PairsToOrderedMap([]utils.Pair{
+					{
+						Key: "parameters",
+						Value: utils.PairsToOrderedMap([]utils.Pair{
+							{
+								Key: "api",
+								Value: utils.PairsToOrderedMap([]utils.Pair{
+									{
+										Key:   "baseUrl",
+										Value: "https://jsonplaceholder.typicode.com",
+									},
+								}),
+							},
+						}),
 					},
-				},
+				}),
 				Rows: []*model.ConfigRow{},
 			},
 			ConfigManifest: &model.ConfigManifest{

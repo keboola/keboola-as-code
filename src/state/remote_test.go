@@ -3,6 +3,7 @@ package state
 import (
 	"context"
 	"fmt"
+	"github.com/iancoleman/orderedmap"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/fixtures"
@@ -148,7 +149,7 @@ func complexRemoteExpectedConfigs() []*model.ConfigState {
 				Name:              "empty",
 				Description:       "test fixture",
 				ChangeDescription: "created by test",
-				Config:            map[string]interface{}{},
+				Config:            orderedmap.New(),
 				Rows:              []*model.ConfigRow{},
 			},
 			// Generated manifest
@@ -173,7 +174,7 @@ func complexRemoteExpectedConfigs() []*model.ConfigState {
 				Name:              "empty",
 				Description:       "test fixture",
 				ChangeDescription: fmt.Sprintf(`Copied from default branch configuration "empty" (%s) version 1`, utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
-				Config:            map[string]interface{}{},
+				Config:            orderedmap.New(),
 				Rows:              []*model.ConfigRow{},
 			},
 			// Generated manifest
@@ -198,13 +199,22 @@ func complexRemoteExpectedConfigs() []*model.ConfigState {
 				Name:              "with-rows",
 				Description:       "test fixture",
 				ChangeDescription: "created by test",
-				Config: map[string]interface{}{
-					"parameters": map[string]interface{}{
-						"db": map[string]interface{}{
-							"host": "mysql.example.com",
-						},
+				Config: utils.PairsToOrderedMap([]utils.Pair{
+					{
+						Key: "parameters",
+						Value: utils.PairsToOrderedMap([]utils.Pair{
+							{
+								Key: "db",
+								Value: utils.PairsToOrderedMap([]utils.Pair{
+									{
+										Key:   "host",
+										Value: "mysql.example.com",
+									},
+								}),
+							},
+						}),
 					},
-				},
+				}),
 				Rows: []*model.ConfigRow{
 					{
 						BranchId:          cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_FOO_ID`)),
@@ -215,11 +225,14 @@ func complexRemoteExpectedConfigs() []*model.ConfigState {
 						Description:       "test fixture",
 						ChangeDescription: "created by test",
 						IsDisabled:        true,
-						Config: map[string]interface{}{
-							"parameters": map[string]interface{}{
-								"incremental": false,
+						Config: utils.PairsToOrderedMap([]utils.Pair{
+							{
+								Key: "parameters",
+								Value: utils.PairsToOrderedMap([]utils.Pair{
+									{Key: "incremental", Value: "false"},
+								}),
 							},
-						},
+						}),
 					},
 					{
 						BranchId:          cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_FOO_ID`)),
@@ -230,11 +243,14 @@ func complexRemoteExpectedConfigs() []*model.ConfigState {
 						Description:       "test fixture",
 						ChangeDescription: "created by test",
 						IsDisabled:        false,
-						Config: map[string]interface{}{
-							"parameters": map[string]interface{}{
-								"incremental": false,
+						Config: utils.PairsToOrderedMap([]utils.Pair{
+							{
+								Key: "parameters",
+								Value: utils.PairsToOrderedMap([]utils.Pair{
+									{Key: "incremental", Value: "false"},
+								}),
 							},
-						},
+						}),
 					},
 					{
 						BranchId:          cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_FOO_ID`)),
@@ -245,11 +261,14 @@ func complexRemoteExpectedConfigs() []*model.ConfigState {
 						Description:       "test fixture",
 						ChangeDescription: "created by test",
 						IsDisabled:        false,
-						Config: map[string]interface{}{
-							"parameters": map[string]interface{}{
-								"incremental": false,
+						Config: utils.PairsToOrderedMap([]utils.Pair{
+							{
+								Key: "parameters",
+								Value: utils.PairsToOrderedMap([]utils.Pair{
+									{Key: "incremental", Value: "false"},
+								}),
 							},
-						},
+						}),
 					},
 				},
 			},
@@ -307,7 +326,7 @@ func complexRemoteExpectedConfigs() []*model.ConfigState {
 				Name:              "empty",
 				Description:       "test fixture",
 				ChangeDescription: fmt.Sprintf(`Copied from default branch configuration "empty" (%s) version 1`, utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
-				Config:            map[string]interface{}{},
+				Config:            orderedmap.New(),
 				Rows:              []*model.ConfigRow{},
 			},
 			// Generated manifest
@@ -332,13 +351,22 @@ func complexRemoteExpectedConfigs() []*model.ConfigState {
 				Name:              "without-rows",
 				Description:       "test fixture",
 				ChangeDescription: "created by test",
-				Config: map[string]interface{}{
-					"parameters": map[string]interface{}{
-						"api": map[string]interface{}{
-							"baseUrl": "https://jsonplaceholder.typicode.com",
-						},
+				Config: utils.PairsToOrderedMap([]utils.Pair{
+					{
+						Key: "parameters",
+						Value: utils.PairsToOrderedMap([]utils.Pair{
+							{
+								Key: "api",
+								Value: utils.PairsToOrderedMap([]utils.Pair{
+									{
+										Key:   "baseUrl",
+										Value: "https://jsonplaceholder.typicode.com",
+									},
+								}),
+							},
+						}),
 					},
-				},
+				}),
 				Rows: []*model.ConfigRow{},
 			},
 			// Generated manifest

@@ -1,0 +1,37 @@
+{
+  "parameters": {
+    "blocks": [
+      {
+        "codes": [
+          {
+            "name": "Code 1",
+            "script": [
+              "CREATE OR REPLACE TABLE \"test\" (\n  \"id\" number default null,\n  \"orderstatus\" varchar(100) default null,\n  \"price\" float\n);",
+              "INSERT INTO \"test\" (\"id\", \"orderstatus\", \"price\") VALUES(123, 'ok', 12.34);",
+              "INSERT INTO \"test\" (\"id\", \"orderstatus\", \"price\") VALUES(456, 'ko', 45.67);",
+              "DROP TABLE IF EXISTS \"test\";"
+            ]
+          },
+          {
+            "name": "Code 2",
+            "script": [
+              "CREATE TABLE \"test2\" AS SELECT $1, $2\nFROM VALUES( 1, 'two' ), ( 3, 'four' ), ( 5, 'six' );"
+            ]
+          }
+        ],
+        "name": "Block 1"
+      },
+      {
+        "codes": [
+          {
+            "name": "Code 3",
+            "script": [
+              "CREATE TABLE \"test3\" AS SELECT $1, $2\nFROM VALUES( 123, 'x' ), ( 345, 'y' );"
+            ]
+          }
+        ],
+        "name": "Block 2 - my name"
+      }
+    ]
+  }
+}

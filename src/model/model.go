@@ -1,6 +1,7 @@
 package model
 
 import (
+	"github.com/iancoleman/orderedmap"
 	"sort"
 )
 
@@ -56,7 +57,7 @@ type Config struct {
 	Name              string                 `json:"name" validate:"required" diff:"true" metaFile:"true"`
 	Description       string                 `json:"description" diff:"true" metaFile:"true"`
 	ChangeDescription string                 `json:"changeDescription"`
-	Config            map[string]interface{} `json:"configuration" validate:"required" diff:"true" configFile:"true"`
+	Config            *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
 	Rows              []*ConfigRow           `json:"rows"`
 }
 
@@ -76,7 +77,7 @@ type ConfigRow struct {
 	Description       string                 `json:"description" diff:"true" metaFile:"true"`
 	ChangeDescription string                 `json:"changeDescription"`
 	IsDisabled        bool                   `json:"isDisabled" diff:"true" metaFile:"true"`
-	Config            map[string]interface{} `json:"configuration" validate:"required" diff:"true" configFile:"true"`
+	Config            *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
 }
 
 // Job - Storage API job
