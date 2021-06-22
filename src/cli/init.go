@@ -3,7 +3,7 @@ package cli
 import (
 	"fmt"
 	"github.com/spf13/cobra"
-	"keboola-as-code/src/model"
+	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/utils"
 	"os"
@@ -66,7 +66,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 
 			// Create metadata dir
 			projectDir := root.options.WorkingDirectory()
-			metadataDir := filepath.Join(projectDir, model.MetadataDir)
+			metadataDir := filepath.Join(projectDir, manifest.MetadataDir)
 			if err = os.MkdirAll(metadataDir, 0755); err != nil {
 				return fmt.Errorf("cannot create metadata directory \"%s\": %s", metadataDir, err)
 			}
@@ -76,14 +76,14 @@ func initCommand(root *rootCommand) *cobra.Command {
 			root.logger.Infof("Created metadata dir \"%s\".", utils.RelPath(projectDir, metadataDir))
 
 			// Create and save manifest
-			manifest, err := model.NewManifest(api.ProjectId(), api.Host(), projectDir, metadataDir)
+			projectManifest, err := manifest.NewManifest(api.ProjectId(), api.Host(), projectDir, metadataDir)
 			if err != nil {
 				return err
 			}
-			if err = manifest.Save(); err != nil {
+			if err = projectManifest.Save(); err != nil {
 				return err
 			}
-			root.logger.Infof("Created manifest file \"%s\".", utils.RelPath(projectDir, manifest.Path()))
+			root.logger.Infof("Created manifest file \"%s\".", utils.RelPath(projectDir, projectManifest.Path()))
 
 			// Create or update ".gitignore"
 			gitignorePath := filepath.Join(projectDir, ".gitignore")

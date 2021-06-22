@@ -19,7 +19,9 @@ func (e *Error) Len() int {
 
 func (e *Error) Add(err error) {
 	if v, ok := err.(*Error); ok {
-		e.errors = append(e.errors, v.Errors()...)
+		if v != nil {
+			e.errors = append(e.errors, v.Errors()...)
+		}
 	} else {
 		e.errors = append(e.errors, err)
 	}

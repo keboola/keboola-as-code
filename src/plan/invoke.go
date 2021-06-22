@@ -5,32 +5,31 @@ import (
 	"fmt"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
-	"keboola-as-code/src/local"
-	"keboola-as-code/src/model"
+	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/utils"
 )
 
-func (p *Plan) Invoke(ctx context.Context, manifest *model.Manifest, api *remote.StorageApi, logger *zap.SugaredLogger) error {
+func (p *Plan) Invoke(ctx context.Context, m *manifest.Manifest, api *remote.StorageApi, logger *zap.SugaredLogger) error {
 	errors := &utils.Error{}
 	workers, _ := errgroup.WithContext(ctx)
 	pool := api.NewPool()
 	for _, action := range p.Actions {
 		switch action.Type {
 		case ActionSaveLocal:
-			if err := local.SaveLocal(action.ObjectState, manifest, logger, workers); err != nil {
+			if err := SaveLocal(action.ObjectState, m, logger, workers); err != nil {
 				errors.Add(err)
 			}
 		case ActionSaveRemote:
-			if err := api.Save(action.Result, logger, pool); err != nil {
+			if err := SaveRemote(api, action.Result, logger, pool); err != nil {
 				errors.Add(err)
 			}
 		case ActionDeleteLocal:
-			if err := local.DeleteLocal(action.ObjectState, manifest, logger, workers); err != nil {
+			if err := DeleteLocal(action.ObjectState, m, logger, workers); err != nil {
 				errors.Add(err)
 			}
 		case ActionDeleteRemote:
-			if err := api.Delete(action.Result, logger, pool); err != nil {
+			if err := DeleteRemote(api, action.Result, logger, pool); err != nil {
 				errors.Add(err)
 			}
 		default:

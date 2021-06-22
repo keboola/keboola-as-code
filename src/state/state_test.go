@@ -5,6 +5,7 @@ import (
 	"github.com/otiai10/copy"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
+	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/utils"
@@ -25,13 +26,13 @@ func TestLoadState(t *testing.T) {
 	api, _ := remote.TestStorageApiWithToken(t)
 	logger, _ := utils.NewDebugLogger()
 
-	manifest, err := model.LoadManifest(projectDir, metadataDir)
+	m, err := manifest.LoadManifest(projectDir, metadataDir)
 	assert.NoError(t, err)
-	state, ok := LoadState(manifest, logger, context.Background(), api)
+	state, ok := LoadState(m, logger, context.Background(), api)
 	assert.True(t, ok)
 	assert.Empty(t, state.RemoteErrors())
 	assert.Empty(t, state.LocalErrors())
-	assert.Equal(t, []*model.BranchState{
+	assert.Equal(t, []*BranchState{
 		{
 			Remote: &model.Branch{
 				Id:          cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
@@ -45,8 +46,8 @@ func TestLoadState(t *testing.T) {
 				Description: "Main branch",
 				IsDefault:   true,
 			},
-			BranchManifest: &model.BranchManifest{
-				ManifestPaths: model.ManifestPaths{
+			BranchManifest: &manifest.BranchManifest{
+				Paths: manifest.Paths{
 					Path:       "main",
 					ParentPath: "",
 				},
@@ -54,7 +55,7 @@ func TestLoadState(t *testing.T) {
 			},
 		},
 	}, state.Branches())
-	assert.Equal(t, []*model.ConfigState{
+	assert.Equal(t, []*ConfigState{
 		{
 			Remote: &model.Config{
 				BranchId:          cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
@@ -89,8 +90,8 @@ func TestLoadState(t *testing.T) {
 					},
 				}),
 			},
-			ConfigManifest: &model.ConfigManifest{
-				ManifestPaths: model.ManifestPaths{
+			ConfigManifest: &manifest.ConfigManifest{
+				Paths: manifest.Paths{
 					Path:       "ex-generic-v2/456-todos",
 					ParentPath: "main",
 				},

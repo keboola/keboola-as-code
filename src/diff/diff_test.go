@@ -2,18 +2,20 @@ package diff
 
 import (
 	"github.com/stretchr/testify/assert"
+	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
+	"keboola-as-code/src/state"
 	"strings"
 	"testing"
 )
 
 func TestDiffOnlyInLocal(t *testing.T) {
 	projectDir := t.TempDir()
-	state := model.NewState(projectDir, model.DefaultNaming())
+	projectState := state.NewState(projectDir, manifest.DefaultNaming())
 	branch := &model.Branch{}
-	manifest := &model.BranchManifest{}
-	state.SetBranchLocalState(branch, manifest)
-	d := NewDiffer(state)
+	m := &manifest.BranchManifest{}
+	projectState.SetBranchLocalState(branch, m)
+	d := NewDiffer(projectState)
 	results, err := d.Diff()
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 1)
@@ -25,10 +27,10 @@ func TestDiffOnlyInLocal(t *testing.T) {
 
 func TestDiffOnlyInRemote(t *testing.T) {
 	projectDir := t.TempDir()
-	state := model.NewState(projectDir, model.DefaultNaming())
+	projectState := state.NewState(projectDir, manifest.DefaultNaming())
 	branch := &model.Branch{}
-	state.SetBranchRemoteState(branch)
-	d := NewDiffer(state)
+	projectState.SetBranchRemoteState(branch)
+	d := NewDiffer(projectState)
 	results, err := d.Diff()
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 1)
@@ -40,7 +42,7 @@ func TestDiffOnlyInRemote(t *testing.T) {
 
 func TestDiffEqual(t *testing.T) {
 	projectDir := t.TempDir()
-	state := model.NewState(projectDir, model.DefaultNaming())
+	projectState := state.NewState(projectDir, manifest.DefaultNaming())
 	branchRemote := &model.Branch{
 		Id:          123,
 		Name:        "name",
@@ -53,10 +55,10 @@ func TestDiffEqual(t *testing.T) {
 		Description: "description",
 		IsDefault:   false,
 	}
-	manifest := &model.BranchManifest{}
-	state.SetBranchRemoteState(branchRemote)
-	state.SetBranchLocalState(branchLocal, manifest)
-	d := NewDiffer(state)
+	m := &manifest.BranchManifest{}
+	projectState.SetBranchRemoteState(branchRemote)
+	projectState.SetBranchLocalState(branchLocal, m)
+	d := NewDiffer(projectState)
 	results, err := d.Diff()
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 1)
@@ -69,7 +71,7 @@ func TestDiffEqual(t *testing.T) {
 
 func TestDiffNotEqual(t *testing.T) {
 	projectDir := t.TempDir()
-	state := model.NewState(projectDir, model.DefaultNaming())
+	projectState := state.NewState(projectDir, manifest.DefaultNaming())
 	branchRemote := &model.Branch{
 		Id:          123,
 		Name:        "name",
@@ -82,10 +84,10 @@ func TestDiffNotEqual(t *testing.T) {
 		Description: "description",
 		IsDefault:   true,
 	}
-	manifest := &model.BranchManifest{}
-	state.SetBranchRemoteState(branchRemote)
-	state.SetBranchLocalState(branchLocal, manifest)
-	d := NewDiffer(state)
+	m := &manifest.BranchManifest{}
+	projectState.SetBranchRemoteState(branchRemote)
+	projectState.SetBranchLocalState(branchLocal, m)
+	d := NewDiffer(projectState)
 	results, err := d.Diff()
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 1)
@@ -100,7 +102,7 @@ func TestDiffNotEqual(t *testing.T) {
 
 func TestDiffEqualConfig(t *testing.T) {
 	projectDir := t.TempDir()
-	state := model.NewState(projectDir, model.DefaultNaming())
+	projectState := state.NewState(projectDir, manifest.DefaultNaming())
 	branchRemote := &model.Branch{
 		Id:          123,
 		Name:        "name",
@@ -113,7 +115,7 @@ func TestDiffEqualConfig(t *testing.T) {
 		Description: "description",
 		IsDefault:   false,
 	}
-	branchManifest := &model.BranchManifest{}
+	branchManifest := &manifest.BranchManifest{}
 	component := &model.Component{
 		Id: "foo-bar",
 	}
@@ -133,12 +135,12 @@ func TestDiffEqualConfig(t *testing.T) {
 		Description:       "description",
 		ChangeDescription: "local", // no diff:"true" tag
 	}
-	configManifest := &model.ConfigManifest{}
-	state.SetBranchRemoteState(branchRemote)
-	state.SetBranchLocalState(branchLocal, branchManifest)
-	state.SetConfigRemoteState(component, configRemote)
-	state.SetConfigLocalState(component, configLocal, configManifest)
-	d := NewDiffer(state)
+	configManifest := &manifest.ConfigManifest{}
+	projectState.SetBranchRemoteState(branchRemote)
+	projectState.SetBranchLocalState(branchLocal, branchManifest)
+	projectState.SetConfigRemoteState(component, configRemote)
+	projectState.SetConfigLocalState(component, configLocal, configManifest)
+	d := NewDiffer(projectState)
 	results, err := d.Diff()
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 2)
@@ -156,7 +158,7 @@ func TestDiffEqualConfig(t *testing.T) {
 
 func TestDiffNotEqualConfig(t *testing.T) {
 	projectDir := t.TempDir()
-	state := model.NewState(projectDir, model.DefaultNaming())
+	projectState := state.NewState(projectDir, manifest.DefaultNaming())
 	branchRemote := &model.Branch{
 		Id:          123,
 		Name:        "name",
@@ -169,7 +171,7 @@ func TestDiffNotEqualConfig(t *testing.T) {
 		Description: "description",
 		IsDefault:   false,
 	}
-	branchManifest := &model.BranchManifest{}
+	branchManifest := &manifest.BranchManifest{}
 	component := &model.Component{
 		Id: "foo-bar",
 	}
@@ -189,12 +191,12 @@ func TestDiffNotEqualConfig(t *testing.T) {
 		Description:       "changed",
 		ChangeDescription: "local", // no diff:"true" tag
 	}
-	configManifest := &model.ConfigManifest{}
-	state.SetBranchRemoteState(branchRemote)
-	state.SetBranchLocalState(branchLocal, branchManifest)
-	state.SetConfigRemoteState(component, configRemote)
-	state.SetConfigLocalState(component, configLocal, configManifest)
-	d := NewDiffer(state)
+	configManifest := &manifest.ConfigManifest{}
+	projectState.SetBranchRemoteState(branchRemote)
+	projectState.SetBranchLocalState(branchLocal, branchManifest)
+	projectState.SetConfigRemoteState(component, configRemote)
+	projectState.SetConfigLocalState(component, configLocal, configManifest)
+	d := NewDiffer(projectState)
 	results, err := d.Diff()
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 2)

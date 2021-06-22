@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
+	"keboola-as-code/src/utils"
 	"runtime"
 	"sync"
 	"time"
@@ -12,32 +13,35 @@ import (
 
 // Pool of the asynchronous HTTP requests. When processing a response, a new request can be send.
 type Pool struct {
+	id              int
 	logger          *zap.SugaredLogger
-	client          *Client         // resty client
-	ctx             context.Context // context of the parallel work
-	workers         *errgroup.Group // error group -> if one worker fails, all will be stopped
-	counter         sync.WaitGroup  // detect when all requests are processed (count of the requests = count of the processed responses)
-	sendersCount    int             // number of parallel http connections -> value of MaxIdleConns
-	processorsCount int             // number of processors workers -> number of CPUs
-	requests        []*Request      // to check that the Send () method has been called on all requests
-	requestsLock    *sync.Mutex     // lock for access to requests slice
-	startTime       time.Time       // time when StartAndWait() called
-	doneChan        chan struct {
-	} // channel for "all requests are processed" notification
-	requestsChan  chan *Request  // channel for requests
-	responsesChan chan *Response // channel for outgoing responses
+	client          *Client            // resty client
+	ctx             context.Context    // context of the parallel work
+	workers         *errgroup.Group    // error group -> if one worker fails, all will be stopped
+	activeRequests  sync.WaitGroup     // detect when all requests are processed (count of the requests = count of the processed responses)
+	sendersCount    int                // number of parallel http connections -> value of MaxIdleConns
+	processorsCount int                // number of processors workers -> number of CPUs
+	requestsCount   *utils.SafeCounter // number of send requests
+	requests        []*Request         // to check that the Send () method has been called on all requests
+	requestsLock    *sync.Mutex        // lock for access to requests slice
+	startTime       time.Time          // time when StartAndWait() called
+	doneChan        chan struct{}      // channel for "all requests are processed" notification
+	requestsChan    chan *Request      // channel for requests
+	responsesChan   chan *Response     // channel for outgoing responses
 }
 
 func (c *Client) NewPool(logger *zap.SugaredLogger) *Pool {
 	workers, ctx := errgroup.WithContext(c.parentCtx)
 	return &Pool{
+		id:              c.poolIdCounter.IncAndGet(),
 		client:          c,
 		logger:          logger,
 		ctx:             ctx,
 		workers:         workers,
-		counter:         sync.WaitGroup{},
+		activeRequests:  sync.WaitGroup{},
 		sendersCount:    MaxIdleConns,
 		processorsCount: runtime.NumCPU(),
+		requestsCount:   utils.NewSafeCounter(0),
 		requestsLock:    &sync.Mutex{},
 		doneChan:        make(chan struct{}),
 		requestsChan:    make(chan *Request, 100),
@@ -60,7 +64,7 @@ func (p *Pool) Send(request *Request) {
 	request.sender = p
 	request.sent = true
 	p.logRequestState("queued", request, nil)
-	p.counter.Add(1)
+	p.activeRequests.Add(1)
 	p.requestsChan <- request
 }
 
@@ -85,8 +89,10 @@ func (p *Pool) start() {
 	// Work is done -> all responses are processed
 	go func() {
 		defer close(p.doneChan)
-		p.counter.Wait()
-		p.log("all done | %s", time.Since(p.startTime))
+		p.activeRequests.Wait()
+		if p.requestsCount.Get() > 0 {
+			p.log("all done | %s", time.Since(p.startTime))
+		}
 	}()
 
 	// Start senders
@@ -145,34 +151,36 @@ func (p *Pool) start() {
 
 func (p *Pool) send(request *Request) *Response {
 	p.logRequestState("started", request, nil)
+	p.requestsCount.Inc()
 	p.client.Send(request)
-	p.logRequestState("finished", request, request.Response().Error())
-	return request.Response()
+	p.logRequestState("finished", request, request.Err())
+	return request.Response
 
 }
 
 func (p *Pool) process(response *Response) (err error) {
-	defer p.counter.Done() // mark request processed
-	defer p.logRequestState("processed", response.Request(), err)
-	return response.Error()
+	defer p.activeRequests.Done() // mark request processed
+	defer p.logRequestState("processed", response.Request, err)
+	return response.Err()
 }
 
 func (p *Pool) logRequestState(state string, request *Request, err error) {
-	msg := fmt.Sprintf("[%d] %s %s %s", request.Id(), state, request.Method(), urlForLog(request.RestyRequest()))
+	msg := fmt.Sprintf("[%d] %s %s %s", request.Id(), state, request.Method, urlForLog(request.Request))
 	if err != nil {
 		msg += fmt.Sprintf(", error: \"%s\"", err)
 	}
-	p.log(msg)
+	p.log("%s", msg)
 }
 
 func (p *Pool) log(template string, args ...interface{}) {
-	p.logger.Debugf("HTTP-POOL\t"+template, args...)
+	args = append([]interface{}{p.id}, args...)
+	p.logger.Debugf("HTTP-POOL\t[%d]"+template, args...)
 }
 
 func (p *Pool) checkAllRequestsSent() {
 	for _, request := range p.requests {
 		if !request.sent {
-			panic(fmt.Errorf("request[%d] %s \"%s\" was not sent - Send() method was not called", request.Id(), request.Method(), request.Url()))
+			panic(fmt.Errorf("request[%d] %s \"%s\" was not sent - Send() method was not called", request.Id(), request.Method, request.URL))
 		}
 	}
 }

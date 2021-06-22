@@ -1,8 +1,9 @@
-package model
+package manifest
 
 import (
 	"github.com/iancoleman/strcase"
 	"github.com/spf13/cast"
+	"keboola-as-code/src/model"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -22,14 +23,14 @@ func DefaultNaming() *LocalNaming {
 	}
 }
 
-func (n *LocalNaming) BranchPath(branch *Branch) string {
+func (n *LocalNaming) BranchPath(branch *model.Branch) string {
 	return n.replace(n.Branch, map[string]interface{}{
 		"branch_id":   branch.Id,
 		"branch_name": n.normalizeName(branch.Name),
 	})
 }
 
-func (n *LocalNaming) ConfigPath(component *Component, config *Config) string {
+func (n *LocalNaming) ConfigPath(component *model.Component, config *model.Config) string {
 	return n.replace(n.Config, map[string]interface{}{
 		"component_type": component.Type,
 		"component_id":   component.Id,
@@ -38,7 +39,7 @@ func (n *LocalNaming) ConfigPath(component *Component, config *Config) string {
 	})
 }
 
-func (n *LocalNaming) ConfigRowPath(row *ConfigRow) string {
+func (n *LocalNaming) ConfigRowPath(row *model.ConfigRow) string {
 	return n.replace(n.ConfigRow, map[string]interface{}{
 		"config_row_id":   row.Id,
 		"config_row_name": n.normalizeName(row.Name),

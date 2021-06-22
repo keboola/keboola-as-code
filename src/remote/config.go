@@ -8,19 +8,19 @@ import (
 )
 
 func (a *StorageApi) ListComponents(branchId int) (*[]*model.ComponentWithConfigs, error) {
-	response := a.ListComponentsRequest(branchId).Send().Response()
+	response := a.ListComponentsRequest(branchId).Send().Response
 	if response.HasResult() {
 		return response.Result().(*[]*model.ComponentWithConfigs), nil
 	}
-	return nil, response.Error()
+	return nil, response.Err()
 }
 
 func (a *StorageApi) GetConfig(branchId int, componentId string, configId string) (*model.Config, error) {
-	response := a.GetConfigRequest(branchId, componentId, configId).Send().Response()
+	response := a.GetConfigRequest(branchId, componentId, configId).Send().Response
 	if response.HasResult() {
 		return response.Result().(*model.Config), nil
 	}
-	return nil, response.Error()
+	return nil, response.Err()
 }
 
 func (a *StorageApi) CreateConfig(config *model.ConfigWithRows) (*model.ConfigWithRows, error) {
@@ -29,11 +29,11 @@ func (a *StorageApi) CreateConfig(config *model.ConfigWithRows) (*model.ConfigWi
 		return nil, err
 	}
 
-	response := request.Send().Response()
+	response := request.Send().Response
 	if response.HasResult() {
 		return response.Result().(*model.ConfigWithRows), nil
 	}
-	return nil, response.Error()
+	return nil, response.Err()
 }
 
 func (a *StorageApi) UpdateConfig(config *model.Config, changed []string) (*model.Config, error) {
@@ -42,16 +42,16 @@ func (a *StorageApi) UpdateConfig(config *model.Config, changed []string) (*mode
 		return nil, err
 	}
 
-	response := request.Send().Response()
+	response := request.Send().Response
 	if response.HasResult() {
 		return response.Result().(*model.Config), nil
 	}
-	return nil, response.Error()
+	return nil, response.Err()
 }
 
 // DeleteConfig - only config in main branch can be deleted!
 func (a *StorageApi) DeleteConfig(componentId string, configId string) error {
-	return a.DeleteConfigRequest(componentId, configId).Send().Response().Error()
+	return a.DeleteConfigRequest(componentId, configId).Send().Err()
 }
 
 func (a *StorageApi) ListComponentsRequest(branchId int) *client.Request {
@@ -127,7 +127,7 @@ func (a *StorageApi) CreateConfigRequest(config *model.ConfigWithRows) (*client.
 				row.ConfigId = config.Id
 				rowRequest, err := a.CreateConfigRowRequest(row)
 				if err != nil {
-					response.SetError(err)
+					response.SetErr(err)
 					return response
 				}
 				configRequest.WaitFor(rowRequest)

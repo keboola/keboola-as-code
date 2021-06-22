@@ -10,11 +10,11 @@ import (
 )
 
 func (a *StorageApi) GetJob(jobId int) (*model.Job, error) {
-	response := a.GetJobRequest(jobId).Send().Response()
+	response := a.GetJobRequest(jobId).Send().Response
 	if response.HasResult() {
 		return response.Result().(*model.Job), nil
 	}
-	return nil, response.Error()
+	return nil, response.Err()
 }
 
 // GetJobRequest https://keboola.docs.apiary.io/#reference/jobs/manage-jobs/job-detail
@@ -39,16 +39,16 @@ func waitForJob(a *StorageApi, parentRequest *client.Request, job *model.Job, on
 			return response
 		} else if job.Status == "error" {
 			err := fmt.Errorf("job failed: %v", job.Results)
-			parentRequest.Response().SetError(err)
-			return response.SetError(err)
+			parentRequest.Response.SetErr(err)
+			return response.SetErr(err)
 		}
 
 		// Wait and check again
 		delay := backoff.NextBackOff()
 		if delay == backoff.Stop {
 			err := fmt.Errorf("timeout: timeout while waiting for the storage job to complete")
-			parentRequest.Response().SetError(err)
-			return response.SetError(err)
+			parentRequest.Response.SetErr(err)
+			return response.SetErr(err)
 		}
 
 		// Try again

@@ -3,8 +3,38 @@ package json
 import (
 	"encoding/json"
 	"fmt"
-	"keboola-as-code/src/utils"
+	"os"
+	"path/filepath"
 )
+
+func ReadFile(dir string, relPath string, target interface{}, errPrefix string) error {
+	path := filepath.Join(dir, relPath)
+
+	// Read meta file
+	content, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("%s file \"%s\" not found", errPrefix, relPath)
+		}
+		return fmt.Errorf("cannot read %s file \"%s\"", errPrefix, relPath)
+	}
+
+	// Decode meta file
+	err = Decode(content, target)
+	if err != nil {
+		return fmt.Errorf("%s file \"%s\" is invalid: %s", errPrefix, relPath, err)
+	}
+	return nil
+}
+
+func WriteFile(dir string, relPath string, source interface{}, errPrefix string) error {
+	path := filepath.Join(dir, relPath)
+	data, err := Encode(source, true)
+	if err != nil {
+		return fmt.Errorf("cannot write %s file \"%s\"", errPrefix, relPath)
+	}
+	return os.WriteFile(path, data, 0644)
+}
 
 func Encode(v interface{}, pretty bool) ([]byte, error) {
 	var data []byte
@@ -39,17 +69,13 @@ func DecodeString(data string, m interface{}) error {
 }
 
 func processJsonError(err error) error {
-	result := &utils.Error{}
-
 	switch err := err.(type) {
 	// Custom error message
 	case *json.UnmarshalTypeError:
-		result.Add(fmt.Errorf("key \"%s\" has invalid type \"%s\"", err.Field, err.Value))
+		return fmt.Errorf("key \"%s\" has invalid type \"%s\"", err.Field, err.Value)
 	case *json.SyntaxError:
-		result.Add(fmt.Errorf("%s, offset: %d", err, err.Offset))
+		return fmt.Errorf("%s, offset: %d", err, err.Offset)
 	default:
-		result.Add(err)
+		return err
 	}
-
-	return result
 }

@@ -2,28 +2,30 @@ package state
 
 import (
 	"fmt"
+	"keboola-as-code/src/local"
+	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/remote"
 )
 
-func LoadLocalState(state *model.State, manifest *model.Manifest, api *remote.StorageApi) {
+func LoadLocalState(state *State, m *manifest.Manifest, api *remote.StorageApi) {
 	var invalidKeys []string
-	for _, key := range manifest.Registry.Keys() {
-		item, _ := manifest.Registry.Get(key)
-		switch itemManifest := item.(type) {
+	for _, key := range m.Registry.Keys() {
+		item, _ := m.Registry.Get(key)
+		switch record := item.(type) {
 		// Add branch
-		case *model.BranchManifest:
-			if branch, err := itemManifest.ToModel(manifest); err == nil {
-				state.SetBranchLocalState(branch, itemManifest)
+		case *manifest.BranchManifest:
+			if branch, err := local.LoadBranch(m.ProjectDir, record); err == nil {
+				state.SetBranchLocalState(branch, record)
 			} else {
 				invalidKeys = append(invalidKeys, key)
 				state.AddLocalError(err)
 			}
 		// Add config
-		case *model.ConfigManifest:
-			if config, err := itemManifest.ToModel(manifest); err == nil {
+		case *manifest.ConfigManifest:
+			if config, err := local.LoadConfig(m.ProjectDir, record); err == nil {
 				if component, err := getComponent(state, api, config.ComponentId); err == nil {
-					state.SetConfigLocalState(component, config, itemManifest)
+					state.SetConfigLocalState(component, config, record)
 				} else {
 					state.AddLocalError(err)
 				}
@@ -32,9 +34,9 @@ func LoadLocalState(state *model.State, manifest *model.Manifest, api *remote.St
 				state.AddLocalError(err)
 			}
 		// Add config row
-		case *model.ConfigRowManifest:
-			if row, err := itemManifest.ToModel(manifest); err == nil {
-				state.SetConfigRowLocalState(row, itemManifest)
+		case *manifest.ConfigRowManifest:
+			if row, err := local.LoadConfigRow(m.ProjectDir, record); err == nil {
+				state.SetConfigRowLocalState(row, record)
 			} else {
 				invalidKeys = append(invalidKeys, key)
 				state.AddLocalError(err)
@@ -46,11 +48,11 @@ func LoadLocalState(state *model.State, manifest *model.Manifest, api *remote.St
 
 	// Delete invalid records
 	for _, key := range invalidKeys {
-		manifest.Registry.Delete(key)
+		m.Registry.Delete(key)
 	}
 }
 
-func getComponent(state *model.State, api *remote.StorageApi, componentId string) (*model.Component, error) {
+func getComponent(state *State, api *remote.StorageApi, componentId string) (*model.Component, error) {
 	// Load component from state if present
 	if component, found := state.GetComponent(componentId); found {
 		return component, nil

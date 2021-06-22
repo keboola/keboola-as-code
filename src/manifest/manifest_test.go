@@ -1,4 +1,4 @@
-package model
+package manifest
 
 import (
 	"github.com/stretchr/testify/assert"
@@ -10,7 +10,7 @@ import (
 
 type test struct {
 	json string
-	data *ManifestContent
+	data *Content
 }
 
 var cases = []test{
@@ -47,7 +47,7 @@ func TestManifestLoad(t *testing.T) {
 		projectDir := t.TempDir()
 		metadataDir := filepath.Join(projectDir, MetadataDir)
 		assert.NoError(t, os.MkdirAll(metadataDir, 0755))
-		path := filepath.Join(metadataDir, ManifestFileName)
+		path := filepath.Join(metadataDir, FileName)
 
 		// Write file
 		assert.NoError(t, os.WriteFile(path, []byte(c.json), 0644))
@@ -58,28 +58,27 @@ func TestManifestLoad(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Assert
-		assert.Equal(t, c.data, manifest.ManifestContent)
+		assert.Equal(t, c.data, manifest.Content)
 	}
 }
 
 func TestManifestSave(t *testing.T) {
-	logger, _ := utils.NewDebugLogger()
 	for _, c := range cases {
 		projectDir := t.TempDir()
 		metadataDir := filepath.Join(projectDir, MetadataDir)
 		assert.NoError(t, os.MkdirAll(metadataDir, 0755))
-		path := filepath.Join(metadataDir, ManifestFileName)
+		path := filepath.Join(metadataDir, FileName)
 
 		// Create
 		m := newManifest(c.data.Version, c.data.Project.ApiHost, projectDir, metadataDir)
 		m.Project.Id = c.data.Project.Id
 		for _, branch := range c.data.Branches {
-			assert.NoError(t, m.SaveModel(branch, utils.EmptyOrderedMap(), logger))
+			m.AddRecord(branch)
 		}
 		for _, config := range c.data.Configs {
-			assert.NoError(t, m.SaveModel(config.ConfigManifest, utils.EmptyOrderedMap(), logger))
+			m.AddRecord(config.ConfigManifest)
 			for _, row := range config.Rows {
-				assert.NoError(t, m.SaveModel(row, utils.EmptyOrderedMap(), logger))
+				m.AddRecord(row)
 			}
 		}
 
@@ -94,7 +93,7 @@ func TestManifestSave(t *testing.T) {
 }
 
 func TestManifestValidateEmpty(t *testing.T) {
-	m := &Manifest{ProjectDir: "foo", MetadataDir: "bar", ManifestContent: &ManifestContent{}}
+	m := &Manifest{ProjectDir: "foo", MetadataDir: "bar", Content: &Content{}}
 	err := m.validate()
 	assert.NotNil(t, err)
 	expected := `manifest is not valid: 
@@ -107,21 +106,21 @@ func TestManifestValidateEmpty(t *testing.T) {
 
 func TestManifestValidateMinimal(t *testing.T) {
 	m := newManifest(0, "", "foo", "bar")
-	m.ManifestContent = minimalStruct()
+	m.Content = minimalStruct()
 	err := m.validate()
 	assert.Nil(t, err)
 }
 
 func TestManifestValidateFull(t *testing.T) {
 	m := newManifest(0, "", "foo", "bar")
-	m.ManifestContent = fullStruct()
+	m.Content = fullStruct()
 	err := m.validate()
 	assert.Nil(t, err)
 }
 
 func TestManifestValidateBadVersion(t *testing.T) {
 	m := newManifest(0, "", "foo", "bar")
-	m.ManifestContent = minimalStruct()
+	m.Content = minimalStruct()
 	m.Version = 123
 	err := m.validate()
 	assert.NotNil(t, err)
@@ -148,10 +147,10 @@ func minimalJson() string {
 `
 }
 
-func minimalStruct() *ManifestContent {
-	return &ManifestContent{
+func minimalStruct() *Content {
+	return &Content{
 		Version: 1,
-		Project: &ProjectManifest{
+		Project: &Project{
 			Id:      12345,
 			ApiHost: "keboola.connection.com",
 		},
@@ -223,10 +222,10 @@ func fullJson() string {
 `
 }
 
-func fullStruct() *ManifestContent {
-	return &ManifestContent{
+func fullStruct() *Content {
+	return &Content{
 		Version: 1,
-		Project: &ProjectManifest{
+		Project: &Project{
 			Id:      12345,
 			ApiHost: "keboola.connection.com",
 		},
@@ -234,14 +233,14 @@ func fullStruct() *ManifestContent {
 		Naming: DefaultNaming(),
 		Branches: []*BranchManifest{
 			{
-				ManifestPaths: ManifestPaths{
+				Paths: Paths{
 					Path:       "main",
 					ParentPath: "",
 				},
 				Id: 10,
 			},
 			{
-				ManifestPaths: ManifestPaths{
+				Paths: Paths{
 					Path:       "11-dev",
 					ParentPath: "",
 				},
@@ -251,7 +250,7 @@ func fullStruct() *ManifestContent {
 		Configs: []*ConfigManifestWithRows{
 			{
 				ConfigManifest: &ConfigManifest{
-					ManifestPaths: ManifestPaths{
+					Paths: Paths{
 						Path:       "11-raw-data",
 						ParentPath: "main",
 					},
@@ -261,7 +260,7 @@ func fullStruct() *ManifestContent {
 				},
 				Rows: []*ConfigRowManifest{
 					{
-						ManifestPaths: ManifestPaths{
+						Paths: Paths{
 							Path:       "101-region-1",
 							ParentPath: "main/11-raw-data/rows",
 						},
@@ -271,7 +270,7 @@ func fullStruct() *ManifestContent {
 						ConfigId:    "11",
 					},
 					{
-						ManifestPaths: ManifestPaths{
+						Paths: Paths{
 							Path:       "102-region-2",
 							ParentPath: "main/11-raw-data/rows",
 						},
@@ -284,7 +283,7 @@ func fullStruct() *ManifestContent {
 			},
 			{
 				ConfigManifest: &ConfigManifest{
-					ManifestPaths: ManifestPaths{
+					Paths: Paths{
 						Path:       "12-current-month",
 						ParentPath: "11-dev",
 					},
@@ -294,7 +293,7 @@ func fullStruct() *ManifestContent {
 				},
 				Rows: []*ConfigRowManifest{
 					{
-						ManifestPaths: ManifestPaths{
+						Paths: Paths{
 							Path:       "103-all",
 							ParentPath: "11-dev/12-current-month/rows",
 						},
@@ -304,7 +303,7 @@ func fullStruct() *ManifestContent {
 						ConfigId:    "12",
 					},
 					{
-						ManifestPaths: ManifestPaths{
+						Paths: Paths{
 							Path:       "104-sum",
 							ParentPath: "11-dev/12-current-month/rows",
 						},

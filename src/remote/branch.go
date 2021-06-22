@@ -24,43 +24,43 @@ func (a *StorageApi) GetDefaultBranch() (*model.Branch, error) {
 }
 
 func (a *StorageApi) GetBranch(branchId int) (*model.Branch, error) {
-	response := a.GetBranchRequest(branchId).Send().Response()
+	response := a.GetBranchRequest(branchId).Send().Response
 	if response.HasResult() {
 		return response.Result().(*model.Branch), nil
 	}
-	return nil, response.Error()
+	return nil, response.Err()
 }
 
 func (a *StorageApi) CreateBranch(branch *model.Branch) (*model.Job, error) {
-	response := a.CreateBranchRequest(branch).Send().Response()
+	response := a.CreateBranchRequest(branch).Send().Response
 	if response.HasResult() {
 		return response.Result().(*model.Job), nil
 	}
-	return nil, response.Error()
+	return nil, response.Err()
 }
 
 func (a *StorageApi) UpdateBranch(branch *model.Branch, changed []string) (*model.Branch, error) {
-	response := a.UpdateBranchRequest(branch, changed).Send().Response()
+	response := a.UpdateBranchRequest(branch, changed).Send().Response
 	if response.HasResult() {
 		return response.Result().(*model.Branch), nil
 	}
-	return nil, response.Error()
+	return nil, response.Err()
 }
 
 func (a *StorageApi) ListBranches() (*[]*model.Branch, error) {
-	response := a.ListBranchesRequest().Send().Response()
+	response := a.ListBranchesRequest().Send().Response
 	if response.HasResult() {
 		return response.Result().(*[]*model.Branch), nil
 	}
-	return nil, response.Error()
+	return nil, response.Err()
 }
 
 func (a *StorageApi) DeleteBranch(branchId int) (*model.Job, error) {
-	response := a.DeleteBranchRequest(branchId).Send().Response()
+	response := a.DeleteBranchRequest(branchId).Send().Response
 	if response.HasResult() {
 		return response.Result().(*model.Job), nil
 	}
-	return nil, response.Error()
+	return nil, response.Err()
 }
 
 // GetBranchRequest https://keboola.docs.apiary.io/#reference/development-branches/branch-manipulation/branch-detail

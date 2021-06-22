@@ -3,6 +3,7 @@ package state
 import (
 	"github.com/otiai10/copy"
 	"github.com/stretchr/testify/assert"
+	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/utils"
@@ -153,7 +154,7 @@ func TestLoadLocalStateConfigRowInvalidMetaJson(t *testing.T) {
 	assert.Equal(t, `config row metadata file "123-branch/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json" is invalid: invalid character 'f' looking for beginning of object key string, offset: 3`, state.LocalErrors().Error())
 }
 
-func loadLocalTestState(t *testing.T, projectDirName string) *model.State {
+func loadLocalTestState(t *testing.T, projectDirName string) *State {
 	utils.MustSetEnv("LOCAL_STATE_MAIN_BRANCH_ID", "111")
 	utils.MustSetEnv("LOCAL_STATE_MY_BRANCH_ID", "123")
 	utils.MustSetEnv("LOCAL_STATE_GENERIC_CONFIG_ID", "456")
@@ -165,7 +166,7 @@ func loadLocalTestState(t *testing.T, projectDirName string) *model.State {
 	testDir := filepath.Dir(testFile)
 	stateDir := filepath.Join(testDir, "..", "fixtures", "local", projectDirName)
 	projectDir := t.TempDir()
-	metadataDir := filepath.Join(projectDir, model.MetadataDir)
+	metadataDir := filepath.Join(projectDir, manifest.MetadataDir)
 
 	err := copy.Copy(stateDir, projectDir)
 	if err != nil {
@@ -173,18 +174,18 @@ func loadLocalTestState(t *testing.T, projectDirName string) *model.State {
 	}
 	utils.ReplaceEnvsDir(projectDir)
 
-	state := model.NewState(projectDir, model.DefaultNaming())
-	manifest, err := model.LoadManifest(projectDir, metadataDir)
+	state := NewState(projectDir, manifest.DefaultNaming())
+	m, err := manifest.LoadManifest(projectDir, metadataDir)
 	if err != nil {
 		assert.FailNow(t, state.LocalErrors().Error())
 	}
 
-	LoadLocalState(state, manifest, api)
+	LoadLocalState(state, m, api)
 	return state
 }
 
-func complexLocalExpectedBranches() []*model.BranchState {
-	return []*model.BranchState{
+func complexLocalExpectedBranches() []*BranchState {
+	return []*BranchState{
 		{
 			Local: &model.Branch{
 				Id:          111,
@@ -192,8 +193,8 @@ func complexLocalExpectedBranches() []*model.BranchState {
 				Description: "Main branch",
 				IsDefault:   true,
 			},
-			BranchManifest: &model.BranchManifest{
-				ManifestPaths: model.ManifestPaths{
+			BranchManifest: &manifest.BranchManifest{
+				Paths: manifest.Paths{
 					Path:       "main",
 					ParentPath: "",
 				},
@@ -207,8 +208,8 @@ func complexLocalExpectedBranches() []*model.BranchState {
 				Description: "My branch",
 				IsDefault:   false,
 			},
-			BranchManifest: &model.BranchManifest{
-				ManifestPaths: model.ManifestPaths{
+			BranchManifest: &manifest.BranchManifest{
+				Paths: manifest.Paths{
 					Path:       "123-branch",
 					ParentPath: "",
 				},
@@ -218,8 +219,8 @@ func complexLocalExpectedBranches() []*model.BranchState {
 	}
 }
 
-func complexLocalExpectedConfigs() []*model.ConfigState {
-	return []*model.ConfigState{
+func complexLocalExpectedConfigs() []*ConfigState {
+	return []*ConfigState{
 		{
 			Local: &model.Config{
 				BranchId:          111,
@@ -245,11 +246,11 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 					},
 				}),
 			},
-			ConfigManifest: &model.ConfigManifest{
+			ConfigManifest: &manifest.ConfigManifest{
 				BranchId:    111,
 				ComponentId: "keboola.ex-generic",
 				Id:          "456",
-				ManifestPaths: model.ManifestPaths{
+				Paths: manifest.Paths{
 					Path:       "keboola.ex-generic/456-todos",
 					ParentPath: "main",
 				},
@@ -280,11 +281,11 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 					},
 				}),
 			},
-			ConfigManifest: &model.ConfigManifest{
+			ConfigManifest: &manifest.ConfigManifest{
 				BranchId:    123,
 				ComponentId: "keboola.ex-db-mysql",
 				Id:          "896",
-				ManifestPaths: model.ManifestPaths{
+				Paths: manifest.Paths{
 					Path:       "keboola.ex-db-mysql/896-tables",
 					ParentPath: "123-branch",
 				},
@@ -315,11 +316,11 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 					},
 				}),
 			},
-			ConfigManifest: &model.ConfigManifest{
+			ConfigManifest: &manifest.ConfigManifest{
 				BranchId:    123,
 				ComponentId: "keboola.ex-generic",
 				Id:          "456",
-				ManifestPaths: model.ManifestPaths{
+				Paths: manifest.Paths{
 					Path:       "keboola.ex-generic/456-todos",
 					ParentPath: "123-branch",
 				},
@@ -328,8 +329,8 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 	}
 }
 
-func complexLocalExpectedConfigRows() []*model.ConfigRowState {
-	return []*model.ConfigRowState{
+func complexLocalExpectedConfigRows() []*ConfigRowState {
+	return []*ConfigRowState{
 		{
 			Local: &model.ConfigRow{
 				BranchId:          123,
@@ -349,12 +350,12 @@ func complexLocalExpectedConfigRows() []*model.ConfigRowState {
 					},
 				}),
 			},
-			ConfigRowManifest: &model.ConfigRowManifest{
+			ConfigRowManifest: &manifest.ConfigRowManifest{
 				Id:          "56",
 				BranchId:    123,
 				ComponentId: "keboola.ex-db-mysql",
 				ConfigId:    "896",
-				ManifestPaths: model.ManifestPaths{
+				Paths: manifest.Paths{
 					Path:       "56-disabled",
 					ParentPath: "123-branch/keboola.ex-db-mysql/896-tables/rows",
 				},
@@ -379,12 +380,12 @@ func complexLocalExpectedConfigRows() []*model.ConfigRowState {
 					},
 				}),
 			},
-			ConfigRowManifest: &model.ConfigRowManifest{
+			ConfigRowManifest: &manifest.ConfigRowManifest{
 				Id:          "34",
 				BranchId:    123,
 				ComponentId: "keboola.ex-db-mysql",
 				ConfigId:    "896",
-				ManifestPaths: model.ManifestPaths{
+				Paths: manifest.Paths{
 					Path:       "34-test-view",
 					ParentPath: "123-branch/keboola.ex-db-mysql/896-tables/rows",
 				},
@@ -409,12 +410,12 @@ func complexLocalExpectedConfigRows() []*model.ConfigRowState {
 					},
 				}),
 			},
-			ConfigRowManifest: &model.ConfigRowManifest{
+			ConfigRowManifest: &manifest.ConfigRowManifest{
 				Id:          "12",
 				BranchId:    123,
 				ComponentId: "keboola.ex-db-mysql",
 				ConfigId:    "896",
-				ManifestPaths: model.ManifestPaths{
+				Paths: manifest.Paths{
 					Path:       "12-users",
 					ParentPath: "123-branch/keboola.ex-db-mysql/896-tables/rows",
 				},

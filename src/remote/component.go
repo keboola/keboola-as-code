@@ -7,11 +7,11 @@ import (
 )
 
 func (a *StorageApi) GetComponent(componentId string) (*model.Component, error) {
-	response := a.GetComponentRequest(componentId).Send().Response()
+	response := a.GetComponentRequest(componentId).Send().Response
 	if response.HasResult() {
 		return response.Result().(*model.Component), nil
 	}
-	return nil, response.Error()
+	return nil, response.Err()
 }
 
 // GetComponentRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/get-component/get-component

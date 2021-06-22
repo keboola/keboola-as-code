@@ -32,6 +32,7 @@ type Client struct {
 	logger           *Logger
 	resty            *resty.Client
 	requestIdCounter *utils.SafeCounter
+	poolIdCounter    *utils.SafeCounter
 }
 
 type contextKey string
@@ -42,6 +43,7 @@ func NewClient(ctx context.Context, logger *zap.SugaredLogger, verbose bool) *Cl
 	client.parentCtx = ctx
 	client.resty = createHttpClient(client.logger)
 	client.requestIdCounter = utils.NewSafeCounter(0)
+	client.poolIdCounter = utils.NewSafeCounter(0)
 	setupLogs(client, verbose)
 	return client
 }
@@ -54,8 +56,8 @@ func (c Client) WithHostUrl(hostUrl string) *Client {
 func (c *Client) Send(request *Request) {
 	// Sent
 	request.sent = true
-	restyResponse, err := request.RestyRequest().Send()
-	request.response = NewResponse(request, restyResponse, err)
+	restyResponse, err := request.Request.Send()
+	request.Response = NewResponse(request, restyResponse, err)
 	request.done = true
 	request.invokeListeners()
 }

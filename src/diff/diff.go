@@ -5,7 +5,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/iancoleman/orderedmap"
 	"keboola-as-code/src/json"
-	"keboola-as-code/src/model"
+	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
 	"reflect"
 	"strings"
@@ -19,7 +19,7 @@ type structField struct {
 }
 
 type Differ struct {
-	state     *model.State
+	state     *state.State
 	results   []*Result
 	typeCache map[typeName][]structField
 	error     *utils.Error
@@ -36,7 +36,7 @@ const (
 )
 
 type Result struct {
-	model.ObjectState
+	state.ObjectState
 	State         ResultState
 	ChangedFields []string
 	Differences   map[string]string
@@ -46,7 +46,7 @@ type Results struct {
 	Results []*Result
 }
 
-func NewDiffer(state *model.State) *Differ {
+func NewDiffer(state *state.State) *Differ {
 	return &Differ{
 		state:     state,
 		typeCache: make(map[typeName][]structField),
@@ -74,7 +74,7 @@ func (d *Differ) Diff() (*Results, error) {
 	return &Results{d.results}, err
 }
 
-func (d *Differ) doDiff(state model.ObjectState) (*Result, error) {
+func (d *Differ) doDiff(state state.ObjectState) (*Result, error) {
 	result := &Result{ObjectState: state}
 	remoteState := state.RemoteState()
 	localState := state.LocalState()

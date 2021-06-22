@@ -57,7 +57,7 @@ func TestBranchApiCalls(t *testing.T) {
 		OnSuccess(func(response *client.Response) *client.Response {
 			// OnSuccess callback called when job is in successful state
 			job := response.Result().(*model.Job)
-			assert.NoError(t, response.Error())
+			assert.NoError(t, response.Err())
 			assert.NotNil(t, job)
 			assert.Equal(t, "success", job.Status)
 			assert.NotEmpty(t, branchBar.Id)
@@ -65,7 +65,7 @@ func TestBranchApiCalls(t *testing.T) {
 			return response
 		}).
 		Send()
-	assert.NoError(t, request.Response().Error())
+	assert.NoError(t, request.Err())
 	assert.True(t, request.IsSent())
 	assert.True(t, request.IsDone())
 	assert.True(t, onSuccessCalled)
@@ -120,14 +120,14 @@ func TestBranchApiCalls(t *testing.T) {
 		OnSuccess(func(response *client.Response) *client.Response {
 			// OnSuccess callback called when job is in successful state
 			job := response.Result().(*model.Job)
-			assert.NoError(t, response.Error())
+			assert.NoError(t, response.Err())
 			assert.NotNil(t, job)
 			assert.Equal(t, "success", job.Status)
 			onSuccessCalled = true
 			return response
 		}).
 		Send()
-	assert.NoError(t, request.Response().Error())
+	assert.NoError(t, request.Err())
 	assert.True(t, request.IsSent())
 	assert.True(t, request.IsDone())
 	assert.True(t, onSuccessCalled)

@@ -5,6 +5,11 @@ import (
 	"sort"
 )
 
+const (
+	MetaFileTag   = "metaFile:true"
+	ConfigFileTag = "configFile:true"
+)
+
 // Token https://keboola.docs.apiary.io/#reference/tokens-and-permissions/token-verification/token-verification
 type Token struct {
 	Id       string     `json:"id"`

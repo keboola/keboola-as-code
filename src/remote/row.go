@@ -9,11 +9,11 @@ import (
 )
 
 func (a *StorageApi) GetConfigRow(branchId int, componentId string, configId string, rowId string) (*model.ConfigRow, error) {
-	response := a.GetConfigRowRequest(branchId, componentId, configId, rowId).Send().Response()
+	response := a.GetConfigRowRequest(branchId, componentId, configId, rowId).Send().Response
 	if response.HasResult() {
 		return response.Result().(*model.ConfigRow), nil
 	}
-	return nil, response.Error()
+	return nil, response.Err()
 }
 
 func (a *StorageApi) CreateConfigRow(row *model.ConfigRow) (*model.ConfigRow, error) {
@@ -22,11 +22,11 @@ func (a *StorageApi) CreateConfigRow(row *model.ConfigRow) (*model.ConfigRow, er
 		return nil, err
 	}
 
-	response := request.Send().Response()
+	response := request.Send().Response
 	if response.HasResult() {
 		return response.Result().(*model.ConfigRow), nil
 	}
-	return nil, response.Error()
+	return nil, response.Err()
 }
 
 func (a *StorageApi) UpdateConfigRow(row *model.ConfigRow, changed []string) (*model.ConfigRow, error) {
@@ -35,16 +35,16 @@ func (a *StorageApi) UpdateConfigRow(row *model.ConfigRow, changed []string) (*m
 		return nil, err
 	}
 
-	response := request.Send().Response()
+	response := request.Send().Response
 	if response.HasResult() {
 		return response.Result().(*model.ConfigRow), nil
 	}
-	return nil, response.Error()
+	return nil, response.Err()
 }
 
 // DeleteConfigRow - only config row in main branch can be deleted!
 func (a *StorageApi) DeleteConfigRow(componentId string, configId string, rowId string) error {
-	return a.DeleteConfigRowRequest(componentId, configId, rowId).Send().Response().Error()
+	return a.DeleteConfigRowRequest(componentId, configId, rowId).Send().Err()
 }
 
 // GetConfigRowRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/manage-configuration-rows/row-detail

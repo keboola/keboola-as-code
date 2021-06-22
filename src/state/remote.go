@@ -7,7 +7,7 @@ import (
 	"keboola-as-code/src/remote"
 )
 
-func LoadRemoteState(state *model.State, ctx context.Context, api *remote.StorageApi) {
+func LoadRemoteState(state *State, ctx context.Context, api *remote.StorageApi) {
 	pool := api.NewPool()
 
 	// Load branches

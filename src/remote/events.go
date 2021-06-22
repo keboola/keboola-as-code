@@ -20,11 +20,11 @@ func (a *StorageApi) CreateEvent(
 	params map[string]interface{},
 	results map[string]interface{},
 ) (*model.Event, error) {
-	response := a.CreatEventRequest(level, message, duration, params, results).Send().Response()
+	response := a.CreatEventRequest(level, message, duration, params, results).Send().Response
 	if response.HasResult() {
 		return response.Result().(*model.Event), nil
 	}
-	return nil, response.Error()
+	return nil, response.Err()
 }
 
 func (a *StorageApi) CreatEventRequest(

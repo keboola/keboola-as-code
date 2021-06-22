@@ -12,14 +12,13 @@ INFO	Created metadata dir ".keboola".
 INFO	Created manifest file ".keboola/manifest.json".
 INFO	Created file ".gitignore".
 INFO	Created file ".env.local" with the API token, keep it local and secret.
-DEBUG	HTTP	POST https://%s/v2/storage/events | 201 | %s
+%A
 DEBUG	Sent "init" successful event id: "%s"
 INFO	Init done. Running pull.
 %A
 DEBUG	Project local and remote states successfully loaded.
 INFO	Plan for "pull" operation:
 INFO	+  B main
-%A
 DEBUG	Saved "main/meta.json"
 DEBUG	Saved manifest file ".keboola/manifest.json".
 %A

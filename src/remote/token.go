@@ -36,11 +36,11 @@ func (a *StorageApi) ProjectName() string {
 }
 
 func (a *StorageApi) GetToken(token string) (*model.Token, error) {
-	response := a.GetTokenRequest(token).Send().Response()
+	response := a.GetTokenRequest(token).Send().Response
 	if response.HasResult() {
 		return response.Result().(*model.Token), nil
 	}
-	return nil, response.Error()
+	return nil, response.Err()
 }
 
 func (a *StorageApi) GetTokenRequest(token string) *client.Request {

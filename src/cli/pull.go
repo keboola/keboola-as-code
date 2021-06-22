@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"keboola-as-code/src/diff"
-	"keboola-as-code/src/model"
+	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/plan"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/state"
@@ -62,13 +62,13 @@ func pullCommand(root *rootCommand) *cobra.Command {
 			// Load manifest
 			projectDir := root.options.ProjectDir()
 			metadataDir := root.options.MetadataDir()
-			manifest, err := model.LoadManifest(projectDir, metadataDir)
+			projectManifest, err := manifest.LoadManifest(projectDir, metadataDir)
 			if err != nil {
 				return err
 			}
 
 			// Load project remote and local state
-			projectState, ok := state.LoadState(manifest, logger, root.ctx, api)
+			projectState, ok := state.LoadState(projectManifest, logger, root.ctx, api)
 			if ok {
 				logger.Debugf("Project local and remote states successfully loaded.")
 			} else {
@@ -110,15 +110,15 @@ func pullCommand(root *rootCommand) *cobra.Command {
 			}
 
 			// Invoke
-			if err := pull.Invoke(root.ctx, manifest, root.api, root.logger); err != nil {
+			if err := pull.Invoke(root.ctx, projectManifest, root.api, root.logger); err != nil {
 				return err
 			}
 
 			// Save manifest
-			if err = manifest.Save(); err != nil {
+			if err = projectManifest.Save(); err != nil {
 				return err
 			}
-			root.logger.Debugf("Saved manifest file \"%s\".", utils.RelPath(projectDir, manifest.Path()))
+			root.logger.Debugf("Saved manifest file \"%s\".", utils.RelPath(projectDir, projectManifest.Path()))
 
 			// Send successful event
 			successful = true
