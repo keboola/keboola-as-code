@@ -11,8 +11,14 @@ func (r *Recipe) Log(logger *zap.SugaredLogger) *Recipe {
 	sort.SliceStable(actions, func(i, j int) bool {
 		return actions[i].RelativePath() < actions[j].RelativePath()
 	})
-	for _, action := range actions {
-		logger.Debugf(action.String())
+
+	if len(actions) == 0 {
+		logger.Debug("  no difference")
+	} else {
+		for _, action := range actions {
+			logger.Debugf(action.String())
+		}
 	}
+
 	return r
 }

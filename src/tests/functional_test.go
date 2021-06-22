@@ -56,16 +56,15 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	if err != nil {
 		t.Fatalf("Copy error: %s", err)
 	}
-
-	// Replace all %%ENV_VAR%% in all files in the working directory
-	utils.ReplaceEnvsDir(workingDir)
-
 	// Setup KBC project state
 	projectStateFilePath := filepath.Join(testDir, "project-state.json")
 	if utils.IsFile(projectStateFilePath) {
 		remote.SetStateOfTestProject(t, projectStateFilePath)
 		remote.SetStateOfTestProject(t, projectStateFilePath)
 	}
+
+	// Replace all %%ENV_VAR%% in all files in the working directory
+	utils.ReplaceEnvsDir(workingDir)
 
 	// Load command arguments from file
 	argsFile := filepath.Join(testDir, "args")

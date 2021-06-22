@@ -3,6 +3,8 @@ package diff
 import (
 	"fmt"
 	"github.com/google/go-cmp/cmp"
+	"github.com/iancoleman/orderedmap"
+	"keboola-as-code/src/json"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
 	"reflect"
@@ -115,11 +117,21 @@ func (d *Differ) doDiff(state model.ObjectState) (*Result, error) {
 		localValues = localValues.Elem()
 	}
 
+	// Compare config/row content as string
+	transform := cmp.Transformer("orderedmap", func(m *orderedmap.OrderedMap) string {
+		str, err := json.EncodeString(m, true)
+		if err != nil {
+			panic(fmt.Errorf("cannot encode JSON: %s", err))
+		}
+		return str
+	})
+
 	// Diff
 	for _, field := range diffFields {
 		difference := cmp.Diff(
 			remoteValues.FieldByName(field.reflect.Name).Interface(),
 			localValues.FieldByName(field.reflect.Name).Interface(),
+			transform,
 		)
 		if len(difference) > 0 {
 			result.ChangedFields = append(result.ChangedFields, field.name)

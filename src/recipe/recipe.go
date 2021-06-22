@@ -28,7 +28,7 @@ func (a *Action) String() string {
 	kindAbb := strings.ToUpper(string(a.Kind()[0]))
 	msg := a.StringPrefix() + " " + kindAbb + " " + a.RelativePath()
 	if len(a.ChangedFields) > 0 {
-		msg += "changed: " + strings.Join(a.ChangedFields, ", ")
+		msg += " | changed: " + strings.Join(a.ChangedFields, ", ")
 	}
 	return msg
 }
