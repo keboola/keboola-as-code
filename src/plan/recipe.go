@@ -1,4 +1,4 @@
-package recipe
+package plan
 
 import (
 	"keboola-as-code/src/diff"
@@ -14,7 +14,7 @@ const (
 	ActionDeleteRemote
 )
 
-type Recipe struct {
+type Plan struct {
 	Name    string
 	Actions []*Action
 }
@@ -50,6 +50,6 @@ func (a *Action) StringPrefix() string {
 	}
 }
 
-func (r *Recipe) Add(d *diff.Result, t ActionType) {
-	r.Actions = append(r.Actions, &Action{d, t})
+func (p *Plan) Add(d *diff.Result, t ActionType) {
+	p.Actions = append(p.Actions, &Action{d, t})
 }

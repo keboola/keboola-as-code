@@ -10,7 +10,7 @@ import (
 )
 
 type Prompt struct {
-	Interactive bool // is terminal interactive, can we ask questions?
+	Interactive bool // is terminal interactive?, can we ask questions?
 	stdin       terminal.FileReader
 	stdout      terminal.FileWriter
 	stderr      terminal.FileWriter

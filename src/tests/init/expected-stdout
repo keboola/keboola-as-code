@@ -22,4 +22,6 @@ INFO	+  B main
 %A
 DEBUG	Saved "main/meta.json"
 DEBUG	Saved manifest file ".keboola/manifest.json".
+%A
+DEBUG	Sent "pull" successful event id: "%s"
 INFO	Pull done.

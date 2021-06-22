@@ -1,12 +1,12 @@
-package recipe
+package plan
 
 import (
 	"fmt"
 	"keboola-as-code/src/diff"
 )
 
-func Pull(diffResults *diff.Results) *Recipe {
-	recipe := &Recipe{Name: "pull"}
+func Pull(diffResults *diff.Results) *Plan {
+	recipe := &Plan{Name: "pull"}
 	for _, result := range diffResults.Results {
 		switch result.State {
 		case diff.ResultEqual:

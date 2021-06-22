@@ -57,7 +57,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 				return err
 			}
 
-			// Send failed event - we have connection to API
+			// Send failed event on error
 			defer func() {
 				if err != nil && !successful {
 					sendInitFailedEvent(root, api, err)

@@ -1,4 +1,4 @@
-package recipe
+package plan
 
 import (
 	"context"
@@ -11,11 +11,11 @@ import (
 	"keboola-as-code/src/utils"
 )
 
-func (r *Recipe) Invoke(ctx context.Context, manifest *model.Manifest, api *remote.StorageApi, logger *zap.SugaredLogger) error {
+func (p *Plan) Invoke(ctx context.Context, manifest *model.Manifest, api *remote.StorageApi, logger *zap.SugaredLogger) error {
 	errors := &utils.Error{}
 	workers, _ := errgroup.WithContext(ctx)
 	pool := api.NewPool()
-	for _, action := range r.Actions {
+	for _, action := range p.Actions {
 		switch action.Type {
 		case ActionSaveLocal:
 			if err := local.SaveLocal(action.ObjectState, manifest, logger, workers); err != nil {

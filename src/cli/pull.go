@@ -5,9 +5,11 @@ import (
 	"github.com/spf13/cobra"
 	"keboola-as-code/src/diff"
 	"keboola-as-code/src/model"
-	"keboola-as-code/src/recipe"
+	"keboola-as-code/src/plan"
+	"keboola-as-code/src/remote"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
+	"time"
 )
 
 const pullShortDescription = `Pull configurations to the local project dir`
@@ -40,7 +42,8 @@ func pullCommand(root *rootCommand) *cobra.Command {
 
 			return nil
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			successful := false
 			logger := root.logger
 
 			// Validate token and get API
@@ -48,6 +51,13 @@ func pullCommand(root *rootCommand) *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			// Send failed event on error
+			defer func() {
+				if err != nil && !successful {
+					sendPullFailedEvent(root, api, err)
+				}
+			}()
 
 			// Load manifest
 			projectDir := root.options.ProjectDir()
@@ -89,8 +99,8 @@ func pullCommand(root *rootCommand) *cobra.Command {
 				return err
 			}
 
-			// Get recipe
-			pull := recipe.Pull(diffResults)
+			// Get plan
+			pull := plan.Pull(diffResults)
 			pull.LogInfo(root.logger)
 
 			// Dry run?
@@ -110,6 +120,10 @@ func pullCommand(root *rootCommand) *cobra.Command {
 			}
 			root.logger.Debugf("Saved manifest file \"%s\".", utils.RelPath(projectDir, manifest.Path()))
 
+			// Send successful event
+			successful = true
+			sendPullSuccessfulEvent(root, api)
+
 			// Done
 			root.logger.Info("Pull done.")
 			return nil
@@ -122,4 +136,39 @@ func pullCommand(root *rootCommand) *cobra.Command {
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "print what needs to be done")
 
 	return cmd
+}
+
+func sendPullSuccessfulEvent(root *rootCommand, api *remote.StorageApi) {
+	message := "Initialized local project directory."
+	duration := time.Since(root.start)
+	params := map[string]interface{}{
+		"command": "pull",
+	}
+	results := map[string]interface{}{
+		"projectId": api.ProjectId(),
+	}
+	event, err := api.CreateEvent("info", message, duration, params, results)
+	if err == nil {
+		root.logger.Debugf("Sent \"pull\" successful event id: \"%s\"", event.Id)
+	} else {
+		root.logger.Warnf("Cannot send \"pull\" successful event: %s", err)
+	}
+}
+
+func sendPullFailedEvent(root *rootCommand, api *remote.StorageApi, err error) {
+	message := "Pull command failed."
+	duration := time.Since(root.start)
+	params := map[string]interface{}{
+		"command": "pull",
+	}
+	results := map[string]interface{}{
+		"projectId": api.ProjectId(),
+		"error":     fmt.Sprintf("%s", err),
+	}
+	event, err := api.CreateEvent("error", message, duration, params, results)
+	if err == nil {
+		root.logger.Debugf("Sent \"pull\" failed event id: \"%s\"", event.Id)
+	} else {
+		root.logger.Warnf("Cannot send \"pull\" failed event: %s", err)
+	}
 }
