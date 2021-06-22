@@ -233,84 +233,84 @@ func fullStruct() *Content {
 		Naming: DefaultNaming(),
 		Branches: []*BranchManifest{
 			{
+				Id: 10,
 				Paths: Paths{
 					Path:       "main",
 					ParentPath: "",
 				},
-				Id: 10,
 			},
 			{
+				Id: 11,
 				Paths: Paths{
 					Path:       "11-dev",
 					ParentPath: "",
 				},
-				Id: 11,
 			},
 		},
 		Configs: []*ConfigManifestWithRows{
 			{
 				ConfigManifest: &ConfigManifest{
+					BranchId:    10,
+					ComponentId: "keboola.ex-db-oracle",
+					Id:          "11",
 					Paths: Paths{
 						Path:       "11-raw-data",
 						ParentPath: "main",
 					},
-					BranchId:    10,
-					ComponentId: "keboola.ex-db-oracle",
-					Id:          "11",
 				},
 				Rows: []*ConfigRowManifest{
 					{
-						Paths: Paths{
-							Path:       "101-region-1",
-							ParentPath: "main/11-raw-data/rows",
-						},
 						Id:          "101",
 						BranchId:    10,
 						ComponentId: "keboola.ex-db-oracle",
 						ConfigId:    "11",
-					},
-					{
 						Paths: Paths{
-							Path:       "102-region-2",
+							Path:       "101-region-1",
 							ParentPath: "main/11-raw-data/rows",
 						},
+					},
+					{
 						Id:          "102",
 						BranchId:    10,
 						ComponentId: "keboola.ex-db-oracle",
 						ConfigId:    "11",
+						Paths: Paths{
+							Path:       "102-region-2",
+							ParentPath: "main/11-raw-data/rows",
+						},
 					},
 				},
 			},
 			{
 				ConfigManifest: &ConfigManifest{
+					BranchId:    11,
+					ComponentId: "keboola.wr-db-mysql",
+					Id:          "12",
 					Paths: Paths{
 						Path:       "12-current-month",
 						ParentPath: "11-dev",
 					},
-					BranchId:    11,
-					ComponentId: "keboola.wr-db-mysql",
-					Id:          "12",
 				},
 				Rows: []*ConfigRowManifest{
 					{
-						Paths: Paths{
-							Path:       "103-all",
-							ParentPath: "11-dev/12-current-month/rows",
-						},
 						Id:          "103",
 						BranchId:    11,
 						ComponentId: "keboola.wr-db-mysql",
 						ConfigId:    "12",
-					},
-					{
 						Paths: Paths{
-							Path:       "104-sum",
+							Path:       "103-all",
 							ParentPath: "11-dev/12-current-month/rows",
 						},
+					},
+					{
 						Id:          "104",
 						BranchId:    11,
 						ComponentId: "keboola.wr-db-mysql",
 						ConfigId:    "12",
+						Paths: Paths{
+							Path:       "104-sum",
+							ParentPath: "11-dev/12-current-month/rows",
+						},
 					},
 				},
 			},

@@ -47,11 +47,11 @@ func TestLoadState(t *testing.T) {
 				IsDefault:   true,
 			},
 			BranchManifest: &manifest.BranchManifest{
+				Id: cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
 				Paths: manifest.Paths{
 					Path:       "main",
 					ParentPath: "",
 				},
-				Id: cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
 			},
 		},
 	}, state.Branches())
@@ -91,13 +91,13 @@ func TestLoadState(t *testing.T) {
 				}),
 			},
 			ConfigManifest: &manifest.ConfigManifest{
+				BranchId:    cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
+				ComponentId: "ex-generic-v2",
+				Id:          utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
 				Paths: manifest.Paths{
 					Path:       "ex-generic-v2/456-todos",
 					ParentPath: "main",
 				},
-				BranchId:    cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
-				ComponentId: "ex-generic-v2",
-				Id:          utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
 			},
 		},
 	}, state.Configs())

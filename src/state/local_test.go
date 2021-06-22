@@ -194,11 +194,11 @@ func complexLocalExpectedBranches() []*BranchState {
 				IsDefault:   true,
 			},
 			BranchManifest: &manifest.BranchManifest{
+				Id: 111,
 				Paths: manifest.Paths{
 					Path:       "main",
 					ParentPath: "",
 				},
-				Id: 111,
 			},
 		},
 		{
@@ -209,11 +209,11 @@ func complexLocalExpectedBranches() []*BranchState {
 				IsDefault:   false,
 			},
 			BranchManifest: &manifest.BranchManifest{
+				Id: 123,
 				Paths: manifest.Paths{
 					Path:       "123-branch",
 					ParentPath: "",
 				},
-				Id: 123,
 			},
 		},
 	}
