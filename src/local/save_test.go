@@ -30,8 +30,11 @@ func (*MockedRecord) UniqueKey(sort string) string {
 	return "key"
 }
 
-func (*MockedRecord) GetPaths() manifest.Paths {
-	return manifest.Paths{}
+func (*MockedRecord) GetPaths() *manifest.Paths {
+	return &manifest.Paths{
+		ParentPath: "",
+		Path:       "test",
+	}
 }
 
 func (*MockedRecord) MetaFilePath() string {

@@ -70,7 +70,7 @@ func pullCommand(root *rootCommand) *cobra.Command {
 			// Load project remote and local state
 			projectState, ok := state.LoadState(projectManifest, logger, root.ctx, api)
 			if ok {
-				logger.Debugf("Project local and remote states successfully loaded.")
+				logger.Debugf("Project local and remote states have been successfully loaded.")
 			} else {
 				if projectState.RemoteErrors().Len() > 0 {
 					logger.Debugf("Project remote state load failed: %s", projectState.RemoteErrors())
@@ -110,7 +110,7 @@ func pullCommand(root *rootCommand) *cobra.Command {
 			}
 
 			// Invoke
-			if err := pull.Invoke(root.ctx, projectManifest, root.api, root.logger); err != nil {
+			if err := pull.Invoke(root.logger, root.ctx, root.api, projectManifest); err != nil {
 				return err
 			}
 

@@ -16,7 +16,7 @@ INFO	Created file ".env.local" with the API token, keep it local and secret.
 DEBUG	Sent "init" successful event id: "%s"
 INFO	Init done. Running pull.
 %A
-DEBUG	Project local and remote states successfully loaded.
+DEBUG	Project local and remote states have been successfully loaded.
 INFO	Plan for "pull" operation:
 INFO	+  B main
 DEBUG	Saved "main/meta.json"

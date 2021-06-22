@@ -25,6 +25,7 @@ func TestLocalLoadModel(t *testing.T) {
 	// Save files
 	target := &ModelStruct{}
 	record := &MockedRecord{}
+	assert.NoError(t, os.MkdirAll(record.GetPaths().RelativePath(), 0750))
 	assert.NoError(t, os.WriteFile(filepath.Join(projectDir, record.MetaFilePath()), []byte(metaFile), 0640))
 	assert.NoError(t, os.WriteFile(filepath.Join(projectDir, record.ConfigFilePath()), []byte(configFile), 0640))
 

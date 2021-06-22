@@ -45,7 +45,7 @@ func (a *Action) StringPrefix() string {
 		if a.Type == ActionSaveLocal || a.Type == ActionSaveRemote {
 			return "+ "
 		} else {
-			return "- "
+			return "× "
 		}
 	}
 }

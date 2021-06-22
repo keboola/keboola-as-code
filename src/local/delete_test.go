@@ -34,8 +34,10 @@ func TestLocalDeleteModel(t *testing.T) {
 	assert.True(t, found)
 
 	// Save files
+	dirAbs := record.GetPaths().RelativePath()
 	metaFileAbs := filepath.Join(projectDir, record.MetaFilePath())
 	configFileAbs := filepath.Join(projectDir, record.ConfigFilePath())
+	assert.NoError(t, os.MkdirAll(dirAbs, 0750))
 	assert.NoError(t, os.WriteFile(metaFileAbs, []byte(metaFile), 0640))
 	assert.NoError(t, os.WriteFile(configFileAbs, []byte(configFile), 0640))
 	assert.NoError(t, DeleteModel(logger, m, record, target))
@@ -45,4 +47,5 @@ func TestLocalDeleteModel(t *testing.T) {
 	assert.False(t, found)
 	assert.NoFileExists(t, metaFileAbs)
 	assert.NoFileExists(t, configFileAbs)
+	assert.NoFileExists(t, dirAbs)
 }

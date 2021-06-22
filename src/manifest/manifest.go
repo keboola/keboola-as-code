@@ -45,7 +45,7 @@ type Record interface {
 	Kind() string
 	KindAbbr() string
 	UniqueKey(sort string) string
-	GetPaths() Paths
+	GetPaths() *Paths
 	MetaFilePath() string
 	ConfigFilePath() string
 }
@@ -251,7 +251,7 @@ func (m *Manifest) DeleteRecordByKey(key string) {
 	m.records.Delete(key)
 }
 
-func (o Paths) GetPaths() Paths {
+func (o *Paths) GetPaths() *Paths {
 	return o
 }
 

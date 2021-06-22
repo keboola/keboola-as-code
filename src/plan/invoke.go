@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
+	"keboola-as-code/src/local"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/utils"
 )
 
-func (p *Plan) Invoke(ctx context.Context, m *manifest.Manifest, api *remote.StorageApi, logger *zap.SugaredLogger) error {
+func (p *Plan) Invoke(logger *zap.SugaredLogger, ctx context.Context, api *remote.StorageApi, m *manifest.Manifest) error {
 	errors := &utils.Error{}
 	workers, _ := errgroup.WithContext(ctx)
 	pool := api.NewPool()
@@ -42,6 +43,10 @@ func (p *Plan) Invoke(ctx context.Context, m *manifest.Manifest, api *remote.Sto
 	}
 
 	if err := workers.Wait(); err != nil {
+		errors.Add(err)
+	}
+
+	if err := local.DeleteEmptyDirectories(logger, m.ProjectDir); err != nil {
 		errors.Add(err)
 	}
 
