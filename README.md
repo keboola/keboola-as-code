@@ -116,7 +116,7 @@ docker-compose run --rm dev bash
 
 To run the one or more tests via wildcard:
 ```
-./scripts/tests.sh -run TestFuncName*
+./scripts/tests.sh -run "Functional/pull*"
 ```
 
 To run tests with verbose output to see HTTP requests, ENVs, etc.:

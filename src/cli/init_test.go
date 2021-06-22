@@ -40,7 +40,7 @@ func TestInteractive(t *testing.T) {
 	} else {
 		stdout = io.Discard
 	}
-	c, state, err := vt10x.NewVT10XConsole(expect.WithStdout(stdout))
+	c, state, err := vt10x.NewVT10XConsole(expect.WithStdout(stdout), expect.WithDefaultTimeout(10*time.Second))
 	assert.NoError(t, err)
 
 	// Init prompt and cmd
@@ -80,7 +80,5 @@ func TestInteractive(t *testing.T) {
 
 	// Assert output
 	out := expect.StripTrailingEmptyLines(state.String())
-	assert.Contains(t, out, "? API host")
-	assert.Contains(t, out, "? API token")
 	assert.Contains(t, out, "Pull done.")
 }

@@ -214,7 +214,8 @@ func (m *Manifest) Save() error {
 	return os.WriteFile(m.Path(), data, 0644)
 }
 
-func (m *Manifest) LoadModel(om ObjectManifest, model interface{}) error {
+func (m *Manifest) LoadModel(om ObjectManifest, model interface{}) *utils.Error {
+	errors := &utils.Error{}
 	paths := om.Paths()
 	modelType := reflect.TypeOf(model).Elem()
 	modelValue := reflect.ValueOf(model).Elem()
@@ -224,22 +225,22 @@ func (m *Manifest) LoadModel(om ObjectManifest, model interface{}) error {
 	if len(metaFields) > 0 {
 		metadataContent := make(map[string]interface{})
 		metadataFile := filepath.Join(paths.AbsolutePath(m.ProjectDir), MetaFile)
-		if err := readJsonFile(m.ProjectDir, metadataFile, &metadataContent, om.Kind()+" metadata"); err != nil {
-			return err
-		}
+		if err := readJsonFile(m.ProjectDir, metadataFile, &metadataContent, om.Kind()+" metadata"); err == nil {
+			for _, field := range metaFields {
+				// Use JSON name if present
+				name := field.Name
+				jsonName := strings.Split(field.Tag.Get("json"), ",")[0]
+				if jsonName != "" {
+					name = jsonName
+				}
 
-		for _, field := range metaFields {
-			// Use JSON name if present
-			name := field.Name
-			jsonName := strings.Split(field.Tag.Get("json"), ",")[0]
-			if jsonName != "" {
-				name = jsonName
+				// Set value, some value are optional, model will be validated later
+				if value, ok := metadataContent[name]; ok {
+					modelValue.FieldByName(field.Name).Set(reflect.ValueOf(value))
+				}
 			}
-
-			// Set value, some value are optional, model will be validated later
-			if value, ok := metadataContent[name]; ok {
-				modelValue.FieldByName(field.Name).Set(reflect.ValueOf(value))
-			}
+		} else {
+			errors.Add(err)
 		}
 	}
 
@@ -250,10 +251,16 @@ func (m *Manifest) LoadModel(om ObjectManifest, model interface{}) error {
 	} else if len(configFields) == 1 {
 		configFile := filepath.Join(paths.AbsolutePath(m.ProjectDir), ConfigFile)
 		content := utils.EmptyOrderedMap()
-		if err := readJsonFile(m.ProjectDir, configFile, &content, om.Kind()); err != nil {
-			return err
+		if err := readJsonFile(m.ProjectDir, configFile, &content, om.Kind()); err == nil {
+			modelValue.FieldByName(configFields[0].Name).Set(reflect.ValueOf(content))
+		} else {
+			errors.Add(err)
 		}
-		modelValue.FieldByName(configFields[0].Name).Set(reflect.ValueOf(content))
+
+	}
+
+	if errors.Len() > 0 {
+		return errors
 	}
 
 	return nil
@@ -455,7 +462,7 @@ func (r *ConfigRowManifest) ResolvePaths(c *ConfigManifest) {
 	r.ParentPath = filepath.Join(c.ParentPath, c.Path, RowsDir)
 }
 
-func (b *BranchManifest) ToModel(m *Manifest) (*Branch, error) {
+func (b *BranchManifest) ToModel(m *Manifest) (*Branch, *utils.Error) {
 	branch := &Branch{Id: b.Id}
 	if err := m.LoadModel(b, branch); err != nil {
 		return nil, err
@@ -463,7 +470,7 @@ func (b *BranchManifest) ToModel(m *Manifest) (*Branch, error) {
 	return branch, nil
 }
 
-func (c *ConfigManifest) ToModel(m *Manifest) (*Config, error) {
+func (c *ConfigManifest) ToModel(m *Manifest) (*Config, *utils.Error) {
 	config := &Config{BranchId: c.BranchId, ComponentId: c.ComponentId, Id: c.Id}
 	if err := m.LoadModel(c, config); err != nil {
 		return nil, err
@@ -471,7 +478,7 @@ func (c *ConfigManifest) ToModel(m *Manifest) (*Config, error) {
 	return config, nil
 }
 
-func (r *ConfigRowManifest) ToModel(m *Manifest) (*ConfigRow, error) {
+func (r *ConfigRowManifest) ToModel(m *Manifest) (*ConfigRow, *utils.Error) {
 	row := &ConfigRow{BranchId: r.BranchId, ComponentId: r.ComponentId, ConfigId: r.ConfigId, Id: r.Id}
 	if err := m.LoadModel(r, row); err != nil {
 		return nil, err
@@ -507,17 +514,17 @@ func (r *ConfigRow) GenerateManifest(naming *LocalNaming, configManifest *Config
 func readJsonFile(projectDir string, path string, v interface{}, errPrefix string) error {
 	// Read meta file
 	if !utils.IsFile(path) {
-		return fmt.Errorf("%s JSON file \"%s\" not found", errPrefix, utils.RelPath(projectDir, path))
+		return fmt.Errorf("%s file \"%s\" not found", errPrefix, utils.RelPath(projectDir, path))
 	}
 	content, err := os.ReadFile(path)
 	if err != nil {
-		return fmt.Errorf("cannot read %s JSON file \"%s\"", errPrefix, utils.RelPath(projectDir, path))
+		return fmt.Errorf("cannot read %s file \"%s\"", errPrefix, utils.RelPath(projectDir, path))
 	}
 
 	// Decode meta file
 	err = json.Decode(content, v)
 	if err != nil {
-		return fmt.Errorf("%s JSON file \"%s\" is invalid: %s", errPrefix, utils.RelPath(projectDir, path), err)
+		return fmt.Errorf("%s file \"%s\" is invalid: %s", errPrefix, utils.RelPath(projectDir, path), err)
 	}
 	return nil
 }

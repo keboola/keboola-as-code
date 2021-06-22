@@ -14,11 +14,9 @@ import (
 
 func TestLoadLocalStateMinimal(t *testing.T) {
 	defer utils.ResetEnv(t, os.Environ())
-	state, err := loadLocalTestState(t, "minimal")
+	state := loadLocalTestState(t, "minimal")
 	assert.NotNil(t, state)
-	assert.NotNil(t, err)
-	assert.Empty(t, err.Error())
-	assert.Equal(t, 0, err.Len())
+	assert.Equal(t, 0, state.LocalErrors().Len())
 	assert.Len(t, state.Branches(), 1)
 	assert.Len(t, state.Configs(), 1)
 	assert.Empty(t, state.UntrackedPaths())
@@ -34,11 +32,9 @@ func TestLoadLocalStateMinimal(t *testing.T) {
 
 func TestLoadLocalStateComplex(t *testing.T) {
 	defer utils.ResetEnv(t, os.Environ())
-	state, err := loadLocalTestState(t, "complex")
+	state := loadLocalTestState(t, "complex")
 	assert.NotNil(t, state)
-	assert.NotNil(t, err)
-	assert.Empty(t, err.Error())
-	assert.Equal(t, 0, err.Len())
+	assert.Equal(t, 0, state.LocalErrors().Len())
 	assert.Equal(t, complexLocalExpectedBranches(), state.Branches())
 	assert.Equal(t, complexLocalExpectedConfigs(), state.Configs())
 	assert.Equal(t, complexLocalExpectedConfigRows(), state.ConfigRows())
@@ -79,85 +75,85 @@ func TestLoadLocalStateComplex(t *testing.T) {
 
 func TestLoadLocalStateBranchMissingMetaJson(t *testing.T) {
 	defer utils.ResetEnv(t, os.Environ())
-	state, err := loadLocalTestState(t, "branch-missing-meta-json")
+	state := loadLocalTestState(t, "branch-missing-meta-json")
 	assert.NotNil(t, state)
-	assert.NotNil(t, err)
-	assert.Equal(t, `branch metadata JSON file "main/meta.json" not found`, err.Error())
+	assert.Greater(t, state.LocalErrors().Len(), 0)
+	assert.Equal(t, `branch metadata file "main/meta.json" not found`, state.LocalErrors().Error())
 }
 
 func TestLoadLocalStateConfigMissingConfigJson(t *testing.T) {
 	defer utils.ResetEnv(t, os.Environ())
-	state, err := loadLocalTestState(t, "config-missing-config-json")
+	state := loadLocalTestState(t, "config-missing-config-json")
 	assert.NotNil(t, state)
-	assert.NotNil(t, err)
-	assert.Equal(t, `config JSON file "123-branch/keboola.ex-generic/456-todos/config.json" not found`, err.Error())
+	assert.Greater(t, state.LocalErrors().Len(), 0)
+	assert.Equal(t, `config file "123-branch/keboola.ex-generic/456-todos/config.json" not found`, state.LocalErrors().Error())
 }
 
 func TestLoadLocalStateConfigMissingMetaJson(t *testing.T) {
 	defer utils.ResetEnv(t, os.Environ())
-	state, err := loadLocalTestState(t, "config-missing-meta-json")
+	state := loadLocalTestState(t, "config-missing-meta-json")
 	assert.NotNil(t, state)
-	assert.NotNil(t, err)
-	assert.Equal(t, `config metadata JSON file "123-branch/keboola.ex-generic/456-todos/meta.json" not found`, err.Error())
+	assert.Greater(t, state.LocalErrors().Len(), 0)
+	assert.Equal(t, `config metadata file "123-branch/keboola.ex-generic/456-todos/meta.json" not found`, state.LocalErrors().Error())
 }
 
 func TestLoadLocalStateConfigRowMissingConfigJson(t *testing.T) {
 	defer utils.ResetEnv(t, os.Environ())
-	state, err := loadLocalTestState(t, "config-row-missing-config-json")
+	state := loadLocalTestState(t, "config-row-missing-config-json")
 	assert.NotNil(t, state)
-	assert.NotNil(t, err)
-	assert.Equal(t, `config row JSON file "123-branch/keboola.ex-db-mysql/896-tables/rows/12-users/config.json" not found`, err.Error())
+	assert.Greater(t, state.LocalErrors().Len(), 0)
+	assert.Equal(t, `config row file "123-branch/keboola.ex-db-mysql/896-tables/rows/12-users/config.json" not found`, state.LocalErrors().Error())
 }
 
 func TestLoadLocalStateConfigRowMissingMetaJson(t *testing.T) {
 	defer utils.ResetEnv(t, os.Environ())
-	state, err := loadLocalTestState(t, "config-row-missing-meta-json")
+	state := loadLocalTestState(t, "config-row-missing-meta-json")
 	assert.NotNil(t, state)
-	assert.NotNil(t, err)
-	assert.Equal(t, `config row metadata JSON file "123-branch/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json" not found`, err.Error())
+	assert.Greater(t, state.LocalErrors().Len(), 0)
+	assert.Equal(t, `config row metadata file "123-branch/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json" not found`, state.LocalErrors().Error())
 }
 
 func TestLoadLocalStateBranchInvalidMetaJson(t *testing.T) {
 	defer utils.ResetEnv(t, os.Environ())
-	state, err := loadLocalTestState(t, "branch-invalid-meta-json")
+	state := loadLocalTestState(t, "branch-invalid-meta-json")
 	assert.NotNil(t, state)
-	assert.NotNil(t, err)
-	assert.Equal(t, `branch metadata JSON file "main/meta.json" is invalid: invalid character 'f' looking for beginning of object key string, offset: 3`, err.Error())
+	assert.Greater(t, state.LocalErrors().Len(), 0)
+	assert.Equal(t, `branch metadata file "main/meta.json" is invalid: invalid character 'f' looking for beginning of object key string, offset: 3`, state.LocalErrors().Error())
 }
 
 func TestLoadLocalStateConfigInvalidConfigJson(t *testing.T) {
 	defer utils.ResetEnv(t, os.Environ())
-	state, err := loadLocalTestState(t, "config-invalid-config-json")
+	state := loadLocalTestState(t, "config-invalid-config-json")
 	assert.NotNil(t, state)
-	assert.NotNil(t, err)
-	assert.Equal(t, `config JSON file "123-branch/keboola.ex-generic/456-todos/config.json" is invalid: invalid character 'f' looking for beginning of object key string, offset: 3`, err.Error())
+	assert.Greater(t, state.LocalErrors().Len(), 0)
+	assert.Equal(t, `config file "123-branch/keboola.ex-generic/456-todos/config.json" is invalid: invalid character 'f' looking for beginning of object key string, offset: 3`, state.LocalErrors().Error())
 }
 
 func TestLoadLocalStateConfigInvalidMetaJson(t *testing.T) {
 	defer utils.ResetEnv(t, os.Environ())
-	state, err := loadLocalTestState(t, "config-invalid-meta-json")
+	state := loadLocalTestState(t, "config-invalid-meta-json")
 	assert.NotNil(t, state)
-	assert.NotNil(t, err)
-	assert.Equal(t, `config metadata JSON file "123-branch/keboola.ex-generic/456-todos/meta.json" is invalid: invalid character 'f' looking for beginning of object key string, offset: 3`, err.Error())
+	assert.Greater(t, state.LocalErrors().Len(), 0)
+	assert.Equal(t, `config metadata file "123-branch/keboola.ex-generic/456-todos/meta.json" is invalid: invalid character 'f' looking for beginning of object key string, offset: 3`, state.LocalErrors().Error())
 }
 
 func TestLoadLocalStateConfigRowInvalidConfigJson(t *testing.T) {
 	defer utils.ResetEnv(t, os.Environ())
-	state, err := loadLocalTestState(t, "config-row-invalid-config-json")
+	state := loadLocalTestState(t, "config-row-invalid-config-json")
 	assert.NotNil(t, state)
-	assert.NotNil(t, err)
-	assert.Equal(t, `config row JSON file "123-branch/keboola.ex-db-mysql/896-tables/rows/56-disabled/config.json" is invalid: invalid character 'f' looking for beginning of object key string, offset: 3`, err.Error())
+	assert.Greater(t, state.LocalErrors().Len(), 0)
+	assert.Equal(t, `config row file "123-branch/keboola.ex-db-mysql/896-tables/rows/56-disabled/config.json" is invalid: invalid character 'f' looking for beginning of object key string, offset: 3`, state.LocalErrors().Error())
 }
 
 func TestLoadLocalStateConfigRowInvalidMetaJson(t *testing.T) {
 	defer utils.ResetEnv(t, os.Environ())
-	state, err := loadLocalTestState(t, "config-row-invalid-meta-json")
+	state := loadLocalTestState(t, "config-row-invalid-meta-json")
 	assert.NotNil(t, state)
-	assert.NotNil(t, err)
-	assert.Equal(t, `config row metadata JSON file "123-branch/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json" is invalid: invalid character 'f' looking for beginning of object key string, offset: 3`, err.Error())
+	assert.Greater(t, state.LocalErrors().Len(), 0)
+	assert.Equal(t, `config row metadata file "123-branch/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json" is invalid: invalid character 'f' looking for beginning of object key string, offset: 3`, state.LocalErrors().Error())
 }
 
-func loadLocalTestState(t *testing.T, projectDirName string) (*model.State, *utils.Error) {
+func loadLocalTestState(t *testing.T, projectDirName string) *model.State {
 	utils.MustSetEnv("LOCAL_STATE_MAIN_BRANCH_ID", "111")
 	utils.MustSetEnv("LOCAL_STATE_MY_BRANCH_ID", "123")
 	utils.MustSetEnv("LOCAL_STATE_GENERIC_CONFIG_ID", "456")
@@ -180,10 +176,11 @@ func loadLocalTestState(t *testing.T, projectDirName string) (*model.State, *uti
 	state := model.NewState(projectDir, model.DefaultNaming())
 	manifest, err := model.LoadManifest(projectDir, metadataDir)
 	if err != nil {
-		assert.FailNow(t, err.Error())
+		assert.FailNow(t, state.LocalErrors().Error())
 	}
 
-	return state, LoadLocalState(state, manifest, api)
+	LoadLocalState(state, manifest, api)
+	return state
 }
 
 func complexLocalExpectedBranches() []*model.BranchState {

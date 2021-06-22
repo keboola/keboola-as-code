@@ -27,8 +27,8 @@ func TestLoadState(t *testing.T) {
 
 	manifest, err := model.LoadManifest(projectDir, metadataDir)
 	assert.NoError(t, err)
-	state, err := LoadState(manifest, logger, context.Background(), api)
-	assert.NoError(t, err)
+	state, ok := LoadState(manifest, logger, context.Background(), api)
+	assert.True(t, ok)
 	assert.Empty(t, state.RemoteErrors())
 	assert.Empty(t, state.LocalErrors())
 	assert.Equal(t, []*model.BranchState{

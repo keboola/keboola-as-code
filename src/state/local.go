@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/remote"
-	"keboola-as-code/src/utils"
 )
 
-func LoadLocalState(state *model.State, manifest *model.Manifest, api *remote.StorageApi) *utils.Error {
+func LoadLocalState(state *model.State, manifest *model.Manifest, api *remote.StorageApi) {
+	var invalidKeys []string
 	for _, key := range manifest.Registry.Keys() {
 		item, _ := manifest.Registry.Get(key)
 		switch itemManifest := item.(type) {
@@ -16,6 +16,7 @@ func LoadLocalState(state *model.State, manifest *model.Manifest, api *remote.St
 			if branch, err := itemManifest.ToModel(manifest); err == nil {
 				state.SetBranchLocalState(branch, itemManifest)
 			} else {
+				invalidKeys = append(invalidKeys, key)
 				state.AddLocalError(err)
 			}
 		// Add config
@@ -27,6 +28,7 @@ func LoadLocalState(state *model.State, manifest *model.Manifest, api *remote.St
 					state.AddLocalError(err)
 				}
 			} else {
+				invalidKeys = append(invalidKeys, key)
 				state.AddLocalError(err)
 			}
 		// Add config row
@@ -34,14 +36,18 @@ func LoadLocalState(state *model.State, manifest *model.Manifest, api *remote.St
 			if row, err := itemManifest.ToModel(manifest); err == nil {
 				state.SetConfigRowLocalState(row, itemManifest)
 			} else {
+				invalidKeys = append(invalidKeys, key)
 				state.AddLocalError(err)
 			}
 		default:
-			panic(fmt.Errorf(`unexpected type "%T"`, item))
+			panic(fmt.Errorf(`unexpected type "%T", key "%s"`, item, key))
 		}
 	}
 
-	return state.LocalErrors()
+	// Delete invalid records
+	for _, key := range invalidKeys {
+		manifest.Registry.Delete(key)
+	}
 }
 
 func getComponent(state *model.State, api *remote.StorageApi, componentId string) (*model.Component, error) {

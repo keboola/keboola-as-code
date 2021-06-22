@@ -120,6 +120,9 @@ func initCommand(root *rootCommand) *cobra.Command {
 			successful = true
 			sendInitSuccessfulEvent(root, api)
 
+			// Done
+			root.logger.Info("Init done. Running pull.")
+
 			// Make first pull
 			pull := root.GetCommandByName("pull")
 			return pull.RunE(pull, nil)

@@ -108,7 +108,7 @@ func LoadStateFile(path string) (*StateFile, error) {
 	return stateFile, nil
 }
 
-// LoadConfig loads config from the JSON file
+// LoadConfig loads config from the file
 func LoadConfig(t *testing.T, name string) *model.ConfigWithRows {
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filepath.Dir(testFile)
@@ -117,7 +117,7 @@ func LoadConfig(t *testing.T, name string) *model.ConfigWithRows {
 	fixture := &Config{}
 	err := json.Unmarshal([]byte(content), fixture)
 	if err != nil {
-		assert.FailNowf(t, "cannot decode JSON file \"%s\": %s", path, err)
+		assert.FailNowf(t, "cannot decode file \"%s\": %s", path, err)
 	}
 	return fixture.ToModel()
 }

@@ -128,7 +128,10 @@ func GetTestDirs(t *testing.T, root string) []string {
 		}
 
 		// Skip hidden
-		if utils.IsIgnoredFile(path, d) || utils.IsIgnoredDir(path, d) {
+		if utils.IsIgnoredFile(path, d) {
+			return nil
+		}
+		if utils.IsIgnoredDir(path, d) {
 			return fs.SkipDir
 		}
 

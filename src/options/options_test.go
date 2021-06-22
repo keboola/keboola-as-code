@@ -208,7 +208,7 @@ func TestValidateAllRequired(t *testing.T) {
 
 	// Assert
 	expected := []string{
-		`- This or any parent directory is not a Keboola project dir.`,
+		`- None of this and parent directories is project dir.`,
 		`  Project directory must contain the ".keboola" metadata directory.`,
 		`  Please change working directory to a project directory or use the "init" command.`,
 		`- Missing api host. Please use "--storage-api-host" flag or ENV variable "KBC_STORAGE_API_HOST".`,

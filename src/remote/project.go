@@ -149,7 +149,7 @@ func (p *testProject) InitState() {
 	p.log("Project state set | %s", time.Since(startTime))
 }
 
-// CreateConfigsInBranch loads configs from JSON files and creates them in the test project
+// CreateConfigsInBranch loads configs from files and creates them in the test project
 func (p *testProject) CreateConfigsInBranch(pool *client.Pool, names []string, branch *model.Branch, envPrefix string) {
 	for _, name := range names {
 		config := fixtures.LoadConfig(p.t, name)

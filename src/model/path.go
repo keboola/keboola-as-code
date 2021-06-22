@@ -107,7 +107,10 @@ func (f *PathsState) init() {
 
 		// Is ignored?
 		if f.isIgnored(path) {
-			return fs.SkipDir
+			if d.IsDir() {
+				return fs.SkipDir
+			}
+			return nil
 		}
 
 		path = f.relative(path)

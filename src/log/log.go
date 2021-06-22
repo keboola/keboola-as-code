@@ -1,6 +1,7 @@
 package log
 
 import (
+	"fmt"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"io"
@@ -40,6 +41,17 @@ func (w *WriteCloser) Close() error {
 func (w *WriteCloser) WriteString(s string) (n int, err error) {
 	return w.Write([]byte(s))
 }
+func (w *WriteCloser) WriteNoErr(p []byte) {
+	if _, err := w.Write(p); err != nil {
+		panic(fmt.Errorf("cannot write: %s", err))
+	}
+}
+
+func (w *WriteCloser) WriteStringNoErr(s string) {
+	if _, err := w.WriteString(s); err != nil {
+		panic(fmt.Errorf("cannot write: %s", err))
+	}
+}
 
 func ToDebugWriter(l *zap.SugaredLogger) *WriteCloser {
 	return &WriteCloser{zapcore.DebugLevel, l}
@@ -51,6 +63,10 @@ func ToInfoWriter(l *zap.SugaredLogger) *WriteCloser {
 
 func ToWarnWriter(l *zap.SugaredLogger) *WriteCloser {
 	return &WriteCloser{zapcore.WarnLevel, l}
+}
+
+func ToErrorWriter(l *zap.SugaredLogger) *WriteCloser {
+	return &WriteCloser{zapcore.ErrorLevel, l}
 }
 
 func NewLogger(stdout io.Writer, stderr io.Writer, logFile *os.File, verbose bool) *zap.SugaredLogger {

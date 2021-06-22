@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"github.com/spf13/cobra"
 	"keboola-as-code/src/diff"
 	"keboola-as-code/src/model"
@@ -20,6 +21,9 @@ what needs to be done without modifying the files.
 `
 
 func pullCommand(root *rootCommand) *cobra.Command {
+	force := false
+	dryRun := false
+
 	cmd := &cobra.Command{
 		Use:   "pull",
 		Short: pullShortDescription,
@@ -37,6 +41,8 @@ func pullCommand(root *rootCommand) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			logger := root.logger
+
 			// Validate token and get API
 			api, err := root.GetStorageApi()
 			if err != nil {
@@ -52,20 +58,48 @@ func pullCommand(root *rootCommand) *cobra.Command {
 			}
 
 			// Load project remote and local state
-			s, err := state.LoadState(manifest, root.logger, root.ctx, api)
-			if err != nil {
-				return err
+			projectState, ok := state.LoadState(manifest, logger, root.ctx, api)
+			if ok {
+				logger.Debugf("Project local and remote states successfully loaded.")
+			} else {
+				if projectState.RemoteErrors().Len() > 0 {
+					logger.Debugf("Project remote state load failed: %s", projectState.RemoteErrors())
+					return fmt.Errorf("cannot load project remote state: %s", projectState.RemoteErrors())
+				}
+				if projectState.LocalErrors().Len() > 0 {
+					if force {
+						logger.Infof("Ignoring invalid local state:%s", projectState.LocalErrors())
+					} else {
+						return fmt.Errorf(
+							"project local state is invalid:%s\n\n%s",
+							projectState.LocalErrors(),
+							"Use --force to override the invalid local state.",
+						)
+					}
+				}
 			}
 
+			// Log untracked paths
+			projectState.LogUntrackedPaths(logger)
+
 			// Diff
-			differ := diff.NewDiffer(s)
+			differ := diff.NewDiffer(projectState)
 			diffResults, err := differ.Diff()
 			if err != nil {
 				return err
 			}
 
-			// Pull
-			pull := recipe.Pull(diffResults).Log(root.logger)
+			// Get recipe
+			pull := recipe.Pull(diffResults)
+			pull.LogInfo(root.logger)
+
+			// Dry run?
+			if dryRun {
+				root.logger.Info("Pull dry run done. Nothing changed.")
+				return nil
+			}
+
+			// Invoke
 			if err := pull.Invoke(root.ctx, manifest, root.api, root.logger); err != nil {
 				return err
 			}
@@ -84,7 +118,8 @@ func pullCommand(root *rootCommand) *cobra.Command {
 
 	// Pull command flags
 	cmd.Flags().SortFlags = true
-	cmd.Flags().Bool("dry-run", false, "print what needs to be done")
+	cmd.Flags().BoolVar(&force, "force", false, "ignore invalid local state")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "print what needs to be done")
 
 	return cmd
 }

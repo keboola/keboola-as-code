@@ -14,12 +14,11 @@ INFO	Created file ".gitignore".
 INFO	Created file ".env.local" with the API token, keep it local and secret.
 DEBUG	HTTP	POST https://%s/v2/storage/events | 201 | %s
 DEBUG	Sent "init" successful event id: "%s"
+INFO	Init done. Running pull.
 %A
-DEBUG	Project remote state successfully loaded.
-%A
-DEBUG	Project local state successfully loaded.
-DEBUG	Recipe for "pull" operation:
-DEBUG	+  B main
+DEBUG	Project local and remote states successfully loaded.
+INFO	Plan for "pull" operation:
+INFO	+  B main
 %A
 DEBUG	Saved "main/meta.json"
 DEBUG	Saved manifest file ".keboola/manifest.json".

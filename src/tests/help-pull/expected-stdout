@@ -11,6 +11,7 @@ Usage:
 
 Flags:
       --dry-run   print what needs to be done
+      --force     ignore invalid local state
 
 Global Flags:
   -h, --help                       print help for command

@@ -5,10 +5,9 @@ import (
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/remote"
-	"keboola-as-code/src/utils"
 )
 
-func LoadRemoteState(state *model.State, ctx context.Context, api *remote.StorageApi) *utils.Error {
+func LoadRemoteState(state *model.State, ctx context.Context, api *remote.StorageApi) {
 	pool := api.NewPool()
 
 	// Load branches
@@ -45,6 +44,4 @@ func LoadRemoteState(state *model.State, ctx context.Context, api *remote.Storag
 	if err := pool.StartAndWait(); err != nil {
 		state.AddRemoteError(err)
 	}
-
-	return state.RemoteErrors()
 }

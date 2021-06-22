@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"keboola-as-code/src/utils"
 	"keboola-as-code/src/validator"
 	"sort"
@@ -105,6 +106,16 @@ func (s *State) MarkPathTracked(path string) {
 
 func (s *State) TrackedPaths() []string {
 	return s.paths.Tracked()
+}
+
+func (s *State) LogUntrackedPaths(logger *zap.SugaredLogger) {
+	untracked := s.UntrackedPaths()
+	if len(untracked) > 0 {
+		logger.Warn("Unknown paths found:")
+		for _, path := range untracked {
+			logger.Warn("  " + path)
+		}
+	}
 }
 
 func (s *State) UntrackedPaths() []string {
