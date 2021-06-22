@@ -87,15 +87,15 @@ func (a *StorageApi) ListComponentsRequest(branchId int) *client.Request {
 
 // GetConfigRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/manage-configurations/development-branch-configuration-detail
 func (a *StorageApi) GetConfigRequest(branchId int, componentId string, configId string) *client.Request {
+	config := &model.Config{}
+	config.BranchId = branchId
+	config.ComponentId = componentId
 	return a.
 		NewRequest(resty.MethodGet, "branch/{branchId}/components/{componentId}/configs/{configId}").
 		SetPathParam("branchId", cast.ToString(branchId)).
 		SetPathParam("componentId", componentId).
 		SetPathParam("configId", configId).
-		SetResult(&model.Config{
-			BranchId:    branchId,
-			ComponentId: componentId,
-		})
+		SetResult(config)
 }
 
 // CreateConfigRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/component-configurations/create-development-branch-configuration

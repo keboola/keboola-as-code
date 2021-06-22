@@ -37,7 +37,7 @@ func LoadModel(projectDir string, record manifest.Record, target interface{}) er
 }
 
 func LoadBranch(projectDir string, b *manifest.BranchManifest) (*model.Branch, error) {
-	branch := &model.Branch{Id: b.Id}
+	branch := &model.Branch{BranchKey: model.BranchKey{Id: b.Id}}
 	if err := LoadModel(projectDir, b, branch); err != nil {
 		return nil, err
 	}
@@ -45,7 +45,7 @@ func LoadBranch(projectDir string, b *manifest.BranchManifest) (*model.Branch, e
 }
 
 func LoadConfig(projectDir string, c *manifest.ConfigManifest) (*model.Config, error) {
-	config := &model.Config{BranchId: c.BranchId, ComponentId: c.ComponentId, Id: c.Id}
+	config := &model.Config{ConfigKey: model.ConfigKey{BranchId: c.BranchId, ComponentId: c.ComponentId, Id: c.Id}}
 	if err := LoadModel(projectDir, c, config); err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func LoadConfig(projectDir string, c *manifest.ConfigManifest) (*model.Config, e
 }
 
 func LoadConfigRow(projectDir string, r *manifest.ConfigRowManifest) (*model.ConfigRow, error) {
-	row := &model.ConfigRow{BranchId: r.BranchId, ComponentId: r.ComponentId, ConfigId: r.ConfigId, Id: r.Id}
+	row := &model.ConfigRow{ConfigRowKey: model.ConfigRowKey{BranchId: r.BranchId, ComponentId: r.ComponentId, ConfigId: r.ConfigId, Id: r.Id}}
 	if err := LoadModel(projectDir, r, row); err != nil {
 		return nil, err
 	}

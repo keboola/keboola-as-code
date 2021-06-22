@@ -35,19 +35,25 @@ func TestLoadState(t *testing.T) {
 	assert.Equal(t, []*BranchState{
 		{
 			Remote: &model.Branch{
-				Id:          cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
+				BranchKey: model.BranchKey{
+					Id: cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
+				},
 				Name:        "Main",
 				Description: "Main branch",
 				IsDefault:   true,
 			},
 			Local: &model.Branch{
-				Id:          cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
+				BranchKey: model.BranchKey{
+					Id: cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
+				},
 				Name:        "Main",
 				Description: "Main branch",
 				IsDefault:   true,
 			},
 			BranchManifest: &manifest.BranchManifest{
-				Id: cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
+				BranchKey: model.BranchKey{
+					Id: cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
+				},
 				Paths: manifest.Paths{
 					Path:       "main",
 					ParentPath: "",
@@ -58,18 +64,22 @@ func TestLoadState(t *testing.T) {
 	assert.Equal(t, []*ConfigState{
 		{
 			Remote: &model.Config{
-				BranchId:          cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
-				ComponentId:       "ex-generic-v2",
-				Id:                utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
+				ConfigKey: model.ConfigKey{
+					BranchId:    cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
+					ComponentId: "ex-generic-v2",
+					Id:          utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
+				},
 				Name:              "empty",
 				Description:       "test fixture",
 				ChangeDescription: "created by test",
 				Content:           utils.EmptyOrderedMap(),
 			},
 			Local: &model.Config{
-				BranchId:          cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
-				ComponentId:       "ex-generic-v2",
-				Id:                utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
+				ConfigKey: model.ConfigKey{
+					BranchId:    cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
+					ComponentId: "ex-generic-v2",
+					Id:          utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
+				},
 				Name:              "todos",
 				Description:       "todos config",
 				ChangeDescription: "",
@@ -91,9 +101,11 @@ func TestLoadState(t *testing.T) {
 				}),
 			},
 			ConfigManifest: &manifest.ConfigManifest{
-				BranchId:    cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
-				ComponentId: "ex-generic-v2",
-				Id:          utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
+				ConfigKey: model.ConfigKey{
+					BranchId:    cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
+					ComponentId: "ex-generic-v2",
+					Id:          utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
+				},
 				Paths: manifest.Paths{
 					Path:       "ex-generic-v2/456-todos",
 					ParentPath: "main",

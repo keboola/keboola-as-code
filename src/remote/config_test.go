@@ -44,8 +44,10 @@ func TestConfigApiCalls(t *testing.T) {
 	}
 	config := &model.ConfigWithRows{
 		Config: &model.Config{
-			BranchId:          branch.Id,
-			ComponentId:       "ex-generic-v2",
+			ConfigKey: model.ConfigKey{
+				BranchId:    branch.Id,
+				ComponentId: "ex-generic-v2",
+			},
 			Name:              "Test",
 			Description:       "Test description",
 			ChangeDescription: "My test",
@@ -128,9 +130,6 @@ func expectedComponentsConfigTest() string {
         },
         "rows": [
           {
-            "branchId": %s,
-            "componentId": "ex-generic-v2",
-            "configId": "%s",
             "id": "%s",
             "name": "Row1",
             "description": "Row1 description",
@@ -141,9 +140,6 @@ func expectedComponentsConfigTest() string {
             }
           },
           {
-            "branchId": %s,
-            "componentId": "ex-generic-v2",
-            "configId": "%s",
             "id": "%s",
             "name": "Row2",
             "description": "Row2 description",

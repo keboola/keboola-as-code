@@ -16,10 +16,10 @@ func (a *StorageApi) GetComponent(componentId string) (*model.Component, error) 
 
 // GetComponentRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/get-component/get-component
 func (a *StorageApi) GetComponentRequest(componentId string) *client.Request {
+	component := &model.Component{}
+	component.Id = componentId
 	return a.
 		NewRequest(resty.MethodGet, "components/{componentId}").
 		SetPathParam("componentId", componentId).
-		SetResult(&model.Component{
-			Id: componentId,
-		})
+		SetResult(component)
 }

@@ -49,13 +49,13 @@ func (a *StorageApi) DeleteConfigRow(componentId string, configId string, rowId 
 
 // GetConfigRowRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/manage-configuration-rows/row-detail
 func (a *StorageApi) GetConfigRowRequest(branchId int, componentId string, configId string, rowId string) *client.Request {
+	row := &model.ConfigRow{}
+	row.BranchId = branchId
+	row.ComponentId = componentId
+	row.ConfigId = configId
 	return a.
 		NewRequest(resty.MethodGet, fmt.Sprintf("branch/%d/components/%s/configs/%s/rows/%s", branchId, componentId, configId, rowId)).
-		SetResult(&model.ConfigRow{
-			BranchId:    branchId,
-			ComponentId: componentId,
-			ConfigId:    configId,
-		})
+		SetResult(row)
 }
 
 // CreateConfigRowRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/create-or-list-configuration-rows/create-development-branch-configuration-row

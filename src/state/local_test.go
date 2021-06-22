@@ -188,13 +188,17 @@ func complexLocalExpectedBranches() []*BranchState {
 	return []*BranchState{
 		{
 			Local: &model.Branch{
-				Id:          111,
+				BranchKey: model.BranchKey{
+					Id: 111,
+				},
 				Name:        "Main",
 				Description: "Main branch",
 				IsDefault:   true,
 			},
 			BranchManifest: &manifest.BranchManifest{
-				Id: 111,
+				BranchKey: model.BranchKey{
+					Id: 111,
+				},
 				Paths: manifest.Paths{
 					Path:       "main",
 					ParentPath: "",
@@ -203,13 +207,17 @@ func complexLocalExpectedBranches() []*BranchState {
 		},
 		{
 			Local: &model.Branch{
-				Id:          123,
+				BranchKey: model.BranchKey{
+					Id: 123,
+				},
 				Name:        "Branch",
 				Description: "My branch",
 				IsDefault:   false,
 			},
 			BranchManifest: &manifest.BranchManifest{
-				Id: 123,
+				BranchKey: model.BranchKey{
+					Id: 123,
+				},
 				Paths: manifest.Paths{
 					Path:       "123-branch",
 					ParentPath: "",
@@ -223,9 +231,11 @@ func complexLocalExpectedConfigs() []*ConfigState {
 	return []*ConfigState{
 		{
 			Local: &model.Config{
-				BranchId:          111,
-				ComponentId:       "keboola.ex-generic",
-				Id:                "456",
+				ConfigKey: model.ConfigKey{
+					BranchId:    111,
+					ComponentId: "keboola.ex-generic",
+					Id:          "456",
+				},
 				Name:              "todos",
 				Description:       "todos config",
 				ChangeDescription: "",
@@ -247,9 +257,11 @@ func complexLocalExpectedConfigs() []*ConfigState {
 				}),
 			},
 			ConfigManifest: &manifest.ConfigManifest{
-				BranchId:    111,
-				ComponentId: "keboola.ex-generic",
-				Id:          "456",
+				ConfigKey: model.ConfigKey{
+					BranchId:    111,
+					ComponentId: "keboola.ex-generic",
+					Id:          "456",
+				},
 				Paths: manifest.Paths{
 					Path:       "keboola.ex-generic/456-todos",
 					ParentPath: "main",
@@ -258,9 +270,11 @@ func complexLocalExpectedConfigs() []*ConfigState {
 		},
 		{
 			Local: &model.Config{
-				BranchId:          123,
-				ComponentId:       "keboola.ex-db-mysql",
-				Id:                "896",
+				ConfigKey: model.ConfigKey{
+					BranchId:    123,
+					ComponentId: "keboola.ex-db-mysql",
+					Id:          "896",
+				},
 				Name:              "tables",
 				Description:       "tables config",
 				ChangeDescription: "",
@@ -282,9 +296,11 @@ func complexLocalExpectedConfigs() []*ConfigState {
 				}),
 			},
 			ConfigManifest: &manifest.ConfigManifest{
-				BranchId:    123,
-				ComponentId: "keboola.ex-db-mysql",
-				Id:          "896",
+				ConfigKey: model.ConfigKey{
+					BranchId:    123,
+					ComponentId: "keboola.ex-db-mysql",
+					Id:          "896",
+				},
 				Paths: manifest.Paths{
 					Path:       "keboola.ex-db-mysql/896-tables",
 					ParentPath: "123-branch",
@@ -293,9 +309,11 @@ func complexLocalExpectedConfigs() []*ConfigState {
 		},
 		{
 			Local: &model.Config{
-				BranchId:          123,
-				ComponentId:       "keboola.ex-generic",
-				Id:                "456",
+				ConfigKey: model.ConfigKey{
+					BranchId:    123,
+					ComponentId: "keboola.ex-generic",
+					Id:          "456",
+				},
 				Name:              "todos",
 				Description:       "todos config",
 				ChangeDescription: "",
@@ -317,9 +335,11 @@ func complexLocalExpectedConfigs() []*ConfigState {
 				}),
 			},
 			ConfigManifest: &manifest.ConfigManifest{
-				BranchId:    123,
-				ComponentId: "keboola.ex-generic",
-				Id:          "456",
+				ConfigKey: model.ConfigKey{
+					BranchId:    123,
+					ComponentId: "keboola.ex-generic",
+					Id:          "456",
+				},
 				Paths: manifest.Paths{
 					Path:       "keboola.ex-generic/456-todos",
 					ParentPath: "123-branch",
@@ -333,10 +353,12 @@ func complexLocalExpectedConfigRows() []*ConfigRowState {
 	return []*ConfigRowState{
 		{
 			Local: &model.ConfigRow{
-				BranchId:          123,
-				ComponentId:       "keboola.ex-db-mysql",
-				ConfigId:          "896",
-				Id:                "56",
+				ConfigRowKey: model.ConfigRowKey{
+					BranchId:    123,
+					ComponentId: "keboola.ex-db-mysql",
+					ConfigId:    "896",
+					Id:          "56",
+				},
 				Name:              "disabled",
 				Description:       "",
 				ChangeDescription: "",
@@ -351,10 +373,12 @@ func complexLocalExpectedConfigRows() []*ConfigRowState {
 				}),
 			},
 			ConfigRowManifest: &manifest.ConfigRowManifest{
-				Id:          "56",
-				BranchId:    123,
-				ComponentId: "keboola.ex-db-mysql",
-				ConfigId:    "896",
+				ConfigRowKey: model.ConfigRowKey{
+					BranchId:    123,
+					ComponentId: "keboola.ex-db-mysql",
+					ConfigId:    "896",
+					Id:          "56",
+				},
 				Paths: manifest.Paths{
 					Path:       "56-disabled",
 					ParentPath: "123-branch/keboola.ex-db-mysql/896-tables/rows",
@@ -363,10 +387,12 @@ func complexLocalExpectedConfigRows() []*ConfigRowState {
 		},
 		{
 			Local: &model.ConfigRow{
-				BranchId:          123,
-				ComponentId:       "keboola.ex-db-mysql",
-				ConfigId:          "896",
-				Id:                "34",
+				ConfigRowKey: model.ConfigRowKey{
+					BranchId:    123,
+					ComponentId: "keboola.ex-db-mysql",
+					ConfigId:    "896",
+					Id:          "34",
+				},
 				Name:              "test_view",
 				Description:       "row description",
 				ChangeDescription: "",
@@ -381,10 +407,12 @@ func complexLocalExpectedConfigRows() []*ConfigRowState {
 				}),
 			},
 			ConfigRowManifest: &manifest.ConfigRowManifest{
-				Id:          "34",
-				BranchId:    123,
-				ComponentId: "keboola.ex-db-mysql",
-				ConfigId:    "896",
+				ConfigRowKey: model.ConfigRowKey{
+					BranchId:    123,
+					ComponentId: "keboola.ex-db-mysql",
+					ConfigId:    "896",
+					Id:          "34",
+				},
 				Paths: manifest.Paths{
 					Path:       "34-test-view",
 					ParentPath: "123-branch/keboola.ex-db-mysql/896-tables/rows",
@@ -393,10 +421,12 @@ func complexLocalExpectedConfigRows() []*ConfigRowState {
 		},
 		{
 			Local: &model.ConfigRow{
-				BranchId:          123,
-				ComponentId:       "keboola.ex-db-mysql",
-				ConfigId:          "896",
-				Id:                "12",
+				ConfigRowKey: model.ConfigRowKey{
+					BranchId:    123,
+					ComponentId: "keboola.ex-db-mysql",
+					ConfigId:    "896",
+					Id:          "12",
+				},
 				Name:              "users",
 				Description:       "",
 				ChangeDescription: "",
@@ -411,10 +441,13 @@ func complexLocalExpectedConfigRows() []*ConfigRowState {
 				}),
 			},
 			ConfigRowManifest: &manifest.ConfigRowManifest{
-				Id:          "12",
-				BranchId:    123,
-				ComponentId: "keboola.ex-db-mysql",
-				ConfigId:    "896",
+				ConfigRowKey: model.ConfigRowKey{
+					BranchId:    123,
+					ComponentId: "keboola.ex-db-mysql",
+					ConfigId:    "896",
+					Id:          "12",
+				},
+
 				Paths: manifest.Paths{
 					Path:       "12-users",
 					ParentPath: "123-branch/keboola.ex-db-mysql/896-tables/rows",

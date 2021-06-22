@@ -2,6 +2,7 @@ package manifest
 
 import (
 	"github.com/stretchr/testify/assert"
+	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
 	"os"
 	"path/filepath"
@@ -233,14 +234,19 @@ func fullStruct() *Content {
 		Naming: DefaultNaming(),
 		Branches: []*BranchManifest{
 			{
-				Id: 10,
+
+				BranchKey: model.BranchKey{
+					Id: 10,
+				},
 				Paths: Paths{
 					Path:       "main",
 					ParentPath: "",
 				},
 			},
 			{
-				Id: 11,
+				BranchKey: model.BranchKey{
+					Id: 11,
+				},
 				Paths: Paths{
 					Path:       "11-dev",
 					ParentPath: "",
@@ -250,9 +256,11 @@ func fullStruct() *Content {
 		Configs: []*ConfigManifestWithRows{
 			{
 				ConfigManifest: &ConfigManifest{
-					BranchId:    10,
-					ComponentId: "keboola.ex-db-oracle",
-					Id:          "11",
+					ConfigKey: model.ConfigKey{
+						BranchId:    10,
+						ComponentId: "keboola.ex-db-oracle",
+						Id:          "11",
+					},
 					Paths: Paths{
 						Path:       "11-raw-data",
 						ParentPath: "main",
@@ -260,20 +268,24 @@ func fullStruct() *Content {
 				},
 				Rows: []*ConfigRowManifest{
 					{
-						Id:          "101",
-						BranchId:    10,
-						ComponentId: "keboola.ex-db-oracle",
-						ConfigId:    "11",
+						ConfigRowKey: model.ConfigRowKey{
+							Id:          "101",
+							BranchId:    10,
+							ComponentId: "keboola.ex-db-oracle",
+							ConfigId:    "11",
+						},
 						Paths: Paths{
 							Path:       "101-region-1",
 							ParentPath: "main/11-raw-data/rows",
 						},
 					},
 					{
-						Id:          "102",
-						BranchId:    10,
-						ComponentId: "keboola.ex-db-oracle",
-						ConfigId:    "11",
+						ConfigRowKey: model.ConfigRowKey{
+							Id:          "102",
+							BranchId:    10,
+							ComponentId: "keboola.ex-db-oracle",
+							ConfigId:    "11",
+						},
 						Paths: Paths{
 							Path:       "102-region-2",
 							ParentPath: "main/11-raw-data/rows",
@@ -283,9 +295,11 @@ func fullStruct() *Content {
 			},
 			{
 				ConfigManifest: &ConfigManifest{
-					BranchId:    11,
-					ComponentId: "keboola.wr-db-mysql",
-					Id:          "12",
+					ConfigKey: model.ConfigKey{
+						BranchId:    11,
+						ComponentId: "keboola.wr-db-mysql",
+						Id:          "12",
+					},
 					Paths: Paths{
 						Path:       "12-current-month",
 						ParentPath: "11-dev",
@@ -293,20 +307,24 @@ func fullStruct() *Content {
 				},
 				Rows: []*ConfigRowManifest{
 					{
-						Id:          "103",
-						BranchId:    11,
-						ComponentId: "keboola.wr-db-mysql",
-						ConfigId:    "12",
+						ConfigRowKey: model.ConfigRowKey{
+							Id:          "103",
+							BranchId:    11,
+							ComponentId: "keboola.wr-db-mysql",
+							ConfigId:    "12",
+						},
 						Paths: Paths{
 							Path:       "103-all",
 							ParentPath: "11-dev/12-current-month/rows",
 						},
 					},
 					{
-						Id:          "104",
-						BranchId:    11,
-						ComponentId: "keboola.wr-db-mysql",
-						ConfigId:    "12",
+						ConfigRowKey: model.ConfigRowKey{
+							Id:          "104",
+							BranchId:    11,
+							ComponentId: "keboola.wr-db-mysql",
+							ConfigId:    "12",
+						},
 						Paths: Paths{
 							Path:       "104-sum",
 							ParentPath: "11-dev/12-current-month/rows",

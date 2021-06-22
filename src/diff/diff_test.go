@@ -44,13 +44,17 @@ func TestDiffEqual(t *testing.T) {
 	projectDir := t.TempDir()
 	projectState := state.NewState(projectDir, manifest.DefaultNaming())
 	branchRemote := &model.Branch{
-		Id:          123,
+		BranchKey: model.BranchKey{
+			Id: 123,
+		},
 		Name:        "name",
 		Description: "description",
 		IsDefault:   false,
 	}
 	branchLocal := &model.Branch{
-		Id:          123,
+		BranchKey: model.BranchKey{
+			Id: 123,
+		},
 		Name:        "name",
 		Description: "description",
 		IsDefault:   false,
@@ -73,13 +77,17 @@ func TestDiffNotEqual(t *testing.T) {
 	projectDir := t.TempDir()
 	projectState := state.NewState(projectDir, manifest.DefaultNaming())
 	branchRemote := &model.Branch{
-		Id:          123,
+		BranchKey: model.BranchKey{
+			Id: 123,
+		},
 		Name:        "name",
 		Description: "description",
 		IsDefault:   false,
 	}
 	branchLocal := &model.Branch{
-		Id:          123,
+		BranchKey: model.BranchKey{
+			Id: 123,
+		},
 		Name:        "changed",
 		Description: "description",
 		IsDefault:   true,
@@ -104,33 +112,43 @@ func TestDiffEqualConfig(t *testing.T) {
 	projectDir := t.TempDir()
 	projectState := state.NewState(projectDir, manifest.DefaultNaming())
 	branchRemote := &model.Branch{
-		Id:          123,
+		BranchKey: model.BranchKey{
+			Id: 123,
+		},
 		Name:        "name",
 		Description: "description",
 		IsDefault:   false,
 	}
 	branchLocal := &model.Branch{
-		Id:          123,
+		BranchKey: model.BranchKey{
+			Id: 123,
+		},
 		Name:        "name",
 		Description: "description",
 		IsDefault:   false,
 	}
 	branchManifest := &manifest.BranchManifest{}
 	component := &model.Component{
-		Id: "foo-bar",
+		ComponentKey: model.ComponentKey{
+			Id: "foo-bar",
+		},
 	}
 	configRemote := &model.Config{
-		BranchId:          123,
-		ComponentId:       "foo",
-		Id:                "456",
+		ConfigKey: model.ConfigKey{
+			BranchId:    123,
+			ComponentId: "foo",
+			Id:          "456",
+		},
 		Name:              "name",
 		Description:       "description",
 		ChangeDescription: "remote", // no diff:"true" tag
 	}
 	configLocal := &model.Config{
-		BranchId:          123,
-		ComponentId:       "foo",
-		Id:                "456",
+		ConfigKey: model.ConfigKey{
+			BranchId:    123,
+			ComponentId: "foo",
+			Id:          "456",
+		},
 		Name:              "name",
 		Description:       "description",
 		ChangeDescription: "local", // no diff:"true" tag
@@ -160,33 +178,43 @@ func TestDiffNotEqualConfig(t *testing.T) {
 	projectDir := t.TempDir()
 	projectState := state.NewState(projectDir, manifest.DefaultNaming())
 	branchRemote := &model.Branch{
-		Id:          123,
+		BranchKey: model.BranchKey{
+			Id: 123,
+		},
 		Name:        "name",
 		Description: "description",
 		IsDefault:   false,
 	}
 	branchLocal := &model.Branch{
-		Id:          123,
+		BranchKey: model.BranchKey{
+			Id: 123,
+		},
 		Name:        "name",
 		Description: "description",
 		IsDefault:   false,
 	}
 	branchManifest := &manifest.BranchManifest{}
 	component := &model.Component{
-		Id: "foo-bar",
+		ComponentKey: model.ComponentKey{
+			Id: "foo-bar",
+		},
 	}
 	configRemote := &model.Config{
-		BranchId:          123,
-		ComponentId:       "foo",
-		Id:                "456",
+		ConfigKey: model.ConfigKey{
+			BranchId:    123,
+			ComponentId: "foo",
+			Id:          "456",
+		},
 		Name:              "name",
 		Description:       "description",
 		ChangeDescription: "remote", // no diff:"true" tag
 	}
 	configLocal := &model.Config{
-		BranchId:          123,
-		ComponentId:       "foo",
-		Id:                "456",
+		ConfigKey: model.ConfigKey{
+			BranchId:    123,
+			ComponentId: "foo",
+			Id:          "456",
+		},
 		Name:              "changed",
 		Description:       "changed",
 		ChangeDescription: "local", // no diff:"true" tag

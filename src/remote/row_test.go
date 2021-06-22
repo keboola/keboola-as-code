@@ -20,8 +20,10 @@ func TestConfigRowApiCalls(t *testing.T) {
 	// Create config
 	config := &model.ConfigWithRows{
 		Config: &model.Config{
-			BranchId:          branch.Id,
-			ComponentId:       "ex-generic-v2",
+			ConfigKey: model.ConfigKey{
+				BranchId:    branch.Id,
+				ComponentId: "ex-generic-v2",
+			},
 			Name:              "Test",
 			Description:       "Test description",
 			ChangeDescription: "My test",
@@ -41,9 +43,11 @@ func TestConfigRowApiCalls(t *testing.T) {
 
 	// Create row1
 	row1 := &model.ConfigRow{
-		BranchId:          branch.Id,
-		ComponentId:       "ex-generic-v2",
-		ConfigId:          config.Id,
+		ConfigRowKey: model.ConfigRowKey{
+			BranchId:    branch.Id,
+			ComponentId: "ex-generic-v2",
+			ConfigId:    config.Id,
+		},
 		Name:              "Row1",
 		Description:       "Row1 description",
 		ChangeDescription: "Row1 test",
@@ -58,9 +62,11 @@ func TestConfigRowApiCalls(t *testing.T) {
 
 	// Create row2
 	row2 := &model.ConfigRow{
-		BranchId:          branch.Id,
-		ComponentId:       "ex-generic-v2",
-		ConfigId:          config.Id,
+		ConfigRowKey: model.ConfigRowKey{
+			BranchId:    branch.Id,
+			ComponentId: "ex-generic-v2",
+			ConfigId:    config.Id,
+		},
 		Name:              "Row2",
 		Description:       "Row2 description",
 		ChangeDescription: "Row2 test",
@@ -119,9 +125,6 @@ func expectedComponentsConfigRowTest() string {
         },
         "rows": [
           {
-            "branchId": %s,
-            "componentId": "ex-generic-v2",
-            "configId": "%s",
             "id": "%s",
             "name": "Row1 modified",
             "description": "Row1 description modified",

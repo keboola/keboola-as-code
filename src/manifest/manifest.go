@@ -61,14 +61,12 @@ type Project struct {
 }
 
 type BranchManifest struct {
-	Id int `json:"id" validate:"required,min=1"`
+	model.BranchKey
 	Paths
 }
 
 type ConfigManifest struct {
-	BranchId    int    `json:"branchId" validate:"required"`
-	ComponentId string `json:"componentId" validate:"required"`
-	Id          string `json:"id" validate:"required"`
+	model.ConfigKey
 	Paths
 }
 
@@ -78,10 +76,7 @@ type ConfigManifestWithRows struct {
 }
 
 type ConfigRowManifest struct {
-	Id          string `json:"id" validate:"required,min=1"`
-	BranchId    int    `json:"-" validate:"required"` // generated, not in JSON
-	ComponentId string `json:"-" validate:"required"` // generated, not in JSON
-	ConfigId    string `json:"-" validate:"required"` // generated, not in JSON
+	model.ConfigRowKey
 	Paths
 }
 
@@ -272,7 +267,7 @@ func (o *Paths) ConfigFilePath() string {
 }
 
 func NewBranchManifest(naming *LocalNaming, branch *model.Branch) *BranchManifest {
-	manifest := &BranchManifest{Id: branch.Id}
+	manifest := &BranchManifest{BranchKey: model.BranchKey{Id: branch.Id}}
 	if branch.IsDefault {
 		manifest.Path = "main"
 	} else {
@@ -283,14 +278,14 @@ func NewBranchManifest(naming *LocalNaming, branch *model.Branch) *BranchManifes
 }
 
 func NewConfigManifest(naming *LocalNaming, branchManifest *BranchManifest, component *model.Component, c *model.Config) *ConfigManifest {
-	manifest := &ConfigManifest{BranchId: c.BranchId, ComponentId: c.ComponentId, Id: c.Id}
+	manifest := &ConfigManifest{ConfigKey: model.ConfigKey{BranchId: c.BranchId, ComponentId: c.ComponentId, Id: c.Id}}
 	manifest.Path = naming.ConfigPath(component, c)
 	manifest.ResolvePaths(branchManifest)
 	return manifest
 }
 
 func NewConfigRowManifest(naming *LocalNaming, configManifest *ConfigManifest, r *model.ConfigRow) *ConfigRowManifest {
-	manifest := &ConfigRowManifest{BranchId: r.BranchId, ComponentId: r.ComponentId, ConfigId: r.ConfigId, Id: r.Id}
+	manifest := &ConfigRowManifest{ConfigRowKey: model.ConfigRowKey{BranchId: r.BranchId, ComponentId: r.ComponentId, ConfigId: r.ConfigId, Id: r.Id}}
 	manifest.Path = naming.ConfigRowPath(r)
 	manifest.ResolvePaths(configManifest)
 	return manifest

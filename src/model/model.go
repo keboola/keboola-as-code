@@ -31,17 +31,25 @@ type TokenOwner struct {
 	Name string `json:"name"`
 }
 
+type BranchKey struct {
+	Id int `json:"id" validate:"required"`
+}
+
 // Branch https://keboola.docs.apiary.io/#reference/development-branches/branches/list-branches
 type Branch struct {
-	Id          int    `json:"id" validate:"required"`
+	BranchKey
 	Name        string `json:"name" validate:"required" diff:"true" metaFile:"true"`
 	Description string `json:"description" diff:"true" metaFile:"true"`
 	IsDefault   bool   `json:"isDefault" diff:"true" metaFile:"true"`
 }
 
+type ComponentKey struct {
+	Id string `json:"id" validate:"required"`
+}
+
 // Component https://keboola.docs.apiary.io/#reference/components-and-configurations/get-development-branch-components/get-development-branch-components
 type Component struct {
-	Id        string                 `json:"id" validate:"required"`
+	ComponentKey
 	Type      string                 `json:"type" validate:"required"`
 	Name      string                 `json:"name" validate:"required"`
 	Schema    map[string]interface{} `json:"configurationSchema,omitempty"`
@@ -54,11 +62,15 @@ type ComponentWithConfigs struct {
 	Configs []*ConfigWithRows `json:"configurations" validate:"required"`
 }
 
+type ConfigKey struct {
+	BranchId    int    `json:"branchId" validate:"required"`    // not present in API response, must be set manually
+	ComponentId string `json:"componentId" validate:"required"` // not present in API response, must be set manually
+	Id          string `json:"id" validate:"required"`
+}
+
 // Config https://keboola.docs.apiary.io/#reference/components-and-configurations/component-configurations/list-configurations
 type Config struct {
-	BranchId          int                    `json:"branchId" validate:"required"`    // not present in API response, must be set manually
-	ComponentId       string                 `json:"componentId" validate:"required"` // not present in API response, must be set manually
-	Id                string                 `json:"id" validate:"required"`
+	ConfigKey
 	Name              string                 `json:"name" validate:"required" diff:"true" metaFile:"true"`
 	Description       string                 `json:"description" diff:"true" metaFile:"true"`
 	ChangeDescription string                 `json:"changeDescription"`
@@ -76,12 +88,16 @@ func (c *ConfigWithRows) SortRows() {
 	})
 }
 
+type ConfigRowKey struct {
+	BranchId    int    `json:"-" validate:"required"` // not present in API response, must be set manually
+	ComponentId string `json:"-" validate:"required"` // not present in API response, must be set manually
+	ConfigId    string `json:"-" validate:"required"` // not present in API response, must be set manually
+	Id          string `json:"id" validate:"required" `
+}
+
 // ConfigRow https://keboola.docs.apiary.io/#reference/components-and-configurations/component-configurations/list-configurations
 type ConfigRow struct {
-	BranchId          int                    `json:"branchId" validate:"required"`    // not present in API response, must be set manually
-	ComponentId       string                 `json:"componentId" validate:"required"` // not present in API response, must be set manually
-	ConfigId          string                 `json:"configId" validate:"required"`    // not present in API response, must be set manually
-	Id                string                 `json:"id" validate:"required" `
+	ConfigRowKey
 	Name              string                 `json:"name" validate:"required" diff:"true" metaFile:"true"`
 	Description       string                 `json:"description" diff:"true" metaFile:"true"`
 	ChangeDescription string                 `json:"changeDescription"`
