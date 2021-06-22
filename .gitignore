@@ -1,5 +1,6 @@
 !.gitkeep
 /.idea
 /.env
-go
-target
+/go
+/target
+/src/tests/.out/*

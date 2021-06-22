@@ -29,21 +29,22 @@ func TestFunctional(t *testing.T) {
 	projectDir := filepath.Join(rootDir, "..", "..")
 	binary := CompileBinary(t, projectDir, tempDir)
 
-	// Run binary in each data dir
+	// Run test for each directory
 	for _, testDir := range GetTestDirs(t, rootDir) {
-		// Run test for each directory
+		workingDir := filepath.Join(rootDir, ".out", filepath.Base(testDir))
 		t.Run(filepath.Base(testDir), func(t *testing.T) {
-			RunFunctionalTest(t, testDir, binary)
+			RunFunctionalTest(t, testDir, workingDir, binary)
 		})
 	}
 }
 
 // RunFunctionalTest runs one functional test
-func RunFunctionalTest(t *testing.T, testDir string, binary string) {
+func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) {
 	defer utils.ResetEnv(t, os.Environ())
 
-	// Create runtime dir
-	workingDir := t.TempDir()
+	// Clean working dir
+	assert.NoError(t, os.RemoveAll(workingDir))
+	assert.NoError(t, os.MkdirAll(workingDir, 0650))
 	assert.NoError(t, os.Chdir(workingDir))
 
 	// Copy all from "in" dir to "runtime" dir
@@ -124,6 +125,11 @@ func GetTestDirs(t *testing.T, root string) []string {
 		// Ignore root
 		if path == root {
 			return nil
+		}
+
+		// Skip hidden
+		if utils.IsIgnoredFile(path, d) {
+			return fs.SkipDir
 		}
 
 		// Skip sub-directories
