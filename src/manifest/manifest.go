@@ -28,7 +28,7 @@ type Manifest struct {
 	*Content                           // content of the file, updated only on LoadManifest() and Save()
 	ProjectDir  string                 `validate:"required"` // project root
 	MetadataDir string                 `validate:"required"` // inside ProjectDir
-	Registry    *orderedmap.OrderedMap // common map for all: branches, configs and rows manifests
+	records     *orderedmap.OrderedMap // common map for all: branches, configs and rows manifests
 	lock        *sync.Mutex
 }
 
@@ -68,7 +68,7 @@ type BranchManifest struct {
 type ConfigManifest struct {
 	BranchId    int    `json:"branchId" validate:"required"`
 	ComponentId string `json:"componentId" validate:"required"`
-	Id          string `json:"id" validate:"required,min=1"`
+	Id          string `json:"id" validate:"required"`
 	Paths
 }
 
@@ -98,7 +98,7 @@ func newManifest(projectId int, apiHost string, projectDir, metadataDir string) 
 	return &Manifest{
 		ProjectDir:  projectDir,
 		MetadataDir: metadataDir,
-		Registry:    utils.EmptyOrderedMap(),
+		records:     utils.EmptyOrderedMap(),
 		Content: &Content{
 			Version:  1,
 			Project:  &Project{Id: projectId, ApiHost: apiHost},
@@ -131,12 +131,12 @@ func LoadManifest(projectDir string, metadataDir string) (*Manifest, error) {
 		return nil, fmt.Errorf("manifest \"%s\" is not valid: %s", utils.RelPath(projectDir, path), err)
 	}
 
-	// Resolve paths, set parent IDs, store struct in Registry
+	// Resolve paths, set parent IDs, store struct in records
 	branchById := make(map[int]*BranchManifest)
 	for _, branch := range m.Content.Branches {
 		branch.ResolvePaths()
 		branchById[branch.Id] = branch
-		m.Registry.Set(branch.UniqueKey(m.SortBy), branch)
+		m.records.Set(branch.UniqueKey(m.SortBy), branch)
 	}
 	for _, configWithRows := range m.Content.Configs {
 		config := configWithRows.ConfigManifest
@@ -145,13 +145,13 @@ func LoadManifest(projectDir string, metadataDir string) (*Manifest, error) {
 			return nil, fmt.Errorf("branch \"%d\" not found in manifest - referenced from the config \"%s:%s\" in \"%s\"", config.BranchId, config.ComponentId, config.Id, path)
 		}
 		config.ResolvePaths(branch)
-		m.Registry.Set(config.UniqueKey(m.SortBy), config)
+		m.records.Set(config.UniqueKey(m.SortBy), config)
 		for _, row := range configWithRows.Rows {
 			row.BranchId = config.BranchId
 			row.ComponentId = config.ComponentId
 			row.ConfigId = config.Id
 			row.ResolvePaths(config)
-			m.Registry.Set(row.UniqueKey(m.SortBy), row)
+			m.records.Set(row.UniqueKey(m.SortBy), row)
 		}
 	}
 
@@ -167,14 +167,14 @@ func LoadManifest(projectDir string, metadataDir string) (*Manifest, error) {
 
 func (m *Manifest) Save() error {
 	// Sort
-	m.Registry.SortKeys(sort.Strings)
+	m.records.SortKeys(sort.Strings)
 
 	// Convert registry to slices
 	configsMap := make(map[string]*ConfigManifestWithRows)
 	m.Content.Branches = make([]*BranchManifest, 0)
 	m.Content.Configs = make([]*ConfigManifestWithRows, 0)
-	for _, key := range m.Registry.Keys() {
-		item, _ := m.Registry.Get(key)
+	for _, key := range m.records.Keys() {
+		item, _ := m.records.Get(key)
 		switch v := item.(type) {
 		case *BranchManifest:
 			m.Content.Branches = append(m.Content.Branches, v)
@@ -223,16 +223,32 @@ func (m *Manifest) validate() error {
 	return nil
 }
 
+func (m *Manifest) GetRecords() orderedmap.OrderedMap {
+	return *m.records
+}
+
+func (m *Manifest) GetRecord(key string) (interface{}, bool) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	return m.records.Get(key)
+}
+
 func (m *Manifest) AddRecord(record Record) {
 	m.lock.Lock()
-	m.Registry.Set(record.UniqueKey(m.SortBy), record)
-	m.lock.Unlock()
+	defer m.lock.Unlock()
+	m.records.Set(record.UniqueKey(m.SortBy), record)
 }
 
 func (m *Manifest) DeleteRecord(record Record) {
 	m.lock.Lock()
-	m.Registry.Delete(record.UniqueKey(m.SortBy))
-	m.lock.Unlock()
+	defer m.lock.Unlock()
+	m.records.Delete(record.UniqueKey(m.SortBy))
+}
+
+func (m *Manifest) DeleteRecordByKey(key string) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	m.records.Delete(key)
 }
 
 func (o Paths) GetPaths() Paths {

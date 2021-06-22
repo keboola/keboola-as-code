@@ -10,8 +10,9 @@ import (
 
 func LoadLocalState(state *State, m *manifest.Manifest, api *remote.StorageApi) {
 	var invalidKeys []string
-	for _, key := range m.Registry.Keys() {
-		item, _ := m.Registry.Get(key)
+	records := m.GetRecords()
+	for _, key := range records.Keys() {
+		item, _ := records.Get(key)
 		switch record := item.(type) {
 		// Add branch
 		case *manifest.BranchManifest:
@@ -48,7 +49,7 @@ func LoadLocalState(state *State, m *manifest.Manifest, api *remote.StorageApi) 
 
 	// Delete invalid records
 	for _, key := range invalidKeys {
-		m.Registry.Delete(key)
+		m.DeleteRecordByKey(key)
 	}
 }
 

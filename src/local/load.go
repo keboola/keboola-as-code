@@ -8,7 +8,7 @@ import (
 	"reflect"
 )
 
-func LoadModel(projectDir string, record manifest.Record, target interface{}) *utils.Error {
+func LoadModel(projectDir string, record manifest.Record, target interface{}) error {
 	errors := &utils.Error{}
 
 	// Load values from meta file
@@ -36,7 +36,7 @@ func LoadModel(projectDir string, record manifest.Record, target interface{}) *u
 	return nil
 }
 
-func LoadBranch(projectDir string, b *manifest.BranchManifest) (*model.Branch, *utils.Error) {
+func LoadBranch(projectDir string, b *manifest.BranchManifest) (*model.Branch, error) {
 	branch := &model.Branch{Id: b.Id}
 	if err := LoadModel(projectDir, b, branch); err != nil {
 		return nil, err
@@ -44,7 +44,7 @@ func LoadBranch(projectDir string, b *manifest.BranchManifest) (*model.Branch, *
 	return branch, nil
 }
 
-func LoadConfig(projectDir string, c *manifest.ConfigManifest) (*model.Config, *utils.Error) {
+func LoadConfig(projectDir string, c *manifest.ConfigManifest) (*model.Config, error) {
 	config := &model.Config{BranchId: c.BranchId, ComponentId: c.ComponentId, Id: c.Id}
 	if err := LoadModel(projectDir, c, config); err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func LoadConfig(projectDir string, c *manifest.ConfigManifest) (*model.Config, *
 	return config, nil
 }
 
-func LoadConfigRow(projectDir string, r *manifest.ConfigRowManifest) (*model.ConfigRow, *utils.Error) {
+func LoadConfigRow(projectDir string, r *manifest.ConfigRowManifest) (*model.ConfigRow, error) {
 	row := &model.ConfigRow{BranchId: r.BranchId, ComponentId: r.ComponentId, ConfigId: r.ConfigId, Id: r.Id}
 	if err := LoadModel(projectDir, r, row); err != nil {
 		return nil, err
