@@ -44,7 +44,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 
 	// Clean working dir
 	assert.NoError(t, os.RemoveAll(workingDir))
-	assert.NoError(t, os.MkdirAll(workingDir, 0650))
+	assert.NoError(t, os.MkdirAll(workingDir, 0755))
 	assert.NoError(t, os.Chdir(workingDir))
 
 	// Copy all from "in" dir to "runtime" dir
@@ -92,6 +92,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 		}
 	}
 
+	// Assert
 	AssertExpectations(t, testDir, workingDir, exitCode, strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()))
 }
 
@@ -128,7 +129,7 @@ func GetTestDirs(t *testing.T, root string) []string {
 		}
 
 		// Skip hidden
-		if utils.IsIgnoredFile(path, d) {
+		if utils.IsIgnoredFile(path, d) || utils.IsIgnoredDir(path, d) {
 			return fs.SkipDir
 		}
 

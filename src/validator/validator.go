@@ -30,10 +30,9 @@ func Validate(value interface{}) error {
 func processValidateError(err validator.ValidationErrors) error {
 	result := &utils.Error{}
 	for _, e := range err {
-		path := strings.TrimPrefix(e.Namespace(), "Manifest.")
 		result.Add(fmt.Errorf(
 			"key=\"%s\", value=\"%v\", failed \"%s\" validation",
-			path,
+			e.Field(),
 			e.Value(),
 			e.ActualTag(),
 		))

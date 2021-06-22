@@ -11,6 +11,7 @@ func Encode(v interface{}, pretty bool) ([]byte, error) {
 	var err error
 	if pretty {
 		data, err = json.MarshalIndent(v, "", "  ")
+		data = append(data, '\n')
 	} else {
 		data, err = json.Marshal(v)
 	}

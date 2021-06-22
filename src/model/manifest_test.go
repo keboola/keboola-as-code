@@ -33,7 +33,7 @@ func TestNewManifest(t *testing.T) {
 func TestManifestLoadNotFound(t *testing.T) {
 	projectDir := t.TempDir()
 	metadataDir := filepath.Join(projectDir, MetadataDir)
-	assert.NoError(t, os.MkdirAll(metadataDir, 0650))
+	assert.NoError(t, os.MkdirAll(metadataDir, 0755))
 
 	// Load
 	manifest, err := LoadManifest(projectDir, metadataDir)
@@ -46,11 +46,11 @@ func TestManifestLoad(t *testing.T) {
 	for _, c := range cases {
 		projectDir := t.TempDir()
 		metadataDir := filepath.Join(projectDir, MetadataDir)
-		assert.NoError(t, os.MkdirAll(metadataDir, 0650))
+		assert.NoError(t, os.MkdirAll(metadataDir, 0755))
 		path := filepath.Join(metadataDir, ManifestFileName)
 
 		// Write file
-		assert.NoError(t, os.WriteFile(path, []byte(c.json), 0600))
+		assert.NoError(t, os.WriteFile(path, []byte(c.json), 0644))
 
 		// Load
 		manifest, err := LoadManifest(projectDir, metadataDir)
@@ -58,7 +58,7 @@ func TestManifestLoad(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Assert
-		assert.Equal(t, c.data, manifest.Content)
+		assert.Equal(t, c.data, manifest.ManifestContent)
 	}
 }
 
@@ -67,12 +67,12 @@ func TestManifestSave(t *testing.T) {
 	for _, c := range cases {
 		projectDir := t.TempDir()
 		metadataDir := filepath.Join(projectDir, MetadataDir)
-		assert.NoError(t, os.MkdirAll(metadataDir, 0655))
+		assert.NoError(t, os.MkdirAll(metadataDir, 0755))
 		path := filepath.Join(metadataDir, ManifestFileName)
 
 		// Create
 		m := newManifest(c.data.Version, c.data.Project.ApiHost, projectDir, metadataDir)
-		m.Content.Project.Id = c.data.Project.Id
+		m.Project.Id = c.data.Project.Id
 		for _, branch := range c.data.Branches {
 			assert.NoError(t, m.SaveModel(branch, utils.EmptyOrderedMap(), logger))
 		}
@@ -94,34 +94,35 @@ func TestManifestSave(t *testing.T) {
 }
 
 func TestManifestValidateEmpty(t *testing.T) {
-	m := &Manifest{ProjectDir: "foo", MetadataDir: "bar", Content: &ManifestContent{}}
+	m := &Manifest{ProjectDir: "foo", MetadataDir: "bar", ManifestContent: &ManifestContent{}}
 	err := m.validate()
 	assert.NotNil(t, err)
 	expected := `manifest is not valid: 
 - key="version", value="0", failed "required" validation
 - key="project", value="<nil>", failed "required" validation
+- key="sortBy", value="", failed "oneof" validation
 - key="naming", value="<nil>", failed "required" validation`
 	assert.Equal(t, expected, err.Error())
 }
 
 func TestManifestValidateMinimal(t *testing.T) {
 	m := newManifest(0, "", "foo", "bar")
-	m.Content = minimalStruct()
+	m.ManifestContent = minimalStruct()
 	err := m.validate()
 	assert.Nil(t, err)
 }
 
 func TestManifestValidateFull(t *testing.T) {
 	m := newManifest(0, "", "foo", "bar")
-	m.Content = fullStruct()
+	m.ManifestContent = fullStruct()
 	err := m.validate()
 	assert.Nil(t, err)
 }
 
 func TestManifestValidateBadVersion(t *testing.T) {
 	m := newManifest(0, "", "foo", "bar")
-	m.Content = minimalStruct()
-	m.Content.Version = 123
+	m.ManifestContent = minimalStruct()
+	m.Version = 123
 	err := m.validate()
 	assert.NotNil(t, err)
 	expected := `manifest is not valid: key="version", value="123", failed "max" validation`
@@ -135,6 +136,7 @@ func minimalJson() string {
     "id": 12345,
     "apiHost": "keboola.connection.com"
   },
+  "sortBy": "id",
   "naming": {
     "branch": "{branch_id}-{branch_name}",
     "config": "{component_type}/{component_id}/{config_id}-{config_name}",
@@ -142,7 +144,8 @@ func minimalJson() string {
   },
   "branches": [],
   "configurations": []
-}`
+}
+`
 }
 
 func minimalStruct() *ManifestContent {
@@ -152,6 +155,7 @@ func minimalStruct() *ManifestContent {
 			Id:      12345,
 			ApiHost: "keboola.connection.com",
 		},
+		SortBy:   SortById,
 		Naming:   DefaultNaming(),
 		Branches: make([]*BranchManifest, 0),
 		Configs:  make([]*ConfigManifestWithRows, 0),
@@ -165,6 +169,7 @@ func fullJson() string {
     "id": 12345,
     "apiHost": "keboola.connection.com"
   },
+  "sortBy": "id",
   "naming": {
     "branch": "{branch_id}-{branch_name}",
     "config": "{component_type}/{component_id}/{config_id}-{config_name}",
@@ -214,7 +219,8 @@ func fullJson() string {
       ]
     }
   ]
-}`
+}
+`
 }
 
 func fullStruct() *ManifestContent {
@@ -224,6 +230,7 @@ func fullStruct() *ManifestContent {
 			Id:      12345,
 			ApiHost: "keboola.connection.com",
 		},
+		SortBy: SortById,
 		Naming: DefaultNaming(),
 		Branches: []*BranchManifest{
 			{

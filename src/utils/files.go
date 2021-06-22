@@ -113,5 +113,5 @@ func CreateOrUpdateFile(path string, lines []FileLine) (updated bool, err error)
 	}
 
 	// Write file
-	return updated, os.WriteFile(path, []byte(content), 0600)
+	return updated, os.WriteFile(path, []byte(content), 0644)
 }

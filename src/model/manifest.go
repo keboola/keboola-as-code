@@ -21,19 +21,22 @@ const (
 	MetaFile         = "meta.json"
 	ConfigFile       = "config.json"
 	RowsDir          = "rows"
+	SortById         = "id"
+	SortByPath       = "path"
 )
 
 type Manifest struct {
-	ProjectDir  string                 `validate:"required"` // project root
-	MetadataDir string                 `validate:"required"` // inside ProjectDir
-	Registry    *orderedmap.OrderedMap // common map for all manifests: branches, configs and rows, guarantees uniqueness
-	Content     *ManifestContent       // content of the file, updated only on LoadManifest() and Save()
-	lock        *sync.Mutex
+	*ManifestContent                        // content of the file, updated only on LoadManifest() and Save()
+	ProjectDir       string                 `validate:"required"` // project root
+	MetadataDir      string                 `validate:"required"` // inside ProjectDir
+	Registry         *orderedmap.OrderedMap // common map for all: branches, configs and rows manifests
+	lock             *sync.Mutex
 }
 
 type ManifestContent struct {
 	Version  int                       `json:"version" validate:"required,min=1,max=1"`
 	Project  *ProjectManifest          `json:"project" validate:"required"`
+	SortBy   string                    `json:"sortBy" validate:"oneof=id path"`
 	Naming   *LocalNaming              `json:"naming" validate:"required"`
 	Branches []*BranchManifest         `json:"branches"`
 	Configs  []*ConfigManifestWithRows `json:"configurations"`
@@ -42,7 +45,7 @@ type ManifestContent struct {
 type ObjectManifest interface {
 	Kind() string
 	KindAbbr() string
-	UniqueKey() string
+	UniqueKey(sort string) string
 	Paths() ManifestPaths
 }
 
@@ -95,10 +98,11 @@ func newManifest(projectId int, apiHost string, projectDir, metadataDir string) 
 		ProjectDir:  projectDir,
 		MetadataDir: metadataDir,
 		Registry:    utils.EmptyOrderedMap(),
-		Content: &ManifestContent{
+		ManifestContent: &ManifestContent{
 			Version:  1,
-			Naming:   DefaultNaming(),
 			Project:  &ProjectManifest{Id: projectId, ApiHost: apiHost},
+			SortBy:   SortById,
+			Naming:   DefaultNaming(),
 			Branches: make([]*BranchManifest, 0),
 			Configs:  make([]*ConfigManifestWithRows, 0),
 		},
@@ -121,32 +125,32 @@ func LoadManifest(projectDir string, metadataDir string) (*Manifest, error) {
 
 	// Decode JSON
 	m := newManifest(0, "", projectDir, metadataDir)
-	err = json.Decode(data, m.Content)
+	err = json.Decode(data, m.ManifestContent)
 	if err != nil {
 		return nil, fmt.Errorf("manifest \"%s\" is not valid: %s", utils.RelPath(projectDir, path), err)
 	}
 
 	// Resolve paths, set parent IDs, store struct in Registry
 	branchById := make(map[int]*BranchManifest)
-	for _, branch := range m.Content.Branches {
+	for _, branch := range m.ManifestContent.Branches {
 		branch.ResolvePaths()
 		branchById[branch.Id] = branch
-		m.Registry.Set(branch.UniqueKey(), branch)
+		m.Registry.Set(branch.UniqueKey(m.SortBy), branch)
 	}
-	for _, configWithRows := range m.Content.Configs {
+	for _, configWithRows := range m.ManifestContent.Configs {
 		config := configWithRows.ConfigManifest
 		branch, found := branchById[config.BranchId]
 		if !found {
 			return nil, fmt.Errorf("branch \"%d\" not found in manifest - referenced from the config \"%s:%s\" in \"%s\"", config.BranchId, config.ComponentId, config.Id, path)
 		}
 		config.ResolvePaths(branch)
-		m.Registry.Set(config.UniqueKey(), config)
+		m.Registry.Set(config.UniqueKey(m.SortBy), config)
 		for _, row := range configWithRows.Rows {
 			row.BranchId = config.BranchId
 			row.ComponentId = config.ComponentId
 			row.ConfigId = config.Id
 			row.ResolvePaths(config)
-			m.Registry.Set(row.UniqueKey(), row)
+			m.Registry.Set(row.UniqueKey(m.SortBy), row)
 		}
 	}
 
@@ -170,18 +174,18 @@ func (m *Manifest) Save() error {
 
 	// Convert registry to slices
 	configsMap := make(map[string]*ConfigManifestWithRows)
-	m.Content.Branches = make([]*BranchManifest, 0)
-	m.Content.Configs = make([]*ConfigManifestWithRows, 0)
+	m.ManifestContent.Branches = make([]*BranchManifest, 0)
+	m.ManifestContent.Configs = make([]*ConfigManifestWithRows, 0)
 	for _, key := range m.Registry.Keys() {
 		item, _ := m.Registry.Get(key)
 		switch v := item.(type) {
 		case *BranchManifest:
-			m.Content.Branches = append(m.Content.Branches, v)
+			m.ManifestContent.Branches = append(m.ManifestContent.Branches, v)
 		case *ConfigManifest:
 			mapKey := fmt.Sprintf("%d_%s_%s", v.BranchId, v.ComponentId, v.Id)
 			config := &ConfigManifestWithRows{v, make([]*ConfigRowManifest, 0)}
 			configsMap[mapKey] = config
-			m.Content.Configs = append(m.Content.Configs, config)
+			m.ManifestContent.Configs = append(m.ManifestContent.Configs, config)
 		case *ConfigRowManifest:
 			mapKey := fmt.Sprintf("%d_%s_%s", v.BranchId, v.ComponentId, v.ConfigId)
 			config, found := configsMap[mapKey]
@@ -201,13 +205,13 @@ func (m *Manifest) Save() error {
 	}
 
 	// Encode JSON
-	data, err := json.Encode(m.Content, true)
+	data, err := json.Encode(m.ManifestContent, true)
 	if err != nil {
 		return err
 	}
 
 	// Write file
-	return os.WriteFile(m.Path(), data, 0650)
+	return os.WriteFile(m.Path(), data, 0644)
 }
 
 func (m *Manifest) LoadModel(om ObjectManifest, model interface{}) error {
@@ -260,11 +264,11 @@ func (m *Manifest) SaveModel(om ObjectManifest, model interface{}, logger *zap.S
 
 	// Add to manifest content
 	m.lock.Lock()
-	m.Registry.Set(om.UniqueKey(), om)
+	m.Registry.Set(om.UniqueKey(m.SortBy), om)
 	m.lock.Unlock()
 
 	// Mkdir
-	if err := os.MkdirAll(paths.AbsolutePath(m.ProjectDir), 06500); err != nil {
+	if err := os.MkdirAll(paths.AbsolutePath(m.ProjectDir), 0755); err != nil {
 		return err
 	}
 
@@ -275,7 +279,7 @@ func (m *Manifest) SaveModel(om ObjectManifest, model interface{}, logger *zap.S
 		if err != nil {
 			return err
 		}
-		if err := os.WriteFile(metadataFile, metadataJson, 0650); err != nil {
+		if err := os.WriteFile(metadataFile, metadataJson, 0644); err != nil {
 			return err
 		}
 		logger.Debugf("Saved \"%s\"", utils.RelPath(m.ProjectDir, metadataFile))
@@ -288,7 +292,7 @@ func (m *Manifest) SaveModel(om ObjectManifest, model interface{}, logger *zap.S
 		if err != nil {
 			return err
 		}
-		if err := os.WriteFile(configFile, configJson, 0650); err != nil {
+		if err := os.WriteFile(configFile, configJson, 0644); err != nil {
 			return err
 		}
 		logger.Debugf("Saved \"%s\"", utils.RelPath(m.ProjectDir, configFile))
@@ -302,7 +306,7 @@ func (m *Manifest) DeleteModel(om ObjectManifest, model interface{}, logger *zap
 
 	// Remove from manifest content
 	m.lock.Lock()
-	m.Registry.Delete(om.UniqueKey())
+	m.Registry.Delete(om.UniqueKey(m.SortBy))
 	m.lock.Unlock()
 
 	// Delete metadata file
@@ -412,16 +416,31 @@ func (r *ConfigRowManifest) KindAbbr() string {
 	return "R"
 }
 
-func (b *BranchManifest) UniqueKey() string {
-	return fmt.Sprintf("01_branch_%d", b.Id)
+func (b *BranchManifest) UniqueKey(sort string) string {
+	if sort == SortByPath {
+		return fmt.Sprintf("01_branch_%s", b.RelativePath())
+	} else {
+		return fmt.Sprintf("01_branch_%d", b.Id)
+	}
+
 }
 
-func (c *ConfigManifest) UniqueKey() string {
-	return fmt.Sprintf("02_config_%d_%s_%s", c.BranchId, c.ComponentId, c.Id)
+func (c *ConfigManifest) UniqueKey(sort string) string {
+	if sort == SortByPath {
+		return fmt.Sprintf("02_config_%s", c.RelativePath())
+	} else {
+		return fmt.Sprintf("02_config_%d_%s_%s", c.BranchId, c.ComponentId, c.Id)
+	}
+
 }
 
-func (r *ConfigRowManifest) UniqueKey() string {
-	return fmt.Sprintf("03_row_%d_%s_%s_%s", r.BranchId, r.ComponentId, r.ConfigId, r.Id)
+func (r *ConfigRowManifest) UniqueKey(sort string) string {
+	if sort == SortByPath {
+		return fmt.Sprintf("03_row_%s", r.RelativePath())
+	} else {
+		return fmt.Sprintf("03_row_%d_%s_%s_%s", r.BranchId, r.ComponentId, r.ConfigId, r.Id)
+	}
+
 }
 
 func (b *BranchManifest) ResolvePaths() {

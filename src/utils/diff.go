@@ -137,3 +137,8 @@ func IsIgnoredFile(path string, d os.DirEntry) bool {
 		!strings.HasPrefix(base, ".env") &&
 		base != ".gitignore"
 }
+
+func IsIgnoredDir(path string, d os.DirEntry) bool {
+	base := filepath.Base(path)
+	return d.IsDir() && strings.HasPrefix(base, ".")
+}

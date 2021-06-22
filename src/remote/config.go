@@ -70,6 +70,7 @@ func (a *StorageApi) ListComponentsRequest(branchId int) *client.Request {
 					for _, config := range component.Configs {
 						config.BranchId = branchId
 						config.ComponentId = component.Id
+						config.SortRows()
 
 						// Set rows IDs
 						for _, row := range config.Rows {

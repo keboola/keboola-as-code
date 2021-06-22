@@ -4,6 +4,7 @@
     "id": %%TEST_PROJECT_ID%%,
     "apiHost": "%%TEST_KBC_STORAGE_API_HOST%%"
   },
+  "sortBy": "path",
   "naming": {
     "branch": "{branch_name}",
     "config": "{component_type}/{component_id}/{config_name}",

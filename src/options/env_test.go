@@ -32,8 +32,8 @@ func TestLoadDotEnv(t *testing.T) {
 	assert.Empty(t, os.Environ())
 
 	// Write envs to file
-	assert.NoError(t, os.WriteFile(filepath.Join(temp, ".env.local"), []byte("FOO1=BAR1\nFOO2=BAR2\n"), 0600))
-	assert.NoError(t, os.WriteFile(filepath.Join(temp, ".env"), []byte("FOO1=BAZ\nFOO3=BAR3\n"), 0600))
+	assert.NoError(t, os.WriteFile(filepath.Join(temp, ".env.local"), []byte("FOO1=BAR1\nFOO2=BAR2\n"), 0650))
+	assert.NoError(t, os.WriteFile(filepath.Join(temp, ".env"), []byte("FOO1=BAZ\nFOO3=BAR3\n"), 0644))
 
 	// Load envs
 	err := loadDotEnv(temp)

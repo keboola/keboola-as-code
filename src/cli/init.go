@@ -67,7 +67,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 			// Create metadata dir
 			projectDir := root.options.WorkingDirectory()
 			metadataDir := filepath.Join(projectDir, model.MetadataDir)
-			if err = os.MkdirAll(metadataDir, 0650); err != nil {
+			if err = os.MkdirAll(metadataDir, 0755); err != nil {
 				return fmt.Errorf("cannot create metadata directory \"%s\": %s", metadataDir, err)
 			}
 			if err = root.options.SetProjectDirectory(projectDir); err != nil {
