@@ -20,8 +20,8 @@ type State struct {
 	localErrors  *utils.Error
 	paths        *PathsState
 	naming       *manifest.LocalNaming
+	components   map[string]*model.Component
 	branches     map[string]*BranchState
-	components   map[string]*ComponentState
 	configs      map[string]*ConfigState
 	configRows   map[string]*ConfigRowState
 }
@@ -38,10 +38,6 @@ type BranchState struct {
 	*manifest.BranchManifest
 	Remote *model.Branch
 	Local  *model.Branch
-}
-
-type ComponentState struct {
-	*model.Component
 }
 
 type ConfigState struct {
@@ -96,7 +92,7 @@ func NewState(projectDir string, naming *manifest.LocalNaming) *State {
 		localErrors:  &utils.Error{},
 		naming:       naming,
 		branches:     make(map[string]*BranchState),
-		components:   make(map[string]*ComponentState),
+		components:   make(map[string]*model.Component),
 		configs:      make(map[string]*ConfigState),
 		configRows:   make(map[string]*ConfigRowState),
 	}
@@ -106,8 +102,8 @@ func NewState(projectDir string, naming *manifest.LocalNaming) *State {
 
 func (s *State) Validate() *utils.Error {
 	v := &stateValidator{}
-	for _, c := range s.Components() {
-		v.validate("component", c.Component)
+	for _, component := range s.Components() {
+		v.validate("component", component)
 	}
 	for _, objectState := range s.All() {
 		v.validate(objectState.Kind(), objectState.RemoteState())
@@ -188,8 +184,8 @@ func (s *State) Branches() []*BranchState {
 	return branches
 }
 
-func (s *State) Components() []*ComponentState {
-	var components []*ComponentState
+func (s *State) Components() []*model.Component {
+	var components []*model.Component
 	for _, c := range s.components {
 		components = append(components, c)
 	}
@@ -212,115 +208,121 @@ func (s *State) ConfigRows() []*ConfigRowState {
 	return configRows
 }
 
-func (s *State) GetComponent(componentId string) (*model.Component, bool) {
+func (s *State) GetBranch(key model.BranchKey, create bool) *BranchState {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	if s, ok := s.components[componentId]; ok {
-		return s.Component, true
-	}
-	return nil, false
-}
-
-func (s *State) SetBranchRemoteState(branch *model.Branch) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	state := s.getBranchState(branch.BranchKey)
-	state.Remote = branch
-	if state.BranchManifest == nil {
-		state.BranchManifest = manifest.NewBranchManifest(s.naming, branch)
-	}
-}
-
-func (s *State) SetBranchLocalState(branch *model.Branch, manifest *manifest.BranchManifest) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	s.MarkPathTracked(manifest.MetaFilePath())
-	state := s.getBranchState(branch.BranchKey)
-	state.Local = branch
-	state.BranchManifest = manifest
-}
-
-func (s *State) setComponentRemoteState(component *model.Component) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	state := s.getComponentState(component.ComponentKey)
-	state.Component = component
-}
-
-func (s *State) SetConfigRemoteState(component *model.Component, config *model.Config) {
-	s.setComponentRemoteState(component)
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	state := s.getConfigState(config.ConfigKey)
-	state.Remote = config
-	if state.ConfigManifest == nil {
-		branch := s.getBranchState(config.BranchKey())
-		state.ConfigManifest = manifest.NewConfigManifest(s.naming, branch.BranchManifest, component, config)
-	}
-}
-
-func (s *State) SetConfigLocalState(component *model.Component, config *model.Config, manifest *manifest.ConfigManifest) {
-	s.setComponentRemoteState(component)
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	s.MarkPathTracked(manifest.MetaFilePath())
-	s.MarkPathTracked(manifest.ConfigFilePath())
-	state := s.getConfigState(config.ConfigKey)
-	state.Local = config
-	state.ConfigManifest = manifest
-}
-
-func (s *State) SetConfigRowRemoteState(row *model.ConfigRow) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	state := s.getConfigRowState(row.ConfigRowKey)
-	state.Remote = row
-	if state.ConfigRowManifest == nil {
-		config := s.getConfigState(row.ConfigKey())
-		state.ConfigRowManifest = manifest.NewConfigRowManifest(s.naming, config.ConfigManifest, row)
-	}
-}
-
-func (s *State) SetConfigRowLocalState(row *model.ConfigRow, manifest *manifest.ConfigRowManifest) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	s.MarkPathTracked(manifest.MetaFilePath())
-	s.MarkPathTracked(manifest.ConfigFilePath())
-	state := s.getConfigRowState(row.ConfigRowKey)
-	state.Local = row
-	state.ConfigRowManifest = manifest
-}
-
-func (s *State) getBranchState(key model.BranchKey) *BranchState {
 	keyStr := key.String()
 	if _, ok := s.branches[keyStr]; !ok {
+		if !create {
+			return nil
+		}
 		s.branches[keyStr] = &BranchState{}
 	}
 	return s.branches[keyStr]
 }
 
-func (s *State) getComponentState(key model.ComponentKey) *ComponentState {
-	keyStr := key.String()
-	if _, ok := s.components[keyStr]; !ok {
-		s.components[keyStr] = &ComponentState{}
+func (s *State) GetComponent(key model.ComponentKey) *model.Component {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	if component, found := s.components[key.String()]; found {
+		return component
 	}
-	return s.components[keyStr]
+	return nil
 }
 
-func (s *State) getConfigState(key model.ConfigKey) *ConfigState {
+func (s *State) GetConfig(key model.ConfigKey, create bool) *ConfigState {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 	keyStr := key.String()
 	if _, ok := s.configs[keyStr]; !ok {
+		if !create {
+			return nil
+		}
 		s.configs[keyStr] = &ConfigState{}
 	}
 	return s.configs[keyStr]
 }
 
-func (s *State) getConfigRowState(key model.ConfigRowKey) *ConfigRowState {
+func (s *State) GetConfigRow(key model.ConfigRowKey, create bool) *ConfigRowState {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 	keyStr := key.String()
 	if _, ok := s.configRows[keyStr]; !ok {
+		if !create {
+			return nil
+		}
 		s.configRows[keyStr] = &ConfigRowState{}
 	}
 	return s.configRows[keyStr]
+}
+
+func (s *State) SetBranchRemoteState(remote *model.Branch) {
+	branch := s.GetBranch(remote.BranchKey, true)
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	branch.Remote = remote
+	if branch.BranchManifest == nil {
+		branch.BranchManifest = manifest.NewBranchManifest(s.naming, remote)
+	}
+}
+
+func (s *State) SetBranchLocalState(local *model.Branch, manifest *manifest.BranchManifest) {
+	branch := s.GetBranch(local.BranchKey, true)
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	branch.Local = local
+	branch.BranchManifest = manifest
+	s.MarkPathTracked(manifest.MetaFilePath())
+}
+
+func (s *State) setComponent(component *model.Component) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	s.components[component.String()] = component
+}
+
+func (s *State) SetConfigRemoteState(component *model.Component, remote *model.Config) {
+	s.setComponent(component)
+	state := s.GetConfig(remote.ConfigKey, true)
+	branch := s.GetBranch(*remote.BranchKey(), true)
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	state.Remote = remote
+	if state.ConfigManifest == nil {
+		state.ConfigManifest = manifest.NewConfigManifest(s.naming, branch.BranchManifest, component, remote)
+	}
+}
+
+func (s *State) SetConfigLocalState(component *model.Component, local *model.Config, manifest *manifest.ConfigManifest) {
+	s.setComponent(component)
+	state := s.GetConfig(local.ConfigKey, true)
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	state.Local = local
+	state.ConfigManifest = manifest
+	s.MarkPathTracked(manifest.MetaFilePath())
+	s.MarkPathTracked(manifest.ConfigFilePath())
+}
+
+func (s *State) SetConfigRowRemoteState(remote *model.ConfigRow) {
+	state := s.GetConfigRow(remote.ConfigRowKey, true)
+	config := s.GetConfig(*remote.ConfigKey(), true)
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	state.Remote = remote
+	if state.ConfigRowManifest == nil {
+		state.ConfigRowManifest = manifest.NewConfigRowManifest(s.naming, config.ConfigManifest, remote)
+	}
+}
+
+func (s *State) SetConfigRowLocalState(local *model.ConfigRow, manifest *manifest.ConfigRowManifest) {
+	state := s.GetConfigRow(local.ConfigRowKey, true)
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	state.Local = local
+	state.ConfigRowManifest = manifest
+	s.MarkPathTracked(manifest.MetaFilePath())
+	s.MarkPathTracked(manifest.ConfigFilePath())
 }
 
 func (b *BranchState) LocalState() interface{} {

@@ -153,12 +153,12 @@ func (k *ConfigRowKey) String() string {
 	return fmt.Sprintf("%02d_%d_%s_%s_%s", k.Level(), k.BranchId, k.ComponentId, k.ConfigId, k.Id)
 }
 
-func (k *ConfigKey) BranchKey() BranchKey {
-	return BranchKey{Id: k.BranchId}
+func (k *ConfigKey) BranchKey() *BranchKey {
+	return &BranchKey{Id: k.BranchId}
 }
 
-func (k *ConfigRowKey) ConfigKey() ConfigKey {
-	return ConfigKey{BranchId: k.BranchId, ComponentId: k.ComponentId, Id: k.ConfigId}
+func (k *ConfigRowKey) ConfigKey() *ConfigKey {
+	return &ConfigKey{BranchId: k.BranchId, ComponentId: k.ComponentId, Id: k.ConfigId}
 }
 
 func (r *ConfigRow) ToApiValues() (map[string]string, error) {

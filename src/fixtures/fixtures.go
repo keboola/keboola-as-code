@@ -12,9 +12,13 @@ import (
 	"testing"
 )
 
+type ProjectSnapshot struct {
+	Branches []*BranchConfigs `json:"branches"`
+}
+
 type Branch struct {
 	Name        string `json:"name" validate:"required"`
-	Description string `json:"description" validate:"required"`
+	Description string `json:"description"`
 	IsDefault   bool   `json:"isDefault"`
 }
 
@@ -23,17 +27,24 @@ type BranchState struct {
 	Configs []string `json:"configs"`
 }
 
+type BranchConfigs struct {
+	Branch  *Branch   `json:"branch" validate:"required"`
+	Configs []*Config `json:"configs"`
+}
+
 type Config struct {
 	ComponentId string                 `json:"componentId" validate:"required"`
 	Name        string                 `json:"name" validate:"required"`
+	Description string                 `json:"description"`
 	Content     *orderedmap.OrderedMap `json:"configuration"`
 	Rows        []*ConfigRow           `json:"rows"`
 }
 
 type ConfigRow struct {
-	Name       string                 `json:"name" validate:"required"`
-	IsDisabled bool                   `json:"isDisabled"`
-	Content    *orderedmap.OrderedMap `json:"configuration"`
+	Name        string                 `json:"name" validate:"required"`
+	Description string                 `json:"description"`
+	IsDisabled  bool                   `json:"isDisabled"`
+	Content     *orderedmap.OrderedMap `json:"configuration"`
 }
 
 type StateFile struct {
@@ -80,6 +91,18 @@ func (r *ConfigRow) ToModel() *model.ConfigRow {
 	row.IsDisabled = r.IsDisabled
 	row.Content = r.Content
 	return row
+}
+
+func (b *BranchConfigs) GetName() string {
+	return b.Branch.Name
+}
+
+func (c *Config) GetName() string {
+	return c.Name
+}
+
+func (r *ConfigRow) GetName() string {
+	return r.Name
 }
 
 func LoadStateFile(path string) (*StateFile, error) {

@@ -13,10 +13,10 @@ import (
 )
 
 func TestLoadRemoteStateEmpty(t *testing.T) {
-	remote.SetStateOfTestProject(t, "empty.json")
+	api, _ := remote.TestStorageApiWithToken(t)
+	remote.SetStateOfTestProject(t, api, "empty.json")
 
 	projectDir := t.TempDir()
-	api, _ := remote.TestStorageApiWithToken(t)
 	state := NewState(projectDir, manifest.DefaultNaming())
 	LoadRemoteState(state, context.Background(), api)
 	assert.NotNil(t, state)
@@ -26,10 +26,10 @@ func TestLoadRemoteStateEmpty(t *testing.T) {
 }
 
 func TestLoadRemoteStateComplex(t *testing.T) {
-	remote.SetStateOfTestProject(t, "complex.json")
+	api, _ := remote.TestStorageApiWithToken(t)
+	remote.SetStateOfTestProject(t, api, "complex.json")
 
 	projectDir := t.TempDir()
-	api, _ := remote.TestStorageApiWithToken(t)
 	state := NewState(projectDir, manifest.DefaultNaming())
 	LoadRemoteState(state, context.Background(), api)
 	assert.NotNil(t, state)

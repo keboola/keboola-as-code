@@ -49,9 +49,9 @@ func IsDir(path string) bool {
 
 // GetFileContent in test.
 func GetFileContent(path string) string {
-	// Return default value if file not exists
-	if _, err := os.Stat(path); err != nil {
-		panic(fmt.Errorf("cannot get file \"%s\" content: %s", path, err))
+	// Check if file exists
+	if !IsFile(path) {
+		panic(fmt.Errorf("file \"%s\" not found", path))
 	}
 
 	// Read content, handle error

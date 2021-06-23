@@ -56,12 +56,13 @@ func LoadLocalState(state *State, m *manifest.Manifest, api *remote.StorageApi) 
 
 func getComponent(state *State, api *remote.StorageApi, componentId string) (*model.Component, error) {
 	// Load component from state if present
-	if component, found := state.GetComponent(componentId); found {
+	if component := state.GetComponent(model.ComponentKey{Id: componentId}); component != nil {
 		return component, nil
 	}
 
 	// Or by API
 	if component, err := api.GetComponent(componentId); err == nil {
+		state.setComponent(component)
 		return component, nil
 	} else {
 		return nil, err

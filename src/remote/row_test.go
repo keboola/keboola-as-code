@@ -9,11 +9,11 @@ import (
 )
 
 func TestConfigRowApiCalls(t *testing.T) {
-	SetStateOfTestProject(t, "empty.json")
-	a, _ := TestStorageApiWithToken(t)
+	api, _ := TestStorageApiWithToken(t)
+	SetStateOfTestProject(t, api, "empty.json")
 
 	// Get default branch
-	branch, err := a.GetDefaultBranch()
+	branch, err := api.GetDefaultBranch()
 	assert.NoError(t, err)
 	assert.NotNil(t, branch)
 
@@ -37,7 +37,7 @@ func TestConfigRowApiCalls(t *testing.T) {
 			}),
 		},
 	}
-	resConfig, err := a.CreateConfig(config)
+	resConfig, err := api.CreateConfig(config)
 	assert.NoError(t, err)
 	assert.Same(t, config, resConfig)
 
@@ -56,7 +56,7 @@ func TestConfigRowApiCalls(t *testing.T) {
 			{Key: "row1", Value: "value1"},
 		}),
 	}
-	resRow1, err := a.CreateConfigRow(row1)
+	resRow1, err := api.CreateConfigRow(row1)
 	assert.NoError(t, err)
 	assert.Same(t, row1, resRow1)
 
@@ -75,7 +75,7 @@ func TestConfigRowApiCalls(t *testing.T) {
 			{Key: "row2", Value: "value2"},
 		}),
 	}
-	resRow2, err := a.CreateConfigRow(row2)
+	resRow2, err := api.CreateConfigRow(row2)
 	assert.NoError(t, err)
 	assert.Same(t, row2, resRow2)
 
@@ -86,16 +86,16 @@ func TestConfigRowApiCalls(t *testing.T) {
 	row1.Content = utils.PairsToOrderedMap([]utils.Pair{
 		{Key: "row1", Value: "xyz"},
 	})
-	resRow1, err = a.UpdateConfigRow(row1, []string{"name", "description", "changeDescription", "configuration"})
+	resRow1, err = api.UpdateConfigRow(row1, []string{"name", "description", "changeDescription", "configuration"})
 	assert.NoError(t, err)
 	assert.Same(t, row1, resRow1)
 
 	// Delete row 2
-	err = a.DeleteConfigRow(row2.ComponentId, row2.ConfigId, row2.Id)
+	err = api.DeleteConfigRow(row2.ComponentId, row2.ConfigId, row2.Id)
 	assert.NoError(t, err)
 
 	// List components
-	components, err := a.ListComponents(branch.Id)
+	components, err := api.ListComponents(branch.Id)
 	assert.NotNil(t, components)
 	assert.NoError(t, err)
 	componentsJson, err := json.EncodeString(components, true)

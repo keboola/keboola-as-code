@@ -9,16 +9,16 @@ import (
 )
 
 func TestConfigApiCalls(t *testing.T) {
-	SetStateOfTestProject(t, "empty.json")
-	a, _ := TestStorageApiWithToken(t)
+	api, _ := TestStorageApiWithToken(t)
+	SetStateOfTestProject(t, api, "empty.json")
 
 	// Get default branch
-	branch, err := a.GetDefaultBranch()
+	branch, err := api.GetDefaultBranch()
 	assert.NoError(t, err)
 	assert.NotNil(t, branch)
 
 	// List components - no component
-	components, err := a.ListComponents(branch.Id)
+	components, err := api.ListComponents(branch.Id)
 	assert.NotNil(t, components)
 	assert.NoError(t, err)
 	assert.Len(t, *components, 0)
@@ -62,7 +62,7 @@ func TestConfigApiCalls(t *testing.T) {
 		},
 		Rows: []*model.ConfigRow{row1, row2},
 	}
-	resConfig, err := a.CreateConfig(config)
+	resConfig, err := api.CreateConfig(config)
 	assert.NoError(t, err)
 	assert.Same(t, config, resConfig)
 	assert.NotEmpty(t, config.Id)
@@ -85,12 +85,12 @@ func TestConfigApiCalls(t *testing.T) {
 			}),
 		},
 	})
-	resConfigUpdate, err := a.UpdateConfig(config.Config, []string{"name", "description", "changeDescription", "configuration"})
+	resConfigUpdate, err := api.UpdateConfig(config.Config, []string{"name", "description", "changeDescription", "configuration"})
 	assert.NoError(t, err)
 	assert.Same(t, config.Config, resConfigUpdate)
 
 	// List components
-	components, err = a.ListComponents(branch.Id)
+	components, err = api.ListComponents(branch.Id)
 	assert.NotNil(t, components)
 	assert.NoError(t, err)
 	componentsJson, err := json.EncodeString(components, true)
@@ -98,11 +98,11 @@ func TestConfigApiCalls(t *testing.T) {
 	utils.AssertWildcards(t, expectedComponentsConfigTest(), componentsJson, "Unexpected components")
 
 	// Delete configuration
-	err = a.DeleteConfig(config.ComponentId, config.Id)
+	err = api.DeleteConfig(config.ComponentId, config.Id)
 	assert.NoError(t, err)
 
 	// List components - no component
-	components, err = a.ListComponents(branch.Id)
+	components, err = api.ListComponents(branch.Id)
 	assert.NotNil(t, components)
 	assert.NoError(t, err)
 	assert.Len(t, *components, 0)
