@@ -54,7 +54,7 @@ func TestInteractive(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		_, err = c.ExpectString("Please enter Keboola Storage API host, eg. \"keboola.connection.com\".")
+		_, err = c.ExpectString("Please enter Keboola Storage API host, eg. \"connection.keboola.com\".")
 		assert.NoError(t, err)
 		_, err = c.ExpectString("API host ")
 		assert.NoError(t, err)

@@ -10,8 +10,10 @@ DEBUG	Storage API token is valid.
 DEBUG	Project id: "%%TEST_PROJECT_ID%%", project name: "%%TEST_PROJECT_NAME%%".
 INFO	Created metadata dir ".keboola".
 INFO	Created manifest file ".keboola/manifest.json".
-INFO	Created file ".gitignore".
-INFO	Created file ".env.local" with the API token, keep it local and secret.
+INFO	Created file ".env" - it contains the API host.
+INFO	Created file ".env.local" - it contains the API token, keep it local and secret.
+INFO	Created file ".env.dist" - an ".env.local" template.
+INFO	Created file ".gitignore" - to keep ".env.local" local.
 %A
 DEBUG	Sent "init" successful event id: "%s"
 INFO	Init done. Running pull.

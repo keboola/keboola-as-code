@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/utils"
@@ -85,35 +86,9 @@ func initCommand(root *rootCommand) *cobra.Command {
 			}
 			root.logger.Infof("Created manifest file \"%s\".", utils.RelPath(projectDir, projectManifest.Path()))
 
-			// Create or update ".gitignore"
-			gitignorePath := filepath.Join(projectDir, ".gitignore")
-			gitignoreRelPath := utils.RelPath(projectDir, gitignorePath)
-			updated, err := utils.CreateOrUpdateFile(gitignorePath, []utils.FileLine{
-				{Line: "/.env.local"},
-			})
-			if err != nil {
+			// Create ENV files
+			if err := createEnvFiles(root.logger, api, projectDir); err != nil {
 				return err
-			}
-			if updated {
-				root.logger.Infof("Updated file \"%s\".", gitignoreRelPath)
-			} else {
-				root.logger.Infof("Created file \"%s\".", gitignoreRelPath)
-			}
-
-			// Create or update ".env.local"
-			envPath := filepath.Join(projectDir, ".env.local")
-			envRelPath := utils.RelPath(projectDir, envPath)
-			updated, err = utils.CreateOrUpdateFile(envPath, []utils.FileLine{
-				{Regexp: "^KBC_STORAGE_API_HOST=", Line: fmt.Sprintf(`KBC_STORAGE_API_HOST="%s"`, api.Host())},
-				{Regexp: "^KBC_STORAGE_API_TOKEN=", Line: fmt.Sprintf(`KBC_STORAGE_API_TOKEN="%s"`, api.Token().Token)},
-			})
-			if err != nil {
-				return err
-			}
-			if updated {
-				root.logger.Infof("Updated file \"%s\" with the API token, keep it local and secret.", envRelPath)
-			} else {
-				root.logger.Infof("Created file \"%s\" with the API token, keep it local and secret.", envRelPath)
 			}
 
 			// Send successful event
@@ -165,4 +140,62 @@ func sendInitFailedEvent(root *rootCommand, api *remote.StorageApi, err error) {
 	} else {
 		root.logger.Warnf("Cannot send \"init\" failed event: %s", err)
 	}
+}
+
+func createEnvFiles(logger *zap.SugaredLogger, api *remote.StorageApi, projectDir string) error {
+	// .env - with host
+	envMsg := " - it contains the API host"
+	envLines := []utils.FileLine{
+		{Regexp: "^KBC_STORAGE_API_HOST=", Line: fmt.Sprintf(`KBC_STORAGE_API_HOST="%s"`, api.Host())},
+	}
+	if err := createFile(logger, projectDir, ".env", envMsg, envLines); err != nil {
+		return err
+	}
+
+	// .env.local - with token value
+	envLocalMsg := " - it contains the API token, keep it local and secret"
+	envLocalLines := []utils.FileLine{
+		{Regexp: "^KBC_STORAGE_API_TOKEN=", Line: fmt.Sprintf(`KBC_STORAGE_API_TOKEN="%s"`, api.Token().Token)},
+	}
+	if err := createFile(logger, projectDir, ".env.local", envLocalMsg, envLocalLines); err != nil {
+		return err
+	}
+
+	// .env.dist - with token template
+	envDistMsg := ` - an ".env.local" template`
+	envDistLines := []utils.FileLine{
+		{Regexp: "^KBC_STORAGE_API_TOKEN=", Line: `KBC_STORAGE_API_TOKEN=`},
+	}
+	if err := createFile(logger, projectDir, ".env.dist", envDistMsg, envDistLines); err != nil {
+		return err
+	}
+
+	// .gitignore - to keep ".env.local" local
+	gitIgnoreMsg := ` - to keep ".env.local" local`
+	gitIgnoreLines := []utils.FileLine{
+		{Line: "/.env.local"},
+	}
+	if err := createFile(logger, projectDir, ".gitignore", gitIgnoreMsg, gitIgnoreLines); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func createFile(logger *zap.SugaredLogger, projectDir, path, msgSuffix string, lines []utils.FileLine) error {
+	absPath := filepath.Join(projectDir, path)
+	relPath := utils.RelPath(projectDir, absPath)
+	updated, err := utils.CreateOrUpdateFile(absPath, lines)
+
+	if err != nil {
+		return err
+	}
+
+	if updated {
+		logger.Infof("Updated file \"%s\"%s.", relPath, msgSuffix)
+	} else {
+		logger.Infof("Created file \"%s\"%s.", relPath, msgSuffix)
+	}
+
+	return nil
 }

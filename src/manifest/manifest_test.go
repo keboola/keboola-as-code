@@ -134,7 +134,7 @@ func minimalJson() string {
   "version": 1,
   "project": {
     "id": 12345,
-    "apiHost": "keboola.connection.com"
+    "apiHost": "connection.keboola.com"
   },
   "sortBy": "id",
   "naming": {
@@ -153,7 +153,7 @@ func minimalStruct() *Content {
 		Version: 1,
 		Project: &Project{
 			Id:      12345,
-			ApiHost: "keboola.connection.com",
+			ApiHost: "connection.keboola.com",
 		},
 		SortBy:   SortById,
 		Naming:   DefaultNaming(),
@@ -167,7 +167,7 @@ func fullJson() string {
   "version": 1,
   "project": {
     "id": 12345,
-    "apiHost": "keboola.connection.com"
+    "apiHost": "connection.keboola.com"
   },
   "sortBy": "id",
   "naming": {
@@ -228,7 +228,7 @@ func fullStruct() *Content {
 		Version: 1,
 		Project: &Project{
 			Id:      12345,
-			ApiHost: "keboola.connection.com",
+			ApiHost: "connection.keboola.com",
 		},
 		SortBy: SortById,
 		Naming: DefaultNaming(),
