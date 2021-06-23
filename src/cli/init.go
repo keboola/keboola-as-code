@@ -9,7 +9,6 @@ import (
 	"keboola-as-code/src/utils"
 	"os"
 	"path/filepath"
-	"time"
 )
 
 const initShortDescription = `Init local project directory and perform the first pull`
@@ -61,7 +60,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 			// Send failed event on error
 			defer func() {
 				if err != nil && !successful {
-					sendInitFailedEvent(root, api, err)
+					sendCmdFailedEvent(root, api, err, "init", "Init command failed.")
 				}
 			}()
 
@@ -93,7 +92,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 
 			// Send successful event
 			successful = true
-			sendInitSuccessfulEvent(root, api)
+			sendCmdSuccessfulEvent(root, api, "init", "Initialized local project directory.")
 
 			// Done
 			root.logger.Info("Init done. Running pull.")
@@ -105,41 +104,6 @@ func initCommand(root *rootCommand) *cobra.Command {
 	}
 
 	return cmd
-}
-
-func sendInitSuccessfulEvent(root *rootCommand, api *remote.StorageApi) {
-	message := "Initialized local project directory."
-	duration := time.Since(root.start)
-	params := map[string]interface{}{
-		"command": "init",
-	}
-	results := map[string]interface{}{
-		"projectId": api.ProjectId(),
-	}
-	event, err := api.CreateEvent("info", message, duration, params, results)
-	if err == nil {
-		root.logger.Debugf("Sent \"init\" successful event id: \"%s\"", event.Id)
-	} else {
-		root.logger.Warnf("Cannot send \"init\" successful event: %s", err)
-	}
-}
-
-func sendInitFailedEvent(root *rootCommand, api *remote.StorageApi, err error) {
-	message := "Init command failed."
-	duration := time.Since(root.start)
-	params := map[string]interface{}{
-		"command": "init",
-	}
-	results := map[string]interface{}{
-		"projectId": api.ProjectId(),
-		"error":     fmt.Sprintf("%s", err),
-	}
-	event, err := api.CreateEvent("error", message, duration, params, results)
-	if err == nil {
-		root.logger.Debugf("Sent \"init\" failed event id: \"%s\"", event.Id)
-	} else {
-		root.logger.Warnf("Cannot send \"init\" failed event: %s", err)
-	}
 }
 
 func createEnvFiles(logger *zap.SugaredLogger, api *remote.StorageApi, projectDir string) error {

@@ -28,6 +28,7 @@ func TestRootSubCommands(t *testing.T) {
 	assert.Equal(t, []string{
 		"init",
 		"pull",
+		"push",
 	}, names)
 }
 

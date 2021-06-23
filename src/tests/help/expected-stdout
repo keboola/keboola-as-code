@@ -12,6 +12,7 @@ Available Commands:
   help        Help about any command
   init        Init local project directory and perform the first pull
   pull        Pull configurations to the local project dir
+  push        Push configurations to the Keboola Connection project
 
 Flags:
   -h, --help                       print help for command

@@ -10,21 +10,21 @@ import (
 	"keboola-as-code/src/utils"
 )
 
-const pullShortDescription = `Pull configurations to the local project dir`
-const pullLongDescription = `Command "pull"
+const pushShortDescription = `Push configurations to the Keboola Connection project`
+const pushLongDescription = `Command "push"
 
-Pull configurations from the Keboola Connection project.
-Local files will be overwritten to match the project's state.
+Push configurations to the Keboola Connection project.
+Project's state will be overwritten to match the local files.
 
 You can use the "--dry-run" flag to see
-what needs to be done without modifying the files.
+what needs to be done without modifying the project's state.
 `
 
-func pullCommand(root *rootCommand) *cobra.Command {
+func pushCommand(root *rootCommand) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "pull",
-		Short: pullShortDescription,
-		Long:  pullLongDescription,
+		Use:   "push",
+		Short: pushShortDescription,
+		Long:  pushLongDescription,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			// Ask for the host/token, if not specified -> to make the first step easier
 			root.options.AskUser(root.prompt, "Host")
@@ -42,19 +42,19 @@ func pullCommand(root *rootCommand) *cobra.Command {
 			action.root = root
 			action.cmd = cmd
 			action.onSuccess = func(api *remote.StorageApi) {
-				sendCmdSuccessfulEvent(root, api, "pull", "Pull command done.")
-				root.logger.Info("Pull done.")
+				sendCmdSuccessfulEvent(root, api, "push", "Push command done.")
+				root.logger.Info("Push done.")
 			}
 			action.onError = func(api *remote.StorageApi, err error) {
-				sendCmdFailedEvent(root, api, err, "pull", "Pull command failed.")
+				sendCmdFailedEvent(root, api, err, "push", "Push command failed.")
 			}
 			action.action = func(api *remote.StorageApi, projectManifest *manifest.Manifest, projectState *state.State, diffResults *diff.Results) error {
 				// Log untracked paths
 				projectState.LogUntrackedPaths(root.logger)
 
 				// Get plan
-				pull := plan.Pull(diffResults)
-				pull.LogInfo(root.logger)
+				push := plan.Push(diffResults)
+				push.LogInfo(root.logger)
 
 				// Dry run?
 				dryRun, _ := cmd.Flags().GetBool("dry-run")
@@ -64,7 +64,7 @@ func pullCommand(root *rootCommand) *cobra.Command {
 				}
 
 				// Invoke
-				if err := pull.Invoke(root.logger, root.ctx, root.api, projectManifest); err != nil {
+				if err := push.Invoke(root.logger, root.ctx, root.api, projectManifest); err != nil {
 					return err
 				}
 
@@ -83,9 +83,8 @@ func pullCommand(root *rootCommand) *cobra.Command {
 		},
 	}
 
-	// Pull command flags
+	// Push command flags
 	cmd.Flags().SortFlags = true
-	cmd.Flags().Bool("force", false, "ignore invalid local state")
 	cmd.Flags().Bool("dry-run", false, "print what needs to be done")
 	return cmd
 }

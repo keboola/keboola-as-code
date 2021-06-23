@@ -90,7 +90,7 @@ func (d *Differ) doDiff(state state.ObjectState) (*Result, error) {
 		return nil, fmt.Errorf(`no field with tag "diff:true" in struct "%s"`, remoteType.String())
 	}
 
-	// Are both, Remote and Local state defined
+	// Are both, Remote and Local state defined?
 	result.ChangedFields = make([]string, 0)
 	result.Differences = make(map[string]string)
 	if remoteValues.IsNil() && localValues.IsNil() {

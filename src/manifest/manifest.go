@@ -28,6 +28,7 @@ type Manifest struct {
 	*Content                           // content of the file, updated only on LoadManifest() and Save()
 	ProjectDir  string                 `validate:"required"` // project root
 	MetadataDir string                 `validate:"required"` // inside ProjectDir
+	changed     bool                   // is content changed?
 	records     *orderedmap.OrderedMap // common map for all: branches, configs and rows manifests
 	lock        *sync.Mutex
 }
@@ -200,6 +201,10 @@ func (m *Manifest) Save() error {
 	return json.WriteFile(m.MetadataDir, FileName, m.Content, "manifest")
 }
 
+func (m *Manifest) IsChanged() bool {
+	return m.changed
+}
+
 func (m *Manifest) Path() string {
 	return filepath.Join(m.MetadataDir, FileName)
 }
@@ -225,18 +230,18 @@ func (m *Manifest) GetRecord(key string) (interface{}, bool) {
 func (m *Manifest) AddRecord(record Record) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
+	m.changed = true
 	m.records.Set(record.UniqueKey(m.SortBy), record)
 }
 
 func (m *Manifest) DeleteRecord(record Record) {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-	m.records.Delete(record.UniqueKey(m.SortBy))
+	m.DeleteRecordByKey(record.UniqueKey(m.SortBy))
 }
 
 func (m *Manifest) DeleteRecordByKey(key string) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
+	m.changed = true
 	m.records.Delete(key)
 }
 
