@@ -6,6 +6,7 @@
 
 ## Installation
 
+### Manual Installation
 - Download the latest release for your architecture from the [Github Releases](https://github.com/keboola/keboola-as-code/releases).
 - Extract archive, eg. `unzip kbc-vx.x.x-linux_arm64.zip`.
 - Make binary executable, eg. `chmod +x ./kbc`.
@@ -149,12 +150,13 @@ Each directory in the `src/tests/*` is one functional test.
 ```
 /src/tests
 └─test-name
-  ├─args              - file with command line arguments, used when running the program
-  ├─expected-code     - file with expected exit code, eg. 0 for success
-  ├─expected-stdout   - file with expected stdout
-  ├─expected-stderr   - file with expected stderr
-  ├─in                - dir, initial state of the working directory before program execution
-  └─out               - dir, expected state of the working directory after program execution
+  ├─args                - file with command line arguments, used when running the program
+  ├─expected-code       - file with expected exit code, eg. 0 for success
+  ├─expected-stdout     - file with expected stdout
+  ├─expected-stderr     - file with expected stderr
+  ├─project-state.json  - optional, if present, TEST_PROJECT will be set to defined state befor test
+  ├─in                  - dir, initial state of the working directory before program execution
+  └─out                 - dir, expected state of the working directory after program execution
 ```
 
 #### Wildcards

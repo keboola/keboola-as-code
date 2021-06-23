@@ -27,12 +27,13 @@ const (
 	RetryWaitTimeMax      = 3 * time.Second
 )
 
+// Client - http client
 type Client struct {
 	parentCtx        context.Context // context for parallel execution
 	logger           *Logger
-	resty            *resty.Client
-	requestIdCounter *utils.SafeCounter
-	poolIdCounter    *utils.SafeCounter
+	resty            *resty.Client      // wrapped http client
+	requestIdCounter *utils.SafeCounter // each request has unique ID -> for logs
+	poolIdCounter    *utils.SafeCounter // each pool has unique ID -> for logs
 }
 
 type contextKey string
@@ -72,7 +73,7 @@ func (c *Client) NewRequest(method string, url string) *Request {
 	r.Method = method
 	r.URL = url
 	request := NewRequest(c.requestIdCounter.IncAndGet(), c, r)
-	//request.SetContext(c.parentCtx)
+	request.SetContext(c.parentCtx)
 	return request
 }
 
@@ -109,8 +110,14 @@ func createHttpClient(logger *Logger) *resty.Client {
 	r.SetRetryWaitTime(RetryWaitTime)
 	r.SetRetryMaxWaitTime(RetryWaitTimeMax)
 	r.SetTransport(createTransport())
-	r.AddRetryCondition(func(response *resty.Response, err error) bool {
-		// On network errors
+	r.AddRetryCondition(createRetry())
+	return r
+}
+
+// createRetry - retry on defined network and HTTP errors
+func createRetry() func(response *resty.Response, err error) bool {
+	return func(response *resty.Response, err error) bool {
+		// On network errors - except hostname not found
 		if err != nil && response == nil {
 			switch true {
 			case
@@ -121,7 +128,7 @@ func createHttpClient(logger *Logger) *resty.Client {
 			}
 		}
 
-		// On status codes
+		// On HTTP status codes
 		switch response.StatusCode() {
 		case
 			http.StatusRequestTimeout,
@@ -136,11 +143,10 @@ func createHttpClient(logger *Logger) *resty.Client {
 		default:
 			return false
 		}
-	})
-
-	return r
+	}
 }
 
+// createTransport with custom timeouts
 func createTransport() *http.Transport {
 	dialer := &net.Dialer{
 		Timeout:   HttpTimeout,

@@ -8,6 +8,7 @@ import (
 	"keboola-as-code/src/remote"
 )
 
+// LoadLocalState - manifest -> local files -> unified model
 func LoadLocalState(state *State, m *manifest.Manifest, api *remote.StorageApi) {
 	var invalidKeys []string
 	records := m.GetRecords()

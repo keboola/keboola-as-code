@@ -14,7 +14,7 @@ type WriteCloser struct {
 	logger *zap.SugaredLogger
 }
 
-// Write message with the level to logger
+// Write messages with the defined level to logger
 func (w *WriteCloser) Write(p []byte) (n int, err error) {
 	lines := strings.TrimRight(string(p), "\n")
 	for _, line := range strings.Split(lines, "\n") {

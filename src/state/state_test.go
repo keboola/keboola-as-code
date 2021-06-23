@@ -60,7 +60,7 @@ func TestLoadState(t *testing.T) {
 				},
 			},
 		},
-	}, state.Branches())
+	}, utils.SortByName(state.Branches()))
 	assert.Equal(t, []*ConfigState{
 		{
 			Remote: &model.Config{
@@ -113,7 +113,7 @@ func TestLoadState(t *testing.T) {
 			},
 		},
 	}, state.Configs())
-	assert.Empty(t, state.ConfigRows())
+	assert.Empty(t, utils.SortByName(state.ConfigRows()))
 }
 
 func initLocalState(t *testing.T, localState string) (string, string) {

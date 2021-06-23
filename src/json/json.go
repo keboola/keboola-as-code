@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 )
 
+// ReadFile reads JSON file to target data
 func ReadFile(dir string, relPath string, target interface{}, errPrefix string) error {
 	path := filepath.Join(dir, relPath)
 
@@ -27,6 +28,7 @@ func ReadFile(dir string, relPath string, target interface{}, errPrefix string) 
 	return nil
 }
 
+// WriteFile writes JSON file from source data
 func WriteFile(dir string, relPath string, source interface{}, errPrefix string) error {
 	path := filepath.Join(dir, relPath)
 	data, err := Encode(source, true)

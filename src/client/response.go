@@ -9,7 +9,7 @@ type Response struct {
 	*Request
 	*resty.Response
 	lock *sync.Mutex
-	err  error
+	err  error // in resty has error type interface{}, but we need error type
 }
 
 func (r *Response) HasResponse() bool {
@@ -38,7 +38,7 @@ func (r *Response) Err() error {
 
 func (r *Response) SetErr(err error) *Response {
 	if err != nil {
-		// Sub-request can run in parallel and end in an error, it is set to parent request
+		// Sub-request can run in parallel and end with an error -> it can be set to parent request
 		// ... so locking is required
 		r.lock.Lock()
 		defer r.lock.Unlock()

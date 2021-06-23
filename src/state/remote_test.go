@@ -34,9 +34,9 @@ func TestLoadRemoteStateComplex(t *testing.T) {
 	LoadRemoteState(state, context.Background(), api)
 	assert.NotNil(t, state)
 	assert.Empty(t, state.RemoteErrors().Errors())
-	assert.Equal(t, complexRemoteExpectedBranches(), state.Branches())
-	assert.Equal(t, complexRemoteExpectedConfigs(), state.Configs())
-	assert.Equal(t, complexRemoteExpectedConfigsRows(), state.ConfigRows())
+	assert.Equal(t, complexRemoteExpectedBranches(), utils.SortByName(state.Branches()))
+	assert.Equal(t, complexRemoteExpectedConfigs(), utils.SortByName(state.Configs()))
+	assert.Equal(t, complexRemoteExpectedConfigsRows(), utils.SortByName(state.ConfigRows()))
 }
 
 func complexRemoteExpectedBranches() []*BranchState {
@@ -44,19 +44,19 @@ func complexRemoteExpectedBranches() []*BranchState {
 		{
 			Remote: &model.Branch{
 				BranchKey: model.BranchKey{
-					Id: cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
+					Id: cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_BAR_ID`)),
 				},
-				Name:        "Main",
-				Description: "Main branch",
-				IsDefault:   true,
+				Name:        "Bar",
+				Description: "Bar branch",
+				IsDefault:   false,
 			},
 			// Generated manifest
 			BranchManifest: &manifest.BranchManifest{
 				BranchKey: model.BranchKey{
-					Id: cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
+					Id: cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_BAR_ID`)),
 				},
 				Paths: manifest.Paths{
-					Path:       "main",
+					Path:       utils.MustGetEnv(`TEST_BRANCH_BAR_ID`) + "-bar",
 					ParentPath: "",
 				},
 			},
@@ -84,19 +84,19 @@ func complexRemoteExpectedBranches() []*BranchState {
 		{
 			Remote: &model.Branch{
 				BranchKey: model.BranchKey{
-					Id: cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_BAR_ID`)),
+					Id: cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
 				},
-				Name:        "Bar",
-				Description: "Bar branch",
-				IsDefault:   false,
+				Name:        "Main",
+				Description: "Main branch",
+				IsDefault:   true,
 			},
 			// Generated manifest
 			BranchManifest: &manifest.BranchManifest{
 				BranchKey: model.BranchKey{
-					Id: cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_BAR_ID`)),
+					Id: cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
 				},
 				Paths: manifest.Paths{
-					Path:       utils.MustGetEnv(`TEST_BRANCH_BAR_ID`) + "-bar",
+					Path:       "main",
 					ParentPath: "",
 				},
 			},
@@ -159,6 +159,31 @@ func complexRemoteExpectedConfigs() []*ConfigState {
 		{
 			Remote: &model.Config{
 				ConfigKey: model.ConfigKey{
+					BranchId:    cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_BAR_ID`)),
+					ComponentId: "ex-generic-v2",
+					Id:          utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
+				},
+				Name:              "empty",
+				Description:       "test fixture",
+				ChangeDescription: fmt.Sprintf(`Copied from default branch configuration "empty" (%s) version 1`, utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
+				Content:           utils.EmptyOrderedMap(),
+			},
+			// Generated manifest
+			ConfigManifest: &manifest.ConfigManifest{
+				ConfigKey: model.ConfigKey{
+					BranchId:    cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_BAR_ID`)),
+					ComponentId: "ex-generic-v2",
+					Id:          utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
+				},
+				Paths: manifest.Paths{
+					Path:       "extractor/ex-generic-v2/" + utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`) + "-empty",
+					ParentPath: utils.MustGetEnv(`TEST_BRANCH_BAR_ID`) + "-bar",
+				},
+			},
+		},
+		{
+			Remote: &model.Config{
+				ConfigKey: model.ConfigKey{
 					BranchId:    cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_FOO_ID`)),
 					ComponentId: "keboola.ex-db-mysql",
 					Id:          utils.MustGetEnv(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`),
@@ -193,31 +218,6 @@ func complexRemoteExpectedConfigs() []*ConfigState {
 				Paths: manifest.Paths{
 					Path:       "extractor/keboola.ex-db-mysql/" + utils.MustGetEnv(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`) + "-with-rows",
 					ParentPath: utils.MustGetEnv(`TEST_BRANCH_FOO_ID`) + "-foo",
-				},
-			},
-		},
-		{
-			Remote: &model.Config{
-				ConfigKey: model.ConfigKey{
-					BranchId:    cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_BAR_ID`)),
-					ComponentId: "ex-generic-v2",
-					Id:          utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
-				},
-				Name:              "empty",
-				Description:       "test fixture",
-				ChangeDescription: fmt.Sprintf(`Copied from default branch configuration "empty" (%s) version 1`, utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
-				Content:           utils.EmptyOrderedMap(),
-			},
-			// Generated manifest
-			ConfigManifest: &manifest.ConfigManifest{
-				ConfigKey: model.ConfigKey{
-					BranchId:    cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_BAR_ID`)),
-					ComponentId: "ex-generic-v2",
-					Id:          utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
-				},
-				Paths: manifest.Paths{
-					Path:       "extractor/ex-generic-v2/" + utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`) + "-empty",
-					ParentPath: utils.MustGetEnv(`TEST_BRANCH_BAR_ID`) + "-bar",
 				},
 			},
 		},
