@@ -98,7 +98,7 @@ func TestErrorInCallback(t *testing.T) {
 			Send()
 
 		if c.Inc(); c.Get() == 10 {
-			return response.SetError(errors.New("some error in response listener"))
+			return response.SetErr(errors.New("some error in response listener"))
 		}
 		return response
 	}
@@ -293,10 +293,10 @@ func TestWaitForSubRequestChain(t *testing.T) {
 				Request(client.NewRequest(resty.MethodGet, "https://example.com/sub")).
 				OnSuccess(subRequestCallback).
 				OnSuccess(func(response *Response) *Response {
-					invokeOrder = append(invokeOrder, response.Request().Id())
+					invokeOrder = append(invokeOrder, response.Id())
 					return response
 				})
-			response.request.WaitFor(subRequest) // main WaitFor -> sub1 -> sub2 -> sub3 ...
+			response.WaitFor(subRequest) // main WaitFor -> sub1 -> sub2 -> sub3 ...
 			subRequest.Send()
 		}
 		return response

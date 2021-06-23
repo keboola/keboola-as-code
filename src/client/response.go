@@ -6,69 +6,54 @@ import (
 )
 
 type Response struct {
-	lock     *sync.Mutex
-	request  *Request
-	response *resty.Response
-	err      error
+	*Request
+	*resty.Response
+	lock *sync.Mutex
+	err  error
 }
 
 func (r *Response) HasResponse() bool {
-	return r.response != nil
+	return r.Response != nil
 }
 
 func (r *Response) HasResult() bool {
-	return !r.HasError() && r.response != nil && r.response.Result() != nil
+	return r.Response.Result() != nil
 }
 
 func (r *Response) HasError() bool {
 	return r.err != nil
 }
 
-func (r *Response) Request() *Request {
-	return r.request
-}
-
-func (r *Response) RestyRequest() *resty.Request {
-	return r.request.RestyRequest()
-}
-
-func (r *Response) RestyResponse() *resty.Response {
-	return r.response
-}
-
-func (r *Response) Result() interface{} {
-	if r.HasError() || r.response == nil {
-		return nil
-	}
-	return r.response.Result()
-}
-
 func (r *Response) SetResult(result interface{}) *Response {
-	r.RestyRequest().Result = result
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	r.Request.Result = result
+	r.Request.Error = nil
 	return r
 }
 
-func (r *Response) Error() error {
+func (r *Response) Err() error {
 	return r.err
 }
 
-func (r *Response) SetError(err error) *Response {
-	// Sub-request can run in parallel and end in an error, it is set to parent request
-	// ... so locking is required
-	r.lock.Lock()
-	defer r.lock.Unlock()
-	r.err = err
+func (r *Response) SetErr(err error) *Response {
+	if err != nil {
+		// Sub-request can run in parallel and end in an error, it is set to parent request
+		// ... so locking is required
+		r.lock.Lock()
+		defer r.lock.Unlock()
+		r.err = err
+		r.Request.Result = nil
+	}
 	return r
 }
 
 func (r *Response) Sender() Sender {
-	return r.request.sender
-}
-
-func (r *Response) Url() string {
-	return r.response.Request.URL
+	return r.Request.sender
 }
 
 func NewResponse(request *Request, response *resty.Response, err error) *Response {
-	return &Response{lock: &sync.Mutex{}, request: request, response: response, err: err}
+	r := &Response{Request: request, Response: response, lock: &sync.Mutex{}}
+	r.SetErr(err)
+	return r
 }

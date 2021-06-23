@@ -13,7 +13,11 @@ func Validate(value interface{}) error {
 	validate := validator.New()
 	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
 		// Use JSON field name in error messages
-		return strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
+		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
+		if name == "-" {
+			return fld.Name
+		}
+		return name
 	})
 
 	// Do
@@ -26,10 +30,9 @@ func Validate(value interface{}) error {
 func processValidateError(err validator.ValidationErrors) error {
 	result := &utils.Error{}
 	for _, e := range err {
-		path := strings.TrimPrefix(e.Namespace(), "Manifest.")
 		result.Add(fmt.Errorf(
 			"key=\"%s\", value=\"%v\", failed \"%s\" validation",
-			path,
+			e.Field(),
 			e.Value(),
 			e.ActualTag(),
 		))

@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"fmt"
 	"github.com/go-resty/resty/v2"
 	"sync"
 )
@@ -26,6 +25,8 @@ type Sender interface {
 }
 
 type Request struct {
+	*resty.Request
+	*Response
 	lock        *sync.Mutex
 	id          int
 	sent        bool
@@ -34,8 +35,6 @@ type Request struct {
 	pathParams  map[string]string
 	queryParams map[string]string
 	body        map[string]string
-	request     *resty.Request
-	response    *Response
 	sender      Sender
 	listeners   []*ResponseListener
 	waitingFor  []*Request
@@ -43,34 +42,34 @@ type Request struct {
 
 func NewRequest(id int, sender Sender, request *resty.Request) *Request {
 	return &Request{
+		Request:     request,
 		lock:        &sync.Mutex{},
 		id:          id,
 		pathParams:  make(map[string]string),
 		queryParams: make(map[string]string),
-		request:     request,
 		url:         request.URL,
 		sender:      sender,
 	}
 }
 
 func (r *Request) SetResult(result interface{}) *Request {
-	r.request.SetResult(result)
+	r.Request.SetResult(result)
 	return r
 }
 
 func (r *Request) SetHeader(header string, value string) *Request {
-	r.request.SetHeader(header, value)
+	r.Request.SetHeader(header, value)
 	return r
 }
 
 func (r *Request) SetQueryParam(param, value string) *Request {
-	r.request.SetQueryParam(param, value)
+	r.Request.SetQueryParam(param, value)
 	r.queryParams[param] = value
 	return r
 }
 
 func (r *Request) SetPathParam(param, value string) *Request {
-	r.request.SetPathParam(param, value)
+	r.Request.SetPathParam(param, value)
 	r.pathParams[param] = value
 	return r
 }
@@ -78,8 +77,8 @@ func (r *Request) SetPathParam(param, value string) *Request {
 func (r *Request) SetBody(body map[string]string) *Request {
 	// Storage API use "form-urlencoded", but it can be simply switched to JSON in the future
 	r.body = body
-	r.request.SetHeader("Content-Type", "application/x-www-form-urlencoded")
-	r.request.SetMultipartFormData(body)
+	r.Request.SetHeader("Content-Type", "application/x-www-form-urlencoded")
+	r.Request.SetMultipartFormData(body)
 	return r
 }
 
@@ -100,25 +99,6 @@ func (r *Request) Id() int {
 	return r.id
 }
 
-func (r *Request) Url() string {
-	return r.url
-}
-
-func (r *Request) Method() string {
-	return r.request.Method
-}
-
-func (r *Request) RestyRequest() *resty.Request {
-	return r.request
-}
-
-func (r *Request) Response() *Response {
-	if r.response == nil {
-		panic(fmt.Errorf("response is not set"))
-	}
-	return r.response
-}
-
 func (r *Request) OnResponse(callback ResponseCallback) *Request {
 	return r.addListener(EventOnResponse, callback)
 }
@@ -135,7 +115,7 @@ func (r *Request) SetContext(ctx context.Context) *Request {
 	// Store pathParams and queryParams to context for logs
 	ctx = context.WithValue(ctx, contextKey("pathParams"), r.pathParams)
 	ctx = context.WithValue(ctx, contextKey("queryParams"), r.queryParams)
-	r.request.SetContext(ctx)
+	r.Request.SetContext(ctx)
 	return r
 }
 
@@ -188,7 +168,7 @@ func (r *Request) invokeListeners() {
 		// Invoke next listener if present
 		listener := r.nextListener()
 		if listener != nil {
-			r.response = listener.Invoke(r.response)
+			r.Response = listener.Invoke(r.Response)
 		} else {
 			break
 		}

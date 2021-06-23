@@ -59,10 +59,10 @@ func TestProjectDirExpectedDirButFoundFile(t *testing.T) {
 	workingDir := filepath.Join(projectDir, "foo", "bar", "baz")
 
 	// Create ".keboola" dir in project directory
-	assert.NoError(t, os.Mkdir(metadataDir, 0600))
+	assert.NoError(t, os.Mkdir(metadataDir, 0755))
 
 	// Working dir = project sub-dir
-	assert.NoError(t, os.MkdirAll(workingDir, 0600))
+	assert.NoError(t, os.MkdirAll(workingDir, 0755))
 	assert.NoError(t, os.Chdir(workingDir))
 
 	// Create ".keboola" file in "foo" dir -> invalid ".keboola" should be dir
@@ -108,10 +108,10 @@ func TestProjectDirIsParentOfWorkingDir(t *testing.T) {
 	workingDir := filepath.Join(projectDir, "foo", "bar", "baz")
 
 	// Create ".keboola" dir in project directory
-	assert.NoError(t, os.Mkdir(metadataDir, 0600))
+	assert.NoError(t, os.Mkdir(metadataDir, 0755))
 
 	// Working dir = project dir sub-dir
-	assert.NoError(t, os.MkdirAll(workingDir, 0600))
+	assert.NoError(t, os.MkdirAll(workingDir, 0755))
 	assert.NoError(t, os.Chdir(workingDir))
 
 	// Load
@@ -132,7 +132,7 @@ func TestValuesPriority(t *testing.T) {
 	projectDir := t.TempDir()
 	metadataDir := filepath.Join(projectDir, ".keboola")
 	workingDir := filepath.Join(projectDir, "foo", "bar")
-	assert.NoError(t, os.MkdirAll(workingDir, 0600))
+	assert.NoError(t, os.MkdirAll(workingDir, 0755))
 	assert.NoError(t, os.Chdir(workingDir))
 
 	// Create structs
@@ -208,7 +208,7 @@ func TestValidateAllRequired(t *testing.T) {
 
 	// Assert
 	expected := []string{
-		`- This or any parent directory is not a Keboola project dir.`,
+		`- None of this and parent directories is project dir.`,
 		`  Project directory must contain the ".keboola" metadata directory.`,
 		`  Please change working directory to a project directory or use the "init" command.`,
 		`- Missing api host. Please use "--storage-api-host" flag or ENV variable "KBC_STORAGE_API_HOST".`,

@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"errors"
 	"github.com/ActiveState/vt10x"
 	"github.com/Netflix/go-expect"
 	"github.com/stretchr/testify/assert"
@@ -41,7 +40,7 @@ func TestInteractive(t *testing.T) {
 	} else {
 		stdout = io.Discard
 	}
-	c, state, err := vt10x.NewVT10XConsole(expect.WithStdout(stdout))
+	c, state, err := vt10x.NewVT10XConsole(expect.WithStdout(stdout), expect.WithDefaultTimeout(10*time.Second))
 	assert.NoError(t, err)
 
 	// Init prompt and cmd
@@ -74,14 +73,12 @@ func TestInteractive(t *testing.T) {
 	}()
 
 	// Run cmd
-	assert.Equal(t, root.cmd.Execute(), errors.New("TODO PULL"))
+	assert.NoError(t, root.cmd.Execute())
 	assert.NoError(t, c.Tty().Close())
 	wg.Wait()
 	assert.NoError(t, c.Close())
 
 	// Assert output
 	out := expect.StripTrailingEmptyLines(state.String())
-	assert.Contains(t, out, "? API host")
-	assert.Contains(t, out, "? API token")
-	assert.Contains(t, out, "Error: TODO PULL")
+	assert.Contains(t, out, "Pull done.")
 }

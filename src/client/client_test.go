@@ -28,8 +28,8 @@ func TestWithHostUrl(t *testing.T) {
 
 	// Must be cloned, not modified
 	assert.NotSame(t, orgClient, hostClient)
-	response := hostClient.NewRequest(resty.MethodGet, "/baz").Send().Response()
-	assert.NoError(t, response.Error())
+	response := hostClient.NewRequest(resty.MethodGet, "/baz").Send().Response
+	assert.NoError(t, response.Err())
 
 	// Check request url
 	assert.Equal(t, 1, httpmock.GetCallCountInfo()["GET https://foo.bar/baz"])
@@ -42,9 +42,9 @@ func TestSimpleRequest(t *testing.T) {
 	httpmock.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(200, `test`))
 
 	// Get
-	response := c.NewRequest(resty.MethodGet, "https://example.com").Send().Response()
-	assert.NoError(t, response.Error())
-	assert.Equal(t, "test", response.RestyResponse().String())
+	response := c.NewRequest(resty.MethodGet, "https://example.com").Send().Response
+	assert.NoError(t, response.Err())
+	assert.Equal(t, "test", response.String())
 	expected := "DEBUG  HTTP\tGET https://example.com | 200 | %s"
 	utils.AssertWildcards(t, expected, out.String(), "Unexpected log")
 }
@@ -56,9 +56,9 @@ func TestRetry(t *testing.T) {
 	httpmock.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(504, `test`))
 
 	// Get
-	response := c.NewRequest(resty.MethodGet, "https://example.com").Send().Response()
-	assert.Equal(t, errors.New(`GET https://example.com | returned http code 504`), response.Error())
-	assert.Equal(t, "test", response.RestyResponse().String())
+	response := c.NewRequest(resty.MethodGet, "https://example.com").Send().Response
+	assert.Equal(t, errors.New(`GET https://example.com | returned http code 504`), response.Err())
+	assert.Equal(t, "test", response.String())
 	logs := out.String()
 
 	// Check number of requests
@@ -86,9 +86,9 @@ func TestDoNotRetry(t *testing.T) {
 	httpmock.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(404, `test`))
 
 	// Get
-	response := c.NewRequest(resty.MethodGet, "https://example.com").Send().Response()
-	assert.Equal(t, errors.New(`GET https://example.com | returned http code 404`), response.Error())
-	assert.Equal(t, "test", response.RestyResponse().String())
+	response := c.NewRequest(resty.MethodGet, "https://example.com").Send().Response
+	assert.Equal(t, errors.New(`GET https://example.com | returned http code 404`), response.Err())
+	assert.Equal(t, "test", response.String())
 	logs := out.String()
 
 	// Only one request, HTTP code 404 is not retried
@@ -109,9 +109,9 @@ func TestVerboseHideSecret(t *testing.T) {
 	httpmock.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(200, `test`))
 
 	// Get
-	response := c.NewRequest(resty.MethodGet, "https://example.com").SetHeader("X-StorageApi-Token", "123-my-token").Send().Response()
-	assert.NoError(t, response.Error())
-	assert.Equal(t, "test", response.RestyResponse().String())
+	response := c.NewRequest(resty.MethodGet, "https://example.com").SetHeader("X-StorageApi-Token", "123-my-token").Send().Response
+	assert.NoError(t, response.Err())
+	assert.Equal(t, "test", response.String())
 
 	// Assert logs
 	expectedLog :=

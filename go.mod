@@ -9,7 +9,9 @@ require (
 	github.com/cenkalti/backoff/v4 v4.1.1
 	github.com/go-playground/validator/v10 v10.6.1
 	github.com/go-resty/resty/v2 v2.6.0
+	github.com/google/go-cmp v0.3.0
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
+	github.com/iancoleman/orderedmap v0.2.0
 	github.com/iancoleman/strcase v0.1.3
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/joho/godotenv v1.3.0

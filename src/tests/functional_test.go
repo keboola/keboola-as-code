@@ -6,7 +6,7 @@ import (
 	"github.com/otiai10/copy"
 	"github.com/stretchr/testify/assert"
 	"io/fs"
-	"keboola-as-code/src/api"
+	"keboola-as-code/src/remote"
 	"keboola-as-code/src/utils"
 	"os"
 	"os/exec"
@@ -29,21 +29,22 @@ func TestFunctional(t *testing.T) {
 	projectDir := filepath.Join(rootDir, "..", "..")
 	binary := CompileBinary(t, projectDir, tempDir)
 
-	// Run binary in each data dir
+	// Run test for each directory
 	for _, testDir := range GetTestDirs(t, rootDir) {
-		// Run test for each directory
+		workingDir := filepath.Join(rootDir, ".out", filepath.Base(testDir))
 		t.Run(filepath.Base(testDir), func(t *testing.T) {
-			RunFunctionalTest(t, testDir, binary)
+			RunFunctionalTest(t, testDir, workingDir, binary)
 		})
 	}
 }
 
 // RunFunctionalTest runs one functional test
-func RunFunctionalTest(t *testing.T, testDir string, binary string) {
+func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) {
 	defer utils.ResetEnv(t, os.Environ())
 
-	// Create runtime dir
-	workingDir := t.TempDir()
+	// Clean working dir
+	assert.NoError(t, os.RemoveAll(workingDir))
+	assert.NoError(t, os.MkdirAll(workingDir, 0755))
 	assert.NoError(t, os.Chdir(workingDir))
 
 	// Copy all from "in" dir to "runtime" dir
@@ -55,16 +56,15 @@ func RunFunctionalTest(t *testing.T, testDir string, binary string) {
 	if err != nil {
 		t.Fatalf("Copy error: %s", err)
 	}
-
-	// Replace all %%ENV_VAR%% in all files in the working directory
-	utils.ReplaceEnvsDir(workingDir)
-
 	// Setup KBC project state
 	projectStateFilePath := filepath.Join(testDir, "project-state.json")
 	if utils.IsFile(projectStateFilePath) {
-		api.SetStateOfTestProject(t, projectStateFilePath)
-		api.SetStateOfTestProject(t, projectStateFilePath)
+		remote.SetStateOfTestProject(t, projectStateFilePath)
+		remote.SetStateOfTestProject(t, projectStateFilePath)
 	}
+
+	// Replace all %%ENV_VAR%% in all files in the working directory
+	utils.ReplaceEnvsDir(workingDir)
 
 	// Load command arguments from file
 	argsFile := filepath.Join(testDir, "args")
@@ -91,6 +91,7 @@ func RunFunctionalTest(t *testing.T, testDir string, binary string) {
 		}
 	}
 
+	// Assert
 	AssertExpectations(t, testDir, workingDir, exitCode, strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()))
 }
 
@@ -124,6 +125,14 @@ func GetTestDirs(t *testing.T, root string) []string {
 		// Ignore root
 		if path == root {
 			return nil
+		}
+
+		// Skip hidden
+		if utils.IsIgnoredFile(path, d) {
+			return nil
+		}
+		if utils.IsIgnoredDir(path, d) {
+			return fs.SkipDir
 		}
 
 		// Skip sub-directories

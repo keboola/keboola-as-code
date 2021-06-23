@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"keboola-as-code/src/ask"
-	"keboola-as-code/src/model"
+	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/utils"
 	"os"
 	"path/filepath"
@@ -63,7 +63,7 @@ func (o *Options) SetWorkingDirectory(dir string) error {
 }
 
 func (o *Options) SetProjectDirectory(projectDir string) error {
-	metadataDir := filepath.Join(projectDir, model.MetadataDir)
+	metadataDir := filepath.Join(projectDir, manifest.MetadataDir)
 	if !utils.IsDir(projectDir) {
 		return fmt.Errorf("project directory \"%s\" not found", o.projectDirectory)
 	}
@@ -111,7 +111,7 @@ func (o *Options) Validate(required []string) string {
 		if fieldName == "projectDirectory" {
 			errors = append(
 				errors,
-				`- This or any parent directory is not a Keboola project dir.`,
+				`- None of this and parent directories is project dir.`,
 				`  Project directory must contain the ".keboola" metadata directory.`,
 				`  Please change working directory to a project directory or use the "init" command.`,
 			)
