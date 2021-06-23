@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"github.com/iancoleman/orderedmap"
 	"sort"
 )
@@ -116,4 +117,28 @@ type Job struct {
 // Event https://keboola.docs.apiary.io/#reference/events/events/create-event
 type Event struct {
 	Id string `json:"id"`
+}
+
+func (k *BranchKey) String() string {
+	return fmt.Sprintf("01_%d", k.Id)
+}
+
+func (k *ComponentKey) String() string {
+	return fmt.Sprintf("02_%s", k.Id)
+}
+
+func (k *ConfigKey) String() string {
+	return fmt.Sprintf("03_%d_%s_%s", k.BranchId, k.ComponentId, k.Id)
+}
+
+func (k *ConfigRowKey) String() string {
+	return fmt.Sprintf("04_%d_%s_%s_%s", k.BranchId, k.ComponentId, k.ConfigId, k.Id)
+}
+
+func (k *ConfigKey) BranchKey() BranchKey {
+	return BranchKey{Id: k.BranchId}
+}
+
+func (k *ConfigRowKey) ConfigKey() ConfigKey {
+	return ConfigKey{BranchId: k.BranchId, ComponentId: k.ComponentId, Id: k.ConfigId}
 }

@@ -36,9 +36,9 @@ func TestLoadLocalStateComplex(t *testing.T) {
 	state := loadLocalTestState(t, "complex")
 	assert.NotNil(t, state)
 	assert.Equal(t, 0, state.LocalErrors().Len())
-	assert.Equal(t, complexLocalExpectedBranches(), state.Branches())
-	assert.Equal(t, complexLocalExpectedConfigs(), state.Configs())
-	assert.Equal(t, complexLocalExpectedConfigRows(), state.ConfigRows())
+	assert.Equal(t, complexLocalExpectedBranches(), utils.SortByName(state.Branches()))
+	assert.Equal(t, complexLocalExpectedConfigs(), utils.SortByName(state.Configs()))
+	assert.Equal(t, complexLocalExpectedConfigRows(), utils.SortByName(state.ConfigRows()))
 	assert.Equal(t, []string{
 		"123-branch/keboola.ex-db-mysql/untrackedDir",
 		"123-branch/keboola.ex-db-mysql/untrackedDir/untracked2",
@@ -189,25 +189,6 @@ func complexLocalExpectedBranches() []*BranchState {
 		{
 			Local: &model.Branch{
 				BranchKey: model.BranchKey{
-					Id: 111,
-				},
-				Name:        "Main",
-				Description: "Main branch",
-				IsDefault:   true,
-			},
-			BranchManifest: &manifest.BranchManifest{
-				BranchKey: model.BranchKey{
-					Id: 111,
-				},
-				Paths: manifest.Paths{
-					Path:       "main",
-					ParentPath: "",
-				},
-			},
-		},
-		{
-			Local: &model.Branch{
-				BranchKey: model.BranchKey{
 					Id: 123,
 				},
 				Name:        "Branch",
@@ -224,50 +205,30 @@ func complexLocalExpectedBranches() []*BranchState {
 				},
 			},
 		},
+		{
+			Local: &model.Branch{
+				BranchKey: model.BranchKey{
+					Id: 111,
+				},
+				Name:        "Main",
+				Description: "Main branch",
+				IsDefault:   true,
+			},
+			BranchManifest: &manifest.BranchManifest{
+				BranchKey: model.BranchKey{
+					Id: 111,
+				},
+				Paths: manifest.Paths{
+					Path:       "main",
+					ParentPath: "",
+				},
+			},
+		},
 	}
 }
 
 func complexLocalExpectedConfigs() []*ConfigState {
 	return []*ConfigState{
-		{
-			Local: &model.Config{
-				ConfigKey: model.ConfigKey{
-					BranchId:    111,
-					ComponentId: "keboola.ex-generic",
-					Id:          "456",
-				},
-				Name:              "todos",
-				Description:       "todos config",
-				ChangeDescription: "",
-				Content: utils.PairsToOrderedMap([]utils.Pair{
-					{
-						Key: "parameters",
-						Value: *utils.PairsToOrderedMap([]utils.Pair{
-							{
-								Key: "api",
-								Value: *utils.PairsToOrderedMap([]utils.Pair{
-									{
-										Key:   "baseUrl",
-										Value: "https://jsonplaceholder.typicode.com",
-									},
-								}),
-							},
-						}),
-					},
-				}),
-			},
-			ConfigManifest: &manifest.ConfigManifest{
-				ConfigKey: model.ConfigKey{
-					BranchId:    111,
-					ComponentId: "keboola.ex-generic",
-					Id:          "456",
-				},
-				Paths: manifest.Paths{
-					Path:       "keboola.ex-generic/456-todos",
-					ParentPath: "main",
-				},
-			},
-		},
 		{
 			Local: &model.Config{
 				ConfigKey: model.ConfigKey{
@@ -304,6 +265,45 @@ func complexLocalExpectedConfigs() []*ConfigState {
 				Paths: manifest.Paths{
 					Path:       "keboola.ex-db-mysql/896-tables",
 					ParentPath: "123-branch",
+				},
+			},
+		},
+		{
+			Local: &model.Config{
+				ConfigKey: model.ConfigKey{
+					BranchId:    111,
+					ComponentId: "keboola.ex-generic",
+					Id:          "456",
+				},
+				Name:              "todos",
+				Description:       "todos config",
+				ChangeDescription: "",
+				Content: utils.PairsToOrderedMap([]utils.Pair{
+					{
+						Key: "parameters",
+						Value: *utils.PairsToOrderedMap([]utils.Pair{
+							{
+								Key: "api",
+								Value: *utils.PairsToOrderedMap([]utils.Pair{
+									{
+										Key:   "baseUrl",
+										Value: "https://jsonplaceholder.typicode.com",
+									},
+								}),
+							},
+						}),
+					},
+				}),
+			},
+			ConfigManifest: &manifest.ConfigManifest{
+				ConfigKey: model.ConfigKey{
+					BranchId:    111,
+					ComponentId: "keboola.ex-generic",
+					Id:          "456",
+				},
+				Paths: manifest.Paths{
+					Path:       "keboola.ex-generic/456-todos",
+					ParentPath: "main",
 				},
 			},
 		},

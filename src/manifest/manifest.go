@@ -319,7 +319,7 @@ func (b *BranchManifest) UniqueKey(sort string) string {
 	if sort == SortByPath {
 		return fmt.Sprintf("01_branch_%s", b.RelativePath())
 	} else {
-		return fmt.Sprintf("01_branch_%d", b.Id)
+		return b.BranchKey.String()
 	}
 
 }
@@ -328,7 +328,7 @@ func (c *ConfigManifest) UniqueKey(sort string) string {
 	if sort == SortByPath {
 		return fmt.Sprintf("02_config_%s", c.RelativePath())
 	} else {
-		return fmt.Sprintf("02_config_%d_%s_%s", c.BranchId, c.ComponentId, c.Id)
+		return c.ConfigKey.String()
 	}
 
 }
@@ -337,7 +337,7 @@ func (r *ConfigRowManifest) UniqueKey(sort string) string {
 	if sort == SortByPath {
 		return fmt.Sprintf("03_row_%s", r.RelativePath())
 	} else {
-		return fmt.Sprintf("03_row_%d_%s_%s_%s", r.BranchId, r.ComponentId, r.ConfigId, r.Id)
+		return r.ConfigRowKey.String()
 	}
 
 }
