@@ -14,11 +14,13 @@ const (
 	ActionDeleteRemote
 )
 
+// Plan of the operation: pull, push, ...
 type Plan struct {
 	Name    string
 	Actions []*Action
 }
 
+// Action - one action from the Plan: add local config, delete remote branch, ...
 type Action struct {
 	*diff.Result
 	Type ActionType

@@ -12,6 +12,7 @@ import (
 	"strings"
 )
 
+// DeleteModel from manifest and disk
 func DeleteModel(logger *zap.SugaredLogger, m *manifest.Manifest, record manifest.Record, target interface{}) error {
 	errors := &utils.Error{}
 
@@ -51,6 +52,7 @@ func DeleteModel(logger *zap.SugaredLogger, m *manifest.Manifest, record manifes
 	return nil
 }
 
+// DeleteEmptyDirectories from project directory (eg. dir with extractors, but no extractor left)
 func DeleteEmptyDirectories(logger *zap.SugaredLogger, projectDir string) error {
 	errors := &utils.Error{}
 	dirs := utils.EmptyOrderedMap()

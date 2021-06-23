@@ -42,17 +42,17 @@ type Content struct {
 }
 
 type Record interface {
-	Kind() string
-	KindAbbr() string
-	UniqueKey(sort string) string
-	GetPaths() *Paths
-	MetaFilePath() string
-	ConfigFilePath() string
+	Kind() string                 // eg. branch, config, config row -> used in logs
+	KindAbbr() string             // eg. B, C, R -> used in diff
+	UniqueKey(sort string) string // unique key for map/sorting
+	GetPaths() *Paths             // define the location of the files
+	MetaFilePath() string         // path to the meta.json file
+	ConfigFilePath() string       // path to the config.json file
 }
 
 type Paths struct {
 	Path       string `json:"path" validate:"required"`
-	ParentPath string `json:"-" validate:"required"` // generated, not in JSON
+	ParentPath string `json:"-" validate:"required"`
 }
 
 type Project struct {
@@ -126,7 +126,7 @@ func LoadManifest(projectDir string, metadataDir string) (*Manifest, error) {
 		return nil, fmt.Errorf("manifest \"%s\" is not valid: %s", utils.RelPath(projectDir, path), err)
 	}
 
-	// Resolve paths, set parent IDs, store struct in records
+	// Resolve paths, set parent IDs, store in records
 	branchById := make(map[int]*BranchManifest)
 	for _, branch := range m.Content.Branches {
 		branch.ResolvePaths()
@@ -137,7 +137,7 @@ func LoadManifest(projectDir string, metadataDir string) (*Manifest, error) {
 		config := configWithRows.ConfigManifest
 		branch, found := branchById[config.BranchId]
 		if !found {
-			return nil, fmt.Errorf("branch \"%d\" not found in manifest - referenced from the config \"%s:%s\" in \"%s\"", config.BranchId, config.ComponentId, config.Id, path)
+			return nil, fmt.Errorf("branch \"%d\" not found in the manifest - referenced from the config \"%s:%s\" in \"%s\"", config.BranchId, config.ComponentId, config.Id, path)
 		}
 		config.ResolvePaths(branch)
 		m.records.Set(config.UniqueKey(m.SortBy), config)
@@ -161,10 +161,10 @@ func LoadManifest(projectDir string, metadataDir string) (*Manifest, error) {
 }
 
 func (m *Manifest) Save() error {
-	// Sort
+	// Sort record in manifest + ensure order of processing: branch, config, configRow
 	m.records.SortKeys(sort.Strings)
 
-	// Convert registry to slices
+	// Convert records map to slices
 	configsMap := make(map[string]*ConfigManifestWithRows)
 	m.Content.Branches = make([]*BranchManifest, 0)
 	m.Content.Configs = make([]*ConfigManifestWithRows, 0)
@@ -196,14 +196,8 @@ func (m *Manifest) Save() error {
 		return err
 	}
 
-	// Encode JSON
-	data, err := json.Encode(m.Content, true)
-	if err != nil {
-		return err
-	}
-
-	// Write file
-	return os.WriteFile(m.Path(), data, 0644)
+	// Write JSON file
+	return json.WriteFile(m.MetadataDir, FileName, m.Content, "manifest")
 }
 
 func (m *Manifest) Path() string {

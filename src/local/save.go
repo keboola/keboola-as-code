@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 )
 
+// SaveModel to manifest and disk
 func SaveModel(logger *zap.SugaredLogger, m *manifest.Manifest, record manifest.Record, source interface{}) error {
 	errors := &utils.Error{}
 

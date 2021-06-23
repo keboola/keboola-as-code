@@ -9,6 +9,7 @@ import (
 	"strings"
 )
 
+// LocalNaming of the files
 type LocalNaming struct {
 	Branch    string `json:"branch" validate:"required"`
 	Config    string `json:"config" validate:"required"`
@@ -47,9 +48,10 @@ func (n *LocalNaming) ConfigRowPath(row *model.ConfigRow) string {
 }
 
 func (n *LocalNaming) normalizeName(name string) string {
-	return regexp.
-		MustCompile(`[^a-zA-Z0-9-]]`).
+	str := regexp.
+		MustCompile(`[^a-zA-Z0-9]+`).
 		ReplaceAllString(strcase.ToDelimited(name, '-'), "-")
+	return strings.Trim(str, "-")
 }
 
 func (n *LocalNaming) replace(path string, placeholders map[string]interface{}) string {

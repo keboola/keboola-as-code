@@ -12,16 +12,17 @@ const (
 	EventOnResponse // always
 )
 
-type DecoratorFunc func(response *resty.Response, err error) (*resty.Response, error)
+// Sender of the request, client (for sync) or pool (for async)
+type Sender interface {
+	Send(r *Request)
+	Request(request *Request) *Request
+}
+
 type ResponseEventType int
 type ResponseCallback func(response *Response) *Response
 type ResponseListener struct {
 	Type     ResponseEventType
 	Callback ResponseCallback
-}
-type Sender interface {
-	Send(r *Request)
-	Request(request *Request) *Request
 }
 
 type Request struct {
@@ -32,12 +33,11 @@ type Request struct {
 	sent        bool
 	done        bool
 	url         string
-	pathParams  map[string]string
-	queryParams map[string]string
-	body        map[string]string
+	pathParams  map[string]string // for logs
+	queryParams map[string]string // for logs
 	sender      Sender
-	listeners   []*ResponseListener
-	waitingFor  []*Request
+	listeners   []*ResponseListener // callback invoked when request is completed
+	waitingFor  []*Request          // defer execution listeners until another request is completed
 }
 
 func NewRequest(id int, sender Sender, request *resty.Request) *Request {
@@ -76,7 +76,6 @@ func (r *Request) SetPathParam(param, value string) *Request {
 
 func (r *Request) SetBody(body map[string]string) *Request {
 	// Storage API use "form-urlencoded", but it can be simply switched to JSON in the future
-	r.body = body
 	r.Request.SetHeader("Content-Type", "application/x-www-form-urlencoded")
 	r.Request.SetMultipartFormData(body)
 	return r
@@ -132,6 +131,7 @@ func (r *Request) WaitFor(subRequest *Request) {
 	})
 }
 
+// isWaiting for sub-request to complete
 func (r *Request) isWaiting() bool {
 	r.lock.Lock()
 	defer r.lock.Unlock()
@@ -143,6 +143,7 @@ func (r *Request) isWaiting() bool {
 	return false
 }
 
+// nextListener which has not yet been invoked
 func (r *Request) nextListener() *ResponseListener {
 	r.lock.Lock()
 	defer r.lock.Unlock()
@@ -158,6 +159,7 @@ func (r *Request) nextListener() *ResponseListener {
 	return listener
 }
 
+// invokeListeners if all are "waitingFor" requests done
 func (r *Request) invokeListeners() {
 	for {
 		if r.isWaiting() {

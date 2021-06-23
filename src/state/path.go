@@ -9,22 +9,21 @@ import (
 	"strings"
 )
 
-const (
-	Tracked PathState = iota
-	Untracked
-	Ignored
-)
-
-type PathState int
-
 // PathsState keeps state of all files/dirs in projectDir.
-// PathState can be Untracked/Ignored (by default) or Tracked
 type PathsState struct {
 	error      *utils.Error
 	projectDir string
 	all        map[string]bool
 	tracked    map[string]bool
 }
+
+type PathState int
+
+const (
+	Tracked PathState = iota
+	Untracked
+	Ignored
+)
 
 func NewPathsState(projectDir string, error *utils.Error) *PathsState {
 	if !utils.IsDir(projectDir) {

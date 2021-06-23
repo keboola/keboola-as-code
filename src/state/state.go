@@ -13,6 +13,7 @@ import (
 	"sync"
 )
 
+// State - Local and Remote state of the project
 type State struct {
 	mutex        *sync.Mutex
 	remoteErrors *utils.Error
@@ -55,6 +56,11 @@ type ConfigRowState struct {
 	Local  *model.ConfigRow
 }
 
+type keyValuePair struct {
+	key   string
+	state ObjectState
+}
+
 type stateValidator struct {
 	error *utils.Error
 }
@@ -69,11 +75,7 @@ func (s *stateValidator) validate(kind string, v interface{}) {
 	}
 }
 
-type keyValuePair struct {
-	key   string
-	state ObjectState
-}
-
+// LoadState - remote and local
 func LoadState(manifest *manifest.Manifest, logger *zap.SugaredLogger, ctx context.Context, api *remote.StorageApi) (*State, bool) {
 	state := NewState(manifest.ProjectDir, manifest.Naming)
 

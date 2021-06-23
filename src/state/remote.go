@@ -7,6 +7,7 @@ import (
 	"keboola-as-code/src/remote"
 )
 
+// LoadRemoteState - API -> unified model
 func LoadRemoteState(state *State, ctx context.Context, api *remote.StorageApi) {
 	pool := api.NewPool()
 

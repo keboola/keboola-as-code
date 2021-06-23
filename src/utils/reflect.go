@@ -48,7 +48,13 @@ func GetFieldsWithTag(tag string, model interface{}) []*StructField {
 	parts := strings.SplitN(tag, ":", 2)
 	tagName, tagValue := parts[0], parts[1]
 
-	modelType := reflect.TypeOf(model).Elem()
+	var modelType reflect.Type
+	if v, ok := model.(reflect.Type); ok {
+		modelType = v
+	} else {
+		modelType = reflect.TypeOf(model).Elem()
+	}
+
 	var fields []*StructField
 	numFields := modelType.NumField()
 	for i := 0; i < numFields; i++ {

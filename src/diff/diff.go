@@ -8,21 +8,15 @@ import (
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
 	"reflect"
-	"strings"
 )
 
 type typeName string
 
-type structField struct {
-	name    string
-	reflect reflect.StructField
-}
-
 type Differ struct {
-	state     *state.State
-	results   []*Result
-	typeCache map[typeName][]structField
-	error     *utils.Error
+	state     *state.State                      // model state
+	results   []*Result                         // diff results
+	typeCache map[typeName][]*utils.StructField // reflection cache
+	error     *utils.Error                      // errors
 }
 
 type ResultState int
@@ -49,14 +43,15 @@ type Results struct {
 func NewDiffer(state *state.State) *Differ {
 	return &Differ{
 		state:     state,
-		typeCache: make(map[typeName][]structField),
+		typeCache: make(map[typeName][]*utils.StructField),
 	}
 }
 
 func (d *Differ) Diff() (*Results, error) {
-	// Diff all states
 	d.results = []*Result{}
 	d.error = &utils.Error{}
+
+	// Diff all objects in state: branches, config, configRows
 	for _, objectState := range d.state.All() {
 		result, err := d.doDiff(objectState)
 		if err != nil {
@@ -65,6 +60,7 @@ func (d *Differ) Diff() (*Results, error) {
 			d.results = append(d.results, result)
 		}
 	}
+
 	// Check errors
 	var err error
 	if d.error.Len() > 0 {
@@ -83,18 +79,18 @@ func (d *Differ) doDiff(state state.ObjectState) (*Result, error) {
 	remoteValues := reflect.ValueOf(remoteState)
 	localValues := reflect.ValueOf(localState)
 
-	// Types must be same
+	// Remote and Local types must be same
 	if remoteType.String() != localType.String() {
 		panic(fmt.Errorf("local(%s) and remote(%s) states must have same data type", remoteType, localType))
 	}
 
-	// Get available fields for diff
+	// Get available fields for diff, defined in `diff:"true"` tag in struct
 	diffFields := d.getDiffFields(remoteType)
 	if len(diffFields) == 0 {
 		return nil, fmt.Errorf(`no field with tag "diff:true" in struct "%s"`, remoteType.String())
 	}
 
-	// Check values
+	// Are both, Remote and Local state defined
 	result.ChangedFields = make([]string, 0)
 	result.Differences = make(map[string]string)
 	if remoteValues.IsNil() && localValues.IsNil() {
@@ -117,8 +113,8 @@ func (d *Differ) doDiff(state state.ObjectState) (*Result, error) {
 		localValues = localValues.Elem()
 	}
 
-	// Compare config/row content as string
-	transform := cmp.Transformer("orderedmap", func(m *orderedmap.OrderedMap) string {
+	// Compare Config/ConfigRow configuration content ("orderedmap" type) as string
+	configTransform := cmp.Transformer("orderedmap", func(m *orderedmap.OrderedMap) string {
 		str, err := json.EncodeString(m, true)
 		if err != nil {
 			panic(fmt.Errorf("cannot encode JSON: %s", err))
@@ -129,13 +125,13 @@ func (d *Differ) doDiff(state state.ObjectState) (*Result, error) {
 	// Diff
 	for _, field := range diffFields {
 		difference := cmp.Diff(
-			remoteValues.FieldByName(field.reflect.Name).Interface(),
-			localValues.FieldByName(field.reflect.Name).Interface(),
-			transform,
+			remoteValues.FieldByName(field.StructField.Name).Interface(),
+			localValues.FieldByName(field.StructField.Name).Interface(),
+			configTransform,
 		)
 		if len(difference) > 0 {
-			result.ChangedFields = append(result.ChangedFields, field.name)
-			result.Differences[field.name] = difference
+			result.ChangedFields = append(result.ChangedFields, field.JsonName())
+			result.Differences[field.JsonName()] = difference
 		}
 	}
 
@@ -148,28 +144,11 @@ func (d *Differ) doDiff(state state.ObjectState) (*Result, error) {
 	return result, nil
 }
 
-func (d *Differ) getDiffFields(t reflect.Type) []structField {
+func (d *Differ) getDiffFields(t reflect.Type) []*utils.StructField {
 	if v, ok := d.typeCache[typeName(t.Name())]; ok {
 		return v
 	} else {
-		diffFields := make([]structField, 0)
-		numFields := t.NumField()
-		for i := 0; i < numFields; i++ {
-			fieldType := t.Field(i)
-
-			// Use JSON name if present
-			name := fieldType.Name
-			jsonName := strings.Split(fieldType.Tag.Get("json"), ",")[0]
-			if jsonName != "" {
-				name = jsonName
-			}
-
-			// Field must be marked with tag `diff:"true"`
-			tag := fieldType.Tag.Get("diff")
-			if tag == "true" {
-				diffFields = append(diffFields, structField{name, fieldType})
-			}
-		}
+		diffFields := utils.GetFieldsWithTag("diff:true", t)
 		name := typeName(t.Name())
 		d.typeCache[name] = diffFields
 		return diffFields

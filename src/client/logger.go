@@ -9,6 +9,7 @@ import (
 
 const LoggerPrefix = "HTTP%s\t"
 
+// Logger for HTTP client
 type Logger struct {
 	logger *zap.SugaredLogger
 }
