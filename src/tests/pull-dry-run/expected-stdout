@@ -14,4 +14,5 @@ Plan for "pull" operation:
 +  C foo/other/transformation/old-transformation/rows/old-transformation-snfk
 +  B main
 +  C main/extractor/ex-generic-v2/empty
-Pull dry run done. Nothing changed.
+Dry run, nothing changed.
+Pull done.
