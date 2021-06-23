@@ -116,7 +116,7 @@ func complexRemoteExpectedConfigs() []*ConfigState {
 				Name:              "empty",
 				Description:       "test fixture",
 				ChangeDescription: "created by test",
-				Content:           utils.EmptyOrderedMap(),
+				Content:           utils.NewOrderedMap(),
 			},
 			// Generated manifest
 			ConfigManifest: &manifest.ConfigManifest{
@@ -141,7 +141,7 @@ func complexRemoteExpectedConfigs() []*ConfigState {
 				Name:              "empty",
 				Description:       "test fixture",
 				ChangeDescription: fmt.Sprintf(`Copied from default branch configuration "empty" (%s) version 1`, utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
-				Content:           utils.EmptyOrderedMap(),
+				Content:           utils.NewOrderedMap(),
 			},
 			// Generated manifest
 			ConfigManifest: &manifest.ConfigManifest{
@@ -166,7 +166,7 @@ func complexRemoteExpectedConfigs() []*ConfigState {
 				Name:              "empty",
 				Description:       "test fixture",
 				ChangeDescription: fmt.Sprintf(`Copied from default branch configuration "empty" (%s) version 1`, utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
-				Content:           utils.EmptyOrderedMap(),
+				Content:           utils.NewOrderedMap(),
 			},
 			// Generated manifest
 			ConfigManifest: &manifest.ConfigManifest{

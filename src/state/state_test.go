@@ -72,7 +72,7 @@ func TestLoadState(t *testing.T) {
 				Name:              "empty",
 				Description:       "test fixture",
 				ChangeDescription: "created by test",
-				Content:           utils.EmptyOrderedMap(),
+				Content:           utils.NewOrderedMap(),
 			},
 			Local: &model.Config{
 				ConfigKey: model.ConfigKey{

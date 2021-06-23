@@ -64,7 +64,8 @@ func pushCommand(root *rootCommand) *cobra.Command {
 				}
 
 				// Invoke
-				if err := push.Invoke(root.logger, root.ctx, root.api, projectManifest); err != nil {
+				executor := plan.NewExecutor(root.logger, root.ctx, root.api, projectManifest)
+				if err := executor.Invoke(push); err != nil {
 					return err
 				}
 

@@ -129,6 +129,22 @@ func TestManifestValidateBadVersion(t *testing.T) {
 	assert.Equal(t, expected, err.Error())
 }
 
+func TestManifestValidateNestedField(t *testing.T) {
+	m := newManifest(1, "connection.keboola.com", "foo", "bar")
+	m.Content = minimalStruct()
+	m.Content.Branches = append(m.Content.Branches, &BranchManifest{
+		BranchKey: model.BranchKey{Id: 0},
+		Paths: Paths{
+			Path:       "foo",
+			ParentPath: "bar",
+		},
+	})
+	err := m.validate()
+	assert.NotNil(t, err)
+	expected := `manifest is not valid: key="branches[0].id", value="0", failed "required" validation`
+	assert.Equal(t, expected, err.Error())
+}
+
 func minimalJson() string {
 	return `{
   "version": 1,

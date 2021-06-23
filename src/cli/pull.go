@@ -64,7 +64,8 @@ func pullCommand(root *rootCommand) *cobra.Command {
 				}
 
 				// Invoke
-				if err := pull.Invoke(root.logger, root.ctx, root.api, projectManifest); err != nil {
+				executor := plan.NewExecutor(root.logger, root.ctx, root.api, projectManifest)
+				if err := executor.Invoke(pull); err != nil {
 					return err
 				}
 

@@ -35,7 +35,7 @@ type TokenOwner struct {
 }
 
 type BranchKey struct {
-	Id int `json:"id" validate:"required"`
+	Id int `json:"id" validate:"required,min=1"`
 }
 
 // Branch https://keboola.docs.apiary.io/#reference/development-branches/branches/list-branches
@@ -121,20 +121,36 @@ type Event struct {
 	Id string `json:"id"`
 }
 
+func (k *BranchKey) Level() int {
+	return 1
+}
+
+func (k *ComponentKey) Level() int {
+	return 2
+}
+
+func (k *ConfigKey) Level() int {
+	return 3
+}
+
+func (k *ConfigRowKey) Level() int {
+	return 3
+}
+
 func (k *BranchKey) String() string {
-	return fmt.Sprintf("01_%d", k.Id)
+	return fmt.Sprintf("%02d_%d", k.Level(), k.Id)
 }
 
 func (k *ComponentKey) String() string {
-	return fmt.Sprintf("02_%s", k.Id)
+	return fmt.Sprintf("%02d_%s", k.Level(), k.Id)
 }
 
 func (k *ConfigKey) String() string {
-	return fmt.Sprintf("03_%d_%s_%s", k.BranchId, k.ComponentId, k.Id)
+	return fmt.Sprintf("%02d_%d_%s_%s", k.Level(), k.BranchId, k.ComponentId, k.Id)
 }
 
 func (k *ConfigRowKey) String() string {
-	return fmt.Sprintf("04_%d_%s_%s_%s", k.BranchId, k.ComponentId, k.ConfigId, k.Id)
+	return fmt.Sprintf("%02d_%d_%s_%s_%s", k.Level(), k.BranchId, k.ComponentId, k.ConfigId, k.Id)
 }
 
 func (k *ConfigKey) BranchKey() BranchKey {

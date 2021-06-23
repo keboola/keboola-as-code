@@ -21,7 +21,7 @@ func LoadModel(projectDir string, record manifest.Record, target interface{}) er
 	// Load config file content
 	errPrefix = record.Kind()
 	if configField := utils.GetOneFieldWithTag(model.ConfigFileTag, target); configField != nil {
-		content := utils.EmptyOrderedMap()
+		content := utils.NewOrderedMap()
 		modelValue := reflect.ValueOf(target).Elem()
 		if err := json.ReadFile(projectDir, record.ConfigFilePath(), &content, errPrefix); err == nil {
 			modelValue.FieldByName(configField.Name).Set(reflect.ValueOf(content))

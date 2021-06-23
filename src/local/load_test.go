@@ -33,7 +33,7 @@ func TestLocalLoadModel(t *testing.T) {
 	assert.NoError(t, LoadModel(projectDir, record, target))
 
 	// Assert
-	config := utils.EmptyOrderedMap()
+	config := utils.NewOrderedMap()
 	config.Set("foo", "bar")
 	assert.Equal(t, &ModelStruct{
 		Foo1:   "",

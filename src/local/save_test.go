@@ -54,7 +54,7 @@ func TestLocalSaveModel(t *testing.T) {
 	m, err := manifest.NewManifest(1, "connection.keboola.com", projectDir, metadataDir)
 	assert.NoError(t, err)
 
-	config := utils.EmptyOrderedMap()
+	config := utils.NewOrderedMap()
 	config.Set("foo", "bar")
 	record := &MockedRecord{}
 	source := &ModelStruct{

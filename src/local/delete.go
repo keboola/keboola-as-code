@@ -55,7 +55,7 @@ func DeleteModel(logger *zap.SugaredLogger, m *manifest.Manifest, record manifes
 // DeleteEmptyDirectories from project directory (eg. dir with extractors, but no extractor left)
 func DeleteEmptyDirectories(logger *zap.SugaredLogger, projectDir string) error {
 	errors := &utils.Error{}
-	dirs := utils.EmptyOrderedMap()
+	dirs := utils.NewOrderedMap()
 	err := filepath.WalkDir(projectDir, func(path string, d os.DirEntry, err error) error {
 		// Stop on error
 		if err != nil {

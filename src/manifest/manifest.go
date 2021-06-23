@@ -7,10 +7,8 @@ import (
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
 	"keboola-as-code/src/validator"
-	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 	"sync"
 )
 
@@ -25,7 +23,7 @@ const (
 )
 
 type Manifest struct {
-	*Content                           // content of the file, updated only on LoadManifest() and Save()
+	*Content    `validate:"dive"`      // content of the file, updated only on LoadManifest() and Save()
 	ProjectDir  string                 `validate:"required"` // project root
 	MetadataDir string                 `validate:"required"` // inside ProjectDir
 	changed     bool                   // is content changed?
@@ -38,8 +36,8 @@ type Content struct {
 	Project  *Project                  `json:"project" validate:"required"`
 	SortBy   string                    `json:"sortBy" validate:"oneof=id path"`
 	Naming   *LocalNaming              `json:"naming" validate:"required"`
-	Branches []*BranchManifest         `json:"branches"`
-	Configs  []*ConfigManifestWithRows `json:"configurations"`
+	Branches []*BranchManifest         `json:"branches" validate:"dive"`
+	Configs  []*ConfigManifestWithRows `json:"configurations" validate:"dive"`
 }
 
 type Record interface {
@@ -53,11 +51,11 @@ type Record interface {
 
 type Paths struct {
 	Path       string `json:"path" validate:"required"`
-	ParentPath string `json:"-" validate:"required"`
+	ParentPath string `json:"-"`
 }
 
 type Project struct {
-	Id      int    `json:"id" validate:"required,min=1"`
+	Id      int    `json:"id" validate:"required"`
 	ApiHost string `json:"apiHost" validate:"required,hostname"`
 }
 
@@ -94,7 +92,7 @@ func newManifest(projectId int, apiHost string, projectDir, metadataDir string) 
 	return &Manifest{
 		ProjectDir:  projectDir,
 		MetadataDir: metadataDir,
-		records:     utils.EmptyOrderedMap(),
+		records:     utils.NewOrderedMap(),
 		Content: &Content{
 			Version:  1,
 			Project:  &Project{Id: projectId, ApiHost: apiHost},
@@ -114,17 +112,10 @@ func LoadManifest(projectDir string, metadataDir string) (*Manifest, error) {
 		return nil, fmt.Errorf("manifest \"%s\" not found", utils.RelPath(projectDir, path))
 	}
 
-	// Load file
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("cannot read from manifest \"%s\": %s", utils.RelPath(projectDir, path), err)
-	}
-
-	// Decode JSON
+	// Read JSON file
 	m := newManifest(0, "", projectDir, metadataDir)
-	err = json.Decode(data, m.Content)
-	if err != nil {
-		return nil, fmt.Errorf("manifest \"%s\" is not valid: %s", utils.RelPath(projectDir, path), err)
+	if err := json.ReadFile(metadataDir, FileName, m.Content, "manifest"); err != nil {
+		return nil, err
 	}
 
 	// Resolve paths, set parent IDs, store in records
@@ -152,8 +143,7 @@ func LoadManifest(projectDir string, metadataDir string) (*Manifest, error) {
 	}
 
 	// Validate
-	err = m.validate()
-	if err != nil {
+	if err := m.validate(); err != nil {
 		return nil, err
 	}
 
@@ -211,8 +201,7 @@ func (m *Manifest) Path() string {
 
 func (m *Manifest) validate() error {
 	if err := validator.Validate(m); err != nil {
-		errStr := strings.ReplaceAll(err.Error(), "Content.", "")
-		return fmt.Errorf("manifest is not valid: %s", errStr)
+		return fmt.Errorf("manifest is not valid: %s", err)
 	}
 	return nil
 }
