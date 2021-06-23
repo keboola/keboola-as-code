@@ -19,12 +19,9 @@ func TestPathsStateDirNotFound(t *testing.T) {
 }
 
 func TestPathsStateEmpty(t *testing.T) {
-	_, testFile, _, _ := runtime.Caller(0)
-	testDir := filepath.Dir(testFile)
-	projectDir := filepath.Join(testDir, "fixtures", "local", "empty")
-	err := &utils.Error{}
-	paths := NewPathsState(projectDir, err)
+	paths, err := loadPathsState("empty")
 	assert.NotNil(t, paths)
+	assert.NotNil(t, err)
 	assert.Equal(t, 0, err.Len())
 	assert.Empty(t, paths.Tracked())
 	assert.Empty(t, paths.Untracked())
@@ -37,12 +34,9 @@ func TestPathsStateEmpty(t *testing.T) {
 }
 
 func TestPathsStateComplex(t *testing.T) {
-	_, testFile, _, _ := runtime.Caller(0)
-	testDir := filepath.Dir(testFile)
-	projectDir := filepath.Join(testDir, "fixtures", "local", "complex")
-	err := &utils.Error{}
-	paths := NewPathsState(projectDir, err)
+	paths, err := loadPathsState("complex")
 	assert.NotNil(t, paths)
+	assert.NotNil(t, err)
 	assert.Equal(t, 0, err.Len())
 
 	// All untracked + hidden nodes ignored
@@ -150,4 +144,13 @@ func TestPathsStateComplex(t *testing.T) {
 		"main/keboola.ex-generic/456-todos/meta.json",
 		"main/meta.json",
 	}, paths.Untracked())
+}
+
+func loadPathsState(fixture string) (*PathsState, *utils.Error) {
+	_, testFile, _, _ := runtime.Caller(0)
+	testDir := filepath.Dir(testFile)
+	projectDir := filepath.Join(testDir, "..", "fixtures", "local", fixture)
+	err := &utils.Error{}
+	paths := NewPathsState(projectDir, err)
+	return paths, err
 }

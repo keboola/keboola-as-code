@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "project": {
+    "id": 12345,
+    "apiHost": "keboola.connection.com"
+  },
+  "branches": [
+    {
+      "id": %%LOCAL_STATE_MAIN_BRANCH_ID%%,
+      "path": "main"
+    },
+    {
+      "id": %%LOCAL_STATE_MY_BRANCH_ID%%,
+      "path": "123-branch"
+    }
+  ],
+  "configurations": [
+    {
+      "branchId": %%LOCAL_STATE_MAIN_BRANCH_ID%%,
+      "componentId": "keboola.ex-generic",
+      "id": "%%LOCAL_STATE_GENERIC_CONFIG_ID%%",
+      "path": "keboola.ex-generic/456-todos",
+      "rows": []
+    },
+    {
+      "branchId": %%LOCAL_STATE_MY_BRANCH_ID%%,
+      "componentId": "keboola.ex-generic",
+      "id": "%%LOCAL_STATE_GENERIC_CONFIG_ID%%",
+      "path": "keboola.ex-generic/456-todos",
+      "rows": []
+    },
+    {
+      "branchId": %%LOCAL_STATE_MY_BRANCH_ID%%,
+      "componentId": "keboola.ex-db-mysql",
+      "id": "%%LOCAL_STATE_MYSQL_CONFIG_ID%%",
+      "path": "keboola.ex-db-mysql/896-tables",
+      "rows": [
+        {
+          "id": "12",
+          "path": "12-users"
+        },
+        {
+          "id": "34",
+          "path": "34-test-view"
+        },
+        {
+          "id": "56",
+          "path": "56-disabled"
+        }
+      ]
+    }
+  ]
+}

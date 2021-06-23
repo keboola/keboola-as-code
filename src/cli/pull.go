@@ -41,7 +41,7 @@ func pullCommand(root *rootCommand) *cobra.Command {
 			}
 
 			// Load project remote and local state
-			differ := diff.NewDiffer(root.ctx, a, root.logger, root.options)
+			differ := diff.NewDiffer(root.ctx, a, root.logger, root.options.ProjectDir(), root.options.MetadataDir())
 			if err := differ.LoadState(); err != nil {
 				return err
 			}

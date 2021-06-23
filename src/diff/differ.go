@@ -7,7 +7,6 @@ import (
 	"golang.org/x/sync/errgroup"
 	"keboola-as-code/src/api"
 	"keboola-as-code/src/model"
-	"keboola-as-code/src/options"
 )
 
 type Differ struct {
@@ -18,12 +17,12 @@ type Differ struct {
 	state       *model.State
 }
 
-func NewDiffer(ctx context.Context, a *api.StorageApi, logger *zap.SugaredLogger, options *options.Options) *Differ {
+func NewDiffer(ctx context.Context, a *api.StorageApi, logger *zap.SugaredLogger, projectDir, metadataDir string) *Differ {
 	d := &Differ{
 		ctx:    ctx,
 		api:    a,
 		logger: logger,
-		state:  model.NewState(options.ProjectDirectory(), options.MetadataDirectory()),
+		state:  model.NewState(projectDir, metadataDir),
 	}
 	return d
 }
@@ -44,7 +43,7 @@ func (d *Differ) LoadState() error {
 	grp.Go(func() error {
 		d.logger.Debugf("Loading project local state.")
 		localErrors := model.LoadLocalState(d.state)
-		if localErrors.Len() > 9 {
+		if localErrors.Len() > 0 {
 			d.logger.Debugf("Project local state load failed: %s", localErrors)
 			return fmt.Errorf("cannot load project local state: %s", localErrors)
 		} else {
@@ -53,7 +52,7 @@ func (d *Differ) LoadState() error {
 		return nil
 	})
 	err := grp.Wait()
-	if err != nil {
+	if err == nil {
 		d.stateLoaded = true
 	}
 	return err

@@ -9,7 +9,7 @@ import (
 )
 
 func TestConfigApiCalls(t *testing.T) {
-	setTestProjectState(t, "empty.json")
+	SetStateOfTestProject(t, "empty.json")
 	a, _ := TestStorageApiWithToken(t)
 
 	// Get default branch

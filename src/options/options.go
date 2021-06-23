@@ -35,14 +35,14 @@ func (o *Options) WorkingDirectory() string {
 	return o.workingDirectory
 }
 
-func (o *Options) ProjectDirectory() string {
+func (o *Options) ProjectDir() string {
 	if len(o.projectDirectory) == 0 {
 		panic(fmt.Errorf("project directory is not set"))
 	}
 	return o.projectDirectory
 }
 
-func (o *Options) MetadataDirectory() string {
+func (o *Options) MetadataDir() string {
 	if len(o.metadataDirectory) == 0 {
 		panic(fmt.Errorf("metadata directory is not set"))
 	}

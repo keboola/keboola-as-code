@@ -10,7 +10,7 @@ import (
 )
 
 func TestBranchApiCalls(t *testing.T) {
-	setTestProjectState(t, "empty.json")
+	SetStateOfTestProject(t, "empty.json")
 	a, _ := TestStorageApiWithToken(t)
 
 	var job1 *model.Job
