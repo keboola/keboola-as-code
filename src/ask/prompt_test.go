@@ -12,10 +12,10 @@ func TestIsInteractiveTerminal(t *testing.T) {
 }
 
 func TestApiHostValidator(t *testing.T) {
-	assert.NoError(t, ApiHostValidator("keboola.connection.com"))
-	assert.NoError(t, ApiHostValidator("keboola.connection.com/"))
-	assert.NoError(t, ApiHostValidator("https://keboola.connection.com"))
-	assert.NoError(t, ApiHostValidator("https://keboola.connection.com/"))
+	assert.NoError(t, ApiHostValidator("connection.keboola.com"))
+	assert.NoError(t, ApiHostValidator("connection.keboola.com/"))
+	assert.NoError(t, ApiHostValidator("https://connection.keboola.com"))
+	assert.NoError(t, ApiHostValidator("https://connection.keboola.com/"))
 	assert.Equal(t, errors.New("value is required"), ApiHostValidator(""))
 	assert.Equal(t, errors.New("invalid host"), ApiHostValidator("@#$$%^&%#$&"))
 }

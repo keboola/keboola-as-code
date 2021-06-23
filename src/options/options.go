@@ -137,7 +137,7 @@ func (o *Options) AskUser(p *ask.Prompt, fieldName string) {
 		if len(o.ApiHost) == 0 {
 			o.ApiHost, _ = p.Ask(&ask.Question{
 				Label:       "API host",
-				Description: "Please enter Keboola Storage API host, eg. \"keboola.connection.com\".",
+				Description: "Please enter Keboola Storage API host, eg. \"connection.keboola.com\".",
 				Validator:   ask.ApiHostValidator,
 			})
 		}
