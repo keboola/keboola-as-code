@@ -1,0 +1,40 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Foo",
+        "description": "",
+        "isDefault": false
+      },
+      "configs": [
+        {
+          "componentId": "ex-generic-v2",
+          "name": "empty",
+          "description": "test fixture",
+          "configuration": {},
+          "rows": []
+        }
+      ]
+    },
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true
+      },
+      "configs": [
+        {
+          "componentId": "ex-generic-v2",
+          "name": "i am not empty",
+          "description": "test fixture",
+          "configuration": {
+            "parameters": {
+              "new": "value"
+            }
+          },
+          "rows": []
+        }
+      ]
+    }
+  ]
+}

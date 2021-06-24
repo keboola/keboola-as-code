@@ -11,6 +11,7 @@ import (
 	"keboola-as-code/src/diff"
 	"keboola-as-code/src/local"
 	"keboola-as-code/src/manifest"
+	"keboola-as-code/src/model"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
@@ -47,21 +48,13 @@ func (e *Executor) Invoke(p *Plan) error {
 	for _, action := range p.Actions {
 		switch action.Type {
 		case ActionSaveLocal:
-			if err := e.saveLocal(action.Result); err != nil {
-				e.errors.Add(err)
-			}
+			e.saveLocal(action.Result)
 		case ActionSaveRemote:
-			if err := e.saveRemote(action.Result); err != nil {
-				e.errors.Add(err)
-			}
+			e.saveRemote(action.Result)
 		case ActionDeleteLocal:
-			if err := e.deleteLocal(action.Result); err != nil {
-				e.errors.Add(err)
-			}
+			e.deleteLocal(action.Result)
 		case ActionDeleteRemote:
-			if err := e.deleteRemote(action.Result); err != nil {
-				e.errors.Add(err)
-			}
+			e.deleteRemote(action.Result)
 		default:
 			panic(fmt.Errorf("unexpected action type"))
 		}
@@ -105,46 +98,50 @@ func (e *Executor) getPoolFor(level int) *client.Pool {
 	return pool
 }
 
-func (e *Executor) saveLocal(object state.ObjectState) error {
+func (e *Executor) saveLocal(object state.ObjectState) {
 	e.workers.Go(func() error {
-		return local.SaveModel(e.logger, e.manifest, object.Manifest(), object.RemoteState())
+		err := local.SaveModel(e.logger, e.manifest, object.Manifest(), object.RemoteState())
+		if err != nil {
+			e.errors.Add(err)
+		}
+		return nil
 	})
-	return nil
 }
 
-func (e *Executor) deleteLocal(object state.ObjectState) error {
+func (e *Executor) deleteLocal(object state.ObjectState) {
 	e.workers.Go(func() error {
-		return local.DeleteModel(e.logger, e.manifest, object.Manifest(), object.LocalState())
+		err := local.DeleteModel(e.logger, e.manifest, object.Manifest(), object.LocalState())
+		if err != nil {
+			e.errors.Add(err)
+		}
+		return nil
 	})
-	return nil
 }
 
-func (e *Executor) saveRemote(result *diff.Result) error {
+func (e *Executor) saveRemote(result *diff.Result) {
 	switch v := result.ObjectState.(type) {
 	case *state.BranchState:
-		return e.saveBranch(v, result)
+		e.saveBranch(v, result)
 	case *state.ConfigState:
-		return e.saveConfig(v, result)
+		e.saveConfig(v, result)
 	case *state.ConfigRowState:
-		return e.saveConfigRow(v, result)
+		e.saveConfigRow(v, result)
 	default:
 		panic(fmt.Errorf(`unexpected type "%T"`, result.State))
 	}
 }
 
-func (e *Executor) saveBranch(branch *state.BranchState, result *diff.Result) error {
+func (e *Executor) saveBranch(branch *state.BranchState, result *diff.Result) {
 	pool := e.getPoolFor(branch.Level())
 	if branch.Local.Id == 0 {
 		// Create - sequentially, branches cannot be created in parallel
 		e.api.
 			CreateBranchRequest(branch.Local).
 			OnSuccess(func(response *client.Response) *client.Response {
-				// Save new branch ID to manifest
+				// Save new ID to manifest
 				branch.Remote = branch.Local
 				branch.BranchManifest.BranchKey = branch.Remote.BranchKey
-				if err := e.saveLocal(branch); err != nil {
-					e.errors.Add(err)
-				}
+				e.saveLocal(branch)
 				return response
 			}).
 			Send()
@@ -155,21 +152,50 @@ func (e *Executor) saveBranch(branch *state.BranchState, result *diff.Result) er
 			Send()
 	} else {
 		// Restore deleted -> not possible
-		return fmt.Errorf(`branch "%d" (%s) exists only locally, it cannot be restored or recreated with the same ID`, branch.Local.Id, branch.Local.Name)
+		err := fmt.Errorf(`branch "%d" (%s) exists only locally, it cannot be restored or recreated with the same ID`, branch.Local.Id, branch.Local.Name)
+		e.errors.Add(err)
 	}
-	return nil
 }
 
-func (e *Executor) saveConfig(config *state.ConfigState, result *diff.Result) error {
-	//pool := e.getPoolFor(config.Level())
-	return nil
+func (e *Executor) saveConfig(config *state.ConfigState, result *diff.Result) {
+	pool := e.getPoolFor(config.Level())
+	if config.Local.Id == "" {
+		// Create
+		request, err := e.api.CreateConfigRequest(&model.ConfigWithRows{Config: config.Local})
+		if err != nil {
+			e.errors.Add(err)
+			return
+		}
+		pool.
+			Request(request).
+			OnSuccess(func(response *client.Response) *client.Response {
+				// Save new ID to manifest
+				config.Remote = config.Local
+				config.ConfigManifest.ConfigKey = config.Remote.ConfigKey
+				e.saveLocal(config)
+				return response
+			}).
+			Send()
+	} else if config.Remote != nil {
+		// Update
+		request, err := e.api.UpdateConfigRequest(config.Local, result.ChangedFields)
+		if err != nil {
+			e.errors.Add(err)
+			return
+		}
+		pool.
+			Request(request).
+			Send()
+	} else {
+		// Restore deleted -> not possible
+		e.errors.Add(fmt.Errorf("TODO"))
+	}
 }
 
-func (e *Executor) saveConfigRow(row *state.ConfigRowState, result *diff.Result) error {
+func (e *Executor) saveConfigRow(row *state.ConfigRowState, result *diff.Result) {
 	//pool := e.getPoolFor(row.Level())
-	return nil
 }
 
-func (e *Executor) deleteRemote(result *diff.Result) error {
-	return fmt.Errorf("TODO REMOTE DELETE")
+func (e *Executor) deleteRemote(result *diff.Result) {
+
 }
