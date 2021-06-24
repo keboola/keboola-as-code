@@ -4,6 +4,7 @@ import (
 	"github.com/iancoleman/orderedmap"
 	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/manifest"
+	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
 	"os"
 	"path/filepath"
@@ -18,30 +19,40 @@ type ModelStruct struct {
 	Config *orderedmap.OrderedMap `configFile:"true"`
 }
 
+type MockedKey struct{}
 type MockedRecord struct{}
 
-func (*MockedRecord) Kind() string {
-	return "kind"
+func (MockedKey) String() string {
+	return "key"
 }
-func (*MockedRecord) KindAbbr() string {
-	return "K"
+func (ModelStruct) Key() model.Key {
+	return &MockedKey{}
 }
-func (*MockedRecord) UniqueKey(sort string) string {
+func (MockedRecord) Key() model.Key {
+	return &MockedKey{}
+}
+func (MockedRecord) Kind() model.Kind {
+	return model.Kind{Name: "kind", Abbr: "K"}
+}
+func (MockedRecord) IsInvalid() bool {
+	return false
+}
+func (MockedRecord) SortKey(sort string) string {
 	return "key"
 }
 
-func (*MockedRecord) GetPaths() *manifest.Paths {
-	return &manifest.Paths{
+func (MockedRecord) GetPaths() manifest.Paths {
+	return manifest.Paths{
 		ParentPath: "",
 		Path:       "test",
 	}
 }
 
-func (*MockedRecord) MetaFilePath() string {
+func (MockedRecord) MetaFilePath() string {
 	return "meta-file.json"
 }
 
-func (*MockedRecord) ConfigFilePath() string {
+func (MockedRecord) ConfigFilePath() string {
 	return "config-file.json"
 }
 
@@ -64,6 +75,9 @@ func TestLocalSaveModel(t *testing.T) {
 		Meta2:  "4",
 		Config: config,
 	}
+	m.SetRecord(record)
+	_, found := m.GetRecord(record.Key())
+	assert.True(t, found)
 
 	// Save
 	assert.NoError(t, SaveModel(logger, m, record, source))

@@ -75,6 +75,18 @@ func (e *Executor) Invoke(p *Plan) error {
 		e.errors.Add(err)
 	}
 
+	// Delete invalid objects (if pull --force used)
+	records := e.manifest.GetRecords()
+	for _, key := range append([]string(nil), records.Keys()...) {
+		v, _ := records.Get(key)
+		record := v.(manifest.Record)
+		if record.IsInvalid() {
+			if err := local.DeleteModel(e.logger, e.manifest, record); err != nil {
+				e.errors.Add(err)
+			}
+		}
+	}
+
 	// Delete empty directories
 	if err := local.DeleteEmptyDirectories(e.logger, e.manifest.ProjectDir); err != nil {
 		e.errors.Add(err)
@@ -110,7 +122,7 @@ func (e *Executor) saveLocal(object state.ObjectState) {
 
 func (e *Executor) deleteLocal(object state.ObjectState) {
 	e.workers.Go(func() error {
-		err := local.DeleteModel(e.logger, e.manifest, object.Manifest(), object.LocalState())
+		err := local.DeleteModel(e.logger, e.manifest, object.Manifest())
 		if err != nil {
 			e.errors.Add(err)
 		}
@@ -139,8 +151,8 @@ func (e *Executor) saveBranch(branch *state.BranchState, result *diff.Result) {
 			CreateBranchRequest(branch.Local).
 			OnSuccess(func(response *client.Response) *client.Response {
 				// Save new ID to manifest
-				branch.Remote = branch.Local
-				branch.BranchManifest.BranchKey = branch.Remote.BranchKey
+				branch.Local = branch.Remote
+				result.ObjectState.UpdateManifest(e.manifest)
 				e.saveLocal(branch)
 				return response
 			}).
@@ -170,8 +182,8 @@ func (e *Executor) saveConfig(config *state.ConfigState, result *diff.Result) {
 			Request(request).
 			OnSuccess(func(response *client.Response) *client.Response {
 				// Save new ID to manifest
-				config.Remote = config.Local
-				config.ConfigManifest.ConfigKey = config.Remote.ConfigKey
+				config.Local = config.Remote
+				result.ObjectState.UpdateManifest(e.manifest)
 				e.saveLocal(config)
 				return response
 			}).

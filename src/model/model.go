@@ -121,43 +121,72 @@ type Event struct {
 	Id string `json:"id"`
 }
 
-func (k *BranchKey) Level() int {
+type ValueWithKey interface {
+	Key() Key
+}
+
+type Key interface {
+	String() string
+}
+
+type Kind struct {
+	Name string
+	Abbr string
+}
+
+func (k BranchKey) Level() int {
 	return 1
 }
 
-func (k *ComponentKey) Level() int {
+func (k ComponentKey) Level() int {
 	return 2
 }
 
-func (k *ConfigKey) Level() int {
+func (k ConfigKey) Level() int {
 	return 3
 }
 
-func (k *ConfigRowKey) Level() int {
-	return 3
+func (k ConfigRowKey) Level() int {
+	return 4
 }
 
-func (k *BranchKey) String() string {
-	return fmt.Sprintf("%02d_%d", k.Level(), k.Id)
+func (k BranchKey) Key() Key {
+	return k
 }
 
-func (k *ComponentKey) String() string {
-	return fmt.Sprintf("%02d_%s", k.Level(), k.Id)
+func (k ComponentKey) Key() Key {
+	return k
 }
 
-func (k *ConfigKey) String() string {
-	return fmt.Sprintf("%02d_%d_%s_%s", k.Level(), k.BranchId, k.ComponentId, k.Id)
+func (k ConfigKey) Key() Key {
+	return k
 }
 
-func (k *ConfigRowKey) String() string {
-	return fmt.Sprintf("%02d_%d_%s_%s_%s", k.Level(), k.BranchId, k.ComponentId, k.ConfigId, k.Id)
+func (k ConfigRowKey) Key() Key {
+	return k
 }
 
-func (k *ConfigKey) BranchKey() *BranchKey {
+func (k BranchKey) String() string {
+	return fmt.Sprintf("%02d_%d_branch", k.Level(), k.Id)
+}
+
+func (k ComponentKey) String() string {
+	return fmt.Sprintf("%02d_%s_component", k.Level(), k.Id)
+}
+
+func (k ConfigKey) String() string {
+	return fmt.Sprintf("%02d_%d_%s_%s_config", k.Level(), k.BranchId, k.ComponentId, k.Id)
+}
+
+func (k ConfigRowKey) String() string {
+	return fmt.Sprintf("%02d_%d_%s_%s_%s_config_row", k.Level(), k.BranchId, k.ComponentId, k.ConfigId, k.Id)
+}
+
+func (k ConfigKey) BranchKey() *BranchKey {
 	return &BranchKey{Id: k.BranchId}
 }
 
-func (k *ConfigRowKey) ConfigKey() *ConfigKey {
+func (k ConfigRowKey) ConfigKey() *ConfigKey {
 	return &ConfigKey{BranchId: k.BranchId, ComponentId: k.ComponentId, Id: k.ConfigId}
 }
 

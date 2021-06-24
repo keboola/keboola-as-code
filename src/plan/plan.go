@@ -27,8 +27,7 @@ type Action struct {
 }
 
 func (a *Action) String() string {
-	kindAbb := strings.ToUpper(string(a.Kind()[0]))
-	msg := a.StringPrefix() + " " + kindAbb + " " + a.RelativePath()
+	msg := a.StringPrefix() + " " + a.Kind().Abbr + " " + a.RelativePath()
 	if len(a.ChangedFields) > 0 {
 		msg += " | changed: " + strings.Join(a.ChangedFields, ", ")
 	}

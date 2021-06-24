@@ -12,24 +12,24 @@
   },
   "branches": [
     {
-      "id": %%TEST_BRANCH_MAIN_ID%%,
-      "path": "main"
-    },
-    {
       "id": %%TEST_BRANCH_FOO_ID%%,
       "path": "foo"
+    },
+    {
+      "id": %%TEST_BRANCH_MAIN_ID%%,
+      "path": "main"
     }
   ],
   "configurations": [
     {
-      "branchId": %%TEST_BRANCH_MAIN_ID%%,
+      "branchId": %%TEST_BRANCH_FOO_ID%%,
       "componentId": "ex-generic-v2",
       "id": "%%TEST_BRANCH_ALL_CONFIG_EMPTY_ID%%",
       "path": "extractor/ex-generic-v2/empty",
       "rows": []
     },
     {
-      "branchId": %%TEST_BRANCH_FOO_ID%%,
+      "branchId": %%TEST_BRANCH_MAIN_ID%%,
       "componentId": "ex-generic-v2",
       "id": "%%TEST_BRANCH_ALL_CONFIG_EMPTY_ID%%",
       "path": "extractor/ex-generic-v2/empty",

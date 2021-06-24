@@ -13,13 +13,13 @@ func LoadModel(projectDir string, record manifest.Record, target interface{}) er
 	errors := &utils.Error{}
 
 	// Load values from meta file
-	errPrefix := record.Kind() + " metadata"
+	errPrefix := record.Kind().Name + " metadata"
 	if err := utils.ReadTaggedFields(projectDir, record.MetaFilePath(), model.MetaFileTag, errPrefix, target); err != nil {
 		errors.Add(err)
 	}
 
 	// Load config file content
-	errPrefix = record.Kind()
+	errPrefix = record.Kind().Name
 	if configField := utils.GetOneFieldWithTag(model.ConfigFileTag, target); configField != nil {
 		content := utils.NewOrderedMap()
 		modelValue := reflect.ValueOf(target).Elem()

@@ -19,7 +19,7 @@ type State struct {
 	remoteErrors *utils.Error
 	localErrors  *utils.Error
 	paths        *PathsState
-	naming       *manifest.LocalNaming
+	manifest     *manifest.Manifest
 	components   map[string]*model.Component
 	branches     map[string]*BranchState
 	configs      map[string]*ConfigState
@@ -27,29 +27,31 @@ type State struct {
 }
 
 type ObjectState interface {
-	Kind() string
-	LocalState() interface{}
-	RemoteState() interface{}
+	Kind() model.Kind
+	LocalState() model.ValueWithKey
+	RemoteState() model.ValueWithKey
 	Manifest() manifest.Record
+	UpdateManifest(m *manifest.Manifest)
 	RelativePath() string
 }
 
 type BranchState struct {
 	*manifest.BranchManifest
-	Remote *model.Branch
-	Local  *model.Branch
+	Remote *model.Branch `validate:"dive"`
+	Local  *model.Branch `validate:"dive"`
 }
 
 type ConfigState struct {
 	*manifest.ConfigManifest
-	Remote *model.Config
-	Local  *model.Config
+	Component *model.Component `validate:"dive"`
+	Remote    *model.Config    `validate:"dive"`
+	Local     *model.Config    `validate:"dive"`
 }
 
 type ConfigRowState struct {
 	*manifest.ConfigRowManifest
-	Remote *model.ConfigRow
-	Local  *model.ConfigRow
+	Remote *model.ConfigRow `validate:"dive"`
+	Local  *model.ConfigRow `validate:"dive"`
 }
 
 type keyValuePair struct {
@@ -72,25 +74,25 @@ func (s *stateValidator) validate(kind string, v interface{}) {
 }
 
 // LoadState - remote and local
-func LoadState(manifest *manifest.Manifest, logger *zap.SugaredLogger, ctx context.Context, api *remote.StorageApi) (*State, bool) {
-	state := NewState(manifest.ProjectDir, manifest.Naming)
+func LoadState(m *manifest.Manifest, logger *zap.SugaredLogger, ctx context.Context, api *remote.StorageApi) (*State, bool) {
+	state := NewState(m.ProjectDir, m)
 
 	logger.Debugf("Loading project remote state.")
 	LoadRemoteState(state, ctx, api)
 
 	logger.Debugf("Loading local state.")
-	LoadLocalState(state, manifest, api)
+	LoadLocalState(state, m.ProjectDir, m.Content, api)
 
 	ok := state.LocalErrors().Len() == 0 && state.RemoteErrors().Len() == 0
 	return state, ok
 }
 
-func NewState(projectDir string, naming *manifest.LocalNaming) *State {
+func NewState(projectDir string, m *manifest.Manifest) *State {
 	s := &State{
 		mutex:        &sync.Mutex{},
 		remoteErrors: &utils.Error{},
 		localErrors:  &utils.Error{},
-		naming:       naming,
+		manifest:     m,
 		branches:     make(map[string]*BranchState),
 		components:   make(map[string]*model.Component),
 		configs:      make(map[string]*ConfigState),
@@ -106,9 +108,7 @@ func (s *State) Validate() *utils.Error {
 		v.validate("component", component)
 	}
 	for _, objectState := range s.All() {
-		v.validate(objectState.Kind(), objectState.RemoteState())
-		v.validate(objectState.Kind(), objectState.RelativePath())
-		v.validate(objectState.Kind()+" manifest record", objectState.Manifest())
+		v.validate(objectState.Kind().Name, objectState)
 	}
 	return v.error
 }
@@ -257,22 +257,23 @@ func (s *State) GetConfigRow(key model.ConfigRowKey, create bool) *ConfigRowStat
 }
 
 func (s *State) SetBranchRemoteState(remote *model.Branch) {
-	branch := s.GetBranch(remote.BranchKey, true)
+	state := s.GetBranch(remote.BranchKey, true)
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	branch.Remote = remote
-	if branch.BranchManifest == nil {
-		branch.BranchManifest = manifest.NewBranchManifest(s.naming, remote)
+	state.Remote = remote
+	if state.BranchManifest == nil {
+		state.BranchManifest = s.manifest.CreateRecordFor(remote.Key()).(*manifest.BranchManifest)
+		state.UpdateManifest(s.manifest)
 	}
 }
 
-func (s *State) SetBranchLocalState(local *model.Branch, manifest *manifest.BranchManifest) {
+func (s *State) SetBranchLocalState(local *model.Branch, m *manifest.BranchManifest) {
 	branch := s.GetBranch(local.BranchKey, true)
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	branch.Local = local
-	branch.BranchManifest = manifest
-	s.MarkPathTracked(manifest.MetaFilePath())
+	branch.BranchManifest = m
+	s.MarkPathTracked(m.MetaFilePath())
 }
 
 func (s *State) setComponent(component *model.Component) {
@@ -284,68 +285,70 @@ func (s *State) setComponent(component *model.Component) {
 func (s *State) SetConfigRemoteState(component *model.Component, remote *model.Config) {
 	s.setComponent(component)
 	state := s.GetConfig(remote.ConfigKey, true)
-	branch := s.GetBranch(*remote.BranchKey(), true)
+	state.Component = component
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	state.Remote = remote
 	if state.ConfigManifest == nil {
-		state.ConfigManifest = manifest.NewConfigManifest(s.naming, branch.BranchManifest, component, remote)
+		state.ConfigManifest = s.manifest.CreateRecordFor(remote.Key()).(*manifest.ConfigManifest)
+		state.UpdateManifest(s.manifest)
 	}
 }
 
-func (s *State) SetConfigLocalState(component *model.Component, local *model.Config, manifest *manifest.ConfigManifest) {
+func (s *State) SetConfigLocalState(component *model.Component, local *model.Config, m *manifest.ConfigManifest) {
 	s.setComponent(component)
 	state := s.GetConfig(local.ConfigKey, true)
+	state.Component = component
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	state.Local = local
-	state.ConfigManifest = manifest
-	s.MarkPathTracked(manifest.MetaFilePath())
-	s.MarkPathTracked(manifest.ConfigFilePath())
+	state.ConfigManifest = m
+	s.MarkPathTracked(m.MetaFilePath())
+	s.MarkPathTracked(m.ConfigFilePath())
 }
 
 func (s *State) SetConfigRowRemoteState(remote *model.ConfigRow) {
 	state := s.GetConfigRow(remote.ConfigRowKey, true)
-	config := s.GetConfig(*remote.ConfigKey(), true)
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	state.Remote = remote
 	if state.ConfigRowManifest == nil {
-		state.ConfigRowManifest = manifest.NewConfigRowManifest(s.naming, config.ConfigManifest, remote)
+		state.ConfigRowManifest = s.manifest.CreateRecordFor(remote.Key()).(*manifest.ConfigRowManifest)
+		state.UpdateManifest(s.manifest)
 	}
 }
 
-func (s *State) SetConfigRowLocalState(local *model.ConfigRow, manifest *manifest.ConfigRowManifest) {
+func (s *State) SetConfigRowLocalState(local *model.ConfigRow, m *manifest.ConfigRowManifest) {
 	state := s.GetConfigRow(local.ConfigRowKey, true)
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	state.Local = local
-	state.ConfigRowManifest = manifest
-	s.MarkPathTracked(manifest.MetaFilePath())
-	s.MarkPathTracked(manifest.ConfigFilePath())
+	state.ConfigRowManifest = m
+	s.MarkPathTracked(m.MetaFilePath())
+	s.MarkPathTracked(m.ConfigFilePath())
 }
 
-func (b *BranchState) LocalState() interface{} {
+func (b *BranchState) LocalState() model.ValueWithKey {
 	return b.Local
 }
 
-func (c *ConfigState) LocalState() interface{} {
+func (c *ConfigState) LocalState() model.ValueWithKey {
 	return c.Local
 }
 
-func (r *ConfigRowState) LocalState() interface{} {
+func (r *ConfigRowState) LocalState() model.ValueWithKey {
 	return r.Local
 }
 
-func (b *BranchState) RemoteState() interface{} {
+func (b *BranchState) RemoteState() model.ValueWithKey {
 	return b.Remote
 }
 
-func (c *ConfigState) RemoteState() interface{} {
+func (c *ConfigState) RemoteState() model.ValueWithKey {
 	return c.Remote
 }
 
-func (r *ConfigRowState) RemoteState() interface{} {
+func (r *ConfigRowState) RemoteState() model.ValueWithKey {
 	return r.Remote
 }
 

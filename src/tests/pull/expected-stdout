@@ -14,16 +14,16 @@ INFO	Plan for "pull" operation:
 INFO	+  B bar
 INFO	+  C bar/extractor/ex-generic-v2/empty
 INFO	+  C bar/extractor/keboola.ex-db-mysql/with-rows
-INFO	+  C bar/extractor/keboola.ex-db-mysql/with-rows/rows/disabled
-INFO	+  C bar/extractor/keboola.ex-db-mysql/with-rows/rows/test-view
-INFO	+  C bar/extractor/keboola.ex-db-mysql/with-rows/rows/users
+INFO	+  R bar/extractor/keboola.ex-db-mysql/with-rows/rows/disabled
+INFO	+  R bar/extractor/keboola.ex-db-mysql/with-rows/rows/test-view
+INFO	+  R bar/extractor/keboola.ex-db-mysql/with-rows/rows/users
 INFO	+  C bar/transformation/keboola.python-transformation-v2/python-transformation
 INFO	+  C bar/transformation/keboola.snowflake-transformation/snowflake-transformation
 INFO	+  B foo
 INFO	+  C foo/extractor/ex-generic-v2/empty
 INFO	+  C foo/extractor/ex-generic-v2/without-rows
 INFO	+  C foo/other/transformation/old-transformation
-INFO	+  C foo/other/transformation/old-transformation/rows/old-transformation-snfk
+INFO	+  R foo/other/transformation/old-transformation/rows/old-transformation-snfk
 INFO	+  B main
 INFO	+  C main/extractor/ex-generic-v2/empty
 %A

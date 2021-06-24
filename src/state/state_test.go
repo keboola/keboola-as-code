@@ -100,6 +100,15 @@ func TestLoadState(t *testing.T) {
 					},
 				}),
 			},
+			Component: &model.Component{
+				ComponentKey: model.ComponentKey{
+					Id: "ex-generic-v2",
+				},
+				Type:      "extractor",
+				Name:      "Generic",
+				Schema:    map[string]interface{}{},
+				SchemaRow: map[string]interface{}{},
+			},
 			ConfigManifest: &manifest.ConfigManifest{
 				ConfigKey: model.ConfigKey{
 					BranchId:    cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),

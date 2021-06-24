@@ -17,7 +17,7 @@ func TestLoadLocalStateMinimal(t *testing.T) {
 	defer utils.ResetEnv(t, os.Environ())
 	state := loadLocalTestState(t, "minimal")
 	assert.NotNil(t, state)
-	assert.Equal(t, 0, state.LocalErrors().Len())
+	assert.Empty(t, state.LocalErrors())
 	assert.Len(t, state.Branches(), 1)
 	assert.Len(t, state.Configs(), 1)
 	assert.Empty(t, state.UntrackedPaths())
@@ -40,12 +40,16 @@ func TestLoadLocalStateComplex(t *testing.T) {
 	assert.Equal(t, complexLocalExpectedConfigs(), utils.SortByName(state.Configs()))
 	assert.Equal(t, complexLocalExpectedConfigRows(), utils.SortByName(state.ConfigRows()))
 	assert.Equal(t, []string{
+		"123-branch/ex-generic-v2/456-todos/untracked1",
 		"123-branch/keboola.ex-db-mysql/untrackedDir",
 		"123-branch/keboola.ex-db-mysql/untrackedDir/untracked2",
-		"123-branch/keboola.ex-generic/456-todos/untracked1",
 	}, state.UntrackedPaths())
 	assert.Equal(t, []string{
 		"123-branch",
+		"123-branch/ex-generic-v2",
+		"123-branch/ex-generic-v2/456-todos",
+		"123-branch/ex-generic-v2/456-todos/config.json",
+		"123-branch/ex-generic-v2/456-todos/meta.json",
 		"123-branch/keboola.ex-db-mysql",
 		"123-branch/keboola.ex-db-mysql/896-tables",
 		"123-branch/keboola.ex-db-mysql/896-tables/config.json",
@@ -60,16 +64,12 @@ func TestLoadLocalStateComplex(t *testing.T) {
 		"123-branch/keboola.ex-db-mysql/896-tables/rows/56-disabled",
 		"123-branch/keboola.ex-db-mysql/896-tables/rows/56-disabled/config.json",
 		"123-branch/keboola.ex-db-mysql/896-tables/rows/56-disabled/meta.json",
-		"123-branch/keboola.ex-generic",
-		"123-branch/keboola.ex-generic/456-todos",
-		"123-branch/keboola.ex-generic/456-todos/config.json",
-		"123-branch/keboola.ex-generic/456-todos/meta.json",
 		"123-branch/meta.json",
 		"main",
-		"main/keboola.ex-generic",
-		"main/keboola.ex-generic/456-todos",
-		"main/keboola.ex-generic/456-todos/config.json",
-		"main/keboola.ex-generic/456-todos/meta.json",
+		"main/ex-generic-v2",
+		"main/ex-generic-v2/456-todos",
+		"main/ex-generic-v2/456-todos/config.json",
+		"main/ex-generic-v2/456-todos/meta.json",
 		"main/meta.json",
 	}, state.TrackedPaths())
 }
@@ -87,7 +87,7 @@ func TestLoadLocalStateConfigMissingConfigJson(t *testing.T) {
 	state := loadLocalTestState(t, "config-missing-config-json")
 	assert.NotNil(t, state)
 	assert.Greater(t, state.LocalErrors().Len(), 0)
-	assert.Equal(t, `config file "123-branch/keboola.ex-generic/456-todos/config.json" not found`, state.LocalErrors().Error())
+	assert.Equal(t, `config file "123-branch/ex-generic-v2/456-todos/config.json" not found`, state.LocalErrors().Error())
 }
 
 func TestLoadLocalStateConfigMissingMetaJson(t *testing.T) {
@@ -95,7 +95,7 @@ func TestLoadLocalStateConfigMissingMetaJson(t *testing.T) {
 	state := loadLocalTestState(t, "config-missing-meta-json")
 	assert.NotNil(t, state)
 	assert.Greater(t, state.LocalErrors().Len(), 0)
-	assert.Equal(t, `config metadata file "123-branch/keboola.ex-generic/456-todos/meta.json" not found`, state.LocalErrors().Error())
+	assert.Equal(t, `config metadata file "123-branch/ex-generic-v2/456-todos/meta.json" not found`, state.LocalErrors().Error())
 }
 
 func TestLoadLocalStateConfigRowMissingConfigJson(t *testing.T) {
@@ -127,7 +127,7 @@ func TestLoadLocalStateConfigInvalidConfigJson(t *testing.T) {
 	state := loadLocalTestState(t, "config-invalid-config-json")
 	assert.NotNil(t, state)
 	assert.Greater(t, state.LocalErrors().Len(), 0)
-	assert.Equal(t, `config file "123-branch/keboola.ex-generic/456-todos/config.json" is invalid: invalid character 'f' looking for beginning of object key string, offset: 3`, state.LocalErrors().Error())
+	assert.Equal(t, `config file "123-branch/ex-generic-v2/456-todos/config.json" is invalid: invalid character 'f' looking for beginning of object key string, offset: 3`, state.LocalErrors().Error())
 }
 
 func TestLoadLocalStateConfigInvalidMetaJson(t *testing.T) {
@@ -135,7 +135,7 @@ func TestLoadLocalStateConfigInvalidMetaJson(t *testing.T) {
 	state := loadLocalTestState(t, "config-invalid-meta-json")
 	assert.NotNil(t, state)
 	assert.Greater(t, state.LocalErrors().Len(), 0)
-	assert.Equal(t, `config metadata file "123-branch/keboola.ex-generic/456-todos/meta.json" is invalid: invalid character 'f' looking for beginning of object key string, offset: 3`, state.LocalErrors().Error())
+	assert.Equal(t, `config metadata file "123-branch/ex-generic-v2/456-todos/meta.json" is invalid: invalid character 'f' looking for beginning of object key string, offset: 3`, state.LocalErrors().Error())
 }
 
 func TestLoadLocalStateConfigRowInvalidConfigJson(t *testing.T) {
@@ -174,13 +174,12 @@ func loadLocalTestState(t *testing.T, projectDirName string) *State {
 	}
 	utils.ReplaceEnvsDir(projectDir)
 
-	state := NewState(projectDir, manifest.DefaultNaming())
 	m, err := manifest.LoadManifest(projectDir, metadataDir)
 	if err != nil {
-		assert.FailNow(t, state.LocalErrors().Error())
+		assert.FailNow(t, err.Error())
 	}
-
-	LoadLocalState(state, m, api)
+	state := NewState(projectDir, m)
+	LoadLocalState(state, m.ProjectDir, m.Content, api)
 	return state
 }
 
@@ -256,6 +255,15 @@ func complexLocalExpectedConfigs() []*ConfigState {
 					},
 				}),
 			},
+			Component: &model.Component{
+				ComponentKey: model.ComponentKey{
+					Id: "keboola.ex-db-mysql",
+				},
+				Type:      "extractor",
+				Name:      "MySQL",
+				Schema:    map[string]interface{}{},
+				SchemaRow: map[string]interface{}{},
+			},
 			ConfigManifest: &manifest.ConfigManifest{
 				ConfigKey: model.ConfigKey{
 					BranchId:    123,
@@ -272,7 +280,7 @@ func complexLocalExpectedConfigs() []*ConfigState {
 			Local: &model.Config{
 				ConfigKey: model.ConfigKey{
 					BranchId:    111,
-					ComponentId: "keboola.ex-generic",
+					ComponentId: "ex-generic-v2",
 					Id:          "456",
 				},
 				Name:              "todos",
@@ -295,14 +303,23 @@ func complexLocalExpectedConfigs() []*ConfigState {
 					},
 				}),
 			},
+			Component: &model.Component{
+				ComponentKey: model.ComponentKey{
+					Id: "ex-generic-v2",
+				},
+				Type:      "extractor",
+				Name:      "Generic",
+				Schema:    map[string]interface{}{},
+				SchemaRow: map[string]interface{}{},
+			},
 			ConfigManifest: &manifest.ConfigManifest{
 				ConfigKey: model.ConfigKey{
 					BranchId:    111,
-					ComponentId: "keboola.ex-generic",
+					ComponentId: "ex-generic-v2",
 					Id:          "456",
 				},
 				Paths: manifest.Paths{
-					Path:       "keboola.ex-generic/456-todos",
+					Path:       "ex-generic-v2/456-todos",
 					ParentPath: "main",
 				},
 			},
@@ -311,7 +328,7 @@ func complexLocalExpectedConfigs() []*ConfigState {
 			Local: &model.Config{
 				ConfigKey: model.ConfigKey{
 					BranchId:    123,
-					ComponentId: "keboola.ex-generic",
+					ComponentId: "ex-generic-v2",
 					Id:          "456",
 				},
 				Name:              "todos",
@@ -334,14 +351,23 @@ func complexLocalExpectedConfigs() []*ConfigState {
 					},
 				}),
 			},
+			Component: &model.Component{
+				ComponentKey: model.ComponentKey{
+					Id: "ex-generic-v2",
+				},
+				Type:      "extractor",
+				Name:      "Generic",
+				Schema:    map[string]interface{}{},
+				SchemaRow: map[string]interface{}{},
+			},
 			ConfigManifest: &manifest.ConfigManifest{
 				ConfigKey: model.ConfigKey{
 					BranchId:    123,
-					ComponentId: "keboola.ex-generic",
+					ComponentId: "ex-generic-v2",
 					Id:          "456",
 				},
 				Paths: manifest.Paths{
-					Path:       "keboola.ex-generic/456-todos",
+					Path:       "ex-generic-v2/456-todos",
 					ParentPath: "123-branch",
 				},
 			},

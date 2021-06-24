@@ -10,8 +10,7 @@ import (
 )
 
 func TestDiffOnlyInLocal(t *testing.T) {
-	projectDir := t.TempDir()
-	projectState := state.NewState(projectDir, manifest.DefaultNaming())
+	projectState := createProjectState(t)
 	branch := &model.Branch{}
 	m := &manifest.BranchManifest{}
 	projectState.SetBranchLocalState(branch, m)
@@ -26,9 +25,8 @@ func TestDiffOnlyInLocal(t *testing.T) {
 }
 
 func TestDiffOnlyInRemote(t *testing.T) {
-	projectDir := t.TempDir()
-	projectState := state.NewState(projectDir, manifest.DefaultNaming())
 	branch := &model.Branch{}
+	projectState := createProjectState(t)
 	projectState.SetBranchRemoteState(branch)
 	d := NewDiffer(projectState)
 	results, err := d.Diff()
@@ -41,8 +39,7 @@ func TestDiffOnlyInRemote(t *testing.T) {
 }
 
 func TestDiffEqual(t *testing.T) {
-	projectDir := t.TempDir()
-	projectState := state.NewState(projectDir, manifest.DefaultNaming())
+	projectState := createProjectState(t)
 	branchRemote := &model.Branch{
 		BranchKey: model.BranchKey{
 			Id: 123,
@@ -74,8 +71,7 @@ func TestDiffEqual(t *testing.T) {
 }
 
 func TestDiffNotEqual(t *testing.T) {
-	projectDir := t.TempDir()
-	projectState := state.NewState(projectDir, manifest.DefaultNaming())
+	projectState := createProjectState(t)
 	branchRemote := &model.Branch{
 		BranchKey: model.BranchKey{
 			Id: 123,
@@ -109,8 +105,7 @@ func TestDiffNotEqual(t *testing.T) {
 }
 
 func TestDiffEqualConfig(t *testing.T) {
-	projectDir := t.TempDir()
-	projectState := state.NewState(projectDir, manifest.DefaultNaming())
+	projectState := createProjectState(t)
 	branchRemote := &model.Branch{
 		BranchKey: model.BranchKey{
 			Id: 123,
@@ -175,8 +170,7 @@ func TestDiffEqualConfig(t *testing.T) {
 }
 
 func TestDiffNotEqualConfig(t *testing.T) {
-	projectDir := t.TempDir()
-	projectState := state.NewState(projectDir, manifest.DefaultNaming())
+	projectState := createProjectState(t)
 	branchRemote := &model.Branch{
 		BranchKey: model.BranchKey{
 			Id: 123,
@@ -238,4 +232,13 @@ func TestDiffNotEqualConfig(t *testing.T) {
 	assert.Equal(t, []string{"name", "description"}, result2.ChangedFields)
 	assert.Same(t, configRemote, result2.ObjectState.RemoteState().(*model.Config))
 	assert.Same(t, configLocal, result2.ObjectState.LocalState().(*model.Config))
+}
+
+func createProjectState(t *testing.T) *state.State {
+	m, err := manifest.NewManifest(1, "connection.keboola.com", "foo", "bar")
+	if err != nil {
+		assert.FailNow(t, err.Error())
+	}
+	projectDir := t.TempDir()
+	return state.NewState(projectDir, m)
 }

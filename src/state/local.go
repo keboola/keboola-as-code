@@ -1,7 +1,6 @@
 package state
 
 import (
-	"fmt"
 	"keboola-as-code/src/local"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
@@ -9,48 +8,38 @@ import (
 )
 
 // LoadLocalState - manifest -> local files -> unified model
-func LoadLocalState(state *State, m *manifest.Manifest, api *remote.StorageApi) {
-	var invalidKeys []string
-	records := m.GetRecords()
-	for _, key := range records.Keys() {
-		item, _ := records.Get(key)
-		switch record := item.(type) {
+func LoadLocalState(state *State, projectDir string, content *manifest.Content, api *remote.StorageApi) {
+	for _, b := range content.Branches {
 		// Add branch
-		case *manifest.BranchManifest:
-			if branch, err := local.LoadBranch(m.ProjectDir, record); err == nil {
-				state.SetBranchLocalState(branch, record)
-			} else {
-				invalidKeys = append(invalidKeys, key)
-				state.AddLocalError(err)
-			}
-		// Add config
-		case *manifest.ConfigManifest:
-			if config, err := local.LoadConfig(m.ProjectDir, record); err == nil {
-				if component, err := getComponent(state, api, config.ComponentId); err == nil {
-					state.SetConfigLocalState(component, config, record)
-				} else {
-					state.AddLocalError(err)
-				}
-			} else {
-				invalidKeys = append(invalidKeys, key)
-				state.AddLocalError(err)
-			}
-		// Add config row
-		case *manifest.ConfigRowManifest:
-			if row, err := local.LoadConfigRow(m.ProjectDir, record); err == nil {
-				state.SetConfigRowLocalState(row, record)
-			} else {
-				invalidKeys = append(invalidKeys, key)
-				state.AddLocalError(err)
-			}
-		default:
-			panic(fmt.Errorf(`unexpected type "%T", key "%s"`, item, key))
+		if branch, err := local.LoadBranch(projectDir, b); err == nil {
+			state.SetBranchLocalState(branch, b)
+		} else {
+			b.SetInvalid()
+			state.AddLocalError(err)
 		}
 	}
+	for _, c := range content.Configs {
+		// Add config
+		if config, err := local.LoadConfig(projectDir, c.ConfigManifest); err == nil {
+			if component, err := getComponent(state, api, config.ComponentId); err == nil {
+				state.SetConfigLocalState(component, config, c.ConfigManifest)
+			} else {
+				state.AddLocalError(err)
+			}
+		} else {
+			c.SetInvalid()
+			state.AddLocalError(err)
+		}
 
-	// Delete invalid records
-	for _, key := range invalidKeys {
-		m.DeleteRecordByKey(key)
+		// Rows
+		for _, r := range c.Rows {
+			if row, err := local.LoadConfigRow(projectDir, r); err == nil {
+				state.SetConfigRowLocalState(row, r)
+			} else {
+				r.SetInvalid()
+				state.AddLocalError(err)
+			}
+		}
 	}
 }
 
