@@ -205,7 +205,38 @@ func (e *Executor) saveConfig(config *state.ConfigState, result *diff.Result) {
 }
 
 func (e *Executor) saveConfigRow(row *state.ConfigRowState, result *diff.Result) {
-	//pool := e.getPoolFor(row.Level())
+	pool := e.getPoolFor(row.Level())
+	if row.Local.Id == "" {
+		// Create
+		request, err := e.api.CreateConfigRowRequest(row.Local)
+		if err != nil {
+			e.errors.Add(err)
+			return
+		}
+		pool.
+			Request(request).
+			OnSuccess(func(response *client.Response) *client.Response {
+				// Save new ID to manifest
+				row.Local = row.Remote
+				result.ObjectState.UpdateManifest(e.manifest)
+				e.saveLocal(row)
+				return response
+			}).
+			Send()
+	} else if row.Remote != nil {
+		// Update
+		request, err := e.api.UpdateConfigRowRequest(row.Local, result.ChangedFields)
+		if err != nil {
+			e.errors.Add(err)
+			return
+		}
+		pool.
+			Request(request).
+			Send()
+	} else {
+		// Restore deleted -> not possible
+		e.errors.Add(fmt.Errorf("TODO"))
+	}
 }
 
 func (e *Executor) deleteRemote(result *diff.Result) {
