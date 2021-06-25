@@ -131,23 +131,23 @@ func (o *Options) Validate(required []string) string {
 }
 
 // AskUser for value if used interactive terminal
-func (o *Options) AskUser(p *ask.Prompt, fieldName string) {
+func (o *Options) AskUser(p *interaction.Prompt, fieldName string) {
 	switch fieldName {
 	case "Host":
 		if len(o.ApiHost) == 0 {
-			o.ApiHost, _ = p.Ask(&ask.Question{
+			o.ApiHost, _ = p.Ask(&interaction.Question{
 				Label:       "API host",
 				Description: "Please enter Keboola Storage API host, eg. \"connection.keboola.com\".",
-				Validator:   ask.ApiHostValidator,
+				Validator:   interaction.ApiHostValidator,
 			})
 		}
 	case "ApiToken":
 		if len(o.ApiToken) == 0 {
-			o.ApiToken, _ = p.Ask(&ask.Question{
+			o.ApiToken, _ = p.Ask(&interaction.Question{
 				Label:       "API token",
 				Description: "Please enter Keboola Storage API token. The value will be hidden.",
 				Hidden:      true,
-				Validator:   ask.ValueRequired,
+				Validator:   interaction.ValueRequired,
 			})
 		}
 	default:

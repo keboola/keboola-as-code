@@ -7,11 +7,10 @@ import (
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/state"
-	"time"
 )
 
-// diffResultsAction run callback on diff results, common for pull and push command
-type diffResultsAction struct {
+// diffProcessCmd run callback on diff results, common for pull, push ...
+type diffProcessCmd struct {
 	root      *rootCommand
 	cmd       *cobra.Command
 	action    func(api *remote.StorageApi, projectManifest *manifest.Manifest, projectState *state.State, diffResults *diff.Results) error
@@ -19,7 +18,7 @@ type diffResultsAction struct {
 	onError   func(api *remote.StorageApi, err error)
 }
 
-func (a *diffResultsAction) run() error {
+func (a *diffProcessCmd) run() error {
 	successful := false
 	logger := a.root.logger
 
@@ -60,6 +59,7 @@ func (a *diffResultsAction) run() error {
 				msg := "project local state is invalid"
 				if a.cmd.Flags().Lookup("force") != nil {
 					return fmt.Errorf(
+						// Print info about --force flag
 						"%s:%s\n\n%s",
 						msg,
 						projectState.LocalErrors(),
@@ -92,37 +92,4 @@ func (a *diffResultsAction) run() error {
 	successful = true
 	a.onSuccess(api)
 	return nil
-}
-
-func sendCmdSuccessfulEvent(root *rootCommand, api *remote.StorageApi, cmd, msg string) {
-	duration := time.Since(root.start)
-	params := map[string]interface{}{
-		"command": cmd,
-	}
-	results := map[string]interface{}{
-		"projectId": api.ProjectId(),
-	}
-	event, err := api.CreateEvent("info", msg, duration, params, results)
-	if err == nil {
-		root.logger.Debugf("Sent \"%s\" successful event id: \"%s\"", cmd, event.Id)
-	} else {
-		root.logger.Warnf("Cannot send \"%s\" successful event: %s", cmd, err)
-	}
-}
-
-func sendCmdFailedEvent(root *rootCommand, api *remote.StorageApi, err error, cmd, msg string) {
-	duration := time.Since(root.start)
-	params := map[string]interface{}{
-		"command": cmd,
-	}
-	results := map[string]interface{}{
-		"projectId": api.ProjectId(),
-		"error":     fmt.Sprintf("%s", err),
-	}
-	event, err := api.CreateEvent("error", msg, duration, params, results)
-	if err == nil {
-		root.logger.Debugf("Sent \"%s\" failed event id: \"%s\"", cmd, event.Id)
-	} else {
-		root.logger.Warnf("Cannot send \"%s\" failed event: %s", cmd, err)
-	}
 }

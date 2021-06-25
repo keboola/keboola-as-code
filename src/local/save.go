@@ -14,10 +14,10 @@ import (
 // SaveModel to manifest and disk
 func SaveModel(logger *zap.SugaredLogger, m *manifest.Manifest, record manifest.Record, source model.ValueWithKey) error {
 	errors := &utils.Error{}
-
-	// Get manifest record
-	m.SetRecord(record)
 	paths := record.GetPaths()
+
+	// Add record to manifest content
+	m.SetRecord(record)
 
 	// Mkdir
 	dir := filepath.Join(m.ProjectDir, paths.RelativePath())

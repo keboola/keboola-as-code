@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
+	"keboola-as-code/src/event"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/utils"
@@ -60,7 +61,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 			// Send failed event on error
 			defer func() {
 				if err != nil && !successful {
-					sendCmdFailedEvent(root, api, err, "init", "Init command failed.")
+					event.SendCmdFailedEvent(root.start, root.logger, api, err, "init", "Init command failed.")
 				}
 			}()
 
@@ -92,7 +93,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 
 			// Send successful event
 			successful = true
-			sendCmdSuccessfulEvent(root, api, "init", "Initialized local project directory.")
+			event.SendCmdSuccessfulEvent(root.start, root.logger, api, "init", "Initialized local project directory.")
 
 			// Done
 			root.logger.Info("Init done. Running pull.")

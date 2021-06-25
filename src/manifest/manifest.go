@@ -130,7 +130,7 @@ func LoadManifest(projectDir string, metadataDir string) (*Manifest, error) {
 	for _, branch := range m.Content.Branches {
 		branch.ResolveParentPath()
 		branchById[branch.Id] = branch
-		m.records.Set(branch.Key().String(), branch)
+		m.SetRecord(branch)
 	}
 	for _, configWithRows := range m.Content.Configs {
 		config := configWithRows.ConfigManifest
@@ -139,15 +139,18 @@ func LoadManifest(projectDir string, metadataDir string) (*Manifest, error) {
 			return nil, fmt.Errorf("branch \"%d\" not found in the manifest - referenced from the config \"%s:%s\" in \"%s\"", config.BranchId, config.ComponentId, config.Id, path)
 		}
 		config.ResolveParentPath(branch)
-		m.records.Set(config.Key().String(), config)
+		m.SetRecord(config)
 		for _, row := range configWithRows.Rows {
 			row.BranchId = config.BranchId
 			row.ComponentId = config.ComponentId
 			row.ConfigId = config.Id
 			row.ResolveParentPath(config)
-			m.records.Set(row.Key().String(), row)
+			m.SetRecord(row)
 		}
 	}
+
+	// Track if was manifest changed after load
+	m.changed = false
 
 	// Validate
 	if err := m.validate(); err != nil {

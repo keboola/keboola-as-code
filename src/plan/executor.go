@@ -75,7 +75,7 @@ func (e *Executor) Invoke(p *Plan) error {
 		e.errors.Add(err)
 	}
 
-	// Delete invalid objects (if pull --force used)
+	// Delete invalid objects (eg. if pull --force used, and work continued even an invalid state found)
 	records := e.manifest.GetRecords()
 	for _, key := range append([]string(nil), records.Keys()...) {
 		v, _ := records.Get(key)
@@ -207,7 +207,7 @@ func (e *Executor) saveConfig(config *state.ConfigState, result *diff.Result) {
 func (e *Executor) saveConfigRow(row *state.ConfigRowState, result *diff.Result) {
 	pool := e.getPoolFor(row.Level())
 	if row.Local.Id == "" {
-		// Create
+		// No ID -> not present in remote -> create
 		request, err := e.api.CreateConfigRowRequest(row.Local)
 		if err != nil {
 			e.errors.Add(err)
@@ -224,7 +224,7 @@ func (e *Executor) saveConfigRow(row *state.ConfigRowState, result *diff.Result)
 			}).
 			Send()
 	} else if row.Remote != nil {
-		// Update
+		// Local ID + present in remote -> update
 		request, err := e.api.UpdateConfigRowRequest(row.Local, result.ChangedFields)
 		if err != nil {
 			e.errors.Add(err)

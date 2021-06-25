@@ -12,7 +12,7 @@ import (
 func LoadModel(projectDir string, record manifest.Record, target interface{}) error {
 	errors := &utils.Error{}
 
-	// Load values from meta file
+	// Load values from the meta file
 	errPrefix := record.Kind().Name + " metadata"
 	if err := utils.ReadTaggedFields(projectDir, record.MetaFilePath(), model.MetaFileTag, errPrefix, target); err != nil {
 		errors.Add(err)
