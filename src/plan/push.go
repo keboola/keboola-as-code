@@ -17,7 +17,7 @@ func Push(diffResults *diff.Results) *Plan {
 		case diff.ResultOnlyInLocal:
 			plan.Add(result, ActionSaveRemote)
 		case diff.ResultOnlyInRemote:
-			if !isParentDeleted(result.ObjectState, plan.CurrentState) {
+			if parentExists(result.ObjectState, plan.CurrentState) {
 				plan.Add(result, ActionDeleteRemote)
 			}
 		case diff.ResultNotSet:
@@ -28,23 +28,21 @@ func Push(diffResults *diff.Results) *Plan {
 	return plan
 }
 
-func isParentDeleted(objectState state.ObjectState, currentState *state.State) bool {
+func parentExists(objectState state.ObjectState, currentState *state.State) bool {
 	switch v := objectState.(type) {
 	case *state.BranchState:
-		// nop
+		return true
 	case *state.ConfigState:
 		config := v.Remote
 		branch := currentState.GetBranch(*config.BranchKey(), false)
-		return branch.Local == nil
+		return branch.Local != nil
 	case *state.ConfigRowState:
 		row := v.Remote
 		config := currentState.GetConfig(*row.ConfigKey(), false)
 		branch := currentState.GetBranch(*config.BranchKey(), false)
-		return config.Local == nil || branch.Local == nil
+		return config.Local != nil && branch.Local != nil
 
 	default:
 		panic(fmt.Errorf(`unexpected type "%T"`, objectState))
 	}
-
-	return false
 }

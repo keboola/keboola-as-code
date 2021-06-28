@@ -1,8 +1,4 @@
-DEBUG	Version:    %s
-DEBUG	Git commit: %s
-DEBUG	Build date: %s
-DEBUG	Go version: %s
-DEBUG	Os/Arch:    %s
+%A
 DEBUG	Running command [%s pull --verbose --storage-api-host %s --storage-api-token %s]
 DEBUG	Parsed options: %s
 DEBUG	HTTP	GET https://%s/v2/storage/tokens/verify | 200 | %s
