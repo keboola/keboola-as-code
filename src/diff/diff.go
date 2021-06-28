@@ -37,7 +37,8 @@ type Result struct {
 }
 
 type Results struct {
-	Results []*Result
+	CurrentState *state.State
+	Results      []*Result
 }
 
 func NewDiffer(state *state.State) *Differ {
@@ -67,7 +68,7 @@ func (d *Differ) Diff() (*Results, error) {
 		err = fmt.Errorf("%s", d.error)
 	}
 
-	return &Results{d.results}, err
+	return &Results{CurrentState: d.state, Results: d.results}, err
 }
 
 func (d *Differ) doDiff(state state.ObjectState) (*Result, error) {

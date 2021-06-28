@@ -3,7 +3,7 @@ package cli
 import (
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
-	"keboola-as-code/src/ask"
+	"keboola-as-code/src/interaction"
 	"keboola-as-code/src/utils"
 	"os"
 	"path/filepath"

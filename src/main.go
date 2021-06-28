@@ -1,8 +1,8 @@
 package main
 
 import (
-	"keboola-as-code/src/ask"
 	"keboola-as-code/src/cli"
+	"keboola-as-code/src/interaction"
 	"os"
 )
 

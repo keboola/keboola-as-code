@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func SendCmdSuccessfulEvent(cmdStart time.Time, logger *zap.SugaredLogger,  api *remote.StorageApi, cmd, msg string) {
+func SendCmdSuccessfulEvent(cmdStart time.Time, logger *zap.SugaredLogger, api *remote.StorageApi, cmd, msg string) {
 	duration := time.Since(cmdStart)
 	params := map[string]interface{}{
 		"command": cmd,
@@ -39,4 +39,3 @@ func SendCmdFailedEvent(cmdStart time.Time, logger *zap.SugaredLogger, api *remo
 		logger.Warnf("Cannot send \"%s\" failed event: %s", cmd, err)
 	}
 }
-

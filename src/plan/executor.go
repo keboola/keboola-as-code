@@ -42,6 +42,13 @@ func NewExecutor(logger *zap.SugaredLogger, ctx context.Context, api *remote.Sto
 }
 
 func (e *Executor) Invoke(p *Plan) error {
+	// Validate
+	if err := p.Validate(); err != nil {
+		return fmt.Errorf("can not perform the \"%s\" operation:%s", p.Name, err.Error())
+	}
+	e.logger.Debugf("Execution plan is valid.")
+
+	// Invoke
 	e.errors = &utils.Error{}
 	e.workers, _ = errgroup.WithContext(e.ctx)
 
@@ -146,7 +153,7 @@ func (e *Executor) saveRemote(result *diff.Result) {
 func (e *Executor) saveBranch(branch *state.BranchState, result *diff.Result) {
 	pool := e.getPoolFor(branch.Level())
 	if branch.Local.Id == 0 {
-		// Create - sequentially, branches cannot be created in parallel
+		// Create sequentially, branches cannot be created in parallel
 		e.api.
 			CreateBranchRequest(branch.Local).
 			OnSuccess(func(response *client.Response) *client.Response {
@@ -240,5 +247,27 @@ func (e *Executor) saveConfigRow(row *state.ConfigRowState, result *diff.Result)
 }
 
 func (e *Executor) deleteRemote(result *diff.Result) {
-
+	switch v := result.ObjectState.(type) {
+	case *state.BranchState:
+		e.manifest.DeleteRecord(v)
+		// Delete sequentially, branches cannot be deleted in parallel
+		_, err := e.api.DeleteBranch(v.Id)
+		if err != nil {
+			e.errors.Add(err)
+		}
+	case *state.ConfigState:
+		e.manifest.DeleteRecord(v)
+		pool := e.getPoolFor(v.Level())
+		pool.
+			Request(e.api.DeleteConfigRequest(v.ComponentId, v.Id)).
+			Send()
+	case *state.ConfigRowState:
+		e.manifest.DeleteRecord(v)
+		pool := e.getPoolFor(v.Level())
+		pool.
+			Request(e.api.DeleteConfigRowRequest(v.ComponentId, v.ConfigId, v.Id)).
+			Send()
+	default:
+		panic(fmt.Errorf(`unexpected type "%T"`, result.State))
+	}
 }

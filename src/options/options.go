@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cast"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"keboola-as-code/src/ask"
+	"keboola-as-code/src/interaction"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/utils"
 	"os"

@@ -16,10 +16,12 @@ func (b *BranchState) UpdateManifest(m *manifest.Manifest) {
 		panic(fmt.Errorf("branch Local or Remote state must be set"))
 	}
 
-	if branch.IsDefault {
-		b.Path = "main"
-	} else {
-		b.Path = m.Naming.BranchPath(branch)
+	if b.Path == "" {
+		if branch.IsDefault {
+			b.Path = "main"
+		} else {
+			b.Path = m.Naming.BranchPath(branch)
+		}
 	}
 
 	b.ResolveParentPath()
@@ -43,7 +45,9 @@ func (c *ConfigState) UpdateManifest(m *manifest.Manifest) {
 	}
 
 	// Set paths
-	c.Path = m.Naming.ConfigPath(c.Component, config)
+	if c.Path == "" {
+		c.Path = m.Naming.ConfigPath(c.Component, config)
+	}
 	c.ResolveParentPath(branchManifest.(*manifest.BranchManifest))
 }
 
@@ -65,6 +69,8 @@ func (r *ConfigRowState) UpdateManifest(m *manifest.Manifest) {
 	}
 
 	// Set paths
-	r.Path = m.Naming.ConfigRowPath(row)
+	if r.Path == "" {
+		r.Path = m.Naming.ConfigRowPath(row)
+	}
 	r.ResolveParentPath(configManifest.(*manifest.ConfigManifest))
 }

@@ -168,6 +168,7 @@ func (m *Manifest) Save() error {
 	})
 
 	// Convert records map to slices
+	branchesMap := make(map[string]*BranchManifest)
 	configsMap := make(map[string]*ConfigManifestWithRows)
 	m.Content.Branches = make([]*BranchManifest, 0)
 	m.Content.Configs = make([]*ConfigManifestWithRows, 0)
@@ -180,19 +181,23 @@ func (m *Manifest) Save() error {
 			continue
 		}
 
+		// Generate content, we have to check if parent exists (eg. branch could have been deleted)
 		switch v := record.(type) {
 		case *BranchManifest:
 			m.Content.Branches = append(m.Content.Branches, v)
+			branchesMap[v.String()] = v
 		case *ConfigManifest:
-			config := &ConfigManifestWithRows{v, make([]*ConfigRowManifest, 0)}
-			configsMap[config.String()] = config
-			m.Content.Configs = append(m.Content.Configs, config)
+			_, found := branchesMap[v.BranchKey().String()]
+			if found {
+				config := &ConfigManifestWithRows{v, make([]*ConfigRowManifest, 0)}
+				configsMap[config.String()] = config
+				m.Content.Configs = append(m.Content.Configs, config)
+			}
 		case *ConfigRowManifest:
 			config, found := configsMap[v.ConfigKey().String()]
-			if !found {
-				panic(fmt.Errorf(`config with key "%s" not found"`, v.ConfigKey().String()))
+			if found {
+				config.Rows = append(config.Rows, v)
 			}
-			config.Rows = append(config.Rows, v)
 		default:
 			panic(fmt.Errorf(`unexpected type "%T"`, record))
 		}

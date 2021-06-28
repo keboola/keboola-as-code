@@ -41,7 +41,7 @@ func pushCommand(root *rootCommand) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			action := &diffProcessCmd{root: root, cmd: cmd}
 			action.onSuccess = func(api *remote.StorageApi) {
-				event.SendCmdSuccessfulEvent(root.start, root.logger, api,"push", "Push command done.")
+				event.SendCmdSuccessfulEvent(root.start, root.logger, api, "push", "Push command done.")
 				root.logger.Info("Push done.")
 			}
 			action.onError = func(api *remote.StorageApi, err error) {
