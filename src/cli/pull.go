@@ -27,15 +27,12 @@ func pullCommand(root *rootCommand) *cobra.Command {
 		Short: pullShortDescription,
 		Long:  pullLongDescription,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			// Ask for the host/token, if not specified -> to make the first step easier
+			// Ask for the host/token, if not specified
 			root.options.AskUser(root.prompt, "Host")
 			root.options.AskUser(root.prompt, "ApiToken")
-
-			// Validate options
 			if err := root.ValidateOptions([]string{"projectDirectory", "ApiHost", "ApiToken"}); err != nil {
 				return err
 			}
-
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
