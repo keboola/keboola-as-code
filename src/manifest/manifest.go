@@ -223,7 +223,7 @@ func (m *Manifest) Path() string {
 
 func (m *Manifest) validate() error {
 	if err := validator.Validate(m); err != nil {
-		return fmt.Errorf("manifest is not valid: %s", err)
+		return utils.WrapError("manifest is not valid", err)
 	}
 	return nil
 }

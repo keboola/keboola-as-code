@@ -1,12 +1,12 @@
 package cli
 
 import (
-	"fmt"
 	"github.com/spf13/cobra"
 	"keboola-as-code/src/diff"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/state"
+	"keboola-as-code/src/utils"
 )
 
 // diffProcessCmd run callback on diff results, common for pull, push ...
@@ -49,29 +49,18 @@ func (a *diffProcessCmd) run() error {
 		logger.Debugf("Project local and remote states have been successfully loaded.")
 	} else {
 		if projectState.RemoteErrors().Len() > 0 {
-			return fmt.Errorf("cannot load project remote state: %s", projectState.RemoteErrors())
+			return utils.WrapError("cannot load project remote state", projectState.RemoteErrors())
 		}
 		if projectState.LocalErrors().Len() > 0 {
 			force, _ := a.cmd.Flags().GetBool("force")
 			if force {
-				logger.Infof("Ignoring invalid local state:%s", projectState.LocalErrors())
+				logger.Info(utils.WrapError("Ignoring invalid local state", projectState.LocalErrors()))
 			} else {
-				msg := "project local state is invalid"
+				errors := utils.WrapError("project local state is invalid", projectState.LocalErrors())
 				if a.cmd.Flags().Lookup("force") != nil {
-					return fmt.Errorf(
-						// Print info about --force flag
-						"%s:%s\n\n%s",
-						msg,
-						projectState.LocalErrors(),
-						"Use --force to override the invalid local state.",
-					)
-				} else {
-					return fmt.Errorf(
-						"%s:%s",
-						msg,
-						projectState.LocalErrors(),
-					)
+					errors.AddRaw("\nUse --force to override the invalid local state.")
 				}
+				return errors
 			}
 		}
 	}

@@ -1,0 +1,8 @@
+WARN	Error: configurations are not valid:
+WARN	- config "foo/extractor/keboola.ex-azure-cost-management-sp/with-schema/config.json" doesn't match schema:
+WARN		- subscriptionId is required
+WARN	- config row "foo/extractor/keboola.ex-azure-cost-management-sp/with-schema/rows/row-1/config.json" doesn't match schema:
+WARN		- export: aggregation is required
+WARN		- export.groupingDimensions: Invalid type. Expected: array, given: string
+WARN	- config row "foo/extractor/keboola.ex-azure-cost-management-sp/with-schema/rows/row-2/config.json" doesn't match schema:
+WARN		- export.type: export.type must be one of the following: "ActualCost", "AmortizedCost", "Usage"

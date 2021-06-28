@@ -7,6 +7,7 @@ import (
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/plan"
 	"keboola-as-code/src/remote"
+	"keboola-as-code/src/schema"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
 )
@@ -47,6 +48,13 @@ func pushCommand(root *rootCommand) *cobra.Command {
 			action.action = func(api *remote.StorageApi, projectManifest *manifest.Manifest, projectState *state.State, diffResults *diff.Results) error {
 				// Log untracked paths
 				projectState.LogUntrackedPaths(root.logger)
+
+				// Validate schemas
+				if err := schema.ValidateSchemas(projectState); err != nil {
+					return utils.WrapError("configurations are not valid", err)
+				} else {
+					root.logger.Debug("Validation done.")
+				}
 
 				// Get plan
 				push := plan.Push(diffResults)

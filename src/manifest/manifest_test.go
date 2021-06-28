@@ -97,7 +97,7 @@ func TestManifestValidateEmpty(t *testing.T) {
 	m := &Manifest{ProjectDir: "foo", MetadataDir: "bar", Content: &Content{}}
 	err := m.validate()
 	assert.NotNil(t, err)
-	expected := `manifest is not valid: 
+	expected := `manifest is not valid:
 - key="version", value="0", failed "required" validation
 - key="project", value="<nil>", failed "required" validation
 - key="sortBy", value="", failed "oneof" validation
@@ -125,7 +125,7 @@ func TestManifestValidateBadVersion(t *testing.T) {
 	m.Version = 123
 	err := m.validate()
 	assert.NotNil(t, err)
-	expected := `manifest is not valid: key="version", value="123", failed "max" validation`
+	expected := "manifest is not valid:\n- key=\"version\", value=\"123\", failed \"max\" validation"
 	assert.Equal(t, expected, err.Error())
 }
 
@@ -141,7 +141,7 @@ func TestManifestValidateNestedField(t *testing.T) {
 	})
 	err := m.validate()
 	assert.NotNil(t, err)
-	expected := `manifest is not valid: key="branches[0].id", value="0", failed "required" validation`
+	expected := "manifest is not valid:\n- key=\"branches[0].id\", value=\"0\", failed \"required\" validation"
 	assert.Equal(t, expected, err.Error())
 }
 

@@ -7,6 +7,7 @@ import (
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/options"
+	"keboola-as-code/src/utils"
 	"time"
 )
 
@@ -32,7 +33,7 @@ func NewStorageApiFromOptions(options *options.Options, ctx context.Context, log
 		if v, ok := err.(client.ErrorWithResponse); ok && v.IsUnauthorized() {
 			return nil, fmt.Errorf("the specified storage API token is not valid")
 		} else {
-			return nil, fmt.Errorf("token verification failed: %s", err)
+			return nil, utils.WrapError("token verification failed", err)
 		}
 	}
 	if !token.IsMaster {

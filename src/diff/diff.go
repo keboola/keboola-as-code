@@ -118,7 +118,7 @@ func (d *Differ) doDiff(state state.ObjectState) (*Result, error) {
 	configTransform := cmp.Transformer("orderedmap", func(m *orderedmap.OrderedMap) string {
 		str, err := json.EncodeString(m, true)
 		if err != nil {
-			panic(fmt.Errorf("cannot encode JSON: %s", err))
+			panic(utils.WrapError("cannot encode JSON", err))
 		}
 		return str
 	})

@@ -3,7 +3,6 @@ package model
 import (
 	"fmt"
 	"github.com/iancoleman/orderedmap"
-	"github.com/xeipuuv/gojsonschema"
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/utils"
 	"sort"
@@ -203,7 +202,7 @@ func (k ConfigRowKey) ConfigKey() *ConfigKey {
 func (r *ConfigRow) ToApiValues() (map[string]string, error) {
 	configJson, err := json.Encode(r.Content, false)
 	if err != nil {
-		return nil, fmt.Errorf(`cannot JSON encode config configuration: %s`, err)
+		return nil, utils.WrapError(`cannot JSON encode config configuration`, err)
 	}
 
 	return map[string]string{
@@ -218,7 +217,7 @@ func (r *ConfigRow) ToApiValues() (map[string]string, error) {
 func (c *Config) ToApiValues() (map[string]string, error) {
 	configJson, err := json.Encode(c.Content, false)
 	if err != nil {
-		return nil, fmt.Errorf(`cannot JSON encode config configuration: %s`, err)
+		return nil, utils.WrapError(`cannot JSON encode config configuration`, err)
 	}
 
 	return map[string]string{
@@ -227,57 +226,4 @@ func (c *Config) ToApiValues() (map[string]string, error) {
 		"changeDescription": c.ChangeDescription,
 		"configuration":     string(configJson),
 	}, nil
-}
-
-func (c *Component) ValidateConfig(config *Config) error {
-	return validateJsonSchema(c.Schema, config.Content)
-}
-
-func (c *Component) ValidateConfigRow(configRow *ConfigRow) error {
-	return validateJsonSchema(c.SchemaRow, configRow.Content)
-}
-
-func validateJsonSchema(schema map[string]interface{}, content *orderedmap.OrderedMap) error {
-	// Get parameters key
-	var parametersMap *orderedmap.OrderedMap
-	parameters, found := content.Get("parameters")
-	if found {
-		if v, ok := parameters.(orderedmap.OrderedMap); ok {
-			parametersMap = &v
-		} else {
-			parametersMap = utils.NewOrderedMap()
-		}
-	} else {
-		parametersMap = utils.NewOrderedMap()
-	}
-
-	// Load
-	schemaJson, err := json.EncodeString(schema, true)
-	if err != nil {
-		return fmt.Errorf("cannot encode component schema JSON: %s", err)
-	}
-
-	documentJson, err := json.EncodeString(parametersMap, true)
-	if err != nil {
-		return fmt.Errorf("cannot encode JSON: %s", err)
-	}
-
-	schemaLoader := gojsonschema.NewStringLoader(schemaJson)
-	documentLoader := gojsonschema.NewStringLoader(documentJson)
-
-	// Validate
-	result, err := gojsonschema.Validate(schemaLoader, documentLoader)
-	if err != nil {
-		return fmt.Errorf("schame validation error: %s", err)
-	}
-
-	if !result.Valid() {
-		errors := &utils.Error{}
-		for _, desc := range result.Errors() {
-			errors.Add(fmt.Errorf("%s", desc.String()))
-		}
-		return errors
-	}
-
-	return nil
 }

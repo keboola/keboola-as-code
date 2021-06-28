@@ -2,32 +2,51 @@ package utils
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 )
 
 type Error struct {
-	errors []error
+	prefix string
+	errors []string
 }
 
-func WrapError(err error) *Error {
-	return &Error{errors: []error{err}}
+func WrapError(prefix string, err error) *Error {
+	e := &Error{}
+	e.SetPrefix(prefix + ":")
+	e.Add(err)
+	return e
 }
 
 func (e *Error) Len() int {
 	return len(e.errors)
 }
 
+func (e *Error) SetPrefix(prefix string) {
+	e.prefix = prefix
+}
+
 func (e *Error) Add(err error) {
 	if v, ok := err.(*Error); ok {
-		if v != nil {
-			e.errors = append(e.errors, v.Errors()...)
+		for _, item := range v.Errors() {
+			e.doAdd(item)
 		}
 	} else {
-		e.errors = append(e.errors, err)
+		e.doAdd(err.Error())
 	}
 }
 
-func (e *Error) Errors() []error {
+func (e *Error) AddRaw(err string) {
+	e.errors = append(e.errors, err)
+}
+
+func (e *Error) AddSubError(prefix string, err error) {
+	// Prefix each line with "-"
+	str := regexp.MustCompile(`((^|\n)\s*-*)`).ReplaceAllString(err.Error(), "${2}\t-")
+	e.doAdd(fmt.Sprintf("%s:\n%s", prefix, str))
+}
+
+func (e *Error) Errors() []string {
 	return e.errors
 }
 
@@ -36,16 +55,16 @@ func (e *Error) Error() string {
 		return ""
 	}
 
-	if len(e.errors) == 0 {
-		return ""
-	} else if len(e.errors) == 1 {
-		return e.errors[0].Error()
+	msg := strings.Join(e.errors, "\n")
+	if e.prefix != "" {
+		return e.prefix + "\n" + msg
 	}
 
-	var msg []string
-	for _, err := range e.errors {
-		msg = append(msg, fmt.Sprintf("- %s", err))
-	}
+	return msg
+}
 
-	return "\n" + strings.Join(msg, "\n")
+func (e *Error) doAdd(err string) {
+	err = strings.TrimLeft(err, "- ")
+	err = fmt.Sprintf("- %s", err)
+	e.errors = append(e.errors, err)
 }

@@ -236,7 +236,7 @@ func getWorkingDirectory(parser *viper.Viper) (string, error) {
 
 	dir, err := os.Getwd()
 	if err != nil {
-		return "", fmt.Errorf("cannot get current working directory: %s", err)
+		return "", utils.WrapError("cannot get current working directory", err)
 	}
 	return dir, nil
 }

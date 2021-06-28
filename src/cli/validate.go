@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"keboola-as-code/src/manifest"
+	"keboola-as-code/src/schema"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
 )
@@ -59,21 +60,10 @@ func validateCommand(root *rootCommand) *cobra.Command {
 			}
 
 			// Validate schemas
-			errors := &utils.Error{}
-			for _, config := range projectState.Configs() {
-				component := projectState.GetComponent(*config.ComponentKey())
-				if err := component.ValidateConfig(config.Local); err != nil {
-					errors.Add(fmt.Errorf("config \"%s\" doesn't match schema: %s", config.ConfigFilePath(), err))
-				}
-			}
-			for _, row := range projectState.ConfigRows() {
-				component := projectState.GetComponent(*row.ComponentKey())
-				if err := component.ValidateConfigRow(row.Local); err != nil {
-					errors.Add(fmt.Errorf("config row \"%s\" doesn't match schema: %s", row.ConfigFilePath(), err))
-				}
-			}
-			if errors.Len() > 0 {
-				return errors
+			if err := schema.ValidateSchemas(projectState); err != nil {
+				return utils.WrapError("configurations are not valid", err)
+			} else {
+				logger.Debug("Validation done.")
 			}
 
 			logger.Info("Everything is good.")
