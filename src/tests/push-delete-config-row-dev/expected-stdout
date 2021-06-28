@@ -1,0 +1,3 @@
+Plan for "push" operation:
+×  R foo/extractor/keboola.ex-db-mysql/with-rows/rows/test-view
+×  R foo/extractor/keboola.ex-db-mysql/with-rows/rows/users
