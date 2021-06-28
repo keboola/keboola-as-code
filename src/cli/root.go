@@ -92,6 +92,7 @@ func NewRootCommand(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteC
 	// Sub-commands
 	root.cmd.AddCommand(
 		initCommand(root),
+		validateCommand(root),
 		pullCommand(root),
 		pushCommand(root),
 	)

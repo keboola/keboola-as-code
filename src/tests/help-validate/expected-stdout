@@ -1,0 +1,16 @@
+Command "validate"
+
+Validate existence and contents of all files in the local project dir.
+For components with a JSON schema, the content must match the schema.
+
+Usage:
+  %s validate [flags]
+
+Global Flags:
+  -h, --help                       print help for command
+  -l, --log-file string            path to a log file for details
+  -H, --storage-api-host string    storage API host, eg. "connection.keboola.com"
+  -t, --storage-api-token string   storage API token from your project
+  -v, --verbose                    print details
+      --verbose-api                log each API request and response
+  -d, --working-dir string         use other working directory

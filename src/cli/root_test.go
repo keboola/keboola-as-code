@@ -29,6 +29,7 @@ func TestRootSubCommands(t *testing.T) {
 		"init",
 		"pull",
 		"push",
+		"validate",
 	}, names)
 }
 
