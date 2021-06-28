@@ -3,7 +3,9 @@ package model
 import (
 	"fmt"
 	"github.com/iancoleman/orderedmap"
+	"github.com/xeipuuv/gojsonschema"
 	"keboola-as-code/src/json"
+	"keboola-as-code/src/utils"
 	"sort"
 	"strconv"
 )
@@ -182,8 +184,16 @@ func (k ConfigRowKey) String() string {
 	return fmt.Sprintf("%02d_%d_%s_%s_%s_config_row", k.Level(), k.BranchId, k.ComponentId, k.ConfigId, k.Id)
 }
 
+func (k ConfigKey) ComponentKey() *ComponentKey {
+	return &ComponentKey{Id: k.ComponentId}
+}
+
 func (k ConfigKey) BranchKey() *BranchKey {
 	return &BranchKey{Id: k.BranchId}
+}
+
+func (k ConfigRowKey) ComponentKey() *ComponentKey {
+	return &ComponentKey{Id: k.ComponentId}
 }
 
 func (k ConfigRowKey) ConfigKey() *ConfigKey {
@@ -217,4 +227,57 @@ func (c *Config) ToApiValues() (map[string]string, error) {
 		"changeDescription": c.ChangeDescription,
 		"configuration":     string(configJson),
 	}, nil
+}
+
+func (c *Component) ValidateConfig(config *Config) error {
+	return validateJsonSchema(c.Schema, config.Content)
+}
+
+func (c *Component) ValidateConfigRow(configRow *ConfigRow) error {
+	return validateJsonSchema(c.SchemaRow, configRow.Content)
+}
+
+func validateJsonSchema(schema map[string]interface{}, content *orderedmap.OrderedMap) error {
+	// Get parameters key
+	var parametersMap *orderedmap.OrderedMap
+	parameters, found := content.Get("parameters")
+	if found {
+		if v, ok := parameters.(orderedmap.OrderedMap); ok {
+			parametersMap = &v
+		} else {
+			parametersMap = utils.NewOrderedMap()
+		}
+	} else {
+		parametersMap = utils.NewOrderedMap()
+	}
+
+	// Load
+	schemaJson, err := json.EncodeString(schema, true)
+	if err != nil {
+		return fmt.Errorf("cannot encode component schema JSON: %s", err)
+	}
+
+	documentJson, err := json.EncodeString(parametersMap, true)
+	if err != nil {
+		return fmt.Errorf("cannot encode JSON: %s", err)
+	}
+
+	schemaLoader := gojsonschema.NewStringLoader(schemaJson)
+	documentLoader := gojsonschema.NewStringLoader(documentJson)
+
+	// Validate
+	result, err := gojsonschema.Validate(schemaLoader, documentLoader)
+	if err != nil {
+		return fmt.Errorf("schame validation error: %s", err)
+	}
+
+	if !result.Valid() {
+		errors := &utils.Error{}
+		for _, desc := range result.Errors() {
+			errors.Add(fmt.Errorf("%s", desc.String()))
+		}
+		return errors
+	}
+
+	return nil
 }

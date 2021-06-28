@@ -74,11 +74,13 @@ func (s *stateValidator) validate(kind string, v interface{}) {
 }
 
 // LoadState - remote and local
-func LoadState(m *manifest.Manifest, logger *zap.SugaredLogger, ctx context.Context, api *remote.StorageApi) (*State, bool) {
+func LoadState(m *manifest.Manifest, logger *zap.SugaredLogger, ctx context.Context, api *remote.StorageApi, remote bool) (*State, bool) {
 	state := NewState(m.ProjectDir, m)
 
-	logger.Debugf("Loading project remote state.")
-	LoadRemoteState(state, ctx, api)
+	if remote {
+		logger.Debugf("Loading project remote state.")
+		LoadRemoteState(state, ctx, api)
+	}
 
 	logger.Debugf("Loading local state.")
 	LoadLocalState(state, m.ProjectDir, m.Content, api)

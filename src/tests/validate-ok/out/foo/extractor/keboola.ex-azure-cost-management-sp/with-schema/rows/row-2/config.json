@@ -1,0 +1,18 @@
+{
+  "parameters": {
+    "export": {
+      "aggregation": "Cost",
+      "destination": "table-2",
+      "granularity": "Daily",
+      "groupingDimensions": [
+        "ServiceName",
+        "ResourceGroupName"
+      ],
+      "incremental": false,
+      "timeDimension": {
+        "timeFrame": "TheLastBillingMonth"
+      },
+      "type": "ActualCost"
+    }
+  }
+}
