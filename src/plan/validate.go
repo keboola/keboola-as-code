@@ -27,7 +27,7 @@ func (a *Action) validate(currentState *state.State) error {
 		if a.Type == ActionDeleteRemote {
 			branch := branchState.Remote
 			if branch.IsDefault {
-				return fmt.Errorf("%s → default branch can never be deleted", a.String())
+				return fmt.Errorf("invalid action \"%s\", default branch can never be deleted", a.StringVerbose())
 			}
 		}
 	}
@@ -39,7 +39,7 @@ func (a *Action) validate(currentState *state.State) error {
 			config := configState.Remote
 			branch := currentState.GetBranch(*config.BranchKey(), false).Remote
 			if !branch.IsDefault {
-				return fmt.Errorf("%s → cannot delete config from dev branch", a.String())
+				return fmt.Errorf("invalid action \"%s\", cannot delete config from dev branch", a.StringVerbose())
 			}
 		}
 	}
@@ -52,7 +52,7 @@ func (a *Action) validate(currentState *state.State) error {
 			config := currentState.GetConfig(*row.ConfigKey(), false).Remote
 			branch := currentState.GetBranch(*config.BranchKey(), false).Remote
 			if !branch.IsDefault {
-				return fmt.Errorf("%s → cannot delete config row from dev branch", a.String())
+				return fmt.Errorf("invalid action \"%s\", cannot delete config row from dev branch", a.StringVerbose())
 			}
 		}
 	}

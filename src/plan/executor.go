@@ -44,7 +44,7 @@ func NewExecutor(logger *zap.SugaredLogger, ctx context.Context, api *remote.Sto
 func (e *Executor) Invoke(p *Plan) error {
 	// Validate
 	if err := p.Validate(); err != nil {
-		return fmt.Errorf("can not perform the \"%s\" operation:%s", p.Name, err.Error())
+		return fmt.Errorf("cannot perform the \"%s\" operation:%s", p.Name, err.Error())
 	}
 	e.logger.Debugf("Execution plan is valid.")
 

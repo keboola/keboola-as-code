@@ -6,15 +6,6 @@
         "name": "Main",
         "isDefault": true
       }
-    },
-    {
-      "branch": {
-        "name": "Dev",
-        "isDefault": false
-      },
-      "configs": [
-        "with-rows"
-      ]
     }
   ]
 }
