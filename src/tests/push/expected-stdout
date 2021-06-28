@@ -1,0 +1,16 @@
+%A
+DEBUG	Running command [%s push --verbose --storage-api-host %s --storage-api-token %s]
+DEBUG	Parsed options: %s
+DEBUG	HTTP	GET https://%s/v2/storage/tokens/verify | 200 | %s
+DEBUG	Storage API token is valid.
+DEBUG	Project id: "%%TEST_PROJECT_ID%%", project name: "%%TEST_PROJECT_NAME%%".
+%A
+DEBUG	Project local and remote states have been successfully loaded.
+INFO	Plan for "push" operation:
+INFO	CH B bar | changed: description
+INFO	CH C bar/extractor/ex-generic-v2/empty | changed: name
+INFO	×  C main/extractor/ex-generic-v2/empty
+DEBUG	Execution plan is valid.
+%A
+DEBUG	Sent "push" successful event id: "%s"
+INFO	Push done.

@@ -2,11 +2,16 @@ package tests
 
 import (
 	"bytes"
+	"context"
 	"github.com/google/shlex"
 	"github.com/otiai10/copy"
 	"github.com/stretchr/testify/assert"
 	"io/fs"
+	"keboola-as-code/src/fixtures"
+	"keboola-as-code/src/json"
+	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/remote"
+	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
 	"os"
 	"os/exec"
@@ -56,11 +61,14 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	if err != nil {
 		t.Fatalf("Copy error: %s", err)
 	}
+
+	// Get API
+	api, _ := remote.TestStorageApiWithToken(t)
+
 	// Setup KBC project state
-	projectStateFilePath := filepath.Join(testDir, "project-state.json")
+	projectStateFilePath := filepath.Join(testDir, "initial-state.json")
 	if utils.IsFile(projectStateFilePath) {
-		remote.SetStateOfTestProject(t, projectStateFilePath)
-		remote.SetStateOfTestProject(t, projectStateFilePath)
+		remote.SetStateOfTestProject(t, api, projectStateFilePath)
 	}
 
 	// Replace all %%ENV_VAR%% in all files in the working directory
@@ -92,7 +100,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	}
 
 	// Assert
-	AssertExpectations(t, testDir, workingDir, exitCode, strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()))
+	AssertExpectations(t, api, testDir, workingDir, exitCode, strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()))
 }
 
 // CompileBinary compiles component to binary used in this test
@@ -154,6 +162,7 @@ func GetTestDirs(t *testing.T, root string) []string {
 // AssertExpectations compares expectations with the actual state.
 func AssertExpectations(
 	t *testing.T,
+	api *remote.StorageApi,
 	testDir string,
 	workingDir string,
 	exitCode int,
@@ -194,4 +203,32 @@ func AssertExpectations(
 
 	// Compare actual and expected dirs
 	utils.AssertDirectoryContentsSame(t, expectedDir, workingDir)
+
+	// Check project state
+	expectedStatePath := filepath.Join(testDir, "expected-state.json")
+	if utils.IsFile(expectedStatePath) {
+		expectedSnapshot := &fixtures.ProjectSnapshot{}
+		err = json.ReadFile(testDir, "expected-state.json", expectedSnapshot, "expected project state")
+		if err != nil {
+			assert.FailNow(t, err.Error())
+		}
+		m, err := manifest.NewManifest(1, "connection.keboola.com", "foo", "bar")
+		if err != nil {
+			assert.FailNow(t, err.Error())
+		}
+		actualState := state.NewState(workingDir, m)
+		state.LoadRemoteState(actualState, context.Background(), api)
+		actualSnapshot, err := state.NewProjectSnapshot(actualState)
+		if err != nil {
+			assert.FailNow(t, err.Error())
+		}
+		err = json.WriteFile(workingDir, "actual-state.json", actualSnapshot, "test project state")
+		if err != nil {
+			assert.FailNow(t, err.Error())
+		}
+
+		// Compare expected and actual state
+		assert.Equal(t, expectedSnapshot, actualSnapshot)
+	}
+
 }

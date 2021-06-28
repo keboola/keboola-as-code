@@ -28,14 +28,14 @@ type testProject struct {
 	envs          []string
 }
 
-func SetStateOfTestProject(t *testing.T, projectStateFile string) {
-	p := newTestProject(t, projectStateFile)
+func SetStateOfTestProject(t *testing.T, api *StorageApi, projectStateFile string) {
+	p := newTestProject(t, api, projectStateFile)
 	p.Clear()
 	p.InitState()
 }
 
 // newTestProject creates testProject and loads state from the stateFilePath
-func newTestProject(t *testing.T, stateFilePath string) *testProject {
+func newTestProject(t *testing.T, api *StorageApi, stateFilePath string) *testProject {
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filepath.Dir(testFile)
 	if !filepath.IsAbs(stateFilePath) {
@@ -48,20 +48,19 @@ func newTestProject(t *testing.T, stateFilePath string) *testProject {
 		assert.FailNow(t, err.Error())
 	}
 
-	// Create API
-	a, _ := TestStorageApiWithToken(t)
-	if utils.TestProjectId() != a.ProjectId() {
+	// Create project ID
+	if utils.TestProjectId() != api.ProjectId() {
 		assert.FailNow(t, "TEST_PROJECT_ID and token project id are different.")
 	}
 
 	// Load default branch
-	defaultBranch, err := a.GetDefaultBranch()
+	defaultBranch, err := api.GetDefaultBranch()
 	if err != nil {
 		assert.FailNow(t, "cannot get default branch")
 	}
 
 	// Create
-	p := &testProject{t, &sync.Mutex{}, testDir, stateFile, a, defaultBranch, nil}
+	p := &testProject{t, &sync.Mutex{}, testDir, stateFile, api, defaultBranch, nil}
 	p.log("Initializing test project \"%s\", id: \"%d\".", p.api.ProjectName(), p.api.ProjectId())
 	return p
 }

@@ -7,7 +7,7 @@ type Pair struct {
 	Value interface{}
 }
 
-func EmptyOrderedMap() *orderedmap.OrderedMap {
+func NewOrderedMap() *orderedmap.OrderedMap {
 	ordered := orderedmap.New()
 	ordered.SetEscapeHTML(false)
 	return ordered

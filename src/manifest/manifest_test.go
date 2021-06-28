@@ -74,12 +74,12 @@ func TestManifestSave(t *testing.T) {
 		m := newManifest(c.data.Version, c.data.Project.ApiHost, projectDir, metadataDir)
 		m.Project.Id = c.data.Project.Id
 		for _, branch := range c.data.Branches {
-			m.AddRecord(branch)
+			m.SetRecord(branch)
 		}
 		for _, config := range c.data.Configs {
-			m.AddRecord(config.ConfigManifest)
+			m.SetRecord(config.ConfigManifest)
 			for _, row := range config.Rows {
-				m.AddRecord(row)
+				m.SetRecord(row)
 			}
 		}
 
@@ -126,6 +126,22 @@ func TestManifestValidateBadVersion(t *testing.T) {
 	err := m.validate()
 	assert.NotNil(t, err)
 	expected := `manifest is not valid: key="version", value="123", failed "max" validation`
+	assert.Equal(t, expected, err.Error())
+}
+
+func TestManifestValidateNestedField(t *testing.T) {
+	m := newManifest(1, "connection.keboola.com", "foo", "bar")
+	m.Content = minimalStruct()
+	m.Content.Branches = append(m.Content.Branches, &BranchManifest{
+		BranchKey: model.BranchKey{Id: 0},
+		Paths: Paths{
+			Path:       "foo",
+			ParentPath: "bar",
+		},
+	})
+	err := m.validate()
+	assert.NotNil(t, err)
+	expected := `manifest is not valid: key="branches[0].id", value="0", failed "required" validation`
 	assert.Equal(t, expected, err.Error())
 }
 

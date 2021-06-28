@@ -5,7 +5,7 @@ import (
 	"github.com/Netflix/go-expect"
 	"github.com/stretchr/testify/assert"
 	"io"
-	"keboola-as-code/src/ask"
+	"keboola-as-code/src/interaction"
 	"keboola-as-code/src/utils"
 	"os"
 	"sync"
@@ -18,7 +18,7 @@ func TestMissingParams(t *testing.T) {
 	assert.NoError(t, os.Chdir(tempDir))
 	in := utils.NewBufferReader()
 	out := utils.NewBufferWriter()
-	root := NewRootCommand(in, out, out, ask.NewPrompt(in, out, out))
+	root := NewRootCommand(in, out, out, interaction.NewPrompt(in, out, out))
 	root.cmd.SetArgs([]string{"init"})
 	err := root.cmd.Execute()
 
@@ -44,7 +44,7 @@ func TestInteractive(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Init prompt and cmd
-	prompt := ask.NewPrompt(c.Tty(), c.Tty(), c.Tty())
+	prompt := interaction.NewPrompt(c.Tty(), c.Tty(), c.Tty())
 	prompt.Interactive = true
 	root := NewRootCommand(c.Tty(), c.Tty(), c.Tty(), prompt)
 	root.cmd.SetArgs([]string{"init"})

@@ -27,10 +27,9 @@ func TestLocalDeleteModel(t *testing.T) {
   "foo": "bar"
 }
 `
-	target := &ModelStruct{}
 	record := &MockedRecord{}
-	m.AddRecord(record)
-	_, found := m.GetRecord(record.UniqueKey(""))
+	m.SetRecord(record)
+	_, found := m.GetRecord(record.Key())
 	assert.True(t, found)
 
 	// Save files
@@ -40,10 +39,10 @@ func TestLocalDeleteModel(t *testing.T) {
 	assert.NoError(t, os.MkdirAll(dirAbs, 0750))
 	assert.NoError(t, os.WriteFile(metaFileAbs, []byte(metaFile), 0640))
 	assert.NoError(t, os.WriteFile(configFileAbs, []byte(configFile), 0640))
-	assert.NoError(t, DeleteModel(logger, m, record, target))
+	assert.NoError(t, DeleteModel(logger, m, record))
 
 	// Assert
-	_, found = m.GetRecord(record.UniqueKey(""))
+	_, found = m.GetRecord(record.Key())
 	assert.False(t, found)
 	assert.NoFileExists(t, metaFileAbs)
 	assert.NoFileExists(t, configFileAbs)

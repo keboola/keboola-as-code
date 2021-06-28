@@ -1,0 +1,20 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Foo New Name",
+        "description": "Description changed",
+        "isDefault": false
+      },
+      "configs": []
+    },
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true
+      },
+      "configs": []
+    }
+  ]
+}

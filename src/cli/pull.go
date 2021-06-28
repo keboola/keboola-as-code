@@ -3,6 +3,7 @@ package cli
 import (
 	"github.com/spf13/cobra"
 	"keboola-as-code/src/diff"
+	"keboola-as-code/src/event"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/plan"
 	"keboola-as-code/src/remote"
@@ -38,15 +39,13 @@ func pullCommand(root *rootCommand) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			action := &diffResultsAction{}
-			action.root = root
-			action.cmd = cmd
+			action := &diffProcessCmd{root: root, cmd: cmd}
 			action.onSuccess = func(api *remote.StorageApi) {
-				sendCmdSuccessfulEvent(root, api, "pull", "Pull command done.")
+				event.SendCmdSuccessfulEvent(root.start, root.logger, api, "pull", "Pull command done.")
 				root.logger.Info("Pull done.")
 			}
 			action.onError = func(api *remote.StorageApi, err error) {
-				sendCmdFailedEvent(root, api, err, "pull", "Pull command failed.")
+				event.SendCmdFailedEvent(root.start, root.logger, api, err, "pull", "Pull command failed.")
 			}
 			action.action = func(api *remote.StorageApi, projectManifest *manifest.Manifest, projectState *state.State, diffResults *diff.Results) error {
 				// Log untracked paths
@@ -64,7 +63,8 @@ func pullCommand(root *rootCommand) *cobra.Command {
 				}
 
 				// Invoke
-				if err := pull.Invoke(root.logger, root.ctx, root.api, projectManifest); err != nil {
+				executor := plan.NewExecutor(root.logger, root.ctx, root.api, projectManifest)
+				if err := executor.Invoke(pull); err != nil {
 					return err
 				}
 

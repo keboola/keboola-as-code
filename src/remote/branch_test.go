@@ -10,8 +10,8 @@ import (
 )
 
 func TestBranchApiCalls(t *testing.T) {
-	SetStateOfTestProject(t, "empty.json")
-	a, _ := TestStorageApiWithToken(t)
+	api, _ := TestStorageApiWithToken(t)
+	SetStateOfTestProject(t, api, "empty.json")
 
 	var job1 *model.Job
 	var job2 *model.Job
@@ -19,7 +19,7 @@ func TestBranchApiCalls(t *testing.T) {
 	var err error
 
 	// Get default branch
-	defaultBranch, err := a.GetDefaultBranch()
+	defaultBranch, err := api.GetDefaultBranch()
 	assert.NoError(t, err)
 	assert.NotNil(t, defaultBranch)
 	assert.Equal(t, "Main", defaultBranch.Name)
@@ -27,7 +27,7 @@ func TestBranchApiCalls(t *testing.T) {
 
 	// Default branch cannot be created
 	assert.PanicsWithError(t, "default branch cannot be created", func() {
-		a.CreateBranch(&model.Branch{
+		api.CreateBranch(&model.Branch{
 			Name:        "Foo",
 			Description: "Foo branch",
 			IsDefault:   true,
@@ -40,7 +40,7 @@ func TestBranchApiCalls(t *testing.T) {
 		Description: "Foo branch",
 		IsDefault:   false,
 	}
-	job2, err = a.CreateBranch(branchFoo)
+	job2, err = api.CreateBranch(branchFoo)
 	assert.NoError(t, err)
 	assert.NotNil(t, job2)
 	assert.Equal(t, "success", job2.Status)
@@ -53,7 +53,7 @@ func TestBranchApiCalls(t *testing.T) {
 		IsDefault:   false,
 	}
 	onSuccessCalled := false
-	request := a.CreateBranchRequest(branchBar).
+	request := api.CreateBranchRequest(branchBar).
 		OnSuccess(func(response *client.Response) *client.Response {
 			// OnSuccess callback called when job is in successful state
 			job := response.Result().(*model.Job)
@@ -76,7 +76,7 @@ func TestBranchApiCalls(t *testing.T) {
 		Description: "Bar branch",
 		IsDefault:   false,
 	}
-	job1, err = a.CreateBranch(branchBarDuplicate)
+	job1, err = api.CreateBranch(branchBarDuplicate)
 	assert.Nil(t, job1)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "There already is a branch with name \"Bar\"")
@@ -84,23 +84,23 @@ func TestBranchApiCalls(t *testing.T) {
 	// Update branch
 	branchFoo.Name = "Foo modified"
 	branchFoo.Description = "Foo description modified"
-	_, err = a.UpdateBranch(branchFoo, []string{"name", "description"})
+	_, err = api.UpdateBranch(branchFoo, []string{"name", "description"})
 	assert.NoError(t, err)
 
 	// Update main branch description
 	defaultBranch.Description = "Default branch"
-	_, err = a.UpdateBranch(defaultBranch, []string{"description"})
+	_, err = api.UpdateBranch(defaultBranch, []string{"description"})
 	assert.NoError(t, err)
 
 	// Cannot update default branch name
 	defaultBranch.Name = "Not Allowed"
 	assert.PanicsWithError(t, `key "name" cannot be updated`, func() {
-		a.UpdateBranch(defaultBranch, []string{"name", "description"})
+		api.UpdateBranch(defaultBranch, []string{"name", "description"})
 	})
 
 	// List branches
 	var branches *[]*model.Branch
-	branches, err = a.ListBranches()
+	branches, err = api.ListBranches()
 	assert.NotNil(t, branches)
 	assert.NoError(t, err)
 	var encoded string
@@ -109,14 +109,14 @@ func TestBranchApiCalls(t *testing.T) {
 	utils.AssertWildcards(t, expectedBranchesAll(), encoded, "Unexpected branches state")
 
 	// Delete branch
-	job3, err = a.DeleteBranch(branchFoo.Id)
+	job3, err = api.DeleteBranch(branchFoo.Id)
 	assert.NoError(t, err)
 	assert.NotNil(t, job3)
 	assert.Equal(t, "success", job3.Status)
 
 	// Delete branch with callback
 	onSuccessCalled = false
-	request = a.DeleteBranchRequest(branchBar.Id).
+	request = api.DeleteBranchRequest(branchBar.Id).
 		OnSuccess(func(response *client.Response) *client.Response {
 			// OnSuccess callback called when job is in successful state
 			job := response.Result().(*model.Job)
@@ -133,7 +133,7 @@ func TestBranchApiCalls(t *testing.T) {
 	assert.True(t, onSuccessCalled)
 
 	// List branches
-	branches, err = a.ListBranches()
+	branches, err = api.ListBranches()
 	assert.NotNil(t, branches)
 	assert.NoError(t, err)
 	encoded, err = json.EncodeString(*branches, true)

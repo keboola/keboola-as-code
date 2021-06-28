@@ -12,16 +12,16 @@ import (
 func LoadModel(projectDir string, record manifest.Record, target interface{}) error {
 	errors := &utils.Error{}
 
-	// Load values from meta file
-	errPrefix := record.Kind() + " metadata"
+	// Load values from the meta file
+	errPrefix := record.Kind().Name + " metadata"
 	if err := utils.ReadTaggedFields(projectDir, record.MetaFilePath(), model.MetaFileTag, errPrefix, target); err != nil {
 		errors.Add(err)
 	}
 
 	// Load config file content
-	errPrefix = record.Kind()
+	errPrefix = record.Kind().Name
 	if configField := utils.GetOneFieldWithTag(model.ConfigFileTag, target); configField != nil {
-		content := utils.EmptyOrderedMap()
+		content := utils.NewOrderedMap()
 		modelValue := reflect.ValueOf(target).Elem()
 		if err := json.ReadFile(projectDir, record.ConfigFilePath(), &content, errPrefix); err == nil {
 			modelValue.FieldByName(configField.Name).Set(reflect.ValueOf(content))

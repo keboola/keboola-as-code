@@ -17,13 +17,13 @@ import (
 
 func TestLoadState(t *testing.T) {
 	defer utils.ResetEnv(t, os.Environ())
-	remote.SetStateOfTestProject(t, "minimal.json")
+	api, _ := remote.TestStorageApiWithToken(t)
+	remote.SetStateOfTestProject(t, api, "minimal.json")
 
 	// Same IDs in local and remote state
 	utils.MustSetEnv("LOCAL_STATE_MAIN_BRANCH_ID", utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`))
 	utils.MustSetEnv("LOCAL_STATE_GENERIC_CONFIG_ID", utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`))
 	projectDir, metadataDir := initLocalState(t, "minimal")
-	api, _ := remote.TestStorageApiWithToken(t)
 	logger, _ := utils.NewDebugLogger()
 
 	m, err := manifest.LoadManifest(projectDir, metadataDir)
@@ -72,7 +72,7 @@ func TestLoadState(t *testing.T) {
 				Name:              "empty",
 				Description:       "test fixture",
 				ChangeDescription: "created by test",
-				Content:           utils.EmptyOrderedMap(),
+				Content:           utils.NewOrderedMap(),
 			},
 			Local: &model.Config{
 				ConfigKey: model.ConfigKey{
@@ -99,6 +99,15 @@ func TestLoadState(t *testing.T) {
 						}),
 					},
 				}),
+			},
+			Component: &model.Component{
+				ComponentKey: model.ComponentKey{
+					Id: "ex-generic-v2",
+				},
+				Type:      "extractor",
+				Name:      "Generic",
+				Schema:    map[string]interface{}{},
+				SchemaRow: map[string]interface{}{},
 			},
 			ConfigManifest: &manifest.ConfigManifest{
 				ConfigKey: model.ConfigKey{

@@ -43,6 +43,11 @@ func TestPathsStateComplex(t *testing.T) {
 	assert.Empty(t, paths.Tracked())
 	assert.Equal(t, []string{
 		"123-branch",
+		"123-branch/ex-generic-v2",
+		"123-branch/ex-generic-v2/456-todos",
+		"123-branch/ex-generic-v2/456-todos/config.json",
+		"123-branch/ex-generic-v2/456-todos/meta.json",
+		"123-branch/ex-generic-v2/456-todos/untracked1",
 		"123-branch/keboola.ex-db-mysql",
 		"123-branch/keboola.ex-db-mysql/896-tables",
 		"123-branch/keboola.ex-db-mysql/896-tables/config.json",
@@ -59,17 +64,12 @@ func TestPathsStateComplex(t *testing.T) {
 		"123-branch/keboola.ex-db-mysql/896-tables/rows/56-disabled/meta.json",
 		"123-branch/keboola.ex-db-mysql/untrackedDir",
 		"123-branch/keboola.ex-db-mysql/untrackedDir/untracked2",
-		"123-branch/keboola.ex-generic",
-		"123-branch/keboola.ex-generic/456-todos",
-		"123-branch/keboola.ex-generic/456-todos/config.json",
-		"123-branch/keboola.ex-generic/456-todos/meta.json",
-		"123-branch/keboola.ex-generic/456-todos/untracked1",
 		"123-branch/meta.json",
 		"main",
-		"main/keboola.ex-generic",
-		"main/keboola.ex-generic/456-todos",
-		"main/keboola.ex-generic/456-todos/config.json",
-		"main/keboola.ex-generic/456-todos/meta.json",
+		"main/ex-generic-v2",
+		"main/ex-generic-v2/456-todos",
+		"main/ex-generic-v2/456-todos/config.json",
+		"main/ex-generic-v2/456-todos/meta.json",
 		"main/meta.json",
 	}, paths.Untracked())
 
@@ -84,6 +84,11 @@ func TestPathsStateComplex(t *testing.T) {
 		"123-branch/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json",
 	}, paths.Tracked())
 	assert.Equal(t, []string{
+		"123-branch/ex-generic-v2",
+		"123-branch/ex-generic-v2/456-todos",
+		"123-branch/ex-generic-v2/456-todos/config.json",
+		"123-branch/ex-generic-v2/456-todos/meta.json",
+		"123-branch/ex-generic-v2/456-todos/untracked1",
 		"123-branch/keboola.ex-db-mysql/896-tables/config.json",
 		"123-branch/keboola.ex-db-mysql/896-tables/meta.json",
 		"123-branch/keboola.ex-db-mysql/896-tables/rows/12-users/config.json",
@@ -95,22 +100,17 @@ func TestPathsStateComplex(t *testing.T) {
 		"123-branch/keboola.ex-db-mysql/896-tables/rows/56-disabled/meta.json",
 		"123-branch/keboola.ex-db-mysql/untrackedDir",
 		"123-branch/keboola.ex-db-mysql/untrackedDir/untracked2",
-		"123-branch/keboola.ex-generic",
-		"123-branch/keboola.ex-generic/456-todos",
-		"123-branch/keboola.ex-generic/456-todos/config.json",
-		"123-branch/keboola.ex-generic/456-todos/meta.json",
-		"123-branch/keboola.ex-generic/456-todos/untracked1",
 		"123-branch/meta.json",
 		"main",
-		"main/keboola.ex-generic",
-		"main/keboola.ex-generic/456-todos",
-		"main/keboola.ex-generic/456-todos/config.json",
-		"main/keboola.ex-generic/456-todos/meta.json",
+		"main/ex-generic-v2",
+		"main/ex-generic-v2/456-todos",
+		"main/ex-generic-v2/456-todos/config.json",
+		"main/ex-generic-v2/456-todos/meta.json",
 		"main/meta.json",
 	}, paths.Untracked())
 
 	// Mark tracked some directory
-	paths.MarkTracked("main/keboola.ex-generic")
+	paths.MarkTracked("main/ex-generic-v2")
 	assert.Equal(t, []string{
 		"123-branch",
 		"123-branch/keboola.ex-db-mysql",
@@ -119,9 +119,14 @@ func TestPathsStateComplex(t *testing.T) {
 		"123-branch/keboola.ex-db-mysql/896-tables/rows/12-users",
 		"123-branch/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json",
 		"main",
-		"main/keboola.ex-generic",
+		"main/ex-generic-v2",
 	}, paths.Tracked())
 	assert.Equal(t, []string{
+		"123-branch/ex-generic-v2",
+		"123-branch/ex-generic-v2/456-todos",
+		"123-branch/ex-generic-v2/456-todos/config.json",
+		"123-branch/ex-generic-v2/456-todos/meta.json",
+		"123-branch/ex-generic-v2/456-todos/untracked1",
 		"123-branch/keboola.ex-db-mysql/896-tables/config.json",
 		"123-branch/keboola.ex-db-mysql/896-tables/meta.json",
 		"123-branch/keboola.ex-db-mysql/896-tables/rows/12-users/config.json",
@@ -133,15 +138,10 @@ func TestPathsStateComplex(t *testing.T) {
 		"123-branch/keboola.ex-db-mysql/896-tables/rows/56-disabled/meta.json",
 		"123-branch/keboola.ex-db-mysql/untrackedDir",
 		"123-branch/keboola.ex-db-mysql/untrackedDir/untracked2",
-		"123-branch/keboola.ex-generic",
-		"123-branch/keboola.ex-generic/456-todos",
-		"123-branch/keboola.ex-generic/456-todos/config.json",
-		"123-branch/keboola.ex-generic/456-todos/meta.json",
-		"123-branch/keboola.ex-generic/456-todos/untracked1",
 		"123-branch/meta.json",
-		"main/keboola.ex-generic/456-todos",
-		"main/keboola.ex-generic/456-todos/config.json",
-		"main/keboola.ex-generic/456-todos/meta.json",
+		"main/ex-generic-v2/456-todos",
+		"main/ex-generic-v2/456-todos/config.json",
+		"main/ex-generic-v2/456-todos/meta.json",
 		"main/meta.json",
 	}, paths.Untracked())
 }

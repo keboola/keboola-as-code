@@ -13,12 +13,7 @@ import (
 )
 
 func TestLoadRemoteStateEmpty(t *testing.T) {
-	remote.SetStateOfTestProject(t, "empty.json")
-
-	projectDir := t.TempDir()
-	api, _ := remote.TestStorageApiWithToken(t)
-	state := NewState(projectDir, manifest.DefaultNaming())
-	LoadRemoteState(state, context.Background(), api)
+	state := loadRemoteState(t, "empty.json")
 	assert.NotNil(t, state)
 	assert.Empty(t, state.RemoteErrors().Errors())
 	assert.Len(t, state.Branches(), 1)
@@ -26,12 +21,7 @@ func TestLoadRemoteStateEmpty(t *testing.T) {
 }
 
 func TestLoadRemoteStateComplex(t *testing.T) {
-	remote.SetStateOfTestProject(t, "complex.json")
-
-	projectDir := t.TempDir()
-	api, _ := remote.TestStorageApiWithToken(t)
-	state := NewState(projectDir, manifest.DefaultNaming())
-	LoadRemoteState(state, context.Background(), api)
+	state := loadRemoteState(t, "complex.json")
 	assert.NotNil(t, state)
 	assert.Empty(t, state.RemoteErrors().Errors())
 	assert.Equal(t, complexRemoteExpectedBranches(), utils.SortByName(state.Branches()))
@@ -116,7 +106,16 @@ func complexRemoteExpectedConfigs() []*ConfigState {
 				Name:              "empty",
 				Description:       "test fixture",
 				ChangeDescription: "created by test",
-				Content:           utils.EmptyOrderedMap(),
+				Content:           utils.NewOrderedMap(),
+			},
+			Component: &model.Component{
+				ComponentKey: model.ComponentKey{
+					Id: "ex-generic-v2",
+				},
+				Type:      "extractor",
+				Name:      "Generic",
+				Schema:    map[string]interface{}{},
+				SchemaRow: map[string]interface{}{},
 			},
 			// Generated manifest
 			ConfigManifest: &manifest.ConfigManifest{
@@ -141,7 +140,16 @@ func complexRemoteExpectedConfigs() []*ConfigState {
 				Name:              "empty",
 				Description:       "test fixture",
 				ChangeDescription: fmt.Sprintf(`Copied from default branch configuration "empty" (%s) version 1`, utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
-				Content:           utils.EmptyOrderedMap(),
+				Content:           utils.NewOrderedMap(),
+			},
+			Component: &model.Component{
+				ComponentKey: model.ComponentKey{
+					Id: "ex-generic-v2",
+				},
+				Type:      "extractor",
+				Name:      "Generic",
+				Schema:    map[string]interface{}{},
+				SchemaRow: map[string]interface{}{},
 			},
 			// Generated manifest
 			ConfigManifest: &manifest.ConfigManifest{
@@ -166,7 +174,16 @@ func complexRemoteExpectedConfigs() []*ConfigState {
 				Name:              "empty",
 				Description:       "test fixture",
 				ChangeDescription: fmt.Sprintf(`Copied from default branch configuration "empty" (%s) version 1`, utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
-				Content:           utils.EmptyOrderedMap(),
+				Content:           utils.NewOrderedMap(),
+			},
+			Component: &model.Component{
+				ComponentKey: model.ComponentKey{
+					Id: "ex-generic-v2",
+				},
+				Type:      "extractor",
+				Name:      "Generic",
+				Schema:    map[string]interface{}{},
+				SchemaRow: map[string]interface{}{},
 			},
 			// Generated manifest
 			ConfigManifest: &manifest.ConfigManifest{
@@ -208,6 +225,15 @@ func complexRemoteExpectedConfigs() []*ConfigState {
 					},
 				}),
 			},
+			Component: &model.Component{
+				ComponentKey: model.ComponentKey{
+					Id: "keboola.ex-db-mysql",
+				},
+				Type:      "extractor",
+				Name:      "MySQL",
+				Schema:    map[string]interface{}{},
+				SchemaRow: map[string]interface{}{},
+			},
 			// Generated manifest
 			ConfigManifest: &manifest.ConfigManifest{
 				ConfigKey: model.ConfigKey{
@@ -247,6 +273,15 @@ func complexRemoteExpectedConfigs() []*ConfigState {
 						}),
 					},
 				}),
+			},
+			Component: &model.Component{
+				ComponentKey: model.ComponentKey{
+					Id: "ex-generic-v2",
+				},
+				Type:      "extractor",
+				Name:      "Generic",
+				Schema:    map[string]interface{}{},
+				SchemaRow: map[string]interface{}{},
 			},
 			// Generated manifest
 			ConfigManifest: &manifest.ConfigManifest{
@@ -369,4 +404,18 @@ func complexRemoteExpectedConfigsRows() []*ConfigRowState {
 			},
 		},
 	}
+}
+
+func loadRemoteState(t *testing.T, projectStateFile string) *State {
+	api, _ := remote.TestStorageApiWithToken(t)
+	remote.SetStateOfTestProject(t, api, projectStateFile)
+
+	projectDir := t.TempDir()
+	m, err := manifest.NewManifest(1, "connection.keboola.com", "foo", "bar")
+	if err != nil {
+		assert.FailNow(t, err.Error())
+	}
+	state := NewState(projectDir, m)
+	LoadRemoteState(state, context.Background(), api)
+	return state
 }

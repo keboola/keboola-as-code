@@ -18,18 +18,21 @@ func SortByName(slice interface{}) interface{} {
 	value := reflect.ValueOf(slice)
 	sort.SliceStable(slice, func(i, j int) bool {
 		// value = {name}_{string key}
-		valueI := callStringMethod(value.Index(i), "GetName") + "_" + callStringMethod(value.Index(i), "String")
-		valueJ := callStringMethod(value.Index(j), "GetName") + "_" + callStringMethod(value.Index(j), "String")
+		valueI := stringMethod(value.Index(i), "GetName", true) + "_" + stringMethod(value.Index(i), "String", false)
+		valueJ := stringMethod(value.Index(j), "GetName", true) + "_" + stringMethod(value.Index(j), "String", false)
 		return valueI < valueJ
 	})
 
 	return slice
 }
 
-func callStringMethod(value reflect.Value, methodName string) string {
+func stringMethod(value reflect.Value, methodName string, required bool) string {
 	method := value.MethodByName(methodName)
-	if method.IsZero() {
-		panic(fmt.Errorf("missing method \"%s\" on type \"%T\"", methodName, value))
+	if method.Kind() == reflect.Invalid {
+		if required {
+			panic(fmt.Errorf("missing method \"%s\" on type \"%s\"", methodName, value.Type().String()))
+		}
+		return ""
 	}
 	values := method.Call(nil)
 	return values[0].String()
