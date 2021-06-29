@@ -1,4 +1,4 @@
-WARN	Error: configurations are not valid:
+WARN	Error: validation failed:
 WARN	- config "foo/extractor/keboola.ex-azure-cost-management-sp/with-schema/config.json" doesn't match schema:
 WARN		- subscriptionId is required
 WARN	- config row "foo/extractor/keboola.ex-azure-cost-management-sp/with-schema/rows/row-1/config.json" doesn't match schema:

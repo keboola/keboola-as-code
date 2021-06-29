@@ -61,7 +61,7 @@ func validateCommand(root *rootCommand) *cobra.Command {
 
 			// Validate schemas
 			if err := schema.ValidateSchemas(projectState); err != nil {
-				return utils.WrapError("configurations are not valid", err)
+				return utils.WrapError("validation failed", err)
 			} else {
 				logger.Debug("Validation done.")
 			}
