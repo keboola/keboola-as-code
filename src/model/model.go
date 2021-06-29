@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/iancoleman/orderedmap"
 	"keboola-as-code/src/json"
+	"keboola-as-code/src/utils"
 	"sort"
 	"strconv"
 )
@@ -182,8 +183,16 @@ func (k ConfigRowKey) String() string {
 	return fmt.Sprintf("%02d_%d_%s_%s_%s_config_row", k.Level(), k.BranchId, k.ComponentId, k.ConfigId, k.Id)
 }
 
+func (k ConfigKey) ComponentKey() *ComponentKey {
+	return &ComponentKey{Id: k.ComponentId}
+}
+
 func (k ConfigKey) BranchKey() *BranchKey {
 	return &BranchKey{Id: k.BranchId}
+}
+
+func (k ConfigRowKey) ComponentKey() *ComponentKey {
+	return &ComponentKey{Id: k.ComponentId}
 }
 
 func (k ConfigRowKey) ConfigKey() *ConfigKey {
@@ -193,7 +202,7 @@ func (k ConfigRowKey) ConfigKey() *ConfigKey {
 func (r *ConfigRow) ToApiValues() (map[string]string, error) {
 	configJson, err := json.Encode(r.Content, false)
 	if err != nil {
-		return nil, fmt.Errorf(`cannot JSON encode config configuration: %s`, err)
+		return nil, utils.WrapError(`cannot JSON encode config configuration`, err)
 	}
 
 	return map[string]string{
@@ -208,7 +217,7 @@ func (r *ConfigRow) ToApiValues() (map[string]string, error) {
 func (c *Config) ToApiValues() (map[string]string, error) {
 	configJson, err := json.Encode(c.Content, false)
 	if err != nil {
-		return nil, fmt.Errorf(`cannot JSON encode config configuration: %s`, err)
+		return nil, utils.WrapError(`cannot JSON encode config configuration`, err)
 	}
 
 	return map[string]string{

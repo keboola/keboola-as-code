@@ -28,7 +28,7 @@ func TestLoadState(t *testing.T) {
 
 	m, err := manifest.LoadManifest(projectDir, metadataDir)
 	assert.NoError(t, err)
-	state, ok := LoadState(m, logger, context.Background(), api)
+	state, ok := LoadState(m, logger, context.Background(), api, true)
 	assert.True(t, ok)
 	assert.Empty(t, state.RemoteErrors())
 	assert.Empty(t, state.LocalErrors())

@@ -63,22 +63,20 @@ type stateValidator struct {
 	error *utils.Error
 }
 
-func (s *stateValidator) AddError(err error) {
-	s.error.Add(err)
-}
-
 func (s *stateValidator) validate(kind string, v interface{}) {
 	if err := validator.Validate(v); err != nil {
-		s.AddError(fmt.Errorf("%s is not valid: %s", kind, err))
+		s.error.AddSubError(fmt.Sprintf("%s is not valid", kind), err)
 	}
 }
 
 // LoadState - remote and local
-func LoadState(m *manifest.Manifest, logger *zap.SugaredLogger, ctx context.Context, api *remote.StorageApi) (*State, bool) {
+func LoadState(m *manifest.Manifest, logger *zap.SugaredLogger, ctx context.Context, api *remote.StorageApi, remote bool) (*State, bool) {
 	state := NewState(m.ProjectDir, m)
 
-	logger.Debugf("Loading project remote state.")
-	LoadRemoteState(state, ctx, api)
+	if remote {
+		logger.Debugf("Loading project remote state.")
+		LoadRemoteState(state, ctx, api)
+	}
 
 	logger.Debugf("Loading local state.")
 	LoadLocalState(state, m.ProjectDir, m.Content, api)
@@ -277,6 +275,9 @@ func (s *State) SetBranchLocalState(local *model.Branch, m *manifest.BranchManif
 }
 
 func (s *State) setComponent(component *model.Component) {
+	if component == nil {
+		panic(fmt.Errorf("component is not set"))
+	}
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	s.components[component.String()] = component

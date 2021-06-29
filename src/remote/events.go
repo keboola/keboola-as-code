@@ -6,6 +6,7 @@ import (
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/model"
+	"keboola-as-code/src/utils"
 	"time"
 )
 
@@ -36,11 +37,11 @@ func (a *StorageApi) CreatEventRequest(
 ) *client.Request {
 	paramsJson, err := json.Encode(params, false)
 	if err != nil {
-		panic(fmt.Errorf(`cannot serialize event "params" key to JSON: %s`, err))
+		panic(utils.WrapError(`cannot serialize event "params" key to JSON`, err))
 	}
 	resultsJson, err := json.Encode(results, false)
 	if err != nil {
-		panic(fmt.Errorf(`cannot serialize event "results" key to JSON: %s`, err))
+		panic(utils.WrapError(`cannot serialize event "results" key to JSON`, err))
 	}
 
 	return a.

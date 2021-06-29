@@ -1,5 +1,5 @@
 {
-  "componentId": "keboola.ex-azure-cost-management-sp",
+  "componentId": "keboola.ex-azure-cost-management",
   "name": "with-schema",
   "configuration": {
     "parameters": {

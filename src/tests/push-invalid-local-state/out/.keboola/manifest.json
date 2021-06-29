@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "project": {
+    "id": %%TEST_PROJECT_ID%%,
+    "apiHost": "%%TEST_KBC_STORAGE_API_HOST%%"
+  },
+  "sortBy": "path",
+  "naming": {
+    "branch": "{branch_name}",
+    "config": "{component_type}/{component_id}/{config_name}",
+    "configRow": "{config_row_name}"
+  },
+  "branches": [
+    {
+      "id": %%TEST_BRANCH_MAIN_ID%%,
+      "path": "main"
+    }
+  ],
+  "configurations": [
+    {
+      "branchId": %%TEST_BRANCH_MAIN_ID%%,
+      "componentId": "ex-generic-v2",
+      "id": "%%TEST_BRANCH_ALL_CONFIG_EMPTY_ID%%",
+      "path": "extractor/ex-generic-v2/empty",
+      "rows": []
+    },
+    {
+      "branchId": %%TEST_BRANCH_MAIN_ID%%,
+      "componentId": "keboola.ex-db-mysql",
+      "id": "456",
+      "path": "extractor/keboola.ex-db-mysql/with-rows",
+      "rows": [
+        {
+          "id": "123",
+          "path": "disabled"
+        },
+        {
+          "id": "1234",
+          "path": "test-view"
+        },
+        {
+          "id": "12345",
+          "path": "users"
+        }
+      ]
+    }
+  ]
+}

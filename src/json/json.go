@@ -23,7 +23,7 @@ func ReadFile(dir string, relPath string, target interface{}, errPrefix string) 
 	// Decode meta file
 	err = Decode(content, target)
 	if err != nil {
-		return fmt.Errorf("%s file \"%s\" is invalid: %s", errPrefix, relPath, err)
+		return fmt.Errorf("%s file \"%s\" is invalid:\n\t- %s", errPrefix, relPath, err)
 	}
 	return nil
 }
