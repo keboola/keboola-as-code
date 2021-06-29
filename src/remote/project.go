@@ -56,7 +56,7 @@ func newTestProject(t *testing.T, api *StorageApi, stateFilePath string) *testPr
 	// Load default branch
 	defaultBranch, err := api.GetDefaultBranch()
 	if err != nil {
-		assert.FailNow(t, "cannot get default branch")
+		assert.FailNow(t, "cannot get default branch: ", err)
 	}
 
 	// Create

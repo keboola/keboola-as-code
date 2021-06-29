@@ -16,8 +16,8 @@ func SaveModel(logger *zap.SugaredLogger, m *manifest.Manifest, record manifest.
 	errors := &utils.Error{}
 	paths := record.GetPaths()
 
-	// Add record to manifest content
-	m.SetRecord(record)
+	// Add record to manifest content + mark it for saving
+	m.PersistRecord(record)
 
 	// Mkdir
 	dir := filepath.Join(m.ProjectDir, paths.RelativePath())

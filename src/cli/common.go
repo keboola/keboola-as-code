@@ -11,11 +11,13 @@ import (
 
 // diffProcessCmd run callback on diff results, common for pull, push ...
 type diffProcessCmd struct {
-	root      *rootCommand
-	cmd       *cobra.Command
-	action    func(api *remote.StorageApi, projectManifest *manifest.Manifest, projectState *state.State, diffResults *diff.Results) error
-	onSuccess func(api *remote.StorageApi)
-	onError   func(api *remote.StorageApi, err error)
+	root                     *rootCommand
+	cmd                      *cobra.Command
+	action                   func(api *remote.StorageApi, diffResults *diff.Results) error
+	onSuccess                func(api *remote.StorageApi)
+	onError                  func(api *remote.StorageApi, err error)
+	invalidStateCanBeIgnored bool
+	ignoreInvalidState       bool
 }
 
 func (a *diffProcessCmd) run() error {
@@ -52,12 +54,11 @@ func (a *diffProcessCmd) run() error {
 			return utils.WrapError("cannot load project remote state", projectState.RemoteErrors())
 		}
 		if projectState.LocalErrors().Len() > 0 {
-			force, _ := a.cmd.Flags().GetBool("force")
-			if force {
+			if a.ignoreInvalidState {
 				logger.Info(utils.WrapError("Ignoring invalid local state", projectState.LocalErrors()))
 			} else {
 				errors := utils.WrapError("project local state is invalid", projectState.LocalErrors())
-				if a.cmd.Flags().Lookup("force") != nil {
+				if a.invalidStateCanBeIgnored {
 					errors.AddRaw("\nUse --force to override the invalid local state.")
 				}
 				return errors
@@ -73,7 +74,7 @@ func (a *diffProcessCmd) run() error {
 	}
 
 	// Run callback with diff results
-	if err := a.action(api, projectManifest, projectState, diffResults); err != nil {
+	if err := a.action(api, diffResults); err != nil {
 		return err
 	}
 

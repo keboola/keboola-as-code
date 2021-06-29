@@ -18,8 +18,8 @@ const (
 	HttpTimeout           = 30 * time.Second
 	IdleConnTimeout       = 30 * time.Second
 	TLSHandshakeTimeout   = 10 * time.Second
-	ResponseHeaderTimeout = 10 * time.Second
-	ExpectContinueTimeout = 1 * time.Second
+	ResponseHeaderTimeout = 20 * time.Second
+	ExpectContinueTimeout = 2 * time.Second
 	KeepAlive             = 20 * time.Second
 	MaxIdleConns          = 64
 	RetryCount            = 5
@@ -56,10 +56,18 @@ func (c Client) WithHostUrl(hostUrl string) *Client {
 
 func (c *Client) Send(request *Request) {
 	// Sent
+	request.lock.Lock()
 	request.sent = true
+	request.lock.Unlock()
 	restyResponse, err := request.Request.Send()
+
+	// Done
+	request.lock.Lock()
 	request.Response = NewResponse(request, restyResponse, err)
 	request.done = true
+	request.lock.Unlock()
+
+	// Listeners
 	request.invokeListeners()
 }
 
@@ -118,7 +126,7 @@ func createHttpClient(logger *Logger) *resty.Client {
 func createRetry() func(response *resty.Response, err error) bool {
 	return func(response *resty.Response, err error) bool {
 		// On network errors - except hostname not found
-		if err != nil && response == nil {
+		if err != nil && (response == nil || response.StatusCode() == 0) {
 			switch true {
 			case
 				strings.Contains(err.Error(), "No address associated with hostname"):

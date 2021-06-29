@@ -34,8 +34,8 @@ func (MockedRecord) Key() model.Key {
 func (MockedRecord) Kind() model.Kind {
 	return model.Kind{Name: "kind", Abbr: "K"}
 }
-func (MockedRecord) IsInvalid() bool {
-	return false
+func (MockedRecord) State() *manifest.RecordState {
+	return &manifest.RecordState{}
 }
 func (MockedRecord) SortKey(sort string) string {
 	return "key"
@@ -75,7 +75,7 @@ func TestLocalSaveModel(t *testing.T) {
 		Meta2:  "4",
 		Config: config,
 	}
-	m.SetRecord(record)
+	m.TrackRecord(record)
 	_, found := m.GetRecord(record.Key())
 	assert.True(t, found)
 

@@ -74,12 +74,12 @@ func TestManifestSave(t *testing.T) {
 		m := newManifest(c.data.Version, c.data.Project.ApiHost, projectDir, metadataDir)
 		m.Project.Id = c.data.Project.Id
 		for _, branch := range c.data.Branches {
-			m.SetRecord(branch)
+			m.TrackRecord(branch)
 		}
 		for _, config := range c.data.Configs {
-			m.SetRecord(config.ConfigManifest)
+			m.TrackRecord(config.ConfigManifest)
 			for _, row := range config.Rows {
-				m.SetRecord(row)
+				m.TrackRecord(row)
 			}
 		}
 
@@ -250,7 +250,9 @@ func fullStruct() *Content {
 		Naming: DefaultNaming(),
 		Branches: []*BranchManifest{
 			{
-
+				RecordState: RecordState{
+					Persisted: true,
+				},
 				BranchKey: model.BranchKey{
 					Id: 10,
 				},
@@ -260,6 +262,9 @@ func fullStruct() *Content {
 				},
 			},
 			{
+				RecordState: RecordState{
+					Persisted: true,
+				},
 				BranchKey: model.BranchKey{
 					Id: 11,
 				},
@@ -272,6 +277,9 @@ func fullStruct() *Content {
 		Configs: []*ConfigManifestWithRows{
 			{
 				ConfigManifest: &ConfigManifest{
+					RecordState: RecordState{
+						Persisted: true,
+					},
 					ConfigKey: model.ConfigKey{
 						BranchId:    10,
 						ComponentId: "keboola.ex-db-oracle",
@@ -284,6 +292,9 @@ func fullStruct() *Content {
 				},
 				Rows: []*ConfigRowManifest{
 					{
+						RecordState: RecordState{
+							Persisted: true,
+						},
 						ConfigRowKey: model.ConfigRowKey{
 							Id:          "101",
 							BranchId:    10,
@@ -296,6 +307,9 @@ func fullStruct() *Content {
 						},
 					},
 					{
+						RecordState: RecordState{
+							Persisted: true,
+						},
 						ConfigRowKey: model.ConfigRowKey{
 							Id:          "102",
 							BranchId:    10,
@@ -311,6 +325,9 @@ func fullStruct() *Content {
 			},
 			{
 				ConfigManifest: &ConfigManifest{
+					RecordState: RecordState{
+						Persisted: true,
+					},
 					ConfigKey: model.ConfigKey{
 						BranchId:    11,
 						ComponentId: "keboola.wr-db-mysql",
@@ -323,6 +340,9 @@ func fullStruct() *Content {
 				},
 				Rows: []*ConfigRowManifest{
 					{
+						RecordState: RecordState{
+							Persisted: true,
+						},
 						ConfigRowKey: model.ConfigRowKey{
 							Id:          "103",
 							BranchId:    11,
@@ -335,6 +355,9 @@ func fullStruct() *Content {
 						},
 					},
 					{
+						RecordState: RecordState{
+							Persisted: true,
+						},
 						ConfigRowKey: model.ConfigRowKey{
 							Id:          "104",
 							BranchId:    11,

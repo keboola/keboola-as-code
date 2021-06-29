@@ -4,10 +4,8 @@ import (
 	"github.com/spf13/cobra"
 	"keboola-as-code/src/diff"
 	"keboola-as-code/src/event"
-	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/plan"
 	"keboola-as-code/src/remote"
-	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
 )
 
@@ -22,6 +20,7 @@ what needs to be done without modifying the files.
 `
 
 func pullCommand(root *rootCommand) *cobra.Command {
+	force := false
 	cmd := &cobra.Command{
 		Use:   "pull",
 		Short: pullShortDescription,
@@ -37,6 +36,8 @@ func pullCommand(root *rootCommand) *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			action := &diffProcessCmd{root: root, cmd: cmd}
+			action.invalidStateCanBeIgnored = true
+			action.ignoreInvalidState = force
 			action.onSuccess = func(api *remote.StorageApi) {
 				event.SendCmdSuccessfulEvent(root.start, root.logger, api, "pull", "Pull command done.")
 				root.logger.Info("Pull done.")
@@ -44,9 +45,12 @@ func pullCommand(root *rootCommand) *cobra.Command {
 			action.onError = func(api *remote.StorageApi, err error) {
 				event.SendCmdFailedEvent(root.start, root.logger, api, err, "pull", "Pull command failed.")
 			}
-			action.action = func(api *remote.StorageApi, projectManifest *manifest.Manifest, projectState *state.State, diffResults *diff.Results) error {
+			action.action = func(api *remote.StorageApi, diffResults *diff.Results) error {
+				state := diffResults.CurrentState
+				manifest := state.Manifest()
+
 				// Log untracked paths
-				projectState.LogUntrackedPaths(root.logger)
+				state.LogUntrackedPaths(root.logger)
 
 				// Get plan
 				pull := plan.Pull(diffResults)
@@ -60,17 +64,17 @@ func pullCommand(root *rootCommand) *cobra.Command {
 				}
 
 				// Invoke
-				executor := plan.NewExecutor(root.logger, root.ctx, root.api, projectManifest)
+				executor := plan.NewExecutor(root.logger, root.ctx, root.api, manifest)
 				if err := executor.Invoke(pull); err != nil {
 					return err
 				}
 
 				// Save manifest
-				if projectManifest.IsChanged() {
-					if err = projectManifest.Save(); err != nil {
+				if manifest.IsChanged() {
+					if err = manifest.Save(); err != nil {
 						return err
 					}
-					root.logger.Debugf("Saved manifest file \"%s\".", utils.RelPath(projectManifest.ProjectDir, projectManifest.Path()))
+					root.logger.Debugf("Saved manifest file \"%s\".", utils.RelPath(manifest.ProjectDir, manifest.Path()))
 				}
 
 				return nil
@@ -82,7 +86,7 @@ func pullCommand(root *rootCommand) *cobra.Command {
 
 	// Pull command flags
 	cmd.Flags().SortFlags = true
-	cmd.Flags().Bool("force", false, "ignore invalid local state")
+	cmd.Flags().BoolVar(&force, "force", false, "ignore invalid local state")
 	cmd.Flags().Bool("dry-run", false, "print what needs to be done")
 	return cmd
 }

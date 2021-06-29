@@ -25,8 +25,18 @@ func (p *Plan) Log(writer *log.WriteCloser) *Plan {
 	if len(actions) == 0 {
 		writer.WriteStringNoErr("  no difference")
 	} else {
+		skippedDeleteCount := 0
 		for _, action := range actions {
-			writer.WriteStringNoErr(action.String())
+			msg := action.String()
+			if !p.allowedRemoteDelete && action.Type == ActionDeleteRemote {
+				msg += " - SKIPPED"
+				skippedDeleteCount++
+			}
+			writer.WriteStringNoErr(msg)
+		}
+
+		if skippedDeleteCount > 0 {
+			writer.WriteStringNoErr("Skipped remote objects deletion, use \"--force\" to delete them.")
 		}
 	}
 
