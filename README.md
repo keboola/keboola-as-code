@@ -18,7 +18,6 @@
 ```
 Root project folder
 ├─ .gitignore
-├─ .env                                         - contains API host, should be versioned
 ├─ .env.local                                   - contains API token, keep it local and secret
 ├─ .env.dist                                    - an ".env.local" template
 ├─ .keboola                                     - metadata
