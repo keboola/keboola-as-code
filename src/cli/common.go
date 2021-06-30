@@ -25,6 +25,17 @@ func (a *diffProcessCmd) run() error {
 	logger := a.root.logger
 	options := a.root.options
 
+	// Validate project directory
+	if err := a.root.ValidateOptions([]string{"projectDirectory"}); err != nil {
+		return err
+	}
+
+	// Validate token
+	a.root.options.AskUser(a.root.prompt, "ApiToken")
+	if err := a.root.ValidateOptions([]string{"ApiToken"}); err != nil {
+		return err
+	}
+
 	// Load manifest
 	projectDir := options.ProjectDir()
 	metadataDir := options.MetadataDir()
@@ -42,7 +53,7 @@ func (a *diffProcessCmd) run() error {
 
 	// Send failed event on error
 	defer func() {
-		if err != nil && !successful {
+		if err != nil && !successful && a.onError != nil {
 			a.onError(api, err)
 		}
 	}()
@@ -82,6 +93,8 @@ func (a *diffProcessCmd) run() error {
 
 	// Success
 	successful = true
-	a.onSuccess(api)
+	if a.onSuccess != nil {
+		a.onSuccess(api)
+	}
 	return nil
 }

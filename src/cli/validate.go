@@ -24,6 +24,17 @@ func validateCommand(root *rootCommand) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			logger := root.logger
 
+			// Validate project directory
+			if err := root.ValidateOptions([]string{"projectDirectory"}); err != nil {
+				return err
+			}
+
+			// Validate token
+			root.options.AskUser(root.prompt, "ApiToken")
+			if err := root.ValidateOptions([]string{"ApiToken"}); err != nil {
+				return err
+			}
+
 			// Load manifest
 			projectDir := root.options.ProjectDir()
 			metadataDir := root.options.MetadataDir()
@@ -32,14 +43,8 @@ func validateCommand(root *rootCommand) *cobra.Command {
 				return err
 			}
 
-			// Validate
-			root.options.ApiHost = projectManifest.Project.ApiHost
-			root.options.AskUser(root.prompt, "ApiToken")
-			if err := root.ValidateOptions([]string{"projectDirectory", "ApiHost", "ApiToken"}); err != nil {
-				return err
-			}
-
 			// Validate token and get API
+			root.options.ApiHost = projectManifest.Project.ApiHost
 			api, err := root.GetStorageApi()
 			if err != nil {
 				return err

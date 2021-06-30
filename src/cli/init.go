@@ -40,11 +40,9 @@ func initCommand(root *rootCommand) *cobra.Command {
 				return fmt.Errorf(`metadata directory "%s" already exists`, utils.RelPath(projectDir, metadataDir))
 			}
 
-			// Ask for the host/token, if not specified -> to make the first step easier
+			// Validate options
 			root.options.AskUser(root.prompt, "Host")
 			root.options.AskUser(root.prompt, "ApiToken")
-
-			// Validate options
 			if err := root.ValidateOptions([]string{"ApiHost", "ApiToken"}); err != nil {
 				return err
 			}

@@ -155,3 +155,20 @@ func (d *Differ) getDiffFields(t reflect.Type) []*utils.StructField {
 		return diffFields
 	}
 }
+
+func (r *Result) Mark() string {
+	switch r.State {
+	case ResultNotSet:
+		return "? "
+	case ResultNotEqual:
+		return "CH"
+	case ResultEqual:
+		return "= "
+	case ResultOnlyInRemote:
+		return "+ "
+	case ResultOnlyInLocal:
+		return "- "
+	default:
+		panic(fmt.Errorf("unexpected type %T", r.State))
+	}
+}

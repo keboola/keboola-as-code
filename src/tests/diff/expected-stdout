@@ -1,0 +1,9 @@
+Description:
+	CH changed
+	+  only in the remote state
+	-  only in the local state
+
+Diff:
+CH B bar
++  C main/extractor/ex-generic-v2/empty
+CH C bar/extractor/ex-generic-v2/empty

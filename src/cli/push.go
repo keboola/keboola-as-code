@@ -27,11 +27,7 @@ func pushCommand(root *rootCommand) *cobra.Command {
 		Short: pushShortDescription,
 		Long:  pushLongDescription,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			root.options.AskUser(root.prompt, "ApiToken")
-			if err := root.ValidateOptions([]string{"projectDirectory", "ApiToken"}); err != nil {
-				return err
-			}
-
+			// Define action on diff results
 			action := &diffProcessCmd{root: root, cmd: cmd}
 			action.onSuccess = func(api *remote.StorageApi) {
 				event.SendCmdSuccessfulEvent(root.start, root.logger, api, "push", "Push command done.")

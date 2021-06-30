@@ -26,11 +26,7 @@ func pullCommand(root *rootCommand) *cobra.Command {
 		Short: pullShortDescription,
 		Long:  pullLongDescription,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			root.options.AskUser(root.prompt, "ApiToken")
-			if err := root.ValidateOptions([]string{"projectDirectory", "ApiToken"}); err != nil {
-				return err
-			}
-
+			// Define action on diff results
 			action := &diffProcessCmd{root: root, cmd: cmd}
 			action.invalidStateCanBeIgnored = true
 			action.ignoreInvalidState = force
