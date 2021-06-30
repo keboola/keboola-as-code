@@ -24,6 +24,8 @@ for components configurations.
 
 Configurations can be synchronized in both
 directions [KBC project] <-> [a local directory].
+
+Start by running the "init" sub-command in a new empty directory.
 `
 
 const usageTemplate = `Usage:{{if .HasAvailableSubCommands}}
@@ -91,10 +93,12 @@ func NewRootCommand(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteC
 
 	// Sub-commands
 	root.cmd.AddCommand(
+		statusCommand(root),
 		initCommand(root),
 		validateCommand(root),
 		pullCommand(root),
 		pushCommand(root),
+		diffCommand(root),
 	)
 
 	return root

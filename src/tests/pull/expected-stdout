@@ -1,10 +1,4 @@
 %A
-DEBUG	Running command [%s pull --verbose --storage-api-host %s --storage-api-token %s]
-DEBUG	Parsed options: %s
-DEBUG	HTTP	GET https://%s/v2/storage/tokens/verify | 200 | %s
-DEBUG	Storage API token is valid.
-DEBUG	Project id: "%%TEST_PROJECT_ID%%", project name: "%%TEST_PROJECT_NAME%%".
-%A
 DEBUG	Project local and remote states have been successfully loaded.
 INFO	Plan for "pull" operation:
 INFO	+  B bar

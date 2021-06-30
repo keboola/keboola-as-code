@@ -23,8 +23,18 @@ type diffProcessCmd struct {
 func (a *diffProcessCmd) run() error {
 	successful := false
 	logger := a.root.logger
+	options := a.root.options
+
+	// Load manifest
+	projectDir := options.ProjectDir()
+	metadataDir := options.MetadataDir()
+	projectManifest, err := manifest.LoadManifest(projectDir, metadataDir)
+	if err != nil {
+		return err
+	}
 
 	// Validate token and get API
+	options.ApiHost = projectManifest.Project.ApiHost
 	api, err := a.root.GetStorageApi()
 	if err != nil {
 		return err
@@ -36,14 +46,6 @@ func (a *diffProcessCmd) run() error {
 			a.onError(api, err)
 		}
 	}()
-
-	// Load manifest
-	projectDir := a.root.options.ProjectDir()
-	metadataDir := a.root.options.MetadataDir()
-	projectManifest, err := manifest.LoadManifest(projectDir, metadataDir)
-	if err != nil {
-		return err
-	}
 
 	// Load project remote and local state
 	projectState, ok := state.LoadState(projectManifest, logger, a.root.ctx, api, true)

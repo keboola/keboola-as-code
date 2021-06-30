@@ -26,16 +26,12 @@ func pushCommand(root *rootCommand) *cobra.Command {
 		Use:   "push",
 		Short: pushShortDescription,
 		Long:  pushLongDescription,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			// Ask for the host/token, if not specified
-			root.options.AskUser(root.prompt, "Host")
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			root.options.AskUser(root.prompt, "ApiToken")
-			if err := root.ValidateOptions([]string{"projectDirectory", "ApiHost", "ApiToken"}); err != nil {
+			if err := root.ValidateOptions([]string{"projectDirectory", "ApiToken"}); err != nil {
 				return err
 			}
-			return nil
-		},
-		RunE: func(cmd *cobra.Command, args []string) (err error) {
+
 			action := &diffProcessCmd{root: root, cmd: cmd}
 			action.onSuccess = func(api *remote.StorageApi) {
 				event.SendCmdSuccessfulEvent(root.start, root.logger, api, "push", "Push command done.")

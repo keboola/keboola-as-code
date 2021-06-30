@@ -5,20 +5,23 @@ for components configurations.
 Configurations can be synchronized in both
 directions [KBC project] <-> [a local directory].
 
+Start by running the "init" sub-command in a new empty directory.
+
 Usage:
   %s [command]
 
 Available Commands:
+  diff        Print differences between local and remote state
   help        Help about any command
   init        Init local project directory and perform the first pull
-  pull        Pull configurations to the local project dir
+  pull        Pull configurations to the project directory
   push        Push configurations to the Keboola Connection project
-  validate    Validate the local project dir
+  status      Print info about project directory
+  validate    Validate the local project directory
 
 Flags:
   -h, --help                       print help for command
   -l, --log-file string            path to a log file for details
-  -H, --storage-api-host string    storage API host, eg. "connection.keboola.com"
   -t, --storage-api-token string   storage API token from your project
   -v, --verbose                    print details
       --verbose-api                log each API request and response

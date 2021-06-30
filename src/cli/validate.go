@@ -9,7 +9,7 @@ import (
 	"keboola-as-code/src/utils"
 )
 
-const validateShortDescription = `Validate the local project dir`
+const validateShortDescription = `Validate the local project directory`
 const validateLongDescription = `Command "validate"
 
 Validate existence and contents of all files in the local project dir.

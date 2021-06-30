@@ -26,9 +26,11 @@ func TestRootSubCommands(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, []string{
+		"diff",
 		"init",
 		"pull",
 		"push",
+		"status",
 		"validate",
 	}, names)
 }
@@ -48,7 +50,6 @@ func TestRootCmdPersistentFlags(t *testing.T) {
 	expected := []string{
 		"help",
 		"log-file",
-		"storage-api-host",
 		"storage-api-token",
 		"verbose",
 		"verbose-api",
