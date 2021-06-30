@@ -41,16 +41,17 @@ type Content struct {
 
 type Record interface {
 	Kind() model.Kind           // eg. branch, config, config row -> used in logs
-	Key() model.Key             // unique key for map
+	Key() model.Key             // unique key for map -> for fast access
 	SortKey(sort string) string // unique key for sorting
-	IsInvalid() bool            // invalid records are skipped on save
 	GetPaths() Paths            // define the location of the files
 	MetaFilePath() string       // path to the meta.json file
 	ConfigFilePath() string     // path to the config.json file
+	State() *RecordState
 }
 
-type state struct {
-	invalid bool
+type RecordState struct {
+	Invalid   bool
+	Persisted bool
 }
 
 type Paths struct {
@@ -64,26 +65,26 @@ type Project struct {
 }
 
 type BranchManifest struct {
-	state
+	RecordState `json:"-"`
 	model.BranchKey
 	Paths
 }
 
 type ConfigManifest struct {
-	state
+	RecordState `json:"-"`
 	model.ConfigKey
+	Paths
+}
+
+type ConfigRowManifest struct {
+	RecordState `json:"-"`
+	model.ConfigRowKey
 	Paths
 }
 
 type ConfigManifestWithRows struct {
 	*ConfigManifest
 	Rows []*ConfigRowManifest `json:"rows"`
-}
-
-type ConfigRowManifest struct {
-	state
-	model.ConfigRowKey
-	Paths
 }
 
 func NewManifest(projectId int, apiHost string, projectDir, metadataDir string) (*Manifest, error) {
@@ -125,12 +126,12 @@ func LoadManifest(projectDir string, metadataDir string) (*Manifest, error) {
 		return nil, err
 	}
 
-	// Resolve parent path, set parent IDs, store in records
+	// Resolve parent path, set parent IDs, store records
 	branchById := make(map[int]*BranchManifest)
 	for _, branch := range m.Content.Branches {
 		branch.ResolveParentPath()
 		branchById[branch.Id] = branch
-		m.SetRecord(branch)
+		m.PersistRecord(branch)
 	}
 	for _, configWithRows := range m.Content.Configs {
 		config := configWithRows.ConfigManifest
@@ -139,13 +140,13 @@ func LoadManifest(projectDir string, metadataDir string) (*Manifest, error) {
 			return nil, fmt.Errorf("branch \"%d\" not found in the manifest - referenced from the config \"%s:%s\" in \"%s\"", config.BranchId, config.ComponentId, config.Id, path)
 		}
 		config.ResolveParentPath(branch)
-		m.SetRecord(config)
+		m.PersistRecord(config)
 		for _, row := range configWithRows.Rows {
 			row.BranchId = config.BranchId
 			row.ComponentId = config.ComponentId
 			row.ConfigId = config.Id
 			row.ResolveParentPath(config)
-			m.SetRecord(row)
+			m.PersistRecord(row)
 		}
 	}
 
@@ -176,8 +177,13 @@ func (m *Manifest) Save() error {
 		r, _ := m.records.Get(key)
 		record := r.(Record)
 
-		// Skip invalid
-		if record.IsInvalid() {
+		// Skip invalid (eg. missing config file)
+		if record.State().IsInvalid() {
+			continue
+		}
+
+		// Skip not persisted
+		if !record.State().IsPersisted() {
 			continue
 		}
 
@@ -249,7 +255,14 @@ func (m *Manifest) GetRecord(key model.Key) (Record, bool) {
 	return nil, false
 }
 
-func (m *Manifest) CreateRecordFor(key model.Key) (record Record) {
+func (m *Manifest) CreateOrGetRecord(key model.Key) (record Record) {
+	// Get
+	record, found := m.GetRecord(key)
+	if found {
+		return record
+	}
+
+	// Create
 	switch v := key.(type) {
 	case model.BranchKey:
 		record = &BranchManifest{BranchKey: v}
@@ -260,14 +273,21 @@ func (m *Manifest) CreateRecordFor(key model.Key) (record Record) {
 	default:
 		panic(fmt.Errorf("unexpected type \"%s\"", key))
 	}
-	m.SetRecord(record)
+	m.TrackRecord(record)
 	return record
 }
 
-func (m *Manifest) SetRecord(record Record) {
+func (m *Manifest) PersistRecord(record Record) {
+	record.State().SetPersisted()
+	m.TrackRecord(record)
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	m.changed = true
+}
+
+func (m *Manifest) TrackRecord(record Record) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
 	m.records.Set(record.Key().String(), record)
 }
 
@@ -276,10 +296,13 @@ func (m *Manifest) DeleteRecord(value model.ValueWithKey) {
 }
 
 func (m *Manifest) DeleteRecordByKey(key model.Key) {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-	m.changed = true
-	m.records.Delete(key.String())
+	record, found := m.GetRecord(key)
+	if found {
+		m.lock.Lock()
+		defer m.lock.Unlock()
+		m.changed = m.changed || record.State().IsPersisted()
+		m.records.Delete(key.String())
+	}
 }
 
 func (o Paths) GetPaths() Paths {
@@ -314,12 +337,25 @@ func (r ConfigRowManifest) Kind() model.Kind {
 	return model.Kind{Name: "config row", Abbr: "R"}
 }
 
-func (s *state) IsInvalid() bool {
-	return s.invalid
+func (s *RecordState) State() *RecordState {
+	return s
 }
 
-func (s *state) SetInvalid() {
-	s.invalid = true
+func (s *RecordState) IsInvalid() bool {
+	return s.Invalid
+}
+
+func (s *RecordState) SetInvalid() {
+	s.Invalid = true
+}
+
+func (s *RecordState) IsPersisted() bool {
+	return s.Persisted
+}
+
+func (s *RecordState) SetPersisted() {
+	s.Invalid = false
+	s.Persisted = true
 }
 
 func (b *BranchManifest) ResolveParentPath() {

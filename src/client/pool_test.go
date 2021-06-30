@@ -205,7 +205,7 @@ func TestOnError(t *testing.T) {
 	assert.True(t, responseCaught)
 	assert.Equal(t, errors.New("network error"), err.(*url.Error).Unwrap())
 	assert.Equal(t, 1, httpmock.GetCallCountInfo()["GET https://example.com"])
-	assert.Equal(t, 1, httpmock.GetCallCountInfo()["GET https://example.com/error"])
+	assert.Equal(t, 1+RetryCount, httpmock.GetCallCountInfo()["GET https://example.com/error"])
 }
 
 func TestSendWasNotCalled(t *testing.T) {

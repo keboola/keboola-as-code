@@ -32,7 +32,7 @@
       "branchId": %%TEST_BRANCH_FOO_ID%%,
       "componentId": "keboola.ex-azure-cost-management",
       "id": "%%TEST_BRANCH_FOO_CONFIG_WITH_SCHEMA_ID%%",
-      "path": "extractor/keboola.ex-azure-cost-management-sp/with-schema",
+      "path": "extractor/keboola.ex-azure-cost-management/with-schema",
       "rows": [
         {
           "id": "%%TEST_BRANCH_FOO_CONFIG_WITH_SCHEMA_ROW_ROW_1_ID%%",

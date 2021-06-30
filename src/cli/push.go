@@ -4,11 +4,9 @@ import (
 	"github.com/spf13/cobra"
 	"keboola-as-code/src/diff"
 	"keboola-as-code/src/event"
-	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/plan"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/schema"
-	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
 )
 
@@ -23,6 +21,7 @@ what needs to be done without modifying the project's state.
 `
 
 func pushCommand(root *rootCommand) *cobra.Command {
+	force := false
 	cmd := &cobra.Command{
 		Use:   "push",
 		Short: pushShortDescription,
@@ -45,12 +44,15 @@ func pushCommand(root *rootCommand) *cobra.Command {
 			action.onError = func(api *remote.StorageApi, err error) {
 				event.SendCmdFailedEvent(root.start, root.logger, api, err, "push", "Push command failed.")
 			}
-			action.action = func(api *remote.StorageApi, projectManifest *manifest.Manifest, projectState *state.State, diffResults *diff.Results) error {
+			action.action = func(api *remote.StorageApi, diffResults *diff.Results) error {
+				state := diffResults.CurrentState
+				manifest := state.Manifest()
+
 				// Log untracked paths
-				projectState.LogUntrackedPaths(root.logger)
+				state.LogUntrackedPaths(root.logger)
 
 				// Validate schemas
-				if err := schema.ValidateSchemas(projectState); err != nil {
+				if err := schema.ValidateSchemas(state); err != nil {
 					return utils.WrapError("validation failed", err)
 				} else {
 					root.logger.Debug("Validation done.")
@@ -58,6 +60,13 @@ func pushCommand(root *rootCommand) *cobra.Command {
 
 				// Get plan
 				push := plan.Push(diffResults)
+
+				// Allow remote deletion, if --force
+				if force {
+					push.AllowRemoteDelete()
+				}
+
+				// Log plan
 				push.LogInfo(root.logger)
 
 				// Dry run?
@@ -68,17 +77,17 @@ func pushCommand(root *rootCommand) *cobra.Command {
 				}
 
 				// Invoke
-				executor := plan.NewExecutor(root.logger, root.ctx, root.api, projectManifest)
+				executor := plan.NewExecutor(root.logger, root.ctx, root.api, manifest)
 				if err := executor.Invoke(push); err != nil {
 					return err
 				}
 
 				// Save manifest
-				if projectManifest.IsChanged() {
-					if err = projectManifest.Save(); err != nil {
+				if manifest.IsChanged() {
+					if err = manifest.Save(); err != nil {
 						return err
 					}
-					root.logger.Debugf("Saved manifest file \"%s\".", utils.RelPath(projectManifest.ProjectDir, projectManifest.Path()))
+					root.logger.Debugf("Saved manifest file \"%s\".", utils.RelPath(manifest.ProjectDir, manifest.Path()))
 				}
 
 				return nil
@@ -90,6 +99,7 @@ func pushCommand(root *rootCommand) *cobra.Command {
 
 	// Push command flags
 	cmd.Flags().SortFlags = true
+	cmd.Flags().BoolVar(&force, "force", false, "enable deleting of remote objects")
 	cmd.Flags().Bool("dry-run", false, "print what needs to be done")
 	return cmd
 }

@@ -28,7 +28,7 @@ func TestLocalDeleteModel(t *testing.T) {
 }
 `
 	record := &MockedRecord{}
-	m.SetRecord(record)
+	m.TrackRecord(record)
 	_, found := m.GetRecord(record.Key())
 	assert.True(t, found)
 

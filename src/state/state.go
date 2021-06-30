@@ -100,6 +100,10 @@ func NewState(projectDir string, m *manifest.Manifest) *State {
 	return s
 }
 
+func (s *State) Manifest() *manifest.Manifest {
+	return s.manifest
+}
+
 func (s *State) Validate() *utils.Error {
 	v := &stateValidator{}
 	for _, component := range s.Components() {
@@ -179,6 +183,9 @@ func (s *State) Branches() []*BranchState {
 	for _, b := range s.branches {
 		branches = append(branches, b)
 	}
+	sort.SliceStable(branches, func(i, j int) bool {
+		return branches[i].SortKey(s.manifest.SortBy) < branches[j].SortKey(s.manifest.SortBy)
+	})
 	return branches
 }
 
@@ -187,6 +194,9 @@ func (s *State) Components() []*model.Component {
 	for _, c := range s.components {
 		components = append(components, c)
 	}
+	sort.SliceStable(components, func(i, j int) bool {
+		return components[i].Id < components[j].Id
+	})
 	return components
 }
 
@@ -195,6 +205,9 @@ func (s *State) Configs() []*ConfigState {
 	for _, c := range s.configs {
 		configs = append(configs, c)
 	}
+	sort.SliceStable(configs, func(i, j int) bool {
+		return configs[i].SortKey(s.manifest.SortBy) < configs[j].SortKey(s.manifest.SortBy)
+	})
 	return configs
 }
 
@@ -203,6 +216,9 @@ func (s *State) ConfigRows() []*ConfigRowState {
 	for _, r := range s.configRows {
 		configRows = append(configRows, r)
 	}
+	sort.SliceStable(configRows, func(i, j int) bool {
+		return configRows[i].SortKey(s.manifest.SortBy) < configRows[j].SortKey(s.manifest.SortBy)
+	})
 	return configRows
 }
 
@@ -260,7 +276,7 @@ func (s *State) SetBranchRemoteState(remote *model.Branch) {
 	defer s.mutex.Unlock()
 	state.Remote = remote
 	if state.BranchManifest == nil {
-		state.BranchManifest = s.manifest.CreateRecordFor(remote.Key()).(*manifest.BranchManifest)
+		state.BranchManifest = s.manifest.CreateOrGetRecord(remote.Key()).(*manifest.BranchManifest)
 		state.UpdateManifest(s.manifest)
 	}
 }
@@ -291,7 +307,7 @@ func (s *State) SetConfigRemoteState(component *model.Component, remote *model.C
 	defer s.mutex.Unlock()
 	state.Remote = remote
 	if state.ConfigManifest == nil {
-		state.ConfigManifest = s.manifest.CreateRecordFor(remote.Key()).(*manifest.ConfigManifest)
+		state.ConfigManifest = s.manifest.CreateOrGetRecord(remote.Key()).(*manifest.ConfigManifest)
 		state.UpdateManifest(s.manifest)
 	}
 }
@@ -314,7 +330,7 @@ func (s *State) SetConfigRowRemoteState(remote *model.ConfigRow) {
 	defer s.mutex.Unlock()
 	state.Remote = remote
 	if state.ConfigRowManifest == nil {
-		state.ConfigRowManifest = s.manifest.CreateRecordFor(remote.Key()).(*manifest.ConfigRowManifest)
+		state.ConfigRowManifest = s.manifest.CreateOrGetRecord(remote.Key()).(*manifest.ConfigRowManifest)
 		state.UpdateManifest(s.manifest)
 	}
 }

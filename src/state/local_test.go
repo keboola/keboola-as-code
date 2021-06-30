@@ -195,6 +195,9 @@ func complexLocalExpectedBranches() []*BranchState {
 				IsDefault:   false,
 			},
 			BranchManifest: &manifest.BranchManifest{
+				RecordState: manifest.RecordState{
+					Persisted: true,
+				},
 				BranchKey: model.BranchKey{
 					Id: 123,
 				},
@@ -214,6 +217,9 @@ func complexLocalExpectedBranches() []*BranchState {
 				IsDefault:   true,
 			},
 			BranchManifest: &manifest.BranchManifest{
+				RecordState: manifest.RecordState{
+					Persisted: true,
+				},
 				BranchKey: model.BranchKey{
 					Id: 111,
 				},
@@ -265,6 +271,9 @@ func complexLocalExpectedConfigs() []*ConfigState {
 				SchemaRow: map[string]interface{}{},
 			},
 			ConfigManifest: &manifest.ConfigManifest{
+				RecordState: manifest.RecordState{
+					Persisted: true,
+				},
 				ConfigKey: model.ConfigKey{
 					BranchId:    123,
 					ComponentId: "keboola.ex-db-mysql",
@@ -313,6 +322,9 @@ func complexLocalExpectedConfigs() []*ConfigState {
 				SchemaRow: map[string]interface{}{},
 			},
 			ConfigManifest: &manifest.ConfigManifest{
+				RecordState: manifest.RecordState{
+					Persisted: true,
+				},
 				ConfigKey: model.ConfigKey{
 					BranchId:    111,
 					ComponentId: "ex-generic-v2",
@@ -361,6 +373,9 @@ func complexLocalExpectedConfigs() []*ConfigState {
 				SchemaRow: map[string]interface{}{},
 			},
 			ConfigManifest: &manifest.ConfigManifest{
+				RecordState: manifest.RecordState{
+					Persisted: true,
+				},
 				ConfigKey: model.ConfigKey{
 					BranchId:    123,
 					ComponentId: "ex-generic-v2",
@@ -399,6 +414,9 @@ func complexLocalExpectedConfigRows() []*ConfigRowState {
 				}),
 			},
 			ConfigRowManifest: &manifest.ConfigRowManifest{
+				RecordState: manifest.RecordState{
+					Persisted: true,
+				},
 				ConfigRowKey: model.ConfigRowKey{
 					BranchId:    123,
 					ComponentId: "keboola.ex-db-mysql",
@@ -433,6 +451,9 @@ func complexLocalExpectedConfigRows() []*ConfigRowState {
 				}),
 			},
 			ConfigRowManifest: &manifest.ConfigRowManifest{
+				RecordState: manifest.RecordState{
+					Persisted: true,
+				},
 				ConfigRowKey: model.ConfigRowKey{
 					BranchId:    123,
 					ComponentId: "keboola.ex-db-mysql",
@@ -467,6 +488,9 @@ func complexLocalExpectedConfigRows() []*ConfigRowState {
 				}),
 			},
 			ConfigRowManifest: &manifest.ConfigRowManifest{
+				RecordState: manifest.RecordState{
+					Persisted: true,
+				},
 				ConfigRowKey: model.ConfigRowKey{
 					BranchId:    123,
 					ComponentId: "keboola.ex-db-mysql",

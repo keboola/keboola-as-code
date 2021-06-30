@@ -51,6 +51,9 @@ func TestLoadState(t *testing.T) {
 				IsDefault:   true,
 			},
 			BranchManifest: &manifest.BranchManifest{
+				RecordState: manifest.RecordState{
+					Persisted: true,
+				},
 				BranchKey: model.BranchKey{
 					Id: cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
 				},
@@ -110,6 +113,9 @@ func TestLoadState(t *testing.T) {
 				SchemaRow: map[string]interface{}{},
 			},
 			ConfigManifest: &manifest.ConfigManifest{
+				RecordState: manifest.RecordState{
+					Persisted: true,
+				},
 				ConfigKey: model.ConfigKey{
 					BranchId:    cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
 					ComponentId: "ex-generic-v2",

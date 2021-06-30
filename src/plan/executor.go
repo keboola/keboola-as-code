@@ -51,7 +51,6 @@ func (e *Executor) Invoke(p *Plan) error {
 	// Invoke
 	e.errors = &utils.Error{}
 	e.workers, _ = errgroup.WithContext(e.ctx)
-
 	for _, action := range p.Actions {
 		switch action.Type {
 		case ActionSaveLocal:
@@ -61,7 +60,9 @@ func (e *Executor) Invoke(p *Plan) error {
 		case ActionDeleteLocal:
 			e.deleteLocal(action.Result)
 		case ActionDeleteRemote:
-			e.deleteRemote(action.Result)
+			if p.allowedRemoteDelete {
+				e.deleteRemote(action.Result)
+			}
 		default:
 			panic(fmt.Errorf("unexpected action type"))
 		}
@@ -87,7 +88,7 @@ func (e *Executor) Invoke(p *Plan) error {
 	for _, key := range append([]string(nil), records.Keys()...) {
 		v, _ := records.Get(key)
 		record := v.(manifest.Record)
-		if record.IsInvalid() {
+		if record.State().IsInvalid() {
 			if err := local.DeleteModel(e.logger, e.manifest, record); err != nil {
 				e.errors.Add(err)
 			}
