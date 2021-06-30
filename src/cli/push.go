@@ -89,7 +89,7 @@ func pushCommand(root *rootCommand) *cobra.Command {
 		},
 	}
 
-	// Push command flags
+	// Flags
 	cmd.Flags().SortFlags = true
 	cmd.Flags().BoolVar(&force, "force", false, "enable deleting of remote objects")
 	cmd.Flags().Bool("dry-run", false, "print what needs to be done")

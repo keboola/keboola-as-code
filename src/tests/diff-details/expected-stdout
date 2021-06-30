@@ -1,0 +1,18 @@
+CH changed
++  only in the remote state
+-  only in the local state
+
+Diff:
+CH B bar
+	"description":
+		-%c
+		+ new description
++  C main/extractor/ex-generic-v2/empty
+CH C foo/extractor/ex-generic-v2/without-rows
+	"configuration":
+		-       "baseUrl": "https://jsonplaceholder.typicode.com"
+		+       "baseUrl": "https://jsonplaceholder.typicode.org"
+CH C bar/extractor/ex-generic-v2/empty
+	"name":
+		- empty
+		+ new name

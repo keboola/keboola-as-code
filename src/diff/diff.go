@@ -3,11 +3,13 @@ package diff
 import (
 	"fmt"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/iancoleman/orderedmap"
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
 	"reflect"
+	"strings"
 )
 
 type typeName string
@@ -123,13 +125,22 @@ func (d *Differ) doDiff(state state.ObjectState) (*Result, error) {
 		return str
 	})
 
+	// Compare strings by lines
+	strByLine := cmpopts.AcyclicTransformer("strByLine", func(s string) []string {
+		return strings.Split(s, "\n")
+	})
+
 	// Diff
 	for _, field := range diffFields {
-		difference := cmp.Diff(
+		var r Reporter
+		cmp.Diff(
 			remoteValues.FieldByName(field.StructField.Name).Interface(),
 			localValues.FieldByName(field.StructField.Name).Interface(),
+			cmp.Reporter(&r),
 			configTransform,
+			strByLine,
 		)
+		difference := r.String()
 		if len(difference) > 0 {
 			result.ChangedFields = append(result.ChangedFields, field.JsonName())
 			result.Differences[field.JsonName()] = difference

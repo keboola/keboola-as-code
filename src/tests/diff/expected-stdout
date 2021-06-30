@@ -1,9 +1,8 @@
-Description:
-	CH changed
-	+  only in the remote state
-	-  only in the local state
+CH changed
++  only in the remote state
+-  only in the local state
 
 Diff:
-CH B bar
+CH B bar | changed: description
 +  C main/extractor/ex-generic-v2/empty
-CH C bar/extractor/ex-generic-v2/empty
+CH C bar/extractor/ex-generic-v2/empty | changed: name

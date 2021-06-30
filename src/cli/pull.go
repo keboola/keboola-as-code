@@ -76,7 +76,7 @@ func pullCommand(root *rootCommand) *cobra.Command {
 		},
 	}
 
-	// Pull command flags
+	// Flags
 	cmd.Flags().SortFlags = true
 	cmd.Flags().BoolVar(&force, "force", false, "ignore invalid local state")
 	cmd.Flags().Bool("dry-run", false, "print what needs to be done")

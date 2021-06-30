@@ -1,9 +1,11 @@
 package cli
 
 import (
+	"fmt"
 	"github.com/spf13/cobra"
 	"keboola-as-code/src/diff"
 	"keboola-as-code/src/remote"
+	"strings"
 )
 
 const diffShortDescription = `Print differences between local and remote state`
@@ -13,6 +15,7 @@ Print differences between local and remote state.
 `
 
 func diffCommand(root *rootCommand) *cobra.Command {
+	printDetails := false
 	cmd := &cobra.Command{
 		Use:   "diff",
 		Short: diffShortDescription,
@@ -26,10 +29,9 @@ func diffCommand(root *rootCommand) *cobra.Command {
 				state.LogUntrackedPaths(root.logger)
 
 				// Explain
-				root.logger.Info("Description:")
-				root.logger.Info("\tCH changed")
-				root.logger.Info("\t+  only in the remote state")
-				root.logger.Info("\t-  only in the local state")
+				root.logger.Info("CH changed")
+				root.logger.Info("+  only in the remote state")
+				root.logger.Info("-  only in the local state")
 				root.logger.Info("")
 
 				// Print diff
@@ -37,7 +39,23 @@ func diffCommand(root *rootCommand) *cobra.Command {
 				differencesCount := 0
 				for _, result := range diffResults.Results {
 					if result.State != diff.ResultEqual {
-						root.logger.Infof("%s %s %s", result.Mark(), result.Kind().Abbr, result.RelativePath())
+						// Message
+						msg := fmt.Sprintf("%s %s %s", result.Mark(), result.Kind().Abbr, result.RelativePath())
+						if !printDetails && len(result.ChangedFields) > 0 {
+							msg += " | changed: " + strings.Join(result.ChangedFields, ", ")
+						}
+						root.logger.Infof(msg)
+
+						// Changed fields
+						if printDetails {
+							for field, change := range result.Differences {
+								root.logger.Infof("\t\"%s\":", field)
+								for _, line := range strings.Split(change, "\n") {
+									root.logger.Infof("\t%s", line)
+								}
+							}
+						}
+
 						differencesCount++
 					}
 				}
@@ -52,6 +70,9 @@ func diffCommand(root *rootCommand) *cobra.Command {
 			return action.run()
 		},
 	}
+
+	cmd.Flags().SortFlags = true
+	cmd.Flags().BoolVar(&printDetails, "details", false, "print changed fields")
 
 	return cmd
 }
