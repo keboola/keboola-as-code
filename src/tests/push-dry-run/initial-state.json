@@ -1,0 +1,34 @@
+{
+  "allBranchesConfigs": [
+    "empty"
+  ],
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "isDefault": true
+      }
+    },
+    {
+      "branch": {
+        "name": "foo",
+        "isDefault": false
+      },
+      "configs": [
+        "old-transformation",
+        "without-rows"
+      ]
+    },
+    {
+      "branch": {
+        "name": "bar",
+        "isDefault": false
+      },
+      "configs": [
+        "with-rows",
+        "python-transformation",
+        "snowflake-transformation"
+      ]
+    }
+  ]
+}
