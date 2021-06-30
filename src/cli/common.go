@@ -23,8 +23,29 @@ type diffProcessCmd struct {
 func (a *diffProcessCmd) run() error {
 	successful := false
 	logger := a.root.logger
+	options := a.root.options
+
+	// Validate project directory
+	if err := a.root.ValidateOptions([]string{"projectDirectory"}); err != nil {
+		return err
+	}
+
+	// Validate token
+	a.root.options.AskUser(a.root.prompt, "ApiToken")
+	if err := a.root.ValidateOptions([]string{"ApiToken"}); err != nil {
+		return err
+	}
+
+	// Load manifest
+	projectDir := options.ProjectDir()
+	metadataDir := options.MetadataDir()
+	projectManifest, err := manifest.LoadManifest(projectDir, metadataDir)
+	if err != nil {
+		return err
+	}
 
 	// Validate token and get API
+	options.ApiHost = projectManifest.Project.ApiHost
 	api, err := a.root.GetStorageApi()
 	if err != nil {
 		return err
@@ -32,18 +53,10 @@ func (a *diffProcessCmd) run() error {
 
 	// Send failed event on error
 	defer func() {
-		if err != nil && !successful {
+		if err != nil && !successful && a.onError != nil {
 			a.onError(api, err)
 		}
 	}()
-
-	// Load manifest
-	projectDir := a.root.options.ProjectDir()
-	metadataDir := a.root.options.MetadataDir()
-	projectManifest, err := manifest.LoadManifest(projectDir, metadataDir)
-	if err != nil {
-		return err
-	}
 
 	// Load project remote and local state
 	projectState, ok := state.LoadState(projectManifest, logger, a.root.ctx, api, true)
@@ -80,6 +93,8 @@ func (a *diffProcessCmd) run() error {
 
 	// Success
 	successful = true
-	a.onSuccess(api)
+	if a.onSuccess != nil {
+		a.onSuccess(api)
+	}
 	return nil
 }

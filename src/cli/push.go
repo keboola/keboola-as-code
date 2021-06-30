@@ -26,16 +26,8 @@ func pushCommand(root *rootCommand) *cobra.Command {
 		Use:   "push",
 		Short: pushShortDescription,
 		Long:  pushLongDescription,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			// Ask for the host/token, if not specified
-			root.options.AskUser(root.prompt, "Host")
-			root.options.AskUser(root.prompt, "ApiToken")
-			if err := root.ValidateOptions([]string{"projectDirectory", "ApiHost", "ApiToken"}); err != nil {
-				return err
-			}
-			return nil
-		},
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			// Define action on diff results
 			action := &diffProcessCmd{root: root, cmd: cmd}
 			action.onSuccess = func(api *remote.StorageApi) {
 				event.SendCmdSuccessfulEvent(root.start, root.logger, api, "push", "Push command done.")
@@ -97,7 +89,7 @@ func pushCommand(root *rootCommand) *cobra.Command {
 		},
 	}
 
-	// Push command flags
+	// Flags
 	cmd.Flags().SortFlags = true
 	cmd.Flags().BoolVar(&force, "force", false, "enable deleting of remote objects")
 	cmd.Flags().Bool("dry-run", false, "print what needs to be done")

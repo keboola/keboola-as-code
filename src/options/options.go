@@ -81,7 +81,6 @@ func (o *Options) BindPersistentFlags(flags *pflag.FlagSet) {
 	flags.BoolP("help", "h", false, "print help for command")
 	flags.StringP("log-file", "l", "", "path to a log file for details")
 	flags.StringP("working-dir", "d", "", "use other working directory")
-	flags.StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
 	flags.StringP("storage-api-token", "t", "", "storage API token from your project")
 	flags.BoolP("verbose", "v", false, "print details")
 	flags.BoolP("verbose-api", "", false, "log each API request and response")

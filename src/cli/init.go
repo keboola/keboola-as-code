@@ -21,25 +21,13 @@ and first time sync project from the Keboola Connection.
 You will be asked to enter the Storage API host
 and Storage API token from your project.
 You can also enter these values
-as flags or environment variables.`
+by flags or environment variables.`
 
 func initCommand(root *rootCommand) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init",
 		Short: initShortDescription,
 		Long:  initLongDescription,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			// Ask for the host/token, if not specified -> to make the first step easier
-			root.options.AskUser(root.prompt, "Host")
-			root.options.AskUser(root.prompt, "ApiToken")
-
-			// Validate options
-			if err := root.ValidateOptions([]string{"ApiHost", "ApiToken"}); err != nil {
-				return err
-			}
-
-			return nil
-		},
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			successful := false
 
@@ -50,6 +38,13 @@ func initCommand(root *rootCommand) *cobra.Command {
 				root.logger.Infof(`The path "%s" is already an project directory.`, projectDir)
 				root.logger.Info(`Please use a different directory or synchronize the current with "pull" command.`)
 				return fmt.Errorf(`metadata directory "%s" already exists`, utils.RelPath(projectDir, metadataDir))
+			}
+
+			// Validate options
+			root.options.AskUser(root.prompt, "Host")
+			root.options.AskUser(root.prompt, "ApiToken")
+			if err := root.ValidateOptions([]string{"ApiHost", "ApiToken"}); err != nil {
+				return err
 			}
 
 			// Validate token and get API
@@ -104,19 +99,12 @@ func initCommand(root *rootCommand) *cobra.Command {
 		},
 	}
 
+	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
+
 	return cmd
 }
 
 func createEnvFiles(logger *zap.SugaredLogger, api *remote.StorageApi, projectDir string) error {
-	// .env - with host
-	envMsg := " - it contains the API host"
-	envLines := []utils.FileLine{
-		{Regexp: "^KBC_STORAGE_API_HOST=", Line: fmt.Sprintf(`KBC_STORAGE_API_HOST="%s"`, api.Host())},
-	}
-	if err := createFile(logger, projectDir, ".env", envMsg, envLines); err != nil {
-		return err
-	}
-
 	// .env.local - with token value
 	envLocalMsg := " - it contains the API token, keep it local and secret"
 	envLocalLines := []utils.FileLine{

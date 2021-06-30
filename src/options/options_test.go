@@ -153,7 +153,7 @@ func TestValuesPriority(t *testing.T) {
 	assert.NoError(t, os.Mkdir(metadataDir, 0600))
 	file, err := os.Create(filepath.Join(projectDir, ".env"))
 	assert.NoError(t, err)
-	_, err = file.WriteString("KBC_STORAGE_API_HOST=connection.keboola.com")
+	_, err = file.WriteString("KBC_STORAGE_API_TOKEN=1abcdef")
 	assert.NoError(t, file.Close())
 	assert.NoError(t, err)
 	warnings, err = options.Load(flags)
@@ -161,13 +161,13 @@ func TestValuesPriority(t *testing.T) {
 	assert.Empty(t, warnings)
 	assert.Equal(t, workingDir, options.WorkingDirectory())
 	assert.Equal(t, projectDir, options.ProjectDir())
-	assert.Equal(t, "connection.keboola.com", options.ApiHost)
+	assert.Equal(t, "1abcdef", options.ApiToken)
 
 	// 2. Higher priority, ".env" file from working dir
 	os.Clearenv()
 	file, err = os.Create(filepath.Join(workingDir, ".env"))
 	assert.NoError(t, err)
-	_, err = file.WriteString("KBC_STORAGE_API_HOST=connection.north-europe.azure.keboola.com/")
+	_, err = file.WriteString("KBC_STORAGE_API_TOKEN=2abcdef")
 	assert.NoError(t, file.Close())
 	assert.NoError(t, err)
 	warnings, err = options.Load(flags)
@@ -175,26 +175,26 @@ func TestValuesPriority(t *testing.T) {
 	assert.Empty(t, warnings)
 	assert.Equal(t, workingDir, options.WorkingDirectory())
 	assert.Equal(t, projectDir, options.ProjectDir())
-	assert.Equal(t, "connection.north-europe.azure.keboola.com", options.ApiHost)
+	assert.Equal(t, "2abcdef", options.ApiToken)
 
 	// 3. Higher priority , ENV defined in OS
 	os.Clearenv()
-	assert.NoError(t, os.Setenv("KBC_STORAGE_API_HOST", "https://connection.eu-central-1.keboola.com/"))
+	assert.NoError(t, os.Setenv("KBC_STORAGE_API_TOKEN", "3abcdef"))
 	warnings, err = options.Load(flags)
 	assert.NoError(t, err)
 	assert.Empty(t, warnings)
 	assert.Equal(t, workingDir, options.WorkingDirectory())
 	assert.Equal(t, projectDir, options.ProjectDir())
-	assert.Equal(t, "connection.eu-central-1.keboola.com", options.ApiHost)
+	assert.Equal(t, "3abcdef", options.ApiToken)
 
 	// 4. The highest priority, flag
-	assert.NoError(t, flags.Set("storage-api-host", "connection.keboola.cloud"))
+	assert.NoError(t, flags.Set("storage-api-token", "4abcdef"))
 	warnings, err = options.Load(flags)
 	assert.NoError(t, err)
 	assert.Empty(t, warnings)
 	assert.Equal(t, workingDir, options.WorkingDirectory())
 	assert.Equal(t, projectDir, options.ProjectDir())
-	assert.Equal(t, "connection.keboola.cloud", options.ApiHost)
+	assert.Equal(t, "4abcdef", options.ApiToken)
 }
 
 func TestValidateNoRequired(t *testing.T) {

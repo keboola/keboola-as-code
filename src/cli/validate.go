@@ -9,7 +9,7 @@ import (
 	"keboola-as-code/src/utils"
 )
 
-const validateShortDescription = `Validate the local project dir`
+const validateShortDescription = `Validate the local project directory`
 const validateLongDescription = `Command "validate"
 
 Validate existence and contents of all files in the local project dir.
@@ -21,20 +21,17 @@ func validateCommand(root *rootCommand) *cobra.Command {
 		Use:   "validate",
 		Short: validateShortDescription,
 		Long:  validateLongDescription,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			root.options.AskUser(root.prompt, "Host")
-			root.options.AskUser(root.prompt, "ApiToken")
-			if err := root.ValidateOptions([]string{"projectDirectory", "ApiHost", "ApiToken"}); err != nil {
-				return err
-			}
-			return nil
-		},
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			logger := root.logger
 
-			// Validate token and get API
-			api, err := root.GetStorageApi()
-			if err != nil {
+			// Validate project directory
+			if err := root.ValidateOptions([]string{"projectDirectory"}); err != nil {
+				return err
+			}
+
+			// Validate token
+			root.options.AskUser(root.prompt, "ApiToken")
+			if err := root.ValidateOptions([]string{"ApiToken"}); err != nil {
 				return err
 			}
 
@@ -42,6 +39,13 @@ func validateCommand(root *rootCommand) *cobra.Command {
 			projectDir := root.options.ProjectDir()
 			metadataDir := root.options.MetadataDir()
 			projectManifest, err := manifest.LoadManifest(projectDir, metadataDir)
+			if err != nil {
+				return err
+			}
+
+			// Validate token and get API
+			root.options.ApiHost = projectManifest.Project.ApiHost
+			api, err := root.GetStorageApi()
 			if err != nil {
 				return err
 			}
