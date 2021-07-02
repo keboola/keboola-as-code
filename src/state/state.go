@@ -73,6 +73,12 @@ func (s *stateValidator) validate(kind string, v interface{}) {
 func LoadState(m *manifest.Manifest, logger *zap.SugaredLogger, ctx context.Context, api *remote.StorageApi, remote bool) (*State, bool) {
 	state := NewState(m.ProjectDir, m)
 
+	// Token and manifest project ID must be same
+	if m.Project.Id != api.ProjectId() {
+		state.AddLocalError(fmt.Errorf("used token is from the project \"%d\", but it must be from the project \"%d\"", api.ProjectId(), m.Project.Id))
+		return state, false
+	}
+
 	if remote {
 		logger.Debugf("Loading project remote state.")
 		LoadRemoteState(state, ctx, api)
