@@ -15,6 +15,20 @@ import (
 	"testing"
 )
 
+func TestLoadStateDifferentProjectId(t *testing.T) {
+	logger, _ := utils.NewDebugLogger()
+	api, _ := remote.TestStorageApi(t)
+	api = api.WithToken(&model.Token{Owner: model.TokenOwner{Id: 45678}})
+	projectDir := t.TempDir()
+	metadataDir := filepath.Join(projectDir, ".keboola")
+	m, err := manifest.NewManifest(12345, "connection.keboola.com", projectDir, metadataDir)
+	assert.NoError(t, err)
+	state, ok := LoadState(m, logger, context.Background(), api, true)
+	assert.NotNil(t, state)
+	assert.False(t, ok)
+	assert.Equal(t, "- used token is from the project \"45678\", but it must be from the project \"12345\"", state.LocalErrors().Error())
+}
+
 func TestLoadState(t *testing.T) {
 	defer utils.ResetEnv(t, os.Environ())
 	api, _ := remote.TestStorageApiWithToken(t)
@@ -28,6 +42,7 @@ func TestLoadState(t *testing.T) {
 
 	m, err := manifest.LoadManifest(projectDir, metadataDir)
 	assert.NoError(t, err)
+	m.Project.Id = utils.TestProjectId()
 	state, ok := LoadState(m, logger, context.Background(), api, true)
 	assert.True(t, ok)
 	assert.Empty(t, state.RemoteErrors())
