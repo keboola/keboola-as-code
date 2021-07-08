@@ -16,6 +16,7 @@ import (
 // State - Local and Remote state of the project
 type State struct {
 	mutex        *sync.Mutex
+	api          *remote.StorageApi
 	remoteErrors *utils.Error
 	localErrors  *utils.Error
 	paths        *PathsState
@@ -71,7 +72,7 @@ func (s *stateValidator) validate(kind string, v interface{}) {
 
 // LoadState - remote and local
 func LoadState(m *manifest.Manifest, logger *zap.SugaredLogger, ctx context.Context, api *remote.StorageApi, remote bool) (*State, bool) {
-	state := NewState(m.ProjectDir, m)
+	state := NewState(m.ProjectDir, api, m)
 
 	// Token and manifest project ID must be same
 	if m.Project.Id != api.ProjectId() {
@@ -81,19 +82,20 @@ func LoadState(m *manifest.Manifest, logger *zap.SugaredLogger, ctx context.Cont
 
 	if remote {
 		logger.Debugf("Loading project remote state.")
-		LoadRemoteState(state, ctx, api)
+		state.LoadRemoteState(ctx)
 	}
 
 	logger.Debugf("Loading local state.")
-	LoadLocalState(state, m.ProjectDir, m.Content, api)
+	state.LoadLocalState()
 
 	ok := state.LocalErrors().Len() == 0 && state.RemoteErrors().Len() == 0
 	return state, ok
 }
 
-func NewState(projectDir string, m *manifest.Manifest) *State {
+func NewState(projectDir string, api *remote.StorageApi, m *manifest.Manifest) *State {
 	s := &State{
 		mutex:        &sync.Mutex{},
+		api:          api,
 		remoteErrors: &utils.Error{},
 		localErrors:  &utils.Error{},
 		manifest:     m,

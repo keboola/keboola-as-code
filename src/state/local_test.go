@@ -35,7 +35,7 @@ func TestLoadLocalStateComplex(t *testing.T) {
 	defer utils.ResetEnv(t, os.Environ())
 	state := loadLocalTestState(t, "complex")
 	assert.NotNil(t, state)
-	assert.Equal(t, 0, state.LocalErrors().Len())
+	assert.Empty(t, state.LocalErrors())
 	assert.Equal(t, complexLocalExpectedBranches(), utils.SortByName(state.Branches()))
 	assert.Equal(t, complexLocalExpectedConfigs(), utils.SortByName(state.Configs()))
 	assert.Equal(t, complexLocalExpectedConfigRows(), utils.SortByName(state.ConfigRows()))
@@ -160,8 +160,6 @@ func loadLocalTestState(t *testing.T, projectDirName string) *State {
 	utils.MustSetEnv("LOCAL_STATE_GENERIC_CONFIG_ID", "456")
 	utils.MustSetEnv("LOCAL_STATE_MYSQL_CONFIG_ID", "896")
 
-	api, _ := remote.TestStorageApiWithToken(t)
-
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filepath.Dir(testFile)
 	stateDir := filepath.Join(testDir, "..", "fixtures", "local", projectDirName)
@@ -178,8 +176,10 @@ func loadLocalTestState(t *testing.T, projectDirName string) *State {
 	if err != nil {
 		assert.FailNow(t, err.Error())
 	}
-	state := NewState(projectDir, m)
-	LoadLocalState(state, m.ProjectDir, m.Content, api)
+
+	api, _ := remote.TestStorageApiWithToken(t)
+	state := NewState(projectDir, api, m)
+	state.LoadLocalState()
 	return state
 }
 
@@ -424,8 +424,8 @@ func complexLocalExpectedConfigRows() []*ConfigRowState {
 					Id:          "56",
 				},
 				Paths: manifest.Paths{
-					Path:       "56-disabled",
-					ParentPath: "123-branch/keboola.ex-db-mysql/896-tables/rows",
+					Path:       "rows/56-disabled",
+					ParentPath: "123-branch/keboola.ex-db-mysql/896-tables",
 				},
 			},
 		},
@@ -461,8 +461,8 @@ func complexLocalExpectedConfigRows() []*ConfigRowState {
 					Id:          "34",
 				},
 				Paths: manifest.Paths{
-					Path:       "34-test-view",
-					ParentPath: "123-branch/keboola.ex-db-mysql/896-tables/rows",
+					Path:       "rows/34-test-view",
+					ParentPath: "123-branch/keboola.ex-db-mysql/896-tables",
 				},
 			},
 		},
@@ -497,10 +497,9 @@ func complexLocalExpectedConfigRows() []*ConfigRowState {
 					ConfigId:    "896",
 					Id:          "12",
 				},
-
 				Paths: manifest.Paths{
-					Path:       "12-users",
-					ParentPath: "123-branch/keboola.ex-db-mysql/896-tables/rows",
+					Path:       "rows/12-users",
+					ParentPath: "123-branch/keboola.ex-db-mysql/896-tables",
 				},
 			},
 		},

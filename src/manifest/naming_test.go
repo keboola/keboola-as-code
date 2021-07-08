@@ -46,7 +46,7 @@ func TestDefaultNaming(t *testing.T) {
 	// Config Row
 	assert.Equal(
 		t,
-		"789-row-ab-c",
+		"rows/789-row-ab-c",
 		n.ConfigRowPath(
 			&model.ConfigRow{
 				ConfigRowKey: model.ConfigRowKey{

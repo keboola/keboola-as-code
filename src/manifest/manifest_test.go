@@ -156,7 +156,7 @@ func minimalJson() string {
   "naming": {
     "branch": "{branch_id}-{branch_name}",
     "config": "{component_type}/{component_id}/{config_id}-{config_name}",
-    "configRow": "{config_row_id}-{config_row_name}"
+    "configRow": "rows/{config_row_id}-{config_row_name}"
   },
   "branches": [],
   "configurations": []
@@ -189,7 +189,7 @@ func fullJson() string {
   "naming": {
     "branch": "{branch_id}-{branch_name}",
     "config": "{component_type}/{component_id}/{config_id}-{config_name}",
-    "configRow": "{config_row_id}-{config_row_name}"
+    "configRow": "rows/{config_row_id}-{config_row_name}"
   },
   "branches": [
     {
@@ -210,11 +210,11 @@ func fullJson() string {
       "rows": [
         {
           "id": "101",
-          "path": "101-region-1"
+          "path": "rows/101-region-1"
         },
         {
           "id": "102",
-          "path": "102-region-2"
+          "path": "rows/102-region-2"
         }
       ]
     },
@@ -226,11 +226,11 @@ func fullJson() string {
       "rows": [
         {
           "id": "103",
-          "path": "103-all"
+          "path": "rows/103-all"
         },
         {
           "id": "104",
-          "path": "104-sum"
+          "path": "rows/104-sum"
         }
       ]
     }
@@ -302,8 +302,8 @@ func fullStruct() *Content {
 							ConfigId:    "11",
 						},
 						Paths: Paths{
-							Path:       "101-region-1",
-							ParentPath: "main/11-raw-data/rows",
+							Path:       "rows/101-region-1",
+							ParentPath: "main/11-raw-data",
 						},
 					},
 					{
@@ -317,8 +317,8 @@ func fullStruct() *Content {
 							ConfigId:    "11",
 						},
 						Paths: Paths{
-							Path:       "102-region-2",
-							ParentPath: "main/11-raw-data/rows",
+							Path:       "rows/102-region-2",
+							ParentPath: "main/11-raw-data",
 						},
 					},
 				},
@@ -350,8 +350,8 @@ func fullStruct() *Content {
 							ConfigId:    "12",
 						},
 						Paths: Paths{
-							Path:       "103-all",
-							ParentPath: "11-dev/12-current-month/rows",
+							Path:       "rows/103-all",
+							ParentPath: "11-dev/12-current-month",
 						},
 					},
 					{
@@ -365,8 +365,8 @@ func fullStruct() *Content {
 							ConfigId:    "12",
 						},
 						Paths: Paths{
-							Path:       "104-sum",
-							ParentPath: "11-dev/12-current-month/rows",
+							Path:       "rows/104-sum",
+							ParentPath: "11-dev/12-current-month",
 						},
 					},
 				},

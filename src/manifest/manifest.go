@@ -7,7 +7,9 @@ import (
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
 	"keboola-as-code/src/validator"
+	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 )
 
@@ -16,7 +18,6 @@ const (
 	FileName    = "manifest.json"
 	MetaFile    = "meta.json"
 	ConfigFile  = "config.json"
-	RowsDir     = "rows"
 	SortById    = "id"
 	SortByPath  = "path"
 )
@@ -310,7 +311,10 @@ func (o Paths) GetPaths() Paths {
 }
 
 func (o Paths) RelativePath() string {
-	return filepath.Join(o.ParentPath, o.Path)
+	return filepath.Join(
+		strings.ReplaceAll(o.ParentPath, "/", string(os.PathSeparator)),
+		strings.ReplaceAll(o.Path, "/", string(os.PathSeparator)),
+	)
 }
 
 func (o Paths) AbsolutePath(projectDir string) string {
@@ -367,7 +371,7 @@ func (c *ConfigManifest) ResolveParentPath(branchManifest *BranchManifest) {
 }
 
 func (r *ConfigRowManifest) ResolveParentPath(configManifest *ConfigManifest) {
-	r.ParentPath = filepath.Join(configManifest.ParentPath, configManifest.Path, RowsDir)
+	r.ParentPath = filepath.Join(configManifest.ParentPath, configManifest.Path)
 }
 
 func (b BranchManifest) SortKey(sort string) string {

@@ -8,7 +8,7 @@
   "naming": {
     "branch": "{branch_name}",
     "config": "{component_type}/{component_id}/{config_name}",
-    "configRow": "{config_row_name}"
+    "configRow": "rows/{config_row_name}"
   },
   "branches": [
     {
@@ -25,7 +25,7 @@
       "rows": [
         {
           "id": "%%TEST_BRANCH_MAIN_CONFIG_WITH_ROWS_ROW_DISABLED_ID%%",
-          "path": "disabled"
+          "path": "rows/disabled"
         }
       ]
     }

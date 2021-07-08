@@ -37,15 +37,15 @@
       "rows": [
         {
           "id": "12",
-          "path": "12-users"
+          "path": "rows/12-users"
         },
         {
           "id": "34",
-          "path": "34-test-view"
+          "path": "rows/34-test-view"
         },
         {
           "id": "56",
-          "path": "56-disabled"
+          "path": "rows/56-disabled"
         }
       ]
     }
