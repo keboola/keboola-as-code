@@ -14,6 +14,7 @@ Available Commands:
   diff        Print differences between local and remote state
   help        Help about any command
   init        Init local project directory and perform the first pull
+  persist     Persist created and deleted configs/rows in manifest
   pull        Pull configurations to the project directory
   push        Push configurations to the Keboola Connection project
   status      Print info about project directory
