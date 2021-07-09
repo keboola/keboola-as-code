@@ -16,7 +16,6 @@ const (
 	FileName    = "manifest.json"
 	MetaFile    = "meta.json"
 	ConfigFile  = "config.json"
-	RowsDir     = "rows"
 	SortById    = "id"
 	SortByPath  = "path"
 )
@@ -367,7 +366,7 @@ func (c *ConfigManifest) ResolveParentPath(branchManifest *BranchManifest) {
 }
 
 func (r *ConfigRowManifest) ResolveParentPath(configManifest *ConfigManifest) {
-	r.ParentPath = filepath.Join(configManifest.ParentPath, configManifest.Path, RowsDir)
+	r.ParentPath = filepath.Join(configManifest.ParentPath, configManifest.Path)
 }
 
 func (b BranchManifest) SortKey(sort string) string {
