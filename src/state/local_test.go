@@ -23,10 +23,11 @@ func TestLoadLocalStateMinimal(t *testing.T) {
 	assert.Empty(t, state.UntrackedPaths())
 	assert.Equal(t, []string{
 		"main",
-		"main/ex-generic-v2",
-		"main/ex-generic-v2/456-todos",
-		"main/ex-generic-v2/456-todos/config.json",
-		"main/ex-generic-v2/456-todos/meta.json",
+		"main/extractor",
+		"main/extractor/ex-generic-v2",
+		"main/extractor/ex-generic-v2/456-todos",
+		"main/extractor/ex-generic-v2/456-todos/config.json",
+		"main/extractor/ex-generic-v2/456-todos/meta.json",
 		"main/meta.json",
 	}, state.TrackedPaths())
 }
@@ -35,7 +36,7 @@ func TestLoadLocalStateComplex(t *testing.T) {
 	defer utils.ResetEnv(t, os.Environ())
 	state := loadLocalTestState(t, "complex")
 	assert.NotNil(t, state)
-	assert.Equal(t, 0, state.LocalErrors().Len())
+	assert.Empty(t, state.LocalErrors())
 	assert.Equal(t, complexLocalExpectedBranches(), utils.SortByName(state.Branches()))
 	assert.Equal(t, complexLocalExpectedConfigs(), utils.SortByName(state.Configs()))
 	assert.Equal(t, complexLocalExpectedConfigRows(), utils.SortByName(state.ConfigRows()))
@@ -160,8 +161,6 @@ func loadLocalTestState(t *testing.T, projectDirName string) *State {
 	utils.MustSetEnv("LOCAL_STATE_GENERIC_CONFIG_ID", "456")
 	utils.MustSetEnv("LOCAL_STATE_MYSQL_CONFIG_ID", "896")
 
-	api, _ := remote.TestStorageApiWithToken(t)
-
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filepath.Dir(testFile)
 	stateDir := filepath.Join(testDir, "..", "fixtures", "local", projectDirName)
@@ -178,8 +177,10 @@ func loadLocalTestState(t *testing.T, projectDirName string) *State {
 	if err != nil {
 		assert.FailNow(t, err.Error())
 	}
-	state := NewState(projectDir, m)
-	LoadLocalState(state, m.ProjectDir, m.Content, api)
+
+	api, _ := remote.TestStorageApiWithToken(t)
+	state := NewState(projectDir, api, m)
+	state.LoadLocalState()
 	return state
 }
 

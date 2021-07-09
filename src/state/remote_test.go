@@ -415,7 +415,7 @@ func loadRemoteState(t *testing.T, projectStateFile string) *State {
 	if err != nil {
 		assert.FailNow(t, err.Error())
 	}
-	state := NewState(projectDir, m)
-	LoadRemoteState(state, context.Background(), api)
+	state := NewState(projectDir, api, m)
+	state.LoadRemoteState(context.Background())
 	return state
 }

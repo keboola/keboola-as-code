@@ -137,7 +137,7 @@ func TestLoadState(t *testing.T) {
 					Id:          utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
 				},
 				Paths: manifest.Paths{
-					Path:       "ex-generic-v2/456-todos",
+					Path:       "extractor/ex-generic-v2/456-todos",
 					ParentPath: "main",
 				},
 			},

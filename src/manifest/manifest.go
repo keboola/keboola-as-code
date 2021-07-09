@@ -7,7 +7,9 @@ import (
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
 	"keboola-as-code/src/validator"
+	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 )
 
@@ -309,7 +311,10 @@ func (o Paths) GetPaths() Paths {
 }
 
 func (o Paths) RelativePath() string {
-	return filepath.Join(o.ParentPath, o.Path)
+	return filepath.Join(
+		strings.ReplaceAll(o.ParentPath, "/", string(os.PathSeparator)),
+		strings.ReplaceAll(o.Path, "/", string(os.PathSeparator)),
+	)
 }
 
 func (o Paths) AbsolutePath(projectDir string) string {

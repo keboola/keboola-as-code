@@ -14,6 +14,11 @@ const (
 	ConfigFileTag = "configFile:true"
 )
 
+// Ticket https://keboola.docs.apiary.io/#reference/tickets/generate-unique-id/generate-new-id
+type Ticket struct {
+	Id string `json:"id"`
+}
+
 // Token https://keboola.docs.apiary.io/#reference/tokens-and-permissions/token-verification/token-verification
 type Token struct {
 	Id       string     `json:"id"`
