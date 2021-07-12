@@ -78,6 +78,9 @@ func persistCommand(root *rootCommand) *cobra.Command {
 				return utils.WrapError("cannot persist untracked files", err)
 			}
 
+			// Print remaining untracked paths
+			projectState.LogUntrackedPaths(root.logger)
+
 			// Save manifest
 			if projectManifest.IsChanged() {
 				if err = projectManifest.Save(); err != nil {
