@@ -216,8 +216,8 @@ func AssertExpectations(
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}
-		actualState := state.NewState(workingDir, m)
-		state.LoadRemoteState(actualState, context.Background(), api)
+		actualState := state.NewState(workingDir, api, m)
+		actualState.LoadRemoteState(context.Background())
 		actualSnapshot, err := state.NewProjectSnapshot(actualState)
 		if err != nil {
 			assert.FailNow(t, err.Error())

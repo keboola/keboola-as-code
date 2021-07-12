@@ -240,5 +240,5 @@ func createProjectState(t *testing.T) *state.State {
 		assert.FailNow(t, err.Error())
 	}
 	projectDir := t.TempDir()
-	return state.NewState(projectDir, m)
+	return state.NewState(projectDir, nil, m)
 }

@@ -160,8 +160,6 @@ func loadLocalTestState(t *testing.T, projectDirName string) *State {
 	utils.MustSetEnv("LOCAL_STATE_GENERIC_CONFIG_ID", "456")
 	utils.MustSetEnv("LOCAL_STATE_MYSQL_CONFIG_ID", "896")
 
-	api, _ := remote.TestStorageApiWithToken(t)
-
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filepath.Dir(testFile)
 	stateDir := filepath.Join(testDir, "..", "fixtures", "local", projectDirName)
@@ -178,8 +176,10 @@ func loadLocalTestState(t *testing.T, projectDirName string) *State {
 	if err != nil {
 		assert.FailNow(t, err.Error())
 	}
-	state := NewState(projectDir, m)
-	LoadLocalState(state, m.ProjectDir, m.Content, api)
+
+	api, _ := remote.TestStorageApiWithToken(t)
+	state := NewState(projectDir, api, m)
+	state.LoadLocalState()
 	return state
 }
 
