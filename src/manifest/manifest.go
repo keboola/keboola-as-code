@@ -7,7 +7,9 @@ import (
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
 	"keboola-as-code/src/validator"
+	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 )
 
