@@ -3,10 +3,13 @@ package state
 import (
 	"keboola-as-code/src/local"
 	"keboola-as-code/src/model"
+	"keboola-as-code/src/utils"
 )
 
 // LoadLocalState - manifest -> local files -> unified model
 func (s *State) LoadLocalState() {
+	s.localErrors = &utils.Error{}
+
 	for _, b := range s.manifest.Content.Branches {
 		// Add branch
 		if branch, err := local.LoadBranch(s.manifest.ProjectDir, b); err == nil {
@@ -16,6 +19,7 @@ func (s *State) LoadLocalState() {
 			s.AddLocalError(err)
 		}
 	}
+
 	for _, c := range s.manifest.Content.Configs {
 		// Add config
 		if config, err := local.LoadConfig(s.manifest.ProjectDir, c.ConfigManifest); err == nil {

@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"github.com/iancoleman/orderedmap"
+	"github.com/spf13/cast"
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/utils"
 	"sort"
@@ -13,6 +14,11 @@ const (
 	MetaFileTag   = "metaFile:true"
 	ConfigFileTag = "configFile:true"
 )
+
+// Ticket https://keboola.docs.apiary.io/#reference/tickets/generate-unique-id/generate-new-id
+type Ticket struct {
+	Id string `json:"id"`
+}
 
 // Token https://keboola.docs.apiary.io/#reference/tokens-and-permissions/token-verification/token-verification
 type Token struct {
@@ -133,6 +139,22 @@ type Key interface {
 type Kind struct {
 	Name string
 	Abbr string
+}
+
+func (k BranchKey) ObjectId() string {
+	return cast.ToString(k.Id)
+}
+
+func (k ComponentKey) ObjectId() string {
+	return k.Id
+}
+
+func (k ConfigKey) ObjectId() string {
+	return k.Id
+}
+
+func (k ConfigRowKey) ObjectId() string {
+	return k.Id
 }
 
 func (k BranchKey) Level() int {
