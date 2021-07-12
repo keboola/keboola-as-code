@@ -23,10 +23,11 @@ func TestLoadLocalStateMinimal(t *testing.T) {
 	assert.Empty(t, state.UntrackedPaths())
 	assert.Equal(t, []string{
 		"main",
-		"main/ex-generic-v2",
-		"main/ex-generic-v2/456-todos",
-		"main/ex-generic-v2/456-todos/config.json",
-		"main/ex-generic-v2/456-todos/meta.json",
+		"main/extractor",
+		"main/extractor/ex-generic-v2",
+		"main/extractor/ex-generic-v2/456-todos",
+		"main/extractor/ex-generic-v2/456-todos/config.json",
+		"main/extractor/ex-generic-v2/456-todos/meta.json",
 		"main/meta.json",
 	}, state.TrackedPaths())
 }
@@ -35,41 +36,43 @@ func TestLoadLocalStateComplex(t *testing.T) {
 	defer utils.ResetEnv(t, os.Environ())
 	state := loadLocalTestState(t, "complex")
 	assert.NotNil(t, state)
-	assert.Equal(t, 0, state.LocalErrors().Len())
+	assert.Empty(t, state.LocalErrors())
 	assert.Equal(t, complexLocalExpectedBranches(), utils.SortByName(state.Branches()))
 	assert.Equal(t, complexLocalExpectedConfigs(), utils.SortByName(state.Configs()))
 	assert.Equal(t, complexLocalExpectedConfigRows(), utils.SortByName(state.ConfigRows()))
 	assert.Equal(t, []string{
-		"123-branch/ex-generic-v2/456-todos/untracked1",
-		"123-branch/keboola.ex-db-mysql/untrackedDir",
-		"123-branch/keboola.ex-db-mysql/untrackedDir/untracked2",
+		"123-branch/extractor/ex-generic-v2/456-todos/untracked1",
+		"123-branch/extractor/keboola.ex-db-mysql/untrackedDir",
+		"123-branch/extractor/keboola.ex-db-mysql/untrackedDir/untracked2",
 	}, state.UntrackedPaths())
 	assert.Equal(t, []string{
 		"123-branch",
-		"123-branch/ex-generic-v2",
-		"123-branch/ex-generic-v2/456-todos",
-		"123-branch/ex-generic-v2/456-todos/config.json",
-		"123-branch/ex-generic-v2/456-todos/meta.json",
-		"123-branch/keboola.ex-db-mysql",
-		"123-branch/keboola.ex-db-mysql/896-tables",
-		"123-branch/keboola.ex-db-mysql/896-tables/config.json",
-		"123-branch/keboola.ex-db-mysql/896-tables/meta.json",
-		"123-branch/keboola.ex-db-mysql/896-tables/rows",
-		"123-branch/keboola.ex-db-mysql/896-tables/rows/12-users",
-		"123-branch/keboola.ex-db-mysql/896-tables/rows/12-users/config.json",
-		"123-branch/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json",
-		"123-branch/keboola.ex-db-mysql/896-tables/rows/34-test-view",
-		"123-branch/keboola.ex-db-mysql/896-tables/rows/34-test-view/config.json",
-		"123-branch/keboola.ex-db-mysql/896-tables/rows/34-test-view/meta.json",
-		"123-branch/keboola.ex-db-mysql/896-tables/rows/56-disabled",
-		"123-branch/keboola.ex-db-mysql/896-tables/rows/56-disabled/config.json",
-		"123-branch/keboola.ex-db-mysql/896-tables/rows/56-disabled/meta.json",
+		"123-branch/extractor",
+		"123-branch/extractor/ex-generic-v2",
+		"123-branch/extractor/ex-generic-v2/456-todos",
+		"123-branch/extractor/ex-generic-v2/456-todos/config.json",
+		"123-branch/extractor/ex-generic-v2/456-todos/meta.json",
+		"123-branch/extractor/keboola.ex-db-mysql",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables/config.json",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables/meta.json",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users/config.json",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/34-test-view",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/34-test-view/config.json",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/34-test-view/meta.json",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/56-disabled",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/56-disabled/config.json",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/56-disabled/meta.json",
 		"123-branch/meta.json",
 		"main",
-		"main/ex-generic-v2",
-		"main/ex-generic-v2/456-todos",
-		"main/ex-generic-v2/456-todos/config.json",
-		"main/ex-generic-v2/456-todos/meta.json",
+		"main/extractor",
+		"main/extractor/ex-generic-v2",
+		"main/extractor/ex-generic-v2/456-todos",
+		"main/extractor/ex-generic-v2/456-todos/config.json",
+		"main/extractor/ex-generic-v2/456-todos/meta.json",
 		"main/meta.json",
 	}, state.TrackedPaths())
 }
@@ -87,7 +90,7 @@ func TestLoadLocalStateConfigMissingConfigJson(t *testing.T) {
 	state := loadLocalTestState(t, "config-missing-config-json")
 	assert.NotNil(t, state)
 	assert.Greater(t, state.LocalErrors().Len(), 0)
-	assert.Equal(t, `- config file "123-branch/ex-generic-v2/456-todos/config.json" not found`, state.LocalErrors().Error())
+	assert.Equal(t, `- config file "123-branch/extractor/ex-generic-v2/456-todos/config.json" not found`, state.LocalErrors().Error())
 }
 
 func TestLoadLocalStateConfigMissingMetaJson(t *testing.T) {
@@ -95,7 +98,7 @@ func TestLoadLocalStateConfigMissingMetaJson(t *testing.T) {
 	state := loadLocalTestState(t, "config-missing-meta-json")
 	assert.NotNil(t, state)
 	assert.Greater(t, state.LocalErrors().Len(), 0)
-	assert.Equal(t, `- config metadata file "123-branch/ex-generic-v2/456-todos/meta.json" not found`, state.LocalErrors().Error())
+	assert.Equal(t, `- config metadata file "123-branch/extractor/ex-generic-v2/456-todos/meta.json" not found`, state.LocalErrors().Error())
 }
 
 func TestLoadLocalStateConfigRowMissingConfigJson(t *testing.T) {
@@ -103,7 +106,7 @@ func TestLoadLocalStateConfigRowMissingConfigJson(t *testing.T) {
 	state := loadLocalTestState(t, "config-row-missing-config-json")
 	assert.NotNil(t, state)
 	assert.Greater(t, state.LocalErrors().Len(), 0)
-	assert.Equal(t, `- config row file "123-branch/keboola.ex-db-mysql/896-tables/rows/12-users/config.json" not found`, state.LocalErrors().Error())
+	assert.Equal(t, `- config row file "123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users/config.json" not found`, state.LocalErrors().Error())
 }
 
 func TestLoadLocalStateConfigRowMissingMetaJson(t *testing.T) {
@@ -111,7 +114,7 @@ func TestLoadLocalStateConfigRowMissingMetaJson(t *testing.T) {
 	state := loadLocalTestState(t, "config-row-missing-meta-json")
 	assert.NotNil(t, state)
 	assert.Greater(t, state.LocalErrors().Len(), 0)
-	assert.Equal(t, `- config row metadata file "123-branch/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json" not found`, state.LocalErrors().Error())
+	assert.Equal(t, `- config row metadata file "123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json" not found`, state.LocalErrors().Error())
 }
 
 func TestLoadLocalStateBranchInvalidMetaJson(t *testing.T) {
@@ -127,7 +130,7 @@ func TestLoadLocalStateConfigInvalidConfigJson(t *testing.T) {
 	state := loadLocalTestState(t, "config-invalid-config-json")
 	assert.NotNil(t, state)
 	assert.Greater(t, state.LocalErrors().Len(), 0)
-	assert.Equal(t, "- config file \"123-branch/ex-generic-v2/456-todos/config.json\" is invalid:\n\t- invalid character 'f' looking for beginning of object key string, offset: 3", state.LocalErrors().Error())
+	assert.Equal(t, "- config file \"123-branch/extractor/ex-generic-v2/456-todos/config.json\" is invalid:\n\t- invalid character 'f' looking for beginning of object key string, offset: 3", state.LocalErrors().Error())
 }
 
 func TestLoadLocalStateConfigInvalidMetaJson(t *testing.T) {
@@ -135,7 +138,7 @@ func TestLoadLocalStateConfigInvalidMetaJson(t *testing.T) {
 	state := loadLocalTestState(t, "config-invalid-meta-json")
 	assert.NotNil(t, state)
 	assert.Greater(t, state.LocalErrors().Len(), 0)
-	assert.Equal(t, "- config metadata file \"123-branch/ex-generic-v2/456-todos/meta.json\" is invalid:\n\t- invalid character 'f' looking for beginning of object key string, offset: 3", state.LocalErrors().Error())
+	assert.Equal(t, "- config metadata file \"123-branch/extractor/ex-generic-v2/456-todos/meta.json\" is invalid:\n\t- invalid character 'f' looking for beginning of object key string, offset: 3", state.LocalErrors().Error())
 }
 
 func TestLoadLocalStateConfigRowInvalidConfigJson(t *testing.T) {
@@ -143,7 +146,7 @@ func TestLoadLocalStateConfigRowInvalidConfigJson(t *testing.T) {
 	state := loadLocalTestState(t, "config-row-invalid-config-json")
 	assert.NotNil(t, state)
 	assert.Greater(t, state.LocalErrors().Len(), 0)
-	assert.Equal(t, "- config row file \"123-branch/keboola.ex-db-mysql/896-tables/rows/56-disabled/config.json\" is invalid:\n\t- invalid character 'f' looking for beginning of object key string, offset: 3", state.LocalErrors().Error())
+	assert.Equal(t, "- config row file \"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/56-disabled/config.json\" is invalid:\n\t- invalid character 'f' looking for beginning of object key string, offset: 3", state.LocalErrors().Error())
 }
 
 func TestLoadLocalStateConfigRowInvalidMetaJson(t *testing.T) {
@@ -151,7 +154,7 @@ func TestLoadLocalStateConfigRowInvalidMetaJson(t *testing.T) {
 	state := loadLocalTestState(t, "config-row-invalid-meta-json")
 	assert.NotNil(t, state)
 	assert.Greater(t, state.LocalErrors().Len(), 0)
-	assert.Equal(t, "- config row metadata file \"123-branch/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json\" is invalid:\n\t- invalid character 'f' looking for beginning of object key string, offset: 3", state.LocalErrors().Error())
+	assert.Equal(t, "- config row metadata file \"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json\" is invalid:\n\t- invalid character 'f' looking for beginning of object key string, offset: 3", state.LocalErrors().Error())
 }
 
 func loadLocalTestState(t *testing.T, projectDirName string) *State {
@@ -280,7 +283,7 @@ func complexLocalExpectedConfigs() []*ConfigState {
 					Id:          "896",
 				},
 				Paths: manifest.Paths{
-					Path:       "keboola.ex-db-mysql/896-tables",
+					Path:       "extractor/keboola.ex-db-mysql/896-tables",
 					ParentPath: "123-branch",
 				},
 			},
@@ -331,7 +334,7 @@ func complexLocalExpectedConfigs() []*ConfigState {
 					Id:          "456",
 				},
 				Paths: manifest.Paths{
-					Path:       "ex-generic-v2/456-todos",
+					Path:       "extractor/ex-generic-v2/456-todos",
 					ParentPath: "main",
 				},
 			},
@@ -382,7 +385,7 @@ func complexLocalExpectedConfigs() []*ConfigState {
 					Id:          "456",
 				},
 				Paths: manifest.Paths{
-					Path:       "ex-generic-v2/456-todos",
+					Path:       "extractor/ex-generic-v2/456-todos",
 					ParentPath: "123-branch",
 				},
 			},
@@ -425,7 +428,7 @@ func complexLocalExpectedConfigRows() []*ConfigRowState {
 				},
 				Paths: manifest.Paths{
 					Path:       "rows/56-disabled",
-					ParentPath: "123-branch/keboola.ex-db-mysql/896-tables",
+					ParentPath: "123-branch/extractor/keboola.ex-db-mysql/896-tables",
 				},
 			},
 		},
@@ -462,7 +465,7 @@ func complexLocalExpectedConfigRows() []*ConfigRowState {
 				},
 				Paths: manifest.Paths{
 					Path:       "rows/34-test-view",
-					ParentPath: "123-branch/keboola.ex-db-mysql/896-tables",
+					ParentPath: "123-branch/extractor/keboola.ex-db-mysql/896-tables",
 				},
 			},
 		},
@@ -499,7 +502,7 @@ func complexLocalExpectedConfigRows() []*ConfigRowState {
 				},
 				Paths: manifest.Paths{
 					Path:       "rows/12-users",
-					ParentPath: "123-branch/keboola.ex-db-mysql/896-tables",
+					ParentPath: "123-branch/extractor/keboola.ex-db-mysql/896-tables",
 				},
 			},
 		},

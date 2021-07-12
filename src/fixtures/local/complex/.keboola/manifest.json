@@ -19,21 +19,21 @@
       "branchId": %%LOCAL_STATE_MAIN_BRANCH_ID%%,
       "componentId": "ex-generic-v2",
       "id": "%%LOCAL_STATE_GENERIC_CONFIG_ID%%",
-      "path": "ex-generic-v2/456-todos",
+      "path": "extractor/ex-generic-v2/456-todos",
       "rows": []
     },
     {
       "branchId": %%LOCAL_STATE_MY_BRANCH_ID%%,
       "componentId": "ex-generic-v2",
       "id": "%%LOCAL_STATE_GENERIC_CONFIG_ID%%",
-      "path": "ex-generic-v2/456-todos",
+      "path": "extractor/ex-generic-v2/456-todos",
       "rows": []
     },
     {
       "branchId": %%LOCAL_STATE_MY_BRANCH_ID%%,
       "componentId": "keboola.ex-db-mysql",
       "id": "%%LOCAL_STATE_MYSQL_CONFIG_ID%%",
-      "path": "keboola.ex-db-mysql/896-tables",
+      "path": "extractor/keboola.ex-db-mysql/896-tables",
       "rows": [
         {
           "id": "12",
