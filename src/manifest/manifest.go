@@ -309,7 +309,10 @@ func (o Paths) GetPaths() Paths {
 }
 
 func (o Paths) RelativePath() string {
-	return filepath.Join(o.ParentPath, o.Path)
+	return filepath.Join(
+		strings.ReplaceAll(o.ParentPath, "/", string(os.PathSeparator)),
+		strings.ReplaceAll(o.Path, "/", string(os.PathSeparator)),
+	)
 }
 
 func (o Paths) AbsolutePath(projectDir string) string {
