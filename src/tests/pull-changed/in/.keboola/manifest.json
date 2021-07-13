@@ -8,7 +8,7 @@
   "naming": {
     "branch": "{branch_name}",
     "config": "{component_type}/{component_id}/{config_name}",
-    "configRow": "{config_row_name}"
+    "configRow": "rows/{config_row_name}"
   },
   "branches": [
     {
@@ -40,15 +40,15 @@
       "rows": [
         {
           "id": "%%TEST_BRANCH_BAR_CONFIG_WITH_ROWS_ROW_DISABLED_ID%%",
-          "path": "disabled"
+          "path": "rows/disabled"
         },
         {
           "id": "%%TEST_BRANCH_BAR_CONFIG_WITH_ROWS_ROW_TEST_VIEW_ID%%",
-          "path": "test-view"
+          "path": "rows/test-view"
         },
         {
           "id": "%%TEST_BRANCH_BAR_CONFIG_WITH_ROWS_ROW_USERS_ID%%",
-          "path": "users"
+          "path": "rows/users"
         }
       ]
     },
@@ -88,7 +88,7 @@
       "rows": [
         {
           "id": "%%TEST_BRANCH_FOO_CONFIG_OLD_TRANSFORMATION_ROW_OLD_TRANSFORMATION_SNFK_ID%%",
-          "path": "old-transformation-snfk"
+          "path": "rows/old-transformation-snfk"
         }
       ]
     },

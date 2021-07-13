@@ -8,7 +8,7 @@
   "naming": {
     "branch": "{branch_name}",
     "config": "{component_type}/{component_id}/{config_name}",
-    "configRow": "{config_row_name}"
+    "configRow": "rows/{config_row_name}"
   },
   "branches": [
     {
@@ -36,11 +36,11 @@
       "rows": [
         {
           "id": "%%TEST_BRANCH_FOO_CONFIG_WITH_SCHEMA_ROW_ROW_1_ID%%",
-          "path": "row-1"
+          "path": "rows/row-1"
         },
         {
           "id": "%%TEST_BRANCH_FOO_CONFIG_WITH_SCHEMA_ROW_ROW_2_ID%%",
-          "path": "row-2"
+          "path": "rows/row-2"
         }
       ]
     }

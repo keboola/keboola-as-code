@@ -424,8 +424,8 @@ func complexLocalExpectedConfigRows() []*ConfigRowState {
 					Id:          "56",
 				},
 				Paths: manifest.Paths{
-					Path:       "56-disabled",
-					ParentPath: "123-branch/keboola.ex-db-mysql/896-tables/rows",
+					Path:       "rows/56-disabled",
+					ParentPath: "123-branch/keboola.ex-db-mysql/896-tables",
 				},
 			},
 		},
@@ -461,8 +461,8 @@ func complexLocalExpectedConfigRows() []*ConfigRowState {
 					Id:          "34",
 				},
 				Paths: manifest.Paths{
-					Path:       "34-test-view",
-					ParentPath: "123-branch/keboola.ex-db-mysql/896-tables/rows",
+					Path:       "rows/34-test-view",
+					ParentPath: "123-branch/keboola.ex-db-mysql/896-tables",
 				},
 			},
 		},
@@ -497,10 +497,9 @@ func complexLocalExpectedConfigRows() []*ConfigRowState {
 					ConfigId:    "896",
 					Id:          "12",
 				},
-
 				Paths: manifest.Paths{
-					Path:       "12-users",
-					ParentPath: "123-branch/keboola.ex-db-mysql/896-tables/rows",
+					Path:       "rows/12-users",
+					ParentPath: "123-branch/keboola.ex-db-mysql/896-tables",
 				},
 			},
 		},

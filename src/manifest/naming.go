@@ -20,7 +20,7 @@ func DefaultNaming() *LocalNaming {
 	return &LocalNaming{
 		Branch:    "{branch_id}-{branch_name}",
 		Config:    "{component_type}/{component_id}/{config_id}-{config_name}",
-		ConfigRow: "{config_row_id}-{config_row_name}",
+		ConfigRow: "rows/{config_row_id}-{config_row_name}",
 	}
 }
 

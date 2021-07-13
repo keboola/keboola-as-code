@@ -19,11 +19,11 @@
       "rows": [
         {
           "id": "12",
-          "path": "12-users"
+          "path": "rows/12-users"
         },
         {
           "id": "56",
-          "path": "56-disabled"
+          "path": "rows/56-disabled"
         }
       ]
     }
