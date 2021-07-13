@@ -94,10 +94,9 @@ func (a *StorageApi) CreateBranchRequest(branch *model.Branch) *client.Request {
 		}).
 		SetResult(job)
 
-	request.OnSuccess(waitForJob(a, request, job, func(response *client.Response) *client.Response {
+	request.OnSuccess(waitForJob(a, request, job, func(response *client.Response) {
 		// Set branch id from the job results
 		branch.Id = cast.ToInt(job.Results["id"])
-		return response
 	}))
 
 	return request

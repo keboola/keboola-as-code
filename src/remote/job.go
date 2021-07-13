@@ -30,25 +30,25 @@ func waitForJob(a *StorageApi, parentRequest *client.Request, job *model.Job, on
 	// Check job
 	backoff := newBackoff()
 	var checkJobStatus client.ResponseCallback
-	checkJobStatus = func(response *client.Response) *client.Response {
+	checkJobStatus = func(response *client.Response) {
 		// Check status
 		if job.Status == "success" {
 			if onJobSuccess != nil {
 				onJobSuccess(response)
 			}
-			return response
+			return
 		} else if job.Status == "error" {
 			err := fmt.Errorf("job failed: %v", job.Results)
-			parentRequest.Response.SetErr(err)
-			return response.SetErr(err)
+			response.SetErr(err)
+			return
 		}
 
 		// Wait and check again
 		delay := backoff.NextBackOff()
 		if delay == backoff.Stop {
 			err := fmt.Errorf("timeout: timeout while waiting for the storage job to complete")
-			parentRequest.Response.SetErr(err)
-			return response.SetErr(err)
+			response.SetErr(err)
+			return
 		}
 
 		// Try again
@@ -56,7 +56,6 @@ func waitForJob(a *StorageApi, parentRequest *client.Request, job *model.Job, on
 		parentRequest.WaitFor(request)
 		time.Sleep(delay)
 		response.Sender().Request(request).Send()
-		return response
 	}
 	return checkJobStatus
 }

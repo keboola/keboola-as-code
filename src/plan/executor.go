@@ -157,12 +157,11 @@ func (e *Executor) saveBranch(branch *state.BranchState, result *diff.Result) {
 		// Create sequentially, branches cannot be created in parallel
 		e.api.
 			CreateBranchRequest(branch.Local).
-			OnSuccess(func(response *client.Response) *client.Response {
+			OnSuccess(func(response *client.Response) {
 				// Save new ID to manifest
 				branch.Local = branch.Remote
 				result.ObjectState.UpdateManifest(e.manifest)
 				e.saveLocal(branch)
-				return response
 			}).
 			Send()
 	} else if branch.Remote != nil {
@@ -188,12 +187,11 @@ func (e *Executor) saveConfig(config *state.ConfigState, result *diff.Result) {
 		}
 		pool.
 			Request(request).
-			OnSuccess(func(response *client.Response) *client.Response {
+			OnSuccess(func(response *client.Response) {
 				// Save new ID to manifest
 				config.Local = config.Remote
 				result.ObjectState.UpdateManifest(e.manifest)
 				e.saveLocal(config)
-				return response
 			}).
 			Send()
 	} else if config.Remote != nil {
@@ -223,12 +221,11 @@ func (e *Executor) saveConfigRow(row *state.ConfigRowState, result *diff.Result)
 		}
 		pool.
 			Request(request).
-			OnSuccess(func(response *client.Response) *client.Response {
+			OnSuccess(func(response *client.Response) {
 				// Save new ID to manifest
 				row.Local = row.Remote
 				result.ObjectState.UpdateManifest(e.manifest)
 				e.saveLocal(row)
-				return response
 			}).
 			Send()
 	} else if row.Remote != nil {

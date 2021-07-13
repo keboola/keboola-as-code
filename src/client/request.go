@@ -19,7 +19,7 @@ type Sender interface {
 }
 
 type ResponseEventType int
-type ResponseCallback func(response *Response) *Response
+type ResponseCallback func(response *Response)
 type ResponseListener struct {
 	Type     ResponseEventType
 	Callback ResponseCallback
@@ -125,9 +125,8 @@ func (r *Request) WaitFor(subRequest *Request) {
 	r.waitingFor = append(r.waitingFor, subRequest)
 	r.lock.Unlock()
 
-	subRequest.OnResponse(func(response *Response) *Response {
+	subRequest.OnResponse(func(response *Response) {
 		r.invokeListeners()
-		return response
 	})
 }
 
@@ -170,7 +169,7 @@ func (r *Request) invokeListeners() {
 		// Invoke next listener if present
 		listener := r.nextListener()
 		if listener != nil {
-			r.Response = listener.Invoke(r.Response)
+			listener.Invoke(r.Response)
 		} else {
 			break
 		}
@@ -187,15 +186,15 @@ func (r *Request) addListener(t ResponseEventType, callback ResponseCallback) *R
 	return r
 }
 
-func (l *ResponseListener) Invoke(response *Response) *Response {
+func (l *ResponseListener) Invoke(response *Response) {
 	if l.Type == EventOnSuccess && response.err != nil {
 		// Invoke only if no error present
-		return response
+		return
 	}
 	if l.Type == EventOnError && response.err == nil {
 		// Invoke only if error present
-		return response
+		return
 	}
 
-	return l.Callback(response)
+	l.Callback(response)
 }

@@ -16,7 +16,7 @@ func (s *State) LoadRemoteState(ctx context.Context) {
 	pool.
 		Request(s.api.ListBranchesRequest()).
 		SetContext(ctx).
-		OnSuccess(func(response *client.Response) *client.Response {
+		OnSuccess(func(response *client.Response) {
 			// Save branch + load branch components
 			for _, branch := range *response.Result().(*[]*model.Branch) {
 				s.SetBranchRemoteState(branch)
@@ -25,7 +25,7 @@ func (s *State) LoadRemoteState(ctx context.Context) {
 				pool.
 					Request(s.api.ListComponentsRequest(branch.Id)).
 					SetContext(ctx).
-					OnSuccess(func(response *client.Response) *client.Response {
+					OnSuccess(func(response *client.Response) {
 						// Save component, it contains all configs and rows
 						for _, component := range *response.Result().(*[]*model.ComponentWithConfigs) {
 							for _, config := range component.Configs {
@@ -35,11 +35,9 @@ func (s *State) LoadRemoteState(ctx context.Context) {
 								}
 							}
 						}
-						return response
 					}).
 					Send()
 			}
-			return response
 		}).
 		Send()
 

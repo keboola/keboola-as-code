@@ -61,7 +61,7 @@ func (a *StorageApi) ListComponentsRequest(branchId int) *client.Request {
 		SetPathParam("branchId", cast.ToString(branchId)).
 		SetQueryParam("include", "configuration,rows").
 		SetResult(&components).
-		OnSuccess(func(response *client.Response) *client.Response {
+		OnSuccess(func(response *client.Response) {
 			if response.Result() != nil {
 				// Add missing values
 				for _, component := range components {
@@ -81,7 +81,6 @@ func (a *StorageApi) ListComponentsRequest(branchId int) *client.Request {
 					}
 				}
 			}
-			return response
 		})
 }
 
@@ -120,7 +119,7 @@ func (a *StorageApi) CreateConfigRequest(config *model.ConfigWithRows) (*client.
 		SetBody(values).
 		SetResult(config).
 		// Create config rows
-		OnSuccess(func(response *client.Response) *client.Response {
+		OnSuccess(func(response *client.Response) {
 			for _, row := range config.Rows {
 				row.BranchId = config.BranchId
 				row.ComponentId = config.ComponentId
@@ -128,12 +127,10 @@ func (a *StorageApi) CreateConfigRequest(config *model.ConfigWithRows) (*client.
 				rowRequest, err := a.CreateConfigRowRequest(row)
 				if err != nil {
 					response.SetErr(err)
-					return response
 				}
 				configRequest.WaitFor(rowRequest)
 				response.Sender().Request(rowRequest).Send()
 			}
-			return response
 		})
 
 	return configRequest, nil
@@ -174,7 +171,7 @@ func (a *StorageApi) DeleteConfigRequest(componentId string, configId string) *c
 
 func (a *StorageApi) DeleteConfigsInBranchRequest(branchId int) *client.Request {
 	return a.ListComponentsRequest(branchId).
-		OnSuccess(func(response *client.Response) *client.Response {
+		OnSuccess(func(response *client.Response) {
 			for _, component := range *response.Result().(*[]*model.ComponentWithConfigs) {
 				for _, config := range component.Configs {
 					response.
@@ -183,6 +180,5 @@ func (a *StorageApi) DeleteConfigsInBranchRequest(branchId int) *client.Request 
 						Send()
 				}
 			}
-			return response
 		})
 }
