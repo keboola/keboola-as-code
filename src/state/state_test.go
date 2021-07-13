@@ -23,7 +23,10 @@ func TestLoadStateDifferentProjectId(t *testing.T) {
 	metadataDir := filepath.Join(projectDir, ".keboola")
 	m, err := manifest.NewManifest(12345, "connection.keboola.com", projectDir, metadataDir)
 	assert.NoError(t, err)
-	state, ok := LoadState(m, logger, context.Background(), api, true)
+	stateOptions := NewOptions(m, api, context.Background(), logger)
+	stateOptions.LoadLocalState = true
+	stateOptions.LoadRemoteState = true
+	state, ok := LoadState(stateOptions)
 	assert.NotNil(t, state)
 	assert.False(t, ok)
 	assert.Equal(t, "- used token is from the project \"45678\", but it must be from the project \"12345\"", state.LocalErrors().Error())
@@ -43,7 +46,10 @@ func TestLoadState(t *testing.T) {
 	m, err := manifest.LoadManifest(projectDir, metadataDir)
 	assert.NoError(t, err)
 	m.Project.Id = utils.TestProjectId()
-	state, ok := LoadState(m, logger, context.Background(), api, true)
+	stateOptions := NewOptions(m, api, context.Background(), logger)
+	stateOptions.LoadLocalState = true
+	stateOptions.LoadRemoteState = true
+	state, ok := LoadState(stateOptions)
 	assert.True(t, ok)
 	assert.Empty(t, state.RemoteErrors())
 	assert.Empty(t, state.LocalErrors())

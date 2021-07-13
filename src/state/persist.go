@@ -110,7 +110,7 @@ func (s *State) persistConfig(path, relPath string, matches map[string]string, b
 		s.manifest.PersistRecord(record)
 
 		// Load model
-		config, err := local.LoadConfig(s.manifest.ProjectDir, record)
+		config, _, err := local.LoadConfig(s.manifest.ProjectDir, record)
 		if err != nil {
 			s.localErrors.Add(utils.WrapError(fmt.Sprintf(`cannot persist "%s"`, path), err))
 		}
@@ -135,7 +135,7 @@ func (s *State) persistConfigRow(path, relPath string, config *ConfigState, tick
 		s.manifest.PersistRecord(record)
 
 		// Load model
-		configRow, err := local.LoadConfigRow(s.manifest.ProjectDir, record)
+		configRow, _, err := local.LoadConfigRow(s.manifest.ProjectDir, record)
 		if err != nil {
 			s.localErrors.Add(utils.WrapError(fmt.Sprintf(`cannot persist "%s"`, path), err))
 		}

@@ -48,6 +48,10 @@ func (MockedRecord) GetPaths() manifest.Paths {
 	}
 }
 
+func (m MockedRecord) RelativePath() string {
+	return m.GetPaths().RelativePath()
+}
+
 func (MockedRecord) MetaFilePath() string {
 	return "meta-file.json"
 }

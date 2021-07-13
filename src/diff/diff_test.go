@@ -1,10 +1,13 @@
 package diff
 
 import (
+	"context"
 	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
+	"keboola-as-code/src/remote"
 	"keboola-as-code/src/state"
+	"keboola-as-code/src/utils"
 	"strings"
 	"testing"
 )
@@ -235,10 +238,18 @@ func TestDiffNotEqualConfig(t *testing.T) {
 }
 
 func createProjectState(t *testing.T) *state.State {
-	m, err := manifest.NewManifest(1, "connection.keboola.com", "foo", "bar")
+	projectDir := t.TempDir()
+	m, err := manifest.NewManifest(1, "connection.keboola.com", projectDir, "bar")
 	if err != nil {
 		assert.FailNow(t, err.Error())
 	}
-	projectDir := t.TempDir()
-	return state.NewState(projectDir, nil, m)
+	logger, _ := utils.NewDebugLogger()
+
+	// State is mocked manually in test functions
+	api, _ := remote.TestMockedStorageApi(t)
+	options := state.NewOptions(m, api, context.Background(), logger)
+	options.LoadLocalState = false
+	options.LoadRemoteState = false
+	s, _ := state.LoadState(options)
+	return s
 }

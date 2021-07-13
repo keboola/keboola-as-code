@@ -14,13 +14,12 @@ import (
 // SaveModel to manifest and disk
 func SaveModel(logger *zap.SugaredLogger, m *manifest.Manifest, record manifest.Record, source model.ValueWithKey) error {
 	errors := &utils.Error{}
-	paths := record.GetPaths()
 
 	// Add record to manifest content + mark it for saving
 	m.PersistRecord(record)
 
 	// Mkdir
-	dir := filepath.Join(m.ProjectDir, paths.RelativePath())
+	dir := filepath.Join(m.ProjectDir, record.RelativePath())
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		errors.Add(fmt.Errorf("cannot create directory \"%s\": %s", dir, err))
 		return errors

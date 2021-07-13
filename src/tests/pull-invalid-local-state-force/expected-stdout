@@ -1,16 +1,11 @@
 Ignoring invalid local state:
 - branch metadata file "main/meta.json" is invalid:
 	- invalid character 'i' looking for beginning of object key string, offset: 3
-- config metadata file "main/extractor/ex-generic-v2/empty/meta.json" not found
-- config file "main/extractor/ex-generic-v2/empty/config.json" not found
-- config metadata file "main/extractor/keboola.ex-db-mysql/with-rows/meta.json" not found
-- config file "main/extractor/keboola.ex-db-mysql/with-rows/config.json" not found
-- config row metadata file "main/extractor/keboola.ex-db-mysql/with-rows/rows/disabled/meta.json" not found
-- config row file "main/extractor/keboola.ex-db-mysql/with-rows/rows/disabled/config.json" not found
-- config row metadata file "main/extractor/keboola.ex-db-mysql/with-rows/rows/test-view/meta.json" not found
-- config row file "main/extractor/keboola.ex-db-mysql/with-rows/rows/test-view/config.json" not found
-- config row metadata file "main/extractor/keboola.ex-db-mysql/with-rows/rows/users/meta.json" not found
-- config row file "main/extractor/keboola.ex-db-mysql/with-rows/rows/users/config.json" not found
+- config "main/extractor/ex-generic-v2/empty" not found
+- config "main/extractor/keboola.ex-db-mysql/with-rows" not found
+- config row "main/extractor/keboola.ex-db-mysql/with-rows/rows/disabled" not found
+- config row "main/extractor/keboola.ex-db-mysql/with-rows/rows/test-view" not found
+- config row "main/extractor/keboola.ex-db-mysql/with-rows/rows/users" not found
 Plan for "pull" operation:
 +  B main
 +  C main/extractor/ex-generic-v2/empty
