@@ -1,0 +1,16 @@
+Command "persist"
+
+This command writes the changes from the filesystem to the manifest.
+- If you have created a new config/row, this command will write record to the manifest with a unique ID.
+- If you have deleted a config/row, this command will delete record from the manifest.
+
+No changes are made to the remote state of the project.
+
+If you also want to change the remote state,
+call the "push" command after the "persist" command.
+
+Usage:
+  %s persist [flags]
+
+Global Flags:
+%A

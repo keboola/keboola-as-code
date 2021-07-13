@@ -99,6 +99,7 @@ func NewRootCommand(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteC
 		pullCommand(root),
 		pushCommand(root),
 		diffCommand(root),
+		persistCommand(root),
 	)
 
 	return root
