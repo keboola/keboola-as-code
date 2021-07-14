@@ -7,6 +7,7 @@ import (
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
+	"keboola-as-code/src/validator"
 	"os"
 	"path/filepath"
 )
@@ -14,6 +15,12 @@ import (
 // SaveModel to manifest and disk
 func SaveModel(logger *zap.SugaredLogger, m *manifest.Manifest, record manifest.Record, source model.ValueWithKey) error {
 	errors := utils.NewMultiError()
+
+	// Validate
+	if err := validator.Validate(source); err != nil {
+		errors.AppendWithPrefix(fmt.Sprintf(`%s "%s" is invalid`, record.Kind().Name, record.RelativePath()), err)
+		return errors
+	}
 
 	// Add record to manifest content + mark it for saving
 	m.PersistRecord(record)
