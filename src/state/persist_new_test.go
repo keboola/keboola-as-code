@@ -41,7 +41,7 @@ func TestPersistNoChange(t *testing.T) {
 	assert.Empty(t, state.UntrackedPaths())
 
 	// State after
-	persisted, err := state.Persist()
+	persisted, err := state.PersistNew()
 	assert.NoError(t, err)
 	assert.Empty(t, persisted)
 }
@@ -89,7 +89,7 @@ func TestPersistNewConfig(t *testing.T) {
 	assert.Len(t, state.All(), 2)
 
 	// State after
-	persisted, err := state.Persist()
+	persisted, err := state.PersistNew()
 	persistedPaths := make([]string, 0)
 	for _, object := range persisted {
 		persistedPaths = append(persistedPaths, object.RelativePath())
@@ -201,7 +201,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 	assert.Len(t, state.All(), 2)
 
 	// State after
-	persisted, err := state.Persist()
+	persisted, err := state.PersistNew()
 	persistedPaths := make([]string, 0)
 	for _, object := range persisted {
 		persistedPaths = append(persistedPaths, object.RelativePath())

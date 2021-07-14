@@ -142,7 +142,7 @@ func (s *State) LogUntrackedPaths(logger *zap.SugaredLogger) {
 	if len(untracked) > 0 {
 		logger.Warn("Unknown paths found:")
 		for _, path := range untracked {
-			logger.Warn("  " + path)
+			logger.Warn("\t- ", path)
 		}
 	}
 }
