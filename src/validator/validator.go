@@ -27,19 +27,25 @@ func Validate(value interface{}) error {
 
 	// Do
 	if err := validate.Struct(value); err != nil {
-		return processValidateError(err.(validator.ValidationErrors))
+		switch v := err.(type) {
+		case validator.ValidationErrors:
+			return processValidateError(v)
+		default:
+			panic(err)
+		}
 	}
+
 	return nil
 }
 
 func processValidateError(err validator.ValidationErrors) error {
-	result := &utils.Error{}
+	result := utils.NewMultiError()
 	for _, e := range err {
 		// Remove struct name, first part
 		namespace := regexp.MustCompile(`^([^.]+\.)?(.*)$`).ReplaceAllString(e.Namespace(), `$2`)
 		// Hide nested fields
 		namespace = strings.ReplaceAll(namespace, `__nested__.`, ``)
-		result.Add(fmt.Errorf(
+		result.Append(fmt.Errorf(
 			"key=\"%s\", value=\"%v\", failed \"%s\" validation",
 			namespace,
 			e.Value(),
@@ -47,10 +53,5 @@ func processValidateError(err validator.ValidationErrors) error {
 		))
 	}
 
-	// Convert msg to error
-	if result.Len() > 0 {
-		return result
-	}
-	return nil
-
+	return result.ErrorOrNil()
 }

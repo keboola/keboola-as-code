@@ -14,7 +14,7 @@ func TestPathsStateDirNotFound(t *testing.T) {
 	testDir := filepath.Dir(testFile)
 	projectDir := filepath.Join(testDir, "foo", "bar")
 	assert.PanicsWithError(t, fmt.Sprintf(`directory "%s" not found`, projectDir), func() {
-		NewPathsState(projectDir, &utils.Error{})
+		NewPathsState(projectDir, utils.NewMultiError())
 	})
 }
 
@@ -156,7 +156,7 @@ func loadPathsState(fixture string) (*PathsState, *utils.Error) {
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filepath.Dir(testFile)
 	projectDir := filepath.Join(testDir, "..", "fixtures", "local", fixture)
-	err := &utils.Error{}
+	err := utils.NewMultiError()
 	paths := NewPathsState(projectDir, err)
 	return paths, err
 }

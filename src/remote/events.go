@@ -37,11 +37,11 @@ func (a *StorageApi) CreatEventRequest(
 ) *client.Request {
 	paramsJson, err := json.Encode(params, false)
 	if err != nil {
-		panic(utils.WrapError(`cannot serialize event "params" key to JSON`, err))
+		panic(utils.PrefixError(`cannot serialize event "params" key to JSON`, err))
 	}
 	resultsJson, err := json.Encode(results, false)
 	if err != nil {
-		panic(utils.WrapError(`cannot serialize event "results" key to JSON`, err))
+		panic(utils.PrefixError(`cannot serialize event "results" key to JSON`, err))
 	}
 
 	return a.

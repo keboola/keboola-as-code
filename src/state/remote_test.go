@@ -15,7 +15,7 @@ import (
 func TestLoadRemoteStateEmpty(t *testing.T) {
 	state := loadRemoteState(t, "empty.json")
 	assert.NotNil(t, state)
-	assert.Empty(t, state.RemoteErrors().Errors())
+	assert.Empty(t, state.RemoteErrors().Errors)
 	assert.Len(t, state.Branches(), 1)
 	assert.Len(t, state.Configs(), 0)
 }
@@ -23,7 +23,7 @@ func TestLoadRemoteStateEmpty(t *testing.T) {
 func TestLoadRemoteStateComplex(t *testing.T) {
 	state := loadRemoteState(t, "complex.json")
 	assert.NotNil(t, state)
-	assert.Empty(t, state.RemoteErrors().Errors())
+	assert.Empty(t, state.RemoteErrors().Errors)
 	assert.Equal(t, complexRemoteExpectedBranches(), utils.SortByName(state.Branches()))
 	assert.Equal(t, complexRemoteExpectedConfigs(), utils.SortByName(state.Configs()))
 	assert.Equal(t, complexRemoteExpectedConfigsRows(), utils.SortByName(state.ConfigRows()))

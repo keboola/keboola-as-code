@@ -12,7 +12,7 @@ import (
 )
 
 func ValidateSchemas(projectState *state.State) error {
-	errors := &utils.Error{}
+	errors := utils.NewMultiError()
 	for _, config := range projectState.Configs() {
 		// Validate only local files
 		if config.Local == nil {
@@ -21,7 +21,7 @@ func ValidateSchemas(projectState *state.State) error {
 
 		component := projectState.GetComponent(*config.ComponentKey())
 		if err := ValidateConfig(component, config.Local); err != nil {
-			errors.AddSubError(fmt.Sprintf("config \"%s\" doesn't match schema", config.ConfigFilePath()), err)
+			errors.AppendWithPrefix(fmt.Sprintf("config \"%s\" doesn't match schema", config.ConfigFilePath()), err)
 		}
 	}
 
@@ -33,15 +33,11 @@ func ValidateSchemas(projectState *state.State) error {
 
 		component := projectState.GetComponent(*row.ComponentKey())
 		if err := ValidateConfigRow(component, row.Local); err != nil {
-			errors.AddSubError(fmt.Sprintf("config row \"%s\" doesn't match schema", row.ConfigFilePath()), err)
+			errors.AppendWithPrefix(fmt.Sprintf("config row \"%s\" doesn't match schema", row.ConfigFilePath()), err)
 		}
 	}
 
-	if errors.Len() > 0 {
-		return errors
-	}
-
-	return nil
+	return errors.ErrorOrNil()
 }
 
 func ValidateConfig(component *model.Component, config *model.Config) error {
@@ -69,12 +65,12 @@ func validateJsonSchema(schema map[string]interface{}, content *orderedmap.Order
 	// Load
 	schemaJson, err := json.EncodeString(schema, true)
 	if err != nil {
-		return utils.WrapError("cannot encode component schema JSON", err)
+		return utils.PrefixError("cannot encode component schema JSON", err)
 	}
 
 	documentJson, err := json.EncodeString(parametersMap, true)
 	if err != nil {
-		return utils.WrapError("cannot encode JSON", err)
+		return utils.PrefixError("cannot encode JSON", err)
 	}
 
 	schemaLoader := gojsonschema.NewStringLoader(schemaJson)
@@ -83,13 +79,13 @@ func validateJsonSchema(schema map[string]interface{}, content *orderedmap.Order
 	// Validate
 	result, err := gojsonschema.Validate(schemaLoader, documentLoader)
 	if err != nil {
-		return utils.WrapError("schema validation error", err)
+		return utils.PrefixError("schema validation error", err)
 	}
 
 	if !result.Valid() {
-		errors := &utils.Error{}
+		errors := utils.NewMultiError()
 		for _, desc := range result.Errors() {
-			errors.Add(fmt.Errorf("%s", strings.TrimPrefix(desc.String(), "(root): ")))
+			errors.Append(fmt.Errorf("%s", strings.TrimPrefix(desc.String(), "(root): ")))
 		}
 		return errors
 	}

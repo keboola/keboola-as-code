@@ -7,17 +7,13 @@ import (
 )
 
 func (p *Plan) Validate() error {
-	errors := &utils.Error{}
+	errors := utils.NewMultiError()
 	for _, action := range p.Actions {
 		if err := action.validate(p.CurrentState); err != nil {
-			errors.Add(err)
+			errors.Append(err)
 		}
 	}
-
-	if errors.Len() > 0 {
-		return errors
-	}
-	return nil
+	return errors.ErrorOrNil()
 }
 
 func (a *Action) validate(currentState *state.State) error {

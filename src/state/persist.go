@@ -12,16 +12,12 @@ import (
 
 // Persist created/deleted object from the filesystem
 func (s *State) Persist() (newPersisted []ObjectState, err error) {
-	s.localErrors = &utils.Error{}
+	s.localErrors = utils.NewMultiError()
 	s.newPersisted = make([]ObjectState, 0)
 
 	s.persistNewConfigs()
 	s.persistNewConfigRows()
-	if s.localErrors.Len() > 0 {
-		return nil, s.localErrors
-	}
-
-	return s.newPersisted, nil
+	return s.newPersisted, s.localErrors.ErrorOrNil()
 }
 
 func (s *State) addNewPersisted(state ObjectState) {
@@ -51,7 +47,7 @@ func (s *State) persistNewConfigs() {
 
 	// Let's wait until all new IDs are generated
 	if err := tickets.Resolve(); err != nil {
-		s.localErrors.Add(err)
+		s.localErrors.Append(err)
 	}
 }
 
@@ -76,7 +72,7 @@ func (s *State) persistNewConfigRows() {
 
 	// Let's wait until all new IDs are generated
 	if err := tickets.Resolve(); err != nil {
-		s.localErrors.Add(err)
+		s.localErrors.Append(err)
 	}
 }
 
@@ -84,7 +80,7 @@ func (s *State) persistConfig(path, relPath string, matches map[string]string, b
 	// Get component ID
 	componentId, ok := matches["component_id"]
 	if !ok || componentId == "" {
-		s.localErrors.Add(fmt.Errorf(
+		s.localErrors.Append(fmt.Errorf(
 			`config's component id cannot be determined, path: "%s", path template: "%s"`,
 			path,
 			s.manifest.Naming.Config,
@@ -95,7 +91,7 @@ func (s *State) persistConfig(path, relPath string, matches map[string]string, b
 	// Load component
 	component, err := s.getOrLoadComponent(componentId)
 	if err != nil {
-		s.localErrors.Add(utils.WrapError(fmt.Sprintf(`cannot persist "%s"`, path), err))
+		s.localErrors.AppendWithPrefix(fmt.Sprintf(`cannot persist "%s"`, path), err)
 		return
 	}
 
@@ -112,7 +108,7 @@ func (s *State) persistConfig(path, relPath string, matches map[string]string, b
 		// Load model
 		config, _, err := local.LoadConfig(s.manifest.ProjectDir, record)
 		if err != nil {
-			s.localErrors.Add(utils.WrapError(fmt.Sprintf(`cannot persist "%s"`, path), err))
+			s.localErrors.AppendWithPrefix(fmt.Sprintf(`cannot persist "%s"`, path), err)
 		}
 
 		// Update state
@@ -137,7 +133,7 @@ func (s *State) persistConfigRow(path, relPath string, config *ConfigState, tick
 		// Load model
 		configRow, _, err := local.LoadConfigRow(s.manifest.ProjectDir, record)
 		if err != nil {
-			s.localErrors.Add(utils.WrapError(fmt.Sprintf(`cannot persist "%s"`, path), err))
+			s.localErrors.AppendWithPrefix(fmt.Sprintf(`cannot persist "%s"`, path), err)
 		}
 
 		// Update state

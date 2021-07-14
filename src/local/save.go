@@ -13,7 +13,7 @@ import (
 
 // SaveModel to manifest and disk
 func SaveModel(logger *zap.SugaredLogger, m *manifest.Manifest, record manifest.Record, source model.ValueWithKey) error {
-	errors := &utils.Error{}
+	errors := utils.NewMultiError()
 
 	// Add record to manifest content + mark it for saving
 	m.PersistRecord(record)
@@ -21,7 +21,7 @@ func SaveModel(logger *zap.SugaredLogger, m *manifest.Manifest, record manifest.
 	// Mkdir
 	dir := filepath.Join(m.ProjectDir, record.RelativePath())
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		errors.Add(fmt.Errorf("cannot create directory \"%s\": %s", dir, err))
+		errors.Append(fmt.Errorf("cannot create directory \"%s\": %s", dir, err))
 		return errors
 	}
 
@@ -30,7 +30,7 @@ func SaveModel(logger *zap.SugaredLogger, m *manifest.Manifest, record manifest.
 		if err := json.WriteFile(m.ProjectDir, record.MetaFilePath(), metadata, record.Kind().Name+" metadata"); err == nil {
 			logger.Debugf(`Saved "%s"`, record.MetaFilePath())
 		} else {
-			errors.Add(err)
+			errors.Append(err)
 		}
 	}
 
@@ -39,13 +39,9 @@ func SaveModel(logger *zap.SugaredLogger, m *manifest.Manifest, record manifest.
 		if err := json.WriteFile(m.ProjectDir, record.ConfigFilePath(), config, record.Kind().Name); err == nil {
 			logger.Debugf(`Saved "%s"`, record.ConfigFilePath())
 		} else {
-			errors.Add(err)
+			errors.Append(err)
 		}
 	}
 
-	if errors.Len() > 0 {
-		return errors
-	}
-
-	return nil
+	return errors.ErrorOrNil()
 }

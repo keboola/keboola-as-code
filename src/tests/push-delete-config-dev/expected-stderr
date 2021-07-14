@@ -1,2 +1,2 @@
 Error: cannot perform the "push" operation:
-- cannot delete config "foo/extractor/keboola.ex-db-mysql/with-rows" from dev branch
+	- cannot delete config "foo/extractor/keboola.ex-db-mysql/with-rows" from dev branch

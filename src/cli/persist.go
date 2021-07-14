@@ -63,7 +63,7 @@ func persistCommand(root *rootCommand) *cobra.Command {
 				logger.Debugf("Project local state has been successfully loaded.")
 			} else {
 				if projectState.LocalErrors().Len() > 0 {
-					return utils.WrapError("project local state is invalid", projectState.LocalErrors())
+					return utils.PrefixError("project local state is invalid", projectState.LocalErrors())
 				}
 			}
 
@@ -74,7 +74,7 @@ func persistCommand(root *rootCommand) *cobra.Command {
 					logger.Infof(`+ %s %s %s`, object.Kind().Abbr, object.ObjectId(), object.RelativePath())
 				}
 			} else {
-				return utils.WrapError("cannot persist untracked files", err)
+				return utils.PrefixError("cannot persist untracked files", err)
 			}
 
 			// Print remaining untracked paths

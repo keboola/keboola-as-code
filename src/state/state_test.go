@@ -29,7 +29,7 @@ func TestLoadStateDifferentProjectId(t *testing.T) {
 	state, ok := LoadState(stateOptions)
 	assert.NotNil(t, state)
 	assert.False(t, ok)
-	assert.Equal(t, "- used token is from the project \"45678\", but it must be from the project \"12345\"", state.LocalErrors().Error())
+	assert.Equal(t, "used token is from the project \"45678\", but it must be from the project \"12345\"", state.LocalErrors().Error())
 }
 
 func TestLoadState(t *testing.T) {
@@ -51,8 +51,8 @@ func TestLoadState(t *testing.T) {
 	stateOptions.LoadRemoteState = true
 	state, ok := LoadState(stateOptions)
 	assert.True(t, ok)
-	assert.Empty(t, state.RemoteErrors())
-	assert.Empty(t, state.LocalErrors())
+	assert.Empty(t, state.RemoteErrors().Errors)
+	assert.Empty(t, state.LocalErrors().Errors)
 	assert.Equal(t, []*BranchState{
 		{
 			Remote: &model.Branch{

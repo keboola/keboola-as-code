@@ -8,7 +8,7 @@ import (
 
 // doLoadLocalState - manifest -> local files -> unified model
 func (s *State) doLoadLocalState() {
-	s.localErrors = &utils.Error{}
+	s.localErrors = utils.NewMultiError()
 
 	for _, b := range s.manifest.Content.Branches {
 		// Add branch

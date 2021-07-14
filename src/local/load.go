@@ -6,24 +6,25 @@ import (
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
+	"keboola-as-code/src/validator"
 	"path/filepath"
 	"reflect"
 )
 
 // LoadModel from manifest and disk
 func LoadModel(projectDir string, record manifest.Record, target interface{}) (found bool, err error) {
-	errors := &utils.Error{}
+	errors := utils.NewMultiError()
 
 	// Check if directory exists
 	if !utils.IsDir(filepath.Join(projectDir, record.RelativePath())) {
-		errors.Add(fmt.Errorf(`%s "%s" not found`, record.Kind().Name, record.RelativePath()))
+		errors.Append(fmt.Errorf(`%s "%s" not found`, record.Kind().Name, record.RelativePath()))
 		return false, errors
 	}
 
 	// Load values from the meta file
 	errPrefix := record.Kind().Name + " metadata"
 	if err := utils.ReadTaggedFields(projectDir, record.MetaFilePath(), model.MetaFileTag, errPrefix, target); err != nil {
-		errors.Add(err)
+		errors.Append(err)
 	}
 
 	// Load config file content
@@ -34,15 +35,18 @@ func LoadModel(projectDir string, record manifest.Record, target interface{}) (f
 		if err := json.ReadFile(projectDir, record.ConfigFilePath(), &content, errPrefix); err == nil {
 			modelValue.FieldByName(configField.Name).Set(reflect.ValueOf(content))
 		} else {
-			errors.Add(err)
+			errors.Append(err)
 		}
 	}
 
-	if errors.Len() > 0 {
-		return true, errors
+	// Validate, if all files loaded without error
+	if errors.Len() == 0 {
+		if err := validator.Validate(target); err != nil {
+			errors.AppendWithPrefix(fmt.Sprintf(`%s "%s" is invalid`, record.Kind().Name, record.RelativePath()), err)
+		}
 	}
 
-	return true, nil
+	return true, errors.ErrorOrNil()
 }
 
 func LoadBranch(projectDir string, b *manifest.BranchManifest) (branch *model.Branch, found bool, err error) {

@@ -52,13 +52,13 @@ func NewDiffer(state *state.State) *Differ {
 
 func (d *Differ) Diff() (*Results, error) {
 	d.results = []*Result{}
-	d.error = &utils.Error{}
+	d.error = utils.NewMultiError()
 
 	// Diff all objects in state: branches, config, configRows
 	for _, objectState := range d.state.All() {
 		result, err := d.doDiff(objectState)
 		if err != nil {
-			d.error.Add(err)
+			d.error.Append(err)
 		} else {
 			d.results = append(d.results, result)
 		}
@@ -120,7 +120,7 @@ func (d *Differ) doDiff(state state.ObjectState) (*Result, error) {
 	configTransform := cmp.Transformer("orderedmap", func(m *orderedmap.OrderedMap) string {
 		str, err := json.EncodeString(m, true)
 		if err != nil {
-			panic(utils.WrapError("cannot encode JSON", err))
+			panic(utils.PrefixError("cannot encode JSON", err))
 		}
 		return str
 	})
