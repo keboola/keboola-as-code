@@ -3,7 +3,6 @@ package cli
 import (
 	"github.com/spf13/cobra"
 	"keboola-as-code/src/manifest"
-	"keboola-as-code/src/schema"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
 )
@@ -62,10 +61,8 @@ func validateCommand(root *rootCommand) *cobra.Command {
 			}
 
 			// Validate schemas
-			if err := schema.ValidateSchemas(projectState); err != nil {
-				return utils.PrefixError("validation failed", err)
-			} else {
-				logger.Debug("Validation done.")
+			if err := ValidateSchemas(projectState, logger); err != nil {
+				return err
 			}
 
 			logger.Info("Everything is good.")

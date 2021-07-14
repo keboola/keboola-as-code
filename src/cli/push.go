@@ -6,8 +6,6 @@ import (
 	"keboola-as-code/src/event"
 	"keboola-as-code/src/plan"
 	"keboola-as-code/src/remote"
-	"keboola-as-code/src/schema"
-	"keboola-as-code/src/utils"
 )
 
 const pushShortDescription = `Push configurations to the Keboola Connection project`
@@ -37,17 +35,16 @@ func pushCommand(root *rootCommand) *cobra.Command {
 				event.SendCmdFailedEvent(root.start, root.logger, api, err, "push", "Push command failed.")
 			}
 			action.action = func(api *remote.StorageApi, diffResults *diff.Results) error {
-				state := diffResults.CurrentState
-				manifest := state.Manifest()
+				logger := root.logger
+				projectState := diffResults.CurrentState
+				projectManifest := projectState.Manifest()
 
 				// Log untracked paths
-				state.LogUntrackedPaths(root.logger)
+				projectState.LogUntrackedPaths(logger)
 
 				// Validate schemas
-				if err := schema.ValidateSchemas(state); err != nil {
-					return utils.PrefixError("validation failed", err)
-				} else {
-					root.logger.Debug("Validation done.")
+				if err := ValidateSchemas(projectState, logger); err != nil {
+					return err
 				}
 
 				// Get plan
@@ -59,27 +56,24 @@ func pushCommand(root *rootCommand) *cobra.Command {
 				}
 
 				// Log plan
-				push.LogInfo(root.logger)
+				push.LogInfo(logger)
 
 				// Dry run?
 				dryRun, _ := cmd.Flags().GetBool("dry-run")
 				if dryRun {
-					root.logger.Info("Dry run, nothing changed.")
+					logger.Info("Dry run, nothing changed.")
 					return nil
 				}
 
 				// Invoke
-				executor := plan.NewExecutor(root.logger, root.ctx, root.api, manifest)
+				executor := plan.NewExecutor(logger, root.ctx, root.api, projectManifest)
 				if err := executor.Invoke(push); err != nil {
 					return err
 				}
 
 				// Save manifest
-				if manifest.IsChanged() {
-					if err = manifest.Save(); err != nil {
-						return err
-					}
-					root.logger.Debugf("Saved manifest file \"%s\".", utils.RelPath(manifest.ProjectDir, manifest.Path()))
+				if _, err := SaveManifest(projectManifest, logger); err != nil {
+					return err
 				}
 
 				return nil

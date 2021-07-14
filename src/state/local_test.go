@@ -2,6 +2,7 @@ package state
 
 import (
 	"context"
+	"github.com/jarcoal/httpmock"
 	"github.com/otiai10/copy"
 	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/manifest"
@@ -181,10 +182,34 @@ func loadLocalTestState(t *testing.T, projectDirName string) *State {
 		assert.FailNow(t, err.Error())
 	}
 
+	// Mocked API
 	logger, _ := utils.NewDebugLogger()
-	api, _ := remote.TestStorageApiWithToken(t)
-	state := newState(NewOptions(m, api, context.Background(), logger))
-	state.doLoadLocalState()
+	api, _ := remote.TestMockedStorageApi(t)
+
+	// Mocked API response
+	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
+		"id":                     "ex-generic-v2",
+		"type":                   "extractor",
+		"name":                   "Generic",
+		"configurationSchema":    map[string]interface{}{},
+		"configurationRowSchema": map[string]interface{}{},
+	})
+	assert.NoError(t, err)
+	getMySqlExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
+		"id":                     "keboola.ex-db-mysql",
+		"type":                   "extractor",
+		"name":                   "MySQL",
+		"configurationSchema":    map[string]interface{}{},
+		"configurationRowSchema": map[string]interface{}{},
+	})
+	assert.NoError(t, err)
+	httpmock.RegisterResponder("GET", `=~/storage/components/ex-generic-v2`, getGenericExResponder)
+	httpmock.RegisterResponder("GET", `=~/storage/components/keboola.ex-db-mysql`, getMySqlExResponder)
+
+	// Load state
+	options := NewOptions(m, api, context.Background(), logger)
+	options.LoadLocalState = true
+	state, _ := LoadState(options)
 	return state
 }
 

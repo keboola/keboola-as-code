@@ -37,7 +37,7 @@ type ObjectState interface {
 	HasRemoteState() bool
 	RemoteState() model.ValueWithKey
 	Manifest() manifest.Record
-	UpdateManifest(m *manifest.Manifest)
+	UpdateManifest(m *manifest.Manifest, rename bool)
 	RelativePath() string
 }
 
@@ -301,7 +301,7 @@ func (s *State) SetBranchRemoteState(remote *model.Branch) *BranchState {
 	state.Remote = remote
 	if state.BranchManifest == nil {
 		state.BranchManifest = s.manifest.CreateOrGetRecord(remote.Key()).(*manifest.BranchManifest)
-		state.UpdateManifest(s.manifest)
+		state.UpdateManifest(s.manifest, false)
 	}
 	return state
 }
@@ -334,7 +334,7 @@ func (s *State) SetConfigRemoteState(component *model.Component, remote *model.C
 	state.Remote = remote
 	if state.ConfigManifest == nil {
 		state.ConfigManifest = s.manifest.CreateOrGetRecord(remote.Key()).(*manifest.ConfigManifest)
-		state.UpdateManifest(s.manifest)
+		state.UpdateManifest(s.manifest, false)
 	}
 	return state
 }
@@ -359,7 +359,7 @@ func (s *State) SetConfigRowRemoteState(remote *model.ConfigRow) *ConfigRowState
 	state.Remote = remote
 	if state.ConfigRowManifest == nil {
 		state.ConfigRowManifest = s.manifest.CreateOrGetRecord(remote.Key()).(*manifest.ConfigRowManifest)
-		state.UpdateManifest(s.manifest)
+		state.UpdateManifest(s.manifest, false)
 	}
 	return state
 }
