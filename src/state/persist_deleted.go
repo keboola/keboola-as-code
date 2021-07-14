@@ -12,7 +12,7 @@ func (s *State) PersistDeleted() (deleted []manifest.Record, err error) {
 
 	// Search for deleted objects
 	records := s.manifest.GetRecords()
-	for _, key := range records.Keys() {
+	for _, key := range append([]string(nil), records.Keys()...) {
 		recordRaw, _ := records.Get(key)
 		record := recordRaw.(manifest.Record)
 
