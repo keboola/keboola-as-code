@@ -1,0 +1,7 @@
+%A
+INFO	New persisted objects:
+INFO	+ C %s main/extractor/ex-generic-v2/new
+INFO	+ C %s main/extractor/keboola.ex-db-mysql/with-rows
+INFO	+ R %s main/extractor/keboola.ex-db-mysql/with-rows/rows/users
+DEBUG	Saved manifest file ".keboola/manifest.json".
+INFO	Persist done.

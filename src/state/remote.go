@@ -4,10 +4,12 @@ import (
 	"context"
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/model"
+	"keboola-as-code/src/utils"
 )
 
 // LoadRemoteState - API -> unified model
 func (s *State) LoadRemoteState(ctx context.Context) {
+	s.remoteErrors = &utils.Error{}
 	pool := s.api.NewPool()
 
 	// Load branches

@@ -54,6 +54,10 @@ func (c Client) WithHostUrl(hostUrl string) *Client {
 	return &c
 }
 
+func (c *Client) GetRestyClient() *resty.Client {
+	return c.resty
+}
+
 func (c *Client) Send(request *Request) {
 	// Sent
 	request.lock.Lock()
