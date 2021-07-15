@@ -24,17 +24,14 @@ func TestSimple(t *testing.T) {
 	responseCounter := utils.NewSafeCounter(0)
 	pool := client.NewPool(logger)
 	pool.Request(client.NewRequest(resty.MethodGet, "https://example.com")).
-		OnResponse(func(response *Response) *Response {
+		OnResponse(func(response *Response) {
 			responseCounter.Inc()
-			return response
 		}).
-		OnSuccess(func(response *Response) *Response {
+		OnSuccess(func(response *Response) {
 			successCounter.Inc()
-			return response
 		}).
-		OnError(func(response *Response) *Response {
+		OnError(func(response *Response) {
 			assert.Fail(t, "error not expected")
-			return response
 		}).
 		Send()
 
@@ -51,16 +48,14 @@ func TestSubRequest(t *testing.T) {
 	successCounter := utils.NewSafeCounter(0)
 	responseCounter := utils.NewSafeCounter(0)
 	pool := client.NewPool(logger)
-	onResponse := func(response *Response) *Response {
+	onResponse := func(response *Response) {
 		responseCounter.Inc()
-		return response
 	}
-	onError := func(response *Response) *Response {
+	onError := func(response *Response) {
 		assert.Fail(t, "error not expected")
-		return response
 	}
 	var onSuccess ResponseCallback
-	onSuccess = func(response *Response) *Response {
+	onSuccess = func(response *Response) {
 		successCounter.Inc()
 		if successCounter.Get() < 30 {
 			// Send sub-request
@@ -70,7 +65,6 @@ func TestSubRequest(t *testing.T) {
 				OnError(onError).
 				Send()
 		}
-		return response
 	}
 
 	pool.Request(client.NewRequest(resty.MethodGet, "https://example.com")).
@@ -92,15 +86,14 @@ func TestErrorInCallback(t *testing.T) {
 	c := utils.NewSafeCounter(0)
 	pool := client.NewPool(logger)
 	var onSuccess ResponseCallback
-	onSuccess = func(response *Response) *Response {
+	onSuccess = func(response *Response) {
 		pool.Request(client.NewRequest(resty.MethodGet, "https://example.com")).
 			OnSuccess(onSuccess).
 			Send()
 
 		if c.Inc(); c.Get() == 10 {
-			return response.SetErr(errors.New("some error in response listener"))
+			response.SetErr(errors.New("some error in response listener"))
 		}
-		return response
 	}
 	pool.Request(client.NewRequest(resty.MethodGet, "https://example.com")).
 		OnSuccess(onSuccess).
@@ -119,7 +112,7 @@ func TestNetworkError(t *testing.T) {
 	c := utils.NewSafeCounter(0)
 	pool := client.NewPool(logger)
 	var onSuccess ResponseCallback
-	onSuccess = func(response *Response) *Response {
+	onSuccess = func(response *Response) {
 		if c.Inc(); c.Get() == 10 {
 			pool.Request(client.NewRequest(resty.MethodGet, "https://example.com/error")).
 				OnSuccess(onSuccess).
@@ -129,7 +122,6 @@ func TestNetworkError(t *testing.T) {
 				OnSuccess(onSuccess).
 				Send()
 		}
-		return response
 	}
 	pool.Request(client.NewRequest(resty.MethodGet, "https://example.com")).
 		OnSuccess(onSuccess).
@@ -147,17 +139,14 @@ func TestOnSuccess(t *testing.T) {
 	responseCaught := false
 	pool := client.NewPool(logger)
 	pool.Request(client.NewRequest(resty.MethodGet, "https://example.com")).
-		OnSuccess(func(response *Response) *Response {
+		OnSuccess(func(response *Response) {
 			successCaught = true
-			return response
 		}).
-		OnError(func(response *Response) *Response {
+		OnError(func(response *Response) {
 			assert.Fail(t, "error not expected")
-			return response
 		}).
-		OnResponse(func(response *Response) *Response {
+		OnResponse(func(response *Response) {
 			responseCaught = true
-			return response
 		}).
 		Send()
 
@@ -176,27 +165,22 @@ func TestOnError(t *testing.T) {
 	responseCaught := false
 	pool := client.NewPool(logger)
 	pool.Request(client.NewRequest(resty.MethodGet, "https://example.com")).
-		OnSuccess(func(response *Response) *Response {
+		OnSuccess(func(response *Response) {
 			pool.Request(client.NewRequest(resty.MethodGet, "https://example.com/error")).
-				OnSuccess(func(response *Response) *Response {
+				OnSuccess(func(response *Response) {
 					assert.Fail(t, "error expected")
-					return response
 
 				}).
-				OnError(func(response *Response) *Response {
+				OnError(func(response *Response) {
 					errorCaught = true
-					return response
 				}).
-				OnResponse(func(response *Response) *Response {
+				OnResponse(func(response *Response) {
 					responseCaught = true
-					return response
 				}).
 				Send()
-			return response
 		}).
-		OnError(func(response *Response) *Response {
+		OnError(func(response *Response) {
 			assert.Fail(t, "error not expected")
-			return response
 		}).
 		Send()
 
@@ -227,7 +211,7 @@ func TestWaitForSubRequest(t *testing.T) {
 	var mainRequest *Request
 	var subRequestCallback ResponseCallback
 	pool := client.NewPool(logger)
-	subRequestCallback = func(response *Response) *Response {
+	subRequestCallback = func(response *Response) {
 		if counter.IncAndGet() <= 10 {
 			// Send sub-request
 			subRequest := pool.
@@ -236,7 +220,6 @@ func TestWaitForSubRequest(t *testing.T) {
 			mainRequest.WaitFor(subRequest) // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 			subRequest.Send()
 		}
-		return response
 	}
 
 	mainDoneCallbackCalled := false
@@ -244,24 +227,21 @@ func TestWaitForSubRequest(t *testing.T) {
 	allDoneCallback2Called := false
 	mainRequest = pool.
 		Request(client.NewRequest(resty.MethodGet, "https://example.com")).
-		OnSuccess(func(response *Response) *Response {
+		OnSuccess(func(response *Response) {
 			// Should be called as soon as the main request is done
 			mainDoneCallbackCalled = true
 			assert.Equal(t, 0, counter.Get())
-			return response
 		}).
 		OnSuccess(subRequestCallback).
-		OnSuccess(func(response *Response) *Response {
+		OnSuccess(func(response *Response) {
 			// Should be called when all sub-requests are done
 			allDoneCallback1Called = true
 			assert.Equal(t, 11, counter.Get())
-			return response
 		}).
-		OnSuccess(func(response *Response) *Response {
+		OnSuccess(func(response *Response) {
 			// Should be called when all sub-requests are done
 			allDoneCallback2Called = true
 			assert.Equal(t, 11, counter.Get())
-			return response
 		}).
 		Send()
 
@@ -286,31 +266,28 @@ func TestWaitForSubRequestChain(t *testing.T) {
 	var subRequestCallback ResponseCallback
 	counter := utils.NewSafeCounter(0)
 	pool := client.NewPool(logger)
-	subRequestCallback = func(response *Response) *Response {
+	subRequestCallback = func(response *Response) {
 		if counter.IncAndGet() <= 10 {
 			// Send sub-request
 			subRequest := pool.
 				Request(client.NewRequest(resty.MethodGet, "https://example.com/sub")).
 				OnSuccess(subRequestCallback).
-				OnSuccess(func(response *Response) *Response {
+				OnSuccess(func(response *Response) {
 					invokeOrder = append(invokeOrder, response.Id())
-					return response
 				})
 			response.WaitFor(subRequest) // main WaitFor -> sub1 -> sub2 -> sub3 ...
 			subRequest.Send()
 		}
-		return response
 	}
 
 	allDoneCallbackCalled := false
 	pool.
 		Request(client.NewRequest(resty.MethodGet, "https://example.com")).
 		OnSuccess(subRequestCallback).
-		OnSuccess(func(response *Response) *Response {
+		OnSuccess(func(response *Response) {
 			// Should be called when all sub-requests are done
 			allDoneCallbackCalled = true
 			assert.Equal(t, 11, counter.Get())
-			return response
 		}).
 		Send()
 

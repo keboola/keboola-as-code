@@ -119,10 +119,9 @@ func (p *testProject) InitState() {
 		} else {
 			p.api.
 				CreateBranchRequest(branch).
-				OnSuccess(func(response *client.Response) *client.Response {
+				OnSuccess(func(response *client.Response) {
 					p.log(`crated branch "%s", id: "%d"`, branch.Name, branch.Id)
 					p.setEnv(fmt.Sprintf("TEST_BRANCH_%s_ID", branch.Name), cast.ToString(branch.Id))
-					return response
 				}).
 				Send()
 		}
@@ -157,12 +156,11 @@ func (p *testProject) CreateConfigsInBranch(pool *client.Pool, names []string, b
 			p.log("creating config \"%s/%s/%s\"", branch.Name, config.ComponentId, config.Name)
 			pool.
 				Request(request).
-				OnSuccess(func(response *client.Response) *client.Response {
+				OnSuccess(func(response *client.Response) {
 					p.setEnv(fmt.Sprintf("%s_%s_ID", envPrefix, config.Name), config.Id)
 					for _, row := range config.Rows {
 						p.setEnv(fmt.Sprintf("%s_%s_ROW_%s_ID", envPrefix, config.Name, row.Name), row.Id)
 					}
-					return response
 				}).
 				Send()
 		} else {

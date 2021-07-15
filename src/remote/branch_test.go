@@ -54,7 +54,7 @@ func TestBranchApiCalls(t *testing.T) {
 	}
 	onSuccessCalled := false
 	request := api.CreateBranchRequest(branchBar).
-		OnSuccess(func(response *client.Response) *client.Response {
+		OnSuccess(func(response *client.Response) {
 			// OnSuccess callback called when job is in successful state
 			job := response.Result().(*model.Job)
 			assert.NoError(t, response.Err())
@@ -62,7 +62,6 @@ func TestBranchApiCalls(t *testing.T) {
 			assert.Equal(t, "success", job.Status)
 			assert.NotEmpty(t, branchBar.Id)
 			onSuccessCalled = true
-			return response
 		}).
 		Send()
 	assert.NoError(t, request.Err())
@@ -117,14 +116,13 @@ func TestBranchApiCalls(t *testing.T) {
 	// Delete branch with callback
 	onSuccessCalled = false
 	request = api.DeleteBranchRequest(branchBar.Id).
-		OnSuccess(func(response *client.Response) *client.Response {
+		OnSuccess(func(response *client.Response) {
 			// OnSuccess callback called when job is in successful state
 			job := response.Result().(*model.Job)
 			assert.NoError(t, response.Err())
 			assert.NotNil(t, job)
 			assert.Equal(t, "success", job.Status)
 			onSuccessCalled = true
-			return response
 		}).
 		Send()
 	assert.NoError(t, request.Err())

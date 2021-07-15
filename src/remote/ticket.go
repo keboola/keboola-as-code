@@ -25,12 +25,11 @@ func (t *TicketProvider) Request(onSuccess func(ticket *model.Ticket)) {
 	t.callbacks = append(t.callbacks, onSuccess)
 	t.pool.
 		Request(t.api.GenerateNewIdRequest()).
-		OnSuccess(func(response *client.Response) *client.Response {
+		OnSuccess(func(response *client.Response) {
 			t.lock.Lock()
 			defer t.lock.Unlock()
 			ticket := response.Result().(*model.Ticket)
 			t.tickets = append(t.tickets, ticket)
-			return response
 		}).
 		Send()
 }
