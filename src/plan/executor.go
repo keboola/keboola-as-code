@@ -174,7 +174,7 @@ func (e *Executor) saveBranch(branch *state.BranchState, result *diff.Result) {
 
 func (e *Executor) saveConfig(config *state.ConfigState, result *diff.Result) {
 	pool := e.getPoolFor(config.Level())
-	if config.Local.Id == "" {
+	if config.Remote == nil {
 		// Create
 		request, err := e.api.CreateConfigRequest(&model.ConfigWithRows{Config: config.Local})
 		if err != nil {
@@ -185,12 +185,12 @@ func (e *Executor) saveConfig(config *state.ConfigState, result *diff.Result) {
 			Request(request).
 			OnSuccess(func(response *client.Response) {
 				// Save new ID to manifest
-				config.Local = config.Remote
+				config.Remote = config.Local
 				result.ObjectState.UpdateManifest(e.manifest, false)
 				e.saveLocal(config)
 			}).
 			Send()
-	} else if config.Remote != nil {
+	} else {
 		// Update
 		request, err := e.api.UpdateConfigRequest(config.Local, result.ChangedFields)
 		if err != nil {
@@ -200,16 +200,13 @@ func (e *Executor) saveConfig(config *state.ConfigState, result *diff.Result) {
 		pool.
 			Request(request).
 			Send()
-	} else {
-		// Restore deleted -> not possible
-		e.errors.Append(fmt.Errorf("TODO"))
 	}
 }
 
 func (e *Executor) saveConfigRow(row *state.ConfigRowState, result *diff.Result) {
 	pool := e.getPoolFor(row.Level())
-	if row.Local.Id == "" {
-		// No ID -> not present in remote -> create
+	if row.Remote == nil {
+		// Create
 		request, err := e.api.CreateConfigRowRequest(row.Local)
 		if err != nil {
 			e.errors.Append(err)
@@ -219,13 +216,13 @@ func (e *Executor) saveConfigRow(row *state.ConfigRowState, result *diff.Result)
 			Request(request).
 			OnSuccess(func(response *client.Response) {
 				// Save new ID to manifest
-				row.Local = row.Remote
+				row.Remote = row.Local
 				result.ObjectState.UpdateManifest(e.manifest, false)
 				e.saveLocal(row)
 			}).
 			Send()
-	} else if row.Remote != nil {
-		// Local ID + present in remote -> update
+	} else {
+		// Update
 		request, err := e.api.UpdateConfigRowRequest(row.Local, result.ChangedFields)
 		if err != nil {
 			e.errors.Append(err)
@@ -234,9 +231,6 @@ func (e *Executor) saveConfigRow(row *state.ConfigRowState, result *diff.Result)
 		pool.
 			Request(request).
 			Send()
-	} else {
-		// Restore deleted -> not possible
-		e.errors.Append(fmt.Errorf("TODO"))
 	}
 }
 
