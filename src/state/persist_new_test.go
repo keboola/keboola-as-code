@@ -296,7 +296,7 @@ func initMinimalProjectDir(t *testing.T) string {
 	if err != nil {
 		t.Fatalf("Copy error: %s", err)
 	}
-	utils.ReplaceEnvsDir(projectDir)
+	utils.ReplaceEnvsDir(projectDir, nil)
 
 	return projectDir
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/google/shlex"
 	"github.com/otiai10/copy"
 	"github.com/stretchr/testify/assert"
+	"github.com/umisama/go-regexpcache"
 	"io/fs"
 	"keboola-as-code/src/fixtures"
 	"keboola-as-code/src/json"
@@ -21,6 +22,25 @@ import (
 	"strings"
 	"testing"
 )
+
+// EnvTicketProvider allows you to generate new unique IDs via an ENV variable in the test
+func CreateEnvTicketProvider(api *remote.StorageApi) utils.EnvProvider {
+	return func(name string) string {
+		name = strings.Trim(name, "%")
+		nameRegexp := regexpcache.MustCompile(`^TEST_NEW_TICKET_\d+$`)
+		if _, found := os.LookupEnv(name); !found && nameRegexp.MatchString(name) {
+			ticket, err := api.GenerateNewId()
+			if err != nil {
+				panic(err)
+			}
+
+			utils.MustSetEnv(name, ticket.Id)
+			return ticket.Id
+		}
+
+		return utils.DefaultEnvProvider(name)
+	}
+}
 
 // TestFunctional runs one functional test per each sub-directory
 func TestFunctional(t *testing.T) {
@@ -71,12 +91,15 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 		remote.SetStateOfTestProject(t, api, projectStateFilePath)
 	}
 
+	// Create ENV provider
+	envProvider := CreateEnvTicketProvider(api)
+
 	// Replace all %%ENV_VAR%% in all files in the working directory
-	utils.ReplaceEnvsDir(workingDir)
+	utils.ReplaceEnvsDir(workingDir, envProvider)
 
 	// Load command arguments from file
 	argsFile := filepath.Join(testDir, "args")
-	argsStr := utils.ReplaceEnvsString(strings.TrimSpace(utils.GetFileContent(argsFile)))
+	argsStr := utils.ReplaceEnvsString(strings.TrimSpace(utils.GetFileContent(argsFile)), nil)
 	args, err := shlex.Split(argsStr)
 	if err != nil {
 		t.Fatalf("Cannot parse args \"%s\": %s", argsStr, err)
@@ -100,7 +123,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	}
 
 	// Assert
-	AssertExpectations(t, api, testDir, workingDir, exitCode, strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()))
+	AssertExpectations(t, api, envProvider, testDir, workingDir, exitCode, strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()))
 }
 
 // CompileBinary compiles component to binary used in this test
@@ -163,6 +186,7 @@ func GetTestDirs(t *testing.T, root string) []string {
 func AssertExpectations(
 	t *testing.T,
 	api *remote.StorageApi,
+	envProvider utils.EnvProvider,
 	testDir string,
 	workingDir string,
 	exitCode int,
@@ -170,8 +194,8 @@ func AssertExpectations(
 	stderr string,
 ) {
 	// Compare expected values
-	expectedStdout := utils.ReplaceEnvsString(utils.GetFileContent(filepath.Join(testDir, "expected-stdout")))
-	expectedStderr := utils.ReplaceEnvsString(utils.GetFileContent(filepath.Join(testDir, "expected-stderr")))
+	expectedStdout := utils.ReplaceEnvsString(utils.GetFileContent(filepath.Join(testDir, "expected-stdout")), nil)
+	expectedStderr := utils.ReplaceEnvsString(utils.GetFileContent(filepath.Join(testDir, "expected-stderr")), nil)
 	expectedCodeStr := utils.GetFileContent(filepath.Join(testDir, "expected-code"))
 	expectedCode, _ := strconv.ParseInt(strings.TrimSpace(expectedCodeStr), 10, 32)
 	assert.Equal(
@@ -199,7 +223,7 @@ func AssertExpectations(
 	if err != nil {
 		t.Fatalf("Copy error: %s", err)
 	}
-	utils.ReplaceEnvsDir(expectedDir)
+	utils.ReplaceEnvsDir(expectedDir, envProvider)
 
 	// Compare actual and expected dirs
 	utils.AssertDirectoryContentsSame(t, expectedDir, workingDir)
@@ -232,7 +256,7 @@ func AssertExpectations(
 		}
 
 		// Compare expected and actual state
-		assert.Equal(t, expectedSnapshot, actualSnapshot)
+		assert.Equal(t, expectedSnapshot, actualSnapshot, "unexpected project state")
 	}
 
 }
