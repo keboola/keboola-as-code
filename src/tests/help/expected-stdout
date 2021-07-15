@@ -12,6 +12,7 @@ Usage:
 
 Available Commands:
   diff        Print differences between local and remote state
+  fix-paths   Normalize all local paths
   help        Help about any command
   init        Init local project directory and perform the first pull
   persist     Persist created and deleted configs/rows in manifest
