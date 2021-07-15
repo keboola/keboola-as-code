@@ -15,7 +15,7 @@
       "branchId": %%LOCAL_STATE_MY_BRANCH_ID%%,
       "componentId": "keboola.ex-db-mysql",
       "id": "%%LOCAL_STATE_MYSQL_CONFIG_ID%%",
-      "path": "keboola.ex-db-mysql/896-tables",
+      "path": "extractor/keboola.ex-db-mysql/896-tables",
       "rows": [
         {
           "id": "12",
