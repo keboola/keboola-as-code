@@ -52,18 +52,18 @@ func TestRenameAllPlan(t *testing.T) {
 	// Get rename plan
 	assert.Equal(t, []*local.RenamePlan{
 		{
-			OldPath:     "my-main-branch",
-			NewPath:     "main",
+			OldPath:     filepath.Join(projectDir, "my-main-branch"),
+			NewPath:     filepath.Join(projectDir, "main"),
 			Description: "my-main-branch -> main",
 		},
 		{
-			OldPath:     "main/extractor/keboola.ex-db-mysql/my-table",
-			NewPath:     "main/extractor/keboola.ex-db-mysql/789-tables",
+			OldPath:     filepath.Join(projectDir, "main/extractor/keboola.ex-db-mysql/my-table"),
+			NewPath:     filepath.Join(projectDir, "main/extractor/keboola.ex-db-mysql/789-tables"),
 			Description: "main/extractor/keboola.ex-db-mysql/{my-table -> 789-tables}",
 		},
 		{
-			OldPath:     "main/extractor/keboola.ex-db-mysql/789-tables/rows/my-row",
-			NewPath:     "main/extractor/keboola.ex-db-mysql/789-tables/rows/12-users",
+			OldPath:     filepath.Join(projectDir, "main/extractor/keboola.ex-db-mysql/789-tables/rows/my-row"),
+			NewPath:     filepath.Join(projectDir, "main/extractor/keboola.ex-db-mysql/789-tables/rows/12-users"),
 			Description: "main/extractor/keboola.ex-db-mysql/789-tables/rows/{my-row -> 12-users}",
 		},
 	}, state.RenamePlan())
