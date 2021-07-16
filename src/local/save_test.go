@@ -5,6 +5,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
+	"keboola-as-code/src/remote"
 	"keboola-as-code/src/utils"
 	"os"
 	"path/filepath"
@@ -68,6 +69,8 @@ func TestLocalSaveModel(t *testing.T) {
 	logger, _ := utils.NewDebugLogger()
 	m, err := manifest.NewManifest(1, "connection.keboola.com", projectDir, metadataDir)
 	assert.NoError(t, err)
+	api, _ := remote.TestMockedStorageApi(t)
+	manager := NewManager(logger, m, api)
 
 	config := utils.NewOrderedMap()
 	config.Set("foo", "bar")
@@ -84,7 +87,7 @@ func TestLocalSaveModel(t *testing.T) {
 	assert.True(t, found)
 
 	// Save
-	assert.NoError(t, SaveModel(logger, m, record, source))
+	assert.NoError(t, manager.SaveModel(record, source))
 
 	// Meta and config files are saved
 	expectedMeta := `{

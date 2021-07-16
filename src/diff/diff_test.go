@@ -109,6 +109,14 @@ func TestDiffNotEqual(t *testing.T) {
 
 func TestDiffEqualConfig(t *testing.T) {
 	projectState := createProjectState(t)
+
+	component := &model.Component{
+		ComponentKey: model.ComponentKey{
+			Id: "foo-bar",
+		},
+	}
+	projectState.Components().Set(component)
+
 	branchRemote := &model.Branch{
 		BranchKey: model.BranchKey{
 			Id: 123,
@@ -126,15 +134,11 @@ func TestDiffEqualConfig(t *testing.T) {
 		IsDefault:   false,
 	}
 	branchManifest := &manifest.BranchManifest{}
-	component := &model.Component{
-		ComponentKey: model.ComponentKey{
-			Id: "foo-bar",
-		},
-	}
+
 	configRemote := &model.Config{
 		ConfigKey: model.ConfigKey{
 			BranchId:    123,
-			ComponentId: "foo",
+			ComponentId: "foo-bar",
 			Id:          "456",
 		},
 		Name:              "name",
@@ -144,7 +148,7 @@ func TestDiffEqualConfig(t *testing.T) {
 	configLocal := &model.Config{
 		ConfigKey: model.ConfigKey{
 			BranchId:    123,
-			ComponentId: "foo",
+			ComponentId: "foo-bar",
 			Id:          "456",
 		},
 		Name:              "name",
@@ -154,8 +158,8 @@ func TestDiffEqualConfig(t *testing.T) {
 	configManifest := &manifest.ConfigManifest{}
 	projectState.SetBranchRemoteState(branchRemote)
 	projectState.SetBranchLocalState(branchLocal, branchManifest)
-	projectState.SetConfigRemoteState(component, configRemote)
-	projectState.SetConfigLocalState(component, configLocal, configManifest)
+	projectState.SetConfigRemoteState(configRemote)
+	projectState.SetConfigLocalState(configLocal, configManifest)
 	d := NewDiffer(projectState)
 	results, err := d.Diff()
 	assert.NoError(t, err)
@@ -174,6 +178,14 @@ func TestDiffEqualConfig(t *testing.T) {
 
 func TestDiffNotEqualConfig(t *testing.T) {
 	projectState := createProjectState(t)
+
+	component := &model.Component{
+		ComponentKey: model.ComponentKey{
+			Id: "foo-bar",
+		},
+	}
+	projectState.Components().Set(component)
+
 	branchRemote := &model.Branch{
 		BranchKey: model.BranchKey{
 			Id: 123,
@@ -191,15 +203,11 @@ func TestDiffNotEqualConfig(t *testing.T) {
 		IsDefault:   false,
 	}
 	branchManifest := &manifest.BranchManifest{}
-	component := &model.Component{
-		ComponentKey: model.ComponentKey{
-			Id: "foo-bar",
-		},
-	}
+
 	configRemote := &model.Config{
 		ConfigKey: model.ConfigKey{
 			BranchId:    123,
-			ComponentId: "foo",
+			ComponentId: "foo-bar",
 			Id:          "456",
 		},
 		Name:              "name",
@@ -209,7 +217,7 @@ func TestDiffNotEqualConfig(t *testing.T) {
 	configLocal := &model.Config{
 		ConfigKey: model.ConfigKey{
 			BranchId:    123,
-			ComponentId: "foo",
+			ComponentId: "foo-bar",
 			Id:          "456",
 		},
 		Name:              "changed",
@@ -219,8 +227,8 @@ func TestDiffNotEqualConfig(t *testing.T) {
 	configManifest := &manifest.ConfigManifest{}
 	projectState.SetBranchRemoteState(branchRemote)
 	projectState.SetBranchLocalState(branchLocal, branchManifest)
-	projectState.SetConfigRemoteState(component, configRemote)
-	projectState.SetConfigLocalState(component, configLocal, configManifest)
+	projectState.SetConfigRemoteState(configRemote)
+	projectState.SetConfigLocalState(configLocal, configManifest)
 	d := NewDiffer(projectState)
 	results, err := d.Diff()
 	assert.NoError(t, err)

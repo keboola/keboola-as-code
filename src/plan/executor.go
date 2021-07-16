@@ -9,7 +9,6 @@ import (
 	"golang.org/x/sync/errgroup"
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/diff"
-	"keboola-as-code/src/local"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/remote"
@@ -19,25 +18,25 @@ import (
 )
 
 type Executor struct {
-	logger   *zap.SugaredLogger
-	ctx      context.Context
-	api      *remote.StorageApi
-	manifest *manifest.Manifest
-	errors   *utils.Error
-	workers  *errgroup.Group
-	pools    *orderedmap.OrderedMap
+	*state.State
+	logger  *zap.SugaredLogger
+	ctx     context.Context
+	api     *remote.StorageApi
+	errors  *utils.Error
+	workers *errgroup.Group
+	pools   *orderedmap.OrderedMap
 }
 
-func NewExecutor(logger *zap.SugaredLogger, ctx context.Context, api *remote.StorageApi, manifest *manifest.Manifest) *Executor {
+func NewExecutor(logger *zap.SugaredLogger, ctx context.Context, projectState *state.State, api *remote.StorageApi) *Executor {
 	group, _ := errgroup.WithContext(ctx)
 	return &Executor{
-		logger:   logger,
-		ctx:      ctx,
-		api:      api,
-		manifest: manifest,
-		errors:   utils.NewMultiError(),
-		workers:  group,
-		pools:    utils.NewOrderedMap(),
+		State:   projectState,
+		logger:  logger,
+		ctx:     ctx,
+		api:     api,
+		errors:  utils.NewMultiError(),
+		workers: group,
+		pools:   utils.NewOrderedMap(),
 	}
 }
 
@@ -84,19 +83,19 @@ func (e *Executor) Invoke(p *Plan) error {
 	}
 
 	// Delete invalid objects (eg. if pull --force used, and work continued even an invalid state found)
-	records := e.manifest.GetRecords()
+	records := e.Manifest().GetRecords()
 	for _, key := range append([]string(nil), records.Keys()...) {
 		v, _ := records.Get(key)
 		record := v.(manifest.Record)
 		if record.State().IsInvalid() {
-			if err := local.DeleteModel(e.logger, e.manifest, record); err != nil {
+			if err := e.LocalManager().DeleteModel(record); err != nil {
 				e.errors.Append(err)
 			}
 		}
 	}
 
 	// Delete empty directories
-	if err := local.DeleteEmptyDirectories(e.logger, e.manifest.ProjectDir); err != nil {
+	if err := e.LocalManager().DeleteEmptyDirectories(); err != nil {
 		e.errors.Append(err)
 	}
 
@@ -116,7 +115,7 @@ func (e *Executor) getPoolFor(level int) *client.Pool {
 
 func (e *Executor) saveLocal(object state.ObjectState) {
 	e.workers.Go(func() error {
-		err := local.SaveModel(e.logger, e.manifest, object.Manifest(), object.RemoteState())
+		err := e.LocalManager().SaveModel(object.Manifest(), object.RemoteState())
 		if err != nil {
 			e.errors.Append(err)
 		}
@@ -126,7 +125,7 @@ func (e *Executor) saveLocal(object state.ObjectState) {
 
 func (e *Executor) deleteLocal(object state.ObjectState) {
 	e.workers.Go(func() error {
-		err := local.DeleteModel(e.logger, e.manifest, object.Manifest())
+		err := e.LocalManager().DeleteModel(object.Manifest())
 		if err != nil {
 			e.errors.Append(err)
 		}
@@ -156,7 +155,7 @@ func (e *Executor) saveBranch(branch *state.BranchState, result *diff.Result) {
 			OnSuccess(func(response *client.Response) {
 				// Save new ID to manifest
 				branch.Local = branch.Remote
-				result.ObjectState.UpdateManifest(e.manifest, false)
+				result.ObjectState.UpdateManifest(e.Manifest(), false)
 				e.saveLocal(branch)
 			}).
 			Send()
@@ -186,7 +185,7 @@ func (e *Executor) saveConfig(config *state.ConfigState, result *diff.Result) {
 			OnSuccess(func(response *client.Response) {
 				// Save new ID to manifest
 				config.Remote = config.Local
-				result.ObjectState.UpdateManifest(e.manifest, false)
+				result.ObjectState.UpdateManifest(e.Manifest(), false)
 				e.saveLocal(config)
 			}).
 			Send()
@@ -217,7 +216,7 @@ func (e *Executor) saveConfigRow(row *state.ConfigRowState, result *diff.Result)
 			OnSuccess(func(response *client.Response) {
 				// Save new ID to manifest
 				row.Remote = row.Local
-				result.ObjectState.UpdateManifest(e.manifest, false)
+				result.ObjectState.UpdateManifest(e.Manifest(), false)
 				e.saveLocal(row)
 			}).
 			Send()
@@ -237,20 +236,20 @@ func (e *Executor) saveConfigRow(row *state.ConfigRowState, result *diff.Result)
 func (e *Executor) deleteRemote(result *diff.Result) {
 	switch v := result.ObjectState.(type) {
 	case *state.BranchState:
-		e.manifest.DeleteRecord(v)
+		e.Manifest().DeleteRecord(v)
 		// Delete sequentially, branches cannot be deleted in parallel
 		_, err := e.api.DeleteBranch(v.Id)
 		if err != nil {
 			e.errors.Append(err)
 		}
 	case *state.ConfigState:
-		e.manifest.DeleteRecord(v)
+		e.Manifest().DeleteRecord(v)
 		pool := e.getPoolFor(v.Level())
 		pool.
 			Request(e.api.DeleteConfigRequest(v.ComponentId, v.Id)).
 			Send()
 	case *state.ConfigRowState:
-		e.manifest.DeleteRecord(v)
+		e.Manifest().DeleteRecord(v)
 		pool := e.getPoolFor(v.Level())
 		pool.
 			Request(e.api.DeleteConfigRowRequest(v.ComponentId, v.ConfigId, v.Id)).

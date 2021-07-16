@@ -2,7 +2,6 @@ package state
 
 import (
 	"fmt"
-	"keboola-as-code/src/local"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/remote"
@@ -64,7 +63,7 @@ func (s *State) persistNewConfigRows() {
 			// Is config row matching path naming/template?
 			matched, _ := s.manifest.Naming.ConfigRow.MatchPath(relPath)
 			if matched {
-				s.persistNewConfigRow(path, relPath, config, tickets)
+				s.persistNewConfigRow(relPath, config, tickets)
 				break
 			}
 		}
@@ -88,13 +87,6 @@ func (s *State) persistNewConfig(path, relPath string, matches map[string]string
 		return
 	}
 
-	// Load component
-	component, err := s.getOrLoadComponent(componentId)
-	if err != nil {
-		s.localErrors.AppendWithPrefix(fmt.Sprintf(`cannot persist "%s"`, path), err)
-		return
-	}
-
 	// Generate unique ID
 	tickets.Request(func(ticket *model.Ticket) {
 		key := model.ConfigKey{BranchId: branch.Id, ComponentId: componentId, Id: ticket.Id}
@@ -106,21 +98,14 @@ func (s *State) persistNewConfig(path, relPath string, matches map[string]string
 		s.manifest.PersistRecord(record)
 
 		// Load model
-		config, _, err := local.LoadConfig(s.manifest.ProjectDir, record)
-		if err != nil {
-			s.localErrors.Append(err)
-			return
+		if state := s.loadModel(record); state != nil {
+			// Store for logs
+			s.addNewPersisted(state)
 		}
-
-		// Update state
-		state := s.SetConfigLocalState(component, config, record)
-
-		// Store for logs
-		s.addNewPersisted(state)
 	})
 }
 
-func (s *State) persistNewConfigRow(path, relPath string, config *ConfigState, tickets *remote.TicketProvider) {
+func (s *State) persistNewConfigRow(relPath string, config *ConfigState, tickets *remote.TicketProvider) {
 	// Generate unique ID
 	tickets.Request(func(ticket *model.Ticket) {
 		key := model.ConfigRowKey{BranchId: config.BranchId, ComponentId: config.ComponentId, ConfigId: config.Id, Id: ticket.Id}
@@ -132,16 +117,9 @@ func (s *State) persistNewConfigRow(path, relPath string, config *ConfigState, t
 		s.manifest.PersistRecord(record)
 
 		// Load model
-		configRow, _, err := local.LoadConfigRow(s.manifest.ProjectDir, record)
-		if err != nil {
-			s.localErrors.Append(err)
-			return
+		if state := s.loadModel(record); state != nil {
+			// Store for logs
+			s.addNewPersisted(state)
 		}
-
-		// Update state
-		state := s.SetConfigRowLocalState(configRow, record)
-
-		// Store for logs
-		s.addNewPersisted(state)
 	})
 }

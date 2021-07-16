@@ -8,6 +8,11 @@ import (
 	"strings"
 )
 
+const (
+	TransformationBlock = `blocks/{block_order}-{block_name}`
+	TransformationCode  = `{code_order}-{code_name}`
+)
+
 // LocalNaming of the files
 type LocalNaming struct {
 	Branch    PathTemplate `json:"branch" validate:"required"`

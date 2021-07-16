@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"go.uber.org/zap"
+	"keboola-as-code/src/local"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/remote"
@@ -21,8 +22,8 @@ type State struct {
 	remoteErrors *utils.Error
 	localErrors  *utils.Error
 	paths        *PathsState
+	localManager *local.Manager
 	newPersisted []ObjectState
-	components   map[string]*model.Component
 	branches     map[string]*BranchState
 	configs      map[string]*ConfigState
 	configRows   map[string]*ConfigRowState
@@ -117,16 +118,24 @@ func newState(options *Options) *State {
 		remoteErrors: utils.NewMultiError(),
 		localErrors:  utils.NewMultiError(),
 		branches:     make(map[string]*BranchState),
-		components:   make(map[string]*model.Component),
 		configs:      make(map[string]*ConfigState),
 		configRows:   make(map[string]*ConfigRowState),
 	}
+	s.localManager = local.NewManager(options.logger, options.manifest, s.api)
 	s.paths = NewPathsState(s.manifest.ProjectDir, s.localErrors)
 	return s
 }
 
 func (s *State) Manifest() *manifest.Manifest {
 	return s.manifest
+}
+
+func (s *State) Components() *remote.ComponentsCache {
+	return s.api.Components()
+}
+
+func (s *State) LocalManager() *local.Manager {
+	return s.localManager
 }
 
 func (s *State) MarkPathTracked(path string) {
@@ -213,17 +222,6 @@ func (s *State) Branches() []*BranchState {
 	return branches
 }
 
-func (s *State) Components() []*model.Component {
-	var components []*model.Component
-	for _, c := range s.components {
-		components = append(components, c)
-	}
-	sort.SliceStable(components, func(i, j int) bool {
-		return components[i].Id < components[j].Id
-	})
-	return components
-}
-
 func (s *State) Configs() []*ConfigState {
 	var configs []*ConfigState
 	for _, c := range s.configs {
@@ -257,15 +255,6 @@ func (s *State) GetBranch(key model.BranchKey, create bool) *BranchState {
 		s.branches[keyStr] = &BranchState{}
 	}
 	return s.branches[keyStr]
-}
-
-func (s *State) GetComponent(key model.ComponentKey) *model.Component {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	if component, found := s.components[key.String()]; found {
-		return component
-	}
-	return nil
 }
 
 func (s *State) GetConfig(key model.ConfigKey, create bool) *ConfigState {
@@ -316,17 +305,13 @@ func (s *State) SetBranchLocalState(local *model.Branch, m *manifest.BranchManif
 	return state
 }
 
-func (s *State) setComponent(component *model.Component) {
-	if component == nil {
-		panic(fmt.Errorf("component is not set"))
+func (s *State) SetConfigRemoteState(remote *model.Config) *ConfigState {
+	component, err := s.Components().Get(*remote.ComponentKey())
+	if err != nil {
+		s.AddRemoteError(err)
+		return nil
 	}
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	s.components[component.String()] = component
-}
 
-func (s *State) SetConfigRemoteState(component *model.Component, remote *model.Config) *ConfigState {
-	s.setComponent(component)
 	state := s.GetConfig(remote.ConfigKey, true)
 	state.Component = component
 	s.mutex.Lock()
@@ -339,8 +324,13 @@ func (s *State) SetConfigRemoteState(component *model.Component, remote *model.C
 	return state
 }
 
-func (s *State) SetConfigLocalState(component *model.Component, local *model.Config, m *manifest.ConfigManifest) *ConfigState {
-	s.setComponent(component)
+func (s *State) SetConfigLocalState(local *model.Config, m *manifest.ConfigManifest) *ConfigState {
+	component, err := s.Components().Get(*local.ComponentKey())
+	if err != nil {
+		s.AddLocalError(err)
+		return nil
+	}
+
 	state := s.GetConfig(local.ConfigKey, true)
 	state.Component = component
 	s.mutex.Lock()
@@ -376,7 +366,7 @@ func (s *State) SetConfigRowLocalState(local *model.ConfigRow, m *manifest.Confi
 }
 
 func (s *State) validate() {
-	for _, component := range s.Components() {
+	for _, component := range s.Components().AllLoaded() {
 		if err := validator.Validate(component); err != nil {
 			s.AddLocalError(utils.PrefixError(fmt.Sprintf(`component \"%s\" is not valid`, component.Key()), err))
 		}
