@@ -1,7 +1,8 @@
 package state
 
 import (
-	"keboola-as-code/src/local"
+	"fmt"
+	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
 )
@@ -10,70 +11,56 @@ import (
 func (s *State) doLoadLocalState() {
 	s.localErrors = utils.NewMultiError()
 
+	// Branches
 	for _, b := range s.manifest.Content.Branches {
-		// Add branch
-		branch, found, err := local.LoadBranch(s.manifest.ProjectDir, b)
-		if err == nil {
-			s.SetBranchLocalState(branch, b)
-		} else {
-			b.SetInvalid()
-			if !found {
-				b.SetNotFound()
-			}
-			if found || !s.SkipNotFoundErr {
-				s.AddLocalError(err)
-			}
-		}
+		s.loadModel(b)
 	}
 
+	// Configs
 	for _, c := range s.manifest.Content.Configs {
-		// Add config
-		config, found, err := local.LoadConfig(s.manifest.ProjectDir, c.ConfigManifest)
-		if err == nil {
-			if component, err := s.getOrLoadComponent(config.ComponentId); err == nil {
-				s.SetConfigLocalState(component, config, c.ConfigManifest)
-			} else {
-				s.AddLocalError(err)
-			}
-		} else {
-			c.SetInvalid()
-			if !found {
-				c.SetNotFound()
-			}
-			if found || !s.SkipNotFoundErr {
-				s.AddLocalError(err)
-			}
-		}
+		s.loadModel(c.ConfigManifest)
 
 		// Rows
 		for _, r := range c.Rows {
-			row, found, err := local.LoadConfigRow(s.manifest.ProjectDir, r)
-			if err == nil {
-				s.SetConfigRowLocalState(row, r)
-			} else {
-				r.SetInvalid()
-				if !found {
-					r.SetNotFound()
-				}
-				if found || !s.SkipNotFoundErr {
-					s.AddLocalError(err)
-				}
-			}
+			s.loadModel(r)
 		}
 	}
 }
 
-func (s *State) getOrLoadComponent(componentId string) (*model.Component, error) {
-	// Load component from state if present
-	if component := s.GetComponent(model.ComponentKey{Id: componentId}); component != nil {
-		return component, nil
+func (s *State) loadModel(record manifest.Record) ObjectState {
+	// Detect record type
+	var value interface{}
+	switch v := record.(type) {
+	case *manifest.BranchManifest:
+		value = &model.Branch{BranchKey: v.BranchKey}
+	case *manifest.ConfigManifest:
+		value = &model.Config{ConfigKey: v.ConfigKey}
+	case *manifest.ConfigRowManifest:
+		value = &model.ConfigRow{ConfigRowKey: v.ConfigRowKey}
+	default:
+		panic(fmt.Errorf(`unexpected type %T`, record))
 	}
 
-	// Or by API
-	if component, err := s.api.GetComponent(componentId); err == nil {
-		s.setComponent(component)
-		return component, nil
+	found, err := s.localManager.LoadModel(record, value)
+	if err == nil {
+		switch v := value.(type) {
+		case *model.Branch:
+			return s.SetBranchLocalState(v, record.(*manifest.BranchManifest))
+		case *model.Config:
+			return s.SetConfigLocalState(v, record.(*manifest.ConfigManifest))
+		case *model.ConfigRow:
+			return s.SetConfigRowLocalState(v, record.(*manifest.ConfigRowManifest))
+		default:
+			panic(fmt.Errorf(`unexpected type %T`, record))
+		}
 	} else {
-		return nil, err
+		record.State().SetInvalid()
+		if !found {
+			record.State().SetNotFound()
+		}
+		if found || !s.SkipNotFoundErr {
+			s.AddLocalError(err)
+		}
+		return nil
 	}
 }

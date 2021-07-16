@@ -11,8 +11,9 @@ import (
 )
 
 const (
-	MetaFileTag   = "metaFile:true"
-	ConfigFileTag = "configFile:true"
+	MetaFileTag        = "metaFile:true"
+	ConfigFileTag      = "configFile:true"
+	TransformationType = "transformation"
 )
 
 // Ticket https://keboola.docs.apiary.io/#reference/tickets/generate-unique-id/generate-new-id
@@ -219,6 +220,10 @@ func (k ConfigRowKey) ComponentKey() *ComponentKey {
 
 func (k ConfigRowKey) ConfigKey() *ConfigKey {
 	return &ConfigKey{BranchId: k.BranchId, ComponentId: k.ComponentId, Id: k.ConfigId}
+}
+
+func (c *Component) IsTransformation() bool {
+	return c.Type == TransformationType
 }
 
 func (r *ConfigRow) ToApiValues() (map[string]string, error) {
