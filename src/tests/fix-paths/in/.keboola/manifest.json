@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "project": {
+    "id": %%TEST_PROJECT_ID%%,
+    "apiHost": "%%TEST_KBC_STORAGE_API_HOST%%"
+  },
+  "sortBy": "path",
+  "naming": {
+    "branch": "{branch_name}",
+    "config": "{component_type}/{component_id}/{config_name}",
+    "configRow": "rows/{config_row_name}"
+  },
+  "branches": [
+    {
+      "id": 123,
+      "path": "my-main-branch"
+    }
+  ],
+  "configurations": [
+    {
+      "branchId": 123,
+      "componentId": "ex-generic-v2",
+      "id": "456",
+      "path": "extractor/ex-generic-v2/todos",
+      "rows": []
+    },
+    {
+      "branchId": 123,
+      "componentId": "keboola.ex-db-mysql",
+      "id": "789",
+      "path": "extractor/keboola.ex-db-mysql/my-table",
+      "rows": [
+        {
+          "id": "12",
+          "path": "rows/my-row"
+        }
+      ]
+    }
+  ]
+}

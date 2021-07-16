@@ -45,7 +45,8 @@ func (s *State) RenamePlan() (plans []*local.RenamePlan) {
 				plan.Description = fmt.Sprintf(`%s -> %s`, oldPathRel, newPathRel)
 			}
 
-			// Add to results
+			// Add to plan
+			s.manifest.PersistRecord(object.Manifest())
 			plans = append(plans, plan)
 		}
 	}

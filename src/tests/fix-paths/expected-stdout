@@ -1,0 +1,9 @@
+%A
+DEBUG	Project local state has been successfully loaded.
+DEBUG	Starting renaming of the 3 paths.
+INFO	Renamed objects:
+INFO		- my-main-branch -> main
+INFO		- main/extractor/keboola.ex-db-mysql/{my-table -> tables}
+INFO		- main/extractor/keboola.ex-db-mysql/tables/rows/{my-row -> users}
+DEBUG	Saved manifest file ".keboola/manifest.json".
+INFO	Fix paths done.
