@@ -1,7 +1,10 @@
 %A
-INFO	New persisted objects:
-INFO	+ C %s main/extractor/ex-generic-v2/new
-INFO	+ C %s main/extractor/keboola.ex-db-mysql/with-rows
-INFO	+ R %s main/extractor/keboola.ex-db-mysql/with-rows/rows/users
+INFO	New objects:
+INFO		+ C %s main/extractor/ex-generic-v2/new
+INFO		+ C %s main/extractor/keboola.ex-db-mysql/with-rows
+INFO		+ R %s main/extractor/keboola.ex-db-mysql/with-rows/rows/users
+INFO	Deleted objects:
+INFO		- C main/extractor/keboola.ex-db-mysql/missing
+INFO		- R main/extractor/keboola.ex-db-mysql/missing/rows/some-row
 DEBUG	Saved manifest file ".keboola/manifest.json".
 INFO	Persist done.

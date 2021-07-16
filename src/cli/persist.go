@@ -67,14 +67,28 @@ func persistCommand(root *rootCommand) *cobra.Command {
 				}
 			}
 
-			// Persist untracked files
-			if newPersisted, err := projectState.Persist(); err == nil {
-				logger.Info("New persisted objects:")
-				for _, object := range newPersisted {
-					logger.Infof(`+ %s %s %s`, object.Kind().Abbr, object.ObjectId(), object.RelativePath())
+			// Persist new/untracked objects
+			if newPersisted, err := projectState.PersistNew(); err == nil {
+				if len(newPersisted) > 0 {
+					logger.Info("New objects:")
+					for _, object := range newPersisted {
+						logger.Infof("\t+ %s %s %s", object.Kind().Abbr, object.ObjectId(), object.RelativePath())
+					}
 				}
 			} else {
-				return utils.PrefixError("cannot persist untracked files", err)
+				return utils.PrefixError("cannot persist new objects", err)
+			}
+
+			// Persist deleted objets
+			if deleted, err := projectState.PersistDeleted(); err == nil {
+				if len(deleted) > 0 {
+					logger.Info("Deleted objects:")
+					for _, object := range deleted {
+						logger.Infof("\t- %s %s", object.Kind().Abbr, object.RelativePath())
+					}
+				}
+			} else {
+				return utils.PrefixError("cannot persist deleted objects", err)
 			}
 
 			// Print remaining untracked paths
@@ -86,6 +100,8 @@ func persistCommand(root *rootCommand) *cobra.Command {
 					return err
 				}
 				root.logger.Debugf("Saved manifest file \"%s\".", utils.RelPath(projectManifest.ProjectDir, projectManifest.Path()))
+			} else {
+				logger.Info(`Nothing to do.`)
 			}
 			logger.Info(`Persist done.`)
 

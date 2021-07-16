@@ -23,7 +23,7 @@ func (p *Plan) Log(writer *log.WriteCloser) *Plan {
 	})
 
 	if len(actions) == 0 {
-		writer.WriteStringNoErr("  no difference")
+		writer.WriteStringNoErr("\tno difference")
 	} else {
 		skippedDeleteCount := 0
 		for _, action := range actions {

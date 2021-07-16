@@ -17,7 +17,7 @@ import (
 )
 
 func TestPersistNoChange(t *testing.T) {
-	projectDir := initProjectDir(t)
+	projectDir := initMinimalProjectDir(t)
 	metadataDir := filepath.Join(projectDir, manifest.MetadataDir)
 	m, err := manifest.LoadManifest(projectDir, metadataDir)
 	assert.NoError(t, err)
@@ -41,13 +41,13 @@ func TestPersistNoChange(t *testing.T) {
 	assert.Empty(t, state.UntrackedPaths())
 
 	// State after
-	persisted, err := state.Persist()
+	persisted, err := state.PersistNew()
 	assert.NoError(t, err)
 	assert.Empty(t, persisted)
 }
 
 func TestPersistNewConfig(t *testing.T) {
-	projectDir := initProjectDir(t)
+	projectDir := initMinimalProjectDir(t)
 	metadataDir := filepath.Join(projectDir, manifest.MetadataDir)
 	m, err := manifest.LoadManifest(projectDir, metadataDir)
 	assert.NoError(t, err)
@@ -89,7 +89,7 @@ func TestPersistNewConfig(t *testing.T) {
 	assert.Len(t, state.All(), 2)
 
 	// State after
-	persisted, err := state.Persist()
+	persisted, err := state.PersistNew()
 	persistedPaths := make([]string, 0)
 	for _, object := range persisted {
 		persistedPaths = append(persistedPaths, object.RelativePath())
@@ -141,7 +141,7 @@ func TestPersistNewConfig(t *testing.T) {
 }
 
 func TestPersistNewConfigRow(t *testing.T) {
-	projectDir := initProjectDir(t)
+	projectDir := initMinimalProjectDir(t)
 	metadataDir := filepath.Join(projectDir, manifest.MetadataDir)
 	m, err := manifest.LoadManifest(projectDir, metadataDir)
 	assert.NoError(t, err)
@@ -181,9 +181,10 @@ func TestPersistNewConfigRow(t *testing.T) {
 
 	// State before
 	logger, _ := utils.NewDebugLogger()
-	state := newState(NewOptions(m, api, context.Background(), logger))
-	assert.NotNil(t, state)
-	state.doLoadLocalState()
+	options := NewOptions(m, api, context.Background(), logger)
+	options.LoadLocalState = true
+	state, ok := LoadState(options)
+	assert.True(t, ok)
 	assert.Empty(t, state.LocalErrors().Errors)
 	assert.Equal(t, []string{
 		"main/extractor/keboola.ex-db-mysql",
@@ -201,7 +202,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 	assert.Len(t, state.All(), 2)
 
 	// State after
-	persisted, err := state.Persist()
+	persisted, err := state.PersistNew()
 	persistedPaths := make([]string, 0)
 	for _, object := range persisted {
 		persistedPaths = append(persistedPaths, object.RelativePath())
@@ -284,7 +285,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 	)
 }
 
-func initProjectDir(t *testing.T) string {
+func initMinimalProjectDir(t *testing.T) string {
 	utils.MustSetEnv("LOCAL_STATE_MAIN_BRANCH_ID", "111")
 	utils.MustSetEnv("LOCAL_STATE_GENERIC_CONFIG_ID", "456")
 

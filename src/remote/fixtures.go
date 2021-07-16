@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
 	"os"
 	"testing"
@@ -15,10 +16,14 @@ func TestStorageApi(t *testing.T) (*StorageApi, *utils.Writer) {
 }
 
 func TestMockedStorageApi(t *testing.T) (*StorageApi, *utils.Writer) {
-	api, logs := TestStorageApiWithToken(t)
-
+	logger, logs := utils.NewDebugLogger()
+	if utils.TestIsVerbose() {
+		logs.ConnectTo(os.Stdout)
+	}
 	// Set short retry delay in tests
+	api := NewStorageApi("connection.keboola.com", context.Background(), logger, false)
 	api.SetRetry(3, 1*time.Millisecond, 1*time.Millisecond)
+	api = api.WithToken(&model.Token{Owner: model.TokenOwner{Id: 12345}})
 
 	// Mocked resty transport
 	httpmock.Activate()

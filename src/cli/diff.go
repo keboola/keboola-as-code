@@ -62,7 +62,7 @@ func diffCommand(root *rootCommand) *cobra.Command {
 
 				// No difference?
 				if differencesCount == 0 {
-					root.logger.Info("No difference.")
+					root.logger.Info("\tno difference")
 				}
 
 				return nil

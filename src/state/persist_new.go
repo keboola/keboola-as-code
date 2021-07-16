@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 )
 
-// Persist created/deleted object from the filesystem
-func (s *State) Persist() (newPersisted []ObjectState, err error) {
+// PersistNew objects from the filesystem
+func (s *State) PersistNew() (newPersisted []ObjectState, err error) {
 	s.localErrors = utils.NewMultiError()
 	s.newPersisted = make([]ObjectState, 0)
 
@@ -39,7 +39,7 @@ func (s *State) persistNewConfigs() {
 			// Is config matching path naming/template?
 			matched, matches := s.manifest.Naming.Config.MatchPath(relPath)
 			if matched {
-				s.persistConfig(path, relPath, matches, branch, tickets)
+				s.persistNewConfig(path, relPath, matches, branch, tickets)
 				break
 			}
 		}
@@ -64,7 +64,7 @@ func (s *State) persistNewConfigRows() {
 			// Is config row matching path naming/template?
 			matched, _ := s.manifest.Naming.ConfigRow.MatchPath(relPath)
 			if matched {
-				s.persistConfigRow(path, relPath, config, tickets)
+				s.persistNewConfigRow(path, relPath, config, tickets)
 				break
 			}
 		}
@@ -76,7 +76,7 @@ func (s *State) persistNewConfigRows() {
 	}
 }
 
-func (s *State) persistConfig(path, relPath string, matches map[string]string, branch *BranchState, tickets *remote.TicketProvider) {
+func (s *State) persistNewConfig(path, relPath string, matches map[string]string, branch *BranchState, tickets *remote.TicketProvider) {
 	// Get component ID
 	componentId, ok := matches["component_id"]
 	if !ok || componentId == "" {
@@ -108,7 +108,8 @@ func (s *State) persistConfig(path, relPath string, matches map[string]string, b
 		// Load model
 		config, _, err := local.LoadConfig(s.manifest.ProjectDir, record)
 		if err != nil {
-			s.localErrors.AppendWithPrefix(fmt.Sprintf(`cannot persist "%s"`, path), err)
+			s.localErrors.Append(err)
+			return
 		}
 
 		// Update state
@@ -119,7 +120,7 @@ func (s *State) persistConfig(path, relPath string, matches map[string]string, b
 	})
 }
 
-func (s *State) persistConfigRow(path, relPath string, config *ConfigState, tickets *remote.TicketProvider) {
+func (s *State) persistNewConfigRow(path, relPath string, config *ConfigState, tickets *remote.TicketProvider) {
 	// Generate unique ID
 	tickets.Request(func(ticket *model.Ticket) {
 		key := model.ConfigRowKey{BranchId: config.BranchId, ComponentId: config.ComponentId, ConfigId: config.Id, Id: ticket.Id}
@@ -133,7 +134,8 @@ func (s *State) persistConfigRow(path, relPath string, config *ConfigState, tick
 		// Load model
 		configRow, _, err := local.LoadConfigRow(s.manifest.ProjectDir, record)
 		if err != nil {
-			s.localErrors.AppendWithPrefix(fmt.Sprintf(`cannot persist "%s"`, path), err)
+			s.localErrors.Append(err)
+			return
 		}
 
 		// Update state
