@@ -12,18 +12,18 @@ import (
 )
 
 // LoadModel from manifest and disk
-func LoadModel(projectDir string, record manifest.Record, target interface{}) (found bool, err error) {
+func (m *Manager) LoadModel(record manifest.Record, target interface{}) (found bool, err error) {
 	errors := utils.NewMultiError()
 
 	// Check if directory exists
-	if !utils.IsDir(filepath.Join(projectDir, record.RelativePath())) {
+	if !utils.IsDir(filepath.Join(m.ProjectDir(), record.RelativePath())) {
 		errors.Append(fmt.Errorf(`%s "%s" not found`, record.Kind().Name, record.RelativePath()))
 		return false, errors
 	}
 
 	// Load values from the meta file
 	errPrefix := record.Kind().Name + " metadata"
-	if err := utils.ReadTaggedFields(projectDir, record.MetaFilePath(), model.MetaFileTag, errPrefix, target); err != nil {
+	if err := utils.ReadTaggedFields(m.ProjectDir(), record.MetaFilePath(), model.MetaFileTag, errPrefix, target); err != nil {
 		errors.Append(err)
 	}
 
@@ -32,11 +32,16 @@ func LoadModel(projectDir string, record manifest.Record, target interface{}) (f
 	if configField := utils.GetOneFieldWithTag(model.ConfigFileTag, target); configField != nil {
 		content := utils.NewOrderedMap()
 		modelValue := reflect.ValueOf(target).Elem()
-		if err := json.ReadFile(projectDir, record.ConfigFilePath(), &content, errPrefix); err == nil {
+		if err := json.ReadFile(m.ProjectDir(), record.ConfigFilePath(), &content, errPrefix); err == nil {
 			modelValue.FieldByName(configField.Name).Set(reflect.ValueOf(content))
 		} else {
 			errors.Append(err)
 		}
+	}
+
+	// Transform
+	if err := m.transformOnLoad(record, target); err != nil {
+		errors.Append(err)
 	}
 
 	// Validate, if all files loaded without error
@@ -49,29 +54,16 @@ func LoadModel(projectDir string, record manifest.Record, target interface{}) (f
 	return true, errors.ErrorOrNil()
 }
 
-func LoadBranch(projectDir string, b *manifest.BranchManifest) (branch *model.Branch, found bool, err error) {
-	branch = &model.Branch{BranchKey: b.BranchKey}
-	found, err = LoadModel(projectDir, b, branch)
-	if err != nil {
-		return nil, found, err
+func (m *Manager) transformOnLoad(record manifest.Record, target interface{}) error {
+	if ok, err := m.isTransformationConfig(target); ok {
+		return m.loadTransformation(record.(*manifest.ConfigManifest), target.(*model.Config))
+	} else if err != nil {
+		return err
 	}
-	return
+	return nil
 }
 
-func LoadConfig(projectDir string, c *manifest.ConfigManifest) (config *model.Config, found bool, err error) {
-	config = &model.Config{ConfigKey: c.ConfigKey}
-	found, err = LoadModel(projectDir, c, config)
-	if err != nil {
-		return nil, found, err
-	}
-	return
-}
-
-func LoadConfigRow(projectDir string, r *manifest.ConfigRowManifest) (row *model.ConfigRow, found bool, err error) {
-	row = &model.ConfigRow{ConfigRowKey: r.ConfigRowKey}
-	found, err = LoadModel(projectDir, r, row)
-	if err != nil {
-		return nil, found, err
-	}
-	return
+func (m *Manager) loadTransformation(record *manifest.ConfigManifest, target *model.Config) error {
+	// TODO
+	return nil
 }

@@ -2,6 +2,8 @@ package local
 
 import (
 	"github.com/stretchr/testify/assert"
+	"keboola-as-code/src/manifest"
+	"keboola-as-code/src/remote"
 	"keboola-as-code/src/utils"
 	"os"
 	"path/filepath"
@@ -12,6 +14,11 @@ func TestLocalLoadModel(t *testing.T) {
 	projectDir := t.TempDir()
 	metadataDir := filepath.Join(projectDir, ".keboola")
 	assert.NoError(t, os.MkdirAll(metadataDir, 0750))
+	logger, _ := utils.NewDebugLogger()
+	m, err := manifest.NewManifest(12345, "connection.keboola.com", projectDir, metadataDir)
+	assert.NoError(t, err)
+	api, _ := remote.TestMockedStorageApi(t)
+	manager := NewManager(logger, m, api)
 
 	metaFile := `{
   "myKey": "3",
@@ -30,7 +37,7 @@ func TestLocalLoadModel(t *testing.T) {
 	assert.NoError(t, os.WriteFile(filepath.Join(projectDir, record.ConfigFilePath()), []byte(configFile), 0640))
 
 	// Load
-	found, err := LoadModel(projectDir, record, target)
+	found, err := manager.LoadModel(record, target)
 	assert.True(t, found)
 	assert.NoError(t, err)
 
@@ -50,13 +57,18 @@ func TestLocalLoadModelNotFound(t *testing.T) {
 	projectDir := t.TempDir()
 	metadataDir := filepath.Join(projectDir, ".keboola")
 	assert.NoError(t, os.MkdirAll(metadataDir, 0750))
+	logger, _ := utils.NewDebugLogger()
+	m, err := manifest.NewManifest(12345, "connection.keboola.com", projectDir, metadataDir)
+	assert.NoError(t, err)
+	api, _ := remote.TestMockedStorageApi(t)
+	manager := NewManager(logger, m, api)
 
 	// Save files
 	target := &ModelStruct{}
 	record := &MockedRecord{}
 
 	// Load
-	found, err := LoadModel(projectDir, record, target)
+	found, err := manager.LoadModel(record, target)
 	assert.False(t, found)
 	assert.Error(t, err)
 	assert.Equal(t, "kind \"test\" not found", err.Error())

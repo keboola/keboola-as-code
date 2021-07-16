@@ -2,7 +2,6 @@ package local
 
 import (
 	"fmt"
-	"go.uber.org/zap"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/utils"
 	"os"
@@ -12,28 +11,28 @@ import (
 )
 
 // DeleteModel from manifest and disk
-func DeleteModel(logger *zap.SugaredLogger, m *manifest.Manifest, record manifest.Record) error {
+func (m *Manager) DeleteModel(record manifest.Record) error {
 	errors := utils.NewMultiError()
 
 	// Remove record from manifest content
-	m.DeleteRecord(record)
+	m.manifest.DeleteRecord(record)
 
 	// Delete metadata file
-	if err := os.Remove(filepath.Join(m.ProjectDir, record.MetaFilePath())); err == nil {
-		logger.Debugf("Removed \"%s\"", record.MetaFilePath())
+	if err := os.Remove(filepath.Join(m.ProjectDir(), record.MetaFilePath())); err == nil {
+		m.logger.Debugf("Removed \"%s\"", record.MetaFilePath())
 	} else if !os.IsNotExist(err) {
 		errors.Append(err)
 	}
 
 	// Delete config file
-	if err := os.Remove(filepath.Join(m.ProjectDir, record.ConfigFilePath())); err == nil {
-		logger.Debugf("Removed \"%s\"", record.ConfigFilePath())
+	if err := os.Remove(filepath.Join(m.ProjectDir(), record.ConfigFilePath())); err == nil {
+		m.logger.Debugf("Removed \"%s\"", record.ConfigFilePath())
 	} else if !os.IsNotExist(err) {
 		errors.Append(err)
 	}
 
 	// Delete dir
-	dir := filepath.Join(m.ProjectDir, record.RelativePath())
+	dir := filepath.Join(m.ProjectDir(), record.RelativePath())
 	if err := os.RemoveAll(dir); err != nil {
 		errors.Append(fmt.Errorf("cannot remove directory \"%s\": %s", dir, err))
 	}
@@ -42,17 +41,17 @@ func DeleteModel(logger *zap.SugaredLogger, m *manifest.Manifest, record manifes
 }
 
 // DeleteEmptyDirectories from project directory (eg. dir with extractors, but no extractor left)
-func DeleteEmptyDirectories(logger *zap.SugaredLogger, projectDir string) error {
+func (m *Manager) DeleteEmptyDirectories() error {
 	errors := utils.NewMultiError()
 	dirs := utils.NewOrderedMap()
-	err := filepath.WalkDir(projectDir, func(path string, d os.DirEntry, err error) error {
+	err := filepath.WalkDir(m.ProjectDir(), func(path string, d os.DirEntry, err error) error {
 		// Stop on error
 		if err != nil {
 			return err
 		}
 
 		// Ignore root
-		if path == projectDir {
+		if path == m.ProjectDir() {
 			return nil
 		}
 
@@ -86,7 +85,7 @@ func DeleteEmptyDirectories(logger *zap.SugaredLogger, projectDir string) error 
 	// Only empty directories remain in "dirs" -> delete
 	for _, dir := range dirs.Keys() {
 		if err := os.Remove(dir); err == nil {
-			logger.Debugf(`Deleted "%s"`, utils.RelPath(projectDir, dir))
+			m.logger.Debugf(`Deleted "%s"`, utils.RelPath(m.ProjectDir(), dir))
 		} else {
 			errors.Append(err)
 		}

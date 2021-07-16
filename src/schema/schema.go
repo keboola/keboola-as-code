@@ -19,7 +19,11 @@ func ValidateSchemas(projectState *state.State) error {
 			continue
 		}
 
-		component := projectState.GetComponent(*config.ComponentKey())
+		component, err := projectState.Components().Get(*config.ComponentKey())
+		if err != nil {
+			return err
+		}
+
 		if err := ValidateConfig(component, config.Local); err != nil {
 			errors.AppendWithPrefix(fmt.Sprintf("config \"%s\" doesn't match schema", config.ConfigFilePath()), err)
 		}
@@ -31,7 +35,11 @@ func ValidateSchemas(projectState *state.State) error {
 			continue
 		}
 
-		component := projectState.GetComponent(*row.ComponentKey())
+		component, err := projectState.Components().Get(*row.ComponentKey())
+		if err != nil {
+			return err
+		}
+
 		if err := ValidateConfigRow(component, row.Local); err != nil {
 			errors.AppendWithPrefix(fmt.Sprintf("config row \"%s\" doesn't match schema", row.ConfigFilePath()), err)
 		}

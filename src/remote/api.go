@@ -17,6 +17,7 @@ type StorageApi struct {
 	client     *client.Client
 	logger     *zap.SugaredLogger
 	token      *model.Token
+	components *ComponentsCache
 }
 
 func NewStorageApiFromOptions(options *options.Options, ctx context.Context, logger *zap.SugaredLogger) (*StorageApi, error) {
@@ -49,7 +50,13 @@ func NewStorageApi(apiHost string, ctx context.Context, logger *zap.SugaredLogge
 	apiHostUrl := "https://" + apiHost + "/v2/storage"
 	c := client.NewClient(ctx, logger, verbose).WithHostUrl(apiHostUrl)
 	c.SetError(&Error{})
-	return &StorageApi{client: c, logger: logger, apiHost: apiHost, apiHostUrl: apiHostUrl}
+	api := &StorageApi{client: c, logger: logger, apiHost: apiHost, apiHostUrl: apiHostUrl}
+	api.components = NewComponentCache(api)
+	return api
+}
+
+func (a *StorageApi) Components() *ComponentsCache {
+	return a.components
 }
 
 func (a *StorageApi) Host() string {
