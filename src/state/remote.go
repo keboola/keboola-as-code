@@ -1,21 +1,20 @@
 package state
 
 import (
-	"context"
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
 )
 
-// LoadRemoteState - API -> unified model
-func (s *State) LoadRemoteState(ctx context.Context) {
+// doLoadRemoteState - API -> unified model
+func (s *State) doLoadRemoteState() {
 	s.remoteErrors = &utils.Error{}
 	pool := s.api.NewPool()
+	pool.SetContext(s.context)
 
 	// Load branches
 	pool.
 		Request(s.api.ListBranchesRequest()).
-		SetContext(ctx).
 		OnSuccess(func(response *client.Response) {
 			// Save branch + load branch components
 			for _, branch := range *response.Result().(*[]*model.Branch) {
@@ -24,7 +23,6 @@ func (s *State) LoadRemoteState(ctx context.Context) {
 				// Load components
 				pool.
 					Request(s.api.ListComponentsRequest(branch.Id)).
-					SetContext(ctx).
 					OnSuccess(func(response *client.Response) {
 						// Save component, it contains all configs and rows
 						for _, component := range *response.Result().(*[]*model.ComponentWithConfigs) {

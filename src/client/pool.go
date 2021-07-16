@@ -49,6 +49,10 @@ func (c *Client) NewPool(logger *zap.SugaredLogger) *Pool {
 	}
 }
 
+func (p *Pool) SetContext(ctx context.Context) {
+	p.ctx = ctx
+}
+
 // Request set request sender to pool
 func (p *Pool) Request(request *Request) *Request {
 	request.sender = p

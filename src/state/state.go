@@ -16,12 +16,11 @@ import (
 
 // State - Local and Remote state of the project
 type State struct {
+	*Options
 	mutex        *sync.Mutex
-	api          *remote.StorageApi
 	remoteErrors *utils.Error
 	localErrors  *utils.Error
 	paths        *PathsState
-	manifest     *manifest.Manifest
 	newPersisted []ObjectState
 	components   map[string]*model.Component
 	branches     map[string]*BranchState
@@ -58,6 +57,16 @@ type ConfigRowState struct {
 	Local  *model.ConfigRow `validate:"dive"`
 }
 
+type Options struct {
+	manifest        *manifest.Manifest
+	api             *remote.StorageApi
+	context         context.Context
+	logger          *zap.SugaredLogger
+	LoadLocalState  bool
+	LoadRemoteState bool
+	SkipNotFoundErr bool
+}
+
 type keyValuePair struct {
 	key   string
 	state ObjectState
@@ -73,41 +82,51 @@ func (s *stateValidator) validate(kind string, v interface{}) {
 	}
 }
 
+func NewOptions(m *manifest.Manifest, api *remote.StorageApi, ctx context.Context, logger *zap.SugaredLogger) *Options {
+	return &Options{
+		manifest: m,
+		api:      api,
+		context:  ctx,
+		logger:   logger,
+	}
+}
+
 // LoadState - remote and local
-func LoadState(m *manifest.Manifest, logger *zap.SugaredLogger, ctx context.Context, api *remote.StorageApi, remote bool) (*State, bool) {
-	state := NewState(m.ProjectDir, api, m)
+func LoadState(options *Options) (state *State, ok bool) {
+	state = newState(options)
 
 	// Token and manifest project ID must be same
-	if m.Project.Id != api.ProjectId() {
-		state.AddLocalError(fmt.Errorf("used token is from the project \"%d\", but it must be from the project \"%d\"", api.ProjectId(), m.Project.Id))
+	if state.manifest.Project.Id != state.api.ProjectId() {
+		state.AddLocalError(fmt.Errorf("used token is from the project \"%d\", but it must be from the project \"%d\"", state.api.ProjectId(), state.manifest.Project.Id))
 		return state, false
 	}
 
-	if remote {
-		logger.Debugf("Loading project remote state.")
-		state.LoadRemoteState(ctx)
+	if state.LoadRemoteState {
+		state.logger.Debugf("Loading project remote state.")
+		state.doLoadRemoteState()
 	}
 
-	logger.Debugf("Loading local state.")
-	state.LoadLocalState()
+	if state.LoadLocalState {
+		state.logger.Debugf("Loading local state.")
+		state.doLoadLocalState()
+	}
 
-	ok := state.LocalErrors().Len() == 0 && state.RemoteErrors().Len() == 0
+	ok = state.LocalErrors().Len() == 0 && state.RemoteErrors().Len() == 0
 	return state, ok
 }
 
-func NewState(projectDir string, api *remote.StorageApi, m *manifest.Manifest) *State {
+func newState(options *Options) *State {
 	s := &State{
+		Options:      options,
 		mutex:        &sync.Mutex{},
-		api:          api,
 		remoteErrors: &utils.Error{},
 		localErrors:  &utils.Error{},
-		manifest:     m,
 		branches:     make(map[string]*BranchState),
 		components:   make(map[string]*model.Component),
 		configs:      make(map[string]*ConfigState),
 		configRows:   make(map[string]*ConfigRowState),
 	}
-	s.paths = NewPathsState(projectDir, s.localErrors)
+	s.paths = NewPathsState(s.manifest.ProjectDir, s.localErrors)
 	return s
 }
 

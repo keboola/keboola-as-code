@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"fmt"
 	"github.com/spf13/cobra"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/state"
@@ -56,15 +55,15 @@ func persistCommand(root *rootCommand) *cobra.Command {
 			}
 
 			// Load project local state
-			projectState, ok := state.LoadState(projectManifest, logger, root.ctx, api, false)
+			stateOptions := state.NewOptions(projectManifest, api, root.ctx, logger)
+			stateOptions.LoadLocalState = true
+			stateOptions.SkipNotFoundErr = true
+			projectState, ok := state.LoadState(stateOptions)
 			if ok {
 				logger.Debugf("Project local state has been successfully loaded.")
 			} else {
 				if projectState.LocalErrors().Len() > 0 {
-					return fmt.Errorf(
-						"project local state is invalid:%s",
-						projectState.LocalErrors(),
-					)
+					return utils.WrapError("project local state is invalid", projectState.LocalErrors())
 				}
 			}
 

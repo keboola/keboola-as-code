@@ -1,6 +1,7 @@
 package state
 
 import (
+	"context"
 	"github.com/jarcoal/httpmock"
 	"github.com/otiai10/copy"
 	"github.com/stretchr/testify/assert"
@@ -32,9 +33,10 @@ func TestPersistNoChange(t *testing.T) {
 	httpmock.RegisterResponder("GET", `=~/storage/components/ex-generic-v2`, getGenericExResponder)
 
 	// State before
-	state := NewState(projectDir, api, m)
+	logger, _ := utils.NewDebugLogger()
+	state := newState(NewOptions(m, api, context.Background(), logger))
 	assert.NotNil(t, state)
-	state.LoadLocalState()
+	state.doLoadLocalState()
 	assert.Empty(t, state.LocalErrors().Errors())
 	assert.Empty(t, state.UntrackedPaths())
 
@@ -72,9 +74,10 @@ func TestPersistNewConfig(t *testing.T) {
 	assert.NoError(t, os.WriteFile(filepath.Join(configDir, `meta.json`), []byte(`{"name": "foo", "description": "bar"}`), 0644))
 
 	// State before
-	state := NewState(projectDir, api, m)
+	logger, _ := utils.NewDebugLogger()
+	state := newState(NewOptions(m, api, context.Background(), logger))
 	assert.NotNil(t, state)
-	state.LoadLocalState()
+	state.doLoadLocalState()
 	assert.Empty(t, state.LocalErrors().Errors())
 	assert.Equal(t, []string{
 		"main/extractor/ex-generic-v2/new-config",
@@ -177,9 +180,10 @@ func TestPersistNewConfigRow(t *testing.T) {
 	assert.NoError(t, os.WriteFile(filepath.Join(rowDir, `meta.json`), []byte(`{"name": "foo2", "description": "bar2"}`), 0644))
 
 	// State before
-	state := NewState(projectDir, api, m)
+	logger, _ := utils.NewDebugLogger()
+	state := newState(NewOptions(m, api, context.Background(), logger))
 	assert.NotNil(t, state)
-	state.LoadLocalState()
+	state.doLoadLocalState()
 	assert.Empty(t, state.LocalErrors().Errors())
 	assert.Equal(t, []string{
 		"main/extractor/keboola.ex-db-mysql",

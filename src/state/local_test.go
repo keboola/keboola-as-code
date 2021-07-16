@@ -1,6 +1,7 @@
 package state
 
 import (
+	"context"
 	"github.com/otiai10/copy"
 	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/manifest"
@@ -180,9 +181,10 @@ func loadLocalTestState(t *testing.T, projectDirName string) *State {
 		assert.FailNow(t, err.Error())
 	}
 
+	logger, _ := utils.NewDebugLogger()
 	api, _ := remote.TestStorageApiWithToken(t)
-	state := NewState(projectDir, api, m)
-	state.LoadLocalState()
+	state := newState(NewOptions(m, api, context.Background(), logger))
+	state.doLoadLocalState()
 	return state
 }
 

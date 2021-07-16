@@ -44,15 +44,16 @@ type Record interface {
 	Kind() model.Kind           // eg. branch, config, config row -> used in logs
 	Key() model.Key             // unique key for map -> for fast access
 	SortKey(sort string) string // unique key for sorting
-	GetPaths() Paths            // define the location of the files
+	RelativePath() string       // path to the object directory
 	MetaFilePath() string       // path to the meta.json file
 	ConfigFilePath() string     // path to the config.json file
 	State() *RecordState
 }
 
 type RecordState struct {
-	Invalid   bool
-	Persisted bool
+	Invalid   bool // if true, object files are not valid, eg. missing file, invalid JSON, ...
+	NotFound  bool // if true, object directory is not present in the filesystem
+	Persisted bool // if true, record will be part of the manifest when saved
 }
 
 type Paths struct {
@@ -343,6 +344,14 @@ func (r ConfigRowManifest) Kind() model.Kind {
 
 func (s *RecordState) State() *RecordState {
 	return s
+}
+
+func (s *RecordState) IsNotFound() bool {
+	return s.NotFound
+}
+
+func (s *RecordState) SetNotFound() {
+	s.NotFound = true
 }
 
 func (s *RecordState) IsInvalid() bool {

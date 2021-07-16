@@ -15,7 +15,7 @@ func TestStorageApi(t *testing.T) (*StorageApi, *utils.Writer) {
 }
 
 func TestMockedStorageApi(t *testing.T) (*StorageApi, *utils.Writer) {
-	api, logs := TestStorageApi(t)
+	api, logs := TestStorageApiWithToken(t)
 
 	// Set short retry delay in tests
 	api.SetRetry(3, 1*time.Millisecond, 1*time.Millisecond)

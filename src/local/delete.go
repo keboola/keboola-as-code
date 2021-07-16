@@ -33,7 +33,7 @@ func DeleteModel(logger *zap.SugaredLogger, m *manifest.Manifest, record manifes
 	}
 
 	// Delete dir
-	dir := filepath.Join(m.ProjectDir, record.GetPaths().RelativePath())
+	dir := filepath.Join(m.ProjectDir, record.RelativePath())
 	if err := os.RemoveAll(dir); err != nil {
 		errors.Add(fmt.Errorf("cannot remove directory \"%s\": %s", dir, err))
 	}

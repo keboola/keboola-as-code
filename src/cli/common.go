@@ -59,7 +59,10 @@ func (a *diffProcessCmd) run() error {
 	}()
 
 	// Load project remote and local state
-	projectState, ok := state.LoadState(projectManifest, logger, a.root.ctx, api, true)
+	stateOptions := state.NewOptions(projectManifest, api, a.root.ctx, logger)
+	stateOptions.LoadLocalState = true
+	stateOptions.LoadRemoteState = true
+	projectState, ok := state.LoadState(stateOptions)
 	if ok {
 		logger.Debugf("Project local and remote states have been successfully loaded.")
 	} else {

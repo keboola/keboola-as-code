@@ -25,12 +25,14 @@ func TestLocalLoadModel(t *testing.T) {
 	// Save files
 	target := &ModelStruct{}
 	record := &MockedRecord{}
-	assert.NoError(t, os.MkdirAll(record.GetPaths().RelativePath(), 0750))
+	assert.NoError(t, os.MkdirAll(filepath.Join(projectDir, record.RelativePath()), 0750))
 	assert.NoError(t, os.WriteFile(filepath.Join(projectDir, record.MetaFilePath()), []byte(metaFile), 0640))
 	assert.NoError(t, os.WriteFile(filepath.Join(projectDir, record.ConfigFilePath()), []byte(configFile), 0640))
 
 	// Load
-	assert.NoError(t, LoadModel(projectDir, record, target))
+	found, err := LoadModel(projectDir, record, target)
+	assert.True(t, found)
+	assert.NoError(t, err)
 
 	// Assert
 	config := utils.NewOrderedMap()
@@ -42,4 +44,20 @@ func TestLocalLoadModel(t *testing.T) {
 		Meta2:  "4",
 		Config: config,
 	}, target)
+}
+
+func TestLocalLoadModelNotFound(t *testing.T) {
+	projectDir := t.TempDir()
+	metadataDir := filepath.Join(projectDir, ".keboola")
+	assert.NoError(t, os.MkdirAll(metadataDir, 0750))
+
+	// Save files
+	target := &ModelStruct{}
+	record := &MockedRecord{}
+
+	// Load
+	found, err := LoadModel(projectDir, record, target)
+	assert.False(t, found)
+	assert.Error(t, err)
+	assert.Equal(t, "- kind \"test\" not found", err.Error())
 }

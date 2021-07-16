@@ -411,11 +411,12 @@ func loadRemoteState(t *testing.T, projectStateFile string) *State {
 	remote.SetStateOfTestProject(t, api, projectStateFile)
 
 	projectDir := t.TempDir()
-	m, err := manifest.NewManifest(1, "connection.keboola.com", "foo", "bar")
+	m, err := manifest.NewManifest(1, "connection.keboola.com", projectDir, "bar")
 	if err != nil {
 		assert.FailNow(t, err.Error())
 	}
-	state := NewState(projectDir, api, m)
-	state.LoadRemoteState(context.Background())
+	logger, _ := utils.NewDebugLogger()
+	state := newState(NewOptions(m, api, context.Background(), logger))
+	state.doLoadRemoteState()
 	return state
 }

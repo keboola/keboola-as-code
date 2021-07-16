@@ -33,7 +33,7 @@ func TestLocalDeleteModel(t *testing.T) {
 	assert.True(t, found)
 
 	// Save files
-	dirAbs := record.GetPaths().RelativePath()
+	dirAbs := record.RelativePath()
 	metaFileAbs := filepath.Join(projectDir, record.MetaFilePath())
 	configFileAbs := filepath.Join(projectDir, record.ConfigFilePath())
 	assert.NoError(t, os.MkdirAll(dirAbs, 0750))

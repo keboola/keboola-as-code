@@ -212,12 +212,16 @@ func AssertExpectations(
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}
-		m, err := manifest.NewManifest(1, "connection.keboola.com", "foo", "bar")
+		m, err := manifest.NewManifest(api.ProjectId(), api.Host(), workingDir, "bar")
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}
-		actualState := state.NewState(workingDir, api, m)
-		actualState.LoadRemoteState(context.Background())
+		logger, _ := utils.NewDebugLogger()
+		stateOptions := state.NewOptions(m, api, context.Background(), logger)
+		stateOptions.LoadRemoteState = true
+		actualState, ok := state.LoadState(stateOptions)
+		assert.True(t, ok)
+		assert.Empty(t, actualState.RemoteErrors().Errors())
 		actualSnapshot, err := state.NewProjectSnapshot(actualState)
 		if err != nil {
 			assert.FailNow(t, err.Error())

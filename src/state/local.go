@@ -6,23 +6,30 @@ import (
 	"keboola-as-code/src/utils"
 )
 
-// LoadLocalState - manifest -> local files -> unified model
-func (s *State) LoadLocalState() {
+// doLoadLocalState - manifest -> local files -> unified model
+func (s *State) doLoadLocalState() {
 	s.localErrors = &utils.Error{}
 
 	for _, b := range s.manifest.Content.Branches {
 		// Add branch
-		if branch, err := local.LoadBranch(s.manifest.ProjectDir, b); err == nil {
+		branch, found, err := local.LoadBranch(s.manifest.ProjectDir, b)
+		if err == nil {
 			s.SetBranchLocalState(branch, b)
 		} else {
 			b.SetInvalid()
-			s.AddLocalError(err)
+			if !found {
+				b.SetNotFound()
+			}
+			if found || !s.SkipNotFoundErr {
+				s.AddLocalError(err)
+			}
 		}
 	}
 
 	for _, c := range s.manifest.Content.Configs {
 		// Add config
-		if config, err := local.LoadConfig(s.manifest.ProjectDir, c.ConfigManifest); err == nil {
+		config, found, err := local.LoadConfig(s.manifest.ProjectDir, c.ConfigManifest)
+		if err == nil {
 			if component, err := s.getOrLoadComponent(config.ComponentId); err == nil {
 				s.SetConfigLocalState(component, config, c.ConfigManifest)
 			} else {
@@ -30,16 +37,27 @@ func (s *State) LoadLocalState() {
 			}
 		} else {
 			c.SetInvalid()
-			s.AddLocalError(err)
+			if !found {
+				c.SetNotFound()
+			}
+			if found || !s.SkipNotFoundErr {
+				s.AddLocalError(err)
+			}
 		}
 
 		// Rows
 		for _, r := range c.Rows {
-			if row, err := local.LoadConfigRow(s.manifest.ProjectDir, r); err == nil {
+			row, found, err := local.LoadConfigRow(s.manifest.ProjectDir, r)
+			if err == nil {
 				s.SetConfigRowLocalState(row, r)
 			} else {
 				r.SetInvalid()
-				s.AddLocalError(err)
+				if !found {
+					r.SetNotFound()
+				}
+				if found || !s.SkipNotFoundErr {
+					s.AddLocalError(err)
+				}
 			}
 		}
 	}
