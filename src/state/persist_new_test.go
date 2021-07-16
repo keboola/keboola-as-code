@@ -27,7 +27,7 @@ func TestPersistNoChange(t *testing.T) {
 	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
 		"id":   "ex-generic-v2",
 		"type": "extractor",
-		"name": "Generic Extractor",
+		"name": "Generic",
 	})
 	assert.NoError(t, err)
 	httpmock.RegisterResponder("GET", `=~/storage/components/ex-generic-v2`, getGenericExResponder)
@@ -57,7 +57,7 @@ func TestPersistNewConfig(t *testing.T) {
 	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
 		"id":   "ex-generic-v2",
 		"type": "extractor",
-		"name": "Generic Extractor",
+		"name": "Generic",
 	})
 	assert.NoError(t, err)
 	generateNewIdResponser, err := httpmock.NewJsonResponder(200, map[string]interface{}{
@@ -121,7 +121,7 @@ func TestPersistNewConfig(t *testing.T) {
 					Id: configKey.ComponentId,
 				},
 				Type: "extractor",
-				Name: "Generic Extractor",
+				Name: "Generic",
 			},
 			Remote: nil,
 			Local: &model.Config{
@@ -151,7 +151,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
 		"id":   "ex-generic-v2",
 		"type": "extractor",
-		"name": "Generic Extractor",
+		"name": "Generic",
 	})
 	assert.NoError(t, err)
 	getMySqlExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
@@ -166,7 +166,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 	assert.NoError(t, err)
 	generateNewIdResponder := httpmock.ResponderFromMultipleResponses([]*http.Response{generateNewIdResponse1, generateNewIdResponse2})
 	httpmock.RegisterResponder("GET", `=~/storage/components/ex-generic-v2`, getGenericExResponder.Once())
-	httpmock.RegisterResponder("GET", `=~/storage/components/ex-generic-v2`, getMySqlExResponder.Once())
+	httpmock.RegisterResponder("GET", `=~/storage/components/keboola.ex-db-mysql`, getMySqlExResponder.Once())
 	httpmock.RegisterResponder("POST", `=~/storage/tickets`, generateNewIdResponder.Times(2))
 
 	// Write files

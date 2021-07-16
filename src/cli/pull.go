@@ -6,7 +6,6 @@ import (
 	"keboola-as-code/src/event"
 	"keboola-as-code/src/plan"
 	"keboola-as-code/src/remote"
-	"keboola-as-code/src/utils"
 )
 
 const pullShortDescription = `Pull configurations to the project directory`
@@ -38,35 +37,38 @@ func pullCommand(root *rootCommand) *cobra.Command {
 				event.SendCmdFailedEvent(root.start, root.logger, api, err, "pull", "Pull command failed.")
 			}
 			action.action = func(api *remote.StorageApi, diffResults *diff.Results) error {
-				state := diffResults.CurrentState
-				manifest := state.Manifest()
+				logger := root.logger
+				projectState := diffResults.CurrentState
+				projectManifest := projectState.Manifest()
 
 				// Log untracked paths
-				state.LogUntrackedPaths(root.logger)
+				projectState.LogUntrackedPaths(logger)
 
 				// Get plan
 				pull := plan.Pull(diffResults)
-				pull.LogInfo(root.logger)
+				pull.LogInfo(logger)
 
 				// Dry run?
 				dryRun, _ := cmd.Flags().GetBool("dry-run")
 				if dryRun {
-					root.logger.Info("Dry run, nothing changed.")
+					logger.Info("Dry run, nothing changed.")
 					return nil
 				}
 
 				// Invoke
-				executor := plan.NewExecutor(root.logger, root.ctx, root.api, manifest)
+				executor := plan.NewExecutor(logger, root.ctx, root.api, projectManifest)
 				if err := executor.Invoke(pull); err != nil {
 					return err
 				}
 
+				// Normalize paths
+				if err := Rename(projectState, logger); err != nil {
+					return err
+				}
+
 				// Save manifest
-				if manifest.IsChanged() {
-					if err = manifest.Save(); err != nil {
-						return err
-					}
-					root.logger.Debugf("Saved manifest file \"%s\".", utils.RelPath(manifest.ProjectDir, manifest.Path()))
+				if _, err := SaveManifest(projectManifest, logger); err != nil {
+					return err
 				}
 
 				return nil

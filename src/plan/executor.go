@@ -156,7 +156,7 @@ func (e *Executor) saveBranch(branch *state.BranchState, result *diff.Result) {
 			OnSuccess(func(response *client.Response) {
 				// Save new ID to manifest
 				branch.Local = branch.Remote
-				result.ObjectState.UpdateManifest(e.manifest)
+				result.ObjectState.UpdateManifest(e.manifest, false)
 				e.saveLocal(branch)
 			}).
 			Send()
@@ -186,7 +186,7 @@ func (e *Executor) saveConfig(config *state.ConfigState, result *diff.Result) {
 			OnSuccess(func(response *client.Response) {
 				// Save new ID to manifest
 				config.Local = config.Remote
-				result.ObjectState.UpdateManifest(e.manifest)
+				result.ObjectState.UpdateManifest(e.manifest, false)
 				e.saveLocal(config)
 			}).
 			Send()
@@ -220,7 +220,7 @@ func (e *Executor) saveConfigRow(row *state.ConfigRowState, result *diff.Result)
 			OnSuccess(func(response *client.Response) {
 				// Save new ID to manifest
 				row.Local = row.Remote
-				result.ObjectState.UpdateManifest(e.manifest)
+				result.ObjectState.UpdateManifest(e.manifest, false)
 				e.saveLocal(row)
 			}).
 			Send()

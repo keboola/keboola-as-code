@@ -165,16 +165,15 @@ func LoadManifest(projectDir string, metadataDir string) (*Manifest, error) {
 }
 
 func (m *Manifest) Save() error {
-	// Sort record in manifest + ensure order of processing: branch, config, configRow
-	m.records.Sort(func(a *orderedmap.Pair, b *orderedmap.Pair) bool {
-		return a.Value().(Record).SortKey(m.SortBy) < b.Value().(Record).SortKey(m.SortBy)
-	})
-
 	// Convert records map to slices
 	branchesMap := make(map[string]*BranchManifest)
 	configsMap := make(map[string]*ConfigManifestWithRows)
 	m.Content.Branches = make([]*BranchManifest, 0)
 	m.Content.Configs = make([]*ConfigManifestWithRows, 0)
+
+	// Ensure order of processing: branch, config, configRow
+	m.sortRecords()
+
 	for _, key := range m.records.Keys() {
 		r, _ := m.records.Get(key)
 		record := r.(Record)
@@ -218,7 +217,12 @@ func (m *Manifest) Save() error {
 	}
 
 	// Write JSON file
-	return json.WriteFile(m.MetadataDir, FileName, m.Content, "manifest")
+	if err := json.WriteFile(m.MetadataDir, FileName, m.Content, "manifest"); err != nil {
+		return err
+	}
+
+	m.changed = false
+	return nil
 }
 
 func (m *Manifest) IsChanged() bool {
@@ -236,7 +240,15 @@ func (m *Manifest) validate() error {
 	return nil
 }
 
+// sortRecords in manifest + ensure order of processing: branch, config, configRow
+func (m *Manifest) sortRecords() {
+	m.records.Sort(func(a *orderedmap.Pair, b *orderedmap.Pair) bool {
+		return a.Value().(Record).SortKey(m.SortBy) < b.Value().(Record).SortKey(m.SortBy)
+	})
+}
+
 func (m *Manifest) GetRecords() orderedmap.OrderedMap {
+	m.sortRecords()
 	return m.records
 }
 

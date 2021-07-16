@@ -6,7 +6,7 @@ import (
 	"keboola-as-code/src/model"
 )
 
-func (b *BranchState) UpdateManifest(m *manifest.Manifest) {
+func (b *BranchState) UpdateManifest(m *manifest.Manifest, rename bool) {
 	var branch *model.Branch
 	if b.Local != nil {
 		branch = b.Local
@@ -16,7 +16,7 @@ func (b *BranchState) UpdateManifest(m *manifest.Manifest) {
 		panic(fmt.Errorf("branch Local or Remote state must be set"))
 	}
 
-	if b.Path == "" {
+	if b.Path == "" || rename {
 		if branch.IsDefault {
 			b.Path = "main"
 		} else {
@@ -27,7 +27,7 @@ func (b *BranchState) UpdateManifest(m *manifest.Manifest) {
 	b.ResolveParentPath()
 }
 
-func (c *ConfigState) UpdateManifest(m *manifest.Manifest) {
+func (c *ConfigState) UpdateManifest(m *manifest.Manifest, rename bool) {
 	var config *model.Config
 	if c.Local != nil {
 		config = c.Local
@@ -45,13 +45,13 @@ func (c *ConfigState) UpdateManifest(m *manifest.Manifest) {
 	}
 
 	// Set paths
-	if c.Path == "" {
+	if c.Path == "" || rename {
 		c.Path = m.Naming.ConfigPath(c.Component, config)
 	}
 	c.ResolveParentPath(branchManifest.(*manifest.BranchManifest))
 }
 
-func (r *ConfigRowState) UpdateManifest(m *manifest.Manifest) {
+func (r *ConfigRowState) UpdateManifest(m *manifest.Manifest, rename bool) {
 	var row *model.ConfigRow
 	if r.Local != nil {
 		row = r.Local
@@ -69,7 +69,7 @@ func (r *ConfigRowState) UpdateManifest(m *manifest.Manifest) {
 	}
 
 	// Set paths
-	if r.Path == "" {
+	if r.Path == "" || rename {
 		r.Path = m.Naming.ConfigRowPath(row)
 	}
 	r.ResolveParentPath(configManifest.(*manifest.ConfigManifest))

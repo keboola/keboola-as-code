@@ -94,17 +94,19 @@ func persistCommand(root *rootCommand) *cobra.Command {
 			// Print remaining untracked paths
 			projectState.LogUntrackedPaths(root.logger)
 
+			// Normalize paths
+			if err := Rename(projectState, logger); err != nil {
+				return err
+			}
+
 			// Save manifest
-			if projectManifest.IsChanged() {
-				if err = projectManifest.Save(); err != nil {
-					return err
-				}
-				root.logger.Debugf("Saved manifest file \"%s\".", utils.RelPath(projectManifest.ProjectDir, projectManifest.Path()))
-			} else {
+			if changed, err := SaveManifest(projectManifest, logger); err != nil {
+				return err
+			} else if !changed {
 				logger.Info(`Nothing to do.`)
 			}
-			logger.Info(`Persist done.`)
 
+			logger.Info(`Persist done.`)
 			return nil
 		},
 	}

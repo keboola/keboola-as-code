@@ -2,9 +2,12 @@ package cli
 
 import (
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 	"keboola-as-code/src/diff"
+	"keboola-as-code/src/local"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/remote"
+	"keboola-as-code/src/schema"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
 )
@@ -98,6 +101,35 @@ func (a *diffProcessCmd) run() error {
 	successful = true
 	if a.onSuccess != nil {
 		a.onSuccess(api)
+	}
+	return nil
+}
+
+func SaveManifest(projectManifest *manifest.Manifest, logger *zap.SugaredLogger) (bool, error) {
+	if projectManifest.IsChanged() {
+		if err := projectManifest.Save(); err != nil {
+			return false, err
+		}
+		logger.Debugf("Saved manifest file \"%s\".", utils.RelPath(projectManifest.ProjectDir, projectManifest.Path()))
+		return true, nil
+	}
+	return false, nil
+}
+
+func ValidateSchemas(projectState *state.State, logger *zap.SugaredLogger) error {
+	if err := schema.ValidateSchemas(projectState); err != nil {
+		return utils.PrefixError("validation failed", err)
+	} else {
+		logger.Debug("Validation done.")
+	}
+	return nil
+}
+
+func Rename(projectState *state.State, logger *zap.SugaredLogger) error {
+	if warn, err := local.Rename(projectState.RenamePlan(), logger); err != nil {
+		return utils.PrefixError(`cannot rename objects`, err)
+	} else if warn != nil {
+		logger.Warn(`cannot finish objects renaming`, err)
 	}
 	return nil
 }

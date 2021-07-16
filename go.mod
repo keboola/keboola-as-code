@@ -16,6 +16,7 @@ require (
 	github.com/iancoleman/strcase v0.1.3
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/joho/godotenv v1.3.0
+	github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
 	github.com/otiai10/copy v1.6.0
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/spf13/cast v1.3.0
