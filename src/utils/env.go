@@ -11,6 +11,13 @@ import (
 	"testing"
 )
 
+type EnvProvider func(s string) string
+
+func DefaultEnvProvider(s string) string {
+	name := strings.Trim(s, "%")
+	return MustGetEnv(name)
+}
+
 func MustGetEnv(key string) string {
 	value := os.Getenv(key)
 	if len(value) == 0 {
@@ -37,24 +44,24 @@ func ResetEnv(t *testing.T, origEnv []string) {
 	}
 }
 
-func ReplaceEnvsString(str string) string {
+func ReplaceEnvsString(str string, provider EnvProvider) string {
+	if provider == nil {
+		provider = DefaultEnvProvider
+	}
 	return regexp.
 		MustCompile(`%%[a-zA-Z0-9\-_]+%%`).
-		ReplaceAllStringFunc(str, func(s string) string {
-			name := strings.Trim(s, "%")
-			return MustGetEnv(name)
-		})
+		ReplaceAllStringFunc(str, provider)
 }
 
-func ReplaceEnvsFile(path string) {
+func ReplaceEnvsFile(path string, provider EnvProvider) {
 	str := GetFileContent(path)
-	str = ReplaceEnvsString(str)
+	str = ReplaceEnvsString(str, provider)
 	if err := os.WriteFile(path, []byte(str), 0655); err != nil {
 		panic(fmt.Errorf("cannot write to file \"%s\": %s", path, err))
 	}
 }
 
-func ReplaceEnvsDir(root string) {
+func ReplaceEnvsDir(root string, provider EnvProvider) {
 	// Iterate over directory structure
 	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
 		// Stop on error
@@ -69,7 +76,7 @@ func ReplaceEnvsDir(root string) {
 
 		// Process file
 		if !d.IsDir() {
-			ReplaceEnvsFile(path)
+			ReplaceEnvsFile(path, provider)
 		}
 
 		return nil

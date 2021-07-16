@@ -162,6 +162,6 @@ func initLocalState(t *testing.T, localState string) (string, string) {
 	if err != nil {
 		t.Fatalf("Copy error: %s", err)
 	}
-	utils.ReplaceEnvsDir(projectDir)
+	utils.ReplaceEnvsDir(projectDir, nil)
 	return projectDir, metadataDir
 }
