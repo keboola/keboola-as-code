@@ -8,7 +8,7 @@ import (
 
 // doLoadRemoteState - API -> unified model
 func (s *State) doLoadRemoteState() {
-	s.remoteErrors = &utils.Error{}
+	s.remoteErrors = utils.NewMultiError()
 	pool := s.api.NewPool()
 	pool.SetContext(s.context)
 

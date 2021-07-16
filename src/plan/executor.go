@@ -35,7 +35,7 @@ func NewExecutor(logger *zap.SugaredLogger, ctx context.Context, api *remote.Sto
 		ctx:      ctx,
 		api:      api,
 		manifest: manifest,
-		errors:   &utils.Error{},
+		errors:   utils.NewMultiError(),
 		workers:  group,
 		pools:    utils.NewOrderedMap(),
 	}
@@ -44,12 +44,12 @@ func NewExecutor(logger *zap.SugaredLogger, ctx context.Context, api *remote.Sto
 func (e *Executor) Invoke(p *Plan) error {
 	// Validate
 	if err := p.Validate(); err != nil {
-		return utils.WrapError(fmt.Sprintf("cannot perform the \"%s\" operation", p.Name), err)
+		return utils.PrefixError(fmt.Sprintf("cannot perform the \"%s\" operation", p.Name), err)
 	}
 	e.logger.Debugf("Execution plan is valid.")
 
 	// Invoke
-	e.errors = &utils.Error{}
+	e.errors = utils.NewMultiError()
 	e.workers, _ = errgroup.WithContext(e.ctx)
 	for _, action := range p.Actions {
 		switch action.Type {
@@ -73,14 +73,14 @@ func (e *Executor) Invoke(p *Plan) error {
 	for _, level := range e.pools.Keys() {
 		pool, _ := e.pools.Get(level)
 		if err := pool.(*client.Pool).StartAndWait(); err != nil {
-			e.errors.Add(err)
+			e.errors.Append(err)
 			break
 		}
 	}
 
 	// Wait for workers
 	if err := e.workers.Wait(); err != nil {
-		e.errors.Add(err)
+		e.errors.Append(err)
 	}
 
 	// Delete invalid objects (eg. if pull --force used, and work continued even an invalid state found)
@@ -90,21 +90,17 @@ func (e *Executor) Invoke(p *Plan) error {
 		record := v.(manifest.Record)
 		if record.State().IsInvalid() {
 			if err := local.DeleteModel(e.logger, e.manifest, record); err != nil {
-				e.errors.Add(err)
+				e.errors.Append(err)
 			}
 		}
 	}
 
 	// Delete empty directories
 	if err := local.DeleteEmptyDirectories(e.logger, e.manifest.ProjectDir); err != nil {
-		e.errors.Add(err)
+		e.errors.Append(err)
 	}
 
-	if e.errors.Len() > 0 {
-		return fmt.Errorf("pull failed: %s", e.errors)
-	}
-
-	return nil
+	return e.errors.ErrorOrNil()
 }
 
 func (e *Executor) getPoolFor(level int) *client.Pool {
@@ -122,7 +118,7 @@ func (e *Executor) saveLocal(object state.ObjectState) {
 	e.workers.Go(func() error {
 		err := local.SaveModel(e.logger, e.manifest, object.Manifest(), object.RemoteState())
 		if err != nil {
-			e.errors.Add(err)
+			e.errors.Append(err)
 		}
 		return nil
 	})
@@ -132,7 +128,7 @@ func (e *Executor) deleteLocal(object state.ObjectState) {
 	e.workers.Go(func() error {
 		err := local.DeleteModel(e.logger, e.manifest, object.Manifest())
 		if err != nil {
-			e.errors.Add(err)
+			e.errors.Append(err)
 		}
 		return nil
 	})
@@ -172,7 +168,7 @@ func (e *Executor) saveBranch(branch *state.BranchState, result *diff.Result) {
 	} else {
 		// Restore deleted -> not possible
 		err := fmt.Errorf(`branch "%d" (%s) exists only locally, it cannot be restored or recreated with the same ID`, branch.Local.Id, branch.Local.Name)
-		e.errors.Add(err)
+		e.errors.Append(err)
 	}
 }
 
@@ -182,7 +178,7 @@ func (e *Executor) saveConfig(config *state.ConfigState, result *diff.Result) {
 		// Create
 		request, err := e.api.CreateConfigRequest(&model.ConfigWithRows{Config: config.Local})
 		if err != nil {
-			e.errors.Add(err)
+			e.errors.Append(err)
 			return
 		}
 		pool.
@@ -198,7 +194,7 @@ func (e *Executor) saveConfig(config *state.ConfigState, result *diff.Result) {
 		// Update
 		request, err := e.api.UpdateConfigRequest(config.Local, result.ChangedFields)
 		if err != nil {
-			e.errors.Add(err)
+			e.errors.Append(err)
 			return
 		}
 		pool.
@@ -206,7 +202,7 @@ func (e *Executor) saveConfig(config *state.ConfigState, result *diff.Result) {
 			Send()
 	} else {
 		// Restore deleted -> not possible
-		e.errors.Add(fmt.Errorf("TODO"))
+		e.errors.Append(fmt.Errorf("TODO"))
 	}
 }
 
@@ -216,7 +212,7 @@ func (e *Executor) saveConfigRow(row *state.ConfigRowState, result *diff.Result)
 		// No ID -> not present in remote -> create
 		request, err := e.api.CreateConfigRowRequest(row.Local)
 		if err != nil {
-			e.errors.Add(err)
+			e.errors.Append(err)
 			return
 		}
 		pool.
@@ -232,7 +228,7 @@ func (e *Executor) saveConfigRow(row *state.ConfigRowState, result *diff.Result)
 		// Local ID + present in remote -> update
 		request, err := e.api.UpdateConfigRowRequest(row.Local, result.ChangedFields)
 		if err != nil {
-			e.errors.Add(err)
+			e.errors.Append(err)
 			return
 		}
 		pool.
@@ -240,7 +236,7 @@ func (e *Executor) saveConfigRow(row *state.ConfigRowState, result *diff.Result)
 			Send()
 	} else {
 		// Restore deleted -> not possible
-		e.errors.Add(fmt.Errorf("TODO"))
+		e.errors.Append(fmt.Errorf("TODO"))
 	}
 }
 
@@ -251,7 +247,7 @@ func (e *Executor) deleteRemote(result *diff.Result) {
 		// Delete sequentially, branches cannot be deleted in parallel
 		_, err := e.api.DeleteBranch(v.Id)
 		if err != nil {
-			e.errors.Add(err)
+			e.errors.Append(err)
 		}
 	case *state.ConfigState:
 		e.manifest.DeleteRecord(v)

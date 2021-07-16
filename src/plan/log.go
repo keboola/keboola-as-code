@@ -32,7 +32,7 @@ func (p *Plan) Log(writer *log.WriteCloser) *Plan {
 				msg += " - SKIPPED"
 				skippedDeleteCount++
 			}
-			writer.WriteStringNoErr(msg)
+			writer.WriteStringNoErr("\t" + msg)
 		}
 
 		if skippedDeleteCount > 0 {

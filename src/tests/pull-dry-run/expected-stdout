@@ -1,18 +1,18 @@
 Plan for "pull" operation:
-+  B bar
-+  C bar/extractor/ex-generic-v2/empty
-+  C bar/extractor/keboola.ex-db-mysql/with-rows
-+  R bar/extractor/keboola.ex-db-mysql/with-rows/rows/disabled
-+  R bar/extractor/keboola.ex-db-mysql/with-rows/rows/test-view
-+  R bar/extractor/keboola.ex-db-mysql/with-rows/rows/users
-+  C bar/transformation/keboola.python-transformation-v2/python-transformation
-+  C bar/transformation/keboola.snowflake-transformation/snowflake-transformation
-+  B foo
-+  C foo/extractor/ex-generic-v2/empty
-+  C foo/extractor/ex-generic-v2/without-rows
-+  C foo/other/transformation/old-transformation
-+  R foo/other/transformation/old-transformation/rows/old-transformation-snfk
-+  B main
-+  C main/extractor/ex-generic-v2/empty
+	+  B bar
+	+  C bar/extractor/ex-generic-v2/empty
+	+  C bar/extractor/keboola.ex-db-mysql/with-rows
+	+  R bar/extractor/keboola.ex-db-mysql/with-rows/rows/disabled
+	+  R bar/extractor/keboola.ex-db-mysql/with-rows/rows/test-view
+	+  R bar/extractor/keboola.ex-db-mysql/with-rows/rows/users
+	+  C bar/transformation/keboola.python-transformation-v2/python-transformation
+	+  C bar/transformation/keboola.snowflake-transformation/snowflake-transformation
+	+  B foo
+	+  C foo/extractor/ex-generic-v2/empty
+	+  C foo/extractor/ex-generic-v2/without-rows
+	+  C foo/other/transformation/old-transformation
+	+  R foo/other/transformation/old-transformation/rows/old-transformation-snfk
+	+  B main
+	+  C main/extractor/ex-generic-v2/empty
 Dry run, nothing changed.
 Pull done.

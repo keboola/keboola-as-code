@@ -221,7 +221,7 @@ func AssertExpectations(
 		stateOptions.LoadRemoteState = true
 		actualState, ok := state.LoadState(stateOptions)
 		assert.True(t, ok)
-		assert.Empty(t, actualState.RemoteErrors().Errors())
+		assert.Empty(t, actualState.RemoteErrors().Errors)
 		actualSnapshot, err := state.NewProjectSnapshot(actualState)
 		if err != nil {
 			assert.FailNow(t, err.Error())

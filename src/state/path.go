@@ -95,7 +95,7 @@ func (f *PathsState) init() {
 	err := filepath.WalkDir(f.projectDir, func(path string, d fs.DirEntry, err error) error {
 		// Log error
 		if err != nil {
-			f.error.Add(err)
+			f.error.Append(err)
 			return nil
 		}
 
@@ -119,7 +119,7 @@ func (f *PathsState) init() {
 
 	// Errors are not critical, they can be e.g. problem with permissions
 	if err != nil {
-		f.error.Add(err)
+		f.error.Append(err)
 	}
 }
 

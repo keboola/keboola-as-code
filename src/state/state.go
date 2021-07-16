@@ -29,9 +29,12 @@ type State struct {
 }
 
 type ObjectState interface {
+	model.ValueWithKey
 	ObjectId() string
 	Kind() model.Kind
+	HasLocalState() bool
 	LocalState() model.ValueWithKey
+	HasRemoteState() bool
 	RemoteState() model.ValueWithKey
 	Manifest() manifest.Record
 	UpdateManifest(m *manifest.Manifest)
@@ -40,21 +43,21 @@ type ObjectState interface {
 
 type BranchState struct {
 	*manifest.BranchManifest
-	Remote *model.Branch `validate:"dive"`
-	Local  *model.Branch `validate:"dive"`
+	Remote *model.Branch `validate:"omitempty,dive"`
+	Local  *model.Branch `validate:"omitempty,dive"`
 }
 
 type ConfigState struct {
 	*manifest.ConfigManifest
 	Component *model.Component `validate:"dive"`
-	Remote    *model.Config    `validate:"dive"`
-	Local     *model.Config    `validate:"dive"`
+	Remote    *model.Config    `validate:"omitempty,dive"`
+	Local     *model.Config    `validate:"omitempty,dive"`
 }
 
 type ConfigRowState struct {
 	*manifest.ConfigRowManifest
-	Remote *model.ConfigRow `validate:"dive"`
-	Local  *model.ConfigRow `validate:"dive"`
+	Remote *model.ConfigRow `validate:"omitempty,dive"`
+	Local  *model.ConfigRow `validate:"omitempty,dive"`
 }
 
 type Options struct {
@@ -70,16 +73,6 @@ type Options struct {
 type keyValuePair struct {
 	key   string
 	state ObjectState
-}
-
-type stateValidator struct {
-	error *utils.Error
-}
-
-func (s *stateValidator) validate(kind string, v interface{}) {
-	if err := validator.Validate(v); err != nil {
-		s.error.AddSubError(fmt.Sprintf("%s is not valid", kind), err)
-	}
 }
 
 func NewOptions(m *manifest.Manifest, api *remote.StorageApi, ctx context.Context, logger *zap.SugaredLogger) *Options {
@@ -111,6 +104,8 @@ func LoadState(options *Options) (state *State, ok bool) {
 		state.doLoadLocalState()
 	}
 
+	state.validate()
+
 	ok = state.LocalErrors().Len() == 0 && state.RemoteErrors().Len() == 0
 	return state, ok
 }
@@ -119,8 +114,8 @@ func newState(options *Options) *State {
 	s := &State{
 		Options:      options,
 		mutex:        &sync.Mutex{},
-		remoteErrors: &utils.Error{},
-		localErrors:  &utils.Error{},
+		remoteErrors: utils.NewMultiError(),
+		localErrors:  utils.NewMultiError(),
 		branches:     make(map[string]*BranchState),
 		components:   make(map[string]*model.Component),
 		configs:      make(map[string]*ConfigState),
@@ -132,17 +127,6 @@ func newState(options *Options) *State {
 
 func (s *State) Manifest() *manifest.Manifest {
 	return s.manifest
-}
-
-func (s *State) Validate() *utils.Error {
-	v := &stateValidator{}
-	for _, component := range s.Components() {
-		v.validate("component", component)
-	}
-	for _, objectState := range s.All() {
-		v.validate(objectState.Kind().Name, objectState)
-	}
-	return v.error
 }
 
 func (s *State) MarkPathTracked(path string) {
@@ -186,11 +170,11 @@ func (s *State) LocalErrors() *utils.Error {
 }
 
 func (s *State) AddRemoteError(err error) {
-	s.remoteErrors.Add(err)
+	s.remoteErrors.Append(err)
 }
 
 func (s *State) AddLocalError(err error) {
-	s.localErrors.Add(err)
+	s.localErrors.Append(err)
 }
 
 func (s *State) All() []ObjectState {
@@ -391,6 +375,39 @@ func (s *State) SetConfigRowLocalState(local *model.ConfigRow, m *manifest.Confi
 	return state
 }
 
+func (s *State) validate() {
+	for _, component := range s.Components() {
+		if err := validator.Validate(component); err != nil {
+			s.AddLocalError(utils.PrefixError(fmt.Sprintf(`component \"%s\" is not valid`, component.Key()), err))
+		}
+	}
+	for _, objectState := range s.All() {
+		if objectState.HasRemoteState() {
+			if err := validator.Validate(objectState.RemoteState()); err != nil {
+				s.AddRemoteError(utils.PrefixError(fmt.Sprintf(`%s \"%s\" is not valid`, objectState.Kind().Name, objectState.Key()), err))
+			}
+		}
+
+		if objectState.HasLocalState() {
+			if err := validator.Validate(objectState.LocalState()); err != nil {
+				s.AddLocalError(utils.PrefixError(fmt.Sprintf(`%s \"%s\" is not valid`, objectState.Kind().Name, objectState.Key()), err))
+			}
+		}
+	}
+}
+
+func (b *BranchState) HasLocalState() bool {
+	return b.Local != nil
+}
+
+func (c *ConfigState) HasLocalState() bool {
+	return c.Local != nil
+}
+
+func (r *ConfigRowState) HasLocalState() bool {
+	return r.Local != nil
+}
+
 func (b *BranchState) LocalState() model.ValueWithKey {
 	return b.Local
 }
@@ -401,6 +418,18 @@ func (c *ConfigState) LocalState() model.ValueWithKey {
 
 func (r *ConfigRowState) LocalState() model.ValueWithKey {
 	return r.Local
+}
+
+func (b *BranchState) HasRemoteState() bool {
+	return b.Remote != nil
+}
+
+func (c *ConfigState) HasRemoteState() bool {
+	return c.Remote != nil
+}
+
+func (r *ConfigRowState) HasRemoteState() bool {
+	return r.Remote != nil
 }
 
 func (b *BranchState) RemoteState() model.ValueWithKey {

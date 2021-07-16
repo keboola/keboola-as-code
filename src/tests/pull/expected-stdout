@@ -1,21 +1,21 @@
 %A
 DEBUG	Project local and remote states have been successfully loaded.
 INFO	Plan for "pull" operation:
-INFO	+  B bar
-INFO	+  C bar/extractor/ex-generic-v2/empty
-INFO	+  C bar/extractor/keboola.ex-db-mysql/with-rows
-INFO	+  R bar/extractor/keboola.ex-db-mysql/with-rows/rows/disabled
-INFO	+  R bar/extractor/keboola.ex-db-mysql/with-rows/rows/test-view
-INFO	+  R bar/extractor/keboola.ex-db-mysql/with-rows/rows/users
-INFO	+  C bar/transformation/keboola.python-transformation-v2/python-transformation
-INFO	+  C bar/transformation/keboola.snowflake-transformation/snowflake-transformation
-INFO	+  B foo
-INFO	+  C foo/extractor/ex-generic-v2/empty
-INFO	+  C foo/extractor/ex-generic-v2/without-rows
-INFO	+  C foo/other/transformation/old-transformation
-INFO	+  R foo/other/transformation/old-transformation/rows/old-transformation-snfk
-INFO	+  B main
-INFO	+  C main/extractor/ex-generic-v2/empty
+INFO		+  B bar
+INFO		+  C bar/extractor/ex-generic-v2/empty
+INFO		+  C bar/extractor/keboola.ex-db-mysql/with-rows
+INFO		+  R bar/extractor/keboola.ex-db-mysql/with-rows/rows/disabled
+INFO		+  R bar/extractor/keboola.ex-db-mysql/with-rows/rows/test-view
+INFO		+  R bar/extractor/keboola.ex-db-mysql/with-rows/rows/users
+INFO		+  C bar/transformation/keboola.python-transformation-v2/python-transformation
+INFO		+  C bar/transformation/keboola.snowflake-transformation/snowflake-transformation
+INFO		+  B foo
+INFO		+  C foo/extractor/ex-generic-v2/empty
+INFO		+  C foo/extractor/ex-generic-v2/without-rows
+INFO		+  C foo/other/transformation/old-transformation
+INFO		+  R foo/other/transformation/old-transformation/rows/old-transformation-snfk
+INFO		+  B main
+INFO		+  C main/extractor/ex-generic-v2/empty
 %A
 DEBUG	Saved manifest file ".keboola/manifest.json".
 %A

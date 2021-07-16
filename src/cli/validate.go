@@ -57,13 +57,13 @@ func validateCommand(root *rootCommand) *cobra.Command {
 				logger.Debugf("Project local state has been successfully loaded.")
 			} else {
 				if projectState.LocalErrors().Len() > 0 {
-					return utils.WrapError("project local state is invalid", projectState.LocalErrors())
+					return utils.PrefixError("project local state is invalid", projectState.LocalErrors())
 				}
 			}
 
 			// Validate schemas
 			if err := schema.ValidateSchemas(projectState); err != nil {
-				return utils.WrapError("validation failed", err)
+				return utils.PrefixError("validation failed", err)
 			} else {
 				logger.Debug("Validation done.")
 			}

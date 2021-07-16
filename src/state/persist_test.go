@@ -37,7 +37,7 @@ func TestPersistNoChange(t *testing.T) {
 	state := newState(NewOptions(m, api, context.Background(), logger))
 	assert.NotNil(t, state)
 	state.doLoadLocalState()
-	assert.Empty(t, state.LocalErrors().Errors())
+	assert.Empty(t, state.LocalErrors().Errors)
 	assert.Empty(t, state.UntrackedPaths())
 
 	// State after
@@ -78,7 +78,7 @@ func TestPersistNewConfig(t *testing.T) {
 	state := newState(NewOptions(m, api, context.Background(), logger))
 	assert.NotNil(t, state)
 	state.doLoadLocalState()
-	assert.Empty(t, state.LocalErrors().Errors())
+	assert.Empty(t, state.LocalErrors().Errors)
 	assert.Equal(t, []string{
 		"main/extractor/ex-generic-v2/new-config",
 		"main/extractor/ex-generic-v2/new-config/config.json",
@@ -184,7 +184,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 	state := newState(NewOptions(m, api, context.Background(), logger))
 	assert.NotNil(t, state)
 	state.doLoadLocalState()
-	assert.Empty(t, state.LocalErrors().Errors())
+	assert.Empty(t, state.LocalErrors().Errors)
 	assert.Equal(t, []string{
 		"main/extractor/keboola.ex-db-mysql",
 		"main/extractor/keboola.ex-db-mysql/new-config",

@@ -224,7 +224,7 @@ func (k ConfigRowKey) ConfigKey() *ConfigKey {
 func (r *ConfigRow) ToApiValues() (map[string]string, error) {
 	configJson, err := json.Encode(r.Content, false)
 	if err != nil {
-		return nil, utils.WrapError(`cannot JSON encode config configuration`, err)
+		return nil, utils.PrefixError(`cannot JSON encode config configuration`, err)
 	}
 
 	return map[string]string{
@@ -239,7 +239,7 @@ func (r *ConfigRow) ToApiValues() (map[string]string, error) {
 func (c *Config) ToApiValues() (map[string]string, error) {
 	configJson, err := json.Encode(c.Content, false)
 	if err != nil {
-		return nil, utils.WrapError(`cannot JSON encode config configuration`, err)
+		return nil, utils.PrefixError(`cannot JSON encode config configuration`, err)
 	}
 
 	return map[string]string{

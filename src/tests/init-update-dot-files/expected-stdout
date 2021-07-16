@@ -5,5 +5,5 @@ Updated file ".env.dist" - an ".env.local" template.
 Updated file ".gitignore" - to keep ".env.local" local.
 Init done. Running pull.
 Plan for "pull" operation:
-+  B main
+	+  B main
 Pull done.

@@ -2,69 +2,94 @@ package utils
 
 import (
 	"fmt"
+	"github.com/hashicorp/go-multierror"
 	"regexp"
 	"strings"
 )
 
+type multiError = multierror.Error
+
 type Error struct {
-	prefix string
-	errors []string
+	*multiError
 }
 
-func WrapError(prefix string, err error) *Error {
-	e := &Error{}
-	e.SetPrefix(prefix + ":")
-	e.Add(err)
+type ErrorRaw struct {
+	msg string
+}
+
+func (e *ErrorRaw) Error() string {
+	return e.msg
+}
+
+func NewMultiError() *Error {
+	e := &Error{multiError: &multierror.Error{}}
+	e.ErrorFormat = formatError
 	return e
 }
 
-func (e *Error) Len() int {
-	return len(e.errors)
+// Append error
+func (e *Error) Append(err error) {
+	e.multiError = multierror.Append(e.multiError, err)
 }
 
-func (e *Error) SetPrefix(prefix string) {
-	e.prefix = prefix
+// AppendRaw - msg will be printed without prefix
+func (e *Error) AppendRaw(msg string) {
+	e.multiError = multierror.Append(e.multiError, &ErrorRaw{msg: msg})
 }
 
-func (e *Error) Add(err error) {
-	if v, ok := err.(*Error); ok {
-		for _, item := range v.Errors() {
-			e.doAdd(item)
+// AppendWithPrefix - add an error with custom prefix
+func (e *Error) AppendWithPrefix(prefix string, err error) {
+	e.multiError = multierror.Append(e.multiError, PrefixError(prefix, err))
+}
+
+func PrefixError(prefix string, err error) *Error {
+	e := NewMultiError()
+	e.Append(fmt.Errorf("%s:\n%s", prefix, prefixEachLine("\t- ", err.Error())))
+	return e
+}
+
+// prefixEachLine 1. use prefix only once, 2. keep indentation, see tests
+func prefixEachLine(prefix, str string) string {
+	return regexp.
+		MustCompile(fmt.Sprintf(`((^|\n)(\s*)(%s)?\s*)`, regexp.QuoteMeta(strings.TrimSpace(prefix)))).
+		ReplaceAllString(str, fmt.Sprintf("${2}${3}%s", regexp.QuoteMeta(prefix)))
+}
+
+// formatError formats the nested errors
+func formatError(errors []error) string {
+	// Count errors without raw messages
+	count := 0
+	for _, err := range errors {
+		if _, ok := err.(*ErrorRaw); !ok {
+			count++
 		}
+	}
+
+	// Prefix if there are more than 1 error
+	var prefix string
+	if count <= 1 {
+		prefix = ``
 	} else {
-		e.doAdd(err.Error())
-	}
-}
-
-func (e *Error) AddRaw(err string) {
-	e.errors = append(e.errors, err)
-}
-
-func (e *Error) AddSubError(prefix string, err error) {
-	// Prefix each line with "-"
-	str := regexp.MustCompile(`((^|\n)\s*-*)`).ReplaceAllString(err.Error(), "${2}\t-")
-	e.doAdd(fmt.Sprintf("%s:\n%s", prefix, str))
-}
-
-func (e *Error) Errors() []string {
-	return e.errors
-}
-
-func (e *Error) Error() string {
-	if len(e.errors) == 0 {
-		return ""
+		prefix = `- `
 	}
 
-	msg := strings.Join(e.errors, "\n")
-	if e.prefix != "" {
-		return e.prefix + "\n" + msg
+	// Prefix each error, format nested errors
+	lines := make([]string, 0)
+	for _, err := range errors {
+		var errStr string
+		switch v := err.(type) {
+		case *ErrorRaw:
+			errStr = v.Error()
+		case *Error:
+			errStr = prefixEachLine(prefix, formatError(v.Errors))
+		case *multierror.Error:
+			errStr = prefixEachLine(prefix, formatError(v.Errors))
+		default:
+			errStr = prefixEachLine(prefix, v.Error())
+		}
+
+		lines = append(lines, errStr)
 	}
 
-	return msg
-}
-
-func (e *Error) doAdd(err string) {
-	err = strings.TrimLeft(err, "- ")
-	err = fmt.Sprintf("- %s", err)
-	e.errors = append(e.errors, err)
+	return strings.Join(lines, "\n")
 }

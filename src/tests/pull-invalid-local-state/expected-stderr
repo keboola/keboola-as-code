@@ -1,10 +1,10 @@
 WARN	Error: project local state is invalid:
-WARN	- branch metadata file "main/meta.json" is invalid:
-WARN		- invalid character 'i' looking for beginning of object key string, offset: 3
-WARN	- config "main/extractor/ex-generic-v2/empty" not found
-WARN	- config "main/extractor/keboola.ex-db-mysql/with-rows" not found
-WARN	- config row "main/extractor/keboola.ex-db-mysql/with-rows/rows/disabled" not found
-WARN	- config row "main/extractor/keboola.ex-db-mysql/with-rows/rows/test-view" not found
-WARN	- config row "main/extractor/keboola.ex-db-mysql/with-rows/rows/users" not found
+WARN		- branch metadata file "main/meta.json" is invalid:
+WARN			- invalid character 'i' looking for beginning of object key string, offset: 3
+WARN		- config "main/extractor/ex-generic-v2/empty" not found
+WARN		- config "main/extractor/keboola.ex-db-mysql/with-rows" not found
+WARN		- config row "main/extractor/keboola.ex-db-mysql/with-rows/rows/disabled" not found
+WARN		- config row "main/extractor/keboola.ex-db-mysql/with-rows/rows/test-view" not found
+WARN		- config row "main/extractor/keboola.ex-db-mysql/with-rows/rows/users" not found
 %A
 WARN	Use --force to override the invalid local state.

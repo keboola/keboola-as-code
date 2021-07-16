@@ -67,15 +67,15 @@ func (a *diffProcessCmd) run() error {
 		logger.Debugf("Project local and remote states have been successfully loaded.")
 	} else {
 		if projectState.RemoteErrors().Len() > 0 {
-			return utils.WrapError("cannot load project remote state", projectState.RemoteErrors())
+			return utils.PrefixError("cannot load project remote state", projectState.RemoteErrors())
 		}
 		if projectState.LocalErrors().Len() > 0 {
 			if a.ignoreInvalidState {
-				logger.Info(utils.WrapError("Ignoring invalid local state", projectState.LocalErrors()))
+				logger.Info(utils.PrefixError("Ignoring invalid local state", projectState.LocalErrors()))
 			} else {
-				errors := utils.WrapError("project local state is invalid", projectState.LocalErrors())
+				errors := utils.PrefixError("project local state is invalid", projectState.LocalErrors())
 				if a.invalidStateCanBeIgnored {
-					errors.AddRaw("\nUse --force to override the invalid local state.")
+					errors.AppendRaw("\nUse --force to override the invalid local state.")
 				}
 				return errors
 			}

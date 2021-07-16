@@ -59,5 +59,5 @@ func TestLocalLoadModelNotFound(t *testing.T) {
 	found, err := LoadModel(projectDir, record, target)
 	assert.False(t, found)
 	assert.Error(t, err)
-	assert.Equal(t, "- kind \"test\" not found", err.Error())
+	assert.Equal(t, "kind \"test\" not found", err.Error())
 }

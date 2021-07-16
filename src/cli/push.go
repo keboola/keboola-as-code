@@ -45,7 +45,7 @@ func pushCommand(root *rootCommand) *cobra.Command {
 
 				// Validate schemas
 				if err := schema.ValidateSchemas(state); err != nil {
-					return utils.WrapError("validation failed", err)
+					return utils.PrefixError("validation failed", err)
 				} else {
 					root.logger.Debug("Validation done.")
 				}

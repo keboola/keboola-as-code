@@ -13,7 +13,7 @@ import (
 
 // DeleteModel from manifest and disk
 func DeleteModel(logger *zap.SugaredLogger, m *manifest.Manifest, record manifest.Record) error {
-	errors := &utils.Error{}
+	errors := utils.NewMultiError()
 
 	// Remove record from manifest content
 	m.DeleteRecord(record)
@@ -22,32 +22,28 @@ func DeleteModel(logger *zap.SugaredLogger, m *manifest.Manifest, record manifes
 	if err := os.Remove(filepath.Join(m.ProjectDir, record.MetaFilePath())); err == nil {
 		logger.Debugf("Removed \"%s\"", record.MetaFilePath())
 	} else if !os.IsNotExist(err) {
-		errors.Add(err)
+		errors.Append(err)
 	}
 
 	// Delete config file
 	if err := os.Remove(filepath.Join(m.ProjectDir, record.ConfigFilePath())); err == nil {
 		logger.Debugf("Removed \"%s\"", record.ConfigFilePath())
 	} else if !os.IsNotExist(err) {
-		errors.Add(err)
+		errors.Append(err)
 	}
 
 	// Delete dir
 	dir := filepath.Join(m.ProjectDir, record.RelativePath())
 	if err := os.RemoveAll(dir); err != nil {
-		errors.Add(fmt.Errorf("cannot remove directory \"%s\": %s", dir, err))
+		errors.Append(fmt.Errorf("cannot remove directory \"%s\": %s", dir, err))
 	}
 
-	if errors.Len() > 0 {
-		return errors
-	}
-
-	return nil
+	return errors.ErrorOrNil()
 }
 
 // DeleteEmptyDirectories from project directory (eg. dir with extractors, but no extractor left)
 func DeleteEmptyDirectories(logger *zap.SugaredLogger, projectDir string) error {
-	errors := &utils.Error{}
+	errors := utils.NewMultiError()
 	dirs := utils.NewOrderedMap()
 	err := filepath.WalkDir(projectDir, func(path string, d os.DirEntry, err error) error {
 		// Stop on error
@@ -92,13 +88,9 @@ func DeleteEmptyDirectories(logger *zap.SugaredLogger, projectDir string) error 
 		if err := os.Remove(dir); err == nil {
 			logger.Debugf(`Deleted "%s"`, utils.RelPath(projectDir, dir))
 		} else {
-			errors.Add(err)
+			errors.Append(err)
 		}
 	}
 
-	if errors.Len() > 0 {
-		return errors
-	}
-
-	return nil
+	return errors.ErrorOrNil()
 }
