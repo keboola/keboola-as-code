@@ -10,10 +10,18 @@ import (
 const splitSqlRegexp = `\s*((?:'[^'\\]*(?:\\.[^'\\]*)*'|"[^"\\]*(?:\\.[^"\\]*)*"|\/\*[^*]*\*+(?:[^*/][^*]*\*+)*\/|#.*|--.*|[^"';#])+(?:;|$))`
 
 func Split(sql string) []string {
-	results := regexpcache.MustCompile(splitSqlRegexp).FindAllString(sql, -1)
-	if results == nil {
-		return make([]string, 0)
+	sql = strings.TrimSuffix(sql, "\n")
+	rawResults := regexpcache.MustCompile(splitSqlRegexp).FindAllString(sql, -1)
+
+	// Trim spaces
+	results := make([]string, 0)
+	for _, result := range rawResults {
+		result := strings.TrimSpace(result)
+		if len(result) > 0 {
+			results = append(results, result)
+		}
 	}
+
 	return results
 }
 
