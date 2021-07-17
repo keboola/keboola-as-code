@@ -21,3 +21,34 @@ func PairsToOrderedMap(pairs []Pair) *orderedmap.OrderedMap {
 	}
 	return ordered
 }
+
+func OrderedMapToMap(in *orderedmap.OrderedMap) map[string]interface{} {
+	if in == nil {
+		return nil
+	}
+
+	out := make(map[string]interface{})
+	keys := in.Keys()
+	for _, key := range keys {
+		value, _ := in.Get(key)
+		out[key] = convertValue(value)
+	}
+
+	return out
+}
+
+func convertValue(value interface{}) interface{} {
+	switch v := value.(type) {
+	case orderedmap.OrderedMap:
+		return OrderedMapToMap(&v)
+	case *orderedmap.OrderedMap:
+		return OrderedMapToMap(v)
+	case []interface{}:
+		for index, item := range v {
+			v[index] = convertValue(item)
+		}
+		return v
+	default:
+		return value
+	}
+}
