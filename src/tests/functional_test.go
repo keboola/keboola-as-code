@@ -256,7 +256,12 @@ func AssertExpectations(
 		}
 
 		// Compare expected and actual state
-		assert.Equal(t, expectedSnapshot, actualSnapshot, "unexpected project state")
+		assert.Equal(
+			t,
+			json.MustEncodeString(expectedSnapshot, true),
+			json.MustEncodeString(actualSnapshot, true),
+			"unexpected project state",
+		)
 	}
 
 }
