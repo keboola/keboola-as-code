@@ -337,8 +337,21 @@ func (s *State) SetConfigLocalState(local *model.Config, m *manifest.ConfigManif
 	defer s.mutex.Unlock()
 	state.Local = local
 	state.ConfigManifest = m
+
 	s.MarkPathTracked(m.MetaFilePath())
 	s.MarkPathTracked(m.ConfigFilePath())
+
+	// Make transformation code blocks tracked
+	for _, block := range local.Blocks {
+		s.MarkPathTracked(block.RelativePath())
+		s.MarkPathTracked(block.MetaFilePath())
+		for _, code := range block.Codes {
+			s.MarkPathTracked(code.RelativePath())
+			s.MarkPathTracked(code.MetaFilePath())
+			s.MarkPathTracked(code.CodeFilePath())
+		}
+	}
+
 	return state
 }
 

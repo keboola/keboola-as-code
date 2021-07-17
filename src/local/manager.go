@@ -25,6 +25,10 @@ func (m *Manager) ProjectDir() string {
 	return m.manifest.ProjectDir
 }
 
+func (m *Manager) Naming() *manifest.LocalNaming {
+	return m.manifest.Naming
+}
+
 func (m *Manager) isTransformationConfig(object interface{}) (bool, error) {
 	if v, ok := object.(*model.Config); ok {
 		if component, err := m.api.Components().Get(*v.ComponentKey()); err == nil {

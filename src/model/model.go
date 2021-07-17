@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cast"
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/utils"
+	"path/filepath"
 	"sort"
 	"strconv"
 )
@@ -86,6 +87,7 @@ type Config struct {
 	Description       string                 `json:"description" diff:"true" metaFile:"true"`
 	ChangeDescription string                 `json:"changeDescription"`
 	Content           *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
+	Blocks            []*Block               `json:"-"`
 }
 
 type ConfigWithRows struct {
@@ -129,6 +131,23 @@ type Event struct {
 	Id string `json:"id"`
 }
 
+// Block - transformation block
+type Block struct {
+	ParentPath string  `json:"-"`
+	Path       string  `json:"-"`
+	Name       string  `json:"name" validate:"required" metaFile:"true"`
+	Codes      []*Code `json:"codes" validate:"omitempty,dive"`
+}
+
+// Code - transformation code
+type Code struct {
+	ParentPath string   `json:"-"`
+	Path       string   `json:"-"`
+	Extension  string   `json:"-"`
+	Name       string   `json:"name" validate:"required" metaFile:"true"`
+	Scripts    []string `json:"script"`
+}
+
 type ValueWithKey interface {
 	Key() Key
 }
@@ -140,6 +159,26 @@ type Key interface {
 type Kind struct {
 	Name string
 	Abbr string
+}
+
+func (b *Block) RelativePath() string {
+	return filepath.Join(b.ParentPath, b.Path)
+}
+
+func (b *Block) MetaFilePath() string {
+	return filepath.Join(b.RelativePath(), "meta.json")
+}
+
+func (c *Code) RelativePath() string {
+	return filepath.Join(c.ParentPath, c.Path)
+}
+
+func (c *Code) MetaFilePath() string {
+	return filepath.Join(c.RelativePath(), "meta.json")
+}
+
+func (c *Code) CodeFilePath() string {
+	return filepath.Join(c.RelativePath(), "code"+"."+c.Extension)
 }
 
 func (k BranchKey) ObjectId() string {

@@ -2,9 +2,11 @@ package local
 
 import (
 	"fmt"
+	"github.com/iancoleman/orderedmap"
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
+	"keboola-as-code/src/transformation"
 	"keboola-as-code/src/utils"
 	"keboola-as-code/src/validator"
 	"os"
@@ -32,7 +34,8 @@ func (m *Manager) SaveModel(record manifest.Record, source model.ValueWithKey) e
 	}
 
 	// Transform
-	if err := m.transformOnSave(record, source); err != nil {
+	configContent, err := m.transformOnSave(record, source)
+	if err != nil {
 		errors.Append(err)
 	}
 
@@ -45,9 +48,12 @@ func (m *Manager) SaveModel(record manifest.Record, source model.ValueWithKey) e
 		}
 	}
 
-	// Write config file
-	if config := utils.MapFromOneTaggedField(model.ConfigFileTag, source); config != nil {
-		if err := json.WriteFile(m.ProjectDir(), record.ConfigFilePath(), config, record.Kind().Name); err == nil {
+	// Write config file (from transformOnSave if defined)
+	if configContent == nil {
+		configContent = utils.MapFromOneTaggedField(model.ConfigFileTag, source)
+	}
+	if configContent != nil {
+		if err := json.WriteFile(m.ProjectDir(), record.ConfigFilePath(), configContent, record.Kind().Name); err == nil {
 			m.logger.Debugf(`Saved "%s"`, record.ConfigFilePath())
 		} else {
 			errors.Append(err)
@@ -57,16 +63,17 @@ func (m *Manager) SaveModel(record manifest.Record, source model.ValueWithKey) e
 	return errors.ErrorOrNil()
 }
 
-func (m *Manager) transformOnSave(record manifest.Record, source model.ValueWithKey) error {
+func (m *Manager) transformOnSave(record manifest.Record, source model.ValueWithKey) (*orderedmap.OrderedMap, error) {
 	if ok, err := m.isTransformationConfig(source); ok {
-		return m.saveTransformation(record.(*manifest.ConfigManifest), source.(*model.Config))
+		return transformation.SaveBlocks(
+			m.ProjectDir(),
+			m.logger,
+			m.Naming(),
+			record.(*manifest.ConfigManifest),
+			source.(*model.Config),
+		)
 	} else if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
-}
-
-func (m *Manager) saveTransformation(record *manifest.ConfigManifest, source *model.Config) error {
-	// TODO
-	return nil
+	return nil, nil
 }

@@ -1,6 +1,7 @@
 package manifest
 
 import (
+	"fmt"
 	"github.com/iancoleman/strcase"
 	"github.com/spf13/cast"
 	"keboola-as-code/src/model"
@@ -9,8 +10,10 @@ import (
 )
 
 const (
-	TransformationBlock = `blocks/{block_order}-{block_name}`
-	TransformationCode  = `{code_order}-{code_name}`
+	TransformationBlocksDir = `blocks`
+	TransformationBlock     = PathTemplate(`{block_order}-{block_name}`)
+	TransformationCode      = PathTemplate(`{code_order}-{code_name}`)
+	TransformationCodeFile  = `code`
 )
 
 // LocalNaming of the files
@@ -49,6 +52,45 @@ func (n *LocalNaming) ConfigRowPath(row *model.ConfigRow) string {
 		"config_row_id":   row.Id,
 		"config_row_name": n.normalizeName(row.Name),
 	})
+}
+
+func (n *LocalNaming) BlockPath(index int, name string) string {
+	return n.replace(string(TransformationBlock), map[string]interface{}{
+		"block_order": fmt.Sprintf(`%03d`, index+1),
+		"block_name":  n.normalizeName(name),
+	})
+}
+
+func (n *LocalNaming) CodePath(index int, name string) string {
+	return n.replace(string(TransformationCode), map[string]interface{}{
+		"code_order": fmt.Sprintf(`%03d`, index+1),
+		"code_name":  n.normalizeName(name),
+	})
+}
+
+func (n *LocalNaming) CodeFileExt(componentId string) string {
+	switch componentId {
+	case `keboola.snowflake-transformation`:
+		return `sql`
+	case `keboola.synapse-transformation`:
+		return `sql`
+	case `keboola.oracle-transformation`:
+		return `sql`
+	case `keboola.r-transformation`:
+		return `r`
+	case `keboola.julia-transformation`:
+		return `jl`
+	case `keboola.python-spark-transformation`:
+		return `py`
+	case `keboola.python-transformation`:
+		return `py`
+	case `keboola.python-transformation-v2`:
+		return `py`
+	case `keboola.csas-python-transformation-v2`:
+		return `py`
+	default:
+		return `txt`
+	}
 }
 
 func (n *LocalNaming) normalizeName(name string) string {

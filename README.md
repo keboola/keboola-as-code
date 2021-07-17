@@ -36,6 +36,24 @@ Root project folder
                        └─ config.json           - contains configuration
 ```
 
+
+### Transformations
+
+Transformations are defined by native files, eg `.sql` or `.py`.
+
+Directory structure:
+```
+[config-id]-[config-name]               - eg. 641226048-python-transformation
+    ├─ meta.json                        - contains name, description, ...
+    ├─ config.json                      - contains configuration
+    └─ blocks
+       └─ [block-order]-[block-name]    - eg. "001-my-block"
+          ├─ meta.json                  - contains block name
+          └─ [code-order]-[code-name]   - eg. "001-my-code"
+             ├─ meta.json               - contains code name
+             └─ code.[ext]              - contains content in the native language, eg. "code.sql", `code.py`, ...
+```
+
 ## Environment Variables
 
 ### Priority Of Values
