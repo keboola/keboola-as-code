@@ -98,9 +98,7 @@ func TestConfigRowApiCalls(t *testing.T) {
 	components, err := api.ListComponents(branch.Id)
 	assert.NotNil(t, components)
 	assert.NoError(t, err)
-	componentsJson, err := json.EncodeString(components, true)
-	assert.NoError(t, err)
-	utils.AssertWildcards(t, expectedComponentsConfigRowTest(), componentsJson, "Unexpected components")
+	utils.AssertWildcards(t, expectedComponentsConfigRowTest(), json.MustEncodeString(components, true), "Unexpected components")
 }
 
 func expectedComponentsConfigRowTest() string {

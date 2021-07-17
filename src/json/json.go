@@ -15,7 +15,7 @@ func ReadFile(dir string, relPath string, target interface{}, errPrefix string) 
 	content, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return fmt.Errorf("%s file \"%s\" not found", errPrefix, relPath)
+			return fmt.Errorf("missing %s file \"%s\"", errPrefix, relPath)
 		}
 		return fmt.Errorf("cannot read %s file \"%s\"", errPrefix, relPath)
 	}
@@ -53,9 +53,25 @@ func Encode(v interface{}, pretty bool) ([]byte, error) {
 	return data, nil
 }
 
+func MustEncode(v interface{}, pretty bool) []byte {
+	data, err := Encode(v, pretty)
+	if err != nil {
+		panic(err)
+	}
+	return data
+}
+
 func EncodeString(v interface{}, pretty bool) (string, error) {
 	data, err := Encode(v, pretty)
 	return string(data), err
+}
+
+func MustEncodeString(v interface{}, pretty bool) string {
+	data, err := EncodeString(v, pretty)
+	if err != nil {
+		panic(err)
+	}
+	return data
 }
 
 func Decode(data []byte, m interface{}) error {
@@ -66,8 +82,20 @@ func Decode(data []byte, m interface{}) error {
 	return nil
 }
 
+func MustDecode(data []byte, m interface{}) {
+	if err := Decode(data, m); err != nil {
+		panic(err)
+	}
+}
+
 func DecodeString(data string, m interface{}) error {
 	return Decode([]byte(data), m)
+}
+
+func MustDecodeString(data string, m interface{}) {
+	if err := DecodeString(data, m); err != nil {
+		panic(err)
+	}
 }
 
 func processJsonError(err error) error {

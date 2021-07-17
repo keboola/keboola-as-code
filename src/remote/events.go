@@ -35,11 +35,11 @@ func (a *StorageApi) CreatEventRequest(
 	params map[string]interface{},
 	results map[string]interface{},
 ) *client.Request {
-	paramsJson, err := json.Encode(params, false)
+	paramsJson, err := json.EncodeString(params, false)
 	if err != nil {
 		panic(utils.PrefixError(`cannot serialize event "params" key to JSON`, err))
 	}
-	resultsJson, err := json.Encode(results, false)
+	resultsJson, err := json.EncodeString(results, false)
 	if err != nil {
 		panic(utils.PrefixError(`cannot serialize event "results" key to JSON`, err))
 	}
@@ -51,8 +51,8 @@ func (a *StorageApi) CreatEventRequest(
 			"message":   message,
 			"type":      level,
 			"duration":  fmt.Sprintf("%.0f", float64(duration/time.Second)),
-			"params":    string(paramsJson),
-			"results":   string(resultsJson),
+			"params":    paramsJson,
+			"results":   resultsJson,
 		}).
 		SetResult(&model.Event{})
 }

@@ -103,9 +103,7 @@ func TestBranchApiCalls(t *testing.T) {
 	assert.NotNil(t, branches)
 	assert.NoError(t, err)
 	var encoded string
-	encoded, err = json.EncodeString(*branches, true)
-	assert.NoError(t, err)
-	utils.AssertWildcards(t, expectedBranchesAll(), encoded, "Unexpected branches state")
+	utils.AssertWildcards(t, expectedBranchesAll(), json.MustEncodeString(*branches, true), "Unexpected branches state")
 
 	// Delete branch
 	job3, err = api.DeleteBranch(branchFoo.Id)
