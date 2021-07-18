@@ -5,7 +5,7 @@ set -o errtrace         # Make sure any error trap is inherited
 set -o nounset          # Disallow expansion of unset variables
 set -o pipefail         # Use last non-zero exit code in a pipeline
 #set -o xtrace          # Trace the execution of the script (debug)
-
+echo $TEST_KBC_STORAGE_API_HOST
 # Check Go files format
 echo "Downloading modules"
 go mod download

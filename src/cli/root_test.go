@@ -34,6 +34,7 @@ func TestRootSubCommands(t *testing.T) {
 		"push",
 		"status",
 		"validate",
+		"encrypt",
 	}, names)
 }
 
