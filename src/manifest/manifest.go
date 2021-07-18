@@ -16,8 +16,6 @@ import (
 const (
 	MetadataDir = ".keboola"
 	FileName    = "manifest.json"
-	MetaFile    = "meta.json"
-	ConfigFile  = "config.json"
 	SortById    = "id"
 	SortByPath  = "path"
 )
@@ -335,11 +333,11 @@ func (o Paths) AbsolutePath(projectDir string) string {
 }
 
 func (o Paths) MetaFilePath() string {
-	return filepath.Join(o.RelativePath(), MetaFile)
+	return filepath.Join(o.RelativePath(), model.MetaFile)
 }
 
 func (o Paths) ConfigFilePath() string {
-	return filepath.Join(o.RelativePath(), ConfigFile)
+	return filepath.Join(o.RelativePath(), model.ConfigFile)
 }
 
 func (b BranchManifest) Kind() model.Kind {
