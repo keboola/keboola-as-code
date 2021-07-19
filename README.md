@@ -105,6 +105,9 @@ DEBUG   Trace:
 ...
 ```
 
+## Quickstart
+For the basic scenarios on how to use the CLI read the [QUICKSTART.md](QUICKSTART.md) document.
+
 ## Development
 
 Clone this repository and init the workspace with following command:
