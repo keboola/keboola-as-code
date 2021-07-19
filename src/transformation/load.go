@@ -23,8 +23,7 @@ type loader struct {
 // LoadBlocks - load code blocks from disk to target config
 func LoadBlocks(projectDir string, naming *manifest.LocalNaming, record *manifest.ConfigManifest, target *model.Config) error {
 	l := &loader{projectDir, naming, target.ComponentId, utils.NewMultiError()}
-	blocksDir := filepath.Join(record.RelativePath(), blocksDir)
-	blocks := l.loadBlocks(blocksDir)
+	blocks := l.loadBlocks(filepath.Join(record.RelativePath(), blocksDir))
 
 	// Set blocks to "parameters.blocks" in the config
 	var parameters orderedmap.OrderedMap
@@ -118,13 +117,12 @@ func (l *loader) loadCodes(blockDir string) []*model.Code {
 		return nil
 	}
 
-	// Load all blocks
+	// Load all codes
 	for _, item := range items {
 		if item.IsDir() {
 			code := &model.Code{
 				ParentPath: blockDir,
 				Path:       item.Name(),
-				Extension:  codeFileExt(l.componentId),
 			}
 
 			// Load meta file
@@ -134,11 +132,14 @@ func (l *loader) loadCodes(blockDir string) []*model.Code {
 			}
 
 			// Load codes
-			scripts := l.loadScripts(code.RelativePath())
-			if scripts != nil {
-				code.Scripts = scripts
-			} else {
-				continue
+			code.CodeFileName = l.codeFileName(code.RelativePath())
+			if code.CodeFileName != "" {
+				scripts := l.loadScripts(code.CodeFilePath())
+				if scripts != nil {
+					code.Scripts = scripts
+				} else {
+					continue
+				}
 			}
 
 			// Store
@@ -149,15 +150,14 @@ func (l *loader) loadCodes(blockDir string) []*model.Code {
 	return codes
 }
 
-// loadScripts - one script is one statement from code file
-func (l *loader) loadScripts(codeDir string) []string {
+func (l *loader) codeFileName(codeDir string) string {
 	// Search for code file, glob "code.*"
 	// File can use an old naming, so the file extension is not specified
 	codeDirAbs := filepath.Join(l.projectDir, codeDir)
 	matches, err := filepath.Glob(filepath.Join(codeDirAbs, model.CodeFileName+`.*`))
 	if err != nil {
 		l.errors.Append(fmt.Errorf(`canoot search for code file in %s": %s`, codeDir, err))
-		return nil
+		return ""
 	}
 	files := make([]string, 0)
 	for _, match := range matches {
@@ -169,7 +169,7 @@ func (l *loader) loadScripts(codeDir string) []string {
 	// No file?
 	if len(files) == 0 {
 		l.errors.Append(fmt.Errorf(`missing code file in "%s"`, codeDir))
-		return nil
+		return ""
 	}
 
 	// Multiple files?
@@ -179,15 +179,20 @@ func (l *loader) loadScripts(codeDir string) []string {
 			strings.Join(files, `", "`),
 			codeDir,
 		))
-		return nil
+		return ""
 	}
 
+	// Found
+	return files[0]
+}
+
+// loadScripts - one script is one statement from code file
+func (l *loader) loadScripts(codeFile string) []string {
 	// Load file content
-	codeFilePath := filepath.Join(codeDir, files[0])
-	codeFilePathAbs := filepath.Join(l.projectDir, codeFilePath)
+	codeFilePathAbs := filepath.Join(l.projectDir, codeFile)
 	content, err := os.ReadFile(codeFilePathAbs)
 	if err != nil {
-		l.errors.Append(fmt.Errorf(`cannot read code file "%s": %s`, codeFilePath, err))
+		l.errors.Append(fmt.Errorf(`cannot read code file "%s": %s`, codeFile, err))
 		return nil
 	}
 

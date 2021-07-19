@@ -4,8 +4,8 @@ import (
 	"context"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
-	"keboola-as-code/src/local"
 	"keboola-as-code/src/manifest"
+	"keboola-as-code/src/model"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/utils"
 	"path/filepath"
@@ -50,7 +50,7 @@ func TestRenameAllPlan(t *testing.T) {
 	}
 
 	// Get rename plan
-	assert.Equal(t, []*local.RenamePlan{
+	assert.Equal(t, []*model.RenamePlan{
 		{
 			OldPath:     filepath.Join(projectDir, "my-main-branch"),
 			NewPath:     filepath.Join(projectDir, "main"),

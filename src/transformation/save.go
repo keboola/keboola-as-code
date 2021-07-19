@@ -146,8 +146,8 @@ func (w *writer) writeCode(codeDir string, code *model.Code) {
 	}
 
 	// Write scripts
-	codePath := filepath.Join(codeDir, model.CodeFileName+`.`+codeFileExt(w.componentId))
-	codePathAbs := filepath.Join(w.projectDir, codePath)
+	codePathRel := filepath.Join(codeDir, model.CodeFileName+`.`+codeFileExt(w.componentId))
+	codePathAbs := filepath.Join(w.projectDir, codePathRel)
 	if err := os.WriteFile(codePathAbs, []byte(w.joinScripts(code.Scripts)), 0644); err != nil {
 		w.errors.Append(err)
 	}
