@@ -1,7 +1,7 @@
 {
   "version": 1,
   "project": {
-    "id": 8614,
+    "id": %%TEST_PROJECT_ID%%,
     "apiHost": "connection.keboola.com"
   },
   "sortBy": "path",

@@ -227,7 +227,7 @@ func (c *Component) IsTransformation() bool {
 }
 
 func (r *ConfigRow) ToApiValues() (map[string]string, error) {
-	configJson, err := json.Encode(r.Content, false)
+	configJson, err := json.EncodeString(r.Content, false)
 	if err != nil {
 		return nil, utils.PrefixError(`cannot JSON encode config configuration`, err)
 	}
@@ -237,12 +237,12 @@ func (r *ConfigRow) ToApiValues() (map[string]string, error) {
 		"description":       r.Description,
 		"changeDescription": r.ChangeDescription,
 		"isDisabled":        strconv.FormatBool(r.IsDisabled),
-		"configuration":     string(configJson),
+		"configuration":     configJson,
 	}, nil
 }
 
 func (c *Config) ToApiValues() (map[string]string, error) {
-	configJson, err := json.Encode(c.Content, false)
+	configJson, err := json.EncodeString(c.Content, false)
 	if err != nil {
 		return nil, utils.PrefixError(`cannot JSON encode config configuration`, err)
 	}
@@ -251,6 +251,6 @@ func (c *Config) ToApiValues() (map[string]string, error) {
 		"name":              c.Name,
 		"description":       c.Description,
 		"changeDescription": c.ChangeDescription,
-		"configuration":     string(configJson),
+		"configuration":     configJson,
 	}, nil
 }

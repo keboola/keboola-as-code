@@ -51,7 +51,7 @@
                     {
                       "name": "Code Z",
                       "script": [
-                        "# Sum of natural numbers up to num\n\nnum = 16\n\nif num \u003c 0:\n   print(\"Enter a positive number\")\nelse:\n   sum = 0\n   # use while loop to iterate until zero\n   while(num \u003e 0):\n       sum += num\n       num -= 1\n   print(\"The sum is\", sum)"
+                        "# Sum of natural numbers up to num\n\nnum = 16\n\nif num \u003c 0:\n    print(\"Enter a positive number\")\nelse:\n    sum = 0\n    # use while loop to iterate until zero\n    while (num \u003c 0):\n        sum += num\n        num -= 1\n    print(\"The sum is\", sum)"
                       ]
                     }
                   ],
@@ -75,7 +75,7 @@
                 {
                   "codes": [
                     {
-                      "name": "Code 1",
+                      "name": "Code X",
                       "script": [
                         "CREATE OR REPLACE TABLE \"test\" (\n  \"id\" number default null,\n  \"orderstatus\" varchar(100) default null,\n  \"price\" float\n);",
                         "INSERT INTO \"test\" (\"id\", \"orderstatus\", \"price\") VALUES(123, 'ok', 12.34);",
@@ -84,7 +84,7 @@
                       ]
                     },
                     {
-                      "name": "Code 2",
+                      "name": "Code Y",
                       "script": [
                         "CREATE TABLE \"test2\" AS SELECT $1, $2\nFROM VALUES( 1, 'two' ), ( 3, 'four' ), ( 5, 'six' );"
                       ]
@@ -95,7 +95,7 @@
                 {
                   "codes": [
                     {
-                      "name": "Code 3",
+                      "name": "Code Z",
                       "script": [
                         "CREATE TABLE \"test3\" AS SELECT $1, $2\nFROM VALUES( 123, 'x' ), ( 345, 'y' );"
                       ]

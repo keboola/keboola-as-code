@@ -84,7 +84,7 @@ func TestLoadLocalStateBranchMissingMetaJson(t *testing.T) {
 	state := loadLocalTestState(t, "branch-missing-meta-json")
 	assert.NotNil(t, state)
 	assert.Greater(t, state.LocalErrors().Len(), 0)
-	assert.Equal(t, `branch metadata file "main/meta.json" not found`, state.LocalErrors().Error())
+	assert.Equal(t, `missing branch metadata file "main/meta.json"`, state.LocalErrors().Error())
 }
 
 func TestLoadLocalStateConfigMissingConfigJson(t *testing.T) {
@@ -92,7 +92,7 @@ func TestLoadLocalStateConfigMissingConfigJson(t *testing.T) {
 	state := loadLocalTestState(t, "config-missing-config-json")
 	assert.NotNil(t, state)
 	assert.Greater(t, state.LocalErrors().Len(), 0)
-	assert.Equal(t, `config file "123-branch/extractor/ex-generic-v2/456-todos/config.json" not found`, state.LocalErrors().Error())
+	assert.Equal(t, `missing config file "123-branch/extractor/ex-generic-v2/456-todos/config.json"`, state.LocalErrors().Error())
 }
 
 func TestLoadLocalStateConfigMissingMetaJson(t *testing.T) {
@@ -100,7 +100,7 @@ func TestLoadLocalStateConfigMissingMetaJson(t *testing.T) {
 	state := loadLocalTestState(t, "config-missing-meta-json")
 	assert.NotNil(t, state)
 	assert.Greater(t, state.LocalErrors().Len(), 0)
-	assert.Equal(t, `config metadata file "123-branch/extractor/ex-generic-v2/456-todos/meta.json" not found`, state.LocalErrors().Error())
+	assert.Equal(t, `missing config metadata file "123-branch/extractor/ex-generic-v2/456-todos/meta.json"`, state.LocalErrors().Error())
 }
 
 func TestLoadLocalStateConfigRowMissingConfigJson(t *testing.T) {
@@ -108,7 +108,7 @@ func TestLoadLocalStateConfigRowMissingConfigJson(t *testing.T) {
 	state := loadLocalTestState(t, "config-row-missing-config-json")
 	assert.NotNil(t, state)
 	assert.Greater(t, state.LocalErrors().Len(), 0)
-	assert.Equal(t, `config row file "123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users/config.json" not found`, state.LocalErrors().Error())
+	assert.Equal(t, `missing config row file "123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users/config.json"`, state.LocalErrors().Error())
 }
 
 func TestLoadLocalStateConfigRowMissingMetaJson(t *testing.T) {
@@ -116,7 +116,7 @@ func TestLoadLocalStateConfigRowMissingMetaJson(t *testing.T) {
 	state := loadLocalTestState(t, "config-row-missing-meta-json")
 	assert.NotNil(t, state)
 	assert.Greater(t, state.LocalErrors().Len(), 0)
-	assert.Equal(t, `config row metadata file "123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json" not found`, state.LocalErrors().Error())
+	assert.Equal(t, `missing config row metadata file "123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json"`, state.LocalErrors().Error())
 }
 
 func TestLoadLocalStateBranchInvalidMetaJson(t *testing.T) {
