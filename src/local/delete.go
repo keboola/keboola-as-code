@@ -41,9 +41,11 @@ func (m *Manager) DeleteModel(record manifest.Record) error {
 }
 
 // DeleteEmptyDirectories from project directory (eg. dir with extractors, but no extractor left)
-func (m *Manager) DeleteEmptyDirectories() error {
+// Deleted are only empty directories from know/tracked paths.
+// Hidden dirs are ignored.
+func (m *Manager) DeleteEmptyDirectories(trackedPaths []string) error {
 	errors := utils.NewMultiError()
-	dirs := utils.NewOrderedMap()
+	emptyDirs := utils.NewOrderedMap()
 	err := filepath.WalkDir(m.ProjectDir(), func(path string, d os.DirEntry, err error) error {
 		// Stop on error
 		if err != nil {
@@ -55,16 +57,21 @@ func (m *Manager) DeleteEmptyDirectories() error {
 			return nil
 		}
 
+		// Skip ignored
+		if utils.IsIgnoredDir(path, d) {
+			return filepath.SkipDir
+		}
+
 		// Found a directory -> store path
 		if d.IsDir() {
-			dirs.Set(path+string(filepath.Separator), true)
+			emptyDirs.Set(path+string(os.PathSeparator), true)
 			return nil
 		}
 
-		// If file, remove from "dirs" all file parents
-		for _, dir := range dirs.Keys() {
+		// Is file -> all parent dirs are not empty
+		for _, dir := range emptyDirs.Keys() {
 			if strings.HasPrefix(path, dir) {
-				dirs.Delete(dir)
+				emptyDirs.Delete(dir)
 			}
 		}
 
@@ -75,15 +82,28 @@ func (m *Manager) DeleteEmptyDirectories() error {
 		return err
 	}
 
-	// Sort longest path firs -> most nested directory first
-	dirs.SortKeys(func(keys []string) {
+	// Sort longest path firs -> delete most nested directory first
+	emptyDirs.SortKeys(func(keys []string) {
 		sort.SliceStable(keys, func(i, j int) bool {
 			return len(keys[i]) > len(keys[j])
 		})
 	})
 
-	// Only empty directories remain in "dirs" -> delete
-	for _, dir := range dirs.Keys() {
+	// Remove only empty dirs, if parent dir is from tracked dirs
+	dirsToRemove := make([]string, 0)
+	for _, dir := range emptyDirs.Keys() {
+		for _, tracked := range trackedPaths {
+			prefix := filepath.Join(m.ProjectDir(), tracked) + string(os.PathSeparator)
+			if strings.HasPrefix(dir, prefix) {
+				// Remove dir, it is from a tracked dir
+				dirsToRemove = append(dirsToRemove, dir)
+				break
+			}
+		}
+	}
+
+	// Delete
+	for _, dir := range dirsToRemove {
 		if err := os.Remove(dir); err == nil {
 			m.logger.Debugf(`Deleted "%s"`, utils.RelPath(m.ProjectDir(), dir))
 		} else {
