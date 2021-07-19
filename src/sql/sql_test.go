@@ -27,17 +27,17 @@ func TestSqlSplitAndJoin(t *testing.T) {
 		{
 			comment:    "one statement + whitespaces",
 			input:      "   \n\n\nSELECT * FROM [bar]\t\n  ",
-			output:     "   \n\n\nSELECT * FROM [bar]\t\n  ",
-			statements: []string{"   \n\n\nSELECT * FROM [bar]\t\n  "},
+			output:     "SELECT * FROM [bar]",
+			statements: []string{"SELECT * FROM [bar]"},
 		},
 		{
 			comment: "multiple",
 			input:   "   \n\n\nSELECT * FROM [bar];\t\n  INSERT INTO bar VALUES('x', 'y'); TRUNCATE records;;;",
-			output:  "   \n\n\nSELECT * FROM [bar];\n\n\t\n  INSERT INTO bar VALUES('x', 'y');\n\n TRUNCATE records;",
+			output:  "SELECT * FROM [bar];\n\nINSERT INTO bar VALUES('x', 'y');\n\nTRUNCATE records;",
 			statements: []string{
-				"   \n\n\nSELECT * FROM [bar];",
-				"\t\n  INSERT INTO bar VALUES('x', 'y');",
-				" TRUNCATE records;",
+				"SELECT * FROM [bar];",
+				"INSERT INTO bar VALUES('x', 'y');",
+				"TRUNCATE records;",
 			},
 		},
 	}
