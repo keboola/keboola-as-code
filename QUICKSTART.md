@@ -71,14 +71,77 @@ Plan for "push" operation:
 Push done.
 ```
 
-## Create a new configuration and sync into the remote project
-TODO - persist command.
+## Create new configurations
+Sometimes you need to create a new configuration from the local directory a sync it to remote project. In such you case you need to create files following the [outlined directory structure](README.md#directory-structure). After that use `kbc persist` command to prepare configuration(to automatically fill-up ids and additional info) and then call `kbc push` command. 
+### Prepare configuration files
+Let's say we want to create new `ex-generic-v2` confiuration named `wiki`. Under `main/extractor/ex-generic-v2/` we create a directory `wiki` where we create following files:
+- `config.json` - with the following json content:
+```
+{
+    "api": {
+        "baseUrl": "https:wiki.com"        
+    }
+}
+```
+ - `meta.json` - with the following json content:
+```
+{
+  "name": "extract wiki.com",
+  "description": ""
+}
+```
+ 
+The final file structure would look as follows:
+```
+ ➜  my-kbc-project tree
+.
+└── main
+    ├── extractor
+    │   ├── ex-generic-v2
+    │   │   ├── 729814342-my-generic-api
+    │   │   │   ├── config.json
+    │   │   │   └── meta.json
+    │   │   ├── 729819493-some-api
+    │   │   │   ├── config.json
+    │   │   │   └── meta.json
+    │   │   └── wiki
+    │   │       ├── config.json
+    │   │       └── meta.json
+```
+### kbc persist
+Call `kbc persist` command to finalize the wiki configuration files.
+```
+ ➜  my-kbc-project kbc persist
+New objects:
+	+ C 731114520 main/extractor/ex-generic-v2/wiki
+Renamed objects:
+	- main/extractor/ex-generic-v2/{wiki -> 731114520-extract-wiki-com}
+Persist done.
+```
+Note that the `wiki` directory has been renamed `731114520-extract-wiki-com` to meet the naming conventions.
+ 
+### kbc push --dry-run
+Call `kbc push --dry-run` to preview changes:
+```
+➜  my-kbc-project kbc push --dry-run
+Plan for "push" operation:
+	+  C main/extractor/ex-generic-v2/731114520-extract-wiki-com
+Dry run, nothing changed.
+```
+### kbc push
+Finally, to sync local changes into the remote project call `kbc push`.
+```
+➜  my-kbc-project kbc push
+Plan for "push" operation:
+	+  C main/extractor/ex-generic-v2/731114520-extract-wiki-com
+Push done.
+``` 
 
 ## Sync remote changes to the local directory
 Sometimes you create a new or change an existing configuration in the remote project.
 ### kbc diff --details
 Preview changes between remote project and local directory call `kbc diff --details`.
-```shell
+```
 ➜  my-kbc-project kbc diff --details
 CH changed
 -  remote state
