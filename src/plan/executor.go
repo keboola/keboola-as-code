@@ -95,7 +95,7 @@ func (e *Executor) Invoke(p *Plan) error {
 	}
 
 	// Delete empty directories
-	if err := e.LocalManager().DeleteEmptyDirectories(); err != nil {
+	if err := e.LocalManager().DeleteEmptyDirectories(e.State.TrackedPaths()); err != nil {
 		e.errors.Append(err)
 	}
 
