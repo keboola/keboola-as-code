@@ -1,11 +1,12 @@
-# Quickstart documentation
+# Quickstart
 This document describes basic scenarious on how to use the CLI assuming the CLI has been already installed and ready to use.
 ## Init project directory
 To start using CLI, a diretory has to be initialized locally with the configurations of the remote project, the following prerequisities are needed:
 - **Master API Token** - go to the remote project settings -> API Tokens and click on your token(labeled as `Yours`). In the token detail page click on `Refresh` button and refresh the token. Copy the refreshed Master API token to the clipboard. 
-- **Empty project directory(aka local directory)** - create an empty directory, name it whatever your like e.g. `mkdir my-kbc-project`
+- **Empty local directory** - create an empty directory, name it whatever your like e.g. `mkdir my-kbc-project`
 
-Call **`kbc init`** command from within the created empty project directory. The command asks for the host and Master API Token inputs. After the commands finishes the directory is initialized and contains all the configurations of the remote project, e.g.:
+### kbc init
+To initialize a directory call `kbc init` command from within the created empty project directory. The command asks for the host and Master API Token inputs. After the commands finishes the directory is initialized and contains all the configurations of the remote project, e.g.:
 
 ```
 ➜  my-kbc-project kbc init 
@@ -36,7 +37,7 @@ Plan for "pull" operation:
 Pull done.
 ```
 At this point it is good to init a git repository as well, so call `git init` and make an initial commit.
-## Sync local directory changes into the remote project
+## Push local changes
 The typical workflow here is to update an existing configuration locally and sync it to the remote project.
 ### kbc diff --details
 Preview changes between remote project and local directory by calling `kbc diff --details`.
@@ -72,7 +73,7 @@ Push done.
 ```
 
 ## Create new configurations
-Sometimes you need to create a new configuration from the local directory a sync it to remote project. In such you case you need to create files following the [outlined directory structure](README.md#directory-structure). After that use `kbc persist` command to prepare configuration(to automatically fill-up ids and additional info) and then call `kbc push` command. 
+Sometimes you need to create a new configuration from the local directory a sync it to remote project. In such you case you need to create files following the outlined [directory structure](README.md#directory-structure). After that use `kbc persist` command to prepare configuration(to automatically fill-up ids and additional info) and then call `kbc push` command. 
 ### Prepare configuration files
 Let's say we want to create new `ex-generic-v2` confiuration named `wiki`. Under `main/extractor/ex-generic-v2/` we create a directory `wiki` where we create following files:
 - `config.json` - with the following json content:
@@ -137,7 +138,7 @@ Plan for "push" operation:
 Push done.
 ``` 
 
-## Sync remote changes to the local directory
+## Pull remote changes
 Sometimes you create a new or change an existing configuration in the remote project.
 ### kbc diff --details
 Preview changes between remote project and local directory call `kbc diff --details`.
