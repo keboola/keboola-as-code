@@ -5,6 +5,7 @@ import (
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
+	"keboola-as-code/src/transformation"
 	"keboola-as-code/src/utils"
 	"keboola-as-code/src/validator"
 	"path/filepath"
@@ -56,14 +57,14 @@ func (m *Manager) LoadModel(record manifest.Record, target interface{}) (found b
 
 func (m *Manager) transformOnLoad(record manifest.Record, target interface{}) error {
 	if ok, err := m.isTransformationConfig(target); ok {
-		return m.loadTransformation(record.(*manifest.ConfigManifest), target.(*model.Config))
+		return transformation.LoadBlocks(
+			m.ProjectDir(),
+			m.Naming(),
+			record.(*manifest.ConfigManifest),
+			target.(*model.Config),
+		)
 	} else if err != nil {
 		return err
 	}
-	return nil
-}
-
-func (m *Manager) loadTransformation(record *manifest.ConfigManifest, target *model.Config) error {
-	// TODO
 	return nil
 }

@@ -1,10 +1,23 @@
 package utils
 
-import "github.com/iancoleman/orderedmap"
+import (
+	"github.com/iancoleman/orderedmap"
+	"keboola-as-code/src/json"
+)
 
 type Pair struct {
 	Key   string
 	Value interface{}
+}
+
+func ConvertByJson(input, target interface{}) {
+	data, err := json.Encode(input, false)
+	if err != nil {
+		panic(err)
+	}
+	if err := json.Decode(data, target); err != nil {
+		panic(err)
+	}
 }
 
 func NewOrderedMap() *orderedmap.OrderedMap {
