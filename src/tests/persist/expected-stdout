@@ -2,6 +2,7 @@
 INFO	New objects:
 INFO		+ C %s main/extractor/ex-generic-v2/new
 INFO		+ C %s main/extractor/keboola.ex-db-mysql/with-rows
+INFO		+ C %s main/transformation/keboola.python-transformation-v2/python-transformation
 INFO		+ R %s main/extractor/keboola.ex-db-mysql/with-rows/rows/users
 INFO	Deleted objects:
 INFO		- C main/extractor/keboola.ex-db-mysql/missing

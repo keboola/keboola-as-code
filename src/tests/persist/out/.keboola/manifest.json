@@ -42,6 +42,13 @@
           "path": "rows/users"
         }
       ]
+    },
+    {
+      "branchId": 111,
+      "componentId": "keboola.python-transformation-v2",
+      "id": "%s",
+      "path": "transformation/keboola.python-transformation-v2/python-transformation",
+      "rows": []
     }
   ]
 }

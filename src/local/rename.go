@@ -4,29 +4,13 @@ import (
 	"fmt"
 	"github.com/otiai10/copy"
 	"go.uber.org/zap"
+	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
 	"os"
-	"path/filepath"
 )
 
-type RenamePlan struct {
-	OldPath     string
-	NewPath     string
-	Description string
-}
-
-func (p *RenamePlan) validate() error {
-	if !filepath.IsAbs(p.OldPath) {
-		return fmt.Errorf("old path must be absolute")
-	}
-	if !filepath.IsAbs(p.NewPath) {
-		return fmt.Errorf("new path must be absolute")
-	}
-	return nil
-}
-
 // Rename according to the defined plan
-func Rename(plan []*RenamePlan, logger *zap.SugaredLogger) (warns error, errs error) {
+func Rename(plan []*model.RenamePlan, logger *zap.SugaredLogger) (warns error, errs error) {
 	errors := utils.NewMultiError()
 	warnings := utils.NewMultiError()
 	newPaths := make([]string, 0)
@@ -38,7 +22,7 @@ func Rename(plan []*RenamePlan, logger *zap.SugaredLogger) (warns error, errs er
 		logger.Info("Renamed objects:")
 		for _, item := range plan {
 			// Validate
-			if err := item.validate(); err != nil {
+			if err := item.Validate(); err != nil {
 				panic(err)
 			}
 

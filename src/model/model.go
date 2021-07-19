@@ -144,11 +144,17 @@ type Block struct {
 
 // Code - transformation code
 type Code struct {
-	ParentPath string   `json:"-"` // config dir relative path
-	Path       string   `json:"-"` // relative path to block dir from ParentPath
-	Extension  string   `json:"-"` // eg. "sql", "py", ...
-	Name       string   `json:"name" validate:"required" metaFile:"true"`
-	Scripts    []string `json:"script"` // scripts, eg. SQL statements
+	ParentPath   string   `json:"-"` // config dir relative path
+	Path         string   `json:"-"` // relative path to block dir from ParentPath
+	CodeFileName string   `json:"-"` // eg. "code.sql", "code.py", ...
+	Name         string   `json:"name" validate:"required" metaFile:"true"`
+	Scripts      []string `json:"script"` // scripts, eg. SQL statements
+}
+
+type RenamePlan struct {
+	OldPath     string
+	NewPath     string
+	Description string
 }
 
 type ValueWithKey interface {
@@ -181,7 +187,7 @@ func (c *Code) MetaFilePath() string {
 }
 
 func (c *Code) CodeFilePath() string {
-	return filepath.Join(c.RelativePath(), CodeFileName+"."+c.Extension)
+	return filepath.Join(c.RelativePath(), c.CodeFileName)
 }
 
 func (k BranchKey) ObjectId() string {
@@ -295,4 +301,14 @@ func (c *Config) ToApiValues() (map[string]string, error) {
 		"changeDescription": c.ChangeDescription,
 		"configuration":     configJson,
 	}, nil
+}
+
+func (p *RenamePlan) Validate() error {
+	if !filepath.IsAbs(p.OldPath) {
+		return fmt.Errorf("old path must be absolute")
+	}
+	if !filepath.IsAbs(p.NewPath) {
+		return fmt.Errorf("new path must be absolute")
+	}
+	return nil
 }

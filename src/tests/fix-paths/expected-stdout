@@ -1,9 +1,16 @@
 %A
 DEBUG	Project local state has been successfully loaded.
-DEBUG	Starting renaming of the 3 paths.
+DEBUG	Starting renaming of the 10 paths.
 INFO	Renamed objects:
 INFO		- my-main-branch -> main
 INFO		- main/extractor/keboola.ex-db-mysql/{my-table -> tables}
+INFO		- main/transformation/keboola.python-transformation-v2/{my-transformation -> python-transformation}
+INFO		- main/transformation/keboola.python-transformation-v2/python-transformation/blocks/{my-block-1 -> 001-block-1}
+INFO		- main/transformation/keboola.python-transformation-v2/python-transformation/blocks/001-block-1/{abc -> 001-code-x}
+INFO		- main/transformation/keboola.python-transformation-v2/python-transformation/blocks/001-block-1/001-code-x/{code.txt -> code.py}
+INFO		- main/transformation/keboola.python-transformation-v2/python-transformation/blocks/{my-block-2 -> 002-block-2}
+INFO		- main/transformation/keboola.python-transformation-v2/python-transformation/blocks/002-block-2/{code -> 001-code-z}
+INFO		- main/transformation/keboola.python-transformation-v2/python-transformation/blocks/002-block-2/001-code-z/{code.myext.py -> code.py}
 INFO		- main/extractor/keboola.ex-db-mysql/tables/rows/{my-row -> users}
 DEBUG	Saved manifest file ".keboola/manifest.json".
 INFO	Fix paths done.

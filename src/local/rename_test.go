@@ -2,6 +2,7 @@ package local
 
 import (
 	"github.com/stretchr/testify/assert"
+	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
 	"os"
 	"path/filepath"
@@ -17,7 +18,7 @@ func TestRename(t *testing.T) {
 	assert.NoError(t, os.WriteFile(filepath.Join(dir, `foo2`), []byte(`content`), 0644))
 
 	// Plan
-	plan := []*RenamePlan{
+	plan := []*model.RenamePlan{
 		{
 			OldPath:     filepath.Join(dir, "foo1"),
 			NewPath:     filepath.Join(dir, "bar1"),
@@ -60,7 +61,7 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 	assert.NoError(t, os.WriteFile(filepath.Join(dir, `foo5`), []byte(`content`), 0644))
 
 	// Plan
-	plan := []*RenamePlan{
+	plan := []*model.RenamePlan{
 		{
 			OldPath:     filepath.Join(dir, "foo1"),
 			NewPath:     filepath.Join(dir, "bar1"),
@@ -111,7 +112,7 @@ INFO  Error occurred, the rename operation was reverted.
 
 func TestRenameInvalidOldPath(t *testing.T) {
 	dir := t.TempDir()
-	plan := []*RenamePlan{
+	plan := []*model.RenamePlan{
 		{
 			OldPath:     "relative path",
 			NewPath:     filepath.Join(dir, "bar1"),
@@ -126,7 +127,7 @@ func TestRenameInvalidOldPath(t *testing.T) {
 
 func TestRenameInvalidNewPath(t *testing.T) {
 	dir := t.TempDir()
-	plan := []*RenamePlan{
+	plan := []*model.RenamePlan{
 		{
 			OldPath:     filepath.Join(dir, "bar1"),
 			NewPath:     "relative path",
