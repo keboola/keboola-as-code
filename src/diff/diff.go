@@ -5,7 +5,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/iancoleman/orderedmap"
-	"keboola-as-code/src/json"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
 	"reflect"
@@ -24,7 +23,9 @@ type Differ struct {
 type ResultState int
 
 const (
-	ResultNotSet ResultState = iota
+	OnlyInRemoteMark             = "-"
+	OnlyInLocalMark              = "+"
+	ResultNotSet     ResultState = iota
 	ResultNotEqual
 	ResultEqual
 	ResultOnlyInRemote
@@ -40,6 +41,7 @@ type Result struct {
 
 type Results struct {
 	CurrentState *state.State
+	Equal        bool
 	Results      []*Result
 }
 
@@ -55,11 +57,15 @@ func (d *Differ) Diff() (*Results, error) {
 	d.error = utils.NewMultiError()
 
 	// Diff all objects in state: branches, config, configRows
+	equal := true
 	for _, objectState := range d.state.All() {
 		result, err := d.doDiff(objectState)
 		if err != nil {
 			d.error.Append(err)
 		} else {
+			if result.State != ResultEqual {
+				equal = false
+			}
 			d.results = append(d.results, result)
 		}
 	}
@@ -70,7 +76,7 @@ func (d *Differ) Diff() (*Results, error) {
 		err = fmt.Errorf("%s", d.error)
 	}
 
-	return &Results{CurrentState: d.state, Results: d.results}, err
+	return &Results{CurrentState: d.state, Equal: equal, Results: d.results}, err
 }
 
 func (d *Differ) doDiff(state state.ObjectState) (*Result, error) {
@@ -117,12 +123,8 @@ func (d *Differ) doDiff(state state.ObjectState) (*Result, error) {
 	}
 
 	// Compare Config/ConfigRow configuration content ("orderedmap" type) as string
-	configTransform := cmp.Transformer("orderedmap", func(m *orderedmap.OrderedMap) string {
-		str, err := json.EncodeString(m, true)
-		if err != nil {
-			panic(utils.PrefixError("cannot encode JSON", err))
-		}
-		return str
+	orderedMapTransform := cmp.Transformer("orderedmap1", func(m *orderedmap.OrderedMap) map[string]interface{} {
+		return utils.OrderedMapToMap(m)
 	})
 
 	// Compare strings by lines
@@ -137,7 +139,7 @@ func (d *Differ) doDiff(state state.ObjectState) (*Result, error) {
 			remoteValues.FieldByName(field.StructField.Name).Interface(),
 			localValues.FieldByName(field.StructField.Name).Interface(),
 			cmp.Reporter(&r),
-			configTransform,
+			orderedMapTransform,
 			strByLine,
 		)
 		difference := r.String()
@@ -176,9 +178,9 @@ func (r *Result) Mark() string {
 	case ResultEqual:
 		return "= "
 	case ResultOnlyInRemote:
-		return "+ "
+		return OnlyInRemoteMark + " "
 	case ResultOnlyInLocal:
-		return "- "
+		return OnlyInLocalMark + " "
 	default:
 		panic(fmt.Errorf("unexpected type %T", r.State))
 	}
