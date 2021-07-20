@@ -203,9 +203,13 @@ func (s *State) All() []ObjectState {
 		return all[i].key < all[j].key
 	})
 
-	// Convert to slice
+	// Convert to slice, ignore deleted
 	var slice []ObjectState
 	for _, pair := range all {
+		if pair.state.Manifest().State().IsDeleted() {
+			continue
+		}
+
 		slice = append(slice, pair.state)
 	}
 	return slice
@@ -214,6 +218,9 @@ func (s *State) All() []ObjectState {
 func (s *State) Branches() []*BranchState {
 	var branches []*BranchState
 	for _, b := range s.branches {
+		if b.Manifest().State().IsDeleted() {
+			continue
+		}
 		branches = append(branches, b)
 	}
 	sort.SliceStable(branches, func(i, j int) bool {
@@ -225,6 +232,9 @@ func (s *State) Branches() []*BranchState {
 func (s *State) Configs() []*ConfigState {
 	var configs []*ConfigState
 	for _, c := range s.configs {
+		if c.Manifest().State().IsDeleted() {
+			continue
+		}
 		configs = append(configs, c)
 	}
 	sort.SliceStable(configs, func(i, j int) bool {
@@ -236,6 +246,9 @@ func (s *State) Configs() []*ConfigState {
 func (s *State) ConfigRows() []*ConfigRowState {
 	var configRows []*ConfigRowState
 	for _, r := range s.configRows {
+		if r.Manifest().State().IsDeleted() {
+			continue
+		}
 		configRows = append(configRows, r)
 	}
 	sort.SliceStable(configRows, func(i, j int) bool {

@@ -52,6 +52,7 @@ type RecordState struct {
 	Invalid   bool // if true, object files are not valid, eg. missing file, invalid JSON, ...
 	NotFound  bool // if true, object directory is not present in the filesystem
 	Persisted bool // if true, record will be part of the manifest when saved
+	Deleted   bool // if true, record has been deleted in this command run
 }
 
 type Paths struct {
@@ -312,6 +313,7 @@ func (m *Manifest) DeleteRecordByKey(key model.Key) {
 	if found {
 		m.lock.Lock()
 		defer m.lock.Unlock()
+		record.State().SetDeleted()
 		m.changed = m.changed || record.State().IsPersisted()
 		m.records.Delete(key.String())
 	}
@@ -379,6 +381,14 @@ func (s *RecordState) IsPersisted() bool {
 func (s *RecordState) SetPersisted() {
 	s.Invalid = false
 	s.Persisted = true
+}
+
+func (s *RecordState) IsDeleted() bool {
+	return s.Deleted
+}
+
+func (s *RecordState) SetDeleted() {
+	s.Deleted = true
 }
 
 func (b *BranchManifest) ResolveParentPath() {
