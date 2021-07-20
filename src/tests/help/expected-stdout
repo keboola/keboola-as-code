@@ -12,6 +12,7 @@ Usage:
 
 Available Commands:
   diff        Print differences between local and remote state
+  encrypt     Find unencrypted values in configurations and encrypt them
   fix-paths   Normalize all local paths
   help        Help about any command
   init        Init local project directory and perform the first pull

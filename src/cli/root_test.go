@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"github.com/spf13/pflag"
-	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/interaction"
 	"keboola-as-code/src/utils"
 	"os"
@@ -11,6 +9,9 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/spf13/pflag"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestRootSubCommands(t *testing.T) {
@@ -27,6 +28,7 @@ func TestRootSubCommands(t *testing.T) {
 	// Assert
 	assert.Equal(t, []string{
 		"diff",
+		"encrypt",
 		"fix-paths",
 		"init",
 		"persist",

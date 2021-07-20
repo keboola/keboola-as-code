@@ -101,6 +101,7 @@ func NewRootCommand(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteC
 		diffCommand(root),
 		persistCommand(root),
 		fixPathsCommand(root),
+		encryptCommand(root),
 	)
 
 	return root
