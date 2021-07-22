@@ -1,9 +1,7 @@
 package model
 
 import (
-	"fmt"
 	"github.com/iancoleman/orderedmap"
-	"github.com/spf13/cast"
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/utils"
 	"path/filepath"
@@ -16,6 +14,12 @@ const (
 	ConfigFileTag      = "configFile:true"
 	TransformationType = "transformation"
 )
+
+// Kind - type of the object, branch, config ...
+type Kind struct {
+	Name string
+	Abbr string
+}
 
 // Ticket https://keboola.docs.apiary.io/#reference/tickets/generate-unique-id/generate-new-id
 type Ticket struct {
@@ -43,20 +47,12 @@ type TokenOwner struct {
 	Name string `json:"name"`
 }
 
-type BranchKey struct {
-	Id int `json:"id" validate:"required,min=1"`
-}
-
 // Branch https://keboola.docs.apiary.io/#reference/development-branches/branches/list-branches
 type Branch struct {
 	BranchKey
 	Name        string `json:"name" validate:"required" diff:"true" metaFile:"true"`
 	Description string `json:"description" diff:"true" metaFile:"true"`
 	IsDefault   bool   `json:"isDefault" diff:"true" metaFile:"true"`
-}
-
-type ComponentKey struct {
-	Id string `json:"id" validate:"required"`
 }
 
 // Component https://keboola.docs.apiary.io/#reference/components-and-configurations/get-development-branch-components/get-development-branch-components
@@ -72,12 +68,6 @@ type ComponentWithConfigs struct {
 	BranchId int `json:"branchId" validate:"required"`
 	*Component
 	Configs []*ConfigWithRows `json:"configurations" validate:"required"`
-}
-
-type ConfigKey struct {
-	BranchId    int    `json:"branchId" validate:"required"`
-	ComponentId string `json:"componentId" validate:"required"`
-	Id          string `json:"id" validate:"required"`
 }
 
 // Config https://keboola.docs.apiary.io/#reference/components-and-configurations/component-configurations/list-configurations
@@ -99,13 +89,6 @@ func (c *ConfigWithRows) SortRows() {
 	sort.SliceStable(c.Rows, func(i, j int) bool {
 		return c.Rows[i].Name < c.Rows[j].Name
 	})
-}
-
-type ConfigRowKey struct {
-	BranchId    int    `json:"-" validate:"required"`
-	ComponentId string `json:"-" validate:"required"`
-	ConfigId    string `json:"-" validate:"required"`
-	Id          string `json:"id" validate:"required" `
 }
 
 // ConfigRow https://keboola.docs.apiary.io/#reference/components-and-configurations/component-configurations/list-configurations
@@ -148,25 +131,6 @@ type Code struct {
 	Scripts      []string `json:"script"` // scripts, eg. SQL statements
 }
 
-type RenamePlan struct {
-	OldPath     string
-	NewPath     string
-	Description string
-}
-
-type ValueWithKey interface {
-	Key() Key
-}
-
-type Key interface {
-	String() string
-}
-
-type Kind struct {
-	Name string
-	Abbr string
-}
-
 func (b *Block) RelativePath() string {
 	return filepath.Join(b.ParentPath, b.Path)
 }
@@ -185,86 +149,6 @@ func (c *Code) MetaFilePath() string {
 
 func (c *Code) CodeFilePath() string {
 	return filepath.Join(c.RelativePath(), c.CodeFileName)
-}
-
-func (k BranchKey) ObjectId() string {
-	return cast.ToString(k.Id)
-}
-
-func (k ComponentKey) ObjectId() string {
-	return k.Id
-}
-
-func (k ConfigKey) ObjectId() string {
-	return k.Id
-}
-
-func (k ConfigRowKey) ObjectId() string {
-	return k.Id
-}
-
-func (k BranchKey) Level() int {
-	return 1
-}
-
-func (k ComponentKey) Level() int {
-	return 2
-}
-
-func (k ConfigKey) Level() int {
-	return 3
-}
-
-func (k ConfigRowKey) Level() int {
-	return 4
-}
-
-func (k BranchKey) Key() Key {
-	return k
-}
-
-func (k ComponentKey) Key() Key {
-	return k
-}
-
-func (k ConfigKey) Key() Key {
-	return k
-}
-
-func (k ConfigRowKey) Key() Key {
-	return k
-}
-
-func (k BranchKey) String() string {
-	return fmt.Sprintf("%02d_%d_branch", k.Level(), k.Id)
-}
-
-func (k ComponentKey) String() string {
-	return fmt.Sprintf("%02d_%s_component", k.Level(), k.Id)
-}
-
-func (k ConfigKey) String() string {
-	return fmt.Sprintf("%02d_%d_%s_%s_config", k.Level(), k.BranchId, k.ComponentId, k.Id)
-}
-
-func (k ConfigRowKey) String() string {
-	return fmt.Sprintf("%02d_%d_%s_%s_%s_config_row", k.Level(), k.BranchId, k.ComponentId, k.ConfigId, k.Id)
-}
-
-func (k ConfigKey) ComponentKey() *ComponentKey {
-	return &ComponentKey{Id: k.ComponentId}
-}
-
-func (k ConfigKey) BranchKey() *BranchKey {
-	return &BranchKey{Id: k.BranchId}
-}
-
-func (k ConfigRowKey) ComponentKey() *ComponentKey {
-	return &ComponentKey{Id: k.ComponentId}
-}
-
-func (k ConfigRowKey) ConfigKey() *ConfigKey {
-	return &ConfigKey{BranchId: k.BranchId, ComponentId: k.ComponentId, Id: k.ConfigId}
 }
 
 func (c *Component) IsTransformation() bool {
@@ -298,14 +182,4 @@ func (c *Config) ToApiValues() (map[string]string, error) {
 		"changeDescription": c.ChangeDescription,
 		"configuration":     configJson,
 	}, nil
-}
-
-func (p *RenamePlan) Validate() error {
-	if !filepath.IsAbs(p.OldPath) {
-		return fmt.Errorf("old path must be absolute")
-	}
-	if !filepath.IsAbs(p.NewPath) {
-		return fmt.Errorf("new path must be absolute")
-	}
-	return nil
 }
