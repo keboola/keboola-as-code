@@ -130,6 +130,14 @@ func (s *State) Manifest() *manifest.Manifest {
 	return s.manifest
 }
 
+func (s *State) ProjectDir() string {
+	return s.manifest.ProjectDir
+}
+
+func (s *State) Naming() *model.Naming {
+	return s.manifest.Naming
+}
+
 func (s *State) Components() *remote.ComponentsCache {
 	return s.api.Components()
 }

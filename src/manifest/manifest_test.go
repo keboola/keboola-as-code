@@ -172,7 +172,7 @@ func minimalStruct() *Content {
 			ApiHost: "connection.keboola.com",
 		},
 		SortBy:   SortById,
-		Naming:   DefaultNaming(),
+		Naming:   model.DefaultNaming(),
 		Branches: make([]*BranchManifest, 0),
 		Configs:  make([]*ConfigManifestWithRows, 0),
 	}
@@ -247,7 +247,7 @@ func fullStruct() *Content {
 			ApiHost: "connection.keboola.com",
 		},
 		SortBy: SortById,
-		Naming: DefaultNaming(),
+		Naming: model.DefaultNaming(),
 		Branches: []*BranchManifest{
 			{
 				RecordState: RecordState{

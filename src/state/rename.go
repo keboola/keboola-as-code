@@ -3,8 +3,8 @@ package state
 import (
 	"fmt"
 	"github.com/jpillora/longestcommon"
+	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
-	"keboola-as-code/src/transformation"
 	"keboola-as-code/src/utils"
 	"os"
 	"path/filepath"
@@ -19,11 +19,11 @@ func (s *State) RenamePlan() (plans []*model.RenamePlan) {
 
 		// The parent object may have already been renamed, so update first old state
 		object.UpdateManifest(s.manifest, false)
-		plan.OldPath = filepath.Join(s.manifest.ProjectDir, object.RelativePath())
+		plan.OldPath = filepath.Join(s.ProjectDir(), object.RelativePath())
 
 		// Rename
 		object.UpdateManifest(s.manifest, true)
-		plan.NewPath = filepath.Join(s.manifest.ProjectDir, object.RelativePath())
+		plan.NewPath = filepath.Join(s.ProjectDir(), object.RelativePath())
 
 		// Should be renamed?
 		if plan.OldPath != plan.NewPath {
@@ -41,8 +41,8 @@ func (s *State) RenamePlan() (plans []*model.RenamePlan) {
 	// Set description
 	for _, plan := range plans {
 		// Get common prefix of the old and new path
-		oldPathRel := utils.RelPath(s.manifest.ProjectDir, plan.OldPath)
-		newPathRel := utils.RelPath(s.manifest.ProjectDir, plan.NewPath)
+		oldPathRel := utils.RelPath(s.ProjectDir(), plan.OldPath)
+		newPathRel := utils.RelPath(s.ProjectDir(), plan.NewPath)
 		prefix := longestcommon.Prefix([]string{oldPathRel, newPathRel})
 
 		// Remove from the prefix everything after the last separator
@@ -72,7 +72,66 @@ func (s *State) renameBlocks(config *ConfigState) (plans []*model.RenamePlan) {
 	}
 
 	for index, block := range config.Local.Blocks {
-		plans = append(plans, transformation.RenameBlock(s.manifest.ProjectDir, config.ConfigManifest, index, block)...)
+		plans = append(plans, s.renameBlock(config.ConfigManifest, index, block)...)
+	}
+
+	return plans
+}
+
+func (s *State) renameBlock(config *manifest.ConfigManifest, index int, block *model.Block) (plans []*model.RenamePlan) {
+	// Update parent path
+	block.ParentPath = s.Naming().BlocksDir(config.RelativePath())
+
+	// Store old path
+	plan := &model.RenamePlan{}
+	plan.OldPath = filepath.Join(s.ProjectDir(), block.RelativePath())
+
+	// Rename
+	block.Path = s.Naming().BlockPath(index, block.Name)
+	plan.NewPath = filepath.Join(s.ProjectDir(), block.RelativePath())
+	if plan.OldPath != plan.NewPath {
+		plans = append(plans, plan)
+	}
+
+	// Process codes
+	for index, code := range block.Codes {
+		plans = append(plans, s.renameCode(config.ComponentId, block, index, code)...)
+	}
+
+	return plans
+}
+
+func (s *State) renameCode(componentId string, block *model.Block, index int, code *model.Code) (plans []*model.RenamePlan) {
+	// Update parent path
+	code.ParentPath = block.RelativePath()
+
+	// Store old path
+	plan := &model.RenamePlan{}
+	plan.OldPath = filepath.Join(s.ProjectDir(), code.RelativePath())
+
+	// Rename
+	code.Path = s.Naming().CodePath(index, code.Name)
+	plan.NewPath = filepath.Join(s.ProjectDir(), code.RelativePath())
+	if plan.OldPath != plan.NewPath {
+		plans = append(plans, plan)
+	}
+
+	// Rename code file
+	plans = append(plans, s.renameCodeFile(componentId, code)...)
+
+	return plans
+}
+
+func (s *State) renameCodeFile(componentId string, code *model.Code) (plans []*model.RenamePlan) {
+	// Store old path
+	plan := &model.RenamePlan{}
+	plan.OldPath = filepath.Join(s.ProjectDir(), code.CodeFilePath())
+
+	// Rename
+	code.CodeFileName = s.Naming().CodeFileName(componentId)
+	plan.NewPath = filepath.Join(s.ProjectDir(), code.CodeFilePath())
+	if plan.OldPath != plan.NewPath {
+		plans = append(plans, plan)
 	}
 
 	return plans

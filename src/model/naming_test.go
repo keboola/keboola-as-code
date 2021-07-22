@@ -1,8 +1,7 @@
-package manifest
+package model
 
 import (
 	"github.com/stretchr/testify/assert"
-	"keboola-as-code/src/model"
 	"testing"
 )
 
@@ -14,8 +13,8 @@ func TestDefaultNaming(t *testing.T) {
 		t,
 		"1234-my-super-branch",
 		n.BranchPath(
-			&model.Branch{
-				BranchKey: model.BranchKey{
+			&Branch{
+				BranchKey: BranchKey{
 					Id: 1234,
 				},
 				Name: "my Super-BRANCH",
@@ -27,14 +26,14 @@ func TestDefaultNaming(t *testing.T) {
 		t,
 		"extractor/keboola.ex-foo-bar/456-my-production-config",
 		n.ConfigPath(
-			&model.Component{
-				ComponentKey: model.ComponentKey{
+			&Component{
+				ComponentKey: ComponentKey{
 					Id: "keboola.ex-foo-bar",
 				},
 				Type: "extractor",
 			},
-			&model.Config{
-				ConfigKey: model.ConfigKey{
+			&Config{
+				ConfigKey: ConfigKey{
 					BranchId:    1234,
 					ComponentId: "keboola.ex-foo-bar",
 					Id:          "456",
@@ -48,8 +47,8 @@ func TestDefaultNaming(t *testing.T) {
 		t,
 		"rows/789-row-ab-c",
 		n.ConfigRowPath(
-			&model.ConfigRow{
-				ConfigRowKey: model.ConfigRowKey{
+			&ConfigRow{
+				ConfigRowKey: ConfigRowKey{
 					BranchId:    1234,
 					ComponentId: "keboola.ex-foo-bar",
 					ConfigId:    "456",

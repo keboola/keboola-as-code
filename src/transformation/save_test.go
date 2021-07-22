@@ -3,7 +3,7 @@ package transformation
 import (
 	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/json"
-	"keboola-as-code/src/manifest"
+	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
 	"os"
 	"path/filepath"
@@ -21,7 +21,7 @@ func TestSaveTransformationEmpty(t *testing.T) {
 	record, source := createTransTestStructs("keboola.snowflake-transformation")
 
 	// Save
-	configContent, err := SaveBlocks(projectDir, logger, manifest.DefaultNaming(), record, source)
+	configContent, err := SaveBlocks(projectDir, logger, model.DefaultNaming(), record, source)
 	assert.NoError(t, err)
 	configContentJson, err := json.Encode(configContent, false)
 	assert.NoError(t, err)
@@ -70,7 +70,7 @@ func TestSaveTransformation(t *testing.T) {
 	source.Content.Set(`parameters`, parameters)
 
 	// Save
-	configContent, err := SaveBlocks(projectDir, logger, manifest.DefaultNaming(), record, source)
+	configContent, err := SaveBlocks(projectDir, logger, model.DefaultNaming(), record, source)
 	assert.NoError(t, err)
 	configContentJson, err := json.Encode(configContent, false)
 	assert.NoError(t, err)

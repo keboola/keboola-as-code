@@ -24,7 +24,7 @@ func TestLoadTransformationMissingBlockMetaSql(t *testing.T) {
 
 	// Load, assert
 	record, target := createTransTestStructs("keboola.snowflake-transformation")
-	err := LoadBlocks(projectDir, manifest.DefaultNaming(), record, target)
+	err := LoadBlocks(projectDir, model.DefaultNaming(), record, target)
 	assert.Error(t, err)
 	assert.Equal(t, `missing block metadata file "branch/config/blocks/001-block-1/meta.json"`, err.Error())
 }
@@ -43,7 +43,7 @@ func TestLoadTransformationMissingCodeMeta(t *testing.T) {
 
 	// Load, assert
 	record, target := createTransTestStructs("keboola.snowflake-transformation")
-	err := LoadBlocks(projectDir, manifest.DefaultNaming(), record, target)
+	err := LoadBlocks(projectDir, model.DefaultNaming(), record, target)
 	assert.Error(t, err)
 	assert.Equal(t, strings.Join([]string{
 		`- missing code metadata file "branch/config/blocks/001-block-1/001-code-1/meta.json"`,
@@ -81,7 +81,7 @@ func TestLoadTransformationSql(t *testing.T) {
 
 	// Load
 	record, target := createTransTestStructs("keboola.snowflake-transformation")
-	assert.NoError(t, LoadBlocks(projectDir, manifest.DefaultNaming(), record, target))
+	assert.NoError(t, LoadBlocks(projectDir, model.DefaultNaming(), record, target))
 
 	// Assert
 	expected := `
@@ -161,7 +161,7 @@ func TestLoadTransformationPy(t *testing.T) {
 
 	// Load
 	record, target := createTransTestStructs("keboola.python-transformation-v2")
-	assert.NoError(t, LoadBlocks(projectDir, manifest.DefaultNaming(), record, target))
+	assert.NoError(t, LoadBlocks(projectDir, model.DefaultNaming(), record, target))
 
 	// Assert
 	expected := `

@@ -33,7 +33,7 @@ type Content struct {
 	Version  int                       `json:"version" validate:"required,min=1,max=1"`
 	Project  *Project                  `json:"project" validate:"required"`
 	SortBy   string                    `json:"sortBy" validate:"oneof=id path"`
-	Naming   *LocalNaming              `json:"naming" validate:"required"`
+	Naming   *model.Naming             `json:"naming" validate:"required"`
 	Branches []*BranchManifest         `json:"branches" validate:"dive"`
 	Configs  []*ConfigManifestWithRows `json:"configurations" validate:"dive"`
 }
@@ -106,7 +106,7 @@ func newManifest(projectId int, apiHost string, projectDir, metadataDir string) 
 			Version:  1,
 			Project:  &Project{Id: projectId, ApiHost: apiHost},
 			SortBy:   SortById,
-			Naming:   DefaultNaming(),
+			Naming:   model.DefaultNaming(),
 			Branches: make([]*BranchManifest, 0),
 			Configs:  make([]*ConfigManifestWithRows, 0),
 		},

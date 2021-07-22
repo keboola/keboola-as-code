@@ -25,7 +25,7 @@ func (m *Manager) ProjectDir() string {
 	return m.manifest.ProjectDir
 }
 
-func (m *Manager) Naming() *manifest.LocalNaming {
+func (m *Manager) Naming() *model.Naming {
 	return m.manifest.Naming
 }
 

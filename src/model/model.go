@@ -15,9 +15,6 @@ const (
 	MetaFileTag        = "metaFile:true"
 	ConfigFileTag      = "configFile:true"
 	TransformationType = "transformation"
-	MetaFile           = "meta.json"
-	ConfigFile         = "config.json"
-	CodeFileName       = `code` // transformation code block name without ext
 )
 
 // Ticket https://keboola.docs.apiary.io/#reference/tickets/generate-unique-id/generate-new-id
