@@ -19,13 +19,13 @@ import (
 type writer struct {
 	projectDir  string
 	logger      *zap.SugaredLogger
-	naming      *manifest.LocalNaming
+	naming      *model.Naming
 	componentId string
 	errors      *utils.Error
 }
 
 // SaveBlocks - save code blocks from source config to the disk
-func SaveBlocks(projectDir string, logger *zap.SugaredLogger, naming *manifest.LocalNaming, record *manifest.ConfigManifest, source *model.Config) (*orderedmap.OrderedMap, error) {
+func SaveBlocks(projectDir string, logger *zap.SugaredLogger, naming *model.Naming, record *manifest.ConfigManifest, source *model.Config) (*orderedmap.OrderedMap, error) {
 	w := &writer{projectDir, logger, naming, source.ComponentId, utils.NewMultiError()}
 
 	// Copy config content to remove blocks
@@ -54,7 +54,7 @@ func SaveBlocks(projectDir string, logger *zap.SugaredLogger, naming *manifest.L
 }
 
 func (w *writer) writeBlocks(configDir string, blocks []*model.Block) {
-	blocksTmpDir := filepath.Join(configDir, `.new_`+blocksDir)
+	blocksTmpDir := w.naming.BlocksTmpDir(configDir)
 	blocksTmpDirAbs := filepath.Join(w.projectDir, blocksTmpDir)
 
 	// Create tmp dir, clear on the end
@@ -66,13 +66,13 @@ func (w *writer) writeBlocks(configDir string, blocks []*model.Block) {
 
 	// Blocks
 	for index, block := range blocks {
-		blockDir := filepath.Join(blocksTmpDir, blockPath(index, block.Name))
+		blockDir := filepath.Join(blocksTmpDir, w.naming.BlockPath(index, block.Name))
 		w.writeBlock(blockDir, block)
 	}
 
 	// If no error, replace old dir with the new
 	if w.errors.Len() == 0 {
-		blocksDir := filepath.Join(configDir, blocksDir)
+		blocksDir := w.naming.BlocksDir(configDir)
 		blocksDirAbs := filepath.Join(w.projectDir, blocksDir)
 
 		// Remove old content
@@ -121,7 +121,7 @@ func (w *writer) writeBlock(blockDir string, block *model.Block) {
 
 	// Write codes
 	for index, code := range block.Codes {
-		codeDir := filepath.Join(blockDir, codePath(index, code.Name))
+		codeDir := filepath.Join(blockDir, w.naming.CodePath(index, code.Name))
 		w.writeCode(codeDir, code)
 	}
 }
@@ -146,7 +146,7 @@ func (w *writer) writeCode(codeDir string, code *model.Code) {
 	}
 
 	// Write scripts
-	codePathRel := filepath.Join(codeDir, model.CodeFileName+`.`+codeFileExt(w.componentId))
+	codePathRel := filepath.Join(codeDir, w.naming.CodeFileName(w.componentId))
 	codePathAbs := filepath.Join(w.projectDir, codePathRel)
 	if err := os.WriteFile(codePathAbs, []byte(w.joinScripts(code.Scripts)), 0644); err != nil {
 		w.errors.Append(err)

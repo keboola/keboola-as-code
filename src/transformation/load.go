@@ -15,15 +15,15 @@ import (
 
 type loader struct {
 	projectDir  string
-	naming      *manifest.LocalNaming
+	naming      *model.Naming
 	componentId string
 	errors      *utils.Error
 }
 
 // LoadBlocks - load code blocks from disk to target config
-func LoadBlocks(projectDir string, naming *manifest.LocalNaming, record *manifest.ConfigManifest, target *model.Config) error {
+func LoadBlocks(projectDir string, naming *model.Naming, config *manifest.ConfigManifest, target *model.Config) error {
 	l := &loader{projectDir, naming, target.ComponentId, utils.NewMultiError()}
-	blocks := l.loadBlocks(filepath.Join(record.RelativePath(), blocksDir))
+	blocks := l.loadBlocks(l.naming.BlocksDir(config.RelativePath()))
 
 	// Set blocks to "parameters.blocks" in the config
 	var parameters orderedmap.OrderedMap
