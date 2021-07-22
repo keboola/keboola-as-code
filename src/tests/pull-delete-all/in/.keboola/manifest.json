@@ -30,6 +30,26 @@
       "id": "456",
       "path": "extractor/ex-generic-v2/without-rows",
       "rows": []
+    },
+    {
+      "branchId": %%TEST_BRANCH_MAIN_ID%%,
+      "componentId": "keboola.ex-db-mysql",
+      "id": "789",
+      "path": "extractor/keboola.ex-db-mysql/with-rows",
+      "rows": [
+        {
+          "id": "10",
+          "path": "rows/disabled"
+        },
+        {
+          "id": "11",
+          "path": "rows/test-view"
+        },
+        {
+          "id": "12",
+          "path": "rows/users"
+        }
+      ]
     }
   ]
 }
