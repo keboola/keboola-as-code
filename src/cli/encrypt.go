@@ -2,7 +2,6 @@ package cli
 
 import (
 	"keboola-as-code/src/encryption"
-	"keboola-as-code/src/local"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
@@ -67,8 +66,8 @@ func encryptCommand(root *rootCommand) *cobra.Command {
 					return utils.PrefixError("project local state is invalid", projectState.LocalErrors())
 				}
 			}
-			manager := local.NewManager(logger, projectManifest, api)
-			encryption.FindValues(projectState, manager, logger)
+			// manager := local.NewManager(logger, projectManifest, api)
+			encryption.FindValues(projectState, logger)
 			return nil
 		},
 	}
