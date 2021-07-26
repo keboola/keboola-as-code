@@ -1,6 +1,14 @@
 package cli
 
-import "github.com/spf13/cobra"
+import (
+	"keboola-as-code/src/encryption"
+	"keboola-as-code/src/local"
+	"keboola-as-code/src/manifest"
+	"keboola-as-code/src/state"
+	"keboola-as-code/src/utils"
+
+	"github.com/spf13/cobra"
+)
 
 const encryptShortDescription = "Find unencrypted values in configurations and encrypt them"
 const encryptLongDescription = `Command "encrypt"
@@ -19,6 +27,48 @@ func encryptCommand(root *rootCommand) *cobra.Command {
 		Short: encryptShortDescription,
 		Long:  encryptLongDescription,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			logger := root.logger
+
+			// Validate project directory
+			if err := root.ValidateOptions([]string{"projectDirectory"}); err != nil {
+				return err
+			}
+
+			// Validate token
+			root.options.AskUser(root.prompt, "ApiToken")
+			if err := root.ValidateOptions([]string{"ApiToken"}); err != nil {
+				return err
+			}
+
+			// Load manifest
+			projectDir := root.options.ProjectDir()
+			metadataDir := root.options.MetadataDir()
+			projectManifest, err := manifest.LoadManifest(projectDir, metadataDir)
+			if err != nil {
+				return err
+			}
+
+			// Validate token and get API
+			root.options.ApiHost = projectManifest.Project.ApiHost
+			api, err := root.GetStorageApi()
+			if err != nil {
+				return err
+			}
+
+			// Load project local state
+			stateOptions := state.NewOptions(projectManifest, api, root.ctx, logger)
+			stateOptions.LoadLocalState = true
+			stateOptions.LoadRemoteState = false
+			projectState, ok := state.LoadState(stateOptions)
+			if ok {
+				logger.Debugf("Project local state has been successfully loaded.")
+			} else {
+				if projectState.LocalErrors().Len() > 0 {
+					return utils.PrefixError("project local state is invalid", projectState.LocalErrors())
+				}
+			}
+			manager := local.NewManager(logger, projectManifest, api)
+			encryption.FindValues(projectState, manager, logger)
 			return nil
 		},
 	}
