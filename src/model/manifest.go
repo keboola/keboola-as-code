@@ -16,6 +16,7 @@ const (
 // Record - manifest record
 type Record interface {
 	Kind() Kind                 // eg. branch, config, config row -> used in logs
+	Level() int                 // hierarchical level, "1" for branch, "2" for config, ...
 	Key() Key                   // unique key for map -> for fast access
 	SortKey(sort string) string // unique key for sorting
 	RelativePath() string       // path to the object directory
@@ -157,7 +158,7 @@ func (r *ConfigRowManifest) ResolveParentPath(configManifest *ConfigManifest) {
 
 func (b BranchManifest) SortKey(sort string) string {
 	if sort == SortByPath {
-		return fmt.Sprintf("01_branch_%s", b.RelativePath())
+		return fmt.Sprintf("%02d_branch_%s", b.Level(), b.RelativePath())
 	} else {
 		return b.BranchKey.String()
 	}
@@ -166,7 +167,7 @@ func (b BranchManifest) SortKey(sort string) string {
 
 func (c ConfigManifest) SortKey(sort string) string {
 	if sort == SortByPath {
-		return fmt.Sprintf("02_config_%s", c.RelativePath())
+		return fmt.Sprintf("%02d_config_%s", c.Level(), c.RelativePath())
 	} else {
 		return c.ConfigKey.String()
 	}
@@ -175,7 +176,7 @@ func (c ConfigManifest) SortKey(sort string) string {
 
 func (r ConfigRowManifest) SortKey(sort string) string {
 	if sort == SortByPath {
-		return fmt.Sprintf("03_row_%s", r.RelativePath())
+		return fmt.Sprintf("%02d_row_%s", r.Level(), r.RelativePath())
 	} else {
 		return r.ConfigRowKey.String()
 	}

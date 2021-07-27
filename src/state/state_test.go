@@ -53,7 +53,7 @@ func TestLoadState(t *testing.T) {
 	assert.True(t, ok)
 	assert.Empty(t, state.RemoteErrors().Errors)
 	assert.Empty(t, state.LocalErrors().Errors)
-	assert.Equal(t, []*BranchState{
+	assert.Equal(t, []*model.BranchState{
 		{
 			Remote: &model.Branch{
 				BranchKey: model.BranchKey{
@@ -86,7 +86,7 @@ func TestLoadState(t *testing.T) {
 			},
 		},
 	}, utils.SortByName(state.Branches()))
-	assert.Equal(t, []*ConfigState{
+	assert.Equal(t, []*model.ConfigState{
 		{
 			Remote: &model.Config{
 				ConfigKey: model.ConfigKey{

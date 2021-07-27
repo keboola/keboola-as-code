@@ -112,7 +112,7 @@ func (e *Executor) getPoolFor(level int) *client.Pool {
 	return pool
 }
 
-func (e *Executor) saveLocal(object state.ObjectState) {
+func (e *Executor) saveLocal(object model.ObjectState) {
 	e.workers.Go(func() error {
 		err := e.LocalManager().SaveModel(object.Manifest(), object.RemoteState())
 		if err != nil {
@@ -122,7 +122,7 @@ func (e *Executor) saveLocal(object state.ObjectState) {
 	})
 }
 
-func (e *Executor) deleteLocal(object state.ObjectState) {
+func (e *Executor) deleteLocal(object model.ObjectState) {
 	e.workers.Go(func() error {
 		err := e.LocalManager().DeleteModel(object.Manifest())
 		if err != nil {
@@ -134,18 +134,18 @@ func (e *Executor) deleteLocal(object state.ObjectState) {
 
 func (e *Executor) saveRemote(result *diff.Result) {
 	switch v := result.ObjectState.(type) {
-	case *state.BranchState:
+	case *model.BranchState:
 		e.saveBranch(v, result)
-	case *state.ConfigState:
+	case *model.ConfigState:
 		e.saveConfig(v, result)
-	case *state.ConfigRowState:
+	case *model.ConfigRowState:
 		e.saveConfigRow(v, result)
 	default:
 		panic(fmt.Errorf(`unexpected type "%T"`, result.State))
 	}
 }
 
-func (e *Executor) saveBranch(branch *state.BranchState, result *diff.Result) {
+func (e *Executor) saveBranch(branch *model.BranchState, result *diff.Result) {
 	pool := e.getPoolFor(branch.Level())
 	if branch.Local.Id == 0 {
 		// Create sequentially, branches cannot be created in parallel
@@ -154,7 +154,7 @@ func (e *Executor) saveBranch(branch *state.BranchState, result *diff.Result) {
 			OnSuccess(func(response *client.Response) {
 				// Save new ID to manifest
 				branch.Local = branch.Remote
-				result.ObjectState.UpdateManifest(e.Manifest(), false)
+				e.LocalManager().UpdatePaths(result.ObjectState, false)
 				e.saveLocal(branch)
 			}).
 			Send()
@@ -170,7 +170,7 @@ func (e *Executor) saveBranch(branch *state.BranchState, result *diff.Result) {
 	}
 }
 
-func (e *Executor) saveConfig(config *state.ConfigState, result *diff.Result) {
+func (e *Executor) saveConfig(config *model.ConfigState, result *diff.Result) {
 	pool := e.getPoolFor(config.Level())
 	if config.Remote == nil {
 		// Create
@@ -184,7 +184,7 @@ func (e *Executor) saveConfig(config *state.ConfigState, result *diff.Result) {
 			OnSuccess(func(response *client.Response) {
 				// Save new ID to manifest
 				config.Remote = config.Local
-				result.ObjectState.UpdateManifest(e.Manifest(), false)
+				e.LocalManager().UpdatePaths(result.ObjectState, false)
 				e.saveLocal(config)
 			}).
 			Send()
@@ -201,7 +201,7 @@ func (e *Executor) saveConfig(config *state.ConfigState, result *diff.Result) {
 	}
 }
 
-func (e *Executor) saveConfigRow(row *state.ConfigRowState, result *diff.Result) {
+func (e *Executor) saveConfigRow(row *model.ConfigRowState, result *diff.Result) {
 	pool := e.getPoolFor(row.Level())
 	if row.Remote == nil {
 		// Create
@@ -215,7 +215,7 @@ func (e *Executor) saveConfigRow(row *state.ConfigRowState, result *diff.Result)
 			OnSuccess(func(response *client.Response) {
 				// Save new ID to manifest
 				row.Remote = row.Local
-				result.ObjectState.UpdateManifest(e.Manifest(), false)
+				e.LocalManager().UpdatePaths(result.ObjectState, false)
 				e.saveLocal(row)
 			}).
 			Send()
@@ -234,20 +234,20 @@ func (e *Executor) saveConfigRow(row *state.ConfigRowState, result *diff.Result)
 
 func (e *Executor) deleteRemote(result *diff.Result) {
 	switch v := result.ObjectState.(type) {
-	case *state.BranchState:
+	case *model.BranchState:
 		e.Manifest().DeleteRecord(v)
 		// Delete sequentially, branches cannot be deleted in parallel
 		_, err := e.api.DeleteBranch(v.Id)
 		if err != nil {
 			e.errors.Append(err)
 		}
-	case *state.ConfigState:
+	case *model.ConfigState:
 		e.Manifest().DeleteRecord(v)
 		pool := e.getPoolFor(v.Level())
 		pool.
 			Request(e.api.DeleteConfigRequest(v.ComponentId, v.Id)).
 			Send()
-	case *state.ConfigRowState:
+	case *model.ConfigRowState:
 		e.Manifest().DeleteRecord(v)
 		pool := e.getPoolFor(v.Level())
 		pool.

@@ -13,7 +13,7 @@ import (
 )
 
 // SaveModel to manifest and disk
-func (m *Manager) SaveModel(record model.Record, source model.ValueWithKey) error {
+func (m *Manager) SaveModel(record model.Record, source model.Object) error {
 	errors := utils.NewMultiError()
 
 	// Validate
@@ -60,7 +60,7 @@ func (m *Manager) SaveModel(record model.Record, source model.ValueWithKey) erro
 	return errors.ErrorOrNil()
 }
 
-func (m *Manager) transformOnSave(record model.Record, source model.ValueWithKey) (*orderedmap.OrderedMap, error) {
+func (m *Manager) transformOnSave(record model.Record, source model.Object) (*orderedmap.OrderedMap, error) {
 	if ok, err := m.isTransformationConfig(source); ok {
 		return transformation.SaveBlocks(
 			m.ProjectDir(),

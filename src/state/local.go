@@ -26,7 +26,7 @@ func (s *State) doLoadLocalState() {
 	}
 }
 
-func (s *State) loadModel(record model.Record) ObjectState {
+func (s *State) loadModel(record model.Record) model.ObjectState {
 	// Detect record type
 	var value interface{}
 	switch v := record.(type) {

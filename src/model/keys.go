@@ -9,7 +9,8 @@ type Key interface {
 	String() string
 }
 
-type ValueWithKey interface {
+type Object interface {
+	Level() int // hierarchical level, "1" for branch, "2" for config, ...
 	Key() Key
 }
 

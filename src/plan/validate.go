@@ -2,6 +2,7 @@ package plan
 
 import (
 	"fmt"
+	"keboola-as-code/src/model"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
 )
@@ -18,7 +19,7 @@ func (p *Plan) Validate() error {
 
 func (a *Action) validate(currentState *state.State) error {
 	// Branch rules
-	if branchState, ok := a.ObjectState.(*state.BranchState); ok {
+	if branchState, ok := a.ObjectState.(*model.BranchState); ok {
 		// Default branch cannot be delete
 		if a.Type == ActionDeleteRemote {
 			branch := branchState.Remote
@@ -29,7 +30,7 @@ func (a *Action) validate(currentState *state.State) error {
 	}
 
 	// Config rules
-	if configState, ok := a.ObjectState.(*state.ConfigState); ok {
+	if configState, ok := a.ObjectState.(*model.ConfigState); ok {
 		// Config from dev-branch cannot be removed, it can be only marked for removal
 		if a.Type == ActionDeleteRemote {
 			config := configState.Remote
@@ -41,7 +42,7 @@ func (a *Action) validate(currentState *state.State) error {
 	}
 
 	// Config row rules
-	if configRowState, ok := a.ObjectState.(*state.ConfigRowState); ok {
+	if configRowState, ok := a.ObjectState.(*model.ConfigRowState); ok {
 		// Config row from dev-branch cannot be removed, it can be only marked for removal
 		if a.Type == ActionDeleteRemote {
 			row := configRowState.Remote

@@ -3,6 +3,7 @@ package plan
 import (
 	"fmt"
 	"keboola-as-code/src/diff"
+	"keboola-as-code/src/model"
 	"keboola-as-code/src/state"
 )
 
@@ -28,15 +29,15 @@ func Push(diffResults *diff.Results) *Plan {
 	return plan
 }
 
-func parentExists(objectState state.ObjectState, currentState *state.State) bool {
+func parentExists(objectState model.ObjectState, currentState *state.State) bool {
 	switch v := objectState.(type) {
-	case *state.BranchState:
+	case *model.BranchState:
 		return true
-	case *state.ConfigState:
+	case *model.ConfigState:
 		config := v.Remote
 		branch := currentState.GetBranch(*config.BranchKey(), false)
 		return branch.Local != nil
-	case *state.ConfigRowState:
+	case *model.ConfigRowState:
 		row := v.Remote
 		config := currentState.GetConfig(*row.ConfigKey(), false)
 		branch := currentState.GetBranch(*config.BranchKey(), false)

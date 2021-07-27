@@ -38,7 +38,11 @@ func (n *Naming) ConfigFilePath(dir string) string {
 	return filepath.Join(dir, ConfigFile)
 }
 
-func (n *Naming) BranchPath(branch *Branch) string {
+func (n *Naming) BranchPath(branch *Branch, isDefault bool) string {
+	if isDefault {
+		return `main`
+	}
+
 	return utils.ReplacePlaceholders(string(n.Branch), map[string]interface{}{
 		"branch_id":   branch.Id,
 		"branch_name": utils.NormalizeName(branch.Name),
