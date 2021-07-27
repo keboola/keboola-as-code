@@ -67,7 +67,12 @@ func encryptCommand(root *rootCommand) *cobra.Command {
 				}
 			}
 			// manager := local.NewManager(logger, projectManifest, api)
-			encryption.FindValues(projectState, logger)
+			valuesToEncrypt, err := encryption.FindValuesToEncrypt(projectState)
+			if err != nil {
+				return err
+			}
+			encryption.PrintValuesToEncrypt(valuesToEncrypt, logger)
+
 			return nil
 		},
 	}

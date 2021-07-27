@@ -3,6 +3,7 @@ package encryption
 import (
 	"fmt"
 	"keboola-as-code/src/state"
+	"keboola-as-code/src/utils"
 	"strconv"
 	"strings"
 
@@ -32,42 +33,62 @@ func (v ArrayMapIterator) String() string {
 	return fmt.Sprintf("[%v]", int(v))
 }
 
-type ConfigEncryptionValue struct {
-	key   string
-	value string
-	path  []pathIterator
+type EncryptionValue struct {
+	object state.ObjectState // config or configRow state object
+	key    string            // key e.g. "#myEncryptedValue"
+	value  string            // value to encrypt
+	path   []pathIterator    // path to value from config
 }
 
-func parseArray(array []interface{}, path []pathIterator) []*ConfigEncryptionValue {
-	result := make([]*ConfigEncryptionValue, 0)
+type finder struct {
+	errors *utils.Error
+	values []EncryptionValue
+}
+
+func (f *finder) parseArray(object state.ObjectState, array []interface{}, path []pathIterator) {
 	for idx, value := range array {
-		result = append(result, parseConfigValue(strconv.Itoa(idx), value, append(path, ArrayMapIterator(idx)))...)
+		f.parseConfigValue(object, strconv.Itoa(idx), value, append(path, ArrayMapIterator(idx)))
 	}
-	return result
+
 }
 
-func parseOrderedMap(config *orderedmap.OrderedMap, path []pathIterator) []*ConfigEncryptionValue {
-	result := make([]*ConfigEncryptionValue, 0)
-	for _, key := range config.Keys() {
-		mapValue, _ := config.Get(key)
-		result = append(result, parseConfigValue(key, mapValue, append(path, OrderedMapIterator(key)))...)
+func (f *finder) parseOrderedMap(object state.ObjectState, content *orderedmap.OrderedMap, path []pathIterator) {
+	for _, key := range content.Keys() {
+		mapValue, _ := content.Get(key)
+		f.parseConfigValue(object, key, mapValue, append(path, OrderedMapIterator(key)))
 	}
-	return result
 }
 
-func parseConfigValue(key string, configValue interface{}, path []pathIterator) []*ConfigEncryptionValue {
-	result := make([]*ConfigEncryptionValue, 0)
+func (f *finder) parseConfigValue(object state.ObjectState, key string, configValue interface{}, path []pathIterator) {
 	switch value := configValue.(type) {
 	case orderedmap.OrderedMap:
-		result = append(result, parseOrderedMap(&value, path)...)
+		f.parseOrderedMap(object, &value, path)
 	case string:
 		if isKeyToEncrypt(key) && !isValueEncrypted(value) {
-			result = append(result, &ConfigEncryptionValue{key, value, path})
+			f.values = append(f.values, EncryptionValue{object, key, value, path})
 		}
 	case []interface{}:
-		result = append(result, parseArray(value, path)...)
+		f.parseArray(object, value, path)
 	}
-	return result
+}
+
+func (f *finder) FindValues(projectState *state.State) {
+	for _, object := range projectState.All() {
+		if !object.HasLocalState() {
+			continue
+		}
+		switch o := object.(type) {
+		case *state.ConfigState:
+			f.parseOrderedMap(o, o.Local.Content, nil)
+		case *state.ConfigRowState:
+			f.parseOrderedMap(o, o.Local.Content, nil)
+		}
+	}
+}
+func FindValuesToEncrypt(projectState *state.State) ([]EncryptionValue, error) {
+	f := &finder{utils.NewMultiError(), nil}
+	f.FindValues(projectState)
+	return f.values, f.errors.ErrorOrNil()
 }
 
 func pathToString(path []pathIterator) string {
@@ -84,34 +105,21 @@ func pathToString(path []pathIterator) string {
 	return result
 }
 
-func getOrderedMapEncryptionInfo(orderedMap *orderedmap.OrderedMap, object state.ObjectState, logger *zap.SugaredLogger) string {
-	result := ""
-	encryptionValues := parseOrderedMap(orderedMap, make([]pathIterator, 0))
-	if len(encryptionValues) > 0 {
-		result = fmt.Sprintf("%v %v\n", object.Kind().Abbr, object.RelativePath())
-		for _, value := range encryptionValues {
-			result += fmt.Sprintf("  %v\n", pathToString(value.path))
-		}
-	}
-	return result
-}
-
-func FindValues(projectState *state.State, logger *zap.SugaredLogger) {
-	configs := projectState.Configs()
-	configRows := projectState.ConfigRows()
-
-	info := ""
-	for _, config := range configs {
-		info += getOrderedMapEncryptionInfo(config.Local.Content, config, logger)
-	}
-	for _, configRow := range configRows {
-		info += getOrderedMapEncryptionInfo(configRow.Local.Content, configRow, logger)
-	}
-	if info == "" {
+func PrintValuesToEncrypt(values []EncryptionValue, logger *zap.SugaredLogger) {
+	if len(values) == 0 {
 		logger.Info("No values to encrypt.")
 	} else {
 		logger.Info("Values to encrypt:")
-		logger.Info(info)
-	}
+		previousObjectId := ""
+		for _, value := range values {
+			if previousObjectId != value.object.ObjectId() {
+				logger.Infof("%v %v", value.object.Kind().Abbr, value.object.RelativePath())
+				previousObjectId = value.object.ObjectId()
+			}
 
+			logger.Infof("  %v", pathToString(value.path))
+
+		}
+
+	}
 }
