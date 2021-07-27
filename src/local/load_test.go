@@ -33,8 +33,8 @@ func TestLocalLoadModel(t *testing.T) {
 	target := &ModelStruct{}
 	record := &MockedRecord{}
 	assert.NoError(t, os.MkdirAll(filepath.Join(projectDir, record.RelativePath()), 0750))
-	assert.NoError(t, os.WriteFile(filepath.Join(projectDir, record.MetaFilePath()), []byte(metaFile), 0640))
-	assert.NoError(t, os.WriteFile(filepath.Join(projectDir, record.ConfigFilePath()), []byte(configFile), 0640))
+	assert.NoError(t, os.WriteFile(filepath.Join(projectDir, manager.Naming().MetaFilePath(record.RelativePath())), []byte(metaFile), 0640))
+	assert.NoError(t, os.WriteFile(filepath.Join(projectDir, manager.Naming().ConfigFilePath(record.RelativePath())), []byte(configFile), 0640))
 
 	// Load
 	found, err := manager.LoadModel(record, target)

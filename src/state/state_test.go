@@ -71,16 +71,17 @@ func TestLoadState(t *testing.T) {
 				Description: "Main branch",
 				IsDefault:   true,
 			},
-			BranchManifest: &manifest.BranchManifest{
-				RecordState: manifest.RecordState{
+			BranchManifest: &model.BranchManifest{
+				RecordState: model.RecordState{
 					Persisted: true,
 				},
 				BranchKey: model.BranchKey{
 					Id: cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
 				},
-				Paths: manifest.Paths{
-					Path:       "main",
-					ParentPath: "",
+				Paths: model.Paths{
+					Path:         "main",
+					ParentPath:   "",
+					RelatedPaths: []string{model.MetaFile},
 				},
 			},
 		},
@@ -133,8 +134,8 @@ func TestLoadState(t *testing.T) {
 				Schema:    map[string]interface{}{},
 				SchemaRow: map[string]interface{}{},
 			},
-			ConfigManifest: &manifest.ConfigManifest{
-				RecordState: manifest.RecordState{
+			ConfigManifest: &model.ConfigManifest{
+				RecordState: model.RecordState{
 					Persisted: true,
 				},
 				ConfigKey: model.ConfigKey{
@@ -142,9 +143,10 @@ func TestLoadState(t *testing.T) {
 					ComponentId: "ex-generic-v2",
 					Id:          utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
 				},
-				Paths: manifest.Paths{
-					Path:       "extractor/ex-generic-v2/456-todos",
-					ParentPath: "main",
+				Paths: model.Paths{
+					Path:         "extractor/ex-generic-v2/456-todos",
+					ParentPath:   "main",
+					RelatedPaths: []string{model.MetaFile, model.ConfigFile},
 				},
 			},
 		},

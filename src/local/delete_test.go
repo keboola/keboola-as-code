@@ -37,8 +37,8 @@ func TestLocalDeleteModel(t *testing.T) {
 
 	// Save files
 	dirAbs := filepath.Join(projectDir, record.RelativePath())
-	metaFileAbs := filepath.Join(projectDir, record.MetaFilePath())
-	configFileAbs := filepath.Join(projectDir, record.ConfigFilePath())
+	metaFileAbs := filepath.Join(projectDir, manager.Naming().MetaFilePath(record.RelativePath()))
+	configFileAbs := filepath.Join(projectDir, manager.Naming().ConfigFilePath(record.RelativePath()))
 	assert.NoError(t, os.MkdirAll(dirAbs, 0750))
 	assert.NoError(t, os.WriteFile(metaFileAbs, []byte(metaFile), 0640))
 	assert.NoError(t, os.WriteFile(configFileAbs, []byte(configFile), 0640))

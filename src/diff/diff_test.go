@@ -15,7 +15,7 @@ import (
 func TestDiffOnlyInLocal(t *testing.T) {
 	projectState := createProjectState(t)
 	branch := &model.Branch{}
-	m := &manifest.BranchManifest{}
+	m := &model.BranchManifest{}
 	projectState.SetBranchLocalState(branch, m)
 	d := NewDiffer(projectState)
 	results, err := d.Diff()
@@ -59,7 +59,7 @@ func TestDiffEqual(t *testing.T) {
 		Description: "description",
 		IsDefault:   false,
 	}
-	m := &manifest.BranchManifest{}
+	m := &model.BranchManifest{}
 	projectState.SetBranchRemoteState(branchRemote)
 	projectState.SetBranchLocalState(branchLocal, m)
 	d := NewDiffer(projectState)
@@ -91,7 +91,7 @@ func TestDiffNotEqual(t *testing.T) {
 		Description: "description",
 		IsDefault:   true,
 	}
-	m := &manifest.BranchManifest{}
+	m := &model.BranchManifest{}
 	projectState.SetBranchRemoteState(branchRemote)
 	projectState.SetBranchLocalState(branchLocal, m)
 	d := NewDiffer(projectState)
@@ -133,7 +133,7 @@ func TestDiffEqualConfig(t *testing.T) {
 		Description: "description",
 		IsDefault:   false,
 	}
-	branchManifest := &manifest.BranchManifest{}
+	branchManifest := &model.BranchManifest{}
 
 	configRemote := &model.Config{
 		ConfigKey: model.ConfigKey{
@@ -155,7 +155,7 @@ func TestDiffEqualConfig(t *testing.T) {
 		Description:       "description",
 		ChangeDescription: "local", // no diff:"true" tag
 	}
-	configManifest := &manifest.ConfigManifest{}
+	configManifest := &model.ConfigManifest{}
 	projectState.SetBranchRemoteState(branchRemote)
 	projectState.SetBranchLocalState(branchLocal, branchManifest)
 	projectState.SetConfigRemoteState(configRemote)
@@ -202,7 +202,7 @@ func TestDiffNotEqualConfig(t *testing.T) {
 		Description: "description",
 		IsDefault:   false,
 	}
-	branchManifest := &manifest.BranchManifest{}
+	branchManifest := &model.BranchManifest{}
 
 	configRemote := &model.Config{
 		ConfigKey: model.ConfigKey{
@@ -224,7 +224,7 @@ func TestDiffNotEqualConfig(t *testing.T) {
 		Description:       "changed",
 		ChangeDescription: "local", // no diff:"true" tag
 	}
-	configManifest := &manifest.ConfigManifest{}
+	configManifest := &model.ConfigManifest{}
 	projectState.SetBranchRemoteState(branchRemote)
 	projectState.SetBranchLocalState(branchLocal, branchManifest)
 	projectState.SetConfigRemoteState(configRemote)

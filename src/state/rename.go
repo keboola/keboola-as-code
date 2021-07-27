@@ -3,7 +3,6 @@ package state
 import (
 	"fmt"
 	"github.com/jpillora/longestcommon"
-	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
 	"os"
@@ -78,7 +77,7 @@ func (s *State) renameBlocks(config *ConfigState) (plans []*model.RenamePlan) {
 	return plans
 }
 
-func (s *State) renameBlock(config *manifest.ConfigManifest, index int, block *model.Block) (plans []*model.RenamePlan) {
+func (s *State) renameBlock(config *model.ConfigManifest, index int, block *model.Block) (plans []*model.RenamePlan) {
 	// Update parent path
 	block.ParentPath = s.Naming().BlocksDir(config.RelativePath())
 
@@ -125,11 +124,11 @@ func (s *State) renameCode(componentId string, block *model.Block, index int, co
 func (s *State) renameCodeFile(componentId string, code *model.Code) (plans []*model.RenamePlan) {
 	// Store old path
 	plan := &model.RenamePlan{}
-	plan.OldPath = filepath.Join(s.ProjectDir(), code.CodeFilePath())
+	plan.OldPath = filepath.Join(s.ProjectDir(), s.Naming().CodeFilePath(code))
 
 	// Rename
 	code.CodeFileName = s.Naming().CodeFileName(componentId)
-	plan.NewPath = filepath.Join(s.ProjectDir(), code.CodeFilePath())
+	plan.NewPath = filepath.Join(s.ProjectDir(), s.Naming().CodeFilePath(code))
 	if plan.OldPath != plan.NewPath {
 		plans = append(plans, plan)
 	}

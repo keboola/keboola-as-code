@@ -9,7 +9,6 @@ import (
 	"golang.org/x/sync/errgroup"
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/diff"
-	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/state"
@@ -86,7 +85,7 @@ func (e *Executor) Invoke(p *Plan) error {
 	records := e.Manifest().GetRecords()
 	for _, key := range append([]string(nil), records.Keys()...) {
 		v, _ := records.Get(key)
-		record := v.(manifest.Record)
+		record := v.(model.Record)
 		if record.State().IsInvalid() {
 			if err := e.LocalManager().DeleteModel(record); err != nil {
 				e.errors.Append(err)

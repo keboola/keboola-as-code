@@ -81,7 +81,7 @@ func GetOneFieldWithTag(tag string, model interface{}) *StructField {
 	return nil
 }
 
-func ReadTaggedFields(dir, relPath, tag, errPrefix string, target interface{}) error {
+func ReadTaggedFields(dir, relPath, tag string, target interface{}, errPrefix string) error {
 	// Read fields with metaFile tag
 	metaFields := GetFieldsWithTag(tag, target)
 	if len(metaFields) == 0 {

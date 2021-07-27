@@ -48,7 +48,7 @@ func (c *ConfigState) UpdateManifest(m *manifest.Manifest, rename bool) {
 	if c.Path == "" || rename {
 		c.Path = m.Naming.ConfigPath(c.Component, config)
 	}
-	c.ResolveParentPath(branchManifest.(*manifest.BranchManifest))
+	c.ResolveParentPath(branchManifest.(*model.BranchManifest))
 }
 
 func (r *ConfigRowState) UpdateManifest(m *manifest.Manifest, rename bool) {
@@ -72,5 +72,5 @@ func (r *ConfigRowState) UpdateManifest(m *manifest.Manifest, rename bool) {
 	if r.Path == "" || rename {
 		r.Path = m.Naming.ConfigRowPath(row)
 	}
-	r.ResolveParentPath(configManifest.(*manifest.ConfigManifest))
+	r.ResolveParentPath(configManifest.(*model.ConfigManifest))
 }

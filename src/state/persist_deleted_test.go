@@ -38,25 +38,25 @@ func TestPersistDeleted(t *testing.T) {
 	m, err := manifest.LoadManifest(projectDir, metadataDir)
 	assert.NoError(t, err)
 	branchId := cast.ToInt(utils.MustGetEnv(`LOCAL_STATE_MAIN_BRANCH_ID`))
-	m.PersistRecord(&manifest.ConfigManifest{
+	m.PersistRecord(&model.ConfigManifest{
 		ConfigKey: model.ConfigKey{
 			BranchId:    branchId,
 			ComponentId: "keboola.ex-db-mysql",
 			Id:          "101",
 		},
-		Paths: manifest.Paths{
+		Paths: model.Paths{
 			ParentPath: "main",
 			Path:       "extractor/keboola.ex-db-mysql/missing",
 		},
 	})
-	m.PersistRecord(&manifest.ConfigRowManifest{
+	m.PersistRecord(&model.ConfigRowManifest{
 		ConfigRowKey: model.ConfigRowKey{
 			BranchId:    branchId,
 			ComponentId: "keboola.ex-db-mysql",
 			ConfigId:    "101",
 			Id:          "202",
 		},
-		Paths: manifest.Paths{
+		Paths: model.Paths{
 			ParentPath: "main/extractor/keboola.ex-db-mysql/missing",
 			Path:       "rows/some-row",
 		},

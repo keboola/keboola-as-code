@@ -105,15 +105,16 @@ func TestPersistNewConfig(t *testing.T) {
 	assert.Equal(
 		t,
 		&ConfigState{
-			ConfigManifest: &manifest.ConfigManifest{
+			ConfigManifest: &model.ConfigManifest{
 				ConfigKey: configKey,
-				RecordState: manifest.RecordState{
+				RecordState: model.RecordState{
 					Invalid:   false,
 					Persisted: true,
 				},
-				Paths: manifest.Paths{
-					ParentPath: "main",
-					Path:       "extractor/ex-generic-v2/new-config",
+				Paths: model.Paths{
+					ParentPath:   "main",
+					Path:         "extractor/ex-generic-v2/new-config",
+					RelatedPaths: []string{model.MetaFile, model.ConfigFile},
 				},
 			},
 			Component: &model.Component{
@@ -221,15 +222,16 @@ func TestPersistNewConfigRow(t *testing.T) {
 	assert.Equal(
 		t,
 		&ConfigState{
-			ConfigManifest: &manifest.ConfigManifest{
+			ConfigManifest: &model.ConfigManifest{
 				ConfigKey: *configKey,
-				RecordState: manifest.RecordState{
+				RecordState: model.RecordState{
 					Invalid:   false,
 					Persisted: true,
 				},
-				Paths: manifest.Paths{
-					ParentPath: "main",
-					Path:       "extractor/keboola.ex-db-mysql/new-config",
+				Paths: model.Paths{
+					ParentPath:   "main",
+					Path:         "extractor/keboola.ex-db-mysql/new-config",
+					RelatedPaths: []string{model.MetaFile, model.ConfigFile},
 				},
 			},
 			Component: &model.Component{
@@ -257,15 +259,16 @@ func TestPersistNewConfigRow(t *testing.T) {
 	assert.Equal(
 		t,
 		&ConfigRowState{
-			ConfigRowManifest: &manifest.ConfigRowManifest{
+			ConfigRowManifest: &model.ConfigRowManifest{
 				ConfigRowKey: rowKey,
-				RecordState: manifest.RecordState{
+				RecordState: model.RecordState{
 					Invalid:   false,
 					Persisted: true,
 				},
-				Paths: manifest.Paths{
-					ParentPath: "main/extractor/keboola.ex-db-mysql/new-config",
-					Path:       "rows/some-row",
+				Paths: model.Paths{
+					ParentPath:   "main/extractor/keboola.ex-db-mysql/new-config",
+					Path:         "rows/some-row",
+					RelatedPaths: []string{model.MetaFile, model.ConfigFile},
 				},
 			},
 			Remote: nil,
