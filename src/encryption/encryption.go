@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -11,12 +12,12 @@ import (
 	"go.uber.org/zap"
 )
 
-func isKeyToEncrypt(property string) bool {
-	return strings.HasPrefix(property, "#")
+func isKeyToEncrypt(key string) bool {
+	return strings.HasPrefix(key, "#")
 }
 
 func isValueEncrypted(value string) bool {
-	return strings.HasPrefix(value, "KBC::ProjectSecure::")
+	return regexp.MustCompile(`^KBC::ProjectSecure::.+$`).MatchString(value)
 }
 
 type pathIterator interface {
