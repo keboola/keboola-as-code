@@ -4,5 +4,5 @@ CH changed
 
 Diff:
 CH B bar | changed: description
--  C main/extractor/ex-generic-v2/empty
 CH C bar/extractor/ex-generic-v2/empty | changed: name
+-  C main/extractor/ex-generic-v2/empty

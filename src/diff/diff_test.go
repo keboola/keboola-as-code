@@ -16,7 +16,7 @@ func TestDiffOnlyInLocal(t *testing.T) {
 	projectState := createProjectState(t)
 	branch := &model.Branch{}
 	m := &model.BranchManifest{}
-	projectState.SetBranchLocalState(branch, m)
+	projectState.SetLocalState(branch, m)
 	d := NewDiffer(projectState)
 	results, err := d.Diff()
 	assert.NoError(t, err)
@@ -30,7 +30,7 @@ func TestDiffOnlyInLocal(t *testing.T) {
 func TestDiffOnlyInRemote(t *testing.T) {
 	branch := &model.Branch{}
 	projectState := createProjectState(t)
-	projectState.SetBranchRemoteState(branch)
+	projectState.SetRemoteState(branch)
 	d := NewDiffer(projectState)
 	results, err := d.Diff()
 	assert.NoError(t, err)
@@ -60,8 +60,8 @@ func TestDiffEqual(t *testing.T) {
 		IsDefault:   false,
 	}
 	m := &model.BranchManifest{}
-	projectState.SetBranchRemoteState(branchRemote)
-	projectState.SetBranchLocalState(branchLocal, m)
+	projectState.SetRemoteState(branchRemote)
+	projectState.SetLocalState(branchLocal, m)
 	d := NewDiffer(projectState)
 	results, err := d.Diff()
 	assert.NoError(t, err)
@@ -92,8 +92,8 @@ func TestDiffNotEqual(t *testing.T) {
 		IsDefault:   true,
 	}
 	m := &model.BranchManifest{}
-	projectState.SetBranchRemoteState(branchRemote)
-	projectState.SetBranchLocalState(branchLocal, m)
+	projectState.SetRemoteState(branchRemote)
+	projectState.SetLocalState(branchLocal, m)
 	d := NewDiffer(projectState)
 	results, err := d.Diff()
 	assert.NoError(t, err)
@@ -156,10 +156,10 @@ func TestDiffEqualConfig(t *testing.T) {
 		ChangeDescription: "local", // no diff:"true" tag
 	}
 	configManifest := &model.ConfigManifest{}
-	projectState.SetBranchRemoteState(branchRemote)
-	projectState.SetBranchLocalState(branchLocal, branchManifest)
-	projectState.SetConfigRemoteState(configRemote)
-	projectState.SetConfigLocalState(configLocal, configManifest)
+	projectState.SetRemoteState(branchRemote)
+	projectState.SetLocalState(branchLocal, branchManifest)
+	projectState.SetRemoteState(configRemote)
+	projectState.SetLocalState(configLocal, configManifest)
 	d := NewDiffer(projectState)
 	results, err := d.Diff()
 	assert.NoError(t, err)
@@ -225,10 +225,10 @@ func TestDiffNotEqualConfig(t *testing.T) {
 		ChangeDescription: "local", // no diff:"true" tag
 	}
 	configManifest := &model.ConfigManifest{}
-	projectState.SetBranchRemoteState(branchRemote)
-	projectState.SetBranchLocalState(branchLocal, branchManifest)
-	projectState.SetConfigRemoteState(configRemote)
-	projectState.SetConfigLocalState(configLocal, configManifest)
+	projectState.SetRemoteState(branchRemote)
+	projectState.SetLocalState(branchLocal, branchManifest)
+	projectState.SetRemoteState(configRemote)
+	projectState.SetLocalState(configLocal, configManifest)
 	d := NewDiffer(projectState)
 	results, err := d.Diff()
 	assert.NoError(t, err)

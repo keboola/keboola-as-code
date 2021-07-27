@@ -6,10 +6,14 @@ type ObjectState interface {
 	ObjectId() string // eg. config id
 	Kind() Kind       // branch, config, ...
 	RelativePath() string
+	HasManifest() bool
+	SetManifest(record Record)
 	Manifest() Record
 	HasLocalState() bool
+	SetLocalState(object Object)
 	LocalState() Object
 	HasRemoteState() bool
+	SetRemoteState(object Object)
 	RemoteState() Object
 }
 
@@ -47,6 +51,18 @@ func (r *ConfigRowState) HasLocalState() bool {
 	return r.Local != nil
 }
 
+func (b *BranchState) SetLocalState(object Object) {
+	b.Local = object.(*Branch)
+}
+
+func (c *ConfigState) SetLocalState(object Object) {
+	c.Local = object.(*Config)
+}
+
+func (r *ConfigRowState) SetLocalState(object Object) {
+	r.Local = object.(*ConfigRow)
+}
+
 func (b *BranchState) LocalState() Object {
 	return b.Local
 }
@@ -71,6 +87,18 @@ func (r *ConfigRowState) HasRemoteState() bool {
 	return r.Remote != nil
 }
 
+func (b *BranchState) SetRemoteState(object Object) {
+	b.Remote = object.(*Branch)
+}
+
+func (c *ConfigState) SetRemoteState(object Object) {
+	c.Remote = object.(*Config)
+}
+
+func (r *ConfigRowState) SetRemoteState(object Object) {
+	r.Remote = object.(*ConfigRow)
+}
+
 func (b *BranchState) RemoteState() Object {
 	return b.Remote
 }
@@ -81,6 +109,30 @@ func (c *ConfigState) RemoteState() Object {
 
 func (r *ConfigRowState) RemoteState() Object {
 	return r.Remote
+}
+
+func (b *BranchState) HasManifest() bool {
+	return b.BranchManifest != nil
+}
+
+func (c *ConfigState) HasManifest() bool {
+	return c.ConfigManifest != nil
+}
+
+func (r *ConfigRowState) HasManifest() bool {
+	return r.ConfigRowManifest != nil
+}
+
+func (b *BranchState) SetManifest(record Record) {
+	b.BranchManifest = record.(*BranchManifest)
+}
+
+func (c *ConfigState) SetManifest(record Record) {
+	c.ConfigManifest = record.(*ConfigManifest)
+}
+
+func (r *ConfigRowState) SetManifest(record Record) {
+	r.ConfigRowManifest = record.(*ConfigRowManifest)
 }
 
 func (b *BranchState) Manifest() Record {
