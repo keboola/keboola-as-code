@@ -2,8 +2,8 @@ package encryption
 
 import (
 	"context"
+	"fmt"
 	"keboola-as-code/src/client"
-	"keboola-as-code/src/remote"
 	"strings"
 
 	"github.com/go-resty/resty/v2"
@@ -16,6 +16,21 @@ type EncryptionApi struct {
 	logger  *zap.SugaredLogger
 }
 
+// Error represents Encryption API error structure
+type Error struct {
+	Message     string `json:"error"`
+	ErrCode     int    `json:"code"`
+	ExceptionId string `json:"exceptionId"`
+}
+
+func (e *Error) Error() string {
+	msg := fmt.Sprintf(`"%v", errCode: "%v"`, e.Message, e.ErrCode)
+	if len(e.ExceptionId) > 0 {
+		msg += fmt.Sprintf(`, exceptionId: "%s"`, e.ExceptionId)
+	}
+	return msg
+}
+
 func getEncryptionApiHost(connectionApiHost string) string {
 	return strings.ReplaceAll(connectionApiHost, "connection.", "encryption.")
 }
@@ -24,7 +39,7 @@ func NewEncryptionApi(connectionApiHost string, ctx context.Context, logger *zap
 	apiHost := getEncryptionApiHost(connectionApiHost)
 	apiHostUrl := "https://" + apiHost
 	c := client.NewClient(ctx, logger, verbose).WithHostUrl(apiHostUrl)
-	c.SetError(&remote.Error{})
+	c.SetError(&Error{})
 	api := &EncryptionApi{client: c, logger: logger, apiHost: apiHost}
 	return api
 }

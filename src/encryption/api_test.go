@@ -19,3 +19,12 @@ func TestNewEncryptionApi(t *testing.T) {
 	assert.NotNil(t, encryptedMap)
 	assert.True(t, isEncrypted(encryptedMap["#keyToEncrypt"]))
 }
+
+func TestErrorEncryptionApi(t *testing.T) {
+	logger, _ := utils.NewDebugLogger()
+	mapToEncrypt := map[string]string{"#keyToEncrypt": "value"}
+	a := NewEncryptionApi("connection.keboola.com", context.Background(), logger, false)
+	_, err := a.EncryptMapValues("", "", mapToEncrypt)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "The componentId parameter is required")
+}
