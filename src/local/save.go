@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/iancoleman/orderedmap"
 	"keboola-as-code/src/json"
-	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/transformation"
 	"keboola-as-code/src/utils"
@@ -14,7 +13,7 @@ import (
 )
 
 // SaveModel to manifest and disk
-func (m *Manager) SaveModel(record manifest.Record, source model.ValueWithKey) error {
+func (m *Manager) SaveModel(record model.Record, source model.ValueWithKey) error {
 	errors := utils.NewMultiError()
 
 	// Validate
@@ -41,9 +40,8 @@ func (m *Manager) SaveModel(record manifest.Record, source model.ValueWithKey) e
 
 	// Write metadata file
 	if metadata := utils.MapFromTaggedFields(model.MetaFileTag, source); metadata != nil {
-		if err := json.WriteFile(m.ProjectDir(), record.MetaFilePath(), metadata, record.Kind().Name+" metadata"); err == nil {
-			m.logger.Debugf(`Saved "%s"`, record.MetaFilePath())
-		} else {
+		errPrefix := record.Kind().Name + " metadata"
+		if err := m.writeJsonFile(m.Naming().MetaFilePath(record.RelativePath()), metadata, errPrefix); err != nil {
 			errors.Append(err)
 		}
 	}
@@ -53,9 +51,8 @@ func (m *Manager) SaveModel(record manifest.Record, source model.ValueWithKey) e
 		configContent = utils.MapFromOneTaggedField(model.ConfigFileTag, source)
 	}
 	if configContent != nil {
-		if err := json.WriteFile(m.ProjectDir(), record.ConfigFilePath(), configContent, record.Kind().Name); err == nil {
-			m.logger.Debugf(`Saved "%s"`, record.ConfigFilePath())
-		} else {
+		errPrefix := record.Kind().Name
+		if err := m.writeJsonFile(m.Naming().ConfigFilePath(record.RelativePath()), configContent, errPrefix); err != nil {
 			errors.Append(err)
 		}
 	}
@@ -63,17 +60,26 @@ func (m *Manager) SaveModel(record manifest.Record, source model.ValueWithKey) e
 	return errors.ErrorOrNil()
 }
 
-func (m *Manager) transformOnSave(record manifest.Record, source model.ValueWithKey) (*orderedmap.OrderedMap, error) {
+func (m *Manager) transformOnSave(record model.Record, source model.ValueWithKey) (*orderedmap.OrderedMap, error) {
 	if ok, err := m.isTransformationConfig(source); ok {
 		return transformation.SaveBlocks(
 			m.ProjectDir(),
 			m.logger,
 			m.Naming(),
-			record.(*manifest.ConfigManifest),
+			record.(*model.ConfigManifest),
 			source.(*model.Config),
 		)
 	} else if err != nil {
 		return nil, err
 	}
 	return nil, nil
+}
+
+func (m *Manager) writeJsonFile(relPath string, content *orderedmap.OrderedMap, errPrefix string) error {
+	if err := json.WriteFile(m.ProjectDir(), relPath, content, errPrefix); err == nil {
+		m.logger.Debugf(`Saved "%s"`, relPath)
+	} else {
+		return err
+	}
+	return nil
 }

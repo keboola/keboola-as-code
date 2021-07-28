@@ -35,7 +35,7 @@ func statusCommand(root *rootCommand) *cobra.Command {
 			root.logger.Infof("Working directory:  %s", root.options.WorkingDirectory())
 			root.logger.Infof("Project directory:  %s", root.options.ProjectDir())
 			root.logger.Infof("Metadata directory: %s", root.options.MetadataDir())
-			root.logger.Infof("Manifest path:      %s", projectManifest.Path())
+			root.logger.Infof("Manifest path:      %s", projectManifest.RelativePath())
 			return nil
 		},
 	}

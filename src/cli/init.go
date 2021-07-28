@@ -79,7 +79,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 			if err = projectManifest.Save(); err != nil {
 				return err
 			}
-			root.logger.Infof("Created manifest file \"%s\".", utils.RelPath(projectDir, projectManifest.Path()))
+			root.logger.Infof("Created manifest file \"%s\".", utils.RelPath(projectDir, projectManifest.RelativePath()))
 
 			// Create ENV files
 			if err := createEnvFiles(root.logger, api, projectDir); err != nil {

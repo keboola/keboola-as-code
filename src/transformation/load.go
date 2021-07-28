@@ -3,7 +3,7 @@ package transformation
 import (
 	"fmt"
 	"github.com/iancoleman/orderedmap"
-	"keboola-as-code/src/manifest"
+	"go.uber.org/zap"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/sql"
 	"keboola-as-code/src/utils"
@@ -14,20 +14,28 @@ import (
 )
 
 type loader struct {
-	projectDir  string
-	naming      *model.Naming
-	componentId string
-	errors      *utils.Error
+	projectDir string
+	logger     *zap.SugaredLogger
+	naming     *model.Naming
+	record     *model.ConfigManifest
+	target     *model.Config
+	errors     *utils.Error
 }
 
 // LoadBlocks - load code blocks from disk to target config
-func LoadBlocks(projectDir string, naming *model.Naming, config *manifest.ConfigManifest, target *model.Config) error {
-	l := &loader{projectDir, naming, target.ComponentId, utils.NewMultiError()}
-	blocks := l.loadBlocks(l.naming.BlocksDir(config.RelativePath()))
+func LoadBlocks(projectDir string, logger *zap.SugaredLogger, naming *model.Naming, record *model.ConfigManifest, target *model.Config) error {
+	l := &loader{projectDir, logger, naming, record, target, utils.NewMultiError()}
+	return l.loadBlocksToConfig()
+}
+
+// LoadBlocks - load code blocks from disk to target config
+func (l *loader) loadBlocksToConfig() error {
+	// Load blocks
+	blocks := l.loadBlocks(l.naming.BlocksDir(l.record.RelativePath()))
 
 	// Set blocks to "parameters.blocks" in the config
 	var parameters orderedmap.OrderedMap
-	if parametersRaw, found := target.Content.Get(`parameters`); found {
+	if parametersRaw, found := l.target.Content.Get(`parameters`); found {
 		// Use existing map
 		parameters = parametersRaw.(orderedmap.OrderedMap)
 	} else {
@@ -43,8 +51,8 @@ func LoadBlocks(projectDir string, naming *model.Naming, config *manifest.Config
 		blocksMap = append(blocksMap, blockMap)
 	}
 	parameters.Set("blocks", blocksMap)
-	target.Content.Set("parameters", parameters)
-	target.Blocks = blocks
+	l.target.Content.Set("parameters", parameters)
+	l.target.Blocks = blocks
 	return l.errors.ErrorOrNil()
 }
 
@@ -69,14 +77,17 @@ func (l *loader) loadBlocks(blocksDir string) []*model.Block {
 	// Load all blocks
 	for _, item := range items {
 		if item.IsDir() {
-			block := &model.Block{
-				ParentPath: blocksDir,
-				Path:       item.Name(),
-			}
+			// Create block struct
+			block := &model.Block{Paths: model.Paths{ParentPath: blocksDir, Path: item.Name()}}
+			l.record.AddRelatedPath(block.RelativePath())
 
 			// Load meta file
+			metaFilePath := l.naming.MetaFilePath(block.RelativePath())
 			errPrefix := "block metadata"
-			if err := utils.ReadTaggedFields(l.projectDir, block.MetaFilePath(), model.MetaFileTag, errPrefix, block); err != nil {
+			if err := utils.ReadTaggedFields(l.projectDir, metaFilePath, model.MetaFileTag, block, errPrefix); err == nil {
+				l.record.AddRelatedPath(metaFilePath)
+				l.logger.Debugf(`Loaded "%s"`, metaFilePath)
+			} else {
 				l.errors.Append(err)
 			}
 
@@ -120,22 +131,27 @@ func (l *loader) loadCodes(blockDir string) []*model.Code {
 	// Load all codes
 	for _, item := range items {
 		if item.IsDir() {
-			code := &model.Code{
-				ParentPath: blockDir,
-				Path:       item.Name(),
-			}
+			// Create code struct
+			code := &model.Code{Paths: model.Paths{ParentPath: blockDir, Path: item.Name()}}
+			l.record.AddRelatedPath(code.RelativePath())
 
 			// Load meta file
+			metaFilePath := l.naming.MetaFilePath(code.RelativePath())
 			errPrefix := "code metadata"
-			if err := utils.ReadTaggedFields(l.projectDir, code.MetaFilePath(), model.MetaFileTag, errPrefix, code); err != nil {
+			if err := utils.ReadTaggedFields(l.projectDir, metaFilePath, model.MetaFileTag, code, errPrefix); err == nil {
+				l.record.AddRelatedPath(metaFilePath)
+				l.logger.Debugf(`Loaded "%s"`, metaFilePath)
+			} else {
 				l.errors.Append(err)
 			}
 
 			// Load codes
 			code.CodeFileName = l.codeFileName(code.RelativePath())
+			codeFilePath := l.naming.CodeFilePath(code)
 			if code.CodeFileName != "" {
-				scripts := l.loadScripts(code.CodeFilePath())
+				scripts := l.loadScripts(codeFilePath)
 				if scripts != nil {
+					l.record.AddRelatedPath(codeFilePath)
 					code.Scripts = scripts
 				} else {
 					continue
@@ -201,7 +217,7 @@ func (l *loader) loadScripts(codeFile string) []string {
 }
 
 func (l *loader) parseScripts(content string) []string {
-	switch l.componentId {
+	switch l.record.ComponentId {
 	case `keboola.snowflake-transformation`:
 		fallthrough
 	case `keboola.synapse-transformation`:

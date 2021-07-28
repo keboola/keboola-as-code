@@ -35,30 +35,23 @@ func (MockedRecord) Key() model.Key {
 func (MockedRecord) Kind() model.Kind {
 	return model.Kind{Name: "kind", Abbr: "K"}
 }
-func (MockedRecord) State() *manifest.RecordState {
-	return &manifest.RecordState{}
+func (MockedRecord) State() *model.RecordState {
+	return &model.RecordState{}
 }
 func (MockedRecord) SortKey(sort string) string {
 	return "key"
 }
 
-func (MockedRecord) GetPaths() manifest.Paths {
-	return manifest.Paths{
-		ParentPath: "",
-		Path:       "test",
-	}
-}
-
 func (m MockedRecord) RelativePath() string {
-	return m.GetPaths().RelativePath()
+	return `test`
 }
 
-func (MockedRecord) MetaFilePath() string {
-	return "meta-file.json"
+func (m MockedRecord) GetRelatedPaths() []string {
+	return nil
 }
 
-func (MockedRecord) ConfigFilePath() string {
-	return "config-file.json"
+func (m MockedRecord) AddRelatedPath(path string) {
+	// nop
 }
 
 func TestLocalSaveModel(t *testing.T) {
@@ -99,6 +92,6 @@ func TestLocalSaveModel(t *testing.T) {
   "foo": "bar"
 }
 `
-	assert.Equal(t, expectedMeta, utils.GetFileContent(filepath.Join(projectDir, record.MetaFilePath())))
-	assert.Equal(t, expectedConfig, utils.GetFileContent(filepath.Join(projectDir, record.ConfigFilePath())))
+	assert.Equal(t, expectedMeta, utils.GetFileContent(filepath.Join(projectDir, manager.Naming().MetaFilePath(record.RelativePath()))))
+	assert.Equal(t, expectedConfig, utils.GetFileContent(filepath.Join(projectDir, manager.Naming().ConfigFilePath(record.RelativePath()))))
 }

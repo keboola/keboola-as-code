@@ -6,7 +6,6 @@ import (
 	"github.com/otiai10/copy"
 	"go.uber.org/zap"
 	"keboola-as-code/src/json"
-	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/sql"
 	"keboola-as-code/src/utils"
@@ -25,7 +24,7 @@ type writer struct {
 }
 
 // SaveBlocks - save code blocks from source config to the disk
-func SaveBlocks(projectDir string, logger *zap.SugaredLogger, naming *model.Naming, record *manifest.ConfigManifest, source *model.Config) (*orderedmap.OrderedMap, error) {
+func SaveBlocks(projectDir string, logger *zap.SugaredLogger, naming *model.Naming, config *model.ConfigManifest, source *model.Config) (*orderedmap.OrderedMap, error) {
 	w := &writer{projectDir, logger, naming, source.ComponentId, utils.NewMultiError()}
 
 	// Copy config content to remove blocks
@@ -47,15 +46,28 @@ func SaveBlocks(projectDir string, logger *zap.SugaredLogger, naming *model.Nami
 	blocks := make([]*model.Block, 0)
 	utils.ConvertByJson(blocksRaw, &blocks)
 
+	// Fill in generated values
+	blocksDir := w.naming.BlocksDir(config.RelativePath())
+	blocksTmpDir := w.naming.BlocksTmpDir(config.RelativePath())
+	for blockIndex, block := range blocks {
+		block.ParentPath = blocksTmpDir
+		block.Path = w.naming.BlockPath(blockIndex, block.Name)
+		for codeIndex, code := range block.Codes {
+			code.ParentPath = block.RelativePath()
+			code.Path = w.naming.CodePath(codeIndex, code.Name)
+			code.CodeFileName = w.naming.CodeFileName(config.ComponentId)
+		}
+	}
+
 	// Write blocks to the disk
-	w.writeBlocks(record.RelativePath(), blocks)
+	w.writeBlocks(blocksDir, blocksTmpDir, blocks)
 
 	return &configContent, w.errors.ErrorOrNil()
 }
 
-func (w *writer) writeBlocks(configDir string, blocks []*model.Block) {
-	blocksTmpDir := w.naming.BlocksTmpDir(configDir)
-	blocksTmpDirAbs := filepath.Join(w.projectDir, blocksTmpDir)
+// writeBlocks to the temp dir, and if all ok move directory to the target path
+func (w *writer) writeBlocks(targetDir, tmpDir string, blocks []*model.Block) {
+	blocksTmpDirAbs := filepath.Join(w.projectDir, tmpDir)
 
 	// Create tmp dir, clear on the end
 	if err := os.MkdirAll(blocksTmpDirAbs, 0755); err != nil {
@@ -65,15 +77,13 @@ func (w *writer) writeBlocks(configDir string, blocks []*model.Block) {
 	defer os.RemoveAll(blocksTmpDirAbs)
 
 	// Blocks
-	for index, block := range blocks {
-		blockDir := filepath.Join(blocksTmpDir, w.naming.BlockPath(index, block.Name))
-		w.writeBlock(blockDir, block)
+	for _, block := range blocks {
+		w.writeBlock(block)
 	}
 
 	// If no error, replace old dir with the new
 	if w.errors.Len() == 0 {
-		blocksDir := w.naming.BlocksDir(configDir)
-		blocksDirAbs := filepath.Join(w.projectDir, blocksDir)
+		blocksDirAbs := filepath.Join(w.projectDir, targetDir)
 
 		// Remove old content
 		if err := os.RemoveAll(blocksDirAbs); err != nil {
@@ -90,19 +100,19 @@ func (w *writer) writeBlocks(configDir string, blocks []*model.Block) {
 			w.errors.Append(err)
 			return
 		}
-		w.logger.Debugf(`Moved "%s" -> "%s"`, blocksTmpDir, blocksDir)
+		w.logger.Debugf(`Moved "%s" -> "%s"`, tmpDir, targetDir)
 	}
 }
 
-func (w *writer) writeBlock(blockDir string, block *model.Block) {
+func (w *writer) writeBlock(block *model.Block) {
 	// Validate
 	if err := validator.Validate(block); err != nil {
-		w.errors.Append(utils.PrefixError(fmt.Sprintf(`invalid block \"%s\"`, blockDir), err))
+		w.errors.Append(utils.PrefixError(fmt.Sprintf(`invalid block \"%s\"`, block.RelativePath()), err))
 		return
 	}
 
 	// Create dir
-	blockDirAbs := filepath.Join(w.projectDir, blockDir)
+	blockDirAbs := filepath.Join(w.projectDir, block.RelativePath())
 	if err := os.MkdirAll(blockDirAbs, 0755); err != nil {
 		w.errors.Append(err)
 		return
@@ -110,7 +120,7 @@ func (w *writer) writeBlock(blockDir string, block *model.Block) {
 
 	// Write metadata
 	if metadata := utils.MapFromTaggedFields(model.MetaFileTag, block); metadata != nil {
-		metaFilePath := filepath.Join(blockDir, model.MetaFile)
+		metaFilePath := w.naming.MetaFilePath(block.RelativePath())
 		if err := json.WriteFile(w.projectDir, metaFilePath, metadata, "block metadata"); err == nil {
 			w.logger.Debugf(`Saved "%s"`, metaFilePath)
 		} else {
@@ -120,15 +130,14 @@ func (w *writer) writeBlock(blockDir string, block *model.Block) {
 	}
 
 	// Write codes
-	for index, code := range block.Codes {
-		codeDir := filepath.Join(blockDir, w.naming.CodePath(index, code.Name))
-		w.writeCode(codeDir, code)
+	for _, code := range block.Codes {
+		w.writeCode(code)
 	}
 }
 
-func (w *writer) writeCode(codeDir string, code *model.Code) {
+func (w *writer) writeCode(code *model.Code) {
 	// Create dir
-	codeDirAbs := filepath.Join(w.projectDir, codeDir)
+	codeDirAbs := filepath.Join(w.projectDir, code.RelativePath())
 	if err := os.MkdirAll(codeDirAbs, 0755); err != nil {
 		w.errors.Append(err)
 		return
@@ -136,7 +145,7 @@ func (w *writer) writeCode(codeDir string, code *model.Code) {
 
 	// Write metadata
 	if metadata := utils.MapFromTaggedFields(model.MetaFileTag, code); metadata != nil {
-		metaFilePath := filepath.Join(codeDir, model.MetaFile)
+		metaFilePath := w.naming.MetaFilePath(code.RelativePath())
 		if err := json.WriteFile(w.projectDir, metaFilePath, metadata, "code metadata"); err == nil {
 			w.logger.Debugf(`Saved "%s"`, metaFilePath)
 		} else {
@@ -146,7 +155,7 @@ func (w *writer) writeCode(codeDir string, code *model.Code) {
 	}
 
 	// Write scripts
-	codePathRel := filepath.Join(codeDir, w.naming.CodeFileName(w.componentId))
+	codePathRel := w.naming.CodeFilePath(code)
 	codePathAbs := filepath.Join(w.projectDir, codePathRel)
 	if err := os.WriteFile(codePathAbs, []byte(w.joinScripts(code.Scripts)), 0644); err != nil {
 		w.errors.Append(err)

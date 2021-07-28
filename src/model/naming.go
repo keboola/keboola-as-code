@@ -30,6 +30,14 @@ func DefaultNaming() *Naming {
 	}
 }
 
+func (n *Naming) MetaFilePath(dir string) string {
+	return filepath.Join(dir, MetaFile)
+}
+
+func (n *Naming) ConfigFilePath(dir string) string {
+	return filepath.Join(dir, ConfigFile)
+}
+
 func (n *Naming) BranchPath(branch *Branch) string {
 	return utils.ReplacePlaceholders(string(n.Branch), map[string]interface{}{
 		"branch_id":   branch.Id,
@@ -73,6 +81,10 @@ func (n *Naming) CodePath(index int, name string) string {
 		"code_order": fmt.Sprintf(`%03d`, index+1),
 		"code_name":  utils.NormalizeName(name),
 	})
+}
+
+func (n *Naming) CodeFilePath(code *Code) string {
+	return filepath.Join(code.RelativePath(), code.CodeFileName)
 }
 
 func (n *Naming) CodeFileName(componentId string) string {

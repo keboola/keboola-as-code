@@ -2,7 +2,6 @@ package state
 
 import (
 	"fmt"
-	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
 )
@@ -27,15 +26,15 @@ func (s *State) doLoadLocalState() {
 	}
 }
 
-func (s *State) loadModel(record manifest.Record) ObjectState {
+func (s *State) loadModel(record model.Record) ObjectState {
 	// Detect record type
 	var value interface{}
 	switch v := record.(type) {
-	case *manifest.BranchManifest:
+	case *model.BranchManifest:
 		value = &model.Branch{BranchKey: v.BranchKey}
-	case *manifest.ConfigManifest:
+	case *model.ConfigManifest:
 		value = &model.Config{ConfigKey: v.ConfigKey}
-	case *manifest.ConfigRowManifest:
+	case *model.ConfigRowManifest:
 		value = &model.ConfigRow{ConfigRowKey: v.ConfigRowKey}
 	default:
 		panic(fmt.Errorf(`unexpected type %T`, record))
@@ -45,11 +44,11 @@ func (s *State) loadModel(record manifest.Record) ObjectState {
 	if err == nil {
 		switch v := value.(type) {
 		case *model.Branch:
-			return s.SetBranchLocalState(v, record.(*manifest.BranchManifest))
+			return s.SetBranchLocalState(v, record.(*model.BranchManifest))
 		case *model.Config:
-			return s.SetConfigLocalState(v, record.(*manifest.ConfigManifest))
+			return s.SetConfigLocalState(v, record.(*model.ConfigManifest))
 		case *model.ConfigRow:
-			return s.SetConfigRowLocalState(v, record.(*manifest.ConfigRowManifest))
+			return s.SetConfigRowLocalState(v, record.(*model.ConfigRowManifest))
 		default:
 			panic(fmt.Errorf(`unexpected type %T`, record))
 		}

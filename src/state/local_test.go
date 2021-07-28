@@ -224,16 +224,17 @@ func complexLocalExpectedBranches() []*BranchState {
 				Description: "My branch",
 				IsDefault:   false,
 			},
-			BranchManifest: &manifest.BranchManifest{
-				RecordState: manifest.RecordState{
+			BranchManifest: &model.BranchManifest{
+				RecordState: model.RecordState{
 					Persisted: true,
 				},
 				BranchKey: model.BranchKey{
 					Id: 123,
 				},
-				Paths: manifest.Paths{
-					Path:       "123-branch",
-					ParentPath: "",
+				Paths: model.Paths{
+					Path:         "123-branch",
+					ParentPath:   "",
+					RelatedPaths: []string{model.MetaFile},
 				},
 			},
 		},
@@ -246,16 +247,17 @@ func complexLocalExpectedBranches() []*BranchState {
 				Description: "Main branch",
 				IsDefault:   true,
 			},
-			BranchManifest: &manifest.BranchManifest{
-				RecordState: manifest.RecordState{
+			BranchManifest: &model.BranchManifest{
+				RecordState: model.RecordState{
 					Persisted: true,
 				},
 				BranchKey: model.BranchKey{
 					Id: 111,
 				},
-				Paths: manifest.Paths{
-					Path:       "main",
-					ParentPath: "",
+				Paths: model.Paths{
+					Path:         "main",
+					ParentPath:   "",
+					RelatedPaths: []string{model.MetaFile},
 				},
 			},
 		},
@@ -300,8 +302,8 @@ func complexLocalExpectedConfigs() []*ConfigState {
 				Schema:    map[string]interface{}{},
 				SchemaRow: map[string]interface{}{},
 			},
-			ConfigManifest: &manifest.ConfigManifest{
-				RecordState: manifest.RecordState{
+			ConfigManifest: &model.ConfigManifest{
+				RecordState: model.RecordState{
 					Persisted: true,
 				},
 				ConfigKey: model.ConfigKey{
@@ -309,9 +311,10 @@ func complexLocalExpectedConfigs() []*ConfigState {
 					ComponentId: "keboola.ex-db-mysql",
 					Id:          "896",
 				},
-				Paths: manifest.Paths{
-					Path:       "extractor/keboola.ex-db-mysql/896-tables",
-					ParentPath: "123-branch",
+				Paths: model.Paths{
+					Path:         "extractor/keboola.ex-db-mysql/896-tables",
+					ParentPath:   "123-branch",
+					RelatedPaths: []string{model.MetaFile, model.ConfigFile},
 				},
 			},
 		},
@@ -351,8 +354,8 @@ func complexLocalExpectedConfigs() []*ConfigState {
 				Schema:    map[string]interface{}{},
 				SchemaRow: map[string]interface{}{},
 			},
-			ConfigManifest: &manifest.ConfigManifest{
-				RecordState: manifest.RecordState{
+			ConfigManifest: &model.ConfigManifest{
+				RecordState: model.RecordState{
 					Persisted: true,
 				},
 				ConfigKey: model.ConfigKey{
@@ -360,9 +363,10 @@ func complexLocalExpectedConfigs() []*ConfigState {
 					ComponentId: "ex-generic-v2",
 					Id:          "456",
 				},
-				Paths: manifest.Paths{
-					Path:       "extractor/ex-generic-v2/456-todos",
-					ParentPath: "main",
+				Paths: model.Paths{
+					Path:         "extractor/ex-generic-v2/456-todos",
+					ParentPath:   "main",
+					RelatedPaths: []string{model.MetaFile, model.ConfigFile},
 				},
 			},
 		},
@@ -402,8 +406,8 @@ func complexLocalExpectedConfigs() []*ConfigState {
 				Schema:    map[string]interface{}{},
 				SchemaRow: map[string]interface{}{},
 			},
-			ConfigManifest: &manifest.ConfigManifest{
-				RecordState: manifest.RecordState{
+			ConfigManifest: &model.ConfigManifest{
+				RecordState: model.RecordState{
 					Persisted: true,
 				},
 				ConfigKey: model.ConfigKey{
@@ -411,9 +415,10 @@ func complexLocalExpectedConfigs() []*ConfigState {
 					ComponentId: "ex-generic-v2",
 					Id:          "456",
 				},
-				Paths: manifest.Paths{
-					Path:       "extractor/ex-generic-v2/456-todos",
-					ParentPath: "123-branch",
+				Paths: model.Paths{
+					Path:         "extractor/ex-generic-v2/456-todos",
+					ParentPath:   "123-branch",
+					RelatedPaths: []string{model.MetaFile, model.ConfigFile},
 				},
 			},
 		},
@@ -443,8 +448,8 @@ func complexLocalExpectedConfigRows() []*ConfigRowState {
 					},
 				}),
 			},
-			ConfigRowManifest: &manifest.ConfigRowManifest{
-				RecordState: manifest.RecordState{
+			ConfigRowManifest: &model.ConfigRowManifest{
+				RecordState: model.RecordState{
 					Persisted: true,
 				},
 				ConfigRowKey: model.ConfigRowKey{
@@ -453,9 +458,10 @@ func complexLocalExpectedConfigRows() []*ConfigRowState {
 					ConfigId:    "896",
 					Id:          "56",
 				},
-				Paths: manifest.Paths{
-					Path:       "rows/56-disabled",
-					ParentPath: "123-branch/extractor/keboola.ex-db-mysql/896-tables",
+				Paths: model.Paths{
+					Path:         "rows/56-disabled",
+					ParentPath:   "123-branch/extractor/keboola.ex-db-mysql/896-tables",
+					RelatedPaths: []string{model.MetaFile, model.ConfigFile},
 				},
 			},
 		},
@@ -480,8 +486,8 @@ func complexLocalExpectedConfigRows() []*ConfigRowState {
 					},
 				}),
 			},
-			ConfigRowManifest: &manifest.ConfigRowManifest{
-				RecordState: manifest.RecordState{
+			ConfigRowManifest: &model.ConfigRowManifest{
+				RecordState: model.RecordState{
 					Persisted: true,
 				},
 				ConfigRowKey: model.ConfigRowKey{
@@ -490,9 +496,10 @@ func complexLocalExpectedConfigRows() []*ConfigRowState {
 					ConfigId:    "896",
 					Id:          "34",
 				},
-				Paths: manifest.Paths{
-					Path:       "rows/34-test-view",
-					ParentPath: "123-branch/extractor/keboola.ex-db-mysql/896-tables",
+				Paths: model.Paths{
+					Path:         "rows/34-test-view",
+					ParentPath:   "123-branch/extractor/keboola.ex-db-mysql/896-tables",
+					RelatedPaths: []string{model.MetaFile, model.ConfigFile},
 				},
 			},
 		},
@@ -517,8 +524,8 @@ func complexLocalExpectedConfigRows() []*ConfigRowState {
 					},
 				}),
 			},
-			ConfigRowManifest: &manifest.ConfigRowManifest{
-				RecordState: manifest.RecordState{
+			ConfigRowManifest: &model.ConfigRowManifest{
+				RecordState: model.RecordState{
 					Persisted: true,
 				},
 				ConfigRowKey: model.ConfigRowKey{
@@ -527,9 +534,10 @@ func complexLocalExpectedConfigRows() []*ConfigRowState {
 					ConfigId:    "896",
 					Id:          "12",
 				},
-				Paths: manifest.Paths{
-					Path:       "rows/12-users",
-					ParentPath: "123-branch/extractor/keboola.ex-db-mysql/896-tables",
+				Paths: model.Paths{
+					Path:         "rows/12-users",
+					ParentPath:   "123-branch/extractor/keboola.ex-db-mysql/896-tables",
+					RelatedPaths: []string{model.MetaFile, model.ConfigFile},
 				},
 			},
 		},

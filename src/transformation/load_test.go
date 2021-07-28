@@ -4,7 +4,6 @@ import (
 	"github.com/iancoleman/orderedmap"
 	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/json"
-	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
 	"os"
@@ -23,8 +22,9 @@ func TestLoadTransformationMissingBlockMetaSql(t *testing.T) {
 	assert.NoError(t, os.MkdirAll(block1, 0755))
 
 	// Load, assert
+	logger, _ := utils.NewDebugLogger()
 	record, target := createTransTestStructs("keboola.snowflake-transformation")
-	err := LoadBlocks(projectDir, model.DefaultNaming(), record, target)
+	err := LoadBlocks(projectDir, logger, model.DefaultNaming(), record, target)
 	assert.Error(t, err)
 	assert.Equal(t, `missing block metadata file "branch/config/blocks/001-block-1/meta.json"`, err.Error())
 }
@@ -42,8 +42,9 @@ func TestLoadTransformationMissingCodeMeta(t *testing.T) {
 	assert.NoError(t, os.MkdirAll(block1Code1, 0755))
 
 	// Load, assert
+	logger, _ := utils.NewDebugLogger()
 	record, target := createTransTestStructs("keboola.snowflake-transformation")
-	err := LoadBlocks(projectDir, model.DefaultNaming(), record, target)
+	err := LoadBlocks(projectDir, logger, model.DefaultNaming(), record, target)
 	assert.Error(t, err)
 	assert.Equal(t, strings.Join([]string{
 		`- missing code metadata file "branch/config/blocks/001-block-1/001-code-1/meta.json"`,
@@ -80,8 +81,9 @@ func TestLoadTransformationSql(t *testing.T) {
 	assert.NoError(t, os.WriteFile(filepath.Join(block3, `meta.json`), []byte(`{"name": "003"}`), 0644))
 
 	// Load
+	logger, _ := utils.NewDebugLogger()
 	record, target := createTransTestStructs("keboola.snowflake-transformation")
-	assert.NoError(t, LoadBlocks(projectDir, model.DefaultNaming(), record, target))
+	assert.NoError(t, LoadBlocks(projectDir, logger, model.DefaultNaming(), record, target))
 
 	// Assert
 	expected := `
@@ -160,8 +162,9 @@ func TestLoadTransformationPy(t *testing.T) {
 	assert.NoError(t, os.WriteFile(filepath.Join(block3, `meta.json`), []byte(`{"name": "003"}`), 0644))
 
 	// Load
+	logger, _ := utils.NewDebugLogger()
 	record, target := createTransTestStructs("keboola.python-transformation-v2")
-	assert.NoError(t, LoadBlocks(projectDir, model.DefaultNaming(), record, target))
+	assert.NoError(t, LoadBlocks(projectDir, logger, model.DefaultNaming(), record, target))
 
 	// Assert
 	expected := `
@@ -210,13 +213,13 @@ func TestLoadTransformationPy(t *testing.T) {
 	assert.Equal(t, expected, json.MustEncodeString(target.Blocks, true))
 }
 
-func createTransTestStructs(componentId string) (*manifest.ConfigManifest, *model.Config) {
+func createTransTestStructs(componentId string) (*model.ConfigManifest, *model.Config) {
 	configKey := model.ConfigKey{
 		ComponentId: componentId,
 	}
-	record := &manifest.ConfigManifest{
+	record := &model.ConfigManifest{
 		ConfigKey: configKey,
-		Paths: manifest.Paths{
+		Paths: model.Paths{
 			ParentPath: "branch",
 			Path:       "config",
 		},

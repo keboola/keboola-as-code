@@ -37,26 +37,26 @@ type ObjectState interface {
 	LocalState() model.ValueWithKey
 	HasRemoteState() bool
 	RemoteState() model.ValueWithKey
-	Manifest() manifest.Record
+	Manifest() model.Record
 	UpdateManifest(m *manifest.Manifest, rename bool)
 	RelativePath() string
 }
 
 type BranchState struct {
-	*manifest.BranchManifest
+	*model.BranchManifest
 	Remote *model.Branch `validate:"omitempty,dive"`
 	Local  *model.Branch `validate:"omitempty,dive"`
 }
 
 type ConfigState struct {
-	*manifest.ConfigManifest
+	*model.ConfigManifest
 	Component *model.Component `validate:"dive"`
 	Remote    *model.Config    `validate:"omitempty,dive"`
 	Local     *model.Config    `validate:"omitempty,dive"`
 }
 
 type ConfigRowState struct {
-	*manifest.ConfigRowManifest
+	*model.ConfigRowManifest
 	Remote *model.ConfigRow `validate:"omitempty,dive"`
 	Local  *model.ConfigRow `validate:"omitempty,dive"`
 }
@@ -310,19 +310,21 @@ func (s *State) SetBranchRemoteState(remote *model.Branch) *BranchState {
 	defer s.mutex.Unlock()
 	state.Remote = remote
 	if state.BranchManifest == nil {
-		state.BranchManifest = s.manifest.CreateOrGetRecord(remote.Key()).(*manifest.BranchManifest)
+		state.BranchManifest = s.manifest.CreateOrGetRecord(remote.Key()).(*model.BranchManifest)
 		state.UpdateManifest(s.manifest, false)
 	}
 	return state
 }
 
-func (s *State) SetBranchLocalState(local *model.Branch, m *manifest.BranchManifest) *BranchState {
+func (s *State) SetBranchLocalState(local *model.Branch, m *model.BranchManifest) *BranchState {
 	state := s.GetBranch(local.BranchKey, true)
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	state.Local = local
 	state.BranchManifest = m
-	s.MarkPathTracked(m.MetaFilePath())
+	for _, path := range m.GetRelatedPaths() {
+		s.MarkPathTracked(path)
+	}
 	return state
 }
 
@@ -339,13 +341,13 @@ func (s *State) SetConfigRemoteState(remote *model.Config) *ConfigState {
 	defer s.mutex.Unlock()
 	state.Remote = remote
 	if state.ConfigManifest == nil {
-		state.ConfigManifest = s.manifest.CreateOrGetRecord(remote.Key()).(*manifest.ConfigManifest)
+		state.ConfigManifest = s.manifest.CreateOrGetRecord(remote.Key()).(*model.ConfigManifest)
 		state.UpdateManifest(s.manifest, false)
 	}
 	return state
 }
 
-func (s *State) SetConfigLocalState(local *model.Config, m *manifest.ConfigManifest) *ConfigState {
+func (s *State) SetConfigLocalState(local *model.Config, m *model.ConfigManifest) *ConfigState {
 	component, err := s.Components().Get(*local.ComponentKey())
 	if err != nil {
 		s.AddLocalError(err)
@@ -358,19 +360,8 @@ func (s *State) SetConfigLocalState(local *model.Config, m *manifest.ConfigManif
 	defer s.mutex.Unlock()
 	state.Local = local
 	state.ConfigManifest = m
-
-	s.MarkPathTracked(m.MetaFilePath())
-	s.MarkPathTracked(m.ConfigFilePath())
-
-	// Process transformation's code blocks
-	for _, block := range local.Blocks {
-		s.MarkPathTracked(block.RelativePath())
-		s.MarkPathTracked(block.MetaFilePath())
-		for _, code := range block.Codes {
-			s.MarkPathTracked(code.RelativePath())
-			s.MarkPathTracked(code.MetaFilePath())
-			s.MarkPathTracked(code.CodeFilePath())
-		}
+	for _, path := range m.GetRelatedPaths() {
+		s.MarkPathTracked(path)
 	}
 
 	return state
@@ -382,20 +373,21 @@ func (s *State) SetConfigRowRemoteState(remote *model.ConfigRow) *ConfigRowState
 	defer s.mutex.Unlock()
 	state.Remote = remote
 	if state.ConfigRowManifest == nil {
-		state.ConfigRowManifest = s.manifest.CreateOrGetRecord(remote.Key()).(*manifest.ConfigRowManifest)
+		state.ConfigRowManifest = s.manifest.CreateOrGetRecord(remote.Key()).(*model.ConfigRowManifest)
 		state.UpdateManifest(s.manifest, false)
 	}
 	return state
 }
 
-func (s *State) SetConfigRowLocalState(local *model.ConfigRow, m *manifest.ConfigRowManifest) *ConfigRowState {
+func (s *State) SetConfigRowLocalState(local *model.ConfigRow, m *model.ConfigRowManifest) *ConfigRowState {
 	state := s.GetConfigRow(local.ConfigRowKey, true)
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	state.Local = local
 	state.ConfigRowManifest = m
-	s.MarkPathTracked(m.MetaFilePath())
-	s.MarkPathTracked(m.ConfigFilePath())
+	for _, path := range m.GetRelatedPaths() {
+		s.MarkPathTracked(path)
+	}
 	return state
 }
 
@@ -468,15 +460,15 @@ func (r *ConfigRowState) RemoteState() model.ValueWithKey {
 	return r.Remote
 }
 
-func (b *BranchState) Manifest() manifest.Record {
+func (b *BranchState) Manifest() model.Record {
 	return b.BranchManifest
 }
 
-func (c *ConfigState) Manifest() manifest.Record {
+func (c *ConfigState) Manifest() model.Record {
 	return c.ConfigManifest
 }
 
-func (r *ConfigRowState) Manifest() manifest.Record {
+func (r *ConfigRowState) Manifest() model.Record {
 	return r.ConfigRowManifest
 }
 

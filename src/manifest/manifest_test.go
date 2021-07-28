@@ -132,9 +132,9 @@ func TestManifestValidateBadVersion(t *testing.T) {
 func TestManifestValidateNestedField(t *testing.T) {
 	m := newManifest(1, "connection.keboola.com", "foo", "bar")
 	m.Content = minimalStruct()
-	m.Content.Branches = append(m.Content.Branches, &BranchManifest{
+	m.Content.Branches = append(m.Content.Branches, &model.BranchManifest{
 		BranchKey: model.BranchKey{Id: 0},
-		Paths: Paths{
+		Paths: model.Paths{
 			Path:       "foo",
 			ParentPath: "bar",
 		},
@@ -167,14 +167,14 @@ func minimalJson() string {
 func minimalStruct() *Content {
 	return &Content{
 		Version: 1,
-		Project: &Project{
+		Project: &model.Project{
 			Id:      12345,
 			ApiHost: "connection.keboola.com",
 		},
-		SortBy:   SortById,
+		SortBy:   model.SortById,
 		Naming:   model.DefaultNaming(),
-		Branches: make([]*BranchManifest, 0),
-		Configs:  make([]*ConfigManifestWithRows, 0),
+		Branches: make([]*model.BranchManifest, 0),
+		Configs:  make([]*model.ConfigManifestWithRows, 0),
 	}
 }
 
@@ -242,42 +242,42 @@ func fullJson() string {
 func fullStruct() *Content {
 	return &Content{
 		Version: 1,
-		Project: &Project{
+		Project: &model.Project{
 			Id:      12345,
 			ApiHost: "connection.keboola.com",
 		},
-		SortBy: SortById,
+		SortBy: model.SortById,
 		Naming: model.DefaultNaming(),
-		Branches: []*BranchManifest{
+		Branches: []*model.BranchManifest{
 			{
-				RecordState: RecordState{
+				RecordState: model.RecordState{
 					Persisted: true,
 				},
 				BranchKey: model.BranchKey{
 					Id: 10,
 				},
-				Paths: Paths{
+				Paths: model.Paths{
 					Path:       "main",
 					ParentPath: "",
 				},
 			},
 			{
-				RecordState: RecordState{
+				RecordState: model.RecordState{
 					Persisted: true,
 				},
 				BranchKey: model.BranchKey{
 					Id: 11,
 				},
-				Paths: Paths{
+				Paths: model.Paths{
 					Path:       "11-dev",
 					ParentPath: "",
 				},
 			},
 		},
-		Configs: []*ConfigManifestWithRows{
+		Configs: []*model.ConfigManifestWithRows{
 			{
-				ConfigManifest: &ConfigManifest{
-					RecordState: RecordState{
+				ConfigManifest: &model.ConfigManifest{
+					RecordState: model.RecordState{
 						Persisted: true,
 					},
 					ConfigKey: model.ConfigKey{
@@ -285,14 +285,14 @@ func fullStruct() *Content {
 						ComponentId: "keboola.ex-db-oracle",
 						Id:          "11",
 					},
-					Paths: Paths{
+					Paths: model.Paths{
 						Path:       "11-raw-data",
 						ParentPath: "main",
 					},
 				},
-				Rows: []*ConfigRowManifest{
+				Rows: []*model.ConfigRowManifest{
 					{
-						RecordState: RecordState{
+						RecordState: model.RecordState{
 							Persisted: true,
 						},
 						ConfigRowKey: model.ConfigRowKey{
@@ -301,13 +301,13 @@ func fullStruct() *Content {
 							ComponentId: "keboola.ex-db-oracle",
 							ConfigId:    "11",
 						},
-						Paths: Paths{
+						Paths: model.Paths{
 							Path:       "rows/101-region-1",
 							ParentPath: "main/11-raw-data",
 						},
 					},
 					{
-						RecordState: RecordState{
+						RecordState: model.RecordState{
 							Persisted: true,
 						},
 						ConfigRowKey: model.ConfigRowKey{
@@ -316,7 +316,7 @@ func fullStruct() *Content {
 							ComponentId: "keboola.ex-db-oracle",
 							ConfigId:    "11",
 						},
-						Paths: Paths{
+						Paths: model.Paths{
 							Path:       "rows/102-region-2",
 							ParentPath: "main/11-raw-data",
 						},
@@ -324,8 +324,8 @@ func fullStruct() *Content {
 				},
 			},
 			{
-				ConfigManifest: &ConfigManifest{
-					RecordState: RecordState{
+				ConfigManifest: &model.ConfigManifest{
+					RecordState: model.RecordState{
 						Persisted: true,
 					},
 					ConfigKey: model.ConfigKey{
@@ -333,14 +333,14 @@ func fullStruct() *Content {
 						ComponentId: "keboola.wr-db-mysql",
 						Id:          "12",
 					},
-					Paths: Paths{
+					Paths: model.Paths{
 						Path:       "12-current-month",
 						ParentPath: "11-dev",
 					},
 				},
-				Rows: []*ConfigRowManifest{
+				Rows: []*model.ConfigRowManifest{
 					{
-						RecordState: RecordState{
+						RecordState: model.RecordState{
 							Persisted: true,
 						},
 						ConfigRowKey: model.ConfigRowKey{
@@ -349,13 +349,13 @@ func fullStruct() *Content {
 							ComponentId: "keboola.wr-db-mysql",
 							ConfigId:    "12",
 						},
-						Paths: Paths{
+						Paths: model.Paths{
 							Path:       "rows/103-all",
 							ParentPath: "11-dev/12-current-month",
 						},
 					},
 					{
-						RecordState: RecordState{
+						RecordState: model.RecordState{
 							Persisted: true,
 						},
 						ConfigRowKey: model.ConfigRowKey{
@@ -364,7 +364,7 @@ func fullStruct() *Content {
 							ComponentId: "keboola.wr-db-mysql",
 							ConfigId:    "12",
 						},
-						Paths: Paths{
+						Paths: model.Paths{
 							Path:       "rows/104-sum",
 							ParentPath: "11-dev/12-current-month",
 						},

@@ -4,7 +4,6 @@ import (
 	"github.com/iancoleman/orderedmap"
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/utils"
-	"path/filepath"
 	"sort"
 	"strconv"
 )
@@ -116,39 +115,17 @@ type Event struct {
 
 // Block - transformation block
 type Block struct {
-	ParentPath string  `json:"-"` // config dir relative path
-	Path       string  `json:"-"` // relative path to block dir from ParentPath
-	Name       string  `json:"name" validate:"required" metaFile:"true"`
-	Codes      []*Code `json:"codes" validate:"omitempty,dive"`
+	Paths `json:"-"`
+	Name  string  `json:"name" validate:"required" metaFile:"true"`
+	Codes []*Code `json:"codes" validate:"omitempty,dive"`
 }
 
 // Code - transformation code
 type Code struct {
-	ParentPath   string   `json:"-"` // config dir relative path
-	Path         string   `json:"-"` // relative path to block dir from ParentPath
+	Paths        `json:"-"`
 	CodeFileName string   `json:"-"` // eg. "code.sql", "code.py", ...
 	Name         string   `json:"name" validate:"required" metaFile:"true"`
 	Scripts      []string `json:"script"` // scripts, eg. SQL statements
-}
-
-func (b *Block) RelativePath() string {
-	return filepath.Join(b.ParentPath, b.Path)
-}
-
-func (b *Block) MetaFilePath() string {
-	return filepath.Join(b.RelativePath(), MetaFile)
-}
-
-func (c *Code) RelativePath() string {
-	return filepath.Join(c.ParentPath, c.Path)
-}
-
-func (c *Code) MetaFilePath() string {
-	return filepath.Join(c.RelativePath(), MetaFile)
-}
-
-func (c *Code) CodeFilePath() string {
-	return filepath.Join(c.RelativePath(), c.CodeFileName)
 }
 
 func (c *Component) IsTransformation() bool {

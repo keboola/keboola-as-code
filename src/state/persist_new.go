@@ -2,7 +2,6 @@ package state
 
 import (
 	"fmt"
-	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/utils"
@@ -92,7 +91,7 @@ func (s *State) persistNewConfig(path, relPath string, matches map[string]string
 		key := model.ConfigKey{BranchId: branch.Id, ComponentId: componentId, Id: ticket.Id}
 
 		// Create manifest record
-		record := s.manifest.CreateOrGetRecord(key).(*manifest.ConfigManifest)
+		record := s.manifest.CreateOrGetRecord(key).(*model.ConfigManifest)
 		record.Path = relPath
 		record.ResolveParentPath(branch.BranchManifest)
 		s.manifest.PersistRecord(record)
@@ -111,7 +110,7 @@ func (s *State) persistNewConfigRow(relPath string, config *ConfigState, tickets
 		key := model.ConfigRowKey{BranchId: config.BranchId, ComponentId: config.ComponentId, ConfigId: config.Id, Id: ticket.Id}
 
 		// Create manifest record
-		record := s.manifest.CreateOrGetRecord(key).(*manifest.ConfigRowManifest)
+		record := s.manifest.CreateOrGetRecord(key).(*model.ConfigRowManifest)
 		record.Path = relPath
 		record.ResolveParentPath(config.ConfigManifest)
 		s.manifest.PersistRecord(record)

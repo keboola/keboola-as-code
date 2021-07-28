@@ -2,7 +2,7 @@ package local
 
 import (
 	"fmt"
-	"keboola-as-code/src/manifest"
+	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
 	"os"
 	"path/filepath"
@@ -11,30 +11,25 @@ import (
 )
 
 // DeleteModel from manifest and disk
-func (m *Manager) DeleteModel(record manifest.Record) error {
+func (m *Manager) DeleteModel(record model.Record) error {
 	errors := utils.NewMultiError()
 
 	// Remove record from manifest content
 	m.manifest.DeleteRecord(record)
 
-	// Delete metadata file
-	if err := os.Remove(filepath.Join(m.ProjectDir(), record.MetaFilePath())); err == nil {
-		m.logger.Debugf("Removed \"%s\"", record.MetaFilePath())
-	} else if !os.IsNotExist(err) {
+	// Metadata file
+	if err := m.remove(m.Naming().MetaFilePath(record.RelativePath())); err != nil {
 		errors.Append(err)
 	}
 
-	// Delete config file
-	if err := os.Remove(filepath.Join(m.ProjectDir(), record.ConfigFilePath())); err == nil {
-		m.logger.Debugf("Removed \"%s\"", record.ConfigFilePath())
-	} else if !os.IsNotExist(err) {
+	// Config file
+	if err := m.remove(m.Naming().ConfigFilePath(record.RelativePath())); err != nil {
 		errors.Append(err)
 	}
 
-	// Delete dir
-	dir := filepath.Join(m.ProjectDir(), record.RelativePath())
-	if err := os.RemoveAll(dir); err != nil {
-		errors.Append(fmt.Errorf("cannot remove directory \"%s\": %s", dir, err))
+	// Dir
+	if err := m.removeAll(record.RelativePath()); err != nil {
+		errors.Append(utils.PrefixError(fmt.Sprintf(`cannot delete directory "%s"`, record.RelativePath()), err))
 	}
 
 	return errors.ErrorOrNil()
@@ -105,11 +100,31 @@ func (m *Manager) DeleteEmptyDirectories(trackedPaths []string) error {
 	// Delete
 	for _, dir := range dirsToRemove {
 		if err := os.Remove(dir); err == nil {
-			m.logger.Debugf(`Deleted "%s"`, utils.RelPath(m.ProjectDir(), dir))
+			m.logger.Debugf(`Removed "%s"`, utils.RelPath(m.ProjectDir(), dir))
 		} else {
 			errors.Append(err)
 		}
 	}
 
 	return errors.ErrorOrNil()
+}
+
+func (m *Manager) remove(relPath string) error {
+	absPath := filepath.Join(m.ProjectDir(), relPath)
+	if err := os.Remove(absPath); err == nil {
+		m.logger.Debugf("Removed \"%s\"", relPath)
+	} else if !os.IsNotExist(err) {
+		return err
+	}
+	return nil
+}
+
+func (m *Manager) removeAll(relPath string) error {
+	absPath := filepath.Join(m.ProjectDir(), relPath)
+	if err := os.RemoveAll(absPath); err == nil {
+		m.logger.Debugf("Removed \"%s\"", relPath)
+	} else if !os.IsNotExist(err) {
+		return err
+	}
+	return nil
 }

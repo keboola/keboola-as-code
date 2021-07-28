@@ -7,85 +7,31 @@ import (
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
 	"keboola-as-code/src/validator"
-	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 )
 
 const (
 	MetadataDir = ".keboola"
 	FileName    = "manifest.json"
-	SortById    = "id"
-	SortByPath  = "path"
 )
 
 type Manifest struct {
-	*Content    `validate:"required,dive"` // content of the file, updated only on LoadManifest() and Save()
+	*Content    `validate:"required,dive"` // content of the file, updated only on load/save
 	ProjectDir  string                     `validate:"required"` // project root
 	MetadataDir string                     `validate:"required"` // inside ProjectDir
-	changed     bool                       // is content changed?
-	records     orderedmap.OrderedMap      // common map for all: branches, configs and rows manifests
+	changed     bool
+	records     orderedmap.OrderedMap // common map for all: branches, configs and rows manifests
 	lock        *sync.Mutex
 }
 
 type Content struct {
-	Version  int                       `json:"version" validate:"required,min=1,max=1"`
-	Project  *Project                  `json:"project" validate:"required"`
-	SortBy   string                    `json:"sortBy" validate:"oneof=id path"`
-	Naming   *model.Naming             `json:"naming" validate:"required"`
-	Branches []*BranchManifest         `json:"branches" validate:"dive"`
-	Configs  []*ConfigManifestWithRows `json:"configurations" validate:"dive"`
-}
-
-type Record interface {
-	Kind() model.Kind           // eg. branch, config, config row -> used in logs
-	Key() model.Key             // unique key for map -> for fast access
-	SortKey(sort string) string // unique key for sorting
-	RelativePath() string       // path to the object directory
-	MetaFilePath() string       // path to the meta.json file
-	ConfigFilePath() string     // path to the config.json file
-	State() *RecordState
-}
-
-type RecordState struct {
-	Invalid   bool // if true, object files are not valid, eg. missing file, invalid JSON, ...
-	NotFound  bool // if true, object directory is not present in the filesystem
-	Persisted bool // if true, record will be part of the manifest when saved
-	Deleted   bool // if true, record has been deleted in this command run
-}
-
-type Paths struct {
-	Path       string `json:"path" validate:"required"`
-	ParentPath string `json:"-"`
-}
-
-type Project struct {
-	Id      int    `json:"id" validate:"required"`
-	ApiHost string `json:"apiHost" validate:"required,hostname"`
-}
-
-type BranchManifest struct {
-	RecordState `json:"-"`
-	model.BranchKey
-	Paths
-}
-
-type ConfigManifest struct {
-	RecordState `json:"-"`
-	model.ConfigKey
-	Paths
-}
-
-type ConfigRowManifest struct {
-	RecordState `json:"-"`
-	model.ConfigRowKey
-	Paths
-}
-
-type ConfigManifestWithRows struct {
-	*ConfigManifest
-	Rows []*ConfigRowManifest `json:"rows"`
+	Version  int                             `json:"version" validate:"required,min=1,max=1"`
+	Project  *model.Project                  `json:"project" validate:"required"`
+	SortBy   string                          `json:"sortBy" validate:"oneof=id path"`
+	Naming   *model.Naming                   `json:"naming" validate:"required"`
+	Branches []*model.BranchManifest         `json:"branches" validate:"dive"`
+	Configs  []*model.ConfigManifestWithRows `json:"configurations" validate:"dive"`
 }
 
 func NewManifest(projectId int, apiHost string, projectDir, metadataDir string) (*Manifest, error) {
@@ -101,16 +47,16 @@ func newManifest(projectId int, apiHost string, projectDir, metadataDir string) 
 	return &Manifest{
 		ProjectDir:  projectDir,
 		MetadataDir: metadataDir,
-		records:     *utils.NewOrderedMap(),
 		Content: &Content{
 			Version:  1,
-			Project:  &Project{Id: projectId, ApiHost: apiHost},
-			SortBy:   SortById,
+			Project:  &model.Project{Id: projectId, ApiHost: apiHost},
+			SortBy:   model.SortById,
 			Naming:   model.DefaultNaming(),
-			Branches: make([]*BranchManifest, 0),
-			Configs:  make([]*ConfigManifestWithRows, 0),
+			Branches: make([]*model.BranchManifest, 0),
+			Configs:  make([]*model.ConfigManifestWithRows, 0),
 		},
-		lock: &sync.Mutex{},
+		records: *utils.NewOrderedMap(),
+		lock:    &sync.Mutex{},
 	}
 }
 
@@ -127,8 +73,8 @@ func LoadManifest(projectDir string, metadataDir string) (*Manifest, error) {
 		return nil, err
 	}
 
-	// Resolve parent path, set parent IDs, store records
-	branchById := make(map[int]*BranchManifest)
+	// Resolve parent path, set parent IDs, persist records
+	branchById := make(map[int]*model.BranchManifest)
 	for _, branch := range m.Content.Branches {
 		branch.ResolveParentPath()
 		branchById[branch.Id] = branch
@@ -138,7 +84,7 @@ func LoadManifest(projectDir string, metadataDir string) (*Manifest, error) {
 		config := configWithRows.ConfigManifest
 		branch, found := branchById[config.BranchId]
 		if !found {
-			return nil, fmt.Errorf("branch \"%d\" not found in the manifest - referenced from the config \"%s:%s\" in \"%s\"", config.BranchId, config.ComponentId, config.Id, path)
+			return nil, fmt.Errorf(`branch "%d" not found in the manifest - referenced from the config "%s:%s" in "%s"`, config.BranchId, config.ComponentId, config.Id, path)
 		}
 		config.ResolveParentPath(branch)
 		m.PersistRecord(config)
@@ -165,17 +111,17 @@ func LoadManifest(projectDir string, metadataDir string) (*Manifest, error) {
 
 func (m *Manifest) Save() error {
 	// Convert records map to slices
-	branchesMap := make(map[string]*BranchManifest)
-	configsMap := make(map[string]*ConfigManifestWithRows)
-	m.Content.Branches = make([]*BranchManifest, 0)
-	m.Content.Configs = make([]*ConfigManifestWithRows, 0)
+	branchesMap := make(map[string]*model.BranchManifest)
+	configsMap := make(map[string]*model.ConfigManifestWithRows)
+	m.Content.Branches = make([]*model.BranchManifest, 0)
+	m.Content.Configs = make([]*model.ConfigManifestWithRows, 0)
 
 	// Ensure order of processing: branch, config, configRow
 	m.sortRecords()
 
 	for _, key := range m.records.Keys() {
 		r, _ := m.records.Get(key)
-		record := r.(Record)
+		record := r.(model.Record)
 
 		// Skip invalid (eg. missing config file)
 		if record.State().IsInvalid() {
@@ -189,17 +135,20 @@ func (m *Manifest) Save() error {
 
 		// Generate content, we have to check if parent exists (eg. branch could have been deleted)
 		switch v := record.(type) {
-		case *BranchManifest:
+		case *model.BranchManifest:
 			m.Content.Branches = append(m.Content.Branches, v)
 			branchesMap[v.String()] = v
-		case *ConfigManifest:
+		case *model.ConfigManifest:
 			_, found := branchesMap[v.BranchKey().String()]
 			if found {
-				config := &ConfigManifestWithRows{v, make([]*ConfigRowManifest, 0)}
+				config := &model.ConfigManifestWithRows{
+					ConfigManifest: v,
+					Rows:           make([]*model.ConfigRowManifest, 0),
+				}
 				configsMap[config.String()] = config
 				m.Content.Configs = append(m.Content.Configs, config)
 			}
-		case *ConfigRowManifest:
+		case *model.ConfigRowManifest:
 			config, found := configsMap[v.ConfigKey().String()]
 			if found {
 				config.Rows = append(config.Rows, v)
@@ -228,22 +177,8 @@ func (m *Manifest) IsChanged() bool {
 	return m.changed
 }
 
-func (m *Manifest) Path() string {
+func (m *Manifest) RelativePath() string {
 	return filepath.Join(m.MetadataDir, FileName)
-}
-
-func (m *Manifest) validate() error {
-	if err := validator.Validate(m); err != nil {
-		return utils.PrefixError("manifest is not valid", err)
-	}
-	return nil
-}
-
-// sortRecords in manifest + ensure order of processing: branch, config, configRow
-func (m *Manifest) sortRecords() {
-	m.records.Sort(func(a *orderedmap.Pair, b *orderedmap.Pair) bool {
-		return a.Value().(Record).SortKey(m.SortBy) < b.Value().(Record).SortKey(m.SortBy)
-	})
 }
 
 func (m *Manifest) GetRecords() orderedmap.OrderedMap {
@@ -251,7 +186,7 @@ func (m *Manifest) GetRecords() orderedmap.OrderedMap {
 	return m.records
 }
 
-func (m *Manifest) MustGetRecord(key model.Key) Record {
+func (m *Manifest) MustGetRecord(key model.Key) model.Record {
 	record, found := m.GetRecord(key)
 	if !found {
 		panic(fmt.Errorf("manifest record with key \"%s\"", key.String()))
@@ -259,16 +194,16 @@ func (m *Manifest) MustGetRecord(key model.Key) Record {
 	return record
 }
 
-func (m *Manifest) GetRecord(key model.Key) (Record, bool) {
+func (m *Manifest) GetRecord(key model.Key) (model.Record, bool) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	if r, found := m.records.Get(key.String()); found {
-		return r.(Record), found
+		return r.(model.Record), found
 	}
 	return nil, false
 }
 
-func (m *Manifest) CreateOrGetRecord(key model.Key) (record Record) {
+func (m *Manifest) CreateOrGetRecord(key model.Key) (record model.Record) {
 	// Get
 	record, found := m.GetRecord(key)
 	if found {
@@ -278,11 +213,11 @@ func (m *Manifest) CreateOrGetRecord(key model.Key) (record Record) {
 	// Create
 	switch v := key.(type) {
 	case model.BranchKey:
-		record = &BranchManifest{BranchKey: v}
+		record = &model.BranchManifest{BranchKey: v}
 	case model.ConfigKey:
-		record = &ConfigManifest{ConfigKey: v}
+		record = &model.ConfigManifest{ConfigKey: v}
 	case model.ConfigRowKey:
-		record = &ConfigRowManifest{ConfigRowKey: v}
+		record = &model.ConfigRowManifest{ConfigRowKey: v}
 	default:
 		panic(fmt.Errorf("unexpected type \"%s\"", key))
 	}
@@ -290,7 +225,7 @@ func (m *Manifest) CreateOrGetRecord(key model.Key) (record Record) {
 	return record
 }
 
-func (m *Manifest) PersistRecord(record Record) {
+func (m *Manifest) PersistRecord(record model.Record) {
 	record.State().SetPersisted()
 	m.TrackRecord(record)
 	m.lock.Lock()
@@ -298,7 +233,7 @@ func (m *Manifest) PersistRecord(record Record) {
 	m.changed = true
 }
 
-func (m *Manifest) TrackRecord(record Record) {
+func (m *Manifest) TrackRecord(record model.Record) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	m.records.Set(record.Key().String(), record)
@@ -319,113 +254,16 @@ func (m *Manifest) DeleteRecordByKey(key model.Key) {
 	}
 }
 
-func (o Paths) GetPaths() Paths {
-	return o
-}
-
-func (o Paths) RelativePath() string {
-	return filepath.Join(
-		strings.ReplaceAll(o.ParentPath, "/", string(os.PathSeparator)),
-		strings.ReplaceAll(o.Path, "/", string(os.PathSeparator)),
-	)
-}
-
-func (o Paths) AbsolutePath(projectDir string) string {
-	return filepath.Join(projectDir, o.RelativePath())
-}
-
-func (o Paths) MetaFilePath() string {
-	return filepath.Join(o.RelativePath(), model.MetaFile)
-}
-
-func (o Paths) ConfigFilePath() string {
-	return filepath.Join(o.RelativePath(), model.ConfigFile)
-}
-
-func (b BranchManifest) Kind() model.Kind {
-	return model.Kind{Name: "branch", Abbr: "B"}
-}
-
-func (c ConfigManifest) Kind() model.Kind {
-	return model.Kind{Name: "config", Abbr: "C"}
-}
-
-func (r ConfigRowManifest) Kind() model.Kind {
-	return model.Kind{Name: "config row", Abbr: "R"}
-}
-
-func (s *RecordState) State() *RecordState {
-	return s
-}
-
-func (s *RecordState) IsNotFound() bool {
-	return s.NotFound
-}
-
-func (s *RecordState) SetNotFound() {
-	s.NotFound = true
-}
-
-func (s *RecordState) IsInvalid() bool {
-	return s.Invalid
-}
-
-func (s *RecordState) SetInvalid() {
-	s.Invalid = true
-}
-
-func (s *RecordState) IsPersisted() bool {
-	return s.Persisted
-}
-
-func (s *RecordState) SetPersisted() {
-	s.Invalid = false
-	s.Persisted = true
-}
-
-func (s *RecordState) IsDeleted() bool {
-	return s.Deleted
-}
-
-func (s *RecordState) SetDeleted() {
-	s.Deleted = true
-}
-
-func (b *BranchManifest) ResolveParentPath() {
-	b.ParentPath = ""
-}
-
-func (c *ConfigManifest) ResolveParentPath(branchManifest *BranchManifest) {
-	c.ParentPath = filepath.Join(branchManifest.ParentPath, branchManifest.Path)
-}
-
-func (r *ConfigRowManifest) ResolveParentPath(configManifest *ConfigManifest) {
-	r.ParentPath = filepath.Join(configManifest.ParentPath, configManifest.Path)
-}
-
-func (b BranchManifest) SortKey(sort string) string {
-	if sort == SortByPath {
-		return fmt.Sprintf("01_branch_%s", b.RelativePath())
-	} else {
-		return b.BranchKey.String()
+func (m *Manifest) validate() error {
+	if err := validator.Validate(m); err != nil {
+		return utils.PrefixError("manifest is not valid", err)
 	}
-
+	return nil
 }
 
-func (c ConfigManifest) SortKey(sort string) string {
-	if sort == SortByPath {
-		return fmt.Sprintf("02_config_%s", c.RelativePath())
-	} else {
-		return c.ConfigKey.String()
-	}
-
-}
-
-func (r ConfigRowManifest) SortKey(sort string) string {
-	if sort == SortByPath {
-		return fmt.Sprintf("03_row_%s", r.RelativePath())
-	} else {
-		return r.ConfigRowKey.String()
-	}
-
+// sortRecords in manifest + ensure order of processing: branch, config, configRow
+func (m *Manifest) sortRecords() {
+	m.records.Sort(func(a *orderedmap.Pair, b *orderedmap.Pair) bool {
+		return a.Value().(model.Record).SortKey(m.SortBy) < b.Value().(model.Record).SortKey(m.SortBy)
+	})
 }
