@@ -19,7 +19,7 @@ func isEncrypted(value string) bool {
 	return regexp.MustCompile(`^KBC::(ProjectSecure|ComponentSecure|ConfigSecure)::.+$`).MatchString(value)
 }
 
-type Record struct {
+type Group struct {
 	object state.ObjectState // config or configRow state object
 	values []Value
 }
@@ -61,8 +61,8 @@ func (f *finder) parseConfigValue(key string, configValue interface{}, keyPath p
 	}
 }
 
-func (f *finder) FindValues(projectState *state.State) []Record {
-	var records []Record
+func (f *finder) FindValues(projectState *state.State) []Group {
+	var groups []Group
 	for _, object := range projectState.All() {
 		f.values = nil
 		if !object.HasLocalState() {
@@ -76,27 +76,27 @@ func (f *finder) FindValues(projectState *state.State) []Record {
 			f.parseOrderedMap(o.Local.Content, nil)
 		}
 		if len(f.values) > 0 {
-			records = append(records, Record{object, f.values})
+			groups = append(groups, Group{object, f.values})
 		}
 	}
-	return records
+	return groups
 }
-func FindUnencrypted(projectState *state.State) ([]Record, error) {
+func FindUnencrypted(projectState *state.State) ([]Group, error) {
 	f := &finder{utils.NewMultiError(), nil}
-	records := f.FindValues(projectState)
-	return records, f.errors.ErrorOrNil()
+	groups := f.FindValues(projectState)
+	return groups, f.errors.ErrorOrNil()
 }
 
-func LogRecords(records []Record, logger *zap.SugaredLogger) {
-	if len(records) == 0 {
+func LogGroups(groups []Group, logger *zap.SugaredLogger) {
+	if len(groups) == 0 {
 		logger.Info("No values to encrypt.")
 		return
 	}
 	logger.Info("Values to encrypt:")
 
-	for _, record := range records {
-		logger.Infof("%v %v", record.object.Kind().Abbr, record.object.RelativePath())
-		for _, value := range record.values {
+	for _, group := range groups {
+		logger.Infof("%v %v", group.object.Kind().Abbr, group.object.RelativePath())
+		for _, value := range group.values {
 			logger.Infof("  %v", value.keyPath)
 		}
 	}
