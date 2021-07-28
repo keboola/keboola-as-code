@@ -1,3 +1,0 @@
-Plan for "push" operation:
-	×  C foo/extractor/keboola.ex-db-mysql/with-rows - SKIPPED
-Skipped remote objects deletion, use "--force" to delete them.

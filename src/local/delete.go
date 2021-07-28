@@ -35,6 +35,22 @@ func (m *Manager) DeleteModel(record model.Record) error {
 	return errors.ErrorOrNil()
 }
 
+// DeleteInvalidObjects from disk, eg. if pull --force used
+func (m *Manager) DeleteInvalidObjects() error {
+	errors := utils.NewMultiError()
+	records := m.manifest.GetRecords()
+	for _, key := range append([]string(nil), records.Keys()...) {
+		v, _ := records.Get(key)
+		record := v.(model.Record)
+		if record.State().IsInvalid() {
+			if err := m.DeleteModel(record); err != nil {
+				errors.Append(err)
+			}
+		}
+	}
+	return errors.ErrorOrNil()
+}
+
 // DeleteEmptyDirectories from project directory (eg. dir with extractors, but no extractor left)
 // Deleted are only empty directories from know/tracked paths.
 // Hidden dirs are ignored.

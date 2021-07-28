@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 	"keboola-as-code/src/diff"
 	"keboola-as-code/src/event"
+	"keboola-as-code/src/log"
 	"keboola-as-code/src/plan"
 	"keboola-as-code/src/remote"
 )
@@ -45,8 +46,13 @@ func pullCommand(root *rootCommand) *cobra.Command {
 				projectState.LogUntrackedPaths(logger)
 
 				// Get plan
-				pull := plan.Pull(diffResults)
-				pull.LogInfo(logger)
+				pull, err := plan.Pull(diffResults)
+				if err != nil {
+					return err
+				}
+
+				// Log plan
+				pull.Log(log.ToInfoWriter(logger))
 
 				// Dry run?
 				dryRun, _ := cmd.Flags().GetBool("dry-run")
@@ -56,8 +62,7 @@ func pullCommand(root *rootCommand) *cobra.Command {
 				}
 
 				// Invoke
-				executor := plan.NewExecutor(logger, root.ctx, projectState, root.api)
-				if err := executor.Invoke(pull); err != nil {
+				if err := pull.Invoke(logger, root.api, root.ctx); err != nil {
 					return err
 				}
 

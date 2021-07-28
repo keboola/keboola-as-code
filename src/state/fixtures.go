@@ -3,6 +3,7 @@ package state
 import (
 	"keboola-as-code/src/fixtures"
 	"keboola-as-code/src/utils"
+	"strings"
 )
 
 // NewProjectSnapshot - to validate final project state in tests
@@ -29,6 +30,7 @@ func NewProjectSnapshot(s *State) (*fixtures.ProjectSnapshot, error) {
 		c.ComponentId = config.ComponentId
 		c.Name = config.Name
 		c.Description = config.Description
+		c.ChangeDescription = normalizeChangeDesc(config.ChangeDescription)
 		c.Content = config.Content
 		b := branches[config.BranchKey().String()]
 		b.Configs = append(b.Configs, c)
@@ -40,6 +42,7 @@ func NewProjectSnapshot(s *State) (*fixtures.ProjectSnapshot, error) {
 		r := &fixtures.ConfigRow{}
 		r.Name = row.Name
 		r.Description = row.Description
+		r.ChangeDescription = normalizeChangeDesc(row.ChangeDescription)
 		r.IsDisabled = row.IsDisabled
 		r.Content = row.Content
 		c := configs[row.ConfigKey().String()]
@@ -56,4 +59,22 @@ func NewProjectSnapshot(s *State) (*fixtures.ProjectSnapshot, error) {
 	}
 
 	return project, nil
+}
+
+func normalizeChangeDesc(str string) string {
+	// Default description if object has been created by test
+	if str == "created by test" {
+		return ""
+	}
+
+	// Default description if object has been created with a new branch
+	if strings.HasPrefix(str, "Copied from ") {
+		return ""
+	}
+	// Default description if rows has been deleted
+	if strings.HasSuffix(str, " deleted") {
+		return ""
+	}
+
+	return str
 }

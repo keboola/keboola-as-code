@@ -19,6 +19,7 @@
           "componentId": "ex-generic-v2",
           "name": "new name",
           "description": "test fixture",
+          "changeDescription": "my change description",
           "configuration": {},
           "rows": []
         },

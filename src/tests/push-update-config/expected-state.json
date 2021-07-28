@@ -11,6 +11,7 @@
           "componentId": "ex-generic-v2",
           "name": "i am not empty",
           "description": "test fixture",
+          "changeDescription": "Updated from #KeboolaCLI",
           "configuration": {
             "parameters": {
               "new": "value"
@@ -31,6 +32,7 @@
           "componentId": "ex-generic-v2",
           "name": "empty",
           "description": "test fixture",
+          "changeDescription": "Updated from #KeboolaCLI",
           "configuration": {
             "new": "value"
           },

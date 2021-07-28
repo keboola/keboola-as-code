@@ -5,22 +5,27 @@ import (
 	"keboola-as-code/src/diff"
 )
 
-func Pull(diffResults *diff.Results) *Plan {
-	plan := &Plan{Name: "pull", CurrentState: diffResults.CurrentState}
+func Pull(diffResults *diff.Results) (*DiffPlan, error) {
+	plan := &DiffPlan{name: "pull", State: diffResults.CurrentState}
+
 	for _, result := range diffResults.Results {
 		switch result.State {
 		case diff.ResultEqual:
 			// nop
 		case diff.ResultNotEqual:
-			plan.Add(result, ActionSaveLocal)
+			plan.add(result, ActionSaveLocal)
 		case diff.ResultOnlyInLocal:
-			plan.Add(result, ActionDeleteLocal)
+			plan.add(result, ActionDeleteLocal)
 		case diff.ResultOnlyInRemote:
-			plan.Add(result, ActionSaveLocal)
+			plan.add(result, ActionSaveLocal)
 		case diff.ResultNotSet:
 			panic(fmt.Errorf("diff was not generated"))
 		}
 	}
 
-	return plan
+	if err := plan.Validate(); err != nil {
+		return nil, err
+	}
+
+	return plan, nil
 }

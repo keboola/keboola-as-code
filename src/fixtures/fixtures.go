@@ -33,18 +33,20 @@ type BranchConfigs struct {
 }
 
 type Config struct {
-	ComponentId string                 `json:"componentId" validate:"required"`
-	Name        string                 `json:"name" validate:"required"`
-	Description string                 `json:"description"`
-	Content     *orderedmap.OrderedMap `json:"configuration"`
-	Rows        []*ConfigRow           `json:"rows"`
+	ComponentId       string                 `json:"componentId" validate:"required"`
+	Name              string                 `json:"name" validate:"required"`
+	Description       string                 `json:"description"`
+	ChangeDescription string                 `json:"changeDescription"`
+	Content           *orderedmap.OrderedMap `json:"configuration"`
+	Rows              []*ConfigRow           `json:"rows"`
 }
 
 type ConfigRow struct {
-	Name        string                 `json:"name" validate:"required"`
-	Description string                 `json:"description"`
-	IsDisabled  bool                   `json:"isDisabled"`
-	Content     *orderedmap.OrderedMap `json:"configuration"`
+	Name              string                 `json:"name" validate:"required"`
+	Description       string                 `json:"description"`
+	ChangeDescription string                 `json:"changeDescription"`
+	IsDisabled        bool                   `json:"isDisabled"`
+	Content           *orderedmap.OrderedMap `json:"configuration"`
 }
 
 type StateFile struct {
