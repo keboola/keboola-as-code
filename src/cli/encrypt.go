@@ -70,6 +70,13 @@ func encryptCommand(root *rootCommand) *cobra.Command {
 			unencryptedGroups := encryption.FindUnencrypted(projectState)
 			encryption.LogGroups(unencryptedGroups, logger)
 
+			// Dry run?
+			dryRun, _ := cmd.Flags().GetBool("dry-run")
+			if dryRun {
+				logger.Info("Dry run, nothing changed.")
+				return nil
+			}
+
 			return nil
 		},
 	}
