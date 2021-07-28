@@ -32,59 +32,61 @@ type Value struct {
 
 type finder struct {
 	errors *utils.Error
-	values []Value
+	groups []Group
 }
 
-func (f *finder) parseArray(array []interface{}, keyPath path) {
+func (g *Group) parseArray(array []interface{}, keyPath path) {
 	for idx, value := range array {
-		f.parseConfigValue(strconv.Itoa(idx), value, append(keyPath, sliceStep(idx)))
+		g.parseConfigValue(strconv.Itoa(idx), value, append(keyPath, sliceStep(idx)))
 	}
 }
 
-func (f *finder) parseOrderedMap(content *orderedmap.OrderedMap, keyPath path) {
+func (g *Group) parseOrderedMap(content *orderedmap.OrderedMap, keyPath path) {
 	for _, key := range content.Keys() {
 		mapValue, _ := content.Get(key)
-		f.parseConfigValue(key, mapValue, append(keyPath, mapStep(key)))
+		g.parseConfigValue(key, mapValue, append(keyPath, mapStep(key)))
 	}
 }
 
-func (f *finder) parseConfigValue(key string, configValue interface{}, keyPath path) {
+func (g *Group) parseConfigValue(key string, configValue interface{}, keyPath path) {
 	switch value := configValue.(type) {
 	case orderedmap.OrderedMap:
-		f.parseOrderedMap(&value, keyPath)
+		g.parseOrderedMap(&value, keyPath)
 	case string:
 		if isKeyToEncrypt(key) && !isEncrypted(value) {
-			f.values = append(f.values, Value{key, value, keyPath})
+			g.values = append(g.values, Value{key, value, keyPath})
 		}
 	case []interface{}:
-		f.parseArray(value, keyPath)
+		g.parseArray(value, keyPath)
 	}
 }
 
-func (f *finder) FindValues(projectState *state.State) []Group {
-	var groups []Group
+func (f *finder) FindValues(projectState *state.State) {
 	for _, object := range projectState.All() {
-		f.values = nil
 		if !object.HasLocalState() {
 			continue
 		}
+
+		// Walk through configuration nested structure
+		group := Group{object, nil}
 		switch o := object.(type) {
 		case *state.ConfigState:
-			f.parseOrderedMap(o.Local.Content, nil)
+			group.parseOrderedMap(o.Local.Content, nil)
 
 		case *state.ConfigRowState:
-			f.parseOrderedMap(o.Local.Content, nil)
+			group.parseOrderedMap(o.Local.Content, nil)
 		}
-		if len(f.values) > 0 {
-			groups = append(groups, Group{object, f.values})
+
+		// Store group if some values found
+		if len(group.values) > 0 {
+			f.groups = append(f.groups, group)
 		}
 	}
-	return groups
 }
 func FindUnencrypted(projectState *state.State) ([]Group, error) {
 	f := &finder{utils.NewMultiError(), nil}
-	groups := f.FindValues(projectState)
-	return groups, f.errors.ErrorOrNil()
+	f.FindValues(projectState)
+	return f.groups, f.errors.ErrorOrNil()
 }
 
 func LogGroups(groups []Group, logger *zap.SugaredLogger) {
