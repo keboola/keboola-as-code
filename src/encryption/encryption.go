@@ -80,18 +80,17 @@ func FindUnencrypted(projectState *state.State) ([]Record, error) {
 func LogValues(values []Record, logger *zap.SugaredLogger) {
 	if len(values) == 0 {
 		logger.Info("No values to encrypt.")
-	} else {
-		logger.Info("Values to encrypt:")
-		previousObjectId := ""
-		for _, value := range values {
-			if previousObjectId != value.object.ObjectId() {
-				logger.Infof("%v %v", value.object.Kind().Abbr, value.object.RelativePath())
-				previousObjectId = value.object.ObjectId()
-			}
-
-			logger.Infof("  %v", value.keyPath)
-
+		return
+	}
+	logger.Info("Values to encrypt:")
+	previousObjectId := ""
+	for _, value := range values {
+		if previousObjectId != value.object.ObjectId() {
+			logger.Infof("%v %v", value.object.Kind().Abbr, value.object.RelativePath())
+			previousObjectId = value.object.ObjectId()
 		}
+
+		logger.Infof("  %v", value.keyPath)
 
 	}
 }
