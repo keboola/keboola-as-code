@@ -28,3 +28,9 @@ func TestErrorEncryptionApi(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "The componentId parameter is required")
 }
+
+func TestGetEncryptionApiHost(t *testing.T) {
+	assert.Equal(t, getEncryptionApiHost("connection.keboola.com"), "encryption.keboola.com")
+	assert.Equal(t, getEncryptionApiHost("connection.east-us-1.azure.keboola-testing.com"), "encryption.east-us-1.azure.keboola-testing.com")
+
+}
