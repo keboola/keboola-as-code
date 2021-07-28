@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/iancoleman/orderedmap"
 	"go.uber.org/zap"
+	"keboola-as-code/src/components"
 	"keboola-as-code/src/local"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
@@ -97,7 +98,7 @@ func (s *State) Naming() *model.Naming {
 	return s.manifest.Naming
 }
 
-func (s *State) Components() *remote.ComponentsCache {
+func (s *State) Components() *components.Provider {
 	return s.api.Components()
 }
 
