@@ -2,7 +2,6 @@ package encryption
 
 import (
 	"keboola-as-code/src/state"
-	"keboola-as-code/src/utils"
 	"regexp"
 	"strconv"
 	"strings"
@@ -31,7 +30,6 @@ type Value struct {
 }
 
 type finder struct {
-	errors *utils.Error
 	groups []Group
 }
 
@@ -83,10 +81,10 @@ func (f *finder) FindValues(projectState *state.State) {
 		}
 	}
 }
-func FindUnencrypted(projectState *state.State) ([]Group, error) {
-	f := &finder{utils.NewMultiError(), nil}
+func FindUnencrypted(projectState *state.State) []Group {
+	f := &finder{nil}
 	f.FindValues(projectState)
-	return f.groups, f.errors.ErrorOrNil()
+	return f.groups
 }
 
 func LogGroups(groups []Group, logger *zap.SugaredLogger) {

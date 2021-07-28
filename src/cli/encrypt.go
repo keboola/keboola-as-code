@@ -67,10 +67,7 @@ func encryptCommand(root *rootCommand) *cobra.Command {
 				}
 			}
 			// manager := local.NewManager(logger, projectManifest, api)
-			unencryptedGroups, err := encryption.FindUnencrypted(projectState)
-			if err != nil {
-				return err
-			}
+			unencryptedGroups := encryption.FindUnencrypted(projectState)
 			encryption.LogGroups(unencryptedGroups, logger)
 
 			return nil
