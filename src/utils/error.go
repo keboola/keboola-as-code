@@ -5,12 +5,14 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"regexp"
 	"strings"
+	"sync"
 )
 
 type multiError = multierror.Error
 
 type Error struct {
 	*multiError
+	lock *sync.Mutex
 }
 
 type ErrorRaw struct {
@@ -22,23 +24,29 @@ func (e *ErrorRaw) Error() string {
 }
 
 func NewMultiError() *Error {
-	e := &Error{multiError: &multierror.Error{}}
+	e := &Error{multiError: &multierror.Error{}, lock: &sync.Mutex{}}
 	e.ErrorFormat = formatError
 	return e
 }
 
 // Append error
 func (e *Error) Append(err error) {
+	e.lock.Lock()
+	defer e.lock.Unlock()
 	e.multiError = multierror.Append(e.multiError, err)
 }
 
 // AppendRaw - msg will be printed without prefix
 func (e *Error) AppendRaw(msg string) {
+	e.lock.Lock()
+	defer e.lock.Unlock()
 	e.multiError = multierror.Append(e.multiError, &ErrorRaw{msg: msg})
 }
 
 // AppendWithPrefix - add an error with custom prefix
 func (e *Error) AppendWithPrefix(prefix string, err error) {
+	e.lock.Lock()
+	defer e.lock.Unlock()
 	e.multiError = multierror.Append(e.multiError, PrefixError(prefix, err))
 }
 

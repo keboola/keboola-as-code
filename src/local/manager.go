@@ -2,22 +2,22 @@ package local
 
 import (
 	"go.uber.org/zap"
+	"keboola-as-code/src/components"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
-	"keboola-as-code/src/remote"
 )
 
 type Manager struct {
-	logger   *zap.SugaredLogger
-	manifest *manifest.Manifest
-	api      *remote.StorageApi
+	logger     *zap.SugaredLogger
+	manifest   *manifest.Manifest
+	components *components.Provider
 }
 
-func NewManager(logger *zap.SugaredLogger, m *manifest.Manifest, api *remote.StorageApi) *Manager {
+func NewManager(logger *zap.SugaredLogger, m *manifest.Manifest, components *components.Provider) *Manager {
 	return &Manager{
-		logger:   logger,
-		manifest: m,
-		api:      api,
+		logger:     logger,
+		manifest:   m,
+		components: components,
 	}
 }
 
@@ -31,7 +31,7 @@ func (m *Manager) Naming() *model.Naming {
 
 func (m *Manager) isTransformationConfig(object interface{}) (bool, error) {
 	if v, ok := object.(*model.Config); ok {
-		if component, err := m.api.Components().Get(*v.ComponentKey()); err == nil {
+		if component, err := m.components.Get(*v.ComponentKey()); err == nil {
 			return component.IsTransformation(), nil
 		} else {
 			return false, err

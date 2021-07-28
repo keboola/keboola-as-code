@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/iancoleman/orderedmap"
 	"go.uber.org/zap"
+	"keboola-as-code/src/components"
 	"keboola-as-code/src/local"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
@@ -80,7 +81,7 @@ func newState(options *Options) *State {
 		localErrors:  utils.NewMultiError(),
 		objects:      utils.NewOrderedMap(),
 	}
-	s.localManager = local.NewManager(options.logger, options.manifest, s.api)
+	s.localManager = local.NewManager(options.logger, options.manifest, s.api.Components())
 	s.paths = NewPathsState(s.manifest.ProjectDir, s.localErrors)
 	return s
 }
@@ -97,7 +98,7 @@ func (s *State) Naming() *model.Naming {
 	return s.manifest.Naming
 }
 
-func (s *State) Components() *remote.ComponentsCache {
+func (s *State) Components() *components.Provider {
 	return s.api.Components()
 }
 
@@ -248,6 +249,9 @@ func (s *State) SetLocalState(local model.Object, record model.Record) model.Obj
 }
 
 func (s *State) getOrCreate(key model.Key) (model.ObjectState, error) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
 	if v, ok := s.objects.Get(key.String()); ok {
 		// Get
 		return v.(model.ObjectState), nil
