@@ -18,7 +18,7 @@ func (s *State) doLoadRemoteState() {
 		OnSuccess(func(response *client.Response) {
 			// Save branch + load branch components
 			for _, branch := range *response.Result().(*[]*model.Branch) {
-				s.SetBranchRemoteState(branch)
+				s.SetRemoteState(branch)
 
 				// Load components
 				pool.
@@ -27,9 +27,9 @@ func (s *State) doLoadRemoteState() {
 						// Save component, it contains all configs and rows
 						for _, component := range *response.Result().(*[]*model.ComponentWithConfigs) {
 							for _, config := range component.Configs {
-								s.SetConfigRemoteState(config.Config)
+								s.SetRemoteState(config.Config)
 								for _, row := range config.Rows {
-									s.SetConfigRowRemoteState(row)
+									s.SetRemoteState(row)
 								}
 							}
 						}

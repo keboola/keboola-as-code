@@ -35,12 +35,12 @@ func parentExists(objectState model.ObjectState, currentState *state.State) bool
 		return true
 	case *model.ConfigState:
 		config := v.Remote
-		branch := currentState.GetBranch(*config.BranchKey(), false)
+		branch := currentState.Get(*config.BranchKey()).(*model.BranchState)
 		return branch.Local != nil
 	case *model.ConfigRowState:
 		row := v.Remote
-		config := currentState.GetConfig(*row.ConfigKey(), false)
-		branch := currentState.GetBranch(*config.BranchKey(), false)
+		config := currentState.Get(*row.ConfigKey()).(*model.ConfigState)
+		branch := currentState.Get(*config.BranchKey()).(*model.BranchState)
 		return config.Local != nil && branch.Local != nil
 
 	default:

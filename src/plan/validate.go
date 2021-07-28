@@ -34,7 +34,7 @@ func (a *Action) validate(currentState *state.State) error {
 		// Config from dev-branch cannot be removed, it can be only marked for removal
 		if a.Type == ActionDeleteRemote {
 			config := configState.Remote
-			branch := currentState.GetBranch(*config.BranchKey(), false).Remote
+			branch := currentState.Get(*config.BranchKey()).(*model.BranchState).Remote
 			if !branch.IsDefault {
 				return fmt.Errorf("cannot %s from dev branch", a.StringVerbose())
 			}
@@ -46,8 +46,8 @@ func (a *Action) validate(currentState *state.State) error {
 		// Config row from dev-branch cannot be removed, it can be only marked for removal
 		if a.Type == ActionDeleteRemote {
 			row := configRowState.Remote
-			config := currentState.GetConfig(*row.ConfigKey(), false).Remote
-			branch := currentState.GetBranch(*config.BranchKey(), false).Remote
+			config := currentState.Get(*row.ConfigKey()).RemoteState().(*model.Config)
+			branch := currentState.Get(*config.BranchKey()).RemoteState().(*model.Branch)
 			if !branch.IsDefault {
 				return fmt.Errorf("cannot %s from dev branch", a.StringVerbose())
 			}

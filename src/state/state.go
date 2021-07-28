@@ -3,6 +3,7 @@ package state
 import (
 	"context"
 	"fmt"
+	"github.com/iancoleman/orderedmap"
 	"go.uber.org/zap"
 	"keboola-as-code/src/local"
 	"keboola-as-code/src/manifest"
@@ -11,7 +12,6 @@ import (
 	"keboola-as-code/src/utils"
 	"keboola-as-code/src/validator"
 	"path/filepath"
-	"sort"
 	"sync"
 )
 
@@ -24,9 +24,7 @@ type State struct {
 	paths        *PathsState
 	localManager *local.Manager
 	newPersisted []model.ObjectState
-	branches     map[string]*model.BranchState
-	configs      map[string]*model.ConfigState
-	configRows   map[string]*model.ConfigRowState
+	objects      *orderedmap.OrderedMap
 }
 
 type Options struct {
@@ -37,11 +35,6 @@ type Options struct {
 	LoadLocalState  bool
 	LoadRemoteState bool
 	SkipNotFoundErr bool
-}
-
-type keyValuePair struct {
-	key   string
-	state model.ObjectState
 }
 
 func NewOptions(m *manifest.Manifest, api *remote.StorageApi, ctx context.Context, logger *zap.SugaredLogger) *Options {
@@ -85,9 +78,7 @@ func newState(options *Options) *State {
 		mutex:        &sync.Mutex{},
 		remoteErrors: utils.NewMultiError(),
 		localErrors:  utils.NewMultiError(),
-		branches:     make(map[string]*model.BranchState),
-		configs:      make(map[string]*model.ConfigState),
-		configRows:   make(map[string]*model.ConfigRowState),
+		objects:      utils.NewOrderedMap(),
 	}
 	s.localManager = local.NewManager(options.logger, options.manifest, s.api)
 	s.paths = NewPathsState(s.manifest.ProjectDir, s.localErrors)
@@ -114,22 +105,8 @@ func (s *State) LocalManager() *local.Manager {
 	return s.localManager
 }
 
-func (s *State) MarkPathTracked(path string) {
-	s.paths.MarkTracked(path)
-}
-
 func (s *State) TrackedPaths() []string {
 	return s.paths.Tracked()
-}
-
-func (s *State) LogUntrackedPaths(logger *zap.SugaredLogger) {
-	untracked := s.UntrackedPaths()
-	if len(untracked) > 0 {
-		logger.Warn("Unknown paths found:")
-		for _, path := range untracked {
-			logger.Warn("\t- ", path)
-		}
-	}
 }
 
 func (s *State) UntrackedPaths() []string {
@@ -144,6 +121,16 @@ func (s *State) UntrackedDirs() (dirs []string) {
 		dirs = append(dirs, path)
 	}
 	return dirs
+}
+
+func (s *State) LogUntrackedPaths(logger *zap.SugaredLogger) {
+	untracked := s.UntrackedPaths()
+	if len(untracked) > 0 {
+		logger.Warn("Unknown paths found:")
+		for _, path := range untracked {
+			logger.Warn("\t- ", path)
+		}
+	}
 }
 
 func (s *State) RemoteErrors() *utils.Error {
@@ -163,200 +150,129 @@ func (s *State) AddLocalError(err error) {
 }
 
 func (s *State) All() []model.ObjectState {
-	var all []keyValuePair
-	for key, branch := range s.branches {
-		all = append(all, keyValuePair{key, branch})
-	}
-	for key, config := range s.configs {
-		all = append(all, keyValuePair{key, config})
-	}
-	for key, row := range s.configRows {
-		all = append(all, keyValuePair{key, row})
-	}
-
-	// Sort by key: branch -> config -> config_row
-	sort.SliceStable(all, func(i, j int) bool {
-		return all[i].key < all[j].key
+	s.objects.Sort(func(a *orderedmap.Pair, b *orderedmap.Pair) bool {
+		aKey := a.Value().(model.ObjectState).Manifest().SortKey(s.manifest.SortBy)
+		bKey := b.Value().(model.ObjectState).Manifest().SortKey(s.manifest.SortBy)
+		return aKey < bKey
 	})
 
-	// Convert to slice, ignore deleted
-	var slice []model.ObjectState
-	for _, pair := range all {
-		if pair.state.Manifest().State().IsDeleted() {
+	var out []model.ObjectState
+	for _, key := range s.objects.Keys() {
+		// Get value
+		v, _ := s.objects.Get(key)
+		object := v.(model.ObjectState)
+
+		// Skip deleted
+		if object.Manifest().State().IsDeleted() {
 			continue
 		}
 
-		slice = append(slice, pair.state)
+		out = append(out, object)
 	}
-	return slice
+
+	return out
 }
 
-func (s *State) Branches() []*model.BranchState {
-	var branches []*model.BranchState
-	for _, b := range s.branches {
-		if b.Manifest().State().IsDeleted() {
-			continue
+func (s *State) Branches() (branches []*model.BranchState) {
+	for _, object := range s.All() {
+		if v, ok := object.(*model.BranchState); ok {
+			branches = append(branches, v)
 		}
-		branches = append(branches, b)
 	}
-	sort.SliceStable(branches, func(i, j int) bool {
-		return branches[i].SortKey(s.manifest.SortBy) < branches[j].SortKey(s.manifest.SortBy)
-	})
 	return branches
 }
 
-func (s *State) Configs() []*model.ConfigState {
-	var configs []*model.ConfigState
-	for _, c := range s.configs {
-		if c.Manifest().State().IsDeleted() {
-			continue
+func (s *State) Configs() (configs []*model.ConfigState) {
+	for _, object := range s.All() {
+		if v, ok := object.(*model.ConfigState); ok {
+			configs = append(configs, v)
 		}
-		configs = append(configs, c)
 	}
-	sort.SliceStable(configs, func(i, j int) bool {
-		return configs[i].SortKey(s.manifest.SortBy) < configs[j].SortKey(s.manifest.SortBy)
-	})
 	return configs
 }
 
-func (s *State) ConfigRows() []*model.ConfigRowState {
-	var configRows []*model.ConfigRowState
-	for _, r := range s.configRows {
-		if r.Manifest().State().IsDeleted() {
-			continue
+func (s *State) ConfigRows() (rows []*model.ConfigRowState) {
+	for _, object := range s.All() {
+		if v, ok := object.(*model.ConfigRowState); ok {
+			rows = append(rows, v)
 		}
-		configRows = append(configRows, r)
 	}
-	sort.SliceStable(configRows, func(i, j int) bool {
-		return configRows[i].SortKey(s.manifest.SortBy) < configRows[j].SortKey(s.manifest.SortBy)
-	})
-	return configRows
+	return rows
 }
 
-func (s *State) GetBranch(key model.BranchKey, create bool) *model.BranchState {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	keyStr := key.String()
-	if _, ok := s.branches[keyStr]; !ok {
-		if !create {
-			return nil
-		}
-		s.branches[keyStr] = &model.BranchState{}
+func (s *State) Get(key model.Key) model.ObjectState {
+	object, err := s.getOrCreate(key)
+	if err != nil {
+		panic(err)
 	}
-	return s.branches[keyStr]
+
+	if object == nil {
+		panic(fmt.Errorf(`object "%s" not found`, key.String()))
+	}
+	return object
 }
 
-func (s *State) GetConfig(key model.ConfigKey, create bool) *model.ConfigState {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	keyStr := key.String()
-	if _, ok := s.configs[keyStr]; !ok {
-		if !create {
-			return nil
-		}
-		s.configs[keyStr] = &model.ConfigState{}
-	}
-	return s.configs[keyStr]
-}
-
-func (s *State) GetConfigRow(key model.ConfigRowKey, create bool) *model.ConfigRowState {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	keyStr := key.String()
-	if _, ok := s.configRows[keyStr]; !ok {
-		if !create {
-			return nil
-		}
-		s.configRows[keyStr] = &model.ConfigRowState{}
-	}
-	return s.configRows[keyStr]
-}
-
-func (s *State) SetBranchRemoteState(remote *model.Branch) *model.BranchState {
-	state := s.GetBranch(remote.BranchKey, true)
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	state.Remote = remote
-	if state.BranchManifest == nil {
-		state.BranchManifest = s.manifest.CreateOrGetRecord(remote.Key()).(*model.BranchManifest)
-		s.localManager.UpdatePaths(state, false)
-	}
-	return state
-}
-
-func (s *State) SetBranchLocalState(local *model.Branch, m *model.BranchManifest) *model.BranchState {
-	state := s.GetBranch(local.BranchKey, true)
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	state.Local = local
-	state.BranchManifest = m
-	for _, path := range m.GetRelatedPaths() {
-		s.MarkPathTracked(path)
-	}
-	return state
-}
-
-func (s *State) SetConfigRemoteState(remote *model.Config) *model.ConfigState {
-	component, err := s.Components().Get(*remote.ComponentKey())
+func (s *State) SetRemoteState(remote model.Object) model.ObjectState {
+	state, err := s.getOrCreate(remote.Key())
 	if err != nil {
 		s.AddRemoteError(err)
 		return nil
 	}
 
-	state := s.GetConfig(remote.ConfigKey, true)
-	state.Component = component
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	state.Remote = remote
-	if state.ConfigManifest == nil {
-		state.ConfigManifest = s.manifest.CreateOrGetRecord(remote.Key()).(*model.ConfigManifest)
+	state.SetRemoteState(remote)
+	if !state.HasManifest() {
+		// Generate manifest record, if not present (no local state)
+		state.SetManifest(s.manifest.CreateOrGetRecord(remote.Key()))
 		s.localManager.UpdatePaths(state, false)
 	}
 	return state
 }
 
-func (s *State) SetConfigLocalState(local *model.Config, m *model.ConfigManifest) *model.ConfigState {
-	component, err := s.Components().Get(*local.ComponentKey())
+func (s *State) SetLocalState(local model.Object, record model.Record) model.ObjectState {
+	state, err := s.getOrCreate(local.Key())
 	if err != nil {
 		s.AddLocalError(err)
 		return nil
 	}
 
-	state := s.GetConfig(local.ConfigKey, true)
-	state.Component = component
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	state.Local = local
-	state.ConfigManifest = m
-	for _, path := range m.GetRelatedPaths() {
-		s.MarkPathTracked(path)
-	}
-
-	return state
-}
-
-func (s *State) SetConfigRowRemoteState(remote *model.ConfigRow) *model.ConfigRowState {
-	state := s.GetConfigRow(remote.ConfigRowKey, true)
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	state.Remote = remote
-	if state.ConfigRowManifest == nil {
-		state.ConfigRowManifest = s.manifest.CreateOrGetRecord(remote.Key()).(*model.ConfigRowManifest)
-		s.localManager.UpdatePaths(state, false)
+	state.SetLocalState(local)
+	state.SetManifest(record)
+	for _, path := range record.GetRelatedPaths() {
+		s.paths.MarkTracked(path)
 	}
 	return state
 }
 
-func (s *State) SetConfigRowLocalState(local *model.ConfigRow, m *model.ConfigRowManifest) *model.ConfigRowState {
-	state := s.GetConfigRow(local.ConfigRowKey, true)
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	state.Local = local
-	state.ConfigRowManifest = m
-	for _, path := range m.GetRelatedPaths() {
-		s.MarkPathTracked(path)
+func (s *State) getOrCreate(key model.Key) (model.ObjectState, error) {
+	if v, ok := s.objects.Get(key.String()); ok {
+		// Get
+		return v.(model.ObjectState), nil
+	} else {
+		// Create
+		var object model.ObjectState
+		switch k := key.(type) {
+		case model.BranchKey:
+			object = &model.BranchState{}
+		case model.ConfigKey:
+			if component, err := s.Components().Get(*k.ComponentKey()); err == nil {
+				object = &model.ConfigState{Component: component}
+			} else {
+				return nil, err
+			}
+
+		case model.ConfigRowKey:
+			object = &model.ConfigRowState{}
+		default:
+			panic(fmt.Errorf(`unexpected type "%T"`, key))
+		}
+
+		s.objects.Set(key.String(), object)
+		return object, nil
 	}
-	return state
 }
 
 func (s *State) validate() {

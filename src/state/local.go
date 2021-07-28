@@ -28,7 +28,7 @@ func (s *State) doLoadLocalState() {
 
 func (s *State) loadModel(record model.Record) model.ObjectState {
 	// Detect record type
-	var value interface{}
+	var value model.Object
 	switch v := record.(type) {
 	case *model.BranchManifest:
 		value = &model.Branch{BranchKey: v.BranchKey}
@@ -42,16 +42,7 @@ func (s *State) loadModel(record model.Record) model.ObjectState {
 
 	found, err := s.localManager.LoadModel(record, value)
 	if err == nil {
-		switch v := value.(type) {
-		case *model.Branch:
-			return s.SetBranchLocalState(v, record.(*model.BranchManifest))
-		case *model.Config:
-			return s.SetConfigLocalState(v, record.(*model.ConfigManifest))
-		case *model.ConfigRow:
-			return s.SetConfigRowLocalState(v, record.(*model.ConfigRowManifest))
-		default:
-			panic(fmt.Errorf(`unexpected type %T`, record))
-		}
+		return s.SetLocalState(value, record)
 	} else {
 		record.State().SetInvalid()
 		if !found {
