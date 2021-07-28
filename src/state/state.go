@@ -249,6 +249,9 @@ func (s *State) SetLocalState(local model.Object, record model.Record) model.Obj
 }
 
 func (s *State) getOrCreate(key model.Key) (model.ObjectState, error) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
 	if v, ok := s.objects.Get(key.String()); ok {
 		// Get
 		return v.(model.ObjectState), nil
