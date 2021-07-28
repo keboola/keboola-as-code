@@ -15,11 +15,11 @@ func isKeyToEncrypt(key string) bool {
 	return strings.HasPrefix(key, "#")
 }
 
-func isValueEncrypted(value string) bool {
+func isEncrypted(value string) bool {
 	return regexp.MustCompile(`^KBC::ProjectSecure::.+$`).MatchString(value)
 }
 
-type EncryptionValue struct {
+type Record struct {
 	object  state.ObjectState // config or configRow state object
 	key     string            // key e.g. "#myEncryptedValue"
 	value   string            // value to encrypt
@@ -28,7 +28,7 @@ type EncryptionValue struct {
 
 type finder struct {
 	errors *utils.Error
-	values []EncryptionValue
+	values []Record
 }
 
 func (f *finder) parseArray(object state.ObjectState, array []interface{}, keyPath path) {
@@ -50,8 +50,8 @@ func (f *finder) parseConfigValue(object state.ObjectState, key string, configVa
 	case orderedmap.OrderedMap:
 		f.parseOrderedMap(object, &value, keyPath)
 	case string:
-		if isKeyToEncrypt(key) && !isValueEncrypted(value) {
-			f.values = append(f.values, EncryptionValue{object, key, value, keyPath})
+		if isKeyToEncrypt(key) && !isEncrypted(value) {
+			f.values = append(f.values, Record{object, key, value, keyPath})
 		}
 	case []interface{}:
 		f.parseArray(object, value, keyPath)
@@ -71,13 +71,13 @@ func (f *finder) FindValues(projectState *state.State) {
 		}
 	}
 }
-func FindValuesToEncrypt(projectState *state.State) ([]EncryptionValue, error) {
+func FindUnencrypted(projectState *state.State) ([]Record, error) {
 	f := &finder{utils.NewMultiError(), nil}
 	f.FindValues(projectState)
 	return f.values, f.errors.ErrorOrNil()
 }
 
-func PrintValuesToEncrypt(values []EncryptionValue, logger *zap.SugaredLogger) {
+func LogValues(values []Record, logger *zap.SugaredLogger) {
 	if len(values) == 0 {
 		logger.Info("No values to encrypt.")
 	} else {
