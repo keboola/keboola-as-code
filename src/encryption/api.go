@@ -35,11 +35,14 @@ func (a *EncryptionApi) NewRequest(method string, url string) *client.Request {
 
 func (a *EncryptionApi) createRequest(componentId string, projectId string, requestBody map[string]string) (*client.Request, error) {
 	// Create request
+	result := make(map[string]string)
 	request := a.
 		client.NewRequest(resty.MethodPost, "encrypt").
-		SetPathParam("componentId", componentId).
-		SetPathParam("projectId", projectId).
-		SetBody(requestBody)
+		SetQueryParam("componentId", componentId).
+		SetQueryParam("projectId", projectId).
+		SetResult(&result)
+	request.Request.SetBody(requestBody)
+	request.Request.SetHeader("Content-Type", "application/json")
 
 	return request, nil
 }
@@ -51,8 +54,7 @@ func (a *EncryptionApi) EncryptMapValues(componentId string, projectId string, m
 	}
 	response := request.Send().Response
 	if response.HasResult() {
-		return response.Result().(map[string]string), nil
+		return *response.Result().(*map[string]string), nil
 	}
 	return nil, response.Err()
-
 }
