@@ -17,11 +17,11 @@ func (s *State) RenamePlan() (plans []*model.RenamePlan) {
 		plan := &model.RenamePlan{}
 
 		// The parent object may have already been renamed, so update first old state
-		object.UpdateManifest(s.manifest, false)
+		s.localManager.UpdatePaths(object, false)
 		plan.OldPath = filepath.Join(s.ProjectDir(), object.RelativePath())
 
 		// Rename
-		object.UpdateManifest(s.manifest, true)
+		s.localManager.UpdatePaths(object, true)
 		plan.NewPath = filepath.Join(s.ProjectDir(), object.RelativePath())
 
 		// Should be renamed?
@@ -32,7 +32,7 @@ func (s *State) RenamePlan() (plans []*model.RenamePlan) {
 		}
 
 		// Rename transformation blocks
-		if v, ok := object.(*ConfigState); ok {
+		if v, ok := object.(*model.ConfigState); ok {
 			plans = append(plans, s.renameBlocks(v)...)
 		}
 	}
@@ -65,7 +65,7 @@ func (s *State) RenamePlan() (plans []*model.RenamePlan) {
 	return plans
 }
 
-func (s *State) renameBlocks(config *ConfigState) (plans []*model.RenamePlan) {
+func (s *State) renameBlocks(config *model.ConfigState) (plans []*model.RenamePlan) {
 	if config.Local == nil {
 		return
 	}

@@ -76,8 +76,8 @@ func LoadManifest(projectDir string, metadataDir string) (*Manifest, error) {
 	// Resolve parent path, set parent IDs, persist records
 	branchById := make(map[int]*model.BranchManifest)
 	for _, branch := range m.Content.Branches {
-		branch.ResolveParentPath()
 		branchById[branch.Id] = branch
+		branch.ResolveParentPath()
 		m.PersistRecord(branch)
 	}
 	for _, configWithRows := range m.Content.Configs {
@@ -239,7 +239,7 @@ func (m *Manifest) TrackRecord(record model.Record) {
 	m.records.Set(record.Key().String(), record)
 }
 
-func (m *Manifest) DeleteRecord(value model.ValueWithKey) {
+func (m *Manifest) DeleteRecord(value model.Object) {
 	m.DeleteRecordByKey(value.Key())
 }
 

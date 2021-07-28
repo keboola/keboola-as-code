@@ -104,7 +104,7 @@ func TestPersistNewConfig(t *testing.T) {
 	configKey := model.ConfigKey{BranchId: 111, ComponentId: "ex-generic-v2", Id: "12345"}
 	assert.Equal(
 		t,
-		&ConfigState{
+		&model.ConfigState{
 			ConfigManifest: &model.ConfigManifest{
 				ConfigKey: configKey,
 				RecordState: model.RecordState{
@@ -221,7 +221,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 	configKey := rowKey.ConfigKey()
 	assert.Equal(
 		t,
-		&ConfigState{
+		&model.ConfigState{
 			ConfigManifest: &model.ConfigManifest{
 				ConfigKey: *configKey,
 				RecordState: model.RecordState{
@@ -258,7 +258,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 	)
 	assert.Equal(
 		t,
-		&ConfigRowState{
+		&model.ConfigRowState{
 			ConfigRowManifest: &model.ConfigRowManifest{
 				ConfigRowKey: rowKey,
 				RecordState: model.RecordState{

@@ -29,8 +29,8 @@ func TestLoadRemoteStateComplex(t *testing.T) {
 	assert.Equal(t, complexRemoteExpectedConfigsRows(), utils.SortByName(state.ConfigRows()))
 }
 
-func complexRemoteExpectedBranches() []*BranchState {
-	return []*BranchState{
+func complexRemoteExpectedBranches() []*model.BranchState {
+	return []*model.BranchState{
 		{
 			Remote: &model.Branch{
 				BranchKey: model.BranchKey{
@@ -94,8 +94,8 @@ func complexRemoteExpectedBranches() []*BranchState {
 	}
 }
 
-func complexRemoteExpectedConfigs() []*ConfigState {
-	return []*ConfigState{
+func complexRemoteExpectedConfigs() []*model.ConfigState {
+	return []*model.ConfigState{
 		{
 			Remote: &model.Config{
 				ConfigKey: model.ConfigKey{
@@ -299,8 +299,8 @@ func complexRemoteExpectedConfigs() []*ConfigState {
 	}
 }
 
-func complexRemoteExpectedConfigsRows() []*ConfigRowState {
-	return []*ConfigRowState{
+func complexRemoteExpectedConfigsRows() []*model.ConfigRowState {
+	return []*model.ConfigRowState{
 		{
 			Remote: &model.ConfigRow{
 				ConfigRowKey: model.ConfigRowKey{

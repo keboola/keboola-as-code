@@ -213,8 +213,8 @@ func loadLocalTestState(t *testing.T, projectDirName string) *State {
 	return state
 }
 
-func complexLocalExpectedBranches() []*BranchState {
-	return []*BranchState{
+func complexLocalExpectedBranches() []*model.BranchState {
+	return []*model.BranchState{
 		{
 			Local: &model.Branch{
 				BranchKey: model.BranchKey{
@@ -264,8 +264,8 @@ func complexLocalExpectedBranches() []*BranchState {
 	}
 }
 
-func complexLocalExpectedConfigs() []*ConfigState {
-	return []*ConfigState{
+func complexLocalExpectedConfigs() []*model.ConfigState {
+	return []*model.ConfigState{
 		{
 			Local: &model.Config{
 				ConfigKey: model.ConfigKey{
@@ -425,8 +425,8 @@ func complexLocalExpectedConfigs() []*ConfigState {
 	}
 }
 
-func complexLocalExpectedConfigRows() []*ConfigRowState {
-	return []*ConfigRowState{
+func complexLocalExpectedConfigRows() []*model.ConfigRowState {
+	return []*model.ConfigRowState{
 		{
 			Local: &model.ConfigRow{
 				ConfigRowKey: model.ConfigRowKey{

@@ -19,6 +19,7 @@ func TestDefaultNaming(t *testing.T) {
 				},
 				Name: "my Super-BRANCH",
 			},
+			false,
 		))
 
 	// Config

@@ -23,42 +23,10 @@ type State struct {
 	localErrors  *utils.Error
 	paths        *PathsState
 	localManager *local.Manager
-	newPersisted []ObjectState
-	branches     map[string]*BranchState
-	configs      map[string]*ConfigState
-	configRows   map[string]*ConfigRowState
-}
-
-type ObjectState interface {
-	model.ValueWithKey
-	ObjectId() string
-	Kind() model.Kind
-	HasLocalState() bool
-	LocalState() model.ValueWithKey
-	HasRemoteState() bool
-	RemoteState() model.ValueWithKey
-	Manifest() model.Record
-	UpdateManifest(m *manifest.Manifest, rename bool)
-	RelativePath() string
-}
-
-type BranchState struct {
-	*model.BranchManifest
-	Remote *model.Branch `validate:"omitempty,dive"`
-	Local  *model.Branch `validate:"omitempty,dive"`
-}
-
-type ConfigState struct {
-	*model.ConfigManifest
-	Component *model.Component `validate:"dive"`
-	Remote    *model.Config    `validate:"omitempty,dive"`
-	Local     *model.Config    `validate:"omitempty,dive"`
-}
-
-type ConfigRowState struct {
-	*model.ConfigRowManifest
-	Remote *model.ConfigRow `validate:"omitempty,dive"`
-	Local  *model.ConfigRow `validate:"omitempty,dive"`
+	newPersisted []model.ObjectState
+	branches     map[string]*model.BranchState
+	configs      map[string]*model.ConfigState
+	configRows   map[string]*model.ConfigRowState
 }
 
 type Options struct {
@@ -73,7 +41,7 @@ type Options struct {
 
 type keyValuePair struct {
 	key   string
-	state ObjectState
+	state model.ObjectState
 }
 
 func NewOptions(m *manifest.Manifest, api *remote.StorageApi, ctx context.Context, logger *zap.SugaredLogger) *Options {
@@ -117,9 +85,9 @@ func newState(options *Options) *State {
 		mutex:        &sync.Mutex{},
 		remoteErrors: utils.NewMultiError(),
 		localErrors:  utils.NewMultiError(),
-		branches:     make(map[string]*BranchState),
-		configs:      make(map[string]*ConfigState),
-		configRows:   make(map[string]*ConfigRowState),
+		branches:     make(map[string]*model.BranchState),
+		configs:      make(map[string]*model.ConfigState),
+		configRows:   make(map[string]*model.ConfigRowState),
 	}
 	s.localManager = local.NewManager(options.logger, options.manifest, s.api)
 	s.paths = NewPathsState(s.manifest.ProjectDir, s.localErrors)
@@ -194,7 +162,7 @@ func (s *State) AddLocalError(err error) {
 	s.localErrors.Append(err)
 }
 
-func (s *State) All() []ObjectState {
+func (s *State) All() []model.ObjectState {
 	var all []keyValuePair
 	for key, branch := range s.branches {
 		all = append(all, keyValuePair{key, branch})
@@ -212,7 +180,7 @@ func (s *State) All() []ObjectState {
 	})
 
 	// Convert to slice, ignore deleted
-	var slice []ObjectState
+	var slice []model.ObjectState
 	for _, pair := range all {
 		if pair.state.Manifest().State().IsDeleted() {
 			continue
@@ -223,8 +191,8 @@ func (s *State) All() []ObjectState {
 	return slice
 }
 
-func (s *State) Branches() []*BranchState {
-	var branches []*BranchState
+func (s *State) Branches() []*model.BranchState {
+	var branches []*model.BranchState
 	for _, b := range s.branches {
 		if b.Manifest().State().IsDeleted() {
 			continue
@@ -237,8 +205,8 @@ func (s *State) Branches() []*BranchState {
 	return branches
 }
 
-func (s *State) Configs() []*ConfigState {
-	var configs []*ConfigState
+func (s *State) Configs() []*model.ConfigState {
+	var configs []*model.ConfigState
 	for _, c := range s.configs {
 		if c.Manifest().State().IsDeleted() {
 			continue
@@ -251,8 +219,8 @@ func (s *State) Configs() []*ConfigState {
 	return configs
 }
 
-func (s *State) ConfigRows() []*ConfigRowState {
-	var configRows []*ConfigRowState
+func (s *State) ConfigRows() []*model.ConfigRowState {
+	var configRows []*model.ConfigRowState
 	for _, r := range s.configRows {
 		if r.Manifest().State().IsDeleted() {
 			continue
@@ -265,7 +233,7 @@ func (s *State) ConfigRows() []*ConfigRowState {
 	return configRows
 }
 
-func (s *State) GetBranch(key model.BranchKey, create bool) *BranchState {
+func (s *State) GetBranch(key model.BranchKey, create bool) *model.BranchState {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	keyStr := key.String()
@@ -273,12 +241,12 @@ func (s *State) GetBranch(key model.BranchKey, create bool) *BranchState {
 		if !create {
 			return nil
 		}
-		s.branches[keyStr] = &BranchState{}
+		s.branches[keyStr] = &model.BranchState{}
 	}
 	return s.branches[keyStr]
 }
 
-func (s *State) GetConfig(key model.ConfigKey, create bool) *ConfigState {
+func (s *State) GetConfig(key model.ConfigKey, create bool) *model.ConfigState {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	keyStr := key.String()
@@ -286,12 +254,12 @@ func (s *State) GetConfig(key model.ConfigKey, create bool) *ConfigState {
 		if !create {
 			return nil
 		}
-		s.configs[keyStr] = &ConfigState{}
+		s.configs[keyStr] = &model.ConfigState{}
 	}
 	return s.configs[keyStr]
 }
 
-func (s *State) GetConfigRow(key model.ConfigRowKey, create bool) *ConfigRowState {
+func (s *State) GetConfigRow(key model.ConfigRowKey, create bool) *model.ConfigRowState {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	keyStr := key.String()
@@ -299,24 +267,24 @@ func (s *State) GetConfigRow(key model.ConfigRowKey, create bool) *ConfigRowStat
 		if !create {
 			return nil
 		}
-		s.configRows[keyStr] = &ConfigRowState{}
+		s.configRows[keyStr] = &model.ConfigRowState{}
 	}
 	return s.configRows[keyStr]
 }
 
-func (s *State) SetBranchRemoteState(remote *model.Branch) *BranchState {
+func (s *State) SetBranchRemoteState(remote *model.Branch) *model.BranchState {
 	state := s.GetBranch(remote.BranchKey, true)
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	state.Remote = remote
 	if state.BranchManifest == nil {
 		state.BranchManifest = s.manifest.CreateOrGetRecord(remote.Key()).(*model.BranchManifest)
-		state.UpdateManifest(s.manifest, false)
+		s.localManager.UpdatePaths(state, false)
 	}
 	return state
 }
 
-func (s *State) SetBranchLocalState(local *model.Branch, m *model.BranchManifest) *BranchState {
+func (s *State) SetBranchLocalState(local *model.Branch, m *model.BranchManifest) *model.BranchState {
 	state := s.GetBranch(local.BranchKey, true)
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
@@ -328,7 +296,7 @@ func (s *State) SetBranchLocalState(local *model.Branch, m *model.BranchManifest
 	return state
 }
 
-func (s *State) SetConfigRemoteState(remote *model.Config) *ConfigState {
+func (s *State) SetConfigRemoteState(remote *model.Config) *model.ConfigState {
 	component, err := s.Components().Get(*remote.ComponentKey())
 	if err != nil {
 		s.AddRemoteError(err)
@@ -342,12 +310,12 @@ func (s *State) SetConfigRemoteState(remote *model.Config) *ConfigState {
 	state.Remote = remote
 	if state.ConfigManifest == nil {
 		state.ConfigManifest = s.manifest.CreateOrGetRecord(remote.Key()).(*model.ConfigManifest)
-		state.UpdateManifest(s.manifest, false)
+		s.localManager.UpdatePaths(state, false)
 	}
 	return state
 }
 
-func (s *State) SetConfigLocalState(local *model.Config, m *model.ConfigManifest) *ConfigState {
+func (s *State) SetConfigLocalState(local *model.Config, m *model.ConfigManifest) *model.ConfigState {
 	component, err := s.Components().Get(*local.ComponentKey())
 	if err != nil {
 		s.AddLocalError(err)
@@ -367,19 +335,19 @@ func (s *State) SetConfigLocalState(local *model.Config, m *model.ConfigManifest
 	return state
 }
 
-func (s *State) SetConfigRowRemoteState(remote *model.ConfigRow) *ConfigRowState {
+func (s *State) SetConfigRowRemoteState(remote *model.ConfigRow) *model.ConfigRowState {
 	state := s.GetConfigRow(remote.ConfigRowKey, true)
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	state.Remote = remote
 	if state.ConfigRowManifest == nil {
 		state.ConfigRowManifest = s.manifest.CreateOrGetRecord(remote.Key()).(*model.ConfigRowManifest)
-		state.UpdateManifest(s.manifest, false)
+		s.localManager.UpdatePaths(state, false)
 	}
 	return state
 }
 
-func (s *State) SetConfigRowLocalState(local *model.ConfigRow, m *model.ConfigRowManifest) *ConfigRowState {
+func (s *State) SetConfigRowLocalState(local *model.ConfigRow, m *model.ConfigRowManifest) *model.ConfigRowState {
 	state := s.GetConfigRow(local.ConfigRowKey, true)
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
@@ -410,94 +378,4 @@ func (s *State) validate() {
 			}
 		}
 	}
-}
-
-func (b *BranchState) HasLocalState() bool {
-	return b.Local != nil
-}
-
-func (c *ConfigState) HasLocalState() bool {
-	return c.Local != nil
-}
-
-func (r *ConfigRowState) HasLocalState() bool {
-	return r.Local != nil
-}
-
-func (b *BranchState) LocalState() model.ValueWithKey {
-	return b.Local
-}
-
-func (c *ConfigState) LocalState() model.ValueWithKey {
-	return c.Local
-}
-
-func (r *ConfigRowState) LocalState() model.ValueWithKey {
-	return r.Local
-}
-
-func (b *BranchState) HasRemoteState() bool {
-	return b.Remote != nil
-}
-
-func (c *ConfigState) HasRemoteState() bool {
-	return c.Remote != nil
-}
-
-func (r *ConfigRowState) HasRemoteState() bool {
-	return r.Remote != nil
-}
-
-func (b *BranchState) RemoteState() model.ValueWithKey {
-	return b.Remote
-}
-
-func (c *ConfigState) RemoteState() model.ValueWithKey {
-	return c.Remote
-}
-
-func (r *ConfigRowState) RemoteState() model.ValueWithKey {
-	return r.Remote
-}
-
-func (b *BranchState) Manifest() model.Record {
-	return b.BranchManifest
-}
-
-func (c *ConfigState) Manifest() model.Record {
-	return c.ConfigManifest
-}
-
-func (r *ConfigRowState) Manifest() model.Record {
-	return r.ConfigRowManifest
-}
-
-func (b *BranchState) GetName() string {
-	if b.Remote != nil {
-		return b.Remote.Name
-	}
-	if b.Local != nil {
-		return b.Local.Name
-	}
-	return ""
-}
-
-func (c *ConfigState) GetName() string {
-	if c.Remote != nil {
-		return c.Remote.Name
-	}
-	if c.Local != nil {
-		return c.Local.Name
-	}
-	return ""
-}
-
-func (r *ConfigRowState) GetName() string {
-	if r.Remote != nil {
-		return r.Remote.Name
-	}
-	if r.Local != nil {
-		return r.Local.Name
-	}
-	return ""
 }

@@ -9,16 +9,16 @@ import (
 )
 
 // PersistNew objects from the filesystem
-func (s *State) PersistNew() (newPersisted []ObjectState, err error) {
+func (s *State) PersistNew() (newPersisted []model.ObjectState, err error) {
 	s.localErrors = utils.NewMultiError()
-	s.newPersisted = make([]ObjectState, 0)
+	s.newPersisted = make([]model.ObjectState, 0)
 
 	s.persistNewConfigs()
 	s.persistNewConfigRows()
 	return s.newPersisted, s.localErrors.ErrorOrNil()
 }
 
-func (s *State) addNewPersisted(state ObjectState) {
+func (s *State) addNewPersisted(state model.ObjectState) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	s.newPersisted = append(s.newPersisted, state)
@@ -74,7 +74,7 @@ func (s *State) persistNewConfigRows() {
 	}
 }
 
-func (s *State) persistNewConfig(path, relPath string, matches map[string]string, branch *BranchState, tickets *remote.TicketProvider) {
+func (s *State) persistNewConfig(path, relPath string, matches map[string]string, branch *model.BranchState, tickets *remote.TicketProvider) {
 	// Get component ID
 	componentId, ok := matches["component_id"]
 	if !ok || componentId == "" {
@@ -104,7 +104,7 @@ func (s *State) persistNewConfig(path, relPath string, matches map[string]string
 	})
 }
 
-func (s *State) persistNewConfigRow(relPath string, config *ConfigState, tickets *remote.TicketProvider) {
+func (s *State) persistNewConfigRow(relPath string, config *model.ConfigState, tickets *remote.TicketProvider) {
 	// Generate unique ID
 	tickets.Request(func(ticket *model.Ticket) {
 		key := model.ConfigRowKey{BranchId: config.BranchId, ComponentId: config.ComponentId, ConfigId: config.Id, Id: ticket.Id}
