@@ -16,7 +16,7 @@ func isKeyToEncrypt(key string) bool {
 }
 
 func isEncrypted(value string) bool {
-	return regexp.MustCompile(`^KBC::ProjectSecure::.+$`).MatchString(value)
+	return regexp.MustCompile(`^KBC::(ProjectSecure|ComponentSecure|ConfigSecure)::.+$`).MatchString(value)
 }
 
 type Record struct {
