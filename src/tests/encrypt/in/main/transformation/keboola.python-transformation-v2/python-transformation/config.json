@@ -1,7 +1,0 @@
-{
-  "parameters": {
-    "packages": [
-      "xgboost"
-    ]
-  }
-}
