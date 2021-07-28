@@ -2,8 +2,8 @@ package local
 
 import (
 	"github.com/stretchr/testify/assert"
+	"keboola-as-code/src/components"
 	"keboola-as-code/src/manifest"
-	"keboola-as-code/src/remote"
 	"keboola-as-code/src/utils"
 	"os"
 	"path/filepath"
@@ -18,8 +18,7 @@ func TestLocalDeleteModel(t *testing.T) {
 	logger, _ := utils.NewDebugLogger()
 	m, err := manifest.NewManifest(1, "connection.keboola.com", projectDir, metadataDir)
 	assert.NoError(t, err)
-	api, _ := remote.TestMockedStorageApi(t)
-	manager := NewManager(logger, m, api)
+	manager := NewManager(logger, m, components.NewProvider(nil))
 
 	metaFile := `{
   "myKey": "3",
@@ -60,8 +59,7 @@ func TestDeleteEmptyDirectories(t *testing.T) {
 	logger, _ := utils.NewDebugLogger()
 	m, err := manifest.NewManifest(1, "connection.keboola.com", projectDir, metadataDir)
 	assert.NoError(t, err)
-	api, _ := remote.TestMockedStorageApi(t)
-	manager := NewManager(logger, m, api)
+	manager := NewManager(logger, m, components.NewProvider(nil))
 
 	// Create empty hidden dir
 	assert.NoError(t, os.MkdirAll(filepath.Join(projectDir, `.hidden`), 0755))

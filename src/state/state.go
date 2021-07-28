@@ -81,7 +81,7 @@ func newState(options *Options) *State {
 		localErrors:  utils.NewMultiError(),
 		objects:      utils.NewOrderedMap(),
 	}
-	s.localManager = local.NewManager(options.logger, options.manifest, s.api)
+	s.localManager = local.NewManager(options.logger, options.manifest, s.api.Components())
 	s.paths = NewPathsState(s.manifest.ProjectDir, s.localErrors)
 	return s
 }
