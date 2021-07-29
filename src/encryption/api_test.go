@@ -12,7 +12,7 @@ func TestNewEncryptionApi(t *testing.T) {
 	logger, _ := utils.NewDebugLogger()
 	a := NewEncryptionApi("connection.keboola.com", context.Background(), logger, true)
 	assert.NotNil(t, a)
-	assert.Equal(t, "encryption.keboola.com", a.apiHost)
+	assert.Equal(t, "https://encryption.keboola.com", a.apiHostUrl)
 	mapToEncrypt := map[string]string{"#keyToEncrypt": "value"}
 	encryptedMap, err := a.EncryptMapValues("keboola.ex-generic-v2", "1234", mapToEncrypt)
 	assert.Nil(t, err)
@@ -27,10 +27,4 @@ func TestErrorEncryptionApi(t *testing.T) {
 	_, err := a.EncryptMapValues("", "", mapToEncrypt)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "The componentId parameter is required")
-}
-
-func TestGetEncryptionApiHost(t *testing.T) {
-	assert.Equal(t, getEncryptionApiHost("connection.keboola.com"), "encryption.keboola.com")
-	assert.Equal(t, getEncryptionApiHost("connection.east-us-1.azure.keboola-testing.com"), "encryption.east-us-1.azure.keboola-testing.com")
-
 }
