@@ -1,8 +1,8 @@
-package local
+package plan
 
 import (
 	"github.com/stretchr/testify/assert"
-	"keboola-as-code/src/model"
+	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/utils"
 	"os"
 	"path/filepath"
@@ -18,22 +18,25 @@ func TestRename(t *testing.T) {
 	assert.NoError(t, os.WriteFile(filepath.Join(dir, `foo2`), []byte(`content`), 0644))
 
 	// Plan
-	plan := []*model.RenamePlan{
-		{
-			OldPath:     filepath.Join(dir, "foo1"),
-			NewPath:     filepath.Join(dir, "bar1"),
-			Description: "foo1 -> bar1",
-		},
-		{
-			OldPath:     filepath.Join(dir, "foo2"),
-			NewPath:     filepath.Join(dir, "bar2"),
-			Description: "foo2 -> bar2",
+	plan := &RenamePlan{
+		actions: []*RenameAction{
+			{
+				OldPath:     filepath.Join(dir, "foo1"),
+				NewPath:     filepath.Join(dir, "bar1"),
+				Description: "foo1 -> bar1",
+			},
+			{
+				OldPath:     filepath.Join(dir, "foo2"),
+				NewPath:     filepath.Join(dir, "bar2"),
+				Description: "foo2 -> bar2",
+			},
 		},
 	}
 
 	// Rename
 	logger, logs := utils.NewDebugLogger()
-	warn, err := Rename(plan, logger)
+	executor := newRenameExecutor(logger, dir, &manifest.Manifest{}, plan)
+	warn, err := executor.invoke()
 	assert.Empty(t, warn)
 	assert.Empty(t, err)
 	assert.True(t, utils.IsFile(filepath.Join(dir, `bar1/sub/file`)))
@@ -45,9 +48,11 @@ func TestRename(t *testing.T) {
 	// Logs
 	expectedLog := `
 DEBUG  Starting renaming of the 2 paths.
-INFO  Renamed objects:
-INFO  	- foo1 -> bar1
-INFO  	- foo2 -> bar2
+DEBUG  Copied foo1 -> bar1
+DEBUG  Copied foo2 -> bar2
+DEBUG  Removing old paths.
+DEBUG  Removed foo1
+DEBUG  Removed foo2
 `
 	assert.Equal(t, strings.TrimLeft(expectedLog, "\n"), logs.String())
 }
@@ -61,32 +66,35 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 	assert.NoError(t, os.WriteFile(filepath.Join(dir, `foo5`), []byte(`content`), 0644))
 
 	// Plan
-	plan := []*model.RenamePlan{
-		{
-			OldPath:     filepath.Join(dir, "foo1"),
-			NewPath:     filepath.Join(dir, "bar1"),
-			Description: "foo1 -> bar1",
-		},
-		{
-			OldPath:     filepath.Join(dir, "foo2"),
-			NewPath:     filepath.Join(dir, "bar2"),
-			Description: "foo2 -> bar2",
-		},
-		{
-			OldPath:     filepath.Join(dir, "missing3"),
-			NewPath:     filepath.Join(dir, "missing4"),
-			Description: "missing3 -> missing4",
-		},
-		{
-			OldPath:     filepath.Join(dir, "foo5"),
-			NewPath:     filepath.Join(dir, "bar5"),
-			Description: "foo5 -> bar5",
+	plan := &RenamePlan{
+		actions: []*RenameAction{
+			{
+				OldPath:     filepath.Join(dir, "foo1"),
+				NewPath:     filepath.Join(dir, "bar1"),
+				Description: "foo1 -> bar1",
+			},
+			{
+				OldPath:     filepath.Join(dir, "foo2"),
+				NewPath:     filepath.Join(dir, "bar2"),
+				Description: "foo2 -> bar2",
+			},
+			{
+				OldPath:     filepath.Join(dir, "missing3"),
+				NewPath:     filepath.Join(dir, "missing4"),
+				Description: "missing3 -> missing4",
+			},
+			{
+				OldPath:     filepath.Join(dir, "foo5"),
+				NewPath:     filepath.Join(dir, "bar5"),
+				Description: "foo5 -> bar5",
+			},
 		},
 	}
 
 	// Rename
 	logger, logs := utils.NewDebugLogger()
-	warn, err := Rename(plan, logger)
+	executor := newRenameExecutor(logger, dir, &manifest.Manifest{}, plan)
+	warn, err := executor.invoke()
 	assert.Empty(t, warn)
 	assert.NotNil(t, err)
 	assert.Regexp(t, `cannot copy "missing3 -> missing4":\n\t- lstat .+/missing3: no such file or directory`, err.Error())
@@ -101,10 +109,13 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 	// Logs
 	expectedLog := `
 DEBUG  Starting renaming of the 4 paths.
-INFO  Renamed objects:
-INFO  	- foo1 -> bar1
-INFO  	- foo2 -> bar2
-INFO  	- foo5 -> bar5
+DEBUG  Copied foo1 -> bar1
+DEBUG  Copied foo2 -> bar2
+DEBUG  Copied foo5 -> bar5
+DEBUG  An error occurred, reverting rename.
+DEBUG  Removed bar1
+DEBUG  Removed bar2
+DEBUG  Removed bar5
 INFO  Error occurred, the rename operation was reverted.
 `
 	assert.Equal(t, strings.TrimLeft(expectedLog, "\n"), logs.String())
@@ -112,30 +123,38 @@ INFO  Error occurred, the rename operation was reverted.
 
 func TestRenameInvalidOldPath(t *testing.T) {
 	dir := t.TempDir()
-	plan := []*model.RenamePlan{
-		{
-			OldPath:     "relative path",
-			NewPath:     filepath.Join(dir, "bar1"),
-			Description: "",
+	plan := &RenamePlan{
+		actions: []*RenameAction{
+			{
+				OldPath:     "relative path",
+				NewPath:     filepath.Join(dir, "bar1"),
+				Description: "",
+			},
 		},
 	}
+
 	logger, _ := utils.NewDebugLogger()
+	executor := newRenameExecutor(logger, dir, &manifest.Manifest{}, plan)
 	assert.PanicsWithError(t, "old path must be absolute", func() {
-		Rename(plan, logger)
+		executor.invoke()
 	})
 }
 
 func TestRenameInvalidNewPath(t *testing.T) {
 	dir := t.TempDir()
-	plan := []*model.RenamePlan{
-		{
-			OldPath:     filepath.Join(dir, "bar1"),
-			NewPath:     "relative path",
-			Description: "",
+	plan := &RenamePlan{
+		actions: []*RenameAction{
+			{
+				OldPath:     filepath.Join(dir, "bar1"),
+				NewPath:     "relative path",
+				Description: "",
+			},
 		},
 	}
+
 	logger, _ := utils.NewDebugLogger()
+	executor := newRenameExecutor(logger, dir, &manifest.Manifest{}, plan)
 	assert.PanicsWithError(t, "new path must be absolute", func() {
-		Rename(plan, logger)
+		executor.invoke()
 	})
 }

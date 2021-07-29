@@ -4,8 +4,9 @@ import (
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"keboola-as-code/src/diff"
-	"keboola-as-code/src/local"
+	"keboola-as-code/src/log"
 	"keboola-as-code/src/manifest"
+	"keboola-as-code/src/plan"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/schema"
 	"keboola-as-code/src/state"
@@ -125,11 +126,31 @@ func ValidateSchemas(projectState *state.State, logger *zap.SugaredLogger) error
 	return nil
 }
 
-func Rename(projectState *state.State, logger *zap.SugaredLogger) error {
-	if warn, err := local.Rename(projectState.RenamePlan(), logger); err != nil {
+func Rename(projectState *state.State, logger *zap.SugaredLogger, logEmpty, dryRun bool) error {
+	// Get plan
+	rename := plan.Rename(projectState)
+
+	// Log plan
+	if logEmpty || !rename.Empty() {
+		rename.Log(log.ToInfoWriter(logger))
+	}
+
+	// Dry run?
+	if dryRun {
+		logger.Info("Dry run, nothing changed.")
+		return nil
+	}
+
+	// Invoke
+	if warn, err := rename.Invoke(logger, projectState.ProjectDir(), projectState.Manifest()); err != nil {
 		return utils.PrefixError(`cannot rename objects`, err)
 	} else if warn != nil {
 		logger.Warn(`cannot finish objects renaming`, err)
 	}
+
+	if !rename.Empty() {
+		logger.Info("Rename done.")
+	}
+
 	return nil
 }

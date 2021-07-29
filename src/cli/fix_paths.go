@@ -13,7 +13,7 @@ const fixPathsLongDescription = `Command "fix-paths"
 Manifest file ".keboola/manifest.json" contains a naming for all local paths.
 
 With this command you can rename all existing paths
-to match the configured naming (eg. if it has been changed).
+to match the configured naming (eg. if the naming has been changed).
 `
 
 func fixPathsCommand(root *rootCommand) *cobra.Command {
@@ -64,7 +64,8 @@ func fixPathsCommand(root *rootCommand) *cobra.Command {
 			}
 
 			// Normalize paths
-			if err := Rename(projectState, logger); err != nil {
+			dryRun, _ := cmd.Flags().GetBool("dry-run")
+			if err := Rename(projectState, logger, true, dryRun); err != nil {
 				return err
 			}
 
@@ -74,7 +75,7 @@ func fixPathsCommand(root *rootCommand) *cobra.Command {
 			// Save manifest
 			if changed, err := SaveManifest(projectManifest, logger); err != nil {
 				return err
-			} else if !changed {
+			} else if !changed && !dryRun {
 				logger.Info(`Nothing to do.`)
 			}
 
@@ -82,6 +83,9 @@ func fixPathsCommand(root *rootCommand) *cobra.Command {
 			return nil
 		},
 	}
+
+	// Flags
+	cmd.Flags().Bool("dry-run", false, "print what needs to be done")
 
 	return cmd
 }

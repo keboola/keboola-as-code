@@ -95,7 +95,7 @@ func persistCommand(root *rootCommand) *cobra.Command {
 			projectState.LogUntrackedPaths(root.logger)
 
 			// Normalize paths
-			if err := Rename(projectState, logger); err != nil {
+			if err := Rename(projectState, logger, false, false); err != nil {
 				return err
 			}
 

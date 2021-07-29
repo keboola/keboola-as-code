@@ -3,10 +3,13 @@ Command "fix-paths"
 Manifest file ".keboola/manifest.json" contains a naming for all local paths.
 
 With this command you can rename all existing paths
-to match the configured naming (eg. if it has been changed).
+to match the configured naming (eg. if the naming has been changed).
 
 Usage:
   %s fix-paths [flags]
+
+Flags:
+      --dry-run   print what needs to be done
 
 Global Flags:
   -h, --help                       print help for command
