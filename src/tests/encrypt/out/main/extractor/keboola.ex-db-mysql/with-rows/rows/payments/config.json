@@ -1,6 +1,6 @@
 {
   "parameters": {
     "incremental": false,
-    "#paymentKey": "blabla"
+    "#paymentKey": "encrypted"
   }
 }

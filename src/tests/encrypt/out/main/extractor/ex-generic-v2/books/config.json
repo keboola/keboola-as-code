@@ -1,7 +1,6 @@
 {
   "parameters": {
     "books": [],
-    "#apiToken": "blablabla"
-
+    "#apiToken": "encrypted"
   }
 }

@@ -76,8 +76,9 @@ func encryptCommand(root *rootCommand) *cobra.Command {
 				logger.Info("Dry run, nothing changed.")
 				return nil
 			}
+			// fmt.Printf("Running encrypt\n")
 
-			return nil
+			return encryption.DoEncrypt(projectState, unencryptedGroups)
 		},
 	}
 	cmd.Flags().Bool("dry-run", false, "print what needs to be done")

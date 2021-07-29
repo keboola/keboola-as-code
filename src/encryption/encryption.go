@@ -103,3 +103,25 @@ func LogGroups(groups []Group, logger *zap.SugaredLogger) {
 		}
 	}
 }
+
+func DoEncrypt(projectState *state.State, unencryptedGroups []Group) error {
+	for _, group := range unencryptedGroups {
+		switch o := group.object.(type) {
+		case *model.ConfigState:
+			for _, value := range group.values {
+				o.Local.Content = utils.UpdateIn(o.Local.Content, value.path, "encrypted")
+			}
+			projectState.LocalManager().SaveModel(o.Manifest(), o)
+
+		case *model.ConfigRowState:
+			// fmt.Printf("Values: %v \n \n", group.values)
+			for _, value := range group.values {
+				o.Local.Content = utils.UpdateIn(o.Local.Content, value.path, "encrypted")
+				// fmt.Printf("***Content: %v \n \n", o.Local.Content)
+			}
+			projectState.LocalManager().SaveModel(o.Manifest(), o)
+		}
+	}
+
+	return nil
+}
