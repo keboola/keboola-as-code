@@ -1,7 +1,6 @@
-package encryption
+package utils
 
 import (
-	"keboola-as-code/src/utils"
 	"testing"
 
 	"github.com/iancoleman/orderedmap"
@@ -9,7 +8,7 @@ import (
 )
 
 func TestUpdateMapStep(t *testing.T) {
-	content := utils.PairsToOrderedMap([]utils.Pair{
+	content := PairsToOrderedMap([]Pair{
 		{
 			Key:   "key1",
 			Value: "value1",
@@ -20,7 +19,7 @@ func TestUpdateMapStep(t *testing.T) {
 		},
 		{
 			Key: "parameters",
-			Value: *utils.PairsToOrderedMap([]utils.Pair{
+			Value: *PairsToOrderedMap([]Pair{
 				{
 					Key:   "host",
 					Value: "mysql.example.com",
@@ -28,8 +27,8 @@ func TestUpdateMapStep(t *testing.T) {
 			}),
 		},
 	})
-	keyPath := path{mapStep("parameters"), mapStep("host")}
-	content = UpdateContent(content, keyPath, "newValue")
+	path := KeyPath{MapStep("parameters"), MapStep("host")}
+	content = UpdateIn(content, path, "newValue")
 	parameters, _ := content.Get("parameters")
 	p := parameters.(orderedmap.OrderedMap)
 	host, _ := p.Get("host")
@@ -37,7 +36,7 @@ func TestUpdateMapStep(t *testing.T) {
 }
 
 func TestUpdateSliceStep(t *testing.T) {
-	content := utils.PairsToOrderedMap([]utils.Pair{
+	content := PairsToOrderedMap([]Pair{
 		{
 			Key:   "key1",
 			Value: "value1",
@@ -48,7 +47,7 @@ func TestUpdateSliceStep(t *testing.T) {
 		},
 		{
 			Key: "parameters",
-			Value: *utils.PairsToOrderedMap([]utils.Pair{
+			Value: *PairsToOrderedMap([]Pair{
 				{
 					Key:   "host",
 					Value: "mysql.example.com",
@@ -56,13 +55,13 @@ func TestUpdateSliceStep(t *testing.T) {
 				{
 					Key: "values",
 					Value: []interface{}{
-						*utils.PairsToOrderedMap([]utils.Pair{
+						*PairsToOrderedMap([]Pair{
 							{
 								Key:   "name",
 								Value: "john",
 							},
 						}),
-						*utils.PairsToOrderedMap([]utils.Pair{
+						*PairsToOrderedMap([]Pair{
 							{
 								Key:   "name",
 								Value: "kate",
@@ -73,8 +72,8 @@ func TestUpdateSliceStep(t *testing.T) {
 			}),
 		},
 	})
-	keyPath := path{mapStep("parameters"), mapStep("values"), sliceStep(1), mapStep("name")}
-	content = UpdateContent(content, keyPath, "newValue")
+	path := KeyPath{MapStep("parameters"), MapStep("values"), SliceStep(1), MapStep("name")}
+	content = UpdateIn(content, path, "newValue")
 	parameters, _ := content.Get("parameters")
 	parametersMap := parameters.(orderedmap.OrderedMap)
 	values, _ := parametersMap.Get("values")

@@ -2,10 +2,11 @@ package utils
 
 import (
 	"fmt"
-	"github.com/umisama/go-regexpcache"
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/umisama/go-regexpcache"
 )
 
 type PathTemplate string
@@ -49,4 +50,30 @@ func (p *PathTemplate) regexp() *regexp.Regexp {
 
 func (p *PathTemplate) placeholderToRegexp(placeholder string) string {
 	return `(?P<` + strings.Trim(placeholder, `\{}`) + `>[^/]+)`
+}
+
+type KeyPath []Step
+
+type Step interface {
+	String() string
+}
+
+type MapStep string
+
+type SliceStep int
+
+func (v KeyPath) String() string {
+	parts := make([]string, 0)
+	for _, step := range v {
+		parts = append(parts, step.String())
+	}
+	return strings.Join(parts, ".")
+}
+
+func (v MapStep) String() string {
+	return string(v)
+}
+
+func (v SliceStep) String() string {
+	return fmt.Sprintf("[%v]", int(v))
 }
