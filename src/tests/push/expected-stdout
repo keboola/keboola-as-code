@@ -1,5 +1,6 @@
 %A
 DEBUG	Project local and remote states have been successfully loaded.
+DEBUG	Change description: "my change description"
 DEBUG	Validation done.
 INFO	Plan for "push" operation:
 INFO		CH B bar | changed: description

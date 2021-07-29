@@ -11,6 +11,7 @@
           "componentId": "keboola.ex-db-mysql",
           "name": "with-rows",
           "description": "test fixture",
+          "changeDescription": "Updated from #KeboolaCLI",
           "configuration": {
             "parameters": {
               "db": {
@@ -22,6 +23,7 @@
             {
               "name": "disabled",
               "description": "test fixture",
+              "changeDescription": "Updated from #KeboolaCLI",
               "isDisabled": false,
               "configuration": {
                 "parameters": {
@@ -64,6 +66,7 @@
           "componentId": "keboola.ex-db-mysql",
           "name": "with-rows",
           "description": "test fixture",
+          "changeDescription": "Updated from #KeboolaCLI",
           "configuration": {
             "parameters": {
               "db": {
@@ -85,6 +88,7 @@
             {
               "name": "test_view changed",
               "description": "test fixture",
+              "changeDescription": "Updated from #KeboolaCLI",
               "isDisabled": false,
               "configuration": {
                 "parameters": {
@@ -95,6 +99,7 @@
             {
               "name": "users",
               "description": "test fixture",
+              "changeDescription": "Updated from #KeboolaCLI",
               "isDisabled": false,
               "configuration": {
                 "parameters": {

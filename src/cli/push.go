@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 	"keboola-as-code/src/diff"
 	"keboola-as-code/src/event"
+	"keboola-as-code/src/log"
 	"keboola-as-code/src/plan"
 	"keboola-as-code/src/remote"
 )
@@ -14,6 +15,9 @@ const pushLongDescription = `Command "push"
 Push configurations to the Keboola Connection project.
 Project's state will be overwritten to match the local files.
 
+You can specify an optional ["change description"].
+It will be visible in the config's versions.
+
 You can use the "--dry-run" flag to see
 what needs to be done without modifying the project's state.
 `
@@ -21,7 +25,7 @@ what needs to be done without modifying the project's state.
 func pushCommand(root *rootCommand) *cobra.Command {
 	force := false
 	cmd := &cobra.Command{
-		Use:   "push",
+		Use:   `push ["change description"]`,
 		Short: pushShortDescription,
 		Long:  pushLongDescription,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
@@ -39,6 +43,13 @@ func pushCommand(root *rootCommand) *cobra.Command {
 				projectState := diffResults.CurrentState
 				projectManifest := projectState.Manifest()
 
+				// Change description - optional arg
+				changeDescription := "Updated from #KeboolaCLI"
+				if len(args) > 0 {
+					changeDescription = args[0]
+				}
+				logger.Debugf(`Change description: "%s"`, changeDescription)
+
 				// Log untracked paths
 				projectState.LogUntrackedPaths(logger)
 
@@ -48,7 +59,10 @@ func pushCommand(root *rootCommand) *cobra.Command {
 				}
 
 				// Get plan
-				push := plan.Push(diffResults)
+				push, err := plan.Push(diffResults, changeDescription)
+				if err != nil {
+					return err
+				}
 
 				// Allow remote deletion, if --force
 				if force {
@@ -56,7 +70,7 @@ func pushCommand(root *rootCommand) *cobra.Command {
 				}
 
 				// Log plan
-				push.LogInfo(logger)
+				push.Log(log.ToInfoWriter(logger))
 
 				// Dry run?
 				dryRun, _ := cmd.Flags().GetBool("dry-run")
@@ -66,8 +80,7 @@ func pushCommand(root *rootCommand) *cobra.Command {
 				}
 
 				// Invoke
-				executor := plan.NewExecutor(logger, root.ctx, projectState, root.api)
-				if err := executor.Invoke(push); err != nil {
+				if err := push.Invoke(logger, api, root.ctx); err != nil {
 					return err
 				}
 
