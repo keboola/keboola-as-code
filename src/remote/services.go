@@ -31,8 +31,8 @@ func (a *StorageApi) GetEncryptionApiUrl() (string, error) {
 	for _, object := range services {
 		service := object.(map[string]interface{})
 		if service["id"] == "encryption" {
-			apiHost := service["url"]
-			return apiHost.(string), nil
+			url := service["url"]
+			return url.(string), nil
 		}
 	}
 	return "", fmt.Errorf("encryption API not found in services from Storage API: \"%s\"", services)
