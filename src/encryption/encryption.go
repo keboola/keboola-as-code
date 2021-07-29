@@ -1,6 +1,7 @@
 package encryption
 
 import (
+	"keboola-as-code/src/model"
 	"keboola-as-code/src/state"
 	"regexp"
 	"strconv"
@@ -19,7 +20,7 @@ func isEncrypted(value string) bool {
 }
 
 type Group struct {
-	object state.ObjectState // config or configRow state object
+	object model.ObjectState // config or configRow state object
 	values []Value
 }
 
@@ -68,10 +69,10 @@ func (f *finder) FindValues(projectState *state.State) {
 		// Walk through configuration nested structure
 		group := Group{object, nil}
 		switch o := object.(type) {
-		case *state.ConfigState:
+		case *model.ConfigState:
 			group.parseOrderedMap(o.Local.Content, nil)
 
-		case *state.ConfigRowState:
+		case *model.ConfigRowState:
 			group.parseOrderedMap(o.Local.Content, nil)
 		}
 
