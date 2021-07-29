@@ -21,6 +21,24 @@ func (a *StorageApi) GetServices() ([]interface{}, error) {
 	return nil, response.Err()
 }
 
+func (a *StorageApi) GetEncryptionApiUrl() (string, error) {
+
+	services, err := a.GetServices()
+	if err != nil {
+		return "", err
+	}
+
+	for _, object := range services {
+		service := object.(map[string]interface{})
+		if service["id"] == "encryption" {
+			apiHost := service["url"]
+			return apiHost.(string), nil
+		}
+	}
+	return "", fmt.Errorf("encryption API not found in services from Storage API: \"%s\"", services)
+
+}
+
 func (a *StorageApi) GetServicesRequest() *client.Request {
 	result := make(map[string]interface{})
 	return a.NewRequest(resty.MethodGet, "/").

@@ -4,16 +4,15 @@ import (
 	"context"
 	"fmt"
 	"keboola-as-code/src/client"
-	"keboola-as-code/src/remote"
 
 	"github.com/go-resty/resty/v2"
 	"go.uber.org/zap"
 )
 
 type Api struct {
-	apiHostUrl string
-	client     *client.Client
-	logger     *zap.SugaredLogger
+	hostUrl string
+	client  *client.Client
+	logger  *zap.SugaredLogger
 }
 
 // Error represents Encryption API error structure
@@ -31,29 +30,11 @@ func (e *Error) Error() string {
 	return msg
 }
 
-func getEncryptionApiHost(connectionApiHost string, ctx context.Context, logger *zap.SugaredLogger) string {
-	storageApi := remote.NewStorageApi(connectionApiHost, ctx, logger, false)
-	services, err := storageApi.GetServices()
-	if err != nil {
-		panic(fmt.Errorf("failed to retrieve services from Storage API: \"%s\"", err))
-	}
+func NewEncryptionApi(hostUrl string, ctx context.Context, logger *zap.SugaredLogger, verbose bool) *Api {
 
-	for _, object := range services {
-		service := object.(map[string]interface{})
-		if service["id"] == "encryption" {
-			apiHost := service["url"]
-			return apiHost.(string)
-		}
-	}
-	panic(fmt.Errorf("encryption API not found in services from Storage API: \"%s\"", services))
-}
-
-func NewEncryptionApi(connectionApiHost string, ctx context.Context, logger *zap.SugaredLogger, verbose bool) *Api {
-
-	apiHostUrl := getEncryptionApiHost(connectionApiHost, ctx, logger)
-	c := client.NewClient(ctx, logger, verbose).WithHostUrl(apiHostUrl)
+	c := client.NewClient(ctx, logger, verbose).WithHostUrl(hostUrl)
 	c.SetError(&Error{})
-	api := &Api{client: c, logger: logger, apiHostUrl: apiHostUrl}
+	api := &Api{client: c, logger: logger, hostUrl: hostUrl}
 	return api
 }
 

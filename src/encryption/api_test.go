@@ -10,9 +10,9 @@ import (
 
 func TestNewEncryptionApi(t *testing.T) {
 	logger, _ := utils.NewDebugLogger()
-	a := NewEncryptionApi("connection.keboola.com", context.Background(), logger, true)
+	a := NewEncryptionApi("https://encryption.keboola.com", context.Background(), logger, true)
 	assert.NotNil(t, a)
-	assert.Equal(t, "https://encryption.keboola.com", a.apiHostUrl)
+	assert.Equal(t, "https://encryption.keboola.com", a.hostUrl)
 	mapToEncrypt := map[string]string{"#keyToEncrypt": "value"}
 	encryptedMap, err := a.EncryptMapValues("keboola.ex-generic-v2", "1234", mapToEncrypt)
 	assert.Nil(t, err)
@@ -23,7 +23,7 @@ func TestNewEncryptionApi(t *testing.T) {
 func TestErrorEncryptionApi(t *testing.T) {
 	logger, _ := utils.NewDebugLogger()
 	mapToEncrypt := map[string]string{"#keyToEncrypt": "value"}
-	a := NewEncryptionApi("connection.keboola.com", context.Background(), logger, false)
+	a := NewEncryptionApi("https://encryption.keboola.com", context.Background(), logger, false)
 	_, err := a.EncryptMapValues("", "", mapToEncrypt)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "The componentId parameter is required")
