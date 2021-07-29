@@ -1,12 +1,12 @@
-package state
+package plan
 
 import (
 	"context"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/manifest"
-	"keboola-as-code/src/model"
 	"keboola-as-code/src/remote"
+	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
 	"path/filepath"
 	"runtime"
@@ -42,29 +42,39 @@ func TestRenameAllPlan(t *testing.T) {
 	// Load state
 	logger, _ := utils.NewDebugLogger()
 	api, _ := remote.TestMockedStorageApi(t)
-	options := NewOptions(m, api, context.Background(), logger)
+	options := state.NewOptions(m, api, context.Background(), logger)
 	options.LoadLocalState = true
-	state, ok := LoadState(options)
+	projectState, ok := state.LoadState(options)
 	if !ok {
-		assert.FailNow(t, state.LocalErrors().Error())
+		assert.FailNow(t, projectState.LocalErrors().Error())
 	}
 
 	// Get rename plan
-	assert.Equal(t, []*model.RenamePlan{
-		{
-			OldPath:     filepath.Join(projectDir, "my-main-branch"),
-			NewPath:     filepath.Join(projectDir, "main"),
-			Description: "my-main-branch -> main",
+	plan := Rename(projectState)
+
+	// Clear manifest records before assert
+	for _, action := range plan.actions {
+		action.Record = nil
+	}
+
+	// Assert
+	assert.Equal(t, &RenamePlan{
+		actions: []*RenameAction{
+			{
+				OldPath:     filepath.Join(projectDir, "my-main-branch"),
+				NewPath:     filepath.Join(projectDir, "main"),
+				Description: "my-main-branch -> main",
+			},
+			{
+				OldPath:     filepath.Join(projectDir, "main/extractor/keboola.ex-db-mysql/my-table"),
+				NewPath:     filepath.Join(projectDir, "main/extractor/keboola.ex-db-mysql/789-tables"),
+				Description: "main/extractor/keboola.ex-db-mysql/{my-table -> 789-tables}",
+			},
+			{
+				OldPath:     filepath.Join(projectDir, "main/extractor/keboola.ex-db-mysql/789-tables/rows/my-row"),
+				NewPath:     filepath.Join(projectDir, "main/extractor/keboola.ex-db-mysql/789-tables/rows/12-users"),
+				Description: "main/extractor/keboola.ex-db-mysql/789-tables/rows/{my-row -> 12-users}",
+			},
 		},
-		{
-			OldPath:     filepath.Join(projectDir, "main/extractor/keboola.ex-db-mysql/my-table"),
-			NewPath:     filepath.Join(projectDir, "main/extractor/keboola.ex-db-mysql/789-tables"),
-			Description: "main/extractor/keboola.ex-db-mysql/{my-table -> 789-tables}",
-		},
-		{
-			OldPath:     filepath.Join(projectDir, "main/extractor/keboola.ex-db-mysql/789-tables/rows/my-row"),
-			NewPath:     filepath.Join(projectDir, "main/extractor/keboola.ex-db-mysql/789-tables/rows/12-users"),
-			Description: "main/extractor/keboola.ex-db-mysql/789-tables/rows/{my-row -> 12-users}",
-		},
-	}, state.RenamePlan())
+	}, plan)
 }

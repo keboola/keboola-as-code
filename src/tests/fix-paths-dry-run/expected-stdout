@@ -1,0 +1,13 @@
+Plan for "rename" operation:
+	- my-main-branch -> main
+	- main/extractor/keboola.ex-db-mysql/{my-table -> tables}
+	- main/transformation/keboola.python-transformation-v2/{my-transformation -> python-transformation}
+	- main/transformation/keboola.python-transformation-v2/python-transformation/blocks/{my-block-1 -> 001-block-1}
+	- main/transformation/keboola.python-transformation-v2/python-transformation/blocks/001-block-1/{abc -> 001-code-x}
+	- main/transformation/keboola.python-transformation-v2/python-transformation/blocks/001-block-1/001-code-x/{code.txt -> code.py}
+	- main/transformation/keboola.python-transformation-v2/python-transformation/blocks/{my-block-2 -> 002-block-2}
+	- main/transformation/keboola.python-transformation-v2/python-transformation/blocks/002-block-2/{code -> 001-code-z}
+	- main/transformation/keboola.python-transformation-v2/python-transformation/blocks/002-block-2/001-code-z/{code.myext.py -> code.py}
+	- main/extractor/keboola.ex-db-mysql/tables/rows/{my-row -> users}
+Dry run, nothing changed.
+Fix paths done.

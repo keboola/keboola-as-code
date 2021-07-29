@@ -67,7 +67,7 @@ func pullCommand(root *rootCommand) *cobra.Command {
 				}
 
 				// Normalize paths
-				if err := Rename(projectState, logger); err != nil {
+				if err := Rename(projectState, logger, false, false); err != nil {
 					return err
 				}
 
