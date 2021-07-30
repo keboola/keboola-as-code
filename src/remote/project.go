@@ -84,7 +84,7 @@ func (p *testProject) Clear() {
 	}
 
 	// Delete all dev-branches sequentially, parallel requests don't work with this endpoint
-	for _, branch := range *branches {
+	for _, branch := range branches {
 		if !branch.IsDefault {
 			p.api.DeleteBranchRequest(branch.Id).Send()
 		}

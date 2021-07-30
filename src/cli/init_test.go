@@ -29,7 +29,7 @@ func TestMissingParams(t *testing.T) {
 	assert.Contains(t, out.String(), "Missing api token.")
 }
 
-func TestInteractive(t *testing.T) {
+func TestInteractiveInit(t *testing.T) {
 	tempDir := t.TempDir()
 	assert.NoError(t, os.Chdir(tempDir))
 
@@ -67,6 +67,11 @@ func TestInteractive(t *testing.T) {
 		assert.NoError(t, err)
 		time.Sleep(100 * time.Millisecond)
 		_, err = c.SendLine(utils.TestTokenMaster())
+		assert.NoError(t, err)
+		_, err = c.ExpectString("Allowed branches")
+		assert.NoError(t, err)
+		time.Sleep(100 * time.Millisecond)
+		_, err = c.SendLine("\n") // enter, first option "only main branch"
 		assert.NoError(t, err)
 		_, err = c.ExpectEOF()
 		assert.NoError(t, err)

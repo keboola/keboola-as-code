@@ -8,6 +8,8 @@ DEBUG	Parsed options: %s
 DEBUG	HTTP	GET https://%s/v2/storage/tokens/verify | 200 | %s
 DEBUG	Storage API token is valid.
 DEBUG	Project id: "%%TEST_PROJECT_ID%%", project name: "%%TEST_PROJECT_NAME%%".
+%A
+INFO	Set allowed branches: "__all__"
 INFO	Created metadata dir ".keboola".
 INFO	Created manifest file ".keboola/manifest.json".
 INFO	Created file ".env.local" - it contains the API token, keep it local and secret.

@@ -16,12 +16,19 @@ const initShortDescription = `Init local project directory and perform the first
 const initLongDescription = `Command "init"
 
 Initialize local project's directory
-and first time sync project from the Keboola Connection.
+and make first sync from the Keboola Connection.
 
-You will be asked to enter the Storage API host
-and Storage API token from your project.
+You will be prompted to enter:
+- storage API host
+- storage API token of your project
+- allowed branches
+
 You can also enter these values
-by flags or environment variables.`
+by flags or environment variables.
+
+This CLI tool will only work with the specified "allowed branches".
+Others will be ignored, although they will still exist in the project.
+`
 
 func initCommand(root *rootCommand) *cobra.Command {
 	cmd := &cobra.Command{
@@ -29,20 +36,23 @@ func initCommand(root *rootCommand) *cobra.Command {
 		Short: initShortDescription,
 		Long:  initLongDescription,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			logger := root.logger
 			successful := false
 
 			// Is project directory already initialized?
 			if root.options.HasProjectDirectory() {
 				projectDir := root.options.ProjectDir()
 				metadataDir := root.options.MetadataDir()
-				root.logger.Infof(`The path "%s" is already an project directory.`, projectDir)
-				root.logger.Info(`Please use a different directory or synchronize the current with "pull" command.`)
+				logger.Infof(`The path "%s" is already an project directory.`, projectDir)
+				logger.Info(`Please use a different directory or synchronize the current with "pull" command.`)
 				return fmt.Errorf(`metadata directory "%s" already exists`, utils.RelPath(projectDir, metadataDir))
 			}
 
-			// Validate options
+			// Prompt user for host and token
 			root.options.AskUser(root.prompt, "Host")
 			root.options.AskUser(root.prompt, "ApiToken")
+
+			// Validate options
 			if err := root.ValidateOptions([]string{"ApiHost", "ApiToken"}); err != nil {
 				return err
 			}
@@ -56,9 +66,23 @@ func initCommand(root *rootCommand) *cobra.Command {
 			// Send failed event on error
 			defer func() {
 				if err != nil && !successful {
-					event.SendCmdFailedEvent(root.start, root.logger, api, err, "init", "Init command failed.")
+					event.SendCmdFailedEvent(root.start, logger, api, err, "init", "Init command failed.")
 				}
 			}()
+
+			// Load all branches
+			allBranches, err := api.ListBranches()
+			if err != nil {
+				return err
+			}
+
+			// Prompt user for allowed allBranches
+			allowedBranches := root.prompt.GetAllowedBranches(
+				allBranches,
+				root.options.IsSet("allowed-branches"),
+				root.options.GetString("allowed-branches"),
+			)
+			logger.Infof(`Set allowed branches: %s`, allowedBranches.String())
 
 			// Create metadata dir
 			projectDir := root.options.WorkingDirectory()
@@ -69,29 +93,30 @@ func initCommand(root *rootCommand) *cobra.Command {
 			if err = root.options.SetProjectDirectory(projectDir); err != nil {
 				return err
 			}
-			root.logger.Infof("Created metadata dir \"%s\".", utils.RelPath(projectDir, metadataDir))
+			logger.Infof("Created metadata dir \"%s\".", utils.RelPath(projectDir, metadataDir))
 
 			// Create and save manifest
 			projectManifest, err := manifest.NewManifest(api.ProjectId(), api.Host(), projectDir, metadataDir)
+			projectManifest.Content.AllowedBranches = allowedBranches
 			if err != nil {
 				return err
 			}
 			if err = projectManifest.Save(); err != nil {
 				return err
 			}
-			root.logger.Infof("Created manifest file \"%s\".", utils.RelPath(projectDir, projectManifest.RelativePath()))
+			logger.Infof("Created manifest file \"%s\".", utils.RelPath(projectDir, projectManifest.RelativePath()))
 
 			// Create ENV files
-			if err := createEnvFiles(root.logger, api, projectDir); err != nil {
+			if err := createEnvFiles(logger, api, projectDir); err != nil {
 				return err
 			}
 
 			// Send successful event
 			successful = true
-			event.SendCmdSuccessfulEvent(root.start, root.logger, api, "init", "Initialized local project directory.")
+			event.SendCmdSuccessfulEvent(root.start, logger, api, "init", "Initialized local project directory.")
 
 			// Done
-			root.logger.Info("Init done. Running pull.")
+			logger.Info("Init done. Running pull.")
 
 			// Make first pull
 			pull := root.GetCommandByName("pull")
@@ -100,6 +125,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 	}
 
 	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
+	cmd.Flags().StringP("allowed-branches", "b", "main", `comma separated IDs or name globs, use "*" for all`)
 
 	return cmd
 }
