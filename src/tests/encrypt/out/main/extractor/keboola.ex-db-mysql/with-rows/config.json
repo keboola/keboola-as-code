@@ -2,7 +2,7 @@
   "parameters": {
     "db": {
       "host": "mysql.example.com",
-      "#passwd": "KBC::ProjectSecure%a::%s"
+      "#passwd": "KBC::ProjectSecure%A::%s"
     }
   }
 }

@@ -1,6 +1,6 @@
 {
   "parameters": {
     "books": [],
-    "#apiToken": "KBC::ProjectSecure%a::%s"
+    "#apiToken": "KBC::ProjectSecure%A::%s"
   }
 }
