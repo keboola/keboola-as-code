@@ -49,8 +49,12 @@
           "path": "rows/row-1"
         },
         {
-          "id": "%%TEST_BRANCH_FOO_CONFIG_WITH_SCHEMA_ROW_ROW_2_ID%%",
+          "id": "33333",
           "path": "rows/row-2"
+        },
+        {
+          "id": "%%TEST_BRANCH_FOO_CONFIG_WITH_SCHEMA_ROW_ROW_2_ID%%",
+          "path": "rows/row-3"
         }
       ]
     }
