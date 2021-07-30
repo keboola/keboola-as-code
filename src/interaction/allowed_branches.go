@@ -149,7 +149,6 @@ func (p *branchesPrompt) typeBranchesList() model.AllowedBranches {
 	if len(p.allBranches) > 10 {
 		p.prompt.Printf(`...`)
 	}
-	p.prompt.Printf("\n")
 
 	// Prompt
 	lines, ok := p.prompt.Multiline(&Question{
