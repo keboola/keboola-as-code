@@ -66,7 +66,8 @@ func encryptCommand(root *rootCommand) *cobra.Command {
 					return utils.PrefixError("project local state is invalid", projectState.LocalErrors())
 				}
 			}
-			// manager := local.NewManager(logger, projectManifest, api)
+
+			// find and log unencrypted values
 			unencryptedGroups := encryption.FindUnencrypted(projectState)
 			encryption.LogGroups(unencryptedGroups, logger)
 
@@ -77,7 +78,19 @@ func encryptCommand(root *rootCommand) *cobra.Command {
 				return nil
 			}
 
+			encryptionApiUrl, err := api.GetEncryptionApiUrl()
+			if err != nil {
+				return err
+			}
+
+			encryptionApi := encryption.NewEncryptionApi(encryptionApiUrl, root.ctx, logger, false)
+			err = encryption.DoEncrypt(projectState, unencryptedGroups, encryptionApi)
+			if err != nil {
+				return err
+			}
+			logger.Info("Encrypt done.")
 			return nil
+
 		},
 	}
 	cmd.Flags().Bool("dry-run", false, "print what needs to be done")

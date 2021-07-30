@@ -1,6 +1,7 @@
 package encryption
 
 import (
+	"fmt"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
@@ -17,7 +18,9 @@ func isKeyToEncrypt(key string) bool {
 }
 
 func isEncrypted(value string) bool {
-	return regexp.MustCompile(`^KBC::(ProjectSecure|ComponentSecure|ConfigSecure)::.+$`).MatchString(value)
+	currentFormatMatch := regexp.MustCompile(`^KBC::(ProjectSecure|ComponentSecure|ConfigSecure)(KV)?::.+$`).MatchString(value)
+	legacyFormatMatch := regexp.MustCompile(`^KBC::(Encrypted==|ComponentProjectEncrypted==|ComponentEncrypted==).+$`).MatchString(value)
+	return currentFormatMatch || legacyFormatMatch
 }
 
 type Group struct {
@@ -102,4 +105,58 @@ func LogGroups(groups []Group, logger *zap.SugaredLogger) {
 			logger.Infof("  %v", value.path)
 		}
 	}
+}
+
+func (v *Value) encryptedPath() string {
+	return "#" + v.path.String()
+}
+
+func prepareMapToEncrypt(values []Value) map[string]string {
+	result := make(map[string]string)
+	for _, value := range values {
+		result[value.encryptedPath()] = value.value
+	}
+	return result
+}
+
+func DoEncrypt(projectState *state.State, unencryptedGroups []Group, api *Api) error {
+	errors := utils.NewMultiError()
+	localManager := projectState.LocalManager()
+	projectId := fmt.Sprintf("%v", projectState.Manifest().Project.Id)
+	for _, group := range unencryptedGroups {
+		// create map with {"#<value-path>":"<value-to-encrypt>"...} entries
+		mapToEncrypt := prepareMapToEncrypt(group.values)
+
+		//type switch on config or configRow state
+		switch o := group.object.(type) {
+		case *model.ConfigState:
+			encryptedMap, encryptionError := api.EncryptMapValues(o.ComponentId, projectId, mapToEncrypt)
+			if encryptionError != nil {
+				errors.Append(encryptionError)
+				continue
+			}
+			//update local state with encrypted values
+			for _, value := range group.values {
+				encryptedValue := encryptedMap[value.encryptedPath()]
+				o.Local.Content = utils.UpdateIn(o.Local.Content, value.path, encryptedValue)
+			}
+		case *model.ConfigRowState:
+			encryptedMap, encryptionError := api.EncryptMapValues(o.ComponentId, projectId, mapToEncrypt)
+			if encryptionError != nil {
+				errors.Append(encryptionError)
+				continue
+			}
+			//update local state with encrypted values
+			for _, value := range group.values {
+				encryptedValue := encryptedMap[value.encryptedPath()]
+				o.Local.Content = utils.UpdateIn(o.Local.Content, value.path, encryptedValue)
+			}
+		}
+		// save updated config local state to disk
+		if err := localManager.SaveModel(group.object.Manifest(), group.object.LocalState()); err != nil {
+			errors.Append(err)
+		}
+	}
+
+	return errors.ErrorOrNil()
 }

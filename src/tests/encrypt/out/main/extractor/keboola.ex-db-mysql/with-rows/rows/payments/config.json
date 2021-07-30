@@ -1,0 +1,6 @@
+{
+  "parameters": {
+    "incremental": false,
+    "#paymentKey": "KBC::ProjectSecure%A::%s"
+  }
+}
