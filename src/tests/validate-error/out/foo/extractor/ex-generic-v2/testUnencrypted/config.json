@@ -4,7 +4,7 @@
         "tokens": [
             {
                 "name": "token0",
-                "#value": "KBC:ProjectSecure::blablabla"
+                "#value": "KBC::ProjectSecure::blablabla"
             },
             {
                 "name": "token1",
