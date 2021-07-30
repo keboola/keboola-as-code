@@ -34,7 +34,7 @@ func ValidateSchemas(projectState *state.State) error {
 		if group, ok := encryption.GetGroupByObject(unencryptedGroups, config); ok {
 			valuesErrors := utils.NewMultiError()
 			for _, value := range group.Values() {
-				valuesErrors.AppendRaw(value.PathString())
+				valuesErrors.AppendRaw(value.Path().String())
 			}
 			errors.AppendWithPrefix(fmt.Sprintf("config \"%s\" contains unencrypted values", projectState.Naming().ConfigFilePath(config.RelativePath())), valuesErrors)
 
@@ -59,7 +59,7 @@ func ValidateSchemas(projectState *state.State) error {
 		if group, ok := encryption.GetGroupByObject(unencryptedGroups, row); ok {
 			valuesErrors := utils.NewMultiError()
 			for _, value := range group.Values() {
-				valuesErrors.AppendRaw(value.PathString())
+				valuesErrors.AppendRaw(value.Path().String())
 			}
 			errors.AppendWithPrefix(fmt.Sprintf("config row \"%s\" contains unencrypted values", projectState.Naming().ConfigFilePath(row.RelativePath())), valuesErrors)
 
