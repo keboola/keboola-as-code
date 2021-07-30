@@ -2,17 +2,17 @@
   "parameters": {
     "carsTokens": [
       {
-        "#token": "encrypted"
+        "#token": "KBC::ProjectSecure%a::%s"
       },
       {
-        "#token": "encrypted"
+        "#token": "KBC::ProjectSecure%a::%s"
       },
       {
         "#token": "KBC::ProjectSecure::eJwBLgHR/mE6Mjp7aTowO3M6ODc6It71AgBjB6FrKJmXGXsL94+4UI3EumD/fqyk+4uSaeOhYnvC8HdXugJoVon9EE34KV5w6WbutaK4hvL5tx+LqTbgpIg5WJpho/6yGbFMfAzm2499XGItqyI7aToxO3M6MTg0OiIBAgMAeGVez2/nHl36SUiQv1vPJofmrO9Ycm3Z8Zb1zMOFZ23AAVeuUCP+rEBx4lG5kr0TvxwAAAB+MHwGCSqGSIb3DQEHBqBvMG0CAQAwaAYJKoZIhvcNAQcBMB4GCWCGSAFlAwQBLjARBAyUGPjO32nIiYoti1ACARCAO1xi3Fr6W+DT34l4NxXNnN1l05EVNPNjBcwm08U6an1WmKvR6hGnnMY8DyROyIThHejCTdv8mPy5zbYAIjt9RZuE/g=="
       },
       {
         "token": {
-          "#special": "encrypted"
+          "#special": "KBC::ProjectSecure%a::%s"
         }
       }
     ],

@@ -1,6 +1,6 @@
 {
   "parameters": {
     "books": [],
-    "#apiToken": "encrypted"
+    "#apiToken": "KBC::ProjectSecure%a::%s"
   }
 }
