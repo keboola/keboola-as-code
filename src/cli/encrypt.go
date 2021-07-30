@@ -77,9 +77,6 @@ func encryptCommand(root *rootCommand) *cobra.Command {
 				logger.Info("Dry run, nothing changed.")
 				return nil
 			}
-			if len(unencryptedGroups) == 0 {
-				return nil
-			}
 
 			encryptionApiUrl, err := api.GetEncryptionApiUrl()
 			if err != nil {
