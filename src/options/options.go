@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"keboola-as-code/src/interaction"
+	"keboola-as-code/src/json"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/utils"
 	"os"
@@ -16,8 +17,11 @@ import (
 	"strings"
 )
 
+type parser = viper.Viper
+
 // Options contains parsed flags and ENV variables
 type Options struct {
+	*parser
 	Verbose           bool   `flag:"verbose"`           // verbose mode, print details to console
 	VerboseApi        bool   `flag:"verbose-api"`       // log each API request and response
 	LogFilePath       string `flag:"log-file"`          // path to the log file
@@ -26,6 +30,12 @@ type Options struct {
 	workingDirectory  string // working directory
 	projectDirectory  string // project directory with ".keboola" metadata dir
 	metadataDirectory string // ".keboola" metadata dir
+}
+
+func NewOptions() *Options {
+	// Env parser
+	envNaming := &envNamingConvention{}
+	return &Options{parser: viper.NewWithOptions(viper.EnvKeyReplacer(envNaming))}
 }
 
 func (o *Options) WorkingDirectory() string {
@@ -156,20 +166,16 @@ func (o *Options) AskUser(p *interaction.Prompt, fieldName string) {
 
 // Load all sources of Options - flags, envs
 func (o *Options) Load(flags *pflag.FlagSet) (warnings []string, err error) {
-	// Env parser
-	envNaming := &envNamingConvention{}
-	parser := viper.NewWithOptions(viper.EnvKeyReplacer(envNaming))
-
 	// Bind flags
-	if err = parser.BindPFlags(flags); err != nil {
+	if err = o.BindPFlags(flags); err != nil {
 		return
 	}
 
 	// Bind ENV variables
-	parser.AutomaticEnv()
+	o.AutomaticEnv()
 
 	// Set Working directory + load .env file if present
-	workingDir, err := getWorkingDirectory(parser)
+	workingDir, err := getWorkingDirectory(o.parser)
 	if err != nil {
 		return
 	}
@@ -198,7 +204,7 @@ func (o *Options) Load(flags *pflag.FlagSet) (warnings []string, err error) {
 	for i := 0; i < reflection.NumField(); i++ {
 		field := types.Field(i)
 		if flag := field.Tag.Get("flag"); len(flag) > 0 {
-			value := castValue(parser.Get(flag), field.Type.Kind())
+			value := castValue(o.Get(flag), field.Type.Kind())
 			if value != nil {
 				reflection.Field(i).Set(reflect.ValueOf(value))
 			}
@@ -220,8 +226,8 @@ func (o *Options) normalize() {
 
 // Dump Options for debugging, hide API token
 func (o *Options) Dump() string {
-	re := regexp.MustCompile(`(ApiToken:"[^"]{1,7})[^"]*(")`)
-	str := fmt.Sprintf("Parsed options: %#v", o)
+	re := regexp.MustCompile(`("ApiToken":"[^"]{1,7})[^"]*(")`)
+	str := fmt.Sprintf("Parsed options: %s", json.MustEncode(o, false))
 	str = re.ReplaceAllString(str, `$1*****$2`)
 	return str
 }

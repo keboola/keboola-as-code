@@ -50,7 +50,7 @@ type rootCommand struct {
 // NewRootCommand creates parent of all sub-commands
 func NewRootCommand(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteCloser, prompt *interaction.Prompt) *rootCommand {
 	root := &rootCommand{
-		options: &options.Options{},
+		options: options.NewOptions(),
 		prompt:  prompt,
 		ctx:     context.Background(),
 		start:   time.Now(),
