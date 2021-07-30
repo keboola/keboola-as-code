@@ -45,7 +45,7 @@ func (s *State) loadModel(record model.Record) model.ObjectState {
 		// Validate, branch must be allowed
 		if v, ok := value.(*model.Branch); ok && !s.manifest.IsBranchAllowed(v.Id, v.Name) {
 			s.AddLocalError(fmt.Errorf(
-				`found manifest record for branch "%s"(%d), but it is not allowed by the manifest "allowedBranches"`,
+				`found manifest record for branch "%s" (%d), but it is not allowed by the manifest "allowedBranches"`,
 				v.Name,
 				v.Id,
 			))

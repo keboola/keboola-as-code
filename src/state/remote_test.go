@@ -9,11 +9,13 @@ import (
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/utils"
+	"path/filepath"
 	"testing"
 )
 
 func TestLoadRemoteStateEmpty(t *testing.T) {
-	state := loadRemoteState(t, "empty.json")
+	m := createManifest(t)
+	state := loadRemoteState(t, m, "empty.json")
 	assert.NotNil(t, state)
 	assert.Empty(t, state.RemoteErrors().Errors)
 	assert.Len(t, state.Branches(), 1)
@@ -21,12 +23,43 @@ func TestLoadRemoteStateEmpty(t *testing.T) {
 }
 
 func TestLoadRemoteStateComplex(t *testing.T) {
-	state := loadRemoteState(t, "complex.json")
+	m := createManifest(t)
+	state := loadRemoteState(t, m, "complex.json")
 	assert.NotNil(t, state)
 	assert.Empty(t, state.RemoteErrors().Errors)
 	assert.Equal(t, complexRemoteExpectedBranches(), utils.SortByName(state.Branches()))
 	assert.Equal(t, complexRemoteExpectedConfigs(), utils.SortByName(state.Configs()))
 	assert.Equal(t, complexRemoteExpectedConfigsRows(), utils.SortByName(state.ConfigRows()))
+}
+
+func TestLoadRemoteStateAllowedBranches(t *testing.T) {
+	m := createManifest(t)
+	m.Content.AllowedBranches = model.AllowedBranches{"f??"} // foo
+	state := loadRemoteState(t, m, "complex.json")
+	assert.NotNil(t, state)
+	assert.Empty(t, state.RemoteErrors().Errors)
+	// Only Foo branch is loaded, other are "invisible"
+	assert.Equal(t, []*model.BranchState{
+		{
+			Remote: &model.Branch{
+				BranchKey: model.BranchKey{
+					Id: cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_FOO_ID`)),
+				},
+				Name:        "Foo",
+				Description: "Foo branch",
+				IsDefault:   false,
+			},
+			BranchManifest: &model.BranchManifest{
+				BranchKey: model.BranchKey{
+					Id: cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_FOO_ID`)),
+				},
+				Paths: model.Paths{
+					Path:       utils.MustGetEnv(`TEST_BRANCH_FOO_ID`) + "-foo",
+					ParentPath: "",
+				},
+			},
+		},
+	}, utils.SortByName(state.Branches()))
 }
 
 func complexRemoteExpectedBranches() []*model.BranchState {
@@ -406,15 +439,19 @@ func complexRemoteExpectedConfigsRows() []*model.ConfigRowState {
 	}
 }
 
-func loadRemoteState(t *testing.T, projectStateFile string) *State {
-	api, _ := remote.TestStorageApiWithToken(t)
-	remote.SetStateOfTestProject(t, api, projectStateFile)
-
+func createManifest(t *testing.T) *manifest.Manifest {
 	projectDir := t.TempDir()
-	m, err := manifest.NewManifest(1, "connection.keboola.com", projectDir, "bar")
+	metadataDir := filepath.Join(projectDir, manifest.MetadataDir)
+	m, err := manifest.NewManifest(1, "connection.keboola.com", projectDir, metadataDir)
 	if err != nil {
 		assert.FailNow(t, err.Error())
 	}
+	return m
+}
+
+func loadRemoteState(t *testing.T, m *manifest.Manifest, projectStateFile string) *State {
+	api, _ := remote.TestStorageApiWithToken(t)
+	remote.SetStateOfTestProject(t, api, projectStateFile)
 	logger, _ := utils.NewDebugLogger()
 	state := newState(NewOptions(m, api, context.Background(), logger))
 	state.doLoadRemoteState()
