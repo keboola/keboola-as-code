@@ -12,7 +12,7 @@ import (
 )
 
 func TestWorkingDirFromOs(t *testing.T) {
-	options := &Options{}
+	options := NewOptions()
 	flags := &pflag.FlagSet{}
 
 	// Load
@@ -28,7 +28,7 @@ func TestWorkingDirFromOs(t *testing.T) {
 func TestWorkingDirFromFlag(t *testing.T) {
 	tempDir := t.TempDir()
 	flags := &pflag.FlagSet{}
-	options := &Options{}
+	options := NewOptions()
 	options.BindPersistentFlags(flags)
 	assert.NoError(t, flags.Set("working-dir", tempDir))
 
@@ -42,7 +42,7 @@ func TestWorkingDirFromFlag(t *testing.T) {
 
 func TestProjectDirNotFound(t *testing.T) {
 	// Load
-	options := &Options{}
+	options := NewOptions()
 	flags := &pflag.FlagSet{}
 	_, err := options.Load(flags)
 	assert.NoError(t, err)
@@ -71,7 +71,7 @@ func TestProjectDirExpectedDirButFoundFile(t *testing.T) {
 	assert.NoError(t, file.Close())
 
 	// Load
-	options := &Options{}
+	options := NewOptions()
 	flags := &pflag.FlagSet{}
 	warnings, err := options.Load(flags)
 	assert.NoError(t, err)
@@ -92,7 +92,7 @@ func TestProjectDirSameAsWorkingDir(t *testing.T) {
 	assert.NoError(t, os.Chdir(projectDir))
 
 	// Load
-	options := &Options{}
+	options := NewOptions()
 	flags := &pflag.FlagSet{}
 	warnings, err := options.Load(flags)
 	assert.NoError(t, err)
@@ -115,7 +115,7 @@ func TestProjectDirIsParentOfWorkingDir(t *testing.T) {
 	assert.NoError(t, os.Chdir(workingDir))
 
 	// Load
-	options := &Options{}
+	options := NewOptions()
 	flags := &pflag.FlagSet{}
 	warnings, err := options.Load(flags)
 	assert.NoError(t, err)
@@ -137,7 +137,7 @@ func TestValuesPriority(t *testing.T) {
 
 	// Create structs
 	flags := &pflag.FlagSet{}
-	options := &Options{}
+	options := NewOptions()
 	options.BindPersistentFlags(flags)
 
 	// No values defined
@@ -198,12 +198,12 @@ func TestValuesPriority(t *testing.T) {
 }
 
 func TestValidateNoRequired(t *testing.T) {
-	options := &Options{}
+	options := NewOptions()
 	assert.Empty(t, options.Validate([]string{}))
 }
 
 func TestValidateAllRequired(t *testing.T) {
-	options := &Options{}
+	options := NewOptions()
 	errors := options.Validate([]string{"projectDirectory", "ApiHost", "ApiToken"})
 
 	// Assert
@@ -217,19 +217,10 @@ func TestValidateAllRequired(t *testing.T) {
 	assert.Equal(t, strings.Join(expected, "\n"), errors)
 }
 
-func TestDump(t *testing.T) {
-	options := &Options{}
+func TestDumpOptions(t *testing.T) {
+	options := NewOptions()
 	options.ApiHost = "connection.keboola.com"
 	options.ApiToken = "12345-67890123abcd"
-	expected := `Parsed options: &options.Options{` +
-		`Verbose:false, ` +
-		`VerboseApi:false, ` +
-		`LogFilePath:"", ` +
-		`ApiHost:"connection.keboola.com", ` +
-		`ApiToken:"12345-6*****", ` +
-		`workingDirectory:"", ` +
-		`projectDirectory:"", ` +
-		`metadataDirectory:""` +
-		`}`
+	expected := `Parsed options: {"Verbose":false,"VerboseApi":false,"LogFilePath":"","ApiHost":"connection.keboola.com","ApiToken":"12345-6*****"}`
 	assert.Equal(t, expected, options.Dump())
 }

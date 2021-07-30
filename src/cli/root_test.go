@@ -127,7 +127,6 @@ func TestInit(t *testing.T) {
 	root := NewRootCommand(in, out, out, interaction.NewPrompt(in, out, out))
 	assert.False(t, root.initialized)
 	assert.Nil(t, root.logger)
-	assert.Empty(t, root.options)
 	err := root.init(root.cmd)
 	assert.NoError(t, err)
 	assert.True(t, root.initialized)

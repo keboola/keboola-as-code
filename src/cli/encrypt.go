@@ -71,7 +71,7 @@ func encryptCommand(root *rootCommand) *cobra.Command {
 			encryption.LogGroups(unencryptedGroups, logger)
 
 			// Dry run?
-			dryRun, _ := cmd.Flags().GetBool("dry-run")
+			dryRun := root.options.GetBool("dry-run")
 			if dryRun {
 				logger.Info("Dry run, nothing changed.")
 				return nil
