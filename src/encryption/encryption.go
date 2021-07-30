@@ -38,6 +38,23 @@ type finder struct {
 	groups []Group
 }
 
+func (v *Value) PathString() string {
+	return fmt.Sprintf("  %v", v.path)
+}
+
+func GetGroupByObject(groups []Group, objectToMatch model.ObjectState) (Group, bool) {
+	for _, group := range groups {
+		if objectToMatch.ObjectId() == group.object.ObjectId() {
+			return group, true
+		}
+	}
+	return Group{}, false
+}
+
+func (g *Group) Values() []Value {
+	return g.values
+}
+
 func (g *Group) parseArray(array []interface{}, keyPath utils.KeyPath) {
 	for idx, value := range array {
 		g.parseConfigValue(strconv.Itoa(idx), value, append(keyPath, utils.SliceStep(idx)))
@@ -102,7 +119,7 @@ func LogGroups(groups []Group, logger *zap.SugaredLogger) {
 	for _, group := range groups {
 		logger.Infof("%v %v", group.object.Kind().Abbr, group.object.RelativePath())
 		for _, value := range group.values {
-			logger.Infof("  %v", value.path)
+			logger.Info(value.PathString())
 		}
 	}
 }
