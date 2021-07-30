@@ -3,6 +3,7 @@ package encryption
 import (
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/state"
+	"keboola-as-code/src/utils"
 	"regexp"
 	"strconv"
 	"strings"
@@ -25,38 +26,38 @@ type Group struct {
 }
 
 type Value struct {
-	key     string // key e.g. "#myEncryptedValue"
-	value   string // value to encrypt
-	keyPath path   // path to value from config
+	key   string        // key e.g. "#myEncryptedValue"
+	value string        // value to encrypt
+	path  utils.KeyPath // path to value from config
 }
 
 type finder struct {
 	groups []Group
 }
 
-func (g *Group) parseArray(array []interface{}, keyPath path) {
+func (g *Group) parseArray(array []interface{}, keyPath utils.KeyPath) {
 	for idx, value := range array {
-		g.parseConfigValue(strconv.Itoa(idx), value, append(keyPath, sliceStep(idx)))
+		g.parseConfigValue(strconv.Itoa(idx), value, append(keyPath, utils.SliceStep(idx)))
 	}
 }
 
-func (g *Group) parseOrderedMap(content *orderedmap.OrderedMap, keyPath path) {
+func (g *Group) parseOrderedMap(content *orderedmap.OrderedMap, path utils.KeyPath) {
 	for _, key := range content.Keys() {
 		mapValue, _ := content.Get(key)
-		g.parseConfigValue(key, mapValue, append(keyPath, mapStep(key)))
+		g.parseConfigValue(key, mapValue, append(path, utils.MapStep(key)))
 	}
 }
 
-func (g *Group) parseConfigValue(key string, configValue interface{}, keyPath path) {
+func (g *Group) parseConfigValue(key string, configValue interface{}, path utils.KeyPath) {
 	switch value := configValue.(type) {
 	case orderedmap.OrderedMap:
-		g.parseOrderedMap(&value, keyPath)
+		g.parseOrderedMap(&value, path)
 	case string:
 		if isKeyToEncrypt(key) && !isEncrypted(value) {
-			g.values = append(g.values, Value{key, value, keyPath})
+			g.values = append(g.values, Value{key, value, path})
 		}
 	case []interface{}:
-		g.parseArray(value, keyPath)
+		g.parseArray(value, path)
 	}
 }
 
@@ -98,7 +99,7 @@ func LogGroups(groups []Group, logger *zap.SugaredLogger) {
 	for _, group := range groups {
 		logger.Infof("%v %v", group.object.Kind().Abbr, group.object.RelativePath())
 		for _, value := range group.values {
-			logger.Infof("  %v", value.keyPath)
+			logger.Infof("  %v", value.path)
 		}
 	}
 }
