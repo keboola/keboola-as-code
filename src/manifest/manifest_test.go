@@ -72,6 +72,7 @@ func TestManifestSave(t *testing.T) {
 
 		// Create
 		m := newManifest(c.data.Version, c.data.Project.ApiHost, projectDir, metadataDir)
+		m.AllowedBranches = c.data.AllowedBranches
 		m.Project.Id = c.data.Project.Id
 		for _, branch := range c.data.Branches {
 			m.TrackRecord(branch)
@@ -101,7 +102,8 @@ func TestManifestValidateEmpty(t *testing.T) {
 	- key="version", value="0", failed "required" validation
 	- key="project", value="<nil>", failed "required" validation
 	- key="sortBy", value="", failed "oneof" validation
-	- key="naming", value="<nil>", failed "required" validation`
+	- key="naming", value="<nil>", failed "required" validation
+	- key="allowedBranches", value="[]", failed "required" validation`
 	assert.Equal(t, expected, err.Error())
 }
 
@@ -158,6 +160,9 @@ func minimalJson() string {
     "config": "{component_type}/{component_id}/{config_id}-{config_name}",
     "configRow": "rows/{config_row_id}-{config_row_name}"
   },
+  "allowedBranches": [
+    "*"
+  ],
   "branches": [],
   "configurations": []
 }
@@ -171,10 +176,11 @@ func minimalStruct() *Content {
 			Id:      12345,
 			ApiHost: "connection.keboola.com",
 		},
-		SortBy:   model.SortById,
-		Naming:   model.DefaultNaming(),
-		Branches: make([]*model.BranchManifest, 0),
-		Configs:  make([]*model.ConfigManifestWithRows, 0),
+		SortBy:          model.SortById,
+		Naming:          model.DefaultNaming(),
+		AllowedBranches: model.AllowedBranches{"*"},
+		Branches:        make([]*model.BranchManifest, 0),
+		Configs:         make([]*model.ConfigManifestWithRows, 0),
 	}
 }
 
@@ -191,6 +197,10 @@ func fullJson() string {
     "config": "{component_type}/{component_id}/{config_id}-{config_name}",
     "configRow": "rows/{config_row_id}-{config_row_name}"
   },
+  "allowedBranches": [
+    "foo",
+    "bar"
+  ],
   "branches": [
     {
       "id": 10,
@@ -246,8 +256,9 @@ func fullStruct() *Content {
 			Id:      12345,
 			ApiHost: "connection.keboola.com",
 		},
-		SortBy: model.SortById,
-		Naming: model.DefaultNaming(),
+		SortBy:          model.SortById,
+		Naming:          model.DefaultNaming(),
+		AllowedBranches: model.AllowedBranches{"foo", "bar"},
 		Branches: []*model.BranchManifest{
 			{
 				RecordState: model.RecordState{

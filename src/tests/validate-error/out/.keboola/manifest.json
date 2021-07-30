@@ -10,6 +10,9 @@
     "config": "{component_type}/{component_id}/{config_name}",
     "configRow": "rows/{config_row_name}"
   },
+  "allowedBranches": [
+    "*"
+  ],
   "branches": [
     {
       "id": %%TEST_BRANCH_FOO_ID%%,

@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "project": {
+    "id": %%TEST_PROJECT_ID%%,
+    "apiHost": "%%TEST_KBC_STORAGE_API_HOST%%"
+  },
+  "sortBy": "path",
+  "naming": {
+    "branch": "{branch_name}",
+    "config": "{component_type}/{component_id}/{config_name}",
+    "configRow": "rows/{config_row_name}"
+  },
+  "allowedBranches": [
+    "fo*"
+  ],
+  "branches": [
+    {
+      "id": %%TEST_BRANCH_FOO_ID%%,
+      "path": "foo"
+    }
+  ],
+  "configurations": [
+    {
+      "branchId": %%TEST_BRANCH_FOO_ID%%,
+      "componentId": "ex-generic-v2",
+      "id": "%%TEST_BRANCH_ALL_CONFIG_EMPTY_ID%%",
+      "path": "extractor/ex-generic-v2/empty",
+      "rows": []
+    },
+    {
+      "branchId": %%TEST_BRANCH_FOO_ID%%,
+      "componentId": "ex-generic-v2",
+      "id": "%%TEST_BRANCH_FOO_CONFIG_WITHOUT_ROWS_ID%%",
+      "path": "extractor/ex-generic-v2/without-rows",
+      "rows": []
+    },
+    {
+      "branchId": %%TEST_BRANCH_FOO_ID%%,
+      "componentId": "transformation",
+      "id": "%%TEST_BRANCH_FOO_CONFIG_OLD_TRANSFORMATION_ID%%",
+      "path": "other/transformation/old-transformation",
+      "rows": [
+        {
+          "id": "%%TEST_BRANCH_FOO_CONFIG_OLD_TRANSFORMATION_ROW_OLD_TRANSFORMATION_SNFK_ID%%",
+          "path": "rows/old-transformation-snfk"
+        }
+      ]
+    }
+  ]
+}

@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"github.com/spf13/cast"
 	"keboola-as-code/src/utils"
 	"os"
 	"path/filepath"
@@ -12,6 +13,51 @@ const (
 	SortById   = "id"
 	SortByPath = "path"
 )
+
+type AllowedBranch string
+type AllowedBranches []AllowedBranch
+
+func (v AllowedBranches) String() string {
+	if len(v) == 0 {
+		return `[]`
+	}
+
+	items := make([]string, 0)
+	for _, item := range v {
+		items = append(items, string(item))
+	}
+	return `"` + strings.Join(items, `", "`) + `"`
+}
+
+func (v AllowedBranches) IsBranchAllowed(id int, name string) bool {
+	for _, definition := range v {
+		if definition.IsBranchAllowed(id, name) {
+			return true
+		}
+	}
+	return false
+}
+
+func (v AllowedBranch) IsBranchAllowed(id int, name string) bool {
+	pattern := string(v)
+
+	// Defined by ID
+	if cast.ToInt(pattern) == id {
+		return true
+	}
+
+	// Defined by name blob
+	if match, _ := filepath.Match(string(v), name); match {
+		return true
+	}
+
+	// Defined by name blob - normalized name
+	if match, _ := filepath.Match(string(v), utils.NormalizeName(name)); match {
+		return true
+	}
+
+	return false
+}
 
 // Record - manifest record
 type Record interface {

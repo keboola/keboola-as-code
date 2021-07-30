@@ -57,6 +57,9 @@ func LoadState(options *Options) (state *State, ok bool) {
 		return state, false
 	}
 
+	// Log allowed branches
+	state.logger.Debugf(`Allowed branches: %s`, state.manifest.Content.AllowedBranches)
+
 	if state.LoadRemoteState {
 		state.logger.Debugf("Loading project remote state.")
 		state.doLoadRemoteState()
