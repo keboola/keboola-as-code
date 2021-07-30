@@ -37,7 +37,6 @@ func ValidateSchemas(projectState *state.State) error {
 				valuesErrors.AppendRaw(value.Path().String())
 			}
 			errors.AppendWithPrefix(fmt.Sprintf("config \"%s\" contains unencrypted values", projectState.Naming().ConfigFilePath(config.RelativePath())), valuesErrors)
-
 		}
 	}
 
@@ -62,7 +61,6 @@ func ValidateSchemas(projectState *state.State) error {
 				valuesErrors.AppendRaw(value.Path().String())
 			}
 			errors.AppendWithPrefix(fmt.Sprintf("config row \"%s\" contains unencrypted values", projectState.Naming().ConfigFilePath(row.RelativePath())), valuesErrors)
-
 		}
 	}
 
