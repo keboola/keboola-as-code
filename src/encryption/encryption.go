@@ -18,7 +18,9 @@ func isKeyToEncrypt(key string) bool {
 }
 
 func isEncrypted(value string) bool {
-	return regexp.MustCompile(`^KBC::(ProjectSecure|ComponentSecure|ConfigSecure)(KV)?::.+$`).MatchString(value)
+	currentFormatMatch := regexp.MustCompile(`^KBC::(ProjectSecure|ComponentSecure|ConfigSecure)(KV)?::.+$`).MatchString(value)
+	legacyFormatMatch := regexp.MustCompile(`^KBC::(Encrypted==|ComponentProjectEncrypted==|ComponentEncrypted==).+$`).MatchString(value)
+	return currentFormatMatch || legacyFormatMatch
 }
 
 type Group struct {
