@@ -6,7 +6,9 @@ set -o nounset          # Disallow expansion of unset variables
 set -o pipefail         # Use last non-zero exit code in a pipeline
 #set -o xtrace          # Trace the execution of the script (debug)
 
-# Check Go files format
+SRC_DIR=./src
+
+# Download modules
 echo "Downloading modules"
 go mod download
 echo "Ok."
@@ -14,7 +16,7 @@ echo
 
 # Check Go files format
 echo "Running gofmt ..."
-gofmtOut=`gofmt -s -l ./src`
+gofmtOut=`gofmt -s -l $SRC_DIR`
 if [[ "$gofmtOut" ]]; then
   echo "Go files are not properly formatted, please run \"make fix\" to fix."
   echo "Fix needed:"
@@ -22,6 +24,18 @@ if [[ "$gofmtOut" ]]; then
   exit 1
 fi
 echo "Ok. Code is properly formatted."
+echo
+
+# Check Go imports
+echo "Running goimports ..."
+goimportsOut=`goimports -e -d $SRC_DIR`
+if [[ "$goimportsOut" ]]; then
+  echo "Go imports are not properly formatted, please run \"make fix\" to fix."
+  echo "Fix needed:"
+  echo "$goimportsOut"
+  exit 1
+fi
+echo "Ok. Imports are properly formatted."
 echo
 
 # Check for suspicious constructs

@@ -3,6 +3,8 @@ FROM golang:1.16-buster
 RUN apt-get update -y && \
     apt-get install -y jq time zip git binutils-common
 
+ENV GOBIN=/usr/local/bin
+
 # Install staticcheck
 RUN curl --silent "https://api.github.com/repos/dominikh/go-tools/releases/latest" | \
     jq -r '.assets[] | select(.name == "staticcheck_linux_amd64.tar.gz").browser_download_url' | \
@@ -17,8 +19,8 @@ RUN curl --silent "https://api.github.com/repos/kyoh86/richgo/releases/latest" |
     tar -xz -C /usr/local/bin richgo && \
     chmod +x /usr/local/bin/richgo
 
-
-ENV GOBIN=/code/build
+# Install goimports
+RUN go get golang.org/x/tools/cmd/goimports
 
 WORKDIR /code/
 COPY . /code/
