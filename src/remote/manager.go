@@ -2,14 +2,15 @@ package remote
 
 import (
 	"fmt"
-	"github.com/iancoleman/orderedmap"
-	"github.com/spf13/cast"
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/local"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
 	"sort"
+
+	"github.com/iancoleman/orderedmap"
+	"github.com/spf13/cast"
 )
 
 type Manager struct {

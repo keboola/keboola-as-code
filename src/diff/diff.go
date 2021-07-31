@@ -2,14 +2,15 @@ package diff
 
 import (
 	"fmt"
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/iancoleman/orderedmap"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
 	"reflect"
 	"strings"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/iancoleman/orderedmap"
 )
 
 type typeName string

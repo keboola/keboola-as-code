@@ -2,9 +2,6 @@ package state
 
 import (
 	"context"
-	"github.com/jarcoal/httpmock"
-	"github.com/otiai10/copy"
-	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/remote"
@@ -13,6 +10,10 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
+
+	"github.com/jarcoal/httpmock"
+	"github.com/otiai10/copy"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestLoadLocalStateMinimal(t *testing.T) {

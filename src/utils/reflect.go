@@ -2,10 +2,11 @@ package utils
 
 import (
 	"fmt"
-	"github.com/iancoleman/orderedmap"
 	"keboola-as-code/src/json"
 	"reflect"
 	"strings"
+
+	"github.com/iancoleman/orderedmap"
 )
 
 type StructField struct {

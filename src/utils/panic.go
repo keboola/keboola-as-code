@@ -3,9 +3,10 @@ package utils
 import (
 	"bytes"
 	"fmt"
-	"go.uber.org/zap"
 	"runtime/debug"
 	"text/template"
+
+	"go.uber.org/zap"
 )
 
 const userFriendlyPanicTmpl = `

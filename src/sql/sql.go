@@ -1,8 +1,9 @@
 package sql
 
 import (
-	"github.com/umisama/go-regexpcache"
 	"strings"
+
+	"github.com/umisama/go-regexpcache"
 )
 
 // Taken from UI: https://github.com/keboola/kbc-ui/blob/master/src/scripts/modules/transformations/utils/splitSqlQueriesWorker.js

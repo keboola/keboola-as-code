@@ -1,11 +1,12 @@
 package remote
 
 import (
-	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestConfigApiCalls(t *testing.T) {

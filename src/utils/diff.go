@@ -2,10 +2,11 @@ package utils
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // fileNode is one file/dir in expected or actual directory.

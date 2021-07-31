@@ -3,10 +3,11 @@ package utils
 import (
 	"bytes"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 type mockedT struct {

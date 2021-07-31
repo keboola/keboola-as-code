@@ -2,11 +2,12 @@ package model
 
 import (
 	"fmt"
-	"github.com/spf13/cast"
 	"keboola-as-code/src/utils"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/spf13/cast"
 )
 
 const (

@@ -2,13 +2,14 @@ package utils
 
 import (
 	"fmt"
-	"github.com/spf13/cast"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/spf13/cast"
 )
 
 type EnvProvider func(s string) string

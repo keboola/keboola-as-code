@@ -4,11 +4,12 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"io"
 	"os"
 	"sync"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type Writer struct {

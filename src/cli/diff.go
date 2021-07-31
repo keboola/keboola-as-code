@@ -2,10 +2,11 @@ package cli
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
 	"keboola-as-code/src/diff"
 	"keboola-as-code/src/remote"
 	"strings"
+
+	"github.com/spf13/cobra"
 )
 
 const diffShortDescription = `Print differences between local and remote state`

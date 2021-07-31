@@ -2,7 +2,6 @@ package local
 
 import (
 	"fmt"
-	"github.com/iancoleman/orderedmap"
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/transformation"
@@ -10,6 +9,8 @@ import (
 	"keboola-as-code/src/validator"
 	"os"
 	"path/filepath"
+
+	"github.com/iancoleman/orderedmap"
 )
 
 // SaveModel to manifest and disk

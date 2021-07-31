@@ -2,9 +2,6 @@ package transformation
 
 import (
 	"fmt"
-	"github.com/iancoleman/orderedmap"
-	"github.com/otiai10/copy"
-	"go.uber.org/zap"
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/sql"
@@ -13,6 +10,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/iancoleman/orderedmap"
+	"github.com/otiai10/copy"
+	"go.uber.org/zap"
 )
 
 type writer struct {

@@ -2,8 +2,9 @@ package client
 
 import (
 	"context"
-	"github.com/go-resty/resty/v2"
 	"sync"
+
+	"github.com/go-resty/resty/v2"
 )
 
 const (

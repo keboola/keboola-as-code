@@ -3,10 +3,6 @@ package tests
 import (
 	"bytes"
 	"context"
-	"github.com/google/shlex"
-	"github.com/otiai10/copy"
-	"github.com/stretchr/testify/assert"
-	"github.com/umisama/go-regexpcache"
 	"io/fs"
 	"keboola-as-code/src/fixtures"
 	"keboola-as-code/src/json"
@@ -21,6 +17,11 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/google/shlex"
+	"github.com/otiai10/copy"
+	"github.com/stretchr/testify/assert"
+	"github.com/umisama/go-regexpcache"
 )
 
 // EnvTicketProvider allows you to generate new unique IDs via an ENV variable in the test

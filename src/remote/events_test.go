@@ -1,9 +1,10 @@
 package remote
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSendEvent(t *testing.T) {

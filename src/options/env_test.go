@@ -1,12 +1,13 @@
 package options
 
 import (
-	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/utils"
 	"os"
 	"path/filepath"
 	"sort"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestEnvNamingConvention(t *testing.T) {

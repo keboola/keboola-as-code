@@ -2,9 +2,10 @@ package utils
 
 import (
 	"bufio"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/buffer"
-	"testing"
 )
 
 func TestNewBufferWriter(t *testing.T) {

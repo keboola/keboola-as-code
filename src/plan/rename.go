@@ -2,7 +2,6 @@ package plan
 
 import (
 	"fmt"
-	"github.com/jpillora/longestcommon"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
@@ -10,6 +9,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/jpillora/longestcommon"
 )
 
 // Rename creates a plan for renaming objects that do not match the naming

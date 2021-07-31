@@ -3,13 +3,14 @@ package fixtures
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/iancoleman/orderedmap"
-	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
 	"path/filepath"
 	"runtime"
 	"testing"
+
+	"github.com/iancoleman/orderedmap"
+	"github.com/stretchr/testify/assert"
 )
 
 type ProjectSnapshot struct {

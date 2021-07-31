@@ -1,11 +1,12 @@
 package log
 
 import (
-	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/utils"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewLogger(t *testing.T) {

@@ -2,10 +2,11 @@ package remote
 
 import (
 	"context"
-	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestApiWithToken(t *testing.T) {

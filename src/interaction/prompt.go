@@ -3,10 +3,11 @@ package interaction
 import (
 	"errors"
 	"fmt"
-	"github.com/AlecAivazis/survey/v2"
-	"github.com/AlecAivazis/survey/v2/terminal"
 	"net/url"
 	"os"
+
+	"github.com/AlecAivazis/survey/v2"
+	"github.com/AlecAivazis/survey/v2/terminal"
 )
 
 type Prompt struct {

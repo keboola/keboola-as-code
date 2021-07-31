@@ -3,12 +3,13 @@ package client
 import (
 	"context"
 	"fmt"
-	"go.uber.org/zap"
-	"golang.org/x/sync/errgroup"
 	"keboola-as-code/src/utils"
 	"runtime"
 	"sync"
 	"time"
+
+	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 )
 
 // Pool of the asynchronous HTTP requests. When processing a response, a new request can be send.

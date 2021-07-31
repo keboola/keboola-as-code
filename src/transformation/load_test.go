@@ -1,8 +1,6 @@
 package transformation
 
 import (
-	"github.com/iancoleman/orderedmap"
-	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
@@ -10,6 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/iancoleman/orderedmap"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestLoadTransformationMissingBlockMetaSql(t *testing.T) {

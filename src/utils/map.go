@@ -1,8 +1,9 @@
 package utils
 
 import (
-	"github.com/iancoleman/orderedmap"
 	"keboola-as-code/src/json"
+
+	"github.com/iancoleman/orderedmap"
 )
 
 type Pair struct {

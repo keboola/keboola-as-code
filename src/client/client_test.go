@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"keboola-as-code/src/utils"
+	"testing"
+	"time"
+
 	"github.com/go-resty/resty/v2"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
-	"keboola-as-code/src/utils"
-	"testing"
-	"time"
 )
 
 func TestNewHttpClient(t *testing.T) {

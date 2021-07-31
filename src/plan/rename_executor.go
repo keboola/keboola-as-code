@@ -2,11 +2,12 @@ package plan
 
 import (
 	"fmt"
-	"github.com/otiai10/copy"
-	"go.uber.org/zap"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/utils"
 	"os"
+
+	"github.com/otiai10/copy"
+	"go.uber.org/zap"
 )
 
 type renameExecutor struct {

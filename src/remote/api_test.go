@@ -2,9 +2,10 @@ package remote
 
 import (
 	"context"
-	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/utils"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewStorageApi(t *testing.T) {

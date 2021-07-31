@@ -2,8 +2,6 @@ package transformation
 
 import (
 	"fmt"
-	"github.com/iancoleman/orderedmap"
-	"go.uber.org/zap"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/sql"
 	"keboola-as-code/src/utils"
@@ -11,6 +9,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/iancoleman/orderedmap"
+	"go.uber.org/zap"
 )
 
 type loader struct {

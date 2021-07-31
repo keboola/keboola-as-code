@@ -1,7 +1,6 @@
 package transformation
 
 import (
-	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
@@ -9,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSaveTransformationEmpty(t *testing.T) {

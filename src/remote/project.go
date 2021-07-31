@@ -2,8 +2,6 @@ package remote
 
 import (
 	"fmt"
-	"github.com/spf13/cast"
-	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/fixtures"
 	"keboola-as-code/src/model"
@@ -15,6 +13,9 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/spf13/cast"
+	"github.com/stretchr/testify/assert"
 )
 
 // testProject manages cleanup and setup of the test project

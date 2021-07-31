@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 	"keboola-as-code/src/diff"
 	"keboola-as-code/src/log"
 	"keboola-as-code/src/manifest"
@@ -11,6 +9,9 @@ import (
 	"keboola-as-code/src/schema"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
+
+	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
 // diffProcessCmd run callback on diff results, common for pull, push ...

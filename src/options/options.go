@@ -2,10 +2,6 @@ package options
 
 import (
 	"fmt"
-	"github.com/iancoleman/strcase"
-	"github.com/spf13/cast"
-	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
 	"keboola-as-code/src/interaction"
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/manifest"
@@ -15,6 +11,11 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+
+	"github.com/iancoleman/strcase"
+	"github.com/spf13/cast"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 )
 
 type parser = viper.Viper

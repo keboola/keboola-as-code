@@ -1,9 +1,6 @@
 package interaction
 
 import (
-	"github.com/ActiveState/vt10x"
-	"github.com/Netflix/go-expect"
-	"github.com/stretchr/testify/assert"
 	"io"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
@@ -11,6 +8,10 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/ActiveState/vt10x"
+	"github.com/Netflix/go-expect"
+	"github.com/stretchr/testify/assert"
 )
 
 const (

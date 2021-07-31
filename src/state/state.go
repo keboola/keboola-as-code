@@ -3,8 +3,6 @@ package state
 import (
 	"context"
 	"fmt"
-	"github.com/iancoleman/orderedmap"
-	"go.uber.org/zap"
 	"keboola-as-code/src/components"
 	"keboola-as-code/src/local"
 	"keboola-as-code/src/manifest"
@@ -14,6 +12,9 @@ import (
 	"keboola-as-code/src/validator"
 	"path/filepath"
 	"sync"
+
+	"github.com/iancoleman/orderedmap"
+	"go.uber.org/zap"
 )
 
 // State - Local and Remote state of the project

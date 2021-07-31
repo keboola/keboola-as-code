@@ -2,8 +2,6 @@ package plan
 
 import (
 	"context"
-	"github.com/jarcoal/httpmock"
-	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/state"
@@ -11,6 +9,9 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
+
+	"github.com/jarcoal/httpmock"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestRenameAllPlan(t *testing.T) {

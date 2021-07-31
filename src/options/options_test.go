@@ -2,13 +2,14 @@ package options
 
 import (
 	"fmt"
-	"github.com/spf13/pflag"
-	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/utils"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/spf13/pflag"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestWorkingDirFromOs(t *testing.T) {

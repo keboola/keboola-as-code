@@ -1,10 +1,11 @@
 package remote
 
 import (
-	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/model"
 	"sort"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGenerateNewId(t *testing.T) {

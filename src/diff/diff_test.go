@@ -2,7 +2,6 @@ package diff
 
 import (
 	"context"
-	"github.com/stretchr/testify/assert"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/remote"
@@ -10,6 +9,8 @@ import (
 	"keboola-as-code/src/utils"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDiffOnlyInLocal(t *testing.T) {

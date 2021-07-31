@@ -2,10 +2,11 @@ package utils
 
 import (
 	"fmt"
-	"github.com/umisama/go-regexpcache"
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/umisama/go-regexpcache"
 )
 
 type PathTemplate string
