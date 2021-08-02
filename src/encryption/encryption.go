@@ -170,11 +170,8 @@ func ValidateAllEncrypted(projectState *state.State) error {
 		for _, value := range group.values {
 			valuesErrors.AppendRaw(value.path.String())
 		}
-		objectTypeStr := "config"
-		if object.Kind().Abbr == "R" {
-			objectTypeStr = "config row"
-		}
-		errors.AppendWithPrefix(fmt.Sprintf("%s \"%s\" contains unencrypted values", objectTypeStr, projectState.Naming().ConfigFilePath(object.RelativePath())), valuesErrors)
+		objectPath := projectState.Naming().ConfigFilePath(object.RelativePath())
+		errors.AppendWithPrefix(fmt.Sprintf("%s \"%s\" contains unencrypted values", object.Kind().Name, objectPath), valuesErrors)
 	}
 	return errors.ErrorOrNil()
 }
