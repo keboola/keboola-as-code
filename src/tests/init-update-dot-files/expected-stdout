@@ -4,6 +4,17 @@ Created manifest file ".keboola/manifest.json".
 Updated file ".env.local" - it contains the API token, keep it local and secret.
 Updated file ".env.dist" - an ".env.local" template.
 Updated file ".gitignore" - to keep ".env.local" local.
+
+Generating CI workflows ...
+Created file ".github/actions/install/action.yml".
+Created file ".github/workflows/validate.yml".
+
+CI workflows have been generated.
+Feel free to modify them.
+
+Please set the secret KBC_STORAGE_API_TOKEN in the GitHub settings.
+See: https://docs.github.com/en/actions/reference/encrypted-secrets
+
 Init done. Running pull.
 Plan for "pull" operation:
 	+  B main

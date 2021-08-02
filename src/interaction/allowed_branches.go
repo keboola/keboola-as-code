@@ -43,7 +43,7 @@ func (p *Prompt) GetAllowedBranches(allBranches []*model.Branch, isFlagSet bool,
 func (p *branchesPrompt) ask() model.AllowedBranches {
 	if p.prompt.Interactive && !p.isFlagSet {
 		for {
-			results := p.doAsk()
+			mode, results := p.doAsk()
 
 			// Check that the definition meets at least one branch
 			matched := 0
@@ -57,15 +57,17 @@ func (p *branchesPrompt) ask() model.AllowedBranches {
 
 			// If a branch is matched -> ok
 			if matched > 0 {
-				if matched == 1 {
-					p.prompt.Printf("\nOne branch match \"allowed branches\". Ok.\n")
-				} else {
-					p.prompt.Printf("\n%d branches match \"allowed branches\". Ok.\n", matched)
+				if mode == ModeTypeList {
+					if matched == 1 {
+						p.prompt.Printf("\nOne project's branch match defined \"allowed branches\". Ok.\n")
+					} else {
+						p.prompt.Printf("\n%d project's branches match defined \"allowed branches\". Ok.\n", matched)
+					}
 				}
 				return results
 			}
 
-			p.prompt.Printf("\nNo existing branch matches your definitions. Please try again.\n")
+			p.prompt.Printf("\nNo existing project's branch matches your definitions. Please try again.\n")
 		}
 	}
 
@@ -73,11 +75,12 @@ func (p *branchesPrompt) ask() model.AllowedBranches {
 	return p.parseString(p.flagValue, ",")
 }
 
-func (p *branchesPrompt) doAsk() model.AllowedBranches {
+func (p *branchesPrompt) doAsk() (string, model.AllowedBranches) {
 	// Ask user for mode
 	mode, ok := p.prompt.Select(&Select{
-		Label:       "Allowed branches",
-		Description: "Please select which branches you want to use with this CLI tool.",
+		Label: "Allowed project's branches:",
+		Description: "Please select which project's branches you want to use with this CLI.\n" +
+			"The other branches will still exist, but they will be invisible in the CLI.",
 		Options: []string{
 			ModeMainBranch,
 			ModeAllBranches,
@@ -94,17 +97,17 @@ func (p *branchesPrompt) doAsk() model.AllowedBranches {
 	if ok {
 		switch mode {
 		case ModeMainBranch:
-			return model.AllowedBranches{model.MainBranchDef}
+			return mode, model.AllowedBranches{model.MainBranchDef}
 		case ModeAllBranches:
-			return model.AllowedBranches{model.AllBranchesDef}
+			return mode, model.AllowedBranches{model.AllBranchesDef}
 		case ModeSelectSpecific:
-			return p.selectBranches()
+			return mode, p.selectBranches()
 		case ModeTypeList:
-			return p.typeBranchesList()
+			return mode, p.typeBranchesList()
 		}
 	}
 
-	return nil
+	return mode, nil
 }
 
 func (p *branchesPrompt) selectBranches() model.AllowedBranches {
@@ -117,7 +120,7 @@ func (p *branchesPrompt) selectBranches() model.AllowedBranches {
 
 	// Prompt
 	keys, ok := p.prompt.MultiSelect(&Select{
-		Label:       "Allowed branches multi-select",
+		Label:       "Allowed project's branches:",
 		Description: "Please select one or more branches.",
 		Options:     options.Keys(),
 	})
@@ -142,7 +145,7 @@ func (p *branchesPrompt) selectBranches() model.AllowedBranches {
 func (p *branchesPrompt) typeBranchesList() model.AllowedBranches {
 	// Print first 10 branches for inspiration
 	end := math.Min(10, float64(len(p.allBranches)))
-	p.prompt.Printf("\nExisting branches, for inspiration:\n")
+	p.prompt.Printf("\nExisting project's branches, for inspiration:\n")
 	for _, branch := range p.allBranches[:int(end)] {
 		p.prompt.Printf("[%d] %s\n", branch.Id, branch.Name)
 	}
@@ -152,7 +155,7 @@ func (p *branchesPrompt) typeBranchesList() model.AllowedBranches {
 
 	// Prompt
 	lines, ok := p.prompt.Multiline(&Question{
-		Label: "Allowed branches definitions",
+		Label: "Allowed project's branches:",
 		Description: "\nPlease enter one branch definition per line.\n" +
 			"Each definition can be:\n" +
 			"- branch ID\n" +

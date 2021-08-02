@@ -1,0 +1,10 @@
+Generating CI workflows ...
+Created file ".github/actions/install/action.yml".
+Created file ".github/workflows/validate.yml".
+Created file ".github/workflows/pull.yml".
+
+CI workflows have been generated.
+Feel free to modify them.
+
+Please set the secret KBC_STORAGE_API_TOKEN in the GitHub settings.
+See: https://docs.github.com/en/actions/reference/encrypted-secrets

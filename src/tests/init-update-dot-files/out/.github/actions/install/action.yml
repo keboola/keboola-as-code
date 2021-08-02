@@ -1,0 +1,30 @@
+name: Keboola as Code Install
+description: Install Keboola as Code CLI
+runs:
+  using: "composite"
+  steps:
+    # Set releases URL
+    - id: kbc_releases_url
+      run: |
+        url='https://api.github.com/repos/keboola/keboola-as-code/releases?per_page=5'
+        echo "KBC_RELEASES_URL=$url" >> $GITHUB_ENV
+        echo "Releases URL: $url"
+      shell: bash
+    # Get URL of the latest release asset
+    - id: kbc_latest_release_url
+      run: |
+        url=`curl -sL $KBC_RELEASES_URL | jq -r '[.[].assets[] | select(.name | contains("linux_amd64.zip"))] | first.browser_download_url'`
+        echo "KBC_RELEASE_URL=$url" >> $GITHUB_ENV
+        echo "Latest release URL: $url"
+      shell: bash
+    # Download and extract binary
+    - id: kbc_download_and_extract_release
+      run: |
+        release_zip="$RUNNER_TEMP/release.zip"
+        release_bin="/usr/local/bin/kbc"
+        curl -sSLo "$release_zip" "$KBC_RELEASE_URL"
+        unzip "$release_zip" -d /usr/local/bin
+        chmod +x "$release_bin"
+        echo "Keboola as Code CLI installed: $release_bin"
+        kbc --version
+      shell: bash

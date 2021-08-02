@@ -27,7 +27,9 @@ func AssertWildcards(t assert.TestingT, expected string, actual string, msg stri
 			B: difflib.SplitLines(EscapeWhitespaces(actual)),
 		}
 		diffStr, _ := difflib.GetUnifiedDiffString(diff)
-		assert.Regexp(t, "^"+expectedRegexp+"$", actual, msg+" Diff:\n"+diffStr)
+		if len(diffStr) > 0 {
+			assert.Regexp(t, "^"+expectedRegexp+"$", actual, msg+" Diff:\n"+diffStr)
+		}
 	}
 }
 

@@ -16,6 +16,13 @@ type Prompt struct {
 	stderr      terminal.FileWriter
 }
 
+type Confirm struct {
+	Label       string
+	Description string
+	Default     bool
+	Help        string
+}
+
 type Question struct {
 	Label       string
 	Description string
@@ -48,6 +55,26 @@ func init() {
 	survey.MultilineQuestionTemplate = survey.MultilineQuestionTemplate + `{{"\n"}}`
 }
 
+func (p *Prompt) Confirm(c *Confirm) bool {
+	// Ask only in the interactive terminal
+	if !p.Interactive {
+		return c.Default
+	}
+
+	// Print description
+	if len(c.Description) > 0 {
+		p.Printf("\n%s\n", c.Description)
+	} else {
+		p.Printf("\n")
+	}
+
+	result := c.Default
+	opts := p.getOpts()
+	err := survey.AskOne(&survey.Confirm{Message: c.Label, Help: c.Help, Default: c.Default}, &result, opts...)
+	_ = p.handleError(err)
+	return result
+}
+
 func (p *Prompt) Ask(q *Question) (result string, ok bool) {
 
 	var err error
@@ -60,6 +87,8 @@ func (p *Prompt) Ask(q *Question) (result string, ok bool) {
 	// Print description
 	if len(q.Description) > 0 {
 		p.Printf("\n%s\n", q.Description)
+	} else {
+		p.Printf("\n")
 	}
 
 	// Validator
@@ -87,6 +116,8 @@ func (p *Prompt) Select(s *Select) (result string, ok bool) {
 	// Print description
 	if len(s.Description) > 0 {
 		p.Printf("\n%s\n", s.Description)
+	} else {
+		p.Printf("\n")
 	}
 
 	// Validator
@@ -108,6 +139,8 @@ func (p *Prompt) MultiSelect(s *Select) (result []string, ok bool) {
 	// Print description
 	if len(s.Description) > 0 {
 		p.Printf("\n%s\n", s.Description)
+	} else {
+		p.Printf("\n")
 	}
 
 	// Validator
@@ -128,9 +161,9 @@ func (p *Prompt) Multiline(q *Question) (result string, ok bool) {
 
 	// Print description
 	if len(q.Description) > 0 {
-		if _, err := fmt.Fprintf(p.stdout, "%s\n", q.Description); err != nil {
-			panic(err)
-		}
+		p.Printf("\n%s\n", q.Description)
+	} else {
+		p.Printf("\n")
 	}
 
 	// Validator
