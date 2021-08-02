@@ -1,10 +1,11 @@
 package cli
 
 import (
-	"github.com/spf13/cobra"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
+
+	"github.com/spf13/cobra"
 )
 
 const validateShortDescription = `Validate the local project directory`
@@ -60,8 +61,8 @@ func validateCommand(root *rootCommand) *cobra.Command {
 				}
 			}
 
-			// Validate schemas
-			if err := ValidateSchemas(projectState, logger); err != nil {
+			// Validate schemas and encryption
+			if err := Validate(projectState, logger); err != nil {
 				return err
 			}
 

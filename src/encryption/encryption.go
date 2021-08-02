@@ -168,3 +168,21 @@ func DoEncrypt(projectState *state.State, unencryptedGroups []Group, api *Api) e
 
 	return errors.ErrorOrNil()
 }
+
+func ValidateAllEncrypted(projectState *state.State) error {
+	unencryptedGroups := FindUnencrypted(projectState)
+	errors := utils.NewMultiError()
+	for _, group := range unencryptedGroups {
+		object := group.object
+		valuesErrors := utils.NewMultiError()
+		for _, value := range group.Values() {
+			valuesErrors.AppendRaw(value.Path().String())
+		}
+		objectTypeStr := "config"
+		if object.Kind().Abbr == "R" {
+			objectTypeStr = "config row"
+		}
+		errors.AppendWithPrefix(fmt.Sprintf("%s \"%s\" contains unencrypted values", objectTypeStr, projectState.Naming().ConfigFilePath(object.RelativePath())), valuesErrors)
+	}
+	return errors.ErrorOrNil()
+}
