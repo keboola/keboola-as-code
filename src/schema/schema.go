@@ -2,7 +2,6 @@ package schema
 
 import (
 	"fmt"
-	"keboola-as-code/src/encryption"
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/state"
@@ -15,7 +14,6 @@ import (
 
 func ValidateSchemas(projectState *state.State) error {
 	errors := utils.NewMultiError()
-	unencryptedGroups := encryption.FindUnencrypted(projectState)
 	for _, config := range projectState.Configs() {
 		// Validate only local files
 		if config.Local == nil {
@@ -29,14 +27,6 @@ func ValidateSchemas(projectState *state.State) error {
 
 		if err := ValidateConfig(component, config.Local); err != nil {
 			errors.AppendWithPrefix(fmt.Sprintf("config \"%s\" doesn't match schema", projectState.Naming().ConfigFilePath(config.RelativePath())), err)
-		}
-
-		if group, ok := encryption.GetGroupByObject(unencryptedGroups, config); ok {
-			valuesErrors := utils.NewMultiError()
-			for _, value := range group.Values() {
-				valuesErrors.AppendRaw(value.Path().String())
-			}
-			errors.AppendWithPrefix(fmt.Sprintf("config \"%s\" contains unencrypted values", projectState.Naming().ConfigFilePath(config.RelativePath())), valuesErrors)
 		}
 	}
 
@@ -53,14 +43,6 @@ func ValidateSchemas(projectState *state.State) error {
 
 		if err := ValidateConfigRow(component, row.Local); err != nil {
 			errors.AppendWithPrefix(fmt.Sprintf("config row \"%s\" doesn't match schema", projectState.Naming().ConfigFilePath(row.RelativePath())), err)
-		}
-
-		if group, ok := encryption.GetGroupByObject(unencryptedGroups, row); ok {
-			valuesErrors := utils.NewMultiError()
-			for _, value := range group.Values() {
-				valuesErrors.AppendRaw(value.Path().String())
-			}
-			errors.AppendWithPrefix(fmt.Sprintf("config row \"%s\" contains unencrypted values", projectState.Naming().ConfigFilePath(row.RelativePath())), valuesErrors)
 		}
 	}
 

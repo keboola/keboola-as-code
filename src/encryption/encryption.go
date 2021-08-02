@@ -42,15 +42,6 @@ func (v *Value) Path() utils.KeyPath {
 	return v.path
 }
 
-func GetGroupByObject(groups []Group, objectToMatch model.ObjectState) (Group, bool) {
-	for _, group := range groups {
-		if objectToMatch.ObjectId() == group.object.ObjectId() {
-			return group, true
-		}
-	}
-	return Group{}, false
-}
-
 func (g *Group) Values() []Value {
 	return g.values
 }
