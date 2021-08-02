@@ -1,17 +1,24 @@
 Command "init"
 
 Initialize local project's directory
-and first time sync project from the Keboola Connection.
+and make first sync from the Keboola Connection.
 
-You will be asked to enter the Storage API host
-and Storage API token from your project.
+You will be prompted to enter:
+- storage API host
+- storage API token of your project
+- allowed branches
+
 You can also enter these values
 by flags or environment variables.
+
+This CLI tool will only work with the specified "allowed branches".
+Others will be ignored, although they will still exist in the project.
 
 Usage:
   %s init [flags]
 
 Flags:
+  -b, --allowed-branches string   comma separated IDs or name globs, use "*" for all (default "main")
   -H, --storage-api-host string   storage API host, eg. "connection.keboola.com"
 
 Global Flags:

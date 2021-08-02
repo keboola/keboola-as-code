@@ -24,6 +24,15 @@ type Question struct {
 	Hidden      bool
 }
 
+type Select struct {
+	Label       string
+	Description string
+	Help        string
+	Options     []string
+	Default     interface{}
+	Validator   func(val interface{}) error
+}
+
 func NewPrompt(stdin terminal.FileReader, stdout terminal.FileWriter, stderr terminal.FileWriter) *Prompt {
 	return &Prompt{
 		Interactive: isInteractiveTerminal(),
@@ -33,8 +42,14 @@ func NewPrompt(stdin terminal.FileReader, stdout terminal.FileWriter, stderr ter
 	}
 }
 
+func init() {
+	// Workaround for bug in 3rd party lib
+	// https://github.com/AlecAivazis/survey/issues/336
+	survey.MultilineQuestionTemplate = survey.MultilineQuestionTemplate + `{{"\n"}}`
+}
+
 func (p *Prompt) Ask(q *Question) (result string, ok bool) {
-	var opts []survey.AskOpt
+
 	var err error
 
 	// Ask only in the interactive terminal
@@ -44,16 +59,11 @@ func (p *Prompt) Ask(q *Question) (result string, ok bool) {
 
 	// Print description
 	if len(q.Description) > 0 {
-		if _, err = fmt.Fprintf(p.stdout, "%s\n", q.Description); err != nil {
-			panic(err)
-		}
+		p.Printf("\n%s\n", q.Description)
 	}
 
-	// Settings
-	opts = append(opts, survey.WithStdio(p.stdin, p.stdout, p.stderr))
-	opts = append(opts, survey.WithShowCursor(true))
-
 	// Validator
+	opts := p.getOpts()
 	if q.Validator != nil {
 		opts = append(opts, survey.WithValidator(q.Validator))
 	}
@@ -65,19 +75,100 @@ func (p *Prompt) Ask(q *Question) (result string, ok bool) {
 		err = survey.AskOne(&survey.Input{Message: q.Label, Help: q.Help}, &result, opts...)
 	}
 
-	// Handle error
-	if err == terminal.InterruptErr {
+	return result, p.handleError(err)
+}
+
+func (p *Prompt) Select(s *Select) (result string, ok bool) {
+	// Ask only in the interactive terminal
+	if !p.Interactive {
+		return "", false
+	}
+
+	// Print description
+	if len(s.Description) > 0 {
+		p.Printf("\n%s\n", s.Description)
+	}
+
+	// Validator
+	opts := p.getOpts()
+	if s.Validator != nil {
+		opts = append(opts, survey.WithValidator(s.Validator))
+	}
+
+	err := survey.AskOne(&survey.Select{Message: s.Label, Help: s.Help, Options: s.Options, Default: s.Default}, &result, opts...)
+	return result, p.handleError(err)
+}
+
+func (p *Prompt) MultiSelect(s *Select) (result []string, ok bool) {
+	// Ask only in the interactive terminal
+	if !p.Interactive {
+		return nil, false
+	}
+
+	// Print description
+	if len(s.Description) > 0 {
+		p.Printf("\n%s\n", s.Description)
+	}
+
+	// Validator
+	opts := p.getOpts()
+	if s.Validator != nil {
+		opts = append(opts, survey.WithValidator(s.Validator))
+	}
+
+	err := survey.AskOne(&survey.MultiSelect{Message: s.Label, Help: s.Help, Options: s.Options, Default: s.Default}, &result, opts...)
+	return result, p.handleError(err)
+}
+
+func (p *Prompt) Multiline(q *Question) (result string, ok bool) {
+	// Ask only in the interactive terminal
+	if !p.Interactive {
+		return "", false
+	}
+
+	// Print description
+	if len(q.Description) > 0 {
+		if _, err := fmt.Fprintf(p.stdout, "%s\n", q.Description); err != nil {
+			panic(err)
+		}
+	}
+
+	// Validator
+	opts := p.getOpts()
+	if q.Validator != nil {
+		opts = append(opts, survey.WithValidator(q.Validator))
+	}
+
+	err := survey.AskOne(&survey.Multiline{Message: q.Label, Help: q.Help}, &result, opts...)
+	return result, p.handleError(err)
+}
+
+func (p *Prompt) getOpts() []survey.AskOpt {
+	var opts []survey.AskOpt
+	opts = append(opts, survey.WithStdio(p.stdin, p.stdout, p.stderr))
+	opts = append(opts, survey.WithShowCursor(true))
+	return opts
+}
+
+func (p *Prompt) Printf(format string, a ...interface{}) {
+	if _, err := fmt.Fprintf(p.stdout, format, a...); err != nil {
+		panic(err)
+	}
+}
+
+func (p *Prompt) handleError(err error) (ok bool) {
+	if err == nil {
+		return true
+	} else if err == terminal.InterruptErr {
 		// Ctrl+c -> append new line after prompt AND exit program
 		_, _ = p.stdout.Write([]byte("\n"))
 		if v, ok := p.stdout.(*os.File); ok {
 			_ = v.Sync()
 		}
 		os.Exit(1)
-	} else if err != nil {
-		return "", false
 	}
 
-	return result, true
+	return false
 }
 
 func ApiHostValidator(val interface{}) error {

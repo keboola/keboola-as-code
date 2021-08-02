@@ -43,11 +43,11 @@ func (s *State) loadModel(record model.Record) model.ObjectState {
 	found, err := s.localManager.LoadModel(record, value)
 	if err == nil {
 		// Validate, branch must be allowed
-		if v, ok := value.(*model.Branch); ok && !s.manifest.IsBranchAllowed(v.Id, v.Name) {
+		if branch, ok := value.(*model.Branch); ok && !s.manifest.IsBranchAllowed(branch) {
 			s.AddLocalError(fmt.Errorf(
 				`found manifest record for branch "%s" (%d), but it is not allowed by the manifest "allowedBranches"`,
-				v.Name,
-				v.Id,
+				branch.Name,
+				branch.Id,
 			))
 			return nil
 		}

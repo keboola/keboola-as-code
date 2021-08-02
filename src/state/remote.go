@@ -19,7 +19,7 @@ func (s *State) doLoadRemoteState() {
 			// Save branch + load branch components
 			for _, branch := range *response.Result().(*[]*model.Branch) {
 				// Skip ignored branches
-				if !s.manifest.IsBranchAllowed(branch.Id, branch.Name) {
+				if !s.manifest.IsBranchAllowed(branch) {
 					continue
 				}
 

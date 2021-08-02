@@ -10,8 +10,10 @@ import (
 )
 
 const (
-	SortById   = "id"
-	SortByPath = "path"
+	SortById       = "id"
+	SortByPath     = "path"
+	AllBranchesDef = "__all__"
+	MainBranchDef  = "__main__"
 )
 
 type AllowedBranch string
@@ -29,30 +31,40 @@ func (v AllowedBranches) String() string {
 	return `"` + strings.Join(items, `", "`) + `"`
 }
 
-func (v AllowedBranches) IsBranchAllowed(id int, name string) bool {
+func (v AllowedBranches) IsBranchAllowed(branch *Branch) bool {
 	for _, definition := range v {
-		if definition.IsBranchAllowed(id, name) {
+		if definition.IsBranchAllowed(branch) {
 			return true
 		}
 	}
 	return false
 }
 
-func (v AllowedBranch) IsBranchAllowed(id int, name string) bool {
+func (v AllowedBranch) IsBranchAllowed(branch *Branch) bool {
 	pattern := string(v)
 
+	// All branches
+	if pattern == AllBranchesDef {
+		return true
+	}
+
+	// Main branch
+	if pattern == MainBranchDef && branch.IsDefault {
+		return true
+	}
+
 	// Defined by ID
-	if cast.ToInt(pattern) == id {
+	if cast.ToInt(pattern) == branch.Id {
 		return true
 	}
 
 	// Defined by name blob
-	if match, _ := filepath.Match(string(v), name); match {
+	if match, _ := filepath.Match(string(v), branch.Name); match {
 		return true
 	}
 
 	// Defined by name blob - normalized name
-	if match, _ := filepath.Match(string(v), utils.NormalizeName(name)); match {
+	if match, _ := filepath.Match(string(v), utils.NormalizeName(branch.Name)); match {
 		return true
 	}
 

@@ -98,12 +98,12 @@ func TestBranchApiCalls(t *testing.T) {
 	})
 
 	// List branches
-	var branches *[]*model.Branch
+	var branches []*model.Branch
 	branches, err = api.ListBranches()
 	assert.NotNil(t, branches)
 	assert.NoError(t, err)
 	var encoded string
-	utils.AssertWildcards(t, expectedBranchesAll(), json.MustEncodeString(*branches, true), "Unexpected branches state")
+	utils.AssertWildcards(t, expectedBranchesAll(), json.MustEncodeString(branches, true), "Unexpected branches state")
 
 	// Delete branch
 	job3, err = api.DeleteBranch(branchFoo.Id)
@@ -132,7 +132,7 @@ func TestBranchApiCalls(t *testing.T) {
 	branches, err = api.ListBranches()
 	assert.NotNil(t, branches)
 	assert.NoError(t, err)
-	encoded, err = json.EncodeString(*branches, true)
+	encoded, err = json.EncodeString(branches, true)
 	assert.NoError(t, err)
 	utils.AssertWildcards(t, expectedBranchesMain(), encoded, "Unexpected branches state")
 }

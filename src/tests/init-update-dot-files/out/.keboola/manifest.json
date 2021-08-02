@@ -11,7 +11,7 @@
     "configRow": "rows/{config_row_id}-{config_row_name}"
   },
   "allowedBranches": [
-    "*"
+    "__all__"
   ],
   "branches": [
     {

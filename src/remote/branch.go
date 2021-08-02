@@ -14,7 +14,7 @@ func (a *StorageApi) GetDefaultBranch() (*model.Branch, error) {
 		return nil, err
 	}
 
-	for _, branch := range *branches {
+	for _, branch := range branches {
 		if branch.IsDefault {
 			return branch, nil
 		}
@@ -47,10 +47,10 @@ func (a *StorageApi) UpdateBranch(branch *model.Branch, changed []string) (*mode
 	return nil, response.Err()
 }
 
-func (a *StorageApi) ListBranches() (*[]*model.Branch, error) {
+func (a *StorageApi) ListBranches() ([]*model.Branch, error) {
 	response := a.ListBranchesRequest().Send().Response
 	if response.HasResult() {
-		return response.Result().(*[]*model.Branch), nil
+		return *response.Result().(*[]*model.Branch), nil
 	}
 	return nil, response.Err()
 }

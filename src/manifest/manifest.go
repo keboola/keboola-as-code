@@ -175,8 +175,8 @@ func (m *Manifest) Save() error {
 	return nil
 }
 
-func (m *Manifest) IsBranchAllowed(id int, name string) bool {
-	return m.Content.AllowedBranches.IsBranchAllowed(id, name)
+func (m *Manifest) IsBranchAllowed(branch *model.Branch) bool {
+	return m.Content.AllowedBranches.IsBranchAllowed(branch)
 }
 
 func (m *Manifest) IsChanged() bool {
