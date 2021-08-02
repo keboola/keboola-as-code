@@ -1,9 +1,8 @@
 package cli
 
 import (
-	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 	"keboola-as-code/src/diff"
+	"keboola-as-code/src/encryption"
 	"keboola-as-code/src/log"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/plan"
@@ -11,6 +10,9 @@ import (
 	"keboola-as-code/src/schema"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
+
+	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
 // diffProcessCmd run callback on diff results, common for pull, push ...
@@ -117,8 +119,16 @@ func SaveManifest(projectManifest *manifest.Manifest, logger *zap.SugaredLogger)
 	return false, nil
 }
 
-func ValidateSchemas(projectState *state.State, logger *zap.SugaredLogger) error {
-	if err := schema.ValidateSchemas(projectState); err != nil {
+func Validate(projectState *state.State, logger *zap.SugaredLogger) error {
+	errors := utils.NewMultiError()
+	if schemasErrors := schema.ValidateSchemas(projectState); schemasErrors != nil {
+		errors.Append(schemasErrors)
+	}
+	if encryptionErrors := encryption.ValidateAllEncrypted(projectState); encryptionErrors != nil {
+		errors.Append(encryptionErrors)
+	}
+
+	if err := errors.ErrorOrNil(); err != nil {
 		return utils.PrefixError("validation failed", err)
 	} else {
 		logger.Debug("Validation done.")

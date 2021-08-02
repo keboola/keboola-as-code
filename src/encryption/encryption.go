@@ -160,3 +160,18 @@ func DoEncrypt(projectState *state.State, unencryptedGroups []Group, api *Api) e
 
 	return errors.ErrorOrNil()
 }
+
+func ValidateAllEncrypted(projectState *state.State) error {
+	unencryptedGroups := FindUnencrypted(projectState)
+	errors := utils.NewMultiError()
+	for _, group := range unencryptedGroups {
+		object := group.object
+		valuesErrors := utils.NewMultiError()
+		for _, value := range group.values {
+			valuesErrors.AppendRaw(value.path.String())
+		}
+		objectPath := projectState.Naming().ConfigFilePath(object.RelativePath())
+		errors.AppendWithPrefix(fmt.Sprintf("%s \"%s\" contains unencrypted values", object.Kind().Name, objectPath), valuesErrors)
+	}
+	return errors.ErrorOrNil()
+}

@@ -6,3 +6,10 @@ WARN			- export: aggregation is required
 WARN			- export.groupingDimensions: Invalid type. Expected: array, given: string
 WARN		- config row "foo/extractor/keboola.ex-azure-cost-management/with-schema/rows/row-2/config.json" doesn't match schema:
 WARN			- export.type: export.type must be one of the following: "ActualCost", "AmortizedCost", "Usage"
+WARN		- config row "foo/extractor/keboola.ex-azure-cost-management/with-schema/rows/row-3/config.json" doesn't match schema:
+WARN			- export.type: export.type must be one of the following: "ActualCost", "AmortizedCost", "Usage"
+WARN		- config "foo/extractor/ex-generic-v2/testUnencrypted/config.json" contains unencrypted values:
+WARN			- #unencrypedValue
+WARN			- parameters.tokens.[1].#value
+WARN		- config row "foo/extractor/keboola.ex-azure-cost-management/with-schema/rows/row-3/config.json" contains unencrypted values:
+WARN			- parameters.export.#password

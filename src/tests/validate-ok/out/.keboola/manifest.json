@@ -33,6 +33,13 @@
     },
     {
       "branchId": %%TEST_BRANCH_FOO_ID%%,
+      "componentId": "ex-generic-v2",
+      "id": "4444",
+      "path": "extractor/ex-generic-v2/testUnencrypted",
+      "rows": []
+    },
+    {
+      "branchId": %%TEST_BRANCH_FOO_ID%%,
       "componentId": "keboola.ex-azure-cost-management",
       "id": "%%TEST_BRANCH_FOO_CONFIG_WITH_SCHEMA_ID%%",
       "path": "extractor/keboola.ex-azure-cost-management/with-schema",
