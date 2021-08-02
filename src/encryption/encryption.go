@@ -38,14 +38,6 @@ type finder struct {
 	groups []Group
 }
 
-func (v *Value) Path() utils.KeyPath {
-	return v.path
-}
-
-func (g *Group) Values() []Value {
-	return g.values
-}
-
 func (g *Group) parseArray(array []interface{}, keyPath utils.KeyPath) {
 	for idx, value := range array {
 		g.parseConfigValue(strconv.Itoa(idx), value, append(keyPath, utils.SliceStep(idx)))
@@ -175,8 +167,8 @@ func ValidateAllEncrypted(projectState *state.State) error {
 	for _, group := range unencryptedGroups {
 		object := group.object
 		valuesErrors := utils.NewMultiError()
-		for _, value := range group.Values() {
-			valuesErrors.AppendRaw(value.Path().String())
+		for _, value := range group.values {
+			valuesErrors.AppendRaw(value.path.String())
 		}
 		objectTypeStr := "config"
 		if object.Kind().Abbr == "R" {
