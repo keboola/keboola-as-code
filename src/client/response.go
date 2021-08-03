@@ -1,8 +1,9 @@
 package client
 
 import (
-	"github.com/go-resty/resty/v2"
 	"sync"
+
+	"github.com/go-resty/resty/v2"
 )
 
 type Response struct {

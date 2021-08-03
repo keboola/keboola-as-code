@@ -2,13 +2,15 @@ package remote
 
 import (
 	"context"
-	"github.com/jarcoal/httpmock"
-	"github.com/stretchr/testify/assert"
-	"keboola-as-code/src/model"
-	"keboola-as-code/src/utils"
 	"os"
 	"testing"
 	"time"
+
+	"keboola-as-code/src/model"
+	"keboola-as-code/src/utils"
+
+	"github.com/jarcoal/httpmock"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestStorageApi(t *testing.T) (*StorageApi, *utils.Writer) {

@@ -2,12 +2,13 @@ package local
 
 import (
 	"fmt"
-	"keboola-as-code/src/model"
-	"keboola-as-code/src/utils"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"keboola-as-code/src/model"
+	"keboola-as-code/src/utils"
 )
 
 // DeleteModel from manifest and disk

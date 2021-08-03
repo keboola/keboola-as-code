@@ -4,11 +4,13 @@ import (
 	"bufio"
 	"bytes"
 	"embed"
-	"go.uber.org/zap"
-	"keboola-as-code/src/utils"
 	"os"
 	"path/filepath"
 	"text/template"
+
+	"keboola-as-code/src/utils"
+
+	"go.uber.org/zap"
 )
 
 //go:embed template/*

@@ -2,9 +2,10 @@ package client
 
 import (
 	"fmt"
-	"go.uber.org/zap"
 	"regexp"
 	"strings"
+
+	"go.uber.org/zap"
 )
 
 const LoggerPrefix = "HTTP%s\t"

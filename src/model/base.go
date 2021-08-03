@@ -1,11 +1,13 @@
 package model
 
 import (
-	"github.com/iancoleman/orderedmap"
-	"keboola-as-code/src/json"
-	"keboola-as-code/src/utils"
 	"sort"
 	"strconv"
+
+	"keboola-as-code/src/json"
+	"keboola-as-code/src/utils"
+
+	"github.com/iancoleman/orderedmap"
 )
 
 const (

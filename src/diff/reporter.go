@@ -2,9 +2,10 @@ package diff
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/spf13/cast"
-	"strings"
 )
 
 type Reporter struct {

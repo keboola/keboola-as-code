@@ -2,6 +2,7 @@ package remote
 
 import (
 	"fmt"
+
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/model"
 )

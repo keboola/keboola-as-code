@@ -3,13 +3,15 @@ package plan
 import (
 	"context"
 	"fmt"
-	"go.uber.org/zap"
+	"sort"
+
 	"keboola-as-code/src/diff"
 	"keboola-as-code/src/log"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
-	"sort"
+
+	"go.uber.org/zap"
 )
 
 // DiffPlan - plan based on the diff results

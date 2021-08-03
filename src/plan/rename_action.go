@@ -2,8 +2,9 @@ package plan
 
 import (
 	"fmt"
-	"keboola-as-code/src/model"
 	"path/filepath"
+
+	"keboola-as-code/src/model"
 )
 
 type RenameAction struct {

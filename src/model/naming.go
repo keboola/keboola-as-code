@@ -2,8 +2,9 @@ package model
 
 import (
 	"fmt"
-	"keboola-as-code/src/utils"
 	"path/filepath"
+
+	"keboola-as-code/src/utils"
 )
 
 const (

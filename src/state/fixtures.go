@@ -1,9 +1,10 @@
 package state
 
 import (
+	"strings"
+
 	"keboola-as-code/src/fixtures"
 	"keboola-as-code/src/utils"
-	"strings"
 )
 
 // NewProjectSnapshot - to validate final project state in tests

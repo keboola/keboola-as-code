@@ -3,13 +3,15 @@ package remote
 import (
 	"context"
 	"fmt"
-	"go.uber.org/zap"
+	"time"
+
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/components"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/options"
 	"keboola-as-code/src/utils"
-	"time"
+
+	"go.uber.org/zap"
 )
 
 type StorageApi struct {

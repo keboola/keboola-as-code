@@ -2,12 +2,14 @@ package client
 
 import (
 	"errors"
+	"net/url"
+	"testing"
+
+	"keboola-as-code/src/utils"
+
 	"github.com/go-resty/resty/v2"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
-	"keboola-as-code/src/utils"
-	"net/url"
-	"testing"
 )
 
 func TestEmpty(t *testing.T) {

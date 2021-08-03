@@ -2,11 +2,13 @@ package remote
 
 import (
 	"fmt"
-	"github.com/go-resty/resty/v2"
-	"github.com/spf13/cast"
+	"time"
+
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/model"
-	"time"
+
+	"github.com/go-resty/resty/v2"
+	"github.com/spf13/cast"
 )
 
 func (a *StorageApi) GetJob(jobId int) (*model.Job, error) {

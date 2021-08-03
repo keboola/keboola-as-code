@@ -2,8 +2,9 @@ package encryption
 
 import (
 	"context"
-	"keboola-as-code/src/utils"
 	"testing"
+
+	"keboola-as-code/src/utils"
 
 	"github.com/stretchr/testify/assert"
 )

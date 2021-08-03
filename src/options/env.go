@@ -2,10 +2,11 @@ package options
 
 import (
 	"fmt"
-	"github.com/joho/godotenv"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/joho/godotenv"
 )
 
 const EnvPrefix = "KBC_"

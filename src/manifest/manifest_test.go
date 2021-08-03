@@ -1,12 +1,14 @@
 package manifest
 
 import (
-	"github.com/stretchr/testify/assert"
-	"keboola-as-code/src/model"
-	"keboola-as-code/src/utils"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"keboola-as-code/src/model"
+	"keboola-as-code/src/utils"
+
+	"github.com/stretchr/testify/assert"
 )
 
 type test struct {

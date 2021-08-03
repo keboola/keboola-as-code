@@ -2,10 +2,11 @@ package plan
 
 import (
 	"fmt"
+	"strings"
+
 	"keboola-as-code/src/diff"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/state"
-	"strings"
 )
 
 const (

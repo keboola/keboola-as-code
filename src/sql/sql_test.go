@@ -1,8 +1,9 @@
 package sql
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSqlSplitAndJoin(t *testing.T) {

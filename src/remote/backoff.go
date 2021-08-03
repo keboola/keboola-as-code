@@ -1,8 +1,9 @@
 package remote
 
 import (
-	"github.com/cenkalti/backoff/v4"
 	"time"
+
+	"github.com/cenkalti/backoff/v4"
 )
 
 // newBackoff for checking Job status and similar operations

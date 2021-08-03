@@ -1,9 +1,11 @@
 package client
 
 import (
-	assert "github.com/stretchr/testify/assert"
-	"keboola-as-code/src/utils"
 	"testing"
+
+	"keboola-as-code/src/utils"
+
+	assert "github.com/stretchr/testify/assert"
 )
 
 func TestClientLogger(t *testing.T) {

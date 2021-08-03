@@ -3,10 +3,11 @@ package state
 import (
 	"fmt"
 	"io/fs"
-	"keboola-as-code/src/utils"
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"keboola-as-code/src/utils"
 )
 
 // PathsState keeps state of all files/dirs in projectDir.
