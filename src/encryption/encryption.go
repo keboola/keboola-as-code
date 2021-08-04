@@ -2,12 +2,13 @@ package encryption
 
 import (
 	"fmt"
-	"keboola-as-code/src/model"
-	"keboola-as-code/src/state"
-	"keboola-as-code/src/utils"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"keboola-as-code/src/model"
+	"keboola-as-code/src/state"
+	"keboola-as-code/src/utils"
 
 	"github.com/iancoleman/orderedmap"
 	"go.uber.org/zap"

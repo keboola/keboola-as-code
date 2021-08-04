@@ -2,12 +2,14 @@ package remote
 
 import (
 	"fmt"
-	"github.com/go-resty/resty/v2"
+	"time"
+
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
-	"time"
+
+	"github.com/go-resty/resty/v2"
 )
 
 const (

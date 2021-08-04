@@ -1,9 +1,10 @@
 package main
 
 import (
+	"os"
+
 	"keboola-as-code/src/cli"
 	"keboola-as-code/src/interaction"
-	"os"
 )
 
 func main() {

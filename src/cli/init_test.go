@@ -1,16 +1,18 @@
 package cli
 
 import (
-	"github.com/ActiveState/vt10x"
-	"github.com/Netflix/go-expect"
-	"github.com/stretchr/testify/assert"
 	"io"
-	"keboola-as-code/src/interaction"
-	"keboola-as-code/src/utils"
 	"os"
 	"sync"
 	"testing"
 	"time"
+
+	"keboola-as-code/src/interaction"
+	"keboola-as-code/src/utils"
+
+	"github.com/ActiveState/vt10x"
+	"github.com/Netflix/go-expect"
+	"github.com/stretchr/testify/assert"
 )
 
 const Enter = "\n"

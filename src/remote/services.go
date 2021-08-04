@@ -2,6 +2,7 @@ package remote
 
 import (
 	"fmt"
+
 	"keboola-as-code/src/client"
 
 	"github.com/go-resty/resty/v2"

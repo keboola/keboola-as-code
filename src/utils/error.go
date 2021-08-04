@@ -2,10 +2,11 @@ package utils
 
 import (
 	"fmt"
-	"github.com/hashicorp/go-multierror"
 	"regexp"
 	"strings"
 	"sync"
+
+	"github.com/hashicorp/go-multierror"
 )
 
 type multiError = multierror.Error

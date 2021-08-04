@@ -2,11 +2,13 @@ package interaction
 
 import (
 	"fmt"
-	"github.com/spf13/cast"
-	"keboola-as-code/src/model"
-	"keboola-as-code/src/utils"
 	"math"
 	"strings"
+
+	"keboola-as-code/src/model"
+	"keboola-as-code/src/utils"
+
+	"github.com/spf13/cast"
 )
 
 const (

@@ -2,11 +2,13 @@ package validator
 
 import (
 	"fmt"
-	"github.com/go-playground/validator/v10"
-	"keboola-as-code/src/utils"
 	"reflect"
 	"regexp"
 	"strings"
+
+	"keboola-as-code/src/utils"
+
+	"github.com/go-playground/validator/v10"
 )
 
 func Validate(value interface{}) error {

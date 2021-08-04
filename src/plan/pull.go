@@ -2,6 +2,7 @@ package plan
 
 import (
 	"fmt"
+
 	"keboola-as-code/src/diff"
 )
 

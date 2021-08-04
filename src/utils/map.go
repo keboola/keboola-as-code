@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+
 	"keboola-as-code/src/json"
 
 	"github.com/iancoleman/orderedmap"

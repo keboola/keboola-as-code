@@ -1,8 +1,9 @@
 package remote
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetComponent(t *testing.T) {

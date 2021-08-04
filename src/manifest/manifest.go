@@ -2,13 +2,15 @@ package manifest
 
 import (
 	"fmt"
-	"github.com/iancoleman/orderedmap"
+	"path/filepath"
+	"sync"
+
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
 	"keboola-as-code/src/validator"
-	"path/filepath"
-	"sync"
+
+	"github.com/iancoleman/orderedmap"
 )
 
 const (

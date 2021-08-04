@@ -3,14 +3,16 @@ package client
 import (
 	"context"
 	"fmt"
-	"github.com/go-resty/resty/v2"
-	"go.uber.org/zap"
-	"keboola-as-code/src/utils"
-	"keboola-as-code/src/version"
 	"net"
 	"net/http"
 	"strings"
 	"time"
+
+	"keboola-as-code/src/utils"
+	"keboola-as-code/src/version"
+
+	"github.com/go-resty/resty/v2"
+	"go.uber.org/zap"
 )
 
 const (

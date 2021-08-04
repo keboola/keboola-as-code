@@ -2,6 +2,7 @@ package local
 
 import (
 	"fmt"
+
 	"keboola-as-code/src/model"
 )
 

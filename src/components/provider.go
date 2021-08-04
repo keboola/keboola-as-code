@@ -2,9 +2,10 @@ package components
 
 import (
 	"fmt"
-	"keboola-as-code/src/model"
 	"sort"
 	"sync"
+
+	"keboola-as-code/src/model"
 )
 
 type remoteProvider interface {

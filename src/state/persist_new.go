@@ -2,10 +2,11 @@ package state
 
 import (
 	"fmt"
+	"path/filepath"
+
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/utils"
-	"path/filepath"
 )
 
 // PersistNew objects from the filesystem

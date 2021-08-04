@@ -1,13 +1,15 @@
 package plan
 
 import (
-	"github.com/stretchr/testify/assert"
-	"keboola-as-code/src/manifest"
-	"keboola-as-code/src/utils"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"keboola-as-code/src/manifest"
+	"keboola-as-code/src/utils"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestRename(t *testing.T) {

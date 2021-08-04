@@ -3,19 +3,21 @@ package cli
 import (
 	"context"
 	"fmt"
-	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 	"io"
+	"os"
+	"path"
+	"regexp"
+	"time"
+
 	"keboola-as-code/src/interaction"
 	"keboola-as-code/src/log"
 	"keboola-as-code/src/options"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/utils"
 	"keboola-as-code/src/version"
-	"os"
-	"path"
-	"regexp"
-	"time"
+
+	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
 const description = `

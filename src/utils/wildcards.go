@@ -1,12 +1,13 @@
 package utils
 
 import (
-	"github.com/pmezard/go-difflib/difflib"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/pmezard/go-difflib/difflib"
+	"github.com/stretchr/testify/assert"
 )
 
 // AssertWildcards compares two texts, in expected value can be used wildcards, see WildcardToRegexp function.

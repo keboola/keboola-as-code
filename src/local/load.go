@@ -2,13 +2,14 @@ package local
 
 import (
 	"fmt"
+	"path/filepath"
+	"reflect"
+
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/transformation"
 	"keboola-as-code/src/utils"
 	"keboola-as-code/src/validator"
-	"path/filepath"
-	"reflect"
 )
 
 // LoadModel from manifest and disk

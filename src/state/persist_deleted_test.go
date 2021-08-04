@@ -2,15 +2,17 @@ package state
 
 import (
 	"context"
-	"github.com/jarcoal/httpmock"
-	"github.com/spf13/cast"
-	"github.com/stretchr/testify/assert"
+	"path/filepath"
+	"testing"
+
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/utils"
-	"path/filepath"
-	"testing"
+
+	"github.com/jarcoal/httpmock"
+	"github.com/spf13/cast"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPersistDeleted(t *testing.T) {

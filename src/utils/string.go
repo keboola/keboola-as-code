@@ -1,10 +1,11 @@
 package utils
 
 import (
-	"github.com/iancoleman/strcase"
-	"github.com/spf13/cast"
 	"regexp"
 	"strings"
+
+	"github.com/iancoleman/strcase"
+	"github.com/spf13/cast"
 )
 
 func NormalizeName(name string) string {
