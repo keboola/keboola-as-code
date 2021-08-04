@@ -1,14 +1,14 @@
 %A
-INFO	New objects:
-INFO		+ C %s main/extractor/ex-generic-v2/new
-INFO		+ C %s main/extractor/keboola.ex-db-mysql/with-rows
-INFO		+ C %s main/transformation/keboola.python-transformation-v2/python-transformation
-INFO		+ R %s main/extractor/keboola.ex-db-mysql/with-rows/rows/users
-DEBUG	Removed "main/extractor/keboola.ex-db-mysql/missing"
-DEBUG	Removed "main/extractor/keboola.ex-db-mysql/missing/rows/some-row"
-INFO	Deleted objects:
+DEBUG	Project local state has been successfully loaded.
+INFO	Plan for "persist" operation:
+INFO		+ C main/extractor/ex-generic-v2/new
+INFO		+ C main/extractor/keboola.ex-db-mysql/with-rows
+INFO		+ R main/extractor/keboola.ex-db-mysql/with-rows/rows/users
+INFO		+ C main/transformation/keboola.python-transformation-v2/python-transformation
 INFO		- C main/extractor/keboola.ex-db-mysql/missing
 INFO		- R main/extractor/keboola.ex-db-mysql/missing/rows/some-row
+%A
+INFO	Persist done.
 INFO	Plan for "rename" operation:
 INFO		- main/extractor/ex-generic-v2/{new -> new-config-name}
 DEBUG	Starting renaming of the 1 paths.
@@ -17,4 +17,3 @@ DEBUG	Removing old paths.
 DEBUG	Removed main/extractor/ex-generic-v2/new
 INFO	Rename done.
 DEBUG	Saved manifest file ".keboola/manifest.json".
-INFO	Persist done.

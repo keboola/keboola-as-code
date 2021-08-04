@@ -6,7 +6,15 @@ import (
 	"github.com/spf13/cast"
 )
 
+const (
+	BranchAbbr    = "B"
+	ComponentAbbr = "COM"
+	ConfigAbbr    = "C"
+	RowAbbr       = "R"
+)
+
 type Key interface {
+	Kind() Kind
 	String() string
 }
 
@@ -34,6 +42,22 @@ type ConfigRowKey struct {
 	ComponentId string `json:"-" validate:"required"`
 	ConfigId    string `json:"-" validate:"required"`
 	Id          string `json:"id" validate:"required" `
+}
+
+func (k BranchKey) Kind() Kind {
+	return Kind{Name: "branch", Abbr: BranchAbbr}
+}
+
+func (k ComponentKey) Kind() Kind {
+	return Kind{Name: "component", Abbr: ComponentAbbr}
+}
+
+func (k ConfigKey) Kind() Kind {
+	return Kind{Name: "config", Abbr: ConfigAbbr}
+}
+
+func (k ConfigRowKey) Kind() Kind {
+	return Kind{Name: "config row", Abbr: RowAbbr}
 }
 
 func (k BranchKey) ObjectId() string {

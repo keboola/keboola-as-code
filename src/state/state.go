@@ -26,7 +26,6 @@ type State struct {
 	localErrors  *utils.Error
 	paths        *PathsState
 	localManager *local.Manager
-	newPersisted []model.ObjectState
 	objects      *orderedmap.OrderedMap
 }
 
