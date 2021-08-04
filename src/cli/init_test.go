@@ -13,6 +13,8 @@ import (
 	"time"
 )
 
+const Enter = "\n"
+
 func TestMissingParams(t *testing.T) {
 	tempDir := t.TempDir()
 	assert.NoError(t, os.Chdir(tempDir))
@@ -40,7 +42,7 @@ func TestInteractiveInit(t *testing.T) {
 	} else {
 		stdout = io.Discard
 	}
-	c, state, err := vt10x.NewVT10XConsole(expect.WithStdout(stdout), expect.WithDefaultTimeout(10*time.Second))
+	c, state, err := vt10x.NewVT10XConsole(expect.WithStdout(stdout), expect.WithDefaultTimeout(15*time.Second))
 	assert.NoError(t, err)
 
 	// Init prompt and cmd
@@ -58,20 +60,47 @@ func TestInteractiveInit(t *testing.T) {
 		assert.NoError(t, err)
 		_, err = c.ExpectString("API host ")
 		assert.NoError(t, err)
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(20 * time.Millisecond)
 		_, err = c.SendLine(utils.TestApiHost())
 		assert.NoError(t, err)
 		_, err = c.ExpectString("Please enter Keboola Storage API token. The value will be hidden.")
 		assert.NoError(t, err)
 		_, err = c.ExpectString("API token ")
 		assert.NoError(t, err)
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(20 * time.Millisecond)
 		_, err = c.SendLine(utils.TestTokenMaster())
 		assert.NoError(t, err)
-		_, err = c.ExpectString("Allowed branches")
+		_, err = c.ExpectString("Allowed project's branches:")
 		assert.NoError(t, err)
-		time.Sleep(100 * time.Millisecond)
-		_, err = c.SendLine("\n") // enter, first option "only main branch"
+		time.Sleep(20 * time.Millisecond)
+		_, err = c.SendLine(Enter) // enter, first option "only main branch"
+		assert.NoError(t, err)
+		_, err = c.ExpectString(`Generate workflows files for GitHub Actions?`)
+		assert.NoError(t, err)
+		time.Sleep(20 * time.Millisecond)
+		_, err = c.SendLine(Enter) // enter - yes
+		assert.NoError(t, err)
+		_, err = c.ExpectString(`Please confirm GitHub Actions you want to generate.`)
+		assert.NoError(t, err)
+		_, err = c.ExpectString(`Generate "validate" workflow?`)
+		assert.NoError(t, err)
+		time.Sleep(20 * time.Millisecond)
+		_, err = c.SendLine(Enter) // enter - yes
+		assert.NoError(t, err)
+		_, err = c.ExpectString(`Generate "push" workflow?`)
+		assert.NoError(t, err)
+		time.Sleep(20 * time.Millisecond)
+		_, err = c.SendLine(Enter) // enter - yes
+		assert.NoError(t, err)
+		_, err = c.ExpectString(`Generate "pull" workflow?`)
+		assert.NoError(t, err)
+		time.Sleep(20 * time.Millisecond)
+		_, err = c.SendLine(Enter) // enter - yes
+		assert.NoError(t, err)
+		_, err = c.ExpectString(`Please select the main GitHub branch name:`)
+		assert.NoError(t, err)
+		time.Sleep(20 * time.Millisecond)
+		_, err = c.SendLine(Enter) // enter - main
 		assert.NoError(t, err)
 		_, err = c.ExpectEOF()
 		assert.NoError(t, err)
@@ -85,5 +114,5 @@ func TestInteractiveInit(t *testing.T) {
 
 	// Assert output
 	out := expect.StripTrailingEmptyLines(state.String())
-	assert.Contains(t, out, "Pull done.")
+	assert.Contains(t, out, "CI workflows have been generated.")
 }

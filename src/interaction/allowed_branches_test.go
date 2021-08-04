@@ -194,7 +194,7 @@ func TestAllowedBranchesTypeList(t *testing.T) {
 // selectOption from interactive select box
 func selectOption(option int, t *testing.T, c *expect.Console) {
 	var err error
-	_, err = c.ExpectString("Allowed branches")
+	_, err = c.ExpectString("Allowed project's branches:")
 	assert.NoError(t, err)
 	_, err = c.ExpectString(ModeMainBranch)
 	assert.NoError(t, err)

@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"keboola-as-code/src/event"
+	"keboola-as-code/src/interaction"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/utils"
@@ -18,10 +19,11 @@ const initLongDescription = `Command "init"
 Initialize local project's directory
 and make first sync from the Keboola Connection.
 
-You will be prompted to enter:
+You will be prompted to define:
 - storage API host
 - storage API token of your project
 - allowed branches
+- GitHub Actions workflows
 
 You can also enter these values
 by flags or environment variables.
@@ -115,17 +117,30 @@ func initCommand(root *rootCommand) *cobra.Command {
 			successful = true
 			event.SendCmdSuccessfulEvent(root.start, logger, api, "init", "Initialized local project directory.")
 
-			// Done
-			logger.Info("Init done. Running pull.")
+			// Generate CI workflows
+			if root.prompt.Confirm(&interaction.Confirm{Label: "Generate workflows files for GitHub Actions?", Default: true}) {
+				workflows := root.GetCommandByName("workflows")
+				if err := workflows.RunE(workflows, nil); err != nil {
+					return err
+				}
+			}
 
 			// Make first pull
+			logger.Info()
+			logger.Info("Init done. Running pull.")
 			pull := root.GetCommandByName("pull")
-			return pull.RunE(pull, nil)
+			if err := pull.RunE(pull, nil); err != nil {
+				return err
+			}
+
+			return nil
 		},
 	}
 
+	// Flags
 	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
 	cmd.Flags().StringP("allowed-branches", "b", "main", `comma separated IDs or name globs, use "*" for all`)
+	workflowsCmdFlags(cmd)
 
 	return cmd
 }

@@ -21,6 +21,7 @@ Available Commands:
   push        Push configurations to the Keboola Connection project
   status      Print info about project directory
   validate    Validate the local project directory
+  workflows   Generate Github Actions workflows
 
 Flags:
   -h, --help                       print help for command

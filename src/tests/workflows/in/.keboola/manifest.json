@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "project": {
+    "id": %%TEST_PROJECT_ID%%,
+    "apiHost": "%%TEST_KBC_STORAGE_API_HOST%%"
+  },
+  "sortBy": "id",
+  "naming": {
+    "branch": "{branch_id}-{branch_name}",
+    "config": "{component_type}/{component_id}/{config_id}-{config_name}",
+    "configRow": "rows/{config_row_id}-{config_row_name}"
+  },
+  "allowedBranches": [
+    "__all__"
+  ],
+  "branches": [
+    {
+      "id": %s,
+      "path": "main"
+    }
+  ],
+  "configurations": []
+}

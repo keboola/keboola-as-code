@@ -17,6 +17,19 @@ INFO	Created file ".env.dist" - an ".env.local" template.
 INFO	Created file ".gitignore" - to keep ".env.local" local.
 %A
 DEBUG	Sent "init" successful event id: "%s"
+%A
+INFO	Generating CI workflows ...
+INFO	Created file ".github/actions/install/action.yml".
+INFO	Created file ".github/workflows/validate.yml".
+INFO	Created file ".github/workflows/push.yml".
+INFO	Created file ".github/workflows/pull.yml".
+%A
+INFO	CI workflows have been generated.
+INFO	Feel free to modify them.
+%A
+INFO	Please set the secret KBC_STORAGE_API_TOKEN in the GitHub settings.
+INFO	See: https://docs.github.com/en/actions/reference/encrypted-secrets
+%A
 INFO	Init done. Running pull.
 %A
 DEBUG	Project local and remote states have been successfully loaded.

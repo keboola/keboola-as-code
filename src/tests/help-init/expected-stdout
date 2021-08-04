@@ -3,10 +3,11 @@ Command "init"
 Initialize local project's directory
 and make first sync from the Keboola Connection.
 
-You will be prompted to enter:
+You will be prompted to define:
 - storage API host
 - storage API token of your project
 - allowed branches
+- GitHub Actions workflows
 
 You can also enter these values
 by flags or environment variables.
@@ -19,6 +20,10 @@ Usage:
 
 Flags:
   -b, --allowed-branches string   comma separated IDs or name globs, use "*" for all (default "main")
+      --ci-main-branch string     name of the main branch for push/pull workflows (default "main")
+      --ci-pull                   create workflow to sync main branch every 5 minutes (default true)
+      --ci-push                   create workflow to push change in main branch to the project (default true)
+      --ci-validate               create workflow to validate all branches on change (default true)
   -H, --storage-api-host string   storage API host, eg. "connection.keboola.com"
 
 Global Flags:

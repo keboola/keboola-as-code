@@ -1,0 +1,27 @@
+Command "workflows"
+
+Generate workflows for Github Actions:
+- "validate" all branches on change.
+- "push" - each change in the main branch will be pushed to the project.
+- "pull" - main branch will be synchronized every 5 minutes.
+
+You will be prompted which workflows you want to generate.
+
+The secret KBC_STORAGE_API_TOKEN must be added to the GitHub repository.
+
+Usage:
+  %s workflows [flags]
+
+Flags:
+      --ci-main-branch string   name of the main branch for push/pull workflows (default "main")
+      --ci-pull                 create workflow to sync main branch every 5 minutes (default true)
+      --ci-push                 create workflow to push change in main branch to the project (default true)
+      --ci-validate             create workflow to validate all branches on change (default true)
+
+Global Flags:
+  -h, --help                       print help for command
+  -l, --log-file string            path to a log file for details
+  -t, --storage-api-token string   storage API token from your project
+  -v, --verbose                    print details
+      --verbose-api                log each API request and response
+  -d, --working-dir string         use other working directory
