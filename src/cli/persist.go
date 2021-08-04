@@ -1,7 +1,9 @@
 package cli
 
 import (
+	"keboola-as-code/src/log"
 	"keboola-as-code/src/manifest"
+	"keboola-as-code/src/plan"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
 
@@ -68,29 +70,25 @@ func persistCommand(root *rootCommand) *cobra.Command {
 				}
 			}
 
-			// Persist new/untracked objects
-			if newPersisted, err := projectState.PersistNew(); err == nil {
-				if len(newPersisted) > 0 {
-					logger.Info("New objects:")
-					for _, object := range newPersisted {
-						logger.Infof("\t+ %s %s %s", object.Kind().Abbr, object.ObjectId(), object.RelativePath())
-					}
-				}
-			} else {
-				return utils.PrefixError("cannot persist new objects", err)
+			// Get plan
+			persist := plan.Persist(projectState)
+
+			// Log plan
+			persist.Log(log.ToInfoWriter(logger))
+
+			// Dry run?
+			dryRun := root.options.GetBool("dry-run")
+			if dryRun {
+				logger.Info("Dry run, nothing changed.")
+				logger.Info(`Persist done.`)
+				return nil
 			}
 
-			// Persist deleted objets
-			if deleted, err := projectState.PersistDeleted(); err == nil {
-				if len(deleted) > 0 {
-					logger.Info("Deleted objects:")
-					for _, object := range deleted {
-						logger.Infof("\t- %s %s", object.Kind().Abbr, object.RelativePath())
-					}
-				}
-			} else {
-				return utils.PrefixError("cannot persist deleted objects", err)
+			// Invoke
+			if err := persist.Invoke(logger, api, projectState); err != nil {
+				return utils.PrefixError(`cannot persist objects`, err)
 			}
+			logger.Info(`Persist done.`)
 
 			// Print remaining untracked paths
 			projectState.LogUntrackedPaths(root.logger)
@@ -101,16 +99,16 @@ func persistCommand(root *rootCommand) *cobra.Command {
 			}
 
 			// Save manifest
-			if changed, err := SaveManifest(projectManifest, logger); err != nil {
+			if _, err := SaveManifest(projectManifest, logger); err != nil {
 				return err
-			} else if !changed {
-				logger.Info(`Nothing to do.`)
 			}
 
-			logger.Info(`Persist done.`)
 			return nil
 		},
 	}
+
+	// Flags
+	cmd.Flags().Bool("dry-run", false, "print what needs to be done")
 
 	return cmd
 }

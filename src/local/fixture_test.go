@@ -17,6 +17,10 @@ type ModelStruct struct {
 type MockedKey struct{}
 type MockedRecord struct{}
 
+func (MockedKey) Kind() model.Kind {
+	return model.Kind{Name: "kind", Abbr: "K"}
+}
+
 func (MockedKey) String() string {
 	return "key"
 }
@@ -37,8 +41,8 @@ func (MockedRecord) Level() int {
 	return 1
 }
 
-func (MockedRecord) Kind() model.Kind {
-	return model.Kind{Name: "kind", Abbr: "K"}
+func (r MockedRecord) Kind() model.Kind {
+	return r.Key().Kind()
 }
 
 func (MockedRecord) State() *model.RecordState {

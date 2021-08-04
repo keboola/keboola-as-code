@@ -13,21 +13,27 @@ func (s *State) doLoadLocalState() {
 
 	// Branches
 	for _, b := range s.manifest.Content.Branches {
-		s.loadModel(b)
+		if _, err := s.LoadModel(b); err != nil {
+			s.AddLocalError(err)
+		}
 	}
 
 	// Configs
 	for _, c := range s.manifest.Content.Configs {
-		s.loadModel(c.ConfigManifest)
+		if _, err := s.LoadModel(c.ConfigManifest); err != nil {
+			s.AddLocalError(err)
+		}
 
 		// Rows
 		for _, r := range c.Rows {
-			s.loadModel(r)
+			if _, err := s.LoadModel(r); err != nil {
+				s.AddLocalError(err)
+			}
 		}
 	}
 }
 
-func (s *State) loadModel(record model.Record) model.ObjectState {
+func (s *State) LoadModel(record model.Record) (model.ObjectState, error) {
 	// Detect record type
 	var value model.Object
 	switch v := record.(type) {
@@ -45,23 +51,21 @@ func (s *State) loadModel(record model.Record) model.ObjectState {
 	if err == nil {
 		// Validate, branch must be allowed
 		if branch, ok := value.(*model.Branch); ok && !s.manifest.IsBranchAllowed(branch) {
-			s.AddLocalError(fmt.Errorf(
+			return nil, fmt.Errorf(
 				`found manifest record for branch "%s" (%d), but it is not allowed by the manifest "allowedBranches"`,
 				branch.Name,
 				branch.Id,
-			))
-			return nil
+			)
 		}
-
-		return s.SetLocalState(value, record)
+		return s.SetLocalState(value, record), nil
 	} else {
 		record.State().SetInvalid()
 		if !found {
 			record.State().SetNotFound()
 		}
 		if found || !s.SkipNotFoundErr {
-			s.AddLocalError(err)
+			return nil, err
 		}
-		return nil
+		return nil, nil
 	}
 }
