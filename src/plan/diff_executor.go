@@ -49,12 +49,20 @@ func (e *diffExecutor) invoke() error {
 		case ActionSaveLocal:
 			a := action
 			e.addWorker(func() error {
-				return e.localManager.SaveModel(a.Manifest(), a.RemoteState())
+				if err := e.localManager.SaveModel(a.Manifest(), a.RemoteState()); err != nil {
+					return err
+				}
+				a.SetLocalState(a.RemoteState())
+				return nil
 			})
 		case ActionDeleteLocal:
 			a := action
 			e.addWorker(func() error {
-				return e.localManager.DeleteModel(a.Manifest())
+				if err := e.localManager.DeleteModel(a.Manifest()); err != nil {
+					return err
+				}
+				a.SetLocalState(nil)
+				return nil
 			})
 		case ActionSaveRemote:
 			if err := e.remoteWork.SaveRemote(action.ObjectState, action.ChangedFields); err != nil {

@@ -70,14 +70,20 @@ func (u *UnitOfWork) DeleteRemote(object model.ObjectState) error {
 	case *model.BranchState:
 		return fmt.Errorf(`branch (%d - %s) cannot be deleted by CLI`, v.Local.Id, v.Local.Name)
 	case *model.ConfigState:
-		u.Manifest().DeleteRecord(v)
 		u.poolFor(v.Level()).
 			Request(u.api.DeleteConfigRequest(v.ComponentId, v.Id)).
+			OnSuccess(func(response *client.Response) {
+				u.Manifest().DeleteRecord(v)
+				object.SetRemoteState(nil)
+			}).
 			Send()
 	case *model.ConfigRowState:
-		u.Manifest().DeleteRecord(v)
 		u.poolFor(v.Level()).
 			Request(u.api.DeleteConfigRowRequest(v.ComponentId, v.ConfigId, v.Id)).
+			OnSuccess(func(response *client.Response) {
+				u.Manifest().DeleteRecord(v)
+				object.SetRemoteState(nil)
+			}).
 			Send()
 	default:
 		panic(fmt.Errorf(`unexpected type "%T"`, object))
