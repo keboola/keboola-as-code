@@ -9,7 +9,7 @@
       "configs": [
         {
           "componentId": "keboola.ex-db-mysql",
-          "name": "undeletedin\nout\nargs\nexpected-code\nexpected-state.json\nexpected-stderr\nexpected-stdout\ninitial-state.json",
+          "name": "undeleted",
           "description": "",
           "changeDescription": "Updated from #KeboolaCLI",
           "configuration": {
