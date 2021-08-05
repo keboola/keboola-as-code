@@ -12,5 +12,8 @@ call the "push" command after the "persist" command.
 Usage:
   %s persist [flags]
 
+Flags:
+      --dry-run   print what needs to be done
+
 Global Flags:
 %A

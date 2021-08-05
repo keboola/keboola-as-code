@@ -155,18 +155,6 @@ func (p *Paths) AbsolutePath(projectDir string) string {
 	return filepath.Join(projectDir, p.RelativePath())
 }
 
-func (b BranchManifest) Kind() Kind {
-	return Kind{Name: "branch", Abbr: "B"}
-}
-
-func (c ConfigManifest) Kind() Kind {
-	return Kind{Name: "config", Abbr: "C"}
-}
-
-func (r ConfigRowManifest) Kind() Kind {
-	return Kind{Name: "config row", Abbr: "R"}
-}
-
 func (s *RecordState) State() *RecordState {
 	return s
 }
