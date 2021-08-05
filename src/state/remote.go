@@ -32,9 +32,20 @@ func (s *State) doLoadRemoteState() {
 					OnSuccess(func(response *client.Response) {
 						// Save component, it contains all configs and rows
 						for _, component := range *response.Result().(*[]*model.ComponentWithConfigs) {
+							// Configs
 							for _, config := range component.Configs {
+								if s.IgnoreMarkedToDelete && config.IsMarkedToDelete() {
+									continue
+								}
+
 								s.SetRemoteState(config.Config)
+
+								// Rows
 								for _, row := range config.Rows {
+									if s.IgnoreMarkedToDelete && row.IsMarkedToDelete() {
+										continue
+									}
+
 									s.SetRemoteState(row)
 								}
 							}

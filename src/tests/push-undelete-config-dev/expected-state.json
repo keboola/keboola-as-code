@@ -1,0 +1,58 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Dev",
+        "description": "",
+        "isDefault": false
+      },
+      "configs": [
+        {
+          "componentId": "keboola.ex-db-mysql",
+          "name": "undeletedin\nout\nargs\nexpected-code\nexpected-state.json\nexpected-stderr\nexpected-stdout\ninitial-state.json",
+          "description": "",
+          "changeDescription": "Updated from #KeboolaCLI",
+          "configuration": {
+            "parameters": {
+              "db": {
+                "host": "mysql.example.com"
+              }
+            }
+          },
+          "rows": [
+            {
+              "name": "disabled",
+              "description": "test fixture",
+              "changeDescription": "Updated from #KeboolaCLI",
+              "isDisabled": true,
+              "configuration": {
+                "parameters": {
+                  "incremental": false
+                }
+              }
+            },
+            {
+              "name": "users",
+              "description": "test fixture",
+              "changeDescription": "Updated from #KeboolaCLI",
+              "isDisabled": false,
+              "configuration": {
+                "parameters": {
+                  "incremental": false
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true
+      },
+      "configs": []
+    }
+  ]
+}

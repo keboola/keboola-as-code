@@ -3,6 +3,7 @@ package model
 import (
 	"sort"
 	"strconv"
+	"strings"
 
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/utils"
@@ -14,6 +15,7 @@ const (
 	MetaFileTag        = "metaFile:true"
 	ConfigFileTag      = "configFile:true"
 	TransformationType = "transformation"
+	ToDeletePrefix     = "[TO DELETE] "
 )
 
 // Kind - type of the object, branch, config ...
@@ -134,19 +136,8 @@ func (c *Component) IsTransformation() bool {
 	return c.Type == TransformationType
 }
 
-func (r *ConfigRow) ToApiValues() (map[string]string, error) {
-	configJson, err := json.EncodeString(r.Content, false)
-	if err != nil {
-		return nil, utils.PrefixError(`cannot JSON encode config configuration`, err)
-	}
-
-	return map[string]string{
-		"name":              r.Name,
-		"description":       r.Description,
-		"changeDescription": r.ChangeDescription,
-		"isDisabled":        strconv.FormatBool(r.IsDisabled),
-		"configuration":     configJson,
-	}, nil
+func (c *Config) IsMarkedToDelete() bool {
+	return strings.HasPrefix(c.Name, ToDeletePrefix)
 }
 
 func (c *Config) ToApiValues() (map[string]string, error) {
@@ -159,6 +150,25 @@ func (c *Config) ToApiValues() (map[string]string, error) {
 		"name":              c.Name,
 		"description":       c.Description,
 		"changeDescription": c.ChangeDescription,
+		"configuration":     configJson,
+	}, nil
+}
+
+func (c *ConfigRow) IsMarkedToDelete() bool {
+	return strings.HasPrefix(c.Name, ToDeletePrefix)
+}
+
+func (r *ConfigRow) ToApiValues() (map[string]string, error) {
+	configJson, err := json.EncodeString(r.Content, false)
+	if err != nil {
+		return nil, utils.PrefixError(`cannot JSON encode config configuration`, err)
+	}
+
+	return map[string]string{
+		"name":              r.Name,
+		"description":       r.Description,
+		"changeDescription": r.ChangeDescription,
+		"isDisabled":        strconv.FormatBool(r.IsDisabled),
 		"configuration":     configJson,
 	}, nil
 }

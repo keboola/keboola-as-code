@@ -25,7 +25,7 @@ func Push(diffResults *diff.Results, changeDescription string) (*DiffPlan, error
 			plan.add(result, ActionSaveRemote)
 		case diff.ResultOnlyInRemote:
 			if parentExists(result.ObjectState, plan.State) {
-				plan.add(result, ActionDeleteRemote)
+				plan.add(result, getDeleteRemoteAction(result.ObjectState, plan.State))
 			}
 		case diff.ResultNotSet:
 			panic(fmt.Errorf("diff was not generated"))
@@ -37,6 +37,24 @@ func Push(diffResults *diff.Results, changeDescription string) (*DiffPlan, error
 	}
 
 	return plan, nil
+}
+
+func getDeleteRemoteAction(object model.ObjectState, projectState *state.State) DiffActionType {
+	switch o := object.(type) {
+	case *model.ConfigState:
+		branch := projectState.Get(o.BranchKey()).(*model.BranchState)
+		if !branch.Remote.IsDefault {
+			// Config from the dev branch cannot be deleted
+			return ActionMarkDeletedRemote
+		}
+	case *model.ConfigRowState:
+		branch := projectState.Get(o.BranchKey()).(*model.BranchState)
+		if !branch.Remote.IsDefault {
+			// Config row from the dev branch cannot be deleted
+			return ActionMarkDeletedRemote
+		}
+	}
+	return ActionDeleteRemote
 }
 
 func parentExists(objectState model.ObjectState, currentState *state.State) bool {
