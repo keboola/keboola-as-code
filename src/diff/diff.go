@@ -33,6 +33,7 @@ const (
 	ResultEqual
 	ResultOnlyInRemote
 	ResultOnlyInLocal
+	ResultInvisible // present in remote state, but ignored
 )
 
 type Result struct {
@@ -84,6 +85,32 @@ func (d *Differ) Diff() (*Results, error) {
 
 func (d *Differ) doDiff(state model.ObjectState) (*Result, error) {
 	result := &Result{ObjectState: state}
+	result.ChangedFields = make([]string, 0)
+	result.Differences = make(map[string]string)
+
+	// Are both, Remote and Local state defined?
+	if !state.HasRemoteState() && !state.HasLocalState() {
+		panic(fmt.Errorf("both local and remote state are not set"))
+	}
+
+	// Not in local state + deleted in the remote state
+	if !state.HasLocalState() && state.RemoteState().IsMarkedToDelete() {
+		result.State = ResultInvisible
+		return result, nil
+	}
+
+	// Not in remote state OR deleted in the remote state
+	if !state.HasRemoteState() || state.RemoteState().IsMarkedToDelete() {
+		result.State = ResultOnlyInLocal
+		return result, nil
+	}
+
+	// Not in local state
+	if !state.HasLocalState() {
+		result.State = ResultOnlyInRemote
+		return result, nil
+	}
+
 	remoteState := state.RemoteState()
 	localState := state.LocalState()
 	remoteType := reflect.TypeOf(remoteState).Elem()
@@ -100,21 +127,6 @@ func (d *Differ) doDiff(state model.ObjectState) (*Result, error) {
 	diffFields := d.getDiffFields(remoteType)
 	if len(diffFields) == 0 {
 		return nil, fmt.Errorf(`no field with tag "diff:true" in struct "%s"`, remoteType.String())
-	}
-
-	// Are both, Remote and Local state defined?
-	result.ChangedFields = make([]string, 0)
-	result.Differences = make(map[string]string)
-	if remoteValues.IsNil() && localValues.IsNil() {
-		panic(fmt.Errorf("both local and remote state are not set"))
-	}
-	if remoteValues.IsNil() {
-		result.State = ResultOnlyInLocal
-		return result, nil
-	}
-	if localValues.IsNil() {
-		result.State = ResultOnlyInRemote
-		return result, nil
 	}
 
 	// Get pointer value

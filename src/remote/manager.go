@@ -140,10 +140,14 @@ func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, changedFields
 	switch v := object.(type) {
 	case *model.Config:
 		v.ChangeDescription = u.changeDescription
-		changedFields = append(changedFields, "changeDescription")
+		if len(changedFields) > 0 {
+			changedFields = append(changedFields, "changeDescription")
+		}
 	case *model.ConfigRow:
 		v.ChangeDescription = u.changeDescription
-		changedFields = append(changedFields, "changeDescription")
+		if len(changedFields) > 0 {
+			changedFields = append(changedFields, "changeDescription")
+		}
 	}
 
 	// Create or update

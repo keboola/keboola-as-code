@@ -3,7 +3,6 @@ package model
 import (
 	"sort"
 	"strconv"
-	"strings"
 
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/utils"
@@ -81,6 +80,7 @@ type Config struct {
 	ChangeDescription string                 `json:"changeDescription"`
 	Content           *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
 	Blocks            []*Block               `json:"-"` // loaded transformation's blocks, filled in only for the LOCAL state
+	markedToDelete    bool
 }
 
 type ConfigWithRows struct {
@@ -102,6 +102,7 @@ type ConfigRow struct {
 	ChangeDescription string                 `json:"changeDescription"`
 	IsDisabled        bool                   `json:"isDisabled" diff:"true" metaFile:"true"`
 	Content           *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
+	markedToDelete    bool
 }
 
 // Job - Storage API job
@@ -132,12 +133,32 @@ type Code struct {
 	Scripts      []string `json:"script"` // scripts, eg. SQL statements
 }
 
-func (c *Component) IsTransformation() bool {
-	return c.Type == TransformationType
+func (c *Config) MarkToDelete() {
+	c.markedToDelete = true
+}
+
+func (r *ConfigRow) MarkToDelete() {
+	r.markedToDelete = true
+}
+
+func (b *Branch) IsMarkedToDelete() bool {
+	return false
+}
+
+func (c *Component) IsMarkedToDelete() bool {
+	return false
 }
 
 func (c *Config) IsMarkedToDelete() bool {
-	return strings.HasPrefix(c.Name, ToDeletePrefix)
+	return c.markedToDelete
+}
+
+func (r *ConfigRow) IsMarkedToDelete() bool {
+	return r.markedToDelete
+}
+
+func (c *Component) IsTransformation() bool {
+	return c.Type == TransformationType
 }
 
 func (c *Config) ToApiValues() (map[string]string, error) {
@@ -152,10 +173,6 @@ func (c *Config) ToApiValues() (map[string]string, error) {
 		"changeDescription": c.ChangeDescription,
 		"configuration":     configJson,
 	}, nil
-}
-
-func (c *ConfigRow) IsMarkedToDelete() bool {
-	return strings.HasPrefix(c.Name, ToDeletePrefix)
 }
 
 func (r *ConfigRow) ToApiValues() (map[string]string, error) {

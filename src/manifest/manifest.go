@@ -247,8 +247,8 @@ func (m *Manifest) TrackRecord(record model.Record) {
 	m.records.Set(record.Key().String(), record)
 }
 
-func (m *Manifest) DeleteRecord(value model.Object) {
-	m.DeleteRecordByKey(value.Key())
+func (m *Manifest) DeleteRecord(object model.WithKey) {
+	m.DeleteRecordByKey(object.Key())
 }
 
 func (m *Manifest) DeleteRecordByKey(key model.Key) {
