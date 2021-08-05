@@ -52,15 +52,27 @@ func (r *ConfigRowState) HasLocalState() bool {
 }
 
 func (b *BranchState) SetLocalState(object Object) {
-	b.Local = object.(*Branch)
+	if object == nil {
+		b.Local = nil
+	} else {
+		b.Local = object.(*Branch)
+	}
 }
 
 func (c *ConfigState) SetLocalState(object Object) {
-	c.Local = object.(*Config)
+	if object == nil {
+		c.Local = nil
+	} else {
+		c.Local = object.(*Config)
+	}
 }
 
 func (r *ConfigRowState) SetLocalState(object Object) {
-	r.Local = object.(*ConfigRow)
+	if object == nil {
+		r.Local = nil
+	} else {
+		r.Local = object.(*ConfigRow)
+	}
 }
 
 func (b *BranchState) LocalState() Object {
@@ -88,15 +100,27 @@ func (r *ConfigRowState) HasRemoteState() bool {
 }
 
 func (b *BranchState) SetRemoteState(object Object) {
-	b.Remote = object.(*Branch)
+	if object == nil {
+		b.Remote = nil
+	} else {
+		b.Remote = object.(*Branch)
+	}
 }
 
 func (c *ConfigState) SetRemoteState(object Object) {
-	c.Remote = object.(*Config)
+	if object == nil {
+		c.Remote = nil
+	} else {
+		c.Remote = object.(*Config)
+	}
 }
 
 func (r *ConfigRowState) SetRemoteState(object Object) {
-	r.Remote = object.(*ConfigRow)
+	if object == nil {
+		r.Remote = nil
+	} else {
+		r.Remote = object.(*ConfigRow)
+	}
 }
 
 func (b *BranchState) RemoteState() Object {
