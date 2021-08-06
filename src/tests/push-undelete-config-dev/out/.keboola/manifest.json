@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "project": {
+    "id": %%TEST_PROJECT_ID%%,
+    "apiHost": "%%TEST_KBC_STORAGE_API_HOST%%"
+  },
+  "sortBy": "path",
+  "naming": {
+    "branch": "{branch_name}",
+    "config": "{component_type}/{component_id}/{config_name}",
+    "configRow": "rows/{config_row_name}"
+  },
+  "allowedBranches": [
+    "dev"
+  ],
+  "branches": [
+    {
+      "id": %%TEST_BRANCH_DEV_ID%%,
+      "path": "dev"
+    }
+  ],
+  "configurations": [
+    {
+      "branchId": %%TEST_BRANCH_DEV_ID%%,
+      "componentId": "keboola.ex-db-mysql",
+      "id": "%%TEST_BRANCH_DEV_CONFIG_TO_DELETE_CONFIG_TO_DELETE_ID%%",
+      "path": "extractor/keboola.ex-db-mysql/undeleted",
+      "rows": [
+        {
+          "id": "%%TEST_BRANCH_DEV_CONFIG_TO_DELETE_CONFIG_TO_DELETE_ROW_DISABLED_ID%%",
+          "path": "rows/disabled"
+        },
+        {
+          "id": "%%TEST_BRANCH_DEV_CONFIG_TO_DELETE_CONFIG_TO_DELETE_ROW_USERS_ID%%",
+          "path": "rows/users"
+        }
+      ]
+    }
+  ]
+}

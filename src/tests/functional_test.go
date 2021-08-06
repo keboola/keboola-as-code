@@ -233,18 +233,24 @@ func AssertExpectations(
 	// Check project state
 	expectedStatePath := filepath.Join(testDir, "expected-state.json")
 	if utils.IsFile(expectedStatePath) {
+		// Read expected state
 		expectedSnapshot := &fixtures.ProjectSnapshot{}
 		err = json.ReadFile(testDir, "expected-state.json", expectedSnapshot, "expected project state")
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}
+
+		// Fake manifest
 		m, err := manifest.NewManifest(api.ProjectId(), api.Host(), workingDir, "bar")
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}
+
+		// Load actual state
 		logger, _ := utils.NewDebugLogger()
 		stateOptions := state.NewOptions(m, api, context.Background(), logger)
 		stateOptions.LoadRemoteState = true
+		stateOptions.IgnoreMarkedToDelete = false
 		actualState, ok := state.LoadState(stateOptions)
 		assert.True(t, ok)
 		assert.Empty(t, actualState.RemoteErrors().Errors)
@@ -252,6 +258,8 @@ func AssertExpectations(
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}
+
+		// Write actual state
 		err = json.WriteFile(workingDir, "actual-state.json", actualSnapshot, "test project state")
 		if err != nil {
 			assert.FailNow(t, err.Error())

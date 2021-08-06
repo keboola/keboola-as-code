@@ -14,6 +14,7 @@ const (
 	ActionSaveRemote
 	ActionDeleteLocal
 	ActionDeleteRemote
+	ActionMarkDeletedRemote
 )
 
 type DiffActionType int
@@ -76,31 +77,6 @@ func (a *DiffAction) validate(currentState *state.State) error {
 				return fmt.Errorf("cannot %s, default branch can never be deleted", a.StringVerbose())
 			} else {
 				return fmt.Errorf("cannot %s, branch cannot be deleted by CLI", a.StringVerbose())
-			}
-		}
-	}
-
-	// Config rules
-	if configState, ok := a.ObjectState.(*model.ConfigState); ok {
-		// Config from dev-branch cannot be removed, it can be only marked for removal
-		if a.action == ActionDeleteRemote {
-			config := configState.Remote
-			branch := currentState.Get(*config.BranchKey()).RemoteState().(*model.Branch)
-			if !branch.IsDefault {
-				return fmt.Errorf("cannot %s from dev branch", a.StringVerbose())
-			}
-		}
-	}
-
-	// Config row rules
-	if configRowState, ok := a.ObjectState.(*model.ConfigRowState); ok {
-		// Config row from dev-branch cannot be removed, it can be only marked for removal
-		if a.action == ActionDeleteRemote {
-			row := configRowState.Remote
-			config := currentState.Get(*row.ConfigKey()).RemoteState().(*model.Config)
-			branch := currentState.Get(*config.BranchKey()).RemoteState().(*model.Branch)
-			if !branch.IsDefault {
-				return fmt.Errorf("cannot %s from dev branch", a.StringVerbose())
 			}
 		}
 	}

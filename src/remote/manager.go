@@ -3,6 +3,7 @@ package remote
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/local"
@@ -92,6 +93,23 @@ func (u *UnitOfWork) DeleteRemote(object model.ObjectState) error {
 	return nil
 }
 
+// MarkDeleted config or row from dev branch. Prefix is added at the name beginning
+func (u *UnitOfWork) MarkDeleted(object model.ObjectState) error {
+	switch o := object.RemoteState().(type) {
+	case *model.Config:
+		o.Name = model.ToDeletePrefix + strings.TrimPrefix(o.Name, model.ToDeletePrefix)
+	case *model.ConfigRow:
+		o.Name = model.ToDeletePrefix + strings.TrimPrefix(o.Name, model.ToDeletePrefix)
+	default:
+		panic(fmt.Errorf(`unexpected type "%T"`, object))
+	}
+
+	// Save
+	object.SetLocalState(object.RemoteState())
+	changedFields := []string{"name", "changeDescription"}
+	return u.SaveRemote(object, changedFields)
+
+}
 func (u *UnitOfWork) Invoke() error {
 	u.pools.SortKeys(sort.Strings)
 	for _, level := range u.pools.Keys() {
@@ -106,47 +124,79 @@ func (u *UnitOfWork) Invoke() error {
 	return u.errors.ErrorOrNil()
 }
 
-func (u *UnitOfWork) createOrUpdate(object model.ObjectState, changedFields []string) error {
+func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, changedFields []string) error {
+	// Get object local state.
+	// Remote state is used for marking object as deleted (then local state is not set)
+	var object model.Object
+	if objectState.HasLocalState() {
+		object = objectState.LocalState()
+	} else if objectState.HasRemoteState() {
+		object = objectState.RemoteState()
+	} else {
+		panic(fmt.Errorf(`local or remote state must be set`))
+	}
+
 	// Set changeDescription
 	switch v := object.(type) {
-	case *model.ConfigState:
-		v.Local.ChangeDescription = u.changeDescription
+	case *model.Config:
+		v.ChangeDescription = u.changeDescription
 		changedFields = append(changedFields, "changeDescription")
-	case *model.ConfigRowState:
-		v.Local.ChangeDescription = u.changeDescription
+	case *model.ConfigRow:
+		v.ChangeDescription = u.changeDescription
 		changedFields = append(changedFields, "changeDescription")
 	}
 
 	// Create or update
-	if !object.HasRemoteState() {
+	if !objectState.HasRemoteState() {
 		// Create
-		request, err := u.api.CreateRequest(object.LocalState())
-		if err != nil {
-			return err
-		}
+		return u.create(objectState, object)
+	}
+
+	// Update
+	return u.update(objectState, object, changedFields)
+}
+
+func (u *UnitOfWork) create(objectState model.ObjectState, object model.Object) error {
+	request, err := u.api.CreateRequest(object)
+	if err != nil {
+		return err
+	}
+	u.poolFor(object.Level()).
+		Request(request).
+		OnSuccess(func(response *client.Response) {
+			// Save new ID to manifest
+			objectState.SetRemoteState(object)
+
+			// If marking as deleted -> local state is not set
+			if objectState.HasLocalState() {
+				u.localManager.UpdatePaths(objectState, false)
+				if err := u.localManager.SaveModel(objectState.Manifest(), objectState.LocalState()); err != nil {
+					u.errors.Append(err)
+				}
+			}
+		}).
+		OnError(func(response *client.Response) {
+			if e, ok := response.Error().(*Error); ok {
+				if e.ErrCode == "configurationAlreadyExists" || e.ErrCode == "configurationRowAlreadyExists" {
+					// Object exists -> update instead of create + clear error
+					response.SetErr(u.update(objectState, object, nil))
+				}
+			}
+		}).
+		Send()
+	return nil
+}
+
+func (u *UnitOfWork) update(objectState model.ObjectState, object model.Object, changedFields []string) error {
+	if request, err := u.api.UpdateRequest(object, changedFields); err == nil {
 		u.poolFor(object.Level()).
 			Request(request).
 			OnSuccess(func(response *client.Response) {
-				// Save new ID to manifest
-				object.SetRemoteState(object.LocalState())
-				u.localManager.UpdatePaths(object, false)
-				if err := u.localManager.SaveModel(object.Manifest(), object.LocalState()); err != nil {
-					u.errors.Append(err)
-				}
+				objectState.SetRemoteState(object)
 			}).
 			Send()
 	} else {
-		// Update
-		if request, err := u.api.UpdateRequest(object.LocalState(), changedFields); err == nil {
-			u.poolFor(object.Level()).
-				Request(request).
-				OnSuccess(func(response *client.Response) {
-					object.SetRemoteState(object.LocalState())
-				}).
-				Send()
-		} else {
-			return err
-		}
+		return err
 	}
 	return nil
 }

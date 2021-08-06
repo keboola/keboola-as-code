@@ -38,12 +38,12 @@ func (r *Response) Err() error {
 }
 
 func (r *Response) SetErr(err error) *Response {
+	// Sub-request can run in parallel and end with an error -> it can be set to parent request
+	// ... so locking is required
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	r.err = err
 	if err != nil {
-		// Sub-request can run in parallel and end with an error -> it can be set to parent request
-		// ... so locking is required
-		r.lock.Lock()
-		defer r.lock.Unlock()
-		r.err = err
 		r.Request.Result = nil
 	}
 	return r

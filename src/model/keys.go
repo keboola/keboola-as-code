@@ -136,6 +136,10 @@ func (k ConfigRowKey) ComponentKey() *ComponentKey {
 	return &ComponentKey{Id: k.ComponentId}
 }
 
+func (k ConfigRowKey) BranchKey() *BranchKey {
+	return k.ConfigKey().BranchKey()
+}
+
 func (k ConfigRowKey) ConfigKey() *ConfigKey {
 	return &ConfigKey{BranchId: k.BranchId, ComponentId: k.ComponentId, Id: k.ConfigId}
 }

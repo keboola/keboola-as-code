@@ -30,21 +30,23 @@ type State struct {
 }
 
 type Options struct {
-	manifest        *manifest.Manifest
-	api             *remote.StorageApi
-	context         context.Context
-	logger          *zap.SugaredLogger
-	LoadLocalState  bool
-	LoadRemoteState bool
-	SkipNotFoundErr bool
+	manifest             *manifest.Manifest
+	api                  *remote.StorageApi
+	context              context.Context
+	logger               *zap.SugaredLogger
+	LoadLocalState       bool
+	LoadRemoteState      bool
+	IgnoreMarkedToDelete bool // dev config/row marked with [TO DELETE] in the name will be ignored
+	SkipNotFoundErr      bool // not found error will be ignored
 }
 
 func NewOptions(m *manifest.Manifest, api *remote.StorageApi, ctx context.Context, logger *zap.SugaredLogger) *Options {
 	return &Options{
-		manifest: m,
-		api:      api,
-		context:  ctx,
-		logger:   logger,
+		manifest:             m,
+		api:                  api,
+		context:              ctx,
+		logger:               logger,
+		IgnoreMarkedToDelete: true,
 	}
 }
 

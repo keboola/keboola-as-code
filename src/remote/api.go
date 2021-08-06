@@ -93,17 +93,18 @@ func (a *StorageApi) SetRetry(count int, waitTime time.Duration, maxWaitTime tim
 }
 
 func getChangedValues(all map[string]string, changed []string) map[string]string {
+	if len(changed) == 0 {
+		return all
+	}
+
+	// Filter
 	data := map[string]string{}
-	if changed != nil {
-		for _, key := range changed {
-			if v, ok := all[key]; ok {
-				data[key] = v
-			} else {
-				panic(fmt.Errorf(`key "%s" cannot be updated`, key))
-			}
+	for _, key := range changed {
+		if v, ok := all[key]; ok {
+			data[key] = v
+		} else {
+			panic(fmt.Errorf(`key "%s" cannot be updated`, key))
 		}
-	} else {
-		data = all
 	}
 	return data
 }
