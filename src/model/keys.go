@@ -18,9 +18,14 @@ type Key interface {
 	String() string
 }
 
+type WithKey interface {
+	Key() Key
+}
+
 type Object interface {
 	Level() int // hierarchical level, "1" for branch, "2" for config, ...
 	Key() Key
+	IsMarkedToDelete() bool
 }
 
 type BranchKey struct {

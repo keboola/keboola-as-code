@@ -33,6 +33,10 @@ func (ModelStruct) Level() int {
 	return 1
 }
 
+func (ModelStruct) IsMarkedToDelete() bool {
+	return false
+}
+
 func (MockedRecord) Key() model.Key {
 	return &MockedKey{}
 }
