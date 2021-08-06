@@ -76,7 +76,7 @@ func TestConfigApiCalls(t *testing.T) {
 	assert.Equal(t, branch.Id, row2.BranchId)
 
 	// Update config
-	config.Name = "Test modified"
+	config.Name = "Test modified +++úěš!@#"
 	config.Description = "Test description modified"
 	config.ChangeDescription = "updated"
 	config.Content = utils.PairsToOrderedMap([]utils.Pair{
@@ -120,7 +120,7 @@ func expectedComponentsConfigTest() string {
         "branchId": %s,
         "componentId": "ex-generic-v2",
         "id": "%s",
-        "name": "Test modified",
+        "name": "Test modified +++úěš!@#",
         "description": "Test description modified",
         "changeDescription": "updated",
         "configuration": {
