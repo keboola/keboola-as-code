@@ -39,3 +39,10 @@ func TestIsBranchAllowed(t *testing.T) {
 		&Branch{BranchKey: BranchKey{Id: 123}, Name: "abc", IsDefault: false}),
 	)
 }
+
+func TestComponentsIds(t *testing.T) {
+	ids := ComponentIds{"foo", "bar"}
+	assert.True(t, ids.Contains("foo"))
+	assert.True(t, ids.Contains("bar"))
+	assert.False(t, ids.Contains("baz"))
+}

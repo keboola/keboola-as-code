@@ -7,71 +7,12 @@ import (
 	"strings"
 
 	"keboola-as-code/src/utils"
-
-	"github.com/spf13/cast"
 )
 
 const (
-	SortById       = "id"
-	SortByPath     = "path"
-	AllBranchesDef = "__all__"
-	MainBranchDef  = "__main__"
+	SortById   = "id"
+	SortByPath = "path"
 )
-
-type AllowedBranch string
-type AllowedBranches []AllowedBranch
-
-func (v AllowedBranches) String() string {
-	if len(v) == 0 {
-		return `[]`
-	}
-
-	items := make([]string, 0)
-	for _, item := range v {
-		items = append(items, string(item))
-	}
-	return `"` + strings.Join(items, `", "`) + `"`
-}
-
-func (v AllowedBranches) IsBranchAllowed(branch *Branch) bool {
-	for _, definition := range v {
-		if definition.IsBranchAllowed(branch) {
-			return true
-		}
-	}
-	return false
-}
-
-func (v AllowedBranch) IsBranchAllowed(branch *Branch) bool {
-	pattern := string(v)
-
-	// All branches
-	if pattern == AllBranchesDef {
-		return true
-	}
-
-	// Main branch
-	if pattern == MainBranchDef && branch.IsDefault {
-		return true
-	}
-
-	// Defined by ID
-	if cast.ToInt(pattern) == branch.Id {
-		return true
-	}
-
-	// Defined by name blob
-	if match, _ := filepath.Match(string(v), branch.Name); match {
-		return true
-	}
-
-	// Defined by name blob - normalized name
-	if match, _ := filepath.Match(string(v), utils.NormalizeName(branch.Name)); match {
-		return true
-	}
-
-	return false
-}
 
 // Record - manifest record
 type Record interface {

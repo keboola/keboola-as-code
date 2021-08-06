@@ -100,7 +100,7 @@ func (s *State) ProjectDir() string {
 	return s.manifest.ProjectDir
 }
 
-func (s *State) Naming() *model.Naming {
+func (s *State) Naming() model.Naming {
 	return s.manifest.Naming
 }
 
@@ -220,6 +220,12 @@ func (s *State) Get(key model.Key) model.ObjectState {
 }
 
 func (s *State) SetRemoteState(remote model.Object) model.ObjectState {
+	// Skip ignored objects
+	if s.manifest.IsObjectIgnored(remote) {
+		return nil
+	}
+
+	// Get or create state
 	state, err := s.getOrCreate(remote.Key())
 	if err != nil {
 		s.AddRemoteError(err)

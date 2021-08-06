@@ -4,6 +4,7 @@
     "id": 123,
     "apiHost": "connection.keboola.com"
   },
+  "ignoredComponents": [],
   "branches": [],
   "configurations": []
 }

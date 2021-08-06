@@ -24,7 +24,9 @@ type WithKey interface {
 
 type Object interface {
 	Level() int // hierarchical level, "1" for branch, "2" for config, ...
+	Kind() Kind
 	Key() Key
+	ObjectId() string
 	IsMarkedToDelete() bool
 }
 

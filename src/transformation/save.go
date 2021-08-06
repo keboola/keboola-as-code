@@ -20,13 +20,13 @@ import (
 type writer struct {
 	projectDir  string
 	logger      *zap.SugaredLogger
-	naming      *model.Naming
+	naming      model.Naming
 	componentId string
 	errors      *utils.Error
 }
 
 // SaveBlocks - save code blocks from source config to the disk
-func SaveBlocks(projectDir string, logger *zap.SugaredLogger, naming *model.Naming, config *model.ConfigManifest, source *model.Config) (*orderedmap.OrderedMap, error) {
+func SaveBlocks(projectDir string, logger *zap.SugaredLogger, naming model.Naming, config *model.ConfigManifest, source *model.Config) (*orderedmap.OrderedMap, error) {
 	w := &writer{projectDir, logger, naming, source.ComponentId, utils.NewMultiError()}
 
 	// Copy config content to remove blocks

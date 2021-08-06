@@ -35,29 +35,29 @@ func (s *State) doLoadLocalState() {
 
 func (s *State) LoadModel(record model.Record) (model.ObjectState, error) {
 	// Detect record type
-	var value model.Object
+	var object model.Object
 	switch v := record.(type) {
 	case *model.BranchManifest:
-		value = &model.Branch{BranchKey: v.BranchKey}
+		object = &model.Branch{BranchKey: v.BranchKey}
 	case *model.ConfigManifest:
-		value = &model.Config{ConfigKey: v.ConfigKey}
+		object = &model.Config{ConfigKey: v.ConfigKey}
 	case *model.ConfigRowManifest:
-		value = &model.ConfigRow{ConfigRowKey: v.ConfigRowKey}
+		object = &model.ConfigRow{ConfigRowKey: v.ConfigRowKey}
 	default:
 		panic(fmt.Errorf(`unexpected type %T`, record))
 	}
 
-	found, err := s.localManager.LoadModel(record, value)
+	found, err := s.localManager.LoadModel(record, object)
 	if err == nil {
 		// Validate, branch must be allowed
-		if branch, ok := value.(*model.Branch); ok && !s.manifest.IsBranchAllowed(branch) {
+		if s.manifest.IsObjectIgnored(object) {
 			return nil, fmt.Errorf(
-				`found manifest record for branch "%s" (%d), but it is not allowed by the manifest "allowedBranches"`,
-				branch.Name,
-				branch.Id,
+				`found manifest record for %s "%s", but it is not allowed by the manifest definition`,
+				object.Kind().Name,
+				object.ObjectId(),
 			)
 		}
-		return s.SetLocalState(value, record), nil
+		return s.SetLocalState(object, record), nil
 	} else {
 		record.State().SetInvalid()
 		if !found {

@@ -28,13 +28,13 @@ type Manifest struct {
 }
 
 type Content struct {
-	Version         int                             `json:"version" validate:"required,min=1,max=1"`
-	Project         *model.Project                  `json:"project" validate:"required"`
-	SortBy          string                          `json:"sortBy" validate:"oneof=id path"`
-	Naming          *model.Naming                   `json:"naming" validate:"required"`
-	AllowedBranches model.AllowedBranches           `json:"allowedBranches" validate:"required,min=1"`
-	Branches        []*model.BranchManifest         `json:"branches" validate:"dive"`
-	Configs         []*model.ConfigManifestWithRows `json:"configurations" validate:"dive"`
+	Version int           `json:"version" validate:"required,min=1,max=1"`
+	Project model.Project `json:"project" validate:"required"`
+	SortBy  string        `json:"sortBy" validate:"oneof=id path"`
+	Naming  model.Naming  `json:"naming" validate:"required"`
+	model.Filter
+	Branches []*model.BranchManifest         `json:"branches" validate:"dive"`
+	Configs  []*model.ConfigManifestWithRows `json:"configurations" validate:"dive"`
 }
 
 func NewManifest(projectId int, apiHost string, projectDir, metadataDir string) (*Manifest, error) {
@@ -51,13 +51,13 @@ func newManifest(projectId int, apiHost string, projectDir, metadataDir string) 
 		ProjectDir:  projectDir,
 		MetadataDir: metadataDir,
 		Content: &Content{
-			Version:         1,
-			Project:         &model.Project{Id: projectId, ApiHost: apiHost},
-			SortBy:          model.SortById,
-			Naming:          model.DefaultNaming(),
-			AllowedBranches: model.AllowedBranches{"*"},
-			Branches:        make([]*model.BranchManifest, 0),
-			Configs:         make([]*model.ConfigManifestWithRows, 0),
+			Version:  1,
+			Project:  model.Project{Id: projectId, ApiHost: apiHost},
+			SortBy:   model.SortById,
+			Naming:   model.DefaultNaming(),
+			Filter:   model.DefaultFilter(),
+			Branches: make([]*model.BranchManifest, 0),
+			Configs:  make([]*model.ConfigManifestWithRows, 0),
 		},
 		records: *utils.NewOrderedMap(),
 		lock:    &sync.Mutex{},
@@ -177,8 +177,17 @@ func (m *Manifest) Save() error {
 	return nil
 }
 
-func (m *Manifest) IsBranchAllowed(branch *model.Branch) bool {
-	return m.Content.AllowedBranches.IsBranchAllowed(branch)
+func (m *Manifest) IsObjectIgnored(object model.Object) bool {
+	switch o := object.(type) {
+	case *model.Branch:
+		return !m.Content.AllowedBranches.IsBranchAllowed(o)
+	case *model.Config:
+		return m.Content.IgnoredComponents.Contains(o.ComponentId)
+	case *model.ConfigRow:
+		return m.Content.IgnoredComponents.Contains(o.ComponentId)
+	}
+
+	return false
 }
 
 func (m *Manifest) IsChanged() bool {
