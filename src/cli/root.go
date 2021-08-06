@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"time"
 
+	"keboola-as-code/src/build"
+
 	"keboola-as-code/src/interaction"
 	"keboola-as-code/src/log"
 	"keboola-as-code/src/options"
@@ -90,7 +92,17 @@ func NewRootCommand(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteC
 
 	// Init when flags are parsed
 	root.cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
-		return root.init(cmd)
+		if err := root.init(cmd); err != nil {
+			return err
+		}
+
+		versionChecker := version.NewChecker(root.ctx, root.logger)
+		if err := versionChecker.CheckIfLatest(build.BuildVersion); err != nil {
+			// Ignore error, send to logs
+			root.logger.Debugf(`Version check: %s.`, err.Error())
+		}
+
+		return nil
 	}
 
 	// Sub-commands

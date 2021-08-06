@@ -32,7 +32,6 @@ func (e *Error) Error() string {
 }
 
 func NewEncryptionApi(hostUrl string, ctx context.Context, logger *zap.SugaredLogger, verbose bool) *Api {
-
 	c := client.NewClient(ctx, logger, verbose).WithHostUrl(hostUrl)
 	c.SetError(&Error{})
 	api := &Api{client: c, logger: logger, hostUrl: hostUrl}

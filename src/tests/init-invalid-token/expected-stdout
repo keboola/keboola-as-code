@@ -1,8 +1,2 @@
-DEBUG	Version:    %s
-DEBUG	Git commit: %s
-DEBUG	Build date: %s
-DEBUG	Go version: %s
-DEBUG	Os/Arch:    %s
-DEBUG	Running command [%s init --verbose --storage-api-host %s --storage-api-token %s]
-DEBUG	Parsed options: %s
+%A
 DEBUG	HTTP-ERROR	Invalid access token, method: "GET", url: "https://%s/v2/storage/tokens/verify", httpCode: "401", errCode: "storage.tokenInvalid", exceptionId: "%s", Attempt 1

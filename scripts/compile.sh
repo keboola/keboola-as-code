@@ -18,8 +18,8 @@ CGO_ENABLED=0
 # Build: optimize for size + set version variables
 go build \
   -ldflags="-s -w \
-    -X keboola-as-code/src/version.BuildVersion=$TARGET_VERSION \
-    -X keboola-as-code/src/version.BuildDate=$BUILD_DATE \
-    -X keboola-as-code/src/version.GitCommit=$GIT_COMMIT" \
+    -X keboola-as-code/src/build.BuildVersion=$TARGET_VERSION \
+    -X keboola-as-code/src/build.BuildDate=$BUILD_DATE \
+    -X keboola-as-code/src/build.GitCommit=$GIT_COMMIT" \
   -o "$OUTPUT" \
   ./src/main.go
