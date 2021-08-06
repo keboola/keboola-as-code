@@ -1,10 +1,4 @@
-DEBUG	Version:    %s
-DEBUG	Git commit: %s
-DEBUG	Build date: %s
-DEBUG	Go version: %s
-DEBUG	Os/Arch:    %s
-DEBUG	Running command [%s init --verbose --storage-api-host %s --storage-api-token %s]
-DEBUG	Parsed options: %s
+%A
 DEBUG	HTTP	GET https://%s/v2/storage/tokens/verify | 200 | %s
 DEBUG	Storage API token is valid.
 DEBUG	Project id: "%%TEST_PROJECT_ID%%", project name: "%%TEST_PROJECT_NAME%%".
