@@ -30,7 +30,7 @@ func (m *Manager) Manifest() *manifest.Manifest {
 	return m.manifest
 }
 
-func (m *Manager) Naming() *model.Naming {
+func (m *Manager) Naming() model.Naming {
 	return m.manifest.Naming
 }
 

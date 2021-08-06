@@ -18,14 +18,14 @@ import (
 type loader struct {
 	projectDir string
 	logger     *zap.SugaredLogger
-	naming     *model.Naming
+	naming     model.Naming
 	record     *model.ConfigManifest
 	target     *model.Config
 	errors     *utils.Error
 }
 
 // LoadBlocks - load code blocks from disk to target config
-func LoadBlocks(projectDir string, logger *zap.SugaredLogger, naming *model.Naming, record *model.ConfigManifest, target *model.Config) error {
+func LoadBlocks(projectDir string, logger *zap.SugaredLogger, naming model.Naming, record *model.ConfigManifest, target *model.Config) error {
 	l := &loader{projectDir, logger, naming, record, target, utils.NewMultiError()}
 	return l.loadBlocksToConfig()
 }

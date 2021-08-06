@@ -22,13 +22,10 @@ func (s *State) doLoadRemoteState() {
 			for _, b := range *response.Result().(*[]*model.Branch) {
 				branch := b
 
-				// Skip ignored branches
-				if !s.manifest.IsBranchAllowed(branch) {
+				// Save to state, skip configs/rows if branch is ignored
+				if s.SetRemoteState(branch) == nil {
 					continue
 				}
-
-				// Save to state
-				s.SetRemoteState(branch)
 
 				// Load components
 				pool.
@@ -55,7 +52,11 @@ func (s *State) processComponents(branch *model.Branch, components []*model.Comp
 			if !branch.IsDefault && strings.HasPrefix(config.Name, model.ToDeletePrefix) {
 				config.MarkToDelete()
 			}
-			s.SetRemoteState(config.Config)
+
+			// Save to state, skip rows if config is ignored
+			if s.SetRemoteState(config.Config) == nil {
+				continue
+			}
 
 			// Rows
 			for _, row := range config.Rows {

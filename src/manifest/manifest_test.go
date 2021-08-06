@@ -75,6 +75,7 @@ func TestManifestSave(t *testing.T) {
 		// Create
 		m := newManifest(c.data.Version, c.data.Project.ApiHost, projectDir, metadataDir)
 		m.AllowedBranches = c.data.AllowedBranches
+		m.IgnoredComponents = c.data.IgnoredComponents
 		m.Project.Id = c.data.Project.Id
 		for _, branch := range c.data.Branches {
 			m.TrackRecord(branch)
@@ -102,9 +103,12 @@ func TestManifestValidateEmpty(t *testing.T) {
 	assert.NotNil(t, err)
 	expected := `manifest is not valid:
 	- key="version", value="0", failed "required" validation
-	- key="project", value="<nil>", failed "required" validation
+	- key="project.id", value="0", failed "required" validation
+	- key="project.apiHost", value="", failed "required" validation
 	- key="sortBy", value="", failed "oneof" validation
-	- key="naming", value="<nil>", failed "required" validation
+	- key="naming.branch", value="", failed "required" validation
+	- key="naming.config", value="", failed "required" validation
+	- key="naming.configRow", value="", failed "required" validation
 	- key="allowedBranches", value="[]", failed "required" validation`
 	assert.Equal(t, expected, err.Error())
 }
@@ -149,6 +153,44 @@ func TestManifestValidateNestedField(t *testing.T) {
 	assert.Equal(t, expected, err.Error())
 }
 
+func TestIsObjectIgnored(t *testing.T) {
+	m := newManifest(1, "connection.keboola.com", "foo", "bar")
+	m.Content = minimalStruct()
+	m.Content.AllowedBranches = model.AllowedBranches{"dev-*", "123", "abc"}
+	m.Content.IgnoredComponents = model.ComponentIds{"aaa", "bbb"}
+
+	assert.False(t, m.IsObjectIgnored(
+		&model.Branch{BranchKey: model.BranchKey{Id: 789}, Name: "dev-1"}),
+	)
+	assert.False(t, m.IsObjectIgnored(
+		&model.Branch{BranchKey: model.BranchKey{Id: 123}, Name: "xyz"}),
+	)
+	assert.False(t, m.IsObjectIgnored(
+		&model.Branch{BranchKey: model.BranchKey{Id: 789}, Name: "abc"}),
+	)
+	assert.True(t, m.IsObjectIgnored(
+		&model.Branch{BranchKey: model.BranchKey{Id: 789}, Name: "xyz"}),
+	)
+	assert.True(t, m.IsObjectIgnored(
+		&model.Config{ConfigKey: model.ConfigKey{ComponentId: "aaa"}}),
+	)
+	assert.True(t, m.IsObjectIgnored(
+		&model.Config{ConfigKey: model.ConfigKey{ComponentId: "bbb"}}),
+	)
+	assert.False(t, m.IsObjectIgnored(
+		&model.Config{ConfigKey: model.ConfigKey{ComponentId: "ccc"}}),
+	)
+	assert.True(t, m.IsObjectIgnored(
+		&model.ConfigRow{ConfigRowKey: model.ConfigRowKey{ComponentId: "aaa"}}),
+	)
+	assert.True(t, m.IsObjectIgnored(
+		&model.ConfigRow{ConfigRowKey: model.ConfigRowKey{ComponentId: "bbb"}}),
+	)
+	assert.False(t, m.IsObjectIgnored(
+		&model.ConfigRow{ConfigRowKey: model.ConfigRowKey{ComponentId: "ccc"}}),
+	)
+}
+
 func minimalJson() string {
 	return `{
   "version": 1,
@@ -165,6 +207,9 @@ func minimalJson() string {
   "allowedBranches": [
     "*"
   ],
+  "ignoredComponents": [
+    "keboola.scheduler"
+  ],
   "branches": [],
   "configurations": []
 }
@@ -174,15 +219,15 @@ func minimalJson() string {
 func minimalStruct() *Content {
 	return &Content{
 		Version: 1,
-		Project: &model.Project{
+		Project: model.Project{
 			Id:      12345,
 			ApiHost: "connection.keboola.com",
 		},
-		SortBy:          model.SortById,
-		Naming:          model.DefaultNaming(),
-		AllowedBranches: model.AllowedBranches{"*"},
-		Branches:        make([]*model.BranchManifest, 0),
-		Configs:         make([]*model.ConfigManifestWithRows, 0),
+		SortBy:   model.SortById,
+		Naming:   model.DefaultNaming(),
+		Filter:   model.DefaultFilter(),
+		Branches: make([]*model.BranchManifest, 0),
+		Configs:  make([]*model.ConfigManifestWithRows, 0),
 	}
 }
 
@@ -202,6 +247,9 @@ func fullJson() string {
   "allowedBranches": [
     "foo",
     "bar"
+  ],
+  "ignoredComponents": [
+    "abc"
   ],
   "branches": [
     {
@@ -254,13 +302,16 @@ func fullJson() string {
 func fullStruct() *Content {
 	return &Content{
 		Version: 1,
-		Project: &model.Project{
+		Project: model.Project{
 			Id:      12345,
 			ApiHost: "connection.keboola.com",
 		},
-		SortBy:          model.SortById,
-		Naming:          model.DefaultNaming(),
-		AllowedBranches: model.AllowedBranches{"foo", "bar"},
+		SortBy: model.SortById,
+		Naming: model.DefaultNaming(),
+		Filter: model.Filter{
+			AllowedBranches:   model.AllowedBranches{"foo", "bar"},
+			IgnoredComponents: model.ComponentIds{"abc"},
+		},
 		Branches: []*model.BranchManifest{
 			{
 				RecordState: model.RecordState{

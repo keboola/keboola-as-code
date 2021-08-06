@@ -98,7 +98,7 @@ func TestLoadLocalStateAllowedBranchesError(t *testing.T) {
 	m.Content.AllowedBranches = model.AllowedBranches{"main"}
 	state := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
-	assert.Equal(t, `found manifest record for branch "Branch" (123), but it is not allowed by the manifest "allowedBranches"`, state.LocalErrors().Error())
+	assert.Equal(t, `found manifest record for branch "123", but it is not allowed by the manifest definition`, state.LocalErrors().Error())
 }
 
 func TestLoadLocalStateBranchMissingMetaJson(t *testing.T) {

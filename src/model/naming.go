@@ -23,23 +23,23 @@ type Naming struct {
 	ConfigRow utils.PathTemplate `json:"configRow" validate:"required"`
 }
 
-func DefaultNaming() *Naming {
-	return &Naming{
+func DefaultNaming() Naming {
+	return Naming{
 		Branch:    "{branch_id}-{branch_name}",
 		Config:    "{component_type}/{component_id}/{config_id}-{config_name}",
 		ConfigRow: "rows/{config_row_id}-{config_row_name}",
 	}
 }
 
-func (n *Naming) MetaFilePath(dir string) string {
+func (n Naming) MetaFilePath(dir string) string {
 	return filepath.Join(dir, MetaFile)
 }
 
-func (n *Naming) ConfigFilePath(dir string) string {
+func (n Naming) ConfigFilePath(dir string) string {
 	return filepath.Join(dir, ConfigFile)
 }
 
-func (n *Naming) BranchPath(branch *Branch, isDefault bool) string {
+func (n Naming) BranchPath(branch *Branch, isDefault bool) string {
 	if isDefault {
 		return `main`
 	}
@@ -50,7 +50,7 @@ func (n *Naming) BranchPath(branch *Branch, isDefault bool) string {
 	})
 }
 
-func (n *Naming) ConfigPath(component *Component, config *Config) string {
+func (n Naming) ConfigPath(component *Component, config *Config) string {
 	return utils.ReplacePlaceholders(string(n.Config), map[string]interface{}{
 		"component_type": component.Type,
 		"component_id":   component.Id,
@@ -59,44 +59,44 @@ func (n *Naming) ConfigPath(component *Component, config *Config) string {
 	})
 }
 
-func (n *Naming) ConfigRowPath(row *ConfigRow) string {
+func (n Naming) ConfigRowPath(row *ConfigRow) string {
 	return utils.ReplacePlaceholders(string(n.ConfigRow), map[string]interface{}{
 		"config_row_id":   row.Id,
 		"config_row_name": utils.NormalizeName(row.Name),
 	})
 }
 
-func (n *Naming) BlocksDir(configDir string) string {
+func (n Naming) BlocksDir(configDir string) string {
 	return filepath.Join(configDir, blocksDir)
 }
 
-func (n *Naming) BlocksTmpDir(configDir string) string {
+func (n Naming) BlocksTmpDir(configDir string) string {
 	return filepath.Join(configDir, `.new_`+blocksDir)
 }
 
-func (n *Naming) BlockPath(index int, name string) string {
+func (n Naming) BlockPath(index int, name string) string {
 	return utils.ReplacePlaceholders(string(blockNameTemplate), map[string]interface{}{
 		"block_order": fmt.Sprintf(`%03d`, index+1),
 		"block_name":  utils.NormalizeName(name),
 	})
 }
 
-func (n *Naming) CodePath(index int, name string) string {
+func (n Naming) CodePath(index int, name string) string {
 	return utils.ReplacePlaceholders(string(codeNameTemplate), map[string]interface{}{
 		"code_order": fmt.Sprintf(`%03d`, index+1),
 		"code_name":  utils.NormalizeName(name),
 	})
 }
 
-func (n *Naming) CodeFilePath(code *Code) string {
+func (n Naming) CodeFilePath(code *Code) string {
 	return filepath.Join(code.RelativePath(), code.CodeFileName)
 }
 
-func (n *Naming) CodeFileName(componentId string) string {
+func (n Naming) CodeFileName(componentId string) string {
 	return CodeFileName + "." + n.CodeFileExt(componentId)
 }
 
-func (n *Naming) CodeFileExt(componentId string) string {
+func (n Naming) CodeFileExt(componentId string) string {
 	switch componentId {
 	case `keboola.snowflake-transformation`:
 		return `sql`

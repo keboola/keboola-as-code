@@ -11,7 +11,7 @@ import (
 
 type PathTemplate string
 
-func (p *PathTemplate) MatchPath(path string) (bool, map[string]string) {
+func (p PathTemplate) MatchPath(path string) (bool, map[string]string) {
 	path = strings.ReplaceAll(path, string(os.PathSeparator), "/")
 	r := p.regexp()
 	result := r.FindStringSubmatch(path)
@@ -29,9 +29,9 @@ func (p *PathTemplate) MatchPath(path string) (bool, map[string]string) {
 	return true, matches
 }
 
-func (p *PathTemplate) regexp() *regexp.Regexp {
+func (p PathTemplate) regexp() *regexp.Regexp {
 	// Replace placeholders with regexp groups
-	str := regexp.QuoteMeta(string(*p))
+	str := regexp.QuoteMeta(string(p))
 	str = regexpcache.
 		MustCompile(`\\\{[^{}]+\\\}`).
 		ReplaceAllStringFunc(str, p.placeholderToRegexp)
@@ -48,7 +48,7 @@ func (p *PathTemplate) regexp() *regexp.Regexp {
 	return regexpcache.MustCompile(`^` + str + `$`)
 }
 
-func (p *PathTemplate) placeholderToRegexp(placeholder string) string {
+func (p PathTemplate) placeholderToRegexp(placeholder string) string {
 	return `(?P<` + strings.Trim(placeholder, `\{}`) + `>[^/]+)`
 }
 

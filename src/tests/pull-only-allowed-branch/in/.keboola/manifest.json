@@ -13,6 +13,7 @@
   "allowedBranches": [
     "fo*"
   ],
+  "ignoredComponents": [],
   "branches": [],
   "configurations": []
 }

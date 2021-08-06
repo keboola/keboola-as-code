@@ -13,6 +13,7 @@
   "allowedBranches": [
     "__all__"
   ],
+  "ignoredComponents": [],
   "branches": [
     {
       "id": %%TEST_BRANCH_FOO_ID%%,

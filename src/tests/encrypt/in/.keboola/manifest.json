@@ -13,6 +13,7 @@
   "allowedBranches": [
     "*"
   ],
+  "ignoredComponents": [],
   "branches": [
     {
       "id": 111,

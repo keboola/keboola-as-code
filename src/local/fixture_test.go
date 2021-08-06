@@ -33,6 +33,14 @@ func (ModelStruct) Level() int {
 	return 1
 }
 
+func (m ModelStruct) ObjectId() string {
+	return "123"
+}
+
+func (m ModelStruct) Kind() model.Kind {
+	return m.Key().Kind()
+}
+
 func (ModelStruct) IsMarkedToDelete() bool {
 	return false
 }
@@ -57,14 +65,14 @@ func (MockedRecord) SortKey(sort string) string {
 	return "key"
 }
 
-func (m MockedRecord) RelativePath() string {
+func (MockedRecord) RelativePath() string {
 	return `test`
 }
 
-func (m MockedRecord) GetRelatedPaths() []string {
+func (MockedRecord) GetRelatedPaths() []string {
 	return nil
 }
 
-func (m MockedRecord) AddRelatedPath(path string) {
+func (MockedRecord) AddRelatedPath(path string) {
 	// nop
 }
