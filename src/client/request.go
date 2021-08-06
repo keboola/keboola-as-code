@@ -78,7 +78,7 @@ func (r *Request) SetPathParam(param, value string) *Request {
 func (r *Request) SetBody(body map[string]string) *Request {
 	// Storage API use "form-urlencoded", but it can be simply switched to JSON in the future
 	r.Request.SetHeader("Content-Type", "application/x-www-form-urlencoded")
-	r.Request.SetMultipartFormData(body)
+	r.Request.SetFormData(body)
 	return r
 }
 
