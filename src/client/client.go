@@ -8,11 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"keboola-as-code/src/utils"
-	"keboola-as-code/src/version"
+	"keboola-as-code/src/build"
 
 	"github.com/go-resty/resty/v2"
 	"go.uber.org/zap"
+
+	"keboola-as-code/src/utils"
 )
 
 const (
@@ -118,7 +119,7 @@ func (c *Client) SetRetry(count int, waitTime time.Duration, maxWaitTime time.Du
 func createHttpClient(logger *Logger) *resty.Client {
 	r := resty.New()
 	r.SetLogger(logger)
-	r.SetHeader("User-Agent", fmt.Sprintf("keboola-as-code/%s", version.BuildVersion))
+	r.SetHeader("User-Agent", fmt.Sprintf("keboola-as-code/%s", build.BuildVersion))
 	r.SetTimeout(RequestTimeout)
 	r.SetRetryCount(RetryCount)
 	r.SetRetryWaitTime(RetryWaitTime)

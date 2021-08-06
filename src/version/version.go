@@ -1,18 +1,18 @@
 package version
 
-import "runtime"
+import (
+	"runtime"
 
-// Defined on build time:
+	"keboola-as-code/src/build"
+)
 
-var GitCommit = "-"
-var BuildVersion = "dev"
-var BuildDate = "-"
+const DevVersionValue = "dev"
 
 // Version for --version flag
 func Version() string {
-	return "Version:    " + BuildVersion + "\n" +
-		"Git commit: " + GitCommit + "\n" +
-		"Build date: " + BuildDate + "\n" +
+	return "Version:    " + build.BuildVersion + "\n" +
+		"Git commit: " + build.GitCommit + "\n" +
+		"Build date: " + build.BuildDate + "\n" +
 		"Go version: " + runtime.Version() + "\n" +
 		"Os/Arch:    " + runtime.GOOS + "/" + runtime.GOARCH + "\n"
 }
