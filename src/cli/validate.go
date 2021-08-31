@@ -55,10 +55,8 @@ func validateCommand(root *rootCommand) *cobra.Command {
 			projectState, ok := state.LoadState(stateOptions)
 			if ok {
 				logger.Debugf("Project local state has been successfully loaded.")
-			} else {
-				if projectState.LocalErrors().Len() > 0 {
-					return utils.PrefixError("project local state is invalid", projectState.LocalErrors())
-				}
+			} else if projectState.LocalErrors().Len() > 0 {
+				return utils.PrefixError("project local state is invalid", projectState.LocalErrors())
 			}
 
 			// Validate schemas and encryption
