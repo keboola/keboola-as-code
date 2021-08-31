@@ -9,7 +9,7 @@ import (
 	"keboola-as-code/src/utils"
 )
 
-// Persist creates a plan for persist new/deleted objects
+// Persist creates a plan for persist new/deleted objects.
 func Persist(projectState *state.State) *PersistPlan {
 	builder := &persistPlanBuilder{State: projectState, PersistPlan: &PersistPlan{}, errors: utils.NewMultiError()}
 	builder.build()

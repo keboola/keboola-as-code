@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"keboola-as-code/src/remote"
-
 	"go.uber.org/zap"
+
+	"keboola-as-code/src/remote"
 )
 
 func SendCmdSuccessfulEvent(cmdStart time.Time, logger *zap.SugaredLogger, api *remote.StorageApi, cmd, msg string) {

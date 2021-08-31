@@ -3,10 +3,10 @@ package plan
 import (
 	"fmt"
 
+	"go.uber.org/zap"
+
 	"keboola-as-code/src/log"
 	"keboola-as-code/src/manifest"
-
-	"go.uber.org/zap"
 )
 
 type RenamePlan struct {

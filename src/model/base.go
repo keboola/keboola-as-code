@@ -4,10 +4,10 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/iancoleman/orderedmap"
+
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/utils"
-
-	"github.com/iancoleman/orderedmap"
 )
 
 const (
@@ -105,7 +105,7 @@ type ConfigRow struct {
 	markedToDelete    bool
 }
 
-// Job - Storage API job
+// Job - Storage API job.
 type Job struct {
 	Id      int                    `json:"id" validate:"required"`
 	Status  string                 `json:"status" validate:"required"`
@@ -118,14 +118,14 @@ type Event struct {
 	Id string `json:"id"`
 }
 
-// Block - transformation block
+// Block - transformation block.
 type Block struct {
 	Paths `json:"-"`
 	Name  string  `json:"name" validate:"required" metaFile:"true"`
 	Codes []*Code `json:"codes" validate:"omitempty,dive"`
 }
 
-// Code - transformation code
+// Code - transformation code.
 type Code struct {
 	Paths        `json:"-"`
 	CodeFileName string   `json:"-"` // eg. "code.sql", "code.py", ...

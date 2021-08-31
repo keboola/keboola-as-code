@@ -3,9 +3,9 @@ package remote
 import (
 	"fmt"
 
-	"keboola-as-code/src/client"
-
 	"github.com/go-resty/resty/v2"
+
+	"keboola-as-code/src/client"
 )
 
 func (a *StorageApi) GetServices() ([]interface{}, error) {
@@ -23,7 +23,6 @@ func (a *StorageApi) GetServices() ([]interface{}, error) {
 }
 
 func (a *StorageApi) GetEncryptionApiUrl() (string, error) {
-
 	services, err := a.GetServices()
 	if err != nil {
 		return "", err
@@ -37,7 +36,6 @@ func (a *StorageApi) GetEncryptionApiUrl() (string, error) {
 		}
 	}
 	return "", fmt.Errorf("encryption API not found in services from Storage API: \"%s\"", services)
-
 }
 
 func (a *StorageApi) GetServicesRequest() *client.Request {

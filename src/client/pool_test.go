@@ -5,11 +5,11 @@ import (
 	"net/url"
 	"testing"
 
-	"keboola-as-code/src/utils"
-
 	"github.com/go-resty/resty/v2"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+
+	"keboola-as-code/src/utils"
 )
 
 func TestEmpty(t *testing.T) {
@@ -171,7 +171,6 @@ func TestOnError(t *testing.T) {
 			pool.Request(client.NewRequest(resty.MethodGet, "https://example.com/error")).
 				OnSuccess(func(response *Response) {
 					assert.Fail(t, "error expected")
-
 				}).
 				OnError(func(response *Response) {
 					errorCaught = true

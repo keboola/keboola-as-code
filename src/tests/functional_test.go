@@ -12,20 +12,20 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/shlex"
+	"github.com/otiai10/copy"
+	"github.com/stretchr/testify/assert"
+	"github.com/umisama/go-regexpcache"
+
 	"keboola-as-code/src/fixtures"
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
-
-	"github.com/google/shlex"
-	"github.com/otiai10/copy"
-	"github.com/stretchr/testify/assert"
-	"github.com/umisama/go-regexpcache"
 )
 
-// EnvTicketProvider allows you to generate new unique IDs via an ENV variable in the test
+// EnvTicketProvider allows you to generate new unique IDs via an ENV variable in the test.
 func CreateEnvTicketProvider(api *remote.StorageApi) utils.EnvProvider {
 	return func(name string) string {
 		name = strings.Trim(name, "%")
@@ -44,7 +44,7 @@ func CreateEnvTicketProvider(api *remote.StorageApi) utils.EnvProvider {
 	}
 }
 
-// TestFunctional runs one functional test per each sub-directory
+// TestFunctional runs one functional test per each sub-directory.
 func TestFunctional(t *testing.T) {
 	_, testFile, _, _ := runtime.Caller(0)
 	rootDir := filepath.Dir(testFile)
@@ -65,7 +65,7 @@ func TestFunctional(t *testing.T) {
 	}
 }
 
-// RunFunctionalTest runs one functional test
+// RunFunctionalTest runs one functional test.
 func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) {
 	defer utils.ResetEnv(t, os.Environ())
 
@@ -128,7 +128,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	AssertExpectations(t, api, envProvider, testDir, workingDir, exitCode, strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()))
 }
 
-// CompileBinary compiles component to binary used in this test
+// CompileBinary compiles component to binary used in this test.
 func CompileBinary(t *testing.T, projectDir string, tempDir string) string {
 	var stdout, stderr bytes.Buffer
 	binaryPath := filepath.Join(tempDir, "/bin_func_tests")
@@ -275,5 +275,4 @@ func AssertExpectations(
 			"unexpected project state",
 		)
 	}
-
 }

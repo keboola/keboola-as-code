@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"testing"
 
-	"keboola-as-code/src/utils"
-
 	"github.com/stretchr/testify/assert"
+
+	"keboola-as-code/src/utils"
 )
 
 func TestGetEncryptionApiUrl(t *testing.T) {

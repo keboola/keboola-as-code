@@ -41,7 +41,7 @@ func NewPathsState(projectDir string, error *utils.Error) *PathsState {
 	return f
 }
 
-// State returns state of path
+// State returns state of path.
 func (f *PathsState) State(path string) PathState {
 	if _, ok := f.tracked[path]; ok {
 		return Tracked
@@ -52,7 +52,7 @@ func (f *PathsState) State(path string) PathState {
 	return Ignored
 }
 
-// Tracked returns all tracked paths
+// Tracked returns all tracked paths.
 func (f *PathsState) Tracked() []string {
 	var tracked []string
 	for path := range f.tracked {
@@ -62,7 +62,7 @@ func (f *PathsState) Tracked() []string {
 	return tracked
 }
 
-// Untracked returns all untracked paths
+// Untracked returns all untracked paths.
 func (f *PathsState) Untracked() []string {
 	var untracked []string
 	for path := range f.all {

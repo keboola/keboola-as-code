@@ -1,13 +1,13 @@
 package cli
 
 import (
+	"github.com/spf13/cobra"
+
 	"keboola-as-code/src/log"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/plan"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
-
-	"github.com/spf13/cobra"
 )
 
 const persistShortDescription = `Persist created and deleted configs/rows in manifest`

@@ -5,14 +5,14 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/iancoleman/orderedmap"
+	"github.com/spf13/cast"
+
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/local"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
-
-	"github.com/iancoleman/orderedmap"
-	"github.com/spf13/cast"
 )
 
 type Manager struct {
@@ -93,7 +93,7 @@ func (u *UnitOfWork) DeleteRemote(object model.ObjectState) error {
 	return nil
 }
 
-// MarkDeleted config or row from dev branch. Prefix is added at the name beginning
+// MarkDeleted config or row from dev branch. Prefix is added at the name beginning.
 func (u *UnitOfWork) MarkDeleted(object model.ObjectState) error {
 	switch o := object.RemoteState().(type) {
 	case *model.Config:
@@ -108,7 +108,6 @@ func (u *UnitOfWork) MarkDeleted(object model.ObjectState) error {
 	object.SetLocalState(object.RemoteState())
 	changedFields := []string{"name", "changeDescription"}
 	return u.SaveRemote(object, changedFields)
-
 }
 func (u *UnitOfWork) Invoke() error {
 	u.pools.SortKeys(sort.Strings)
@@ -205,7 +204,7 @@ func (u *UnitOfWork) update(objectState model.ObjectState, object model.Object, 
 	return nil
 }
 
-// poolFor each level (branches, configs, rows)
+// poolFor each level (branches, configs, rows).
 func (u *UnitOfWork) poolFor(level int) *client.Pool {
 	if u.invoked {
 		panic(`invoked UnitOfWork cannot be reused`)

@@ -7,12 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"keboola-as-code/src/interaction"
-	"keboola-as-code/src/utils"
-
 	"github.com/ActiveState/vt10x"
 	"github.com/Netflix/go-expect"
 	"github.com/stretchr/testify/assert"
+
+	"keboola-as-code/src/interaction"
+	"keboola-as-code/src/utils"
 )
 
 const Enter = "\n"

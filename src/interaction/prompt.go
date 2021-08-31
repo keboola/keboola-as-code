@@ -77,7 +77,6 @@ func (p *Prompt) Confirm(c *Confirm) bool {
 }
 
 func (p *Prompt) Ask(q *Question) (result string, ok bool) {
-
 	var err error
 
 	// Ask only in the interactive terminal

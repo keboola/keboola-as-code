@@ -14,7 +14,7 @@ type mockedT struct {
 	buf *bytes.Buffer
 }
 
-// Implements TestingT for mockedT
+// Implements TestingT for mockedT.
 func (t *mockedT) Errorf(format string, args ...interface{}) {
 	s := fmt.Sprintf(format, args...)
 	t.buf.WriteString(s)

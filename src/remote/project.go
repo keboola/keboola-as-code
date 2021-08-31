@@ -10,16 +10,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/spf13/cast"
+	"github.com/stretchr/testify/assert"
+
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/fixtures"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
-
-	"github.com/spf13/cast"
-	"github.com/stretchr/testify/assert"
 )
 
-// testProject manages cleanup and setup of the test project
+// testProject manages cleanup and setup of the test project.
 type testProject struct {
 	t             *testing.T
 	lock          *sync.Mutex
@@ -36,7 +36,7 @@ func SetStateOfTestProject(t *testing.T, api *StorageApi, projectStateFile strin
 	p.InitState()
 }
 
-// newTestProject creates testProject and loads state from the stateFilePath
+// newTestProject creates testProject and loads state from the stateFilePath.
 func newTestProject(t *testing.T, api *StorageApi, stateFilePath string) *testProject {
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filepath.Dir(testFile)
@@ -67,7 +67,7 @@ func newTestProject(t *testing.T, api *StorageApi, stateFilePath string) *testPr
 	return p
 }
 
-// Clear deletes all project branches (except default) and all configurations
+// Clear deletes all project branches (except default) and all configurations.
 func (p *testProject) Clear() {
 	p.log("Clearing project ...")
 	startTime := time.Now()
@@ -95,7 +95,7 @@ func (p *testProject) Clear() {
 	p.log("Test project cleared | %s", time.Since(startTime))
 }
 
-// InitState creates branches and configurations according stateFile
+// InitState creates branches and configurations according stateFile.
 func (p *testProject) InitState() {
 	startTime := time.Now()
 	p.log("Setting project state ...")
@@ -149,7 +149,7 @@ func (p *testProject) InitState() {
 	p.log("Project state set | %s", time.Since(startTime))
 }
 
-// CreateConfigsInBranch loads configs from files and creates them in the test project
+// CreateConfigsInBranch loads configs from files and creates them in the test project.
 func (p *testProject) CreateConfigsInBranch(pool *client.Pool, names []string, branch *model.Branch, envPrefix string) {
 	for _, name := range names {
 		config := fixtures.LoadConfig(p.t, name)
@@ -171,7 +171,7 @@ func (p *testProject) CreateConfigsInBranch(pool *client.Pool, names []string, b
 	}
 }
 
-// setEnv set ENV variable, all ENVs are logged at the end of InitState method
+// setEnv set ENV variable, all ENVs are logged at the end of InitState method.
 func (p *testProject) setEnv(key string, value string) {
 	// Normalize key
 	key = regexp.MustCompile(`[^a-zA-Z0-9]+`).ReplaceAllString(key, "_")

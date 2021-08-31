@@ -7,10 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"keboola-as-code/src/utils"
-
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
+
+	"keboola-as-code/src/utils"
 )
 
 // Pool of the asynchronous HTTP requests. When processing a response, a new request can be send.
@@ -55,7 +55,7 @@ func (p *Pool) SetContext(ctx context.Context) {
 	p.ctx = ctx
 }
 
-// Request set request sender to pool
+// Request set request sender to pool.
 func (p *Pool) Request(request *Request) *Request {
 	request.sender = p
 	p.requestsLock.Lock()
@@ -64,7 +64,7 @@ func (p *Pool) Request(request *Request) *Request {
 	return request
 }
 
-// Send adds request to pool
+// Send adds request to pool.
 func (p *Pool) Send(request *Request) {
 	request.SetContext(p.ctx)
 	request.sender = p
@@ -84,7 +84,7 @@ func (p *Pool) StartAndWait() error {
 	return err
 }
 
-// Wait until all requests done
+// Wait until all requests done.
 func (p *Pool) wait() error {
 	defer close(p.responsesChan)
 	defer close(p.requestsChan)
@@ -161,7 +161,6 @@ func (p *Pool) send(request *Request) *Response {
 	p.client.Send(request)
 	p.logRequestState("finished", request, request.Err())
 	return request.Response
-
 }
 
 func (p *Pool) process(response *Response) (err error) {

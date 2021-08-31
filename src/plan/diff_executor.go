@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
+
 	"keboola-as-code/src/local"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/utils"
-
-	"go.uber.org/zap"
-	"golang.org/x/sync/errgroup"
 )
 
 type diffExecutor struct {

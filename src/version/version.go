@@ -8,7 +8,7 @@ import (
 
 const DevVersionValue = "dev"
 
-// Version for --version flag
+// Version for --version flag.
 func Version() string {
 	return "Version:    " + build.BuildVersion + "\n" +
 		"Git commit: " + build.GitCommit + "\n" +

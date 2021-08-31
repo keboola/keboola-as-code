@@ -6,15 +6,15 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/iancoleman/orderedmap"
+	"github.com/otiai10/copy"
+	"go.uber.org/zap"
+
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/sql"
 	"keboola-as-code/src/utils"
 	"keboola-as-code/src/validator"
-
-	"github.com/iancoleman/orderedmap"
-	"github.com/otiai10/copy"
-	"go.uber.org/zap"
 )
 
 type writer struct {
@@ -25,7 +25,7 @@ type writer struct {
 	errors      *utils.Error
 }
 
-// SaveBlocks - save code blocks from source config to the disk
+// SaveBlocks - save code blocks from source config to the disk.
 func SaveBlocks(projectDir string, logger *zap.SugaredLogger, naming model.Naming, config *model.ConfigManifest, source *model.Config) (*orderedmap.OrderedMap, error) {
 	w := &writer{projectDir, logger, naming, source.ComponentId, utils.NewMultiError()}
 
@@ -67,7 +67,7 @@ func SaveBlocks(projectDir string, logger *zap.SugaredLogger, naming model.Namin
 	return &configContent, w.errors.ErrorOrNil()
 }
 
-// writeBlocks to the temp dir, and if all ok move directory to the target path
+// writeBlocks to the temp dir, and if all ok move directory to the target path.
 func (w *writer) writeBlocks(targetDir, tmpDir string, blocks []*model.Block) {
 	blocksTmpDirAbs := filepath.Join(w.projectDir, tmpDir)
 

@@ -3,11 +3,11 @@ package remote
 import (
 	"fmt"
 
-	"keboola-as-code/src/client"
-	"keboola-as-code/src/model"
-
 	"github.com/go-resty/resty/v2"
 	"github.com/spf13/cast"
+
+	"keboola-as-code/src/client"
+	"keboola-as-code/src/model"
 )
 
 func (a *StorageApi) GetDefaultBranch() (*model.Branch, error) {
@@ -137,7 +137,6 @@ func (a *StorageApi) ListBranchesRequest() *client.Request {
 	return a.
 		NewRequest(resty.MethodGet, "dev-branches").
 		SetResult(&branches)
-
 }
 
 // DeleteBranchRequest https://keboola.docs.apiary.io/#reference/development-branches/branch-manipulation/delete-branch

@@ -34,7 +34,7 @@ func AssertWildcards(t assert.TestingT, expected string, actual string, msg stri
 	}
 }
 
-// WildcardToRegexp converts string with wildcards to regexp, so it can be used in assert.Regexp
+// WildcardToRegexp converts string with wildcards to regexp, so it can be used in assert.Regexp.
 func WildcardToRegexp(pattern string) string {
 	pattern = regexp.QuoteMeta(pattern)
 	re := regexp.MustCompile(`%.`)
@@ -84,7 +84,7 @@ func WildcardToRegexp(pattern string) string {
 	})
 }
 
-// EscapeWhitespaces escapes all whitespaces except new line -> for better difference in diff output
+// EscapeWhitespaces escapes all whitespaces except new line -> for better difference in diff output.
 func EscapeWhitespaces(input string) string {
 	re := regexp.MustCompile(`\s`)
 	return re.ReplaceAllStringFunc(input, func(s string) string {

@@ -19,7 +19,7 @@ const (
 
 type DiffActionType int
 
-// DiffAction - an action on the diff result
+// DiffAction - an action on the diff result.
 type DiffAction struct {
 	*diff.Result
 	action DiffActionType

@@ -12,7 +12,7 @@ import (
 	"keboola-as-code/src/validator"
 )
 
-// LoadModel from manifest and disk
+// LoadModel from manifest and disk.
 func (m *Manager) LoadModel(record model.Record, target interface{}) (found bool, err error) {
 	errors := utils.NewMultiError()
 

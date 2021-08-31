@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"os"
 
-	"keboola-as-code/src/manifest"
-	"keboola-as-code/src/utils"
-
 	"github.com/otiai10/copy"
 	"go.uber.org/zap"
+
+	"keboola-as-code/src/manifest"
+	"keboola-as-code/src/utils"
 )
 
 type renameExecutor struct {

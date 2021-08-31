@@ -1,11 +1,11 @@
 package cli
 
 import (
+	"github.com/spf13/cobra"
+
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
-
-	"github.com/spf13/cobra"
 )
 
 const fixPathsShortDescription = `Normalize all local paths`

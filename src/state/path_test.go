@@ -6,9 +6,9 @@ import (
 	"runtime"
 	"testing"
 
-	"keboola-as-code/src/utils"
-
 	"github.com/stretchr/testify/assert"
+
+	"keboola-as-code/src/utils"
 )
 
 func TestPathsStateDirNotFound(t *testing.T) {

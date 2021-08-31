@@ -3,10 +3,10 @@ package remote
 import (
 	"fmt"
 
+	"github.com/go-resty/resty/v2"
+
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/model"
-
-	"github.com/go-resty/resty/v2"
 )
 
 func (a StorageApi) WithToken(token *model.Token) *StorageApi {

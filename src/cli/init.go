@@ -5,14 +5,14 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/spf13/cobra"
+	"go.uber.org/zap"
+
 	"keboola-as-code/src/event"
 	"keboola-as-code/src/interaction"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/utils"
-
-	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 )
 
 const initShortDescription = `Init local project directory and perform the first pull`

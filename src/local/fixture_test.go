@@ -1,9 +1,9 @@
 package local
 
 import (
-	"keboola-as-code/src/model"
-
 	"github.com/iancoleman/orderedmap"
+
+	"keboola-as-code/src/model"
 )
 
 type ModelStruct struct {

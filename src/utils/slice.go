@@ -6,7 +6,7 @@ import (
 	"sort"
 )
 
-// SortByName - in tests are IDs and sort random -> so we must sort by name
+// SortByName - in tests are IDs and sort random -> so we must sort by name.
 func SortByName(slice interface{}) interface{} {
 	// Check slice
 	t := reflect.TypeOf(slice)

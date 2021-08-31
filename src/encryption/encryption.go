@@ -6,12 +6,12 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/iancoleman/orderedmap"
+	"go.uber.org/zap"
+
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
-
-	"github.com/iancoleman/orderedmap"
-	"go.uber.org/zap"
 )
 
 func isKeyToEncrypt(key string) bool {

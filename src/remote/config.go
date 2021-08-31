@@ -1,11 +1,11 @@
 package remote
 
 import (
-	"keboola-as-code/src/client"
-	"keboola-as-code/src/model"
-
 	"github.com/go-resty/resty/v2"
 	"github.com/spf13/cast"
+
+	"keboola-as-code/src/client"
+	"keboola-as-code/src/model"
 )
 
 func (a *StorageApi) ListComponents(branchId int) (*[]*model.ComponentWithConfigs, error) {

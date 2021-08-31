@@ -7,14 +7,14 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/jarcoal/httpmock"
+	"github.com/otiai10/copy"
+	"github.com/stretchr/testify/assert"
+
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/utils"
-
-	"github.com/jarcoal/httpmock"
-	"github.com/otiai10/copy"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestLoadLocalStateMinimal(t *testing.T) {

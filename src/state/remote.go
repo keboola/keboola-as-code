@@ -8,7 +8,7 @@ import (
 	"keboola-as-code/src/utils"
 )
 
-// doLoadRemoteState - API -> unified model
+// doLoadRemoteState - API -> unified model.
 func (s *State) doLoadRemoteState() {
 	s.remoteErrors = utils.NewMultiError()
 	pool := s.api.NewPool()

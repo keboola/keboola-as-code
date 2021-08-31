@@ -6,7 +6,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 )
 
-// newBackoff for checking Job status and similar operations
+// newBackoff for checking Job status and similar operations.
 func newBackoff() *backoff.ExponentialBackOff {
 	b := backoff.NewExponentialBackOff()
 	b.RandomizationFactor = 0

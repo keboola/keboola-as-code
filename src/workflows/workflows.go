@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"text/template"
 
-	"keboola-as-code/src/utils"
-
 	"go.uber.org/zap"
+
+	"keboola-as-code/src/utils"
 )
 
 //go:embed template/*

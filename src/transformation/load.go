@@ -6,13 +6,13 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/iancoleman/orderedmap"
+	"go.uber.org/zap"
+
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/sql"
 	"keboola-as-code/src/utils"
 	"keboola-as-code/src/validator"
-
-	"github.com/iancoleman/orderedmap"
-	"go.uber.org/zap"
 )
 
 type loader struct {
@@ -24,13 +24,13 @@ type loader struct {
 	errors     *utils.Error
 }
 
-// LoadBlocks - load code blocks from disk to target config
+// LoadBlocks - load code blocks from disk to target config.
 func LoadBlocks(projectDir string, logger *zap.SugaredLogger, naming model.Naming, record *model.ConfigManifest, target *model.Config) error {
 	l := &loader{projectDir, logger, naming, record, target, utils.NewMultiError()}
 	return l.loadBlocksToConfig()
 }
 
-// LoadBlocks - load code blocks from disk to target config
+// LoadBlocks - load code blocks from disk to target config.
 func (l *loader) loadBlocksToConfig() error {
 	// Load blocks
 	blocks := l.loadBlocks(l.naming.BlocksDir(l.record.RelativePath()))
@@ -58,7 +58,7 @@ func (l *loader) loadBlocksToConfig() error {
 	return l.errors.ErrorOrNil()
 }
 
-// loadBlocks - one block is one dir from blocksDir
+// loadBlocks - one block is one dir from blocksDir.
 func (l *loader) loadBlocks(blocksDir string) []*model.Block {
 	blocks := make([]*model.Block, 0)
 	blocksDirAbs := filepath.Join(l.projectDir, blocksDir)
@@ -118,7 +118,7 @@ func (l *loader) loadBlocks(blocksDir string) []*model.Block {
 	return blocks
 }
 
-// loadCodes - one code is one dir from block dir
+// loadCodes - one code is one dir from block dir.
 func (l *loader) loadCodes(blockDir string) []*model.Code {
 	codes := make([]*model.Code, 0)
 	blockDirAbs := filepath.Join(l.projectDir, blockDir)
@@ -204,7 +204,7 @@ func (l *loader) codeFileName(codeDir string) string {
 	return files[0]
 }
 
-// loadScripts - one script is one statement from code file
+// loadScripts - one script is one statement from code file.
 func (l *loader) loadScripts(codeFile string) []string {
 	// Load file content
 	codeFilePathAbs := filepath.Join(l.projectDir, codeFile)

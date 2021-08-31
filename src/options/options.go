@@ -8,20 +8,20 @@ import (
 	"regexp"
 	"strings"
 
-	"keboola-as-code/src/interaction"
-	"keboola-as-code/src/json"
-	"keboola-as-code/src/manifest"
-	"keboola-as-code/src/utils"
-
 	"github.com/iancoleman/strcase"
 	"github.com/spf13/cast"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+
+	"keboola-as-code/src/interaction"
+	"keboola-as-code/src/json"
+	"keboola-as-code/src/manifest"
+	"keboola-as-code/src/utils"
 )
 
 type parser = viper.Viper
 
-// Options contains parsed flags and ENV variables
+// Options contains parsed flags and ENV variables.
 type Options struct {
 	*parser
 	Verbose           bool   `flag:"verbose"`           // verbose mode, print details to console
@@ -87,7 +87,7 @@ func (o *Options) SetProjectDirectory(projectDir string) error {
 	return nil
 }
 
-// BindPersistentFlags for all commands
+// BindPersistentFlags for all commands.
 func (o *Options) BindPersistentFlags(flags *pflag.FlagSet) {
 	flags.SortFlags = true
 	flags.BoolP("help", "h", false, "print help for command")
@@ -98,7 +98,7 @@ func (o *Options) BindPersistentFlags(flags *pflag.FlagSet) {
 	flags.BoolP("verbose-api", "", false, "log each API request and response")
 }
 
-// Validate required options - defined by field name
+// Validate required options - defined by field name.
 func (o *Options) Validate(required []string) string {
 	var errors []string
 	envNaming := &envNamingConvention{}
@@ -141,7 +141,7 @@ func (o *Options) Validate(required []string) string {
 	return strings.Join(errors, "\n")
 }
 
-// AskUser for value if used interactive terminal
+// AskUser for value if used interactive terminal.
 func (o *Options) AskUser(p *interaction.Prompt, fieldName string) {
 	switch fieldName {
 	case "Host":
@@ -166,7 +166,7 @@ func (o *Options) AskUser(p *interaction.Prompt, fieldName string) {
 	}
 }
 
-// Load all sources of Options - flags, envs
+// Load all sources of Options - flags, envs.
 func (o *Options) Load(flags *pflag.FlagSet) (warnings []string, err error) {
 	// Bind flags
 	if err = o.BindPFlags(flags); err != nil {
@@ -226,7 +226,7 @@ func (o *Options) normalize() {
 	o.ApiToken = strings.TrimSpace(o.ApiToken)
 }
 
-// Dump Options for debugging, hide API token
+// Dump Options for debugging, hide API token.
 func (o *Options) Dump() string {
 	re := regexp.MustCompile(`("ApiToken":"[^"]{1,7})[^"]*(")`)
 	str := fmt.Sprintf("Parsed options: %s", json.MustEncode(o, false))
@@ -234,7 +234,7 @@ func (o *Options) Dump() string {
 	return str
 }
 
-// getWorkingDirectory from flag or by default from OS
+// getWorkingDirectory from flag or by default from OS.
 func getWorkingDirectory(parser *viper.Viper) (string, error) {
 	value := parser.GetString("working-dir")
 	if len(value) > 0 {
@@ -248,7 +248,7 @@ func getWorkingDirectory(parser *viper.Viper) (string, error) {
 	return dir, nil
 }
 
-// getProjectDirectory finds project directory -> working dir or its parent that contains ".keboola" metadata dir
+// getProjectDirectory finds project directory -> working dir or its parent that contains ".keboola" metadata dir.
 func getProjectDirectory(workingDir string) (projectDir string, warnings []string) {
 	sep := string(os.PathSeparator)
 	projectDir = workingDir

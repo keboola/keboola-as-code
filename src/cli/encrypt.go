@@ -1,12 +1,12 @@
 package cli
 
 import (
+	"github.com/spf13/cobra"
+
 	"keboola-as-code/src/encryption"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
-
-	"github.com/spf13/cobra"
 )
 
 const encryptShortDescription = "Find unencrypted values in configurations and encrypt them"
@@ -90,7 +90,6 @@ func encryptCommand(root *rootCommand) *cobra.Command {
 			}
 			logger.Info("Encrypt done.")
 			return nil
-
 		},
 	}
 	cmd.Flags().Bool("dry-run", false, "print what needs to be done")

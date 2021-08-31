@@ -16,7 +16,7 @@ const (
 	codeNameTemplate  = utils.PathTemplate(`{code_order}-{code_name}`)
 )
 
-// Naming of the files
+// Naming of the files.
 type Naming struct {
 	Branch    utils.PathTemplate `json:"branch" validate:"required"`
 	Config    utils.PathTemplate `json:"config" validate:"required"`

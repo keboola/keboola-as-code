@@ -30,21 +30,21 @@ func NewMultiError() *Error {
 	return e
 }
 
-// Append error
+// Append error.
 func (e *Error) Append(err error) {
 	e.lock.Lock()
 	defer e.lock.Unlock()
 	e.multiError = multierror.Append(e.multiError, err)
 }
 
-// AppendRaw - msg will be printed without prefix
+// AppendRaw - msg will be printed without prefix.
 func (e *Error) AppendRaw(msg string) {
 	e.lock.Lock()
 	defer e.lock.Unlock()
 	e.multiError = multierror.Append(e.multiError, &ErrorRaw{msg: msg})
 }
 
-// AppendWithPrefix - add an error with custom prefix
+// AppendWithPrefix - add an error with custom prefix.
 func (e *Error) AppendWithPrefix(prefix string, err error) {
 	e.lock.Lock()
 	defer e.lock.Unlock()
@@ -57,14 +57,14 @@ func PrefixError(prefix string, err error) *Error {
 	return e
 }
 
-// prefixEachLine 1. use prefix only once, 2. keep indentation, see tests
+// prefixEachLine 1. use prefix only once, 2. keep indentation, see tests.
 func prefixEachLine(prefix, str string) string {
 	return regexp.
 		MustCompile(fmt.Sprintf(`((^|\n)(\s*)(%s)?\s*)`, regexp.QuoteMeta(strings.TrimSpace(prefix)))).
 		ReplaceAllString(str, fmt.Sprintf("${2}${3}%s", regexp.QuoteMeta(prefix)))
 }
 
-// formatError formats the nested errors
+// formatError formats the nested errors.
 func formatError(errors []error) string {
 	// Count errors without raw messages
 	count := 0

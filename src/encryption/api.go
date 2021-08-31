@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"keboola-as-code/src/client"
-
 	"github.com/go-resty/resty/v2"
 	"go.uber.org/zap"
+
+	"keboola-as-code/src/client"
 )
 
 type Api struct {
@@ -16,7 +16,7 @@ type Api struct {
 	logger  *zap.SugaredLogger
 }
 
-// Error represents Encryption API error structure
+// Error represents Encryption API error structure.
 type Error struct {
 	Message     string `json:"error"`
 	ErrCode     int    `json:"code"`

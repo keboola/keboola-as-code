@@ -3,12 +3,12 @@ package remote
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestBranchApiCalls(t *testing.T) {

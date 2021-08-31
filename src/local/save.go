@@ -5,16 +5,16 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/iancoleman/orderedmap"
+
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/transformation"
 	"keboola-as-code/src/utils"
 	"keboola-as-code/src/validator"
-
-	"github.com/iancoleman/orderedmap"
 )
 
-// SaveModel to manifest and disk
+// SaveModel to manifest and disk.
 func (m *Manager) SaveModel(record model.Record, source model.Object) error {
 	errors := utils.NewMultiError()
 

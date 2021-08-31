@@ -9,17 +9,16 @@ import (
 	"regexp"
 	"time"
 
-	"keboola-as-code/src/build"
+	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 
+	"keboola-as-code/src/build"
 	"keboola-as-code/src/interaction"
 	"keboola-as-code/src/log"
 	"keboola-as-code/src/options"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/utils"
 	"keboola-as-code/src/version"
-
-	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 )
 
 const description = `
@@ -51,7 +50,7 @@ type rootCommand struct {
 	logger       *zap.SugaredLogger  // log to console and logFile
 }
 
-// NewRootCommand creates parent of all sub-commands
+// NewRootCommand creates parent of all sub-commands.
 func NewRootCommand(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteCloser, prompt *interaction.Prompt) *rootCommand {
 	root := &rootCommand{
 		options: options.NewOptions(),
@@ -122,7 +121,7 @@ func NewRootCommand(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteC
 	return root
 }
 
-// Execute command or sub-command
+// Execute command or sub-command.
 func (root *rootCommand) Execute() {
 	defer root.tearDown()
 	if err := root.cmd.Execute(); err != nil {
@@ -151,7 +150,7 @@ func (root *rootCommand) ValidateOptions(required []string) error {
 	return nil
 }
 
-// GetStorageApi returns API and initialize it first time
+// GetStorageApi returns API and initialize it first time.
 func (root *rootCommand) GetStorageApi() (api *remote.StorageApi, err error) {
 	if root.api == nil {
 		root.api, err = root.newStorageApi()
@@ -166,7 +165,7 @@ func (root *rootCommand) newStorageApi() (*remote.StorageApi, error) {
 	return remote.NewStorageApiFromOptions(root.options, root.ctx, root.logger)
 }
 
-// tearDown makes clean-up after command execution
+// tearDown makes clean-up after command execution.
 func (root *rootCommand) tearDown() {
 	if err := recover(); err == nil {
 		// No error -> remove log file if temporary
@@ -190,7 +189,7 @@ func (root *rootCommand) tearDown() {
 	}
 }
 
-// init sets logger and options after flags are parsed
+// init sets logger and options after flags are parsed.
 func (root *rootCommand) init(cmd *cobra.Command) (err error) {
 	if root.initialized {
 		return
@@ -220,7 +219,7 @@ func (root *rootCommand) init(cmd *cobra.Command) (err error) {
 	return
 }
 
-// setupLogger according to the options
+// setupLogger according to the options.
 func (root *rootCommand) setupLogger() {
 	logFile, logFileErr := root.getLogFile()
 	root.logger = log.NewLogger(root.cmd.OutOrStdout(), root.cmd.ErrOrStderr(), logFile, root.options.Verbose)
@@ -248,7 +247,7 @@ func (root *rootCommand) logDebugInfo() {
 	root.logger.Debug(root.options.Dump())
 }
 
-// Get log file defined in the flags or create a temp file
+// Get log file defined in the flags or create a temp file.
 func (root *rootCommand) getLogFile() (logFile *os.File, logFileErr error) {
 	if len(root.options.LogFilePath) > 0 {
 		root.logFileClear = false // log file defined by user will be preserved

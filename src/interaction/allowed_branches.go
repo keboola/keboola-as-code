@@ -5,10 +5,10 @@ import (
 	"math"
 	"strings"
 
+	"github.com/spf13/cast"
+
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
-
-	"github.com/spf13/cast"
 )
 
 const (
@@ -189,7 +189,7 @@ func (p *branchesPrompt) parseSlice(items []string) model.AllowedBranches {
 	return p.unique(branches)
 }
 
-// unique returns only unique items
+// unique returns only unique items.
 func (p *branchesPrompt) unique(items model.AllowedBranches) model.AllowedBranches {
 	m := utils.NewOrderedMap()
 	for _, item := range items {

@@ -7,12 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"keboola-as-code/src/model"
-	"keboola-as-code/src/utils"
-
 	"github.com/ActiveState/vt10x"
 	"github.com/Netflix/go-expect"
 	"github.com/stretchr/testify/assert"
+
+	"keboola-as-code/src/model"
+	"keboola-as-code/src/utils"
 )
 
 const (
@@ -21,7 +21,7 @@ const (
 	Enter     = "\n"
 )
 
-// TestAllowedBranchesByFlag use flag value if present
+// TestAllowedBranchesByFlag use flag value if present.
 func TestAllowedBranchesByFlag(t *testing.T) {
 	prompt, console, _ := createVirtualPrompt(t)
 
@@ -33,7 +33,7 @@ func TestAllowedBranchesByFlag(t *testing.T) {
 	assert.NoError(t, console.Close())
 }
 
-// TestAllowedBranchesDefaultValue use default value if terminal is not interactive
+// TestAllowedBranchesDefaultValue use default value if terminal is not interactive.
 func TestAllowedBranchesDefaultValue(t *testing.T) {
 	prompt, console, _ := createVirtualPrompt(t)
 	prompt.Interactive = false
@@ -47,7 +47,7 @@ func TestAllowedBranchesDefaultValue(t *testing.T) {
 }
 
 // TestAllowedBranchesOnlyMain - select first option from the interactive select box
-// -> only main branch
+// -> only main branch.
 func TestAllowedBranchesOnlyMain(t *testing.T) {
 	prompt, c, _ := createVirtualPrompt(t)
 	allBranches := []*model.Branch{{BranchKey: model.BranchKey{Id: 123}, Name: "Main", IsDefault: true}}
@@ -73,7 +73,7 @@ func TestAllowedBranchesOnlyMain(t *testing.T) {
 }
 
 // TestAllowedBranchesOnlyMain - select second option from the interactive select box
-// -> all branches
+// -> all branches.
 func TestAllowedBranchesAllBranches(t *testing.T) {
 	prompt, c, _ := createVirtualPrompt(t)
 	allBranches := []*model.Branch{{BranchKey: model.BranchKey{Id: 123}, Name: "Main", IsDefault: true}}
@@ -99,7 +99,7 @@ func TestAllowedBranchesAllBranches(t *testing.T) {
 }
 
 // TestAllowedBranchesOnlyMain - select third option from the interactive select box
-// -> select branches, and select 2/4 of the listed brances
+// -> select branches, and select 2/4 of the listed brances.
 func TestAllowedBranchesSelectedBranches(t *testing.T) {
 	prompt, c, _ := createVirtualPrompt(t)
 	allBranches := []*model.Branch{
@@ -156,7 +156,7 @@ func TestAllowedBranchesSelectedBranches(t *testing.T) {
 }
 
 // TestAllowedBranchesOnlyMain - select fourth option from the interactive select box
-// -> type IDs or names and type two custom definitions
+// -> type IDs or names and type two custom definitions.
 func TestAllowedBranchesTypeList(t *testing.T) {
 	prompt, c, _ := createVirtualPrompt(t)
 	allBranches := []*model.Branch{
@@ -193,7 +193,7 @@ func TestAllowedBranchesTypeList(t *testing.T) {
 	assert.Equal(t, model.AllowedBranches{"f**", "b*z"}, allowedBranches)
 }
 
-// selectOption from interactive select box
+// selectOption from interactive select box.
 func selectOption(option int, t *testing.T, c *expect.Console) {
 	var err error
 	_, err = c.ExpectString("Allowed project's branches:")

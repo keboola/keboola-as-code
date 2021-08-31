@@ -18,7 +18,7 @@ type Writer struct {
 	buffer  *bytes.Buffer
 }
 
-// ConnectTo allows write to multiple targets
+// ConnectTo allows write to multiple targets.
 func (w *Writer) ConnectTo(writer io.Writer) {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
@@ -55,7 +55,7 @@ func (w *Writer) Flush() (err error) {
 
 func (*Writer) Close() error { return nil }
 
-// Fd fake terminal file descriptor
+// Fd fake terminal file descriptor.
 func (*Writer) Fd() uintptr {
 	return os.Stdout.Fd()
 }
@@ -79,7 +79,7 @@ func (r *Reader) Read(p []byte) (n int, err error) {
 
 func (*Reader) Close() error { return nil }
 
-// Fd fake terminal file descriptor
+// Fd fake terminal file descriptor.
 func (*Reader) Fd() uintptr {
 	return os.Stdin.Fd()
 }

@@ -26,7 +26,7 @@ var envFiles = []string{
 }
 
 // Replace converts flag name to ENV variable name
-// eg. "storage-api-host" -> "KBC_STORAGE_API_HOST"
+// eg. "storage-api-host" -> "KBC_STORAGE_API_HOST".
 func (*envNamingConvention) Replace(flagName string) string {
 	if len(flagName) == 0 {
 		panic(fmt.Errorf("flag name cannot be empty"))

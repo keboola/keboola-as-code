@@ -6,13 +6,13 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/spf13/cast"
+	"github.com/stretchr/testify/assert"
+
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/utils"
-
-	"github.com/spf13/cast"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestLoadRemoteStateEmpty(t *testing.T) {
