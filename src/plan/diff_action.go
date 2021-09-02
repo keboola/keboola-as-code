@@ -6,7 +6,6 @@ import (
 
 	"keboola-as-code/src/diff"
 	"keboola-as-code/src/model"
-	"keboola-as-code/src/state"
 )
 
 const (
@@ -67,7 +66,7 @@ func (a *DiffAction) markString() string {
 	}
 }
 
-func (a *DiffAction) validate(currentState *state.State) error {
+func (a *DiffAction) validate() error {
 	// Branch rules
 	if branchState, ok := a.ObjectState.(*model.BranchState); ok {
 		// Default branch cannot be delete

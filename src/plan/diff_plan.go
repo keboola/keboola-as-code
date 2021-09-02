@@ -66,7 +66,7 @@ func (p *DiffPlan) Log(writer *log.WriteCloser) {
 func (p *DiffPlan) Validate() error {
 	errors := utils.NewMultiError()
 	for _, action := range p.actions {
-		if err := action.validate(p.State); err != nil {
+		if err := action.validate(); err != nil {
 			errors.Append(err)
 		}
 	}
