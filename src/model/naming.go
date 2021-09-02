@@ -14,6 +14,11 @@ const (
 	blocksDir         = `blocks`
 	blockNameTemplate = utils.PathTemplate(`{block_order}-{block_name}`)
 	codeNameTemplate  = utils.PathTemplate(`{code_order}-{code_name}`)
+	SqlExt            = `sql`
+	PyExt             = `py`
+	JuliaExt          = `jl`
+	RExt              = `r`
+	TxtExt            = `txt`
 )
 
 // Naming of the files.
@@ -99,24 +104,24 @@ func (n Naming) CodeFileName(componentId string) string {
 func (n Naming) CodeFileExt(componentId string) string {
 	switch componentId {
 	case `keboola.snowflake-transformation`:
-		return `sql`
+		return SqlExt
 	case `keboola.synapse-transformation`:
-		return `sql`
+		return SqlExt
 	case `keboola.oracle-transformation`:
-		return `sql`
+		return SqlExt
 	case `keboola.r-transformation`:
-		return `r`
+		return RExt
 	case `keboola.julia-transformation`:
-		return `jl`
+		return JuliaExt
 	case `keboola.python-spark-transformation`:
-		return `py`
+		return PyExt
 	case `keboola.python-transformation`:
-		return `py`
+		return PyExt
 	case `keboola.python-transformation-v2`:
-		return `py`
+		return PyExt
 	case `keboola.csas-python-transformation-v2`:
-		return `py`
+		return PyExt
 	default:
-		return `txt`
+		return TxtExt
 	}
 }
