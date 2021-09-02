@@ -32,7 +32,7 @@ jobs:
           docker-compose build
       - name: Tests
         run: |
-          docker-compose run --rm -u "$UID:$GID" dev make tests
+          docker-compose run --rm -u "$UID:$GID" dev make ci
       - name: Compile
         run: |
           docker-compose run --rm -u "$UID:$GID" dev make build
