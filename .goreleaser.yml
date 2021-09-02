@@ -29,6 +29,7 @@ archives:
       - goos: "windows"
         format: "zip"
     id: kbc
+    # dont package README and LICENSE files to the release archive
     files:
       - none*
     builds:
