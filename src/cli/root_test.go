@@ -91,7 +91,7 @@ func TestExecute(t *testing.T) {
 
 	// Execute
 	root.logger = logger
-	root.Execute()
+	assert.Equal(t, 0, root.Execute())
 	assert.Contains(t, out.String(), "Available Commands:")
 }
 

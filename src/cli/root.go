@@ -122,14 +122,15 @@ func NewRootCommand(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteC
 }
 
 // Execute command or sub-command.
-func (root *rootCommand) Execute() {
+func (root *rootCommand) Execute() (exitCode int) {
 	defer root.tearDown()
 	if err := root.cmd.Execute(); err != nil {
 		// Init, it can be uninitialized, if error occurred before PersistentPreRun call
 		_ = root.init(root.cmd)
 		// Error is already logged
-		os.Exit(1)
+		return 1
 	}
+	return 0
 }
 
 func (root *rootCommand) GetCommandByName(name string) *cobra.Command {
