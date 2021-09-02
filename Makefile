@@ -1,11 +1,10 @@
 .PHONY: build
 
 build:
-	./scripts/compile.sh
+	goreleaser build --rm-dist
 
-build-cross:
-	./scripts/cross-compile.sh
-
+build:
+	goreleaser release --rm-dist
 tests:
 	TEST_VERBOSE=false ./scripts/tests.sh
 
@@ -20,4 +19,3 @@ tests-functional-verbose:
 
 fix:
 	./scripts/fix.sh
-
