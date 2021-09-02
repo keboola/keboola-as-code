@@ -193,7 +193,7 @@ func (p *Prompt) Printf(format string, a ...interface{}) {
 func (p *Prompt) handleError(err error) (ok bool) {
 	if err == nil {
 		return true
-	} else if err == terminal.InterruptErr {
+	} else if errors.Is(err, terminal.InterruptErr) {
 		// Ctrl+c -> append new line after prompt AND exit program
 		_, _ = p.stdout.Write([]byte("\n"))
 		if v, ok := p.stdout.(*os.File); ok {
