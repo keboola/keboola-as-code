@@ -13,16 +13,18 @@ const EnvPrefix = "KBC_"
 
 type envNamingConvention struct{}
 
-// https://github.com/bkeepers/dotenv#what-other-env-files-can-i-use
-var envFiles = []string{
-	".env.development.local",
-	".env.test.local",
-	".env.production.local",
-	".env.local",
-	".env.development",
-	".env.test",
-	".env.production",
-	".env",
+func getEnvFiles() []string {
+	// https://github.com/bkeepers/dotenv#what-other-env-files-can-i-use
+	return []string{
+		".env.development.local",
+		".env.test.local",
+		".env.production.local",
+		".env.local",
+		".env.development",
+		".env.test",
+		".env.production",
+		".env",
+	}
 }
 
 // Replace converts flag name to ENV variable name
@@ -42,7 +44,7 @@ func loadDotEnv(dir string) error {
 		return nil
 	}
 
-	for _, file := range envFiles {
+	for _, file := range getEnvFiles() {
 		// Check if exists
 		path := filepath.Join(dir, file)
 		if stat, err := os.Stat(path); err == nil && stat.IsDir() {
