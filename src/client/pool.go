@@ -13,41 +13,47 @@ import (
 	"keboola-as-code/src/utils"
 )
 
+const REQUESTS_BUFFER_SIZE = 10000
+
 // Pool of the asynchronous HTTP requests. When processing a response, a new request can be send.
 type Pool struct {
-	id              int
-	logger          *zap.SugaredLogger
-	client          *Client            // resty client
-	ctx             context.Context    // context of the parallel work
-	workers         *errgroup.Group    // error group -> if one worker fails, all will be stopped
-	activeRequests  sync.WaitGroup     // detect when all requests are processed (count of the requests = count of the processed responses)
-	sendersCount    int                // number of parallel http connections -> value of MaxIdleConns
-	processorsCount int                // number of processors workers -> number of CPUs
-	requestsCount   *utils.SafeCounter // number of send requests
-	requests        []*Request         // to check that the Send () method has been called on all requests
-	requestsLock    *sync.Mutex        // lock for access to requests slice
-	startTime       time.Time          // time when StartAndWait() called
-	doneChan        chan struct{}      // channel for "all requests are processed" notification
-	requestsChan    chan *Request      // channel for requests
-	responsesChan   chan *Response     // channel for outgoing responses
+	id                  int
+	started             bool
+	finished            bool
+	logger              *zap.SugaredLogger
+	client              *Client            // resty client
+	ctx                 context.Context    // context of the parallel work
+	workers             *errgroup.Group    // error group -> if one worker fails, all will be stopped
+	activeRequests      sync.WaitGroup     // detect when all requests are processed (count of the requests = count of the processed responses)
+	sendersCount        int                // number of parallel http connections -> value of MaxIdleConns
+	processorsCount     int                // number of processors workers -> number of CPUs
+	requestsQueuedCount *utils.SafeCounter // number of send requests
+	requestsSendCount   *utils.SafeCounter // number of send requests
+	requests            []*Request         // to check that the Send () method has been called on all requests
+	requestsLock        *sync.Mutex        // lock for access to requests slice
+	startTime           time.Time          // time when StartAndWait() called
+	doneChan            chan struct{}      // channel for "all requests are processed" notification
+	requestsChan        chan *Request      // channel for requests
+	responsesChan       chan *Response     // channel for outgoing responses
 }
 
 func (c *Client) NewPool(logger *zap.SugaredLogger) *Pool {
 	workers, ctx := errgroup.WithContext(c.parentCtx)
 	return &Pool{
-		id:              c.poolIdCounter.IncAndGet(),
-		client:          c,
-		logger:          logger,
-		ctx:             ctx,
-		workers:         workers,
-		activeRequests:  sync.WaitGroup{},
-		sendersCount:    MaxIdleConns,
-		processorsCount: runtime.NumCPU(),
-		requestsCount:   utils.NewSafeCounter(0),
-		requestsLock:    &sync.Mutex{},
-		doneChan:        make(chan struct{}),
-		requestsChan:    make(chan *Request, 100),
-		responsesChan:   make(chan *Response, 1),
+		id:                  c.poolIdCounter.IncAndGet(),
+		client:              c,
+		logger:              logger,
+		ctx:                 ctx,
+		workers:             workers,
+		activeRequests:      sync.WaitGroup{},
+		sendersCount:        MaxIdleConns,
+		processorsCount:     runtime.NumCPU(),
+		requestsQueuedCount: utils.NewSafeCounter(0),
+		requestsSendCount:   utils.NewSafeCounter(0),
+		requestsLock:        &sync.Mutex{},
+		doneChan:            make(chan struct{}),
+		requestsChan:        make(chan *Request, REQUESTS_BUFFER_SIZE),
+		responsesChan:       make(chan *Response, 1),
 	}
 }
 
@@ -66,6 +72,12 @@ func (p *Pool) Request(request *Request) *Request {
 
 // Send adds request to pool.
 func (p *Pool) Send(request *Request) {
+	// Check if a free space is in the "requestsChan" channel.
+	// If not, then a deadlock would occur. See test "TestPoolManyRequests".
+	if !p.started && p.requestsQueuedCount.IncAndGet() >= REQUESTS_BUFFER_SIZE {
+		panic(fmt.Errorf(`Too many (%d) queued reuests in HTTP pool.`, p.requestsQueuedCount.Get()))
+	}
+
 	request.SetContext(p.ctx)
 	request.sender = p
 	request.sent = true
@@ -92,13 +104,20 @@ func (p *Pool) wait() error {
 }
 
 func (p *Pool) start() {
+	// Mark started
+	if p.started {
+		panic(fmt.Errorf(`Pool has been already started.`))
+	}
+	p.started = true
+
 	// Work is done -> all responses are processed
 	go func() {
 		defer close(p.doneChan)
 		p.activeRequests.Wait()
-		if p.requestsCount.Get() > 0 {
+		if p.requestsSendCount.Get() > 0 {
 			p.log("all done | %s", time.Since(p.startTime))
 		}
+		p.finished = true
 	}()
 
 	// Start senders
@@ -157,7 +176,7 @@ func (p *Pool) start() {
 
 func (p *Pool) send(request *Request) *Response {
 	p.logRequestState("started", request, nil)
-	p.requestsCount.Inc()
+	p.requestsSendCount.Inc()
 	p.client.Send(request)
 	p.logRequestState("finished", request, request.Err())
 	return request.Response
