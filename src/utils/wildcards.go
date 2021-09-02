@@ -88,13 +88,15 @@ func WildcardToRegexp(pattern string) string {
 func EscapeWhitespaces(input string) string {
 	re := regexp.MustCompile(`\s`)
 	return re.ReplaceAllStringFunc(input, func(s string) string {
-		if s == "\n" {
+		switch s {
+		case "\n":
 			return s
-		} else if s == "\t" {
+		case "\t":
 			return `→→→→`
-		} else if s == " " {
+		case " ":
 			return `␣`
+		default:
+			return strings.Trim(strconv.Quote(s), `"`)
 		}
-		return strings.Trim(strconv.Quote(s), `"`)
 	})
 }
