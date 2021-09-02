@@ -42,7 +42,7 @@ func (a *Api) NewRequest(method string, url string) *client.Request {
 	return a.client.NewRequest(method, url)
 }
 
-func (a *Api) createRequest(componentId string, projectId string, requestBody map[string]string) (*client.Request, error) {
+func (a *Api) createRequest(componentId string, projectId string, requestBody map[string]string) *client.Request {
 	// Create request
 	result := make(map[string]string)
 	request := a.
@@ -53,15 +53,11 @@ func (a *Api) createRequest(componentId string, projectId string, requestBody ma
 	request.Request.SetBody(requestBody)
 	request.Request.SetHeader("Content-Type", "application/json")
 
-	return request, nil
+	return request
 }
 
 func (a *Api) EncryptMapValues(componentId string, projectId string, mapValues map[string]string) (map[string]string, error) {
-	request, err := a.createRequest(componentId, projectId, mapValues)
-	if err != nil {
-		return nil, err
-	}
-	response := request.Send().Response
+	response := a.createRequest(componentId, projectId, mapValues).Send().Response
 	if response.HasResult() {
 		return *response.Result().(*map[string]string), nil
 	}

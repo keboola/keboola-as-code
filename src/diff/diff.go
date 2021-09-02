@@ -4,10 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
-
+	
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
@@ -136,7 +133,7 @@ func (d *Differ) doDiff(state model.ObjectState) (*Result, error) {
 		localValues = localValues.Elem()
 	}
 
-	// Compare Config/ConfigRow configuration content ("orderedmap" type) as string
+	// Compare Config/ConfigRow configuration content ("orderedmap" type) as map (keys order doesn't matter)
 	orderedMapTransform := cmp.Transformer("orderedmap1", utils.OrderedMapToMap)
 
 	// Compare strings by lines
