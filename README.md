@@ -154,14 +154,14 @@ In the container, you can run CLI from the source code using:
 go run ./src/main.go help init
 ```
 
-To compile a local binary to `./target/bin/local`, run in the container:
+To compile a local binary to `./target`, run in the container:
 ```
-make build
+make build-local
 ```
 
-To compile a binary for all architectures to `./target/bin`, run in the container:
+To compile a binary for all architectures to `./target`, run in the container:
 ```
-make build-cross
+make build
 ```
 
 ### Functional Tests

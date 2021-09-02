@@ -2,6 +2,8 @@
 
 build:
 	goreleaser build --rm-dist --snapshot
+build-local:
+	goreleaser build --single-target --skip-validate --rm-dist
 
 release:
 	goreleaser release --rm-dist
