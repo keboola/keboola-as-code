@@ -16,11 +16,11 @@ type Error struct {
 	lock *sync.Mutex
 }
 
-type ErrorRaw struct {
+type RawError struct {
 	msg string
 }
 
-func (e *ErrorRaw) Error() string {
+func (e *RawError) Error() string {
 	return e.msg
 }
 
@@ -41,7 +41,7 @@ func (e *Error) Append(err error) {
 func (e *Error) AppendRaw(msg string) {
 	e.lock.Lock()
 	defer e.lock.Unlock()
-	e.multiError = multierror.Append(e.multiError, &ErrorRaw{msg: msg})
+	e.multiError = multierror.Append(e.multiError, &RawError{msg: msg})
 }
 
 // AppendWithPrefix - add an error with custom prefix.
@@ -69,7 +69,8 @@ func formatError(errors []error) string {
 	// Count errors without raw messages
 	count := 0
 	for _, err := range errors {
-		if _, ok := err.(*ErrorRaw); !ok {
+		// nolint: errorlint
+		if _, ok := err.(*RawError); !ok {
 			count++
 		}
 	}
@@ -86,8 +87,9 @@ func formatError(errors []error) string {
 	lines := make([]string, 0)
 	for _, err := range errors {
 		var errStr string
+		// nolint: errorlint
 		switch v := err.(type) {
-		case *ErrorRaw:
+		case *RawError:
 			errStr = v.Error()
 		case *Error:
 			errStr = prefixEachLine(prefix, formatError(v.Errors))

@@ -16,7 +16,7 @@ func AssertWildcards(t assert.TestingT, expected string, actual string, msg stri
 	actual = strings.TrimSpace(actual)
 
 	// Replace NBSP with space
-	actual = strings.Replace(actual, " ", " ", -1)
+	actual = strings.ReplaceAll(actual, " ", " ")
 
 	// Assert
 	if len(expected) == 0 {

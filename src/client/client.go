@@ -233,7 +233,7 @@ func urlForLog(request *resty.Request) string {
 	if request.RawRequest == nil {
 		if pathParams, ok := request.Context().Value(contextKey("pathParams")).(map[string]string); ok {
 			for p, v := range pathParams {
-				url = strings.Replace(url, "{"+p+"}", "{"+p+"=\""+v+"\"}", -1)
+				url = strings.ReplaceAll(url, "{"+p+"}", "{"+p+"=\""+v+"\"}")
 			}
 		}
 
