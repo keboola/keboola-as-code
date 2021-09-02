@@ -28,7 +28,7 @@ type Pool struct {
 	sendersCount        int                // number of parallel http connections -> value of MaxIdleConns
 	processorsCount     int                // number of processors workers -> number of CPUs
 	requestsQueuedCount *utils.SafeCounter // number of total queued requests
-	requestsSendCount   *utils.SafeCounter // number of send requests
+	requestsSentCount   *utils.SafeCounter // number of sent requests
 	requests            []*Request         // to check that the Send () method has been called on all requests
 	requestsLock        *sync.Mutex        // lock for access to requests slice
 	startTime           time.Time          // time when StartAndWait() called
@@ -49,7 +49,7 @@ func (c *Client) NewPool(logger *zap.SugaredLogger) *Pool {
 		sendersCount:        MaxIdleConns,
 		processorsCount:     runtime.NumCPU(),
 		requestsQueuedCount: utils.NewSafeCounter(0),
-		requestsSendCount:   utils.NewSafeCounter(0),
+		requestsSentCount:   utils.NewSafeCounter(0),
 		requestsLock:        &sync.Mutex{},
 		doneChan:            make(chan struct{}),
 		requestsChan:        make(chan *Request, REQUESTS_BUFFER_SIZE),
@@ -114,7 +114,7 @@ func (p *Pool) start() {
 	go func() {
 		defer close(p.doneChan)
 		p.activeRequests.Wait()
-		if p.requestsSendCount.Get() > 0 {
+		if p.requestsSentCount.Get() > 0 {
 			p.log("all done | %s", time.Since(p.startTime))
 		}
 		p.finished = true
@@ -176,7 +176,7 @@ func (p *Pool) start() {
 
 func (p *Pool) send(request *Request) *Response {
 	p.logRequestState("started", request, nil)
-	p.requestsSendCount.Inc()
+	p.requestsSentCount.Inc()
 	p.client.Send(request)
 	p.logRequestState("finished", request, request.Err())
 	return request.Response

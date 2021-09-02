@@ -62,16 +62,11 @@ func (c *Client) GetRestyClient() *resty.Client {
 
 func (c *Client) Send(request *Request) {
 	// Sent
-	request.lock.Lock()
-	request.sent = true
-	request.lock.Unlock()
+	request.MarkSent()
 	restyResponse, err := request.Request.Send()
 
 	// Done
-	request.lock.Lock()
-	request.Response = NewResponse(request, restyResponse, err)
-	request.done = true
-	request.lock.Unlock()
+	request.MarkDone(NewResponse(request, restyResponse, err))
 
 	// Listeners
 	request.invokeListeners()
