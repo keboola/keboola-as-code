@@ -1,7 +1,8 @@
 FROM golang:1.16-buster
 
+RUN echo 'deb [trusted=yes] https://repo.goreleaser.com/apt/ /' | tee /etc/apt/sources.list.d/goreleaser.list
 RUN apt-get update -y && \
-    apt-get install -y jq time zip git binutils-common
+    apt-get install -y jq time zip git binutils-common goreleaser
 
 ENV HOME=/tmp/home
 ENV GOPATH=/tmp/go

@@ -1,0 +1,28 @@
+project_name: "keboola-as-code"
+
+dist: target
+builds:
+  - main: "./src/main.go"
+    id: kbc
+    binary: "{{.Env.OUTPUT}}"
+    no_unique_dist_dir: true
+    goos: ["linux", "darwin", "windows"]
+    goarch: ["amd64", "arm", "arm64"]
+    goarm: ["6", "7"]
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w
+      - -X keboola-as-code/src/build.BuildVersion={{.Env.TARGET_VERSION}}
+      - -X keboola-as-code/src/build.BuildDate={{.Env.BUILD_DATE}}
+      - -X keboola-as-code/src/build.GitCommit={{.Env.GIT_COMMIT}}
+# changelog:
+#   sort: "asc"
+#   filters:
+#     exclude: ["^docs:", "^test:", "Merge pull request", "Merge branch"]
+
+# archives:
+#   - format_overrides:
+#       - goos: "windows"
+#         format: "zip"
+#     wrap_in_directory: true
