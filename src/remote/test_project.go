@@ -195,6 +195,6 @@ func (p *testProject) setEnv(key string, value string) {
 func (p *testProject) logf(format string, a ...interface{}) {
 	if utils.TestIsVerbose() {
 		a = append([]interface{}{p.t.Name()}, a...)
-		fmt.Println(fmt.Sprintf("Fixtures[%s]: "+format, a...))
+		p.t.Logf("Fixtures[%s]: "+format, a...)
 	}
 }
