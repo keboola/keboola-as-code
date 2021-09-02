@@ -26,13 +26,13 @@ const (
 	Ignored
 )
 
-func NewPathsState(projectDir string, error *utils.Error) *PathsState {
+func NewPathsState(projectDir string, err *utils.Error) *PathsState {
 	if !utils.IsDir(projectDir) {
 		panic(fmt.Errorf("directory \"%s\" not found", projectDir))
 	}
 
 	f := &PathsState{
-		error:      error,
+		error:      err,
 		projectDir: projectDir,
 		all:        make(map[string]bool),
 		tracked:    make(map[string]bool),

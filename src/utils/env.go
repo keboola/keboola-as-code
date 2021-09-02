@@ -28,9 +28,8 @@ func MustGetEnv(key string) string {
 }
 
 func MustSetEnv(key string, value string) {
-	err := os.Setenv(key, value)
-	if err != nil {
-		panic(fmt.Errorf("cannot set env variable \"%s\": %s", key, err))
+	if err := os.Setenv(key, value); err != nil {
+		panic(fmt.Errorf("cannot set env variable \"%s\": %w", key, err))
 	}
 }
 

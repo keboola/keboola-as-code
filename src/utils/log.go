@@ -61,8 +61,7 @@ func (*Writer) Fd() uintptr {
 }
 
 func (w *Writer) String() string {
-	err := w.Flush()
-	if err != nil {
+	if err := w.Flush(); err != nil {
 		panic(fmt.Errorf("cannot flush utils log writer"))
 	}
 	return w.buffer.String()

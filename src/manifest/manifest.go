@@ -39,8 +39,7 @@ type Content struct {
 
 func NewManifest(projectId int, apiHost string, projectDir, metadataDir string) (*Manifest, error) {
 	m := newManifest(projectId, apiHost, projectDir, metadataDir)
-	err := m.validate()
-	if err != nil {
+	if err := m.validate(); err != nil {
 		return nil, err
 	}
 	return m, nil
