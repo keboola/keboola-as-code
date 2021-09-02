@@ -1,0 +1,107 @@
+run:
+  concurrency: 8
+  tests: true # check test files
+  skip-files: []
+  skip-dirs: []
+  skip-dirs-use-default: true
+  modules-download-mode: readonly
+
+output:
+  sort-results: true
+
+linters-settings:
+  # Errors from the project can be returned without wrapping
+  wrapcheck:
+    ignorePackageGlobs:
+      - keboola-as-code/src/*
+  # Gci - improved version of goimports
+  gci:
+    local-prefixes: keboola-as-code
+  gocyclo:
+    # minimal code complexity to report, 30 by default (but we recommend 10-20)
+    min-complexity: 10
+
+# https://golangci-lint.run/usage/linters
+linters:
+  enable:
+    - asciicheck
+    - bodyclose
+    - deadcode
+    - depguard
+    - dogsled
+    - dupl
+    - durationcheck
+    - errcheck
+    - errname
+    - errorlint
+    - exportloopref
+    - forbidigo
+    - gci
+    - gochecknoglobals
+    - gochecknoinits
+    - goconst
+    - gocritic
+    - godot
+    - godox
+    - gofmt
+    - goheader
+    - gomoddirectives
+    - gomodguard
+    - goprintffuncname
+    - gosec
+    - gosimple
+    - govet
+    - ifshort
+    - importas
+    - ineffassign
+    - makezero
+    - misspell
+    - nakedret
+    - nilerr
+    - noctx
+    - nolintlint
+    - predeclared
+    - promlinter
+    - rowserrcheck
+    - sqlclosecheck
+    - staticcheck
+    - structcheck
+    - tagliatelle
+    - thelper
+    - tparallel
+    - unconvert
+    - unparam
+    - unused
+    - varcheck
+    - wastedassign
+    - whitespace
+  disable:
+    # TODO
+    - funlen
+    - gocyclo
+    - gocognit
+    - cyclop
+    - nestif
+    - lll
+    - gomnd
+    - gofumpt
+
+issues:
+  # List of regexps of issue texts to exclude
+  exclude:
+    - 'G306: Expect WriteFile permissions to be 0600 or less'
+
+  # Excluding configuration per-path, per-linter, per-text and per-source
+  exclude-rules:
+    # Exclude some linters from running on tests files.
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - goconst
+        - gosec
+        - gochecknoglobals
+        - errcheck
+        - errorlint
+        - dupl
+        - dogsled
+        - bodyclose

@@ -6,13 +6,18 @@ set -o nounset          # Disallow expansion of unset variables
 set -o pipefail         # Use last non-zero exit code in a pipeline
 #set -o xtrace          # Trace the execution of the script (debug)
 
-SRC_DIR=./src
-
-# Fix Go files format
-gofmt -s -l -w $SRC_DIR
-
-# Fix go imports
-goimports -local "keboola-as-code" -w $SRC_DIR
+cd "$(dirname "$0")"/..
 
 # Fix modules
 go mod tidy
+
+# Fix linters
+cd ./src
+if golangci-lint run --fix -c "../.golangci.yml"; then
+    echo "Ok. The code looks good."
+    echo
+else
+    echo "Some errors ^^^ cannot be fixed. Please fix them manually."
+    echo
+    exit 1
+fi

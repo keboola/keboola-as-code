@@ -131,7 +131,7 @@ TEST_KBC_STORAGE_API_TOKEN_EXPIRED=
 Run the test suite and download the dependencies using:
 
 ```
-docker-compose run --rm -u "$UID:$GID" dev make tests
+`docker-compose run --rm -u "$UID:$GID" dev` make ci
 ```
 
 To start the interactive console in the container, you can use:

@@ -14,9 +14,22 @@ go mod download
 echo "Ok."
 echo
 
-# Run tests, sequentially because the API is shared resource
-echo "Running tests ..."
-richgo clean -testcache
-RICHGO_FORCE_COLOR=1 richgo test -p 1 -timeout 360s -v -race -coverprofile=/tmp/profile.out ./src/... $@
-echo "Ok. All tests passed."
+# Check modules
+echo "Running go mod tidy/verify ..."
+go mod tidy
+git diff --exit-code -- go.mod go.sum
+go mod verify
+echo "Ok. Tidy: go.mod and go.sum are valid."
 echo
+
+# Run linters
+cd ./src
+echo "Running golangci-lint ..."
+if golangci-lint run -c "../.golangci.yml"; then
+    echo "Ok. The code looks good."
+    echo
+else
+    echo "Please fix ^^^ errors. You can try run \"make fix\"."
+    echo
+    exit 1
+fi
