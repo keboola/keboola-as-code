@@ -7,7 +7,7 @@ builds:
     binary: "kbc"
     goos: ["linux", "darwin", "windows"]
     goarch: ["amd64", "arm", "arm64"]
-    goarm: ["6", "7"]
+    goarm: ["6"]
     env:
       - CGO_ENABLED=0
     ldflags:
@@ -15,6 +15,9 @@ builds:
       - -X keboola-as-code/src/build.BuildVersion={{ if index .Env "TARGET_VERSION"  }}{{ .Env.TARGET_VERSION }}{{ else }}dev{{ end }}
       - -X keboola-as-code/src/build.BuildDate={{.Date}}
       - -X keboola-as-code/src/build.GitCommit={{.Commit}}
+    ignore:
+      - goos: windows
+        goarch: arm64
 # changelog:
 #   sort: "asc"
 #   filters:
