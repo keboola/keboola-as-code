@@ -36,6 +36,7 @@ func MustSetEnv(key string, value string) {
 
 // ResetEnv used from https://golang.org/src/os/env_test.go
 func ResetEnv(t *testing.T, origEnv []string) {
+	t.Helper()
 	os.Clearenv()
 	for _, pair := range origEnv {
 		i := strings.Index(pair[1:], "=") + 1

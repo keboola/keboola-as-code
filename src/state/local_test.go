@@ -192,6 +192,8 @@ func TestLoadLocalStateConfigRowInvalidMetaJson(t *testing.T) {
 }
 
 func loadLocalTestState(t *testing.T, m *manifest.Manifest) *State {
+	t.Helper()
+
 	// Mocked API
 	logger, _ := utils.NewDebugLogger()
 	api, _ := remote.TestMockedStorageApi(t)
@@ -224,6 +226,8 @@ func loadLocalTestState(t *testing.T, m *manifest.Manifest) *State {
 }
 
 func loadManifest(t *testing.T, projectDirName string) *manifest.Manifest {
+	t.Helper()
+
 	utils.MustSetEnv("LOCAL_STATE_MAIN_BRANCH_ID", "111")
 	utils.MustSetEnv("LOCAL_STATE_MY_BRANCH_ID", "123")
 	utils.MustSetEnv("LOCAL_STATE_GENERIC_CONFIG_ID", "456")

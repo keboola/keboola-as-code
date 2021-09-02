@@ -31,6 +31,8 @@ type testProject struct {
 }
 
 func SetStateOfTestProject(t *testing.T, api *StorageApi, projectStateFile string) {
+	t.Helper()
+
 	p := newTestProject(t, api, projectStateFile)
 	p.Clear()
 	p.InitState()
@@ -38,6 +40,8 @@ func SetStateOfTestProject(t *testing.T, api *StorageApi, projectStateFile strin
 
 // newTestProject creates testProject and loads state from the stateFilePath.
 func newTestProject(t *testing.T, api *StorageApi, stateFilePath string) *testProject {
+	t.Helper()
+
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filepath.Dir(testFile)
 	if !filepath.IsAbs(stateFilePath) {

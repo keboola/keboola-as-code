@@ -67,6 +67,7 @@ func TestFunctional(t *testing.T) {
 
 // RunFunctionalTest runs one functional test.
 func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) {
+	t.Helper()
 	defer utils.ResetEnv(t, os.Environ())
 
 	// Clean working dir
@@ -130,6 +131,8 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 
 // CompileBinary compiles component to binary used in this test.
 func CompileBinary(t *testing.T, projectDir string, tempDir string) string {
+	t.Helper()
+
 	var stdout, stderr bytes.Buffer
 	binaryPath := filepath.Join(tempDir, "/bin_func_tests")
 	cmd := exec.Command("/usr/bin/make", "build-local")
@@ -148,6 +151,7 @@ func CompileBinary(t *testing.T, projectDir string, tempDir string) string {
 
 // GetTestDirs returns list of all dirs in the root directory.
 func GetTestDirs(t *testing.T, root string) []string {
+	t.Helper()
 	var dirs []string
 
 	// Iterate over directory structure
@@ -197,6 +201,8 @@ func AssertExpectations(
 	stdout string,
 	stderr string,
 ) {
+	t.Helper()
+
 	// Compare expected values
 	expectedStdout := utils.ReplaceEnvsString(utils.GetFileContent(filepath.Join(testDir, "expected-stdout")), nil)
 	expectedStderr := utils.ReplaceEnvsString(utils.GetFileContent(filepath.Join(testDir, "expected-stderr")), nil)

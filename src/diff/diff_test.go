@@ -248,6 +248,8 @@ func TestDiffNotEqualConfig(t *testing.T) {
 }
 
 func createProjectState(t *testing.T) *state.State {
+	t.Helper()
+
 	projectDir := t.TempDir()
 	m, err := manifest.NewManifest(1, "connection.keboola.com", projectDir, "bar")
 	if err != nil {

@@ -157,6 +157,8 @@ func TestLoadState(t *testing.T) {
 }
 
 func initLocalState(t *testing.T, localState string) (string, string) {
+	t.Helper()
+
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filepath.Dir(testFile)
 	localStateDir := filepath.Join(testDir, "..", "fixtures", "local", localState)

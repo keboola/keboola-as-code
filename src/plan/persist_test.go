@@ -416,6 +416,8 @@ func TestPersistDeleted(t *testing.T) {
 }
 
 func initMinimalProjectDir(t *testing.T) string {
+	t.Helper()
+
 	utils.MustSetEnv("LOCAL_STATE_MAIN_BRANCH_ID", "111")
 	utils.MustSetEnv("LOCAL_STATE_GENERIC_CONFIG_ID", "456")
 

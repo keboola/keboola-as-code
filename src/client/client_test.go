@@ -145,6 +145,8 @@ DEBUG  HTTP	GET https://example.com | 200 | %s
 }
 
 func getMockedClientAndLogs(t *testing.T, verbose bool) (*Client, *zap.SugaredLogger, *utils.Writer) {
+	t.Helper()
+
 	// Create
 	logger, out := utils.NewDebugLogger()
 	c := NewClient(context.Background(), logger, verbose)
