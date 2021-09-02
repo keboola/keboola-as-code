@@ -27,7 +27,7 @@ type Pool struct {
 	activeRequests      sync.WaitGroup     // detect when all requests are processed (count of the requests = count of the processed responses)
 	sendersCount        int                // number of parallel http connections -> value of MaxIdleConns
 	processorsCount     int                // number of processors workers -> number of CPUs
-	requestsQueuedCount *utils.SafeCounter // number of send requests
+	requestsQueuedCount *utils.SafeCounter // number of total queued requests
 	requestsSendCount   *utils.SafeCounter // number of send requests
 	requests            []*Request         // to check that the Send () method has been called on all requests
 	requestsLock        *sync.Mutex        // lock for access to requests slice
@@ -87,7 +87,6 @@ func (p *Pool) Send(request *Request) {
 }
 
 func (p *Pool) StartAndWait() error {
-	p.startTime = time.Now()
 	p.start()
 	err := p.wait()
 	if err == nil {
@@ -109,6 +108,7 @@ func (p *Pool) start() {
 		panic(fmt.Errorf(`Pool has been already started.`))
 	}
 	p.started = true
+	p.startTime = time.Now()
 
 	// Work is done -> all responses are processed
 	go func() {
