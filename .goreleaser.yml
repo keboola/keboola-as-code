@@ -5,7 +5,6 @@ builds:
   - main: "./src/main.go"
     id: kbc
     binary: "{{.Env.OUTPUT}}"
-    no_unique_dist_dir: true
     goos: ["linux", "darwin", "windows"]
     goarch: ["amd64", "arm", "arm64"]
     goarm: ["6", "7"]
