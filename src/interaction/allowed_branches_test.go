@@ -57,7 +57,7 @@ func TestAllowedBranchesOnlyMain(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		selectOption(1, t, c) // only main branch
+		selectOption(t, 1, c) // only main branch
 		_, err := c.ExpectEOF()
 		assert.NoError(t, err)
 	}()
@@ -83,7 +83,7 @@ func TestAllowedBranchesAllBranches(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		selectOption(2, t, c) // all branches
+		selectOption(t, 2, c) // all branches
 		_, err := c.ExpectEOF()
 		assert.NoError(t, err)
 	}()
@@ -114,7 +114,7 @@ func TestAllowedBranchesSelectedBranches(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		selectOption(3, t, c) // selected branches
+		selectOption(t, 3, c) // selected branches
 		_, err := c.ExpectString(`[10] Main`)
 		assert.NoError(t, err)
 		_, err = c.ExpectString(`[20] foo`)
@@ -171,7 +171,7 @@ func TestAllowedBranchesTypeList(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		selectOption(4, t, c) // type custom definitions
+		selectOption(t, 4, c) // type custom definitions
 		time.Sleep(50 * time.Millisecond)
 		_, err := c.Send("f**\n")
 		assert.NoError(t, err)
@@ -194,7 +194,9 @@ func TestAllowedBranchesTypeList(t *testing.T) {
 }
 
 // selectOption from interactive select box.
-func selectOption(option int, t *testing.T, c *expect.Console) {
+func selectOption(t *testing.T, option int, c *expect.Console) {
+	t.Helper()
+	
 	var err error
 	_, err = c.ExpectString("Allowed project's branches:")
 	assert.NoError(t, err)
