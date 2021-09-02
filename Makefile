@@ -3,7 +3,7 @@
 build:
 	goreleaser build --rm-dist
 
-build:
+release:
 	goreleaser release --rm-dist
 tests:
 	TEST_VERBOSE=false ./scripts/tests.sh
