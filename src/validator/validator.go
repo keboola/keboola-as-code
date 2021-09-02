@@ -1,6 +1,7 @@
 package validator
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -29,9 +30,10 @@ func Validate(value interface{}) error {
 
 	// Do
 	if err := validate.Struct(value); err != nil {
-		switch v := err.(type) {
-		case validator.ValidationErrors:
-			return processValidateError(v)
+		var validationErrs validator.ValidationErrors
+		switch {
+		case errors.As(err, &validationErrs):
+			return processValidateError(validationErrs)
 		default:
 			panic(err)
 		}

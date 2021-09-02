@@ -13,6 +13,7 @@ import (
 	"keboola-as-code/src/utils"
 )
 
+// nolint:gochecknoglobals
 //go:embed template/*
 var templates embed.FS
 

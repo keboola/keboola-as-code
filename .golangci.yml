@@ -76,6 +76,7 @@ linters:
     - wastedassign
     - whitespace
   disable:
+    - goimports # replaced with gci
     # TODO
     - funlen
     - gocyclo

@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"

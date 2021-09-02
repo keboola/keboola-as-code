@@ -2,7 +2,6 @@ package client
 
 import (
 	"errors"
-	"net/url"
 	"testing"
 
 	"github.com/go-resty/resty/v2"
@@ -128,7 +127,7 @@ func TestNetworkError(t *testing.T) {
 	pool.Request(client.NewRequest(resty.MethodGet, "https://example.com")).
 		OnSuccess(onSuccess).
 		Send()
-	assert.Equal(t, errors.New("network error"), pool.StartAndWait().(*url.Error).Unwrap())
+	assert.Contains(t, pool.StartAndWait().Error(), "network error")
 	assert.GreaterOrEqual(t, c.Get(), 10)
 	assert.GreaterOrEqual(t, httpmock.GetCallCountInfo()["GET https://example.com"], 10)
 }
@@ -188,7 +187,7 @@ func TestOnError(t *testing.T) {
 	err := pool.StartAndWait()
 	assert.True(t, errorCaught)
 	assert.True(t, responseCaught)
-	assert.Equal(t, errors.New("network error"), err.(*url.Error).Unwrap())
+	assert.Contains(t, err.Error(), "network error")
 	assert.Equal(t, 1, httpmock.GetCallCountInfo()["GET https://example.com"])
 	assert.Equal(t, 1+RetryCount, httpmock.GetCallCountInfo()["GET https://example.com/error"])
 }

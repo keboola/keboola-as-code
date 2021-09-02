@@ -28,7 +28,7 @@ func AssertDirectoryContentsSame(t assert.TestingT, expectedDir string, actualDi
 	var errors []string
 	for _, node := range nodesState {
 		// Check if present if both dirs (actual/expected) and if has same type (file/dir)
-		switch  {
+		switch {
 		case node.actual == nil:
 			errors = append(errors, fmt.Sprintf("only in expected \"%s\"", node.expected.absPath))
 		case node.expected == nil:
