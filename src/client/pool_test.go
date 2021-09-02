@@ -50,10 +50,10 @@ func TestSubRequest(t *testing.T) {
 	successCounter := utils.NewSafeCounter(0)
 	responseCounter := utils.NewSafeCounter(0)
 	pool := client.NewPool(logger)
-	onResponse := func(response *Response) {
+	onResponse := func(*Response) {
 		responseCounter.Inc()
 	}
-	onError := func(response *Response) {
+	onError := func(*Response) {
 		assert.Fail(t, "error not expected")
 	}
 	var onSuccess ResponseCallback
