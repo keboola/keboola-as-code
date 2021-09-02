@@ -36,7 +36,7 @@ func TestCheckIfLatestVersionUpdate(t *testing.T) {
 
 func createMockedChecker(t *testing.T) (*checker, *utils.Writer) {
 	t.Helper()
-	
+
 	logger, logs := utils.NewDebugLogger()
 	c := NewChecker(context.Background(), logger)
 	resty := c.api.GetRestyClient()
