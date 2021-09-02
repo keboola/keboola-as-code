@@ -7,14 +7,7 @@ import (
 )
 
 func (m *Manager) UpdatePaths(state model.ObjectState, rename bool) {
-	var object model.Object
-	if state.HasLocalState() {
-		object = state.LocalState()
-	} else if state.HasRemoteState() {
-		object = state.RemoteState()
-	} else {
-		panic(fmt.Errorf("object Local or Remote state must be set"))
-	}
+	object := state.LocalOrRemoteState()
 
 	switch v := state.(type) {
 	case *model.BranchState:

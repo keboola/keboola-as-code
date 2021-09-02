@@ -47,13 +47,15 @@ func loadDotEnv(dir string) error {
 	for _, file := range getEnvFiles() {
 		// Check if exists
 		path := filepath.Join(dir, file)
-		if stat, err := os.Stat(path); err == nil && stat.IsDir() {
+		stat, err := os.Stat(path)
+		switch {
+		case err == nil && stat.IsDir():
 			// Expected file found dir
 			return nil
-		} else if err != nil && os.IsNotExist(err) {
+		case err != nil && os.IsNotExist(err):
 			// File doesn't exist
 			continue
-		} else if err != nil && !os.IsNotExist(err) {
+		case err != nil && !os.IsNotExist(err):
 			return fmt.Errorf("cannot check if path \"%s\" exists: %w", path, err)
 		}
 

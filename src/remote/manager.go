@@ -126,14 +126,7 @@ func (u *UnitOfWork) Invoke() error {
 func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, changedFields []string) error {
 	// Get object local state.
 	// Remote state is used for marking object as deleted (then local state is not set)
-	var object model.Object
-	if objectState.HasLocalState() {
-		object = objectState.LocalState()
-	} else if objectState.HasRemoteState() {
-		object = objectState.RemoteState()
-	} else {
-		panic(fmt.Errorf(`local or remote state must be set`))
-	}
+	object := objectState.LocalOrRemoteState()
 
 	// Set changeDescription
 	switch v := object.(type) {

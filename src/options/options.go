@@ -119,21 +119,22 @@ func (o *Options) Validate(required []string) string {
 		}
 
 		// Create error message by field type
-		if fieldName == "projectDirectory" {
+		switch {
+		case fieldName == "projectDirectory":
 			errors = append(
 				errors,
 				`- None of this and parent directories is project dir.`,
 				`  Project directory must contain the ".keboola" metadata directory.`,
 				`  Please change working directory to a project directory or use the "init" command.`,
 			)
-		} else if len(flag) > 0 {
+		case len(flag) > 0:
 			errors = append(errors, fmt.Sprintf(
 				`- Missing %s. Please use "--%s" flag or ENV variable "%s".`,
 				fieldNameHumanReadable,
 				flag,
 				envNaming.Replace(flag),
 			))
-		} else {
+		default:
 			errors = append(errors, fmt.Sprintf(`- Missing %s.`, fieldNameHumanReadable))
 		}
 	}
