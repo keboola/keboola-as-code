@@ -138,7 +138,7 @@ func LoadStateFile(path string) (*StateFile, error) {
 // LoadConfig loads config from the file.
 func LoadConfig(t *testing.T, name string) *model.ConfigWithRows {
 	t.Helper()
-	
+
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filepath.Dir(testFile)
 	path := filepath.Join(testDir, "configs", name+".json")

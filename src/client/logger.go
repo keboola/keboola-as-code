@@ -16,18 +16,18 @@ type Logger struct {
 }
 
 func (l *Logger) Debugf(format string, v ...interface{}) {
-	l.logWithoutSecrets("", format, v...)
+	l.logWithoutSecretsf("", format, v...)
 }
 
 func (l *Logger) Warnf(format string, v ...interface{}) {
-	l.logWithoutSecrets("-WARN", format, v...)
+	l.logWithoutSecretsf("-WARN", format, v...)
 }
 
 func (l *Logger) Errorf(format string, v ...interface{}) {
-	l.logWithoutSecrets("-ERROR", format, v...)
+	l.logWithoutSecretsf("-ERROR", format, v...)
 }
 
-func (l *Logger) logWithoutSecrets(level string, format string, v ...interface{}) {
+func (l *Logger) logWithoutSecretsf(level string, format string, v ...interface{}) {
 	v = append([]interface{}{level}, v...)
 	msg := fmt.Sprintf(LoggerPrefix+format, v...)
 	msg = removeSecrets(msg)
