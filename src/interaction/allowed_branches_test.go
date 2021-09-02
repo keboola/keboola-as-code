@@ -218,6 +218,8 @@ func selectOption(t *testing.T, option int, c *expect.Console) {
 }
 
 func createVirtualPrompt(t *testing.T) (*Prompt, *expect.Console) {
+	t.Helper()
+
 	// Create virtual console
 	var stdout io.Writer
 	if utils.TestIsVerbose() {

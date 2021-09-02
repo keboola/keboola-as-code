@@ -50,10 +50,11 @@ func NewPrompt(stdin terminal.FileReader, stdout terminal.FileWriter, stderr ter
 	}
 }
 
+// nolint: gochecknoinits
 func init() {
 	// Workaround for bug in 3rd party lib
 	// https://github.com/AlecAivazis/survey/issues/336
-	survey.MultilineQuestionTemplate = survey.MultilineQuestionTemplate + `{{"\n"}}`
+	survey.MultilineQuestionTemplate += `{{"\n"}}`
 }
 
 func (p *Prompt) Confirm(c *Confirm) bool {
