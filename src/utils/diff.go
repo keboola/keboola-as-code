@@ -92,7 +92,7 @@ func compareDirectories(expectedDir string, actualDir string) map[string]*fileNo
 	})
 
 	if err != nil {
-		panic(fmt.Errorf("cannot iterate over directory \"%s\": %s", actualDirAbs, err))
+		panic(fmt.Errorf("cannot iterate over directory \"%s\": %w", actualDirAbs, err))
 	}
 
 	// Process expected dir
@@ -125,7 +125,7 @@ func compareDirectories(expectedDir string, actualDir string) map[string]*fileNo
 	})
 
 	if err != nil {
-		panic(fmt.Errorf("cannot iterate over directory \"%s\": %s", actualDirAbs, err))
+		panic(fmt.Errorf("cannot iterate over directory \"%s\": %w", actualDirAbs, err))
 	}
 
 	return hashMap

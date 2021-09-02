@@ -58,7 +58,7 @@ func ReplaceEnvsFile(path string, provider EnvProvider) {
 	str := GetFileContent(path)
 	str = ReplaceEnvsString(str, provider)
 	if err := os.WriteFile(path, []byte(str), 0655); err != nil {
-		panic(fmt.Errorf("cannot write to file \"%s\": %s", path, err))
+		panic(fmt.Errorf("cannot write to file \"%s\": %w", path, err))
 	}
 }
 
@@ -84,7 +84,7 @@ func ReplaceEnvsDir(root string, provider EnvProvider) {
 	})
 
 	if err != nil {
-		panic(fmt.Errorf("cannot walk over dir \"%s\": %s", root, err))
+		panic(fmt.Errorf("cannot walk over dir \"%s\": %w", root, err))
 	}
 }
 
@@ -108,7 +108,7 @@ func TestProjectId() int {
 	str := MustGetEnv("TEST_PROJECT_ID")
 	value, err := strconv.Atoi(str)
 	if err != nil {
-		panic(fmt.Errorf("invalid integer \"%s\": %s", str, err))
+		panic(fmt.Errorf("invalid integer \"%s\": %w", str, err))
 	}
 	return value
 }

@@ -114,7 +114,7 @@ func LoadStateFile(path string) (*StateFile, error) {
 	stateFile := &StateFile{}
 	err := json.Unmarshal([]byte(data), stateFile)
 	if err != nil {
-		return nil, fmt.Errorf("cannot parse project state file \"%s\": %s", path, err)
+		return nil, fmt.Errorf("cannot parse project state file \"%s\": %w", path, err)
 	}
 
 	// Check if main branch defined

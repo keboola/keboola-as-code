@@ -72,7 +72,7 @@ func (l *loader) loadBlocks(blocksDir string) []*model.Block {
 	// Load all dir entries
 	items, err := os.ReadDir(blocksDirAbs)
 	if err != nil {
-		l.errors.Append(fmt.Errorf(`cannot read transformation blocks from "%s": %s`, blocksDir, err.Error()))
+		l.errors.Append(fmt.Errorf(`cannot read transformation blocks from "%s": %w`, blocksDir, err))
 		return nil
 	}
 
@@ -126,7 +126,7 @@ func (l *loader) loadCodes(blockDir string) []*model.Code {
 	// Load all dir entries
 	items, err := os.ReadDir(blockDirAbs)
 	if err != nil {
-		l.errors.Append(fmt.Errorf(`cannot read transformation codes from "%s": %s`, blockDirAbs, err.Error()))
+		l.errors.Append(fmt.Errorf(`cannot read transformation codes from "%s": %w`, blockDirAbs, err))
 		return nil
 	}
 
@@ -174,7 +174,7 @@ func (l *loader) codeFileName(codeDir string) string {
 	codeDirAbs := filepath.Join(l.projectDir, codeDir)
 	matches, err := filepath.Glob(filepath.Join(codeDirAbs, model.CodeFileName+`.*`))
 	if err != nil {
-		l.errors.Append(fmt.Errorf(`canoot search for code file in %s": %s`, codeDir, err))
+		l.errors.Append(fmt.Errorf(`canoot search for code file in %s": %w`, codeDir, err))
 		return ""
 	}
 	files := make([]string, 0)
@@ -210,7 +210,7 @@ func (l *loader) loadScripts(codeFile string) []string {
 	codeFilePathAbs := filepath.Join(l.projectDir, codeFile)
 	content, err := os.ReadFile(codeFilePathAbs)
 	if err != nil {
-		l.errors.Append(fmt.Errorf(`cannot read code file "%s": %s`, codeFile, err))
+		l.errors.Append(fmt.Errorf(`cannot read code file "%s": %w`, codeFile, err))
 		return nil
 	}
 

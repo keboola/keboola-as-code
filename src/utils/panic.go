@@ -66,7 +66,7 @@ func ProcessPanic(err interface{}, logger *zap.SugaredLogger, logFilePath string
 func panicMessage(logFile string) string {
 	tmpl, err := template.New("panicMsg").Parse(userFriendlyPanicTmpl)
 	if err != nil {
-		panic(fmt.Errorf("cannot parse panic template: %s", err))
+		panic(fmt.Errorf("cannot parse panic template: %w", err))
 	}
 
 	var output bytes.Buffer
@@ -75,7 +75,7 @@ func panicMessage(logFile string) string {
 		struct{ LogFile string }{logFile},
 	)
 	if err != nil {
-		panic(fmt.Errorf("cannot render panic template: %s", err))
+		panic(fmt.Errorf("cannot render panic template: %w", err))
 	}
 
 	return output.String()

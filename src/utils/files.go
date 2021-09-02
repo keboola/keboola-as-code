@@ -19,7 +19,7 @@ func FileExists(path string) bool {
 	if _, err := os.Stat(path); err == nil {
 		return true
 	} else if !os.IsNotExist(err) {
-		panic(fmt.Errorf("cannot test if file exists \"%s\": %s", path, err))
+		panic(fmt.Errorf("cannot test if file exists \"%s\": %w", path, err))
 	}
 
 	return false
@@ -30,7 +30,7 @@ func IsFile(path string) bool {
 	if s, err := os.Stat(path); err == nil {
 		return !s.IsDir()
 	} else if !os.IsNotExist(err) {
-		panic(fmt.Errorf("cannot test if file exists \"%s\": %s", path, err))
+		panic(fmt.Errorf("cannot test if file exists \"%s\": %w", path, err))
 	}
 
 	return false
@@ -41,7 +41,7 @@ func IsDir(path string) bool {
 	if s, err := os.Stat(path); err == nil {
 		return s.IsDir()
 	} else if !os.IsNotExist(err) {
-		panic(fmt.Errorf("cannot test if file exists \"%s\": %s", path, err))
+		panic(fmt.Errorf("cannot test if file exists \"%s\": %w", path, err))
 	}
 
 	return false
@@ -57,7 +57,7 @@ func GetFileContent(path string) string {
 	// Read content, handle error
 	contentBytes, err := ioutil.ReadFile(path)
 	if err != nil {
-		panic(fmt.Errorf("cannot get file \"%s\" content: %s", path, err))
+		panic(fmt.Errorf("cannot get file \"%s\" content: %w", path, err))
 	}
 
 	return string(contentBytes)
@@ -66,7 +66,7 @@ func GetFileContent(path string) string {
 func AbsPath(path string) string {
 	abs, err := filepath.Abs(path)
 	if err != nil {
-		panic(fmt.Sprintf("cannot get absolute path: %s", err))
+		panic(fmt.Errorf("cannot get absolute path: %w", err))
 	}
 	return abs
 }
@@ -74,7 +74,7 @@ func AbsPath(path string) string {
 func RelPath(base string, path string) string {
 	rel, err := filepath.Rel(base, path)
 	if err != nil {
-		panic(fmt.Sprintf("cannot get relative path: %s", err))
+		panic(fmt.Errorf("cannot get relative path: %w", err))
 	}
 	return rel
 }

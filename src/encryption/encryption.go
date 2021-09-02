@@ -128,7 +128,7 @@ func DoEncrypt(projectState *state.State, unencryptedGroups []Group, api *Api) e
 		// create map with {"#<value-path>":"<value-to-encrypt>"...} entries
 		mapToEncrypt := prepareMapToEncrypt(group.values)
 
-		//type switch on config or configRow state
+		// type switch on config or configRow state
 		switch o := group.object.(type) {
 		case *model.ConfigState:
 			encryptedMap, encryptionError := api.EncryptMapValues(o.ComponentId, projectId, mapToEncrypt)
@@ -136,7 +136,7 @@ func DoEncrypt(projectState *state.State, unencryptedGroups []Group, api *Api) e
 				errors.Append(encryptionError)
 				continue
 			}
-			//update local state with encrypted values
+			// update local state with encrypted values
 			for _, value := range group.values {
 				encryptedValue := encryptedMap[value.encryptedPath()]
 				o.Local.Content = utils.UpdateIn(o.Local.Content, value.path, encryptedValue)
@@ -147,7 +147,7 @@ func DoEncrypt(projectState *state.State, unencryptedGroups []Group, api *Api) e
 				errors.Append(encryptionError)
 				continue
 			}
-			//update local state with encrypted values
+			// update local state with encrypted values
 			for _, value := range group.values {
 				encryptedValue := encryptedMap[value.encryptedPath()]
 				o.Local.Content = utils.UpdateIn(o.Local.Content, value.path, encryptedValue)

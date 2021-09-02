@@ -52,7 +52,7 @@ func loadDotEnv(dir string) error {
 			// File doesn't exist
 			continue
 		} else if err != nil && !os.IsNotExist(err) {
-			return fmt.Errorf("cannot check if path \"%s\" exists: %s", path, err)
+			return fmt.Errorf("cannot check if path \"%s\" exists: %w", path, err)
 		}
 
 		// Load env,

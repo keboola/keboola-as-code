@@ -30,7 +30,7 @@ func (m *Manager) SaveModel(record model.Record, source model.Object) error {
 	// Mkdir
 	dir := filepath.Join(m.ProjectDir(), record.RelativePath())
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		errors.Append(fmt.Errorf("cannot create directory \"%s\": %s", dir, err))
+		errors.Append(fmt.Errorf("cannot create directory \"%s\": %w", dir, err))
 		return errors
 	}
 
