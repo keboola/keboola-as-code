@@ -39,6 +39,6 @@ jobs:
       - name: Compile and Release
         if: startsWith(github.ref, 'refs/tags/')
         run: |
-          docker-compose run --rm -u "$UID:$GID" -e GITHUB_TOKEN dev make release
+          docker-compose run --rm -u "$UID:$GID" -e GITHUB_TOKEN -e TARGET_VERSION dev make release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

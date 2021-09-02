@@ -1,7 +1,7 @@
 .PHONY: build
 
 build:
-	goreleaser build --rm-dist
+	goreleaser build --rm-dist --snapshot
 
 release:
 	goreleaser release --rm-dist
