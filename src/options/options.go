@@ -217,7 +217,7 @@ func (o *Options) Load(flags *pflag.FlagSet) (warnings []string, err error) {
 	// Normalize the values into a uniform form
 	o.normalize()
 
-	return
+	return warnings, err
 }
 
 func (o *Options) normalize() {
