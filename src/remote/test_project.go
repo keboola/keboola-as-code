@@ -42,6 +42,7 @@ func SetStateOfTestProject(t *testing.T, api *StorageApi, projectStateFile strin
 func newTestProject(t *testing.T, api *StorageApi, stateFilePath string) *testProject {
 	t.Helper()
 
+	// nolint: dogsled
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filepath.Dir(testFile)
 	if !filepath.IsAbs(stateFilePath) {
