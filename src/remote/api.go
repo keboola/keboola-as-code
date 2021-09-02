@@ -2,6 +2,7 @@ package remote
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -34,7 +35,8 @@ func NewStorageApiFromOptions(options *options.Options, ctx context.Context, log
 	storageApi := NewStorageApi(options.ApiHost, ctx, logger, options.VerboseApi)
 	token, err := storageApi.GetToken(options.ApiToken)
 	if err != nil {
-		if v, ok := err.(client.ErrorWithResponse); ok && v.IsUnauthorized() {
+		var errWithResponse client.ErrorWithResponse
+		if errors.As(err, &errWithResponse) && errWithResponse.IsUnauthorized() {
 			return nil, fmt.Errorf("the specified storage API token is not valid")
 		} else {
 			return nil, utils.PrefixError("token verification failed", err)
