@@ -3,12 +3,17 @@ package version
 import (
 	"context"
 	"fmt"
+	"os"
+	"strings"
 	"time"
 
+	"github.com/Masterminds/semver"
 	"go.uber.org/zap"
 
 	"keboola-as-code/src/client"
 )
+
+const EnvVersionCheck = "KBC_VERSION_CHECK"
 
 type checker struct {
 	api    *client.Client
@@ -28,8 +33,14 @@ func NewChecker(parentCtx context.Context, logger *zap.SugaredLogger) *checker {
 func (c *checker) CheckIfLatest(currentVersion string) error {
 	defer c.cancel()
 
+	// Dev build
 	if currentVersion == DevVersionValue {
 		return fmt.Errorf(`skipped, found dev build`)
+	}
+
+	// Disabled by ENV
+	if value, _ := os.LookupEnv(EnvVersionCheck); strings.ToLower(value) == "false" {
+		return fmt.Errorf(fmt.Sprintf(`skipped, disabled by ENV "%s"`, EnvVersionCheck))
 	}
 
 	latestVersion, err := c.getLatestVersion()
@@ -37,7 +48,17 @@ func (c *checker) CheckIfLatest(currentVersion string) error {
 		return err
 	}
 
-	if currentVersion != latestVersion {
+	current, err := semver.NewVersion(currentVersion)
+	if err != nil {
+		return err
+	}
+
+	latest, err := semver.NewVersion(latestVersion)
+	if err != nil {
+		return err
+	}
+
+	if latest.GreaterThan(current) {
 		c.logger.Warn(`*******************************************************`)
 		c.logger.Warnf(`WARNING: A new version "%s" is available.`, latestVersion)
 		c.logger.Warn(`Please update to get the latest features and bug fixes.`)

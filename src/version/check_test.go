@@ -20,14 +20,21 @@ func TestCheckIfLatestVersionDev(t *testing.T) {
 	assert.Equal(t, `skipped, found dev build`, err.Error())
 }
 
-func TestCheckIfLatestVersionOk(t *testing.T) {
+func TestCheckIfLatestVersionEqual(t *testing.T) {
 	c, logs := createMockedChecker(t)
 	err := c.CheckIfLatest(`v1.2.3`)
 	assert.Nil(t, err)
 	assert.NotContains(t, logs.String(), `WARN`)
 }
 
-func TestCheckIfLatestVersionUpdate(t *testing.T) {
+func TestCheckIfLatestVersionGreater(t *testing.T) {
+	c, logs := createMockedChecker(t)
+	err := c.CheckIfLatest(`v1.2.5`)
+	assert.Nil(t, err)
+	assert.NotContains(t, logs.String(), `WARN`)
+}
+
+func TestCheckIfLatestVersionLess(t *testing.T) {
 	c, logs := createMockedChecker(t)
 	err := c.CheckIfLatest(`v1.2.2`)
 	assert.Nil(t, err)
@@ -40,6 +47,9 @@ func createMockedChecker(t *testing.T) (*checker, *utils.Writer) {
 	logger, logs := utils.NewDebugLogger()
 	c := NewChecker(context.Background(), logger)
 	resty := c.api.GetRestyClient()
+
+	// Version check are disabled in tests by default
+	utils.MustSetEnv(EnvVersionCheck, "")
 
 	// Set short retry delay in tests
 	resty.RetryWaitTime = 1 * time.Millisecond
