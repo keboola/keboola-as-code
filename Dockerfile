@@ -4,7 +4,7 @@ RUN apt-get update -y && \
     apt-get install -y jq time zip git binutils-common
 
 ENV HOME=/tmp/home
-ENV GOPATH=/tmp/go
+ENV GOPATH=/code/go
 ENV GOCACHE=/tmp/go-cache
 ENV GOBIN=/usr/local/bin
 
