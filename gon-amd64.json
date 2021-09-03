@@ -1,7 +1,6 @@
 {
     "source": [
-        "./release/darwin-amd64/kbc",
-        "./release/darwin-arm64/kbc"
+        "./release/darwin-amd64/kbc"
     ],
     "bundle_id": "com.keboola.kbc",
     "apple_id": {
@@ -9,5 +8,8 @@
     },
     "sign": {
         "application_identity": "Developer ID Application: Tomas Netrval"
+    },
+    "zip": {
+        "output_path": "./release/signed/kbc-amd64.zip"
     }
 }
