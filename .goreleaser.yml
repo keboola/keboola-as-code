@@ -19,9 +19,9 @@ builds:
   #     post: '{{ if index .Env "TARGET_PATH"  }}cp "{{ .Path }}" "{{ .Env.TARGET_PATH }}"{{ else }}true{{ end }}'
   - main: "./src/main.go"
     id: "darwin"
-    binary: "darwin/kbc"
+    binary: "kbc"
     goos: ["darwin"]
-    goarch: ["amd64", "arm", "arm64"]
+    goarch: ["amd64", "arm64"]
     goarm: ["6"]
     env:
       - CGO_ENABLED=0
