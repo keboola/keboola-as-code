@@ -103,10 +103,10 @@ jobs:
         env:
           TARGET_VERSION: ${{ needs.set_version.outputs.version }}
       - name: Zip build cache
-        #if: startsWith(github.ref, 'refs/tags/') && needs.set_version.outputs.is_semantic_tag == 'true'
+        if: startsWith(github.ref, 'refs/tags/') && needs.set_version.outputs.is_semantic_tag == 'true'
         run: zip -q -4 -r /tmp/go-cache.zip /tmp/go-cache
       - name: Upload build cache
-        #if: startsWith(github.ref, 'refs/tags/') && needs.set_version.outputs.is_semantic_tag == 'true'
+        if: startsWith(github.ref, 'refs/tags/') && needs.set_version.outputs.is_semantic_tag == 'true'
         uses: actions/upload-artifact@v2
         with:
           name: build-cache
@@ -120,7 +120,7 @@ jobs:
       - tests
       - cross-compile
     runs-on: ubuntu-latest
-    #if: startsWith(github.ref, 'refs/tags/') && needs.set_version.outputs.is_semantic_tag == 'true'
+    if: startsWith(github.ref, 'refs/tags/') && needs.set_version.outputs.is_semantic_tag == 'true'
     steps:
       - name: Check out the repo
         uses: actions/checkout@v2
@@ -130,7 +130,7 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/load-build-cache
       - name: Release
-        run: docker-compose run --rm -u "$UID:$GID" -e GITHUB_TOKEN -e TARGET_VERSION -v /tmp/go-cache:/tmp/go-cache dev make release-local
+        run: docker-compose run --rm -u "$UID:$GID" -e GITHUB_TOKEN -e TARGET_VERSION -v /tmp/go-cache:/tmp/go-cache dev make release
         env:
           TARGET_VERSION: ${{ needs.set_version.outputs.version }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
