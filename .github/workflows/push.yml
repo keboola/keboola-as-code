@@ -135,7 +135,8 @@ jobs:
           TARGET_VERSION: ${{ needs.set_version.outputs.version }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   release-macos:
-    needs: build
+    needs:
+      - Build
     runs-on: macos-latest
     steps:
       - name: Checkout
