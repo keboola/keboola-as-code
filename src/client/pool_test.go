@@ -2,6 +2,7 @@ package client
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/go-resty/resty/v2"
@@ -303,4 +304,34 @@ func TestWaitForSubRequestChain(t *testing.T) {
 	// Earlier requests are waiting for the next one
 	// ... so callbacks are performed in reverse order, "1" is main request "2-11" sub requests
 	assert.Equal(t, []int{11, 10, 9, 8, 7, 6, 5, 4, 3, 2}, invokeOrder)
+}
+
+func TestPoolManyRequestsUnderLimit(t *testing.T) {
+	client, logger, _ := getMockedClientAndLogs(t, false)
+	httpmock.RegisterResponder(`GET`, `https://example.com`, httpmock.NewStringResponder(200, `test`))
+	pool := client.NewPool(logger)
+
+	count := REQUESTS_BUFFER_SIZE - 1
+	for i := 0; i < count; i++ {
+		pool.Send(client.NewRequest(`GET`, `https://example.com`))
+	}
+
+	assert.NoError(t, pool.StartAndWait())
+	assert.Equal(t, count, httpmock.GetCallCountInfo()["GET https://example.com"])
+}
+
+func TestPoolTooManyRequests(t *testing.T) {
+	client, logger, _ := getMockedClientAndLogs(t, false)
+	httpmock.RegisterResponder(`GET`, `https://example.com`, httpmock.NewStringResponder(200, `test`))
+	pool := client.NewPool(logger)
+
+	// Pool can handle it ...
+	for i := 0; i < REQUESTS_BUFFER_SIZE-1; i++ {
+		pool.Send(client.NewRequest(`GET`, `https://example.com`))
+	}
+
+	// This is too much
+	assert.PanicsWithError(t, fmt.Sprintf(`Too many (%d) queued reuests in HTTP pool.`, REQUESTS_BUFFER_SIZE), func() {
+		pool.Send(client.NewRequest(`GET`, `https://example.com`))
+	})
 }

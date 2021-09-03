@@ -23,7 +23,7 @@ const (
 	ResponseHeaderTimeout = 20 * time.Second
 	ExpectContinueTimeout = 2 * time.Second
 	KeepAlive             = 20 * time.Second
-	MaxIdleConns          = 64
+	MaxIdleConns          = 32
 	RetryCount            = 5
 	RetryWaitTime         = 100 * time.Millisecond
 	RetryWaitTimeMax      = 3 * time.Second
