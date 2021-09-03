@@ -132,7 +132,9 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 func CompileBinary(t *testing.T, projectDir string, tempDir string) string {
 	var stdout, stderr bytes.Buffer
 	binaryPath := filepath.Join(tempDir, "/bin_func_tests")
-	cmd := exec.Command(projectDir+"/scripts/compile.sh", binaryPath)
+	cmd := exec.Command("/usr/bin/make", "build-local")
+	cmd.Dir = projectDir
+	cmd.Env = append(os.Environ(), "TARGET_PATH="+binaryPath)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err := cmd.Run()

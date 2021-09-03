@@ -1,9 +1,7 @@
-project_name: "keboola-as-code"
-
-dist: target
+project_name: "kbc"
+dist: 'target'
 builds:
   - main: "./src/main.go"
-    id: kbc
     binary: "kbc"
     goos: ["linux", "darwin", "windows"]
     goarch: ["amd64", "arm", "arm64"]
@@ -15,37 +13,18 @@ builds:
       - -X keboola-as-code/src/build.BuildVersion={{ if index .Env "TARGET_VERSION"  }}{{ .Env.TARGET_VERSION }}{{ else }}dev{{ end }}
       - -X keboola-as-code/src/build.BuildDate={{.Date}}
       - -X keboola-as-code/src/build.GitCommit={{.Commit}}
-    ignore:
-      - goos: windows
-        goarch: arm64
+    hooks:
+      # Copy binary to TARGET_PATH if set
+      post: '{{ if index .Env "TARGET_PATH"  }}cp "{{ .Path }}" "{{ .Env.TARGET_PATH }}"{{ else }}true{{ end }}'
 
 changelog:
-  # Set it to true if you wish to skip the changelog generation.
-  # This may result in an empty release notes on GitHub/GitLab/Gitea.
   skip: true
 
 archives:
-  - format_overrides:
-      - goos: "windows"
-        format: "zip"
-    id: kbc
-    # dont package README and LICENSE files to the release archive
-    files:
+  - files:
       - none*
-    builds:
-      - kbc
-    name_template: "kbc-v{{ .Version }}-{{ .Os }}_{{ .Arch }}"
-    replacements:
-      amd64: 64-bit
-      "386": 32-bit
-      darwin: macOS
-      linux: linux
+    format: zip
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 
 snapshot:
-  # Allows you to change the name of the generated snapshot
-  #
-  # Note that some pipes require this to be semantic version compliant (nfpm,
-  # for example).
-  #
-  # Default is `{{ .Version }}-SNAPSHOT-{{.ShortCommit}}`.
-  name_template: "{{ incpatch .Version }}-devel"
+  name_template: '{{ if index .Env "SNAPSHOT"  }}{{ .Env.SNAPSHOT }}{{ else }}dev{{ end }}'

@@ -7,6 +7,10 @@ build-local:
 
 release:
 	goreleaser release --rm-dist
+
+release-local:
+	goreleaser release --rm-dist --snapshot --skip-publish
+
 tests:
 	TEST_VERBOSE=false ./scripts/tests.sh
 

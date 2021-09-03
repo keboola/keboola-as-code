@@ -1,4 +1,4 @@
-FROM golang:1.16-buster
+FROM golang:1.17-buster
 
 RUN echo 'deb [trusted=yes] https://repo.goreleaser.com/apt/ /' | tee /etc/apt/sources.list.d/goreleaser.list
 RUN apt-get update -y && \
