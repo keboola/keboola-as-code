@@ -45,20 +45,16 @@ jobs:
       - set_version
     runs-on: ubuntu-latest
     steps:
-      -
-        name: Check out the repo
+      - name: Check out the repo
         uses: actions/checkout@v2
-      -
-        name: Set up Docker Buildx
+      - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
-      -
-        name: Login to DockerHub
+      - name: Login to DockerHub
         uses: docker/login-action@v1
         with:
           username: ${{ env.DOCKERHUB_USER }}
           password: ${{ env.DOCKERHUB_TOKEN }}
-      -
-        name: Build and push
+      - name: Build and push
         id: docker_build
         uses: docker/build-push-action@v2
         with:
@@ -112,6 +108,11 @@ jobs:
           name: build-cache
           path: /tmp/go-cache.zip
           retention-days: 1
+      - name: Upload binary artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: darwin-binaries
+          path: target/*amd64/darwin/kbc
 
   release:
     needs:
@@ -136,7 +137,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   release-macos:
     needs:
-      - Build
+      - cross-compile
     runs-on: macos-latest
     steps:
       - name: Checkout
@@ -145,7 +146,7 @@ jobs:
       - name: Download-Binaries
         uses: actions/download-artifact@v2
         with:
-          name: binaries
+          name: darwin-binaries
           path: release/
 
       - name: Import Code-Signing Certificates
@@ -176,9 +177,9 @@ jobs:
           gon -log-level=debug -log-json ./gon.json
       - name: Zip up release directory
         run: |
-          zip -r darwin.zip release/darwin
+          zip -r darwin.zip release
       - name: upload binary artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: darwin
+          name: darwin.zip
           path: darwin.zip
