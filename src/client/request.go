@@ -87,11 +87,28 @@ func (r *Request) Send() *Request {
 	return r
 }
 
+func (r *Request) MarkSent() {
+	r.lock.Lock()
+	r.sent = true
+	r.lock.Unlock()
+}
+
 func (r *Request) IsSent() bool {
+	r.lock.Lock()
+	defer r.lock.Unlock()
 	return r.sent
 }
 
+func (r *Request) MarkDone(response *Response) {
+	r.lock.Lock()
+	r.Response = response
+	r.done = true
+	r.lock.Unlock()
+}
+
 func (r *Request) IsDone() bool {
+	r.lock.Lock()
+	defer r.lock.Unlock()
 	return r.done
 }
 
@@ -136,7 +153,7 @@ func (r *Request) isWaiting() bool {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	for _, subRequest := range r.waitingFor {
-		if !subRequest.done {
+		if !subRequest.IsDone() {
 			return true
 		}
 	}
