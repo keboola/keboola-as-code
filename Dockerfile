@@ -1,8 +1,7 @@
 FROM golang:1.17-buster
 
-RUN echo 'deb [trusted=yes] https://repo.goreleaser.com/apt/ /' | tee /etc/apt/sources.list.d/goreleaser.list
 RUN apt-get update -y && \
-    apt-get install -y jq time zip git binutils-common goreleaser
+    apt-get install -y jq time zip git binutils-common
 
 ENV HOME=/tmp/home
 ENV GOPATH=/tmp/go
@@ -18,6 +17,13 @@ RUN curl --silent "https://api.github.com/repos/kyoh86/richgo/releases/latest" |
 
 # Install linter
 RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b /usr/local/bin v1.42.0
+
+# Install goreleaser
+RUN curl --silent "https://api.github.com/repos/goreleaser/goreleaser/releases/latest" | \
+    jq -r '.assets[] | select(.name | endswith("Linux_x86_64.tar.gz")).browser_download_url' | \
+    wget -i - -O - | \
+    tar -xz -C /usr/local/bin goreleaser && \
+    chmod +x /usr/local/bin/goreleaser
 
 RUN rm -rf /tmp/* && \
     mkdir -p /tmp/home && \
