@@ -1,6 +1,15 @@
 name: GitHub Actions
 on: [ push ]
 env:
+  # Dev docker image, must be same as in docker-compose.yml
+  IMAGE: keboolabot/keboola-as-code-dev
+  IMAGE_TAG: ${{ github.sha }}
+
+  # DockerHub login
+  DOCKERHUB_USER: "keboolabot"
+  DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+  # Test project in KBC
   TEST_PROJECT_ID: 8614
   TEST_PROJECT_NAME: keboola-as-code-tests
   TEST_KBC_STORAGE_API_HOST: connection.keboola.com
@@ -8,7 +17,60 @@ env:
   TEST_KBC_STORAGE_API_TOKEN_MASTER: ${{ secrets.TEST_KBC_STORAGE_API_TOKEN_MASTER }}
   TEST_KBC_STORAGE_API_TOKEN_EXPIRED: ${{ secrets.TEST_KBC_STORAGE_API_TOKEN_EXPIRED }}
 jobs:
-  Build:
+  set_version:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.set_version.outputs.tag }}
+      is_semantic_tag: ${{ steps.set_version.outputs.is_semantic_tag }}
+      version: ${{ steps.set_version.outputs.version }}
+    steps:
+      - name: Set version
+        id: set_version
+        run: |
+          TAG="${GITHUB_REF##*/}"
+          IS_SEMANTIC_TAG=$(echo "$TAG" | grep -q '^v\?[0-9]\+\.[0-9]\+\.[0-9]\+$' && echo true || echo false)
+          if [[ "${GITHUB_REF}" == refs/tags/* ]];
+          then
+            export TARGET_VERSION=${GITHUB_REF/refs\/tags\//}
+          else
+            export TARGET_VERSION="dev"
+          fi
+          echo "Tag = '$TAG', is semantic tag = '$IS_SEMANTIC_TAG', target version = '$TARGET_VERSION'"
+          echo "::set-output name=tag::$TAG"
+          echo "::set-output name=is_semantic_tag::$IS_SEMANTIC_TAG"
+          echo "::set-output name=version::$TARGET_VERSION"
+
+  build_image:
+    needs:
+      - set_version
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Check out the repo
+        uses: actions/checkout@v2
+      -
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      -
+        name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ env.DOCKERHUB_USER }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
+      -
+        name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: ${{ env.IMAGE }}:${{ env.IMAGE_TAG }}
+          cache-from: type=registry,ref=${{ env.IMAGE }}:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE }}:buildcache,mode=max
+
+  tests:
+    needs:
+      - set_version
+      - build_image
     # only one parallel job allowed - used shared testing project
     concurrency:
       group: ci
@@ -17,31 +79,58 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v2
-      - name: Print Docker version
-        run: |
-          docker -v
-      - name: Set version
-        run: |
-          if [[ "${GITHUB_REF}" == refs/tags/* ]];
-          then
-            export TARGET_VERSION=${GITHUB_REF/refs\/tags\//}
-          else
-            export TARGET_VERSION="dev"
-          fi
-          echo ${TARGET_VERSION}
-          echo "TARGET_VERSION=${TARGET_VERSION}" >> $GITHUB_ENV
-      - name: Build dev Docker image
-        run: |
-          docker-compose build
+      - name: Load Docker image
+        uses: ./.github/actions/load-image
       - name: Tests
-        run: |
-          docker-compose run --rm -u "$UID:$GID" dev make ci
-      - name: Compile
-        run: |
-          docker-compose run --rm -u "$UID:$GID" dev make build
-      - name: Compile and Release
-        if: startsWith(github.ref, 'refs/tags/')
-        run: |
-          docker-compose run --rm -u "$UID:$GID" -e GITHUB_TOKEN -e TARGET_VERSION dev make release
+        run: docker-compose run --rm -u "$UID:$GID" -e TARGET_VERSION dev make ci
         env:
+          TARGET_VERSION: ${{ needs.set_version.outputs.version }}
+
+  cross-compile:
+    needs:
+      - set_version
+      - build_image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
+      - name: Load Docker image
+        uses: ./.github/actions/load-image
+      - name: Cross compile
+        run: |
+          mkdir -p /tmp/go-cache
+          docker-compose run --rm -u "$UID:$GID" -e TARGET_VERSION -v /tmp/go-cache:/tmp/go-cache dev make build
+        env:
+          TARGET_VERSION: ${{ needs.set_version.outputs.version }}
+      - name: Zip build cache
+        #if: startsWith(github.ref, 'refs/tags/') && needs.set_version.outputs.is_semantic_tag == 'true'
+        run: zip -q -4 -r /tmp/go-cache.zip /tmp/go-cache
+      - name: Upload build cache
+        #if: startsWith(github.ref, 'refs/tags/') && needs.set_version.outputs.is_semantic_tag == 'true'
+        uses: actions/upload-artifact@v2
+        with:
+          name: build-cache
+          path: /tmp/go-cache.zip
+          retention-days: 1
+
+  release:
+    needs:
+      - set_version
+      - build_image
+      - tests
+      - cross-compile
+    runs-on: ubuntu-latest
+    #if: startsWith(github.ref, 'refs/tags/') && needs.set_version.outputs.is_semantic_tag == 'true'
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
+      - name: Load Docker image
+        uses: ./.github/actions/load-image
+      - name: Load build cache
+        continue-on-error: true
+        uses: ./.github/actions/load-build-cache
+      - name: Release
+        run: docker-compose run --rm -u "$UID:$GID" -e GITHUB_TOKEN -e TARGET_VERSION -v /tmp/go-cache:/tmp/go-cache dev make release-local
+        env:
+          TARGET_VERSION: ${{ needs.set_version.outputs.version }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

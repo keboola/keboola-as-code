@@ -23,8 +23,8 @@ func TestHostnameNotFound(t *testing.T) {
 	token, err := api.GetToken("mytoken")
 	assert.Nil(t, token)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), `Get "https://foo.bar.com/v2/storage/tokens/verify": dial tcp: lookup foo.bar.com: No address associated with hostname`)
-	assert.Regexp(t, `DEBUG  HTTP-ERROR\tGet "https://foo.bar.com/v2/storage/tokens/verify": dial tcp: lookup foo.bar.com: No address associated with hostname`, logs.String())
+	assert.Contains(t, err.Error(), `Get "https://foo.bar.com/v2/storage/tokens/verify": dial tcp`)
+	assert.Regexp(t, `DEBUG  HTTP-ERROR\tGet "https://foo.bar.com/v2/storage/tokens/verify": dial tcp`, logs.String())
 }
 
 func TestInvalidHost(t *testing.T) {

@@ -1,11 +1,10 @@
 version: '3'
 services:
   dev:
-    image: keboola/keboola-as-code-dev
+    image: keboolabot/keboola-as-code-dev
     build: .
     volumes:
       - ./:/code:z
-      - ./go:/go:z
     environment:
       - TEST_PROJECT_ID
       - TEST_PROJECT_NAME
