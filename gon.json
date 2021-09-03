@@ -1,6 +1,6 @@
 {
     "source": [
-        "./release/macos/kbc"
+        "./release/darwin/kbc"
     ],
     "bundle_id": "com.keboola.kbc",
     "apple_id": {
@@ -10,10 +10,10 @@
         "application_identity": "Developer ID Application: Tomas Netrval"
     },
     "dmg": {
-        "output_path": "./release/darwin/kbc.dmg",
+        "output_path": "./release/kbc.dmg",
         "volume_name": "kbc"
     },
     "zip": {
-        "output_path": "./release/darwin/hello-github.zip"
+        "output_path": "./release/kbc.zip"
     }
 }

@@ -161,11 +161,12 @@ jobs:
           brew tap mitchellh/gon
           brew install mitchellh/gon/gon
           brew install tree
-          tree
+          tree target
+          tree release
           mkdir release/darwin
-          tree
+          tree release
           cp release/*amd64/darwin/kbc release/darwin
-          tree
+          tree release
 
       - name: Sign the mac binaries with Gon
         env:
