@@ -1,10 +1,27 @@
 project_name: "kbc"
-dist: 'target'
+dist: "target"
 builds:
   - main: "./src/main.go"
+    id: kbc
     binary: "kbc"
-    goos: ["linux", "darwin", "windows"]
+    goos: ["linux", "windows"]
     goarch: ["amd64", "arm", "arm64"]
+    goarm: ["6"]
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w
+      - -X keboola-as-code/src/build.BuildVersion={{ if index .Env "TARGET_VERSION"  }}{{ .Env.TARGET_VERSION }}{{ else }}dev{{ end }}
+      - -X keboola-as-code/src/build.BuildDate={{.Date}}
+      - -X keboola-as-code/src/build.GitCommit={{.Commit}}
+    hooks:
+      # Copy binary to TARGET_PATH if set
+      post: '{{ if index .Env "TARGET_PATH"  }}cp "{{ .Path }}" "{{ .Env.TARGET_PATH }}"{{ else }}true{{ end }}'
+  - main: "./src/main.go"
+    id: "darwin"
+    binary: "kbc"
+    goos: ["darwin"]
+    goarch: ["amd64", "arm64"]
     goarm: ["6"]
     env:
       - CGO_ENABLED=0
@@ -23,6 +40,8 @@ changelog:
 archives:
   - files:
       - none*
+    builds:
+      - kbc
     format: zip
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 
