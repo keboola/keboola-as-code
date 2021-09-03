@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"sort"
 
+	"go.uber.org/zap"
+
 	"keboola-as-code/src/diff"
 	"keboola-as-code/src/log"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
-
-	"go.uber.org/zap"
 )
 
-// DiffPlan - plan based on the diff results
+// DiffPlan - plan based on the diff results.
 type DiffPlan struct {
 	*state.State
 	name                string
@@ -66,7 +66,7 @@ func (p *DiffPlan) Log(writer *log.WriteCloser) {
 func (p *DiffPlan) Validate() error {
 	errors := utils.NewMultiError()
 	for _, action := range p.actions {
-		if err := action.validate(p.State); err != nil {
+		if err := action.validate(); err != nil {
 			errors.Append(err)
 		}
 	}

@@ -7,12 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"keboola-as-code/src/utils"
-
 	"github.com/go-resty/resty/v2"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
+
+	"keboola-as-code/src/utils"
 )
 
 func TestNewHttpClient(t *testing.T) {
@@ -145,6 +145,8 @@ DEBUG  HTTP	GET https://example.com | 200 | %s
 }
 
 func getMockedClientAndLogs(t *testing.T, verbose bool) (*Client, *zap.SugaredLogger, *utils.Writer) {
+	t.Helper()
+
 	// Create
 	logger, out := utils.NewDebugLogger()
 	c := NewClient(context.Background(), logger, verbose)

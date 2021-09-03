@@ -5,13 +5,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestDiffOnlyInLocal(t *testing.T) {
@@ -248,6 +248,8 @@ func TestDiffNotEqualConfig(t *testing.T) {
 }
 
 func createProjectState(t *testing.T) *state.State {
+	t.Helper()
+
 	projectDir := t.TempDir()
 	m, err := manifest.NewManifest(1, "connection.keboola.com", projectDir, "bar")
 	if err != nil {

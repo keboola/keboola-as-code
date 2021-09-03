@@ -3,9 +3,9 @@ package cli
 import (
 	"fmt"
 
-	"keboola-as-code/src/manifest"
-
 	"github.com/spf13/cobra"
+
+	"keboola-as-code/src/manifest"
 )
 
 const statusShortDescription = `Print info about project directory`

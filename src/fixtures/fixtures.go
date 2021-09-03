@@ -7,11 +7,11 @@ import (
 	"runtime"
 	"testing"
 
-	"keboola-as-code/src/model"
-	"keboola-as-code/src/utils"
-
 	"github.com/iancoleman/orderedmap"
 	"github.com/stretchr/testify/assert"
+
+	"keboola-as-code/src/model"
+	"keboola-as-code/src/utils"
 )
 
 type ProjectSnapshot struct {
@@ -56,7 +56,7 @@ type StateFile struct {
 	Branches           []*BranchState `json:"branches" validate:"required"`
 }
 
-// ToModel maps fixture to model.Branch
+// ToModel maps fixture to model.Branch.
 func (b *Branch) ToModel(defaultBranch *model.Branch) *model.Branch {
 	if b.IsDefault {
 		return defaultBranch
@@ -69,7 +69,7 @@ func (b *Branch) ToModel(defaultBranch *model.Branch) *model.Branch {
 	return branch
 }
 
-// ToModel maps fixture to model.Config
+// ToModel maps fixture to model.Config.
 func (c *Config) ToModel() *model.ConfigWithRows {
 	config := &model.ConfigWithRows{Config: &model.Config{}}
 	config.ComponentId = c.ComponentId
@@ -86,7 +86,7 @@ func (c *Config) ToModel() *model.ConfigWithRows {
 	return config
 }
 
-// ToModel maps fixture to model.Config
+// ToModel maps fixture to model.Config.
 func (r *ConfigRow) ToModel() *model.ConfigRow {
 	row := &model.ConfigRow{}
 	row.Name = r.Name
@@ -114,7 +114,7 @@ func LoadStateFile(path string) (*StateFile, error) {
 	stateFile := &StateFile{}
 	err := json.Unmarshal([]byte(data), stateFile)
 	if err != nil {
-		return nil, fmt.Errorf("cannot parse project state file \"%s\": %s", path, err)
+		return nil, fmt.Errorf("cannot parse project state file \"%s\": %w", path, err)
 	}
 
 	// Check if main branch defined
@@ -135,8 +135,11 @@ func LoadStateFile(path string) (*StateFile, error) {
 	return stateFile, nil
 }
 
-// LoadConfig loads config from the file
+// LoadConfig loads config from the file.
 func LoadConfig(t *testing.T, name string) *model.ConfigWithRows {
+	t.Helper()
+
+	// nolint: dogsled
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filepath.Dir(testFile)
 	path := filepath.Join(testDir, "configs", name+".json")

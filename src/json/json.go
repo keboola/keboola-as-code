@@ -2,12 +2,13 @@ package json
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 )
 
-// ReadFile reads JSON file to target data
+// ReadFile reads JSON file to target data.
 func ReadFile(dir string, relPath string, target interface{}, errPrefix string) error {
 	path := filepath.Join(dir, relPath)
 
@@ -23,12 +24,12 @@ func ReadFile(dir string, relPath string, target interface{}, errPrefix string) 
 	// Decode meta file
 	err = Decode(content, target)
 	if err != nil {
-		return fmt.Errorf("%s file \"%s\" is invalid:\n\t- %s", errPrefix, relPath, err)
+		return fmt.Errorf("%s file \"%s\" is invalid:\n\t- %w", errPrefix, relPath, err)
 	}
 	return nil
 }
 
-// WriteFile writes JSON file from source data
+// WriteFile writes JSON file from source data.
 func WriteFile(dir string, relPath string, source interface{}, errPrefix string) error {
 	path := filepath.Join(dir, relPath)
 	data, err := Encode(source, true)
@@ -75,8 +76,7 @@ func MustEncodeString(v interface{}, pretty bool) string {
 }
 
 func Decode(data []byte, m interface{}) error {
-	err := json.Unmarshal(data, m)
-	if err != nil {
+	if err := json.Unmarshal(data, m); err != nil {
 		return processJsonError(err)
 	}
 	return nil
@@ -99,12 +99,15 @@ func MustDecodeString(data string, m interface{}) {
 }
 
 func processJsonError(err error) error {
-	switch err := err.(type) {
+	var typeError *json.UnmarshalTypeError
+	var syntaxError *json.SyntaxError
+
+	switch {
 	// Custom error message
-	case *json.UnmarshalTypeError:
-		return fmt.Errorf("key \"%s\" has invalid type \"%s\"", err.Field, err.Value)
-	case *json.SyntaxError:
-		return fmt.Errorf("%s, offset: %d", err, err.Offset)
+	case errors.As(err, &typeError):
+		return fmt.Errorf("key \"%s\" has invalid type \"%s\"", typeError.Field, typeError.Value)
+	case errors.As(err, &syntaxError):
+		return fmt.Errorf("%w, offset: %d", err, syntaxError.Offset)
 	default:
 		return err
 	}

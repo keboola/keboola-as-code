@@ -12,20 +12,20 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/shlex"
+	"github.com/otiai10/copy"
+	"github.com/stretchr/testify/assert"
+	"github.com/umisama/go-regexpcache"
+
 	"keboola-as-code/src/fixtures"
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
-
-	"github.com/google/shlex"
-	"github.com/otiai10/copy"
-	"github.com/stretchr/testify/assert"
-	"github.com/umisama/go-regexpcache"
 )
 
-// EnvTicketProvider allows you to generate new unique IDs via an ENV variable in the test
+// EnvTicketProvider allows you to generate new unique IDs via an ENV variable in the test.
 func CreateEnvTicketProvider(api *remote.StorageApi) utils.EnvProvider {
 	return func(name string) string {
 		name = strings.Trim(name, "%")
@@ -44,7 +44,7 @@ func CreateEnvTicketProvider(api *remote.StorageApi) utils.EnvProvider {
 	}
 }
 
-// TestFunctional runs one functional test per each sub-directory
+// TestFunctional runs one functional test per each sub-directory.
 func TestFunctional(t *testing.T) {
 	_, testFile, _, _ := runtime.Caller(0)
 	rootDir := filepath.Dir(testFile)
@@ -65,8 +65,9 @@ func TestFunctional(t *testing.T) {
 	}
 }
 
-// RunFunctionalTest runs one functional test
+// RunFunctionalTest runs one functional test.
 func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) {
+	t.Helper()
 	defer utils.ResetEnv(t, os.Environ())
 
 	// Clean working dir
@@ -128,8 +129,10 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	AssertExpectations(t, api, envProvider, testDir, workingDir, exitCode, strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()))
 }
 
-// CompileBinary compiles component to binary used in this test
+// CompileBinary compiles component to binary used in this test.
 func CompileBinary(t *testing.T, projectDir string, tempDir string) string {
+	t.Helper()
+
 	var stdout, stderr bytes.Buffer
 	binaryPath := filepath.Join(tempDir, "/bin_func_tests")
 	cmd := exec.Command("/usr/bin/make", "build-local")
@@ -137,9 +140,7 @@ func CompileBinary(t *testing.T, projectDir string, tempDir string) string {
 	cmd.Env = append(os.Environ(), "TARGET_PATH="+binaryPath)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	err := cmd.Run()
-
-	if err != nil {
+	if err := cmd.Run(); err != nil {
 		t.Fatalf("Compilation failed: %s\n%s\n%s\n", err, stdout.Bytes(), stderr.Bytes())
 	}
 
@@ -148,6 +149,7 @@ func CompileBinary(t *testing.T, projectDir string, tempDir string) string {
 
 // GetTestDirs returns list of all dirs in the root directory.
 func GetTestDirs(t *testing.T, root string) []string {
+	t.Helper()
 	var dirs []string
 
 	// Iterate over directory structure
@@ -197,6 +199,8 @@ func AssertExpectations(
 	stdout string,
 	stderr string,
 ) {
+	t.Helper()
+
 	// Compare expected values
 	expectedStdout := utils.ReplaceEnvsString(utils.GetFileContent(filepath.Join(testDir, "expected-stdout")), nil)
 	expectedStderr := utils.ReplaceEnvsString(utils.GetFileContent(filepath.Join(testDir, "expected-stderr")), nil)
@@ -275,5 +279,4 @@ func AssertExpectations(
 			"unexpected project state",
 		)
 	}
-
 }

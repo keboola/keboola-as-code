@@ -2,14 +2,13 @@ package client
 
 import (
 	"errors"
-	"net/url"
 	"testing"
-
-	"keboola-as-code/src/utils"
 
 	"github.com/go-resty/resty/v2"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+
+	"keboola-as-code/src/utils"
 )
 
 func TestEmpty(t *testing.T) {
@@ -50,10 +49,10 @@ func TestSubRequest(t *testing.T) {
 	successCounter := utils.NewSafeCounter(0)
 	responseCounter := utils.NewSafeCounter(0)
 	pool := client.NewPool(logger)
-	onResponse := func(response *Response) {
+	onResponse := func(*Response) {
 		responseCounter.Inc()
 	}
-	onError := func(response *Response) {
+	onError := func(*Response) {
 		assert.Fail(t, "error not expected")
 	}
 	var onSuccess ResponseCallback
@@ -128,7 +127,7 @@ func TestNetworkError(t *testing.T) {
 	pool.Request(client.NewRequest(resty.MethodGet, "https://example.com")).
 		OnSuccess(onSuccess).
 		Send()
-	assert.Equal(t, errors.New("network error"), pool.StartAndWait().(*url.Error).Unwrap())
+	assert.Contains(t, pool.StartAndWait().Error(), "network error")
 	assert.GreaterOrEqual(t, c.Get(), 10)
 	assert.GreaterOrEqual(t, httpmock.GetCallCountInfo()["GET https://example.com"], 10)
 }
@@ -171,7 +170,6 @@ func TestOnError(t *testing.T) {
 			pool.Request(client.NewRequest(resty.MethodGet, "https://example.com/error")).
 				OnSuccess(func(response *Response) {
 					assert.Fail(t, "error expected")
-
 				}).
 				OnError(func(response *Response) {
 					errorCaught = true
@@ -189,7 +187,7 @@ func TestOnError(t *testing.T) {
 	err := pool.StartAndWait()
 	assert.True(t, errorCaught)
 	assert.True(t, responseCaught)
-	assert.Equal(t, errors.New("network error"), err.(*url.Error).Unwrap())
+	assert.Contains(t, err.Error(), "network error")
 	assert.Equal(t, 1, httpmock.GetCallCountInfo()["GET https://example.com"])
 	assert.Equal(t, 1+RetryCount, httpmock.GetCallCountInfo()["GET https://example.com/error"])
 }

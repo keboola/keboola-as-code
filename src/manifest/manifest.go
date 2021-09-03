@@ -5,12 +5,12 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/iancoleman/orderedmap"
+
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
 	"keboola-as-code/src/validator"
-
-	"github.com/iancoleman/orderedmap"
 )
 
 const (
@@ -39,8 +39,7 @@ type Content struct {
 
 func NewManifest(projectId int, apiHost string, projectDir, metadataDir string) (*Manifest, error) {
 	m := newManifest(projectId, apiHost, projectDir, metadataDir)
-	err := m.validate()
-	if err != nil {
+	if err := m.validate(); err != nil {
 		return nil, err
 	}
 	return m, nil
@@ -278,7 +277,7 @@ func (m *Manifest) validate() error {
 	return nil
 }
 
-// sortRecords in manifest + ensure order of processing: branch, config, configRow
+// sortRecords in manifest + ensure order of processing: branch, config, configRow.
 func (m *Manifest) sortRecords() {
 	m.records.Sort(func(a *orderedmap.Pair, b *orderedmap.Pair) bool {
 		return a.Value().(model.Record).SortKey(m.SortBy) < b.Value().(model.Record).SortKey(m.SortBy)

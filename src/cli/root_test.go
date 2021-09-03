@@ -8,11 +8,11 @@ import (
 	"strings"
 	"testing"
 
-	"keboola-as-code/src/interaction"
-	"keboola-as-code/src/utils"
-
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
+
+	"keboola-as-code/src/interaction"
+	"keboola-as-code/src/utils"
 )
 
 func TestRootSubCommands(t *testing.T) {
@@ -91,7 +91,7 @@ func TestExecute(t *testing.T) {
 
 	// Execute
 	root.logger = logger
-	root.Execute()
+	assert.Equal(t, 0, root.Execute())
 	assert.Contains(t, out.String(), "Available Commands:")
 }
 

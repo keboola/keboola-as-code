@@ -1,3 +1,4 @@
+//nolint:gochecknoglobals
 package build
 
 const DevVersionValue = "dev"

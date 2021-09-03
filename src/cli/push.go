@@ -1,13 +1,13 @@
 package cli
 
 import (
+	"github.com/spf13/cobra"
+
 	"keboola-as-code/src/diff"
 	"keboola-as-code/src/event"
 	"keboola-as-code/src/log"
 	"keboola-as-code/src/plan"
 	"keboola-as-code/src/remote"
-
-	"github.com/spf13/cobra"
 )
 
 const pushShortDescription = `Push configurations to the Keboola Connection project`

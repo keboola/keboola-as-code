@@ -5,11 +5,11 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"keboola-as-code/src/components"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/utils"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestLocalDeleteModel(t *testing.T) {

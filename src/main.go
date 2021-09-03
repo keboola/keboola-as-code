@@ -11,5 +11,5 @@ func main() {
 	// Run command
 	prompt := interaction.NewPrompt(os.Stdin, os.Stdout, os.Stderr)
 	cmd := cli.NewRootCommand(os.Stdin, os.Stdout, os.Stderr, prompt)
-	cmd.Execute()
+	os.Exit(cmd.Execute())
 }

@@ -10,16 +10,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/spf13/cast"
+	"github.com/stretchr/testify/assert"
+
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/fixtures"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
-
-	"github.com/spf13/cast"
-	"github.com/stretchr/testify/assert"
 )
 
-// testProject manages cleanup and setup of the test project
+// testProject manages cleanup and setup of the test project.
 type testProject struct {
 	t             *testing.T
 	lock          *sync.Mutex
@@ -31,13 +31,18 @@ type testProject struct {
 }
 
 func SetStateOfTestProject(t *testing.T, api *StorageApi, projectStateFile string) {
+	t.Helper()
+
 	p := newTestProject(t, api, projectStateFile)
 	p.Clear()
 	p.InitState()
 }
 
-// newTestProject creates testProject and loads state from the stateFilePath
+// newTestProject creates testProject and loads state from the stateFilePath.
 func newTestProject(t *testing.T, api *StorageApi, stateFilePath string) *testProject {
+	t.Helper()
+
+	// nolint: dogsled
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filepath.Dir(testFile)
 	if !filepath.IsAbs(stateFilePath) {
@@ -63,13 +68,13 @@ func newTestProject(t *testing.T, api *StorageApi, stateFilePath string) *testPr
 
 	// Create
 	p := &testProject{t, &sync.Mutex{}, testDir, stateFile, api, defaultBranch, nil}
-	p.log("Initializing test project \"%s\", id: \"%d\".", p.api.ProjectName(), p.api.ProjectId())
+	p.logf("Initializing test project \"%s\", id: \"%d\".", p.api.ProjectName(), p.api.ProjectId())
 	return p
 }
 
-// Clear deletes all project branches (except default) and all configurations
+// Clear deletes all project branches (except default) and all configurations.
 func (p *testProject) Clear() {
-	p.log("Clearing project ...")
+	p.logf("Clearing project ...")
 	startTime := time.Now()
 
 	// Delete all configs in default branch, it cannot be deleted
@@ -92,13 +97,13 @@ func (p *testProject) Clear() {
 		}
 	}
 
-	p.log("Test project cleared | %s", time.Since(startTime))
+	p.logf("Test project cleared | %s", time.Since(startTime))
 }
 
-// InitState creates branches and configurations according stateFile
+// InitState creates branches and configurations according stateFile.
 func (p *testProject) InitState() {
 	startTime := time.Now()
-	p.log("Setting project state ...")
+	p.logf("Setting project state ...")
 
 	// Create configs in default branch, they will be auto-copied to dev-branches
 	pool := p.api.NewPool()
@@ -122,7 +127,7 @@ func (p *testProject) InitState() {
 			p.api.
 				CreateBranchRequest(branch).
 				OnSuccess(func(response *client.Response) {
-					p.log(`crated branch "%s", id: "%d"`, branch.Name, branch.Id)
+					p.logf(`crated branch "%s", id: "%d"`, branch.Name, branch.Id)
 					p.setEnv(fmt.Sprintf("TEST_BRANCH_%s_ID", branch.Name), cast.ToString(branch.Id))
 				}).
 				Send()
@@ -142,20 +147,20 @@ func (p *testProject) InitState() {
 
 	// Log ENVs
 	for _, env := range p.envs {
-		p.log(fmt.Sprintf(`Set ENV "%s"`, env))
+		p.logf(fmt.Sprintf(`Set ENV "%s"`, env))
 	}
 
 	// Done
-	p.log("Project state set | %s", time.Since(startTime))
+	p.logf("Project state set | %s", time.Since(startTime))
 }
 
-// CreateConfigsInBranch loads configs from files and creates them in the test project
+// CreateConfigsInBranch loads configs from files and creates them in the test project.
 func (p *testProject) CreateConfigsInBranch(pool *client.Pool, names []string, branch *model.Branch, envPrefix string) {
 	for _, name := range names {
 		config := fixtures.LoadConfig(p.t, name)
 		config.BranchId = branch.Id
 		if request, err := p.api.CreateConfigRequest(config); err == nil {
-			p.log("creating config \"%s/%s/%s\"", branch.Name, config.ComponentId, config.Name)
+			p.logf("creating config \"%s/%s/%s\"", branch.Name, config.ComponentId, config.Name)
 			pool.
 				Request(request).
 				OnSuccess(func(response *client.Response) {
@@ -171,7 +176,7 @@ func (p *testProject) CreateConfigsInBranch(pool *client.Pool, names []string, b
 	}
 }
 
-// setEnv set ENV variable, all ENVs are logged at the end of InitState method
+// setEnv set ENV variable, all ENVs are logged at the end of InitState method.
 func (p *testProject) setEnv(key string, value string) {
 	// Normalize key
 	key = regexp.MustCompile(`[^a-zA-Z0-9]+`).ReplaceAllString(key, "_")
@@ -187,9 +192,9 @@ func (p *testProject) setEnv(key string, value string) {
 	p.envs = append(p.envs, fmt.Sprintf("%s=%s", key, value))
 }
 
-func (p *testProject) log(format string, a ...interface{}) {
+func (p *testProject) logf(format string, a ...interface{}) {
 	if utils.TestIsVerbose() {
 		a = append([]interface{}{p.t.Name()}, a...)
-		fmt.Println(fmt.Sprintf("Fixtures[%s]: "+format, a...))
+		p.t.Logf("Fixtures[%s]: "+format, a...)
 	}
 }

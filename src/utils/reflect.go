@@ -5,9 +5,9 @@ import (
 	"reflect"
 	"strings"
 
-	"keboola-as-code/src/json"
-
 	"github.com/iancoleman/orderedmap"
+
+	"keboola-as-code/src/json"
 )
 
 type StructField struct {

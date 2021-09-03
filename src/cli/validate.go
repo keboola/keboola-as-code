@@ -1,11 +1,11 @@
 package cli
 
 import (
+	"github.com/spf13/cobra"
+
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
-
-	"github.com/spf13/cobra"
 )
 
 const validateShortDescription = `Validate the local project directory`
@@ -55,10 +55,8 @@ func validateCommand(root *rootCommand) *cobra.Command {
 			projectState, ok := state.LoadState(stateOptions)
 			if ok {
 				logger.Debugf("Project local state has been successfully loaded.")
-			} else {
-				if projectState.LocalErrors().Len() > 0 {
-					return utils.PrefixError("project local state is invalid", projectState.LocalErrors())
-				}
+			} else if projectState.LocalErrors().Len() > 0 {
+				return utils.PrefixError("project local state is invalid", projectState.LocalErrors())
 			}
 
 			// Validate schemas and encryption

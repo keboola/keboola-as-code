@@ -7,7 +7,7 @@ import (
 	"keboola-as-code/src/utils"
 )
 
-// NewProjectSnapshot - to validate final project state in tests
+// NewProjectSnapshot - to validate final project state in tests.
 func NewProjectSnapshot(s *State) (*fixtures.ProjectSnapshot, error) {
 	project := &fixtures.ProjectSnapshot{}
 

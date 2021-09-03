@@ -14,7 +14,7 @@ const (
 	SortByPath = "path"
 )
 
-// Record - manifest record
+// Record - manifest record.
 type Record interface {
 	Kind() Kind                 // eg. branch, config, config row -> used in logs
 	Level() int                 // hierarchical level, "1" for branch, "2" for config, ...
@@ -151,7 +151,6 @@ func (b BranchManifest) SortKey(sort string) string {
 	} else {
 		return b.BranchKey.String()
 	}
-
 }
 
 func (c ConfigManifest) SortKey(sort string) string {
@@ -160,7 +159,6 @@ func (c ConfigManifest) SortKey(sort string) string {
 	} else {
 		return c.ConfigKey.String()
 	}
-
 }
 
 func (r ConfigRowManifest) SortKey(sort string) string {
@@ -169,5 +167,4 @@ func (r ConfigRowManifest) SortKey(sort string) string {
 	} else {
 		return r.ConfigRowKey.String()
 	}
-
 }

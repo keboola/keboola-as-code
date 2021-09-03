@@ -28,14 +28,14 @@ func MustGetEnv(key string) string {
 }
 
 func MustSetEnv(key string, value string) {
-	err := os.Setenv(key, value)
-	if err != nil {
-		panic(fmt.Errorf("cannot set env variable \"%s\": %s", key, err))
+	if err := os.Setenv(key, value); err != nil {
+		panic(fmt.Errorf("cannot set env variable \"%s\": %w", key, err))
 	}
 }
 
 // ResetEnv used from https://golang.org/src/os/env_test.go
 func ResetEnv(t *testing.T, origEnv []string) {
+	t.Helper()
 	os.Clearenv()
 	for _, pair := range origEnv {
 		i := strings.Index(pair[1:], "=") + 1
@@ -58,7 +58,7 @@ func ReplaceEnvsFile(path string, provider EnvProvider) {
 	str := GetFileContent(path)
 	str = ReplaceEnvsString(str, provider)
 	if err := os.WriteFile(path, []byte(str), 0655); err != nil {
-		panic(fmt.Errorf("cannot write to file \"%s\": %s", path, err))
+		panic(fmt.Errorf("cannot write to file \"%s\": %w", path, err))
 	}
 }
 
@@ -84,7 +84,7 @@ func ReplaceEnvsDir(root string, provider EnvProvider) {
 	})
 
 	if err != nil {
-		panic(fmt.Errorf("cannot walk over dir \"%s\": %s", root, err))
+		panic(fmt.Errorf("cannot walk over dir \"%s\": %w", root, err))
 	}
 }
 
@@ -108,7 +108,7 @@ func TestProjectId() int {
 	str := MustGetEnv("TEST_PROJECT_ID")
 	value, err := strconv.Atoi(str)
 	if err != nil {
-		panic(fmt.Errorf("invalid integer \"%s\": %s", str, err))
+		panic(fmt.Errorf("invalid integer \"%s\": %w", str, err))
 	}
 	return value
 }

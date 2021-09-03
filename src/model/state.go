@@ -1,5 +1,7 @@
 package model
 
+import "fmt"
+
 type ObjectState interface {
 	Level() int       // hierarchical level, "1" for branch, "2" for config, ...
 	Key() Key         // unique key for all objects
@@ -15,6 +17,7 @@ type ObjectState interface {
 	HasRemoteState() bool
 	SetRemoteState(object Object)
 	RemoteState() Object
+	LocalOrRemoteState() Object
 }
 
 type RecordProvider interface {
@@ -133,6 +136,39 @@ func (c *ConfigState) RemoteState() Object {
 
 func (r *ConfigRowState) RemoteState() Object {
 	return r.Remote
+}
+
+func (b *BranchState) LocalOrRemoteState() Object {
+	switch {
+	case b.HasLocalState():
+		return b.LocalState()
+	case b.HasRemoteState():
+		return b.RemoteState()
+	default:
+		panic(fmt.Errorf("object Local or Remote state must be set"))
+	}
+}
+
+func (c *ConfigState) LocalOrRemoteState() Object {
+	switch {
+	case c.HasLocalState():
+		return c.LocalState()
+	case c.HasRemoteState():
+		return c.RemoteState()
+	default:
+		panic(fmt.Errorf("object Local or Remote state must be set"))
+	}
+}
+
+func (r *ConfigRowState) LocalOrRemoteState() Object {
+	switch {
+	case r.HasLocalState():
+		return r.LocalState()
+	case r.HasRemoteState():
+		return r.RemoteState()
+	default:
+		panic(fmt.Errorf("object Local or Remote state must be set"))
+	}
 }
 
 func (b *BranchState) HasManifest() bool {

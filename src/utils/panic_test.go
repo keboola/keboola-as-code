@@ -27,7 +27,6 @@ func TestProcessPanicUserError(t *testing.T) {
 	assert.Contains(t, writer.String(), "DEBUG  User error panic: test")
 	assert.Contains(t, writer.String(), "DEBUG  Trace:")
 	assert.Contains(t, writer.String(), "Details can be found in the log file \"/foo/bar.log\".")
-
 }
 
 func TestProcessPanicUnexpected(t *testing.T) {

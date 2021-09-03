@@ -5,13 +5,12 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
-
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/iancoleman/orderedmap"
 )
 
 type typeName string
@@ -137,10 +136,8 @@ func (d *Differ) doDiff(state model.ObjectState) (*Result, error) {
 		localValues = localValues.Elem()
 	}
 
-	// Compare Config/ConfigRow configuration content ("orderedmap" type) as string
-	orderedMapTransform := cmp.Transformer("orderedmap1", func(m *orderedmap.OrderedMap) map[string]interface{} {
-		return utils.OrderedMapToMap(m)
-	})
+	// Compare Config/ConfigRow configuration content ("orderedmap" type) as map (keys order doesn't matter)
+	orderedMapTransform := cmp.Transformer("orderedmap1", utils.OrderedMapToMap)
 
 	// Compare strings by lines
 	strByLine := cmpopts.AcyclicTransformer("strByLine", func(s string) []string {

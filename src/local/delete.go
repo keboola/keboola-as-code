@@ -11,7 +11,7 @@ import (
 	"keboola-as-code/src/utils"
 )
 
-// DeleteModel from manifest and disk
+// DeleteModel from manifest and disk.
 func (m *Manager) DeleteModel(record model.Record) error {
 	errors := utils.NewMultiError()
 
@@ -36,7 +36,7 @@ func (m *Manager) DeleteModel(record model.Record) error {
 	return errors.ErrorOrNil()
 }
 
-// DeleteInvalidObjects from disk, eg. if pull --force used
+// DeleteInvalidObjects from disk, eg. if pull --force used.
 func (m *Manager) DeleteInvalidObjects() error {
 	errors := utils.NewMultiError()
 	records := m.manifest.GetRecords()

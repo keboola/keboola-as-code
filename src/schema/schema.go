@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/iancoleman/orderedmap"
+	"github.com/xeipuuv/gojsonschema"
+
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
-
-	"github.com/iancoleman/orderedmap"
-	"github.com/xeipuuv/gojsonschema"
 )
 
 func ValidateSchemas(projectState *state.State) error {

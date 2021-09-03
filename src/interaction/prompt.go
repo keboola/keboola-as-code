@@ -50,10 +50,11 @@ func NewPrompt(stdin terminal.FileReader, stdout terminal.FileWriter, stderr ter
 	}
 }
 
+// nolint: gochecknoinits
 func init() {
 	// Workaround for bug in 3rd party lib
 	// https://github.com/AlecAivazis/survey/issues/336
-	survey.MultilineQuestionTemplate = survey.MultilineQuestionTemplate + `{{"\n"}}`
+	survey.MultilineQuestionTemplate += `{{"\n"}}`
 }
 
 func (p *Prompt) Confirm(c *Confirm) bool {
@@ -77,7 +78,6 @@ func (p *Prompt) Confirm(c *Confirm) bool {
 }
 
 func (p *Prompt) Ask(q *Question) (result string, ok bool) {
-
 	var err error
 
 	// Ask only in the interactive terminal
@@ -193,7 +193,7 @@ func (p *Prompt) Printf(format string, a ...interface{}) {
 func (p *Prompt) handleError(err error) (ok bool) {
 	if err == nil {
 		return true
-	} else if err == terminal.InterruptErr {
+	} else if errors.Is(err, terminal.InterruptErr) {
 		// Ctrl+c -> append new line after prompt AND exit program
 		_, _ = p.stdout.Write([]byte("\n"))
 		if v, ok := p.stdout.(*os.File); ok {

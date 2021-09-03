@@ -7,14 +7,14 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/jpillora/longestcommon"
+
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
-
-	"github.com/jpillora/longestcommon"
 )
 
-// Rename creates a plan for renaming objects that do not match the naming
+// Rename creates a plan for renaming objects that do not match the naming.
 func Rename(projectState *state.State) *RenamePlan {
 	builder := &renamePlanBuilder{State: projectState}
 	return &RenamePlan{actions: builder.build()}

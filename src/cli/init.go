@@ -5,14 +5,14 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/spf13/cobra"
+	"go.uber.org/zap"
+
 	"keboola-as-code/src/event"
 	"keboola-as-code/src/interaction"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/utils"
-
-	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 )
 
 const initShortDescription = `Init local project directory and perform the first pull`
@@ -92,7 +92,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 			projectDir := root.options.WorkingDirectory()
 			metadataDir := filepath.Join(projectDir, manifest.MetadataDir)
 			if err = os.MkdirAll(metadataDir, 0755); err != nil {
-				return fmt.Errorf("cannot create metadata directory \"%s\": %s", metadataDir, err)
+				return fmt.Errorf("cannot create metadata directory \"%s\": %w", metadataDir, err)
 			}
 			if err = root.options.SetProjectDirectory(projectDir); err != nil {
 				return err

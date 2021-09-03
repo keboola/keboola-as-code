@@ -4,9 +4,9 @@ import (
 	"sort"
 	"testing"
 
-	"keboola-as-code/src/model"
-
 	"github.com/stretchr/testify/assert"
+
+	"keboola-as-code/src/model"
 )
 
 func TestGenerateNewId(t *testing.T) {

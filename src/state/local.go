@@ -7,7 +7,7 @@ import (
 	"keboola-as-code/src/utils"
 )
 
-// doLoadLocalState - manifest -> local files -> unified model
+// doLoadLocalState - manifest -> local files -> unified model.
 func (s *State) doLoadLocalState() {
 	s.localErrors = utils.NewMultiError()
 

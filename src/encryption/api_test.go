@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"keboola-as-code/src/utils"
-
 	"github.com/stretchr/testify/assert"
+
+	"keboola-as-code/src/utils"
 )
 
 func TestNewEncryptionApi(t *testing.T) {

@@ -5,12 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"keboola-as-code/src/json"
-
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
 	"keboola-as-code/src/build"
+	"keboola-as-code/src/json"
 	"keboola-as-code/src/utils"
 )
 
@@ -36,6 +35,8 @@ func TestCheckIfLatestVersionUpdate(t *testing.T) {
 }
 
 func createMockedChecker(t *testing.T) (*checker, *utils.Writer) {
+	t.Helper()
+
 	logger, logs := utils.NewDebugLogger()
 	c := NewChecker(context.Background(), logger)
 	resty := c.api.GetRestyClient()

@@ -3,9 +3,9 @@ package utils
 import (
 	"fmt"
 
-	"keboola-as-code/src/json"
-
 	"github.com/iancoleman/orderedmap"
+
+	"keboola-as-code/src/json"
 )
 
 type Pair struct {
@@ -69,14 +69,13 @@ func convertValue(value interface{}) interface{} {
 	}
 }
 
-// updates *orderedMap nested value stored on path and returns the updated map
+// updates *orderedMap nested value stored on path and returns the updated map.
 func UpdateIn(content *orderedmap.OrderedMap, keyPath KeyPath, value interface{}) *orderedmap.OrderedMap {
 	return updateInElement(content, keyPath, value).(*orderedmap.OrderedMap)
 }
 
-// recursively updates nested structure element with value stored on the specified path and returns new or updated element
+// recursively updates nested structure element with value stored on the specified path and returns new or updated element.
 func updateInElement(element interface{}, path KeyPath, value interface{}) interface{} {
-
 	switch currentElement := element.(type) {
 	case *orderedmap.OrderedMap:
 

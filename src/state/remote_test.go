@@ -6,13 +6,13 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/spf13/cast"
+	"github.com/stretchr/testify/assert"
+
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/utils"
-
-	"github.com/spf13/cast"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestLoadRemoteStateEmpty(t *testing.T) {
@@ -442,6 +442,8 @@ func complexRemoteExpectedConfigsRows() []*model.ConfigRowState {
 }
 
 func createManifest(t *testing.T) *manifest.Manifest {
+	t.Helper()
+
 	projectDir := t.TempDir()
 	metadataDir := filepath.Join(projectDir, manifest.MetadataDir)
 	m, err := manifest.NewManifest(1, "connection.keboola.com", projectDir, metadataDir)
@@ -452,6 +454,8 @@ func createManifest(t *testing.T) *manifest.Manifest {
 }
 
 func loadRemoteState(t *testing.T, m *manifest.Manifest, projectStateFile string) *State {
+	t.Helper()
+
 	api, _ := remote.TestStorageApiWithToken(t)
 	remote.SetStateOfTestProject(t, api, projectStateFile)
 	logger, _ := utils.NewDebugLogger()

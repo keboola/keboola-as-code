@@ -28,17 +28,18 @@ func AssertDirectoryContentsSame(t assert.TestingT, expectedDir string, actualDi
 	var errors []string
 	for _, node := range nodesState {
 		// Check if present if both dirs (actual/expected) and if has same type (file/dir)
-		if node.actual == nil {
+		switch {
+		case node.actual == nil:
 			errors = append(errors, fmt.Sprintf("only in expected \"%s\"", node.expected.absPath))
-		} else if node.expected == nil {
+		case node.expected == nil:
 			errors = append(errors, fmt.Sprintf("only in actual \"%s\"", node.actual.absPath))
-		} else if node.actual.isDir != node.expected.isDir {
+		case node.actual.isDir != node.expected.isDir:
 			if node.actual.isDir {
 				errors = append(errors, fmt.Sprintf("\"%s\" is dir in actual, but file in expected", node.relPath))
 			} else {
 				errors = append(errors, fmt.Sprintf("\"%s\" is file in actual, but dir in expected", node.relPath))
 			}
-		} else {
+		default:
 			// Compare content
 			if !node.actual.isDir {
 				AssertWildcards(
@@ -92,7 +93,7 @@ func compareDirectories(expectedDir string, actualDir string) map[string]*fileNo
 	})
 
 	if err != nil {
-		panic(fmt.Errorf("cannot iterate over directory \"%s\": %s", actualDirAbs, err))
+		panic(fmt.Errorf("cannot iterate over directory \"%s\": %w", actualDirAbs, err))
 	}
 
 	// Process expected dir
@@ -125,7 +126,7 @@ func compareDirectories(expectedDir string, actualDir string) map[string]*fileNo
 	})
 
 	if err != nil {
-		panic(fmt.Errorf("cannot iterate over directory \"%s\": %s", actualDirAbs, err))
+		panic(fmt.Errorf("cannot iterate over directory \"%s\": %w", actualDirAbs, err))
 	}
 
 	return hashMap

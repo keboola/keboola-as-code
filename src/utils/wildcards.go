@@ -16,7 +16,7 @@ func AssertWildcards(t assert.TestingT, expected string, actual string, msg stri
 	actual = strings.TrimSpace(actual)
 
 	// Replace NBSP with space
-	actual = strings.Replace(actual, " ", " ", -1)
+	actual = strings.ReplaceAll(actual, " ", " ")
 
 	// Assert
 	if len(expected) == 0 {
@@ -34,7 +34,7 @@ func AssertWildcards(t assert.TestingT, expected string, actual string, msg stri
 	}
 }
 
-// WildcardToRegexp converts string with wildcards to regexp, so it can be used in assert.Regexp
+// WildcardToRegexp converts string with wildcards to regexp, so it can be used in assert.Regexp.
 func WildcardToRegexp(pattern string) string {
 	pattern = regexp.QuoteMeta(pattern)
 	re := regexp.MustCompile(`%.`)
@@ -84,17 +84,19 @@ func WildcardToRegexp(pattern string) string {
 	})
 }
 
-// EscapeWhitespaces escapes all whitespaces except new line -> for better difference in diff output
+// EscapeWhitespaces escapes all whitespaces except new line -> for better difference in diff output.
 func EscapeWhitespaces(input string) string {
 	re := regexp.MustCompile(`\s`)
 	return re.ReplaceAllStringFunc(input, func(s string) string {
-		if s == "\n" {
+		switch s {
+		case "\n":
 			return s
-		} else if s == "\t" {
+		case "\t":
 			return `→→→→`
-		} else if s == " " {
+		case " ":
 			return `␣`
+		default:
+			return strings.Trim(strconv.Quote(s), `"`)
 		}
-		return strings.Trim(strconv.Quote(s), `"`)
 	})
 }

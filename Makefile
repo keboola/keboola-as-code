@@ -23,5 +23,10 @@ tests-functional:
 tests-functional-verbose:
 	TEST_VERBOSE=true ./scripts/tests.sh -run TestFunctional
 
+lint:
+	TEST_VERBOSE=false ./scripts/lint.sh
+
 fix:
 	./scripts/fix.sh
+
+ci: lint tests

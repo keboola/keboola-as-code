@@ -6,6 +6,9 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/iancoleman/orderedmap"
+	"go.uber.org/zap"
+
 	"keboola-as-code/src/components"
 	"keboola-as-code/src/local"
 	"keboola-as-code/src/manifest"
@@ -13,12 +16,9 @@ import (
 	"keboola-as-code/src/remote"
 	"keboola-as-code/src/utils"
 	"keboola-as-code/src/validator"
-
-	"github.com/iancoleman/orderedmap"
-	"go.uber.org/zap"
 )
 
-// State - Local and Remote state of the project
+// State - Local and Remote state of the project.
 type State struct {
 	*Options
 	mutex        *sync.Mutex
@@ -50,7 +50,7 @@ func NewOptions(m *manifest.Manifest, api *remote.StorageApi, ctx context.Contex
 	}
 }
 
-// LoadState - remote and local
+// LoadState - remote and local.
 func LoadState(options *Options) (state *State, ok bool) {
 	state = newState(options)
 

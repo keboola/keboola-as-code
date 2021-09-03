@@ -13,7 +13,7 @@ const (
 	EventOnResponse // always
 )
 
-// Sender of the request, client (for sync) or pool (for async)
+// Sender of the request, client (for sync) or pool (for async).
 type Sender interface {
 	Send(r *Request)
 	Request(request *Request) *Request
@@ -120,7 +120,7 @@ func (r *Request) SetContext(ctx context.Context) *Request {
 }
 
 // WaitFor ensures that all remaining listeners will be deferred until subRequest done
-// See TestWaitForSubRequest test
+// See TestWaitForSubRequest test.
 func (r *Request) WaitFor(subRequest *Request) {
 	r.lock.Lock()
 	r.waitingFor = append(r.waitingFor, subRequest)
@@ -131,7 +131,7 @@ func (r *Request) WaitFor(subRequest *Request) {
 	})
 }
 
-// isWaiting for sub-request to complete
+// isWaiting for sub-request to complete.
 func (r *Request) isWaiting() bool {
 	r.lock.Lock()
 	defer r.lock.Unlock()
@@ -143,7 +143,7 @@ func (r *Request) isWaiting() bool {
 	return false
 }
 
-// nextListener which has not yet been invoked
+// nextListener which has not yet been invoked.
 func (r *Request) nextListener() *ResponseListener {
 	r.lock.Lock()
 	defer r.lock.Unlock()
@@ -159,7 +159,7 @@ func (r *Request) nextListener() *ResponseListener {
 	return listener
 }
 
-// invokeListeners if all are "waitingFor" requests done
+// invokeListeners if all are "waitingFor" requests done.
 func (r *Request) invokeListeners() {
 	for {
 		if r.isWaiting() {

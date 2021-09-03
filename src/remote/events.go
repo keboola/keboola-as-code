@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-resty/resty/v2"
+
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
-
-	"github.com/go-resty/resty/v2"
 )
 
 const (

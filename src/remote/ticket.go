@@ -4,13 +4,13 @@ import (
 	"sort"
 	"sync"
 
+	"github.com/go-resty/resty/v2"
+
 	"keboola-as-code/src/client"
 	"keboola-as-code/src/model"
-
-	"github.com/go-resty/resty/v2"
 )
 
-// TicketProvider generates new IDs and GUARANTEES that the IDs will be in the same order as the Request method was called
+// TicketProvider generates new IDs and GUARANTEES that the IDs will be in the same order as the Request method was called.
 type TicketProvider struct {
 	lock      *sync.Mutex
 	api       *StorageApi

@@ -8,11 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"keboola-as-code/src/build"
-
 	"github.com/go-resty/resty/v2"
 	"go.uber.org/zap"
 
+	"keboola-as-code/src/build"
 	"keboola-as-code/src/utils"
 )
 
@@ -30,7 +29,7 @@ const (
 	RetryWaitTimeMax      = 3 * time.Second
 )
 
-// Client - http client
+// Client - http client.
 type Client struct {
 	parentCtx        context.Context // context for parallel execution
 	logger           *Logger
@@ -129,12 +128,12 @@ func createHttpClient(logger *Logger) *resty.Client {
 	return r
 }
 
-// createRetry - retry on defined network and HTTP errors
+// createRetry - retry on defined network and HTTP errors.
 func createRetry() func(response *resty.Response, err error) bool {
 	return func(response *resty.Response, err error) bool {
 		// On network errors - except hostname not found
 		if err != nil && (response == nil || response.StatusCode() == 0) {
-			switch true {
+			switch {
 			case
 				strings.Contains(err.Error(), "No address associated with hostname"):
 				return false
@@ -161,7 +160,7 @@ func createRetry() func(response *resty.Response, err error) bool {
 	}
 }
 
-// createTransport with custom timeouts
+// createTransport with custom timeouts.
 func createTransport() *http.Transport {
 	dialer := &net.Dialer{
 		Timeout:   HttpTimeout,
@@ -234,7 +233,7 @@ func urlForLog(request *resty.Request) string {
 	if request.RawRequest == nil {
 		if pathParams, ok := request.Context().Value(contextKey("pathParams")).(map[string]string); ok {
 			for p, v := range pathParams {
-				url = strings.Replace(url, "{"+p+"}", "{"+p+"=\""+v+"\"}", -1)
+				url = strings.ReplaceAll(url, "{"+p+"}", "{"+p+"=\""+v+"\"}")
 			}
 		}
 

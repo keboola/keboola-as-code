@@ -5,16 +5,16 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/iancoleman/orderedmap"
+
 	"keboola-as-code/src/json"
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/transformation"
 	"keboola-as-code/src/utils"
 	"keboola-as-code/src/validator"
-
-	"github.com/iancoleman/orderedmap"
 )
 
-// SaveModel to manifest and disk
+// SaveModel to manifest and disk.
 func (m *Manager) SaveModel(record model.Record, source model.Object) error {
 	errors := utils.NewMultiError()
 
@@ -30,7 +30,7 @@ func (m *Manager) SaveModel(record model.Record, source model.Object) error {
 	// Mkdir
 	dir := filepath.Join(m.ProjectDir(), record.RelativePath())
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		errors.Append(fmt.Errorf("cannot create directory \"%s\": %s", dir, err))
+		errors.Append(fmt.Errorf("cannot create directory \"%s\": %w", dir, err))
 		return errors
 	}
 

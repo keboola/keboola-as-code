@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"keboola-as-code/src/client"
-
 	"go.uber.org/zap"
+
+	"keboola-as-code/src/client"
 )
 
 type checker struct {
