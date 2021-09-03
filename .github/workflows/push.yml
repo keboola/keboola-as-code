@@ -177,3 +177,8 @@ jobs:
       - name: Zip up release directory
         run: |
           zip -r darwin.zip release/darwin
+      - name: upload binary artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: darwin
+          path: darwin.zip
