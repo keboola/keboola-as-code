@@ -61,6 +61,6 @@ echo
 # Run tests, sequentially because the API is shared resource
 echo "Running tests ..."
 richgo clean -testcache
-RICHGO_FORCE_COLOR=1 richgo test -p 1 -timeout 360s -v -race -coverprofile=./target/profile.out ./src/... $@
+RICHGO_FORCE_COLOR=1 richgo test -p 1 -timeout 360s -v -race -coverprofile=/tmp/profile.out ./src/... $@
 echo "Ok. All tests passed."
 echo
