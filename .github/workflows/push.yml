@@ -161,7 +161,8 @@ jobs:
           brew tap mitchellh/gon
           brew install mitchellh/gon/gon
           brew install tree
-          mkdir darwin
+          tree
+          mkdir release/darwin
           tree
           cp release/*amd64/darwin/kbc release/darwin
           tree
