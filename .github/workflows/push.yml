@@ -1,5 +1,5 @@
 name: GitHub Actions
-on: [push]
+on: [ push ]
 env:
   TEST_PROJECT_ID: 8614
   TEST_PROJECT_NAME: keboola-as-code-tests
@@ -9,7 +9,10 @@ env:
   TEST_KBC_STORAGE_API_TOKEN_EXPIRED: ${{ secrets.TEST_KBC_STORAGE_API_TOKEN_EXPIRED }}
 jobs:
   Build:
-    concurrency: ci # only one parallel job allowed - used shared testing project
+    # only one parallel job allowed - used shared testing project
+    concurrency:
+      group: ci
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo
