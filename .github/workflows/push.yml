@@ -113,8 +113,8 @@ jobs:
         with:
           name: darwin-binaries
           path: |
-            target/*amd64/darwin/kbc
-            target/*arm64/darwin/kbc
+            target/*darwin_amd64/kbc
+            target/*darwin_arm64/kbc
 
   release:
     needs:
@@ -153,9 +153,9 @@ jobs:
       - name: Prepare files
         run: |
           mkdir release/darwin-amd64
-          cp release/*amd64/darwin/kbc release/darwin-amd64
+          cp release/*amd64/kbc release/darwin-amd64
           mkdir release/darwin-arm64
-          cp release/*arm64/darwin/kbc release/darwin-arm64
+          cp release/*arm64/kbc release/darwin-arm64
       - name: Import Code-Signing Certificates
         uses: Apple-Actions/import-codesign-certs@v1
         with:
