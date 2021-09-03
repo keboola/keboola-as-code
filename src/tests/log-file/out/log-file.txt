@@ -5,7 +5,7 @@ DEBUG	Go version: %s
 DEBUG	Os/Arch:    %s
 DEBUG	Running command [%s --log-file ./log-file.txt]
 DEBUG	Parsed options: %s
-DEBUG	Version check: skipped, found dev build.
+DEBUG	Version check: %s
 INFO%w
 INFO	Keboola Connection pull/push client
 INFO	%A
