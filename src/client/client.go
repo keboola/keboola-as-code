@@ -129,8 +129,9 @@ func createRetry() func(response *resty.Response, err error) bool {
 		// On network errors - except hostname not found
 		if err != nil && (response == nil || response.StatusCode() == 0) {
 			switch {
-			case
-				strings.Contains(err.Error(), "No address associated with hostname"):
+			case strings.Contains(err.Error(), "No address associated with hostname"):
+				return false
+			case strings.Contains(err.Error(), "no such host"):
 				return false
 			default:
 				return true
