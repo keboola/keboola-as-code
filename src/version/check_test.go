@@ -48,7 +48,7 @@ func createMockedChecker(t *testing.T) (*checker, *utils.Writer) {
 	c := NewChecker(context.Background(), logger)
 	resty := c.api.GetRestyClient()
 
-	// Version check are disabled in testy by default
+	// Version check are disabled in tests by default
 	utils.MustSetEnv(EnvVersionCheck, "")
 
 	// Set short retry delay in tests
