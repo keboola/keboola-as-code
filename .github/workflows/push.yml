@@ -178,10 +178,11 @@ jobs:
           gon -log-level=debug -log-json ./gon.json
       - name: Zip up signed binaries
         run: |
-          zip -r kbc_${TARGET_VERSION}_darwin_amd64.zip release/darwin-amd64/kbc
-          zip -r kbc_${TARGET_VERSION}_darwin_arm64.zip release/darwin-arm64/kbc
-      - name: upload arm64 kbc artifact
+          mkdir release/signed
+          zip -r release/signed/kbc_${{ needs.set_version.outputs.version }}_darwin_amd64.zip release/darwin-amd64/kbc
+          zip -r release/signed/kbc_${{ needs.set_version.outputs.version }}_darwin_arm64.zip release/darwin-arm64/kbc
+      - name: upload signed and zipped artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: kbc_${TARGET_VERSION}_darwin_arm64.zip
-          path: kbc_${TARGET_VERSION}_darwin_arm64.zip
+          name: signed
+          path: release/signed
