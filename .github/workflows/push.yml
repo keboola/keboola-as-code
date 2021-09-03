@@ -139,12 +139,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   release-macos:
     needs:
+      - set_version
       - cross-compile
+      - tests
     runs-on: macos-latest
+    if: startsWith(github.ref, 'refs/tags/') && needs.set_version.outputs.is_semantic_tag == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-
       - name: Download-Binaries
         uses: actions/download-artifact@v2
         with:
@@ -164,7 +166,6 @@ jobs:
           p12-file-base64: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
           # The password used to import the PKCS12 file.
           p12-password: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}
-
       - name: Install gon via HomeBrew for code signing and app notarization
         run: |
           brew tap mitchellh/gon
@@ -182,8 +183,11 @@ jobs:
         run: |
           mv release/signed/kbc-amd64.zip release/signed/kbc_${{ needs.set_version.outputs.version }}_darwin_amd64.zip
           mv release/signed/kbc-arm64.zip release/signed/kbc_${{ needs.set_version.outputs.version }}_darwin_arm64.zip
-      - name: upload signed and zipped artifacts
-        uses: actions/upload-artifact@v2
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v2
         with:
-          name: signed
-          path: release/signed
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: release/signed/*
+          tag: ${{ github.ref }}
+          overwrite: true
+          file_glob: true
