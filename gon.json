@@ -1,0 +1,19 @@
+{
+    "source": [
+        "./release/macos/kbc"
+    ],
+    "bundle_id": "com.keboola.kbc",
+    "apple_id": {
+        "password": "@env:AC_PASSWORD"
+    },
+    "sign": {
+        "application_identity": "Developer ID Application: Tomas Netrval"
+    },
+    "dmg": {
+        "output_path": "./release/darwin/kbc.dmg",
+        "volume_name": "kbc"
+    },
+    "zip": {
+        "output_path": "./release/darwin/hello-github.zip"
+    }
+}
