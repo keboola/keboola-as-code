@@ -19,9 +19,18 @@ env:
 
   # S3 repository
   IAM_USER: keboola-as-code-s3
+  AWS_BUCKET_NAME: keboola-as-code
   AWS_REGION: us-east-1
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+  # GPG keys for DEB and RPM Linux packages
+  GPG_PRIVATE: ${{ secrets.GPG_PRIVATE }}
+  GPG_PUBLIC: ${{ secrets.GPG_PUBLIC }}
+
+  # PEM keys form APK Alpine Linux packages
+  ALPINE_PRIVATE_KEY: ${{ secrets.ALPINE_PRIVATE_KEY }}
+  ALPINE_PUBLIC_KEY: ${{ secrets.ALPINE_PUBLIC_KEY }}
 jobs:
   set_version:
     runs-on: ubuntu-latest
@@ -83,8 +92,12 @@ jobs:
         uses: actions/checkout@v2
       - name: Pull Docker image
         uses: ./.github/actions/pull-image
+      - name: Go cache
+        uses: ./.github/actions/go-cache
+        with:
+          key: tests
       - name: Tests
-        run: docker-compose run --rm -u "$UID:$GID" -e TARGET_VERSION dev make ci
+        run: docker-compose run --rm -u "$UID:$GID" -e TARGET_VERSION -v /tmp/go-cache:/tmp/go-cache dev make ci
         env:
           TARGET_VERSION: ${{ needs.set_version.outputs.version }}
 
@@ -98,29 +111,25 @@ jobs:
         uses: actions/checkout@v2
       - name: Pull Docker image
         uses: ./.github/actions/pull-image
+      - name: Go cache
+        uses: ./.github/actions/go-cache
+        with:
+          key: compile
       - name: Cross compile
         run: |
           mkdir -p /tmp/go-cache
           docker-compose run --rm -u "$UID:$GID" -e TARGET_VERSION -v /tmp/go-cache:/tmp/go-cache dev make build
         env:
           TARGET_VERSION: ${{ needs.set_version.outputs.version }}
-      - name: Zip build cache
-        if: startsWith(github.ref, 'refs/tags/') && needs.set_version.outputs.is_semantic_tag == 'true'
-        run: zip -q -4 -r /tmp/go-cache.zip /tmp/go-cache
-      - name: Upload build cache
-        if: startsWith(github.ref, 'refs/tags/') && needs.set_version.outputs.is_semantic_tag == 'true'
-        uses: actions/upload-artifact@v2
-        with:
-          name: build-cache
-          path: /tmp/go-cache.zip
-          retention-days: 1
       - name: Upload binary artifacts
+        if: startsWith(github.ref, 'refs/tags/') && needs.set_version.outputs.is_semantic_tag == 'true'
         uses: actions/upload-artifact@v2
         with:
           name: darwin-binaries
           path: |
             target/*darwin_amd64/kbc
             target/*darwin_arm64/kbc
+          retention-days: 1
 
   release:
     needs:
@@ -128,6 +137,10 @@ jobs:
       - build_image
       - tests
       - cross-compile
+    # only one parallel job allowed - used shared S3
+    concurrency:
+      group: release
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/') && needs.set_version.outputs.is_semantic_tag == 'true'
     steps:
@@ -135,19 +148,43 @@ jobs:
         uses: actions/checkout@v2
       - name: Pull Docker image
         uses: ./.github/actions/pull-image
-      - name: Load build cache
-        continue-on-error: true
-        uses: ./.github/actions/load-build-cache
+      - name: Build Docker image to index Linux packages
+        run: ./scripts/pkgs/build-image.sh
+      - name: Go cache
+        uses: ./.github/actions/go-cache
+        with:
+          key: compile
+      - name: Mount S3 bucket
+        uses: ./.github/actions/mount-s3
+      - name: Write private keys
+        run: |
+          mkdir -p /tmp/keys
+          echo "$GPG_PRIVATE" > /tmp/keys/gpg.key
+          chmod 0600 /tmp/keys/gpg.key
+          echo "$ALPINE_PRIVATE_KEY" > /tmp/keys/alpine.key
+          chmod 0600 /tmp/keys/alpine.key
       - name: Release
-        run: docker-compose run --rm -u "$UID:$GID" -e GITHUB_TOKEN -e TARGET_VERSION -v /tmp/go-cache:/tmp/go-cache dev make release
+        run: |
+          docker-compose run --rm -u "$UID:$GID" \
+          -e GITHUB_TOKEN \
+          -e GPG_PRIVATE_PATH=/tmp/keys/gpg.key \
+          -e ALPINE_PRIVATE_KEY_PATH=/tmp/keys/alpine.key \
+          -e TARGET_VERSION \
+          -v /tmp/go-cache:/tmp/go-cache \
+          -v /tmp/keys:/tmp/keys \
+          -v /s3bucket:/s3bucket \
+          dev make release
         env:
           TARGET_VERSION: ${{ needs.set_version.outputs.version }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Index Linux packages
+        run: ./scripts/pkgs/index.sh /s3bucket
       - name: Upload zipped files to artifacts
         uses: actions/upload-artifact@v2
         with:
           name: linux
           path: target/*linux*.zip
+
   release-mac-os:
     needs:
       - set_version

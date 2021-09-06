@@ -1,0 +1,20 @@
+name: 'Load Gp build cache'
+description: 'Load Go build cache'
+inputs:
+  key:
+    description: Cache key
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Create directory
+      run: mkdir -p /tmp/go-cache
+      shell: bash
+    - uses: actions/cache@v2
+      with:
+        path: |
+          /tmp/go-cache
+          ${{ github.workspace }}/go
+        key: ${{ runner.os }}-go-${{ inputs.key }}-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-go-${{ inputs.key }}

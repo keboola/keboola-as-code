@@ -3,7 +3,11 @@ dist: "target"
 builds:
   - main: "./src/main.go"
     binary: "kbc"
+<<<<<<< HEAD
     goos: ["linux", "windows", "darwin"]
+=======
+    goos: ["linux", "darwin", "windows"]
+>>>>>>> efd3418 (Upload packages to S3)
     goarch: ["amd64", "arm", "arm64"]
     goarm: ["6"]
     env:
@@ -21,19 +25,20 @@ changelog:
   skip: true
 
 archives:
-  - files:
+  - id: archives
+    files:
       - none*
     format: zip
     format_overrides:
       - goos: darwin
         format: binary
-    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 
 snapshot:
   name_template: '{{ if index .Env "SNAPSHOT"  }}{{ .Env.SNAPSHOT }}{{ else }}dev{{ end }}'
 
 nfpms:
-  - vendor: Keboola
+  - id: packages
+    vendor: Keboola
     homepage: https://keboola.com
     maintainer: Keboola <support@keboola.com>
     description: Keboola Connection CLI client.
@@ -43,3 +48,28 @@ nfpms:
       - apk
       - deb
       - rpm
+<<<<<<< HEAD
+=======
+    rpm:
+      signature:
+        key_file: '{{ if index .Env "GPG_PRIVATE_PATH"  }}{{ .Env.GPG_PRIVATE_PATH }}{{ end }}'
+    deb:
+      signature:
+        key_file: '{{ if index .Env "GPG_PRIVATE_PATH"  }}{{ .Env.GPG_PRIVATE_PATH }}{{ end }}'
+    apk:
+      signature:
+        key_name: keboola
+        key_file: '{{ if index .Env "ALPINE_PRIVATE_KEY_PATH"  }}{{ .Env.ALPINE_PRIVATE_KEY_PATH }}{{ end }}'
+
+publishers:
+  - name: Upload artifacts to S3
+    cmd: ./scripts/pkgs/publish-to-s3.sh "{{ abs .ArtifactPath }}" "{{ .ArtifactName }}" "{{ .ProjectName }}" "{{ .Version }}" "{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    ids:
+      - archives
+      - packages
+
+release:
+  ids:
+    - archives
+    - packages
+>>>>>>> efd3418 (Upload packages to S3)
