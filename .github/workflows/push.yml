@@ -171,6 +171,7 @@ jobs:
           brew tap mitchellh/gon
           brew install mitchellh/gon/gon
           brew install tree
+          brew install coreutils
           tree release
       - name: Sign the mac binaries with Gon
         env:
