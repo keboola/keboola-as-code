@@ -63,24 +63,24 @@ jobs:
           cache-from: type=registry,ref=${{ env.IMAGE }}:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE }}:buildcache,mode=max
 
-  tests:
-    needs:
-      - set_version
-      - build_image
-    # only one parallel job allowed - used shared testing project
-    concurrency:
-      group: ci
-      cancel-in-progress: false
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out the repo
-        uses: actions/checkout@v2
-      - name: Load Docker image
-        uses: ./.github/actions/load-image
-      - name: Tests
-        run: docker-compose run --rm -u "$UID:$GID" -e TARGET_VERSION dev make ci
-        env:
-          TARGET_VERSION: ${{ needs.set_version.outputs.version }}
+  # tests:
+  #   needs:
+  #     - set_version
+  #     - build_image
+  #   # only one parallel job allowed - used shared testing project
+  #   concurrency:
+  #     group: ci
+  #     cancel-in-progress: false
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Check out the repo
+  #       uses: actions/checkout@v2
+  #     - name: Load Docker image
+  #       uses: ./.github/actions/load-image
+  #     - name: Tests
+  #       run: docker-compose run --rm -u "$UID:$GID" -e TARGET_VERSION dev make ci
+  #       env:
+  #         TARGET_VERSION: ${{ needs.set_version.outputs.version }}
 
   cross-compile:
     needs:
@@ -120,7 +120,7 @@ jobs:
     needs:
       - set_version
       - build_image
-      - tests
+      #- tests
       - cross-compile
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/') && needs.set_version.outputs.is_semantic_tag == 'true'
@@ -141,7 +141,7 @@ jobs:
     needs:
       - set_version
       - cross-compile
-      - tests
+      #- tests
     runs-on: macos-latest
     #if: startsWith(github.ref, 'refs/tags/') && needs.set_version.outputs.is_semantic_tag == 'true'
     steps:
