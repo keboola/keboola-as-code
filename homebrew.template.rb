@@ -4,11 +4,11 @@ class KeboolaAsCode < Formula
   license "MIT"
   bottle :unneeded
 
-  if OS.Mac? && Hardware::CPU.arm?
+  if OS.mac? && Hardware::CPU.arm?
     url "https://github.com/keboola/keboola-as-code/releases/download/v${TARGET_VERSION}/kbc_${TARGET_VERSION}_darwin_arm64.zip"
     sha256 "${ARM_TARGET_SHA256}"
   end
-  if OS.Mac? && Hardware::CPU.intel?
+  if OS.mac? && Hardware::CPU.intel?
         url "https://github.com/keboola/keboola-as-code/releases/download/v${TARGET_VERSION}/kbc_${TARGET_VERSION}_darwin_amd64.zip"
     sha256 "${AMD_TARGET_SHA256}"
   end
