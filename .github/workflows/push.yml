@@ -201,3 +201,13 @@ jobs:
           export AMD_TARGET_SHA256=$(ls release/signed/*darwin_amd64.zip | sha256sum | cut -f 1 -d ' ')
           envsubst < homebrew.template.rb > homebrew/keboola-as-code.rb
           cat homebrew/keboola-as-code.rb
+      - name: Push formulae to keboola/homebrew-tap repository
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
+        with:
+          source-directory: 'homebrew'
+          destination-github-username: 'keboola'
+          destination-repository-name: 'homebrew-tap'
+          user-email: tomas.kacur@keboola.com
+          target-branch: main
