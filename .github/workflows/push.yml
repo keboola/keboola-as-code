@@ -224,7 +224,7 @@ jobs:
       - name: Push formulae to keboola/homebrew-tap repository
         uses: cpina/github-action-push-to-another-repository@main
         env:
-          API_TOKEN_GITHUB: ${{ secrets.GITHUB_TOKEN }}
+          API_TOKEN_GITHUB: ${{ secrets.HOMEBREW_RELEASE_GITHUB_PERSONAL_ACCESS_TOKEN }}
         with:
           source-directory: "homebrew"
           destination-github-username: "keboola"
