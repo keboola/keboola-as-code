@@ -3,11 +3,7 @@ dist: "target"
 builds:
   - main: "./src/main.go"
     binary: "kbc"
-<<<<<<< HEAD
-    goos: ["linux", "windows", "darwin"]
-=======
     goos: ["linux", "darwin", "windows"]
->>>>>>> efd3418 (Upload packages to S3)
     goarch: ["amd64", "arm", "arm64"]
     goarm: ["6"]
     env:
@@ -48,8 +44,6 @@ nfpms:
       - apk
       - deb
       - rpm
-<<<<<<< HEAD
-=======
     rpm:
       signature:
         key_file: '{{ if index .Env "GPG_PRIVATE_PATH"  }}{{ .Env.GPG_PRIVATE_PATH }}{{ end }}'
@@ -72,4 +66,3 @@ release:
   ids:
     - archives
     - packages
->>>>>>> efd3418 (Upload packages to S3)
