@@ -190,7 +190,7 @@ jobs:
       #     repo_token: ${{ secrets.GITHUB_TOKEN }}
       #     file: release/signed/*
       #     tag: ${{ github.ref }}
-      #     overwrite: true
+      #     overwrite: false
       #     file_glob: true
       - name: create homebrew formulae
         env:
@@ -205,8 +205,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: homebrew
-          path: |
-            homebrew
+          path: homebrew
 
   release-homebrew:
     needs:
@@ -221,6 +220,7 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: homebrew
+          path: homebrew
       - name: Push formulae to keboola/homebrew-tap repository
         uses: cpina/github-action-push-to-another-repository@main
         env:
