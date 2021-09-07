@@ -11,10 +11,17 @@
 - Extract archive, eg. `unzip kbc-vx.x.x-linux_arm64.zip`.
 - Make binary executable, eg. `chmod +x ./kbc`.
 - Fix permissions on MacOS > v10.15:
-  - Binary as an macOS application is not yet signed and you may encounter error saying `“kbc” cannot be opened because it is from an unidentified developer.` 
+  - Binary as an macOS application is not yet signed and you may encounter error saying `“kbc” cannot be opened because it is from an unidentified developer.`
   - To fix the issue add the binary to the allowed applications by running the command: `spctl --add ./kbc`
 - Optionally move the binary to your [PATH](https://en.wikipedia.org/wiki/PATH_(variable)).
 - Run.
+### MacOS Homebrew
+Install cli via [homebrew](https://brew.sh/) as follows
+```
+brew tap keboola/homebrew-tap
+brew install keboola-as-code
+```
+After succesfull installation run cli via `kbc` command.
 
 ## Directory Structure
 
