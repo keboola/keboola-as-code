@@ -229,5 +229,4 @@ jobs:
           source-directory: "homebrew"
           destination-github-username: "keboola"
           destination-repository-name: "homebrew-tap"
-          user-email: tomas.kacur@keboola.com
           target-branch: main
