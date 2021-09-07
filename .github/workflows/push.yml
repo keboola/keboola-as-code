@@ -194,15 +194,6 @@ jobs:
           tag: ${{ github.ref }}
           overwrite: true
           file_glob: true
-      - name: create homebrew formulae
-        env:
-          TARGET_VERSION: ${{ needs.set_version.outputs.version }}
-        run: |
-          mkdir homebrew
-          export DARWIN_ARM_TARGET_SHA256=$(ls release/signed/*darwin_arm64.zip | sha256sum | cut -f 1 -d ' ' )
-          export DARWIN_AMD_TARGET_SHA256=$(ls release/signed/*darwin_amd64.zip | sha256sum | cut -f 1 -d ' ')
-          envsubst < homebrew.template.rb > homebrew/keboola-as-code.rb
-          cat homebrew/keboola-as-code.rb
       - name: Upload zipped files to artifacts
         uses: actions/upload-artifact@v2
         with:
