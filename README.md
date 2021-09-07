@@ -15,7 +15,7 @@
   - To fix the issue add the binary to the allowed applications by running the command: `spctl --add ./kbc`
 - Optionally move the binary to your [PATH](https://en.wikipedia.org/wiki/PATH_(variable)).
 - Run.
-### MacOS Homebrew
+### MacOS/Linux Homebrew Installation
 Install cli via [homebrew](https://brew.sh/) as follows
 ```
 brew tap keboola/homebrew-tap
