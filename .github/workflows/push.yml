@@ -188,7 +188,7 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: release/signed/*
           tag: ${{ github.ref }}
-          overwrite: false
+          overwrite: true
           file_glob: true
       - name: create homebrew formulae
         env:
