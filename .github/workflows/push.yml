@@ -173,17 +173,17 @@ jobs:
           brew install tree
           brew install coreutils
           tree release
-      # - name: Sign the mac binaries with Gon
-      #   env:
-      #     AC_USERNAME: ${{ secrets.AC_USERNAME }}
-      #     AC_PASSWORD: ${{ secrets.AC_PASSWORD }}
-      #   run: |
-      #     gon -log-level=info ./gon-amd64.json
-      #     gon -log-level=info ./gon-arm64.json
+      - name: Sign the mac binaries with Gon
+        env:
+          AC_USERNAME: ${{ secrets.AC_USERNAME }}
+          AC_PASSWORD: ${{ secrets.AC_PASSWORD }}
+        run: |
+          gon -log-level=info ./gon-amd64.json
+          gon -log-level=info ./gon-arm64.json
       - name: rename signed binaries
         run: |
-          echo "foobar" > release/signed/kbc_${{ needs.set_version.outputs.version }}_darwin_amd64.zip
-          echo "foobar" > release/signed/kbc_${{ needs.set_version.outputs.version }}_darwin_arm64.zip
+          mv release/signed/kbc-amd64.zip release/signed/kbc_${{ needs.set_version.outputs.version }}_darwin_amd64.zip
+          mv release/signed/kbc-arm64.zip release/signed/kbc_${{ needs.set_version.outputs.version }}_darwin_arm64.zip
       # - name: Upload binaries to release
       #   uses: svenstaro/upload-release-action@v2
       #   with:
