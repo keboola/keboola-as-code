@@ -20,9 +20,9 @@ export PACKAGES_DIR="$(realpath "$1")"
 echo "Packages dir: $PACKAGES_DIR"
 cd $SCRIPTS_DIR
 
-echo "Indexing APT packages for Debian ..."
+echo "Indexing DEB packages for Debian ..."
 docker-compose run --rm -u "$(id -u):$(id -g)" deb
-echo "OK. APT packages indexed."
+echo "OK. DEB packages indexed."
 echo
 echo
 

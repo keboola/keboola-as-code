@@ -7,7 +7,7 @@ services:
       dockerfile: ./Dockerfile-deb
     volumes:
       - $PACKAGES_DIR:/packages
-      - ./index_apt.sh:/scripts/index_deb.sh
+      - ./index_deb.sh:/scripts/index_deb.sh
     environment:
       - DEB_KEY_PUBLIC
       - DEB_KEY_PRIVATE
