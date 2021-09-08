@@ -21,7 +21,7 @@ echo "Packages dir: $PACKAGES_DIR"
 cd $SCRIPTS_DIR
 
 echo "Indexing APT packages for Debian ..."
-docker-compose run --rm -u "$(id -u):$(id -g)" apt
+docker-compose run --rm -u "$(id -u):$(id -g)" deb
 echo "OK. APT packages indexed."
 echo
 echo

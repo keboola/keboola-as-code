@@ -8,10 +8,10 @@ set -o pipefail         # Use last non-zero exit code in a pipeline
 
 # Import key
 mkdir -p "$HOME/.abuild"
-echo -e "$ALPINE_PRIVATE_KEY"  > "$HOME/.abuild/keboola.rsa"
+echo -e "$APK_KEY_PRIVATE"  > "$HOME/.abuild/keboola.rsa"
 
 # Index and sign
-cd /packages/alpine
+cd /packages/apk
 for DIR in `find ~+ -mindepth 1 -type d`; do
     if [ -d "${DIR}" ]; then
         echo "Arch '$DIR' ..."

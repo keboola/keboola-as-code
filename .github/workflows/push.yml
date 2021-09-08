@@ -18,19 +18,18 @@ env:
   TEST_KBC_STORAGE_API_TOKEN_EXPIRED: ${{ secrets.TEST_KBC_STORAGE_API_TOKEN_EXPIRED }}
 
   # S3 repository
-  IAM_USER: keboola-as-code-s3
-  AWS_BUCKET_NAME: keboola-as-code
+  AWS_BUCKET_NAME: keboola-as-code-dist
   AWS_REGION: us-east-1
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-  # GPG keys for DEB and RPM Linux packages
-  GPG_PRIVATE: ${{ secrets.GPG_PRIVATE }}
-  GPG_PUBLIC: ${{ secrets.GPG_PUBLIC }}
-
-  # PEM keys form APK Alpine Linux packages
-  ALPINE_PRIVATE_KEY: ${{ secrets.ALPINE_PRIVATE_KEY }}
-  ALPINE_PUBLIC_KEY: ${{ secrets.ALPINE_PUBLIC_KEY }}
+  # GPG keys for DEB, RPM and APK Linux packages
+  DEB_KEY_PRIVATE: ${{ secrets.DEB_KEY_PRIVATE }}
+  DEB_KEY_PUBLIC: ${{ secrets.DEB_KEY_PUBLIC }}
+  RPM_KEY_PRIVATE: ${{ secrets.RPM_KEY_PRIVATE }}
+  RPM_KEY_PUBLIC: ${{ secrets.RPM_KEY_PUBLIC }}
+  APK_KEY_PRIVATE: ${{ secrets.APK_KEY_PRIVATE }}
+  APK_KEY_PUBLIC: ${{ secrets.APK_KEY_PUBLIC }}
 jobs:
   set_version:
     runs-on: ubuntu-latest
@@ -159,16 +158,19 @@ jobs:
       - name: Write private keys
         run: |
           mkdir -p /tmp/keys
-          echo "$GPG_PRIVATE" > /tmp/keys/gpg.key
-          chmod 0600 /tmp/keys/gpg.key
-          echo "$ALPINE_PRIVATE_KEY" > /tmp/keys/alpine.key
-          chmod 0600 /tmp/keys/alpine.key
+          echo "$DEB_KEY_PRIVATE" > /tmp/keys/deb.key
+          chmod 0600 /tmp/keys/deb.key
+          echo "$RPM_KEY_PRIVATE" > /tmp/keys/rpm.key
+          chmod 0600 /tmp/keys/rpm.key
+          echo "$APK_KEY_PRIVATE" > /tmp/keys/apk.key
+          chmod 0600 /tmp/keys/apk.key
       - name: Release
         run: |
           docker-compose run --rm -u "$UID:$GID" \
           -e GITHUB_TOKEN \
-          -e GPG_PRIVATE_PATH=/tmp/keys/gpg.key \
-          -e ALPINE_PRIVATE_KEY_PATH=/tmp/keys/alpine.key \
+          -e DEB_KEY_PRIVATE_PATH=/tmp/keys/deb.key \
+          -e RPM_KEY_PRIVATE_PATH=/tmp/keys/rpm.key \
+          -e APK_KEY_PRIVATE_PATH=/tmp/keys/apk.key \
           -e TARGET_VERSION \
           -v /tmp/go-cache:/tmp/go-cache \
           -v /tmp/keys:/tmp/keys \
@@ -284,3 +286,69 @@ jobs:
           destination-github-username: "keboola"
           destination-repository-name: "homebrew-tap"
           target-branch: main
+
+  test-install-linux:
+    needs:
+      - release
+      - release-homebrew
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install on Ubuntu
+        run: |
+          docker run --rm ubuntu bash -c '
+            wget -qO - https://cli-dist.keboola.com/deb/key.gpg | apt-key add -
+            echo "deb https://cli-dist.keboola.com/deb /" | tee /etc/apt/sources.list.d/keboola.list
+            apt-get update
+            apt-get install kbc
+            kbc --version
+          '
+      - name: Install on Debian
+        run: |
+          docker run --rm debian bash -c '
+            wget -qO - https://cli-dist.keboola.com/deb/key.gpg | apt-key add -
+            echo "deb https://cli-dist.keboola.com/deb /" | tee /etc/apt/sources.list.d/keboola.list
+            apt-get update
+            apt-get install kbc
+            kbc --version
+          '
+      - name: Install on Fedora
+        run: |
+          docker run --rm fedora bash -c '
+            echo "[keboola]
+            name=keboola
+            baseurl=https://cli-dist.keboola.com/rpm
+            enabled=1
+            gpgcheck=1
+            gpgkey=https://cli-dist.keboola.com/rpm/key.gpg
+            " | tee /etc/yum.repos.d/keboola.repo
+            dnf install kbc
+            kbc --version
+          '
+      - name: Install on Alpine
+        run: |
+          docker run --rm  alpine sh -c '
+            echo "https://cli-dist.keboola.com/apk" | tee -a /etc/apk/repositories
+            wget -P /etc/apk/keys/ https://cli-dist.keboola.com/apk/keboola.rsa.pub
+            apk update
+            apk add kbc
+            kbc --version
+          '
+      - name: Install on Linux Homebrew
+        run: |
+          docker run --rm alpine sh -c '
+            brew tap keboola/homebrew-tap
+            brew install keboola-as-code
+            kbc --version
+          '
+
+  test-install-mac-os:
+    needs:
+      - release
+      - release-homebrew
+    runs-on: macos-latest
+    steps:
+      - name: Install on MacOS
+        run: |
+          brew tap keboola/homebrew-tap
+          brew install keboola-as-code
+          kbc --version

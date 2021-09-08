@@ -1,16 +1,16 @@
 version: '3'
 services:
   apt:
-    image: keboolabot/keboola-as-code-index-apt
+    image: keboolabot/keboola-as-code-index-deb
     build:
       context: .
-      dockerfile: ./Dockerfile-apt
+      dockerfile: ./Dockerfile-deb
     volumes:
       - $PACKAGES_DIR:/packages
-      - ./index_apt.sh:/scripts/index_apt.sh
+      - ./index_apt.sh:/scripts/index_deb.sh
     environment:
-      - GPG_PUBLIC
-      - GPG_PRIVATE
+      - DEB_KEY_PUBLIC
+      - DEB_KEY_PRIVATE
 
   rpm:
     image: keboolabot/keboola-as-code-index-rpm
@@ -21,8 +21,8 @@ services:
       - $PACKAGES_DIR:/packages
       - ./index_rpm.sh:/scripts/index_rpm.sh
     environment:
-      - GPG_PUBLIC
-      - GPG_PRIVATE
+      - RPM_KEY_PUBLIC
+      - RPM_KEY_PRIVATE
 
   apk:
     image: keboolabot/keboola-as-code-index-apk
@@ -33,5 +33,5 @@ services:
       - $PACKAGES_DIR:/packages
       - ./index_apk.sh:/scripts/index_apk.sh
     environment:
-      - ALPINE_PRIVATE_KEY
-      - ALPINE_PUBLIC_KEY
+      - APK_KEY_PUBLIC
+      - APK_KEY_PRIVATE

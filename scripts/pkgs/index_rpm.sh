@@ -7,11 +7,11 @@ set -o pipefail         # Use last non-zero exit code in a pipeline
 #set -o xtrace          # Trace the execution of the script (debug)
 
 # Import keys
-echo -e "$GPG_PUBLIC"  | gpg --import --batch
-echo -e "$GPG_PRIVATE" | gpg --import --batch
+echo -e "$RPM_KEY_PUBLIC"  | gpg --import --batch
+echo -e "$RPM_KEY_PRIVATE" | gpg --import --batch
 
 # Index
-cd /packages
+cd /packages/rpm
 createrepo --skip-stat --update  .
 
 # Sign

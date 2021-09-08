@@ -21,18 +21,31 @@ PACKAGE_NAME=$3
 VERSION=$4
 ARCH=$5
 
-if ! [[ "$ARTIFACT_NAME" =~ (\.zip|\.apk|\.deb|\.rpm)$ ]]; then
-  echo "skipped '$ARTIFACT_PATH'"
-  exit 0
+# ZIP repository
+if [[ "$ARTIFACT_NAME" =~ \.zip$ ]]; then
+  DST_DIR="${S3_MOUNTPOINT}/zip";
+  DST="${DST_DIR}/${PACKAGE_NAME}_${VERSION}_${ARCH}.zip";
+  mkdir -p "$DST_DIR";
+  cp -vf "$ARTIFACT_PATH" "$DST";
 fi
 
-# Copy
-DST_DIR="${S3_MOUNTPOINT}/releases/${VERSION}";
-DST="${DST_DIR}/${ARTIFACT_NAME}";
-mkdir -p "$DST_DIR";
-cp -vf "$ARTIFACT_PATH" "$DST";
+# DEB repository
+if [[ "$ARTIFACT_NAME" =~ \.rpm$ ]]; then
+  DST_DIR="${S3_MOUNTPOINT}/deb";
+  DST="${DST_DIR}/${PACKAGE_NAME}_${VERSION}_${ARCH}.deb";
+  mkdir -p "$DST_DIR";
+  cp -vf "$ARTIFACT_PATH" "$DST";
+fi
 
-# APK Alpine repository - needs separated directory
+# RPM repository
+if [[ "$ARTIFACT_NAME" =~ \.rpm$ ]]; then
+  DST_DIR="${S3_MOUNTPOINT}/rpm";
+  DST="${DST_DIR}/${PACKAGE_NAME}_${VERSION}_${ARCH}.rpm";
+  mkdir -p "$DST_DIR";
+  cp -vf "$ARTIFACT_PATH" "$DST";
+fi
+
+# APK Alpine repository
 if [[ "$ARTIFACT_NAME" =~ \.apk$ ]]; then
   case $ARCH in
     amd64)
@@ -50,8 +63,7 @@ if [[ "$ARTIFACT_NAME" =~ \.apk$ ]]; then
       ;;
   esac
 
-  # Copy
-  export DST_DIR="${S3_MOUNTPOINT}/alpine/${ALPINE_ARCH}";
+  export DST_DIR="${S3_MOUNTPOINT}/apk/${ALPINE_ARCH}";
   export DST="${DST_DIR}/${PACKAGE_NAME}_${VERSION}.apk";
   mkdir -p "$DST_DIR";
   cp -vf "$ARTIFACT_PATH" "$DST";

@@ -12,11 +12,11 @@ echo "digest-algo SHA256" >> ~/.gnupg/gpg.conf
 chmod -R 0700 ~/.gnupg
 
 # Import keys
-echo -e "$GPG_PUBLIC"  | gpg --import --batch
-echo -e "$GPG_PRIVATE" | gpg --import --batch
+echo -e "$DEB_KEY_PUBLIC"  | gpg --import --batch
+echo -e "$DEB_KEY_PRIVATE" | gpg --import --batch
 
 # Index
-cd /packages
+cd /packages/deb
 apt-ftparchive packages . > Packages
 cat Packages | gzip > Packages.gz
 

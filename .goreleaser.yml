@@ -46,14 +46,14 @@ nfpms:
       - rpm
     rpm:
       signature:
-        key_file: '{{ if index .Env "GPG_PRIVATE_PATH"  }}{{ .Env.GPG_PRIVATE_PATH }}{{ end }}'
+        key_file: '{{ if index .Env "DEB_KEY_PRIVATE_PATH"  }}{{ .Env.DEB_KEY_PRIVATE_PATH }}{{ end }}'
     deb:
       signature:
-        key_file: '{{ if index .Env "GPG_PRIVATE_PATH"  }}{{ .Env.GPG_PRIVATE_PATH }}{{ end }}'
+        key_file: '{{ if index .Env "RPM_KEY_PRIVATE_PATH"  }}{{ .Env.RPM_KEY_PRIVATE_PATH }}{{ end }}'
     apk:
       signature:
         key_name: keboola
-        key_file: '{{ if index .Env "ALPINE_PRIVATE_KEY_PATH"  }}{{ .Env.ALPINE_PRIVATE_KEY_PATH }}{{ end }}'
+        key_file: '{{ if index .Env "APK_KEY_PRIVATE_PATH"  }}{{ .Env.APK_KEY_PRIVATE_PATH }}{{ end }}'
 
 publishers:
   - name: Upload artifacts to S3
