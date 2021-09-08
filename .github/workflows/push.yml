@@ -228,7 +228,7 @@ jobs:
         run: |
           gon -log-level=info ./gon-amd64.json
           gon -log-level=info ./gon-arm64.json
-      - name: rename signed binaries
+      - name: Rename signed binaries
         run: |
           mv release/signed/kbc-amd64.zip release/signed/kbc_${{ needs.set_version.outputs.version }}_darwin_amd64.zip
           mv release/signed/kbc-arm64.zip release/signed/kbc_${{ needs.set_version.outputs.version }}_darwin_arm64.zip
