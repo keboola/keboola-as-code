@@ -272,7 +272,7 @@ jobs:
           mkdir homebrew
           export DARWIN_ARM_TARGET_SHA256=$(ls darwin/*darwin_arm64.zip | sha256sum | cut -f 1 -d ' ' )
           export DARWIN_AMD_TARGET_SHA256=$(ls darwin/*darwin_amd64.zip | sha256sum | cut -f 1 -d ' ')
-          export LINUX_ARM_TARGET_SHA256=$(ls linux/*linux_arm.zip | sha256sum | cut -f 1 -d ' ' )
+          export LINUX_ARM_TARGET_SHA256=$(ls linux/*linux_armv6.zip | sha256sum | cut -f 1 -d ' ' )
           export LINUX_ARM64_TARGET_SHA256=$(ls linux/*linux_arm64.zip | sha256sum | cut -f 1 -d ' ' )
           export LINUX_AMD_TARGET_SHA256=$(ls linux/*linux_amd64.zip | sha256sum | cut -f 1 -d ' ' )
           envsubst < homebrew.template.rb > homebrew/keboola-as-code.rb
