@@ -18,6 +18,7 @@ env:
   TEST_KBC_STORAGE_API_TOKEN_EXPIRED: ${{ secrets.TEST_KBC_STORAGE_API_TOKEN_EXPIRED }}
 
   # S3 repository
+  IAM_USER: keboola-as-code-dist-s3-upload
   AWS_BUCKET_NAME: keboola-as-code-dist
   AWS_REGION: us-east-1
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
