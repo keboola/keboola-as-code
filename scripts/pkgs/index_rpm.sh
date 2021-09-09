@@ -12,7 +12,7 @@ echo -e "$RPM_KEY_PRIVATE" | gpg --import --batch
 
 # Index
 cd /packages/rpm
-createrepo --skip-stat --update  .
+createrepo --update  .
 
 # Sign
 gpg --yes --detach-sign --armor repodata/repomd.xml
