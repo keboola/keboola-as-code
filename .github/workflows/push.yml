@@ -373,7 +373,7 @@ jobs:
           '
         env:
           VERSION: ${{ needs.set_version.outputs.version }}
-      - name: Install on Linux Homebrew
+      - name: Install on Linux by Homebrew
         if: always()
         run: |
           docker run --rm homebrew/brew sh -c '
@@ -391,8 +391,8 @@ jobs:
       - release-homebrew
     runs-on: macos-latest
     steps:
-      - name: Install on MacOS
+      - name: Install on MacOS by Homebrew
         run: |
           brew tap keboola/homebrew-tap
           brew install keboola-as-code
-          kbc --version
+          kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"

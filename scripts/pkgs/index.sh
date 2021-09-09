@@ -21,7 +21,7 @@ echo "Packages dir: $PACKAGES_DIR"
 cd $SCRIPTS_DIR
 
 echo "Pulling Docker images ..."
-docker-compose pull
+docker-compose pull -q
 
 echo "Indexing DEB packages for Debian ..."
 docker-compose run --rm -u "$(id -u):$(id -g)" deb
