@@ -46,14 +46,15 @@ jobs:
           IS_SEMANTIC_TAG=$(echo "$TAG" | grep -q '^v\?[0-9]\+\.[0-9]\+\.[0-9]\+$' && echo true || echo false)
           if [[ "${GITHUB_REF}" == refs/tags/* ]];
           then
-            export TARGET_VERSION=${GITHUB_REF/refs\/tags\//}
+            export VERSION=${GITHUB_REF/refs\/tags\//}
+            export VERSION=${VERSION#v}
           else
-            export TARGET_VERSION="dev"
+            export VERSION="dev"
           fi
-          echo "Tag = '$TAG', is semantic tag = '$IS_SEMANTIC_TAG', target version = '$TARGET_VERSION'"
+          echo "Tag = '$TAG', is semantic tag = '$IS_SEMANTIC_TAG', target version = '$VERSION'"
           echo "::set-output name=tag::$TAG"
           echo "::set-output name=is_semantic_tag::$IS_SEMANTIC_TAG"
-          echo "::set-output name=version::$TARGET_VERSION"
+          echo "::set-output name=version::$VERSION"
 
   build_image:
     needs:
@@ -97,9 +98,9 @@ jobs:
         with:
           key: tests
       - name: Tests
-        run: docker-compose run --rm -u "$UID:$GID" -e TARGET_VERSION -v /tmp/go-cache:/tmp/go-cache dev make ci
+        run: docker-compose run --rm -u "$UID:$GID" -e VERSION -v /tmp/go-cache:/tmp/go-cache dev make ci
         env:
-          TARGET_VERSION: ${{ needs.set_version.outputs.version }}
+          VERSION: ${{ needs.set_version.outputs.version }}
 
   cross-compile:
     needs:
@@ -118,9 +119,9 @@ jobs:
       - name: Cross compile
         run: |
           mkdir -p /tmp/go-cache
-          docker-compose run --rm -u "$UID:$GID" -e TARGET_VERSION -v /tmp/go-cache:/tmp/go-cache dev make build
+          docker-compose run --rm -u "$UID:$GID" -e VERSION -v /tmp/go-cache:/tmp/go-cache dev make build
         env:
-          TARGET_VERSION: ${{ needs.set_version.outputs.version }}
+          VERSION: ${{ needs.set_version.outputs.version }}
       - name: Upload binary artifacts
         if: startsWith(github.ref, 'refs/tags/') && needs.set_version.outputs.is_semantic_tag == 'true'
         uses: actions/upload-artifact@v2
@@ -144,18 +145,26 @@ jobs:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/') && needs.set_version.outputs.is_semantic_tag == 'true'
     steps:
-      - name: Check out the repo
-        uses: actions/checkout@v2
-      - name: Pull Docker image
-        uses: ./.github/actions/pull-image
-      - name: Build Docker image to index Linux packages
-        run: ./scripts/pkgs/build-image.sh
-      - name: Go cache
-        uses: ./.github/actions/go-cache
+      - uses: actions/checkout@v2
+      - uses: docker/setup-buildx-action@v1
+      - uses: docker/login-action@v1
+        with:
+          username: ${{ env.DOCKERHUB_USER }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
+      - uses: ./.github/actions/pull-image
+      - uses: ./.github/actions/build-repo-tools
+        with:
+          type: deb
+      - uses: ./.github/actions/build-repo-tools
+        with:
+          type: rpm
+      - uses: ./.github/actions/build-repo-tools
+        with:
+          type: apk
+      - uses: ./.github/actions/go-cache
         with:
           key: compile
-      - name: Mount S3 bucket
-        uses: ./.github/actions/mount-s3
+      - uses: ./.github/actions/mount-s3
       - name: Write private keys
         run: |
           mkdir -p /tmp/keys
@@ -172,13 +181,13 @@ jobs:
           -e DEB_KEY_PRIVATE_PATH=/tmp/keys/deb.key \
           -e RPM_KEY_PRIVATE_PATH=/tmp/keys/rpm.key \
           -e APK_KEY_PRIVATE_PATH=/tmp/keys/apk.key \
-          -e TARGET_VERSION \
+          -e VERSION \
           -v /tmp/go-cache:/tmp/go-cache \
           -v /tmp/keys:/tmp/keys \
           -v /s3bucket:/s3bucket \
           dev make release
         env:
-          TARGET_VERSION: ${{ needs.set_version.outputs.version }}
+          VERSION: ${{ needs.set_version.outputs.version }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Index Linux packages
         run: ./scripts/pkgs/index.sh /s3bucket
@@ -268,7 +277,8 @@ jobs:
           path: linux
       - name: Create Homebrew formulae
         env:
-          TARGET_VERSION: ${{ needs.set_version.outputs.version }}
+          TAG: ${{ needs.set_version.outputs.tag }}
+          VERSION: ${{ needs.set_version.outputs.version }}
         run: |
           mkdir homebrew
           export DARWIN_ARM_TARGET_SHA256=$(ls darwin/*darwin_arm64.zip | sha256sum | cut -f 1 -d ' ' )
@@ -299,69 +309,69 @@ jobs:
         if: always()
         run: |
           docker run --rm ubuntu bash -c '
-            set -e
-            apt-get update -y && apt-get install -y wget ca-certificates gnupg
-            wget -P /etc/apt/trusted.gpg.d https://cli-dist.keboola.com/deb/keboola.gpg
-            echo "deb https://cli-dist.keboola.com/deb /" | tee /etc/apt/sources.list.d/keboola.list
-            apt-get update
-            apt-get install kbc
-            kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.TARGET_VERSION }}"
+          set -e
+          apt-get update -y && apt-get install -y wget ca-certificates gnupg
+          wget -P /etc/apt/trusted.gpg.d https://cli-dist.keboola.com/deb/keboola.gpg
+          echo "deb https://cli-dist.keboola.com/deb /" | tee /etc/apt/sources.list.d/keboola.list
+          apt-get update
+          apt-get install kbc
+          kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
           '
         env:
-          TARGET_VERSION: ${{ needs.set_version.outputs.version }}
+          VERSION: ${{ needs.set_version.outputs.version }}
       - name: Install on Debian
         if: always()
         run: |
           docker run --rm debian bash -c '
-            set -e
-            apt-get update -y && apt-get install -y wget ca-certificates gnupg
-            wget -P /etc/apt/trusted.gpg.d https://cli-dist.keboola.com/deb/keboola.gpg
-            echo "deb https://cli-dist.keboola.com/deb /" | tee /etc/apt/sources.list.d/keboola.list
-            apt-get update
-            apt-get install kbc
-            kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.TARGET_VERSION }}"
+          set -e
+          apt-get update -y && apt-get install -y wget ca-certificates gnupg
+          wget -P /etc/apt/trusted.gpg.d https://cli-dist.keboola.com/deb/keboola.gpg
+          echo "deb https://cli-dist.keboola.com/deb /" | tee /etc/apt/sources.list.d/keboola.list
+          apt-get update
+          apt-get install kbc
+          kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
           '
         env:
-          TARGET_VERSION: ${{ needs.set_version.outputs.version }}
+          VERSION: ${{ needs.set_version.outputs.version }}
       - name: Install on Fedora
         if: always()
         run: |
           docker run --rm fedora bash -c '
-            rpm --import https://cli-dist.keboola.com/rpm/keboola.gpg
-            echo "[keboola]
-            name=keboola
-            baseurl=https://cli-dist.keboola.com/rpm
-            enabled=1
-            gpgcheck=1
-            gpgkey=https://cli-dist.keboola.com/rpm/keboola.gpg
-            " | tee /etc/yum.repos.d/keboola.repo
-            dnf install kbc
-            kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.TARGET_VERSION }}"
+          rpm --import https://cli-dist.keboola.com/rpm/keboola.gpg
+          echo "[keboola]
+          name=keboola
+          baseurl=https://cli-dist.keboola.com/rpm
+          enabled=1
+          gpgcheck=1
+          gpgkey=https://cli-dist.keboola.com/rpm/keboola.gpg
+          " | tee /etc/yum.repos.d/keboola.repo
+          dnf install kbc
+          kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
           '
         env:
-          TARGET_VERSION: ${{ needs.set_version.outputs.version }}
+          VERSION: ${{ needs.set_version.outputs.version }}
       - name: Install on Alpine
         if: always()
         run: |
           docker run --rm  alpine sh -c '
-            echo "https://cli-dist.keboola.com/apk" | tee -a /etc/apk/repositories
-            wget -P /etc/apk/keys/ https://cli-dist.keboola.com/apk/keboola.rsa.pub
-            apk update
-            apk add kbc
-            kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.TARGET_VERSION }}"
+          echo "https://cli-dist.keboola.com/apk" | tee -a /etc/apk/repositories
+          wget -P /etc/apk/keys/ https://cli-dist.keboola.com/apk/keboola.rsa.pub
+          apk update
+          apk add kbc
+          kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
           '
         env:
-          TARGET_VERSION: ${{ needs.set_version.outputs.version }}
+          VERSION: ${{ needs.set_version.outputs.version }}
       - name: Install on Linux Homebrew
         if: always()
         run: |
           docker run --rm homebrew/brew sh -c '
-            brew tap keboola/homebrew-tap
-            brew install keboola-as-code
-            kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.TARGET_VERSION }}"
+          brew tap keboola/homebrew-tap
+          brew install keboola-as-code
+          kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
           '
         env:
-          TARGET_VERSION: ${{ needs.set_version.outputs.version }}
+          VERSION: ${{ needs.set_version.outputs.version }}
 
   test-install-mac-os:
     needs:

@@ -10,7 +10,7 @@ builds:
       - CGO_ENABLED=0
     ldflags:
       - -s -w
-      - -X keboola-as-code/src/build.BuildVersion={{ if index .Env "TARGET_VERSION"  }}{{ .Env.TARGET_VERSION }}{{ else }}dev{{ end }}
+      - -X keboola-as-code/src/build.BuildVersion={{ if index .Env "VERSION"  }}{{ .Env.VERSION }}{{ else }}dev{{ end }}
       - -X keboola-as-code/src/build.BuildDate={{.Date}}
       - -X keboola-as-code/src/build.GitCommit={{.Commit}}
     hooks:

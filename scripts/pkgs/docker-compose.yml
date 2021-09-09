@@ -1,7 +1,7 @@
 version: '3'
 services:
   deb:
-    image: keboolabot/keboola-as-code-index-deb
+    image: keboolabot/keboola-as-code-deb-tools
     build:
       context: .
       dockerfile: ./Dockerfile-deb
@@ -13,7 +13,7 @@ services:
       - DEB_KEY_PRIVATE
 
   rpm:
-    image: keboolabot/keboola-as-code-index-rpm
+    image: keboolabot/keboola-as-code-rpm-tools
     build:
       context: .
       dockerfile: ./Dockerfile-rpm
@@ -25,7 +25,7 @@ services:
       - RPM_KEY_PRIVATE
 
   apk:
-    image: keboolabot/keboola-as-code-index-apk
+    image: keboolabot/keboola-as-code-apk-tools
     build:
       context: .
       dockerfile: ./Dockerfile-apk
