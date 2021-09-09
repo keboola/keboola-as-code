@@ -151,20 +151,26 @@ jobs:
         with:
           username: ${{ env.DOCKERHUB_USER }}
           password: ${{ env.DOCKERHUB_TOKEN }}
-      - uses: ./.github/actions/pull-image
-      - uses: ./.github/actions/build-repo-tools
+      - name: Pull Docker image
+        uses: ./.github/actions/pull-image
+      - name: Build DEB repo tools
+        uses: ./.github/actions/build-repo-tools
         with:
           type: deb
-      - uses: ./.github/actions/build-repo-tools
+      - name: Build RPM repo tools
+        uses: ./.github/actions/build-repo-tools
         with:
           type: rpm
-      - uses: ./.github/actions/build-repo-tools
+      - name: Build APK repo tools
+        uses: ./.github/actions/build-repo-tools
         with:
           type: apk
-      - uses: ./.github/actions/go-cache
+      - name: Go cache
+        uses: ./.github/actions/go-cache
         with:
           key: compile
-      - uses: ./.github/actions/mount-s3
+      - name: Mount S3 bucket
+        uses: ./.github/actions/mount-s3
       - name: Write private keys
         run: |
           mkdir -p /tmp/keys
@@ -281,11 +287,11 @@ jobs:
           VERSION: ${{ needs.set_version.outputs.version }}
         run: |
           mkdir homebrew
-          export DARWIN_ARM_TARGET_SHA256=$(ls darwin/*darwin_arm64.zip | sha256sum | cut -f 1 -d ' ' )
-          export DARWIN_AMD_TARGET_SHA256=$(ls darwin/*darwin_amd64.zip | sha256sum | cut -f 1 -d ' ')
-          export LINUX_ARM_TARGET_SHA256=$(ls linux/*linux_armv6.zip | sha256sum | cut -f 1 -d ' ' )
-          export LINUX_ARM64_TARGET_SHA256=$(ls linux/*linux_arm64.zip | sha256sum | cut -f 1 -d ' ' )
-          export LINUX_AMD_TARGET_SHA256=$(ls linux/*linux_amd64.zip | sha256sum | cut -f 1 -d ' ' )
+          export DARWIN_ARM_TARGET_SHA256=$(sha256sum darwin/*darwin_arm64.zip | cut -f 1 -d ' ' )
+          export DARWIN_AMD_TARGET_SHA256=$(sha256sum darwin/*darwin_amd64.zip | cut -f 1 -d ' ')
+          export LINUX_ARM_TARGET_SHA256=$(sha256sum linux/*linux_armv6.zip | cut -f 1 -d ' ' )
+          export LINUX_ARM64_TARGET_SHA256=$(sha256sum linux/*linux_arm64.zip | cut -f 1 -d ' ' )
+          export LINUX_AMD_TARGET_SHA256=$(sha256sum linux/*linux_amd64.zip | cut -f 1 -d ' ' )
           envsubst < homebrew.template.rb > homebrew/keboola-as-code.rb
           cat homebrew/keboola-as-code.rb
       - name: Push formulae to keboola/homebrew-tap repository
@@ -337,6 +343,7 @@ jobs:
         if: always()
         run: |
           docker run --rm fedora bash -c '
+          set -e
           rpm --import https://cli-dist.keboola.com/rpm/keboola.gpg
           echo "[keboola]
           name=keboola
@@ -345,7 +352,7 @@ jobs:
           gpgcheck=1
           gpgkey=https://cli-dist.keboola.com/rpm/keboola.gpg
           " | tee /etc/yum.repos.d/keboola.repo
-          dnf install kbc
+          dnf install -y kbc
           kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
           '
         env:
@@ -354,6 +361,7 @@ jobs:
         if: always()
         run: |
           docker run --rm  alpine sh -c '
+          set -e
           echo "https://cli-dist.keboola.com/apk" | tee -a /etc/apk/repositories
           wget -P /etc/apk/keys/ https://cli-dist.keboola.com/apk/keboola.rsa.pub
           apk update
@@ -366,6 +374,7 @@ jobs:
         if: always()
         run: |
           docker run --rm homebrew/brew sh -c '
+          set -e
           brew tap keboola/homebrew-tap
           brew install keboola-as-code
           kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
