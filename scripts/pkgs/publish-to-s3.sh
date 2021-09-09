@@ -6,10 +6,10 @@ set -o nounset          # Disallow expansion of unset variables
 set -o pipefail         # Use last non-zero exit code in a pipeline
 #set -o xtrace          # Trace the execution of the script (debug)
 
-if [ $# -lt 5 ]; then
+if [ $# -lt 6 ]; then
   echo 1>&2 "$0: not enough arguments"
   exit 2
-elif [ $# -gt 5 ]; then
+elif [ $# -gt 6 ]; then
   echo 1>&2 "$0: too many arguments"
   exit 2
 fi
