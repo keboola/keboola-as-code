@@ -85,22 +85,22 @@ func TestDoNotRetry(t *testing.T) {
 	c, _, out := getMockedClientAndLogs(t, false)
 
 	// Mocked response
-	httpmock.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(404, `test`))
+	httpmock.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(403, `test`))
 
 	// Get
 	response := c.NewRequest(resty.MethodGet, "https://example.com").Send().Response
-	assert.Equal(t, errors.New(`GET https://example.com | returned http code 404`), response.Err())
+	assert.Equal(t, errors.New(`GET https://example.com | returned http code 403`), response.Err())
 	assert.Equal(t, "test", response.String())
 	logs := out.String()
 
-	// Only one request, HTTP code 404 is not retried
+	// Only one request, HTTP code 403 is not retried
 	assert.Equal(t, 1, httpmock.GetCallCountInfo()["GET https://example.com"])
 
 	// No retry
 	assert.NotContains(t, "Attempt 2", logs)
 
 	// Error is logged
-	expected := "DEBUG  HTTP-ERROR\tGET https://example.com | returned http code 404, Attempt 1\n"
+	expected := "DEBUG  HTTP-ERROR\tGET https://example.com | returned http code 403, Attempt 1\n"
 	utils.AssertWildcards(t, expected, logs, "Unexpected log")
 }
 

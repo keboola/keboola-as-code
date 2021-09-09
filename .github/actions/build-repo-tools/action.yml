@@ -1,0 +1,17 @@
+name: 'Build Linux repository tools'
+description: 'Build Linux repository tools'
+inputs:
+  type:
+    description: Repo type.
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - uses: docker/build-push-action@v2
+      with:
+        context: ./scripts/pkgs
+        file: ./scripts/pkgs/Dockerfile-${{ inputs.type }}
+        push: true
+        tags: keboolabot/keboola-as-code-${{ inputs.type }}-tools:latest
+        cache-from: type=registry,ref=keboolabot/keboola-as-code-${{ inputs.type }}-tools:buildcache
+        cache-to: type=registry,ref=keboolabot/keboola-as-code-${{ inputs.type }}-tools:buildcache,mode=max

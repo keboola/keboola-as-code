@@ -3,14 +3,14 @@ dist: "target"
 builds:
   - main: "./src/main.go"
     binary: "kbc"
-    goos: ["linux", "windows", "darwin"]
+    goos: ["linux", "darwin", "windows"]
     goarch: ["amd64", "arm", "arm64"]
     goarm: ["6"]
     env:
       - CGO_ENABLED=0
     ldflags:
       - -s -w
-      - -X keboola-as-code/src/build.BuildVersion={{ if index .Env "TARGET_VERSION"  }}{{ .Env.TARGET_VERSION }}{{ else }}dev{{ end }}
+      - -X keboola-as-code/src/build.BuildVersion={{ if index .Env "VERSION"  }}{{ .Env.VERSION }}{{ else }}dev{{ end }}
       - -X keboola-as-code/src/build.BuildDate={{.Date}}
       - -X keboola-as-code/src/build.GitCommit={{.Commit}}
     hooks:
@@ -21,19 +21,20 @@ changelog:
   skip: true
 
 archives:
-  - files:
+  - id: archives
+    files:
       - none*
     format: zip
     format_overrides:
       - goos: darwin
         format: binary
-    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 
 snapshot:
   name_template: '{{ if index .Env "SNAPSHOT"  }}{{ .Env.SNAPSHOT }}{{ else }}dev{{ end }}'
 
 nfpms:
-  - vendor: Keboola
+  - id: packages
+    vendor: Keboola
     homepage: https://keboola.com
     maintainer: Keboola <support@keboola.com>
     description: Keboola Connection CLI client.
@@ -43,3 +44,25 @@ nfpms:
       - apk
       - deb
       - rpm
+    rpm:
+      signature:
+        key_file: '{{ if index .Env "DEB_KEY_PRIVATE_PATH"  }}{{ .Env.DEB_KEY_PRIVATE_PATH }}{{ end }}'
+    deb:
+      signature:
+        key_file: '{{ if index .Env "RPM_KEY_PRIVATE_PATH"  }}{{ .Env.RPM_KEY_PRIVATE_PATH }}{{ end }}'
+    apk:
+      signature:
+        key_name: keboola
+        key_file: '{{ if index .Env "APK_KEY_PRIVATE_PATH"  }}{{ .Env.APK_KEY_PRIVATE_PATH }}{{ end }}'
+
+publishers:
+  - name: Upload artifacts to S3
+    cmd: ./scripts/pkgs/publish-to-s3.sh "{{ abs .ArtifactPath }}" "{{ .ArtifactName }}" "{{ .ProjectName }}" "{{ .Version }}" "{{ .Os }}" "{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    ids:
+      - archives
+      - packages
+
+release:
+  ids:
+    - archives
+    - packages

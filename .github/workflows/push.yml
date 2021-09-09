@@ -16,6 +16,21 @@ env:
   TEST_KBC_STORAGE_API_TOKEN: ${{ secrets.TEST_KBC_STORAGE_API_TOKEN }}
   TEST_KBC_STORAGE_API_TOKEN_MASTER: ${{ secrets.TEST_KBC_STORAGE_API_TOKEN_MASTER }}
   TEST_KBC_STORAGE_API_TOKEN_EXPIRED: ${{ secrets.TEST_KBC_STORAGE_API_TOKEN_EXPIRED }}
+
+  # S3 repository
+  IAM_USER: keboola-as-code-dist-s3-upload
+  AWS_BUCKET_NAME: keboola-as-code-dist
+  AWS_REGION: us-east-1
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+  # GPG keys for DEB, RPM and APK Linux packages
+  DEB_KEY_PRIVATE: ${{ secrets.DEB_KEY_PRIVATE }}
+  DEB_KEY_PUBLIC: ${{ secrets.DEB_KEY_PUBLIC }}
+  RPM_KEY_PRIVATE: ${{ secrets.RPM_KEY_PRIVATE }}
+  RPM_KEY_PUBLIC: ${{ secrets.RPM_KEY_PUBLIC }}
+  APK_KEY_PRIVATE: ${{ secrets.APK_KEY_PRIVATE }}
+  APK_KEY_PUBLIC: ${{ secrets.APK_KEY_PUBLIC }}
 jobs:
   set_version:
     runs-on: ubuntu-latest
@@ -31,14 +46,15 @@ jobs:
           IS_SEMANTIC_TAG=$(echo "$TAG" | grep -q '^v\?[0-9]\+\.[0-9]\+\.[0-9]\+$' && echo true || echo false)
           if [[ "${GITHUB_REF}" == refs/tags/* ]];
           then
-            export TARGET_VERSION=${GITHUB_REF/refs\/tags\//}
+            export VERSION=${GITHUB_REF/refs\/tags\//}
+            export VERSION=${VERSION#v}
           else
-            export TARGET_VERSION="dev"
+            export VERSION="dev"
           fi
-          echo "Tag = '$TAG', is semantic tag = '$IS_SEMANTIC_TAG', target version = '$TARGET_VERSION'"
+          echo "Tag = '$TAG', is semantic tag = '$IS_SEMANTIC_TAG', target version = '$VERSION'"
           echo "::set-output name=tag::$TAG"
           echo "::set-output name=is_semantic_tag::$IS_SEMANTIC_TAG"
-          echo "::set-output name=version::$TARGET_VERSION"
+          echo "::set-output name=version::$VERSION"
 
   build_image:
     needs:
@@ -75,12 +91,16 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v2
-      - name: Load Docker image
-        uses: ./.github/actions/load-image
+      - name: Pull Docker image
+        uses: ./.github/actions/pull-image
+      - name: Go cache
+        uses: ./.github/actions/go-cache
+        with:
+          key: tests
       - name: Tests
-        run: docker-compose run --rm -u "$UID:$GID" -e TARGET_VERSION dev make ci
+        run: docker-compose run --rm -u "$UID:$GID" -e VERSION -v /tmp/go-cache:/tmp/go-cache dev make ci
         env:
-          TARGET_VERSION: ${{ needs.set_version.outputs.version }}
+          VERSION: ${{ needs.set_version.outputs.version }}
 
   cross-compile:
     needs:
@@ -90,31 +110,27 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v2
-      - name: Load Docker image
-        uses: ./.github/actions/load-image
+      - name: Pull Docker image
+        uses: ./.github/actions/pull-image
+      - name: Go cache
+        uses: ./.github/actions/go-cache
+        with:
+          key: compile
       - name: Cross compile
         run: |
           mkdir -p /tmp/go-cache
-          docker-compose run --rm -u "$UID:$GID" -e TARGET_VERSION -v /tmp/go-cache:/tmp/go-cache dev make build
+          docker-compose run --rm -u "$UID:$GID" -e VERSION -v /tmp/go-cache:/tmp/go-cache dev make build
         env:
-          TARGET_VERSION: ${{ needs.set_version.outputs.version }}
-      - name: Zip build cache
-        if: startsWith(github.ref, 'refs/tags/') && needs.set_version.outputs.is_semantic_tag == 'true'
-        run: zip -q -4 -r /tmp/go-cache.zip /tmp/go-cache
-      - name: Upload build cache
-        if: startsWith(github.ref, 'refs/tags/') && needs.set_version.outputs.is_semantic_tag == 'true'
-        uses: actions/upload-artifact@v2
-        with:
-          name: build-cache
-          path: /tmp/go-cache.zip
-          retention-days: 1
+          VERSION: ${{ needs.set_version.outputs.version }}
       - name: Upload binary artifacts
+        if: startsWith(github.ref, 'refs/tags/') && needs.set_version.outputs.is_semantic_tag == 'true'
         uses: actions/upload-artifact@v2
         with:
           name: darwin-binaries
           path: |
             target/*darwin_amd64/kbc
             target/*darwin_arm64/kbc
+          retention-days: 1
 
   release:
     needs:
@@ -122,26 +138,74 @@ jobs:
       - build_image
       - tests
       - cross-compile
+    # only one parallel job allowed - used shared S3
+    concurrency:
+      group: release
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/') && needs.set_version.outputs.is_semantic_tag == 'true'
     steps:
       - name: Check out the repo
         uses: actions/checkout@v2
-      - name: Load Docker image
-        uses: ./.github/actions/load-image
-      - name: Load build cache
-        continue-on-error: true
-        uses: ./.github/actions/load-build-cache
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Docker login
+        uses: docker/login-action@v1
+        with:
+          username: ${{ env.DOCKERHUB_USER }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
+      - name: Pull Docker image
+        uses: ./.github/actions/pull-image
+      - name: Build DEB repo tools
+        uses: ./.github/actions/build-repo-tools
+        with:
+          type: deb
+      - name: Build RPM repo tools
+        uses: ./.github/actions/build-repo-tools
+        with:
+          type: rpm
+      - name: Build APK repo tools
+        uses: ./.github/actions/build-repo-tools
+        with:
+          type: apk
+      - name: Go cache
+        uses: ./.github/actions/go-cache
+        with:
+          key: compile
+      - name: Mount S3 bucket
+        uses: ./.github/actions/mount-s3
+      - name: Write private keys
+        run: |
+          mkdir -p /tmp/keys
+          echo "$DEB_KEY_PRIVATE" > /tmp/keys/deb.key
+          chmod 0600 /tmp/keys/deb.key
+          echo "$RPM_KEY_PRIVATE" > /tmp/keys/rpm.key
+          chmod 0600 /tmp/keys/rpm.key
+          echo "$APK_KEY_PRIVATE" > /tmp/keys/apk.key
+          chmod 0600 /tmp/keys/apk.key
       - name: Release
-        run: docker-compose run --rm -u "$UID:$GID" -e GITHUB_TOKEN -e TARGET_VERSION -v /tmp/go-cache:/tmp/go-cache dev make release
+        run: |
+          docker-compose run --rm -u "$UID:$GID" \
+          -e GITHUB_TOKEN \
+          -e DEB_KEY_PRIVATE_PATH=/tmp/keys/deb.key \
+          -e RPM_KEY_PRIVATE_PATH=/tmp/keys/rpm.key \
+          -e APK_KEY_PRIVATE_PATH=/tmp/keys/apk.key \
+          -e VERSION \
+          -v /tmp/go-cache:/tmp/go-cache \
+          -v /tmp/keys:/tmp/keys \
+          -v /s3bucket:/s3bucket \
+          dev make release
         env:
-          TARGET_VERSION: ${{ needs.set_version.outputs.version }}
+          VERSION: ${{ needs.set_version.outputs.version }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Index Linux packages
+        run: ./scripts/pkgs/index.sh /s3bucket
       - name: Upload zipped files to artifacts
         uses: actions/upload-artifact@v2
         with:
           name: linux
           path: target/*linux*.zip
+
   release-mac-os:
     needs:
       - set_version
@@ -182,7 +246,7 @@ jobs:
         run: |
           gon -log-level=info ./gon-amd64.json
           gon -log-level=info ./gon-arm64.json
-      - name: rename signed binaries
+      - name: Rename signed binaries
         run: |
           mv release/signed/kbc-amd64.zip release/signed/kbc_${{ needs.set_version.outputs.version }}_darwin_amd64.zip
           mv release/signed/kbc-arm64.zip release/signed/kbc_${{ needs.set_version.outputs.version }}_darwin_arm64.zip
@@ -222,14 +286,15 @@ jobs:
           path: linux
       - name: Create Homebrew formulae
         env:
-          TARGET_VERSION: ${{ needs.set_version.outputs.version }}
+          TAG: ${{ needs.set_version.outputs.tag }}
+          VERSION: ${{ needs.set_version.outputs.version }}
         run: |
           mkdir homebrew
-          export DARWIN_ARM_TARGET_SHA256=$(ls darwin/*darwin_arm64.zip | sha256sum | cut -f 1 -d ' ' )
-          export DARWIN_AMD_TARGET_SHA256=$(ls darwin/*darwin_amd64.zip | sha256sum | cut -f 1 -d ' ')
-          export LINUX_ARM_TARGET_SHA256=$(ls linux/*linux_arm.zip | sha256sum | cut -f 1 -d ' ' )
-          export LINUX_ARM64_TARGET_SHA256=$(ls linux/*linux_arm64.zip | sha256sum | cut -f 1 -d ' ' )
-          export LINUX_AMD_TARGET_SHA256=$(ls linux/*linux_amd64.zip | sha256sum | cut -f 1 -d ' ' )
+          export DARWIN_ARM_TARGET_SHA256=$(sha256sum darwin/*darwin_arm64.zip | cut -f 1 -d ' ' )
+          export DARWIN_AMD_TARGET_SHA256=$(sha256sum darwin/*darwin_amd64.zip | cut -f 1 -d ' ')
+          export LINUX_ARM_TARGET_SHA256=$(sha256sum linux/*linux_armv6.zip | cut -f 1 -d ' ' )
+          export LINUX_ARM64_TARGET_SHA256=$(sha256sum linux/*linux_arm64.zip | cut -f 1 -d ' ' )
+          export LINUX_AMD_TARGET_SHA256=$(sha256sum linux/*linux_amd64.zip | cut -f 1 -d ' ' )
           envsubst < homebrew.template.rb > homebrew/keboola-as-code.rb
           cat homebrew/keboola-as-code.rb
       - name: Push formulae to keboola/homebrew-tap repository
@@ -241,3 +306,93 @@ jobs:
           destination-github-username: "keboola"
           destination-repository-name: "homebrew-tap"
           target-branch: main
+
+  test-install-linux:
+    needs:
+      - set_version
+      - release
+      - release-homebrew
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install on Ubuntu
+        if: always()
+        run: |
+          docker run --rm ubuntu bash -c '
+          set -e
+          apt-get update -y && apt-get install -y wget ca-certificates gnupg
+          wget -P /etc/apt/trusted.gpg.d https://cli-dist.keboola.com/deb/keboola.gpg
+          echo "deb https://cli-dist.keboola.com/deb /" | tee /etc/apt/sources.list.d/keboola.list
+          apt-get update
+          apt-get install kbc
+          kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
+          '
+        env:
+          VERSION: ${{ needs.set_version.outputs.version }}
+      - name: Install on Debian
+        if: always()
+        run: |
+          docker run --rm debian bash -c '
+          set -e
+          apt-get update -y && apt-get install -y wget ca-certificates gnupg
+          wget -P /etc/apt/trusted.gpg.d https://cli-dist.keboola.com/deb/keboola.gpg
+          echo "deb https://cli-dist.keboola.com/deb /" | tee /etc/apt/sources.list.d/keboola.list
+          apt-get update
+          apt-get install kbc
+          kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
+          '
+        env:
+          VERSION: ${{ needs.set_version.outputs.version }}
+      - name: Install on Fedora
+        if: always()
+        run: |
+          docker run --rm fedora bash -c '
+          set -e
+          rpm --import https://cli-dist.keboola.com/rpm/keboola.gpg
+          echo "[keboola]
+          name=keboola
+          baseurl=https://cli-dist.keboola.com/rpm
+          enabled=1
+          gpgcheck=1
+          gpgkey=https://cli-dist.keboola.com/rpm/keboola.gpg
+          " | tee /etc/yum.repos.d/keboola.repo
+          dnf install -y kbc
+          kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
+          '
+        env:
+          VERSION: ${{ needs.set_version.outputs.version }}
+      - name: Install on Alpine
+        if: always()
+        run: |
+          docker run --rm  alpine sh -c '
+          set -e
+          echo "https://cli-dist.keboola.com/apk" | tee -a /etc/apk/repositories
+          wget -P /etc/apk/keys/ https://cli-dist.keboola.com/apk/keboola.rsa.pub
+          apk update
+          apk add kbc
+          kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
+          '
+        env:
+          VERSION: ${{ needs.set_version.outputs.version }}
+      - name: Install on Linux by Homebrew
+        if: always()
+        run: |
+          docker run --rm homebrew/brew sh -c '
+          set -e
+          brew tap keboola/homebrew-tap
+          brew install keboola-as-code
+          kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
+          '
+        env:
+          VERSION: ${{ needs.set_version.outputs.version }}
+
+  test-install-mac-os:
+    needs:
+      - release
+      - release-homebrew
+    runs-on: macos-latest
+    steps:
+      - name: Install on MacOS by Homebrew
+        run: |
+          brew tap keboola/homebrew-tap
+          brew install keboola-as-code
+          kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"

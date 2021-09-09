@@ -141,6 +141,7 @@ func createRetry() func(response *resty.Response, err error) bool {
 		// On HTTP status codes
 		switch response.StatusCode() {
 		case
+			http.StatusNotFound, // race condition
 			http.StatusRequestTimeout,
 			http.StatusConflict,
 			http.StatusLocked,
