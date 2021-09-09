@@ -8,6 +8,7 @@ set -o pipefail         # Use last non-zero exit code in a pipeline
 
 # Import key
 mkdir -p "$HOME/.abuild"
+echo -e "$APK_KEY_PUBLIC"   > "/etc/apk/keys/keboola.rsa.pub"
 echo -e "$APK_KEY_PRIVATE"  > "$HOME/.abuild/keboola.rsa"
 
 # Index and sign
@@ -16,7 +17,7 @@ for DIR in `find ~+ -mindepth 1 -type d`; do
     if [ -d "${DIR}" ]; then
         echo "Arch '$DIR' ..."
         cd "$DIR"
-        apk index -Uv -o APKINDEX.new.tar.gz ./*.apk
+        apk index -Uv -x APKINDEX.tar.gz -o APKINDEX.new.tar.gz ./*.apk
         abuild-sign -k "$HOME/.abuild/keboola.rsa" APKINDEX.new.tar.gz
         mv -vf APKINDEX.new.tar.gz APKINDEX.tar.gz
         echo
