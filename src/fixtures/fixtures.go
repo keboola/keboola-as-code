@@ -44,7 +44,7 @@ type Config struct {
 }
 
 type ConfigRow struct {
-	Name              string                 `json:"name" validate:"required"`
+	Name              string                 `json:"name"`
 	Description       string                 `json:"description"`
 	ChangeDescription string                 `json:"changeDescription"`
 	IsDisabled        bool                   `json:"isDisabled"`
