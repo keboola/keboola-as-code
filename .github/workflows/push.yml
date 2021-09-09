@@ -295,8 +295,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install on Ubuntu
+        if: always()
         run: |
           docker run --rm ubuntu bash -c '
+            set -e
+            apt-get update
+            apt-get install curl
             wget -qO - https://cli-dist.keboola.com/deb/key.gpg | apt-key add -
             echo "deb https://cli-dist.keboola.com/deb /" | tee /etc/apt/sources.list.d/keboola.list
             apt-get update
@@ -304,6 +308,7 @@ jobs:
             kbc --version
           '
       - name: Install on Debian
+        if: always()
         run: |
           docker run --rm debian bash -c '
             wget -qO - https://cli-dist.keboola.com/deb/key.gpg | apt-key add -
@@ -313,6 +318,7 @@ jobs:
             kbc --version
           '
       - name: Install on Fedora
+        if: always()
         run: |
           docker run --rm fedora bash -c '
             echo "[keboola]
@@ -326,6 +332,7 @@ jobs:
             kbc --version
           '
       - name: Install on Alpine
+        if: always()
         run: |
           docker run --rm  alpine sh -c '
             echo "https://cli-dist.keboola.com/apk" | tee -a /etc/apk/repositories
@@ -335,6 +342,7 @@ jobs:
             kbc --version
           '
       - name: Install on Linux Homebrew
+        if: always()
         run: |
           docker run --rm alpine sh -c '
             brew tap keboola/homebrew-tap

@@ -19,12 +19,13 @@ ARTIFACT_PATH=$1
 ARTIFACT_NAME=$2
 PACKAGE_NAME=$3
 VERSION=$4
-ARCH=$5
+OS=$5
+ARCH=$6
 
 # ZIP repository
 if [[ "$ARTIFACT_NAME" =~ \.zip$ ]]; then
   DST_DIR="${S3_MOUNTPOINT}/zip";
-  DST="${DST_DIR}/${PACKAGE_NAME}_${VERSION}_${ARCH}.zip";
+  DST="${DST_DIR}/${PACKAGE_NAME}_${VERSION}_${OS}_${ARCH}.zip";
   mkdir -p "$DST_DIR";
   cp -v --remove-destination "$ARTIFACT_PATH" "$DST";
 fi

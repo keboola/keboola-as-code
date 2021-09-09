@@ -57,7 +57,7 @@ nfpms:
 
 publishers:
   - name: Upload artifacts to S3
-    cmd: ./scripts/pkgs/publish-to-s3.sh "{{ abs .ArtifactPath }}" "{{ .ArtifactName }}" "{{ .ProjectName }}" "{{ .Version }}" "{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    cmd: ./scripts/pkgs/publish-to-s3.sh "{{ abs .ArtifactPath }}" "{{ .ArtifactName }}" "{{ .ProjectName }}" "{{ .Version }}" "{{ .Os }}" "{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
     ids:
       - archives
       - packages
