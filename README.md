@@ -22,7 +22,7 @@ kbc --version
 
 #### Debian / Ubuntu
 ```sh
-wget -qO - https://cli-dist.keboola.com/deb/key.gpg | sudo apt-key add -
+sudo wget -P /etc/apt/trusted.gpg.d https://cli-dist.keboola.com/deb/keboola.gpg
 echo "deb https://cli-dist.keboola.com/deb /" | sudo tee /etc/apt/sources.list.d/keboola.list
 sudo apt-get update
 sudo apt-get install kbc
@@ -31,12 +31,13 @@ kbc --version
 
 #### Fedora
 ```sh
+sudo rpm --import https://cli-dist.keboola.com/rpm/keboola.gpg
 echo "[keboola]
 name=keboola
 baseurl=https://cli-dist.keboola.com/rpm
 enabled=1
 gpgcheck=1
-gpgkey=https://cli-dist.keboola.com/rpm/key.gpg
+gpgkey=https://cli-dist.keboola.com/rpm/keboola.gpg
 " | sudo tee /etc/yum.repos.d/keboola.repo
 sudo dnf install kbc
 kbc --version

@@ -65,7 +65,7 @@ if [[ "$ARTIFACT_NAME" =~ \.apk$ ]]; then
   esac
 
   export DST_DIR="${S3_MOUNTPOINT}/apk/${ALPINE_ARCH}";
-  export DST="${DST_DIR}/${PACKAGE_NAME}_${VERSION}.apk";
+  export DST="${DST_DIR}/${PACKAGE_NAME}-${VERSION}.apk";
   mkdir -p "$DST_DIR";
   cp -v --remove-destination "$ARTIFACT_PATH" "$DST";
 fi

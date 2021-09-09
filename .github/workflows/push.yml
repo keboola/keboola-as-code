@@ -290,6 +290,7 @@ jobs:
 
   test-install-linux:
     needs:
+      - set_version
       - release
       - release-homebrew
     runs-on: ubuntu-latest
@@ -299,38 +300,46 @@ jobs:
         run: |
           docker run --rm ubuntu bash -c '
             set -e
-            apt-get update
-            apt-get install curl
-            wget -qO - https://cli-dist.keboola.com/deb/key.gpg | apt-key add -
+            apt-get update -y && apt-get install -y wget ca-certificates gnupg
+            wget -P /etc/apt/trusted.gpg.d https://cli-dist.keboola.com/deb/keboola.gpg
             echo "deb https://cli-dist.keboola.com/deb /" | tee /etc/apt/sources.list.d/keboola.list
             apt-get update
             apt-get install kbc
-            kbc --version
+            kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.TARGET_VERSION }}"
           '
+        env:
+          TARGET_VERSION: ${{ needs.set_version.outputs.version }}
       - name: Install on Debian
         if: always()
         run: |
           docker run --rm debian bash -c '
-            wget -qO - https://cli-dist.keboola.com/deb/key.gpg | apt-key add -
+            set -e
+            apt-get update -y && apt-get install -y wget ca-certificates gnupg
+            wget -P /etc/apt/trusted.gpg.d https://cli-dist.keboola.com/deb/keboola.gpg
             echo "deb https://cli-dist.keboola.com/deb /" | tee /etc/apt/sources.list.d/keboola.list
             apt-get update
             apt-get install kbc
-            kbc --version
+            kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.TARGET_VERSION }}"
           '
+        env:
+          TARGET_VERSION: ${{ needs.set_version.outputs.version }}
       - name: Install on Fedora
         if: always()
         run: |
           docker run --rm fedora bash -c '
+            rpm --import https://cli-dist.keboola.com/rpm/keboola.gpg
             echo "[keboola]
             name=keboola
             baseurl=https://cli-dist.keboola.com/rpm
             enabled=1
             gpgcheck=1
-            gpgkey=https://cli-dist.keboola.com/rpm/key.gpg
+            gpgkey=https://cli-dist.keboola.com/rpm/keboola.gpg
             " | tee /etc/yum.repos.d/keboola.repo
             dnf install kbc
-            kbc --version
+            kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.TARGET_VERSION }}"
           '
+        env:
+          TARGET_VERSION: ${{ needs.set_version.outputs.version }}
       - name: Install on Alpine
         if: always()
         run: |
@@ -339,16 +348,20 @@ jobs:
             wget -P /etc/apk/keys/ https://cli-dist.keboola.com/apk/keboola.rsa.pub
             apk update
             apk add kbc
-            kbc --version
+            kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.TARGET_VERSION }}"
           '
+        env:
+          TARGET_VERSION: ${{ needs.set_version.outputs.version }}
       - name: Install on Linux Homebrew
         if: always()
         run: |
-          docker run --rm alpine sh -c '
+          docker run --rm homebrew/brew sh -c '
             brew tap keboola/homebrew-tap
             brew install keboola-as-code
-            kbc --version
+            kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.TARGET_VERSION }}"
           '
+        env:
+          TARGET_VERSION: ${{ needs.set_version.outputs.version }}
 
   test-install-mac-os:
     needs:
