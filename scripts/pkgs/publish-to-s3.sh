@@ -32,7 +32,7 @@ fi
 
 # DEB repository
 if [[ "$ARTIFACT_NAME" =~ \.deb$ ]]; then
-  DST_DIR="${S3_MOUNTPOINT}/deb";
+  DST_DIR="${S3_MOUNTPOINT}/deb/pool";
   DST="${DST_DIR}/${PACKAGE_NAME}_${VERSION}_${ARCH}.deb";
   mkdir -p "$DST_DIR";
   cp -v --remove-destination "$ARTIFACT_PATH" "$DST";

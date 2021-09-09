@@ -17,7 +17,7 @@ echo -e "$DEB_KEY_PRIVATE" | gpg --import --batch
 
 # Index
 cd /packages/deb
-apt-ftparchive packages . > Packages
+apt-ftparchive packages pool > Packages
 cat Packages | gzip > Packages.gz
 
 # Sign
