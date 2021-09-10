@@ -63,6 +63,21 @@ func TestDeleteEmptyDirectories(t *testing.T) {
 	assert.NoError(t, err)
 	manager := NewManager(logger, m, components.NewProvider(nil))
 
+	// Structure:
+	// D .hidden
+	// D .git
+	//     D empty
+	// D tracked-empty
+	// D tracked-empty-sub
+	//     D abc
+	// D non-tracked-empty
+	// D tracked
+	//    F foo.txt
+	// D non-tracked
+	//    F foo.txt
+	// D tracked-with-hidden
+	//    D .git
+
 	// Create empty hidden dir
 	assert.NoError(t, os.MkdirAll(filepath.Join(projectDir, `.hidden`), 0755))
 	// Create empty sub-dir in hidden dir
@@ -73,6 +88,7 @@ func TestDeleteEmptyDirectories(t *testing.T) {
 	assert.NoError(t, os.MkdirAll(filepath.Join(projectDir, `non-tracked-empty`), 0755))
 	assert.NoError(t, os.MkdirAll(filepath.Join(projectDir, `tracked`), 0755))
 	assert.NoError(t, os.MkdirAll(filepath.Join(projectDir, `non-tracked`), 0755))
+	assert.NoError(t, os.MkdirAll(filepath.Join(projectDir, `tracked-with-hidden`, `.git`), 0755))
 	assert.NoError(t, os.WriteFile(filepath.Join(projectDir, `tracked`, `foo.txt`), []byte(`bar`), 0644))
 	assert.NoError(t, os.WriteFile(filepath.Join(projectDir, `non-tracked`, `foo.txt`), []byte(`bar`), 0644))
 
@@ -82,6 +98,7 @@ func TestDeleteEmptyDirectories(t *testing.T) {
 		`tracked-empty`,
 		`tracked-empty-sub`,
 		`tracked`,
+		`tracked-with-hidden`,
 	}
 	assert.NoError(t, manager.DeleteEmptyDirectories(trackedPaths))
 
@@ -92,6 +109,7 @@ func TestDeleteEmptyDirectories(t *testing.T) {
 	assert.DirExists(t, filepath.Join(projectDir, `.hidden`))
 	assert.DirExists(t, filepath.Join(projectDir, `.git`, `empty`))
 	assert.DirExists(t, filepath.Join(projectDir, `non-tracked-empty`))
+	assert.DirExists(t, filepath.Join(projectDir, `tracked-with-hidden`, `.git`))
 	assert.FileExists(t, filepath.Join(projectDir, `tracked`, `foo.txt`))
 	assert.FileExists(t, filepath.Join(projectDir, `non-tracked`, `foo.txt`))
 }
