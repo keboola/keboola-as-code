@@ -67,14 +67,9 @@ func (n Naming) Attach(key Key, path string) {
 }
 
 // Detach object's path from Naming, so it can be used by other object.
-func (n Naming) Detach(key Key, path string) {
+func (n Naming) Detach(key Key) {
 	n.usedLock.Lock()
 	defer n.usedLock.Unlock()
-
-	if foundKey, found := n.usedByPath[path]; found {
-		delete(n.usedByPath, path)
-		delete(n.usedByKey, foundKey)
-	}
 
 	if foundPath, found := n.usedByKey[key.String()]; found {
 		delete(n.usedByPath, foundPath)
