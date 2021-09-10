@@ -60,7 +60,14 @@ func TestManifestLoad(t *testing.T) {
 		assert.NotNil(t, manifest)
 		assert.NoError(t, err)
 
+		// Assert naming (without internal fields)
+		assert.Equal(t, c.data.Naming.Branch, manifest.Content.Naming.Branch)
+		assert.Equal(t, c.data.Naming.Config, manifest.Content.Naming.Config)
+		assert.Equal(t, c.data.Naming.ConfigRow, manifest.Content.Naming.ConfigRow)
+
 		// Assert
+		c.data.Naming = model.DefaultNaming()
+		manifest.Naming = model.DefaultNaming()
 		assert.Equal(t, c.data, manifest.Content)
 	}
 }
@@ -143,8 +150,10 @@ func TestManifestValidateNestedField(t *testing.T) {
 	m.Content.Branches = append(m.Content.Branches, &model.BranchManifest{
 		BranchKey: model.BranchKey{Id: 0},
 		Paths: model.Paths{
-			Path:       "foo",
-			ParentPath: "bar",
+			PathInProject: model.PathInProject{
+				ObjectPath: "foo",
+				ParentPath: "bar",
+			},
 		},
 	})
 	err := m.validate()
@@ -321,8 +330,10 @@ func fullStruct() *Content {
 					Id: 10,
 				},
 				Paths: model.Paths{
-					Path:       "main",
-					ParentPath: "",
+					PathInProject: model.PathInProject{
+						ObjectPath: "main",
+						ParentPath: "",
+					},
 				},
 			},
 			{
@@ -333,8 +344,10 @@ func fullStruct() *Content {
 					Id: 11,
 				},
 				Paths: model.Paths{
-					Path:       "11-dev",
-					ParentPath: "",
+					PathInProject: model.PathInProject{
+						ObjectPath: "11-dev",
+						ParentPath: "",
+					},
 				},
 			},
 		},
@@ -350,8 +363,10 @@ func fullStruct() *Content {
 						Id:          "11",
 					},
 					Paths: model.Paths{
-						Path:       "11-raw-data",
-						ParentPath: "main",
+						PathInProject: model.PathInProject{
+							ObjectPath: "11-raw-data",
+							ParentPath: "main",
+						},
 					},
 				},
 				Rows: []*model.ConfigRowManifest{
@@ -366,8 +381,10 @@ func fullStruct() *Content {
 							ConfigId:    "11",
 						},
 						Paths: model.Paths{
-							Path:       "rows/101-region-1",
-							ParentPath: "main/11-raw-data",
+							PathInProject: model.PathInProject{
+								ObjectPath: "rows/101-region-1",
+								ParentPath: "main/11-raw-data",
+							},
 						},
 					},
 					{
@@ -381,8 +398,10 @@ func fullStruct() *Content {
 							ConfigId:    "11",
 						},
 						Paths: model.Paths{
-							Path:       "rows/102-region-2",
-							ParentPath: "main/11-raw-data",
+							PathInProject: model.PathInProject{
+								ObjectPath: "rows/102-region-2",
+								ParentPath: "main/11-raw-data",
+							},
 						},
 					},
 				},
@@ -398,8 +417,10 @@ func fullStruct() *Content {
 						Id:          "12",
 					},
 					Paths: model.Paths{
-						Path:       "12-current-month",
-						ParentPath: "11-dev",
+						PathInProject: model.PathInProject{
+							ObjectPath: "12-current-month",
+							ParentPath: "11-dev",
+						},
 					},
 				},
 				Rows: []*model.ConfigRowManifest{
@@ -414,8 +435,10 @@ func fullStruct() *Content {
 							ConfigId:    "12",
 						},
 						Paths: model.Paths{
-							Path:       "rows/103-all",
-							ParentPath: "11-dev/12-current-month",
+							PathInProject: model.PathInProject{
+								ObjectPath: "rows/103-all",
+								ParentPath: "11-dev/12-current-month",
+							},
 						},
 					},
 					{
@@ -429,8 +452,10 @@ func fullStruct() *Content {
 							ConfigId:    "12",
 						},
 						Paths: model.Paths{
-							Path:       "rows/104-sum",
-							ParentPath: "11-dev/12-current-month",
+							PathInProject: model.PathInProject{
+								ObjectPath: "rows/104-sum",
+								ParentPath: "11-dev/12-current-month",
+							},
 						},
 					},
 				},

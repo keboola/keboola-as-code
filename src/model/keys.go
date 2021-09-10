@@ -11,6 +11,8 @@ const (
 	ComponentAbbr = "COM"
 	ConfigAbbr    = "C"
 	RowAbbr       = "R"
+	BlockAbbr     = "b"
+	CodeAbbr      = "c"
 )
 
 type Key interface {
@@ -51,6 +53,21 @@ type ConfigRowKey struct {
 	Id          string `json:"id" validate:"required" `
 }
 
+type BlockKey struct {
+	BranchId    int    `json:"-"`
+	ComponentId string `json:"-"`
+	ConfigId    string `json:"-"`
+	Index       int    `json:"-"`
+}
+
+type CodeKey struct {
+	BranchId    int    `json:"-"`
+	ComponentId string `json:"-"`
+	ConfigId    string `json:"-"`
+	BlockIndex  int    `json:"-"`
+	Index       int    `json:"-"`
+}
+
 func (k BranchKey) Kind() Kind {
 	return Kind{Name: "branch", Abbr: BranchAbbr}
 }
@@ -65,6 +82,14 @@ func (k ConfigKey) Kind() Kind {
 
 func (k ConfigRowKey) Kind() Kind {
 	return Kind{Name: "config row", Abbr: RowAbbr}
+}
+
+func (k BlockKey) Kind() Kind {
+	return Kind{Name: "block", Abbr: BlockAbbr}
+}
+
+func (k CodeKey) Kind() Kind {
+	return Kind{Name: "code", Abbr: CodeAbbr}
 }
 
 func (k BranchKey) ObjectId() string {
@@ -83,6 +108,14 @@ func (k ConfigRowKey) ObjectId() string {
 	return k.Id
 }
 
+func (k BlockKey) ObjectId() string {
+	return cast.ToString(k.Index)
+}
+
+func (k CodeKey) ObjectId() string {
+	return cast.ToString(k.Index)
+}
+
 func (k BranchKey) Level() int {
 	return 1
 }
@@ -97,6 +130,14 @@ func (k ConfigKey) Level() int {
 
 func (k ConfigRowKey) Level() int {
 	return 4
+}
+
+func (k BlockKey) Level() int {
+	return 5
+}
+
+func (k CodeKey) Level() int {
+	return 6
 }
 
 func (k BranchKey) Key() Key {
@@ -115,8 +156,20 @@ func (k ConfigRowKey) Key() Key {
 	return k
 }
 
+func (k BlockKey) Key() Key {
+	return k
+}
+
+func (k CodeKey) Key() Key {
+	return k
+}
+
 func (k BranchKey) String() string {
 	return fmt.Sprintf("%02d_%d_branch", k.Level(), k.Id)
+}
+
+func (k BranchKey) ParentKey() Key {
+	return nil // Branch is top level object
 }
 
 func (k ComponentKey) String() string {
@@ -131,12 +184,24 @@ func (k ConfigRowKey) String() string {
 	return fmt.Sprintf("%02d_%d_%s_%s_%s_config_row", k.Level(), k.BranchId, k.ComponentId, k.ConfigId, k.Id)
 }
 
+func (k BlockKey) String() string {
+	return fmt.Sprintf("%02d_%d_%s_%s_%03d_block", k.Level(), k.BranchId, k.ComponentId, k.ConfigId, k.Index)
+}
+
+func (k CodeKey) String() string {
+	return fmt.Sprintf("%02d_%d_%s_%s_%03d_%03d_code", k.Level(), k.BranchId, k.ComponentId, k.ConfigId, k.BlockIndex, k.Index)
+}
+
 func (k ConfigKey) ComponentKey() *ComponentKey {
 	return &ComponentKey{Id: k.ComponentId}
 }
 
 func (k ConfigKey) BranchKey() *BranchKey {
 	return &BranchKey{Id: k.BranchId}
+}
+
+func (k ConfigKey) ParentKey() Key {
+	return k.BranchKey()
 }
 
 func (k ConfigRowKey) ComponentKey() *ComponentKey {
@@ -148,5 +213,17 @@ func (k ConfigRowKey) BranchKey() *BranchKey {
 }
 
 func (k ConfigRowKey) ConfigKey() *ConfigKey {
+	return &ConfigKey{BranchId: k.BranchId, ComponentId: k.ComponentId, Id: k.ConfigId}
+}
+
+func (k ConfigRowKey) ParentKey() Key {
+	return k.ConfigKey()
+}
+
+func (k Block) ConfigKey() *ConfigKey {
+	return &ConfigKey{BranchId: k.BranchId, ComponentId: k.ComponentId, Id: k.ConfigId}
+}
+
+func (k Code) ConfigKey() *ConfigKey {
 	return &ConfigKey{BranchId: k.BranchId, ComponentId: k.ComponentId, Id: k.ConfigId}
 }

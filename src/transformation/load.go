@@ -33,7 +33,8 @@ func LoadBlocks(projectDir string, logger *zap.SugaredLogger, naming model.Namin
 // LoadBlocks - load code blocks from disk to target config.
 func (l *loader) loadBlocksToConfig() error {
 	// Load blocks
-	blocks := l.loadBlocks(l.naming.BlocksDir(l.record.RelativePath()))
+	blocksDir := l.naming.BlocksDir(l.record.RelativePath())
+	blocks := l.loadBlocks(blocksDir)
 
 	// Set blocks to "parameters.blocks" in the config
 	var parameters orderedmap.OrderedMap
@@ -77,10 +78,18 @@ func (l *loader) loadBlocks(blocksDir string) []*model.Block {
 	}
 
 	// Load all blocks
-	for _, item := range items {
+	for i, item := range items {
 		if item.IsDir() {
 			// Create block struct
-			block := &model.Block{Paths: model.Paths{ParentPath: blocksDir, Path: item.Name()}}
+			block := &model.Block{
+				BlockKey: model.BlockKey{
+					BranchId:    l.target.BranchId,
+					ComponentId: l.target.ComponentId,
+					ConfigId:    l.target.Id,
+					Index:       i,
+				},
+				Paths: model.Paths{PathInProject: model.PathInProject{ParentPath: blocksDir, ObjectPath: item.Name()}},
+			}
 			l.record.AddRelatedPath(block.RelativePath())
 
 			// Load meta file
@@ -94,7 +103,7 @@ func (l *loader) loadBlocks(blocksDir string) []*model.Block {
 			}
 
 			// Load codes
-			codes := l.loadCodes(block.RelativePath())
+			codes := l.loadCodes(block)
 			if codes != nil {
 				block.Codes = codes
 			} else {
@@ -119,9 +128,9 @@ func (l *loader) loadBlocks(blocksDir string) []*model.Block {
 }
 
 // loadCodes - one code is one dir from block dir.
-func (l *loader) loadCodes(blockDir string) []*model.Code {
+func (l *loader) loadCodes(block *model.Block) []*model.Code {
 	codes := make([]*model.Code, 0)
-	blockDirAbs := filepath.Join(l.projectDir, blockDir)
+	blockDirAbs := filepath.Join(l.projectDir, block.RelativePath())
 
 	// Load all dir entries
 	items, err := os.ReadDir(blockDirAbs)
@@ -131,10 +140,19 @@ func (l *loader) loadCodes(blockDir string) []*model.Code {
 	}
 
 	// Load all codes
-	for _, item := range items {
+	for i, item := range items {
 		if item.IsDir() {
 			// Create code struct
-			code := &model.Code{Paths: model.Paths{ParentPath: blockDir, Path: item.Name()}}
+			code := &model.Code{
+				CodeKey: model.CodeKey{
+					BranchId:    l.target.BranchId,
+					ComponentId: l.target.ComponentId,
+					ConfigId:    l.target.Id,
+					BlockIndex:  block.Index,
+					Index:       i,
+				},
+				Paths: model.Paths{PathInProject: model.PathInProject{ParentPath: block.RelativePath(), ObjectPath: item.Name()}},
+			}
 			l.record.AddRelatedPath(code.RelativePath())
 
 			// Load meta file

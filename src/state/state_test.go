@@ -81,8 +81,10 @@ func TestLoadState(t *testing.T) {
 					Id: cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
 				},
 				Paths: model.Paths{
-					Path:         "main",
-					ParentPath:   "",
+					PathInProject: model.PathInProject{
+						ObjectPath: "main",
+						ParentPath: "",
+					},
 					RelatedPaths: []string{model.MetaFile},
 				},
 			},
@@ -146,8 +148,10 @@ func TestLoadState(t *testing.T) {
 					Id:          utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
 				},
 				Paths: model.Paths{
-					Path:         "extractor/ex-generic-v2/456-todos",
-					ParentPath:   "main",
+					PathInProject: model.PathInProject{
+						ObjectPath: "extractor/ex-generic-v2/456-todos",
+						ParentPath: "main",
+					},
 					RelatedPaths: []string{model.MetaFile, model.ConfigFile},
 				},
 			},

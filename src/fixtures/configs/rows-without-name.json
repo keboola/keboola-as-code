@@ -1,0 +1,43 @@
+{
+  "componentId": "transformation",
+  "name": "legacy transformation",
+  "configuration": {
+    "parameters": {
+      "foo": "bar"
+    }
+  },
+  "rows": [
+    {
+      "isDisabled": false,
+      "configuration": {
+        "name": "name from config",
+        "foo": "foo"
+      }
+    },
+    {
+      "isDisabled": false,
+      "configuration": {
+        "name": "name from config",
+        "foo": "bar"
+      }
+    },
+    {
+      "isDisabled": false,
+      "configuration": {
+        "foo": "bar, no name 1"
+      }
+    },
+    {
+      "isDisabled": false,
+      "configuration": {
+        "foo": "bar, no name 2"
+      }
+    },
+    {
+      "isDisabled": false,
+      "configuration": {
+        "foo": "bar, no name 3"
+      }
+    }
+  ]
+}

@@ -273,8 +273,10 @@ func complexLocalExpectedBranches() []*model.BranchState {
 					Id: 123,
 				},
 				Paths: model.Paths{
-					Path:         "123-branch",
-					ParentPath:   "",
+					PathInProject: model.PathInProject{
+						ObjectPath: "123-branch",
+						ParentPath: "",
+					},
 					RelatedPaths: []string{model.MetaFile},
 				},
 			},
@@ -296,8 +298,10 @@ func complexLocalExpectedBranches() []*model.BranchState {
 					Id: 111,
 				},
 				Paths: model.Paths{
-					Path:         "main",
-					ParentPath:   "",
+					PathInProject: model.PathInProject{
+						ObjectPath: "main",
+						ParentPath: "",
+					},
 					RelatedPaths: []string{model.MetaFile},
 				},
 			},
@@ -353,8 +357,10 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 					Id:          "896",
 				},
 				Paths: model.Paths{
-					Path:         "extractor/keboola.ex-db-mysql/896-tables",
-					ParentPath:   "123-branch",
+					PathInProject: model.PathInProject{
+						ObjectPath: "extractor/keboola.ex-db-mysql/896-tables",
+						ParentPath: "123-branch",
+					},
 					RelatedPaths: []string{model.MetaFile, model.ConfigFile},
 				},
 			},
@@ -405,8 +411,10 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 					Id:          "456",
 				},
 				Paths: model.Paths{
-					Path:         "extractor/ex-generic-v2/456-todos",
-					ParentPath:   "main",
+					PathInProject: model.PathInProject{
+						ObjectPath: "extractor/ex-generic-v2/456-todos",
+						ParentPath: "main",
+					},
 					RelatedPaths: []string{model.MetaFile, model.ConfigFile},
 				},
 			},
@@ -457,8 +465,10 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 					Id:          "456",
 				},
 				Paths: model.Paths{
-					Path:         "extractor/ex-generic-v2/456-todos",
-					ParentPath:   "123-branch",
+					PathInProject: model.PathInProject{
+						ObjectPath: "extractor/ex-generic-v2/456-todos",
+						ParentPath: "123-branch",
+					},
 					RelatedPaths: []string{model.MetaFile, model.ConfigFile},
 				},
 			},
@@ -500,8 +510,10 @@ func complexLocalExpectedConfigRows() []*model.ConfigRowState {
 					Id:          "56",
 				},
 				Paths: model.Paths{
-					Path:         "rows/56-disabled",
-					ParentPath:   "123-branch/extractor/keboola.ex-db-mysql/896-tables",
+					PathInProject: model.PathInProject{
+						ObjectPath: "rows/56-disabled",
+						ParentPath: "123-branch/extractor/keboola.ex-db-mysql/896-tables",
+					},
 					RelatedPaths: []string{model.MetaFile, model.ConfigFile},
 				},
 			},
@@ -538,8 +550,10 @@ func complexLocalExpectedConfigRows() []*model.ConfigRowState {
 					Id:          "34",
 				},
 				Paths: model.Paths{
-					Path:         "rows/34-test-view",
-					ParentPath:   "123-branch/extractor/keboola.ex-db-mysql/896-tables",
+					PathInProject: model.PathInProject{
+						ObjectPath: "rows/34-test-view",
+						ParentPath: "123-branch/extractor/keboola.ex-db-mysql/896-tables",
+					},
 					RelatedPaths: []string{model.MetaFile, model.ConfigFile},
 				},
 			},
@@ -576,8 +590,10 @@ func complexLocalExpectedConfigRows() []*model.ConfigRowState {
 					Id:          "12",
 				},
 				Paths: model.Paths{
-					Path:         "rows/12-users",
-					ParentPath:   "123-branch/extractor/keboola.ex-db-mysql/896-tables",
+					PathInProject: model.PathInProject{
+						ObjectPath: "rows/12-users",
+						ParentPath: "123-branch/extractor/keboola.ex-db-mysql/896-tables",
+					},
 					RelatedPaths: []string{model.MetaFile, model.ConfigFile},
 				},
 			},

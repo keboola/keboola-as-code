@@ -76,26 +76,16 @@ func LoadManifest(projectDir string, metadataDir string) (*Manifest, error) {
 		return nil, err
 	}
 
-	// Resolve parent path, set parent IDs, persist records
-	branchById := make(map[int]*model.BranchManifest)
+	// Connect together all manifest records
 	for _, branch := range m.Content.Branches {
-		branchById[branch.Id] = branch
-		branch.ResolveParentPath()
 		m.PersistRecord(branch)
 	}
-	for _, configWithRows := range m.Content.Configs {
-		config := configWithRows.ConfigManifest
-		branch, found := branchById[config.BranchId]
-		if !found {
-			return nil, fmt.Errorf(`branch "%d" not found in the manifest - referenced from the config "%s:%s" in "%s"`, config.BranchId, config.ComponentId, config.Id, path)
-		}
-		config.ResolveParentPath(branch)
-		m.PersistRecord(config)
-		for _, row := range configWithRows.Rows {
+	for _, config := range m.Content.Configs {
+		m.PersistRecord(config.ConfigManifest)
+		for _, row := range config.Rows {
 			row.BranchId = config.BranchId
 			row.ComponentId = config.ComponentId
 			row.ConfigId = config.Id
-			row.ResolveParentPath(config)
 			m.PersistRecord(row)
 		}
 	}
@@ -219,11 +209,11 @@ func (m *Manifest) GetRecord(key model.Key) (model.Record, bool) {
 	return nil, false
 }
 
-func (m *Manifest) CreateOrGetRecord(key model.Key) (record model.Record) {
+func (m *Manifest) CreateOrGetRecord(key model.Key) (record model.Record, found bool) {
 	// Get
-	record, found := m.GetRecord(key)
+	record, found = m.GetRecord(key)
 	if found {
-		return record
+		return record, found
 	}
 
 	// Create
@@ -238,18 +228,25 @@ func (m *Manifest) CreateOrGetRecord(key model.Key) (record model.Record) {
 		panic(fmt.Errorf("unexpected type \"%s\"", key))
 	}
 	m.TrackRecord(record)
-	return record
+	return record, false
 }
 
 func (m *Manifest) PersistRecord(record model.Record) {
-	record.State().SetPersisted()
 	m.TrackRecord(record)
+	m.Naming.Attach(record.Key(), record.RelativePath())
+	record.State().SetPersisted()
+
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	m.changed = true
 }
 
 func (m *Manifest) TrackRecord(record model.Record) {
+	// Resolve parent path, if record has been loaded from manifest.json
+	if record.GetParentPath() == "" {
+		m.ResolveParentPath(record)
+	}
+
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	m.records.Set(record.Key().String(), record)
@@ -267,6 +264,28 @@ func (m *Manifest) DeleteRecordByKey(key model.Key) {
 		record.State().SetDeleted()
 		m.changed = m.changed || record.State().IsPersisted()
 		m.records.Delete(key.String())
+	}
+}
+
+func (m *Manifest) GetParent(record model.Record) model.Record {
+	parentKey := record.ParentKey()
+	if parentKey == nil {
+		return nil
+	}
+
+	parent, found := m.GetRecord(parentKey)
+	if !found {
+		panic(fmt.Sprintf(`record "%s" not found, referenced from "%s"`, parentKey, record))
+	}
+	return parent
+}
+
+func (m *Manifest) ResolveParentPath(record model.Record) {
+	if parent := m.GetParent(record); parent == nil {
+		// branch - no parent
+		record.SetParentPath("")
+	} else {
+		record.SetParentPath(parent.RelativePath())
 	}
 }
 

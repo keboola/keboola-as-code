@@ -49,6 +49,10 @@ func (MockedRecord) Key() model.Key {
 	return &MockedKey{}
 }
 
+func (MockedRecord) ParentKey() model.Key {
+	return nil
+}
+
 func (MockedRecord) Level() int {
 	return 1
 }
@@ -63,6 +67,20 @@ func (MockedRecord) State() *model.RecordState {
 
 func (MockedRecord) SortKey(sort string) string {
 	return "key"
+}
+
+func (MockedRecord) GetObjectPath() string {
+	return "foo"
+}
+
+func (MockedRecord) SetObjectPath(string) {
+}
+
+func (MockedRecord) GetParentPath() string {
+	return "bar"
+}
+
+func (MockedRecord) SetParentPath(string) {
 }
 
 func (MockedRecord) RelativePath() string {

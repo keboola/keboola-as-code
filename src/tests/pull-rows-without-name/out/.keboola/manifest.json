@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "project": {
+    "id": %%TEST_PROJECT_ID%%,
+    "apiHost": "%%TEST_KBC_STORAGE_API_HOST%%"
+  },
+  "sortBy": "path",
+  "naming": {
+    "branch": "{branch_name}",
+    "config": "{component_type}/{component_id}/{config_name}",
+    "configRow": "rows/{config_row_name}"
+  },
+  "allowedBranches": [
+    "__all__"
+  ],
+  "ignoredComponents": [],
+  "branches": [
+    {
+      "id": %%TEST_BRANCH_MAIN_ID%%,
+      "path": "main"
+    }
+  ],
+  "configurations": [
+    {
+      "branchId": %%TEST_BRANCH_MAIN_ID%%,
+      "componentId": "transformation",
+      "id": "%%TEST_BRANCH_ALL_CONFIG_LEGACY_TRANSFORMATION_ID%%",
+      "path": "other/transformation/legacy-transformation",
+      "rows": [
+        {
+          "id": "%%TEST_BRANCH_ALL_CONFIG_LEGACY_TRANSFORMATION_ROW_1_ID%%",
+          "path": "rows/name-from-config"
+        },
+        {
+          "id": "%%TEST_BRANCH_ALL_CONFIG_LEGACY_TRANSFORMATION_ROW_2_ID%%",
+          "path": "rows/name-from-config-001"
+        },
+        {
+          "id": "%%TEST_BRANCH_ALL_CONFIG_LEGACY_TRANSFORMATION_ROW_3_ID%%",
+          "path": "rows/row"
+        },
+        {
+          "id": "%%TEST_BRANCH_ALL_CONFIG_LEGACY_TRANSFORMATION_ROW_4_ID%%",
+          "path": "rows/row-001"
+        },
+        {
+          "id": "%%TEST_BRANCH_ALL_CONFIG_LEGACY_TRANSFORMATION_ROW_5_ID%%",
+          "path": "rows/row-002"
+        }
+      ]
+    }
+  ]
+}

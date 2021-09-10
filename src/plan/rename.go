@@ -86,58 +86,58 @@ func (b *renamePlanBuilder) renameBlocks(config *model.ConfigState) {
 		return
 	}
 
-	for index, block := range config.Local.Blocks {
-		b.renameBlock(config.ConfigManifest, index, block)
+	for _, block := range config.Local.Blocks {
+		b.renameBlock(block)
 	}
 }
 
-func (b *renamePlanBuilder) renameBlock(config *model.ConfigManifest, index int, block *model.Block) {
+func (b *renamePlanBuilder) renameBlock(block *model.Block) {
 	// Update parent path
-	block.ParentPath = b.Naming().BlocksDir(config.RelativePath())
+	b.LocalManager().UpdateBlockPath(block, false)
 
 	// Store old path
 	action := &RenameAction{}
 	action.OldPath = filepath.Join(b.ProjectDir(), block.RelativePath())
 
 	// Rename
-	block.Path = b.Naming().BlockPath(index, block.Name)
+	b.LocalManager().UpdateBlockPath(block, true)
 	action.NewPath = filepath.Join(b.ProjectDir(), block.RelativePath())
 	if action.OldPath != action.NewPath {
 		b.actions = append(b.actions, action)
 	}
 
 	// Process codes
-	for codeIndex, code := range block.Codes {
-		b.renameCode(config.ComponentId, block, codeIndex, code)
+	for _, code := range block.Codes {
+		b.renameCode(block, code)
 	}
 }
 
-func (b *renamePlanBuilder) renameCode(componentId string, block *model.Block, index int, code *model.Code) {
+func (b *renamePlanBuilder) renameCode(block *model.Block, code *model.Code) {
 	// Update parent path
-	code.ParentPath = block.RelativePath()
+	b.LocalManager().UpdateCodePath(block, code, false)
 
 	// Store old path
 	action := &RenameAction{}
 	action.OldPath = filepath.Join(b.ProjectDir(), code.RelativePath())
 
 	// Rename
-	code.Path = b.Naming().CodePath(index, code.Name)
+	b.LocalManager().UpdateCodePath(block, code, true)
 	action.NewPath = filepath.Join(b.ProjectDir(), code.RelativePath())
 	if action.OldPath != action.NewPath {
 		b.actions = append(b.actions, action)
 	}
 
 	// Rename code file
-	b.renameCodeFile(componentId, code)
+	b.renameCodeFile(code)
 }
 
-func (b *renamePlanBuilder) renameCodeFile(componentId string, code *model.Code) {
+func (b *renamePlanBuilder) renameCodeFile(code *model.Code) {
 	// Store old path
 	action := &RenameAction{}
 	action.OldPath = filepath.Join(b.ProjectDir(), b.Naming().CodeFilePath(code))
 
 	// Rename
-	code.CodeFileName = b.Naming().CodeFileName(componentId)
+	code.CodeFileName = b.Naming().CodeFileName(code.ComponentId)
 	action.NewPath = filepath.Join(b.ProjectDir(), b.Naming().CodeFilePath(code))
 	if action.OldPath != action.NewPath {
 		b.actions = append(b.actions, action)

@@ -222,8 +222,10 @@ func createTransTestStructs(componentId string) (*model.ConfigManifest, *model.C
 	record := &model.ConfigManifest{
 		ConfigKey: configKey,
 		Paths: model.Paths{
-			ParentPath: "branch",
-			Path:       "config",
+			PathInProject: model.PathInProject{
+				ParentPath: "branch",
+				ObjectPath: "config",
+			},
 		},
 	}
 	config := &model.Config{

@@ -60,10 +60,15 @@ func (e *persistExecutor) persistNewConfig(action *NewConfigAction) {
 		key.Id = ticket.Id
 
 		// Create manifest record
-		branchManifest, _ := e.Manifest().GetRecord(key.BranchKey())
-		record := e.Manifest().CreateOrGetRecord(key).(*model.ConfigManifest)
-		record.Path = action.Path
-		record.ResolveParentPath(branchManifest.(*model.BranchManifest))
+		record, found := e.Manifest().CreateOrGetRecord(key)
+		if found {
+			panic(fmt.Errorf(`unexpected state: record "%s" existis, but it should not`, record))
+		}
+
+		// Set local path
+		record.SetObjectPath(action.Path)
+
+		// Save to manifest.json
 		e.Manifest().PersistRecord(record)
 
 		// Load model
@@ -85,16 +90,21 @@ func (e *persistExecutor) persistNewRow(action *NewRowAction) {
 		key := action.Key
 		key.Id = ticket.Id
 
-		// Create manifest record
-		configManifest, found := e.Manifest().GetRecord(key.ConfigKey())
-		if !found {
-			// Config has not been persisted -> skip
+		// The parent config was not persisted for some error -> skip row
+		if key.ConfigId == "" {
 			return
 		}
 
-		record := e.Manifest().CreateOrGetRecord(key).(*model.ConfigRowManifest)
-		record.Path = action.Path
-		record.ResolveParentPath(configManifest.(*model.ConfigManifest))
+		// Create manifest record
+		record, found := e.Manifest().CreateOrGetRecord(key)
+		if found {
+			panic(fmt.Errorf(`unexpected state: record "%s" existis, but it should not`, record))
+		}
+
+		// Set local path
+		record.SetObjectPath(action.Path)
+
+		// Save to manifest.json
 		e.Manifest().PersistRecord(record)
 
 		// Load model

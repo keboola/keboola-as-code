@@ -123,7 +123,7 @@ func TestDiffEqualConfig(t *testing.T) {
 		BranchKey: model.BranchKey{
 			Id: 123,
 		},
-		Name:        "name",
+		Name:        "branch name",
 		Description: "description",
 		IsDefault:   false,
 	}
@@ -131,7 +131,7 @@ func TestDiffEqualConfig(t *testing.T) {
 		BranchKey: model.BranchKey{
 			Id: 123,
 		},
-		Name:        "name",
+		Name:        "branch name",
 		Description: "description",
 		IsDefault:   false,
 	}
@@ -143,7 +143,7 @@ func TestDiffEqualConfig(t *testing.T) {
 			ComponentId: "foo-bar",
 			Id:          "456",
 		},
-		Name:              "name",
+		Name:              "config name",
 		Description:       "description",
 		ChangeDescription: "remote", // no diff:"true" tag
 	}
@@ -153,7 +153,7 @@ func TestDiffEqualConfig(t *testing.T) {
 			ComponentId: "foo-bar",
 			Id:          "456",
 		},
-		Name:              "name",
+		Name:              "config name",
 		Description:       "description",
 		ChangeDescription: "local", // no diff:"true" tag
 	}

@@ -3,6 +3,7 @@ package tests
 import (
 	"bytes"
 	"context"
+	"io"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -114,6 +115,10 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	cmd.Dir = workingDir
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
+	if utils.TestIsVerbose() {
+		cmd.Stdout = io.MultiWriter(cmd.Stdout, os.Stdout)
+		cmd.Stderr = io.MultiWriter(cmd.Stderr, os.Stderr)
+	}
 
 	// Run command
 	exitCode := 0
