@@ -78,11 +78,9 @@ func TestDeleteEmptyDirectories(t *testing.T) {
 	// D tracked-with-hidden
 	//    D .git
 
-	// Create empty hidden dir
+	// Create structure
 	assert.NoError(t, os.MkdirAll(filepath.Join(projectDir, `.hidden`), 0755))
-	// Create empty sub-dir in hidden dir
 	assert.NoError(t, os.MkdirAll(filepath.Join(projectDir, `.git`, `empty`), 0755))
-	// Other
 	assert.NoError(t, os.MkdirAll(filepath.Join(projectDir, `tracked-empty`), 0755))
 	assert.NoError(t, os.MkdirAll(filepath.Join(projectDir, `tracked-empty-sub`, `abc`), 0755))
 	assert.NoError(t, os.MkdirAll(filepath.Join(projectDir, `non-tracked-empty`), 0755))

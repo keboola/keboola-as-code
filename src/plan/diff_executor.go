@@ -94,7 +94,7 @@ func (e *diffExecutor) invoke() error {
 		e.errors.Append(err)
 	}
 
-	// Delete empty directories, eg. no extractor of an type left -> dir is empty
+	// Delete empty directories, eg. no extractor of a type left -> dir is empty
 	if err := e.localManager.DeleteEmptyDirectories(e.State.TrackedPaths()); err != nil {
 		e.errors.Append(err)
 	}
