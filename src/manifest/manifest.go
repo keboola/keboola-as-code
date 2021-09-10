@@ -244,7 +244,7 @@ func (m *Manifest) PersistRecord(record model.Record) {
 func (m *Manifest) TrackRecord(record model.Record) {
 	// Resolve parent path, if record has been loaded from manifest.json
 	if record.GetParentPath() == "" {
-		m.ResolvePath(record)
+		m.ResolveParentPath(record)
 	}
 
 	m.lock.Lock()
@@ -280,7 +280,7 @@ func (m *Manifest) GetParent(record model.Record) model.Record {
 	return parent
 }
 
-func (m *Manifest) ResolvePath(record model.Record) {
+func (m *Manifest) ResolveParentPath(record model.Record) {
 	if parent := m.GetParent(record); parent == nil {
 		// branch - no parent
 		record.SetParentPath("")

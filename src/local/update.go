@@ -10,7 +10,7 @@ func (m *Manager) UpdatePaths(state model.ObjectState, rename bool) {
 	object := state.LocalOrRemoteState()
 
 	// Update parent path
-	m.manifest.ResolvePath(state.Manifest())
+	m.manifest.ResolveParentPath(state.Manifest())
 
 	// Re-generate object path IF rename is enabled OR path is not set
 	if state.GetObjectPath() == "" || rename {
