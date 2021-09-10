@@ -9,46 +9,46 @@ import (
 func (m *Manager) UpdatePaths(state model.ObjectState, rename bool) {
 	object := state.LocalOrRemoteState()
 
-	switch v := state.(type) {
-	case *model.BranchState:
-		branch := object.(*model.Branch)
+	// Update parent path
+	m.manifest.ResolvePath(state.Manifest())
 
-		// Set paths
-		if v.Path == "" || rename {
-			v.Path = m.Naming().BranchPath(branch, branch.IsDefault)
+	// Re-generate object path IF rename is enabled OR path is not set
+	if state.GetObjectPath() == "" || rename {
+		switch v := state.(type) {
+		case *model.BranchState:
+			v.PathInProject = m.Naming().BranchPath(object.(*model.Branch))
+		case *model.ConfigState:
+			config := object.(*model.Config)
+			v.PathInProject = m.Naming().ConfigPath(v.ParentPath, v.Component, config)
+		case *model.ConfigRowState:
+			row := object.(*model.ConfigRow)
+			v.PathInProject = m.Naming().ConfigRowPath(v.ParentPath, row)
+		default:
+			panic(fmt.Errorf(`unexpect type "%T"`, state))
 		}
-		v.ResolveParentPath()
-	case *model.ConfigState:
-		config := object.(*model.Config)
-
-		// Get parent - branch
-		branchKey := v.BranchKey()
-		branchManifest, found := m.manifest.GetRecord(branchKey)
-		if !found {
-			panic(fmt.Errorf("branch manifest wit key \"%s\" not found", branchKey))
-		}
-
-		// Set paths
-		if v.Path == "" || rename {
-			v.Path = m.Naming().ConfigPath(v.Component, config)
-		}
-		v.ResolveParentPath(branchManifest.(*model.BranchManifest))
-	case *model.ConfigRowState:
-		row := object.(*model.ConfigRow)
-
-		// Get parent - config
-		configKey := row.ConfigKey()
-		configManifest, found := m.manifest.GetRecord(configKey)
-		if !found {
-			panic(fmt.Errorf("config manifest wit key \"%s\" not found", configKey))
-		}
-
-		// Set paths
-		if v.Path == "" || rename {
-			v.Path = m.Naming().ConfigRowPath(row)
-		}
-		v.ResolveParentPath(configManifest.(*model.ConfigManifest))
-	default:
-		panic(fmt.Errorf(`unexpect type "%T"`, state))
 	}
+}
+
+func (m *Manager) UpdateBlockPath(block *model.Block, rename bool) {
+	// Update parent path
+	configDir := m.manifest.MustGetRecord(block.ConfigKey()).RelativePath()
+	blocksDir := m.Naming().BlocksDir(configDir)
+	block.SetParentPath(blocksDir)
+	if !rename {
+		return
+	}
+
+	// Re-generate object path
+	block.PathInProject = m.Naming().BlockPath(block.ParentPath, block)
+}
+
+func (m *Manager) UpdateCodePath(block *model.Block, code *model.Code, rename bool) {
+	// Update parent path
+	code.SetParentPath(block.RelativePath())
+	if !rename {
+		return
+	}
+
+	// Re-generate object path
+	code.PathInProject = m.Naming().CodePath(code.ParentPath, code)
 }

@@ -19,8 +19,13 @@ type Record interface {
 	Kind() Kind                 // eg. branch, config, config row -> used in logs
 	Level() int                 // hierarchical level, "1" for branch, "2" for config, ...
 	Key() Key                   // unique key for map -> for fast access
+	ParentKey() Key             // unique key of the parent object
 	SortKey(sort string) string // unique key for sorting
-	RelativePath() string       // path to the object directory
+	GetObjectPath() string      // path relative to the parent object
+	SetObjectPath(string)       // set path relative to the parent object
+	GetParentPath() string      // parent path relative to the project dir
+	SetParentPath(string)       // set parent path
+	RelativePath() string       // parent path + path -> path relative to the project dir
 	GetRelatedPaths() []string  // files related to the record, relative to the project dir, e.g. main/meta.json
 	AddRelatedPath(path string)
 	State() *RecordState
@@ -33,9 +38,13 @@ type RecordState struct {
 	Deleted   bool // if true, record has been deleted in this command run
 }
 
+type PathInProject struct {
+	Path       string `json:"path" validate:"required"`
+	ParentPath string `json:"-"` // not serialized, records are stored hierarchically
+}
+
 type Paths struct {
-	Path         string   `json:"path" validate:"required"`
-	ParentPath   string   `json:"-"` // not serialized, records are stored hierarchically
+	PathInProject
 	RelatedPaths []string `json:"-"` // no serialized, is generated when the object is loaded
 }
 
@@ -67,7 +76,23 @@ type ConfigManifestWithRows struct {
 	Rows []*ConfigRowManifest `json:"rows"`
 }
 
-func (p *Paths) RelativePath() string {
+func (p *PathInProject) GetObjectPath() string {
+	return p.Path
+}
+
+func (p *PathInProject) SetObjectPath(path string) {
+	p.Path = path
+}
+
+func (p *PathInProject) GetParentPath() string {
+	return p.ParentPath
+}
+
+func (p *PathInProject) SetParentPath(parentPath string) {
+	p.ParentPath = parentPath
+}
+
+func (p PathInProject) RelativePath() string {
 	return filepath.Join(
 		strings.ReplaceAll(p.ParentPath, "/", string(os.PathSeparator)),
 		strings.ReplaceAll(p.Path, "/", string(os.PathSeparator)),
@@ -131,18 +156,6 @@ func (s *RecordState) IsDeleted() bool {
 
 func (s *RecordState) SetDeleted() {
 	s.Deleted = true
-}
-
-func (b *BranchManifest) ResolveParentPath() {
-	b.ParentPath = ""
-}
-
-func (c *ConfigManifest) ResolveParentPath(branchManifest *BranchManifest) {
-	c.ParentPath = filepath.Join(branchManifest.ParentPath, branchManifest.Path)
-}
-
-func (r *ConfigRowManifest) ResolveParentPath(configManifest *ConfigManifest) {
-	r.ParentPath = filepath.Join(configManifest.ParentPath, configManifest.Path)
 }
 
 func (b BranchManifest) SortKey(sort string) string {

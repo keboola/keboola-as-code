@@ -52,11 +52,17 @@ func SaveBlocks(projectDir string, logger *zap.SugaredLogger, naming model.Namin
 	blocksDir := w.naming.BlocksDir(config.RelativePath())
 	blocksTmpDir := w.naming.BlocksTmpDir(config.RelativePath())
 	for blockIndex, block := range blocks {
-		block.ParentPath = blocksTmpDir
-		block.Path = w.naming.BlockPath(blockIndex, block.Name)
+		block.BranchId = source.BranchId
+		block.ComponentId = source.ComponentId
+		block.ConfigId = source.Id
+		block.Index = blockIndex
+		block.PathInProject = w.naming.BlockPath(blocksTmpDir, block)
 		for codeIndex, code := range block.Codes {
-			code.ParentPath = block.RelativePath()
-			code.Path = w.naming.CodePath(codeIndex, code.Name)
+			code.BranchId = source.BranchId
+			code.ComponentId = source.ComponentId
+			code.ConfigId = source.Id
+			code.Index = codeIndex
+			code.PathInProject = w.naming.CodePath(block.RelativePath(), code)
 			code.CodeFileName = w.naming.CodeFileName(config.ComponentId)
 		}
 	}
@@ -69,6 +75,7 @@ func SaveBlocks(projectDir string, logger *zap.SugaredLogger, naming model.Namin
 
 // writeBlocks to the temp dir, and if all ok move directory to the target path.
 func (w *writer) writeBlocks(targetDir, tmpDir string, blocks []*model.Block) {
+	blocksDirAbs := filepath.Join(w.projectDir, targetDir)
 	blocksTmpDirAbs := filepath.Join(w.projectDir, tmpDir)
 
 	// Create tmp dir, clear on the end
@@ -85,8 +92,6 @@ func (w *writer) writeBlocks(targetDir, tmpDir string, blocks []*model.Block) {
 
 	// If no error, replace old dir with the new
 	if w.errors.Len() == 0 {
-		blocksDirAbs := filepath.Join(w.projectDir, targetDir)
-
 		// Remove old content
 		if err := os.RemoveAll(blocksDirAbs); err != nil {
 			w.errors.Append(err)

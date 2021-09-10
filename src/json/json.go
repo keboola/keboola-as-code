@@ -12,7 +12,7 @@ import (
 func ReadFile(dir string, relPath string, target interface{}, errPrefix string) error {
 	path := filepath.Join(dir, relPath)
 
-	// Read meta file
+	// Read file
 	content, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -21,7 +21,7 @@ func ReadFile(dir string, relPath string, target interface{}, errPrefix string) 
 		return fmt.Errorf("cannot read %s file \"%s\"", errPrefix, relPath)
 	}
 
-	// Decode meta file
+	// Decode file
 	err = Decode(content, target)
 	if err != nil {
 		return fmt.Errorf("%s file \"%s\" is invalid:\n\t- %w", errPrefix, relPath, err)

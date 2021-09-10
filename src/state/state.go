@@ -236,8 +236,11 @@ func (s *State) SetRemoteState(remote model.Object) model.ObjectState {
 	defer s.mutex.Unlock()
 	state.SetRemoteState(remote)
 	if !state.HasManifest() {
-		// Generate manifest record, if not present (no local state)
-		state.SetManifest(s.manifest.CreateOrGetRecord(remote.Key()))
+		// Generate manifest record
+		m, _ := s.manifest.CreateOrGetRecord(remote.Key())
+		state.SetManifest(m)
+
+		// Generate local path
 		s.localManager.UpdatePaths(state, false)
 	}
 	return state

@@ -159,17 +159,34 @@ func (p *testProject) CreateConfigsInBranch(pool *client.Pool, names []string, b
 	for _, name := range names {
 		config := fixtures.LoadConfig(p.t, name)
 		config.BranchId = branch.Id
+
+		// Get IDs for config and its rows
+		// In tests must be rows IDs order always equal
+		p.logf("creating IDs for config \"%s/%s/%s\"", branch.Name, config.ComponentId, config.Name)
+		tickets := p.api.NewTicketProvider()
+		tickets.Request(func(ticket *model.Ticket) {
+			config.Id = ticket.Id
+			p.setEnv(fmt.Sprintf("%s_%s_ID", envPrefix, config.Name), config.Id)
+		})
+		for rowIndex, r := range config.Rows {
+			row := r
+			rowName := row.Name
+			if len(rowName) == 0 {
+				rowName = cast.ToString(rowIndex + 1)
+			}
+			tickets.Request(func(ticket *model.Ticket) {
+				row.Id = ticket.Id
+				p.setEnv(fmt.Sprintf("%s_%s_ROW_%s_ID", envPrefix, config.Name, rowName), row.Id)
+			})
+		}
+		if err := tickets.Resolve(); err != nil {
+			panic(err)
+		}
+
+		// Create config and rows, set ENVs
 		if request, err := p.api.CreateConfigRequest(config); err == nil {
 			p.logf("creating config \"%s/%s/%s\"", branch.Name, config.ComponentId, config.Name)
-			pool.
-				Request(request).
-				OnSuccess(func(response *client.Response) {
-					p.setEnv(fmt.Sprintf("%s_%s_ID", envPrefix, config.Name), config.Id)
-					for _, row := range config.Rows {
-						p.setEnv(fmt.Sprintf("%s_%s_ROW_%s_ID", envPrefix, config.Name, row.Name), row.Id)
-					}
-				}).
-				Send()
+			pool.Request(request).Send()
 		} else {
 			assert.FailNow(p.t, fmt.Sprintf("cannot create create config request: %s", err))
 		}

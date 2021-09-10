@@ -138,8 +138,10 @@ func TestPersistNewConfig(t *testing.T) {
 					Persisted: true,
 				},
 				Paths: model.Paths{
-					ParentPath:   "main",
-					Path:         "extractor/ex-generic-v2/new-config",
+					PathInProject: model.PathInProject{
+						ParentPath: "main",
+						Path:       "extractor/ex-generic-v2/new-config",
+					},
 					RelatedPaths: []string{model.MetaFile, model.ConfigFile},
 				},
 			},
@@ -274,8 +276,10 @@ func TestPersistNewConfigRow(t *testing.T) {
 					Persisted: true,
 				},
 				Paths: model.Paths{
-					ParentPath:   "main",
-					Path:         "extractor/keboola.ex-db-mysql/new-config",
+					PathInProject: model.PathInProject{
+						ParentPath: "main",
+						Path:       "extractor/keboola.ex-db-mysql/new-config",
+					},
 					RelatedPaths: []string{model.MetaFile, model.ConfigFile},
 				},
 			},
@@ -311,8 +315,10 @@ func TestPersistNewConfigRow(t *testing.T) {
 					Persisted: true,
 				},
 				Paths: model.Paths{
-					ParentPath:   "main/extractor/keboola.ex-db-mysql/new-config",
-					Path:         "rows/some-row",
+					PathInProject: model.PathInProject{
+						ParentPath: "main/extractor/keboola.ex-db-mysql/new-config",
+						Path:       "rows/some-row",
+					},
 					RelatedPaths: []string{model.MetaFile, model.ConfigFile},
 				},
 			},
@@ -365,8 +371,10 @@ func TestPersistDeleted(t *testing.T) {
 			Id:          "101",
 		},
 		Paths: model.Paths{
-			ParentPath: "main",
-			Path:       "extractor/keboola.ex-db-mysql/missing",
+			PathInProject: model.PathInProject{
+				ParentPath: "main",
+				Path:       "extractor/keboola.ex-db-mysql/missing",
+			},
 		},
 	}
 	missingRow := &model.ConfigRowManifest{
@@ -377,8 +385,10 @@ func TestPersistDeleted(t *testing.T) {
 			Id:          "202",
 		},
 		Paths: model.Paths{
-			ParentPath: "main/extractor/keboola.ex-db-mysql/missing",
-			Path:       "rows/some-row",
+			PathInProject: model.PathInProject{
+				ParentPath: "main/extractor/keboola.ex-db-mysql/missing",
+				Path:       "rows/some-row",
+			},
 		},
 	}
 	m.PersistRecord(missingConfig)

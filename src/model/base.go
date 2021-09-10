@@ -97,7 +97,7 @@ func (c *ConfigWithRows) SortRows() {
 // ConfigRow https://keboola.docs.apiary.io/#reference/components-and-configurations/component-configurations/list-configurations
 type ConfigRow struct {
 	ConfigRowKey
-	Name              string                 `json:"name" validate:"required" diff:"true" metaFile:"true"`
+	Name              string                 `json:"name" diff:"true" metaFile:"true"`
 	Description       string                 `json:"description" diff:"true" metaFile:"true"`
 	ChangeDescription string                 `json:"changeDescription"`
 	IsDisabled        bool                   `json:"isDisabled" diff:"true" metaFile:"true"`
@@ -120,6 +120,7 @@ type Event struct {
 
 // Block - transformation block.
 type Block struct {
+	BlockKey
 	Paths `json:"-"`
 	Name  string  `json:"name" validate:"required" metaFile:"true"`
 	Codes []*Code `json:"codes" validate:"omitempty,dive"`
@@ -127,6 +128,7 @@ type Block struct {
 
 // Code - transformation code.
 type Code struct {
+	CodeKey
 	Paths        `json:"-"`
 	CodeFileName string   `json:"-"` // eg. "code.sql", "code.py", ...
 	Name         string   `json:"name" validate:"required" metaFile:"true"`

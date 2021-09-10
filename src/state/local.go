@@ -2,7 +2,6 @@ package state
 
 import (
 	"fmt"
-
 	"keboola-as-code/src/model"
 	"keboola-as-code/src/utils"
 )

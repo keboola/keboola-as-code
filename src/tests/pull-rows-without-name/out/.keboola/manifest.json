@@ -14,6 +14,40 @@
     "__all__"
   ],
   "ignoredComponents": [],
-  "branches": [],
-  "configurations": []
+  "branches": [
+    {
+      "id": %%TEST_BRANCH_MAIN_ID%%,
+      "path": "main"
+    }
+  ],
+  "configurations": [
+    {
+      "branchId": 26240,
+      "componentId": "transformation",
+      "id": "%%TEST_BRANCH_ALL_CONFIG_LEGACY_TRANSFORMATION_ID%%",
+      "path": "other/transformation/legacy-transformation",
+      "rows": [
+        {
+          "id": "%%TEST_BRANCH_ALL_CONFIG_LEGACY_TRANSFORMATION_ROW_1_ID%%",
+          "path": "rows/name-from-config"
+        },
+        {
+          "id": "%%TEST_BRANCH_ALL_CONFIG_LEGACY_TRANSFORMATION_ROW_2_ID%%",
+          "path": "rows/name-from-config-001"
+        },
+        {
+          "id": "%%TEST_BRANCH_ALL_CONFIG_LEGACY_TRANSFORMATION_ROW_3_ID%%",
+          "path": "rows/row"
+        },
+        {
+          "id": "%%TEST_BRANCH_ALL_CONFIG_LEGACY_TRANSFORMATION_ROW_4_ID%%",
+          "path": "rows/row-001"
+        },
+        {
+          "id": "%%TEST_BRANCH_ALL_CONFIG_LEGACY_TRANSFORMATION_ROW_5_ID%%",
+          "path": "rows/row-002"
+        }
+      ]
+    }
+  ]
 }
