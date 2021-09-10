@@ -1,5 +1,0 @@
-Plan for "push" operation:
-	+  C dev/extractor/keboola.ex-db-mysql/undeleted
-	+  R dev/extractor/keboola.ex-db-mysql/undeleted/rows/disabled
-	+  R dev/extractor/keboola.ex-db-mysql/undeleted/rows/users
-Push done.

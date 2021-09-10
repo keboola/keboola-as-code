@@ -1,4 +1,0 @@
-Plan for "push" operation:
-	CH C dev/extractor/keboola.ex-db-mysql/config | changed: name, description
-	+  R dev/extractor/keboola.ex-db-mysql/config/rows/undeleted
-Push done.

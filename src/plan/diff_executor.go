@@ -74,12 +74,6 @@ func (e *diffExecutor) invoke() error {
 					e.errors.Append(err)
 				}
 			}
-		case ActionMarkDeletedRemote:
-			if e.allowedRemoteDelete {
-				if err := e.remoteWork.MarkDeleted(action.ObjectState); err != nil {
-					e.errors.Append(err)
-				}
-			}
 		default:
 			panic(fmt.Errorf(`unexpected action type`))
 		}

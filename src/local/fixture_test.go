@@ -41,10 +41,6 @@ func (m ModelStruct) Kind() model.Kind {
 	return m.Key().Kind()
 }
 
-func (ModelStruct) IsMarkedToDelete() bool {
-	return false
-}
-
 func (MockedRecord) Key() model.Key {
 	return &MockedKey{}
 }

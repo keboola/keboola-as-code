@@ -14,7 +14,6 @@ const (
 	MetaFileTag        = "metaFile:true"
 	ConfigFileTag      = "configFile:true"
 	TransformationType = "transformation"
-	ToDeletePrefix     = "[TO DELETE] "
 )
 
 // Kind - type of the object, branch, config ...
@@ -80,7 +79,6 @@ type Config struct {
 	ChangeDescription string                 `json:"changeDescription"`
 	Content           *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
 	Blocks            []*Block               `json:"-"` // loaded transformation's blocks, filled in only for the LOCAL state
-	markedToDelete    bool
 }
 
 type ConfigWithRows struct {
@@ -102,7 +100,6 @@ type ConfigRow struct {
 	ChangeDescription string                 `json:"changeDescription"`
 	IsDisabled        bool                   `json:"isDisabled" diff:"true" metaFile:"true"`
 	Content           *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
-	markedToDelete    bool
 }
 
 // Job - Storage API job.
@@ -133,30 +130,6 @@ type Code struct {
 	CodeFileName string   `json:"-"` // eg. "code.sql", "code.py", ...
 	Name         string   `json:"name" validate:"required" metaFile:"true"`
 	Scripts      []string `json:"script"` // scripts, eg. SQL statements
-}
-
-func (c *Config) MarkToDelete() {
-	c.markedToDelete = true
-}
-
-func (r *ConfigRow) MarkToDelete() {
-	r.markedToDelete = true
-}
-
-func (b *Branch) IsMarkedToDelete() bool {
-	return false
-}
-
-func (c *Component) IsMarkedToDelete() bool {
-	return false
-}
-
-func (c *Config) IsMarkedToDelete() bool {
-	return c.markedToDelete
-}
-
-func (r *ConfigRow) IsMarkedToDelete() bool {
-	return r.markedToDelete
 }
 
 func (c *Component) IsTransformation() bool {

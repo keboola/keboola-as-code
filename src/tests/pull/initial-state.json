@@ -27,9 +27,7 @@
       "configs": [
         "with-rows",
         "python-transformation",
-        "snowflake-transformation",
-        "config-to-delete",
-        "row-to-delete"
+        "snowflake-transformation"
       ]
     }
   ]

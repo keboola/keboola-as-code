@@ -29,7 +29,6 @@ type Object interface {
 	Kind() Kind
 	Key() Key
 	ObjectId() string
-	IsMarkedToDelete() bool
 }
 
 type BranchKey struct {

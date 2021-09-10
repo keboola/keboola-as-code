@@ -50,9 +50,8 @@ func (a *StorageApi) UpdateConfig(config *model.Config, changed []string) (*mode
 	return nil, response.Err()
 }
 
-// DeleteConfig - only config in main branch can be deleted!
-func (a *StorageApi) DeleteConfig(componentId string, configId string) error {
-	return a.DeleteConfigRequest(componentId, configId).Send().Err()
+func (a *StorageApi) DeleteConfig(config *model.Config) error {
+	return a.DeleteConfigRequest(config).Send().Err()
 }
 
 func (a *StorageApi) ListComponentsRequest(branchId int) *client.Request {
@@ -167,11 +166,11 @@ func (a *StorageApi) UpdateConfigRequest(config *model.Config, changed []string)
 }
 
 // DeleteConfigRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/manage-configurations/delete-configuration
-// Only config in main branch can be deleted!
-func (a *StorageApi) DeleteConfigRequest(componentId string, configId string) *client.Request {
-	return a.NewRequest(resty.MethodDelete, "components/{componentId}/configs/{configId}").
-		SetPathParam("componentId", componentId).
-		SetPathParam("configId", configId)
+func (a *StorageApi) DeleteConfigRequest(config *model.Config) *client.Request {
+	return a.NewRequest(resty.MethodDelete, "branch/{branchId}/components/{componentId}/configs/{configId}").
+		SetPathParam("branchId", cast.ToString(config.BranchId)).
+		SetPathParam("componentId", config.ComponentId).
+		SetPathParam("configId", config.Id)
 }
 
 func (a *StorageApi) DeleteConfigsInBranchRequest(branchId int) *client.Request {
@@ -181,7 +180,7 @@ func (a *StorageApi) DeleteConfigsInBranchRequest(branchId int) *client.Request 
 				for _, config := range component.Configs {
 					response.
 						Sender().
-						Request(a.DeleteConfigRequest(config.ComponentId, config.Id)).
+						Request(a.DeleteConfigRequest(config.Config)).
 						Send()
 				}
 			}
