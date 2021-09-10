@@ -22,7 +22,7 @@
   ],
   "configurations": [
     {
-      "branchId": 26240,
+      "branchId": %%TEST_BRANCH_MAIN_ID%%,
       "componentId": "transformation",
       "id": "%%TEST_BRANCH_ALL_CONFIG_LEGACY_TRANSFORMATION_ID%%",
       "path": "other/transformation/legacy-transformation",
