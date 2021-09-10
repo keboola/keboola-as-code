@@ -233,7 +233,9 @@ func (l *loader) loadScripts(codeFile string) []string {
 	}
 
 	// Split to scripts
-	return l.parseScripts(string(content))
+	scripts := l.parseScripts(string(content))
+	l.logger.Debugf(`Loaded "%s", parsed "%d" scripts`, codeFile, len(scripts))
+	return scripts
 }
 
 func (l *loader) parseScripts(content string) []string {
