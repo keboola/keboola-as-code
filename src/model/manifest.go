@@ -39,7 +39,7 @@ type RecordState struct {
 }
 
 type PathInProject struct {
-	Path       string `json:"path" validate:"required"`
+	ObjectPath string `json:"path" validate:"required"`
 	ParentPath string `json:"-"` // not serialized, records are stored hierarchically
 }
 
@@ -77,11 +77,11 @@ type ConfigManifestWithRows struct {
 }
 
 func (p *PathInProject) GetObjectPath() string {
-	return p.Path
+	return p.ObjectPath
 }
 
 func (p *PathInProject) SetObjectPath(path string) {
-	p.Path = path
+	p.ObjectPath = path
 }
 
 func (p *PathInProject) GetParentPath() string {
@@ -95,7 +95,7 @@ func (p *PathInProject) SetParentPath(parentPath string) {
 func (p PathInProject) RelativePath() string {
 	return filepath.Join(
 		strings.ReplaceAll(p.ParentPath, "/", string(os.PathSeparator)),
-		strings.ReplaceAll(p.Path, "/", string(os.PathSeparator)),
+		strings.ReplaceAll(p.ObjectPath, "/", string(os.PathSeparator)),
 	)
 }
 

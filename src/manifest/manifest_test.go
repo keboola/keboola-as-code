@@ -151,7 +151,7 @@ func TestManifestValidateNestedField(t *testing.T) {
 		BranchKey: model.BranchKey{Id: 0},
 		Paths: model.Paths{
 			PathInProject: model.PathInProject{
-				Path:       "foo",
+				ObjectPath: "foo",
 				ParentPath: "bar",
 			},
 		},
@@ -331,7 +331,7 @@ func fullStruct() *Content {
 				},
 				Paths: model.Paths{
 					PathInProject: model.PathInProject{
-						Path:       "main",
+						ObjectPath: "main",
 						ParentPath: "",
 					},
 				},
@@ -345,7 +345,7 @@ func fullStruct() *Content {
 				},
 				Paths: model.Paths{
 					PathInProject: model.PathInProject{
-						Path:       "11-dev",
+						ObjectPath: "11-dev",
 						ParentPath: "",
 					},
 				},
@@ -364,7 +364,7 @@ func fullStruct() *Content {
 					},
 					Paths: model.Paths{
 						PathInProject: model.PathInProject{
-							Path:       "11-raw-data",
+							ObjectPath: "11-raw-data",
 							ParentPath: "main",
 						},
 					},
@@ -382,7 +382,7 @@ func fullStruct() *Content {
 						},
 						Paths: model.Paths{
 							PathInProject: model.PathInProject{
-								Path:       "rows/101-region-1",
+								ObjectPath: "rows/101-region-1",
 								ParentPath: "main/11-raw-data",
 							},
 						},
@@ -399,7 +399,7 @@ func fullStruct() *Content {
 						},
 						Paths: model.Paths{
 							PathInProject: model.PathInProject{
-								Path:       "rows/102-region-2",
+								ObjectPath: "rows/102-region-2",
 								ParentPath: "main/11-raw-data",
 							},
 						},
@@ -418,7 +418,7 @@ func fullStruct() *Content {
 					},
 					Paths: model.Paths{
 						PathInProject: model.PathInProject{
-							Path:       "12-current-month",
+							ObjectPath: "12-current-month",
 							ParentPath: "11-dev",
 						},
 					},
@@ -436,7 +436,7 @@ func fullStruct() *Content {
 						},
 						Paths: model.Paths{
 							PathInProject: model.PathInProject{
-								Path:       "rows/103-all",
+								ObjectPath: "rows/103-all",
 								ParentPath: "11-dev/12-current-month",
 							},
 						},
@@ -453,7 +453,7 @@ func fullStruct() *Content {
 						},
 						Paths: model.Paths{
 							PathInProject: model.PathInProject{
-								Path:       "rows/104-sum",
+								ObjectPath: "rows/104-sum",
 								ParentPath: "11-dev/12-current-month",
 							},
 						},

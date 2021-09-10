@@ -34,21 +34,19 @@ func (m *Manager) UpdateBlockPath(block *model.Block, rename bool) {
 	configDir := m.manifest.MustGetRecord(block.ConfigKey()).RelativePath()
 	blocksDir := m.Naming().BlocksDir(configDir)
 	block.SetParentPath(blocksDir)
-	if !rename {
-		return
-	}
 
-	// Re-generate object path
-	block.PathInProject = m.Naming().BlockPath(block.ParentPath, block)
+	// Re-generate object path IF rename is enabled OR path is not set
+	if block.ObjectPath == "" || rename {
+		block.PathInProject = m.Naming().BlockPath(block.ParentPath, block)
+	}
 }
 
 func (m *Manager) UpdateCodePath(block *model.Block, code *model.Code, rename bool) {
 	// Update parent path
 	code.SetParentPath(block.RelativePath())
-	if !rename {
-		return
-	}
 
-	// Re-generate object path
-	code.PathInProject = m.Naming().CodePath(code.ParentPath, code)
+	// Re-generate object path IF rename is enabled OR path is not set
+	if block.ObjectPath == "" || rename {
+		code.PathInProject = m.Naming().CodePath(code.ParentPath, code)
+	}
 }

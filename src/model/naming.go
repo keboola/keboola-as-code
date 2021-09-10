@@ -93,12 +93,12 @@ func (n Naming) makeUniquePath(key Key, p PathInProject) PathInProject {
 	defer n.usedLock.Unlock()
 
 	// Object path cannot be empty
-	if len(p.Path) == 0 {
-		p.Path = utils.NormalizeName(key.Kind().Name)
+	if len(p.ObjectPath) == 0 {
+		p.ObjectPath = utils.NormalizeName(key.Kind().Name)
 	}
 
 	keyStr := key.String()
-	dir, file := filepath.Split(p.Path)
+	dir, file := filepath.Split(p.ObjectPath)
 
 	// Add a suffix to the path if it is not unique
 	suffix := 0
@@ -109,7 +109,7 @@ func (n Naming) makeUniquePath(key Key, p PathInProject) PathInProject {
 		}
 
 		suffix++
-		p.Path = filepath.Join(dir, utils.NormalizeName(file+"-"+fmt.Sprintf(`%03d`, suffix)))
+		p.ObjectPath = filepath.Join(dir, utils.NormalizeName(file+"-"+fmt.Sprintf(`%03d`, suffix)))
 	}
 	return p
 }
@@ -127,9 +127,9 @@ func (n Naming) BranchPath(branch *Branch) PathInProject {
 	p.ParentPath = "" // branch is top level object
 
 	if branch.IsDefault {
-		p.Path = `main`
+		p.ObjectPath = `main`
 	} else {
-		p.Path = utils.ReplacePlaceholders(string(n.Branch), map[string]interface{}{
+		p.ObjectPath = utils.ReplacePlaceholders(string(n.Branch), map[string]interface{}{
 			"branch_id":   branch.Id,
 			"branch_name": utils.NormalizeName(branch.Name),
 		})
@@ -145,7 +145,7 @@ func (n Naming) ConfigPath(parentPath string, component *Component, config *Conf
 
 	p := PathInProject{}
 	p.ParentPath = parentPath
-	p.Path = utils.ReplacePlaceholders(string(n.Config), map[string]interface{}{
+	p.ObjectPath = utils.ReplacePlaceholders(string(n.Config), map[string]interface{}{
 		"component_type": component.Type,
 		"component_id":   component.Id,
 		"config_id":      config.Id,
@@ -174,7 +174,7 @@ func (n Naming) ConfigRowPath(parentPath string, row *ConfigRow) PathInProject {
 
 	p := PathInProject{}
 	p.ParentPath = parentPath
-	p.Path = utils.ReplacePlaceholders(string(n.ConfigRow), map[string]interface{}{
+	p.ObjectPath = utils.ReplacePlaceholders(string(n.ConfigRow), map[string]interface{}{
 		"config_row_id":   row.Id,
 		"config_row_name": utils.NormalizeName(name),
 	})
@@ -192,7 +192,7 @@ func (n Naming) BlocksTmpDir(configDir string) string {
 func (n Naming) BlockPath(parentPath string, block *Block) PathInProject {
 	p := PathInProject{}
 	p.ParentPath = parentPath
-	p.Path = utils.ReplacePlaceholders(string(blockNameTemplate), map[string]interface{}{
+	p.ObjectPath = utils.ReplacePlaceholders(string(blockNameTemplate), map[string]interface{}{
 		"block_order": fmt.Sprintf(`%03d`, block.Index+1),
 		"block_name":  utils.NormalizeName(block.Name),
 	})
@@ -202,7 +202,7 @@ func (n Naming) BlockPath(parentPath string, block *Block) PathInProject {
 func (n Naming) CodePath(parentPath string, code *Code) PathInProject {
 	p := PathInProject{}
 	p.ParentPath = parentPath
-	p.Path = utils.ReplacePlaceholders(string(codeNameTemplate), map[string]interface{}{
+	p.ObjectPath = utils.ReplacePlaceholders(string(codeNameTemplate), map[string]interface{}{
 		"code_order": fmt.Sprintf(`%03d`, code.Index+1),
 		"code_name":  utils.NormalizeName(code.Name),
 	})

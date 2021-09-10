@@ -140,7 +140,7 @@ func TestPersistNewConfig(t *testing.T) {
 				Paths: model.Paths{
 					PathInProject: model.PathInProject{
 						ParentPath: "main",
-						Path:       "extractor/ex-generic-v2/new-config",
+						ObjectPath: "extractor/ex-generic-v2/new-config",
 					},
 					RelatedPaths: []string{model.MetaFile, model.ConfigFile},
 				},
@@ -278,7 +278,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 				Paths: model.Paths{
 					PathInProject: model.PathInProject{
 						ParentPath: "main",
-						Path:       "extractor/keboola.ex-db-mysql/new-config",
+						ObjectPath: "extractor/keboola.ex-db-mysql/new-config",
 					},
 					RelatedPaths: []string{model.MetaFile, model.ConfigFile},
 				},
@@ -317,7 +317,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 				Paths: model.Paths{
 					PathInProject: model.PathInProject{
 						ParentPath: "main/extractor/keboola.ex-db-mysql/new-config",
-						Path:       "rows/some-row",
+						ObjectPath: "rows/some-row",
 					},
 					RelatedPaths: []string{model.MetaFile, model.ConfigFile},
 				},
@@ -373,7 +373,7 @@ func TestPersistDeleted(t *testing.T) {
 		Paths: model.Paths{
 			PathInProject: model.PathInProject{
 				ParentPath: "main",
-				Path:       "extractor/keboola.ex-db-mysql/missing",
+				ObjectPath: "extractor/keboola.ex-db-mysql/missing",
 			},
 		},
 	}
@@ -387,7 +387,7 @@ func TestPersistDeleted(t *testing.T) {
 		Paths: model.Paths{
 			PathInProject: model.PathInProject{
 				ParentPath: "main/extractor/keboola.ex-db-mysql/missing",
-				Path:       "rows/some-row",
+				ObjectPath: "rows/some-row",
 			},
 		},
 	}

@@ -82,7 +82,7 @@ func TestLoadState(t *testing.T) {
 				},
 				Paths: model.Paths{
 					PathInProject: model.PathInProject{
-						Path:       "main",
+						ObjectPath: "main",
 						ParentPath: "",
 					},
 					RelatedPaths: []string{model.MetaFile},
@@ -149,7 +149,7 @@ func TestLoadState(t *testing.T) {
 				},
 				Paths: model.Paths{
 					PathInProject: model.PathInProject{
-						Path:       "extractor/ex-generic-v2/456-todos",
+						ObjectPath: "extractor/ex-generic-v2/456-todos",
 						ParentPath: "main",
 					},
 					RelatedPaths: []string{model.MetaFile, model.ConfigFile},

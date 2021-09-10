@@ -88,7 +88,7 @@ func (l *loader) loadBlocks(blocksDir string) []*model.Block {
 					ConfigId:    l.target.Id,
 					Index:       i,
 				},
-				Paths: model.Paths{PathInProject: model.PathInProject{ParentPath: blocksDir, Path: item.Name()}},
+				Paths: model.Paths{PathInProject: model.PathInProject{ParentPath: blocksDir, ObjectPath: item.Name()}},
 			}
 			l.record.AddRelatedPath(block.RelativePath())
 
@@ -151,7 +151,7 @@ func (l *loader) loadCodes(block *model.Block) []*model.Code {
 					BlockIndex:  block.Index,
 					Index:       i,
 				},
-				Paths: model.Paths{PathInProject: model.PathInProject{ParentPath: block.RelativePath(), Path: item.Name()}},
+				Paths: model.Paths{PathInProject: model.PathInProject{ParentPath: block.RelativePath(), ObjectPath: item.Name()}},
 			}
 			l.record.AddRelatedPath(code.RelativePath())
 

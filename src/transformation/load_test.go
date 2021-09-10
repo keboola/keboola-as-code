@@ -224,7 +224,7 @@ func createTransTestStructs(componentId string) (*model.ConfigManifest, *model.C
 		Paths: model.Paths{
 			PathInProject: model.PathInProject{
 				ParentPath: "branch",
-				Path:       "config",
+				ObjectPath: "config",
 			},
 		},
 	}
