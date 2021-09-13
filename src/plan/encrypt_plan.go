@@ -2,18 +2,18 @@ package plan
 
 import (
 	"fmt"
-	"keboola-as-code/src/model"
 
 	"go.uber.org/zap"
 
 	"keboola-as-code/src/encryption"
 	"keboola-as-code/src/log"
+	"keboola-as-code/src/model"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
 )
 
 type EncryptPlan struct {
-	naming model.Naming
+	naming  model.Naming
 	actions []*EncryptAction
 }
 
