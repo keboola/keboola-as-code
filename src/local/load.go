@@ -39,12 +39,14 @@ func (m *Manager) LoadModel(record model.Record, target interface{}) (found bool
 		content := utils.NewOrderedMap()
 		modelValue := reflect.ValueOf(target).Elem()
 		if err := json.ReadFile(m.ProjectDir(), configFilePath, &content, errPrefix); err == nil {
-			modelValue.FieldByName(configField.Name).Set(reflect.ValueOf(content))
 			record.AddRelatedPath(configFilePath)
 			m.logger.Debugf(`Loaded "%s"`, configFilePath)
 		} else {
 			errors.Append(err)
 		}
+
+		// Set empty map even if an error occurs -> so that the value is set (not nil).
+		modelValue.FieldByName(configField.Name).Set(reflect.ValueOf(content))
 	}
 
 	// Transform
