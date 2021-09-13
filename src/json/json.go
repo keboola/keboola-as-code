@@ -1,6 +1,7 @@
 package json
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -49,7 +50,7 @@ func Encode(v interface{}, pretty bool) ([]byte, error) {
 		data, err = json.Marshal(v)
 	}
 	if err != nil {
-		return nil, processJsonError(err)
+		return nil, processJsonEncodeError(err)
 	}
 	return data, nil
 }
@@ -77,7 +78,7 @@ func MustEncodeString(v interface{}, pretty bool) string {
 
 func Decode(data []byte, m interface{}) error {
 	if err := json.Unmarshal(data, m); err != nil {
-		return processJsonError(err)
+		return processJsonDecodeError(data, err)
 	}
 	return nil
 }
@@ -98,7 +99,7 @@ func MustDecodeString(data string, m interface{}) {
 	}
 }
 
-func processJsonError(err error) error {
+func processJsonEncodeError(err error) error {
 	var typeError *json.UnmarshalTypeError
 	var syntaxError *json.SyntaxError
 
@@ -107,6 +108,24 @@ func processJsonError(err error) error {
 	case errors.As(err, &typeError):
 		return fmt.Errorf("key \"%s\" has invalid type \"%s\"", typeError.Field, typeError.Value)
 	case errors.As(err, &syntaxError):
+		return fmt.Errorf("%w, offset: %d", err, syntaxError.Offset)
+	default:
+		return err
+	}
+}
+
+func processJsonDecodeError(data []byte, err error) error {
+	var typeError *json.UnmarshalTypeError
+	var syntaxError *json.SyntaxError
+
+	switch {
+	// Custom error message
+	case errors.As(err, &typeError):
+		return fmt.Errorf("key \"%s\" has invalid type \"%s\"", typeError.Field, typeError.Value)
+	case errors.As(err, &syntaxError):
+		if syntaxError.Error() == "unexpected end of JSON input" && len(bytes.TrimSpace(data)) == 0 {
+			return fmt.Errorf(`empty, please use "{}" for an empty JSON`)
+		}
 		return fmt.Errorf("%w, offset: %d", err, syntaxError.Offset)
 	default:
 		return err
