@@ -11,7 +11,7 @@
           "componentId": "keboola.ex-db-mysql",
           "name": "with-rows",
           "description": "test fixture",
-          "changeDescription": "Updated from #KeboolaCLI",
+          "changeDescription": "",
           "configuration": {
             "parameters": {
               "db": {
@@ -20,28 +20,6 @@
             }
           },
           "rows": [
-            {
-              "name": "[TO DELETE] test_view",
-              "description": "test fixture",
-              "changeDescription": "Updated from #KeboolaCLI",
-              "isDisabled": false,
-              "configuration": {
-                "parameters": {
-                  "incremental": false
-                }
-              }
-            },
-            {
-              "name": "[TO DELETE] users",
-              "description": "test fixture",
-              "changeDescription": "Updated from #KeboolaCLI",
-              "isDisabled": false,
-              "configuration": {
-                "parameters": {
-                  "incremental": false
-                }
-              }
-            },
             {
               "name": "disabled",
               "description": "test fixture",

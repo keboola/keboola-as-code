@@ -39,13 +39,6 @@
     {
       "branchId": %%TEST_BRANCH_BAR_ID%%,
       "componentId": "keboola.ex-db-mysql",
-      "id": "%%TEST_BRANCH_BAR_CONFIG_ROW_TO_DELETE_ID%%",
-      "path": "extractor/keboola.ex-db-mysql/row-to-delete",
-      "rows": []
-    },
-    {
-      "branchId": %%TEST_BRANCH_BAR_ID%%,
-      "componentId": "keboola.ex-db-mysql",
       "id": "%%TEST_BRANCH_BAR_CONFIG_WITH_ROWS_ID%%",
       "path": "extractor/keboola.ex-db-mysql/with-rows",
       "rows": [

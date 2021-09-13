@@ -3,7 +3,6 @@ package remote
 import (
 	"fmt"
 	"sort"
-	"strings"
 
 	"github.com/iancoleman/orderedmap"
 	"github.com/spf13/cast"
@@ -72,7 +71,7 @@ func (u *UnitOfWork) DeleteRemote(object model.ObjectState) error {
 		return fmt.Errorf(`branch (%d - %s) cannot be deleted by CLI`, v.Local.Id, v.Local.Name)
 	case *model.ConfigState:
 		u.poolFor(v.Level()).
-			Request(u.api.DeleteConfigRequest(v.ComponentId, v.Id)).
+			Request(u.api.DeleteConfigRequest(v.Remote)).
 			OnSuccess(func(response *client.Response) {
 				u.Manifest().DeleteRecord(v)
 				object.SetRemoteState(nil)
@@ -80,7 +79,7 @@ func (u *UnitOfWork) DeleteRemote(object model.ObjectState) error {
 			Send()
 	case *model.ConfigRowState:
 		u.poolFor(v.Level()).
-			Request(u.api.DeleteConfigRowRequest(v.ComponentId, v.ConfigId, v.Id)).
+			Request(u.api.DeleteConfigRowRequest(v.Remote)).
 			OnSuccess(func(response *client.Response) {
 				u.Manifest().DeleteRecord(v)
 				object.SetRemoteState(nil)
@@ -93,22 +92,6 @@ func (u *UnitOfWork) DeleteRemote(object model.ObjectState) error {
 	return nil
 }
 
-// MarkDeleted config or row from dev branch. Prefix is added at the name beginning.
-func (u *UnitOfWork) MarkDeleted(object model.ObjectState) error {
-	switch o := object.RemoteState().(type) {
-	case *model.Config:
-		o.Name = model.ToDeletePrefix + strings.TrimPrefix(o.Name, model.ToDeletePrefix)
-	case *model.ConfigRow:
-		o.Name = model.ToDeletePrefix + strings.TrimPrefix(o.Name, model.ToDeletePrefix)
-	default:
-		panic(fmt.Errorf(`unexpected type "%T"`, object))
-	}
-
-	// Save
-	object.SetLocalState(object.RemoteState())
-	changedFields := []string{"name", "changeDescription"}
-	return u.SaveRemote(object, changedFields)
-}
 func (u *UnitOfWork) Invoke() error {
 	u.pools.SortKeys(sort.Strings)
 	for _, level := range u.pools.Keys() {

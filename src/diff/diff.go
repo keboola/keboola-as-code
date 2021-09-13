@@ -92,14 +92,8 @@ func (d *Differ) doDiff(state model.ObjectState) (*Result, error) {
 		panic(fmt.Errorf("both local and remote state are not set"))
 	}
 
-	// Not in local state + deleted in the remote state
-	if !state.HasLocalState() && state.RemoteState().IsMarkedToDelete() {
-		result.State = ResultInvisible
-		return result, nil
-	}
-
-	// Not in remote state OR deleted in the remote state
-	if !state.HasRemoteState() || state.RemoteState().IsMarkedToDelete() {
+	// Not in remote state
+	if !state.HasRemoteState() {
 		result.State = ResultOnlyInLocal
 		return result, nil
 	}

@@ -3,7 +3,6 @@ DEBUG	Project local and remote states have been successfully loaded.
 INFO	Plan for "pull" operation:
 INFO		+  B bar
 INFO		+  C bar/extractor/ex-generic-v2/empty
-INFO		+  C bar/extractor/keboola.ex-db-mysql/row-to-delete
 INFO		+  C bar/extractor/keboola.ex-db-mysql/with-rows
 INFO		+  R bar/extractor/keboola.ex-db-mysql/with-rows/rows/disabled
 INFO		+  R bar/extractor/keboola.ex-db-mysql/with-rows/rows/test-view

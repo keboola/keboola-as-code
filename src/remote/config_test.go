@@ -98,7 +98,7 @@ func TestConfigApiCalls(t *testing.T) {
 	utils.AssertWildcards(t, expectedComponentsConfigTest(), json.MustEncodeString(components, true), "Unexpected components")
 
 	// Delete configuration
-	err = api.DeleteConfig(config.ComponentId, config.Id)
+	err = api.DeleteConfig(config.Config)
 	assert.NoError(t, err)
 
 	// List components - no component

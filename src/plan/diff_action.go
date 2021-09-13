@@ -13,7 +13,6 @@ const (
 	ActionSaveRemote
 	ActionDeleteLocal
 	ActionDeleteRemote
-	ActionMarkDeletedRemote
 )
 
 type DiffActionType int

@@ -6,56 +6,7 @@
         "description": "",
         "isDefault": false
       },
-      "configs": [
-        {
-          "componentId": "keboola.ex-db-mysql",
-          "name": "[TO DELETE] with-rows",
-          "description": "test fixture",
-          "changeDescription": "Updated from #KeboolaCLI",
-          "configuration": {
-            "parameters": {
-              "db": {
-                "host": "mysql.example.com"
-              }
-            }
-          },
-          "rows": [
-            {
-              "name": "disabled",
-              "description": "test fixture",
-              "changeDescription": "",
-              "isDisabled": true,
-              "configuration": {
-                "parameters": {
-                  "incremental": false
-                }
-              }
-            },
-            {
-              "name": "test_view",
-              "description": "test fixture",
-              "changeDescription": "",
-              "isDisabled": false,
-              "configuration": {
-                "parameters": {
-                  "incremental": false
-                }
-              }
-            },
-            {
-              "name": "users",
-              "description": "test fixture",
-              "changeDescription": "",
-              "isDisabled": false,
-              "configuration": {
-                "parameters": {
-                  "incremental": false
-                }
-              }
-            }
-          ]
-        }
-      ]
+      "configs": []
     },
     {
       "branch": {

@@ -50,7 +50,7 @@ func (p *DiffPlan) Log(writer *log.WriteCloser) {
 		for _, action := range actions {
 			msg := action.String()
 			if !p.allowedRemoteDelete &&
-				(action.action == ActionDeleteRemote || action.action == ActionMarkDeletedRemote) {
+				(action.action == ActionDeleteRemote) {
 				msg += " - SKIPPED"
 				skippedDeleteCount++
 			}
