@@ -52,6 +52,7 @@ func (p PathTemplate) placeholderToRegexp(placeholder string) string {
 	return `(?P<` + strings.Trim(placeholder, `\{}`) + `>[^/]+)`
 }
 
+// KeyPath is the path to the value in the OrderedMap (JSON file).
 type KeyPath []Step
 
 type Step interface {
@@ -68,6 +69,14 @@ func (v KeyPath) String() string {
 		parts = append(parts, step.String())
 	}
 	return strings.Join(parts, ".")
+}
+
+func (v KeyPath) LastStep() Step {
+	l := len(v)
+	if l == 0 {
+		return nil
+	}
+	return v[l-1]
 }
 
 func (v MapStep) String() string {

@@ -4,7 +4,9 @@ import (
 	"github.com/spf13/cobra"
 
 	"keboola-as-code/src/encryption"
+	"keboola-as-code/src/log"
 	"keboola-as-code/src/manifest"
+	"keboola-as-code/src/plan"
 	"keboola-as-code/src/state"
 	"keboola-as-code/src/utils"
 )
@@ -65,9 +67,11 @@ func encryptCommand(root *rootCommand) *cobra.Command {
 				return utils.PrefixError("project local state is invalid", projectState.LocalErrors())
 			}
 
-			// find and log unencrypted values
-			unencryptedGroups := encryption.FindUnencrypted(projectState)
-			encryption.LogGroups(unencryptedGroups, logger)
+			// Get plan
+			encrypt := plan.Encrypt(projectState)
+
+			// Log plan
+			encrypt.Log(log.ToInfoWriter(logger))
 
 			// Dry run?
 			dryRun := root.options.GetBool("dry-run")
@@ -76,16 +80,18 @@ func encryptCommand(root *rootCommand) *cobra.Command {
 				return nil
 			}
 
+			// Get encryption API
 			encryptionApiUrl, err := api.GetEncryptionApiUrl()
 			if err != nil {
 				return err
 			}
 
+			// Invoke
 			encryptionApi := encryption.NewEncryptionApi(encryptionApiUrl, root.ctx, logger, false)
-			err = encryption.DoEncrypt(projectState, unencryptedGroups, encryptionApi)
-			if err != nil {
+			if err := encrypt.Invoke(api.ProjectId(), logger, encryptionApi, projectState); err != nil {
 				return err
 			}
+
 			logger.Info("Encrypt done.")
 			return nil
 		},

@@ -96,7 +96,7 @@ func LoadManifest(projectDir string, metadataDir string) (*Manifest, error) {
 		}
 	}
 
-	// Track if was manifest changed after load
+	// Track if manifest was changed after load
 	m.changed = false
 
 	// Validate
