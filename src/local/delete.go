@@ -69,22 +69,25 @@ func (m *Manager) DeleteEmptyDirectories(trackedPaths []string) error {
 			return nil
 		}
 
-		// Skip ignored
-		if utils.IsIgnoredDir(path, d) {
-			return filepath.SkipDir
-		}
+		// Stop on ignored dir
+		isIgnoredDir := utils.IsIgnoredDir(path, d)
 
 		// Found a directory -> store path
-		if d.IsDir() {
+		if !isIgnoredDir && d.IsDir() {
 			emptyDirs.Set(path+string(os.PathSeparator), true)
 			return nil
 		}
 
-		// Is file -> all parent dirs are not empty
+		// Found file/ignored dir -> all parent dirs are not empty
 		for _, dir := range emptyDirs.Keys() {
 			if strings.HasPrefix(path, dir) {
 				emptyDirs.Delete(dir)
 			}
+		}
+
+		// Skip sub-directories
+		if isIgnoredDir {
+			return filepath.SkipDir
 		}
 
 		return nil
@@ -94,7 +97,7 @@ func (m *Manager) DeleteEmptyDirectories(trackedPaths []string) error {
 		return err
 	}
 
-	// Sort longest path firs -> delete most nested directory first
+	// Sort by the longest path firs -> delete most nested directory first
 	emptyDirs.SortKeys(func(keys []string) {
 		sort.SliceStable(keys, func(i, j int) bool {
 			return len(keys[i]) > len(keys[j])
