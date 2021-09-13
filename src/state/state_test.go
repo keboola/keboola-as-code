@@ -5,8 +5,10 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
+	"github.com/jarcoal/httpmock"
 	"github.com/otiai10/copy"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
@@ -158,6 +160,55 @@ func TestLoadState(t *testing.T) {
 		},
 	}, state.Configs())
 	assert.Empty(t, utils.SortByName(state.ConfigRows()))
+}
+
+func TestValidateState(t *testing.T) {
+	// Create state
+	utils.MustSetEnv("LOCAL_STATE_MAIN_BRANCH_ID", `123`)
+	utils.MustSetEnv("LOCAL_STATE_GENERIC_CONFIG_ID", `456`)
+	projectDir, metadataDir := initLocalState(t, "minimal")
+	logger, _ := utils.NewDebugLogger()
+	m, err := manifest.LoadManifest(projectDir, metadataDir)
+	assert.NoError(t, err)
+	m.Project.Id = utils.TestProjectId()
+	api, _ := remote.TestMockedStorageApi(t)
+	stateOptions := NewOptions(m, api, context.Background(), logger)
+	s := newState(stateOptions)
+
+	// Mocked component response
+	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
+		"id":   "keboola.foo",
+		"type": "writer",
+		"name": "Foo",
+	})
+	assert.NoError(t, err)
+	httpmock.RegisterResponder("GET", `=~/storage/components/keboola.foo`, getGenericExResponder)
+
+	// Add invalid objects
+	branchKey := model.BranchKey{Id: 456}
+	branch := &model.Branch{BranchKey: branchKey}
+	branchManifest := &model.BranchManifest{BranchKey: branchKey}
+	branchManifest.ObjectPath = "branch"
+	configKey := model.ConfigKey{BranchId: 456, ComponentId: "keboola.foo", Id: "234"}
+	config := &model.Config{ConfigKey: configKey}
+	assert.NoError(t, s.manifest.TrackRecord(branchManifest))
+	s.SetLocalState(branch, branchManifest)
+	_, err = s.SetRemoteState(config)
+	assert.NoError(t, err)
+
+	// Validate
+	s.validate()
+	expectedLocalError := `
+branch "456" is not valid:
+	- key="name", value="", failed "required" validation
+`
+	expectedRemoteError := `
+config "branch:456/component:keboola.foo/config:234" is not valid:
+	- key="name", value="", failed "required" validation
+	- key="configuration", value="<nil>", failed "required" validation
+`
+	assert.Equal(t, strings.TrimSpace(expectedLocalError), s.LocalErrors().Error())
+	assert.Equal(t, strings.TrimSpace(expectedRemoteError), s.RemoteErrors().Error())
 }
 
 func initLocalState(t *testing.T, localState string) (string, string) {

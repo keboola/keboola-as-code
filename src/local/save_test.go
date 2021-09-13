@@ -32,7 +32,7 @@ func TestLocalSaveModel(t *testing.T) {
 		Meta2:  "4",
 		Config: config,
 	}
-	m.TrackRecord(record)
+	assert.NoError(t, m.TrackRecord(record))
 	_, found := m.GetRecord(record.Key())
 	assert.True(t, found)
 

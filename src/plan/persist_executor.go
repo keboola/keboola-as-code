@@ -60,8 +60,11 @@ func (e *persistExecutor) persistNewConfig(action *NewConfigAction) {
 		key.Id = ticket.Id
 
 		// Create manifest record
-		record, found := e.Manifest().CreateOrGetRecord(key)
-		if found {
+		record, found, err := e.Manifest().CreateOrGetRecord(key)
+		if err != nil {
+			e.errors.Append(err)
+			return
+		} else if found {
 			panic(fmt.Errorf(`unexpected state: record "%s" existis, but it should not`, record))
 		}
 
@@ -69,7 +72,10 @@ func (e *persistExecutor) persistNewConfig(action *NewConfigAction) {
 		record.SetObjectPath(action.Path)
 
 		// Save to manifest.json
-		e.Manifest().PersistRecord(record)
+		if err := e.Manifest().PersistRecord(record); err != nil {
+			e.errors.Append(err)
+			return
+		}
 
 		// Load model
 		if _, err := e.LoadModel(record); err != nil {
@@ -96,8 +102,11 @@ func (e *persistExecutor) persistNewRow(action *NewRowAction) {
 		}
 
 		// Create manifest record
-		record, found := e.Manifest().CreateOrGetRecord(key)
-		if found {
+		record, found, err := e.Manifest().CreateOrGetRecord(key)
+		if err != nil {
+			e.errors.Append(err)
+			return
+		} else if found {
 			panic(fmt.Errorf(`unexpected state: record "%s" existis, but it should not`, record))
 		}
 
@@ -105,7 +114,10 @@ func (e *persistExecutor) persistNewRow(action *NewRowAction) {
 		record.SetObjectPath(action.Path)
 
 		// Save to manifest.json
-		e.Manifest().PersistRecord(record)
+		if err := e.Manifest().PersistRecord(record); err != nil {
+			e.errors.Append(err)
+			return
+		}
 
 		// Load model
 		if _, err := e.LoadModel(record); err != nil {

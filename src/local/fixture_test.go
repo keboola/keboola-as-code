@@ -25,6 +25,10 @@ func (MockedKey) String() string {
 	return "key"
 }
 
+func (MockedKey) Desc() string {
+	return "key"
+}
+
 func (ModelStruct) Key() model.Key {
 	return &MockedKey{}
 }
@@ -43,6 +47,10 @@ func (m ModelStruct) Kind() model.Kind {
 
 func (MockedRecord) Key() model.Key {
 	return &MockedKey{}
+}
+
+func (r MockedRecord) Desc() string {
+	return r.Key().Desc()
 }
 
 func (MockedRecord) ParentKey() model.Key {

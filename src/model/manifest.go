@@ -19,6 +19,7 @@ type Record interface {
 	Kind() Kind                 // eg. branch, config, config row -> used in logs
 	Level() int                 // hierarchical level, "1" for branch, "2" for config, ...
 	Key() Key                   // unique key for map -> for fast access
+	Desc() string               // human-readable description of the object
 	ParentKey() Key             // unique key of the parent object
 	SortKey(sort string) string // unique key for sorting
 	GetObjectPath() string      // path relative to the parent object

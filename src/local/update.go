@@ -6,11 +6,13 @@ import (
 	"keboola-as-code/src/model"
 )
 
-func (m *Manager) UpdatePaths(state model.ObjectState, rename bool) {
+func (m *Manager) UpdatePaths(state model.ObjectState, rename bool) error {
 	object := state.LocalOrRemoteState()
 
 	// Update parent path
-	m.manifest.ResolveParentPath(state.Manifest())
+	if err := m.manifest.ResolveParentPath(state.Manifest()); err != nil {
+		return err
+	}
 
 	// Re-generate object path IF rename is enabled OR path is not set
 	if state.GetObjectPath() == "" || rename {
@@ -27,6 +29,8 @@ func (m *Manager) UpdatePaths(state model.ObjectState, rename bool) {
 			panic(fmt.Errorf(`unexpect type "%T"`, state))
 		}
 	}
+
+	return nil
 }
 
 func (m *Manager) UpdateBlockPath(block *model.Block, rename bool) {

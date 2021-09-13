@@ -5,6 +5,7 @@ import "fmt"
 type ObjectState interface {
 	Level() int            // hierarchical level, "1" for branch, "2" for config, ...
 	Key() Key              // unique key for all objects
+	Desc() string          // human-readable description of the object
 	ObjectId() string      // eg. config id
 	Kind() Kind            // branch, config, ...
 	GetObjectPath() string // path relative to the parent object

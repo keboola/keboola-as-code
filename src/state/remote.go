@@ -21,7 +21,10 @@ func (s *State) doLoadRemoteState() {
 				branch := b
 
 				// Save to state, skip configs/rows if branch is ignored
-				if s.SetRemoteState(branch) == nil {
+				if objectState, err := s.SetRemoteState(branch); err != nil {
+					s.AddRemoteError(err)
+					continue
+				} else if objectState == nil {
 					continue
 				}
 
@@ -47,13 +50,19 @@ func (s *State) processComponents(components []*model.ComponentWithConfigs) {
 		// Configs
 		for _, config := range component.Configs {
 			// Save to state, skip rows if config is ignored
-			if s.SetRemoteState(config.Config) == nil {
+			if objectState, err := s.SetRemoteState(config.Config); err != nil {
+				s.AddRemoteError(err)
+				continue
+			} else if objectState == nil {
 				continue
 			}
 
 			// Rows
 			for _, row := range config.Rows {
-				s.SetRemoteState(row)
+				if _, err := s.SetRemoteState(row); err != nil {
+					s.AddRemoteError(err)
+					continue
+				}
 			}
 		}
 	}
