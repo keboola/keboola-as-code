@@ -25,7 +25,9 @@ func (m *Manager) SaveModel(record model.Record, source model.Object) error {
 	}
 
 	// Add record to manifest content + mark it for saving
-	m.manifest.PersistRecord(record)
+	if err := m.manifest.PersistRecord(record); err != nil {
+		return err
+	}
 
 	// Mkdir
 	dir := filepath.Join(m.ProjectDir(), record.RelativePath())

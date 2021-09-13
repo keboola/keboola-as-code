@@ -85,12 +85,12 @@ func TestManifestSave(t *testing.T) {
 		m.IgnoredComponents = c.data.IgnoredComponents
 		m.Project.Id = c.data.Project.Id
 		for _, branch := range c.data.Branches {
-			m.TrackRecord(branch)
+			assert.NoError(t, m.TrackRecord(branch))
 		}
 		for _, config := range c.data.Configs {
-			m.TrackRecord(config.ConfigManifest)
+			assert.NoError(t, m.TrackRecord(config.ConfigManifest))
 			for _, row := range config.Rows {
-				m.TrackRecord(row)
+				assert.NoError(t, m.TrackRecord(row))
 			}
 		}
 
@@ -198,6 +198,40 @@ func TestIsObjectIgnored(t *testing.T) {
 	assert.False(t, m.IsObjectIgnored(
 		&model.ConfigRow{ConfigRowKey: model.ConfigRowKey{ComponentId: "ccc"}}),
 	)
+}
+
+func TestManifestRecordGetParent(t *testing.T) {
+	m := newManifest(0, "", "foo", "bar")
+	branchManifest := &model.BranchManifest{BranchKey: model.BranchKey{Id: 123}}
+	configManifest := &model.ConfigManifest{ConfigKey: model.ConfigKey{
+		BranchId:    123,
+		ComponentId: "keboola.foo",
+		Id:          "456",
+	}}
+	assert.NoError(t, m.TrackRecord(branchManifest))
+	parent, err := m.GetParent(configManifest)
+	assert.Equal(t, branchManifest, parent)
+	assert.NoError(t, err)
+}
+
+func TestManifestRecordGetParentNotFound(t *testing.T) {
+	m := newManifest(0, "", "foo", "bar")
+	configManifest := &model.ConfigManifest{ConfigKey: model.ConfigKey{
+		BranchId:    123,
+		ComponentId: "keboola.foo",
+		Id:          "456",
+	}}
+	parent, err := m.GetParent(configManifest)
+	assert.Nil(t, parent)
+	assert.Error(t, err)
+	assert.Equal(t, `manifest record for branch "123" not found, referenced from config "branch:123/component:keboola.foo/config:456"`, err.Error())
+}
+
+func TestManifestRecordGetParentNil(t *testing.T) {
+	m := newManifest(0, "", "foo", "bar")
+	parent, err := m.GetParent(&model.BranchManifest{})
+	assert.Nil(t, parent)
+	assert.NoError(t, err)
 }
 
 func minimalJson() string {

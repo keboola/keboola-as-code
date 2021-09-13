@@ -391,8 +391,8 @@ func TestPersistDeleted(t *testing.T) {
 			},
 		},
 	}
-	m.PersistRecord(missingConfig)
-	m.PersistRecord(missingRow)
+	assert.NoError(t, m.PersistRecord(missingConfig))
+	assert.NoError(t, m.PersistRecord(missingRow))
 	assert.NoError(t, m.Save())
 
 	// Reload manifest

@@ -15,9 +15,13 @@ import (
 )
 
 // Rename creates a plan for renaming objects that do not match the naming.
-func Rename(projectState *state.State) *RenamePlan {
+func Rename(projectState *state.State) (*RenamePlan, error) {
 	builder := &renamePlanBuilder{State: projectState}
-	return &RenamePlan{actions: builder.build()}
+	actions, err := builder.build()
+	if err != nil {
+		return nil, err
+	}
+	return &RenamePlan{actions: actions}, nil
 }
 
 type renamePlanBuilder struct {
@@ -25,16 +29,20 @@ type renamePlanBuilder struct {
 	actions []*RenameAction
 }
 
-func (b *renamePlanBuilder) build() []*RenameAction {
+func (b *renamePlanBuilder) build() ([]*RenameAction, error) {
 	for _, object := range b.All() {
 		action := &RenameAction{}
 
 		// The parent object may have already been renamed, so update first old state
-		b.LocalManager().UpdatePaths(object, false)
+		if err := b.LocalManager().UpdatePaths(object, false); err != nil {
+			return nil, err
+		}
 		action.OldPath = filepath.Join(b.ProjectDir(), object.RelativePath())
 
 		// Rename
-		b.LocalManager().UpdatePaths(object, true)
+		if err := b.LocalManager().UpdatePaths(object, true); err != nil {
+			return nil, err
+		}
 		action.NewPath = filepath.Join(b.ProjectDir(), object.RelativePath())
 
 		// Should be renamed?
@@ -51,7 +59,7 @@ func (b *renamePlanBuilder) build() []*RenameAction {
 	}
 
 	b.setDescriptions()
-	return b.actions
+	return b.actions, nil
 }
 
 func (b *renamePlanBuilder) setDescriptions() {

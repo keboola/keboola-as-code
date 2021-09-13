@@ -62,7 +62,9 @@ func (e *renameExecutor) invoke() (warns error, errs error) {
 
 			// Update manifest
 			if action.Record != nil {
-				e.manifest.PersistRecord(action.Record)
+				if err := e.manifest.PersistRecord(action.Record); err != nil {
+					e.errors.AppendWithPrefix(fmt.Sprintf(`cannot persist "%s"`, action.Record.Desc()), err)
+				}
 			}
 
 			// Remove old path

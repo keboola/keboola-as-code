@@ -138,7 +138,10 @@ func Validate(projectState *state.State, logger *zap.SugaredLogger) error {
 
 func Rename(projectState *state.State, logger *zap.SugaredLogger, logEmpty, dryRun bool) error {
 	// Get plan
-	rename := plan.Rename(projectState)
+	rename, err := plan.Rename(projectState)
+	if err != nil {
+		return err
+	}
 
 	// Log plan
 	if logEmpty || !rename.Empty() {

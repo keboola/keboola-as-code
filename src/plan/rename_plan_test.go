@@ -52,7 +52,8 @@ func TestRenameAllPlan(t *testing.T) {
 	}
 
 	// Get rename plan
-	plan := Rename(projectState)
+	plan, err := Rename(projectState)
+	assert.NoError(t, err)
 
 	// Clear manifest records before assert
 	for _, action := range plan.actions {

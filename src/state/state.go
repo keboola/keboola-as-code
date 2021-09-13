@@ -219,17 +219,17 @@ func (s *State) Get(key model.Key) model.ObjectState {
 	return object
 }
 
-func (s *State) SetRemoteState(remote model.Object) model.ObjectState {
+func (s *State) SetRemoteState(remote model.Object) (model.ObjectState, error) {
 	// Skip ignored objects
 	if s.manifest.IsObjectIgnored(remote) {
-		return nil
+		return nil, nil
 	}
 
 	// Get or create state
 	state, err := s.getOrCreate(remote.Key())
 	if err != nil {
 		s.AddRemoteError(err)
-		return nil
+		return nil, nil
 	}
 
 	s.mutex.Lock()
@@ -237,13 +237,18 @@ func (s *State) SetRemoteState(remote model.Object) model.ObjectState {
 	state.SetRemoteState(remote)
 	if !state.HasManifest() {
 		// Generate manifest record
-		m, _ := s.manifest.CreateOrGetRecord(remote.Key())
+		m, _, err := s.manifest.CreateOrGetRecord(remote.Key())
+		if err != nil {
+			return nil, err
+		}
 		state.SetManifest(m)
 
 		// Generate local path
-		s.localManager.UpdatePaths(state, false)
+		if err := s.localManager.UpdatePaths(state, false); err != nil {
+			return nil, err
+		}
 	}
-	return state
+	return state, nil
 }
 
 func (s *State) SetLocalState(local model.Object, record model.Record) model.ObjectState {
@@ -303,13 +308,13 @@ func (s *State) validate() {
 	for _, objectState := range s.All() {
 		if objectState.HasRemoteState() {
 			if err := validator.Validate(objectState.RemoteState()); err != nil {
-				s.AddRemoteError(utils.PrefixError(fmt.Sprintf(`%s \"%s\" is not valid`, objectState.Kind().Name, objectState.Key()), err))
+				s.AddRemoteError(utils.PrefixError(fmt.Sprintf(`%s is not valid`, objectState.Desc()), err))
 			}
 		}
 
 		if objectState.HasLocalState() {
 			if err := validator.Validate(objectState.LocalState()); err != nil {
-				s.AddLocalError(utils.PrefixError(fmt.Sprintf(`%s \"%s\" is not valid`, objectState.Kind().Name, objectState.Key()), err))
+				s.AddLocalError(utils.PrefixError(fmt.Sprintf(`%s is not valid`, objectState.Desc()), err))
 			}
 		}
 	}

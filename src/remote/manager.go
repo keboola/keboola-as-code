@@ -148,8 +148,9 @@ func (u *UnitOfWork) create(objectState model.ObjectState, object model.Object) 
 
 			// If marking as deleted -> local state is not set
 			if objectState.HasLocalState() {
-				u.localManager.UpdatePaths(objectState, false)
-				if err := u.localManager.SaveModel(objectState.Manifest(), objectState.LocalState()); err != nil {
+				if err := u.localManager.UpdatePaths(objectState, false); err != nil {
+					u.errors.Append(err)
+				} else if err := u.localManager.SaveModel(objectState.Manifest(), objectState.LocalState()); err != nil {
 					u.errors.Append(err)
 				}
 			}

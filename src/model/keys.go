@@ -16,8 +16,9 @@ const (
 )
 
 type Key interface {
-	Kind() Kind
-	String() string
+	Kind() Kind     // kind of the object: branch, config, ...
+	Desc() string   // human-readable description of the object
+	String() string // unique string representation of the key
 }
 
 type WithKey interface {
@@ -161,6 +162,30 @@ func (k BlockKey) Key() Key {
 
 func (k CodeKey) Key() Key {
 	return k
+}
+
+func (k BranchKey) Desc() string {
+	return fmt.Sprintf(`%s "%d"`, k.Kind().Name, k.Id)
+}
+
+func (k ComponentKey) Desc() string {
+	return fmt.Sprintf(`%s "%s"`, k.Kind().Name, k.Id)
+}
+
+func (k ConfigKey) Desc() string {
+	return fmt.Sprintf(`%s "branch:%d/component:%s/config:%s"`, k.Kind().Name, k.BranchId, k.ComponentId, k.Id)
+}
+
+func (k ConfigRowKey) Desc() string {
+	return fmt.Sprintf(`%s "branch:%d/component:%s/config:%s/row:%s"`, k.Kind().Name, k.BranchId, k.ComponentId, k.ConfigId, k.Id)
+}
+
+func (k BlockKey) Desc() string {
+	return fmt.Sprintf(`%s "branch:%d/component:%s/config:%s/block:%d"`, k.Kind().Name, k.BranchId, k.ComponentId, k.ConfigId, k.Index)
+}
+
+func (k CodeKey) Desc() string {
+	return fmt.Sprintf(`%s "branch:%d/component:%s/config:%s/block:%d/code:%d"`, k.Kind().Name, k.BranchId, k.ComponentId, k.ConfigId, k.BlockIndex, k.Index)
 }
 
 func (k BranchKey) String() string {
