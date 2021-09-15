@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 
+	"github.com/iancoleman/orderedmap"
 	"github.com/spf13/cast"
 )
 
@@ -29,7 +30,14 @@ type Object interface {
 	Level() int // hierarchical level, "1" for branch, "2" for config, ...
 	Kind() Kind
 	Key() Key
+	Desc() string
 	ObjectId() string
+}
+
+type ObjectWithContent interface {
+	Object
+	GetComponentId() string
+	GetContent() *orderedmap.OrderedMap
 }
 
 type BranchKey struct {

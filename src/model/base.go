@@ -136,6 +136,22 @@ func (c *Component) IsTransformation() bool {
 	return c.Type == TransformationType
 }
 
+func (c *Config) GetComponentId() string {
+	return c.ComponentId
+}
+
+func (r *ConfigRow) GetComponentId() string {
+	return r.ComponentId
+}
+
+func (c *Config) GetContent() *orderedmap.OrderedMap {
+	return c.Content
+}
+
+func (r *ConfigRow) GetContent() *orderedmap.OrderedMap {
+	return r.Content
+}
+
 func (c *Config) ToApiValues() (map[string]string, error) {
 	configJson, err := json.EncodeString(c.Content, false)
 	if err != nil {

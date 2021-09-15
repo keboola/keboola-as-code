@@ -1,6 +1,8 @@
 package model
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type ObjectState interface {
 	Level() int            // hierarchical level, "1" for branch, "2" for config, ...

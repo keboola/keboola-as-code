@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/go-resty/resty/v2"
+	"github.com/spf13/cast"
 	"go.uber.org/zap"
 
 	"keboola-as-code/src/client"
@@ -38,28 +39,22 @@ func NewEncryptionApi(hostUrl string, ctx context.Context, logger *zap.SugaredLo
 	return api
 }
 
+func (a *Api) NewPool() *client.Pool {
+	return a.client.NewPool(a.logger)
+}
+
 func (a *Api) NewRequest(method string, url string) *client.Request {
 	return a.client.NewRequest(method, url)
 }
 
-func (a *Api) createRequest(componentId string, projectId string, requestBody map[string]string) *client.Request {
-	// Create request
+func (a *Api) CreateEncryptRequest(componentId string, projectId int, data map[string]string) *client.Request {
 	result := make(map[string]string)
 	request := a.
 		client.NewRequest(resty.MethodPost, "encrypt").
 		SetQueryParam("componentId", componentId).
-		SetQueryParam("projectId", projectId).
+		SetQueryParam("projectId", cast.ToString(projectId)).
 		SetResult(&result)
-	request.Request.SetBody(requestBody)
+	request.Request.SetBody(data)
 	request.Request.SetHeader("Content-Type", "application/json")
-
 	return request
-}
-
-func (a *Api) EncryptMapValues(componentId string, projectId string, mapValues map[string]string) (map[string]string, error) {
-	response := a.createRequest(componentId, projectId, mapValues).Send().Response
-	if response.HasResult() {
-		return *response.Result().(*map[string]string), nil
-	}
-	return nil, response.Err()
 }

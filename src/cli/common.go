@@ -5,7 +5,6 @@ import (
 	"go.uber.org/zap"
 
 	"keboola-as-code/src/diff"
-	"keboola-as-code/src/encryption"
 	"keboola-as-code/src/log"
 	"keboola-as-code/src/manifest"
 	"keboola-as-code/src/plan"
@@ -121,13 +120,19 @@ func SaveManifest(projectManifest *manifest.Manifest, logger *zap.SugaredLogger)
 
 func Validate(projectState *state.State, logger *zap.SugaredLogger) error {
 	errors := utils.NewMultiError()
-	if schemasErrors := schema.ValidateSchemas(projectState); schemasErrors != nil {
-		errors.Append(schemasErrors)
-	}
-	if encryptionErrors := encryption.ValidateAllEncrypted(projectState); encryptionErrors != nil {
-		errors.Append(encryptionErrors)
+
+	// Validate schemas
+	if err := schema.ValidateSchemas(projectState); err != nil {
+		errors.Append(err)
 	}
 
+	// Validate all values encrypted
+	encryptPlan := plan.Encrypt(projectState)
+	if err := encryptPlan.ValidateAllEncrypted(); err != nil {
+		errors.Append(err)
+	}
+
+	// Process errors
 	if err := errors.ErrorOrNil(); err != nil {
 		return utils.PrefixError("validation failed", err)
 	} else {

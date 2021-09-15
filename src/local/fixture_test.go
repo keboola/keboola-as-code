@@ -45,6 +45,10 @@ func (m ModelStruct) Kind() model.Kind {
 	return m.Key().Kind()
 }
 
+func (m ModelStruct) Desc() string {
+	return m.Key().Desc()
+}
+
 func (MockedRecord) Key() model.Key {
 	return &MockedKey{}
 }
