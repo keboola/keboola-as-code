@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"keboola-as-code/src/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 func TestGenerateNewId(t *testing.T) {

@@ -3,7 +3,7 @@ package version
 import (
 	"runtime"
 
-	"keboola-as-code/src/build"
+	"github.com/keboola/keboola-as-code/internal/pkg/build"
 )
 
 const DevVersionValue = "dev"

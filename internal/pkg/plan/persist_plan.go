@@ -5,9 +5,9 @@ import (
 
 	"go.uber.org/zap"
 
-	"keboola-as-code/src/log"
-	"keboola-as-code/src/remote"
-	"keboola-as-code/src/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/remote"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 )
 
 type PersistPlan struct {

@@ -4,14 +4,14 @@ import (
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 
-	"keboola-as-code/src/diff"
-	"keboola-as-code/src/log"
-	"keboola-as-code/src/manifest"
-	"keboola-as-code/src/plan"
-	"keboola-as-code/src/remote"
-	"keboola-as-code/src/schema"
-	"keboola-as-code/src/state"
-	"keboola-as-code/src/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/diff"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/plan"
+	"github.com/keboola/keboola-as-code/internal/pkg/remote"
+	"github.com/keboola/keboola-as-code/internal/pkg/schema"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // diffProcessCmd run callback on diff results, common for pull, push ...

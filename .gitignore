@@ -19,7 +19,7 @@
 # IDE
 /.idea
 
-# Dependency dir
+# Dependency directory
 vendor/*
 
 # Build dir

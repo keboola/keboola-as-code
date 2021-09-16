@@ -6,4 +6,5 @@ RUN echo 'PS1="\w > "' > ~/.bashrc && chmod 0777 -R ~
 RUN apk add --no-cache bash abuild && \
     chmod 777 /etc/apk/keys
 
-CMD /scripts/index_apk.sh
+COPY index.sh /usr/local/bin/index.sh
+CMD /usr/local/bin/index.sh

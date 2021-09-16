@@ -5,7 +5,7 @@ import (
 	"sort"
 	"sync"
 
-	"keboola-as-code/src/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 type remoteProvider interface {

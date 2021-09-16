@@ -13,10 +13,10 @@ linters-settings:
   # Errors from the project can be returned without wrapping
   wrapcheck:
     ignorePackageGlobs:
-      - keboola-as-code/src/*
+      - github.com/keboola/keboola-as-code/*
   # Gci - improved version of goimports
   gci:
-    local-prefixes: keboola-as-code
+    local-prefixes: github.com/keboola/keboola-as-code
   gocyclo:
     # minimal code complexity to report, 30 by default (but we recommend 10-20)
     min-complexity: 10

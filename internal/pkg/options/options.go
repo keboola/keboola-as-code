@@ -13,10 +13,10 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	"keboola-as-code/src/interaction"
-	"keboola-as-code/src/json"
-	"keboola-as-code/src/manifest"
-	"keboola-as-code/src/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/interaction"
+	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 type parser = viper.Viper

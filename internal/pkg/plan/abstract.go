@@ -1,6 +1,6 @@
 package plan
 
-import "keboola-as-code/src/log"
+import "github.com/keboola/keboola-as-code/internal/pkg/log"
 
 type Plan interface {
 	Name() string

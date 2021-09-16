@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
-	"keboola-as-code/src/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func TestNewHttpClient(t *testing.T) {

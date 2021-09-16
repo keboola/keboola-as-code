@@ -7,8 +7,8 @@ import (
 
 	"github.com/spf13/cast"
 
-	"keboola-as-code/src/model"
-	"keboola-as-code/src/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 const (

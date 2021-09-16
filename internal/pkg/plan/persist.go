@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"keboola-as-code/src/model"
-	"keboola-as-code/src/state"
-	"keboola-as-code/src/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // Persist creates a plan for persist new/deleted objects.

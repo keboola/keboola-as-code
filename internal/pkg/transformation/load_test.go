@@ -9,9 +9,9 @@ import (
 	"github.com/iancoleman/orderedmap"
 	"github.com/stretchr/testify/assert"
 
-	"keboola-as-code/src/json"
-	"keboola-as-code/src/model"
-	"keboola-as-code/src/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func TestLoadTransformationMissingBlockMetaSql(t *testing.T) {

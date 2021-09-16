@@ -7,7 +7,7 @@ import (
 
 	"github.com/iancoleman/orderedmap"
 
-	"keboola-as-code/src/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/json"
 )
 
 type StructField struct {

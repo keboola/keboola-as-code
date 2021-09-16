@@ -4,8 +4,8 @@ import (
 	"github.com/go-resty/resty/v2"
 	"github.com/spf13/cast"
 
-	"keboola-as-code/src/client"
-	"keboola-as-code/src/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 func (a *StorageApi) ListComponents(branchId int) (*[]*model.ComponentWithConfigs, error) {

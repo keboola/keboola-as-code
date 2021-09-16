@@ -7,11 +7,11 @@ import (
 	"github.com/iancoleman/orderedmap"
 	"github.com/spf13/cast"
 
-	"keboola-as-code/src/client"
-	"keboola-as-code/src/local"
-	"keboola-as-code/src/manifest"
-	"keboola-as-code/src/model"
-	"keboola-as-code/src/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 type Manager struct {

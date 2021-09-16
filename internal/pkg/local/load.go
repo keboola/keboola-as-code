@@ -5,11 +5,11 @@ import (
 	"path/filepath"
 	"reflect"
 
-	"keboola-as-code/src/json"
-	"keboola-as-code/src/model"
-	"keboola-as-code/src/transformation"
-	"keboola-as-code/src/utils"
-	"keboola-as-code/src/validator"
+	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/transformation"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 // LoadModel from manifest and disk.

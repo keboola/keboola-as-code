@@ -13,10 +13,10 @@ import (
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 
-	"keboola-as-code/src/client"
-	"keboola-as-code/src/fixtures"
-	"keboola-as-code/src/model"
-	"keboola-as-code/src/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // testProject manages cleanup and setup of the test project.

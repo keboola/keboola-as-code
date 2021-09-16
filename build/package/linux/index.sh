@@ -14,10 +14,11 @@ elif [ $# -gt 1 ]; then
   exit 2
 fi
 
-SCRIPTS_DIR_REL="$(dirname "$0")"
-SCRIPTS_DIR="$(realpath "$SCRIPTS_DIR_REL")"
 export PACKAGES_DIR="$(realpath "$1")"
 echo "Packages dir: $PACKAGES_DIR"
+
+SCRIPTS_DIR_REL="$(dirname "$0")"
+SCRIPTS_DIR="$(realpath "$SCRIPTS_DIR_REL")"
 cd $SCRIPTS_DIR
 
 echo "Pulling Docker images ..."

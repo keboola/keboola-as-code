@@ -11,8 +11,8 @@ import (
 	"github.com/go-resty/resty/v2"
 	"go.uber.org/zap"
 
-	"keboola-as-code/src/build"
-	"keboola-as-code/src/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/build"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 const (

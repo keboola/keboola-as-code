@@ -7,9 +7,9 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 
-	"keboola-as-code/src/local"
-	"keboola-as-code/src/remote"
-	"keboola-as-code/src/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/remote"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 type diffExecutor struct {

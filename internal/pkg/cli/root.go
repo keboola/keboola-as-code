@@ -12,13 +12,13 @@ import (
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 
-	"keboola-as-code/src/build"
-	"keboola-as-code/src/interaction"
-	"keboola-as-code/src/log"
-	"keboola-as-code/src/options"
-	"keboola-as-code/src/remote"
-	"keboola-as-code/src/utils"
-	"keboola-as-code/src/version"
+	"github.com/keboola/keboola-as-code/internal/pkg/build"
+	"github.com/keboola/keboola-as-code/internal/pkg/interaction"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/options"
+	"github.com/keboola/keboola-as-code/internal/pkg/remote"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/version"
 )
 
 const description = `

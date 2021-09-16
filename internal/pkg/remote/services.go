@@ -5,7 +5,7 @@ import (
 
 	"github.com/go-resty/resty/v2"
 
-	"keboola-as-code/src/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/client"
 )
 
 func (a *StorageApi) GetServices() ([]interface{}, error) {

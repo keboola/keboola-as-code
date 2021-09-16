@@ -9,9 +9,9 @@ import (
 
 	"github.com/jpillora/longestcommon"
 
-	"keboola-as-code/src/model"
-	"keboola-as-code/src/state"
-	"keboola-as-code/src/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // Rename creates a plan for renaming objects that do not match the naming.

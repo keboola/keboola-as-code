@@ -3,8 +3,8 @@ package main
 import (
 	"os"
 
-	"keboola-as-code/src/cli"
-	"keboola-as-code/src/interaction"
+	"github.com/keboola/keboola-as-code/internal/pkg/cli"
+	"github.com/keboola/keboola-as-code/internal/pkg/interaction"
 )
 
 func main() {

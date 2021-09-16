@@ -7,8 +7,8 @@ import (
 	"github.com/otiai10/copy"
 	"go.uber.org/zap"
 
-	"keboola-as-code/src/manifest"
-	"keboola-as-code/src/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 type renameExecutor struct {

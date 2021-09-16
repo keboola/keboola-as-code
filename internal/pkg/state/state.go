@@ -9,13 +9,13 @@ import (
 	"github.com/iancoleman/orderedmap"
 	"go.uber.org/zap"
 
-	"keboola-as-code/src/components"
-	"keboola-as-code/src/local"
-	"keboola-as-code/src/manifest"
-	"keboola-as-code/src/model"
-	"keboola-as-code/src/remote"
-	"keboola-as-code/src/utils"
-	"keboola-as-code/src/validator"
+	"github.com/keboola/keboola-as-code/internal/pkg/components"
+	"github.com/keboola/keboola-as-code/internal/pkg/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/remote"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 // State - Local and Remote state of the project.

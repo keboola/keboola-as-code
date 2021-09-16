@@ -10,7 +10,7 @@ import (
 	"github.com/Masterminds/semver"
 	"go.uber.org/zap"
 
-	"keboola-as-code/src/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/client"
 )
 
 const EnvVersionCheck = "KBC_VERSION_CHECK"

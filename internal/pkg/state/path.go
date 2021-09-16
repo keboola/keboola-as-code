@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"keboola-as-code/src/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // PathsState keeps state of all files/dirs in projectDir.

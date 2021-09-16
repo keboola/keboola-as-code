@@ -3,10 +3,10 @@ package plan
 import (
 	"github.com/iancoleman/orderedmap"
 
-	"keboola-as-code/src/encryption"
-	"keboola-as-code/src/model"
-	"keboola-as-code/src/state"
-	"keboola-as-code/src/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/encryption"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // Encrypt creates a plan for encrypt all unencrypted values in all configs and rows.

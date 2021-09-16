@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"keboola-as-code/src/diff"
-	"keboola-as-code/src/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/diff"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 const (

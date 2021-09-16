@@ -6,8 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"keboola-as-code/src/diff"
-	"keboola-as-code/src/remote"
+	"github.com/keboola/keboola-as-code/internal/pkg/diff"
+	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 )
 
 const diffShortDescription = `Print differences between local and remote state`

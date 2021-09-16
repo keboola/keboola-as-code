@@ -6,8 +6,8 @@ import (
 
 	"github.com/go-resty/resty/v2"
 
-	"keboola-as-code/src/client"
-	"keboola-as-code/src/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 // TicketProvider generates new IDs and GUARANTEES that the IDs will be in the same order as the Request method was called.

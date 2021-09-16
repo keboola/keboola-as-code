@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"keboola-as-code/src/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func TestGetEncryptionApiUrl(t *testing.T) {

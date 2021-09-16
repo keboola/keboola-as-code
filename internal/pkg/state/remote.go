@@ -1,9 +1,9 @@
 package state
 
 import (
-	"keboola-as-code/src/client"
-	"keboola-as-code/src/model"
-	"keboola-as-code/src/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // doLoadRemoteState - API -> unified model.

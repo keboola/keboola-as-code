@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 
-	"keboola-as-code/src/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 const REQUESTS_BUFFER_SIZE = 10000

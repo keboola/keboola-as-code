@@ -8,11 +8,11 @@ import (
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 
-	"keboola-as-code/src/event"
-	"keboola-as-code/src/interaction"
-	"keboola-as-code/src/manifest"
-	"keboola-as-code/src/remote"
-	"keboola-as-code/src/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/event"
+	"github.com/keboola/keboola-as-code/internal/pkg/interaction"
+	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/remote"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 const initShortDescription = `Init local project directory and perform the first pull`

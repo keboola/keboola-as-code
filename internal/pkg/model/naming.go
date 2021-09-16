@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"keboola-as-code/src/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 const (

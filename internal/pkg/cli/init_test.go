@@ -11,8 +11,8 @@ import (
 	"github.com/Netflix/go-expect"
 	"github.com/stretchr/testify/assert"
 
-	"keboola-as-code/src/interaction"
-	"keboola-as-code/src/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/interaction"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 const Enter = "\n"

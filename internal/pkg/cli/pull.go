@@ -3,11 +3,11 @@ package cli
 import (
 	"github.com/spf13/cobra"
 
-	"keboola-as-code/src/diff"
-	"keboola-as-code/src/event"
-	"keboola-as-code/src/log"
-	"keboola-as-code/src/plan"
-	"keboola-as-code/src/remote"
+	"github.com/keboola/keboola-as-code/internal/pkg/diff"
+	"github.com/keboola/keboola-as-code/internal/pkg/event"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/plan"
+	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 )
 
 const pullShortDescription = `Pull configurations to the project directory`

@@ -1,4 +1,4 @@
-package tests
+package test
 
 import (
 	"bytes"
@@ -18,12 +18,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/umisama/go-regexpcache"
 
-	"keboola-as-code/src/fixtures"
-	"keboola-as-code/src/json"
-	"keboola-as-code/src/manifest"
-	"keboola-as-code/src/remote"
-	"keboola-as-code/src/state"
-	"keboola-as-code/src/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
+	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/remote"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // EnvTicketProvider allows you to generate new unique IDs via an ENV variable in the test.
@@ -54,7 +54,7 @@ func TestFunctional(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Compile binary, it will be run in the tests
-	projectDir := filepath.Join(rootDir, "..", "..")
+	projectDir := filepath.Join(rootDir, "..")
 	binary := CompileBinary(t, projectDir, tempDir)
 
 	// Run test for each directory

@@ -7,11 +7,11 @@ import (
 
 	"go.uber.org/zap"
 
-	"keboola-as-code/src/diff"
-	"keboola-as-code/src/log"
-	"keboola-as-code/src/remote"
-	"keboola-as-code/src/state"
-	"keboola-as-code/src/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/diff"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/remote"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // DiffPlan - plan based on the diff results.

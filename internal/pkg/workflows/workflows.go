@@ -10,7 +10,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"keboola-as-code/src/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // nolint:gochecknoglobals

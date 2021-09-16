@@ -1,7 +1,7 @@
 project_name: "kbc"
 dist: "target"
 builds:
-  - main: "./src/main.go"
+  - main: "./cmd/kbc/main.go"
     binary: "kbc"
     goos: ["linux", "darwin", "windows"]
     goarch: ["amd64", "arm", "arm64"]
@@ -57,7 +57,7 @@ nfpms:
 
 publishers:
   - name: Upload artifacts to S3
-    cmd: ./scripts/pkgs/publish-to-s3.sh "{{ abs .ArtifactPath }}" "{{ .ArtifactName }}" "{{ .ProjectName }}" "{{ .Version }}" "{{ .Os }}" "{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    cmd: ./build/package/s3/publish.sh "{{ abs .ArtifactPath }}" "{{ .ArtifactName }}" "{{ .ProjectName }}" "{{ .Version }}" "{{ .Os }}" "{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
     ids:
       - archives
       - packages

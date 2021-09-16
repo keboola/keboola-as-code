@@ -3,9 +3,9 @@ package local
 import (
 	"go.uber.org/zap"
 
-	"keboola-as-code/src/components"
-	"keboola-as-code/src/manifest"
-	"keboola-as-code/src/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/components"
+	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 type Manager struct {

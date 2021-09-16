@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"keboola-as-code/src/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 )
 
 const statusShortDescription = `Print info about project directory`

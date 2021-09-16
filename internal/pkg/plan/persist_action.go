@@ -3,7 +3,7 @@ package plan
 import (
 	"fmt"
 
-	"keboola-as-code/src/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 type PersistAction interface {

@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cast"
 	"go.uber.org/zap"
 
-	"keboola-as-code/src/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/client"
 )
 
 type Api struct {

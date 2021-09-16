@@ -8,11 +8,11 @@ import (
 
 	"go.uber.org/zap"
 
-	"keboola-as-code/src/client"
-	"keboola-as-code/src/components"
-	"keboola-as-code/src/model"
-	"keboola-as-code/src/options"
-	"keboola-as-code/src/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/components"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/options"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 type StorageApi struct {

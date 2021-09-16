@@ -5,8 +5,8 @@ import (
 
 	"go.uber.org/zap"
 
-	"keboola-as-code/src/log"
-	"keboola-as-code/src/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 )
 
 type RenamePlan struct {

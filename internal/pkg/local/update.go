@@ -3,7 +3,7 @@ package local
 import (
 	"fmt"
 
-	"keboola-as-code/src/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 func (m *Manager) UpdatePaths(state model.ObjectState, rename bool) error {

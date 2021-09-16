@@ -9,10 +9,10 @@ import (
 	"github.com/iancoleman/orderedmap"
 	"go.uber.org/zap"
 
-	"keboola-as-code/src/model"
-	"keboola-as-code/src/sql"
-	"keboola-as-code/src/utils"
-	"keboola-as-code/src/validator"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/sql"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 type loader struct {

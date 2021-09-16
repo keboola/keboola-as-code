@@ -3,7 +3,7 @@ package plan
 import (
 	"fmt"
 
-	"keboola-as-code/src/diff"
+	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 )
 
 func Pull(diffResults *diff.Results) (*DiffPlan, error) {

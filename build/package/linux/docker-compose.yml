@@ -3,11 +3,10 @@ services:
   deb:
     image: keboolabot/keboola-as-code-deb-tools
     build:
-      context: .
-      dockerfile: ./Dockerfile-deb
+      context: ./deb
+      dockerfile: ./deb/Dockerfile
     volumes:
       - $PACKAGES_DIR:/packages
-      - ./index_deb.sh:/scripts/index_deb.sh
     environment:
       - DEB_KEY_PUBLIC
       - DEB_KEY_PRIVATE
@@ -15,11 +14,10 @@ services:
   rpm:
     image: keboolabot/keboola-as-code-rpm-tools
     build:
-      context: .
-      dockerfile: ./Dockerfile-rpm
+      context: ./rpm
+      dockerfile: ./rpm/Dockerfile
     volumes:
       - $PACKAGES_DIR:/packages
-      - ./index_rpm.sh:/scripts/index_rpm.sh
     environment:
       - RPM_KEY_PUBLIC
       - RPM_KEY_PRIVATE
@@ -27,11 +25,10 @@ services:
   apk:
     image: keboolabot/keboola-as-code-apk-tools
     build:
-      context: .
-      dockerfile: ./Dockerfile-apk
+      context: ./apk
+      dockerfile: ./apk/Dockerfile
     volumes:
       - $PACKAGES_DIR:/packages
-      - ./index_apk.sh:/scripts/index_apk.sh
     environment:
       - APK_KEY_PUBLIC
       - APK_KEY_PRIVATE

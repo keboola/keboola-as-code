@@ -5,10 +5,10 @@ import (
 
 	"go.uber.org/zap"
 
-	"keboola-as-code/src/client"
-	"keboola-as-code/src/encryption"
-	"keboola-as-code/src/state"
-	"keboola-as-code/src/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/encryption"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 type encryptExecutor struct {

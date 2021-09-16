@@ -3,8 +3,8 @@ package cli
 import (
 	"github.com/spf13/cobra"
 
-	"keboola-as-code/src/interaction"
-	"keboola-as-code/src/workflows"
+	"github.com/keboola/keboola-as-code/internal/pkg/interaction"
+	"github.com/keboola/keboola-as-code/internal/pkg/workflows"
 )
 
 const workflowsShortDescription = `Generate Github Actions workflows`

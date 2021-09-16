@@ -161,11 +161,11 @@ DEBUG   Trace:
 
 ## Quickstart
 
-For the basic scenarios on how to use the CLI read the [QUICKSTART.md](QUICKSTART.md) document.
+For the basic scenarios on how to use the CLI read the [QUICKSTART.md](./docs/QUICKSTART.md) document.
 
 ## Development
 
 - This tool is primarily developed by [Keboola](https://www.keboola.com/).
 - Suggestions for improvements and new features can be submitted at https://ideas.keboola.com/.
 - You can also send PR directly, but we do not guarantee that it will be accepted.
-- See the [developer's guide](./DEVELOPMENT.md).
+- See the [developer's guide](./docs/DEVELOPMENT.md).

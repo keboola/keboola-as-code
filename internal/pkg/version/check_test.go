@@ -8,9 +8,9 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
-	"keboola-as-code/src/build"
-	"keboola-as-code/src/json"
-	"keboola-as-code/src/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/build"
+	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func TestCheckIfLatestVersionDev(t *testing.T) {

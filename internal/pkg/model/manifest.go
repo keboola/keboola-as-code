@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"keboola-as-code/src/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 const (

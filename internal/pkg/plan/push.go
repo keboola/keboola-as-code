@@ -3,9 +3,9 @@ package plan
 import (
 	"fmt"
 
-	"keboola-as-code/src/diff"
-	"keboola-as-code/src/model"
-	"keboola-as-code/src/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/diff"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 )
 
 func Push(diffResults *diff.Results, changeDescription string) (*DiffPlan, error) {
