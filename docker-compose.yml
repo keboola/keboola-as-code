@@ -5,6 +5,7 @@ services:
     build: .
     volumes:
       - ./:/code:z
+      - cache:/tmp/cache
     environment:
       - TEST_PROJECT_ID
       - TEST_PROJECT_NAME
@@ -13,3 +14,6 @@ services:
       - TEST_KBC_STORAGE_API_TOKEN_MASTER
       - TEST_KBC_STORAGE_API_TOKEN_EXPIRED
       - GPG_PRIVATE_PATH
+
+volumes:
+  cache:

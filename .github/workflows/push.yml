@@ -98,7 +98,7 @@ jobs:
         with:
           key: tests
       - name: Tests
-        run: docker-compose run --rm -u "$UID:$GID" -e VERSION -v /tmp/go-cache:/tmp/go-cache dev make ci
+        run: docker-compose run --rm -e VERSION -v /tmp/cache-go:/tmp/cache dev make ci
         env:
           VERSION: ${{ needs.set_version.outputs.version }}
 
@@ -117,9 +117,7 @@ jobs:
         with:
           key: compile
       - name: Cross compile
-        run: |
-          mkdir -p /tmp/go-cache
-          docker-compose run --rm -u "$UID:$GID" -e VERSION -v /tmp/go-cache:/tmp/go-cache dev make build
+        run: docker-compose run --rm -e VERSION -v /tmp/cache-go:/tmp/cache dev make build
         env:
           VERSION: ${{ needs.set_version.outputs.version }}
       - name: Upload binary artifacts
@@ -185,13 +183,13 @@ jobs:
           chmod 0600 /tmp/keys/apk.key
       - name: Release
         run: |
-          docker-compose run --rm -u "$UID:$GID" \
+          docker-compose run --rm \
           -e GITHUB_TOKEN \
           -e DEB_KEY_PRIVATE_PATH=/tmp/keys/deb.key \
           -e RPM_KEY_PRIVATE_PATH=/tmp/keys/rpm.key \
           -e APK_KEY_PRIVATE_PATH=/tmp/keys/apk.key \
           -e VERSION \
-          -v /tmp/go-cache:/tmp/go-cache \
+          -v /tmp/cache-go:/tmp/cache \
           -v /tmp/keys:/tmp/keys \
           -v /s3bucket:/s3bucket \
           dev make release
@@ -199,7 +197,7 @@ jobs:
           VERSION: ${{ needs.set_version.outputs.version }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Index Linux packages
-        run: ./scripts/pkgs/index.sh /s3bucket
+        run: ./build/packages/linux/index.sh /s3bucket
       - name: Upload zipped files to artifacts
         uses: actions/upload-artifact@v2
         with:
@@ -244,8 +242,8 @@ jobs:
           AC_USERNAME: ${{ secrets.AC_USERNAME }}
           AC_PASSWORD: ${{ secrets.AC_PASSWORD }}
         run: |
-          gon -log-level=info ./gon-amd64.json
-          gon -log-level=info ./gon-arm64.json
+          gon -log-level=info build/package/mac-os/gon/amd64.json
+          gon -log-level=info build/package/mac-os/gon/arm64.json
       - name: Rename signed binaries
         run: |
           mv release/signed/kbc-amd64.zip release/signed/kbc_${{ needs.set_version.outputs.version }}_darwin_amd64.zip
@@ -295,7 +293,7 @@ jobs:
           export LINUX_ARM_TARGET_SHA256=$(sha256sum linux/*linux_armv6.zip | cut -f 1 -d ' ' )
           export LINUX_ARM64_TARGET_SHA256=$(sha256sum linux/*linux_arm64.zip | cut -f 1 -d ' ' )
           export LINUX_AMD_TARGET_SHA256=$(sha256sum linux/*linux_amd64.zip | cut -f 1 -d ' ' )
-          envsubst < homebrew.template.rb > homebrew/keboola-as-code.rb
+          envsubst < build/package/homebrew/homebrew.template.rb > homebrew/keboola-as-code.rb
           cat homebrew/keboola-as-code.rb
       - name: Push formulae to keboola/homebrew-tap repository
         uses: cpina/github-action-push-to-another-repository@main

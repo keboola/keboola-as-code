@@ -4,9 +4,14 @@ RUN apt-get update -y && \
     apt-get install -y jq time zip git binutils-common
 
 ENV HOME=/my-home
-ENV GOPATH=/code/go
-ENV GOCACHE=/tmp/go-cache
+ENV GOCACHE=/tmp/cache/go
+ENV GOMODCACHE=/tmp/cache/go-mod
 ENV GOBIN=/usr/local/bin
+ENV GOFLAGS="-mod=mod"
+ENV GOLANGCI_LINT_CACHE=/tmp/cache/golangci-lint
+RUN mkdir -p $GOCACHE && chmod 777 $GOCACHE && \
+    mkdir -p $GOMODCACHE && chmod 777 $GOMODCACHE && \
+    mkdir -p $GOLANGCI_LINT_CACHE && chmod 777 $GOLANGCI_LINT_CACHE
 
 # Install richgo
 RUN curl --silent "https://api.github.com/repos/kyoh86/richgo/releases/latest" | \

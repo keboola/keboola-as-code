@@ -11,6 +11,7 @@ cd "$(dirname "$0")"/..
 # Check Go files format
 echo "Downloading modules"
 go mod download
+go mod vendor
 echo "Ok."
 echo
 
@@ -23,9 +24,8 @@ echo "Ok. Tidy: go.mod and go.sum are valid."
 echo
 
 # Run linters
-cd ./src
 echo "Running golangci-lint ..."
-if golangci-lint run -c "../.golangci.yml"; then
+if golangci-lint run -c "./build/ci/golangci.yml"; then
     echo "Ok. The code looks good."
     echo
 else

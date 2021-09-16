@@ -1,15 +1,15 @@
 .PHONY: build
 
 build:
-	goreleaser build --rm-dist --snapshot
+	goreleaser build --rm-dist --snapshot -f ./build/ci/goreleaser.yml
 build-local:
-	goreleaser build --single-target --rm-dist --snapshot
+	goreleaser build --single-target --rm-dist --snapshot -f ./build/ci/goreleaser.yml
 
 release:
-	goreleaser release --rm-dist
+	goreleaser release --rm-dist -f ./build/ci/goreleaser.yml
 
 release-local:
-	goreleaser release --rm-dist --snapshot --skip-publish
+	goreleaser release --rm-dist --snapshot --skip-publish -f ./build/ci/goreleaser.yml
 
 tests:
 	TEST_VERBOSE=false ./scripts/tests.sh
