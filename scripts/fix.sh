@@ -10,10 +10,10 @@ cd "$(dirname "$0")"/..
 
 # Fix modules
 go mod tidy
+go mod vendor
 
 # Fix linters
-cd ./src
-if golangci-lint run --fix -c "../.golangci.yml"; then
+if golangci-lint run --fix -c "./build/ci/golangci.yml"; then
     echo "Ok. The code looks good."
     echo
 else

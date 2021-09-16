@@ -9,8 +9,8 @@ runs:
   steps:
     - uses: docker/build-push-action@v2
       with:
-        context: ./scripts/pkgs
-        file: ./scripts/pkgs/Dockerfile-${{ inputs.type }}
+        context: ./build/packages/linux/${{ inputs.type }}
+        file: ./build/packages/linux/${{ inputs.type }}/Dockerfile
         push: true
         tags: keboolabot/keboola-as-code-${{ inputs.type }}-tools:latest
         cache-from: type=registry,ref=keboolabot/keboola-as-code-${{ inputs.type }}-tools:buildcache

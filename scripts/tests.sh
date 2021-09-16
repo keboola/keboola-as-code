@@ -11,6 +11,7 @@ cd "$(dirname "$0")"/..
 # Check Go files format
 echo "Downloading modules"
 go mod download
+go mod vendor
 echo "Ok."
 echo
 
@@ -18,6 +19,6 @@ echo
 echo "Running tests ..."
 export KBC_VERSION_CHECK=false # do not check the latest version in the tests
 richgo clean -testcache
-RICHGO_FORCE_COLOR=1 richgo test -p 1 -timeout 360s -v -race -coverprofile=/tmp/profile.out ./src/... $@
+RICHGO_FORCE_COLOR=1 richgo test -p 1 -timeout 360s -v -race -coverprofile=/tmp/profile.out ./... $@
 echo "Ok. All tests passed."
 echo

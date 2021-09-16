@@ -98,7 +98,7 @@ jobs:
         with:
           key: tests
       - name: Tests
-        run: docker-compose run --rm -u "$UID:$GID" -e VERSION -v /tmp/go-cache:/tmp/go-cache dev make ci
+        run: docker-compose run --rm -e VERSION -v /tmp/cache-go:/tmp/cache dev make ci
         env:
           VERSION: ${{ needs.set_version.outputs.version }}
 
@@ -117,9 +117,7 @@ jobs:
         with:
           key: compile
       - name: Cross compile
-        run: |
-          mkdir -p /tmp/go-cache
-          docker-compose run --rm -u "$UID:$GID" -e VERSION -v /tmp/go-cache:/tmp/go-cache dev make build
+        run: docker-compose run --rm -e VERSION -v /tmp/cache-go:/tmp/cache dev make build
         env:
           VERSION: ${{ needs.set_version.outputs.version }}
       - name: Upload binary artifacts
@@ -185,13 +183,13 @@ jobs:
           chmod 0600 /tmp/keys/apk.key
       - name: Release
         run: |
-          docker-compose run --rm -u "$UID:$GID" \
+          docker-compose run --rm \
           -e GITHUB_TOKEN \
           -e DEB_KEY_PRIVATE_PATH=/tmp/keys/deb.key \
           -e RPM_KEY_PRIVATE_PATH=/tmp/keys/rpm.key \
           -e APK_KEY_PRIVATE_PATH=/tmp/keys/apk.key \
           -e VERSION \
-          -v /tmp/go-cache:/tmp/go-cache \
+          -v /tmp/cache-go:/tmp/cache \
           -v /tmp/keys:/tmp/keys \
           -v /s3bucket:/s3bucket \
           dev make release
@@ -199,7 +197,7 @@ jobs:
           VERSION: ${{ needs.set_version.outputs.version }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Index Linux packages
-        run: ./scripts/pkgs/index.sh /s3bucket
+        run: ./build/packages/linux/index.sh /s3bucket
       - name: Upload zipped files to artifacts
         uses: actions/upload-artifact@v2
         with:

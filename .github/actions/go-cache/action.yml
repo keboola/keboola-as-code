@@ -8,13 +8,11 @@ runs:
   using: "composite"
   steps:
     - name: Create directory
-      run: mkdir -p /tmp/go-cache
+      run: mkdir -p /tmp/cache-go
       shell: bash
     - uses: actions/cache@v2
       with:
-        path: |
-          /tmp/go-cache
-          ${{ github.workspace }}/go
+        path: /tmp/cache-go
         key: ${{ runner.os }}-go-${{ inputs.key }}-${{ github.sha }}
         restore-keys: |
           ${{ runner.os }}-go-${{ inputs.key }}
