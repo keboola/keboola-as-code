@@ -81,16 +81,19 @@ Root project folder
 |  └─ manifest.json
 └─ branches
    └─ [branch-id]-[branch-name]                 - eg. 10715-test
-      ├─ meta.json                              - contains branch name, description
+      ├─ meta.json                              - contains name, ...
+      ├─ description.md                         - contains description
       └─ [component-type]                       - eg. extractor
          └─ [component-id]                      - eg. keboola.ex-db-oracle
             └─ [config-id]-[config-name]        - eg. 641226048-oauth-test
-                ├─ meta.json                    - contains name, description, ...
+                ├─ meta.json                    - contains name, ...
                 ├─ config.json                  - contains configuration
+                ├─ description.md               - contains description
                 └─ rows
                    └─ [row-id]-[row-name]       - eg. 28790-prod-fact-table
-                       ├─ meta.json             - contains name, description, ...
-                       └─ config.json           - contains configuration
+                       ├─ meta.json             - contains name, isDisabled ...
+                       ├─ config.json           - contains configuration
+                       └─ description.md         - contains description
 ```
 
 

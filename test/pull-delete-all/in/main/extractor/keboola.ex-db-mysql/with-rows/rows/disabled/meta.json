@@ -1,5 +1,4 @@
 {
   "name": "disabled",
-  "description": "test fixture",
   "isDisabled": true
 }
