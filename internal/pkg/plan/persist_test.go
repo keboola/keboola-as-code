@@ -85,7 +85,8 @@ func TestPersistNewConfig(t *testing.T) {
 	configDir := filepath.Join(projectDir, `main`, `extractor`, `ex-generic-v2`, `new-config`)
 	assert.NoError(t, os.Mkdir(configDir, 0755))
 	assert.NoError(t, os.WriteFile(filepath.Join(configDir, `config.json`), []byte(`{"key": "value"}`), 0644))
-	assert.NoError(t, os.WriteFile(filepath.Join(configDir, `meta.json`), []byte(`{"name": "foo", "description": "bar"}`), 0644))
+	assert.NoError(t, os.WriteFile(filepath.Join(configDir, `meta.json`), []byte(`{"name": "foo"}`), 0644))
+	assert.NoError(t, os.WriteFile(filepath.Join(configDir, `description.md`), []byte(`bar`), 0644))
 
 	// Load state
 	logger, _ := utils.NewDebugLogger()
@@ -100,6 +101,7 @@ func TestPersistNewConfig(t *testing.T) {
 	assert.Equal(t, []string{
 		"main/extractor/ex-generic-v2/new-config",
 		"main/extractor/ex-generic-v2/new-config/config.json",
+		"main/extractor/ex-generic-v2/new-config/description.md",
 		"main/extractor/ex-generic-v2/new-config/meta.json",
 	}, projectState.UntrackedPaths())
 	assert.Len(t, projectState.Branches(), 1)
@@ -142,7 +144,7 @@ func TestPersistNewConfig(t *testing.T) {
 						ParentPath: "main",
 						ObjectPath: "extractor/ex-generic-v2/new-config",
 					},
-					RelatedPaths: []string{model.MetaFile, model.ConfigFile},
+					RelatedPaths: []string{model.MetaFile, model.DescriptionFile, model.ConfigFile},
 				},
 			},
 			Component: &model.Component{
@@ -202,11 +204,13 @@ func TestPersistNewConfigRow(t *testing.T) {
 	configDir := filepath.Join(projectDir, `main`, `extractor`, `keboola.ex-db-mysql`, `new-config`)
 	assert.NoError(t, os.MkdirAll(configDir, 0755))
 	assert.NoError(t, os.WriteFile(filepath.Join(configDir, `config.json`), []byte(`{"key1": "value1"}`), 0644))
-	assert.NoError(t, os.WriteFile(filepath.Join(configDir, `meta.json`), []byte(`{"name": "foo1", "description": "bar1"}`), 0644))
+	assert.NoError(t, os.WriteFile(filepath.Join(configDir, `meta.json`), []byte(`{"name": "foo1"}`), 0644))
+	assert.NoError(t, os.WriteFile(filepath.Join(configDir, `description.md`), []byte(`bar1`), 0644))
 	rowDir := filepath.Join(configDir, `rows`, `some-row`)
 	assert.NoError(t, os.MkdirAll(rowDir, 0755))
 	assert.NoError(t, os.WriteFile(filepath.Join(rowDir, `config.json`), []byte(`{"key2": "value2"}`), 0644))
-	assert.NoError(t, os.WriteFile(filepath.Join(rowDir, `meta.json`), []byte(`{"name": "foo2", "description": "bar2"}`), 0644))
+	assert.NoError(t, os.WriteFile(filepath.Join(rowDir, `meta.json`), []byte(`{"name": "foo2"}`), 0644))
+	assert.NoError(t, os.WriteFile(filepath.Join(rowDir, `description.md`), []byte(`bar2`), 0644))
 
 	// Load state
 	logger, _ := utils.NewDebugLogger()
@@ -222,10 +226,12 @@ func TestPersistNewConfigRow(t *testing.T) {
 		"main/extractor/keboola.ex-db-mysql",
 		"main/extractor/keboola.ex-db-mysql/new-config",
 		"main/extractor/keboola.ex-db-mysql/new-config/config.json",
+		"main/extractor/keboola.ex-db-mysql/new-config/description.md",
 		"main/extractor/keboola.ex-db-mysql/new-config/meta.json",
 		"main/extractor/keboola.ex-db-mysql/new-config/rows",
 		"main/extractor/keboola.ex-db-mysql/new-config/rows/some-row",
 		"main/extractor/keboola.ex-db-mysql/new-config/rows/some-row/config.json",
+		"main/extractor/keboola.ex-db-mysql/new-config/rows/some-row/description.md",
 		"main/extractor/keboola.ex-db-mysql/new-config/rows/some-row/meta.json",
 	}, projectState.UntrackedPaths())
 	assert.Len(t, projectState.Branches(), 1)
@@ -280,7 +286,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 						ParentPath: "main",
 						ObjectPath: "extractor/keboola.ex-db-mysql/new-config",
 					},
-					RelatedPaths: []string{model.MetaFile, model.ConfigFile},
+					RelatedPaths: []string{model.MetaFile, model.DescriptionFile, model.ConfigFile},
 				},
 			},
 			Component: &model.Component{
@@ -319,7 +325,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 						ParentPath: "main/extractor/keboola.ex-db-mysql/new-config",
 						ObjectPath: "rows/some-row",
 					},
-					RelatedPaths: []string{model.MetaFile, model.ConfigFile},
+					RelatedPaths: []string{model.MetaFile, model.DescriptionFile, model.ConfigFile},
 				},
 			},
 			Remote: nil,
