@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "project": {
+    "id": 12345,
+    "apiHost": "connection.keboola.com"
+  },
+  "branches": [
+    {
+      "id": %%LOCAL_STATE_MY_BRANCH_ID%%,
+      "path": "123-branch"
+    }
+  ],
+  "configurations": [
+    {
+      "branchId": %%LOCAL_STATE_MY_BRANCH_ID%%,
+      "componentId": "ex-generic-v2",
+      "id": "%%LOCAL_STATE_GENERIC_CONFIG_ID%%",
+      "path": "extractor/ex-generic-v2/456-todos",
+      "rows": []
+    }
+  ]
+}
