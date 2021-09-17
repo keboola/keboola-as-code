@@ -46,6 +46,19 @@ func MapFromOneTaggedField(tag string, model interface{}) *orderedmap.OrderedMap
 	return reflection.FieldByName(field.Name).Interface().(*orderedmap.OrderedMap)
 }
 
+func StringFromOneTaggedField(tag string, model interface{}) (str string, found bool) {
+	field := GetOneFieldWithTag(tag, model)
+	if field == nil {
+		return "", false
+	}
+	if field.Type.String() != "string" {
+		return "", false
+	}
+
+	reflection := reflect.ValueOf(model).Elem()
+	return reflection.FieldByName(field.Name).Interface().(string), true
+}
+
 func GetFieldsWithTag(tag string, model interface{}) []*StructField {
 	parts := strings.SplitN(tag, ":", 2)
 	tagName, tagValue := parts[0], parts[1]

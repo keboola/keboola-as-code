@@ -37,7 +37,10 @@ func WriteFile(dir string, relPath string, source interface{}, errPrefix string)
 	if err != nil {
 		return fmt.Errorf("cannot write %s file \"%s\"", errPrefix, relPath)
 	}
-	return os.WriteFile(path, data, 0644)
+	if err := os.WriteFile(path, data, 0644); err != nil {
+		return fmt.Errorf("cannot write %s file \"%s\"", errPrefix, relPath)
+	}
+	return nil
 }
 
 func Encode(v interface{}, pretty bool) ([]byte, error) {

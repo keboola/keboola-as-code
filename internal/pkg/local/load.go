@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"reflect"
+	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -30,6 +31,22 @@ func (m *Manager) LoadModel(record model.Record, target interface{}) (found bool
 		m.logger.Debugf(`Loaded "%s"`, metaFilePath)
 	} else {
 		errors.Append(err)
+	}
+
+	// Load description
+	if descField := utils.GetOneFieldWithTag(model.DescriptionFileTag, target); descField != nil {
+		descriptionFile := m.Naming().DescriptionFilePath(record.RelativePath())
+		errPrefix = record.Kind().Name + " description"
+		modelValue := reflect.ValueOf(target).Elem()
+		if content, err := utils.ReadFile(m.ProjectDir(), descriptionFile, errPrefix); err == nil {
+			record.AddRelatedPath(descriptionFile)
+			m.logger.Debugf(`Loaded "%s"`, descriptionFile)
+			// Trim whitespaces from end and set
+			content = strings.TrimRight(content, " \r\n\t")
+			modelValue.FieldByName(descField.Name).Set(reflect.ValueOf(content))
+		} else {
+			errors.Append(err)
+		}
 	}
 
 	// Load config file content
