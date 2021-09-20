@@ -3,7 +3,6 @@ package local
 import (
 	"go.uber.org/zap"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/components"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
@@ -11,10 +10,10 @@ import (
 type Manager struct {
 	logger     *zap.SugaredLogger
 	manifest   *manifest.Manifest
-	components *components.Provider
+	components *model.ComponentsMap
 }
 
-func NewManager(logger *zap.SugaredLogger, m *manifest.Manifest, components *components.Provider) *Manager {
+func NewManager(logger *zap.SugaredLogger, m *manifest.Manifest, components *model.ComponentsMap) *Manager {
 	return &Manager{
 		logger:     logger,
 		manifest:   m,

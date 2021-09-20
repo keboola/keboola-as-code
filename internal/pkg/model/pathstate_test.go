@@ -1,4 +1,4 @@
-package state
+package model
 
 import (
 	"fmt"
@@ -25,14 +25,14 @@ func TestPathsStateEmpty(t *testing.T) {
 	assert.NotNil(t, paths)
 	assert.NotNil(t, err)
 	assert.Equal(t, 0, err.Len())
-	assert.Empty(t, paths.Tracked())
-	assert.Empty(t, paths.Untracked())
+	assert.Empty(t, paths.TrackedPaths())
+	assert.Empty(t, paths.UntrackedPaths())
 
 	// Mark tracked some non-existing file -> no change
 	paths.MarkTracked("foo/bar")
 	assert.Equal(t, 0, err.Len())
-	assert.Empty(t, paths.Tracked())
-	assert.Empty(t, paths.Untracked())
+	assert.Empty(t, paths.TrackedPaths())
+	assert.Empty(t, paths.UntrackedPaths())
 }
 
 func TestPathsStateComplex(t *testing.T) {
@@ -42,7 +42,7 @@ func TestPathsStateComplex(t *testing.T) {
 	assert.Equal(t, 0, err.Len())
 
 	// All untracked + hidden nodes ignored
-	assert.Empty(t, paths.Tracked())
+	assert.Empty(t, paths.TrackedPaths())
 	assert.Equal(t, []string{
 		"123-branch",
 		"123-branch/description.md",
@@ -83,7 +83,7 @@ func TestPathsStateComplex(t *testing.T) {
 		"main/extractor/ex-generic-v2/456-todos/description.md",
 		"main/extractor/ex-generic-v2/456-todos/meta.json",
 		"main/meta.json",
-	}, paths.Untracked())
+	}, paths.UntrackedPaths())
 
 	// Mark tracked some leaf node
 	paths.MarkTracked("123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json")
@@ -95,7 +95,7 @@ func TestPathsStateComplex(t *testing.T) {
 		"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows",
 		"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users",
 		"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json",
-	}, paths.Tracked())
+	}, paths.TrackedPaths())
 	assert.Equal(t, []string{
 		"123-branch/description.md",
 		"123-branch/extractor/ex-generic-v2",
@@ -129,7 +129,7 @@ func TestPathsStateComplex(t *testing.T) {
 		"main/extractor/ex-generic-v2/456-todos/description.md",
 		"main/extractor/ex-generic-v2/456-todos/meta.json",
 		"main/meta.json",
-	}, paths.Untracked())
+	}, paths.UntrackedPaths())
 
 	// Mark tracked some directory
 	paths.MarkTracked("main/extractor/ex-generic-v2")
@@ -144,7 +144,7 @@ func TestPathsStateComplex(t *testing.T) {
 		"main",
 		"main/extractor",
 		"main/extractor/ex-generic-v2",
-	}, paths.Tracked())
+	}, paths.TrackedPaths())
 	assert.Equal(t, []string{
 		"123-branch/description.md",
 		"123-branch/extractor/ex-generic-v2",
@@ -175,7 +175,7 @@ func TestPathsStateComplex(t *testing.T) {
 		"main/extractor/ex-generic-v2/456-todos/description.md",
 		"main/extractor/ex-generic-v2/456-todos/meta.json",
 		"main/meta.json",
-	}, paths.Untracked())
+	}, paths.UntrackedPaths())
 }
 
 func loadPathsState(fixture string) (*PathsState, *utils.Error) {

@@ -7,8 +7,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/components"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -20,7 +20,7 @@ func TestLocalSaveModel(t *testing.T) {
 	logger, _ := utils.NewDebugLogger()
 	m, err := manifest.NewManifest(1, "connection.keboola.com", projectDir, metadataDir)
 	assert.NoError(t, err)
-	manager := NewManager(logger, m, components.NewProvider(nil))
+	manager := NewManager(logger, m, model.NewComponentsMap(nil))
 
 	config := utils.NewOrderedMap()
 	config.Set("foo", "bar")
