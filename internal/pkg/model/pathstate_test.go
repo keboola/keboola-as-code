@@ -7,30 +7,26 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func TestPathsStateDirNotFound(t *testing.T) {
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filepath.Dir(testFile)
 	projectDir := filepath.Join(testDir, "foo", "bar")
-	assert.PanicsWithError(t, fmt.Sprintf(`directory "%s" not found`, projectDir), func() {
-		NewPathsState(projectDir, utils.NewMultiError())
-	})
+	_, err := NewPathsState(projectDir)
+	assert.Error(t, err)
+	assert.Equal(t, fmt.Sprintf(`directory "%s" not found`, projectDir), err.Error())
 }
 
 func TestPathsStateEmpty(t *testing.T) {
 	paths, err := loadPathsState("empty")
 	assert.NotNil(t, paths)
-	assert.NotNil(t, err)
-	assert.Equal(t, 0, err.Len())
+	assert.NoError(t, err)
 	assert.Empty(t, paths.TrackedPaths())
 	assert.Empty(t, paths.UntrackedPaths())
 
 	// Mark tracked some non-existing file -> no change
 	paths.MarkTracked("foo/bar")
-	assert.Equal(t, 0, err.Len())
 	assert.Empty(t, paths.TrackedPaths())
 	assert.Empty(t, paths.UntrackedPaths())
 }
@@ -38,8 +34,7 @@ func TestPathsStateEmpty(t *testing.T) {
 func TestPathsStateComplex(t *testing.T) {
 	paths, err := loadPathsState("complex")
 	assert.NotNil(t, paths)
-	assert.NotNil(t, err)
-	assert.Equal(t, 0, err.Len())
+	assert.NoError(t, err)
 
 	// All untracked + hidden nodes ignored
 	assert.Empty(t, paths.TrackedPaths())
@@ -190,11 +185,9 @@ func TestPathsStateComplex(t *testing.T) {
 	}, paths.UntrackedPaths())
 }
 
-func loadPathsState(fixture string) (*PathsState, *utils.Error) {
+func loadPathsState(fixture string) (*PathsState, error) {
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filepath.Dir(testFile)
 	projectDir := filepath.Join(testDir, "..", "fixtures", "local", fixture)
-	err := utils.NewMultiError()
-	paths := NewPathsState(projectDir, err)
-	return paths, err
+	return NewPathsState(projectDir)
 }

@@ -20,7 +20,6 @@ import (
 type State struct {
 	*Options
 	*model.State
-	*model.PathsState
 	mutex        *sync.Mutex
 	localManager *local.Manager
 	remoteErrors *utils.Error
@@ -84,9 +83,17 @@ func newState(options *Options) *State {
 		remoteErrors: utils.NewMultiError(),
 		localErrors:  utils.NewMultiError(),
 	}
-	s.State = model.NewState(options.api.Components())
-	s.PathsState = model.NewPathsState(s.manifest.ProjectDir, s.localErrors)
+
+	// State model struct
+	var err error
+	s.State, err = model.NewState(s.ProjectDir(), options.api.Components())
+	if err != nil {
+		s.localErrors.Append(err)
+	}
+
+	// Local manager for load,save,delete ... operations
 	s.localManager = local.NewManager(options.logger, options.manifest, s.api.Components())
+
 	return s
 }
 

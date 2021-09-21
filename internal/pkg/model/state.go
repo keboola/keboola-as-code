@@ -30,7 +30,10 @@ type ObjectState interface {
 	LocalOrRemoteState() Object
 }
 
+type pathsState = PathsState
+
 type State struct {
+	*pathsState
 	mutex      *sync.Mutex
 	components *ComponentsMap
 	objects    *orderedmap.OrderedMap
@@ -250,12 +253,14 @@ func (r *ConfigRowState) GetName() string {
 	return ""
 }
 
-func NewState(components *ComponentsMap) *State {
+func NewState(projectDir string, components *ComponentsMap) (*State, error) {
+	ps, err := NewPathsState(projectDir)
 	return &State{
+		pathsState: ps,
 		mutex:      &sync.Mutex{},
 		components: components,
 		objects:    utils.NewOrderedMap(),
-	}
+	}, err
 }
 
 func (s *State) Components() *ComponentsMap {
