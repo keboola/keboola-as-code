@@ -1,0 +1,8 @@
+{
+  "parameters": {
+    "db": {
+      "host": "mysql.example.com",
+      "#pass": "KBC::ProjectSecure%A::%s"
+    }
+  }
+}
