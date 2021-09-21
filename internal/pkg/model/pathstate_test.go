@@ -85,6 +85,18 @@ func TestPathsStateComplex(t *testing.T) {
 		"main/meta.json",
 	}, paths.UntrackedPaths())
 
+	// Test IsDir/IsFile
+	assert.True(t, paths.IsDir(`123-branch/extractor/ex-generic-v2/456-todos`))
+	assert.False(t, paths.IsFile(`123-branch/extractor/ex-generic-v2/456-todos`))
+	assert.False(t, paths.IsDir(`123-branch/extractor/keboola.ex-db-mysql/896-tables/config.json`))
+	assert.True(t, paths.IsFile(`123-branch/extractor/keboola.ex-db-mysql/896-tables/config.json`))
+	assert.PanicsWithError(t, `unknown path "abc"`, func() {
+		paths.IsDir(`abc`)
+	})
+	assert.PanicsWithError(t, `unknown path "abc"`, func() {
+		paths.IsFile(`abc`)
+	})
+
 	// Mark tracked some leaf node
 	paths.MarkTracked("123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json")
 	assert.Equal(t, []string{

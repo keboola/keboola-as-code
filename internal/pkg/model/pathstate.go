@@ -16,6 +16,7 @@ type PathsState struct {
 	projectDir string
 	all        map[string]bool
 	tracked    map[string]bool
+	isFile     map[string]bool
 }
 
 type PathState int
@@ -36,6 +37,7 @@ func NewPathsState(projectDir string, err *utils.Error) *PathsState {
 		projectDir: projectDir,
 		all:        make(map[string]bool),
 		tracked:    make(map[string]bool),
+		isFile:     make(map[string]bool),
 	}
 	f.init()
 	return f
@@ -74,6 +76,18 @@ func (f *PathsState) UntrackedPaths() []string {
 	return untracked
 }
 
+func (f *PathsState) IsFile(path string) bool {
+	v, ok := f.isFile[path]
+	if !ok {
+		panic(fmt.Errorf(`unknown path "%s"`, path))
+	}
+	return v
+}
+
+func (f *PathsState) IsDir(path string) bool {
+	return !f.IsFile(path)
+}
+
 func (f *PathsState) MarkTracked(path string) {
 	path = f.relative(path)
 
@@ -93,7 +107,7 @@ func (f *PathsState) MarkTracked(path string) {
 }
 
 func (f *PathsState) init() {
-	err := filepath.WalkDir(f.projectDir, func(path string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(f.projectDir, func(absPath string, d fs.DirEntry, err error) error {
 		// Log error
 		if err != nil {
 			f.error.Append(err)
@@ -101,20 +115,21 @@ func (f *PathsState) init() {
 		}
 
 		// Ignore root
-		if path == f.projectDir {
+		if absPath == f.projectDir {
 			return nil
 		}
 
 		// Is ignored?
-		if f.isIgnored(path) {
+		if f.isIgnored(absPath) {
 			if d.IsDir() {
 				return fs.SkipDir
 			}
 			return nil
 		}
 
-		path = f.relative(path)
-		f.all[path] = true
+		relPath := f.relative(absPath)
+		f.all[relPath] = true
+		f.isFile[relPath] = utils.IsFile(absPath)
 		return nil
 	})
 
