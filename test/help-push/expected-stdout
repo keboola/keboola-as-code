@@ -14,6 +14,7 @@ Usage:
 
 Flags:
       --dry-run   print what needs to be done
+      --encrypt   encrypt unencrypted values before push
       --force     enable deleting of remote objects
 
 Global Flags:
