@@ -12,7 +12,6 @@ import (
 
 // PathsState keeps state of all files/dirs in projectDir.
 type PathsState struct {
-	error      *utils.Error
 	projectDir string
 	all        map[string]bool
 	tracked    map[string]bool
@@ -27,20 +26,18 @@ const (
 	Ignored
 )
 
-func NewPathsState(projectDir string, err *utils.Error) *PathsState {
+func NewPathsState(projectDir string) (*PathsState, error) {
 	if !utils.IsDir(projectDir) {
-		panic(fmt.Errorf("directory \"%s\" not found", projectDir))
+		return nil, fmt.Errorf("directory \"%s\" not found", projectDir)
 	}
 
 	f := &PathsState{
-		error:      err,
 		projectDir: projectDir,
 		all:        make(map[string]bool),
 		tracked:    make(map[string]bool),
 		isFile:     make(map[string]bool),
 	}
-	f.init()
-	return f
+	return f, f.init()
 }
 
 // State returns state of path.
@@ -106,11 +103,12 @@ func (f *PathsState) MarkTracked(path string) {
 	}
 }
 
-func (f *PathsState) init() {
+func (f *PathsState) init() error {
+	errors := utils.NewMultiError()
 	err := filepath.WalkDir(f.projectDir, func(absPath string, d fs.DirEntry, err error) error {
 		// Log error
 		if err != nil {
-			f.error.Append(err)
+			errors.Append(err)
 			return nil
 		}
 
@@ -135,8 +133,10 @@ func (f *PathsState) init() {
 
 	// Errors are not critical, they can be e.g. problem with permissions
 	if err != nil {
-		f.error.Append(err)
+		errors.Append(err)
 	}
+
+	return errors.ErrorOrNil()
 }
 
 func (f *PathsState) isIgnored(path string) bool {
