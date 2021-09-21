@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -14,7 +15,7 @@ func TestPathsStateDirNotFound(t *testing.T) {
 	projectDir := filepath.Join(testDir, "foo", "bar")
 	_, err := NewPathsState(projectDir)
 	assert.Error(t, err)
-	assert.Equal(t, `directory "` + projectDir + `" not found`, err.Error())
+	assert.Equal(t, fmt.Sprintf(`directory "%s" not found`, projectDir), err.Error())
 }
 
 func TestPathsStateEmpty(t *testing.T) {

@@ -256,7 +256,7 @@ func (r *ConfigRowState) GetName() string {
 func NewState(projectDir string, components *ComponentsMap) (*State, error) {
 	ps, err := NewPathsState(projectDir)
 	return &State{
-		pathsState:  ps,
+		pathsState: ps,
 		mutex:      &sync.Mutex{},
 		components: components,
 		objects:    utils.NewOrderedMap(),
