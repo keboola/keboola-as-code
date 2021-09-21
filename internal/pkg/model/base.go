@@ -13,6 +13,7 @@ import (
 const (
 	MetaFileTag        = "metaFile:true"
 	ConfigFileTag      = "configFile:true"
+	DescriptionFileTag = "descriptionFile:true"
 	TransformationType = "transformation"
 )
 
@@ -52,7 +53,7 @@ type TokenOwner struct {
 type Branch struct {
 	BranchKey
 	Name        string `json:"name" validate:"required" diff:"true" metaFile:"true"`
-	Description string `json:"description" diff:"true" metaFile:"true"`
+	Description string `json:"description" diff:"true" descriptionFile:"true"`
 	IsDefault   bool   `json:"isDefault" diff:"true" metaFile:"true"`
 }
 
@@ -75,7 +76,7 @@ type ComponentWithConfigs struct {
 type Config struct {
 	ConfigKey
 	Name              string                 `json:"name" validate:"required" diff:"true" metaFile:"true"`
-	Description       string                 `json:"description" diff:"true" metaFile:"true"`
+	Description       string                 `json:"description" diff:"true" descriptionFile:"true"`
 	ChangeDescription string                 `json:"changeDescription"`
 	Content           *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
 	Blocks            []*Block               `json:"-"` // loaded transformation's blocks, filled in only for the LOCAL state
@@ -96,7 +97,7 @@ func (c *ConfigWithRows) SortRows() {
 type ConfigRow struct {
 	ConfigRowKey
 	Name              string                 `json:"name" diff:"true" metaFile:"true"`
-	Description       string                 `json:"description" diff:"true" metaFile:"true"`
+	Description       string                 `json:"description" diff:"true" descriptionFile:"true"`
 	ChangeDescription string                 `json:"changeDescription"`
 	IsDisabled        bool                   `json:"isDisabled" diff:"true" metaFile:"true"`
 	Content           *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`

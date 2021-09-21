@@ -50,6 +50,14 @@ func (m *Manager) SaveModel(record model.Record, source model.Object) error {
 		}
 	}
 
+	// Write description file
+	if description, found := utils.StringFromOneTaggedField(model.DescriptionFileTag, source); found {
+		errPrefix := record.Kind().Name + " description"
+		if err := m.writeFile(m.Naming().DescriptionFilePath(record.RelativePath()), description, errPrefix); err != nil {
+			errors.Append(err)
+		}
+	}
+
 	// Write config file (can be modified by transformOnSave method)
 	if configContent == nil {
 		configContent = utils.MapFromOneTaggedField(model.ConfigFileTag, source)
@@ -77,6 +85,15 @@ func (m *Manager) transformOnSave(record model.Record, source model.Object) (*or
 		return nil, err
 	}
 	return nil, nil
+}
+
+func (m *Manager) writeFile(relPath string, content string, errPrefix string) error {
+	if err := utils.WriteFile(m.ProjectDir(), relPath, content, errPrefix); err == nil {
+		m.logger.Debugf(`Saved "%s"`, relPath)
+	} else {
+		return err
+	}
+	return nil
 }
 
 func (m *Manager) writeJsonFile(relPath string, content *orderedmap.OrderedMap, errPrefix string) error {

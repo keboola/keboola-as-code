@@ -47,7 +47,22 @@ func IsDir(path string) bool {
 	return false
 }
 
-// GetFileContent in test.
+func AbsPath(path string) string {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		panic(fmt.Errorf("cannot get absolute path: %w", err))
+	}
+	return abs
+}
+
+func RelPath(base string, path string) string {
+	rel, err := filepath.Rel(base, path)
+	if err != nil {
+		panic(fmt.Errorf("cannot get relative path: %w", err))
+	}
+	return rel
+}
+
 func GetFileContent(path string) string {
 	// Check if file exists
 	if !IsFile(path) {
@@ -63,20 +78,26 @@ func GetFileContent(path string) string {
 	return string(contentBytes)
 }
 
-func AbsPath(path string) string {
-	abs, err := filepath.Abs(path)
+func ReadFile(dir string, relPath string, errPrefix string) (string, error) {
+	path := filepath.Join(dir, relPath)
+
+	content, err := os.ReadFile(path)
 	if err != nil {
-		panic(fmt.Errorf("cannot get absolute path: %w", err))
+		if os.IsNotExist(err) {
+			return "", fmt.Errorf("missing %s file \"%s\"", errPrefix, relPath)
+		}
+		return "", fmt.Errorf("cannot read %s file \"%s\"", errPrefix, relPath)
 	}
-	return abs
+
+	return string(content), nil
 }
 
-func RelPath(base string, path string) string {
-	rel, err := filepath.Rel(base, path)
-	if err != nil {
-		panic(fmt.Errorf("cannot get relative path: %w", err))
+func WriteFile(dir string, relPath string, content string, errPrefix string) error {
+	path := filepath.Join(dir, relPath)
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		return fmt.Errorf("cannot write %s file \"%s\"", errPrefix, relPath)
 	}
-	return rel
+	return nil
 }
 
 func CreateOrUpdateFile(path string, lines []FileLine) (updated bool, err error) {

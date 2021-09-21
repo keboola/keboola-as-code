@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "project": {
+    "id": 12345,
+    "apiHost": "connection.keboola.com"
+  },
+  "branches": [
+    {
+      "id": %%LOCAL_STATE_MY_BRANCH_ID%%,
+      "path": "123-branch"
+    }
+  ],
+  "configurations": [
+    {
+      "branchId": %%LOCAL_STATE_MY_BRANCH_ID%%,
+      "componentId": "keboola.ex-db-mysql",
+      "id": "%%LOCAL_STATE_MYSQL_CONFIG_ID%%",
+      "path": "extractor/keboola.ex-db-mysql/896-tables",
+      "rows": [
+        {
+          "id": "12",
+          "path": "rows/12-users"
+        }
+      ]
+    }
+  ]
+}

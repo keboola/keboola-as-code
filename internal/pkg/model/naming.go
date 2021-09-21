@@ -11,6 +11,7 @@ import (
 const (
 	MetaFile          = "meta.json"
 	ConfigFile        = "config.json"
+	DescriptionFile   = "description.md"
 	CodeFileName      = `code` // transformation code block name without ext
 	blocksDir         = `blocks`
 	blockNameTemplate = utils.PathTemplate(`{block_order}-{block_name}`)
@@ -115,6 +116,10 @@ func (n Naming) MetaFilePath(dir string) string {
 
 func (n Naming) ConfigFilePath(dir string) string {
 	return filepath.Join(dir, ConfigFile)
+}
+
+func (n Naming) DescriptionFilePath(dir string) string {
+	return filepath.Join(dir, DescriptionFile)
 }
 
 func (n Naming) BranchPath(branch *Branch) PathInProject {

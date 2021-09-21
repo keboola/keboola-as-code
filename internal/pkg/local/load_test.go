@@ -96,6 +96,7 @@ func TestLocalLoadModelInvalidTransformation(t *testing.T) {
 
 	// Files content
 	metaFile := `{foo`
+	descFile := `abc`
 	configFile := ``
 	blockMeta := `{"name": "foo1"}`
 	codeMeta := `{"name": "foo2"}`
@@ -117,6 +118,7 @@ func TestLocalLoadModelInvalidTransformation(t *testing.T) {
 	naming := manager.Naming()
 	assert.NoError(t, os.MkdirAll(filepath.Join(projectDir, record.RelativePath()), 0750))
 	assert.NoError(t, os.WriteFile(filepath.Join(projectDir, naming.MetaFilePath(record.RelativePath())), []byte(metaFile), 0640))
+	assert.NoError(t, os.WriteFile(filepath.Join(projectDir, naming.DescriptionFilePath(record.RelativePath())), []byte(descFile), 0640))
 	assert.NoError(t, os.WriteFile(filepath.Join(projectDir, naming.ConfigFilePath(record.RelativePath())), []byte(configFile), 0640))
 	blocksDir := naming.BlocksDir(record.RelativePath())
 	assert.NoError(t, os.MkdirAll(filepath.Join(projectDir, blocksDir), 0750))
