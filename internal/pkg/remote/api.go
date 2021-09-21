@@ -9,7 +9,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/client"
-	"github.com/keboola/keboola-as-code/internal/pkg/components"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -21,7 +20,7 @@ type StorageApi struct {
 	client     *client.Client
 	logger     *zap.SugaredLogger
 	token      *model.Token
-	components *components.Provider
+	components *model.ComponentsMap
 }
 
 func NewStorageApiFromOptions(options *options.Options, ctx context.Context, logger *zap.SugaredLogger) (*StorageApi, error) {
@@ -56,11 +55,11 @@ func NewStorageApi(apiHost string, ctx context.Context, logger *zap.SugaredLogge
 	c := client.NewClient(ctx, logger, verbose).WithHostUrl(apiHostUrl)
 	c.SetError(&Error{})
 	api := &StorageApi{client: c, logger: logger, apiHost: apiHost, apiHostUrl: apiHostUrl}
-	api.components = components.NewProvider(api)
+	api.components = model.NewComponentsMap(api)
 	return api
 }
 
-func (a *StorageApi) Components() *components.Provider {
+func (a *StorageApi) Components() *model.ComponentsMap {
 	return a.components
 }
 

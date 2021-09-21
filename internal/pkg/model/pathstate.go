@@ -1,4 +1,4 @@
-package state
+package model
 
 import (
 	"fmt"
@@ -52,8 +52,8 @@ func (f *PathsState) State(path string) PathState {
 	return Ignored
 }
 
-// Tracked returns all tracked paths.
-func (f *PathsState) Tracked() []string {
+// TrackedPaths returns all tracked paths.
+func (f *PathsState) TrackedPaths() []string {
 	var tracked []string
 	for path := range f.tracked {
 		tracked = append(tracked, path)
@@ -62,8 +62,8 @@ func (f *PathsState) Tracked() []string {
 	return tracked
 }
 
-// Untracked returns all untracked paths.
-func (f *PathsState) Untracked() []string {
+// UntrackedPaths returns all untracked paths.
+func (f *PathsState) UntrackedPaths() []string {
 	var untracked []string
 	for path := range f.all {
 		if _, ok := f.tracked[path]; !ok {

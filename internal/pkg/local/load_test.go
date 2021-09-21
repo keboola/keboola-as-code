@@ -8,7 +8,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/components"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -21,7 +20,7 @@ func TestLocalLoadModel(t *testing.T) {
 	logger, _ := utils.NewDebugLogger()
 	m, err := manifest.NewManifest(12345, "connection.keboola.com", projectDir, metadataDir)
 	assert.NoError(t, err)
-	manager := NewManager(logger, m, components.NewProvider(nil))
+	manager := NewManager(logger, m, model.NewComponentsMap(nil))
 
 	metaFile := `{
   "myKey": "3",
@@ -63,7 +62,7 @@ func TestLocalLoadModelNotFound(t *testing.T) {
 	logger, _ := utils.NewDebugLogger()
 	m, err := manifest.NewManifest(12345, "connection.keboola.com", projectDir, metadataDir)
 	assert.NoError(t, err)
-	manager := NewManager(logger, m, components.NewProvider(nil))
+	manager := NewManager(logger, m, model.NewComponentsMap(nil))
 
 	// Save files
 	target := &ModelStruct{}
@@ -78,7 +77,7 @@ func TestLocalLoadModelNotFound(t *testing.T) {
 
 func TestLocalLoadModelInvalidTransformation(t *testing.T) {
 	// Mocked component
-	componentProvider := components.NewProvider(nil)
+	componentProvider := model.NewComponentsMap(nil)
 	component := &model.Component{
 		ComponentKey: model.ComponentKey{Id: "keboola.foo-bar"},
 		Type:         model.TransformationType,

@@ -57,21 +57,6 @@ type Branch struct {
 	IsDefault   bool   `json:"isDefault" diff:"true" metaFile:"true"`
 }
 
-// Component https://keboola.docs.apiary.io/#reference/components-and-configurations/get-development-branch-components/get-development-branch-components
-type Component struct {
-	ComponentKey
-	Type      string                 `json:"type" validate:"required"`
-	Name      string                 `json:"name" validate:"required"`
-	Schema    map[string]interface{} `json:"configurationSchema,omitempty"`
-	SchemaRow map[string]interface{} `json:"configurationRowSchema,omitempty"`
-}
-
-type ComponentWithConfigs struct {
-	BranchId int `json:"branchId" validate:"required"`
-	*Component
-	Configs []*ConfigWithRows `json:"configurations" validate:"required"`
-}
-
 // Config https://keboola.docs.apiary.io/#reference/components-and-configurations/component-configurations/list-configurations
 type Config struct {
 	ConfigKey
@@ -131,10 +116,6 @@ type Code struct {
 	CodeFileName string   `json:"-"` // eg. "code.sql", "code.py", ...
 	Name         string   `json:"name" validate:"required" metaFile:"true"`
 	Scripts      []string `json:"script"` // scripts, eg. SQL statements
-}
-
-func (c *Component) IsTransformation() bool {
-	return c.Type == TransformationType
 }
 
 func (c *Config) GetComponentId() string {
