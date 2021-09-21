@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
+	"github.com/keboola/keboola-as-code/internal/pkg/encryption"
 	"github.com/keboola/keboola-as-code/internal/pkg/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan"
@@ -43,6 +44,7 @@ func pushCommand(root *rootCommand) *cobra.Command {
 				logger := root.logger
 				projectState := diffResults.CurrentState
 				projectManifest := projectState.Manifest()
+				encrypt := root.options.GetBool("encrypt")
 
 				// Change description - optional arg
 				changeDescription := "Updated from #KeboolaCLI"
@@ -55,7 +57,7 @@ func pushCommand(root *rootCommand) *cobra.Command {
 				projectState.LogUntrackedPaths(logger)
 
 				// Validate schemas and encryption
-				if err := Validate(projectState, logger); err != nil {
+				if err := Validate(projectState, logger, encrypt); err != nil {
 					return err
 				}
 
@@ -65,9 +67,17 @@ func pushCommand(root *rootCommand) *cobra.Command {
 					return err
 				}
 
+				// Get encrypt plan
+				encryptPlan := plan.Encrypt(projectState)
+
 				// Allow remote deletion, if --force
 				if force {
 					push.AllowRemoteDelete()
+				}
+
+				// Encrypt plan
+				if encrypt {
+					encryptPlan.Log(log.ToInfoWriter(logger))
 				}
 
 				// Log plan
@@ -78,6 +88,20 @@ func pushCommand(root *rootCommand) *cobra.Command {
 				if dryRun {
 					logger.Info("Dry run, nothing changed.")
 					return nil
+				}
+
+				if encrypt {
+					// Get encryption API
+					encryptionApiUrl, err := api.GetEncryptionApiUrl()
+					if err != nil {
+						return err
+					}
+
+					// Invoke
+					encryptionApi := encryption.NewEncryptionApi(encryptionApiUrl, root.ctx, logger, false)
+					if err := encryptPlan.Invoke(api.ProjectId(), logger, encryptionApi, projectState); err != nil {
+						return err
+					}
 				}
 
 				// Invoke
@@ -101,5 +125,6 @@ func pushCommand(root *rootCommand) *cobra.Command {
 	cmd.Flags().SortFlags = true
 	cmd.Flags().BoolVar(&force, "force", false, "enable deleting of remote objects")
 	cmd.Flags().Bool("dry-run", false, "print what needs to be done")
+	cmd.Flags().Bool("encrypt", false, "encrypt unencrypted values before push")
 	return cmd
 }

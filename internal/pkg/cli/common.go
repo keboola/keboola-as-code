@@ -118,7 +118,7 @@ func SaveManifest(projectManifest *manifest.Manifest, logger *zap.SugaredLogger)
 	return false, nil
 }
 
-func Validate(projectState *state.State, logger *zap.SugaredLogger) error {
+func Validate(projectState *state.State, logger *zap.SugaredLogger, skipEncryptValidation bool) error {
 	errors := utils.NewMultiError()
 
 	// Validate schemas
@@ -126,10 +126,12 @@ func Validate(projectState *state.State, logger *zap.SugaredLogger) error {
 		errors.Append(err)
 	}
 
-	// Validate all values encrypted
-	encryptPlan := plan.Encrypt(projectState)
-	if err := encryptPlan.ValidateAllEncrypted(); err != nil {
-		errors.Append(err)
+	if !skipEncryptValidation {
+		// Validate all values encrypted
+		encryptPlan := plan.Encrypt(projectState)
+		if err := encryptPlan.ValidateAllEncrypted(); err != nil {
+			errors.Append(err)
+		}
 	}
 
 	// Process errors
