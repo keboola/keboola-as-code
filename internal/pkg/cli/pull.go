@@ -78,7 +78,7 @@ func pullCommand(root *rootCommand) *cobra.Command {
 				}
 
 				// Validate schemas and encryption
-				if err := Validate(projectState, logger); err != nil {
+				if err := Validate(projectState, logger, false); err != nil {
 					logger.Warn(`Warning, ` + err.Error())
 					logger.Warn()
 					logger.Warnf(`The project has been pulled, but it is not in a valid state.`)

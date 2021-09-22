@@ -1,0 +1,8 @@
+Plan for "encrypt" operation:
+	C main/extractor/ex-generic-v2/foo-config
+		parameters.db.#pass
+Dry run, nothing changed.
+Plan for "push" operation:
+	+  C main/extractor/ex-generic-v2/foo-config
+Dry run, nothing changed.
+Push done.

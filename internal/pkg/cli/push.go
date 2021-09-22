@@ -30,6 +30,13 @@ func pushCommand(root *rootCommand) *cobra.Command {
 		Short: pushShortDescription,
 		Long:  pushLongDescription,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			// Run the encrypt command first, if the --encrypt flag is used
+			if root.options.GetBool("encrypt") {
+				encryptCmd := root.GetCommandByName("encrypt")
+				if err := encryptCmd.RunE(encryptCmd, nil); err != nil {
+					return err
+				}
+			}
 			// Define action on diff results
 			action := &diffProcessCmd{root: root, cmd: cmd}
 			action.onSuccess = func(api *remote.StorageApi) {
@@ -43,6 +50,7 @@ func pushCommand(root *rootCommand) *cobra.Command {
 				logger := root.logger
 				projectState := diffResults.CurrentState
 				projectManifest := projectState.Manifest()
+				encrypt := root.options.GetBool("encrypt")
 
 				// Change description - optional arg
 				changeDescription := "Updated from #KeboolaCLI"
@@ -55,7 +63,7 @@ func pushCommand(root *rootCommand) *cobra.Command {
 				projectState.LogUntrackedPaths(logger)
 
 				// Validate schemas and encryption
-				if err := Validate(projectState, logger); err != nil {
+				if err := Validate(projectState, logger, encrypt); err != nil {
 					return err
 				}
 
@@ -101,5 +109,6 @@ func pushCommand(root *rootCommand) *cobra.Command {
 	cmd.Flags().SortFlags = true
 	cmd.Flags().BoolVar(&force, "force", false, "enable deleting of remote objects")
 	cmd.Flags().Bool("dry-run", false, "print what needs to be done")
+	cmd.Flags().Bool("encrypt", false, "encrypt unencrypted values before push")
 	return cmd
 }

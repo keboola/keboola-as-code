@@ -60,7 +60,7 @@ func validateCommand(root *rootCommand) *cobra.Command {
 			}
 
 			// Validate schemas and encryption
-			if err := Validate(projectState, logger); err != nil {
+			if err := Validate(projectState, logger, false); err != nil {
 				return err
 			}
 
