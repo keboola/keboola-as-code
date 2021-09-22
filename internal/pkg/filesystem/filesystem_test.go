@@ -1,6 +1,7 @@
 package filesystem_test
 
 import (
+	iofs "io/fs"
 	"reflect"
 	"strings"
 	"testing"
@@ -73,8 +74,33 @@ func (*testCases) TestApiName(t *testing.T, fs model.Filesystem, _ *utils.Writer
 	assert.NotEmpty(t, fs.ApiName())
 }
 
-func (*testCases) TestProjectDir(t *testing.T, fs model.Filesystem, _ *utils.Writer) {
-	assert.NotEmpty(t, fs.ProjectDir())
+func (*testCases) TestBasePath(t *testing.T, fs model.Filesystem, _ *utils.Writer) {
+	assert.NotEmpty(t, fs.BasePath())
+}
+
+func (*testCases) TestWalk(t *testing.T, fs model.Filesystem, _ *utils.Writer) {
+	assert.NoError(t, fs.Mkdir("my/dir1"))
+	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir2/file.txt", "", "foo\n")))
+
+	paths := make([]string, 0)
+	root := "."
+	err := fs.Walk(root, func(path string, info iofs.FileInfo, err error) error {
+		// Skip root
+		if root == path {
+			return nil
+		}
+
+		assert.NoError(t, err)
+		paths = append(paths, path)
+		return err
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, []string{
+		`my`,
+		`my/dir1`,
+		`my/dir2`,
+		`my/dir2/file.txt`,
+	}, paths)
 }
 
 func (*testCases) TestIsFile(t *testing.T, fs model.Filesystem, _ *utils.Writer) {

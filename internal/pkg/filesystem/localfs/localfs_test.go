@@ -9,5 +9,5 @@ import (
 func TestNewLocalFs(t *testing.T) {
 	projectDir := t.TempDir()
 	fs := NewLocalFs(projectDir)
-	assert.Equal(t, projectDir, fs.ProjectDir())
+	assert.Equal(t, projectDir, fs.BasePath())
 }

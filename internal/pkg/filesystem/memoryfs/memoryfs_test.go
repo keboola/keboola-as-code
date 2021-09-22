@@ -8,5 +8,5 @@ import (
 
 func TestNewMemoryFs(t *testing.T) {
 	fs := NewMemoryFs()
-	assert.Equal(t, "__memory__", fs.ProjectDir())
+	assert.Equal(t, "__memory__", fs.BasePath())
 }
