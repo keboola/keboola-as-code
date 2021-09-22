@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -293,7 +294,21 @@ func (f *Fs) ReadJsonFile(path, desc string) (*model.JsonFile, error) {
 	return jsonFile, nil
 }
 
-// ReadJsonFieldsTo target struct.
+// ReadJsonFileTo to target struct.
+func (f *Fs) ReadJsonFileTo(path, desc string, target interface{}) error {
+	file, err := f.ReadFile(path, desc)
+	if err != nil {
+		return err
+	}
+
+	if err := json.DecodeString(file.Content, target); err != nil {
+		return utils.PrefixError(fmt.Sprintf("%s \"%s\" is invalid", file.Desc, file.Path), err)
+	}
+
+	return nil
+}
+
+// ReadJsonFieldsTo target struct by tag.
 func (f *Fs) ReadJsonFieldsTo(path, desc string, target interface{}, tag string) (*model.JsonFile, error) {
 	if fields := utils.GetFieldsWithTag(tag, target); len(fields) > 0 {
 		if file, err := f.ReadJsonFile(path, desc); err == nil {
@@ -307,7 +322,7 @@ func (f *Fs) ReadJsonFieldsTo(path, desc string, target interface{}, tag string)
 	return nil, nil
 }
 
-// ReadJsonMapTo field in target struct as ordered map.
+// ReadJsonMapTo tagged field in target struct as ordered map.
 func (f *Fs) ReadJsonMapTo(path, desc string, target interface{}, tag string) (*model.JsonFile, error) {
 	if field := utils.GetOneFieldWithTag(tag, target); field != nil {
 		if file, err := f.ReadJsonFile(path, desc); err == nil {
@@ -322,7 +337,7 @@ func (f *Fs) ReadJsonMapTo(path, desc string, target interface{}, tag string) (*
 	return nil, nil
 }
 
-// ReadFileContentTo to field in target struct as string.
+// ReadFileContentTo to tagged field in target struct as string.
 func (f *Fs) ReadFileContentTo(path, desc string, target interface{}, tag string) (*model.File, error) {
 	if field := utils.GetOneFieldWithTag(tag, target); field != nil {
 		if file, err := f.ReadFile(path, desc); err == nil {

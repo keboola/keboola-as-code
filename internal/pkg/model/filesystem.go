@@ -19,6 +19,7 @@ type Filesystem interface {
 	ReadJsonMapTo(path, desc string, target interface{}, tag string) (*JsonFile, error)
 	ReadFileContentTo(path, desc string, target interface{}, tag string) (*File, error)
 	ReadJsonFile(path, desc string) (*JsonFile, error)
+	ReadJsonFileTo(path, desc string, target interface{}) error
 	ReadFile(path, desc string) (*File, error)
 	WriteFile(file *File) error
 	CreateOrUpdateFile(path, desc string, lines []FileLine) (updated bool, err error)
