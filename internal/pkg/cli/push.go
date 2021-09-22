@@ -4,7 +4,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
-	"github.com/keboola/keboola-as-code/internal/pkg/encryption"
 	"github.com/keboola/keboola-as-code/internal/pkg/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan"
@@ -31,6 +30,13 @@ func pushCommand(root *rootCommand) *cobra.Command {
 		Short: pushShortDescription,
 		Long:  pushLongDescription,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			// Run the encrypt command first, if the --encrypt flag is used
+			if root.options.GetBool("encrypt") {
+				encryptCmd := root.GetCommandByName("encrypt")
+				if err := encryptCmd.RunE(encryptCmd, nil); err != nil {
+					return err
+				}
+			}
 			// Define action on diff results
 			action := &diffProcessCmd{root: root, cmd: cmd}
 			action.onSuccess = func(api *remote.StorageApi) {
@@ -67,19 +73,6 @@ func pushCommand(root *rootCommand) *cobra.Command {
 					return err
 				}
 
-				// Get encrypt plan
-				encryptPlan := plan.Encrypt(projectState)
-
-				// Allow remote deletion, if --force
-				if force {
-					push.AllowRemoteDelete()
-				}
-
-				// Encrypt plan
-				if encrypt {
-					encryptPlan.Log(log.ToInfoWriter(logger))
-				}
-
 				// Log plan
 				push.Log(log.ToInfoWriter(logger))
 
@@ -88,20 +81,6 @@ func pushCommand(root *rootCommand) *cobra.Command {
 				if dryRun {
 					logger.Info("Dry run, nothing changed.")
 					return nil
-				}
-
-				if encrypt {
-					// Get encryption API
-					encryptionApiUrl, err := api.GetEncryptionApiUrl()
-					if err != nil {
-						return err
-					}
-
-					// Invoke
-					encryptionApi := encryption.NewEncryptionApi(encryptionApiUrl, root.ctx, logger, false)
-					if err := encryptPlan.Invoke(api.ProjectId(), logger, encryptionApi, projectState); err != nil {
-						return err
-					}
 				}
 
 				// Invoke
