@@ -20,21 +20,23 @@ func TestNewUserErrorWithCode(t *testing.T) {
 }
 
 func TestProcessPanicUserError(t *testing.T) {
-	logger, writer := NewDebugLogger()
+	logger, log := NewDebugLogger()
 	logFilePath := "/foo/bar.log"
 	exitCode := ProcessPanic(NewUserErrorWithCode(123, "test"), logger, logFilePath)
 	assert.Equal(t, 123, exitCode)
-	assert.Contains(t, writer.String(), "DEBUG  User error panic: test")
-	assert.Contains(t, writer.String(), "DEBUG  Trace:")
-	assert.Contains(t, writer.String(), "Details can be found in the log file \"/foo/bar.log\".")
+	logStr := log.String()
+	assert.Contains(t, logStr, "DEBUG  User error panic: test")
+	assert.Contains(t, logStr, "DEBUG  Trace:")
+	assert.Contains(t, logStr, "Details can be found in the log file \"/foo/bar.log\".")
 }
 
 func TestProcessPanicUnexpected(t *testing.T) {
-	logger, writer := NewDebugLogger()
+	logger, log := NewDebugLogger()
 	logFilePath := "/foo/bar.log"
 	exitCode := ProcessPanic(fmt.Errorf("test"), logger, logFilePath)
 	assert.Equal(t, 1, exitCode)
-	assert.Contains(t, writer.String(), "DEBUG  Unexpected panic: test")
-	assert.Contains(t, writer.String(), "DEBUG  Trace:")
-	assert.Contains(t, writer.String(), "To help us diagnose the problem you can send us a crash report.")
+	logStr := log.String()
+	assert.Contains(t, logStr, "DEBUG  Unexpected panic: test")
+	assert.Contains(t, logStr, "DEBUG  Trace:")
+	assert.Contains(t, logStr, "To help us diagnose the problem you can send us a crash report.")
 }

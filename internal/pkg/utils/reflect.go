@@ -120,3 +120,18 @@ func ReadTaggedFields(dir, relPath, tag string, target interface{}, errPrefix st
 
 	return nil
 }
+
+func SetFields(fields []*StructField, data *orderedmap.OrderedMap, target interface{}) {
+	reflection := reflect.ValueOf(target).Elem()
+	for _, field := range fields {
+		// Set value, some values are optional, model will be validated later
+		if value, ok := data.Get(field.JsonName()); ok {
+			reflection.FieldByName(field.Name).Set(reflect.ValueOf(value))
+		}
+	}
+}
+
+func SetField(field *StructField, value, target interface{}) {
+	reflection := reflect.ValueOf(target).Elem()
+	reflection.FieldByName(field.Name).Set(reflect.ValueOf(value))
+}

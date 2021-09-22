@@ -60,11 +60,20 @@ func (*Writer) Fd() uintptr {
 	return os.Stdout.Fd()
 }
 
+func (w *Writer) Truncate() {
+	if err := w.Flush(); err != nil {
+		panic(fmt.Errorf("cannot flush utils log writer"))
+	}
+	w.buffer.Truncate(0)
+}
+
 func (w *Writer) String() string {
 	if err := w.Flush(); err != nil {
 		panic(fmt.Errorf("cannot flush utils log writer"))
 	}
-	return w.buffer.String()
+	str := w.buffer.String()
+	w.Truncate()
+	return str
 }
 
 type Reader struct {
