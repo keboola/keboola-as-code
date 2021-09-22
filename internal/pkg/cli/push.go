@@ -73,6 +73,11 @@ func pushCommand(root *rootCommand) *cobra.Command {
 					return err
 				}
 
+				// Allow remote deletion, if --force
+				if force {
+					push.AllowRemoteDelete()
+				}
+
 				// Log plan
 				push.Log(log.ToInfoWriter(logger))
 
