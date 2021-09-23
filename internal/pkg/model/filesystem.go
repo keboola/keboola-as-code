@@ -1,8 +1,11 @@
 package model
 
+import "path/filepath"
+
 type Filesystem interface {
 	ApiName() string // name of the used implementation, for example local, memory, ...
-	ProjectDir() string
+	BasePath() string
+	Walk(root string, walkFn filepath.WalkFunc) error
 	Mkdir(path string) error
 	Exists(path string) bool
 	IsFile(path string) bool

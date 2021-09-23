@@ -20,7 +20,8 @@ import (
 type fsApi interface {
 	afero.Fs
 	Name() string
-	ProjectDir() string
+	BasePath() string
+	Walk(root string, walkFn filepath.WalkFunc) error
 }
 
 // Fs - filesystem abstraction.
@@ -38,9 +39,14 @@ func (f *Fs) ApiName() string {
 	return f.fs.Name()
 }
 
-// ProjectDir - base path, all paths are relative to this path.
-func (f *Fs) ProjectDir() string {
-	return f.fs.ProjectDir()
+// BasePath - base path, all paths are relative to this path.
+func (f *Fs) BasePath() string {
+	return f.fs.BasePath()
+}
+
+// Walk walks the file tree.
+func (f *Fs) Walk(root string, walkFn filepath.WalkFunc) error {
+	return f.fs.Walk(root, walkFn)
 }
 
 func (f *Fs) Exists(path string) bool {
