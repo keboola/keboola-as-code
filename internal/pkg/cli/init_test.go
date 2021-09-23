@@ -29,8 +29,9 @@ func TestMissingParams(t *testing.T) {
 	// Assert
 	assert.Error(t, err)
 	assert.Equal(t, "invalid parameters, see output above", err.Error())
-	assert.Contains(t, out.String(), "Missing api host.")
-	assert.Contains(t, out.String(), "Missing api token.")
+	logStr := out.String()
+	assert.Contains(t, logStr, "Missing api host.")
+	assert.Contains(t, logStr, "Missing api token.")
 }
 
 func TestInteractiveInit(t *testing.T) {
