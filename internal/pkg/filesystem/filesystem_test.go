@@ -18,10 +18,11 @@ import (
 )
 
 type myStruct struct {
-	Field1  string                 `json:"field1" mytag:"field"`
-	Field2  string                 `json:"field2" mytag:"field"`
-	Map     *orderedmap.OrderedMap `mytag:"map"`
-	Content string                 `mytag:"content"`
+	Field1   string                 `json:"field1" mytag:"field"`
+	Field2   string                 `json:"field2" mytag:"field"`
+	FooField string                 `json:"foo"`
+	Map      *orderedmap.OrderedMap `mytag:"map"`
+	Content  string                 `mytag:"content"`
 }
 
 func TestLocalFilesystem(t *testing.T) {
@@ -407,6 +408,37 @@ func (*testCases) TestReadJsonFile(t *testing.T, fs model.Filesystem, log *utils
 	assert.NotNil(t, file)
 	assert.Equal(t, `{"foo":"bar"}`, json.MustEncodeString(file.Content, false))
 	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(log.String()))
+}
+
+func (*testCases) TestReadJsonFileTo(t *testing.T, fs model.Filesystem, log *utils.Writer) {
+	// Create file
+	filePath := "file.txt"
+	assert.NoError(t, fs.WriteFile(model.CreateFile(filePath, "", `{"foo": "bar"}`)))
+
+	// Read
+	log.Truncate()
+	target := &myStruct{}
+	err := fs.ReadJsonFileTo(filePath, "", target)
+	assert.NoError(t, err)
+	assert.Equal(t, `bar`, target.FooField)
+	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(log.String()))
+}
+
+func (*testCases) TestReadJsonFileToInvalid(t *testing.T, fs model.Filesystem, log *utils.Writer) {
+	// Create file
+	filePath := "file.txt"
+	assert.NoError(t, fs.WriteFile(model.CreateFile(filePath, "", `{"foo":`)))
+
+	// Read
+	log.Truncate()
+	target := &myStruct{}
+	err := fs.ReadJsonFileTo(filePath, "", target)
+	assert.Error(t, err)
+	expectedError := `
+file "file.txt" is invalid:
+	- unexpected end of JSON input, offset: 7
+`
+	assert.Equal(t, strings.TrimSpace(expectedError), err.Error())
 }
 
 func (*testCases) TestReadJsonFileInvalid(t *testing.T, fs model.Filesystem, _ *utils.Writer) {
