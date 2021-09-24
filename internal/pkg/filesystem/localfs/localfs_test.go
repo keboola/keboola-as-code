@@ -8,6 +8,6 @@ import (
 
 func TestNewLocalFs(t *testing.T) {
 	projectDir := t.TempDir()
-	fs := NewLocalFs(projectDir)
+	fs := New(projectDir)
 	assert.Equal(t, projectDir, fs.BasePath())
 }

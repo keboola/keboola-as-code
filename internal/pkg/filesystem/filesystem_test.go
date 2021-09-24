@@ -10,8 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	. "github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/localfs"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/memoryfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -26,10 +24,11 @@ type myStruct struct {
 }
 
 func TestLocalFilesystem(t *testing.T) {
-	createFs := func() (model.Filesystem, *utils.Writer) {
+	createFs := func() (model.Fs, *utils.Writer) {
 		logger, out := utils.NewDebugLogger()
 		projectDir := t.TempDir()
-		fs := NewFS(logger, localfs.NewLocalFs(projectDir))
+		fs, err := NewLocalFsFromProjectDir(logger, projectDir, "/")
+		assert.NoError(t, err)
 		return fs, out
 	}
 	cases := &testCases{createFs}
@@ -37,9 +36,10 @@ func TestLocalFilesystem(t *testing.T) {
 }
 
 func TestMemoryFilesystem(t *testing.T) {
-	createFs := func() (model.Filesystem, *utils.Writer) {
+	createFs := func() (model.Fs, *utils.Writer) {
 		logger, out := utils.NewDebugLogger()
-		fs := NewFS(logger, memoryfs.NewMemoryFs())
+		fs, err := NewMemoryFs(logger, "/")
+		assert.NoError(t, err)
 		return fs, out
 	}
 	cases := &testCases{createFs}
@@ -47,7 +47,7 @@ func TestMemoryFilesystem(t *testing.T) {
 }
 
 type testCases struct {
-	createFs func() (model.Filesystem, *utils.Writer)
+	createFs func() (model.Fs, *utils.Writer)
 }
 
 func (tc *testCases) runTests(t *testing.T) {
@@ -71,17 +71,17 @@ func (tc *testCases) runTests(t *testing.T) {
 	}
 }
 
-func (*testCases) TestApiName(t *testing.T, fs model.Filesystem, _ *utils.Writer) {
+func (*testCases) TestApiName(t *testing.T, fs model.Fs, _ *utils.Writer) {
 	assert.NotEmpty(t, fs.ApiName())
 }
 
-func (*testCases) TestBasePath(t *testing.T, fs model.Filesystem, _ *utils.Writer) {
+func (*testCases) TestBasePath(t *testing.T, fs model.Fs, _ *utils.Writer) {
 	assert.NotEmpty(t, fs.BasePath())
 }
 
-func (*testCases) TestWalk(t *testing.T, fs model.Filesystem, _ *utils.Writer) {
+func (*testCases) TestWalk(t *testing.T, fs model.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
-	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir2/file.txt", "", "foo\n")))
+	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir2/file.txt", "foo\n")))
 
 	paths := make([]string, 0)
 	root := "."
@@ -104,9 +104,9 @@ func (*testCases) TestWalk(t *testing.T, fs model.Filesystem, _ *utils.Writer) {
 	}, paths)
 }
 
-func (*testCases) TestIsFile(t *testing.T, fs model.Filesystem, _ *utils.Writer) {
+func (*testCases) TestIsFile(t *testing.T, fs model.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Mkdir("my/dir"))
-	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir/file.txt", "", "foo\n")))
+	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir/file.txt", "foo\n")))
 
 	// Assert
 	assert.True(t, fs.IsFile("my/dir/file.txt"))
@@ -114,9 +114,9 @@ func (*testCases) TestIsFile(t *testing.T, fs model.Filesystem, _ *utils.Writer)
 	assert.False(t, fs.IsFile("file-non-exists.txt"))
 }
 
-func (*testCases) TestIsDir(t *testing.T, fs model.Filesystem, _ *utils.Writer) {
+func (*testCases) TestIsDir(t *testing.T, fs model.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Mkdir("my/dir"))
-	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir/file.txt", "", "foo\n")))
+	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir/file.txt", "foo\n")))
 
 	// Assert
 	assert.True(t, fs.IsDir("my/dir"))
@@ -124,7 +124,7 @@ func (*testCases) TestIsDir(t *testing.T, fs model.Filesystem, _ *utils.Writer) 
 	assert.False(t, fs.IsDir("file-non-exists.txt"))
 }
 
-func (*testCases) TestMkdir(t *testing.T, fs model.Filesystem, _ *utils.Writer) {
+func (*testCases) TestMkdir(t *testing.T, fs model.Fs, _ *utils.Writer) {
 	assert.False(t, fs.Exists("my/dir"))
 	assert.NoError(t, fs.Mkdir("my/dir"))
 	assert.True(t, fs.Exists("my/dir"))
@@ -132,10 +132,10 @@ func (*testCases) TestMkdir(t *testing.T, fs model.Filesystem, _ *utils.Writer) 
 	assert.True(t, fs.Exists("my/dir"))
 }
 
-func (*testCases) TestCopyFile(t *testing.T, fs model.Filesystem, _ *utils.Writer) {
+func (*testCases) TestCopyFile(t *testing.T, fs model.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
 	assert.NoError(t, fs.Mkdir("my/dir2"))
-	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir1/file.txt", "", "foo\n")))
+	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir1/file.txt", "foo\n")))
 
 	assert.True(t, fs.Exists("my/dir1/file.txt"))
 	assert.False(t, fs.Exists("my/dir2/file.txt"))
@@ -146,11 +146,11 @@ func (*testCases) TestCopyFile(t *testing.T, fs model.Filesystem, _ *utils.Write
 	assert.True(t, fs.Exists("my/dir2/file.txt"))
 }
 
-func (*testCases) TestCopyFileExists(t *testing.T, fs model.Filesystem, _ *utils.Writer) {
+func (*testCases) TestCopyFileExists(t *testing.T, fs model.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
 	assert.NoError(t, fs.Mkdir("my/dir2"))
-	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir1/file.txt", "", "foo\n")))
-	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir2/file.txt", "", "bar\n")))
+	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir1/file.txt", "foo\n")))
+	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir2/file.txt", "bar\n")))
 
 	assert.True(t, fs.Exists("my/dir1/file.txt"))
 	assert.True(t, fs.Exists("my/dir2/file.txt"))
@@ -159,11 +159,11 @@ func (*testCases) TestCopyFileExists(t *testing.T, fs model.Filesystem, _ *utils
 	assert.True(t, strings.HasPrefix(err.Error(), `cannot copy "my/dir1/file.txt" -> "my/dir2/file.txt": destination exists`))
 }
 
-func (*testCases) TestCopyForce(t *testing.T, fs model.Filesystem, _ *utils.Writer) {
+func (*testCases) TestCopyForce(t *testing.T, fs model.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
 	assert.NoError(t, fs.Mkdir("my/dir2"))
-	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir1/file.txt", "", "foo\n")))
-	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir2/file.txt", "", "bar\n")))
+	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir1/file.txt", "foo\n")))
+	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir2/file.txt", "bar\n")))
 
 	assert.True(t, fs.Exists("my/dir1/file.txt"))
 	assert.True(t, fs.Exists("my/dir2/file.txt"))
@@ -176,9 +176,9 @@ func (*testCases) TestCopyForce(t *testing.T, fs model.Filesystem, _ *utils.Writ
 	assert.True(t, fs.Exists("my/dir2/file.txt"))
 }
 
-func (*testCases) TestCopyDir(t *testing.T, fs model.Filesystem, _ *utils.Writer) {
+func (*testCases) TestCopyDir(t *testing.T, fs model.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
-	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir1/file.txt", "", "foo\n")))
+	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir1/file.txt", "foo\n")))
 
 	assert.True(t, fs.Exists("my/dir1/file.txt"))
 	assert.False(t, fs.Exists("my/dir2/file.txt"))
@@ -189,9 +189,9 @@ func (*testCases) TestCopyDir(t *testing.T, fs model.Filesystem, _ *utils.Writer
 	assert.True(t, fs.Exists("my/dir2/file.txt"))
 }
 
-func (*testCases) TestCopyDirExists(t *testing.T, fs model.Filesystem, _ *utils.Writer) {
+func (*testCases) TestCopyDirExists(t *testing.T, fs model.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
-	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir1/file.txt", "", "foo\n")))
+	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir1/file.txt", "foo\n")))
 	assert.NoError(t, fs.Mkdir("my/dir2"))
 
 	assert.True(t, fs.Exists("my/dir1/file.txt"))
@@ -200,10 +200,10 @@ func (*testCases) TestCopyDirExists(t *testing.T, fs model.Filesystem, _ *utils.
 	assert.True(t, strings.HasPrefix(err.Error(), `cannot copy "my/dir1" -> "my/dir2": destination exists`))
 }
 
-func (*testCases) TestMoveFile(t *testing.T, fs model.Filesystem, _ *utils.Writer) {
+func (*testCases) TestMoveFile(t *testing.T, fs model.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
 	assert.NoError(t, fs.Mkdir("my/dir2"))
-	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir1/file.txt", "", "foo\n")))
+	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir1/file.txt", "foo\n")))
 
 	assert.True(t, fs.Exists("my/dir1/file.txt"))
 	assert.False(t, fs.Exists("my/dir2/file.txt"))
@@ -214,24 +214,24 @@ func (*testCases) TestMoveFile(t *testing.T, fs model.Filesystem, _ *utils.Write
 	assert.True(t, fs.Exists("my/dir2/file.txt"))
 }
 
-func (*testCases) TestMoveFileExists(t *testing.T, fs model.Filesystem, _ *utils.Writer) {
+func (*testCases) TestMoveFileExists(t *testing.T, fs model.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
 	assert.NoError(t, fs.Mkdir("my/dir2"))
-	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir1/file.txt", "", "foo\n")))
-	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir2/file.txt", "", "bar\n")))
+	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir1/file.txt", "foo\n")))
+	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir2/file.txt", "bar\n")))
 
 	assert.True(t, fs.Exists("my/dir1/file.txt"))
 	assert.True(t, fs.Exists("my/dir2/file.txt"))
 	err := fs.Move("my/dir1/file.txt", "my/dir2/file.txt")
 	assert.Error(t, err)
-	assert.True(t, strings.HasPrefix(err.Error(), `cannot move "my/dir1/file.txt" -> "my/dir2/file.txt": destination exists`))
+	assert.Equal(t, `cannot move "my/{dir1/file.txt -> dir2/file.txt}": destination exists`, err.Error())
 }
 
-func (*testCases) TestMoveForce(t *testing.T, fs model.Filesystem, _ *utils.Writer) {
+func (*testCases) TestMoveForce(t *testing.T, fs model.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
 	assert.NoError(t, fs.Mkdir("my/dir2"))
-	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir1/file.txt", "", "foo\n")))
-	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir2/file.txt", "", "bar\n")))
+	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir1/file.txt", "foo\n")))
+	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir2/file.txt", "bar\n")))
 
 	assert.True(t, fs.Exists("my/dir1/file.txt"))
 	assert.True(t, fs.Exists("my/dir2/file.txt"))
@@ -244,9 +244,9 @@ func (*testCases) TestMoveForce(t *testing.T, fs model.Filesystem, _ *utils.Writ
 	assert.True(t, fs.Exists("my/dir2/file.txt"))
 }
 
-func (*testCases) TestMoveDir(t *testing.T, fs model.Filesystem, _ *utils.Writer) {
+func (*testCases) TestMoveDir(t *testing.T, fs model.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
-	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir1/file.txt", "", "foo\n")))
+	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir1/file.txt", "foo\n")))
 
 	assert.True(t, fs.Exists("my/dir1/file.txt"))
 	assert.False(t, fs.Exists("my/dir2/file.txt"))
@@ -257,43 +257,43 @@ func (*testCases) TestMoveDir(t *testing.T, fs model.Filesystem, _ *utils.Writer
 	assert.True(t, fs.Exists("my/dir2/file.txt"))
 }
 
-func (*testCases) TestMoveDirExists(t *testing.T, fs model.Filesystem, _ *utils.Writer) {
+func (*testCases) TestMoveDirExists(t *testing.T, fs model.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
-	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir1/file.txt", "", "foo\n")))
+	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir1/file.txt", "foo\n")))
 	assert.NoError(t, fs.Mkdir("my/dir2"))
 
 	assert.True(t, fs.Exists("my/dir1/file.txt"))
 	assert.True(t, fs.Exists("my/dir2"))
 	err := fs.Move("my/dir1", "my/dir2")
-	assert.True(t, strings.HasPrefix(err.Error(), `cannot move "my/dir1" -> "my/dir2": destination exists`))
+	assert.Equal(t, `cannot move "my/{dir1 -> dir2}": destination exists`, err.Error())
 }
 
-func (*testCases) TestRemoveFile(t *testing.T, fs model.Filesystem, _ *utils.Writer) {
+func (*testCases) TestRemoveFile(t *testing.T, fs model.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
-	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir1/file.txt", "", "foo\n")))
+	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir1/file.txt", "foo\n")))
 
 	assert.True(t, fs.Exists("my/dir1/file.txt"))
 	assert.NoError(t, fs.Remove("my/dir1/file.txt"))
 	assert.False(t, fs.Exists("my/dir1/file.txt"))
 }
 
-func (*testCases) TestRemoveDir(t *testing.T, fs model.Filesystem, _ *utils.Writer) {
+func (*testCases) TestRemoveDir(t *testing.T, fs model.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
-	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir1/file.txt", "", "foo\n")))
+	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir1/file.txt", "foo\n")))
 
 	assert.True(t, fs.Exists("my/dir1"))
 	assert.NoError(t, fs.Remove("my/dir1"))
 	assert.False(t, fs.Exists("my/dir1"))
 }
 
-func (*testCases) TestRemoveNotExist(t *testing.T, fs model.Filesystem, _ *utils.Writer) {
+func (*testCases) TestRemoveNotExist(t *testing.T, fs model.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Remove("my/dir1/file.txt"))
 }
 
-func (*testCases) TestExists(t *testing.T, fs model.Filesystem, log *utils.Writer) {
+func (*testCases) TestExists(t *testing.T, fs model.Fs, log *utils.Writer) {
 	// Create file
 	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(model.CreateFile(filePath, "", "foo\n")))
+	assert.NoError(t, fs.WriteFile(model.CreateFile(filePath, "foo\n")))
 
 	// Assert
 	log.Truncate()
@@ -302,10 +302,10 @@ func (*testCases) TestExists(t *testing.T, fs model.Filesystem, log *utils.Write
 	assert.Equal(t, "", log.String())
 }
 
-func (*testCases) TestReadFile(t *testing.T, fs model.Filesystem, log *utils.Writer) {
+func (*testCases) TestReadFile(t *testing.T, fs model.Fs, log *utils.Writer) {
 	// Create file
 	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(model.CreateFile(filePath, "", "foo\n")))
+	assert.NoError(t, fs.WriteFile(model.CreateFile(filePath, "foo\n")))
 
 	// Read
 	log.Truncate()
@@ -316,7 +316,7 @@ func (*testCases) TestReadFile(t *testing.T, fs model.Filesystem, log *utils.Wri
 	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(log.String()))
 }
 
-func (*testCases) TestReadFileNotFound(t *testing.T, fs model.Filesystem, log *utils.Writer) {
+func (*testCases) TestReadFileNotFound(t *testing.T, fs model.Fs, log *utils.Writer) {
 	filePath := "file.txt"
 	file, err := fs.ReadFile(filePath, "")
 	assert.Error(t, err)
@@ -325,11 +325,11 @@ func (*testCases) TestReadFileNotFound(t *testing.T, fs model.Filesystem, log *u
 	assert.Equal(t, "", log.String())
 }
 
-func (*testCases) TestWriteFile(t *testing.T, fs model.Filesystem, log *utils.Writer) {
+func (*testCases) TestWriteFile(t *testing.T, fs model.Fs, log *utils.Writer) {
 	filePath := "file.txt"
 
 	// Write
-	assert.NoError(t, fs.WriteFile(model.CreateFile(filePath, "", "foo\n")))
+	assert.NoError(t, fs.WriteFile(model.CreateFile(filePath, "foo\n")))
 	assert.Equal(t, `DEBUG  Saved "file.txt"`, strings.TrimSpace(log.String()))
 
 	// Read
@@ -339,11 +339,11 @@ func (*testCases) TestWriteFile(t *testing.T, fs model.Filesystem, log *utils.Wr
 	assert.Equal(t, "foo\n", file.Content)
 }
 
-func (*testCases) TestWriteFileDirNotFound(t *testing.T, fs model.Filesystem, log *utils.Writer) {
+func (*testCases) TestWriteFileDirNotFound(t *testing.T, fs model.Fs, log *utils.Writer) {
 	filePath := "my/dir/file.txt"
 
 	// Write
-	assert.NoError(t, fs.WriteFile(model.CreateFile(filePath, "", "foo\n")))
+	assert.NoError(t, fs.WriteFile(model.CreateFile(filePath, "foo\n")))
 	expectedLogs := `
 DEBUG  Created directory "my/dir"
 DEBUG  Saved "my/dir/file.txt"
@@ -357,7 +357,23 @@ DEBUG  Saved "my/dir/file.txt"
 	assert.Equal(t, "foo\n", file.Content)
 }
 
-func (*testCases) TestCreateOrUpdateFile(t *testing.T, fs model.Filesystem, log *utils.Writer) {
+func (*testCases) TestWriteJsonFile(t *testing.T, fs model.Fs, log *utils.Writer) {
+	filePath := "file.json"
+
+	// Write
+	data := utils.NewOrderedMap()
+	data.Set(`foo`, `bar`)
+	assert.NoError(t, fs.WriteJsonFile(model.CreateJsonFile(filePath, data)))
+	assert.Equal(t, `DEBUG  Saved "file.json"`, strings.TrimSpace(log.String()))
+
+	// Read
+	file, err := fs.ReadFile(filePath, "")
+	assert.NoError(t, err)
+	assert.NotNil(t, file)
+	assert.Equal(t, "{\n  \"foo\": \"bar\"\n}\n", file.Content)
+}
+
+func (*testCases) TestCreateOrUpdateFile(t *testing.T, fs model.Fs, log *utils.Writer) {
 	filePath := "file.txt"
 
 	// Create empty file
@@ -396,10 +412,10 @@ func (*testCases) TestCreateOrUpdateFile(t *testing.T, fs model.Filesystem, log 
 	assert.Equal(t, "foo\nbar\nBAZ1=new123\nBAZ2=new456\n", file.Content)
 }
 
-func (*testCases) TestReadJsonFile(t *testing.T, fs model.Filesystem, log *utils.Writer) {
+func (*testCases) TestReadJsonFile(t *testing.T, fs model.Fs, log *utils.Writer) {
 	// Create file
 	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(model.CreateFile(filePath, "", `{"foo": "bar"}`)))
+	assert.NoError(t, fs.WriteFile(model.CreateFile(filePath, `{"foo": "bar"}`)))
 
 	// Read
 	log.Truncate()
@@ -410,10 +426,10 @@ func (*testCases) TestReadJsonFile(t *testing.T, fs model.Filesystem, log *utils
 	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(log.String()))
 }
 
-func (*testCases) TestReadJsonFileTo(t *testing.T, fs model.Filesystem, log *utils.Writer) {
+func (*testCases) TestReadJsonFileTo(t *testing.T, fs model.Fs, log *utils.Writer) {
 	// Create file
 	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(model.CreateFile(filePath, "", `{"foo": "bar"}`)))
+	assert.NoError(t, fs.WriteFile(model.CreateFile(filePath, `{"foo": "bar"}`)))
 
 	// Read
 	log.Truncate()
@@ -424,10 +440,10 @@ func (*testCases) TestReadJsonFileTo(t *testing.T, fs model.Filesystem, log *uti
 	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(log.String()))
 }
 
-func (*testCases) TestReadJsonFileToInvalid(t *testing.T, fs model.Filesystem, log *utils.Writer) {
+func (*testCases) TestReadJsonFileToInvalid(t *testing.T, fs model.Fs, log *utils.Writer) {
 	// Create file
 	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(model.CreateFile(filePath, "", `{"foo":`)))
+	assert.NoError(t, fs.WriteFile(model.CreateFile(filePath, `{"foo":`)))
 
 	// Read
 	log.Truncate()
@@ -441,10 +457,10 @@ file "file.txt" is invalid:
 	assert.Equal(t, strings.TrimSpace(expectedError), err.Error())
 }
 
-func (*testCases) TestReadJsonFileInvalid(t *testing.T, fs model.Filesystem, _ *utils.Writer) {
+func (*testCases) TestReadJsonFileInvalid(t *testing.T, fs model.Fs, _ *utils.Writer) {
 	// Create file
 	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(model.CreateFile(filePath, "", `{"foo":`)))
+	assert.NoError(t, fs.WriteFile(model.CreateFile(filePath, `{"foo":`)))
 
 	// Read
 	file, err := fs.ReadJsonFile(filePath, "")
@@ -457,10 +473,10 @@ file "file.txt" is invalid:
 	assert.Equal(t, strings.TrimSpace(expectedError), err.Error())
 }
 
-func (*testCases) TestReadJsonFieldsTo(t *testing.T, fs model.Filesystem, log *utils.Writer) {
+func (*testCases) TestReadJsonFieldsTo(t *testing.T, fs model.Fs, log *utils.Writer) {
 	// Create file
 	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(model.CreateFile(filePath, "", `{"field1": "foo", "field2": "bar"}`)))
+	assert.NoError(t, fs.WriteFile(model.CreateFile(filePath, `{"field1": "foo", "field2": "bar"}`)))
 
 	// Read
 	log.Truncate()
@@ -474,10 +490,10 @@ func (*testCases) TestReadJsonFieldsTo(t *testing.T, fs model.Filesystem, log *u
 	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(log.String()))
 }
 
-func (*testCases) TestReadJsonMapTo(t *testing.T, fs model.Filesystem, log *utils.Writer) {
+func (*testCases) TestReadJsonMapTo(t *testing.T, fs model.Fs, log *utils.Writer) {
 	// Create file
 	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(model.CreateFile(filePath, "", `{"field1": "foo", "field2": "bar"}`)))
+	assert.NoError(t, fs.WriteFile(model.CreateFile(filePath, `{"field1": "foo", "field2": "bar"}`)))
 
 	// Read
 	log.Truncate()
@@ -490,10 +506,10 @@ func (*testCases) TestReadJsonMapTo(t *testing.T, fs model.Filesystem, log *util
 	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(log.String()))
 }
 
-func (*testCases) TestReadFileContentTo(t *testing.T, fs model.Filesystem, log *utils.Writer) {
+func (*testCases) TestReadFileContentTo(t *testing.T, fs model.Fs, log *utils.Writer) {
 	// Create file
 	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(model.CreateFile(filePath, "", `{"field1": "foo", "field2": "bar"}`)))
+	assert.NoError(t, fs.WriteFile(model.CreateFile(filePath, `{"field1": "foo", "field2": "bar"}`)))
 
 	// Read
 	log.Truncate()

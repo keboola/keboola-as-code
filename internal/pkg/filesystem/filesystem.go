@@ -1,7 +1,6 @@
 package filesystem
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -15,24 +14,27 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/strhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-type fsApi interface {
+type backend interface {
 	afero.Fs
 	Name() string
 	BasePath() string
 	Walk(root string, walkFn filepath.WalkFunc) error
+	ReadDir(path string) ([]os.FileInfo, error)
 }
 
 // Fs - filesystem abstraction.
 type Fs struct {
-	fs     fsApi
-	logger *zap.SugaredLogger
+	fs         backend
+	logger     *zap.SugaredLogger
+	workingDir string
 }
 
-func NewFS(logger *zap.SugaredLogger, fs fsApi) model.Filesystem {
-	return &Fs{fs: fs, logger: logger}
+func New(logger *zap.SugaredLogger, fs backend, workingDir string) model.Fs {
+	return &Fs{fs: fs, logger: logger, workingDir: workingDir}
 }
 
 // ApiName - name of the file system implementation, for example local, memory, ...
@@ -45,9 +47,33 @@ func (f *Fs) BasePath() string {
 	return f.fs.BasePath()
 }
 
+// WorkingDir - user current working directory.
+func (f *Fs) WorkingDir() string {
+	return f.workingDir
+}
+
+func (f *Fs) SetLogger(logger *zap.SugaredLogger) {
+	f.logger = logger
+}
+
 // Walk walks the file tree.
 func (f *Fs) Walk(root string, walkFn filepath.WalkFunc) error {
 	return f.fs.Walk(root, walkFn)
+}
+
+// Glob returns the names of all files matching pattern or nil.
+func (f *Fs) Glob(pattern string) (matches []string, err error) {
+	return afero.Glob(f.fs, pattern)
+}
+
+// Stat returns a FileInfo.
+func (f *Fs) Stat(path string) (os.FileInfo, error) {
+	return f.fs.Stat(path)
+}
+
+// ReadDir - return list of sorted directory entries.
+func (f *Fs) ReadDir(path string) ([]os.FileInfo, error) {
+	return f.fs.ReadDir(path)
 }
 
 func (f *Fs) Exists(path string) bool {
@@ -82,6 +108,21 @@ func (f *Fs) IsDir(path string) bool {
 	return false
 }
 
+// Create creates a file in the filesystem, returning the file.
+func (f *Fs) Create(name string) (afero.File, error) {
+	return f.fs.Create(name)
+}
+
+// Open opens a file.
+func (f *Fs) Open(name string) (afero.File, error) {
+	return f.fs.Open(name)
+}
+
+// OpenFile opens a file using the given flags and the given mode.
+func (f *Fs) OpenFile(name string, flag int, perm os.FileMode) (afero.File, error) {
+	return f.fs.OpenFile(name, flag, perm)
+}
+
 // Mkdir - create directory.
 // If the directory already exists, it is a valid state.
 // Parent directories will also be created if necessary.
@@ -111,9 +152,10 @@ func (f *Fs) Copy(src, dst string) error {
 		},
 	})
 	if err != nil {
-		return fmt.Errorf(`cannot copy "%s" -> "%s": %w`, src, dst, err)
+		return fmt.Errorf(`cannot copy %s: %w`, strhelper.FormatPathChange(src, dst, true), err)
 	}
-	f.logger.Debugf(`Copied "%s" -> "%s"`, src, dst)
+	// Get common prefix of the old and new path
+	f.logger.Debugf(`Copied %s`, strhelper.FormatPathChange(src, dst, true))
 	return nil
 }
 
@@ -134,7 +176,7 @@ func (f *Fs) CopyForce(src, dst string) error {
 // The destination path must not exist.
 func (f *Fs) Move(src, dst string) error {
 	if f.Exists(dst) {
-		return fmt.Errorf(`cannot move "%s" -> "%s": destination exists`, src, dst)
+		return fmt.Errorf(`cannot move %s: destination exists`, strhelper.FormatPathChange(src, dst, true))
 	}
 
 	var err error
@@ -151,7 +193,7 @@ func (f *Fs) Move(src, dst string) error {
 		}
 	}
 
-	f.logger.Debugf(`Moved "%s" -> "%s"`, src, dst)
+	f.logger.Debugf(`Moved %s`, strhelper.FormatPathChange(src, dst, true))
 	return err
 }
 
@@ -179,21 +221,22 @@ func (f *Fs) Remove(path string) error {
 
 // ReadFile content as string.
 func (f *Fs) ReadFile(path, desc string) (*model.File, error) {
-	file := model.CreateFile(path, desc, "")
+	file := model.CreateFile(path, "")
+	file.Desc = desc
 
 	// Open
 	fd, err := f.fs.Open(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, fmt.Errorf("missing %s \"%s\": %w", file.Desc, file.Path, err)
+			return nil, newFileError("missing", file, nil)
 		}
-		return nil, fmt.Errorf("cannot open %s \"%s\": %w", file.Desc, file.Path, err)
+		return nil, newFileError("cannot open", file, err)
 	}
 
 	// Read
 	content, err := ioutil.ReadAll(fd)
 	if err != nil {
-		return nil, fmt.Errorf("cannot read %s \"%s\": %w", file.Desc, file.Path, err)
+		return nil, newFileError("cannot read", file, err)
 	}
 
 	// Close
@@ -209,7 +252,7 @@ func (f *Fs) ReadFile(path, desc string) (*model.File, error) {
 // WriteFile from string.
 func (f *Fs) WriteFile(file *model.File) error {
 	// Create dir
-	dir := filepath.Dir(string(file.Path))
+	dir := filepath.Dir(file.Path)
 	if !f.Exists(dir) {
 		if err := f.Mkdir(dir); err != nil {
 			return err
@@ -217,15 +260,15 @@ func (f *Fs) WriteFile(file *model.File) error {
 	}
 
 	// Open
-	fd, err := f.fs.OpenFile(string(file.Path), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
+	fd, err := f.OpenFile(file.Path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 	if err != nil {
-		return fmt.Errorf("cannot open %s \"%s\": %w", file.Desc, file.Path, err)
+		return err
 	}
 
 	// Write
 	_, err = fd.WriteString(file.Content)
 	if err != nil {
-		return fmt.Errorf("cannot write %s \"%s\": %w", file.Desc, file.Path, err)
+		return newFileError("cannot write to", file, err)
 	}
 
 	// Close
@@ -237,16 +280,24 @@ func (f *Fs) WriteFile(file *model.File) error {
 	return nil
 }
 
+func (f *Fs) WriteJsonFile(jsonFile *model.JsonFile) error {
+	if file, err := jsonFile.ToFile(); err == nil {
+		return f.WriteFile(file)
+	} else {
+		return err
+	}
+}
+
 // CreateOrUpdateFile lines.
 func (f *Fs) CreateOrUpdateFile(path, desc string, lines []model.FileLine) (updated bool, err error) {
 	// Read file if exists
 	file, err := f.ReadFile(path, desc)
 	switch {
-	case err != nil && !os.IsNotExist(errors.Unwrap(err)):
+	case err != nil && f.IsFile(path):
 		return false, err
 	case file == nil:
 		updated = false
-		file = model.CreateFile(path, desc, "")
+		file = model.CreateFile(path, "")
 	default:
 		updated = true
 	}
@@ -302,7 +353,8 @@ func (f *Fs) ReadJsonFileTo(path, desc string, target interface{}) error {
 	}
 
 	if err := json.DecodeString(file.Content, target); err != nil {
-		return utils.PrefixError(fmt.Sprintf("%s \"%s\" is invalid", file.Desc, file.Path), err)
+		fileDesc := strings.TrimSpace(file.Desc + " file")
+		return utils.PrefixError(fmt.Sprintf("%s \"%s\" is invalid", fileDesc, file.Path), err)
 	}
 
 	return nil
@@ -341,11 +393,55 @@ func (f *Fs) ReadJsonMapTo(path, desc string, target interface{}, tag string) (*
 func (f *Fs) ReadFileContentTo(path, desc string, target interface{}, tag string) (*model.File, error) {
 	if field := utils.GetOneFieldWithTag(tag, target); field != nil {
 		if file, err := f.ReadFile(path, desc); err == nil {
-			utils.SetField(field, file.Content, target)
+			content := strings.TrimRight(file.Content, " \r\n\t")
+			utils.SetField(field, content, target)
 			return file, nil
 		} else {
 			return nil, err
 		}
 	}
 	return nil, nil
+}
+
+func newFileError(msg string, file *model.File, err error) error {
+	fileDesc := strings.TrimSpace(file.Desc + " file")
+	if err == nil {
+		return fmt.Errorf("%s %s \"%s\"", msg, fileDesc, file.Path)
+	} else {
+		return fmt.Errorf("%s %s \"%s\": %w", msg, fileDesc, file.Path, err)
+	}
+}
+
+// Rel returns relative path.
+func Rel(base, path string) string {
+	relPath, err := filepath.Rel(base, path)
+	if err != nil {
+		panic(fmt.Errorf(`cannot get relative path, base="%s", path="%s"`, base, path))
+	}
+	return relPath
+}
+
+// Join joins any number of path elements into a single path.
+func Join(elem ...string) string {
+	return filepath.Join(elem...)
+}
+
+// Split splits path immediately following the final Separator,.
+func Split(path string) (dir, file string) {
+	return filepath.Split(path)
+}
+
+// Dir returns all but the last element of path, typically the path's directory.
+func Dir(path string) string {
+	return filepath.Dir(path)
+}
+
+// Base returns the last element of path.
+func Base(path string) string {
+	return filepath.Base(path)
+}
+
+// Match reports whether name matches the shell file name pattern.
+func Match(pattern, name string) (matched bool, err error) {
+	return filepath.Match(pattern, name)
 }

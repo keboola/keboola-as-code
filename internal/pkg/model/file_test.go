@@ -9,16 +9,16 @@ import (
 )
 
 func TestCreateFile(t *testing.T) {
-	f := CreateFile(`path`, `desc`, `content`)
-	assert.Equal(t, FilePath(`path`), f.Path)
+	f := CreateFile(`path`, `content`).SetDescription(`desc`)
+	assert.Equal(t, `path`, f.Path)
 	assert.Equal(t, `desc`, f.Desc)
 	assert.Equal(t, `content`, f.Content)
 }
 
 func TestCreateJsonFile(t *testing.T) {
 	m := utils.NewOrderedMap()
-	f := CreateJsonFile(`path`, `desc`, m)
-	assert.Equal(t, FilePath(`path`), f.Path)
+	f := CreateJsonFile(`path`, m).SetDescription(`desc`)
+	assert.Equal(t, `path`, f.Path)
 	assert.Equal(t, `desc`, f.Desc)
 	assert.Equal(t, m, f.Content)
 }
@@ -26,9 +26,9 @@ func TestCreateJsonFile(t *testing.T) {
 func TestJsonFile_ToFile(t *testing.T) {
 	m := utils.NewOrderedMap()
 	m.Set(`foo`, `bar`)
-	f, err := CreateJsonFile(`path`, `desc`, m).ToFile()
+	f, err := CreateJsonFile(`path`, m).SetDescription(`desc`).ToFile()
 	assert.NoError(t, err)
-	assert.Equal(t, FilePath(`path`), f.Path)
+	assert.Equal(t, `path`, f.Path)
 	assert.Equal(t, `desc`, f.Desc)
 	assert.Equal(t, "{\n  \"foo\": \"bar\"\n}\n", f.Content)
 }
