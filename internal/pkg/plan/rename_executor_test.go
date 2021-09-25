@@ -27,13 +27,13 @@ func TestRename(t *testing.T) {
 	plan := &RenamePlan{
 		actions: []*RenameAction{
 			{
-				OldPath:     filepath.Join(dir, "foo1"),
-				NewPath:     filepath.Join(dir, "bar1"),
+				OldPath:     "foo1",
+				NewPath:     "bar1",
 				Description: "foo1 -> bar1",
 			},
 			{
-				OldPath:     filepath.Join(dir, "foo2"),
-				NewPath:     filepath.Join(dir, "bar2"),
+				OldPath:     "foo2",
+				NewPath:     "bar2",
 				Description: "foo2 -> bar2",
 			},
 		},
@@ -77,23 +77,23 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 	plan := &RenamePlan{
 		actions: []*RenameAction{
 			{
-				OldPath:     filepath.Join(dir, "foo1"),
-				NewPath:     filepath.Join(dir, "bar1"),
+				OldPath:     "foo1",
+				NewPath:     "bar1",
 				Description: "foo1 -> bar1",
 			},
 			{
-				OldPath:     filepath.Join(dir, "foo2"),
-				NewPath:     filepath.Join(dir, "bar2"),
+				OldPath:     "foo2",
+				NewPath:     "bar2",
 				Description: "foo2 -> bar2",
 			},
 			{
-				OldPath:     filepath.Join(dir, "missing3"),
-				NewPath:     filepath.Join(dir, "missing4"),
+				OldPath:     "missing3",
+				NewPath:     "missing4",
 				Description: "missing3 -> missing4",
 			},
 			{
-				OldPath:     filepath.Join(dir, "foo5"),
-				NewPath:     filepath.Join(dir, "bar5"),
+				OldPath:     "foo5",
+				NewPath:     "bar5",
 				Description: "foo5 -> bar5",
 			},
 		},

@@ -44,7 +44,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 				logger.Infof(`The path "%s" is already an project directory.`, root.fs.BasePath())
 				logger.Infof(`The path "%s" is already an project directory.`, projectDir)
 				logger.Info(`Please use a different directory or synchronize the current with "pull" command.`)
-				return fmt.Errorf(`metadata directory "%s" already exists`, utils.RelPath(projectDir, metadataDir))
+				return fmt.Errorf(`metadata directory "%s" already exists`, filesystem.MetadataDir)
 			}
 
 			// Prompt user for host and token
@@ -98,7 +98,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 			if err = projectManifest.Save(); err != nil {
 				return err
 			}
-			logger.Infof("Created manifest file \"%s\".", utils.RelPath(projectDir, projectManifest.RelativePath()))
+			logger.Infof("Created manifest file \"%s\".", projectManifest.Path())
 
 			// Create ENV files
 			if err := createEnvFiles(logger, api, projectDir); err != nil {

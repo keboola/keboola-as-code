@@ -1,9 +1,6 @@
 package plan
 
 import (
-	"fmt"
-	"path/filepath"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 

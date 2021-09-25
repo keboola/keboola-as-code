@@ -278,7 +278,6 @@ func loadManifest(t *testing.T, projectDirName string) *manifest.Manifest {
 	testDir := filesystem.Dir(testFile)
 	stateDir := filesystem.Join(testDir, "..", "fixtures", "local", projectDirName)
 	projectDir := t.TempDir()
-	metadataDir := filepath.Join(projectDir, manifest.MetadataDir)
 
 	// Copy test data
 	err := copy.Copy(stateDir, projectDir)

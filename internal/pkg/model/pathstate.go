@@ -3,7 +3,6 @@ package model
 import (
 	"fmt"
 	"io/fs"
-	"path/filepath"
 	"sort"
 	"strings"
 
@@ -84,8 +83,6 @@ func (f *PathsState) IsDir(path string) bool {
 }
 
 func (f *PathsState) MarkTracked(path string) {
-	path = f.relative(path)
-
 	// Add path and all parents
 	for {
 		// Is path known (not ignored)?
@@ -139,17 +136,5 @@ func (f *PathsState) init() error {
 
 func (f *PathsState) isIgnored(path string) bool {
 	// Ignore empty and hidden paths
-	return path == "" || path == "." || strings.HasPrefix(filepath.Base(path), ".")
-}
-
-func (f *PathsState) relative(path string) string {
-	if !filepath.IsAbs(path) {
-		return path
-	}
-
-	if !strings.HasPrefix(path, f.projectDir+string(filepath.Separator)) {
-		panic(fmt.Errorf("path \"%s\" is not from the project dir \"%s\"", path, f.projectDir))
-	}
-
-	return utils.RelPath(f.projectDir, path)
+	return path == "" || path == "." || strings.HasPrefix(filesystem.Base(path), ".")
 }

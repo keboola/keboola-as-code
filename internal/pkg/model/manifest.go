@@ -111,10 +111,12 @@ func (p *Paths) GetRelatedPaths() []string {
 
 func (p *Paths) AddRelatedPath(path string) {
 	dir := p.RelativePath()
-	if !strings.HasPrefix(path, dir) {
+	prefix := dir + string(os.PathSeparator)
+	if !strings.HasPrefix(path, prefix) {
 		panic(fmt.Errorf(`path "%s" is not from the dir "%s"`, path, dir))
 	}
-	p.RelatedPaths = append(p.RelatedPaths, utils.RelPath(dir, path))
+
+	p.RelatedPaths = append(p.RelatedPaths, strings.TrimPrefix(path, prefix))
 }
 
 func (p *Paths) AbsolutePath(projectDir string) string {

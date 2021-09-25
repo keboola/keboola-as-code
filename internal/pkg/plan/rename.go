@@ -37,13 +37,13 @@ func (b *renamePlanBuilder) build() ([]*RenameAction, error) {
 		if err := b.LocalManager().UpdatePaths(object, false); err != nil {
 			return nil, err
 		}
-		action.OldPath = filepath.Join(b.ProjectDir(), object.RelativePath())
+		action.OldPath = object.RelativePath()
 
 		// Rename
 		if err := b.LocalManager().UpdatePaths(object, true); err != nil {
 			return nil, err
 		}
-		action.NewPath = filepath.Join(b.ProjectDir(), object.RelativePath())
+		action.NewPath = object.RelativePath()
 
 		// Should be renamed?
 		if action.OldPath != action.NewPath {
@@ -105,11 +105,11 @@ func (b *renamePlanBuilder) renameBlock(block *model.Block) {
 
 	// Store old path
 	action := &RenameAction{}
-	action.OldPath = filepath.Join(b.ProjectDir(), block.RelativePath())
+	action.OldPath = block.RelativePath()
 
 	// Rename
 	b.LocalManager().UpdateBlockPath(block, true)
-	action.NewPath = filepath.Join(b.ProjectDir(), block.RelativePath())
+	action.NewPath = block.RelativePath()
 	if action.OldPath != action.NewPath {
 		b.actions = append(b.actions, action)
 	}
@@ -126,11 +126,11 @@ func (b *renamePlanBuilder) renameCode(block *model.Block, code *model.Code) {
 
 	// Store old path
 	action := &RenameAction{}
-	action.OldPath = filepath.Join(b.ProjectDir(), code.RelativePath())
+	action.OldPath = code.RelativePath()
 
 	// Rename
 	b.LocalManager().UpdateCodePath(block, code, true)
-	action.NewPath = filepath.Join(b.ProjectDir(), code.RelativePath())
+	action.NewPath = code.RelativePath()
 	if action.OldPath != action.NewPath {
 		b.actions = append(b.actions, action)
 	}
@@ -142,11 +142,11 @@ func (b *renamePlanBuilder) renameCode(block *model.Block, code *model.Code) {
 func (b *renamePlanBuilder) renameCodeFile(code *model.Code) {
 	// Store old path
 	action := &RenameAction{}
-	action.OldPath = filepath.Join(b.ProjectDir(), b.Naming().CodeFilePath(code))
+	action.OldPath = b.Naming().CodeFilePath(code)
 
 	// Rename
 	code.CodeFileName = b.Naming().CodeFileName(code.ComponentId)
-	action.NewPath = filepath.Join(b.ProjectDir(), b.Naming().CodeFilePath(code))
+	action.NewPath = b.Naming().CodeFilePath(code)
 	if action.OldPath != action.NewPath {
 		b.actions = append(b.actions, action)
 	}

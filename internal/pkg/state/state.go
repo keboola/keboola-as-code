@@ -113,7 +113,7 @@ func (s *State) LocalManager() *local.Manager {
 
 func (s *State) UntrackedDirs() (dirs []string) {
 	for _, path := range s.UntrackedPaths() {
-		if !utils.IsDir(filepath.Join(s.manifest.ProjectDir, path)) {
+		if !s.fs.IsDir(path) {
 			continue
 		}
 		dirs = append(dirs, path)
