@@ -11,7 +11,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/thelper"
 )
 
 type ProjectSnapshot struct {
@@ -110,7 +110,7 @@ func (r *ConfigRow) GetName() string {
 }
 
 func LoadStateFile(path string) (*StateFile, error) {
-	data := utils.GetFileContent(path)
+	data := thelper.GetFileContent(path) // nolint: forbidigo
 	stateFile := &StateFile{}
 	err := json.Unmarshal([]byte(data), stateFile)
 	if err != nil {

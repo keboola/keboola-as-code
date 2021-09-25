@@ -41,7 +41,7 @@ func TestLoadStateDifferentProjectId(t *testing.T) {
 }
 
 func TestLoadState(t *testing.T) {
-	defer utils.ResetEnv(t, os.Environ())
+	defer thelper.ResetEnv(t, os.Environ())
 	api, _ := remote.TestStorageApiWithToken(t)
 	remote.SetStateOfTestProject(t, api, "minimal.json")
 

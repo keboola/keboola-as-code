@@ -1,6 +1,9 @@
 package options
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/thelper"
 	"os"
 	"strings"
 	"testing"

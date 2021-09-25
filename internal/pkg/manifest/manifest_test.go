@@ -94,7 +94,7 @@ func TestManifestSave(t *testing.T) {
 		path := filesystem.Join(filesystem.MetadataDir, FileName)
 		file, err := m.fs.ReadFile(path, "")
 		assert.NoError(t, err)
-		assert.Equal(t, utils.EscapeWhitespaces(c.json), utils.EscapeWhitespaces(string(file)))
+		assert.Equal(t, thelper.EscapeWhitespaces(c.json), thelper.EscapeWhitespaces(file.Content))
 	}
 }
 

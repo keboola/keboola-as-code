@@ -11,8 +11,7 @@ import (
 	"github.com/Netflix/go-expect"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/interaction"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/thelper"
 )
 
 const Enter = "\n"
@@ -33,7 +32,7 @@ func TestMissingParams(t *testing.T) {
 func TestInteractiveInit(t *testing.T) {
 	// Create virtual console
 	var stdout io.Writer
-	if utils.TestIsVerbose() {
+	if thelper.TestIsVerbose() {
 		stdout = os.Stdout
 	} else {
 		stdout = io.Discard
@@ -55,14 +54,14 @@ func TestInteractiveInit(t *testing.T) {
 		_, err = c.ExpectString("API host ")
 		assert.NoError(t, err)
 		time.Sleep(20 * time.Millisecond)
-		_, err = c.SendLine(utils.TestApiHost())
+		_, err = c.SendLine(thelper.TestApiHost())
 		assert.NoError(t, err)
 		_, err = c.ExpectString("Please enter Keboola Storage API token. The value will be hidden.")
 		assert.NoError(t, err)
 		_, err = c.ExpectString("API token ")
 		assert.NoError(t, err)
 		time.Sleep(20 * time.Millisecond)
-		_, err = c.SendLine(utils.TestTokenMaster())
+		_, err = c.SendLine(thelper.TestTokenMaster())
 		assert.NoError(t, err)
 		_, err = c.ExpectString("Allowed project's branches:")
 		assert.NoError(t, err)

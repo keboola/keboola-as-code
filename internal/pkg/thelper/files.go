@@ -1,17 +1,32 @@
-package utils
+// nolint: forbidigo
+package thelper
 
 import (
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 )
 
 type FileLine struct {
 	Line   string
 	Regexp string
+}
+
+func GetFileContent(path string) string {
+	// Check if file exists
+	if !IsFile(path) {
+		panic(fmt.Errorf("file \"%s\" not found", path))
+	}
+
+	// Read content, handle error
+	contentBytes, err := ioutil.ReadFile(path)
+	if err != nil {
+		panic(fmt.Errorf("cannot get file \"%s\" content: %w", path, err))
+	}
+
+	return string(contentBytes)
 }
 
 // FileExists returns true if file exists.
@@ -47,15 +62,7 @@ func IsDir(path string) bool {
 	return false
 }
 
-func AbsPath(path string) string {
-	abs, err := filepath.Abs(path)
-	if err != nil {
-		panic(fmt.Errorf("cannot get absolute path: %w", err))
-	}
-	return abs
-}
-
-func RelPath(base string, path string) string {
+func relPath(base string, path string) string {
 	rel, err := filepath.Rel(base, path)
 	if err != nil {
 		panic(fmt.Errorf("cannot get relative path: %w", err))
@@ -63,19 +70,17 @@ func RelPath(base string, path string) string {
 	return rel
 }
 
-func GetFileContent(path string) string {
-	// Check if file exists
-	if !IsFile(path) {
-		panic(fmt.Errorf("file \"%s\" not found", path))
-	}
+func IsIgnoredFile(path string, d os.DirEntry) bool {
+	base := filepath.Base(path)
+	return !d.IsDir() &&
+		strings.HasPrefix(base, ".") &&
+		!strings.HasPrefix(base, ".env") &&
+		base != ".gitignore"
+}
 
-	// Read content, handle error
-	contentBytes, err := ioutil.ReadFile(path)
-	if err != nil {
-		panic(fmt.Errorf("cannot get file \"%s\" content: %w", path, err))
-	}
-
-	return string(contentBytes)
+func IsIgnoredDir(path string, d os.DirEntry) bool {
+	base := filepath.Base(path)
+	return d.IsDir() && strings.HasPrefix(base, ".")
 }
 
 func ReadFile(dir string, relPath string, errPrefix string) (string, error) {
@@ -98,41 +103,4 @@ func WriteFile(dir string, relPath string, content string, errPrefix string) err
 		return fmt.Errorf("cannot write %s file \"%s\"", errPrefix, relPath)
 	}
 	return nil
-}
-
-func CreateOrUpdateFile(path string, lines []FileLine) (updated bool, err error) {
-	// Read file if exists
-	bytes, err := os.ReadFile(path)
-	if err != nil && !os.IsNotExist(err) {
-		return false, err
-	}
-	updated = err == nil
-
-	// Process expected lines
-	content := string(bytes)
-	for _, line := range lines {
-		newValue := strings.TrimSuffix(line.Line, "\n") + "\n"
-		regExpStr := "(?m)" + line.Regexp // multi-line mode, ^ match line start
-		if len(line.Regexp) == 0 {
-			// No regexp specified, search fo line if already present
-			regExpStr = regexp.QuoteMeta(newValue)
-		}
-
-		regExpStr = strings.TrimSuffix(regExpStr, "$") + ".*$" // match whole line
-		regExp := regexp.MustCompile(regExpStr)
-		if regExp.MatchString(content) {
-			// Replace
-			content = regExp.ReplaceAllString(content, strings.TrimSuffix(newValue, "\n"))
-		} else {
-			// Append
-			if len(content) > 0 {
-				// Add new line, if file has some content
-				content = strings.TrimSuffix(content, "\n") + "\n"
-			}
-			content = fmt.Sprintf("%s%s", content, newValue)
-		}
-	}
-
-	// Write file
-	return updated, os.WriteFile(path, []byte(content), 0644)
 }

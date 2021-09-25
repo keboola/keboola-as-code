@@ -15,6 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/thelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -430,7 +431,7 @@ func initMinimalProjectDir(t *testing.T) string {
 	if err != nil {
 		t.Fatalf("Copy error: %s", err)
 	}
-	utils.ReplaceEnvsDir(projectDir, nil)
+	thelper.ReplaceEnvsDir(projectDir, nil)
 
 	return projectDir
 }

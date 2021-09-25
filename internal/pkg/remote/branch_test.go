@@ -8,7 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/thelper"
 )
 
 func TestBranchApiCalls(t *testing.T) {
@@ -105,7 +105,7 @@ func TestBranchApiCalls(t *testing.T) {
 	assert.NotNil(t, branches)
 	assert.NoError(t, err)
 	var encoded string
-	utils.AssertWildcards(t, expectedBranchesAll(), json.MustEncodeString(branches, true), "Unexpected branches state")
+	thelper.AssertWildcards(t, expectedBranchesAll(), json.MustEncodeString(branches, true), "Unexpected branches state")
 
 	// Delete branch
 	job3, err = api.DeleteBranch(branchFoo.Id)
@@ -136,7 +136,7 @@ func TestBranchApiCalls(t *testing.T) {
 	assert.NoError(t, err)
 	encoded, err = json.EncodeString(branches, true)
 	assert.NoError(t, err)
-	utils.AssertWildcards(t, expectedBranchesMain(), encoded, "Unexpected branches state")
+	thelper.AssertWildcards(t, expectedBranchesMain(), encoded, "Unexpected branches state")
 }
 
 func expectedBranchesAll() string {
