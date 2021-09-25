@@ -172,13 +172,10 @@ func TestValidateNoRequired(t *testing.T) {
 
 func TestValidateAllRequired(t *testing.T) {
 	options := NewOptions()
-	errors := options.Validate([]string{"projectDirectory", "ApiHost", "ApiToken"})
+	errors := options.Validate([]string{"ApiHost", "ApiToken"})
 
 	// Assert
 	expected := []string{
-		`- None of this and parent directories is project dir.`,
-		`  Project directory must contain the ".keboola" metadata directory.`,
-		`  Please change working directory to a project directory or use the "init" command.`,
 		`- Missing api host. Please use "--storage-api-host" flag or ENV variable "KBC_STORAGE_API_HOST".`,
 		`- Missing api token. Please use "--storage-api-token" flag or ENV variable "KBC_STORAGE_API_TOKEN".`,
 	}

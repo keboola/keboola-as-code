@@ -30,7 +30,7 @@ func workflowsCommand(root *rootCommand) *cobra.Command {
 			prompt := root.prompt
 
 			// Validate project directory
-			if err := root.ValidateOptions([]string{"projectDirectory"}); err != nil {
+			if err := ValidateMetadataFound(root.fs); err != nil {
 				return err
 			}
 

@@ -32,7 +32,7 @@ func persistCommand(root *rootCommand) *cobra.Command {
 			logger := root.logger
 
 			// Validate project directory
-			if err := root.ValidateOptions([]string{"projectDirectory"}); err != nil {
+			if err := ValidateMetadataFound(root.fs); err != nil {
 				return err
 			}
 

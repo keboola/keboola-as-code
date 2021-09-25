@@ -1,10 +1,13 @@
 package cli
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan"
@@ -31,7 +34,7 @@ func (a *diffProcessCmd) run() error {
 	options := a.root.options
 
 	// Validate project directory
-	if err := a.root.ValidateOptions([]string{"projectDirectory"}); err != nil {
+	if err := ValidateMetadataFound(a.root.fs); err != nil {
 		return err
 	}
 
@@ -114,6 +117,17 @@ func SaveManifest(projectManifest *manifest.Manifest, logger *zap.SugaredLogger)
 		return true, nil
 	}
 	return false, nil
+}
+
+func ValidateMetadataFound(fs filesystem.Fs) error {
+	err := utils.NewMultiError()
+	if !fs.IsDir(filesystem.MetadataDir) {
+		err.Append(fmt.Errorf(`none of this and parent directories is project dir`))
+		err.AppendRaw(`  Project directory must contain the ".keboola" metadata directory.`)
+		err.AppendRaw(`  Please change working directory to a project directory or use the "init" command.`)
+	}
+
+	return err.ErrorOrNil()
 }
 
 func Validate(projectState *state.State, logger *zap.SugaredLogger, skipEncryptValidation bool) error {
