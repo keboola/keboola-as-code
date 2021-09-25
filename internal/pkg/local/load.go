@@ -2,96 +2,98 @@ package local
 
 import (
 	"fmt"
-	"path/filepath"
-	"reflect"
-	"strings"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/transformation"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
-// LoadModel from manifest and disk.
-func (m *Manager) LoadModel(record model.Record, target interface{}) (found bool, err error) {
-	errors := utils.NewMultiError()
+type files = model.ObjectFiles
 
-	// Check if directory exists
-	if !utils.IsDir(filepath.Join(m.ProjectDir(), record.RelativePath())) {
-		errors.Append(fmt.Errorf(`%s "%s" not found`, record.Kind().Name, record.RelativePath()))
-		return false, errors
-	}
-
-	// Load values from the meta file
-	metaFilePath := m.Naming().MetaFilePath(record.RelativePath())
-	errPrefix := record.Kind().Name + " metadata"
-	if err := utils.ReadTaggedFields(m.ProjectDir(), metaFilePath, model.MetaFileTag, target, errPrefix); err == nil {
-		record.AddRelatedPath(metaFilePath)
-		m.logger.Debugf(`Loaded "%s"`, metaFilePath)
-	} else {
-		errors.Append(err)
-	}
-
-	// Load description
-	if descField := utils.GetOneFieldWithTag(model.DescriptionFileTag, target); descField != nil {
-		descriptionFile := m.Naming().DescriptionFilePath(record.RelativePath())
-		errPrefix = record.Kind().Name + " description"
-		modelValue := reflect.ValueOf(target).Elem()
-		if content, err := utils.ReadFile(m.ProjectDir(), descriptionFile, errPrefix); err == nil {
-			record.AddRelatedPath(descriptionFile)
-			m.logger.Debugf(`Loaded "%s"`, descriptionFile)
-			// Trim whitespaces from end and set
-			content = strings.TrimRight(content, " \r\n\t")
-			modelValue.FieldByName(descField.Name).Set(reflect.ValueOf(content))
-		} else {
-			errors.Append(err)
-		}
-	}
-
-	// Load config file content
-	if configField := utils.GetOneFieldWithTag(model.ConfigFileTag, target); configField != nil {
-		configFilePath := m.Naming().ConfigFilePath(record.RelativePath())
-		errPrefix = record.Kind().Name
-		content := utils.NewOrderedMap()
-		modelValue := reflect.ValueOf(target).Elem()
-		if err := json.ReadFile(m.ProjectDir(), configFilePath, &content, errPrefix); err == nil {
-			record.AddRelatedPath(configFilePath)
-			m.logger.Debugf(`Loaded "%s"`, configFilePath)
-		} else {
-			errors.Append(err)
-		}
-
-		// Set empty map even if an error occurs -> so that the value is set (not nil).
-		modelValue.FieldByName(configField.Name).Set(reflect.ValueOf(content))
-	}
-
-	// Transform
-	if err := m.transformOnLoad(record, target); err != nil {
-		errors.Append(err)
-	}
-
-	// Validate, if all files loaded without error
-	if errors.Len() == 0 {
-		if err := validator.Validate(target); err != nil {
-			errors.AppendWithPrefix(fmt.Sprintf(`%s "%s" is invalid`, record.Kind().Name, record.RelativePath()), err)
-		}
-	}
-
-	return true, errors.ErrorOrNil()
+type modelLoader struct {
+	*Manager
+	*files
+	mapper *mapper.Mapper
+	errors *utils.Error
 }
 
-func (m *Manager) transformOnLoad(record model.Record, target interface{}) error {
-	if ok, err := m.isTransformationConfig(target); ok {
-		return transformation.LoadBlocks(
-			m.ProjectDir(),
-			m.logger,
-			m.Naming(),
-			record.(*model.ConfigManifest),
-			target.(*model.Config),
-		)
-	} else if err != nil {
-		return err
+func (m *Manager) LoadModel(record model.Record, object model.Object) (found bool, err error) {
+	l := &modelLoader{
+		Manager: m,
+		files:   &model.ObjectFiles{Object: object, Record: record},
+		mapper:  mapper.New(m.state, m.logger, m.fs, m.Naming()),
+		errors:  utils.NewMultiError(),
 	}
-	return nil
+	return l.load()
+}
+
+func (l *modelLoader) load() (found bool, err error) {
+	// Check if directory exists
+	if !l.fs.IsDir(l.Record.RelativePath()) {
+		l.errors.Append(fmt.Errorf(`%s "%s" not found`, l.Record.Kind().Name, l.Record.RelativePath()))
+		return false, l.errors.ErrorOrNil()
+	}
+
+	// Load
+	l.loadFiles()
+	l.transform()
+
+	// Validate, if all files loaded without error
+	if l.errors.Len() == 0 {
+		if err := validator.Validate(l.Object); err != nil {
+			l.errors.AppendWithPrefix(fmt.Sprintf(`%s "%s" is invalid`, l.Record.Kind().Name, l.Record.RelativePath()), err)
+		}
+	}
+
+	return true, l.errors.ErrorOrNil()
+}
+
+func (l *modelLoader) loadFiles() {
+	l.loadMetaFile()
+	l.loadConfigFile()
+	l.loadDescriptionFile()
+}
+
+// loadMetaFile from meta.json.
+func (l *modelLoader) loadMetaFile() {
+	path := l.Naming().MetaFilePath(l.Record.RelativePath())
+	desc := l.Record.Kind().Name + " metadata"
+	if file, err := l.fs.ReadJsonFieldsTo(path, desc, l.Object, model.MetaFileTag); err != nil {
+		l.errors.Append(err)
+	} else if file != nil {
+		l.Metadata = file
+		l.Record.AddRelatedPath(path)
+	}
+}
+
+// loadConfigFile from config.json.
+func (l *modelLoader) loadConfigFile() {
+	// config.json
+	path := l.Naming().ConfigFilePath(l.Record.RelativePath())
+	desc := l.Record.Kind().Name
+	if file, err := l.fs.ReadJsonMapTo(path, desc, l.Object, model.ConfigFileTag); err != nil {
+		l.errors.Append(err)
+	} else if file != nil {
+		l.Configuration = file
+		l.Record.AddRelatedPath(path)
+	}
+}
+
+// loadDescriptionFile from description.md.
+func (l *modelLoader) loadDescriptionFile() {
+	path := l.Naming().DescriptionFilePath(l.Record.RelativePath())
+	desc := l.Record.Kind().Name + " description"
+	if file, err := l.fs.ReadFileContentTo(path, desc, l.Object, model.DescriptionFileTag); err != nil {
+		l.errors.Append(err)
+	} else if file != nil {
+		l.Description = file
+		l.Record.AddRelatedPath(path)
+	}
+}
+
+func (l *modelLoader) transform() {
+	if err := l.mapper.AfterLoad(l.files); err != nil {
+		l.errors.Append(err)
+	}
 }
