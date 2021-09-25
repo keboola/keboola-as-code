@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 )
 
 func TestNewLocalFs(t *testing.T) {
@@ -19,7 +19,7 @@ func TestNewLocalFs(t *testing.T) {
 
 func TestFindProjectDir(t *testing.T) {
 	projectDir := t.TempDir()
-	metadataDir := filepath.Join(projectDir, model.MetadataDir)
+	metadataDir := filepath.Join(projectDir, filesystem.MetadataDir)
 	workingDir := filepath.Join(projectDir, `foo`, `bar`)
 	assert.NoError(t, os.MkdirAll(metadataDir, 0755))
 	assert.NoError(t, os.MkdirAll(workingDir, 0755))
