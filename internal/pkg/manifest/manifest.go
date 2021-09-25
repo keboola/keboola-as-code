@@ -62,9 +62,9 @@ func newManifest(projectId int, apiHost string, fs filesystem.Fs) *Manifest {
 
 func LoadManifest(fs filesystem.Fs) (*Manifest, error) {
 	// Exists?
-	path := filepath.Join(metadataDir, FileName)
-	if !utils.IsFile(path) {
-		return nil, fmt.Errorf("manifest \"%s\" not found", utils.RelPath(projectDir, path))
+	path := filesystem.Join(filesystem.MetadataDir, FileName)
+	if !fs.IsFile(path) {
+		return nil, fmt.Errorf("manifest \"%s\" not found", path)
 	}
 
 	// Read JSON file
@@ -196,8 +196,8 @@ func (m *Manifest) IsChanged() bool {
 	return m.changed
 }
 
-func (m *Manifest) RelativePath() string {
-	return filepath.Join(m.MetadataDir, FileName)
+func (m *Manifest) Path() string {
+	return filesystem.Join(filesystem.MetadataDir, FileName)
 }
 
 func (m *Manifest) GetRecords() orderedmap.OrderedMap {

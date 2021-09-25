@@ -2,9 +2,9 @@ package model
 
 import (
 	"fmt"
-	"path/filepath"
 	"sync"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -94,7 +94,7 @@ func (n Naming) makeUniquePath(key Key, p PathInProject) PathInProject {
 	}
 
 	keyStr := key.String()
-	dir, file := filepath.Split(p.ObjectPath)
+	dir, file := filesystem.Split(p.ObjectPath)
 
 	// Add a suffix to the path if it is not unique
 	suffix := 0
@@ -105,21 +105,21 @@ func (n Naming) makeUniquePath(key Key, p PathInProject) PathInProject {
 		}
 
 		suffix++
-		p.ObjectPath = filepath.Join(dir, utils.NormalizeName(file+"-"+fmt.Sprintf(`%03d`, suffix)))
+		p.ObjectPath = filesystem.Join(dir, utils.NormalizeName(file+"-"+fmt.Sprintf(`%03d`, suffix)))
 	}
 	return p
 }
 
 func (n Naming) MetaFilePath(dir string) string {
-	return filepath.Join(dir, MetaFile)
+	return filesystem.Join(dir, MetaFile)
 }
 
 func (n Naming) ConfigFilePath(dir string) string {
-	return filepath.Join(dir, ConfigFile)
+	return filesystem.Join(dir, ConfigFile)
 }
 
 func (n Naming) DescriptionFilePath(dir string) string {
-	return filepath.Join(dir, DescriptionFile)
+	return filesystem.Join(dir, DescriptionFile)
 }
 
 func (n Naming) BranchPath(branch *Branch) PathInProject {
@@ -182,11 +182,11 @@ func (n Naming) ConfigRowPath(parentPath string, row *ConfigRow) PathInProject {
 }
 
 func (n Naming) BlocksDir(configDir string) string {
-	return filepath.Join(configDir, blocksDir)
+	return filesystem.Join(configDir, blocksDir)
 }
 
 func (n Naming) BlocksTmpDir(configDir string) string {
-	return filepath.Join(configDir, `.new_`+blocksDir)
+	return filesystem.Join(configDir, `.new_`+blocksDir)
 }
 
 func (n Naming) BlockPath(parentPath string, block *Block) PathInProject {
@@ -210,7 +210,7 @@ func (n Naming) CodePath(parentPath string, code *Code) PathInProject {
 }
 
 func (n Naming) CodeFilePath(code *Code) string {
-	return filepath.Join(code.RelativePath(), code.CodeFileName)
+	return filesystem.Join(code.RelativePath(), code.CodeFileName)
 }
 
 func (n Naming) CodeFileName(componentId string) string {

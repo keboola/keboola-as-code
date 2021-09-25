@@ -5,7 +5,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"go.uber.org/zap"
 	"os"
-	"path/filepath"
 	"runtime"
 	"testing"
 
@@ -276,8 +275,8 @@ func loadManifest(t *testing.T, projectDirName string) *manifest.Manifest {
 	utils.MustSetEnv("LOCAL_STATE_MYSQL_CONFIG_ID", "896")
 
 	_, testFile, _, _ := runtime.Caller(0)
-	testDir := filepath.Dir(testFile)
-	stateDir := filepath.Join(testDir, "..", "fixtures", "local", projectDirName)
+	testDir := filesystem.Dir(testFile)
+	stateDir := filesystem.Join(testDir, "..", "fixtures", "local", projectDirName)
 	projectDir := t.TempDir()
 	metadataDir := filepath.Join(projectDir, manifest.MetadataDir)
 

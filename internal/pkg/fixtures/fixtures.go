@@ -3,13 +3,13 @@ package fixtures
 import (
 	"encoding/json"
 	"fmt"
-	"path/filepath"
 	"runtime"
 	"testing"
 
 	"github.com/iancoleman/orderedmap"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -141,9 +141,9 @@ func LoadConfig(t *testing.T, name string) *model.ConfigWithRows {
 
 	// nolint: dogsled
 	_, testFile, _, _ := runtime.Caller(0)
-	testDir := filepath.Dir(testFile)
-	path := filepath.Join(testDir, "configs", name+".json")
-	content := utils.GetFileContent(path)
+	testDir := filesystem.Dir(testFile)
+	path := filesystem.Join(testDir, "configs", name+".json")
+	content := thelper.GetFileContent(path) // nolint: forbidigo
 	fixture := &Config{}
 	err := json.Unmarshal([]byte(content), fixture)
 	if err != nil {

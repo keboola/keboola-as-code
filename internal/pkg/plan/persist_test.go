@@ -74,7 +74,7 @@ func TestPersistNewConfig(t *testing.T) {
 	httpmock.RegisterResponder("POST", `=~/storage/tickets`, generateNewIdResponser)
 
 	// Write files
-	configDir := filepath.Join(projectDir, `main`, `extractor`, `ex-generic-v2`, `new-config`)
+	configDir := filesystem.Join(`main`, `extractor`, `ex-generic-v2`, `new-config`)
 	assert.NoError(t, fs.Mkdir(configDir))
 	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(configDir, `config.json`), `{"key": "value"}`)))
 	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(configDir, `meta.json`), `{"name": "foo"}`)))
@@ -190,7 +190,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 	httpmock.RegisterResponder("POST", `=~/storage/tickets`, generateNewIdResponder)
 
 	// Write files
-	configDir := filepath.Join(projectDir, `main`, `extractor`, `keboola.ex-db-mysql`, `new-config`)
+	configDir := filesystem.Join(`main`, `extractor`, `keboola.ex-db-mysql`, `new-config`)
 	assert.NoError(t, fs.Mkdir(configDir))
 	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(configDir, `config.json`), `{"key1": "value1"}`)))
 	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(configDir, `meta.json`), `{"name": "foo1"}`)))
@@ -424,7 +424,7 @@ func initMinimalProjectDir(t *testing.T) string {
 	utils.MustSetEnv("LOCAL_STATE_GENERIC_CONFIG_ID", "456")
 
 	_, testFile, _, _ := runtime.Caller(0)
-	testDir := filepath.Dir(testFile)
+	testDir := filesystem.Dir(testFile)
 	projectDir := t.TempDir()
 	err := copy.Copy(filepath.Join(testDir, `..`, `fixtures`, `local`, `minimal`), projectDir)
 	if err != nil {

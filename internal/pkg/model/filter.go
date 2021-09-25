@@ -1,11 +1,11 @@
 package model
 
 import (
-	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cast"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -73,12 +73,12 @@ func (v AllowedBranch) IsBranchAllowed(branch *Branch) bool {
 	}
 
 	// Defined by name blob
-	if match, _ := filepath.Match(string(v), branch.Name); match {
+	if match, _ := filesystem.Match(string(v), branch.Name); match {
 		return true
 	}
 
 	// Defined by name blob - normalized name
-	if match, _ := filepath.Match(string(v), utils.NormalizeName(branch.Name)); match {
+	if match, _ := filesystem.Match(string(v), utils.NormalizeName(branch.Name)); match {
 		return true
 	}
 

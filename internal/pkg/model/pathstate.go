@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"io/fs"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -96,13 +97,14 @@ func (f *PathsState) MarkTracked(path string) {
 		f.tracked[path] = true
 
 		// Process parent path
-		path = filepath.Dir(path)
+		path = filesystem.Dir(path)
 	}
 }
 
 func (f *PathsState) init() error {
 	errors := utils.NewMultiError()
-	err := filepath.WalkDir(f.projectDir, func(absPath string, d fs.DirEntry, err error) error {
+	root := "."
+	err := f.fs.Walk(root, func(path string, info fs.FileInfo, err error) error {
 		// Log error
 		if err != nil {
 			errors.Append(err)
@@ -110,21 +112,20 @@ func (f *PathsState) init() error {
 		}
 
 		// Ignore root
-		if absPath == f.projectDir {
+		if path == root {
 			return nil
 		}
 
 		// Is ignored?
-		if f.isIgnored(absPath) {
-			if d.IsDir() {
+		if f.isIgnored(path) {
+			if info.IsDir() {
 				return fs.SkipDir
 			}
 			return nil
 		}
 
-		relPath := f.relative(absPath)
-		f.all[relPath] = true
-		f.isFile[relPath] = utils.IsFile(absPath)
+		f.all[path] = true
+		f.isFile[path] = f.fs.IsFile(path)
 		return nil
 	})
 

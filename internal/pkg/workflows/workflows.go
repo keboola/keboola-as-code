@@ -54,21 +54,21 @@ func (g *generator) generateFiles() error {
 	installActDir := filepath.Join(actionsDir, "install")
 	g.handleError(g.fs.Mkdir(workflowsDir))
 	g.handleError(g.fs.Mkdir(installActDir))
-	g.renderTemplate(`template/install.yml.tmpl`, filepath.Join(installActDir, `action.yml`))
+	g.renderTemplate(`template/install.yml.tmpl`, filesystem.Join(installActDir, `action.yml`))
 
 	// Validate operation
 	if g.options.Validate {
-		g.renderTemplate(`template/validate.yml.tmpl`, filepath.Join(workflowsDir, `validate.yml`))
+		g.renderTemplate(`template/validate.yml.tmpl`, filesystem.Join(workflowsDir, `validate.yml`))
 	}
 
 	// Push operation
 	if g.options.Push {
-		g.renderTemplate(`template/push.yml.tmpl`, filepath.Join(workflowsDir, `push.yml`))
+		g.renderTemplate(`template/push.yml.tmpl`, filesystem.Join(workflowsDir, `push.yml`))
 	}
 
 	// Pull operation
 	if g.options.Pull {
-		g.renderTemplate(`template/pull.yml.tmpl`, filepath.Join(workflowsDir, `pull.yml`))
+		g.renderTemplate(`template/pull.yml.tmpl`, filesystem.Join(workflowsDir, `pull.yml`))
 	}
 
 	if g.errors.Len() > 0 {

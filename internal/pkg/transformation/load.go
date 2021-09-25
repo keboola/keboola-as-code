@@ -2,13 +2,12 @@ package transformation
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/iancoleman/orderedmap"
 	"go.uber.org/zap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/sql"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"

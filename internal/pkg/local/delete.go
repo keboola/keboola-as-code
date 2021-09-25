@@ -2,11 +2,13 @@ package local
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -58,22 +60,23 @@ func (m *Manager) DeleteInvalidObjects() error {
 func (m *Manager) DeleteEmptyDirectories(trackedPaths []string) error {
 	errors := utils.NewMultiError()
 	emptyDirs := utils.NewOrderedMap()
-	err := filepath.WalkDir(m.ProjectDir(), func(path string, d os.DirEntry, err error) error {
+	root := `.`
+	err := m.fs.Walk(root, func(path string, info fs.FileInfo, err error) error {
 		// Stop on error
 		if err != nil {
 			return err
 		}
 
 		// Ignore root
-		if path == m.ProjectDir() {
+		if path == root {
 			return nil
 		}
 
 		// Stop on ignored dir
-		isIgnoredDir := utils.IsIgnoredDir(path, d)
+		isIgnoredDir := isIgnoredDir(path, info)
 
 		// Found a directory -> store path
-		if !isIgnoredDir && d.IsDir() {
+		if !isIgnoredDir && info.IsDir() {
 			emptyDirs.Set(path+string(os.PathSeparator), true)
 			return nil
 		}
@@ -87,7 +90,7 @@ func (m *Manager) DeleteEmptyDirectories(trackedPaths []string) error {
 
 		// Skip sub-directories
 		if isIgnoredDir {
-			return filepath.SkipDir
+			return fs.SkipDir
 		}
 
 		return nil
@@ -108,7 +111,7 @@ func (m *Manager) DeleteEmptyDirectories(trackedPaths []string) error {
 	dirsToRemove := make([]string, 0)
 	for _, dir := range emptyDirs.Keys() {
 		for _, tracked := range trackedPaths {
-			prefix := filepath.Join(m.ProjectDir(), tracked) + string(os.PathSeparator)
+			prefix := tracked + string(os.PathSeparator)
 			if strings.HasPrefix(dir, prefix) {
 				// Remove dir, it is from a tracked dir
 				dirsToRemove = append(dirsToRemove, dir)
@@ -119,9 +122,7 @@ func (m *Manager) DeleteEmptyDirectories(trackedPaths []string) error {
 
 	// Delete
 	for _, dir := range dirsToRemove {
-		if err := os.Remove(dir); err == nil {
-			m.logger.Debugf(`Removed "%s"`, utils.RelPath(m.ProjectDir(), dir))
-		} else {
+		if err := m.fs.Remove(dir); err != nil {
 			errors.Append(err)
 		}
 	}
