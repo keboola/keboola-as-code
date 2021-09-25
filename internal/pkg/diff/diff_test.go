@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
@@ -250,12 +251,16 @@ func TestDiffNotEqualConfig(t *testing.T) {
 func createProjectState(t *testing.T) *state.State {
 	t.Helper()
 
-	projectDir := t.TempDir()
-	m, err := manifest.NewManifest(1, "connection.keboola.com", projectDir, "bar")
+	logger, _ := utils.NewDebugLogger()
+	fs, err := aferofs.NewMemoryFs(logger, "")
 	if err != nil {
 		assert.FailNow(t, err.Error())
 	}
-	logger, _ := utils.NewDebugLogger()
+
+	m, err := manifest.NewManifest(1, "connection.keboola.com", fs)
+	if err != nil {
+		assert.FailNow(t, err.Error())
+	}
 
 	// State is mocked manually in test functions
 	api, _ := remote.TestMockedStorageApi(t)

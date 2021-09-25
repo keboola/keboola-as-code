@@ -12,7 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs/memoryfs"
 )
 
-func NewLocalFs(logger *zap.SugaredLogger, workingDir string) (fs filesystem.Fs, err error) {
+func NewLocalFsFindProjectDir(logger *zap.SugaredLogger, workingDir string) (fs filesystem.Fs, err error) {
 	if workingDir == "" {
 		workingDir, err = os.Getwd()
 		if err != nil {
@@ -38,7 +38,7 @@ func NewLocalFs(logger *zap.SugaredLogger, workingDir string) (fs filesystem.Fs,
 	return New(logger, localfs.New(projectDir), workingDirRel), nil
 }
 
-func NewLocalFsFromProjectDir(logger *zap.SugaredLogger, projectDir string, workingDirRel string) (fs filesystem.Fs, err error) {
+func NewLocalFs(logger *zap.SugaredLogger, projectDir string, workingDirRel string) (fs filesystem.Fs, err error) {
 	// Create filesystem abstraction
 	return New(logger, localfs.New(projectDir), workingDirRel), nil
 }

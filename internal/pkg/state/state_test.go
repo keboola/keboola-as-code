@@ -3,19 +3,22 @@ package state
 import (
 	"context"
 	"os"
-	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/jarcoal/httpmock"
-	"github.com/otiai10/copy"
+	"github.com/nhatthm/aferocopy"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
+	"github.com/keboola/keboola-as-code/internal/pkg/thelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -23,10 +26,11 @@ func TestLoadStateDifferentProjectId(t *testing.T) {
 	logger, _ := utils.NewDebugLogger()
 	api, _ := remote.TestStorageApi(t)
 	api = api.WithToken(&model.Token{Owner: model.TokenOwner{Id: 45678}})
-	projectDir := t.TempDir()
-	metadataDir := filepath.Join(projectDir, ".keboola")
-	m, err := manifest.NewManifest(12345, "connection.keboola.com", projectDir, metadataDir)
+	fs, err := aferofs.NewMemoryFs(logger, ".")
 	assert.NoError(t, err)
+	m, err := manifest.NewManifest(12345, "connection.keboola.com", fs)
+	assert.NoError(t, err)
+
 	stateOptions := NewOptions(m, api, context.Background(), logger)
 	stateOptions.LoadLocalState = true
 	stateOptions.LoadRemoteState = true
@@ -44,12 +48,11 @@ func TestLoadState(t *testing.T) {
 	// Same IDs in local and remote state
 	utils.MustSetEnv("LOCAL_STATE_MAIN_BRANCH_ID", utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`))
 	utils.MustSetEnv("LOCAL_STATE_GENERIC_CONFIG_ID", utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`))
-	projectDir, metadataDir := initLocalState(t, "minimal")
-	logger, _ := utils.NewDebugLogger()
 
-	m, err := manifest.LoadManifest(projectDir, metadataDir)
-	assert.NoError(t, err)
-	m.Project.Id = utils.TestProjectId()
+	logger, _ := utils.NewDebugLogger()
+	m := loadTestManifest(t, "minimal")
+	m.Project.Id = thelper.TestProjectId()
+
 	stateOptions := NewOptions(m, api, context.Background(), logger)
 	stateOptions.LoadLocalState = true
 	stateOptions.LoadRemoteState = true
@@ -166,11 +169,11 @@ func TestValidateState(t *testing.T) {
 	// Create state
 	utils.MustSetEnv("LOCAL_STATE_MAIN_BRANCH_ID", `123`)
 	utils.MustSetEnv("LOCAL_STATE_GENERIC_CONFIG_ID", `456`)
-	projectDir, metadataDir := initLocalState(t, "minimal")
+
 	logger, _ := utils.NewDebugLogger()
-	m, err := manifest.LoadManifest(projectDir, metadataDir)
-	assert.NoError(t, err)
-	m.Project.Id = utils.TestProjectId()
+	m := loadTestManifest(t, "minimal")
+	m.Project.Id = thelper.TestProjectId()
+
 	api, _ := remote.TestMockedStorageApi(t)
 	stateOptions := NewOptions(m, api, context.Background(), logger)
 	s := newState(stateOptions)
@@ -211,18 +214,26 @@ config "branch:456/component:keboola.foo/config:234" is not valid:
 	assert.Equal(t, strings.TrimSpace(expectedRemoteError), s.RemoteErrors().Error())
 }
 
-func initLocalState(t *testing.T, localState string) (string, string) {
+func loadTestManifest(t *testing.T, localState string) *manifest.Manifest {
 	t.Helper()
 
+	// Prepare temp dir with defined state
 	_, testFile, _, _ := runtime.Caller(0)
-	testDir := filepath.Dir(testFile)
-	localStateDir := filepath.Join(testDir, "..", "fixtures", "local", localState)
+	testDir := filesystem.Dir(testFile)
+	localStateDir := filesystem.Join(testDir, "..", "fixtures", "local", localState)
 	projectDir := t.TempDir()
-	metadataDir := filepath.Join(projectDir, ".keboola")
-	err := copy.Copy(localStateDir, projectDir)
-	if err != nil {
+	if err := aferocopy.Copy(localStateDir, projectDir); err != nil {
 		t.Fatalf("Copy error: %s", err)
 	}
-	utils.ReplaceEnvsDir(projectDir, nil)
-	return projectDir, metadataDir
+	thelper.ReplaceEnvsDir(projectDir, nil)
+
+	// Create fs and load manifest
+	fs, err := aferofs.NewLocalFs(zap.NewNop().Sugar(), projectDir, ".")
+	assert.NoError(t, err)
+	m, err := manifest.LoadManifest(fs)
+	assert.NoError(t, err)
+	m.Project.Id = 12345
+	m.Project.ApiHost = "connection.keboola.com"
+
+	return m
 }

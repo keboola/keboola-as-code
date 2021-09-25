@@ -17,7 +17,9 @@ import (
 	"github.com/otiai10/copy"
 	"github.com/stretchr/testify/assert"
 	"github.com/umisama/go-regexpcache"
+	"go.uber.org/zap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
@@ -250,9 +252,12 @@ func AssertExpectations(
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}
+		json.MustDecodeString(content, expectedSnapshot)
 
 		// Fake manifest
-		m, err := manifest.NewManifest(api.ProjectId(), api.Host(), workingDir, "bar")
+		fs, err := aferofs.NewLocalFs(zap.NewNop().Sugar(), workingDir, "/")
+		assert.NoError(t, err)
+		m, err := manifest.NewManifest(api.ProjectId(), api.Host(), fs)
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}

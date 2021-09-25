@@ -1,26 +1,16 @@
 package local
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func TestLocalSaveModel(t *testing.T) {
-	projectDir := t.TempDir()
-	metadataDir := filepath.Join(projectDir, ".keboola")
-	assert.NoError(t, os.MkdirAll(metadataDir, 0750))
-
-	logger, _ := utils.NewDebugLogger()
-	m, err := manifest.NewManifest(1, "connection.keboola.com", projectDir, metadataDir)
-	assert.NoError(t, err)
-	manager := NewManager(logger, m, model.NewComponentsMap(nil))
+	manager := newTestLocalManager(t)
+	fs := manager.fs
 
 	config := utils.NewOrderedMap()
 	config.Set("foo", "bar")

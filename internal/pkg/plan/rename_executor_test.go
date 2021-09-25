@@ -1,23 +1,27 @@
 package plan
 
 import (
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func TestRename(t *testing.T) {
+	m, logger, logs := newTestManifest(t)
+	fs := m.Fs()
+
 	// Dir structure
-	dir := t.TempDir()
-	assert.NoError(t, os.MkdirAll(filepath.Join(dir, `foo1/sub`), 0755))
-	assert.NoError(t, os.WriteFile(filepath.Join(dir, `foo1/sub/file`), []byte(`content`), 0644))
-	assert.NoError(t, os.WriteFile(filepath.Join(dir, `foo2`), []byte(`content`), 0644))
+	assert.NoError(t, fs.Mkdir(`foo1/sub`))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(`foo1/sub/file`), `content`)))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(`foo2`), `content`)))
+	logs.Truncate()
 
 	// Plan
 	plan := &RenamePlan{
@@ -36,8 +40,7 @@ func TestRename(t *testing.T) {
 	}
 
 	// Rename
-	logger, logs := utils.NewDebugLogger()
-	executor := newRenameExecutor(logger, dir, &manifest.Manifest{}, plan)
+	executor := newRenameExecutor(logger, m, plan)
 	warn, err := executor.invoke()
 	assert.Empty(t, warn)
 	assert.Empty(t, err)
@@ -60,6 +63,9 @@ DEBUG  Removed foo2
 }
 
 func TestRenameFailedKeepOldState(t *testing.T) {
+	m, logger, logs := newTestManifest(t)
+	fs := m.Fs()
+
 	// Dir structure
 	dir := t.TempDir()
 	assert.NoError(t, os.MkdirAll(filepath.Join(dir, `foo1/sub`), 0755))
@@ -94,8 +100,7 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 	}
 
 	// Rename
-	logger, logs := utils.NewDebugLogger()
-	executor := newRenameExecutor(logger, dir, &manifest.Manifest{}, plan)
+	executor := newRenameExecutor(logger, m, plan)
 	warn, err := executor.invoke()
 	assert.Empty(t, warn)
 	assert.NotNil(t, err)
@@ -159,4 +164,12 @@ func TestRenameInvalidNewPath(t *testing.T) {
 	assert.PanicsWithError(t, "new path must be absolute", func() {
 		executor.invoke()
 	})
+func newTestManifest(t *testing.T) (*manifest.Manifest, *zap.SugaredLogger, *utils.Writer) {
+	t.Helper()
+	logger, logs := utils.NewDebugLogger()
+	fs, err := aferofs.NewMemoryFs(logger, ".")
+	assert.NoError(t, err)
+	m, err := manifest.NewManifest(1, "foo", fs)
+	assert.NoError(t, err)
+	return m, logger, logs
 }

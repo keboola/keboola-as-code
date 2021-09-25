@@ -18,11 +18,7 @@ import (
 const Enter = "\n"
 
 func TestMissingParams(t *testing.T) {
-	tempDir := t.TempDir()
-	assert.NoError(t, os.Chdir(tempDir))
-	in := utils.NewBufferReader()
-	out := utils.NewBufferWriter()
-	root := NewRootCommand(in, out, out, interaction.NewPrompt(in, out, out))
+	root, out := newTestRootCommand()
 	root.cmd.SetArgs([]string{"init"})
 	err := root.cmd.Execute()
 
@@ -35,9 +31,6 @@ func TestMissingParams(t *testing.T) {
 }
 
 func TestInteractiveInit(t *testing.T) {
-	tempDir := t.TempDir()
-	assert.NoError(t, os.Chdir(tempDir))
-
 	// Create virtual console
 	var stdout io.Writer
 	if utils.TestIsVerbose() {
@@ -49,9 +42,7 @@ func TestInteractiveInit(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Init prompt and cmd
-	prompt := interaction.NewPrompt(c.Tty(), c.Tty(), c.Tty())
-	prompt.Interactive = true
-	root := NewRootCommand(c.Tty(), c.Tty(), c.Tty(), prompt)
+	root := newTestRootCommandWithTty(c.Tty())
 	root.cmd.SetArgs([]string{"init"})
 
 	// Interaction

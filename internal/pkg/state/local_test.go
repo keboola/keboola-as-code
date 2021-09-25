@@ -2,6 +2,8 @@ package state
 
 import (
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"go.uber.org/zap"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -10,7 +12,10 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/otiai10/copy"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
@@ -284,7 +289,9 @@ func loadManifest(t *testing.T, projectDirName string) *manifest.Manifest {
 	utils.ReplaceEnvsDir(projectDir, nil)
 
 	// Load manifest
-	m, err := manifest.LoadManifest(projectDir, metadataDir)
+	fs, err := aferofs.NewLocalFs(zap.NewNop().Sugar(), projectDir, ".")
+	assert.NoError(t, err)
+	m, err := manifest.LoadManifest(fs)
 	if err != nil {
 		assert.FailNow(t, err.Error())
 	}

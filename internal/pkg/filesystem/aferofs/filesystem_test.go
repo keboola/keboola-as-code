@@ -30,7 +30,7 @@ func TestLocalFilesystem(t *testing.T) {
 	createFs := func() (filesystem.Fs, *utils.Writer) {
 		logger, out := utils.NewDebugLogger()
 		projectDir := t.TempDir()
-		fs, err := NewLocalFsFromProjectDir(logger, projectDir, "/")
+		fs, err := NewLocalFs(logger, projectDir, "/")
 		assert.NoError(t, err)
 		return fs, out
 	}

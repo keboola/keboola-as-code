@@ -21,10 +21,7 @@ import (
 )
 
 func TestPersistNoChange(t *testing.T) {
-	projectDir := initMinimalProjectDir(t)
-	metadataDir := filepath.Join(projectDir, manifest.MetadataDir)
-	m, err := manifest.LoadManifest(projectDir, metadataDir)
-	assert.NoError(t, err)
+	m, _ := loadTestManifest(t, initMinimalProjectDir(t))
 	api, _ := remote.TestMockedStorageApi(t)
 
 	// Mocked API response
@@ -61,10 +58,7 @@ func TestPersistNoChange(t *testing.T) {
 }
 
 func TestPersistNewConfig(t *testing.T) {
-	projectDir := initMinimalProjectDir(t)
-	metadataDir := filepath.Join(projectDir, manifest.MetadataDir)
-	m, err := manifest.LoadManifest(projectDir, metadataDir)
-	assert.NoError(t, err)
+	m, fs := loadTestManifest(t, initMinimalProjectDir(t))
 	api, _ := remote.TestMockedStorageApi(t)
 
 	// Mocked API response
@@ -172,10 +166,7 @@ func TestPersistNewConfig(t *testing.T) {
 }
 
 func TestPersistNewConfigRow(t *testing.T) {
-	projectDir := initMinimalProjectDir(t)
-	metadataDir := filepath.Join(projectDir, manifest.MetadataDir)
-	m, err := manifest.LoadManifest(projectDir, metadataDir)
-	assert.NoError(t, err)
+	m, fs := loadTestManifest(t, initMinimalProjectDir(t))
 	api, _ := remote.TestMockedStorageApi(t)
 
 	// Mocked API response
@@ -347,7 +338,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 
 func TestPersistDeleted(t *testing.T) {
 	projectDir := initMinimalProjectDir(t)
-	metadataDir := filepath.Join(projectDir, manifest.MetadataDir)
+	m, _ := loadTestManifest(t, projectDir)
 	api, _ := remote.TestMockedStorageApi(t)
 
 	// Mocked API response
@@ -367,8 +358,6 @@ func TestPersistDeleted(t *testing.T) {
 	httpmock.RegisterResponder("GET", `=~/storage/components/keboola.ex-db-mysql`, getMySqlExResponder)
 
 	// Update manifest, add fake records
-	m, err := manifest.LoadManifest(projectDir, metadataDir)
-	assert.NoError(t, err)
 	branchId := cast.ToInt(utils.MustGetEnv(`LOCAL_STATE_MAIN_BRANCH_ID`))
 	missingConfig := &model.ConfigManifest{
 		ConfigKey: model.ConfigKey{
@@ -402,8 +391,7 @@ func TestPersistDeleted(t *testing.T) {
 	assert.NoError(t, m.Save())
 
 	// Reload manifest
-	m, err = manifest.LoadManifest(projectDir, metadataDir)
-	assert.NoError(t, err)
+	m, _ = loadTestManifest(t, projectDir)
 
 	// Load state
 	logger, _ := utils.NewDebugLogger()

@@ -1,21 +1,16 @@
 package local
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 )
 
 func TestLocalDeleteModel(t *testing.T) {
-	projectDir := t.TempDir()
-	metadataDir := filepath.Join(projectDir, ".keboola")
-	assert.NoError(t, os.MkdirAll(metadataDir, 0750))
+	manager := newTestLocalManager(t)
+	fs := manager.fs
 
 	logger, _ := utils.NewDebugLogger()
 	m, err := manifest.NewManifest(1, "connection.keboola.com", projectDir, metadataDir)
@@ -56,9 +51,8 @@ func TestLocalDeleteModel(t *testing.T) {
 }
 
 func TestDeleteEmptyDirectories(t *testing.T) {
-	projectDir := t.TempDir()
-	metadataDir := filepath.Join(projectDir, ".keboola")
-	logger, _ := utils.NewDebugLogger()
+	manager := newTestLocalManager(t)
+	fs := manager.fs
 	m, err := manifest.NewManifest(1, "connection.keboola.com", projectDir, metadataDir)
 	assert.NoError(t, err)
 	manager := NewManager(logger, m, model.NewComponentsMap(nil))

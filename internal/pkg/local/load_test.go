@@ -1,26 +1,19 @@
 package local
 
 import (
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func TestLocalLoadModel(t *testing.T) {
-	projectDir := t.TempDir()
-	metadataDir := filepath.Join(projectDir, ".keboola")
-	assert.NoError(t, os.MkdirAll(metadataDir, 0750))
-	logger, _ := utils.NewDebugLogger()
-	m, err := manifest.NewManifest(12345, "connection.keboola.com", projectDir, metadataDir)
-	assert.NoError(t, err)
-	manager := NewManager(logger, m, model.NewComponentsMap(nil))
+	manager := newTestLocalManager(t)
+	fs := manager.fs
 
 	metaFile := `{
   "myKey": "3",
@@ -56,13 +49,7 @@ func TestLocalLoadModel(t *testing.T) {
 }
 
 func TestLocalLoadModelNotFound(t *testing.T) {
-	projectDir := t.TempDir()
-	metadataDir := filepath.Join(projectDir, ".keboola")
-	assert.NoError(t, os.MkdirAll(metadataDir, 0750))
-	logger, _ := utils.NewDebugLogger()
-	m, err := manifest.NewManifest(12345, "connection.keboola.com", projectDir, metadataDir)
-	assert.NoError(t, err)
-	manager := NewManager(logger, m, model.NewComponentsMap(nil))
+	manager := newTestLocalManager(t)
 
 	// Save files
 	target := &ModelStruct{}
@@ -76,22 +63,14 @@ func TestLocalLoadModelNotFound(t *testing.T) {
 }
 
 func TestLocalLoadModelInvalidTransformation(t *testing.T) {
-	// Mocked component
-	componentProvider := model.NewComponentsMap(nil)
+	manager := newTestLocalManager(t)
+	fs := manager.fs
+	componentProvider := manager.state.Components()
 	component := &model.Component{
 		ComponentKey: model.ComponentKey{Id: "keboola.foo-bar"},
 		Type:         model.TransformationType,
 	}
 	componentProvider.Set(component)
-
-	// Mocked project
-	projectDir := t.TempDir()
-	metadataDir := filepath.Join(projectDir, ".keboola")
-	assert.NoError(t, os.MkdirAll(metadataDir, 0750))
-	logger, _ := utils.NewDebugLogger()
-	m, err := manifest.NewManifest(12345, "connection.keboola.com", projectDir, metadataDir)
-	assert.NoError(t, err)
-	manager := NewManager(logger, m, componentProvider)
 
 	// Files content
 	metaFile := `{foo`

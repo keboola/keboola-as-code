@@ -1,14 +1,15 @@
 package manifest
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/thelper"
 )
 
 type test struct {
@@ -28,18 +29,16 @@ var cases = []test{
 }
 
 func TestNewManifest(t *testing.T) {
-	manifest, err := NewManifest(123, "connection.keboola.com", "foo", "bra")
-	assert.NoError(t, err)
+	manifest := newTestManifest(t)
 	assert.NotNil(t, manifest)
 }
 
 func TestManifestLoadNotFound(t *testing.T) {
-	projectDir := t.TempDir()
-	metadataDir := filepath.Join(projectDir, MetadataDir)
-	assert.NoError(t, os.MkdirAll(metadataDir, 0755))
+	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
+	assert.NoError(t, err)
 
 	// Load
-	manifest, err := LoadManifest(projectDir, metadataDir)
+	manifest, err := LoadManifest(fs)
 	assert.Nil(t, manifest)
 	assert.Error(t, err)
 	assert.Equal(t, `manifest ".keboola/manifest.json" not found`, err.Error())
@@ -47,16 +46,14 @@ func TestManifestLoadNotFound(t *testing.T) {
 
 func TestManifestLoad(t *testing.T) {
 	for _, c := range cases {
-		projectDir := t.TempDir()
-		metadataDir := filepath.Join(projectDir, MetadataDir)
-		assert.NoError(t, os.MkdirAll(metadataDir, 0755))
-		path := filepath.Join(metadataDir, FileName)
+		fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
+		assert.NoError(t, err)
 
 		// Write file
 		assert.NoError(t, os.WriteFile(path, []byte(c.json), 0644))
 
 		// Load
-		manifest, err := LoadManifest(projectDir, metadataDir)
+		manifest, err := LoadManifest(fs)
 		assert.NotNil(t, manifest)
 		assert.NoError(t, err)
 
@@ -74,13 +71,8 @@ func TestManifestLoad(t *testing.T) {
 
 func TestManifestSave(t *testing.T) {
 	for _, c := range cases {
-		projectDir := t.TempDir()
-		metadataDir := filepath.Join(projectDir, MetadataDir)
-		assert.NoError(t, os.MkdirAll(metadataDir, 0755))
-		path := filepath.Join(metadataDir, FileName)
-
 		// Create
-		m := newManifest(c.data.Version, c.data.Project.ApiHost, projectDir, metadataDir)
+		m := newTestManifest(t)
 		m.AllowedBranches = c.data.AllowedBranches
 		m.IgnoredComponents = c.data.IgnoredComponents
 		m.Project.Id = c.data.Project.Id
@@ -105,7 +97,7 @@ func TestManifestSave(t *testing.T) {
 }
 
 func TestManifestValidateEmpty(t *testing.T) {
-	m := &Manifest{ProjectDir: "foo", MetadataDir: "bar", Content: &Content{}}
+	m := &Manifest{Content: &Content{}}
 	err := m.validate()
 	assert.NotNil(t, err)
 	expected := `manifest is not valid:
@@ -121,21 +113,27 @@ func TestManifestValidateEmpty(t *testing.T) {
 }
 
 func TestManifestValidateMinimal(t *testing.T) {
-	m := newManifest(0, "", "foo", "bar")
+	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
+	assert.NoError(t, err)
+	m := newManifest(0, "", fs)
 	m.Content = minimalStruct()
 	err := m.validate()
 	assert.Nil(t, err)
 }
 
 func TestManifestValidateFull(t *testing.T) {
-	m := newManifest(0, "", "foo", "bar")
+	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
+	assert.NoError(t, err)
+	m := newManifest(0, "", fs)
 	m.Content = fullStruct()
 	err := m.validate()
 	assert.Nil(t, err)
 }
 
 func TestManifestValidateBadVersion(t *testing.T) {
-	m := newManifest(0, "", "foo", "bar")
+	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
+	assert.NoError(t, err)
+	m := newManifest(0, "", fs)
 	m.Content = minimalStruct()
 	m.Version = 123
 	err := m.validate()
@@ -145,7 +143,9 @@ func TestManifestValidateBadVersion(t *testing.T) {
 }
 
 func TestManifestValidateNestedField(t *testing.T) {
-	m := newManifest(1, "connection.keboola.com", "foo", "bar")
+	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
+	assert.NoError(t, err)
+	m := newManifest(1, "connection.keboola.com", fs)
 	m.Content = minimalStruct()
 	m.Content.Branches = append(m.Content.Branches, &model.BranchManifest{
 		BranchKey: model.BranchKey{Id: 0},
@@ -163,7 +163,9 @@ func TestManifestValidateNestedField(t *testing.T) {
 }
 
 func TestIsObjectIgnored(t *testing.T) {
-	m := newManifest(1, "connection.keboola.com", "foo", "bar")
+	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
+	assert.NoError(t, err)
+	m := newManifest(1, "connection.keboola.com", fs)
 	m.Content = minimalStruct()
 	m.Content.AllowedBranches = model.AllowedBranches{"dev-*", "123", "abc"}
 	m.Content.IgnoredComponents = model.ComponentIds{"aaa", "bbb"}
@@ -201,7 +203,9 @@ func TestIsObjectIgnored(t *testing.T) {
 }
 
 func TestManifestRecordGetParent(t *testing.T) {
-	m := newManifest(0, "", "foo", "bar")
+	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
+	assert.NoError(t, err)
+	m := newManifest(0, "", fs)
 	branchManifest := &model.BranchManifest{BranchKey: model.BranchKey{Id: 123}}
 	configManifest := &model.ConfigManifest{ConfigKey: model.ConfigKey{
 		BranchId:    123,
@@ -215,7 +219,9 @@ func TestManifestRecordGetParent(t *testing.T) {
 }
 
 func TestManifestRecordGetParentNotFound(t *testing.T) {
-	m := newManifest(0, "", "foo", "bar")
+	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
+	assert.NoError(t, err)
+	m := newManifest(0, "", fs)
 	configManifest := &model.ConfigManifest{ConfigKey: model.ConfigKey{
 		BranchId:    123,
 		ComponentId: "keboola.foo",
@@ -228,7 +234,9 @@ func TestManifestRecordGetParentNotFound(t *testing.T) {
 }
 
 func TestManifestRecordGetParentNil(t *testing.T) {
-	m := newManifest(0, "", "foo", "bar")
+	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
+	assert.NoError(t, err)
+	m := newManifest(0, "", fs)
 	parent, err := m.GetParent(&model.BranchManifest{})
 	assert.Nil(t, parent)
 	assert.NoError(t, err)
@@ -496,4 +504,13 @@ func fullStruct() *Content {
 			},
 		},
 	}
+}
+
+func newTestManifest(t *testing.T) *Manifest {
+	t.Helper()
+	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
+	assert.NoError(t, err)
+	manifest, err := NewManifest(123, "connection.keboola.com", fs)
+	assert.NoError(t, err)
+	return manifest
 }

@@ -2,14 +2,13 @@ package plan
 
 import (
 	"context"
-	"path/filepath"
 	"runtime"
 	"testing"
 
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -17,13 +16,8 @@ import (
 
 func TestRenameAllPlan(t *testing.T) {
 	_, testFile, _, _ := runtime.Caller(0)
-	testDir := filepath.Dir(testFile)
-	projectDir := filepath.Join(testDir, "..", "fixtures", "local", "to-rename")
-	metadataDir := filepath.Join(projectDir, manifest.MetadataDir)
-	m, err := manifest.LoadManifest(projectDir, metadataDir)
-	if err != nil {
-		assert.FailNow(t, err.Error())
-	}
+	testDir := filesystem.Dir(testFile)
+	m, _ := loadTestManifest(t, filesystem.Join(testDir, "..", "fixtures", "local", "to-rename"))
 
 	// Mocked API response
 	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
