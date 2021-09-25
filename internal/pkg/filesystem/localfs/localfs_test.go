@@ -1,13 +1,14 @@
 package localfs
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"go.uber.org/zap"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 func TestNewLocalFs(t *testing.T) {
@@ -34,4 +35,3 @@ func TestFindProjectDirNotFound(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, workingDir, dir)
 }
-
