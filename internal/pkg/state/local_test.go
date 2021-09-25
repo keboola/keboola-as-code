@@ -2,8 +2,6 @@ package state
 
 import (
 	"context"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
-	"go.uber.org/zap"
 	"os"
 	"runtime"
 	"testing"

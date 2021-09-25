@@ -2,20 +2,20 @@ package options
 
 import (
 	"fmt"
-	"github.com/joho/godotenv"
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"go.uber.org/zap"
 	"os"
 	"reflect"
 	"regexp"
 	"strings"
 
 	"github.com/iancoleman/strcase"
+	"github.com/joho/godotenv"
 	"github.com/spf13/cast"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/interaction"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
