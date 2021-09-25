@@ -30,6 +30,18 @@ type ObjectState interface {
 	LocalOrRemoteState() Object
 }
 
+// ObjectFiles - all files related to the object, when saving.
+type ObjectFiles struct {
+	Record        Record
+	Object        Object
+	Metadata      *JsonFile // meta.json
+	Description   *File     // description.md
+	Configuration *JsonFile // config.json
+	Extra         []*File   // extra files
+	ToDelete      []string  // files to delete, on save
+	Path          string
+}
+
 type pathsState = PathsState
 
 type State struct {
