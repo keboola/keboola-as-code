@@ -30,8 +30,8 @@ func TestValuesPriority(t *testing.T) {
 
 	// Create structs
 	flags := &pflag.FlagSet{}
+	flags.String("storage-api-token", "", "")
 	options := NewOptions()
-	options.BindPersistentFlags(flags)
 
 	// No values defined
 	err = options.Load(logger, fs, flags)
