@@ -1,17 +1,9 @@
 package plan
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
-	"regexp"
-	"strings"
-
-	"github.com/jpillora/longestcommon"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/strhelper"
 )
 
 // Rename creates a plan for renaming objects that do not match the naming.
@@ -65,27 +57,7 @@ func (b *renamePlanBuilder) build() ([]*RenameAction, error) {
 func (b *renamePlanBuilder) setDescriptions() {
 	// Set description
 	for _, action := range b.actions {
-		// Get common prefix of the old and new path
-		oldPathRel := utils.RelPath(b.ProjectDir(), action.OldPath)
-		newPathRel := utils.RelPath(b.ProjectDir(), action.NewPath)
-		prefix := longestcommon.Prefix([]string{oldPathRel, newPathRel})
-
-		// Remove from the prefix everything after the last separator
-		prefix = regexp.
-			MustCompile(fmt.Sprintf(`(^|%c)[^%c]*$`, os.PathSeparator, os.PathSeparator)).
-			ReplaceAllString(prefix, "$1")
-
-		// Generate description for logs
-		if prefix != "" {
-			action.Description = fmt.Sprintf(
-				`%s{%s -> %s}`,
-				prefix,
-				strings.TrimPrefix(oldPathRel, prefix),
-				strings.TrimPrefix(newPathRel, prefix),
-			)
-		} else {
-			action.Description = fmt.Sprintf(`%s -> %s`, oldPathRel, newPathRel)
-		}
+		action.Description = strhelper.FormatPathChange(action.OldPath, action.NewPath, false)
 	}
 }
 
