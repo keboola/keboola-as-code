@@ -52,6 +52,8 @@ func (fs *LocalFs) ReadDir(path string) ([]os.FileInfo, error) {
 }
 
 // FindProjectDir -> working dir or its parent that contains ".keboola" metadata dir.
+// If no directory metadata is found, workingDir is returned.
+// It is assumed to be the init action.
 func FindProjectDir(logger *zap.SugaredLogger, workingDir string) (string, error) {
 	// Working dir must be absolute
 
