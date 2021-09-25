@@ -33,7 +33,8 @@ func TestDiffOnlyInLocal(t *testing.T) {
 func TestDiffOnlyInRemote(t *testing.T) {
 	branch := &model.Branch{}
 	projectState := createProjectState(t)
-	projectState.SetRemoteState(branch)
+	_, err := projectState.SetRemoteState(branch)
+	assert.NoError(t, err)
 	d := NewDiffer(projectState)
 	results, err := d.Diff()
 	assert.NoError(t, err)
@@ -63,7 +64,8 @@ func TestDiffEqual(t *testing.T) {
 		IsDefault:   false,
 	}
 	m := &model.BranchManifest{}
-	projectState.SetRemoteState(branchRemote)
+	_, err := projectState.SetRemoteState(branchRemote)
+	assert.NoError(t, err)
 	projectState.SetLocalState(branchLocal, m)
 	d := NewDiffer(projectState)
 	results, err := d.Diff()
@@ -95,7 +97,8 @@ func TestDiffNotEqual(t *testing.T) {
 		IsDefault:   true,
 	}
 	m := &model.BranchManifest{}
-	projectState.SetRemoteState(branchRemote)
+	_, err := projectState.SetRemoteState(branchRemote)
+	assert.NoError(t, err)
 	projectState.SetLocalState(branchLocal, m)
 	d := NewDiffer(projectState)
 	results, err := d.Diff()
@@ -159,9 +162,11 @@ func TestDiffEqualConfig(t *testing.T) {
 		ChangeDescription: "local", // no diff:"true" tag
 	}
 	configManifest := &model.ConfigManifest{}
-	projectState.SetRemoteState(branchRemote)
+	_, err := projectState.SetRemoteState(branchRemote)
+	assert.NoError(t, err)
 	projectState.SetLocalState(branchLocal, branchManifest)
-	projectState.SetRemoteState(configRemote)
+	_, err = projectState.SetRemoteState(configRemote)
+	assert.NoError(t, err)
 	projectState.SetLocalState(configLocal, configManifest)
 	d := NewDiffer(projectState)
 	results, err := d.Diff()
@@ -228,9 +233,11 @@ func TestDiffNotEqualConfig(t *testing.T) {
 		ChangeDescription: "local", // no diff:"true" tag
 	}
 	configManifest := &model.ConfigManifest{}
-	projectState.SetRemoteState(branchRemote)
+	_, err := projectState.SetRemoteState(branchRemote)
+	assert.NoError(t, err)
 	projectState.SetLocalState(branchLocal, branchManifest)
-	projectState.SetRemoteState(configRemote)
+	_, err = projectState.SetRemoteState(configRemote)
+	assert.NoError(t, err)
 	projectState.SetLocalState(configLocal, configManifest)
 	d := NewDiffer(projectState)
 	results, err := d.Diff()
