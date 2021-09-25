@@ -128,42 +128,6 @@ INFO  Error occurred, the rename operation was reverted.
 	assert.Equal(t, strings.TrimLeft(expectedLog, "\n"), logs.String())
 }
 
-func TestRenameInvalidOldPath(t *testing.T) {
-	dir := t.TempDir()
-	plan := &RenamePlan{
-		actions: []*RenameAction{
-			{
-				OldPath:     "relative path",
-				NewPath:     filepath.Join(dir, "bar1"),
-				Description: "",
-			},
-		},
-	}
-
-	logger, _ := utils.NewDebugLogger()
-	executor := newRenameExecutor(logger, dir, &manifest.Manifest{}, plan)
-	assert.PanicsWithError(t, "old path must be absolute", func() {
-		executor.invoke()
-	})
-}
-
-func TestRenameInvalidNewPath(t *testing.T) {
-	dir := t.TempDir()
-	plan := &RenamePlan{
-		actions: []*RenameAction{
-			{
-				OldPath:     filepath.Join(dir, "bar1"),
-				NewPath:     "relative path",
-				Description: "",
-			},
-		},
-	}
-
-	logger, _ := utils.NewDebugLogger()
-	executor := newRenameExecutor(logger, dir, &manifest.Manifest{}, plan)
-	assert.PanicsWithError(t, "new path must be absolute", func() {
-		executor.invoke()
-	})
 func newTestManifest(t *testing.T) (*manifest.Manifest, *zap.SugaredLogger, *utils.Writer) {
 	t.Helper()
 	logger, logs := utils.NewDebugLogger()

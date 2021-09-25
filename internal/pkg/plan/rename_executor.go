@@ -41,11 +41,6 @@ func (e *renameExecutor) invoke() (warns error, errs error) {
 	// Execute
 	e.logger.Debugf(`Starting renaming of the %d paths.`, len(e.actions))
 	for _, action := range e.actions {
-		// Validate
-		if err := action.Validate(); err != nil {
-			panic(err)
-		}
-
 		// Deep copy
 		err := e.fs.Copy(action.OldPath, action.NewPath)
 
