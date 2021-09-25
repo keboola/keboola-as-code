@@ -186,6 +186,8 @@ func (root *rootCommand) tearDown() {
 			if err = root.logFile.Close(); err != nil {
 				panic(fmt.Errorf("cannot close log file \"%s\": %s", root.options.LogFilePath, err))
 			}
+
+			// nolint: forbidigo
 			if err = os.Remove(root.options.LogFilePath); err != nil {
 				panic(fmt.Errorf("cannot remove temp log file \"%s\": %s", root.options.LogFilePath, err))
 			}
@@ -270,6 +272,7 @@ func (root *rootCommand) logDebugInfo() {
 }
 
 // Get log file defined in the flags or create a temp file.
+// Log file can be outside project directory, so it is NOT using virtual filesystem.
 func (root *rootCommand) getLogFile() (logFile *os.File, logFileErr error) {
 	if len(root.options.LogFilePath) > 0 {
 		root.logFileClear = false // log file defined by user will be preserved
@@ -278,6 +281,7 @@ func (root *rootCommand) getLogFile() (logFile *os.File, logFileErr error) {
 		root.logFileClear = true // temp log file will be removed. It will be preserved only in case of error
 	}
 
+	// nolint: forbidigo
 	logFile, logFileErr = os.OpenFile(root.options.LogFilePath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
 	if logFileErr != nil {
 		root.options.LogFilePath = ""
