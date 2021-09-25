@@ -21,6 +21,17 @@ linters-settings:
     # minimal code complexity to report, 30 by default (but we recommend 10-20)
     min-complexity: 10
 
+  # Forbidden constructions
+  forbidigo:
+    forbid:
+      # No debug statements
+      - ^(fmt\.Print.*|print|println)$
+      # No "os" filesystem ops, use "internal/pkg/fs" package instead
+      - ^(os\.(NewFile|Create.*|Open.*|Ch.*|Link|Symlink|Mkdir.*|ReadFile|Readlink|Remove.*|Rename|Truncate|Lstat|Stat|Getwd))$
+      - ^thelper.(GetFileContent|Glob)$
+      # No "filepath" package, use "internal/pkg/fs" package instead
+      - ^filepath\..*$
+
 # https://golangci-lint.run/usage/linters
 linters:
   enable:
