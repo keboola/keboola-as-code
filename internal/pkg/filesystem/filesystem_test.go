@@ -621,7 +621,7 @@ func TestJoin(t *testing.T) {
 
 func TestSplit(t *testing.T) {
 	dir, file := Split(`foo/bar/abc/file.txt`)
-	assert.Equal(t, "foo/bar/abc", dir)
+	assert.Equal(t, "foo/bar/abc/", dir)
 	assert.Equal(t, "file.txt", file)
 }
 
@@ -634,7 +634,7 @@ func TestBase(t *testing.T) {
 }
 
 func TestMatch(t *testing.T) {
-	m, err := Match(`foo/**`, `foo/bar/abc/file.txt`)
+	m, err := Match(`foo/*/*/*`, `foo/bar/abc/file.txt`)
 	assert.NoError(t, err)
 	assert.True(t, m)
 
