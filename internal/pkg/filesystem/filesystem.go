@@ -113,7 +113,7 @@ func (f *Fs) Create(name string) (afero.File, error) {
 	return f.fs.Create(name)
 }
 
-// Open opens a file.
+// Open opens a file readon.
 func (f *Fs) Open(name string) (afero.File, error) {
 	return f.fs.Open(name)
 }

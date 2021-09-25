@@ -1,13 +1,16 @@
 package filesystem_test
 
 import (
+	"io"
 	iofs "io/fs"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/iancoleman/orderedmap"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 
 	. "github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
@@ -79,6 +82,17 @@ func (*testCases) TestBasePath(t *testing.T, fs model.Fs, _ *utils.Writer) {
 	assert.NotEmpty(t, fs.BasePath())
 }
 
+func (*testCases) TestWorkingDir(t *testing.T, fs model.Fs, _ *utils.Writer) {
+	assert.Equal(t, "/", fs.WorkingDir())
+}
+
+func (*testCases) TestSetLogger(t *testing.T, fs model.Fs, _ *utils.Writer) {
+	logger := zap.NewNop().Sugar()
+	assert.NotPanics(t, func() {
+		fs.SetLogger(logger)
+	})
+}
+
 func (*testCases) TestWalk(t *testing.T, fs model.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
 	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir2/file.txt", "foo\n")))
@@ -104,6 +118,55 @@ func (*testCases) TestWalk(t *testing.T, fs model.Fs, _ *utils.Writer) {
 	}, paths)
 }
 
+func (*testCases) TestGlob(t *testing.T, fs model.Fs, _ *utils.Writer) {
+	assert.NoError(t, fs.Mkdir("my/dir1"))
+	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir2/file.txt", "foo\n")))
+
+	matches, err := fs.Glob(`my/abc/*`)
+	assert.NoError(t, err)
+	assert.Empty(t, matches)
+
+	matches, err = fs.Glob(`my/*`)
+	assert.NoError(t, err)
+	assert.Equal(t, []string{`my/dir1`, `my/dir2`}, matches)
+
+	matches, err = fs.Glob(`my/*/*`)
+	assert.NoError(t, err)
+	assert.Equal(t, []string{`my/dir2/file.txt`}, matches)
+
+	matches, err = fs.Glob(`my/*/*.txt`)
+	assert.NoError(t, err)
+	assert.Equal(t, []string{`my/dir2/file.txt`}, matches)
+}
+
+func (*testCases) TestStat(t *testing.T, fs model.Fs, _ *utils.Writer) {
+	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir/file.txt", "foo\n")))
+	s, err := fs.Stat(`my/dir/file.txt`)
+	assert.NoError(t, err)
+	assert.False(t, s.IsDir())
+}
+
+func (*testCases) TestReadDir(t *testing.T, fs model.Fs, _ *utils.Writer) {
+	assert.NoError(t, fs.Mkdir("my/dir/subdir"))
+	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir/file.txt", "foo\n")))
+
+	items, err := fs.ReadDir(`my/dir`)
+	assert.NoError(t, err)
+	assert.Len(t, items, 2)
+}
+
+func (*testCases) TestExists(t *testing.T, fs model.Fs, log *utils.Writer) {
+	// Create file
+	filePath := "file.txt"
+	assert.NoError(t, fs.WriteFile(model.CreateFile(filePath, "foo\n")))
+
+	// Assert
+	log.Truncate()
+	assert.True(t, fs.Exists(filePath))
+	assert.False(t, fs.Exists("file-non-exists.txt"))
+	assert.Equal(t, "", log.String())
+}
+
 func (*testCases) TestIsFile(t *testing.T, fs model.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Mkdir("my/dir"))
 	assert.NoError(t, fs.WriteFile(model.CreateFile("my/dir/file.txt", "foo\n")))
@@ -122,6 +185,44 @@ func (*testCases) TestIsDir(t *testing.T, fs model.Fs, _ *utils.Writer) {
 	assert.True(t, fs.IsDir("my/dir"))
 	assert.False(t, fs.IsDir("my/dir/file.txt"))
 	assert.False(t, fs.IsDir("file-non-exists.txt"))
+}
+
+func (*testCases) TestCreate(t *testing.T, fs model.Fs, _ *utils.Writer) {
+	fd, err := fs.Create(`file.txt`)
+	assert.NoError(t, err)
+
+	n, err := fd.WriteString("foo\n")
+	assert.Equal(t, 4, n)
+	assert.NoError(t, err)
+	assert.NoError(t, fd.Close())
+
+	file, err := fs.ReadFile(`file.txt`, ``)
+	assert.NoError(t, err)
+	assert.Equal(t, "foo\n", file.Content)
+}
+
+func (*testCases) TestOpen(t *testing.T, fs model.Fs, _ *utils.Writer) {
+	assert.NoError(t, fs.WriteFile(model.CreateFile(`file.txt`, "foo\n")))
+
+	fd, err := fs.Open(`file.txt`)
+	assert.NoError(t, err)
+
+	content, err := io.ReadAll(fd)
+	assert.NoError(t, err)
+	assert.Equal(t, "foo\n", string(content))
+	assert.NoError(t, fd.Close())
+}
+
+func (*testCases) TestOpenFile(t *testing.T, fs model.Fs, _ *utils.Writer) {
+	assert.NoError(t, fs.WriteFile(model.CreateFile(`file.txt`, "foo\n")))
+
+	fd, err := fs.OpenFile(`file.txt`, os.O_RDONLY, 0600)
+	assert.NoError(t, err)
+
+	content, err := io.ReadAll(fd)
+	assert.NoError(t, err)
+	assert.Equal(t, "foo\n", string(content))
+	assert.NoError(t, fd.Close())
 }
 
 func (*testCases) TestMkdir(t *testing.T, fs model.Fs, _ *utils.Writer) {
@@ -288,18 +389,6 @@ func (*testCases) TestRemoveDir(t *testing.T, fs model.Fs, _ *utils.Writer) {
 
 func (*testCases) TestRemoveNotExist(t *testing.T, fs model.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Remove("my/dir1/file.txt"))
-}
-
-func (*testCases) TestExists(t *testing.T, fs model.Fs, log *utils.Writer) {
-	// Create file
-	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(model.CreateFile(filePath, "foo\n")))
-
-	// Assert
-	log.Truncate()
-	assert.True(t, fs.Exists(filePath))
-	assert.False(t, fs.Exists("file-non-exists.txt"))
-	assert.Equal(t, "", log.String())
 }
 
 func (*testCases) TestReadFile(t *testing.T, fs model.Fs, log *utils.Writer) {
@@ -520,4 +609,36 @@ func (*testCases) TestReadFileContentTo(t *testing.T, fs model.Fs, log *utils.Wr
 	assert.Equal(t, `{"field1": "foo", "field2": "bar"}`, file.Content)
 	assert.Equal(t, `{"field1": "foo", "field2": "bar"}`, target.Content)
 	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(log.String()))
+}
+
+func TestRel(t *testing.T) {
+	assert.Equal(t, "abc/file.txt", Rel(`foo/bar`, `foo/bar/abc/file.txt`))
+}
+
+func TestJoin(t *testing.T) {
+	assert.Equal(t, `foo/bar/abc/file.txt`, Join("foo/bar/abc", "file.txt"))
+}
+
+func TestSplit(t *testing.T) {
+	dir, file := Split(`foo/bar/abc/file.txt`)
+	assert.Equal(t, "foo/bar/abc", dir)
+	assert.Equal(t, "file.txt", file)
+}
+
+func TestDir(t *testing.T) {
+	assert.Equal(t, "foo/bar/abc", Dir(`foo/bar/abc/file.txt`))
+}
+
+func TestBase(t *testing.T) {
+	assert.Equal(t, "file.txt", Base(`foo/bar/abc/file.txt`))
+}
+
+func TestMatch(t *testing.T) {
+	m, err := Match(`foo/**`, `foo/bar/abc/file.txt`)
+	assert.NoError(t, err)
+	assert.True(t, m)
+
+	m, err = Match(`abc/**`, `foo/bar/abc/file.txt`)
+	assert.NoError(t, err)
+	assert.False(t, m)
 }
