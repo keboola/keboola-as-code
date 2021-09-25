@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/jarcoal/httpmock"
-	"github.com/otiai10/copy"
+	"github.com/nhatthm/aferocopy"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
@@ -280,7 +280,7 @@ func loadManifest(t *testing.T, projectDirName string) *manifest.Manifest {
 	projectDir := t.TempDir()
 
 	// Copy test data
-	err := copy.Copy(stateDir, projectDir)
+	err := aferocopy.Copy(stateDir, projectDir)
 	if err != nil {
 		t.Fatalf("Copy error: %s", err)
 	}

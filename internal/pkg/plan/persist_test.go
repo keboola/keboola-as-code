@@ -426,7 +426,7 @@ func initMinimalProjectDir(t *testing.T) string {
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filesystem.Dir(testFile)
 	projectDir := t.TempDir()
-	err := copy.Copy(filepath.Join(testDir, `..`, `fixtures`, `local`, `minimal`), projectDir)
+	err := aferocopy.Copy(filesystem.Join(testDir, `..`, `fixtures`, `local`, `minimal`), projectDir)
 	if err != nil {
 		t.Fatalf("Copy error: %s", err)
 	}
