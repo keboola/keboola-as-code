@@ -290,16 +290,14 @@ func (f *Fs) WriteJsonFile(jsonFile *model.JsonFile) error {
 
 // CreateOrUpdateFile lines.
 func (f *Fs) CreateOrUpdateFile(path, desc string, lines []model.FileLine) (updated bool, err error) {
-	// Read file if exists
-	file, err := f.ReadFile(path, desc)
-	switch {
-	case err != nil && f.IsFile(path):
-		return false, err
-	case file == nil:
-		updated = false
-		file = model.CreateFile(path, "")
-	default:
+	// Create file OR read if exists
+	updated = false
+	file := model.CreateFile(path, "")
+	if f.Exists(path) {
 		updated = true
+		if file, err = f.ReadFile(path, desc); err != nil {
+			return false, err
+		}
 	}
 
 	// Process expected lines
