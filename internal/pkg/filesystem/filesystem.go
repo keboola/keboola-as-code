@@ -33,7 +33,7 @@ type Fs struct {
 	workingDir string
 }
 
-func New(logger *zap.SugaredLogger, fs backend, workingDir string) model.Fs {
+func New(logger *zap.SugaredLogger, fs backend, workingDir string) model.Filesystem {
 	return &Fs{fs: fs, logger: logger, workingDir: workingDir}
 }
 

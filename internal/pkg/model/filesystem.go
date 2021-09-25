@@ -10,10 +10,10 @@ import (
 
 const MetadataDir = ".keboola"
 
-type Factory func(logger *zap.SugaredLogger, workingDir string) (fs Fs, err error)
+type FsFactory func(logger *zap.SugaredLogger, workingDir string) (fs Filesystem, err error)
 
-// Fs - filesystem interface.
-type Fs interface {
+// Filesystem - filesystem interface.
+type Filesystem interface {
 	ApiName() string // name of the used implementation, for example local, memory, ...
 	BasePath() string
 	WorkingDir() string
