@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"path/filepath"
 	"sort"
 	"strings"
 
@@ -20,18 +19,8 @@ func (m *Manager) DeleteModel(record model.Record) error {
 	// Remove record from manifest content
 	m.manifest.DeleteRecord(record)
 
-	// Metadata file
-	if err := m.remove(m.Naming().MetaFilePath(record.RelativePath())); err != nil {
-		errors.Append(err)
-	}
-
-	// Config file
-	if err := m.remove(m.Naming().ConfigFilePath(record.RelativePath())); err != nil {
-		errors.Append(err)
-	}
-
-	// Dir
-	if err := m.removeAll(record.RelativePath()); err != nil {
+	// Remove dir
+	if err := m.fs.Remove(record.RelativePath()); err != nil {
 		errors.Append(utils.PrefixError(fmt.Sprintf(`cannot delete directory "%s"`, record.RelativePath()), err))
 	}
 
@@ -73,10 +62,10 @@ func (m *Manager) DeleteEmptyDirectories(trackedPaths []string) error {
 		}
 
 		// Stop on ignored dir
-		isIgnoredDir := isIgnoredDir(path, info)
+		skipDir := isIgnoredDir(path, info)
 
 		// Found a directory -> store path
-		if !isIgnoredDir && info.IsDir() {
+		if !skipDir && info.IsDir() {
 			emptyDirs.Set(path+string(os.PathSeparator), true)
 			return nil
 		}
@@ -89,7 +78,7 @@ func (m *Manager) DeleteEmptyDirectories(trackedPaths []string) error {
 		}
 
 		// Skip sub-directories
-		if isIgnoredDir {
+		if skipDir {
 			return fs.SkipDir
 		}
 
@@ -130,22 +119,7 @@ func (m *Manager) DeleteEmptyDirectories(trackedPaths []string) error {
 	return errors.ErrorOrNil()
 }
 
-func (m *Manager) remove(relPath string) error {
-	absPath := filepath.Join(m.ProjectDir(), relPath)
-	if err := os.Remove(absPath); err == nil {
-		m.logger.Debugf("Removed \"%s\"", relPath)
-	} else if !os.IsNotExist(err) {
-		return err
-	}
-	return nil
-}
-
-func (m *Manager) removeAll(relPath string) error {
-	absPath := filepath.Join(m.ProjectDir(), relPath)
-	if err := os.RemoveAll(absPath); err == nil {
-		m.logger.Debugf("Removed \"%s\"", relPath)
-	} else if !os.IsNotExist(err) {
-		return err
-	}
-	return nil
+func isIgnoredDir(path string, info fs.FileInfo) bool {
+	base := filesystem.Base(path)
+	return info.IsDir() && strings.HasPrefix(base, ".")
 }
