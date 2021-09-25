@@ -113,7 +113,6 @@ func SaveManifest(projectManifest *manifest.Manifest, logger *zap.SugaredLogger)
 		if err := projectManifest.Save(); err != nil {
 			return false, err
 		}
-		logger.Debugf("Saved manifest file \"%s\".", utils.RelPath(projectManifest.ProjectDir, projectManifest.RelativePath()))
 		return true, nil
 	}
 	return false, nil

@@ -43,7 +43,6 @@ func initCommand(root *rootCommand) *cobra.Command {
 			// Is project directory already initialized?
 			if root.fs.Exists(filesystem.MetadataDir) {
 				logger.Infof(`The path "%s" is already an project directory.`, root.fs.BasePath())
-				logger.Infof(`The path "%s" is already an project directory.`, projectDir)
 				logger.Info(`Please use a different directory or synchronize the current with "pull" command.`)
 				return fmt.Errorf(`metadata directory "%s" already exists`, filesystem.MetadataDir)
 			}
