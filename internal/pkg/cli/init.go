@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/initenv"
 	"github.com/keboola/keboola-as-code/internal/pkg/interaction"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 )
@@ -90,7 +91,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 			logger.Infof("Created metadata directory \"%s\".", filesystem.MetadataDir)
 
 			// Create and save manifest
-			projectManifest, err := manifest.NewManifest(api.ProjectId(), api.Host(), projectDir, metadataDir)
+			projectManifest, err := manifest.NewManifest(api.ProjectId(), api.Host(), root.fs)
 			projectManifest.Content.AllowedBranches = allowedBranches
 			if err != nil {
 				return err
@@ -101,7 +102,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 			logger.Infof("Created manifest file \"%s\".", projectManifest.Path())
 
 			// Create ENV files
-			if err := createEnvFiles(logger, api, projectDir); err != nil {
+			if err := initenv.CreateEnvFiles(logger, root.fs, api); err != nil {
 				return err
 			}
 
@@ -135,53 +136,4 @@ func initCommand(root *rootCommand) *cobra.Command {
 	workflowsCmdFlags(cmd)
 
 	return cmd
-}
-
-func createEnvFiles(logger *zap.SugaredLogger, api *remote.StorageApi, projectDir string) error {
-	// .env.local - with token value
-	envLocalMsg := " - it contains the API token, keep it local and secret"
-	envLocalLines := []utils.FileLine{
-		{Regexp: "^KBC_STORAGE_API_TOKEN=", Line: fmt.Sprintf(`KBC_STORAGE_API_TOKEN="%s"`, api.Token().Token)},
-	}
-	if err := createFile(logger, projectDir, ".env.local", envLocalMsg, envLocalLines); err != nil {
-		return err
-	}
-
-	// .env.dist - with token template
-	envDistMsg := ` - an ".env.local" template`
-	envDistLines := []utils.FileLine{
-		{Regexp: "^KBC_STORAGE_API_TOKEN=", Line: `KBC_STORAGE_API_TOKEN=`},
-	}
-	if err := createFile(logger, projectDir, ".env.dist", envDistMsg, envDistLines); err != nil {
-		return err
-	}
-
-	// .gitignore - to keep ".env.local" local
-	gitIgnoreMsg := ` - to keep ".env.local" local`
-	gitIgnoreLines := []utils.FileLine{
-		{Line: "/.env.local"},
-	}
-	if err := createFile(logger, projectDir, ".gitignore", gitIgnoreMsg, gitIgnoreLines); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func createFile(logger *zap.SugaredLogger, projectDir, path, msgSuffix string, lines []utils.FileLine) error {
-	absPath := filepath.Join(projectDir, path)
-	relPath := utils.RelPath(projectDir, absPath)
-	updated, err := utils.CreateOrUpdateFile(absPath, lines)
-
-	if err != nil {
-		return err
-	}
-
-	if updated {
-		logger.Infof("Updated file \"%s\"%s.", relPath, msgSuffix)
-	} else {
-		logger.Infof("Created file \"%s\"%s.", relPath, msgSuffix)
-	}
-
-	return nil
 }
