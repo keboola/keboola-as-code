@@ -1,120 +1,21 @@
 package options
 
 import (
-	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/thelper"
 )
 
-func TestWorkingDirFromOs(t *testing.T) {
-	options := NewOptions()
-	flags := &pflag.FlagSet{}
-
-	// Load
-	_, err := options.Load(flags)
-	assert.NoError(t, err)
-
-	// Assert
-	wd, err := os.Getwd()
-	assert.NoError(t, err)
-	assert.Equal(t, wd, options.WorkingDirectory())
-}
-
-func TestWorkingDirFromFlag(t *testing.T) {
-	tempDir := t.TempDir()
-	flags := &pflag.FlagSet{}
-	options := NewOptions()
-	options.BindPersistentFlags(flags)
-	assert.NoError(t, flags.Set("working-dir", tempDir))
-
-	// Load
-	_, err := options.Load(flags)
-	assert.NoError(t, err)
-
-	// Assert
-	assert.Equal(t, tempDir, options.WorkingDirectory())
-}
-
-func TestProjectDirNotFound(t *testing.T) {
-	// Load
-	options := NewOptions()
-	flags := &pflag.FlagSet{}
-	_, err := options.Load(flags)
-	assert.NoError(t, err)
-
-	// Assert
-	assert.Empty(t, options.projectDirectory)
-	assert.False(t, options.HasProjectDirectory())
-}
-
-func TestProjectDirExpectedDirButFoundFile(t *testing.T) {
-	projectDir := t.TempDir()
-	metadataDir := filepath.Join(projectDir, ".keboola")
-	fakeMetadataFile := filepath.Join(projectDir, "foo", ".keboola")
-	workingDir := filepath.Join(projectDir, "foo", "bar", "baz")
-
-	// Create ".keboola" dir in project directory
-	assert.NoError(t, os.Mkdir(metadataDir, 0755))
-
-	// Working dir = project sub-dir
-	assert.NoError(t, os.MkdirAll(workingDir, 0755))
-	assert.NoError(t, os.Chdir(workingDir))
-
-	// Create ".keboola" file in "foo" dir -> invalid ".keboola" should be dir
-	file, err := os.Create(fakeMetadataFile)
-	assert.NoError(t, err)
-	assert.NoError(t, file.Close())
-
-	// Load
-	options := NewOptions()
-	flags := &pflag.FlagSet{}
-	warnings, err := options.Load(flags)
-	assert.NoError(t, err)
-
-	// Assert
-	assert.Equal(t, projectDir, options.ProjectDir())
-	assert.Equal(t, []string{fmt.Sprintf("Expected dir, but found file at \"%s\"", fakeMetadataFile)}, warnings)
-}
-
-func TestProjectDirSameAsWorkingDir(t *testing.T) {
-	projectDir := t.TempDir()
-	metadataDir := filepath.Join(projectDir, ".keboola")
-
-	// Create ".keboola" dir in project directory
-	assert.NoError(t, os.Mkdir(metadataDir, 0600))
-
-	// Working dir = project dir
-	assert.NoError(t, os.Chdir(projectDir))
-
-	// Load
-	options := NewOptions()
-	flags := &pflag.FlagSet{}
-	warnings, err := options.Load(flags)
-	assert.NoError(t, err)
-
-	// Assert
-	assert.Equal(t, projectDir, options.ProjectDir())
-	assert.Empty(t, warnings)
-}
-
-func TestProjectDirIsParentOfWorkingDir(t *testing.T) {
-	projectDir := t.TempDir()
-	metadataDir := filepath.Join(projectDir, ".keboola")
-	workingDir := filepath.Join(projectDir, "foo", "bar", "baz")
-
-	// Create ".keboola" dir in project directory
-	assert.NoError(t, os.Mkdir(metadataDir, 0755))
-
-	// Working dir = project dir sub-dir
-	assert.NoError(t, os.MkdirAll(workingDir, 0755))
-	assert.NoError(t, os.Chdir(workingDir))
+func TestValuesPriority(t *testing.T) {
+	defer thelper.ResetEnv(t, os.Environ())
 
 	logger := zap.NewNop().Sugar()
 	workingDir := filesystem.Join("foo", "bar")
@@ -130,11 +31,8 @@ func TestProjectDirIsParentOfWorkingDir(t *testing.T) {
 	options.BindPersistentFlags(flags)
 
 	// No values defined
-	warnings, err := options.Load(flags)
+	err = options.Load(logger, fs, flags)
 	assert.NoError(t, err)
-	assert.Empty(t, warnings)
-	assert.Equal(t, workingDir, options.WorkingDirectory())
-	assert.False(t, options.HasProjectDirectory())
 	assert.Equal(t, "", options.ApiHost)
 
 	// 1. Lowest priority, ".env" file from project dir

@@ -3,7 +3,6 @@ package options
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"reflect"
 	"regexp"
 	"strings"
@@ -85,17 +84,6 @@ func (o *Options) SetProjectDirectory(projectDir string) error {
 	o.projectDirectory = utils.AbsPath(projectDir)
 	o.metadataDirectory = utils.AbsPath(metadataDir)
 	return nil
-}
-
-// BindPersistentFlags for all commands.
-func (o *Options) BindPersistentFlags(flags *pflag.FlagSet) {
-	flags.SortFlags = true
-	flags.BoolP("help", "h", false, "print help for command")
-	flags.StringP("log-file", "l", "", "path to a log file for details")
-	flags.StringP("working-dir", "d", "", "use other working directory")
-	flags.StringP("storage-api-token", "t", "", "storage API token from your project")
-	flags.BoolP("verbose", "v", false, "print details")
-	flags.BoolP("verbose-api", "", false, "log each API request and response")
 }
 
 // Validate required options - defined by field name.
@@ -226,49 +214,6 @@ func (o *Options) Dump() string {
 	str := fmt.Sprintf("Parsed options: %s", json.MustEncode(o, false))
 	str = re.ReplaceAllString(str, `$1*****$2`)
 	return str
-}
-
-// getWorkingDirectory from flag or by default from OS.
-func getWorkingDirectory(parser *viper.Viper) (string, error) {
-	value := parser.GetString("working-dir")
-	if len(value) > 0 {
-		return value, nil
-	}
-
-	dir, err := os.Getwd()
-	if err != nil {
-		return "", utils.PrefixError("cannot get current working directory", err)
-	}
-	return dir, nil
-}
-
-// getProjectDirectory finds project directory -> working dir or its parent that contains ".keboola" metadata dir.
-func getProjectDirectory(workingDir string) (projectDir string, warnings []string) {
-	sep := string(os.PathSeparator)
-	projectDir = workingDir
-
-	for {
-		metadataDir := filepath.Join(projectDir, ".keboola")
-		if stat, err := os.Stat(metadataDir); err == nil {
-			if stat.IsDir() {
-				return projectDir, warnings
-			} else {
-				warnings = append(warnings, fmt.Sprintf("Expected dir, but found file at \"%s\"", metadataDir))
-			}
-		} else if !os.IsNotExist(err) {
-			warnings = append(warnings, fmt.Sprintf("Cannot check if path \"%s\" exists: %s", metadataDir, err))
-		}
-
-		// Check parent directory
-		projectDir = filepath.Dir(projectDir)
-
-		// Is root dir? -> ends with separator, or has no separator -> break
-		if strings.HasSuffix(projectDir, sep) || strings.Count(projectDir, sep) == 0 {
-			break
-		}
-	}
-
-	return "", warnings
 }
 
 func castValue(val interface{}, kind reflect.Kind) interface{} {

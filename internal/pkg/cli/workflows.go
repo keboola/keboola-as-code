@@ -75,7 +75,7 @@ func workflowsCommand(root *rootCommand) *cobra.Command {
 			}
 
 			// Generate
-			return workflows.GenerateFiles(root.logger, root.options.ProjectDir(), options)
+			return workflows.GenerateFiles(root.logger, root.fs, options)
 		},
 	}
 

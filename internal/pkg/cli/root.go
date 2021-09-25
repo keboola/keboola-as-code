@@ -88,7 +88,14 @@ func NewRootCommand(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteC
 	)
 
 	// Persistent flags for all sub-commands
-	root.options.BindPersistentFlags(root.cmd.PersistentFlags())
+	flags := root.cmd.PersistentFlags()
+	flags.SortFlags = true
+	flags.BoolP("help", "h", false, "print help for command")
+	flags.StringP("log-file", "l", "", "path to a log file for details")
+	flags.StringP("working-dir", "d", "", "use other working directory")
+	flags.StringP("storage-api-token", "t", "", "storage API token from your project")
+	flags.BoolP("verbose", "v", false, "print details")
+	flags.BoolP("verbose-api", "", false, "log each API request and response")
 
 	// Root command flags
 	root.cmd.Flags().SortFlags = true

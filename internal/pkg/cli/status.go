@@ -28,9 +28,7 @@ func statusCommand(root *rootCommand) *cobra.Command {
 			}
 
 			// Load manifest
-			projectDir := root.options.ProjectDir()
-			metadataDir := root.options.MetadataDir()
-			projectManifest, err := manifest.LoadManifest(projectDir, metadataDir)
+			projectManifest, err := manifest.LoadManifest(root.fs)
 			if err != nil {
 				return err
 			}
@@ -38,7 +36,6 @@ func statusCommand(root *rootCommand) *cobra.Command {
 			root.logger.Infof("Project directory:  %s", root.fs.BasePath())
 			root.logger.Infof("Working directory:  %s", root.fs.WorkingDir())
 			root.logger.Infof("Manifest path:      %s", projectManifest.Path())
-			root.logger.Infof("Manifest path:      %s", projectManifest.RelativePath())
 			return nil
 		},
 	}

@@ -117,7 +117,6 @@ func TestInit(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, root.initialized)
 	assert.NotNil(t, root.logger)
-	assert.NotEmpty(t, root.options.WorkingDirectory)
 }
 
 func TestLogVersion(t *testing.T) {
