@@ -3,14 +3,12 @@ package transformation
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/iancoleman/orderedmap"
-	"github.com/otiai10/copy"
 	"go.uber.org/zap"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/sql"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -18,159 +16,128 @@ import (
 )
 
 type writer struct {
-	projectDir  string
-	logger      *zap.SugaredLogger
-	naming      model.Naming
-	componentId string
-	errors      *utils.Error
+	*files
+	logger    *zap.SugaredLogger
+	fs        filesystem.Fs
+	naming    model.Naming
+	state     *model.State
+	config    *model.Config
+	configDir string
+	errors    *utils.Error
 }
 
-// SaveBlocks - save code blocks from source config to the disk.
-func SaveBlocks(projectDir string, logger *zap.SugaredLogger, naming model.Naming, config *model.ConfigManifest, source *model.Config) (*orderedmap.OrderedMap, error) {
-	w := &writer{projectDir, logger, naming, source.ComponentId, utils.NewMultiError()}
+// GenerateBlockFiles - save code blocks from source config to the disk.
+func GenerateBlockFiles(logger *zap.SugaredLogger, fs filesystem.Fs, naming model.Naming, state *model.State, files *model.ObjectFiles) error {
+	w := &writer{
+		files:     files,
+		logger:    logger,
+		fs:        fs,
+		naming:    naming,
+		state:     state,
+		config:    files.Object.(*model.Config),
+		configDir: files.Record.RelativePath(),
+		errors:    utils.NewMultiError(),
+	}
+	return w.generate()
+}
 
-	// Copy config content to remove blocks
-	configContent := *source.Content
-
-	// Load and clear "parameters.blocks" from the config
+func (w *writer) generate() error {
+	// Load and clear "parameters.blocks" from the record
 	var blocksRaw interface{} = nil
-	if parametersRaw, found := configContent.Get(`parameters`); found {
+	if parametersRaw, found := w.Configuration.Content.Get(`parameters`); found {
 		// Get blocks map
 		parameters := parametersRaw.(orderedmap.OrderedMap)
 		blocksRaw, _ = parameters.Get(`blocks`)
 
-		// Don't save blocks to local config.json
+		// Remove blocks from config.json
 		parameters.Delete(`blocks`)
-		configContent.Set(`parameters`, parameters)
+		w.Configuration.Content.Set(`parameters`, parameters)
 	}
 
 	// Convert map to structs
 	blocks := make([]*model.Block, 0)
 	utils.ConvertByJson(blocksRaw, &blocks)
 
-	// Fill in generated values
-	blocksDir := w.naming.BlocksDir(config.RelativePath())
-	blocksTmpDir := w.naming.BlocksTmpDir(config.RelativePath())
+	// Fill in values AND generate files
+	blocksDir := w.naming.BlocksDir(w.configDir)
 	for blockIndex, block := range blocks {
-		block.BranchId = source.BranchId
-		block.ComponentId = source.ComponentId
-		block.ConfigId = source.Id
+		block.BranchId = w.config.BranchId
+		block.ComponentId = w.config.ComponentId
+		block.ConfigId = w.config.Id
 		block.Index = blockIndex
-		block.PathInProject = w.naming.BlockPath(blocksTmpDir, block)
+		block.PathInProject = w.naming.BlockPath(blocksDir, block)
 		for codeIndex, code := range block.Codes {
-			code.BranchId = source.BranchId
-			code.ComponentId = source.ComponentId
-			code.ConfigId = source.Id
+			code.BranchId = w.config.BranchId
+			code.ComponentId = w.config.ComponentId
+			code.ConfigId = w.config.Id
 			code.Index = codeIndex
 			code.PathInProject = w.naming.CodePath(block.RelativePath(), code)
-			code.CodeFileName = w.naming.CodeFileName(config.ComponentId)
+			code.CodeFileName = w.naming.CodeFileName(w.config.ComponentId)
+		}
+
+		// Generate block files
+		w.generateBlockFiles(block)
+	}
+
+	// Delete all old files from blocks dir
+	// We always do full generation of blocks dir.
+	blocksDirWithSep := blocksDir + string(os.PathSeparator)
+	for _, path := range w.state.TrackedPaths() {
+		if strings.HasPrefix(path, blocksDirWithSep) && w.state.IsFile(path) {
+			w.ToDelete = append(w.ToDelete, path)
 		}
 	}
 
-	// Write blocks to the disk
-	w.writeBlocks(blocksDir, blocksTmpDir, blocks)
-
-	return &configContent, w.errors.ErrorOrNil()
+	return w.errors.ErrorOrNil()
 }
 
-// writeBlocks to the temp dir, and if all ok move directory to the target path.
-func (w *writer) writeBlocks(targetDir, tmpDir string, blocks []*model.Block) {
-	blocksDirAbs := filepath.Join(w.projectDir, targetDir)
-	blocksTmpDirAbs := filepath.Join(w.projectDir, tmpDir)
-
-	// Create tmp dir, clear on the end
-	if err := os.MkdirAll(blocksTmpDirAbs, 0755); err != nil {
-		w.errors.Append(err)
-		return
-	}
-	defer os.RemoveAll(blocksTmpDirAbs)
-
-	// Blocks
-	for _, block := range blocks {
-		w.writeBlock(block)
-	}
-
-	// If no error, replace old dir with the new
-	if w.errors.Len() == 0 {
-		// Remove old content
-		if err := os.RemoveAll(blocksDirAbs); err != nil {
-			w.errors.Append(err)
-		}
-
-		// Copy new content to destination
-		err := copy.Copy(blocksTmpDirAbs, blocksDirAbs, copy.Options{
-			OnDirExists:   func(src, dest string) copy.DirExistsAction { return copy.Replace },
-			Sync:          true,
-			PreserveTimes: true,
-		})
-		if err != nil {
-			w.errors.Append(err)
-			return
-		}
-		w.logger.Debugf(`Moved "%s" -> "%s"`, tmpDir, targetDir)
-	}
-}
-
-func (w *writer) writeBlock(block *model.Block) {
+func (w *writer) generateBlockFiles(block *model.Block) {
 	// Validate
 	if err := validator.Validate(block); err != nil {
 		w.errors.Append(utils.PrefixError(fmt.Sprintf(`invalid block \"%s\"`, block.RelativePath()), err))
 		return
 	}
 
-	// Create dir
-	blockDirAbs := filepath.Join(w.projectDir, block.RelativePath())
-	if err := os.MkdirAll(blockDirAbs, 0755); err != nil {
-		w.errors.Append(err)
-		return
-	}
-
-	// Write metadata
+	// Create metadata file
 	if metadata := utils.MapFromTaggedFields(model.MetaFileTag, block); metadata != nil {
-		metaFilePath := w.naming.MetaFilePath(block.RelativePath())
-		if err := json.WriteFile(w.projectDir, metaFilePath, metadata, "block metadata"); err == nil {
-			w.logger.Debugf(`Saved "%s"`, metaFilePath)
-		} else {
-			w.errors.Append(err)
-			return
-		}
+		metadataPath := w.naming.MetaFilePath(block.RelativePath())
+		w.createMetadataFile(metadataPath, `block metadata`, metadata)
 	}
 
-	// Write codes
+	// Create codes
 	for _, code := range block.Codes {
-		w.writeCode(code)
+		w.generateCodeFiles(code)
 	}
 }
 
-func (w *writer) writeCode(code *model.Code) {
-	// Create dir
-	codeDirAbs := filepath.Join(w.projectDir, code.RelativePath())
-	if err := os.MkdirAll(codeDirAbs, 0755); err != nil {
-		w.errors.Append(err)
-		return
-	}
-
-	// Write metadata
+func (w *writer) generateCodeFiles(code *model.Code) {
+	// Create metadata file
 	if metadata := utils.MapFromTaggedFields(model.MetaFileTag, code); metadata != nil {
-		metaFilePath := w.naming.MetaFilePath(code.RelativePath())
-		if err := json.WriteFile(w.projectDir, metaFilePath, metadata, "code metadata"); err == nil {
-			w.logger.Debugf(`Saved "%s"`, metaFilePath)
-		} else {
-			w.errors.Append(err)
-			return
-		}
+		metadataPath := w.naming.MetaFilePath(code.RelativePath())
+		w.createMetadataFile(metadataPath, `code metadata`, metadata)
 	}
 
-	// Write scripts
-	codePathRel := w.naming.CodeFilePath(code)
-	codePathAbs := filepath.Join(w.projectDir, codePathRel)
-	if err := os.WriteFile(codePathAbs, []byte(w.joinScripts(code.Scripts)), 0644); err != nil {
+	// Create code file
+	file := filesystem.
+		CreateFile(w.naming.CodeFilePath(code), w.joinScripts(code.Scripts)).
+		SetDescription(`code`)
+	w.Extra = append(w.Extra, file)
+}
+
+func (w *writer) createMetadataFile(path, desc string, content *orderedmap.OrderedMap) {
+	file, err := filesystem.
+		CreateJsonFile(path, content).
+		SetDescription(desc).
+		ToFile()
+	if err == nil {
+		w.Extra = append(w.Extra, file)
+	} else {
 		w.errors.Append(err)
 	}
 }
 
 func (w *writer) joinScripts(scripts []string) string {
-	switch w.componentId {
+	switch w.config.ComponentId {
 	case `keboola.snowflake-transformation`:
 		fallthrough
 	case `keboola.synapse-transformation`:

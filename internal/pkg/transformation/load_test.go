@@ -43,9 +43,7 @@ func TestLoadTransformationMissingCodeMeta(t *testing.T) {
 	assert.NoError(t, fs.Mkdir(block1Code1))
 
 	// Load, assert
-	logger, _ := utils.NewDebugLogger()
-	record, target := createTransTestStructs("keboola.snowflake-transformation")
-	err := LoadBlocks(projectDir, logger, model.DefaultNaming(), record, target)
+	err := LoadBlocks(logger, fs, model.DefaultNaming(), state, objectFiles)
 	assert.Error(t, err)
 	assert.Equal(t, strings.Join([]string{
 		`- missing code metadata file "branch/config/blocks/001-block-1/001-code-1/meta.json"`,
@@ -84,8 +82,6 @@ func TestLoadTransformationSql(t *testing.T) {
 
 	// Load
 	assert.NoError(t, LoadBlocks(logger, fs, model.DefaultNaming(), state, objectFiles))
-	record, target := createTransTestStructs("keboola.snowflake-transformation")
-	assert.NoError(t, LoadBlocks(projectDir, logger, model.DefaultNaming(), record, target))
 
 	// Assert
 	expected := `
@@ -126,13 +122,13 @@ func TestLoadTransformationSql(t *testing.T) {
 ]
 `
 	expected = strings.TrimPrefix(expected, "\n")
-	parametersRaw, found := target.Content.Get(`parameters`)
+	parametersRaw, found := config.Content.Get(`parameters`)
 	assert.True(t, found)
 	parameters := parametersRaw.(orderedmap.OrderedMap)
 	value, found := parameters.Get(`blocks`)
 	assert.True(t, found)
 	assert.Equal(t, expected, json.MustEncodeString(value, true))
-	assert.Equal(t, expected, json.MustEncodeString(target.Blocks, true))
+	assert.Equal(t, expected, json.MustEncodeString(config.Blocks, true))
 }
 
 func TestLoadTransformationPy(t *testing.T) {
@@ -166,8 +162,6 @@ func TestLoadTransformationPy(t *testing.T) {
 
 	// Load
 	assert.NoError(t, LoadBlocks(logger, fs, model.DefaultNaming(), state, objectFiles))
-	record, target := createTransTestStructs("keboola.python-transformation-v2")
-	assert.NoError(t, LoadBlocks(projectDir, logger, model.DefaultNaming(), record, target))
 
 	// Assert
 	expected := `
@@ -207,19 +201,22 @@ func TestLoadTransformationPy(t *testing.T) {
 ]
 `
 	expected = strings.TrimPrefix(expected, "\n")
-	parametersRaw, found := target.Content.Get(`parameters`)
+	parametersRaw, found := config.Content.Get(`parameters`)
 	assert.True(t, found)
 	parameters := parametersRaw.(orderedmap.OrderedMap)
 	value, found := parameters.Get(`blocks`)
 	assert.True(t, found)
 	assert.Equal(t, expected, json.MustEncodeString(value, true))
-	assert.Equal(t, expected, json.MustEncodeString(target.Blocks, true))
+	assert.Equal(t, expected, json.MustEncodeString(config.Blocks, true))
 }
 
-func createTransTestStructs(componentId string) (*model.ConfigManifest, *model.Config) {
+func createTestFixtures(t *testing.T) (*zap.SugaredLogger, filesystem.Fs, *model.State, *model.ObjectFiles) {
+	t.Helper()
+
 	configKey := model.ConfigKey{
-		ComponentId: componentId,
+		ComponentId: "keboola.snowflake-transformation",
 	}
+
 	record := &model.ConfigManifest{
 		ConfigKey: configKey,
 		Paths: model.Paths{
@@ -229,10 +226,24 @@ func createTransTestStructs(componentId string) (*model.ConfigManifest, *model.C
 			},
 		},
 	}
+
 	config := &model.Config{
 		ConfigKey: configKey,
 		Content:   utils.NewOrderedMap(),
 	}
 
-	return record, config
+	objectFiles := &model.ObjectFiles{
+		Object:        config,
+		Record:        record,
+		Metadata:      filesystem.CreateJsonFile(model.MetaFile, utils.NewOrderedMap()),
+		Configuration: filesystem.CreateJsonFile(model.ConfigFile, utils.NewOrderedMap()),
+		Description:   filesystem.CreateFile(model.DescriptionFile, ``),
+	}
+
+	logger, _ := utils.NewDebugLogger()
+	fs, err := aferofs.NewMemoryFs(logger, ".")
+	assert.NoError(t, err)
+
+	state := model.NewState(zap.NewNop().Sugar(), fs, model.NewComponentsMap(nil))
+	return logger, fs, state, objectFiles
 }
