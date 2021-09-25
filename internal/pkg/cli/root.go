@@ -9,10 +9,12 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/build"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/interaction"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/options"
@@ -39,24 +41,27 @@ Aliases:`
 
 type rootCommand struct {
 	cmd          *cobra.Command
+	fsFactory    filesystem.Factory
+	fs           filesystem.Fs
 	options      *options.Options    // parsed flags and env variables
 	prompt       *interaction.Prompt // user interaction
 	ctx          context.Context     // context for parallel operations
 	api          *remote.StorageApi  // GetStorageApi should be used to initialize
 	start        time.Time           // cmd start time
 	initialized  bool                // init method was called
-	logFile      *os.File            // log file instance
+	logFile      afero.File          // log file instance
 	logFileClear bool                // is log file temporary? if yes, it will be removed at the end, if no error occurs
 	logger       *zap.SugaredLogger  // log to console and logFile
 }
 
 // NewRootCommand creates parent of all sub-commands.
-func NewRootCommand(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteCloser, prompt *interaction.Prompt) *rootCommand {
+func NewRootCommand(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteCloser, prompt *interaction.Prompt, fsFactory filesystem.Factory) *rootCommand {
 	root := &rootCommand{
-		options: options.NewOptions(),
-		prompt:  prompt,
-		ctx:     context.Background(),
-		start:   time.Now(),
+		fsFactory: fsFactory,
+		options:   options.NewOptions(),
+		prompt:    prompt,
+		ctx:       context.Background(),
+		start:     time.Now(),
 	}
 
 	// Command definition
@@ -206,18 +211,27 @@ func (root *rootCommand) init(cmd *cobra.Command) (err error) {
 		}
 	}()
 
+	// Temporary logger
+	tmpLogger := zap.NewNop().Sugar()
+
+	// Create filesystem abstraction
+	workingDir, _ := cmd.Flags().GetString(`working-dir`)
+	if root.fs, err = root.fsFactory(tmpLogger, workingDir); err != nil {
+		return err
+	}
+
 	// Load values from flags and envs
-	warnings, err := root.options.Load(cmd.Flags())
+	if err = root.options.Load(tmpLogger, root.fs, cmd.Flags()); err != nil {
+		return err
+	}
 
 	// Setup logger and log options load warnings
 	root.setupLogger()
 	root.logDebugInfo()
-	for _, msg := range warnings {
-		root.logger.Debug(msg)
-	}
+	root.fs.SetLogger(root.logger)
 
 	// Return load error
-	return
+	return nil
 }
 
 // setupLogger according to the options.

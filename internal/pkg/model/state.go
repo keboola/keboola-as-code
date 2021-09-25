@@ -266,14 +266,17 @@ func (r *ConfigRowState) GetName() string {
 	return ""
 }
 
-func NewState(projectDir string, components *ComponentsMap) (*State, error) {
-	ps, err := NewPathsState(projectDir)
+func NewState(logger *zap.SugaredLogger, fs filesystem.Fs, components *ComponentsMap) *State {
+	ps, err := NewPathsState(fs)
+	if err != nil {
+		logger.Debug(utils.PrefixError(`error loading directory structure`, err).Error())
+	}
 	return &State{
 		pathsState: ps,
 		mutex:      &sync.Mutex{},
 		components: components,
 		objects:    utils.NewOrderedMap(),
-	}, err
+	}
 }
 
 func (s *State) Components() *ComponentsMap {

@@ -4,12 +4,11 @@ import (
 	"bufio"
 	"bytes"
 	"embed"
-	"os"
-	"path/filepath"
 	"text/template"
 
 	"go.uber.org/zap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -29,14 +28,14 @@ func (o *Options) Enabled() bool {
 }
 
 type generator struct {
-	projectDir string
-	options    *Options
-	logger     *zap.SugaredLogger
-	errors     *utils.Error
+	fs      filesystem.Fs
+	options *Options
+	logger  *zap.SugaredLogger
+	errors  *utils.Error
 }
 
-func GenerateFiles(logger *zap.SugaredLogger, projectDir string, options *Options) error {
-	g := &generator{projectDir: projectDir, options: options, logger: logger, errors: utils.NewMultiError()}
+func GenerateFiles(logger *zap.SugaredLogger, fs filesystem.Fs, options *Options) error {
+	g := &generator{fs: fs, options: options, logger: logger, errors: utils.NewMultiError()}
 	return g.generateFiles()
 }
 

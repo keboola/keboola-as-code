@@ -3,19 +3,19 @@ package model
 import (
 	"fmt"
 	"io/fs"
-	"path/filepath"
 	"sort"
 	"strings"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // PathsState keeps state of all files/dirs in projectDir.
 type PathsState struct {
-	projectDir string
-	all        map[string]bool
-	tracked    map[string]bool
-	isFile     map[string]bool
+	fs      filesystem.Fs
+	all     map[string]bool
+	tracked map[string]bool
+	isFile  map[string]bool
 }
 
 type PathState int
@@ -26,18 +26,15 @@ const (
 	Ignored
 )
 
-func NewPathsState(projectDir string) (*PathsState, error) {
-	if !utils.IsDir(projectDir) {
-		return nil, fmt.Errorf("directory \"%s\" not found", projectDir)
-	}
-
+func NewPathsState(fs filesystem.Fs) (*PathsState, error) {
 	f := &PathsState{
-		projectDir: projectDir,
-		all:        make(map[string]bool),
-		tracked:    make(map[string]bool),
-		isFile:     make(map[string]bool),
+		fs:      fs,
+		all:     make(map[string]bool),
+		tracked: make(map[string]bool),
+		isFile:  make(map[string]bool),
 	}
-	return f, f.init()
+	err := f.init()
+	return f, err
 }
 
 // State returns state of path.

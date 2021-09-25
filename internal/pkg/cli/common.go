@@ -42,9 +42,7 @@ func (a *diffProcessCmd) run() error {
 	}
 
 	// Load manifest
-	projectDir := options.ProjectDir()
-	metadataDir := options.MetadataDir()
-	projectManifest, err := manifest.LoadManifest(projectDir, metadataDir)
+	projectManifest, err := manifest.LoadManifest(a.root.fs)
 	if err != nil {
 		return err
 	}
@@ -162,7 +160,7 @@ func Rename(projectState *state.State, logger *zap.SugaredLogger, logEmpty, dryR
 	}
 
 	// Invoke
-	if warn, err := rename.Invoke(logger, projectState.ProjectDir(), projectState.Manifest()); err != nil {
+	if warn, err := rename.Invoke(logger, projectState.Manifest()); err != nil {
 		return utils.PrefixError(`cannot rename objects`, err)
 	} else if warn != nil {
 		logger.Warn(`cannot finish objects renaming`, err)

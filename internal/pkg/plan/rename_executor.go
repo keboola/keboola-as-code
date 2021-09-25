@@ -2,11 +2,10 @@ package plan
 
 import (
 	"fmt"
-	"os"
 
-	"github.com/otiai10/copy"
 	"go.uber.org/zap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -14,7 +13,7 @@ import (
 type renameExecutor struct {
 	*RenamePlan
 	logger        *zap.SugaredLogger
-	projectDir    string
+	fs            filesystem.Fs
 	manifest      *manifest.Manifest
 	errors        *utils.Error
 	warnings      *utils.Error
@@ -22,11 +21,11 @@ type renameExecutor struct {
 	pathsToRemove []string
 }
 
-func newRenameExecutor(logger *zap.SugaredLogger, projectDir string, manifest *manifest.Manifest, plan *RenamePlan) *renameExecutor {
+func newRenameExecutor(logger *zap.SugaredLogger, manifest *manifest.Manifest, plan *RenamePlan) *renameExecutor {
 	return &renameExecutor{
 		RenamePlan: plan,
 		logger:     logger,
-		projectDir: projectDir,
+		fs:         manifest.Fs(),
 		manifest:   manifest,
 		errors:     utils.NewMultiError(),
 		warnings:   utils.NewMultiError(),

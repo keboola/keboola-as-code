@@ -3,11 +3,11 @@ package state
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"sync"
 
 	"go.uber.org/zap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -27,6 +27,7 @@ type State struct {
 }
 
 type Options struct {
+	fs                   filesystem.Fs
 	manifest             *manifest.Manifest
 	api                  *remote.StorageApi
 	context              context.Context
@@ -39,6 +40,7 @@ type Options struct {
 
 func NewOptions(m *manifest.Manifest, api *remote.StorageApi, ctx context.Context, logger *zap.SugaredLogger) *Options {
 	return &Options{
+		fs:                   m.Fs(),
 		manifest:             m,
 		api:                  api,
 		context:              ctx,
@@ -85,14 +87,10 @@ func newState(options *Options) *State {
 	}
 
 	// State model struct
-	var err error
-	s.State, err = model.NewState(s.ProjectDir(), options.api.Components())
-	if err != nil {
-		s.localErrors.Append(err)
-	}
+	s.State = model.NewState(options.logger, options.fs, options.api.Components())
 
 	// Local manager for load,save,delete ... operations
-	s.localManager = local.NewManager(options.logger, options.manifest, s.api.Components())
+	s.localManager = local.NewManager(options.logger, options.fs, options.manifest, s.State)
 
 	return s
 }
