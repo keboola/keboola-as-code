@@ -44,11 +44,11 @@ func TestRename(t *testing.T) {
 	warn, err := executor.invoke()
 	assert.Empty(t, warn)
 	assert.Empty(t, err)
-	assert.True(t, utils.IsFile(filepath.Join(dir, `bar1/sub/file`)))
-	assert.True(t, utils.IsFile(filepath.Join(dir, `bar2`)))
-	assert.False(t, utils.FileExists(filepath.Join(dir, `foo1/sub/file`)))
-	assert.False(t, utils.FileExists(filepath.Join(dir, `foo1`)))
-	assert.False(t, utils.FileExists(filepath.Join(dir, `foo2`)))
+	assert.True(t, fs.IsFile(`bar1/sub/file`))
+	assert.True(t, fs.IsFile(`bar2`))
+	assert.False(t, fs.Exists(`foo1/sub/file`))
+	assert.False(t, fs.Exists(`foo1`))
+	assert.False(t, fs.Exists(`foo2`))
 
 	// Logs
 	expectedLog := `
@@ -67,11 +67,11 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 	fs := m.Fs()
 
 	// Dir structure
-	dir := t.TempDir()
-	assert.NoError(t, os.MkdirAll(filepath.Join(dir, `foo1/sub`), 0755))
-	assert.NoError(t, os.WriteFile(filepath.Join(dir, `foo1/sub/file`), []byte(`content`), 0644))
-	assert.NoError(t, os.WriteFile(filepath.Join(dir, `foo2`), []byte(`content`), 0644))
-	assert.NoError(t, os.WriteFile(filepath.Join(dir, `foo5`), []byte(`content`), 0644))
+	assert.NoError(t, fs.Mkdir(`foo1/sub`))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(`foo1/sub/file`, `content`)))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(`foo2`, `content`)))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(`foo5`, `content`)))
+	logs.Truncate()
 
 	// Plan
 	plan := &RenamePlan{
@@ -104,14 +104,14 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 	warn, err := executor.invoke()
 	assert.Empty(t, warn)
 	assert.NotNil(t, err)
-	assert.Regexp(t, `cannot copy "missing3 -> missing4":\n\t- lstat .+/missing3: no such file or directory`, err.Error())
-	assert.False(t, utils.FileExists(filepath.Join(dir, `bar1/sub/file`)))
-	assert.False(t, utils.FileExists(filepath.Join(dir, `bar1`)))
-	assert.False(t, utils.FileExists(filepath.Join(dir, `bar2`)))
-	assert.False(t, utils.FileExists(filepath.Join(dir, `bar5`)))
-	assert.True(t, utils.IsFile(filepath.Join(dir, `foo1/sub/file`)))
-	assert.True(t, utils.IsFile(filepath.Join(dir, `foo2`)))
-	assert.True(t, utils.IsFile(filepath.Join(dir, `foo5`)))
+	assert.Contains(t, err.Error(), `cannot copy "missing3" -> "missing4"`)
+	assert.False(t, fs.Exists(`bar1/sub/file`))
+	assert.False(t, fs.Exists(`bar1`))
+	assert.False(t, fs.Exists(`bar2`))
+	assert.False(t, fs.Exists(`bar5`))
+	assert.True(t, fs.IsFile(`foo1/sub/file`))
+	assert.True(t, fs.IsFile(`foo2`))
+	assert.True(t, fs.IsFile(`foo5`))
 
 	// Logs
 	expectedLog := `

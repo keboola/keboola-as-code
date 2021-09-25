@@ -52,8 +52,8 @@ func (g *generator) generateFiles() error {
 	workflowsDir := filepath.Join(g.projectDir, ".github", "workflows")
 	actionsDir := filepath.Join(g.projectDir, ".github", "actions")
 	installActDir := filepath.Join(actionsDir, "install")
-	g.handleError(os.MkdirAll(workflowsDir, 0755))
-	g.handleError(os.MkdirAll(installActDir, 0755))
+	g.handleError(g.fs.Mkdir(workflowsDir))
+	g.handleError(g.fs.Mkdir(installActDir))
 	g.renderTemplate(`template/install.yml.tmpl`, filepath.Join(installActDir, `action.yml`))
 
 	// Validate operation
@@ -116,8 +116,8 @@ func (g *generator) renderTemplate(templatePath, targetPath string) {
 	}
 
 	// Write
-	if err := os.WriteFile(targetPath, buffer.Bytes(), 0644); err == nil {
-		g.logger.Infof(`Created file "%s".`, utils.RelPath(g.projectDir, targetPath))
+	if err := g.fs.WriteFile(filesystem.CreateFile(targetPath, buffer.String())); err == nil {
+		g.logger.Infof(`Created file "%s".`, targetPath)
 	} else {
 		g.errors.Append(err)
 	}

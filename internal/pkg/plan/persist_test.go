@@ -3,17 +3,15 @@ package plan
 import (
 	"context"
 	"net/http"
-	"os"
-	"path/filepath"
 	"runtime"
 	"testing"
 
 	"github.com/jarcoal/httpmock"
-	"github.com/otiai10/copy"
+	"github.com/nhatthm/aferocopy"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
@@ -77,10 +75,10 @@ func TestPersistNewConfig(t *testing.T) {
 
 	// Write files
 	configDir := filepath.Join(projectDir, `main`, `extractor`, `ex-generic-v2`, `new-config`)
-	assert.NoError(t, os.Mkdir(configDir, 0755))
-	assert.NoError(t, os.WriteFile(filepath.Join(configDir, `config.json`), []byte(`{"key": "value"}`), 0644))
-	assert.NoError(t, os.WriteFile(filepath.Join(configDir, `meta.json`), []byte(`{"name": "foo"}`), 0644))
-	assert.NoError(t, os.WriteFile(filepath.Join(configDir, `description.md`), []byte(`bar`), 0644))
+	assert.NoError(t, fs.Mkdir(configDir))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(configDir, `config.json`), `{"key": "value"}`)))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(configDir, `meta.json`), `{"name": "foo"}`)))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(configDir, `description.md`), `bar`)))
 
 	// Load state
 	logger, _ := utils.NewDebugLogger()
@@ -193,15 +191,15 @@ func TestPersistNewConfigRow(t *testing.T) {
 
 	// Write files
 	configDir := filepath.Join(projectDir, `main`, `extractor`, `keboola.ex-db-mysql`, `new-config`)
-	assert.NoError(t, os.MkdirAll(configDir, 0755))
-	assert.NoError(t, os.WriteFile(filepath.Join(configDir, `config.json`), []byte(`{"key1": "value1"}`), 0644))
-	assert.NoError(t, os.WriteFile(filepath.Join(configDir, `meta.json`), []byte(`{"name": "foo1"}`), 0644))
-	assert.NoError(t, os.WriteFile(filepath.Join(configDir, `description.md`), []byte(`bar1`), 0644))
-	rowDir := filepath.Join(configDir, `rows`, `some-row`)
-	assert.NoError(t, os.MkdirAll(rowDir, 0755))
-	assert.NoError(t, os.WriteFile(filepath.Join(rowDir, `config.json`), []byte(`{"key2": "value2"}`), 0644))
-	assert.NoError(t, os.WriteFile(filepath.Join(rowDir, `meta.json`), []byte(`{"name": "foo2"}`), 0644))
-	assert.NoError(t, os.WriteFile(filepath.Join(rowDir, `description.md`), []byte(`bar2`), 0644))
+	assert.NoError(t, fs.Mkdir(configDir))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(configDir, `config.json`), `{"key1": "value1"}`)))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(configDir, `meta.json`), `{"name": "foo1"}`)))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(configDir, `description.md`), `bar1`)))
+	rowDir := filesystem.Join(configDir, `rows`, `some-row`)
+	assert.NoError(t, fs.Mkdir(rowDir))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(rowDir, `config.json`), `{"key2": "value2"}`)))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(rowDir, `meta.json`), `{"name": "foo2"}`)))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(rowDir, `description.md`), `bar2`)))
 
 	// Load state
 	logger, _ := utils.NewDebugLogger()

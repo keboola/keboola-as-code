@@ -50,7 +50,8 @@ func TestManifestLoad(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Write file
-		assert.NoError(t, os.WriteFile(path, []byte(c.json), 0644))
+		path := filesystem.Join(filesystem.MetadataDir, FileName)
+		assert.NoError(t, fs.WriteFile(filesystem.CreateFile(path, c.json)))
 
 		// Load
 		manifest, err := LoadManifest(fs)
@@ -90,7 +91,8 @@ func TestManifestSave(t *testing.T) {
 		assert.NoError(t, m.Save())
 
 		// Load file
-		file, err := os.ReadFile(path)
+		path := filesystem.Join(filesystem.MetadataDir, FileName)
+		file, err := m.fs.ReadFile(path, "")
 		assert.NoError(t, err)
 		assert.Equal(t, utils.EscapeWhitespaces(c.json), utils.EscapeWhitespaces(string(file)))
 	}
@@ -117,8 +119,7 @@ func TestManifestValidateMinimal(t *testing.T) {
 	assert.NoError(t, err)
 	m := newManifest(0, "", fs)
 	m.Content = minimalStruct()
-	err := m.validate()
-	assert.Nil(t, err)
+	assert.NoError(t, m.validate())
 }
 
 func TestManifestValidateFull(t *testing.T) {
@@ -126,8 +127,7 @@ func TestManifestValidateFull(t *testing.T) {
 	assert.NoError(t, err)
 	m := newManifest(0, "", fs)
 	m.Content = fullStruct()
-	err := m.validate()
-	assert.Nil(t, err)
+	assert.NoError(t, m.validate())
 }
 
 func TestManifestValidateBadVersion(t *testing.T) {
@@ -136,8 +136,8 @@ func TestManifestValidateBadVersion(t *testing.T) {
 	m := newManifest(0, "", fs)
 	m.Content = minimalStruct()
 	m.Version = 123
-	err := m.validate()
-	assert.NotNil(t, err)
+	err = m.validate()
+	assert.Error(t, err)
 	expected := "manifest is not valid:\n\t- key=\"version\", value=\"123\", failed \"max\" validation"
 	assert.Equal(t, expected, err.Error())
 }
@@ -156,8 +156,8 @@ func TestManifestValidateNestedField(t *testing.T) {
 			},
 		},
 	})
-	err := m.validate()
-	assert.NotNil(t, err)
+	err = m.validate()
+	assert.Error(t, err)
 	expected := "manifest is not valid:\n\t- key=\"branches[0].id\", value=\"0\", failed \"required\" validation"
 	assert.Equal(t, expected, err.Error())
 }

@@ -116,26 +116,13 @@ func TestProjectDirIsParentOfWorkingDir(t *testing.T) {
 	assert.NoError(t, os.MkdirAll(workingDir, 0755))
 	assert.NoError(t, os.Chdir(workingDir))
 
-	// Load
-	options := NewOptions()
-	flags := &pflag.FlagSet{}
-	warnings, err := options.Load(flags)
+	logger := zap.NewNop().Sugar()
+	workingDir := filesystem.Join("foo", "bar")
+	fs, err := aferofs.NewMemoryFs(logger, workingDir)
 	assert.NoError(t, err)
 
-	// Assert
-	assert.Equal(t, projectDir, options.ProjectDir())
-	assert.Empty(t, warnings)
-}
-
-func TestValuesPriority(t *testing.T) {
-	defer utils.ResetEnv(t, os.Environ())
-
 	// Create working and project dir
-	projectDir := t.TempDir()
-	metadataDir := filepath.Join(projectDir, ".keboola")
-	workingDir := filepath.Join(projectDir, "foo", "bar")
-	assert.NoError(t, os.MkdirAll(workingDir, 0755))
-	assert.NoError(t, os.Chdir(workingDir))
+	assert.NoError(t, fs.Mkdir(workingDir))
 
 	// Create structs
 	flags := &pflag.FlagSet{}
@@ -152,50 +139,29 @@ func TestValuesPriority(t *testing.T) {
 
 	// 1. Lowest priority, ".env" file from project dir
 	os.Clearenv()
-	assert.NoError(t, os.Mkdir(metadataDir, 0600))
-	file, err := os.Create(filepath.Join(projectDir, ".env"))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(".env", "KBC_STORAGE_API_TOKEN=1abcdef")))
+	err = options.Load(logger, fs, flags)
 	assert.NoError(t, err)
-	_, err = file.WriteString("KBC_STORAGE_API_TOKEN=1abcdef")
-	assert.NoError(t, file.Close())
-	assert.NoError(t, err)
-	warnings, err = options.Load(flags)
-	assert.NoError(t, err)
-	assert.Empty(t, warnings)
-	assert.Equal(t, workingDir, options.WorkingDirectory())
-	assert.Equal(t, projectDir, options.ProjectDir())
 	assert.Equal(t, "1abcdef", options.ApiToken)
 
 	// 2. Higher priority, ".env" file from working dir
 	os.Clearenv()
-	file, err = os.Create(filepath.Join(workingDir, ".env"))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(workingDir, ".env"), "KBC_STORAGE_API_TOKEN=2abcdef")))
+	err = options.Load(logger, fs, flags)
 	assert.NoError(t, err)
-	_, err = file.WriteString("KBC_STORAGE_API_TOKEN=2abcdef")
-	assert.NoError(t, file.Close())
-	assert.NoError(t, err)
-	warnings, err = options.Load(flags)
-	assert.NoError(t, err)
-	assert.Empty(t, warnings)
-	assert.Equal(t, workingDir, options.WorkingDirectory())
-	assert.Equal(t, projectDir, options.ProjectDir())
 	assert.Equal(t, "2abcdef", options.ApiToken)
 
 	// 3. Higher priority , ENV defined in OS
 	os.Clearenv()
 	assert.NoError(t, os.Setenv("KBC_STORAGE_API_TOKEN", "3abcdef"))
-	warnings, err = options.Load(flags)
+	err = options.Load(logger, fs, flags)
 	assert.NoError(t, err)
-	assert.Empty(t, warnings)
-	assert.Equal(t, workingDir, options.WorkingDirectory())
-	assert.Equal(t, projectDir, options.ProjectDir())
 	assert.Equal(t, "3abcdef", options.ApiToken)
 
 	// 4. The highest priority, flag
 	assert.NoError(t, flags.Set("storage-api-token", "4abcdef"))
-	warnings, err = options.Load(flags)
+	err = options.Load(logger, fs, flags)
 	assert.NoError(t, err)
-	assert.Empty(t, warnings)
-	assert.Equal(t, workingDir, options.WorkingDirectory())
-	assert.Equal(t, projectDir, options.ProjectDir())
 	assert.Equal(t, "4abcdef", options.ApiToken)
 }
 

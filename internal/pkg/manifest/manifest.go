@@ -68,8 +68,8 @@ func LoadManifest(fs filesystem.Fs) (*Manifest, error) {
 	}
 
 	// Read JSON file
-	m := newManifest(0, "", projectDir, metadataDir)
-	if err := json.ReadFile(metadataDir, FileName, &m.Content, "manifest"); err != nil {
+	m := newManifest(0, "", fs)
+	if err := fs.ReadJsonFileTo(path, "manifest", &m.Content); err != nil {
 		return nil, err
 	}
 
@@ -161,7 +161,13 @@ func (m *Manifest) Save() error {
 	}
 
 	// Write JSON file
-	if err := json.WriteFile(m.MetadataDir, FileName, m.Content, "manifest"); err != nil {
+	path := filesystem.Join(filesystem.MetadataDir, FileName)
+	content, err := json.EncodeString(m.Content, true)
+	if err != nil {
+		return utils.PrefixError(`cannot encode manifest`, err)
+	}
+	file := filesystem.CreateFile(path, content)
+	if err := m.fs.WriteFile(file); err != nil {
 		return err
 	}
 

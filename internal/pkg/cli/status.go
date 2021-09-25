@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 )
 
@@ -21,7 +22,7 @@ func statusCommand(root *rootCommand) *cobra.Command {
 		Long:  statusLongDescription,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			// Validate
-			if !root.options.HasProjectDirectory() {
+			if !root.fs.IsDir(filesystem.MetadataDir) {
 				root.logger.Infof(`Start by running the "init" sub-command in an empty directory.`)
 				return fmt.Errorf("none of this and parent directories is project dir")
 			}

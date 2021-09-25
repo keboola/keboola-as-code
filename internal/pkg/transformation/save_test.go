@@ -91,20 +91,15 @@ DEBUG  Moved "branch/config/.new_blocks" -> "branch/config/blocks"
 `
 	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logs.String())
 
-	// Check meta files content
-	block1Meta, err := os.ReadFile(filepath.Join(blocksDir, `001-block-1/meta.json`))
-	assert.NoError(t, err)
-	assert.Equal(t, "{\n  \"name\": \"block1\"\n}\n", string(block1Meta))
-	block2Meta, err := os.ReadFile(filepath.Join(blocksDir, `002-block-2/meta.json`))
-	assert.NoError(t, err)
-	assert.Equal(t, "{\n  \"name\": \"block2\"\n}\n", string(block2Meta))
-	code1Meta, err := os.ReadFile(filepath.Join(blocksDir, `001-block-1/001-code-1/meta.json`))
-	assert.NoError(t, err)
-	assert.Equal(t, "{\n  \"name\": \"code1\"\n}\n", string(code1Meta))
-	code2Meta, err := os.ReadFile(filepath.Join(blocksDir, `001-block-1/002-code-2/meta.json`))
-	assert.NoError(t, err)
-	assert.Equal(t, "{\n  \"name\": \"code2\"\n}\n", string(code2Meta))
-	code3Meta, err := os.ReadFile(filepath.Join(blocksDir, `002-block-2/001-code-3/meta.json`))
-	assert.NoError(t, err)
-	assert.Equal(t, "{\n  \"name\": \"code3\"\n}\n", string(code3Meta))
+	// Check generated files
+	assert.Equal(t, []*filesystem.File{
+		filesystem.CreateFile(blocksDir+`/001-block-1/meta.json`, "{\n  \"name\": \"block1\"\n}\n").SetDescription(`block metadata`),
+		filesystem.CreateFile(blocksDir+`/001-block-1/001-code-1/meta.json`, "{\n  \"name\": \"code1\"\n}\n").SetDescription(`code metadata`),
+		filesystem.CreateFile(blocksDir+`/001-block-1/001-code-1/code.sql`, "SELECT 1\n").SetDescription(`code`),
+		filesystem.CreateFile(blocksDir+`/001-block-1/002-code-2/meta.json`, "{\n  \"name\": \"code2\"\n}\n").SetDescription(`code metadata`),
+		filesystem.CreateFile(blocksDir+`/001-block-1/002-code-2/code.sql`, "SELECT 2;\n\nSELECT 3;\n").SetDescription(`code`),
+		filesystem.CreateFile(blocksDir+`/002-block-2/meta.json`, "{\n  \"name\": \"block2\"\n}\n").SetDescription(`block metadata`),
+		filesystem.CreateFile(blocksDir+`/002-block-2/001-code-3/meta.json`, "{\n  \"name\": \"code3\"\n}\n").SetDescription(`code metadata`),
+		filesystem.CreateFile(blocksDir+`/002-block-2/001-code-3/code.sql`, "\n").SetDescription(`code`),
+	}, objectFiles.Extra)
 }

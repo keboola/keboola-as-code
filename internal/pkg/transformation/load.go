@@ -189,22 +189,21 @@ func (l *loader) loadCodes(block *model.Block) []*model.Code {
 func (l *loader) codeFileName(codeDir string) string {
 	// Search for code file, glob "code.*"
 	// File can use an old naming, so the file extension is not specified
-	codeDirAbs := filepath.Join(l.projectDir, codeDir)
-	matches, err := filepath.Glob(filepath.Join(codeDirAbs, model.CodeFileName+`.*`))
+	matches, err := l.fs.Glob(filesystem.Join(code.RelativePath(), model.CodeFileName+`.*`))
 	if err != nil {
-		l.errors.Append(fmt.Errorf(`canoot search for code file in %s": %w`, codeDir, err))
+		l.errors.Append(fmt.Errorf(`cannot search for code file in %s": %w`, code.RelativePath(), err))
 		return ""
 	}
 	files := make([]string, 0)
 	for _, match := range matches {
-		if utils.IsFile(match) {
-			files = append(files, utils.RelPath(codeDirAbs, match))
+		if l.fs.IsFile(match) {
+			files = append(files, filesystem.Rel(code.RelativePath(), match))
 		}
 	}
 
 	// No file?
 	if len(files) == 0 {
-		l.errors.Append(fmt.Errorf(`missing code file in "%s"`, codeDir))
+		l.errors.Append(fmt.Errorf(`missing code file in "%s"`, code.RelativePath()))
 		return ""
 	}
 
@@ -213,7 +212,7 @@ func (l *loader) codeFileName(codeDir string) string {
 		l.errors.Append(fmt.Errorf(
 			`expected one, but found multiple code files "%s" in "%s"`,
 			strings.Join(files, `", "`),
-			codeDir,
+			code.RelativePath(),
 		))
 		return ""
 	}

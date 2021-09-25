@@ -47,18 +47,11 @@ func (e *renameExecutor) invoke() (warns error, errs error) {
 		}
 
 		// Deep copy
-		err := copy.Copy(action.OldPath, action.NewPath, copy.Options{
-			OnDirExists:   func(src, dest string) copy.DirExistsAction { return copy.Replace },
-			Sync:          true,
-			PreserveTimes: true,
-		})
+		err := e.fs.Copy(action.OldPath, action.NewPath)
 
 		if err != nil {
 			e.errors.AppendWithPrefix(fmt.Sprintf(`cannot copy "%s"`, action.Description), err)
 		} else {
-			// Log info
-			e.logger.Debug("Copied ", action.Description)
-
 			// Update manifest
 			if action.Record != nil {
 				if err := e.manifest.PersistRecord(action.Record); err != nil {
@@ -76,9 +69,7 @@ func (e *renameExecutor) invoke() (warns error, errs error) {
 		// No error -> remove old paths
 		e.logger.Debug("Removing old paths.")
 		for _, oldPath := range e.pathsToRemove {
-			if err := os.RemoveAll(oldPath); err == nil {
-				e.logger.Debug("Removed ", utils.RelPath(e.projectDir, oldPath))
-			} else {
+			if err := e.fs.Remove(oldPath); err != nil {
 				e.warnings.AppendWithPrefix(fmt.Sprintf(`cannot remove \"%s\"`, oldPath), err)
 			}
 		}
@@ -86,9 +77,7 @@ func (e *renameExecutor) invoke() (warns error, errs error) {
 		// An error occurred -> keep old state -> remove new paths
 		e.logger.Debug("An error occurred, reverting rename.")
 		for _, newPath := range e.newPaths {
-			if err := os.RemoveAll(newPath); err == nil {
-				e.logger.Debug("Removed ", utils.RelPath(e.projectDir, newPath))
-			} else {
+			if err := e.fs.Remove(newPath); err != nil {
 				e.warnings.AppendWithPrefix(fmt.Sprintf(`cannot remove \"%s\"`, newPath), err)
 			}
 		}

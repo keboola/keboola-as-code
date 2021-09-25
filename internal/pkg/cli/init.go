@@ -2,17 +2,13 @@ package cli
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/event"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/interaction"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 const initShortDescription = `Init local project directory and perform the first pull`
@@ -44,9 +40,8 @@ func initCommand(root *rootCommand) *cobra.Command {
 			successful := false
 
 			// Is project directory already initialized?
-			if root.options.HasProjectDirectory() {
-				projectDir := root.options.ProjectDir()
-				metadataDir := root.options.MetadataDir()
+			if root.fs.Exists(filesystem.MetadataDir) {
+				logger.Infof(`The path "%s" is already an project directory.`, root.fs.BasePath())
 				logger.Infof(`The path "%s" is already an project directory.`, projectDir)
 				logger.Info(`Please use a different directory or synchronize the current with "pull" command.`)
 				return fmt.Errorf(`metadata directory "%s" already exists`, utils.RelPath(projectDir, metadataDir))
@@ -89,15 +84,10 @@ func initCommand(root *rootCommand) *cobra.Command {
 			logger.Infof(`Set allowed branches: %s`, allowedBranches.String())
 
 			// Create metadata dir
-			projectDir := root.options.WorkingDirectory()
-			metadataDir := filepath.Join(projectDir, manifest.MetadataDir)
-			if err = os.MkdirAll(metadataDir, 0755); err != nil {
-				return fmt.Errorf("cannot create metadata directory \"%s\": %w", metadataDir, err)
+			if err = root.fs.Mkdir(filesystem.MetadataDir); err != nil {
+				return fmt.Errorf("cannot create metadata directory \"%s\": %w", filesystem.MetadataDir, err)
 			}
-			if err = root.options.SetProjectDirectory(projectDir); err != nil {
-				return err
-			}
-			logger.Infof("Created metadata dir \"%s\".", utils.RelPath(projectDir, metadataDir))
+			logger.Infof("Created metadata directory \"%s\".", filesystem.MetadataDir)
 
 			// Create and save manifest
 			projectManifest, err := manifest.NewManifest(api.ProjectId(), api.Host(), projectDir, metadataDir)

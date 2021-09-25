@@ -12,50 +12,44 @@ func TestLocalDeleteModel(t *testing.T) {
 	manager := newTestLocalManager(t)
 	fs := manager.fs
 
-	logger, _ := utils.NewDebugLogger()
-	m, err := manifest.NewManifest(1, "connection.keboola.com", projectDir, metadataDir)
-	assert.NoError(t, err)
-	manager := NewManager(logger, m, model.NewComponentsMap(nil))
+	record := &MockedRecord{}
+	assert.NoError(t, manager.manifest.TrackRecord(record))
+	_, found := manager.manifest.GetRecord(record.Key())
+	assert.True(t, found)
 
+	dirPath := record.RelativePath()
+
+	metaFilePath := manager.Naming().MetaFilePath(record.RelativePath())
 	metaFile := `{
   "myKey": "3",
   "Meta2": "4"
 }
 `
+	configFilePath := manager.Naming().ConfigFilePath(record.RelativePath())
 	configFile := `{
   "foo": "bar"
 }
 `
-	record := &MockedRecord{}
-	assert.NoError(t, m.TrackRecord(record))
-	_, found := m.GetRecord(record.Key())
-	assert.True(t, found)
 
 	// Save files
-	dirAbs := filepath.Join(projectDir, record.RelativePath())
-	metaFileAbs := filepath.Join(projectDir, manager.Naming().MetaFilePath(record.RelativePath()))
-	configFileAbs := filepath.Join(projectDir, manager.Naming().ConfigFilePath(record.RelativePath()))
-	assert.NoError(t, os.MkdirAll(dirAbs, 0750))
-	assert.NoError(t, os.WriteFile(metaFileAbs, []byte(metaFile), 0640))
-	assert.NoError(t, os.WriteFile(configFileAbs, []byte(configFile), 0640))
+	assert.NoError(t, fs.Mkdir(dirPath))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(metaFilePath, metaFile)))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(configFilePath, configFile)))
 
 	// Delete
 	assert.NoError(t, manager.DeleteModel(record))
 
 	// Assert
-	_, found = m.GetRecord(record.Key())
+	_, found = manager.manifest.GetRecord(record.Key())
 	assert.False(t, found)
-	assert.NoFileExists(t, metaFileAbs)
-	assert.NoFileExists(t, configFileAbs)
-	assert.NoFileExists(t, dirAbs)
+	assert.False(t, fs.Exists(metaFilePath))
+	assert.False(t, fs.Exists(configFilePath))
+	assert.False(t, fs.Exists(dirPath))
 }
 
 func TestDeleteEmptyDirectories(t *testing.T) {
 	manager := newTestLocalManager(t)
 	fs := manager.fs
-	m, err := manifest.NewManifest(1, "connection.keboola.com", projectDir, metadataDir)
-	assert.NoError(t, err)
-	manager := NewManager(logger, m, model.NewComponentsMap(nil))
 
 	// Structure:
 	// D .hidden
@@ -73,16 +67,16 @@ func TestDeleteEmptyDirectories(t *testing.T) {
 	//    D .git
 
 	// Create structure
-	assert.NoError(t, os.MkdirAll(filepath.Join(projectDir, `.hidden`), 0755))
-	assert.NoError(t, os.MkdirAll(filepath.Join(projectDir, `.git`, `empty`), 0755))
-	assert.NoError(t, os.MkdirAll(filepath.Join(projectDir, `tracked-empty`), 0755))
-	assert.NoError(t, os.MkdirAll(filepath.Join(projectDir, `tracked-empty-sub`, `abc`), 0755))
-	assert.NoError(t, os.MkdirAll(filepath.Join(projectDir, `non-tracked-empty`), 0755))
-	assert.NoError(t, os.MkdirAll(filepath.Join(projectDir, `tracked`), 0755))
-	assert.NoError(t, os.MkdirAll(filepath.Join(projectDir, `non-tracked`), 0755))
-	assert.NoError(t, os.MkdirAll(filepath.Join(projectDir, `tracked-with-hidden`, `.git`), 0755))
-	assert.NoError(t, os.WriteFile(filepath.Join(projectDir, `tracked`, `foo.txt`), []byte(`bar`), 0644))
-	assert.NoError(t, os.WriteFile(filepath.Join(projectDir, `non-tracked`, `foo.txt`), []byte(`bar`), 0644))
+	assert.NoError(t, fs.Mkdir(`.hidden`))
+	assert.NoError(t, fs.Mkdir(filesystem.Join(`.git`, `empty`)))
+	assert.NoError(t, fs.Mkdir(`tracked-empty`))
+	assert.NoError(t, fs.Mkdir(filesystem.Join(`tracked-empty-sub`, `abc`)))
+	assert.NoError(t, fs.Mkdir(`non-tracked-empty`))
+	assert.NoError(t, fs.Mkdir(`tracked`))
+	assert.NoError(t, fs.Mkdir(`non-tracked`))
+	assert.NoError(t, fs.Mkdir(filesystem.Join(`tracked-with-hidden`, `.git`)))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(`tracked`, `foo.txt`), `bar`)))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(`non-tracked`, `foo.txt`), `bar`)))
 
 	// Delete
 	trackedPaths := []string{
@@ -95,13 +89,13 @@ func TestDeleteEmptyDirectories(t *testing.T) {
 	assert.NoError(t, manager.DeleteEmptyDirectories(trackedPaths))
 
 	// Assert
-	assert.NoDirExists(t, filepath.Join(projectDir, `tracked-empty`))
-	assert.NoDirExists(t, filepath.Join(projectDir, `tracked-empty-sub`))
+	assert.False(t, fs.Exists(`tracked-empty`))
+	assert.False(t, fs.Exists(`tracked-empty-sub`))
 
-	assert.DirExists(t, filepath.Join(projectDir, `.hidden`))
-	assert.DirExists(t, filepath.Join(projectDir, `.git`, `empty`))
-	assert.DirExists(t, filepath.Join(projectDir, `non-tracked-empty`))
-	assert.DirExists(t, filepath.Join(projectDir, `tracked-with-hidden`, `.git`))
-	assert.FileExists(t, filepath.Join(projectDir, `tracked`, `foo.txt`))
-	assert.FileExists(t, filepath.Join(projectDir, `non-tracked`, `foo.txt`))
+	assert.True(t, fs.Exists(`.hidden`))
+	assert.True(t, fs.Exists(filesystem.Join(`.git`, `empty`)))
+	assert.True(t, fs.Exists(`non-tracked-empty`))
+	assert.True(t, fs.Exists(filesystem.Join(`tracked-with-hidden`, `.git`)))
+	assert.True(t, fs.Exists(filesystem.Join(`tracked`, `foo.txt`)))
+	assert.True(t, fs.Exists(filesystem.Join(`non-tracked`, `foo.txt`)))
 }

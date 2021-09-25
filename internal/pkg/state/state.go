@@ -95,12 +95,12 @@ func newState(options *Options) *State {
 	return s
 }
 
-func (s *State) Manifest() *manifest.Manifest {
-	return s.manifest
+func (s *State) Fs() filesystem.Fs {
+	return s.manifest.Fs()
 }
 
-func (s *State) ProjectDir() string {
-	return s.manifest.ProjectDir
+func (s *State) Manifest() *manifest.Manifest {
+	return s.manifest
 }
 
 func (s *State) Naming() model.Naming {
