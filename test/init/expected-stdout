@@ -4,18 +4,29 @@ DEBUG	Storage API token is valid.
 DEBUG	Project id: "%%TEST_PROJECT_ID%%", project name: "%%TEST_PROJECT_NAME%%".
 %A
 INFO	Set allowed branches: "__all__"
-INFO	Created metadata dir ".keboola".
+DEBUG	Created directory ".keboola"
+INFO	Created metadata directory ".keboola".
+DEBUG	Saved ".keboola/manifest.json"
 INFO	Created manifest file ".keboola/manifest.json".
+DEBUG	Saved ".env.local"
 INFO	Created file ".env.local" - it contains the API token, keep it local and secret.
+DEBUG	Saved ".env.dist"
 INFO	Created file ".env.dist" - an ".env.local" template.
+DEBUG	Saved ".gitignore"
 INFO	Created file ".gitignore" - to keep ".env.local" local.
 %A
 DEBUG	Sent "init" successful event id: "%s"
 %A
 INFO	Generating CI workflows ...
+DEBUG	Created directory ".github/workflows"
+DEBUG	Created directory ".github/actions/install"
+DEBUG	Saved ".github/actions/install/action.yml"
 INFO	Created file ".github/actions/install/action.yml".
+DEBUG	Saved ".github/workflows/validate.yml"
 INFO	Created file ".github/workflows/validate.yml".
+DEBUG	Saved ".github/workflows/push.yml"
 INFO	Created file ".github/workflows/push.yml".
+DEBUG	Saved ".github/workflows/pull.yml"
 INFO	Created file ".github/workflows/pull.yml".
 %A
 INFO	CI workflows have been generated.
@@ -30,9 +41,10 @@ DEBUG	Project local and remote states have been successfully loaded.
 INFO	Plan for "pull" operation:
 INFO		+  B main
 DEBUG	Execution plan is valid.
+DEBUG	Created directory "main"
 DEBUG	Saved "main/meta.json"
 DEBUG	Saved "main/description.md"
-DEBUG	Saved manifest file ".keboola/manifest.json".
+DEBUG	Saved ".keboola/manifest.json"
 %A
 DEBUG	Sent "pull" successful event id: "%s"
 INFO	Pull done.

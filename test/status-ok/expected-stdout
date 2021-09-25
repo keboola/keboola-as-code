@@ -1,4 +1,3 @@
-Working directory:  %s/foo/bar/baz
 Project directory:  %s/foo
-Metadata directory: %s/.keboola
-Manifest path:      %s/.keboola/manifest.json
+Working directory:  bar/baz
+Manifest path:      .keboola/manifest.json

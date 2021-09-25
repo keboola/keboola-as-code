@@ -1,5 +1,3 @@
-Invalid parameters:
-- None of this and parent directories is project dir.
+Error: none of this and parent directories is project dir
   Project directory must contain the ".keboola" metadata directory.
   Please change working directory to a project directory or use the "init" command.
-Error: invalid parameters, see output above

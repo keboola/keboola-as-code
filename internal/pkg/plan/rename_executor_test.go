@@ -53,11 +53,11 @@ func TestRename(t *testing.T) {
 	// Logs
 	expectedLog := `
 DEBUG  Starting renaming of the 2 paths.
-DEBUG  Copied foo1 -> bar1
-DEBUG  Copied foo2 -> bar2
+DEBUG  Copied "foo1" -> "bar1"
+DEBUG  Copied "foo2" -> "bar2"
 DEBUG  Removing old paths.
-DEBUG  Removed foo1
-DEBUG  Removed foo2
+DEBUG  Removed "foo1"
+DEBUG  Removed "foo2"
 `
 	assert.Equal(t, strings.TrimLeft(expectedLog, "\n"), logs.String())
 }
@@ -116,13 +116,13 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 	// Logs
 	expectedLog := `
 DEBUG  Starting renaming of the 4 paths.
-DEBUG  Copied foo1 -> bar1
-DEBUG  Copied foo2 -> bar2
-DEBUG  Copied foo5 -> bar5
+DEBUG  Copied "foo1" -> "bar1"
+DEBUG  Copied "foo2" -> "bar2"
+DEBUG  Copied "foo5" -> "bar5"
 DEBUG  An error occurred, reverting rename.
-DEBUG  Removed bar1
-DEBUG  Removed bar2
-DEBUG  Removed bar5
+DEBUG  Removed "bar1"
+DEBUG  Removed "bar2"
+DEBUG  Removed "bar5"
 INFO  Error occurred, the rename operation was reverted.
 `
 	assert.Equal(t, strings.TrimLeft(expectedLog, "\n"), logs.String())
