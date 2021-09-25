@@ -2,6 +2,10 @@ package options
 
 import (
 	"fmt"
+	"github.com/joho/godotenv"
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"go.uber.org/zap"
 	"os"
 	"reflect"
 	"regexp"
@@ -14,7 +18,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/interaction"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -23,73 +26,95 @@ type parser = viper.Viper
 // Options contains parsed flags and ENV variables.
 type Options struct {
 	*parser
-	Verbose           bool   `flag:"verbose"`           // verbose mode, print details to console
-	VerboseApi        bool   `flag:"verbose-api"`       // log each API request and response
-	LogFilePath       string `flag:"log-file"`          // path to the log file
-	ApiHost           string `flag:"storage-api-host"`  // api host
-	ApiToken          string `flag:"storage-api-token"` // api token
-	workingDirectory  string // working directory
-	projectDirectory  string // project directory with ".keboola" metadata dir
-	metadataDirectory string // ".keboola" metadata dir
+	envNaming   *env.NamingConvention
+	Verbose     bool   `flag:"verbose"`           // verbose mode, print details to console
+	VerboseApi  bool   `flag:"verbose-api"`       // log each API request and response
+	LogFilePath string `flag:"log-file"`          // path to the log file
+	ApiHost     string `flag:"storage-api-host"`  // api host
+	ApiToken    string `flag:"storage-api-token"` // api token
 }
 
 func NewOptions() *Options {
-	// Env parser
-	envNaming := &envNamingConvention{}
-	return &Options{parser: viper.NewWithOptions(viper.EnvKeyReplacer(envNaming))}
-}
-
-func (o *Options) WorkingDirectory() string {
-	if len(o.workingDirectory) == 0 {
-		panic(fmt.Errorf("working directory is not set"))
+	envNaming := env.NewNamingConvention()
+	return &Options{
+		envNaming: envNaming,
+		parser: viper.NewWithOptions(
+			viper.EnvKeyReplacer(envNaming),
+		),
 	}
-	return o.workingDirectory
 }
 
-func (o *Options) ProjectDir() string {
-	if len(o.projectDirectory) == 0 {
-		panic(fmt.Errorf("project directory is not set"))
+func (o *Options) Load(logger *zap.SugaredLogger, fs filesystem.Fs, flags *pflag.FlagSet) error {
+	// Bind flags
+	if err := o.BindPFlags(flags); err != nil {
+		return err
 	}
-	return o.projectDirectory
-}
 
-func (o *Options) MetadataDir() string {
-	if len(o.metadataDirectory) == 0 {
-		panic(fmt.Errorf("metadata directory is not set"))
+	// Automatic fallback to ENVs, see env.NamingConvention
+	o.AutomaticEnv()
+
+	// Load ENVs from OS and files
+	envs, err := o.loadEnvFiles(fs)
+	if err != nil {
+		logger.Debug(err.Error())
 	}
-	return o.metadataDirectory
-}
 
-func (o *Options) HasProjectDirectory() bool {
-	return len(o.projectDirectory) > 0
-}
-
-func (o *Options) SetWorkingDirectory(dir string) error {
-	if !utils.IsDir(dir) {
-		wd, _ := os.Getwd()
-		return fmt.Errorf("working directory \"%s\" not found, pwd:%s", dir, wd)
+	// Set loaded ENVs
+	for k, v := range envs {
+		if strings.HasPrefix(k, env.Prefix) {
+			logger.Debugf(`Found ENV "%s"`, k)
+			utils.MustSetEnv(k, v)
+		}
 	}
-	o.workingDirectory = utils.AbsPath(dir)
+
+	// Map values to Options struct
+	reflection := reflect.Indirect(reflect.ValueOf(o))
+	types := reflect.TypeOf(*o)
+	for i := 0; i < reflection.NumField(); i++ {
+		field := types.Field(i)
+		if flag := field.Tag.Get("flag"); len(flag) > 0 {
+			value := castValue(o.Get(flag), field.Type.Kind())
+			if value != nil {
+				reflection.Field(i).Set(reflect.ValueOf(value))
+			}
+		}
+	}
+
+	// Normalize the values into a uniform form
+	o.normalize()
+
 	return nil
 }
 
-func (o *Options) SetProjectDirectory(projectDir string) error {
-	metadataDir := filepath.Join(projectDir, manifest.MetadataDir)
-	if !utils.IsDir(projectDir) {
-		return fmt.Errorf("project directory \"%s\" not found", o.projectDirectory)
+func (o *Options) loadEnvFiles(fs filesystem.Fs) (map[string]string, error) {
+	// File system basePath = projectDir, so here we are using current/top level dir
+	projectDir := `.` // nolint
+	workingDir := fs.WorkingDir()
+
+	// Load ENVs from OS
+	osEnvs, err := godotenv.Parse(strings.NewReader(strings.Join(os.Environ(), "\n")))
+	if err != nil {
+		return nil, err
 	}
-	if !utils.IsDir(metadataDir) {
-		return fmt.Errorf("metadata directory \"%s\" not found", o.metadataDirectory)
+
+	// Dirs with ENVs files
+	dirs := make([]string, 0)
+	dirs = append(dirs, workingDir)
+	if workingDir != projectDir {
+		dirs = append(dirs, projectDir)
 	}
-	o.projectDirectory = utils.AbsPath(projectDir)
-	o.metadataDirectory = utils.AbsPath(metadataDir)
-	return nil
+
+	// Load ENVs from files
+	if envs, err := env.LoadDotEnv(osEnvs, fs, dirs); err == nil {
+		return envs, nil
+	} else {
+		return nil, utils.PrefixError(fmt.Sprintf(`error loading ENV files: %s`, err.Error()), err)
+	}
 }
 
 // Validate required options - defined by field name.
 func (o *Options) Validate(required []string) string {
 	var errors []string
-	envNaming := &envNamingConvention{}
 	reflection := reflect.Indirect(reflect.ValueOf(o))
 	types := reflect.TypeOf(*o)
 
@@ -113,7 +138,7 @@ func (o *Options) Validate(required []string) string {
 				`- Missing %s. Please use "--%s" flag or ENV variable "%s".`,
 				fieldNameHumanReadable,
 				flag,
-				envNaming.Replace(flag),
+				o.envNaming.Replace(flag),
 			))
 		default:
 			errors = append(errors, fmt.Sprintf(`- Missing %s.`, fieldNameHumanReadable))
@@ -146,59 +171,6 @@ func (o *Options) AskUser(p *interaction.Prompt, fieldName string) {
 	default:
 		panic(fmt.Sprintf("unexpected field name \"%s\"", fieldName))
 	}
-}
-
-// Load all sources of Options - flags, envs.
-func (o *Options) Load(flags *pflag.FlagSet) (warnings []string, err error) {
-	// Bind flags
-	if err = o.BindPFlags(flags); err != nil {
-		return
-	}
-
-	// Bind ENV variables
-	o.AutomaticEnv()
-
-	// Set Working directory + load .env file if present
-	workingDir, err := getWorkingDirectory(o.parser)
-	if err != nil {
-		return
-	}
-	if err = o.SetWorkingDirectory(workingDir); err != nil {
-		return
-	}
-	if err = loadDotEnv(o.workingDirectory); err != nil {
-		return
-	}
-
-	// Set Project directory + load .env file if present
-	projectDir, projectDirWarnings := getProjectDirectory(o.workingDirectory)
-	warnings = append(warnings, projectDirWarnings...)
-	if len(projectDir) > 0 {
-		if err = o.SetProjectDirectory(strings.TrimRight(projectDir, string(os.PathSeparator))); err != nil {
-			return nil, err
-		}
-		if err = loadDotEnv(o.projectDirectory); err != nil {
-			return
-		}
-	}
-
-	// For each Options struct field with "flag" tag -> load value from parser
-	reflection := reflect.Indirect(reflect.ValueOf(o))
-	types := reflect.TypeOf(*o)
-	for i := 0; i < reflection.NumField(); i++ {
-		field := types.Field(i)
-		if flag := field.Tag.Get("flag"); len(flag) > 0 {
-			value := castValue(o.Get(flag), field.Type.Kind())
-			if value != nil {
-				reflection.Field(i).Set(reflect.ValueOf(value))
-			}
-		}
-	}
-
-	// Normalize the values into a uniform form
-	o.normalize()
-
-	return warnings, err
 }
 
 func (o *Options) normalize() {
