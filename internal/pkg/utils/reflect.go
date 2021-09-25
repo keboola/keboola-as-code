@@ -6,8 +6,6 @@ import (
 	"strings"
 
 	"github.com/iancoleman/orderedmap"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/json"
 )
 
 type StructField struct {
@@ -91,31 +89,6 @@ func GetOneFieldWithTag(tag string, model interface{}) *StructField {
 
 	if len(fields) == 1 {
 		return fields[0]
-	}
-
-	return nil
-}
-
-func ReadTaggedFields(dir, relPath, tag string, target interface{}, errPrefix string) error {
-	// Read fields with metaFile tag
-	metaFields := GetFieldsWithTag(tag, target)
-	if len(metaFields) == 0 {
-		return nil
-	}
-
-	// Read file content
-	content := make(map[string]interface{})
-	if err := json.ReadFile(dir, relPath, &content, errPrefix); err != nil {
-		return err
-	}
-
-	// Set values
-	reflection := reflect.ValueOf(target).Elem()
-	for _, field := range metaFields {
-		// Set value, some value are optional, model will be validated later
-		if value, ok := content[field.JsonName()]; ok {
-			reflection.FieldByName(field.Name).Set(reflect.ValueOf(value))
-		}
 	}
 
 	return nil

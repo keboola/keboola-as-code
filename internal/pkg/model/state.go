@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/iancoleman/orderedmap"
+	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -36,11 +37,10 @@ type ObjectFiles struct {
 	Record        Record
 	Object        Object
 	Metadata      *filesystem.JsonFile // meta.json
-	Description   *filesystem.File     // description.md
 	Configuration *filesystem.JsonFile // config.json
+	Description   *filesystem.File     // description.md
 	Extra         []*filesystem.File   // extra files
-	ToDelete      []string             // files to delete, on save
-	Path          string
+	ToDelete      []string             // paths to delete, on save
 }
 
 type pathsState = PathsState
