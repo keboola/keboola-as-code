@@ -137,7 +137,7 @@ func TestPersistNewConfig(t *testing.T) {
 						ParentPath: "main",
 						ObjectPath: "extractor/ex-generic-v2/new-config",
 					},
-					RelatedPaths: []string{model.MetaFile, model.DescriptionFile, model.ConfigFile},
+					RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
 				},
 			},
 			Component: &model.Component{
@@ -276,7 +276,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 						ParentPath: "main",
 						ObjectPath: "extractor/keboola.ex-db-mysql/new-config",
 					},
-					RelatedPaths: []string{model.MetaFile, model.DescriptionFile, model.ConfigFile},
+					RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
 				},
 			},
 			Component: &model.Component{
@@ -315,7 +315,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 						ParentPath: "main/extractor/keboola.ex-db-mysql/new-config",
 						ObjectPath: "rows/some-row",
 					},
-					RelatedPaths: []string{model.MetaFile, model.DescriptionFile, model.ConfigFile},
+					RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
 				},
 			},
 			Remote: nil,

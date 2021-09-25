@@ -157,7 +157,7 @@ func TestLoadState(t *testing.T) {
 						ObjectPath: "extractor/ex-generic-v2/456-todos",
 						ParentPath: "main",
 					},
-					RelatedPaths: []string{model.MetaFile, model.DescriptionFile, model.ConfigFile},
+					RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
 				},
 			},
 		},
