@@ -26,8 +26,8 @@ type writer struct {
 	errors    *utils.Error
 }
 
-// GenerateBlockFiles - save code blocks from source config to the disk.
-func GenerateBlockFiles(logger *zap.SugaredLogger, fs filesystem.Fs, naming model.Naming, state *model.State, files *model.ObjectFiles) error {
+// Save - save code blocks from source config to the disk.
+func Save(logger *zap.SugaredLogger, fs filesystem.Fs, naming model.Naming, state *model.State, files *model.ObjectFiles) error {
 	w := &writer{
 		files:     files,
 		logger:    logger,
@@ -38,10 +38,10 @@ func GenerateBlockFiles(logger *zap.SugaredLogger, fs filesystem.Fs, naming mode
 		configDir: files.Record.RelativePath(),
 		errors:    utils.NewMultiError(),
 	}
-	return w.generate()
+	return w.save()
 }
 
-func (w *writer) generate() error {
+func (w *writer) save() error {
 	// Load and clear "parameters.blocks" from the record
 	var blocksRaw interface{} = nil
 	if parametersRaw, found := w.Configuration.Content.Get(`parameters`); found {

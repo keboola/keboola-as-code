@@ -25,7 +25,7 @@ func TestLoadTransformationMissingBlockMetaSql(t *testing.T) {
 	assert.NoError(t, fs.Mkdir(block1))
 
 	// Load, assert
-	err := LoadBlocks(logger, fs, model.DefaultNaming(), state, objectFiles)
+	err := Load(logger, fs, model.DefaultNaming(), state, objectFiles)
 	assert.Error(t, err)
 	assert.Equal(t, `missing block metadata file "branch/config/blocks/001-block-1/meta.json"`, err.Error())
 }
@@ -43,7 +43,7 @@ func TestLoadTransformationMissingCodeMeta(t *testing.T) {
 	assert.NoError(t, fs.Mkdir(block1Code1))
 
 	// Load, assert
-	err := LoadBlocks(logger, fs, model.DefaultNaming(), state, objectFiles)
+	err := Load(logger, fs, model.DefaultNaming(), state, objectFiles)
 	assert.Error(t, err)
 	assert.Equal(t, strings.Join([]string{
 		`- missing code metadata file "branch/config/blocks/001-block-1/001-code-1/meta.json"`,
@@ -81,7 +81,7 @@ func TestLoadTransformationSql(t *testing.T) {
 	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(block3, `meta.json`), `{"name": "003"}`)))
 
 	// Load
-	assert.NoError(t, LoadBlocks(logger, fs, model.DefaultNaming(), state, objectFiles))
+	assert.NoError(t, Load(logger, fs, model.DefaultNaming(), state, objectFiles))
 
 	// Assert
 	expected := `
@@ -161,7 +161,7 @@ func TestLoadTransformationPy(t *testing.T) {
 	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(block3, `meta.json`), `{"name": "003"}`)))
 
 	// Load
-	assert.NoError(t, LoadBlocks(logger, fs, model.DefaultNaming(), state, objectFiles))
+	assert.NoError(t, Load(logger, fs, model.DefaultNaming(), state, objectFiles))
 
 	// Assert
 	expected := `

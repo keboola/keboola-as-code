@@ -28,8 +28,8 @@ type loader struct {
 	errors    *utils.Error
 }
 
-// LoadBlocks - load code blocks from disk to target config.
-func LoadBlocks(logger *zap.SugaredLogger, fs filesystem.Fs, naming model.Naming, state *model.State, files *model.ObjectFiles) error {
+// Load - load code blocks from filesystem to target config.
+func Load(logger *zap.SugaredLogger, fs filesystem.Fs, naming model.Naming, state *model.State, files *model.ObjectFiles) error {
 	l := &loader{
 		fs:     fs,
 		files:  files,

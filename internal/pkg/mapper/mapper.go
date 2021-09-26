@@ -20,26 +20,12 @@ func New(state *model.State, logger *zap.SugaredLogger, fs filesystem.Fs, naming
 	return &Mapper{state: state, logger: logger, fs: fs, naming: naming}
 }
 
-func (m *Mapper) isTransformationConfig(object interface{}) (bool, error) {
-	v, ok := object.(*model.Config)
-	if !ok {
-		return false, nil
-	}
-
-	component, err := m.Components().Get(*v.ComponentKey())
-	if err != nil {
-		return false, err
-	}
-
-	return component.IsTransformation(), nil
-}
-
 func (m *Mapper) BeforeSave(files *model.ObjectFiles) error {
 	// Save transformation
 	if ok, err := m.isTransformationConfig(files.Object); err != nil {
 		return err
 	} else if ok {
-		return transformation.GenerateBlockFiles(
+		return transformation.Save(
 			m.logger,
 			m.fs,
 			m.naming,
@@ -52,9 +38,9 @@ func (m *Mapper) BeforeSave(files *model.ObjectFiles) error {
 }
 
 func (m *Mapper) AfterLoad(files *model.ObjectFiles) error {
-	// Map transformation
+	// Load transformation
 	if ok, err := m.isTransformationConfig(files.Object); ok {
-		return transformation.LoadBlocks(
+		return transformation.Load(
 			m.logger,
 			m.fs,
 			m.naming,
@@ -66,4 +52,18 @@ func (m *Mapper) AfterLoad(files *model.ObjectFiles) error {
 	}
 
 	return nil
+}
+
+func (m *Mapper) isTransformationConfig(object interface{}) (bool, error) {
+	v, ok := object.(*model.Config)
+	if !ok {
+		return false, nil
+	}
+
+	component, err := m.Components().Get(*v.ComponentKey())
+	if err != nil {
+		return false, err
+	}
+
+	return component.IsTransformation(), nil
 }
