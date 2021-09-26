@@ -61,9 +61,8 @@ type BranchState struct {
 
 type ConfigState struct {
 	*ConfigManifest
-	Component *Component `validate:"dive"`
-	Remote    *Config    `validate:"omitempty,dive"`
-	Local     *Config    `validate:"omitempty,dive"`
+	Remote *Config `validate:"omitempty,dive"`
+	Local  *Config `validate:"omitempty,dive"`
 }
 
 type ConfigRowState struct {
@@ -390,15 +389,11 @@ func (s *State) GetOrCreate(key Key) (ObjectState, error) {
 	} else {
 		// Create
 		var object ObjectState
-		switch k := key.(type) {
+		switch key.(type) {
 		case BranchKey:
 			object = &BranchState{}
 		case ConfigKey:
-			if component, err := s.components.Get(*k.ComponentKey()); err == nil {
-				object = &ConfigState{Component: component}
-			} else {
-				return nil, err
-			}
+			object = &ConfigState{}
 		case ConfigRowKey:
 			object = &ConfigRowState{}
 		default:
