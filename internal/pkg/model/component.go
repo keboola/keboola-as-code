@@ -25,6 +25,10 @@ func (c *Component) IsTransformation() bool {
 	return c.Type == TransformationType
 }
 
+func (c *Component) IsSharedCode() bool {
+	return c.Id == ShareCodeComponentId
+}
+
 // remoteComponentsProvider - interface for Storage API.
 type remoteComponentsProvider interface {
 	GetComponent(componentId string) (*Component, error)

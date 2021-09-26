@@ -28,7 +28,11 @@ func (m *Manager) UpdatePaths(state model.ObjectState, rename bool) error {
 			}
 		case *model.ConfigRowState:
 			row := object.(*model.ConfigRow)
-			v.PathInProject = m.Naming().ConfigRowPath(v.ParentPath, row)
+			if component, err := m.state.Components().Get(*row.ComponentKey()); err == nil {
+				v.PathInProject = m.Naming().ConfigRowPath(v.ParentPath, component, row)
+			} else {
+				return err
+			}
 		default:
 			panic(fmt.Errorf(`unexpect type "%T"`, state))
 		}

@@ -11,10 +11,13 @@ import (
 )
 
 const (
-	MetaFileTag        = "metaFile:true"
-	ConfigFileTag      = "configFile:true"
-	DescriptionFileTag = "descriptionFile:true"
-	TransformationType = "transformation"
+	MetaFileTag                 = "metaFile:true"
+	ConfigFileTag               = "configFile:true"
+	DescriptionFileTag          = "descriptionFile:true"
+	TransformationType          = "transformation"
+	ShareCodeComponentId        = "keboola.shared-code"
+	ShareCodeTargetComponentKey = `componentId`
+	ShareCodeContentKey         = `code_content`
 )
 
 // Kind - type of the object, branch, config ...
