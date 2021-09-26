@@ -33,6 +33,26 @@
   "configurations": [
     {
       "branchId": %%TEST_BRANCH_BAR_ID%%,
+      "componentId": "keboola.shared-code",
+      "id": "%%TEST_BRANCH_BAR_CONFIG_SHARED_CODES_ID%%",
+      "path": "_shared/keboola.python-transformation-v2",
+      "rows": [
+        {
+          "id": "%%TEST_BRANCH_BAR_CONFIG_SHARED_CODES_ROW_CODE_WITH_VARIABLES_ID%%",
+          "path": "codes/code-with-variables"
+        },
+        {
+          "id": "%%TEST_BRANCH_BAR_CONFIG_SHARED_CODES_ROW_MY_CODE_1_ID%%",
+          "path": "codes/my-code-1"
+        },
+        {
+          "id": "%%TEST_BRANCH_BAR_CONFIG_SHARED_CODES_ROW_MY_CODE_2_ID%%",
+          "path": "codes/my-code-2"
+        }
+      ]
+    },
+    {
+      "branchId": %%TEST_BRANCH_BAR_ID%%,
       "componentId": "ex-generic-v2",
       "id": "%%TEST_BRANCH_ALL_CONFIG_EMPTY_ID%%",
       "path": "extractor/ex-generic-v2/empty",
@@ -60,9 +80,35 @@
     },
     {
       "branchId": %%TEST_BRANCH_BAR_ID%%,
+      "componentId": "keboola.variables",
+      "id": "%%TEST_BRANCH_BAR_CONFIG_PYTHON_TRANSFORMATION_SHARED_CODE_VARIABLES_ID%%",
+      "path": "other/keboola.variables/python-transformation-shared-code-variables",
+      "rows": [
+        {
+          "id": "%%TEST_BRANCH_BAR_CONFIG_PYTHON_TRANSFORMATION_SHARED_CODE_VARIABLES_ROW_DEFAULT_VALUES_ID%%",
+          "path": "rows/default-values"
+        }
+      ]
+    },
+    {
+      "branchId": %%TEST_BRANCH_BAR_ID%%,
+      "componentId": "keboola.variables",
+      "id": "%%TEST_BRANCH_BAR_CONFIG_SHARED_CODE_VARIABLES_ID%%",
+      "path": "other/keboola.variables/shared-code-variables",
+      "rows": []
+    },
+    {
+      "branchId": %%TEST_BRANCH_BAR_ID%%,
       "componentId": "keboola.python-transformation-v2",
       "id": "%%TEST_BRANCH_BAR_CONFIG_PYTHON_TRANSFORMATION_ID%%",
       "path": "transformation/keboola.python-transformation-v2/python-transformation",
+      "rows": []
+    },
+    {
+      "branchId": %%TEST_BRANCH_BAR_ID%%,
+      "componentId": "keboola.python-transformation-v2",
+      "id": "%%TEST_BRANCH_BAR_CONFIG_PYTHON_TRANSFORMATION_SHARED_CODE_ID%%",
+      "path": "transformation/keboola.python-transformation-v2/python-transformation-shared-code",
       "rows": []
     },
     {
