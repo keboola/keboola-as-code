@@ -4,9 +4,9 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/sharedcode"
-	"github.com/keboola/keboola-as-code/internal/pkg/transformation"
 )
 
 type state = model.State
