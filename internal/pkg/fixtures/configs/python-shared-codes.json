@@ -1,0 +1,31 @@
+{
+  "componentId": "keboola.shared-code",
+  "name": "Shared Codes",
+  "configuration": {
+    "componentId": "keboola.python-transformation-v2"
+  },
+  "rows": [
+    {
+      "name": "My code 1",
+      "isDisabled": false,
+      "configuration": {
+        "code_content": "# This program prints Hello, world!\n\nprint('Hello, world!')"
+      }
+    },
+    {
+      "name": "My code 2",
+      "isDisabled": false,
+      "configuration": {
+        "code_content": "num1 = 1.5\nnum2 = 6.3\nsum = num1 + num2"
+      }
+    },
+    {
+      "name": "Code with variables",
+      "isDisabled": false,
+      "configuration": {
+        "code_content": "num1 = {{num1}}\nnum2 = {{num2}}\nsum = num1 + num2",
+        "variables_id": "..."
+      }
+    }
+  ]
+}

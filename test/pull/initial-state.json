@@ -26,7 +26,11 @@
       },
       "configs": [
         "with-rows",
+        "python-shared-codes",
+        "python-shared-codes-variables",
         "python-transformation",
+        "python-transformation-shared-code",
+        "python-transformation-shared-code-variables",
         "snowflake-transformation"
       ]
     }

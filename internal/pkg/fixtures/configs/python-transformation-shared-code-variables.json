@@ -1,0 +1,34 @@
+{
+  "componentId": "keboola.variables",
+  "name": "Python Transformation Shared Code Variables",
+  "configuration": {
+    "variables": [
+      {
+        "name": "num1",
+        "type": "string"
+      },
+      {
+        "name": "num2",
+        "type": "string"
+      }
+    ]
+  },
+  "rows": [
+    {
+      "name": "Default values",
+      "isDisabled": false,
+      "configuration": {
+        "values": [
+          {
+            "name": "num1",
+            "value": "10"
+          },
+          {
+            "name": "num2",
+            "value": "20"
+          }
+        ]
+      }
+    }
+  ]
+}

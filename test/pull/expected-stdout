@@ -2,12 +2,20 @@
 DEBUG	Project local and remote states have been successfully loaded.
 INFO	Plan for "pull" operation:
 INFO		+  B bar
+INFO		+  C bar/_shared/keboola.python-transformation-v2
+INFO		+  R bar/_shared/keboola.python-transformation-v2/codes/code-with-variables
+INFO		+  R bar/_shared/keboola.python-transformation-v2/codes/my-code-1
+INFO		+  R bar/_shared/keboola.python-transformation-v2/codes/my-code-2
 INFO		+  C bar/extractor/ex-generic-v2/empty
 INFO		+  C bar/extractor/keboola.ex-db-mysql/with-rows
 INFO		+  R bar/extractor/keboola.ex-db-mysql/with-rows/rows/disabled
 INFO		+  R bar/extractor/keboola.ex-db-mysql/with-rows/rows/test-view
 INFO		+  R bar/extractor/keboola.ex-db-mysql/with-rows/rows/users
+INFO		+  C bar/other/keboola.variables/python-transformation-shared-code-variables
+INFO		+  R bar/other/keboola.variables/python-transformation-shared-code-variables/rows/default-values
+INFO		+  C bar/other/keboola.variables/shared-code-variables
 INFO		+  C bar/transformation/keboola.python-transformation-v2/python-transformation
+INFO		+  C bar/transformation/keboola.python-transformation-v2/python-transformation-shared-code
 INFO		+  C bar/transformation/keboola.snowflake-transformation/snowflake-transformation
 INFO		+  B foo
 INFO		+  C foo/extractor/ex-generic-v2/empty

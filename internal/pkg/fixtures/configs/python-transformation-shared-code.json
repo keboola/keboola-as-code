@@ -1,0 +1,28 @@
+{
+  "componentId": "keboola.python-transformation-v2",
+  "name": "Python Transformation Shared Code",
+  "configuration": {
+    "parameters": {
+      "blocks": [
+        {
+          "codes": [
+            {
+              "name": "Shared Code Used",
+              "script": [
+                "{{...}}"
+              ]
+            }
+          ],
+          "name": "Block 1"
+        }
+      ]
+    }
+  },
+  "rows": null,
+  "shared_code_id": "...",
+  "shared_code_row_ids": [
+    "..."
+  ],
+  "variables_id": "...",
+  "variables_values_id": "..."
+}
