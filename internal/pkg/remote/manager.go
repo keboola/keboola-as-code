@@ -47,7 +47,7 @@ func (m *Manager) NewUnitOfWork(changeDescription string) *UnitOfWork {
 	}
 }
 
-func (u *UnitOfWork) SaveRemote(object model.ObjectState, changedFields []string) error {
+func (u *UnitOfWork) SaveObject(object model.ObjectState, changedFields []string) error {
 	switch v := object.(type) {
 	case *model.BranchState:
 		if v.Remote != nil {
@@ -65,7 +65,7 @@ func (u *UnitOfWork) SaveRemote(object model.ObjectState, changedFields []string
 	}
 }
 
-func (u *UnitOfWork) DeleteRemote(object model.ObjectState) error {
+func (u *UnitOfWork) DeleteObject(object model.ObjectState) error {
 	switch v := object.(type) {
 	case *model.BranchState:
 		return fmt.Errorf(`branch (%d - %s) cannot be deleted by CLI`, v.Local.Id, v.Local.Name)

@@ -74,7 +74,7 @@ func (e *encryptExecutor) encryptRequest(action *EncryptAction) *client.Request 
 			}
 
 			// Save changes
-			if err := e.LocalManager().SaveModel(manifest, object); err == nil {
+			if err := e.LocalManager().SaveObject(manifest, object); err == nil {
 				e.logger.Debugf(`Saved "%s"`, manifest.RelativePath())
 			} else {
 				e.errors.Append(err)

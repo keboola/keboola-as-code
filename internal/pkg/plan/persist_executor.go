@@ -37,7 +37,7 @@ func (e *persistExecutor) invoke() error {
 		case *NewRowAction:
 			e.persistNewRow(a)
 		case *DeleteRecordAction:
-			if err := e.LocalManager().DeleteModel(a.Record); err != nil {
+			if err := e.LocalManager().DeleteObject(a.Record); err != nil {
 				e.errors.Append(err)
 			}
 		default:
