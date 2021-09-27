@@ -152,15 +152,6 @@ func complexRemoteExpectedConfigs() []*model.ConfigState {
 				ChangeDescription: "created by test",
 				Content:           utils.NewOrderedMap(),
 			},
-			Component: &model.Component{
-				ComponentKey: model.ComponentKey{
-					Id: "ex-generic-v2",
-				},
-				Type:      "extractor",
-				Name:      "Generic",
-				Schema:    map[string]interface{}{},
-				SchemaRow: map[string]interface{}{},
-			},
 			// Generated manifest
 			ConfigManifest: &model.ConfigManifest{
 				ConfigKey: model.ConfigKey{
@@ -188,15 +179,6 @@ func complexRemoteExpectedConfigs() []*model.ConfigState {
 				ChangeDescription: fmt.Sprintf(`Copied from default branch configuration "empty" (%s) version 1`, utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
 				Content:           utils.NewOrderedMap(),
 			},
-			Component: &model.Component{
-				ComponentKey: model.ComponentKey{
-					Id: "ex-generic-v2",
-				},
-				Type:      "extractor",
-				Name:      "Generic",
-				Schema:    map[string]interface{}{},
-				SchemaRow: map[string]interface{}{},
-			},
 			// Generated manifest
 			ConfigManifest: &model.ConfigManifest{
 				ConfigKey: model.ConfigKey{
@@ -223,15 +205,6 @@ func complexRemoteExpectedConfigs() []*model.ConfigState {
 				Description:       "test fixture",
 				ChangeDescription: fmt.Sprintf(`Copied from default branch configuration "empty" (%s) version 1`, utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
 				Content:           utils.NewOrderedMap(),
-			},
-			Component: &model.Component{
-				ComponentKey: model.ComponentKey{
-					Id: "ex-generic-v2",
-				},
-				Type:      "extractor",
-				Name:      "Generic",
-				Schema:    map[string]interface{}{},
-				SchemaRow: map[string]interface{}{},
 			},
 			// Generated manifest
 			ConfigManifest: &model.ConfigManifest{
@@ -275,15 +248,6 @@ func complexRemoteExpectedConfigs() []*model.ConfigState {
 					},
 				}),
 			},
-			Component: &model.Component{
-				ComponentKey: model.ComponentKey{
-					Id: "keboola.ex-db-mysql",
-				},
-				Type:      "extractor",
-				Name:      "MySQL",
-				Schema:    map[string]interface{}{},
-				SchemaRow: map[string]interface{}{},
-			},
 			// Generated manifest
 			ConfigManifest: &model.ConfigManifest{
 				ConfigKey: model.ConfigKey{
@@ -325,15 +289,6 @@ func complexRemoteExpectedConfigs() []*model.ConfigState {
 						}),
 					},
 				}),
-			},
-			Component: &model.Component{
-				ComponentKey: model.ComponentKey{
-					Id: "ex-generic-v2",
-				},
-				Type:      "extractor",
-				Name:      "Generic",
-				Schema:    map[string]interface{}{},
-				SchemaRow: map[string]interface{}{},
 			},
 			// Generated manifest
 			ConfigManifest: &model.ConfigManifest{

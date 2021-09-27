@@ -379,15 +379,6 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 					},
 				}),
 			},
-			Component: &model.Component{
-				ComponentKey: model.ComponentKey{
-					Id: "keboola.ex-db-mysql",
-				},
-				Type:      "extractor",
-				Name:      "MySQL",
-				Schema:    map[string]interface{}{},
-				SchemaRow: map[string]interface{}{},
-			},
 			ConfigManifest: &model.ConfigManifest{
 				RecordState: model.RecordState{
 					Persisted: true,
@@ -433,15 +424,6 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 					},
 				}),
 			},
-			Component: &model.Component{
-				ComponentKey: model.ComponentKey{
-					Id: "ex-generic-v2",
-				},
-				Type:      "extractor",
-				Name:      "Generic",
-				Schema:    map[string]interface{}{},
-				SchemaRow: map[string]interface{}{},
-			},
 			ConfigManifest: &model.ConfigManifest{
 				RecordState: model.RecordState{
 					Persisted: true,
@@ -486,15 +468,6 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 						}),
 					},
 				}),
-			},
-			Component: &model.Component{
-				ComponentKey: model.ComponentKey{
-					Id: "ex-generic-v2",
-				},
-				Type:      "extractor",
-				Name:      "Generic",
-				Schema:    map[string]interface{}{},
-				SchemaRow: map[string]interface{}{},
 			},
 			ConfigManifest: &model.ConfigManifest{
 				RecordState: model.RecordState{

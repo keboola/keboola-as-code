@@ -140,13 +140,6 @@ func TestPersistNewConfig(t *testing.T) {
 					RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
 				},
 			},
-			Component: &model.Component{
-				ComponentKey: model.ComponentKey{
-					Id: configKey.ComponentId,
-				},
-				Type: "extractor",
-				Name: "Generic",
-			},
 			Remote: nil,
 			Local: &model.Config{
 				ConfigKey:   configKey,
@@ -278,13 +271,6 @@ func TestPersistNewConfigRow(t *testing.T) {
 					},
 					RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
 				},
-			},
-			Component: &model.Component{
-				ComponentKey: model.ComponentKey{
-					Id: configKey.ComponentId,
-				},
-				Type: "extractor",
-				Name: "MySQL Extractor",
 			},
 			Remote: nil,
 			Local: &model.Config{
