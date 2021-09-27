@@ -11,11 +11,11 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
-	"github.com/keboola/keboola-as-code/internal/pkg/thelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 )
 
 func TestValuesPriority(t *testing.T) {
-	defer thelper.ResetEnv(t, os.Environ())
+	defer testhelper.ResetEnv(t, os.Environ())
 
 	logger := zap.NewNop().Sugar()
 	workingDir := filesystem.Join("foo", "bar")

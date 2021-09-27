@@ -9,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/thelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 )
 
 type test struct {
@@ -94,7 +94,7 @@ func TestManifestSave(t *testing.T) {
 		path := filesystem.Join(filesystem.MetadataDir, FileName)
 		file, err := m.fs.ReadFile(path, "")
 		assert.NoError(t, err)
-		assert.Equal(t, thelper.EscapeWhitespaces(c.json), thelper.EscapeWhitespaces(file.Content))
+		assert.Equal(t, testhelper.EscapeWhitespaces(c.json), testhelper.EscapeWhitespaces(file.Content))
 	}
 }
 

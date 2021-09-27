@@ -26,12 +26,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/thelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // EnvTicketProvider allows you to generate new unique IDs via an ENV variable in the test.
-func CreateEnvTicketProvider(api *remote.StorageApi) thelper.EnvProvider {
+func CreateEnvTicketProvider(api *remote.StorageApi) testhelper.EnvProvider {
 	return func(name string) string {
 		name = strings.Trim(name, "%")
 		nameRegexp := regexpcache.MustCompile(`^TEST_NEW_TICKET_\d+$`)
@@ -45,7 +45,7 @@ func CreateEnvTicketProvider(api *remote.StorageApi) thelper.EnvProvider {
 			return ticket.Id
 		}
 
-		return thelper.DefaultEnvProvider(name)
+		return testhelper.DefaultEnvProvider(name)
 	}
 }
 
@@ -73,7 +73,7 @@ func TestFunctional(t *testing.T) {
 // RunFunctionalTest runs one functional test.
 func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) {
 	t.Helper()
-	defer thelper.ResetEnv(t, os.Environ())
+	defer testhelper.ResetEnv(t, os.Environ())
 
 	// Clean working dir
 	assert.NoError(t, os.RemoveAll(workingDir))
@@ -82,7 +82,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 
 	// Copy all from "in" dir to "runtime" dir
 	inDir := filepath.Join(testDir, "in")
-	if !thelper.FileExists(inDir) {
+	if !testhelper.FileExists(inDir) {
 		t.Fatalf("Missing directory \"%s\".", inDir)
 	}
 	err := copy.Copy(inDir, workingDir)
@@ -95,7 +95,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 
 	// Setup KBC project state
 	projectStateFilePath := filepath.Join(testDir, "initial-state.json")
-	if thelper.IsFile(projectStateFilePath) {
+	if testhelper.IsFile(projectStateFilePath) {
 		remote.SetStateOfTestProject(t, api, projectStateFilePath)
 	}
 
@@ -103,11 +103,11 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	envProvider := CreateEnvTicketProvider(api)
 
 	// Replace all %%ENV_VAR%% in all files in the working directory
-	thelper.ReplaceEnvsDir(workingDir, envProvider)
+	testhelper.ReplaceEnvsDir(workingDir, envProvider)
 
 	// Load command arguments from file
 	argsFile := filepath.Join(testDir, "args")
-	argsStr := thelper.ReplaceEnvsString(strings.TrimSpace(thelper.GetFileContent(argsFile)), nil)
+	argsStr := testhelper.ReplaceEnvsString(strings.TrimSpace(testhelper.GetFileContent(argsFile)), nil)
 	args, err := shlex.Split(argsStr)
 	if err != nil {
 		t.Fatalf("Cannot parse args \"%s\": %s", argsStr, err)
@@ -119,7 +119,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	cmd.Dir = workingDir
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	if thelper.TestIsVerbose() {
+	if testhelper.TestIsVerbose() {
 		cmd.Stdout = io.MultiWriter(cmd.Stdout, os.Stdout)
 		cmd.Stderr = io.MultiWriter(cmd.Stderr, os.Stderr)
 	}
@@ -174,10 +174,10 @@ func GetTestDirs(t *testing.T, root string) []string {
 		}
 
 		// Skip hidden
-		if thelper.IsIgnoredFile(path, d) {
+		if testhelper.IsIgnoredFile(path, d) {
 			return nil
 		}
-		if thelper.IsIgnoredDir(path, d) {
+		if testhelper.IsIgnoredDir(path, d) {
 			return filepath.SkipDir
 		}
 
@@ -201,7 +201,7 @@ func GetTestDirs(t *testing.T, root string) []string {
 func AssertExpectations(
 	t *testing.T,
 	api *remote.StorageApi,
-	envProvider thelper.EnvProvider,
+	envProvider testhelper.EnvProvider,
 	testDir string,
 	workingDir string,
 	exitCode int,
@@ -211,9 +211,9 @@ func AssertExpectations(
 	t.Helper()
 
 	// Compare expected values
-	expectedStdout := thelper.ReplaceEnvsString(thelper.GetFileContent(filepath.Join(testDir, "expected-stdout")), nil)
-	expectedStderr := thelper.ReplaceEnvsString(thelper.GetFileContent(filepath.Join(testDir, "expected-stderr")), nil)
-	expectedCodeStr := thelper.GetFileContent(filepath.Join(testDir, "expected-code"))
+	expectedStdout := testhelper.ReplaceEnvsString(testhelper.GetFileContent(filepath.Join(testDir, "expected-stdout")), nil)
+	expectedStderr := testhelper.ReplaceEnvsString(testhelper.GetFileContent(filepath.Join(testDir, "expected-stderr")), nil)
+	expectedCodeStr := testhelper.GetFileContent(filepath.Join(testDir, "expected-code"))
 	expectedCode, _ := strconv.ParseInt(strings.TrimSpace(expectedCodeStr), 10, 32)
 	assert.Equal(
 		t,
@@ -225,12 +225,12 @@ func AssertExpectations(
 	)
 
 	// Assert STDOUT and STDERR
-	thelper.AssertWildcards(t, expectedStdout, stdout, "Unexpected STDOUT.")
-	thelper.AssertWildcards(t, expectedStderr, stderr, "Unexpected STDERR.")
+	testhelper.AssertWildcards(t, expectedStdout, stdout, "Unexpected STDOUT.")
+	testhelper.AssertWildcards(t, expectedStderr, stderr, "Unexpected STDERR.")
 
 	// Expected state dir
 	expectedDirOrg := filepath.Join(testDir, "out")
-	if !thelper.FileExists(expectedDirOrg) {
+	if !testhelper.FileExists(expectedDirOrg) {
 		t.Fatalf("Missing directory \"%s\".", expectedDirOrg)
 	}
 
@@ -240,17 +240,17 @@ func AssertExpectations(
 	if err != nil {
 		t.Fatalf("Copy error: %s", err)
 	}
-	thelper.ReplaceEnvsDir(expectedDir, envProvider)
+	testhelper.ReplaceEnvsDir(expectedDir, envProvider)
 
 	// Compare actual and expected dirs
-	thelper.AssertDirectoryContentsSame(t, expectedDir, workingDir)
+	testhelper.AssertDirectoryContentsSame(t, expectedDir, workingDir)
 
 	// Check project state
 	expectedStatePath := filepath.Join(testDir, "expected-state.json")
-	if thelper.IsFile(expectedStatePath) {
+	if testhelper.IsFile(expectedStatePath) {
 		// Read expected state
 		expectedSnapshot := &fixtures.ProjectSnapshot{}
-		content, err := thelper.ReadFile(testDir, "expected-state.json", "expected project state")
+		content, err := testhelper.ReadFile(testDir, "expected-state.json", "expected project state")
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}
@@ -278,7 +278,7 @@ func AssertExpectations(
 		}
 
 		// Write actual state
-		err = thelper.WriteFile(workingDir, "actual-state.json", json.MustEncodeString(actualSnapshot, true), "test project state")
+		err = testhelper.WriteFile(workingDir, "actual-state.json", json.MustEncodeString(actualSnapshot, true), "test project state")
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}

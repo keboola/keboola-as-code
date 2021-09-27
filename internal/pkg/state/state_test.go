@@ -18,7 +18,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/thelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -41,7 +41,7 @@ func TestLoadStateDifferentProjectId(t *testing.T) {
 }
 
 func TestLoadState(t *testing.T) {
-	defer thelper.ResetEnv(t, os.Environ())
+	defer testhelper.ResetEnv(t, os.Environ())
 	api, _ := remote.TestStorageApiWithToken(t)
 	remote.SetStateOfTestProject(t, api, "minimal.json")
 
@@ -51,7 +51,7 @@ func TestLoadState(t *testing.T) {
 
 	logger, _ := utils.NewDebugLogger()
 	m := loadTestManifest(t, "minimal")
-	m.Project.Id = thelper.TestProjectId()
+	m.Project.Id = testhelper.TestProjectId()
 
 	stateOptions := NewOptions(m, api, context.Background(), logger)
 	stateOptions.LoadLocalState = true
@@ -163,7 +163,7 @@ func TestValidateState(t *testing.T) {
 
 	logger, _ := utils.NewDebugLogger()
 	m := loadTestManifest(t, "minimal")
-	m.Project.Id = thelper.TestProjectId()
+	m.Project.Id = testhelper.TestProjectId()
 
 	api, _ := remote.TestMockedStorageApi(t)
 	stateOptions := NewOptions(m, api, context.Background(), logger)
@@ -216,7 +216,7 @@ func loadTestManifest(t *testing.T, localState string) *manifest.Manifest {
 	if err := aferocopy.Copy(localStateDir, projectDir); err != nil {
 		t.Fatalf("Copy error: %s", err)
 	}
-	thelper.ReplaceEnvsDir(projectDir, nil)
+	testhelper.ReplaceEnvsDir(projectDir, nil)
 
 	// Create fs and load manifest
 	fs, err := aferofs.NewLocalFs(zap.NewNop().Sugar(), projectDir, ".")

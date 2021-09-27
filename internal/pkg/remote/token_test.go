@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/thelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -24,14 +24,14 @@ func TestApiWithToken(t *testing.T) {
 }
 
 func TestGetToken(t *testing.T) {
-	tokenValue := thelper.TestToken()
+	tokenValue := testhelper.TestToken()
 	api, logs := TestStorageApi(t)
 	token, err := api.GetToken(tokenValue)
 	assert.NoError(t, err)
 	assert.Regexp(t, `DEBUG  HTTP      GET https://.*/v2/storage/tokens/verify | 200 | .*`, logs.String())
 	assert.Equal(t, tokenValue, token.Token)
-	assert.Equal(t, thelper.TestProjectId(), token.ProjectId())
-	assert.Equal(t, thelper.TestProjectName(), token.ProjectName())
+	assert.Equal(t, testhelper.TestProjectId(), token.ProjectId())
+	assert.Equal(t, testhelper.TestProjectName(), token.ProjectName())
 }
 
 func TestGetTokenEmpty(t *testing.T) {
@@ -59,7 +59,7 @@ func TestGetTokenInvalid(t *testing.T) {
 }
 
 func TestGetTokenExpired(t *testing.T) {
-	tokenValue := thelper.TestTokenExpired()
+	tokenValue := testhelper.TestTokenExpired()
 	api, _ := TestStorageApi(t)
 	token, err := api.GetToken(tokenValue)
 	assert.Error(t, err)

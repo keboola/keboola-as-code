@@ -11,7 +11,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/thelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 )
 
 type ProjectSnapshot struct {
@@ -110,7 +110,7 @@ func (r *ConfigRow) GetName() string {
 }
 
 func LoadStateFile(path string) (*StateFile, error) {
-	data := thelper.GetFileContent(path) // nolint: forbidigo
+	data := testhelper.GetFileContent(path) 
 	stateFile := &StateFile{}
 	err := json.Unmarshal([]byte(data), stateFile)
 	if err != nil {
@@ -143,7 +143,7 @@ func LoadConfig(t *testing.T, name string) *model.ConfigWithRows {
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filesystem.Dir(testFile)
 	path := filesystem.Join(testDir, "configs", name+".json")
-	content := thelper.GetFileContent(path) // nolint: forbidigo
+	content := testhelper.GetFileContent(path) 
 	fixture := &Config{}
 	err := json.Unmarshal([]byte(content), fixture)
 	if err != nil {

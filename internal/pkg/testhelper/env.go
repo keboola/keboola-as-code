@@ -1,4 +1,4 @@
-package thelper
+package testhelper
 
 import (
 	"fmt"
