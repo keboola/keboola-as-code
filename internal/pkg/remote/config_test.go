@@ -7,7 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/thelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -96,7 +96,7 @@ func TestConfigApiCalls(t *testing.T) {
 	components, err = api.ListComponents(branch.Id)
 	assert.NotNil(t, components)
 	assert.NoError(t, err)
-	thelper.AssertWildcards(t, expectedComponentsConfigTest(), json.MustEncodeString(components, true), "Unexpected components")
+	testhelper.AssertWildcards(t, expectedComponentsConfigTest(), json.MustEncodeString(components, true), "Unexpected components")
 
 	// Delete configuration
 	err = api.DeleteConfig(config.Config)

@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/thelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 )
 
 const (
@@ -222,7 +222,7 @@ func createVirtualPrompt(t *testing.T) (*Prompt, *expect.Console) {
 
 	// Create virtual console
 	var stdout io.Writer
-	if thelper.TestIsVerbose() {
+	if testhelper.TestIsVerbose() {
 		stdout = os.Stdout
 	} else {
 		stdout = io.Discard

@@ -28,7 +28,7 @@ linters-settings:
       - ^(fmt\.Print.*|print|println)$
       # No "os" filesystem ops, use "internal/pkg/fs" package instead
       - ^(os\.(NewFile|Create.*|Open.*|Ch.*|Link|Symlink|Mkdir.*|ReadFile|Readlink|Remove.*|Rename|Truncate|Lstat|Stat|Getwd))$
-      - ^thelper.(GetFileContent|Glob)$
+      - ^testhelper.(GetFileContent|Glob)$
       # No "filepath" package, use "internal/pkg/fs" package instead
       - ^filepath\..*$
 
