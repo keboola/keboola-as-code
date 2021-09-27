@@ -110,6 +110,8 @@ func TestManifestValidateEmpty(t *testing.T) {
 	- key="naming.branch", value="", failed "required" validation
 	- key="naming.config", value="", failed "required" validation
 	- key="naming.configRow", value="", failed "required" validation
+	- key="naming.sharedCodeConfig", value="", failed "required" validation
+	- key="naming.sharedCodeConfigRow", value="", failed "required" validation
 	- key="allowedBranches", value="[]", failed "required" validation`
 	assert.Equal(t, expected, err.Error())
 }
@@ -253,7 +255,9 @@ func minimalJson() string {
   "naming": {
     "branch": "{branch_id}-{branch_name}",
     "config": "{component_type}/{component_id}/{config_id}-{config_name}",
-    "configRow": "rows/{config_row_id}-{config_row_name}"
+    "configRow": "rows/{config_row_id}-{config_row_name}",
+    "sharedCodeConfig": "_shared/{target_component_id}",
+    "sharedCodeConfigRow": "codes/{config_row_id}-{config_row_name}"
   },
   "allowedBranches": [
     "*"
@@ -293,7 +297,9 @@ func fullJson() string {
   "naming": {
     "branch": "{branch_id}-{branch_name}",
     "config": "{component_type}/{component_id}/{config_id}-{config_name}",
-    "configRow": "rows/{config_row_id}-{config_row_name}"
+    "configRow": "rows/{config_row_id}-{config_row_name}",
+    "sharedCodeConfig": "_shared/{target_component_id}",
+    "sharedCodeConfigRow": "codes/{config_row_id}-{config_row_name}"
   },
   "allowedBranches": [
     "foo",

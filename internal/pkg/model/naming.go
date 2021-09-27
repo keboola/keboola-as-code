@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/spf13/cast"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -25,22 +27,26 @@ const (
 
 // Naming of the files.
 type Naming struct {
-	Branch     utils.PathTemplate `json:"branch" validate:"required"`
-	Config     utils.PathTemplate `json:"config" validate:"required"`
-	ConfigRow  utils.PathTemplate `json:"configRow" validate:"required"`
-	usedLock   *sync.Mutex
-	usedByPath map[string]string // path -> object key
-	usedByKey  map[string]string // object key -> path
+	Branch              utils.PathTemplate `json:"branch" validate:"required"`
+	Config              utils.PathTemplate `json:"config" validate:"required"`
+	ConfigRow           utils.PathTemplate `json:"configRow" validate:"required"`
+	SharedCodeConfig    utils.PathTemplate `json:"sharedCodeConfig" validate:"required"`
+	SharedCodeConfigRow utils.PathTemplate `json:"sharedCodeConfigRow" validate:"required"`
+	usedLock            *sync.Mutex
+	usedByPath          map[string]string // path -> object key
+	usedByKey           map[string]string // object key -> path
 }
 
 func DefaultNaming() Naming {
 	return Naming{
-		Branch:     "{branch_id}-{branch_name}",
-		Config:     "{component_type}/{component_id}/{config_id}-{config_name}",
-		ConfigRow:  "rows/{config_row_id}-{config_row_name}",
-		usedLock:   &sync.Mutex{},
-		usedByPath: make(map[string]string),
-		usedByKey:  make(map[string]string),
+		Branch:              "{branch_id}-{branch_name}",
+		Config:              "{component_type}/{component_id}/{config_id}-{config_name}",
+		ConfigRow:           "rows/{config_row_id}-{config_row_name}",
+		SharedCodeConfig:    "_shared/{target_component_id}",
+		SharedCodeConfigRow: "codes/{config_row_id}-{config_row_name}",
+		usedLock:            &sync.Mutex{},
+		usedByPath:          make(map[string]string),
+		usedByKey:           make(map[string]string),
 	}
 }
 
@@ -143,20 +149,48 @@ func (n Naming) ConfigPath(parentPath string, component *Component, config *Conf
 		panic(fmt.Errorf(`config "%s" parent path cannot be empty"`, config))
 	}
 
+	// Shared code is handled differently
+	var template, targetComponentId string
+	if component.IsSharedCode() {
+		// Get target component ID for shared code config
+		if config.Content == nil {
+			panic(fmt.Errorf(`shared code config "%s" must have set key "%s"`, config.Desc(), ShareCodeTargetComponentKey))
+		}
+		targetComponentIdRaw, found := config.Content.Get(ShareCodeTargetComponentKey)
+		if !found {
+			panic(fmt.Errorf(`shared code config "%s" must have set key "%s"`, config.Desc(), ShareCodeTargetComponentKey))
+		}
+		// Shared code
+		template = string(n.SharedCodeConfig)
+		targetComponentId = cast.ToString(targetComponentIdRaw)
+	} else {
+		// Ordinary config
+		template = string(n.Config)
+	}
+
 	p := PathInProject{}
 	p.ParentPath = parentPath
-	p.ObjectPath = utils.ReplacePlaceholders(string(n.Config), map[string]interface{}{
-		"component_type": component.Type,
-		"component_id":   component.Id,
-		"config_id":      config.Id,
-		"config_name":    utils.NormalizeName(config.Name),
+	p.ObjectPath = utils.ReplacePlaceholders(template, map[string]interface{}{
+		"target_component_id": targetComponentId, // for shared code
+		"component_type":      component.Type,
+		"component_id":        component.Id,
+		"config_id":           config.Id,
+		"config_name":         utils.NormalizeName(config.Name),
 	})
 	return n.ensureUniquePath(config.Key(), p)
 }
 
-func (n Naming) ConfigRowPath(parentPath string, row *ConfigRow) PathInProject {
+func (n Naming) ConfigRowPath(parentPath string, component *Component, row *ConfigRow) PathInProject {
 	if len(parentPath) == 0 {
 		panic(fmt.Errorf(`config row "%s" parent path cannot be empty"`, row))
+	}
+
+	// Shared code is handled differently
+	var template string
+	if component.IsSharedCode() {
+		template = string(n.SharedCodeConfigRow)
+	} else {
+		template = string(n.ConfigRow)
 	}
 
 	// Row name can be empty.
@@ -174,7 +208,7 @@ func (n Naming) ConfigRowPath(parentPath string, row *ConfigRow) PathInProject {
 
 	p := PathInProject{}
 	p.ParentPath = parentPath
-	p.ObjectPath = utils.ReplacePlaceholders(string(n.ConfigRow), map[string]interface{}{
+	p.ObjectPath = utils.ReplacePlaceholders(template, map[string]interface{}{
 		"config_row_id":   row.Id,
 		"config_row_name": utils.NormalizeName(name),
 	})
@@ -211,6 +245,10 @@ func (n Naming) CodePath(parentPath string, code *Code) PathInProject {
 
 func (n Naming) CodeFilePath(code *Code) string {
 	return filesystem.Join(code.RelativePath(), code.CodeFileName)
+}
+
+func (n Naming) SharedCodeFilePath(parentPath, targetComponentId string) string {
+	return filesystem.Join(parentPath, n.CodeFileName(targetComponentId))
 }
 
 func (n Naming) CodeFileName(componentId string) string {
