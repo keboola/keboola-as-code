@@ -6,6 +6,7 @@ import (
 
 	"github.com/iancoleman/orderedmap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -34,11 +35,11 @@ type ObjectState interface {
 type ObjectFiles struct {
 	Record        Record
 	Object        Object
-	Metadata      *JsonFile // meta.json
-	Description   *File     // description.md
-	Configuration *JsonFile // config.json
-	Extra         []*File   // extra files
-	ToDelete      []string  // files to delete, on save
+	Metadata      *filesystem.JsonFile // meta.json
+	Description   *filesystem.File     // description.md
+	Configuration *filesystem.JsonFile // config.json
+	Extra         []*filesystem.File   // extra files
+	ToDelete      []string             // files to delete, on save
 	Path          string
 }
 

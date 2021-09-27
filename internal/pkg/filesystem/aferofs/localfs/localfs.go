@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 )
 
 type aferoFs = afero.Fs
@@ -75,7 +75,7 @@ func FindProjectDir(logger *zap.SugaredLogger, workingDir string) (string, error
 	projectDir := workingDir
 
 	for {
-		metadataDir := filepath.Join(projectDir, model.MetadataDir)
+		metadataDir := filepath.Join(projectDir, filesystem.MetadataDir)
 		if stat, err := os.Stat(metadataDir); err == nil {
 			if stat.IsDir() {
 				return projectDir, nil

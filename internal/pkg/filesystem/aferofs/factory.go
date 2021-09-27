@@ -1,4 +1,4 @@
-package filesystem
+package aferofs
 
 import (
 	"fmt"
@@ -7,12 +7,12 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/localfs"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/memoryfs"
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs/localfs"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs/memoryfs"
 )
 
-func NewLocalFs(logger *zap.SugaredLogger, workingDir string) (fs model.Filesystem, err error) {
+func NewLocalFs(logger *zap.SugaredLogger, workingDir string) (fs filesystem.Fs, err error) {
 	if workingDir == "" {
 		workingDir, err = os.Getwd()
 		if err != nil {
@@ -32,18 +32,18 @@ func NewLocalFs(logger *zap.SugaredLogger, workingDir string) (fs model.Filesyst
 		return nil, err
 	}
 
-	workingDirRel := Rel(projectDir, workingDir)
+	workingDirRel := filesystem.Rel(projectDir, workingDir)
 
 	// Create filesystem abstraction
 	return New(logger, localfs.New(projectDir), workingDirRel), nil
 }
 
-func NewLocalFsFromProjectDir(logger *zap.SugaredLogger, projectDir string, workingDirRel string) (fs model.Filesystem, err error) {
+func NewLocalFsFromProjectDir(logger *zap.SugaredLogger, projectDir string, workingDirRel string) (fs filesystem.Fs, err error) {
 	// Create filesystem abstraction
 	return New(logger, localfs.New(projectDir), workingDirRel), nil
 }
 
-func NewMemoryFs(logger *zap.SugaredLogger, workingDir string) (fs model.Filesystem, err error) {
+func NewMemoryFs(logger *zap.SugaredLogger, workingDir string) (fs filesystem.Fs, err error) {
 	// Create filesystem abstraction
 	return New(logger, memoryfs.New(), workingDir), nil
 }
