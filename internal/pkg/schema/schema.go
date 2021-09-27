@@ -51,10 +51,18 @@ func ValidateSchemas(projectState *state.State) error {
 }
 
 func ValidateConfig(component *model.Component, config *model.Config) error {
+	// Skip deprecated component
+	if component.IsDeprecated() {
+		return nil
+	}
 	return validateJsonSchema(component.Schema, config.Content)
 }
 
 func ValidateConfigRow(component *model.Component, configRow *model.ConfigRow) error {
+	// Skip deprecated component
+	if component.IsDeprecated() {
+		return nil
+	}
 	return validateJsonSchema(component.SchemaRow, configRow.Content)
 }
 

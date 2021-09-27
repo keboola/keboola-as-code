@@ -13,7 +13,7 @@ type Component struct {
 	ComponentKey
 	Type      string                 `json:"type" validate:"required"`
 	Name      string                 `json:"name" validate:"required"`
-	Flags     []string               `json:"flags,omitempty" validate:"required"`
+	Flags     []string               `json:"flags,omitempty"`
 	Schema    map[string]interface{} `json:"configurationSchema,omitempty"`
 	SchemaRow map[string]interface{} `json:"configurationRowSchema,omitempty"`
 }
