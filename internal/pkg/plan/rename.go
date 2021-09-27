@@ -1,17 +1,9 @@
 package plan
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
-	"regexp"
-	"strings"
-
-	"github.com/jpillora/longestcommon"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/strhelper"
 )
 
 // Rename creates a plan for renaming objects that do not match the naming.
@@ -37,13 +29,13 @@ func (b *renamePlanBuilder) build() ([]*RenameAction, error) {
 		if err := b.LocalManager().UpdatePaths(object, false); err != nil {
 			return nil, err
 		}
-		action.OldPath = filepath.Join(b.ProjectDir(), object.RelativePath())
+		action.OldPath = object.RelativePath()
 
 		// Rename
 		if err := b.LocalManager().UpdatePaths(object, true); err != nil {
 			return nil, err
 		}
-		action.NewPath = filepath.Join(b.ProjectDir(), object.RelativePath())
+		action.NewPath = object.RelativePath()
 
 		// Should be renamed?
 		if action.OldPath != action.NewPath {
@@ -65,27 +57,7 @@ func (b *renamePlanBuilder) build() ([]*RenameAction, error) {
 func (b *renamePlanBuilder) setDescriptions() {
 	// Set description
 	for _, action := range b.actions {
-		// Get common prefix of the old and new path
-		oldPathRel := utils.RelPath(b.ProjectDir(), action.OldPath)
-		newPathRel := utils.RelPath(b.ProjectDir(), action.NewPath)
-		prefix := longestcommon.Prefix([]string{oldPathRel, newPathRel})
-
-		// Remove from the prefix everything after the last separator
-		prefix = regexp.
-			MustCompile(fmt.Sprintf(`(^|%c)[^%c]*$`, os.PathSeparator, os.PathSeparator)).
-			ReplaceAllString(prefix, "$1")
-
-		// Generate description for logs
-		if prefix != "" {
-			action.Description = fmt.Sprintf(
-				`%s{%s -> %s}`,
-				prefix,
-				strings.TrimPrefix(oldPathRel, prefix),
-				strings.TrimPrefix(newPathRel, prefix),
-			)
-		} else {
-			action.Description = fmt.Sprintf(`%s -> %s`, oldPathRel, newPathRel)
-		}
+		action.Description = strhelper.FormatPathChange(action.OldPath, action.NewPath, false)
 	}
 }
 
@@ -105,11 +77,11 @@ func (b *renamePlanBuilder) renameBlock(block *model.Block) {
 
 	// Store old path
 	action := &RenameAction{}
-	action.OldPath = filepath.Join(b.ProjectDir(), block.RelativePath())
+	action.OldPath = block.RelativePath()
 
 	// Rename
 	b.LocalManager().UpdateBlockPath(block, true)
-	action.NewPath = filepath.Join(b.ProjectDir(), block.RelativePath())
+	action.NewPath = block.RelativePath()
 	if action.OldPath != action.NewPath {
 		b.actions = append(b.actions, action)
 	}
@@ -126,11 +98,11 @@ func (b *renamePlanBuilder) renameCode(block *model.Block, code *model.Code) {
 
 	// Store old path
 	action := &RenameAction{}
-	action.OldPath = filepath.Join(b.ProjectDir(), code.RelativePath())
+	action.OldPath = code.RelativePath()
 
 	// Rename
 	b.LocalManager().UpdateCodePath(block, code, true)
-	action.NewPath = filepath.Join(b.ProjectDir(), code.RelativePath())
+	action.NewPath = code.RelativePath()
 	if action.OldPath != action.NewPath {
 		b.actions = append(b.actions, action)
 	}
@@ -142,11 +114,11 @@ func (b *renamePlanBuilder) renameCode(block *model.Block, code *model.Code) {
 func (b *renamePlanBuilder) renameCodeFile(code *model.Code) {
 	// Store old path
 	action := &RenameAction{}
-	action.OldPath = filepath.Join(b.ProjectDir(), b.Naming().CodeFilePath(code))
+	action.OldPath = b.Naming().CodeFilePath(code)
 
 	// Rename
 	code.CodeFileName = b.Naming().CodeFileName(code.ComponentId)
-	action.NewPath = filepath.Join(b.ProjectDir(), b.Naming().CodeFilePath(code))
+	action.NewPath = b.Naming().CodeFilePath(code)
 	if action.OldPath != action.NewPath {
 		b.actions = append(b.actions, action)
 	}

@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 )
 
@@ -21,23 +22,20 @@ func statusCommand(root *rootCommand) *cobra.Command {
 		Long:  statusLongDescription,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			// Validate
-			if !root.options.HasProjectDirectory() {
+			if !root.fs.IsDir(filesystem.MetadataDir) {
 				root.logger.Infof(`Start by running the "init" sub-command in an empty directory.`)
 				return fmt.Errorf("none of this and parent directories is project dir")
 			}
 
 			// Load manifest
-			projectDir := root.options.ProjectDir()
-			metadataDir := root.options.MetadataDir()
-			projectManifest, err := manifest.LoadManifest(projectDir, metadataDir)
+			projectManifest, err := manifest.LoadManifest(root.fs)
 			if err != nil {
 				return err
 			}
 
-			root.logger.Infof("Working directory:  %s", root.options.WorkingDirectory())
-			root.logger.Infof("Project directory:  %s", root.options.ProjectDir())
-			root.logger.Infof("Metadata directory: %s", root.options.MetadataDir())
-			root.logger.Infof("Manifest path:      %s", projectManifest.RelativePath())
+			root.logger.Infof("Project directory:  %s", root.fs.BasePath())
+			root.logger.Infof("Working directory:  %s", root.fs.WorkingDir())
+			root.logger.Infof("Manifest path:      %s", projectManifest.Path())
 			return nil
 		},
 	}

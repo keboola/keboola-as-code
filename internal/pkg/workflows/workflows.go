@@ -4,12 +4,11 @@ import (
 	"bufio"
 	"bytes"
 	"embed"
-	"os"
-	"path/filepath"
 	"text/template"
 
 	"go.uber.org/zap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -29,14 +28,14 @@ func (o *Options) Enabled() bool {
 }
 
 type generator struct {
-	projectDir string
-	options    *Options
-	logger     *zap.SugaredLogger
-	errors     *utils.Error
+	fs      filesystem.Fs
+	options *Options
+	logger  *zap.SugaredLogger
+	errors  *utils.Error
 }
 
-func GenerateFiles(logger *zap.SugaredLogger, projectDir string, options *Options) error {
-	g := &generator{projectDir: projectDir, options: options, logger: logger, errors: utils.NewMultiError()}
+func GenerateFiles(logger *zap.SugaredLogger, fs filesystem.Fs, options *Options) error {
+	g := &generator{fs: fs, options: options, logger: logger, errors: utils.NewMultiError()}
 	return g.generateFiles()
 }
 
@@ -50,26 +49,26 @@ func (g *generator) generateFiles() error {
 	// Common files
 	g.logger.Info()
 	g.logger.Info(`Generating CI workflows ...`)
-	workflowsDir := filepath.Join(g.projectDir, ".github", "workflows")
-	actionsDir := filepath.Join(g.projectDir, ".github", "actions")
-	installActDir := filepath.Join(actionsDir, "install")
-	g.handleError(os.MkdirAll(workflowsDir, 0755))
-	g.handleError(os.MkdirAll(installActDir, 0755))
-	g.renderTemplate(`template/install.yml.tmpl`, filepath.Join(installActDir, `action.yml`))
+	workflowsDir := filesystem.Join(".github", "workflows")
+	actionsDir := filesystem.Join(".github", "actions")
+	installActDir := filesystem.Join(actionsDir, "install")
+	g.handleError(g.fs.Mkdir(workflowsDir))
+	g.handleError(g.fs.Mkdir(installActDir))
+	g.renderTemplate(`template/install.yml.tmpl`, filesystem.Join(installActDir, `action.yml`))
 
 	// Validate operation
 	if g.options.Validate {
-		g.renderTemplate(`template/validate.yml.tmpl`, filepath.Join(workflowsDir, `validate.yml`))
+		g.renderTemplate(`template/validate.yml.tmpl`, filesystem.Join(workflowsDir, `validate.yml`))
 	}
 
 	// Push operation
 	if g.options.Push {
-		g.renderTemplate(`template/push.yml.tmpl`, filepath.Join(workflowsDir, `push.yml`))
+		g.renderTemplate(`template/push.yml.tmpl`, filesystem.Join(workflowsDir, `push.yml`))
 	}
 
 	// Pull operation
 	if g.options.Pull {
-		g.renderTemplate(`template/pull.yml.tmpl`, filepath.Join(workflowsDir, `pull.yml`))
+		g.renderTemplate(`template/pull.yml.tmpl`, filesystem.Join(workflowsDir, `pull.yml`))
 	}
 
 	if g.errors.Len() > 0 {
@@ -117,8 +116,8 @@ func (g *generator) renderTemplate(templatePath, targetPath string) {
 	}
 
 	// Write
-	if err := os.WriteFile(targetPath, buffer.Bytes(), 0644); err == nil {
-		g.logger.Infof(`Created file "%s".`, utils.RelPath(g.projectDir, targetPath))
+	if err := g.fs.WriteFile(filesystem.CreateFile(targetPath, buffer.String())); err == nil {
+		g.logger.Infof(`Created file "%s".`, targetPath)
 	} else {
 		g.errors.Append(err)
 	}

@@ -32,7 +32,7 @@ func persistCommand(root *rootCommand) *cobra.Command {
 			logger := root.logger
 
 			// Validate project directory
-			if err := root.ValidateOptions([]string{"projectDirectory"}); err != nil {
+			if err := ValidateMetadataFound(root.fs); err != nil {
 				return err
 			}
 
@@ -43,9 +43,7 @@ func persistCommand(root *rootCommand) *cobra.Command {
 			}
 
 			// Load manifest
-			projectDir := root.options.ProjectDir()
-			metadataDir := root.options.MetadataDir()
-			projectManifest, err := manifest.LoadManifest(projectDir, metadataDir)
+			projectManifest, err := manifest.LoadManifest(root.fs)
 			if err != nil {
 				return err
 			}

@@ -3,28 +3,24 @@ package plan
 import (
 	"context"
 	"net/http"
-	"os"
-	"path/filepath"
 	"runtime"
 	"testing"
 
 	"github.com/jarcoal/httpmock"
-	"github.com/otiai10/copy"
+	"github.com/nhatthm/aferocopy"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/thelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func TestPersistNoChange(t *testing.T) {
-	projectDir := initMinimalProjectDir(t)
-	metadataDir := filepath.Join(projectDir, manifest.MetadataDir)
-	m, err := manifest.LoadManifest(projectDir, metadataDir)
-	assert.NoError(t, err)
+	m, _ := loadTestManifest(t, initMinimalProjectDir(t))
 	api, _ := remote.TestMockedStorageApi(t)
 
 	// Mocked API response
@@ -61,10 +57,7 @@ func TestPersistNoChange(t *testing.T) {
 }
 
 func TestPersistNewConfig(t *testing.T) {
-	projectDir := initMinimalProjectDir(t)
-	metadataDir := filepath.Join(projectDir, manifest.MetadataDir)
-	m, err := manifest.LoadManifest(projectDir, metadataDir)
-	assert.NoError(t, err)
+	m, fs := loadTestManifest(t, initMinimalProjectDir(t))
 	api, _ := remote.TestMockedStorageApi(t)
 
 	// Mocked API response
@@ -82,11 +75,11 @@ func TestPersistNewConfig(t *testing.T) {
 	httpmock.RegisterResponder("POST", `=~/storage/tickets`, generateNewIdResponser)
 
 	// Write files
-	configDir := filepath.Join(projectDir, `main`, `extractor`, `ex-generic-v2`, `new-config`)
-	assert.NoError(t, os.Mkdir(configDir, 0755))
-	assert.NoError(t, os.WriteFile(filepath.Join(configDir, `config.json`), []byte(`{"key": "value"}`), 0644))
-	assert.NoError(t, os.WriteFile(filepath.Join(configDir, `meta.json`), []byte(`{"name": "foo"}`), 0644))
-	assert.NoError(t, os.WriteFile(filepath.Join(configDir, `description.md`), []byte(`bar`), 0644))
+	configDir := filesystem.Join(`main`, `extractor`, `ex-generic-v2`, `new-config`)
+	assert.NoError(t, fs.Mkdir(configDir))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(configDir, `config.json`), `{"key": "value"}`)))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(configDir, `meta.json`), `{"name": "foo"}`)))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(configDir, `description.md`), `bar`)))
 
 	// Load state
 	logger, _ := utils.NewDebugLogger()
@@ -144,7 +137,7 @@ func TestPersistNewConfig(t *testing.T) {
 						ParentPath: "main",
 						ObjectPath: "extractor/ex-generic-v2/new-config",
 					},
-					RelatedPaths: []string{model.MetaFile, model.DescriptionFile, model.ConfigFile},
+					RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
 				},
 			},
 			Component: &model.Component{
@@ -172,10 +165,7 @@ func TestPersistNewConfig(t *testing.T) {
 }
 
 func TestPersistNewConfigRow(t *testing.T) {
-	projectDir := initMinimalProjectDir(t)
-	metadataDir := filepath.Join(projectDir, manifest.MetadataDir)
-	m, err := manifest.LoadManifest(projectDir, metadataDir)
-	assert.NoError(t, err)
+	m, fs := loadTestManifest(t, initMinimalProjectDir(t))
 	api, _ := remote.TestMockedStorageApi(t)
 
 	// Mocked API response
@@ -201,16 +191,16 @@ func TestPersistNewConfigRow(t *testing.T) {
 	httpmock.RegisterResponder("POST", `=~/storage/tickets`, generateNewIdResponder)
 
 	// Write files
-	configDir := filepath.Join(projectDir, `main`, `extractor`, `keboola.ex-db-mysql`, `new-config`)
-	assert.NoError(t, os.MkdirAll(configDir, 0755))
-	assert.NoError(t, os.WriteFile(filepath.Join(configDir, `config.json`), []byte(`{"key1": "value1"}`), 0644))
-	assert.NoError(t, os.WriteFile(filepath.Join(configDir, `meta.json`), []byte(`{"name": "foo1"}`), 0644))
-	assert.NoError(t, os.WriteFile(filepath.Join(configDir, `description.md`), []byte(`bar1`), 0644))
-	rowDir := filepath.Join(configDir, `rows`, `some-row`)
-	assert.NoError(t, os.MkdirAll(rowDir, 0755))
-	assert.NoError(t, os.WriteFile(filepath.Join(rowDir, `config.json`), []byte(`{"key2": "value2"}`), 0644))
-	assert.NoError(t, os.WriteFile(filepath.Join(rowDir, `meta.json`), []byte(`{"name": "foo2"}`), 0644))
-	assert.NoError(t, os.WriteFile(filepath.Join(rowDir, `description.md`), []byte(`bar2`), 0644))
+	configDir := filesystem.Join(`main`, `extractor`, `keboola.ex-db-mysql`, `new-config`)
+	assert.NoError(t, fs.Mkdir(configDir))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(configDir, `config.json`), `{"key1": "value1"}`)))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(configDir, `meta.json`), `{"name": "foo1"}`)))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(configDir, `description.md`), `bar1`)))
+	rowDir := filesystem.Join(configDir, `rows`, `some-row`)
+	assert.NoError(t, fs.Mkdir(rowDir))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(rowDir, `config.json`), `{"key2": "value2"}`)))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(rowDir, `meta.json`), `{"name": "foo2"}`)))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(rowDir, `description.md`), `bar2`)))
 
 	// Load state
 	logger, _ := utils.NewDebugLogger()
@@ -286,7 +276,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 						ParentPath: "main",
 						ObjectPath: "extractor/keboola.ex-db-mysql/new-config",
 					},
-					RelatedPaths: []string{model.MetaFile, model.DescriptionFile, model.ConfigFile},
+					RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
 				},
 			},
 			Component: &model.Component{
@@ -325,7 +315,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 						ParentPath: "main/extractor/keboola.ex-db-mysql/new-config",
 						ObjectPath: "rows/some-row",
 					},
-					RelatedPaths: []string{model.MetaFile, model.DescriptionFile, model.ConfigFile},
+					RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
 				},
 			},
 			Remote: nil,
@@ -347,7 +337,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 
 func TestPersistDeleted(t *testing.T) {
 	projectDir := initMinimalProjectDir(t)
-	metadataDir := filepath.Join(projectDir, manifest.MetadataDir)
+	m, _ := loadTestManifest(t, projectDir)
 	api, _ := remote.TestMockedStorageApi(t)
 
 	// Mocked API response
@@ -367,8 +357,6 @@ func TestPersistDeleted(t *testing.T) {
 	httpmock.RegisterResponder("GET", `=~/storage/components/keboola.ex-db-mysql`, getMySqlExResponder)
 
 	// Update manifest, add fake records
-	m, err := manifest.LoadManifest(projectDir, metadataDir)
-	assert.NoError(t, err)
 	branchId := cast.ToInt(utils.MustGetEnv(`LOCAL_STATE_MAIN_BRANCH_ID`))
 	missingConfig := &model.ConfigManifest{
 		ConfigKey: model.ConfigKey{
@@ -402,8 +390,7 @@ func TestPersistDeleted(t *testing.T) {
 	assert.NoError(t, m.Save())
 
 	// Reload manifest
-	m, err = manifest.LoadManifest(projectDir, metadataDir)
-	assert.NoError(t, err)
+	m, _ = loadTestManifest(t, projectDir)
 
 	// Load state
 	logger, _ := utils.NewDebugLogger()
@@ -438,13 +425,13 @@ func initMinimalProjectDir(t *testing.T) string {
 	utils.MustSetEnv("LOCAL_STATE_GENERIC_CONFIG_ID", "456")
 
 	_, testFile, _, _ := runtime.Caller(0)
-	testDir := filepath.Dir(testFile)
+	testDir := filesystem.Dir(testFile)
 	projectDir := t.TempDir()
-	err := copy.Copy(filepath.Join(testDir, `..`, `fixtures`, `local`, `minimal`), projectDir)
+	err := aferocopy.Copy(filesystem.Join(testDir, `..`, `fixtures`, `local`, `minimal`), projectDir)
 	if err != nil {
 		t.Fatalf("Copy error: %s", err)
 	}
-	utils.ReplaceEnvsDir(projectDir, nil)
+	thelper.ReplaceEnvsDir(projectDir, nil)
 
 	return projectDir
 }

@@ -1,3 +1,4 @@
+//nolint:forbidigo
 package test
 
 import (
@@ -17,17 +18,20 @@ import (
 	"github.com/otiai10/copy"
 	"github.com/stretchr/testify/assert"
 	"github.com/umisama/go-regexpcache"
+	"go.uber.org/zap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/thelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // EnvTicketProvider allows you to generate new unique IDs via an ENV variable in the test.
-func CreateEnvTicketProvider(api *remote.StorageApi) utils.EnvProvider {
+func CreateEnvTicketProvider(api *remote.StorageApi) thelper.EnvProvider {
 	return func(name string) string {
 		name = strings.Trim(name, "%")
 		nameRegexp := regexpcache.MustCompile(`^TEST_NEW_TICKET_\d+$`)
@@ -41,7 +45,7 @@ func CreateEnvTicketProvider(api *remote.StorageApi) utils.EnvProvider {
 			return ticket.Id
 		}
 
-		return utils.DefaultEnvProvider(name)
+		return thelper.DefaultEnvProvider(name)
 	}
 }
 
@@ -69,7 +73,7 @@ func TestFunctional(t *testing.T) {
 // RunFunctionalTest runs one functional test.
 func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) {
 	t.Helper()
-	defer utils.ResetEnv(t, os.Environ())
+	defer thelper.ResetEnv(t, os.Environ())
 
 	// Clean working dir
 	assert.NoError(t, os.RemoveAll(workingDir))
@@ -78,7 +82,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 
 	// Copy all from "in" dir to "runtime" dir
 	inDir := filepath.Join(testDir, "in")
-	if !utils.FileExists(inDir) {
+	if !thelper.FileExists(inDir) {
 		t.Fatalf("Missing directory \"%s\".", inDir)
 	}
 	err := copy.Copy(inDir, workingDir)
@@ -91,7 +95,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 
 	// Setup KBC project state
 	projectStateFilePath := filepath.Join(testDir, "initial-state.json")
-	if utils.IsFile(projectStateFilePath) {
+	if thelper.IsFile(projectStateFilePath) {
 		remote.SetStateOfTestProject(t, api, projectStateFilePath)
 	}
 
@@ -99,11 +103,11 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	envProvider := CreateEnvTicketProvider(api)
 
 	// Replace all %%ENV_VAR%% in all files in the working directory
-	utils.ReplaceEnvsDir(workingDir, envProvider)
+	thelper.ReplaceEnvsDir(workingDir, envProvider)
 
 	// Load command arguments from file
 	argsFile := filepath.Join(testDir, "args")
-	argsStr := utils.ReplaceEnvsString(strings.TrimSpace(utils.GetFileContent(argsFile)), nil)
+	argsStr := thelper.ReplaceEnvsString(strings.TrimSpace(thelper.GetFileContent(argsFile)), nil)
 	args, err := shlex.Split(argsStr)
 	if err != nil {
 		t.Fatalf("Cannot parse args \"%s\": %s", argsStr, err)
@@ -115,7 +119,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	cmd.Dir = workingDir
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	if utils.TestIsVerbose() {
+	if thelper.TestIsVerbose() {
 		cmd.Stdout = io.MultiWriter(cmd.Stdout, os.Stdout)
 		cmd.Stderr = io.MultiWriter(cmd.Stderr, os.Stderr)
 	}
@@ -170,11 +174,11 @@ func GetTestDirs(t *testing.T, root string) []string {
 		}
 
 		// Skip hidden
-		if utils.IsIgnoredFile(path, d) {
+		if thelper.IsIgnoredFile(path, d) {
 			return nil
 		}
-		if utils.IsIgnoredDir(path, d) {
-			return fs.SkipDir
+		if thelper.IsIgnoredDir(path, d) {
+			return filepath.SkipDir
 		}
 
 		// Skip sub-directories
@@ -197,7 +201,7 @@ func GetTestDirs(t *testing.T, root string) []string {
 func AssertExpectations(
 	t *testing.T,
 	api *remote.StorageApi,
-	envProvider utils.EnvProvider,
+	envProvider thelper.EnvProvider,
 	testDir string,
 	workingDir string,
 	exitCode int,
@@ -207,9 +211,9 @@ func AssertExpectations(
 	t.Helper()
 
 	// Compare expected values
-	expectedStdout := utils.ReplaceEnvsString(utils.GetFileContent(filepath.Join(testDir, "expected-stdout")), nil)
-	expectedStderr := utils.ReplaceEnvsString(utils.GetFileContent(filepath.Join(testDir, "expected-stderr")), nil)
-	expectedCodeStr := utils.GetFileContent(filepath.Join(testDir, "expected-code"))
+	expectedStdout := thelper.ReplaceEnvsString(thelper.GetFileContent(filepath.Join(testDir, "expected-stdout")), nil)
+	expectedStderr := thelper.ReplaceEnvsString(thelper.GetFileContent(filepath.Join(testDir, "expected-stderr")), nil)
+	expectedCodeStr := thelper.GetFileContent(filepath.Join(testDir, "expected-code"))
 	expectedCode, _ := strconv.ParseInt(strings.TrimSpace(expectedCodeStr), 10, 32)
 	assert.Equal(
 		t,
@@ -221,12 +225,12 @@ func AssertExpectations(
 	)
 
 	// Assert STDOUT and STDERR
-	utils.AssertWildcards(t, expectedStdout, stdout, "Unexpected STDOUT.")
-	utils.AssertWildcards(t, expectedStderr, stderr, "Unexpected STDERR.")
+	thelper.AssertWildcards(t, expectedStdout, stdout, "Unexpected STDOUT.")
+	thelper.AssertWildcards(t, expectedStderr, stderr, "Unexpected STDERR.")
 
 	// Expected state dir
 	expectedDirOrg := filepath.Join(testDir, "out")
-	if !utils.FileExists(expectedDirOrg) {
+	if !thelper.FileExists(expectedDirOrg) {
 		t.Fatalf("Missing directory \"%s\".", expectedDirOrg)
 	}
 
@@ -236,23 +240,26 @@ func AssertExpectations(
 	if err != nil {
 		t.Fatalf("Copy error: %s", err)
 	}
-	utils.ReplaceEnvsDir(expectedDir, envProvider)
+	thelper.ReplaceEnvsDir(expectedDir, envProvider)
 
 	// Compare actual and expected dirs
-	utils.AssertDirectoryContentsSame(t, expectedDir, workingDir)
+	thelper.AssertDirectoryContentsSame(t, expectedDir, workingDir)
 
 	// Check project state
 	expectedStatePath := filepath.Join(testDir, "expected-state.json")
-	if utils.IsFile(expectedStatePath) {
+	if thelper.IsFile(expectedStatePath) {
 		// Read expected state
 		expectedSnapshot := &fixtures.ProjectSnapshot{}
-		err = json.ReadFile(testDir, "expected-state.json", expectedSnapshot, "expected project state")
+		content, err := thelper.ReadFile(testDir, "expected-state.json", "expected project state")
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}
+		json.MustDecodeString(content, expectedSnapshot)
 
 		// Fake manifest
-		m, err := manifest.NewManifest(api.ProjectId(), api.Host(), workingDir, "bar")
+		fs, err := aferofs.NewLocalFs(zap.NewNop().Sugar(), workingDir, "/")
+		assert.NoError(t, err)
+		m, err := manifest.NewManifest(api.ProjectId(), api.Host(), fs)
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}
@@ -271,7 +278,7 @@ func AssertExpectations(
 		}
 
 		// Write actual state
-		err = json.WriteFile(workingDir, "actual-state.json", actualSnapshot, "test project state")
+		err = thelper.WriteFile(workingDir, "actual-state.json", json.MustEncodeString(actualSnapshot, true), "test project state")
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}

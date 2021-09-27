@@ -3,15 +3,15 @@ package fixtures
 import (
 	"encoding/json"
 	"fmt"
-	"path/filepath"
 	"runtime"
 	"testing"
 
 	"github.com/iancoleman/orderedmap"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/thelper"
 )
 
 type ProjectSnapshot struct {
@@ -110,7 +110,7 @@ func (r *ConfigRow) GetName() string {
 }
 
 func LoadStateFile(path string) (*StateFile, error) {
-	data := utils.GetFileContent(path)
+	data := thelper.GetFileContent(path) // nolint: forbidigo
 	stateFile := &StateFile{}
 	err := json.Unmarshal([]byte(data), stateFile)
 	if err != nil {
@@ -141,9 +141,9 @@ func LoadConfig(t *testing.T, name string) *model.ConfigWithRows {
 
 	// nolint: dogsled
 	_, testFile, _, _ := runtime.Caller(0)
-	testDir := filepath.Dir(testFile)
-	path := filepath.Join(testDir, "configs", name+".json")
-	content := utils.GetFileContent(path)
+	testDir := filesystem.Dir(testFile)
+	path := filesystem.Join(testDir, "configs", name+".json")
+	content := thelper.GetFileContent(path) // nolint: forbidigo
 	fixture := &Config{}
 	err := json.Unmarshal([]byte(content), fixture)
 	if err != nil {

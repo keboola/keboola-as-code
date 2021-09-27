@@ -2,8 +2,8 @@ package plan
 
 import (
 	"fmt"
-	"path/filepath"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -57,10 +57,7 @@ func (b *persistPlanBuilder) build() {
 
 func (b *persistPlanBuilder) tryAddConfig(projectPath string, branch *model.BranchState) []PersistAction {
 	// Is path from the branch dir?
-	relPath, err := filepath.Rel(branch.RelativePath(), projectPath)
-	if err != nil {
-		return nil
-	}
+	relPath := filesystem.Rel(branch.RelativePath(), projectPath)
 
 	// Is config path matching naming template?
 	matched, matches := b.Naming().Config.MatchPath(relPath)
@@ -96,10 +93,7 @@ func (b *persistPlanBuilder) tryAddConfig(projectPath string, branch *model.Bran
 
 func (b *persistPlanBuilder) tryAddConfigRow(projectPath, configPath string, configKey model.ConfigKey) *NewRowAction {
 	// Is path from the config dir?
-	relPath, err := filepath.Rel(configPath, projectPath)
-	if err != nil {
-		return nil
-	}
+	relPath := filesystem.Rel(configPath, projectPath)
 
 	// Is config row pat matching naming template?
 	if matched, _ := b.Naming().ConfigRow.MatchPath(relPath); !matched {

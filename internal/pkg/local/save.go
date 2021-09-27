@@ -2,105 +2,177 @@ package local
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
+	"strings"
 
-	"github.com/iancoleman/orderedmap"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/transformation"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
-// SaveModel to manifest and disk.
-func (m *Manager) SaveModel(record model.Record, source model.Object) error {
-	errors := utils.NewMultiError()
+type modelWriter struct {
+	*Manager
+	*files
+	mapper  *mapper.Mapper
+	backups map[string]string
+	errors  *utils.Error
+}
 
+// SaveModel to manifest and disk.
+func (m *Manager) SaveModel(record model.Record, object model.Object) error {
+	w := modelWriter{
+		Manager: m,
+		files:   &model.ObjectFiles{Object: object, Record: record},
+		mapper:  mapper.New(m.state, m.logger, m.fs, m.Naming()),
+		backups: make(map[string]string),
+		errors:  utils.NewMultiError(),
+	}
+	return w.save()
+}
+
+func (w *modelWriter) save() error {
 	// Validate
-	if err := validator.Validate(source); err != nil {
-		errors.AppendWithPrefix(fmt.Sprintf(`%s "%s" is invalid`, record.Kind().Name, record.RelativePath()), err)
-		return errors
+	if err := validator.Validate(w.Object); err != nil {
+		w.errors.AppendWithPrefix(fmt.Sprintf(`%s "%s" is invalid`, w.Record.Kind().Name, w.Record.RelativePath()), err)
+		return w.errors
 	}
 
 	// Add record to manifest content + mark it for saving
-	if err := m.manifest.PersistRecord(record); err != nil {
+	if err := w.manifest.PersistRecord(w.Record); err != nil {
 		return err
 	}
 
-	// Mkdir
-	dir := filepath.Join(m.ProjectDir(), record.RelativePath())
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		errors.Append(fmt.Errorf("cannot create directory \"%s\": %w", dir, err))
-		return errors
+	// Save
+	w.createFiles()
+	w.transform()
+	if w.errors.Len() == 0 {
+		w.write()
+	}
+	return w.errors.ErrorOrNil()
+}
+
+func (w *modelWriter) createFiles() {
+	// meta.json
+	if metadata := utils.MapFromTaggedFields(model.MetaFileTag, w.Object); metadata != nil {
+		w.Metadata = filesystem.CreateJsonFile(w.Naming().MetaFilePath(w.Record.RelativePath()), metadata)
 	}
 
-	// Transform
-	configContent, err := m.transformOnSave(record, source)
-	if err != nil {
-		errors.Append(err)
+	// config.json
+	if configuration := utils.MapFromOneTaggedField(model.ConfigFileTag, w.Object); configuration != nil {
+		w.Configuration = filesystem.CreateJsonFile(w.Naming().ConfigFilePath(w.Record.RelativePath()), configuration)
 	}
 
-	// Write metadata file
-	if metadata := utils.MapFromTaggedFields(model.MetaFileTag, source); metadata != nil {
-		errPrefix := record.Kind().Name + " metadata"
-		if err := m.writeJsonFile(m.Naming().MetaFilePath(record.RelativePath()), metadata, errPrefix); err != nil {
-			errors.Append(err)
+	// description.md
+	if description, found := utils.StringFromOneTaggedField(model.DescriptionFileTag, w.Object); found {
+		w.Description = filesystem.CreateFile(w.Naming().DescriptionFilePath(w.Record.RelativePath()), strings.TrimRight(description, " \r\n\t")+"\n")
+	}
+}
+func (w *modelWriter) allFiles() []*filesystem.File {
+	// Get all files
+	files := make([]*filesystem.File, 0)
+
+	// meta.json
+	if jsonFile := w.Metadata; jsonFile != nil {
+		if file, err := jsonFile.ToFile(); err == nil {
+			files = append(files, file)
+		} else {
+			w.errors.Append(err)
 		}
 	}
 
-	// Write description file
-	if description, found := utils.StringFromOneTaggedField(model.DescriptionFileTag, source); found {
-		errPrefix := record.Kind().Name + " description"
-		if err := m.writeFile(m.Naming().DescriptionFilePath(record.RelativePath()), description, errPrefix); err != nil {
-			errors.Append(err)
+	// config.json
+	if jsonFile := w.Configuration; jsonFile != nil {
+		if file, err := jsonFile.ToFile(); err == nil {
+			files = append(files, file)
+		} else {
+			w.errors.Append(err)
 		}
 	}
 
-	// Write config file (can be modified by transformOnSave method)
-	if configContent == nil {
-		configContent = utils.MapFromOneTaggedField(model.ConfigFileTag, source)
+	// description.md
+	if file := w.Description; file != nil {
+		files = append(files, file)
 	}
-	if configContent != nil {
-		errPrefix := record.Kind().Name
-		if err := m.writeJsonFile(m.Naming().ConfigFilePath(record.RelativePath()), configContent, errPrefix); err != nil {
-			errors.Append(err)
+
+	// other
+	files = append(files, w.Extra...)
+	return files
+}
+
+func (w *modelWriter) transform() {
+	if err := w.mapper.BeforeSave(w.files); err != nil {
+		w.errors.Append(err)
+	}
+}
+
+func (w *modelWriter) write() {
+	// Existing files are backed up, if the operation fails, they will be restored
+	defer w.restoreBackups()
+
+	// Load files
+	toDelete := w.ToDelete
+	newFiles := w.allFiles()
+	for _, file := range newFiles {
+		// Previous versions must be deleted
+		toDelete = append(toDelete, file.Path)
+	}
+
+	// Delete
+	for _, path := range toDelete {
+		if err := w.softDelete(path); err != nil {
+			w.errors.Append(err)
+			return
 		}
 	}
 
-	return errors.ErrorOrNil()
+	// Write new files
+	for _, file := range newFiles {
+		if err := w.fs.WriteFile(file); err != nil {
+			w.errors.Append(err)
+		}
+	}
+
+	// Stop on error - restore backups
+	if w.errors.Len() > 0 {
+		return
+	}
+
+	// Cleanup - remove backups
+	w.removeBackups()
 }
 
-func (m *Manager) transformOnSave(record model.Record, source model.Object) (*orderedmap.OrderedMap, error) {
-	if ok, err := m.isTransformationConfig(source); ok {
-		return transformation.SaveBlocks(
-			m.ProjectDir(),
-			m.logger,
-			m.Naming(),
-			record.(*model.ConfigManifest),
-			source.(*model.Config),
-		)
-	} else if err != nil {
-		return nil, err
+func (w *modelWriter) softDelete(path string) error {
+	src := path
+	dst := src + `.old`
+	if !w.fs.IsFile(src) {
+		return nil
 	}
-	return nil, nil
+
+	err := w.fs.Move(src, dst)
+	if err == nil {
+		w.backups[src] = dst
+	}
+	return err
 }
 
-func (m *Manager) writeFile(relPath string, content string, errPrefix string) error {
-	if err := utils.WriteFile(m.ProjectDir(), relPath, content, errPrefix); err == nil {
-		m.logger.Debugf(`Saved "%s"`, relPath)
-	} else {
-		return err
+// restoreBackups if operation fails.
+func (w *modelWriter) restoreBackups() {
+	if w.errors.Len() > 0 {
+		for dst, src := range w.backups {
+			if err := w.fs.Move(src, dst); err != nil {
+				w.logger.Debug(fmt.Errorf(`cannot restore backup "%s" -> "%s": %w`, src, dst, err))
+			}
+		}
 	}
-	return nil
 }
 
-func (m *Manager) writeJsonFile(relPath string, content *orderedmap.OrderedMap, errPrefix string) error {
-	if err := json.WriteFile(m.ProjectDir(), relPath, content, errPrefix); err == nil {
-		m.logger.Debugf(`Saved "%s"`, relPath)
-	} else {
-		return err
+// removeBackups if all is ok.
+func (w *modelWriter) removeBackups() {
+	for _, path := range w.backups {
+		if err := w.fs.Remove(path); err != nil {
+			w.logger.Debug(fmt.Errorf(`cannot remove backup "%s": %w`, path, err))
+		}
 	}
-	return nil
+	w.backups = make(map[string]string)
 }

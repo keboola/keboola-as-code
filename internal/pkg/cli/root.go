@@ -9,10 +9,12 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/build"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/interaction"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/options"
@@ -39,24 +41,27 @@ Aliases:`
 
 type rootCommand struct {
 	cmd          *cobra.Command
+	fsFactory    filesystem.Factory
+	fs           filesystem.Fs
 	options      *options.Options    // parsed flags and env variables
 	prompt       *interaction.Prompt // user interaction
 	ctx          context.Context     // context for parallel operations
 	api          *remote.StorageApi  // GetStorageApi should be used to initialize
 	start        time.Time           // cmd start time
 	initialized  bool                // init method was called
-	logFile      *os.File            // log file instance
+	logFile      afero.File          // log file instance
 	logFileClear bool                // is log file temporary? if yes, it will be removed at the end, if no error occurs
 	logger       *zap.SugaredLogger  // log to console and logFile
 }
 
 // NewRootCommand creates parent of all sub-commands.
-func NewRootCommand(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteCloser, prompt *interaction.Prompt) *rootCommand {
+func NewRootCommand(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteCloser, prompt *interaction.Prompt, fsFactory filesystem.Factory) *rootCommand {
 	root := &rootCommand{
-		options: options.NewOptions(),
-		prompt:  prompt,
-		ctx:     context.Background(),
-		start:   time.Now(),
+		fsFactory: fsFactory,
+		options:   options.NewOptions(),
+		prompt:    prompt,
+		ctx:       context.Background(),
+		start:     time.Now(),
 	}
 
 	// Command definition
@@ -83,7 +88,14 @@ func NewRootCommand(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteC
 	)
 
 	// Persistent flags for all sub-commands
-	root.options.BindPersistentFlags(root.cmd.PersistentFlags())
+	flags := root.cmd.PersistentFlags()
+	flags.SortFlags = true
+	flags.BoolP("help", "h", false, "print help for command")
+	flags.StringP("log-file", "l", "", "path to a log file for details")
+	flags.StringP("working-dir", "d", "", "use other working directory")
+	flags.StringP("storage-api-token", "t", "", "storage API token from your project")
+	flags.BoolP("verbose", "v", false, "print details")
+	flags.BoolP("verbose-api", "", false, "log each API request and response")
 
 	// Root command flags
 	root.cmd.Flags().SortFlags = true
@@ -174,6 +186,8 @@ func (root *rootCommand) tearDown() {
 			if err = root.logFile.Close(); err != nil {
 				panic(fmt.Errorf("cannot close log file \"%s\": %s", root.options.LogFilePath, err))
 			}
+
+			// nolint: forbidigo
 			if err = os.Remove(root.options.LogFilePath); err != nil {
 				panic(fmt.Errorf("cannot remove temp log file \"%s\": %s", root.options.LogFilePath, err))
 			}
@@ -206,18 +220,27 @@ func (root *rootCommand) init(cmd *cobra.Command) (err error) {
 		}
 	}()
 
+	// Temporary logger
+	tmpLogger := zap.NewNop().Sugar()
+
+	// Create filesystem abstraction
+	workingDir, _ := cmd.Flags().GetString(`working-dir`)
+	if root.fs, err = root.fsFactory(tmpLogger, workingDir); err != nil {
+		return err
+	}
+
 	// Load values from flags and envs
-	warnings, err := root.options.Load(cmd.Flags())
+	if err = root.options.Load(tmpLogger, root.fs, cmd.Flags()); err != nil {
+		return err
+	}
 
 	// Setup logger and log options load warnings
 	root.setupLogger()
 	root.logDebugInfo()
-	for _, msg := range warnings {
-		root.logger.Debug(msg)
-	}
+	root.fs.SetLogger(root.logger)
 
 	// Return load error
-	return
+	return nil
 }
 
 // setupLogger according to the options.
@@ -249,6 +272,7 @@ func (root *rootCommand) logDebugInfo() {
 }
 
 // Get log file defined in the flags or create a temp file.
+// Log file can be outside project directory, so it is NOT using virtual filesystem.
 func (root *rootCommand) getLogFile() (logFile *os.File, logFileErr error) {
 	if len(root.options.LogFilePath) > 0 {
 		root.logFileClear = false // log file defined by user will be preserved
@@ -257,6 +281,7 @@ func (root *rootCommand) getLogFile() (logFile *os.File, logFileErr error) {
 		root.logFileClear = true // temp log file will be removed. It will be preserved only in case of error
 	}
 
+	// nolint: forbidigo
 	logFile, logFileErr = os.OpenFile(root.options.LogFilePath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
 	if logFileErr != nil {
 		root.options.LogFilePath = ""

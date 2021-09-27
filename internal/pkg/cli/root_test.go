@@ -2,7 +2,6 @@ package cli
 
 import (
 	"os"
-	"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
@@ -10,15 +9,14 @@ import (
 
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/interaction"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func TestRootSubCommands(t *testing.T) {
-	in := utils.NewBufferReader()
-	out := utils.NewBufferWriter()
-	root := NewRootCommand(in, out, out, interaction.NewPrompt(in, out, out))
+	root, _ := newTestRootCommand()
 
 	// Map commands to names
 	var names []string
@@ -42,9 +40,7 @@ func TestRootSubCommands(t *testing.T) {
 }
 
 func TestRootCmdPersistentFlags(t *testing.T) {
-	in := utils.NewBufferReader()
-	out := utils.NewBufferWriter()
-	root := NewRootCommand(in, out, out, interaction.NewPrompt(in, out, out))
+	root, _ := newTestRootCommand()
 
 	// Map flags to names
 	var names []string
@@ -65,9 +61,7 @@ func TestRootCmdPersistentFlags(t *testing.T) {
 }
 
 func TestRootCmdFlags(t *testing.T) {
-	in := utils.NewBufferReader()
-	out := utils.NewBufferWriter()
-	root := NewRootCommand(in, out, out, interaction.NewPrompt(in, out, out))
+	root, _ := newTestRootCommand()
 
 	// Map flags to names
 	var names []string
@@ -83,65 +77,51 @@ func TestRootCmdFlags(t *testing.T) {
 }
 
 func TestExecute(t *testing.T) {
-	tempDir := t.TempDir()
-	assert.NoError(t, os.Chdir(tempDir))
-	in := utils.NewBufferReader()
-	logger, out := utils.NewDebugLogger()
-	root := NewRootCommand(in, out, out, interaction.NewPrompt(in, out, out))
+	root, out := newTestRootCommand()
 
 	// Execute
-	root.logger = logger
+	root.logger = zap.NewNop().Sugar()
 	assert.Equal(t, 0, root.Execute())
 	assert.Contains(t, out.String(), "Available Commands:")
 }
 
 func TestTearDownRemoveLogFile(t *testing.T) {
-	tempDir := t.TempDir()
-	in := utils.NewBufferReader()
-	out := utils.NewBufferWriter()
-	root := NewRootCommand(in, out, out, interaction.NewPrompt(in, out, out))
+	root, _ := newTestRootCommand()
 
-	root.options.LogFilePath = filepath.Join(tempDir, "log-file.txt")
-	root.logFile, _ = os.Create(root.options.LogFilePath)
-	root.logFileClear = false // <<<<<
+	// Note: log file can be outside project directory, so it is NOT using virtual filesystem
+	tempDir := t.TempDir()
+	root.options.LogFilePath = filesystem.Join(tempDir, "log-file.txt")
+	root.logFile, _ = os.Create(root.options.LogFilePath) // nolint: forbidigo
+	root.logFileClear = false                             // <<<<<
 	root.tearDown()
 	assert.FileExists(t, root.options.LogFilePath)
 }
 
 func TestTearDownKeepLogFile(t *testing.T) {
-	tempDir := t.TempDir()
-	in := utils.NewBufferReader()
-	out := utils.NewBufferWriter()
-	root := NewRootCommand(in, out, out, interaction.NewPrompt(in, out, out))
+	root, _ := newTestRootCommand()
 
-	root.options.LogFilePath = filepath.Join(tempDir, "log-file.txt")
-	root.logFile, _ = os.Create(root.options.LogFilePath)
-	root.logFileClear = true // <<<<<
+	// Note: log file can be outside project directory, so it is NOT using virtual filesystem
+	tempDir := t.TempDir()
+	root.options.LogFilePath = filesystem.Join(tempDir, "log-file.txt")
+	root.logFile, _ = os.Create(root.options.LogFilePath) // nolint: forbidigo
+	root.logFileClear = true                              // <<<<<
 	root.tearDown()
 	assert.NoFileExists(t, root.options.LogFilePath)
 }
 
 func TestInit(t *testing.T) {
-	tempDir := t.TempDir()
-	assert.NoError(t, os.Chdir(tempDir))
-	in := utils.NewBufferReader()
-	out := utils.NewBufferWriter()
-	root := NewRootCommand(in, out, out, interaction.NewPrompt(in, out, out))
+	root, _ := newTestRootCommand()
 	assert.False(t, root.initialized)
 	assert.Nil(t, root.logger)
 	err := root.init(root.cmd)
 	assert.NoError(t, err)
 	assert.True(t, root.initialized)
 	assert.NotNil(t, root.logger)
-	assert.NotEmpty(t, root.options.WorkingDirectory)
 }
 
 func TestLogVersion(t *testing.T) {
-	tempDir := t.TempDir()
-	assert.NoError(t, os.Chdir(tempDir))
-	in := utils.NewBufferReader()
+	root, _ := newTestRootCommand()
 	logger, out := utils.NewDebugLogger()
-	root := NewRootCommand(in, out, out, interaction.NewPrompt(in, out, out))
 
 	// Log version
 	err := root.init(root.cmd)
@@ -166,9 +146,7 @@ func TestLogVersion(t *testing.T) {
 }
 
 func TestGetLogFileTempFile(t *testing.T) {
-	in := utils.NewBufferReader()
-	out := utils.NewBufferWriter()
-	root := NewRootCommand(in, out, out, interaction.NewPrompt(in, out, out))
+	root, _ := newTestRootCommand()
 	file, err := root.getLogFile()
 	assert.NoError(t, err)
 	assert.NotNil(t, file)
@@ -177,11 +155,11 @@ func TestGetLogFileTempFile(t *testing.T) {
 }
 
 func TestGetLogFileFromFlags(t *testing.T) {
+	root, _ := newTestRootCommand()
+
+	// Note: log file can be outside project directory, so it is NOT using virtual filesystem
 	tempDir := t.TempDir()
-	in := utils.NewBufferReader()
-	out := utils.NewBufferWriter()
-	root := NewRootCommand(in, out, out, interaction.NewPrompt(in, out, out))
-	root.options.LogFilePath = filepath.Join(tempDir, "log-file.txt")
+	root.options.LogFilePath = filesystem.Join(tempDir, "log-file.txt")
 	file, err := root.getLogFile()
 	assert.NoError(t, err)
 	assert.NotNil(t, file)

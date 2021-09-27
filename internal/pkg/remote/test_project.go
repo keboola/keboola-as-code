@@ -14,8 +14,10 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/thelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -44,9 +46,10 @@ func newTestProject(t *testing.T, api *StorageApi, stateFilePath string) *testPr
 
 	// nolint: dogsled
 	_, testFile, _, _ := runtime.Caller(0)
-	testDir := filepath.Dir(testFile)
+	testDir := filesystem.Dir(testFile)
+	// nolint: forbidigo
 	if !filepath.IsAbs(stateFilePath) {
-		stateFilePath = filepath.Join(testDir, "..", "fixtures", "remote", stateFilePath)
+		stateFilePath = filesystem.Join(testDir, "..", "fixtures", "remote", stateFilePath)
 	}
 
 	// Load state file
@@ -56,7 +59,7 @@ func newTestProject(t *testing.T, api *StorageApi, stateFilePath string) *testPr
 	}
 
 	// Create project ID
-	if utils.TestProjectId() != api.ProjectId() {
+	if thelper.TestProjectId() != api.ProjectId() {
 		assert.FailNow(t, "TEST_PROJECT_ID and token project id are different.")
 	}
 
@@ -210,7 +213,7 @@ func (p *testProject) setEnv(key string, value string) {
 }
 
 func (p *testProject) logf(format string, a ...interface{}) {
-	if utils.TestIsVerbose() {
+	if thelper.TestIsVerbose() {
 		a = append([]interface{}{p.t.Name()}, a...)
 		p.t.Logf("Fixtures[%s]: "+format, a...)
 	}

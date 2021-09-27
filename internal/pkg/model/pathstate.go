@@ -3,19 +3,19 @@ package model
 import (
 	"fmt"
 	"io/fs"
-	"path/filepath"
 	"sort"
 	"strings"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // PathsState keeps state of all files/dirs in projectDir.
 type PathsState struct {
-	projectDir string
-	all        map[string]bool
-	tracked    map[string]bool
-	isFile     map[string]bool
+	fs      filesystem.Fs
+	all     map[string]bool
+	tracked map[string]bool
+	isFile  map[string]bool
 }
 
 type PathState int
@@ -26,18 +26,15 @@ const (
 	Ignored
 )
 
-func NewPathsState(projectDir string) (*PathsState, error) {
-	if !utils.IsDir(projectDir) {
-		return nil, fmt.Errorf("directory \"%s\" not found", projectDir)
-	}
-
+func NewPathsState(fs filesystem.Fs) (*PathsState, error) {
 	f := &PathsState{
-		projectDir: projectDir,
-		all:        make(map[string]bool),
-		tracked:    make(map[string]bool),
-		isFile:     make(map[string]bool),
+		fs:      fs,
+		all:     make(map[string]bool),
+		tracked: make(map[string]bool),
+		isFile:  make(map[string]bool),
 	}
-	return f, f.init()
+	err := f.init()
+	return f, err
 }
 
 // State returns state of path.
@@ -86,8 +83,6 @@ func (f *PathsState) IsDir(path string) bool {
 }
 
 func (f *PathsState) MarkTracked(path string) {
-	path = f.relative(path)
-
 	// Add path and all parents
 	for {
 		// Is path known (not ignored)?
@@ -99,13 +94,14 @@ func (f *PathsState) MarkTracked(path string) {
 		f.tracked[path] = true
 
 		// Process parent path
-		path = filepath.Dir(path)
+		path = filesystem.Dir(path)
 	}
 }
 
 func (f *PathsState) init() error {
 	errors := utils.NewMultiError()
-	err := filepath.WalkDir(f.projectDir, func(absPath string, d fs.DirEntry, err error) error {
+	root := "."
+	err := f.fs.Walk(root, func(path string, info fs.FileInfo, err error) error {
 		// Log error
 		if err != nil {
 			errors.Append(err)
@@ -113,21 +109,20 @@ func (f *PathsState) init() error {
 		}
 
 		// Ignore root
-		if absPath == f.projectDir {
+		if path == root {
 			return nil
 		}
 
 		// Is ignored?
-		if f.isIgnored(absPath) {
-			if d.IsDir() {
+		if f.isIgnored(path) {
+			if info.IsDir() {
 				return fs.SkipDir
 			}
 			return nil
 		}
 
-		relPath := f.relative(absPath)
-		f.all[relPath] = true
-		f.isFile[relPath] = utils.IsFile(absPath)
+		f.all[path] = true
+		f.isFile[path] = f.fs.IsFile(path)
 		return nil
 	})
 
@@ -141,17 +136,5 @@ func (f *PathsState) init() error {
 
 func (f *PathsState) isIgnored(path string) bool {
 	// Ignore empty and hidden paths
-	return path == "" || path == "." || strings.HasPrefix(filepath.Base(path), ".")
-}
-
-func (f *PathsState) relative(path string) string {
-	if !filepath.IsAbs(path) {
-		return path
-	}
-
-	if !strings.HasPrefix(path, f.projectDir+string(filepath.Separator)) {
-		panic(fmt.Errorf("path \"%s\" is not from the project dir \"%s\"", path, f.projectDir))
-	}
-
-	return utils.RelPath(f.projectDir, path)
+	return path == "" || path == "." || strings.HasPrefix(filesystem.Base(path), ".")
 }

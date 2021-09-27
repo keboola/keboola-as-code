@@ -1,4 +1,5 @@
-package utils
+//nolint:forbidigo
+package thelper
 
 import (
 	"bytes"

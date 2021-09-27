@@ -2,11 +2,10 @@ package plan
 
 import (
 	"fmt"
-	"os"
 
-	"github.com/otiai10/copy"
 	"go.uber.org/zap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -14,7 +13,7 @@ import (
 type renameExecutor struct {
 	*RenamePlan
 	logger        *zap.SugaredLogger
-	projectDir    string
+	fs            filesystem.Fs
 	manifest      *manifest.Manifest
 	errors        *utils.Error
 	warnings      *utils.Error
@@ -22,11 +21,11 @@ type renameExecutor struct {
 	pathsToRemove []string
 }
 
-func newRenameExecutor(logger *zap.SugaredLogger, projectDir string, manifest *manifest.Manifest, plan *RenamePlan) *renameExecutor {
+func newRenameExecutor(logger *zap.SugaredLogger, manifest *manifest.Manifest, plan *RenamePlan) *renameExecutor {
 	return &renameExecutor{
 		RenamePlan: plan,
 		logger:     logger,
-		projectDir: projectDir,
+		fs:         manifest.Fs(),
 		manifest:   manifest,
 		errors:     utils.NewMultiError(),
 		warnings:   utils.NewMultiError(),
@@ -42,24 +41,12 @@ func (e *renameExecutor) invoke() (warns error, errs error) {
 	// Execute
 	e.logger.Debugf(`Starting renaming of the %d paths.`, len(e.actions))
 	for _, action := range e.actions {
-		// Validate
-		if err := action.Validate(); err != nil {
-			panic(err)
-		}
-
 		// Deep copy
-		err := copy.Copy(action.OldPath, action.NewPath, copy.Options{
-			OnDirExists:   func(src, dest string) copy.DirExistsAction { return copy.Replace },
-			Sync:          true,
-			PreserveTimes: true,
-		})
+		err := e.fs.Copy(action.OldPath, action.NewPath)
 
 		if err != nil {
 			e.errors.AppendWithPrefix(fmt.Sprintf(`cannot copy "%s"`, action.Description), err)
 		} else {
-			// Log info
-			e.logger.Debug("Copied ", action.Description)
-
 			// Update manifest
 			if action.Record != nil {
 				if err := e.manifest.PersistRecord(action.Record); err != nil {
@@ -77,9 +64,7 @@ func (e *renameExecutor) invoke() (warns error, errs error) {
 		// No error -> remove old paths
 		e.logger.Debug("Removing old paths.")
 		for _, oldPath := range e.pathsToRemove {
-			if err := os.RemoveAll(oldPath); err == nil {
-				e.logger.Debug("Removed ", utils.RelPath(e.projectDir, oldPath))
-			} else {
+			if err := e.fs.Remove(oldPath); err != nil {
 				e.warnings.AppendWithPrefix(fmt.Sprintf(`cannot remove \"%s\"`, oldPath), err)
 			}
 		}
@@ -87,9 +72,7 @@ func (e *renameExecutor) invoke() (warns error, errs error) {
 		// An error occurred -> keep old state -> remove new paths
 		e.logger.Debug("An error occurred, reverting rename.")
 		for _, newPath := range e.newPaths {
-			if err := os.RemoveAll(newPath); err == nil {
-				e.logger.Debug("Removed ", utils.RelPath(e.projectDir, newPath))
-			} else {
+			if err := e.fs.Remove(newPath); err != nil {
 				e.warnings.AppendWithPrefix(fmt.Sprintf(`cannot remove \"%s\"`, newPath), err)
 			}
 		}

@@ -1,26 +1,16 @@
 package local
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func TestLocalSaveModel(t *testing.T) {
-	projectDir := t.TempDir()
-	metadataDir := filepath.Join(projectDir, ".keboola")
-	assert.NoError(t, os.MkdirAll(metadataDir, 0750))
-
-	logger, _ := utils.NewDebugLogger()
-	m, err := manifest.NewManifest(1, "connection.keboola.com", projectDir, metadataDir)
-	assert.NoError(t, err)
-	manager := NewManager(logger, m, model.NewComponentsMap(nil))
+	manager := newTestLocalManager(t)
+	fs := manager.fs
 
 	config := utils.NewOrderedMap()
 	config.Set("foo", "bar")
@@ -32,8 +22,8 @@ func TestLocalSaveModel(t *testing.T) {
 		Meta2:  "4",
 		Config: config,
 	}
-	assert.NoError(t, m.TrackRecord(record))
-	_, found := m.GetRecord(record.Key())
+	assert.NoError(t, manager.manifest.TrackRecord(record))
+	_, found := manager.manifest.GetRecord(record.Key())
 	assert.True(t, found)
 
 	// Save
@@ -49,6 +39,10 @@ func TestLocalSaveModel(t *testing.T) {
   "foo": "bar"
 }
 `
-	assert.Equal(t, expectedMeta, utils.GetFileContent(filepath.Join(projectDir, manager.Naming().MetaFilePath(record.RelativePath()))))
-	assert.Equal(t, expectedConfig, utils.GetFileContent(filepath.Join(projectDir, manager.Naming().ConfigFilePath(record.RelativePath()))))
+	metaFile, err := fs.ReadFile(manager.Naming().MetaFilePath(record.RelativePath()), "")
+	assert.NoError(t, err)
+	configFile, err := fs.ReadFile(manager.Naming().ConfigFilePath(record.RelativePath()), "")
+	assert.NoError(t, err)
+	assert.Equal(t, expectedMeta, metaFile.Content)
+	assert.Equal(t, expectedConfig, configFile.Content)
 }

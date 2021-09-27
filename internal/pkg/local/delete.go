@@ -2,11 +2,12 @@ package local
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
-	"path/filepath"
 	"sort"
 	"strings"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -18,18 +19,8 @@ func (m *Manager) DeleteModel(record model.Record) error {
 	// Remove record from manifest content
 	m.manifest.DeleteRecord(record)
 
-	// Metadata file
-	if err := m.remove(m.Naming().MetaFilePath(record.RelativePath())); err != nil {
-		errors.Append(err)
-	}
-
-	// Config file
-	if err := m.remove(m.Naming().ConfigFilePath(record.RelativePath())); err != nil {
-		errors.Append(err)
-	}
-
-	// Dir
-	if err := m.removeAll(record.RelativePath()); err != nil {
+	// Remove dir
+	if err := m.fs.Remove(record.RelativePath()); err != nil {
 		errors.Append(utils.PrefixError(fmt.Sprintf(`cannot delete directory "%s"`, record.RelativePath()), err))
 	}
 
@@ -58,22 +49,23 @@ func (m *Manager) DeleteInvalidObjects() error {
 func (m *Manager) DeleteEmptyDirectories(trackedPaths []string) error {
 	errors := utils.NewMultiError()
 	emptyDirs := utils.NewOrderedMap()
-	err := filepath.WalkDir(m.ProjectDir(), func(path string, d os.DirEntry, err error) error {
+	root := `.`
+	err := m.fs.Walk(root, func(path string, info fs.FileInfo, err error) error {
 		// Stop on error
 		if err != nil {
 			return err
 		}
 
 		// Ignore root
-		if path == m.ProjectDir() {
+		if path == root {
 			return nil
 		}
 
 		// Stop on ignored dir
-		isIgnoredDir := utils.IsIgnoredDir(path, d)
+		skipDir := isIgnoredDir(path, info)
 
 		// Found a directory -> store path
-		if !isIgnoredDir && d.IsDir() {
+		if !skipDir && info.IsDir() {
 			emptyDirs.Set(path+string(os.PathSeparator), true)
 			return nil
 		}
@@ -86,8 +78,8 @@ func (m *Manager) DeleteEmptyDirectories(trackedPaths []string) error {
 		}
 
 		// Skip sub-directories
-		if isIgnoredDir {
-			return filepath.SkipDir
+		if skipDir {
+			return fs.SkipDir
 		}
 
 		return nil
@@ -108,7 +100,7 @@ func (m *Manager) DeleteEmptyDirectories(trackedPaths []string) error {
 	dirsToRemove := make([]string, 0)
 	for _, dir := range emptyDirs.Keys() {
 		for _, tracked := range trackedPaths {
-			prefix := filepath.Join(m.ProjectDir(), tracked) + string(os.PathSeparator)
+			prefix := tracked + string(os.PathSeparator)
 			if strings.HasPrefix(dir, prefix) {
 				// Remove dir, it is from a tracked dir
 				dirsToRemove = append(dirsToRemove, dir)
@@ -119,9 +111,7 @@ func (m *Manager) DeleteEmptyDirectories(trackedPaths []string) error {
 
 	// Delete
 	for _, dir := range dirsToRemove {
-		if err := os.Remove(dir); err == nil {
-			m.logger.Debugf(`Removed "%s"`, utils.RelPath(m.ProjectDir(), dir))
-		} else {
+		if err := m.fs.Remove(dir); err != nil {
 			errors.Append(err)
 		}
 	}
@@ -129,22 +119,7 @@ func (m *Manager) DeleteEmptyDirectories(trackedPaths []string) error {
 	return errors.ErrorOrNil()
 }
 
-func (m *Manager) remove(relPath string) error {
-	absPath := filepath.Join(m.ProjectDir(), relPath)
-	if err := os.Remove(absPath); err == nil {
-		m.logger.Debugf("Removed \"%s\"", relPath)
-	} else if !os.IsNotExist(err) {
-		return err
-	}
-	return nil
-}
-
-func (m *Manager) removeAll(relPath string) error {
-	absPath := filepath.Join(m.ProjectDir(), relPath)
-	if err := os.RemoveAll(absPath); err == nil {
-		m.logger.Debugf("Removed \"%s\"", relPath)
-	} else if !os.IsNotExist(err) {
-		return err
-	}
-	return nil
+func isIgnoredDir(path string, info fs.FileInfo) bool {
+	base := filesystem.Base(path)
+	return info.IsDir() && strings.HasPrefix(base, ".")
 }

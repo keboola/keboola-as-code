@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
@@ -32,7 +33,8 @@ func TestDiffOnlyInLocal(t *testing.T) {
 func TestDiffOnlyInRemote(t *testing.T) {
 	branch := &model.Branch{}
 	projectState := createProjectState(t)
-	projectState.SetRemoteState(branch)
+	_, err := projectState.SetRemoteState(branch)
+	assert.NoError(t, err)
 	d := NewDiffer(projectState)
 	results, err := d.Diff()
 	assert.NoError(t, err)
@@ -62,7 +64,8 @@ func TestDiffEqual(t *testing.T) {
 		IsDefault:   false,
 	}
 	m := &model.BranchManifest{}
-	projectState.SetRemoteState(branchRemote)
+	_, err := projectState.SetRemoteState(branchRemote)
+	assert.NoError(t, err)
 	projectState.SetLocalState(branchLocal, m)
 	d := NewDiffer(projectState)
 	results, err := d.Diff()
@@ -94,7 +97,8 @@ func TestDiffNotEqual(t *testing.T) {
 		IsDefault:   true,
 	}
 	m := &model.BranchManifest{}
-	projectState.SetRemoteState(branchRemote)
+	_, err := projectState.SetRemoteState(branchRemote)
+	assert.NoError(t, err)
 	projectState.SetLocalState(branchLocal, m)
 	d := NewDiffer(projectState)
 	results, err := d.Diff()
@@ -158,9 +162,11 @@ func TestDiffEqualConfig(t *testing.T) {
 		ChangeDescription: "local", // no diff:"true" tag
 	}
 	configManifest := &model.ConfigManifest{}
-	projectState.SetRemoteState(branchRemote)
+	_, err := projectState.SetRemoteState(branchRemote)
+	assert.NoError(t, err)
 	projectState.SetLocalState(branchLocal, branchManifest)
-	projectState.SetRemoteState(configRemote)
+	_, err = projectState.SetRemoteState(configRemote)
+	assert.NoError(t, err)
 	projectState.SetLocalState(configLocal, configManifest)
 	d := NewDiffer(projectState)
 	results, err := d.Diff()
@@ -227,9 +233,11 @@ func TestDiffNotEqualConfig(t *testing.T) {
 		ChangeDescription: "local", // no diff:"true" tag
 	}
 	configManifest := &model.ConfigManifest{}
-	projectState.SetRemoteState(branchRemote)
+	_, err := projectState.SetRemoteState(branchRemote)
+	assert.NoError(t, err)
 	projectState.SetLocalState(branchLocal, branchManifest)
-	projectState.SetRemoteState(configRemote)
+	_, err = projectState.SetRemoteState(configRemote)
+	assert.NoError(t, err)
 	projectState.SetLocalState(configLocal, configManifest)
 	d := NewDiffer(projectState)
 	results, err := d.Diff()
@@ -250,12 +258,16 @@ func TestDiffNotEqualConfig(t *testing.T) {
 func createProjectState(t *testing.T) *state.State {
 	t.Helper()
 
-	projectDir := t.TempDir()
-	m, err := manifest.NewManifest(1, "connection.keboola.com", projectDir, "bar")
+	logger, _ := utils.NewDebugLogger()
+	fs, err := aferofs.NewMemoryFs(logger, "")
 	if err != nil {
 		assert.FailNow(t, err.Error())
 	}
-	logger, _ := utils.NewDebugLogger()
+
+	m, err := manifest.NewManifest(1, "connection.keboola.com", fs)
+	if err != nil {
+		assert.FailNow(t, err.Error())
+	}
 
 	// State is mocked manually in test functions
 	api, _ := remote.TestMockedStorageApi(t)

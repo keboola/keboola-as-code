@@ -1,4 +1,5 @@
-package utils
+//nolint:forbidigo
+package thelper
 
 import (
 	"fmt"
@@ -66,7 +67,7 @@ func compareDirectories(expectedDir string, actualDir string) map[string]*fileNo
 
 	// Process actual dir
 	err = filepath.WalkDir(actualDirAbs, func(path string, d os.DirEntry, err error) error {
-		relPath := RelPath(actualDirAbs, path)
+		relPath := relPath(actualDirAbs, path)
 
 		// Stop on error
 		if err != nil {
@@ -98,7 +99,7 @@ func compareDirectories(expectedDir string, actualDir string) map[string]*fileNo
 
 	// Process expected dir
 	err = filepath.WalkDir(expectedDirAbs, func(path string, d os.DirEntry, err error) error {
-		relPath := RelPath(expectedDirAbs, path)
+		relPath := relPath(expectedDirAbs, path)
 
 		// Stop on error
 		if err != nil {
@@ -130,17 +131,4 @@ func compareDirectories(expectedDir string, actualDir string) map[string]*fileNo
 	}
 
 	return hashMap
-}
-
-func IsIgnoredFile(path string, d os.DirEntry) bool {
-	base := filepath.Base(path)
-	return !d.IsDir() &&
-		strings.HasPrefix(base, ".") &&
-		!strings.HasPrefix(base, ".env") &&
-		base != ".gitignore"
-}
-
-func IsIgnoredDir(path string, d os.DirEntry) bool {
-	base := filepath.Base(path)
-	return d.IsDir() && strings.HasPrefix(base, ".")
 }

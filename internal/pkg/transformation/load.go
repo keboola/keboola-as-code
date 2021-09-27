@@ -2,43 +2,62 @@ package transformation
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/iancoleman/orderedmap"
 	"go.uber.org/zap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/sql"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
+type files = model.ObjectFiles
+
 type loader struct {
-	projectDir string
-	logger     *zap.SugaredLogger
-	naming     model.Naming
-	record     *model.ConfigManifest
-	target     *model.Config
-	errors     *utils.Error
+	*files
+	fs        filesystem.Fs
+	logger    *zap.SugaredLogger
+	naming    model.Naming
+	state     *model.State
+	config    *model.Config
+	blocksDir string
+	blocks    []*model.Block
+	errors    *utils.Error
 }
 
 // LoadBlocks - load code blocks from disk to target config.
-func LoadBlocks(projectDir string, logger *zap.SugaredLogger, naming model.Naming, record *model.ConfigManifest, target *model.Config) error {
-	l := &loader{projectDir, logger, naming, record, target, utils.NewMultiError()}
-	return l.loadBlocksToConfig()
+func LoadBlocks(logger *zap.SugaredLogger, fs filesystem.Fs, naming model.Naming, state *model.State, files *model.ObjectFiles) error {
+	l := &loader{
+		fs:     fs,
+		files:  files,
+		logger: logger,
+		naming: naming,
+		state:  state,
+		config: files.Object.(*model.Config),
+		errors: utils.NewMultiError(),
+	}
+	l.blocksDir = naming.BlocksDir(files.Record.RelativePath())
+	return l.loadBlocks()
 }
 
-// LoadBlocks - load code blocks from disk to target config.
-func (l *loader) loadBlocksToConfig() error {
-	// Load blocks
-	blocksDir := l.naming.BlocksDir(l.record.RelativePath())
-	blocks := l.loadBlocks(blocksDir)
+func (l *loader) loadBlocks() error {
+	// Load blocks and codes from filesystem
+	for blockIndex, blockDir := range l.blockDirs() {
+		block := l.addBlock(blockIndex, blockDir)
+		for codeIndex, codeDir := range l.codeDirs(block) {
+			l.addCode(block, codeIndex, codeDir)
+		}
+	}
+
+	// Validate, if all loaded without error
+	l.validate()
 
 	// Set blocks to "parameters.blocks" in the config
 	var parameters orderedmap.OrderedMap
-	if parametersRaw, found := l.target.Content.Get(`parameters`); found {
+	if parametersRaw, found := l.config.Content.Get(`parameters`); found {
 		// Use existing map
 		parameters = parametersRaw.(orderedmap.OrderedMap)
 	} else {
@@ -48,163 +67,177 @@ func (l *loader) loadBlocksToConfig() error {
 
 	// Convert []struct to []map
 	blocksMap := make([]interface{}, 0)
-	for _, block := range blocks {
+	for _, block := range l.blocks {
 		blockMap := utils.NewOrderedMap()
 		utils.ConvertByJson(block, &blockMap)
 		blocksMap = append(blocksMap, blockMap)
 	}
 	parameters.Set("blocks", blocksMap)
-	l.target.Content.Set("parameters", parameters)
-	l.target.Blocks = blocks
+	l.config.Content.Set("parameters", parameters)
+	l.config.Blocks = l.blocks
 	return l.errors.ErrorOrNil()
 }
 
-// loadBlocks - one block is one dir from blocksDir.
-func (l *loader) loadBlocks(blocksDir string) []*model.Block {
-	blocks := make([]*model.Block, 0)
-	blocksDirAbs := filepath.Join(l.projectDir, blocksDir)
-
-	// Check if blocks dir exists
-	if !utils.IsDir(blocksDirAbs) {
-		l.errors.Append(fmt.Errorf(`missing blocks dir "%s"`, blocksDir))
-		return nil
-	}
-
-	// Load all dir entries
-	items, err := os.ReadDir(blocksDirAbs)
-	if err != nil {
-		l.errors.Append(fmt.Errorf(`cannot read transformation blocks from "%s": %w`, blocksDir, err))
-		return nil
-	}
-
-	// Load all blocks
-	for i, item := range items {
-		if item.IsDir() {
-			// Create block struct
-			block := &model.Block{
-				BlockKey: model.BlockKey{
-					BranchId:    l.target.BranchId,
-					ComponentId: l.target.ComponentId,
-					ConfigId:    l.target.Id,
-					Index:       i,
-				},
-				Paths: model.Paths{PathInProject: model.PathInProject{ParentPath: blocksDir, ObjectPath: item.Name()}},
-			}
-			l.record.AddRelatedPath(block.RelativePath())
-
-			// Load meta file
-			metaFilePath := l.naming.MetaFilePath(block.RelativePath())
-			errPrefix := "block metadata"
-			if err := utils.ReadTaggedFields(l.projectDir, metaFilePath, model.MetaFileTag, block, errPrefix); err == nil {
-				l.record.AddRelatedPath(metaFilePath)
-				l.logger.Debugf(`Loaded "%s"`, metaFilePath)
-			} else {
-				l.errors.Append(err)
-			}
-
-			// Load codes
-			codes := l.loadCodes(block)
-			if codes != nil {
-				block.Codes = codes
-			} else {
-				continue
-			}
-
-			// Store
-			blocks = append(blocks, block)
-		}
-	}
-
-	// Validate
+func (l *loader) validate() {
 	if l.errors.Len() == 0 {
-		for _, block := range blocks {
+		for _, block := range l.blocks {
 			if err := validator.Validate(block); err != nil {
 				l.errors.Append(utils.PrefixError(fmt.Sprintf(`block "%s" is not valid`, block.RelativePath()), err))
 			}
 		}
 	}
-
-	return blocks
 }
 
-// loadCodes - one code is one dir from block dir.
-func (l *loader) loadCodes(block *model.Block) []*model.Code {
-	codes := make([]*model.Code, 0)
-	blockDirAbs := filepath.Join(l.projectDir, block.RelativePath())
+func (l *loader) addBlock(blockIndex int, path string) *model.Block {
+	block := &model.Block{
+		BlockKey: model.BlockKey{
+			BranchId:    l.config.BranchId,
+			ComponentId: l.config.ComponentId,
+			ConfigId:    l.config.Id,
+			Index:       blockIndex,
+		},
+		Paths: model.Paths{
+			PathInProject: model.PathInProject{
+				ParentPath: l.blocksDir,
+				ObjectPath: path,
+			},
+		},
+		Codes: make([]*model.Code, 0),
+	}
 
-	// Load all dir entries
-	items, err := os.ReadDir(blockDirAbs)
+	l.Record.AddRelatedPath(block.RelativePath())
+	l.loadBlockMetaFile(block)
+	l.blocks = append(l.blocks, block)
+
+	return block
+}
+
+func (l *loader) addCode(block *model.Block, codeIndex int, path string) *model.Code {
+	code := &model.Code{
+		CodeKey: model.CodeKey{
+			BranchId:    l.config.BranchId,
+			ComponentId: l.config.ComponentId,
+			ConfigId:    l.config.Id,
+			BlockIndex:  block.Index,
+			Index:       codeIndex,
+		},
+		Paths: model.Paths{
+			PathInProject: model.PathInProject{
+				ParentPath: block.RelativePath(),
+				ObjectPath: path,
+			},
+		},
+		Scripts: make([]string, 0),
+	}
+
+	l.Record.AddRelatedPath(code.RelativePath())
+	l.loadCodeMetaFile(code)
+	l.addScripts(code)
+	block.Codes = append(block.Codes, code)
+
+	return code
+}
+
+func (l *loader) addScripts(code *model.Code) {
+	code.CodeFileName = l.codeFileName(code)
+	if code.CodeFileName == "" {
+		return
+	}
+
+	// Load file content
+	codeFilePath := l.naming.CodeFilePath(code)
+	file, err := l.fs.ReadFile(codeFilePath, "code file")
 	if err != nil {
-		l.errors.Append(fmt.Errorf(`cannot read transformation codes from "%s": %w`, blockDirAbs, err))
+		l.errors.Append(err)
+		return
+	}
+
+	// Split to scripts
+	code.Scripts = l.parseScripts(file.Content)
+	l.Record.AddRelatedPath(codeFilePath)
+	l.logger.Debugf(`Parsed "%d" scripts from "%s"`, len(code.Scripts), codeFilePath)
+}
+
+func (l *loader) loadBlockMetaFile(block *model.Block) {
+	path := l.naming.MetaFilePath(block.RelativePath())
+	desc := "block metadata"
+	if file, err := l.fs.ReadJsonFieldsTo(path, desc, block, model.MetaFileTag); err != nil {
+		l.errors.Append(err)
+	} else if file != nil {
+		l.Record.AddRelatedPath(path)
+	}
+}
+
+func (l *loader) loadCodeMetaFile(code *model.Code) {
+	path := l.naming.MetaFilePath(code.RelativePath())
+	desc := "code metadata"
+	if file, err := l.fs.ReadJsonFieldsTo(path, desc, code, model.MetaFileTag); err != nil {
+		l.errors.Append(err)
+	} else if file != nil {
+		l.Record.AddRelatedPath(path)
+	}
+}
+
+func (l *loader) blockDirs() []string {
+	// Check if blocks dir exists
+	if !l.fs.IsDir(l.blocksDir) {
+		l.errors.Append(fmt.Errorf(`missing blocks dir "%s"`, l.blocksDir))
 		return nil
 	}
 
-	// Load all codes
-	for i, item := range items {
-		if item.IsDir() {
-			// Create code struct
-			code := &model.Code{
-				CodeKey: model.CodeKey{
-					BranchId:    l.target.BranchId,
-					ComponentId: l.target.ComponentId,
-					ConfigId:    l.target.Id,
-					BlockIndex:  block.Index,
-					Index:       i,
-				},
-				Paths: model.Paths{PathInProject: model.PathInProject{ParentPath: block.RelativePath(), ObjectPath: item.Name()}},
-			}
-			l.record.AddRelatedPath(code.RelativePath())
-
-			// Load meta file
-			metaFilePath := l.naming.MetaFilePath(code.RelativePath())
-			errPrefix := "code metadata"
-			if err := utils.ReadTaggedFields(l.projectDir, metaFilePath, model.MetaFileTag, code, errPrefix); err == nil {
-				l.record.AddRelatedPath(metaFilePath)
-				l.logger.Debugf(`Loaded "%s"`, metaFilePath)
-			} else {
-				l.errors.Append(err)
-			}
-
-			// Load codes
-			code.CodeFileName = l.codeFileName(code.RelativePath())
-			codeFilePath := l.naming.CodeFilePath(code)
-			if code.CodeFileName != "" {
-				scripts := l.loadScripts(codeFilePath)
-				if scripts != nil {
-					l.record.AddRelatedPath(codeFilePath)
-					code.Scripts = scripts
-				} else {
-					continue
-				}
-			}
-
-			// Store
-			codes = append(codes, code)
-		}
+	// Load all dir entries
+	items, err := l.fs.ReadDir(l.blocksDir)
+	if err != nil {
+		l.errors.Append(fmt.Errorf(`cannot read transformation blocks from "%s": %w`, l.blocksDir, err))
+		return nil
 	}
 
-	return codes
+	// Only dirs
+	dirs := make([]string, 0)
+	for _, item := range items {
+		if item.IsDir() {
+			dirs = append(dirs, item.Name())
+		}
+	}
+	return dirs
 }
 
-func (l *loader) codeFileName(codeDir string) string {
+func (l *loader) codeDirs(block *model.Block) []string {
+	// Load all dir entries
+	items, err := l.fs.ReadDir(block.RelativePath())
+	if err != nil {
+		l.errors.Append(fmt.Errorf(`cannot read transformation codes from "%s": %w`, block.RelativePath(), err))
+		return nil
+	}
+
+	// Only dirs
+	dirs := make([]string, 0)
+	for _, item := range items {
+		if item.IsDir() {
+			dirs = append(dirs, item.Name())
+		}
+	}
+	return dirs
+}
+
+func (l *loader) codeFileName(code *model.Code) string {
 	// Search for code file, glob "code.*"
 	// File can use an old naming, so the file extension is not specified
-	codeDirAbs := filepath.Join(l.projectDir, codeDir)
-	matches, err := filepath.Glob(filepath.Join(codeDirAbs, model.CodeFileName+`.*`))
+	matches, err := l.fs.Glob(filesystem.Join(code.RelativePath(), model.CodeFileName+`.*`))
 	if err != nil {
-		l.errors.Append(fmt.Errorf(`canoot search for code file in %s": %w`, codeDir, err))
+		l.errors.Append(fmt.Errorf(`cannot search for code file in %s": %w`, code.RelativePath(), err))
 		return ""
 	}
 	files := make([]string, 0)
 	for _, match := range matches {
-		if utils.IsFile(match) {
-			files = append(files, utils.RelPath(codeDirAbs, match))
+		if l.fs.IsFile(match) {
+			files = append(files, filesystem.Rel(code.RelativePath(), match))
 		}
 	}
 
 	// No file?
 	if len(files) == 0 {
-		l.errors.Append(fmt.Errorf(`missing code file in "%s"`, codeDir))
+		l.errors.Append(fmt.Errorf(`missing code file in "%s"`, code.RelativePath()))
 		return ""
 	}
 
@@ -213,7 +246,7 @@ func (l *loader) codeFileName(codeDir string) string {
 		l.errors.Append(fmt.Errorf(
 			`expected one, but found multiple code files "%s" in "%s"`,
 			strings.Join(files, `", "`),
-			codeDir,
+			code.RelativePath(),
 		))
 		return ""
 	}
@@ -222,24 +255,8 @@ func (l *loader) codeFileName(codeDir string) string {
 	return files[0]
 }
 
-// loadScripts - one script is one statement from code file.
-func (l *loader) loadScripts(codeFile string) []string {
-	// Load file content
-	codeFilePathAbs := filepath.Join(l.projectDir, codeFile)
-	content, err := os.ReadFile(codeFilePathAbs)
-	if err != nil {
-		l.errors.Append(fmt.Errorf(`cannot read code file "%s": %w`, codeFile, err))
-		return nil
-	}
-
-	// Split to scripts
-	scripts := l.parseScripts(string(content))
-	l.logger.Debugf(`Loaded "%s", parsed "%d" scripts`, codeFile, len(scripts))
-	return scripts
-}
-
 func (l *loader) parseScripts(content string) []string {
-	switch l.record.ComponentId {
+	switch l.config.ComponentId {
 	case `keboola.snowflake-transformation`:
 		fallthrough
 	case `keboola.synapse-transformation`:

@@ -3,10 +3,9 @@ package model
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 )
 
 const (
@@ -26,7 +25,7 @@ type Record interface {
 	SetObjectPath(string)       // set path relative to the parent object
 	GetParentPath() string      // parent path relative to the project dir
 	SetParentPath(string)       // set parent path
-	RelativePath() string       // parent path + path -> path relative to the project dir
+	RelativePath() string       // parent path + object path -> path relative to the project dir
 	GetRelatedPaths() []string  // files related to the record, relative to the project dir, e.g. main/meta.json
 	AddRelatedPath(path string)
 	State() *RecordState
@@ -94,7 +93,7 @@ func (p *PathInProject) SetParentPath(parentPath string) {
 }
 
 func (p PathInProject) RelativePath() string {
-	return filepath.Join(
+	return filesystem.Join(
 		strings.ReplaceAll(p.ParentPath, "/", string(os.PathSeparator)),
 		strings.ReplaceAll(p.ObjectPath, "/", string(os.PathSeparator)),
 	)
@@ -105,21 +104,23 @@ func (p *Paths) GetRelatedPaths() []string {
 	out := make([]string, 0)
 	for _, path := range p.RelatedPaths {
 		// Prefix by dir -> path will be relative to the project dir
-		out = append(out, filepath.Join(dir, path))
+		out = append(out, filesystem.Join(dir, path))
 	}
 	return out
 }
 
 func (p *Paths) AddRelatedPath(path string) {
 	dir := p.RelativePath()
-	if !strings.HasPrefix(path, dir) {
+	prefix := dir + string(os.PathSeparator)
+	if !strings.HasPrefix(path, prefix) {
 		panic(fmt.Errorf(`path "%s" is not from the dir "%s"`, path, dir))
 	}
-	p.RelatedPaths = append(p.RelatedPaths, utils.RelPath(dir, path))
+
+	p.RelatedPaths = append(p.RelatedPaths, strings.TrimPrefix(path, prefix))
 }
 
 func (p *Paths) AbsolutePath(projectDir string) string {
-	return filepath.Join(projectDir, p.RelativePath())
+	return filesystem.Join(projectDir, p.RelativePath())
 }
 
 func (s *RecordState) State() *RecordState {

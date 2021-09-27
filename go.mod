@@ -15,6 +15,7 @@ require (
 	github.com/hashicorp/go-multierror v1.0.0
 	github.com/iancoleman/orderedmap v0.2.0
 	github.com/iancoleman/strcase v0.1.3
+	github.com/imdario/mergo v0.3.12
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/joho/godotenv v1.3.0
 	github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629

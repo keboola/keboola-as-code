@@ -10,16 +10,17 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/thelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func TestStorageApi(t *testing.T) (*StorageApi, *utils.Writer) {
-	return TestStorageApiWithHost(t, utils.TestApiHost())
+	return TestStorageApiWithHost(t, thelper.TestApiHost())
 }
 
 func TestMockedStorageApi(t *testing.T) (*StorageApi, *utils.Writer) {
 	logger, logs := utils.NewDebugLogger()
-	if utils.TestIsVerbose() {
+	if thelper.TestIsVerbose() {
 		logs.ConnectTo(os.Stdout)
 	}
 	// Set short retry delay in tests
@@ -39,7 +40,7 @@ func TestMockedStorageApi(t *testing.T) (*StorageApi, *utils.Writer) {
 
 func TestStorageApiWithHost(t *testing.T, apiHost string) (*StorageApi, *utils.Writer) {
 	logger, logs := utils.NewDebugLogger()
-	if utils.TestIsVerbose() {
+	if thelper.TestIsVerbose() {
 		logs.ConnectTo(os.Stdout)
 	}
 	a := NewStorageApi(apiHost, context.Background(), logger, false)
@@ -48,8 +49,8 @@ func TestStorageApiWithHost(t *testing.T, apiHost string) (*StorageApi, *utils.W
 }
 
 func TestStorageApiWithToken(t *testing.T) (*StorageApi, *utils.Writer) {
-	a, logs := TestStorageApiWithHost(t, utils.TestApiHost())
-	token, err := a.GetToken(utils.TestTokenMaster())
+	a, logs := TestStorageApiWithHost(t, thelper.TestApiHost())
+	token, err := a.GetToken(thelper.TestTokenMaster())
 	if err != nil {
 		assert.FailNow(t, err.Error())
 	}

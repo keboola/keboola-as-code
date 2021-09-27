@@ -1,3 +1,4 @@
+// nolint: forbidigo
 package log
 
 import (
@@ -7,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/thelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -34,7 +36,7 @@ func TestFileCore(t *testing.T) {
 
 	// Assert, all levels logged with the level prefix
 	expected := "DEBUG\tDebug msg\nINFO\tInfo msg\nWARN\tWarn msg\nERROR\tError msg\n"
-	assert.Equal(t, expected, utils.GetFileContent(filePath))
+	assert.Equal(t, expected, thelper.GetFileContent(filePath))
 }
 
 func TestConsoleCoreVerboseFalse(t *testing.T) {

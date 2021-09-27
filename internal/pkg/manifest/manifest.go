@@ -2,11 +2,11 @@ package manifest
 
 import (
 	"fmt"
-	"path/filepath"
 	"sync"
 
 	"github.com/iancoleman/orderedmap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -14,17 +14,15 @@ import (
 )
 
 const (
-	MetadataDir = ".keboola"
-	FileName    = "manifest.json"
+	FileName = "manifest.json"
 )
 
 type Manifest struct {
-	*Content    `validate:"required,dive"` // content of the file, updated only on load/save
-	ProjectDir  string                     `validate:"required"` // project root
-	MetadataDir string                     `validate:"required"` // inside ProjectDir
-	changed     bool
-	records     orderedmap.OrderedMap // common map for all: branches, configs and rows manifests
-	lock        *sync.Mutex
+	fs       filesystem.Fs
+	*Content `validate:"required,dive"` // content of the file, updated only on load/save
+	changed  bool
+	records  orderedmap.OrderedMap // common map for all: branches, configs and rows manifests
+	lock     *sync.Mutex
 }
 
 type Content struct {
@@ -37,18 +35,17 @@ type Content struct {
 	Configs  []*model.ConfigManifestWithRows `json:"configurations" validate:"dive"`
 }
 
-func NewManifest(projectId int, apiHost string, projectDir, metadataDir string) (*Manifest, error) {
-	m := newManifest(projectId, apiHost, projectDir, metadataDir)
+func NewManifest(projectId int, apiHost string, fs filesystem.Fs) (*Manifest, error) {
+	m := newManifest(projectId, apiHost, fs)
 	if err := m.validate(); err != nil {
 		return nil, err
 	}
 	return m, nil
 }
 
-func newManifest(projectId int, apiHost string, projectDir, metadataDir string) *Manifest {
+func newManifest(projectId int, apiHost string, fs filesystem.Fs) *Manifest {
 	return &Manifest{
-		ProjectDir:  projectDir,
-		MetadataDir: metadataDir,
+		fs: fs,
 		Content: &Content{
 			Version:  1,
 			Project:  model.Project{Id: projectId, ApiHost: apiHost},
@@ -63,16 +60,16 @@ func newManifest(projectId int, apiHost string, projectDir, metadataDir string) 
 	}
 }
 
-func LoadManifest(projectDir string, metadataDir string) (*Manifest, error) {
+func LoadManifest(fs filesystem.Fs) (*Manifest, error) {
 	// Exists?
-	path := filepath.Join(metadataDir, FileName)
-	if !utils.IsFile(path) {
-		return nil, fmt.Errorf("manifest \"%s\" not found", utils.RelPath(projectDir, path))
+	path := filesystem.Join(filesystem.MetadataDir, FileName)
+	if !fs.IsFile(path) {
+		return nil, fmt.Errorf("manifest \"%s\" not found", path)
 	}
 
 	// Read JSON file
-	m := newManifest(0, "", projectDir, metadataDir)
-	if err := json.ReadFile(metadataDir, FileName, &m.Content, "manifest"); err != nil {
+	m := newManifest(0, "", fs)
+	if err := fs.ReadJsonFileTo(path, "manifest", &m.Content); err != nil {
 		return nil, err
 	}
 
@@ -164,7 +161,13 @@ func (m *Manifest) Save() error {
 	}
 
 	// Write JSON file
-	if err := json.WriteFile(m.MetadataDir, FileName, m.Content, "manifest"); err != nil {
+	path := filesystem.Join(filesystem.MetadataDir, FileName)
+	content, err := json.EncodeString(m.Content, true)
+	if err != nil {
+		return utils.PrefixError(`cannot encode manifest`, err)
+	}
+	file := filesystem.CreateFile(path, content)
+	if err := m.fs.WriteFile(file); err != nil {
 		return err
 	}
 
@@ -185,12 +188,16 @@ func (m *Manifest) IsObjectIgnored(object model.Object) bool {
 	return false
 }
 
+func (m *Manifest) Fs() filesystem.Fs {
+	return m.fs
+}
+
 func (m *Manifest) IsChanged() bool {
 	return m.changed
 }
 
-func (m *Manifest) RelativePath() string {
-	return filepath.Join(m.MetadataDir, FileName)
+func (m *Manifest) Path() string {
+	return filesystem.Join(filesystem.MetadataDir, FileName)
 }
 
 func (m *Manifest) GetRecords() orderedmap.OrderedMap {

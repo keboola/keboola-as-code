@@ -3,22 +3,25 @@ package state
 import (
 	"context"
 	"os"
-	"path/filepath"
 	"runtime"
 	"testing"
 
 	"github.com/jarcoal/httpmock"
-	"github.com/otiai10/copy"
+	"github.com/nhatthm/aferocopy"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
+	"github.com/keboola/keboola-as-code/internal/pkg/thelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func TestLoadLocalStateMinimal(t *testing.T) {
-	defer utils.ResetEnv(t, os.Environ())
+	defer thelper.ResetEnv(t, os.Environ())
 	m := loadManifest(t, "minimal")
 	state := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
@@ -40,7 +43,7 @@ func TestLoadLocalStateMinimal(t *testing.T) {
 }
 
 func TestLoadLocalStateComplex(t *testing.T) {
-	defer utils.ResetEnv(t, os.Environ())
+	defer thelper.ResetEnv(t, os.Environ())
 	m := loadManifest(t, "complex")
 	state := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
@@ -94,7 +97,7 @@ func TestLoadLocalStateComplex(t *testing.T) {
 }
 
 func TestLoadLocalStateAllowedBranches(t *testing.T) {
-	defer utils.ResetEnv(t, os.Environ())
+	defer thelper.ResetEnv(t, os.Environ())
 	m := loadManifest(t, "minimal")
 	m.Content.AllowedBranches = model.AllowedBranches{"main"}
 	state := loadLocalTestState(t, m)
@@ -103,7 +106,7 @@ func TestLoadLocalStateAllowedBranches(t *testing.T) {
 }
 
 func TestLoadLocalStateAllowedBranchesError(t *testing.T) {
-	defer utils.ResetEnv(t, os.Environ())
+	defer thelper.ResetEnv(t, os.Environ())
 	m := loadManifest(t, "complex")
 	m.Content.AllowedBranches = model.AllowedBranches{"main"}
 	state := loadLocalTestState(t, m)
@@ -112,7 +115,7 @@ func TestLoadLocalStateAllowedBranchesError(t *testing.T) {
 }
 
 func TestLoadLocalStateBranchMissingMetaJson(t *testing.T) {
-	defer utils.ResetEnv(t, os.Environ())
+	defer thelper.ResetEnv(t, os.Environ())
 	m := loadManifest(t, "branch-missing-meta-json")
 	state := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
@@ -121,7 +124,7 @@ func TestLoadLocalStateBranchMissingMetaJson(t *testing.T) {
 }
 
 func TestLoadLocalStateBranchMissingDescription(t *testing.T) {
-	defer utils.ResetEnv(t, os.Environ())
+	defer thelper.ResetEnv(t, os.Environ())
 	m := loadManifest(t, "branch-missing-description")
 	state := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
@@ -130,7 +133,7 @@ func TestLoadLocalStateBranchMissingDescription(t *testing.T) {
 }
 
 func TestLoadLocalStateConfigMissingConfigJson(t *testing.T) {
-	defer utils.ResetEnv(t, os.Environ())
+	defer thelper.ResetEnv(t, os.Environ())
 	m := loadManifest(t, "config-missing-config-json")
 	state := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
@@ -139,7 +142,7 @@ func TestLoadLocalStateConfigMissingConfigJson(t *testing.T) {
 }
 
 func TestLoadLocalStateConfigMissingMetaJson(t *testing.T) {
-	defer utils.ResetEnv(t, os.Environ())
+	defer thelper.ResetEnv(t, os.Environ())
 	m := loadManifest(t, "config-missing-meta-json")
 	state := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
@@ -148,7 +151,7 @@ func TestLoadLocalStateConfigMissingMetaJson(t *testing.T) {
 }
 
 func TestLoadLocalStateConfigMissingDescription(t *testing.T) {
-	defer utils.ResetEnv(t, os.Environ())
+	defer thelper.ResetEnv(t, os.Environ())
 	m := loadManifest(t, "config-missing-description")
 	state := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
@@ -157,7 +160,7 @@ func TestLoadLocalStateConfigMissingDescription(t *testing.T) {
 }
 
 func TestLoadLocalStateConfigRowMissingConfigJson(t *testing.T) {
-	defer utils.ResetEnv(t, os.Environ())
+	defer thelper.ResetEnv(t, os.Environ())
 	m := loadManifest(t, "config-row-missing-config-json")
 	state := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
@@ -166,7 +169,7 @@ func TestLoadLocalStateConfigRowMissingConfigJson(t *testing.T) {
 }
 
 func TestLoadLocalStateConfigRowMissingMetaJson(t *testing.T) {
-	defer utils.ResetEnv(t, os.Environ())
+	defer thelper.ResetEnv(t, os.Environ())
 	m := loadManifest(t, "config-row-missing-meta-json")
 	state := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
@@ -175,7 +178,7 @@ func TestLoadLocalStateConfigRowMissingMetaJson(t *testing.T) {
 }
 
 func TestLoadLocalStateBranchInvalidMetaJson(t *testing.T) {
-	defer utils.ResetEnv(t, os.Environ())
+	defer thelper.ResetEnv(t, os.Environ())
 	m := loadManifest(t, "branch-invalid-meta-json")
 	state := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
@@ -184,7 +187,7 @@ func TestLoadLocalStateBranchInvalidMetaJson(t *testing.T) {
 }
 
 func TestLoadLocalStateConfigRowMissingDescription(t *testing.T) {
-	defer utils.ResetEnv(t, os.Environ())
+	defer thelper.ResetEnv(t, os.Environ())
 	m := loadManifest(t, "config-row-missing-description")
 	state := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
@@ -193,7 +196,7 @@ func TestLoadLocalStateConfigRowMissingDescription(t *testing.T) {
 }
 
 func TestLoadLocalStateConfigInvalidConfigJson(t *testing.T) {
-	defer utils.ResetEnv(t, os.Environ())
+	defer thelper.ResetEnv(t, os.Environ())
 	m := loadManifest(t, "config-invalid-config-json")
 	state := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
@@ -202,7 +205,7 @@ func TestLoadLocalStateConfigInvalidConfigJson(t *testing.T) {
 }
 
 func TestLoadLocalStateConfigInvalidMetaJson(t *testing.T) {
-	defer utils.ResetEnv(t, os.Environ())
+	defer thelper.ResetEnv(t, os.Environ())
 	m := loadManifest(t, "config-invalid-meta-json")
 	state := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
@@ -211,7 +214,7 @@ func TestLoadLocalStateConfigInvalidMetaJson(t *testing.T) {
 }
 
 func TestLoadLocalStateConfigRowInvalidConfigJson(t *testing.T) {
-	defer utils.ResetEnv(t, os.Environ())
+	defer thelper.ResetEnv(t, os.Environ())
 	m := loadManifest(t, "config-row-invalid-config-json")
 	state := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
@@ -220,7 +223,7 @@ func TestLoadLocalStateConfigRowInvalidConfigJson(t *testing.T) {
 }
 
 func TestLoadLocalStateConfigRowInvalidMetaJson(t *testing.T) {
-	defer utils.ResetEnv(t, os.Environ())
+	defer thelper.ResetEnv(t, os.Environ())
 	m := loadManifest(t, "config-row-invalid-meta-json")
 	state := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
@@ -271,20 +274,21 @@ func loadManifest(t *testing.T, projectDirName string) *manifest.Manifest {
 	utils.MustSetEnv("LOCAL_STATE_MYSQL_CONFIG_ID", "896")
 
 	_, testFile, _, _ := runtime.Caller(0)
-	testDir := filepath.Dir(testFile)
-	stateDir := filepath.Join(testDir, "..", "fixtures", "local", projectDirName)
+	testDir := filesystem.Dir(testFile)
+	stateDir := filesystem.Join(testDir, "..", "fixtures", "local", projectDirName)
 	projectDir := t.TempDir()
-	metadataDir := filepath.Join(projectDir, manifest.MetadataDir)
 
 	// Copy test data
-	err := copy.Copy(stateDir, projectDir)
+	err := aferocopy.Copy(stateDir, projectDir)
 	if err != nil {
 		t.Fatalf("Copy error: %s", err)
 	}
-	utils.ReplaceEnvsDir(projectDir, nil)
+	thelper.ReplaceEnvsDir(projectDir, nil)
 
 	// Load manifest
-	m, err := manifest.LoadManifest(projectDir, metadataDir)
+	fs, err := aferofs.NewLocalFs(zap.NewNop().Sugar(), projectDir, ".")
+	assert.NoError(t, err)
+	m, err := manifest.LoadManifest(fs)
 	if err != nil {
 		assert.FailNow(t, err.Error())
 	}
@@ -398,7 +402,7 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 						ObjectPath: "extractor/keboola.ex-db-mysql/896-tables",
 						ParentPath: "123-branch",
 					},
-					RelatedPaths: []string{model.MetaFile, model.DescriptionFile, model.ConfigFile},
+					RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
 				},
 			},
 		},
@@ -452,7 +456,7 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 						ObjectPath: "extractor/ex-generic-v2/456-todos",
 						ParentPath: "main",
 					},
-					RelatedPaths: []string{model.MetaFile, model.DescriptionFile, model.ConfigFile},
+					RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
 				},
 			},
 		},
@@ -506,7 +510,7 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 						ObjectPath: "extractor/ex-generic-v2/456-todos",
 						ParentPath: "123-branch",
 					},
-					RelatedPaths: []string{model.MetaFile, model.DescriptionFile, model.ConfigFile},
+					RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
 				},
 			},
 		},
@@ -551,7 +555,7 @@ func complexLocalExpectedConfigRows() []*model.ConfigRowState {
 						ObjectPath: "rows/56-disabled",
 						ParentPath: "123-branch/extractor/keboola.ex-db-mysql/896-tables",
 					},
-					RelatedPaths: []string{model.MetaFile, model.DescriptionFile, model.ConfigFile},
+					RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
 				},
 			},
 		},
@@ -591,7 +595,7 @@ func complexLocalExpectedConfigRows() []*model.ConfigRowState {
 						ObjectPath: "rows/34-test-view",
 						ParentPath: "123-branch/extractor/keboola.ex-db-mysql/896-tables",
 					},
-					RelatedPaths: []string{model.MetaFile, model.DescriptionFile, model.ConfigFile},
+					RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
 				},
 			},
 		},
@@ -631,7 +635,7 @@ func complexLocalExpectedConfigRows() []*model.ConfigRowState {
 						ObjectPath: "rows/12-users",
 						ParentPath: "123-branch/extractor/keboola.ex-db-mysql/896-tables",
 					},
-					RelatedPaths: []string{model.MetaFile, model.DescriptionFile, model.ConfigFile},
+					RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
 				},
 			},
 		},

@@ -1,25 +1,19 @@
-package model
+package model_test
 
 import (
-	"fmt"
-	"path/filepath"
 	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	. "github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func TestPathsStateDirNotFound(t *testing.T) {
-	_, testFile, _, _ := runtime.Caller(0)
-	testDir := filepath.Dir(testFile)
-	projectDir := filepath.Join(testDir, "foo", "bar")
-	_, err := NewPathsState(projectDir)
-	assert.Error(t, err)
-	assert.Equal(t, fmt.Sprintf(`directory "%s" not found`, projectDir), err.Error())
-}
-
 func TestPathsStateEmpty(t *testing.T) {
-	paths, err := loadPathsState("empty")
+	paths, err := loadPathsState(t, "empty")
 	assert.NotNil(t, paths)
 	assert.NoError(t, err)
 	assert.Empty(t, paths.TrackedPaths())
@@ -32,7 +26,7 @@ func TestPathsStateEmpty(t *testing.T) {
 }
 
 func TestPathsStateComplex(t *testing.T) {
-	paths, err := loadPathsState("complex")
+	paths, err := loadPathsState(t, "complex")
 	assert.NotNil(t, paths)
 	assert.NoError(t, err)
 
@@ -185,9 +179,12 @@ func TestPathsStateComplex(t *testing.T) {
 	}, paths.UntrackedPaths())
 }
 
-func loadPathsState(fixture string) (*PathsState, error) {
+func loadPathsState(t *testing.T, fixture string) (*PathsState, error) {
+	t.Helper()
 	_, testFile, _, _ := runtime.Caller(0)
-	testDir := filepath.Dir(testFile)
-	projectDir := filepath.Join(testDir, "..", "fixtures", "local", fixture)
-	return NewPathsState(projectDir)
+	testDir := filesystem.Dir(testFile)
+	projectDir := filesystem.Join(testDir, "..", "fixtures", "local", fixture)
+	fs, err := aferofs.NewLocalFs(zap.NewNop().Sugar(), projectDir, ".")
+	assert.NoError(t, err)
+	return NewPathsState(fs)
 }

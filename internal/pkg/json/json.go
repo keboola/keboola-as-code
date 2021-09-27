@@ -5,43 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 )
-
-// ReadFile reads JSON file to target data.
-func ReadFile(dir string, relPath string, target interface{}, errPrefix string) error {
-	path := filepath.Join(dir, relPath)
-
-	// Read file
-	content, err := os.ReadFile(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return fmt.Errorf("missing %s file \"%s\"", errPrefix, relPath)
-		}
-		return fmt.Errorf("cannot read %s file \"%s\"", errPrefix, relPath)
-	}
-
-	// Decode file
-	err = Decode(content, target)
-	if err != nil {
-		return fmt.Errorf("%s file \"%s\" is invalid:\n\t- %w", errPrefix, relPath, err)
-	}
-	return nil
-}
-
-// WriteFile writes JSON file from source data.
-func WriteFile(dir string, relPath string, source interface{}, errPrefix string) error {
-	path := filepath.Join(dir, relPath)
-	data, err := Encode(source, true)
-	if err != nil {
-		return fmt.Errorf("cannot write %s file \"%s\"", errPrefix, relPath)
-	}
-	if err := os.WriteFile(path, data, 0644); err != nil {
-		return fmt.Errorf("cannot write %s file \"%s\"", errPrefix, relPath)
-	}
-	return nil
-}
 
 func Encode(v interface{}, pretty bool) ([]byte, error) {
 	var data []byte

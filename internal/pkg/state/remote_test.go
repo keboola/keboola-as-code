@@ -3,12 +3,13 @@ package state
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"testing"
 
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
@@ -468,9 +469,9 @@ func complexRemoteExpectedConfigsRows() []*model.ConfigRowState {
 func createManifest(t *testing.T) *manifest.Manifest {
 	t.Helper()
 
-	projectDir := t.TempDir()
-	metadataDir := filepath.Join(projectDir, manifest.MetadataDir)
-	m, err := manifest.NewManifest(1, "connection.keboola.com", projectDir, metadataDir)
+	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), ".")
+	assert.NoError(t, err)
+	m, err := manifest.NewManifest(1, "connection.keboola.com", fs)
 	if err != nil {
 		assert.FailNow(t, err.Error())
 	}
