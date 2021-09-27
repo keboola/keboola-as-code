@@ -19,7 +19,7 @@ func TestValidateJsonSchemaOk(t *testing.T) {
 	})
 	content := utils.NewOrderedMap()
 	content.Set(`parameters`, *parameters)
-	assert.NoError(t, validateJsonSchema(schema, content))
+	assert.NoError(t, validateContent(schema, content))
 }
 
 func TestValidateJsonSchemaErr(t *testing.T) {
@@ -27,14 +27,22 @@ func TestValidateJsonSchemaErr(t *testing.T) {
 	parameters := utils.PairsToOrderedMap([]utils.Pair{
 		{Key: "lastName", Value: "Brown"},
 		{Key: "age", Value: -1},
+		{
+			Key: "address",
+			Value: utils.PairsToOrderedMap([]utils.Pair{
+				{Key: "number", Value: "abc"},
+			}),
+		},
 	})
 	content := utils.NewOrderedMap()
 	content.Set(`parameters`, *parameters)
-	err := validateJsonSchema(schema, content)
+	err := validateContent(schema, content)
 	assert.Error(t, err)
 	expectedErr := `
-- firstName is required
-- age: Must be greater than or equal to 0
+- "firstName" value is required
+- "address": "street" value is required
+- "address.number": type should be integer, got string
+- "age": must be greater than or equal to 0
 `
 	assert.Equal(t, strings.TrimSpace(expectedErr), err.Error())
 }
@@ -42,30 +50,45 @@ func TestValidateJsonSchemaErr(t *testing.T) {
 func TestValidateJsonSchemaSkipEmpty(t *testing.T) {
 	schema := getTestSchema()
 	content := utils.NewOrderedMap()
-	assert.NoError(t, validateJsonSchema(schema, content))
+	assert.NoError(t, validateContent(schema, content))
 }
 
 func TestValidateJsonSchemaSkipEmptyParameters(t *testing.T) {
 	schema := getTestSchema()
 	content := utils.NewOrderedMap()
 	content.Set(`parameters`, *utils.NewOrderedMap())
-	assert.NoError(t, validateJsonSchema(schema, content))
+	assert.NoError(t, validateContent(schema, content))
 }
 
 func getTestSchema() map[string]interface{} {
 	schemaJson := `
 {
- "required": [ "firstName", "lastName", "age"],
+  "required": [ "firstName", "lastName", "age"],
   "properties": {
     "firstName": {
       "type": "string"
     },
     "lastName": {
-      "type": "string"
+      "type": "string",
+      "default": "Green"
     },
     "age": {
       "type": "integer",
       "minimum": 0
+    },
+    "address": {
+      "type": "object",
+      "required": ["street", "number"],
+      "properties": {
+        "street": {
+          "type": "string",
+          "default": "Street"
+        },
+        "number": {
+          "type": "integer",
+          "default": 123
+        }
+      }
     }
   }
 }
