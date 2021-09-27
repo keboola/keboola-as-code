@@ -30,6 +30,7 @@ type ObjectState interface {
 	SetRemoteState(object Object)
 	RemoteState() Object
 	LocalOrRemoteState() Object
+	RemoteOrLocalState() Object
 }
 
 // ObjectFiles - all files related to the object, when saving.
@@ -197,6 +198,39 @@ func (r *ConfigRowState) LocalOrRemoteState() Object {
 		return r.RemoteState()
 	default:
 		panic(fmt.Errorf("object Local or Remote state must be set"))
+	}
+}
+
+func (b *BranchState) RemoteOrLocalState() Object {
+	switch {
+	case b.HasRemoteState():
+		return b.RemoteState()
+	case b.HasLocalState():
+		return b.LocalState()
+	default:
+		panic(fmt.Errorf("object Remote or Local state must be set"))
+	}
+}
+
+func (c *ConfigState) RemoteOrLocalState() Object {
+	switch {
+	case c.HasRemoteState():
+		return c.RemoteState()
+	case c.HasLocalState():
+		return c.LocalState()
+	default:
+		panic(fmt.Errorf("object Remote or Local state must be set"))
+	}
+}
+
+func (r *ConfigRowState) RemoteOrLocalState() Object {
+	switch {
+	case r.HasRemoteState():
+		return r.RemoteState()
+	case r.HasLocalState():
+		return r.LocalState()
+	default:
+		panic(fmt.Errorf("object Remote or Local state must be set"))
 	}
 }
 
