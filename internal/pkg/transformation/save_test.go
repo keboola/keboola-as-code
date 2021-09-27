@@ -17,7 +17,7 @@ func TestSaveTransformationEmpty(t *testing.T) {
 	assert.NoError(t, fs.Mkdir(blocksDir))
 
 	// Save
-	err := GenerateBlockFiles(logger, fs, model.DefaultNaming(), state, objectFiles)
+	err := Save(logger, fs, model.DefaultNaming(), state, objectFiles)
 	assert.NoError(t, err)
 	configContent := json.MustEncodeString(objectFiles.Configuration.Content, false)
 	assert.Equal(t, `{}`, configContent)
@@ -63,7 +63,7 @@ func TestSaveTransformation(t *testing.T) {
 	objectFiles.Configuration.Content.Set(`parameters`, parameters)
 
 	// Save
-	err := GenerateBlockFiles(logger, fs, model.DefaultNaming(), state, objectFiles)
+	err := Save(logger, fs, model.DefaultNaming(), state, objectFiles)
 	assert.NoError(t, err)
 
 	// Blocks are not part of the config.json
