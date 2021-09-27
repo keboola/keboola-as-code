@@ -110,7 +110,7 @@ func (r *ConfigRow) GetName() string {
 }
 
 func LoadStateFile(path string) (*StateFile, error) {
-	data := testhelper.GetFileContent(path) 
+	data := testhelper.GetFileContent(path) // nolint: forbidigo
 	stateFile := &StateFile{}
 	err := json.Unmarshal([]byte(data), stateFile)
 	if err != nil {
@@ -143,7 +143,7 @@ func LoadConfig(t *testing.T, name string) *model.ConfigWithRows {
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filesystem.Dir(testFile)
 	path := filesystem.Join(testDir, "configs", name+".json")
-	content := testhelper.GetFileContent(path) 
+	content := testhelper.GetFileContent(path) // nolint: forbidigo
 	fixture := &Config{}
 	err := json.Unmarshal([]byte(content), fixture)
 	if err != nil {
