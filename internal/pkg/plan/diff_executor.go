@@ -6,33 +6,38 @@ import (
 
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/semaphore"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
+const MaxLocalWorkers = 32
+
 type diffExecutor struct {
 	*DiffPlan
-	logger       *zap.SugaredLogger
-	ctx          context.Context
-	localManager *local.Manager
-	localWorkers *errgroup.Group
-	remoteWork   *remote.UnitOfWork
-	errors       *utils.Error
+	logger         *zap.SugaredLogger
+	ctx            context.Context
+	localManager   *local.Manager
+	localWorkers   *errgroup.Group
+	localSemaphore *semaphore.Weighted
+	remoteWork     *remote.UnitOfWork
+	errors         *utils.Error
 }
 
 func newDiffExecutor(plan *DiffPlan, logger *zap.SugaredLogger, api *remote.StorageApi, ctx context.Context) *diffExecutor {
 	workers, _ := errgroup.WithContext(ctx)
 	localManager := plan.State.LocalManager()
 	return &diffExecutor{
-		DiffPlan:     plan,
-		logger:       logger,
-		ctx:          ctx,
-		localWorkers: workers,
-		localManager: localManager,
-		remoteWork:   remote.NewManager(localManager, api).NewUnitOfWork(plan.changeDescription),
-		errors:       utils.NewMultiError(),
+		DiffPlan:       plan,
+		logger:         logger,
+		ctx:            ctx,
+		localWorkers:   workers,
+		localSemaphore: semaphore.NewWeighted(MaxLocalWorkers),
+		localManager:   localManager,
+		remoteWork:     remote.NewManager(localManager, api).NewUnitOfWork(plan.changeDescription),
+		errors:         utils.NewMultiError(),
 	}
 }
 
@@ -103,7 +108,15 @@ func (e *diffExecutor) invoke() error {
 }
 
 func (e *diffExecutor) addWorker(worker func() error) {
+	// Limit maximum numbers of parallel filesystem operations.
+	// It prevents problem with: too many open files
+	if err := e.localSemaphore.Acquire(e.ctx, 1); err != nil {
+		e.errors.Append(err)
+		return
+	}
+
 	e.localWorkers.Go(func() error {
+		defer e.localSemaphore.Release(1)
 		if err := worker(); err != nil {
 			e.errors.Append(err)
 		}
