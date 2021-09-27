@@ -61,6 +61,11 @@ func (c *ComponentsMap) Get(key ComponentKey) (*Component, error) {
 		return component, nil
 	}
 
+	// Remote provider can be nil in tests, prevent panic
+	if c.remoteProvider == nil {
+		return nil, fmt.Errorf(`cannot load component "%s": remote provider is not set`, key.Id)
+	}
+
 	// Or by API
 	if component, err := c.remoteProvider.GetComponent(key.Id); err == nil {
 		return component, nil
