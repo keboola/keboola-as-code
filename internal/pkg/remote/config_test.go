@@ -116,6 +116,10 @@ func expectedComponentsConfigTest() string {
     "id": "ex-generic-v2",
     "type": "extractor",
     "name": "Generic",
+    "flags": [
+      "genericUI",
+      "encrypt"
+    ],
     "configurations": [
       {
         "branchId": %s,
