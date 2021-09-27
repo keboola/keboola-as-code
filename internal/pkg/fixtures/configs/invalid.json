@@ -2,7 +2,9 @@
   "componentId": "keboola.ex-azure-cost-management",
   "name": "invalid",
   "configuration": {
-    "parameters": {}
+    "parameters": {
+      "foo": "bar"
+    }
   },
   "rows": []
 }
