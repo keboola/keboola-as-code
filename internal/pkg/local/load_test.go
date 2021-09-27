@@ -32,7 +32,7 @@ func TestLocalLoadModel(t *testing.T) {
 	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(manager.Naming().ConfigFilePath(record.RelativePath()), configFile)))
 
 	// Load
-	found, err := manager.LoadModel(record, target)
+	found, err := manager.LoadObject(record, target)
 	assert.True(t, found)
 	assert.NoError(t, err)
 
@@ -56,7 +56,7 @@ func TestLocalLoadModelNotFound(t *testing.T) {
 	record := &MockedRecord{}
 
 	// Load
-	found, err := manager.LoadModel(record, target)
+	found, err := manager.LoadObject(record, target)
 	assert.False(t, found)
 	assert.Error(t, err)
 	assert.Equal(t, "kind \"test\" not found", err.Error())
@@ -112,7 +112,7 @@ func TestLocalLoadModelInvalidTransformation(t *testing.T) {
 	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(naming.CodeFilePath(code), codeContent)))
 
 	// Load
-	found, err := manager.LoadModel(record, target)
+	found, err := manager.LoadObject(record, target)
 	assert.True(t, found)
 
 	// Files are not valid

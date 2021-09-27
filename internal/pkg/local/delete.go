@@ -12,8 +12,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-// DeleteModel from manifest and disk.
-func (m *Manager) DeleteModel(record model.Record) error {
+// DeleteObject from manifest and filesystem.
+func (m *Manager) DeleteObject(record model.Record) error {
 	errors := utils.NewMultiError()
 
 	// Remove record from manifest content
@@ -35,7 +35,7 @@ func (m *Manager) DeleteInvalidObjects() error {
 		v, _ := records.Get(key)
 		record := v.(model.Record)
 		if record.State().IsInvalid() {
-			if err := m.DeleteModel(record); err != nil {
+			if err := m.DeleteObject(record); err != nil {
 				errors.Append(err)
 			}
 		}

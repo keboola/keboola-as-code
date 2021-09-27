@@ -47,7 +47,7 @@ func (s *State) LoadModel(record model.Record) (model.ObjectState, error) {
 		panic(fmt.Errorf(`unexpected type %T`, record))
 	}
 
-	found, err := s.localManager.LoadModel(record, object)
+	found, err := s.localManager.LoadObject(record, object)
 	if err == nil {
 		// Validate, branch must be allowed
 		if s.manifest.IsObjectIgnored(object) {

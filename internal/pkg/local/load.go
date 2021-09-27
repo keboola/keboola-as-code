@@ -18,7 +18,7 @@ type modelLoader struct {
 	errors *utils.Error
 }
 
-func (m *Manager) LoadModel(record model.Record, object model.Object) (found bool, err error) {
+func (m *Manager) LoadObject(record model.Record, object model.Object) (found bool, err error) {
 	l := &modelLoader{
 		Manager: m,
 		files:   &model.ObjectFiles{Object: object, Record: record},

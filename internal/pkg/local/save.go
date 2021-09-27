@@ -19,8 +19,8 @@ type modelWriter struct {
 	errors  *utils.Error
 }
 
-// SaveModel to manifest and disk.
-func (m *Manager) SaveModel(record model.Record, object model.Object) error {
+// SaveObject to manifest and filesystem.
+func (m *Manager) SaveObject(record model.Record, object model.Object) error {
 	w := modelWriter{
 		Manager: m,
 		files:   &model.ObjectFiles{Object: object, Record: record},

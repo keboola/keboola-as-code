@@ -54,7 +54,7 @@ func (e *diffExecutor) invoke() error {
 		case ActionSaveLocal:
 			a := action
 			e.addWorker(func() error {
-				if err := e.localManager.SaveModel(a.Manifest(), a.RemoteState()); err != nil {
+				if err := e.localManager.SaveObject(a.Manifest(), a.RemoteState()); err != nil {
 					return err
 				}
 				a.SetLocalState(a.RemoteState())
@@ -63,19 +63,19 @@ func (e *diffExecutor) invoke() error {
 		case ActionDeleteLocal:
 			a := action
 			e.addWorker(func() error {
-				if err := e.localManager.DeleteModel(a.Manifest()); err != nil {
+				if err := e.localManager.DeleteObject(a.Manifest()); err != nil {
 					return err
 				}
 				a.SetLocalState(nil)
 				return nil
 			})
 		case ActionSaveRemote:
-			if err := e.remoteWork.SaveRemote(action.ObjectState, action.ChangedFields); err != nil {
+			if err := e.remoteWork.SaveObject(action.ObjectState, action.ChangedFields); err != nil {
 				e.errors.Append(err)
 			}
 		case ActionDeleteRemote:
 			if e.allowedRemoteDelete {
-				if err := e.remoteWork.DeleteRemote(action.ObjectState); err != nil {
+				if err := e.remoteWork.DeleteObject(action.ObjectState); err != nil {
 					e.errors.Append(err)
 				}
 			}

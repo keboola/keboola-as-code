@@ -27,7 +27,7 @@ func TestLocalSaveModel(t *testing.T) {
 	assert.True(t, found)
 
 	// Save
-	assert.NoError(t, manager.SaveModel(record, source))
+	assert.NoError(t, manager.SaveObject(record, source))
 
 	// Meta and config files are saved
 	expectedMeta := `{
