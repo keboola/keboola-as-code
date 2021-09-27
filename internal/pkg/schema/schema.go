@@ -1,11 +1,13 @@
 package schema
 
 import (
+	"context"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/iancoleman/orderedmap"
-	"github.com/xeipuuv/gojsonschema"
+	"github.com/qri-io/jsonschema"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -55,7 +57,7 @@ func ValidateConfig(component *model.Component, config *model.Config) error {
 	if component.IsDeprecated() {
 		return nil
 	}
-	return validateJsonSchema(component.Schema, config.Content)
+	return validateContent(component.Schema, config.Content)
 }
 
 func ValidateConfigRow(component *model.Component, configRow *model.ConfigRow) error {
@@ -63,10 +65,10 @@ func ValidateConfigRow(component *model.Component, configRow *model.ConfigRow) e
 	if component.IsDeprecated() {
 		return nil
 	}
-	return validateJsonSchema(component.SchemaRow, configRow.Content)
+	return validateContent(component.SchemaRow, configRow.Content)
 }
 
-func validateJsonSchema(schema map[string]interface{}, content *orderedmap.OrderedMap) error {
+func validateContent(schema map[string]interface{}, content *orderedmap.OrderedMap) error {
 	// Get parameters key
 	var parametersMap *orderedmap.OrderedMap
 	parameters, found := content.Get("parameters")
@@ -86,33 +88,54 @@ func validateJsonSchema(schema map[string]interface{}, content *orderedmap.Order
 		return nil
 	}
 
-	// Load
-	schemaJson, err := json.EncodeString(schema, true)
-	if err != nil {
-		return utils.PrefixError("cannot encode component schema JSON", err)
-	}
-
-	documentJson, err := json.EncodeString(parametersMap, true)
-	if err != nil {
-		return utils.PrefixError("cannot encode JSON", err)
-	}
-
-	schemaLoader := gojsonschema.NewStringLoader(schemaJson)
-	documentLoader := gojsonschema.NewStringLoader(documentJson)
-
 	// Validate
-	result, err := gojsonschema.Validate(schemaLoader, documentLoader)
+	schemaErrs, err := validateDocument(schema, parametersMap)
+
+	// Internal error?
 	if err != nil {
-		return utils.PrefixError("schema validation error", err)
+		return err
 	}
 
-	if !result.Valid() {
-		errors := utils.NewMultiError()
-		for _, desc := range result.Errors() {
-			errors.Append(fmt.Errorf("%s", strings.TrimPrefix(desc.String(), "(root): ")))
+	// All OK?
+	if len(schemaErrs) == 0 {
+		return nil
+	}
+
+	// Sort errors
+	sort.Slice(schemaErrs, func(i, j int) bool {
+		return schemaErrs[i].PropertyPath < schemaErrs[j].PropertyPath
+	})
+
+	// Process schema errors
+	errors := utils.NewMultiError()
+	for _, err := range schemaErrs {
+		propertyPath := strings.TrimLeft(err.PropertyPath, "/")
+		propertyPath = strings.ReplaceAll(propertyPath, "/", ".")
+		if propertyPath == "" {
+			errors.Append(fmt.Errorf(`%s`, err.Message))
+		} else {
+			errors.Append(fmt.Errorf(`"%s": %s`, propertyPath, err.Message))
 		}
-		return errors
+	}
+	return errors
+}
+
+func validateDocument(schemaMap map[string]interface{}, document interface{}) ([]jsonschema.KeyError, error) {
+	// Set root level type to object if it is missing.
+	if _, ok := schemaMap["type"]; !ok {
+		schemaMap["type"] = "object"
 	}
 
-	return nil
+	// Convert schema to struct
+	schemaJson := json.MustEncodeString(schemaMap, false)
+	schema := &jsonschema.Schema{}
+	err := json.DecodeString(schemaJson, schema)
+	if err != nil {
+		return nil, fmt.Errorf(`invalid JSON schema: %w`, err)
+	}
+	schemaErrs, err := schema.ValidateBytes(context.Background(), json.MustEncode(document, true))
+	if err != nil {
+		return nil, fmt.Errorf(`invalid JSON schema: %w`, err)
+	}
+	return schemaErrs, nil
 }

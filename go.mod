@@ -22,6 +22,7 @@ require (
 	github.com/nhatthm/aferocopy v1.0.2
 	github.com/otiai10/copy v1.6.0
 	github.com/pmezard/go-difflib v1.0.0
+	github.com/qri-io/jsonschema v0.2.1
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cast v1.3.0
 	github.com/spf13/cobra v1.1.3
@@ -29,7 +30,6 @@ require (
 	github.com/spf13/viper v1.7.0
 	github.com/stretchr/testify v1.7.0
 	github.com/umisama/go-regexpcache v0.0.0-20150417035358-2444a542492f
-	github.com/xeipuuv/gojsonschema v1.2.0
 	go.uber.org/zap v1.17.0
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
 )
@@ -51,10 +51,9 @@ require (
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/mitchellh/mapstructure v1.1.2 // indirect
 	github.com/pelletier/go-toml v1.2.0 // indirect
+	github.com/qri-io/jsonpointer v0.1.1 // indirect
 	github.com/spf13/jwalterweatherman v1.0.0 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
-	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect
-	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9 // indirect
