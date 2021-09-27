@@ -145,15 +145,6 @@ func (u *UnitOfWork) create(objectState model.ObjectState, object model.Object) 
 		OnSuccess(func(response *client.Response) {
 			// Save new ID to manifest
 			objectState.SetRemoteState(object)
-
-			// If marking as deleted -> local state is not set
-			if objectState.HasLocalState() {
-				if err := u.localManager.UpdatePaths(objectState, false); err != nil {
-					u.errors.Append(err)
-				} else if err := u.localManager.SaveModel(objectState.Manifest(), objectState.LocalState()); err != nil {
-					u.errors.Append(err)
-				}
-			}
 		}).
 		OnError(func(response *client.Response) {
 			if e, ok := response.Error().(*Error); ok {
