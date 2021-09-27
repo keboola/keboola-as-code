@@ -214,10 +214,10 @@ func (b *BranchState) RemoteOrLocalState() Object {
 
 func (c *ConfigState) RemoteOrLocalState() Object {
 	switch {
-	case c.HasLocalState():
-		return c.LocalState()
 	case c.HasRemoteState():
 		return c.RemoteState()
+	case c.HasLocalState():
+		return c.LocalState()
 	default:
 		panic(fmt.Errorf("object Remote or Local state must be set"))
 	}
