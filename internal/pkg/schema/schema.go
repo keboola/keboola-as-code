@@ -72,6 +72,12 @@ func validateJsonSchema(schema map[string]interface{}, content *orderedmap.Order
 		parametersMap = utils.NewOrderedMap()
 	}
 
+	// Skip empty configurations.
+	// Users often just create configuration in UI, but leaves it unconfigured.
+	if len(parametersMap.Keys()) == 0 {
+		return nil
+	}
+
 	// Load
 	schemaJson, err := json.EncodeString(schema, true)
 	if err != nil {

@@ -1,0 +1,12 @@
+{
+  "componentId": "keboola.ex-azure-cost-management",
+  "name": "with-schema-empty",
+  "configuration": {},
+  "rows": [
+    {
+      "name": "row-1",
+      "isDisabled": false,
+      "configuration": {}
+    }
+  ]
+}
