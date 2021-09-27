@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "project": {
+    "id": %%TEST_PROJECT_ID%%,
+    "apiHost": "connection.keboola.com"
+  },
+  "sortBy": "path",
+  "naming": {
+    "branch": "{branch_name}",
+    "config": "{component_type}/{component_id}/{config_name}",
+    "configRow": "rows/{config_row_name}",
+    "sharedCodeConfig": "_shared/{target_component_id}",
+    "sharedCodeConfigRow": "codes/{config_row_name}"
+  },
+  "allowedBranches": [
+    "__all__"
+  ],
+  "ignoredComponents": [],
+  "branches": [
+    {
+      "id": 123,
+      "path": "foo"
+    }
+  ],
+  "configurations": [
+    {
+      "branchId": 123,
+      "componentId": "keboola.ex-azure-cost-management",
+      "id": "456",
+      "path": "extractor/keboola.ex-azure-cost-management/with-schema-empty",
+      "rows": [
+        {
+          "id": "789",
+          "path": "rows/row-1"
+        }
+      ]
+    }
+  ]
+}
