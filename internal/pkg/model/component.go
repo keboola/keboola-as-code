@@ -6,11 +6,14 @@ import (
 	"sync"
 )
 
+const DeprecatedFlag = `deprecated`
+
 // Component https://keboola.docs.apiary.io/#reference/components-and-configurations/get-development-branch-components/get-development-branch-components
 type Component struct {
 	ComponentKey
 	Type      string                 `json:"type" validate:"required"`
 	Name      string                 `json:"name" validate:"required"`
+	Flags     []string               `json:"flags,omitempty" validate:"required"`
 	Schema    map[string]interface{} `json:"configurationSchema,omitempty"`
 	SchemaRow map[string]interface{} `json:"configurationRowSchema,omitempty"`
 }
@@ -27,6 +30,15 @@ func (c *Component) IsTransformation() bool {
 
 func (c *Component) IsSharedCode() bool {
 	return c.Id == ShareCodeComponentId
+}
+
+func (c *Component) IsDeprecated() bool {
+	for _, flag := range c.Flags {
+		if flag == DeprecatedFlag {
+			return true
+		}
+	}
+	return false
 }
 
 // remoteComponentsProvider - interface for Storage API.
