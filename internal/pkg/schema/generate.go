@@ -66,7 +66,6 @@ func getDefaultValueFor(schema *jsonschema.Schema, level int) interface{} {
 		case *jsonschema.Schema:
 			values = append(values, getDefaultValueFor(v, level+1))
 		case []*jsonschema.Schema:
-			sortSchemas(v)
 			for _, item := range v {
 				values = append(values, getDefaultValueFor(item, level+1))
 			}
