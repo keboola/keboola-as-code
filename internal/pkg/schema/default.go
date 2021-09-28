@@ -1,0 +1,167 @@
+package schema
+
+import (
+	"sort"
+
+	"github.com/iancoleman/orderedmap"
+	"github.com/santhosh-tekuri/jsonschema/v5"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+)
+
+func GenerateDocument(schemaDef []byte) (string, error) {
+	schema, err := compileSchema(schemaDef)
+	if err != nil {
+		return "", err
+	}
+
+	// Generate default object value
+	if len(schema.Types) == 0 {
+		schema.Types = []string{`object`}
+	}
+	def := getDefaultValueFor(schema, 0)
+	return json.MustEncodeString(def, true), nil
+}
+
+func getDefaultValueFor(schema *jsonschema.Schema, level int) interface{} {
+	// Return default value
+	if schema.Default != nil {
+		return schema.Default
+	}
+
+	// Return default value
+	if len(schema.Enum) > 0 {
+		return schema.Enum[0]
+	}
+
+	// Prevent infinite recursion
+	if level > 20 {
+		return ``
+	}
+
+	// Reference
+	if schema.Ref != nil {
+		return getDefaultValueFor(schema.Ref, level+1)
+	}
+
+	// Process nested schemas
+	if v := getFirstChildSchema(schema.OneOf); v != nil {
+		return getDefaultValueFor(v, level+1)
+	}
+	if len(schema.AllOf) > 0 {
+		return mergeDefaultValues(schema.AllOf, level+1)
+	}
+	if len(schema.AnyOf) > 0 {
+		return mergeDefaultValues(schema.AnyOf, level+1)
+	}
+
+	// Generate value based on type
+	switch getFirstType(schema) {
+	case `array`:
+		// Generate array with one item of each allowed type
+		values := make([]interface{}, 0)
+		switch v := schema.Items.(type) {
+		case *jsonschema.Schema:
+			values = append(values, getDefaultValueFor(v, level+1))
+		case []*jsonschema.Schema:
+			sortSchemas(v)
+			for _, item := range v {
+				values = append(values, getDefaultValueFor(item, level+1))
+			}
+		}
+		return values
+	case `object`:
+		values := *utils.NewOrderedMap()
+		if schema.Properties != nil {
+			props := make([]*jsonschema.Schema, 0)
+			keys := make(map[string]string)
+			for key, prop := range schema.Properties {
+				props = append(props, prop)
+				keys[prop.Location] = key
+			}
+			sortSchemas(props)
+
+			for _, prop := range props {
+				key := keys[prop.Location]
+				values.Set(key, getDefaultValueFor(prop, level+1))
+			}
+		}
+		return values
+	case `string`:
+		switch schema.Format {
+		case `date-time`:
+			return `2018-11-13T20:20:39+00:00`
+		case `time`:
+			return `20:20:39+00:00`
+		case `date`:
+			return `2018-11-13`
+		case `duration`:
+			return `P3D`
+		case `email`:
+			return `user@company.com`
+		case `idn-email`:
+			return `user@company.com`
+		case `uuid`:
+			return `3e4666bf-d5e5-4aa7-b8ce-cefe41c7568a`
+		}
+		return ``
+	case `number`:
+		fallthrough
+	case `integer`:
+		return 0
+	case `boolean`:
+		return false
+	default:
+		return ``
+	}
+}
+
+func getFirstType(schema *jsonschema.Schema) string {
+	if len(schema.Types) > 0 {
+		return schema.Types[0]
+	}
+	return `unknown`
+}
+
+func getFirstChildSchema(schemas []*jsonschema.Schema) *jsonschema.Schema {
+	if len(schemas) > 0 {
+		return schemas[0]
+	}
+
+	// Not found
+	return nil
+}
+
+func sortSchemas(schemas []*jsonschema.Schema) {
+	sort.Slice(schemas, func(i, j int) bool {
+		return schemas[i].Location < schemas[j].Location
+	})
+}
+
+func mergeDefaultValues(schemas []*jsonschema.Schema, level int) interface{} {
+	// No schema
+	if len(schemas) == 0 {
+		return ``
+	}
+
+	// Multiple schemas, are there some objects?
+	values := *utils.NewOrderedMap()
+	for _, schema := range schemas {
+		def := getDefaultValueFor(schema, level)
+		if m, ok := def.(orderedmap.OrderedMap); ok {
+			for _, k := range m.Keys() {
+				v, _ := m.Get(k)
+				values.Set(k, v)
+			}
+		}
+	}
+
+	// Found some object keys -> return
+	if len(values.Keys()) > 0 {
+		return values
+	}
+
+	// No object keys found -> get default value from first schema
+	return getDefaultValueFor(schemas[0], level)
+}
