@@ -146,9 +146,9 @@ func sortSchemas(schemas []*jsonschema.Schema) {
 	})
 }
 
-func getPropertyOrder(schema *jsonschema.Schema) int {
+func getPropertyOrder(schema *jsonschema.Schema) int64 {
 	if v, ok := schema.Extensions[`propertyOrder`]; ok {
-		return int(v.(propertyOrderSchema))
+		return int64(v.(propertyOrderSchema))
 	}
 	return math.MaxInt64
 }
