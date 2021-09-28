@@ -6,7 +6,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -39,10 +38,10 @@ func TestValidateJsonSchemaErr(t *testing.T) {
 	err := validateContent(schema, content)
 	assert.Error(t, err)
 	expectedErr := `
-- "firstName" value is required
-- "address": "street" value is required
-- "address.number": type should be integer, got string
-- "age": must be greater than or equal to 0
+- missing properties: "firstName"
+- "address": missing properties: "street"
+- "address.number": expected integer, but got string
+- "age": must be >= 0 but found -1
 `
 	assert.Equal(t, strings.TrimSpace(expectedErr), err.Error())
 }
@@ -60,8 +59,8 @@ func TestValidateJsonSchemaSkipEmptyParameters(t *testing.T) {
 	assert.NoError(t, validateContent(schema, content))
 }
 
-func getTestSchema() map[string]interface{} {
-	schemaJson := `
+func getTestSchema() []byte {
+	return []byte(`
 {
   "required": [ "firstName", "lastName", "age"],
   "properties": {
@@ -92,8 +91,5 @@ func getTestSchema() map[string]interface{} {
     }
   }
 }
-`
-	schema := make(map[string]interface{})
-	json.MustDecodeString(schemaJson, &schema)
-	return schema
+`)
 }

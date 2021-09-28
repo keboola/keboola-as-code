@@ -115,6 +115,8 @@ func expectedComponentsConfigRowTest() string {
       "genericUI",
       "encrypt"
     ],
+    "configurationSchema": {},
+    "configurationRowSchema": {},
     "configurations": [
       {
         "branchId": %s,
