@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"math"
 	"sort"
 
 	"github.com/iancoleman/orderedmap"
@@ -135,8 +136,22 @@ func getFirstChildSchema(schemas []*jsonschema.Schema) *jsonschema.Schema {
 
 func sortSchemas(schemas []*jsonschema.Schema) {
 	sort.Slice(schemas, func(i, j int) bool {
+		// Sort by "propertyOrder" key if present
+		orderI := getPropertyOrder(schemas[i])
+		orderJ := getPropertyOrder(schemas[j])
+		if orderI != orderJ {
+			return orderI < orderJ
+		}
+		// Otherwise alphabetically
 		return schemas[i].Location < schemas[j].Location
 	})
+}
+
+func getPropertyOrder(schema *jsonschema.Schema) int {
+	if v, ok := schema.Extensions[`propertyOrder`]; ok {
+		return int(v.(propertyOrderSchema))
+	}
+	return math.MaxInt64
 }
 
 func mergeDefaultValues(schemas []*jsonschema.Schema, level int) interface{} {

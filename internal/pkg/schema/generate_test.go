@@ -13,9 +13,9 @@ func TestGenerateDocument(t *testing.T) {
 
 	expected := `
 {
-  "nc:Amount": 0,
   "nc:Currency": "EUR",
   "nc:CurrencyCode": "EUR",
+  "nc:Amount": 0,
   "nc:IdentificationID": "",
   "nc:Vehicle": {
     "@base": "",
@@ -112,6 +112,7 @@ func getSampleSchema() []byte {
       ]
     },
     "nc:Currency": {
+      "propertyOrder": 1,
       "description": "A data concept for a unit of money or exchange.",
       "oneOf": [
         {
@@ -134,6 +135,7 @@ func getSampleSchema() []byte {
       ]
     },
     "nc:CurrencyCode": {
+      "propertyOrder": 2,
       "description": "A unit of money or exchange.",
       "oneOf": [
         {

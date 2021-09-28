@@ -138,6 +138,7 @@ func processErrors(errs []*jsonschema.ValidationError, output *utils.Error) {
 
 func compileSchema(schemaStr []byte) (*jsonschema.Schema, error) {
 	c := jsonschema.NewCompiler()
+	registerPropertyOrderExt(c)
 	c.ExtractAnnotations = true
 	if err := c.AddResource("schema.json", bytes.NewReader(schemaStr)); err != nil {
 		return nil, err
