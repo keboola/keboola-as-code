@@ -29,8 +29,8 @@ func propertyOrderMeta() *jsonschema.Schema {
 }
 
 func (propertyOrderExt) Compile(_ jsonschema.CompilerContext, m map[string]interface{}) (jsonschema.ExtSchema, error) {
-	if pow, ok := m["propertyOrder"]; ok {
-		n, err := pow.(json.Number).Int64()
+	if value, ok := m["propertyOrder"]; ok {
+		n, err := value.(json.Number).Int64()
 		return propertyOrderSchema(n), err
 	}
 

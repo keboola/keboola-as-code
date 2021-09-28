@@ -176,6 +176,6 @@ func mergeDefaultValues(schemas []*jsonschema.Schema, level int) interface{} {
 		return values
 	}
 
-	// No object keys found -> get default value from first schema
+	// No object keys found -> get default value from the first schema
 	return getDefaultValueFor(schemas[0], level)
 }
