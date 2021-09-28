@@ -40,6 +40,15 @@ type ObjectWithContent interface {
 	GetContent() *orderedmap.OrderedMap
 }
 
+type ObjectsProvider interface {
+	Components() *ComponentsMap
+	All() []ObjectState
+	Branches() (branches []*BranchState)
+	Configs() (configs []*ConfigState)
+	ConfigRows() (rows []*ConfigRowState)
+	Naming() Naming
+}
+
 type BranchKey struct {
 	Id int `json:"id" validate:"required,min=1"`
 }

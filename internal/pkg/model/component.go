@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sort"
 	"sync"
+
+	"github.com/iancoleman/orderedmap"
 )
 
 const DeprecatedFlag = `deprecated`
@@ -12,11 +14,13 @@ const DeprecatedFlag = `deprecated`
 // Component https://keboola.docs.apiary.io/#reference/components-and-configurations/get-development-branch-components/get-development-branch-components
 type Component struct {
 	ComponentKey
-	Type      string          `json:"type" validate:"required"`
-	Name      string          `json:"name" validate:"required"`
-	Flags     []string        `json:"flags,omitempty"`
-	Schema    json.RawMessage `json:"configurationSchema,omitempty"`
-	SchemaRow json.RawMessage `json:"configurationRowSchema,omitempty"`
+	Type           string                 `json:"type" validate:"required"`
+	Name           string                 `json:"name" validate:"required"`
+	Flags          []string               `json:"flags,omitempty"`
+	Schema         json.RawMessage        `json:"configurationSchema,omitempty"`
+	SchemaRow      json.RawMessage        `json:"configurationRowSchema,omitempty"`
+	EmptyConfig    *orderedmap.OrderedMap `json:"emptyConfiguration,omitempty"`
+	EmptyConfigRow *orderedmap.OrderedMap `json:"emptyConfigurationRow,omitempty"`
 }
 
 type ComponentWithConfigs struct {

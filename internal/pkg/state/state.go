@@ -182,11 +182,11 @@ func (s *State) SetRemoteState(remote model.Object) (model.ObjectState, error) {
 	state.SetRemoteState(remote)
 	if !state.HasManifest() {
 		// Generate manifest record
-		m, _, err := s.manifest.CreateOrGetRecord(remote.Key())
+		record, _, err := s.manifest.CreateOrGetRecord(remote.Key())
 		if err != nil {
 			return nil, err
 		}
-		state.SetManifest(m)
+		state.SetManifest(record)
 
 		// Generate local path
 		if err := s.localManager.UpdatePaths(state, false); err != nil {
@@ -212,6 +212,27 @@ func (s *State) SetLocalState(local model.Object, record model.Record) model.Obj
 		s.MarkTracked(path)
 	}
 	return state
+}
+
+func (s *State) CreateLocalState(local model.Object) (model.ObjectState, error) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	// Generate manifest record
+	record, _, err := s.manifest.CreateOrGetRecord(local.Key())
+	if err != nil {
+		return nil, err
+	}
+
+	// Save
+	state := s.SetLocalState(local, record)
+
+	// Generate local path
+	if err := s.localManager.UpdatePaths(state, false); err != nil {
+		return nil, err
+	}
+
+	return state, nil
 }
 
 func (s *State) validate() {

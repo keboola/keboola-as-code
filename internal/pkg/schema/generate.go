@@ -7,22 +7,27 @@ import (
 	"github.com/iancoleman/orderedmap"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func GenerateDocument(schemaDef []byte) (string, error) {
+func GenerateDocument(schemaDef []byte) (*orderedmap.OrderedMap, error) {
+	// Is schema empty?
+	if len(schemaDef) == 0 {
+		return utils.NewOrderedMap(), nil
+	}
+
+	// Generate schema
 	schema, err := compileSchema(schemaDef, true)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	// Generate default object value
 	if len(schema.Types) == 0 {
 		schema.Types = []string{`object`}
 	}
-	def := getDefaultValueFor(schema, 0)
-	return json.MustEncodeString(def, true), nil
+	content := getDefaultValueFor(schema, 0).(orderedmap.OrderedMap)
+	return &content, nil
 }
 
 func getDefaultValueFor(schema *jsonschema.Schema, level int) interface{} {

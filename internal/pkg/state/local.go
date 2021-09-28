@@ -49,7 +49,7 @@ func (s *State) LoadModel(record model.Record) (model.ObjectState, error) {
 
 	found, err := s.localManager.LoadObject(record, object)
 	if err == nil {
-		// Validate, branch must be allowed
+		// Validate, object must be allowed
 		if s.manifest.IsObjectIgnored(object) {
 			return nil, fmt.Errorf(
 				`found manifest record for %s "%s", but it is not allowed by the manifest definition`,
