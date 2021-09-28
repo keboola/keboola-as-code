@@ -214,27 +214,6 @@ func (s *State) SetLocalState(local model.Object, record model.Record) model.Obj
 	return state
 }
 
-func (s *State) CreateLocalState(local model.Object) (model.ObjectState, error) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	// Generate manifest record
-	record, _, err := s.manifest.CreateOrGetRecord(local.Key())
-	if err != nil {
-		return nil, err
-	}
-
-	// Save
-	state := s.SetLocalState(local, record)
-
-	// Generate local path
-	if err := s.localManager.UpdatePaths(state, false); err != nil {
-		return nil, err
-	}
-
-	return state, nil
-}
-
 func (s *State) validate() {
 	for _, component := range s.Components().AllLoaded() {
 		if err := validator.Validate(component); err != nil {
