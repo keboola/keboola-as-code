@@ -12,7 +12,7 @@ import (
 )
 
 func GenerateDocument(schemaDef []byte) (string, error) {
-	schema, err := compileSchema(schemaDef)
+	schema, err := compileSchema(schemaDef, true)
 	if err != nil {
 		return "", err
 	}

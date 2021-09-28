@@ -104,7 +104,7 @@ func validateContent(schema []byte, content *orderedmap.OrderedMap) error {
 }
 
 func validateDocument(schemaStr []byte, document *orderedmap.OrderedMap) error {
-	schema, err := compileSchema(schemaStr)
+	schema, err := compileSchema(schemaStr, false)
 	if err != nil {
 		return fmt.Errorf(`invalid JSON schema: %w`, err)
 	}
@@ -136,12 +136,16 @@ func processErrors(errs []*jsonschema.ValidationError, output *utils.Error) {
 	}
 }
 
-func compileSchema(schemaStr []byte) (*jsonschema.Schema, error) {
+func compileSchema(schemaStr []byte, savePropertyOrder bool) (*jsonschema.Schema, error) {
 	c := jsonschema.NewCompiler()
-	registerPropertyOrderExt(c)
 	c.ExtractAnnotations = true
+	if savePropertyOrder {
+		registerPropertyOrderExt(c)
+	}
+
 	if err := c.AddResource("schema.json", bytes.NewReader(schemaStr)); err != nil {
 		return nil, err
 	}
+
 	return c.Compile("schema.json")
 }
