@@ -117,6 +117,8 @@ func expectedComponentsConfigRowTest() string {
     ],
     "configurationSchema": {},
     "configurationRowSchema": {},
+    "emptyConfiguration": {},
+    "emptyConfigurationRow": {},
     "configurations": [
       {
         "branchId": %s,

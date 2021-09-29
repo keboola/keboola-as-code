@@ -11,41 +11,40 @@ import (
 	"github.com/santhosh-tekuri/jsonschema/v5"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func ValidateSchemas(projectState *state.State) error {
+func ValidateSchemas(objects model.ObjectsProvider) error {
 	errs := utils.NewMultiError()
-	for _, config := range projectState.Configs() {
+	for _, config := range objects.Configs() {
 		// Validate only local files
 		if config.Local == nil {
 			continue
 		}
 
-		component, err := projectState.Components().Get(*config.ComponentKey())
+		component, err := objects.Components().Get(*config.ComponentKey())
 		if err != nil {
 			return err
 		}
 
 		if err := ValidateConfig(component, config.Local); err != nil {
-			errs.AppendWithPrefix(fmt.Sprintf("config \"%s\" doesn't match schema", projectState.Naming().ConfigFilePath(config.RelativePath())), err)
+			errs.AppendWithPrefix(fmt.Sprintf("config \"%s\" doesn't match schema", objects.Naming().ConfigFilePath(config.RelativePath())), err)
 		}
 	}
 
-	for _, row := range projectState.ConfigRows() {
+	for _, row := range objects.ConfigRows() {
 		// Validate only local files
 		if row.Local == nil {
 			continue
 		}
 
-		component, err := projectState.Components().Get(*row.ComponentKey())
+		component, err := objects.Components().Get(*row.ComponentKey())
 		if err != nil {
 			return err
 		}
 
 		if err := ValidateConfigRow(component, row.Local); err != nil {
-			errs.AppendWithPrefix(fmt.Sprintf("config row \"%s\" doesn't match schema", projectState.Naming().ConfigFilePath(row.RelativePath())), err)
+			errs.AppendWithPrefix(fmt.Sprintf("config row \"%s\" doesn't match schema", objects.Naming().ConfigFilePath(row.RelativePath())), err)
 		}
 	}
 

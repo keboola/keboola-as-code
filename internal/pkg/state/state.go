@@ -182,11 +182,11 @@ func (s *State) SetRemoteState(remote model.Object) (model.ObjectState, error) {
 	state.SetRemoteState(remote)
 	if !state.HasManifest() {
 		// Generate manifest record
-		m, _, err := s.manifest.CreateOrGetRecord(remote.Key())
+		record, _, err := s.manifest.CreateOrGetRecord(remote.Key())
 		if err != nil {
 			return nil, err
 		}
-		state.SetManifest(m)
+		state.SetManifest(record)
 
 		// Generate local path
 		if err := s.localManager.UpdatePaths(state, false); err != nil {
