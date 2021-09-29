@@ -60,10 +60,11 @@ func convertValue(value interface{}) interface{} {
 	case *orderedmap.OrderedMap:
 		return OrderedMapToMap(v)
 	case []interface{}:
-		for index, item := range v {
-			v[index] = convertValue(item)
+		mapped := make([]interface{}, 0)
+		for _, item := range v {
+			mapped = append(mapped, convertValue(item))
 		}
-		return v
+		return mapped
 	default:
 		return value
 	}

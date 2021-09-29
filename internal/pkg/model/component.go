@@ -1,6 +1,7 @@
 package model
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 	"sync"
@@ -11,11 +12,11 @@ const DeprecatedFlag = `deprecated`
 // Component https://keboola.docs.apiary.io/#reference/components-and-configurations/get-development-branch-components/get-development-branch-components
 type Component struct {
 	ComponentKey
-	Type      string                 `json:"type" validate:"required"`
-	Name      string                 `json:"name" validate:"required"`
-	Flags     []string               `json:"flags,omitempty"`
-	Schema    map[string]interface{} `json:"configurationSchema,omitempty"`
-	SchemaRow map[string]interface{} `json:"configurationRowSchema,omitempty"`
+	Type      string          `json:"type" validate:"required"`
+	Name      string          `json:"name" validate:"required"`
+	Flags     []string        `json:"flags,omitempty"`
+	Schema    json.RawMessage `json:"configurationSchema,omitempty"`
+	SchemaRow json.RawMessage `json:"configurationRowSchema,omitempty"`
 }
 
 type ComponentWithConfigs struct {

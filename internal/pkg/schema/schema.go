@@ -1,22 +1,22 @@
 package schema
 
 import (
-	"context"
+	"bytes"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
 
 	"github.com/iancoleman/orderedmap"
-	"github.com/qri-io/jsonschema"
+	"github.com/santhosh-tekuri/jsonschema/v5"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func ValidateSchemas(projectState *state.State) error {
-	errors := utils.NewMultiError()
+	errs := utils.NewMultiError()
 	for _, config := range projectState.Configs() {
 		// Validate only local files
 		if config.Local == nil {
@@ -29,7 +29,7 @@ func ValidateSchemas(projectState *state.State) error {
 		}
 
 		if err := ValidateConfig(component, config.Local); err != nil {
-			errors.AppendWithPrefix(fmt.Sprintf("config \"%s\" doesn't match schema", projectState.Naming().ConfigFilePath(config.RelativePath())), err)
+			errs.AppendWithPrefix(fmt.Sprintf("config \"%s\" doesn't match schema", projectState.Naming().ConfigFilePath(config.RelativePath())), err)
 		}
 	}
 
@@ -45,11 +45,11 @@ func ValidateSchemas(projectState *state.State) error {
 		}
 
 		if err := ValidateConfigRow(component, row.Local); err != nil {
-			errors.AppendWithPrefix(fmt.Sprintf("config row \"%s\" doesn't match schema", projectState.Naming().ConfigFilePath(row.RelativePath())), err)
+			errs.AppendWithPrefix(fmt.Sprintf("config row \"%s\" doesn't match schema", projectState.Naming().ConfigFilePath(row.RelativePath())), err)
 		}
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func ValidateConfig(component *model.Component, config *model.Config) error {
@@ -68,7 +68,7 @@ func ValidateConfigRow(component *model.Component, configRow *model.ConfigRow) e
 	return validateContent(component.SchemaRow, configRow.Content)
 }
 
-func validateContent(schema map[string]interface{}, content *orderedmap.OrderedMap) error {
+func validateContent(schema []byte, content *orderedmap.OrderedMap) error {
 	// Get parameters key
 	var parametersMap *orderedmap.OrderedMap
 	parameters, found := content.Get("parameters")
@@ -89,53 +89,63 @@ func validateContent(schema map[string]interface{}, content *orderedmap.OrderedM
 	}
 
 	// Validate
-	schemaErrs, err := validateDocument(schema, parametersMap)
-
-	// Internal error?
-	if err != nil {
-		return err
-	}
-
-	// All OK?
-	if len(schemaErrs) == 0 {
-		return nil
-	}
-
-	// Sort errors
-	sort.Slice(schemaErrs, func(i, j int) bool {
-		return schemaErrs[i].PropertyPath < schemaErrs[j].PropertyPath
-	})
+	err := validateDocument(schema, parametersMap)
 
 	// Process schema errors
-	errors := utils.NewMultiError()
-	for _, err := range schemaErrs {
-		propertyPath := strings.TrimLeft(err.PropertyPath, "/")
-		propertyPath = strings.ReplaceAll(propertyPath, "/", ".")
-		if propertyPath == "" {
-			errors.Append(fmt.Errorf(`%s`, err.Message))
-		} else {
-			errors.Append(fmt.Errorf(`"%s": %s`, propertyPath, err.Message))
-		}
+	validationErrors := &jsonschema.ValidationError{}
+	errs := utils.NewMultiError()
+	if errors.As(err, &validationErrors) {
+		processErrors(validationErrors.Causes, errs)
+	} else if err != nil {
+		errs.Append(err)
 	}
-	return errors
+
+	return errs.ErrorOrNil()
 }
 
-func validateDocument(schemaMap map[string]interface{}, document interface{}) ([]jsonschema.KeyError, error) {
-	// Set root level type to object if it is missing.
-	if _, ok := schemaMap["type"]; !ok {
-		schemaMap["type"] = "object"
+func validateDocument(schemaStr []byte, document *orderedmap.OrderedMap) error {
+	schema, err := compileSchema(schemaStr, false)
+	if err != nil {
+		return fmt.Errorf(`invalid JSON schema: %w`, err)
+	}
+	return schema.Validate(utils.OrderedMapToMap(document))
+}
+
+func processErrors(errs []*jsonschema.ValidationError, output *utils.Error) {
+	// Sort errors
+	sort.Slice(errs, func(i, j int) bool {
+		return errs[i].InstanceLocation < errs[j].InstanceLocation
+	})
+
+	for _, e := range errs {
+		// Process nested errors
+		if len(e.Causes) > 0 {
+			processErrors(e.Causes, output)
+			continue
+		}
+
+		// Format error
+		path := strings.TrimLeft(e.InstanceLocation, "/")
+		path = strings.ReplaceAll(path, "/", ".")
+		msg := strings.ReplaceAll(e.Message, `'`, `"`)
+		if path == "" {
+			output.Append(fmt.Errorf(`%s`, msg))
+		} else {
+			output.Append(fmt.Errorf(`"%s": %s`, path, msg))
+		}
+	}
+}
+
+func compileSchema(schemaStr []byte, savePropertyOrder bool) (*jsonschema.Schema, error) {
+	c := jsonschema.NewCompiler()
+	c.ExtractAnnotations = true
+	if savePropertyOrder {
+		registerPropertyOrderExt(c)
 	}
 
-	// Convert schema to struct
-	schemaJson := json.MustEncodeString(schemaMap, false)
-	schema := &jsonschema.Schema{}
-	err := json.DecodeString(schemaJson, schema)
-	if err != nil {
-		return nil, fmt.Errorf(`invalid JSON schema: %w`, err)
+	if err := c.AddResource("schema.json", bytes.NewReader(schemaStr)); err != nil {
+		return nil, err
 	}
-	schemaErrs, err := schema.ValidateBytes(context.Background(), json.MustEncode(document, true))
-	if err != nil {
-		return nil, fmt.Errorf(`invalid JSON schema: %w`, err)
-	}
-	return schemaErrs, nil
+
+	return c.Compile("schema.json")
 }
