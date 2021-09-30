@@ -1,0 +1,22 @@
+Command "create"
+
+Creates a new config or config row in the local directory structure.
+A new unique ID is assigned to the new object (there is no need to call "persist").
+To save the new object to the project, call "push" after "create".
+
+You will be prompted for the object specification,
+or you can enter it using flags / ENVs.
+
+Tip:
+  You can also create a new config or config row by copying
+  an existing one and running the "persist" command.
+
+Usage:
+  %s create [command]
+
+Available Commands:
+  config      Create config
+  row         Create config row
+
+Global Flags:
+%A

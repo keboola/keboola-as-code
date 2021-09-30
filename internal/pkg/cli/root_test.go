@@ -26,6 +26,7 @@ func TestRootSubCommands(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, []string{
+		"create",
 		"diff",
 		"encrypt",
 		"fix-paths",
