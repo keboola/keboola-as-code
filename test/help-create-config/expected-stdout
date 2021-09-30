@@ -4,8 +4,8 @@ Creates a new config in the local directory structure.
 A new unique ID is assigned to the new object (there is no need to call "persist").
 To save the new object to the project, call "push" after "create".
 
-You will be prompted for the object specification,
-or you can enter it using flags / ENVs.
+You will be prompted for name, branch and component ID.
+You can also specify them using flags or environment.
 
 Tip:
   You can also create a new config by copying
