@@ -8,6 +8,8 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/AlecAivazis/survey/v2/terminal"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/strhelper"
 )
 
 type Prompt struct {
@@ -166,6 +168,9 @@ func (p *Prompt) getOpts() []survey.AskOpt {
 	var opts []survey.AskOpt
 	opts = append(opts, survey.WithStdio(p.stdin, p.stdout, p.stderr))
 	opts = append(opts, survey.WithShowCursor(true))
+	opts = append(opts, survey.WithFilter(func(filter string, value string, index int) (include bool) {
+		return strhelper.MatchWords(value, filter)
+	}))
 	return opts
 }
 

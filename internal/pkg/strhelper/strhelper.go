@@ -44,3 +44,20 @@ func ExtractCommonPrefix(a string, b string) (prefix string, ax string, bx strin
 
 	return "", a, b
 }
+
+func MatchWords(value string, wordsStr string) bool {
+	wordsStr = strings.TrimSpace(strings.ToLower(wordsStr))
+	words := strings.Split(wordsStr, " ")
+	for _, word := range words {
+		word = strings.TrimSpace(word)
+		if len(word) == 0 {
+			continue
+		}
+
+		if !strings.Contains(value, word) {
+			return false
+		}
+	}
+
+	return true
+}

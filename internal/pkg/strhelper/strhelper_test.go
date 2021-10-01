@@ -60,3 +60,22 @@ func TestExtractCommonPrefix(t *testing.T) {
 		assert.Equalf(t, c.expected, out, `case `+cast.ToString(cIndex+1))
 	}
 }
+
+func TestFilterByWords(t *testing.T) {
+	// Match all words from filter, order does not matter
+	assert.True(t, MatchWords(``, ``))
+	assert.True(t, MatchWords(`foo`, ``))
+	assert.True(t, MatchWords(`foo`, `foo`))
+	assert.True(t, MatchWords(`foo`, `  foo  `))
+	assert.True(t, MatchWords(`   foo   `, `  foo  `))
+	assert.True(t, MatchWords(`   foo  bar   `, `  foo  bar `))
+	assert.True(t, MatchWords(`foo bar`, `  foo  bar `))
+	assert.True(t, MatchWords(`   bar  foo   `, `  foo  bar `))
+	assert.True(t, MatchWords(`bar foo`, `  foo  bar `))
+	assert.True(t, MatchWords(`bar foo`, `  fo  bar `))
+
+	// All words must be matched
+	assert.False(t, MatchWords(`bar`, `foo`))
+	assert.False(t, MatchWords(`bar`, `foo bar`))
+	assert.False(t, MatchWords(`bar foo`, `  foo  bar baz`))
+}
