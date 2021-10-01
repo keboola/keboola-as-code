@@ -27,7 +27,7 @@ func TestSharedCodeSaveOk(t *testing.T) {
 	codeFilePath := filesystem.Join(naming.SharedCodeFilePath(objectFiles.Record.RelativePath(), targetComponentId))
 
 	// Set JSON value
-	row.Content.Set(CodeContentRowJsonKey, `foo bar`)
+	row.Content.Set(model.ShareCodeContentKey, `foo bar`)
 
 	// Create dir
 	assert.NoError(t, fs.Mkdir(filesystem.Dir(codeFilePath)))

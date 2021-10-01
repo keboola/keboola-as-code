@@ -29,7 +29,7 @@ func TestSharedCodeLoadOk(t *testing.T) {
 	// Load
 	err := Load(logger, fs, naming, state, objectFiles)
 	assert.NoError(t, err)
-	codeContent, found := row.Content.Get(CodeContentRowJsonKey)
+	codeContent, found := row.Content.Get(model.ShareCodeContentKey)
 	assert.True(t, found)
 	assert.Equal(t, "foo bar\n", codeContent)
 

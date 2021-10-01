@@ -54,7 +54,7 @@ func (l *loader) load() error {
 	l.Record.AddRelatedPath(codeFilePath)
 
 	// Set to config row JSON
-	l.configRow.Content.Set(CodeContentRowJsonKey, codeFile.Content)
+	l.configRow.Content.Set(model.ShareCodeContentKey, codeFile.Content)
 	normalizeContent(l.configRow.Content)
 	return nil
 }

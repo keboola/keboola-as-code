@@ -59,7 +59,7 @@ func createTestFixtures(t *testing.T, targetComponentId string) (*zap.SugaredLog
 		ConfigKey: configKey,
 		Content:   utils.NewOrderedMap(),
 	}
-	config.Content.Set(TargetComponentConfigJsonKey, targetComponentId)
+	config.Content.Set(model.ShareCodeTargetComponentKey, targetComponentId)
 	configStateRaw, err := state.GetOrCreate(configKey)
 	assert.NoError(t, err)
 	configState := configStateRaw.(*model.ConfigState)
