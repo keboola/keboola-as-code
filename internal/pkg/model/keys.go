@@ -16,9 +16,11 @@ const (
 )
 
 type Key interface {
+	Level() int     // hierarchical level, "1" for branch, "2" for config, ...
 	Kind() Kind     // kind of the object: branch, config, ...
 	Desc() string   // human-readable description of the object
 	String() string // unique string representation of the key
+	ObjectId() string
 }
 
 type WithKey interface {

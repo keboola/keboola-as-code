@@ -21,11 +21,8 @@ const (
 )
 
 type Object interface {
-	Level() int // hierarchical level, "1" for branch, "2" for config, ...
-	Kind() Kind
+	Key
 	Key() Key
-	Desc() string
-	ObjectId() string
 }
 
 type ObjectWithContent interface {
