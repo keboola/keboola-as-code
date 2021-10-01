@@ -10,6 +10,9 @@ import (
 )
 
 const DeprecatedFlag = `deprecated`
+const ExcludeFromNewListFlag = `excludeFromNewList`
+const ComponentTypeCodePattern = `code-pattern`
+const ComponentTypeProcessor = `processor`
 
 // Component https://keboola.docs.apiary.io/#reference/components-and-configurations/get-development-branch-components/get-development-branch-components
 type Component struct {
@@ -37,9 +40,26 @@ func (c *Component) IsSharedCode() bool {
 	return c.Id == ShareCodeComponentId
 }
 
+func (c *Component) IsCodePattern() bool {
+	return c.Type == ComponentTypeCodePattern
+}
+
+func (c *Component) IsProcessor() bool {
+	return c.Type == ComponentTypeProcessor
+}
+
 func (c *Component) IsDeprecated() bool {
 	for _, flag := range c.Flags {
 		if flag == DeprecatedFlag {
+			return true
+		}
+	}
+	return false
+}
+
+func (c *Component) IsExcludedFromNewList() bool {
+	for _, flag := range c.Flags {
+		if flag == ExcludeFromNewListFlag {
 			return true
 		}
 	}
