@@ -8,9 +8,7 @@ import (
 
 type ObjectState interface {
 	Object
-	Path() string          // parent path + path -> path relative to the project dir
-	GetObjectPath() string // path relative to the parent object
-	GetParentPath() string // parent path relative to the project dir
+	RecordPaths
 	HasManifest() bool
 	SetManifest(record Record)
 	Manifest() Record

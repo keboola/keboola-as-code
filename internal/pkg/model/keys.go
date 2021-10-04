@@ -21,6 +21,7 @@ type Key interface {
 	Desc() string   // human-readable description of the object
 	String() string // unique string representation of the key
 	ObjectId() string
+	ParentKey() Key // unique key of the parent object
 }
 
 type WithKey interface {
@@ -155,8 +156,45 @@ func (k BlockKey) Key() Key {
 	return k
 }
 
+func (k BlockKey) ConfigKey() Key {
+	return ConfigKey{
+		BranchId:    k.BranchId,
+		ComponentId: k.ComponentId,
+		Id:          k.ConfigId,
+	}
+}
+
+func (k BlockKey) ParentKey() Key {
+	return k.ConfigKey()
+}
+
 func (k CodeKey) Key() Key {
 	return k
+}
+
+func (k CodeKey) ConfigKey() Key {
+	return ConfigKey{
+		BranchId:    k.BranchId,
+		ComponentId: k.ComponentId,
+		Id:          k.ConfigId,
+	}
+}
+
+func (k CodeKey) BlockKey() Key {
+	return BlockKey{
+		BranchId:    k.BranchId,
+		ComponentId: k.ComponentId,
+		ConfigId:    k.ConfigId,
+		Index:       k.BlockIndex,
+	}
+}
+
+func (k CodeKey) ParentKey() Key {
+	return k.BlockKey()
+}
+
+func (k ComponentKey) ParentKey() Key {
+	return nil // Component is top level object
 }
 
 func (k BranchKey) Desc() string {
