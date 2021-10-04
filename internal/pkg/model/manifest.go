@@ -46,7 +46,7 @@ type PathInProject struct {
 
 type Paths struct {
 	PathInProject
-	RelatedPaths []string `json:"-"` // no serialized, is generated when the object is loaded
+	RelatedPaths []string `json:"-"` // not serialized, slice is generated when the object is loaded
 }
 
 type Project struct {
