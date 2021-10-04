@@ -42,6 +42,11 @@ func createCommand(root *rootCommand) *cobra.Command {
 		Short: createShortDescription,
 		Long:  longDesc,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Validate project directory
+			if err := ValidateMetadataFound(root.fs); err != nil {
+				return err
+			}
+
 			// We ask the user what he wants to create.
 			objectType, _ := root.prompt.Select(&interaction.Select{
 				Label:   `What do you want to create?`,
@@ -280,7 +285,7 @@ func getComponentId(root *rootCommand, projectState *state.State, api *remote.St
 			options = append(options, item)
 		}
 		if index, ok := root.prompt.SelectIndex(&interaction.Select{
-			Label:   `Please select a target component`,
+			Label:   `Select the target component`,
 			Options: options,
 		}); ok {
 			componentId = components[index].Id
