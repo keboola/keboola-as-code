@@ -6,7 +6,6 @@ import (
 	"github.com/iancoleman/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json/schema"
-	"github.com/keboola/keboola-as-code/internal/pkg/json/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
