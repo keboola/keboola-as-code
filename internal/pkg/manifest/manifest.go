@@ -253,7 +253,7 @@ func (m *Manifest) PersistRecord(record model.Record) error {
 		return err
 	}
 
-	m.Naming.Attach(record.Key(), record.RelativePath())
+	m.Naming.Attach(record.Key(), record.Path())
 	record.State().SetPersisted()
 
 	m.lock.Lock()
@@ -310,7 +310,7 @@ func (m *Manifest) ResolveParentPath(record model.Record) error {
 	case err != nil:
 		return err
 	case parent != nil:
-		record.SetParentPath(parent.RelativePath())
+		record.SetParentPath(parent.Path())
 	default:
 		// branch - no parent
 		record.SetParentPath("")

@@ -24,7 +24,7 @@ type DiffAction struct {
 }
 
 func (a *DiffAction) String() string {
-	msg := a.markString() + " " + a.Kind().Abbr + " " + a.RelativePath()
+	msg := a.markString() + " " + a.Kind().Abbr + " " + a.Path()
 	if len(a.ChangedFields) > 0 {
 		msg += " | changed: " + strings.Join(a.ChangedFields, ", ")
 	}
@@ -32,7 +32,7 @@ func (a *DiffAction) String() string {
 }
 
 func (a *DiffAction) StringVerbose() string {
-	return a.opString() + " " + a.Kind().Name + " \"" + a.RelativePath() + "\""
+	return a.opString() + " " + a.Kind().Name + " \"" + a.Path() + "\""
 }
 
 func (a *DiffAction) opString() string {

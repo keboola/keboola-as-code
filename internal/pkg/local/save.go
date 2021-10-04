@@ -34,7 +34,7 @@ func (m *Manager) SaveObject(record model.Record, object model.Object) error {
 func (w *modelWriter) save() error {
 	// Validate
 	if err := validator.Validate(w.Object); err != nil {
-		w.errors.AppendWithPrefix(fmt.Sprintf(`%s "%s" is invalid`, w.Record.Kind().Name, w.Record.RelativePath()), err)
+		w.errors.AppendWithPrefix(fmt.Sprintf(`%s "%s" is invalid`, w.Record.Kind().Name, w.Record.Path()), err)
 		return w.errors
 	}
 
@@ -55,17 +55,17 @@ func (w *modelWriter) save() error {
 func (w *modelWriter) createFiles() {
 	// meta.json
 	if metadata := utils.MapFromTaggedFields(model.MetaFileTag, w.Object); metadata != nil {
-		w.Metadata = filesystem.CreateJsonFile(w.Naming().MetaFilePath(w.Record.RelativePath()), metadata)
+		w.Metadata = filesystem.CreateJsonFile(w.Naming().MetaFilePath(w.Record.Path()), metadata)
 	}
 
 	// config.json
 	if configuration := utils.MapFromOneTaggedField(model.ConfigFileTag, w.Object); configuration != nil {
-		w.Configuration = filesystem.CreateJsonFile(w.Naming().ConfigFilePath(w.Record.RelativePath()), configuration)
+		w.Configuration = filesystem.CreateJsonFile(w.Naming().ConfigFilePath(w.Record.Path()), configuration)
 	}
 
 	// description.md
 	if description, found := utils.StringFromOneTaggedField(model.DescriptionFileTag, w.Object); found {
-		w.Description = filesystem.CreateFile(w.Naming().DescriptionFilePath(w.Record.RelativePath()), strings.TrimRight(description, " \r\n\t")+"\n")
+		w.Description = filesystem.CreateFile(w.Naming().DescriptionFilePath(w.Record.Path()), strings.TrimRight(description, " \r\n\t")+"\n")
 	}
 }
 func (w *modelWriter) allFiles() []*filesystem.File {

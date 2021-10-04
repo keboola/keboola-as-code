@@ -39,9 +39,9 @@ func TestLocalSaveModel(t *testing.T) {
   "foo": "bar"
 }
 `
-	metaFile, err := fs.ReadFile(manager.Naming().MetaFilePath(record.RelativePath()), "")
+	metaFile, err := fs.ReadFile(manager.Naming().MetaFilePath(record.Path()), "")
 	assert.NoError(t, err)
-	configFile, err := fs.ReadFile(manager.Naming().ConfigFilePath(record.RelativePath()), "")
+	configFile, err := fs.ReadFile(manager.Naming().ConfigFilePath(record.Path()), "")
 	assert.NoError(t, err)
 	assert.Equal(t, expectedMeta, metaFile.Content)
 	assert.Equal(t, expectedConfig, configFile.Content)

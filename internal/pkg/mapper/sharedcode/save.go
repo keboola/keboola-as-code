@@ -64,7 +64,7 @@ func (w *writer) save() error {
 	rowContent.Delete(model.ShareCodeContentKey)
 
 	// Generate code file
-	codeFilePath := w.naming.SharedCodeFilePath(w.Record.RelativePath(), targetComponentId)
+	codeFilePath := w.naming.SharedCodeFilePath(w.Record.Path(), targetComponentId)
 	codeFile := filesystem.CreateFile(codeFilePath, codeContent).SetDescription(`shared code`)
 	w.files.Extra = append(w.files.Extra, codeFile)
 

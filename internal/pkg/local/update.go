@@ -43,7 +43,7 @@ func (m *Manager) UpdatePaths(state model.ObjectState, rename bool) error {
 
 func (m *Manager) UpdateBlockPath(block *model.Block, rename bool) {
 	// Update parent path
-	configDir := m.manifest.MustGetRecord(block.ConfigKey()).RelativePath()
+	configDir := m.manifest.MustGetRecord(block.ConfigKey()).Path()
 	blocksDir := m.Naming().BlocksDir(configDir)
 	block.SetParentPath(blocksDir)
 
@@ -55,7 +55,7 @@ func (m *Manager) UpdateBlockPath(block *model.Block, rename bool) {
 
 func (m *Manager) UpdateCodePath(block *model.Block, code *model.Code, rename bool) {
 	// Update parent path
-	code.SetParentPath(block.RelativePath())
+	code.SetParentPath(block.Path())
 
 	// Re-generate object path IF rename is enabled OR path is not set
 	if block.ObjectPath == "" || rename {

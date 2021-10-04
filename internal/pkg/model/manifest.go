@@ -23,9 +23,9 @@ type Record interface {
 	SortKey(sort string) string // unique key for sorting
 	GetObjectPath() string      // path relative to the parent object
 	SetObjectPath(string)       // set path relative to the parent object
+	Path() string               // parent path + object path -> path relative to the project dir
 	GetParentPath() string      // parent path relative to the project dir
 	SetParentPath(string)       // set parent path
-	RelativePath() string       // parent path + object path -> path relative to the project dir
 	GetRelatedPaths() []string  // files related to the record, relative to the project dir, e.g. main/meta.json
 	AddRelatedPath(path string)
 	State() *RecordState
@@ -92,7 +92,7 @@ func (p *PathInProject) SetParentPath(parentPath string) {
 	p.ParentPath = parentPath
 }
 
-func (p PathInProject) RelativePath() string {
+func (p PathInProject) Path() string {
 	return filesystem.Join(
 		strings.ReplaceAll(p.ParentPath, "/", string(os.PathSeparator)),
 		strings.ReplaceAll(p.ObjectPath, "/", string(os.PathSeparator)),
@@ -100,7 +100,7 @@ func (p PathInProject) RelativePath() string {
 }
 
 func (p *Paths) GetRelatedPaths() []string {
-	dir := p.RelativePath()
+	dir := p.Path()
 	out := make([]string, 0)
 	for _, path := range p.RelatedPaths {
 		// Prefix by dir -> path will be relative to the project dir
@@ -110,7 +110,7 @@ func (p *Paths) GetRelatedPaths() []string {
 }
 
 func (p *Paths) AddRelatedPath(path string) {
-	dir := p.RelativePath()
+	dir := p.Path()
 	prefix := dir + string(os.PathSeparator)
 	if !strings.HasPrefix(path, prefix) {
 		panic(fmt.Errorf(`path "%s" is not from the dir "%s"`, path, dir))
@@ -120,7 +120,7 @@ func (p *Paths) AddRelatedPath(path string) {
 }
 
 func (p *Paths) AbsolutePath(projectDir string) string {
-	return filesystem.Join(projectDir, p.RelativePath())
+	return filesystem.Join(projectDir, p.Path())
 }
 
 func (s *RecordState) State() *RecordState {
@@ -162,7 +162,7 @@ func (s *RecordState) SetDeleted() {
 
 func (b BranchManifest) SortKey(sort string) string {
 	if sort == SortByPath {
-		return fmt.Sprintf("%02d_branch_%s", b.Level(), b.RelativePath())
+		return fmt.Sprintf("%02d_branch_%s", b.Level(), b.Path())
 	} else {
 		return b.BranchKey.String()
 	}
@@ -170,7 +170,7 @@ func (b BranchManifest) SortKey(sort string) string {
 
 func (c ConfigManifest) SortKey(sort string) string {
 	if sort == SortByPath {
-		return fmt.Sprintf("%02d_config_%s", c.Level(), c.RelativePath())
+		return fmt.Sprintf("%02d_config_%s", c.Level(), c.Path())
 	} else {
 		return c.ConfigKey.String()
 	}
@@ -178,7 +178,7 @@ func (c ConfigManifest) SortKey(sort string) string {
 
 func (r ConfigRowManifest) SortKey(sort string) string {
 	if sort == SortByPath {
-		return fmt.Sprintf("%02d_row_%s", r.Level(), r.RelativePath())
+		return fmt.Sprintf("%02d_row_%s", r.Level(), r.Path())
 	} else {
 		return r.ConfigRowKey.String()
 	}

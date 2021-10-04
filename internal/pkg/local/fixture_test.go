@@ -75,7 +75,7 @@ func (MockedRecord) GetParentPath() string {
 func (MockedRecord) SetParentPath(string) {
 }
 
-func (MockedRecord) RelativePath() string {
+func (MockedRecord) Path() string {
 	return `test`
 }
 

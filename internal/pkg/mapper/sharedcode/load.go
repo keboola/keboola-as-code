@@ -46,7 +46,7 @@ func (l *loader) load() error {
 	}
 
 	// Load file
-	codeFilePath := l.naming.SharedCodeFilePath(l.Record.RelativePath(), targetComponentId)
+	codeFilePath := l.naming.SharedCodeFilePath(l.Record.Path(), targetComponentId)
 	codeFile, err := l.fs.ReadFile(codeFilePath, `shared code`)
 	if err != nil {
 		return err

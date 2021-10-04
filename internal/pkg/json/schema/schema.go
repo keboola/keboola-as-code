@@ -28,7 +28,7 @@ func ValidateSchemas(objects model.ObjectsProvider) error {
 		}
 
 		if err := ValidateConfig(component, config.Local); err != nil {
-			errs.AppendWithPrefix(fmt.Sprintf("config \"%s\" doesn't match schema", objects.Naming().ConfigFilePath(config.RelativePath())), err)
+			errs.AppendWithPrefix(fmt.Sprintf("config \"%s\" doesn't match schema", objects.Naming().ConfigFilePath(config.Path())), err)
 		}
 	}
 
@@ -44,7 +44,7 @@ func ValidateSchemas(objects model.ObjectsProvider) error {
 		}
 
 		if err := ValidateConfigRow(component, row.Local); err != nil {
-			errs.AppendWithPrefix(fmt.Sprintf("config row \"%s\" doesn't match schema", objects.Naming().ConfigFilePath(row.RelativePath())), err)
+			errs.AppendWithPrefix(fmt.Sprintf("config row \"%s\" doesn't match schema", objects.Naming().ConfigFilePath(row.Path())), err)
 		}
 	}
 

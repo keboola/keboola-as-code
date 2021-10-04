@@ -36,5 +36,5 @@ func (a *NewRowAction) String() string {
 }
 
 func (a *DeleteRecordAction) String() string {
-	return fmt.Sprintf(`- %s %s`, a.Record.Kind().Abbr, a.Record.RelativePath())
+	return fmt.Sprintf(`- %s %s`, a.Record.Kind().Abbr, a.Record.Path())
 }

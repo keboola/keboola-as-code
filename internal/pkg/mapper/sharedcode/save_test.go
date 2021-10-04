@@ -24,7 +24,7 @@ func TestSharedCodeSaveOk(t *testing.T) {
 	targetComponentId := `keboola.python-transformation-v2`
 	logger, fs, state, row, objectFiles := createTestFixtures(t, targetComponentId)
 	naming := model.DefaultNaming()
-	codeFilePath := filesystem.Join(naming.SharedCodeFilePath(objectFiles.Record.RelativePath(), targetComponentId))
+	codeFilePath := filesystem.Join(naming.SharedCodeFilePath(objectFiles.Record.Path(), targetComponentId))
 
 	// Set JSON value
 	row.Content.Set(model.ShareCodeContentKey, `foo bar`)

@@ -36,7 +36,7 @@ func (b *persistPlanBuilder) build() {
 	// New config rows from existing configs
 	for _, path := range b.UntrackedDirs() {
 		for _, config := range b.Configs() {
-			if action := b.tryAddConfigRow(path, config.RelativePath(), config.ConfigKey); action != nil {
+			if action := b.tryAddConfigRow(path, config.Path(), config.ConfigKey); action != nil {
 				b.actions = append(b.actions, action)
 				break
 			}
@@ -57,7 +57,7 @@ func (b *persistPlanBuilder) build() {
 
 func (b *persistPlanBuilder) tryAddConfig(projectPath string, branch *model.BranchState) []PersistAction {
 	// Is path from the branch dir?
-	relPath := filesystem.Rel(branch.RelativePath(), projectPath)
+	relPath := filesystem.Rel(branch.Path(), projectPath)
 
 	// Is config path matching naming template?
 	matched, matches := b.Naming().Config.MatchPath(relPath)
