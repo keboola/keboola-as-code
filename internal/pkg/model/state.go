@@ -15,18 +15,20 @@ type pathsState = PathsState
 
 type State struct {
 	*pathsState
+	sortBy     string
 	mutex      *sync.Mutex
 	components *ComponentsMap
 	objects    *orderedmap.OrderedMap
 }
 
-func NewState(logger *zap.SugaredLogger, fs filesystem.Fs, components *ComponentsMap) *State {
+func NewState(logger *zap.SugaredLogger, fs filesystem.Fs, components *ComponentsMap, sortBy string) *State {
 	ps, err := NewPathsState(fs)
 	if err != nil {
 		logger.Debug(utils.PrefixError(`error loading directory structure`, err).Error())
 	}
 	return &State{
 		pathsState: ps,
+		sortBy:     sortBy,
 		mutex:      &sync.Mutex{},
 		components: components,
 		objects:    utils.NewOrderedMap(),
@@ -37,10 +39,10 @@ func (s *State) Components() *ComponentsMap {
 	return s.components
 }
 
-func (s *State) All(sortBy string) []ObjectState {
+func (s *State) All() []ObjectState {
 	s.objects.Sort(func(a *orderedmap.Pair, b *orderedmap.Pair) bool {
-		aKey := a.Value().(ObjectState).Manifest().SortKey(sortBy)
-		bKey := b.Value().(ObjectState).Manifest().SortKey(sortBy)
+		aKey := a.Value().(ObjectState).Manifest().SortKey(s.sortBy)
+		bKey := b.Value().(ObjectState).Manifest().SortKey(s.sortBy)
 		return aKey < bKey
 	})
 
@@ -61,8 +63,8 @@ func (s *State) All(sortBy string) []ObjectState {
 	return out
 }
 
-func (s *State) Branches(sortBy string) (branches []*BranchState) {
-	for _, object := range s.All(sortBy) {
+func (s *State) Branches() (branches []*BranchState) {
+	for _, object := range s.All() {
 		if v, ok := object.(*BranchState); ok {
 			branches = append(branches, v)
 		}
@@ -70,8 +72,8 @@ func (s *State) Branches(sortBy string) (branches []*BranchState) {
 	return branches
 }
 
-func (s *State) Configs(sortBy string) (configs []*ConfigState) {
-	for _, object := range s.All(sortBy) {
+func (s *State) Configs() (configs []*ConfigState) {
+	for _, object := range s.All() {
 		if v, ok := object.(*ConfigState); ok {
 			configs = append(configs, v)
 		}
@@ -79,8 +81,8 @@ func (s *State) Configs(sortBy string) (configs []*ConfigState) {
 	return configs
 }
 
-func (s *State) ConfigRows(sortBy string) (rows []*ConfigRowState) {
-	for _, object := range s.All(sortBy) {
+func (s *State) ConfigRows() (rows []*ConfigRowState) {
+	for _, object := range s.All() {
 		if v, ok := object.(*ConfigRowState); ok {
 			rows = append(rows, v)
 		}

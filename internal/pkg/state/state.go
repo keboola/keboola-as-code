@@ -87,7 +87,7 @@ func newState(options *Options) *State {
 	}
 
 	// State model struct
-	s.State = model.NewState(options.logger, options.fs, options.api.Components())
+	s.State = model.NewState(options.logger, options.fs, options.api.Components(), options.manifest.SortBy)
 
 	// Local manager for load,save,delete ... operations
 	s.localManager = local.NewManager(options.logger, options.fs, options.manifest, s.State)
@@ -145,22 +145,6 @@ func (s *State) AddRemoteError(err error) {
 
 func (s *State) AddLocalError(err error) {
 	s.localErrors.Append(err)
-}
-
-func (s *State) All() []model.ObjectState {
-	return s.State.All(s.manifest.SortBy)
-}
-
-func (s *State) Branches() (branches []*model.BranchState) {
-	return s.State.Branches(s.manifest.SortBy)
-}
-
-func (s *State) Configs() (configs []*model.ConfigState) {
-	return s.State.Configs(s.manifest.SortBy)
-}
-
-func (s *State) ConfigRows() (rows []*model.ConfigRowState) {
-	return s.State.ConfigRows(s.manifest.SortBy)
 }
 
 func (s *State) SetRemoteState(remote model.Object) (model.ObjectState, error) {

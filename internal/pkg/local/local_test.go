@@ -23,6 +23,6 @@ func newTestLocalManager(t *testing.T) *Manager {
 	assert.NoError(t, err)
 
 	components := model.NewComponentsMap(nil)
-	state := model.NewState(zap.NewNop().Sugar(), fs, components)
+	state := model.NewState(zap.NewNop().Sugar(), fs, components, model.SortByPath)
 	return NewManager(logger, fs, m, state)
 }
