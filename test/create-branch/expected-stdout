@@ -1,0 +1,10 @@
+%A
+INFO	The branch was successfully created.
+INFO	Pulling objects to the local directory.
+%A
+INFO	Plan for "pull" operation:
+INFO		+  B new-branch
+INFO		+  C new-branch/extractor/ex-generic-v2/empty
+%A
+INFO	Pull done.
+INFO	Created new branch "new branch".

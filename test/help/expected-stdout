@@ -11,7 +11,7 @@ Usage:
   %s [command]
 
 Available Commands:
-  create      Create config or row
+  create      Create branch, config or row
   diff        Print differences between local and remote state
   encrypt     Find unencrypted values in configurations and encrypt them
   fix-paths   Normalize all local paths
