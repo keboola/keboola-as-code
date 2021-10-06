@@ -11,11 +11,8 @@ env:
 
   # Test project in KBC
   TEST_PROJECT_ID: 8614
-  TEST_PROJECT_NAME: keboola-as-code-tests
   TEST_KBC_STORAGE_API_HOST: connection.keboola.com
-  TEST_KBC_STORAGE_API_TOKEN: ${{ secrets.TEST_KBC_STORAGE_API_TOKEN }}
-  TEST_KBC_STORAGE_API_TOKEN_MASTER: ${{ secrets.TEST_KBC_STORAGE_API_TOKEN_MASTER }}
-  TEST_KBC_STORAGE_API_TOKEN_EXPIRED: ${{ secrets.TEST_KBC_STORAGE_API_TOKEN_EXPIRED }}
+  TEST_KBC_STORAGE_API_TOKEN: ${{ secrets.TEST_KBC_STORAGE_API_TOKEN_MASTER }}
 
   # S3 repository
   IAM_USER: keboola-as-code-dist-s3-upload
