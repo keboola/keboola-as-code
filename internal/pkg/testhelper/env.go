@@ -2,11 +2,13 @@
 package testhelper
 
 import (
+	"bytes"
 	"fmt"
+	"github.com/acarl005/stripansi"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/spf13/cast"
@@ -58,21 +60,33 @@ func ReplaceEnvsDir(root string, provider EnvProvider) {
 	}
 }
 
-func TestApiHost() string {
-	return os.Getenv("TEST_KBC_STORAGE_API_HOST")
+// stripAnsiWriter strips ANSI characters from
+type stripAnsiWriter struct {
+	buf *bytes.Buffer
+	writer io.Writer
 }
 
-func TestToken() string {
-	return os.Getenv("TEST_KBC_STORAGE_API_TOKEN")
-}
-
-func TestProjectId() int {
-	str := os.Getenv("TEST_PROJECT_ID")
-	value, err := strconv.Atoi(str)
-	if err != nil {
-		panic(fmt.Errorf("invalid integer \"%s\": %w", str, err))
+func newStripAnsiWriter(writer io.Writer) *stripAnsiWriter {
+	return &stripAnsiWriter{
+		buf: &bytes.Buffer{},
+		writer: writer,
 	}
-	return value
+}
+
+func (w *stripAnsiWriter) Write(p []byte) (int, error) {
+	// Append to the buffer
+	n, err := w.buf.Write(p)
+
+	// We can only remove an ANSI escape seq if the whole expression is present.
+	// ... so if buffer contains new line -> flush
+	if bytes.Contains(w.buf.Bytes(), []byte("\n")) {
+		if _, err := w.writer.Write([]byte(stripansi.Strip(w.buf.String()))); err != nil {
+			return 0, err
+		}
+		w.buf.Reset()
+	}
+
+	return n, err
 }
 
 func TestIsVerbose() bool {
@@ -81,4 +95,20 @@ func TestIsVerbose() bool {
 		value = "false"
 	}
 	return cast.ToBool(value)
+}
+
+func VerboseStdout() io.Writer {
+	if TestIsVerbose() {
+		return newStripAnsiWriter(os.Stdout)
+	}
+
+	return io.Discard
+}
+
+func VerboseStderr() io.Writer {
+	if TestIsVerbose() {
+		return newStripAnsiWriter(os.Stderr)
+	}
+
+	return io.Discard
 }

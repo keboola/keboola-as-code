@@ -7,6 +7,7 @@ import (
 )
 
 func TestNamingNormalizeName(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "", NormalizeName(""))
 	assert.Equal(t, "abc", NormalizeName("abc"))
 	assert.Equal(t, "camel-case", NormalizeName("CamelCase"))

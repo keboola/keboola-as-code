@@ -13,12 +13,14 @@ import (
 )
 
 func TestEmpty(t *testing.T) {
+	t.Parallel()
 	client, _, logger, _ := getMockedClientAndLogs(t, false)
 	pool := client.NewPool(logger)
 	assert.NoError(t, pool.StartAndWait())
 }
 
 func TestSimple(t *testing.T) {
+	t.Parallel()
 	client, httpTransport, logger, _ := getMockedClientAndLogs(t, false)
 	httpTransport.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(200, `test`))
 
@@ -44,6 +46,7 @@ func TestSimple(t *testing.T) {
 }
 
 func TestSubRequest(t *testing.T) {
+	t.Parallel()
 	client, httpTransport, logger, _ := getMockedClientAndLogs(t, false)
 	httpTransport.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(200, `test`))
 
@@ -82,6 +85,7 @@ func TestSubRequest(t *testing.T) {
 }
 
 func TestErrorInCallback(t *testing.T) {
+	t.Parallel()
 	client, httpTransport, logger, _ := getMockedClientAndLogs(t, false)
 	httpTransport.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(200, `test`))
 
@@ -107,6 +111,7 @@ func TestErrorInCallback(t *testing.T) {
 }
 
 func TestNetworkError(t *testing.T) {
+	t.Parallel()
 	client, httpTransport, logger, _ := getMockedClientAndLogs(t, false)
 	httpTransport.RegisterResponder("GET", `https://example.com`, httpmock.NewStringResponder(200, `test`))
 	httpTransport.RegisterResponder("GET", `https://example.com/error`, httpmock.NewErrorResponder(errors.New("network error")))
@@ -134,6 +139,7 @@ func TestNetworkError(t *testing.T) {
 }
 
 func TestOnSuccess(t *testing.T) {
+	t.Parallel()
 	client, httpTransport, logger, _ := getMockedClientAndLogs(t, false)
 	httpTransport.RegisterResponder("GET", `https://example.com`, httpmock.NewStringResponder(200, `test`))
 
@@ -159,6 +165,7 @@ func TestOnSuccess(t *testing.T) {
 }
 
 func TestOnError(t *testing.T) {
+	t.Parallel()
 	client, httpTransport, logger, _ := getMockedClientAndLogs(t, false)
 	httpTransport.RegisterResponder("GET", `https://example.com`, httpmock.NewStringResponder(200, `test`))
 	httpTransport.RegisterResponder("GET", `https://example.com/error`, httpmock.NewErrorResponder(errors.New("network error")))
@@ -194,7 +201,9 @@ func TestOnError(t *testing.T) {
 }
 
 func TestSendWasNotCalled(t *testing.T) {
+	t.Parallel()
 	client, _, logger, _ := getMockedClientAndLogs(t, false)
+
 	pool := client.NewPool(logger)
 	pool.Request(client.NewRequest(resty.MethodGet, "https://example.com"))
 	assert.PanicsWithError(t, `request[1] GET "https://example.com" was not sent - Send() method was not called`, func() {
@@ -203,10 +212,10 @@ func TestSendWasNotCalled(t *testing.T) {
 }
 
 func TestWaitForSubRequest(t *testing.T) {
+	t.Parallel()
 	client, httpTransport, logger, _ := getMockedClientAndLogs(t, false)
 	httpTransport.RegisterResponder("GET", `https://example.com`, httpmock.NewStringResponder(200, `test`))
 	httpTransport.RegisterResponder("GET", `https://example.com/sub`, httpmock.NewStringResponder(200, `test`))
-
 	counter := utils.NewSafeCounter(0)
 
 	var mainRequest *Request
@@ -259,6 +268,7 @@ func TestWaitForSubRequest(t *testing.T) {
 }
 
 func TestWaitForSubRequestChain(t *testing.T) {
+	t.Parallel()
 	client, httpTransport, logger, _ := getMockedClientAndLogs(t, false)
 	httpTransport.RegisterResponder("GET", `https://example.com`, httpmock.NewStringResponder(200, `test`))
 	httpTransport.RegisterResponder("GET", `https://example.com/sub`, httpmock.NewStringResponder(200, `test`))
@@ -307,6 +317,7 @@ func TestWaitForSubRequestChain(t *testing.T) {
 }
 
 func TestPoolManyRequestsUnderLimit(t *testing.T) {
+	t.Parallel()
 	client, httpTransport, logger, _ := getMockedClientAndLogs(t, false)
 	httpTransport.RegisterResponder(`GET`, `https://example.com`, httpmock.NewStringResponder(200, `test`))
 	pool := client.NewPool(logger)
@@ -321,6 +332,7 @@ func TestPoolManyRequestsUnderLimit(t *testing.T) {
 }
 
 func TestPoolTooManyRequests(t *testing.T) {
+	t.Parallel()
 	client, httpTransport, logger, _ := getMockedClientAndLogs(t, false)
 	httpTransport.RegisterResponder(`GET`, `https://example.com`, httpmock.NewStringResponder(200, `test`))
 	pool := client.NewPool(logger)

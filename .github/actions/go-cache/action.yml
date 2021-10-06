@@ -1,4 +1,4 @@
-name: 'Load Gp build cache'
+name: 'Load Go cache'
 description: 'Load Go build cache'
 inputs:
   key:
@@ -7,12 +7,25 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Create directory
-      run: mkdir -p /tmp/cache-go
+    - name: Use GNU tar instead BSD tar
       shell: bash
-    - uses: actions/cache@v2
+      run: |
+        if [[ "$RUNNER_OS" == 'Windows' ]]; then
+          echo 'C:\Program Files\Git\usr\bin' >> $GITHUB_PATH
+        fi
+    - name: Load Go cache
+      uses: actions/cache@v2
       with:
-        path: /tmp/cache-go
-        key: ${{ runner.os }}-go-${{ inputs.key }}-${{ github.sha }}
+        path: |
+          ~/go/pkg/mod
+          ~\go\pkg\mod
+          ~/.cache/go-build
+          ~/Library/Caches/go-build
+          ~\AppData\Local\go-build
+          ~/.cache/golangci-lint
+          ~/Library/Caches/golangci-lint
+          ~\AppData\Local\golangci-lint
+        key: ${{ runner.os }}-go-${{ inputs.key }}-${{ hashFiles('**/go.sum') }}
         restore-keys: |
-          ${{ runner.os }}-go-${{ inputs.key }}
+          ${{ runner.os }}-go-
+          ${{ runner.os }}-go-${{ inputs.key }}-

@@ -28,6 +28,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -59,10 +60,11 @@ func (p *envTicketProvider) MustGet(key string) string {
 
 // TestFunctional runs one functional test per each sub-directory.
 func TestFunctional(t *testing.T) {
-	_, testFile, _, _ := runtime.Caller(0)
-	rootDir := filepath.Dir(testFile)
+	t.Parallel()
 
 	// Create temp dir
+	_, testFile, _, _ := runtime.Caller(0)
+	rootDir := filepath.Dir(testFile)
 	tempDir := t.TempDir()
 
 	// Compile binary, it will be run in the tests
@@ -81,6 +83,7 @@ func TestFunctional(t *testing.T) {
 // RunFunctionalTest runs one functional test.
 func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) {
 	t.Helper()
+	t.Parallel()
 
 	// Clean working dir
 	assert.NoError(t, os.RemoveAll(workingDir))
@@ -97,15 +100,16 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 		t.Fatalf("Copy error: %s", err)
 	}
 
-	// Get API
-	api, _ := remote.TestStorageApiWithToken(t)
-
-	// Setup KBC project state
-	projectStateFilePath := filepath.Join(testDir, "initial-state.json")
+	// Get test project
 	envs, err := env.FromOs()
 	assert.NoError(t, err)
+	project := testproject.GetTestProject(t, envs)
+	api := project.Api()
+
+	// Setup project state
+	projectStateFilePath := filepath.Join(testDir, "initial-state.json")
 	if testhelper.IsFile(projectStateFilePath) {
-		remote.SetStateOfTestProject(t, api, projectStateFilePath, envs)
+		project.SetState(projectStateFilePath)
 	}
 
 	// Create ENV provider
@@ -126,12 +130,8 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	var stdout, stderr bytes.Buffer
 	cmd := exec.Command(binary, args...)
 	cmd.Dir = workingDir
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	if testhelper.TestIsVerbose() {
-		cmd.Stdout = io.MultiWriter(cmd.Stdout, os.Stdout)
-		cmd.Stderr = io.MultiWriter(cmd.Stderr, os.Stderr)
-	}
+	cmd.Stdout = io.MultiWriter(&stdout, testhelper.VerboseStdout())
+	cmd.Stderr = io.MultiWriter(&stderr, testhelper.VerboseStderr())
 
 	// Run command
 	exitCode := 0

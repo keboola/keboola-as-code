@@ -27,6 +27,7 @@ type myStruct struct {
 }
 
 func TestLocalFilesystem(t *testing.T) {
+	t.Parallel()
 	createFs := func() (filesystem.Fs, *utils.Writer) {
 		logger, out := utils.NewDebugLogger()
 		projectDir := t.TempDir()
@@ -39,6 +40,7 @@ func TestLocalFilesystem(t *testing.T) {
 }
 
 func TestMemoryFilesystem(t *testing.T) {
+	t.Parallel()
 	createFs := func() (filesystem.Fs, *utils.Writer) {
 		logger, out := utils.NewDebugLogger()
 		fs, err := NewMemoryFs(logger, "/")
@@ -64,6 +66,7 @@ func (tc *testCases) runTests(t *testing.T) {
 			fs, log := tc.createFs()
 			testName := strings.TrimPrefix(method.Name, prefix)
 			t.Run(testName, func(t *testing.T) {
+				t.Parallel()
 				reflect.ValueOf(tc).MethodByName(method.Name).Call([]reflect.Value{
 					reflect.ValueOf(t),
 					reflect.ValueOf(fs),

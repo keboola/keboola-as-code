@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"io"
-	"os"
 	"sync"
 	"testing"
 	"time"
@@ -10,10 +8,13 @@ import (
 	"github.com/Netflix/go-expect"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
 )
 
 func TestMissingParams(t *testing.T) {
+	t.Parallel()
 	root, out := newTestRootCommand()
 	root.cmd.SetArgs([]string{"init"})
 	err := root.cmd.Execute()
@@ -27,15 +28,14 @@ func TestMissingParams(t *testing.T) {
 }
 
 func TestInteractiveInit(t *testing.T) {
+	t.Parallel()
+
 	// Create virtual console
-	var stdout io.Writer
-	if testhelper.TestIsVerbose() {
-		stdout = os.Stdout
-	} else {
-		stdout = io.Discard
-	}
-	c, state, err := testhelper.NewVirtualTerminal(expect.WithStdout(stdout), expect.WithDefaultTimeout(15*time.Second))
+	c, state, err := testhelper.NewVirtualTerminal(expect.WithStdout(testhelper.VerboseStdout()), expect.WithDefaultTimeout(15*time.Second))
 	assert.NoError(t, err)
+
+	// Test project
+	project := testproject.GetTestProject(t, env.Empty())
 
 	// Init prompt and cmd
 	root := newTestRootCommandWithTty(c.Tty())
@@ -51,14 +51,14 @@ func TestInteractiveInit(t *testing.T) {
 		_, err = c.ExpectString("API host ")
 		assert.NoError(t, err)
 		time.Sleep(20 * time.Millisecond)
-		_, err = c.SendLine(testhelper.TestApiHost())
+		_, err = c.SendLine(project.StorageApiHost())
 		assert.NoError(t, err)
 		_, err = c.ExpectString("Please enter Keboola Storage API token. The value will be hidden.")
 		assert.NoError(t, err)
 		_, err = c.ExpectString("API token ")
 		assert.NoError(t, err)
 		time.Sleep(20 * time.Millisecond)
-		_, err = c.SendLine(testhelper.TestToken())
+		_, err = c.SendLine(project.Token())
 		assert.NoError(t, err)
 		_, err = c.ExpectString("Allowed project's branches:")
 		assert.NoError(t, err)

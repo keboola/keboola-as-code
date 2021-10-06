@@ -3,6 +3,7 @@ package env
 import (
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"sync"
 
@@ -33,13 +34,11 @@ func FromMap(data map[string]string) *Map {
 
 func FromOs() (*Map, error) {
 	m := Empty()
-	envs, err := godotenv.Unmarshal(strings.Join(os.Environ(), "\n"))
-	if err != nil {
-		return nil, err
-	}
-
-	for k, v := range envs {
-		m.Set(k, v)
+	for _, pair := range os.Environ() {
+		parts := strings.SplitN(pair, "=", 2)
+		if len(parts) == 2 {
+			m.Set(parts[0], parts[1])
+		}
 	}
 
 	return m, nil
@@ -62,6 +61,7 @@ func (m *Map) Keys() []string {
 	for k := range m.data {
 		keys = append(keys, k)
 	}
+	sort.Strings(keys)
 	return keys
 }
 

@@ -16,6 +16,7 @@ import (
 )
 
 func TestRootSubCommands(t *testing.T) {
+	t.Parallel()
 	root, _ := newTestRootCommand()
 
 	// Map commands to names
@@ -41,6 +42,7 @@ func TestRootSubCommands(t *testing.T) {
 }
 
 func TestRootCmdPersistentFlags(t *testing.T) {
+	t.Parallel()
 	root, _ := newTestRootCommand()
 
 	// Map flags to names
@@ -62,6 +64,7 @@ func TestRootCmdPersistentFlags(t *testing.T) {
 }
 
 func TestRootCmdFlags(t *testing.T) {
+	t.Parallel()
 	root, _ := newTestRootCommand()
 
 	// Map flags to names
@@ -78,6 +81,7 @@ func TestRootCmdFlags(t *testing.T) {
 }
 
 func TestExecute(t *testing.T) {
+	t.Parallel()
 	root, out := newTestRootCommand()
 
 	// Execute
@@ -87,6 +91,7 @@ func TestExecute(t *testing.T) {
 }
 
 func TestTearDownRemoveLogFile(t *testing.T) {
+	t.Parallel()
 	root, _ := newTestRootCommand()
 
 	// Note: log file can be outside project directory, so it is NOT using virtual filesystem
@@ -99,6 +104,7 @@ func TestTearDownRemoveLogFile(t *testing.T) {
 }
 
 func TestTearDownKeepLogFile(t *testing.T) {
+	t.Parallel()
 	root, _ := newTestRootCommand()
 
 	// Note: log file can be outside project directory, so it is NOT using virtual filesystem
@@ -111,6 +117,7 @@ func TestTearDownKeepLogFile(t *testing.T) {
 }
 
 func TestInit(t *testing.T) {
+	t.Parallel()
 	root, _ := newTestRootCommand()
 	assert.False(t, root.initialized)
 	assert.Nil(t, root.logger)
@@ -121,6 +128,7 @@ func TestInit(t *testing.T) {
 }
 
 func TestLogVersion(t *testing.T) {
+	t.Parallel()
 	root, _ := newTestRootCommand()
 	logger, out := utils.NewDebugLogger()
 
@@ -147,15 +155,21 @@ func TestLogVersion(t *testing.T) {
 }
 
 func TestGetLogFileTempFile(t *testing.T) {
+	t.Parallel()
 	root, _ := newTestRootCommand()
 	file, err := root.getLogFile()
 	assert.NoError(t, err)
 	assert.NotNil(t, file)
-	assert.True(t, strings.HasPrefix(root.options.LogFilePath, os.TempDir()+"/"))
+
+	// Linux returns temp dir without last separator, MacOs with last separator.
+	// ... so we need to make sure there is only one separator at the end.
+	tempDir := strings.TrimRight(os.TempDir(), string(os.PathSeparator)) + string(os.PathSeparator)
+	assert.True(t, strings.HasPrefix(root.options.LogFilePath, tempDir))
 	assert.True(t, root.logFileClear)
 }
 
 func TestGetLogFileFromFlags(t *testing.T) {
+	t.Parallel()
 	root, _ := newTestRootCommand()
 
 	// Note: log file can be outside project directory, so it is NOT using virtual filesystem

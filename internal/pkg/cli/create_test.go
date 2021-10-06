@@ -2,8 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"io"
-	"os"
 	"sync"
 	"testing"
 	"time"
@@ -12,27 +10,27 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func TestInteractiveCreateConfig(t *testing.T) {
+	t.Parallel()
 	// Create virtual console
-	var stdout io.Writer
-	if testhelper.TestIsVerbose() {
-		stdout = os.Stdout
-	} else {
-		stdout = io.Discard
-	}
-	c, state, err := testhelper.NewVirtualTerminal(expect.WithStdout(stdout), expect.WithDefaultTimeout(15*time.Second))
+	c, state, err := testhelper.NewVirtualTerminal(expect.WithStdout(testhelper.VerboseStdout()), expect.WithDefaultTimeout(15*time.Second))
 	assert.NoError(t, err)
+
+	// Test project
+	project := testproject.GetTestProject(t, env.Empty())
 
 	// Init prompt and cmd
 	root := newTestRootCommandWithTty(c.Tty())
-	root.cmd.SetArgs([]string{"create", "--storage-api-token", testhelper.TestToken()})
+	root.cmd.SetArgs([]string{"create", "--storage-api-token", project.Token()})
 
 	// Create fs
 	logger, _ := utils.NewDebugLogger()
@@ -59,7 +57,7 @@ func TestInteractiveCreateConfig(t *testing.T) {
 `
 	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(
 		filesystem.Join(filesystem.MetadataDir, manifest.FileName),
-		fmt.Sprintf(manifestContent, testhelper.TestProjectId()),
+		fmt.Sprintf(manifestContent, project.Id()),
 	)))
 
 	// Create branch files
@@ -119,19 +117,18 @@ func TestInteractiveCreateConfig(t *testing.T) {
 }
 
 func TestInteractiveCreateConfigRow(t *testing.T) {
+	t.Parallel()
+
 	// Create virtual console
-	var stdout io.Writer
-	if testhelper.TestIsVerbose() {
-		stdout = os.Stdout
-	} else {
-		stdout = io.Discard
-	}
-	c, state, err := testhelper.NewVirtualTerminal(expect.WithStdout(stdout), expect.WithDefaultTimeout(15*time.Second))
+	c, state, err := testhelper.NewVirtualTerminal(expect.WithStdout(testhelper.VerboseStdout()), expect.WithDefaultTimeout(15*time.Second))
 	assert.NoError(t, err)
+
+	// Test project
+	project := testproject.GetTestProject(t, env.Empty())
 
 	// Init prompt and cmd
 	root := newTestRootCommandWithTty(c.Tty())
-	root.cmd.SetArgs([]string{"create", "--storage-api-token", testhelper.TestToken()})
+	root.cmd.SetArgs([]string{"create", "--storage-api-token", project.Token()})
 
 	// Create fs
 	logger, _ := utils.NewDebugLogger()
@@ -166,7 +163,7 @@ func TestInteractiveCreateConfigRow(t *testing.T) {
 `
 	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(
 		filesystem.Join(filesystem.MetadataDir, manifest.FileName),
-		fmt.Sprintf(manifestContent, testhelper.TestProjectId()),
+		fmt.Sprintf(manifestContent, project.Id()),
 	)))
 
 	// Create branch files

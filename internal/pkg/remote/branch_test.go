@@ -1,4 +1,4 @@
-package remote
+package remote_test
 
 import (
 	"testing"
@@ -10,11 +10,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
 )
 
 func TestBranchApiCalls(t *testing.T) {
-	api, _ := TestStorageApiWithToken(t)
-	SetStateOfTestProject(t, api, "empty.json", env.Empty())
+	t.Parallel()
+	project := testproject.GetTestProject(t, env.Empty())
+	project.SetState("empty.json")
+	api := project.Api()
 
 	var job1 *model.Job
 	var job2 *model.Job

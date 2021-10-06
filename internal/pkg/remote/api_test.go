@@ -1,4 +1,4 @@
-package remote
+package remote_test
 
 import (
 	"context"
@@ -6,20 +6,24 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	. "github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func TestNewStorageApi(t *testing.T) {
+	t.Parallel()
 	logger, _ := utils.NewDebugLogger()
 	a := NewStorageApi("foo.bar.com", context.Background(), logger, false)
 	assert.NotNil(t, a)
 	assert.Equal(t, "foo.bar.com", a.Host())
 	assert.Equal(t, "https://foo.bar.com/v2/storage", a.HostUrl())
-	assert.Equal(t, "https://foo.bar.com/v2/storage", a.client.HostUrl())
+	assert.Equal(t, "https://foo.bar.com/v2/storage", a.RestyClient().HostURL)
 }
 
 func TestHostnameNotFound(t *testing.T) {
-	api, logs := TestStorageApiWithHost(t, "foo.bar.com")
+	t.Parallel()
+	logger, logs := utils.NewDebugLogger()
+	api := NewStorageApi("foo.bar.com", context.Background(), logger, false)
 	token, err := api.GetToken("mytoken")
 	assert.Nil(t, token)
 	assert.Error(t, err)
@@ -28,7 +32,9 @@ func TestHostnameNotFound(t *testing.T) {
 }
 
 func TestInvalidHost(t *testing.T) {
-	api, logs := TestStorageApiWithHost(t, "google.com")
+	t.Parallel()
+	logger, logs := utils.NewDebugLogger()
+	api := NewStorageApi("google.com", context.Background(), logger, false)
 	token, err := api.GetToken("mytoken")
 	assert.Nil(t, token)
 	assert.Error(t, err)

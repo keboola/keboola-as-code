@@ -7,6 +7,7 @@ import (
 )
 
 func TestPathTemplateRegexp(t *testing.T) {
+	t.Parallel()
 	var matched bool
 	var matches map[string]string
 

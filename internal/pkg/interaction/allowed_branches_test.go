@@ -1,8 +1,6 @@
 package interaction
 
 import (
-	"io"
-	"os"
 	"sync"
 	"testing"
 	"time"
@@ -22,6 +20,7 @@ const (
 
 // TestAllowedBranchesByFlag use flag value if present.
 func TestAllowedBranchesByFlag(t *testing.T) {
+	t.Parallel()
 	prompt, console := createVirtualPrompt(t)
 
 	// No interaction expected
@@ -34,6 +33,7 @@ func TestAllowedBranchesByFlag(t *testing.T) {
 
 // TestAllowedBranchesDefaultValue use default value if terminal is not interactive.
 func TestAllowedBranchesDefaultValue(t *testing.T) {
+	t.Parallel()
 	prompt, console := createVirtualPrompt(t)
 	prompt.Interactive = false
 
@@ -48,6 +48,7 @@ func TestAllowedBranchesDefaultValue(t *testing.T) {
 // TestAllowedBranchesOnlyMain - select first option from the interactive select box
 // -> only main branch.
 func TestAllowedBranchesOnlyMain(t *testing.T) {
+	t.Parallel()
 	prompt, c := createVirtualPrompt(t)
 	allBranches := []*model.Branch{{BranchKey: model.BranchKey{Id: 123}, Name: "Main", IsDefault: true}}
 
@@ -74,6 +75,7 @@ func TestAllowedBranchesOnlyMain(t *testing.T) {
 // TestAllowedBranchesOnlyMain - select second option from the interactive select box
 // -> all branches.
 func TestAllowedBranchesAllBranches(t *testing.T) {
+	t.Parallel()
 	prompt, c := createVirtualPrompt(t)
 	allBranches := []*model.Branch{{BranchKey: model.BranchKey{Id: 123}, Name: "Main", IsDefault: true}}
 
@@ -100,6 +102,7 @@ func TestAllowedBranchesAllBranches(t *testing.T) {
 // TestAllowedBranchesOnlyMain - select third option from the interactive select box
 // -> select branches, and select 2/4 of the listed brances.
 func TestAllowedBranchesSelectedBranches(t *testing.T) {
+	t.Parallel()
 	prompt, c := createVirtualPrompt(t)
 	allBranches := []*model.Branch{
 		{BranchKey: model.BranchKey{Id: 10}, Name: "Main", IsDefault: true},
@@ -157,6 +160,7 @@ func TestAllowedBranchesSelectedBranches(t *testing.T) {
 // TestAllowedBranchesOnlyMain - select fourth option from the interactive select box
 // -> type IDs or names and type two custom definitions.
 func TestAllowedBranchesTypeList(t *testing.T) {
+	t.Parallel()
 	prompt, c := createVirtualPrompt(t)
 	allBranches := []*model.Branch{
 		{BranchKey: model.BranchKey{Id: 10}, Name: "Main", IsDefault: true},
@@ -220,13 +224,7 @@ func createVirtualPrompt(t *testing.T) (*Prompt, *expect.Console) {
 	t.Helper()
 
 	// Create virtual console
-	var stdout io.Writer
-	if testhelper.TestIsVerbose() {
-		stdout = os.Stdout
-	} else {
-		stdout = io.Discard
-	}
-	console, _, err := testhelper.NewVirtualTerminal(expect.WithStdout(stdout), expect.WithDefaultTimeout(5*time.Second))
+	console, _, err := testhelper.NewVirtualTerminal(expect.WithStdout(testhelper.VerboseStdout()), expect.WithDefaultTimeout(5*time.Second))
 	assert.NoError(t, err)
 	prompt := NewPrompt(console.Tty(), console.Tty(), console.Tty())
 	prompt.Interactive = true

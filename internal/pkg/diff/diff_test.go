@@ -7,15 +7,17 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func TestDiffOnlyInLocal(t *testing.T) {
+	t.Parallel()
 	projectState := createProjectState(t)
 	branch := &model.Branch{}
 	m := &model.BranchManifest{}
@@ -31,6 +33,7 @@ func TestDiffOnlyInLocal(t *testing.T) {
 }
 
 func TestDiffOnlyInRemote(t *testing.T) {
+	t.Parallel()
 	branch := &model.Branch{}
 	projectState := createProjectState(t)
 	_, err := projectState.SetRemoteState(branch)
@@ -46,6 +49,7 @@ func TestDiffOnlyInRemote(t *testing.T) {
 }
 
 func TestDiffEqual(t *testing.T) {
+	t.Parallel()
 	projectState := createProjectState(t)
 	branchRemote := &model.Branch{
 		BranchKey: model.BranchKey{
@@ -79,6 +83,7 @@ func TestDiffEqual(t *testing.T) {
 }
 
 func TestDiffNotEqual(t *testing.T) {
+	t.Parallel()
 	projectState := createProjectState(t)
 	branchRemote := &model.Branch{
 		BranchKey: model.BranchKey{
@@ -114,6 +119,7 @@ func TestDiffNotEqual(t *testing.T) {
 }
 
 func TestDiffEqualConfig(t *testing.T) {
+	t.Parallel()
 	projectState := createProjectState(t)
 
 	component := &model.Component{
@@ -185,6 +191,7 @@ func TestDiffEqualConfig(t *testing.T) {
 }
 
 func TestDiffNotEqualConfig(t *testing.T) {
+	t.Parallel()
 	projectState := createProjectState(t)
 
 	component := &model.Component{
@@ -270,7 +277,9 @@ func createProjectState(t *testing.T) *state.State {
 	}
 
 	// State is mocked manually in test functions
-	api, _, _ := remote.TestMockedStorageApi(t)
+	project := testproject.GetTestProject(t, env.Empty())
+
+	api := project.Api()
 	options := state.NewOptions(m, api, context.Background(), logger)
 	options.LoadLocalState = false
 	options.LoadRemoteState = false

@@ -16,6 +16,7 @@ import (
 )
 
 func TestLoadTransformationMissingBlockMetaSql(t *testing.T) {
+	t.Parallel()
 	logger, fs, state, objectFiles := createTestFixtures(t)
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
 
@@ -31,6 +32,7 @@ func TestLoadTransformationMissingBlockMetaSql(t *testing.T) {
 }
 
 func TestLoadTransformationMissingCodeMeta(t *testing.T) {
+	t.Parallel()
 	logger, fs, state, objectFiles := createTestFixtures(t)
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
 
@@ -52,6 +54,7 @@ func TestLoadTransformationMissingCodeMeta(t *testing.T) {
 }
 
 func TestLoadTransformationSql(t *testing.T) {
+	t.Parallel()
 	logger, fs, state, objectFiles := createTestFixtures(t)
 	config := objectFiles.Object.(*model.Config)
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
@@ -132,6 +135,7 @@ func TestLoadTransformationSql(t *testing.T) {
 }
 
 func TestLoadTransformationPy(t *testing.T) {
+	t.Parallel()
 	logger, fs, state, objectFiles := createTestFixtures(t)
 	config := objectFiles.Object.(*model.Config)
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)

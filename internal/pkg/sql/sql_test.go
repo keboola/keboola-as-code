@@ -7,6 +7,7 @@ import (
 )
 
 func TestSqlSplitAndJoin(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		comment    string
 		input      string

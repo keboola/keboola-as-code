@@ -13,6 +13,7 @@ import (
 )
 
 func TestPathsStateEmpty(t *testing.T) {
+	t.Parallel()
 	paths, err := loadPathsState(t, "empty")
 	assert.NotNil(t, paths)
 	assert.NoError(t, err)
@@ -26,6 +27,7 @@ func TestPathsStateEmpty(t *testing.T) {
 }
 
 func TestPathsStateComplex(t *testing.T) {
+	t.Parallel()
 	paths, err := loadPathsState(t, "complex")
 	assert.NotNil(t, paths)
 	assert.NoError(t, err)

@@ -9,6 +9,7 @@ import (
 )
 
 func TestNewBufferWriter(t *testing.T) {
+	t.Parallel()
 	writer := NewBufferWriter()
 	_, err := writer.WriteString("test")
 	assert.NoError(t, err)
@@ -16,12 +17,14 @@ func TestNewBufferWriter(t *testing.T) {
 }
 
 func TestNewDebugLogger(t *testing.T) {
+	t.Parallel()
 	logger, writer := NewDebugLogger()
 	logger.Warn("test")
 	assert.Equal(t, "WARN  test\n", writer.String())
 }
 
 func TestConnectTo(t *testing.T) {
+	t.Parallel()
 	writer := NewBufferWriter()
 	otherBuffer := buffer.Buffer{}
 	otherWriter := bufio.NewWriter(&otherBuffer)

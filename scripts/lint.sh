@@ -11,24 +11,17 @@ SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 cd "$SCRIPT_DIR/.."
 pwd
 
-# Check Go files format
-echo "Downloading modules"
-go mod download
-go mod vendor
-echo "Ok."
-echo
+echo "Running go vet ..."
+if ! go vet ./...; then
+    echo "Please fix ^^^ errors. You can try run \"make fix\"."
+    echo
+    exit 1
+fi
 
-# Check modules
-echo "Running go mod tidy/verify ..."
-go mod tidy
-git diff --exit-code -- go.mod go.sum
-go mod verify
-echo "Ok. Tidy: go.mod and go.sum are valid."
-echo
 
 # Run linters
 echo "Running golangci-lint ..."
-if golangci-lint run -c "./build/ci/golangci.yml"; then
+if golangci-lint run --timeout=2m0s -c "./build/ci/golangci.yml"; then
     echo "Ok. The code looks good."
     echo
 else

@@ -1,4 +1,4 @@
-package remote
+package remote_test
 
 import (
 	"sort"
@@ -6,11 +6,16 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
 )
 
 func TestGenerateNewId(t *testing.T) {
-	api, _ := TestStorageApiWithToken(t)
+	t.Parallel()
+	project := testproject.GetTestProject(t, env.Empty())
+	api := project.Api()
+
 	ticket, err := api.GenerateNewId()
 	assert.NoError(t, err)
 	assert.NotNil(t, ticket)
@@ -18,7 +23,10 @@ func TestGenerateNewId(t *testing.T) {
 }
 
 func TestTicketProvider(t *testing.T) {
-	api, _ := TestStorageApiWithToken(t)
+	t.Parallel()
+	project := testproject.GetTestProject(t, env.Empty())
+	api := project.Api()
+
 	tickets := api.NewTicketProvider()
 	values := make([]string, 0)
 

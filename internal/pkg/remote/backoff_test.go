@@ -20,6 +20,7 @@ func (c *TestClock) Advance(d time.Duration) {
 }
 
 func TestBackoff(t *testing.T) {
+	t.Parallel()
 	clock := &TestClock{now: time.Now()}
 	backoff := newBackoff()
 	backoff.Clock = clock

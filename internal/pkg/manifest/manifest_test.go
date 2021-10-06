@@ -13,27 +13,34 @@ import (
 )
 
 type test struct {
+	name string
 	json string
 	data *Content
 }
 
-var cases = []test{
-	{
-		json: minimalJson(),
-		data: minimalStruct(),
-	},
-	{
-		json: fullJson(),
-		data: fullStruct(),
-	},
+func cases() []test {
+	return []test{
+		{
+			name: `minimal`,
+			json: minimalJson(),
+			data: minimalStruct(),
+		},
+		{
+			name: `full`,
+			json: fullJson(),
+			data: fullStruct(),
+		},
+	}
 }
 
 func TestNewManifest(t *testing.T) {
+	t.Parallel()
 	manifest := newTestManifest(t)
 	assert.NotNil(t, manifest)
 }
 
 func TestManifestLoadNotFound(t *testing.T) {
+	t.Parallel()
 	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
 	assert.NoError(t, err)
 
@@ -45,60 +52,73 @@ func TestManifestLoadNotFound(t *testing.T) {
 }
 
 func TestManifestLoad(t *testing.T) {
-	for _, c := range cases {
-		fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
-		assert.NoError(t, err)
+	t.Parallel()
+	for _, c := range cases() {
+		c := c
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
 
-		// Write file
-		path := filesystem.Join(filesystem.MetadataDir, FileName)
-		assert.NoError(t, fs.WriteFile(filesystem.CreateFile(path, c.json)))
+			fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
+			assert.NoError(t, err)
 
-		// Load
-		manifest, err := LoadManifest(fs)
-		assert.NotNil(t, manifest)
-		assert.NoError(t, err)
+			// Write file
+			path := filesystem.Join(filesystem.MetadataDir, FileName)
+			assert.NoError(t, fs.WriteFile(filesystem.CreateFile(path, c.json)))
 
-		// Assert naming (without internal fields)
-		assert.Equal(t, c.data.Naming.Branch, manifest.Content.Naming.Branch)
-		assert.Equal(t, c.data.Naming.Config, manifest.Content.Naming.Config)
-		assert.Equal(t, c.data.Naming.ConfigRow, manifest.Content.Naming.ConfigRow)
+			// Load
+			manifest, err := LoadManifest(fs)
+			assert.NotNil(t, manifest)
+			assert.NoError(t, err)
 
-		// Assert
-		c.data.Naming = model.DefaultNaming()
-		manifest.Naming = model.DefaultNaming()
-		assert.Equal(t, c.data, manifest.Content)
+			// Assert naming (without internal fields)
+			assert.Equal(t, c.data.Naming.Branch, manifest.Content.Naming.Branch)
+			assert.Equal(t, c.data.Naming.Config, manifest.Content.Naming.Config)
+			assert.Equal(t, c.data.Naming.ConfigRow, manifest.Content.Naming.ConfigRow)
+
+			// Assert
+			c.data.Naming = model.DefaultNaming()
+			manifest.Naming = model.DefaultNaming()
+			assert.Equal(t, c.data, manifest.Content)
+		})
 	}
 }
 
 func TestManifestSave(t *testing.T) {
-	for _, c := range cases {
-		// Create
-		m := newTestManifest(t)
-		m.AllowedBranches = c.data.AllowedBranches
-		m.IgnoredComponents = c.data.IgnoredComponents
-		m.Project.Id = c.data.Project.Id
-		for _, branch := range c.data.Branches {
-			assert.NoError(t, m.TrackRecord(branch))
-		}
-		for _, config := range c.data.Configs {
-			assert.NoError(t, m.TrackRecord(config.ConfigManifest))
-			for _, row := range config.Rows {
-				assert.NoError(t, m.TrackRecord(row))
+	t.Parallel()
+	for _, c := range cases() {
+		c := c
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Create
+			m := newTestManifest(t)
+			m.AllowedBranches = c.data.AllowedBranches
+			m.IgnoredComponents = c.data.IgnoredComponents
+			m.Project.Id = c.data.Project.Id
+			for _, branch := range c.data.Branches {
+				assert.NoError(t, m.TrackRecord(branch))
 			}
-		}
+			for _, config := range c.data.Configs {
+				assert.NoError(t, m.TrackRecord(config.ConfigManifest))
+				for _, row := range config.Rows {
+					assert.NoError(t, m.TrackRecord(row))
+				}
+			}
 
-		// Save
-		assert.NoError(t, m.Save())
+			// Save
+			assert.NoError(t, m.Save())
 
-		// Load file
-		path := filesystem.Join(filesystem.MetadataDir, FileName)
-		file, err := m.fs.ReadFile(path, "")
-		assert.NoError(t, err)
-		assert.Equal(t, testhelper.EscapeWhitespaces(c.json), testhelper.EscapeWhitespaces(file.Content))
+			// Load file
+			path := filesystem.Join(filesystem.MetadataDir, FileName)
+			file, err := m.fs.ReadFile(path, "")
+			assert.NoError(t, err)
+			assert.Equal(t, testhelper.EscapeWhitespaces(c.json), testhelper.EscapeWhitespaces(file.Content))
+		})
 	}
 }
 
 func TestManifestValidateEmpty(t *testing.T) {
+	t.Parallel()
 	m := &Manifest{Content: &Content{}}
 	err := m.validate()
 	assert.NotNil(t, err)
@@ -117,6 +137,7 @@ func TestManifestValidateEmpty(t *testing.T) {
 }
 
 func TestManifestValidateMinimal(t *testing.T) {
+	t.Parallel()
 	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
 	assert.NoError(t, err)
 	m := newManifest(0, "", fs)
@@ -125,6 +146,7 @@ func TestManifestValidateMinimal(t *testing.T) {
 }
 
 func TestManifestValidateFull(t *testing.T) {
+	t.Parallel()
 	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
 	assert.NoError(t, err)
 	m := newManifest(0, "", fs)
@@ -133,6 +155,7 @@ func TestManifestValidateFull(t *testing.T) {
 }
 
 func TestManifestValidateBadVersion(t *testing.T) {
+	t.Parallel()
 	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
 	assert.NoError(t, err)
 	m := newManifest(0, "", fs)
@@ -145,6 +168,7 @@ func TestManifestValidateBadVersion(t *testing.T) {
 }
 
 func TestManifestValidateNestedField(t *testing.T) {
+	t.Parallel()
 	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
 	assert.NoError(t, err)
 	m := newManifest(1, "connection.keboola.com", fs)
@@ -165,6 +189,7 @@ func TestManifestValidateNestedField(t *testing.T) {
 }
 
 func TestIsObjectIgnored(t *testing.T) {
+	t.Parallel()
 	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
 	assert.NoError(t, err)
 	m := newManifest(1, "connection.keboola.com", fs)
@@ -205,6 +230,7 @@ func TestIsObjectIgnored(t *testing.T) {
 }
 
 func TestManifestRecordGetParent(t *testing.T) {
+	t.Parallel()
 	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
 	assert.NoError(t, err)
 	m := newManifest(0, "", fs)
@@ -221,6 +247,7 @@ func TestManifestRecordGetParent(t *testing.T) {
 }
 
 func TestManifestRecordGetParentNotFound(t *testing.T) {
+	t.Parallel()
 	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
 	assert.NoError(t, err)
 	m := newManifest(0, "", fs)
@@ -236,6 +263,7 @@ func TestManifestRecordGetParentNotFound(t *testing.T) {
 }
 
 func TestManifestRecordGetParentNil(t *testing.T) {
+	t.Parallel()
 	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
 	assert.NoError(t, err)
 	m := newManifest(0, "", fs)

@@ -1,18 +1,36 @@
 name: GitHub Actions
-on: [push]
+on: [ push ]
 env:
   # Dev docker image, must be same as in docker-compose.yml
-  IMAGE: keboolabot/keboola-as-code-dev
-  IMAGE_TAG: ${{ github.sha }}
+  GO_VERSION: 1.17
 
   # DockerHub login
   DOCKERHUB_USER: "keboolabot"
   DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
-  # Test project in KBC
-  TEST_PROJECT_ID: 8614
-  TEST_KBC_STORAGE_API_HOST: connection.keboola.com
-  TEST_KBC_STORAGE_API_TOKEN: ${{ secrets.TEST_KBC_STORAGE_API_TOKEN_MASTER }}
+  # Test projects in KBC for integration tests
+  # Project name: KBC Internal / [ ci ] Keboola-as-code 1 .. 18
+  TEST_KBC_PROJECTS_LINUX: |
+    connection.keboola.com|8763|${{ secrets.TEST_KBC_PROJECT_8763_TOKEN }};
+    connection.keboola.com|8764|${{ secrets.TEST_KBC_PROJECT_8764_TOKEN }};
+    connection.keboola.com|8765|${{ secrets.TEST_KBC_PROJECT_8765_TOKEN }};
+    connection.keboola.com|8766|${{ secrets.TEST_KBC_PROJECT_8766_TOKEN }};
+    connection.keboola.com|8768|${{ secrets.TEST_KBC_PROJECT_8768_TOKEN }};
+    connection.keboola.com|8769|${{ secrets.TEST_KBC_PROJECT_8769_TOKEN }};
+  TEST_KBC_PROJECTS_MACOS: |
+    connection.keboola.com|8770|${{ secrets.TEST_KBC_PROJECT_8770_TOKEN }};
+    connection.keboola.com|8771|${{ secrets.TEST_KBC_PROJECT_8771_TOKEN }};
+    connection.keboola.com|8772|${{ secrets.TEST_KBC_PROJECT_8772_TOKEN }};
+    connection.keboola.com|8773|${{ secrets.TEST_KBC_PROJECT_8773_TOKEN }};
+    connection.keboola.com|8776|${{ secrets.TEST_KBC_PROJECT_8776_TOKEN }};
+    connection.keboola.com|8775|${{ secrets.TEST_KBC_PROJECT_8775_TOKEN }};
+  TEST_KBC_PROJECTS_WINDOWS: |
+    connection.keboola.com|8777|${{ secrets.TEST_KBC_PROJECT_8777_TOKEN }};
+    connection.keboola.com|8778|${{ secrets.TEST_KBC_PROJECT_8778_TOKEN }};
+    connection.keboola.com|8779|${{ secrets.TEST_KBC_PROJECT_8779_TOKEN }};
+    connection.keboola.com|8780|${{ secrets.TEST_KBC_PROJECT_8780_TOKEN }};
+    connection.keboola.com|8781|${{ secrets.TEST_KBC_PROJECT_8781_TOKEN }};
+    connection.keboola.com|8782|${{ secrets.TEST_KBC_PROJECT_8782_TOKEN }};
 
   # S3 repository
   IAM_USER: keboola-as-code-dist-s3-upload
@@ -28,6 +46,7 @@ env:
   RPM_KEY_PUBLIC: ${{ secrets.RPM_KEY_PUBLIC }}
   APK_KEY_PRIVATE: ${{ secrets.APK_KEY_PRIVATE }}
   APK_KEY_PUBLIC: ${{ secrets.APK_KEY_PUBLIC }}
+
 jobs:
   set_version:
     runs-on: ubuntu-latest
@@ -53,68 +72,71 @@ jobs:
           echo "::set-output name=is_semantic_tag::$IS_SEMANTIC_TAG"
           echo "::set-output name=version::$VERSION"
 
-  build_image:
+  test:
     needs:
       - set_version
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: linux
+            os: ubuntu-latest
+            projects: TEST_KBC_PROJECTS_LINUX
+            experimental: false
+          - name: mac-os
+            os: macos-latest
+            projects: TEST_KBC_PROJECTS_MACOS
+            experimental: false
+          - name: windows
+            os: windows-latest
+            projects: TEST_KBC_PROJECTS_WINDOWS
+            experimental: true
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.experimental }}
+    name: test ${{ matrix.name }}
     steps:
-      - name: Check out the repo
+      - name: Setup line endings
+        run: git config --global core.autocrlf false
+      - name: Checkout code
         uses: actions/checkout@v2
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
+      - name: Install Go
+        uses: actions/setup-go@v2
         with:
-          username: ${{ env.DOCKERHUB_USER }}
-          password: ${{ env.DOCKERHUB_TOKEN }}
-      - name: Build and push
-        id: docker_build
-        uses: docker/build-push-action@v2
-        with:
-          push: true
-          tags: ${{ env.IMAGE }}:${{ env.IMAGE_TAG }}
-          cache-from: type=registry,ref=${{ env.IMAGE }}:buildcache
-          cache-to: type=registry,ref=${{ env.IMAGE }}:buildcache,mode=max
-
-  tests:
-    needs:
-      - set_version
-      - build_image
-    # only one parallel job allowed - used shared testing project
-    concurrency:
-      group: ci
-      cancel-in-progress: false
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out the repo
-        uses: actions/checkout@v2
-      - name: Pull Docker image
-        uses: ./.github/actions/pull-image
-      - name: Go cache
+          go-version: ${{ env.GO_VERSION }}
+      - name: Install tools
+        run: . ./scripts/tools.sh
+        shell: bash
+      - name: Load Go cache
         uses: ./.github/actions/go-cache
         with:
-          key: tests
-      - name: Tests
-        run: docker-compose run --rm -e VERSION -v /tmp/cache-go:/tmp/cache dev make ci
+          key: test
+      - name: Run tests
+        run: make ci
+        shell: bash
         env:
           VERSION: ${{ needs.set_version.outputs.version }}
+          TEST_KBC_PROJECTS: ${{ env[matrix.projects] }}
 
   cross-compile:
     needs:
       - set_version
-      - build_image
-    runs-on: ubuntu-latest
+    runs-on: macos-latest # same as release, shared cache
     steps:
-      - name: Check out the repo
+      - name: Checkout code
         uses: actions/checkout@v2
-      - name: Pull Docker image
-        uses: ./.github/actions/pull-image
-      - name: Go cache
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Install tools
+        run: . ./scripts/tools.sh
+        shell: bash
+      - name: Load Go cache
         uses: ./.github/actions/go-cache
         with:
           key: compile
-      - name: Cross compile
-        run: docker-compose run --rm -e VERSION -v /tmp/cache-go:/tmp/cache dev make build
+      - name: Cross-compile
+        run: make build
+        shell: bash
         env:
           VERSION: ${{ needs.set_version.outputs.version }}
       - name: Upload binary artifacts
@@ -130,7 +152,6 @@ jobs:
   release:
     needs:
       - set_version
-      - build_image
       - tests
       - cross-compile
     # only one parallel job allowed - used shared S3
@@ -163,7 +184,14 @@ jobs:
         uses: ./.github/actions/build-repo-tools
         with:
           type: apk
-      - name: Go cache
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Install tools
+        run: . ./scripts/tools.sh
+        shell: bash
+      - name: Load Go cache
         uses: ./.github/actions/go-cache
         with:
           key: compile
@@ -178,51 +206,6 @@ jobs:
           chmod 0600 /tmp/keys/rpm.key
           echo "$APK_KEY_PRIVATE" > /tmp/keys/apk.key
           chmod 0600 /tmp/keys/apk.key
-      - name: Release
-        run: |
-          docker-compose run --rm \
-          -e GITHUB_TOKEN \
-          -e DEB_KEY_PRIVATE_PATH=/tmp/keys/deb.key \
-          -e RPM_KEY_PRIVATE_PATH=/tmp/keys/rpm.key \
-          -e APK_KEY_PRIVATE_PATH=/tmp/keys/apk.key \
-          -e VERSION \
-          -v /tmp/cache-go:/tmp/cache \
-          -v /tmp/keys:/tmp/keys \
-          -v /s3bucket:/s3bucket \
-          dev make release
-        env:
-          VERSION: ${{ needs.set_version.outputs.version }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Index Linux packages
-        run: ./build/packages/linux/index.sh /s3bucket
-      - name: Upload zipped files to artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: linux
-          path: target/*linux*.zip
-
-  release-mac-os:
-    needs:
-      - set_version
-      - cross-compile
-      - tests
-    runs-on: macos-latest
-    if: startsWith(github.ref, 'refs/tags/') && needs.set_version.outputs.is_semantic_tag == 'true'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Download-Binaries
-        uses: actions/download-artifact@v2
-        with:
-          name: darwin-binaries
-          path: release/
-      - name: Prepare files
-        run: |
-          mkdir release/signed
-          mkdir release/darwin-amd64
-          cp release/*amd64/kbc release/darwin-amd64
-          mkdir release/darwin-arm64
-          cp release/*arm64/kbc release/darwin-arm64
       - name: Import Code-Signing Certificates
         uses: Apple-Actions/import-codesign-certs@v1
         with:
@@ -234,79 +217,122 @@ jobs:
         run: |
           brew tap mitchellh/gon
           brew install mitchellh/gon/gon
-      - name: Sign the mac binaries with Gon
+      - name: Release
+        run: make release
         env:
-          AC_USERNAME: ${{ secrets.AC_USERNAME }}
-          AC_PASSWORD: ${{ secrets.AC_PASSWORD }}
-        run: |
-          gon -log-level=info build/package/mac-os/gon/amd64.json
-          gon -log-level=info build/package/mac-os/gon/arm64.json
-      - name: Rename signed binaries
-        run: |
-          mv release/signed/kbc-amd64.zip release/signed/kbc_${{ needs.set_version.outputs.version }}_darwin_amd64.zip
-          mv release/signed/kbc-arm64.zip release/signed/kbc_${{ needs.set_version.outputs.version }}_darwin_arm64.zip
-      - name: Upload binaries to release
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: release/signed/*
-          tag: ${{ github.ref }}
-          overwrite: true
-          file_glob: true
-      - name: Upload zipped files to artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: darwin
-          path: release/signed
-
-  release-homebrew:
-    needs:
-      - set_version
-      - release-mac-os
-      - release
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/') && needs.set_version.outputs.is_semantic_tag == 'true'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Download Darwin zipped artifacts
-        uses: actions/download-artifact@v2
-        with:
-          name: darwin
-          path: darwin
-      - name: Download Linux zipped artifacts
-        uses: actions/download-artifact@v2
-        with:
-          name: linux
-          path: linux
-      - name: Create Homebrew formulae
-        env:
-          TAG: ${{ needs.set_version.outputs.tag }}
           VERSION: ${{ needs.set_version.outputs.version }}
-        run: |
-          mkdir homebrew
-          export DARWIN_ARM_TARGET_SHA256=$(sha256sum darwin/*darwin_arm64.zip | cut -f 1 -d ' ' )
-          export DARWIN_AMD_TARGET_SHA256=$(sha256sum darwin/*darwin_amd64.zip | cut -f 1 -d ' ')
-          export LINUX_ARM_TARGET_SHA256=$(sha256sum linux/*linux_armv6.zip | cut -f 1 -d ' ' )
-          export LINUX_ARM64_TARGET_SHA256=$(sha256sum linux/*linux_arm64.zip | cut -f 1 -d ' ' )
-          export LINUX_AMD_TARGET_SHA256=$(sha256sum linux/*linux_amd64.zip | cut -f 1 -d ' ' )
-          envsubst < build/package/homebrew/homebrew.template.rb > homebrew/keboola-as-code.rb
-          cat homebrew/keboola-as-code.rb
-      - name: Push formulae to keboola/homebrew-tap repository
-        uses: cpina/github-action-push-to-another-repository@main
-        env:
-          API_TOKEN_GITHUB: ${{ secrets.HOMEBREW_RELEASE_GITHUB_PERSONAL_ACCESS_TOKEN }}
-        with:
-          source-directory: "homebrew"
-          destination-github-username: "keboola"
-          destination-repository-name: "homebrew-tap"
-          target-branch: main
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEB_KEY_PRIVATE_PATH: /tmp/keys/deb.key
+          RPM_KEY_PRIVATE_PATH: /tmp/keys/rpm.key
+          APK_KEY_PRIVATE_PATH: /tmp/keys/apk.key
+      - name: Index Linux packages
+        run: ./build/packages/linux/index.sh /s3bucket
 
+#  release-mac-os:
+#    needs:
+#      - set_version
+#      - cross-compile
+#      - tests
+#    runs-on: macos-latest
+#    if: startsWith(github.ref, 'refs/tags/') && needs.set_version.outputs.is_semantic_tag == 'true'
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v2
+#      - name: Download-Binaries
+#        uses: actions/download-artifact@v2
+#        with:
+#          name: darwin-binaries
+#          path: release/
+#      - name: Prepare files
+#        run: |
+#          mkdir release/signed
+#          mkdir release/darwin-amd64
+#          cp release/*amd64/kbc release/darwin-amd64
+#          mkdir release/darwin-arm64
+#          cp release/*arm64/kbc release/darwin-arm64
+#      - name: Import Code-Signing Certificates
+#        uses: Apple-Actions/import-codesign-certs@v1
+#        with:
+#          # The certificates in a PKCS12 file encoded as a base64 string
+#          p12-file-base64: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
+#          # The password used to import the PKCS12 file.
+#          p12-password: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}
+#      - name: Install gon via HomeBrew for code signing and app notarization
+#        run: |
+#          brew tap mitchellh/gon
+#          brew install mitchellh/gon/gon
+#      - name: Sign the mac binaries with Gon
+#        env:
+#          AC_USERNAME: ${{ secrets.AC_USERNAME }}
+#          AC_PASSWORD: ${{ secrets.AC_PASSWORD }}
+#        run: |
+#          gon -log-level=info build/package/mac-os/gon/amd64.json
+#          gon -log-level=info build/package/mac-os/gon/arm64.json
+#      - name: Rename signed binaries
+#        run: |
+#          mv release/signed/kbc-amd64.zip release/signed/kbc_${{ needs.set_version.outputs.version }}_darwin_amd64.zip
+#          mv release/signed/kbc-arm64.zip release/signed/kbc_${{ needs.set_version.outputs.version }}_darwin_arm64.zip
+#      - name: Upload binaries to release
+#        uses: svenstaro/upload-release-action@v2
+#        with:
+#          repo_token: ${{ secrets.GITHUB_TOKEN }}
+#          file: release/signed/*
+#          tag: ${{ github.ref }}
+#          overwrite: true
+#          file_glob: true
+#      - name: Upload zipped files to artifacts
+#        uses: actions/upload-artifact@v2
+#        with:
+#          name: darwin
+#          path: release/signed
+#
+#  release-homebrew:
+#    needs:
+#      - set_version
+#      - release-mac-os
+#      - release
+#    runs-on: ubuntu-latest
+#    if: startsWith(github.ref, 'refs/tags/') && needs.set_version.outputs.is_semantic_tag == 'true'
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v2
+#      - name: Download Darwin zipped artifacts
+#        uses: actions/download-artifact@v2
+#        with:
+#          name: darwin
+#          path: darwin
+#      - name: Download Linux zipped artifacts
+#        uses: actions/download-artifact@v2
+#        with:
+#          name: linux
+#          path: linux
+#      - name: Create Homebrew formulae
+#        env:
+#          TAG: ${{ needs.set_version.outputs.tag }}
+#          VERSION: ${{ needs.set_version.outputs.version }}
+#        run: |
+#          mkdir homebrew
+#          export DARWIN_ARM_TARGET_SHA256=$(sha256sum darwin/*darwin_arm64.zip | cut -f 1 -d ' ' )
+#          export DARWIN_AMD_TARGET_SHA256=$(sha256sum darwin/*darwin_amd64.zip | cut -f 1 -d ' ')
+#          export LINUX_ARM_TARGET_SHA256=$(sha256sum linux/*linux_armv6.zip | cut -f 1 -d ' ' )
+#          export LINUX_ARM64_TARGET_SHA256=$(sha256sum linux/*linux_arm64.zip | cut -f 1 -d ' ' )
+#          export LINUX_AMD_TARGET_SHA256=$(sha256sum linux/*linux_amd64.zip | cut -f 1 -d ' ' )
+#          envsubst < build/package/homebrew/homebrew.template.rb > homebrew/keboola-as-code.rb
+#          cat homebrew/keboola-as-code.rb
+#      - name: Push formulae to keboola/homebrew-tap repository
+#        uses: cpina/github-action-push-to-another-repository@main
+#        env:
+#          API_TOKEN_GITHUB: ${{ secrets.HOMEBREW_RELEASE_GITHUB_PERSONAL_ACCESS_TOKEN }}
+#        with:
+#          source-directory: "homebrew"
+#          destination-github-username: "keboola"
+#          destination-repository-name: "homebrew-tap"
+#          target-branch: main
+#
   test-install-linux:
     needs:
       - set_version
       - release
-      - release-homebrew
     runs-on: ubuntu-latest
     steps:
       - name: Install on Ubuntu
@@ -382,8 +408,8 @@ jobs:
 
   test-install-mac-os:
     needs:
+      - set_version
       - release
-      - release-homebrew
     runs-on: macos-latest
     steps:
       - name: Install on MacOS by Homebrew
@@ -391,3 +417,5 @@ jobs:
           brew tap keboola/homebrew-tap
           brew install keboola-as-code
           kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
+        env:
+          VERSION: ${{ needs.set_version.outputs.version }}
