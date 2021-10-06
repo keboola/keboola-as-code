@@ -14,11 +14,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-const createShortDescription = "Create branch, config or row"
-const createBranchShortDescription = "Create branch"
-const createConfigShortDescription = "Create config"
-const createRowShortDescription = "Create config row"
-const createConfigOrRowLongDesc = `
+const (
+	createShortDescription       = "Create branch, config or row"
+	createBranchShortDescription = "Create branch"
+	createConfigShortDescription = "Create config"
+	createRowShortDescription    = "Create config row"
+	createConfigOrRowLongDesc    = `
 Creates [object] in the local directory structure.
 A new unique ID is assigned to the new object (there is no need to call "persist").
 To save the new object to the project, call "push" after the "create".
@@ -30,6 +31,8 @@ Tip:
   You can also create [object] by copying
   an existing one and running the "persist" command.
 `
+)
+
 const createBranchLongDesc = `Command "create branch"
 
 - Creates a new dev branch in the project remote state.

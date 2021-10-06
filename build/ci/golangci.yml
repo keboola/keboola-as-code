@@ -54,7 +54,7 @@ linters:
     - gocritic
     - godot
     - godox
-    - gofmt
+    - gofumpt
     - goheader
     - gomoddirectives
     - gomodguard
@@ -88,6 +88,7 @@ linters:
     - whitespace
   disable:
     - goimports # replaced with gci
+    - gofmt # replaced with gofumpt
     # TODO
     - funlen
     - gocyclo
@@ -96,7 +97,6 @@ linters:
     - nestif
     - lll
     - gomnd
-    - gofumpt
 
 issues:
   # List of regexps of issue texts to exclude

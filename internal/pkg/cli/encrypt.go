@@ -11,8 +11,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-const encryptShortDescription = "Find unencrypted values in configurations and encrypt them"
-const encryptLongDescription = `Command "encrypt"
+const (
+	encryptShortDescription = "Find unencrypted values in configurations and encrypt them"
+	encryptLongDescription  = `Command "encrypt"
 
 This command searches for unencrypted values in al local configurations and encrypts them.
 - The encrypted values are properties that begin with '#' and contain string.
@@ -21,6 +22,7 @@ This command searches for unencrypted values in al local configurations and encr
 You can use the "--dry-run" flag to see
 what needs to be done without modifying the files.
 `
+)
 
 func encryptCommand(root *rootCommand) *cobra.Command {
 	cmd := &cobra.Command{

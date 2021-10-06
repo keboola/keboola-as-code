@@ -41,6 +41,7 @@ func (w *WriteCloser) Close() error {
 func (w *WriteCloser) WriteString(s string) (n int, err error) {
 	return w.Write([]byte(s))
 }
+
 func (w *WriteCloser) WriteNoErr(p []byte) {
 	if _, err := w.Write(p); err != nil {
 		panic(fmt.Errorf("cannot write: %w", err))

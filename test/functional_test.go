@@ -77,7 +77,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 
 	// Clean working dir
 	assert.NoError(t, os.RemoveAll(workingDir))
-	assert.NoError(t, os.MkdirAll(workingDir, 0755))
+	assert.NoError(t, os.MkdirAll(workingDir, 0o755))
 	assert.NoError(t, os.Chdir(workingDir))
 
 	// Copy all from "in" dir to "runtime" dir
@@ -189,7 +189,6 @@ func GetTestDirs(t *testing.T, root string) []string {
 
 		return nil
 	})
-
 	if err != nil {
 		t.Fatal(err)
 	}

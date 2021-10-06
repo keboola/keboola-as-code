@@ -8,12 +8,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-const validateShortDescription = `Validate the local project directory`
-const validateLongDescription = `Command "validate"
+const (
+	validateShortDescription = `Validate the local project directory`
+	validateLongDescription  = `Command "validate"
 
 Validate existence and contents of all files in the local project dir.
 For components with a JSON schema, the content must match the schema.
 `
+)
 
 func validateCommand(root *rootCommand) *cobra.Command {
 	cmd := &cobra.Command{

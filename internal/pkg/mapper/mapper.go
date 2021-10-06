@@ -10,6 +10,7 @@ import (
 )
 
 type state = model.State
+
 type Mapper struct {
 	*state
 	logger *zap.SugaredLogger

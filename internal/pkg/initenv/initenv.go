@@ -42,7 +42,6 @@ func CreateEnvFiles(logger *zap.SugaredLogger, fs filesystem.Fs, api *remote.Sto
 
 func createFile(logger *zap.SugaredLogger, fs filesystem.Fs, path, desc string, lines []filesystem.FileLine) error {
 	updated, err := fs.CreateOrUpdateFile(path, desc, lines)
-
 	if err != nil {
 		return err
 	}

@@ -5,6 +5,8 @@ const DevVersionValue = "dev"
 
 // Defined on build time:
 
-var GitCommit = "-"
-var BuildVersion = DevVersionValue
-var BuildDate = "-"
+var (
+	GitCommit    = "-"
+	BuildVersion = DevVersionValue
+	BuildDate    = "-"
+)

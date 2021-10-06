@@ -216,7 +216,7 @@ func (*testCases) TestOpen(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 func (*testCases) TestOpenFile(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(`file.txt`, "foo\n")))
 
-	fd, err := fs.OpenFile(`file.txt`, os.O_RDONLY, 0600)
+	fd, err := fs.OpenFile(`file.txt`, os.O_RDONLY, 0o600)
 	assert.NoError(t, err)
 
 	content, err := io.ReadAll(fd)
