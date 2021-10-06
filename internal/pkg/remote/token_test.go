@@ -24,7 +24,7 @@ func TestApiWithToken(t *testing.T) {
 }
 
 func TestGetToken(t *testing.T) {
-	tokenValue := testhelper.TestTokenMaster()
+	tokenValue := testhelper.TestToken()
 	api, logs := TestStorageApi(t)
 	token, err := api.GetToken(tokenValue)
 	assert.NoError(t, err)

@@ -80,7 +80,7 @@ func TestApiHost() string {
 	return utils.MustGetEnv("TEST_KBC_STORAGE_API_HOST")
 }
 
-func TestTokenMaster() string {
+func TestToken() string {
 	return utils.MustGetEnv("TEST_KBC_STORAGE_API_TOKEN")
 }
 

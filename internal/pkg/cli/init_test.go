@@ -58,7 +58,7 @@ func TestInteractiveInit(t *testing.T) {
 		_, err = c.ExpectString("API token ")
 		assert.NoError(t, err)
 		time.Sleep(20 * time.Millisecond)
-		_, err = c.SendLine(testhelper.TestTokenMaster())
+		_, err = c.SendLine(testhelper.TestToken())
 		assert.NoError(t, err)
 		_, err = c.ExpectString("Allowed project's branches:")
 		assert.NoError(t, err)
