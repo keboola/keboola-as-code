@@ -1,5 +1,8 @@
 .PHONY: build
 
+tools:
+	./scripts/tools.sh
+
 build:
 	goreleaser build --rm-dist --snapshot -f ./build/ci/goreleaser.yml
 build-local:
