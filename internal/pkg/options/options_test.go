@@ -1,7 +1,6 @@
 package options
 
 import (
-	"os"
 	"strings"
 	"testing"
 
@@ -9,14 +8,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
-	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 )
 
 func TestValuesPriority(t *testing.T) {
-	defer testhelper.ResetEnv(t, os.Environ())
-
 	logger := zap.NewNop().Sugar()
 	workingDir := filesystem.Join("foo", "bar")
 	fs, err := aferofs.NewMemoryFs(logger, workingDir)
@@ -31,34 +28,32 @@ func TestValuesPriority(t *testing.T) {
 	options := NewOptions()
 
 	// No values defined
-	err = options.Load(logger, fs, flags)
+	err = options.Load(logger, env.Empty(), fs, flags)
 	assert.NoError(t, err)
 	assert.Equal(t, "", options.ApiHost)
 
 	// 1. Lowest priority, ".env" file from project dir
-	os.Clearenv()
 	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(".env", "KBC_STORAGE_API_TOKEN=1abcdef")))
-	err = options.Load(logger, fs, flags)
+	err = options.Load(logger, env.Empty(), fs, flags)
 	assert.NoError(t, err)
 	assert.Equal(t, "1abcdef", options.ApiToken)
 
 	// 2. Higher priority, ".env" file from working dir
-	os.Clearenv()
 	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(workingDir, ".env"), "KBC_STORAGE_API_TOKEN=2abcdef")))
-	err = options.Load(logger, fs, flags)
+	err = options.Load(logger, env.Empty(), fs, flags)
 	assert.NoError(t, err)
 	assert.Equal(t, "2abcdef", options.ApiToken)
 
 	// 3. Higher priority , ENV defined in OS
-	os.Clearenv()
-	assert.NoError(t, os.Setenv("KBC_STORAGE_API_TOKEN", "3abcdef"))
-	err = options.Load(logger, fs, flags)
+	osEnvs := env.Empty()
+	osEnvs.Set("KBC_STORAGE_API_TOKEN", "3abcdef")
+	err = options.Load(logger, osEnvs, fs, flags)
 	assert.NoError(t, err)
 	assert.Equal(t, "3abcdef", options.ApiToken)
 
 	// 4. The highest priority, flag
 	assert.NoError(t, flags.Set("storage-api-token", "4abcdef"))
-	err = options.Load(logger, fs, flags)
+	err = options.Load(logger, osEnvs, fs, flags)
 	assert.NoError(t, err)
 	assert.Equal(t, "4abcdef", options.ApiToken)
 }

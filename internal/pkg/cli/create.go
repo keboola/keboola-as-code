@@ -91,7 +91,7 @@ func createBranchCommand(root *rootCommand) *cobra.Command {
 			o := root.options
 
 			// This cmd can be called from parent command, so we need bind flags manually
-			if err := o.BindPFlags(cmd.Flags()); err != nil {
+			if err := o.BindFlagsAndEnvs(cmd.Flags()); err != nil {
 				return err
 			}
 
@@ -144,7 +144,7 @@ func createConfigCommand(root *rootCommand) *cobra.Command {
 			o := root.options
 
 			// This cmd can be called from parent command, so we need bind flags manually
-			if err := o.BindPFlags(cmd.Flags()); err != nil {
+			if err := o.BindFlagsAndEnvs(cmd.Flags()); err != nil {
 				return err
 			}
 
@@ -204,7 +204,7 @@ func createRowCommand(root *rootCommand) *cobra.Command {
 			o := root.options
 
 			// This cmd can be called from parent command, so we need bind flags manually
-			if err := o.BindPFlags(cmd.Flags()); err != nil {
+			if err := o.BindFlagsAndEnvs(cmd.Flags()); err != nil {
 				return err
 			}
 

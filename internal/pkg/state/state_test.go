@@ -2,7 +2,6 @@ package state
 
 import (
 	"context"
-	"os"
 	"runtime"
 	"strings"
 	"testing"
@@ -13,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
@@ -41,16 +41,16 @@ func TestLoadStateDifferentProjectId(t *testing.T) {
 }
 
 func TestLoadState(t *testing.T) {
-	defer testhelper.ResetEnv(t, os.Environ())
 	api, _ := remote.TestStorageApiWithToken(t)
-	remote.SetStateOfTestProject(t, api, "minimal.json")
+	envs := env.Empty()
+	remote.SetStateOfTestProject(t, api, "minimal.json", envs)
 
 	// Same IDs in local and remote state
-	utils.MustSetEnv("LOCAL_STATE_MAIN_BRANCH_ID", utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`))
-	utils.MustSetEnv("LOCAL_STATE_GENERIC_CONFIG_ID", utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`))
+	envs.Set("LOCAL_STATE_MAIN_BRANCH_ID", envs.MustGet(`TEST_BRANCH_MAIN_ID`))
+	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`))
 
 	logger, _ := utils.NewDebugLogger()
-	m := loadTestManifest(t, "minimal")
+	m := loadTestManifest(t, envs, "minimal")
 	m.Project.Id = testhelper.TestProjectId()
 
 	stateOptions := NewOptions(m, api, context.Background(), logger)
@@ -64,7 +64,7 @@ func TestLoadState(t *testing.T) {
 		{
 			Remote: &model.Branch{
 				BranchKey: model.BranchKey{
-					Id: cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
+					Id: cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`)),
 				},
 				Name:        "Main",
 				Description: "Main branch",
@@ -72,7 +72,7 @@ func TestLoadState(t *testing.T) {
 			},
 			Local: &model.Branch{
 				BranchKey: model.BranchKey{
-					Id: cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
+					Id: cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`)),
 				},
 				Name:        "Main",
 				Description: "Main branch",
@@ -83,7 +83,7 @@ func TestLoadState(t *testing.T) {
 					Persisted: true,
 				},
 				BranchKey: model.BranchKey{
-					Id: cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
+					Id: cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`)),
 				},
 				Paths: model.Paths{
 					PathInProject: model.PathInProject{
@@ -99,9 +99,9 @@ func TestLoadState(t *testing.T) {
 		{
 			Remote: &model.Config{
 				ConfigKey: model.ConfigKey{
-					BranchId:    cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
+					BranchId:    cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`)),
 					ComponentId: "ex-generic-v2",
-					Id:          utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
+					Id:          envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
 				},
 				Name:              "empty",
 				Description:       "test fixture",
@@ -110,9 +110,9 @@ func TestLoadState(t *testing.T) {
 			},
 			Local: &model.Config{
 				ConfigKey: model.ConfigKey{
-					BranchId:    cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
+					BranchId:    cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`)),
 					ComponentId: "ex-generic-v2",
-					Id:          utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
+					Id:          envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
 				},
 				Name:              "todos",
 				Description:       "todos config",
@@ -139,9 +139,9 @@ func TestLoadState(t *testing.T) {
 					Persisted: true,
 				},
 				ConfigKey: model.ConfigKey{
-					BranchId:    cast.ToInt(utils.MustGetEnv(`TEST_BRANCH_MAIN_ID`)),
+					BranchId:    cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`)),
 					ComponentId: "ex-generic-v2",
-					Id:          utils.MustGetEnv(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
+					Id:          envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
 				},
 				Paths: model.Paths{
 					PathInProject: model.PathInProject{
@@ -158,11 +158,12 @@ func TestLoadState(t *testing.T) {
 
 func TestValidateState(t *testing.T) {
 	// Create state
-	utils.MustSetEnv("LOCAL_STATE_MAIN_BRANCH_ID", `123`)
-	utils.MustSetEnv("LOCAL_STATE_GENERIC_CONFIG_ID", `456`)
+	envs := env.Empty()
+	envs.Set("LOCAL_STATE_MAIN_BRANCH_ID", `123`)
+	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", `456`)
 
 	logger, _ := utils.NewDebugLogger()
-	m := loadTestManifest(t, "minimal")
+	m := loadTestManifest(t, envs, "minimal")
 	m.Project.Id = testhelper.TestProjectId()
 
 	api, httpTransport, _ := remote.TestMockedStorageApi(t)
@@ -205,7 +206,7 @@ config "branch:456/component:keboola.foo/config:234" is not valid:
 	assert.Equal(t, strings.TrimSpace(expectedRemoteError), s.RemoteErrors().Error())
 }
 
-func loadTestManifest(t *testing.T, localState string) *manifest.Manifest {
+func loadTestManifest(t *testing.T, envs *env.Map, localState string) *manifest.Manifest {
 	t.Helper()
 
 	// Prepare temp dir with defined state
@@ -216,7 +217,7 @@ func loadTestManifest(t *testing.T, localState string) *manifest.Manifest {
 	if err := aferocopy.Copy(localStateDir, projectDir); err != nil {
 		t.Fatalf("Copy error: %s", err)
 	}
-	testhelper.ReplaceEnvsDir(projectDir, nil)
+	testhelper.ReplaceEnvsDir(projectDir, envs)
 
 	// Create fs and load manifest
 	fs, err := aferofs.NewLocalFs(zap.NewNop().Sugar(), projectDir, ".")

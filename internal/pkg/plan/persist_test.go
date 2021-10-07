@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
@@ -20,7 +21,8 @@ import (
 )
 
 func TestPersistNoChange(t *testing.T) {
-	m, _ := loadTestManifest(t, initMinimalProjectDir(t))
+	projectDir, _ := initMinimalProjectDir(t)
+	m, _ := loadTestManifest(t, projectDir)
 	api, httpTransport, _ := remote.TestMockedStorageApi(t)
 
 	// Mocked API response
@@ -57,7 +59,8 @@ func TestPersistNoChange(t *testing.T) {
 }
 
 func TestPersistNewConfig(t *testing.T) {
-	m, fs := loadTestManifest(t, initMinimalProjectDir(t))
+	projectDir, envs := initMinimalProjectDir(t)
+	m, fs := loadTestManifest(t, projectDir)
 	api, httpTransport, _ := remote.TestMockedStorageApi(t)
 
 	// Mocked API response
@@ -107,7 +110,7 @@ func TestPersistNewConfig(t *testing.T) {
 	assert.Len(t, plan.actions, 1)
 	assert.Equal(t, &NewConfigAction{
 		Key: model.ConfigKey{
-			BranchId:    cast.ToInt(utils.MustGetEnv(`LOCAL_STATE_MAIN_BRANCH_ID`)),
+			BranchId:    cast.ToInt(envs.MustGet(`LOCAL_STATE_MAIN_BRANCH_ID`)),
 			ComponentId: "ex-generic-v2",
 		},
 		Path:        "extractor/ex-generic-v2/new-config",
@@ -158,7 +161,8 @@ func TestPersistNewConfig(t *testing.T) {
 }
 
 func TestPersistNewConfigRow(t *testing.T) {
-	m, fs := loadTestManifest(t, initMinimalProjectDir(t))
+	projectDir, envs := initMinimalProjectDir(t)
+	m, fs := loadTestManifest(t, projectDir)
 	api, httpTransport, _ := remote.TestMockedStorageApi(t)
 
 	// Mocked API response
@@ -228,7 +232,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 	assert.Len(t, plan.actions, 2)
 	rowAction := &NewRowAction{
 		Key: model.ConfigRowKey{
-			BranchId:    cast.ToInt(utils.MustGetEnv(`LOCAL_STATE_MAIN_BRANCH_ID`)),
+			BranchId:    cast.ToInt(envs.MustGet(`LOCAL_STATE_MAIN_BRANCH_ID`)),
 			ComponentId: "keboola.ex-db-mysql",
 		},
 		Path:        "rows/some-row",
@@ -236,7 +240,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 	}
 	configAction := &NewConfigAction{
 		Key: model.ConfigKey{
-			BranchId:    cast.ToInt(utils.MustGetEnv(`LOCAL_STATE_MAIN_BRANCH_ID`)),
+			BranchId:    cast.ToInt(envs.MustGet(`LOCAL_STATE_MAIN_BRANCH_ID`)),
 			ComponentId: "keboola.ex-db-mysql",
 		},
 		Path:        "extractor/keboola.ex-db-mysql/new-config",
@@ -322,7 +326,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 }
 
 func TestPersistDeleted(t *testing.T) {
-	projectDir := initMinimalProjectDir(t)
+	projectDir, envs := initMinimalProjectDir(t)
 	m, _ := loadTestManifest(t, projectDir)
 	api, httpTransport, _ := remote.TestMockedStorageApi(t)
 
@@ -343,7 +347,7 @@ func TestPersistDeleted(t *testing.T) {
 	httpTransport.RegisterResponder("GET", `=~/storage/components/keboola.ex-db-mysql`, getMySqlExResponder)
 
 	// Update manifest, add fake records
-	branchId := cast.ToInt(utils.MustGetEnv(`LOCAL_STATE_MAIN_BRANCH_ID`))
+	branchId := cast.ToInt(envs.MustGet(`LOCAL_STATE_MAIN_BRANCH_ID`))
 	missingConfig := &model.ConfigManifest{
 		ConfigKey: model.ConfigKey{
 			BranchId:    branchId,
@@ -404,11 +408,12 @@ func TestPersistDeleted(t *testing.T) {
 	assert.False(t, rowFound)
 }
 
-func initMinimalProjectDir(t *testing.T) string {
+func initMinimalProjectDir(t *testing.T) (string, *env.Map) {
 	t.Helper()
 
-	utils.MustSetEnv("LOCAL_STATE_MAIN_BRANCH_ID", "111")
-	utils.MustSetEnv("LOCAL_STATE_GENERIC_CONFIG_ID", "456")
+	envs := env.Empty()
+	envs.Set("LOCAL_STATE_MAIN_BRANCH_ID", "111")
+	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", "456")
 
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filesystem.Dir(testFile)
@@ -417,7 +422,7 @@ func initMinimalProjectDir(t *testing.T) string {
 	if err != nil {
 		t.Fatalf("Copy error: %s", err)
 	}
-	testhelper.ReplaceEnvsDir(projectDir, nil)
+	testhelper.ReplaceEnvsDir(projectDir, envs)
 
-	return projectDir
+	return projectDir, envs
 }

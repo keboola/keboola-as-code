@@ -32,7 +32,9 @@ linters-settings:
       # No "filepath" package, use "internal/pkg/filesystem" package instead
       - ^filepath\..*$
       # "httpmock" singleton is forbidden, it doesn't work in parallel tests, use client.Transport = httpmock.NewMockTransport() instead
-      - ^httpmock\.(Activate|ActivateNonDefault|ActivateNonDefault|DeactivateAndReset|RegisterResponder|GetCallCountInfo$)$
+      - ^httpmock\.(Activate|ActivateNonDefault|ActivateNonDefault|DeactivateAndReset|RegisterResponder|GetCallCountInfo)$
+      # Os ENVs singleton is forbidden, use env.Map instead
+      - ^os\.(Setenv|Getenv|Unsetenv|Lookupenv|Clearenv)$
 
 # https://golangci-lint.run/usage/linters
 linters:
@@ -72,7 +74,6 @@ linters:
     - nakedret
     - nilerr
     - noctx
-    - nolintlint
     - predeclared
     - promlinter
     - rowserrcheck
@@ -91,6 +92,7 @@ linters:
   disable:
     - goimports # replaced with gci
     - gofmt # replaced with gofumpt
+    - nolintlint # strange behavior
     # TODO
     - funlen
     - gocyclo

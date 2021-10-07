@@ -20,6 +20,7 @@ import (
 	"github.com/umisama/go-regexpcache"
 	"go.uber.org/zap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
@@ -30,23 +31,30 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-// EnvTicketProvider allows you to generate new unique IDs via an ENV variable in the test.
-func CreateEnvTicketProvider(api *remote.StorageApi) testhelper.EnvProvider {
-	return func(name string) string {
-		name = strings.Trim(name, "%")
-		nameRegexp := regexpcache.MustCompile(`^TEST_NEW_TICKET_\d+$`)
-		if _, found := os.LookupEnv(name); !found && nameRegexp.MatchString(name) {
-			ticket, err := api.GenerateNewId()
-			if err != nil {
-				panic(err)
-			}
+type envTicketProvider struct {
+	api  *remote.StorageApi
+	envs *env.Map
+}
 
-			utils.MustSetEnv(name, ticket.Id)
-			return ticket.Id
+// EnvTicketProvider allows you to generate new unique IDs via an ENV variable in the test.
+func CreateEnvTicketProvider(api *remote.StorageApi, envs *env.Map) testhelper.EnvProvider {
+	return &envTicketProvider{api, envs}
+}
+
+func (p *envTicketProvider) MustGet(key string) string {
+	key = strings.Trim(key, "%")
+	nameRegexp := regexpcache.MustCompile(`^TEST_NEW_TICKET_\d+$`)
+	if _, found := p.envs.Lookup(key); !found && nameRegexp.MatchString(key) {
+		ticket, err := p.api.GenerateNewId()
+		if err != nil {
+			panic(err)
 		}
 
-		return testhelper.DefaultEnvProvider(name)
+		p.envs.Set(key, ticket.Id)
+		return ticket.Id
 	}
+
+	return p.envs.MustGet(key)
 }
 
 // TestFunctional runs one functional test per each sub-directory.
@@ -73,7 +81,6 @@ func TestFunctional(t *testing.T) {
 // RunFunctionalTest runs one functional test.
 func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) {
 	t.Helper()
-	defer testhelper.ResetEnv(t, os.Environ())
 
 	// Clean working dir
 	assert.NoError(t, os.RemoveAll(workingDir))
@@ -95,19 +102,21 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 
 	// Setup KBC project state
 	projectStateFilePath := filepath.Join(testDir, "initial-state.json")
+	envs, err := env.FromOs()
+	assert.NoError(t, err)
 	if testhelper.IsFile(projectStateFilePath) {
-		remote.SetStateOfTestProject(t, api, projectStateFilePath)
+		remote.SetStateOfTestProject(t, api, projectStateFilePath, envs)
 	}
 
 	// Create ENV provider
-	envProvider := CreateEnvTicketProvider(api)
+	envProvider := CreateEnvTicketProvider(api, envs)
 
 	// Replace all %%ENV_VAR%% in all files in the working directory
 	testhelper.ReplaceEnvsDir(workingDir, envProvider)
 
 	// Load command arguments from file
 	argsFile := filepath.Join(testDir, "args")
-	argsStr := testhelper.ReplaceEnvsString(strings.TrimSpace(testhelper.GetFileContent(argsFile)), nil)
+	argsStr := testhelper.ReplaceEnvsString(strings.TrimSpace(testhelper.GetFileContent(argsFile)), envProvider)
 	args, err := shlex.Split(argsStr)
 	if err != nil {
 		t.Fatalf("Cannot parse args \"%s\": %s", argsStr, err)
@@ -210,8 +219,8 @@ func AssertExpectations(
 	t.Helper()
 
 	// Compare expected values
-	expectedStdout := testhelper.ReplaceEnvsString(testhelper.GetFileContent(filepath.Join(testDir, "expected-stdout")), nil)
-	expectedStderr := testhelper.ReplaceEnvsString(testhelper.GetFileContent(filepath.Join(testDir, "expected-stderr")), nil)
+	expectedStdout := testhelper.ReplaceEnvsString(testhelper.GetFileContent(filepath.Join(testDir, "expected-stdout")), envProvider)
+	expectedStderr := testhelper.ReplaceEnvsString(testhelper.GetFileContent(filepath.Join(testDir, "expected-stderr")), envProvider)
 	expectedCodeStr := testhelper.GetFileContent(filepath.Join(testDir, "expected-code"))
 	expectedCode, _ := strconv.ParseInt(strings.TrimSpace(expectedCodeStr), 10, 32)
 	assert.Equal(

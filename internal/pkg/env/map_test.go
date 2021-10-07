@@ -55,8 +55,22 @@ func TestEnvMap(t *testing.T) {
 	assert.Equal(t, "A=\"123\"\nX=\"Y\"", str)
 }
 
+func TestEnvMapFromMap(t *testing.T) {
+	data := map[string]string{
+		`A`: `123`,
+		`B`: `456`,
+	}
+
+	m := FromMap(data)
+	assert.Equal(t, `123`, m.Get(`A`))
+	assert.Equal(t, `456`, m.Get(`B`))
+	assert.Equal(t, []string{`A`, `B`}, m.Keys())
+
+	assert.Equal(t, data, m.ToMap())
+}
+
 func TestEnvMapFromOs(t *testing.T) {
-	assert.NoError(t, os.Setenv(`Foo`, `bar`))
+	assert.NoError(t, os.Setenv(`Foo`, `bar`)) // nolint forbidigo
 	m, err := FromOs()
 	assert.NotNil(t, m)
 	assert.NoError(t, err)
@@ -98,4 +112,3 @@ func TestEnvMapMergeOverwrite(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "A=\"1\"\nB=\"20\"\nC=\"30\"", str)
 }
-

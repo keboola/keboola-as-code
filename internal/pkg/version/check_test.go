@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/build"
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -45,11 +46,8 @@ func createMockedChecker(t *testing.T) (*checker, *utils.Writer) {
 	t.Helper()
 
 	logger, logs := utils.NewDebugLogger()
-	c := NewChecker(context.Background(), logger)
+	c := NewChecker(context.Background(), logger, env.Empty())
 	resty := c.api.GetRestyClient()
-
-	// Version check are disabled in tests by default
-	utils.MustSetEnv(EnvVersionCheck, "")
 
 	// Set short retry delay in tests
 	resty.RetryWaitTime = 1 * time.Millisecond

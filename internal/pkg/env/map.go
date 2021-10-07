@@ -23,6 +23,14 @@ func Empty() *Map {
 	}
 }
 
+func FromMap(data map[string]string) *Map {
+	m := Empty()
+	for k, v := range data {
+		m.Set(k, v)
+	}
+	return m
+}
+
 func FromOs() (*Map, error) {
 	m := Empty()
 	envs, err := godotenv.Unmarshal(strings.Join(os.Environ(), "\n"))
@@ -39,6 +47,14 @@ func FromOs() (*Map, error) {
 
 func (m *Map) ToString() (string, error) {
 	return godotenv.Marshal(m.data)
+}
+
+func (m *Map) ToMap() map[string]string {
+	data := make(map[string]string)
+	for k, v := range m.data {
+		data[k] = v
+	}
+	return data
 }
 
 func (m *Map) Keys() []string {

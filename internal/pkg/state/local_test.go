@@ -2,7 +2,6 @@ package state
 
 import (
 	"context"
-	"os"
 	"runtime"
 	"testing"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
@@ -21,7 +21,6 @@ import (
 )
 
 func TestLoadLocalStateMinimal(t *testing.T) {
-	defer testhelper.ResetEnv(t, os.Environ())
 	m := loadManifest(t, "minimal")
 	state := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
@@ -43,7 +42,6 @@ func TestLoadLocalStateMinimal(t *testing.T) {
 }
 
 func TestLoadLocalStateComplex(t *testing.T) {
-	defer testhelper.ResetEnv(t, os.Environ())
 	m := loadManifest(t, "complex")
 	state := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
@@ -97,7 +95,6 @@ func TestLoadLocalStateComplex(t *testing.T) {
 }
 
 func TestLoadLocalStateAllowedBranches(t *testing.T) {
-	defer testhelper.ResetEnv(t, os.Environ())
 	m := loadManifest(t, "minimal")
 	m.Content.AllowedBranches = model.AllowedBranches{"main"}
 	state := loadLocalTestState(t, m)
@@ -106,7 +103,6 @@ func TestLoadLocalStateAllowedBranches(t *testing.T) {
 }
 
 func TestLoadLocalStateAllowedBranchesError(t *testing.T) {
-	defer testhelper.ResetEnv(t, os.Environ())
 	m := loadManifest(t, "complex")
 	m.Content.AllowedBranches = model.AllowedBranches{"main"}
 	state := loadLocalTestState(t, m)
@@ -115,7 +111,6 @@ func TestLoadLocalStateAllowedBranchesError(t *testing.T) {
 }
 
 func TestLoadLocalStateBranchMissingMetaJson(t *testing.T) {
-	defer testhelper.ResetEnv(t, os.Environ())
 	m := loadManifest(t, "branch-missing-meta-json")
 	state := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
@@ -124,7 +119,6 @@ func TestLoadLocalStateBranchMissingMetaJson(t *testing.T) {
 }
 
 func TestLoadLocalStateBranchMissingDescription(t *testing.T) {
-	defer testhelper.ResetEnv(t, os.Environ())
 	m := loadManifest(t, "branch-missing-description")
 	state := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
@@ -133,7 +127,6 @@ func TestLoadLocalStateBranchMissingDescription(t *testing.T) {
 }
 
 func TestLoadLocalStateConfigMissingConfigJson(t *testing.T) {
-	defer testhelper.ResetEnv(t, os.Environ())
 	m := loadManifest(t, "config-missing-config-json")
 	state := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
@@ -142,7 +135,6 @@ func TestLoadLocalStateConfigMissingConfigJson(t *testing.T) {
 }
 
 func TestLoadLocalStateConfigMissingMetaJson(t *testing.T) {
-	defer testhelper.ResetEnv(t, os.Environ())
 	m := loadManifest(t, "config-missing-meta-json")
 	state := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
@@ -151,7 +143,6 @@ func TestLoadLocalStateConfigMissingMetaJson(t *testing.T) {
 }
 
 func TestLoadLocalStateConfigMissingDescription(t *testing.T) {
-	defer testhelper.ResetEnv(t, os.Environ())
 	m := loadManifest(t, "config-missing-description")
 	state := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
@@ -160,7 +151,6 @@ func TestLoadLocalStateConfigMissingDescription(t *testing.T) {
 }
 
 func TestLoadLocalStateConfigRowMissingConfigJson(t *testing.T) {
-	defer testhelper.ResetEnv(t, os.Environ())
 	m := loadManifest(t, "config-row-missing-config-json")
 	state := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
@@ -169,7 +159,6 @@ func TestLoadLocalStateConfigRowMissingConfigJson(t *testing.T) {
 }
 
 func TestLoadLocalStateConfigRowMissingMetaJson(t *testing.T) {
-	defer testhelper.ResetEnv(t, os.Environ())
 	m := loadManifest(t, "config-row-missing-meta-json")
 	state := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
@@ -178,7 +167,6 @@ func TestLoadLocalStateConfigRowMissingMetaJson(t *testing.T) {
 }
 
 func TestLoadLocalStateBranchInvalidMetaJson(t *testing.T) {
-	defer testhelper.ResetEnv(t, os.Environ())
 	m := loadManifest(t, "branch-invalid-meta-json")
 	state := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
@@ -187,7 +175,6 @@ func TestLoadLocalStateBranchInvalidMetaJson(t *testing.T) {
 }
 
 func TestLoadLocalStateConfigRowMissingDescription(t *testing.T) {
-	defer testhelper.ResetEnv(t, os.Environ())
 	m := loadManifest(t, "config-row-missing-description")
 	state := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
@@ -196,7 +183,6 @@ func TestLoadLocalStateConfigRowMissingDescription(t *testing.T) {
 }
 
 func TestLoadLocalStateConfigInvalidConfigJson(t *testing.T) {
-	defer testhelper.ResetEnv(t, os.Environ())
 	m := loadManifest(t, "config-invalid-config-json")
 	state := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
@@ -205,7 +191,6 @@ func TestLoadLocalStateConfigInvalidConfigJson(t *testing.T) {
 }
 
 func TestLoadLocalStateConfigInvalidMetaJson(t *testing.T) {
-	defer testhelper.ResetEnv(t, os.Environ())
 	m := loadManifest(t, "config-invalid-meta-json")
 	state := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
@@ -214,7 +199,6 @@ func TestLoadLocalStateConfigInvalidMetaJson(t *testing.T) {
 }
 
 func TestLoadLocalStateConfigRowInvalidConfigJson(t *testing.T) {
-	defer testhelper.ResetEnv(t, os.Environ())
 	m := loadManifest(t, "config-row-invalid-config-json")
 	state := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
@@ -223,7 +207,6 @@ func TestLoadLocalStateConfigRowInvalidConfigJson(t *testing.T) {
 }
 
 func TestLoadLocalStateConfigRowInvalidMetaJson(t *testing.T) {
-	defer testhelper.ResetEnv(t, os.Environ())
 	m := loadManifest(t, "config-row-invalid-meta-json")
 	state := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
@@ -268,10 +251,11 @@ func loadLocalTestState(t *testing.T, m *manifest.Manifest) *State {
 func loadManifest(t *testing.T, projectDirName string) *manifest.Manifest {
 	t.Helper()
 
-	utils.MustSetEnv("LOCAL_STATE_MAIN_BRANCH_ID", "111")
-	utils.MustSetEnv("LOCAL_STATE_MY_BRANCH_ID", "123")
-	utils.MustSetEnv("LOCAL_STATE_GENERIC_CONFIG_ID", "456")
-	utils.MustSetEnv("LOCAL_STATE_MYSQL_CONFIG_ID", "896")
+	envs := env.Empty()
+	envs.Set("LOCAL_STATE_MAIN_BRANCH_ID", "111")
+	envs.Set("LOCAL_STATE_MY_BRANCH_ID", "123")
+	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", "456")
+	envs.Set("LOCAL_STATE_MYSQL_CONFIG_ID", "896")
 
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filesystem.Dir(testFile)
@@ -283,7 +267,7 @@ func loadManifest(t *testing.T, projectDirName string) *manifest.Manifest {
 	if err != nil {
 		t.Fatalf("Copy error: %s", err)
 	}
-	testhelper.ReplaceEnvsDir(projectDir, nil)
+	testhelper.ReplaceEnvsDir(projectDir, envs)
 
 	// Load manifest
 	fs, err := aferofs.NewLocalFs(zap.NewNop().Sugar(), projectDir, ".")

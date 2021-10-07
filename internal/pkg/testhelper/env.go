@@ -1,3 +1,4 @@
+// nolint forbidigo
 package testhelper
 
 import (
@@ -7,27 +8,20 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"testing"
 
 	"github.com/spf13/cast"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-type EnvProvider func(s string) string
-
-func DefaultEnvProvider(s string) string {
-	name := strings.Trim(s, "%")
-	return utils.MustGetEnv(name)
+type EnvProvider interface {
+	MustGet(key string) string
 }
 
 func ReplaceEnvsString(str string, provider EnvProvider) string {
-	if provider == nil {
-		provider = DefaultEnvProvider
-	}
 	return regexp.
 		MustCompile(`%%[a-zA-Z0-9\-_]+%%`).
-		ReplaceAllStringFunc(str, provider)
+		ReplaceAllStringFunc(str, func(s string) string {
+			return provider.MustGet(strings.Trim(s, `%`))
+		})
 }
 
 func ReplaceEnvsFile(path string, provider EnvProvider) {
@@ -64,28 +58,16 @@ func ReplaceEnvsDir(root string, provider EnvProvider) {
 	}
 }
 
-// ResetEnv used from https://golang.org/src/os/env_test.go
-func ResetEnv(t *testing.T, origEnv []string) {
-	t.Helper()
-	os.Clearenv()
-	for _, pair := range origEnv {
-		i := strings.Index(pair[1:], "=") + 1
-		if err := os.Setenv(pair[:i], pair[i+1:]); err != nil {
-			t.Errorf("Setenv(%q, %q) failed during reset: %v", pair[:i], pair[i+1:], err)
-		}
-	}
-}
-
 func TestApiHost() string {
-	return utils.MustGetEnv("TEST_KBC_STORAGE_API_HOST")
+	return os.Getenv("TEST_KBC_STORAGE_API_HOST")
 }
 
 func TestToken() string {
-	return utils.MustGetEnv("TEST_KBC_STORAGE_API_TOKEN")
+	return os.Getenv("TEST_KBC_STORAGE_API_TOKEN")
 }
 
 func TestProjectId() int {
-	str := utils.MustGetEnv("TEST_PROJECT_ID")
+	str := os.Getenv("TEST_PROJECT_ID")
 	value, err := strconv.Atoi(str)
 	if err != nil {
 		panic(fmt.Errorf("invalid integer \"%s\": %w", str, err))
