@@ -108,27 +108,12 @@ func (p *Prompt) Ask(q *Question) (result string, ok bool) {
 	return result, p.handleError(err)
 }
 
-func (p *Prompt) Select(s *Select) (result string, ok bool) {
-	// Ask only in the interactive terminal
-	if !p.Interactive {
-		return "", false
-	}
+func (p *Prompt) Select(s *Select) (value string, ok bool) {
+	return value, p.doSelect(s, &value)
+}
 
-	// Print description
-	if len(s.Description) > 0 {
-		p.Printf("\n%s\n", s.Description)
-	} else {
-		p.Printf("\n")
-	}
-
-	// Validator
-	opts := p.getOpts()
-	if s.Validator != nil {
-		opts = append(opts, survey.WithValidator(s.Validator))
-	}
-
-	err := survey.AskOne(&survey.Select{Message: s.Label, Help: s.Help, Options: s.Options, Default: s.Default}, &result, opts...)
-	return result, p.handleError(err)
+func (p *Prompt) SelectIndex(s *Select) (index int, ok bool) {
+	return index, p.doSelect(s, &index)
 }
 
 func (p *Prompt) MultiSelect(s *Select) (result []string, ok bool) {
@@ -233,4 +218,27 @@ func isInteractiveTerminal() bool {
 	}
 
 	return true
+}
+
+func (p *Prompt) doSelect(s *Select, result interface{}) bool {
+	// Ask only in the interactive terminal
+	if !p.Interactive {
+		return false
+	}
+
+	// Print description
+	if len(s.Description) > 0 {
+		p.Printf("\n%s\n", s.Description)
+	} else {
+		p.Printf("\n")
+	}
+
+	// Validator
+	opts := p.getOpts()
+	if s.Validator != nil {
+		opts = append(opts, survey.WithValidator(s.Validator))
+	}
+
+	err := survey.AskOne(&survey.Select{Message: s.Label, Help: s.Help, Options: s.Options, Default: s.Default}, result, opts...)
+	return p.handleError(err)
 }
