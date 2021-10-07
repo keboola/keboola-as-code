@@ -20,7 +20,7 @@ func createTestFixtures(t *testing.T, targetComponentId string) (*zap.SugaredLog
 	fs, err := aferofs.NewMemoryFs(logger, ".")
 	assert.NoError(t, err)
 
-	state := model.NewState(zap.NewNop().Sugar(), fs, model.NewComponentsMap(nil))
+	state := model.NewState(zap.NewNop().Sugar(), fs, model.NewComponentsMap(nil), model.SortByPath)
 
 	// Component
 	state.Components().Set(&model.Component{
