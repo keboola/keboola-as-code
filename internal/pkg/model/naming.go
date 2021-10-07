@@ -86,7 +86,7 @@ func (n Naming) Detach(key Key) {
 
 func (n Naming) ensureUniquePath(key Key, p PathInProject) PathInProject {
 	p = n.makeUniquePath(key, p)
-	n.Attach(key, p.RelativePath())
+	n.Attach(key, p.Path())
 	return p
 }
 
@@ -105,7 +105,7 @@ func (n Naming) makeUniquePath(key Key, p PathInProject) PathInProject {
 	// Add a suffix to the path if it is not unique
 	suffix := 0
 	for {
-		foundKey, found := n.usedByPath[p.RelativePath()]
+		foundKey, found := n.usedByPath[p.Path()]
 		if !found || foundKey == keyStr {
 			break
 		}
@@ -244,7 +244,7 @@ func (n Naming) CodePath(parentPath string, code *Code) PathInProject {
 }
 
 func (n Naming) CodeFilePath(code *Code) string {
-	return filesystem.Join(code.RelativePath(), code.CodeFileName)
+	return filesystem.Join(code.Path(), code.CodeFileName)
 }
 
 func (n Naming) SharedCodeFilePath(parentPath, targetComponentId string) string {

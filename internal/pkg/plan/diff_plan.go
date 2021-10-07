@@ -40,7 +40,7 @@ func (p *DiffPlan) Log(writer *log.WriteCloser) {
 	writer.WriteStringNoErr(fmt.Sprintf(`Plan for "%s" operation:`, p.Name()))
 	actions := p.actions
 	sort.SliceStable(actions, func(i, j int) bool {
-		return actions[i].RelativePath() < actions[j].RelativePath()
+		return actions[i].Path() < actions[j].Path()
 	})
 
 	if len(actions) == 0 {

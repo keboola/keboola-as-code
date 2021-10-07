@@ -35,7 +35,7 @@ func Save(logger *zap.SugaredLogger, fs filesystem.Fs, naming model.Naming, stat
 		naming:    naming,
 		state:     state,
 		config:    files.Object.(*model.Config),
-		configDir: files.Record.RelativePath(),
+		configDir: files.Record.Path(),
 		errors:    utils.NewMultiError(),
 	}
 	return w.save()
@@ -71,7 +71,7 @@ func (w *writer) save() error {
 			code.ComponentId = w.config.ComponentId
 			code.ConfigId = w.config.Id
 			code.Index = codeIndex
-			code.PathInProject = w.naming.CodePath(block.RelativePath(), code)
+			code.PathInProject = w.naming.CodePath(block.Path(), code)
 			code.CodeFileName = w.naming.CodeFileName(w.config.ComponentId)
 		}
 
@@ -94,13 +94,13 @@ func (w *writer) save() error {
 func (w *writer) generateBlockFiles(block *model.Block) {
 	// Validate
 	if err := validator.Validate(block); err != nil {
-		w.errors.Append(utils.PrefixError(fmt.Sprintf(`invalid block \"%s\"`, block.RelativePath()), err))
+		w.errors.Append(utils.PrefixError(fmt.Sprintf(`invalid block \"%s\"`, block.Path()), err))
 		return
 	}
 
 	// Create metadata file
 	if metadata := utils.MapFromTaggedFields(model.MetaFileTag, block); metadata != nil {
-		metadataPath := w.naming.MetaFilePath(block.RelativePath())
+		metadataPath := w.naming.MetaFilePath(block.Path())
 		w.createMetadataFile(metadataPath, `block metadata`, metadata)
 	}
 
@@ -113,7 +113,7 @@ func (w *writer) generateBlockFiles(block *model.Block) {
 func (w *writer) generateCodeFiles(code *model.Code) {
 	// Create metadata file
 	if metadata := utils.MapFromTaggedFields(model.MetaFileTag, code); metadata != nil {
-		metadataPath := w.naming.MetaFilePath(code.RelativePath())
+		metadataPath := w.naming.MetaFilePath(code.Path())
 		w.createMetadataFile(metadataPath, `code metadata`, metadata)
 	}
 

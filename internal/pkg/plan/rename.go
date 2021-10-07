@@ -29,13 +29,13 @@ func (b *renamePlanBuilder) build() ([]*RenameAction, error) {
 		if err := b.LocalManager().UpdatePaths(object, false); err != nil {
 			return nil, err
 		}
-		action.OldPath = object.RelativePath()
+		action.OldPath = object.Path()
 
 		// Rename
 		if err := b.LocalManager().UpdatePaths(object, true); err != nil {
 			return nil, err
 		}
-		action.NewPath = object.RelativePath()
+		action.NewPath = object.Path()
 
 		// Should be renamed?
 		if action.OldPath != action.NewPath {
@@ -77,11 +77,11 @@ func (b *renamePlanBuilder) renameBlock(block *model.Block) {
 
 	// Store old path
 	action := &RenameAction{}
-	action.OldPath = block.RelativePath()
+	action.OldPath = block.Path()
 
 	// Rename
 	b.LocalManager().UpdateBlockPath(block, true)
-	action.NewPath = block.RelativePath()
+	action.NewPath = block.Path()
 	if action.OldPath != action.NewPath {
 		b.actions = append(b.actions, action)
 	}
@@ -98,11 +98,11 @@ func (b *renamePlanBuilder) renameCode(block *model.Block, code *model.Code) {
 
 	// Store old path
 	action := &RenameAction{}
-	action.OldPath = code.RelativePath()
+	action.OldPath = code.Path()
 
 	// Rename
 	b.LocalManager().UpdateCodePath(block, code, true)
-	action.NewPath = code.RelativePath()
+	action.NewPath = code.Path()
 	if action.OldPath != action.NewPath {
 		b.actions = append(b.actions, action)
 	}

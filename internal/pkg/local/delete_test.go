@@ -17,15 +17,15 @@ func TestLocalDeleteModel(t *testing.T) {
 	_, found := manager.manifest.GetRecord(record.Key())
 	assert.True(t, found)
 
-	dirPath := record.RelativePath()
+	dirPath := record.Path()
 
-	metaFilePath := manager.Naming().MetaFilePath(record.RelativePath())
+	metaFilePath := manager.Naming().MetaFilePath(record.Path())
 	metaFile := `{
   "myKey": "3",
   "Meta2": "4"
 }
 `
-	configFilePath := manager.Naming().ConfigFilePath(record.RelativePath())
+	configFilePath := manager.Naming().ConfigFilePath(record.Path())
 	configFile := `{
   "foo": "bar"
 }

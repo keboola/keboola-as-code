@@ -20,8 +20,8 @@ func (m *Manager) DeleteObject(record model.Record) error {
 	m.manifest.DeleteRecord(record)
 
 	// Remove dir
-	if err := m.fs.Remove(record.RelativePath()); err != nil {
-		errors.Append(utils.PrefixError(fmt.Sprintf(`cannot delete directory "%s"`, record.RelativePath()), err))
+	if err := m.fs.Remove(record.Path()); err != nil {
+		errors.Append(utils.PrefixError(fmt.Sprintf(`cannot delete directory "%s"`, record.Path()), err))
 	}
 
 	return errors.ErrorOrNil()

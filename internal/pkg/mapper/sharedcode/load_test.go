@@ -23,7 +23,7 @@ func TestSharedCodeLoadOk(t *testing.T) {
 	naming := model.DefaultNaming()
 
 	// Write file
-	codeFilePath := filesystem.Join(naming.SharedCodeFilePath(objectFiles.Record.RelativePath(), targetComponentId))
+	codeFilePath := filesystem.Join(naming.SharedCodeFilePath(objectFiles.Record.Path(), targetComponentId))
 	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(codeFilePath, `foo bar`)))
 
 	// Load

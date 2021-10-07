@@ -44,7 +44,7 @@ func diffCommand(root *rootCommand) *cobra.Command {
 					for _, result := range diffResults.Results {
 						if result.State != diff.ResultEqual {
 							// Message
-							msg := fmt.Sprintf("%s %s %s", result.Mark(), result.Kind().Abbr, result.RelativePath())
+							msg := fmt.Sprintf("%s %s %s", result.Mark(), result.Kind().Abbr, result.Path())
 							if !printDetails && len(result.ChangedFields) > 0 {
 								msg += " | changed: " + strings.Join(result.ChangedFields, ", ")
 							}

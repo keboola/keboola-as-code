@@ -39,7 +39,7 @@ func Load(logger *zap.SugaredLogger, fs filesystem.Fs, naming model.Naming, stat
 		config: files.Object.(*model.Config),
 		errors: utils.NewMultiError(),
 	}
-	l.blocksDir = naming.BlocksDir(files.Record.RelativePath())
+	l.blocksDir = naming.BlocksDir(files.Record.Path())
 	return l.loadBlocks()
 }
 
@@ -82,7 +82,7 @@ func (l *loader) validate() {
 	if l.errors.Len() == 0 {
 		for _, block := range l.blocks {
 			if err := validator.Validate(block); err != nil {
-				l.errors.Append(utils.PrefixError(fmt.Sprintf(`block "%s" is not valid`, block.RelativePath()), err))
+				l.errors.Append(utils.PrefixError(fmt.Sprintf(`block "%s" is not valid`, block.Path()), err))
 			}
 		}
 	}
@@ -105,7 +105,7 @@ func (l *loader) addBlock(blockIndex int, path string) *model.Block {
 		Codes: make([]*model.Code, 0),
 	}
 
-	l.Record.AddRelatedPath(block.RelativePath())
+	l.Record.AddRelatedPath(block.Path())
 	l.loadBlockMetaFile(block)
 	l.blocks = append(l.blocks, block)
 
@@ -123,14 +123,14 @@ func (l *loader) addCode(block *model.Block, codeIndex int, path string) *model.
 		},
 		Paths: model.Paths{
 			PathInProject: model.PathInProject{
-				ParentPath: block.RelativePath(),
+				ParentPath: block.Path(),
 				ObjectPath: path,
 			},
 		},
 		Scripts: make([]string, 0),
 	}
 
-	l.Record.AddRelatedPath(code.RelativePath())
+	l.Record.AddRelatedPath(code.Path())
 	l.loadCodeMetaFile(code)
 	l.addScripts(code)
 	block.Codes = append(block.Codes, code)
@@ -159,7 +159,7 @@ func (l *loader) addScripts(code *model.Code) {
 }
 
 func (l *loader) loadBlockMetaFile(block *model.Block) {
-	path := l.naming.MetaFilePath(block.RelativePath())
+	path := l.naming.MetaFilePath(block.Path())
 	desc := "block metadata"
 	if file, err := l.fs.ReadJsonFieldsTo(path, desc, block, model.MetaFileTag); err != nil {
 		l.errors.Append(err)
@@ -169,7 +169,7 @@ func (l *loader) loadBlockMetaFile(block *model.Block) {
 }
 
 func (l *loader) loadCodeMetaFile(code *model.Code) {
-	path := l.naming.MetaFilePath(code.RelativePath())
+	path := l.naming.MetaFilePath(code.Path())
 	desc := "code metadata"
 	if file, err := l.fs.ReadJsonFieldsTo(path, desc, code, model.MetaFileTag); err != nil {
 		l.errors.Append(err)
@@ -204,9 +204,9 @@ func (l *loader) blockDirs() []string {
 
 func (l *loader) codeDirs(block *model.Block) []string {
 	// Load all dir entries
-	items, err := l.fs.ReadDir(block.RelativePath())
+	items, err := l.fs.ReadDir(block.Path())
 	if err != nil {
-		l.errors.Append(fmt.Errorf(`cannot read transformation codes from "%s": %w`, block.RelativePath(), err))
+		l.errors.Append(fmt.Errorf(`cannot read transformation codes from "%s": %w`, block.Path(), err))
 		return nil
 	}
 
@@ -223,21 +223,21 @@ func (l *loader) codeDirs(block *model.Block) []string {
 func (l *loader) codeFileName(code *model.Code) string {
 	// Search for code file, glob "code.*"
 	// File can use an old naming, so the file extension is not specified
-	matches, err := l.fs.Glob(filesystem.Join(code.RelativePath(), model.CodeFileName+`.*`))
+	matches, err := l.fs.Glob(filesystem.Join(code.Path(), model.CodeFileName+`.*`))
 	if err != nil {
-		l.errors.Append(fmt.Errorf(`cannot search for code file in %s": %w`, code.RelativePath(), err))
+		l.errors.Append(fmt.Errorf(`cannot search for code file in %s": %w`, code.Path(), err))
 		return ""
 	}
 	files := make([]string, 0)
 	for _, match := range matches {
 		if l.fs.IsFile(match) {
-			files = append(files, filesystem.Rel(code.RelativePath(), match))
+			files = append(files, filesystem.Rel(code.Path(), match))
 		}
 	}
 
 	// No file?
 	if len(files) == 0 {
-		l.errors.Append(fmt.Errorf(`missing code file in "%s"`, code.RelativePath()))
+		l.errors.Append(fmt.Errorf(`missing code file in "%s"`, code.Path()))
 		return ""
 	}
 
@@ -246,7 +246,7 @@ func (l *loader) codeFileName(code *model.Code) string {
 		l.errors.Append(fmt.Errorf(
 			`expected one, but found multiple code files "%s" in "%s"`,
 			strings.Join(files, `", "`),
-			code.RelativePath(),
+			code.Path(),
 		))
 		return ""
 	}

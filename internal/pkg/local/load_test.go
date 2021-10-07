@@ -27,9 +27,9 @@ func TestLocalLoadModel(t *testing.T) {
 	// Save files
 	target := &ModelStruct{}
 	record := &MockedRecord{}
-	assert.NoError(t, fs.Mkdir(record.RelativePath()))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(manager.Naming().MetaFilePath(record.RelativePath()), metaFile)))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(manager.Naming().ConfigFilePath(record.RelativePath()), configFile)))
+	assert.NoError(t, fs.Mkdir(record.Path()))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(manager.Naming().MetaFilePath(record.Path()), metaFile)))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(manager.Naming().ConfigFilePath(record.Path()), configFile)))
 
 	// Load
 	found, err := manager.LoadObject(record, target)
@@ -94,21 +94,21 @@ func TestLocalLoadModelInvalidTransformation(t *testing.T) {
 		Paths:     model.Paths{PathInProject: model.PathInProject{ObjectPath: "config"}},
 	}
 	naming := manager.Naming()
-	assert.NoError(t, fs.Mkdir(record.RelativePath()))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(naming.MetaFilePath(record.RelativePath()), metaFile)))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(naming.DescriptionFilePath(record.RelativePath()), descFile)))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(naming.ConfigFilePath(record.RelativePath()), configFile)))
-	blocksDir := naming.BlocksDir(record.RelativePath())
+	assert.NoError(t, fs.Mkdir(record.Path()))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(naming.MetaFilePath(record.Path()), metaFile)))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(naming.DescriptionFilePath(record.Path()), descFile)))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(naming.ConfigFilePath(record.Path()), configFile)))
+	blocksDir := naming.BlocksDir(record.Path())
 	assert.NoError(t, fs.Mkdir(blocksDir))
 	block := &model.Block{BlockKey: model.BlockKey{Index: 123}, Name: `block`}
 	block.PathInProject = naming.BlockPath(blocksDir, block)
-	assert.NoError(t, fs.Mkdir(block.RelativePath()))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(naming.MetaFilePath(block.RelativePath()), blockMeta)))
+	assert.NoError(t, fs.Mkdir(block.Path()))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(naming.MetaFilePath(block.Path()), blockMeta)))
 	code := &model.Code{CodeKey: model.CodeKey{Index: 123}, Name: `code`}
-	code.PathInProject = naming.CodePath(block.RelativePath(), code)
+	code.PathInProject = naming.CodePath(block.Path(), code)
 	code.CodeFileName = naming.CodeFileName(component.Id)
-	assert.NoError(t, fs.Mkdir(code.RelativePath()))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(naming.MetaFilePath(code.RelativePath()), codeMeta)))
+	assert.NoError(t, fs.Mkdir(code.Path()))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(naming.MetaFilePath(code.Path()), codeMeta)))
 	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(naming.CodeFilePath(code), codeContent)))
 
 	// Load

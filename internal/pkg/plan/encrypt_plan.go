@@ -31,7 +31,7 @@ func (p *EncryptPlan) Log(writer *log.WriteCloser) {
 		writer.WriteStringNoErr("\tno values to encrypt")
 	} else {
 		for _, action := range p.actions {
-			writer.WriteStringNoErr("\t" + action.manifest.Kind().Abbr + " " + action.manifest.RelativePath())
+			writer.WriteStringNoErr("\t" + action.manifest.Kind().Abbr + " " + action.manifest.Path())
 			for _, value := range action.values {
 				writer.WriteStringNoErr(fmt.Sprintf("\t\t%v", value.path))
 			}
@@ -51,7 +51,7 @@ func (p *EncryptPlan) ValidateAllEncrypted() error {
 			fmt.Sprintf(
 				`%s "%s" contains unencrypted values`,
 				action.manifest.Kind().Name,
-				p.naming.ConfigFilePath(action.manifest.RelativePath()),
+				p.naming.ConfigFilePath(action.manifest.Path()),
 			),
 			objectErrors,
 		)
