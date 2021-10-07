@@ -8,11 +8,11 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/json/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
