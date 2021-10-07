@@ -13,18 +13,19 @@ const (
 	SortByPath = "path"
 )
 
+type RecordPaths interface {
+	Path() string          // parent path + object path -> path relative to the project dir
+	GetObjectPath() string // path relative to the parent object
+	GetParentPath() string // parent path relative to the project dir
+}
+
 // Record - manifest record.
 type Record interface {
-	Kind() Kind                 // eg. branch, config, config row -> used in logs
-	Level() int                 // hierarchical level, "1" for branch, "2" for config, ...
+	Key
+	RecordPaths
 	Key() Key                   // unique key for map -> for fast access
-	Desc() string               // human-readable description of the object
-	ParentKey() Key             // unique key of the parent object
 	SortKey(sort string) string // unique key for sorting
-	GetObjectPath() string      // path relative to the parent object
 	SetObjectPath(string)       // set path relative to the parent object
-	Path() string               // parent path + object path -> path relative to the project dir
-	GetParentPath() string      // parent path relative to the project dir
 	SetParentPath(string)       // set parent path
 	GetRelatedPaths() []string  // files related to the record, relative to the project dir, e.g. main/meta.json
 	AddRelatedPath(path string)
