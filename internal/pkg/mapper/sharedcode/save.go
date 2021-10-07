@@ -43,15 +43,15 @@ func (w *writer) save() error {
 	normalizeContent(rowContent)
 
 	// Load content
-	raw, found := rowContent.Get(CodeContentRowJsonKey)
+	raw, found := rowContent.Get(model.ShareCodeContentKey)
 	if !found {
-		return fmt.Errorf(`key "%s" not found in %s`, CodeContentRowJsonKey, w.configRow.Desc())
+		return fmt.Errorf(`key "%s" not found in %s`, model.ShareCodeContentKey, w.configRow.Desc())
 	}
 
 	// Content must be string
 	codeContent, ok := raw.(string)
 	if !ok {
-		return fmt.Errorf(`key "%s" must be string in %s`, CodeContentRowJsonKey, w.configRow.Desc())
+		return fmt.Errorf(`key "%s" must be string in %s`, model.ShareCodeContentKey, w.configRow.Desc())
 	}
 
 	// Get target component of the shared code -> needed for file extension
@@ -61,7 +61,7 @@ func (w *writer) save() error {
 	}
 
 	// Remove code content from JSON
-	rowContent.Delete(CodeContentRowJsonKey)
+	rowContent.Delete(model.ShareCodeContentKey)
 
 	// Generate code file
 	codeFilePath := w.naming.SharedCodeFilePath(w.Record.RelativePath(), targetComponentId)
