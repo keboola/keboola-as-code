@@ -21,7 +21,7 @@ import (
 
 func TestPersistNoChange(t *testing.T) {
 	m, _ := loadTestManifest(t, initMinimalProjectDir(t))
-	api, _ := remote.TestMockedStorageApi(t)
+	api, httpTransport, _ := remote.TestMockedStorageApi(t)
 
 	// Mocked API response
 	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
@@ -30,7 +30,7 @@ func TestPersistNoChange(t *testing.T) {
 		"name": "Generic",
 	})
 	assert.NoError(t, err)
-	httpmock.RegisterResponder("GET", `=~/storage/components/ex-generic-v2`, getGenericExResponder)
+	httpTransport.RegisterResponder("GET", `=~/storage/components/ex-generic-v2`, getGenericExResponder)
 
 	// Load state
 	logger, _ := utils.NewDebugLogger()
@@ -58,7 +58,7 @@ func TestPersistNoChange(t *testing.T) {
 
 func TestPersistNewConfig(t *testing.T) {
 	m, fs := loadTestManifest(t, initMinimalProjectDir(t))
-	api, _ := remote.TestMockedStorageApi(t)
+	api, httpTransport, _ := remote.TestMockedStorageApi(t)
 
 	// Mocked API response
 	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
@@ -71,8 +71,8 @@ func TestPersistNewConfig(t *testing.T) {
 		"id": "12345",
 	})
 	assert.NoError(t, err)
-	httpmock.RegisterResponder("GET", `=~/storage/components/ex-generic-v2`, getGenericExResponder)
-	httpmock.RegisterResponder("POST", `=~/storage/tickets`, generateNewIdResponser)
+	httpTransport.RegisterResponder("GET", `=~/storage/components/ex-generic-v2`, getGenericExResponder)
+	httpTransport.RegisterResponder("POST", `=~/storage/tickets`, generateNewIdResponser)
 
 	// Write files
 	configDir := filesystem.Join(`main`, `extractor`, `ex-generic-v2`, `new-config`)
@@ -159,7 +159,7 @@ func TestPersistNewConfig(t *testing.T) {
 
 func TestPersistNewConfigRow(t *testing.T) {
 	m, fs := loadTestManifest(t, initMinimalProjectDir(t))
-	api, _ := remote.TestMockedStorageApi(t)
+	api, httpTransport, _ := remote.TestMockedStorageApi(t)
 
 	// Mocked API response
 	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
@@ -179,9 +179,9 @@ func TestPersistNewConfigRow(t *testing.T) {
 	generateNewIdResponse2, err := httpmock.NewJsonResponse(200, map[string]interface{}{"id": "45678"})
 	assert.NoError(t, err)
 	generateNewIdResponder := httpmock.ResponderFromMultipleResponses([]*http.Response{generateNewIdResponse1, generateNewIdResponse2})
-	httpmock.RegisterResponder("GET", `=~/storage/components/ex-generic-v2`, getGenericExResponder)
-	httpmock.RegisterResponder("GET", `=~/storage/components/keboola.ex-db-mysql`, getMySqlExResponder)
-	httpmock.RegisterResponder("POST", `=~/storage/tickets`, generateNewIdResponder)
+	httpTransport.RegisterResponder("GET", `=~/storage/components/ex-generic-v2`, getGenericExResponder)
+	httpTransport.RegisterResponder("GET", `=~/storage/components/keboola.ex-db-mysql`, getMySqlExResponder)
+	httpTransport.RegisterResponder("POST", `=~/storage/tickets`, generateNewIdResponder)
 
 	// Write files
 	configDir := filesystem.Join(`main`, `extractor`, `keboola.ex-db-mysql`, `new-config`)
@@ -324,7 +324,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 func TestPersistDeleted(t *testing.T) {
 	projectDir := initMinimalProjectDir(t)
 	m, _ := loadTestManifest(t, projectDir)
-	api, _ := remote.TestMockedStorageApi(t)
+	api, httpTransport, _ := remote.TestMockedStorageApi(t)
 
 	// Mocked API response
 	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
@@ -339,8 +339,8 @@ func TestPersistDeleted(t *testing.T) {
 		"name": "MySQL Extractor",
 	})
 	assert.NoError(t, err)
-	httpmock.RegisterResponder("GET", `=~/storage/components/ex-generic-v2`, getGenericExResponder)
-	httpmock.RegisterResponder("GET", `=~/storage/components/keboola.ex-db-mysql`, getMySqlExResponder)
+	httpTransport.RegisterResponder("GET", `=~/storage/components/ex-generic-v2`, getGenericExResponder)
+	httpTransport.RegisterResponder("GET", `=~/storage/components/keboola.ex-db-mysql`, getMySqlExResponder)
 
 	// Update manifest, add fake records
 	branchId := cast.ToInt(utils.MustGetEnv(`LOCAL_STATE_MAIN_BRANCH_ID`))

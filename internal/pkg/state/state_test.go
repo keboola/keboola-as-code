@@ -165,7 +165,7 @@ func TestValidateState(t *testing.T) {
 	m := loadTestManifest(t, "minimal")
 	m.Project.Id = testhelper.TestProjectId()
 
-	api, _ := remote.TestMockedStorageApi(t)
+	api, httpTransport, _ := remote.TestMockedStorageApi(t)
 	stateOptions := NewOptions(m, api, context.Background(), logger)
 	s := newState(stateOptions)
 
@@ -176,7 +176,7 @@ func TestValidateState(t *testing.T) {
 		"name": "Foo",
 	})
 	assert.NoError(t, err)
-	httpmock.RegisterResponder("GET", `=~/storage/components/keboola.foo`, getGenericExResponder)
+	httpTransport.RegisterResponder("GET", `=~/storage/components/keboola.foo`, getGenericExResponder)
 
 	// Add invalid objects
 	branchKey := model.BranchKey{Id: 456}

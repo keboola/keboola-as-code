@@ -56,11 +56,8 @@ func createMockedChecker(t *testing.T) (*checker, *utils.Writer) {
 	resty.RetryMaxWaitTime = 1 * time.Millisecond
 
 	// Mocked resty transport
-	httpmock.Activate()
-	httpmock.ActivateNonDefault(resty.GetClient())
-	t.Cleanup(func() {
-		httpmock.DeactivateAndReset()
-	})
+	httpTransport := httpmock.NewMockTransport()
+	resty.GetClient().Transport = httpTransport
 
 	// Mocked body
 	body := `
@@ -84,7 +81,7 @@ func createMockedChecker(t *testing.T) (*checker, *utils.Writer) {
 	json.MustDecodeString(body, &bodyJson)
 	responder, err := httpmock.NewJsonResponder(200, bodyJson)
 	assert.NoError(t, err)
-	httpmock.RegisterResponder("GET", `=~.+repos/keboola/keboola-as-code/releases.+`, responder)
+	httpTransport.RegisterResponder("GET", `=~.+repos/keboola/keboola-as-code/releases.+`, responder)
 
 	return c, logs
 }
