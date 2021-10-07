@@ -6,6 +6,11 @@ import (
 	"sort"
 )
 
+type objectWithName interface {
+	ObjectName() string
+	String() string
+}
+
 // SortByName - in tests are IDs and sort random -> so we must sort by name.
 func SortByName(slice interface{}) interface{} {
 	// Check slice
@@ -17,23 +22,13 @@ func SortByName(slice interface{}) interface{} {
 	// Sort by Name, and by String key if names are same
 	value := reflect.ValueOf(slice)
 	sort.SliceStable(slice, func(i, j int) bool {
+		objI := value.Index(i).Interface().(objectWithName)
+		objJ := value.Index(j).Interface().(objectWithName)
 		// value = {name}_{string key}
-		valueI := stringMethod(value.Index(i), "GetName", true) + "_" + stringMethod(value.Index(i), "String", false)
-		valueJ := stringMethod(value.Index(j), "GetName", true) + "_" + stringMethod(value.Index(j), "String", false)
+		valueI := objI.ObjectName() + `_` + objI.String()
+		valueJ := objJ.ObjectName() + `_` + objJ.String()
 		return valueI < valueJ
 	})
 
 	return slice
-}
-
-func stringMethod(value reflect.Value, methodName string, required bool) string {
-	method := value.MethodByName(methodName)
-	if method.Kind() == reflect.Invalid {
-		if required {
-			panic(fmt.Errorf("missing method \"%s\" on type \"%s\"", methodName, value.Type().String()))
-		}
-		return ""
-	}
-	values := method.Call(nil)
-	return values[0].String()
 }

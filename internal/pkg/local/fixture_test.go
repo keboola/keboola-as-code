@@ -41,16 +41,8 @@ func (m MockedKey) ObjectId() string {
 	return "123"
 }
 
-func (ModelStruct) Key() model.Key {
-	return &MockedKey{}
-}
-
 func (MockedRecord) Key() model.Key {
 	return &MockedKey{}
-}
-
-func (r MockedRecord) Desc() string {
-	return r.Key().Desc()
 }
 
 func (MockedRecord) ParentKey() model.Key {
@@ -93,4 +85,8 @@ func (MockedRecord) GetRelatedPaths() []string {
 
 func (MockedRecord) AddRelatedPath(path string) {
 	// nop
+}
+
+func (ModelStruct) ObjectName() string {
+	return "object"
 }

@@ -251,7 +251,7 @@ func (r *ConfigRowState) Manifest() Record {
 	return r.ConfigRowManifest
 }
 
-func (b *BranchState) GetName() string {
+func (b *BranchState) ObjectName() string {
 	if b.Remote != nil {
 		return b.Remote.Name
 	}
@@ -261,7 +261,7 @@ func (b *BranchState) GetName() string {
 	return ""
 }
 
-func (c *ConfigState) GetName() string {
+func (c *ConfigState) ObjectName() string {
 	if c.Remote != nil {
 		return c.Remote.Name
 	}
@@ -271,7 +271,7 @@ func (c *ConfigState) GetName() string {
 	return ""
 }
 
-func (r *ConfigRowState) GetName() string {
+func (r *ConfigRowState) ObjectName() string {
 	if r.Remote != nil {
 		return r.Remote.Name
 	}

@@ -25,12 +25,12 @@ type Branch struct {
 }
 
 type BranchState struct {
-	Branch  *Branch  `json:"branch" validate:"required"`
+	*Branch `json:"branch" validate:"required"`
 	Configs []string `json:"configs"`
 }
 
 type BranchConfigs struct {
-	Branch  *Branch   `json:"branch" validate:"required"`
+	*Branch `json:"branch" validate:"required"`
 	Configs []*Config `json:"configs"`
 }
 
@@ -97,15 +97,27 @@ func (r *ConfigRow) ToModel() *model.ConfigRow {
 	return row
 }
 
-func (b *BranchConfigs) GetName() string {
-	return b.Branch.Name
+func (b *Branch) String() string {
+	return b.Description
 }
 
-func (c *Config) GetName() string {
+func (c *Config) String() string {
+	return c.Description
+}
+
+func (r *ConfigRow) String() string {
+	return r.Description
+}
+
+func (b *Branch) ObjectName() string {
+	return b.Name
+}
+
+func (c *Config) ObjectName() string {
 	return c.Name
 }
 
-func (r *ConfigRow) GetName() string {
+func (r *ConfigRow) ObjectName() string {
 	return r.Name
 }
 

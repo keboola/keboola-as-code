@@ -23,6 +23,7 @@ const (
 type Object interface {
 	Key
 	Key() Key
+	ObjectName() string
 }
 
 type ObjectWithContent interface {
@@ -139,6 +140,18 @@ type Code struct {
 	CodeFileName string   `json:"-"` // eg. "code.sql", "code.py", ...
 	Name         string   `json:"name" validate:"required" metaFile:"true"`
 	Scripts      []string `json:"script"` // scripts, eg. SQL statements
+}
+
+func (b *Branch) ObjectName() string {
+	return b.Name
+}
+
+func (c *Config) ObjectName() string {
+	return c.Name
+}
+
+func (r *ConfigRow) ObjectName() string {
+	return r.Name
 }
 
 func (c *Config) GetComponentId() string {
