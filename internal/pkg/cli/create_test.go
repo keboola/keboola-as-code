@@ -76,6 +76,10 @@ func TestInteractiveCreateConfig(t *testing.T) {
 		assert.NoError(t, err)
 
 		time.Sleep(20 * time.Millisecond)
+		_, err = c.Send(testhelper.DownArrow) // select config
+		assert.NoError(t, err)
+
+		time.Sleep(20 * time.Millisecond)
 		_, err = c.Send(testhelper.Enter) // enter - config
 		assert.NoError(t, err)
 
@@ -185,6 +189,8 @@ func TestInteractiveCreateConfigRow(t *testing.T) {
 		assert.NoError(t, err)
 
 		time.Sleep(20 * time.Millisecond)
+		_, err = c.Send(testhelper.DownArrow) // select config row
+		assert.NoError(t, err)
 		_, err = c.Send(testhelper.DownArrow) // select config row
 		assert.NoError(t, err)
 

@@ -14,13 +14,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-const createShortDescription = "Create config or row"
+const createShortDescription = "Create branch, config or row"
+const createBranchShortDescription = "Create branch"
 const createConfigShortDescription = "Create config"
 const createRowShortDescription = "Create config row"
 const createConfigOrRowLongDesc = `
 Creates [object] in the local directory structure.
 A new unique ID is assigned to the new object (there is no need to call "persist").
-To save the new object to the project, call "push" after "create".
+To save the new object to the project, call "push" after the "create".
 
 You will be prompted for [values].
 You can also specify them using flags or environment.
@@ -29,12 +30,19 @@ Tip:
   You can also create [object] by copying
   an existing one and running the "persist" command.
 `
+const createBranchLongDesc = `Command "create branch"
+
+- Creates a new dev branch in the project remote state.
+- Local changes have no effect, so it is recommended to first use the "push" command.
+- When the branch is created, the new state is pulled to the local directory.
+`
 
 func createCommand(root *rootCommand) *cobra.Command {
+	createBranchCmd := createBranchCommand(root)
 	createConfigCmd := createConfigCommand(root)
 	createRowCmd := createRowCommand(root)
 
-	longDesc := "Command \"create\"\n" + createConfigOrRowLongDesc
+	longDesc := `### ` + createBranchLongDesc + "\n\n### Command \"create config/row\"\n" + createConfigOrRowLongDesc
 	longDesc = strings.ReplaceAll(longDesc, `[object]`, `a new config or config row`)
 	longDesc = strings.ReplaceAll(longDesc, `[values]`, `all needed values`)
 	cmd := &cobra.Command{
@@ -50,9 +58,11 @@ func createCommand(root *rootCommand) *cobra.Command {
 			// We ask the user what he wants to create.
 			objectType, _ := root.prompt.Select(&interaction.Select{
 				Label:   `What do you want to create?`,
-				Options: []string{`config`, `config row`},
+				Options: []string{`branch`, `config`, `config row`},
 			})
 			switch objectType {
+			case `branch`:
+				return createBranchCmd.RunE(createBranchCmd, nil)
 			case `config`:
 				return createConfigCmd.RunE(createConfigCmd, nil)
 			case `config row`:
@@ -64,7 +74,58 @@ func createCommand(root *rootCommand) *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(createConfigCmd, createRowCmd)
+	cmd.AddCommand(createBranchCmd, createConfigCmd, createRowCmd)
+	return cmd
+}
+
+func createBranchCommand(root *rootCommand) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "branch",
+		Short: createBranchShortDescription,
+		Long:  createBranchLongDesc,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			logger := root.logger
+			o := root.options
+
+			// This cmd can be called from parent command, so we need bind flags manually
+			if err := o.BindPFlags(cmd.Flags()); err != nil {
+				return err
+			}
+
+			// Load state
+			_, api, err := loadLocalState(root)
+			if err != nil {
+				return err
+			}
+
+			// Name
+			name, err := getName(root, `branch`)
+			if err != nil {
+				return err
+			}
+
+			// Create branch by API
+			branch := &model.Branch{Name: name}
+			if _, err := api.CreateBranch(branch); err != nil {
+				return fmt.Errorf(`cannot create branch: %w`, err)
+			}
+
+			// Pull remote state
+			logger.Info()
+			logger.Info("The branch was successfully created.")
+			logger.Info(`Pulling objects to the local directory.`)
+			pull := root.GetCommandByName("pull")
+			if err := pull.RunE(pull, nil); err != nil {
+				return err
+			}
+
+			logger.Info(fmt.Sprintf(`Created new %s "%s".`, branch.Kind().Name, branch.Name))
+			return nil
+		},
+	}
+
+	cmd.Flags().SortFlags = true
+	cmd.Flags().StringP(`name`, "n", ``, "name of the new branch")
 	return cmd
 }
 

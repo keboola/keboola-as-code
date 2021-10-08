@@ -1,0 +1,14 @@
+Command "create branch"
+
+- Creates a new dev branch in the project remote state.
+- Local changes have no effect, so it is recommended to first use the "push" command.
+- When the branch is created, the new state is pulled to the local directory.
+
+Usage:
+  %s create branch [flags]
+
+Flags:
+  -n, --name string   name of the new branch
+
+Global Flags:
+%A

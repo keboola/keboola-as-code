@@ -1,8 +1,15 @@
-Command "create"
+### Command "create branch"
+
+- Creates a new dev branch in the project remote state.
+- Local changes have no effect, so it is recommended to first use the "push" command.
+- When the branch is created, the new state is pulled to the local directory.
+
+
+### Command "create config/row"
 
 Creates a new config or config row in the local directory structure.
 A new unique ID is assigned to the new object (there is no need to call "persist").
-To save the new object to the project, call "push" after "create".
+To save the new object to the project, call "push" after the "create".
 
 You will be prompted for all needed values.
 You can also specify them using flags or environment.
@@ -15,6 +22,7 @@ Usage:
   %s create [command]
 
 Available Commands:
+  branch      Create branch
   config      Create config
   row         Create config row
 

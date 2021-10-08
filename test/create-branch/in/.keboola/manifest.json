@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "project": {
+    "id": %%TEST_PROJECT_ID%%,
+    "apiHost": "%%TEST_KBC_STORAGE_API_HOST%%"
+  },
+  "sortBy": "id",
+  "naming": {
+    "branch": "{branch_name}",
+    "config": "{component_type}/{component_id}/{config_name}",
+    "configRow": "rows/{config_row_name}",
+    "sharedCodeConfig": "_shared/{target_component_id}",
+    "sharedCodeConfigRow": "codes/{config_row_name}"
+  },
+  "allowedBranches": [
+    "__all__"
+  ],
+  "ignoredComponents": [],
+  "branches": [
+    {
+      "id": %%TEST_BRANCH_MAIN_ID%%,
+      "path": "main"
+    }
+  ],
+  "configurations": [
+    {
+      "branchId": %%TEST_BRANCH_MAIN_ID%%,
+      "componentId": "ex-generic-v2",
+      "id": "%%TEST_BRANCH_MAIN_CONFIG_EMPTY_ID%%",
+      "path": "extractor/ex-generic-v2/empty",
+      "rows": []
+    }
+  ]
+}
