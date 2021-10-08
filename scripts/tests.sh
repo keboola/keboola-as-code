@@ -6,9 +6,12 @@ set -o nounset          # Disallow expansion of unset variables
 set -o pipefail         # Use last non-zero exit code in a pipeline
 #set -o xtrace          # Trace the execution of the script (debug)
 
-cd "$(dirname "$0")"/..
+# Change directory to the project root
+SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+cd "$SCRIPT_DIR/.."
+pwd
 
-# Check Go files format
+# Download modules
 echo "Downloading modules"
 go mod download
 go mod vendor

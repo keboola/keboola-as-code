@@ -1,3 +1,9 @@
 .idea
 go
 target
+cmd
+docs
+internal
+pkg
+test
+vendor
