@@ -14,11 +14,11 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // testProject manages cleanup and setup of the test project.
@@ -29,19 +29,19 @@ type testProject struct {
 	stateFile     *fixtures.StateFile
 	api           *StorageApi
 	defaultBranch *model.Branch
-	envs          []string
+	envs          *env.Map
 }
 
-func SetStateOfTestProject(t *testing.T, api *StorageApi, projectStateFile string) {
+func SetStateOfTestProject(t *testing.T, api *StorageApi, projectStateFile string, envs *env.Map) {
 	t.Helper()
 
-	p := newTestProject(t, api, projectStateFile)
+	p := newTestProject(t, api, projectStateFile, envs)
 	p.Clear()
 	p.InitState()
 }
 
 // newTestProject creates testProject and loads state from the stateFilePath.
-func newTestProject(t *testing.T, api *StorageApi, stateFilePath string) *testProject {
+func newTestProject(t *testing.T, api *StorageApi, stateFilePath string, envs *env.Map) *testProject {
 	t.Helper()
 
 	// nolint: dogsled
@@ -70,7 +70,7 @@ func newTestProject(t *testing.T, api *StorageApi, stateFilePath string) *testPr
 	}
 
 	// Create
-	p := &testProject{t, &sync.Mutex{}, testDir, stateFile, api, defaultBranch, nil}
+	p := &testProject{t, &sync.Mutex{}, testDir, stateFile, api, defaultBranch, envs}
 	p.logf("Initializing test project \"%s\", id: \"%d\".", p.api.ProjectName(), p.api.ProjectId())
 	return p
 }
@@ -149,8 +149,8 @@ func (p *testProject) InitState() {
 	}
 
 	// Log ENVs
-	for _, env := range p.envs {
-		p.logf(fmt.Sprintf(`Set ENV "%s"`, env))
+	for key, value := range p.envs.ToMap() {
+		p.logf(fmt.Sprintf(`Set ENV "%s=%s"`, key, value))
 	}
 
 	// Done
@@ -204,12 +204,9 @@ func (p *testProject) setEnv(key string, value string) {
 	key = strings.Trim(key, "_")
 
 	// Set
-	utils.MustSetEnv(key, value)
-
-	// Log
 	p.lock.Lock()
 	defer p.lock.Unlock()
-	p.envs = append(p.envs, fmt.Sprintf("%s=%s", key, value))
+	p.envs.Set(key, value)
 }
 
 func (p *testProject) logf(format string, a ...interface{}) {

@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/build"
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/interaction"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -42,7 +43,8 @@ Aliases:`
 type rootCommand struct {
 	cmd          *cobra.Command
 	fsFactory    filesystem.Factory
-	fs           filesystem.Fs
+	fs           filesystem.Fs       // filesystem abstraction
+	envs         *env.Map            // ENVs from OS
 	options      *options.Options    // parsed flags and env variables
 	prompt       *interaction.Prompt // user interaction
 	ctx          context.Context     // context for parallel operations
@@ -55,9 +57,10 @@ type rootCommand struct {
 }
 
 // NewRootCommand creates parent of all sub-commands.
-func NewRootCommand(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteCloser, prompt *interaction.Prompt, fsFactory filesystem.Factory) *rootCommand {
+func NewRootCommand(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteCloser, prompt *interaction.Prompt, envs *env.Map, fsFactory filesystem.Factory) *rootCommand {
 	root := &rootCommand{
 		fsFactory: fsFactory,
+		envs:      envs,
 		options:   options.NewOptions(),
 		prompt:    prompt,
 		ctx:       context.Background(),
@@ -107,7 +110,7 @@ func NewRootCommand(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteC
 			return err
 		}
 
-		versionChecker := version.NewChecker(root.ctx, root.logger)
+		versionChecker := version.NewChecker(root.ctx, root.logger, root.envs)
 		if err := versionChecker.CheckIfLatest(build.BuildVersion); err != nil {
 			// Ignore error, send to logs
 			root.logger.Debugf(`Version check: %s.`, err.Error())
@@ -231,7 +234,7 @@ func (root *rootCommand) init(cmd *cobra.Command) (err error) {
 	}
 
 	// Load values from flags and envs
-	if err = root.options.Load(tmpLogger, root.fs, cmd.Flags()); err != nil {
+	if err = root.options.Load(tmpLogger, root.envs, root.fs, cmd.Flags()); err != nil {
 		return err
 	}
 

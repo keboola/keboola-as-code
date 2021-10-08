@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
@@ -13,7 +14,7 @@ import (
 
 func TestBranchApiCalls(t *testing.T) {
 	api, _ := TestStorageApiWithToken(t)
-	SetStateOfTestProject(t, api, "empty.json")
+	SetStateOfTestProject(t, api, "empty.json", env.Empty())
 
 	var job1 *model.Job
 	var job2 *model.Job

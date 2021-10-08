@@ -2,13 +2,11 @@ package options
 
 import (
 	"fmt"
-	"os"
 	"reflect"
 	"regexp"
 	"strings"
 
 	"github.com/iancoleman/strcase"
-	"github.com/joho/godotenv"
 	"github.com/spf13/cast"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -27,6 +25,7 @@ type parser = viper.Viper
 type Options struct {
 	*parser
 	envNaming   *env.NamingConvention
+	envs        *env.Map
 	Verbose     bool   `flag:"verbose"`           // verbose mode, print details to console
 	VerboseApi  bool   `flag:"verbose-api"`       // log each API request and response
 	LogFilePath string `flag:"log-file"`          // path to the log file
@@ -38,33 +37,22 @@ func NewOptions() *Options {
 	envNaming := env.NewNamingConvention()
 	return &Options{
 		envNaming: envNaming,
-		parser: viper.NewWithOptions(
-			viper.EnvKeyReplacer(envNaming),
-		),
+		parser:    viper.New(),
 	}
 }
 
-func (o *Options) Load(logger *zap.SugaredLogger, fs filesystem.Fs, flags *pflag.FlagSet) error {
-	// Bind flags
-	if err := o.BindPFlags(flags); err != nil {
-		return err
-	}
-
-	// Automatic fallback to ENVs, see env.NamingConvention
-	o.AutomaticEnv()
-
+func (o *Options) Load(logger *zap.SugaredLogger, osEnvs *env.Map, fs filesystem.Fs, flags *pflag.FlagSet) error {
 	// Load ENVs from OS and files
-	envs, err := o.loadEnvFiles(fs)
-	if err != nil {
+	envs, err := o.loadEnvFiles(osEnvs, fs)
+	if err == nil {
+		o.envs = envs
+	} else {
 		logger.Debug(err.Error())
 	}
 
-	// Set loaded ENVs
-	for k, v := range envs {
-		if strings.HasPrefix(k, env.Prefix) {
-			logger.Debugf(`Found ENV "%s"`, k)
-			utils.MustSetEnv(k, v)
-		}
+	// Bind flags and corresponding ENVs
+	if err := o.BindFlagsAndEnvs(flags); err != nil {
+		return err
 	}
 
 	// Map values to Options struct
@@ -86,16 +74,29 @@ func (o *Options) Load(logger *zap.SugaredLogger, fs filesystem.Fs, flags *pflag
 	return nil
 }
 
-func (o *Options) loadEnvFiles(fs filesystem.Fs) (map[string]string, error) {
+func (o *Options) BindFlagsAndEnvs(flags *pflag.FlagSet) error {
+	if err := o.BindPFlags(flags); err != nil {
+		return err
+	}
+
+	// For each know flag (config key) -> search for ENV
+	envs := make(map[string]interface{})
+	for _, flagName := range o.AllKeys() {
+		envName := o.envNaming.Replace(flagName)
+		if v, found := o.envs.Lookup(envName); found {
+			envs[flagName] = v
+		}
+	}
+
+	// Set config, it has < priority as flag.
+	// ... so flag value is used if set, otherwise env is used.
+	return o.MergeConfigMap(envs)
+}
+
+func (o *Options) loadEnvFiles(osEnvs *env.Map, fs filesystem.Fs) (*env.Map, error) {
 	// File system basePath = projectDir, so here we are using current/top level dir
 	projectDir := `.` // nolint
 	workingDir := fs.WorkingDir()
-
-	// Load ENVs from OS
-	osEnvs, err := godotenv.Parse(strings.NewReader(strings.Join(os.Environ(), "\n")))
-	if err != nil {
-		return nil, err
-	}
 
 	// Dirs with ENVs files
 	dirs := make([]string, 0)

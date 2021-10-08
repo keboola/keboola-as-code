@@ -3,7 +3,6 @@ package version
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -11,23 +10,25 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 )
 
 const EnvVersionCheck = "KBC_VERSION_CHECK"
 
 type checker struct {
+	envs   *env.Map
 	api    *client.Client
 	cancel context.CancelFunc
 	logger *zap.SugaredLogger
 }
 
-func NewChecker(parentCtx context.Context, logger *zap.SugaredLogger) *checker {
+func NewChecker(parentCtx context.Context, logger *zap.SugaredLogger, envs *env.Map) *checker {
 	// Timeout 3 seconds
 	ctx, cancel := context.WithTimeout(parentCtx, 3*time.Second)
 
 	// Create client
 	api := client.NewClient(ctx, logger, false).WithHostUrl(`https://api.github.com`)
-	return &checker{api, cancel, logger}
+	return &checker{envs, api, cancel, logger}
 }
 
 func (c *checker) CheckIfLatest(currentVersion string) error {
@@ -39,7 +40,7 @@ func (c *checker) CheckIfLatest(currentVersion string) error {
 	}
 
 	// Disabled by ENV
-	if value, _ := os.LookupEnv(EnvVersionCheck); strings.ToLower(value) == "false" {
+	if value, _ := c.envs.Lookup(EnvVersionCheck); strings.ToLower(value) == "false" {
 		return fmt.Errorf(fmt.Sprintf(`skipped, disabled by ENV "%s"`, EnvVersionCheck))
 	}
 

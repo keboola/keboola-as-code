@@ -3,9 +3,7 @@ package env
 import (
 	"fmt"
 	"os"
-	"strings"
 
-	"github.com/imdario/mergo"
 	"github.com/joho/godotenv"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -13,9 +11,9 @@ import (
 )
 
 // LoadDotEnv loads envs from ".env" if exists. Existing envs take precedence.
-func LoadDotEnv(osEnvs map[string]string, fs filesystem.Fs, dirs []string) (map[string]string, error) {
+func LoadDotEnv(osEnvs *Map, fs filesystem.Fs, dirs []string) (*Map, error) {
 	errors := utils.NewMultiError()
-	envs := osEnvs
+	envs := FromMap(osEnvs.ToMap()) // copy
 
 	for _, dir := range dirs {
 		for _, file := range Files() {
@@ -42,16 +40,14 @@ func LoadDotEnv(osEnvs map[string]string, fs filesystem.Fs, dirs []string) (map[
 			}
 
 			// Load env
-			fileEnvs, err := godotenv.Parse(strings.NewReader(file.Content))
+			fileEnvs, err := godotenv.Unmarshal(file.Content)
 			if err != nil {
 				errors.Append(err)
 				continue
 			}
 
-			// Merge ENVs, Existing take precedence.
-			if err := mergo.Merge(&envs, fileEnvs); err != nil {
-				errors.Append(err)
-			}
+			// Merge ENVs, existing keys take precedence.
+			envs.Merge(FromMap(fileEnvs), false)
 		}
 	}
 
