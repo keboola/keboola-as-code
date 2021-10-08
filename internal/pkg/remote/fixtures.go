@@ -50,7 +50,7 @@ func TestStorageApiWithHost(t *testing.T, apiHost string) (*StorageApi, *utils.W
 
 func TestStorageApiWithToken(t *testing.T) (*StorageApi, *utils.Writer) {
 	a, logs := TestStorageApiWithHost(t, testhelper.TestApiHost())
-	token, err := a.GetToken(testhelper.TestTokenMaster())
+	token, err := a.GetToken(testhelper.TestToken())
 	if err != nil {
 		assert.FailNow(t, err.Error())
 	}

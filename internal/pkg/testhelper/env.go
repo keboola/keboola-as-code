@@ -84,14 +84,6 @@ func TestToken() string {
 	return utils.MustGetEnv("TEST_KBC_STORAGE_API_TOKEN")
 }
 
-func TestTokenMaster() string {
-	return utils.MustGetEnv("TEST_KBC_STORAGE_API_TOKEN_MASTER")
-}
-
-func TestTokenExpired() string {
-	return utils.MustGetEnv("TEST_KBC_STORAGE_API_TOKEN_EXPIRED")
-}
-
 func TestProjectId() int {
 	str := utils.MustGetEnv("TEST_PROJECT_ID")
 	value, err := strconv.Atoi(str)
@@ -99,10 +91,6 @@ func TestProjectId() int {
 		panic(fmt.Errorf("invalid integer \"%s\": %w", str, err))
 	}
 	return value
-}
-
-func TestProjectName() string {
-	return utils.MustGetEnv("TEST_PROJECT_NAME")
 }
 
 func TestIsVerbose() bool {

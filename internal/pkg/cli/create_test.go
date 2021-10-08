@@ -32,7 +32,7 @@ func TestInteractiveCreateConfig(t *testing.T) {
 
 	// Init prompt and cmd
 	root := newTestRootCommandWithTty(c.Tty())
-	root.cmd.SetArgs([]string{"create", "--storage-api-token", testhelper.TestTokenMaster()})
+	root.cmd.SetArgs([]string{"create", "--storage-api-token", testhelper.TestToken()})
 
 	// Create fs
 	logger, _ := utils.NewDebugLogger()
@@ -131,7 +131,7 @@ func TestInteractiveCreateConfigRow(t *testing.T) {
 
 	// Init prompt and cmd
 	root := newTestRootCommandWithTty(c.Tty())
-	root.cmd.SetArgs([]string{"create", "--storage-api-token", testhelper.TestTokenMaster()})
+	root.cmd.SetArgs([]string{"create", "--storage-api-token", testhelper.TestToken()})
 
 	// Create fs
 	logger, _ := utils.NewDebugLogger()

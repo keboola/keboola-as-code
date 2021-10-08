@@ -1,1 +1,1 @@
-pull --dry-run --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN_MASTER%%
+pull --dry-run --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%%

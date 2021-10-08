@@ -31,7 +31,7 @@ func TestGetToken(t *testing.T) {
 	assert.Regexp(t, `DEBUG  HTTP      GET https://.*/v2/storage/tokens/verify | 200 | .*`, logs.String())
 	assert.Equal(t, tokenValue, token.Token)
 	assert.Equal(t, testhelper.TestProjectId(), token.ProjectId())
-	assert.Equal(t, testhelper.TestProjectName(), token.ProjectName())
+	assert.NotEmpty(t, token.ProjectName())
 }
 
 func TestGetTokenEmpty(t *testing.T) {
@@ -48,18 +48,6 @@ func TestGetTokenEmpty(t *testing.T) {
 
 func TestGetTokenInvalid(t *testing.T) {
 	tokenValue := "mytoken"
-	api, _ := TestStorageApi(t)
-	token, err := api.GetToken(tokenValue)
-	assert.Error(t, err)
-	apiErr := err.(*Error)
-	assert.Equal(t, "Invalid access token", apiErr.Message)
-	assert.Equal(t, "storage.tokenInvalid", apiErr.ErrCode)
-	assert.Equal(t, 401, apiErr.HttpStatus())
-	assert.Nil(t, token)
-}
-
-func TestGetTokenExpired(t *testing.T) {
-	tokenValue := testhelper.TestTokenExpired()
 	api, _ := TestStorageApi(t)
 	token, err := api.GetToken(tokenValue)
 	assert.Error(t, err)
