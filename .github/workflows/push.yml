@@ -10,7 +10,7 @@ env:
   DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   # Test project in KBC
-  TEST_PROJECT_ID: 8763
+  TEST_KBC_PROJECT_ID: 8763
   TEST_KBC_STORAGE_API_HOST: connection.keboola.com
   TEST_KBC_STORAGE_API_TOKEN: ${{ secrets.TEST_KBC_PROJECT_8763_TOKEN }}
 

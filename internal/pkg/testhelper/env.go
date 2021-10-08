@@ -67,7 +67,7 @@ func TestToken() string {
 }
 
 func TestProjectId() int {
-	str := os.Getenv("TEST_PROJECT_ID")
+	str := os.Getenv("TEST_KBC_PROJECT_ID")
 	value, err := strconv.Atoi(str)
 	if err != nil {
 		panic(fmt.Errorf("invalid integer \"%s\": %w", str, err))
