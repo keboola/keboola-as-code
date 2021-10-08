@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ActiveState/vt10x"
 	"github.com/Netflix/go-expect"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
@@ -28,7 +27,7 @@ func TestInteractiveCreateConfig(t *testing.T) {
 	} else {
 		stdout = io.Discard
 	}
-	c, state, err := vt10x.NewVT10XConsole(expect.WithStdout(stdout), expect.WithDefaultTimeout(15*time.Second))
+	c, state, err := testhelper.NewVirtualTerminal(expect.WithStdout(stdout), expect.WithDefaultTimeout(15*time.Second))
 	assert.NoError(t, err)
 
 	// Init prompt and cmd
@@ -127,7 +126,7 @@ func TestInteractiveCreateConfigRow(t *testing.T) {
 	} else {
 		stdout = io.Discard
 	}
-	c, state, err := vt10x.NewVT10XConsole(expect.WithStdout(stdout), expect.WithDefaultTimeout(15*time.Second))
+	c, state, err := testhelper.NewVirtualTerminal(expect.WithStdout(stdout), expect.WithDefaultTimeout(15*time.Second))
 	assert.NoError(t, err)
 
 	// Init prompt and cmd

@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ActiveState/vt10x"
 	"github.com/Netflix/go-expect"
 	"github.com/stretchr/testify/assert"
 
@@ -227,7 +226,7 @@ func createVirtualPrompt(t *testing.T) (*Prompt, *expect.Console) {
 	} else {
 		stdout = io.Discard
 	}
-	console, _, err := vt10x.NewVT10XConsole(expect.WithStdout(stdout), expect.WithDefaultTimeout(5*time.Second))
+	console, _, err := testhelper.NewVirtualTerminal(expect.WithStdout(stdout), expect.WithDefaultTimeout(5*time.Second))
 	assert.NoError(t, err)
 	prompt := NewPrompt(console.Tty(), console.Tty(), console.Tty())
 	prompt.Interactive = true
