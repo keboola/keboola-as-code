@@ -236,7 +236,7 @@ func loadLocalTestState(t *testing.T, m *manifest.Manifest) *State {
 
 	// Mocked API
 	logger, _ := utils.NewDebugLogger()
-	api, _ := remote.TestMockedStorageApi(t)
+	api, httpTransport, _ := remote.TestMockedStorageApi(t)
 
 	// Mocked API response
 	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
@@ -255,8 +255,8 @@ func loadLocalTestState(t *testing.T, m *manifest.Manifest) *State {
 		"configurationRowSchema": map[string]interface{}{},
 	})
 	assert.NoError(t, err)
-	httpmock.RegisterResponder("GET", `=~/storage/components/ex-generic-v2`, getGenericExResponder)
-	httpmock.RegisterResponder("GET", `=~/storage/components/keboola.ex-db-mysql`, getMySqlExResponder)
+	httpTransport.RegisterResponder("GET", `=~/storage/components/ex-generic-v2`, getGenericExResponder)
+	httpTransport.RegisterResponder("GET", `=~/storage/components/keboola.ex-db-mysql`, getMySqlExResponder)
 
 	// Load state
 	options := NewOptions(m, api, context.Background(), logger)

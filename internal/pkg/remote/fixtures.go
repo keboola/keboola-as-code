@@ -18,7 +18,9 @@ func TestStorageApi(t *testing.T) (*StorageApi, *utils.Writer) {
 	return TestStorageApiWithHost(t, testhelper.TestApiHost())
 }
 
-func TestMockedStorageApi(t *testing.T) (*StorageApi, *utils.Writer) {
+func TestMockedStorageApi(t *testing.T) (*StorageApi, *httpmock.MockTransport, *utils.Writer) {
+	t.Helper()
+
 	logger, logs := utils.NewDebugLogger()
 	if testhelper.TestIsVerbose() {
 		logs.ConnectTo(os.Stdout)
@@ -29,13 +31,9 @@ func TestMockedStorageApi(t *testing.T) (*StorageApi, *utils.Writer) {
 	api = api.WithToken(&model.Token{Owner: model.TokenOwner{Id: 12345}})
 
 	// Mocked resty transport
-	httpmock.Activate()
-	httpmock.ActivateNonDefault(api.client.GetRestyClient().GetClient())
-	t.Cleanup(func() {
-		httpmock.DeactivateAndReset()
-	})
-
-	return api, logs
+	transport := httpmock.NewMockTransport()
+	api.client.GetRestyClient().GetClient().Transport = transport
+	return api, transport, logs
 }
 
 func TestStorageApiWithHost(t *testing.T, apiHost string) (*StorageApi, *utils.Writer) {

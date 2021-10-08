@@ -19,6 +19,10 @@ func TestRenameAllPlan(t *testing.T) {
 	testDir := filesystem.Dir(testFile)
 	m, _ := loadTestManifest(t, filesystem.Join(testDir, "..", "fixtures", "local", "to-rename"))
 
+	// Load state
+	logger, _ := utils.NewDebugLogger()
+	api, httpTransport, _ := remote.TestMockedStorageApi(t)
+
 	// Mocked API response
 	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
 		"id":   "ex-generic-v2",
@@ -32,12 +36,10 @@ func TestRenameAllPlan(t *testing.T) {
 		"name": "MySQL",
 	})
 	assert.NoError(t, err)
-	httpmock.RegisterResponder("GET", `=~/storage/components/ex-generic-v2`, getGenericExResponder.Once())
-	httpmock.RegisterResponder("GET", `=~/storage/components/keboola.ex-db-mysql`, getMySqlExResponder.Once())
+	httpTransport.RegisterResponder("GET", `=~/storage/components/ex-generic-v2`, getGenericExResponder.Once())
+	httpTransport.RegisterResponder("GET", `=~/storage/components/keboola.ex-db-mysql`, getMySqlExResponder.Once())
 
 	// Load state
-	logger, _ := utils.NewDebugLogger()
-	api, _ := remote.TestMockedStorageApi(t)
 	options := state.NewOptions(m, api, context.Background(), logger)
 	options.LoadLocalState = true
 	projectState, ok := state.LoadState(options)

@@ -31,6 +31,8 @@ linters-settings:
       - ^testhelper.(GetFileContent|Glob)$
       # No "filepath" package, use "internal/pkg/filesystem" package instead
       - ^filepath\..*$
+      # "httpmock" singleton is forbidden, it doesn't work in parallel tests, use client.Transport = httpmock.NewMockTransport() instead
+      - ^httpmock\.(Activate|ActivateNonDefault|ActivateNonDefault|DeactivateAndReset|RegisterResponder|GetCallCountInfo$)$
 
 # https://golangci-lint.run/usage/linters
 linters:

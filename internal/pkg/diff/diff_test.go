@@ -270,7 +270,7 @@ func createProjectState(t *testing.T) *state.State {
 	}
 
 	// State is mocked manually in test functions
-	api, _ := remote.TestMockedStorageApi(t)
+	api, _, _ := remote.TestMockedStorageApi(t)
 	options := state.NewOptions(m, api, context.Background(), logger)
 	options.LoadLocalState = false
 	options.LoadRemoteState = false
