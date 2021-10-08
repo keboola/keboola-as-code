@@ -125,7 +125,6 @@ func (f *PathsState) init() error {
 		f.isFile[path] = f.fs.IsFile(path)
 		return nil
 	})
-
 	// Errors are not critical, they can be e.g. problem with permissions
 	if err != nil {
 		errors.Append(err)

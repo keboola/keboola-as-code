@@ -12,8 +12,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 )
 
-const initShortDescription = `Init local project directory and perform the first pull`
-const initLongDescription = `Command "init"
+const (
+	initShortDescription = `Init local project directory and perform the first pull`
+	initLongDescription  = `Command "init"
 
 Initialize local project's directory
 and make first sync from the Keboola Connection.
@@ -30,6 +31,7 @@ by flags or environment variables.
 This CLI tool will only work with the specified "allowed branches".
 Others will be ignored, although they will still exist in the project.
 `
+)
 
 func initCommand(root *rootCommand) *cobra.Command {
 	cmd := &cobra.Command{

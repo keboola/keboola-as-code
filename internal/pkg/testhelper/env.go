@@ -33,7 +33,7 @@ func ReplaceEnvsString(str string, provider EnvProvider) string {
 func ReplaceEnvsFile(path string, provider EnvProvider) {
 	str := GetFileContent(path)
 	str = ReplaceEnvsString(str, provider)
-	if err := os.WriteFile(path, []byte(str), 0655); err != nil {
+	if err := os.WriteFile(path, []byte(str), 0o655); err != nil {
 		panic(fmt.Errorf("cannot write to file \"%s\": %w", path, err))
 	}
 }
@@ -59,7 +59,6 @@ func ReplaceEnvsDir(root string, provider EnvProvider) {
 
 		return nil
 	})
-
 	if err != nil {
 		panic(fmt.Errorf("cannot walk over dir \"%s\": %w", root, err))
 	}

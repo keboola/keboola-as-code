@@ -68,6 +68,7 @@ func (w *modelWriter) createFiles() {
 		w.Description = filesystem.CreateFile(w.Naming().DescriptionFilePath(w.Record.Path()), strings.TrimRight(description, " \r\n\t")+"\n")
 	}
 }
+
 func (w *modelWriter) allFiles() []*filesystem.File {
 	// Get all files
 	files := make([]*filesystem.File, 0)

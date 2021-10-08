@@ -99,7 +99,7 @@ func ReadFile(dir string, relPath string, errPrefix string) (string, error) {
 
 func WriteFile(dir string, relPath string, content string, errPrefix string) error {
 	path := filepath.Join(dir, relPath)
-	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		return fmt.Errorf("cannot write %s file \"%s\"", errPrefix, relPath)
 	}
 	return nil

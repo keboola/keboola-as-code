@@ -8,14 +8,16 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-const fixPathsShortDescription = `Normalize all local paths`
-const fixPathsLongDescription = `Command "fix-paths"
+const (
+	fixPathsShortDescription = `Normalize all local paths`
+	fixPathsLongDescription  = `Command "fix-paths"
 
 Manifest file ".keboola/manifest.json" contains a naming for all local paths.
 
 With this command you can rename all existing paths
 to match the configured naming (eg. if the naming has been changed).
 `
+)
 
 func fixPathsCommand(root *rootCommand) *cobra.Command {
 	cmd := &cobra.Command{

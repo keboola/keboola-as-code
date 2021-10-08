@@ -10,8 +10,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 )
 
-const pullShortDescription = `Pull configurations to the project directory`
-const pullLongDescription = `Command "pull"
+const (
+	pullShortDescription = `Pull configurations to the project directory`
+	pullLongDescription  = `Command "pull"
 
 Pull configurations from the Keboola Connection project.
 Local files will be overwritten to match the project's state.
@@ -19,6 +20,7 @@ Local files will be overwritten to match the project's state.
 You can use the "--dry-run" flag to see
 what needs to be done without modifying the files.
 `
+)
 
 func pullCommand(root *rootCommand) *cobra.Command {
 	force := false

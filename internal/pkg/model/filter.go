@@ -21,9 +21,11 @@ type Filter struct {
 }
 
 type AllowedBranch string
+
 type AllowedBranches []AllowedBranch
 
 type ComponentId string
+
 type ComponentIds []ComponentId
 
 func DefaultFilter() Filter {

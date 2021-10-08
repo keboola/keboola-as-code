@@ -20,7 +20,9 @@ type Sender interface {
 }
 
 type ResponseEventType int
+
 type ResponseCallback func(response *Response)
+
 type ResponseListener struct {
 	Type     ResponseEventType
 	Callback ResponseCallback

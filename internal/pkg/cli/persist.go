@@ -10,8 +10,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-const persistShortDescription = `Persist created and deleted configs/rows in manifest`
-const persistLongDescription = `Command "persist"
+const (
+	persistShortDescription = `Persist created and deleted configs/rows in manifest`
+	persistLongDescription  = `Command "persist"
 
 This command writes the changes from the filesystem to the manifest.
 - If you have created a new config/row, this command will write record to the manifest with a unique ID.
@@ -22,6 +23,7 @@ No changes are made to the remote state of the project.
 If you also want to change the remote state,
 call the "push" command after the "persist" command.
 `
+)
 
 func persistCommand(root *rootCommand) *cobra.Command {
 	cmd := &cobra.Command{

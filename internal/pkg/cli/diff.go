@@ -10,11 +10,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 )
 
-const diffShortDescription = `Print differences between local and remote state`
-const diffLongDescription = `Command "diff"
+const (
+	diffShortDescription = `Print differences between local and remote state`
+	diffLongDescription  = `Command "diff"
 
 Print differences between local and remote state.
 `
+)
 
 func diffCommand(root *rootCommand) *cobra.Command {
 	printDetails := false

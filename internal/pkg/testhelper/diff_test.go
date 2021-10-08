@@ -43,7 +43,7 @@ func TestAssertDirectoryDirOnlyInExpected(t *testing.T) {
 	actualDir := t.TempDir()
 
 	// Create directory
-	assert.NoError(t, os.Mkdir(expectedDir+"/myDir", 0700))
+	assert.NoError(t, os.Mkdir(expectedDir+"/myDir", 0o700))
 
 	// Assert
 	test := &mockedT{buf: bytes.NewBuffer(nil)}
@@ -73,7 +73,7 @@ func TestAssertDirectoryDirOnlyInActual(t *testing.T) {
 	actualDir := t.TempDir()
 
 	// Create directory
-	assert.NoError(t, os.Mkdir(actualDir+"/myDir", 0700))
+	assert.NoError(t, os.Mkdir(actualDir+"/myDir", 0o700))
 
 	// Assert
 	test := &mockedT{buf: bytes.NewBuffer(nil)}
@@ -93,7 +93,7 @@ func TestAssertDirectoryFileDifferentType1(t *testing.T) {
 	assert.NoError(t, file1.Close())
 
 	// Create directory in expected
-	assert.NoError(t, os.Mkdir(expectedDir+"/myNode", 0700))
+	assert.NoError(t, os.Mkdir(expectedDir+"/myNode", 0o700))
 
 	test := &mockedT{buf: bytes.NewBuffer(nil)}
 	AssertDirectoryContentsSame(test, expectedDir, actualDir)
@@ -112,7 +112,7 @@ func TestAssertDirectoryFileDifferentType2(t *testing.T) {
 	assert.NoError(t, file1.Close())
 
 	// Create directory in actual
-	assert.NoError(t, os.Mkdir(actualDir+"/myNode", 0700))
+	assert.NoError(t, os.Mkdir(actualDir+"/myNode", 0o700))
 
 	test := &mockedT{buf: bytes.NewBuffer(nil)}
 	AssertDirectoryContentsSame(test, expectedDir, actualDir)
@@ -178,7 +178,7 @@ func TestAssertDirectoryIgnoreHiddenFiles(t *testing.T) {
 	actualDir := t.TempDir()
 
 	// File in expected
-	assert.NoError(t, os.Mkdir(expectedDir+"/myDir", 0700))
+	assert.NoError(t, os.Mkdir(expectedDir+"/myDir", 0o700))
 	file1, err := os.Create(filepath.Join(expectedDir, "myDir", ".hidden"))
 	assert.NoError(t, err)
 	_, err = file1.WriteString("foo\n")
@@ -186,7 +186,7 @@ func TestAssertDirectoryIgnoreHiddenFiles(t *testing.T) {
 	assert.NoError(t, file1.Close())
 
 	// File in actual
-	assert.NoError(t, os.Mkdir(actualDir+"/myDir", 0700))
+	assert.NoError(t, os.Mkdir(actualDir+"/myDir", 0o700))
 	file2, err := os.Create(filepath.Join(actualDir, "myDir", ".hidden"))
 	assert.NoError(t, err)
 	_, err = file2.WriteString("bar\n")
@@ -203,7 +203,7 @@ func TestAssertDirectorySame(t *testing.T) {
 	actualDir := t.TempDir()
 
 	// File in expected
-	assert.NoError(t, os.Mkdir(expectedDir+"/myDir", 0700))
+	assert.NoError(t, os.Mkdir(expectedDir+"/myDir", 0o700))
 	file1, err := os.Create(filepath.Join(expectedDir, "myDir", "file.txt"))
 	assert.NoError(t, err)
 	_, err = file1.WriteString("foo\n")
@@ -211,7 +211,7 @@ func TestAssertDirectorySame(t *testing.T) {
 	assert.NoError(t, file1.Close())
 
 	// File in actual
-	assert.NoError(t, os.Mkdir(actualDir+"/myDir", 0700))
+	assert.NoError(t, os.Mkdir(actualDir+"/myDir", 0o700))
 	file2, err := os.Create(filepath.Join(actualDir, "myDir", "file.txt"))
 	assert.NoError(t, err)
 	_, err = file2.WriteString("foo\n")
@@ -228,7 +228,7 @@ func TestAssertDirectorySameWildcards(t *testing.T) {
 	actualDir := t.TempDir()
 
 	// File in expected
-	assert.NoError(t, os.Mkdir(expectedDir+"/myDir", 0700))
+	assert.NoError(t, os.Mkdir(expectedDir+"/myDir", 0o700))
 	file1, err := os.Create(filepath.Join(expectedDir, "myDir", "file.txt"))
 	assert.NoError(t, err)
 	_, err = file1.WriteString("%c%c%c\n")
@@ -236,7 +236,7 @@ func TestAssertDirectorySameWildcards(t *testing.T) {
 	assert.NoError(t, file1.Close())
 
 	// File in actual
-	assert.NoError(t, os.Mkdir(actualDir+"/myDir", 0700))
+	assert.NoError(t, os.Mkdir(actualDir+"/myDir", 0o700))
 	file2, err := os.Create(filepath.Join(actualDir, "myDir", "file.txt"))
 	assert.NoError(t, err)
 	_, err = file2.WriteString("foo\n")

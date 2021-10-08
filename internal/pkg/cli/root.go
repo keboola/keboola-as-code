@@ -283,7 +283,7 @@ func (root *rootCommand) getLogFile() (logFile *os.File, logFileErr error) {
 	}
 
 	// nolint: forbidigo
-	logFile, logFileErr = os.OpenFile(root.options.LogFilePath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
+	logFile, logFileErr = os.OpenFile(root.options.LogFilePath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
 	if logFileErr != nil {
 		root.options.LogFilePath = ""
 	}

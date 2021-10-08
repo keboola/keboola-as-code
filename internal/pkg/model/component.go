@@ -9,10 +9,12 @@ import (
 	"github.com/iancoleman/orderedmap"
 )
 
-const DeprecatedFlag = `deprecated`
-const ExcludeFromNewListFlag = `excludeFromNewList`
-const ComponentTypeCodePattern = `code-pattern`
-const ComponentTypeProcessor = `processor`
+const (
+	DeprecatedFlag           = `deprecated`
+	ExcludeFromNewListFlag   = `excludeFromNewList`
+	ComponentTypeCodePattern = `code-pattern`
+	ComponentTypeProcessor   = `processor`
+)
 
 // Component https://keboola.docs.apiary.io/#reference/components-and-configurations/get-development-branch-components/get-development-branch-components
 type Component struct {

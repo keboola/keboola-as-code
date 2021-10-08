@@ -22,8 +22,8 @@ func TestFindProjectDir(t *testing.T) {
 	projectDir := t.TempDir()
 	metadataDir := filepath.Join(projectDir, filesystem.MetadataDir)
 	workingDir := filepath.Join(projectDir, `foo`, `bar`)
-	assert.NoError(t, os.MkdirAll(metadataDir, 0755))
-	assert.NoError(t, os.MkdirAll(workingDir, 0755))
+	assert.NoError(t, os.MkdirAll(metadataDir, 0o755))
+	assert.NoError(t, os.MkdirAll(workingDir, 0o755))
 
 	dir, err := FindProjectDir(zap.NewNop().Sugar(), workingDir)
 	assert.NoError(t, err)

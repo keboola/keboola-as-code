@@ -9,11 +9,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 )
 
-const statusShortDescription = `Print info about project directory`
-const statusLongDescription = `Command "status"
+const (
+	statusShortDescription = `Print info about project directory`
+	statusLongDescription  = `Command "status"
 
 Print info about current project dir, metadata dir and working dir.
 `
+)
 
 func statusCommand(root *rootCommand) *cobra.Command {
 	cmd := &cobra.Command{

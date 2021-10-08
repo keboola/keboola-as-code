@@ -7,8 +7,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/workflows"
 )
 
-const workflowsShortDescription = `Generate Github Actions workflows`
-const workflowsLongDescription = `Command "workflows"
+const (
+	workflowsShortDescription = `Generate Github Actions workflows`
+	workflowsLongDescription  = `Command "workflows"
 
 Generate workflows for Github Actions:
 - "validate" all branches on change.
@@ -19,6 +20,7 @@ You will be prompted which workflows you want to generate.
 
 The secret KBC_STORAGE_API_TOKEN must be added to the GitHub repository.
 `
+)
 
 func workflowsCommand(root *rootCommand) *cobra.Command {
 	cmd := &cobra.Command{

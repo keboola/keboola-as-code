@@ -10,8 +10,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 )
 
-const pushShortDescription = `Push configurations to the Keboola Connection project`
-const pushLongDescription = `Command "push"
+const (
+	pushShortDescription = `Push configurations to the Keboola Connection project`
+	pushLongDescription  = `Command "push"
 
 Push configurations to the Keboola Connection project.
 Project's state will be overwritten to match the local files.
@@ -22,6 +23,7 @@ It will be visible in the config's versions.
 You can use the "--dry-run" flag to see
 what needs to be done without modifying the project's state.
 `
+)
 
 func pushCommand(root *rootCommand) *cobra.Command {
 	force := false

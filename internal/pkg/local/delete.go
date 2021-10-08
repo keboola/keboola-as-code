@@ -84,7 +84,6 @@ func (m *Manager) DeleteEmptyDirectories(trackedPaths []string) error {
 
 		return nil
 	})
-
 	if err != nil {
 		return err
 	}
