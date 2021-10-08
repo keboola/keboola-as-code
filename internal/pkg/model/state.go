@@ -2,9 +2,11 @@ package model
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/iancoleman/orderedmap"
+	"github.com/spf13/cast"
 	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -72,6 +74,31 @@ func (s *State) Branches() (branches []*BranchState) {
 	return branches
 }
 
+// SearchForBranches by ID and name.
+func (s *State) SearchForBranches(str string) []*BranchState {
+	matches := make([]*BranchState, 0)
+	for _, object := range s.Branches() {
+		if matchObjectIdOrName(str, object) {
+			matches = append(matches, object)
+		}
+	}
+	return matches
+}
+
+// SearchForBranch by ID and name.
+func (s *State) SearchForBranch(str string) (*BranchState, error) {
+	branches := s.SearchForBranches(str)
+	switch len(branches) {
+	case 1:
+		// ok, one match
+		return branches[0], nil
+	case 0:
+		return nil, fmt.Errorf(`no branch matches the specified "%s"`, str)
+	default:
+		return nil, fmt.Errorf(`multiple branches match the specified "%s"`, str)
+	}
+}
+
 func (s *State) Configs() (configs []*ConfigState) {
 	for _, object := range s.All() {
 		if v, ok := object.(*ConfigState); ok {
@@ -79,6 +106,43 @@ func (s *State) Configs() (configs []*ConfigState) {
 		}
 	}
 	return configs
+}
+
+func (s *State) ConfigsFrom(branch BranchKey) (configs []*ConfigState) {
+	for _, object := range s.All() {
+		if v, ok := object.(*ConfigState); ok {
+			if v.BranchId != branch.Id {
+				continue
+			}
+			configs = append(configs, v)
+		}
+	}
+	return configs
+}
+
+// SearchForConfigs by ID and name.
+func (s *State) SearchForConfigs(str string, branch BranchKey) []*ConfigState {
+	matches := make([]*ConfigState, 0)
+	for _, object := range s.ConfigsFrom(branch) {
+		if matchObjectIdOrName(str, object) {
+			matches = append(matches, object)
+		}
+	}
+	return matches
+}
+
+// SearchForConfig by ID and name.
+func (s *State) SearchForConfig(str string, branch BranchKey) (*ConfigState, error) {
+	configs := s.SearchForConfigs(str, branch)
+	switch len(configs) {
+	case 1:
+		// ok, one match
+		return configs[0], nil
+	case 0:
+		return nil, fmt.Errorf(`no config matches the specified "%s"`, str)
+	default:
+		return nil, fmt.Errorf(`multiple configs match the specified "%s"`, str)
+	}
 }
 
 func (s *State) ConfigRows() (rows []*ConfigRowState) {
@@ -90,16 +154,48 @@ func (s *State) ConfigRows() (rows []*ConfigRowState) {
 	return rows
 }
 
-func (s *State) Get(key Key) ObjectState {
-	object, err := s.GetOrCreate(key)
-	if err != nil {
-		panic(err)
+func (s *State) ConfigRowsFrom(config ConfigKey) (rows []*ConfigRowState) {
+	for _, object := range s.All() {
+		if v, ok := object.(*ConfigRowState); ok {
+			if v.BranchId != config.BranchId || v.ComponentId != config.ComponentId || v.ConfigId != config.Id {
+				continue
+			}
+			rows = append(rows, v)
+		}
 	}
+	return rows
+}
 
-	if object == nil {
-		panic(fmt.Errorf(`object "%s" not found`, key.String()))
+// SearchForConfigRows by ID and name.
+func (s *State) SearchForConfigRows(str string, config ConfigKey) []*ConfigRowState {
+	matches := make([]*ConfigRowState, 0)
+	for _, object := range s.ConfigRowsFrom(config) {
+		if matchObjectIdOrName(str, object) {
+			matches = append(matches, object)
+		}
 	}
-	return object
+	return matches
+}
+
+// SearchForConfigRow by ID and name.
+func (s *State) SearchForConfigRow(str string, config ConfigKey) (*ConfigRowState, error) {
+	rows := s.SearchForConfigRows(str, config)
+	switch len(rows) {
+	case 1:
+		// ok, one match
+		return rows[0], nil
+	case 0:
+		return nil, fmt.Errorf(`no row matches the specified "%s"`, str)
+	default:
+		return nil, fmt.Errorf(`multiple rows match the specified "%s"`, str)
+	}
+}
+
+func (s *State) Get(key Key) ObjectState {
+	if v, ok := s.objects.Get(key.String()); ok {
+		return v.(ObjectState)
+	}
+	panic(fmt.Errorf(`%s not found`, key.Desc()))
 }
 
 func (s *State) GetOrCreate(key Key) (ObjectState, error) {
@@ -126,4 +222,14 @@ func (s *State) GetOrCreate(key Key) (ObjectState, error) {
 		s.objects.Set(key.String(), object)
 		return object, nil
 	}
+}
+
+// matchObjectIdOrName returns true if str == objectId or objectName contains str.
+func matchObjectIdOrName(str string, object Object) bool {
+	if cast.ToString(object.ObjectId()) == str {
+		return true
+	}
+
+	// Matched by name
+	return strings.Contains(strings.ToLower(object.ObjectName()), strings.ToLower(str))
 }
