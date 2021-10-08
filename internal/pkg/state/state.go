@@ -198,6 +198,30 @@ func (s *State) SetLocalState(local model.Object, record model.Record) model.Obj
 	return state
 }
 
+func (s *State) CreateLocalState(key model.Key, name string) (model.ObjectState, error) {
+	// Create object
+	object, err := s.localManager.CreateObject(key, name)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create manifest record
+	record, _, err := s.manifest.CreateOrGetRecord(object.Key())
+	if err != nil {
+		return nil, err
+	}
+
+	// Set local state
+	state := s.SetLocalState(object, record)
+
+	// Generate local path
+	if err := s.localManager.UpdatePaths(state, false); err != nil {
+		return nil, err
+	}
+
+	return state, nil
+}
+
 func (s *State) validate() {
 	for _, component := range s.Components().AllLoaded() {
 		if err := validator.Validate(component); err != nil {
