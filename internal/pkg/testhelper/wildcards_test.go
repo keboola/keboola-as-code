@@ -3,6 +3,7 @@ package testhelper
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"regexp"
 	"testing"
 
@@ -44,7 +45,7 @@ func TestWildcardToRegexp(t *testing.T) {
 		out string
 	}{
 		{in: ``, out: ``},
-		{in: `%e`, out: `/`},
+		{in: `%e`, out: regexp.QuoteMeta(string(os.PathSeparator))}, // nolint forbidigo
 		{in: `%s`, out: `.+`},
 		{in: `%S`, out: `.*`},
 		{in: `%a`, out: `(.|\n)+`},
@@ -73,7 +74,7 @@ func TestWildcardToRegexpMatch(t *testing.T) {
 		{pattern: ``, input: `foo`, match: false},
 		{pattern: ``, input: ``, match: true},
 		{pattern: `%e`, input: `foo`, match: false},
-		{pattern: `%e`, input: `/`, match: true},
+		{pattern: `%e`, input: string(os.PathSeparator), match: true}, // nolint forbidigo
 		{pattern: `%s`, input: ``, match: false},
 		{pattern: `%s`, input: "\n", match: false},
 		{pattern: `%s`, input: ` `, match: true},

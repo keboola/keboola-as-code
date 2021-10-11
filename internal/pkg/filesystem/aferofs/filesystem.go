@@ -3,6 +3,7 @@ package aferofs
 
 import (
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -23,6 +24,8 @@ type backend interface {
 	afero.Fs
 	Name() string
 	BasePath() string
+	FromSlash(path string) string // returns OS representation of the path
+	ToSlash(path string) string   // returns internal representation of the path
 	Walk(root string, walkFn filepath.WalkFunc) error
 	ReadDir(path string) ([]os.FileInfo, error)
 }
@@ -35,7 +38,7 @@ type Fs struct {
 }
 
 func New(logger *zap.SugaredLogger, fs backend, workingDir string) filesystem.Fs {
-	return &Fs{fs: fs, logger: logger, workingDir: workingDir}
+	return &Fs{fs: fs, logger: logger, workingDir: fs.ToSlash(workingDir)}
 }
 
 // ApiName - name of the file system implementation, for example local, memory, ...
@@ -59,26 +62,39 @@ func (f *Fs) SetLogger(logger *zap.SugaredLogger) {
 
 // Walk walks the file tree.
 func (f *Fs) Walk(root string, walkFn filepath.WalkFunc) error {
-	return f.fs.Walk(root, walkFn)
+	return f.fs.Walk(f.fs.FromSlash(root), func(path string, info fs.FileInfo, err error) error {
+		return walkFn(f.fs.ToSlash(path), info, err)
+	})
 }
 
 // Glob returns the names of all files matching pattern or nil.
 func (f *Fs) Glob(pattern string) (matches []string, err error) {
-	return afero.Glob(f.fs, pattern)
+	matches, err = afero.Glob(f.fs, f.fs.FromSlash(pattern))
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert path separator
+	mapped := make([]string, len(matches))
+	for i, path := range matches {
+		mapped[i] = f.fs.ToSlash(path)
+	}
+
+	return mapped, nil
 }
 
 // Stat returns a FileInfo.
 func (f *Fs) Stat(path string) (os.FileInfo, error) {
-	return f.fs.Stat(path)
+	return f.fs.Stat(f.fs.FromSlash(path))
 }
 
 // ReadDir - return list of sorted directory entries.
 func (f *Fs) ReadDir(path string) ([]os.FileInfo, error) {
-	return f.fs.ReadDir(path)
+	return f.fs.ReadDir(f.fs.FromSlash(path))
 }
 
 func (f *Fs) Exists(path string) bool {
-	if _, err := f.fs.Stat(path); err == nil {
+	if _, err := f.Stat(path); err == nil {
 		return true
 	} else if !os.IsNotExist(err) {
 		panic(fmt.Errorf("cannot test if file exists \"%s\": %w", path, err))
@@ -89,7 +105,7 @@ func (f *Fs) Exists(path string) bool {
 
 // IsFile - true if path exists, and it is a file.
 func (f *Fs) IsFile(path string) bool {
-	if s, err := f.fs.Stat(path); err == nil {
+	if s, err := f.Stat(path); err == nil {
 		return !s.IsDir()
 	} else if !os.IsNotExist(err) {
 		panic(fmt.Errorf("cannot test if file exists \"%s\": %w", path, err))
@@ -100,7 +116,7 @@ func (f *Fs) IsFile(path string) bool {
 
 // IsDir - true if path exists, and it is a dir.
 func (f *Fs) IsDir(path string) bool {
-	if s, err := f.fs.Stat(path); err == nil {
+	if s, err := f.Stat(path); err == nil {
 		return s.IsDir()
 	} else if !os.IsNotExist(err) {
 		panic(fmt.Errorf("cannot test if file exists \"%s\": %w", path, err))
@@ -111,24 +127,24 @@ func (f *Fs) IsDir(path string) bool {
 
 // Create creates a file in the filesystem, returning the file.
 func (f *Fs) Create(name string) (afero.File, error) {
-	return f.fs.Create(name)
+	return f.fs.Create(f.fs.FromSlash(name))
 }
 
 // Open opens a file readon.
 func (f *Fs) Open(name string) (afero.File, error) {
-	return f.fs.Open(name)
+	return f.fs.Open(f.fs.FromSlash(name))
 }
 
 // OpenFile opens a file using the given flags and the given mode.
 func (f *Fs) OpenFile(name string, flag int, perm os.FileMode) (afero.File, error) {
-	return f.fs.OpenFile(name, flag, perm)
+	return f.fs.OpenFile(f.fs.FromSlash(name), flag, perm)
 }
 
 // Mkdir - create directory.
 // If the directory already exists, it is a valid state.
 // Parent directories will also be created if necessary.
 func (f *Fs) Mkdir(path string) error {
-	if err := f.fs.MkdirAll(path, 0o755); err != nil {
+	if err := f.fs.MkdirAll(f.fs.FromSlash(path), 0o755); err != nil {
 		return fmt.Errorf(`cannot create directory "%s": %w`, path, err)
 	} else {
 		f.logger.Debugf(`Created directory "%s"`, path)
@@ -144,7 +160,7 @@ func (f *Fs) Copy(src, dst string) error {
 		return fmt.Errorf(`cannot copy "%s" -> "%s": destination exists`, src, dst)
 	}
 
-	err := aferocopy.Copy(src, dst, aferocopy.Options{
+	err := aferocopy.Copy(f.fs.FromSlash(src), f.fs.FromSlash(dst), aferocopy.Options{
 		SrcFs:  f.fs,
 		DestFs: f.fs,
 		Sync:   true,
@@ -182,7 +198,7 @@ func (f *Fs) Move(src, dst string) error {
 
 	var err error
 	if f.IsFile(src) {
-		if err = f.fs.Rename(src, dst); err != nil {
+		if err = f.fs.Rename(f.fs.FromSlash(src), f.fs.FromSlash(dst)); err != nil {
 			return err
 		}
 	} else {
@@ -213,7 +229,7 @@ func (f *Fs) MoveForce(src, dst string) error {
 // Remove file or dir.
 // Directories are removed recursively.
 func (f *Fs) Remove(path string) error {
-	err := f.fs.RemoveAll(path)
+	err := f.fs.RemoveAll(f.fs.FromSlash(path))
 	if err == nil {
 		f.logger.Debugf(`Removed "%s"`, path)
 	}
@@ -226,7 +242,7 @@ func (f *Fs) ReadFile(path, desc string) (*filesystem.File, error) {
 	file.Desc = desc
 
 	// Open
-	fd, err := f.fs.Open(path)
+	fd, err := f.fs.Open(f.fs.FromSlash(file.Path))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, newFileError("missing", file, nil)
@@ -253,7 +269,7 @@ func (f *Fs) ReadFile(path, desc string) (*filesystem.File, error) {
 // WriteFile from string.
 func (f *Fs) WriteFile(file *filesystem.File) error {
 	// Create dir
-	dir := filepath.Dir(file.Path)
+	dir := filesystem.Dir(file.Path)
 	if !f.Exists(dir) {
 		if err := f.Mkdir(dir); err != nil {
 			return err

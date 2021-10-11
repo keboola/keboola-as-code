@@ -35,6 +35,7 @@ func TestFileCore(t *testing.T) {
 	logger.Info("Info msg")
 	logger.Warn("Warn msg")
 	logger.Error("Error msg")
+	assert.NoError(t, file.Close())
 
 	// Assert, all levels logged with the level prefix
 	expected := "DEBUG\tDebug msg\nINFO\tInfo msg\nWARN\tWarn msg\nERROR\tError msg\n"

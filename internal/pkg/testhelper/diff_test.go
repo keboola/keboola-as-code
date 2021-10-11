@@ -36,7 +36,7 @@ func TestAssertDirectoryFileOnlyInExpected(t *testing.T) {
 	// Assert
 	test := &mockedT{buf: bytes.NewBuffer(nil)}
 	AssertDirectoryContentsSame(test, expectedDir, actualDir)
-	assert.Regexp(t, "^Directories are not same:\nonly in expected \".+/file.txt\"$", test.buf.String())
+	assert.Regexp(t, "^Directories are not same:\nonly in expected \".+file.txt\"$", test.buf.String())
 }
 
 func TestAssertDirectoryDirOnlyInExpected(t *testing.T) {
@@ -50,7 +50,7 @@ func TestAssertDirectoryDirOnlyInExpected(t *testing.T) {
 	// Assert
 	test := &mockedT{buf: bytes.NewBuffer(nil)}
 	AssertDirectoryContentsSame(test, expectedDir, actualDir)
-	assert.Regexp(t, "^Directories are not same:\nonly in expected \".+/myDir\"$", test.buf.String())
+	assert.Regexp(t, "^Directories are not same:\nonly in expected \".+myDir\"$", test.buf.String())
 }
 
 func TestAssertDirectoryFileOnlyInActual(t *testing.T) {
@@ -68,7 +68,7 @@ func TestAssertDirectoryFileOnlyInActual(t *testing.T) {
 	// Assert
 	test := &mockedT{buf: bytes.NewBuffer(nil)}
 	AssertDirectoryContentsSame(test, expectedDir, actualDir)
-	assert.Regexp(t, "^Directories are not same:\nonly in actual \".+/file.txt\"$", test.buf.String())
+	assert.Regexp(t, "^Directories are not same:\nonly in actual \".+file.txt\"$", test.buf.String())
 }
 
 func TestAssertDirectoryDirOnlyInActual(t *testing.T) {
@@ -82,7 +82,7 @@ func TestAssertDirectoryDirOnlyInActual(t *testing.T) {
 	// Assert
 	test := &mockedT{buf: bytes.NewBuffer(nil)}
 	AssertDirectoryContentsSame(test, expectedDir, actualDir)
-	assert.Regexp(t, "^Directories are not same:\nonly in actual \".+/myDir\"$", test.buf.String())
+	assert.Regexp(t, "^Directories are not same:\nonly in actual \".+myDir\"$", test.buf.String())
 }
 
 func TestAssertDirectoryFileDifferentType1(t *testing.T) {

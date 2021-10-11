@@ -4,8 +4,11 @@ package memoryfs
 import (
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/afero"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 )
 
 type aferoFs = afero.Fs
@@ -30,6 +33,18 @@ func (fs *MemoryFs) Name() string {
 
 func (fs *MemoryFs) BasePath() string {
 	return "__memory__"
+}
+
+// FromSlash returns OS representation of the path.
+func (fs *MemoryFs) FromSlash(path string) string {
+	// Note: memoryfs is virtual, but is using os.PathSeparator constant
+	return strings.ReplaceAll(path, string(filesystem.PathSeparator), string(os.PathSeparator))
+}
+
+// ToSlash returns internal representation of the path.
+func (fs *MemoryFs) ToSlash(path string) string {
+	// Note: memoryfs is virtual, but is using os.PathSeparator constant
+	return strings.ReplaceAll(path, string(os.PathSeparator), string(filesystem.PathSeparator))
 }
 
 func (fs *MemoryFs) Walk(root string, walkFn filepath.WalkFunc) error {

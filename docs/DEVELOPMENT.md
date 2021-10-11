@@ -80,7 +80,7 @@ Each directory in the `src/tests/*` is one functional test.
 #### Wildcards
 
 Wildcards can be used in `/expected-stdout`, `/expected-stderr` and `/out/*.*` for comparing dynamic values:
-- `%e`: Represents a directory separator, for example / on Linux.
+- `%e`: Represents a directory separator, for example `/` on Linux.
 - `%s`: One or more of anything (character or white space) except the end of line character.
 - `%S`: Zero or more of anything (character or white space) except the end of line character.
 - `%a`: One or more of anything (character or white space) including the end of line character.

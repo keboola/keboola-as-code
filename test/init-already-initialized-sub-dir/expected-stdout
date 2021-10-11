@@ -1,2 +1,2 @@
-The path "%s/foo" is already an project directory.
+The path "%s%efoo" is already an project directory.
 Please use a different directory or synchronize the current with "pull" command.

@@ -1,14 +1,28 @@
 package filesystem
 
 import (
+	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
+func TestToOs(t *testing.T) {
+	t.Parallel()
+	assert.Equal(t, filepath.Join(`abc`, `def`), ToOs(path.Join(`abc`, `def`))) // nolint forbidifo
+}
+
+func TestFromOs(t *testing.T) {
+	t.Parallel()
+	assert.Equal(t, path.Join(`abc`, `def`), FromOs(filepath.Join(`abc`, `def`))) // nolint forbidifo
+}
+
 func TestRel(t *testing.T) {
 	t.Parallel()
-	assert.Equal(t, "abc/file.txt", Rel(`foo/bar`, `foo/bar/abc/file.txt`))
+	path, err := Rel(`foo/bar`, `foo/bar/abc/file.txt`)
+	assert.NoError(t, err)
+	assert.Equal(t, "abc/file.txt", path)
 }
 
 func TestJoin(t *testing.T) {
@@ -53,4 +67,3 @@ func TestIsFrom(t *testing.T) {
 	assert.False(t, IsFrom(`xyz/def`, `abc`))
 	assert.False(t, IsFrom(`xyz/def/file.txt`, `abc`))
 }
-

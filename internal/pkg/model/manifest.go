@@ -111,7 +111,12 @@ func (p *Paths) AddRelatedPath(path string) {
 		panic(fmt.Errorf(`path "%s" is not from the dir "%s"`, path, dir))
 	}
 
-	p.RelatedPaths = append(p.RelatedPaths, filesystem.Rel(dir, path))
+	relPath, err := filesystem.Rel(dir, path)
+	if err != nil {
+		panic(err)
+	}
+
+	p.RelatedPaths = append(p.RelatedPaths, relPath)
 }
 
 func (p *Paths) AbsolutePath(projectDir string) string {

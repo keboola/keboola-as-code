@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"time"
 
@@ -186,12 +187,14 @@ func (root *rootCommand) newStorageApi() (*remote.StorageApi, error) {
 // tearDown makes clean-up after command execution.
 func (root *rootCommand) tearDown() {
 	if err := recover(); err == nil {
-		// No error -> remove log file if temporary
-		if root.logFile != nil && root.logFileClear {
+		if root.logFile != nil {
 			if err = root.logFile.Close(); err != nil {
 				panic(fmt.Errorf("cannot close log file \"%s\": %s", root.options.LogFilePath, err))
 			}
+		}
 
+		// No error -> remove log file if temporary
+		if root.logFileClear {
 			// nolint: forbidigo
 			if err = os.Remove(root.options.LogFilePath); err != nil {
 				panic(fmt.Errorf("cannot remove temp log file \"%s\": %s", root.options.LogFilePath, err))
@@ -289,7 +292,8 @@ func (root *rootCommand) getLogFile() (logFile *os.File, logFileErr error) {
 			randomHash = fmt.Sprintf(`-%x`, randomBytes)
 		}
 
-		root.options.LogFilePath = path.Join(os.TempDir(), fmt.Sprintf("keboola-as-code-%d%s.txt", time.Now().Unix(), randomHash))
+		// nolint forbidigo
+		root.options.LogFilePath = filepath.Join(os.TempDir(), fmt.Sprintf("keboola-as-code-%d%s.txt", time.Now().Unix(), randomHash))
 		root.logFileClear = true // temp log file will be removed. It will be preserved only in case of error
 	}
 

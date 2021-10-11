@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"os"
 	"regexp"
 	"runtime"
@@ -164,7 +165,7 @@ func TestGetLogFileTempFile(t *testing.T) {
 	// Linux returns temp dir without last separator, MacOs with last separator.
 	// ... so we need to make sure there is only one separator at the end.
 	tempDir := strings.TrimRight(os.TempDir(), string(os.PathSeparator)) + string(os.PathSeparator) // nolint forbidigo
-	assert.True(t, strings.HasPrefix(root.options.LogFilePath, tempDir))
+	assert.True(t, strings.HasPrefix(root.options.LogFilePath, tempDir), fmt.Sprintf("%s\n%s\n", root.options.LogFilePath, tempDir))
 	assert.True(t, root.logFileClear)
 }
 
@@ -180,4 +181,5 @@ func TestGetLogFileFromFlags(t *testing.T) {
 	assert.NotNil(t, file)
 	assert.Equal(t, root.options.LogFilePath, root.options.LogFilePath)
 	assert.False(t, root.logFileClear)
+	assert.NoError(t, file.Close())
 }

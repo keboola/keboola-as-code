@@ -57,7 +57,11 @@ func (b *persistPlanBuilder) build() {
 
 func (b *persistPlanBuilder) tryAddConfig(projectPath string, branch *model.BranchState) []PersistAction {
 	// Is path from the branch dir?
-	relPath := filesystem.Rel(branch.Path(), projectPath)
+	relPath, err := filesystem.Rel(branch.Path(), projectPath)
+	if err != nil {
+		b.errors.Append(err)
+		return nil
+	}
 
 	// Is config path matching naming template?
 	matched, matches := b.Naming().Config.MatchPath(relPath)
@@ -93,7 +97,11 @@ func (b *persistPlanBuilder) tryAddConfig(projectPath string, branch *model.Bran
 
 func (b *persistPlanBuilder) tryAddConfigRow(projectPath, configPath string, configKey model.ConfigKey) *NewRowAction {
 	// Is path from the config dir?
-	relPath := filesystem.Rel(configPath, projectPath)
+	relPath, err := filesystem.Rel(configPath, projectPath)
+	if err != nil {
+		b.errors.Append(err)
+		return nil
+	}
 
 	// Is config row pat matching naming template?
 	if matched, _ := b.Naming().ConfigRow.MatchPath(relPath); !matched {

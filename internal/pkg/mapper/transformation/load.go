@@ -230,8 +230,14 @@ func (l *loader) codeFileName(code *model.Code) string {
 	}
 	files := make([]string, 0)
 	for _, match := range matches {
+		relPath, err := filesystem.Rel(code.Path(), match)
+		if err != nil {
+			l.errors.Append(err)
+			continue
+		}
+
 		if l.fs.IsFile(match) {
-			files = append(files, filesystem.Rel(code.Path(), match))
+			files = append(files, relPath)
 		}
 	}
 
