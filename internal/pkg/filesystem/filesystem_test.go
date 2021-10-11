@@ -8,14 +8,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestToOs(t *testing.T) {
+func TestFromSlash(t *testing.T) {
 	t.Parallel()
-	assert.Equal(t, filepath.Join(`abc`, `def`), ToOs(path.Join(`abc`, `def`))) // nolint forbidifo
+	assert.Equal(t, filepath.Join(`abc`, `def`), FromSlash(path.Join(`abc`, `def`))) // nolint forbidifo
 }
 
-func TestFromOs(t *testing.T) {
+func TestToSlash(t *testing.T) {
 	t.Parallel()
-	assert.Equal(t, path.Join(`abc`, `def`), FromOs(filepath.Join(`abc`, `def`))) // nolint forbidifo
+	assert.Equal(t, path.Join(`abc`, `def`), ToSlash(filepath.Join(`abc`, `def`))) // nolint forbidifo
 }
 
 func TestRel(t *testing.T) {

@@ -52,11 +52,11 @@ type Fs interface {
 	CreateOrUpdateFile(path, desc string, lines []FileLine) (updated bool, err error)
 }
 
-func ToOs(path string) string {
+func FromSlash(path string) string {
 	return filepath.FromSlash(path)
 }
 
-func FromOs(path string) string {
+func ToSlash(path string) string {
 	return filepath.ToSlash(path)
 }
 
