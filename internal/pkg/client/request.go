@@ -56,28 +56,38 @@ func NewRequest(id int, sender Sender, request *resty.Request) *Request {
 }
 
 func (r *Request) SetResult(result interface{}) *Request {
+	r.lock.Lock()
+	defer r.lock.Unlock()
 	r.Request.SetResult(result)
 	return r
 }
 
 func (r *Request) SetHeader(header string, value string) *Request {
+	r.lock.Lock()
+	defer r.lock.Unlock()
 	r.Request.SetHeader(header, value)
 	return r
 }
 
 func (r *Request) SetQueryParam(param, value string) *Request {
+	r.lock.Lock()
+	defer r.lock.Unlock()
 	r.Request.SetQueryParam(param, value)
 	r.queryParams[param] = value
 	return r
 }
 
 func (r *Request) SetPathParam(param, value string) *Request {
+	r.lock.Lock()
+	defer r.lock.Unlock()
 	r.Request.SetPathParam(param, value)
 	r.pathParams[param] = value
 	return r
 }
 
 func (r *Request) SetBody(body map[string]string) *Request {
+	r.lock.Lock()
+	defer r.lock.Unlock()
 	// Storage API use "form-urlencoded", but it can be simply switched to JSON in the future
 	r.Request.SetHeader("Content-Type", "application/x-www-form-urlencoded")
 	r.Request.SetFormData(body)
@@ -91,8 +101,8 @@ func (r *Request) Send() *Request {
 
 func (r *Request) MarkSent() {
 	r.lock.Lock()
+	defer r.lock.Unlock()
 	r.sent = true
-	r.lock.Unlock()
 }
 
 func (r *Request) IsSent() bool {
@@ -103,9 +113,9 @@ func (r *Request) IsSent() bool {
 
 func (r *Request) MarkDone(response *Response) {
 	r.lock.Lock()
+	defer r.lock.Unlock()
 	r.Response = response
 	r.done = true
-	r.lock.Unlock()
 }
 
 func (r *Request) IsDone() bool {
@@ -115,6 +125,8 @@ func (r *Request) IsDone() bool {
 }
 
 func (r *Request) Id() int {
+	r.lock.Lock()
+	defer r.lock.Unlock()
 	return r.id
 }
 
@@ -131,6 +143,8 @@ func (r *Request) OnError(callback ResponseCallback) *Request {
 }
 
 func (r *Request) SetContext(ctx context.Context) *Request {
+	r.lock.Lock()
+	defer r.lock.Unlock()
 	// Store pathParams and queryParams to context for logs
 	ctx = context.WithValue(ctx, contextKey("pathParams"), r.pathParams)
 	ctx = context.WithValue(ctx, contextKey("queryParams"), r.queryParams)
@@ -142,24 +156,11 @@ func (r *Request) SetContext(ctx context.Context) *Request {
 // See TestWaitForSubRequest test.
 func (r *Request) WaitFor(subRequest *Request) {
 	r.lock.Lock()
+	defer r.lock.Unlock()
 	r.waitingFor = append(r.waitingFor, subRequest)
-	r.lock.Unlock()
-
 	subRequest.OnResponse(func(response *Response) {
 		r.invokeListeners()
 	})
-}
-
-// isWaiting for sub-request to complete.
-func (r *Request) isWaiting() bool {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-	for _, subRequest := range r.waitingFor {
-		if !subRequest.IsDone() {
-			return true
-		}
-	}
-	return false
 }
 
 // nextListener which has not yet been invoked.
@@ -172,6 +173,14 @@ func (r *Request) nextListener() *ResponseListener {
 		return nil
 	}
 
+	// Are all sub-requests done?
+	for _, subRequest := range r.waitingFor {
+		if !subRequest.IsDone() {
+			// Invoke listeners later, when all subRequests will be done, see waitFor method
+			return nil
+		}
+	}
+
 	// Remove listener from slice
 	listener := r.listeners[0]
 	r.listeners = r.listeners[1:]
@@ -181,11 +190,6 @@ func (r *Request) nextListener() *ResponseListener {
 // invokeListeners if all are "waitingFor" requests done.
 func (r *Request) invokeListeners() {
 	for {
-		if r.isWaiting() {
-			// Invoke listeners later, when all subRequests will be done, see WaitFor method
-			break
-		}
-
 		// Invoke next listener if present
 		listener := r.nextListener()
 		if listener != nil {
@@ -197,6 +201,9 @@ func (r *Request) invokeListeners() {
 }
 
 func (r *Request) addListener(t ResponseEventType, callback ResponseCallback) *Request {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
 	if r.sent {
 		panic("listener cannot be added, request is already sent")
 	}
