@@ -2,7 +2,6 @@ package transformation
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/iancoleman/orderedmap"
@@ -81,9 +80,8 @@ func (w *writer) save() error {
 
 	// Delete all old files from blocks dir
 	// We always do full generation of blocks dir.
-	blocksDirWithSep := blocksDir + string(os.PathSeparator)
 	for _, path := range w.state.TrackedPaths() {
-		if strings.HasPrefix(path, blocksDirWithSep) && w.state.IsFile(path) {
+		if filesystem.IsFrom(path, blocksDir) && w.state.IsFile(path) {
 			w.ToDelete = append(w.ToDelete, path)
 		}
 	}

@@ -3,7 +3,6 @@ package local
 import (
 	"fmt"
 	"io/fs"
-	"os"
 	"sort"
 	"strings"
 
@@ -66,13 +65,13 @@ func (m *Manager) DeleteEmptyDirectories(trackedPaths []string) error {
 
 		// Found a directory -> store path
 		if !skipDir && info.IsDir() {
-			emptyDirs.Set(path+string(os.PathSeparator), true)
+			emptyDirs.Set(path, true)
 			return nil
 		}
 
 		// Found file/ignored dir -> all parent dirs are not empty
 		for _, dir := range emptyDirs.Keys() {
-			if strings.HasPrefix(path, dir) {
+			if filesystem.IsFrom(path, dir) {
 				emptyDirs.Delete(dir)
 			}
 		}
@@ -99,8 +98,7 @@ func (m *Manager) DeleteEmptyDirectories(trackedPaths []string) error {
 	dirsToRemove := make([]string, 0)
 	for _, dir := range emptyDirs.Keys() {
 		for _, tracked := range trackedPaths {
-			prefix := tracked + string(os.PathSeparator)
-			if strings.HasPrefix(dir, prefix) {
+			if tracked == dir || filesystem.IsFrom(dir, tracked) {
 				// Remove dir, it is from a tracked dir
 				dirsToRemove = append(dirsToRemove, dir)
 				break

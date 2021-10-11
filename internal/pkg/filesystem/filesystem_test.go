@@ -43,3 +43,14 @@ func TestMatch(t *testing.T) {
 	assert.NoError(t, err)
 	assert.False(t, m)
 }
+
+func TestIsFrom(t *testing.T) {
+	t.Parallel()
+	assert.True(t, IsFrom(`abc/def`, `abc`))
+	assert.True(t, IsFrom(`abc/def/file.txt`, `abc`))
+	assert.False(t, IsFrom(`abc`, `abc`))
+	assert.False(t, IsFrom(`xyz`, `abc`))
+	assert.False(t, IsFrom(`xyz/def`, `abc`))
+	assert.False(t, IsFrom(`xyz/def/file.txt`, `abc`))
+}
+

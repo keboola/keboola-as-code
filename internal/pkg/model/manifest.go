@@ -2,8 +2,6 @@ package model
 
 import (
 	"fmt"
-	"os"
-	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 )
@@ -94,10 +92,7 @@ func (p *PathInProject) SetParentPath(parentPath string) {
 }
 
 func (p PathInProject) Path() string {
-	return filesystem.Join(
-		strings.ReplaceAll(p.ParentPath, "/", string(os.PathSeparator)),
-		strings.ReplaceAll(p.ObjectPath, "/", string(os.PathSeparator)),
-	)
+	return filesystem.Join(p.ParentPath, p.ObjectPath)
 }
 
 func (p *Paths) GetRelatedPaths() []string {
@@ -112,12 +107,11 @@ func (p *Paths) GetRelatedPaths() []string {
 
 func (p *Paths) AddRelatedPath(path string) {
 	dir := p.Path()
-	prefix := dir + string(os.PathSeparator)
-	if !strings.HasPrefix(path, prefix) {
+	if !filesystem.IsFrom(path, dir) {
 		panic(fmt.Errorf(`path "%s" is not from the dir "%s"`, path, dir))
 	}
 
-	p.RelatedPaths = append(p.RelatedPaths, strings.TrimPrefix(path, prefix))
+	p.RelatedPaths = append(p.RelatedPaths, filesystem.Rel(dir, path))
 }
 
 func (p *Paths) AbsolutePath(projectDir string) string {

@@ -44,7 +44,7 @@ func WildcardToRegexp(pattern string) string {
 		switch s {
 		// %e: Represents a directory separator, for example / on Linux.
 		case `%e`:
-			return string(os.PathSeparator)
+			return string(os.PathSeparator) // nolint forbidigo
 		// %s: One or more of anything (character or white space) except the end of line character.
 		case `%s`:
 			return `.+`

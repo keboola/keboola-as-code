@@ -4,13 +4,18 @@ package filesystem
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 )
 
-const MetadataDir = ".keboola"
+const (
+	MetadataDir   = ".keboola"
+	PathSeparator = '/'
+)
 
 type Factory func(logger *zap.SugaredLogger, workingDir string) (fs Fs, err error)
 
@@ -58,25 +63,31 @@ func Rel(base, path string) string {
 
 // Join joins any number of path elements into a single path.
 func Join(elem ...string) string {
-	return filepath.Join(elem...)
+	return path.Join(elem...)
 }
 
 // Split splits path immediately following the final Separator,.
-func Split(path string) (dir, file string) {
-	return filepath.Split(path)
+func Split(p string) (dir, file string) {
+	return path.Split(p)
 }
 
 // Dir returns all but the last element of path, typically the path's directory.
-func Dir(path string) string {
-	return filepath.Dir(path)
+func Dir(p string) string {
+	return path.Dir(p)
 }
 
 // Base returns the last element of path.
-func Base(path string) string {
-	return filepath.Base(path)
+func Base(p string) string {
+	return path.Base(p)
 }
 
 // Match reports whether name matches the shell file name pattern.
 func Match(pattern, name string) (matched bool, err error) {
-	return filepath.Match(pattern, name)
+	return path.Match(pattern, name)
+}
+
+// IsFrom returns true if path is from base dir or some sub-dir.
+func IsFrom(path, base string) bool {
+	baseWithSep := base + string(PathSeparator)
+	return strings.HasPrefix(path, baseWithSep)
 }
