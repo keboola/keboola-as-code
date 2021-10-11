@@ -126,12 +126,8 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	var stdout, stderr bytes.Buffer
 	cmd := exec.Command(binary, args...)
 	cmd.Dir = workingDir
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	if testhelper.TestIsVerbose() {
-		cmd.Stdout = io.MultiWriter(cmd.Stdout, os.Stdout)
-		cmd.Stderr = io.MultiWriter(cmd.Stderr, os.Stderr)
-	}
+	cmd.Stdout = io.MultiWriter(&stdout, testhelper.VerboseStdout())
+	cmd.Stderr = io.MultiWriter(&stderr, testhelper.VerboseStderr())
 
 	// Run command
 	exitCode := 0
