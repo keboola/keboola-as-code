@@ -6,9 +6,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	. "github.com/keboola/keboola-as-code/internal/pkg/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -25,19 +26,25 @@ func TestApiWithToken(t *testing.T) {
 }
 
 func TestGetToken(t *testing.T) {
-	tokenValue := testhelper.TestToken()
-	api, logs := TestStorageApi(t)
+	project := testproject.GetTestProject(t, env.Empty())
+	logger, logs := utils.NewDebugLogger()
+	api := NewStorageApi(project.StorageApiHost(), context.Background(), logger, false)
+
+	tokenValue := project.Token()
 	token, err := api.GetToken(tokenValue)
 	assert.NoError(t, err)
 	assert.Regexp(t, `DEBUG  HTTP      GET https://.*/v2/storage/tokens/verify | 200 | .*`, logs.String())
 	assert.Equal(t, tokenValue, token.Token)
-	assert.Equal(t, testhelper.TestProjectId(), token.ProjectId())
+	assert.Equal(t, project.Id(), token.ProjectId())
 	assert.NotEmpty(t, token.ProjectName())
 }
 
 func TestGetTokenEmpty(t *testing.T) {
+	project := testproject.GetTestProject(t, env.Empty())
+	logger, _ := utils.NewDebugLogger()
+	api := NewStorageApi(project.StorageApiHost(), context.Background(), logger, false)
+
 	tokenValue := ""
-	api, _ := TestStorageApi(t)
 	token, err := api.GetToken(tokenValue)
 	assert.Error(t, err)
 	apiErr := err.(*Error)
@@ -48,8 +55,11 @@ func TestGetTokenEmpty(t *testing.T) {
 }
 
 func TestGetTokenInvalid(t *testing.T) {
+	project := testproject.GetTestProject(t, env.Empty())
+	logger, _ := utils.NewDebugLogger()
+	api := NewStorageApi(project.StorageApiHost(), context.Background(), logger, false)
+
 	tokenValue := "mytoken"
-	api, _ := TestStorageApi(t)
 	token, err := api.GetToken(tokenValue)
 	assert.Error(t, err)
 	apiErr := err.(*Error)

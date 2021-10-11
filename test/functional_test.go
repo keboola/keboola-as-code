@@ -28,6 +28,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -59,10 +60,9 @@ func (p *envTicketProvider) MustGet(key string) string {
 
 // TestFunctional runs one functional test per each sub-directory.
 func TestFunctional(t *testing.T) {
+	// Create temp dir
 	_, testFile, _, _ := runtime.Caller(0)
 	rootDir := filepath.Dir(testFile)
-
-	// Create temp dir
 	tempDir := t.TempDir()
 
 	// Compile binary, it will be run in the tests
@@ -97,15 +97,16 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 		t.Fatalf("Copy error: %s", err)
 	}
 
-	// Get API
-	api, _ := remote.TestStorageApiWithToken(t)
-
-	// Setup KBC project state
-	projectStateFilePath := filepath.Join(testDir, "initial-state.json")
+	// Get test project
 	envs, err := env.FromOs()
 	assert.NoError(t, err)
+	project := testproject.GetTestProject(t, envs)
+	api := project.Api()
+
+	// Setup project state
+	projectStateFilePath := filepath.Join(testDir, "initial-state.json")
 	if testhelper.IsFile(projectStateFilePath) {
-		remote.SetStateOfTestProject(t, api, projectStateFilePath, envs)
+		project.SetState(projectStateFilePath)
 	}
 
 	// Create ENV provider
