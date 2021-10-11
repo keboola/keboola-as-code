@@ -14,7 +14,6 @@ elif [ $# -gt 6 ]; then
   exit 2
 fi
 
-S3_MOUNTPOINT="/s3bucket"
 ARTIFACT_PATH=$1
 ARTIFACT_NAME=$2
 PACKAGE_NAME=$3
@@ -22,28 +21,35 @@ VERSION=$4
 OS=$5
 ARCH=$6
 
-# ZIP repository
+GITHUB_RELEASE_DIR="./target/gh-release"
+mkdir -p "$GITHUB_RELEASE_DIR"
+
+# TXT file
+if [[ "$ARTIFACT_NAME" =~ \.txt ]]; then
+  DST_S3="s3://${AWS_BUCKET_NAME}/zip/${ARTIFACT_NAME}";
+  aws s3 cp "$ARTIFACT_PATH" "$DST_S3";
+  cp "${ARTIFACT_PATH}" "${GITHUB_RELEASE_DIR}/${ARTIFACT_NAME}"
+fi
+
+# ZIP archive
 if [[ "$ARTIFACT_NAME" =~ \.zip$ ]]; then
-  DST_DIR="${S3_MOUNTPOINT}/zip";
-  DST="${DST_DIR}/${PACKAGE_NAME}_${VERSION}_${OS}_${ARCH}.zip";
-  mkdir -p "$DST_DIR";
-  cp -v --remove-destination "$ARTIFACT_PATH" "$DST";
+  DST_S3="s3://${AWS_BUCKET_NAME}/zip/${ARTIFACT_NAME}";
+  aws s3 cp "$ARTIFACT_PATH" "$DST_S3";
+  cp "${ARTIFACT_PATH}" "${GITHUB_RELEASE_DIR}/${ARTIFACT_NAME}"
 fi
 
 # DEB repository
 if [[ "$ARTIFACT_NAME" =~ \.deb$ ]]; then
-  DST_DIR="${S3_MOUNTPOINT}/deb/pool";
-  DST="${DST_DIR}/${PACKAGE_NAME}_${VERSION}_${ARCH}.deb";
-  mkdir -p "$DST_DIR";
-  cp -v --remove-destination "$ARTIFACT_PATH" "$DST";
+  DST_S3="s3://${AWS_BUCKET_NAME}/deb/pool/${PACKAGE_NAME}_${VERSION}_${ARCH}.deb";
+  aws s3 cp "$ARTIFACT_PATH" "$DST_S3";
+  cp "${ARTIFACT_PATH}" "${GITHUB_RELEASE_DIR}/${ARTIFACT_NAME}"
 fi
 
 # RPM repository
 if [[ "$ARTIFACT_NAME" =~ \.rpm$ ]]; then
-  DST_DIR="${S3_MOUNTPOINT}/rpm";
-  DST="${DST_DIR}/${PACKAGE_NAME}_${VERSION}_${ARCH}.rpm";
-  mkdir -p "$DST_DIR";
-  cp -v --remove-destination "$ARTIFACT_PATH" "$DST";
+  DST_S3="s3://${AWS_BUCKET_NAME}/rpm/${PACKAGE_NAME}_${VERSION}_${ARCH}.rpm";
+  aws s3 cp "$ARTIFACT_PATH" "$DST_S3";
+  cp "${ARTIFACT_PATH}" "${GITHUB_RELEASE_DIR}/${ARTIFACT_NAME}"
 fi
 
 # APK Alpine repository
@@ -64,8 +70,7 @@ if [[ "$ARTIFACT_NAME" =~ \.apk$ ]]; then
       ;;
   esac
 
-  export DST_DIR="${S3_MOUNTPOINT}/apk/${ALPINE_ARCH}";
-  export DST="${DST_DIR}/${PACKAGE_NAME}-${VERSION}.apk";
-  mkdir -p "$DST_DIR";
-  cp -v --remove-destination "$ARTIFACT_PATH" "$DST";
+  export DST_S3="s3://${AWS_BUCKET_NAME}/apk/${ALPINE_ARCH}/${PACKAGE_NAME}-${VERSION}.apk";
+  aws s3 cp "$ARTIFACT_PATH" "$DST_S3";
+  cp "${ARTIFACT_PATH}" "${GITHUB_RELEASE_DIR}/${ARTIFACT_NAME}"
 fi
