@@ -9,10 +9,29 @@ env:
   DOCKERHUB_USER: "keboolabot"
   DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
-  # Test project in KBC
-  TEST_KBC_PROJECT_ID: 8763
-  TEST_KBC_STORAGE_API_HOST: connection.keboola.com
-  TEST_KBC_STORAGE_API_TOKEN: ${{ secrets.TEST_KBC_PROJECT_8763_TOKEN }}
+  # Test projects in KBC for integration tests
+  # Project name: KBC Internal / [ ci ] Keboola-as-code 1 .. 18
+  TEST_KBC_PROJECTS_LINUX: |
+    connection.keboola.com|8763|${{ secrets.TEST_KBC_PROJECT_8763_TOKEN }};
+    connection.keboola.com|8764|${{ secrets.TEST_KBC_PROJECT_8764_TOKEN }};
+    connection.keboola.com|8765|${{ secrets.TEST_KBC_PROJECT_8765_TOKEN }};
+    connection.keboola.com|8766|${{ secrets.TEST_KBC_PROJECT_8766_TOKEN }};
+    connection.keboola.com|8768|${{ secrets.TEST_KBC_PROJECT_8768_TOKEN }};
+    connection.keboola.com|8769|${{ secrets.TEST_KBC_PROJECT_8769_TOKEN }};
+  TEST_KBC_PROJECTS_MACOS: |
+    connection.keboola.com|8770|${{ secrets.TEST_KBC_PROJECT_8770_TOKEN }};
+    connection.keboola.com|8771|${{ secrets.TEST_KBC_PROJECT_8771_TOKEN }};
+    connection.keboola.com|8772|${{ secrets.TEST_KBC_PROJECT_8772_TOKEN }};
+    connection.keboola.com|8773|${{ secrets.TEST_KBC_PROJECT_8773_TOKEN }};
+    connection.keboola.com|8776|${{ secrets.TEST_KBC_PROJECT_8776_TOKEN }};
+    connection.keboola.com|8775|${{ secrets.TEST_KBC_PROJECT_8775_TOKEN }};
+  TEST_KBC_PROJECTS_WINDOWS: |
+    connection.keboola.com|8777|${{ secrets.TEST_KBC_PROJECT_8777_TOKEN }};
+    connection.keboola.com|8778|${{ secrets.TEST_KBC_PROJECT_8778_TOKEN }};
+    connection.keboola.com|8779|${{ secrets.TEST_KBC_PROJECT_8779_TOKEN }};
+    connection.keboola.com|8780|${{ secrets.TEST_KBC_PROJECT_8780_TOKEN }};
+    connection.keboola.com|8781|${{ secrets.TEST_KBC_PROJECT_8781_TOKEN }};
+    connection.keboola.com|8782|${{ secrets.TEST_KBC_PROJECT_8782_TOKEN }};
 
   # S3 repository
   IAM_USER: keboola-as-code-dist-s3-upload
@@ -98,6 +117,7 @@ jobs:
         run: docker-compose run --rm -e VERSION -v /tmp/cache-go:/tmp/cache dev make ci
         env:
           VERSION: ${{ needs.set_version.outputs.version }}
+          TEST_KBC_PROJECTS: ${{ env.TEST_KBC_PROJECTS_LINUX }}
 
   cross-compile:
     needs:
