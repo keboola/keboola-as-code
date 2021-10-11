@@ -1,9 +1,11 @@
-package remote
+package remote_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	. "github.com/keboola/keboola-as-code/internal/pkg/remote"
 )
 
 func TestGetComponent(t *testing.T) {

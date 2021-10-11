@@ -1,10 +1,12 @@
-package remote
+package remote_test
 
 import (
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	. "github.com/keboola/keboola-as-code/internal/pkg/remote"
 )
 
 func TestSendEvent(t *testing.T) {

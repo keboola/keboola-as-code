@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
+	"github.com/go-resty/resty/v2"
 	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/client"
@@ -91,6 +93,14 @@ func (a *StorageApi) Send(request *client.Request) {
 
 func (a *StorageApi) SetRetry(count int, waitTime time.Duration, maxWaitTime time.Duration) {
 	a.client.SetRetry(count, waitTime, maxWaitTime)
+}
+
+func (a *StorageApi) RestyClient() *resty.Client {
+	return a.client.GetRestyClient()
+}
+
+func (a *StorageApi) HttpClient() *http.Client {
+	return a.client.GetRestyClient().GetClient()
 }
 
 func getChangedValues(all map[string]string, changed []string) map[string]string {

@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -21,7 +21,7 @@ func TestRenameAllPlan(t *testing.T) {
 
 	// Load state
 	logger, _ := utils.NewDebugLogger()
-	api, httpTransport, _ := remote.TestMockedStorageApi(t)
+	api, httpTransport, _ := testapi.TestMockedStorageApi()
 
 	// Mocked API response
 	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
