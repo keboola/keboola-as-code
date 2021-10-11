@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"io"
 	"os"
@@ -281,7 +282,14 @@ func (root *rootCommand) getLogFile() (logFile *os.File, logFileErr error) {
 	if len(root.options.LogFilePath) > 0 {
 		root.logFileClear = false // log file defined by user will be preserved
 	} else {
-		root.options.LogFilePath = path.Join(os.TempDir(), fmt.Sprintf("keboola-as-code-%d.txt", time.Now().Unix()))
+		// Generate a unique hash if multiple instances start simultaneously
+		randomHash := ``
+		randomBytes := make([]byte, 6)
+		if _, err := rand.Read(randomBytes); err == nil {
+			randomHash = fmt.Sprintf(`-%x`, randomBytes)
+		}
+
+		root.options.LogFilePath = path.Join(os.TempDir(), fmt.Sprintf("keboola-as-code-%d%s.txt", time.Now().Unix(), randomHash))
 		root.logFileClear = true // temp log file will be removed. It will be preserved only in case of error
 	}
 
