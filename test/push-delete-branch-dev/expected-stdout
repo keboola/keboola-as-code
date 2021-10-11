@@ -1,0 +1,4 @@
+Plan for "push" operation:
+	×  B dev - SKIPPED
+Skipped remote objects deletion, use "--force" to delete them.
+Push done.
