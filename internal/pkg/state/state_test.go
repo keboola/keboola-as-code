@@ -17,9 +17,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -42,9 +42,10 @@ func TestLoadStateDifferentProjectId(t *testing.T) {
 }
 
 func TestLoadState(t *testing.T) {
-	api, _ := remote.TestStorageApiWithToken(t)
 	envs := env.Empty()
-	remote.SetStateOfTestProject(t, api, "minimal.json", envs)
+
+	project := testproject.GetTestProject(t, envs)
+	project.SetState("minimal.json")
 
 	// Same IDs in local and remote state
 	envs.Set("LOCAL_STATE_MAIN_BRANCH_ID", envs.MustGet(`TEST_BRANCH_MAIN_ID`))
@@ -52,9 +53,9 @@ func TestLoadState(t *testing.T) {
 
 	logger, _ := utils.NewDebugLogger()
 	m := loadTestManifest(t, envs, "minimal")
-	m.Project.Id = testhelper.TestProjectId()
+	m.Project.Id = project.Id()
 
-	stateOptions := NewOptions(m, api, context.Background(), logger)
+	stateOptions := NewOptions(m, project.Api(), context.Background(), logger)
 	stateOptions.LoadLocalState = true
 	stateOptions.LoadRemoteState = true
 	state, ok := LoadState(stateOptions)

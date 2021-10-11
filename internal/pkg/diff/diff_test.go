@@ -7,11 +7,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -270,7 +271,9 @@ func createProjectState(t *testing.T) *state.State {
 	}
 
 	// State is mocked manually in test functions
-	api, _, _ := remote.TestMockedStorageApi(t)
+	project := testproject.GetTestProject(t, env.Empty())
+
+	api := project.Api()
 	options := state.NewOptions(m, api, context.Background(), logger)
 	options.LoadLocalState = false
 	options.LoadRemoteState = false

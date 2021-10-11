@@ -13,7 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/remote"
+	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -437,11 +437,12 @@ func createManifest(t *testing.T) *manifest.Manifest {
 func loadRemoteState(t *testing.T, m *manifest.Manifest, projectStateFile string) (*State, *env.Map) {
 	t.Helper()
 
-	api, _ := remote.TestStorageApiWithToken(t)
 	envs := env.Empty()
-	remote.SetStateOfTestProject(t, api, projectStateFile, envs)
+	project := testproject.GetTestProject(t, envs)
+	project.SetState(projectStateFile)
+
 	logger, _ := utils.NewDebugLogger()
-	state := newState(NewOptions(m, api, context.Background(), logger))
+	state := newState(NewOptions(m, project.Api(), context.Background(), logger))
 	state.doLoadRemoteState()
 	return state, envs
 }

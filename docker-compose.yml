@@ -7,6 +7,8 @@ services:
       - ./:/code:z
       - cache:/tmp/cache
     environment:
+      - TEST_KBC_PROJECTS
+      # OR
       - TEST_KBC_PROJECT_ID
       - TEST_KBC_STORAGE_API_HOST
       - TEST_KBC_STORAGE_API_TOKEN

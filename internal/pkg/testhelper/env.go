@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/spf13/cast"
@@ -59,23 +58,6 @@ func ReplaceEnvsDir(root string, provider EnvProvider) {
 	if err != nil {
 		panic(fmt.Errorf("cannot walk over dir \"%s\": %w", root, err))
 	}
-}
-
-func TestApiHost() string {
-	return os.Getenv("TEST_KBC_STORAGE_API_HOST")
-}
-
-func TestToken() string {
-	return os.Getenv("TEST_KBC_STORAGE_API_TOKEN")
-}
-
-func TestProjectId() int {
-	str := os.Getenv("TEST_KBC_PROJECT_ID")
-	value, err := strconv.Atoi(str)
-	if err != nil {
-		panic(fmt.Errorf("invalid integer \"%s\": %w", str, err))
-	}
-	return value
 }
 
 // stripAnsiWriter strips ANSI characters from
