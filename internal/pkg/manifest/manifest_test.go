@@ -13,19 +13,24 @@ import (
 )
 
 type test struct {
+	name string
 	json string
 	data *Content
 }
 
-var cases = []test{
-	{
-		json: minimalJson(),
-		data: minimalStruct(),
-	},
-	{
-		json: fullJson(),
-		data: fullStruct(),
-	},
+func cases() []test {
+	return []test{
+		{
+			name: `minimal`,
+			json: minimalJson(),
+			data: minimalStruct(),
+		},
+		{
+			name: `full`,
+			json: fullJson(),
+			data: fullStruct(),
+		},
+	}
 }
 
 func TestNewManifest(t *testing.T) {
@@ -45,7 +50,7 @@ func TestManifestLoadNotFound(t *testing.T) {
 }
 
 func TestManifestLoad(t *testing.T) {
-	for _, c := range cases {
+	for _, c := range cases() {
 		fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
 		assert.NoError(t, err)
 
@@ -59,19 +64,19 @@ func TestManifestLoad(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Assert naming (without internal fields)
-		assert.Equal(t, c.data.Naming.Branch, manifest.Content.Naming.Branch)
-		assert.Equal(t, c.data.Naming.Config, manifest.Content.Naming.Config)
-		assert.Equal(t, c.data.Naming.ConfigRow, manifest.Content.Naming.ConfigRow)
+		assert.Equal(t, c.data.Naming.Branch, manifest.Content.Naming.Branch, c.name)
+		assert.Equal(t, c.data.Naming.Config, manifest.Content.Naming.Config, c.name)
+		assert.Equal(t, c.data.Naming.ConfigRow, manifest.Content.Naming.ConfigRow, c.name)
 
 		// Assert
 		c.data.Naming = model.DefaultNaming()
 		manifest.Naming = model.DefaultNaming()
-		assert.Equal(t, c.data, manifest.Content)
+		assert.Equal(t, c.data, manifest.Content, c.name)
 	}
 }
 
 func TestManifestSave(t *testing.T) {
-	for _, c := range cases {
+	for _, c := range cases() {
 		// Create
 		m := newTestManifest(t)
 		m.AllowedBranches = c.data.AllowedBranches
@@ -94,7 +99,7 @@ func TestManifestSave(t *testing.T) {
 		path := filesystem.Join(filesystem.MetadataDir, FileName)
 		file, err := m.fs.ReadFile(path, "")
 		assert.NoError(t, err)
-		assert.Equal(t, testhelper.EscapeWhitespaces(c.json), testhelper.EscapeWhitespaces(file.Content))
+		assert.Equal(t, testhelper.EscapeWhitespaces(c.json), testhelper.EscapeWhitespaces(file.Content), c.name)
 	}
 }
 
