@@ -18,13 +18,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
+	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func TestLoadStateDifferentProjectId(t *testing.T) {
 	logger, _ := utils.NewDebugLogger()
-	api, _ := remote.TestStorageApi(t)
+	api, _, _ := testapi.TestMockedStorageApi()
 	api = api.WithToken(&model.Token{Owner: model.TokenOwner{Id: 45678}})
 	fs, err := aferofs.NewMemoryFs(logger, ".")
 	assert.NoError(t, err)
@@ -164,9 +165,10 @@ func TestValidateState(t *testing.T) {
 
 	logger, _ := utils.NewDebugLogger()
 	m := loadTestManifest(t, envs, "minimal")
-	m.Project.Id = testhelper.TestProjectId()
+	m.Project.Id = 123
 
-	api, httpTransport, _ := remote.TestMockedStorageApi(t)
+	api, httpTransport, _ := testapi.TestMockedStorageApi()
+
 	stateOptions := NewOptions(m, api, context.Background(), logger)
 	s := newState(stateOptions)
 

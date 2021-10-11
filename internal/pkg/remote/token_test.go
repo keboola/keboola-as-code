@@ -1,4 +1,4 @@
-package remote
+package remote_test
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	. "github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -19,8 +20,8 @@ func TestApiWithToken(t *testing.T) {
 
 	// Must be cloned, not modified
 	assert.NotSame(t, orgApi, tokenApi)
-	assert.Same(t, token, tokenApi.token)
-	assert.Equal(t, "mytoken", tokenApi.client.Header().Get("X-StorageApi-Token"))
+	assert.Same(t, token, tokenApi.Token())
+	assert.Equal(t, "mytoken", tokenApi.RestyClient().Header.Get("X-StorageApi-Token"))
 }
 
 func TestGetToken(t *testing.T) {

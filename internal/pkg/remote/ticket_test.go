@@ -1,4 +1,4 @@
-package remote
+package remote_test
 
 import (
 	"sort"
@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	. "github.com/keboola/keboola-as-code/internal/pkg/remote"
 )
 
 func TestGenerateNewId(t *testing.T) {

@@ -14,8 +14,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -23,7 +23,7 @@ import (
 func TestPersistNoChange(t *testing.T) {
 	projectDir, _ := initMinimalProjectDir(t)
 	m, _ := loadTestManifest(t, projectDir)
-	api, httpTransport, _ := remote.TestMockedStorageApi(t)
+	api, httpTransport, _ := testapi.TestMockedStorageApi()
 
 	// Mocked API response
 	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
@@ -61,7 +61,7 @@ func TestPersistNoChange(t *testing.T) {
 func TestPersistNewConfig(t *testing.T) {
 	projectDir, envs := initMinimalProjectDir(t)
 	m, fs := loadTestManifest(t, projectDir)
-	api, httpTransport, _ := remote.TestMockedStorageApi(t)
+	api, httpTransport, _ := testapi.TestMockedStorageApi()
 
 	// Mocked API response
 	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
@@ -163,7 +163,7 @@ func TestPersistNewConfig(t *testing.T) {
 func TestPersistNewConfigRow(t *testing.T) {
 	projectDir, envs := initMinimalProjectDir(t)
 	m, fs := loadTestManifest(t, projectDir)
-	api, httpTransport, _ := remote.TestMockedStorageApi(t)
+	api, httpTransport, _ := testapi.TestMockedStorageApi()
 
 	// Mocked API response
 	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
@@ -328,7 +328,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 func TestPersistDeleted(t *testing.T) {
 	projectDir, envs := initMinimalProjectDir(t)
 	m, _ := loadTestManifest(t, projectDir)
-	api, httpTransport, _ := remote.TestMockedStorageApi(t)
+	api, httpTransport, _ := testapi.TestMockedStorageApi()
 
 	// Mocked API response
 	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{

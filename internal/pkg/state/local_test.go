@@ -15,7 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/remote"
+	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -219,7 +219,7 @@ func loadLocalTestState(t *testing.T, m *manifest.Manifest) *State {
 
 	// Mocked API
 	logger, _ := utils.NewDebugLogger()
-	api, httpTransport, _ := remote.TestMockedStorageApi(t)
+	api, httpTransport, _ := testapi.TestMockedStorageApi()
 
 	// Mocked API response
 	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
