@@ -1,5 +1,5 @@
-//go:build !windows
-// +build !windows
+//go:build windows
+// +build windows
 
 package testhelper
 
@@ -12,5 +12,6 @@ import (
 
 func NewVirtualTerminal(t *testing.T, opts ...expect.ConsoleOpt) (*expect.Console, *vt10x.State, error) {
 	t.Helper()
-	return vt10x.NewVT10XConsole(opts...)
+	t.Skipf(`virtual terminal in not supported in Windows tests`)
+	return nil, nil, nil
 }

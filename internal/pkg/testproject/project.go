@@ -64,7 +64,7 @@ func newProject(host string, id int, token string) *Project {
 	}
 
 	// Init API
-	p.api, _ = testapi.TestStorageApiWithToken(p.host, p.token, false)
+	p.api, _ = testapi.TestStorageApiWithToken(p.host, p.token, testhelper.TestIsVerbose())
 
 	// Check project ID
 	if p.id != p.api.ProjectId() {

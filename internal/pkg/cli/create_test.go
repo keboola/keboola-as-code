@@ -22,7 +22,7 @@ import (
 func TestInteractiveCreateConfig(t *testing.T) {
 	t.Parallel()
 	// Create virtual console
-	c, state, err := testhelper.NewVirtualTerminal(expect.WithStdout(testhelper.VerboseStdout()), expect.WithDefaultTimeout(15*time.Second))
+	c, state, err := testhelper.NewVirtualTerminal(t, expect.WithStdout(testhelper.VerboseStdout()), expect.WithDefaultTimeout(15*time.Second))
 	assert.NoError(t, err)
 
 	// Test project
@@ -120,7 +120,7 @@ func TestInteractiveCreateConfigRow(t *testing.T) {
 	t.Parallel()
 
 	// Create virtual console
-	c, state, err := testhelper.NewVirtualTerminal(expect.WithStdout(testhelper.VerboseStdout()), expect.WithDefaultTimeout(15*time.Second))
+	c, state, err := testhelper.NewVirtualTerminal(t, expect.WithStdout(testhelper.VerboseStdout()), expect.WithDefaultTimeout(15*time.Second))
 	assert.NoError(t, err)
 
 	// Test project

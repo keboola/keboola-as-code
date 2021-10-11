@@ -224,7 +224,7 @@ func createVirtualPrompt(t *testing.T) (*Prompt, *expect.Console) {
 	t.Helper()
 
 	// Create virtual console
-	console, _, err := testhelper.NewVirtualTerminal(expect.WithStdout(testhelper.VerboseStdout()), expect.WithDefaultTimeout(5*time.Second))
+	console, _, err := testhelper.NewVirtualTerminal(t, expect.WithStdout(testhelper.VerboseStdout()), expect.WithDefaultTimeout(5*time.Second))
 	assert.NoError(t, err)
 	prompt := NewPrompt(console.Tty(), console.Tty(), console.Tty())
 	prompt.Interactive = true
