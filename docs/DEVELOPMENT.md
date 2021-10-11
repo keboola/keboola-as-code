@@ -12,7 +12,7 @@ docker-compose build
 
 Create `.env` file:
 ```dotenv
-TEST_PROJECT_ID=
+TEST_KBC_PROJECT_ID=
 TEST_KBC_STORAGE_API_HOST=connection.keboola.com
 TEST_KBC_STORAGE_API_TOKEN=
 ```

@@ -60,7 +60,7 @@ func newTestProject(t *testing.T, api *StorageApi, stateFilePath string, envs *e
 
 	// Create project ID
 	if testhelper.TestProjectId() != api.ProjectId() {
-		assert.FailNow(t, "TEST_PROJECT_ID and token project id are different.")
+		assert.FailNow(t, "TEST_KBC_PROJECT_ID and token project id are different.")
 	}
 
 	// Load default branch
