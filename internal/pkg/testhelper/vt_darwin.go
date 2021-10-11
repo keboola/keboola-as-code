@@ -1,5 +1,5 @@
-//go:build !windows && !darwin
-// +build !windows,!darwin
+//go:build darwin
+// +build darwin
 
 package testhelper
 
@@ -12,5 +12,6 @@ import (
 
 func NewVirtualTerminal(t *testing.T, opts ...expect.ConsoleOpt) (*expect.Console, *vt10x.State, error) {
 	t.Helper()
-	return vt10x.NewVT10XConsole(opts...)
+	t.Skipf(`virtual terminal is not stable in Mac Os tests`)
+	return nil, nil, nil
 }
