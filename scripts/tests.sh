@@ -11,17 +11,23 @@ SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 cd "$SCRIPT_DIR/.."
 pwd
 
-# Download modules
-echo "Downloading modules"
-go mod download
-go mod vendor
-echo "Ok."
-echo
+TEST_VERBOSE="${TEST_VERBOSE:=false}"
+TEST_LOG_FORMAT="${TEST_LOG_FORMAT:=testname}"
+TEST_DETECT_RACE="${TEST_DETECT_RACE:=true}"
+TEST_COVERAGE="${TEST_COVERAGE:=true}"
+TEST_ARGS="${TEST_ARGS:=}"
+if [[ $TEST_DETECT_RACE == "true" ]]; then
+  TEST_ARGS="$TEST_ARGS -race"
+fi
+if [[ $TEST_COVERAGE == "true" ]]; then
+  TEST_ARGS="$TEST_ARGS -coverprofile=/tmp/profile.out"
+fi
 
 # Run tests, sequentially because the API is shared resource
 echo "Running tests ..."
 export KBC_VERSION_CHECK=false # do not check the latest version in the tests
-richgo clean -testcache
-RICHGO_FORCE_COLOR=1 richgo test -p 1 -timeout 600s -v -race -coverprofile=/tmp/profile.out ./... $@
+cmd="gotestsum --no-color=false --format \"$TEST_LOG_FORMAT\" -- -timeout 600s -p 1 -v $TEST_ARGS  ./... $@"
+echo $cmd
+eval $cmd
 echo "Ok. All tests passed."
 echo
