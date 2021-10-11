@@ -8,6 +8,7 @@ import (
 )
 
 func TestEnvMap(t *testing.T) {
+	t.Parallel()
 	m := Empty()
 	assert.Len(t, m.Keys(), 0)
 
@@ -56,6 +57,7 @@ func TestEnvMap(t *testing.T) {
 }
 
 func TestEnvMapFromMap(t *testing.T) {
+	t.Parallel()
 	data := map[string]string{
 		`A`: `123`,
 		`B`: `456`,
@@ -69,6 +71,7 @@ func TestEnvMapFromMap(t *testing.T) {
 	assert.Equal(t, data, m.ToMap())
 }
 
+// nolint paralleltest
 func TestEnvMapFromOs(t *testing.T) {
 	assert.NoError(t, os.Setenv(`Foo`, `bar`)) // nolint forbidigo
 	m, err := FromOs()
@@ -80,6 +83,7 @@ func TestEnvMapFromOs(t *testing.T) {
 }
 
 func TestEnvMapMerge(t *testing.T) {
+	t.Parallel()
 	m1 := Empty()
 	m2 := Empty()
 
@@ -97,6 +101,7 @@ func TestEnvMapMerge(t *testing.T) {
 }
 
 func TestEnvMapMergeOverwrite(t *testing.T) {
+	t.Parallel()
 	m1 := Empty()
 	m2 := Empty()
 

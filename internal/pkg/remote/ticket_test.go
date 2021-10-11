@@ -12,6 +12,7 @@ import (
 )
 
 func TestGenerateNewId(t *testing.T) {
+	t.Parallel()
 	project := testproject.GetTestProject(t, env.Empty())
 	api := project.Api()
 
@@ -22,6 +23,7 @@ func TestGenerateNewId(t *testing.T) {
 }
 
 func TestTicketProvider(t *testing.T) {
+	t.Parallel()
 	project := testproject.GetTestProject(t, env.Empty())
 	api := project.Api()
 

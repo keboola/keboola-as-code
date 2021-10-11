@@ -9,22 +9,26 @@ import (
 )
 
 func TestErrorMsg1(t *testing.T) {
+	t.Parallel()
 	e := &Error{Message: "msg", response: newResponseWithStatusCode(404)}
 	assert.Equal(t, `msg, method: "GET", url: "https://example.com", httpCode: "404"`, e.Error())
 }
 
 func TestErrorMsg2(t *testing.T) {
+	t.Parallel()
 	e := &Error{Message: "msg", ErrCode: "errCode", ExceptionId: "exceptionId", response: newResponseWithStatusCode(404)}
 	assert.Equal(t, `msg, method: "GET", url: "https://example.com", httpCode: "404", errCode: "errCode", exceptionId: "exceptionId"`, e.Error())
 }
 
 func TestErrorHttpStatus(t *testing.T) {
+	t.Parallel()
 	e := &Error{}
 	e.SetResponse(newResponseWithStatusCode(123))
 	assert.Equal(t, 123, e.HttpStatus())
 }
 
 func TestErrorIsBadRequest(t *testing.T) {
+	t.Parallel()
 	e := &Error{}
 	e.SetResponse(newResponseWithStatusCode(123))
 	assert.False(t, e.IsBadRequest())
@@ -33,6 +37,7 @@ func TestErrorIsBadRequest(t *testing.T) {
 }
 
 func TestErrorIsUnauthorized(t *testing.T) {
+	t.Parallel()
 	e := &Error{}
 	e.SetResponse(newResponseWithStatusCode(123))
 	assert.False(t, e.IsUnauthorized())
@@ -41,6 +46,7 @@ func TestErrorIsUnauthorized(t *testing.T) {
 }
 
 func TestErrorIsForbidden(t *testing.T) {
+	t.Parallel()
 	e := &Error{}
 	e.SetResponse(newResponseWithStatusCode(123))
 	assert.False(t, e.IsForbidden())
@@ -49,6 +55,7 @@ func TestErrorIsForbidden(t *testing.T) {
 }
 
 func TestErrorIsNotFound(t *testing.T) {
+	t.Parallel()
 	e := &Error{}
 	e.SetResponse(newResponseWithStatusCode(123))
 	assert.False(t, e.IsNotFound())

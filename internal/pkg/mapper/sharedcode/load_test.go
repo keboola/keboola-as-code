@@ -10,6 +10,7 @@ import (
 )
 
 func TestSharedCodeLoadMissingFile(t *testing.T) {
+	t.Parallel()
 	targetComponentId := `keboola.python-transformation-v2`
 	logger, fs, state, _, objectFiles := createTestFixtures(t, targetComponentId)
 	err := Load(logger, fs, model.DefaultNaming(), state, objectFiles)
@@ -18,6 +19,7 @@ func TestSharedCodeLoadMissingFile(t *testing.T) {
 }
 
 func TestSharedCodeLoadOk(t *testing.T) {
+	t.Parallel()
 	targetComponentId := `keboola.python-transformation-v2`
 	logger, fs, state, row, objectFiles := createTestFixtures(t, targetComponentId)
 	naming := model.DefaultNaming()

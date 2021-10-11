@@ -12,6 +12,7 @@ import (
 )
 
 func TestLocalCreateConfigDefaultContent(t *testing.T) {
+	t.Parallel()
 	manager := newTestLocalManager(t)
 
 	// Mocked component
@@ -48,6 +49,7 @@ func TestLocalCreateConfigDefaultContent(t *testing.T) {
 }
 
 func TestLocalCreateConfigRowDefaultContent(t *testing.T) {
+	t.Parallel()
 	manager := newTestLocalManager(t)
 
 	// Mocked component
@@ -85,6 +87,7 @@ func TestLocalCreateConfigRowDefaultContent(t *testing.T) {
 }
 
 func TestLocalCreateConfigContentFromSchema(t *testing.T) {
+	t.Parallel()
 	manager := newTestLocalManager(t)
 
 	// Mocked component
@@ -112,6 +115,7 @@ func TestLocalCreateConfigContentFromSchema(t *testing.T) {
 }
 
 func TestLocalCreateConfigRowContentFromSchema(t *testing.T) {
+	t.Parallel()
 	manager := newTestLocalManager(t)
 
 	// Mocked component
@@ -140,6 +144,7 @@ func TestLocalCreateConfigRowContentFromSchema(t *testing.T) {
 }
 
 func TestLocalCreateConfigEmptyContent(t *testing.T) {
+	t.Parallel()
 	manager := newTestLocalManager(t)
 
 	// Mocked component
@@ -164,6 +169,7 @@ func TestLocalCreateConfigEmptyContent(t *testing.T) {
 }
 
 func TestLocalCreateConfigRowEmptyContent(t *testing.T) {
+	t.Parallel()
 	manager := newTestLocalManager(t)
 
 	// Mocked component

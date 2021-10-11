@@ -14,6 +14,7 @@ import (
 )
 
 func TestBranchApiCalls(t *testing.T) {
+	t.Parallel()
 	project := testproject.GetTestProject(t, env.Empty())
 	project.SetState("empty.json")
 	api := project.Api()

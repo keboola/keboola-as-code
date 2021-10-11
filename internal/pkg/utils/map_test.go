@@ -8,6 +8,7 @@ import (
 )
 
 func TestUpdateMapStep(t *testing.T) {
+	t.Parallel()
 	content := PairsToOrderedMap([]Pair{
 		{
 			Key:   "key1",
@@ -36,6 +37,7 @@ func TestUpdateMapStep(t *testing.T) {
 }
 
 func TestUpdateSliceStep(t *testing.T) {
+	t.Parallel()
 	content := PairsToOrderedMap([]Pair{
 		{
 			Key:   "key1",

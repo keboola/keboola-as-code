@@ -9,12 +9,14 @@ import (
 )
 
 func TestSingleError(t *testing.T) {
+	t.Parallel()
 	e := NewMultiError()
 	e.Append(fmt.Errorf(`foo bar`))
 	assert.Equal(t, `foo bar`, e.Error())
 }
 
 func TestMultiError(t *testing.T) {
+	t.Parallel()
 	e := NewMultiError()
 	e.Append(fmt.Errorf(`12345`))
 	e.AppendRaw(`45678`)

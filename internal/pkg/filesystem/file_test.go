@@ -9,6 +9,7 @@ import (
 )
 
 func TestCreateFile(t *testing.T) {
+	t.Parallel()
 	f := CreateFile(`path`, `content`).SetDescription(`desc`)
 	assert.Equal(t, `path`, f.Path)
 	assert.Equal(t, `desc`, f.Desc)
@@ -16,6 +17,7 @@ func TestCreateFile(t *testing.T) {
 }
 
 func TestCreateJsonFile(t *testing.T) {
+	t.Parallel()
 	m := utils.NewOrderedMap()
 	f := CreateJsonFile(`path`, m).SetDescription(`desc`)
 	assert.Equal(t, `path`, f.Path)
@@ -24,6 +26,7 @@ func TestCreateJsonFile(t *testing.T) {
 }
 
 func TestJsonFile_ToFile(t *testing.T) {
+	t.Parallel()
 	m := utils.NewOrderedMap()
 	m.Set(`foo`, `bar`)
 	f, err := CreateJsonFile(`path`, m).SetDescription(`desc`).ToFile()

@@ -60,6 +60,8 @@ func (p *envTicketProvider) MustGet(key string) string {
 
 // TestFunctional runs one functional test per each sub-directory.
 func TestFunctional(t *testing.T) {
+	t.Parallel()
+
 	// Create temp dir
 	_, testFile, _, _ := runtime.Caller(0)
 	rootDir := filepath.Dir(testFile)
@@ -70,9 +72,12 @@ func TestFunctional(t *testing.T) {
 	binary := CompileBinary(t, projectDir, tempDir)
 
 	// Run test for each directory
-	for _, testDir := range GetTestDirs(t, rootDir) {
+	for _, d := range GetTestDirs(t, rootDir) {
+		testDir := d
 		workingDir := filepath.Join(rootDir, ".out", filepath.Base(testDir))
-		t.Run(filepath.Base(testDir), func(t *testing.T) {
+		name := filepath.Base(testDir)
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 			RunFunctionalTest(t, testDir, workingDir, binary)
 		})
 	}

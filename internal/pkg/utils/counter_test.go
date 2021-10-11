@@ -8,6 +8,7 @@ import (
 )
 
 func TestSafeCounter(t *testing.T) {
+	t.Parallel()
 	c := NewSafeCounter(0)
 	wg := sync.WaitGroup{}
 

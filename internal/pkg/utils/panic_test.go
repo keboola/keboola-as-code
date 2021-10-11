@@ -8,18 +8,21 @@ import (
 )
 
 func TestNewUserError(t *testing.T) {
+	t.Parallel()
 	err := NewUserError("test")
 	assert.Equal(t, "test", err.Error())
 	assert.Equal(t, 1, err.ExitCode)
 }
 
 func TestNewUserErrorWithCode(t *testing.T) {
+	t.Parallel()
 	err := NewUserErrorWithCode(123, "test")
 	assert.Equal(t, "test", err.Error())
 	assert.Equal(t, 123, err.ExitCode)
 }
 
 func TestProcessPanicUserError(t *testing.T) {
+	t.Parallel()
 	logger, log := NewDebugLogger()
 	logFilePath := "/foo/bar.log"
 	exitCode := ProcessPanic(NewUserErrorWithCode(123, "test"), logger, logFilePath)
@@ -31,6 +34,7 @@ func TestProcessPanicUserError(t *testing.T) {
 }
 
 func TestProcessPanicUnexpected(t *testing.T) {
+	t.Parallel()
 	logger, log := NewDebugLogger()
 	logFilePath := "/foo/bar.log"
 	exitCode := ProcessPanic(fmt.Errorf("test"), logger, logFilePath)

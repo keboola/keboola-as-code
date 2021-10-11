@@ -9,6 +9,7 @@ import (
 )
 
 func TestDefaultNaming(t *testing.T) {
+	t.Parallel()
 	n := DefaultNaming()
 
 	// Branch
@@ -114,6 +115,7 @@ func TestDefaultNaming(t *testing.T) {
 }
 
 func TestNamingAttachDetach(t *testing.T) {
+	t.Parallel()
 	n := DefaultNaming()
 
 	// Attach multiple times with same key
@@ -150,6 +152,7 @@ func TestNamingAttachDetach(t *testing.T) {
 }
 
 func TestUniquePathSameObjectType(t *testing.T) {
+	t.Parallel()
 	t.Skipped()
 	n := DefaultNaming()
 	n.Branch = "{branch_name}"
@@ -175,6 +178,7 @@ func TestUniquePathSameObjectType(t *testing.T) {
 }
 
 func TestUniquePathDifferentObjects(t *testing.T) {
+	t.Parallel()
 	t.Skipped()
 	n := DefaultNaming()
 	n.Branch = "prefix"
@@ -194,6 +198,7 @@ func TestUniquePathDifferentObjects(t *testing.T) {
 }
 
 func TestNamingEmptyTemplate(t *testing.T) {
+	t.Parallel()
 	t.Skipped()
 	n := DefaultNaming()
 	n.Branch = ""

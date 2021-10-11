@@ -10,6 +10,7 @@ import (
 )
 
 func TestGetComponent(t *testing.T) {
+	t.Parallel()
 	project := testproject.GetTestProject(t, env.Empty())
 	api := project.Api()
 
@@ -22,6 +23,7 @@ func TestGetComponent(t *testing.T) {
 }
 
 func TestGetComponentNotFound(t *testing.T) {
+	t.Parallel()
 	project := testproject.GetTestProject(t, env.Empty())
 	api := project.Api()
 
@@ -32,6 +34,7 @@ func TestGetComponentNotFound(t *testing.T) {
 }
 
 func TestComponentIsDeprecated(t *testing.T) {
+	t.Parallel()
 	project := testproject.GetTestProject(t, env.Empty())
 	api := project.Api()
 

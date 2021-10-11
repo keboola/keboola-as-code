@@ -10,6 +10,7 @@ import (
 )
 
 func TestNewState(t *testing.T) {
+	t.Parallel()
 	logger, _ := utils.NewDebugLogger()
 	fs, err := aferofs.NewMemoryFs(logger, `/`)
 	assert.NoError(t, err)
@@ -18,31 +19,37 @@ func TestNewState(t *testing.T) {
 }
 
 func TestStateComponents(t *testing.T) {
+	t.Parallel()
 	s := newTestState(t)
 	assert.NotNil(t, s.Components())
 }
 
 func TestStateAll(t *testing.T) {
+	t.Parallel()
 	s := newTestState(t)
 	assert.Len(t, s.All(), 6)
 }
 
 func TestStateBranches(t *testing.T) {
+	t.Parallel()
 	s := newTestState(t)
 	assert.Len(t, s.Branches(), 2)
 }
 
 func TestStateConfigs(t *testing.T) {
+	t.Parallel()
 	s := newTestState(t)
 	assert.Len(t, s.Configs(), 2)
 }
 
 func TestStateConfigRows(t *testing.T) {
+	t.Parallel()
 	s := newTestState(t)
 	assert.Len(t, s.ConfigRows(), 2)
 }
 
 func TestStateConfigsFrom(t *testing.T) {
+	t.Parallel()
 	s := newTestState(t)
 	assert.Len(t, s.ConfigsFrom(BranchKey{Id: 123}), 2)
 	assert.Len(t, s.ConfigsFrom(BranchKey{Id: 567}), 0)
@@ -50,6 +57,7 @@ func TestStateConfigsFrom(t *testing.T) {
 }
 
 func TestStateConfigRowsFrom(t *testing.T) {
+	t.Parallel()
 	s := newTestState(t)
 	assert.Len(t, s.ConfigRowsFrom(ConfigKey{BranchId: 123, ComponentId: "keboola.bar", Id: `678`}), 2)
 	assert.Len(t, s.ConfigRowsFrom(ConfigKey{BranchId: 123, ComponentId: "keboola.bar", Id: `345`}), 0)
@@ -57,6 +65,7 @@ func TestStateConfigRowsFrom(t *testing.T) {
 }
 
 func TestStateSearchForBranches(t *testing.T) {
+	t.Parallel()
 	s := newTestState(t)
 	assert.Len(t, s.SearchForBranches(`baz`), 0)
 	assert.Len(t, s.SearchForBranches(`Foo bar`), 1)
@@ -64,6 +73,7 @@ func TestStateSearchForBranches(t *testing.T) {
 }
 
 func TestStateSearchForBranch(t *testing.T) {
+	t.Parallel()
 	s := newTestState(t)
 
 	b, err := s.SearchForBranch(`baz`)
@@ -83,6 +93,7 @@ func TestStateSearchForBranch(t *testing.T) {
 }
 
 func TestStateSearchForConfigs(t *testing.T) {
+	t.Parallel()
 	s := newTestState(t)
 	branchKey := BranchKey{Id: 123}
 
@@ -92,6 +103,7 @@ func TestStateSearchForConfigs(t *testing.T) {
 }
 
 func TestStateSearchForConfig(t *testing.T) {
+	t.Parallel()
 	s := newTestState(t)
 	branchKey := BranchKey{Id: 123}
 
@@ -112,6 +124,7 @@ func TestStateSearchForConfig(t *testing.T) {
 }
 
 func TestStateSearchForConfigRows(t *testing.T) {
+	t.Parallel()
 	s := newTestState(t)
 	configKey := ConfigKey{BranchId: 123, ComponentId: "keboola.bar", Id: `678`}
 
@@ -121,6 +134,7 @@ func TestStateSearchForConfigRows(t *testing.T) {
 }
 
 func TestStateSearchForConfigRow(t *testing.T) {
+	t.Parallel()
 	s := newTestState(t)
 	configKey := ConfigKey{BranchId: 123, ComponentId: "keboola.bar", Id: `678`}
 
@@ -141,11 +155,13 @@ func TestStateSearchForConfigRow(t *testing.T) {
 }
 
 func TestStateGet(t *testing.T) {
+	t.Parallel()
 	s := newTestState(t)
 	assert.Equal(t, "Foo Bar Branch", s.Get(BranchKey{Id: 567}).ObjectName())
 }
 
 func TestStateGetNotFound(t *testing.T) {
+	t.Parallel()
 	s := newTestState(t)
 	assert.PanicsWithError(t, `branch "111" not found`, func() {
 		s.Get(BranchKey{Id: 111})
@@ -220,6 +236,7 @@ func newTestState(t *testing.T) *State {
 }
 
 func TestStateMatchObjectIdOrName(t *testing.T) {
+	t.Parallel()
 	// Match by ID
 	assert.True(t, matchObjectIdOrName(`123`, &Branch{
 		BranchKey: BranchKey{Id: 123},

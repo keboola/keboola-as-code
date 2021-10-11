@@ -83,6 +83,7 @@ linters:
     - tagliatelle
     - thelper
     - tparallel
+    - paralleltest
     - unconvert
     - unparam
     - unused
@@ -121,3 +122,7 @@ issues:
         - dupl
         - dogsled
         - bodyclose
+    # False positive: https://github.com/kunwardeep/paralleltest/issues/8.
+    - linters:
+        - paralleltest
+      text: "Range statement for test TestFunctional does not use range value in test Run"

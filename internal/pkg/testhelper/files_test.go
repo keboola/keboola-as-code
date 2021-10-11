@@ -10,6 +10,7 @@ import (
 )
 
 func TestFileExists(t *testing.T) {
+	t.Parallel()
 	tempDir := t.TempDir()
 	filePath := filepath.Join(tempDir, "file.txt")
 
@@ -27,6 +28,7 @@ func TestFileExists(t *testing.T) {
 }
 
 func TestGetFileContent(t *testing.T) {
+	t.Parallel()
 	tempDir := t.TempDir()
 	filePath := filepath.Join(tempDir, "file.txt")
 

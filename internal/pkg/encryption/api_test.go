@@ -10,6 +10,7 @@ import (
 )
 
 func TestNewEncryptionApi(t *testing.T) {
+	t.Parallel()
 	logger, _ := utils.NewDebugLogger()
 	a := NewEncryptionApi("https://encryption.keboola.com", context.Background(), logger, true)
 	assert.NotNil(t, a)
@@ -24,6 +25,7 @@ func TestNewEncryptionApi(t *testing.T) {
 }
 
 func TestErrorEncryptionApi(t *testing.T) {
+	t.Parallel()
 	logger, _ := utils.NewDebugLogger()
 	a := NewEncryptionApi("https://encryption.keboola.com", context.Background(), logger, true)
 	assert.NotNil(t, a)

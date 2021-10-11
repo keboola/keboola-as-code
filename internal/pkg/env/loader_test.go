@@ -11,6 +11,7 @@ import (
 )
 
 func TestLoadDotEnv(t *testing.T) {
+	t.Parallel()
 	// Memory fs
 	logger, _ := utils.NewDebugLogger()
 	fs, err := aferofs.NewMemoryFs(logger, ".")

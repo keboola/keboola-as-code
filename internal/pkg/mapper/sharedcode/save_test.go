@@ -10,6 +10,7 @@ import (
 )
 
 func TestSharedCodeSaveMissingKey(t *testing.T) {
+	t.Parallel()
 	targetComponentId := `keboola.python-transformation-v2`
 	logger, fs, state, _, objectFiles := createTestFixtures(t, targetComponentId)
 	naming := model.DefaultNaming()
@@ -21,6 +22,7 @@ func TestSharedCodeSaveMissingKey(t *testing.T) {
 }
 
 func TestSharedCodeSaveOk(t *testing.T) {
+	t.Parallel()
 	targetComponentId := `keboola.python-transformation-v2`
 	logger, fs, state, row, objectFiles := createTestFixtures(t, targetComponentId)
 	naming := model.DefaultNaming()

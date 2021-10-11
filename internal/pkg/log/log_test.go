@@ -13,6 +13,7 @@ import (
 )
 
 func TestNewLogger(t *testing.T) {
+	t.Parallel()
 	stdout := utils.NewBufferWriter()
 	stderr := utils.NewBufferWriter()
 	logger := NewLogger(stdout, stderr, nil, false)
@@ -20,6 +21,7 @@ func TestNewLogger(t *testing.T) {
 }
 
 func TestFileCore(t *testing.T) {
+	t.Parallel()
 	tempDir := t.TempDir()
 	filePath := filepath.Join(tempDir, "log-file.txt")
 	file, err := os.Create(filePath)
@@ -40,6 +42,7 @@ func TestFileCore(t *testing.T) {
 }
 
 func TestConsoleCoreVerboseFalse(t *testing.T) {
+	t.Parallel()
 	stdout := utils.NewBufferWriter()
 	stderr := utils.NewBufferWriter()
 	logger := NewLogger(stdout, stderr, nil, false)
@@ -59,6 +62,7 @@ func TestConsoleCoreVerboseFalse(t *testing.T) {
 }
 
 func TestConsoleCoreVerboseTrue(t *testing.T) {
+	t.Parallel()
 	stdout := utils.NewBufferWriter()
 	stderr := utils.NewBufferWriter()
 	logger := NewLogger(stdout, stderr, nil, true)
@@ -77,6 +81,7 @@ func TestConsoleCoreVerboseTrue(t *testing.T) {
 }
 
 func TestToInfoWriter(t *testing.T) {
+	t.Parallel()
 	stdout := utils.NewBufferWriter()
 	stderr := utils.NewBufferWriter()
 
@@ -91,6 +96,7 @@ func TestToInfoWriter(t *testing.T) {
 }
 
 func TestToWarnWriter(t *testing.T) {
+	t.Parallel()
 	stdout := utils.NewBufferWriter()
 	stderr := utils.NewBufferWriter()
 
