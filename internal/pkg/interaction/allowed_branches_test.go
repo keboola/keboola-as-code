@@ -1,8 +1,6 @@
 package interaction
 
 import (
-	"io"
-	"os"
 	"sync"
 	"testing"
 	"time"
@@ -220,13 +218,7 @@ func createVirtualPrompt(t *testing.T) (*Prompt, *expect.Console) {
 	t.Helper()
 
 	// Create virtual console
-	var stdout io.Writer
-	if testhelper.TestIsVerbose() {
-		stdout = os.Stdout
-	} else {
-		stdout = io.Discard
-	}
-	console, _, err := testhelper.NewVirtualTerminal(expect.WithStdout(stdout), expect.WithDefaultTimeout(5*time.Second))
+	console, _, err := testhelper.NewVirtualTerminal(expect.WithStdout(testhelper.VerboseStdout()), expect.WithDefaultTimeout(5*time.Second))
 	assert.NoError(t, err)
 	prompt := NewPrompt(console.Tty(), console.Tty(), console.Tty())
 	prompt.Interactive = true

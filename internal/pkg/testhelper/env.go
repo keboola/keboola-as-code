@@ -2,7 +2,10 @@
 package testhelper
 
 import (
+	"bytes"
 	"fmt"
+	"github.com/acarl005/stripansi"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -75,10 +78,55 @@ func TestProjectId() int {
 	return value
 }
 
+// stripAnsiWriter strips ANSI characters from
+type stripAnsiWriter struct {
+	buf *bytes.Buffer
+	writer io.Writer
+}
+
+func newStripAnsiWriter(writer io.Writer) *stripAnsiWriter {
+	return &stripAnsiWriter{
+		buf: &bytes.Buffer{},
+		writer: writer,
+	}
+}
+
+func (w *stripAnsiWriter) Write(p []byte) (int, error) {
+	// Append to the buffer
+	n, err := w.buf.Write(p)
+
+	// We can only remove an ANSI escape seq if the whole expression is present.
+	// ... so if buffer contains new line -> flush
+	if bytes.Contains(w.buf.Bytes(), []byte("\n")) {
+		if _, err := w.writer.Write([]byte(stripansi.Strip(w.buf.String()))); err != nil {
+			return 0, err
+		}
+		w.buf.Reset()
+	}
+
+	return n, err
+}
+
 func TestIsVerbose() bool {
 	value := os.Getenv("TEST_VERBOSE")
 	if value == "" {
 		value = "false"
 	}
 	return cast.ToBool(value)
+}
+
+func VerboseStdout() io.Writer {
+	if TestIsVerbose() {
+		return newStripAnsiWriter(os.Stdout)
+	}
+
+	return io.Discard
+}
+
+func VerboseStderr() io.Writer {
+	if TestIsVerbose() {
+		return newStripAnsiWriter(os.Stderr)
+	}
+
+	return io.Discard
 }

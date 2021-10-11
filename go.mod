@@ -7,6 +7,7 @@ require (
 	github.com/AlecAivazis/survey/v2 v2.2.12
 	github.com/Masterminds/semver v1.5.0
 	github.com/Netflix/go-expect v0.0.0-20210429232723-e923ed2d1db5
+	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
 	github.com/cenkalti/backoff/v4 v4.1.1
 	github.com/go-playground/validator/v10 v10.6.1
 	github.com/go-resty/resty/v2 v2.6.0

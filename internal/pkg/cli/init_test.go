@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"io"
-	"os"
 	"sync"
 	"testing"
 	"time"
@@ -28,13 +26,7 @@ func TestMissingParams(t *testing.T) {
 
 func TestInteractiveInit(t *testing.T) {
 	// Create virtual console
-	var stdout io.Writer
-	if testhelper.TestIsVerbose() {
-		stdout = os.Stdout
-	} else {
-		stdout = io.Discard
-	}
-	c, state, err := testhelper.NewVirtualTerminal(expect.WithStdout(stdout), expect.WithDefaultTimeout(15*time.Second))
+	c, state, err := testhelper.NewVirtualTerminal(expect.WithStdout(testhelper.VerboseStdout()), expect.WithDefaultTimeout(15*time.Second))
 	assert.NoError(t, err)
 
 	// Init prompt and cmd
