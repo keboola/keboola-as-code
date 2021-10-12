@@ -10,6 +10,7 @@ import (
 )
 
 func TestGetEncryptionApiUrl(t *testing.T) {
+	t.Parallel()
 	logger, _ := utils.NewDebugLogger()
 	api := NewStorageApi("connection.keboola.com", context.Background(), logger, false)
 	encryptionApiUrl, _ := api.GetEncryptionApiUrl()
@@ -18,6 +19,7 @@ func TestGetEncryptionApiUrl(t *testing.T) {
 }
 
 func TestErrorGetEncryptionApiUrl(t *testing.T) {
+	t.Parallel()
 	logger, _ := utils.NewDebugLogger()
 	api := NewStorageApi("connection.foobar.keboola.com", context.Background(), logger, false)
 	_, err := api.GetEncryptionApiUrl()

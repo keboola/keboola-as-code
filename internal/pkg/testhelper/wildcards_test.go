@@ -10,30 +10,35 @@ import (
 )
 
 func TestAssertWildcardsSame1(t *testing.T) {
+	t.Parallel()
 	test := &mockedT{buf: bytes.NewBuffer(nil)}
 	AssertWildcards(test, "foo", "foo", "Fail msg.")
 	assert.Equal(t, "", test.buf.String())
 }
 
 func TestAssertWildcardsSame2(t *testing.T) {
+	t.Parallel()
 	test := &mockedT{buf: bytes.NewBuffer(nil)}
 	AssertWildcards(test, "%c%c%c", "foo", "Fail msg.")
 	assert.Equal(t, "", test.buf.String())
 }
 
 func TestAssertWildcardsDifferent1(t *testing.T) {
+	t.Parallel()
 	test := &mockedT{buf: bytes.NewBuffer(nil)}
 	AssertWildcards(test, "foo", "bar", "Fail msg.")
 	assert.Contains(t, test.buf.String(), "Expect \"bar\" to match \"^foo$\"")
 }
 
 func TestAssertWildcardsDifferent2(t *testing.T) {
+	t.Parallel()
 	test := &mockedT{buf: bytes.NewBuffer(nil)}
 	AssertWildcards(test, "%c%c%c%c", "bar", "Fail msg.")
 	assert.Contains(t, test.buf.String(), "Expect \"bar\" to match \"^....$\"")
 }
 
 func TestWildcardToRegexp(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		in  string
 		out string
@@ -59,6 +64,7 @@ func TestWildcardToRegexp(t *testing.T) {
 }
 
 func TestWildcardToRegexpMatch(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		pattern string
 		input   string

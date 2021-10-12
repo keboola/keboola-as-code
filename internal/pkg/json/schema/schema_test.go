@@ -10,6 +10,7 @@ import (
 )
 
 func TestValidateJsonSchemaOk(t *testing.T) {
+	t.Parallel()
 	schema := getTestSchema()
 	parameters := utils.PairsToOrderedMap([]utils.Pair{
 		{Key: "firstName", Value: "John"},
@@ -22,6 +23,7 @@ func TestValidateJsonSchemaOk(t *testing.T) {
 }
 
 func TestValidateJsonSchemaErr(t *testing.T) {
+	t.Parallel()
 	schema := getTestSchema()
 	parameters := utils.PairsToOrderedMap([]utils.Pair{
 		{Key: "lastName", Value: "Brown"},
@@ -47,12 +49,14 @@ func TestValidateJsonSchemaErr(t *testing.T) {
 }
 
 func TestValidateJsonSchemaSkipEmpty(t *testing.T) {
+	t.Parallel()
 	schema := getTestSchema()
 	content := utils.NewOrderedMap()
 	assert.NoError(t, validateContent(schema, content))
 }
 
 func TestValidateJsonSchemaSkipEmptyParameters(t *testing.T) {
+	t.Parallel()
 	schema := getTestSchema()
 	content := utils.NewOrderedMap()
 	content.Set(`parameters`, *utils.NewOrderedMap())

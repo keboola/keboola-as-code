@@ -8,6 +8,7 @@ import (
 )
 
 func TestFormatPathChange(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		src      string
 		dst      string
@@ -38,6 +39,7 @@ func TestFormatPathChange(t *testing.T) {
 }
 
 func TestExtractCommonPrefix(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		src      string
 		dst      string
@@ -62,6 +64,7 @@ func TestExtractCommonPrefix(t *testing.T) {
 }
 
 func TestFilterByWords(t *testing.T) {
+	t.Parallel()
 	// Match all words from filter, order does not matter
 	assert.True(t, MatchWords(``, ``))
 	assert.True(t, MatchWords(`foo`, ``))

@@ -34,11 +34,13 @@ func cases() []test {
 }
 
 func TestNewManifest(t *testing.T) {
+	t.Parallel()
 	manifest := newTestManifest(t)
 	assert.NotNil(t, manifest)
 }
 
 func TestManifestLoadNotFound(t *testing.T) {
+	t.Parallel()
 	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
 	assert.NoError(t, err)
 
@@ -50,6 +52,7 @@ func TestManifestLoadNotFound(t *testing.T) {
 }
 
 func TestManifestLoad(t *testing.T) {
+	t.Parallel()
 	for _, c := range cases() {
 		fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
 		assert.NoError(t, err)
@@ -76,6 +79,7 @@ func TestManifestLoad(t *testing.T) {
 }
 
 func TestManifestSave(t *testing.T) {
+	t.Parallel()
 	for _, c := range cases() {
 		// Create
 		m := newTestManifest(t)
@@ -104,6 +108,7 @@ func TestManifestSave(t *testing.T) {
 }
 
 func TestManifestValidateEmpty(t *testing.T) {
+	t.Parallel()
 	m := &Manifest{Content: &Content{}}
 	err := m.validate()
 	assert.NotNil(t, err)
@@ -122,6 +127,7 @@ func TestManifestValidateEmpty(t *testing.T) {
 }
 
 func TestManifestValidateMinimal(t *testing.T) {
+	t.Parallel()
 	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
 	assert.NoError(t, err)
 	m := newManifest(0, "", fs)
@@ -130,6 +136,7 @@ func TestManifestValidateMinimal(t *testing.T) {
 }
 
 func TestManifestValidateFull(t *testing.T) {
+	t.Parallel()
 	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
 	assert.NoError(t, err)
 	m := newManifest(0, "", fs)
@@ -138,6 +145,7 @@ func TestManifestValidateFull(t *testing.T) {
 }
 
 func TestManifestValidateBadVersion(t *testing.T) {
+	t.Parallel()
 	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
 	assert.NoError(t, err)
 	m := newManifest(0, "", fs)
@@ -150,6 +158,7 @@ func TestManifestValidateBadVersion(t *testing.T) {
 }
 
 func TestManifestValidateNestedField(t *testing.T) {
+	t.Parallel()
 	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
 	assert.NoError(t, err)
 	m := newManifest(1, "connection.keboola.com", fs)
@@ -170,6 +179,7 @@ func TestManifestValidateNestedField(t *testing.T) {
 }
 
 func TestIsObjectIgnored(t *testing.T) {
+	t.Parallel()
 	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
 	assert.NoError(t, err)
 	m := newManifest(1, "connection.keboola.com", fs)
@@ -210,6 +220,7 @@ func TestIsObjectIgnored(t *testing.T) {
 }
 
 func TestManifestRecordGetParent(t *testing.T) {
+	t.Parallel()
 	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
 	assert.NoError(t, err)
 	m := newManifest(0, "", fs)
@@ -226,6 +237,7 @@ func TestManifestRecordGetParent(t *testing.T) {
 }
 
 func TestManifestRecordGetParentNotFound(t *testing.T) {
+	t.Parallel()
 	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
 	assert.NoError(t, err)
 	m := newManifest(0, "", fs)
@@ -241,6 +253,7 @@ func TestManifestRecordGetParentNotFound(t *testing.T) {
 }
 
 func TestManifestRecordGetParentNil(t *testing.T) {
+	t.Parallel()
 	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
 	assert.NoError(t, err)
 	m := newManifest(0, "", fs)

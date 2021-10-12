@@ -9,6 +9,7 @@ import (
 )
 
 func TestClientLogger(t *testing.T) {
+	t.Parallel()
 	logger, out := utils.NewDebugLogger()
 	clientLogger := &Logger{logger}
 	clientLogger.Debugf("Some debug")
@@ -20,6 +21,7 @@ func TestClientLogger(t *testing.T) {
 }
 
 func TestRemoveSecrets(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, "token/verify", removeSecrets("token/verify"))
 	assert.Equal(t, "tokens/verify", removeSecrets("tokens/verify"))
 	assert.Equal(t, "token, abc", removeSecrets("token, abc"))

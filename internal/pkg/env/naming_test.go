@@ -7,6 +7,7 @@ import (
 )
 
 func TestEnvNamingConvention(t *testing.T) {
+	t.Parallel()
 	n := NewNamingConvention()
 	assert.Equal(t, "KBC_FOO", n.Replace("foo"))
 	assert.Equal(t, "KBC_FOO_BAR", n.Replace("foo-bar"))
@@ -14,6 +15,7 @@ func TestEnvNamingConvention(t *testing.T) {
 }
 
 func TestEnvNamingConventionFlagNameEmpty(t *testing.T) {
+	t.Parallel()
 	n := NewNamingConvention()
 	assert.PanicsWithError(t, "flag name cannot be empty", func() {
 		n.Replace("")

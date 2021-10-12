@@ -14,6 +14,7 @@ import (
 )
 
 func TestMissingParams(t *testing.T) {
+	t.Parallel()
 	root, out := newTestRootCommand()
 	root.cmd.SetArgs([]string{"init"})
 	err := root.cmd.Execute()
@@ -27,6 +28,8 @@ func TestMissingParams(t *testing.T) {
 }
 
 func TestInteractiveInit(t *testing.T) {
+	t.Parallel()
+
 	// Create virtual console
 	c, state, err := testhelper.NewVirtualTerminal(expect.WithStdout(testhelper.VerboseStdout()), expect.WithDefaultTimeout(15*time.Second))
 	assert.NoError(t, err)

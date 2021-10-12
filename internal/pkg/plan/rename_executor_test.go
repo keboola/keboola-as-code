@@ -14,6 +14,7 @@ import (
 )
 
 func TestRename(t *testing.T) {
+	t.Parallel()
 	m, logger, logs := newTestManifest(t)
 	fs := m.Fs()
 
@@ -63,6 +64,7 @@ DEBUG  Removed "foo2"
 }
 
 func TestRenameFailedKeepOldState(t *testing.T) {
+	t.Parallel()
 	m, logger, logs := newTestManifest(t)
 	fs := m.Fs()
 

@@ -17,6 +17,7 @@ import (
 )
 
 func TestDiffOnlyInLocal(t *testing.T) {
+	t.Parallel()
 	projectState := createProjectState(t)
 	branch := &model.Branch{}
 	m := &model.BranchManifest{}
@@ -32,6 +33,7 @@ func TestDiffOnlyInLocal(t *testing.T) {
 }
 
 func TestDiffOnlyInRemote(t *testing.T) {
+	t.Parallel()
 	branch := &model.Branch{}
 	projectState := createProjectState(t)
 	_, err := projectState.SetRemoteState(branch)
@@ -47,6 +49,7 @@ func TestDiffOnlyInRemote(t *testing.T) {
 }
 
 func TestDiffEqual(t *testing.T) {
+	t.Parallel()
 	projectState := createProjectState(t)
 	branchRemote := &model.Branch{
 		BranchKey: model.BranchKey{
@@ -80,6 +83,7 @@ func TestDiffEqual(t *testing.T) {
 }
 
 func TestDiffNotEqual(t *testing.T) {
+	t.Parallel()
 	projectState := createProjectState(t)
 	branchRemote := &model.Branch{
 		BranchKey: model.BranchKey{
@@ -115,6 +119,7 @@ func TestDiffNotEqual(t *testing.T) {
 }
 
 func TestDiffEqualConfig(t *testing.T) {
+	t.Parallel()
 	projectState := createProjectState(t)
 
 	component := &model.Component{
@@ -186,6 +191,7 @@ func TestDiffEqualConfig(t *testing.T) {
 }
 
 func TestDiffNotEqualConfig(t *testing.T) {
+	t.Parallel()
 	projectState := createProjectState(t)
 
 	component := &model.Component{

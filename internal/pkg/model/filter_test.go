@@ -7,6 +7,7 @@ import (
 )
 
 func TestIsBranchAllowed(t *testing.T) {
+	t.Parallel()
 	assert.True(t, (AllowedBranches{"*", "xyz"}).IsBranchAllowed(
 		&Branch{BranchKey: BranchKey{Id: 123}, Name: "abc", IsDefault: false}),
 	)
@@ -41,6 +42,7 @@ func TestIsBranchAllowed(t *testing.T) {
 }
 
 func TestComponentsIds(t *testing.T) {
+	t.Parallel()
 	ids := ComponentIds{"foo", "bar"}
 	assert.True(t, ids.Contains("foo"))
 	assert.True(t, ids.Contains("bar"))

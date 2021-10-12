@@ -9,6 +9,7 @@ import (
 )
 
 func TestLocalSaveModel(t *testing.T) {
+	t.Parallel()
 	manager := newTestLocalManager(t)
 	fs := manager.fs
 

@@ -14,6 +14,7 @@ import (
 )
 
 func TestValuesPriority(t *testing.T) {
+	t.Parallel()
 	logger := zap.NewNop().Sugar()
 	workingDir := filesystem.Join("foo", "bar")
 	fs, err := aferofs.NewMemoryFs(logger, workingDir)
@@ -59,11 +60,13 @@ func TestValuesPriority(t *testing.T) {
 }
 
 func TestValidateNoRequired(t *testing.T) {
+	t.Parallel()
 	options := NewOptions()
 	assert.Empty(t, options.Validate([]string{}))
 }
 
 func TestValidateAllRequired(t *testing.T) {
+	t.Parallel()
 	options := NewOptions()
 	errors := options.Validate([]string{"ApiHost", "ApiToken"})
 
@@ -76,6 +79,7 @@ func TestValidateAllRequired(t *testing.T) {
 }
 
 func TestDumpOptions(t *testing.T) {
+	t.Parallel()
 	options := NewOptions()
 	options.ApiHost = "connection.keboola.com"
 	options.ApiToken = "12345-67890123abcd"

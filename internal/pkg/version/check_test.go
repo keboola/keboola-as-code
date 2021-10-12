@@ -15,6 +15,7 @@ import (
 )
 
 func TestCheckIfLatestVersionDev(t *testing.T) {
+	t.Parallel()
 	c, _ := createMockedChecker(t)
 	err := c.CheckIfLatest(build.DevVersionValue)
 	assert.NotNil(t, err)
@@ -22,6 +23,7 @@ func TestCheckIfLatestVersionDev(t *testing.T) {
 }
 
 func TestCheckIfLatestVersionEqual(t *testing.T) {
+	t.Parallel()
 	c, logs := createMockedChecker(t)
 	err := c.CheckIfLatest(`v1.2.3`)
 	assert.Nil(t, err)
@@ -29,6 +31,7 @@ func TestCheckIfLatestVersionEqual(t *testing.T) {
 }
 
 func TestCheckIfLatestVersionGreater(t *testing.T) {
+	t.Parallel()
 	c, logs := createMockedChecker(t)
 	err := c.CheckIfLatest(`v1.2.5`)
 	assert.Nil(t, err)
@@ -36,6 +39,7 @@ func TestCheckIfLatestVersionGreater(t *testing.T) {
 }
 
 func TestCheckIfLatestVersionLess(t *testing.T) {
+	t.Parallel()
 	c, logs := createMockedChecker(t)
 	err := c.CheckIfLatest(`v1.2.2`)
 	assert.Nil(t, err)

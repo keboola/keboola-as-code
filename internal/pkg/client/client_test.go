@@ -17,12 +17,14 @@ import (
 )
 
 func TestNewHttpClient(t *testing.T) {
+	t.Parallel()
 	logger, _ := utils.NewDebugLogger()
 	c := NewClient(context.Background(), logger, false)
 	assert.NotNil(t, c)
 }
 
 func TestWithHostUrl(t *testing.T) {
+	t.Parallel()
 	orgClient, httpTransport, _, _ := getMockedClientAndLogs(t, false)
 	hostClient := orgClient.WithHostUrl("https://foo.bar")
 
@@ -39,6 +41,7 @@ func TestWithHostUrl(t *testing.T) {
 }
 
 func TestSimpleRequest(t *testing.T) {
+	t.Parallel()
 	c, httpTransport, _, out := getMockedClientAndLogs(t, false)
 
 	// Mocked response
@@ -53,6 +56,7 @@ func TestSimpleRequest(t *testing.T) {
 }
 
 func TestRetry(t *testing.T) {
+	t.Parallel()
 	c, httpTransport, _, out := getMockedClientAndLogs(t, false)
 
 	// Mocked response
@@ -83,6 +87,7 @@ func TestRetry(t *testing.T) {
 }
 
 func TestDoNotRetry(t *testing.T) {
+	t.Parallel()
 	c, httpTransport, _, out := getMockedClientAndLogs(t, false)
 
 	// Mocked response
@@ -106,6 +111,7 @@ func TestDoNotRetry(t *testing.T) {
 }
 
 func TestVerboseHideSecret(t *testing.T) {
+	t.Parallel()
 	c, httpTransport, _, out := getMockedClientAndLogs(t, true)
 
 	// Mocked response

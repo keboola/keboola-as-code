@@ -15,6 +15,7 @@ import (
 )
 
 func TestRenameAllPlan(t *testing.T) {
+	t.Parallel()
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filesystem.Dir(testFile)
 	m, _ := loadTestManifest(t, filesystem.Join(testDir, "..", "fixtures", "local", "to-rename"))

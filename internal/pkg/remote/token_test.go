@@ -14,6 +14,7 @@ import (
 )
 
 func TestApiWithToken(t *testing.T) {
+	t.Parallel()
 	logger, _ := utils.NewDebugLogger()
 	token := &model.Token{Id: "123", Token: "mytoken", Owner: model.TokenOwner{Id: 456, Name: "name"}}
 	orgApi := NewStorageApi("foo.bar.com", context.Background(), logger, false)
@@ -26,6 +27,7 @@ func TestApiWithToken(t *testing.T) {
 }
 
 func TestGetToken(t *testing.T) {
+	t.Parallel()
 	project := testproject.GetTestProject(t, env.Empty())
 	logger, logs := utils.NewDebugLogger()
 	api := NewStorageApi(project.StorageApiHost(), context.Background(), logger, false)
@@ -40,6 +42,7 @@ func TestGetToken(t *testing.T) {
 }
 
 func TestGetTokenEmpty(t *testing.T) {
+	t.Parallel()
 	project := testproject.GetTestProject(t, env.Empty())
 	logger, _ := utils.NewDebugLogger()
 	api := NewStorageApi(project.StorageApiHost(), context.Background(), logger, false)
@@ -55,6 +58,7 @@ func TestGetTokenEmpty(t *testing.T) {
 }
 
 func TestGetTokenInvalid(t *testing.T) {
+	t.Parallel()
 	project := testproject.GetTestProject(t, env.Empty())
 	logger, _ := utils.NewDebugLogger()
 	api := NewStorageApi(project.StorageApiHost(), context.Background(), logger, false)

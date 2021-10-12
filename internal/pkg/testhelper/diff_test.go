@@ -22,6 +22,7 @@ func (t *mockedT) Errorf(format string, args ...interface{}) {
 }
 
 func TestAssertDirectoryFileOnlyInExpected(t *testing.T) {
+	t.Parallel()
 	expectedDir := t.TempDir()
 	actualDir := t.TempDir()
 
@@ -39,6 +40,7 @@ func TestAssertDirectoryFileOnlyInExpected(t *testing.T) {
 }
 
 func TestAssertDirectoryDirOnlyInExpected(t *testing.T) {
+	t.Parallel()
 	expectedDir := t.TempDir()
 	actualDir := t.TempDir()
 
@@ -52,6 +54,7 @@ func TestAssertDirectoryDirOnlyInExpected(t *testing.T) {
 }
 
 func TestAssertDirectoryFileOnlyInActual(t *testing.T) {
+	t.Parallel()
 	expectedDir := t.TempDir()
 	actualDir := t.TempDir()
 
@@ -69,6 +72,7 @@ func TestAssertDirectoryFileOnlyInActual(t *testing.T) {
 }
 
 func TestAssertDirectoryDirOnlyInActual(t *testing.T) {
+	t.Parallel()
 	expectedDir := t.TempDir()
 	actualDir := t.TempDir()
 
@@ -82,6 +86,7 @@ func TestAssertDirectoryDirOnlyInActual(t *testing.T) {
 }
 
 func TestAssertDirectoryFileDifferentType1(t *testing.T) {
+	t.Parallel()
 	expectedDir := t.TempDir()
 	actualDir := t.TempDir()
 
@@ -101,6 +106,7 @@ func TestAssertDirectoryFileDifferentType1(t *testing.T) {
 }
 
 func TestAssertDirectoryFileDifferentType2(t *testing.T) {
+	t.Parallel()
 	expectedDir := t.TempDir()
 	actualDir := t.TempDir()
 
@@ -120,6 +126,7 @@ func TestAssertDirectoryFileDifferentType2(t *testing.T) {
 }
 
 func TestAssertDirectoryDifferentContent(t *testing.T) {
+	t.Parallel()
 	expectedDir := t.TempDir()
 	actualDir := t.TempDir()
 
@@ -143,6 +150,7 @@ func TestAssertDirectoryDifferentContent(t *testing.T) {
 }
 
 func TestAssertDirectoryDifferentContentWildcards(t *testing.T) {
+	t.Parallel()
 	expectedDir := t.TempDir()
 	actualDir := t.TempDir()
 
@@ -166,6 +174,7 @@ func TestAssertDirectoryDifferentContentWildcards(t *testing.T) {
 }
 
 func TestAssertDirectorySameEmpty(t *testing.T) {
+	t.Parallel()
 	expectedDir := t.TempDir()
 	actualDir := t.TempDir()
 	test := &mockedT{buf: bytes.NewBuffer(nil)}
@@ -174,6 +183,7 @@ func TestAssertDirectorySameEmpty(t *testing.T) {
 }
 
 func TestAssertDirectoryIgnoreHiddenFiles(t *testing.T) {
+	t.Parallel()
 	expectedDir := t.TempDir()
 	actualDir := t.TempDir()
 
@@ -199,6 +209,7 @@ func TestAssertDirectoryIgnoreHiddenFiles(t *testing.T) {
 }
 
 func TestAssertDirectorySame(t *testing.T) {
+	t.Parallel()
 	expectedDir := t.TempDir()
 	actualDir := t.TempDir()
 
@@ -224,6 +235,7 @@ func TestAssertDirectorySame(t *testing.T) {
 }
 
 func TestAssertDirectorySameWildcards(t *testing.T) {
+	t.Parallel()
 	expectedDir := t.TempDir()
 	actualDir := t.TempDir()
 

@@ -12,6 +12,7 @@ import (
 )
 
 func TestLocalLoadModel(t *testing.T) {
+	t.Parallel()
 	manager := newTestLocalManager(t)
 	fs := manager.fs
 
@@ -49,6 +50,7 @@ func TestLocalLoadModel(t *testing.T) {
 }
 
 func TestLocalLoadModelNotFound(t *testing.T) {
+	t.Parallel()
 	manager := newTestLocalManager(t)
 
 	// Save files
@@ -63,6 +65,7 @@ func TestLocalLoadModelNotFound(t *testing.T) {
 }
 
 func TestLocalLoadModelInvalidTransformation(t *testing.T) {
+	t.Parallel()
 	manager := newTestLocalManager(t)
 	fs := manager.fs
 	componentProvider := manager.state.Components()

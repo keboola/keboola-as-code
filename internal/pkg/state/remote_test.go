@@ -18,6 +18,7 @@ import (
 )
 
 func TestLoadRemoteStateEmpty(t *testing.T) {
+	t.Parallel()
 	m := createManifest(t)
 	state, _ := loadRemoteState(t, m, "empty.json")
 	assert.NotNil(t, state)
@@ -27,6 +28,7 @@ func TestLoadRemoteStateEmpty(t *testing.T) {
 }
 
 func TestLoadRemoteStateComplex(t *testing.T) {
+	t.Parallel()
 	m := createManifest(t)
 	state, envs := loadRemoteState(t, m, "complex.json")
 	assert.NotNil(t, state)
@@ -37,6 +39,7 @@ func TestLoadRemoteStateComplex(t *testing.T) {
 }
 
 func TestLoadRemoteStateAllowedBranches(t *testing.T) {
+	t.Parallel()
 	m := createManifest(t)
 	m.Content.AllowedBranches = model.AllowedBranches{"f??"} // foo
 	state, envs := loadRemoteState(t, m, "complex.json")

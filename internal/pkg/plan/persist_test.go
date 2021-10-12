@@ -21,6 +21,7 @@ import (
 )
 
 func TestPersistNoChange(t *testing.T) {
+	t.Parallel()
 	projectDir, _ := initMinimalProjectDir(t)
 	m, _ := loadTestManifest(t, projectDir)
 	api, httpTransport, _ := testapi.TestMockedStorageApi()
@@ -59,6 +60,7 @@ func TestPersistNoChange(t *testing.T) {
 }
 
 func TestPersistNewConfig(t *testing.T) {
+	t.Parallel()
 	projectDir, envs := initMinimalProjectDir(t)
 	m, fs := loadTestManifest(t, projectDir)
 	api, httpTransport, _ := testapi.TestMockedStorageApi()
@@ -161,6 +163,7 @@ func TestPersistNewConfig(t *testing.T) {
 }
 
 func TestPersistNewConfigRow(t *testing.T) {
+	t.Parallel()
 	projectDir, envs := initMinimalProjectDir(t)
 	m, fs := loadTestManifest(t, projectDir)
 	api, httpTransport, _ := testapi.TestMockedStorageApi()
@@ -326,6 +329,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 }
 
 func TestPersistDeleted(t *testing.T) {
+	t.Parallel()
 	projectDir, envs := initMinimalProjectDir(t)
 	m, _ := loadTestManifest(t, projectDir)
 	api, httpTransport, _ := testapi.TestMockedStorageApi()

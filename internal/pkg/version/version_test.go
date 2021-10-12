@@ -9,6 +9,7 @@ import (
 )
 
 func TestVersion(t *testing.T) {
+	t.Parallel()
 	assert.Regexp(
 		t,
 		`^`+

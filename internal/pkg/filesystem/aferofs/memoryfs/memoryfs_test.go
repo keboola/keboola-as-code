@@ -7,6 +7,7 @@ import (
 )
 
 func TestNewMemoryFs(t *testing.T) {
+	t.Parallel()
 	fs := New()
 	assert.Equal(t, "__memory__", fs.BasePath())
 }

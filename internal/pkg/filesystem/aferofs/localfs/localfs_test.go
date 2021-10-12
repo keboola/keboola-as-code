@@ -13,12 +13,14 @@ import (
 )
 
 func TestNewLocalFs(t *testing.T) {
+	t.Parallel()
 	projectDir := t.TempDir()
 	fs := New(projectDir)
 	assert.Equal(t, projectDir, fs.BasePath())
 }
 
 func TestFindProjectDir(t *testing.T) {
+	t.Parallel()
 	projectDir := t.TempDir()
 	metadataDir := filepath.Join(projectDir, filesystem.MetadataDir)
 	workingDir := filepath.Join(projectDir, `foo`, `bar`)
@@ -31,6 +33,7 @@ func TestFindProjectDir(t *testing.T) {
 }
 
 func TestFindProjectDirNotFound(t *testing.T) {
+	t.Parallel()
 	workingDir := t.TempDir()
 	dir, err := FindProjectDir(zap.NewNop().Sugar(), workingDir)
 	assert.NoError(t, err)

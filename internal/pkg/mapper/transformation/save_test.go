@@ -12,6 +12,7 @@ import (
 )
 
 func TestSaveTransformationEmpty(t *testing.T) {
+	t.Parallel()
 	logger, fs, state, objectFiles := createTestFixtures(t)
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
 	assert.NoError(t, fs.Mkdir(blocksDir))
@@ -24,6 +25,7 @@ func TestSaveTransformationEmpty(t *testing.T) {
 }
 
 func TestSaveTransformation(t *testing.T) {
+	t.Parallel()
 	logger, fs, state, objectFiles := createTestFixtures(t)
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
 	assert.NoError(t, fs.Mkdir(blocksDir))

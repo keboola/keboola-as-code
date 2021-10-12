@@ -11,6 +11,7 @@ import (
 )
 
 func TestListAllComponents(t *testing.T) {
+	t.Parallel()
 	project := testproject.GetTestProject(t, env.Empty())
 	api := project.Api()
 
@@ -20,6 +21,7 @@ func TestListAllComponents(t *testing.T) {
 }
 
 func TestNewComponentList(t *testing.T) {
+	t.Parallel()
 	project := testproject.GetTestProject(t, env.Empty())
 	api := project.Api()
 

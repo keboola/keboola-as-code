@@ -10,6 +10,7 @@ import (
 )
 
 func TestGenerateDocument(t *testing.T) {
+	t.Parallel()
 	document, err := GenerateDocument(getSampleSchema())
 	documentJson := json.MustEncodeString(document, true)
 	assert.NoError(t, err)
@@ -46,6 +47,7 @@ func TestGenerateDocument(t *testing.T) {
 }
 
 func TestGenerateDocumentEmptySchema(t *testing.T) {
+	t.Parallel()
 	document, err := GenerateDocument([]byte(`{}`))
 	documentJson := json.MustEncodeString(document, true)
 	assert.NoError(t, err)

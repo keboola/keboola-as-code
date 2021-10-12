@@ -7,6 +7,7 @@ import (
 )
 
 func TestIsKeyToEncrypt(t *testing.T) {
+	t.Parallel()
 	assert.True(t, IsKeyToEncrypt("#keyToEncrypt"))
 	assert.True(t, IsKeyToEncrypt("##aa"))
 	assert.True(t, IsKeyToEncrypt("#vaule"))
@@ -17,6 +18,7 @@ func TestIsKeyToEncrypt(t *testing.T) {
 }
 
 func TestIsValueEncrypted(t *testing.T) {
+	t.Parallel()
 	assert.False(t, IsEncrypted("somevalue"))
 	assert.False(t, IsEncrypted("kbc:value"))
 	assert.False(t, IsEncrypted("kbc::project"))

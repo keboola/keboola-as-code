@@ -24,6 +24,7 @@ import (
 )
 
 func TestLoadStateDifferentProjectId(t *testing.T) {
+	t.Parallel()
 	logger, _ := utils.NewDebugLogger()
 	api, _, _ := testapi.TestMockedStorageApi()
 	api = api.WithToken(&model.Token{Owner: model.TokenOwner{Id: 45678}})
@@ -42,6 +43,7 @@ func TestLoadStateDifferentProjectId(t *testing.T) {
 }
 
 func TestLoadState(t *testing.T) {
+	t.Parallel()
 	envs := env.Empty()
 
 	project := testproject.GetTestProject(t, envs)
@@ -159,6 +161,7 @@ func TestLoadState(t *testing.T) {
 }
 
 func TestValidateState(t *testing.T) {
+	t.Parallel()
 	// Create state
 	envs := env.Empty()
 	envs.Set("LOCAL_STATE_MAIN_BRANCH_ID", `123`)
