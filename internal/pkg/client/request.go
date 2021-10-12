@@ -187,7 +187,7 @@ func (r *Request) nextListener() *ResponseListener {
 	return listener
 }
 
-// invokeListeners if all are "waitingFor" requests done.
+// invokeListeners if all "waitingFor" requests are done.
 func (r *Request) invokeListeners() {
 	for {
 		// Invoke next listener if present
