@@ -11,12 +11,21 @@ SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 cd "$SCRIPT_DIR/.."
 pwd
 
+# Check the most important things
 echo "Running go vet ..."
 if ! go vet ./...; then
     echo "Please fix ^^^ errors. You can try run \"make fix\"."
     echo
     exit 1
 fi
+
+# Check modules
+echo "Running go mod tidy/verify ..."
+go mod tidy
+git diff --exit-code -- go.mod go.sum
+go mod verify
+echo "Ok. Tidy: go.mod and go.sum are valid."
+echo
 
 
 # Run linters
