@@ -68,7 +68,15 @@ func (u *UnitOfWork) SaveObject(object model.ObjectState, changedFields []string
 func (u *UnitOfWork) DeleteObject(object model.ObjectState) error {
 	switch v := object.(type) {
 	case *model.BranchState:
-		return fmt.Errorf(`branch (%d - %s) cannot be deleted by CLI`, v.Local.Id, v.Local.Name)
+		branch := v.LocalOrRemoteState().(*model.Branch)
+		if branch.IsDefault {
+			return fmt.Errorf("default branch cannot be deleted")
+		}
+
+		// Branch must be deleted in blocking operation
+		if _, err := u.api.DeleteBranch(branch.Id); err != nil {
+			return err
+		}
 	case *model.ConfigState:
 		u.poolFor(v.Level()).
 			Request(u.api.DeleteConfigRequest(v.Remote)).

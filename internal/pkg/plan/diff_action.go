@@ -73,8 +73,6 @@ func (a *DiffAction) validate() error {
 			branch := branchState.Remote
 			if branch.IsDefault {
 				return fmt.Errorf("cannot %s, default branch can never be deleted", a.StringVerbose())
-			} else {
-				return fmt.Errorf("cannot %s, branch cannot be deleted by CLI", a.StringVerbose())
 			}
 		}
 	}
