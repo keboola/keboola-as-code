@@ -1,14 +1,28 @@
 package filesystem
 
 import (
+	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
+func TestFromSlash(t *testing.T) {
+	t.Parallel()
+	assert.Equal(t, filepath.Join(`abc`, `def`), FromSlash(path.Join(`abc`, `def`))) // nolint forbidifo
+}
+
+func TestToSlash(t *testing.T) {
+	t.Parallel()
+	assert.Equal(t, path.Join(`abc`, `def`), ToSlash(filepath.Join(`abc`, `def`))) // nolint forbidifo
+}
+
 func TestRel(t *testing.T) {
 	t.Parallel()
-	assert.Equal(t, "abc/file.txt", Rel(`foo/bar`, `foo/bar/abc/file.txt`))
+	path, err := Rel(`foo/bar`, `foo/bar/abc/file.txt`)
+	assert.NoError(t, err)
+	assert.Equal(t, "abc/file.txt", path)
 }
 
 func TestJoin(t *testing.T) {
@@ -42,4 +56,14 @@ func TestMatch(t *testing.T) {
 	m, err = Match(`abc/**`, `foo/bar/abc/file.txt`)
 	assert.NoError(t, err)
 	assert.False(t, m)
+}
+
+func TestIsFrom(t *testing.T) {
+	t.Parallel()
+	assert.True(t, IsFrom(`abc/def`, `abc`))
+	assert.True(t, IsFrom(`abc/def/file.txt`, `abc`))
+	assert.False(t, IsFrom(`abc`, `abc`))
+	assert.False(t, IsFrom(`xyz`, `abc`))
+	assert.False(t, IsFrom(`xyz/def`, `abc`))
+	assert.False(t, IsFrom(`xyz/def/file.txt`, `abc`))
 }

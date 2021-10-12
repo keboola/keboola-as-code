@@ -34,7 +34,7 @@ linters-settings:
       # "httpmock" singleton is forbidden, it doesn't work in parallel tests, use client.Transport = httpmock.NewMockTransport() instead
       - ^httpmock\.(Activate|ActivateNonDefault|ActivateNonDefault|DeactivateAndReset|RegisterResponder|GetCallCountInfo)$
       # Os ENVs singleton is forbidden, use env.Map instead
-      - ^os\.(Setenv|Getenv|Unsetenv|Lookupenv|Clearenv)$
+      - ^os\.(Setenv|Getenv|Unsetenv|Lookupenv|Clearenv|PathSeparator)$
 
 # https://golangci-lint.run/usage/linters
 linters:

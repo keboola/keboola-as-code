@@ -2,7 +2,6 @@ package utils
 
 import (
 	"fmt"
-	"os"
 	"regexp"
 	"strings"
 
@@ -12,7 +11,6 @@ import (
 type PathTemplate string
 
 func (p PathTemplate) MatchPath(path string) (bool, map[string]string) {
-	path = strings.ReplaceAll(path, string(os.PathSeparator), "/")
 	r := p.regexp()
 	result := r.FindStringSubmatch(path)
 	if result == nil {

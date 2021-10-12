@@ -33,7 +33,10 @@ func NewLocalFsFindProjectDir(logger *zap.SugaredLogger, workingDir string) (fs 
 		return nil, err
 	}
 
-	workingDirRel := filesystem.Rel(projectDir, workingDir)
+	workingDirRel, err := filepath.Rel(projectDir, workingDir)
+	if err != nil {
+		return nil, fmt.Errorf(`cannot determine working dir relative path: %w`, err)
+	}
 
 	// Create filesystem abstraction
 	return New(logger, localfs.New(projectDir), workingDirRel), nil

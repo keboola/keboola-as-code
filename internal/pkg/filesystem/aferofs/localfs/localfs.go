@@ -44,6 +44,16 @@ func (fs *LocalFs) BasePath() string {
 	return fs.basePath
 }
 
+// FromSlash returns OS representation of the path.
+func (fs *LocalFs) FromSlash(path string) string {
+	return strings.ReplaceAll(path, string(filesystem.PathSeparator), string(os.PathSeparator))
+}
+
+// ToSlash returns internal representation of the path.
+func (fs *LocalFs) ToSlash(path string) string {
+	return strings.ReplaceAll(path, string(os.PathSeparator), string(filesystem.PathSeparator))
+}
+
 func (fs *LocalFs) Walk(root string, walkFn filepath.WalkFunc) error {
 	return fs.utils.Walk(root, walkFn)
 }
