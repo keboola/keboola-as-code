@@ -25,7 +25,7 @@ TEST_KBC_PROJECTS="connection.keboola.com|1234|project-1234-token;host2|id2|toke
 Run the test suite and download the dependencies using:
 
 ```
-`docker-compose run --rm -u "$UID:$GID" dev` make ci
+docker-compose run --rm -u "$UID:$GID" dev make ci
 ```
 
 To start the interactive console in the container, you can use:
@@ -110,4 +110,6 @@ If a ENV placeholder in the form `^TEST_NEW_TICKET_\d+$` is found, it is replace
 
 ### IDE setup
 
-In IntelliJ IDEA is needed to set project GOPATH to `/go` directory, for code autocompletion to work.
+The scripts `make mod`, `make fix`, `make ci` calls `go mod vendor`.
+It syncs all dependencies (Go modules) to the `vendor` directory.
+So integration with the IDE should work automatically.
