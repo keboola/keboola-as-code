@@ -16,13 +16,13 @@
           "name": "Block 1"
         }
       ]
-    }
+    },
+    "shared_code_id": "...",
+    "shared_code_row_ids": [
+      "..."
+    ],
+    "variables_id": "...",
+    "variables_values_id": "..."
   },
-  "rows": null,
-  "shared_code_id": "...",
-  "shared_code_row_ids": [
-    "..."
-  ],
-  "variables_id": "...",
-  "variables_values_id": "..."
+  "rows": null
 }

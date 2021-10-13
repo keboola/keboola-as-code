@@ -1,3 +1,9 @@
 {
-  "parameters": {}
+  "parameters": {},
+  "shared_code_id": "...",
+  "shared_code_row_ids": [
+    "..."
+  ],
+  "variables_id": "...",
+  "variables_values_id": "..."
 }
