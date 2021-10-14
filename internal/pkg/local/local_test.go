@@ -19,7 +19,7 @@ func newTestLocalManager(t *testing.T) *Manager {
 	fs, err := aferofs.NewMemoryFs(logger, "")
 	assert.NoError(t, err)
 
-	m, err := manifest.NewManifest(1, "connection.keboola.com", fs)
+	m, err := manifest.NewManifest(1, "foo.bar", fs)
 	assert.NoError(t, err)
 
 	components := model.NewComponentsMap(nil)
