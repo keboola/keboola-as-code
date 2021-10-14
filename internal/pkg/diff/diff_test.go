@@ -5,14 +5,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
+
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -271,15 +271,12 @@ func createProjectState(t *testing.T) *state.State {
 		assert.FailNow(t, err.Error())
 	}
 
-	m, err := manifest.NewManifest(1, "connection.keboola.com", fs)
+	m, err := manifest.NewManifest(1, `foo.bar`, fs)
 	if err != nil {
 		assert.FailNow(t, err.Error())
 	}
 
-	// State is mocked manually in test functions
-	project := testproject.GetTestProject(t, env.Empty())
-
-	api := project.Api()
+	api, _, _ := testapi.TestMockedStorageApi()
 	options := state.NewOptions(m, api, context.Background(), logger)
 	options.LoadLocalState = false
 	options.LoadRemoteState = false

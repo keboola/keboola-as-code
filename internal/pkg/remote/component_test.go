@@ -1,6 +1,9 @@
 package remote_test
 
 import (
+	"github.com/jarcoal/httpmock"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -35,8 +38,18 @@ func TestGetComponentNotFound(t *testing.T) {
 
 func TestComponentIsDeprecated(t *testing.T) {
 	t.Parallel()
-	project := testproject.GetTestProject(t, env.Empty())
-	api := project.Api()
+	api, httpTransport, _ := testapi.TestMockedStorageApi()
+
+	responder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
+		"id":   "wr-dropbox",
+		"type": "writer",
+		"name": "DropBox",
+		"flags": []interface{}{
+			model.DeprecatedFlag,
+		},
+	})
+	assert.NoError(t, err)
+	httpTransport.RegisterResponder("GET", `=~/storage/components/wr-dropbox`, responder)
 
 	component, err := api.GetComponent("wr-dropbox")
 	assert.NoError(t, err)

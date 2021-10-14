@@ -267,7 +267,7 @@ func minimalJson() string {
   "version": 1,
   "project": {
     "id": 12345,
-    "apiHost": "connection.keboola.com"
+    "apiHost": "foo.bar"
   },
   "sortBy": "id",
   "naming": {
@@ -294,7 +294,7 @@ func minimalStruct() *Content {
 		Version: 1,
 		Project: model.Project{
 			Id:      12345,
-			ApiHost: "connection.keboola.com",
+			ApiHost: "foo.bar",
 		},
 		SortBy:   model.SortById,
 		Naming:   model.DefaultNaming(),
@@ -309,7 +309,7 @@ func fullJson() string {
   "version": 1,
   "project": {
     "id": 12345,
-    "apiHost": "connection.keboola.com"
+    "apiHost": "foo.bar"
   },
   "sortBy": "id",
   "naming": {
@@ -379,7 +379,7 @@ func fullStruct() *Content {
 		Version: 1,
 		Project: model.Project{
 			Id:      12345,
-			ApiHost: "connection.keboola.com",
+			ApiHost: "foo.bar",
 		},
 		SortBy: model.SortById,
 		Naming: model.DefaultNaming(),
@@ -534,7 +534,7 @@ func newTestManifest(t *testing.T) *Manifest {
 	t.Helper()
 	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
 	assert.NoError(t, err)
-	manifest, err := NewManifest(123, "connection.keboola.com", fs)
+	manifest, err := NewManifest(123, "foo.bar", fs)
 	assert.NoError(t, err)
 	return manifest
 }

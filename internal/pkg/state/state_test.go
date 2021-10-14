@@ -164,6 +164,7 @@ func TestValidateState(t *testing.T) {
 	t.Parallel()
 	// Create state
 	envs := env.Empty()
+	envs.Set("TEST_KBC_STORAGE_API_HOST", "foo.bar")
 	envs.Set("LOCAL_STATE_MAIN_BRANCH_ID", `123`)
 	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", `456`)
 

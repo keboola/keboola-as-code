@@ -272,6 +272,7 @@ func loadManifest(t *testing.T, projectDirName string) *manifest.Manifest {
 	t.Helper()
 
 	envs := env.Empty()
+	envs.Set("TEST_KBC_STORAGE_API_HOST", "foo.bar")
 	envs.Set("LOCAL_STATE_MAIN_BRANCH_ID", "111")
 	envs.Set("LOCAL_STATE_MY_BRANCH_ID", "123")
 	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", "456")

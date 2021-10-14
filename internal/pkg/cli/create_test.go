@@ -44,7 +44,7 @@ func TestInteractiveCreateConfig(t *testing.T) {
 	manifestContent := `
 {
   "version": 1,
-  "project": {"id": %d, "apiHost": "connection.keboola.com"},
+  "project": {"id": %d, "apiHost": "%s"},
   "naming": {
     "branch": "{branch_name}",
     "config": "{component_type}/{component_id}/{config_name}",
@@ -57,7 +57,7 @@ func TestInteractiveCreateConfig(t *testing.T) {
 `
 	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(
 		filesystem.Join(filesystem.MetadataDir, manifest.FileName),
-		fmt.Sprintf(manifestContent, project.Id()),
+		fmt.Sprintf(manifestContent, project.Id(), project.StorageApiHost()),
 	)))
 
 	// Create branch files
@@ -142,7 +142,7 @@ func TestInteractiveCreateConfigRow(t *testing.T) {
 	manifestContent := `
 {
   "version": 1,
-  "project": {"id": %d, "apiHost": "connection.keboola.com"},
+  "project": {"id": %d, "apiHost": "%s"},
   "naming": {
     "branch": "{branch_name}",
     "config": "{component_type}/{component_id}/{config_name}",
@@ -163,7 +163,7 @@ func TestInteractiveCreateConfigRow(t *testing.T) {
 `
 	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(
 		filesystem.Join(filesystem.MetadataDir, manifest.FileName),
-		fmt.Sprintf(manifestContent, project.Id()),
+		fmt.Sprintf(manifestContent, project.Id(), project.StorageApiHost()),
 	)))
 
 	// Create branch files
