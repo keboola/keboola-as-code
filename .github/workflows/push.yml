@@ -79,9 +79,10 @@ jobs:
     needs:
       - set_version
     concurrency:
-      group: tests
+      group: tests-${{ matrix.name }}
       cancel-in-progress: false
     strategy:
+      fail-fast: false
       matrix:
         include:
           - name: linux
