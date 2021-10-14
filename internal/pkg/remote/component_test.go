@@ -1,14 +1,14 @@
 package remote_test
 
 import (
-	"github.com/jarcoal/httpmock"
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"testing"
 
+	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
 )
 

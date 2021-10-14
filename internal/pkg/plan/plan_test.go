@@ -1,17 +1,17 @@
 package plan
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
-	"github.com/nhatthm/aferocopy"
 	"testing"
 
+	"github.com/nhatthm/aferocopy"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 )
 
 func loadTestManifest(t *testing.T, inputDir string) (*manifest.Manifest, filesystem.Fs) {
