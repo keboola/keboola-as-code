@@ -33,12 +33,13 @@ type ObjectWithContent interface {
 }
 
 type ObjectsProvider interface {
+	Naming() Naming
 	Components() *ComponentsMap
+	Relations() Relations
 	All() []ObjectState
 	Branches() (branches []*BranchState)
 	Configs() (configs []*ConfigState)
 	ConfigRows() (rows []*ConfigRowState)
-	Naming() Naming
 }
 
 // Kind - type of the object, branch, config ...

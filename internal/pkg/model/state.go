@@ -41,6 +41,10 @@ func (s *State) Components() *ComponentsMap {
 	return s.components
 }
 
+func (s *State) Relations() Relations {
+	return make(Relations, 0)
+}
+
 func (s *State) All() []ObjectState {
 	s.objects.Sort(func(a *orderedmap.Pair, b *orderedmap.Pair) bool {
 		aKey := a.Value().(ObjectState).Manifest().SortKey(s.sortBy)

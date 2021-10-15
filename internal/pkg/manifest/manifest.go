@@ -33,6 +33,7 @@ type Content struct {
 	model.Filter
 	Branches []*model.BranchManifest         `json:"branches" validate:"dive"`
 	Configs  []*model.ConfigManifestWithRows `json:"configurations" validate:"dive"`
+	// Relations model.Relations                 `json:"relations" validate:"dive"`
 }
 
 func NewManifest(projectId int, apiHost string, fs filesystem.Fs) (*Manifest, error) {
