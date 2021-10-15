@@ -31,16 +31,17 @@ type ResponseListener struct {
 type Request struct {
 	*resty.Request
 	*Response
-	lock        *sync.Mutex
-	id          int
-	sent        bool
-	done        bool
-	url         string
-	pathParams  map[string]string // for logs
-	queryParams map[string]string // for logs
-	sender      Sender
-	listeners   []*ResponseListener // callback invoked when request is completed
-	waitingFor  []*Request          // defer execution listeners until another request is completed
+	lock            *sync.Mutex
+	id              int
+	sent            bool
+	done            bool
+	url             string
+	pathParams      map[string]string // for logs
+	queryParams     map[string]string // for logs
+	sender          Sender
+	cancelListeners context.CancelFunc  // to cancel execution of listeners if a new sub-request is added via WaitFor()
+	listeners       []*ResponseListener // callback invoked when request is completed
+	waitingFor      []*Request          // defer execution listeners until another request is completed
 }
 
 func NewRequest(id int, sender Sender, request *resty.Request) *Request {
@@ -166,7 +167,16 @@ func (r *Request) SetContext(ctx context.Context) *Request {
 func (r *Request) WaitFor(subRequest *Request) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
+
+	// Stop the execution of the listeners
+	if r.cancelListeners != nil {
+		r.cancelListeners()
+	}
+
+	// Store sub-request
 	r.waitingFor = append(r.waitingFor, subRequest)
+
+	// Continue execution of the listeners, when the sub-request completes
 	subRequest.OnResponse(func(response *Response) {
 		r.invokeListeners()
 	})
@@ -198,13 +208,24 @@ func (r *Request) nextListener() *ResponseListener {
 
 // invokeListeners if all "waitingFor" requests are done.
 func (r *Request) invokeListeners() {
+	ctx, cancel := context.WithCancel(r.Context())
+	r.cancelListeners = cancel
+
 	for {
 		// Invoke next listener if present
 		listener := r.nextListener()
 		if listener != nil {
 			listener.Invoke(r.Response)
 		} else {
-			break
+			return
+		}
+
+		// Stop if context is cancelled
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			// continue
 		}
 	}
 }
