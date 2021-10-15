@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/go-resty/resty/v2"
 	"github.com/jarcoal/httpmock"
@@ -43,6 +44,41 @@ func TestSimple(t *testing.T) {
 	assert.Equal(t, 1, successCounter.Get())
 	assert.Equal(t, 1, responseCounter.Get())
 	assert.Equal(t, 1, httpTransport.GetCallCountInfo()["GET https://example.com"])
+}
+
+func TestSubRequestDelayed(t *testing.T) {
+	t.Parallel()
+	client, httpTransport, logger, _ := getMockedClientAndLogs(t, false)
+	httpTransport.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(200, `test`))
+
+	var invokeOrder []int
+	pool := client.NewPool(logger)
+	pool.Request(client.NewRequest(resty.MethodGet, "https://example.com")).
+		OnSuccess(func(response *Response) {
+			subRequest := pool.Request(client.NewRequest(resty.MethodGet, "https://example.com/sub"))
+			subRequest.OnSuccess(func(response *Response) {
+				invokeOrder = append(invokeOrder, 1)
+			})
+			response.WaitFor(subRequest)
+			subRequest.Send()
+			time.Sleep(10 * time.Millisecond)
+		}).
+		OnSuccess(func(response *Response) {
+			time.Sleep(20 * time.Millisecond)
+			invokeOrder = append(invokeOrder, 2)
+		}).
+		OnSuccess(func(response *Response) {
+			invokeOrder = append(invokeOrder, 3)
+		}).
+		OnSuccess(func(response *Response) {
+			invokeOrder = append(invokeOrder, 4)
+		}).
+		Send()
+
+	assert.NoError(t, pool.StartAndWait())
+	assert.Equal(t, []int{1, 2, 3, 4}, invokeOrder)
+	assert.Equal(t, 1, httpTransport.GetCallCountInfo()["GET https://example.com"])
+	assert.Equal(t, 1, httpTransport.GetCallCountInfo()["GET https://example.com/sub"])
 }
 
 func TestSubRequest(t *testing.T) {
