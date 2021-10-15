@@ -100,7 +100,7 @@ func (r *Request) SetJsonBody(body map[string]string) *Request {
 	defer r.lock.Unlock()
 
 	r.Request.SetHeader("Content-Type", "application/json")
-	r.Request.SetBody(body)
+	r.Request.SetBody(body) // nolint
 	return r
 }
 

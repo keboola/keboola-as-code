@@ -35,6 +35,8 @@ linters-settings:
       - ^httpmock\.(Activate|ActivateNonDefault|ActivateNonDefault|DeactivateAndReset|RegisterResponder|GetCallCountInfo)$
       # Os ENVs singleton is forbidden, use env.Map instead
       - ^os\.(Setenv|Getenv|Unsetenv|Lookupenv|Clearenv|PathSeparator)$
+      # Instead of SetBody, use client.Request.SetJsonBody/SetFormBody
+      - ^.*\.SetBody$
 
 # https://golangci-lint.run/usage/linters
 linters:
