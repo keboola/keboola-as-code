@@ -78,7 +78,7 @@ func (a *StorageApi) CreateConfigRowRequest(row *model.ConfigRow) (*client.Reque
 		SetPathParam("branchId", cast.ToString(row.BranchId)).
 		SetPathParam("componentId", row.ComponentId).
 		SetPathParam("configId", row.ConfigId).
-		SetBody(values).
+		SetFormBody(values).
 		SetResult(row)
 
 	return request, nil
@@ -104,7 +104,7 @@ func (a *StorageApi) UpdateConfigRowRequest(row *model.ConfigRow, changed []stri
 		SetPathParam("componentId", row.ComponentId).
 		SetPathParam("configId", row.ConfigId).
 		SetPathParam("rowId", row.Id).
-		SetBody(getChangedValues(values, changed)).
+		SetFormBody(getChangedValues(values, changed)).
 		SetResult(row)
 
 	return request, nil
