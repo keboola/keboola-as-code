@@ -49,12 +49,10 @@ func (a *Api) NewRequest(method string, url string) *client.Request {
 
 func (a *Api) CreateEncryptRequest(componentId string, projectId int, data map[string]string) *client.Request {
 	result := make(map[string]string)
-	request := a.
+	return a.
 		client.NewRequest(resty.MethodPost, "encrypt").
 		SetQueryParam("componentId", componentId).
 		SetQueryParam("projectId", cast.ToString(projectId)).
+		SetJsonBody(data).
 		SetResult(&result)
-	request.Request.SetBody(data)
-	request.Request.SetHeader("Content-Type", "application/json")
-	return request
 }

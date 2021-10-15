@@ -48,7 +48,7 @@ func (a *StorageApi) CreatEventRequest(
 
 	return a.
 		NewRequest(resty.MethodPost, "events").
-		SetBody(map[string]string{
+		SetFormBody(map[string]string{
 			"component": EventsComponentId,
 			"message":   message,
 			"type":      level,

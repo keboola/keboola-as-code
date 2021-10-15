@@ -86,12 +86,21 @@ func (r *Request) SetPathParam(param, value string) *Request {
 	return r
 }
 
-func (r *Request) SetBody(body map[string]string) *Request {
+func (r *Request) SetFormBody(body map[string]string) *Request {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	// Storage API use "form-urlencoded", but it can be simply switched to JSON in the future
 	r.Request.SetHeader("Content-Type", "application/x-www-form-urlencoded")
 	r.Request.SetFormData(body)
+	return r
+}
+
+func (r *Request) SetJsonBody(body map[string]string) *Request {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	r.Request.SetHeader("Content-Type", "application/json")
+	r.Request.SetBody(body) // nolint
 	return r
 }
 

@@ -120,7 +120,7 @@ func (a *StorageApi) CreateConfigRequest(config *model.ConfigWithRows) (*client.
 		NewRequest(resty.MethodPost, "branch/{branchId}/components/{componentId}/configs").
 		SetPathParam("branchId", cast.ToString(config.BranchId)).
 		SetPathParam("componentId", config.ComponentId).
-		SetBody(values).
+		SetFormBody(values).
 		SetResult(config).
 		// Create config rows
 		OnSuccess(func(response *client.Response) {
@@ -159,7 +159,7 @@ func (a *StorageApi) UpdateConfigRequest(config *model.Config, changed []string)
 		SetPathParam("branchId", cast.ToString(config.BranchId)).
 		SetPathParam("componentId", config.ComponentId).
 		SetPathParam("configId", config.Id).
-		SetBody(getChangedValues(values, changed)).
+		SetFormBody(getChangedValues(values, changed)).
 		SetResult(config)
 
 	return request, nil

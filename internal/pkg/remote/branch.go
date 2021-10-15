@@ -90,7 +90,7 @@ func (a *StorageApi) CreateBranchRequest(branch *model.Branch) *client.Request {
 	// Create request
 	request := a.
 		NewRequest(resty.MethodPost, "dev-branches").
-		SetBody(map[string]string{
+		SetFormBody(map[string]string{
 			"name":        branch.Name,
 			"description": branch.Description,
 		}).
@@ -125,7 +125,7 @@ func (a *StorageApi) UpdateBranchRequest(branch *model.Branch, changed []string)
 	request := a.
 		NewRequest(resty.MethodPut, "dev-branches/{branchId}").
 		SetPathParam("branchId", cast.ToString(branch.Id)).
-		SetBody(getChangedValues(all, changed)).
+		SetFormBody(getChangedValues(all, changed)).
 		SetResult(branch)
 
 	return request
