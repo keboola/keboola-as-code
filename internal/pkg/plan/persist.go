@@ -85,9 +85,12 @@ func (b *persistPlanBuilder) tryAddConfig(projectPath string, branch *model.Bran
 	// Search for config rows
 	for _, path := range b.UntrackedDirs() {
 		if rowAction := b.tryAddConfigRow(path, projectPath, configKey); rowAction != nil {
-			// Store row action inside config action too.
-			// Config ID can be then set to the rows on invoke.
-			action.Rows = append(action.Rows, rowAction)
+			// Set config ID to row key on config persist
+			rowAction := rowAction
+			action.OnPersist = append(action.OnPersist, func(parentKey model.ConfigKey) {
+				rowAction.Key.ConfigId = parentKey.Id
+			})
+
 			actions = append(actions, rowAction)
 		}
 	}
