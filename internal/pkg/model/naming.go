@@ -32,6 +32,8 @@ type Naming struct {
 	ConfigRow           utils.PathTemplate `json:"configRow" validate:"required"`
 	SharedCodeConfig    utils.PathTemplate `json:"sharedCodeConfig" validate:"required"`
 	SharedCodeConfigRow utils.PathTemplate `json:"sharedCodeConfigRow" validate:"required"`
+	Variables           utils.PathTemplate `json:"variables" validate:"required"`
+	VariablesValues     utils.PathTemplate `json:"variablesValues" validate:"required"`
 	usedLock            *sync.Mutex
 	usedByPath          map[string]string // path -> object key
 	usedByKey           map[string]string // object key -> path
@@ -44,6 +46,8 @@ func DefaultNaming() Naming {
 		ConfigRow:           "rows/{config_row_id}-{config_row_name}",
 		SharedCodeConfig:    "_shared/{target_component_id}",
 		SharedCodeConfigRow: "codes/{config_row_id}-{config_row_name}",
+		Variables:           "variables",
+		VariablesValues:     "values/{config_row_name}",
 		usedLock:            &sync.Mutex{},
 		usedByPath:          make(map[string]string),
 		usedByKey:           make(map[string]string),
@@ -278,4 +282,40 @@ func (n Naming) CodeFileExt(componentId string) string {
 	default:
 		return TxtExt
 	}
+}
+
+func (n Naming) VariablesPath(parentPath string, config *Config) PathInProject {
+	if len(parentPath) == 0 {
+		panic(fmt.Errorf(`variables "%s" parent path cannot be empty"`, config))
+	}
+
+	if config.ComponentId != VariablesComponentId {
+		panic(fmt.Errorf(`variables must be from "%s" component, given "%s"`, VariablesComponentId, config.ComponentId))
+	}
+
+	p := PathInProject{}
+	p.ParentPath = parentPath
+	p.ObjectPath = utils.ReplacePlaceholders(string(n.Variables), map[string]interface{}{
+		"config_id":   config.Id,
+		"config_name": utils.NormalizeName(config.Name),
+	})
+	return n.ensureUniquePath(config.Key(), p)
+}
+
+func (n Naming) VariablesValuesPath(parentPath string, row *ConfigRow) PathInProject {
+	if len(parentPath) == 0 {
+		panic(fmt.Errorf(`variables values "%s" parent path cannot be empty"`, row))
+	}
+
+	if row.ComponentId != VariablesComponentId {
+		panic(fmt.Errorf(`variables values must be from "%s" component, given "%s"`, VariablesComponentId, row.ComponentId))
+	}
+
+	p := PathInProject{}
+	p.ParentPath = parentPath
+	p.ObjectPath = utils.ReplacePlaceholders(string(n.VariablesValues), map[string]interface{}{
+		"config_row_id":   row.Id,
+		"config_row_name": utils.NormalizeName(row.Name),
+	})
+	return n.ensureUniquePath(row.Key(), p)
 }
