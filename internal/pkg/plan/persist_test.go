@@ -111,12 +111,14 @@ func TestPersistNewConfig(t *testing.T) {
 	assert.False(t, plan.Empty())
 	assert.Len(t, plan.actions, 1)
 	assert.Equal(t, &NewConfigAction{
+		PathInProject: model.PathInProject{
+			ParentPath: "main",
+			ObjectPath: "extractor/ex-generic-v2/new-config",
+		},
 		Key: model.ConfigKey{
 			BranchId:    cast.ToInt(envs.MustGet(`LOCAL_STATE_MAIN_BRANCH_ID`)),
 			ComponentId: "ex-generic-v2",
 		},
-		Path:        "extractor/ex-generic-v2/new-config",
-		ProjectPath: "main/extractor/ex-generic-v2/new-config",
 	}, plan.actions[0].(*NewConfigAction))
 
 	// Invoke
@@ -232,21 +234,25 @@ func TestPersistNewConfigRow(t *testing.T) {
 	plan := Persist(projectState)
 	assert.False(t, plan.Empty())
 	assert.Len(t, plan.actions, 2)
-	rowAction := &NewRowAction{
-		Key: model.ConfigRowKey{
-			BranchId:    cast.ToInt(envs.MustGet(`LOCAL_STATE_MAIN_BRANCH_ID`)),
-			ComponentId: "keboola.ex-db-mysql",
-		},
-		Path:        "rows/some-row",
-		ProjectPath: "main/extractor/keboola.ex-db-mysql/new-config/rows/some-row",
-	}
 	configAction := &NewConfigAction{
+		PathInProject: model.PathInProject{
+			ParentPath: "main",
+			ObjectPath: "extractor/keboola.ex-db-mysql/new-config",
+		},
 		Key: model.ConfigKey{
 			BranchId:    cast.ToInt(envs.MustGet(`LOCAL_STATE_MAIN_BRANCH_ID`)),
 			ComponentId: "keboola.ex-db-mysql",
 		},
-		Path:        "extractor/keboola.ex-db-mysql/new-config",
-		ProjectPath: "main/extractor/keboola.ex-db-mysql/new-config",
+	}
+	rowAction := &NewRowAction{
+		PathInProject: model.PathInProject{
+			ParentPath: "main/extractor/keboola.ex-db-mysql/new-config",
+			ObjectPath: "rows/some-row",
+		},
+		Key: model.ConfigRowKey{
+			BranchId:    cast.ToInt(envs.MustGet(`LOCAL_STATE_MAIN_BRANCH_ID`)),
+			ComponentId: "keboola.ex-db-mysql",
+		},
 	}
 
 	// Delete callbacks for easier comparison (we only check callbacks result)
