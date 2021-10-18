@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/go-resty/resty/v2"
@@ -31,28 +32,29 @@ type ResponseListener struct {
 type Request struct {
 	*resty.Request
 	*Response
-	lock            *sync.Mutex
-	id              int
-	sent            bool
-	done            bool
-	url             string
-	pathParams      map[string]string // for logs
-	queryParams     map[string]string // for logs
-	sender          Sender
-	cancelListeners context.CancelFunc  // to cancel execution of listeners if a new sub-request is added via WaitFor()
-	listeners       []*ResponseListener // callback invoked when request is completed
-	waitingFor      []*Request          // defer execution listeners until another request is completed
+	lock          *sync.Mutex
+	id            int
+	sent          bool
+	done          bool
+	url           string
+	pathParams    map[string]string // for logs
+	queryParams   map[string]string // for logs
+	sender        Sender
+	listeners     []*ResponseListener // callbacks invoked when request (and sub-requests from waitingFor) are completed
+	waitingFor    []*Request          // all defined sub-requests must be completed, to continue listeners execution
+	waitingForGrp *sync.WaitGroup     // blocks the execution of listeners until all sub-requests are completed
 }
 
 func NewRequest(id int, sender Sender, request *resty.Request) *Request {
 	return &Request{
-		Request:     request,
-		lock:        &sync.Mutex{},
-		id:          id,
-		pathParams:  make(map[string]string),
-		queryParams: make(map[string]string),
-		url:         request.URL,
-		sender:      sender,
+		Request:       request,
+		lock:          &sync.Mutex{},
+		id:            id,
+		pathParams:    make(map[string]string),
+		queryParams:   make(map[string]string),
+		url:           request.URL,
+		sender:        sender,
+		waitingForGrp: &sync.WaitGroup{},
 	}
 }
 
@@ -101,6 +103,7 @@ func (r *Request) SetJsonBody(body map[string]string) *Request {
 
 	r.Request.SetHeader("Content-Type", "application/json")
 	r.Request.SetBody(body) // nolint
+
 	return r
 }
 
@@ -168,22 +171,22 @@ func (r *Request) WaitFor(subRequest *Request) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	// Stop the execution of the listeners
-	if r.cancelListeners != nil {
-		r.cancelListeners()
-	}
-
 	// Store sub-request
 	r.waitingFor = append(r.waitingFor, subRequest)
 
 	// Continue execution of the listeners, when the sub-request completes
+	r.waitingForGrp.Add(1)
 	subRequest.OnResponse(func(response *Response) {
-		r.invokeListeners()
+		r.waitingForGrp.Done()
 	})
 }
 
 // nextListener which has not yet been invoked.
 func (r *Request) nextListener() *ResponseListener {
+	// Wait until all sub-requests done
+	r.waitingForGrp.Wait()
+
+	// Atomic access to the listeners slice
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
@@ -195,8 +198,7 @@ func (r *Request) nextListener() *ResponseListener {
 	// Are all sub-requests done?
 	for _, subRequest := range r.waitingFor {
 		if !subRequest.IsDone() {
-			// Invoke listeners later, when all subRequests will be done, see waitFor method
-			return nil
+			panic(fmt.Errorf(`all sub-request should be done`))
 		}
 	}
 
@@ -208,21 +210,20 @@ func (r *Request) nextListener() *ResponseListener {
 
 // invokeListeners if all "waitingFor" requests are done.
 func (r *Request) invokeListeners() {
-	ctx, cancel := context.WithCancel(r.Context())
-	r.cancelListeners = cancel
-
 	for {
 		// Invoke next listener if present
 		listener := r.nextListener()
 		if listener != nil {
 			listener.Invoke(r.Response)
 		} else {
+			// all done
 			return
 		}
 
 		// Stop if context is cancelled
 		select {
-		case <-ctx.Done():
+		case <-r.Context().Done():
+			// request has been cancelled
 			return
 		default:
 			// continue
