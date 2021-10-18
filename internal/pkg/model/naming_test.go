@@ -112,6 +112,40 @@ func TestDefaultNaming(t *testing.T) {
 				Name: "---  code AbC---",
 			},
 		).Path())
+
+	// Variables
+	assert.Equal(
+		t,
+		"my-branch/my-config/variables",
+		n.VariablesPath(
+			"my-branch/my-config",
+			&Config{
+				ConfigKey: ConfigKey{
+					BranchId:    1234,
+					ComponentId: VariablesComponentId,
+					Id:          "456",
+				},
+				Name:    "Variables",
+				Content: utils.NewOrderedMap(),
+			},
+		).Path())
+
+	// Variables values
+	assert.Equal(
+		t,
+		"my-branch/my-config/variables/values/default-values",
+		n.VariablesValuesPath(
+			"my-branch/my-config/variables",
+			&ConfigRow{
+				ConfigRowKey: ConfigRowKey{
+					BranchId:    1234,
+					ComponentId: VariablesComponentId,
+					ConfigId:    "456",
+					Id:          "789",
+				},
+				Name: "Default Values",
+			},
+		).Path())
 }
 
 func TestNamingAttachDetach(t *testing.T) {
