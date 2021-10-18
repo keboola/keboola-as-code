@@ -23,6 +23,11 @@ type NewRowAction struct {
 	Key model.ConfigRowKey
 }
 
+type NewVariablesRelAction struct {
+	Variables *model.ConfigKey
+	ConfigKey *model.ConfigKey
+}
+
 type DeleteRecordAction struct {
 	model.Record
 }
@@ -35,8 +40,12 @@ func (a *NewRowAction) Order() int {
 	return 1
 }
 
-func (a *DeleteRecordAction) Order() int {
+func (a *NewVariablesRelAction) Order() int {
 	return 2
+}
+
+func (a *DeleteRecordAction) Order() int {
+	return 3
 }
 
 func (a *NewConfigAction) String() string {
@@ -49,6 +58,14 @@ func (a *NewRowAction) String() string {
 
 func (a *DeleteRecordAction) String() string {
 	return fmt.Sprintf(`- %s %s`, a.Record.Kind().Abbr, a.Record.Path())
+}
+
+func (a *NewVariablesRelAction) String() string {
+	return ""
+}
+
+func (a *NewVariablesRelAction) Path() string {
+	return ""
 }
 
 func (a *NewConfigAction) InvokeOnPersist(key model.ConfigKey) {

@@ -40,6 +40,8 @@ func (e *persistExecutor) invoke() error {
 			if err := e.LocalManager().DeleteObject(a.Record); err != nil {
 				e.errors.Append(err)
 			}
+		case *NewVariablesRelAction:
+			e.persistNewRow(a)
 		default:
 			panic(fmt.Errorf(`unexpected type "%T"`, action))
 		}
@@ -124,4 +126,8 @@ func (e *persistExecutor) persistNewRow(action *NewRowAction) {
 			e.errors.Append(err)
 		}
 	})
+}
+
+func (e *persistExecutor) addVariablesRelation(action *NewRowAction) {
+
 }

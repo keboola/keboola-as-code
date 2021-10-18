@@ -14,6 +14,7 @@ const (
 	MetaFile          = "meta.json"
 	ConfigFile        = "config.json"
 	DescriptionFile   = "description.md"
+	VariablesFile     = "variables.json"
 	CodeFileName      = `code` // transformation code block name without ext
 	blocksDir         = `blocks`
 	blockNameTemplate = utils.PathTemplate(`{block_order}-{block_name}`)

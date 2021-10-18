@@ -30,7 +30,10 @@ func (p *PersistPlan) Log(writer *log.WriteCloser) {
 		writer.WriteStringNoErr("\tno new or deleted objects found")
 	} else {
 		for _, action := range actions {
-			writer.WriteStringNoErr("\t" + action.String())
+			info := action.String()
+			if info != "" {
+				writer.WriteStringNoErr("\t" + action.String())
+			}
 		}
 	}
 }

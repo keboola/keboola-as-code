@@ -87,6 +87,9 @@ func (b *persistPlanBuilder) tryAdd(fullPath string, parent model.RecordPaths) {
 		if b.tryAddConfigRow(path, p.ConfigKey) != nil {
 			return
 		}
+		if b.tryAddVariables(path, &p.ConfigKey) != nil {
+			return
+		}
 	case *NewConfigAction:
 		if action := b.tryAddConfigRow(path, p.Key); action != nil {
 			// Set ConfigId on config persist, now it is unknown
@@ -95,11 +98,14 @@ func (b *persistPlanBuilder) tryAdd(fullPath string, parent model.RecordPaths) {
 			})
 			return
 		}
+		if b.tryAddVariables(path, &p.Key) != nil {
+			return
+		}
 	}
 }
 
 func (b *persistPlanBuilder) tryAddConfig(path model.PathInProject, branchKey model.BranchKey) *NewConfigAction {
-	// Is config path matching naming template?
+	// Does the path match the naming template?
 	matched, matches := b.Naming().Config.MatchPath(path.ObjectPath)
 	if !matched {
 		return nil
@@ -112,10 +118,33 @@ func (b *persistPlanBuilder) tryAddConfig(path model.PathInProject, branchKey mo
 		return nil
 	}
 
-	// Create action
-	configKey := model.ConfigKey{BranchId: branchKey.Id, ComponentId: componentId}
-	action := &NewConfigAction{PathInProject: path, Key: configKey}
-	b.actions = append(b.actions, action)
+	// Action
+	action := &NewConfigAction{
+		PathInProject: path,
+		Key:           model.ConfigKey{BranchId: branchKey.Id, ComponentId: componentId},
+	}
+	b.addAction(action)
+	return action
+}
+
+func (b *persistPlanBuilder) tryAddVariables(path model.PathInProject, parentKey *model.ConfigKey) *NewConfigAction {
+	// Does the path match the naming template?
+	if matched, _ := b.Naming().Variables.MatchPath(path.ObjectPath); !matched {
+		return nil
+	}
+
+	// Config action
+	action := &NewConfigAction{
+		PathInProject: path,
+		Key:           model.ConfigKey{BranchId: parentKey.BranchId, ComponentId: model.VariablesComponentId},
+	}
+	b.addAction(action)
+
+	// Relation action
+	// Note: keys are pointers, so both IDs will be set during execution
+	relation := &NewVariablesRelAction{Variables: &action.Key, ConfigKey: parentKey}
+	b.addAction(relation)
+
 	return action
 }
 
@@ -125,9 +154,16 @@ func (b *persistPlanBuilder) tryAddConfigRow(path model.PathInProject, configKey
 		return nil
 	}
 
-	// Create action
-	rowKey := model.ConfigRowKey{BranchId: configKey.BranchId, ComponentId: configKey.ComponentId, ConfigId: configKey.Id}
-	action := &NewRowAction{PathInProject: path, Key: rowKey}
-	b.actions = append(b.actions, action)
+	// Action
+	action := &NewRowAction{
+		PathInProject: path,
+		Key:           model.ConfigRowKey{BranchId: configKey.BranchId, ComponentId: configKey.ComponentId, ConfigId: configKey.Id},
+	}
+	b.addAction(action)
+
 	return action
+}
+
+func (b *persistPlanBuilder) addAction(action PersistAction) {
+	b.actions = append(b.actions, action)
 }

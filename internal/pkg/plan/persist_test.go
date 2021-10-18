@@ -426,6 +426,162 @@ func TestPersistDeleted(t *testing.T) {
 	assert.False(t, rowFound)
 }
 
+func TestPersistVariables(t *testing.T) {
+	t.Parallel()
+	projectDir, envs := initMinimalProjectDir(t)
+	m, fs := loadTestManifest(t, projectDir)
+	api, httpTransport, _ := testapi.TestMockedStorageApi()
+
+	// Mocked API response
+	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
+		"id":   "ex-generic-v2",
+		"type": "extractor",
+		"name": "Generic",
+	})
+	assert.NoError(t, err)
+	generateNewIdResponse, err := httpmock.NewJsonResponse(200, map[string]interface{}{"id": "12345"})
+	assert.NoError(t, err)
+	generateNewIdResponder := httpmock.ResponderFromResponse(generateNewIdResponse)
+	httpTransport.RegisterResponder("GET", `=~/storage/components/ex-generic-v2`, getGenericExResponder)
+	httpTransport.RegisterResponder("POST", `=~/storage/tickets`, generateNewIdResponder)
+
+	// Write files
+	variablesDir := filesystem.Join(`main`, `extractor`, `ex-generic-v2`, `456-todos`, `variables`)
+	variables := `{"name":"Variables","variables":[{"name":"num1","type":"string"},{"name":"num2","type":"string"}]}`
+	assert.NoError(t, fs.Mkdir(variablesDir))
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(variablesDir, model.VariablesFile), variables)))
+
+	// Load state
+	logger, _ := utils.NewDebugLogger()
+	options := state.NewOptions(m, api, context.Background(), logger)
+	options.LoadLocalState = true
+	options.LoadRemoteState = false
+	projectState, ok := state.LoadState(options)
+	assert.NotNil(t, projectState)
+	assert.True(t, ok)
+
+	// State before
+	assert.Equal(t, []string{
+		"main/extractor/ex-generic-v2/456-todos/variables",
+		"main/extractor/ex-generic-v2/456-todos/variables/" + model.VariablesFile,
+	}, projectState.UntrackedPaths())
+	assert.Len(t, projectState.Branches(), 1)
+	assert.Len(t, projectState.Configs(), 1)
+	assert.Len(t, projectState.ConfigRows(), 0)
+	assert.Len(t, projectState.All(), 2)
+
+	// Assert plan
+	plan := Persist(projectState)
+	assert.False(t, plan.Empty())
+	assert.Len(t, plan.actions, 2)
+	configAction := &NewConfigAction{
+		PathInProject: model.PathInProject{
+			ParentPath: "main/extractor/ex-generic-v2/456-todos",
+			ObjectPath: "variables",
+		},
+		Key: model.ConfigKey{
+			BranchId:    cast.ToInt(envs.MustGet(`LOCAL_STATE_MAIN_BRANCH_ID`)),
+			ComponentId: model.VariablesComponentId,
+		},
+	}
+	relationAction := &NewVariablesRelAction{
+		Variables: &model.ConfigKey{
+			BranchId:    cast.ToInt(envs.MustGet(`LOCAL_STATE_MAIN_BRANCH_ID`)),
+			ComponentId: model.VariablesComponentId,
+		},
+		ConfigKey: &model.ConfigKey{
+			BranchId:    cast.ToInt(envs.MustGet(`LOCAL_STATE_MAIN_BRANCH_ID`)),
+			ComponentId: `ex-generic-v2`,
+			Id: `456`,
+		},
+	}
+
+	// Delete callbacks for easier comparison (we only check callbacks result)
+	for _, action := range plan.actions {
+		if a, ok := action.(*NewConfigAction); ok {
+			a.OnPersist = nil
+		}
+	}
+
+	// Compare
+	assert.Equal(t, []PersistAction{configAction, relationAction}, plan.actions)
+
+	// Invoke
+	assert.NoError(t, Persist(projectState).Invoke(logger, api, projectState))
+
+	// State after
+	assert.Len(t, projectState.Branches(), 1)
+	assert.Len(t, projectState.Configs(), 2)
+	assert.Len(t, projectState.ConfigRows(), 1)
+	assert.Len(t, projectState.All(), 4)
+	rowKey := model.ConfigRowKey{BranchId: 111, ComponentId: "keboola.ex-db-mysql", ConfigId: "12345", Id: "45678"}
+	configKey := rowKey.ConfigKey()
+	assert.Equal(
+		t,
+		&model.ConfigState{
+			ConfigManifest: &model.ConfigManifest{
+				ConfigKey: *configKey,
+				RecordState: model.RecordState{
+					Invalid:   false,
+					Persisted: true,
+				},
+				Paths: model.Paths{
+					PathInProject: model.PathInProject{
+						ParentPath: "main",
+						ObjectPath: "extractor/keboola.ex-db-mysql/new-config",
+					},
+					RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
+				},
+			},
+			Remote: nil,
+			Local: &model.Config{
+				ConfigKey:   *configKey,
+				Name:        "foo1",
+				Description: "bar1",
+				Content: utils.PairsToOrderedMap([]utils.Pair{
+					{
+						Key:   "key1",
+						Value: "value1",
+					},
+				}),
+			},
+		},
+		projectState.Get(*configKey),
+	)
+	assert.Equal(
+		t,
+		&model.ConfigRowState{
+			ConfigRowManifest: &model.ConfigRowManifest{
+				ConfigRowKey: rowKey,
+				RecordState: model.RecordState{
+					Invalid:   false,
+					Persisted: true,
+				},
+				Paths: model.Paths{
+					PathInProject: model.PathInProject{
+						ParentPath: "main/extractor/keboola.ex-db-mysql/new-config",
+						ObjectPath: "rows/some-row",
+					},
+					RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
+				},
+			},
+			Remote: nil,
+			Local: &model.ConfigRow{
+				ConfigRowKey: rowKey,
+				Name:         "foo2",
+				Description:  "bar2",
+				Content: utils.PairsToOrderedMap([]utils.Pair{
+					{
+						Key:   "key2",
+						Value: "value2",
+					},
+				}),
+			},
+		},
+		projectState.Get(rowKey),
+	)
+}
+
 func initMinimalProjectDir(t *testing.T) (string, *env.Map) {
 	t.Helper()
 
