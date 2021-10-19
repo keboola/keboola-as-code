@@ -97,10 +97,10 @@ func (l *loader) addBlock(blockIndex int, path string) *model.Block {
 			Index:       blockIndex,
 		},
 		Paths: model.Paths{
-			PathInProject: model.PathInProject{
-				ParentPath: l.blocksDir,
-				ObjectPath: path,
-			},
+			PathInProject: model.NewPathInProject(
+				l.blocksDir,
+				path,
+			),
 		},
 		Codes: make([]*model.Code, 0),
 	}
@@ -122,10 +122,10 @@ func (l *loader) addCode(block *model.Block, codeIndex int, path string) *model.
 			Index:       codeIndex,
 		},
 		Paths: model.Paths{
-			PathInProject: model.PathInProject{
-				ParentPath: block.Path(),
-				ObjectPath: path,
-			},
+			PathInProject: model.NewPathInProject(
+				block.Path(),
+				path,
+			),
 		},
 		Scripts: make([]string, 0),
 	}

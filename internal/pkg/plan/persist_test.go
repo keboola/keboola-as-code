@@ -138,10 +138,10 @@ func TestPersistNewConfig(t *testing.T) {
 					Persisted: true,
 				},
 				Paths: model.Paths{
-					PathInProject: model.PathInProject{
-						ParentPath: "main",
-						ObjectPath: "extractor/ex-generic-v2/new-config",
-					},
+					PathInProject: model.NewPathInProject(
+						"main",
+						"extractor/ex-generic-v2/new-config",
+					),
 					RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
 				},
 			},
@@ -272,10 +272,10 @@ func TestPersistNewConfigRow(t *testing.T) {
 					Persisted: true,
 				},
 				Paths: model.Paths{
-					PathInProject: model.PathInProject{
-						ParentPath: "main",
-						ObjectPath: "extractor/keboola.ex-db-mysql/new-config",
-					},
+					PathInProject: model.NewPathInProject(
+						"main",
+						"extractor/keboola.ex-db-mysql/new-config",
+					),
 					RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
 				},
 			},
@@ -304,10 +304,10 @@ func TestPersistNewConfigRow(t *testing.T) {
 					Persisted: true,
 				},
 				Paths: model.Paths{
-					PathInProject: model.PathInProject{
-						ParentPath: "main/extractor/keboola.ex-db-mysql/new-config",
-						ObjectPath: "rows/some-row",
-					},
+					PathInProject: model.NewPathInProject(
+						"main/extractor/keboola.ex-db-mysql/new-config",
+						"rows/some-row",
+					),
 					RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
 				},
 			},
@@ -359,10 +359,10 @@ func TestPersistDeleted(t *testing.T) {
 			Id:          "101",
 		},
 		Paths: model.Paths{
-			PathInProject: model.PathInProject{
-				ParentPath: "main",
-				ObjectPath: "extractor/keboola.ex-db-mysql/missing",
-			},
+			PathInProject: model.NewPathInProject(
+				"main",
+				"extractor/keboola.ex-db-mysql/missing",
+			),
 		},
 	}
 	missingRow := &model.ConfigRowManifest{
@@ -373,10 +373,10 @@ func TestPersistDeleted(t *testing.T) {
 			Id:          "202",
 		},
 		Paths: model.Paths{
-			PathInProject: model.PathInProject{
-				ParentPath: "main/extractor/keboola.ex-db-mysql/missing",
-				ObjectPath: "rows/some-row",
-			},
+			PathInProject: model.NewPathInProject(
+				"main/extractor/keboola.ex-db-mysql/missing",
+				"rows/some-row",
+			),
 		},
 	}
 	assert.NoError(t, m.PersistRecord(missingConfig))

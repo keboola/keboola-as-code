@@ -76,6 +76,10 @@ func (MockedRecord) GetParentPath() string {
 	return "bar"
 }
 
+func (MockedRecord) IsParentPathSet() bool {
+	return true
+}
+
 func (MockedRecord) SetParentPath(string) {
 }
 

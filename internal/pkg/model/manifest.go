@@ -24,6 +24,7 @@ type Record interface {
 	Key() Key                   // unique key for map -> for fast access
 	SortKey(sort string) string // unique key for sorting
 	SetObjectPath(string)       // set path relative to the parent object
+	IsParentPathSet() bool      // is parent path resolved?
 	SetParentPath(string)       // set parent path
 	GetRelatedPaths() []string  // files related to the record, relative to the project dir, e.g. main/meta.json
 	AddRelatedPath(path string)
@@ -31,15 +32,16 @@ type Record interface {
 }
 
 type RecordState struct {
-	Invalid   bool // if true, object files are not valid, eg. missing file, invalid JSON, ...
-	NotFound  bool // if true, object directory is not present in the filesystem
-	Persisted bool // if true, record will be part of the manifest when saved
-	Deleted   bool // if true, record has been deleted in this command run
+	Invalid   bool // object files are not valid, eg. missing file, invalid JSON, ...
+	NotFound  bool // object directory is not present in the filesystem
+	Persisted bool // record will be part of the manifest when saved
+	Deleted   bool // record has been deleted in this command run
 }
 
 type PathInProject struct {
-	ObjectPath string `json:"path" validate:"required"`
-	ParentPath string `json:"-"` // not serialized, records are stored hierarchically
+	ObjectPath    string `json:"path" validate:"required"`
+	parentPath    string
+	parentPathSet bool
 }
 
 type Paths struct {
@@ -75,6 +77,10 @@ type ConfigManifestWithRows struct {
 	Rows []*ConfigRowManifest `json:"rows"`
 }
 
+func NewPathInProject(parentPath, objectPath string) PathInProject {
+	return PathInProject{parentPath: parentPath, parentPathSet: true, ObjectPath: objectPath}
+}
+
 func (p *PathInProject) GetObjectPath() string {
 	return p.ObjectPath
 }
@@ -84,15 +90,20 @@ func (p *PathInProject) SetObjectPath(path string) {
 }
 
 func (p *PathInProject) GetParentPath() string {
-	return p.ParentPath
+	return p.parentPath
+}
+
+func (p *PathInProject) IsParentPathSet() bool {
+	return p.parentPathSet
 }
 
 func (p *PathInProject) SetParentPath(parentPath string) {
-	p.ParentPath = parentPath
+	p.parentPathSet = true
+	p.parentPath = parentPath
 }
 
 func (p PathInProject) Path() string {
-	return filesystem.Join(p.ParentPath, p.ObjectPath)
+	return filesystem.Join(p.parentPath, p.ObjectPath)
 }
 
 func (p *Paths) GetRelatedPaths() []string {
