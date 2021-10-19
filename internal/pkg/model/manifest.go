@@ -64,6 +64,7 @@ type ConfigManifest struct {
 	RecordState `json:"-"`
 	ConfigKey
 	Paths
+	Relations Relations `json:"relations,omitempty" validate:"dive"` // relations with other objects, for example variables definition
 }
 
 type ConfigRowManifest struct {
@@ -193,4 +194,29 @@ func (r ConfigRowManifest) SortKey(sort string) string {
 	} else {
 		return r.ConfigRowKey.String()
 	}
+}
+
+// ParentKey - config parent (dir) can be modified via Relations.
+func (c ConfigManifest) ParentKey() (Key, error) {
+	var parents []Key
+	for _, r := range c.Relations {
+		if parent, err := r.ParentKey(c.Key()); err != nil {
+			return nil, err
+		} else if parent != nil {
+			parents = append(parents, parent)
+		}
+	}
+
+	// Found parent defined via Relations
+	if len(parents) == 1 {
+		return parents[0], nil
+	}
+
+	// Multiple parents are forbidden
+	if len(parents) > 1 {
+		return nil, fmt.Errorf(`unexpected state: multiple parents defined by "relations" in "%s"`, c.Desc())
+	}
+
+	// No parent defined via "Relations" -> parent is branch
+	return c.ConfigKey.ParentKey()
 }
