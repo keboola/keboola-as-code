@@ -193,7 +193,7 @@ func TestValidateState(t *testing.T) {
 	branchManifest.ObjectPath = "branch"
 	configKey := model.ConfigKey{BranchId: 456, ComponentId: "keboola.foo", Id: "234"}
 	config := &model.Config{ConfigKey: configKey}
-	assert.NoError(t, s.manifest.TrackRecord(branchManifest))
+	assert.NoError(t, s.manifest.PersistRecord(branchManifest))
 	s.SetLocalState(branch, branchManifest)
 	_, err = s.SetRemoteState(config)
 	assert.NoError(t, err)

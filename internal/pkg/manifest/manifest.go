@@ -20,6 +20,7 @@ const (
 type Manifest struct {
 	fs       filesystem.Fs
 	*Content `validate:"required,dive"` // content of the file, updated only on load/save
+	loaded   bool
 	changed  bool
 	records  orderedmap.OrderedMap // common map for all: branches, configs and rows manifests
 	lock     *sync.Mutex
@@ -73,27 +74,37 @@ func LoadManifest(fs filesystem.Fs) (*Manifest, error) {
 		return nil, err
 	}
 
-	// Connect together all manifest records
+	// Read all manifest records
 	for _, branch := range m.Content.Branches {
-		if err := m.PersistRecord(branch); err != nil {
+		if err := m.trackRecord(branch); err != nil {
 			return nil, err
 		}
 	}
 	for _, config := range m.Content.Configs {
-		if err := m.PersistRecord(config.ConfigManifest); err != nil {
+		if err := m.trackRecord(config.ConfigManifest); err != nil {
 			return nil, err
 		}
 		for _, row := range config.Rows {
 			row.BranchId = config.BranchId
 			row.ComponentId = config.ComponentId
 			row.ConfigId = config.Id
-			if err := m.PersistRecord(row); err != nil {
+			if err := m.trackRecord(row); err != nil {
 				return nil, err
 			}
 		}
 	}
 
+	// Connect records together and resolve parent path
+	for _, key := range m.records.Keys() {
+		r, _ := m.records.Get(key)
+		record := r.(model.Record)
+		if err := m.PersistRecord(record); err != nil {
+			return nil, err
+		}
+	}
+
 	// Track if manifest was changed after load
+	m.loaded = true
 	m.changed = false
 
 	// Validate
@@ -241,30 +252,41 @@ func (m *Manifest) CreateOrGetRecord(key model.Key) (record model.Record, found 
 		panic(fmt.Errorf("unexpected type \"%s\"", key))
 	}
 
-	if err := m.TrackRecord(record); err != nil {
+	if err := m.trackRecord(record); err != nil {
 		return nil, false, err
 	}
 
 	return record, false, nil
 }
 
+// PersistRecord - store a new or existing record, and marks it as persisted.
 func (m *Manifest) PersistRecord(record model.Record) error {
-	if err := m.TrackRecord(record); err != nil {
-		return err
+	// Resolve parent path
+	if !record.IsParentPathSet() {
+		if err := m.ResolveParentPath(record); err != nil {
+			return err
+		}
 	}
 
+	// Attach record to the naming
 	m.Naming.Attach(record.Key(), record.Path())
-	record.State().SetPersisted()
 
 	m.lock.Lock()
 	defer m.lock.Unlock()
+
+	// Mark persisted -> will be saved to manifest.json
+	record.State().SetPersisted()
+
+	m.records.Set(record.Key().String(), record)
 	m.changed = true
 	return nil
 }
 
-func (m *Manifest) TrackRecord(record model.Record) error {
-	// Resolve parent path, if record has been loaded from manifest.json
-	if record.GetParentPath() == "" {
+// trackRecord - store a new record and make sure it has unique key.
+func (m *Manifest) trackRecord(record model.Record) error {
+	// Resolve parent path and attach record to the naming
+	if m.loaded {
+		// All records must be loaded to resolve parent path
 		if err := m.ResolveParentPath(record); err != nil {
 			return err
 		}
@@ -272,6 +294,12 @@ func (m *Manifest) TrackRecord(record model.Record) error {
 
 	m.lock.Lock()
 	defer m.lock.Unlock()
+
+	// Make sure the key is unique
+	if _, exists := m.records.Get(record.Key().String()); exists {
+		return fmt.Errorf(`duplicate %s in manifest`, record.Desc())
+	}
+
 	m.records.Set(record.Key().String(), record)
 	return nil
 }

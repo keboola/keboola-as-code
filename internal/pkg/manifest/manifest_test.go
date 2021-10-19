@@ -87,12 +87,12 @@ func TestManifestSave(t *testing.T) {
 		m.IgnoredComponents = c.data.IgnoredComponents
 		m.Project.Id = c.data.Project.Id
 		for _, branch := range c.data.Branches {
-			assert.NoError(t, m.TrackRecord(branch))
+			assert.NoError(t, m.trackRecord(branch))
 		}
 		for _, config := range c.data.Configs {
-			assert.NoError(t, m.TrackRecord(config.ConfigManifest))
+			assert.NoError(t, m.trackRecord(config.ConfigManifest))
 			for _, row := range config.Rows {
-				assert.NoError(t, m.TrackRecord(row))
+				assert.NoError(t, m.trackRecord(row))
 			}
 		}
 
@@ -230,7 +230,7 @@ func TestManifestRecordGetParent(t *testing.T) {
 		ComponentId: "keboola.foo",
 		Id:          "456",
 	}}
-	assert.NoError(t, m.TrackRecord(branchManifest))
+	assert.NoError(t, m.trackRecord(branchManifest))
 	parent, err := m.GetParent(configManifest)
 	assert.Equal(t, branchManifest, parent)
 	assert.NoError(t, err)

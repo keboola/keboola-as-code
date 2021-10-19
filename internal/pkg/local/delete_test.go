@@ -14,7 +14,7 @@ func TestLocalDeleteModel(t *testing.T) {
 	fs := manager.fs
 
 	record := &MockedRecord{}
-	assert.NoError(t, manager.manifest.TrackRecord(record))
+	assert.NoError(t, manager.manifest.PersistRecord(record))
 	_, found := manager.manifest.GetRecord(record.Key())
 	assert.True(t, found)
 
