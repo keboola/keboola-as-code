@@ -37,11 +37,11 @@
       "path": "extractor/keboola.ex-db-mysql/with-rows",
       "rows": [
         {
-          "id": "4444445",
+          "id": "123",
           "path": "rows/emptyconfig"
         },
         {
-          "id": "4444445",
+          "id": "456",
           "path": "rows/users"
         }
       ]
