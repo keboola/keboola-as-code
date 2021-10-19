@@ -262,6 +262,22 @@ func TestManifestRecordGetParentNil(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestManifestCyclicDependency(t *testing.T) {
+	t.Parallel()
+	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
+	assert.NoError(t, err)
+
+	// Write file
+	path := filesystem.Join(filesystem.MetadataDir, FileName)
+	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(path, cyclicDependencyJson())))
+
+	// Load
+	manifest, err := LoadManifest(fs)
+	assert.Nil(t, manifest)
+	assert.Error(t, err)
+	assert.Equal(t, `a cyclic relation was found when resolving path to config "branch:123/component:keboola.variables/config:111"`, err.Error())
+}
+
 func minimalJson() string {
 	return `{
   "version": 1,
@@ -350,6 +366,31 @@ func fullJson() string {
         {
           "id": "102",
           "path": "rows/102-region-2"
+        }
+      ]
+    },
+    {
+      "branchId": 11,
+      "componentId": "keboola.variables",
+      "id": "13",
+      "path": "variables",
+      "relations": [
+        {
+          "type": "variablesFor",
+          "target": {
+            "componentId": "keboola.wr-db-mysql",
+            "id": "12"
+          }
+        }
+      ],
+      "rows": [
+        {
+          "id": "105",
+          "path": "values/default"
+        },
+        {
+          "id": "106",
+          "path": "values/other"
         }
       ]
     },
@@ -479,6 +520,69 @@ func fullStruct() *Content {
 					},
 					ConfigKey: model.ConfigKey{
 						BranchId:    11,
+						ComponentId: "keboola.variables",
+						Id:          "13",
+					},
+					Paths: model.Paths{
+						PathInProject: model.NewPathInProject(
+							"11-dev/12-current-month",
+							"variables",
+						),
+					},
+					Relations: model.Relations{
+						&model.VariablesForRelation{
+							RelationType: model.VariablesForRelType,
+							Target: model.ConfigKeySameBranch{
+								ComponentId: "keboola.wr-db-mysql",
+								Id:          "12",
+							},
+						},
+					},
+				},
+				Rows: []*model.ConfigRowManifest{
+					{
+						RecordState: model.RecordState{
+							Persisted: true,
+						},
+						ConfigRowKey: model.ConfigRowKey{
+							Id:          "105",
+							BranchId:    11,
+							ComponentId: "keboola.variables",
+							ConfigId:    "13",
+						},
+						Paths: model.Paths{
+							PathInProject: model.NewPathInProject(
+								"11-dev/12-current-month/variables",
+								"values/default",
+							),
+						},
+					},
+					{
+						RecordState: model.RecordState{
+							Persisted: true,
+						},
+						ConfigRowKey: model.ConfigRowKey{
+							Id:          "106",
+							BranchId:    11,
+							ComponentId: "keboola.variables",
+							ConfigId:    "13",
+						},
+						Paths: model.Paths{
+							PathInProject: model.NewPathInProject(
+								"11-dev/12-current-month/variables",
+								"values/other",
+							),
+						},
+					},
+				},
+			},
+			{
+				ConfigManifest: &model.ConfigManifest{
+					RecordState: model.RecordState{
+						Persisted: true,
+					},
+					ConfigKey: model.ConfigKey{
+						BranchId:    11,
 						ComponentId: "keboola.wr-db-mysql",
 						Id:          "12",
 					},
@@ -528,6 +632,69 @@ func fullStruct() *Content {
 			},
 		},
 	}
+}
+
+func cyclicDependencyJson() string {
+	return `{
+  "version": 1,
+  "project": {
+    "id": 12345,
+    "apiHost": "foo.bar"
+  },
+  "sortBy": "id",
+  "naming": {
+    "branch": "{branch_id}-{branch_name}",
+    "config": "{component_type}/{component_id}/{config_id}-{config_name}",
+    "configRow": "rows/{config_row_id}-{config_row_name}",
+    "sharedCodeConfig": "_shared/{target_component_id}",
+    "sharedCodeConfigRow": "codes/{config_row_id}-{config_row_name}"
+  },
+  "allowedBranches": [
+    "*"
+  ],
+  "ignoredComponents": [
+    "keboola.scheduler"
+  ],
+  "branches": [
+    {
+      "id": 123,
+      "path": "main"
+    }
+  ],
+  "configurations": [
+    {
+      "branchId": 123,
+      "componentId": "keboola.variables",
+      "id": "111",
+      "path": "variables",
+      "relations": [
+        {
+          "type": "variablesFor",
+          "target": {
+            "componentId": "keboola.variables",
+            "id": "222"
+          }
+        }
+      ]
+    },
+    {
+      "branchId": 123,
+      "componentId": "keboola.variables",
+      "id": "222",
+      "path": "variables",
+      "relations": [
+        {
+          "type": "variablesFor",
+          "target": {
+            "componentId": "keboola.variables",
+            "id": "111"
+          }
+        }
+      ]
+    }
+  ]
+}
+`
 }
 
 func newTestManifest(t *testing.T) *Manifest {

@@ -335,11 +335,30 @@ func (m *Manifest) GetParent(record model.Record) (model.Record, error) {
 }
 
 func (m *Manifest) ResolveParentPath(record model.Record) error {
+	return m.doResolveParentPath(record, nil)
+}
+
+// doResolveParentPath recursive + fail on cyclic relations.
+func (m *Manifest) doResolveParentPath(record, origin model.Record) error {
+	if origin != nil && record.Key().String() == origin.Key().String() {
+		return fmt.Errorf(`a cyclic relation was found when resolving path to %s`, origin.Desc())
+	}
+
+	if origin == nil {
+		origin = record
+	}
+
 	parent, err := m.GetParent(record)
 	switch {
 	case err != nil:
 		return err
 	case parent != nil:
+		// Recursively resolve the parent path, if it is not set
+		if !parent.IsParentPathSet() {
+			if err := m.doResolveParentPath(parent, origin); err != nil {
+				return err
+			}
+		}
 		record.SetParentPath(parent.Path())
 	default:
 		// branch - no parent

@@ -42,6 +42,11 @@ type ConfigKey struct {
 	Id          string `json:"id" validate:"required"`
 }
 
+type ConfigKeySameBranch struct {
+	ComponentId string `json:"componentId" validate:"required"`
+	Id          string `json:"id" validate:"required"`
+}
+
 type ConfigRowKey struct {
 	BranchId    int    `json:"-" validate:"required"`
 	ComponentId string `json:"-" validate:"required"`
@@ -283,4 +288,8 @@ func (k Block) ConfigKey() *ConfigKey {
 
 func (k Code) ConfigKey() *ConfigKey {
 	return &ConfigKey{BranchId: k.BranchId, ComponentId: k.ComponentId, Id: k.ConfigId}
+}
+
+func (k ConfigKeySameBranch) ConfigKey(branch BranchKey) *ConfigKey {
+	return &ConfigKey{BranchId: branch.Id, ComponentId: k.ComponentId, Id: k.Id}
 }
