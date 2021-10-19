@@ -111,12 +111,14 @@ func TestPersistNewConfig(t *testing.T) {
 	assert.False(t, plan.Empty())
 	assert.Len(t, plan.actions, 1)
 	assert.Equal(t, &NewConfigAction{
+		PathInProject: model.NewPathInProject(
+			"main",
+			"extractor/ex-generic-v2/new-config",
+		),
 		Key: model.ConfigKey{
 			BranchId:    cast.ToInt(envs.MustGet(`LOCAL_STATE_MAIN_BRANCH_ID`)),
 			ComponentId: "ex-generic-v2",
 		},
-		Path:        "extractor/ex-generic-v2/new-config",
-		ProjectPath: "main/extractor/ex-generic-v2/new-config",
 	}, plan.actions[0].(*NewConfigAction))
 
 	// Invoke
@@ -237,16 +239,20 @@ func TestPersistNewConfigRow(t *testing.T) {
 			BranchId:    cast.ToInt(envs.MustGet(`LOCAL_STATE_MAIN_BRANCH_ID`)),
 			ComponentId: "keboola.ex-db-mysql",
 		},
-		Path:        "rows/some-row",
-		ProjectPath: "main/extractor/keboola.ex-db-mysql/new-config/rows/some-row",
+		PathInProject: model.NewPathInProject(
+			"main/extractor/keboola.ex-db-mysql/new-config",
+			"rows/some-row",
+		),
 	}
 	configAction := &NewConfigAction{
 		Key: model.ConfigKey{
 			BranchId:    cast.ToInt(envs.MustGet(`LOCAL_STATE_MAIN_BRANCH_ID`)),
 			ComponentId: "keboola.ex-db-mysql",
 		},
-		Path:        "extractor/keboola.ex-db-mysql/new-config",
-		ProjectPath: "main/extractor/keboola.ex-db-mysql/new-config",
+		PathInProject: model.NewPathInProject(
+			"main",
+			"extractor/keboola.ex-db-mysql/new-config",
+		),
 	}
 
 	// Delete callbacks for easier comparison (we only check callbacks result)
