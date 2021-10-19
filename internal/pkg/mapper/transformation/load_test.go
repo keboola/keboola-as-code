@@ -224,10 +224,10 @@ func createTestFixtures(t *testing.T) (*zap.SugaredLogger, filesystem.Fs, *model
 	record := &model.ConfigManifest{
 		ConfigKey: configKey,
 		Paths: model.Paths{
-			PathInProject: model.PathInProject{
-				ParentPath: "branch",
-				ObjectPath: "config",
-			},
+			PathInProject: model.NewPathInProject(
+				"branch",
+				"config",
+			),
 		},
 	}
 

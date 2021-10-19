@@ -130,7 +130,7 @@ func (n Naming) DescriptionFilePath(dir string) string {
 
 func (n Naming) BranchPath(branch *Branch) PathInProject {
 	p := PathInProject{}
-	p.ParentPath = "" // branch is top level object
+	p.SetParentPath("") // branch is top level object
 
 	if branch.IsDefault {
 		p.ObjectPath = `main`
@@ -169,7 +169,7 @@ func (n Naming) ConfigPath(parentPath string, component *Component, config *Conf
 	}
 
 	p := PathInProject{}
-	p.ParentPath = parentPath
+	p.SetParentPath(parentPath)
 	p.ObjectPath = utils.ReplacePlaceholders(template, map[string]interface{}{
 		"target_component_id": targetComponentId, // for shared code
 		"component_type":      component.Type,
@@ -207,7 +207,7 @@ func (n Naming) ConfigRowPath(parentPath string, component *Component, row *Conf
 	}
 
 	p := PathInProject{}
-	p.ParentPath = parentPath
+	p.SetParentPath(parentPath)
 	p.ObjectPath = utils.ReplacePlaceholders(template, map[string]interface{}{
 		"config_row_id":   row.Id,
 		"config_row_name": utils.NormalizeName(name),
@@ -225,7 +225,7 @@ func (n Naming) BlocksTmpDir(configDir string) string {
 
 func (n Naming) BlockPath(parentPath string, block *Block) PathInProject {
 	p := PathInProject{}
-	p.ParentPath = parentPath
+	p.SetParentPath(parentPath)
 	p.ObjectPath = utils.ReplacePlaceholders(string(blockNameTemplate), map[string]interface{}{
 		"block_order": fmt.Sprintf(`%03d`, block.Index+1),
 		"block_name":  utils.NormalizeName(block.Name),
@@ -235,7 +235,7 @@ func (n Naming) BlockPath(parentPath string, block *Block) PathInProject {
 
 func (n Naming) CodePath(parentPath string, code *Code) PathInProject {
 	p := PathInProject{}
-	p.ParentPath = parentPath
+	p.SetParentPath(parentPath)
 	p.ObjectPath = utils.ReplacePlaceholders(string(codeNameTemplate), map[string]interface{}{
 		"code_order": fmt.Sprintf(`%03d`, code.Index+1),
 		"code_name":  utils.NormalizeName(code.Name),

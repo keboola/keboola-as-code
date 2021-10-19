@@ -49,10 +49,10 @@ func createTestFixtures(t *testing.T, targetComponentId string) (*zap.SugaredLog
 	configRecord := &model.ConfigManifest{
 		ConfigKey: configKey,
 		Paths: model.Paths{
-			PathInProject: model.PathInProject{
-				ParentPath: "branch",
-				ObjectPath: "config",
-			},
+			PathInProject: model.NewPathInProject(
+				"branch",
+				"config",
+			),
 		},
 	}
 	config := &model.Config{
@@ -77,10 +77,10 @@ func createTestFixtures(t *testing.T, targetComponentId string) (*zap.SugaredLog
 	rowRecord := &model.ConfigRowManifest{
 		ConfigRowKey: rowKey,
 		Paths: model.Paths{
-			PathInProject: model.PathInProject{
-				ParentPath: "branch/config",
-				ObjectPath: "row",
-			},
+			PathInProject: model.NewPathInProject(
+				"branch/config",
+				"row",
+			),
 		},
 	}
 	row := &model.ConfigRow{

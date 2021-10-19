@@ -61,10 +61,10 @@ func TestLoadRemoteStateAllowedBranches(t *testing.T) {
 					Id: cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`)),
 				},
 				Paths: model.Paths{
-					PathInProject: model.PathInProject{
-						ObjectPath: envs.MustGet(`TEST_BRANCH_FOO_ID`) + "-foo",
-						ParentPath: "",
-					},
+					PathInProject: model.NewPathInProject(
+						"",
+						envs.MustGet(`TEST_BRANCH_FOO_ID`)+"-foo",
+					),
 				},
 			},
 		},
@@ -88,10 +88,10 @@ func complexRemoteExpectedBranches(envs *env.Map) []*model.BranchState {
 					Id: cast.ToInt(envs.MustGet(`TEST_BRANCH_BAR_ID`)),
 				},
 				Paths: model.Paths{
-					PathInProject: model.PathInProject{
-						ObjectPath: envs.MustGet(`TEST_BRANCH_BAR_ID`) + "-bar",
-						ParentPath: "",
-					},
+					PathInProject: model.NewPathInProject(
+						"",
+						envs.MustGet(`TEST_BRANCH_BAR_ID`)+"-bar",
+					),
 				},
 			},
 		},
@@ -110,10 +110,10 @@ func complexRemoteExpectedBranches(envs *env.Map) []*model.BranchState {
 					Id: cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`)),
 				},
 				Paths: model.Paths{
-					PathInProject: model.PathInProject{
-						ObjectPath: envs.MustGet(`TEST_BRANCH_FOO_ID`) + "-foo",
-						ParentPath: "",
-					},
+					PathInProject: model.NewPathInProject(
+						"",
+						envs.MustGet(`TEST_BRANCH_FOO_ID`)+"-foo",
+					),
 				},
 			},
 		},
@@ -132,10 +132,10 @@ func complexRemoteExpectedBranches(envs *env.Map) []*model.BranchState {
 					Id: cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`)),
 				},
 				Paths: model.Paths{
-					PathInProject: model.PathInProject{
-						ObjectPath: "main",
-						ParentPath: "",
-					},
+					PathInProject: model.NewPathInProject(
+						"",
+						"main",
+					),
 				},
 			},
 		},
@@ -164,10 +164,10 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 					Id:          envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
 				},
 				Paths: model.Paths{
-					PathInProject: model.PathInProject{
-						ObjectPath: "extractor/ex-generic-v2/" + envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`) + "-empty",
-						ParentPath: "main",
-					},
+					PathInProject: model.NewPathInProject(
+						"main",
+						"extractor/ex-generic-v2/"+envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)+"-empty",
+					),
 				},
 			},
 		},
@@ -191,10 +191,10 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 					Id:          envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
 				},
 				Paths: model.Paths{
-					PathInProject: model.PathInProject{
-						ObjectPath: "extractor/ex-generic-v2/" + envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`) + "-empty",
-						ParentPath: envs.MustGet(`TEST_BRANCH_FOO_ID`) + "-foo",
-					},
+					PathInProject: model.NewPathInProject(
+						envs.MustGet(`TEST_BRANCH_FOO_ID`)+"-foo",
+						"extractor/ex-generic-v2/"+envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)+"-empty",
+					),
 				},
 			},
 		},
@@ -218,10 +218,10 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 					Id:          envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
 				},
 				Paths: model.Paths{
-					PathInProject: model.PathInProject{
-						ObjectPath: "extractor/ex-generic-v2/" + envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`) + "-empty",
-						ParentPath: envs.MustGet(`TEST_BRANCH_BAR_ID`) + "-bar",
-					},
+					PathInProject: model.NewPathInProject(
+						envs.MustGet(`TEST_BRANCH_BAR_ID`)+"-bar",
+						"extractor/ex-generic-v2/"+envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)+"-empty",
+					),
 				},
 			},
 		},
@@ -260,10 +260,10 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 					Id:          envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`),
 				},
 				Paths: model.Paths{
-					PathInProject: model.PathInProject{
-						ObjectPath: "extractor/keboola.ex-db-mysql/" + envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`) + "-with-rows",
-						ParentPath: envs.MustGet(`TEST_BRANCH_FOO_ID`) + "-foo",
-					},
+					PathInProject: model.NewPathInProject(
+						envs.MustGet(`TEST_BRANCH_FOO_ID`)+"-foo",
+						"extractor/keboola.ex-db-mysql/"+envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`)+"-with-rows",
+					),
 				},
 			},
 		},
@@ -302,10 +302,10 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 					Id:          envs.MustGet(`TEST_BRANCH_BAR_CONFIG_WITHOUT_ROWS_ID`),
 				},
 				Paths: model.Paths{
-					PathInProject: model.PathInProject{
-						ObjectPath: "extractor/ex-generic-v2/" + envs.MustGet(`TEST_BRANCH_BAR_CONFIG_WITHOUT_ROWS_ID`) + "-without-rows",
-						ParentPath: envs.MustGet(`TEST_BRANCH_BAR_ID`) + "-bar",
-					},
+					PathInProject: model.NewPathInProject(
+						envs.MustGet(`TEST_BRANCH_BAR_ID`)+"-bar",
+						"extractor/ex-generic-v2/"+envs.MustGet(`TEST_BRANCH_BAR_CONFIG_WITHOUT_ROWS_ID`)+"-without-rows",
+					),
 				},
 			},
 		},
@@ -343,10 +343,10 @@ func complexRemoteExpectedConfigsRows(envs *env.Map) []*model.ConfigRowState {
 					Id:          envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_DISABLED_ID`),
 				},
 				Paths: model.Paths{
-					PathInProject: model.PathInProject{
-						ObjectPath: `rows/` + envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_DISABLED_ID`) + "-disabled",
-						ParentPath: envs.MustGet(`TEST_BRANCH_FOO_ID`) + "-foo/extractor/keboola.ex-db-mysql/" + envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`) + "-with-rows",
-					},
+					PathInProject: model.NewPathInProject(
+						envs.MustGet(`TEST_BRANCH_FOO_ID`)+"-foo/extractor/keboola.ex-db-mysql/"+envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`)+"-with-rows",
+						`rows/`+envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_DISABLED_ID`)+"-disabled",
+					),
 				},
 			},
 		},
@@ -379,10 +379,10 @@ func complexRemoteExpectedConfigsRows(envs *env.Map) []*model.ConfigRowState {
 					Id:          envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_TEST_VIEW_ID`),
 				},
 				Paths: model.Paths{
-					PathInProject: model.PathInProject{
-						ObjectPath: `rows/` + envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_TEST_VIEW_ID`) + "-test-view",
-						ParentPath: envs.MustGet(`TEST_BRANCH_FOO_ID`) + "-foo/extractor/keboola.ex-db-mysql/" + envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`) + "-with-rows",
-					},
+					PathInProject: model.NewPathInProject(
+						envs.MustGet(`TEST_BRANCH_FOO_ID`)+"-foo/extractor/keboola.ex-db-mysql/"+envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`)+"-with-rows",
+						`rows/`+envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_TEST_VIEW_ID`)+"-test-view",
+					),
 				},
 			},
 		},
@@ -415,10 +415,10 @@ func complexRemoteExpectedConfigsRows(envs *env.Map) []*model.ConfigRowState {
 					Id:          envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_USERS_ID`),
 				},
 				Paths: model.Paths{
-					PathInProject: model.PathInProject{
-						ObjectPath: `rows/` + envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_USERS_ID`) + "-users",
-						ParentPath: envs.MustGet(`TEST_BRANCH_FOO_ID`) + "-foo/extractor/keboola.ex-db-mysql/" + envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`) + "-with-rows",
-					},
+					PathInProject: model.NewPathInProject(
+						envs.MustGet(`TEST_BRANCH_FOO_ID`)+"-foo/extractor/keboola.ex-db-mysql/"+envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`)+"-with-rows",
+						`rows/`+envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_USERS_ID`)+"-users",
+					),
 				},
 			},
 		},
