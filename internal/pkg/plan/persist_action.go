@@ -7,6 +7,7 @@ import (
 )
 
 type PersistAction interface {
+	Order() int
 	String() string
 	Path() string
 }
@@ -24,6 +25,18 @@ type NewRowAction struct {
 
 type DeleteRecordAction struct {
 	model.Record
+}
+
+func (a *NewConfigAction) Order() int {
+	return 1
+}
+
+func (a *NewRowAction) Order() int {
+	return 1
+}
+
+func (a *DeleteRecordAction) Order() int {
+	return 2
 }
 
 func (a *NewConfigAction) String() string {
