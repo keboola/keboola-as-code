@@ -10,6 +10,7 @@ import (
 )
 
 const (
+	VariablesComponentId     = `keboola.variables`
 	DeprecatedFlag           = `deprecated`
 	ExcludeFromNewListFlag   = `excludeFromNewList`
 	ComponentTypeCodePattern = `code-pattern`
