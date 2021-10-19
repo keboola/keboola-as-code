@@ -83,10 +83,8 @@ func (e *persistExecutor) persistNewConfig(action *NewConfigAction) {
 			return
 		}
 
-		// Set config id to rows
-		for _, rowAction := range action.Rows {
-			rowAction.Key.ConfigId = key.Id
-		}
+		// Setup related objects
+		action.InvokeOnPersist(key)
 	})
 }
 
@@ -94,6 +92,8 @@ func (e *persistExecutor) persistNewRow(action *NewRowAction) {
 	// Generate unique ID
 	e.tickets.Request(func(ticket *model.Ticket) {
 		key := action.Key
+
+		// Set new id to the key
 		key.Id = ticket.Id
 
 		// The parent config was not persisted for some error -> skip row

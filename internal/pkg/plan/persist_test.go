@@ -117,7 +117,6 @@ func TestPersistNewConfig(t *testing.T) {
 		},
 		Path:        "extractor/ex-generic-v2/new-config",
 		ProjectPath: "main/extractor/ex-generic-v2/new-config",
-		Rows:        nil,
 	}, plan.actions[0].(*NewConfigAction))
 
 	// Invoke
@@ -248,11 +247,20 @@ func TestPersistNewConfigRow(t *testing.T) {
 		},
 		Path:        "extractor/keboola.ex-db-mysql/new-config",
 		ProjectPath: "main/extractor/keboola.ex-db-mysql/new-config",
-		Rows:        []*NewRowAction{rowAction},
 	}
+
+	// Delete callbacks for easier comparison (we only check callbacks result)
+	for _, action := range plan.actions {
+		if a, ok := action.(*NewConfigAction); ok {
+			a.OnPersist = nil
+		}
+	}
+
+	// Compare
 	assert.Equal(t, []PersistAction{configAction, rowAction}, plan.actions)
 
 	// Invoke
+	plan = Persist(projectState) // plan with callbacks
 	assert.NoError(t, plan.Invoke(logger, api, projectState))
 
 	// State after

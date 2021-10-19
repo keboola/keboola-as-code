@@ -14,7 +14,7 @@ type NewConfigAction struct {
 	Key         model.ConfigKey
 	Path        string
 	ProjectPath string
-	Rows        []*NewRowAction
+	OnPersist   []func(key model.ConfigKey)
 }
 
 type NewRowAction struct {
@@ -37,4 +37,10 @@ func (a *NewRowAction) String() string {
 
 func (a *DeleteRecordAction) String() string {
 	return fmt.Sprintf(`- %s %s`, a.Record.Kind().Abbr, a.Record.Path())
+}
+
+func (a *NewConfigAction) InvokeOnPersist(key model.ConfigKey) {
+	for _, callback := range a.OnPersist {
+		callback(key)
+	}
 }
