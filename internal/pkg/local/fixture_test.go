@@ -41,16 +41,16 @@ func (m MockedKey) ObjectId() string {
 	return "123"
 }
 
-func (m MockedKey) ParentKey() model.Key {
-	return nil
+func (m MockedKey) ParentKey() (model.Key, error) {
+	return nil, nil
 }
 
 func (MockedRecord) Key() model.Key {
 	return &MockedKey{}
 }
 
-func (MockedRecord) ParentKey() model.Key {
-	return nil
+func (MockedRecord) ParentKey() (model.Key, error) {
+	return nil, nil
 }
 
 func (r MockedRecord) Kind() model.Kind {

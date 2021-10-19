@@ -21,7 +21,7 @@ type Key interface {
 	Desc() string   // human-readable description of the object
 	String() string // unique string representation of the key
 	ObjectId() string
-	ParentKey() Key // unique key of the parent object
+	ParentKey() (Key, error) // unique key of the parent object
 }
 
 type WithKey interface {
@@ -164,8 +164,8 @@ func (k BlockKey) ConfigKey() Key {
 	}
 }
 
-func (k BlockKey) ParentKey() Key {
-	return k.ConfigKey()
+func (k BlockKey) ParentKey() (Key, error) {
+	return k.ConfigKey(), nil
 }
 
 func (k CodeKey) Key() Key {
@@ -189,12 +189,12 @@ func (k CodeKey) BlockKey() Key {
 	}
 }
 
-func (k CodeKey) ParentKey() Key {
-	return k.BlockKey()
+func (k CodeKey) ParentKey() (Key, error) {
+	return k.BlockKey(), nil
 }
 
-func (k ComponentKey) ParentKey() Key {
-	return nil // Component is top level object
+func (k ComponentKey) ParentKey() (Key, error) {
+	return nil, nil // Component is top level object
 }
 
 func (k BranchKey) Desc() string {
@@ -225,8 +225,8 @@ func (k BranchKey) String() string {
 	return fmt.Sprintf("%02d_%d_branch", k.Level(), k.Id)
 }
 
-func (k BranchKey) ParentKey() Key {
-	return nil // Branch is top level object
+func (k BranchKey) ParentKey() (Key, error) {
+	return nil, nil // Branch is top level object
 }
 
 func (k ComponentKey) String() string {
@@ -257,8 +257,8 @@ func (k ConfigKey) BranchKey() *BranchKey {
 	return &BranchKey{Id: k.BranchId}
 }
 
-func (k ConfigKey) ParentKey() Key {
-	return k.BranchKey()
+func (k ConfigKey) ParentKey() (Key, error) {
+	return k.BranchKey(), nil
 }
 
 func (k ConfigRowKey) ComponentKey() *ComponentKey {
@@ -273,8 +273,8 @@ func (k ConfigRowKey) ConfigKey() *ConfigKey {
 	return &ConfigKey{BranchId: k.BranchId, ComponentId: k.ComponentId, Id: k.ConfigId}
 }
 
-func (k ConfigRowKey) ParentKey() Key {
-	return k.ConfigKey()
+func (k ConfigRowKey) ParentKey() (Key, error) {
+	return k.ConfigKey(), nil
 }
 
 func (k Block) ConfigKey() *ConfigKey {

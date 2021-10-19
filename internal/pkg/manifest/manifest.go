@@ -320,8 +320,10 @@ func (m *Manifest) DeleteRecordByKey(key model.Key) {
 }
 
 func (m *Manifest) GetParent(record model.Record) (model.Record, error) {
-	parentKey := record.ParentKey()
-	if parentKey == nil {
+	parentKey, err := record.ParentKey()
+	if err != nil {
+		return nil, err
+	} else if parentKey == nil {
 		return nil, nil
 	}
 
