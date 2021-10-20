@@ -3,11 +3,12 @@ package scheduler
 import (
 	"context"
 	"fmt"
+
 	"github.com/go-resty/resty/v2"
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 type Api struct {
@@ -75,4 +76,31 @@ func (a *Api) DeleteScheduleRequest(scheduleId string) *client.Request {
 
 func (a *Api) DeleteSchedule(scheduleId string) error {
 	return a.DeleteScheduleRequest(scheduleId).Send().Err()
+}
+
+// DeleteSchedulesForConfigurationRequest https://app.swaggerhub.com/apis/odinuv/scheduler/1.0.0#/schedules/deleteSchedulesForConfiguration
+func (a *Api) DeleteSchedulesForConfigurationRequest(configurationId string) *client.Request {
+	return a.client.
+		NewRequest(resty.MethodDelete, "configurations/{configurationId}").
+		SetPathParam("configurationId", configurationId)
+}
+
+func (a *Api) DeleteSchedulesForConfiguration(configurationId string) error {
+	return a.DeleteSchedulesForConfigurationRequest(configurationId).Send().Err()
+}
+
+// ListSchedulesRequest https://app.swaggerhub.com/apis/odinuv/scheduler/1.0.0#/schedules/get_schedules
+func (a *Api) ListSchedulesRequest() *client.Request {
+	schedules := make([]*model.Schedule, 0)
+	return a.client.
+		NewRequest(resty.MethodGet, "schedules").
+		SetResult(&schedules)
+}
+
+func (a *Api) ListSchedules() ([]*model.Schedule, error) {
+	response := a.ListSchedulesRequest().Send().Response
+	if response.HasResult() {
+		return *response.Result().(*[]*model.Schedule), nil
+	}
+	return nil, response.Err()
 }
