@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strings"
 
+	"go.uber.org/zap"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -69,6 +71,14 @@ func (f *PathsState) State(path string) PathState {
 	return Ignored
 }
 
+func (f *PathsState) IsTracked(path string) bool {
+	return f.State(path) == Tracked
+}
+
+func (f *PathsState) IsUntracked(path string) bool {
+	return f.State(path) == Untracked
+}
+
 // TrackedPaths returns all tracked paths.
 func (f *PathsState) TrackedPaths() []string {
 	var tracked []string
@@ -91,6 +101,36 @@ func (f *PathsState) UntrackedPaths() []string {
 	return untracked
 }
 
+func (f *PathsState) UntrackedDirs() (dirs []string) {
+	for _, path := range f.UntrackedPaths() {
+		if !f.fs.IsDir(path) {
+			continue
+		}
+		dirs = append(dirs, path)
+	}
+	return dirs
+}
+
+func (f *PathsState) UntrackedDirsFrom(base string) (dirs []string) {
+	for _, path := range f.UntrackedPaths() {
+		if !f.fs.IsDir(path) || !filesystem.IsFrom(path, base) {
+			continue
+		}
+		dirs = append(dirs, path)
+	}
+	return dirs
+}
+
+func (f *PathsState) LogUntrackedPaths(logger *zap.SugaredLogger) {
+	untracked := f.UntrackedPaths()
+	if len(untracked) > 0 {
+		logger.Warn("Unknown paths found:")
+		for _, path := range untracked {
+			logger.Warn("\t- ", path)
+		}
+	}
+}
+
 func (f *PathsState) IsFile(path string) bool {
 	v, ok := f.isFile[path]
 	if !ok {
@@ -103,6 +143,7 @@ func (f *PathsState) IsDir(path string) bool {
 	return !f.IsFile(path)
 }
 
+// MarkTracked path and all parent paths.
 func (f *PathsState) MarkTracked(path string) {
 	// Add path and all parents
 	for {
@@ -116,6 +157,18 @@ func (f *PathsState) MarkTracked(path string) {
 
 		// Process parent path
 		path = filesystem.Dir(path)
+	}
+}
+
+// MarkSubPathsTracked path and all parent and sub paths.
+func (f *PathsState) MarkSubPathsTracked(path string) {
+	f.MarkTracked(path)
+
+	// Mark tracked all sub paths
+	for subPath := range f.all {
+		if filesystem.IsFrom(subPath, path) {
+			f.tracked[subPath] = true
+		}
 	}
 }
 
