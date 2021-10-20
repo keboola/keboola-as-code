@@ -15,7 +15,7 @@ const (
 	ConfigFileTag               = "configFile:true"
 	DescriptionFileTag          = "descriptionFile:true"
 	TransformationType          = "transformation"
-	ShareCodeComponentId        = "keboola.shared-code"
+	SharedCodeComponentId       = "keboola.shared-code"
 	ShareCodeTargetComponentKey = `componentId`
 	ShareCodeContentKey         = `code_content`
 )
@@ -197,4 +197,32 @@ func (r *ConfigRow) ToApiValues() (map[string]string, error) {
 		"isDisabled":        strconv.FormatBool(r.IsDisabled),
 		"configuration":     configJson,
 	}, nil
+}
+
+func (k Kind) String() string {
+	return k.Name
+}
+
+func (k Kind) IsBranch() bool {
+	return k.Name == BranchKind
+}
+
+func (k Kind) IsComponent() bool {
+	return k.Name == ComponentKind
+}
+
+func (k Kind) IsConfig() bool {
+	return k.Name == ConfigKind
+}
+
+func (k Kind) IsConfigRow() bool {
+	return k.Name == ConfigRowKind
+}
+
+func (k Kind) IsBlock() bool {
+	return k.Name == BlockKind
+}
+
+func (k Kind) IsCode() bool {
+	return k.Name == CodeKind
 }

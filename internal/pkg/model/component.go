@@ -40,7 +40,7 @@ func (c *Component) IsTransformation() bool {
 }
 
 func (c *Component) IsSharedCode() bool {
-	return c.Id == ShareCodeComponentId
+	return c.Id == SharedCodeComponentId
 }
 
 func (c *Component) IsCodePattern() bool {

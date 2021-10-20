@@ -153,23 +153,33 @@ func (n Naming) ConfigPath(parentPath string, component *Component, config *Conf
 		panic(fmt.Errorf(`config "%s" parent path cannot be empty"`, config))
 	}
 
+	// Get parent in the local filesystem
+	parentKey, err := config.ParentKey()
+	if err != nil {
+		panic(err)
+	}
+
 	// Shared code is handled differently
 	var template, targetComponentId string
-	if component.IsSharedCode() {
-		// Get target component ID for shared code config
-		if config.Content == nil {
-			panic(fmt.Errorf(`shared code config "%s" must have set key "%s"`, config.Desc(), ShareCodeTargetComponentKey))
+	if parentKey.Kind().IsBranch() {
+		if component.IsSharedCode() {
+			// Get target component ID for shared code config
+			if config.Content == nil {
+				panic(fmt.Errorf(`shared code config "%s" must have set key "%s"`, config.Desc(), ShareCodeTargetComponentKey))
+			}
+			targetComponentIdRaw, found := config.Content.Get(ShareCodeTargetComponentKey)
+			if !found {
+				panic(fmt.Errorf(`shared code config "%s" must have set key "%s"`, config.Desc(), ShareCodeTargetComponentKey))
+			}
+			// Shared code
+			template = string(n.SharedCodeConfig)
+			targetComponentId = cast.ToString(targetComponentIdRaw)
+		} else {
+			// Ordinary config
+			template = string(n.Config)
 		}
-		targetComponentIdRaw, found := config.Content.Get(ShareCodeTargetComponentKey)
-		if !found {
-			panic(fmt.Errorf(`shared code config "%s" must have set key "%s"`, config.Desc(), ShareCodeTargetComponentKey))
-		}
-		// Shared code
-		template = string(n.SharedCodeConfig)
-		targetComponentId = cast.ToString(targetComponentIdRaw)
 	} else {
-		// Ordinary config
-		template = string(n.Config)
+		panic(fmt.Errorf(`unexpected config parent type "%s"`, parentKey.Kind()))
 	}
 
 	p := PathInProject{}
@@ -187,6 +197,17 @@ func (n Naming) ConfigPath(parentPath string, component *Component, config *Conf
 func (n Naming) ConfigRowPath(parentPath string, component *Component, row *ConfigRow) PathInProject {
 	if len(parentPath) == 0 {
 		panic(fmt.Errorf(`config row "%s" parent path cannot be empty"`, row))
+	}
+
+	// Get parent in the local filesystem
+	parentKey, err := row.ParentKey()
+	if err != nil {
+		panic(err)
+	}
+
+	// Check parent type
+	if !parentKey.Kind().IsConfig() {
+		panic(fmt.Errorf(`unexpected config row parent type "%s"`, parentKey.Kind()))
 	}
 
 	// Shared code is handled differently
