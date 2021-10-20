@@ -22,13 +22,13 @@ func (r *Reporter) Report(rs cmp.Result) {
 		vx, vy := r.path.Last().Values()
 		pathStr := pathToString(r.path)
 		if len(pathStr) > 0 {
-			r.diffs = append(r.diffs, fmt.Sprintf("\t\"%s\":", pathStr))
+			r.diffs = append(r.diffs, fmt.Sprintf("  \"%s\":", pathStr))
 		}
 		if vx.IsValid() {
-			r.diffs = append(r.diffs, fmt.Sprintf("\t%s %+v", OnlyInRemoteMark, vx))
+			r.diffs = append(r.diffs, fmt.Sprintf("  %s %+v", OnlyInRemoteMark, vx))
 		}
 		if vy.IsValid() {
-			r.diffs = append(r.diffs, fmt.Sprintf("\t%s %+v", OnlyInLocalMark, vy))
+			r.diffs = append(r.diffs, fmt.Sprintf("  %s %+v", OnlyInLocalMark, vy))
 		}
 	}
 }
