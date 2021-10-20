@@ -111,26 +111,6 @@ func (s *State) LocalManager() *local.Manager {
 	return s.localManager
 }
 
-func (s *State) UntrackedDirs() (dirs []string) {
-	for _, path := range s.UntrackedPaths() {
-		if !s.fs.IsDir(path) {
-			continue
-		}
-		dirs = append(dirs, path)
-	}
-	return dirs
-}
-
-func (s *State) LogUntrackedPaths(logger *zap.SugaredLogger) {
-	untracked := s.UntrackedPaths()
-	if len(untracked) > 0 {
-		logger.Warn("Unknown paths found:")
-		for _, path := range untracked {
-			logger.Warn("  - ", path)
-		}
-	}
-}
-
 func (s *State) RemoteErrors() *utils.Error {
 	return s.remoteErrors
 }
