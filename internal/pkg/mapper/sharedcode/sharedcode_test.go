@@ -25,7 +25,7 @@ func createTestFixtures(t *testing.T, targetComponentId string) (*zap.SugaredLog
 	// Component
 	state.Components().Set(&model.Component{
 		ComponentKey: model.ComponentKey{
-			Id: model.ShareCodeComponentId,
+			Id: model.SharedCodeComponentId,
 		},
 		Type: `other`,
 		Name: `Shared Code`,
@@ -44,7 +44,7 @@ func createTestFixtures(t *testing.T, targetComponentId string) (*zap.SugaredLog
 	configKey := model.ConfigKey{
 		BranchId:    789,
 		Id:          `123`,
-		ComponentId: model.ShareCodeComponentId,
+		ComponentId: model.SharedCodeComponentId,
 	}
 	configRecord := &model.ConfigManifest{
 		ConfigKey: configKey,
@@ -72,7 +72,7 @@ func createTestFixtures(t *testing.T, targetComponentId string) (*zap.SugaredLog
 		BranchId:    789,
 		ConfigId:    `123`,
 		Id:          `456`,
-		ComponentId: model.ShareCodeComponentId,
+		ComponentId: model.SharedCodeComponentId,
 	}
 	rowRecord := &model.ConfigRowManifest{
 		ConfigRowKey: rowKey,

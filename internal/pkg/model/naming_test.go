@@ -76,14 +76,14 @@ func TestDefaultNaming(t *testing.T) {
 			"my-branch",
 			&Component{
 				ComponentKey: ComponentKey{
-					Id: ShareCodeComponentId,
+					Id: SharedCodeComponentId,
 				},
 				Type: "other",
 			},
 			&Config{
 				ConfigKey: ConfigKey{
 					BranchId:    1234,
-					ComponentId: ShareCodeComponentId,
+					ComponentId: SharedCodeComponentId,
 					Id:          "456",
 				},
 				Name: "MySharedCode",
@@ -100,12 +100,12 @@ func TestDefaultNaming(t *testing.T) {
 		n.ConfigRowPath(
 			"my-branch/shared",
 			&Component{
-				ComponentKey: ComponentKey{Id: ShareCodeComponentId},
+				ComponentKey: ComponentKey{Id: SharedCodeComponentId},
 			},
 			&ConfigRow{
 				ConfigRowKey: ConfigRowKey{
 					BranchId:    1234,
-					ComponentId: ShareCodeComponentId,
+					ComponentId: SharedCodeComponentId,
 					ConfigId:    "456",
 					Id:          "789",
 				},

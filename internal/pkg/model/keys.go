@@ -7,6 +7,12 @@ import (
 )
 
 const (
+	BranchKind    = "branch"
+	ComponentKind = "component"
+	ConfigKind    = "config"
+	ConfigRowKind = "config row"
+	BlockKind     = "block"
+	CodeKind      = "code"
 	BranchAbbr    = "B"
 	ComponentAbbr = "COM"
 	ConfigAbbr    = "C"
@@ -70,27 +76,27 @@ type CodeKey struct {
 }
 
 func (k BranchKey) Kind() Kind {
-	return Kind{Name: "branch", Abbr: BranchAbbr}
+	return Kind{Name: BranchKind, Abbr: BranchAbbr}
 }
 
 func (k ComponentKey) Kind() Kind {
-	return Kind{Name: "component", Abbr: ComponentAbbr}
+	return Kind{Name: ComponentKind, Abbr: ComponentAbbr}
 }
 
 func (k ConfigKey) Kind() Kind {
-	return Kind{Name: "config", Abbr: ConfigAbbr}
+	return Kind{Name: ConfigKind, Abbr: ConfigAbbr}
 }
 
 func (k ConfigRowKey) Kind() Kind {
-	return Kind{Name: "config row", Abbr: RowAbbr}
+	return Kind{Name: ConfigRowKind, Abbr: RowAbbr}
 }
 
 func (k BlockKey) Kind() Kind {
-	return Kind{Name: "block", Abbr: BlockAbbr}
+	return Kind{Name: BlockKind, Abbr: BlockAbbr}
 }
 
 func (k CodeKey) Kind() Kind {
-	return Kind{Name: "code", Abbr: CodeAbbr}
+	return Kind{Name: CodeKind, Abbr: CodeAbbr}
 }
 
 func (k BranchKey) ObjectId() string {
