@@ -28,12 +28,12 @@ func (p *EncryptPlan) Invoke(projectId int, logger *zap.SugaredLogger, encryptio
 func (p *EncryptPlan) Log(writer *log.WriteCloser) {
 	writer.WriteStringNoErr(fmt.Sprintf(`Plan for "%s" operation:`, p.Name()))
 	if len(p.actions) == 0 {
-		writer.WriteStringNoErr("\tno values to encrypt")
+		writer.WriteStringNoErrIndent1("no values to encrypt")
 	} else {
 		for _, action := range p.actions {
-			writer.WriteStringNoErr("\t" + action.manifest.Kind().Abbr + " " + action.manifest.Path())
+			writer.WriteStringNoErrIndent1(action.manifest.Kind().Abbr + " " + action.manifest.Path())
 			for _, value := range action.values {
-				writer.WriteStringNoErr(fmt.Sprintf("\t\t%v", value.path))
+				writer.WriteStringNoErrIndent(fmt.Sprintf("%v", value.path), 2)
 			}
 		}
 	}

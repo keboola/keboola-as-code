@@ -54,6 +54,14 @@ func (w *WriteCloser) WriteStringNoErr(s string) {
 	}
 }
 
+func (w *WriteCloser) WriteStringNoErrIndent1(s string) {
+	w.WriteStringNoErrIndent(s, 1)
+}
+
+func (w *WriteCloser) WriteStringNoErrIndent(s string, indent int) {
+	w.WriteStringNoErr(strings.Repeat("  ", indent) + s)
+}
+
 func ToDebugWriter(l *zap.SugaredLogger) *WriteCloser {
 	return &WriteCloser{zapcore.DebugLevel, l}
 }
