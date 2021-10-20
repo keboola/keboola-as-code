@@ -48,7 +48,8 @@ func TestPersistNoChange(t *testing.T) {
 	assert.Empty(t, projectState.UntrackedPaths())
 
 	// Assert plan
-	plan := Persist(projectState)
+	plan, err := Persist(projectState)
+	assert.NoError(t, err)
 	assert.True(t, plan.Empty())
 	assert.Empty(t, plan.actions)
 
@@ -107,7 +108,8 @@ func TestPersistNewConfig(t *testing.T) {
 	assert.Len(t, projectState.All(), 2)
 
 	// Assert plan
-	plan := Persist(projectState)
+	plan, err := Persist(projectState)
+	assert.NoError(t, err)
 	assert.False(t, plan.Empty())
 	assert.Len(t, plan.actions, 1)
 	assert.Equal(t, &NewConfigAction{
@@ -231,7 +233,8 @@ func TestPersistNewConfigRow(t *testing.T) {
 	assert.Len(t, projectState.All(), 2)
 
 	// Assert plan
-	plan := Persist(projectState)
+	plan, err := Persist(projectState)
+	assert.NoError(t, err)
 	assert.False(t, plan.Empty())
 	assert.Len(t, plan.actions, 2)
 	rowAction := &NewRowAction{
@@ -266,7 +269,8 @@ func TestPersistNewConfigRow(t *testing.T) {
 	assert.Equal(t, []PersistAction{configAction, rowAction}, plan.actions)
 
 	// Invoke
-	plan = Persist(projectState) // plan with callbacks
+	plan, err = Persist(projectState) // plan with callbacks
+	assert.NoError(t, err)
 	assert.NoError(t, plan.Invoke(logger, api, projectState))
 
 	// State after
@@ -414,7 +418,8 @@ func TestPersistDeleted(t *testing.T) {
 	assert.Empty(t, projectState.UntrackedPaths())
 
 	// Assert plan
-	plan := Persist(projectState)
+	plan, err := Persist(projectState)
+	assert.NoError(t, err)
 
 	// Invoke
 	assert.NoError(t, plan.Invoke(logger, api, projectState))

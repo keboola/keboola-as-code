@@ -69,7 +69,10 @@ func persistCommand(root *rootCommand) *cobra.Command {
 			}
 
 			// Get plan
-			persist := plan.Persist(projectState)
+			persist, err := plan.Persist(projectState)
+			if err != nil {
+				return err
+			}
 
 			// Log plan
 			persist.Log(log.ToInfoWriter(logger))
