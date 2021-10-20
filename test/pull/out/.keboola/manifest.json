@@ -82,25 +82,6 @@
     },
     {
       "branchId": %%TEST_BRANCH_BAR_ID%%,
-      "componentId": "keboola.variables",
-      "id": "%%TEST_BRANCH_BAR_CONFIG_PYTHON_TRANSFORMATION_SHARED_CODE_VARIABLES_ID%%",
-      "path": "other/keboola.variables/python-transformation-shared-code-variables",
-      "rows": [
-        {
-          "id": "%%TEST_BRANCH_BAR_CONFIG_PYTHON_TRANSFORMATION_SHARED_CODE_VARIABLES_ROW_DEFAULT_VALUES_ID%%",
-          "path": "rows/default-values"
-        }
-      ]
-    },
-    {
-      "branchId": %%TEST_BRANCH_BAR_ID%%,
-      "componentId": "keboola.variables",
-      "id": "%%TEST_BRANCH_BAR_CONFIG_SHARED_CODE_VARIABLES_ID%%",
-      "path": "other/keboola.variables/shared-code-variables",
-      "rows": []
-    },
-    {
-      "branchId": %%TEST_BRANCH_BAR_ID%%,
       "componentId": "keboola.python-transformation-v2",
       "id": "%%TEST_BRANCH_BAR_CONFIG_PYTHON_TRANSFORMATION_ID%%",
       "path": "transformation/keboola.python-transformation-v2/python-transformation",
@@ -119,6 +100,25 @@
       "id": "%%TEST_BRANCH_BAR_CONFIG_SNOWFLAKE_TRANSFORMATION_ID%%",
       "path": "transformation/keboola.snowflake-transformation/snowflake-transformation",
       "rows": []
+    },
+    {
+      "branchId": %%TEST_BRANCH_BAR_ID%%,
+      "componentId": "keboola.variables",
+      "id": "%%TEST_BRANCH_BAR_CONFIG_SHARED_CODE_VARIABLES_ID%%",
+      "path": "variables",
+      "rows": []
+    },
+    {
+      "branchId": %%TEST_BRANCH_BAR_ID%%,
+      "componentId": "keboola.variables",
+      "id": "%%TEST_BRANCH_BAR_CONFIG_PYTHON_TRANSFORMATION_SHARED_CODE_VARIABLES_ID%%",
+      "path": "variables-001",
+      "rows": [
+        {
+          "id": "%%TEST_BRANCH_BAR_CONFIG_PYTHON_TRANSFORMATION_SHARED_CODE_VARIABLES_ROW_DEFAULT_VALUES_ID%%",
+          "path": "values/default-values"
+        }
+      ]
     },
     {
       "branchId": %%TEST_BRANCH_FOO_ID%%,
