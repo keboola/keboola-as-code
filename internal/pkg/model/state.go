@@ -13,10 +13,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-type pathsState = PathsState
-
 type State struct {
-	*pathsState
+	pathsState *PathsState
 	sortBy     string
 	mutex      *sync.Mutex
 	components *ComponentsMap
@@ -39,6 +37,16 @@ func NewState(logger *zap.SugaredLogger, fs filesystem.Fs, components *Component
 
 func (s *State) Components() *ComponentsMap {
 	return s.components
+}
+
+func (s *State) PathsState() *PathsState {
+	return s.pathsState.Clone()
+}
+
+func (s *State) TrackRecord(record Record) {
+	for _, path := range record.GetRelatedPaths() {
+		s.pathsState.MarkTracked(path)
+	}
 }
 
 func (s *State) All() []ObjectState {
@@ -222,6 +230,44 @@ func (s *State) GetOrCreate(key Key) (ObjectState, error) {
 		s.objects.Set(key.String(), object)
 		return object, nil
 	}
+}
+
+func (s *State) IsTracked(path string) bool {
+	return s.pathsState.IsTracked(path)
+}
+
+func (s *State) IsUntracked(path string) bool {
+	return s.pathsState.IsUntracked(path)
+}
+
+// TrackedPaths returns all tracked paths.
+func (s *State) TrackedPaths() []string {
+	return s.pathsState.TrackedPaths()
+}
+
+// UntrackedPaths returns all untracked paths.
+func (s *State) UntrackedPaths() []string {
+	return s.pathsState.UntrackedPaths()
+}
+
+func (s *State) UntrackedDirs() (dirs []string) {
+	return s.pathsState.UntrackedPaths()
+}
+
+func (s *State) UntrackedDirsFrom(base string) (dirs []string) {
+	return s.pathsState.UntrackedDirsFrom(base)
+}
+
+func (s *State) IsFile(path string) bool {
+	return s.pathsState.IsFile(path)
+}
+
+func (s *State) IsDir(path string) bool {
+	return s.pathsState.IsDir(path)
+}
+
+func (s *State) LogUntrackedPaths(logger *zap.SugaredLogger) {
+	s.pathsState.LogUntrackedPaths(logger)
 }
 
 // matchObjectIdOrName returns true if str == objectId or objectName contains str.

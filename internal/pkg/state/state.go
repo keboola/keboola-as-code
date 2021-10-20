@@ -192,9 +192,7 @@ func (s *State) SetLocalState(local model.Object, record model.Record) model.Obj
 
 	state.SetLocalState(local)
 	state.SetManifest(record)
-	for _, path := range record.GetRelatedPaths() {
-		s.MarkTracked(path)
-	}
+	s.State.TrackRecord(record)
 	return state
 }
 
