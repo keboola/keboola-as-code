@@ -155,7 +155,8 @@ func (n Naming) ConfigPath(parentPath string, component *Component, config *Conf
 
 	// Shared code is handled differently
 	var template, targetComponentId string
-	if component.IsSharedCode() {
+	switch {
+	case component.IsSharedCode():
 		// Get target component ID for shared code config
 		if config.Content == nil {
 			panic(fmt.Errorf(`shared code config "%s" must have set key "%s"`, config.Desc(), ShareCodeTargetComponentKey))
@@ -167,7 +168,9 @@ func (n Naming) ConfigPath(parentPath string, component *Component, config *Conf
 		// Shared code
 		template = string(n.SharedCodeConfig)
 		targetComponentId = cast.ToString(targetComponentIdRaw)
-	} else {
+	case component.IsVariables():
+		template = string(n.Variables)
+	default:
 		// Ordinary config
 		template = string(n.Config)
 	}
@@ -191,9 +194,12 @@ func (n Naming) ConfigRowPath(parentPath string, component *Component, row *Conf
 
 	// Shared code is handled differently
 	var template string
-	if component.IsSharedCode() {
+	switch {
+	case component.IsSharedCode():
 		template = string(n.SharedCodeConfigRow)
-	} else {
+	case component.IsVariables():
+		template = string(n.VariablesValues)
+	default:
 		template = string(n.ConfigRow)
 	}
 
@@ -282,40 +288,4 @@ func (n Naming) CodeFileExt(componentId string) string {
 	default:
 		return TxtExt
 	}
-}
-
-func (n Naming) VariablesPath(parentPath string, config *Config) PathInProject {
-	if len(parentPath) == 0 {
-		panic(fmt.Errorf(`variables "%s" parent path cannot be empty"`, config))
-	}
-
-	if config.ComponentId != VariablesComponentId {
-		panic(fmt.Errorf(`variables must be from "%s" component, given "%s"`, VariablesComponentId, config.ComponentId))
-	}
-
-	p := PathInProject{}
-	p.SetParentPath(parentPath)
-	p.ObjectPath = utils.ReplacePlaceholders(string(n.Variables), map[string]interface{}{
-		"config_id":   config.Id,
-		"config_name": utils.NormalizeName(config.Name),
-	})
-	return n.ensureUniquePath(config.Key(), p)
-}
-
-func (n Naming) VariablesValuesPath(parentPath string, row *ConfigRow) PathInProject {
-	if len(parentPath) == 0 {
-		panic(fmt.Errorf(`variables values "%s" parent path cannot be empty"`, row))
-	}
-
-	if row.ComponentId != VariablesComponentId {
-		panic(fmt.Errorf(`variables values must be from "%s" component, given "%s"`, VariablesComponentId, row.ComponentId))
-	}
-
-	p := PathInProject{}
-	p.SetParentPath(parentPath)
-	p.ObjectPath = utils.ReplacePlaceholders(string(n.VariablesValues), map[string]interface{}{
-		"config_row_id":   row.Id,
-		"config_row_name": utils.NormalizeName(row.Name),
-	})
-	return n.ensureUniquePath(row.Key(), p)
 }

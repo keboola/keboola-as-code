@@ -117,8 +117,11 @@ func TestDefaultNaming(t *testing.T) {
 	assert.Equal(
 		t,
 		"my-branch/my-config/variables",
-		n.VariablesPath(
+		n.ConfigPath(
 			"my-branch/my-config",
+			&Component{
+				ComponentKey: ComponentKey{Id: VariablesComponentId},
+			},
 			&Config{
 				ConfigKey: ConfigKey{
 					BranchId:    1234,
@@ -134,8 +137,11 @@ func TestDefaultNaming(t *testing.T) {
 	assert.Equal(
 		t,
 		"my-branch/my-config/variables/values/default-values",
-		n.VariablesValuesPath(
+		n.ConfigRowPath(
 			"my-branch/my-config/variables",
+			&Component{
+				ComponentKey: ComponentKey{Id: VariablesComponentId},
+			},
 			&ConfigRow{
 				ConfigRowKey: ConfigRowKey{
 					BranchId:    1234,
