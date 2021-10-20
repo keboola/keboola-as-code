@@ -544,7 +544,7 @@ func (*testCases) TestReadJsonFileToInvalid(t *testing.T, fs filesystem.Fs, log 
 	assert.Error(t, err)
 	expectedError := `
 file "file.txt" is invalid:
-	- unexpected end of JSON input, offset: 7
+  - unexpected end of JSON input, offset: 7
 `
 	assert.Equal(t, strings.TrimSpace(expectedError), err.Error())
 }
@@ -560,7 +560,7 @@ func (*testCases) TestReadJsonFileInvalid(t *testing.T, fs filesystem.Fs, _ *uti
 	assert.Nil(t, file)
 	expectedError := `
 file "file.txt" is invalid:
-	- unexpected end of JSON input, offset: 7
+  - unexpected end of JSON input, offset: 7
 `
 	assert.Equal(t, strings.TrimSpace(expectedError), err.Error())
 }

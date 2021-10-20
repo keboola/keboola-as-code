@@ -1,9 +1,9 @@
 Plan for "persist" operation:
-	+ C main/extractor/ex-generic-v2/new
-	+ C main/extractor/keboola.ex-db-mysql/with-rows
-	+ R main/extractor/keboola.ex-db-mysql/with-rows/rows/users
-	+ C main/transformation/keboola.python-transformation-v2/python-transformation
-	- C main/extractor/keboola.ex-db-mysql/missing
-	- R main/extractor/keboola.ex-db-mysql/missing/rows/some-row
+  + C main/extractor/ex-generic-v2/new
+  + C main/extractor/keboola.ex-db-mysql/with-rows
+  + R main/extractor/keboola.ex-db-mysql/with-rows/rows/users
+  + C main/transformation/keboola.python-transformation-v2/python-transformation
+  - C main/extractor/keboola.ex-db-mysql/missing
+  - R main/extractor/keboola.ex-db-mysql/missing/rows/some-row
 Dry run, nothing changed.
 Persist done.

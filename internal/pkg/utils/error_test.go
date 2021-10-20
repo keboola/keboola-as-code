@@ -49,14 +49,14 @@ func TestMultiError(t *testing.T) {
 - merged 1
 - merged 2
 - my prefix:
-	- abc
-	- def
-	- xyz
-	- sub1:
-		- x
-		- y
-	- sub1:
-		- z
+  - abc
+  - def
+  - xyz
+  - sub1:
+    - x
+    - y
+  - sub1:
+    - z
 - last error
 `
 	assert.Equal(t, strings.TrimSpace(expected), e.Error())

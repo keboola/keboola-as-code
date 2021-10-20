@@ -4,16 +4,16 @@ CH changed
 
 Diff:
 CH B bar
-	"description":
-		-%c
-		+ new description
+  "description":
+    -%c
+    + new description
 CH C bar/extractor/ex-generic-v2/empty
-	"name":
-		- empty
-		+ new name
+  "name":
+    - empty
+    + new name
 CH C foo/extractor/ex-generic-v2/without-rows
-	"configuration":
-		"parameters.api.baseUrl":
-		- https://jsonplaceholder.typicode.com
-		+ https://jsonplaceholder.typicode.org
+  "configuration":
+    "parameters.api.baseUrl":
+    - https://jsonplaceholder.typicode.com
+    + https://jsonplaceholder.typicode.org
 -  C main/extractor/ex-generic-v2/empty

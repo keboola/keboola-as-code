@@ -202,12 +202,12 @@ func TestValidateState(t *testing.T) {
 	s.validate()
 	expectedLocalError := `
 branch "456" is not valid:
-	- key="name", value="", failed "required" validation
+  - key="name", value="", failed "required" validation
 `
 	expectedRemoteError := `
 config "branch:456/component:keboola.foo/config:234" is not valid:
-	- key="name", value="", failed "required" validation
-	- key="configuration", value="<nil>", failed "required" validation
+  - key="name", value="", failed "required" validation
+  - key="configuration", value="<nil>", failed "required" validation
 `
 	assert.Equal(t, strings.TrimSpace(expectedLocalError), s.LocalErrors().Error())
 	assert.Equal(t, strings.TrimSpace(expectedRemoteError), s.RemoteErrors().Error())
