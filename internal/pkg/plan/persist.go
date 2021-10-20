@@ -9,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-// Persist creates a plan for persist new/deleted objects.
+// Persist creates a plan to persist new/deleted objects from local filesystem.
 func Persist(projectState *state.State) *PersistPlan {
 	builder := &persistPlanBuilder{State: projectState, PersistPlan: &PersistPlan{}, errors: utils.NewMultiError()}
 	builder.build()
@@ -57,14 +57,16 @@ func (b *persistPlanBuilder) build() {
 
 func (b *persistPlanBuilder) tryAddConfig(projectPath string, branch *model.BranchState) []PersistAction {
 	// Is path from the branch dir?
-	relPath, err := filesystem.Rel(branch.Path(), projectPath)
+	parentPath := branch.Path()
+	relPath, err := filesystem.Rel(parentPath, projectPath)
 	if err != nil {
 		b.errors.Append(err)
 		return nil
 	}
+	path := model.NewPathInProject(parentPath, relPath)
 
 	// Is config path matching naming template?
-	matched, matches := b.Naming().Config.MatchPath(relPath)
+	matched, matches := b.Naming().Config.MatchPath(path.ObjectPath)
 	if !matched {
 		return nil
 	}
@@ -72,14 +74,14 @@ func (b *persistPlanBuilder) tryAddConfig(projectPath string, branch *model.Bran
 	// Get component ID
 	componentId, ok := matches["component_id"]
 	if !ok || componentId == "" {
-		b.errors.Append(fmt.Errorf(`config's component id cannot be determined, path: "%s", path template: "%s"`, projectPath, b.Naming().Config))
+		b.errors.Append(fmt.Errorf(`config's component id cannot be determined, path: "%s", path template: "%s"`, path.Path(), b.Naming().Config))
 		return nil
 	}
 
 	// Create action
 	configKey := model.ConfigKey{BranchId: branch.Id, ComponentId: componentId}
 	actions := make([]PersistAction, 0)
-	action := &NewConfigAction{Key: configKey, Path: relPath, ProjectPath: projectPath}
+	action := &NewConfigAction{Key: configKey, PathInProject: path}
 	actions = append(actions, action)
 
 	// Search for config rows
@@ -98,13 +100,14 @@ func (b *persistPlanBuilder) tryAddConfig(projectPath string, branch *model.Bran
 	return actions
 }
 
-func (b *persistPlanBuilder) tryAddConfigRow(projectPath, configPath string, configKey model.ConfigKey) *NewRowAction {
+func (b *persistPlanBuilder) tryAddConfigRow(projectPath, parentPath string, configKey model.ConfigKey) *NewRowAction {
 	// Is path from the config dir?
-	relPath, err := filesystem.Rel(configPath, projectPath)
+	relPath, err := filesystem.Rel(parentPath, projectPath)
 	if err != nil {
 		b.errors.Append(err)
 		return nil
 	}
+	path := model.NewPathInProject(parentPath, relPath)
 
 	// Is config row pat matching naming template?
 	if matched, _ := b.Naming().ConfigRow.MatchPath(relPath); !matched {
@@ -113,5 +116,5 @@ func (b *persistPlanBuilder) tryAddConfigRow(projectPath, configPath string, con
 
 	// Create action
 	rowKey := model.ConfigRowKey{BranchId: configKey.BranchId, ComponentId: configKey.ComponentId, ConfigId: configKey.Id}
-	return &NewRowAction{Key: rowKey, Path: relPath, ProjectPath: projectPath}
+	return &NewRowAction{Key: rowKey, PathInProject: path}
 }

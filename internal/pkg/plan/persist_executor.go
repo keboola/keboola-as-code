@@ -69,7 +69,7 @@ func (e *persistExecutor) persistNewConfig(action *NewConfigAction) {
 		}
 
 		// Set local path
-		record.SetObjectPath(action.Path)
+		record.SetObjectPath(action.ObjectPath)
 
 		// Save to manifest.json
 		if err := e.Manifest().PersistRecord(record); err != nil {
@@ -111,7 +111,7 @@ func (e *persistExecutor) persistNewRow(action *NewRowAction) {
 		}
 
 		// Set local path
-		record.SetObjectPath(action.Path)
+		record.SetObjectPath(action.ObjectPath)
 
 		// Save to manifest.json
 		if err := e.Manifest().PersistRecord(record); err != nil {
