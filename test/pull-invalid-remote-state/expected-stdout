@@ -1,4 +1,4 @@
 Plan for "pull" operation:
-	+  B main
-	+  C main/extractor/keboola.ex-azure-cost-management/invalid
+  +  B main
+  +  C main/extractor/keboola.ex-azure-cost-management/invalid
 Pull done.
