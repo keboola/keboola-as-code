@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/iancoleman/orderedmap"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -15,28 +14,32 @@ import (
 )
 
 type writer struct {
-	*files
-	logger    *zap.SugaredLogger
-	fs        filesystem.Fs
-	naming    model.Naming
-	state     *model.State
+	model.MapperContext
+	*model.LocalSaveRecipe
 	config    *model.Config
 	configDir string
 	errors    *utils.Error
 }
 
-// Save - save code blocks from source config to the disk.
-func Save(logger *zap.SugaredLogger, fs filesystem.Fs, naming model.Naming, state *model.State, files *model.ObjectFiles) error {
-	w := &writer{
-		files:     files,
-		logger:    logger,
-		fs:        fs,
-		naming:    naming,
-		state:     state,
-		config:    files.Object.(*model.Config),
-		configDir: files.Record.Path(),
-		errors:    utils.NewMultiError(),
+// BeforeLocalSave - save code blocks from source config to the disk.
+func (m *transformationMapper) BeforeLocalSave(recipe *model.LocalSaveRecipe) error {
+	// Only for transformation config
+	if ok, err := m.isTransformationConfig(recipe.Object); err != nil {
+		return err
+	} else if !ok {
+		return nil
 	}
+
+	// Create writer
+	w := &writer{
+		MapperContext:   m.MapperContext,
+		LocalSaveRecipe: recipe,
+		config:          recipe.Object.(*model.Config),
+		configDir:       recipe.Record.Path(),
+		errors:          utils.NewMultiError(),
+	}
+
+	// Save
 	return w.save()
 }
 
@@ -58,20 +61,20 @@ func (w *writer) save() error {
 	utils.ConvertByJson(blocksRaw, &blocks)
 
 	// Fill in values AND generate files
-	blocksDir := w.naming.BlocksDir(w.configDir)
+	blocksDir := w.Naming.BlocksDir(w.configDir)
 	for blockIndex, block := range blocks {
 		block.BranchId = w.config.BranchId
 		block.ComponentId = w.config.ComponentId
 		block.ConfigId = w.config.Id
 		block.Index = blockIndex
-		block.PathInProject = w.naming.BlockPath(blocksDir, block)
+		block.PathInProject = w.Naming.BlockPath(blocksDir, block)
 		for codeIndex, code := range block.Codes {
 			code.BranchId = w.config.BranchId
 			code.ComponentId = w.config.ComponentId
 			code.ConfigId = w.config.Id
 			code.Index = codeIndex
-			code.PathInProject = w.naming.CodePath(block.Path(), code)
-			code.CodeFileName = w.naming.CodeFileName(w.config.ComponentId)
+			code.PathInProject = w.Naming.CodePath(block.Path(), code)
+			code.CodeFileName = w.Naming.CodeFileName(w.config.ComponentId)
 		}
 
 		// Generate block files
@@ -80,8 +83,8 @@ func (w *writer) save() error {
 
 	// Delete all old files from blocks dir
 	// We always do full generation of blocks dir.
-	for _, path := range w.state.TrackedPaths() {
-		if filesystem.IsFrom(path, blocksDir) && w.state.IsFile(path) {
+	for _, path := range w.State.TrackedPaths() {
+		if filesystem.IsFrom(path, blocksDir) && w.State.IsFile(path) {
 			w.ToDelete = append(w.ToDelete, path)
 		}
 	}
@@ -98,7 +101,7 @@ func (w *writer) generateBlockFiles(block *model.Block) {
 
 	// Create metadata file
 	if metadata := utils.MapFromTaggedFields(model.MetaFileTag, block); metadata != nil {
-		metadataPath := w.naming.MetaFilePath(block.Path())
+		metadataPath := w.Naming.MetaFilePath(block.Path())
 		w.createMetadataFile(metadataPath, `block metadata`, metadata)
 	}
 
@@ -111,15 +114,15 @@ func (w *writer) generateBlockFiles(block *model.Block) {
 func (w *writer) generateCodeFiles(code *model.Code) {
 	// Create metadata file
 	if metadata := utils.MapFromTaggedFields(model.MetaFileTag, code); metadata != nil {
-		metadataPath := w.naming.MetaFilePath(code.Path())
+		metadataPath := w.Naming.MetaFilePath(code.Path())
 		w.createMetadataFile(metadataPath, `code metadata`, metadata)
 	}
 
 	// Create code file
 	file := filesystem.
-		CreateFile(w.naming.CodeFilePath(code), w.joinScripts(code.Scripts)).
+		CreateFile(w.Naming.CodeFilePath(code), w.joinScripts(code.Scripts)).
 		SetDescription(`code`)
-	w.Extra = append(w.Extra, file)
+	w.ExtraFiles = append(w.ExtraFiles, file)
 }
 
 func (w *writer) createMetadataFile(path, desc string, content *orderedmap.OrderedMap) {
@@ -128,7 +131,7 @@ func (w *writer) createMetadataFile(path, desc string, content *orderedmap.Order
 		SetDescription(desc).
 		ToFile()
 	if err == nil {
-		w.Extra = append(w.Extra, file)
+		w.ExtraFiles = append(w.ExtraFiles, file)
 	} else {
 		w.errors.Append(err)
 	}

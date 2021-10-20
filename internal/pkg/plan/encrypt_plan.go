@@ -13,7 +13,7 @@ import (
 )
 
 type EncryptPlan struct {
-	naming  model.Naming
+	naming  *model.Naming
 	actions []*EncryptAction
 }
 

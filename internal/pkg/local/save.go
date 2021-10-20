@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
@@ -13,8 +12,7 @@ import (
 
 type modelWriter struct {
 	*Manager
-	*files
-	mapper  *mapper.Mapper
+	*model.LocalSaveRecipe
 	backups map[string]string
 	errors  *utils.Error
 }
@@ -22,11 +20,10 @@ type modelWriter struct {
 // SaveObject to manifest and filesystem.
 func (m *Manager) SaveObject(record model.Record, object model.Object) error {
 	w := modelWriter{
-		Manager: m,
-		files:   &model.ObjectFiles{Object: object, Record: record},
-		mapper:  mapper.New(m.state, m.logger, m.fs, m.Naming()),
-		backups: make(map[string]string),
-		errors:  utils.NewMultiError(),
+		Manager:         m,
+		LocalSaveRecipe: &model.LocalSaveRecipe{Object: object, Record: record},
+		backups:         make(map[string]string),
+		errors:          utils.NewMultiError(),
 	}
 	return w.save()
 }
@@ -97,12 +94,12 @@ func (w *modelWriter) allFiles() []*filesystem.File {
 	}
 
 	// other
-	files = append(files, w.Extra...)
+	files = append(files, w.ExtraFiles...)
 	return files
 }
 
 func (w *modelWriter) transform() {
-	if err := w.mapper.BeforeSave(w.files); err != nil {
+	if err := w.mapper.BeforeLocalSave(w.LocalSaveRecipe); err != nil {
 		w.errors.Append(err)
 	}
 }

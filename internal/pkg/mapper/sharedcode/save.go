@@ -3,37 +3,39 @@ package sharedcode
 import (
 	"fmt"
 
-	"go.uber.org/zap"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 type writer struct {
-	*files
-	fs        filesystem.Fs
-	logger    *zap.SugaredLogger
-	naming    model.Naming
-	state     *model.State
+	model.MapperContext
+	*model.LocalSaveRecipe
 	config    *model.Config
 	configRow *model.ConfigRow
 	errors    *utils.Error
 }
 
-func Save(logger *zap.SugaredLogger, fs filesystem.Fs, naming model.Naming, state *model.State, files *model.ObjectFiles) error {
-	configRow := files.Object.(*model.ConfigRow)
-	config := state.Get(configRow.ConfigKey()).RemoteOrLocalState().(*model.Config)
-	w := &writer{
-		fs:        fs,
-		files:     files,
-		logger:    logger,
-		naming:    naming,
-		state:     state,
-		config:    config,
-		configRow: configRow,
-		errors:    utils.NewMultiError(),
+func (m *sharedCodeMapper) BeforeLocalSave(recipe *model.LocalSaveRecipe) error {
+	// Only for shared code config row
+	if ok, err := m.isSharedCodeConfigRow(recipe.Object); err != nil {
+		return err
+	} else if !ok {
+		return nil
 	}
+
+	// Create writer
+	configRow := recipe.Object.(*model.ConfigRow)
+	config := m.State.Get(configRow.ConfigKey()).RemoteOrLocalState().(*model.Config)
+	w := &writer{
+		MapperContext:   m.MapperContext,
+		LocalSaveRecipe: recipe,
+		config:          config,
+		configRow:       configRow,
+		errors:          utils.NewMultiError(),
+	}
+
+	// Save
 	return w.save()
 }
 
@@ -64,14 +66,14 @@ func (w *writer) save() error {
 	rowContent.Delete(model.ShareCodeContentKey)
 
 	// Generate code file
-	codeFilePath := w.naming.SharedCodeFilePath(w.Record.Path(), targetComponentId)
+	codeFilePath := w.Naming.SharedCodeFilePath(w.Record.Path(), targetComponentId)
 	codeFile := filesystem.CreateFile(codeFilePath, codeContent).SetDescription(`shared code`)
-	w.files.Extra = append(w.files.Extra, codeFile)
+	w.ExtraFiles = append(w.ExtraFiles, codeFile)
 
 	// Remove "isDisabled" unnecessary value from "meta.json".
 	// Shared code is represented as config row
 	// and always contains `"isDisabled": false` in metadata.
-	meta := w.files.Metadata
+	meta := w.Metadata
 	if meta != nil && meta.Content != nil {
 		if value, found := meta.Content.Get(`isDisabled`); found {
 			if v, ok := value.(bool); ok && !v {

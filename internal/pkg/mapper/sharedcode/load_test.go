@@ -1,4 +1,4 @@
-package sharedcode
+package sharedcode_test
 
 import (
 	"testing"
@@ -6,14 +6,17 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 func TestSharedCodeLoadMissingFile(t *testing.T) {
 	t.Parallel()
 	targetComponentId := `keboola.python-transformation-v2`
-	logger, fs, state, _, objectFiles := createTestFixtures(t, targetComponentId)
-	err := Load(logger, fs, model.DefaultNaming(), state, objectFiles)
+	context, row, rowRecord := createTestFixtures(t, targetComponentId)
+	recipe := createLocalLoadRecipe(row, rowRecord)
+
+	err := NewMapper(context).AfterLocalLoad(recipe)
 	assert.Error(t, err)
 	assert.Equal(t, `missing shared code file "branch/config/row/code.py"`, err.Error())
 }
@@ -21,22 +24,22 @@ func TestSharedCodeLoadMissingFile(t *testing.T) {
 func TestSharedCodeLoadOk(t *testing.T) {
 	t.Parallel()
 	targetComponentId := `keboola.python-transformation-v2`
-	logger, fs, state, row, objectFiles := createTestFixtures(t, targetComponentId)
-	naming := model.DefaultNaming()
+	context, row, rowRecord := createTestFixtures(t, targetComponentId)
+	recipe := createLocalLoadRecipe(row, rowRecord)
 
 	// Write file
-	codeFilePath := filesystem.Join(naming.SharedCodeFilePath(objectFiles.Record.Path(), targetComponentId))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(codeFilePath, `foo bar`)))
+	codeFilePath := filesystem.Join(context.Naming.SharedCodeFilePath(recipe.Record.Path(), targetComponentId))
+	assert.NoError(t, context.Fs.WriteFile(filesystem.CreateFile(codeFilePath, `foo bar`)))
 
 	// Load
-	err := Load(logger, fs, naming, state, objectFiles)
+	err := NewMapper(context).AfterLocalLoad(recipe)
 	assert.NoError(t, err)
 	codeContent, found := row.Content.Get(model.ShareCodeContentKey)
 	assert.True(t, found)
 	assert.Equal(t, "foo bar\n", codeContent)
 
-	// Path present in related paths
+	// Path is present in related paths
 	assert.Equal(t, []string{
 		"branch/config/row/code.py",
-	}, objectFiles.Record.GetRelatedPaths())
+	}, recipe.Record.GetRelatedPaths())
 }

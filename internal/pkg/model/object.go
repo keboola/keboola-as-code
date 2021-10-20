@@ -33,7 +33,7 @@ type ObjectWithContent interface {
 }
 
 type ObjectsProvider interface {
-	Naming() Naming
+	Naming() *Naming
 	Components() *ComponentsMap
 	All() []ObjectState
 	Branches() (branches []*BranchState)

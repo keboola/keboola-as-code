@@ -39,8 +39,8 @@ type Naming struct {
 	usedByKey           map[string]string // object key -> path
 }
 
-func DefaultNaming() Naming {
-	return Naming{
+func DefaultNaming() *Naming {
+	return &Naming{
 		Branch:              "{branch_id}-{branch_name}",
 		Config:              "{component_type}/{component_id}/{config_id}-{config_name}",
 		ConfigRow:           "rows/{config_row_id}-{config_row_name}",

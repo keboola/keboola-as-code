@@ -2,8 +2,6 @@ package model
 
 import (
 	"fmt"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 )
 
 type ObjectState interface {
@@ -20,17 +18,6 @@ type ObjectState interface {
 	RemoteState() Object
 	LocalOrRemoteState() Object
 	RemoteOrLocalState() Object
-}
-
-// ObjectFiles - all files related to the object, when saving.
-type ObjectFiles struct {
-	Record        Record
-	Object        Object
-	Metadata      *filesystem.JsonFile // meta.json
-	Configuration *filesystem.JsonFile // config.json
-	Description   *filesystem.File     // description.md
-	Extra         []*filesystem.File   // extra files
-	ToDelete      []string             // paths to delete, on save
 }
 
 type BranchState struct {

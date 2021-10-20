@@ -1,4 +1,4 @@
-package transformation
+package transformation_test
 
 import (
 	"strings"
@@ -6,18 +6,17 @@ import (
 
 	"github.com/iancoleman/orderedmap"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
 )
 
 func TestLoadTransformationMissingBlockMetaSql(t *testing.T) {
 	t.Parallel()
-	logger, fs, state, objectFiles := createTestFixtures(t)
+	context, config, configRecord := createTestFixtures(t)
+	recipe := createLocalLoadRecipe(config, configRecord)
+	fs := context.Fs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
 
 	// Create files/dirs
@@ -26,14 +25,16 @@ func TestLoadTransformationMissingBlockMetaSql(t *testing.T) {
 	assert.NoError(t, fs.Mkdir(block1))
 
 	// Load, assert
-	err := Load(logger, fs, model.DefaultNaming(), state, objectFiles)
+	err := NewMapper(context).AfterLocalLoad(recipe)
 	assert.Error(t, err)
 	assert.Equal(t, `missing block metadata file "branch/config/blocks/001-block-1/meta.json"`, err.Error())
 }
 
 func TestLoadTransformationMissingCodeMeta(t *testing.T) {
 	t.Parallel()
-	logger, fs, state, objectFiles := createTestFixtures(t)
+	context, config, configRecord := createTestFixtures(t)
+	recipe := createLocalLoadRecipe(config, configRecord)
+	fs := context.Fs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
 
 	// Create files/dirs
@@ -45,7 +46,7 @@ func TestLoadTransformationMissingCodeMeta(t *testing.T) {
 	assert.NoError(t, fs.Mkdir(block1Code1))
 
 	// Load, assert
-	err := Load(logger, fs, model.DefaultNaming(), state, objectFiles)
+	err := NewMapper(context).AfterLocalLoad(recipe)
 	assert.Error(t, err)
 	assert.Equal(t, strings.Join([]string{
 		`- missing code metadata file "branch/config/blocks/001-block-1/001-code-1/meta.json"`,
@@ -55,8 +56,9 @@ func TestLoadTransformationMissingCodeMeta(t *testing.T) {
 
 func TestLoadTransformationSql(t *testing.T) {
 	t.Parallel()
-	logger, fs, state, objectFiles := createTestFixtures(t)
-	config := objectFiles.Object.(*model.Config)
+	context, config, configRecord := createTestFixtures(t)
+	recipe := createLocalLoadRecipe(config, configRecord)
+	fs := context.Fs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
 
 	// Create files/dirs
@@ -84,7 +86,7 @@ func TestLoadTransformationSql(t *testing.T) {
 	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(block3, `meta.json`), `{"name": "003"}`)))
 
 	// Load
-	assert.NoError(t, Load(logger, fs, model.DefaultNaming(), state, objectFiles))
+	assert.NoError(t, NewMapper(context).AfterLocalLoad(recipe))
 
 	// Assert
 	expected := `
@@ -136,8 +138,9 @@ func TestLoadTransformationSql(t *testing.T) {
 
 func TestLoadTransformationPy(t *testing.T) {
 	t.Parallel()
-	logger, fs, state, objectFiles := createTestFixtures(t)
-	config := objectFiles.Object.(*model.Config)
+	context, config, configRecord := createTestFixtures(t)
+	recipe := createLocalLoadRecipe(config, configRecord)
+	fs := context.Fs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
 
 	// Create files/dirs
@@ -165,7 +168,7 @@ func TestLoadTransformationPy(t *testing.T) {
 	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(block3, `meta.json`), `{"name": "003"}`)))
 
 	// Load
-	assert.NoError(t, Load(logger, fs, model.DefaultNaming(), state, objectFiles))
+	assert.NoError(t, NewMapper(context).AfterLocalLoad(recipe))
 
 	// Assert
 	expected := `
@@ -212,42 +215,4 @@ func TestLoadTransformationPy(t *testing.T) {
 	assert.True(t, found)
 	assert.Equal(t, expected, json.MustEncodeString(value, true))
 	assert.Equal(t, expected, json.MustEncodeString(config.Blocks, true))
-}
-
-func createTestFixtures(t *testing.T) (*zap.SugaredLogger, filesystem.Fs, *model.State, *model.ObjectFiles) {
-	t.Helper()
-
-	configKey := model.ConfigKey{
-		ComponentId: "keboola.snowflake-transformation",
-	}
-
-	record := &model.ConfigManifest{
-		ConfigKey: configKey,
-		Paths: model.Paths{
-			PathInProject: model.NewPathInProject(
-				"branch",
-				"config",
-			),
-		},
-	}
-
-	config := &model.Config{
-		ConfigKey: configKey,
-		Content:   utils.NewOrderedMap(),
-	}
-
-	objectFiles := &model.ObjectFiles{
-		Object:        config,
-		Record:        record,
-		Metadata:      filesystem.CreateJsonFile(model.MetaFile, utils.NewOrderedMap()),
-		Configuration: filesystem.CreateJsonFile(model.ConfigFile, utils.NewOrderedMap()),
-		Description:   filesystem.CreateFile(model.DescriptionFile, ``),
-	}
-
-	logger, _ := utils.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger, ".")
-	assert.NoError(t, err)
-
-	state := model.NewState(zap.NewNop().Sugar(), fs, model.NewComponentsMap(nil), model.SortByPath)
-	return logger, fs, state, objectFiles
 }

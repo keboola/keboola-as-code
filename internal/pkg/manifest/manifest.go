@@ -30,7 +30,7 @@ type Content struct {
 	Version int           `json:"version" validate:"required,min=1,max=1"`
 	Project model.Project `json:"project" validate:"required"`
 	SortBy  string        `json:"sortBy" validate:"oneof=id path"`
-	Naming  model.Naming  `json:"naming" validate:"required"`
+	Naming  *model.Naming `json:"naming" validate:"required"`
 	model.Filter
 	Branches []*model.BranchManifest         `json:"branches" validate:"dive"`
 	Configs  []*model.ConfigManifestWithRows `json:"configurations" validate:"dive"`

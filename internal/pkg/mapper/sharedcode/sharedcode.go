@@ -10,6 +10,28 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
+type sharedCodeMapper struct {
+	model.MapperContext
+}
+
+func NewMapper(context model.MapperContext) *sharedCodeMapper {
+	return &sharedCodeMapper{MapperContext: context}
+}
+
+func (m *sharedCodeMapper) isSharedCodeConfigRow(object interface{}) (bool, error) {
+	v, ok := object.(*model.ConfigRow)
+	if !ok {
+		return false, nil
+	}
+
+	component, err := m.State.Components().Get(*v.ComponentKey())
+	if err != nil {
+		return false, err
+	}
+
+	return component.IsSharedCode(), nil
+}
+
 func normalizeContent(m *orderedmap.OrderedMap) {
 	// Add empty line to the end of the code file
 	if raw, found := m.Get(model.ShareCodeContentKey); found {
