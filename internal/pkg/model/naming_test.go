@@ -113,7 +113,7 @@ func TestDefaultNaming(t *testing.T) {
 			},
 		).Path())
 
-	// Variables
+	// VariablesConfig
 	assert.Equal(
 		t,
 		"my-branch/my-config/variables",
@@ -130,7 +130,7 @@ func TestDefaultNaming(t *testing.T) {
 			},
 		).Path())
 
-	// Variables values
+	// VariablesConfig values
 	assert.Equal(
 		t,
 		"my-branch/my-config/variables/values/default-values",
