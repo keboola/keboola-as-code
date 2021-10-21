@@ -122,9 +122,9 @@ func TestLocalLoadModelInvalidTransformation(t *testing.T) {
 	assert.Error(t, err)
 	expectedErr := `
 - config metadata file "config/meta.json" is invalid:
-	- invalid character 'f' looking for beginning of object key string, offset: 2
+  - invalid character 'f' looking for beginning of object key string, offset: 2
 - config file "config/config.json" is invalid:
-	- empty, please use "{}" for an empty JSON
+  - empty, please use "{}" for an empty JSON
 `
 	assert.Equal(t, strings.TrimSpace(expectedErr), err.Error())
 

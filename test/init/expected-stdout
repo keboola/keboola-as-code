@@ -39,7 +39,7 @@ INFO	Init done. Running pull.
 %A
 DEBUG	Project local and remote states have been successfully loaded.
 INFO	Plan for "pull" operation:
-INFO		+  B main
+INFO	  +  B main
 DEBUG	Execution plan is valid.
 DEBUG	Created directory "main"
 DEBUG	Saved "main/meta.json"

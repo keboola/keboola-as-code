@@ -53,7 +53,7 @@ func (e *Error) AppendWithPrefix(prefix string, err error) {
 
 func PrefixError(prefix string, err error) *Error {
 	e := NewMultiError()
-	e.Append(fmt.Errorf("%s:\n%s", prefix, prefixEachLine("\t- ", err.Error())))
+	e.Append(fmt.Errorf("%s:\n%s", prefix, prefixEachLine("  - ", err.Error())))
 	return e
 }
 
