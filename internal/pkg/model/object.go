@@ -142,6 +142,11 @@ type Code struct {
 	Scripts      []string `json:"script"` // scripts, eg. SQL statements
 }
 
+// Schedule - https://app.swaggerhub.com/apis/odinuv/scheduler/1.0.0#/schedules/get_schedules
+type Schedule struct {
+	Id string `json:"id" validate:"required"`
+}
+
 func (b *Branch) ObjectName() string {
 	return b.Name
 }

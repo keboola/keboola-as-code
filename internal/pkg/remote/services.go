@@ -22,7 +22,7 @@ func (a *StorageApi) GetServices() ([]interface{}, error) {
 	return nil, response.Err()
 }
 
-func (a *StorageApi) GetEncryptionApiUrl() (string, error) {
+func (a *StorageApi) getServiceApiUrl(serviceName string) (string, error) {
 	services, err := a.GetServices()
 	if err != nil {
 		return "", err
@@ -30,12 +30,12 @@ func (a *StorageApi) GetEncryptionApiUrl() (string, error) {
 
 	for _, object := range services {
 		service := object.(map[string]interface{})
-		if service["id"] == "encryption" {
+		if service["id"] == serviceName {
 			url := service["url"]
 			return url.(string), nil
 		}
 	}
-	return "", fmt.Errorf("encryption API not found in services from Storage API: \"%s\"", services)
+	return "", fmt.Errorf("API %s not found in services from Storage API: \"%s\"", serviceName, services)
 }
 
 func (a *StorageApi) GetServicesRequest() *client.Request {
@@ -43,4 +43,12 @@ func (a *StorageApi) GetServicesRequest() *client.Request {
 	return a.NewRequest(resty.MethodGet, "/").
 		SetQueryParam("exclude", "components").
 		SetResult(&result)
+}
+
+func (a *StorageApi) GetEncryptionApiUrl() (string, error) {
+	return a.getServiceApiUrl("encryption")
+}
+
+func (a *StorageApi) GetSchedulerApiUrl() (string, error) {
+	return a.getServiceApiUrl("scheduler")
 }

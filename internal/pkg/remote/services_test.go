@@ -26,3 +26,12 @@ func TestErrorGetEncryptionApiUrl(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "no such host")
 }
+
+func TestGetSchedulerApiUrl(t *testing.T) {
+	t.Parallel()
+	logger, _ := utils.NewDebugLogger()
+	api := NewStorageApi("connection.keboola.com", context.Background(), logger, false)
+	apiUrl, _ := api.GetSchedulerApiUrl()
+	assert.NotEmpty(t, apiUrl)
+	assert.Equal(t, apiUrl, "https://scheduler.keboola.com")
+}
