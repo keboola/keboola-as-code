@@ -69,18 +69,18 @@ func (c *Component) IsExcludedFromNewList() bool {
 	return false
 }
 
-// remoteComponentsProvider - interface for Storage API.
-type remoteComponentsProvider interface {
+// RemoteComponentsProvider - interface for Storage API.
+type RemoteComponentsProvider interface {
 	GetComponent(componentId string) (*Component, error)
 }
 
 type ComponentsMap struct {
 	mutex          *sync.Mutex
-	remoteProvider remoteComponentsProvider
+	remoteProvider RemoteComponentsProvider
 	components     map[string]*Component
 }
 
-func NewComponentsMap(remoteProvider remoteComponentsProvider) *ComponentsMap {
+func NewComponentsMap(remoteProvider RemoteComponentsProvider) *ComponentsMap {
 	return &ComponentsMap{
 		mutex:          &sync.Mutex{},
 		remoteProvider: remoteProvider,

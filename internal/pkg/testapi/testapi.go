@@ -44,3 +44,31 @@ func TestStorageApiWithToken(host, tokenStr string, verbose bool) (*remote.Stora
 	}
 	return a.WithToken(token), logs
 }
+
+func NewMockedComponentsProvider() model.RemoteComponentsProvider {
+	api, httpTransport, _ := TestMockedStorageApi()
+
+	// Define mocked components
+	components := []struct{ Id, Type, Name string }{
+		{"ex-generic-v2", "extractor", "Generic"},
+		{"keboola.ex-db-mysql", "extractor", "MySQL"},
+		{"keboola.snowflake-transformation", "transformation", "Snowflake"},
+		{"keboola.python-transformation-v2", "transformation", "Python"},
+		{model.SharedCodeComponentId, "other", "Shared Code"},
+		{model.VariablesComponentId, "other", "Variables"},
+	}
+
+	// Register responses
+	for _, component := range components {
+		responder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
+			"id": component.Id, "type": component.Type, "name": component.Name,
+		})
+		if err != nil {
+			panic(err)
+		}
+		url := `=~/storage/components/` + component.Id
+		httpTransport.RegisterResponder("GET", url, responder)
+	}
+
+	return api
+}

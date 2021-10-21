@@ -1,40 +1,39 @@
 package sharedcode
 
 import (
-	"go.uber.org/zap"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-type files = model.ObjectFiles
-
 type loader struct {
-	*files
-	fs        filesystem.Fs
-	logger    *zap.SugaredLogger
-	naming    model.Naming
-	state     *model.State
+	model.MapperContext
+	*model.LocalLoadRecipe
 	config    *model.Config
 	configRow *model.ConfigRow
 	errors    *utils.Error
 }
 
-// Load - load shared code from filesystem to target config.
-func Load(logger *zap.SugaredLogger, fs filesystem.Fs, naming model.Naming, state *model.State, files *model.ObjectFiles) error {
-	configRow := files.Object.(*model.ConfigRow)
-	config := state.Get(configRow.ConfigKey()).LocalState().(*model.Config)
-	l := &loader{
-		fs:        fs,
-		files:     files,
-		logger:    logger,
-		naming:    naming,
-		state:     state,
-		config:    config,
-		configRow: configRow,
-		errors:    utils.NewMultiError(),
+// AfterLocalLoad - load shared code from filesystem to target config.
+func (m *sharedCodeMapper) AfterLocalLoad(recipe *model.LocalLoadRecipe) error {
+	// Only for shared code config row
+	if ok, err := m.isSharedCodeConfigRow(recipe.Object); err != nil {
+		return err
+	} else if !ok {
+		return nil
 	}
+
+	// Create loader
+	configRow := recipe.Object.(*model.ConfigRow)
+	config := m.State.Get(configRow.ConfigKey()).LocalState().(*model.Config)
+	l := &loader{
+		MapperContext:   m.MapperContext,
+		LocalLoadRecipe: recipe,
+		config:          config,
+		configRow:       configRow,
+		errors:          utils.NewMultiError(),
+	}
+
+	// Load
 	return l.load()
 }
 
@@ -46,8 +45,8 @@ func (l *loader) load() error {
 	}
 
 	// Load file
-	codeFilePath := l.naming.SharedCodeFilePath(l.Record.Path(), targetComponentId)
-	codeFile, err := l.fs.ReadFile(codeFilePath, `shared code`)
+	codeFilePath := l.Naming.SharedCodeFilePath(l.Record.Path(), targetComponentId)
+	codeFile, err := l.Fs.ReadFile(codeFilePath, `shared code`)
 	if err != nil {
 		return err
 	}

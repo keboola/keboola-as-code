@@ -1,4 +1,4 @@
-package sharedcode
+package sharedcode_test
 
 import (
 	"testing"
@@ -9,18 +9,19 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // nolint: unparam
-func createTestFixtures(t *testing.T, targetComponentId string) (*zap.SugaredLogger, filesystem.Fs, *model.State, *model.ConfigRow, *model.ObjectFiles) {
+func createTestFixtures(t *testing.T, targetComponentId string) (model.MapperContext, *model.ConfigRow, *model.ConfigRowManifest) {
 	t.Helper()
 
 	logger, _ := utils.NewDebugLogger()
 	fs, err := aferofs.NewMemoryFs(logger, ".")
 	assert.NoError(t, err)
 
-	state := model.NewState(zap.NewNop().Sugar(), fs, model.NewComponentsMap(nil), model.SortByPath)
+	state := model.NewState(zap.NewNop().Sugar(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
 
 	// Component
 	state.Components().Set(&model.Component{
@@ -94,14 +95,26 @@ func createTestFixtures(t *testing.T, targetComponentId string) (*zap.SugaredLog
 	rowState.SetLocalState(row)
 	rowState.SetRemoteState(row)
 
-	// Files
-	objectFiles := &model.ObjectFiles{
+	context := model.MapperContext{Logger: logger, Fs: fs, Naming: model.DefaultNaming(), State: state}
+	return context, row, rowRecord
+}
+
+func createLocalLoadRecipe(row *model.ConfigRow, rowRecord *model.ConfigRowManifest) *model.LocalLoadRecipe {
+	return &model.LocalLoadRecipe{
 		Object:        row,
 		Record:        rowRecord,
 		Metadata:      filesystem.CreateJsonFile(model.MetaFile, utils.NewOrderedMap()),
 		Configuration: filesystem.CreateJsonFile(model.ConfigFile, utils.NewOrderedMap()),
 		Description:   filesystem.CreateFile(model.DescriptionFile, ``),
 	}
+}
 
-	return logger, fs, state, row, objectFiles
+func createLocalSaveRecipe(row *model.ConfigRow, rowRecord *model.ConfigRowManifest) *model.LocalSaveRecipe {
+	return &model.LocalSaveRecipe{
+		Object:        row,
+		Record:        rowRecord,
+		Metadata:      filesystem.CreateJsonFile(model.MetaFile, utils.NewOrderedMap()),
+		Configuration: filesystem.CreateJsonFile(model.ConfigFile, utils.NewOrderedMap()),
+		Description:   filesystem.CreateFile(model.DescriptionFile, ``),
+	}
 }

@@ -1,4 +1,4 @@
-package transformation
+package transformation_test
 
 import (
 	"testing"
@@ -7,31 +7,35 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func TestSaveTransformationEmpty(t *testing.T) {
 	t.Parallel()
-	logger, fs, state, objectFiles := createTestFixtures(t)
+	context, config, configRecord := createTestFixtures(t)
+	recipe := createLocalSaveRecipe(config, configRecord)
+	fs := context.Fs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
 	assert.NoError(t, fs.Mkdir(blocksDir))
 
 	// Save
-	err := Save(logger, fs, model.DefaultNaming(), state, objectFiles)
+	err := NewMapper(context).BeforeLocalSave(recipe)
 	assert.NoError(t, err)
-	configContent := json.MustEncodeString(objectFiles.Configuration.Content, false)
+	configContent := json.MustEncodeString(recipe.Configuration.Content, false)
 	assert.Equal(t, `{}`, configContent)
 }
 
 func TestSaveTransformation(t *testing.T) {
 	t.Parallel()
-	logger, fs, state, objectFiles := createTestFixtures(t)
+	context, config, configRecord := createTestFixtures(t)
+	recipe := createLocalSaveRecipe(config, configRecord)
+	fs := context.Fs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
 	assert.NoError(t, fs.Mkdir(blocksDir))
 
 	// Prepare
-	objectFiles.Configuration.Content.Set(`foo`, `bar`)
+	recipe.Configuration.Content.Set(`foo`, `bar`)
 	parameters := *utils.NewOrderedMap()
 	parameters.Set(`blocks`, []map[string]interface{}{
 		{
@@ -62,14 +66,13 @@ func TestSaveTransformation(t *testing.T) {
 			},
 		},
 	})
-	objectFiles.Configuration.Content.Set(`parameters`, parameters)
+	recipe.Configuration.Content.Set(`parameters`, parameters)
 
 	// Save
-	err := Save(logger, fs, model.DefaultNaming(), state, objectFiles)
-	assert.NoError(t, err)
+	assert.NoError(t, NewMapper(context).BeforeLocalSave(recipe))
 
 	// Blocks are not part of the config.json
-	configContent := json.MustEncodeString(objectFiles.Configuration.Content, false)
+	configContent := json.MustEncodeString(recipe.Configuration.Content, false)
 	assert.Equal(t, `{"foo":"bar","parameters":{}}`, configContent)
 
 	// Check generated files
@@ -82,5 +85,5 @@ func TestSaveTransformation(t *testing.T) {
 		filesystem.CreateFile(blocksDir+`/002-block-2/meta.json`, "{\n  \"name\": \"block2\"\n}\n").SetDescription(`block metadata`),
 		filesystem.CreateFile(blocksDir+`/002-block-2/001-code-3/meta.json`, "{\n  \"name\": \"code3\"\n}\n").SetDescription(`code metadata`),
 		filesystem.CreateFile(blocksDir+`/002-block-2/001-code-3/code.sql`, "\n").SetDescription(`code`),
-	}, objectFiles.Extra)
+	}, recipe.ExtraFiles)
 }

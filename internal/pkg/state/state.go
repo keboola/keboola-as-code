@@ -103,7 +103,7 @@ func (s *State) Manifest() *manifest.Manifest {
 	return s.manifest
 }
 
-func (s *State) Naming() model.Naming {
+func (s *State) Naming() *model.Naming {
 	return s.manifest.Naming
 }
 

@@ -3,27 +3,22 @@ package local
 import (
 	"fmt"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
-type files = model.ObjectFiles
-
 type modelLoader struct {
 	*Manager
-	*files
-	mapper *mapper.Mapper
+	*model.LocalLoadRecipe
 	errors *utils.Error
 }
 
 func (m *Manager) LoadObject(record model.Record, object model.Object) (found bool, err error) {
 	l := &modelLoader{
-		Manager: m,
-		files:   &model.ObjectFiles{Object: object, Record: record},
-		mapper:  mapper.New(m.state, m.logger, m.fs, m.Naming()),
-		errors:  utils.NewMultiError(),
+		Manager:         m,
+		LocalLoadRecipe: &model.LocalLoadRecipe{Object: object, Record: record},
+		errors:          utils.NewMultiError(),
 	}
 	return l.load()
 }
@@ -93,7 +88,7 @@ func (l *modelLoader) loadDescriptionFile() {
 }
 
 func (l *modelLoader) transform() {
-	if err := l.mapper.AfterLoad(l.files); err != nil {
+	if err := l.mapper.AfterLocalLoad(l.LocalLoadRecipe); err != nil {
 		l.errors.Append(err)
 	}
 }

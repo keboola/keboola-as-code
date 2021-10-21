@@ -9,103 +9,86 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-type state = model.State
+type BeforeLocalSaveMapper interface {
+	BeforeLocalSave(recipe *model.LocalSaveRecipe) error
+}
+
+type AfterLocalLoadMapper interface {
+	AfterLocalLoad(recipe *model.LocalLoadRecipe) error
+}
+
+type BeforeRemoteSaveMapper interface {
+	BeforeRemoteSave(recipe *model.RemoteSaveRecipe) error
+}
+
+type AfterRemoteLoadMapper interface {
+	AfterRemoteLoad(recipe *model.RemoteLoadRecipe) error
+}
 
 type Mapper struct {
-	*state
-	logger *zap.SugaredLogger
-	fs     filesystem.Fs
-	naming model.Naming
+	context model.MapperContext
+	mappers []interface{} // implement part of the interfaces above
 }
 
-func New(state *model.State, logger *zap.SugaredLogger, fs filesystem.Fs, naming model.Naming) *Mapper {
-	return &Mapper{state: state, logger: logger, fs: fs, naming: naming}
-}
-
-func (m *Mapper) BeforeSave(files *model.ObjectFiles) error {
-	// Save transformation
-	if ok, err := m.isTransformationConfig(files.Object); err != nil {
-		return err
-	} else if ok {
-		return transformation.Save(
-			m.logger,
-			m.fs,
-			m.naming,
-			m.state,
-			files,
-		)
+func New(logger *zap.SugaredLogger, fs filesystem.Fs, naming *model.Naming, state *model.State) *Mapper {
+	m := &Mapper{
+		context: model.MapperContext{Logger: logger, Fs: fs, Naming: naming, State: state},
 	}
 
-	// Save shared code
-	if ok, err := m.isSharedCodeConfigRow(files.Object); err != nil {
-		return err
-	} else if ok {
-		return sharedcode.Save(
-			m.logger,
-			m.fs,
-			m.naming,
-			m.state,
-			files,
-		)
+	// Mappers
+	m.mappers = append(
+		m.mappers,
+		sharedcode.NewMapper(m.context),
+		transformation.NewMapper(m.context),
+	)
+
+	return m
+}
+
+func (m *Mapper) BeforeLocalSave(recipe *model.LocalSaveRecipe) error {
+	for _, mapper := range m.mappers {
+		if mapper, ok := mapper.(BeforeLocalSaveMapper); ok {
+			if err := mapper.BeforeLocalSave(recipe); err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil
 }
 
-func (m *Mapper) AfterLoad(files *model.ObjectFiles) error {
-	// Load transformation
-	if ok, err := m.isTransformationConfig(files.Object); ok {
-		return transformation.Load(
-			m.logger,
-			m.fs,
-			m.naming,
-			m.state,
-			files,
-		)
-	} else if err != nil {
-		return err
-	}
-
-	// Load shared code
-	if ok, err := m.isSharedCodeConfigRow(files.Object); ok {
-		return sharedcode.Load(
-			m.logger,
-			m.fs,
-			m.naming,
-			m.state,
-			files,
-		)
-	} else if err != nil {
-		return err
+func (m *Mapper) AfterLocalLoad(recipe *model.LocalLoadRecipe) error {
+	for _, mapper := range m.mappers {
+		if mapper, ok := mapper.(AfterLocalLoadMapper); ok {
+			if err := mapper.AfterLocalLoad(recipe); err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil
 }
 
-func (m *Mapper) isTransformationConfig(object interface{}) (bool, error) {
-	v, ok := object.(*model.Config)
-	if !ok {
-		return false, nil
+func (m *Mapper) BeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
+	for _, mapper := range m.mappers {
+		if mapper, ok := mapper.(BeforeRemoteSaveMapper); ok {
+			if err := mapper.BeforeRemoteSave(recipe); err != nil {
+				return err
+			}
+		}
 	}
 
-	component, err := m.Components().Get(*v.ComponentKey())
-	if err != nil {
-		return false, err
-	}
-
-	return component.IsTransformation(), nil
+	return nil
 }
 
-func (m *Mapper) isSharedCodeConfigRow(object interface{}) (bool, error) {
-	v, ok := object.(*model.ConfigRow)
-	if !ok {
-		return false, nil
+func (m *Mapper) AfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
+	for _, mapper := range m.mappers {
+		if mapper, ok := mapper.(AfterRemoteLoadMapper); ok {
+			if err := mapper.AfterRemoteLoad(recipe); err != nil {
+				return err
+			}
+		}
 	}
 
-	component, err := m.Components().Get(*v.ComponentKey())
-	if err != nil {
-		return false, err
-	}
-
-	return component.IsSharedCode(), nil
+	return nil
 }
