@@ -181,6 +181,21 @@ func TestPathsStateComplex(t *testing.T) {
 	}, paths.UntrackedPaths())
 }
 
+func TestPathsStateClone(t *testing.T) {
+	t.Parallel()
+
+	paths, err := loadPathsState(t, "complex")
+	assert.NotNil(t, paths)
+	assert.NoError(t, err)
+
+	clone := paths.Clone()
+	assert.NotSame(t, paths, clone)
+	assert.Equal(t, paths, clone)
+
+	paths.MarkTracked(`123-branch/description.md`)
+	assert.NotEqual(t, paths, clone)
+}
+
 func loadPathsState(t *testing.T, fixture string) (*PathsState, error) {
 	t.Helper()
 	_, testFile, _, _ := runtime.Caller(0)
