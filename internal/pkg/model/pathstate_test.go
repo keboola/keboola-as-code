@@ -179,6 +179,52 @@ func TestPathsStateComplex(t *testing.T) {
 		"main/extractor/ex-generic-v2/456-todos/meta.json",
 		"main/meta.json",
 	}, paths.UntrackedPaths())
+
+	// Mark tracked sub paths
+	paths.MarkSubPathsTracked("123-branch/extractor/keboola.ex-db-mysql/896-tables/rows")
+	assert.Equal(t, []string{
+		"123-branch",
+		"123-branch/extractor",
+		"123-branch/extractor/keboola.ex-db-mysql",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users/config.json",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users/description.md",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/34-test-view",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/34-test-view/config.json",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/34-test-view/description.md",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/34-test-view/meta.json",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/56-disabled",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/56-disabled/config.json",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/56-disabled/description.md",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/56-disabled/meta.json",
+		"main",
+		"main/extractor",
+		"main/extractor/ex-generic-v2",
+	}, paths.TrackedPaths())
+	assert.Equal(t, []string{
+		"123-branch/description.md",
+		"123-branch/extractor/ex-generic-v2",
+		"123-branch/extractor/ex-generic-v2/456-todos",
+		"123-branch/extractor/ex-generic-v2/456-todos/config.json",
+		"123-branch/extractor/ex-generic-v2/456-todos/description.md",
+		"123-branch/extractor/ex-generic-v2/456-todos/meta.json",
+		"123-branch/extractor/ex-generic-v2/456-todos/untracked1",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables/config.json",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables/description.md",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables/meta.json",
+		"123-branch/extractor/keboola.ex-db-mysql/untrackedDir",
+		"123-branch/extractor/keboola.ex-db-mysql/untrackedDir/untracked2",
+		"123-branch/meta.json",
+		"main/description.md",
+		"main/extractor/ex-generic-v2/456-todos",
+		"main/extractor/ex-generic-v2/456-todos/config.json",
+		"main/extractor/ex-generic-v2/456-todos/description.md",
+		"main/extractor/ex-generic-v2/456-todos/meta.json",
+		"main/meta.json",
+	}, paths.UntrackedPaths())
 }
 
 func TestPathsStateClone(t *testing.T) {
@@ -194,6 +240,60 @@ func TestPathsStateClone(t *testing.T) {
 
 	paths.MarkTracked(`123-branch/description.md`)
 	assert.NotEqual(t, paths, clone)
+}
+
+func TestPathsStateStateMethods(t *testing.T) {
+	t.Parallel()
+	paths, err := loadPathsState(t, "complex")
+	assert.NotNil(t, paths)
+	assert.NoError(t, err)
+
+	path := `123-branch/extractor/ex-generic-v2`
+	assert.Equal(t, paths.State(path), Untracked)
+	assert.False(t, paths.IsTracked(path))
+	assert.True(t, paths.IsUntracked(path))
+
+	paths.MarkTracked(path)
+	assert.Equal(t, paths.State(path), Tracked)
+	assert.True(t, paths.IsTracked(path))
+	assert.False(t, paths.IsUntracked(path))
+}
+
+func TestPathsStateUntrackedDirs(t *testing.T) {
+	t.Parallel()
+	paths, err := loadPathsState(t, "complex")
+	assert.NotNil(t, paths)
+	assert.NoError(t, err)
+
+	assert.Equal(t, []string{
+		"123-branch",
+		"123-branch/extractor",
+		"123-branch/extractor/ex-generic-v2",
+		"123-branch/extractor/ex-generic-v2/456-todos",
+		"123-branch/extractor/keboola.ex-db-mysql",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/34-test-view",
+		"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/56-disabled",
+		"123-branch/extractor/keboola.ex-db-mysql/untrackedDir",
+		"main",
+		"main/extractor",
+		"main/extractor/ex-generic-v2",
+		"main/extractor/ex-generic-v2/456-todos",
+	}, paths.UntrackedDirs())
+}
+
+func TestPathsStateUntrackedDirsFrom(t *testing.T) {
+	t.Parallel()
+	paths, err := loadPathsState(t, "complex")
+	assert.NotNil(t, paths)
+	assert.NoError(t, err)
+
+	assert.Equal(t, []string{
+		"main/extractor/ex-generic-v2",
+		"main/extractor/ex-generic-v2/456-todos",
+	}, paths.UntrackedDirsFrom(`main/extractor`))
 }
 
 func loadPathsState(t *testing.T, fixture string) (*PathsState, error) {
