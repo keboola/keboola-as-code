@@ -144,7 +144,7 @@ type Code struct {
 
 // Schedule - https://app.swaggerhub.com/apis/odinuv/scheduler/1.0.0#/schedules/get_schedules
 type Schedule struct {
-	Id string `json:"id" validate:"required" diff:"true" metaFile:"true"`
+	Id string `json:"id" validate:"required"`
 }
 
 func (b *Branch) ObjectName() string {

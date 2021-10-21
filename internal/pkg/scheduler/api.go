@@ -36,8 +36,7 @@ func NewSchedulerApi(hostUrl string, token string, ctx context.Context, logger *
 	c := client.NewClient(ctx, logger, verbose).WithHostUrl(hostUrl)
 	c.SetHeader("X-StorageApi-Token", token)
 	c.SetError(&Error{})
-	api := &Api{client: c, logger: logger, hostUrl: hostUrl}
-	return api
+	return &Api{client: c, logger: logger, hostUrl: hostUrl}
 }
 
 func (a *Api) NewPool() *client.Pool {

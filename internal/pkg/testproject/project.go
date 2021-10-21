@@ -2,9 +2,12 @@
 package testproject
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -132,7 +135,38 @@ func (p *Project) Clear() {
 		}
 	}
 
+	p.clearSchedules()
+
 	p.logf("Test project cleared | %s", time.Since(startTime))
+}
+
+// Clear deletes all schedules.
+func (p *Project) clearSchedules() {
+	logger, _ := utils.NewDebugLogger()
+	hostName, _ := p.api.GetSchedulerApiUrl()
+	schedulerApi := scheduler.NewSchedulerApi(
+		hostName,
+		p.api.Token().Token,
+		context.Background(),
+		logger,
+		true,
+	)
+
+	pool := schedulerApi.NewPool()
+
+	// Load schedules
+	schedules, err := schedulerApi.ListSchedules()
+	if err != nil {
+		assert.FailNow(p.t, fmt.Sprintf("cannot load schedules: %s", err))
+	}
+
+	// Delete all schedules
+	for _, schedule := range schedules {
+		pool.Request(schedulerApi.DeleteScheduleRequest(schedule.Id)).Send()
+	}
+	if err := pool.StartAndWait(); err != nil {
+		assert.FailNow(p.t, fmt.Sprintf("cannot delete configs: %s", err))
+	}
 }
 
 func (p *Project) SetState(stateFilePath string) {

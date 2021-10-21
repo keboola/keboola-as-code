@@ -86,10 +86,10 @@ func TestSchedulerApiCalls(t *testing.T) {
 
 	api := scheduler.NewSchedulerApi(hostName, token, context.Background(), logger, true)
 
-	// List
+	// List should return no schedule
 	schedules, err := api.ListSchedules()
 	assert.NoError(t, err)
-	schedulesLength := len(schedules)
+	assert.Len(t, schedules, 0)
 
 	// Activate
 	schedule, err := api.ActivateSchedule(resConfigScheduler.Id, "")
@@ -97,19 +97,19 @@ func TestSchedulerApiCalls(t *testing.T) {
 	assert.NotNil(t, schedule)
 	assert.NotEmpty(t, schedule.Id)
 
-	// List should return one more schedule
+	// List should return one schedule
 	schedules, err = api.ListSchedules()
 	assert.NoError(t, err)
-	assert.Len(t, schedules, schedulesLength+1)
+	assert.Len(t, schedules, 1)
 
 	// Delete
 	deleteResponseErr := api.DeleteSchedule(schedule.Id)
 	assert.NoError(t, deleteResponseErr)
 
-	// List should return one less schedule
+	// List should return no schedule
 	schedules, err = api.ListSchedules()
 	assert.NoError(t, err)
-	assert.Len(t, schedules, schedulesLength)
+	assert.Len(t, schedules, 0)
 
 	// Activate again
 	schedule, err = api.ActivateSchedule(resConfigScheduler.Id, "")
@@ -117,17 +117,17 @@ func TestSchedulerApiCalls(t *testing.T) {
 	assert.NotNil(t, schedule)
 	assert.NotEmpty(t, schedule.Id)
 
-	// List should return one more schedule
+	// List should return one schedule
 	schedules, err = api.ListSchedules()
 	assert.NoError(t, err)
-	assert.Len(t, schedules, schedulesLength+1)
+	assert.Len(t, schedules, 1)
 
 	// Delete for configuration
 	deleteResponseErr = api.DeleteSchedulesForConfiguration(resConfigScheduler.Id)
 	assert.NoError(t, deleteResponseErr)
 
-	// List should return one less schedule
+	// List should return no schedule
 	schedules, err = api.ListSchedules()
 	assert.NoError(t, err)
-	assert.Len(t, schedules, schedulesLength)
+	assert.Len(t, schedules, 0)
 }
