@@ -37,6 +37,27 @@ func NewPathsState(fs filesystem.Fs) (*PathsState, error) {
 	return f, err
 }
 
+func (f *PathsState) Clone() *PathsState {
+	n := &PathsState{
+		fs:      f.fs,
+		all:     make(map[string]bool),
+		tracked: make(map[string]bool),
+		isFile:  make(map[string]bool),
+	}
+
+	// Copy all fields
+	for k, v := range f.all {
+		n.all[k] = v
+	}
+	for k, v := range f.tracked {
+		n.tracked[k] = v
+	}
+	for k, v := range f.isFile {
+		n.isFile[k] = v
+	}
+	return n
+}
+
 // State returns state of path.
 func (f *PathsState) State(path string) PathState {
 	if _, ok := f.tracked[path]; ok {
