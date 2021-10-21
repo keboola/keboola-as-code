@@ -24,7 +24,7 @@ func (m *sharedCodeMapper) AfterLocalLoad(recipe *model.LocalLoadRecipe) error {
 
 	// Create loader
 	configRow := recipe.Object.(*model.ConfigRow)
-	config := m.State.Get(configRow.ConfigKey()).LocalState().(*model.Config)
+	config := m.State.MustGet(configRow.ConfigKey()).LocalState().(*model.Config)
 	l := &loader{
 		MapperContext:   m.MapperContext,
 		LocalLoadRecipe: recipe,

@@ -47,13 +47,13 @@ func parentExists(objectState model.ObjectState, currentState *state.State) bool
 		return true
 	case *model.ConfigState:
 		config := v.Remote
-		branch := currentState.Get(*config.BranchKey()).(*model.BranchState)
-		return branch.HasLocalState()
+		branch, branchFound := currentState.Get(*config.BranchKey())
+		return branchFound && branch.HasLocalState()
 	case *model.ConfigRowState:
 		row := v.Remote
-		config := currentState.Get(*row.ConfigKey()).(*model.ConfigState)
-		branch := currentState.Get(*config.BranchKey()).(*model.BranchState)
-		return config.HasLocalState() && branch.HasLocalState()
+		config, configFound := currentState.Get(*row.ConfigKey())
+		branch, branchFound := currentState.Get(*row.BranchKey())
+		return configFound && config.HasLocalState() && branchFound && branch.HasLocalState()
 
 	default:
 		panic(fmt.Errorf(`unexpected type "%T"`, objectState))

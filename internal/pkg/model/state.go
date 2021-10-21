@@ -199,11 +199,19 @@ func (s *State) SearchForConfigRow(str string, config ConfigKey) (*ConfigRowStat
 	}
 }
 
-func (s *State) Get(key Key) ObjectState {
+func (s *State) Get(key Key) (ObjectState, bool) {
 	if v, ok := s.objects.Get(key.String()); ok {
-		return v.(ObjectState)
+		return v.(ObjectState), true
 	}
-	panic(fmt.Errorf(`%s not found`, key.Desc()))
+	return nil, false
+}
+
+func (s *State) MustGet(key Key) ObjectState {
+	state, found := s.Get(key)
+	if !found {
+		panic(fmt.Errorf(`%s not found`, key.Desc()))
+	}
+	return state
 }
 
 func (s *State) GetOrCreate(key Key) (ObjectState, error) {

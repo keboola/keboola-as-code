@@ -161,7 +161,7 @@ func TestPersistNewConfig(t *testing.T) {
 				}),
 			},
 		},
-		projectState.Get(configKey),
+		projectState.MustGet(configKey),
 	)
 }
 
@@ -310,7 +310,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 				}),
 			},
 		},
-		projectState.Get(*configKey),
+		projectState.MustGet(*configKey),
 	)
 	assert.Equal(
 		t,
@@ -342,7 +342,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 				}),
 			},
 		},
-		projectState.Get(rowKey),
+		projectState.MustGet(rowKey),
 	)
 }
 

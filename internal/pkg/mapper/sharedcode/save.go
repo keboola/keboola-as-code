@@ -26,7 +26,7 @@ func (m *sharedCodeMapper) BeforeLocalSave(recipe *model.LocalSaveRecipe) error 
 
 	// Create writer
 	configRow := recipe.Object.(*model.ConfigRow)
-	config := m.State.Get(configRow.ConfigKey()).RemoteOrLocalState().(*model.Config)
+	config := m.State.MustGet(configRow.ConfigKey()).RemoteOrLocalState().(*model.Config)
 	w := &writer{
 		MapperContext:   m.MapperContext,
 		LocalSaveRecipe: recipe,

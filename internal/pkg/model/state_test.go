@@ -157,14 +157,30 @@ func TestStateSearchForConfigRow(t *testing.T) {
 func TestStateGet(t *testing.T) {
 	t.Parallel()
 	s := newTestState(t)
-	assert.Equal(t, "Foo Bar Branch", s.Get(BranchKey{Id: 567}).ObjectName())
+	state, found := s.Get(BranchKey{Id: 567})
+	assert.NotNil(t, state)
+	assert.True(t, found)
 }
 
 func TestStateGetNotFound(t *testing.T) {
 	t.Parallel()
 	s := newTestState(t)
+	state, found := s.Get(BranchKey{Id: 111})
+	assert.Nil(t, state)
+	assert.False(t, found)
+}
+
+func TestStateMustGet(t *testing.T) {
+	t.Parallel()
+	s := newTestState(t)
+	assert.Equal(t, "Foo Bar Branch", s.MustGet(BranchKey{Id: 567}).ObjectName())
+}
+
+func TestStateMustGetNotFound(t *testing.T) {
+	t.Parallel()
+	s := newTestState(t)
 	assert.PanicsWithError(t, `branch "111" not found`, func() {
-		s.Get(BranchKey{Id: 111})
+		s.MustGet(BranchKey{Id: 111})
 	})
 }
 
