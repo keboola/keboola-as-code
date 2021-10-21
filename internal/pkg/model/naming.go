@@ -158,27 +158,29 @@ func (n Naming) ConfigPath(parentPath string, component *Component, config *Conf
 	if err != nil {
 		panic(err)
 	}
+	parent := parentKey.Kind()
 
 	// Shared code is handled differently
 	var template, targetComponentId string
-	if parentKey.Kind().IsBranch() {
-		if component.IsSharedCode() {
-			// Get target component ID for shared code config
-			if config.Content == nil {
-				panic(fmt.Errorf(`shared code config "%s" must have set key "%s"`, config.Desc(), ShareCodeTargetComponentKey))
-			}
-			targetComponentIdRaw, found := config.Content.Get(ShareCodeTargetComponentKey)
-			if !found {
-				panic(fmt.Errorf(`shared code config "%s" must have set key "%s"`, config.Desc(), ShareCodeTargetComponentKey))
-			}
-			// Shared code
-			template = string(n.SharedCodeConfig)
-			targetComponentId = cast.ToString(targetComponentIdRaw)
-		} else {
-			// Ordinary config
-			template = string(n.Config)
+	switch {
+	case parent.IsBranch() && component.IsSharedCode():
+		// Get target component ID for shared code config
+		if config.Content == nil {
+			panic(fmt.Errorf(`shared code config "%s" must have set key "%s"`, config.Desc(), ShareCodeTargetComponentKey))
 		}
-	} else {
+		targetComponentIdRaw, found := config.Content.Get(ShareCodeTargetComponentKey)
+		if !found {
+			panic(fmt.Errorf(`shared code config "%s" must have set key "%s"`, config.Desc(), ShareCodeTargetComponentKey))
+		}
+		// Shared code
+		template = string(n.SharedCodeConfig)
+		targetComponentId = cast.ToString(targetComponentIdRaw)
+	case parent.IsConfig() && component.IsVariables():
+		template = string(n.VariablesConfig)
+	case parent.IsBranch():
+		// Ordinary config
+		template = string(n.Config)
+	default:
 		panic(fmt.Errorf(`unexpected config parent type "%s"`, parentKey.Kind()))
 	}
 
@@ -212,9 +214,12 @@ func (n Naming) ConfigRowPath(parentPath string, component *Component, row *Conf
 
 	// Shared code is handled differently
 	var template string
-	if component.IsSharedCode() {
+	switch {
+	case component.IsSharedCode():
 		template = string(n.SharedCodeConfigRow)
-	} else {
+	case component.IsVariables():
+		template = string(n.VariablesValuesRow)
+	default:
 		template = string(n.ConfigRow)
 	}
 
@@ -305,38 +310,48 @@ func (n Naming) CodeFileExt(componentId string) string {
 	}
 }
 
-func (n Naming) VariablesPath(parentPath string, config *Config) PathInProject {
-	if len(parentPath) == 0 {
-		panic(fmt.Errorf(`variables "%s" parent path cannot be empty"`, config))
+func (n Naming) MatchConfigPath(parent Kind, path PathInProject) (componentId string, err error) {
+	if parent.IsBranch() {
+		// Shared code
+		if matched, _ := n.SharedCodeConfig.MatchPath(path.ObjectPath); matched {
+			return SharedCodeComponentId, nil
+		}
+
+		// Ordinary config
+		if matched, matches := n.Config.MatchPath(path.ObjectPath); matched {
+			// Get component ID
+			componentId, ok := matches["component_id"]
+			if !ok || componentId == "" {
+				return "", fmt.Errorf(`config's component id cannot be determined, path: "%s", path template: "%s"`, path.Path(), n.Config)
+			}
+			return componentId, nil
+		}
 	}
 
-	if config.ComponentId != VariablesComponentId {
-		panic(fmt.Errorf(`variables must be from "%s" component, given "%s"`, VariablesComponentId, config.ComponentId))
+	// Variables
+	if parent.IsConfig() {
+		if matched, _ := n.VariablesConfig.MatchPath(path.ObjectPath); matched {
+			return VariablesComponentId, nil
+		}
 	}
 
-	p := PathInProject{}
-	p.SetParentPath(parentPath)
-	p.ObjectPath = utils.ReplacePlaceholders(string(n.VariablesConfig), map[string]interface{}{
-		"config_id":   config.Id,
-		"config_name": utils.NormalizeName(config.Name),
-	})
-	return n.ensureUniquePath(config.Key(), p)
+	return "", nil
 }
 
-func (n Naming) VariablesValuesPath(parentPath string, row *ConfigRow) PathInProject {
-	if len(parentPath) == 0 {
-		panic(fmt.Errorf(`variables values "%s" parent path cannot be empty"`, row))
+func (n Naming) MatchConfigRowPath(component *Component, path PathInProject) bool {
+	// Shared code
+	if component.IsSharedCode() {
+		matched, _ := n.SharedCodeConfigRow.MatchPath(path.ObjectPath)
+		return matched
 	}
 
-	if row.ComponentId != VariablesComponentId {
-		panic(fmt.Errorf(`variables values must be from "%s" component, given "%s"`, VariablesComponentId, row.ComponentId))
+	// Variables
+	if component.IsVariables() {
+		matched, _ := n.VariablesValuesRow.MatchPath(path.ObjectPath)
+		return matched
 	}
 
-	p := PathInProject{}
-	p.SetParentPath(parentPath)
-	p.ObjectPath = utils.ReplacePlaceholders(string(n.VariablesValuesRow), map[string]interface{}{
-		"config_row_id":   row.Id,
-		"config_row_name": utils.NormalizeName(row.Name),
-	})
-	return n.ensureUniquePath(row.Key(), p)
+	// Ordinary config row
+	matched, _ := n.ConfigRow.MatchPath(path.ObjectPath)
+	return matched
 }

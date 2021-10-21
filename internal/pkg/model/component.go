@@ -43,6 +43,10 @@ func (c *Component) IsSharedCode() bool {
 	return c.Id == SharedCodeComponentId
 }
 
+func (c *Component) IsVariables() bool {
+	return c.Id == VariablesComponentId
+}
+
 func (c *Component) IsCodePattern() bool {
 	return c.Type == ComponentTypeCodePattern
 }

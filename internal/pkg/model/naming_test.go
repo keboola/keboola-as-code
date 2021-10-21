@@ -117,13 +117,25 @@ func TestDefaultNaming(t *testing.T) {
 	assert.Equal(
 		t,
 		"my-branch/my-config/variables",
-		n.VariablesPath(
+		n.ConfigPath(
 			"my-branch/my-config",
+			&Component{
+				ComponentKey: ComponentKey{Id: VariablesComponentId},
+			},
 			&Config{
 				ConfigKey: ConfigKey{
 					BranchId:    1234,
 					ComponentId: VariablesComponentId,
 					Id:          "456",
+				},
+				Relations: Relations{
+					&VariablesForRelation{
+						RelationType: VariablesForRelType,
+						Target: ConfigKeySameBranch{
+							Id:          `4567`,
+							ComponentId: `foo.bar`,
+						},
+					},
 				},
 				Name:    "Variables",
 				Content: utils.NewOrderedMap(),
@@ -134,8 +146,11 @@ func TestDefaultNaming(t *testing.T) {
 	assert.Equal(
 		t,
 		"my-branch/my-config/variables/values/default-values",
-		n.VariablesValuesPath(
+		n.ConfigRowPath(
 			"my-branch/my-config/variables",
+			&Component{
+				ComponentKey: ComponentKey{Id: VariablesComponentId},
+			},
 			&ConfigRow{
 				ConfigRowKey: ConfigRowKey{
 					BranchId:    1234,
@@ -187,7 +202,6 @@ func TestNamingAttachDetach(t *testing.T) {
 
 func TestUniquePathSameObjectType(t *testing.T) {
 	t.Parallel()
-	t.Skipped()
 	n := DefaultNaming()
 	n.Branch = "{branch_name}"
 	n.Config = "{component_type}/{component_id}/{config_name}"
@@ -213,7 +227,6 @@ func TestUniquePathSameObjectType(t *testing.T) {
 
 func TestUniquePathDifferentObjects(t *testing.T) {
 	t.Parallel()
-	t.Skipped()
 	n := DefaultNaming()
 	n.Branch = "prefix"
 	n.Config = "prefix"
@@ -233,7 +246,6 @@ func TestUniquePathDifferentObjects(t *testing.T) {
 
 func TestNamingEmptyTemplate(t *testing.T) {
 	t.Parallel()
-	t.Skipped()
 	n := DefaultNaming()
 	n.Branch = ""
 	n.Config = ""
@@ -249,4 +261,114 @@ func TestNamingEmptyTemplate(t *testing.T) {
 	assert.Equal(t, "foo/config-row-001", n.ConfigRowPath(parentPath, component, &ConfigRow{ConfigRowKey: ConfigRowKey{Id: "456"}, Name: "d"}).Path())
 	assert.Equal(t, "foo/config-row-002", n.ConfigRowPath(parentPath, component, &ConfigRow{ConfigRowKey: ConfigRowKey{Id: "567"}, Name: "", Content: rowWithName}).Path())
 	assert.Equal(t, "foo/config-row-003", n.ConfigRowPath(parentPath, component, &ConfigRow{ConfigRowKey: ConfigRowKey{Id: "678"}, Name: "", Content: rowWithoutName}).Path())
+}
+
+func TestNamingMatchConfigPathNotMatched(t *testing.T) {
+	t.Parallel()
+	n := DefaultNaming()
+	componentId, err := n.MatchConfigPath(
+		Kind{Name: BranchKind},
+		NewPathInProject(
+			"parent/path",
+			"foo",
+		))
+	assert.NoError(t, err)
+	assert.Empty(t, componentId)
+}
+
+func TestNamingMatchConfigPathOrdinary(t *testing.T) {
+	t.Parallel()
+	n := DefaultNaming()
+	componentId, err := n.MatchConfigPath(
+		Kind{Name: BranchKind},
+		NewPathInProject(
+			"parent/path",
+			"extractor/keboola.ex-db-mysql/with-rows",
+		))
+	assert.NoError(t, err)
+	assert.Equal(t, `keboola.ex-db-mysql`, componentId)
+}
+
+func TestNamingMatchConfigPathSharedCode(t *testing.T) {
+	t.Parallel()
+	n := DefaultNaming()
+	componentId, err := n.MatchConfigPath(
+		Kind{Name: BranchKind},
+		NewPathInProject(
+			"parent/path",
+			"_shared/keboola.python-transformation-v2",
+		))
+	assert.NoError(t, err)
+	assert.Equal(t, SharedCodeComponentId, componentId)
+}
+
+func TestNamingMatchConfigPathVariables(t *testing.T) {
+	t.Parallel()
+	n := DefaultNaming()
+	componentId, err := n.MatchConfigPath(
+		Kind{Name: ConfigKind},
+		NewPathInProject(
+			"parent/path",
+			"variables",
+		))
+	assert.NoError(t, err)
+	assert.Equal(t, VariablesComponentId, componentId)
+}
+
+func TestNamingMatchConfigRowPathNotMatched(t *testing.T) {
+	t.Parallel()
+	n := DefaultNaming()
+	matched := n.MatchConfigRowPath(
+		&Component{
+			ComponentKey: ComponentKey{Id: "foo.bar"},
+		},
+		NewPathInProject(
+			"parent/path",
+			"foo",
+		),
+	)
+	assert.False(t, matched)
+}
+
+func TestNamingMatchConfigRowPathOrdinary(t *testing.T) {
+	t.Parallel()
+	n := DefaultNaming()
+	matched := n.MatchConfigRowPath(
+		&Component{
+			ComponentKey: ComponentKey{Id: "foo.bar"},
+		},
+		NewPathInProject(
+			"parent/path",
+			"rows/foo",
+		),
+	)
+	assert.True(t, matched)
+}
+
+func TestNamingMatchConfigRowPathSharedCode(t *testing.T) {
+	t.Parallel()
+	n := DefaultNaming()
+	matched := n.MatchConfigRowPath(
+		&Component{
+			ComponentKey: ComponentKey{Id: SharedCodeComponentId},
+		},
+		NewPathInProject(
+			"parent/path",
+			"codes/foo",
+		))
+	assert.True(t, matched)
+}
+
+func TestNamingMatchConfigRowPathVariables(t *testing.T) {
+	t.Parallel()
+	n := DefaultNaming()
+	matched := n.MatchConfigRowPath(
+		&Component{
+			ComponentKey: ComponentKey{Id: VariablesComponentId},
+		},
+		NewPathInProject(
+			"parent/path",
+			"values/foo",
+		))
+	assert.True(t, matched)
 }
