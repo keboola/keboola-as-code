@@ -122,8 +122,8 @@ func TestManifestValidateEmpty(t *testing.T) {
   - key="naming.configRow", value="", failed "required" validation
   - key="naming.sharedCodeConfig", value="", failed "required" validation
   - key="naming.sharedCodeConfigRow", value="", failed "required" validation
-  - key="naming.variables", value="", failed "required" validation
-  - key="naming.variablesValues", value="", failed "required" validation
+  - key="naming.variablesConfig", value="", failed "required" validation
+  - key="naming.variablesValuesRow", value="", failed "required" validation
   - key="allowedBranches", value="[]", failed "required" validation`
 	assert.Equal(t, expected, err.Error())
 }
@@ -294,8 +294,8 @@ func minimalJson() string {
     "configRow": "rows/{config_row_id}-{config_row_name}",
     "sharedCodeConfig": "_shared/{target_component_id}",
     "sharedCodeConfigRow": "codes/{config_row_id}-{config_row_name}",
-    "variables": "variables",
-    "variablesValues": "values/{config_row_name}"
+    "variablesConfig": "variables",
+    "variablesValuesRow": "values/{config_row_name}"
   },
   "allowedBranches": [
     "*"
@@ -338,8 +338,8 @@ func fullJson() string {
     "configRow": "rows/{config_row_id}-{config_row_name}",
     "sharedCodeConfig": "_shared/{target_component_id}",
     "sharedCodeConfigRow": "codes/{config_row_id}-{config_row_name}",
-    "variables": "variables",
-    "variablesValues": "values/{config_row_name}"
+    "variablesConfig": "variables",
+    "variablesValuesRow": "values/{config_row_name}"
   },
   "allowedBranches": [
     "foo",
