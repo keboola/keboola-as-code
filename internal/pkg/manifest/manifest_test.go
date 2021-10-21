@@ -113,18 +113,18 @@ func TestManifestValidateEmpty(t *testing.T) {
 	err := m.validate()
 	assert.NotNil(t, err)
 	expected := `manifest is not valid:
-	- key="version", value="0", failed "required" validation
-	- key="project.id", value="0", failed "required" validation
-	- key="project.apiHost", value="", failed "required" validation
-	- key="sortBy", value="", failed "oneof" validation
-	- key="naming.branch", value="", failed "required" validation
-	- key="naming.config", value="", failed "required" validation
-	- key="naming.configRow", value="", failed "required" validation
-	- key="naming.sharedCodeConfig", value="", failed "required" validation
-	- key="naming.sharedCodeConfigRow", value="", failed "required" validation
-	- key="naming.variablesConfig", value="", failed "required" validation
-	- key="naming.variablesValuesRow", value="", failed "required" validation
-	- key="allowedBranches", value="[]", failed "required" validation`
+  - key="version", value="0", failed "required" validation
+  - key="project.id", value="0", failed "required" validation
+  - key="project.apiHost", value="", failed "required" validation
+  - key="sortBy", value="", failed "oneof" validation
+  - key="naming.branch", value="", failed "required" validation
+  - key="naming.config", value="", failed "required" validation
+  - key="naming.configRow", value="", failed "required" validation
+  - key="naming.sharedCodeConfig", value="", failed "required" validation
+  - key="naming.sharedCodeConfigRow", value="", failed "required" validation
+  - key="naming.variablesConfig", value="", failed "required" validation
+  - key="naming.variablesValuesRow", value="", failed "required" validation
+  - key="allowedBranches", value="[]", failed "required" validation`
 	assert.Equal(t, expected, err.Error())
 }
 
