@@ -38,6 +38,29 @@ type Relation interface {
 
 type Relations []Relation
 
+func (v Relations) ParentKey(source Key) (Key, error) {
+	var parents []Key
+	for _, r := range v {
+		if parent, err := r.ParentKey(source); err != nil {
+			return nil, err
+		} else if parent != nil {
+			parents = append(parents, parent)
+		}
+	}
+
+	// Found parent defined via Relations
+	if len(parents) == 1 {
+		return parents[0], nil
+	}
+
+	// Multiple parents are forbidden
+	if len(parents) > 1 {
+		return nil, fmt.Errorf(`unexpected state: multiple parents defined by "relations" in "%s"`, source.Desc())
+	}
+
+	return nil, nil
+}
+
 func (v *Relations) UnmarshalJSON(data []byte) error {
 	var raw []json.RawMessage
 	if err := json.Unmarshal(data, &raw); err != nil {
