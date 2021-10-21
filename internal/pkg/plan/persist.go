@@ -11,10 +11,14 @@ import (
 )
 
 // Persist creates a plan to persist new/deleted objects from local filesystem.
-func Persist(projectState *state.State) *PersistPlan {
-	builder := &persistPlanBuilder{State: projectState, PersistPlan: &PersistPlan{}, errors: utils.NewMultiError()}
+func Persist(projectState *state.State) (*PersistPlan, error) {
+	builder := &persistPlanBuilder{
+		PersistPlan: &PersistPlan{},
+		State:       projectState,
+		errors:      utils.NewMultiError(),
+	}
 	builder.build()
-	return builder.PersistPlan
+	return builder.PersistPlan, builder.errors.ErrorOrNil()
 }
 
 type persistPlanBuilder struct {
