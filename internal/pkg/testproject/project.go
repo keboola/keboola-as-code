@@ -2,9 +2,12 @@
 package testproject
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -36,6 +39,7 @@ type Project struct {
 	locked        bool
 	mutex         *sync.Mutex
 	api           *remote.StorageApi
+	schedulerApi  *scheduler.Api
 	defaultBranch *model.Branch
 	envLock       *sync.Mutex
 	envs          *env.Map
@@ -65,6 +69,20 @@ func newProject(host string, id int, token string) *Project {
 
 	// Init API
 	p.api, _ = testapi.TestStorageApiWithToken(p.host, p.token, testhelper.TestIsVerbose())
+
+	// Init Scheduler API
+	logger, logs := utils.NewDebugLogger()
+	if testhelper.TestIsVerbose() {
+		logs.ConnectTo(os.Stdout)
+	}
+	schedulerHostName, _ := p.api.GetSchedulerApiUrl()
+	p.schedulerApi = scheduler.NewSchedulerApi(
+		schedulerHostName,
+		p.api.Token().Token,
+		context.Background(),
+		logger,
+		true,
+	)
 
 	// Check project ID
 	if p.id != p.api.ProjectId() {
@@ -132,7 +150,27 @@ func (p *Project) Clear() {
 		}
 	}
 
+	p.clearSchedules()
+
 	p.logf("Test project cleared | %s", time.Since(startTime))
+}
+
+// Clear deletes all schedules.
+func (p *Project) clearSchedules() {
+	// Load schedules
+	schedules, err := p.schedulerApi.ListSchedules()
+	if err != nil {
+		assert.FailNow(p.t, fmt.Sprintf("cannot load schedules: %s", err))
+	}
+
+	// Delete all schedules
+	pool := p.schedulerApi.NewPool()
+	for _, schedule := range schedules {
+		pool.Request(p.schedulerApi.DeleteScheduleRequest(schedule.Id)).Send()
+	}
+	if err := pool.StartAndWait(); err != nil {
+		assert.FailNow(p.t, fmt.Sprintf("cannot delete schedules: %s", err))
+	}
 }
 
 func (p *Project) SetState(stateFilePath string) {
