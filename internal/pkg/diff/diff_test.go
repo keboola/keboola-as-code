@@ -111,8 +111,8 @@ func TestDiffNotEqual(t *testing.T) {
 	result := results.Results[0]
 	assert.Equal(t, ResultNotEqual, result.State)
 	assert.Equal(t, []string{"name", "isDefault"}, result.ChangedFields)
-	assert.Equal(t, "\t- name\n\t+ changed", strings.ReplaceAll(result.Differences["name"], " ", " "))
-	assert.Equal(t, "\t- false\n\t+ true", strings.ReplaceAll(result.Differences["isDefault"], " ", " "))
+	assert.Equal(t, "  - name\n  + changed", strings.ReplaceAll(result.Differences["name"], " ", " "))
+	assert.Equal(t, "  - false\n  + true", strings.ReplaceAll(result.Differences["isDefault"], " ", " "))
 	assert.Same(t, branchRemote, result.ObjectState.RemoteState().(*model.Branch))
 	assert.Same(t, branchLocal, result.ObjectState.LocalState().(*model.Branch))
 }

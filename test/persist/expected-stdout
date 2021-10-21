@@ -1,16 +1,16 @@
 %A
 DEBUG	Project local state has been successfully loaded.
 INFO	Plan for "persist" operation:
-INFO		+ C main/extractor/ex-generic-v2/new
-INFO		+ C main/extractor/keboola.ex-db-mysql/with-rows
-INFO		+ R main/extractor/keboola.ex-db-mysql/with-rows/rows/users
-INFO		+ C main/transformation/keboola.python-transformation-v2/python-transformation
-INFO		- C main/extractor/keboola.ex-db-mysql/missing
-INFO		- R main/extractor/keboola.ex-db-mysql/missing/rows/some-row
+INFO	  + C main/extractor/ex-generic-v2/new
+INFO	  + C main/extractor/keboola.ex-db-mysql/with-rows
+INFO	  + R main/extractor/keboola.ex-db-mysql/with-rows/rows/users
+INFO	  + C main/transformation/keboola.python-transformation-v2/python-transformation
+INFO	  - C main/extractor/keboola.ex-db-mysql/missing
+INFO	  - R main/extractor/keboola.ex-db-mysql/missing/rows/some-row
 %A
 INFO	Persist done.
 INFO	Plan for "rename" operation:
-INFO		- main/extractor/ex-generic-v2/{new -> new-config-name}
+INFO	  - main/extractor/ex-generic-v2/{new -> new-config-name}
 DEBUG	Starting renaming of the 1 paths.
 DEBUG	Copied "main/extractor/ex-generic-v2/{new -> new-config-name}"
 DEBUG	Removing old paths.

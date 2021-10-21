@@ -26,10 +26,10 @@ func (p *RenamePlan) Log(writer *log.WriteCloser) {
 	actions := p.actions
 
 	if len(actions) == 0 {
-		writer.WriteStringNoErr("\tno paths to rename")
+		writer.WriteStringNoErrIndent1("no paths to rename")
 	} else {
 		for _, action := range actions {
-			writer.WriteStringNoErr("\t- " + action.String())
+			writer.WriteStringNoErrIndent1("- " + action.String())
 		}
 	}
 }
