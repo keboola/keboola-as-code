@@ -55,9 +55,9 @@ func diffCommand(root *rootCommand) *cobra.Command {
 							// Changed fields
 							if printDetails {
 								for field, change := range result.Differences {
-									root.logger.Infof("\t\"%s\":", field)
+									root.logger.Infof("  \"%s\":", field)
 									for _, line := range strings.Split(change, "\n") {
-										root.logger.Infof("\t%s", line)
+										root.logger.Infof("  %s", line)
 									}
 								}
 							}

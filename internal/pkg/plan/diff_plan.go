@@ -44,7 +44,7 @@ func (p *DiffPlan) Log(writer *log.WriteCloser) {
 	})
 
 	if len(actions) == 0 {
-		writer.WriteStringNoErr("\tno difference")
+		writer.WriteStringNoErrIndent1("no difference")
 	} else {
 		skippedDeleteCount := 0
 		for _, action := range actions {
@@ -54,7 +54,7 @@ func (p *DiffPlan) Log(writer *log.WriteCloser) {
 				msg += " - SKIPPED"
 				skippedDeleteCount++
 			}
-			writer.WriteStringNoErr("\t" + msg)
+			writer.WriteStringNoErrIndent1(msg)
 		}
 
 		if skippedDeleteCount > 0 {

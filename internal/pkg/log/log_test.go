@@ -110,3 +110,44 @@ func TestToWarnWriter(t *testing.T) {
 	assert.Equal(t, "", stdout.String())
 	assert.Equal(t, "test\n", stderr.String())
 }
+
+func TestWriteStringNoErrIndent1(t *testing.T) {
+	t.Parallel()
+	tempDir := t.TempDir()
+	filePath := filepath.Join(tempDir, "log-file.txt")
+	file, err := os.Create(filePath)
+	assert.NoError(t, err)
+
+	stdout := utils.NewBufferWriter()
+	stderr := utils.NewBufferWriter()
+	logger := NewLogger(stdout, stderr, file, false)
+
+	writer := ToInfoWriter(logger)
+	writer.WriteStringNoErrIndent1("test")
+	assert.NoError(t, file.Close())
+
+	// Assert, all levels logged with the level prefix
+	expected := "INFO\t  test\n"
+	assert.Equal(t, expected, testhelper.GetFileContent(filePath))
+}
+
+func TestWriteStringNoErrIndent(t *testing.T) {
+	t.Parallel()
+	tempDir := t.TempDir()
+	filePath := filepath.Join(tempDir, "log-file.txt")
+	file, err := os.Create(filePath)
+	assert.NoError(t, err)
+
+	stdout := utils.NewBufferWriter()
+	stderr := utils.NewBufferWriter()
+	logger := NewLogger(stdout, stderr, file, false)
+
+	writer := ToInfoWriter(logger)
+	writer.WriteStringNoErrIndent("test", 3)
+	writer.WriteStringNoErrIndent("test", 2)
+	assert.NoError(t, file.Close())
+
+	// Assert, all levels logged with the level prefix
+	expected := "INFO\t      test\nINFO\t    test\n"
+	assert.Equal(t, expected, testhelper.GetFileContent(filePath))
+}
