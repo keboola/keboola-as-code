@@ -88,7 +88,8 @@ type Config struct {
 	Description       string                 `json:"description" diff:"true" descriptionFile:"true"`
 	ChangeDescription string                 `json:"changeDescription"`
 	Content           *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
-	Blocks            []*Block               `json:"-"` // loaded transformation's blocks, filled in only for the LOCAL state
+	Blocks            []*Block               `json:"-" validate:"dive"` // loaded transformation's blocks, filled in only for the LOCAL state
+	Relations         Relations              `json:"-" validate:"dive"`
 }
 
 type ConfigWithRows struct {
@@ -197,6 +198,18 @@ func (r *ConfigRow) ToApiValues() (map[string]string, error) {
 		"isDisabled":        strconv.FormatBool(r.IsDisabled),
 		"configuration":     configJson,
 	}, nil
+}
+
+// ParentKey - config parent can be modified via Relations, for example variables config is embedded in another config.
+func (c *Config) ParentKey() (Key, error) {
+	if parentKey, err := c.Relations.ParentKey(c.Key()); err != nil {
+		return nil, err
+	} else if parentKey != nil {
+		return parentKey, nil
+	}
+
+	// No parent defined via "Relations" -> parent is branch
+	return c.ConfigKey.ParentKey()
 }
 
 func (k Kind) String() string {

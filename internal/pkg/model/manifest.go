@@ -196,25 +196,12 @@ func (r ConfigRowManifest) SortKey(sort string) string {
 	}
 }
 
-// ParentKey - config parent (dir) can be modified via Relations.
+// ParentKey - config parent can be modified via Relations, for example variables config is embedded in another config.
 func (c ConfigManifest) ParentKey() (Key, error) {
-	var parents []Key
-	for _, r := range c.Relations {
-		if parent, err := r.ParentKey(c.Key()); err != nil {
-			return nil, err
-		} else if parent != nil {
-			parents = append(parents, parent)
-		}
-	}
-
-	// Found parent defined via Relations
-	if len(parents) == 1 {
-		return parents[0], nil
-	}
-
-	// Multiple parents are forbidden
-	if len(parents) > 1 {
-		return nil, fmt.Errorf(`unexpected state: multiple parents defined by "relations" in "%s"`, c.Desc())
+	if parentKey, err := c.Relations.ParentKey(c.Key()); err != nil {
+		return nil, err
+	} else if parentKey != nil {
+		return parentKey, nil
 	}
 
 	// No parent defined via "Relations" -> parent is branch

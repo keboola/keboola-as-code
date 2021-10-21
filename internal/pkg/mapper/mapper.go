@@ -4,6 +4,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/relations"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -38,6 +39,7 @@ func New(logger *zap.SugaredLogger, fs filesystem.Fs, naming *model.Naming, stat
 	// Mappers
 	m.mappers = append(
 		m.mappers,
+		relations.NewMapper(m.context),
 		sharedcode.NewMapper(m.context),
 		transformation.NewMapper(m.context),
 	)
