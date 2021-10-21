@@ -11,252 +11,340 @@ import (
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
+type testCase struct {
+	inputDir        string
+	untrackedPaths  []string
+	expectedNewIds  int
+	expectedPlan    []PersistAction
+	expectedStates  []model.ObjectState
+	expectedMissing []model.Key
+}
+
 func TestPersistNoChange(t *testing.T) {
 	t.Parallel()
-	projectDir, _ := initMinimalProjectDir(t)
-	m, _ := loadTestManifest(t, projectDir)
-	api, httpTransport, _ := testapi.TestMockedStorageApi()
-
-	// Mocked API response
-	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
-		"id":   "ex-generic-v2",
-		"type": "extractor",
-		"name": "Generic",
-	})
-	assert.NoError(t, err)
-	httpTransport.RegisterResponder("GET", `=~/storage/components/ex-generic-v2`, getGenericExResponder)
-
-	// Load state
-	logger, _ := utils.NewDebugLogger()
-	options := state.NewOptions(m, api, context.Background(), logger)
-	options.LoadLocalState = true
-	options.LoadRemoteState = false
-	projectState, ok := state.LoadState(options)
-	assert.NotNil(t, projectState)
-	assert.True(t, ok)
-
-	// State before
-	assert.Empty(t, projectState.UntrackedPaths())
-
-	// Assert plan
-	plan, err := Persist(projectState)
-	assert.NoError(t, err)
-	assert.True(t, plan.Empty())
-	assert.Empty(t, plan.actions)
-
-	// Invoke
-	assert.NoError(t, plan.Invoke(logger, api, projectState))
-
-	// State after
-	assert.Empty(t, projectState.UntrackedPaths())
+	tc := testCase{
+		inputDir:       `persist-no-change`,
+		untrackedPaths: nil,
+		expectedPlan:   nil,
+	}
+	tc.run(t)
 }
 
 func TestPersistNewConfig(t *testing.T) {
 	t.Parallel()
-	projectDir, envs := initMinimalProjectDir(t)
-	m, fs := loadTestManifest(t, projectDir)
-	api, httpTransport, _ := testapi.TestMockedStorageApi()
-
-	// Mocked API response
-	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
-		"id":   "ex-generic-v2",
-		"type": "extractor",
-		"name": "Generic",
-	})
-	assert.NoError(t, err)
-	generateNewIdResponser, err := httpmock.NewJsonResponder(200, map[string]interface{}{
-		"id": "12345",
-	})
-	assert.NoError(t, err)
-	httpTransport.RegisterResponder("GET", `=~/storage/components/ex-generic-v2`, getGenericExResponder)
-	httpTransport.RegisterResponder("POST", `=~/storage/tickets`, generateNewIdResponser)
-
-	// Write files
-	configDir := filesystem.Join(`main`, `extractor`, `ex-generic-v2`, `new-config`)
-	assert.NoError(t, fs.Mkdir(configDir))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(configDir, `config.json`), `{"key": "value"}`)))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(configDir, `meta.json`), `{"name": "foo"}`)))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(configDir, `description.md`), `bar`)))
-
-	// Load state
-	logger, _ := utils.NewDebugLogger()
-	options := state.NewOptions(m, api, context.Background(), logger)
-	options.LoadLocalState = true
-	options.LoadRemoteState = false
-	projectState, ok := state.LoadState(options)
-	assert.NotNil(t, projectState)
-	assert.True(t, ok)
-
-	// State before
-	assert.Equal(t, []string{
-		"main/extractor/ex-generic-v2/new-config",
-		"main/extractor/ex-generic-v2/new-config/config.json",
-		"main/extractor/ex-generic-v2/new-config/description.md",
-		"main/extractor/ex-generic-v2/new-config/meta.json",
-	}, projectState.UntrackedPaths())
-	assert.Len(t, projectState.Branches(), 1)
-	assert.Len(t, projectState.Configs(), 1)
-	assert.Len(t, projectState.All(), 2)
-
-	// Assert plan
-	plan, err := Persist(projectState)
-	assert.NoError(t, err)
-	assert.False(t, plan.Empty())
-	assert.Len(t, plan.actions, 1)
-	assert.Equal(t, &NewConfigAction{
-		PathInProject: model.NewPathInProject(
-			"main",
-			"extractor/ex-generic-v2/new-config",
-		),
-		Key: model.ConfigKey{
-			BranchId:    cast.ToInt(envs.MustGet(`LOCAL_STATE_MAIN_BRANCH_ID`)),
-			ComponentId: "ex-generic-v2",
+	tc := testCase{
+		inputDir: `persist-config`,
+		untrackedPaths: []string{
+			"main/extractor/ex-generic-v2/new-config",
+			"main/extractor/ex-generic-v2/new-config/config.json",
+			"main/extractor/ex-generic-v2/new-config/description.md",
+			"main/extractor/ex-generic-v2/new-config/meta.json",
 		},
-	}, plan.actions[0].(*NewConfigAction))
-
-	// Invoke
-	assert.NoError(t, plan.Invoke(logger, api, projectState))
-
-	// State after
-	assert.Len(t, projectState.Branches(), 1)
-	assert.Len(t, projectState.Configs(), 2)
-	assert.Len(t, projectState.All(), 3)
-	configKey := model.ConfigKey{BranchId: 111, ComponentId: "ex-generic-v2", Id: "12345"}
-	assert.Equal(
-		t,
-		&model.ConfigState{
-			ConfigManifest: &model.ConfigManifest{
-				ConfigKey: configKey,
-				RecordState: model.RecordState{
-					Invalid:   false,
-					Persisted: true,
-				},
-				Paths: model.Paths{
-					PathInProject: model.NewPathInProject(
-						"main",
-						"extractor/ex-generic-v2/new-config",
-					),
-					RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
+		expectedNewIds: 1,
+		expectedPlan: []PersistAction{
+			&NewConfigAction{
+				PathInProject: model.NewPathInProject(
+					"main",
+					"extractor/ex-generic-v2/new-config",
+				),
+				Key: model.ConfigKey{
+					BranchId:    111,
+					ComponentId: "ex-generic-v2",
 				},
 			},
-			Remote: nil,
-			Local: &model.Config{
-				ConfigKey:   configKey,
-				Name:        "foo",
-				Description: "bar",
-				Content: utils.PairsToOrderedMap([]utils.Pair{
-					{
-						Key:   "key",
-						Value: "value",
+		},
+		expectedStates: []model.ObjectState{
+			&model.ConfigState{
+				ConfigManifest: &model.ConfigManifest{
+					ConfigKey: model.ConfigKey{
+						BranchId:    111,
+						ComponentId: "ex-generic-v2",
+						Id:          "1001",
 					},
-				}),
+					RecordState: model.RecordState{
+						Invalid:   false,
+						Persisted: true,
+					},
+					Paths: model.Paths{
+						PathInProject: model.NewPathInProject(
+							"main",
+							"extractor/ex-generic-v2/new-config",
+						),
+						RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
+					},
+				},
+				Remote: nil,
+				Local: &model.Config{
+					ConfigKey: model.ConfigKey{
+						BranchId:    111,
+						ComponentId: "ex-generic-v2",
+						Id:          "1001",
+					},
+					Name:        "foo",
+					Description: "bar",
+					Content: utils.PairsToOrderedMap([]utils.Pair{
+						{
+							Key:   "key",
+							Value: "value",
+						},
+					}),
+				},
 			},
 		},
-		projectState.MustGet(configKey),
-	)
+	}
+	tc.run(t)
 }
 
 func TestPersistNewConfigRow(t *testing.T) {
 	t.Parallel()
-	projectDir, envs := initMinimalProjectDir(t)
-	m, fs := loadTestManifest(t, projectDir)
+	tc := testCase{
+		inputDir: `persist-config-row`,
+		untrackedPaths: []string{
+			"main/extractor/keboola.ex-db-mysql",
+			"main/extractor/keboola.ex-db-mysql/new-config",
+			"main/extractor/keboola.ex-db-mysql/new-config/config.json",
+			"main/extractor/keboola.ex-db-mysql/new-config/description.md",
+			"main/extractor/keboola.ex-db-mysql/new-config/meta.json",
+			"main/extractor/keboola.ex-db-mysql/new-config/rows",
+			"main/extractor/keboola.ex-db-mysql/new-config/rows/some-row",
+			"main/extractor/keboola.ex-db-mysql/new-config/rows/some-row/config.json",
+			"main/extractor/keboola.ex-db-mysql/new-config/rows/some-row/description.md",
+			"main/extractor/keboola.ex-db-mysql/new-config/rows/some-row/meta.json",
+		},
+		expectedNewIds: 2,
+		expectedPlan: []PersistAction{
+			&NewConfigAction{
+				PathInProject: model.NewPathInProject(
+					"main",
+					"extractor/keboola.ex-db-mysql/new-config",
+				),
+				Key: model.ConfigKey{
+					BranchId:    111,
+					ComponentId: "keboola.ex-db-mysql",
+				},
+			},
+			&NewRowAction{
+				PathInProject: model.NewPathInProject(
+					"main/extractor/keboola.ex-db-mysql/new-config",
+					"rows/some-row",
+				),
+				Key: model.ConfigRowKey{
+					BranchId:    111,
+					ComponentId: "keboola.ex-db-mysql",
+				},
+			},
+		},
+		expectedStates: []model.ObjectState{
+			&model.ConfigState{
+				ConfigManifest: &model.ConfigManifest{
+					ConfigKey: model.ConfigKey{
+						BranchId:    111,
+						ComponentId: "keboola.ex-db-mysql",
+						Id:          "1001",
+					},
+					RecordState: model.RecordState{
+						Invalid:   false,
+						Persisted: true,
+					},
+					Paths: model.Paths{
+						PathInProject: model.NewPathInProject(
+							"main",
+							"extractor/keboola.ex-db-mysql/new-config",
+						),
+						RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
+					},
+				},
+				Remote: nil,
+				Local: &model.Config{
+					ConfigKey: model.ConfigKey{
+						BranchId:    111,
+						ComponentId: "keboola.ex-db-mysql",
+						Id:          "1001",
+					},
+					Name:        "foo1",
+					Description: "bar1",
+					Content: utils.PairsToOrderedMap([]utils.Pair{
+						{
+							Key:   "key1",
+							Value: "value1",
+						},
+					}),
+				},
+			},
+			&model.ConfigRowState{
+				ConfigRowManifest: &model.ConfigRowManifest{
+					ConfigRowKey: model.ConfigRowKey{
+						BranchId:    111,
+						ComponentId: "keboola.ex-db-mysql",
+						ConfigId:    "1001",
+						Id:          "1002",
+					},
+					RecordState: model.RecordState{
+						Invalid:   false,
+						Persisted: true,
+					},
+					Paths: model.Paths{
+						PathInProject: model.NewPathInProject(
+							"main/extractor/keboola.ex-db-mysql/new-config",
+							"rows/some-row",
+						),
+						RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
+					},
+				},
+				Remote: nil,
+				Local: &model.ConfigRow{
+					ConfigRowKey: model.ConfigRowKey{
+						BranchId:    111,
+						ComponentId: "keboola.ex-db-mysql",
+						ConfigId:    "1001",
+						Id:          "1002",
+					},
+					Name:        "foo2",
+					Description: "bar2",
+					Content: utils.PairsToOrderedMap([]utils.Pair{
+						{
+							Key:   "key2",
+							Value: "value2",
+						},
+					}),
+				},
+			},
+		},
+	}
+	tc.run(t)
+}
+
+func TestPersistDeleted(t *testing.T) {
+	t.Parallel()
+	tc := testCase{
+		inputDir:       `persist-deleted`,
+		untrackedPaths: nil,
+		expectedPlan: []PersistAction{
+			&DeleteRecordAction{
+				Record: &model.ConfigManifest{
+					ConfigKey: model.ConfigKey{
+						BranchId:    111,
+						ComponentId: "keboola.ex-db-mysql",
+						Id:          "101",
+					},
+					RecordState: model.RecordState{
+						Invalid:   true,
+						NotFound:  true,
+						Persisted: true,
+					},
+					Paths: model.Paths{
+						PathInProject: model.NewPathInProject(
+							"main",
+							"extractor/keboola.ex-db-mysql/missing",
+						),
+					},
+				},
+			},
+			&DeleteRecordAction{
+				Record: &model.ConfigRowManifest{
+					ConfigRowKey: model.ConfigRowKey{
+						BranchId:    111,
+						ComponentId: "keboola.ex-db-mysql",
+						ConfigId:    "101",
+						Id:          "202",
+					},
+					RecordState: model.RecordState{
+						Invalid:   true,
+						NotFound:  true,
+						Persisted: true,
+					},
+					Paths: model.Paths{
+						PathInProject: model.NewPathInProject(
+							"main/extractor/keboola.ex-db-mysql/missing",
+							"rows/some-row",
+						),
+					},
+				},
+			},
+		},
+		expectedMissing: []model.Key{
+			model.ConfigKey{
+				BranchId:    111,
+				ComponentId: "keboola.ex-db-mysql",
+				Id:          "101",
+			},
+			model.ConfigRowKey{
+				BranchId:    111,
+				ComponentId: "keboola.ex-db-mysql",
+				ConfigId:    "101",
+				Id:          "202",
+			},
+		},
+	}
+	tc.run(t)
+}
+
+func (tc *testCase) run(t *testing.T) {
+	t.Helper()
+
+	// Init project dir
+	_, testFile, _, _ := runtime.Caller(0)
+	testDir := filesystem.Dir(testFile)
+	inputDir := filesystem.Join(testDir, `..`, `fixtures`, `local`, tc.inputDir)
+	projectDir := t.TempDir()
+	err := aferocopy.Copy(inputDir, projectDir)
+	if err != nil {
+		t.Fatalf("Copy error: %s", err)
+	}
+
+	// Load manifest
+	logger, _ := utils.NewDebugLogger()
+	fs, err := aferofs.NewLocalFs(logger, projectDir, `/`)
+	assert.NoError(t, err)
+	m, err := manifest.LoadManifest(fs)
+	assert.NoError(t, err)
+
+	// Create API
 	api, httpTransport, _ := testapi.TestMockedStorageApi()
+	testapi.AddMockedComponents(httpTransport)
 
-	// Mocked API response
-	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
-		"id":   "ex-generic-v2",
-		"type": "extractor",
-		"name": "Generic",
-	})
-	assert.NoError(t, err)
-	getMySqlExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
-		"id":   "keboola.ex-db-mysql",
-		"type": "extractor",
-		"name": "MySQL Extractor",
-	})
-	assert.NoError(t, err)
-	generateNewIdResponse1, err := httpmock.NewJsonResponse(200, map[string]interface{}{"id": "12345"})
-	assert.NoError(t, err)
-	generateNewIdResponse2, err := httpmock.NewJsonResponse(200, map[string]interface{}{"id": "45678"})
-	assert.NoError(t, err)
-	generateNewIdResponder := httpmock.ResponderFromMultipleResponses([]*http.Response{generateNewIdResponse1, generateNewIdResponse2})
-	httpTransport.RegisterResponder("GET", `=~/storage/components/ex-generic-v2`, getGenericExResponder)
-	httpTransport.RegisterResponder("GET", `=~/storage/components/keboola.ex-db-mysql`, getMySqlExResponder)
-	httpTransport.RegisterResponder("POST", `=~/storage/tickets`, generateNewIdResponder)
-
-	// Write files
-	configDir := filesystem.Join(`main`, `extractor`, `keboola.ex-db-mysql`, `new-config`)
-	assert.NoError(t, fs.Mkdir(configDir))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(configDir, `config.json`), `{"key1": "value1"}`)))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(configDir, `meta.json`), `{"name": "foo1"}`)))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(configDir, `description.md`), `bar1`)))
-	rowDir := filesystem.Join(configDir, `rows`, `some-row`)
-	assert.NoError(t, fs.Mkdir(rowDir))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(rowDir, `config.json`), `{"key2": "value2"}`)))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(rowDir, `meta.json`), `{"name": "foo2"}`)))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(rowDir, `description.md`), `bar2`)))
+	// Register new IDs API responses
+	var ticketResponses []*http.Response
+	for i := 1; i <= tc.expectedNewIds; i++ {
+		response, err := httpmock.NewJsonResponse(200, map[string]interface{}{"id": cast.ToString(1000 + i)})
+		assert.NoError(t, err)
+		ticketResponses = append(ticketResponses, response)
+	}
+	httpTransport.RegisterResponder("POST", `=~/storage/tickets`, httpmock.ResponderFromMultipleResponses(ticketResponses))
 
 	// Load state
-	logger, _ := utils.NewDebugLogger()
 	options := state.NewOptions(m, api, context.Background(), logger)
 	options.LoadLocalState = true
 	options.LoadRemoteState = false
+	options.SkipNotFoundErr = true
 	projectState, ok := state.LoadState(options)
 	assert.NotNil(t, projectState)
 	assert.True(t, ok)
+	assert.NoError(t, projectState.LocalErrors().ErrorOrNil())
 
-	// State before
-	assert.Equal(t, []string{
-		"main/extractor/keboola.ex-db-mysql",
-		"main/extractor/keboola.ex-db-mysql/new-config",
-		"main/extractor/keboola.ex-db-mysql/new-config/config.json",
-		"main/extractor/keboola.ex-db-mysql/new-config/description.md",
-		"main/extractor/keboola.ex-db-mysql/new-config/meta.json",
-		"main/extractor/keboola.ex-db-mysql/new-config/rows",
-		"main/extractor/keboola.ex-db-mysql/new-config/rows/some-row",
-		"main/extractor/keboola.ex-db-mysql/new-config/rows/some-row/config.json",
-		"main/extractor/keboola.ex-db-mysql/new-config/rows/some-row/description.md",
-		"main/extractor/keboola.ex-db-mysql/new-config/rows/some-row/meta.json",
-	}, projectState.UntrackedPaths())
-	assert.Len(t, projectState.Branches(), 1)
-	assert.Len(t, projectState.Configs(), 1)
-	assert.Len(t, projectState.ConfigRows(), 0)
-	assert.Len(t, projectState.All(), 2)
+	// Assert state before
+	assert.Equal(t, tc.untrackedPaths, projectState.UntrackedPaths())
+	for _, objectState := range tc.expectedStates {
+		_, found := projectState.Get(objectState.Key())
+		assert.Falsef(t, found, `%s should not exists`, objectState.Desc())
+	}
+	for _, key := range tc.expectedMissing {
+		_, found := m.GetRecord(key)
+		assert.Truef(t, found, `%s should exists`, key.Desc())
+	}
 
-	// Assert plan
+	// Get plan
 	plan, err := Persist(projectState)
 	assert.NoError(t, err)
-	assert.False(t, plan.Empty())
-	assert.Len(t, plan.actions, 2)
-	rowAction := &NewRowAction{
-		Key: model.ConfigRowKey{
-			BranchId:    cast.ToInt(envs.MustGet(`LOCAL_STATE_MAIN_BRANCH_ID`)),
-			ComponentId: "keboola.ex-db-mysql",
-		},
-		PathInProject: model.NewPathInProject(
-			"main/extractor/keboola.ex-db-mysql/new-config",
-			"rows/some-row",
-		),
-	}
-	configAction := &NewConfigAction{
-		Key: model.ConfigKey{
-			BranchId:    cast.ToInt(envs.MustGet(`LOCAL_STATE_MAIN_BRANCH_ID`)),
-			ComponentId: "keboola.ex-db-mysql",
-		},
-		PathInProject: model.NewPathInProject(
-			"main",
-			"extractor/keboola.ex-db-mysql/new-config",
-		),
-	}
 
 	// Delete callbacks for easier comparison (we only check callbacks result)
 	for _, action := range plan.actions {
@@ -265,188 +353,23 @@ func TestPersistNewConfigRow(t *testing.T) {
 		}
 	}
 
-	// Compare
-	assert.Equal(t, []PersistAction{configAction, rowAction}, plan.actions)
+	// Assert plan
+	assert.Equalf(t, tc.expectedPlan, plan.actions, `unexpected persist plan`)
 
 	// Invoke
 	plan, err = Persist(projectState) // plan with callbacks
 	assert.NoError(t, err)
 	assert.NoError(t, plan.Invoke(logger, api, projectState))
 
-	// State after
-	assert.Len(t, projectState.Branches(), 1)
-	assert.Len(t, projectState.Configs(), 2)
-	assert.Len(t, projectState.ConfigRows(), 1)
-	assert.Len(t, projectState.All(), 4)
-	rowKey := model.ConfigRowKey{BranchId: 111, ComponentId: "keboola.ex-db-mysql", ConfigId: "12345", Id: "45678"}
-	configKey := rowKey.ConfigKey()
-	assert.Equal(
-		t,
-		&model.ConfigState{
-			ConfigManifest: &model.ConfigManifest{
-				ConfigKey: *configKey,
-				RecordState: model.RecordState{
-					Invalid:   false,
-					Persisted: true,
-				},
-				Paths: model.Paths{
-					PathInProject: model.NewPathInProject(
-						"main",
-						"extractor/keboola.ex-db-mysql/new-config",
-					),
-					RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
-				},
-			},
-			Remote: nil,
-			Local: &model.Config{
-				ConfigKey:   *configKey,
-				Name:        "foo1",
-				Description: "bar1",
-				Content: utils.PairsToOrderedMap([]utils.Pair{
-					{
-						Key:   "key1",
-						Value: "value1",
-					},
-				}),
-			},
-		},
-		projectState.MustGet(*configKey),
-	)
-	assert.Equal(
-		t,
-		&model.ConfigRowState{
-			ConfigRowManifest: &model.ConfigRowManifest{
-				ConfigRowKey: rowKey,
-				RecordState: model.RecordState{
-					Invalid:   false,
-					Persisted: true,
-				},
-				Paths: model.Paths{
-					PathInProject: model.NewPathInProject(
-						"main/extractor/keboola.ex-db-mysql/new-config",
-						"rows/some-row",
-					),
-					RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
-				},
-			},
-			Remote: nil,
-			Local: &model.ConfigRow{
-				ConfigRowKey: rowKey,
-				Name:         "foo2",
-				Description:  "bar2",
-				Content: utils.PairsToOrderedMap([]utils.Pair{
-					{
-						Key:   "key2",
-						Value: "value2",
-					},
-				}),
-			},
-		},
-		projectState.MustGet(rowKey),
-	)
-}
-
-func TestPersistDeleted(t *testing.T) {
-	t.Parallel()
-	projectDir, envs := initMinimalProjectDir(t)
-	m, _ := loadTestManifest(t, projectDir)
-	api, httpTransport, _ := testapi.TestMockedStorageApi()
-
-	// Mocked API response
-	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
-		"id":   "ex-generic-v2",
-		"type": "extractor",
-		"name": "Generic Extractor",
-	})
-	assert.NoError(t, err)
-	getMySqlExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
-		"id":   "keboola.ex-db-mysql",
-		"type": "extractor",
-		"name": "MySQL Extractor",
-	})
-	assert.NoError(t, err)
-	httpTransport.RegisterResponder("GET", `=~/storage/components/ex-generic-v2`, getGenericExResponder)
-	httpTransport.RegisterResponder("GET", `=~/storage/components/keboola.ex-db-mysql`, getMySqlExResponder)
-
-	// Update manifest, add fake records
-	branchId := cast.ToInt(envs.MustGet(`LOCAL_STATE_MAIN_BRANCH_ID`))
-	missingConfig := &model.ConfigManifest{
-		ConfigKey: model.ConfigKey{
-			BranchId:    branchId,
-			ComponentId: "keboola.ex-db-mysql",
-			Id:          "101",
-		},
-		Paths: model.Paths{
-			PathInProject: model.NewPathInProject(
-				"main",
-				"extractor/keboola.ex-db-mysql/missing",
-			),
-		},
-	}
-	missingRow := &model.ConfigRowManifest{
-		ConfigRowKey: model.ConfigRowKey{
-			BranchId:    branchId,
-			ComponentId: "keboola.ex-db-mysql",
-			ConfigId:    "101",
-			Id:          "202",
-		},
-		Paths: model.Paths{
-			PathInProject: model.NewPathInProject(
-				"main/extractor/keboola.ex-db-mysql/missing",
-				"rows/some-row",
-			),
-		},
-	}
-	assert.NoError(t, m.PersistRecord(missingConfig))
-	assert.NoError(t, m.PersistRecord(missingRow))
-	assert.NoError(t, m.Save())
-
-	// Reload manifest
-	m, _ = loadTestManifest(t, projectDir)
-
-	// Load state
-	logger, _ := utils.NewDebugLogger()
-	options := state.NewOptions(m, api, context.Background(), logger)
-	options.LoadLocalState = true
-	options.LoadRemoteState = false
-	options.SkipNotFoundErr = true
-	projectState, ok := state.LoadState(options)
-	assert.NotNil(t, projectState)
-	assert.True(t, ok)
-
-	// State before
+	// Assert state after
 	assert.Empty(t, projectState.UntrackedPaths())
-
-	// Assert plan
-	plan, err := Persist(projectState)
-	assert.NoError(t, err)
-
-	// Invoke
-	assert.NoError(t, plan.Invoke(logger, api, projectState))
-
-	// State after
-	_, configFound := m.GetRecord(missingConfig.Key())
-	assert.False(t, configFound)
-	_, rowFound := m.GetRecord(missingRow.Key())
-	assert.False(t, rowFound)
-}
-
-func initMinimalProjectDir(t *testing.T) (string, *env.Map) {
-	t.Helper()
-
-	envs := env.Empty()
-	envs.Set("TEST_KBC_STORAGE_API_HOST", "foo.bar")
-	envs.Set("LOCAL_STATE_MAIN_BRANCH_ID", "111")
-	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", "456")
-
-	_, testFile, _, _ := runtime.Caller(0)
-	testDir := filesystem.Dir(testFile)
-	projectDir := t.TempDir()
-	err := aferocopy.Copy(filesystem.Join(testDir, `..`, `fixtures`, `local`, `minimal`), projectDir)
-	if err != nil {
-		t.Fatalf("Copy error: %s", err)
+	for _, objectState := range tc.expectedStates {
+		realState, found := projectState.Get(objectState.Key())
+		assert.Truef(t, found, `%s should exists`, objectState.Desc())
+		assert.Equalf(t, objectState, realState, `object "%s" has unexpected content`, objectState.Desc())
 	}
-	testhelper.ReplaceEnvsDir(projectDir, envs)
-
-	return projectDir, envs
+	for _, key := range tc.expectedMissing {
+		_, found := m.GetRecord(key)
+		assert.Falsef(t, found, `%s should not exists`, key.Desc())
+	}
 }
