@@ -81,7 +81,7 @@ func newProject(host string, id int, token string) *Project {
 		p.api.Token().Token,
 		context.Background(),
 		logger,
-		true,
+		false,
 	)
 
 	// Check project ID

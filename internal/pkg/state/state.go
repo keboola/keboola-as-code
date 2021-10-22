@@ -22,11 +22,10 @@ type State struct {
 	*Options
 	*model.State
 	mutex         *sync.Mutex
-	mapper        *mapper.Mapper
 	localManager  *local.Manager
 	remoteManager *remote.Manager
-	remoteErrors  *utils.Error
 	localErrors   *utils.Error
+	remoteErrors  *utils.Error
 }
 
 type Options struct {
@@ -93,13 +92,13 @@ func newState(options *Options) *State {
 	s.State = model.NewState(options.logger, options.fs, options.api.Components(), options.manifest.SortBy)
 
 	// Mapper
-	s.mapper = mapper.New(options.logger, options.fs, options.manifest.Naming, s.State)
+	mapperInst := mapper.New(options.logger, options.fs, options.manifest.Naming, s.State)
 
 	// Local manager for load,save,delete ... operations
-	s.localManager = local.NewManager(options.logger, options.fs, options.manifest, s.State, s.mapper)
+	s.localManager = local.NewManager(options.logger, options.fs, options.manifest, s.State, mapperInst)
 
 	// Local manager for API operations
-	s.remoteManager = remote.NewManager(s.localManager, options.api, s.mapper)
+	s.remoteManager = remote.NewManager(s.localManager, options.api, mapperInst)
 
 	return s
 }

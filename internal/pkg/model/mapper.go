@@ -35,7 +35,9 @@ type LocalSaveRecipe struct {
 }
 
 // RemoteLoadRecipe - all items related to the object, when loading from Storage API.
-type RemoteLoadRecipe struct{}
+type RemoteLoadRecipe struct {
+	Object Object // object, eg. Config
+}
 
 // RemoteSaveRecipe - all items related to the object, when saving to Storage API.
 type RemoteSaveRecipe struct{}

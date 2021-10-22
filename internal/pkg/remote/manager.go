@@ -1,6 +1,7 @@
 package remote
 
 import (
+	"context"
 	"fmt"
 	"sort"
 
@@ -23,10 +24,15 @@ type Manager struct {
 
 type UnitOfWork struct {
 	*Manager
+	ctx               context.Context
 	changeDescription string                 // change description used for all modified configs and rows
 	pools             *orderedmap.OrderedMap // separated pool for changes in branches, configs and rows
 	errors            *utils.Error
 	invoked           bool
+}
+
+type objectsState interface {
+	SetRemoteState(remote model.Object) (model.ObjectState, error)
 }
 
 func NewManager(localManager *local.Manager, api *StorageApi, mapper *mapper.Mapper) *Manager {
@@ -41,44 +47,123 @@ func (m *Manager) Manifest() *manifest.Manifest {
 	return m.localManager.Manifest()
 }
 
-func (m *Manager) NewUnitOfWork(changeDescription string) *UnitOfWork {
+func (m *Manager) NewUnitOfWork(ctx context.Context, changeDescription string) *UnitOfWork {
 	return &UnitOfWork{
 		Manager:           m,
+		ctx:               ctx,
 		changeDescription: changeDescription,
 		pools:             utils.NewOrderedMap(),
 		errors:            utils.NewMultiError(),
 	}
 }
 
-func (u *UnitOfWork) SaveObject(object model.ObjectState, changedFields []string) error {
+func (u *UnitOfWork) LoadAllTo(state objectsState) {
+	// Run all requests in one pool
+	pool := u.poolFor(-1)
+
+	// Branches
+	pool.
+		Request(u.api.ListBranchesRequest()).
+		OnSuccess(func(response *client.Response) {
+			// Save branch + load branch components
+			for _, branch := range *response.Result().(*[]*model.Branch) {
+				// Store branch to state
+				if objectState, err := u.loadObjectTo(branch, state); err != nil {
+					u.errors.Append(err)
+					continue
+				} else if objectState == nil {
+					// Ignored -> skip
+					continue
+				}
+
+				// Load components
+				u.loadBranchTo(branch, state, pool)
+			}
+		}).
+		Send()
+}
+
+func (u *UnitOfWork) loadBranchTo(branch *model.Branch, state objectsState, pool *client.Pool) {
+	pool.
+		Request(u.api.ListComponentsRequest(branch.Id)).
+		OnSuccess(func(response *client.Response) {
+			components := *response.Result().(*[]*model.ComponentWithConfigs)
+
+			// Save component, it contains all configs and rows
+			for _, component := range components {
+				// Configs
+				for _, config := range component.Configs {
+					// Store config to state
+					if objectState, err := u.loadObjectTo(config.Config, state); err != nil {
+						u.errors.Append(err)
+						continue
+					} else if objectState == nil {
+						// Ignored -> skip
+						continue
+					}
+
+					// Rows
+					for _, row := range config.Rows {
+						//  Store row to state
+						if _, err := u.loadObjectTo(row, state); err != nil {
+							u.errors.Append(err)
+							continue
+						}
+					}
+				}
+			}
+		}).
+		Send()
+}
+
+func (u *UnitOfWork) loadObjectTo(object model.Object, state objectsState) (model.ObjectState, error) {
+	// Invoke mapper
+	if err := u.mapper.AfterRemoteLoad(&model.RemoteLoadRecipe{Object: object}); err != nil {
+		return nil, err
+	}
+
+	// Set remote state
+	return state.SetRemoteState(object)
+}
+
+func (u *UnitOfWork) SaveObject(object model.ObjectState, changedFields []string) {
 	switch v := object.(type) {
 	case *model.BranchState:
 		if v.Remote != nil {
-			return u.createOrUpdate(v, changedFields)
+			if err := u.createOrUpdate(v, changedFields); err != nil {
+				u.errors.Append(err)
+			}
 		} else {
 			// Branch cannot be created from the CLI
-			return fmt.Errorf(`branch "%d" (%s) exists only locally, new branch cannot be created by CLI`, v.Local.Id, v.Local.Name)
+			u.errors.Append(fmt.Errorf(`branch "%d" (%s) exists only locally, new branch cannot be created by CLI`, v.Local.Id, v.Local.Name))
+			return
 		}
 	case *model.ConfigState:
-		return u.createOrUpdate(v, changedFields)
+		if err := u.createOrUpdate(v, changedFields); err != nil {
+			u.errors.Append(err)
+		}
 	case *model.ConfigRowState:
-		return u.createOrUpdate(v, changedFields)
+		if err := u.createOrUpdate(v, changedFields); err != nil {
+			u.errors.Append(err)
+		}
 	default:
 		panic(fmt.Errorf(`unexpected type "%T"`, object))
 	}
 }
 
-func (u *UnitOfWork) DeleteObject(object model.ObjectState) error {
+func (u *UnitOfWork) DeleteObject(object model.ObjectState) {
 	switch v := object.(type) {
 	case *model.BranchState:
 		branch := v.LocalOrRemoteState().(*model.Branch)
 		if branch.IsDefault {
-			return fmt.Errorf("default branch cannot be deleted")
+			u.errors.Append(fmt.Errorf("default branch cannot be deleted"))
+			return
 		}
 
 		// Branch must be deleted in blocking operation
 		if _, err := u.api.DeleteBranch(branch.Id); err != nil {
-			return err
+			u.errors.Append(err)
+			return
 		}
 	case *model.ConfigState:
 		u.poolFor(v.Level()).
@@ -99,8 +184,6 @@ func (u *UnitOfWork) DeleteObject(object model.ObjectState) error {
 	default:
 		panic(fmt.Errorf(`unexpected type "%T"`, object))
 	}
-
-	return nil
 }
 
 func (u *UnitOfWork) Invoke() error {
@@ -195,6 +278,7 @@ func (u *UnitOfWork) poolFor(level int) *client.Pool {
 	}
 
 	pool := u.api.NewPool()
+	pool.SetContext(u.ctx)
 	u.pools.Set(key, pool)
 	return pool
 }
