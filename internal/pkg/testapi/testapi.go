@@ -47,7 +47,11 @@ func TestStorageApiWithToken(host, tokenStr string, verbose bool) (*remote.Stora
 
 func NewMockedComponentsProvider() model.RemoteComponentsProvider {
 	api, httpTransport, _ := TestMockedStorageApi()
+	AddMockedComponents(httpTransport)
+	return api
+}
 
+func AddMockedComponents(httpTransport *httpmock.MockTransport) {
 	// Define mocked components
 	components := []struct{ Id, Type, Name string }{
 		{"ex-generic-v2", "extractor", "Generic"},
@@ -69,6 +73,4 @@ func NewMockedComponentsProvider() model.RemoteComponentsProvider {
 		url := `=~/storage/components/` + component.Id
 		httpTransport.RegisterResponder("GET", url, responder)
 	}
-
-	return api
 }
