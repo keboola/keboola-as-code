@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -20,10 +21,12 @@ import (
 type State struct {
 	*Options
 	*model.State
-	mutex        *sync.Mutex
-	localManager *local.Manager
-	remoteErrors *utils.Error
-	localErrors  *utils.Error
+	mutex         *sync.Mutex
+	mapper        *mapper.Mapper
+	localManager  *local.Manager
+	remoteManager *remote.Manager
+	remoteErrors  *utils.Error
+	localErrors   *utils.Error
 }
 
 type Options struct {
@@ -89,8 +92,14 @@ func newState(options *Options) *State {
 	// State model struct
 	s.State = model.NewState(options.logger, options.fs, options.api.Components(), options.manifest.SortBy)
 
+	// Mapper
+	s.mapper = mapper.New(options.logger, options.fs, options.manifest.Naming, s.State)
+
 	// Local manager for load,save,delete ... operations
-	s.localManager = local.NewManager(options.logger, options.fs, options.manifest, s.State)
+	s.localManager = local.NewManager(options.logger, options.fs, options.manifest, s.State, s.mapper)
+
+	// Local manager for API operations
+	s.remoteManager = remote.NewManager(s.localManager, options.api, s.mapper)
 
 	return s
 }
@@ -109,6 +118,10 @@ func (s *State) Naming() *model.Naming {
 
 func (s *State) LocalManager() *local.Manager {
 	return s.localManager
+}
+
+func (s *State) RemoteManager() *remote.Manager {
+	return s.remoteManager
 }
 
 func (s *State) RemoteErrors() *utils.Error {

@@ -65,7 +65,7 @@ func pullCommand(root *rootCommand) *cobra.Command {
 				}
 
 				// Invoke
-				if err := pull.Invoke(logger, root.api, root.ctx); err != nil {
+				if err := pull.Invoke(logger, root.ctx); err != nil {
 					return err
 				}
 
