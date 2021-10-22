@@ -14,8 +14,9 @@ type PersistAction interface {
 
 type NewConfigAction struct {
 	model.PathInProject
-	Key       model.ConfigKey
-	OnPersist []func(key model.ConfigKey)
+	Key          model.ConfigKey
+	ParentConfig *model.ConfigKeySameBranch
+	OnPersist    []func(key model.ConfigKey)
 }
 
 type NewRowAction struct {

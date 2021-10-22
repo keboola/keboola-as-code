@@ -57,15 +57,48 @@ func (e *persistExecutor) persistNewConfig(action *NewConfigAction) {
 	// Generate unique ID
 	e.tickets.Request(func(ticket *model.Ticket) {
 		key := action.Key
+
+		// Set new id to the key
 		key.Id = ticket.Id
 
+		// The parent was not persisted for some error -> skip
+		if action.ParentConfig != nil && action.ParentConfig.Id == `` {
+			return
+		}
+
 		// Create manifest record
-		record, found, err := e.Manifest().CreateOrGetRecord(key)
+		recordRaw, found, err := e.Manifest().CreateOrGetRecord(key)
 		if err != nil {
 			e.errors.Append(err)
 			return
 		} else if found {
-			panic(fmt.Errorf(`unexpected state: record "%s" existis, but it should not`, record))
+			panic(fmt.Errorf(`unexpected state: record "%s" existis, but it should not`, recordRaw))
+		}
+		record := recordRaw.(*model.ConfigManifest)
+
+		// Create relations
+		if action.ParentConfig != nil {
+			component, err := e.State.Components().Get(*record.ComponentKey())
+			if err != nil {
+				e.errors.Append(err)
+				return
+			}
+
+			// Add relation
+			if component.IsVariables() {
+				record.Relations = append(record.Relations, &model.VariablesForRelation{
+					RelationType: model.VariablesForRelType,
+					Target:       *action.ParentConfig,
+				})
+			} else {
+				panic(fmt.Errorf(`unexpected usage of NewConfigAction.ParentConfig`))
+			}
+
+			// Update parent path - may be affected by relations
+			if err := e.Manifest().ResolveParentPath(record); err != nil {
+				e.errors.Append(fmt.Errorf(`cannot resolve path: %w`, err))
+				return
+			}
 		}
 
 		// Set local path
