@@ -361,6 +361,9 @@ func (tc *testCase) run(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, plan.Invoke(logger, api, projectState))
 
+	// Assert new IDs requests count
+	assert.Equal(t, tc.expectedNewIds, httpTransport.GetCallCountInfo()["POST =~/storage/tickets"])
+
 	// Assert state after
 	assert.Empty(t, projectState.UntrackedPaths())
 	for _, objectState := range tc.expectedStates {
