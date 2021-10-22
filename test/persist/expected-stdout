@@ -1,5 +1,6 @@
 %A
 DEBUG	Project local state has been successfully loaded.
+%A
 INFO	Plan for "persist" operation:
 INFO	  + C main/extractor/ex-generic-v2/new
 INFO	  + C main/extractor/keboola.ex-db-mysql/with-rows
