@@ -288,6 +288,283 @@ func TestPersistDeleted(t *testing.T) {
 	tc.run(t)
 }
 
+func TestPersistSharedCode(t *testing.T) {
+	t.Parallel()
+	tc := testCase{
+		inputDir: `persist-shared-code`,
+		untrackedPaths: []string{
+			"main/_shared",
+			"main/_shared/keboola.python-transformation-v2",
+			"main/_shared/keboola.python-transformation-v2/codes",
+			"main/_shared/keboola.python-transformation-v2/codes/my-code",
+			"main/_shared/keboola.python-transformation-v2/codes/my-code/code.py",
+			"main/_shared/keboola.python-transformation-v2/codes/my-code/config.json",
+			"main/_shared/keboola.python-transformation-v2/codes/my-code/description.md",
+			"main/_shared/keboola.python-transformation-v2/codes/my-code/meta.json",
+			"main/_shared/keboola.python-transformation-v2/config.json",
+			"main/_shared/keboola.python-transformation-v2/description.md",
+			"main/_shared/keboola.python-transformation-v2/meta.json",
+		},
+		expectedNewIds: 2,
+		expectedPlan: []PersistAction{
+			&NewConfigAction{
+				PathInProject: model.NewPathInProject(
+					"main",
+					"_shared/keboola.python-transformation-v2",
+				),
+				Key: model.ConfigKey{
+					BranchId:    111,
+					ComponentId: model.SharedCodeComponentId,
+				},
+			},
+			&NewRowAction{
+				PathInProject: model.NewPathInProject(
+					"main/_shared/keboola.python-transformation-v2",
+					"codes/my-code",
+				),
+				Key: model.ConfigRowKey{
+					BranchId:    111,
+					ComponentId: model.SharedCodeComponentId,
+				},
+			},
+		},
+		expectedStates: []model.ObjectState{
+			&model.ConfigState{
+				ConfigManifest: &model.ConfigManifest{
+					ConfigKey: model.ConfigKey{
+						BranchId:    111,
+						ComponentId: model.SharedCodeComponentId,
+						Id:          "1001",
+					},
+					RecordState: model.RecordState{
+						Invalid:   false,
+						Persisted: true,
+					},
+					Paths: model.Paths{
+						PathInProject: model.NewPathInProject(
+							"main",
+							"_shared/keboola.python-transformation-v2",
+						),
+						RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
+					},
+				},
+				Remote: nil,
+				Local: &model.Config{
+					ConfigKey: model.ConfigKey{
+						BranchId:    111,
+						ComponentId: model.SharedCodeComponentId,
+						Id:          "1001",
+					},
+					Name:        "Shared Codes",
+					Description: "foo bar",
+					Content: utils.PairsToOrderedMap([]utils.Pair{
+						{
+							Key:   "componentId",
+							Value: "keboola.python-transformation-v2",
+						},
+					}),
+				},
+			},
+			&model.ConfigRowState{
+				ConfigRowManifest: &model.ConfigRowManifest{
+					ConfigRowKey: model.ConfigRowKey{
+						BranchId:    111,
+						ComponentId: model.SharedCodeComponentId,
+						ConfigId:    "1001",
+						Id:          "1002",
+					},
+					RecordState: model.RecordState{
+						Invalid:   false,
+						Persisted: true,
+					},
+					Paths: model.Paths{
+						PathInProject: model.NewPathInProject(
+							"main/_shared/keboola.python-transformation-v2",
+							"codes/my-code",
+						),
+						RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile, `code.py`},
+					},
+				},
+				Remote: nil,
+				Local: &model.ConfigRow{
+					ConfigRowKey: model.ConfigRowKey{
+						BranchId:    111,
+						ComponentId: model.SharedCodeComponentId,
+						ConfigId:    "1001",
+						Id:          "1002",
+					},
+					Name:        "My code",
+					Description: "test code",
+					Content: utils.PairsToOrderedMap([]utils.Pair{
+						{
+							Key:   "code_content",
+							Value: "print('Hello, world!')\n",
+						},
+					}),
+				},
+			},
+		},
+	}
+	tc.run(t)
+}
+
+func TestPersistVariables(t *testing.T) {
+	t.Parallel()
+
+	expectedRelations := model.Relations{
+		&model.VariablesForRelation{
+			RelationType: model.VariablesForRelType,
+			Target: model.ConfigKeySameBranch{
+				ComponentId: `ex-generic-v2`,
+				Id:          `456`,
+			},
+		},
+	}
+
+	tc := testCase{
+		inputDir: `persist-variables`,
+		untrackedPaths: []string{
+			"main/extractor/ex-generic-v2/456-todos/variables",
+			"main/extractor/ex-generic-v2/456-todos/variables/config.json",
+			"main/extractor/ex-generic-v2/456-todos/variables/description.md",
+			"main/extractor/ex-generic-v2/456-todos/variables/meta.json",
+			"main/extractor/ex-generic-v2/456-todos/variables/values",
+			"main/extractor/ex-generic-v2/456-todos/variables/values/default",
+			"main/extractor/ex-generic-v2/456-todos/variables/values/default/config.json",
+			"main/extractor/ex-generic-v2/456-todos/variables/values/default/description.md",
+			"main/extractor/ex-generic-v2/456-todos/variables/values/default/meta.json",
+		},
+		expectedNewIds: 2,
+		expectedPlan: []PersistAction{
+			&NewConfigAction{
+				PathInProject: model.NewPathInProject(
+					"main/extractor/ex-generic-v2/456-todos",
+					"variables",
+				),
+				Key: model.ConfigKey{
+					BranchId:    111,
+					ComponentId: model.VariablesComponentId,
+				},
+				ParentConfig: &model.ConfigKeySameBranch{
+					ComponentId: `ex-generic-v2`,
+					Id:          `456`,
+				},
+			},
+			&NewRowAction{
+				PathInProject: model.NewPathInProject(
+					"main/extractor/ex-generic-v2/456-todos/variables",
+					"values/default",
+				),
+				Key: model.ConfigRowKey{
+					BranchId:    111,
+					ComponentId: model.VariablesComponentId,
+				},
+			},
+		},
+		expectedStates: []model.ObjectState{
+			&model.ConfigState{
+				ConfigManifest: &model.ConfigManifest{
+					ConfigKey: model.ConfigKey{
+						BranchId:    111,
+						ComponentId: model.VariablesComponentId,
+						Id:          "1001",
+					},
+					RecordState: model.RecordState{
+						Invalid:   false,
+						Persisted: true,
+					},
+					Paths: model.Paths{
+						PathInProject: model.NewPathInProject(
+							"main/extractor/ex-generic-v2/456-todos",
+							"variables",
+						),
+						RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
+					},
+					Relations: expectedRelations,
+				},
+				Remote: nil,
+				Local: &model.Config{
+					ConfigKey: model.ConfigKey{
+						BranchId:    111,
+						ComponentId: model.VariablesComponentId,
+						Id:          "1001",
+					},
+					Name:        "Variables",
+					Description: "test1",
+					Content: utils.PairsToOrderedMap([]utils.Pair{
+						{
+							Key: "variables",
+							Value: []interface{}{
+								*utils.PairsToOrderedMap([]utils.Pair{
+									{
+										Key:   "name",
+										Value: "foo",
+									},
+									{
+										Key:   "type",
+										Value: "string",
+									},
+								}),
+							},
+						},
+					}),
+					Relations: expectedRelations,
+				},
+			},
+			&model.ConfigRowState{
+				ConfigRowManifest: &model.ConfigRowManifest{
+					ConfigRowKey: model.ConfigRowKey{
+						BranchId:    111,
+						ComponentId: model.VariablesComponentId,
+						ConfigId:    "1001",
+						Id:          "1002",
+					},
+					RecordState: model.RecordState{
+						Invalid:   false,
+						Persisted: true,
+					},
+					Paths: model.Paths{
+						PathInProject: model.NewPathInProject(
+							"main/extractor/ex-generic-v2/456-todos/variables",
+							"values/default",
+						),
+						RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
+					},
+				},
+				Remote: nil,
+				Local: &model.ConfigRow{
+					ConfigRowKey: model.ConfigRowKey{
+						BranchId:    111,
+						ComponentId: model.VariablesComponentId,
+						ConfigId:    "1001",
+						Id:          "1002",
+					},
+					Name:        "Default values",
+					Description: "test2",
+					Content: utils.PairsToOrderedMap([]utils.Pair{
+						{
+							Key: "values",
+							Value: []interface{}{
+								*utils.PairsToOrderedMap([]utils.Pair{
+									{
+										Key:   "name",
+										Value: "foo",
+									},
+									{
+										Key:   "value",
+										Value: "bar",
+									},
+								}),
+							},
+						},
+					}),
+				},
+			},
+		},
+	}
+	tc.run(t)
+}
+
 func (tc *testCase) run(t *testing.T) {
 	t.Helper()
 
