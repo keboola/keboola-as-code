@@ -61,8 +61,8 @@ func (e *diffExecutor) invoke() error {
 		e.errors.Append(err)
 	}
 
-	// Wait for workers
-	if err := e.localWork.Wait(); err != nil {
+	// Invoke local workers
+	if err := e.localWork.Invoke(); err != nil {
 		e.errors.Append(err)
 	}
 

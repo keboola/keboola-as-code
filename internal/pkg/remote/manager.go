@@ -187,6 +187,10 @@ func (u *UnitOfWork) DeleteObject(object model.ObjectState) {
 }
 
 func (u *UnitOfWork) Invoke() error {
+	if u.invoked {
+		panic(fmt.Errorf(`invoked UnitOfWork cannot be reused`))
+	}
+
 	u.pools.SortKeys(sort.Strings)
 	for _, level := range u.pools.Keys() {
 		pool, _ := u.pools.Get(level)
@@ -269,7 +273,7 @@ func (u *UnitOfWork) update(objectState model.ObjectState, object model.Object, 
 // poolFor each level (branches, configs, rows).
 func (u *UnitOfWork) poolFor(level int) *client.Pool {
 	if u.invoked {
-		panic(`invoked UnitOfWork cannot be reused`)
+		panic(fmt.Errorf(`invoked UnitOfWork cannot be reused`))
 	}
 
 	key := cast.ToString(level)
