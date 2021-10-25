@@ -57,8 +57,8 @@ func (a *StorageApi) ListBranches() ([]*model.Branch, error) {
 	return nil, response.Err()
 }
 
-func (a *StorageApi) DeleteBranch(branchId int) (*model.Job, error) {
-	response := a.DeleteBranchRequest(branchId).Send().Response
+func (a *StorageApi) DeleteBranch(key model.BranchKey) (*model.Job, error) {
+	response := a.DeleteBranchRequest(key).Send().Response
 	if response.HasResult() {
 		return response.Result().(*model.Job), nil
 	}
@@ -140,11 +140,11 @@ func (a *StorageApi) ListBranchesRequest() *client.Request {
 }
 
 // DeleteBranchRequest https://keboola.docs.apiary.io/#reference/development-branches/branch-manipulation/delete-branch
-func (a *StorageApi) DeleteBranchRequest(branchId int) *client.Request {
+func (a *StorageApi) DeleteBranchRequest(key model.BranchKey) *client.Request {
 	job := &model.Job{}
 	request := a.
 		NewRequest(resty.MethodDelete, "dev-branches/{branchId}").
-		SetPathParam("branchId", cast.ToString(branchId)).
+		SetPathParam("branchId", cast.ToString(key.Id)).
 		SetResult(job)
 	request.OnSuccess(waitForJob(a, request, job, nil))
 	return request

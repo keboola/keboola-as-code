@@ -132,7 +132,7 @@ func (p *Project) Clear() {
 
 	// Delete all configs in default branch, it cannot be deleted
 	pool := p.api.NewPool()
-	pool.Request(p.api.DeleteConfigsInBranchRequest(p.defaultBranch.Id)).Send()
+	pool.Request(p.api.DeleteConfigsInBranchRequest(p.defaultBranch.BranchKey)).Send()
 	if err := pool.StartAndWait(); err != nil {
 		assert.FailNow(p.t, fmt.Sprintf("cannot delete branches: %s", err))
 	}
@@ -146,7 +146,7 @@ func (p *Project) Clear() {
 	// Delete all dev-branches sequentially, parallel requests don't work with this endpoint
 	for _, branch := range branches {
 		if !branch.IsDefault {
-			p.api.DeleteBranchRequest(branch.Id).Send()
+			p.api.DeleteBranchRequest(branch.BranchKey).Send()
 		}
 	}
 

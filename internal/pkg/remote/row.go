@@ -44,7 +44,7 @@ func (a *StorageApi) UpdateConfigRow(row *model.ConfigRow, changed []string) (*m
 	return nil, response.Err()
 }
 
-func (a *StorageApi) DeleteConfigRow(row *model.ConfigRow) error {
+func (a *StorageApi) DeleteConfigRow(row model.ConfigRowKey) error {
 	return a.DeleteConfigRowRequest(row).Send().Err()
 }
 
@@ -111,10 +111,10 @@ func (a *StorageApi) UpdateConfigRowRequest(row *model.ConfigRow, changed []stri
 }
 
 // DeleteConfigRowRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/manage-configuration-rows/update-row
-func (a *StorageApi) DeleteConfigRowRequest(row *model.ConfigRow) *client.Request {
+func (a *StorageApi) DeleteConfigRowRequest(key model.ConfigRowKey) *client.Request {
 	return a.NewRequest(resty.MethodDelete, "branch/{branchId}/components/{componentId}/configs/{configId}/rows/{rowId}").
-		SetPathParam("branchId", cast.ToString(row.BranchId)).
-		SetPathParam("componentId", row.ComponentId).
-		SetPathParam("configId", row.ConfigId).
-		SetPathParam("rowId", row.Id)
+		SetPathParam("branchId", cast.ToString(key.BranchId)).
+		SetPathParam("componentId", key.ComponentId).
+		SetPathParam("configId", key.ConfigId).
+		SetPathParam("rowId", key.Id)
 }

@@ -36,3 +36,16 @@ func (a *StorageApi) UpdateRequest(object interface{}, changed []string) (*clien
 		panic(fmt.Errorf(`unexpected type "%T"`, object))
 	}
 }
+
+func (a *StorageApi) DeleteRequest(key model.Key) *client.Request {
+	switch k := key.(type) {
+	case model.BranchKey:
+		return a.DeleteBranchRequest(k)
+	case model.ConfigKey:
+		return a.DeleteConfigRequest(k)
+	case model.ConfigRowKey:
+		return a.DeleteConfigRowRequest(k)
+	default:
+		panic(fmt.Errorf(`unexpected type "%T"`, key))
+	}
+}
