@@ -37,6 +37,7 @@ type Options struct {
 	fs              filesystem.Fs
 	manifest        *manifest.Manifest
 	api             *remote.StorageApi
+	schedulerApi    *scheduler.Api
 	context         context.Context
 	logger          *zap.SugaredLogger
 	LoadLocalState  bool
@@ -44,13 +45,14 @@ type Options struct {
 	SkipNotFoundErr bool // not found error will be ignored
 }
 
-func NewOptions(m *manifest.Manifest, api *remote.StorageApi, ctx context.Context, logger *zap.SugaredLogger) *Options {
+func NewOptions(m *manifest.Manifest, api *remote.StorageApi, schedulerApi *scheduler.Api, ctx context.Context, logger *zap.SugaredLogger) *Options {
 	return &Options{
-		fs:       m.Fs(),
-		manifest: m,
-		api:      api,
-		context:  ctx,
-		logger:   logger,
+		fs:           m.Fs(),
+		manifest:     m,
+		api:          api,
+		schedulerApi: schedulerApi,
+		context:      ctx,
+		logger:       logger,
 	}
 }
 
@@ -113,8 +115,7 @@ func newState(options *Options) *State {
 	s.localManager = local.NewManager(options.logger, options.fs, options.manifest, s.State, mapperInst)
 
 	// Local manager for API operations
-	var schedulerApi *scheduler.Api
-	s.remoteManager = remote.NewManager(s.localManager, options.api, schedulerApi, s.State, mapperInst)
+	s.remoteManager = remote.NewManager(s.localManager, options.api, options.schedulerApi, s.State, mapperInst)
 
 	return s
 }

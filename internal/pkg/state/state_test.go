@@ -31,7 +31,8 @@ func TestLoadStateDifferentProjectId(t *testing.T) {
 	m, err := manifest.NewManifest(12345, "connection.keboola.com", fs)
 	assert.NoError(t, err)
 
-	stateOptions := NewOptions(m, api, context.Background(), logger)
+	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
+	stateOptions := NewOptions(m, api, schedulerApi, context.Background(), logger)
 	stateOptions.LoadLocalState = true
 	stateOptions.LoadRemoteState = true
 	state, ok := LoadState(stateOptions)
@@ -55,7 +56,7 @@ func TestLoadState(t *testing.T) {
 	m := loadTestManifest(t, envs, "minimal")
 	m.Project.Id = project.Id()
 
-	stateOptions := NewOptions(m, project.Api(), context.Background(), logger)
+	stateOptions := NewOptions(m, project.Api(), project.SchedulerApi(), context.Background(), logger)
 	stateOptions.LoadLocalState = true
 	stateOptions.LoadRemoteState = true
 	state, ok := LoadState(stateOptions)
@@ -172,7 +173,8 @@ func TestValidateState(t *testing.T) {
 
 	api, httpTransport, _ := testapi.TestMockedStorageApi()
 
-	stateOptions := NewOptions(m, api, context.Background(), logger)
+	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
+	stateOptions := NewOptions(m, api, schedulerApi, context.Background(), logger)
 	s := newState(stateOptions)
 
 	// Mocked component response

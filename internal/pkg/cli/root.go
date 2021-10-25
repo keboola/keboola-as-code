@@ -22,6 +22,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
+	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/version"
 )
@@ -51,6 +52,7 @@ type rootCommand struct {
 	prompt       *interaction.Prompt // user interaction
 	ctx          context.Context     // context for parallel operations
 	api          *remote.StorageApi  // GetStorageApi should be used to initialize
+	schedulerApi *scheduler.Api      // GetSchedulerApi should be used to initialize
 	start        time.Time           // cmd start time
 	initialized  bool                // init method was called
 	logFile      afero.File          // log file instance
@@ -180,8 +182,32 @@ func (root *rootCommand) GetStorageApi() (api *remote.StorageApi, err error) {
 	return root.api, nil
 }
 
+func (root *rootCommand) GetSchedulerApi() (api *scheduler.Api, err error) {
+	if root.schedulerApi == nil {
+		root.schedulerApi, err = root.newSchedulerApi()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return root.schedulerApi, nil
+}
+
 func (root *rootCommand) newStorageApi() (*remote.StorageApi, error) {
 	return remote.NewStorageApiFromOptions(root.options, root.ctx, root.logger)
+}
+
+func (root *rootCommand) newSchedulerApi() (*scheduler.Api, error) {
+	storageApi, err := root.GetStorageApi()
+	if err != nil {
+		return nil, err
+	}
+
+	hostName, err := storageApi.GetSchedulerApiUrl()
+	if err != nil {
+		return nil, fmt.Errorf(`cannot get Scheduler API host: %w`, err)
+	}
+
+	return scheduler.NewSchedulerApi(hostName, storageApi.Token().Token, root.ctx, root.logger, false), nil
 }
 
 // tearDown makes clean-up after command execution.

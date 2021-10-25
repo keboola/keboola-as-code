@@ -259,7 +259,8 @@ func loadLocalTestState(t *testing.T, m *manifest.Manifest) *State {
 	httpTransport.RegisterResponder("GET", `=~/storage/components/keboola.ex-db-mysql`, getMySqlExResponder)
 
 	// Load state
-	options := NewOptions(m, api, context.Background(), logger)
+	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
+	options := NewOptions(m, api, schedulerApi, context.Background(), logger)
 	options.LoadLocalState = true
 	state, _ := LoadState(options)
 	return state

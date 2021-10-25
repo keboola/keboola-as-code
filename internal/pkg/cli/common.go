@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -14,7 +13,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -25,7 +23,6 @@ type diffProcessCmd struct {
 	cmd    *cobra.Command
 	action func(
 		api *remote.StorageApi,
-		schedulerApi *scheduler.Api,
 		diffResults *diff.Results,
 	) error
 	onSuccess                func(api *remote.StorageApi)
@@ -70,8 +67,14 @@ func (a *diffProcessCmd) run() error {
 		}
 	}()
 
+	// Get Scheduler API
+	schedulerApi, err := a.root.GetSchedulerApi()
+	if err != nil {
+		return err
+	}
+
 	// Load project remote and local state
-	stateOptions := state.NewOptions(projectManifest, api, a.root.ctx, logger)
+	stateOptions := state.NewOptions(projectManifest, api, schedulerApi, a.root.ctx, logger)
 	stateOptions.LoadLocalState = true
 	stateOptions.LoadRemoteState = true
 	projectState, ok := state.LoadState(stateOptions)
@@ -101,15 +104,8 @@ func (a *diffProcessCmd) run() error {
 		return err
 	}
 
-	token := api.Token().Token
-	hostName, err := api.GetSchedulerApiUrl()
-	if err != nil {
-		return err
-	}
-	schedulerApi := scheduler.NewSchedulerApi(hostName, token, context.Background(), logger, true)
-
 	// Run callback with diff results
-	if err := a.action(api, schedulerApi, diffResults); err != nil {
+	if err := a.action(api, diffResults); err != nil {
 		return err
 	}
 

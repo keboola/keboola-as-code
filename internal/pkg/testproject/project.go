@@ -127,6 +127,11 @@ func (p *Project) Api() *remote.StorageApi {
 	return p.api
 }
 
+func (p *Project) SchedulerApi() *scheduler.Api {
+	p.assertLocked()
+	return p.schedulerApi
+}
+
 // Clear deletes all project branches (except default) and all configurations.
 func (p *Project) Clear() {
 	p.assertLocked()

@@ -456,7 +456,7 @@ func loadRemoteState(t *testing.T, m *manifest.Manifest, projectStateFile string
 	project.SetState(projectStateFile)
 
 	logger, _ := utils.NewDebugLogger()
-	state := newState(NewOptions(m, project.Api(), context.Background(), logger))
+	state := newState(NewOptions(m, project.Api(), project.SchedulerApi(), context.Background(), logger))
 	state.loadRemoteState()
 	return state, envs
 }

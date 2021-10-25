@@ -56,8 +56,14 @@ func encryptCommand(root *rootCommand) *cobra.Command {
 				return err
 			}
 
+			// Get Scheduler API
+			schedulerApi, err := root.GetSchedulerApi()
+			if err != nil {
+				return err
+			}
+
 			// Load project local state
-			stateOptions := state.NewOptions(projectManifest, api, root.ctx, logger)
+			stateOptions := state.NewOptions(projectManifest, api, schedulerApi, root.ctx, logger)
 			stateOptions.LoadLocalState = true
 			stateOptions.LoadRemoteState = false
 			projectState, ok := state.LoadState(stateOptions)

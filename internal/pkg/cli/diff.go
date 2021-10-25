@@ -8,7 +8,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 )
 
 const (
@@ -27,7 +26,7 @@ func diffCommand(root *rootCommand) *cobra.Command {
 		Long:  diffLongDescription,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			action := &diffProcessCmd{root: root, cmd: cmd}
-			action.action = func(api *remote.StorageApi, schedulerApi *scheduler.Api, diffResults *diff.Results) error {
+			action.action = func(api *remote.StorageApi, diffResults *diff.Results) error {
 				state := diffResults.CurrentState
 
 				// Log untracked paths

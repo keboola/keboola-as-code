@@ -9,6 +9,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
+	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -19,6 +20,19 @@ func TestMockedStorageApi() (*remote.StorageApi, *httpmock.MockTransport, *utils
 	api := remote.NewStorageApi("connection.keboola.com", context.Background(), logger, false)
 	api.SetRetry(3, 1*time.Millisecond, 1*time.Millisecond)
 	api = api.WithToken(&model.Token{Owner: model.TokenOwner{Id: 12345}})
+
+	// Mocked resty transport
+	transport := httpmock.NewMockTransport()
+	api.HttpClient().Transport = transport
+	return api, transport, logs
+}
+
+func NewMockedSchedulerApi() (*scheduler.Api, *httpmock.MockTransport, *utils.Writer) {
+	logger, logs := utils.NewDebugLogger()
+
+	// Set short retry delay in tests
+	api := scheduler.NewSchedulerApi("scheduler.keboola.com", "my-token", context.Background(), logger, false)
+	api.SetRetry(3, 1*time.Millisecond, 1*time.Millisecond)
 
 	// Mocked resty transport
 	transport := httpmock.NewMockTransport()

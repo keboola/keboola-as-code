@@ -3,6 +3,8 @@ package scheduler
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"time"
 
 	"github.com/go-resty/resty/v2"
 	"go.uber.org/zap"
@@ -37,6 +39,14 @@ func NewSchedulerApi(hostUrl string, token string, ctx context.Context, logger *
 	c.SetHeader("X-StorageApi-Token", token)
 	c.SetError(&Error{})
 	return &Api{client: c, logger: logger, hostUrl: hostUrl}
+}
+
+func (a *Api) HttpClient() *http.Client {
+	return a.client.GetRestyClient().GetClient()
+}
+
+func (a *Api) SetRetry(count int, waitTime time.Duration, maxWaitTime time.Duration) {
+	a.client.SetRetry(count, waitTime, maxWaitTime)
 }
 
 func (a *Api) NewPool() *client.Pool {
