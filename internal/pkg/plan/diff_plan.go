@@ -9,7 +9,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -31,8 +30,8 @@ func (p *DiffPlan) AllowRemoteDelete() {
 	p.allowedRemoteDelete = true
 }
 
-func (p *DiffPlan) Invoke(logger *zap.SugaredLogger, api *remote.StorageApi, ctx context.Context) error {
-	executor := newDiffExecutor(p, logger, api, ctx)
+func (p *DiffPlan) Invoke(logger *zap.SugaredLogger, ctx context.Context) error {
+	executor := newDiffExecutor(p, logger, ctx)
 	return executor.invoke()
 }
 

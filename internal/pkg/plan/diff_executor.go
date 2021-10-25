@@ -26,17 +26,16 @@ type diffExecutor struct {
 	errors         *utils.Error
 }
 
-func newDiffExecutor(plan *DiffPlan, logger *zap.SugaredLogger, api *remote.StorageApi, ctx context.Context) *diffExecutor {
+func newDiffExecutor(plan *DiffPlan, logger *zap.SugaredLogger, ctx context.Context) *diffExecutor {
 	workers, _ := errgroup.WithContext(ctx)
-	localManager := plan.State.LocalManager()
 	return &diffExecutor{
 		DiffPlan:       plan,
 		logger:         logger,
 		ctx:            ctx,
 		localWorkers:   workers,
 		localSemaphore: semaphore.NewWeighted(MaxLocalWorkers),
-		localManager:   localManager,
-		remoteWork:     remote.NewManager(localManager, api).NewUnitOfWork(plan.changeDescription),
+		localManager:   plan.State.LocalManager(),
+		remoteWork:     plan.State.RemoteManager().NewUnitOfWork(plan.changeDescription),
 		errors:         utils.NewMultiError(),
 	}
 }

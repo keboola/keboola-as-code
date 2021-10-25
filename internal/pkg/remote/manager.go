@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -17,6 +18,7 @@ import (
 type Manager struct {
 	localManager *local.Manager
 	api          *StorageApi
+	mapper       *mapper.Mapper
 }
 
 type UnitOfWork struct {
@@ -27,10 +29,11 @@ type UnitOfWork struct {
 	invoked           bool
 }
 
-func NewManager(localManager *local.Manager, api *StorageApi) *Manager {
+func NewManager(localManager *local.Manager, api *StorageApi, mapper *mapper.Mapper) *Manager {
 	return &Manager{
 		localManager: localManager,
 		api:          api,
+		mapper:       mapper,
 	}
 }
 

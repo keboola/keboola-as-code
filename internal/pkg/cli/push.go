@@ -91,7 +91,7 @@ func pushCommand(root *rootCommand) *cobra.Command {
 				}
 
 				// Invoke
-				if err := push.Invoke(logger, api, root.ctx); err != nil {
+				if err := push.Invoke(logger, root.ctx); err != nil {
 					return err
 				}
 

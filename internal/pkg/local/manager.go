@@ -17,13 +17,13 @@ type Manager struct {
 	mapper   *mapper.Mapper
 }
 
-func NewManager(logger *zap.SugaredLogger, fs filesystem.Fs, m *manifest.Manifest, state *model.State) *Manager {
+func NewManager(logger *zap.SugaredLogger, fs filesystem.Fs, m *manifest.Manifest, state *model.State, mapper *mapper.Mapper) *Manager {
 	return &Manager{
 		logger:   logger,
 		fs:       fs,
 		manifest: m,
 		state:    state,
-		mapper:   mapper.New(logger, fs, m.Naming, state),
+		mapper:   mapper,
 	}
 }
 

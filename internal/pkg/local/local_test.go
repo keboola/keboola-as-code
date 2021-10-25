@@ -8,6 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -24,5 +25,5 @@ func newTestLocalManager(t *testing.T) *Manager {
 
 	components := model.NewComponentsMap(nil)
 	state := model.NewState(zap.NewNop().Sugar(), fs, components, model.SortByPath)
-	return NewManager(logger, fs, m, state)
+	return NewManager(logger, fs, m, state, mapper.New(logger, fs, m.Naming, state))
 }
