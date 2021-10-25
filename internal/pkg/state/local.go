@@ -1,71 +1,20 @@
 package state
 
 import (
-	"fmt"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-// doLoadLocalState - manifest -> local files -> unified model.
-func (s *State) doLoadLocalState() {
+// loadLocalState - manifest -> local files -> unified model.
+func (s *State) loadLocalState() {
 	s.localErrors = utils.NewMultiError()
 
-	// Branches
-	for _, b := range s.manifest.Content.Branches {
-		if _, err := s.LoadModel(b); err != nil {
-			s.AddLocalError(err)
-		}
+	uow := s.localManager.NewUnitOfWork(s.context)
+	if s.SkipNotFoundErr {
+		uow.SkipNotFoundErr()
 	}
 
-	// Configs
-	for _, c := range s.manifest.Content.Configs {
-		if _, err := s.LoadModel(c.ConfigManifest); err != nil {
-			s.AddLocalError(err)
-		}
-
-		// Rows
-		for _, r := range c.Rows {
-			if _, err := s.LoadModel(r); err != nil {
-				s.AddLocalError(err)
-			}
-		}
-	}
-}
-
-func (s *State) LoadModel(record model.Record) (model.ObjectState, error) {
-	// Detect record type
-	var object model.Object
-	switch v := record.(type) {
-	case *model.BranchManifest:
-		object = &model.Branch{BranchKey: v.BranchKey}
-	case *model.ConfigManifest:
-		object = &model.Config{ConfigKey: v.ConfigKey}
-	case *model.ConfigRowManifest:
-		object = &model.ConfigRow{ConfigRowKey: v.ConfigRowKey}
-	default:
-		panic(fmt.Errorf(`unexpected type %T`, record))
-	}
-
-	found, err := s.localManager.LoadObject(record, object)
-	if err == nil {
-		// Validate, object must be allowed
-		if s.manifest.IsObjectIgnored(object) {
-			return nil, fmt.Errorf(
-				`found manifest record for %s "%s", but it is not allowed by the manifest definition`,
-				object.Kind().Name,
-				object.ObjectId(),
-			)
-		}
-		return s.SetLocalState(object, record), nil
-	} else {
-		record.State().SetInvalid()
-		if !found {
-			record.State().SetNotFound()
-		}
-		if found || !s.SkipNotFoundErr {
-			return nil, err
-		}
-		return nil, nil
+	uow.LoadAll(s.manifest.Content)
+	if err := uow.Invoke(); err != nil {
+		s.AddLocalError(err)
 	}
 }

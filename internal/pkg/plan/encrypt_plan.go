@@ -1,6 +1,7 @@
 package plan
 
 import (
+	"context"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -21,8 +22,8 @@ func (p *EncryptPlan) Name() string {
 	return "encrypt"
 }
 
-func (p *EncryptPlan) Invoke(projectId int, logger *zap.SugaredLogger, encryptionApi *encryption.Api, projectState *state.State) error {
-	return newEncryptExecutor(projectId, logger, encryptionApi, projectState, p).invoke()
+func (p *EncryptPlan) Invoke(projectId int, logger *zap.SugaredLogger, encryptionApi *encryption.Api, projectState *state.State, ctx context.Context) error {
+	return newEncryptExecutor(projectId, logger, encryptionApi, projectState, ctx, p).invoke()
 }
 
 func (p *EncryptPlan) Log(writer *log.WriteCloser) {

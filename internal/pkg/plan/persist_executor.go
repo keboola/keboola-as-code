@@ -1,10 +1,12 @@
 package plan
 
 import (
+	"context"
 	"fmt"
 
 	"go.uber.org/zap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
@@ -16,6 +18,7 @@ type persistExecutor struct {
 	*state.State
 	logger  *zap.SugaredLogger
 	tickets *remote.TicketProvider
+	uow     *local.UnitOfWork
 	errors  *utils.Error
 }
 
@@ -25,6 +28,7 @@ func newPersistExecutor(logger *zap.SugaredLogger, api *remote.StorageApi, proje
 		State:       projectState,
 		logger:      logger,
 		tickets:     api.NewTicketProvider(),
+		uow:         projectState.LocalManager().NewUnitOfWork(context.Background()),
 		errors:      utils.NewMultiError(),
 	}
 }
@@ -37,9 +41,8 @@ func (e *persistExecutor) invoke() error {
 		case *NewRowAction:
 			e.persistNewRow(a)
 		case *DeleteRecordAction:
-			if err := e.LocalManager().DeleteObject(a.Record); err != nil {
-				e.errors.Append(err)
-			}
+			objectState, _ := e.State.Get(a.Key())
+			e.uow.DeleteObject(objectState, a.Record)
 		default:
 			panic(fmt.Errorf(`unexpected type "%T"`, action))
 		}
@@ -47,6 +50,11 @@ func (e *persistExecutor) invoke() error {
 
 	// Let's wait until all new IDs are generated
 	if err := e.tickets.Resolve(); err != nil {
+		e.errors.Append(err)
+	}
+
+	// Wait for all local operations
+	if err := e.uow.Invoke(); err != nil {
 		e.errors.Append(err)
 	}
 
@@ -111,10 +119,7 @@ func (e *persistExecutor) persistNewConfig(action *NewConfigAction) {
 		}
 
 		// Load model
-		if _, err := e.LoadModel(record); err != nil {
-			e.errors.Append(err)
-			return
-		}
+		e.uow.LoadObject(record)
 
 		// Setup related objects
 		action.InvokeOnPersist(key)
@@ -153,8 +158,6 @@ func (e *persistExecutor) persistNewRow(action *NewRowAction) {
 		}
 
 		// Load model
-		if _, err := e.LoadModel(record); err != nil {
-			e.errors.Append(err)
-		}
+		e.uow.LoadObject(record)
 	})
 }

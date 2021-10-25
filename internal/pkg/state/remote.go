@@ -8,8 +8,8 @@ import (
 func (s *State) doLoadRemoteState() {
 	s.remoteErrors = utils.NewMultiError()
 	uow := s.remoteManager.NewUnitOfWork(s.context, "")
-	uow.LoadAllTo(s)
+	uow.LoadAll()
 	if err := uow.Invoke(); err != nil {
-		s.remoteErrors.Append(err)
+		s.AddRemoteError(err)
 	}
 }
