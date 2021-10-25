@@ -1,12 +1,14 @@
 package plan
 
 import (
+	"context"
 	"fmt"
 
 	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/encryption"
+	"github.com/keboola/keboola-as-code/internal/pkg/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -17,27 +19,35 @@ type encryptExecutor struct {
 	projectId int
 	logger    *zap.SugaredLogger
 	api       *encryption.Api
+	pool      *client.Pool
+	uow       *local.UnitOfWork
 	errors    *utils.Error
 }
 
-func newEncryptExecutor(projectId int, logger *zap.SugaredLogger, api *encryption.Api, projectState *state.State, plan *EncryptPlan) *encryptExecutor {
+func newEncryptExecutor(projectId int, logger *zap.SugaredLogger, api *encryption.Api, projectState *state.State, ctx context.Context, plan *EncryptPlan) *encryptExecutor {
 	return &encryptExecutor{
 		EncryptPlan: plan,
 		State:       projectState,
 		projectId:   projectId,
 		logger:      logger,
 		api:         api,
+		pool:        api.NewPool(),
+		uow:         projectState.LocalManager().NewUnitOfWork(ctx),
 		errors:      utils.NewMultiError(),
 	}
 }
 
 func (e *encryptExecutor) invoke() error {
-	pool := e.api.NewPool()
+	// Encrypt values
 	for _, action := range e.actions {
-		pool.Request(e.encryptRequest(action)).Send()
+		e.pool.Request(e.encryptRequest(action)).Send()
+	}
+	if err := e.pool.StartAndWait(); err != nil {
+		e.errors.Append(err)
 	}
 
-	if err := pool.StartAndWait(); err != nil {
+	// Save changed files
+	if err := e.uow.Invoke(); err != nil {
 		e.errors.Append(err)
 	}
 
@@ -46,7 +56,6 @@ func (e *encryptExecutor) invoke() error {
 
 func (e *encryptExecutor) encryptRequest(action *EncryptAction) *client.Request {
 	object := action.object
-	manifest := action.manifest
 
 	// Each key for encryption, in the API call, must start with #
 	keyToPath := make(map[string]utils.KeyPath)
@@ -74,10 +83,6 @@ func (e *encryptExecutor) encryptRequest(action *EncryptAction) *client.Request 
 			}
 
 			// Save changes
-			if err := e.LocalManager().SaveObject(manifest, object); err == nil {
-				e.logger.Debugf(`Saved "%s"`, manifest.Path())
-			} else {
-				e.errors.Append(err)
-			}
+			e.uow.SaveObject(action.ObjectState, action.object)
 		})
 }

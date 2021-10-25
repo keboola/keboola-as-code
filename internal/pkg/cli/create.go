@@ -429,14 +429,10 @@ func createObject(root *rootCommand, projectState *state.State, api *remote.Stor
 		return fmt.Errorf(`cannot generate new ID: %w`, err)
 	}
 
-	// Create object state
-	objectState, err := projectState.CreateLocalState(key, name)
-	if err != nil {
-		return err
-	}
-
-	// Save to filesystem
-	if err := projectState.LocalManager().SaveObject(objectState.Manifest(), objectState.LocalState()); err != nil {
+	// Create object and save to filesystem
+	uow := projectState.LocalManager().NewUnitOfWork(root.ctx)
+	uow.CreateObject(key, name)
+	if err := uow.Invoke(); err != nil {
 		return fmt.Errorf(`cannot save object: %w`, err)
 	}
 
@@ -445,6 +441,6 @@ func createObject(root *rootCommand, projectState *state.State, api *remote.Stor
 		return err
 	}
 
-	logger.Info(fmt.Sprintf(`Created new %s "%s"`, objectState.Kind().Name, objectState.Path()))
+	logger.Info(fmt.Sprintf(`Created new %s "%s"`, key.Kind().Name, projectState.MustGet(key).Path()))
 	return nil
 }

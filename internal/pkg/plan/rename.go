@@ -66,21 +66,22 @@ func (b *renamePlanBuilder) renameBlocks(config *model.ConfigState) {
 		return
 	}
 
+	configDir := config.Path()
 	for _, block := range config.Local.Blocks {
-		b.renameBlock(block)
+		b.renameBlock(block, configDir)
 	}
 }
 
-func (b *renamePlanBuilder) renameBlock(block *model.Block) {
+func (b *renamePlanBuilder) renameBlock(block *model.Block, configDir string) {
 	// Update parent path
-	b.LocalManager().UpdateBlockPath(block, false)
+	b.LocalManager().UpdateBlockPath(block, configDir, false)
 
 	// Store old path
 	action := &RenameAction{}
 	action.OldPath = block.Path()
 
 	// Rename
-	b.LocalManager().UpdateBlockPath(block, true)
+	b.LocalManager().UpdateBlockPath(block, configDir, true)
 	action.NewPath = block.Path()
 	if action.OldPath != action.NewPath {
 		b.actions = append(b.actions, action)

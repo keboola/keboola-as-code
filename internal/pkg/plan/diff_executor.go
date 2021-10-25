@@ -42,9 +42,9 @@ func (e *diffExecutor) invoke() error {
 	for _, action := range e.actions {
 		switch action.action {
 		case ActionSaveLocal:
-			e.localWork.SaveObject(action.ObjectState)
+			e.localWork.SaveObject(action.ObjectState, action.RemoteState())
 		case ActionDeleteLocal:
-			e.localWork.DeleteObject(action.ObjectState)
+			e.localWork.DeleteObject(action.ObjectState, action.Manifest())
 		case ActionSaveRemote:
 			e.remoteWork.SaveObject(action.ObjectState, action.ChangedFields)
 		case ActionDeleteRemote:

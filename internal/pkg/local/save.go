@@ -17,8 +17,12 @@ type modelWriter struct {
 	errors  *utils.Error
 }
 
-// SaveObject to manifest and filesystem.
-func (m *Manager) SaveObject(record model.Record, object model.Object) error {
+// saveObject to manifest and filesystem.
+func (m *Manager) saveObject(record model.Record, object model.Object) error {
+	if record.Key() != object.Key() {
+		panic(fmt.Errorf(`record "%T" and object "%T" type mismatch`, record, object))
+	}
+
 	w := modelWriter{
 		Manager:         m,
 		LocalSaveRecipe: &model.LocalSaveRecipe{Object: object, Record: record},
@@ -31,7 +35,7 @@ func (m *Manager) SaveObject(record model.Record, object model.Object) error {
 func (w *modelWriter) save() error {
 	// Validate
 	if err := validator.Validate(w.Object); err != nil {
-		w.errors.AppendWithPrefix(fmt.Sprintf(`%s "%s" is invalid`, w.Record.Kind().Name, w.Record.Path()), err)
+		w.errors.AppendWithPrefix(fmt.Sprintf(`%s "%s" is invalid`, w.Kind().Name, w.Path()), err)
 		return w.errors
 	}
 
@@ -46,23 +50,24 @@ func (w *modelWriter) save() error {
 	if w.errors.Len() == 0 {
 		w.write()
 	}
+
 	return w.errors.ErrorOrNil()
 }
 
 func (w *modelWriter) createFiles() {
 	// meta.json
 	if metadata := utils.MapFromTaggedFields(model.MetaFileTag, w.Object); metadata != nil {
-		w.Metadata = filesystem.CreateJsonFile(w.Naming().MetaFilePath(w.Record.Path()), metadata)
+		w.Metadata = filesystem.CreateJsonFile(w.Naming().MetaFilePath(w.Path()), metadata)
 	}
 
 	// config.json
 	if configuration := utils.MapFromOneTaggedField(model.ConfigFileTag, w.Object); configuration != nil {
-		w.Configuration = filesystem.CreateJsonFile(w.Naming().ConfigFilePath(w.Record.Path()), configuration)
+		w.Configuration = filesystem.CreateJsonFile(w.Naming().ConfigFilePath(w.Path()), configuration)
 	}
 
 	// description.md
 	if description, found := utils.StringFromOneTaggedField(model.DescriptionFileTag, w.Object); found {
-		w.Description = filesystem.CreateFile(w.Naming().DescriptionFilePath(w.Record.Path()), strings.TrimRight(description, " \r\n\t")+"\n")
+		w.Description = filesystem.CreateFile(w.Naming().DescriptionFilePath(w.Path()), strings.TrimRight(description, " \r\n\t")+"\n")
 	}
 }
 

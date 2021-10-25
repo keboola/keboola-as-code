@@ -14,7 +14,8 @@ type modelLoader struct {
 	errors *utils.Error
 }
 
-func (m *Manager) LoadObject(record model.Record, object model.Object) (found bool, err error) {
+// loadObject from manifest and filesystem.
+func (m *Manager) loadObject(record model.Record, object model.Object) (found bool, err error) {
 	l := &modelLoader{
 		Manager:         m,
 		LocalLoadRecipe: &model.LocalLoadRecipe{Object: object, Record: record},

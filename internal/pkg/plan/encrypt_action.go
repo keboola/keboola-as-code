@@ -6,9 +6,9 @@ import (
 )
 
 type EncryptAction struct {
-	object   model.ObjectWithContent
-	manifest model.Record
-	values   []*UnencryptedValue
+	model.ObjectState
+	object model.ObjectWithContent
+	values []*UnencryptedValue
 }
 
 type UnencryptedValue struct {

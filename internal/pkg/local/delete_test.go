@@ -38,7 +38,7 @@ func TestLocalDeleteModel(t *testing.T) {
 	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(configFilePath, configFile)))
 
 	// Delete
-	assert.NoError(t, manager.DeleteObject(record))
+	assert.NoError(t, manager.deleteObject(record))
 
 	// Assert
 	_, found = manager.manifest.GetRecord(record.Key())

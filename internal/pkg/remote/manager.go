@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"sync"
 
 	"github.com/iancoleman/orderedmap"
 	"github.com/spf13/cast"
@@ -17,6 +18,7 @@ import (
 )
 
 type Manager struct {
+	state        *model.State
 	localManager *local.Manager
 	api          *StorageApi
 	mapper       *mapper.Mapper
@@ -25,18 +27,17 @@ type Manager struct {
 type UnitOfWork struct {
 	*Manager
 	ctx               context.Context
+	lock              *sync.Mutex
 	changeDescription string                 // change description used for all modified configs and rows
 	pools             *orderedmap.OrderedMap // separated pool for changes in branches, configs and rows
+	newObjects        []model.Object
 	errors            *utils.Error
 	invoked           bool
 }
 
-type objectsState interface {
-	SetRemoteState(remote model.Object) (model.ObjectState, error)
-}
-
-func NewManager(localManager *local.Manager, api *StorageApi, mapper *mapper.Mapper) *Manager {
+func NewManager(localManager *local.Manager, api *StorageApi, state *model.State, mapper *mapper.Mapper) *Manager {
 	return &Manager{
+		state:        state,
 		localManager: localManager,
 		api:          api,
 		mapper:       mapper,
@@ -51,13 +52,14 @@ func (m *Manager) NewUnitOfWork(ctx context.Context, changeDescription string) *
 	return &UnitOfWork{
 		Manager:           m,
 		ctx:               ctx,
+		lock:              &sync.Mutex{},
 		changeDescription: changeDescription,
 		pools:             utils.NewOrderedMap(),
 		errors:            utils.NewMultiError(),
 	}
 }
 
-func (u *UnitOfWork) LoadAllTo(state objectsState) {
+func (u *UnitOfWork) LoadAll() {
 	// Run all requests in one pool
 	pool := u.poolFor(-1)
 
@@ -68,7 +70,7 @@ func (u *UnitOfWork) LoadAllTo(state objectsState) {
 			// Save branch + load branch components
 			for _, branch := range *response.Result().(*[]*model.Branch) {
 				// Store branch to state
-				if objectState, err := u.loadObjectTo(branch, state); err != nil {
+				if objectState, err := u.LoadObject(branch); err != nil {
 					u.errors.Append(err)
 					continue
 				} else if objectState == nil {
@@ -77,13 +79,13 @@ func (u *UnitOfWork) LoadAllTo(state objectsState) {
 				}
 
 				// Load components
-				u.loadBranchTo(branch, state, pool)
+				u.loadBranch(branch, pool)
 			}
 		}).
 		Send()
 }
 
-func (u *UnitOfWork) loadBranchTo(branch *model.Branch, state objectsState, pool *client.Pool) {
+func (u *UnitOfWork) loadBranch(branch *model.Branch, pool *client.Pool) {
 	pool.
 		Request(u.api.ListComponentsRequest(branch.Id)).
 		OnSuccess(func(response *client.Response) {
@@ -94,7 +96,7 @@ func (u *UnitOfWork) loadBranchTo(branch *model.Branch, state objectsState, pool
 				// Configs
 				for _, config := range component.Configs {
 					// Store config to state
-					if objectState, err := u.loadObjectTo(config.Config, state); err != nil {
+					if objectState, err := u.LoadObject(config.Config); err != nil {
 						u.errors.Append(err)
 						continue
 					} else if objectState == nil {
@@ -105,7 +107,7 @@ func (u *UnitOfWork) loadBranchTo(branch *model.Branch, state objectsState, pool
 					// Rows
 					for _, row := range config.Rows {
 						//  Store row to state
-						if _, err := u.loadObjectTo(row, state); err != nil {
+						if _, err := u.LoadObject(row); err != nil {
 							u.errors.Append(err)
 							continue
 						}
@@ -116,14 +118,47 @@ func (u *UnitOfWork) loadBranchTo(branch *model.Branch, state objectsState, pool
 		Send()
 }
 
-func (u *UnitOfWork) loadObjectTo(object model.Object, state objectsState) (model.ObjectState, error) {
+func (u *UnitOfWork) LoadObject(object model.Object) (model.ObjectState, error) {
+	// Skip ignored objects
+	if u.Manifest().IsObjectIgnored(object) {
+		return nil, nil
+	}
+
 	// Invoke mapper
 	if err := u.mapper.AfterRemoteLoad(&model.RemoteLoadRecipe{Object: object}); err != nil {
 		return nil, err
 	}
 
+	// Get object state
+	objectState, found := u.state.Get(object.Key())
+
+	// Create object state if needed
+	if !found {
+		// Create manifest record
+		record, _, err := u.Manifest().CreateOrGetRecord(object.Key())
+		if err != nil {
+			return nil, err
+		}
+
+		// Create object state
+		objectState, err = u.state.CreateFrom(record)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// Set remote state
-	return state.SetRemoteState(object)
+	objectState.SetRemoteState(object)
+
+	// Generate local path
+	if !found {
+		if err := u.localManager.UpdatePaths(objectState, false); err != nil {
+			return nil, err
+		}
+	}
+
+	u.addNewObject(object)
+	return objectState, nil
 }
 
 func (u *UnitOfWork) SaveObject(object model.ObjectState, changedFields []string) {
@@ -268,6 +303,12 @@ func (u *UnitOfWork) update(objectState model.ObjectState, object model.Object, 
 		return err
 	}
 	return nil
+}
+
+func (u *UnitOfWork) addNewObject(object model.Object) {
+	u.lock.Lock()
+	defer u.lock.Unlock()
+	u.newObjects = append(u.newObjects, object)
 }
 
 // poolFor each level (branches, configs, rows).

@@ -1,6 +1,7 @@
 package plan
 
 import (
+	"context"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -21,8 +22,8 @@ func (p *EncryptPlan) Name() string {
 	return "encrypt"
 }
 
-func (p *EncryptPlan) Invoke(projectId int, logger *zap.SugaredLogger, encryptionApi *encryption.Api, projectState *state.State) error {
-	return newEncryptExecutor(projectId, logger, encryptionApi, projectState, p).invoke()
+func (p *EncryptPlan) Invoke(projectId int, logger *zap.SugaredLogger, encryptionApi *encryption.Api, projectState *state.State, ctx context.Context) error {
+	return newEncryptExecutor(projectId, logger, encryptionApi, projectState, ctx, p).invoke()
 }
 
 func (p *EncryptPlan) Log(writer *log.WriteCloser) {
@@ -31,7 +32,7 @@ func (p *EncryptPlan) Log(writer *log.WriteCloser) {
 		writer.WriteStringNoErrIndent1("no values to encrypt")
 	} else {
 		for _, action := range p.actions {
-			writer.WriteStringNoErrIndent1(action.manifest.Kind().Abbr + " " + action.manifest.Path())
+			writer.WriteStringNoErrIndent1(action.Kind().Abbr + " " + action.Path())
 			for _, value := range action.values {
 				writer.WriteStringNoErrIndent(fmt.Sprintf("%v", value.path), 2)
 			}
@@ -50,8 +51,8 @@ func (p *EncryptPlan) ValidateAllEncrypted() error {
 		errors.AppendWithPrefix(
 			fmt.Sprintf(
 				`%s "%s" contains unencrypted values`,
-				action.manifest.Kind().Name,
-				p.naming.ConfigFilePath(action.manifest.Path()),
+				action.Kind().Name,
+				p.naming.ConfigFilePath(action.Path()),
 			),
 			objectErrors,
 		)

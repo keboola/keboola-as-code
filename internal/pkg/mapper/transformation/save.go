@@ -35,7 +35,7 @@ func (m *transformationMapper) BeforeLocalSave(recipe *model.LocalSaveRecipe) er
 		MapperContext:   m.MapperContext,
 		LocalSaveRecipe: recipe,
 		config:          recipe.Object.(*model.Config),
-		configDir:       recipe.Record.Path(),
+		configDir:       recipe.Path(),
 		errors:          utils.NewMultiError(),
 	}
 

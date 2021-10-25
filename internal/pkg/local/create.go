@@ -9,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func (m *Manager) CreateObject(key model.Key, name string) (model.Object, error) {
+func (m *Manager) createObject(key model.Key, name string) (model.Object, error) {
 	switch k := key.(type) {
 	case model.ConfigKey:
 		component, err := m.state.Components().Get(*k.ComponentKey())

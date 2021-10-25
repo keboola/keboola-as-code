@@ -61,10 +61,8 @@ func createTestFixtures(t *testing.T, targetComponentId string) (model.MapperCon
 		Content:   utils.NewOrderedMap(),
 	}
 	config.Content.Set(model.ShareCodeTargetComponentKey, targetComponentId)
-	configStateRaw, err := state.GetOrCreate(configKey)
+	configState, err := state.CreateFrom(configRecord)
 	assert.NoError(t, err)
-	configState := configStateRaw.(*model.ConfigState)
-	configState.SetManifest(configRecord)
 	configState.SetLocalState(config)
 	configState.SetRemoteState(config)
 
@@ -88,10 +86,8 @@ func createTestFixtures(t *testing.T, targetComponentId string) (model.MapperCon
 		ConfigRowKey: rowKey,
 		Content:      utils.NewOrderedMap(),
 	}
-	rowStateRaw, err := state.GetOrCreate(rowKey)
+	rowState, err := state.GetOrCreateFrom(rowRecord)
 	assert.NoError(t, err)
-	rowState := rowStateRaw.(*model.ConfigRowState)
-	rowState.SetManifest(rowRecord)
 	rowState.SetLocalState(row)
 	rowState.SetRemoteState(row)
 

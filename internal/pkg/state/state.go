@@ -64,12 +64,12 @@ func LoadState(options *Options) (state *State, ok bool) {
 
 	if state.LoadRemoteState {
 		state.logger.Debugf("Loading project remote state.")
-		state.doLoadRemoteState()
+		state.loadRemoteState()
 	}
 
 	if state.LoadLocalState {
 		state.logger.Debugf("Loading local state.")
-		state.doLoadLocalState()
+		state.loadLocalState()
 	}
 
 	state.validate()
@@ -96,7 +96,7 @@ func newState(options *Options) *State {
 	s.localManager = local.NewManager(options.logger, options.fs, options.manifest, s.State, mapperInst)
 
 	// Local manager for API operations
-	s.remoteManager = remote.NewManager(s.localManager, options.api, mapperInst)
+	s.remoteManager = remote.NewManager(s.localManager, options.api, s.State, mapperInst)
 
 	return s
 }
@@ -137,79 +137,6 @@ func (s *State) AddLocalError(err error) {
 	s.localErrors.Append(err)
 }
 
-func (s *State) SetRemoteState(remote model.Object) (model.ObjectState, error) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	// Skip ignored objects
-	if s.manifest.IsObjectIgnored(remote) {
-		return nil, nil
-	}
-
-	// Get or create state
-	state, err := s.GetOrCreate(remote.Key())
-	if err != nil {
-		s.AddRemoteError(err)
-		return nil, nil
-	}
-
-	state.SetRemoteState(remote)
-	if !state.HasManifest() {
-		// Generate manifest record
-		record, _, err := s.manifest.CreateOrGetRecord(remote.Key())
-		if err != nil {
-			return nil, err
-		}
-		state.SetManifest(record)
-
-		// Generate local path
-		if err := s.localManager.UpdatePaths(state, false); err != nil {
-			return nil, err
-		}
-	}
-	return state, nil
-}
-
-func (s *State) SetLocalState(local model.Object, record model.Record) model.ObjectState {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	state, err := s.GetOrCreate(local.Key())
-	if err != nil {
-		s.AddLocalError(err)
-		return nil
-	}
-
-	state.SetLocalState(local)
-	state.SetManifest(record)
-	s.State.TrackRecord(record)
-	return state
-}
-
-func (s *State) CreateLocalState(key model.Key, name string) (model.ObjectState, error) {
-	// Create object
-	object, err := s.localManager.CreateObject(key, name)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create manifest record
-	record, _, err := s.manifest.CreateOrGetRecord(object.Key())
-	if err != nil {
-		return nil, err
-	}
-
-	// Set local state
-	state := s.SetLocalState(object, record)
-
-	// Generate local path
-	if err := s.localManager.UpdatePaths(state, false); err != nil {
-		return nil, err
-	}
-
-	return state, nil
-}
-
 func (s *State) validate() {
 	for _, component := range s.Components().AllLoaded() {
 		if err := validator.Validate(component); err != nil {
@@ -219,13 +146,13 @@ func (s *State) validate() {
 	for _, objectState := range s.All() {
 		if objectState.HasRemoteState() {
 			if err := validator.Validate(objectState.RemoteState()); err != nil {
-				s.AddRemoteError(utils.PrefixError(fmt.Sprintf(`%s is not valid`, objectState.Desc()), err))
+				s.AddRemoteError(utils.PrefixError(fmt.Sprintf(`remote %s is not valid`, objectState.Desc()), err))
 			}
 		}
 
 		if objectState.HasLocalState() {
 			if err := validator.Validate(objectState.LocalState()); err != nil {
-				s.AddLocalError(utils.PrefixError(fmt.Sprintf(`%s is not valid`, objectState.Desc()), err))
+				s.AddLocalError(utils.PrefixError(fmt.Sprintf(`local %s "%s" is not valid`, objectState.Kind(), objectState.Path()), err))
 			}
 		}
 	}

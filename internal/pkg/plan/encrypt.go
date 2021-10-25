@@ -46,9 +46,9 @@ func (b *encryptPlanBuilder) processObject(objectState model.ObjectState) {
 		builder.processValue(o.GetContent(), nil)
 		if len(builder.values) > 0 {
 			b.actions = append(b.actions, &EncryptAction{
-				object:   o,
-				manifest: objectState.Manifest(),
-				values:   builder.values,
+				ObjectState: objectState,
+				object:      o,
+				values:      builder.values,
 			})
 		}
 	}
