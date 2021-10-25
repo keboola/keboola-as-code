@@ -173,9 +173,8 @@ func (u *UnitOfWork) SaveObject(objectState model.ObjectState, object model.Obje
 	}
 }
 
-func (u *UnitOfWork) DeleteObject(object model.ObjectState) {
-	switch v := object.(type) {
-	case *model.BranchState:
+func (u *UnitOfWork) DeleteObject(objectState model.ObjectState) {
+	if v, ok := objectState.(*model.BranchState); ok {
 		branch := v.LocalOrRemoteState().(*model.Branch)
 		if branch.IsDefault {
 			u.errors.Append(fmt.Errorf("default branch cannot be deleted"))
@@ -183,29 +182,14 @@ func (u *UnitOfWork) DeleteObject(object model.ObjectState) {
 		}
 
 		// Branch must be deleted in blocking operation
-		if _, err := u.api.DeleteBranch(branch.Id); err != nil {
+		if _, err := u.api.DeleteBranch(branch.BranchKey); err != nil {
 			u.errors.Append(err)
-			return
 		}
-	case *model.ConfigState:
-		u.poolFor(v.Level()).
-			Request(u.api.DeleteConfigRequest(v.Remote)).
-			OnSuccess(func(response *client.Response) {
-				u.Manifest().DeleteRecord(v)
-				object.SetRemoteState(nil)
-			}).
-			Send()
-	case *model.ConfigRowState:
-		u.poolFor(v.Level()).
-			Request(u.api.DeleteConfigRowRequest(v.Remote)).
-			OnSuccess(func(response *client.Response) {
-				u.Manifest().DeleteRecord(v)
-				object.SetRemoteState(nil)
-			}).
-			Send()
-	default:
-		panic(fmt.Errorf(`unexpected type "%T"`, object))
+
+		return
 	}
+
+	u.delete(objectState)
 }
 
 func (u *UnitOfWork) Invoke() error {
@@ -286,6 +270,16 @@ func (u *UnitOfWork) update(objectState model.ObjectState, object model.Object, 
 		return err
 	}
 	return nil
+}
+
+func (u *UnitOfWork) delete(objectState model.ObjectState) {
+	u.poolFor(objectState.Level()).
+		Request(u.api.DeleteRequest(objectState.Key())).
+		OnSuccess(func(response *client.Response) {
+			u.Manifest().DeleteRecord(objectState)
+			objectState.SetRemoteState(nil)
+		}).
+		Send()
 }
 
 func (u *UnitOfWork) addNewObject(object model.Object) {

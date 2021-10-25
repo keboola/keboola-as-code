@@ -112,14 +112,14 @@ func TestBranchApiCalls(t *testing.T) {
 	testhelper.AssertWildcards(t, expectedBranchesAll(), json.MustEncodeString(branches, true), "Unexpected branches state")
 
 	// Delete branch
-	job3, err = api.DeleteBranch(branchFoo.Id)
+	job3, err = api.DeleteBranch(branchFoo.BranchKey)
 	assert.NoError(t, err)
 	assert.NotNil(t, job3)
 	assert.Equal(t, "success", job3.Status)
 
 	// Delete branch with callback
 	onSuccessCalled = false
-	request = api.DeleteBranchRequest(branchBar.Id).
+	request = api.DeleteBranchRequest(branchBar.BranchKey).
 		OnSuccess(func(response *client.Response) {
 			// OnSuccess callback called when job is in successful state
 			job := response.Result().(*model.Job)

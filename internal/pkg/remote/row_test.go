@@ -98,7 +98,7 @@ func TestConfigRowApiCalls(t *testing.T) {
 	assert.Same(t, row1, resRow1)
 
 	// Delete row 2
-	err = api.DeleteConfigRow(row2)
+	err = api.DeleteConfigRow(row2.ConfigRowKey)
 	assert.NoError(t, err)
 
 	// List components
