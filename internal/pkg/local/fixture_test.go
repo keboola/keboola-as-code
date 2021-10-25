@@ -12,7 +12,7 @@ type MockedRecord struct {
 	MockedKey
 }
 
-type ModelStruct struct {
+type MockedObject struct {
 	MockedRecord
 	Foo1   string
 	Foo2   string
@@ -95,6 +95,10 @@ func (MockedRecord) AddRelatedPath(path string) {
 	// nop
 }
 
-func (ModelStruct) ObjectName() string {
+func (r MockedRecord) NewEmptyObject() model.Object {
+	return &MockedObject{}
+}
+
+func (MockedObject) ObjectName() string {
 	return "object"
 }

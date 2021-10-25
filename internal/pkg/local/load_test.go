@@ -26,7 +26,7 @@ func TestLocalLoadModel(t *testing.T) {
 }
 `
 	// Save files
-	target := &ModelStruct{}
+	target := &MockedObject{}
 	record := &MockedRecord{}
 	assert.NoError(t, fs.Mkdir(record.Path()))
 	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(manager.Naming().MetaFilePath(record.Path()), metaFile)))
@@ -40,7 +40,7 @@ func TestLocalLoadModel(t *testing.T) {
 	// Assert
 	config := utils.NewOrderedMap()
 	config.Set("foo", "bar")
-	assert.Equal(t, &ModelStruct{
+	assert.Equal(t, &MockedObject{
 		Foo1:   "",
 		Foo2:   "",
 		Meta1:  "3",
@@ -54,7 +54,7 @@ func TestLocalLoadModelNotFound(t *testing.T) {
 	manager := newTestLocalManager(t)
 
 	// Save files
-	target := &ModelStruct{}
+	target := &MockedObject{}
 	record := &MockedRecord{}
 
 	// Load

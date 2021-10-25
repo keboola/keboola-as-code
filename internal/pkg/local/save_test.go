@@ -16,7 +16,7 @@ func TestLocalSaveModel(t *testing.T) {
 	config := utils.NewOrderedMap()
 	config.Set("foo", "bar")
 	record := &MockedRecord{}
-	source := &ModelStruct{
+	source := &MockedObject{
 		Foo1:   "1",
 		Foo2:   "2",
 		Meta1:  "3",

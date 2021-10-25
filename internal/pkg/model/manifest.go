@@ -29,6 +29,7 @@ type Record interface {
 	GetRelatedPaths() []string  // files related to the record, relative to the project dir, e.g. main/meta.json
 	AddRelatedPath(path string)
 	State() *RecordState
+	NewEmptyObject() Object
 }
 
 type RecordState struct {
@@ -170,6 +171,18 @@ func (s *RecordState) IsDeleted() bool {
 
 func (s *RecordState) SetDeleted() {
 	s.Deleted = true
+}
+
+func (b BranchManifest) NewEmptyObject() Object {
+	return &Branch{BranchKey: b.BranchKey}
+}
+
+func (c ConfigManifest) NewEmptyObject() Object {
+	return &Config{ConfigKey: c.ConfigKey}
+}
+
+func (r ConfigRowManifest) NewEmptyObject() Object {
+	return &ConfigRow{ConfigRowKey: r.ConfigRowKey}
 }
 
 func (b BranchManifest) SortKey(sort string) string {
