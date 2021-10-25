@@ -43,6 +43,18 @@ func (a *Api) NewPool() *client.Pool {
 	return a.client.NewPool(a.logger)
 }
 
+func (a *Api) OnObjectCreateUpdate(object model.Object, pool *client.Pool) {
+	if object.Kind().IsConfig() && object.(*model.Config).ComponentId == "keboola.scheduler" {
+		pool.Request(a.ActivateScheduleRequest(object.ObjectId(), ""))
+	}
+}
+
+func (a *Api) OnObjectDelete(object model.Object, pool *client.Pool) {
+	if object.Kind().IsConfig() && object.(*model.Config).ComponentId == "keboola.scheduler" {
+		pool.Request(a.DeleteSchedulesForConfigurationRequest(object.ObjectId()))
+	}
+}
+
 // ActivateScheduleRequest https://app.swaggerhub.com/apis/odinuv/scheduler/1.0.0#/schedules/activate
 func (a *Api) ActivateScheduleRequest(configurationId string, configurationVersionId string) *client.Request {
 	schedule := &model.Schedule{}

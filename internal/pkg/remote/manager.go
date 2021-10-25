@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -21,6 +22,7 @@ type Manager struct {
 	state        *model.State
 	localManager *local.Manager
 	api          *StorageApi
+	schedulerApi *scheduler.Api
 	mapper       *mapper.Mapper
 }
 
@@ -35,11 +37,12 @@ type UnitOfWork struct {
 	invoked           bool
 }
 
-func NewManager(localManager *local.Manager, api *StorageApi, state *model.State, mapper *mapper.Mapper) *Manager {
+func NewManager(localManager *local.Manager, api *StorageApi, schedulerApi *scheduler.Api, state *model.State, mapper *mapper.Mapper) *Manager {
 	return &Manager{
 		state:        state,
 		localManager: localManager,
 		api:          api,
+		schedulerApi: schedulerApi,
 		mapper:       mapper,
 	}
 }
@@ -273,6 +276,9 @@ func (u *UnitOfWork) create(objectState model.ObjectState, recipe *model.RemoteS
 				}
 			}
 		}).
+		OnSuccess(func(response *client.Response) {
+			u.schedulerApi.OnObjectCreateUpdate(object, u.schedulerApi.NewPool())
+		}).
 		Send()
 	return nil
 }
@@ -284,6 +290,9 @@ func (u *UnitOfWork) update(objectState model.ObjectState, recipe *model.RemoteS
 			Request(request).
 			OnSuccess(func(response *client.Response) {
 				objectState.SetRemoteState(recipe.InternalObject)
+			}).
+			OnSuccess(func(response *client.Response) {
+				u.schedulerApi.OnObjectCreateUpdate(object, u.schedulerApi.NewPool())
 			}).
 			Send()
 	} else {

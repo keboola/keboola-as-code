@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -13,15 +14,20 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
+	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // diffProcessCmd run callback on diff results, common for pull, push ...
 type diffProcessCmd struct {
-	root                     *rootCommand
-	cmd                      *cobra.Command
-	action                   func(api *remote.StorageApi, diffResults *diff.Results) error
+	root   *rootCommand
+	cmd    *cobra.Command
+	action func(
+		api *remote.StorageApi,
+		schedulerApi *scheduler.Api,
+		diffResults *diff.Results,
+	) error
 	onSuccess                func(api *remote.StorageApi)
 	onError                  func(api *remote.StorageApi, err error)
 	invalidStateCanBeIgnored bool
@@ -95,8 +101,15 @@ func (a *diffProcessCmd) run() error {
 		return err
 	}
 
+	token := api.Token().Token
+	hostName, err := api.GetSchedulerApiUrl()
+	if err != nil {
+		return err
+	}
+	schedulerApi := scheduler.NewSchedulerApi(hostName, token, context.Background(), logger, true)
+
 	// Run callback with diff results
-	if err := a.action(api, diffResults); err != nil {
+	if err := a.action(api, schedulerApi, diffResults); err != nil {
 		return err
 	}
 

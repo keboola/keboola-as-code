@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
+	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 )
 
 const (
@@ -48,7 +49,11 @@ func pushCommand(root *rootCommand) *cobra.Command {
 			action.onError = func(api *remote.StorageApi, err error) {
 				event.SendCmdFailedEvent(root.start, root.logger, api, err, "push", "Push command failed.")
 			}
-			action.action = func(api *remote.StorageApi, diffResults *diff.Results) error {
+			action.action = func(
+				api *remote.StorageApi,
+				schedulerApi *scheduler.Api,
+				diffResults *diff.Results,
+			) error {
 				logger := root.logger
 				projectState := diffResults.CurrentState
 				projectManifest := projectState.Manifest()

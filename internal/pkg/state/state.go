@@ -17,6 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/variables"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
+	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -112,7 +113,8 @@ func newState(options *Options) *State {
 	s.localManager = local.NewManager(options.logger, options.fs, options.manifest, s.State, mapperInst)
 
 	// Local manager for API operations
-	s.remoteManager = remote.NewManager(s.localManager, options.api, s.State, mapperInst)
+	var schedulerApi *scheduler.Api
+	s.remoteManager = remote.NewManager(s.localManager, options.api, schedulerApi, s.State, mapperInst)
 
 	return s
 }
