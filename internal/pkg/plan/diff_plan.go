@@ -3,6 +3,7 @@ package plan
 import (
 	"context"
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"sort"
 
 	"go.uber.org/zap"
@@ -31,8 +32,13 @@ func (p *DiffPlan) AllowRemoteDelete() {
 	p.allowedRemoteDelete = true
 }
 
-func (p *DiffPlan) Invoke(logger *zap.SugaredLogger, api *remote.StorageApi, ctx context.Context) error {
-	executor := newDiffExecutor(p, logger, api, ctx)
+func (p *DiffPlan) Invoke(
+	logger *zap.SugaredLogger,
+	api *remote.StorageApi,
+	schedulerApi *scheduler.Api,
+	ctx context.Context,
+) error {
+	executor := newDiffExecutor(p, logger, api, schedulerApi, ctx)
 	return executor.invoke()
 }
 

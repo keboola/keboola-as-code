@@ -2,6 +2,7 @@ package remote
 
 import (
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"sort"
 
 	"github.com/iancoleman/orderedmap"
@@ -17,6 +18,7 @@ import (
 type Manager struct {
 	localManager *local.Manager
 	api          *StorageApi
+	schedulerApi *scheduler.Api
 }
 
 type UnitOfWork struct {
@@ -27,10 +29,11 @@ type UnitOfWork struct {
 	invoked           bool
 }
 
-func NewManager(localManager *local.Manager, api *StorageApi) *Manager {
+func NewManager(localManager *local.Manager, api *StorageApi, schedulerApi *scheduler.Api) *Manager {
 	return &Manager{
 		localManager: localManager,
 		api:          api,
+		schedulerApi: schedulerApi,
 	}
 }
 
@@ -162,6 +165,9 @@ func (u *UnitOfWork) create(objectState model.ObjectState, object model.Object) 
 				}
 			}
 		}).
+		OnSuccess(func(response *client.Response) {
+			scheduler.Api.OnObjectCreateUpdate(object, u.schedulerApi.NewPool())
+		}).
 		Send()
 	return nil
 }
@@ -172,6 +178,9 @@ func (u *UnitOfWork) update(objectState model.ObjectState, object model.Object, 
 			Request(request).
 			OnSuccess(func(response *client.Response) {
 				objectState.SetRemoteState(object)
+			}).
+			OnSuccess(func(response *client.Response) {
+				scheduler.Api.OnObjectCreateUpdate(object, u.schedulerApi.NewPool())
 			}).
 			Send()
 	} else {

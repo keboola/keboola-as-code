@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
@@ -40,7 +41,11 @@ func pullCommand(root *rootCommand) *cobra.Command {
 			action.onError = func(api *remote.StorageApi, err error) {
 				event.SendCmdFailedEvent(root.start, root.logger, api, err, "pull", "Pull command failed.")
 			}
-			action.action = func(api *remote.StorageApi, diffResults *diff.Results) error {
+			action.action = func(
+				api *remote.StorageApi,
+				schedulerApi *scheduler.Api,
+				diffResults *diff.Results,
+			) error {
 				logger := root.logger
 				projectState := diffResults.CurrentState
 				projectManifest := projectState.Manifest()
@@ -65,7 +70,7 @@ func pullCommand(root *rootCommand) *cobra.Command {
 				}
 
 				// Invoke
-				if err := pull.Invoke(logger, root.api, root.ctx); err != nil {
+				if err := pull.Invoke(logger, api, schedulerApi, root.ctx); err != nil {
 					return err
 				}
 

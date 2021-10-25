@@ -3,6 +3,7 @@ package plan
 import (
 	"context"
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
@@ -26,7 +27,13 @@ type diffExecutor struct {
 	errors         *utils.Error
 }
 
-func newDiffExecutor(plan *DiffPlan, logger *zap.SugaredLogger, api *remote.StorageApi, ctx context.Context) *diffExecutor {
+func newDiffExecutor(
+	plan *DiffPlan,
+	logger *zap.SugaredLogger,
+	api *remote.StorageApi,
+	schedulerApi *scheduler.Api,
+	ctx context.Context,
+) *diffExecutor {
 	workers, _ := errgroup.WithContext(ctx)
 	localManager := plan.State.LocalManager()
 	return &diffExecutor{
@@ -36,7 +43,7 @@ func newDiffExecutor(plan *DiffPlan, logger *zap.SugaredLogger, api *remote.Stor
 		localWorkers:   workers,
 		localSemaphore: semaphore.NewWeighted(MaxLocalWorkers),
 		localManager:   localManager,
-		remoteWork:     remote.NewManager(localManager, api).NewUnitOfWork(plan.changeDescription),
+		remoteWork:     remote.NewManager(localManager, api, schedulerApi).NewUnitOfWork(plan.changeDescription),
 		errors:         utils.NewMultiError(),
 	}
 }
