@@ -26,7 +26,7 @@ func newDiffExecutor(plan *DiffPlan, logger *zap.SugaredLogger, ctx context.Cont
 		logger:       logger,
 		localManager: plan.State.LocalManager(),
 		localWork:    plan.State.LocalManager().NewUnitOfWork(ctx),
-		remoteWork:   plan.State.RemoteManager().NewUnitOfWork(plan.changeDescription),
+		remoteWork:   plan.State.RemoteManager().NewUnitOfWork(ctx, plan.changeDescription),
 		errors:       utils.NewMultiError(),
 	}
 }
@@ -46,14 +46,10 @@ func (e *diffExecutor) invoke() error {
 		case ActionDeleteLocal:
 			e.localWork.DeleteObject(action.ObjectState)
 		case ActionSaveRemote:
-			if err := e.remoteWork.SaveObject(action.ObjectState, action.ChangedFields); err != nil {
-				e.errors.Append(err)
-			}
+			e.remoteWork.SaveObject(action.ObjectState, action.ChangedFields)
 		case ActionDeleteRemote:
 			if e.allowedRemoteDelete {
-				if err := e.remoteWork.DeleteObject(action.ObjectState); err != nil {
-					e.errors.Append(err)
-				}
+				e.remoteWork.DeleteObject(action.ObjectState)
 			}
 		default:
 			panic(fmt.Errorf(`unexpected action type`))
