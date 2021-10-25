@@ -16,7 +16,7 @@ import (
 type State struct {
 	pathsState *PathsState
 	sortBy     string
-	mutex      *sync.Mutex
+	lock       *sync.Mutex
 	components *ComponentsMap
 	objects    *orderedmap.OrderedMap
 }
@@ -29,7 +29,7 @@ func NewState(logger *zap.SugaredLogger, fs filesystem.Fs, components *Component
 	return &State{
 		pathsState: ps,
 		sortBy:     sortBy,
-		mutex:      &sync.Mutex{},
+		lock:       &sync.Mutex{},
 		components: components,
 		objects:    utils.NewOrderedMap(),
 	}
@@ -50,6 +50,9 @@ func (s *State) TrackRecord(record Record) {
 }
 
 func (s *State) All() []ObjectState {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
 	s.objects.Sort(func(a *orderedmap.Pair, b *orderedmap.Pair) bool {
 		aKey := a.Value().(ObjectState).Manifest().SortKey(s.sortBy)
 		bKey := b.Value().(ObjectState).Manifest().SortKey(s.sortBy)
@@ -200,6 +203,9 @@ func (s *State) SearchForConfigRow(str string, config ConfigKey) (*ConfigRowStat
 }
 
 func (s *State) Get(key Key) (ObjectState, bool) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
 	if v, ok := s.objects.Get(key.String()); ok {
 		return v.(ObjectState), true
 	}
@@ -215,8 +221,8 @@ func (s *State) MustGet(key Key) ObjectState {
 }
 
 func (s *State) GetOrCreate(key Key) (ObjectState, error) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
+	s.lock.Lock()
+	defer s.lock.Unlock()
 
 	if v, ok := s.objects.Get(key.String()); ok {
 		// Get
