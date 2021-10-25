@@ -5,38 +5,29 @@ import (
 	"fmt"
 
 	"go.uber.org/zap"
-	"golang.org/x/sync/errgroup"
-	"golang.org/x/sync/semaphore"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-const MaxLocalWorkers = 32
-
 type diffExecutor struct {
 	*DiffPlan
-	logger         *zap.SugaredLogger
-	ctx            context.Context
-	localManager   *local.Manager
-	localWorkers   *errgroup.Group
-	localSemaphore *semaphore.Weighted
-	remoteWork     *remote.UnitOfWork
-	errors         *utils.Error
+	logger       *zap.SugaredLogger
+	localManager *local.Manager
+	localWork    *local.UnitOfWork
+	remoteWork   *remote.UnitOfWork
+	errors       *utils.Error
 }
 
 func newDiffExecutor(plan *DiffPlan, logger *zap.SugaredLogger, ctx context.Context) *diffExecutor {
-	workers, _ := errgroup.WithContext(ctx)
 	return &diffExecutor{
-		DiffPlan:       plan,
-		logger:         logger,
-		ctx:            ctx,
-		localWorkers:   workers,
-		localSemaphore: semaphore.NewWeighted(MaxLocalWorkers),
-		localManager:   plan.State.LocalManager(),
-		remoteWork:     plan.State.RemoteManager().NewUnitOfWork(plan.changeDescription),
-		errors:         utils.NewMultiError(),
+		DiffPlan:     plan,
+		logger:       logger,
+		localManager: plan.State.LocalManager(),
+		localWork:    plan.State.LocalManager().NewUnitOfWork(ctx),
+		remoteWork:   plan.State.RemoteManager().NewUnitOfWork(plan.changeDescription),
+		errors:       utils.NewMultiError(),
 	}
 }
 
@@ -51,23 +42,9 @@ func (e *diffExecutor) invoke() error {
 	for _, action := range e.actions {
 		switch action.action {
 		case ActionSaveLocal:
-			a := action
-			e.addWorker(func() error {
-				if err := e.localManager.SaveObject(a.Manifest(), a.RemoteState()); err != nil {
-					return err
-				}
-				a.SetLocalState(a.RemoteState())
-				return nil
-			})
+			e.localWork.SaveObject(action.ObjectState)
 		case ActionDeleteLocal:
-			a := action
-			e.addWorker(func() error {
-				if err := e.localManager.DeleteObject(a.Manifest()); err != nil {
-					return err
-				}
-				a.SetLocalState(nil)
-				return nil
-			})
+			e.localWork.DeleteObject(action.ObjectState)
 		case ActionSaveRemote:
 			if err := e.remoteWork.SaveObject(action.ObjectState, action.ChangedFields); err != nil {
 				e.errors.Append(err)
@@ -89,7 +66,7 @@ func (e *diffExecutor) invoke() error {
 	}
 
 	// Wait for workers
-	if err := e.localWorkers.Wait(); err != nil {
+	if err := e.localWork.Wait(); err != nil {
 		e.errors.Append(err)
 	}
 
@@ -104,21 +81,4 @@ func (e *diffExecutor) invoke() error {
 	}
 
 	return e.errors.ErrorOrNil()
-}
-
-func (e *diffExecutor) addWorker(worker func() error) {
-	// Limit maximum numbers of parallel filesystem operations.
-	// It prevents problem with: too many open files
-	if err := e.localSemaphore.Acquire(e.ctx, 1); err != nil {
-		e.errors.Append(err)
-		return
-	}
-
-	e.localWorkers.Go(func() error {
-		defer e.localSemaphore.Release(1)
-		if err := worker(); err != nil {
-			e.errors.Append(err)
-		}
-		return nil
-	})
 }
