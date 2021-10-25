@@ -282,7 +282,6 @@ func AssertExpectations(
 		logger, _ := utils.NewDebugLogger()
 		stateOptions := state.NewOptions(m, api, context.Background(), logger)
 		stateOptions.LoadRemoteState = true
-		stateOptions.IgnoreMarkedToDelete = false
 		actualState, ok := state.LoadState(stateOptions)
 		assert.True(t, ok)
 		assert.Empty(t, actualState.RemoteErrors().Errors)
