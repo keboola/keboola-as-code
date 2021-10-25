@@ -41,9 +41,8 @@ func (m *Manager) UpdatePaths(state model.ObjectState, rename bool) error {
 	return nil
 }
 
-func (m *Manager) UpdateBlockPath(block *model.Block, rename bool) {
+func (m *Manager) UpdateBlockPath(block *model.Block, configDir string, rename bool) {
 	// Update parent path
-	configDir := m.manifest.MustGetRecord(block.ConfigKey()).Path()
 	blocksDir := m.Naming().BlocksDir(configDir)
 	block.SetParentPath(blocksDir)
 

@@ -4,8 +4,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-// doLoadRemoteState - API -> unified model.
-func (s *State) doLoadRemoteState() {
+// loadRemoteState - API -> unified model.
+func (s *State) loadRemoteState() {
 	s.remoteErrors = utils.NewMultiError()
 	uow := s.remoteManager.NewUnitOfWork(s.context, "")
 	uow.LoadAll()

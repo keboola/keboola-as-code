@@ -441,6 +441,6 @@ func createObject(root *rootCommand, projectState *state.State, api *remote.Stor
 		return err
 	}
 
-	logger.Info(fmt.Sprintf(`Created new %s "%s"`, objectState.Kind().Name, objectState.Path()))
+	logger.Info(fmt.Sprintf(`Created new %s "%s"`, key.Kind().Name, projectState.MustGet(key).Path()))
 	return nil
 }

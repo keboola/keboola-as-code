@@ -50,7 +50,7 @@ func (b *persistPlanBuilder) build() {
 		recordRaw, _ := records.Get(key)
 		record := recordRaw.(model.Record)
 		if record.State().IsNotFound() {
-			b.addAction(&DeleteRecordAction{Record: record})
+			b.addAction(&DeleteRecordAction{record})
 		}
 	}
 

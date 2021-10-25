@@ -64,12 +64,12 @@ func LoadState(options *Options) (state *State, ok bool) {
 
 	if state.LoadRemoteState {
 		state.logger.Debugf("Loading project remote state.")
-		state.doLoadRemoteState()
+		state.loadRemoteState()
 	}
 
 	if state.LoadLocalState {
 		state.logger.Debugf("Loading local state.")
-		state.doLoadLocalState()
+		state.loadLocalState()
 	}
 
 	state.validate()

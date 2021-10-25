@@ -37,7 +37,7 @@ func TestLocalCreateConfigDefaultContent(t *testing.T) {
 		ComponentId: `keboola.foo`,
 		Id:          "456",
 	}
-	object, err := manager.CreateObject(key, "New Config")
+	object, err := manager.createObject(key, "New Config")
 	assert.NoError(t, err)
 
 	// Assert
@@ -75,7 +75,7 @@ func TestLocalCreateConfigRowDefaultContent(t *testing.T) {
 		ConfigId:    "567",
 		Id:          "789",
 	}
-	object, err := manager.CreateObject(key, "New Row")
+	object, err := manager.createObject(key, "New Row")
 	assert.NoError(t, err)
 
 	// Assert
@@ -103,7 +103,7 @@ func TestLocalCreateConfigContentFromSchema(t *testing.T) {
 		ComponentId: `keboola.foo`,
 		Id:          "456",
 	}
-	object, err := manager.CreateObject(key, "New Config")
+	object, err := manager.createObject(key, "New Config")
 	assert.NoError(t, err)
 
 	// Assert
@@ -132,7 +132,7 @@ func TestLocalCreateConfigRowContentFromSchema(t *testing.T) {
 		ConfigId:    "567",
 		Id:          "789",
 	}
-	object, err := manager.CreateObject(key, "New Row")
+	object, err := manager.createObject(key, "New Row")
 	assert.NoError(t, err)
 
 	// Assert
@@ -157,7 +157,7 @@ func TestLocalCreateConfigEmptyContent(t *testing.T) {
 		ComponentId: `keboola.foo`,
 		Id:          "456",
 	}
-	object, err := manager.CreateObject(key, "New Config")
+	object, err := manager.createObject(key, "New Config")
 	assert.NoError(t, err)
 
 	// Assert
@@ -183,7 +183,7 @@ func TestLocalCreateConfigRowEmptyContent(t *testing.T) {
 		ConfigId:    "567",
 		Id:          "789",
 	}
-	object, err := manager.CreateObject(key, "New Row")
+	object, err := manager.createObject(key, "New Row")
 	assert.NoError(t, err)
 
 	// Assert
