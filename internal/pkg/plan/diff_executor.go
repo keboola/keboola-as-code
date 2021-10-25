@@ -46,7 +46,7 @@ func (e *diffExecutor) invoke() error {
 		case ActionDeleteLocal:
 			e.localWork.DeleteObject(action.ObjectState, action.Manifest())
 		case ActionSaveRemote:
-			e.remoteWork.SaveObject(action.ObjectState, action.ChangedFields)
+			e.remoteWork.SaveObject(action.ObjectState, action.LocalState(), action.ChangedFields)
 		case ActionDeleteRemote:
 			if e.allowedRemoteDelete {
 				e.remoteWork.DeleteObject(action.ObjectState)

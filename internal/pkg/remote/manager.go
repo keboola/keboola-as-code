@@ -161,28 +161,15 @@ func (u *UnitOfWork) LoadObject(object model.Object) (model.ObjectState, error) 
 	return objectState, nil
 }
 
-func (u *UnitOfWork) SaveObject(object model.ObjectState, changedFields []string) {
-	switch v := object.(type) {
-	case *model.BranchState:
-		if v.Remote != nil {
-			if err := u.createOrUpdate(v, changedFields); err != nil {
-				u.errors.Append(err)
-			}
-		} else {
-			// Branch cannot be created from the CLI
-			u.errors.Append(fmt.Errorf(`branch "%d" (%s) exists only locally, new branch cannot be created by CLI`, v.Local.Id, v.Local.Name))
-			return
-		}
-	case *model.ConfigState:
-		if err := u.createOrUpdate(v, changedFields); err != nil {
-			u.errors.Append(err)
-		}
-	case *model.ConfigRowState:
-		if err := u.createOrUpdate(v, changedFields); err != nil {
-			u.errors.Append(err)
-		}
-	default:
-		panic(fmt.Errorf(`unexpected type "%T"`, object))
+func (u *UnitOfWork) SaveObject(objectState model.ObjectState, object model.Object, changedFields []string) {
+	if v, ok := objectState.(*model.BranchState); ok && v.Remote == nil {
+		// Branch cannot be created from the CLI
+		u.errors.Append(fmt.Errorf(`branch "%d" (%s) exists only locally, new branch cannot be created by CLI`, v.Local.Id, v.Local.Name))
+		return
+	}
+
+	if err := u.createOrUpdate(objectState, object, changedFields); err != nil {
+		u.errors.Append(err)
 	}
 }
 
@@ -239,11 +226,7 @@ func (u *UnitOfWork) Invoke() error {
 	return u.errors.ErrorOrNil()
 }
 
-func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, changedFields []string) error {
-	// Get object local state.
-	// Remote state is used for marking object as deleted (then local state is not set)
-	object := objectState.LocalOrRemoteState()
-
+func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, object model.Object, changedFields []string) error {
 	// Set changeDescription
 	switch v := object.(type) {
 	case *model.Config:
