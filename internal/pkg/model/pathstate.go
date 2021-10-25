@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"sort"
 	"strings"
+	"sync"
 
 	"go.uber.org/zap"
 
@@ -14,6 +15,7 @@ import (
 
 // PathsState keeps state of all files/dirs in projectDir.
 type PathsState struct {
+	lock    *sync.Mutex
 	fs      filesystem.Fs
 	all     map[string]bool
 	tracked map[string]bool
@@ -30,6 +32,7 @@ const (
 
 func NewPathsState(fs filesystem.Fs) (*PathsState, error) {
 	f := &PathsState{
+		lock:    &sync.Mutex{},
 		fs:      fs,
 		all:     make(map[string]bool),
 		tracked: make(map[string]bool),
@@ -40,7 +43,11 @@ func NewPathsState(fs filesystem.Fs) (*PathsState, error) {
 }
 
 func (f *PathsState) Clone() *PathsState {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+
 	n := &PathsState{
+		lock:    &sync.Mutex{},
 		fs:      f.fs,
 		all:     make(map[string]bool),
 		tracked: make(map[string]bool),
@@ -62,6 +69,9 @@ func (f *PathsState) Clone() *PathsState {
 
 // State returns state of path.
 func (f *PathsState) State(path string) PathState {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+
 	if _, ok := f.tracked[path]; ok {
 		return Tracked
 	}
@@ -81,6 +91,9 @@ func (f *PathsState) IsUntracked(path string) bool {
 
 // TrackedPaths returns all tracked paths.
 func (f *PathsState) TrackedPaths() []string {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+
 	var tracked []string
 	for path := range f.tracked {
 		tracked = append(tracked, path)
@@ -91,6 +104,9 @@ func (f *PathsState) TrackedPaths() []string {
 
 // UntrackedPaths returns all untracked paths.
 func (f *PathsState) UntrackedPaths() []string {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+
 	var untracked []string
 	for path := range f.all {
 		if _, ok := f.tracked[path]; !ok {
@@ -132,6 +148,9 @@ func (f *PathsState) LogUntrackedPaths(logger *zap.SugaredLogger) {
 }
 
 func (f *PathsState) IsFile(path string) bool {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+
 	v, ok := f.isFile[path]
 	if !ok {
 		panic(fmt.Errorf(`unknown path "%s"`, path))
@@ -145,6 +164,9 @@ func (f *PathsState) IsDir(path string) bool {
 
 // MarkTracked path and all parent paths.
 func (f *PathsState) MarkTracked(path string) {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+
 	// Add path and all parents
 	for {
 		// Is path known (not ignored)?
@@ -165,6 +187,8 @@ func (f *PathsState) MarkSubPathsTracked(path string) {
 	f.MarkTracked(path)
 
 	// Mark tracked all sub paths
+	f.lock.Lock()
+	defer f.lock.Unlock()
 	for subPath := range f.all {
 		if filesystem.IsFrom(subPath, path) {
 			f.tracked[subPath] = true
