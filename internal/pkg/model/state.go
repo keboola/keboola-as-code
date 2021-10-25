@@ -220,30 +220,39 @@ func (s *State) MustGet(key Key) ObjectState {
 	return state
 }
 
-func (s *State) GetOrCreate(key Key) (ObjectState, error) {
+func (s *State) CreateFrom(objectManifest Record) (ObjectState, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	if v, ok := s.objects.Get(key.String()); ok {
-		// Get
-		return v.(ObjectState), nil
-	} else {
-		// Create
-		var object ObjectState
-		switch key.(type) {
-		case BranchKey:
-			object = &BranchState{}
-		case ConfigKey:
-			object = &ConfigState{}
-		case ConfigRowKey:
-			object = &ConfigRowState{}
-		default:
-			panic(fmt.Errorf(`unexpected type "%T"`, key))
-		}
-
-		s.objects.Set(key.String(), object)
-		return object, nil
+	key := objectManifest.Key()
+	if _, found := s.objects.Get(key.String()); found {
+		return nil, fmt.Errorf(`object "%s" already exists`, key.Desc())
 	}
+
+	// Create
+	var object ObjectState
+	switch v := objectManifest.(type) {
+	case *BranchManifest:
+		object = &BranchState{BranchManifest: v}
+	case *ConfigManifest:
+		object = &ConfigState{ConfigManifest: v}
+	case *ConfigRowManifest:
+		object = &ConfigRowState{ConfigRowManifest: v}
+	default:
+		panic(fmt.Errorf(`unexpected type "%T"`, objectManifest))
+	}
+
+	s.objects.Set(key.String(), object)
+	return object, nil
+}
+
+func (s *State) GetOrCreateFrom(objectManifest Record) (ObjectState, error) {
+	if objectState, found := s.Get(objectManifest.Key()); found {
+		objectState.SetManifest(objectManifest)
+		return objectState, nil
+	}
+
+	return s.CreateFrom(objectManifest)
 }
 
 func (s *State) IsTracked(path string) bool {
