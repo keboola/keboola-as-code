@@ -193,19 +193,24 @@ func TestValidateState(t *testing.T) {
 	branchManifest.ObjectPath = "branch"
 	configKey := model.ConfigKey{BranchId: 456, ComponentId: "keboola.foo", Id: "234"}
 	config := &model.Config{ConfigKey: configKey}
+	configManifest := &model.ConfigManifest{ConfigKey: configKey}
 	assert.NoError(t, s.manifest.PersistRecord(branchManifest))
-	s.SetLocalState(branch, branchManifest)
-	_, err = s.SetRemoteState(config)
+	branchState, err := s.CreateFrom(branchManifest)
+	assert.NoError(t, err)
+	branchState.SetLocalState(branch)
+	configState, err := s.CreateFrom(configManifest)
+	assert.NoError(t, err)
+	configState.SetRemoteState(config)
 	assert.NoError(t, err)
 
 	// Validate
 	s.validate()
 	expectedLocalError := `
-branch "456" is not valid:
+local branch "branch" is not valid:
   - key="name", value="", failed "required" validation
 `
 	expectedRemoteError := `
-config "branch:456/component:keboola.foo/config:234" is not valid:
+remote config "branch:456/component:keboola.foo/config:234" is not valid:
   - key="name", value="", failed "required" validation
   - key="configuration", value="<nil>", failed "required" validation
 `

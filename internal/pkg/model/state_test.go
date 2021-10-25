@@ -194,59 +194,53 @@ func newTestState(t *testing.T) *State {
 
 	// Branch 1
 	branch1Key := BranchKey{Id: 123}
-	branch1State, err := s.GetOrCreate(branch1Key)
+	branch1State, err := s.CreateFrom(&BranchManifest{BranchKey: branch1Key})
 	assert.NoError(t, err)
 	branch1State.SetLocalState(&Branch{
 		Name:      "Main",
 		IsDefault: true,
 	})
-	branch1State.SetManifest(&BranchManifest{BranchKey: branch1Key})
 
 	// Branch 2
 	branch2Key := BranchKey{Id: 567}
-	branch2State, err := s.GetOrCreate(branch2Key)
+	branch2State, err := s.CreateFrom(&BranchManifest{BranchKey: branch2Key})
 	assert.NoError(t, err)
 	branch2State.SetLocalState(&Branch{
 		Name:      "Foo Bar Branch",
 		IsDefault: false,
 	})
-	branch2State.SetManifest(&BranchManifest{BranchKey: branch2Key})
 
 	// Config 1
 	config1Key := ConfigKey{BranchId: 123, ComponentId: "keboola.foo", Id: `345`}
-	config1State, err := s.GetOrCreate(config1Key)
+	config1State, err := s.CreateFrom(&ConfigManifest{ConfigKey: config1Key})
 	assert.NoError(t, err)
 	config1State.SetLocalState(&Config{
 		Name: "Config 1",
 	})
-	config1State.SetManifest(&ConfigManifest{ConfigKey: config1Key})
 
 	// Config 2
 	config2Key := ConfigKey{BranchId: 123, ComponentId: "keboola.bar", Id: `678`}
-	config2State, err := s.GetOrCreate(config2Key)
+	config2State, err := s.GetOrCreateFrom(&ConfigManifest{ConfigKey: config2Key})
 	assert.NoError(t, err)
 	config2State.SetLocalState(&Config{
 		Name: "Config 2",
 	})
-	config2State.SetManifest(&ConfigManifest{ConfigKey: config2Key})
 
 	// Config Row 1
 	configRow1Key := ConfigRowKey{BranchId: 123, ComponentId: "keboola.bar", ConfigId: `678`, Id: `12`}
-	configRow1State, err := s.GetOrCreate(configRow1Key)
+	configRow1State, err := s.CreateFrom(&ConfigRowManifest{ConfigRowKey: configRow1Key})
 	assert.NoError(t, err)
 	configRow1State.SetLocalState(&ConfigRow{
 		Name: "Config Row 1",
 	})
-	configRow1State.SetManifest(&ConfigRowManifest{ConfigRowKey: configRow1Key})
 
 	// Config Row 2
 	configRow2Key := ConfigRowKey{BranchId: 123, ComponentId: "keboola.bar", ConfigId: `678`, Id: `34`}
-	configRow2State, err := s.GetOrCreate(configRow2Key)
+	configRow2State, err := s.CreateFrom(&ConfigRowManifest{ConfigRowKey: configRow2Key})
 	assert.NoError(t, err)
 	configRow2State.SetLocalState(&ConfigRow{
 		Name: "Config Row 2",
 	})
-	configRow2State.SetManifest(&ConfigRowManifest{ConfigRowKey: configRow2Key})
 
 	return s
 }
