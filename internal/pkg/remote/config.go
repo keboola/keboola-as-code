@@ -50,8 +50,8 @@ func (a *StorageApi) UpdateConfig(config *model.Config, changed []string) (*mode
 	return nil, response.Err()
 }
 
-func (a *StorageApi) DeleteConfig(config *model.Config) error {
-	return a.DeleteConfigRequest(config).Send().Err()
+func (a *StorageApi) DeleteConfig(key model.ConfigKey) error {
+	return a.DeleteConfigRequest(key).Send().Err()
 }
 
 func (a *StorageApi) ListComponentsRequest(branchId int) *client.Request {
@@ -166,21 +166,21 @@ func (a *StorageApi) UpdateConfigRequest(config *model.Config, changed []string)
 }
 
 // DeleteConfigRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/manage-configurations/delete-configuration
-func (a *StorageApi) DeleteConfigRequest(config *model.Config) *client.Request {
+func (a *StorageApi) DeleteConfigRequest(key model.ConfigKey) *client.Request {
 	return a.NewRequest(resty.MethodDelete, "branch/{branchId}/components/{componentId}/configs/{configId}").
-		SetPathParam("branchId", cast.ToString(config.BranchId)).
-		SetPathParam("componentId", config.ComponentId).
-		SetPathParam("configId", config.Id)
+		SetPathParam("branchId", cast.ToString(key.BranchId)).
+		SetPathParam("componentId", key.ComponentId).
+		SetPathParam("configId", key.Id)
 }
 
-func (a *StorageApi) DeleteConfigsInBranchRequest(branchId int) *client.Request {
-	return a.ListComponentsRequest(branchId).
+func (a *StorageApi) DeleteConfigsInBranchRequest(key model.BranchKey) *client.Request {
+	return a.ListComponentsRequest(key.Id).
 		OnSuccess(func(response *client.Response) {
 			for _, component := range *response.Result().(*[]*model.ComponentWithConfigs) {
 				for _, config := range component.Configs {
 					response.
 						Sender().
-						Request(a.DeleteConfigRequest(config.Config)).
+						Request(a.DeleteConfigRequest(config.ConfigKey)).
 						Send()
 				}
 			}
