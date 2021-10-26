@@ -70,7 +70,9 @@ func (l *loader) loadBlocks() error {
 	blocksMap := make([]interface{}, 0)
 	for _, block := range l.blocks {
 		blockMap := utils.NewOrderedMap()
-		utils.ConvertByJson(block, &blockMap)
+		if err := utils.ConvertByJson(block, &blockMap); err != nil {
+			return err
+		}
 		blocksMap = append(blocksMap, blockMap)
 	}
 	parameters.Set("blocks", blocksMap)

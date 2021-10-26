@@ -58,7 +58,9 @@ func (w *writer) save() error {
 
 	// Convert map to structs
 	blocks := make([]*model.Block, 0)
-	utils.ConvertByJson(blocksRaw, &blocks)
+	if err := utils.ConvertByJson(blocksRaw, &blocks); err != nil {
+		return err
+	}
 
 	// Fill in values AND generate files
 	blocksDir := w.Naming.BlocksDir(w.configDir)

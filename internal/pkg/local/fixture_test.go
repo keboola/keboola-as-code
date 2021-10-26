@@ -102,3 +102,8 @@ func (r MockedRecord) NewEmptyObject() model.Object {
 func (MockedObject) ObjectName() string {
 	return "object"
 }
+
+func (o *MockedObject) Clone() model.Object {
+	clone := *o
+	return &clone
+}

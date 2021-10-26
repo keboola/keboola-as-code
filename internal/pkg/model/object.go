@@ -20,10 +20,16 @@ const (
 	ShareCodeContentKey         = `code_content`
 )
 
+type ObjectIdAndName interface {
+	ObjectId() string
+	ObjectName() string
+}
+
 type Object interface {
 	Key
 	Key() Key
 	ObjectName() string
+	Clone() Object
 }
 
 type ObjectWithContent interface {
@@ -88,7 +94,7 @@ type Config struct {
 	Description       string                 `json:"description" diff:"true" descriptionFile:"true"`
 	ChangeDescription string                 `json:"changeDescription"`
 	Content           *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
-	Blocks            []*Block               `json:"-" validate:"dive"` // loaded transformation's blocks, filled in only for the LOCAL state
+	Blocks            Blocks                 `json:"-" validate:"dive"` // loaded transformation's blocks, filled in only for the LOCAL state
 	Relations         Relations              `json:"-" validate:"dive"`
 }
 
@@ -126,13 +132,17 @@ type Event struct {
 	Id string `json:"id"`
 }
 
+type Blocks []*Block
+
 // Block - transformation block.
 type Block struct {
 	BlockKey
 	Paths `json:"-"`
-	Name  string  `json:"name" validate:"required" metaFile:"true"`
-	Codes []*Code `json:"codes" validate:"omitempty,dive"`
+	Name  string `json:"name" validate:"required" metaFile:"true"`
+	Codes Codes  `json:"codes" validate:"omitempty,dive"`
 }
+
+type Codes []*Code
 
 // Code - transformation code.
 type Code struct {
@@ -243,4 +253,70 @@ func (k Kind) IsBlock() bool {
 
 func (k Kind) IsCode() bool {
 	return k.Name == CodeKind
+}
+
+func (b *Branch) Clone() Object {
+	clone := *b
+	return &clone
+}
+
+func (c *Config) Clone() Object {
+	clone := *c
+	clone.Content = utils.CloneOrderedMap(c.Content)
+	clone.Blocks = c.Blocks.Clone()
+	clone.Relations = c.Relations.Clone()
+	return &clone
+}
+
+func (r *ConfigRow) Clone() Object {
+	clone := *r
+	clone.Content = utils.CloneOrderedMap(r.Content)
+	return &clone
+}
+
+func (b *Block) Clone() *Block {
+	clone := *b
+	clone.Codes = b.Codes.Clone()
+	return &clone
+}
+
+func (v Blocks) Clone() Blocks {
+	if v == nil {
+		return nil
+	}
+
+	out := make(Blocks, len(v))
+	for index, item := range v {
+		out[index] = item.Clone()
+	}
+	return out
+}
+
+func (c *Code) Clone() *Code {
+	clone := *c
+	return &clone
+}
+
+func (v Codes) Clone() Codes {
+	if v == nil {
+		return nil
+	}
+
+	out := make(Codes, len(v))
+	for index, item := range v {
+		out[index] = item.Clone()
+	}
+	return out
+}
+
+func (v Relations) Clone() Relations {
+	if v == nil {
+		return nil
+	}
+
+	var out Relations
+	if err := utils.ConvertByJson(v, &out); err != nil {
+		panic(err)
+	}
+	return out
 }
