@@ -70,7 +70,7 @@ func (u *UnitOfWork) LoadAll() {
 			// Save branch + load branch components
 			for _, branch := range *response.Result().(*[]*model.Branch) {
 				// Store branch to state
-				if objectState, err := u.LoadObject(branch); err != nil {
+				if objectState, err := u.loadObject(branch); err != nil {
 					u.errors.Append(err)
 					continue
 				} else if objectState == nil {
@@ -96,7 +96,7 @@ func (u *UnitOfWork) loadBranch(branch *model.Branch, pool *client.Pool) {
 				// Configs
 				for _, config := range component.Configs {
 					// Store config to state
-					if objectState, err := u.LoadObject(config.Config); err != nil {
+					if objectState, err := u.loadObject(config.Config); err != nil {
 						u.errors.Append(err)
 						continue
 					} else if objectState == nil {
@@ -107,7 +107,7 @@ func (u *UnitOfWork) loadBranch(branch *model.Branch, pool *client.Pool) {
 					// Rows
 					for _, row := range config.Rows {
 						//  Store row to state
-						if _, err := u.LoadObject(row); err != nil {
+						if _, err := u.loadObject(row); err != nil {
 							u.errors.Append(err)
 							continue
 						}
@@ -118,16 +118,18 @@ func (u *UnitOfWork) loadBranch(branch *model.Branch, pool *client.Pool) {
 		Send()
 }
 
-func (u *UnitOfWork) LoadObject(object model.Object) (model.ObjectState, error) {
+func (u *UnitOfWork) loadObject(object model.Object) (model.ObjectState, error) {
 	// Skip ignored objects
 	if u.Manifest().IsObjectIgnored(object) {
 		return nil, nil
 	}
 
 	// Invoke mapper
-	if err := u.mapper.AfterRemoteLoad(&model.RemoteLoadRecipe{Object: object}); err != nil {
+	recipe := &model.RemoteLoadRecipe{Original: object, Modified: object.Clone()}
+	if err := u.mapper.AfterRemoteLoad(recipe); err != nil {
 		return nil, err
 	}
+	object = recipe.Modified
 
 	// Get object state
 	objectState, found := u.state.Get(object.Key())
@@ -168,7 +170,14 @@ func (u *UnitOfWork) SaveObject(objectState model.ObjectState, object model.Obje
 		return
 	}
 
-	if err := u.createOrUpdate(objectState, object, changedFields); err != nil {
+	// Invoke mapper
+	recipe := &model.RemoteSaveRecipe{Original: object, Modified: object.Clone()}
+	if err := u.mapper.BeforeRemoteSave(recipe); err != nil {
+		u.errors.Append(err)
+		return
+	}
+
+	if err := u.createOrUpdate(objectState, recipe, changedFields); err != nil {
 		u.errors.Append(err)
 	}
 }
@@ -210,9 +219,9 @@ func (u *UnitOfWork) Invoke() error {
 	return u.errors.ErrorOrNil()
 }
 
-func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, object model.Object, changedFields []string) error {
+func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, recipe *model.RemoteSaveRecipe, changedFields []string) error {
 	// Set changeDescription
-	switch v := object.(type) {
+	switch v := recipe.Modified.(type) {
 	case *model.Config:
 		v.ChangeDescription = u.changeDescription
 		if len(changedFields) > 0 {
@@ -228,14 +237,15 @@ func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, object model.
 	// Create or update
 	if !objectState.HasRemoteState() {
 		// Create
-		return u.create(objectState, object)
+		return u.create(objectState, recipe)
 	}
 
 	// Update
-	return u.update(objectState, object, changedFields)
+	return u.update(objectState, recipe, changedFields)
 }
 
-func (u *UnitOfWork) create(objectState model.ObjectState, object model.Object) error {
+func (u *UnitOfWork) create(objectState model.ObjectState, recipe *model.RemoteSaveRecipe) error {
+	object := recipe.Modified
 	request, err := u.api.CreateRequest(object)
 	if err != nil {
 		return err
@@ -244,13 +254,13 @@ func (u *UnitOfWork) create(objectState model.ObjectState, object model.Object) 
 		Request(request).
 		OnSuccess(func(response *client.Response) {
 			// Save new ID to manifest
-			objectState.SetRemoteState(object)
+			objectState.SetRemoteState(recipe.Original)
 		}).
 		OnError(func(response *client.Response) {
 			if e, ok := response.Error().(*Error); ok {
 				if e.ErrCode == "configurationAlreadyExists" || e.ErrCode == "configurationRowAlreadyExists" {
 					// Object exists -> update instead of create + clear error
-					response.SetErr(u.update(objectState, object, nil))
+					response.SetErr(u.update(objectState, recipe, nil))
 				}
 			}
 		}).
@@ -258,12 +268,13 @@ func (u *UnitOfWork) create(objectState model.ObjectState, object model.Object) 
 	return nil
 }
 
-func (u *UnitOfWork) update(objectState model.ObjectState, object model.Object, changedFields []string) error {
+func (u *UnitOfWork) update(objectState model.ObjectState, recipe *model.RemoteSaveRecipe, changedFields []string) error {
+	object := recipe.Modified
 	if request, err := u.api.UpdateRequest(object, changedFields); err == nil {
 		u.poolFor(object.Level()).
 			Request(request).
 			OnSuccess(func(response *client.Response) {
-				objectState.SetRemoteState(object)
+				objectState.SetRemoteState(recipe.Original)
 			}).
 			Send()
 	} else {

@@ -54,6 +54,10 @@ func (m *Manager) Naming() *model.Naming {
 	return m.manifest.Naming
 }
 
+func (m *Manager) Fs() filesystem.Fs {
+	return m.fs
+}
+
 func (m *Manager) NewUnitOfWork(ctx context.Context) *UnitOfWork {
 	u := &UnitOfWork{
 		Manager: m,
