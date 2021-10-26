@@ -288,12 +288,12 @@ func (k ConfigRowKey) ParentKey() (Key, error) {
 	return k.ConfigKey(), nil
 }
 
-func (k Block) ConfigKey() *ConfigKey {
-	return &ConfigKey{BranchId: k.BranchId, ComponentId: k.ComponentId, Id: k.ConfigId}
+func (b Block) ConfigKey() *ConfigKey {
+	return &ConfigKey{BranchId: b.BranchId, ComponentId: b.ComponentId, Id: b.ConfigId}
 }
 
-func (k Code) ConfigKey() *ConfigKey {
-	return &ConfigKey{BranchId: k.BranchId, ComponentId: k.ComponentId, Id: k.ConfigId}
+func (c Code) ConfigKey() *ConfigKey {
+	return &ConfigKey{BranchId: c.BranchId, ComponentId: c.ComponentId, Id: c.ConfigId}
 }
 
 func (k ConfigKeySameBranch) ConfigKey(branch BranchKey) *ConfigKey {

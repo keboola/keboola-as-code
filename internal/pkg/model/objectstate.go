@@ -5,8 +5,10 @@ import (
 )
 
 type ObjectState interface {
-	Object
 	RecordPaths
+	Key
+	Key() Key
+	ObjectName() string
 	HasManifest() bool
 	SetManifest(record Record)
 	Manifest() Record

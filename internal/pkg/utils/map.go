@@ -13,14 +13,15 @@ type Pair struct {
 	Value interface{}
 }
 
-func ConvertByJson(input, target interface{}) {
+func ConvertByJson(input, target interface{}) error {
 	data, err := json.Encode(input, false)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	if err := json.Decode(data, target); err != nil {
-		panic(err)
+		return err
 	}
+	return nil
 }
 
 func NewOrderedMap() *orderedmap.OrderedMap {
@@ -50,6 +51,14 @@ func OrderedMapToMap(in *orderedmap.OrderedMap) map[string]interface{} {
 		out[key] = convertValue(value)
 	}
 
+	return out
+}
+
+func CloneOrderedMap(in *orderedmap.OrderedMap) *orderedmap.OrderedMap {
+	out := NewOrderedMap()
+	if err := ConvertByJson(in, out); err != nil {
+		panic(err)
+	}
 	return out
 }
 
