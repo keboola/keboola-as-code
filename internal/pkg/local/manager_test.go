@@ -11,8 +11,8 @@ import (
 
 func TestUnitOfWork_workersFor(t *testing.T) {
 	t.Parallel()
-	m := newTestLocalManager(t)
-	uow := m.NewUnitOfWork(context.Background())
+	manager, _ := newTestLocalManager(t)
+	uow := manager.NewUnitOfWork(context.Background())
 
 	lock := &sync.Mutex{}
 	var order []int

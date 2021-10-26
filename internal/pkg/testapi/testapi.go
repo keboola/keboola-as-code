@@ -54,6 +54,7 @@ func NewMockedComponentsProvider() model.RemoteComponentsProvider {
 func AddMockedComponents(httpTransport *httpmock.MockTransport) {
 	// Define mocked components
 	components := []struct{ Id, Type, Name string }{
+		{"foo.bar", "other", "Foo Bar"},
 		{"ex-generic-v2", "extractor", "Generic"},
 		{"keboola.ex-db-mysql", "extractor", "MySQL"},
 		{"keboola.snowflake-transformation", "transformation", "Snowflake"},

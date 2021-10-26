@@ -10,7 +10,7 @@ import (
 
 func TestLocalDeleteModel(t *testing.T) {
 	t.Parallel()
-	manager := newTestLocalManager(t)
+	manager, _ := newTestLocalManager(t)
 	fs := manager.fs
 
 	record := &MockedRecord{}
@@ -50,7 +50,7 @@ func TestLocalDeleteModel(t *testing.T) {
 
 func TestDeleteEmptyDirectories(t *testing.T) {
 	t.Parallel()
-	manager := newTestLocalManager(t)
+	manager, _ := newTestLocalManager(t)
 	fs := manager.fs
 
 	// Structure:

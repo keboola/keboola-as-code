@@ -1,12 +1,6 @@
 package mapper
 
 import (
-	"go.uber.org/zap"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper/relations"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
@@ -31,20 +25,17 @@ type Mapper struct {
 	mappers []interface{} // implement part of the interfaces above
 }
 
-func New(logger *zap.SugaredLogger, fs filesystem.Fs, naming *model.Naming, state *model.State) *Mapper {
-	m := &Mapper{
-		context: model.MapperContext{Logger: logger, Fs: fs, Naming: naming, State: state},
-	}
+func New(context model.MapperContext) *Mapper {
+	return &Mapper{context: context}
+}
 
-	// Mappers
-	m.mappers = append(
-		m.mappers,
-		relations.NewMapper(m.context),
-		sharedcode.NewMapper(m.context),
-		transformation.NewMapper(m.context),
-	)
-
+func (m *Mapper) AddMapper(mapper ...interface{}) *Mapper {
+	m.mappers = append(m.mappers, mapper...)
 	return m
+}
+
+func (m *Mapper) Context() model.MapperContext {
+	return m.context
 }
 
 func (m *Mapper) BeforeLocalSave(recipe *model.LocalSaveRecipe) error {

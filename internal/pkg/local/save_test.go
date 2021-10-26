@@ -10,7 +10,7 @@ import (
 
 func TestLocalSaveModel(t *testing.T) {
 	t.Parallel()
-	manager := newTestLocalManager(t)
+	manager, _ := newTestLocalManager(t)
 	fs := manager.fs
 
 	config := utils.NewOrderedMap()

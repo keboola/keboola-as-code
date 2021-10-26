@@ -13,7 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func newTestLocalManager(t *testing.T) *Manager {
+func newTestLocalManager(t *testing.T) (*Manager, *mapper.Mapper) {
 	t.Helper()
 
 	logger, _ := utils.NewDebugLogger()
@@ -25,5 +25,7 @@ func newTestLocalManager(t *testing.T) *Manager {
 
 	components := model.NewComponentsMap(nil)
 	state := model.NewState(zap.NewNop().Sugar(), fs, components, model.SortByPath)
-	return NewManager(logger, fs, m, state, mapper.New(logger, fs, m.Naming, state))
+	mapperContext := model.MapperContext{Logger: logger, Fs: fs, Naming: m.Naming, State: state}
+	mapperInst := mapper.New(mapperContext)
+	return NewManager(logger, fs, m, state, mapperInst), mapperInst
 }
