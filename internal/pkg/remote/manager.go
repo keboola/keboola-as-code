@@ -31,7 +31,8 @@ type UnitOfWork struct {
 	ctx               context.Context
 	lock              *sync.Mutex
 	changeDescription string                 // change description used for all modified configs and rows
-	pools             *orderedmap.OrderedMap // separated pool for changes in branches, configs and rows
+	storageApiPools   *orderedmap.OrderedMap // separated pool for changes in branches, configs and rows
+	schedulerApiPool  *client.Pool
 	newObjectStates   []model.ObjectState
 	errors            *utils.Error
 	invoked           bool
@@ -57,7 +58,8 @@ func (m *Manager) NewUnitOfWork(ctx context.Context, changeDescription string) *
 		ctx:               ctx,
 		lock:              &sync.Mutex{},
 		changeDescription: changeDescription,
-		pools:             utils.NewOrderedMap(),
+		storageApiPools:   utils.NewOrderedMap(),
+		schedulerApiPool:  m.schedulerApi.NewPool(),
 		errors:            utils.NewMultiError(),
 	}
 }
@@ -203,13 +205,17 @@ func (u *UnitOfWork) Invoke() error {
 	}
 
 	// Start and wait for all pools
-	u.pools.SortKeys(sort.Strings)
-	for _, level := range u.pools.Keys() {
-		pool, _ := u.pools.Get(level)
+	u.storageApiPools.SortKeys(sort.Strings)
+	for _, level := range u.storageApiPools.Keys() {
+		pool, _ := u.storageApiPools.Get(level)
 		if err := pool.(*client.Pool).StartAndWait(); err != nil {
 			u.errors.Append(err)
 			break
 		}
+	}
+
+	if err := u.schedulerApiPool.StartAndWait(); err != nil {
+		u.errors.Append(err)
 	}
 
 	// OnObjectsLoad event
@@ -332,12 +338,12 @@ func (u *UnitOfWork) poolFor(level int) *client.Pool {
 	}
 
 	key := cast.ToString(level)
-	if value, found := u.pools.Get(key); found {
+	if value, found := u.storageApiPools.Get(key); found {
 		return value.(*client.Pool)
 	}
 
 	pool := u.api.NewPool()
 	pool.SetContext(u.ctx)
-	u.pools.Set(key, pool)
+	u.storageApiPools.Set(key, pool)
 	return pool
 }
