@@ -20,6 +20,11 @@ const (
 	ShareCodeContentKey         = `code_content`
 )
 
+type ObjectIdAndName interface {
+	ObjectId() string
+	ObjectName() string
+}
+
 type Object interface {
 	Key
 	Key() Key

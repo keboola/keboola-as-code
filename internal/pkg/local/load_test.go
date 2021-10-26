@@ -7,13 +7,14 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func TestLocalLoadModel(t *testing.T) {
 	t.Parallel()
-	manager := newTestLocalManager(t)
+	manager, _ := newTestLocalManager(t)
 	fs := manager.fs
 
 	metaFile := `{
@@ -51,7 +52,7 @@ func TestLocalLoadModel(t *testing.T) {
 
 func TestLocalLoadModelNotFound(t *testing.T) {
 	t.Parallel()
-	manager := newTestLocalManager(t)
+	manager, _ := newTestLocalManager(t)
 
 	// Save files
 	target := &MockedObject{}
@@ -66,7 +67,10 @@ func TestLocalLoadModelNotFound(t *testing.T) {
 
 func TestLocalLoadModelInvalidTransformation(t *testing.T) {
 	t.Parallel()
-	manager := newTestLocalManager(t)
+
+	manager, mapperIst := newTestLocalManager(t)
+	mapperIst.AddMapper(transformation.NewMapper(mapperIst.Context()))
+
 	fs := manager.fs
 	componentProvider := manager.state.Components()
 	component := &model.Component{

@@ -11,6 +11,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/relations"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -90,7 +93,18 @@ func newState(options *Options) *State {
 	s.State = model.NewState(options.logger, options.fs, options.api.Components(), options.manifest.SortBy)
 
 	// Mapper
-	mapperInst := mapper.New(options.logger, options.fs, options.manifest.Naming, s.State)
+	mapperContext := model.MapperContext{
+		Logger: options.logger,
+		Fs:     options.fs,
+		Naming: options.manifest.Naming,
+		State:  s.State,
+	}
+	mappers := []interface{}{
+		relations.NewMapper(mapperContext),
+		sharedcode.NewMapper(mapperContext),
+		transformation.NewMapper(mapperContext),
+	}
+	mapperInst := mapper.New(mapperContext).AddMapper(mappers...)
 
 	// Local manager for load,save,delete ... operations
 	s.localManager = local.NewManager(options.logger, options.fs, options.manifest, s.State, mapperInst)

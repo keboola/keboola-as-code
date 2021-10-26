@@ -294,7 +294,7 @@ func (s *State) LogUntrackedPaths(logger *zap.SugaredLogger) {
 }
 
 // matchObjectIdOrName returns true if str == objectId or objectName contains str.
-func matchObjectIdOrName(str string, object Object) bool {
+func matchObjectIdOrName(str string, object ObjectIdAndName) bool {
 	if cast.ToString(object.ObjectId()) == str {
 		return true
 	}
