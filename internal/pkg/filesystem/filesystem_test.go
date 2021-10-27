@@ -20,9 +20,16 @@ func TestToSlash(t *testing.T) {
 
 func TestRel(t *testing.T) {
 	t.Parallel()
-	path, err := Rel(`foo/bar`, `foo/bar/abc/file.txt`)
+	out, err := Rel(`foo/bar`, `foo/bar/abc/file.txt`)
 	assert.NoError(t, err)
-	assert.Equal(t, "abc/file.txt", path)
+	assert.Equal(t, "abc/file.txt", out)
+}
+
+func TestRelFromRootDir(t *testing.T) {
+	t.Parallel()
+	out, err := Rel(`/`, `/file.txt`)
+	assert.NoError(t, err)
+	assert.Equal(t, "file.txt", out)
 }
 
 func TestJoin(t *testing.T) {

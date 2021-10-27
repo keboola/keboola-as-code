@@ -8,7 +8,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -39,7 +38,9 @@ func TestFileCore(t *testing.T) {
 
 	// Assert, all levels logged with the level prefix
 	expected := "DEBUG\tDebug msg\nINFO\tInfo msg\nWARN\tWarn msg\nERROR\tError msg\n"
-	assert.Equal(t, expected, testhelper.GetFileContent(filePath))
+	content, err := os.ReadFile(filePath)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, string(content))
 }
 
 func TestConsoleCoreVerboseFalse(t *testing.T) {
@@ -128,7 +129,9 @@ func TestWriteStringNoErrIndent1(t *testing.T) {
 
 	// Assert, all levels logged with the level prefix
 	expected := "INFO\t  test\n"
-	assert.Equal(t, expected, testhelper.GetFileContent(filePath))
+	content, err := os.ReadFile(filePath)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, string(content))
 }
 
 func TestWriteStringNoErrIndent(t *testing.T) {
@@ -149,5 +152,7 @@ func TestWriteStringNoErrIndent(t *testing.T) {
 
 	// Assert, all levels logged with the level prefix
 	expected := "INFO\t      test\nINFO\t    test\n"
-	assert.Equal(t, expected, testhelper.GetFileContent(filePath))
+	content, err := os.ReadFile(filePath)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, string(content))
 }

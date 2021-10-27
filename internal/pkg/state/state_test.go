@@ -7,10 +7,8 @@ import (
 	"testing"
 
 	"github.com/jarcoal/httpmock"
-	"github.com/nhatthm/aferocopy"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -224,16 +222,13 @@ func loadTestManifest(t *testing.T, envs *env.Map, localState string) *manifest.
 	// Prepare temp dir with defined state
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filesystem.Dir(testFile)
-	localStateDir := filesystem.Join(testDir, "..", "fixtures", "local", localState)
-	projectDir := t.TempDir()
-	if err := aferocopy.Copy(localStateDir, projectDir); err != nil {
-		t.Fatalf("Copy error: %s", err)
-	}
-	testhelper.ReplaceEnvsDir(projectDir, envs)
+	stateDir := filesystem.Join(testDir, "..", "fixtures", "local", localState)
 
-	// Create fs and load manifest
-	fs, err := aferofs.NewLocalFs(zap.NewNop().Sugar(), projectDir, ".")
-	assert.NoError(t, err)
+	// Create Fs
+	fs := testhelper.NewMemoryFsFrom(stateDir)
+	testhelper.ReplaceEnvsDir(fs, `/`, envs)
+
+	// Load manifest
 	m, err := manifest.LoadManifest(fs)
 	assert.NoError(t, err)
 	m.Project.Id = 12345

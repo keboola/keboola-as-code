@@ -37,6 +37,8 @@ linters-settings:
       - ^os\.(Setenv|Getenv|Unsetenv|Lookupenv|Clearenv|PathSeparator)$
       # Instead of SetBody, use client.Request.SetJsonBody/SetFormBody
       - ^.*\.SetBody$
+      # Instead of aferocopy.Copy use aferofs.CopyFs2Fs
+      - ^aferocopy\.Copy$
 
 # https://golangci-lint.run/usage/linters
 linters:

@@ -3,11 +3,11 @@ package testhelper
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 )
 
 // fileNode is one file/dir in expected or actual directory.
@@ -24,8 +24,8 @@ type fileNodeState struct {
 }
 
 // AssertDirectoryContentsSame compares two directories, in expected file content can be used wildcards.
-func AssertDirectoryContentsSame(t assert.TestingT, expectedDir string, actualDir string) {
-	nodesState := compareDirectories(expectedDir, actualDir)
+func AssertDirectoryContentsSame(t assert.TestingT, expectedFs filesystem.Fs, expectedDir string, actualFs filesystem.Fs, actualDir string) {
+	nodesState := compareDirectories(expectedFs, expectedDir, actualFs, actualDir)
 	var errors []string
 	for _, node := range nodesState {
 		// Check if present if both dirs (actual/expected) and if has same type (file/dir)
@@ -43,10 +43,14 @@ func AssertDirectoryContentsSame(t assert.TestingT, expectedDir string, actualDi
 		default:
 			// Compare content
 			if !node.actual.isDir {
+				expectedFile, err := expectedFs.ReadFile(node.expected.absPath, ``)
+				assert.NoError(t, err)
+				actualFile, err := actualFs.ReadFile(node.actual.absPath, ``)
+				assert.NoError(t, err)
 				AssertWildcards(
 					t,
-					GetFileContent(node.expected.absPath),
-					GetFileContent(node.actual.absPath),
+					expectedFile.Content,
+					actualFile.Content,
 					fmt.Sprintf("Different content of the file \"%s\".", node.relPath),
 				)
 			}
@@ -58,62 +62,68 @@ func AssertDirectoryContentsSame(t assert.TestingT, expectedDir string, actualDi
 	}
 }
 
-func compareDirectories(expectedDir string, actualDir string) map[string]*fileNodeState {
+func compareDirectories(expectedFs filesystem.Fs, expectedDir string, actualFs filesystem.Fs, actualDir string) map[string]*fileNodeState {
 	// relative path -> state
 	hashMap := map[string]*fileNodeState{}
-	expectedDirAbs, _ := filepath.Abs(expectedDir)
-	actualDirAbs, _ := filepath.Abs(actualDir)
 	var err error
 
 	// Process actual dir
-	err = filepath.WalkDir(actualDirAbs, func(path string, d os.DirEntry, err error) error {
-		relPath := relPath(actualDirAbs, path)
-
+	err = actualFs.Walk(actualDir, func(path string, info filesystem.FileInfo, err error) error {
 		// Stop on error
 		if err != nil {
 			return err
 		}
 
 		// Ignore root
-		if path == actualDirAbs {
+		if path == actualDir {
 			return nil
 		}
 
 		// Ignore hidden files, except .env*, .gitignore
-		if IsIgnoredFile(path, d) {
+		if IsIgnoredFile(path, info) {
 			return nil
+		}
+
+		// Get relative path
+		relPath, err := filesystem.Rel(actualDir, path)
+		if err != nil {
+			return err
 		}
 
 		// Create node
 		hashMap[relPath] = &fileNodeState{
 			relPath: relPath,
-			actual:  &fileNode{d.IsDir(), path},
+			actual:  &fileNode{info.IsDir(), path},
 		}
 
 		return nil
 	})
 
 	if err != nil {
-		panic(fmt.Errorf("cannot iterate over directory \"%s\": %w", actualDirAbs, err))
+		panic(fmt.Errorf(`cannot iterate over directory "%s" in "%s": %w`, actualDir, actualFs.BasePath(), err))
 	}
 
 	// Process expected dir
-	err = filepath.WalkDir(expectedDirAbs, func(path string, d os.DirEntry, err error) error {
-		relPath := relPath(expectedDirAbs, path)
-
+	err = expectedFs.Walk(expectedDir, func(path string, info filesystem.FileInfo, err error) error {
 		// Stop on error
 		if err != nil {
 			return err
 		}
 
 		// Ignore root
-		if path == expectedDirAbs {
+		if path == expectedDir {
 			return nil
 		}
 
 		// Ignore hidden files, except .env*, .gitignore
-		if IsIgnoredFile(path, d) {
+		if IsIgnoredFile(path, info) {
 			return nil
+		}
+
+		// Get relative path
+		relPath, err := filesystem.Rel(expectedDir, path)
+		if err != nil {
+			return err
 		}
 
 		// Create node if not exists
@@ -121,13 +131,13 @@ func compareDirectories(expectedDir string, actualDir string) map[string]*fileNo
 			hashMap[relPath] = &fileNodeState{}
 		}
 		hashMap[relPath].relPath = relPath
-		hashMap[relPath].expected = &fileNode{d.IsDir(), path}
+		hashMap[relPath].expected = &fileNode{info.IsDir(), path}
 
 		return nil
 	})
 
 	if err != nil {
-		panic(fmt.Errorf("cannot iterate over directory \"%s\": %w", actualDirAbs, err))
+		panic(fmt.Errorf(`cannot iterate over directory "%s" in "%s": %w`, expectedDir, expectedFs.BasePath(), err))
 	}
 
 	return hashMap

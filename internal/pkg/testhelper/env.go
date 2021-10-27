@@ -5,9 +5,9 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/acarl005/stripansi"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"io"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -18,6 +18,7 @@ type EnvProvider interface {
 	MustGet(key string) string
 }
 
+// ReplaceEnvsString replaces ENVs in given string.
 func ReplaceEnvsString(str string, provider EnvProvider) string {
 	return regexp.
 		MustCompile(`%%[a-zA-Z0-9\-_]+%%`).
@@ -26,31 +27,35 @@ func ReplaceEnvsString(str string, provider EnvProvider) string {
 		})
 }
 
-func ReplaceEnvsFile(path string, provider EnvProvider) {
-	str := GetFileContent(path)
-	str = ReplaceEnvsString(str, provider)
-	if err := os.WriteFile(path, []byte(str), 0o655); err != nil {
+// ReplaceEnvsFile replaces ENVs in given file.
+func ReplaceEnvsFile(fs filesystem.Fs, path string, provider EnvProvider) {
+	file, err := fs.ReadFile(path, ``)
+	if err != nil {
+		panic(err)
+	}
+	file.Content = ReplaceEnvsString(file.Content, provider)
+	if err := fs.WriteFile(file); err != nil {
 		panic(fmt.Errorf("cannot write to file \"%s\": %w", path, err))
 	}
 }
 
-func ReplaceEnvsDir(root string, provider EnvProvider) {
+// ReplaceEnvsDir replaces ENVs in all files in root directory and sub-directories.
+func ReplaceEnvsDir(fs filesystem.Fs, root string, provider EnvProvider) {
 	// Iterate over directory structure
-	// nolint: forbidigo
-	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+	err := fs.Walk(root, func(path string, info filesystem.FileInfo, err error) error {
 		// Stop on error
 		if err != nil {
 			return err
 		}
 
 		// Ignore hidden files, except .env*, .gitignore
-		if IsIgnoredFile(path, d) {
+		if IsIgnoredFile(path, info) {
 			return nil
 		}
 
 		// Process file
-		if !d.IsDir() {
-			ReplaceEnvsFile(path, provider)
+		if !info.IsDir() {
+			ReplaceEnvsFile(fs, path, provider)
 		}
 
 		return nil
@@ -62,13 +67,13 @@ func ReplaceEnvsDir(root string, provider EnvProvider) {
 
 // stripAnsiWriter strips ANSI characters from
 type stripAnsiWriter struct {
-	buf *bytes.Buffer
+	buf    *bytes.Buffer
 	writer io.Writer
 }
 
 func newStripAnsiWriter(writer io.Writer) *stripAnsiWriter {
 	return &stripAnsiWriter{
-		buf: &bytes.Buffer{},
+		buf:    &bytes.Buffer{},
 		writer: writer,
 	}
 }

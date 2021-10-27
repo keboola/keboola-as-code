@@ -3,6 +3,7 @@ package filesystem
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
@@ -18,6 +19,8 @@ const (
 )
 
 type Factory func(logger *zap.SugaredLogger, workingDir string) (fs Fs, err error)
+
+type FileInfo = fs.FileInfo
 
 // Fs - filesystem interface.
 type Fs interface {
@@ -64,6 +67,9 @@ func ToSlash(path string) string {
 func Rel(base, path string) (string, error) {
 	if path == base {
 		return "", nil
+	}
+	if base == string(PathSeparator) {
+		base = ""
 	}
 
 	if !IsFrom(path, base) {

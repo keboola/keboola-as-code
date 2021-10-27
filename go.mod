@@ -21,7 +21,6 @@ require (
 	github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
 	github.com/juju/fslock v0.0.0-20160525022230-4d5c94c67b4b
 	github.com/nhatthm/aferocopy v1.0.2
-	github.com/otiai10/copy v1.6.0
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/santhosh-tekuri/jsonschema/v5 v5.0.0
 	github.com/spf13/afero v1.6.0
