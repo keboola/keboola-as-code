@@ -21,7 +21,7 @@ func TestRelationsMapperLoad(t *testing.T) {
 
 	assert.NotEmpty(t, record.Relations)
 	assert.Empty(t, object.Relations)
-	assert.NoError(t, NewMapper(context).AfterLocalLoad(recipe))
+	assert.NoError(t, NewMapper(context).MapAfterLocalLoad(recipe))
 
 	// Copied, record.Relations -> object.Relations
 	assert.NotEmpty(t, record.Relations)

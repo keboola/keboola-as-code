@@ -20,7 +20,7 @@ func TestSaveTransformationEmpty(t *testing.T) {
 	assert.NoError(t, fs.Mkdir(blocksDir))
 
 	// Save
-	err := NewMapper(context).BeforeLocalSave(recipe)
+	err := NewMapper(context).MapBeforeLocalSave(recipe)
 	assert.NoError(t, err)
 	configContent := json.MustEncodeString(recipe.Configuration.Content, false)
 	assert.Equal(t, `{}`, configContent)
@@ -69,7 +69,7 @@ func TestSaveTransformation(t *testing.T) {
 	recipe.Configuration.Content.Set(`parameters`, parameters)
 
 	// Save
-	assert.NoError(t, NewMapper(context).BeforeLocalSave(recipe))
+	assert.NoError(t, NewMapper(context).MapBeforeLocalSave(recipe))
 
 	// Blocks are not part of the config.json
 	configContent := json.MustEncodeString(recipe.Configuration.Content, false)

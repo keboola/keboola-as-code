@@ -12,6 +12,8 @@ type ObjectState interface {
 	HasManifest() bool
 	SetManifest(record Record)
 	Manifest() Record
+	HasState(stateType StateType) bool
+	GetState(stateType StateType) Object
 	HasLocalState() bool
 	SetLocalState(object Object)
 	LocalState() Object
@@ -38,6 +40,72 @@ type ConfigRowState struct {
 	*ConfigRowManifest
 	Remote *ConfigRow `validate:"omitempty,dive"`
 	Local  *ConfigRow `validate:"omitempty,dive"`
+}
+
+func (b *BranchState) HasState(stateType StateType) bool {
+	switch stateType {
+	case StateTypeLocal:
+		return b.Local != nil
+	case StateTypeRemote:
+		return b.Remote != nil
+	default:
+		panic(fmt.Errorf(`unexpected state type "%T"`, stateType))
+	}
+}
+
+func (c *ConfigState) HasState(stateType StateType) bool {
+	switch stateType {
+	case StateTypeLocal:
+		return c.Local != nil
+	case StateTypeRemote:
+		return c.Remote != nil
+	default:
+		panic(fmt.Errorf(`unexpected state type "%T"`, stateType))
+	}
+}
+
+func (r *ConfigRowState) HasState(stateType StateType) bool {
+	switch stateType {
+	case StateTypeLocal:
+		return r.Local != nil
+	case StateTypeRemote:
+		return r.Remote != nil
+	default:
+		panic(fmt.Errorf(`unexpected state type "%T"`, stateType))
+	}
+}
+
+func (b *BranchState) GetState(stateType StateType) Object {
+	switch stateType {
+	case StateTypeLocal:
+		return b.Local
+	case StateTypeRemote:
+		return b.Remote
+	default:
+		panic(fmt.Errorf(`unexpected state type "%T"`, stateType))
+	}
+}
+
+func (c *ConfigState) GetState(stateType StateType) Object {
+	switch stateType {
+	case StateTypeLocal:
+		return c.Local
+	case StateTypeRemote:
+		return c.Remote
+	default:
+		panic(fmt.Errorf(`unexpected state type "%T"`, stateType))
+	}
+}
+
+func (r *ConfigRowState) GetState(stateType StateType) Object {
+	switch stateType {
+	case StateTypeLocal:
+		return r.Local
+	case StateTypeRemote:
+		return r.Remote
+	default:
+		panic(fmt.Errorf(`unexpected state type "%T"`, stateType))
+	}
 }
 
 func (b *BranchState) HasLocalState() bool {

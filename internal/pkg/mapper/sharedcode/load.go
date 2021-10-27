@@ -14,7 +14,7 @@ type loader struct {
 }
 
 // AfterLocalLoad - load shared code from filesystem to target config.
-func (m *sharedCodeMapper) AfterLocalLoad(recipe *model.LocalLoadRecipe) error {
+func (m *sharedCodeMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
 	// Only for shared code config row
 	if ok, err := m.isSharedCodeConfigRow(recipe.Object); err != nil {
 		return err

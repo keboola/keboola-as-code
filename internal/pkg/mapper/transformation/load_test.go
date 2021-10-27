@@ -25,7 +25,7 @@ func TestLoadTransformationMissingBlockMetaSql(t *testing.T) {
 	assert.NoError(t, fs.Mkdir(block1))
 
 	// Load, assert
-	err := NewMapper(context).AfterLocalLoad(recipe)
+	err := NewMapper(context).MapAfterLocalLoad(recipe)
 	assert.Error(t, err)
 	assert.Equal(t, `missing block metadata file "branch/config/blocks/001-block-1/meta.json"`, err.Error())
 }
@@ -46,7 +46,7 @@ func TestLoadTransformationMissingCodeMeta(t *testing.T) {
 	assert.NoError(t, fs.Mkdir(block1Code1))
 
 	// Load, assert
-	err := NewMapper(context).AfterLocalLoad(recipe)
+	err := NewMapper(context).MapAfterLocalLoad(recipe)
 	assert.Error(t, err)
 	assert.Equal(t, strings.Join([]string{
 		`- missing code metadata file "branch/config/blocks/001-block-1/001-code-1/meta.json"`,
@@ -86,7 +86,7 @@ func TestLoadTransformationSql(t *testing.T) {
 	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(block3, `meta.json`), `{"name": "003"}`)))
 
 	// Load
-	assert.NoError(t, NewMapper(context).AfterLocalLoad(recipe))
+	assert.NoError(t, NewMapper(context).MapAfterLocalLoad(recipe))
 
 	// Assert
 	expected := `
@@ -168,7 +168,7 @@ func TestLoadTransformationPy(t *testing.T) {
 	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(block3, `meta.json`), `{"name": "003"}`)))
 
 	// Load
-	assert.NoError(t, NewMapper(context).AfterLocalLoad(recipe))
+	assert.NoError(t, NewMapper(context).MapAfterLocalLoad(recipe))
 
 	// Assert
 	expected := `

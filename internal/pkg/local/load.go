@@ -89,7 +89,7 @@ func (l *modelLoader) loadDescriptionFile() {
 }
 
 func (l *modelLoader) transform() {
-	if err := l.mapper.AfterLocalLoad(l.LocalLoadRecipe); err != nil {
+	if err := l.mapper.MapAfterLocalLoad(l.LocalLoadRecipe); err != nil {
 		l.errors.Append(err)
 	}
 }

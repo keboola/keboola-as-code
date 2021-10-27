@@ -23,7 +23,7 @@ type loader struct {
 }
 
 // AfterLocalLoad - load code blocks from filesystem to target config.
-func (m *transformationMapper) AfterLocalLoad(recipe *model.LocalLoadRecipe) error {
+func (m *transformationMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
 	// Only for transformation config
 	if ok, err := m.isTransformationConfig(recipe.Object); err != nil {
 		return err

@@ -5,7 +5,7 @@ import (
 )
 
 // BeforeLocalSave - store config relations from object to manifest.
-func (m *relationsMapper) BeforeLocalSave(recipe *model.LocalSaveRecipe) error {
+func (m *relationsMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
 	if manifest, ok := recipe.Record.(*model.ConfigManifest); ok {
 		config := recipe.Object.(*model.Config)
 		manifest.Relations = config.Relations

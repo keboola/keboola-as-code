@@ -16,7 +16,7 @@ type writer struct {
 	errors    *utils.Error
 }
 
-func (m *sharedCodeMapper) BeforeLocalSave(recipe *model.LocalSaveRecipe) error {
+func (m *sharedCodeMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
 	// Only for shared code config row
 	if ok, err := m.isSharedCodeConfigRow(recipe.Object); err != nil {
 		return err

@@ -76,6 +76,14 @@ func (s *State) All() []ObjectState {
 	return out
 }
 
+func (s *State) LocalObjects() *StateObjects {
+	return NewStateObjects(s, StateTypeLocal)
+}
+
+func (s *State) RemoteObjects() *StateObjects {
+	return NewStateObjects(s, StateTypeRemote)
+}
+
 func (s *State) Branches() (branches []*BranchState) {
 	for _, object := range s.All() {
 		if v, ok := object.(*BranchState); ok {
@@ -301,4 +309,36 @@ func matchObjectIdOrName(str string, object ObjectIdAndName) bool {
 
 	// Matched by name
 	return strings.Contains(strings.ToLower(object.ObjectName()), strings.ToLower(str))
+}
+
+type StateType int
+
+const (
+	StateTypeLocal StateType = iota
+	StateTypeRemote
+)
+
+type StateObjects struct {
+	state     *State
+	stateType StateType
+}
+
+func NewStateObjects(state *State, stateType StateType) *StateObjects {
+	return &StateObjects{state: state, stateType: stateType}
+}
+
+func (f *StateObjects) Get(key Key) (Object, bool) {
+	objectState, found := f.state.Get(key)
+	if !found || !objectState.HasState(f.stateType) {
+		return nil, false
+	}
+	return objectState.GetState(f.stateType), true
+}
+
+func (f *StateObjects) MustGet(key Key) Object {
+	objectState, found := f.state.Get(key)
+	if !found || !objectState.HasState(f.stateType) {
+		panic(fmt.Errorf(`%s not found`, key.Desc()))
+	}
+	return objectState.GetState(f.stateType)
 }

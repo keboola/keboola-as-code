@@ -32,7 +32,7 @@ type UnitOfWork struct {
 	errors          *utils.Error
 	lock            *sync.Mutex
 	skipNotFoundErr bool
-	newObjects      []model.Object
+	newObjects      []model.ObjectState
 	invoked         bool
 }
 
@@ -112,7 +112,7 @@ func (u *UnitOfWork) CreateObject(key model.Key, name string) {
 		return
 	}
 	objectState.SetLocalState(object)
-	u.addNewObject(object)
+	u.addNewObject(objectState)
 
 	// Generate local path
 	if err := u.UpdatePaths(objectState, false); err != nil {
@@ -161,7 +161,7 @@ func (u *UnitOfWork) LoadObject(record model.Record) {
 			// Set local state
 			objectState.SetLocalState(object)
 
-			u.addNewObject(object)
+			u.addNewObject(objectState)
 			return nil
 		})
 }
@@ -198,6 +198,7 @@ func (u *UnitOfWork) Invoke() error {
 		panic(fmt.Errorf(`invoked local.UnitOfWork cannot be reused`))
 	}
 
+	// Start and wait for all workers
 	u.workers.SortKeys(sort.Strings)
 	for _, level := range u.workers.Keys() {
 		worker, _ := u.workers.Get(level)
@@ -205,6 +206,9 @@ func (u *UnitOfWork) Invoke() error {
 			u.errors.Append(err)
 		}
 	}
+
+	// OnLoad event
+	u.onLoad()
 
 	u.invoked = true
 	return u.errors.ErrorOrNil()
@@ -226,8 +230,23 @@ func (u *UnitOfWork) workersFor(level int) *Workers {
 	return workers
 }
 
-func (u *UnitOfWork) addNewObject(object model.Object) {
+func (u *UnitOfWork) addNewObject(objectState model.ObjectState) {
 	u.lock.Lock()
 	defer u.lock.Unlock()
-	u.newObjects = append(u.newObjects, object)
+	u.newObjects = append(u.newObjects, objectState)
+}
+
+// onLoad calls OnLoadListener for each loaded object.
+func (u *UnitOfWork) onLoad() {
+	allObjects := u.state.LocalObjects()
+	for _, objectState := range u.newObjects {
+		event := model.OnObjectLoadEvent{
+			Object:      objectState.LocalState(),
+			ObjectState: objectState,
+			AllObjects:  allObjects,
+		}
+		if err := u.mapper.OnLoad(event); err != nil {
+			u.errors.Append(err)
+		}
+	}
 }
