@@ -30,7 +30,7 @@ type UnitOfWork struct {
 	lock              *sync.Mutex
 	changeDescription string                 // change description used for all modified configs and rows
 	pools             *orderedmap.OrderedMap // separated pool for changes in branches, configs and rows
-	newObjects        []model.Object
+	newObjects        []model.ObjectState
 	errors            *utils.Error
 	invoked           bool
 }
@@ -126,7 +126,7 @@ func (u *UnitOfWork) loadObject(object model.Object) (model.ObjectState, error) 
 
 	// Invoke mapper
 	recipe := &model.RemoteLoadRecipe{Original: object, Modified: object.Clone()}
-	if err := u.mapper.AfterRemoteLoad(recipe); err != nil {
+	if err := u.mapper.MapAfterRemoteLoad(recipe); err != nil {
 		return nil, err
 	}
 	object = recipe.Modified
@@ -159,7 +159,7 @@ func (u *UnitOfWork) loadObject(object model.Object) (model.ObjectState, error) 
 		}
 	}
 
-	u.addNewObject(object)
+	u.addNewObject(objectState)
 	return objectState, nil
 }
 
@@ -172,7 +172,7 @@ func (u *UnitOfWork) SaveObject(objectState model.ObjectState, object model.Obje
 
 	// Invoke mapper
 	recipe := &model.RemoteSaveRecipe{Original: object, Modified: object.Clone()}
-	if err := u.mapper.BeforeRemoteSave(recipe); err != nil {
+	if err := u.mapper.MapBeforeRemoteSave(recipe); err != nil {
 		u.errors.Append(err)
 		return
 	}
@@ -206,6 +206,7 @@ func (u *UnitOfWork) Invoke() error {
 		panic(fmt.Errorf(`invoked UnitOfWork cannot be reused`))
 	}
 
+	// Start and wait for all pools
 	u.pools.SortKeys(sort.Strings)
 	for _, level := range u.pools.Keys() {
 		pool, _ := u.pools.Get(level)
@@ -214,6 +215,9 @@ func (u *UnitOfWork) Invoke() error {
 			break
 		}
 	}
+
+	// OnLoad event
+	u.onLoad()
 
 	u.invoked = true
 	return u.errors.ErrorOrNil()
@@ -293,10 +297,25 @@ func (u *UnitOfWork) delete(objectState model.ObjectState) {
 		Send()
 }
 
-func (u *UnitOfWork) addNewObject(object model.Object) {
+func (u *UnitOfWork) addNewObject(objectState model.ObjectState) {
 	u.lock.Lock()
 	defer u.lock.Unlock()
-	u.newObjects = append(u.newObjects, object)
+	u.newObjects = append(u.newObjects, objectState)
+}
+
+// onLoad calls OnLoadListener for each loaded object.
+func (u *UnitOfWork) onLoad() {
+	allObjects := u.state.RemoteObjects()
+	for _, objectState := range u.newObjects {
+		event := model.OnObjectLoadEvent{
+			Object:      objectState.RemoteState(),
+			ObjectState: objectState,
+			AllObjects:  allObjects,
+		}
+		if err := u.mapper.OnLoad(event); err != nil {
+			u.errors.Append(err)
+		}
+	}
 }
 
 // poolFor each level (branches, configs, rows).

@@ -5,7 +5,7 @@ import (
 )
 
 // AfterLocalLoad - load relations from manifest to object.
-func (m *relationsMapper) AfterLocalLoad(recipe *model.LocalLoadRecipe) error {
+func (m *relationsMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
 	if manifest, ok := recipe.Record.(*model.ConfigManifest); ok {
 		config := recipe.Object.(*model.Config)
 		config.Relations = manifest.Relations

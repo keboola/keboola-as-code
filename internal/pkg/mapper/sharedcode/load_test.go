@@ -16,7 +16,7 @@ func TestSharedCodeLoadMissingFile(t *testing.T) {
 	context, row, rowRecord := createTestFixtures(t, targetComponentId)
 	recipe := createLocalLoadRecipe(row, rowRecord)
 
-	err := NewMapper(context).AfterLocalLoad(recipe)
+	err := NewMapper(context).MapAfterLocalLoad(recipe)
 	assert.Error(t, err)
 	assert.Equal(t, `missing shared code file "branch/config/row/code.py"`, err.Error())
 }
@@ -32,7 +32,7 @@ func TestSharedCodeLoadOk(t *testing.T) {
 	assert.NoError(t, context.Fs.WriteFile(filesystem.CreateFile(codeFilePath, `foo bar`)))
 
 	// Load
-	err := NewMapper(context).AfterLocalLoad(recipe)
+	err := NewMapper(context).MapAfterLocalLoad(recipe)
 	assert.NoError(t, err)
 	codeContent, found := row.Content.Get(model.ShareCodeContentKey)
 	assert.True(t, found)

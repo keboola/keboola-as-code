@@ -22,7 +22,7 @@ type writer struct {
 }
 
 // BeforeLocalSave - save code blocks from source config to the disk.
-func (m *transformationMapper) BeforeLocalSave(recipe *model.LocalSaveRecipe) error {
+func (m *transformationMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
 	// Only for transformation config
 	if ok, err := m.isTransformationConfig(recipe.Object); err != nil {
 		return err

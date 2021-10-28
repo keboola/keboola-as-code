@@ -104,7 +104,7 @@ func (w *modelWriter) allFiles() []*filesystem.File {
 }
 
 func (w *modelWriter) transform() {
-	if err := w.mapper.BeforeLocalSave(w.LocalSaveRecipe); err != nil {
+	if err := w.mapper.MapBeforeLocalSave(w.LocalSaveRecipe); err != nil {
 		w.errors.Append(err)
 	}
 }

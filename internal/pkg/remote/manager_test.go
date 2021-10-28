@@ -23,9 +23,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-type testMapper struct{}
+type testMapper struct {
+	onLoadCalls []string
+}
 
-func (*testMapper) BeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
+func (*testMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
 	if config, ok := recipe.Modified.(*model.Config); ok {
 		config.Name = "modified name"
 		config.Content.Set(`key`, `api value`)
@@ -34,7 +36,7 @@ func (*testMapper) BeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
 	return nil
 }
 
-func (*testMapper) AfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
+func (*testMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
 	if config, ok := recipe.Modified.(*model.Config); ok {
 		config.Name = "internal name"
 		config.Content.Set(`key`, `internal value`)
@@ -43,9 +45,14 @@ func (*testMapper) AfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
 	return nil
 }
 
+func (t *testMapper) OnLoad(event model.OnObjectLoadEvent) error {
+	t.onLoadCalls = append(t.onLoadCalls, event.Object.Desc())
+	return nil
+}
+
 func TestBeforeRemoteSaveMapper(t *testing.T) {
 	t.Parallel()
-	uow, httpTransport, _ := newTestRemoteUOW(t)
+	_, uow, httpTransport, _ := newTestRemoteUOW(t)
 
 	// Test object
 	configKey := model.ConfigKey{BranchId: 123, ComponentId: `foo.bar`, Id: `456`}
@@ -90,7 +97,7 @@ func TestBeforeRemoteSaveMapper(t *testing.T) {
 
 func TestAfterRemoteLoadMapper(t *testing.T) {
 	t.Parallel()
-	uow, httpTransport, state := newTestRemoteUOW(t)
+	testMapperInst, uow, httpTransport, state := newTestRemoteUOW(t)
 
 	// Mocked response: branches
 	httpTransport.RegisterResponder(
@@ -124,8 +131,11 @@ func TestAfterRemoteLoadMapper(t *testing.T) {
 		}).Once(),
 	)
 
+	// Load all
 	uow.LoadAll()
 	assert.NoError(t, uow.Invoke())
+
+	// Config has been loaded
 	assert.Len(t, state.Configs(), 1)
 	configRaw, found := state.Get(model.ConfigKey{
 		BranchId:    123,
@@ -134,13 +144,19 @@ func TestAfterRemoteLoadMapper(t *testing.T) {
 	})
 	assert.True(t, found)
 	config := configRaw.(*model.ConfigState).Remote
+
+	// API response has been mapped
 	assert.Equal(t, `internal name`, config.Name)
 	assert.Equal(t, `{"key":"internal value","new":"value"}`, json.MustEncodeString(config.Content, false))
+
+	// OnLoad event has been called
+	assert.Equal(t, []string{`branch "123"`, `config "branch:123/component:foo.bar/config:456"`}, testMapperInst.onLoadCalls)
 }
 
-func newTestRemoteUOW(t *testing.T) (*remote.UnitOfWork, *httpmock.MockTransport, *model.State) {
+func newTestRemoteUOW(t *testing.T) (*testMapper, *remote.UnitOfWork, *httpmock.MockTransport, *model.State) {
 	t.Helper()
-	mappers := []interface{}{&testMapper{}}
+	testMapperInst := &testMapper{}
+	mappers := []interface{}{testMapperInst}
 	storageApi, httpTransport, _ := testapi.TestMockedStorageApi()
 	localManager, state := newTestLocalManager(t, mappers)
 	mapperContext := model.MapperContext{
@@ -151,7 +167,7 @@ func newTestRemoteUOW(t *testing.T) (*remote.UnitOfWork, *httpmock.MockTransport
 	}
 	mapperInst := mapper.New(mapperContext).AddMapper(mappers...)
 	remoteManager := remote.NewManager(localManager, storageApi, state, mapperInst)
-	return remoteManager.NewUnitOfWork(context.Background(), `change desc`), httpTransport, state
+	return testMapperInst, remoteManager.NewUnitOfWork(context.Background(), `change desc`), httpTransport, state
 }
 
 func newTestLocalManager(t *testing.T, mappers []interface{}) (*local.Manager, *model.State) {

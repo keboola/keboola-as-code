@@ -59,6 +59,11 @@ func (n Naming) Attach(key Key, path string) {
 	n.usedLock.Lock()
 	defer n.usedLock.Unlock()
 
+	// Object path cannot be empty
+	if len(path) == 0 {
+		panic(fmt.Errorf(`naming error: path for %s cannot be empty`, key.Desc()))
+	}
+
 	// Check if the path is unique
 	keyStr := key.String()
 	if foundKey, found := n.usedByPath[path]; found && foundKey != keyStr {
