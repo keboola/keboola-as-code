@@ -58,7 +58,6 @@ func TestConfig_Clone(t *testing.T) {
 		},
 		Relations: Relations{
 			&VariablesForRelation{
-				RelationType: VariablesForRelType,
 				Target: ConfigKeySameBranch{
 					ComponentId: `foo.bar`,
 					Id:          `789`,

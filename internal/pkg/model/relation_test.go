@@ -15,7 +15,14 @@ func TestRelationsUnmarshalJSON(t *testing.T) {
 	assert.NoError(t, json.Unmarshal(data, &relations))
 	assert.Len(t, relations, 1)
 	assert.IsType(t, &VariablesForRelation{}, relations[0])
-	assert.Equal(t, VariablesForRelType, relations[0].Type())
+}
+
+func TestRelationsMarshalJSON(t *testing.T) {
+	t.Parallel()
+	relations := Relations{&VariablesForRelation{}}
+	data, err := json.Marshal(&relations)
+	assert.NoError(t, err)
+	assert.Contains(t, string(data), fmt.Sprintf(`"type":"%s"`, VariablesForRelType))
 }
 
 func TestVariablesForRelation(t *testing.T) {

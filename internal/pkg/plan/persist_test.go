@@ -412,7 +412,6 @@ func TestPersistVariables(t *testing.T) {
 
 	expectedRelations := model.Relations{
 		&model.VariablesForRelation{
-			RelationType: model.VariablesForRelType,
 			Target: model.ConfigKeySameBranch{
 				ComponentId: `ex-generic-v2`,
 				Id:          `456`,
