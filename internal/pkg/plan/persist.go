@@ -148,7 +148,7 @@ func (b *persistPlanBuilder) tryAddConfig(path model.PathInProject, parentKey mo
 }
 
 func (b *persistPlanBuilder) tryAddConfigRow(path model.PathInProject, configKey model.ConfigKey) *NewRowAction {
-	component, err := b.State.Components().Get(*configKey.ComponentKey())
+	component, err := b.State.Components().Get(configKey.ComponentKey())
 	if err != nil {
 		b.errors.Append(err)
 		return nil

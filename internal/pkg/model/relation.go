@@ -136,7 +136,7 @@ type VariablesForRelation struct {
 }
 
 func (t *VariablesForRelation) TargetKey(source Key) (Key, error) {
-	return t.Target.ConfigKey(*source.(ConfigKey).BranchKey()), nil
+	return t.Target.ConfigKey(source.(ConfigKey).BranchKey()), nil
 }
 
 func (t *VariablesForRelation) ParentKey(source Key) (Key, error) {

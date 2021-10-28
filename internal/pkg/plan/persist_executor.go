@@ -86,7 +86,7 @@ func (e *persistExecutor) persistNewConfig(action *NewConfigAction) {
 
 		// Create relations
 		if action.ParentConfig != nil {
-			component, err := e.State.Components().Get(*record.ComponentKey())
+			component, err := e.State.Components().Get(record.ComponentKey())
 			if err != nil {
 				e.errors.Append(err)
 				return
