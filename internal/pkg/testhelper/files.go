@@ -3,74 +3,40 @@ package testhelper
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
 	"path/filepath"
 	"strings"
+
+	"go.uber.org/zap"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 )
 
-type FileLine struct {
-	Line   string
-	Regexp string
-}
-
-func GetFileContent(path string) string {
-	// Check if file exists
-	if !IsFile(path) {
-		panic(fmt.Errorf("file \"%s\" not found", path))
-	}
-
-	// Read content, handle error
-	contentBytes, err := ioutil.ReadFile(path)
+func NewBasePathLocalFs(basePath string) filesystem.Fs {
+	fs, err := aferofs.NewLocalFs(zap.NewNop().Sugar(), basePath, `/`)
 	if err != nil {
-		panic(fmt.Errorf("cannot get file \"%s\" content: %w", path, err))
+		panic(err)
 	}
-
-	return string(contentBytes)
+	return fs
 }
 
-// FileExists returns true if file exists.
-func FileExists(path string) bool {
-	if _, err := os.Stat(path); err == nil {
-		return true
-	} else if !os.IsNotExist(err) {
-		panic(fmt.Errorf("cannot test if file exists \"%s\": %w", path, err))
-	}
-
-	return false
-}
-
-// IsFile returns true if fle exists.
-func IsFile(path string) bool {
-	if s, err := os.Stat(path); err == nil {
-		return !s.IsDir()
-	} else if !os.IsNotExist(err) {
-		panic(fmt.Errorf("cannot test if file exists \"%s\": %w", path, err))
-	}
-
-	return false
-}
-
-// IsDir returns true if dir exists.
-func IsDir(path string) bool {
-	if s, err := os.Stat(path); err == nil {
-		return s.IsDir()
-	} else if !os.IsNotExist(err) {
-		panic(fmt.Errorf("cannot test if file exists \"%s\": %w", path, err))
-	}
-
-	return false
-}
-
-func relPath(base string, path string) string {
-	rel, err := filepath.Rel(base, path)
+func NewMemoryFs() filesystem.Fs {
+	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), `/`)
 	if err != nil {
-		panic(fmt.Errorf("cannot get relative path: %w", err))
+		panic(err)
 	}
-	return rel
+	return fs
 }
 
-func IsIgnoredFile(path string, d os.DirEntry) bool {
+func NewMemoryFsFrom(localDir string) filesystem.Fs {
+	memoryFs := NewMemoryFs()
+	if err := aferofs.CopyFs2Fs(nil, localDir, memoryFs, ``); err != nil {
+		panic(fmt.Errorf(`cannot init memory fs from local dir "%s": %w`, localDir, err))
+	}
+	return memoryFs
+}
+
+func IsIgnoredFile(path string, d filesystem.FileInfo) bool {
 	base := filepath.Base(path)
 	return !d.IsDir() &&
 		strings.HasPrefix(base, ".") &&
@@ -78,29 +44,7 @@ func IsIgnoredFile(path string, d os.DirEntry) bool {
 		base != ".gitignore"
 }
 
-func IsIgnoredDir(path string, d os.DirEntry) bool {
+func IsIgnoredDir(path string, d filesystem.FileInfo) bool {
 	base := filepath.Base(path)
 	return d.IsDir() && strings.HasPrefix(base, ".")
-}
-
-func ReadFile(dir string, relPath string, errPrefix string) (string, error) {
-	path := filepath.Join(dir, relPath)
-
-	content, err := os.ReadFile(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return "", fmt.Errorf("missing %s file \"%s\"", errPrefix, relPath)
-		}
-		return "", fmt.Errorf("cannot read %s file \"%s\"", errPrefix, relPath)
-	}
-
-	return string(content), nil
-}
-
-func WriteFile(dir string, relPath string, content string, errPrefix string) error {
-	path := filepath.Join(dir, relPath)
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
-		return fmt.Errorf("cannot write %s file \"%s\"", errPrefix, relPath)
-	}
-	return nil
 }

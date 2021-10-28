@@ -3,15 +3,14 @@ package fixtures
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"runtime"
 	"testing"
 
 	"github.com/iancoleman/orderedmap"
-	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 )
 
 type ProjectSnapshot struct {
@@ -122,11 +121,14 @@ func (r *ConfigRow) ObjectName() string {
 }
 
 func LoadStateFile(path string) (*StateFile, error) {
-	data := testhelper.GetFileContent(path) // nolint: forbidigo
-	stateFile := &StateFile{}
-	err := json.Unmarshal([]byte(data), stateFile)
+	data, err := os.ReadFile(path) // nolint: forbidigo
 	if err != nil {
-		return nil, fmt.Errorf("cannot parse project state file \"%s\": %w", path, err)
+		return nil, fmt.Errorf(`cannot load test project state file "%s": %w`, path, err)
+	}
+
+	stateFile := &StateFile{}
+	if err := json.Unmarshal(data, stateFile); err != nil {
+		return nil, fmt.Errorf("cannot parse test project state file \"%s\": %w", path, err)
 	}
 
 	// Check if main branch defined
@@ -154,12 +156,19 @@ func LoadConfig(t *testing.T, name string) *model.ConfigWithRows {
 	// nolint: dogsled
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filesystem.Dir(testFile)
+
+	// Load file
 	path := filesystem.Join(testDir, "configs", name+".json")
-	content := testhelper.GetFileContent(path) // nolint: forbidigo
-	fixture := &Config{}
-	err := json.Unmarshal([]byte(content), fixture)
+	data, err := os.ReadFile(path) // nolint: forbidigo
 	if err != nil {
-		assert.FailNowf(t, "cannot decode file \"%s\": %s", path, err)
+		panic(fmt.Errorf(`cannot load test confg file "%s": %w`, path, err))
 	}
+
+	// Parse file
+	fixture := &Config{}
+	if err := json.Unmarshal(data, fixture); err != nil {
+		panic(fmt.Errorf("cannot parse test config file \"%s\": %w", path, err))
+	}
+
 	return fixture.ToModel()
 }

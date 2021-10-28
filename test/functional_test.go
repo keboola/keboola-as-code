@@ -10,17 +10,16 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/google/shlex"
-	"github.com/otiai10/copy"
+	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 	"github.com/umisama/go-regexpcache"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
@@ -92,15 +91,18 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	assert.NoError(t, os.MkdirAll(workingDir, 0o755))
 	assert.NoError(t, os.Chdir(workingDir))
 
+	// Virtual fs for test and working dir
+	testDirFs := testhelper.NewBasePathLocalFs(testDir)
+	workingDirFs := testhelper.NewBasePathLocalFs(workingDir)
+
 	// Copy all from "in" dir to "runtime" dir
-	inDir := filepath.Join(testDir, "in")
-	if !testhelper.FileExists(inDir) {
-		t.Fatalf("Missing directory \"%s\".", inDir)
+	inDir := `in`
+	if !testDirFs.IsDir(inDir) {
+		t.Fatalf(`Missing directory "%s" in "%s".`, inDir, testDir)
 	}
-	err := copy.Copy(inDir, workingDir)
-	if err != nil {
-		t.Fatalf("Copy error: %s", err)
-	}
+
+	// Init working dir from "in" dir
+	assert.NoError(t, aferofs.CopyFs2Fs(testDirFs, inDir, workingDirFs, `/`))
 
 	// Get test project
 	envs, err := env.FromOs()
@@ -109,23 +111,30 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	api := project.Api()
 
 	// Setup project state
-	projectStateFilePath := filepath.Join(testDir, "initial-state.json")
-	if testhelper.IsFile(projectStateFilePath) {
-		project.SetState(projectStateFilePath)
+	projectStateFile := "initial-state.json"
+	if testDirFs.IsFile(projectStateFile) {
+		project.SetState(filepath.Join(testDir, projectStateFile))
 	}
 
 	// Create ENV provider
 	envProvider := CreateEnvTicketProvider(api, envs)
 
 	// Replace all %%ENV_VAR%% in all files in the working directory
-	testhelper.ReplaceEnvsDir(workingDir, envProvider)
+	testhelper.ReplaceEnvsDir(workingDirFs, `/`, envProvider)
 
 	// Load command arguments from file
-	argsFile := filepath.Join(testDir, "args")
-	argsStr := testhelper.ReplaceEnvsString(strings.TrimSpace(testhelper.GetFileContent(argsFile)), envProvider)
+	argsFileName := `args`
+	argsFile, err := testDirFs.ReadFile(argsFileName, ``)
+	if err != nil {
+		t.Fatalf(`cannot open "%s" test file %s`, argsFileName, err)
+	}
+
+	// Load and parse command arguments
+	argsStr := strings.TrimSpace(argsFile.Content)
+	argsStr = testhelper.ReplaceEnvsString(argsStr, envProvider)
 	args, err := shlex.Split(argsStr)
 	if err != nil {
-		t.Fatalf("Cannot parse args \"%s\": %s", argsStr, err)
+		t.Fatalf(`Cannot parse args "%s": %s`, argsStr, err)
 	}
 
 	// Prepare command
@@ -146,7 +155,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	}
 
 	// Assert
-	AssertExpectations(t, api, envProvider, testDir, workingDir, exitCode, strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()))
+	AssertExpectations(t, api, envProvider, testDirFs, workingDirFs, exitCode, strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()))
 }
 
 // CompileBinary compiles component to binary used in this test.
@@ -177,7 +186,7 @@ func GetTestDirs(t *testing.T, root string) []string {
 	var dirs []string
 
 	// Iterate over directory structure
-	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+	err := filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
 		// Stop on error
 		if err != nil {
 			return err
@@ -189,15 +198,15 @@ func GetTestDirs(t *testing.T, root string) []string {
 		}
 
 		// Skip hidden
-		if testhelper.IsIgnoredFile(path, d) {
+		if testhelper.IsIgnoredFile(path, info) {
 			return nil
 		}
-		if testhelper.IsIgnoredDir(path, d) {
+		if testhelper.IsIgnoredDir(path, info) {
 			return filepath.SkipDir
 		}
 
 		// Skip sub-directories
-		if d.IsDir() {
+		if info.IsDir() {
 			dirs = append(dirs, path)
 			return fs.SkipDir
 		}
@@ -216,22 +225,31 @@ func AssertExpectations(
 	t *testing.T,
 	api *remote.StorageApi,
 	envProvider testhelper.EnvProvider,
-	testDir string,
-	workingDir string,
+	testDirFs filesystem.Fs,
+	workingDirFs filesystem.Fs,
 	exitCode int,
 	stdout string,
 	stderr string,
 ) {
 	t.Helper()
 
-	// Compare expected values
-	expectedStdout := testhelper.ReplaceEnvsString(testhelper.GetFileContent(filepath.Join(testDir, "expected-stdout")), envProvider)
-	expectedStderr := testhelper.ReplaceEnvsString(testhelper.GetFileContent(filepath.Join(testDir, "expected-stderr")), envProvider)
-	expectedCodeStr := testhelper.GetFileContent(filepath.Join(testDir, "expected-code"))
-	expectedCode, _ := strconv.ParseInt(strings.TrimSpace(expectedCodeStr), 10, 32)
+	// Compare stdout
+	expectedStdoutFile, err := testDirFs.ReadFile("expected-stdout", ``)
+	assert.NoError(t, err)
+	expectedStdout := testhelper.ReplaceEnvsString(expectedStdoutFile.Content, envProvider)
+
+	// Compare stderr
+	expectedStderrFile, err := testDirFs.ReadFile("expected-stderr", ``)
+	assert.NoError(t, err)
+	expectedStderr := testhelper.ReplaceEnvsString(expectedStderrFile.Content, envProvider)
+
+	// Compare exit code
+	expectedCodeFile, err := testDirFs.ReadFile("expected-code", ``)
+	assert.NoError(t, err)
+	expectedCode := cast.ToInt(strings.TrimSpace(expectedCodeFile.Content))
 	assert.Equal(
 		t,
-		int(expectedCode),
+		expectedCode,
 		exitCode,
 		"Unexpected exit code.\nSTDOUT:\n%s\n\nSTDERR:\n%s\n\n",
 		stdout,
@@ -243,37 +261,29 @@ func AssertExpectations(
 	testhelper.AssertWildcards(t, expectedStderr, stderr, "Unexpected STDERR.")
 
 	// Expected state dir
-	expectedDirOrg := filepath.Join(testDir, "out")
-	if !testhelper.FileExists(expectedDirOrg) {
-		t.Fatalf("Missing directory \"%s\".", expectedDirOrg)
+	expectedDir := "out"
+	if !testDirFs.IsDir(expectedDir) {
+		t.Fatalf(`Missing directory "%s" in "%s".`, expectedDir, testDirFs.BasePath())
 	}
 
 	// Copy expected state and replace ENVs
-	expectedDir := t.TempDir()
-	err := copy.Copy(expectedDirOrg, expectedDir)
-	if err != nil {
-		t.Fatalf("Copy error: %s", err)
-	}
-	testhelper.ReplaceEnvsDir(expectedDir, envProvider)
+	expectedDirFs := testhelper.NewMemoryFsFrom(filesystem.Join(testDirFs.BasePath(), expectedDir))
+	testhelper.ReplaceEnvsDir(expectedDirFs, `/`, envProvider)
 
 	// Compare actual and expected dirs
-	testhelper.AssertDirectoryContentsSame(t, expectedDir, workingDir)
+	testhelper.AssertDirectoryContentsSame(t, expectedDirFs, `/`, workingDirFs, `/`)
 
 	// Check project state
-	expectedStatePath := filepath.Join(testDir, "expected-state.json")
-	if testhelper.IsFile(expectedStatePath) {
+	expectedStatePath := "expected-state.json"
+	if testDirFs.IsFile(expectedStatePath) {
 		// Read expected state
 		expectedSnapshot := &fixtures.ProjectSnapshot{}
-		content, err := testhelper.ReadFile(testDir, "expected-state.json", "expected project state")
-		if err != nil {
+		if err := testDirFs.ReadJsonFileTo(expectedStatePath, ``, expectedSnapshot); err != nil {
 			assert.FailNow(t, err.Error())
 		}
-		json.MustDecodeString(content, expectedSnapshot)
 
 		// Fake manifest
-		fs, err := aferofs.NewLocalFs(zap.NewNop().Sugar(), workingDir, "/")
-		assert.NoError(t, err)
-		m, err := manifest.NewManifest(api.ProjectId(), api.Host(), fs)
+		m, err := manifest.NewManifest(api.ProjectId(), api.Host(), testhelper.NewMemoryFs())
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}
@@ -291,7 +301,7 @@ func AssertExpectations(
 		}
 
 		// Write actual state
-		err = testhelper.WriteFile(workingDir, "actual-state.json", json.MustEncodeString(actualSnapshot, true), "test project state")
+		err = workingDirFs.WriteFile(filesystem.CreateFile("actual-state.json", json.MustEncodeString(actualSnapshot, true)))
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}

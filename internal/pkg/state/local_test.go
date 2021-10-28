@@ -6,13 +6,10 @@ import (
 	"testing"
 
 	"github.com/jarcoal/httpmock"
-	"github.com/nhatthm/aferocopy"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
@@ -278,21 +275,16 @@ func loadManifest(t *testing.T, projectDirName string) *manifest.Manifest {
 	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", "456")
 	envs.Set("LOCAL_STATE_MYSQL_CONFIG_ID", "896")
 
+	// State dir
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filesystem.Dir(testFile)
 	stateDir := filesystem.Join(testDir, "..", "fixtures", "local", projectDirName)
-	projectDir := t.TempDir()
 
-	// Copy test data
-	err := aferocopy.Copy(stateDir, projectDir)
-	if err != nil {
-		t.Fatalf("Copy error: %s", err)
-	}
-	testhelper.ReplaceEnvsDir(projectDir, envs)
+	// Create Fs
+	fs := testhelper.NewMemoryFsFrom(stateDir)
+	testhelper.ReplaceEnvsDir(fs, `/`, envs)
 
 	// Load manifest
-	fs, err := aferofs.NewLocalFs(zap.NewNop().Sugar(), projectDir, ".")
-	assert.NoError(t, err)
 	m, err := manifest.LoadManifest(fs)
 	if err != nil {
 		assert.FailNow(t, err.Error())

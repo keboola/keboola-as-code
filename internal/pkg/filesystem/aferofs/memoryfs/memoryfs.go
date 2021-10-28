@@ -20,7 +20,7 @@ type MemoryFs struct {
 }
 
 func New() *MemoryFs {
-	fs := afero.NewMemMapFs()
+	fs := afero.NewBasePathFs(afero.NewMemMapFs(), `/`)
 	return &MemoryFs{
 		aferoFs: fs,
 		utils:   &afero.Afero{Fs: fs},

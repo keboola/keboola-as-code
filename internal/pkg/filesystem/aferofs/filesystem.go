@@ -51,6 +51,10 @@ func (f *Fs) BasePath() string {
 	return f.fs.BasePath()
 }
 
+func (f *Fs) AferoFs() afero.Fs {
+	return f.fs
+}
+
 // WorkingDir - user current working directory.
 func (f *Fs) WorkingDir() string {
 	return f.workingDir

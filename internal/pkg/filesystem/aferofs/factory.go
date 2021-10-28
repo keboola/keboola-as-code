@@ -42,9 +42,9 @@ func NewLocalFsFindProjectDir(logger *zap.SugaredLogger, workingDir string) (fs 
 	return New(logger, localfs.New(projectDir), workingDirRel), nil
 }
 
-func NewLocalFs(logger *zap.SugaredLogger, projectDir string, workingDirRel string) (fs filesystem.Fs, err error) {
+func NewLocalFs(logger *zap.SugaredLogger, rootDir string, workingDirRel string) (fs filesystem.Fs, err error) {
 	// Create filesystem abstraction
-	return New(logger, localfs.New(projectDir), workingDirRel), nil
+	return New(logger, localfs.New(rootDir), workingDirRel), nil
 }
 
 func NewMemoryFs(logger *zap.SugaredLogger, workingDir string) (fs filesystem.Fs, err error) {

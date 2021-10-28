@@ -7,16 +7,15 @@ import (
 	"testing"
 
 	"github.com/jarcoal/httpmock"
-	"github.com/nhatthm/aferocopy"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -572,16 +571,11 @@ func (tc *testCase) run(t *testing.T) {
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filesystem.Dir(testFile)
 	inputDir := filesystem.Join(testDir, `..`, `fixtures`, `local`, tc.inputDir)
-	projectDir := t.TempDir()
-	err := aferocopy.Copy(inputDir, projectDir)
-	if err != nil {
-		t.Fatalf("Copy error: %s", err)
-	}
+
+	// Create Fs
+	fs := testhelper.NewMemoryFsFrom(inputDir)
 
 	// Load manifest
-	logger, _ := utils.NewDebugLogger()
-	fs, err := aferofs.NewLocalFs(logger, projectDir, `/`)
-	assert.NoError(t, err)
 	m, err := manifest.LoadManifest(fs)
 	assert.NoError(t, err)
 
@@ -599,6 +593,7 @@ func (tc *testCase) run(t *testing.T) {
 	httpTransport.RegisterResponder("POST", `=~/storage/tickets`, httpmock.ResponderFromMultipleResponses(ticketResponses))
 
 	// Load state
+	logger, _ := utils.NewDebugLogger()
 	options := state.NewOptions(m, api, context.Background(), logger)
 	options.LoadLocalState = true
 	options.LoadRemoteState = false
