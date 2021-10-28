@@ -24,7 +24,7 @@ func (m *sharedCodeMapper) isSharedCodeConfigRow(object interface{}) (bool, erro
 		return false, nil
 	}
 
-	component, err := m.State.Components().Get(*v.ComponentKey())
+	component, err := m.State.Components().Get(v.ComponentKey())
 	if err != nil {
 		return false, err
 	}

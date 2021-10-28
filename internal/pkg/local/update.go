@@ -21,14 +21,14 @@ func (m *Manager) UpdatePaths(state model.ObjectState, rename bool) error {
 			v.PathInProject = m.Naming().BranchPath(object.(*model.Branch))
 		case *model.ConfigState:
 			config := object.(*model.Config)
-			if component, err := m.state.Components().Get(*config.ComponentKey()); err == nil {
+			if component, err := m.state.Components().Get(config.ComponentKey()); err == nil {
 				v.PathInProject = m.Naming().ConfigPath(v.GetParentPath(), component, config)
 			} else {
 				return err
 			}
 		case *model.ConfigRowState:
 			row := object.(*model.ConfigRow)
-			if component, err := m.state.Components().Get(*row.ComponentKey()); err == nil {
+			if component, err := m.state.Components().Get(row.ComponentKey()); err == nil {
 				v.PathInProject = m.Naming().ConfigRowPath(v.GetParentPath(), component, row)
 			} else {
 				return err

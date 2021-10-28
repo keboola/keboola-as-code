@@ -260,42 +260,42 @@ func (k CodeKey) String() string {
 	return fmt.Sprintf("%02d_%d_%s_%s_%03d_%03d_code", k.Level(), k.BranchId, k.ComponentId, k.ConfigId, k.BlockIndex, k.Index)
 }
 
-func (k ConfigKey) ComponentKey() *ComponentKey {
-	return &ComponentKey{Id: k.ComponentId}
+func (k ConfigKey) ComponentKey() ComponentKey {
+	return ComponentKey{Id: k.ComponentId}
 }
 
-func (k ConfigKey) BranchKey() *BranchKey {
-	return &BranchKey{Id: k.BranchId}
+func (k ConfigKey) BranchKey() BranchKey {
+	return BranchKey{Id: k.BranchId}
 }
 
 func (k ConfigKey) ParentKey() (Key, error) {
 	return k.BranchKey(), nil
 }
 
-func (k ConfigRowKey) ComponentKey() *ComponentKey {
-	return &ComponentKey{Id: k.ComponentId}
+func (k ConfigRowKey) ComponentKey() ComponentKey {
+	return ComponentKey{Id: k.ComponentId}
 }
 
-func (k ConfigRowKey) BranchKey() *BranchKey {
+func (k ConfigRowKey) BranchKey() BranchKey {
 	return k.ConfigKey().BranchKey()
 }
 
-func (k ConfigRowKey) ConfigKey() *ConfigKey {
-	return &ConfigKey{BranchId: k.BranchId, ComponentId: k.ComponentId, Id: k.ConfigId}
+func (k ConfigRowKey) ConfigKey() ConfigKey {
+	return ConfigKey{BranchId: k.BranchId, ComponentId: k.ComponentId, Id: k.ConfigId}
 }
 
 func (k ConfigRowKey) ParentKey() (Key, error) {
 	return k.ConfigKey(), nil
 }
 
-func (b Block) ConfigKey() *ConfigKey {
-	return &ConfigKey{BranchId: b.BranchId, ComponentId: b.ComponentId, Id: b.ConfigId}
+func (b Block) ConfigKey() ConfigKey {
+	return ConfigKey{BranchId: b.BranchId, ComponentId: b.ComponentId, Id: b.ConfigId}
 }
 
-func (c Code) ConfigKey() *ConfigKey {
-	return &ConfigKey{BranchId: c.BranchId, ComponentId: c.ComponentId, Id: c.ConfigId}
+func (c Code) ConfigKey() ConfigKey {
+	return ConfigKey{BranchId: c.BranchId, ComponentId: c.ComponentId, Id: c.ConfigId}
 }
 
-func (k ConfigKeySameBranch) ConfigKey(branch BranchKey) *ConfigKey {
-	return &ConfigKey{BranchId: branch.Id, ComponentId: k.ComponentId, Id: k.Id}
+func (k ConfigKeySameBranch) ConfigKey(branch BranchKey) ConfigKey {
+	return ConfigKey{BranchId: branch.Id, ComponentId: k.ComponentId, Id: k.Id}
 }

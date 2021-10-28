@@ -47,12 +47,12 @@ func parentExists(objectState model.ObjectState, currentState *state.State) bool
 		return true
 	case *model.ConfigState:
 		config := v.Remote
-		branch, branchFound := currentState.Get(*config.BranchKey())
+		branch, branchFound := currentState.Get(config.BranchKey())
 		return branchFound && branch.HasLocalState()
 	case *model.ConfigRowState:
 		row := v.Remote
-		config, configFound := currentState.Get(*row.ConfigKey())
-		branch, branchFound := currentState.Get(*row.BranchKey())
+		config, configFound := currentState.Get(row.ConfigKey())
+		branch, branchFound := currentState.Get(row.BranchKey())
 		return configFound && config.HasLocalState() && branchFound && branch.HasLocalState()
 
 	default:

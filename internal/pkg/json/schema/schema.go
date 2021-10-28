@@ -22,7 +22,7 @@ func ValidateSchemas(objects model.ObjectsProvider) error {
 			continue
 		}
 
-		component, err := objects.Components().Get(*config.ComponentKey())
+		component, err := objects.Components().Get(config.ComponentKey())
 		if err != nil {
 			return err
 		}
@@ -38,7 +38,7 @@ func ValidateSchemas(objects model.ObjectsProvider) error {
 			continue
 		}
 
-		component, err := objects.Components().Get(*row.ComponentKey())
+		component, err := objects.Components().Get(row.ComponentKey())
 		if err != nil {
 			return err
 		}
