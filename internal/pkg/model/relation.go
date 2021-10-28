@@ -3,6 +3,10 @@ package model
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/iancoleman/orderedmap"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 const (
@@ -19,47 +23,13 @@ func (t RelationType) Type() RelationType {
 	return t
 }
 
-func newEmptyRelation(t RelationType) (Relation, error) {
-	switch t {
-	case VariablesForRelType:
-		return &VariablesForRelation{RelationType: VariablesForRelType}, nil
-	default:
-		return nil, fmt.Errorf(`unexpected RelationType "%s"`, t)
-	}
-}
-
 // Relation between objects, eg. config <-> config.
 type Relation interface {
-	String() string
-	Type() RelationType
 	TargetKey(source Key) (Key, error) // source is where the relation is defined, target is other side
 	ParentKey(source Key) (Key, error) // if relation type is parent <-> child, then parent key is returned, otherwise nil
 }
 
 type Relations []Relation
-
-func (v Relations) ParentKey(source Key) (Key, error) {
-	var parents []Key
-	for _, r := range v {
-		if parent, err := r.ParentKey(source); err != nil {
-			return nil, err
-		} else if parent != nil {
-			parents = append(parents, parent)
-		}
-	}
-
-	// Found parent defined via Relations
-	if len(parents) == 1 {
-		return parents[0], nil
-	}
-
-	// Multiple parents are forbidden
-	if len(parents) > 1 {
-		return nil, fmt.Errorf(`unexpected state: multiple parents defined by "relations" in "%s"`, source.Desc())
-	}
-
-	return nil, nil
-}
 
 func (v *Relations) UnmarshalJSON(data []byte) error {
 	var raw []json.RawMessage
@@ -99,10 +69,70 @@ func (v *Relations) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (v Relations) MarshalJSON() ([]byte, error) {
+	var out []*orderedmap.OrderedMap
+	for _, relation := range v {
+		// Get type string
+		t, err := relationToType(relation)
+		if err != nil {
+			return nil, err
+		}
+
+		// Convert struct -> map
+		relationMap := utils.NewOrderedMap()
+		if err := utils.ConvertByJson(relation, &relationMap); err != nil {
+			return nil, err
+		}
+		relationMap.Set(`type`, t)
+		out = append(out, relationMap)
+	}
+	return json.Marshal(out)
+}
+
+func newEmptyRelation(t RelationType) (Relation, error) {
+	switch t {
+	case VariablesForRelType:
+		return &VariablesForRelation{}, nil
+	default:
+		return nil, fmt.Errorf(`unexpected RelationType "%s"`, t)
+	}
+}
+
+func relationToType(relation Relation) (RelationType, error) {
+	switch relation.(type) {
+	case *VariablesForRelation:
+		return VariablesForRelType, nil
+	default:
+		return "", fmt.Errorf(`unexpected Relation "%T"`, relation)
+	}
+}
+
+func (v Relations) ParentKey(source Key) (Key, error) {
+	var parents []Key
+	for _, r := range v {
+		if parent, err := r.ParentKey(source); err != nil {
+			return nil, err
+		} else if parent != nil {
+			parents = append(parents, parent)
+		}
+	}
+
+	// Found parent defined via Relations
+	if len(parents) == 1 {
+		return parents[0], nil
+	}
+
+	// Multiple parents are forbidden
+	if len(parents) > 1 {
+		return nil, fmt.Errorf(`unexpected state: multiple parents defined by "relations" in "%s"`, source.Desc())
+	}
+
+	return nil, nil
+}
+
 // VariablesForRelation - variables for target configuration.
 type VariablesForRelation struct {
-	RelationType `json:"type" validate:"required"`
-	Target       ConfigKeySameBranch `json:"target" validate:"required"`
+	Target ConfigKeySameBranch `json:"target" validate:"required"`
 }
 
 func (t *VariablesForRelation) TargetKey(source Key) (Key, error) {

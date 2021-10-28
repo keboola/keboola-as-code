@@ -95,8 +95,7 @@ func (e *persistExecutor) persistNewConfig(action *NewConfigAction) {
 			// Add relation
 			if component.IsVariables() {
 				record.Relations = append(record.Relations, &model.VariablesForRelation{
-					RelationType: model.VariablesForRelType,
-					Target:       *action.ParentConfig,
+					Target: *action.ParentConfig,
 				})
 			} else {
 				panic(fmt.Errorf(`unexpected usage of NewConfigAction.ParentConfig`))
