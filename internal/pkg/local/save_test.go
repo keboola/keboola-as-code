@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -15,8 +16,8 @@ func TestLocalSaveModel(t *testing.T) {
 
 	config := utils.NewOrderedMap()
 	config.Set("foo", "bar")
-	record := &MockedRecord{}
-	source := &MockedObject{
+	record := &fixtures.MockedRecord{}
+	source := &fixtures.MockedObject{
 		Foo1:   "1",
 		Foo2:   "2",
 		Meta1:  "3",
