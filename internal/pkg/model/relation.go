@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	VariablesForRelType = RelationType(`variablesFor`)
+	VariablesForRelType  = RelationType(`variablesFor`)
+	VariablesFromRelType = RelationType(`variablesFrom`)
 )
 
 type RelationType string
@@ -25,8 +26,11 @@ func (t RelationType) Type() RelationType {
 
 // Relation between objects, eg. config <-> config.
 type Relation interface {
-	TargetKey(source Key) (Key, error) // source is where the relation is defined, target is other side
-	ParentKey(source Key) (Key, error) // if relation type is parent <-> child, then parent key is returned, otherwise nil
+	Type() RelationType
+	ParentKey(relationOwner Key) (Key, error) // if relation type is parent <-> child, then parent key is returned, otherwise nil
+	OtherSideKey(owner Key) Key               // get key of the other side
+	IsOwningSide() bool                       // if true, relation will be stored in the manifest
+	NewOtherSideRelation(owner Key) Relation  // create the new other side relation, for example VariablesFor -> VariablesFrom
 }
 
 type Relations []Relation
@@ -64,6 +68,12 @@ func (v *Relations) UnmarshalJSON(data []byte) error {
 		if err := json.Unmarshal(item, value); err != nil {
 			return err
 		}
+
+		// Validate, only owning side should be present in JSON
+		if !value.IsOwningSide() {
+			return fmt.Errorf(`unexpected state: relation "%T" should not be present in JSON, it is not an owning side`, value)
+		}
+
 		*v = append(*v, value)
 	}
 	return nil
@@ -72,10 +82,9 @@ func (v *Relations) UnmarshalJSON(data []byte) error {
 func (v Relations) MarshalJSON() ([]byte, error) {
 	var out []*orderedmap.OrderedMap
 	for _, relation := range v {
-		// Get type string
-		t, err := relationToType(relation)
-		if err != nil {
-			return nil, err
+		// Validate, only owning side should be serialized to JSON
+		if !relation.IsOwningSide() {
+			return nil, fmt.Errorf(`unexpected state: relation "%T" should not be serialized to JSON, it is not an owning side`, relation)
 		}
 
 		// Convert struct -> map
@@ -83,7 +92,7 @@ func (v Relations) MarshalJSON() ([]byte, error) {
 		if err := utils.ConvertByJson(relation, &relationMap); err != nil {
 			return nil, err
 		}
-		relationMap.Set(`type`, t)
+		relationMap.Set(`type`, relation.Type().String())
 		out = append(out, relationMap)
 	}
 	return json.Marshal(out)
@@ -93,17 +102,10 @@ func newEmptyRelation(t RelationType) (Relation, error) {
 	switch t {
 	case VariablesForRelType:
 		return &VariablesForRelation{}, nil
+	case VariablesFromRelType:
+		return &VariablesFromRelation{}, nil
 	default:
 		return nil, fmt.Errorf(`unexpected RelationType "%s"`, t)
-	}
-}
-
-func relationToType(relation Relation) (RelationType, error) {
-	switch relation.(type) {
-	case *VariablesForRelation:
-		return VariablesForRelType, nil
-	default:
-		return "", fmt.Errorf(`unexpected Relation "%T"`, relation)
 	}
 }
 
@@ -130,15 +132,12 @@ func (v Relations) ParentKey(source Key) (Key, error) {
 	return nil, nil
 }
 
-// VariablesForRelation - variables for target configuration.
-type VariablesForRelation struct {
-	Target ConfigKeySameBranch `json:"target" validate:"required"`
-}
-
-func (t *VariablesForRelation) TargetKey(source Key) (Key, error) {
-	return t.Target.ConfigKey(source.(ConfigKey).BranchKey()), nil
-}
-
-func (t *VariablesForRelation) ParentKey(source Key) (Key, error) {
-	return t.TargetKey(source)
+func (v Relations) OnlyOwningSides() Relations {
+	var out Relations
+	for _, relation := range v {
+		if relation.IsOwningSide() {
+			out = append(out, relation)
+		}
+	}
+	return out
 }

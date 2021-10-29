@@ -32,6 +32,12 @@ type Record interface {
 	NewEmptyObject() Object
 }
 
+type ObjectManifestWithRelations interface {
+	Record
+	GetRelations() Relations
+	SetRelations(relations Relations)
+}
+
 type RecordState struct {
 	Invalid   bool // object files are not valid, eg. missing file, invalid JSON, ...
 	NotFound  bool // object directory is not present in the filesystem
@@ -72,6 +78,7 @@ type ConfigRowManifest struct {
 	RecordState `json:"-"`
 	ConfigRowKey
 	Paths
+	Relations Relations `json:"relations,omitempty" validate:"dive"` // relations with other objects, for example variables values definition
 }
 
 type ConfigManifestWithRows struct {
@@ -219,4 +226,20 @@ func (c ConfigManifest) ParentKey() (Key, error) {
 
 	// No parent defined via "Relations" -> parent is branch
 	return c.ConfigKey.ParentKey()
+}
+
+func (c *ConfigManifest) GetRelations() Relations {
+	return c.Relations
+}
+
+func (r *ConfigRowManifest) GetRelations() Relations {
+	return r.Relations
+}
+
+func (c *ConfigManifest) SetRelations(relations Relations) {
+	c.Relations = relations
+}
+
+func (r *ConfigRowManifest) SetRelations(relations Relations) {
+	r.Relations = relations
 }
