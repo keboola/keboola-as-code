@@ -30,6 +30,13 @@ type Record interface {
 	AddRelatedPath(path string)
 	State() *RecordState
 	NewEmptyObject() Object
+	NewObjectState() ObjectState
+}
+
+type ObjectManifestWithRelations interface {
+	Record
+	GetRelations() Relations
+	SetRelations(relations Relations)
 }
 
 type RecordState struct {
@@ -72,6 +79,7 @@ type ConfigRowManifest struct {
 	RecordState `json:"-"`
 	ConfigRowKey
 	Paths
+	Relations Relations `json:"relations,omitempty" validate:"dive"` // relations with other objects, for example variables values definition
 }
 
 type ConfigManifestWithRows struct {
@@ -185,6 +193,18 @@ func (r ConfigRowManifest) NewEmptyObject() Object {
 	return &ConfigRow{ConfigRowKey: r.ConfigRowKey}
 }
 
+func (b *BranchManifest) NewObjectState() ObjectState {
+	return &BranchState{BranchManifest: b}
+}
+
+func (c *ConfigManifest) NewObjectState() ObjectState {
+	return &ConfigState{ConfigManifest: c}
+}
+
+func (r *ConfigRowManifest) NewObjectState() ObjectState {
+	return &ConfigRowState{ConfigRowManifest: r}
+}
+
 func (b BranchManifest) SortKey(sort string) string {
 	if sort == SortByPath {
 		return fmt.Sprintf("%02d_branch_%s", b.Level(), b.Path())
@@ -219,4 +239,20 @@ func (c ConfigManifest) ParentKey() (Key, error) {
 
 	// No parent defined via "Relations" -> parent is branch
 	return c.ConfigKey.ParentKey()
+}
+
+func (c *ConfigManifest) GetRelations() Relations {
+	return c.Relations
+}
+
+func (r *ConfigRowManifest) GetRelations() Relations {
+	return r.Relations
+}
+
+func (c *ConfigManifest) SetRelations(relations Relations) {
+	c.Relations = relations
+}
+
+func (r *ConfigRowManifest) SetRelations(relations Relations) {
+	r.Relations = relations
 }

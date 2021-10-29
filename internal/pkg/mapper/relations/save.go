@@ -4,11 +4,18 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-// BeforeLocalSave - store config relations from object to manifest.
+// MapBeforeLocalSave - store config relations from object to manifest.
 func (m *relationsMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
-	if manifest, ok := recipe.Record.(*model.ConfigManifest); ok {
-		config := recipe.Object.(*model.Config)
-		manifest.Relations = config.Relations
+	manifest, ok := recipe.Record.(model.ObjectManifestWithRelations)
+	if !ok {
+		return nil
 	}
+
+	object, ok := recipe.Object.(model.ObjectWithRelations)
+	if !ok {
+		return nil
+	}
+
+	manifest.SetRelations(object.GetRelations().OnlyOwningSides())
 	return nil
 }

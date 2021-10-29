@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/relations"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
@@ -12,19 +13,21 @@ import (
 func TestRelationsMapperSave(t *testing.T) {
 	t.Parallel()
 	context := createMapperContext(t)
-	record := &model.ConfigManifest{}
-	object := &model.Config{}
-	recipe := &model.LocalSaveRecipe{Record: record, Object: object}
+	objectManifest := &model.ConfigManifest{}
+	object := &fixtures.MockedObject{}
+	recipe := &model.LocalSaveRecipe{Record: objectManifest, Object: object}
 
-	relation := &model.VariablesForRelation{}
-	object.Relations = append(object.Relations, relation)
+	// Object has 2 relations
+	owningSideRel := &fixtures.OwningSideRelation{}
+	otherSideRel := &fixtures.OtherSideRelation{}
+	object.SetRelations(model.Relations{owningSideRel, otherSideRel})
 
-	assert.Empty(t, record.Relations)
+	assert.Empty(t, objectManifest.Relations)
 	assert.NotEmpty(t, object.Relations)
 	assert.NoError(t, NewMapper(context).MapBeforeLocalSave(recipe))
 
-	// Copied, object.Relations -> record.Relations
-	assert.NotEmpty(t, record.Relations)
+	// OwningSide relations copied from object.Relations -> manifest.Relations
+	assert.NotEmpty(t, objectManifest.Relations)
 	assert.NotEmpty(t, object.Relations)
-	assert.Equal(t, record.Relations, object.Relations)
+	assert.Equal(t, model.Relations{owningSideRel}, objectManifest.Relations)
 }
