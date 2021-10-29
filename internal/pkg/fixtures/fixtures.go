@@ -51,8 +51,9 @@ type ConfigRow struct {
 }
 
 type StateFile struct {
-	AllBranchesConfigs []string       `json:"allBranchesConfigs" validate:"required"`
-	Branches           []*BranchState `json:"branches" validate:"required"`
+	AllBranchesConfigs []string          `json:"allBranchesConfigs" validate:"required"`
+	Branches           []*BranchState    `json:"branches" validate:"required"`
+	Envs               map[string]string `json:"envs,omitempty"` // additional ENVs
 }
 
 // ToModel maps fixture to model.Branch.

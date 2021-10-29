@@ -24,7 +24,7 @@ tests-functional:
 	TEST_VERBOSE=false TEST_LOG_FORMAT=standard-verbose bash ./scripts/tests.sh -run TestFunctional
 
 tests-functional-verbose:
-	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 bash ./scripts/tests.sh -run TestFunctional
+	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 bash ./scripts/tests.sh -run TestFunctional
 
 mod:
 	bash ./scripts/mod.sh

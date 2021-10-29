@@ -48,30 +48,44 @@ func initProjects() {
 
 	// Multiple test projects
 	if def, found := os.LookupEnv(`TEST_KBC_PROJECTS`); found {
+		wg := &sync.WaitGroup{}
+		projectsLock := &sync.Mutex{}
+
 		// Each project definition is separated by ";"
 		for _, p := range strings.Split(def, ";") {
-			p = strings.TrimSpace(p)
+			p := strings.TrimSpace(p)
 			if len(p) == 0 {
-				return
+				break
 			}
 
-			// Definition format: storage_api_host|project_id|project_token
-			parts := strings.Split(p, `|`)
+			// Init projects in parallel
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
 
-			// Check number of parts
-			if len(parts) != 3 {
-				panic(fmt.Errorf(
-					`project definition in TEST_PROJECTS env must be in "storage_api_host|project_id|project_token " format, given "%s"`,
-					p,
-				))
-			}
+				// Definition format: storage_api_host|project_id|project_token
+				parts := strings.Split(p, `|`)
 
-			host := strings.TrimSpace(parts[0])
-			id := strings.TrimSpace(parts[1])
-			token := strings.TrimSpace(parts[2])
-			project := newProject(host, cast.ToInt(id), token)
-			projects = append(projects, project)
+				// Check number of parts
+				if len(parts) != 3 {
+					panic(fmt.Errorf(
+						`project definition in TEST_PROJECTS env must be in "storage_api_host|project_id|project_token " format, given "%s"`,
+						p,
+					))
+				}
+
+				host := strings.TrimSpace(parts[0])
+				id := strings.TrimSpace(parts[1])
+				token := strings.TrimSpace(parts[2])
+
+				project := newProject(host, cast.ToInt(id), token)
+				projectsLock.Lock()
+				projects = append(projects, project)
+				projectsLock.Unlock()
+			}()
 		}
+
+		wg.Wait()
 		return
 	}
 
