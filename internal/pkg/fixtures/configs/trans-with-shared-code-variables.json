@@ -1,6 +1,6 @@
 {
   "componentId": "keboola.variables",
-  "name": "Python Transformation Shared Code Variables",
+  "name": "Trans With Shared Code Variables",
   "configuration": {
     "variables": [
       {

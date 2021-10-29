@@ -11,11 +11,11 @@ INFO	  +  C bar/extractor/keboola.ex-db-mysql/with-rows
 INFO	  +  R bar/extractor/keboola.ex-db-mysql/with-rows/rows/disabled
 INFO	  +  R bar/extractor/keboola.ex-db-mysql/with-rows/rows/test-view
 INFO	  +  R bar/extractor/keboola.ex-db-mysql/with-rows/rows/users
-INFO	  +  C bar/other/keboola.variables/python-transformation-shared-code-variables
-INFO	  +  R bar/other/keboola.variables/python-transformation-shared-code-variables/values/default-values
 INFO	  +  C bar/other/keboola.variables/shared-code-variables
+INFO	  +  C bar/other/keboola.variables/trans-with-shared-code-variables
+INFO	  +  R bar/other/keboola.variables/trans-with-shared-code-variables/values/default-values
 INFO	  +  C bar/transformation/keboola.python-transformation-v2/python-transformation
-INFO	  +  C bar/transformation/keboola.python-transformation-v2/python-transformation-shared-code
+INFO	  +  C bar/transformation/keboola.python-transformation-v2/trans-with-shared-code
 INFO	  +  C bar/transformation/keboola.snowflake-transformation/snowflake-transformation
 INFO	  +  B foo
 INFO	  +  C foo/extractor/ex-generic-v2/empty

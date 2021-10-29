@@ -1,6 +1,6 @@
 {
   "componentId": "keboola.python-transformation-v2",
-  "name": "Python Transformation Shared Code",
+  "name": "Trans With Shared Code",
   "configuration": {
     "parameters": {
       "blocks": [
@@ -9,7 +9,7 @@
             {
               "name": "Shared Code Used",
               "script": [
-                "{{...}}"
+                "{{%%TEST_SHARED_CODE_ROW_ID%%}}"
               ]
             }
           ],
@@ -17,12 +17,12 @@
         }
       ]
     },
-    "shared_code_id": "...",
+    "shared_code_id": "%%TEST_SHARED_CODE_ID%%",
     "shared_code_row_ids": [
-      "..."
+      "%%TEST_SHARED_CODE_ROW_ID%%"
     ],
-    "variables_id": "...",
-    "variables_values_id": "..."
+    "variables_id": "%%TEST_TRANS_WITH_SHARED_CODE_VARIABLES_ID%%",
+    "variables_values_id": "%%TEST_TRANS_WITH_SHARED_CODE_VARIABLES_VALUES_ID%%"
   },
   "rows": null
 }

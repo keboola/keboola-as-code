@@ -24,7 +24,7 @@
       "isDisabled": false,
       "configuration": {
         "code_content": "num1 = {{num1}}\nnum2 = {{num2}}\nsum = num1 + num2",
-        "variables_id": "..."
+        "variables_id": "%%TEST_SHARED_CODE_VARIABLES_ID%%"
       }
     }
   ]
