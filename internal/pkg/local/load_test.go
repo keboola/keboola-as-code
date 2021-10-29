@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -27,8 +28,8 @@ func TestLocalLoadModel(t *testing.T) {
 }
 `
 	// Save files
-	target := &MockedObject{}
-	record := &MockedRecord{}
+	target := &fixtures.MockedObject{}
+	record := &fixtures.MockedRecord{}
 	assert.NoError(t, fs.Mkdir(record.Path()))
 	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(manager.Naming().MetaFilePath(record.Path()), metaFile)))
 	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(manager.Naming().ConfigFilePath(record.Path()), configFile)))
@@ -41,7 +42,7 @@ func TestLocalLoadModel(t *testing.T) {
 	// Assert
 	config := utils.NewOrderedMap()
 	config.Set("foo", "bar")
-	assert.Equal(t, &MockedObject{
+	assert.Equal(t, &fixtures.MockedObject{
 		Foo1:   "",
 		Foo2:   "",
 		Meta1:  "3",
@@ -55,8 +56,8 @@ func TestLocalLoadModelNotFound(t *testing.T) {
 	manager, _ := newTestLocalManager(t)
 
 	// Save files
-	target := &MockedObject{}
-	record := &MockedRecord{}
+	target := &fixtures.MockedObject{}
+	record := &fixtures.MockedRecord{}
 
 	// Load
 	found, err := manager.loadObject(record, target)

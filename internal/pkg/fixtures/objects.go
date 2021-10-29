@@ -1,4 +1,4 @@
-package local
+package fixtures
 
 import (
 	"github.com/iancoleman/orderedmap"
@@ -30,7 +30,7 @@ func (MockedKey) Kind() model.Kind {
 }
 
 func (MockedKey) Desc() string {
-	return "key"
+	return "key desc"
 }
 
 func (MockedKey) String() string {
