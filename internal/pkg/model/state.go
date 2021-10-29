@@ -237,21 +237,9 @@ func (s *State) CreateFrom(objectManifest Record) (ObjectState, error) {
 		return nil, fmt.Errorf(`object "%s" already exists`, key.Desc())
 	}
 
-	// Create
-	var object ObjectState
-	switch v := objectManifest.(type) {
-	case *BranchManifest:
-		object = &BranchState{BranchManifest: v}
-	case *ConfigManifest:
-		object = &ConfigState{ConfigManifest: v}
-	case *ConfigRowManifest:
-		object = &ConfigRowState{ConfigRowManifest: v}
-	default:
-		panic(fmt.Errorf(`unexpected type "%T"`, objectManifest))
-	}
-
-	s.objects.Set(key.String(), object)
-	return object, nil
+	objectState := objectManifest.NewObjectState()
+	s.objects.Set(key.String(), objectState)
+	return objectState, nil
 }
 
 func (s *State) GetOrCreateFrom(objectManifest Record) (ObjectState, error) {
