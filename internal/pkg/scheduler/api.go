@@ -54,14 +54,14 @@ func (a *Api) NewPool() *client.Pool {
 }
 
 func (a *Api) OnObjectCreateUpdate(object model.Object, pool *client.Pool) {
-	if object.Kind().IsConfig() && object.(*model.Config).ComponentId == "keboola.scheduler" {
-		pool.Request(a.ActivateScheduleRequest(object.ObjectId(), ""))
+	if object.Kind().IsConfig() && object.(*model.Config).ComponentId == model.SchedulerComponentId {
+		pool.Request(a.ActivateScheduleRequest(object.ObjectId(), "")).Send()
 	}
 }
 
 func (a *Api) OnObjectDelete(object model.Object, pool *client.Pool) {
-	if object.Kind().IsConfig() && object.(*model.Config).ComponentId == "keboola.scheduler" {
-		pool.Request(a.DeleteSchedulesForConfigurationRequest(object.ObjectId()))
+	if object.Kind().IsConfig() && object.(*model.Config).ComponentId == model.SchedulerComponentId {
+		pool.Request(a.DeleteSchedulesForConfigurationRequest(object.ObjectId())).Send()
 	}
 }
 

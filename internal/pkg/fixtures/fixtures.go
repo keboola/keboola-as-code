@@ -14,7 +14,8 @@ import (
 )
 
 type ProjectSnapshot struct {
-	Branches []*BranchConfigs `json:"branches"`
+	Branches  []*BranchConfigs  `json:"branches"`
+	Schedules []*ScheduleConfig `json:"schedules,omitempty"`
 }
 
 type Branch struct {
@@ -31,6 +32,10 @@ type BranchState struct {
 type BranchConfigs struct {
 	*Branch `json:"branch" validate:"required"`
 	Configs []*Config `json:"configs"`
+}
+
+type ScheduleConfig struct {
+	Name string `json:"name"`
 }
 
 type Config struct {

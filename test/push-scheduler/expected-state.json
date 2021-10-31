@@ -1,0 +1,30 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "my description",
+        "isDefault": true
+      },
+      "configs": [
+        {
+          "componentId": "ex-generic-v2",
+          "name": "books",
+          "description": "test",
+          "changeDescription": "Updated from #KeboolaCLI",
+          "configuration": {
+            "parameters": {
+              "books": []
+            }
+          },
+          "rows": []
+        }
+      ]
+    }
+  ],
+  "schedules": [
+    {
+      "name": "schedule1"
+    }
+  ]
+}

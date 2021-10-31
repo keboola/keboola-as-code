@@ -283,7 +283,7 @@ func (u *UnitOfWork) create(objectState model.ObjectState, recipe *model.RemoteS
 			}
 		}).
 		OnSuccess(func(response *client.Response) {
-			u.schedulerApi.OnObjectCreateUpdate(object, u.schedulerApi.NewPool())
+			u.schedulerApi.OnObjectCreateUpdate(object, u.schedulerApiPool)
 		}).
 		Send()
 	return nil
@@ -298,7 +298,7 @@ func (u *UnitOfWork) update(objectState model.ObjectState, recipe *model.RemoteS
 				objectState.SetRemoteState(recipe.InternalObject)
 			}).
 			OnSuccess(func(response *client.Response) {
-				u.schedulerApi.OnObjectCreateUpdate(object, u.schedulerApi.NewPool())
+				u.schedulerApi.OnObjectCreateUpdate(object, u.schedulerApiPool)
 			}).
 			Send()
 	} else {

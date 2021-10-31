@@ -156,7 +156,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	}
 
 	// Assert
-	AssertExpectations(t, api, envProvider, testDirFs, workingDirFs, exitCode, strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()))
+	AssertExpectations(t, api, envProvider, testDirFs, workingDirFs, exitCode, strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()), project)
 }
 
 // CompileBinary compiles component to binary used in this test.
@@ -231,6 +231,7 @@ func AssertExpectations(
 	exitCode int,
 	stdout string,
 	stderr string,
+	project *testproject.Project,
 ) {
 	t.Helper()
 
@@ -297,7 +298,7 @@ func AssertExpectations(
 		actualState, ok := state.LoadState(stateOptions)
 		assert.True(t, ok)
 		assert.Empty(t, actualState.RemoteErrors().Errors)
-		actualSnapshot, err := state.NewProjectSnapshot(actualState)
+		actualSnapshot, err := state.NewProjectSnapshot(actualState, project)
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}
