@@ -102,7 +102,7 @@ type Config struct {
 	ChangeDescription string                 `json:"changeDescription"`
 	Content           *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
 	Blocks            Blocks                 `json:"-" validate:"dive"` // loaded transformation's blocks, filled in only for the LOCAL state
-	Relations         Relations              `json:"-" validate:"dive"`
+	Relations         `json:"-" validate:"dive"`
 }
 
 type ConfigWithRows struct {
@@ -124,7 +124,7 @@ type ConfigRow struct {
 	ChangeDescription string                 `json:"changeDescription"`
 	IsDisabled        bool                   `json:"isDisabled" diff:"true" metaFile:"true"`
 	Content           *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
-	Relations         Relations              `json:"-" validate:"dive"`
+	Relations         `json:"-" validate:"dive"`
 }
 
 // Job - Storage API job.
@@ -235,6 +235,18 @@ func (c *Config) ParentKey() (Key, error) {
 	return c.ConfigKey.ParentKey()
 }
 
+// ParentKey - config row parent can be modified via Relations, for example variables config is embedded in another config.
+func (r *ConfigRow) ParentKey() (Key, error) {
+	if parentKey, err := r.Relations.ParentKey(r.Key()); err != nil {
+		return nil, err
+	} else if parentKey != nil {
+		return parentKey, nil
+	}
+
+	// No parent defined via "Relations" -> parent is branch
+	return r.ConfigRowKey.ParentKey()
+}
+
 func (k Kind) String() string {
 	return k.Name
 }
@@ -327,28 +339,4 @@ func (v Relations) Clone() Relations {
 		panic(err)
 	}
 	return out
-}
-
-func (c *Config) GetRelations() Relations {
-	return c.Relations
-}
-
-func (r *ConfigRow) GetRelations() Relations {
-	return r.Relations
-}
-
-func (c *Config) SetRelations(relations Relations) {
-	c.Relations = relations
-}
-
-func (r *ConfigRow) SetRelations(relations Relations) {
-	r.Relations = relations
-}
-
-func (c *Config) AddRelation(relation Relation) {
-	c.Relations = append(c.Relations, relation)
-}
-
-func (r *ConfigRow) AddRelation(relation Relation) {
-	r.Relations = append(r.Relations, relation)
 }
