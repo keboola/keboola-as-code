@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"os"
@@ -31,19 +32,21 @@ import (
 )
 
 type Project struct {
-	t             *testing.T
-	host          string // Storage API host
-	token         string // Storage API token
-	id            int    // project ID
-	lock          *fslock.Lock
-	locked        bool
-	mutex         *sync.Mutex
-	api           *remote.StorageApi
-	schedulerApi  *scheduler.Api
-	defaultBranch *model.Branch
-	envLock       *sync.Mutex
-	envs          *env.Map
-	newEnvs       []string
+	t              *testing.T
+	host           string // Storage API host
+	token          string // Storage API token
+	id             int    // project ID
+	lock           *fslock.Lock
+	locked         bool
+	mutex          *sync.Mutex
+	api            *remote.StorageApi
+	schedulerApi   *scheduler.Api
+	defaultBranch  *model.Branch
+	branchesById   map[int]*model.Branch
+	branchesByName map[string]*model.Branch
+	envLock        *sync.Mutex
+	envs           *env.Map
+	newEnvs        []string
 }
 
 // newProject - create test project handler and lock it.
@@ -58,7 +61,7 @@ func newProject(host string, id int, token string) *Project {
 	lockFile := host + `-` + cast.ToString(id) + `.lock`
 	lockPath := filepath.Join(locksDir, lockFile)
 
-	p :=  &Project{
+	p := &Project{
 		host:    host,
 		id:      id,
 		token:   token,
@@ -130,6 +133,10 @@ func (p *Project) Clear() {
 	p.logf("Clearing project ...")
 	startTime := time.Now()
 
+	// Clear branches maps
+	p.branchesById = make(map[int]*model.Branch)
+	p.branchesByName = make(map[string]*model.Branch)
+
 	// Delete all configs in default branch, it cannot be deleted
 	pool := p.api.NewPool()
 	pool.Request(p.api.DeleteConfigsInBranchRequest(p.defaultBranch.BranchKey)).Send()
@@ -179,6 +186,9 @@ func (p *Project) SetState(stateFilePath string) {
 	// Remove all objects
 	p.Clear()
 
+	// Log ENVs at the end
+	defer p.logEnvs()
+
 	// Load desired state from file
 	// nolint: dogsled
 	_, testFile, _, _ := runtime.Caller(0)
@@ -198,18 +208,22 @@ func (p *Project) SetState(stateFilePath string) {
 	startTime := time.Now()
 	p.logf("Setting project state ...")
 
-	// Create configs in default branch, they will be auto-copied to dev-branches
-	pool := p.api.NewPool()
-	p.createConfigs(pool, stateFile.AllBranchesConfigs, p.defaultBranch, "TEST_BRANCH_ALL_CONFIG")
-	if err := pool.StartAndWait(); err != nil {
-		assert.FailNow(p.t, fmt.Sprintf("cannot create configs in default branch: %s", err))
-	}
+	// Create configs in default branch, they will be auto-copied to branches created later
+	p.createConfigsInDefaultBranch(stateFile.AllBranchesConfigs)
 
+	// Create branches
+	p.createBranches(stateFile.Branches)
+
+	// Create configs in branches
+	p.createConfigs(stateFile.Branches, stateFile.Envs)
+
+	p.logf("Project state set | %s", time.Since(startTime))
+}
+
+func (p *Project) createBranches(branches []*fixtures.BranchState) {
 	// Create branches sequentially, parallel requests don't work with this endpoint
-	branchesByName := make(map[string]*model.Branch)
-	for _, fixture := range stateFile.Branches {
+	for _, fixture := range branches {
 		branch := fixture.Branch.ToModel(p.defaultBranch)
-		branchesByName[branch.Name] = branch
 		if branch.IsDefault {
 			p.defaultBranch.Description = fixture.Branch.Description
 			if _, err := p.api.UpdateBranch(p.defaultBranch, []string{"description"}); err != nil {
@@ -222,36 +236,98 @@ func (p *Project) SetState(stateFilePath string) {
 				OnSuccess(func(response *client.Response) {
 					p.logf(`crated branch "%s", id: "%d"`, branch.Name, branch.Id)
 					p.setEnv(fmt.Sprintf("TEST_BRANCH_%s_ID", branch.Name), cast.ToString(branch.Id))
+					p.branchesById[branch.Id] = branch
+					p.branchesByName[branch.Name] = branch
 				}).
 				Send()
 		}
 	}
+}
 
-	// Create configs in dev-branches
-	pool = p.api.NewPool()
-	for _, branch := range stateFile.Branches {
-		modelBranch := branchesByName[branch.Branch.Name]
-		envPrefix := fmt.Sprintf("TEST_BRANCH_%s_CONFIG", modelBranch.Name)
-		p.createConfigs(pool, branch.Configs, modelBranch, envPrefix)
+func (p *Project) createConfigsInDefaultBranch(names []string) {
+	p.branchesById[p.defaultBranch.Id] = p.defaultBranch
+	p.branchesByName[p.defaultBranch.Name] = p.defaultBranch
+
+	// Prepare configs
+	tickets := p.api.NewTicketProvider()
+	configs := p.prepareConfigs(names, p.defaultBranch, tickets,"TEST_BRANCH_ALL_CONFIG")
+
+	// Generate new IDs
+	if err := tickets.Resolve(); err != nil {
+		assert.FailNow(p.t, fmt.Sprintf(`cannot generate new IDs: %s`, err))
 	}
+
+	// Create requests
+	pool := p.api.NewPool()
+	p.createConfigsRequests(configs, pool)
+
+	// Send requests
+	if err := pool.StartAndWait(); err != nil {
+		assert.FailNow(p.t, fmt.Sprintf("cannot create configs in default branch: %s", err))
+	}
+}
+
+func (p *Project) createConfigs(branches []*fixtures.BranchState, additionalEnvs map[string]string) {
+	// Prepare configs
+	tickets := p.api.NewTicketProvider()
+	var configs []*model.ConfigWithRows
+	for _, branch := range branches {
+		modelBranch := p.branchesByName[branch.Branch.Name]
+		envPrefix := fmt.Sprintf("TEST_BRANCH_%s_CONFIG", modelBranch.Name)
+		configs = append(configs, p.prepareConfigs(branch.Configs, modelBranch, tickets, envPrefix)...)
+	}
+
+	// Generate new IDs
+	if err := tickets.Resolve(); err != nil {
+		assert.FailNow(p.t, fmt.Sprintf(`cannot generate new IDs: %s`, err))
+	}
+
+	// Add additional ENVs
+	if additionalEnvs != nil {
+		for k, v := range additionalEnvs {
+			p.setEnv(k, testhelper.ReplaceEnvsString(v, p.envs))
+		}
+	}
+
+	// Create requests
+	pool := p.api.NewPool()
+	p.createConfigsRequests(configs, pool)
+
+	// Send requests
 	if err := pool.StartAndWait(); err != nil {
 		assert.FailNow(p.t, fmt.Sprintf("cannot create configs: %s", err))
 	}
-
-	p.logEnvs()
-	p.logf("Project state set | %s", time.Since(startTime))
 }
 
-// createConfigs loads configs from files and creates them in the test project.
-func (p *Project) createConfigs(pool *client.Pool, names []string, branch *model.Branch, envPrefix string) {
+func (p *Project) createConfigsRequests(configs []*model.ConfigWithRows, pool *client.Pool) {
+	for _, config := range configs {
+		// Replace ENVs in config and rows content
+		json.MustDecodeString(testhelper.ReplaceEnvsString(json.MustEncodeString(config.Content, false), p.envs), &config.Content)
+		for _, row := range config.Rows {
+			json.MustDecodeString(testhelper.ReplaceEnvsString(json.MustEncodeString(row.Content, false), p.envs), &row.Content)
+		}
+
+		// Create config request
+		if request, err := p.api.CreateConfigRequest(config); err == nil {
+			branch := p.branchesById[config.BranchId]
+			p.logf("creating config \"%s/%s/%s\"", branch.Name, config.ComponentId, config.Name)
+			pool.Request(request).Send()
+		} else {
+			assert.FailNow(p.t, fmt.Sprintf("cannot create create config request: %s", err))
+		}
+	}
+}
+
+func (p *Project) prepareConfigs(names []string, branch *model.Branch, tickets *remote.TicketProvider, envPrefix string) []*model.ConfigWithRows {
+	var configs []*model.ConfigWithRows
 	for _, name := range names {
 		config := fixtures.LoadConfig(p.t, name)
+		configs = append(configs, config)
 		config.BranchId = branch.Id
 
 		// Get IDs for config and its rows
 		// In tests must be rows IDs order always equal
 		p.logf("creating IDs for config \"%s/%s/%s\"", branch.Name, config.ComponentId, config.Name)
-		tickets := p.api.NewTicketProvider()
 		tickets.Request(func(ticket *model.Ticket) {
 			config.Id = ticket.Id
 			p.setEnv(fmt.Sprintf("%s_%s_ID", envPrefix, config.Name), config.Id)
@@ -267,18 +343,9 @@ func (p *Project) createConfigs(pool *client.Pool, names []string, branch *model
 				p.setEnv(fmt.Sprintf("%s_%s_ROW_%s_ID", envPrefix, config.Name, rowName), row.Id)
 			})
 		}
-		if err := tickets.Resolve(); err != nil {
-			assert.FailNow(p.t, fmt.Sprintf(`cannot generate new IDs: %s`, err))
-		}
-
-		// Create config and rows, set ENVs
-		if request, err := p.api.CreateConfigRequest(config); err == nil {
-			p.logf("creating config \"%s/%s/%s\"", branch.Name, config.ComponentId, config.Name)
-			pool.Request(request).Send()
-		} else {
-			assert.FailNow(p.t, fmt.Sprintf("cannot create create config request: %s", err))
-		}
 	}
+
+	return configs
 }
 
 // setEnv set ENV variable, all ENVs are logged at the end of SetState method.
@@ -299,7 +366,7 @@ func (p *Project) setEnv(key string, value string) {
 
 func (p *Project) logEnvs() {
 	for _, item := range p.newEnvs {
-		p.logf(fmt.Sprintf(`Set ENV "%s"`, item))
+		p.logf(fmt.Sprintf(`ENV "%s"`, item))
 	}
 }
 
