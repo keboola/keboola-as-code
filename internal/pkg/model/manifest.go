@@ -30,6 +30,7 @@ type Record interface {
 	AddRelatedPath(path string)
 	State() *RecordState
 	NewEmptyObject() Object
+	NewObjectState() ObjectState
 }
 
 type ObjectManifestWithRelations interface {
@@ -190,6 +191,18 @@ func (c ConfigManifest) NewEmptyObject() Object {
 
 func (r ConfigRowManifest) NewEmptyObject() Object {
 	return &ConfigRow{ConfigRowKey: r.ConfigRowKey}
+}
+
+func (b *BranchManifest) NewObjectState() ObjectState {
+	return &BranchState{BranchManifest: b}
+}
+
+func (c *ConfigManifest) NewObjectState() ObjectState {
+	return &ConfigState{ConfigManifest: c}
+}
+
+func (r *ConfigRowManifest) NewObjectState() ObjectState {
+	return &ConfigRowState{ConfigRowManifest: r}
 }
 
 func (b BranchManifest) SortKey(sort string) string {
