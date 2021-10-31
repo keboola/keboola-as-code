@@ -38,6 +38,13 @@ type ObjectWithContent interface {
 	GetContent() *orderedmap.OrderedMap
 }
 
+type ObjectWithRelations interface {
+	Object
+	GetRelations() Relations
+	SetRelations(relations Relations)
+	AddRelation(relation Relation)
+}
+
 type ObjectsProvider interface {
 	Naming() *Naming
 	Components() *ComponentsMap
@@ -117,6 +124,7 @@ type ConfigRow struct {
 	ChangeDescription string                 `json:"changeDescription"`
 	IsDisabled        bool                   `json:"isDisabled" diff:"true" metaFile:"true"`
 	Content           *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
+	Relations         Relations              `json:"-" validate:"dive"`
 }
 
 // Job - Storage API job.
@@ -319,4 +327,28 @@ func (v Relations) Clone() Relations {
 		panic(err)
 	}
 	return out
+}
+
+func (c *Config) GetRelations() Relations {
+	return c.Relations
+}
+
+func (r *ConfigRow) GetRelations() Relations {
+	return r.Relations
+}
+
+func (c *Config) SetRelations(relations Relations) {
+	c.Relations = relations
+}
+
+func (r *ConfigRow) SetRelations(relations Relations) {
+	r.Relations = relations
+}
+
+func (c *Config) AddRelation(relation Relation) {
+	c.Relations = append(c.Relations, relation)
+}
+
+func (r *ConfigRow) AddRelation(relation Relation) {
+	r.Relations = append(r.Relations, relation)
 }

@@ -264,6 +264,10 @@ func (k ConfigKey) ComponentKey() ComponentKey {
 	return ComponentKey{Id: k.ComponentId}
 }
 
+func (k ConfigKey) ConfigKeySameBranch() ConfigKeySameBranch {
+	return ConfigKeySameBranch{ComponentId: k.ComponentId, Id: k.Id}
+}
+
 func (k ConfigKey) BranchKey() BranchKey {
 	return BranchKey{Id: k.BranchId}
 }
