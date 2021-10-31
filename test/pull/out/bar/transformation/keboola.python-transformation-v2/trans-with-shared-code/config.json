@@ -1,9 +1,0 @@
-{
-  "parameters": {},
-  "shared_code_id": "%%TEST_SHARED_CODE_ID%%",
-  "shared_code_row_ids": [
-    "%%TEST_SHARED_CODE_ROW_ID%%"
-  ],
-  "variables_id": "%%TEST_TRANS_WITH_SHARED_CODE_VARIABLES_ID%%",
-  "variables_values_id": "%%TEST_TRANS_WITH_SHARED_CODE_VARIABLES_VALUES_ID%%"
-}

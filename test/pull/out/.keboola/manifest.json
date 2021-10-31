@@ -90,11 +90,11 @@
     {
       "branchId": %%TEST_BRANCH_BAR_ID%%,
       "componentId": "keboola.variables",
-      "id": "%%TEST_BRANCH_BAR_CONFIG_TRANS_WITH_SHARED_CODE_VARIABLES_ID%%",
-      "path": "other/keboola.variables/trans-with-shared-code-variables",
+      "id": "%%TEST_BRANCH_BAR_CONFIG_TRANSFORMATION_WITH_SHARED_CODE_VARIABLES_ID%%",
+      "path": "other/keboola.variables/transformation-with-shared-code-variables",
       "rows": [
         {
-          "id": "%%TEST_BRANCH_BAR_CONFIG_TRANS_WITH_SHARED_CODE_VARIABLES_ROW_DEFAULT_VALUES_ID%%",
+          "id": "%%TEST_BRANCH_BAR_CONFIG_TRANSFORMATION_WITH_SHARED_CODE_VARIABLES_ROW_DEFAULT_VALUES_ID%%",
           "path": "values/default-values"
         }
       ]
@@ -109,8 +109,8 @@
     {
       "branchId": %%TEST_BRANCH_BAR_ID%%,
       "componentId": "keboola.python-transformation-v2",
-      "id": "%%TEST_BRANCH_BAR_CONFIG_TRANS_WITH_SHARED_CODE_ID%%",
-      "path": "transformation/keboola.python-transformation-v2/trans-with-shared-code",
+      "id": "%%TEST_BRANCH_BAR_CONFIG_TRANSFORMATION_WITH_SHARED_CODE_ID%%",
+      "path": "transformation/keboola.python-transformation-v2/transformation-with-shared-code",
       "rows": []
     },
     {
