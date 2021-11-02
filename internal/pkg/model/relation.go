@@ -30,10 +30,31 @@ type Relation interface {
 	ParentKey(relationOwner Key) (Key, error) // if relation type is parent <-> child, then parent key is returned, otherwise nil
 	OtherSideKey(owner Key) Key               // get key of the other side
 	IsOwningSide() bool                       // if true, relation will be stored in the manifest
+	IgnoreMissingOtherSide() bool             // if true, the missing other party will be a warning and not an error
 	NewOtherSideRelation(owner Key) Relation  // create the new other side relation, for example VariablesFor -> VariablesFrom
 }
 
 type Relations []Relation
+
+func (v Relations) GetByType(t RelationType) Relations {
+	var out Relations
+	for _, relation := range v {
+		if relation.Type() == t {
+			out = append(out, relation)
+		}
+	}
+	return out
+}
+
+func (v *Relations) RemoveByType(t RelationType) {
+	var out Relations
+	for _, relation := range *v {
+		if relation.Type() != t {
+			out = append(out, relation)
+		}
+	}
+	*v = out
+}
 
 func (v *Relations) UnmarshalJSON(data []byte) error {
 	var raw []json.RawMessage

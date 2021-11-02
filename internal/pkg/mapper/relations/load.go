@@ -48,12 +48,19 @@ func (m *relationsMapper) linkRelations(objectRaw model.Object, event model.OnOb
 		otherSideKey := relation.OtherSideKey(thisSideKey)
 		otherSideObject, found := event.AllObjects.Get(otherSideKey)
 		if !found {
-			errors.Append(fmt.Errorf(
+			err := fmt.Errorf(
 				`%s not found, referenced from %s, by relation "%s"`,
 				otherSideKey.Desc(),
 				thisSideKey.Desc(),
 				relation.Type(),
-			))
+			)
+
+			if relation.IgnoreMissingOtherSide() {
+				m.Logger.Warn(`Warning: `, err)
+			} else {
+				errors.Append(err)
+			}
+
 			continue
 		}
 

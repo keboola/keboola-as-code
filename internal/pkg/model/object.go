@@ -18,6 +18,7 @@ const (
 	SharedCodeComponentId       = "keboola.shared-code"
 	ShareCodeTargetComponentKey = `componentId`
 	ShareCodeContentKey         = `code_content`
+	VariablesIdContentKey       = `variables_id`
 )
 
 type ObjectIdAndName interface {
