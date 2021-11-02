@@ -2,6 +2,7 @@ package mapper
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // LocalSaveMapper to modify how the object will be saved in the filesystem.
@@ -10,7 +11,7 @@ type LocalSaveMapper interface {
 }
 
 // LocalLoadMapper to modify/normalize the object internal representation after loading from the filesystem.
-// Note: do not rely on other objects, they may not be loaded yet, see OnLoadListener.
+// Note: do not rely on other objects, they may not be loaded yet, see OnObjectsLoadListener.
 type LocalLoadMapper interface {
 	MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error
 }
@@ -21,15 +22,14 @@ type RemoteSaveMapper interface {
 }
 
 // RemoteLoadMapper to modify/normalize the object internal representation after loading from the Storage API.
-// Note: do not rely on other objects, they may not be loaded yet, see OnLoadListener.
+// Note: do not rely on other objects, they may not be loaded yet, see OnObjectsLoadListener.
 type RemoteLoadMapper interface {
 	MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error
 }
 
-// OnLoadListener is called when a new object is loaded
-// It is called when all new objects from the operation are loaded.
-type OnLoadListener interface {
-	OnLoad(event model.OnObjectLoadEvent) error
+// OnObjectsLoadListener is called when all new objects  are loaded in local/remote state.
+type OnObjectsLoadListener interface {
+	OnObjectsLoad(event model.OnObjectsLoadEvent) error
 }
 
 // Mapper maps Objects between internal/filesystem/API representations.
@@ -99,14 +99,20 @@ func (m *Mapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
 	return nil
 }
 
-func (m *Mapper) OnLoad(event model.OnObjectLoadEvent) error {
+func (m *Mapper) OnObjectsLoaded(stateType model.StateType, newObjects []model.Object) error {
+	errors := utils.NewMultiError()
+	event := model.OnObjectsLoadEvent{
+		StateType:  stateType,
+		NewObjects: newObjects,
+		AllObjects: m.context.State.StateObjects(stateType),
+	}
 	for _, mapper := range m.mappers {
-		if mapper, ok := mapper.(OnLoadListener); ok {
-			if err := mapper.OnLoad(event); err != nil {
-				return err
+		if mapper, ok := mapper.(OnObjectsLoadListener); ok {
+			if err := mapper.OnObjectsLoad(event); err != nil {
+				errors.Append(err)
 			}
 		}
 	}
 
-	return nil
+	return errors.ErrorOrNil()
 }

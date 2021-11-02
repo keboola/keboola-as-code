@@ -30,7 +30,7 @@ type UnitOfWork struct {
 	lock              *sync.Mutex
 	changeDescription string                 // change description used for all modified configs and rows
 	pools             *orderedmap.OrderedMap // separated pool for changes in branches, configs and rows
-	newObjects        []model.ObjectState
+	newObjectStates   []model.ObjectState
 	errors            *utils.Error
 	invoked           bool
 }
@@ -159,7 +159,7 @@ func (u *UnitOfWork) loadObject(object model.Object) (model.ObjectState, error) 
 		}
 	}
 
-	u.addNewObject(objectState)
+	u.addNewObjectState(objectState)
 	return objectState, nil
 }
 
@@ -216,8 +216,10 @@ func (u *UnitOfWork) Invoke() error {
 		}
 	}
 
-	// OnLoad event
-	u.onLoad()
+	// OnObjectsLoad event
+	if err := u.mapper.OnObjectsLoaded(model.StateTypeRemote, u.newObjects()); err != nil {
+		u.errors.Append(err)
+	}
 
 	u.invoked = true
 	return u.errors.ErrorOrNil()
@@ -297,25 +299,18 @@ func (u *UnitOfWork) delete(objectState model.ObjectState) {
 		Send()
 }
 
-func (u *UnitOfWork) addNewObject(objectState model.ObjectState) {
+func (u *UnitOfWork) addNewObjectState(objectState model.ObjectState) {
 	u.lock.Lock()
 	defer u.lock.Unlock()
-	u.newObjects = append(u.newObjects, objectState)
+	u.newObjectStates = append(u.newObjectStates, objectState)
 }
 
-// onLoad calls OnLoadListener for each loaded object.
-func (u *UnitOfWork) onLoad() {
-	allObjects := u.state.RemoteObjects()
-	for _, objectState := range u.newObjects {
-		event := model.OnObjectLoadEvent{
-			Object:      objectState.RemoteState(),
-			ObjectState: objectState,
-			AllObjects:  allObjects,
-		}
-		if err := u.mapper.OnLoad(event); err != nil {
-			u.errors.Append(err)
-		}
+func (u *UnitOfWork) newObjects() []model.Object {
+	var newObjects []model.Object
+	for _, objectState := range u.newObjectStates {
+		newObjects = append(newObjects, objectState.RemoteState())
 	}
+	return newObjects
 }
 
 // poolFor each level (branches, configs, rows).

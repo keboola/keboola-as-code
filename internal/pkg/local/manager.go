@@ -32,7 +32,7 @@ type UnitOfWork struct {
 	errors          *utils.Error
 	lock            *sync.Mutex
 	skipNotFoundErr bool
-	newObjects      []model.ObjectState
+	newObjectStates []model.ObjectState
 	invoked         bool
 }
 
@@ -112,7 +112,7 @@ func (u *UnitOfWork) CreateObject(key model.Key, name string) {
 		return
 	}
 	objectState.SetLocalState(object)
-	u.addNewObject(objectState)
+	u.addNewObjectState(objectState)
 
 	// Generate local path
 	if err := u.UpdatePaths(objectState, false); err != nil {
@@ -161,7 +161,7 @@ func (u *UnitOfWork) LoadObject(record model.Record) {
 			// Set local state
 			objectState.SetLocalState(object)
 
-			u.addNewObject(objectState)
+			u.addNewObjectState(objectState)
 			return nil
 		})
 }
@@ -207,8 +207,10 @@ func (u *UnitOfWork) Invoke() error {
 		}
 	}
 
-	// OnLoad event
-	u.onLoad()
+	// OnObjectsLoad event
+	if err := u.mapper.OnObjectsLoaded(model.StateTypeLocal, u.newObjects()); err != nil {
+		u.errors.Append(err)
+	}
 
 	u.invoked = true
 	return u.errors.ErrorOrNil()
@@ -230,23 +232,16 @@ func (u *UnitOfWork) workersFor(level int) *Workers {
 	return workers
 }
 
-func (u *UnitOfWork) addNewObject(objectState model.ObjectState) {
+func (u *UnitOfWork) addNewObjectState(objectState model.ObjectState) {
 	u.lock.Lock()
 	defer u.lock.Unlock()
-	u.newObjects = append(u.newObjects, objectState)
+	u.newObjectStates = append(u.newObjectStates, objectState)
 }
 
-// onLoad calls OnLoadListener for each loaded object.
-func (u *UnitOfWork) onLoad() {
-	allObjects := u.state.LocalObjects()
-	for _, objectState := range u.newObjects {
-		event := model.OnObjectLoadEvent{
-			Object:      objectState.LocalState(),
-			ObjectState: objectState,
-			AllObjects:  allObjects,
-		}
-		if err := u.mapper.OnLoad(event); err != nil {
-			u.errors.Append(err)
-		}
+func (u *UnitOfWork) newObjects() []model.Object {
+	var newObjects []model.Object
+	for _, objectState := range u.newObjectStates {
+		newObjects = append(newObjects, objectState.LocalState())
 	}
+	return newObjects
 }

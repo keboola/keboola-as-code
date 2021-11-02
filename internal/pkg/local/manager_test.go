@@ -40,8 +40,10 @@ func (*testMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
 	return nil
 }
 
-func (t *testMapper) OnLoad(event model.OnObjectLoadEvent) error {
-	t.onLoadCalls = append(t.onLoadCalls, event.Object.Desc())
+func (t *testMapper) OnObjectsLoad(event model.OnObjectsLoadEvent) error {
+	for _, object := range event.NewObjects {
+		t.onLoadCalls = append(t.onLoadCalls, object.Desc())
+	}
 	return nil
 }
 
@@ -154,6 +156,6 @@ func TestAfterLocalLoadMapper(t *testing.T) {
 	configState := manager.state.MustGet(model.ConfigKey{BranchId: 111, ComponentId: `ex-generic-v2`, Id: `456`}).(*model.ConfigState)
 	assert.Equal(t, `{"parameters":"overwritten","new":"value"}`, json.MustEncodeString(configState.Local.Content, false))
 
-	// OnLoad event has been called
+	// OnObjectsLoad event has been called
 	assert.Equal(t, []string{`branch "111"`, `config "branch:111/component:ex-generic-v2/config:456"`}, testMapperInst.onLoadCalls)
 }

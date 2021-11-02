@@ -76,6 +76,17 @@ func (s *State) All() []ObjectState {
 	return out
 }
 
+func (s *State) StateObjects(stateType StateType) *StateObjects {
+	switch stateType {
+	case StateTypeRemote:
+		return s.RemoteObjects()
+	case StateTypeLocal:
+		return s.LocalObjects()
+	default:
+		panic(fmt.Errorf(`unexpected StateType "%v"`, stateType))
+	}
+}
+
 func (s *State) LocalObjects() *StateObjects {
 	return NewStateObjects(s, StateTypeLocal)
 }

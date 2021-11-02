@@ -23,14 +23,25 @@ func (m *relationsMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error
 	return nil
 }
 
-func (m *relationsMapper) OnLoad(event model.OnObjectLoadEvent) error {
+func (m *relationsMapper) OnObjectsLoad(event model.OnObjectsLoadEvent) error {
 	errors := utils.NewMultiError()
-	object, ok := event.Object.(model.ObjectWithRelations)
+	for _, object := range event.NewObjects {
+		if err := m.linkRelations(object, event); err != nil {
+			errors.Append(err)
+		}
+	}
+
+	return errors.ErrorOrNil()
+}
+
+func (m *relationsMapper) linkRelations(objectRaw model.Object, event model.OnObjectsLoadEvent) error {
+	object, ok := objectRaw.(model.ObjectWithRelations)
 	if !ok {
 		return nil
 	}
 
 	// Find the other side of the relation and create a corresponding relation on the other side
+	errors := utils.NewMultiError()
 	for _, relation := range object.GetRelations() {
 		// Get relation other side
 		thisSideKey := object.Key()
