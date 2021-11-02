@@ -30,7 +30,7 @@ type Relation interface {
 	ParentKey(relationOwner Key) (Key, error) // if relation type is parent <-> child, then parent key is returned, otherwise nil
 	OtherSideKey(owner Key) Key               // get key of the other side
 	IsOwningSide() bool                       // if true, relation will be stored in the manifest
-	IgnoreMissingOtherSide() bool             // if true, the missing other party will be a warning and not an error
+	IgnoreMissingOtherSide() bool             // if true, the missing other side will be a warning and not an error
 	NewOtherSideRelation(owner Key) Relation  // create the new other side relation, for example VariablesFor -> VariablesFrom
 }
 
