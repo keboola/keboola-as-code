@@ -67,7 +67,7 @@ func NewProjectSnapshot(s *State, testProject *testproject.Project) (*fixtures.P
 	for _, schedule := range schedules {
 		configKey := model.ConfigKey{BranchId: defaultBranchId, ComponentId: model.SchedulerComponentId, Id: schedule.ConfigurationId}
 		scheduleConfig := s.MustGet(configKey).(*model.ConfigState).Remote
-		project.Schedules = append(project.Schedules, &fixtures.ScheduleConfig{Name: scheduleConfig.Name})
+		project.Schedules = append(project.Schedules, &fixtures.Schedule{Name: scheduleConfig.Name})
 	}
 
 	// Sort by name
