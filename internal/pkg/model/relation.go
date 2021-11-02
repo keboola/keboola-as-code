@@ -35,6 +35,26 @@ type Relation interface {
 
 type Relations []Relation
 
+func (v Relations) GetByType(t RelationType) Relations {
+	var out Relations
+	for _, relation := range v {
+		if relation.Type() == t {
+			out = append(out, relation)
+		}
+	}
+	return out
+}
+
+func (v *Relations) RemoveByType(t RelationType) {
+	var out Relations
+	for _, relation := range *v {
+		if relation.Type() != t {
+			out = append(out, relation)
+		}
+	}
+	*v = out
+}
+
 func (v *Relations) UnmarshalJSON(data []byte) error {
 	var raw []json.RawMessage
 	if err := json.Unmarshal(data, &raw); err != nil {
