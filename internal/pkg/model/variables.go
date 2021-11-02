@@ -30,6 +30,10 @@ func (t *VariablesForRelation) IsOwningSide() bool {
 	return true
 }
 
+func (t *VariablesForRelation) IgnoreMissingOtherSide() bool {
+	return true
+}
+
 // NewOtherSideRelation create the other side relation, for example VariablesFor -> VariablesFrom.
 func (t *VariablesForRelation) NewOtherSideRelation(owner Key) Relation {
 	return &VariablesFromRelation{
@@ -63,6 +67,10 @@ func (t *VariablesFromRelation) OtherSideKey(owner Key) Key {
 
 func (t *VariablesFromRelation) IsOwningSide() bool {
 	return false
+}
+
+func (t *VariablesFromRelation) IgnoreMissingOtherSide() bool {
+	return true
 }
 
 func (t *VariablesFromRelation) NewOtherSideRelation(owner Key) Relation {

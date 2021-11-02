@@ -34,11 +34,13 @@ type MockedObjectState struct {
 }
 
 type OwningSideRelation struct {
-	OtherSide model.Key
+	OtherSide                   model.Key
+	IgnoreMissingOtherSideValue bool
 }
 
 type OtherSideRelation struct {
-	OwningSide model.Key
+	OwningSide                  model.Key
+	IgnoreMissingOtherSideValue bool
 }
 
 func (MockedKey) Level() int {
@@ -264,6 +266,10 @@ func (r *OwningSideRelation) IsOwningSide() bool {
 	return true
 }
 
+func (r *OwningSideRelation) IgnoreMissingOtherSide() bool {
+	return r.IgnoreMissingOtherSideValue
+}
+
 func (r *OwningSideRelation) NewOtherSideRelation(owner model.Key) model.Relation {
 	if r.OtherSide != nil {
 		return &OtherSideRelation{
@@ -287,6 +293,10 @@ func (r *OtherSideRelation) OtherSideKey(_ model.Key) model.Key {
 
 func (r *OtherSideRelation) IsOwningSide() bool {
 	return false
+}
+
+func (r *OtherSideRelation) IgnoreMissingOtherSide() bool {
+	return r.IgnoreMissingOtherSideValue
 }
 
 func (r *OtherSideRelation) NewOtherSideRelation(owner model.Key) model.Relation {
