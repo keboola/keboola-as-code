@@ -46,9 +46,9 @@ type RemoteSaveRecipe struct {
 	Modified Object // object, eg. Config, modified version, API representation
 }
 
-// OnObjectLoadEvent - loaded object + all objects in the same state (called when all objects are loaded).
-type OnObjectLoadEvent struct {
-	Object      Object        // object loaded into the local / remote state
-	ObjectState ObjectState   // contains manifest and both remote and local state
-	AllObjects  *StateObjects // eg. if has been loaded a new object to local state -> all objects in local state
+// OnObjectsLoadEvent contains new and all objects in the same state.
+type OnObjectsLoadEvent struct {
+	StateType  StateType     // StateTypeLocal or StateTypeRemote
+	NewObjects []Object      // new objects loaded into the local / remote state
+	AllObjects *StateObjects // eg. if has been loaded a new object to local state -> all objects in local state
 }

@@ -66,19 +66,19 @@ func TestRelationsMapperOnLoad(t *testing.T) {
 	assert.NoError(t, err)
 	objectState2.SetLocalState(object2)
 
-	// OnLoad event for object1
-	event := model.OnObjectLoadEvent{
-		Object:      object1,
-		ObjectState: objectState1,
-		AllObjects:  state.LocalObjects(),
+	// OnObjectsLoad event
+	event := model.OnObjectsLoadEvent{
+		StateType:  model.StateTypeLocal,
+		NewObjects: []model.Object{object1},
+		AllObjects: state.LocalObjects(),
 	}
 
 	// No other side relation
 	assert.Empty(t, object2.Relations)
 
-	// Call OnLoad
+	// Call OnObjectsLoad
 	context := createMapperContext(t)
-	assert.NoError(t, NewMapper(context).OnLoad(event))
+	assert.NoError(t, NewMapper(context).OnObjectsLoad(event))
 
 	// Other side relation has been created
 	assert.Equal(t, model.Relations{

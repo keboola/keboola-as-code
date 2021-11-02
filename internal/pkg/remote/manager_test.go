@@ -45,8 +45,10 @@ func (*testMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
 	return nil
 }
 
-func (t *testMapper) OnLoad(event model.OnObjectLoadEvent) error {
-	t.onLoadCalls = append(t.onLoadCalls, event.Object.Desc())
+func (t *testMapper) OnObjectsLoad(event model.OnObjectsLoadEvent) error {
+	for _, object := range event.NewObjects {
+		t.onLoadCalls = append(t.onLoadCalls, object.Desc())
+	}
 	return nil
 }
 
@@ -149,7 +151,7 @@ func TestAfterRemoteLoadMapper(t *testing.T) {
 	assert.Equal(t, `internal name`, config.Name)
 	assert.Equal(t, `{"key":"internal value","new":"value"}`, json.MustEncodeString(config.Content, false))
 
-	// OnLoad event has been called
+	// OnObjectsLoad event has been called
 	assert.Equal(t, []string{`branch "123"`, `config "branch:123/component:foo.bar/config:456"`}, testMapperInst.onLoadCalls)
 }
 
