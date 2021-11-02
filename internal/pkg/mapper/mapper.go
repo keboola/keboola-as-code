@@ -27,7 +27,7 @@ type RemoteLoadMapper interface {
 	MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error
 }
 
-// OnObjectsLoadListener is called when all new objects  are loaded in local/remote state.
+// OnObjectsLoadListener is called when all new objects are loaded in local/remote state.
 type OnObjectsLoadListener interface {
 	OnObjectsLoad(event model.OnObjectsLoadEvent) error
 }

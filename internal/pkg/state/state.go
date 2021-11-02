@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/relations"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/variables"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -100,6 +101,7 @@ func newState(options *Options) *State {
 		State:  s.State,
 	}
 	mappers := []interface{}{
+		variables.NewMapper(mapperContext),
 		relations.NewMapper(mapperContext),
 		sharedcode.NewMapper(mapperContext),
 		transformation.NewMapper(mapperContext),
