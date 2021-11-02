@@ -115,7 +115,7 @@ func (u *UnitOfWork) CreateObject(key model.Key, name string) {
 	u.addNewObjectState(objectState)
 
 	// Generate local path
-	if err := u.UpdatePaths(objectState, false); err != nil {
+	if err := u.NewPathsGenerator(false).Update(objectState); err != nil {
 		u.errors.Append(err)
 		return
 	}

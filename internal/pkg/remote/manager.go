@@ -152,13 +152,6 @@ func (u *UnitOfWork) loadObject(object model.Object) (model.ObjectState, error) 
 	// Set remote state
 	objectState.SetRemoteState(object)
 
-	// Generate local path
-	if !found {
-		if err := u.localManager.UpdatePaths(objectState, false); err != nil {
-			return nil, err
-		}
-	}
-
 	u.addNewObjectState(objectState)
 	return objectState, nil
 }
@@ -219,6 +212,16 @@ func (u *UnitOfWork) Invoke() error {
 	// OnObjectsLoad event
 	if err := u.mapper.OnObjectsLoaded(model.StateTypeRemote, u.newObjects()); err != nil {
 		u.errors.Append(err)
+	}
+
+	// Generate local path if needed
+	pathsUpdater := u.localManager.NewPathsGenerator(false)
+	for _, objectState := range u.newObjectStates {
+		if !objectState.HasLocalState() {
+			if err := pathsUpdater.Update(objectState); err != nil {
+				u.errors.Append(err)
+			}
+		}
 	}
 
 	u.invoked = true
