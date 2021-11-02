@@ -125,11 +125,11 @@ func (u *UnitOfWork) loadObject(object model.Object) (model.ObjectState, error) 
 	}
 
 	// Invoke mapper
-	recipe := &model.RemoteLoadRecipe{Original: object, Modified: object.Clone()}
+	recipe := &model.RemoteLoadRecipe{ApiObject: object, InternalObject: object.Clone()}
 	if err := u.mapper.MapAfterRemoteLoad(recipe); err != nil {
 		return nil, err
 	}
-	object = recipe.Modified
+	object = recipe.InternalObject
 
 	// Get object state
 	objectState, found := u.state.Get(object.Key())
@@ -164,7 +164,7 @@ func (u *UnitOfWork) SaveObject(objectState model.ObjectState, object model.Obje
 	}
 
 	// Invoke mapper
-	recipe := &model.RemoteSaveRecipe{Original: object, Modified: object.Clone()}
+	recipe := &model.RemoteSaveRecipe{Manifest: objectState.Manifest(), InternalObject: object, ApiObject: object.Clone()}
 	if err := u.mapper.MapBeforeRemoteSave(recipe); err != nil {
 		u.errors.Append(err)
 		return
@@ -230,7 +230,7 @@ func (u *UnitOfWork) Invoke() error {
 
 func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, recipe *model.RemoteSaveRecipe, changedFields []string) error {
 	// Set changeDescription
-	switch v := recipe.Modified.(type) {
+	switch v := recipe.ApiObject.(type) {
 	case *model.Config:
 		v.ChangeDescription = u.changeDescription
 		if len(changedFields) > 0 {
@@ -254,7 +254,7 @@ func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, recipe *model
 }
 
 func (u *UnitOfWork) create(objectState model.ObjectState, recipe *model.RemoteSaveRecipe) error {
-	object := recipe.Modified
+	object := recipe.ApiObject
 	request, err := u.api.CreateRequest(object)
 	if err != nil {
 		return err
@@ -263,7 +263,7 @@ func (u *UnitOfWork) create(objectState model.ObjectState, recipe *model.RemoteS
 		Request(request).
 		OnSuccess(func(response *client.Response) {
 			// Save new ID to manifest
-			objectState.SetRemoteState(recipe.Original)
+			objectState.SetRemoteState(recipe.InternalObject)
 		}).
 		OnError(func(response *client.Response) {
 			if e, ok := response.Error().(*Error); ok {
@@ -278,12 +278,12 @@ func (u *UnitOfWork) create(objectState model.ObjectState, recipe *model.RemoteS
 }
 
 func (u *UnitOfWork) update(objectState model.ObjectState, recipe *model.RemoteSaveRecipe, changedFields []string) error {
-	object := recipe.Modified
+	object := recipe.ApiObject
 	if request, err := u.api.UpdateRequest(object, changedFields); err == nil {
 		u.poolFor(object.Level()).
 			Request(request).
 			OnSuccess(func(response *client.Response) {
-				objectState.SetRemoteState(recipe.Original)
+				objectState.SetRemoteState(recipe.InternalObject)
 			}).
 			Send()
 	} else {
