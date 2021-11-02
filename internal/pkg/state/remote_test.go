@@ -33,9 +33,9 @@ func TestLoadRemoteStateComplex(t *testing.T) {
 	state, envs := loadRemoteState(t, m, "complex.json")
 	assert.NotNil(t, state)
 	assert.Empty(t, state.RemoteErrors().Errors)
-	assert.Equal(t, complexRemoteExpectedBranches(envs), utils.SortByName(state.Branches()))
-	assert.Equal(t, complexRemoteExpectedConfigs(envs), utils.SortByName(state.Configs()))
-	assert.Equal(t, complexRemoteExpectedConfigsRows(envs), utils.SortByName(state.ConfigRows()))
+	assert.Equal(t, complexRemoteExpectedBranches(envs), state.Branches())
+	assert.Equal(t, complexRemoteExpectedConfigs(envs), state.Configs())
+	assert.Equal(t, complexRemoteExpectedConfigsRows(envs), state.ConfigRows())
 }
 
 func TestLoadRemoteStateAllowedBranches(t *testing.T) {
@@ -63,12 +63,12 @@ func TestLoadRemoteStateAllowedBranches(t *testing.T) {
 				Paths: model.Paths{
 					PathInProject: model.NewPathInProject(
 						"",
-						envs.MustGet(`TEST_BRANCH_FOO_ID`)+"-foo",
+						"foo",
 					),
 				},
 			},
 		},
-	}, utils.SortByName(state.Branches()))
+	}, state.Branches())
 }
 
 func complexRemoteExpectedBranches(envs *env.Map) []*model.BranchState {
@@ -90,7 +90,7 @@ func complexRemoteExpectedBranches(envs *env.Map) []*model.BranchState {
 				Paths: model.Paths{
 					PathInProject: model.NewPathInProject(
 						"",
-						envs.MustGet(`TEST_BRANCH_BAR_ID`)+"-bar",
+						"bar",
 					),
 				},
 			},
@@ -112,7 +112,7 @@ func complexRemoteExpectedBranches(envs *env.Map) []*model.BranchState {
 				Paths: model.Paths{
 					PathInProject: model.NewPathInProject(
 						"",
-						envs.MustGet(`TEST_BRANCH_FOO_ID`)+"-foo",
+						"foo",
 					),
 				},
 			},
@@ -147,60 +147,6 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 		{
 			Remote: &model.Config{
 				ConfigKey: model.ConfigKey{
-					BranchId:    cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`)),
-					ComponentId: "ex-generic-v2",
-					Id:          envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
-				},
-				Name:              "empty",
-				Description:       "test fixture",
-				ChangeDescription: "created by test",
-				Content:           utils.NewOrderedMap(),
-			},
-			// Generated manifest
-			ConfigManifest: &model.ConfigManifest{
-				ConfigKey: model.ConfigKey{
-					BranchId:    cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`)),
-					ComponentId: "ex-generic-v2",
-					Id:          envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
-				},
-				Paths: model.Paths{
-					PathInProject: model.NewPathInProject(
-						"main",
-						"extractor/ex-generic-v2/"+envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)+"-empty",
-					),
-				},
-			},
-		},
-		{
-			Remote: &model.Config{
-				ConfigKey: model.ConfigKey{
-					BranchId:    cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`)),
-					ComponentId: "ex-generic-v2",
-					Id:          envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
-				},
-				Name:              "empty",
-				Description:       "test fixture",
-				ChangeDescription: fmt.Sprintf(`Copied from default branch configuration "empty" (%s) version 1`, envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
-				Content:           utils.NewOrderedMap(),
-			},
-			// Generated manifest
-			ConfigManifest: &model.ConfigManifest{
-				ConfigKey: model.ConfigKey{
-					BranchId:    cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`)),
-					ComponentId: "ex-generic-v2",
-					Id:          envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
-				},
-				Paths: model.Paths{
-					PathInProject: model.NewPathInProject(
-						envs.MustGet(`TEST_BRANCH_FOO_ID`)+"-foo",
-						"extractor/ex-generic-v2/"+envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)+"-empty",
-					),
-				},
-			},
-		},
-		{
-			Remote: &model.Config{
-				ConfigKey: model.ConfigKey{
 					BranchId:    cast.ToInt(envs.MustGet(`TEST_BRANCH_BAR_ID`)),
 					ComponentId: "ex-generic-v2",
 					Id:          envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
@@ -219,50 +165,8 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 				},
 				Paths: model.Paths{
 					PathInProject: model.NewPathInProject(
-						envs.MustGet(`TEST_BRANCH_BAR_ID`)+"-bar",
-						"extractor/ex-generic-v2/"+envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)+"-empty",
-					),
-				},
-			},
-		},
-		{
-			Remote: &model.Config{
-				ConfigKey: model.ConfigKey{
-					BranchId:    cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`)),
-					ComponentId: "keboola.ex-db-mysql",
-					Id:          envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`),
-				},
-				Name:              "with-rows",
-				Description:       "test fixture",
-				ChangeDescription: "created by test",
-				Content: utils.PairsToOrderedMap([]utils.Pair{
-					{
-						Key: "parameters",
-						Value: *utils.PairsToOrderedMap([]utils.Pair{
-							{
-								Key: "db",
-								Value: *utils.PairsToOrderedMap([]utils.Pair{
-									{
-										Key:   "host",
-										Value: "mysql.example.com",
-									},
-								}),
-							},
-						}),
-					},
-				}),
-			},
-			// Generated manifest
-			ConfigManifest: &model.ConfigManifest{
-				ConfigKey: model.ConfigKey{
-					BranchId:    cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`)),
-					ComponentId: "keboola.ex-db-mysql",
-					Id:          envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`),
-				},
-				Paths: model.Paths{
-					PathInProject: model.NewPathInProject(
-						envs.MustGet(`TEST_BRANCH_FOO_ID`)+"-foo",
-						"extractor/keboola.ex-db-mysql/"+envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`)+"-with-rows",
+						"bar",
+						"extractor/ex-generic-v2/empty",
 					),
 				},
 			},
@@ -303,8 +207,104 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 				},
 				Paths: model.Paths{
 					PathInProject: model.NewPathInProject(
-						envs.MustGet(`TEST_BRANCH_BAR_ID`)+"-bar",
-						"extractor/ex-generic-v2/"+envs.MustGet(`TEST_BRANCH_BAR_CONFIG_WITHOUT_ROWS_ID`)+"-without-rows",
+						"bar",
+						"extractor/ex-generic-v2/without-rows",
+					),
+				},
+			},
+		},
+		{
+			Remote: &model.Config{
+				ConfigKey: model.ConfigKey{
+					BranchId:    cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`)),
+					ComponentId: "ex-generic-v2",
+					Id:          envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
+				},
+				Name:              "empty",
+				Description:       "test fixture",
+				ChangeDescription: fmt.Sprintf(`Copied from default branch configuration "empty" (%s) version 1`, envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
+				Content:           utils.NewOrderedMap(),
+			},
+			// Generated manifest
+			ConfigManifest: &model.ConfigManifest{
+				ConfigKey: model.ConfigKey{
+					BranchId:    cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`)),
+					ComponentId: "ex-generic-v2",
+					Id:          envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
+				},
+				Paths: model.Paths{
+					PathInProject: model.NewPathInProject(
+						"foo",
+						"extractor/ex-generic-v2/empty",
+					),
+				},
+			},
+		},
+		{
+			Remote: &model.Config{
+				ConfigKey: model.ConfigKey{
+					BranchId:    cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`)),
+					ComponentId: "keboola.ex-db-mysql",
+					Id:          envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`),
+				},
+				Name:              "with-rows",
+				Description:       "test fixture",
+				ChangeDescription: "created by test",
+				Content: utils.PairsToOrderedMap([]utils.Pair{
+					{
+						Key: "parameters",
+						Value: *utils.PairsToOrderedMap([]utils.Pair{
+							{
+								Key: "db",
+								Value: *utils.PairsToOrderedMap([]utils.Pair{
+									{
+										Key:   "host",
+										Value: "mysql.example.com",
+									},
+								}),
+							},
+						}),
+					},
+				}),
+			},
+			// Generated manifest
+			ConfigManifest: &model.ConfigManifest{
+				ConfigKey: model.ConfigKey{
+					BranchId:    cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`)),
+					ComponentId: "keboola.ex-db-mysql",
+					Id:          envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`),
+				},
+				Paths: model.Paths{
+					PathInProject: model.NewPathInProject(
+						"foo",
+						"extractor/keboola.ex-db-mysql/with-rows",
+					),
+				},
+			},
+		},
+		{
+			Remote: &model.Config{
+				ConfigKey: model.ConfigKey{
+					BranchId:    cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`)),
+					ComponentId: "ex-generic-v2",
+					Id:          envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
+				},
+				Name:              "empty",
+				Description:       "test fixture",
+				ChangeDescription: "created by test",
+				Content:           utils.NewOrderedMap(),
+			},
+			// Generated manifest
+			ConfigManifest: &model.ConfigManifest{
+				ConfigKey: model.ConfigKey{
+					BranchId:    cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`)),
+					ComponentId: "ex-generic-v2",
+					Id:          envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
+				},
+				Paths: model.Paths{
+					PathInProject: model.NewPathInProject(
+						"main",
+						"extractor/ex-generic-v2/empty",
 					),
 				},
 			},
@@ -344,8 +344,8 @@ func complexRemoteExpectedConfigsRows(envs *env.Map) []*model.ConfigRowState {
 				},
 				Paths: model.Paths{
 					PathInProject: model.NewPathInProject(
-						envs.MustGet(`TEST_BRANCH_FOO_ID`)+"-foo/extractor/keboola.ex-db-mysql/"+envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`)+"-with-rows",
-						`rows/`+envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_DISABLED_ID`)+"-disabled",
+						`foo/extractor/keboola.ex-db-mysql/with-rows`,
+						`rows/disabled`,
 					),
 				},
 			},
@@ -380,8 +380,8 @@ func complexRemoteExpectedConfigsRows(envs *env.Map) []*model.ConfigRowState {
 				},
 				Paths: model.Paths{
 					PathInProject: model.NewPathInProject(
-						envs.MustGet(`TEST_BRANCH_FOO_ID`)+"-foo/extractor/keboola.ex-db-mysql/"+envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`)+"-with-rows",
-						`rows/`+envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_TEST_VIEW_ID`)+"-test-view",
+						`foo/extractor/keboola.ex-db-mysql/with-rows`,
+						`rows/test-view`,
 					),
 				},
 			},
@@ -416,8 +416,8 @@ func complexRemoteExpectedConfigsRows(envs *env.Map) []*model.ConfigRowState {
 				},
 				Paths: model.Paths{
 					PathInProject: model.NewPathInProject(
-						envs.MustGet(`TEST_BRANCH_FOO_ID`)+"-foo/extractor/keboola.ex-db-mysql/"+envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`)+"-with-rows",
-						`rows/`+envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_USERS_ID`)+"-users",
+						`foo/extractor/keboola.ex-db-mysql/with-rows`,
+						`rows/users`,
 					),
 				},
 			},
@@ -434,6 +434,17 @@ func createManifest(t *testing.T) *manifest.Manifest {
 	if err != nil {
 		assert.FailNow(t, err.Error())
 	}
+
+	// Force stable sort in tests
+	m.SortBy = model.SortByPath
+	m.Naming.Branch = "{branch_name}"
+	m.Naming.Config = "{component_type}/{component_id}/{config_name}"
+	m.Naming.ConfigRow = "rows/{config_row_name}"
+	m.Naming.SharedCodeConfig = "_shared/{target_component_id}"
+	m.Naming.SharedCodeConfigRow = "codes/{config_row_name}"
+	m.Naming.VariablesConfig = "variables"
+	m.Naming.VariablesValuesRow = "values/{config_row_name}"
+
 	return m
 }
 
