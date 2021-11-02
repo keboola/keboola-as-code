@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/iancoleman/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -13,6 +14,14 @@ const (
 	VariablesForRelType  = RelationType(`variablesFor`)
 	VariablesFromRelType = RelationType(`variablesFrom`)
 )
+
+// OneToXRelations gets relations that can be defined on an object only once.
+func OneToXRelations() []RelationType {
+	return []RelationType{
+		VariablesForRelType,
+		VariablesFromRelType,
+	}
+}
 
 type RelationType string
 
@@ -44,6 +53,24 @@ func (v Relations) GetByType(t RelationType) Relations {
 		}
 	}
 	return out
+}
+
+func (v Relations) GetAllByType() map[RelationType]Relations {
+	out := make(map[RelationType]Relations)
+	for _, relation := range v {
+		out[relation.Type()] = append(out[relation.Type()], relation)
+	}
+	return out
+}
+
+func (v *Relations) Add(relation Relation) {
+	for _, item := range *v {
+		if cmp.Equal(item, relation) {
+			// Relation is already present
+			return
+		}
+	}
+	*v = append(*v, relation)
 }
 
 func (v *Relations) RemoveByType(t RelationType) {
@@ -147,7 +174,7 @@ func (v Relations) ParentKey(source Key) (Key, error) {
 
 	// Multiple parents are forbidden
 	if len(parents) > 1 {
-		return nil, fmt.Errorf(`unexpected state: multiple parents defined by "relations" in "%s"`, source.Desc())
+		return nil, fmt.Errorf(`unexpected state: multiple parents defined by "relations" in %s`, source.Desc())
 	}
 
 	return nil, nil

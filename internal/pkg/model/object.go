@@ -347,9 +347,9 @@ func (r *ConfigRow) SetRelations(relations Relations) {
 }
 
 func (c *Config) AddRelation(relation Relation) {
-	c.Relations = append(c.Relations, relation)
+	c.Relations.Add(relation)
 }
 
 func (r *ConfigRow) AddRelation(relation Relation) {
-	r.Relations = append(r.Relations, relation)
+	r.Relations.Add(relation)
 }
