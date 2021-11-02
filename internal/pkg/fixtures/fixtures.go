@@ -14,8 +14,8 @@ import (
 )
 
 type ProjectSnapshot struct {
-	Branches  []*BranchConfigs  `json:"branches"`
-	Schedules []*ScheduleConfig `json:"schedules,omitempty"`
+	Branches  []*BranchWithConfigs `json:"branches"`
+	Schedules []*ScheduleConfig    `json:"schedules,omitempty"`
 }
 
 type Branch struct {
@@ -29,7 +29,7 @@ type BranchState struct {
 	Configs []string `json:"configs"`
 }
 
-type BranchConfigs struct {
+type BranchWithConfigs struct {
 	*Branch `json:"branch" validate:"required"`
 	Configs []*Config `json:"configs"`
 }

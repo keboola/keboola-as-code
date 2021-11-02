@@ -15,7 +15,7 @@ func NewProjectSnapshot(s *State, testProject *testproject.Project) (*fixtures.P
 	project := &fixtures.ProjectSnapshot{}
 
 	defaultBranchId := -1
-	branches := make(map[string]*fixtures.BranchConfigs)
+	branches := make(map[string]*fixtures.BranchWithConfigs)
 	for _, bState := range s.Branches() {
 		// Map branch
 		branch := bState.Remote
@@ -26,7 +26,7 @@ func NewProjectSnapshot(s *State, testProject *testproject.Project) (*fixtures.P
 		if b.IsDefault {
 			defaultBranchId = branch.Id
 		}
-		branchConfigs := &fixtures.BranchConfigs{Branch: b, Configs: make([]*fixtures.Config, 0)}
+		branchConfigs := &fixtures.BranchWithConfigs{Branch: b, Configs: make([]*fixtures.Config, 0)}
 		project.Branches = append(project.Branches, branchConfigs)
 		branches[branch.String()] = branchConfigs
 	}
