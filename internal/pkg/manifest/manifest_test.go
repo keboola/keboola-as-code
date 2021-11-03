@@ -294,9 +294,7 @@ func minimalJson() string {
   "allowedBranches": [
     "*"
   ],
-  "ignoredComponents": [
-    "keboola.scheduler"
-  ],
+  "ignoredComponents": [],
   "branches": [],
   "configurations": []
 }
@@ -651,9 +649,7 @@ func cyclicDependencyJson() string {
   "allowedBranches": [
     "*"
   ],
-  "ignoredComponents": [
-    "keboola.scheduler"
-  ],
+  "ignoredComponents": [],
   "branches": [
     {
       "id": 123,

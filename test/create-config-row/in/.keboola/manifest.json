@@ -17,9 +17,7 @@
   "allowedBranches": [
     "__all__"
   ],
-  "ignoredComponents": [
-    "keboola.scheduler"
-  ],
+  "ignoredComponents": [],
   "branches": [
     {
       "id": 123,
