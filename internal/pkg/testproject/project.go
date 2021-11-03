@@ -107,6 +107,11 @@ func (p *Project) Id() int {
 	return p.id
 }
 
+func (p *Project) DefaultBranch() *model.Branch {
+	p.assertLocked()
+	return p.defaultBranch
+}
+
 func (p *Project) StorageApiHost() string {
 	p.assertLocked()
 	return p.host

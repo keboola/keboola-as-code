@@ -1,7 +1,6 @@
 package state
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
@@ -14,7 +13,6 @@ import (
 func NewProjectSnapshot(s *State, testProject *testproject.Project) (*fixtures.ProjectSnapshot, error) {
 	project := &fixtures.ProjectSnapshot{}
 
-	defaultBranchId := -1
 	branches := make(map[string]*fixtures.BranchWithConfigs)
 	for _, bState := range s.Branches() {
 		// Map branch
@@ -23,15 +21,9 @@ func NewProjectSnapshot(s *State, testProject *testproject.Project) (*fixtures.P
 		b.Name = branch.Name
 		b.Description = branch.Description
 		b.IsDefault = branch.IsDefault
-		if b.IsDefault {
-			defaultBranchId = branch.Id
-		}
 		branchConfigs := &fixtures.BranchWithConfigs{Branch: b, Configs: make([]*fixtures.Config, 0)}
 		project.Branches = append(project.Branches, branchConfigs)
 		branches[branch.String()] = branchConfigs
-	}
-	if defaultBranchId == -1 {
-		panic(fmt.Errorf("default branch not found"))
 	}
 
 	configs := make(map[string]*fixtures.Config)
@@ -62,10 +54,10 @@ func NewProjectSnapshot(s *State, testProject *testproject.Project) (*fixtures.P
 
 	schedules, err := testProject.SchedulerApi().ListSchedules()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	for _, schedule := range schedules {
-		configKey := model.ConfigKey{BranchId: defaultBranchId, ComponentId: model.SchedulerComponentId, Id: schedule.ConfigurationId}
+		configKey := model.ConfigKey{BranchId: testProject.DefaultBranch().Id, ComponentId: model.SchedulerComponentId, Id: schedule.ConfigurationId}
 		scheduleConfig := s.MustGet(configKey).(*model.ConfigState).Remote
 		project.Schedules = append(project.Schedules, &fixtures.Schedule{Name: scheduleConfig.Name})
 	}

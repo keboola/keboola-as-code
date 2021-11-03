@@ -28,14 +28,14 @@
     {
       "branchId": %%TEST_BRANCH_MAIN_ID%%,
       "componentId": "ex-generic-v2",
-      "id": "22222",
+      "id": "123",
       "path": "extractor/ex-generic-v2/books",
       "rows": []
     },
     {
       "branchId": %%TEST_BRANCH_MAIN_ID%%,
       "componentId": "keboola.scheduler",
-      "id": "22223",
+      "id": "456",
       "path": "other/keboola.scheduler/schedule1",
       "rows": []
     }
