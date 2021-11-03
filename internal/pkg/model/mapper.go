@@ -47,9 +47,21 @@ type RemoteSaveRecipe struct {
 	ApiObject      Object // eg. Config, modified version, API representation
 }
 
+// PersistRecipe - TODO.
+type PersistRecipe struct {
+	ParentKey Key
+	Manifest  Record
+}
+
 // OnObjectsLoadEvent contains new and all objects in the same state.
 type OnObjectsLoadEvent struct {
 	StateType  StateType     // StateTypeLocal or StateTypeRemote
 	NewObjects []Object      // new objects loaded into the local / remote state
 	AllObjects *StateObjects // eg. if has been loaded a new object to local state -> all objects in local state
+}
+
+// OnObjectsPersistEvent contains new persisted and all local objects.
+type OnObjectsPersistEvent struct {
+	PersistedObjects []Object      // new persisted objects
+	AllObjects       *StateObjects // all local objects
 }

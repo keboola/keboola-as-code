@@ -51,7 +51,7 @@ func TestVariablesForRelation(t *testing.T) {
 		Id:          `12345`,
 	}, otherSideKey)
 
-	// Parent key, same as target, ... variables config is stored within component config
+	// ParentKey key, same as target, ... variables config is stored within component config
 	parentKey, err := r.ParentKey(sourceKey)
 	assert.NoError(t, err)
 	assert.Equal(t, ConfigKey{

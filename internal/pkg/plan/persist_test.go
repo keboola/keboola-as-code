@@ -50,7 +50,7 @@ func TestPersistNewConfig(t *testing.T) {
 		},
 		expectedNewIds: 1,
 		expectedPlan: []PersistAction{
-			&NewConfigAction{
+			&NewObjectAction{
 				PathInProject: model.NewPathInProject(
 					"main",
 					"extractor/ex-generic-v2/new-config",
@@ -58,6 +58,9 @@ func TestPersistNewConfig(t *testing.T) {
 				Key: model.ConfigKey{
 					BranchId:    111,
 					ComponentId: "ex-generic-v2",
+				},
+				ParentKey: model.BranchKey{
+					Id: 111,
 				},
 			},
 		},
@@ -121,7 +124,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 		},
 		expectedNewIds: 2,
 		expectedPlan: []PersistAction{
-			&NewConfigAction{
+			&NewObjectAction{
 				PathInProject: model.NewPathInProject(
 					"main",
 					"extractor/keboola.ex-db-mysql/new-config",
@@ -130,13 +133,20 @@ func TestPersistNewConfigRow(t *testing.T) {
 					BranchId:    111,
 					ComponentId: "keboola.ex-db-mysql",
 				},
+				ParentKey: model.BranchKey{
+					Id: 111,
+				},
 			},
-			&NewRowAction{
+			&NewObjectAction{
 				PathInProject: model.NewPathInProject(
 					"main/extractor/keboola.ex-db-mysql/new-config",
 					"rows/some-row",
 				),
 				Key: model.ConfigRowKey{
+					BranchId:    111,
+					ComponentId: "keboola.ex-db-mysql",
+				},
+				ParentKey: model.ConfigKey{
 					BranchId:    111,
 					ComponentId: "keboola.ex-db-mysql",
 				},
@@ -306,7 +316,7 @@ func TestPersistSharedCode(t *testing.T) {
 		},
 		expectedNewIds: 2,
 		expectedPlan: []PersistAction{
-			&NewConfigAction{
+			&NewObjectAction{
 				PathInProject: model.NewPathInProject(
 					"main",
 					"_shared/keboola.python-transformation-v2",
@@ -315,13 +325,20 @@ func TestPersistSharedCode(t *testing.T) {
 					BranchId:    111,
 					ComponentId: model.SharedCodeComponentId,
 				},
+				ParentKey: model.BranchKey{
+					Id: 111,
+				},
 			},
-			&NewRowAction{
+			&NewObjectAction{
 				PathInProject: model.NewPathInProject(
 					"main/_shared/keboola.python-transformation-v2",
 					"codes/my-code",
 				),
 				Key: model.ConfigRowKey{
+					BranchId:    111,
+					ComponentId: model.SharedCodeComponentId,
+				},
+				ParentKey: model.ConfigKey{
 					BranchId:    111,
 					ComponentId: model.SharedCodeComponentId,
 				},
@@ -434,7 +451,7 @@ func TestPersistVariables(t *testing.T) {
 		},
 		expectedNewIds: 2,
 		expectedPlan: []PersistAction{
-			&NewConfigAction{
+			&NewObjectAction{
 				PathInProject: model.NewPathInProject(
 					"main/extractor/ex-generic-v2/456-todos",
 					"variables",
@@ -443,17 +460,22 @@ func TestPersistVariables(t *testing.T) {
 					BranchId:    111,
 					ComponentId: model.VariablesComponentId,
 				},
-				ParentConfig: &model.ConfigKeySameBranch{
+				ParentKey: model.ConfigKey{
+					BranchId:    111,
 					ComponentId: `ex-generic-v2`,
 					Id:          `456`,
 				},
 			},
-			&NewRowAction{
+			&NewObjectAction{
 				PathInProject: model.NewPathInProject(
 					"main/extractor/ex-generic-v2/456-todos/variables",
 					"values/default",
 				),
 				Key: model.ConfigRowKey{
+					BranchId:    111,
+					ComponentId: model.VariablesComponentId,
+				},
+				ParentKey: model.ConfigKey{
 					BranchId:    111,
 					ComponentId: model.VariablesComponentId,
 				},
@@ -621,7 +643,7 @@ func (tc *testCase) run(t *testing.T) {
 
 	// Delete callbacks for easier comparison (we only check callbacks result)
 	for _, action := range plan.actions {
-		if a, ok := action.(*NewConfigAction); ok {
+		if a, ok := action.(*NewObjectAction); ok {
 			a.OnPersist = nil
 		}
 	}
