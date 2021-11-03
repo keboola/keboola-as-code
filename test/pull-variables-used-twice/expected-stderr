@@ -1,0 +1,1 @@
+Warning: config "branch:%s/component:keboola.variables/config:%s" have 2 "variablesFor" relations [config "branch:%s/component:ex-generic-v2/config:%s"; config "branch:%s/component:ex-generic-v2/config:%s"], but only one is expected

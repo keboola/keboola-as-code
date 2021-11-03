@@ -1,6 +1,8 @@
 package variables
 
-import "github.com/keboola/keboola-as-code/internal/pkg/model"
+import (
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
+)
 
 func (m *variablesMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
 	// Variables are used by config

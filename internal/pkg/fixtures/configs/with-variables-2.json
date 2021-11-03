@@ -1,0 +1,9 @@
+{
+  "componentId": "ex-generic-v2",
+  "name": "With Variables 2",
+  "configuration": {
+    "variables_id": "%%TEST_CONFIG_WITH_VARIABLES_2_VARIABLES_ID%%",
+    "variables_values_id": "%%TEST_CONFIG_WITH_VARIABLES_2_VARIABLES_VALUES_ID%%"
+  },
+  "rows": null
+}

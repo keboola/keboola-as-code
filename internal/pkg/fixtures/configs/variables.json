@@ -1,0 +1,12 @@
+{
+  "componentId": "keboola.variables",
+  "name": "Variables",
+  "configuration": {
+    "variables": [
+      {
+        "name": "foo",
+        "type": "string"
+      }
+    ]
+  }
+}

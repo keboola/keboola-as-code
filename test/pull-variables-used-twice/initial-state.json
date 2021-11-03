@@ -1,0 +1,22 @@
+{
+  "allBranchesConfigs": [],
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "isDefault": true
+      },
+      "configs": [
+        "with-variables-1",
+        "with-variables-2",
+        "variables"
+      ]
+    }
+  ],
+  "envs": {
+    "TEST_CONFIG_WITH_VARIABLES_1_VARIABLES_ID": "%%TEST_BRANCH_MAIN_CONFIG_VARIABLES_ID%%",
+    "TEST_CONFIG_WITH_VARIABLES_1_VARIABLES_VALUES_ID": "456",
+    "TEST_CONFIG_WITH_VARIABLES_2_VARIABLES_ID": "%%TEST_BRANCH_MAIN_CONFIG_VARIABLES_ID%%",
+    "TEST_CONFIG_WITH_VARIABLES_2_VARIABLES_VALUES_ID": "456"
+  }
+}
