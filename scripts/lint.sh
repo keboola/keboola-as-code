@@ -11,7 +11,7 @@ SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 cd "$SCRIPT_DIR/.."
 pwd
 
-# Check the most important things
+# Check the most important problems first
 echo "Running go vet ..."
 if ! go vet ./...; then
     echo "Please fix ^^^ errors. You can try run \"make fix\"."
