@@ -27,6 +27,7 @@ type State struct {
 	*Options
 	*model.State
 	mutex         *sync.Mutex
+	mapper        *mapper.Mapper
 	localManager  *local.Manager
 	remoteManager *remote.Manager
 	localErrors   *utils.Error
@@ -109,13 +110,13 @@ func newState(options *Options) *State {
 		sharedcode.NewMapper(mapperContext),
 		transformation.NewMapper(mapperContext),
 	}
-	mapperInst := mapper.New(mapperContext).AddMapper(mappers...)
+	s.mapper = mapper.New(mapperContext).AddMapper(mappers...)
 
 	// Local manager for load,save,delete ... operations
-	s.localManager = local.NewManager(options.logger, options.fs, options.manifest, s.State, mapperInst)
+	s.localManager = local.NewManager(options.logger, options.fs, options.manifest, s.State, s.mapper)
 
 	// Local manager for API operations
-	s.remoteManager = remote.NewManager(s.localManager, options.api, options.schedulerApi, s.State, mapperInst)
+	s.remoteManager = remote.NewManager(s.localManager, options.api, options.schedulerApi, s.State, s.mapper)
 
 	return s
 }
@@ -130,6 +131,10 @@ func (s *State) Manifest() *manifest.Manifest {
 
 func (s *State) Naming() *model.Naming {
 	return s.manifest.Naming
+}
+
+func (s *State) Mapper() *mapper.Mapper {
+	return s.mapper
 }
 
 func (s *State) LocalManager() *local.Manager {

@@ -36,10 +36,8 @@ func newPersistExecutor(logger *zap.SugaredLogger, api *remote.StorageApi, proje
 func (e *persistExecutor) invoke() error {
 	for _, action := range e.actions {
 		switch a := action.(type) {
-		case *NewConfigAction:
-			e.persistNewConfig(a)
-		case *NewRowAction:
-			e.persistNewRow(a)
+		case *NewObjectAction:
+			e.persistNewObject(a)
 		case *DeleteRecordAction:
 			objectState, _ := e.State.Get(a.Key())
 			e.uow.DeleteObject(objectState, a.Record)
@@ -61,51 +59,51 @@ func (e *persistExecutor) invoke() error {
 	return e.errors.ErrorOrNil()
 }
 
-func (e *persistExecutor) persistNewConfig(action *NewConfigAction) {
+func (e *persistExecutor) persistNewObject(action *NewObjectAction) {
 	// Generate unique ID
 	e.tickets.Request(func(ticket *model.Ticket) {
 		key := action.Key
 
 		// Set new id to the key
-		key.Id = ticket.Id
+		switch k := key.(type) {
+		case model.ConfigKey:
+			k.Id = ticket.Id
+			key = k
+		case model.ConfigRowKey:
+			k.Id = ticket.Id
+			key = k
+		default:
+			panic(fmt.Errorf(`unexpected type "%s" of the persisted object "%s"`, key.Kind(), key.Desc()))
+		}
 
 		// The parent was not persisted for some error -> skip
-		if action.ParentConfig != nil && action.ParentConfig.Id == `` {
+		if action.ParentKey != nil && action.ParentKey.ObjectId() == `` {
 			return
 		}
 
 		// Create manifest record
-		recordRaw, found, err := e.Manifest().CreateOrGetRecord(key)
+		record, found, err := e.Manifest().CreateOrGetRecord(key)
 		if err != nil {
 			e.errors.Append(err)
 			return
 		} else if found {
-			panic(fmt.Errorf(`unexpected state: record "%s" existis, but it should not`, recordRaw))
+			panic(fmt.Errorf(`unexpected state: manifest record "%s" exists, but it should not`, record))
 		}
-		record := recordRaw.(*model.ConfigManifest)
 
-		// Create relations
-		if action.ParentConfig != nil {
-			component, err := e.State.Components().Get(record.ComponentKey())
-			if err != nil {
-				e.errors.Append(err)
-				return
-			}
+		// Invoke mapper
+		err = e.Mapper().MapBeforePersist(&model.PersistRecipe{
+			ParentKey: action.ParentKey,
+			Manifest:  record,
+		})
+		if err != nil {
+			e.errors.Append(err)
+			return
+		}
 
-			// Add relation
-			if component.IsVariables() {
-				record.Relations = append(record.Relations, &model.VariablesForRelation{
-					Target: *action.ParentConfig,
-				})
-			} else {
-				panic(fmt.Errorf(`unexpected usage of NewConfigAction.ParentConfig`))
-			}
-
-			// Update parent path - may be affected by relations
-			if err := e.Manifest().ResolveParentPath(record); err != nil {
-				e.errors.Append(fmt.Errorf(`cannot resolve path: %w`, err))
-				return
-			}
+		// Update parent path - may be affected by relations
+		if err := e.Manifest().ResolveParentPath(record); err != nil {
+			e.errors.Append(fmt.Errorf(`cannot resolve path: %w`, err))
+			return
 		}
 
 		// Set local path
@@ -122,41 +120,5 @@ func (e *persistExecutor) persistNewConfig(action *NewConfigAction) {
 
 		// Setup related objects
 		action.InvokeOnPersist(key)
-	})
-}
-
-func (e *persistExecutor) persistNewRow(action *NewRowAction) {
-	// Generate unique ID
-	e.tickets.Request(func(ticket *model.Ticket) {
-		key := action.Key
-
-		// Set new id to the key
-		key.Id = ticket.Id
-
-		// The parent config was not persisted for some error -> skip row
-		if key.ConfigId == "" {
-			return
-		}
-
-		// Create manifest record
-		record, found, err := e.Manifest().CreateOrGetRecord(key)
-		if err != nil {
-			e.errors.Append(err)
-			return
-		} else if found {
-			panic(fmt.Errorf(`unexpected state: record "%s" existis, but it should not`, record))
-		}
-
-		// Set local path
-		record.SetObjectPath(action.ObjectPath)
-
-		// Save to manifest.json
-		if err := e.Manifest().PersistRecord(record); err != nil {
-			e.errors.Append(err)
-			return
-		}
-
-		// Load model
-		e.uow.LoadObject(record)
 	})
 }

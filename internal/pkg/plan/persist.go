@@ -93,27 +93,33 @@ func (b *persistPlanBuilder) tryAdd(fullPath string, parent model.RecordPaths) b
 		if b.tryAddConfig(path, parent.ConfigKey) != nil {
 			return true
 		}
-	case *NewConfigAction:
-		if action := b.tryAddConfigRow(path, parent.Key); action != nil {
-			// Set ConfigId on config persist, now it is unknown
-			parent.OnPersist = append(parent.OnPersist, func(parentKey model.ConfigKey) {
-				action.Key.ConfigId = parentKey.Id
-			})
-			return true
-		}
-		if action := b.tryAddConfig(path, parent.Key); action != nil {
-			// Set ConfigId on config persist, now it is unknown
-			parent.OnPersist = append(parent.OnPersist, func(parentKey model.ConfigKey) {
-				action.ParentConfig.Id = parentKey.Id
-			})
-			return true
+	case *NewObjectAction:
+		if parentKey, ok := parent.Key.(model.ConfigKey); ok {
+			if action := b.tryAddConfigRow(path, parentKey); action != nil {
+				// Set ConfigId on config persist, now it is unknown
+				parent.OnPersist = append(parent.OnPersist, func(parentKey model.Key) {
+					parentConfigKey := parentKey.(model.ConfigKey)
+					key := action.Key.(model.ConfigRowKey)
+					key.ConfigId = parentConfigKey.Id
+					action.ParentKey = parentConfigKey
+					action.Key = key
+				})
+				return true
+			}
+			if action := b.tryAddConfig(path, parent.Key); action != nil {
+				// Set ConfigId on config persist, now it is unknown
+				parent.OnPersist = append(parent.OnPersist, func(parentKey model.Key) {
+					action.ParentKey = parentKey
+				})
+				return true
+			}
 		}
 	}
 
 	return false
 }
 
-func (b *persistPlanBuilder) tryAddConfig(path model.PathInProject, parentKey model.Key) *NewConfigAction {
+func (b *persistPlanBuilder) tryAddConfig(path model.PathInProject, parentKey model.Key) *NewObjectAction {
 	// Is config path matching naming template?
 	componentId, err := b.Naming().MatchConfigPath(parentKey.Kind(), path)
 	if err != nil {
@@ -133,22 +139,14 @@ func (b *persistPlanBuilder) tryAddConfig(path model.PathInProject, parentKey mo
 	}
 
 	// Create action
-	action := &NewConfigAction{PathInProject: path, Key: configKey}
-
-	// Set parent config key
-	if k, ok := parentKey.(model.ConfigKey); ok {
-		action.ParentConfig = &model.ConfigKeySameBranch{
-			ComponentId: k.ComponentId,
-			Id:          k.Id,
-		}
-	}
+	action := &NewObjectAction{PathInProject: path, Key: configKey, ParentKey: parentKey}
 
 	b.addAction(action)
 	return action
 }
 
-func (b *persistPlanBuilder) tryAddConfigRow(path model.PathInProject, configKey model.ConfigKey) *NewRowAction {
-	component, err := b.State.Components().Get(configKey.ComponentKey())
+func (b *persistPlanBuilder) tryAddConfigRow(path model.PathInProject, parentKey model.ConfigKey) *NewObjectAction {
+	component, err := b.State.Components().Get(parentKey.ComponentKey())
 	if err != nil {
 		b.errors.Append(err)
 		return nil
@@ -159,8 +157,8 @@ func (b *persistPlanBuilder) tryAddConfigRow(path model.PathInProject, configKey
 	}
 
 	// Create action
-	rowKey := model.ConfigRowKey{BranchId: configKey.BranchId, ComponentId: configKey.ComponentId, ConfigId: configKey.Id}
-	action := &NewRowAction{PathInProject: path, Key: rowKey}
+	rowKey := model.ConfigRowKey{BranchId: parentKey.BranchId, ComponentId: parentKey.ComponentId, ConfigId: parentKey.Id}
+	action := &NewObjectAction{PathInProject: path, Key: rowKey, ParentKey: parentKey}
 	b.addAction(action)
 	return action
 }

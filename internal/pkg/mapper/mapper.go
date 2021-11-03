@@ -27,9 +27,19 @@ type RemoteLoadMapper interface {
 	MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error
 }
 
+// BeforePersistMapper to modify manifest record before persist.
+type BeforePersistMapper interface {
+	MapBeforePersist(recipe *model.PersistRecipe) error
+}
+
 // OnObjectsLoadListener is called when all new objects are loaded in local/remote state.
 type OnObjectsLoadListener interface {
 	OnObjectsLoad(event model.OnObjectsLoadEvent) error
+}
+
+// OnObjectsPersistListener is called when all new objects are persisted.
+type OnObjectsPersistListener interface {
+	OnObjectsPersist(event model.OnObjectsPersistEvent) error
 }
 
 // Mapper maps Objects between internal/filesystem/API representations.
@@ -99,6 +109,18 @@ func (m *Mapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
 	return nil
 }
 
+func (m *Mapper) MapBeforePersist(recipe *model.PersistRecipe) error {
+	for _, mapper := range m.mappers {
+		if mapper, ok := mapper.(BeforePersistMapper); ok {
+			if err := mapper.MapBeforePersist(recipe); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 func (m *Mapper) OnObjectsLoaded(stateType model.StateType, newObjects []model.Object) error {
 	errors := utils.NewMultiError()
 	event := model.OnObjectsLoadEvent{
@@ -106,9 +128,28 @@ func (m *Mapper) OnObjectsLoaded(stateType model.StateType, newObjects []model.O
 		NewObjects: newObjects,
 		AllObjects: m.context.State.StateObjects(stateType),
 	}
+
 	for _, mapper := range m.mappers {
 		if mapper, ok := mapper.(OnObjectsLoadListener); ok {
 			if err := mapper.OnObjectsLoad(event); err != nil {
+				errors.Append(err)
+			}
+		}
+	}
+
+	return errors.ErrorOrNil()
+}
+
+func (m *Mapper) OnObjectsPersist(persistedObjects []model.Object) error {
+	errors := utils.NewMultiError()
+	event := model.OnObjectsPersistEvent{
+		PersistedObjects: persistedObjects,
+		AllObjects:       m.context.State.LocalObjects(),
+	}
+
+	for _, mapper := range m.mappers {
+		if mapper, ok := mapper.(OnObjectsPersistListener); ok {
+			if err := mapper.OnObjectsPersist(event); err != nil {
 				errors.Append(err)
 			}
 		}

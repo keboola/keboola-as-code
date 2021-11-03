@@ -146,7 +146,7 @@ func (f *Fs) OpenFile(name string, flag int, perm os.FileMode) (afero.File, erro
 
 // Mkdir - create directory.
 // If the directory already exists, it is a valid state.
-// Parent directories will also be created if necessary.
+// ParentKey directories will also be created if necessary.
 func (f *Fs) Mkdir(path string) error {
 	if err := f.fs.MkdirAll(f.fs.FromSlash(path), 0o755); err != nil {
 		return fmt.Errorf(`cannot create directory "%s": %w`, path, err)
