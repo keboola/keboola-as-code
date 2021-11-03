@@ -12,11 +12,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func createMapperContext(t *testing.T) model.MapperContext {
+func createMapperContext(t *testing.T) (model.MapperContext, *utils.Writer) {
 	t.Helper()
-	logger, _ := utils.NewDebugLogger()
+	logger, logs := utils.NewDebugLogger()
 	fs, err := aferofs.NewMemoryFs(logger, ".")
 	assert.NoError(t, err)
 	state := model.NewState(zap.NewNop().Sugar(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
-	return model.MapperContext{Logger: logger, Fs: fs, Naming: model.DefaultNaming(), State: state}
+	return model.MapperContext{Logger: logger, Fs: fs, Naming: model.DefaultNaming(), State: state}, logs
 }

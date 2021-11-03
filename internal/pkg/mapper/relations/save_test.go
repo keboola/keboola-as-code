@@ -12,7 +12,7 @@ import (
 
 func TestRelationsMapperSave(t *testing.T) {
 	t.Parallel()
-	context := createMapperContext(t)
+	context, _ := createMapperContext(t)
 	objectManifest := &model.ConfigManifest{}
 	object := &fixtures.MockedObject{}
 	recipe := &model.LocalSaveRecipe{Record: objectManifest, Object: object}

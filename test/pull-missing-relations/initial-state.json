@@ -1,0 +1,20 @@
+{
+  "allBranchesConfigs": [],
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "isDefault": true
+      },
+      "configs": [
+        "transformation-with-shared-code"
+      ]
+    }
+  ],
+  "envs": {
+    "TEST_SHARED_CODE_ID": "321",
+    "TEST_SHARED_CODE_ROW_ID": "543",
+    "TEST_TRANSFORMATION_WITH_SHARED_CODE_VARIABLES_ID": "123456",
+    "TEST_TRANSFORMATION_WITH_SHARED_CODE_VARIABLES_VALUES_ID": "456789"
+  }
+}
