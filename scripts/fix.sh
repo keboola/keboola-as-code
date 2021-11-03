@@ -11,6 +11,13 @@ SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 cd "$SCRIPT_DIR/.."
 pwd
 
+# Check the most important problems first
+if ! go vet ./...; then
+    echo "Please fix ^^^ errors."
+    echo
+    exit 1
+fi
+
 # Fix modules
 go mod tidy
 go mod vendor

@@ -61,13 +61,7 @@ func (m *relationsMapper) linkRelations(object model.ObjectWithRelations, event 
 				thisSideKey.Desc(),
 				relation.Type(),
 			)
-
-			if relation.IgnoreMissingOtherSide() {
-				m.Logger.Warn(`Warning: `, err)
-			} else {
-				errors.Append(err)
-			}
-
+			m.Logger.Warn(`Warning: `, err)
 			continue
 		}
 

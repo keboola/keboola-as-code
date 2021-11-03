@@ -29,7 +29,7 @@ func (t *VariablesForRelation) Type() RelationType {
 }
 
 func (t *VariablesForRelation) ParentKey(owner Key) (Key, error) {
-	return t.TargetKey(owner)
+	return t.OtherSideKey(owner), nil
 }
 
 func (t *VariablesForRelation) OtherSideKey(owner Key) Key {
@@ -40,19 +40,11 @@ func (t *VariablesForRelation) IsOwningSide() bool {
 	return true
 }
 
-func (t *VariablesForRelation) IgnoreMissingOtherSide() bool {
-	return true
-}
-
 // NewOtherSideRelation create the other side relation, for example VariablesFor -> VariablesFrom.
 func (t *VariablesForRelation) NewOtherSideRelation(owner Key) Relation {
 	return &VariablesFromRelation{
 		Source: t.ownerKey(owner).ConfigKeySameBranch(),
 	}
-}
-
-func (t *VariablesForRelation) TargetKey(owner Key) (Key, error) {
-	return t.Target.ConfigKey(t.ownerKey(owner).BranchKey()), nil
 }
 
 func (t *VariablesForRelation) ownerKey(relationOwner Key) ConfigKey {
@@ -79,18 +71,10 @@ func (t *VariablesFromRelation) IsOwningSide() bool {
 	return false
 }
 
-func (t *VariablesFromRelation) IgnoreMissingOtherSide() bool {
-	return true
-}
-
 func (t *VariablesFromRelation) NewOtherSideRelation(owner Key) Relation {
 	return &VariablesForRelation{
 		Target: t.ownerKey(owner).ConfigKeySameBranch(),
 	}
-}
-
-func (t *VariablesFromRelation) SourceKey(owner Key) (Key, error) {
-	return t.Source.ConfigKey(owner.(ConfigKey).BranchKey()), nil
 }
 
 func (t *VariablesFromRelation) ownerKey(owner Key) ConfigKey {
@@ -114,10 +98,6 @@ func (t *VariablesValuesForRelation) OtherSideKey(owner Key) Key {
 }
 
 func (t *VariablesValuesForRelation) IsOwningSide() bool {
-	return true
-}
-
-func (t *VariablesValuesForRelation) IgnoreMissingOtherSide() bool {
 	return true
 }
 
@@ -149,10 +129,6 @@ func (t *VariablesValuesFromRelation) OtherSideKey(owner Key) Key {
 
 func (t *VariablesValuesFromRelation) IsOwningSide() bool {
 	return false
-}
-
-func (t *VariablesValuesFromRelation) IgnoreMissingOtherSide() bool {
-	return true
 }
 
 func (t *VariablesValuesFromRelation) NewOtherSideRelation(owner Key) Relation {

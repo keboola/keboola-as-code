@@ -43,14 +43,13 @@ func TestVariablesForRelation(t *testing.T) {
 		Id:          `45678`,
 	}
 
-	// And we want the target side key (regular component config, it uses variables)
-	targetKey, err := r.TargetKey(sourceKey)
-	assert.NoError(t, err)
+	// Check other side key (regular component config, it uses variables)
+	otherSideKey := r.OtherSideKey(sourceKey)
 	assert.Equal(t, ConfigKey{
 		BranchId:    123, // from source key
 		ComponentId: `foo.bar`,
 		Id:          `12345`,
-	}, targetKey)
+	}, otherSideKey)
 
 	// Parent key, same as target, ... variables config is stored within component config
 	parentKey, err := r.ParentKey(sourceKey)
