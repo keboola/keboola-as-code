@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -21,6 +22,7 @@ type Manager struct {
 	state        *model.State
 	localManager *local.Manager
 	api          *StorageApi
+	schedulerApi *scheduler.Api
 	mapper       *mapper.Mapper
 }
 
@@ -29,17 +31,19 @@ type UnitOfWork struct {
 	ctx               context.Context
 	lock              *sync.Mutex
 	changeDescription string                 // change description used for all modified configs and rows
-	pools             *orderedmap.OrderedMap // separated pool for changes in branches, configs and rows
+	storageApiPools   *orderedmap.OrderedMap // separated pool for changes in branches, configs and rows
+	schedulerApiPool  *client.Pool
 	newObjectStates   []model.ObjectState
 	errors            *utils.Error
 	invoked           bool
 }
 
-func NewManager(localManager *local.Manager, api *StorageApi, state *model.State, mapper *mapper.Mapper) *Manager {
+func NewManager(localManager *local.Manager, api *StorageApi, schedulerApi *scheduler.Api, state *model.State, mapper *mapper.Mapper) *Manager {
 	return &Manager{
 		state:        state,
 		localManager: localManager,
 		api:          api,
+		schedulerApi: schedulerApi,
 		mapper:       mapper,
 	}
 }
@@ -54,7 +58,8 @@ func (m *Manager) NewUnitOfWork(ctx context.Context, changeDescription string) *
 		ctx:               ctx,
 		lock:              &sync.Mutex{},
 		changeDescription: changeDescription,
-		pools:             utils.NewOrderedMap(),
+		storageApiPools:   utils.NewOrderedMap(),
+		schedulerApiPool:  m.schedulerApi.NewPool(),
 		errors:            utils.NewMultiError(),
 	}
 }
@@ -200,13 +205,17 @@ func (u *UnitOfWork) Invoke() error {
 	}
 
 	// Start and wait for all pools
-	u.pools.SortKeys(sort.Strings)
-	for _, level := range u.pools.Keys() {
-		pool, _ := u.pools.Get(level)
+	u.storageApiPools.SortKeys(sort.Strings)
+	for _, level := range u.storageApiPools.Keys() {
+		pool, _ := u.storageApiPools.Get(level)
 		if err := pool.(*client.Pool).StartAndWait(); err != nil {
 			u.errors.Append(err)
 			break
 		}
+	}
+
+	if err := u.schedulerApiPool.StartAndWait(); err != nil {
+		u.errors.Append(err)
 	}
 
 	// OnObjectsLoad event
@@ -273,6 +282,9 @@ func (u *UnitOfWork) create(objectState model.ObjectState, recipe *model.RemoteS
 				}
 			}
 		}).
+		OnSuccess(func(response *client.Response) {
+			u.schedulerApi.OnObjectCreateUpdate(object, u.schedulerApiPool)
+		}).
 		Send()
 	return nil
 }
@@ -284,6 +296,9 @@ func (u *UnitOfWork) update(objectState model.ObjectState, recipe *model.RemoteS
 			Request(request).
 			OnSuccess(func(response *client.Response) {
 				objectState.SetRemoteState(recipe.InternalObject)
+			}).
+			OnSuccess(func(response *client.Response) {
+				u.schedulerApi.OnObjectCreateUpdate(object, u.schedulerApiPool)
 			}).
 			Send()
 	} else {
@@ -323,12 +338,12 @@ func (u *UnitOfWork) poolFor(level int) *client.Pool {
 	}
 
 	key := cast.ToString(level)
-	if value, found := u.pools.Get(key); found {
+	if value, found := u.storageApiPools.Get(key); found {
 		return value.(*client.Pool)
 	}
 
 	pool := u.api.NewPool()
 	pool.SetContext(u.ctx)
-	u.pools.Set(key, pool)
+	u.storageApiPools.Set(key, pool)
 	return pool
 }

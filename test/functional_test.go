@@ -26,6 +26,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -155,7 +156,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	}
 
 	// Assert
-	AssertExpectations(t, api, envProvider, testDirFs, workingDirFs, exitCode, strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()))
+	AssertExpectations(t, api, envProvider, testDirFs, workingDirFs, exitCode, strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()), project)
 }
 
 // CompileBinary compiles component to binary used in this test.
@@ -230,6 +231,7 @@ func AssertExpectations(
 	exitCode int,
 	stdout string,
 	stderr string,
+	project *testproject.Project,
 ) {
 	t.Helper()
 
@@ -289,13 +291,14 @@ func AssertExpectations(
 		}
 
 		// Load actual state
+		schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
 		logger, _ := utils.NewDebugLogger()
-		stateOptions := state.NewOptions(m, api, context.Background(), logger)
+		stateOptions := state.NewOptions(m, api, schedulerApi, context.Background(), logger)
 		stateOptions.LoadRemoteState = true
 		actualState, ok := state.LoadState(stateOptions)
 		assert.True(t, ok)
 		assert.Empty(t, actualState.RemoteErrors().Errors)
-		actualSnapshot, err := state.NewProjectSnapshot(actualState)
+		actualSnapshot, err := state.NewProjectSnapshot(actualState, project)
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}

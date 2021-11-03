@@ -394,8 +394,14 @@ func loadLocalState(root *rootCommand) (*state.State, *remote.StorageApi, error)
 		return nil, nil, err
 	}
 
+	// Get Scheduler API
+	schedulerApi, err := root.GetSchedulerApi()
+	if err != nil {
+		return nil, nil, err
+	}
+
 	// Load project local state
-	stateOptions := state.NewOptions(projectManifest, api, root.ctx, logger)
+	stateOptions := state.NewOptions(projectManifest, api, schedulerApi, root.ctx, logger)
 	stateOptions.LoadLocalState = true
 	stateOptions.LoadRemoteState = false
 	projectState, ok := state.LoadState(stateOptions)

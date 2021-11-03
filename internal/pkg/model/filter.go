@@ -31,7 +31,7 @@ type ComponentIds []ComponentId
 func DefaultFilter() Filter {
 	return Filter{
 		AllowedBranches:   AllowedBranches{"*"},
-		IgnoredComponents: ComponentIds{SchedulerComponentId},
+		IgnoredComponents: ComponentIds{},
 	}
 }
 

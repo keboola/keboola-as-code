@@ -4,14 +4,16 @@ import (
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // NewProjectSnapshot - to validate final project state in tests.
-func NewProjectSnapshot(s *State) (*fixtures.ProjectSnapshot, error) {
+func NewProjectSnapshot(s *State, testProject *testproject.Project) (*fixtures.ProjectSnapshot, error) {
 	project := &fixtures.ProjectSnapshot{}
 
-	branches := make(map[string]*fixtures.BranchConfigs)
+	branches := make(map[string]*fixtures.BranchWithConfigs)
 	for _, bState := range s.Branches() {
 		// Map branch
 		branch := bState.Remote
@@ -19,7 +21,7 @@ func NewProjectSnapshot(s *State) (*fixtures.ProjectSnapshot, error) {
 		b.Name = branch.Name
 		b.Description = branch.Description
 		b.IsDefault = branch.IsDefault
-		branchConfigs := &fixtures.BranchConfigs{Branch: b, Configs: make([]*fixtures.Config, 0)}
+		branchConfigs := &fixtures.BranchWithConfigs{Branch: b, Configs: make([]*fixtures.Config, 0)}
 		project.Branches = append(project.Branches, branchConfigs)
 		branches[branch.String()] = branchConfigs
 	}
@@ -48,6 +50,16 @@ func NewProjectSnapshot(s *State) (*fixtures.ProjectSnapshot, error) {
 		r.Content = row.Content
 		c := configs[row.ConfigKey().String()]
 		c.Rows = append(c.Rows, r)
+	}
+
+	schedules, err := testProject.SchedulerApi().ListSchedules()
+	if err != nil {
+		return nil, err
+	}
+	for _, schedule := range schedules {
+		configKey := model.ConfigKey{BranchId: testProject.DefaultBranch().Id, ComponentId: model.SchedulerComponentId, Id: schedule.ConfigurationId}
+		scheduleConfig := s.MustGet(configKey).(*model.ConfigState).Remote
+		project.Schedules = append(project.Schedules, &fixtures.Schedule{Name: scheduleConfig.Name})
 	}
 
 	// Sort by name

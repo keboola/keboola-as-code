@@ -19,9 +19,12 @@ import (
 
 // diffProcessCmd run callback on diff results, common for pull, push ...
 type diffProcessCmd struct {
-	root                     *rootCommand
-	cmd                      *cobra.Command
-	action                   func(api *remote.StorageApi, diffResults *diff.Results) error
+	root   *rootCommand
+	cmd    *cobra.Command
+	action func(
+		api *remote.StorageApi,
+		diffResults *diff.Results,
+	) error
 	onSuccess                func(api *remote.StorageApi)
 	onError                  func(api *remote.StorageApi, err error)
 	invalidStateCanBeIgnored bool
@@ -64,8 +67,14 @@ func (a *diffProcessCmd) run() error {
 		}
 	}()
 
+	// Get Scheduler API
+	schedulerApi, err := a.root.GetSchedulerApi()
+	if err != nil {
+		return err
+	}
+
 	// Load project remote and local state
-	stateOptions := state.NewOptions(projectManifest, api, a.root.ctx, logger)
+	stateOptions := state.NewOptions(projectManifest, api, schedulerApi, a.root.ctx, logger)
 	stateOptions.LoadLocalState = true
 	stateOptions.LoadRemoteState = true
 	projectState, ok := state.LoadState(stateOptions)

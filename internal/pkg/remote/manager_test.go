@@ -160,6 +160,7 @@ func newTestRemoteUOW(t *testing.T) (*testMapper, *remote.UnitOfWork, *httpmock.
 	testMapperInst := &testMapper{}
 	mappers := []interface{}{testMapperInst}
 	storageApi, httpTransport, _ := testapi.TestMockedStorageApi()
+	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
 	localManager, state := newTestLocalManager(t, mappers)
 	mapperContext := model.MapperContext{
 		Logger: zap.NewNop().Sugar(),
@@ -168,7 +169,8 @@ func newTestRemoteUOW(t *testing.T) (*testMapper, *remote.UnitOfWork, *httpmock.
 		State:  state,
 	}
 	mapperInst := mapper.New(mapperContext).AddMapper(mappers...)
-	remoteManager := remote.NewManager(localManager, storageApi, state, mapperInst)
+
+	remoteManager := remote.NewManager(localManager, storageApi, schedulerApi, state, mapperInst)
 	return testMapperInst, remoteManager.NewUnitOfWork(context.Background(), `change desc`), httpTransport, state
 }
 

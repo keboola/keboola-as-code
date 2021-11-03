@@ -593,7 +593,9 @@ func (tc *testCase) run(t *testing.T) {
 
 	// Load state
 	logger, _ := utils.NewDebugLogger()
-	options := state.NewOptions(m, api, context.Background(), logger)
+	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
+	options := state.NewOptions(m, api, schedulerApi, context.Background(), logger)
+
 	options.LoadLocalState = true
 	options.LoadRemoteState = false
 	options.SkipNotFoundErr = true

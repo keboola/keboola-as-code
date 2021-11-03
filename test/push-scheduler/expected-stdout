@@ -1,0 +1,4 @@
+Plan for "push" operation:
+  +  C main/extractor/ex-generic-v2/books
+  +  C main/other/keboola.scheduler/schedule1
+Push done.

@@ -41,7 +41,8 @@ func TestRenameAllPlan(t *testing.T) {
 	httpTransport.RegisterResponder("GET", `=~/storage/components/keboola.ex-db-mysql`, getMySqlExResponder.Once())
 
 	// Load state
-	options := state.NewOptions(m, api, context.Background(), logger)
+	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
+	options := state.NewOptions(m, api, schedulerApi, context.Background(), logger)
 	options.LoadLocalState = true
 	projectState, ok := state.LoadState(options)
 	if !ok {

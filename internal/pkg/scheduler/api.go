@@ -3,6 +3,8 @@ package scheduler
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"time"
 
 	"github.com/go-resty/resty/v2"
 	"go.uber.org/zap"
@@ -39,8 +41,28 @@ func NewSchedulerApi(hostUrl string, token string, ctx context.Context, logger *
 	return &Api{client: c, logger: logger, hostUrl: hostUrl}
 }
 
+func (a *Api) HttpClient() *http.Client {
+	return a.client.GetRestyClient().GetClient()
+}
+
+func (a *Api) SetRetry(count int, waitTime time.Duration, maxWaitTime time.Duration) {
+	a.client.SetRetry(count, waitTime, maxWaitTime)
+}
+
 func (a *Api) NewPool() *client.Pool {
 	return a.client.NewPool(a.logger)
+}
+
+func (a *Api) OnObjectCreateUpdate(object model.Object, pool *client.Pool) {
+	if object.Kind().IsConfig() && object.(*model.Config).ComponentId == model.SchedulerComponentId {
+		pool.Request(a.ActivateScheduleRequest(object.ObjectId(), "")).Send()
+	}
+}
+
+func (a *Api) OnObjectDelete(object model.Object, pool *client.Pool) {
+	if object.Kind().IsConfig() && object.(*model.Config).ComponentId == model.SchedulerComponentId {
+		pool.Request(a.DeleteSchedulesForConfigurationRequest(object.ObjectId())).Send()
+	}
 }
 
 // ActivateScheduleRequest https://app.swaggerhub.com/apis/odinuv/scheduler/1.0.0#/schedules/activate

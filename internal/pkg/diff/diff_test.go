@@ -272,8 +272,9 @@ func createProjectState(t *testing.T) *state.State {
 		assert.FailNow(t, err.Error())
 	}
 
-	api, _, _ := testapi.TestMockedStorageApi()
-	options := state.NewOptions(m, api, context.Background(), logger)
+	storageApi, _, _ := testapi.TestMockedStorageApi()
+	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
+	options := state.NewOptions(m, storageApi, schedulerApi, context.Background(), logger)
 	options.LoadLocalState = false
 	options.LoadRemoteState = false
 	s, _ := state.LoadState(options)

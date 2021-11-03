@@ -107,6 +107,11 @@ func (p *Project) Id() int {
 	return p.id
 }
 
+func (p *Project) DefaultBranch() *model.Branch {
+	p.assertLocked()
+	return p.defaultBranch
+}
+
 func (p *Project) StorageApiHost() string {
 	p.assertLocked()
 	return p.host
@@ -125,6 +130,11 @@ func (p *Project) Token() string {
 func (p *Project) Api() *remote.StorageApi {
 	p.assertLocked()
 	return p.api
+}
+
+func (p *Project) SchedulerApi() *scheduler.Api {
+	p.assertLocked()
+	return p.schedulerApi
 }
 
 // Clear deletes all project branches (except default) and all configurations.
