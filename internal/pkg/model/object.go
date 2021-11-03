@@ -19,6 +19,7 @@ const (
 	ShareCodeTargetComponentKey = `componentId`
 	ShareCodeContentKey         = `code_content`
 	VariablesIdContentKey       = `variables_id`
+	VariablesValuesIdContentKey = `variables_values_id`
 )
 
 type ObjectIdAndName interface {

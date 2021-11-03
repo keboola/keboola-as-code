@@ -11,8 +11,10 @@ import (
 )
 
 const (
-	VariablesForRelType  = RelationType(`variablesFor`)
-	VariablesFromRelType = RelationType(`variablesFrom`)
+	VariablesForRelType        = RelationType(`variablesFor`)
+	VariablesFromRelType       = RelationType(`variablesFrom`)
+	VariablesValuesForRelType  = RelationType(`variablesValuesFor`)
+	VariablesValuesFromRelType = RelationType(`variablesValuesFrom`)
 )
 
 // OneToXRelations gets relations that can be defined on an object only once.
@@ -20,6 +22,8 @@ func OneToXRelations() []RelationType {
 	return []RelationType{
 		VariablesForRelType,
 		VariablesFromRelType,
+		VariablesValuesForRelType,
+		VariablesValuesFromRelType,
 	}
 }
 

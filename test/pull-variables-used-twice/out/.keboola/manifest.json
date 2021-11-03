@@ -44,7 +44,12 @@
       "componentId": "keboola.variables",
       "id": "%%TEST_BRANCH_MAIN_CONFIG_VARIABLES_ID%%",
       "path": "other/keboola.variables/variables",
-      "rows": []
+      "rows": [
+        {
+          "id": "%%TEST_BRANCH_MAIN_CONFIG_VARIABLES_ROW_DEFAULT_VALUES_ID%%",
+          "path": "values/default-values"
+        }
+      ]
     }
   ]
 }

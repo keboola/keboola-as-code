@@ -1,1 +1,2 @@
 Warning: config "branch:%s/component:keboola.variables/config:123456" not found, referenced from config "branch:%s/component:keboola.python-transformation-v2/config:%s", by relation "variablesFrom"
+Warning: config row "branch:%s/component:keboola.variables/config:123456/row:456789" not found, referenced from config "branch:%s/component:keboola.python-transformation-v2/config:%s", by relation "variablesValuesFrom"

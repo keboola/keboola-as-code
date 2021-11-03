@@ -15,8 +15,10 @@ func TestVariablesMapAfterRemoteLoad(t *testing.T) {
 	context := createMapperContext(t)
 
 	variablesConfigId := `123456`
+	valuesConfigRowId := `456789`
 	content := utils.NewOrderedMap()
 	content.Set(model.VariablesIdContentKey, variablesConfigId)
+	content.Set(model.VariablesValuesIdContentKey, valuesConfigRowId)
 	apiObject := &model.Config{Content: content}
 	internalObject := apiObject.Clone().(*model.Config)
 	recipe := &model.RemoteLoadRecipe{ApiObject: apiObject, InternalObject: internalObject}
@@ -40,7 +42,16 @@ func TestVariablesMapAfterRemoteLoad(t *testing.T) {
 				Id:          variablesConfigId,
 			},
 		},
+		&model.VariablesValuesFromRelation{
+			Source: model.ConfigRowKeySameBranch{
+				ComponentId: model.VariablesComponentId,
+				ConfigId:    variablesConfigId,
+				Id:          valuesConfigRowId,
+			},
+		},
 	}, internalObject.Relations)
 	_, found = internalObject.Content.Get(model.VariablesIdContentKey)
+	assert.False(t, found)
+	_, found = internalObject.Content.Get(model.VariablesValuesIdContentKey)
 	assert.False(t, found)
 }

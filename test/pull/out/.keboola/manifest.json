@@ -118,7 +118,16 @@
       "rows": [
         {
           "id": "%%TEST_BRANCH_BAR_CONFIG_TRANSFORMATION_WITH_SHARED_CODE_VARIABLES_ROW_DEFAULT_VALUES_ID%%",
-          "path": "values/default-values"
+          "path": "values/default-values",
+          "relations": [
+            {
+              "target": {
+                "componentId": "keboola.python-transformation-v2",
+                "id": "%%TEST_BRANCH_BAR_CONFIG_TRANSFORMATION_WITH_SHARED_CODE_ID%%"
+              },
+              "type": "variablesValuesFor"
+            }
+          ]
         }
       ]
     },

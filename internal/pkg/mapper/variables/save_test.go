@@ -15,6 +15,7 @@ func TestVariablesMapBeforeRemoteSave(t *testing.T) {
 	context := createMapperContext(t)
 
 	variablesConfigId := `123456`
+	valuesConfigRowId := `456789`
 	apiObject := &model.Config{Content: utils.NewOrderedMap()}
 	internalObject := apiObject.Clone().(*model.Config)
 	internalObject.AddRelation(&model.VariablesFromRelation{
@@ -23,7 +24,18 @@ func TestVariablesMapBeforeRemoteSave(t *testing.T) {
 			Id:          variablesConfigId,
 		},
 	})
-	recipe := &model.RemoteSaveRecipe{ApiObject: apiObject, InternalObject: internalObject}
+	internalObject.AddRelation(&model.VariablesValuesFromRelation{
+		Source: model.ConfigRowKeySameBranch{
+			ComponentId: model.VariablesComponentId,
+			ConfigId:    variablesConfigId,
+			Id:          valuesConfigRowId,
+		},
+	})
+	recipe := &model.RemoteSaveRecipe{
+		ApiObject:      apiObject,
+		InternalObject: internalObject,
+		Manifest:       &model.ConfigManifest{},
+	}
 
 	// Invoke
 	assert.Empty(t, apiObject.Relations)
@@ -38,13 +50,27 @@ func TestVariablesMapBeforeRemoteSave(t *testing.T) {
 				Id:          variablesConfigId,
 			},
 		},
+		&model.VariablesValuesFromRelation{
+			Source: model.ConfigRowKeySameBranch{
+				ComponentId: model.VariablesComponentId,
+				ConfigId:    variablesConfigId,
+				Id:          valuesConfigRowId,
+			},
+		},
 	}, internalObject.Relations)
 	_, found := internalObject.Content.Get(model.VariablesIdContentKey)
 	assert.False(t, found)
 
-	// Api object contains variables ID in content
+	// All relations have been mapped
 	assert.Empty(t, apiObject.Relations)
+
+	// Api object contains variables ID in content
 	v, found := apiObject.Content.Get(model.VariablesIdContentKey)
 	assert.True(t, found)
 	assert.Equal(t, variablesConfigId, v)
+
+	// Api object contains variables values ID in content
+	v, found = apiObject.Content.Get(model.VariablesValuesIdContentKey)
+	assert.True(t, found)
+	assert.Equal(t, valuesConfigRowId, v)
 }

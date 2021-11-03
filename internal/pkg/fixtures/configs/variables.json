@@ -8,5 +8,19 @@
         "type": "string"
       }
     ]
-  }
+  },
+  "rows": [
+    {
+      "name": "Default values",
+      "isDisabled": false,
+      "configuration": {
+        "values": [
+          {
+            "name": "foo",
+            "value": "bar"
+          }
+        ]
+      }
+    }
+  ]
 }

@@ -10,21 +10,27 @@ func (m *variablesMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) err
 	if !ok {
 		return nil
 	}
+	internalObject := recipe.InternalObject.(*model.Config)
 
+	m.loadVariables(apiObject, internalObject)
+	m.loadVariablesValues(apiObject, internalObject)
+	return nil
+}
+
+func (m *variablesMapper) loadVariables(apiObject, internalObject *model.Config) {
 	// Variables ID is stored in configuration
 	variablesIdRaw, found := apiObject.Content.Get(model.VariablesIdContentKey)
 	if !found {
-		return nil
+		return
 	}
 
 	// Variables ID must be string
 	variablesId, ok := variablesIdRaw.(string)
 	if !ok {
-		return nil
+		return
 	}
 
 	// Create relation
-	internalObject := recipe.InternalObject.(*model.Config)
 	internalObject.AddRelation(&model.VariablesFromRelation{
 		Source: model.ConfigKeySameBranch{
 			ComponentId: model.VariablesComponentId,
@@ -34,5 +40,37 @@ func (m *variablesMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) err
 
 	// Remove variables ID from configuration content
 	internalObject.Content.Delete(model.VariablesIdContentKey)
-	return nil
+}
+
+func (m *variablesMapper) loadVariablesValues(apiObject, internalObject *model.Config) {
+	// Values ID is stored in configuration
+	valuesIdRaw, found := apiObject.Content.Get(model.VariablesValuesIdContentKey)
+	if !found {
+		return
+	}
+
+	// Values ID must be string
+	valuesId, ok := valuesIdRaw.(string)
+	if !ok {
+		return
+	}
+
+	// Config must have define variables config
+	variablesRelations := internalObject.Relations.GetByType(model.VariablesFromRelType)
+	if len(variablesRelations) != 1 {
+		return
+	}
+	variablesRelation := variablesRelations[0].(*model.VariablesFromRelation)
+
+	// Create relation
+	internalObject.AddRelation(&model.VariablesValuesFromRelation{
+		Source: model.ConfigRowKeySameBranch{
+			ComponentId: variablesRelation.Source.ComponentId,
+			ConfigId:    variablesRelation.Source.Id,
+			Id:          valuesId,
+		},
+	})
+
+	// Remove variables ID from configuration content
+	internalObject.Content.Delete(model.VariablesValuesIdContentKey)
 }

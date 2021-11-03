@@ -119,5 +119,5 @@ func relationsToString(relType model.RelationType, relations model.Relations, ob
 	for _, r := range relations {
 		otherSides = append(otherSides, r.OtherSideKey(objectKey).Desc())
 	}
-	return fmt.Sprintf(`%d "%s" relations [%s]`, len(relations), relType.String(), strings.Join(otherSides, `; `))
+	return fmt.Sprintf(`%d relations "%s" [%s]`, len(relations), relType.String(), strings.Join(otherSides, `; `))
 }
