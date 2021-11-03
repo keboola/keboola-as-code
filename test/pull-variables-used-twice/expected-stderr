@@ -1,1 +1,2 @@
-Warning: config "branch:%s/component:keboola.variables/config:%s" have 2 "variablesFor" relations [config "branch:%s/component:ex-generic-v2/config:%s"; config "branch:%s/component:ex-generic-v2/config:%s"], but only one is expected
+Warning: config "branch:%s/component:keboola.variables/config:%s" have 2 relations "variablesFor" [config "branch:%s/component:ex-generic-v2/config:%s"; config "branch:%s/component:ex-generic-v2/config:%s"], but only one is expected
+Warning: config row "branch:%s/component:keboola.variables/config:%s/row:%s" have 2 relations "variablesValuesFor" [config "branch:%s/component:ex-generic-v2/config:%s"; config "branch:%s/component:ex-generic-v2/config:%s"], but only one is expected

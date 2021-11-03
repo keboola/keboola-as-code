@@ -60,6 +60,12 @@ type ConfigRowKey struct {
 	Id          string `json:"id" validate:"required" `
 }
 
+type ConfigRowKeySameBranch struct {
+	ComponentId string `json:"-" validate:"required"`
+	ConfigId    string `json:"-" validate:"required"`
+	Id          string `json:"id" validate:"required" `
+}
+
 type BlockKey struct {
 	BranchId    int    `json:"-"`
 	ComponentId string `json:"-"`
@@ -276,6 +282,10 @@ func (k ConfigKey) ParentKey() (Key, error) {
 	return k.BranchKey(), nil
 }
 
+func (k ConfigRowKey) ConfigRowKeySameBranch() ConfigRowKeySameBranch {
+	return ConfigRowKeySameBranch{ComponentId: k.ComponentId, ConfigId: k.ConfigId, Id: k.Id}
+}
+
 func (k ConfigRowKey) ComponentKey() ComponentKey {
 	return ComponentKey{Id: k.ComponentId}
 }
@@ -302,4 +312,12 @@ func (c Code) ConfigKey() ConfigKey {
 
 func (k ConfigKeySameBranch) ConfigKey(branch BranchKey) ConfigKey {
 	return ConfigKey{BranchId: branch.Id, ComponentId: k.ComponentId, Id: k.Id}
+}
+
+func (k ConfigRowKeySameBranch) ConfigKey(branch BranchKey) ConfigKey {
+	return ConfigKey{BranchId: branch.Id, ComponentId: k.ComponentId, Id: k.ConfigId}
+}
+
+func (k ConfigRowKeySameBranch) ConfigRowKey(branch BranchKey) ConfigRowKey {
+	return ConfigRowKey{BranchId: branch.Id, ComponentId: k.ComponentId, ConfigId: k.ConfigId, Id: k.Id}
 }
