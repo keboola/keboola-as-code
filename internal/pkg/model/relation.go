@@ -45,7 +45,8 @@ type Relation interface {
 	Key() string                              // unique key for sorting and comparing
 	ParentKey(relationOwner Key) (Key, error) // if relation type is parent <-> child, then parent key is returned, otherwise nil
 	OtherSideKey(owner Key) Key               // get key of the other side
-	IsOwningSide() bool                       // if true, relation will be stored in the manifest
+	IsDefinedInManifest() bool                // if true, relation will be present in the manifest
+	IsDefinedInApi() bool                     // if true, relation will be present in API calls
 	NewOtherSideRelation(owner Key) Relation  // create the new other side relation, for example VariablesFor -> VariablesFrom
 }
 
@@ -166,7 +167,7 @@ func (v *Relations) UnmarshalJSON(data []byte) error {
 		}
 
 		// Validate, only owning side should be present in JSON
-		if !value.IsOwningSide() {
+		if !value.IsDefinedInManifest() {
 			return fmt.Errorf(`unexpected state: relation "%T" should not be present in JSON, it is not an owning side`, value)
 		}
 
@@ -179,7 +180,7 @@ func (v Relations) MarshalJSON() ([]byte, error) {
 	var out []*orderedmap.OrderedMap
 	for _, relation := range v {
 		// Validate, only owning side should be serialized to JSON
-		if !relation.IsOwningSide() {
+		if !relation.IsDefinedInManifest() {
 			return nil, fmt.Errorf(`unexpected state: relation "%T" should not be serialized to JSON, it is not an owning side`, relation)
 		}
 
@@ -228,10 +229,20 @@ func (v Relations) ParentKey(source Key) (Key, error) {
 	return nil, nil
 }
 
-func (v Relations) OnlyOwningSides() Relations {
+func (v Relations) OnlyStoredInApi() Relations {
 	var out Relations
 	for _, relation := range v {
-		if relation.IsOwningSide() {
+		if relation.IsDefinedInApi() {
+			out = append(out, relation)
+		}
+	}
+	return out
+}
+
+func (v Relations) OnlyStoredInManifest() Relations {
+	var out Relations
+	for _, relation := range v {
+		if relation.IsDefinedInManifest() {
 			out = append(out, relation)
 		}
 	}

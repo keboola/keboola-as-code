@@ -30,8 +30,8 @@ func TestRelationsMarshalJSON(t *testing.T) {
 
 func TestRelationsEqual(t *testing.T) {
 	t.Parallel()
-	v1 := &fixtures.OtherSideRelation{OwningSide: fixtures.MockedKey{Id: `123`}}
-	v2 := &fixtures.OtherSideRelation{OwningSide: fixtures.MockedKey{Id: `345`}}
+	v1 := &fixtures.MockedApiSideRelation{OtherSide: fixtures.MockedKey{Id: `123`}}
+	v2 := &fixtures.MockedApiSideRelation{OtherSide: fixtures.MockedKey{Id: `345`}}
 	assert.True(t, (Relations{}).Equal(Relations{}))
 	assert.True(t, (Relations{v1}).Equal(Relations{v1}))
 	assert.True(t, (Relations{v1, v2}).Equal(Relations{v1, v2}))
@@ -44,23 +44,33 @@ func TestRelationsEqual(t *testing.T) {
 
 func TestRelationsDiff(t *testing.T) {
 	t.Parallel()
-	v1 := &fixtures.OtherSideRelation{OwningSide: fixtures.MockedKey{Id: `123`}}
-	v2 := &fixtures.OtherSideRelation{OwningSide: fixtures.MockedKey{Id: `345`}}
-	v3 := &fixtures.OtherSideRelation{OwningSide: fixtures.MockedKey{Id: `567`}}
-	v4 := &fixtures.OtherSideRelation{OwningSide: fixtures.MockedKey{Id: `789`}}
+	v1 := &fixtures.MockedApiSideRelation{OtherSide: fixtures.MockedKey{Id: `123`}}
+	v2 := &fixtures.MockedApiSideRelation{OtherSide: fixtures.MockedKey{Id: `345`}}
+	v3 := &fixtures.MockedApiSideRelation{OtherSide: fixtures.MockedKey{Id: `567`}}
+	v4 := &fixtures.MockedApiSideRelation{OtherSide: fixtures.MockedKey{Id: `789`}}
 	onlyIn1, onlyIn2 := (Relations{v1, v2, v3}).Diff(Relations{v2, v4})
 	assert.Equal(t, Relations{v1, v3}, onlyIn1)
 	assert.Equal(t, Relations{v4}, onlyIn2)
 }
 
-func TestRelationsOnlyOwningSides(t *testing.T) {
+func TestRelationsOnlyStoredInManifest(t *testing.T) {
 	t.Parallel()
-	v1 := &fixtures.OtherSideRelation{OwningSide: fixtures.MockedKey{Id: `123`}}
-	v2 := &fixtures.OwningSideRelation{OtherSide: fixtures.MockedKey{Id: `345`}}
-	v3 := &fixtures.OtherSideRelation{OwningSide: fixtures.MockedKey{Id: `567`}}
-	v4 := &fixtures.OwningSideRelation{OtherSide: fixtures.MockedKey{Id: `789`}}
+	v1 := &fixtures.MockedApiSideRelation{OtherSide: fixtures.MockedKey{Id: `123`}}
+	v2 := &fixtures.MockedManifestSideRelation{OtherSide: fixtures.MockedKey{Id: `345`}}
+	v3 := &fixtures.MockedApiSideRelation{OtherSide: fixtures.MockedKey{Id: `567`}}
+	v4 := &fixtures.MockedManifestSideRelation{OtherSide: fixtures.MockedKey{Id: `789`}}
 	r := Relations{v1, v2, v3, v4}
-	assert.Equal(t, Relations{v2, v4}, r.OnlyOwningSides())
+	assert.Equal(t, Relations{v2, v4}, r.OnlyStoredInManifest())
+}
+
+func TestRelationsOnlyStoredInApi(t *testing.T) {
+	t.Parallel()
+	v1 := &fixtures.MockedApiSideRelation{OtherSide: fixtures.MockedKey{Id: `123`}}
+	v2 := &fixtures.MockedManifestSideRelation{OtherSide: fixtures.MockedKey{Id: `345`}}
+	v3 := &fixtures.MockedApiSideRelation{OtherSide: fixtures.MockedKey{Id: `567`}}
+	v4 := &fixtures.MockedManifestSideRelation{OtherSide: fixtures.MockedKey{Id: `789`}}
+	r := Relations{v1, v2, v3, v4}
+	assert.Equal(t, Relations{v1, v3}, r.OnlyStoredInApi())
 }
 
 func TestVariablesForRelation(t *testing.T) {

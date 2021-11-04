@@ -14,6 +14,7 @@ type MockedKey struct {
 
 type MockedRecord struct {
 	MockedKey
+	PathValue string
 	Relations model.Relations
 }
 
@@ -33,14 +34,12 @@ type MockedObjectState struct {
 	Remote *MockedObject
 }
 
-type OwningSideRelation struct {
-	OtherSide                   model.Key
-	IgnoreMissingOtherSideValue bool
+type MockedManifestSideRelation struct {
+	OtherSide model.Key
 }
 
-type OtherSideRelation struct {
-	OwningSide                  model.Key
-	IgnoreMissingOtherSideValue bool
+type MockedApiSideRelation struct {
+	OtherSide model.Key
 }
 
 func (MockedKey) Level() int {
@@ -105,7 +104,10 @@ func (MockedRecord) IsParentPathSet() bool {
 func (MockedRecord) SetParentPath(string) {
 }
 
-func (MockedRecord) Path() string {
+func (r MockedRecord) Path() string {
+	if len(r.PathValue) > 0 {
+		return r.PathValue
+	}
 	return `test`
 }
 
@@ -254,74 +256,74 @@ func (o *MockedObjectState) RemoteOrLocalState() model.Object {
 	}
 }
 
-func (r *OwningSideRelation) Type() model.RelationType {
-	return "owning_side_relation"
+func (r *MockedManifestSideRelation) Type() model.RelationType {
+	return "manifest_side_relation"
 }
 
-func (r *OwningSideRelation) Desc() string {
-	return "owning side relation"
+func (r *MockedManifestSideRelation) Desc() string {
+	return "manifest side relation"
 }
 
-func (r *OwningSideRelation) Key() string {
+func (r *MockedManifestSideRelation) Key() string {
 	return fmt.Sprintf(`%s_%s`, r.Type(), r.OtherSide.String())
 }
 
-func (r *OwningSideRelation) ParentKey(_ model.Key) (model.Key, error) {
+func (r *MockedManifestSideRelation) ParentKey(_ model.Key) (model.Key, error) {
 	return nil, nil
 }
 
-func (r *OwningSideRelation) OtherSideKey(_ model.Key) model.Key {
+func (r *MockedManifestSideRelation) OtherSideKey(_ model.Key) model.Key {
 	return r.OtherSide
 }
 
-func (r *OwningSideRelation) IsOwningSide() bool {
+func (r *MockedManifestSideRelation) IsDefinedInManifest() bool {
 	return true
 }
 
-func (r *OwningSideRelation) IgnoreMissingOtherSide() bool {
-	return r.IgnoreMissingOtherSideValue
+func (r *MockedManifestSideRelation) IsDefinedInApi() bool {
+	return false
 }
 
-func (r *OwningSideRelation) NewOtherSideRelation(owner model.Key) model.Relation {
+func (r *MockedManifestSideRelation) NewOtherSideRelation(owner model.Key) model.Relation {
 	if r.OtherSide != nil {
-		return &OtherSideRelation{
-			OwningSide: owner,
+		return &MockedApiSideRelation{
+			OtherSide: owner,
 		}
 	}
 	return nil
 }
 
-func (r *OtherSideRelation) Type() model.RelationType {
-	return "other_side_relation"
+func (r *MockedApiSideRelation) Type() model.RelationType {
+	return "api_side_relation"
 }
 
-func (r *OtherSideRelation) Desc() string {
-	return "other side relation"
+func (r *MockedApiSideRelation) Desc() string {
+	return "api side relation"
 }
 
-func (r *OtherSideRelation) Key() string {
-	return fmt.Sprintf(`%s_%s`, r.Type(), r.OwningSide.String())
+func (r *MockedApiSideRelation) Key() string {
+	return fmt.Sprintf(`%s_%s`, r.Type(), r.OtherSide.String())
 }
 
-func (r *OtherSideRelation) ParentKey(_ model.Key) (model.Key, error) {
+func (r *MockedApiSideRelation) ParentKey(_ model.Key) (model.Key, error) {
 	return nil, nil
 }
 
-func (r *OtherSideRelation) OtherSideKey(_ model.Key) model.Key {
-	return r.OwningSide
+func (r *MockedApiSideRelation) OtherSideKey(_ model.Key) model.Key {
+	return r.OtherSide
 }
 
-func (r *OtherSideRelation) IsOwningSide() bool {
+func (r *MockedApiSideRelation) IsDefinedInManifest() bool {
 	return false
 }
 
-func (r *OtherSideRelation) IgnoreMissingOtherSide() bool {
-	return r.IgnoreMissingOtherSideValue
+func (r *MockedApiSideRelation) IsDefinedInApi() bool {
+	return true
 }
 
-func (r *OtherSideRelation) NewOtherSideRelation(owner model.Key) model.Relation {
-	if r.OwningSide != nil {
-		return &OwningSideRelation{
+func (r *MockedApiSideRelation) NewOtherSideRelation(owner model.Key) model.Relation {
+	if r.OtherSide != nil {
+		return &MockedManifestSideRelation{
 			OtherSide: owner,
 		}
 	}

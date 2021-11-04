@@ -20,7 +20,7 @@ func TestRelationsMapperLocalLoad(t *testing.T) {
 	object := &fixtures.MockedObject{}
 	recipe := &model.LocalLoadRecipe{Record: record, Object: object}
 
-	relation := &fixtures.OwningSideRelation{}
+	relation := &fixtures.MockedManifestSideRelation{}
 	record.Relations = append(record.Relations, relation)
 
 	assert.NotEmpty(t, record.Relations)
@@ -47,7 +47,7 @@ func TestRelationsMapperOnLoad(t *testing.T) {
 	object1 := &fixtures.MockedObject{
 		MockedKey: key1,
 		Relations: model.Relations{
-			&fixtures.OwningSideRelation{
+			&fixtures.MockedManifestSideRelation{
 				OtherSide: key2,
 			},
 		},
@@ -82,8 +82,8 @@ func TestRelationsMapperOnLoad(t *testing.T) {
 
 	// Other side relation has been created
 	assert.Equal(t, model.Relations{
-		&fixtures.OtherSideRelation{
-			OwningSide: key1,
+		&fixtures.MockedApiSideRelation{
+			OtherSide: key1,
 		},
 	}, object2.Relations)
 }
@@ -102,9 +102,8 @@ func TestRelationsMapperOnLoadOtherSideMissing(t *testing.T) {
 	object1 := &fixtures.MockedObject{
 		MockedKey: key1,
 		Relations: model.Relations{
-			&fixtures.OwningSideRelation{
-				OtherSide:                   key2,
-				IgnoreMissingOtherSideValue: true, // <<<<<<<<<<<<<
+			&fixtures.MockedManifestSideRelation{
+				OtherSide: key2,
 			},
 		},
 	}
@@ -127,7 +126,7 @@ func TestRelationsMapperOnLoadOtherSideMissing(t *testing.T) {
 
 	// Warning is logged
 	assert.Equal(t,
-		"WARN  Warning: mocked key \"456\" not found, referenced from mocked key \"123\", by relation \"owning_side_relation\"\n",
+		"WARN  Warning: mocked key \"456\" not found, referenced from mocked key \"123\", by relation \"manifest_side_relation\"\n",
 		logs.String(),
 	)
 }
