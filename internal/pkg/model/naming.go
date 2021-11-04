@@ -224,6 +224,11 @@ func (n Naming) ConfigRowPath(parentPath string, component *Component, row *Conf
 		template = string(n.SharedCodeConfigRow)
 	case component.IsVariables():
 		template = string(n.VariablesValuesRow)
+		if row.Relations.Has(VariablesValuesForRelType) {
+			template = utils.ReplacePlaceholders(string(n.VariablesValuesRow), map[string]interface{}{
+				"config_row_name": `default`,
+			})
+		}
 	default:
 		template = string(n.ConfigRow)
 	}

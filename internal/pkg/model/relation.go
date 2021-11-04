@@ -48,6 +48,15 @@ type Relation interface {
 
 type Relations []Relation
 
+func (v Relations) Has(t RelationType) bool {
+	for _, relation := range v {
+		if relation.Type() == t {
+			return true
+		}
+	}
+	return false
+}
+
 func (v Relations) GetByType(t RelationType) Relations {
 	var out Relations
 	for _, relation := range v {

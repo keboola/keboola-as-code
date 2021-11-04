@@ -326,6 +326,16 @@ func NewStateObjects(state *State, stateType StateType) *StateObjects {
 	return &StateObjects{state: state, stateType: stateType}
 }
 
+func (f *StateObjects) All() []Object {
+	var out []Object
+	for _, object := range f.state.All() {
+		if object.HasState(f.stateType) {
+			out = append(out, object.GetState(f.stateType))
+		}
+	}
+	return out
+}
+
 func (f *StateObjects) Get(key Key) (Object, bool) {
 	objectState, found := f.state.Get(key)
 	if !found || !objectState.HasState(f.stateType) {
@@ -340,4 +350,14 @@ func (f *StateObjects) MustGet(key Key) Object {
 		panic(fmt.Errorf(`%s not found`, key.Desc()))
 	}
 	return objectState.GetState(f.stateType)
+}
+
+func (f *StateObjects) ConfigRowsFrom(config ConfigKey) (rows []*ConfigRow) {
+	var out []*ConfigRow
+	for _, row := range f.state.ConfigRowsFrom(config) {
+		if row.HasState(f.stateType) {
+			out = append(out, row.GetState(f.stateType).(*ConfigRow))
+		}
+	}
+	return out
 }

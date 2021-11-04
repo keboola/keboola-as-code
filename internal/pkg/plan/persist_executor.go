@@ -56,6 +56,11 @@ func (e *persistExecutor) invoke() error {
 		e.errors.Append(err)
 	}
 
+	// OnObjectsPersist event
+	if err := e.State.Mapper().OnObjectsPersist(e.uow.LoadedObjects()); err != nil {
+		e.errors.Append(err)
+	}
+
 	return e.errors.ErrorOrNil()
 }
 
