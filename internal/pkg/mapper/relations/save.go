@@ -16,6 +16,21 @@ func (m *relationsMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) erro
 		return nil
 	}
 
+	oldParentKey, err := manifest.ParentKey()
+	if err != nil {
+		return err
+	}
+
 	manifest.SetRelations(object.GetRelations().OnlyStoredInManifest())
+
+	newParentKey, err := manifest.ParentKey()
+	if err != nil {
+		return err
+	}
+
+	if oldParentKey != newParentKey {
+		manifest.State().ParentChanged = true
+	}
+
 	return nil
 }

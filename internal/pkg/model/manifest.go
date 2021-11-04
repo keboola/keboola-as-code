@@ -14,6 +14,7 @@ const (
 type RecordPaths interface {
 	Path() string          // parent path + object path -> path relative to the project dir
 	GetObjectPath() string // path relative to the parent object
+	IsParentPathSet() bool
 	GetParentPath() string // parent path relative to the project dir
 }
 
@@ -41,10 +42,11 @@ type ObjectManifestWithRelations interface {
 }
 
 type RecordState struct {
-	Invalid   bool // object files are not valid, eg. missing file, invalid JSON, ...
-	NotFound  bool // object directory is not present in the filesystem
-	Persisted bool // record will be part of the manifest when saved
-	Deleted   bool // record has been deleted in this command run
+	Invalid       bool // object files are not valid, eg. missing file, invalid JSON, ...
+	NotFound      bool // object directory is not present in the filesystem
+	Persisted     bool // record will be part of the manifest when saved
+	Deleted       bool // record has been deleted in this command run
+	ParentChanged bool // record parent has been changed, files must be moved to new destination
 }
 
 type PathInProject struct {

@@ -168,10 +168,6 @@ func (d *Differ) newOptions() cmp.Options {
 		cmpopts.AcyclicTransformer("strByLine", func(s string) []string {
 			return strings.Split(s, "\n")
 		}),
-		// Compare only relations defined on the API side
-		cmpopts.AcyclicTransformer("relations", func(relations model.Relations) model.Relations {
-			return relations.OnlyStoredInApi()
-		}),
 	}
 }
 

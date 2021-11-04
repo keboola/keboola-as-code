@@ -47,22 +47,35 @@ func (g *PathsGenerator) doUpdate(objectState model.ObjectState, origin model.Ke
 
 	// Use remote state if the local state is not set
 	object := objectState.LocalOrRemoteState()
+	manifest := objectState.Manifest()
+
+	// Store old path
+	oldPath := objectState.Path()
 
 	// Update parent path
 	parentKey, err := object.ParentKey()
 	if err != nil {
 		return err
 	} else if parentKey != nil {
+		// Update parent path
 		parent := g.state.MustGet(parentKey)
 		if err := g.doUpdate(parent, origin); err != nil {
 			return err
 		}
-		objectState.Manifest().SetParentPath(parent.Path())
+
+		// Set new parent path
+		manifest.SetParentPath(parent.Path())
+
+		// Parent has been renamed before children.
+		// Therefore, in the old path, we use the new parent path.
+		// With the parent renaming, the children also moved.
+		if !manifest.State().ParentChanged {
+			oldPath = objectState.Path()
+		}
 	}
 
 	// Re-generate object path IF rename is enabled OR path is not set
 	if objectState.GetObjectPath() == "" || g.rename {
-		oldPath := objectState.Path()
 		switch v := objectState.(type) {
 		case *model.BranchState:
 			v.PathInProject = g.Naming().BranchPath(object.(*model.Branch))
@@ -97,6 +110,9 @@ func (g *PathsGenerator) doUpdate(objectState model.ObjectState, origin model.Ke
 				g.updateBlockPath(block, configDir)
 			}
 		}
+
+		// After renaming, the object is in the correct parent
+		manifest.State().ParentChanged = false
 	}
 
 	// Mark processed
