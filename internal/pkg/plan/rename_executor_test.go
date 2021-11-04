@@ -41,7 +41,7 @@ func TestRename(t *testing.T) {
 	}
 
 	// Rename
-	executor := newRenameExecutor(logger, m, plan)
+	executor := newRenameExecutor(logger, m, []string{}, plan)
 	warn, err := executor.invoke()
 	assert.Empty(t, warn)
 	assert.Empty(t, err)
@@ -102,7 +102,7 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 	}
 
 	// Rename
-	executor := newRenameExecutor(logger, m, plan)
+	executor := newRenameExecutor(logger, m, []string{}, plan)
 	warn, err := executor.invoke()
 	assert.Empty(t, warn)
 	assert.NotNil(t, err)

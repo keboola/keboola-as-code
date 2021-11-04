@@ -6,6 +6,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -15,20 +16,22 @@ type renameExecutor struct {
 	logger        *zap.SugaredLogger
 	fs            filesystem.Fs
 	manifest      *manifest.Manifest
+	trackedPaths  []string
 	errors        *utils.Error
 	warnings      *utils.Error
 	newPaths      []string
 	pathsToRemove []string
 }
 
-func newRenameExecutor(logger *zap.SugaredLogger, manifest *manifest.Manifest, plan *RenamePlan) *renameExecutor {
+func newRenameExecutor(logger *zap.SugaredLogger, manifest *manifest.Manifest, trackedPaths []string, plan *RenamePlan) *renameExecutor {
 	return &renameExecutor{
-		RenamePlan: plan,
-		logger:     logger,
-		fs:         manifest.Fs(),
-		manifest:   manifest,
-		errors:     utils.NewMultiError(),
-		warnings:   utils.NewMultiError(),
+		RenamePlan:   plan,
+		logger:       logger,
+		fs:           manifest.Fs(),
+		manifest:     manifest,
+		trackedPaths: trackedPaths,
+		errors:       utils.NewMultiError(),
+		warnings:     utils.NewMultiError(),
 	}
 }
 
@@ -77,6 +80,13 @@ func (e *renameExecutor) invoke() (warns error, errs error) {
 			}
 		}
 		e.logger.Info(`Error occurred, the rename operation was reverted.`)
+	}
+
+	// Delete empty directories, eg. no extractor of a type left -> dir is empty
+	if e.errors.Len() == 0 {
+		if err := local.DeleteEmptyDirectories(e.fs, e.trackedPaths); err != nil {
+			e.errors.Append(err)
+		}
 	}
 
 	return e.warnings.ErrorOrNil(), e.errors.ErrorOrNil()

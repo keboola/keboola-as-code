@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
+	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 )
 
 func TestLocalDeleteModel(t *testing.T) {
@@ -51,8 +52,7 @@ func TestLocalDeleteModel(t *testing.T) {
 
 func TestDeleteEmptyDirectories(t *testing.T) {
 	t.Parallel()
-	manager, _ := newTestLocalManager(t)
-	fs := manager.fs
+	fs := testhelper.NewMemoryFs()
 
 	// Structure:
 	// D .hidden
@@ -89,7 +89,7 @@ func TestDeleteEmptyDirectories(t *testing.T) {
 		`tracked`,
 		`tracked-with-hidden`,
 	}
-	assert.NoError(t, manager.DeleteEmptyDirectories(trackedPaths))
+	assert.NoError(t, DeleteEmptyDirectories(fs, trackedPaths))
 
 	// Assert
 	assert.False(t, fs.Exists(`tracked-empty`))

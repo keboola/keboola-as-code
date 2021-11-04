@@ -18,6 +18,8 @@ const (
 	PathSeparator = '/'
 )
 
+var SkipDir = fs.SkipDir // nolint: gochecknoglobals
+
 type Factory func(logger *zap.SugaredLogger, workingDir string) (fs Fs, err error)
 
 type FileInfo = fs.FileInfo

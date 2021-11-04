@@ -30,11 +30,11 @@ func (m *Manager) DeleteInvalidObjects() error {
 // DeleteEmptyDirectories from project directory (eg. dir with extractors, but no extractor left)
 // Deleted are only empty directories from know/tracked paths.
 // Hidden dirs are ignored.
-func (m *Manager) DeleteEmptyDirectories(trackedPaths []string) error {
+func DeleteEmptyDirectories(fs filesystem.Fs, trackedPaths []string) error {
 	errors := utils.NewMultiError()
 	emptyDirs := utils.NewOrderedMap()
 	root := `.`
-	err := m.fs.Walk(root, func(path string, info fs.FileInfo, err error) error {
+	err := fs.Walk(root, func(path string, info filesystem.FileInfo, err error) error {
 		// Stop on error
 		if err != nil {
 			return err
@@ -63,7 +63,7 @@ func (m *Manager) DeleteEmptyDirectories(trackedPaths []string) error {
 
 		// Skip sub-directories
 		if skipDir {
-			return fs.SkipDir
+			return filesystem.SkipDir
 		}
 
 		return nil
@@ -93,7 +93,7 @@ func (m *Manager) DeleteEmptyDirectories(trackedPaths []string) error {
 
 	// Delete
 	for _, dir := range dirsToRemove {
-		if err := m.fs.Remove(dir); err != nil {
+		if err := fs.Remove(dir); err != nil {
 			errors.Append(err)
 		}
 	}
