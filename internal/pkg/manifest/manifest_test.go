@@ -286,6 +286,7 @@ func minimalJson() string {
     "branch": "{branch_id}-{branch_name}",
     "config": "{component_type}/{component_id}/{config_id}-{config_name}",
     "configRow": "rows/{config_row_id}-{config_row_name}",
+    "schedule": "schedules/{config_id}-{config_name}",
     "sharedCodeConfig": "_shared/{target_component_id}",
     "sharedCodeConfigRow": "codes/{config_row_id}-{config_row_name}",
     "variablesConfig": "variables",
@@ -328,6 +329,7 @@ func fullJson() string {
     "branch": "{branch_id}-{branch_name}",
     "config": "{component_type}/{component_id}/{config_id}-{config_name}",
     "configRow": "rows/{config_row_id}-{config_row_name}",
+    "schedule": "schedules/{config_id}-{config_name}",
     "sharedCodeConfig": "_shared/{target_component_id}",
     "sharedCodeConfigRow": "codes/{config_row_id}-{config_row_name}",
     "variablesConfig": "variables",
@@ -643,6 +645,7 @@ func cyclicDependencyJson() string {
     "branch": "{branch_id}-{branch_name}",
     "config": "{component_type}/{component_id}/{config_id}-{config_name}",
     "configRow": "rows/{config_row_id}-{config_row_name}",
+    "schedule": "schedules/{config_id}-{config_name}",
     "sharedCodeConfig": "_shared/{target_component_id}",
     "sharedCodeConfigRow": "codes/{config_row_id}-{config_row_name}"
   },
