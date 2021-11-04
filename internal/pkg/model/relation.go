@@ -3,6 +3,7 @@ package model
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/iancoleman/orderedmap"
@@ -40,6 +41,8 @@ func (t RelationType) Type() RelationType {
 // Relation between objects, eg. config <-> config.
 type Relation interface {
 	Type() RelationType
+	Desc() string                             // human-readable description
+	Key() string                              // unique key for sorting and comparing
 	ParentKey(relationOwner Key) (Key, error) // if relation type is parent <-> child, then parent key is returned, otherwise nil
 	OtherSideKey(owner Key) Key               // get key of the other side
 	IsOwningSide() bool                       // if true, relation will be stored in the manifest
@@ -47,6 +50,39 @@ type Relation interface {
 }
 
 type Relations []Relation
+
+func (v Relations) Equal(v2 Relations) bool {
+	onlyIn1, onlyIn2 := v.Diff(v2)
+	return onlyIn1 == nil && onlyIn2 == nil
+}
+
+func (v Relations) Diff(v2 Relations) (onlyIn1 Relations, onlyIn2 Relations) {
+	v1Map := make(map[string]bool)
+	v2Map := make(map[string]bool)
+	for _, r := range v {
+		v1Map[r.Key()] = true
+	}
+	for _, r := range v2 {
+		v2Map[r.Key()] = true
+	}
+	for _, r := range v {
+		if !v2Map[r.Key()] {
+			onlyIn1 = append(onlyIn1, r)
+		}
+	}
+	for _, r := range v2 {
+		if !v1Map[r.Key()] {
+			onlyIn2 = append(onlyIn2, r)
+		}
+	}
+	onlyIn1.Sort()
+	onlyIn2.Sort()
+	return onlyIn1, onlyIn2
+}
+
+func (v Relations) Sort() {
+	sort.SliceStable(v, func(i, j int) bool { return v[i].Key() < v[j].Key() })
+}
 
 func (v Relations) Has(t RelationType) bool {
 	for _, relation := range v {

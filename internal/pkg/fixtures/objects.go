@@ -258,6 +258,14 @@ func (r *OwningSideRelation) Type() model.RelationType {
 	return "owning_side_relation"
 }
 
+func (r *OwningSideRelation) Desc() string {
+	return "owning side relation"
+}
+
+func (r *OwningSideRelation) Key() string {
+	return fmt.Sprintf(`%s_%s`, r.Type(), r.OtherSide.String())
+}
+
 func (r *OwningSideRelation) ParentKey(_ model.Key) (model.Key, error) {
 	return nil, nil
 }
@@ -285,6 +293,14 @@ func (r *OwningSideRelation) NewOtherSideRelation(owner model.Key) model.Relatio
 
 func (r *OtherSideRelation) Type() model.RelationType {
 	return "other_side_relation"
+}
+
+func (r *OtherSideRelation) Desc() string {
+	return "other side relation"
+}
+
+func (r *OtherSideRelation) Key() string {
+	return fmt.Sprintf(`%s_%s`, r.Type(), r.OwningSide.String())
 }
 
 func (r *OtherSideRelation) ParentKey(_ model.Key) (model.Key, error) {

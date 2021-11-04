@@ -28,6 +28,14 @@ func (t *VariablesForRelation) Type() RelationType {
 	return VariablesForRelType
 }
 
+func (t *VariablesForRelation) Desc() string {
+	return `variables for`
+}
+
+func (t *VariablesForRelation) Key() string {
+	return fmt.Sprintf(`%s_%s`, t.Type(), t.Target.String())
+}
+
 func (t *VariablesForRelation) ParentKey(owner Key) (Key, error) {
 	return t.OtherSideKey(owner), nil
 }
@@ -57,6 +65,14 @@ func (t *VariablesForRelation) ownerKey(relationOwner Key) ConfigKey {
 
 func (t *VariablesFromRelation) Type() RelationType {
 	return VariablesFromRelType
+}
+
+func (t *VariablesFromRelation) Desc() string {
+	return `variables from`
+}
+
+func (t *VariablesFromRelation) Key() string {
+	return fmt.Sprintf(`%s_%s`, t.Type(), t.Source.String())
 }
 
 func (t *VariablesFromRelation) ParentKey(_ Key) (Key, error) {
@@ -89,6 +105,14 @@ func (t *VariablesValuesForRelation) Type() RelationType {
 	return VariablesValuesForRelType
 }
 
+func (t *VariablesValuesForRelation) Desc() string {
+	return `variables values for`
+}
+
+func (t *VariablesValuesForRelation) Key() string {
+	return fmt.Sprintf(`%s_%s`, t.Type(), t.Target.String())
+}
+
 func (t *VariablesValuesForRelation) ParentKey(_ Key) (Key, error) {
 	return nil, nil
 }
@@ -117,6 +141,14 @@ func (t *VariablesValuesForRelation) ownerKey(owner Key) ConfigRowKey {
 
 func (t *VariablesValuesFromRelation) Type() RelationType {
 	return VariablesValuesFromRelType
+}
+
+func (t *VariablesValuesFromRelation) Desc() string {
+	return `variables values from`
+}
+
+func (t *VariablesValuesFromRelation) Key() string {
+	return fmt.Sprintf(`%s_%s`, t.Type(), t.Source.String())
 }
 
 func (t *VariablesValuesFromRelation) ParentKey(_ Key) (Key, error) {

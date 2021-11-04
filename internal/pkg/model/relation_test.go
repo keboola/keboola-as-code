@@ -1,4 +1,4 @@
-package model
+package model_test
 
 import (
 	"encoding/json"
@@ -6,6 +6,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
+	. "github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 func TestRelationsUnmarshalJSON(t *testing.T) {
@@ -25,12 +28,45 @@ func TestRelationsMarshalJSON(t *testing.T) {
 	assert.Contains(t, string(data), fmt.Sprintf(`"type":"%s"`, VariablesForRelType))
 }
 
+func TestRelationsEqual(t *testing.T) {
+	t.Parallel()
+	v1 := &fixtures.OtherSideRelation{OwningSide: fixtures.MockedKey{Id: `123`}}
+	v2 := &fixtures.OtherSideRelation{OwningSide: fixtures.MockedKey{Id: `345`}}
+	assert.True(t, (Relations{}).Equal(Relations{}))
+	assert.True(t, (Relations{v1}).Equal(Relations{v1}))
+	assert.True(t, (Relations{v1, v2}).Equal(Relations{v1, v2}))
+	assert.True(t, (Relations{v2, v1}).Equal(Relations{v1, v2}))
+	assert.False(t, (Relations{}).Equal(Relations{v1}))
+	assert.False(t, (Relations{}).Equal(Relations{v1, v2}))
+	assert.False(t, (Relations{v1}).Equal(Relations{v1, v2}))
+	assert.False(t, (Relations{v2}).Equal(Relations{v1, v2}))
+}
+
+func TestRelationsDiff(t *testing.T) {
+	t.Parallel()
+	v1 := &fixtures.OtherSideRelation{OwningSide: fixtures.MockedKey{Id: `123`}}
+	v2 := &fixtures.OtherSideRelation{OwningSide: fixtures.MockedKey{Id: `345`}}
+	v3 := &fixtures.OtherSideRelation{OwningSide: fixtures.MockedKey{Id: `567`}}
+	v4 := &fixtures.OtherSideRelation{OwningSide: fixtures.MockedKey{Id: `789`}}
+	onlyIn1, onlyIn2 := (Relations{v1, v2, v3}).Diff(Relations{v2, v4})
+	assert.Equal(t, Relations{v1, v3}, onlyIn1)
+	assert.Equal(t, Relations{v4}, onlyIn2)
+}
+
+func TestRelationsOnlyOwningSides(t *testing.T) {
+	t.Parallel()
+	v1 := &fixtures.OtherSideRelation{OwningSide: fixtures.MockedKey{Id: `123`}}
+	v2 := &fixtures.OwningSideRelation{OtherSide: fixtures.MockedKey{Id: `345`}}
+	v3 := &fixtures.OtherSideRelation{OwningSide: fixtures.MockedKey{Id: `567`}}
+	v4 := &fixtures.OwningSideRelation{OtherSide: fixtures.MockedKey{Id: `789`}}
+	r := Relations{v1, v2, v3, v4}
+	assert.Equal(t, Relations{v2, v4}, r.OnlyOwningSides())
+}
+
 func TestVariablesForRelation(t *testing.T) {
 	t.Parallel()
-	raw, err := newEmptyRelation(VariablesForRelType)
-	assert.NoError(t, err)
-	r, ok := raw.(*VariablesForRelation)
-	assert.True(t, ok)
+
+	r := &VariablesForRelation{}
 	r.Target = ConfigKeySameBranch{
 		ComponentId: `foo.bar`,
 		Id:          `12345`,
