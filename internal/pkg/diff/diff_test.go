@@ -238,19 +238,23 @@ func TestDiffNotEqualConfig(t *testing.T) {
 	assert.NoError(t, err)
 	branchState.SetRemoteState(branchRemote)
 	branchState.SetLocalState(branchLocal)
+
 	configState, err := projectState.CreateFrom(&model.ConfigManifest{ConfigKey: configKey})
 	assert.NoError(t, err)
 	configState.SetRemoteState(configRemote)
 	configState.SetLocalState(configLocal)
+
 	d := NewDiffer(projectState)
 	results, err := d.Diff()
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 2)
+
 	result1 := results.Results[0]
 	assert.Equal(t, ResultEqual, result1.State)
 	assert.Equal(t, []string{}, result1.ChangedFields)
 	assert.Same(t, branchRemote, result1.ObjectState.RemoteState().(*model.Branch))
 	assert.Same(t, branchLocal, result1.ObjectState.LocalState().(*model.Branch))
+
 	result2 := results.Results[1]
 	assert.Equal(t, ResultNotEqual, result2.State)
 	assert.Equal(t, []string{"name", "description"}, result2.ChangedFields)

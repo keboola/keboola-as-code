@@ -310,6 +310,14 @@ func (c Code) ConfigKey() ConfigKey {
 	return ConfigKey{BranchId: c.BranchId, ComponentId: c.ComponentId, Id: c.ConfigId}
 }
 
+func (k ConfigKeySameBranch) String() string {
+	return fmt.Sprintf(`%s_%s`, k.ComponentId, k.Id)
+}
+
+func (k ConfigRowKeySameBranch) String() string {
+	return fmt.Sprintf(`%s_%s_%s`, k.ComponentId, k.ConfigId, k.Id)
+}
+
 func (k ConfigKeySameBranch) ConfigKey(branch BranchKey) ConfigKey {
 	return ConfigKey{BranchId: branch.Id, ComponentId: k.ComponentId, Id: k.Id}
 }
