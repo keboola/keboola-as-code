@@ -67,16 +67,16 @@ func (m MockedKey) ParentKey() (model.Key, error) {
 	return nil, nil
 }
 
-func (m *MockedRecord) Key() model.Key {
-	return m.MockedKey
+func (r *MockedRecord) Key() model.Key {
+	return r.MockedKey
 }
 
 func (MockedRecord) ParentKey() (model.Key, error) {
 	return nil, nil
 }
 
-func (m MockedRecord) Kind() model.Kind {
-	return m.Key().Kind()
+func (r MockedRecord) Kind() model.Kind {
+	return r.Key().Kind()
 }
 
 func (MockedRecord) State() *model.RecordState {
@@ -144,6 +144,10 @@ func (r *MockedRecord) GetRelations() model.Relations {
 
 func (r *MockedRecord) SetRelations(relations model.Relations) {
 	r.Relations = relations
+}
+
+func (r *MockedRecord) AddRelation(relation model.Relation) {
+	r.Relations.Add(relation)
 }
 
 func (o *MockedObject) GetRelations() model.Relations {

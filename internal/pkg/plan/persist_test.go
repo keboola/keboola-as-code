@@ -427,8 +427,16 @@ func TestPersistSharedCode(t *testing.T) {
 func TestPersistVariables(t *testing.T) {
 	t.Parallel()
 
-	expectedRelations := model.Relations{
+	expectedConfigRelations := model.Relations{
 		&model.VariablesForRelation{
+			Target: model.ConfigKeySameBranch{
+				ComponentId: `ex-generic-v2`,
+				Id:          `456`,
+			},
+		},
+	}
+	expectedRowRelations := model.Relations{
+		&model.VariablesValuesForRelation{
 			Target: model.ConfigKeySameBranch{
 				ComponentId: `ex-generic-v2`,
 				Id:          `456`,
@@ -500,7 +508,7 @@ func TestPersistVariables(t *testing.T) {
 						),
 						RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
 					},
-					Relations: expectedRelations,
+					Relations: expectedConfigRelations,
 				},
 				Remote: nil,
 				Local: &model.Config{
@@ -528,7 +536,7 @@ func TestPersistVariables(t *testing.T) {
 							},
 						},
 					}),
-					Relations: expectedRelations,
+					Relations: expectedConfigRelations,
 				},
 			},
 			&model.ConfigRowState{
@@ -550,6 +558,7 @@ func TestPersistVariables(t *testing.T) {
 						),
 						RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
 					},
+					Relations: expectedRowRelations,
 				},
 				Remote: nil,
 				Local: &model.ConfigRow{
@@ -578,6 +587,7 @@ func TestPersistVariables(t *testing.T) {
 							},
 						},
 					}),
+					Relations: expectedRowRelations,
 				},
 			},
 		},

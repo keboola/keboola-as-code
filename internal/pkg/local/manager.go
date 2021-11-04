@@ -27,13 +27,13 @@ type Manager struct {
 
 type UnitOfWork struct {
 	*Manager
-	ctx             context.Context
-	workers         *orderedmap.OrderedMap // separated workers for changes in branches, configs and rows
-	errors          *utils.Error
-	lock            *sync.Mutex
-	skipNotFoundErr bool
-	newObjectStates []model.ObjectState
-	invoked         bool
+	ctx                context.Context
+	workers            *orderedmap.OrderedMap // separated workers for changes in branches, configs and rows
+	errors             *utils.Error
+	lock               *sync.Mutex
+	skipNotFoundErr    bool
+	loadedObjectStates []model.ObjectState
+	invoked            bool
 }
 
 func NewManager(logger *zap.SugaredLogger, fs filesystem.Fs, m *manifest.Manifest, state *model.State, mapper *mapper.Mapper) *Manager {
@@ -71,6 +71,13 @@ func (m *Manager) NewUnitOfWork(ctx context.Context) *UnitOfWork {
 
 func (u *UnitOfWork) SkipNotFoundErr() {
 	u.skipNotFoundErr = true
+}
+
+func (u *UnitOfWork) LoadedObjects() []model.Object {
+	if !u.invoked {
+		panic(`UnitOfWork must be invoked`)
+	}
+	return u.loadedObjects()
 }
 
 func (u *UnitOfWork) LoadAll(manifestContent *manifest.Content) {
@@ -112,7 +119,7 @@ func (u *UnitOfWork) CreateObject(key model.Key, name string) {
 		return
 	}
 	objectState.SetLocalState(object)
-	u.addNewObjectState(objectState)
+	u.addLoaded(objectState)
 
 	// Generate local path
 	if err := u.NewPathsGenerator(false).Update(objectState); err != nil {
@@ -161,7 +168,7 @@ func (u *UnitOfWork) LoadObject(record model.Record) {
 			// Set local state
 			objectState.SetLocalState(object)
 
-			u.addNewObjectState(objectState)
+			u.addLoaded(objectState)
 			return nil
 		})
 }
@@ -208,7 +215,7 @@ func (u *UnitOfWork) Invoke() error {
 	}
 
 	// OnObjectsLoad event
-	if err := u.mapper.OnObjectsLoaded(model.StateTypeLocal, u.newObjects()); err != nil {
+	if err := u.mapper.OnObjectsLoaded(model.StateTypeLocal, u.loadedObjects()); err != nil {
 		u.errors.Append(err)
 	}
 
@@ -232,16 +239,16 @@ func (u *UnitOfWork) workersFor(level int) *Workers {
 	return workers
 }
 
-func (u *UnitOfWork) addNewObjectState(objectState model.ObjectState) {
+func (u *UnitOfWork) addLoaded(objectState model.ObjectState) {
 	u.lock.Lock()
 	defer u.lock.Unlock()
-	u.newObjectStates = append(u.newObjectStates, objectState)
+	u.loadedObjectStates = append(u.loadedObjectStates, objectState)
 }
 
-func (u *UnitOfWork) newObjects() []model.Object {
-	var newObjects []model.Object
-	for _, objectState := range u.newObjectStates {
-		newObjects = append(newObjects, objectState.LocalState())
+func (u *UnitOfWork) loadedObjects() []model.Object {
+	var objects []model.Object
+	for _, objectState := range u.loadedObjectStates {
+		objects = append(objects, objectState.LocalState())
 	}
-	return newObjects
+	return objects
 }

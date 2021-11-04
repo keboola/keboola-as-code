@@ -37,6 +37,7 @@ type ObjectManifestWithRelations interface {
 	Record
 	GetRelations() Relations
 	SetRelations(relations Relations)
+	AddRelation(relation Relation)
 }
 
 type RecordState struct {
@@ -255,4 +256,12 @@ func (c *ConfigManifest) SetRelations(relations Relations) {
 
 func (r *ConfigRowManifest) SetRelations(relations Relations) {
 	r.Relations = relations
+}
+
+func (c *ConfigManifest) AddRelation(relation Relation) {
+	c.Relations.Add(relation)
+}
+
+func (r *ConfigRowManifest) AddRelation(relation Relation) {
+	r.Relations.Add(relation)
 }
