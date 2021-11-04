@@ -55,7 +55,7 @@ func (c *Component) IsProcessor() bool {
 	return c.Type == ComponentTypeProcessor
 }
 
-func (c *Component) IsSchedule() bool {
+func (c *Component) IsScheduler() bool {
 	return c.Id == SchedulerComponentId
 }
 
