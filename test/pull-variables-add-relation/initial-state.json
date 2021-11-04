@@ -1,0 +1,19 @@
+{
+  "allBranchesConfigs": [],
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "isDefault": true
+      },
+      "configs": [
+        "with-variables-1",
+        "variables"
+      ]
+    }
+  ],
+  "envs": {
+    "TEST_CONFIG_WITH_VARIABLES_1_VARIABLES_ID": "%%TEST_BRANCH_MAIN_CONFIG_VARIABLES_ID%%",
+    "TEST_CONFIG_WITH_VARIABLES_1_VARIABLES_VALUES_ID": "%%TEST_BRANCH_MAIN_CONFIG_VARIABLES_ROW_DEFAULT_VALUES_ID%%"
+  }
+}
