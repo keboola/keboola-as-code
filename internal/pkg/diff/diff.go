@@ -3,6 +3,7 @@ package diff
 import (
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 
 	"github.com/google/go-cmp/cmp"
@@ -16,6 +17,7 @@ import (
 type typeName string
 
 type Differ struct {
+	reporter  Reporter
 	state     *state.State                      // model state
 	results   []*Result                         // diff results
 	typeCache map[typeName][]*utils.StructField // reflection cache
@@ -62,7 +64,7 @@ func (d *Differ) Diff() (*Results, error) {
 	// Diff all objects in state: branches, config, configRows
 	equal := true
 	for _, objectState := range d.state.All() {
-		result, err := d.doDiff(objectState)
+		result, err := d.diffState(objectState)
 		if err != nil {
 			d.error.Append(err)
 		} else {
@@ -82,7 +84,7 @@ func (d *Differ) Diff() (*Results, error) {
 	return &Results{CurrentState: d.state, Equal: equal, Results: d.results}, err
 }
 
-func (d *Differ) doDiff(state model.ObjectState) (*Result, error) {
+func (d *Differ) diffState(state model.ObjectState) (*Result, error) {
 	result := &Result{ObjectState: state}
 	result.ChangedFields = make([]string, 0)
 	result.Differences = make(map[string]string)
@@ -130,25 +132,14 @@ func (d *Differ) doDiff(state model.ObjectState) (*Result, error) {
 		localValues = localValues.Elem()
 	}
 
-	// Compare Config/ConfigRow configuration content ("orderedmap" type) as map (keys order doesn't matter)
-	orderedMapTransform := cmp.Transformer("orderedmap1", utils.OrderedMapToMap)
-
-	// Compare strings by lines
-	strByLine := cmpopts.AcyclicTransformer("strByLine", func(s string) []string {
-		return strings.Split(s, "\n")
-	})
-
 	// Diff
 	for _, field := range diffFields {
-		var r Reporter
-		cmp.Diff(
+		difference := d.diffValues(
+			remoteState,
 			remoteValues.FieldByName(field.StructField.Name).Interface(),
+			localState,
 			localValues.FieldByName(field.StructField.Name).Interface(),
-			cmp.Reporter(&r),
-			orderedMapTransform,
-			strByLine,
 		)
-		difference := r.String()
 		if len(difference) > 0 {
 			result.ChangedFields = append(result.ChangedFields, field.JsonName())
 			result.Differences[field.JsonName()] = difference
@@ -162,6 +153,48 @@ func (d *Differ) doDiff(state model.ObjectState) (*Result, error) {
 	}
 
 	return result, nil
+}
+
+func (d *Differ) diffValues(remoteState, remoteValue, localState, localValue interface{}) string {
+	d.reporter = newReporter(remoteState, localState)
+	cmp.Diff(remoteValue, localValue, d.newOptions())
+	return d.reporter.String()
+}
+
+func (d *Differ) newOptions() cmp.Options {
+	return cmp.Options{
+		// Compare Config/ConfigRow configuration content ("orderedmap" type) as map (keys order doesn't matter)
+		cmp.Transformer("orderedmap", utils.OrderedMapToMap),
+		// Compare relations in human-readable form
+		cmp.Transformer("relations", func(relations model.Relations) string {
+			var out []string
+			for _, relation := range relations {
+				out = append(out, d.relationToString(relation))
+			}
+			sort.Strings(out)
+			return strings.Join(out, "\n")
+		}),
+		// Compare strings by lines
+		cmpopts.AcyclicTransformer("strByLine", func(s string) []string {
+			return strings.Split(s, "\n")
+		}),
+		// Custom reporter
+		cmp.Reporter(&d.reporter),
+	}
+}
+
+func (d *Differ) relationToString(relation model.Relation) string {
+	otherSideDesc := ``
+	if relationParent := d.reporter.ParentKey(); relationParent != nil {
+		otherSideKey := relation.OtherSideKey(relationParent)
+		if otherSide, found := d.state.Get(otherSideKey); found {
+			otherSideDesc = `"` + otherSide.Path() + `"`
+		}
+		if len(otherSideDesc) == 0 {
+			otherSideDesc = otherSideKey.Desc()
+		}
+	}
+	return relation.Desc() + ` ` + otherSideDesc
 }
 
 func (d *Differ) getDiffFields(t reflect.Type) []*utils.StructField {

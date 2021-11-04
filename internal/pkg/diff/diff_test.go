@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
@@ -238,24 +239,95 @@ func TestDiffNotEqualConfig(t *testing.T) {
 	assert.NoError(t, err)
 	branchState.SetRemoteState(branchRemote)
 	branchState.SetLocalState(branchLocal)
+
 	configState, err := projectState.CreateFrom(&model.ConfigManifest{ConfigKey: configKey})
 	assert.NoError(t, err)
 	configState.SetRemoteState(configRemote)
 	configState.SetLocalState(configLocal)
+
 	d := NewDiffer(projectState)
 	results, err := d.Diff()
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 2)
+
 	result1 := results.Results[0]
 	assert.Equal(t, ResultEqual, result1.State)
 	assert.Equal(t, []string{}, result1.ChangedFields)
 	assert.Same(t, branchRemote, result1.ObjectState.RemoteState().(*model.Branch))
 	assert.Same(t, branchLocal, result1.ObjectState.LocalState().(*model.Branch))
+
 	result2 := results.Results[1]
 	assert.Equal(t, ResultNotEqual, result2.State)
 	assert.Equal(t, []string{"name", "description"}, result2.ChangedFields)
 	assert.Same(t, configRemote, result2.ObjectState.RemoteState().(*model.Config))
 	assert.Same(t, configLocal, result2.ObjectState.LocalState().(*model.Config))
+}
+
+func TestDiffRelations(t *testing.T) {
+	t.Parallel()
+	projectState := createProjectState(t)
+
+	// Target object
+	targetKey := fixtures.MockedKey{
+		Id: `123`,
+	}
+	_, err := projectState.CreateFrom(&fixtures.MockedRecord{
+		MockedKey: targetKey,
+		PathValue: `path/to/target`,
+	})
+	assert.NoError(t, err)
+
+	// Remote object
+	rKey := fixtures.MockedKey{
+		Id: `345`,
+	}
+	rState, err := projectState.CreateFrom(&fixtures.MockedRecord{
+		MockedKey: rKey,
+		PathValue: `path/to/remote`,
+	})
+	rObject := &fixtures.MockedObject{
+		MockedKey: rKey,
+		Relations: model.Relations{
+			&fixtures.OwningSideRelation{
+				OtherSide: fixtures.MockedKey{Id: `123`},
+			},
+			&fixtures.OwningSideRelation{
+				OtherSide: fixtures.MockedKey{Id: `001`},
+			},
+		},
+	}
+	assert.NoError(t, err)
+	rState.SetLocalState(rObject)
+
+	// Local object
+	lKey := fixtures.MockedKey{
+		Id: `567`,
+	}
+	lState, err := projectState.CreateFrom(&fixtures.MockedRecord{
+		MockedKey: lKey,
+		PathValue: `path/to/y`,
+	})
+	lObject := &fixtures.MockedObject{
+		MockedKey: lKey,
+		Relations: model.Relations{
+			&fixtures.OwningSideRelation{
+				OtherSide: fixtures.MockedKey{Id: `001`},
+			},
+			&fixtures.OtherSideRelation{
+				OwningSide: fixtures.MockedKey{Id: `002`},
+			},
+		},
+	}
+	assert.NoError(t, err)
+	lState.SetRemoteState(lObject)
+
+	differ := NewDiffer(projectState)
+	differences := differ.diffValues(rObject, rObject.Relations, lObject, lObject.Relations)
+	expected := `
+  - owning side relation "path/to/target"
+  + other side relation mocked key "002"
+`
+	assert.Equal(t, strings.Trim(expected, "\n"), differences)
 }
 
 func createProjectState(t *testing.T) *state.State {

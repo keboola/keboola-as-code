@@ -40,6 +40,7 @@ func (t RelationType) Type() RelationType {
 // Relation between objects, eg. config <-> config.
 type Relation interface {
 	Type() RelationType
+	Desc() string
 	ParentKey(relationOwner Key) (Key, error) // if relation type is parent <-> child, then parent key is returned, otherwise nil
 	OtherSideKey(owner Key) Key               // get key of the other side
 	IsOwningSide() bool                       // if true, relation will be stored in the manifest

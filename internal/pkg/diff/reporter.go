@@ -6,15 +6,57 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/spf13/cast"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
+// Reporter contains path to the compared values and generates human-readable difference report.
 type Reporter struct {
-	path  cmp.Path
-	diffs []string
+	path     cmp.Path
+	valueX   interface{}
+	valueY   interface{}
+	parentsX []interface{}
+	parentsY []interface{}
+	diffs    []string
+}
+
+func newReporter(xRoot, yRoot interface{}) Reporter {
+	r := Reporter{}
+	r.valueX = xRoot
+	r.valueY = yRoot
+	return r
 }
 
 func (r *Reporter) PushStep(ps cmp.PathStep) {
 	r.path = append(r.path, ps)
+	r.parentsX = append(r.parentsX, r.valueX)
+	r.parentsY = append(r.parentsY, r.valueY)
+	r.valueX, r.valueY = ps.Values()
+}
+
+func (r *Reporter) ParentKey() model.Key {
+	if o, ok := r.ParentX().(model.Object); ok {
+		return o.Key()
+	} else if o, ok := r.ParentY().(model.Object); ok {
+		return o.Key()
+	}
+	return nil
+}
+
+func (r *Reporter) ParentX() interface{} {
+	s := r.parentsX
+	if i := len(s) - 1; i != -1 {
+		return s[i]
+	}
+	return nil
+}
+
+func (r *Reporter) ParentY() interface{} {
+	s := r.parentsY
+	if i := len(s) - 1; i != -1 {
+		return s[i]
+	}
+	return nil
 }
 
 func (r *Reporter) Report(rs cmp.Result) {
@@ -25,10 +67,16 @@ func (r *Reporter) Report(rs cmp.Result) {
 			r.diffs = append(r.diffs, fmt.Sprintf("  \"%s\":", pathStr))
 		}
 		if vx.IsValid() {
-			r.diffs = append(r.diffs, fmt.Sprintf("  %s %+v", OnlyInRemoteMark, vx))
+			formatted := fmt.Sprintf(`%+v`, vx)
+			if len(formatted) != 0 {
+				r.diffs = append(r.diffs, fmt.Sprintf("  %s %+v", OnlyInRemoteMark, formatted))
+			}
 		}
 		if vy.IsValid() {
-			r.diffs = append(r.diffs, fmt.Sprintf("  %s %+v", OnlyInLocalMark, vy))
+			formatted := fmt.Sprintf(`%+v`, vy)
+			if len(formatted) != 0 {
+				r.diffs = append(r.diffs, fmt.Sprintf("  %s %+v", OnlyInLocalMark, formatted))
+			}
 		}
 	}
 }
