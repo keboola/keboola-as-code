@@ -104,7 +104,7 @@ type Config struct {
 	ChangeDescription string                 `json:"changeDescription"`
 	Content           *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
 	Blocks            Blocks                 `json:"-" validate:"dive"` // loaded transformation's blocks, filled in only for the LOCAL state
-	Relations         Relations              `json:"-" validate:"dive"`
+	Relations         Relations              `json:"-" validate:"dive" diff:"true"`
 }
 
 type ConfigWithRows struct {
@@ -126,7 +126,7 @@ type ConfigRow struct {
 	ChangeDescription string                 `json:"changeDescription"`
 	IsDisabled        bool                   `json:"isDisabled" diff:"true" metaFile:"true"`
 	Content           *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
-	Relations         Relations              `json:"-" validate:"dive"`
+	Relations         Relations              `json:"-" validate:"dive" diff:"true"`
 }
 
 // Job - Storage API job.

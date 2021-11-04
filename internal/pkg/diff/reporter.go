@@ -2,15 +2,28 @@ package diff
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/spf13/cast"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
+// Reporter contains path to the compared values and generates human-readable difference report.
 type Reporter struct {
-	path  cmp.Path
-	diffs []string
+	objectKey model.Key    // key of the root object, parent of the compared values
+	state     *model.State // state of the other objects (to get objects path if needed)
+	path      cmp.Path     // current path to the compared value
+	diffs     []string     // list of the found differences in human-readable format
+}
+
+func newReporter(objectKey model.Key, state *model.State) Reporter {
+	return Reporter{
+		objectKey: objectKey,
+		state:     state,
+	}
 }
 
 func (r *Reporter) PushStep(ps cmp.PathStep) {
@@ -24,11 +37,24 @@ func (r *Reporter) Report(rs cmp.Result) {
 		if len(pathStr) > 0 {
 			r.diffs = append(r.diffs, fmt.Sprintf("  \"%s\":", pathStr))
 		}
+
+		// Format relations diff
+		if r.relationsDiff(vx, vy) {
+			return
+		}
+
+		// Other types
 		if vx.IsValid() {
-			r.diffs = append(r.diffs, fmt.Sprintf("  %s %+v", OnlyInRemoteMark, vx))
+			formatted := fmt.Sprintf(`%+v`, vx)
+			if len(formatted) != 0 {
+				r.diffs = append(r.diffs, fmt.Sprintf("  %s %+v", OnlyInRemoteMark, formatted))
+			}
 		}
 		if vy.IsValid() {
-			r.diffs = append(r.diffs, fmt.Sprintf("  %s %+v", OnlyInLocalMark, vy))
+			formatted := fmt.Sprintf(`%+v`, vy)
+			if len(formatted) != 0 {
+				r.diffs = append(r.diffs, fmt.Sprintf("  %s %+v", OnlyInLocalMark, formatted))
+			}
 		}
 	}
 }
@@ -39,6 +65,33 @@ func (r *Reporter) PopStep() {
 
 func (r *Reporter) String() string {
 	return strings.Join(r.diffs, "\n")
+}
+
+func (r *Reporter) relationsDiff(vx, vy reflect.Value) bool {
+	relationsType := reflect.TypeOf((*model.Relations)(nil)).Elem()
+	if vx.IsValid() && vy.IsValid() && vx.Type().ConvertibleTo(relationsType) && vy.Type().ConvertibleTo(relationsType) {
+		onlyInRemote, onlyInLocal := vx.Interface().(model.Relations).Diff(vy.Interface().(model.Relations))
+		for _, v := range onlyInRemote {
+			r.diffs = append(r.diffs, fmt.Sprintf("  %s %s", OnlyInRemoteMark, r.relationToString(v)))
+		}
+		for _, v := range onlyInLocal {
+			r.diffs = append(r.diffs, fmt.Sprintf("  %s %s", OnlyInLocalMark, r.relationToString(v)))
+		}
+		return true
+	}
+	return false
+}
+
+func (r *Reporter) relationToString(relation model.Relation) string {
+	otherSideDesc := ``
+	otherSideKey := relation.OtherSideKey(r.objectKey)
+	if otherSide, found := r.state.Get(otherSideKey); found {
+		otherSideDesc = `"` + otherSide.Path() + `"`
+	}
+	if len(otherSideDesc) == 0 {
+		otherSideDesc = otherSideKey.Desc()
+	}
+	return relation.Desc() + ` ` + otherSideDesc
 }
 
 func pathToString(path cmp.Path) string {

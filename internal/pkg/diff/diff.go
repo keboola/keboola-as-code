@@ -62,7 +62,7 @@ func (d *Differ) Diff() (*Results, error) {
 	// Diff all objects in state: branches, config, configRows
 	equal := true
 	for _, objectState := range d.state.All() {
-		result, err := d.doDiff(objectState)
+		result, err := d.diffState(objectState)
 		if err != nil {
 			d.error.Append(err)
 		} else {
@@ -82,7 +82,7 @@ func (d *Differ) Diff() (*Results, error) {
 	return &Results{CurrentState: d.state, Equal: equal, Results: d.results}, err
 }
 
-func (d *Differ) doDiff(state model.ObjectState) (*Result, error) {
+func (d *Differ) diffState(state model.ObjectState) (*Result, error) {
 	result := &Result{ObjectState: state}
 	result.ChangedFields = make([]string, 0)
 	result.Differences = make(map[string]string)
@@ -130,25 +130,13 @@ func (d *Differ) doDiff(state model.ObjectState) (*Result, error) {
 		localValues = localValues.Elem()
 	}
 
-	// Compare Config/ConfigRow configuration content ("orderedmap" type) as map (keys order doesn't matter)
-	orderedMapTransform := cmp.Transformer("orderedmap1", utils.OrderedMapToMap)
-
-	// Compare strings by lines
-	strByLine := cmpopts.AcyclicTransformer("strByLine", func(s string) []string {
-		return strings.Split(s, "\n")
-	})
-
 	// Diff
 	for _, field := range diffFields {
-		var r Reporter
-		cmp.Diff(
+		difference := d.diffValues(
+			state.Key(),
 			remoteValues.FieldByName(field.StructField.Name).Interface(),
 			localValues.FieldByName(field.StructField.Name).Interface(),
-			cmp.Reporter(&r),
-			orderedMapTransform,
-			strByLine,
 		)
-		difference := r.String()
 		if len(difference) > 0 {
 			result.ChangedFields = append(result.ChangedFields, field.JsonName())
 			result.Differences[field.JsonName()] = difference
@@ -162,6 +150,29 @@ func (d *Differ) doDiff(state model.ObjectState) (*Result, error) {
 	}
 
 	return result, nil
+}
+
+func (d *Differ) diffValues(objectKey model.Key, remoteValue, localValue interface{}) string {
+	reporter := newReporter(objectKey, d.state.State)
+	options := d.newOptions()
+	options = append(options, cmp.Reporter(&reporter))
+	cmp.Diff(remoteValue, localValue, options)
+	return reporter.String()
+}
+
+func (d *Differ) newOptions() cmp.Options {
+	return cmp.Options{
+		// Compare Config/ConfigRow configuration content ("orderedmap" type) as map (keys order doesn't matter)
+		cmp.Transformer("orderedmap", utils.OrderedMapToMap),
+		// Compare strings by line by line
+		cmpopts.AcyclicTransformer("strByLine", func(s string) []string {
+			return strings.Split(s, "\n")
+		}),
+		// Compare only relations defined on the API side
+		cmpopts.AcyclicTransformer("relations", func(relations model.Relations) model.Relations {
+			return relations.OnlyStoredInApi()
+		}),
+	}
 }
 
 func (d *Differ) getDiffFields(t reflect.Type) []*utils.StructField {
