@@ -1,0 +1,5 @@
+Plan for "pull" operation:
+  CH C main/extractor/ex-generic-v2/with-variables-1 | changed: Relations
+  +  C main/extractor/ex-generic-v2/with-variables-1/variables
+  +  R main/extractor/ex-generic-v2/with-variables-1/variables/values/default
+Pull done.
