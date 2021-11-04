@@ -30,6 +30,7 @@ type Naming struct {
 	Branch              utils.PathTemplate `json:"branch" validate:"required"`
 	Config              utils.PathTemplate `json:"config" validate:"required"`
 	ConfigRow           utils.PathTemplate `json:"configRow" validate:"required"`
+	Schedule            utils.PathTemplate `json:"schedule" validate:"required"`
 	SharedCodeConfig    utils.PathTemplate `json:"sharedCodeConfig" validate:"required"`
 	SharedCodeConfigRow utils.PathTemplate `json:"sharedCodeConfigRow" validate:"required"`
 	VariablesConfig     utils.PathTemplate `json:"variablesConfig" validate:"required"`
@@ -44,6 +45,7 @@ func DefaultNaming() *Naming {
 		Branch:              "{branch_id}-{branch_name}",
 		Config:              "{component_type}/{component_id}/{config_id}-{config_name}",
 		ConfigRow:           "rows/{config_row_id}-{config_row_name}",
+		Schedule:            "schedules/{config_id}-{config_name}",
 		SharedCodeConfig:    "_shared/{target_component_id}",
 		SharedCodeConfigRow: "codes/{config_row_id}-{config_row_name}",
 		VariablesConfig:     "variables",
@@ -180,6 +182,8 @@ func (n Naming) ConfigPath(parentPath string, component *Component, config *Conf
 		// Shared code
 		template = string(n.SharedCodeConfig)
 		targetComponentId = cast.ToString(targetComponentIdRaw)
+	case component.IsSchedule():
+		template = string(n.Schedule)
 	case parent.IsConfig() && component.IsVariables():
 		template = string(n.VariablesConfig)
 	case parent.IsBranch():
