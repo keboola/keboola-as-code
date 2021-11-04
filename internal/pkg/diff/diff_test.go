@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
@@ -260,6 +261,77 @@ func TestDiffNotEqualConfig(t *testing.T) {
 	assert.Equal(t, []string{"name", "description"}, result2.ChangedFields)
 	assert.Same(t, configRemote, result2.ObjectState.RemoteState().(*model.Config))
 	assert.Same(t, configLocal, result2.ObjectState.LocalState().(*model.Config))
+}
+
+func TestDiffRelations(t *testing.T) {
+	t.Parallel()
+	projectState := createProjectState(t)
+
+	// Target object
+	targetKey := fixtures.MockedKey{
+		Id: `123`,
+	}
+	_, err := projectState.CreateFrom(&fixtures.MockedRecord{
+		MockedKey: targetKey,
+		PathValue: `path/to/target`,
+	})
+	assert.NoError(t, err)
+
+	objectKey := fixtures.MockedKey{
+		Id: `345`,
+	}
+
+	// Remote state
+	rObject := &fixtures.MockedObject{
+		MockedKey: objectKey,
+		Relations: model.Relations{
+			&fixtures.MockedApiSideRelation{
+				OtherSide: fixtures.MockedKey{Id: `123`},
+			},
+			&fixtures.MockedApiSideRelation{
+				OtherSide: fixtures.MockedKey{Id: `001`},
+			},
+			// Ignored manifest side relation
+			&fixtures.MockedManifestSideRelation{
+				OtherSide: fixtures.MockedKey{Id: `foo`},
+			},
+		},
+	}
+	assert.NoError(t, err)
+
+	// Local state
+	lObject := &fixtures.MockedObject{
+		MockedKey: objectKey,
+		Relations: model.Relations{
+			&fixtures.MockedApiSideRelation{
+				OtherSide: fixtures.MockedKey{Id: `001`},
+			},
+			&fixtures.MockedApiSideRelation{
+				OtherSide: fixtures.MockedKey{Id: `002`},
+			},
+			// Ignored manifest side relation
+			&fixtures.MockedManifestSideRelation{
+				OtherSide: fixtures.MockedKey{Id: `bar`},
+			},
+		},
+	}
+
+	// Object state
+	objectState, err := projectState.CreateFrom(&fixtures.MockedRecord{
+		MockedKey: objectKey,
+		PathValue: `path/to/object`,
+	})
+	assert.NoError(t, err)
+	objectState.SetLocalState(lObject)
+	objectState.SetRemoteState(rObject)
+
+	differ := NewDiffer(projectState)
+	differences := differ.diffValues(objectState.Key(), rObject.Relations, lObject.Relations)
+	expected := `
+  - api side relation "path/to/target"
+  + api side relation mocked key "002"
+`
+	assert.Equal(t, strings.Trim(expected, "\n"), differences)
 }
 
 func createProjectState(t *testing.T) *state.State {

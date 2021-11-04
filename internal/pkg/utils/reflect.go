@@ -14,7 +14,7 @@ type StructField struct {
 }
 
 func (f *StructField) JsonName() string {
-	if f.jsonName != "" {
+	if f.jsonName != "" && f.jsonName != "-" {
 		return f.jsonName
 	}
 	return f.StructField.Name
