@@ -16,6 +16,6 @@ func (m *relationsMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) erro
 		return nil
 	}
 
-	manifest.SetRelations(object.GetRelations().OnlyOwningSides())
+	manifest.SetRelations(object.GetRelations().OnlyStoredInManifest())
 	return nil
 }

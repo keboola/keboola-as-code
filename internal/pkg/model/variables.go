@@ -44,8 +44,12 @@ func (t *VariablesForRelation) OtherSideKey(owner Key) Key {
 	return t.Target.ConfigKey(t.ownerKey(owner).BranchKey())
 }
 
-func (t *VariablesForRelation) IsOwningSide() bool {
+func (t *VariablesForRelation) IsDefinedInManifest() bool {
 	return true
+}
+
+func (t *VariablesForRelation) IsDefinedInApi() bool {
+	return false
 }
 
 // NewOtherSideRelation create the other side relation, for example VariablesFor -> VariablesFrom.
@@ -83,8 +87,12 @@ func (t *VariablesFromRelation) OtherSideKey(owner Key) Key {
 	return t.Source.ConfigKey(t.ownerKey(owner).BranchKey())
 }
 
-func (t *VariablesFromRelation) IsOwningSide() bool {
+func (t *VariablesFromRelation) IsDefinedInManifest() bool {
 	return false
+}
+
+func (t *VariablesFromRelation) IsDefinedInApi() bool {
+	return true
 }
 
 func (t *VariablesFromRelation) NewOtherSideRelation(owner Key) Relation {
@@ -121,8 +129,12 @@ func (t *VariablesValuesForRelation) OtherSideKey(owner Key) Key {
 	return t.Target.ConfigKey(t.ownerKey(owner).BranchKey())
 }
 
-func (t *VariablesValuesForRelation) IsOwningSide() bool {
+func (t *VariablesValuesForRelation) IsDefinedInManifest() bool {
 	return true
+}
+
+func (t *VariablesValuesForRelation) IsDefinedInApi() bool {
+	return false
 }
 
 func (t *VariablesValuesForRelation) NewOtherSideRelation(owner Key) Relation {
@@ -159,8 +171,12 @@ func (t *VariablesValuesFromRelation) OtherSideKey(owner Key) Key {
 	return t.Source.ConfigRowKey(t.ownerKey(owner).BranchKey())
 }
 
-func (t *VariablesValuesFromRelation) IsOwningSide() bool {
+func (t *VariablesValuesFromRelation) IsDefinedInManifest() bool {
 	return false
+}
+
+func (t *VariablesValuesFromRelation) IsDefinedInApi() bool {
+	return true
 }
 
 func (t *VariablesValuesFromRelation) NewOtherSideRelation(owner Key) Relation {

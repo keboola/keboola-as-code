@@ -18,16 +18,16 @@ func TestRelationsMapperSave(t *testing.T) {
 	recipe := &model.LocalSaveRecipe{Record: objectManifest, Object: object}
 
 	// Object has 2 relations
-	owningSideRel := &fixtures.OwningSideRelation{}
-	otherSideRel := &fixtures.OtherSideRelation{}
-	object.SetRelations(model.Relations{owningSideRel, otherSideRel})
+	manifestSideRel := &fixtures.MockedManifestSideRelation{}
+	apiSideRel := &fixtures.MockedApiSideRelation{}
+	object.SetRelations(model.Relations{manifestSideRel, apiSideRel})
 
 	assert.Empty(t, objectManifest.Relations)
 	assert.NotEmpty(t, object.Relations)
 	assert.NoError(t, NewMapper(context).MapBeforeLocalSave(recipe))
 
-	// OwningSide relations copied from object.Relations -> manifest.Relations
+	// ManifestSide relations copied from object.Relations -> manifest.Relations
 	assert.NotEmpty(t, objectManifest.Relations)
 	assert.NotEmpty(t, object.Relations)
-	assert.Equal(t, model.Relations{owningSideRel}, objectManifest.Relations)
+	assert.Equal(t, model.Relations{manifestSideRel}, objectManifest.Relations)
 }
