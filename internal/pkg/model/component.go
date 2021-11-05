@@ -55,6 +55,10 @@ func (c *Component) IsProcessor() bool {
 	return c.Type == ComponentTypeProcessor
 }
 
+func (c *Component) IsScheduler() bool {
+	return c.Id == SchedulerComponentId
+}
+
 func (c *Component) IsDeprecated() bool {
 	for _, flag := range c.Flags {
 		if flag == DeprecatedFlag {

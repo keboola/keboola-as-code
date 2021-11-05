@@ -93,6 +93,26 @@ func TestDefaultNaming(t *testing.T) {
 			},
 		).Path())
 
+	// Scheduler
+	assert.Equal(
+		t,
+		"my-branch/schedules/456-schedule-1",
+		n.ConfigPath(
+			"my-branch",
+			&Component{
+				ComponentKey: ComponentKey{Id: SchedulerComponentId},
+			},
+			&Config{
+				ConfigKey: ConfigKey{
+					BranchId:    1234,
+					ComponentId: SchedulerComponentId,
+					Id:          "456",
+				},
+				Name:    "schedule-1",
+				Content: utils.NewOrderedMap(),
+			},
+		).Path())
+
 	// Shared code (config row)
 	assert.Equal(
 		t,
