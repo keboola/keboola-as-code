@@ -43,6 +43,23 @@ func (s *State) PathsState() *PathsState {
 	return s.pathsState.Clone()
 }
 
+func (s *State) ReloadPathsState() error {
+	// Create a new paths state -> all paths are untracked
+	ps, err := NewPathsState(s.pathsState.fs)
+	if err != nil {
+		return fmt.Errorf(`cannot reload paths state: %w`, err)
+	}
+	s.pathsState = ps
+
+	// Track all known paths
+	for _, object := range s.All() {
+		if object.Manifest().State().IsPersisted() {
+			s.TrackRecord(object.Manifest())
+		}
+	}
+	return nil
+}
+
 func (s *State) TrackRecord(record Record) {
 	for _, path := range record.GetRelatedPaths() {
 		s.pathsState.MarkTracked(path)

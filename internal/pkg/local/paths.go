@@ -3,6 +3,7 @@ package local
 import (
 	"fmt"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
@@ -47,22 +48,39 @@ func (g *PathsGenerator) doUpdate(objectState model.ObjectState, origin model.Ke
 
 	// Use remote state if the local state is not set
 	object := objectState.LocalOrRemoteState()
+	manifest := objectState.Manifest()
+
+	// Store old path
+	oldPath := objectState.Path()
 
 	// Update parent path
 	parentKey, err := object.ParentKey()
 	if err != nil {
 		return err
 	} else if parentKey != nil {
+		// Update parent path
 		parent := g.state.MustGet(parentKey)
 		if err := g.doUpdate(parent, origin); err != nil {
 			return err
 		}
-		objectState.Manifest().SetParentPath(parent.Path())
+
+		// Set new parent path
+		manifest.SetParentPath(parent.Path())
+	}
+
+	// Replace already renamed parts of the old path
+	for _, item := range g.renamed {
+		if filesystem.IsFrom(oldPath, item.OldPath) {
+			if relPath, err := filesystem.Rel(item.OldPath, oldPath); err == nil {
+				oldPath = filesystem.Join(item.NewPath, relPath)
+			} else {
+				return err
+			}
+		}
 	}
 
 	// Re-generate object path IF rename is enabled OR path is not set
 	if objectState.GetObjectPath() == "" || g.rename {
-		oldPath := objectState.Path()
 		switch v := objectState.(type) {
 		case *model.BranchState:
 			v.PathInProject = g.Naming().BranchPath(object.(*model.Branch))
@@ -92,9 +110,8 @@ func (g *PathsGenerator) doUpdate(objectState model.ObjectState, origin model.Ke
 
 		// Rename transformation blocks
 		if v, ok := objectState.(*model.ConfigState); ok && v.HasLocalState() {
-			configDir := v.Path()
 			for _, block := range v.Local.Blocks {
-				g.updateBlockPath(block, configDir)
+				g.updateBlockPath(v, block)
 			}
 		}
 	}
@@ -105,9 +122,9 @@ func (g *PathsGenerator) doUpdate(objectState model.ObjectState, origin model.Ke
 	return nil
 }
 
-func (g *PathsGenerator) updateBlockPath(block *model.Block, configDir string) {
+func (g *PathsGenerator) updateBlockPath(parent *model.ConfigState, block *model.Block) {
 	// Update parent path
-	blocksDir := g.Naming().BlocksDir(configDir)
+	blocksDir := g.Naming().BlocksDir(parent.Path())
 	block.SetParentPath(blocksDir)
 
 	// Re-generate object path IF rename is enabled OR path is not set
@@ -118,17 +135,17 @@ func (g *PathsGenerator) updateBlockPath(block *model.Block, configDir string) {
 		// Has been block renamed?
 		newPath := block.Path()
 		if oldPath != newPath {
-			g.renamed = append(g.renamed, renamedPath{OldPath: oldPath, NewPath: newPath})
+			g.renamed = append(g.renamed, renamedPath{ObjectState: parent, OldPath: oldPath, NewPath: newPath})
 		}
 	}
 
 	// Process codes
 	for _, code := range block.Codes {
-		g.updateCodePath(block, code)
+		g.updateCodePath(parent, block, code)
 	}
 }
 
-func (g *PathsGenerator) updateCodePath(block *model.Block, code *model.Code) {
+func (g *PathsGenerator) updateCodePath(parent *model.ConfigState, block *model.Block, code *model.Code) {
 	// Update parent path
 	code.SetParentPath(block.Path())
 
@@ -140,19 +157,19 @@ func (g *PathsGenerator) updateCodePath(block *model.Block, code *model.Code) {
 		// Has been code renamed?
 		newPath := code.Path()
 		if oldPath != newPath {
-			g.renamed = append(g.renamed, renamedPath{OldPath: oldPath, NewPath: newPath})
+			g.renamed = append(g.renamed, renamedPath{ObjectState: parent, OldPath: oldPath, NewPath: newPath})
 		}
 	}
 
 	// Rename code file
-	g.updateCodeFilePath(code)
+	g.updateCodeFilePath(parent, code)
 }
 
-func (g *PathsGenerator) updateCodeFilePath(code *model.Code) {
+func (g *PathsGenerator) updateCodeFilePath(parent *model.ConfigState, code *model.Code) {
 	oldPath := g.Naming().CodeFilePath(code)
 	code.CodeFileName = g.Naming().CodeFileName(code.ComponentId)
 	newPath := g.Naming().CodeFilePath(code)
 	if oldPath != newPath {
-		g.renamed = append(g.renamed, renamedPath{OldPath: oldPath, NewPath: newPath})
+		g.renamed = append(g.renamed, renamedPath{ObjectState: parent, OldPath: oldPath, NewPath: newPath})
 	}
 }

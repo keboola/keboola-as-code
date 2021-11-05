@@ -119,6 +119,10 @@ func (MockedRecord) AddRelatedPath(path string) {
 	// nop
 }
 
+func (MockedRecord) RenameRelatedPaths(oldPath, newPath string) {
+	// nop
+}
+
 func (r MockedRecord) NewEmptyObject() model.Object {
 	return &MockedObject{}
 }
