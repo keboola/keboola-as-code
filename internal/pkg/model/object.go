@@ -326,8 +326,15 @@ func (v Relations) Clone() Relations {
 	}
 
 	var out Relations
-	if err := utils.ConvertByJson(v, &out); err != nil {
-		panic(err)
+	for _, r := range v {
+		rClone, err := newEmptyRelation(r.Type())
+		if err != nil {
+			panic(err)
+		}
+		if err := utils.ConvertByJson(r, &rClone); err != nil {
+			panic(err)
+		}
+		out.Add(rClone)
 	}
 	return out
 }
