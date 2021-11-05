@@ -236,7 +236,7 @@ func (p *Project) createBranches(branches []*fixtures.BranchState) {
 		branch := fixture.Branch.ToModel(p.defaultBranch)
 		if branch.IsDefault {
 			p.defaultBranch.Description = fixture.Branch.Description
-			if _, err := p.api.UpdateBranch(p.defaultBranch, []string{"description"}); err != nil {
+			if _, err := p.api.UpdateBranch(p.defaultBranch, model.ChangedFields{"description": true}); err != nil {
 				assert.FailNow(p.t, fmt.Sprintf("cannot set default branch description: %s", err))
 			}
 			p.setEnv(fmt.Sprintf("TEST_BRANCH_%s_ID", branch.Name), cast.ToString(branch.Id))

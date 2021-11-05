@@ -92,7 +92,7 @@ func TestConfigApiCalls(t *testing.T) {
 			}),
 		},
 	})
-	resConfigUpdate, err := api.UpdateConfig(config.Config, []string{"name", "description", "changeDescription", "configuration"})
+	resConfigUpdate, err := api.UpdateConfig(config.Config, model.ChangedFields{"name": true, "description": true, "changeDescription": true, "configuration": true})
 	assert.NoError(t, err)
 	assert.Same(t, config.Config, resConfigUpdate)
 

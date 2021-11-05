@@ -89,18 +89,18 @@ func TestBranchApiCalls(t *testing.T) {
 	// Update branch
 	branchFoo.Name = "Foo modified"
 	branchFoo.Description = "Foo description modified"
-	_, err = api.UpdateBranch(branchFoo, []string{"name", "description"})
+	_, err = api.UpdateBranch(branchFoo, model.ChangedFields{"name": true, "description": true})
 	assert.NoError(t, err)
 
 	// Update main branch description
 	defaultBranch.Description = "Default branch"
-	_, err = api.UpdateBranch(defaultBranch, []string{"description"})
+	_, err = api.UpdateBranch(defaultBranch, model.ChangedFields{"description": true})
 	assert.NoError(t, err)
 
 	// Cannot update default branch name
 	defaultBranch.Name = "Not Allowed"
-	assert.PanicsWithError(t, `key "name" cannot be updated`, func() {
-		api.UpdateBranch(defaultBranch, []string{"name", "description"})
+	assert.PanicsWithError(t, `changed field "name" not found in API values`, func() {
+		api.UpdateBranch(defaultBranch, model.ChangedFields{"name": true, "description": true})
 	})
 
 	// List branches

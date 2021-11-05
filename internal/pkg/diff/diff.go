@@ -38,7 +38,7 @@ const (
 type Result struct {
 	model.ObjectState
 	State         ResultState
-	ChangedFields []string
+	ChangedFields model.ChangedFields
 	Differences   map[string]string
 }
 
@@ -84,7 +84,7 @@ func (d *Differ) Diff() (*Results, error) {
 
 func (d *Differ) diffState(state model.ObjectState) (*Result, error) {
 	result := &Result{ObjectState: state}
-	result.ChangedFields = make([]string, 0)
+	result.ChangedFields = make(map[string]bool)
 	result.Differences = make(map[string]string)
 
 	// Are both, Remote and Local state defined?
@@ -138,7 +138,7 @@ func (d *Differ) diffState(state model.ObjectState) (*Result, error) {
 			localValues.FieldByName(field.StructField.Name).Interface(),
 		)
 		if len(difference) > 0 {
-			result.ChangedFields = append(result.ChangedFields, field.JsonName())
+			result.ChangedFields[field.JsonName()] = true
 			result.Differences[field.JsonName()] = difference
 		}
 	}

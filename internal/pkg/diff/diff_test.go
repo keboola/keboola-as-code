@@ -31,7 +31,7 @@ func TestDiffOnlyInLocal(t *testing.T) {
 	assert.Len(t, results.Results, 1)
 	result := results.Results[0]
 	assert.Equal(t, ResultOnlyInLocal, result.State)
-	assert.Equal(t, []string{}, result.ChangedFields)
+	assert.Equal(t, model.ChangedFields{}, result.ChangedFields)
 	assert.Same(t, branch, result.ObjectState.LocalState().(*model.Branch))
 }
 
@@ -50,7 +50,7 @@ func TestDiffOnlyInRemote(t *testing.T) {
 	assert.Len(t, results.Results, 1)
 	result := results.Results[0]
 	assert.Equal(t, ResultOnlyInRemote, result.State)
-	assert.Equal(t, []string{}, result.ChangedFields)
+	assert.Equal(t, model.ChangedFields{}, result.ChangedFields)
 	assert.Same(t, branch, result.ObjectState.RemoteState().(*model.Branch))
 }
 
@@ -83,7 +83,7 @@ func TestDiffEqual(t *testing.T) {
 	assert.Len(t, results.Results, 1)
 	result := results.Results[0]
 	assert.Equal(t, ResultEqual, result.State)
-	assert.Equal(t, []string{}, result.ChangedFields)
+	assert.Equal(t, model.ChangedFields{}, result.ChangedFields)
 	assert.Same(t, branchRemote, result.ObjectState.RemoteState().(*model.Branch))
 	assert.Same(t, branchLocal, result.ObjectState.LocalState().(*model.Branch))
 }
@@ -116,7 +116,7 @@ func TestDiffNotEqual(t *testing.T) {
 	assert.Len(t, results.Results, 1)
 	result := results.Results[0]
 	assert.Equal(t, ResultNotEqual, result.State)
-	assert.Equal(t, []string{"name", "isDefault"}, result.ChangedFields)
+	assert.Equal(t, model.ChangedFields{"name": true, "isDefault": true}, result.ChangedFields)
 	assert.Equal(t, "  - name\n  + changed", strings.ReplaceAll(result.Differences["name"], " ", " "))
 	assert.Equal(t, "  - false\n  + true", strings.ReplaceAll(result.Differences["isDefault"], " ", " "))
 	assert.Same(t, branchRemote, result.ObjectState.RemoteState().(*model.Branch))
@@ -181,12 +181,12 @@ func TestDiffEqualConfig(t *testing.T) {
 	assert.Len(t, results.Results, 2)
 	result1 := results.Results[0]
 	assert.Equal(t, ResultEqual, result1.State)
-	assert.Equal(t, []string{}, result1.ChangedFields)
+	assert.Equal(t, model.ChangedFields{}, result1.ChangedFields)
 	assert.Same(t, branchRemote, result1.ObjectState.RemoteState().(*model.Branch))
 	assert.Same(t, branchLocal, result1.ObjectState.LocalState().(*model.Branch))
 	result2 := results.Results[1]
 	assert.Equal(t, ResultEqual, result2.State)
-	assert.Equal(t, []string{}, result2.ChangedFields)
+	assert.Equal(t, model.ChangedFields{}, result2.ChangedFields)
 	assert.Same(t, configRemote, result2.ObjectState.RemoteState().(*model.Config))
 	assert.Same(t, configLocal, result2.ObjectState.LocalState().(*model.Config))
 }
@@ -252,13 +252,13 @@ func TestDiffNotEqualConfig(t *testing.T) {
 
 	result1 := results.Results[0]
 	assert.Equal(t, ResultEqual, result1.State)
-	assert.Equal(t, []string{}, result1.ChangedFields)
+	assert.Equal(t, model.ChangedFields{}, result1.ChangedFields)
 	assert.Same(t, branchRemote, result1.ObjectState.RemoteState().(*model.Branch))
 	assert.Same(t, branchLocal, result1.ObjectState.LocalState().(*model.Branch))
 
 	result2 := results.Results[1]
 	assert.Equal(t, ResultNotEqual, result2.State)
-	assert.Equal(t, []string{"name", "description"}, result2.ChangedFields)
+	assert.Equal(t, model.ChangedFields{"name": true, "description": true}, result2.ChangedFields)
 	assert.Same(t, configRemote, result2.ObjectState.RemoteState().(*model.Config))
 	assert.Same(t, configLocal, result2.ObjectState.LocalState().(*model.Config))
 }
