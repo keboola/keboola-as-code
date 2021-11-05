@@ -33,7 +33,6 @@ const (
 	ResultEqual
 	ResultOnlyInRemote
 	ResultOnlyInLocal
-	ResultInvisible // present in remote state, but ignored
 )
 
 type Result struct {

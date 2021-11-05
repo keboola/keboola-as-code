@@ -19,8 +19,6 @@ func Push(diffResults *diff.Results, changeDescription string) (*DiffPlan, error
 		switch result.State {
 		case diff.ResultEqual:
 			// nop
-		case diff.ResultInvisible:
-			// nop
 		case diff.ResultNotEqual:
 			plan.add(result, ActionSaveRemote)
 		case diff.ResultOnlyInLocal:
