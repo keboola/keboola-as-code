@@ -31,7 +31,7 @@ func TestDiffOnlyInLocal(t *testing.T) {
 	assert.Len(t, results.Results, 1)
 	result := results.Results[0]
 	assert.Equal(t, ResultOnlyInLocal, result.State)
-	assert.Equal(t, []string{}, result.ChangedFields)
+	assert.True(t, result.ChangedFields.IsEmpty())
 	assert.Same(t, branch, result.ObjectState.LocalState().(*model.Branch))
 }
 
@@ -50,7 +50,7 @@ func TestDiffOnlyInRemote(t *testing.T) {
 	assert.Len(t, results.Results, 1)
 	result := results.Results[0]
 	assert.Equal(t, ResultOnlyInRemote, result.State)
-	assert.Equal(t, []string{}, result.ChangedFields)
+	assert.True(t, result.ChangedFields.IsEmpty())
 	assert.Same(t, branch, result.ObjectState.RemoteState().(*model.Branch))
 }
 
@@ -83,7 +83,7 @@ func TestDiffEqual(t *testing.T) {
 	assert.Len(t, results.Results, 1)
 	result := results.Results[0]
 	assert.Equal(t, ResultEqual, result.State)
-	assert.Equal(t, []string{}, result.ChangedFields)
+	assert.True(t, result.ChangedFields.IsEmpty())
 	assert.Same(t, branchRemote, result.ObjectState.RemoteState().(*model.Branch))
 	assert.Same(t, branchLocal, result.ObjectState.LocalState().(*model.Branch))
 }
@@ -116,9 +116,9 @@ func TestDiffNotEqual(t *testing.T) {
 	assert.Len(t, results.Results, 1)
 	result := results.Results[0]
 	assert.Equal(t, ResultNotEqual, result.State)
-	assert.Equal(t, []string{"name", "isDefault"}, result.ChangedFields)
-	assert.Equal(t, "  - name\n  + changed", strings.ReplaceAll(result.Differences["name"], " ", " "))
-	assert.Equal(t, "  - false\n  + true", strings.ReplaceAll(result.Differences["isDefault"], " ", " "))
+	assert.Equal(t, `isDefault, name`, result.ChangedFields.String())
+	assert.Equal(t, "  - name\n  + changed", strings.ReplaceAll(result.ChangedFields.Get("name").Diff(), " ", " "))
+	assert.Equal(t, "  - false\n  + true", strings.ReplaceAll(result.ChangedFields.Get("isDefault").Diff(), " ", " "))
 	assert.Same(t, branchRemote, result.ObjectState.RemoteState().(*model.Branch))
 	assert.Same(t, branchLocal, result.ObjectState.LocalState().(*model.Branch))
 }
@@ -181,12 +181,12 @@ func TestDiffEqualConfig(t *testing.T) {
 	assert.Len(t, results.Results, 2)
 	result1 := results.Results[0]
 	assert.Equal(t, ResultEqual, result1.State)
-	assert.Equal(t, []string{}, result1.ChangedFields)
+	assert.True(t, result1.ChangedFields.IsEmpty())
 	assert.Same(t, branchRemote, result1.ObjectState.RemoteState().(*model.Branch))
 	assert.Same(t, branchLocal, result1.ObjectState.LocalState().(*model.Branch))
 	result2 := results.Results[1]
 	assert.Equal(t, ResultEqual, result2.State)
-	assert.Equal(t, []string{}, result2.ChangedFields)
+	assert.True(t, result2.ChangedFields.IsEmpty())
 	assert.Same(t, configRemote, result2.ObjectState.RemoteState().(*model.Config))
 	assert.Same(t, configLocal, result2.ObjectState.LocalState().(*model.Config))
 }
@@ -252,13 +252,96 @@ func TestDiffNotEqualConfig(t *testing.T) {
 
 	result1 := results.Results[0]
 	assert.Equal(t, ResultEqual, result1.State)
-	assert.Equal(t, []string{}, result1.ChangedFields)
+	assert.True(t, result1.ChangedFields.IsEmpty())
 	assert.Same(t, branchRemote, result1.ObjectState.RemoteState().(*model.Branch))
 	assert.Same(t, branchLocal, result1.ObjectState.LocalState().(*model.Branch))
 
 	result2 := results.Results[1]
 	assert.Equal(t, ResultNotEqual, result2.State)
-	assert.Equal(t, []string{"name", "description"}, result2.ChangedFields)
+	assert.Equal(t, `description, name`, result2.ChangedFields.String())
+	assert.Same(t, configRemote, result2.ObjectState.RemoteState().(*model.Config))
+	assert.Same(t, configLocal, result2.ObjectState.LocalState().(*model.Config))
+}
+
+func TestDiffNotEqualConfigConfiguration(t *testing.T) {
+	t.Parallel()
+	projectState := createProjectState(t)
+
+	component := &model.Component{
+		ComponentKey: model.ComponentKey{
+			Id: "foo-bar",
+		},
+	}
+	projectState.Components().Set(component)
+
+	branchKey := model.BranchKey{
+		Id: 123,
+	}
+	branchRemote := &model.Branch{
+		BranchKey:   branchKey,
+		Name:        "name",
+		Description: "description",
+		IsDefault:   false,
+	}
+	branchLocal := &model.Branch{
+		BranchKey:   branchKey,
+		Name:        "name",
+		Description: "description",
+		IsDefault:   false,
+	}
+
+	configKey := model.ConfigKey{
+		BranchId:    123,
+		ComponentId: "foo-bar",
+		Id:          "456",
+	}
+	configRemote := &model.Config{
+		ConfigKey: configKey,
+		Content: utils.PairsToOrderedMap([]utils.Pair{
+			{
+				Key: "foo",
+				Value: utils.PairsToOrderedMap([]utils.Pair{
+					{Key: "bar", Value: "123"},
+				}),
+			},
+		}),
+	}
+	configLocal := &model.Config{
+		ConfigKey: configKey,
+		Content: utils.PairsToOrderedMap([]utils.Pair{
+			{
+				Key: "foo",
+				Value: utils.PairsToOrderedMap([]utils.Pair{
+					{Key: "bar", Value: "456"},
+				}),
+			},
+		}),
+	}
+	branchState, err := projectState.CreateFrom(&model.BranchManifest{BranchKey: branchKey})
+	assert.NoError(t, err)
+	branchState.SetRemoteState(branchRemote)
+	branchState.SetLocalState(branchLocal)
+
+	configState, err := projectState.CreateFrom(&model.ConfigManifest{ConfigKey: configKey})
+	assert.NoError(t, err)
+	configState.SetRemoteState(configRemote)
+	configState.SetLocalState(configLocal)
+
+	d := NewDiffer(projectState)
+	results, err := d.Diff()
+	assert.NoError(t, err)
+	assert.Len(t, results.Results, 2)
+
+	result1 := results.Results[0]
+	assert.Equal(t, ResultEqual, result1.State)
+	assert.True(t, result1.ChangedFields.IsEmpty())
+	assert.Same(t, branchRemote, result1.ObjectState.RemoteState().(*model.Branch))
+	assert.Same(t, branchLocal, result1.ObjectState.LocalState().(*model.Branch))
+
+	result2 := results.Results[1]
+	assert.Equal(t, ResultNotEqual, result2.State)
+	assert.Equal(t, `configuration`, result2.ChangedFields.String())
+	assert.Equal(t, `foo.bar`, result2.ChangedFields.Get(`configuration`).Paths())
 	assert.Same(t, configRemote, result2.ObjectState.RemoteState().(*model.Config))
 	assert.Same(t, configLocal, result2.ObjectState.LocalState().(*model.Config))
 }
@@ -324,14 +407,14 @@ func TestDiffRelations(t *testing.T) {
 	objectState.SetRemoteState(rObject)
 
 	differ := NewDiffer(projectState)
-	differences := differ.diffValues(objectState.Key(), rObject.Relations, lObject.Relations)
+	reporter := differ.diffValues(objectState.Key(), rObject.Relations, lObject.Relations)
 	expected := `
   - api side relation "path/to/target"
   - manifest side relation mocked key "foo"
   + api side relation mocked key "002"
   + manifest side relation mocked key "bar"
 `
-	assert.Equal(t, strings.Trim(expected, "\n"), differences)
+	assert.Equal(t, strings.Trim(expected, "\n"), reporter.String())
 }
 
 func createProjectState(t *testing.T) *state.State {

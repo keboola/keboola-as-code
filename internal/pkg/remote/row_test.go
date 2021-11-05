@@ -93,7 +93,7 @@ func TestConfigRowApiCalls(t *testing.T) {
 	row1.Content = utils.PairsToOrderedMap([]utils.Pair{
 		{Key: "row1", Value: "xyz"},
 	})
-	resRow1, err = api.UpdateConfigRow(row1, []string{"name", "description", "changeDescription", "configuration"})
+	resRow1, err = api.UpdateConfigRow(row1, model.NewChangedFields("name", "description", "changeDescription", "configuration"))
 	assert.NoError(t, err)
 	assert.Same(t, row1, resRow1)
 

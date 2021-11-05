@@ -161,7 +161,7 @@ func (u *UnitOfWork) loadObject(object model.Object) (model.ObjectState, error) 
 	return objectState, nil
 }
 
-func (u *UnitOfWork) SaveObject(objectState model.ObjectState, object model.Object, changedFields []string) {
+func (u *UnitOfWork) SaveObject(objectState model.ObjectState, object model.Object, changedFields model.ChangedFields) {
 	if v, ok := objectState.(*model.BranchState); ok && v.Remote == nil {
 		// Branch cannot be created from the CLI
 		u.errors.Append(fmt.Errorf(`branch "%d" (%s) exists only locally, new branch cannot be created by CLI`, v.Local.Id, v.Local.Name))
@@ -169,7 +169,12 @@ func (u *UnitOfWork) SaveObject(objectState model.ObjectState, object model.Obje
 	}
 
 	// Invoke mapper
-	recipe := &model.RemoteSaveRecipe{Manifest: objectState.Manifest(), InternalObject: object, ApiObject: object.Clone()}
+	recipe := &model.RemoteSaveRecipe{
+		ChangedFields:  changedFields,
+		Manifest:       objectState.Manifest(),
+		InternalObject: object,
+		ApiObject:      object.Clone(),
+	}
 	if err := u.mapper.MapBeforeRemoteSave(recipe); err != nil {
 		u.errors.Append(err)
 		return
@@ -237,19 +242,15 @@ func (u *UnitOfWork) Invoke() error {
 	return u.errors.ErrorOrNil()
 }
 
-func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, recipe *model.RemoteSaveRecipe, changedFields []string) error {
+func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, recipe *model.RemoteSaveRecipe, changedFields model.ChangedFields) error {
 	// Set changeDescription
 	switch v := recipe.ApiObject.(type) {
 	case *model.Config:
 		v.ChangeDescription = u.changeDescription
-		if len(changedFields) > 0 {
-			changedFields = append(changedFields, "changeDescription")
-		}
+		changedFields.Add("changeDescription")
 	case *model.ConfigRow:
 		v.ChangeDescription = u.changeDescription
-		if len(changedFields) > 0 {
-			changedFields = append(changedFields, "changeDescription")
-		}
+		changedFields.Add("changeDescription")
 	}
 
 	// Create or update
@@ -289,7 +290,7 @@ func (u *UnitOfWork) create(objectState model.ObjectState, recipe *model.RemoteS
 	return nil
 }
 
-func (u *UnitOfWork) update(objectState model.ObjectState, recipe *model.RemoteSaveRecipe, changedFields []string) error {
+func (u *UnitOfWork) update(objectState model.ObjectState, recipe *model.RemoteSaveRecipe, changedFields model.ChangedFields) error {
 	object := recipe.ApiObject
 	if request, err := u.api.UpdateRequest(object, changedFields); err == nil {
 		u.poolFor(object.Level()).
