@@ -20,6 +20,10 @@ func Push(diffResults *diff.Results, changeDescription string) (*DiffPlan, error
 		case diff.ResultEqual:
 			// nop
 		case diff.ResultNotEqual:
+			// SKIP: if only Relations have changed + no changed relations on the API side
+			if result.ChangedFields.String() == "relations" && !result.ChangedFields.Get("relations").HasPath("InApi") {
+				continue
+			}
 			plan.add(result, ActionSaveRemote)
 		case diff.ResultOnlyInLocal:
 			plan.add(result, ActionSaveRemote)

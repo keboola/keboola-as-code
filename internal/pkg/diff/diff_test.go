@@ -409,12 +409,13 @@ func TestDiffRelations(t *testing.T) {
 	differ := NewDiffer(projectState)
 	reporter := differ.diffValues(objectState.Key(), rObject.Relations, lObject.Relations)
 	expected := `
-  - api side relation "path/to/target"
   - manifest side relation mocked key "foo"
-  + api side relation mocked key "002"
   + manifest side relation mocked key "bar"
+  - api side relation "path/to/target"
+  + api side relation mocked key "002"
 `
 	assert.Equal(t, strings.Trim(expected, "\n"), reporter.String())
+	assert.Equal(t, []string{"InManifest", "InApi"}, reporter.Paths()) // see model.RelationsBySide
 }
 
 func createProjectState(t *testing.T) *state.State {

@@ -52,6 +52,11 @@ type Relation interface {
 
 type Relations []Relation
 
+type RelationsBySide struct {
+	InManifest Relations
+	InApi      Relations
+}
+
 func (v Relations) ParentKey(source Key) (Key, error) {
 	var parents []Key
 	for _, r := range v {
@@ -73,6 +78,13 @@ func (v Relations) ParentKey(source Key) (Key, error) {
 	}
 
 	return nil, nil
+}
+
+func (v Relations) RelationsBySide() RelationsBySide {
+	return RelationsBySide{
+		InManifest: v.OnlyStoredInManifest(),
+		InApi:      v.OnlyStoredInApi(),
+	}
 }
 
 func (v Relations) OnlyStoredInApi() Relations {

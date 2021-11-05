@@ -168,6 +168,10 @@ func (d *Differ) newOptions(reporter *Reporter) cmp.Options {
 		cmpopts.AcyclicTransformer("strByLine", func(s string) []string {
 			return strings.Split(s, "\n")
 		}),
+		// Separately compares the relations for the manifest and API side
+		cmpopts.AcyclicTransformer("relations", func(relations model.Relations) model.RelationsBySide {
+			return relations.RelationsBySide()
+		}),
 	}
 }
 

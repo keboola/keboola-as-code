@@ -14,6 +14,10 @@ func Pull(diffResults *diff.Results) (*DiffPlan, error) {
 		case diff.ResultEqual:
 			// nop
 		case diff.ResultNotEqual:
+			// SKIP: if only Relations have changed + no changed relations on the local side
+			if result.ChangedFields.String() == "relations" && !result.ChangedFields.Get("relations").HasPath("InManifest") {
+				continue
+			}
 			plan.add(result, ActionSaveLocal)
 		case diff.ResultOnlyInLocal:
 			plan.add(result, ActionDeleteLocal)

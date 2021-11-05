@@ -1,5 +1,4 @@
 Plan for "pull" operation:
-  CH C my-branch/extractor/ex-generic-v2/empty | changed: relations
   CH C my-branch/extractor/ex-generic-v2/empty/variables | changed: relations
   CH R my-branch/extractor/ex-generic-v2/empty/variables/values/default | changed: relations
 Plan for "rename" operation:
