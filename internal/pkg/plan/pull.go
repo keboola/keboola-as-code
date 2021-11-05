@@ -13,8 +13,6 @@ func Pull(diffResults *diff.Results) (*DiffPlan, error) {
 		switch result.State {
 		case diff.ResultEqual:
 			// nop
-		case diff.ResultInvisible:
-			// nop
 		case diff.ResultNotEqual:
 			plan.add(result, ActionSaveLocal)
 		case diff.ResultOnlyInLocal:
