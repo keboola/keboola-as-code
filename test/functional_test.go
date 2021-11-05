@@ -3,7 +3,6 @@ package test
 
 import (
 	"bytes"
-	"context"
 	"io"
 	"io/fs"
 	"os"
@@ -23,13 +22,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 type envTicketProvider struct {
@@ -109,7 +104,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	envs, err := env.FromOs()
 	assert.NoError(t, err)
 	project := testproject.GetTestProject(t, envs)
-	api := project.Api()
+	api := project.StorageApi()
 
 	// Setup project state
 	projectStateFile := "initial-state.json"
@@ -284,21 +279,8 @@ func AssertExpectations(
 			assert.FailNow(t, err.Error())
 		}
 
-		// Fake manifest
-		m, err := manifest.NewManifest(api.ProjectId(), api.Host(), testhelper.NewMemoryFs())
-		if err != nil {
-			assert.FailNow(t, err.Error())
-		}
-
 		// Load actual state
-		schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
-		logger, _ := utils.NewDebugLogger()
-		stateOptions := state.NewOptions(m, api, schedulerApi, context.Background(), logger)
-		stateOptions.LoadRemoteState = true
-		actualState, ok := state.LoadState(stateOptions)
-		assert.True(t, ok)
-		assert.Empty(t, actualState.RemoteErrors().Errors)
-		actualSnapshot, err := state.NewProjectSnapshot(actualState, project)
+		actualSnapshot, err := project.NewSnapshot()
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}
@@ -310,11 +292,11 @@ func AssertExpectations(
 		}
 
 		// Compare expected and actual state
-		assert.Equal(
+		testhelper.AssertWildcards(
 			t,
 			json.MustEncodeString(expectedSnapshot, true),
 			json.MustEncodeString(actualSnapshot, true),
-			"unexpected project state",
+			`unexpected project state, compare "expected-state.json" from test and "actual-state.json" from ".out" dir`,
 		)
 	}
 }

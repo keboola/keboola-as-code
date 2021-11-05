@@ -19,7 +19,7 @@ func TestSchedulerApiCalls(t *testing.T) {
 
 	project := testproject.GetTestProject(t, env.Empty())
 	project.SetState("empty.json")
-	storageApi := project.Api()
+	storageApi := project.StorageApi()
 	token := storageApi.Token().Token
 	hostName, _ := storageApi.GetSchedulerApiUrl()
 

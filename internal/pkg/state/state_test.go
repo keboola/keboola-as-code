@@ -56,7 +56,7 @@ func TestLoadState(t *testing.T) {
 	m := loadTestManifest(t, envs, "minimal")
 	m.Project.Id = project.Id()
 
-	stateOptions := NewOptions(m, project.Api(), project.SchedulerApi(), context.Background(), logger)
+	stateOptions := NewOptions(m, project.StorageApi(), project.SchedulerApi(), context.Background(), logger)
 	stateOptions.LoadLocalState = true
 	stateOptions.LoadRemoteState = true
 	state, ok := LoadState(stateOptions)

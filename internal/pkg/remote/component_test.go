@@ -15,7 +15,7 @@ import (
 func TestGetComponent(t *testing.T) {
 	t.Parallel()
 	project := testproject.GetTestProject(t, env.Empty())
-	api := project.Api()
+	api := project.StorageApi()
 
 	component, err := api.GetComponent("ex-generic-v2")
 	assert.False(t, component.IsDeprecated())
@@ -28,7 +28,7 @@ func TestGetComponent(t *testing.T) {
 func TestGetComponentNotFound(t *testing.T) {
 	t.Parallel()
 	project := testproject.GetTestProject(t, env.Empty())
-	api := project.Api()
+	api := project.StorageApi()
 
 	component, err := api.GetComponent("foo-bar")
 	assert.NotNil(t, err)

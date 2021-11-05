@@ -127,7 +127,7 @@ func (p *Project) Token() string {
 	return p.api.Token().Token
 }
 
-func (p *Project) Api() *remote.StorageApi {
+func (p *Project) StorageApi() *remote.StorageApi {
 	p.assertLocked()
 	return p.api
 }

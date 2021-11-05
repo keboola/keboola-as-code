@@ -13,7 +13,7 @@ import (
 func TestSendEvent(t *testing.T) {
 	t.Parallel()
 	project := testproject.GetTestProject(t, env.Empty())
-	api := project.Api()
+	api := project.StorageApi()
 
 	params := map[string]interface{}{"foo1": "bar1"}
 	results := map[string]interface{}{"foo2": "bar2"}
