@@ -16,11 +16,12 @@ type Reporter struct {
 	objectKey model.Key    // key of the root object, parent of the compared values
 	state     *model.State // state of the other objects (to get objects path if needed)
 	path      cmp.Path     // current path to the compared value
+	paths     []string     // list of the non-equal paths
 	diffs     []string     // list of the found differences in human-readable format
 }
 
-func newReporter(objectKey model.Key, state *model.State) Reporter {
-	return Reporter{
+func newReporter(objectKey model.Key, state *model.State) *Reporter {
+	return &Reporter{
 		objectKey: objectKey,
 		state:     state,
 	}
@@ -35,6 +36,7 @@ func (r *Reporter) Report(rs cmp.Result) {
 		vx, vy := r.path.Last().Values()
 		pathStr := pathToString(r.path)
 		if len(pathStr) > 0 {
+			r.paths = append(r.paths, pathStr)
 			r.diffs = append(r.diffs, fmt.Sprintf("  \"%s\":", pathStr))
 		}
 
@@ -65,6 +67,10 @@ func (r *Reporter) PopStep() {
 
 func (r *Reporter) String() string {
 	return strings.Join(r.diffs, "\n")
+}
+
+func (r *Reporter) Paths() []string {
+	return r.paths
 }
 
 func (r *Reporter) relationsDiff(vx, vy reflect.Value) bool {

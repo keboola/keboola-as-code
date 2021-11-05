@@ -41,7 +41,7 @@ func (a *StorageApi) CreateBranch(branch *model.Branch) (*model.Job, error) {
 	return nil, response.Err()
 }
 
-func (a *StorageApi) UpdateBranch(branch *model.Branch, changed []string) (*model.Branch, error) {
+func (a *StorageApi) UpdateBranch(branch *model.Branch, changed model.ChangedFields) (*model.Branch, error) {
 	response := a.UpdateBranchRequest(branch, changed).Send().Response
 	if response.HasResult() {
 		return response.Result().(*model.Branch), nil
@@ -105,7 +105,7 @@ func (a *StorageApi) CreateBranchRequest(branch *model.Branch) *client.Request {
 }
 
 // UpdateBranchRequest https://keboola.docs.apiary.io/#reference/development-branches/branches/update-branch
-func (a *StorageApi) UpdateBranchRequest(branch *model.Branch, changed []string) *client.Request {
+func (a *StorageApi) UpdateBranchRequest(branch *model.Branch, changed model.ChangedFields) *client.Request {
 	// Id is required
 	if branch.Id == 0 {
 		panic("branch id must be set")

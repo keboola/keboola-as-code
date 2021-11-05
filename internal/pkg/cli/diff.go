@@ -47,16 +47,16 @@ func diffCommand(root *rootCommand) *cobra.Command {
 						if result.State != diff.ResultEqual {
 							// Message
 							msg := fmt.Sprintf("%s %s %s", result.Mark(), result.Kind().Abbr, result.Path())
-							if !printDetails && len(result.ChangedFields) > 0 {
-								msg += " | changed: " + strings.Join(result.ChangedFields, ", ")
+							if !printDetails && !result.ChangedFields.IsEmpty() {
+								msg += " | changed: " + result.ChangedFields.String()
 							}
 							root.logger.Infof(msg)
 
 							// Changed fields
 							if printDetails {
-								for field, change := range result.Differences {
-									root.logger.Infof("  \"%s\":", field)
-									for _, line := range strings.Split(change, "\n") {
+								for name, field := range result.ChangedFields {
+									root.logger.Infof("  \"%s\":", name)
+									for _, line := range strings.Split(field.Diff(), "\n") {
 										root.logger.Infof("  %s", line)
 									}
 								}

@@ -103,18 +103,14 @@ func (a *StorageApi) HttpClient() *http.Client {
 	return a.client.GetRestyClient().GetClient()
 }
 
-func getChangedValues(all map[string]string, changed []string) map[string]string {
-	if len(changed) == 0 {
-		return all
-	}
-
+func getChangedValues(all map[string]string, changedFields model.ChangedFields) map[string]string {
 	// Filter
 	data := map[string]string{}
-	for _, key := range changed {
+	for key := range changedFields {
 		if v, ok := all[key]; ok {
 			data[key] = v
 		} else {
-			panic(fmt.Errorf(`key "%s" cannot be updated`, key))
+			panic(fmt.Errorf(`changed field "%s" not found in API values`, key))
 		}
 	}
 	return data

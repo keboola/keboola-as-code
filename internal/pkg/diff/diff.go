@@ -38,8 +38,7 @@ const (
 type Result struct {
 	model.ObjectState
 	State         ResultState
-	ChangedFields []string
-	Differences   map[string]string
+	ChangedFields model.ChangedFields
 }
 
 type Results struct {
@@ -84,8 +83,7 @@ func (d *Differ) Diff() (*Results, error) {
 
 func (d *Differ) diffState(state model.ObjectState) (*Result, error) {
 	result := &Result{ObjectState: state}
-	result.ChangedFields = make([]string, 0)
-	result.Differences = make(map[string]string)
+	result.ChangedFields = model.NewChangedFields()
 
 	// Are both, Remote and Local state defined?
 	if !state.HasRemoteState() && !state.HasLocalState() {
@@ -132,14 +130,17 @@ func (d *Differ) diffState(state model.ObjectState) (*Result, error) {
 
 	// Diff
 	for _, field := range diffFields {
-		difference := d.diffValues(
+		reporter := d.diffValues(
 			state.Key(),
 			remoteValues.FieldByName(field.StructField.Name).Interface(),
 			localValues.FieldByName(field.StructField.Name).Interface(),
 		)
-		if len(difference) > 0 {
-			result.ChangedFields = append(result.ChangedFields, field.JsonName())
-			result.Differences[field.JsonName()] = difference
+		diffStr := reporter.String()
+		if len(diffStr) > 0 {
+			result.ChangedFields.
+				Add(field.JsonName()).
+				SetDiff(diffStr).
+				AddPath(reporter.Paths()...)
 		}
 	}
 
@@ -152,16 +153,15 @@ func (d *Differ) diffState(state model.ObjectState) (*Result, error) {
 	return result, nil
 }
 
-func (d *Differ) diffValues(objectKey model.Key, remoteValue, localValue interface{}) string {
+func (d *Differ) diffValues(objectKey model.Key, remoteValue, localValue interface{}) *Reporter {
 	reporter := newReporter(objectKey, d.state.State)
-	options := d.newOptions()
-	options = append(options, cmp.Reporter(&reporter))
-	cmp.Diff(remoteValue, localValue, options)
-	return reporter.String()
+	cmp.Diff(remoteValue, localValue, d.newOptions(reporter))
+	return reporter
 }
 
-func (d *Differ) newOptions() cmp.Options {
+func (d *Differ) newOptions(reporter *Reporter) cmp.Options {
 	return cmp.Options{
+		cmp.Reporter(reporter),
 		// Compare Config/ConfigRow configuration content ("orderedmap" type) as map (keys order doesn't matter)
 		cmp.Transformer("orderedmap", utils.OrderedMapToMap),
 		// Compare strings by line by line

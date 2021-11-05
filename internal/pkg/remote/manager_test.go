@@ -81,7 +81,7 @@ func TestBeforeRemoteSaveMapper(t *testing.T) {
 	)
 
 	// Save object
-	uow.SaveObject(configState, configState.Local, nil)
+	uow.SaveObject(configState, configState.Local, model.ChangedFields{})
 	assert.NoError(t, uow.Invoke())
 
 	// Modified version was sent to the API

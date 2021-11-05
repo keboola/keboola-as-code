@@ -2,7 +2,6 @@ package plan
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -25,8 +24,8 @@ type DiffAction struct {
 
 func (a *DiffAction) String() string {
 	msg := a.markString() + " " + a.Kind().Abbr + " " + a.Path()
-	if len(a.ChangedFields) > 0 {
-		msg += " | changed: " + strings.Join(a.ChangedFields, ", ")
+	if !a.ChangedFields.IsEmpty() {
+		msg += " | changed: " + a.ChangedFields.String()
 	}
 	return msg
 }

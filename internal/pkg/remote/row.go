@@ -31,7 +31,7 @@ func (a *StorageApi) CreateConfigRow(row *model.ConfigRow) (*model.ConfigRow, er
 	return nil, response.Err()
 }
 
-func (a *StorageApi) UpdateConfigRow(row *model.ConfigRow, changed []string) (*model.ConfigRow, error) {
+func (a *StorageApi) UpdateConfigRow(row *model.ConfigRow, changed model.ChangedFields) (*model.ConfigRow, error) {
 	request, err := a.UpdateConfigRowRequest(row, changed)
 	if err != nil {
 		return nil, err
@@ -85,7 +85,7 @@ func (a *StorageApi) CreateConfigRowRequest(row *model.ConfigRow) (*client.Reque
 }
 
 // UpdateConfigRowRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/manage-configuration-rows/update-row-for-development-branch
-func (a *StorageApi) UpdateConfigRowRequest(row *model.ConfigRow, changed []string) (*client.Request, error) {
+func (a *StorageApi) UpdateConfigRowRequest(row *model.ConfigRow, changed model.ChangedFields) (*client.Request, error) {
 	// Id is required
 	if row.Id == "" {
 		panic("config row id must be set")

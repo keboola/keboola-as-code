@@ -22,7 +22,7 @@ func (a *StorageApi) CreateRequest(object interface{}) (*client.Request, error) 
 	}
 }
 
-func (a *StorageApi) UpdateRequest(object interface{}, changed []string) (*client.Request, error) {
+func (a *StorageApi) UpdateRequest(object interface{}, changed model.ChangedFields) (*client.Request, error) {
 	switch v := object.(type) {
 	case *model.Branch:
 		return a.UpdateBranchRequest(v, changed), nil
