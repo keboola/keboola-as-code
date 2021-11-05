@@ -226,7 +226,7 @@ func (u *UnitOfWork) Invoke() error {
 	// Generate local path if needed
 	pathsUpdater := u.localManager.NewPathsGenerator(false)
 	for _, objectState := range u.newObjectStates {
-		if !objectState.HasLocalState() {
+		if objectState.GetObjectPath() == "" {
 			if err := pathsUpdater.Update(objectState); err != nil {
 				u.errors.Append(err)
 			}
