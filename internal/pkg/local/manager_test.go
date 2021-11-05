@@ -114,7 +114,7 @@ func TestBeforeLocalSaveMapper(t *testing.T) {
 	}
 
 	// Save object
-	uow.SaveObject(configState, configState.Remote)
+	uow.SaveObject(configState, configState.Remote, model.ChangedFields{})
 	assert.NoError(t, uow.Invoke())
 
 	// File content has been mapped

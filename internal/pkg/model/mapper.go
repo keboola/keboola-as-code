@@ -25,6 +25,7 @@ type LocalLoadRecipe struct {
 
 // LocalSaveRecipe - all items related to the object, when saving to local fs.
 type LocalSaveRecipe struct {
+	ChangedFields ChangedFields
 	Record                             // manifest record, eg *ConfigManifest
 	Object        Object               // object, eg. Config
 	Metadata      *filesystem.JsonFile // meta.json

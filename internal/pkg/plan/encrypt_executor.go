@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/encryption"
 	"github.com/keboola/keboola-as-code/internal/pkg/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -83,6 +84,6 @@ func (e *encryptExecutor) encryptRequest(action *EncryptAction) *client.Request 
 			}
 
 			// Save changes
-			e.uow.SaveObject(action.ObjectState, action.object)
+			e.uow.SaveObject(action.ObjectState, action.object, model.NewChangedFields("configuration"))
 		})
 }

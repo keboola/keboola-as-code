@@ -128,7 +128,7 @@ func (u *UnitOfWork) CreateObject(key model.Key, name string) {
 	}
 
 	// Save
-	u.SaveObject(objectState, object)
+	u.SaveObject(objectState, object, model.ChangedFields{})
 }
 
 func (u *UnitOfWork) LoadObject(record model.Record) {
@@ -173,11 +173,11 @@ func (u *UnitOfWork) LoadObject(record model.Record) {
 		})
 }
 
-func (u *UnitOfWork) SaveObject(objectState model.ObjectState, object model.Object) {
+func (u *UnitOfWork) SaveObject(objectState model.ObjectState, object model.Object, changedFields model.ChangedFields) {
 	u.
 		workersFor(objectState.Level()).
 		AddWorker(func() error {
-			if err := u.Manager.saveObject(objectState.Manifest(), object); err != nil {
+			if err := u.Manager.saveObject(objectState.Manifest(), object, changedFields); err != nil {
 				return err
 			}
 			objectState.SetLocalState(object)
