@@ -52,6 +52,49 @@ type Relation interface {
 
 type Relations []Relation
 
+func (v Relations) ParentKey(source Key) (Key, error) {
+	var parents []Key
+	for _, r := range v {
+		if parent, err := r.ParentKey(source); err != nil {
+			return nil, err
+		} else if parent != nil {
+			parents = append(parents, parent)
+		}
+	}
+
+	// Found parent defined via Relations
+	if len(parents) == 1 {
+		return parents[0], nil
+	}
+
+	// Multiple parents are forbidden
+	if len(parents) > 1 {
+		return nil, fmt.Errorf(`unexpected state: multiple parents defined by "relations" in %s`, source.Desc())
+	}
+
+	return nil, nil
+}
+
+func (v Relations) OnlyStoredInApi() Relations {
+	var out Relations
+	for _, relation := range v {
+		if relation.IsDefinedInApi() {
+			out = append(out, relation)
+		}
+	}
+	return out
+}
+
+func (v Relations) OnlyStoredInManifest() Relations {
+	var out Relations
+	for _, relation := range v {
+		if relation.IsDefinedInManifest() {
+			out = append(out, relation)
+		}
+	}
+	return out
+}
+
 func (v Relations) Equal(v2 Relations) bool {
 	onlyIn1, onlyIn2 := v.Diff(v2)
 	return onlyIn1 == nil && onlyIn2 == nil
@@ -208,47 +251,4 @@ func newEmptyRelation(t RelationType) (Relation, error) {
 	default:
 		return nil, fmt.Errorf(`unexpected RelationType "%s"`, t)
 	}
-}
-
-func (v Relations) ParentKey(source Key) (Key, error) {
-	var parents []Key
-	for _, r := range v {
-		if parent, err := r.ParentKey(source); err != nil {
-			return nil, err
-		} else if parent != nil {
-			parents = append(parents, parent)
-		}
-	}
-
-	// Found parent defined via Relations
-	if len(parents) == 1 {
-		return parents[0], nil
-	}
-
-	// Multiple parents are forbidden
-	if len(parents) > 1 {
-		return nil, fmt.Errorf(`unexpected state: multiple parents defined by "relations" in %s`, source.Desc())
-	}
-
-	return nil, nil
-}
-
-func (v Relations) OnlyStoredInApi() Relations {
-	var out Relations
-	for _, relation := range v {
-		if relation.IsDefinedInApi() {
-			out = append(out, relation)
-		}
-	}
-	return out
-}
-
-func (v Relations) OnlyStoredInManifest() Relations {
-	var out Relations
-	for _, relation := range v {
-		if relation.IsDefinedInManifest() {
-			out = append(out, relation)
-		}
-	}
-	return out
 }
