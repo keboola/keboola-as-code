@@ -1,0 +1,9 @@
+Plan for "pull" operation:
+  CH C my-branch/extractor/ex-generic-v2/with-variables-1 | changed: Relations
+  CH C my-branch/other/keboola.variables/variables | changed: Relations
+  CH R my-branch/other/keboola.variables/variables/values/default | changed: Relations
+Plan for "rename" operation:
+  - my-branch -> main
+  - main/{other/keboola.variables/variables -> extractor/ex-generic-v2/with-variables-1/variables}
+Rename done.
+Pull done.
