@@ -16,10 +16,10 @@ type Pair struct {
 func ConvertByJson(input, target interface{}) error {
 	data, err := json.Encode(input, false)
 	if err != nil {
-		return err
+		return fmt.Errorf(`encode error: %w`, err)
 	}
 	if err := json.Decode(data, target); err != nil {
-		return err
+		return fmt.Errorf(`decode error: %w`, err)
 	}
 	return nil
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -29,7 +30,7 @@ func TestLocalSaveModel(t *testing.T) {
 	assert.True(t, found)
 
 	// Save
-	assert.NoError(t, manager.saveObject(record, source))
+	assert.NoError(t, manager.saveObject(record, source, model.ChangedFields{}))
 
 	// Meta and config files are saved
 	expectedMeta := `{

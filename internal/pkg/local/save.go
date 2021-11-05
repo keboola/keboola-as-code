@@ -18,14 +18,14 @@ type modelWriter struct {
 }
 
 // saveObject to manifest and filesystem.
-func (m *Manager) saveObject(record model.Record, object model.Object) error {
+func (m *Manager) saveObject(record model.Record, object model.Object, changedFields model.ChangedFields) error {
 	if record.Key() != object.Key() {
 		panic(fmt.Errorf(`record "%T" and object "%T" type mismatch`, record, object))
 	}
 
 	w := modelWriter{
 		Manager:         m,
-		LocalSaveRecipe: &model.LocalSaveRecipe{Object: object, Record: record},
+		LocalSaveRecipe: &model.LocalSaveRecipe{ChangedFields: changedFields, Object: object, Record: record},
 		backups:         make(map[string]string),
 		errors:          utils.NewMultiError(),
 	}

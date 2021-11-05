@@ -166,9 +166,9 @@ func (v *Relations) UnmarshalJSON(data []byte) error {
 			return err
 		}
 
-		// Validate, only owning side should be present in JSON
+		// Validate, only manifest side should be present in JSON
 		if !value.IsDefinedInManifest() {
-			return fmt.Errorf(`unexpected state: relation "%T" should not be present in JSON, it is not an owning side`, value)
+			return fmt.Errorf(`unexpected state: relation "%T" should not be present in JSON, it is not an manifest side`, value)
 		}
 
 		*v = append(*v, value)
@@ -179,9 +179,9 @@ func (v *Relations) UnmarshalJSON(data []byte) error {
 func (v Relations) MarshalJSON() ([]byte, error) {
 	var out []*orderedmap.OrderedMap
 	for _, relation := range v {
-		// Validate, only owning side should be serialized to JSON
+		// Validate, only manifest side should be serialized to JSON
 		if !relation.IsDefinedInManifest() {
-			return nil, fmt.Errorf(`unexpected state: relation "%T" should not be serialized to JSON, it is not an owning side`, relation)
+			return nil, fmt.Errorf(`unexpected state: relation "%T" should not be serialized to JSON, it is not an manifest side`, relation)
 		}
 
 		// Convert struct -> map

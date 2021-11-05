@@ -42,7 +42,7 @@ func TestRelationsMapperOnLoad(t *testing.T) {
 	key1 := fixtures.MockedKey{Id: "123"}
 	key2 := fixtures.MockedKey{Id: "456"}
 
-	// Owning side
+	// Manifest side
 	manifest1 := &fixtures.MockedRecord{MockedKey: key1}
 	object1 := &fixtures.MockedObject{
 		MockedKey: key1,
@@ -56,7 +56,7 @@ func TestRelationsMapperOnLoad(t *testing.T) {
 	assert.NoError(t, err)
 	objectState1.SetLocalState(object1)
 
-	// Other side
+	// API side
 	manifest2 := &fixtures.MockedRecord{MockedKey: key2}
 	object2 := &fixtures.MockedObject{
 		MockedKey: key2,
@@ -97,7 +97,7 @@ func TestRelationsMapperOnLoadOtherSideMissing(t *testing.T) {
 	key1 := fixtures.MockedKey{Id: "123"}
 	key2 := fixtures.MockedKey{Id: "456"}
 
-	// Owning side
+	// Manifest side
 	manifest1 := &fixtures.MockedRecord{MockedKey: key1}
 	object1 := &fixtures.MockedObject{
 		MockedKey: key1,
