@@ -9,7 +9,9 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -28,11 +30,13 @@ func TestRename(t *testing.T) {
 	plan := &RenamePlan{
 		actions: []*RenameAction{
 			{
+				Record:      &fixtures.MockedRecord{},
 				OldPath:     "foo1",
 				NewPath:     "bar1",
 				Description: "foo1 -> bar1",
 			},
 			{
+				Record:      &fixtures.MockedRecord{},
 				OldPath:     "foo2",
 				NewPath:     "bar2",
 				Description: "foo2 -> bar2",
@@ -41,7 +45,8 @@ func TestRename(t *testing.T) {
 	}
 
 	// Rename
-	executor := newRenameExecutor(logger, m, []string{}, plan)
+	state := model.NewState(logger, fs, model.NewComponentsMap(nil), model.SortByPath)
+	executor := newRenameExecutor(logger, m, state, plan)
 	warn, err := executor.invoke()
 	assert.Empty(t, warn)
 	assert.Empty(t, err)
@@ -79,21 +84,25 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 	plan := &RenamePlan{
 		actions: []*RenameAction{
 			{
+				Record:      &fixtures.MockedRecord{},
 				OldPath:     "foo1",
 				NewPath:     "bar1",
 				Description: "foo1 -> bar1",
 			},
 			{
+				Record:      &fixtures.MockedRecord{},
 				OldPath:     "foo2",
 				NewPath:     "bar2",
 				Description: "foo2 -> bar2",
 			},
 			{
+				Record:      &fixtures.MockedRecord{},
 				OldPath:     "missing3",
 				NewPath:     "missing4",
 				Description: "missing3 -> missing4",
 			},
 			{
+				Record:      &fixtures.MockedRecord{},
 				OldPath:     "foo5",
 				NewPath:     "bar5",
 				Description: "foo5 -> bar5",
@@ -102,7 +111,8 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 	}
 
 	// Rename
-	executor := newRenameExecutor(logger, m, []string{}, plan)
+	state := model.NewState(logger, fs, model.NewComponentsMap(nil), model.SortByPath)
+	executor := newRenameExecutor(logger, m, state, plan)
 	warn, err := executor.invoke()
 	assert.Empty(t, warn)
 	assert.NotNil(t, err)

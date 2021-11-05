@@ -28,6 +28,7 @@ type Record interface {
 	SetParentPath(string)       // set parent path
 	GetRelatedPaths() []string  // files related to the record, relative to the project dir, e.g. main/meta.json
 	AddRelatedPath(path string)
+	RenameRelatedPaths(oldPath, newPath string)
 	State() *RecordState
 	NewEmptyObject() Object
 	NewObjectState() ObjectState
@@ -139,6 +140,37 @@ func (p *Paths) AddRelatedPath(path string) {
 	}
 
 	p.RelatedPaths = append(p.RelatedPaths, relPath)
+}
+
+func (p *Paths) RenameRelatedPaths(oldPath, newPath string) {
+	dir := p.Path()
+	if !filesystem.IsFrom(oldPath, dir) {
+		panic(fmt.Errorf(`old "%s" is not from the dir "%s"`, oldPath, dir))
+	}
+	if !filesystem.IsFrom(newPath, dir) {
+		panic(fmt.Errorf(`new "%s" is not from the dir "%s"`, oldPath, dir))
+	}
+	oldRel, err := filesystem.Rel(dir, oldPath)
+	if err != nil {
+		panic(err)
+	}
+	newRel, err := filesystem.Rel(dir, newPath)
+	if err != nil {
+		panic(err)
+	}
+
+	// Rename all related paths that match old -> new
+	for i, path := range p.RelatedPaths {
+		if path == oldRel {
+			p.RelatedPaths[i] = newRel
+		} else if filesystem.IsFrom(path, oldRel) {
+			pathRel, err := filesystem.Rel(oldRel, path)
+			if err != nil {
+				panic(err)
+			}
+			p.RelatedPaths[i] = filesystem.Join(newRel, pathRel)
+		}
+	}
 }
 
 func (p *Paths) AbsolutePath(projectDir string) string {

@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 type RenamePlan struct {
@@ -34,6 +35,6 @@ func (p *RenamePlan) Log(writer *log.WriteCloser) {
 	}
 }
 
-func (p *RenamePlan) Invoke(logger *zap.SugaredLogger, manifest *manifest.Manifest, trackedPaths []string) (warns error, errs error) {
-	return newRenameExecutor(logger, manifest, trackedPaths, p).invoke()
+func (p *RenamePlan) Invoke(logger *zap.SugaredLogger, manifest *manifest.Manifest, state *model.State) (warns error, errs error) {
+	return newRenameExecutor(logger, manifest, state, p).invoke()
 }

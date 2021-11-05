@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -16,22 +17,22 @@ type renameExecutor struct {
 	logger        *zap.SugaredLogger
 	fs            filesystem.Fs
 	manifest      *manifest.Manifest
-	trackedPaths  []string
+	state         *model.State
 	errors        *utils.Error
 	warnings      *utils.Error
 	newPaths      []string
 	pathsToRemove []string
 }
 
-func newRenameExecutor(logger *zap.SugaredLogger, manifest *manifest.Manifest, trackedPaths []string, plan *RenamePlan) *renameExecutor {
+func newRenameExecutor(logger *zap.SugaredLogger, manifest *manifest.Manifest, state *model.State, plan *RenamePlan) *renameExecutor {
 	return &renameExecutor{
-		RenamePlan:   plan,
-		logger:       logger,
-		fs:           manifest.Fs(),
-		manifest:     manifest,
-		trackedPaths: trackedPaths,
-		errors:       utils.NewMultiError(),
-		warnings:     utils.NewMultiError(),
+		RenamePlan: plan,
+		logger:     logger,
+		fs:         manifest.Fs(),
+		manifest:   manifest,
+		state:      state,
+		errors:     utils.NewMultiError(),
+		warnings:   utils.NewMultiError(),
 	}
 }
 
@@ -51,10 +52,11 @@ func (e *renameExecutor) invoke() (warns error, errs error) {
 			e.errors.AppendWithPrefix(fmt.Sprintf(`cannot copy "%s"`, action.Description), err)
 		} else {
 			// Update manifest
-			if action.Record != nil {
-				if err := e.manifest.PersistRecord(action.Record); err != nil {
-					e.errors.AppendWithPrefix(fmt.Sprintf(`cannot persist "%s"`, action.Record.Desc()), err)
-				}
+			if err := e.manifest.PersistRecord(action.Record); err != nil {
+				e.errors.AppendWithPrefix(fmt.Sprintf(`cannot persist "%s"`, action.Record.Desc()), err)
+			}
+			if filesystem.IsFrom(action.NewPath, action.Record.Path()) {
+				action.Record.RenameRelatedPaths(action.OldPath, action.NewPath)
 			}
 
 			// Remove old path
@@ -82,9 +84,16 @@ func (e *renameExecutor) invoke() (warns error, errs error) {
 		e.logger.Info(`Error occurred, the rename operation was reverted.`)
 	}
 
+	// Reload paths state
+	if e.errors.Len() == 0 {
+		if err := e.state.ReloadPathsState(); err != nil {
+			e.errors.Append(err)
+		}
+	}
+
 	// Delete empty directories, eg. no extractor of a type left -> dir is empty
 	if e.errors.Len() == 0 {
-		if err := local.DeleteEmptyDirectories(e.fs, e.trackedPaths); err != nil {
+		if err := local.DeleteEmptyDirectories(e.fs, e.state.TrackedPaths()); err != nil {
 			e.errors.Append(err)
 		}
 	}
