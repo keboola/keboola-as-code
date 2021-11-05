@@ -291,7 +291,6 @@ func TestDiffRelations(t *testing.T) {
 			&fixtures.MockedApiSideRelation{
 				OtherSide: fixtures.MockedKey{Id: `001`},
 			},
-			// Ignored manifest side relation
 			&fixtures.MockedManifestSideRelation{
 				OtherSide: fixtures.MockedKey{Id: `foo`},
 			},
@@ -309,7 +308,6 @@ func TestDiffRelations(t *testing.T) {
 			&fixtures.MockedApiSideRelation{
 				OtherSide: fixtures.MockedKey{Id: `002`},
 			},
-			// Ignored manifest side relation
 			&fixtures.MockedManifestSideRelation{
 				OtherSide: fixtures.MockedKey{Id: `bar`},
 			},
@@ -329,7 +327,9 @@ func TestDiffRelations(t *testing.T) {
 	differences := differ.diffValues(objectState.Key(), rObject.Relations, lObject.Relations)
 	expected := `
   - api side relation "path/to/target"
+  - manifest side relation mocked key "foo"
   + api side relation mocked key "002"
+  + manifest side relation mocked key "bar"
 `
 	assert.Equal(t, strings.Trim(expected, "\n"), differences)
 }
