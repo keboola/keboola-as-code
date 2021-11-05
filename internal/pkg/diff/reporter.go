@@ -37,7 +37,9 @@ func (r *Reporter) Report(rs cmp.Result) {
 		pathStr := pathToString(r.path)
 		if len(pathStr) > 0 {
 			r.paths = append(r.paths, pathStr)
-			r.diffs = append(r.diffs, fmt.Sprintf("  \"%s\":", pathStr))
+			if !r.isPathHidden() {
+				r.diffs = append(r.diffs, fmt.Sprintf("  \"%s\":", pathStr))
+			}
 		}
 
 		// Format relations diff
@@ -86,6 +88,11 @@ func (r *Reporter) relationsDiff(vx, vy reflect.Value) bool {
 		return true
 	}
 	return false
+}
+
+func (r *Reporter) isPathHidden() bool {
+	// Hide InManifest/InKey paths from model.RelationsBySide
+	return r.path.Last().Type().String() == "model.Relations"
 }
 
 func (r *Reporter) relationToString(relation model.Relation) string {

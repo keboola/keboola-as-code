@@ -1,5 +1,4 @@
 Plan for "pull" operation:
-  CH C my-branch/extractor/ex-generic-v2/with-variables-1 | changed: relations
   CH C my-branch/other/keboola.variables/variables | changed: relations
   CH R my-branch/other/keboola.variables/variables/values/default | changed: relations
 Plan for "rename" operation:
