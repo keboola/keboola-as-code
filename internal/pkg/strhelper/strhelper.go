@@ -61,3 +61,7 @@ func MatchWords(value string, wordsStr string) bool {
 
 	return true
 }
+
+func FirstLower(str string) string {
+	return strings.ToLower(string(str[0])) + str[1:]
+}

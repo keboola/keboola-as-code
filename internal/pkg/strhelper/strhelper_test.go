@@ -82,3 +82,10 @@ func TestFilterByWords(t *testing.T) {
 	assert.False(t, MatchWords(`bar`, `foo bar`))
 	assert.False(t, MatchWords(`bar foo`, `  foo  bar baz`))
 }
+
+func TestFirstLower(t *testing.T) {
+	t.Parallel()
+	assert.Equal(t, "foo", FirstLower("foo"))
+	assert.Equal(t, "fOO", FirstLower("FOO"))
+	assert.Equal(t, "foo", FirstLower("Foo"))
+}
