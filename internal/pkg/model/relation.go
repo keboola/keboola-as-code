@@ -147,18 +147,18 @@ func (v *Relations) UnmarshalJSON(data []byte) error {
 		// Get type value
 		typeRaw, ok := obj["type"]
 		if !ok {
-			return fmt.Errorf(`missing "type" field`)
+			return fmt.Errorf(`missing "type" field in relation definition`)
 		}
 
 		typeStr, ok := typeRaw.(string)
 		if !ok {
-			return fmt.Errorf(`field "type" must be string, "%T" given`, typeStr)
+			return fmt.Errorf(`field "type" must be string in relation definition, "%T" given`, typeStr)
 		}
 
 		// Create instance from type
 		value, err := newEmptyRelation(RelationType(typeStr))
 		if err != nil {
-			return fmt.Errorf(`missing "type" field`)
+			return fmt.Errorf(`invalid "type" value "%s" in relation definition`, typeStr)
 		}
 
 		// Unmarshal to concrete sub-type of the Relation
@@ -201,6 +201,10 @@ func newEmptyRelation(t RelationType) (Relation, error) {
 		return &VariablesForRelation{}, nil
 	case VariablesFromRelType:
 		return &VariablesFromRelation{}, nil
+	case VariablesValuesForRelType:
+		return &VariablesValuesForRelation{}, nil
+	case VariablesValuesFromRelType:
+		return &VariablesValuesFromRelation{}, nil
 	default:
 		return nil, fmt.Errorf(`unexpected RelationType "%s"`, t)
 	}
