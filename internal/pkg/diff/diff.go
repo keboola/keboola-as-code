@@ -10,6 +10,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/strhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -138,7 +139,7 @@ func (d *Differ) diffState(state model.ObjectState) (*Result, error) {
 		diffStr := reporter.String()
 		if len(diffStr) > 0 {
 			result.ChangedFields.
-				Add(field.JsonName()).
+				Add(strhelper.FirstLower(field.JsonName())).
 				SetDiff(diffStr).
 				AddPath(reporter.Paths()...)
 		}
