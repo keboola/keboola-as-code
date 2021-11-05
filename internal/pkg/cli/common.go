@@ -182,7 +182,7 @@ func Rename(projectState *state.State, logger *zap.SugaredLogger, logEmpty, dryR
 	}
 
 	// Invoke
-	if warn, err := rename.Invoke(logger, projectState.Manifest()); err != nil {
+	if warn, err := rename.Invoke(logger, projectState.Manifest(), projectState.TrackedPaths()); err != nil {
 		return utils.PrefixError(`cannot rename objects`, err)
 	} else if warn != nil {
 		logger.Warn(`cannot finish objects renaming`, err)

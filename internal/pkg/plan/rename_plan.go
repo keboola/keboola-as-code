@@ -34,6 +34,6 @@ func (p *RenamePlan) Log(writer *log.WriteCloser) {
 	}
 }
 
-func (p *RenamePlan) Invoke(logger *zap.SugaredLogger, manifest *manifest.Manifest) (warns error, errs error) {
-	return newRenameExecutor(logger, manifest, p).invoke()
+func (p *RenamePlan) Invoke(logger *zap.SugaredLogger, manifest *manifest.Manifest, trackedPaths []string) (warns error, errs error) {
+	return newRenameExecutor(logger, manifest, trackedPaths, p).invoke()
 }
