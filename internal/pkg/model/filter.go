@@ -10,9 +10,8 @@ import (
 )
 
 const (
-	AllBranchesDef       = "__all__"
-	MainBranchDef        = "__main__"
-	SchedulerComponentId = "keboola.scheduler"
+	AllBranchesDef = "__all__"
+	MainBranchDef  = "__main__"
 )
 
 type Filter struct {

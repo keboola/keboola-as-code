@@ -17,13 +17,13 @@ func TestVariablesMapBeforeRemoteSave(t *testing.T) {
 	variablesConfigId := `123456`
 	valuesConfigRowId := `456789`
 	apiObject := &model.Config{Content: utils.NewOrderedMap()}
-	internalObject := apiObject.Clone().(*model.Config)
-	internalObject.AddRelation(&model.VariablesFromRelation{
+	apiObject.AddRelation(&model.VariablesFromRelation{
 		VariablesId: variablesConfigId,
 	})
-	internalObject.AddRelation(&model.VariablesValuesFromRelation{
+	apiObject.AddRelation(&model.VariablesValuesFromRelation{
 		VariablesValuesId: valuesConfigRowId,
 	})
+	internalObject := apiObject.Clone().(*model.Config)
 	recipe := &model.RemoteSaveRecipe{
 		ApiObject:      apiObject,
 		InternalObject: internalObject,
@@ -31,7 +31,7 @@ func TestVariablesMapBeforeRemoteSave(t *testing.T) {
 	}
 
 	// Invoke
-	assert.Empty(t, apiObject.Relations)
+	assert.NotEmpty(t, apiObject.Relations)
 	assert.NotEmpty(t, internalObject.Relations)
 	assert.NoError(t, NewMapper(context).MapBeforeRemoteSave(recipe))
 

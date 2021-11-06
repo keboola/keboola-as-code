@@ -1,0 +1,17 @@
+{
+  "componentId": "keboola.scheduler",
+  "name": "scheduler",
+  "configuration": {
+    "schedule": {
+      "cronTab": "*/10 * * * *",
+      "timezone": "UTC",
+      "state": "disabled"
+    },
+    "target": {
+      "componentId": "%%TEST_SCHEDULER_TARGET_COMPONENT_ID%%",
+      "configurationId": "%%TEST_SCHEDULER_TARGET_CONFIG_ID%%",
+      "mode": "run"
+    }
+  },
+  "rows": null
+}

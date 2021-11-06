@@ -17,6 +17,7 @@ const (
 	VariablesFromRelType       = RelationType(`variablesFrom`)
 	VariablesValuesForRelType  = RelationType(`variablesValuesFor`)
 	VariablesValuesFromRelType = RelationType(`variablesValuesFrom`)
+	SchedulerForRelType        = RelationType(`schedulerFor`)
 )
 
 // OneToXRelations gets relations that can be defined on an object only once.
@@ -26,6 +27,7 @@ func OneToXRelations() []RelationType {
 		VariablesFromRelType,
 		VariablesValuesForRelType,
 		VariablesValuesFromRelType,
+		SchedulerForRelType,
 	}
 }
 
@@ -285,6 +287,8 @@ func newEmptyRelation(t RelationType) (Relation, error) {
 		return &VariablesValuesForRelation{}, nil
 	case VariablesValuesFromRelType:
 		return &VariablesValuesFromRelation{}, nil
+	case SchedulerForRelType:
+		return &SchedulerForRelation{}, nil
 	default:
 		return nil, fmt.Errorf(`unexpected RelationType "%s"`, t)
 	}
