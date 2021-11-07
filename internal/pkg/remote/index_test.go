@@ -13,7 +13,7 @@ import (
 func TestListAllComponents(t *testing.T) {
 	t.Parallel()
 	project := testproject.GetTestProject(t, env.Empty())
-	api := project.Api()
+	api := project.StorageApi()
 
 	components, err := api.ListAllComponents()
 	assert.NoError(t, err)
@@ -23,7 +23,7 @@ func TestListAllComponents(t *testing.T) {
 func TestNewComponentList(t *testing.T) {
 	t.Parallel()
 	project := testproject.GetTestProject(t, env.Empty())
-	api := project.Api()
+	api := project.StorageApi()
 
 	components, err := api.NewComponentList()
 	assert.NoError(t, err)

@@ -8,10 +8,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func (a *StorageApi) ListComponents(branchId int) (*[]*model.ComponentWithConfigs, error) {
+func (a *StorageApi) ListComponents(branchId int) ([]*model.ComponentWithConfigs, error) {
 	response := a.ListComponentsRequest(branchId).Send().Response
 	if response.HasResult() {
-		return response.Result().(*[]*model.ComponentWithConfigs), nil
+		return *response.Result().(*[]*model.ComponentWithConfigs), nil
 	}
 	return nil, response.Err()
 }

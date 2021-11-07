@@ -14,7 +14,7 @@ import (
 func TestGenerateNewId(t *testing.T) {
 	t.Parallel()
 	project := testproject.GetTestProject(t, env.Empty())
-	api := project.Api()
+	api := project.StorageApi()
 
 	ticket, err := api.GenerateNewId()
 	assert.NoError(t, err)
@@ -25,7 +25,7 @@ func TestGenerateNewId(t *testing.T) {
 func TestTicketProvider(t *testing.T) {
 	t.Parallel()
 	project := testproject.GetTestProject(t, env.Empty())
-	api := project.Api()
+	api := project.StorageApi()
 
 	tickets := api.NewTicketProvider()
 	values := make([]string, 0)

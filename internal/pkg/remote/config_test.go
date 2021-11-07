@@ -17,7 +17,7 @@ func TestConfigApiCalls(t *testing.T) {
 	t.Parallel()
 	project := testproject.GetTestProject(t, env.Empty())
 	project.SetState("empty.json")
-	api := project.Api()
+	api := project.StorageApi()
 
 	// Get default branch
 	branch, err := api.GetDefaultBranch()
@@ -28,7 +28,7 @@ func TestConfigApiCalls(t *testing.T) {
 	components, err := api.ListComponents(branch.Id)
 	assert.NotNil(t, components)
 	assert.NoError(t, err)
-	assert.Len(t, *components, 0)
+	assert.Len(t, components, 0)
 
 	// Create config with rows
 	row1 := &model.ConfigRow{
@@ -110,7 +110,7 @@ func TestConfigApiCalls(t *testing.T) {
 	components, err = api.ListComponents(branch.Id)
 	assert.NotNil(t, components)
 	assert.NoError(t, err)
-	assert.Len(t, *components, 0)
+	assert.Len(t, components, 0)
 }
 
 func expectedComponentsConfigTest() string {

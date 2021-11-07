@@ -17,7 +17,7 @@ func TestConfigRowApiCalls(t *testing.T) {
 	t.Parallel()
 	project := testproject.GetTestProject(t, env.Empty())
 	project.SetState("empty.json")
-	api := project.Api()
+	api := project.StorageApi()
 
 	// Get default branch
 	branch, err := api.GetDefaultBranch()
