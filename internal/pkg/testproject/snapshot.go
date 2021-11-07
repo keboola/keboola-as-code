@@ -2,6 +2,7 @@ package testproject
 
 import (
 	"strings"
+	"sync"
 
 	"golang.org/x/sync/errgroup"
 
@@ -50,6 +51,8 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 }
 
 func (p *Project) snapshot(snapshot *fixtures.ProjectSnapshot, configs map[string]*fixtures.Config) error {
+	lock := &sync.Mutex{}
+
 	// Load objects from Storage API
 	// Branches
 	pool := p.StorageApi().NewPool()
@@ -79,7 +82,10 @@ func (p *Project) snapshot(snapshot *fixtures.ProjectSnapshot, configs map[strin
 								c.ChangeDescription = normalizeChangeDesc(config.ChangeDescription)
 								c.Content = config.Content
 								branchWithConfigs.Configs = append(branchWithConfigs.Configs, c)
+
+								lock.Lock()
 								configs[config.Key().String()] = c
+								lock.Unlock()
 
 								// Rows
 								for _, row := range config.Rows {

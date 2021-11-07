@@ -20,7 +20,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
-	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
@@ -274,8 +273,8 @@ func AssertExpectations(
 	expectedStatePath := "expected-state.json"
 	if testDirFs.IsFile(expectedStatePath) {
 		// Read expected state
-		expectedSnapshot := &fixtures.ProjectSnapshot{}
-		if err := testDirFs.ReadJsonFileTo(expectedStatePath, ``, expectedSnapshot); err != nil {
+		expectedSnapshot, err := testDirFs.ReadFile(expectedStatePath, ``)
+		if err != nil {
 			assert.FailNow(t, err.Error())
 		}
 
@@ -294,7 +293,7 @@ func AssertExpectations(
 		// Compare expected and actual state
 		testhelper.AssertWildcards(
 			t,
-			json.MustEncodeString(expectedSnapshot, true),
+			testhelper.ReplaceEnvsString(expectedSnapshot.Content, envProvider),
 			json.MustEncodeString(actualSnapshot, true),
 			`unexpected project state, compare "expected-state.json" from test and "actual-state.json" from ".out" dir`,
 		)

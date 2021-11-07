@@ -42,7 +42,7 @@ type Config struct {
 	ComponentId       string                 `json:"componentId" validate:"required"`
 	Name              string                 `json:"name" validate:"required"`
 	Description       string                 `json:"description"`
-	ChangeDescription string                 `json:"changeDescription"`
+	ChangeDescription string                 `json:"changeDescription,omitempty"`
 	Content           *orderedmap.OrderedMap `json:"configuration"`
 	Rows              []*ConfigRow           `json:"rows"`
 }
@@ -50,7 +50,7 @@ type Config struct {
 type ConfigRow struct {
 	Name              string                 `json:"name"`
 	Description       string                 `json:"description"`
-	ChangeDescription string                 `json:"changeDescription"`
+	ChangeDescription string                 `json:"changeDescription,omitempty"`
 	IsDisabled        bool                   `json:"isDisabled"`
 	Content           *orderedmap.OrderedMap `json:"configuration"`
 }
