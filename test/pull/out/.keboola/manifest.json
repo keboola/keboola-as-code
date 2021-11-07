@@ -109,10 +109,8 @@
       "path": "variables",
       "relations": [
         {
-          "target": {
-            "componentId": "keboola.python-transformation-v2",
-            "id": "%%TEST_BRANCH_BAR_CONFIG_TRANSFORMATION_WITH_SHARED_CODE_ID%%"
-          },
+          "componentId": "keboola.python-transformation-v2",
+          "id": "%%TEST_BRANCH_BAR_CONFIG_TRANSFORMATION_WITH_SHARED_CODE_ID%%",
           "type": "variablesFor"
         }
       ],
@@ -122,10 +120,6 @@
           "path": "values/default",
           "relations": [
             {
-              "target": {
-                "componentId": "keboola.python-transformation-v2",
-                "id": "%%TEST_BRANCH_BAR_CONFIG_TRANSFORMATION_WITH_SHARED_CODE_ID%%"
-              },
               "type": "variablesValuesFor"
             }
           ]

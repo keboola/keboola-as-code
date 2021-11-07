@@ -276,10 +276,6 @@ func (r *MockedManifestSideRelation) ParentKey(_ model.Key) (model.Key, error) {
 	return nil, nil
 }
 
-func (r *MockedManifestSideRelation) OtherSideKey(_ model.Key) model.Key {
-	return r.OtherSide
-}
-
 func (r *MockedManifestSideRelation) IsDefinedInManifest() bool {
 	return true
 }
@@ -288,13 +284,11 @@ func (r *MockedManifestSideRelation) IsDefinedInApi() bool {
 	return false
 }
 
-func (r *MockedManifestSideRelation) NewOtherSideRelation(owner model.Key) model.Relation {
+func (r *MockedManifestSideRelation) NewOtherSideRelation(relationDefinedOn model.Object, _ *model.StateObjects) (model.Key, model.Relation, error) {
 	if r.OtherSide != nil {
-		return &MockedApiSideRelation{
-			OtherSide: owner,
-		}
+		return r.OtherSide, &MockedApiSideRelation{OtherSide: relationDefinedOn.Key()}, nil
 	}
-	return nil
+	return nil, nil, nil
 }
 
 func (r *MockedApiSideRelation) Type() model.RelationType {
@@ -325,11 +319,9 @@ func (r *MockedApiSideRelation) IsDefinedInApi() bool {
 	return true
 }
 
-func (r *MockedApiSideRelation) NewOtherSideRelation(owner model.Key) model.Relation {
+func (r *MockedApiSideRelation) NewOtherSideRelation(relationDefinedOn model.Object, _ *model.StateObjects) (model.Key, model.Relation, error) {
 	if r.OtherSide != nil {
-		return &MockedManifestSideRelation{
-			OtherSide: owner,
-		}
+		return r.OtherSide, &MockedManifestSideRelation{OtherSide: relationDefinedOn.Key()}, nil
 	}
-	return nil
+	return nil, nil, nil
 }

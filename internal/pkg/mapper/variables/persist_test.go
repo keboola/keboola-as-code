@@ -37,10 +37,8 @@ func TestVariablesMapBeforePersist(t *testing.T) {
 	// Relation has been created
 	assert.Equal(t, model.Relations{
 		&model.VariablesForRelation{
-			Target: model.ConfigKeySameBranch{
-				ComponentId: `foo.bar`,
-				Id:          `345`,
-			},
+			ComponentId: `foo.bar`,
+			Id:          `345`,
 		},
 	}, configManifest.Relations)
 }
@@ -86,12 +84,7 @@ func TestVariablesValuesPersistDefaultInName(t *testing.T) {
 
 	// Row 2 has relation -> contains default variables values, because it has "default" in the name
 	expectedRelation := model.Relations{
-		&model.VariablesValuesForRelation{
-			Target: model.ConfigKeySameBranch{
-				ComponentId: `foo.bar`,
-				Id:          `789`,
-			},
-		},
+		&model.VariablesValuesForRelation{},
 	}
 	assert.Empty(t, row1.Local.Relations)
 	assert.Empty(t, row1.ConfigRowManifest.Relations)
@@ -139,12 +132,7 @@ func TestVariablesValuesPersistFirstRowIsDefault(t *testing.T) {
 
 	// Row1 has relation -> contains default variables values, because it is first
 	expectedRelation := model.Relations{
-		&model.VariablesValuesForRelation{
-			Target: model.ConfigKeySameBranch{
-				ComponentId: `foo.bar`,
-				Id:          `789`,
-			},
-		},
+		&model.VariablesValuesForRelation{},
 	}
 	assert.Equal(t, expectedRelation, row1.Local.Relations)
 	assert.Equal(t, expectedRelation, row1.ConfigRowManifest.Relations)
@@ -156,11 +144,6 @@ func TestVariablesValuesPersistFirstRowIsDefault(t *testing.T) {
 
 func createTestObjectForPersist(t *testing.T, state *model.State) {
 	t.Helper()
-
-	targetConfig := model.ConfigKeySameBranch{
-		ComponentId: `foo.bar`,
-		Id:          `789`,
-	}
 
 	configKey := model.ConfigKey{
 		BranchId:    123,
@@ -188,7 +171,8 @@ func createTestObjectForPersist(t *testing.T, state *model.State) {
 
 	configRelations := model.Relations{
 		&model.VariablesForRelation{
-			Target: targetConfig,
+			ComponentId: `foo.bar`,
+			Id:          `789`,
 		},
 	}
 

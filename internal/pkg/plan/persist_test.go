@@ -429,19 +429,12 @@ func TestPersistVariables(t *testing.T) {
 
 	expectedConfigRelations := model.Relations{
 		&model.VariablesForRelation{
-			Target: model.ConfigKeySameBranch{
-				ComponentId: `ex-generic-v2`,
-				Id:          `456`,
-			},
+			ComponentId: `ex-generic-v2`,
+			Id:          `456`,
 		},
 	}
 	expectedRowRelations := model.Relations{
-		&model.VariablesValuesForRelation{
-			Target: model.ConfigKeySameBranch{
-				ComponentId: `ex-generic-v2`,
-				Id:          `456`,
-			},
-		},
+		&model.VariablesValuesForRelation{},
 	}
 
 	tc := testCase{

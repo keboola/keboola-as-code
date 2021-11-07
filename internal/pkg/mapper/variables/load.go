@@ -32,10 +32,7 @@ func (m *variablesMapper) loadVariables(apiObject, internalObject *model.Config)
 
 	// Create relation
 	internalObject.AddRelation(&model.VariablesFromRelation{
-		Source: model.ConfigKeySameBranch{
-			ComponentId: model.VariablesComponentId,
-			Id:          variablesId,
-		},
+		VariablesId: variablesId,
 	})
 
 	// Remove variables ID from configuration content
@@ -60,15 +57,10 @@ func (m *variablesMapper) loadVariablesValues(apiObject, internalObject *model.C
 	if len(variablesRelations) != 1 {
 		return
 	}
-	variablesRelation := variablesRelations[0].(*model.VariablesFromRelation)
 
 	// Create relation
 	internalObject.AddRelation(&model.VariablesValuesFromRelation{
-		Source: model.ConfigRowKeySameBranch{
-			ComponentId: variablesRelation.Source.ComponentId,
-			ConfigId:    variablesRelation.Source.Id,
-			Id:          valuesId,
-		},
+		VariablesValuesId: valuesId,
 	})
 
 	// Remove variables ID from configuration content

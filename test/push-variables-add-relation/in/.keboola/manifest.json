@@ -39,10 +39,8 @@
       "path": "variables",
       "relations": [
         {
-          "target": {
-            "componentId": "ex-generic-v2",
-            "id": "%%TEST_BRANCH_MAIN_CONFIG_EMPTY_ID%%"
-          },
+          "componentId": "ex-generic-v2",
+          "id": "%%TEST_BRANCH_MAIN_CONFIG_EMPTY_ID%%",
           "type": "variablesFor"
         }
       ],
@@ -52,10 +50,6 @@
           "path": "values/default",
           "relations": [
             {
-              "target": {
-                "componentId": "ex-generic-v2",
-                "id": "%%TEST_BRANCH_MAIN_CONFIG_EMPTY_ID%%"
-              },
               "type": "variablesValuesFor"
             }
           ]

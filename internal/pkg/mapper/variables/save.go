@@ -24,7 +24,7 @@ func (m *variablesMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) er
 
 	// Save variables_values_id if variables are present
 	if variablesRelation != nil {
-		if err := m.saveVariablesValues(apiObject, internalObject, recipe, variablesRelation); err != nil {
+		if err := m.saveVariablesValues(apiObject, internalObject, recipe); err != nil {
 			errors.Append(err)
 		}
 	}
@@ -44,14 +44,14 @@ func (m *variablesMapper) saveVariables(apiObject, internalObject *model.Config,
 	relation := relationRaw.(*model.VariablesFromRelation)
 
 	// Set variables ID
-	apiObject.Content.Set(model.VariablesIdContentKey, relation.Source.Id)
+	apiObject.Content.Set(model.VariablesIdContentKey, relation.VariablesId)
 
 	// Delete relation
 	apiObject.Relations.RemoveByType(relType)
 	return relation, nil
 }
 
-func (m *variablesMapper) saveVariablesValues(apiObject, internalObject *model.Config, recipe *model.RemoteSaveRecipe, variablesRelation *model.VariablesFromRelation) error {
+func (m *variablesMapper) saveVariablesValues(apiObject, internalObject *model.Config, recipe *model.RemoteSaveRecipe) error {
 	// Get relation
 	relType := model.VariablesValuesFromRelType
 	relationRaw, err := getOneRelationByType(internalObject.Relations, relType, recipe.Manifest.Desc())
@@ -62,20 +62,8 @@ func (m *variablesMapper) saveVariablesValues(apiObject, internalObject *model.C
 	}
 	relation := relationRaw.(*model.VariablesValuesFromRelation)
 
-	// Check variables and values are from same config
-	variablesConfig := relation.Source.ConfigKey(internalObject.BranchKey())
-	valuesConfig := variablesRelation.Source.ConfigKey(internalObject.BranchKey())
-	if variablesConfig != valuesConfig {
-		return fmt.Errorf(
-			`unexpected relations in %s: variables (%s) and values (%s) configs must be same`,
-			recipe.Manifest.Desc(),
-			variablesConfig.Desc(),
-			valuesConfig.Desc(),
-		)
-	}
-
 	// Set values ID
-	apiObject.Content.Set(model.VariablesValuesIdContentKey, relation.Source.Id)
+	apiObject.Content.Set(model.VariablesValuesIdContentKey, relation.VariablesValuesId)
 
 	// Delete relation
 	apiObject.Relations.RemoveByType(relType)

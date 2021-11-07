@@ -1,6 +1,7 @@
 package relations_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -125,8 +126,11 @@ func TestRelationsMapperOnLoadOtherSideMissing(t *testing.T) {
 	assert.NoError(t, NewMapper(context).OnObjectsLoad(event))
 
 	// Warning is logged
-	assert.Equal(t,
-		"WARN  Warning: mocked key \"456\" not found, referenced from mocked key \"123\", by relation \"manifest_side_relation\"\n",
-		logs.String(),
-	)
+	expected := `
+WARN  Warning:
+  - mocked key "456" not found
+    - referenced from mocked key "123"
+    - by relation "manifest_side_relation"
+`
+	assert.Equal(t, strings.TrimLeft(expected, "\n"), logs.String())
 }

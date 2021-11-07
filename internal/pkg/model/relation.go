@@ -8,6 +8,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/iancoleman/orderedmap"
 
+	jsonutils "github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -41,13 +42,12 @@ func (t RelationType) Type() RelationType {
 // Relation between objects, eg. config <-> config.
 type Relation interface {
 	Type() RelationType
-	Desc() string                             // human-readable description
-	Key() string                              // unique key for sorting and comparing
-	ParentKey(relationOwner Key) (Key, error) // if relation type is parent <-> child, then parent key is returned, otherwise nil
-	OtherSideKey(owner Key) Key               // get key of the other side
-	IsDefinedInManifest() bool                // if true, relation will be present in the manifest
-	IsDefinedInApi() bool                     // if true, relation will be present in API calls
-	NewOtherSideRelation(owner Key) Relation  // create the new other side relation, for example VariablesFor -> VariablesFrom
+	Desc() string                                 // human-readable description
+	Key() string                                  // unique key within the object on which the relation is defined, for sorting and comparing
+	ParentKey(relationDefinedOn Key) (Key, error) // if relation type is parent <-> child, then parent key is returned, otherwise nil
+	IsDefinedInManifest() bool                    // if true, relation will be present in the manifest
+	IsDefinedInApi() bool                         // if true, relation will be present in API calls
+	NewOtherSideRelation(relationDefinedOn Object, allObjects *StateObjects) (otherSide Key, relation Relation, err error)
 }
 
 type Relations []Relation
@@ -159,6 +159,21 @@ func (v Relations) GetByType(t RelationType) Relations {
 	return out
 }
 
+func (v Relations) GetOneByType(t RelationType) (Relation, error) {
+	relations := v.GetByType(t)
+	if len(relations) == 0 {
+		return nil, nil
+	} else if len(relations) > 1 {
+		errors := utils.NewMultiError()
+		errors.Append(fmt.Errorf(`only one relation "%s" expected, but found %d`, t, len(relations)))
+		for _, relation := range relations {
+			errors.AppendRaw(fmt.Sprintf(`  - %s`, jsonutils.MustEncodeString(relation, false)))
+		}
+		return nil, errors
+	}
+	return relations[0], nil
+}
+
 func (v Relations) GetAllByType() map[RelationType]Relations {
 	out := make(map[RelationType]Relations)
 	for _, relation := range v {
@@ -175,6 +190,16 @@ func (v *Relations) Add(relation Relation) {
 		}
 	}
 	*v = append(*v, relation)
+}
+
+func (v *Relations) Remove(toDelete Relation) {
+	var out Relations
+	for _, relation := range *v {
+		if relation != toDelete {
+			out = append(out, relation)
+		}
+	}
+	*v = out
 }
 
 func (v *Relations) RemoveByType(t RelationType) {

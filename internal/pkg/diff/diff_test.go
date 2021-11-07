@@ -407,7 +407,7 @@ func TestDiffRelations(t *testing.T) {
 	objectState.SetRemoteState(rObject)
 
 	differ := NewDiffer(projectState)
-	reporter := differ.diffValues(objectState.Key(), rObject.Relations, lObject.Relations)
+	reporter := differ.diffValues(rObject, lObject, rObject.Relations, lObject.Relations)
 	expected := `
   - manifest side relation mocked key "foo"
   + manifest side relation mocked key "bar"

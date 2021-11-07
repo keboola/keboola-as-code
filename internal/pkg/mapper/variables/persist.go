@@ -16,7 +16,7 @@ func (m *variablesMapper) MapBeforePersist(recipe *model.PersistRecipe) error {
 	}
 
 	// Parent of the variables must be config that using variables
-	parentKey, ok := recipe.ParentKey.(model.ConfigKey)
+	configKey, ok := recipe.ParentKey.(model.ConfigKey)
 	if !ok {
 		return nil
 	}
@@ -33,13 +33,14 @@ func (m *variablesMapper) MapBeforePersist(recipe *model.PersistRecipe) error {
 	}
 
 	// Branch must be same
-	if parentKey.BranchKey() != configManifest.BranchKey() {
-		panic(fmt.Errorf(`child "%s" and parent "%s" must be from same branch`, configManifest.Desc(), parentKey.Desc()))
+	if configKey.BranchKey() != configManifest.BranchKey() {
+		panic(fmt.Errorf(`child "%s" and parent "%s" must be from same branch`, configManifest.Desc(), configKey.Desc()))
 	}
 
 	// Add relation
 	configManifest.Relations.Add(&model.VariablesForRelation{
-		Target: parentKey.ConfigKeySameBranch(),
+		ComponentId: configKey.ComponentId,
+		Id:          configKey.Id,
 	})
 
 	return nil
@@ -131,7 +132,7 @@ func (m *variablesMapper) ensureOneRowHasRelation(config *model.Config) {
 	}
 
 	// Add relation to row local object and manifest
-	relation := &model.VariablesValuesForRelation{Target: configRelation.(*model.VariablesForRelation).Target}
+	relation := &model.VariablesValuesForRelation{}
 	row.Local.AddRelation(relation)
 	row.ConfigRowManifest.AddRelation(relation)
 }
