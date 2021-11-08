@@ -290,7 +290,7 @@ func TestNamingMatchConfigPathNotMatched(t *testing.T) {
 	t.Parallel()
 	n := DefaultNaming()
 	componentId, err := n.MatchConfigPath(
-		Kind{Name: BranchKind},
+		BranchKey{},
 		NewPathInProject(
 			"parent/path",
 			"foo",
@@ -303,7 +303,7 @@ func TestNamingMatchConfigPathOrdinary(t *testing.T) {
 	t.Parallel()
 	n := DefaultNaming()
 	componentId, err := n.MatchConfigPath(
-		Kind{Name: BranchKind},
+		BranchKey{},
 		NewPathInProject(
 			"parent/path",
 			"extractor/keboola.ex-db-mysql/with-rows",
@@ -316,7 +316,7 @@ func TestNamingMatchConfigPathSharedCode(t *testing.T) {
 	t.Parallel()
 	n := DefaultNaming()
 	componentId, err := n.MatchConfigPath(
-		Kind{Name: BranchKind},
+		BranchKey{},
 		NewPathInProject(
 			"parent/path",
 			"_shared/keboola.python-transformation-v2",
@@ -329,9 +329,22 @@ func TestNamingMatchConfigPathVariables(t *testing.T) {
 	t.Parallel()
 	n := DefaultNaming()
 	componentId, err := n.MatchConfigPath(
-		Kind{Name: ConfigKind},
+		ConfigKey{},
 		NewPathInProject(
 			"parent/path",
+			"variables",
+		))
+	assert.NoError(t, err)
+	assert.Equal(t, VariablesComponentId, componentId)
+}
+
+func TestNamingMatchSharedCodeVariables(t *testing.T) {
+	t.Parallel()
+	n := DefaultNaming()
+	componentId, err := n.MatchConfigPath(
+		ConfigRowKey{ComponentId: SharedCodeComponentId},
+		NewPathInProject(
+			"shared/code/path",
 			"variables",
 		))
 	assert.NoError(t, err)
