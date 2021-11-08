@@ -17,6 +17,7 @@ type PathsGenerator struct {
 type renamedPath struct {
 	ObjectState model.ObjectState
 	OldPath     string
+	RenameFrom  string // old path with renamed parents dirs
 	NewPath     string
 }
 
@@ -69,10 +70,11 @@ func (g *PathsGenerator) doUpdate(objectState model.ObjectState, origin model.Ke
 	}
 
 	// Replace already renamed parts of the old path
+	renameFrom := oldPath
 	for _, item := range g.renamed {
-		if filesystem.IsFrom(oldPath, item.OldPath) {
-			if relPath, err := filesystem.Rel(item.OldPath, oldPath); err == nil {
-				oldPath = filesystem.Join(item.NewPath, relPath)
+		if filesystem.IsFrom(renameFrom, item.RenameFrom) {
+			if relPath, err := filesystem.Rel(item.RenameFrom, renameFrom); err == nil {
+				renameFrom = filesystem.Join(item.NewPath, relPath)
 			} else {
 				return err
 			}
@@ -104,8 +106,8 @@ func (g *PathsGenerator) doUpdate(objectState model.ObjectState, origin model.Ke
 
 		// Has been object renamed?
 		newPath := objectState.Path()
-		if oldPath != newPath {
-			g.renamed = append(g.renamed, renamedPath{ObjectState: objectState, OldPath: oldPath, NewPath: newPath})
+		if renameFrom != newPath {
+			g.renamed = append(g.renamed, renamedPath{ObjectState: objectState, OldPath: oldPath, RenameFrom: renameFrom, NewPath: newPath})
 		}
 
 		// Rename transformation blocks
@@ -124,18 +126,19 @@ func (g *PathsGenerator) doUpdate(objectState model.ObjectState, origin model.Ke
 
 func (g *PathsGenerator) updateBlockPath(parent *model.ConfigState, block *model.Block) {
 	// Update parent path
+	oldPath := block.Path()
 	blocksDir := g.Naming().BlocksDir(parent.Path())
 	block.SetParentPath(blocksDir)
 
 	// Re-generate object path IF rename is enabled OR path is not set
 	if block.ObjectPath == "" || g.rename {
-		oldPath := block.Path()
+		renameFrom := block.Path()
 		block.PathInProject = g.Naming().BlockPath(block.GetParentPath(), block)
 
 		// Has been block renamed?
 		newPath := block.Path()
-		if oldPath != newPath {
-			g.renamed = append(g.renamed, renamedPath{ObjectState: parent, OldPath: oldPath, NewPath: newPath})
+		if renameFrom != newPath {
+			g.renamed = append(g.renamed, renamedPath{ObjectState: parent, OldPath: oldPath, RenameFrom: renameFrom, NewPath: newPath})
 		}
 	}
 
@@ -147,29 +150,31 @@ func (g *PathsGenerator) updateBlockPath(parent *model.ConfigState, block *model
 
 func (g *PathsGenerator) updateCodePath(parent *model.ConfigState, block *model.Block, code *model.Code) {
 	// Update parent path
+	oldPath := block.Path()
+	oldPathCodeFile := g.Naming().CodeFilePath(code)
 	code.SetParentPath(block.Path())
 
 	// Re-generate object path IF rename is enabled OR path is not set
 	if block.ObjectPath == "" || g.rename {
-		oldPath := code.Path()
+		renameFrom := code.Path()
 		code.PathInProject = g.Naming().CodePath(code.GetParentPath(), code)
 
 		// Has been code renamed?
 		newPath := code.Path()
-		if oldPath != newPath {
-			g.renamed = append(g.renamed, renamedPath{ObjectState: parent, OldPath: oldPath, NewPath: newPath})
+		if renameFrom != newPath {
+			g.renamed = append(g.renamed, renamedPath{ObjectState: parent, OldPath: oldPath, RenameFrom: renameFrom, NewPath: newPath})
 		}
 	}
 
 	// Rename code file
-	g.updateCodeFilePath(parent, code)
+	g.updateCodeFilePath(parent, code, oldPathCodeFile)
 }
 
-func (g *PathsGenerator) updateCodeFilePath(parent *model.ConfigState, code *model.Code) {
-	oldPath := g.Naming().CodeFilePath(code)
+func (g *PathsGenerator) updateCodeFilePath(parent *model.ConfigState, code *model.Code, oldPath string) {
+	renameFrom := g.Naming().CodeFilePath(code)
 	code.CodeFileName = g.Naming().CodeFileName(code.ComponentId)
 	newPath := g.Naming().CodeFilePath(code)
-	if oldPath != newPath {
-		g.renamed = append(g.renamed, renamedPath{ObjectState: parent, OldPath: oldPath, NewPath: newPath})
+	if renameFrom != newPath {
+		g.renamed = append(g.renamed, renamedPath{ObjectState: parent, OldPath: oldPath, RenameFrom: renameFrom, NewPath: newPath})
 	}
 }

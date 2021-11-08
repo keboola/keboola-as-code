@@ -46,7 +46,7 @@ func (e *renameExecutor) invoke() (warns error, errs error) {
 	e.logger.Debugf(`Starting renaming of the %d paths.`, len(e.actions))
 	for _, action := range e.actions {
 		// Deep copy
-		err := e.fs.Copy(action.OldPath, action.NewPath)
+		err := e.fs.Copy(action.RenameFrom, action.NewPath)
 
 		if err != nil {
 			e.errors.AppendWithPrefix(fmt.Sprintf(`cannot copy "%s"`, action.Description), err)
@@ -56,12 +56,12 @@ func (e *renameExecutor) invoke() (warns error, errs error) {
 				e.errors.AppendWithPrefix(fmt.Sprintf(`cannot persist "%s"`, action.Record.Desc()), err)
 			}
 			if filesystem.IsFrom(action.NewPath, action.Record.Path()) {
-				action.Record.RenameRelatedPaths(action.OldPath, action.NewPath)
+				action.Record.RenameRelatedPaths(action.RenameFrom, action.NewPath)
 			}
 
 			// Remove old path
 			e.newPaths = append(e.newPaths, action.NewPath)
-			e.pathsToRemove = append(e.pathsToRemove, action.OldPath)
+			e.pathsToRemove = append(e.pathsToRemove, action.RenameFrom)
 		}
 	}
 

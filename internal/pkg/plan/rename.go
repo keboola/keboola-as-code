@@ -31,9 +31,10 @@ func (b *renamePlanBuilder) build() ([]*RenameAction, error) {
 	// Convert renamed items to actions
 	for _, item := range pathsUpdater.Renamed() {
 		action := &RenameAction{
-			NewPath:     item.NewPath,
 			OldPath:     item.OldPath,
-			Description: strhelper.FormatPathChange(item.OldPath, item.NewPath, false),
+			RenameFrom:  item.RenameFrom,
+			NewPath:     item.NewPath,
+			Description: strhelper.FormatPathChange(item.RenameFrom, item.NewPath, false),
 		}
 		if item.ObjectState != nil {
 			action.Record = item.ObjectState.Manifest()

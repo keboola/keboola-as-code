@@ -6,6 +6,7 @@ import (
 
 type RenameAction struct {
 	OldPath     string
+	RenameFrom  string // old path with renamed parents dirs
 	NewPath     string
 	Description string
 	Record      model.Record
