@@ -70,7 +70,7 @@ func fixPathsCommand(root *rootCommand) *cobra.Command {
 
 			// Normalize paths
 			dryRun := root.options.GetBool("dry-run")
-			if err := Rename(projectState, logger, true, dryRun); err != nil {
+			if err := Rename(root.ctx, projectState, logger, true, dryRun); err != nil {
 				return err
 			}
 

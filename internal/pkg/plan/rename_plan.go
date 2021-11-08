@@ -1,17 +1,16 @@
 package plan
 
 import (
+	"context"
 	"fmt"
 
-	"go.uber.org/zap"
-
+	"github.com/keboola/keboola-as-code/internal/pkg/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 type RenamePlan struct {
-	actions []*RenameAction
+	actions []model.RenameAction
 }
 
 func (p *RenamePlan) Empty() bool {
@@ -35,6 +34,6 @@ func (p *RenamePlan) Log(writer *log.WriteCloser) {
 	}
 }
 
-func (p *RenamePlan) Invoke(logger *zap.SugaredLogger, manifest *manifest.Manifest, state *model.State) (warns error, errs error) {
-	return newRenameExecutor(logger, manifest, state, p).invoke()
+func (p *RenamePlan) Invoke(ctx context.Context, localManager *local.Manager) error {
+	return newRenameExecutor(ctx, localManager, p).invoke()
 }

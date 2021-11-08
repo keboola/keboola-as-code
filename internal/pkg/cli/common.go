@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -163,7 +164,7 @@ func Validate(projectState *state.State, logger *zap.SugaredLogger, skipEncryptV
 	return nil
 }
 
-func Rename(projectState *state.State, logger *zap.SugaredLogger, logEmpty, dryRun bool) error {
+func Rename(ctx context.Context, projectState *state.State, logger *zap.SugaredLogger, logEmpty, dryRun bool) error {
 	// Get plan
 	rename, err := plan.Rename(projectState)
 	if err != nil {
@@ -182,10 +183,8 @@ func Rename(projectState *state.State, logger *zap.SugaredLogger, logEmpty, dryR
 	}
 
 	// Invoke
-	if warn, err := rename.Invoke(logger, projectState.Manifest(), projectState.State); err != nil {
+	if err := rename.Invoke(ctx, projectState.LocalManager()); err != nil {
 		return utils.PrefixError(`cannot rename objects`, err)
-	} else if warn != nil {
-		logger.Warn(`cannot finish objects renaming`, err)
 	}
 
 	if !rename.Empty() {

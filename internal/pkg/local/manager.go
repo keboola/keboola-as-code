@@ -33,6 +33,7 @@ type UnitOfWork struct {
 	lock               *sync.Mutex
 	skipNotFoundErr    bool
 	loadedObjectStates []model.ObjectState
+	renamed            []model.RenameAction
 	invoked            bool
 }
 
@@ -122,7 +123,7 @@ func (u *UnitOfWork) CreateObject(key model.Key, name string) {
 	u.addLoaded(objectState)
 
 	// Generate local path
-	if err := u.NewPathsGenerator(false).Update(objectState); err != nil {
+	if err := u.NewPathsGenerator(false).Add(objectState).Invoke(); err != nil {
 		u.errors.Append(err)
 		return
 	}
@@ -200,6 +201,18 @@ func (u *UnitOfWork) DeleteObject(objectState model.ObjectState, record model.Re
 		})
 }
 
+func (u *UnitOfWork) Rename(actions []model.RenameAction) {
+	u.
+		workersFor(1000). // rename at the end
+		AddWorker(func() error {
+			if err := u.rename(actions); err != nil {
+				return err
+			}
+			u.renamed = append(u.renamed, actions...)
+			return nil
+		})
+}
+
 func (u *UnitOfWork) Invoke() error {
 	if u.invoked {
 		panic(fmt.Errorf(`invoked local.UnitOfWork cannot be reused`))
@@ -216,6 +229,11 @@ func (u *UnitOfWork) Invoke() error {
 
 	// OnObjectsLoad event
 	if err := u.mapper.OnObjectsLoaded(model.StateTypeLocal, u.loadedObjects()); err != nil {
+		u.errors.Append(err)
+	}
+
+	// OnObjectsLoad event
+	if err := u.mapper.OnObjectsRename(u.renamed); err != nil {
 		u.errors.Append(err)
 	}
 

@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -58,9 +59,14 @@ func TestRenameAllPlan(t *testing.T) {
 		action.Record = nil
 	}
 
+	// Clear manifest Record from actions for easier comparison
+	for i := range plan.actions {
+		plan.actions[i].Record = nil
+	}
+
 	// Assert
 	assert.Equal(t, &RenamePlan{
-		actions: []*RenameAction{
+		actions: []model.RenameAction{
 			{
 				OldPath:     "my-main-branch",
 				RenameFrom:  "my-main-branch",

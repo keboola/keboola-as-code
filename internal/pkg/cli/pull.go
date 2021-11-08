@@ -70,7 +70,7 @@ func pullCommand(root *rootCommand) *cobra.Command {
 				}
 
 				// Normalize paths
-				if err := Rename(projectState, logger, false, false); err != nil {
+				if err := Rename(root.ctx, projectState, logger, false, false); err != nil {
 					return err
 				}
 

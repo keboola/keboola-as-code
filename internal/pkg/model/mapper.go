@@ -49,7 +49,7 @@ type RemoteSaveRecipe struct {
 	ApiObject      Object // eg. Config, modified version, API representation
 }
 
-// PersistRecipe - TODO.
+// PersistRecipe contains object to persist.
 type PersistRecipe struct {
 	ParentKey Key
 	Manifest  Record
@@ -66,4 +66,9 @@ type OnObjectsLoadEvent struct {
 type OnObjectsPersistEvent struct {
 	PersistedObjects []Object      // new persisted objects
 	AllObjects       *StateObjects // all local objects
+}
+
+// OnObjectsRenameEvent contains old and new paths of renamed objects.
+type OnObjectsRenameEvent struct {
+	RenamedObjects []RenameAction
 }
