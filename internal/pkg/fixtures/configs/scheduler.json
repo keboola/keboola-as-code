@@ -1,6 +1,6 @@
 {
   "componentId": "keboola.scheduler",
-  "name": "scheduler",
+  "name": "Scheduler",
   "configuration": {
     "schedule": {
       "cronTab": "*/10 * * * *",
