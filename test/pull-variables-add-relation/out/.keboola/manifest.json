@@ -41,7 +41,7 @@
       "relations": [
         {
           "componentId": "ex-generic-v2",
-          "id": "%%TEST_BRANCH_MAIN_CONFIG_WITH_VARIABLES_1_ID%%",
+          "configId": "%%TEST_BRANCH_MAIN_CONFIG_WITH_VARIABLES_1_ID%%",
           "type": "variablesFor"
         }
       ],

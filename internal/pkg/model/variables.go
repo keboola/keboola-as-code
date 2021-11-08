@@ -9,7 +9,7 @@ import (
 // VariablesForRelation - variables for target configuration.
 type VariablesForRelation struct {
 	ComponentId string `json:"componentId" validate:"required"`
-	Id          string `json:"id" validate:"required"`
+	ConfigId    string `json:"configId" validate:"required"`
 }
 
 // VariablesFromRelation - variables from source configuration.
@@ -34,7 +34,7 @@ func (t *VariablesForRelation) Desc() string {
 }
 
 func (t *VariablesForRelation) Key() string {
-	return fmt.Sprintf(`%s_%s_%s`, t.Type(), t.ComponentId, t.Id)
+	return fmt.Sprintf(`%s_%s_%s`, t.Type(), t.ComponentId, t.ConfigId)
 }
 
 func (t *VariablesForRelation) ParentKey(relationDefinedOn Key) (Key, error) {
@@ -45,7 +45,7 @@ func (t *VariablesForRelation) ParentKey(relationDefinedOn Key) (Key, error) {
 	return ConfigKey{
 		BranchId:    variables.BranchId,
 		ComponentId: t.ComponentId,
-		Id:          t.Id,
+		Id:          t.ConfigId,
 	}, nil
 }
 
@@ -65,7 +65,7 @@ func (t *VariablesForRelation) NewOtherSideRelation(relationDefinedOn Object, _ 
 	otherSide := ConfigKey{
 		BranchId:    variables.BranchId,
 		ComponentId: t.ComponentId,
-		Id:          t.Id,
+		Id:          t.ConfigId,
 	}
 	otherSideRelation := &VariablesFromRelation{
 		VariablesId: variables.Id,
@@ -120,7 +120,7 @@ func (t *VariablesFromRelation) NewOtherSideRelation(relationDefinedOn Object, _
 	}
 	otherSideRelation := &VariablesForRelation{
 		ComponentId: config.ComponentId,
-		Id:          config.Id,
+		ConfigId:    config.Id,
 	}
 	return otherSide, otherSideRelation, nil
 }
@@ -186,7 +186,7 @@ func (t *VariablesValuesForRelation) NewOtherSideRelation(relationDefinedOn Obje
 	otherSide := ConfigKey{
 		BranchId:    variablesConfig.BranchId,
 		ComponentId: variablesForRelation.ComponentId,
-		Id:          variablesForRelation.Id,
+		Id:          variablesForRelation.ConfigId,
 	}
 	otherSideRelation := &VariablesValuesFromRelation{
 		VariablesValuesId: valuesRowKey.Id,

@@ -43,7 +43,7 @@ func TestSchedulerMapAfterRemoteLoad(t *testing.T) {
 	assert.Equal(t, model.Relations{
 		&model.SchedulerForRelation{
 			ComponentId: `foo.bar`,
-			Id:          `123`,
+			ConfigId:    `123`,
 		},
 	}, internalObject.Relations)
 

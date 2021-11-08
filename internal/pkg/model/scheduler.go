@@ -7,7 +7,7 @@ import (
 // SchedulerForRelation - scheduler for a configuration.
 type SchedulerForRelation struct {
 	ComponentId string `json:"componentId" validate:"required"`
-	Id          string `json:"id" validate:"required"`
+	ConfigId    string `json:"configId" validate:"required"`
 }
 
 func (t *SchedulerForRelation) Type() RelationType {
@@ -19,7 +19,7 @@ func (t *SchedulerForRelation) Desc() string {
 }
 
 func (t *SchedulerForRelation) Key() string {
-	return fmt.Sprintf(`%s_%s_%s`, t.Type(), t.ComponentId, t.Id)
+	return fmt.Sprintf(`%s_%s_%s`, t.Type(), t.ComponentId, t.ConfigId)
 }
 
 func (t *SchedulerForRelation) ParentKey(relationDefinedOn Key) (Key, error) {
@@ -30,7 +30,7 @@ func (t *SchedulerForRelation) ParentKey(relationDefinedOn Key) (Key, error) {
 	return ConfigKey{
 		BranchId:    config.BranchId,
 		ComponentId: t.ComponentId,
-		Id:          t.Id,
+		Id:          t.ConfigId,
 	}, nil
 }
 

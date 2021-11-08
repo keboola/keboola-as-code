@@ -61,7 +61,7 @@ func (m *schedulerMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) err
 	// Create relation
 	internalObject.AddRelation(&model.SchedulerForRelation{
 		ComponentId: componentId,
-		Id:          configurationId,
+		ConfigId:    configurationId,
 	})
 
 	// Remove component and configuration ID

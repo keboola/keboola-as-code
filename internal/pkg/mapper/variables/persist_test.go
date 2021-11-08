@@ -38,7 +38,7 @@ func TestVariablesMapBeforePersist(t *testing.T) {
 	assert.Equal(t, model.Relations{
 		&model.VariablesForRelation{
 			ComponentId: `foo.bar`,
-			Id:          `345`,
+			ConfigId:    `345`,
 		},
 	}, configManifest.Relations)
 }
@@ -172,7 +172,7 @@ func createTestObjectForPersist(t *testing.T, state *model.State) {
 	configRelations := model.Relations{
 		&model.VariablesForRelation{
 			ComponentId: `foo.bar`,
-			Id:          `789`,
+			ConfigId:    `789`,
 		},
 	}
 

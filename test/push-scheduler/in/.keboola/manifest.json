@@ -42,7 +42,7 @@
       "relations": [
         {
           "componentId": "ex-generic-v2",
-          "id":  "123",
+          "configId":  "123",
           "type": "schedulerFor"
         }
       ]

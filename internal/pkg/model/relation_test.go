@@ -78,7 +78,7 @@ func TestVariablesForRelation(t *testing.T) {
 
 	r := &VariablesForRelation{
 		ComponentId: `foo.bar`,
-		Id:          `12345`,
+		ConfigId:    `12345`,
 	}
 
 	// The relation is defined on this source side (variables config)

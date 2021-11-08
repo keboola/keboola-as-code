@@ -22,7 +22,7 @@ func TestSchedulerMapBeforeRemoteSave(t *testing.T) {
 	apiObject := &model.Config{Content: content}
 	apiObject.AddRelation(&model.SchedulerForRelation{
 		ComponentId: `foo.bar`,
-		Id:          `12345`,
+		ConfigId:    `12345`,
 	})
 	internalObject := apiObject.Clone().(*model.Config)
 	recipe := &model.RemoteSaveRecipe{
@@ -40,7 +40,7 @@ func TestSchedulerMapBeforeRemoteSave(t *testing.T) {
 	assert.Equal(t, model.Relations{
 		&model.SchedulerForRelation{
 			ComponentId: `foo.bar`,
-			Id:          `12345`,
+			ConfigId:    `12345`,
 		},
 	}, internalObject.Relations)
 	targetInternalRaw, found := internalObject.Content.Get(model.SchedulerTargetKey)

@@ -38,7 +38,7 @@ func TestVariablesMapBeforePersist(t *testing.T) {
 	assert.Equal(t, model.Relations{
 		&model.SchedulerForRelation{
 			ComponentId: `foo.bar`,
-			Id:          `345`,
+			ConfigId:    `345`,
 		},
 	}, configManifest.Relations)
 }

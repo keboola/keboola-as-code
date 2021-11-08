@@ -1,8 +1,8 @@
 Warning:
   - invalid config "branch:%s/component:keboola.variables/config:%s":
     - only one relation "variablesFor" expected, but found 2
-      - {"componentId":"ex-generic-v2","id":"%s"}
-      - {"componentId":"ex-generic-v2","id":"%s"}
+      - {"componentId":"ex-generic-v2","configId":"%s"}
+      - {"componentId":"ex-generic-v2","configId":"%s"}
   - missing relation "variablesFor" in config "branch:%s/component:keboola.variables/config:%s"
     - referenced from config row "branch:%s/component:keboola.variables/config:%s/row:%s"
     - by relation "variablesValuesFor"
