@@ -1,11 +1,11 @@
-package sharedcode_test
+package variables_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode"
+	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode/variables"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 

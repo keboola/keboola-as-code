@@ -1,4 +1,4 @@
-package sharedcode
+package variables
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func (m *sharedCodeMapper) MapBeforePersist(recipe *model.PersistRecipe) error {
+func (m *mapper) MapBeforePersist(recipe *model.PersistRecipe) error {
 	// Variables are represented by config
 	configManifest, ok := recipe.Manifest.(*model.ConfigManifest)
 	if !ok {
