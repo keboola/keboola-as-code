@@ -29,4 +29,7 @@ class KeboolaAsCode < Formula
     bin.install_symlink Dir["#{libexec}/bin/*"]
   end
 
+  test do
+    system "#{bin}/kbc --version"
+  end
 end
