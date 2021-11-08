@@ -182,7 +182,7 @@ func (n Naming) ConfigPath(parentPath string, component *Component, config *Conf
 		// Shared code
 		template = string(n.SharedCodeConfig)
 		targetComponentId = cast.ToString(targetComponentIdRaw)
-	case component.IsScheduler():
+	case parent.IsConfig() && component.IsScheduler():
 		template = string(n.SchedulerConfig)
 	case parent.IsConfig() && component.IsVariables():
 		template = string(n.VariablesConfig)
@@ -342,10 +342,15 @@ func (n Naming) MatchConfigPath(parent Kind, path PathInProject) (componentId st
 		}
 	}
 
-	// Variables
+	// Config embedded in another config
 	if parent.IsConfig() {
+		// Variables
 		if matched, _ := n.VariablesConfig.MatchPath(path.ObjectPath); matched {
 			return VariablesComponentId, nil
+		}
+		// Scheduler
+		if matched, _ := n.SchedulerConfig.MatchPath(path.ObjectPath); matched {
+			return SchedulerComponentId, nil
 		}
 	}
 

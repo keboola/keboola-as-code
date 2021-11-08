@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
@@ -581,6 +582,97 @@ func TestPersistVariables(t *testing.T) {
 						},
 					}),
 					Relations: expectedRowRelations,
+				},
+			},
+		},
+	}
+	tc.run(t)
+}
+
+func TestPersistScheduler(t *testing.T) {
+	t.Parallel()
+
+	expectedRelations := model.Relations{
+		&model.SchedulerForRelation{
+			ComponentId: `ex-generic-v2`,
+			Id:          `456`,
+		},
+	}
+
+	expectedContentStr := `
+{
+  "schedule": {
+    "cronTab": "*/10 * * * *",
+    "timezone": "UTC",
+    "state": "disabled"
+  },
+  "target": {
+    "mode": "run"
+  }
+}
+`
+	expectedContent := utils.NewOrderedMap()
+	json.MustDecodeString(expectedContentStr, expectedContent)
+
+	tc := testCase{
+		inputDir: `persist-scheduler`,
+		untrackedPaths: []string{
+			"main/extractor/ex-generic-v2/456-todos/schedules",
+			"main/extractor/ex-generic-v2/456-todos/schedules/my-scheduler",
+			"main/extractor/ex-generic-v2/456-todos/schedules/my-scheduler/config.json",
+			"main/extractor/ex-generic-v2/456-todos/schedules/my-scheduler/description.md",
+			"main/extractor/ex-generic-v2/456-todos/schedules/my-scheduler/meta.json",
+		},
+		expectedNewIds: 1,
+		expectedPlan: []PersistAction{
+			&NewObjectAction{
+				PathInProject: model.NewPathInProject(
+					"main/extractor/ex-generic-v2/456-todos",
+					"schedules/my-scheduler",
+				),
+				Key: model.ConfigKey{
+					BranchId:    111,
+					ComponentId: model.SchedulerComponentId,
+				},
+				ParentKey: model.ConfigKey{
+					BranchId:    111,
+					ComponentId: `ex-generic-v2`,
+					Id:          `456`,
+				},
+			},
+		},
+		expectedStates: []model.ObjectState{
+			&model.ConfigState{
+				ConfigManifest: &model.ConfigManifest{
+					ConfigKey: model.ConfigKey{
+						BranchId:    111,
+						ComponentId: model.SchedulerComponentId,
+						Id:          "1001",
+					},
+					RecordState: model.RecordState{
+						Invalid:   false,
+						Persisted: true,
+					},
+					Paths: model.Paths{
+						PathInProject: model.NewPathInProject(
+							"main/extractor/ex-generic-v2/456-todos",
+							"schedules/my-scheduler",
+						),
+						RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
+					},
+					Relations: expectedRelations,
+				},
+				Remote: nil,
+				Local: &model.Config{
+					ConfigKey: model.ConfigKey{
+						BranchId:    111,
+						ComponentId: model.SchedulerComponentId,
+						Id:          "1001",
+					},
+					Name:        "My Scheduler",
+					Description: "",
+					Content:     expectedContent,
+					Relations:   expectedRelations,
 				},
 			},
 		},

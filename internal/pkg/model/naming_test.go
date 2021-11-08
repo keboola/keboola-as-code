@@ -96,9 +96,9 @@ func TestDefaultNaming(t *testing.T) {
 	// Scheduler
 	assert.Equal(
 		t,
-		"my-branch/schedules/456-schedule-1",
+		"my-branch/my-config/schedules/456-schedule-1",
 		n.ConfigPath(
-			"my-branch",
+			"my-branch/my-config",
 			&Component{
 				ComponentKey: ComponentKey{Id: SchedulerComponentId},
 			},
@@ -107,6 +107,12 @@ func TestDefaultNaming(t *testing.T) {
 					BranchId:    1234,
 					ComponentId: SchedulerComponentId,
 					Id:          "456",
+				},
+				Relations: Relations{
+					&SchedulerForRelation{
+						ComponentId: `foo.bar`,
+						Id:          `789`,
+					},
 				},
 				Name:    "schedule-1",
 				Content: utils.NewOrderedMap(),

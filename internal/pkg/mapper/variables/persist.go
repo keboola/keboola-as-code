@@ -78,17 +78,19 @@ func (m *variablesMapper) OnObjectsPersist(event model.OnObjectsPersistEvent) er
 	// Ensure that each variables config has one row with default values
 	for configKey := range configs {
 		config := m.State.MustGet(configKey).LocalState().(*model.Config)
-		m.ensureOneRowHasRelation(config)
+		if err := m.ensureOneRowHasRelation(config); err != nil {
+			errors.Append(err)
+		}
 	}
 
 	return errors.ErrorOrNil()
 }
 
 // ensureOneRowHasRelation VariablesValuesForRelation, it marks variables default values.
-func (m *variablesMapper) ensureOneRowHasRelation(config *model.Config) {
-	configRelation := m.getOneRelByType(config, model.VariablesForRelType)
-	if configRelation == nil {
-		return
+func (m *variablesMapper) ensureOneRowHasRelation(config *model.Config) error {
+	configRelation, err := config.GetRelations().GetOneByType(model.VariablesForRelType)
+	if err != nil || configRelation == nil {
+		return err
 	}
 
 	// Process rows
@@ -101,7 +103,11 @@ func (m *variablesMapper) ensureOneRowHasRelation(config *model.Config) {
 		}
 
 		// Has row relation?
-		if m.getOneRelByType(config, model.VariablesValuesForRelType) != nil {
+		rowRelation, err := row.GetRelations().GetOneByType(model.VariablesValuesForRelType)
+		if err != nil {
+			return err
+		}
+		if rowRelation != nil {
 			rowsWithRelation = append(rowsWithRelation, row)
 		}
 
@@ -114,7 +120,7 @@ func (m *variablesMapper) ensureOneRowHasRelation(config *model.Config) {
 
 	// Row with relation already exists -> end
 	if len(rowsWithRelation) > 0 {
-		return
+		return nil
 	}
 
 	// Determine row with default values
@@ -128,22 +134,12 @@ func (m *variablesMapper) ensureOneRowHasRelation(config *model.Config) {
 		row = rows[0]
 	default:
 		// No rows -> end
-		return
+		return nil
 	}
 
 	// Add relation to row local object and manifest
 	relation := &model.VariablesValuesForRelation{}
 	row.Local.AddRelation(relation)
 	row.ConfigRowManifest.AddRelation(relation)
-}
-
-func (m *variablesMapper) getOneRelByType(object model.ObjectWithRelations, t model.RelationType) model.Relation {
-	relations := object.GetRelations().GetByType(t)
-	if len(relations) == 0 {
-		return nil
-	} else if len(relations) > 1 {
-		m.Logger.Warnf(`Warning: %s have %d relations "%s", but only one expected`, object.Desc(), len(relations), t)
-		return nil
-	}
-	return relations[0]
+	return nil
 }
