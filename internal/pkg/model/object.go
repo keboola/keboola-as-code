@@ -11,15 +11,18 @@ import (
 )
 
 const (
-	MetaFileTag                 = "metaFile:true"
-	ConfigFileTag               = "configFile:true"
-	DescriptionFileTag          = "descriptionFile:true"
-	TransformationType          = "transformation"
-	SharedCodeComponentId       = "keboola.shared-code"
-	ShareCodeTargetComponentKey = `componentId`
-	ShareCodeContentKey         = `code_content`
-	VariablesIdContentKey       = `variables_id`
-	VariablesValuesIdContentKey = `variables_values_id`
+	MetaFileTag                       = "metaFile:true"
+	ConfigFileTag                     = "configFile:true"
+	DescriptionFileTag                = "descriptionFile:true"
+	TransformationType                = "transformation"
+	SharedCodeComponentId             = "keboola.shared-code"
+	ShareCodeTargetComponentKey       = `componentId`
+	ShareCodeContentKey               = `code_content`
+	VariablesIdContentKey             = `variables_id`
+	VariablesValuesIdContentKey       = `variables_values_id`
+	SchedulerTargetKey                = `target`
+	SchedulerTargetComponentIdKey     = `componentId`
+	SchedulerTargetConfigurationIdKey = `configurationId`
 )
 
 type ObjectIdAndName interface {

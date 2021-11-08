@@ -35,9 +35,9 @@ func (m *variablesMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) er
 func (m *variablesMapper) saveVariables(apiObject, internalObject *model.Config, recipe *model.RemoteSaveRecipe) (*model.VariablesFromRelation, error) {
 	// Get relation
 	relType := model.VariablesFromRelType
-	relationRaw, err := getOneRelationByType(internalObject.Relations, relType, recipe.Manifest.Desc())
+	relationRaw, err := internalObject.Relations.GetOneByType(relType)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(`unexpected state of %s: %w`, recipe.Manifest.Desc(), err)
 	} else if relationRaw == nil {
 		return nil, nil
 	}
@@ -54,9 +54,9 @@ func (m *variablesMapper) saveVariables(apiObject, internalObject *model.Config,
 func (m *variablesMapper) saveVariablesValues(apiObject, internalObject *model.Config, recipe *model.RemoteSaveRecipe) error {
 	// Get relation
 	relType := model.VariablesValuesFromRelType
-	relationRaw, err := getOneRelationByType(internalObject.Relations, relType, recipe.Manifest.Desc())
+	relationRaw, err := internalObject.Relations.GetOneByType(relType)
 	if err != nil {
-		return err
+		return fmt.Errorf(`unexpected state of %s: %w`, recipe.Manifest.Desc(), err)
 	} else if relationRaw == nil {
 		return nil
 	}
@@ -68,14 +68,4 @@ func (m *variablesMapper) saveVariablesValues(apiObject, internalObject *model.C
 	// Delete relation
 	apiObject.Relations.RemoveByType(relType)
 	return nil
-}
-
-func getOneRelationByType(allRelations model.Relations, t model.RelationType, objectDesc string) (model.Relation, error) {
-	relations := allRelations.GetByType(t)
-	if len(relations) == 0 {
-		return nil, nil
-	} else if len(relations) > 1 {
-		return nil, fmt.Errorf(`unexpected state: %s has %d relations "%s", but only one allowed`, objectDesc, len(relations), t)
-	}
-	return relations[0], nil
 }

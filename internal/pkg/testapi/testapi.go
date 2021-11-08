@@ -75,6 +75,7 @@ func AddMockedComponents(httpTransport *httpmock.MockTransport) {
 		{"keboola.python-transformation-v2", "transformation", "Python"},
 		{model.SharedCodeComponentId, "other", "Shared Code"},
 		{model.VariablesComponentId, "other", "Variables"},
+		{model.SchedulerComponentId, "other", "Scheduler"},
 	}
 
 	// Register responses

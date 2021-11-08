@@ -11,6 +11,7 @@ import (
 
 const (
 	VariablesComponentId     = `keboola.variables`
+	SchedulerComponentId     = "keboola.scheduler"
 	DeprecatedFlag           = `deprecated`
 	ExcludeFromNewListFlag   = `excludeFromNewList`
 	ComponentTypeCodePattern = `code-pattern`
