@@ -2,7 +2,6 @@ class KeboolaAsCode < Formula
   desc "Keboola as Code cli tool"
   homepage "https://github.com/keboola/keboola-as-code"
   license "MIT"
-  bottle :unneeded
 
   if OS.mac? && Hardware::CPU.arm?
     url "https://cli-dist.keboola.com/zip/kbc_${VERSION}_darwin_arm64.zip"
