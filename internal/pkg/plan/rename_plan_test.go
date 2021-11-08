@@ -63,16 +63,19 @@ func TestRenameAllPlan(t *testing.T) {
 		actions: []*RenameAction{
 			{
 				OldPath:     "my-main-branch",
+				RenameFrom:  "my-main-branch",
 				NewPath:     "main",
 				Description: "my-main-branch -> main",
 			},
 			{
-				OldPath:     "main/extractor/keboola.ex-db-mysql/my-table",
+				OldPath:     "my-main-branch/extractor/keboola.ex-db-mysql/my-table",
+				RenameFrom:  "main/extractor/keboola.ex-db-mysql/my-table",
 				NewPath:     "main/extractor/keboola.ex-db-mysql/789-tables",
 				Description: "main/extractor/keboola.ex-db-mysql/{my-table -> 789-tables}",
 			},
 			{
-				OldPath:     "main/extractor/keboola.ex-db-mysql/789-tables/rows/my-row",
+				OldPath:     "my-main-branch/extractor/keboola.ex-db-mysql/my-table/rows/my-row",
+				RenameFrom:  "main/extractor/keboola.ex-db-mysql/789-tables/rows/my-row",
 				NewPath:     "main/extractor/keboola.ex-db-mysql/789-tables/rows/12-users",
 				Description: "main/extractor/keboola.ex-db-mysql/789-tables/rows/{my-row -> 12-users}",
 			},
