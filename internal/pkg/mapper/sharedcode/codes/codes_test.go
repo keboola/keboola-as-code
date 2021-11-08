@@ -1,4 +1,4 @@
-package sharedcode_test
+package codes_test
 
 import (
 	"testing"
@@ -113,13 +113,4 @@ func createLocalSaveRecipe(row *model.ConfigRow, rowRecord *model.ConfigRowManif
 		Configuration: filesystem.CreateJsonFile(model.ConfigFile, utils.NewOrderedMap()),
 		Description:   filesystem.CreateFile(model.DescriptionFile, ``),
 	}
-}
-
-func createMapperContext(t *testing.T) model.MapperContext {
-	t.Helper()
-	logger, _ := utils.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger, ".")
-	assert.NoError(t, err)
-	state := model.NewState(zap.NewNop().Sugar(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
-	return model.MapperContext{Logger: logger, Fs: fs, Naming: model.DefaultNaming(), State: state}
 }

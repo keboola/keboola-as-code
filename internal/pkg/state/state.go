@@ -108,8 +108,9 @@ func newState(options *Options) *State {
 	mappers := []interface{}{
 		variables.NewMapper(mapperContext),
 		schedulerMapper.NewMapper(mapperContext),
+		sharedcode.NewVariablesMapper(mapperContext),
 		relations.NewMapper(mapperContext),
-		sharedcode.NewMapper(mapperContext),
+		sharedcode.NewCodesMapper(mapperContext),
 		transformation.NewMapper(mapperContext),
 	}
 	s.mapper = mapper.New(mapperContext).AddMapper(mappers...)
