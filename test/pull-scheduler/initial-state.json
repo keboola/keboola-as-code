@@ -1,0 +1,20 @@
+{
+  "allBranchesConfigs": [],
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "my description",
+        "isDefault": true
+      },
+      "configs": [
+        "empty",
+        "scheduler"
+      ]
+    }
+  ],
+  "envs": {
+    "TEST_SCHEDULER_TARGET_COMPONENT_ID": "ex-generic-v2",
+    "TEST_SCHEDULER_TARGET_CONFIG_ID": "%%TEST_BRANCH_MAIN_CONFIG_EMPTY_ID%%"
+  }
+}
