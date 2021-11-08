@@ -3,15 +3,17 @@ package links
 import (
 	"fmt"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 // mapper replaces "shared_code_id" with "shared_code_path" in local fs.
 type mapper struct {
 	model.MapperContext
+	*local.Manager
 }
 
-func NewMapper(context model.MapperContext) *mapper {
+func NewMapper(localManager *local.Manager, context model.MapperContext) *mapper {
 	return &mapper{MapperContext: context}
 }
 

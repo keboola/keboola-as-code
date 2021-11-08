@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+
 	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -105,22 +106,25 @@ func newState(options *Options) *State {
 		Naming: options.manifest.Naming,
 		State:  s.State,
 	}
-	mappers := []interface{}{
-		variables.NewMapper(mapperContext),
-		schedulerMapper.NewMapper(mapperContext),
-		sharedcode.NewVariablesMapper(mapperContext),
-		relations.NewMapper(mapperContext),
-		sharedcode.NewCodesMapper(mapperContext),
-		sharedcode.NewLinksMapper(mapperContext),
-		transformation.NewMapper(mapperContext),
-	}
-	s.mapper = mapper.New(mapperContext).AddMapper(mappers...)
+
+	s.mapper = mapper.New(mapperContext)
 
 	// Local manager for load,save,delete ... operations
 	s.localManager = local.NewManager(options.logger, options.fs, options.manifest, s.State, s.mapper)
 
 	// Local manager for API operations
 	s.remoteManager = remote.NewManager(s.localManager, options.api, options.schedulerApi, s.State, s.mapper)
+
+	mappers := []interface{}{
+		variables.NewMapper(mapperContext),
+		schedulerMapper.NewMapper(mapperContext),
+		sharedcode.NewVariablesMapper(mapperContext),
+		relations.NewMapper(mapperContext),
+		sharedcode.NewCodesMapper(mapperContext),
+		sharedcode.NewLinksMapper(s.localManager, mapperContext),
+		transformation.NewMapper(mapperContext),
+	}
+	s.mapper.AddMapper(mappers...)
 
 	return s
 }

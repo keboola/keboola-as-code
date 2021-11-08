@@ -1,6 +1,7 @@
 package sharedcode
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode/codes"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode/links"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode/variables"
@@ -18,6 +19,6 @@ func NewVariablesMapper(context model.MapperContext) interface{} {
 }
 
 // NewLinksMapper replaces "shared_code_id" with "shared_code_path" in local fs.
-func NewLinksMapper(context model.MapperContext) interface{} {
-	return links.NewMapper(context)
+func NewLinksMapper(localManager *local.Manager, context model.MapperContext) interface{} {
+	return links.NewMapper(localManager, context)
 }
