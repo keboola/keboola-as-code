@@ -20,6 +20,7 @@ const (
 	ShareCodeContentKey               = `code_content`
 	VariablesIdContentKey             = `variables_id`
 	VariablesValuesIdContentKey       = `variables_values_id`
+	SharedCodeVariablesIdContentKey   = `variables_id`
 	SchedulerTargetKey                = `target`
 	SchedulerTargetComponentIdKey     = `componentId`
 	SchedulerTargetConfigurationIdKey = `configurationId`

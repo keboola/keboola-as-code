@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "project": {
+    "id": %%TEST_KBC_PROJECT_ID%%,
+    "apiHost": "%%TEST_KBC_STORAGE_API_HOST%%"
+  },
+  "sortBy": "path",
+  "naming": {
+    "branch": "{branch_name}",
+    "config": "{component_type}/{component_id}/{config_name}",
+    "configRow": "rows/{config_row_name}",
+    "sharedCodeConfig": "_shared/{target_component_id}",
+    "sharedCodeConfigRow": "codes/{config_row_name}",
+    "variablesConfig": "variables",
+    "variablesValuesRow": "values/{config_row_name}"
+  },
+  "allowedBranches": [
+    "__all__"
+  ],
+  "ignoredComponents": [],
+  "branches": [
+    {
+      "id": %%TEST_BRANCH_MAIN_ID%%,
+      "path": "my-branch"
+    }
+  ],
+  "configurations": [
+    {
+      "branchId": %%TEST_BRANCH_MAIN_ID%%,
+      "componentId": "keboola.shared-code",
+      "id": "%%TEST_NEW_TICKET_1%%",
+      "path": "_shared/keboola.python-transformation-v2",
+      "rows": [
+        {
+          "id": "%%TEST_NEW_TICKET_2%%",
+          "path": "codes/code-with-variables"
+        },
+        {
+          "id": "%%TEST_NEW_TICKET_3%%",
+          "path": "codes/my-code-1"
+        },
+        {
+          "id": "%%TEST_NEW_TICKET_4%%",
+          "path": "codes/my-code-2"
+        }
+      ]
+    },
+    {
+      "branchId": %%TEST_BRANCH_MAIN_ID%%,
+      "componentId": "keboola.variables",
+      "id": "%%TEST_NEW_TICKET_5%%",
+      "path": "variables",
+      "relations": [
+        {
+          "configId": "%%TEST_NEW_TICKET_1%%",
+          "rowId": "%%TEST_NEW_TICKET_2%%",
+          "type": "sharedCodeVariablesFor"
+        }
+      ],
+      "rows": []
+    }
+  ]
+}

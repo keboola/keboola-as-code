@@ -425,6 +425,223 @@ func TestPersistSharedCode(t *testing.T) {
 	tc.run(t)
 }
 
+func TestPersistSharedCodeWithVariables(t *testing.T) {
+	expectedCodeRelations := model.Relations{
+		&model.SharedCodeVariablesFromRelation{
+			VariablesId: `1003`,
+		},
+	}
+	expectedVariablesRelations := model.Relations{
+		&model.SharedCodeVariablesForRelation{
+			ConfigId: `1001`,
+			RowId:    `1002`,
+		},
+	}
+
+	t.Parallel()
+	tc := testCase{
+		inputDir: `persist-shared-code-with-vars`,
+		untrackedPaths: []string{
+			"main/_shared",
+			"main/_shared/keboola.python-transformation-v2",
+			"main/_shared/keboola.python-transformation-v2/codes",
+			"main/_shared/keboola.python-transformation-v2/codes/my-code",
+			"main/_shared/keboola.python-transformation-v2/codes/my-code/code.py",
+			"main/_shared/keboola.python-transformation-v2/codes/my-code/config.json",
+			"main/_shared/keboola.python-transformation-v2/codes/my-code/description.md",
+			"main/_shared/keboola.python-transformation-v2/codes/my-code/meta.json",
+			"main/_shared/keboola.python-transformation-v2/codes/my-code/variables",
+			"main/_shared/keboola.python-transformation-v2/codes/my-code/variables/config.json",
+			"main/_shared/keboola.python-transformation-v2/codes/my-code/variables/description.md",
+			"main/_shared/keboola.python-transformation-v2/codes/my-code/variables/meta.json",
+			"main/_shared/keboola.python-transformation-v2/config.json",
+			"main/_shared/keboola.python-transformation-v2/description.md",
+			"main/_shared/keboola.python-transformation-v2/meta.json",
+		},
+		expectedNewIds: 3,
+		expectedPlan: []PersistAction{
+			&NewObjectAction{
+				PathInProject: model.NewPathInProject(
+					"main",
+					"_shared/keboola.python-transformation-v2",
+				),
+				Key: model.ConfigKey{
+					BranchId:    111,
+					ComponentId: model.SharedCodeComponentId,
+				},
+				ParentKey: model.BranchKey{
+					Id: 111,
+				},
+			},
+			&NewObjectAction{
+				PathInProject: model.NewPathInProject(
+					"main/_shared/keboola.python-transformation-v2",
+					"codes/my-code",
+				),
+				Key: model.ConfigRowKey{
+					BranchId:    111,
+					ComponentId: model.SharedCodeComponentId,
+				},
+				ParentKey: model.ConfigKey{
+					BranchId:    111,
+					ComponentId: model.SharedCodeComponentId,
+				},
+			},
+			&NewObjectAction{
+				PathInProject: model.NewPathInProject(
+					"main/_shared/keboola.python-transformation-v2/codes/my-code",
+					"variables",
+				),
+				Key: model.ConfigKey{
+					BranchId:    111,
+					ComponentId: model.VariablesComponentId,
+				},
+				ParentKey: model.ConfigRowKey{
+					BranchId:    111,
+					ComponentId: model.SharedCodeComponentId,
+				},
+			},
+		},
+		expectedStates: []model.ObjectState{
+			&model.ConfigState{
+				ConfigManifest: &model.ConfigManifest{
+					ConfigKey: model.ConfigKey{
+						BranchId:    111,
+						ComponentId: model.SharedCodeComponentId,
+						Id:          "1001",
+					},
+					RecordState: model.RecordState{
+						Invalid:   false,
+						Persisted: true,
+					},
+					Paths: model.Paths{
+						PathInProject: model.NewPathInProject(
+							"main",
+							"_shared/keboola.python-transformation-v2",
+						),
+						RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
+					},
+				},
+				Remote: nil,
+				Local: &model.Config{
+					ConfigKey: model.ConfigKey{
+						BranchId:    111,
+						ComponentId: model.SharedCodeComponentId,
+						Id:          "1001",
+					},
+					Name:        "Shared Codes",
+					Description: "foo bar",
+					Content: utils.PairsToOrderedMap([]utils.Pair{
+						{
+							Key:   "componentId",
+							Value: "keboola.python-transformation-v2",
+						},
+					}),
+				},
+			},
+			&model.ConfigRowState{
+				ConfigRowManifest: &model.ConfigRowManifest{
+					ConfigRowKey: model.ConfigRowKey{
+						BranchId:    111,
+						ComponentId: model.SharedCodeComponentId,
+						ConfigId:    "1001",
+						Id:          "1002",
+					},
+					RecordState: model.RecordState{
+						Invalid:   false,
+						Persisted: true,
+					},
+					Paths: model.Paths{
+						PathInProject: model.NewPathInProject(
+							"main/_shared/keboola.python-transformation-v2",
+							"codes/my-code",
+						),
+						RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile, `code.py`},
+					},
+				},
+				Remote: nil,
+				Local: &model.ConfigRow{
+					ConfigRowKey: model.ConfigRowKey{
+						BranchId:    111,
+						ComponentId: model.SharedCodeComponentId,
+						ConfigId:    "1001",
+						Id:          "1002",
+					},
+					Name:        "My code",
+					Description: "test code",
+					Content: utils.PairsToOrderedMap([]utils.Pair{
+						{
+							Key:   "code_content",
+							Value: "num1 = {{num1}}\nnum2 = {{num2}}\nsum = num1 + num2\n",
+						},
+					}),
+					Relations: expectedCodeRelations,
+				},
+			},
+			&model.ConfigState{
+				ConfigManifest: &model.ConfigManifest{
+					ConfigKey: model.ConfigKey{
+						BranchId:    111,
+						ComponentId: model.VariablesComponentId,
+						Id:          "1003",
+					},
+					RecordState: model.RecordState{
+						Invalid:   false,
+						Persisted: true,
+					},
+					Paths: model.Paths{
+						PathInProject: model.NewPathInProject(
+							"main/_shared/keboola.python-transformation-v2/codes/my-code",
+							"variables",
+						),
+						RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
+					},
+					Relations: expectedVariablesRelations,
+				},
+				Remote: nil,
+				Local: &model.Config{
+					ConfigKey: model.ConfigKey{
+						BranchId:    111,
+						ComponentId: model.VariablesComponentId,
+						Id:          "1003",
+					},
+					Name:        "Shared Code Variables",
+					Description: "test fixture",
+					Content: utils.PairsToOrderedMap([]utils.Pair{
+						{
+							Key: "variables",
+							Value: []interface{}{
+								*utils.PairsToOrderedMap([]utils.Pair{
+									{
+										Key:   "name",
+										Value: "num1",
+									},
+									{
+										Key:   "type",
+										Value: "string",
+									},
+								}),
+								*utils.PairsToOrderedMap([]utils.Pair{
+									{
+										Key:   "name",
+										Value: "num2",
+									},
+									{
+										Key:   "type",
+										Value: "string",
+									},
+								}),
+							},
+						},
+					}),
+					Relations: expectedVariablesRelations,
+				},
+			},
+		},
+	}
+	tc.run(t)
+}
+
 func TestPersistVariables(t *testing.T) {
 	t.Parallel()
 

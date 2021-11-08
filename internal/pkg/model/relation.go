@@ -13,11 +13,13 @@ import (
 )
 
 const (
-	VariablesForRelType        = RelationType(`variablesFor`)
-	VariablesFromRelType       = RelationType(`variablesFrom`)
-	VariablesValuesForRelType  = RelationType(`variablesValuesFor`)
-	VariablesValuesFromRelType = RelationType(`variablesValuesFrom`)
-	SchedulerForRelType        = RelationType(`schedulerFor`)
+	VariablesForRelType            = RelationType(`variablesFor`)
+	VariablesFromRelType           = RelationType(`variablesFrom`)
+	VariablesValuesForRelType      = RelationType(`variablesValuesFor`)
+	VariablesValuesFromRelType     = RelationType(`variablesValuesFrom`)
+	SharedCodeVariablesForRelType  = RelationType(`sharedCodeVariablesFor`)
+	SharedCodeVariablesFromRelType = RelationType(`sharedCodeVariablesFrom`)
+	SchedulerForRelType            = RelationType(`schedulerFor`)
 )
 
 // OneToXRelations gets relations that can be defined on an object only once.
@@ -287,6 +289,10 @@ func newEmptyRelation(t RelationType) (Relation, error) {
 		return &VariablesValuesForRelation{}, nil
 	case VariablesValuesFromRelType:
 		return &VariablesValuesFromRelation{}, nil
+	case SharedCodeVariablesForRelType:
+		return &SharedCodeVariablesForRelation{}, nil
+	case SharedCodeVariablesFromRelType:
+		return &SharedCodeVariablesFromRelation{}, nil
 	case SchedulerForRelType:
 		return &SchedulerForRelation{}, nil
 	default:

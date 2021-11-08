@@ -185,6 +185,10 @@ func (n Naming) ConfigPath(parentPath string, component *Component, config *Conf
 	case parent.IsConfig() && component.IsScheduler():
 		template = string(n.SchedulerConfig)
 	case parent.IsConfig() && component.IsVariables():
+		// Regular component with variables
+		template = string(n.VariablesConfig)
+	case parent.IsConfigRow() && component.IsVariables() && parentKey.(ConfigRowKey).ComponentId == SharedCodeComponentId:
+		// Shared code is config row and can have variables
 		template = string(n.VariablesConfig)
 	case parent.IsBranch():
 		// Ordinary config
@@ -324,7 +328,8 @@ func (n Naming) CodeFileExt(componentId string) string {
 	}
 }
 
-func (n Naming) MatchConfigPath(parent Kind, path PathInProject) (componentId string, err error) {
+func (n Naming) MatchConfigPath(parentKey Key, path PathInProject) (componentId string, err error) {
+	parent := parentKey.Kind()
 	if parent.IsBranch() {
 		// Shared code
 		if matched, _ := n.SharedCodeConfig.MatchPath(path.ObjectPath); matched {
@@ -351,6 +356,13 @@ func (n Naming) MatchConfigPath(parent Kind, path PathInProject) (componentId st
 		// Scheduler
 		if matched, _ := n.SchedulerConfig.MatchPath(path.ObjectPath); matched {
 			return SchedulerComponentId, nil
+		}
+	}
+
+	// Shared code variables, parent is config row
+	if parent.IsConfigRow() && parentKey.(ConfigRowKey).ComponentId == SharedCodeComponentId {
+		if matched, _ := n.VariablesConfig.MatchPath(path.ObjectPath); matched {
+			return VariablesComponentId, nil
 		}
 	}
 

@@ -1,0 +1,71 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true
+      },
+      "configs": [
+        {
+          "componentId": "keboola.variables",
+          "name": "Shared Code Variables",
+          "description": "test fixture",
+          "changeDescription": "Updated from #KeboolaCLI",
+          "configuration": {
+            "variables": [
+              {
+                "name": "num1",
+                "type": "string"
+              },
+              {
+                "name": "num2",
+                "type": "string"
+              }
+            ]
+          },
+          "rows": []
+        },
+        {
+          "componentId": "keboola.shared-code",
+          "name": "Shared Codes",
+          "description": "test fixture",
+          "changeDescription": "Updated from #KeboolaCLI",
+          "configuration": {
+            "componentId": "keboola.python-transformation-v2"
+          },
+          "rows": [
+            {
+              "name": "Code with variables",
+              "description": "test fixture",
+              "changeDescription": "Updated from #KeboolaCLI",
+              "isDisabled": false,
+              "configuration": {
+                "code_content": "num1 = {{num1}}\nnum2 = {{num2}}\nsum = num1 + num2\n",
+                "variables_id": "%%TEST_NEW_TICKET_5%%"
+              }
+            },
+            {
+              "name": "My code 1",
+              "description": "test fixture",
+              "changeDescription": "Updated from #KeboolaCLI",
+              "isDisabled": false,
+              "configuration": {
+                "code_content": "# This program prints Hello, world!\n\nprint('Hello, world!')\n"
+              }
+            },
+            {
+              "name": "My code 2",
+              "description": "test fixture",
+              "changeDescription": "Updated from #KeboolaCLI",
+              "isDisabled": false,
+              "configuration": {
+                "code_content": "num1 = 1.5\nnum2 = 6.3\nsum = num1 + num2\n"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

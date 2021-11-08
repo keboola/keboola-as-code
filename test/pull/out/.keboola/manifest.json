@@ -56,6 +56,20 @@
     },
     {
       "branchId": %%TEST_BRANCH_BAR_ID%%,
+      "componentId": "keboola.variables",
+      "id": "%%TEST_BRANCH_BAR_CONFIG_SHARED_CODE_VARIABLES_ID%%",
+      "path": "variables",
+      "relations": [
+        {
+          "configId": "%%TEST_BRANCH_BAR_CONFIG_SHARED_CODES_ID%%",
+          "rowId": "%%TEST_BRANCH_BAR_CONFIG_SHARED_CODES_ROW_CODE_WITH_VARIABLES_ID%%",
+          "type": "sharedCodeVariablesFor"
+        }
+      ],
+      "rows": []
+    },
+    {
+      "branchId": %%TEST_BRANCH_BAR_ID%%,
       "componentId": "ex-generic-v2",
       "id": "%%TEST_BRANCH_ALL_CONFIG_EMPTY_ID%%",
       "path": "extractor/ex-generic-v2/empty",
@@ -80,13 +94,6 @@
           "path": "rows/users"
         }
       ]
-    },
-    {
-      "branchId": %%TEST_BRANCH_BAR_ID%%,
-      "componentId": "keboola.variables",
-      "id": "%%TEST_BRANCH_BAR_CONFIG_SHARED_CODE_VARIABLES_ID%%",
-      "path": "other/keboola.variables/shared-code-variables",
-      "rows": []
     },
     {
       "branchId": %%TEST_BRANCH_BAR_ID%%,
