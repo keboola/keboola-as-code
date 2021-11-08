@@ -226,6 +226,7 @@ jobs:
         env:
           VERSION: ${{ needs.set_version.outputs.version }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_RELEASE_GITHUB_PERSONAL_ACCESS_TOKEN }}
           DEB_KEY_PRIVATE_PATH: /tmp/keys/deb.key
           RPM_KEY_PRIVATE_PATH: /tmp/keys/rpm.key
           APK_KEY_PRIVATE_PATH: /tmp/keys/apk.key
@@ -239,26 +240,6 @@ jobs:
           tag: ${{ github.ref }}
           overwrite: true
           file_glob: true
-      - name: Create Homebrew formulae
-        env:
-          TAG: ${{ needs.set_version.outputs.tag }}
-          VERSION: ${{ needs.set_version.outputs.version }}
-        run: |
-          mkdir target/homebrew
-          export DARWIN_ARM_TARGET_SHA256=$(openssl dgst -sha256  target/gh-release/*darwin_arm64.zip | cut -f 2 -d ' ' )
-          export DARWIN_AMD_TARGET_SHA256=$(openssl dgst -sha256  target/gh-release/*darwin_amd64.zip | cut -f 2 -d ' ' )
-          export LINUX_ARM_TARGET_SHA256=$(openssl dgst -sha256   target/gh-release/*linux_armv6.zip  | cut -f 2 -d ' ' )
-          export LINUX_ARM64_TARGET_SHA256=$(openssl dgst -sha256 target/gh-release/*linux_arm64.zip  | cut -f 2 -d ' ' )
-          export LINUX_AMD_TARGET_SHA256=$(openssl dgst -sha256   target/gh-release/*linux_amd64.zip  | cut -f 2 -d ' ' )
-          envsubst < build/package/homebrew/homebrew.template.rb > target/homebrew/keboola-as-code.rb
-          cat target/homebrew/keboola-as-code.rb
-      - name: Upload Homebrew formulae
-        uses: actions/upload-artifact@v2
-        with:
-          name: homebrew-formulae
-          path: target/homebrew/keboola-as-code.rb
-          retention-days: 1
-
 
   update-pkg-index:
     needs:
@@ -280,20 +261,6 @@ jobs:
         with:
           username: ${{ env.DOCKERHUB_USER }}
           password: ${{ env.DOCKERHUB_TOKEN }}
-      - name: Download Homebrew formulae
-        uses: actions/download-artifact@v2
-        with:
-          name: homebrew-formulae
-          path: target/homebrew
-      - name: Push Homebrew formulae
-        uses: cpina/github-action-push-to-another-repository@main
-        env:
-          API_TOKEN_GITHUB: ${{ secrets.HOMEBREW_RELEASE_GITHUB_PERSONAL_ACCESS_TOKEN }}
-        with:
-          source-directory: "target/homebrew"
-          destination-github-username: "keboola"
-          destination-repository-name: "homebrew-tap"
-          target-branch: main
       - name: Build DEB repo tools
         uses: ./.github/actions/build-repo-tools
         with:

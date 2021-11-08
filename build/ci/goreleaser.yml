@@ -66,6 +66,26 @@ nfpms:
         key_name: keboola
         key_file: '{{ if index .Env "APK_KEY_PRIVATE_PATH"  }}{{ .Env.APK_KEY_PRIVATE_PATH }}{{ end }}'
 
+brews:
+  - ids:
+      - archives
+      - mac-os-signed
+    tap:
+      owner: keboola
+      name: homebrew-tap
+      branch: main
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    url_template: "https://cli-dist.keboola.com/zip/{{ .ArtifactName }}"
+    commit_author:
+      name: goreleaserbot
+      email: goreleaserbot@keboola.com
+    commit_msg_template: "Brew formula update for {{ .ProjectName }} version {{ .Tag }}"
+    homepage: "https://github.com/keboola/keboola-as-code"
+    description: "Keboola CLI tool"
+    license: "MIT"
+    test:  system "#{bin}/kbc --version"
+    install: bin.install "kbc"
+
 publishers:
   - name: Upload artifacts to S3
     signature: true
