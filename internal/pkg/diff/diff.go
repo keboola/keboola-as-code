@@ -131,7 +131,8 @@ func (d *Differ) diffState(state model.ObjectState) (*Result, error) {
 	// Diff
 	for _, field := range diffFields {
 		reporter := d.diffValues(
-			state.Key(),
+			remoteState,
+			localState,
 			remoteValues.FieldByName(field.StructField.Name).Interface(),
 			localValues.FieldByName(field.StructField.Name).Interface(),
 		)
@@ -153,8 +154,8 @@ func (d *Differ) diffState(state model.ObjectState) (*Result, error) {
 	return result, nil
 }
 
-func (d *Differ) diffValues(objectKey model.Key, remoteValue, localValue interface{}) *Reporter {
-	reporter := newReporter(objectKey, d.state.State)
+func (d *Differ) diffValues(remoteObject, localObject model.Object, remoteValue, localValue interface{}) *Reporter {
+	reporter := newReporter(remoteObject, localObject, d.state.State)
 	cmp.Diff(remoteValue, localValue, d.newOptions(reporter))
 	return reporter
 }

@@ -76,29 +76,34 @@ func TestRelationsOnlyStoredInApi(t *testing.T) {
 func TestVariablesForRelation(t *testing.T) {
 	t.Parallel()
 
-	r := &VariablesForRelation{}
-	r.Target = ConfigKeySameBranch{
+	r := &VariablesForRelation{
 		ComponentId: `foo.bar`,
 		Id:          `12345`,
 	}
 
 	// The relation is defined on this source side (variables config)
-	sourceKey := ConfigKey{
-		BranchId:    123,
-		ComponentId: `bar.baz`,
-		Id:          `45678`,
+	definedOn := &Config{
+		ConfigKey: ConfigKey{
+			BranchId:    123,
+			ComponentId: VariablesComponentId,
+			Id:          `45678`,
+		},
 	}
 
 	// Check other side key (regular component config, it uses variables)
-	otherSideKey := r.OtherSideKey(sourceKey)
+	otherSideKey, otherSideRel, err := r.NewOtherSideRelation(definedOn, nil)
+	assert.NoError(t, err)
 	assert.Equal(t, ConfigKey{
 		BranchId:    123, // from source key
 		ComponentId: `foo.bar`,
 		Id:          `12345`,
 	}, otherSideKey)
+	assert.Equal(t, &VariablesFromRelation{
+		VariablesId: `45678`,
+	}, otherSideRel)
 
 	// ParentKey key, same as target, ... variables config is stored within component config
-	parentKey, err := r.ParentKey(sourceKey)
+	parentKey, err := r.ParentKey(definedOn.Key())
 	assert.NoError(t, err)
 	assert.Equal(t, ConfigKey{
 		BranchId:    123, // from source key

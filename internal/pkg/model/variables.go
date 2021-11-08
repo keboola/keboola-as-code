@@ -2,26 +2,27 @@ package model
 
 import (
 	"fmt"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // VariablesForRelation - variables for target configuration.
 type VariablesForRelation struct {
-	Target ConfigKeySameBranch `json:"target" validate:"required"`
+	ComponentId string `json:"componentId" validate:"required"`
+	Id          string `json:"id" validate:"required"`
 }
 
 // VariablesFromRelation - variables from source configuration.
 type VariablesFromRelation struct {
-	Source ConfigKeySameBranch `json:"source" validate:"required"`
+	VariablesId string `json:"variablesId" validate:"required"`
 }
 
 // VariablesValuesForRelation - variables default values for target configuration.
-type VariablesValuesForRelation struct {
-	Target ConfigKeySameBranch `json:"target" validate:"required"`
-}
+type VariablesValuesForRelation struct{}
 
 // VariablesValuesFromRelation - variables default values from source config row.
 type VariablesValuesFromRelation struct {
-	Source ConfigRowKeySameBranch `json:"source" validate:"required"`
+	VariablesValuesId string `json:"variablesValuesId" validate:"required" `
 }
 
 func (t *VariablesForRelation) Type() RelationType {
@@ -33,15 +34,19 @@ func (t *VariablesForRelation) Desc() string {
 }
 
 func (t *VariablesForRelation) Key() string {
-	return fmt.Sprintf(`%s_%s`, t.Type(), t.Target.String())
+	return fmt.Sprintf(`%s_%s_%s`, t.Type(), t.ComponentId, t.Id)
 }
 
-func (t *VariablesForRelation) ParentKey(owner Key) (Key, error) {
-	return t.OtherSideKey(owner), nil
-}
-
-func (t *VariablesForRelation) OtherSideKey(owner Key) Key {
-	return t.Target.ConfigKey(t.ownerKey(owner).BranchKey())
+func (t *VariablesForRelation) ParentKey(relationDefinedOn Key) (Key, error) {
+	variables, err := t.checkDefinedOn(relationDefinedOn)
+	if err != nil {
+		return nil, err
+	}
+	return ConfigKey{
+		BranchId:    variables.BranchId,
+		ComponentId: t.ComponentId,
+		Id:          t.Id,
+	}, nil
 }
 
 func (t *VariablesForRelation) IsDefinedInManifest() bool {
@@ -52,19 +57,31 @@ func (t *VariablesForRelation) IsDefinedInApi() bool {
 	return false
 }
 
-// NewOtherSideRelation create the other side relation, for example VariablesFor -> VariablesFrom.
-func (t *VariablesForRelation) NewOtherSideRelation(owner Key) Relation {
-	return &VariablesFromRelation{
-		Source: t.ownerKey(owner).ConfigKeySameBranch(),
+func (t *VariablesForRelation) NewOtherSideRelation(relationDefinedOn Object, _ *StateObjects) (Key, Relation, error) {
+	variables, err := t.checkDefinedOn(relationDefinedOn.Key())
+	if err != nil {
+		return nil, nil, err
 	}
+	otherSide := ConfigKey{
+		BranchId:    variables.BranchId,
+		ComponentId: t.ComponentId,
+		Id:          t.Id,
+	}
+	otherSideRelation := &VariablesFromRelation{
+		VariablesId: variables.Id,
+	}
+	return otherSide, otherSideRelation, nil
 }
 
-func (t *VariablesForRelation) ownerKey(relationOwner Key) ConfigKey {
-	if configKey, ok := relationOwner.(ConfigKey); ok {
-		return configKey
-	} else {
-		panic(fmt.Errorf(`VariablesForRelation must be defined on Config`))
+func (t *VariablesForRelation) checkDefinedOn(relationDefinedOn Key) (ConfigKey, error) {
+	variables, ok := relationDefinedOn.(ConfigKey)
+	if !ok {
+		return variables, fmt.Errorf(`relation "%s" must be defined on config, found %s`, t.Type(), relationDefinedOn.Desc())
 	}
+	if variables.ComponentId != VariablesComponentId {
+		return variables, fmt.Errorf(`relation "%s" must be defined on config of the "%s" component`, t.Type(), VariablesComponentId)
+	}
+	return variables, nil
 }
 
 func (t *VariablesFromRelation) Type() RelationType {
@@ -76,15 +93,11 @@ func (t *VariablesFromRelation) Desc() string {
 }
 
 func (t *VariablesFromRelation) Key() string {
-	return fmt.Sprintf(`%s_%s`, t.Type(), t.Source.String())
+	return fmt.Sprintf(`%s_%s`, t.Type(), t.VariablesId)
 }
 
 func (t *VariablesFromRelation) ParentKey(_ Key) (Key, error) {
 	return nil, nil
-}
-
-func (t *VariablesFromRelation) OtherSideKey(owner Key) Key {
-	return t.Source.ConfigKey(t.ownerKey(owner).BranchKey())
 }
 
 func (t *VariablesFromRelation) IsDefinedInManifest() bool {
@@ -95,18 +108,29 @@ func (t *VariablesFromRelation) IsDefinedInApi() bool {
 	return true
 }
 
-func (t *VariablesFromRelation) NewOtherSideRelation(owner Key) Relation {
-	return &VariablesForRelation{
-		Target: t.ownerKey(owner).ConfigKeySameBranch(),
+func (t *VariablesFromRelation) NewOtherSideRelation(relationDefinedOn Object, _ *StateObjects) (Key, Relation, error) {
+	config, err := t.checkDefinedOn(relationDefinedOn.Key())
+	if err != nil {
+		return nil, nil, err
 	}
+	otherSide := ConfigKey{
+		BranchId:    config.BranchId,
+		ComponentId: VariablesComponentId,
+		Id:          t.VariablesId,
+	}
+	otherSideRelation := &VariablesForRelation{
+		ComponentId: config.ComponentId,
+		Id:          config.Id,
+	}
+	return otherSide, otherSideRelation, nil
 }
 
-func (t *VariablesFromRelation) ownerKey(owner Key) ConfigKey {
-	if configKey, ok := owner.(ConfigKey); ok {
-		return configKey
-	} else {
-		panic(fmt.Errorf(`VariablesFromRelation must be defined on Config`))
+func (t *VariablesFromRelation) checkDefinedOn(relationDefinedOn Key) (ConfigKey, error) {
+	config, ok := relationDefinedOn.(ConfigKey)
+	if !ok {
+		return config, fmt.Errorf(`relation "%s" must be defined on config, found %s`, t.Type(), relationDefinedOn.Desc())
 	}
+	return config, nil
 }
 
 func (t *VariablesValuesForRelation) Type() RelationType {
@@ -118,15 +142,11 @@ func (t *VariablesValuesForRelation) Desc() string {
 }
 
 func (t *VariablesValuesForRelation) Key() string {
-	return fmt.Sprintf(`%s_%s`, t.Type(), t.Target.String())
+	return t.Type().String()
 }
 
 func (t *VariablesValuesForRelation) ParentKey(_ Key) (Key, error) {
 	return nil, nil
-}
-
-func (t *VariablesValuesForRelation) OtherSideKey(owner Key) Key {
-	return t.Target.ConfigKey(t.ownerKey(owner).BranchKey())
 }
 
 func (t *VariablesValuesForRelation) IsDefinedInManifest() bool {
@@ -137,18 +157,52 @@ func (t *VariablesValuesForRelation) IsDefinedInApi() bool {
 	return false
 }
 
-func (t *VariablesValuesForRelation) NewOtherSideRelation(owner Key) Relation {
-	return &VariablesValuesFromRelation{
-		Source: t.ownerKey(owner).ConfigRowKeySameBranch(),
+func (t *VariablesValuesForRelation) NewOtherSideRelation(relationDefinedOn Object, allObjects *StateObjects) (Key, Relation, error) {
+	valuesRowKey, err := t.checkDefinedOn(relationDefinedOn.Key())
+	if err != nil {
+		return nil, nil, err
 	}
+	variablesConfigKey, err := valuesRowKey.ParentKey()
+	if err != nil {
+		return nil, nil, err
+	}
+	variablesConfigRaw, found := allObjects.Get(variablesConfigKey)
+	if !found {
+		return nil, nil, fmt.Errorf(`%s not found, referenced from %s, by relation "%s"`, variablesConfigKey.Desc(), relationDefinedOn.Desc(), t.Type())
+	}
+	variablesConfig := variablesConfigRaw.(*Config)
+	variablesForRaw, err := variablesConfig.Relations.GetOneByType(VariablesForRelType)
+	if err != nil {
+		return nil, nil, utils.PrefixError(fmt.Sprintf(`invalid %s`, variablesConfig.Desc()), err)
+	}
+	if variablesForRaw == nil {
+		errors := utils.NewMultiError()
+		errors.Append(fmt.Errorf(`missing relation "%s" in %s`, VariablesForRelType, variablesConfig.Desc()))
+		errors.AppendRaw(fmt.Sprintf(`  - referenced from %s`, relationDefinedOn.Desc()))
+		errors.AppendRaw(fmt.Sprintf(`  - by relation "%s"`, t.Type()))
+		return nil, nil, errors
+	}
+	variablesForRelation := variablesForRaw.(*VariablesForRelation)
+	otherSide := ConfigKey{
+		BranchId:    variablesConfig.BranchId,
+		ComponentId: variablesForRelation.ComponentId,
+		Id:          variablesForRelation.Id,
+	}
+	otherSideRelation := &VariablesValuesFromRelation{
+		VariablesValuesId: valuesRowKey.Id,
+	}
+	return otherSide, otherSideRelation, nil
 }
 
-func (t *VariablesValuesForRelation) ownerKey(owner Key) ConfigRowKey {
-	if configRowKey, ok := owner.(ConfigRowKey); ok {
-		return configRowKey
-	} else {
-		panic(fmt.Errorf(`VariablesValuesForRelation must be defined on ConfigRow`))
+func (t *VariablesValuesForRelation) checkDefinedOn(relationDefinedOn Key) (ConfigRowKey, error) {
+	values, ok := relationDefinedOn.(ConfigRowKey)
+	if !ok {
+		return values, fmt.Errorf(`relation "%s" must be defined on config row, found %s`, t.Type(), relationDefinedOn.Desc())
 	}
+	if values.ComponentId != VariablesComponentId {
+		return values, fmt.Errorf(`relation "%s" must be defined on config of the "%s" component`, t.Type(), VariablesComponentId)
+	}
+	return values, nil
 }
 
 func (t *VariablesValuesFromRelation) Type() RelationType {
@@ -160,15 +214,11 @@ func (t *VariablesValuesFromRelation) Desc() string {
 }
 
 func (t *VariablesValuesFromRelation) Key() string {
-	return fmt.Sprintf(`%s_%s`, t.Type(), t.Source.String())
+	return fmt.Sprintf(`%s_%s`, t.Type(), t.VariablesValuesId)
 }
 
 func (t *VariablesValuesFromRelation) ParentKey(_ Key) (Key, error) {
 	return nil, nil
-}
-
-func (t *VariablesValuesFromRelation) OtherSideKey(owner Key) Key {
-	return t.Source.ConfigRowKey(t.ownerKey(owner).BranchKey())
 }
 
 func (t *VariablesValuesFromRelation) IsDefinedInManifest() bool {
@@ -179,16 +229,37 @@ func (t *VariablesValuesFromRelation) IsDefinedInApi() bool {
 	return true
 }
 
-func (t *VariablesValuesFromRelation) NewOtherSideRelation(owner Key) Relation {
-	return &VariablesValuesForRelation{
-		Target: t.ownerKey(owner).ConfigKeySameBranch(),
+func (t *VariablesValuesFromRelation) NewOtherSideRelation(relationDefinedOn Object, _ *StateObjects) (Key, Relation, error) {
+	_, err := t.checkDefinedOn(relationDefinedOn.Key())
+	if err != nil {
+		return nil, nil, err
 	}
+	config := relationDefinedOn.(*Config)
+	variablesFromRel, err := config.Relations.GetOneByType(VariablesFromRelType)
+	if err != nil {
+		return nil, nil, utils.PrefixError(fmt.Sprintf(`invalid %s`, config.Desc()), err)
+	} else if variablesFromRel == nil {
+		errors := utils.NewMultiError()
+		errors.Append(fmt.Errorf(`missing relation "%s" in %s`, VariablesFromRelType, config.Desc()))
+		errors.AppendRaw(fmt.Sprintf(`  - referenced from %s`, relationDefinedOn.Desc()))
+		errors.AppendRaw(fmt.Sprintf(`  - by relation "%s"`, t.Type()))
+		return nil, nil, errors
+	}
+
+	otherSideKey := ConfigRowKey{
+		BranchId:    config.BranchId,
+		ComponentId: VariablesComponentId,
+		ConfigId:    variablesFromRel.(*VariablesFromRelation).VariablesId,
+		Id:          t.VariablesValuesId,
+	}
+	otherSideRelation := &VariablesValuesForRelation{}
+	return otherSideKey, otherSideRelation, nil
 }
 
-func (t *VariablesValuesFromRelation) ownerKey(owner Key) ConfigKey {
-	if configKey, ok := owner.(ConfigKey); ok {
-		return configKey
-	} else {
-		panic(fmt.Errorf(`VariablesValuesForRelation must be defined on ConfigRow`))
+func (t *VariablesValuesFromRelation) checkDefinedOn(relationDefinedOn Key) (ConfigKey, error) {
+	config, ok := relationDefinedOn.(ConfigKey)
+	if !ok {
+		return config, fmt.Errorf(`relation "%s" must be defined on config row, found %s`, t.Type(), relationDefinedOn.Desc())
 	}
+	return config, nil
 }

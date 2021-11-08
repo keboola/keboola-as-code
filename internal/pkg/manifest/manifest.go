@@ -94,6 +94,11 @@ func LoadManifest(fs filesystem.Fs) (*Manifest, error) {
 		}
 	}
 
+	// Validate
+	if err := m.validate(); err != nil {
+		return nil, err
+	}
+
 	// Connect records together and resolve parent path
 	for _, key := range m.records.Keys() {
 		r, _ := m.records.Get(key)
@@ -106,11 +111,6 @@ func LoadManifest(fs filesystem.Fs) (*Manifest, error) {
 	// Track if manifest was changed after load
 	m.loaded = true
 	m.changed = false
-
-	// Validate
-	if err := m.validate(); err != nil {
-		return nil, err
-	}
 
 	// Return
 	return m, nil

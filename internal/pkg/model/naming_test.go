@@ -150,10 +150,8 @@ func TestDefaultNaming(t *testing.T) {
 				},
 				Relations: Relations{
 					&VariablesForRelation{
-						Target: ConfigKeySameBranch{
-							Id:          `4567`,
-							ComponentId: `foo.bar`,
-						},
+						Id:          `4567`,
+						ComponentId: `foo.bar`,
 					},
 				},
 				Name:    "Variables",

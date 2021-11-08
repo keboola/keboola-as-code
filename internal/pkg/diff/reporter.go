@@ -13,17 +13,19 @@ import (
 
 // Reporter contains path to the compared values and generates human-readable difference report.
 type Reporter struct {
-	objectKey model.Key    // key of the root object, parent of the compared values
-	state     *model.State // state of the other objects (to get objects path if needed)
-	path      cmp.Path     // current path to the compared value
-	paths     []string     // list of the non-equal paths
-	diffs     []string     // list of the found differences in human-readable format
+	remoteObject model.Object
+	localObject  model.Object
+	state        *model.State // state of the other objects (to get objects path if needed)
+	path         cmp.Path     // current path to the compared value
+	paths        []string     // list of the non-equal paths
+	diffs        []string     // list of the found differences in human-readable format
 }
 
-func newReporter(objectKey model.Key, state *model.State) *Reporter {
+func newReporter(remoteObject, localObject model.Object, state *model.State) *Reporter {
 	return &Reporter{
-		objectKey: objectKey,
-		state:     state,
+		remoteObject: remoteObject,
+		localObject:  localObject,
+		state:        state,
 	}
 }
 
@@ -33,7 +35,7 @@ func (r *Reporter) PushStep(ps cmp.PathStep) {
 
 func (r *Reporter) Report(rs cmp.Result) {
 	if !rs.Equal() {
-		vx, vy := r.path.Last().Values()
+		remoteValue, localValue := r.path.Last().Values()
 		pathStr := pathToString(r.path)
 		if len(pathStr) > 0 {
 			r.paths = append(r.paths, pathStr)
@@ -43,19 +45,19 @@ func (r *Reporter) Report(rs cmp.Result) {
 		}
 
 		// Format relations diff
-		if r.relationsDiff(vx, vy) {
+		if r.relationsDiff(remoteValue, localValue) {
 			return
 		}
 
 		// Other types
-		if vx.IsValid() {
-			formatted := fmt.Sprintf(`%+v`, vx)
+		if remoteValue.IsValid() {
+			formatted := fmt.Sprintf(`%+v`, remoteValue)
 			if len(formatted) != 0 {
 				r.diffs = append(r.diffs, fmt.Sprintf("  %s %+v", OnlyInRemoteMark, formatted))
 			}
 		}
-		if vy.IsValid() {
-			formatted := fmt.Sprintf(`%+v`, vy)
+		if localValue.IsValid() {
+			formatted := fmt.Sprintf(`%+v`, localValue)
 			if len(formatted) != 0 {
 				r.diffs = append(r.diffs, fmt.Sprintf("  %s %+v", OnlyInLocalMark, formatted))
 			}
@@ -75,15 +77,15 @@ func (r *Reporter) Paths() []string {
 	return r.paths
 }
 
-func (r *Reporter) relationsDiff(vx, vy reflect.Value) bool {
+func (r *Reporter) relationsDiff(remoteValue, localValue reflect.Value) bool {
 	relationsType := reflect.TypeOf((*model.Relations)(nil)).Elem()
-	if vx.IsValid() && vy.IsValid() && vx.Type().ConvertibleTo(relationsType) && vy.Type().ConvertibleTo(relationsType) {
-		onlyInRemote, onlyInLocal := vx.Interface().(model.Relations).Diff(vy.Interface().(model.Relations))
+	if remoteValue.IsValid() && localValue.IsValid() && remoteValue.Type().ConvertibleTo(relationsType) && localValue.Type().ConvertibleTo(relationsType) {
+		onlyInRemote, onlyInLocal := remoteValue.Interface().(model.Relations).Diff(localValue.Interface().(model.Relations))
 		for _, v := range onlyInRemote {
-			r.diffs = append(r.diffs, fmt.Sprintf("  %s %s", OnlyInRemoteMark, r.relationToString(v)))
+			r.diffs = append(r.diffs, fmt.Sprintf("  %s %s", OnlyInRemoteMark, r.relationToString(v, r.remoteObject, r.state.RemoteObjects())))
 		}
 		for _, v := range onlyInLocal {
-			r.diffs = append(r.diffs, fmt.Sprintf("  %s %s", OnlyInLocalMark, r.relationToString(v)))
+			r.diffs = append(r.diffs, fmt.Sprintf("  %s %s", OnlyInLocalMark, r.relationToString(v, r.localObject, r.state.LocalObjects())))
 		}
 		return true
 	}
@@ -95,14 +97,16 @@ func (r *Reporter) isPathHidden() bool {
 	return r.path.Last().Type().String() == "model.Relations"
 }
 
-func (r *Reporter) relationToString(relation model.Relation) string {
+func (r *Reporter) relationToString(relation model.Relation, definedOn model.Object, allObjects *model.StateObjects) string {
 	otherSideDesc := ``
-	otherSideKey := relation.OtherSideKey(r.objectKey)
-	if otherSide, found := r.state.Get(otherSideKey); found {
-		otherSideDesc = `"` + otherSide.Path() + `"`
-	}
-	if len(otherSideDesc) == 0 {
-		otherSideDesc = otherSideKey.Desc()
+	otherSideKey, _, err := relation.NewOtherSideRelation(definedOn, allObjects)
+	if err == nil {
+		if otherSide, found := r.state.Get(otherSideKey); found {
+			otherSideDesc = `"` + otherSide.Path() + `"`
+		}
+		if len(otherSideDesc) == 0 {
+			otherSideDesc = otherSideKey.Desc()
+		}
 	}
 	return relation.Desc() + ` ` + otherSideDesc
 }

@@ -19,17 +19,10 @@ func TestVariablesMapBeforeRemoteSave(t *testing.T) {
 	apiObject := &model.Config{Content: utils.NewOrderedMap()}
 	internalObject := apiObject.Clone().(*model.Config)
 	internalObject.AddRelation(&model.VariablesFromRelation{
-		Source: model.ConfigKeySameBranch{
-			ComponentId: model.VariablesComponentId,
-			Id:          variablesConfigId,
-		},
+		VariablesId: variablesConfigId,
 	})
 	internalObject.AddRelation(&model.VariablesValuesFromRelation{
-		Source: model.ConfigRowKeySameBranch{
-			ComponentId: model.VariablesComponentId,
-			ConfigId:    variablesConfigId,
-			Id:          valuesConfigRowId,
-		},
+		VariablesValuesId: valuesConfigRowId,
 	})
 	recipe := &model.RemoteSaveRecipe{
 		ApiObject:      apiObject,
@@ -45,17 +38,10 @@ func TestVariablesMapBeforeRemoteSave(t *testing.T) {
 	// Internal object is not changed
 	assert.Equal(t, model.Relations{
 		&model.VariablesFromRelation{
-			Source: model.ConfigKeySameBranch{
-				ComponentId: model.VariablesComponentId,
-				Id:          variablesConfigId,
-			},
+			VariablesId: variablesConfigId,
 		},
 		&model.VariablesValuesFromRelation{
-			Source: model.ConfigRowKeySameBranch{
-				ComponentId: model.VariablesComponentId,
-				ConfigId:    variablesConfigId,
-				Id:          valuesConfigRowId,
-			},
+			VariablesValuesId: valuesConfigRowId,
 		},
 	}, internalObject.Relations)
 	_, found := internalObject.Content.Get(model.VariablesIdContentKey)

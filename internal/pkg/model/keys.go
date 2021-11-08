@@ -48,19 +48,8 @@ type ConfigKey struct {
 	Id          string `json:"id" validate:"required"`
 }
 
-type ConfigKeySameBranch struct {
-	ComponentId string `json:"componentId" validate:"required"`
-	Id          string `json:"id" validate:"required"`
-}
-
 type ConfigRowKey struct {
 	BranchId    int    `json:"-" validate:"required"`
-	ComponentId string `json:"-" validate:"required"`
-	ConfigId    string `json:"-" validate:"required"`
-	Id          string `json:"id" validate:"required" `
-}
-
-type ConfigRowKeySameBranch struct {
 	ComponentId string `json:"-" validate:"required"`
 	ConfigId    string `json:"-" validate:"required"`
 	Id          string `json:"id" validate:"required" `
@@ -270,20 +259,12 @@ func (k ConfigKey) ComponentKey() ComponentKey {
 	return ComponentKey{Id: k.ComponentId}
 }
 
-func (k ConfigKey) ConfigKeySameBranch() ConfigKeySameBranch {
-	return ConfigKeySameBranch{ComponentId: k.ComponentId, Id: k.Id}
-}
-
 func (k ConfigKey) BranchKey() BranchKey {
 	return BranchKey{Id: k.BranchId}
 }
 
 func (k ConfigKey) ParentKey() (Key, error) {
 	return k.BranchKey(), nil
-}
-
-func (k ConfigRowKey) ConfigRowKeySameBranch() ConfigRowKeySameBranch {
-	return ConfigRowKeySameBranch{ComponentId: k.ComponentId, ConfigId: k.ConfigId, Id: k.Id}
 }
 
 func (k ConfigRowKey) ComponentKey() ComponentKey {
@@ -308,24 +289,4 @@ func (b Block) ConfigKey() ConfigKey {
 
 func (c Code) ConfigKey() ConfigKey {
 	return ConfigKey{BranchId: c.BranchId, ComponentId: c.ComponentId, Id: c.ConfigId}
-}
-
-func (k ConfigKeySameBranch) String() string {
-	return fmt.Sprintf(`%s_%s`, k.ComponentId, k.Id)
-}
-
-func (k ConfigRowKeySameBranch) String() string {
-	return fmt.Sprintf(`%s_%s_%s`, k.ComponentId, k.ConfigId, k.Id)
-}
-
-func (k ConfigKeySameBranch) ConfigKey(branch BranchKey) ConfigKey {
-	return ConfigKey{BranchId: branch.Id, ComponentId: k.ComponentId, Id: k.Id}
-}
-
-func (k ConfigRowKeySameBranch) ConfigKey(branch BranchKey) ConfigKey {
-	return ConfigKey{BranchId: branch.Id, ComponentId: k.ComponentId, Id: k.ConfigId}
-}
-
-func (k ConfigRowKeySameBranch) ConfigRowKey(branch BranchKey) ConfigRowKey {
-	return ConfigRowKey{BranchId: branch.Id, ComponentId: k.ComponentId, ConfigId: k.ConfigId, Id: k.Id}
 }
