@@ -37,8 +37,15 @@
       "branchId": %%TEST_BRANCH_MAIN_ID%%,
       "componentId": "keboola.scheduler",
       "id": "456",
-      "path": "other/keboola.scheduler/schedule1",
-      "rows": []
+      "path": "schedules/schedule1",
+      "rows": [],
+      "relations": [
+        {
+          "componentId": "ex-generic-v2",
+          "id":  "123",
+          "type": "schedulerFor"
+        }
+      ]
     }
   ]
 }
