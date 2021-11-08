@@ -377,7 +377,7 @@ func fullJson() string {
       "relations": [
         {
           "componentId": "keboola.wr-db-mysql",
-          "id": "12",
+          "configId": "12",
           "type": "variablesFor"
         }
       ],
@@ -530,7 +530,7 @@ func fullStruct() *Content {
 					Relations: model.Relations{
 						&model.VariablesForRelation{
 							ComponentId: "keboola.wr-db-mysql",
-							Id:          "12",
+							ConfigId:    "12",
 						},
 					},
 				},
@@ -664,7 +664,7 @@ func cyclicDependencyJson() string {
       "relations": [
         {
           "componentId": "keboola.variables",
-          "id": "222",
+          "configId": "222",
           "type": "variablesFor"
         }
       ]
@@ -677,7 +677,7 @@ func cyclicDependencyJson() string {
       "relations": [
         {
           "componentId": "keboola.variables",
-          "id": "111",
+          "configId": "111",
           "type": "variablesFor"
         }
       ]

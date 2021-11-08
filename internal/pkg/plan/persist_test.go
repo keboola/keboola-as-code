@@ -431,7 +431,7 @@ func TestPersistVariables(t *testing.T) {
 	expectedConfigRelations := model.Relations{
 		&model.VariablesForRelation{
 			ComponentId: `ex-generic-v2`,
-			Id:          `456`,
+			ConfigId:    `456`,
 		},
 	}
 	expectedRowRelations := model.Relations{
@@ -595,7 +595,7 @@ func TestPersistScheduler(t *testing.T) {
 	expectedRelations := model.Relations{
 		&model.SchedulerForRelation{
 			ComponentId: `ex-generic-v2`,
-			Id:          `456`,
+			ConfigId:    `456`,
 		},
 	}
 

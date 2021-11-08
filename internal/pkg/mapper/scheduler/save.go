@@ -44,7 +44,7 @@ func (m *schedulerMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) er
 
 	// Set componentId and configurationId
 	target.Set(model.SchedulerTargetComponentIdKey, relation.ComponentId)
-	target.Set(model.SchedulerTargetConfigurationIdKey, relation.Id)
+	target.Set(model.SchedulerTargetConfigurationIdKey, relation.ConfigId)
 	apiObject.Content.Set(model.SchedulerTargetKey, target)
 
 	// Delete relation

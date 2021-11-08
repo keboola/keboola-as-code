@@ -59,7 +59,7 @@ func TestConfig_Clone(t *testing.T) {
 		Relations: Relations{
 			&VariablesForRelation{
 				ComponentId: `foo.bar`,
-				Id:          `789`,
+				ConfigId:    `789`,
 			},
 		},
 	}

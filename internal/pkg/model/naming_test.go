@@ -111,7 +111,7 @@ func TestDefaultNaming(t *testing.T) {
 				Relations: Relations{
 					&SchedulerForRelation{
 						ComponentId: `foo.bar`,
-						Id:          `789`,
+						ConfigId:    `789`,
 					},
 				},
 				Name:    "schedule-1",
@@ -156,7 +156,7 @@ func TestDefaultNaming(t *testing.T) {
 				},
 				Relations: Relations{
 					&VariablesForRelation{
-						Id:          `4567`,
+						ConfigId:    `4567`,
 						ComponentId: `foo.bar`,
 					},
 				},

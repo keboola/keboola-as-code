@@ -110,7 +110,7 @@
       "relations": [
         {
           "componentId": "keboola.python-transformation-v2",
-          "id": "%%TEST_BRANCH_BAR_CONFIG_TRANSFORMATION_WITH_SHARED_CODE_ID%%",
+          "configId": "%%TEST_BRANCH_BAR_CONFIG_TRANSFORMATION_WITH_SHARED_CODE_ID%%",
           "type": "variablesFor"
         }
       ],

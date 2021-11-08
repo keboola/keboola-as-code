@@ -38,7 +38,7 @@ func (m *schedulerMapper) MapBeforePersist(recipe *model.PersistRecipe) error {
 	// Add relation
 	configManifest.Relations.Add(&model.SchedulerForRelation{
 		ComponentId: configKey.ComponentId,
-		Id:          configKey.Id,
+		ConfigId:    configKey.Id,
 	})
 
 	return nil
