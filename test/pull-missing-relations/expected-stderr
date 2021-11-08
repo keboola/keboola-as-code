@@ -5,3 +5,6 @@ Warning:
   - config row "branch:%s/component:keboola.variables/config:%s/row:%s" not found
     - referenced from config "branch:%s/component:keboola.python-transformation-v2/config:%s"
     - by relation "variablesValuesFrom"
+Warning:
+  - missing shared code config "branch:%s/component:keboola.shared-code/config:%s"
+    - referenced from config "branch:%s/component:keboola.python-transformation-v2/config:%s"

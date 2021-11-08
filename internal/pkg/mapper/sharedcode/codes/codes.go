@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
+// mapper saves shared codes (config rows) to "codes" local dir.
 type mapper struct {
 	model.MapperContext
 }
