@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sync"
 
-
 	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"

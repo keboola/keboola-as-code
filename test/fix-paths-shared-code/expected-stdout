@@ -1,0 +1,9 @@
+%A
+INFO	Plan for "rename" operation:
+INFO	  - my-main-branch -> main
+INFO	  - main/_shared/{my-shared-code -> keboola.python-transformation-v2}
+INFO	  - main/transformation/keboola.python-transformation-v2/{my-transformation -> transformation-with-shared-code}
+%A
+DEBUG	Updating "shared_code_path" in "main/transformation/keboola.python-transformation-v2/transformation-with-shared-code"
+%A
+INFO	Fix paths done.

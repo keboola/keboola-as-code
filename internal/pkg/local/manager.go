@@ -228,13 +228,18 @@ func (u *UnitOfWork) Invoke() error {
 	}
 
 	// OnObjectsLoad event
-	if err := u.mapper.OnObjectsLoaded(model.StateTypeLocal, u.loadedObjects()); err != nil {
-		u.errors.Append(err)
+	loadedObjects := u.loadedObjects()
+	if len(loadedObjects) > 0 {
+		if err := u.mapper.OnObjectsLoad(model.StateTypeLocal, loadedObjects); err != nil {
+			u.errors.Append(err)
+		}
 	}
 
 	// OnObjectsLoad event
-	if err := u.mapper.OnObjectsRename(u.renamed); err != nil {
-		u.errors.Append(err)
+	if len(u.renamed) > 0 {
+		if err := u.mapper.OnObjectsRename(u.renamed); err != nil {
+			u.errors.Append(err)
+		}
 	}
 
 	u.invoked = true

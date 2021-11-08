@@ -17,7 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func createMapper(t *testing.T) (mapper.Mapper, model.MapperContext, *utils.Writer) {
+func createMapper(t *testing.T) (*mapper.Mapper, model.MapperContext, *utils.Writer) {
 	t.Helper()
 	logger, logs := utils.NewDebugLogger()
 	fs, err := aferofs.NewMemoryFs(logger, ".")

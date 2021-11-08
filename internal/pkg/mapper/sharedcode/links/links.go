@@ -14,7 +14,7 @@ type mapper struct {
 }
 
 func NewMapper(localManager *local.Manager, context model.MapperContext) *mapper {
-	return &mapper{MapperContext: context}
+	return &mapper{MapperContext: context, Manager: localManager}
 }
 
 // getSharedCodeTargetComponentId returns the component for which the shared code is intended.
