@@ -111,6 +111,7 @@ func newState(options *Options) *State {
 		sharedcode.NewVariablesMapper(mapperContext),
 		relations.NewMapper(mapperContext),
 		sharedcode.NewCodesMapper(mapperContext),
+		sharedcode.NewLinksMapper(mapperContext),
 		transformation.NewMapper(mapperContext),
 	}
 	s.mapper = mapper.New(mapperContext).AddMapper(mappers...)

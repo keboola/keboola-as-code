@@ -58,6 +58,13 @@
         }
       ],
       "rows": []
+    },
+    {
+      "branchId": %%TEST_BRANCH_MAIN_ID%%,
+      "componentId": "keboola.python-transformation-v2",
+      "id": "%%TEST_NEW_TICKET_6%%",
+      "path": "transformation/keboola.python-transformation-v2/transformation-with-shared-code",
+      "rows": []
     }
   ]
 }

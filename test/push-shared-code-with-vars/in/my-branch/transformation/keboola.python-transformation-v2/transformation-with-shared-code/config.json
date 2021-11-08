@@ -1,7 +1,4 @@
 {
   "parameters": {},
-  "shared_code_row_ids": [
-    "%%TEST_SHARED_CODE_ROW_ID%%"
-  ],
   "shared_code_path": "_shared/keboola.python-transformation-v2"
 }

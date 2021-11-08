@@ -64,6 +64,31 @@
               }
             }
           ]
+        },
+        {
+          "componentId": "keboola.python-transformation-v2",
+          "name": "Transformation With Shared Code",
+          "description": "test fixture",
+          "changeDescription": "Updated from #KeboolaCLI",
+          "configuration": {
+            "parameters": {
+              "blocks": [
+                {
+                  "name": "Block 1",
+                  "codes": [
+                    {
+                      "name": "Shared Code Used",
+                      "script": [
+                        "{{123456}}"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "shared_code_id": "%%TEST_NEW_TICKET_1%%"
+          },
+          "rows": []
         }
       ]
     }
