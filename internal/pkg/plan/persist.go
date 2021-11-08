@@ -1,6 +1,7 @@
 package plan
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -93,6 +94,10 @@ func (b *persistPlanBuilder) tryAdd(fullPath string, parent model.RecordPaths) b
 		if b.tryAddConfig(path, parent.ConfigKey) != nil {
 			return true
 		}
+	case *model.ConfigRowState:
+		if b.tryAddConfig(path, parent.ConfigRowKey) != nil {
+			return true
+		}
 	case *NewObjectAction:
 		if parentKey, ok := parent.Key.(model.ConfigKey); ok {
 			if action := b.tryAddConfigRow(path, parentKey); action != nil {
@@ -106,13 +111,13 @@ func (b *persistPlanBuilder) tryAdd(fullPath string, parent model.RecordPaths) b
 				})
 				return true
 			}
-			if action := b.tryAddConfig(path, parent.Key); action != nil {
-				// Set ConfigId on config persist, now it is unknown
-				parent.OnPersist = append(parent.OnPersist, func(parentKey model.Key) {
-					action.ParentKey = parentKey
-				})
-				return true
-			}
+		}
+		if action := b.tryAddConfig(path, parent.Key); action != nil {
+			// Set ConfigId on config persist, now it is unknown
+			parent.OnPersist = append(parent.OnPersist, func(parentKey model.Key) {
+				action.ParentKey = parentKey
+			})
+			return true
 		}
 	}
 
@@ -121,7 +126,7 @@ func (b *persistPlanBuilder) tryAdd(fullPath string, parent model.RecordPaths) b
 
 func (b *persistPlanBuilder) tryAddConfig(path model.PathInProject, parentKey model.Key) *NewObjectAction {
 	// Is config path matching naming template?
-	componentId, err := b.Naming().MatchConfigPath(parentKey.Kind(), path)
+	componentId, err := b.Naming().MatchConfigPath(parentKey, path)
 	if err != nil {
 		b.errors.Append(err)
 		return nil
@@ -136,6 +141,10 @@ func (b *persistPlanBuilder) tryAddConfig(path model.PathInProject, parentKey mo
 		configKey = model.ConfigKey{BranchId: k.Id, ComponentId: componentId}
 	case model.ConfigKey:
 		configKey = model.ConfigKey{BranchId: k.BranchId, ComponentId: componentId}
+	case model.ConfigRowKey:
+		configKey = model.ConfigKey{BranchId: k.BranchId, ComponentId: componentId}
+	default:
+		panic(fmt.Errorf(`unexpected parent key type "%T"`, parentKey))
 	}
 
 	// Create action
