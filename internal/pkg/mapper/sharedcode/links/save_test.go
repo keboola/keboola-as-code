@@ -5,14 +5,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode/links"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func TestSharedCodeLinksMapBeforeLocalSave(t *testing.T) {
 	t.Parallel()
-	context, logs := createMapperContext(t)
+	mapperInst, context, logs := createMapper(t)
 
 	// Shared code
 	sharedCodeKey := model.ConfigKey{
@@ -54,7 +53,7 @@ func TestSharedCodeLinksMapBeforeLocalSave(t *testing.T) {
 	recipe.Configuration.Content.Set(model.SharedCodeIdContentKey, `456`)
 
 	// Invoke
-	assert.NoError(t, NewMapper(context).MapBeforeLocalSave(recipe))
+	assert.NoError(t, mapperInst.MapBeforeLocalSave(recipe))
 	assert.Empty(t, logs.String())
 
 	// Path is replaced by ID

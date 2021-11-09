@@ -224,7 +224,7 @@ func (u *UnitOfWork) Invoke() error {
 	}
 
 	// OnObjectsLoad event
-	if err := u.mapper.OnObjectsLoaded(model.StateTypeRemote, u.newObjects()); err != nil {
+	if err := u.mapper.OnObjectsLoad(model.StateTypeRemote, u.newObjects()); err != nil {
 		u.errors.Append(err)
 	}
 

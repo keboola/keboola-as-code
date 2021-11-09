@@ -126,7 +126,7 @@ func (m *Mapper) MapBeforePersist(recipe *model.PersistRecipe) error {
 	return nil
 }
 
-func (m *Mapper) OnObjectsLoaded(stateType model.StateType, newObjects []model.Object) error {
+func (m *Mapper) OnObjectsLoad(stateType model.StateType, newObjects []model.Object) error {
 	errors := utils.NewMultiError()
 	event := model.OnObjectsLoadEvent{
 		StateType:  stateType,
