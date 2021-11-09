@@ -5,13 +5,16 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 type PathsGenerator struct {
 	*Manager
-	rename    bool            // rename=false -> path is generated only for new objects, rename=true -> all paths are re-generated
+	rename    bool // rename=false -> path is generated only for new objects, rename=true -> all paths are re-generated
+	toUpdate  []model.ObjectState
 	processed map[string]bool // Key.String() -> true
 	renamed   []renamedPath
+	invoked   bool
 }
 
 type renamedPath struct {
@@ -25,11 +28,34 @@ func (m *Manager) NewPathsGenerator(rename bool) *PathsGenerator {
 	return &PathsGenerator{Manager: m, rename: rename, processed: make(map[string]bool)}
 }
 
-func (g *PathsGenerator) Update(objectState model.ObjectState) error {
-	return g.doUpdate(objectState, nil)
+func (g *PathsGenerator) Add(objectState model.ObjectState) *PathsGenerator {
+	if g.invoked {
+		panic(fmt.Errorf(`PathsGenerator have already been invoked`))
+	}
+	g.toUpdate = append(g.toUpdate, objectState)
+	return g
+}
+
+func (g *PathsGenerator) Invoke() error {
+	if g.invoked {
+		panic(fmt.Errorf(`PathsGenerator must be first invoked to get list of the renamed objects`))
+	}
+
+	errors := utils.NewMultiError()
+	for _, objectState := range g.toUpdate {
+		if err := g.doUpdate(objectState, nil); err != nil {
+			errors.Append(err)
+		}
+	}
+
+	g.invoked = true
+	return errors.ErrorOrNil()
 }
 
 func (g *PathsGenerator) Renamed() []renamedPath {
+	if !g.invoked {
+		panic(fmt.Errorf(`PathsGenerator must be first invoked to get list of the renamed objects`))
+	}
 	return g.renamed
 }
 

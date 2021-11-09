@@ -232,10 +232,11 @@ func (u *UnitOfWork) Invoke() error {
 	pathsUpdater := u.localManager.NewPathsGenerator(false)
 	for _, objectState := range u.newObjectStates {
 		if objectState.GetObjectPath() == "" {
-			if err := pathsUpdater.Update(objectState); err != nil {
-				u.errors.Append(err)
-			}
+			pathsUpdater.Add(objectState)
 		}
+	}
+	if err := pathsUpdater.Invoke(); err != nil {
+		u.errors.Append(err)
 	}
 
 	u.invoked = true

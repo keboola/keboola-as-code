@@ -1,6 +1,7 @@
 package plan
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -10,7 +11,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
+	"github.com/keboola/keboola-as-code/internal/pkg/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -28,7 +31,7 @@ func TestRename(t *testing.T) {
 
 	// Plan
 	plan := &RenamePlan{
-		actions: []*RenameAction{
+		actions: []model.RenameAction{
 			{
 				Record:      &fixtures.MockedRecord{},
 				RenameFrom:  "foo1",
@@ -46,10 +49,12 @@ func TestRename(t *testing.T) {
 
 	// Rename
 	state := model.NewState(logger, fs, model.NewComponentsMap(nil), model.SortByPath)
-	executor := newRenameExecutor(logger, m, state, plan)
-	warn, err := executor.invoke()
-	assert.Empty(t, warn)
-	assert.Empty(t, err)
+	localManager := local.NewManager(logger, fs, m, state, mapper.New(model.MapperContext{}))
+	executor := newRenameExecutor(context.Background(), localManager, plan)
+	err := executor.invoke()
+	assert.NoError(t, err)
+	logsStr := logs.String()
+	assert.NotContains(t, logsStr, `WARN`)
 	assert.True(t, fs.IsFile(`bar1/sub/file`))
 	assert.True(t, fs.IsFile(`bar2`))
 	assert.False(t, fs.Exists(`foo1/sub/file`))
@@ -65,7 +70,7 @@ DEBUG  Removing old paths.
 DEBUG  Removed "foo1"
 DEBUG  Removed "foo2"
 `
-	assert.Equal(t, strings.TrimLeft(expectedLog, "\n"), logs.String())
+	assert.Equal(t, strings.TrimLeft(expectedLog, "\n"), logsStr)
 }
 
 func TestRenameFailedKeepOldState(t *testing.T) {
@@ -82,7 +87,7 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 
 	// Plan
 	plan := &RenamePlan{
-		actions: []*RenameAction{
+		actions: []model.RenameAction{
 			{
 				Record:      &fixtures.MockedRecord{},
 				RenameFrom:  "foo1",
@@ -112,10 +117,12 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 
 	// Rename
 	state := model.NewState(logger, fs, model.NewComponentsMap(nil), model.SortByPath)
-	executor := newRenameExecutor(logger, m, state, plan)
-	warn, err := executor.invoke()
-	assert.Empty(t, warn)
-	assert.NotNil(t, err)
+	localManager := local.NewManager(logger, fs, m, state, mapper.New(model.MapperContext{}))
+	executor := newRenameExecutor(context.Background(), localManager, plan)
+	err := executor.invoke()
+	assert.Error(t, err)
+	logsStr := logs.String()
+	assert.NotContains(t, logsStr, `WARN`)
 	assert.Contains(t, err.Error(), `cannot copy "missing3" -> "missing4"`)
 	assert.False(t, fs.Exists(`bar1/sub/file`))
 	assert.False(t, fs.Exists(`bar1`))
@@ -137,7 +144,7 @@ DEBUG  Removed "bar2"
 DEBUG  Removed "bar5"
 INFO  Error occurred, the rename operation was reverted.
 `
-	assert.Equal(t, strings.TrimLeft(expectedLog, "\n"), logs.String())
+	assert.Equal(t, strings.TrimLeft(expectedLog, "\n"), logsStr)
 }
 
 func newTestManifest(t *testing.T) (*manifest.Manifest, *zap.SugaredLogger, *utils.Writer) {

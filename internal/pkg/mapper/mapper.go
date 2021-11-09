@@ -42,6 +42,11 @@ type OnObjectsPersistListener interface {
 	OnObjectsPersist(event model.OnObjectsPersistEvent) error
 }
 
+// OnObjectsRenameListener is called when some object paths have been changed.
+type OnObjectsRenameListener interface {
+	OnObjectsRename(event model.OnObjectsRenameEvent) error
+}
+
 // Mapper maps Objects between internal/filesystem/API representations.
 type Mapper struct {
 	context model.MapperContext
@@ -150,6 +155,23 @@ func (m *Mapper) OnObjectsPersist(persistedObjects []model.Object) error {
 	for _, mapper := range m.mappers {
 		if mapper, ok := mapper.(OnObjectsPersistListener); ok {
 			if err := mapper.OnObjectsPersist(event); err != nil {
+				errors.Append(err)
+			}
+		}
+	}
+
+	return errors.ErrorOrNil()
+}
+
+func (m *Mapper) OnObjectsRename(renamedObjects []model.RenameAction) error {
+	errors := utils.NewMultiError()
+	event := model.OnObjectsRenameEvent{
+		RenamedObjects: renamedObjects,
+	}
+
+	for _, mapper := range m.mappers {
+		if mapper, ok := mapper.(OnObjectsRenameListener); ok {
+			if err := mapper.OnObjectsRename(event); err != nil {
 				errors.Append(err)
 			}
 		}
