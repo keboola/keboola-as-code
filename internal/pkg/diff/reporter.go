@@ -1,15 +1,20 @@
 package diff
 
 import (
+	"bytes"
 	"fmt"
+	"math"
 	"reflect"
 	"strings"
 
 	"github.com/google/go-cmp/cmp"
+	diffstr "github.com/kylelemons/godebug/diff"
 	"github.com/spf13/cast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
+
+const MaxEqualLinesInString = 5 // maximum of equal lines returned by strings diff
 
 // Reporter contains path to the compared values and generates human-readable difference report.
 type Reporter struct {
@@ -46,6 +51,11 @@ func (r *Reporter) Report(rs cmp.Result) {
 
 		// Format relations diff
 		if r.relationsDiff(remoteValue, localValue) {
+			return
+		}
+
+		// Format strings diff
+		if r.stringsDiff(remoteValue, localValue) {
 			return
 		}
 
@@ -111,6 +121,48 @@ func (r *Reporter) relationToString(relation model.Relation, definedOn model.Obj
 	return relation.Desc() + ` ` + otherSideDesc
 }
 
+func (r *Reporter) stringsDiff(remoteValue, localValue reflect.Value) bool {
+	if remoteValue.IsValid() && localValue.IsValid() && remoteValue.Type().String() == `string` && localValue.Type().String() == `string` {
+		r.diffs = append(r.diffs, stringsDiff(remoteValue.Interface().(string), localValue.Interface().(string)))
+		return true
+	}
+	return false
+}
+
+func stringsDiff(remote, local string) string {
+	remoteLines := strings.Split(remote, "\n")
+	if len(remote) == 0 {
+		remoteLines = []string{}
+	}
+	localLines := strings.Split(local, "\n")
+	if len(local) == 0 {
+		localLines = []string{}
+	}
+	chunks := diffstr.DiffChunks(remoteLines, localLines)
+	out := new(bytes.Buffer)
+	for _, c := range chunks {
+		for _, line := range c.Added {
+			_, _ = fmt.Fprintf(out, "  %s %s\n", OnlyInLocalMark, line)
+		}
+		for _, line := range c.Deleted {
+			_, _ = fmt.Fprintf(out, "  %s %s\n", OnlyInRemoteMark, line)
+		}
+		for i, line := range c.Equal {
+			// Limit number of equal lines in row
+			if i+1 >= MaxEqualLinesInString && len(c.Equal) > MaxEqualLinesInString {
+				_, _ = fmt.Fprint(out, "    ...\n")
+				break
+			}
+			if len(line) == 0 {
+				_, _ = fmt.Fprint(out, "\n")
+			} else {
+				_, _ = fmt.Fprintf(out, "    %s\n", line)
+			}
+		}
+	}
+	return strings.TrimRight(out.String(), "\n")
+}
+
 func pathToString(path cmp.Path) string {
 	var parts []string
 	skip := make(map[int]bool)
@@ -130,7 +182,10 @@ func pathToString(path cmp.Path) string {
 		case cmp.MapIndex:
 			parts = append(parts, cast.ToString(v.Key().Interface()))
 		case cmp.SliceIndex:
-			parts = append(parts, cast.ToString(v.Key()))
+			// index1 or index2 can be "-1",
+			// if the value is on one side only
+			index1, index2 := v.SplitKeys()
+			parts = append(parts, cast.ToString(math.Max(float64(index1), float64(index2))))
 		case cmp.StructField:
 			parts = append(parts, v.Name())
 		}
