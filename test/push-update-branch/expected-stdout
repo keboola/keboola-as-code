@@ -1,3 +1,3 @@
 Plan for "push" operation:
-  CH B foo | changed: description, name
+  * B foo | changed: description, name
 Push done.

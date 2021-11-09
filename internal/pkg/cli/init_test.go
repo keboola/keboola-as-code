@@ -36,6 +36,7 @@ func TestInteractiveInit(t *testing.T) {
 
 	// Test project
 	project := testproject.GetTestProject(t, env.Empty())
+	project.SetState(`empty.json`)
 
 	// Init prompt and cmd
 	root := newTestRootCommandWithTty(c.Tty())

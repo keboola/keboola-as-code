@@ -1,4 +1,4 @@
 Plan for "pull" operation:
-  +  B main
-  +  C main/transformation/keboola.python-transformation-v2/transformation-with-shared-code
+  + B main
+  + C main/transformation/keboola.python-transformation-v2/transformation-with-shared-code
 Pull done.

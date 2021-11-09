@@ -117,8 +117,8 @@ func TestDiffNotEqual(t *testing.T) {
 	result := results.Results[0]
 	assert.Equal(t, ResultNotEqual, result.State)
 	assert.Equal(t, `isDefault, name`, result.ChangedFields.String())
-	assert.Equal(t, "  - name\n  + changed", strings.ReplaceAll(result.ChangedFields.Get("name").Diff(), " ", " "))
-	assert.Equal(t, "  - false\n  + true", strings.ReplaceAll(result.ChangedFields.Get("isDefault").Diff(), " ", " "))
+	assert.Equal(t, "  - name\n  + changed", result.ChangedFields.Get("name").Diff())
+	assert.Equal(t, "  - false\n  + true", result.ChangedFields.Get("isDefault").Diff())
 	assert.Same(t, branchRemote, result.ObjectState.RemoteState().(*model.Branch))
 	assert.Same(t, branchLocal, result.ObjectState.LocalState().(*model.Branch))
 }
@@ -407,7 +407,7 @@ func TestDiffRelations(t *testing.T) {
 	objectState.SetRemoteState(rObject)
 
 	differ := NewDiffer(projectState)
-	reporter := differ.diffValues(rObject, lObject, rObject.Relations, lObject.Relations)
+	reporter := differ.diffValues(objectState, rObject.Relations, lObject.Relations)
 	expected := `
   - manifest side relation mocked key "foo"
   + manifest side relation mocked key "bar"

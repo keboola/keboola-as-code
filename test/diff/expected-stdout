@@ -1,8 +1,8 @@
-CH changed
--  remote state
-+  local state
+* changed
+- remote state
++ local state
 
 Diff:
-CH B bar | changed: description
-CH C bar/extractor/ex-generic-v2/empty | changed: name
--  C main/extractor/ex-generic-v2/empty
+* B bar | changed: description
+* C bar/extractor/ex-generic-v2/empty | changed: name
+- C main/extractor/ex-generic-v2/empty

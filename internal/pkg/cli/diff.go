@@ -1,9 +1,6 @@
 package cli
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
@@ -36,32 +33,15 @@ func diffCommand(root *rootCommand) *cobra.Command {
 					root.logger.Info("No difference.")
 				} else {
 					// Explain
-					root.logger.Info("CH changed")
-					root.logger.Info(diff.OnlyInRemoteMark + "  remote state")
-					root.logger.Info(diff.OnlyInLocalMark + "  local state")
+					root.logger.Info(diff.ChangedMark + " changed")
+					root.logger.Info(diff.OnlyInRemoteMark + " remote state")
+					root.logger.Info(diff.OnlyInLocalMark + " local state")
 					root.logger.Info("")
 
 					// Print diff
 					root.logger.Info("Diff:")
-					for _, result := range diffResults.Results {
-						if result.State != diff.ResultEqual {
-							// Message
-							msg := fmt.Sprintf("%s %s %s", result.Mark(), result.Kind().Abbr, result.Path())
-							if !printDetails && !result.ChangedFields.IsEmpty() {
-								msg += " | changed: " + result.ChangedFields.String()
-							}
-							root.logger.Infof(msg)
-
-							// Changed fields
-							if printDetails {
-								for name, field := range result.ChangedFields {
-									root.logger.Infof("  \"%s\":", name)
-									for _, line := range strings.Split(field.Diff(), "\n") {
-										root.logger.Infof("  %s", line)
-									}
-								}
-							}
-						}
+					for _, line := range diffResults.Format(printDetails) {
+						root.logger.Info(line)
 					}
 				}
 

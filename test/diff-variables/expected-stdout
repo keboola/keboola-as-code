@@ -1,11 +1,11 @@
-CH changed
--  remote state
-+  local state
+* changed
+- remote state
++ local state
 
 Diff:
-CH C main/extractor/ex-generic-v2/with-variables-1
-  "relations":
+* C main/extractor/ex-generic-v2/with-variables-1
+  relations:
     - variables from "main/extractor/ex-generic-v2/with-variables-1/variables"
     - variables values from "main/extractor/ex-generic-v2/with-variables-1/variables/values/default"
--  C main/extractor/ex-generic-v2/with-variables-1/variables
--  R main/extractor/ex-generic-v2/with-variables-1/variables/values/default
+- C main/extractor/ex-generic-v2/with-variables-1/variables
+- R main/extractor/ex-generic-v2/with-variables-1/variables/values/default

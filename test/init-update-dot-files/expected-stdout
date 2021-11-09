@@ -17,5 +17,5 @@ See: https://docs.github.com/en/actions/reference/encrypted-secrets
 
 Init done. Running pull.
 Plan for "pull" operation:
-  +  B main
+  + B main
 Pull done.

@@ -50,16 +50,16 @@ func (a *DiffAction) opString() string {
 func (a *DiffAction) markString() string {
 	switch a.State {
 	case diff.ResultNotSet:
-		return "? "
+		return "?"
 	case diff.ResultNotEqual:
-		return "CH"
+		return diff.ChangedMark
 	case diff.ResultEqual:
-		return "= "
+		return diff.EqualMark
 	default:
 		if a.action == ActionSaveLocal || a.action == ActionSaveRemote {
-			return "+ "
+			return diff.AddMark
 		} else {
-			return "× "
+			return diff.DeleteMark
 		}
 	}
 }

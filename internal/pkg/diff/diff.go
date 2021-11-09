@@ -26,6 +26,10 @@ type Differ struct {
 type ResultState int
 
 const (
+	EqualMark                    = "="
+	ChangedMark                  = "*"
+	AddMark                      = "+"
+	DeleteMark                   = "×"
 	OnlyInRemoteMark             = "-"
 	OnlyInLocalMark              = "+"
 	ResultNotSet     ResultState = iota
@@ -131,8 +135,7 @@ func (d *Differ) diffState(state model.ObjectState) (*Result, error) {
 	// Diff
 	for _, field := range diffFields {
 		reporter := d.diffValues(
-			remoteState,
-			localState,
+			state,
 			remoteValues.FieldByName(field.StructField.Name).Interface(),
 			localValues.FieldByName(field.StructField.Name).Interface(),
 		)
@@ -154,8 +157,8 @@ func (d *Differ) diffState(state model.ObjectState) (*Result, error) {
 	return result, nil
 }
 
-func (d *Differ) diffValues(remoteObject, localObject model.Object, remoteValue, localValue interface{}) *Reporter {
-	reporter := newReporter(remoteObject, localObject, d.state.State)
+func (d *Differ) diffValues(objectState model.ObjectState, remoteValue, localValue interface{}) *Reporter {
+	reporter := newReporter(objectState, d.state.State)
 	cmp.Diff(remoteValue, localValue, d.newOptions(reporter))
 	return reporter
 }
@@ -165,10 +168,6 @@ func (d *Differ) newOptions(reporter *Reporter) cmp.Options {
 		cmp.Reporter(reporter),
 		// Compare Config/ConfigRow configuration content ("orderedmap" type) as map (keys order doesn't matter)
 		cmp.Transformer("orderedmap", utils.OrderedMapToMap),
-		// Compare strings by line by line
-		cmpopts.AcyclicTransformer("strByLine", func(s string) []string {
-			return strings.Split(s, "\n")
-		}),
 		// Separately compares the relations for the manifest and API side
 		cmpopts.AcyclicTransformer("relations", func(relations model.Relations) model.RelationsBySide {
 			return relations.RelationsBySide()
@@ -187,18 +186,43 @@ func (d *Differ) getDiffFields(t reflect.Type) []*utils.StructField {
 	}
 }
 
+func (r *Results) Format(details bool) []string {
+	var out []string
+	for _, result := range r.Results {
+		if result.State != ResultEqual {
+			// Message
+			msg := fmt.Sprintf("%s %s %s", result.Mark(), result.Kind().Abbr, result.Path())
+			if !details && !result.ChangedFields.IsEmpty() {
+				msg += " | changed: " + result.ChangedFields.String()
+			}
+			out = append(out, msg)
+
+			// Changed fields
+			if details {
+				for name, field := range result.ChangedFields {
+					out = append(out, fmt.Sprintf("  %s:", name))
+					for _, line := range strings.Split(field.Diff(), "\n") {
+						out = append(out, fmt.Sprintf("  %s", line))
+					}
+				}
+			}
+		}
+	}
+	return out
+}
+
 func (r *Result) Mark() string {
 	switch r.State {
 	case ResultNotSet:
-		return "? "
+		return "?"
 	case ResultNotEqual:
-		return "CH"
+		return "*"
 	case ResultEqual:
-		return "= "
+		return "="
 	case ResultOnlyInRemote:
-		return OnlyInRemoteMark + " "
+		return OnlyInRemoteMark
 	case ResultOnlyInLocal:
-		return OnlyInLocalMark + " "
+		return OnlyInLocalMark
 	default:
 		panic(fmt.Errorf("unexpected type %T", r.State))
 	}
