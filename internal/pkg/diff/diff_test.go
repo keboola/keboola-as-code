@@ -418,6 +418,159 @@ func TestDiffRelations(t *testing.T) {
 	assert.Equal(t, []string{"InManifest", "InApi"}, reporter.Paths()) // see model.RelationsBySide
 }
 
+func TestDiffBlocks(t *testing.T) {
+	t.Parallel()
+	projectState := createProjectState(t)
+
+	// Object state
+	configKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.python-transformation-v2`, Id: `456`}
+	objectState, err := projectState.CreateFrom(&model.ConfigManifest{
+		ConfigKey: configKey,
+		Paths: model.Paths{
+			PathInProject: model.NewPathInProject("branch", "config"),
+		},
+	})
+	assert.NoError(t, err)
+
+	// Remote state
+	rObject := &model.Config{
+		Blocks: model.Blocks{
+			{
+				Name: "Block 1",
+				Codes: model.Codes{
+					{
+						Name: "Code 1",
+						Scripts: []string{
+							"SELECT 1;",
+						},
+					},
+				},
+				PathInProject: model.NewPathInProject(`branch/config/blocks`, `001-block-1`),
+			},
+			{
+				Name: "Block 2",
+				Codes: model.Codes{
+					{
+						Name: "Code 2",
+						Scripts: []string{
+							"SELECT 2;",
+						},
+					},
+				},
+				PathInProject: model.NewPathInProject(`branch/config/blocks/001-block-1`, `001-code-1`),
+			},
+		},
+	}
+	objectState.SetRemoteState(rObject)
+
+	// Local state
+	lObject := &model.Config{
+		Blocks: model.Blocks{
+			{
+				Name: "My block",
+				Codes: model.Codes{
+					{
+						Name: "Code 1",
+						Scripts: []string{
+							"SELECT 1;",
+							"SELECT 2;",
+							"SELECT 3;",
+						},
+						PathInProject: model.NewPathInProject(`branch/config/blocks/001-block-1`, `001-code-1`),
+					},
+				},
+				PathInProject: model.NewPathInProject(`branch/config/blocks`, `001-my-block`),
+			},
+		},
+	}
+	objectState.SetLocalState(lObject)
+
+	differ := NewDiffer(projectState)
+	reporter := differ.diffValues(objectState, rObject.Blocks, lObject.Blocks)
+	expected := `
+  blocks/001-my-block:
+    - #  Block 1
+    + #  My block
+      ## Code 1
+      SELECT 1;
+    + SELECT 2;
+    + SELECT 3;
+- blocks/001-block-1/001-code-1:
+-   #  Block 2
+-   ## Code 2
+-   SELECT 2;
+-   
+`
+	assert.Equal(t, strings.Trim(expected, "\n"), reporter.String())
+}
+
+func TestDiffMap(t *testing.T) {
+	t.Parallel()
+	projectState := createProjectState(t)
+
+	// Object state
+	configKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.python-transformation-v2`, Id: `456`}
+	objectState, err := projectState.CreateFrom(&model.ConfigManifest{
+		ConfigKey: configKey,
+		Paths: model.Paths{
+			PathInProject: model.NewPathInProject("branch", "config"),
+		},
+	})
+	assert.NoError(t, err)
+
+	// Remote state
+	rObject := &model.Config{
+		Content: utils.PairsToOrderedMap([]utils.Pair{
+			{
+				Key: "foo",
+				Value: utils.PairsToOrderedMap([]utils.Pair{
+					{Key: "bar", Value: "value"},
+				}),
+			},
+			{Key: "key", Value: "value"},
+		}),
+	}
+	objectState.SetRemoteState(rObject)
+
+	// Local state
+	lObject := &model.Config{
+		Content: utils.PairsToOrderedMap([]utils.Pair{
+			{
+				Key: "foo",
+				Value: utils.PairsToOrderedMap([]utils.Pair{
+					{
+						Key: "bar",
+						Value: utils.PairsToOrderedMap([]utils.Pair{
+							{
+								Key: "baz",
+								Value: utils.PairsToOrderedMap([]utils.Pair{
+									{Key: "key", Value: "value"},
+								}),
+							},
+						}),
+					},
+				}),
+			},
+		}),
+	}
+	objectState.SetLocalState(lObject)
+
+	differ := NewDiffer(projectState)
+	reporter := differ.diffValues(objectState, rObject.Content, lObject.Content)
+	expected := `
+  foo.bar:
+    - value
+    + {
+    +   "baz": {
+    +     "key": "value"
+    +   }
+    + }
+- key:
+-   value
+`
+	assert.Equal(t, strings.Trim(expected, "\n"), reporter.String())
+}
+
 func createProjectState(t *testing.T) *state.State {
 	t.Helper()
 

@@ -192,24 +192,24 @@ func TestNamingAttachDetach(t *testing.T) {
 
 	// Attach multiple times with same key
 	key1 := BranchKey{Id: 123}
-	n.Attach(key1, "my-branch")
-	n.Attach(key1, "my-branch-123")
-	n.Attach(key1, "my-branch-abc")
+	n.Attach(key1, NewPathInProject("", "my-branch"))
+	n.Attach(key1, NewPathInProject("", "my-branch-123"))
+	n.Attach(key1, NewPathInProject("", "my-branch-abc"))
 	assert.Len(t, n.usedByPath, 1)
 	assert.Len(t, n.usedByKey, 1)
 	assert.Equal(t, key1.String(), n.usedByPath["my-branch-abc"])
-	assert.Equal(t, "my-branch-abc", n.usedByKey[key1.String()])
+	assert.Equal(t, NewPathInProject("", "my-branch-abc"), n.usedByKey[key1.String()])
 
 	// Attach another key
 	key2 := BranchKey{Id: 456}
-	n.Attach(key2, "my-branch-456")
+	n.Attach(key2, NewPathInProject("", "my-branch-456"))
 	assert.Len(t, n.usedByPath, 2)
 	assert.Len(t, n.usedByKey, 2)
 
 	// Attach another key with same path
 	msg := `naming error: path "my-branch-456" is attached to object "01_456_branch", but new object "01_789_branch" has same path`
 	assert.PanicsWithError(t, msg, func() {
-		n.Attach(BranchKey{Id: 789}, "my-branch-456")
+		n.Attach(BranchKey{Id: 789}, NewPathInProject("", "my-branch-456"))
 	})
 
 	// Detach
@@ -218,7 +218,7 @@ func TestNamingAttachDetach(t *testing.T) {
 	assert.Len(t, n.usedByKey, 1)
 
 	// Re-use path
-	n.Attach(BranchKey{Id: 789}, "my-branch-456")
+	n.Attach(BranchKey{Id: 789}, NewPathInProject("", "my-branch-456"))
 	assert.Len(t, n.usedByPath, 2)
 	assert.Len(t, n.usedByKey, 2)
 }
