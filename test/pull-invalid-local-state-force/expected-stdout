@@ -8,6 +8,6 @@ Ignoring invalid local state:
   - config row "main/extractor/keboola.ex-db-mysql/with-rows/rows/test-view" not found
   - config row "main/extractor/keboola.ex-db-mysql/with-rows/rows/users" not found
 Plan for "pull" operation:
-  +  B main
-  +  C main/extractor/ex-generic-v2/empty
+  + B main
+  + C main/extractor/ex-generic-v2/empty
 Pull done.

@@ -1,5 +1,5 @@
 Plan for "push" operation:
-  CH R foo/extractor/keboola.ex-db-mysql/with-rows/rows/disabled | changed: isDisabled
-  CH R main/extractor/keboola.ex-db-mysql/with-rows/rows/test-view | changed: name
-  CH R main/extractor/keboola.ex-db-mysql/with-rows/rows/users | changed: configuration
+  * R foo/extractor/keboola.ex-db-mysql/with-rows/rows/disabled | changed: isDisabled
+  * R main/extractor/keboola.ex-db-mysql/with-rows/rows/test-view | changed: name
+  * R main/extractor/keboola.ex-db-mysql/with-rows/rows/users | changed: configuration
 Push done.

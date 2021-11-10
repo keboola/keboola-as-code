@@ -1,18 +1,18 @@
-CH changed
--  remote state
-+  local state
+* changed
+- remote state
++ local state
 
 Diff:
-CH B bar
-  "description":
+* B bar
+  description:
     + new description
-CH C bar/extractor/ex-generic-v2/empty
-  "name":
+* C bar/extractor/ex-generic-v2/empty
+  name:
     - empty
     + new name
-CH C foo/extractor/ex-generic-v2/without-rows
-  "configuration":
-    "parameters.api.baseUrl":
-    - https://jsonplaceholder.typicode.com
-    + https://jsonplaceholder.typicode.org
--  C main/extractor/ex-generic-v2/empty
+* C foo/extractor/ex-generic-v2/without-rows
+  configuration:
+    parameters.api.baseUrl:
+      - https://jsonplaceholder.typicode.com
+      + https://jsonplaceholder.typicode.org
+- C main/extractor/ex-generic-v2/empty

@@ -1,9 +1,9 @@
 Plan for "pull" operation:
-  +  B main
-  +  C main/other/transformation/legacy-transformation
-  +  R main/other/transformation/legacy-transformation/rows/name-from-config
-  +  R main/other/transformation/legacy-transformation/rows/name-from-config-001
-  +  R main/other/transformation/legacy-transformation/rows/row
-  +  R main/other/transformation/legacy-transformation/rows/row-001
-  +  R main/other/transformation/legacy-transformation/rows/row-002
+  + B main
+  + C main/other/transformation/legacy-transformation
+  + R main/other/transformation/legacy-transformation/rows/name-from-config
+  + R main/other/transformation/legacy-transformation/rows/name-from-config-001
+  + R main/other/transformation/legacy-transformation/rows/row
+  + R main/other/transformation/legacy-transformation/rows/row-001
+  + R main/other/transformation/legacy-transformation/rows/row-002
 Pull done.
