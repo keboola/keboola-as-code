@@ -269,7 +269,7 @@ func (m *Manifest) PersistRecord(record model.Record) error {
 	}
 
 	// Attach record to the naming
-	m.Naming.Attach(record.Key(), record.Path())
+	m.Naming.Attach(record.Key(), record.GetPathInProject())
 
 	m.lock.Lock()
 	defer m.lock.Unlock()

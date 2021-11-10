@@ -172,6 +172,10 @@ func (d *Differ) newOptions(reporter *Reporter) cmp.Options {
 		cmpopts.AcyclicTransformer("relations", func(relations model.Relations) model.RelationsBySide {
 			return relations.RelationsBySide()
 		}),
+		// Diff transformation blocks as string
+		cmp.Transformer("block", func(block model.Block) string {
+			return block.String()
+		}),
 	}
 }
 

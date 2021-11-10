@@ -36,8 +36,8 @@ type Naming struct {
 	VariablesConfig     utils.PathTemplate `json:"variablesConfig" validate:"required"`
 	VariablesValuesRow  utils.PathTemplate `json:"variablesValuesRow" validate:"required"`
 	usedLock            *sync.Mutex
-	usedByPath          map[string]string // path -> object key
-	usedByKey           map[string]string // object key -> path
+	usedByPath          map[string]string        // path -> object key
+	usedByKey           map[string]PathInProject // object key -> path
 }
 
 func DefaultNaming() *Naming {
@@ -52,35 +52,36 @@ func DefaultNaming() *Naming {
 		VariablesValuesRow:  "values/{config_row_name}",
 		usedLock:            &sync.Mutex{},
 		usedByPath:          make(map[string]string),
-		usedByKey:           make(map[string]string),
+		usedByKey:           make(map[string]PathInProject),
 	}
 }
 
 // Attach object's path to Naming, it guarantees the path will remain unique and will not be used again.
-func (n Naming) Attach(key Key, path string) {
+func (n Naming) Attach(key Key, path PathInProject) {
 	n.usedLock.Lock()
 	defer n.usedLock.Unlock()
 
 	// Object path cannot be empty
-	if len(path) == 0 {
+	pathStr := path.Path()
+	if len(pathStr) == 0 {
 		panic(fmt.Errorf(`naming error: path for %s cannot be empty`, key.Desc()))
 	}
 
 	// Check if the path is unique
 	keyStr := key.String()
-	if foundKey, found := n.usedByPath[path]; found && foundKey != keyStr {
+	if foundKey, found := n.usedByPath[pathStr]; found && foundKey != keyStr {
 		panic(fmt.Errorf(
 			`naming error: path "%s" is attached to object "%s", but new object "%s" has same path`,
-			path, foundKey, keyStr,
+			pathStr, foundKey, keyStr,
 		))
 	}
 
 	// Remove the previous value attached to the key
 	if foundPath, found := n.usedByKey[keyStr]; found {
-		delete(n.usedByPath, foundPath)
+		delete(n.usedByPath, foundPath.Path())
 	}
 
-	n.usedByPath[path] = keyStr
+	n.usedByPath[pathStr] = keyStr
 	n.usedByKey[keyStr] = path
 }
 
@@ -90,14 +91,19 @@ func (n Naming) Detach(key Key) {
 	defer n.usedLock.Unlock()
 
 	if foundPath, found := n.usedByKey[key.String()]; found {
-		delete(n.usedByPath, foundPath)
+		delete(n.usedByPath, foundPath.Path())
 		delete(n.usedByKey, key.String())
 	}
 }
 
+func (n Naming) GetCurrentPath(key Key) (PathInProject, bool) {
+	path, found := n.usedByKey[key.String()]
+	return path, found
+}
+
 func (n Naming) ensureUniquePath(key Key, p PathInProject) PathInProject {
 	p = n.makeUniquePath(key, p)
-	n.Attach(key, p.Path())
+	n.Attach(key, p)
 	return p
 }
 

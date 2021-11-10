@@ -62,6 +62,30 @@ func CloneOrderedMap(in *orderedmap.OrderedMap) *orderedmap.OrderedMap {
 	return out
 }
 
+func GetFromMap(m *orderedmap.OrderedMap, keys []string) interface{} {
+	lastI := len(keys) - 1
+	for i, key := range keys {
+		last := i == lastI
+		v, found := m.Get(key)
+		if !found {
+			return nil
+		}
+		if last {
+			return v
+		}
+		if v, ok := v.(*orderedmap.OrderedMap); ok {
+			m = v
+			continue
+		}
+		if v, ok := v.(orderedmap.OrderedMap); ok {
+			m = &v
+			continue
+		}
+		return nil
+	}
+	return m
+}
+
 func convertValue(value interface{}) interface{} {
 	switch v := value.(type) {
 	case orderedmap.OrderedMap:
