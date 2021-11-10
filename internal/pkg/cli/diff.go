@@ -33,7 +33,7 @@ func diffCommand(root *rootCommand) *cobra.Command {
 					root.logger.Info("No difference.")
 				} else {
 					// Explain
-					root.logger.Info(diff.ChangedMark + " changed")
+					root.logger.Info(diff.ChangeMark + " changed")
 					root.logger.Info(diff.OnlyInRemoteMark + " remote state")
 					root.logger.Info(diff.OnlyInLocalMark + " local state")
 					root.logger.Info("")

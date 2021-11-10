@@ -27,7 +27,7 @@ type ResultState int
 
 const (
 	EqualMark                    = "="
-	ChangedMark                  = "*"
+	ChangeMark                   = "*"
 	AddMark                      = "+"
 	DeleteMark                   = "×"
 	OnlyInRemoteMark             = "-"

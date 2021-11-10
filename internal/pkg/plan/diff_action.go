@@ -52,7 +52,7 @@ func (a *DiffAction) markString() string {
 	case diff.ResultNotSet:
 		return "?"
 	case diff.ResultNotEqual:
-		return diff.ChangedMark
+		return diff.ChangeMark
 	case diff.ResultEqual:
 		return diff.EqualMark
 	default:
