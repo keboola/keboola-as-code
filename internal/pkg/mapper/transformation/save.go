@@ -2,26 +2,64 @@ package transformation
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/iancoleman/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/sql"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
-type writer struct {
-	model.MapperContext
-	*model.LocalSaveRecipe
-	config    *model.Config
-	configDir string
-	errors    *utils.Error
+// MapBeforeRemoteSave - save code blocks to the API.
+func (m *transformationMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
+	// Only for transformation config
+	if ok, err := m.isTransformationConfig(recipe.InternalObject); err != nil {
+		return err
+	} else if !ok {
+		return nil
+	}
+	internalObject := recipe.InternalObject.(*model.Config)
+	apiObject := recipe.ApiObject.(*model.Config)
+
+	// Get parameters
+	var parameters orderedmap.OrderedMap
+	parametersRaw := utils.GetFromMap(apiObject.Content, []string{`parameters`})
+	if v, ok := parametersRaw.(orderedmap.OrderedMap); ok {
+		parameters = v
+	} else {
+		parameters = *utils.NewOrderedMap()
+	}
+
+	// Convert blocks to map
+	blocks := make([]interface{}, 0)
+	for _, block := range internalObject.Blocks {
+		blockRaw := *utils.NewOrderedMap()
+		if err := utils.ConvertByJson(block, &blockRaw); err != nil {
+			return fmt.Errorf(`cannot convert block to JSON: %w`, err)
+		}
+		blocks = append(blocks, blockRaw)
+	}
+
+	// Add "parameters.blocks" to configuration content
+	parameters.Set("blocks", blocks)
+
+	// Set parameters
+	apiObject.Content.Set(`parameters`, parameters)
+
+	// Clear blocks in API object
+	apiObject.Blocks = nil
+
+	// Update changed fields
+	if recipe.ChangedFields.Has(`blocks`) {
+		recipe.ChangedFields.Remove(`blocks`)
+		recipe.ChangedFields.Add(`configuration`)
+	}
+
+	return nil
 }
 
-// BeforeLocalSave - save code blocks from source config to the disk.
+// MapBeforeLocalSave - save code blocks to the disk.
 func (m *transformationMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
 	// Only for transformation config
 	if ok, err := m.isTransformationConfig(recipe.Object); err != nil {
@@ -30,12 +68,11 @@ func (m *transformationMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe)
 		return nil
 	}
 
-	// Create writer
-	w := &writer{
+	// Create local writer
+	w := &localWriter{
 		MapperContext:   m.MapperContext,
 		LocalSaveRecipe: recipe,
 		config:          recipe.Object.(*model.Config),
-		configDir:       recipe.Path(),
 		errors:          utils.NewMultiError(),
 	}
 
@@ -43,48 +80,23 @@ func (m *transformationMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe)
 	return w.save()
 }
 
-func (w *writer) save() error {
-	// Load and clear "parameters.blocks" from the record
-	var blocksRaw interface{} = nil
-	if parametersRaw, found := w.Configuration.Content.Get(`parameters`); found {
-		// Get blocks map
-		parameters := parametersRaw.(orderedmap.OrderedMap)
-		blocksRaw, _ = parameters.Get(`blocks`)
+type localWriter struct {
+	model.MapperContext
+	*model.LocalSaveRecipe
+	config *model.Config
+	errors *utils.Error
+}
 
-		// Remove blocks from config.json
-		parameters.Delete(`blocks`)
-		w.Configuration.Content.Set(`parameters`, parameters)
-	}
-
-	// Convert map to structs
-	blocks := make([]*model.Block, 0)
-	if err := utils.ConvertByJson(blocksRaw, &blocks); err != nil {
-		return err
-	}
-
-	// Fill in values AND generate files
-	blocksDir := w.Naming.BlocksDir(w.configDir)
-	for blockIndex, block := range blocks {
-		block.BranchId = w.config.BranchId
-		block.ComponentId = w.config.ComponentId
-		block.ConfigId = w.config.Id
-		block.Index = blockIndex
-		block.PathInProject = w.Naming.BlockPath(blocksDir, block)
-		for codeIndex, code := range block.Codes {
-			code.BranchId = w.config.BranchId
-			code.ComponentId = w.config.ComponentId
-			code.ConfigId = w.config.Id
-			code.Index = codeIndex
-			code.PathInProject = w.Naming.CodePath(block.Path(), code)
-			code.CodeFileName = w.Naming.CodeFileName(w.config.ComponentId)
-		}
-
+func (w *localWriter) save() error {
+	// Generate files for blocks
+	for _, block := range w.config.Blocks {
 		// Generate block files
 		w.generateBlockFiles(block)
 	}
 
 	// Delete all old files from blocks dir
 	// We always do full generation of blocks dir.
+	blocksDir := w.Naming.BlocksDir(w.Record.Path())
 	for _, path := range w.State.TrackedPaths() {
 		if filesystem.IsFrom(path, blocksDir) && w.State.IsFile(path) {
 			w.ToDelete = append(w.ToDelete, path)
@@ -94,7 +106,7 @@ func (w *writer) save() error {
 	return w.errors.ErrorOrNil()
 }
 
-func (w *writer) generateBlockFiles(block *model.Block) {
+func (w *localWriter) generateBlockFiles(block *model.Block) {
 	// Validate
 	if err := validator.Validate(block); err != nil {
 		w.errors.Append(utils.PrefixError(fmt.Sprintf(`invalid block \"%s\"`, block.Path()), err))
@@ -113,7 +125,7 @@ func (w *writer) generateBlockFiles(block *model.Block) {
 	}
 }
 
-func (w *writer) generateCodeFiles(code *model.Code) {
+func (w *localWriter) generateCodeFiles(code *model.Code) {
 	// Create metadata file
 	if metadata := utils.MapFromTaggedFields(model.MetaFileTag, code); metadata != nil {
 		metadataPath := w.Naming.MetaFilePath(code.Path())
@@ -122,12 +134,12 @@ func (w *writer) generateCodeFiles(code *model.Code) {
 
 	// Create code file
 	file := filesystem.
-		CreateFile(w.Naming.CodeFilePath(code), w.joinScripts(code.Scripts)).
+		CreateFile(w.Naming.CodeFilePath(code), code.ScriptsToString()).
 		SetDescription(`code`)
 	w.ExtraFiles = append(w.ExtraFiles, file)
 }
 
-func (w *writer) createMetadataFile(path, desc string, content *orderedmap.OrderedMap) {
+func (w *localWriter) createMetadataFile(path, desc string, content *orderedmap.OrderedMap) {
 	file, err := filesystem.
 		CreateJsonFile(path, content).
 		SetDescription(desc).
@@ -136,18 +148,5 @@ func (w *writer) createMetadataFile(path, desc string, content *orderedmap.Order
 		w.ExtraFiles = append(w.ExtraFiles, file)
 	} else {
 		w.errors.Append(err)
-	}
-}
-
-func (w *writer) joinScripts(scripts []string) string {
-	switch w.config.ComponentId {
-	case `keboola.snowflake-transformation`:
-		fallthrough
-	case `keboola.synapse-transformation`:
-		fallthrough
-	case `keboola.oracle-transformation`:
-		return sql.Join(scripts) + "\n"
-	default:
-		return strings.Join(scripts, "\n") + "\n"
 	}
 }

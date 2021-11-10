@@ -1,12 +1,16 @@
 package model
 
 import (
+	"bytes"
+	"fmt"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/iancoleman/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/sql"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -110,7 +114,7 @@ type Config struct {
 	Description       string                 `json:"description" diff:"true" descriptionFile:"true"`
 	ChangeDescription string                 `json:"changeDescription"`
 	Content           *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
-	Blocks            Blocks                 `json:"-" validate:"dive"` // loaded transformation's blocks, filled in only for the LOCAL state
+	Blocks            Blocks                 `json:"-" validate:"dive" diff:"true"`
 	Relations         Relations              `json:"-" validate:"dive" diff:"true"`
 }
 
@@ -154,9 +158,9 @@ type Blocks []*Block
 // Block - transformation block.
 type Block struct {
 	BlockKey
-	Paths `json:"-"`
-	Name  string `json:"name" validate:"required" metaFile:"true"`
-	Codes Codes  `json:"codes" validate:"omitempty,dive"`
+	PathInProject `json:"-"`
+	Name          string `json:"name" validate:"required" metaFile:"true"`
+	Codes         Codes  `json:"codes" validate:"omitempty,dive"`
 }
 
 type Codes []*Code
@@ -164,10 +168,10 @@ type Codes []*Code
 // Code - transformation code.
 type Code struct {
 	CodeKey
-	Paths        `json:"-"`
-	CodeFileName string   `json:"-"` // eg. "code.sql", "code.py", ...
-	Name         string   `json:"name" validate:"required" metaFile:"true"`
-	Scripts      []string `json:"script"` // scripts, eg. SQL statements
+	PathInProject `json:"-"`
+	CodeFileName  string   `json:"-"` // eg. "code.sql", "code.py", ...
+	Name          string   `json:"name" validate:"required" metaFile:"true"`
+	Scripts       []string `json:"script"` // scripts, eg. SQL statements
 }
 
 // Schedule - https://app.swaggerhub.com/apis/odinuv/scheduler/1.0.0#/schedules/get_schedules
@@ -368,4 +372,30 @@ func (c *Config) AddRelation(relation Relation) {
 
 func (r *ConfigRow) AddRelation(relation Relation) {
 	r.Relations.Add(relation)
+}
+
+func (b Block) String() string {
+	buf := new(bytes.Buffer)
+	_, _ = fmt.Fprintln(buf, `# `, b.Name)
+	for _, code := range b.Codes {
+		_, _ = fmt.Fprint(buf, code.String())
+	}
+	return buf.String()
+}
+
+func (c Code) String() string {
+	return fmt.Sprintf("## %s\n%s", c.Name, c.ScriptsToString())
+}
+
+func (c Code) ScriptsToString() string {
+	switch c.ComponentId {
+	case `keboola.snowflake-transformation`:
+		fallthrough
+	case `keboola.synapse-transformation`:
+		fallthrough
+	case `keboola.oracle-transformation`:
+		return sql.Join(c.Scripts) + "\n"
+	default:
+		return strings.Join(c.Scripts, "\n") + "\n"
+	}
 }

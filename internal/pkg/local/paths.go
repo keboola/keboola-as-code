@@ -137,9 +137,16 @@ func (g *PathsGenerator) doUpdate(objectState model.ObjectState, origin model.Ke
 		}
 
 		// Rename transformation blocks
-		if v, ok := objectState.(*model.ConfigState); ok && v.HasLocalState() {
-			for _, block := range v.Local.Blocks {
-				g.updateBlockPath(v, block)
+		if v, ok := objectState.(*model.ConfigState); ok {
+			if v.HasLocalState() {
+				for _, block := range v.Local.Blocks {
+					g.updateBlockPath(v, block)
+				}
+			}
+			if v.HasRemoteState() {
+				for _, block := range v.Remote.Blocks {
+					g.updateBlockPath(v, block)
+				}
 			}
 		}
 	}
@@ -176,15 +183,14 @@ func (g *PathsGenerator) updateBlockPath(parent *model.ConfigState, block *model
 
 func (g *PathsGenerator) updateCodePath(parent *model.ConfigState, block *model.Block, code *model.Code) {
 	// Update parent path
-	oldPath := block.Path()
+	oldPath := code.Path()
 	oldPathCodeFile := g.Naming().CodeFilePath(code)
 	code.SetParentPath(block.Path())
 
 	// Re-generate object path IF rename is enabled OR path is not set
-	if block.ObjectPath == "" || g.rename {
+	if code.ObjectPath == "" || g.rename {
 		renameFrom := code.Path()
 		code.PathInProject = g.Naming().CodePath(code.GetParentPath(), code)
-
 		// Has been code renamed?
 		newPath := code.Path()
 		if renameFrom != newPath {

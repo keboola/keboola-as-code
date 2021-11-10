@@ -1,10 +1,13 @@
 package utils
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/iancoleman/orderedmap"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/json"
 )
 
 func TestUpdateMapStep(t *testing.T) {
@@ -83,4 +86,42 @@ func TestUpdateSliceStep(t *testing.T) {
 	secondNameMap := secondName.(orderedmap.OrderedMap)
 	name, _ := secondNameMap.Get("name")
 	assert.Equal(t, name, "newValue")
+}
+
+func TestGetFromMap(t *testing.T) {
+	t.Parallel()
+	input := `
+{
+  "foo": {
+    "bar": {
+      "baz": {
+        "value": 123
+      }
+    }
+  }
+}
+`
+	m := NewOrderedMap()
+	json.MustDecodeString(input, m)
+	cases := []struct {
+		keys     []string
+		expected interface{}
+	}{
+		{[]string{}, `{"foo":{"bar":{"baz":{"value":123}}}}`},
+		{[]string{`foo1`}, nil},
+		{[]string{`foo1`, `foo2`}, nil},
+		{[]string{`foo`}, `{"bar":{"baz":{"value":123}}}`},
+		{[]string{`foo`, `bar`}, `{"baz":{"value":123}}`},
+		{[]string{`foo`, `bar`, `baz`}, `{"value":123}`},
+		{[]string{`foo`, `bar`, `baz`, `value`}, `123`},
+		{[]string{`foo`, `bar`, `baz`, `value`, `xyz`}, nil},
+	}
+
+	for i, c := range cases {
+		v := GetFromMap(m, c.keys)
+		if v != nil {
+			v = json.MustEncodeString(v, false)
+		}
+		assert.Equal(t, c.expected, v, fmt.Sprintf(`case "%d"`, i))
+	}
 }

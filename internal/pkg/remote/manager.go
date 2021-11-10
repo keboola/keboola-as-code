@@ -129,13 +129,6 @@ func (u *UnitOfWork) loadObject(object model.Object) (model.ObjectState, error) 
 		return nil, nil
 	}
 
-	// Invoke mapper
-	recipe := &model.RemoteLoadRecipe{ApiObject: object, InternalObject: object.Clone()}
-	if err := u.mapper.MapAfterRemoteLoad(recipe); err != nil {
-		return nil, err
-	}
-	object = recipe.InternalObject
-
 	// Get object state
 	objectState, found := u.state.Get(object.Key())
 
@@ -155,7 +148,14 @@ func (u *UnitOfWork) loadObject(object model.Object) (model.ObjectState, error) 
 	}
 
 	// Set remote state
-	objectState.SetRemoteState(object)
+	internalObject := object.Clone()
+	objectState.SetRemoteState(internalObject)
+
+	// Invoke mapper
+	recipe := &model.RemoteLoadRecipe{Manifest: objectState.Manifest(), ApiObject: object, InternalObject: internalObject}
+	if err := u.mapper.MapAfterRemoteLoad(recipe); err != nil {
+		return nil, err
+	}
 
 	u.addNewObjectState(objectState)
 	return objectState, nil

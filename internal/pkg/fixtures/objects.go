@@ -104,6 +104,13 @@ func (MockedRecord) IsParentPathSet() bool {
 func (MockedRecord) SetParentPath(string) {
 }
 
+func (r MockedRecord) GetPathInProject() model.PathInProject {
+	if len(r.PathValue) > 0 {
+		return model.NewPathInProject("", r.PathValue)
+	}
+	return model.NewPathInProject("", "test")
+}
+
 func (r MockedRecord) Path() string {
 	if len(r.PathValue) > 0 {
 		return r.PathValue

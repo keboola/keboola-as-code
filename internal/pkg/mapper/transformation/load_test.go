@@ -4,17 +4,17 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/iancoleman/orderedmap"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 func TestLoadTransformationMissingBlockMetaSql(t *testing.T) {
 	t.Parallel()
-	context, config, configRecord := createTestFixtures(t)
+	context, config, configRecord := createTestFixtures(t, "keboola.snowflake-transformation")
 	recipe := createLocalLoadRecipe(config, configRecord)
 	fs := context.Fs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
@@ -32,7 +32,7 @@ func TestLoadTransformationMissingBlockMetaSql(t *testing.T) {
 
 func TestLoadTransformationMissingCodeMeta(t *testing.T) {
 	t.Parallel()
-	context, config, configRecord := createTestFixtures(t)
+	context, config, configRecord := createTestFixtures(t, "keboola.snowflake-transformation")
 	recipe := createLocalLoadRecipe(config, configRecord)
 	fs := context.Fs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
@@ -54,9 +54,9 @@ func TestLoadTransformationMissingCodeMeta(t *testing.T) {
 	}, "\n"), err.Error())
 }
 
-func TestLoadTransformationSql(t *testing.T) {
+func TestLoadLocalTransformationSql(t *testing.T) {
 	t.Parallel()
-	context, config, configRecord := createTestFixtures(t)
+	context, config, configRecord := createTestFixtures(t, `keboola.snowflake-transformation`)
 	recipe := createLocalLoadRecipe(config, configRecord)
 	fs := context.Fs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
@@ -89,56 +89,113 @@ func TestLoadTransformationSql(t *testing.T) {
 	assert.NoError(t, NewMapper(context).MapAfterLocalLoad(recipe))
 
 	// Assert
-	expected := `
-[
-  {
-    "name": "001",
-    "codes": [
-      {
-        "name": "001-001",
-        "script": [
-          "SELECT 1"
-        ]
-      },
-      {
-        "name": "001-002",
-        "script": [
-          "SELECT 1;",
-          "SELECT 2;"
-        ]
-      }
-    ]
-  },
-  {
-    "name": "002",
-    "codes": [
-      {
-        "name": "002-001",
-        "script": [
-          "SELECT 3"
-        ]
-      }
-    ]
-  },
-  {
-    "name": "003",
-    "codes": []
-  }
-]
-`
-	expected = strings.TrimPrefix(expected, "\n")
-	parametersRaw, found := config.Content.Get(`parameters`)
-	assert.True(t, found)
-	parameters := parametersRaw.(orderedmap.OrderedMap)
-	value, found := parameters.Get(`blocks`)
-	assert.True(t, found)
-	assert.Equal(t, expected, json.MustEncodeString(value, true))
-	assert.Equal(t, expected, json.MustEncodeString(config.Blocks, true))
+	expected := model.Blocks{
+		{
+			BlockKey: model.BlockKey{
+				BranchId:    123,
+				ComponentId: "keboola.snowflake-transformation",
+				ConfigId:    `456`,
+				Index:       0,
+			},
+			PathInProject: model.NewPathInProject(
+				`branch/config/blocks`,
+				`001-block-1`,
+			),
+			Name: "001",
+			Codes: model.Codes{
+				{
+					CodeKey: model.CodeKey{
+						BranchId:    123,
+						ComponentId: "keboola.snowflake-transformation",
+						ConfigId:    `456`,
+						BlockIndex:  0,
+						Index:       0,
+					},
+					PathInProject: model.NewPathInProject(
+						`branch/config/blocks/001-block-1`,
+						`001-code-1`,
+					),
+					Name:         "001-001",
+					CodeFileName: `code.sql`,
+					Scripts: []string{
+						"SELECT 1",
+					},
+				},
+				{
+					CodeKey: model.CodeKey{
+						BranchId:    123,
+						ComponentId: "keboola.snowflake-transformation",
+						ConfigId:    `456`,
+						BlockIndex:  0,
+						Index:       1,
+					},
+					PathInProject: model.NewPathInProject(
+						`branch/config/blocks/001-block-1`,
+						`002-code-2`,
+					),
+					Name:         "001-002",
+					CodeFileName: `code.sql`,
+					Scripts: []string{
+						"SELECT 1;",
+						"SELECT 2;",
+					},
+				},
+			},
+		},
+		{
+			BlockKey: model.BlockKey{
+				BranchId:    123,
+				ComponentId: "keboola.snowflake-transformation",
+				ConfigId:    `456`,
+				Index:       1,
+			},
+			PathInProject: model.NewPathInProject(
+				`branch/config/blocks`,
+				`002-block-2`,
+			),
+			Name: "002",
+			Codes: model.Codes{
+				{
+					CodeKey: model.CodeKey{
+						BranchId:    123,
+						ComponentId: "keboola.snowflake-transformation",
+						ConfigId:    `456`,
+						BlockIndex:  1,
+						Index:       0,
+					},
+					PathInProject: model.NewPathInProject(
+						`branch/config/blocks/002-block-2`,
+						`002-code-1`,
+					),
+					Name:         "002-001",
+					CodeFileName: `code.sql`,
+					Scripts: []string{
+						"SELECT 3",
+					},
+				},
+			},
+		},
+		{
+			BlockKey: model.BlockKey{
+				BranchId:    123,
+				ComponentId: "keboola.snowflake-transformation",
+				ConfigId:    `456`,
+				Index:       2,
+			},
+			PathInProject: model.NewPathInProject(
+				`branch/config/blocks`,
+				`003-block-3`,
+			),
+			Name:  "003",
+			Codes: model.Codes{},
+		},
+	}
+	assert.Equal(t, expected, config.Blocks)
 }
 
-func TestLoadTransformationPy(t *testing.T) {
+func TestLoadLocalTransformationPy(t *testing.T) {
 	t.Parallel()
-	context, config, configRecord := createTestFixtures(t)
+	context, config, configRecord := createTestFixtures(t, `keboola.python-transformation-v2`)
 	recipe := createLocalLoadRecipe(config, configRecord)
 	fs := context.Fs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
@@ -171,48 +228,252 @@ func TestLoadTransformationPy(t *testing.T) {
 	assert.NoError(t, NewMapper(context).MapAfterLocalLoad(recipe))
 
 	// Assert
-	expected := `
-[
-  {
-    "name": "001",
-    "codes": [
+	expected := model.Blocks{
+		{
+			BlockKey: model.BlockKey{
+				BranchId:    123,
+				ComponentId: "keboola.python-transformation-v2",
+				ConfigId:    `456`,
+				Index:       0,
+			},
+			PathInProject: model.NewPathInProject(
+				`branch/config/blocks`,
+				`001-block-1`,
+			),
+			Name: "001",
+			Codes: model.Codes{
+				{
+					CodeKey: model.CodeKey{
+						BranchId:    123,
+						ComponentId: "keboola.python-transformation-v2",
+						ConfigId:    `456`,
+						BlockIndex:  0,
+						Index:       0,
+					},
+					PathInProject: model.NewPathInProject(
+						`branch/config/blocks/001-block-1`,
+						`001-code-1`,
+					),
+					Name:         "001-001",
+					CodeFileName: `code.py`,
+					Scripts: []string{
+						"print('1')",
+					},
+				},
+				{
+					CodeKey: model.CodeKey{
+						BranchId:    123,
+						ComponentId: "keboola.python-transformation-v2",
+						ConfigId:    `456`,
+						BlockIndex:  0,
+						Index:       1,
+					},
+					PathInProject: model.NewPathInProject(
+						`branch/config/blocks/001-block-1`,
+						`002-code-2`,
+					),
+					Name:         "001-002",
+					CodeFileName: `code.py`,
+					Scripts: []string{
+						"print('1')\nprint('2')",
+					},
+				},
+			},
+		},
+		{
+			BlockKey: model.BlockKey{
+				BranchId:    123,
+				ComponentId: "keboola.python-transformation-v2",
+				ConfigId:    `456`,
+				Index:       1,
+			},
+			PathInProject: model.NewPathInProject(
+				`branch/config/blocks`,
+				`002-block-2`,
+			),
+			Name: "002",
+			Codes: model.Codes{
+				{
+					CodeKey: model.CodeKey{
+						BranchId:    123,
+						ComponentId: "keboola.python-transformation-v2",
+						ConfigId:    `456`,
+						BlockIndex:  1,
+						Index:       0,
+					},
+					PathInProject: model.NewPathInProject(
+						`branch/config/blocks/002-block-2`,
+						`002-code-1`,
+					),
+					Name:         "002-001",
+					CodeFileName: `code.py`,
+					Scripts: []string{
+						"print('3')",
+					},
+				},
+			},
+		},
+		{
+			BlockKey: model.BlockKey{
+				BranchId:    123,
+				ComponentId: "keboola.python-transformation-v2",
+				ConfigId:    `456`,
+				Index:       2,
+			},
+			PathInProject: model.NewPathInProject(
+				`branch/config/blocks`,
+				`003-block-3`,
+			),
+			Name:  "003",
+			Codes: model.Codes{},
+		},
+	}
+	assert.Equal(t, expected, config.Blocks)
+}
+
+func TestLoadRemoteTransformation(t *testing.T) {
+	t.Parallel()
+	context, apiObject, configManifest := createTestFixtures(t, `keboola.snowflake-transformation`)
+
+	// Api representation
+	configInApi := `
+{
+  "parameters": {
+    "blocks": [
       {
-        "name": "001-001",
-        "script": [
-          "print('1')"
+        "name": "block-1",
+        "codes": [
+          {
+            "name": "code-1",
+            "script": [
+              "SELECT 1"
+            ]
+          },
+          {
+            "name": "code-2",
+            "script": [
+              "SELECT 1;",
+              "SELECT 2;"
+            ]
+          }
         ]
       },
       {
-        "name": "001-002",
-        "script": [
-          "print('1')\nprint('2')"
+        "name": "block-2",
+        "codes": [
+          {
+            "name": "code-3",
+            "script": [
+              "SELECT 3"
+            ]
+          }
         ]
       }
     ]
-  },
-  {
-    "name": "002",
-    "codes": [
-      {
-        "name": "002-001",
-        "script": [
-          "print('3')"
-        ]
-      }
-    ]
-  },
-  {
-    "name": "003",
-    "codes": []
   }
-]
+}
 `
-	expected = strings.TrimPrefix(expected, "\n")
-	parametersRaw, found := config.Content.Get(`parameters`)
-	assert.True(t, found)
-	parameters := parametersRaw.(orderedmap.OrderedMap)
-	value, found := parameters.Get(`blocks`)
-	assert.True(t, found)
-	assert.Equal(t, expected, json.MustEncodeString(value, true))
-	assert.Equal(t, expected, json.MustEncodeString(config.Blocks, true))
+
+	// Load
+	json.MustDecodeString(configInApi, apiObject.Content)
+	internalObject := apiObject.Clone().(*model.Config)
+	recipe := &model.RemoteLoadRecipe{Manifest: configManifest, ApiObject: apiObject, InternalObject: internalObject}
+	assert.NoError(t, NewMapper(context).MapAfterRemoteLoad(recipe))
+
+	// Internal representation
+	expected := model.Blocks{
+		{
+			BlockKey: model.BlockKey{
+				BranchId:    123,
+				ComponentId: "keboola.snowflake-transformation",
+				ConfigId:    `456`,
+				Index:       0,
+			},
+			PathInProject: model.NewPathInProject(
+				`branch/config/blocks`,
+				`001-block-1`,
+			),
+			Name: "block-1",
+			Codes: model.Codes{
+				{
+					CodeKey: model.CodeKey{
+						BranchId:    123,
+						ComponentId: "keboola.snowflake-transformation",
+						ConfigId:    `456`,
+						BlockIndex:  0,
+						Index:       0,
+					},
+					PathInProject: model.NewPathInProject(
+						`branch/config/blocks/001-block-1`,
+						`001-code-1`,
+					),
+					Name:         "code-1",
+					CodeFileName: `code.sql`,
+					Scripts: []string{
+						"SELECT 1",
+					},
+				},
+				{
+					CodeKey: model.CodeKey{
+						BranchId:    123,
+						ComponentId: "keboola.snowflake-transformation",
+						ConfigId:    `456`,
+						BlockIndex:  0,
+						Index:       1,
+					},
+					PathInProject: model.NewPathInProject(
+						`branch/config/blocks/001-block-1`,
+						`002-code-2`,
+					),
+					Name:         "code-2",
+					CodeFileName: `code.sql`,
+					Scripts: []string{
+						"SELECT 1;",
+						"SELECT 2;",
+					},
+				},
+			},
+		},
+		{
+			BlockKey: model.BlockKey{
+				BranchId:    123,
+				ComponentId: "keboola.snowflake-transformation",
+				ConfigId:    `456`,
+				Index:       1,
+			},
+			PathInProject: model.NewPathInProject(
+				`branch/config/blocks`,
+				`002-block-2`,
+			),
+			Name: "block-2",
+			Codes: model.Codes{
+				{
+					CodeKey: model.CodeKey{
+						BranchId:    123,
+						ComponentId: "keboola.snowflake-transformation",
+						ConfigId:    `456`,
+						BlockIndex:  1,
+						Index:       0,
+					},
+					PathInProject: model.NewPathInProject(
+						`branch/config/blocks/002-block-2`,
+						`001-code-3`,
+					),
+					Name:         "code-3",
+					CodeFileName: `code.sql`,
+					Scripts: []string{
+						"SELECT 3",
+					},
+				},
+			},
+		},
+	}
+
+	// Api object is not modified
+	assert.Equal(t, strings.TrimSpace(configInApi), strings.TrimSpace(json.MustEncodeString(apiObject.Content, true)))
+	assert.Empty(t, apiObject.Blocks)
+
+	// In internal object are blocks in Blocks field, not in Content
+	assert.Equal(t, `{"parameters":{}}`, json.MustEncodeString(internalObject.Content, false))
+	assert.Equal(t, expected, internalObject.Blocks)
 }

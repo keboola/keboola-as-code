@@ -37,6 +37,7 @@ type LocalSaveRecipe struct {
 
 // RemoteLoadRecipe - all items related to the object, when loading from Storage API.
 type RemoteLoadRecipe struct {
+	Manifest       Record
 	ApiObject      Object // eg. Config, original version, API representation
 	InternalObject Object // eg. Config, modified version, internal representation
 }

@@ -13,11 +13,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func createTestFixtures(t *testing.T) (model.MapperContext, *model.Config, *model.ConfigManifest) {
+func createTestFixtures(t *testing.T, componentId string) (model.MapperContext, *model.Config, *model.ConfigManifest) {
 	t.Helper()
 
 	configKey := model.ConfigKey{
-		ComponentId: "keboola.snowflake-transformation",
+		BranchId:    123,
+		ComponentId: componentId,
+		Id:          `456`,
 	}
 
 	record := &model.ConfigManifest{

@@ -12,6 +12,7 @@ const (
 )
 
 type RecordPaths interface {
+	GetPathInProject() PathInProject
 	Path() string          // parent path + object path -> path relative to the project dir
 	GetObjectPath() string // path relative to the parent object
 	GetParentPath() string // parent path relative to the project dir
@@ -91,6 +92,10 @@ type ConfigManifestWithRows struct {
 
 func NewPathInProject(parentPath, objectPath string) PathInProject {
 	return PathInProject{parentPath: parentPath, parentPathSet: true, ObjectPath: objectPath}
+}
+
+func (p PathInProject) GetPathInProject() PathInProject {
+	return p
 }
 
 func (p *PathInProject) GetObjectPath() string {

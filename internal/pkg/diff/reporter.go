@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
@@ -200,30 +201,45 @@ func (r *Reporter) objectPath(value reflect.Value) string {
 func valuesDiff(remote, local reflect.Value) []string {
 	var out []string
 	if remote.IsValid() {
-		formatted := fmt.Sprintf(`%+v`, remote)
+		formatted := formatValue(remote)
 		if len(formatted) != 0 {
 			valueMark := ``
 			if local.IsValid() {
 				valueMark = OnlyInRemoteMark + ` `
 			}
-			for _, line := range strings.Split(formatted, "\n") {
+			for _, line := range formatted {
 				out = append(out, fmt.Sprintf("%s%s", valueMark, line))
 			}
 		}
 	}
 	if local.IsValid() {
-		formatted := fmt.Sprintf(`%+v`, local)
+		formatted := formatValue(local)
 		if len(formatted) != 0 {
 			valueMark := ``
 			if remote.IsValid() {
 				valueMark = OnlyInLocalMark + ` `
 			}
-			for _, line := range strings.Split(formatted, "\n") {
+			for _, line := range formatted {
 				out = append(out, fmt.Sprintf("%s%s", valueMark, line))
 			}
 		}
 	}
 	return out
+}
+
+func formatValue(value reflect.Value) []string {
+	if value.Type().Kind().String() == `interface` {
+		value = value.Elem()
+	}
+
+	var formatted string
+	if strings.HasPrefix(value.Type().String(), "map[") {
+		// Format map to JSON
+		formatted = strings.TrimRight(json.MustEncodeString(value.Interface(), true), "\n")
+	} else {
+		formatted = fmt.Sprintf(`%+v`, value)
+	}
+	return strings.Split(formatted, "\n")
 }
 
 func stringsDiff(remote, local string) string {

@@ -13,16 +13,80 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
-type loader struct {
-	model.MapperContext
-	*model.LocalLoadRecipe
-	config    *model.Config
-	blocksDir string
-	blocks    []*model.Block
-	errors    *utils.Error
+// MapAfterRemoteLoad - load code blocks from API to blocks field.
+func (m *transformationMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
+	// Only for transformation config
+	if ok, err := m.isTransformationConfig(recipe.InternalObject); err != nil {
+		return err
+	} else if !ok {
+		return nil
+	}
+	config := recipe.InternalObject.(*model.Config)
+
+	// Get parameters
+	var parameters orderedmap.OrderedMap
+	parametersRaw := utils.GetFromMap(config.Content, []string{`parameters`})
+	if v, ok := parametersRaw.(orderedmap.OrderedMap); ok {
+		parameters = v
+	} else {
+		parameters = *utils.NewOrderedMap()
+	}
+
+	// Get blocks
+	var blocks []interface{}
+	blocksRaw := utils.GetFromMap(&parameters, []string{`blocks`})
+	if v, ok := blocksRaw.([]interface{}); ok {
+		blocks = v
+	}
+
+	// Remove blocks from config.json
+	parameters.Delete(`blocks`)
+	config.Content.Set(`parameters`, parameters)
+
+	// Convert map to Block structs
+	if err := utils.ConvertByJson(blocks, &config.Blocks); err != nil {
+		return err
+	}
+
+	// Fill in keys
+	for blockIndex, block := range config.Blocks {
+		block.BranchId = config.BranchId
+		block.ComponentId = config.ComponentId
+		block.ConfigId = config.Id
+		block.Index = blockIndex
+		for codeIndex, code := range block.Codes {
+			code.BranchId = config.BranchId
+			code.ComponentId = config.ComponentId
+			code.ConfigId = config.Id
+			code.BlockIndex = block.Index
+			code.Index = codeIndex
+		}
+	}
+
+	// Set paths, if are present
+	if recipe.Manifest.Path() != "" {
+		blocksDir := m.Naming.BlocksDir(recipe.Manifest.Path())
+		for _, block := range config.Blocks {
+			if path, found := m.Naming.GetCurrentPath(block.Key()); found {
+				block.PathInProject = path
+			} else {
+				block.PathInProject = m.Naming.BlockPath(blocksDir, block)
+			}
+			for _, code := range block.Codes {
+				if path, found := m.Naming.GetCurrentPath(code.Key()); found {
+					code.PathInProject = path
+				} else {
+					code.PathInProject = m.Naming.CodePath(block.Path(), code)
+				}
+				code.CodeFileName = m.Naming.CodeFileName(config.ComponentId)
+			}
+		}
+	}
+
+	return nil
 }
 
-// AfterLocalLoad - load code blocks from filesystem to target config.
+// MapAfterLocalLoad - load code blocks from filesystem to Blocks field.
 func (m *transformationMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
 	// Only for transformation config
 	if ok, err := m.isTransformationConfig(recipe.Object); err != nil {
@@ -31,8 +95,8 @@ func (m *transformationMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) 
 		return nil
 	}
 
-	// Create loader
-	l := &loader{
+	// Create local loader
+	l := &localLoader{
 		MapperContext:   m.MapperContext,
 		LocalLoadRecipe: recipe,
 		config:          recipe.Object.(*model.Config),
@@ -44,7 +108,16 @@ func (m *transformationMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) 
 	return l.loadBlocks()
 }
 
-func (l *loader) loadBlocks() error {
+type localLoader struct {
+	model.MapperContext
+	*model.LocalLoadRecipe
+	config    *model.Config
+	blocksDir string
+	blocks    []*model.Block
+	errors    *utils.Error
+}
+
+func (l *localLoader) loadBlocks() error {
 	// Load blocks and codes from filesystem
 	for blockIndex, blockDir := range l.blockDirs() {
 		block := l.addBlock(blockIndex, blockDir)
@@ -56,32 +129,11 @@ func (l *loader) loadBlocks() error {
 	// Validate, if all loaded without error
 	l.validate()
 
-	// Set blocks to "parameters.blocks" in the config
-	var parameters orderedmap.OrderedMap
-	if parametersRaw, found := l.config.Content.Get(`parameters`); found {
-		// Use existing map
-		parameters = parametersRaw.(orderedmap.OrderedMap)
-	} else {
-		// Create new map if not exists
-		parameters = *utils.NewOrderedMap()
-	}
-
-	// Convert []struct to []map
-	blocksMap := make([]interface{}, 0)
-	for _, block := range l.blocks {
-		blockMap := utils.NewOrderedMap()
-		if err := utils.ConvertByJson(block, &blockMap); err != nil {
-			return err
-		}
-		blocksMap = append(blocksMap, blockMap)
-	}
-	parameters.Set("blocks", blocksMap)
-	l.config.Content.Set("parameters", parameters)
 	l.config.Blocks = l.blocks
 	return l.errors.ErrorOrNil()
 }
 
-func (l *loader) validate() {
+func (l *localLoader) validate() {
 	if l.errors.Len() == 0 {
 		for _, block := range l.blocks {
 			if err := validator.Validate(block); err != nil {
@@ -91,7 +143,7 @@ func (l *loader) validate() {
 	}
 }
 
-func (l *loader) addBlock(blockIndex int, path string) *model.Block {
+func (l *localLoader) addBlock(blockIndex int, path string) *model.Block {
 	block := &model.Block{
 		BlockKey: model.BlockKey{
 			BranchId:    l.config.BranchId,
@@ -99,12 +151,10 @@ func (l *loader) addBlock(blockIndex int, path string) *model.Block {
 			ConfigId:    l.config.Id,
 			Index:       blockIndex,
 		},
-		Paths: model.Paths{
-			PathInProject: model.NewPathInProject(
-				l.blocksDir,
-				path,
-			),
-		},
+		PathInProject: model.NewPathInProject(
+			l.blocksDir,
+			path,
+		),
 		Codes: make([]*model.Code, 0),
 	}
 
@@ -115,7 +165,7 @@ func (l *loader) addBlock(blockIndex int, path string) *model.Block {
 	return block
 }
 
-func (l *loader) addCode(block *model.Block, codeIndex int, path string) *model.Code {
+func (l *localLoader) addCode(block *model.Block, codeIndex int, path string) *model.Code {
 	code := &model.Code{
 		CodeKey: model.CodeKey{
 			BranchId:    l.config.BranchId,
@@ -124,12 +174,10 @@ func (l *loader) addCode(block *model.Block, codeIndex int, path string) *model.
 			BlockIndex:  block.Index,
 			Index:       codeIndex,
 		},
-		Paths: model.Paths{
-			PathInProject: model.NewPathInProject(
-				block.Path(),
-				path,
-			),
-		},
+		PathInProject: model.NewPathInProject(
+			block.Path(),
+			path,
+		),
 		Scripts: make([]string, 0),
 	}
 
@@ -141,7 +189,7 @@ func (l *loader) addCode(block *model.Block, codeIndex int, path string) *model.
 	return code
 }
 
-func (l *loader) addScripts(code *model.Code) {
+func (l *localLoader) addScripts(code *model.Code) {
 	code.CodeFileName = l.codeFileName(code)
 	if code.CodeFileName == "" {
 		return
@@ -161,7 +209,7 @@ func (l *loader) addScripts(code *model.Code) {
 	l.Logger.Debugf(`Parsed "%d" scripts from "%s"`, len(code.Scripts), codeFilePath)
 }
 
-func (l *loader) loadBlockMetaFile(block *model.Block) {
+func (l *localLoader) loadBlockMetaFile(block *model.Block) {
 	path := l.Naming.MetaFilePath(block.Path())
 	desc := "block metadata"
 	if file, err := l.Fs.ReadJsonFieldsTo(path, desc, block, model.MetaFileTag); err != nil {
@@ -171,7 +219,7 @@ func (l *loader) loadBlockMetaFile(block *model.Block) {
 	}
 }
 
-func (l *loader) loadCodeMetaFile(code *model.Code) {
+func (l *localLoader) loadCodeMetaFile(code *model.Code) {
 	path := l.Naming.MetaFilePath(code.Path())
 	desc := "code metadata"
 	if file, err := l.Fs.ReadJsonFieldsTo(path, desc, code, model.MetaFileTag); err != nil {
@@ -181,7 +229,7 @@ func (l *loader) loadCodeMetaFile(code *model.Code) {
 	}
 }
 
-func (l *loader) blockDirs() []string {
+func (l *localLoader) blockDirs() []string {
 	// Check if blocks dir exists
 	if !l.Fs.IsDir(l.blocksDir) {
 		l.errors.Append(fmt.Errorf(`missing blocks dir "%s"`, l.blocksDir))
@@ -205,7 +253,7 @@ func (l *loader) blockDirs() []string {
 	return dirs
 }
 
-func (l *loader) codeDirs(block *model.Block) []string {
+func (l *localLoader) codeDirs(block *model.Block) []string {
 	// Load all dir entries
 	items, err := l.Fs.ReadDir(block.Path())
 	if err != nil {
@@ -223,7 +271,7 @@ func (l *loader) codeDirs(block *model.Block) []string {
 	return dirs
 }
 
-func (l *loader) codeFileName(code *model.Code) string {
+func (l *localLoader) codeFileName(code *model.Code) string {
 	// Search for code file, glob "code.*"
 	// File can use an old naming, so the file extension is not specified
 	matches, err := l.Fs.Glob(filesystem.Join(code.Path(), model.CodeFileName+`.*`))
@@ -264,7 +312,7 @@ func (l *loader) codeFileName(code *model.Code) string {
 	return files[0]
 }
 
-func (l *loader) parseScripts(content string) []string {
+func (l *localLoader) parseScripts(content string) []string {
 	switch l.config.ComponentId {
 	case `keboola.snowflake-transformation`:
 		fallthrough
