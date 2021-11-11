@@ -2,11 +2,48 @@ package diff
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestReporterValuesDiffSameType1(t *testing.T) {
+	t.Parallel()
+	out := valuesDiff(reflect.ValueOf(`123`), reflect.ValueOf(`456`))
+	assert.Equal(t, []string{
+		`- 123`,
+		`+ 456`,
+	}, out)
+}
+
+func TestReporterValuesDiffSameType2(t *testing.T) {
+	t.Parallel()
+	out := valuesDiff(reflect.ValueOf([]int{1, 2}), reflect.ValueOf([]int{3, 4}))
+	assert.Equal(t, []string{
+		`- [1 2]`,
+		`+ [3 4]`,
+	}, out)
+}
+
+func TestReporterValuesDiffDifferentType1(t *testing.T) {
+	t.Parallel()
+	out := valuesDiff(reflect.ValueOf(123), reflect.ValueOf(`456`))
+	assert.Equal(t, []string{
+		`- 123`,
+		`+ "456"`,
+	}, out)
+}
+
+func TestReporterValuesDiffDifferentType2(t *testing.T) {
+	t.Parallel()
+	out := valuesDiff(reflect.ValueOf([]float64{1, 2}), reflect.ValueOf([]int{1, 2}))
+	assert.Equal(t, []string{
+		`- []float64{1, 2}`,
+		`+ []int{1, 2}`,
+	}, out)
+}
 
 func TestReporterStringsDiff(t *testing.T) {
 	t.Parallel()

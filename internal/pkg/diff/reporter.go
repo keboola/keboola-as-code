@@ -200,8 +200,9 @@ func (r *Reporter) objectPath(value reflect.Value) string {
 
 func valuesDiff(remote, local reflect.Value) []string {
 	var out []string
+	includeType := remote.IsValid() && local.IsValid() && remote.Type().String() != local.Type().String()
 	if remote.IsValid() {
-		formatted := formatValue(remote)
+		formatted := formatValue(remote, includeType)
 		if len(formatted) != 0 {
 			valueMark := ``
 			if local.IsValid() {
@@ -213,7 +214,7 @@ func valuesDiff(remote, local reflect.Value) []string {
 		}
 	}
 	if local.IsValid() {
-		formatted := formatValue(local)
+		formatted := formatValue(local, includeType)
 		if len(formatted) != 0 {
 			valueMark := ``
 			if remote.IsValid() {
@@ -227,16 +228,19 @@ func valuesDiff(remote, local reflect.Value) []string {
 	return out
 }
 
-func formatValue(value reflect.Value) []string {
+func formatValue(value reflect.Value, includeType bool) []string {
 	if value.Type().Kind().String() == `interface` {
 		value = value.Elem()
 	}
 
 	var formatted string
-	if strings.HasPrefix(value.Type().String(), "map[") {
+	switch {
+	case strings.HasPrefix(value.Type().String(), "map["):
 		// Format map to JSON
 		formatted = strings.TrimRight(json.MustEncodeString(value.Interface(), true), "\n")
-	} else {
+	case includeType:
+		formatted = fmt.Sprintf(`%#v`, value)
+	default:
 		formatted = fmt.Sprintf(`%+v`, value)
 	}
 	return strings.Split(formatted, "\n")

@@ -51,10 +51,14 @@ func (l *loader) load() error {
 	}
 	l.Record.AddRelatedPath(codeFilePath)
 
+	// Convert []string -> []interface{} (so there is no type difference against API type)
+	scripts := strhelper.ParseTransformationScript(codeFile.Content, targetComponentId)
+	scriptsRaw := make([]interface{}, 0)
+	for _, script := range scripts {
+		scriptsRaw = append(scriptsRaw, script)
+	}
+
 	// Set to config row JSON
-	l.configRow.Content.Set(
-		model.ShareCodeContentKey,
-		strhelper.ParseTransformationScript(codeFile.Content, targetComponentId),
-	)
+	l.configRow.Content.Set(model.ShareCodeContentKey, scriptsRaw)
 	return nil
 }

@@ -415,7 +415,7 @@ func TestPersistSharedCode(t *testing.T) {
 					Content: utils.PairsToOrderedMap([]utils.Pair{
 						{
 							Key: "code_content",
-							Value: []string{
+							Value: []interface{}{
 								"print('Hello, world!')",
 							},
 						},
@@ -574,7 +574,7 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 					Content: utils.PairsToOrderedMap([]utils.Pair{
 						{
 							Key: "code_content",
-							Value: []string{
+							Value: []interface{}{
 								"num1 = {{num1}}\nnum2 = {{num2}}\nsum = num1 + num2",
 							},
 						},
