@@ -204,7 +204,7 @@ func (l *localLoader) addScripts(code *model.Code) {
 	}
 
 	// Split to scripts
-	code.Scripts = l.parseScripts(file.Content)
+	code.Scripts = strhelper.ParseTransformationScript(file.Content, l.config.ComponentId)
 	l.Record.AddRelatedPath(codeFilePath)
 	l.Logger.Debugf(`Parsed "%d" scripts from "%s"`, len(code.Scripts), codeFilePath)
 }
@@ -310,8 +310,4 @@ func (l *localLoader) codeFileName(code *model.Code) string {
 
 	// Found
 	return files[0]
-}
-
-func (l *localLoader) parseScripts(content string) []string {
-	return strhelper.ParseTransformationScript(content, l.config.ComponentId)
 }

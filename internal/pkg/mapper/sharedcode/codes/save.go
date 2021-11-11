@@ -3,8 +3,11 @@ package codes
 import (
 	"fmt"
 
+	"github.com/spf13/cast"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/strhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -40,7 +43,6 @@ func (m *mapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
 func (w *writer) save() error {
 	// Load content from config row JSON
 	rowContent := w.configRow.Content
-	normalizeContent(rowContent)
 
 	// Load content
 	raw, found := rowContent.Get(model.ShareCodeContentKey)
@@ -48,16 +50,24 @@ func (w *writer) save() error {
 		return fmt.Errorf(`key "%s" not found in %s`, model.ShareCodeContentKey, w.configRow.Desc())
 	}
 
-	// Content must be string
-	codeContent, ok := raw.(string)
-	if !ok {
-		return fmt.Errorf(`key "%s" must be string in %s`, model.ShareCodeContentKey, w.configRow.Desc())
-	}
-
 	// Get target component of the shared code -> needed for file extension
 	targetComponentId, err := w.GetTargetComponentId(w.config)
 	if err != nil {
 		return err
+	}
+
+	// Content must be string or array
+	var codeContent string
+	if codeContentStr, ok := raw.(string); ok {
+		codeContent = strhelper.TransformationScriptsToString([]string{codeContentStr}, targetComponentId)
+	} else if codeContentSlice, ok := raw.([]interface{}); ok {
+		var scripts []string
+		for _, script := range codeContentSlice {
+			scripts = append(scripts, cast.ToString(script))
+		}
+		codeContent = strhelper.TransformationScriptsToString(scripts, targetComponentId)
+	} else {
+		return fmt.Errorf(`key "%s" must be string or string[], found %T, in %s`, model.ShareCodeContentKey, raw, w.configRow.Desc())
 	}
 
 	// Remove code content from JSON
