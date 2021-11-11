@@ -83,11 +83,13 @@ func (m *mapper) replaceSharedCodePathById(object model.Object) error {
 	}
 
 	// Convert row IDs map -> slice
-	rowIds := make([]string, 0)
+	rowIds := make([]interface{}, 0)
 	for id := range rowIdsMap {
 		rowIds = append(rowIds, id)
 	}
-	sort.Strings(rowIds)
+	sort.SliceStable(rowIds, func(i, j int) bool {
+		return rowIds[i].(string) < rowIds[j].(string)
+	})
 
 	// Set rows IDs
 	transformation.Content.Set(model.SharedCodeRowsIdContentKey, rowIds)

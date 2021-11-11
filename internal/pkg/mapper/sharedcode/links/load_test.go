@@ -82,7 +82,7 @@ func TestSharedCodeLinksAfterLocalLoad(t *testing.T) {
 	assert.Equal(t, sharedCodeId, `456`)
 	sharedCodeRowIds, found := configState.Local.Content.Get(model.SharedCodeRowsIdContentKey)
 	assert.True(t, found)
-	assert.Equal(t, sharedCodeRowIds, []string{`1234`, `5678`})
+	assert.Equal(t, sharedCodeRowIds, []interface{}{`1234`, `5678`})
 
 	// Paths in transformation blocks are replaced by IDs
 	assert.Equal(t, model.Blocks{
