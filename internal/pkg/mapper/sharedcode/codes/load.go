@@ -6,7 +6,7 @@ import (
 )
 
 type loader struct {
-	model.MapperContext
+	*mapper
 	*model.LocalLoadRecipe
 	config    *model.Config
 	configRow *model.ConfigRow
@@ -16,17 +16,15 @@ type loader struct {
 // MapAfterLocalLoad - load shared code from filesystem to target config.
 func (m *mapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
 	// Only for shared code config row
-	if ok, err := m.isSharedCodeConfigRow(recipe.Object); err != nil {
+	if ok, err := m.IsSharedCodeRowKey(recipe.Object.Key()); err != nil || !ok {
 		return err
-	} else if !ok {
-		return nil
 	}
 
 	// Create loader
 	configRow := recipe.Object.(*model.ConfigRow)
 	config := m.State.MustGet(configRow.ConfigKey()).LocalState().(*model.Config)
 	l := &loader{
-		MapperContext:   m.MapperContext,
+		mapper:          m,
 		LocalLoadRecipe: recipe,
 		config:          config,
 		configRow:       configRow,
@@ -39,7 +37,7 @@ func (m *mapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
 
 func (l *loader) load() error {
 	// Get target component of the shared code -> needed for file extension
-	targetComponentId, err := getTargetComponentId(l.config)
+	targetComponentId, err := l.GetTargetComponentId(l.config)
 	if err != nil {
 		return err
 	}

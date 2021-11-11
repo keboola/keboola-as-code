@@ -1,4 +1,4 @@
-package links
+package helper
 
 import (
 	"testing"
@@ -17,7 +17,7 @@ func TestGetSharedCodePath(t *testing.T) {
 	t.Parallel()
 	fs := testhelper.NewMemoryFs()
 	state := model.NewState(zap.NewNop().Sugar(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
-	m := NewMapper(nil, model.MapperContext{State: state})
+	h := New(state, model.DefaultNaming())
 
 	transformation := &model.Config{
 		ConfigKey: model.ConfigKey{
@@ -34,34 +34,34 @@ func TestGetSharedCodePath(t *testing.T) {
 	}
 
 	// Valid
-	_, path, err := m.getSharedCodePath(transformation)
+	_, path, err := h.GetSharedCodePath(transformation)
 	assert.NoError(t, err)
 	assert.Equal(t, `_shared/keboola.python-transformation-v2`, path)
 
 	// Not config
 	row := &model.ConfigRow{}
-	_, path, err = m.getSharedCodePath(row)
+	_, path, err = h.GetSharedCodePath(row)
 	assert.NoError(t, err)
 	assert.Empty(t, path)
 
 	// Not transformation
 	object := transformation.Clone().(*model.Config)
 	object.ComponentId = `foo.bar`
-	_, path, err = m.getSharedCodePath(object)
+	_, path, err = h.GetSharedCodePath(object)
 	assert.NoError(t, err)
 	assert.Empty(t, path)
 
 	// No path
 	object = transformation.Clone().(*model.Config)
 	object.Content = utils.NewOrderedMap()
-	_, path, err = m.getSharedCodePath(object)
+	_, path, err = h.GetSharedCodePath(object)
 	assert.NoError(t, err)
 	assert.Empty(t, path)
 
 	// Path is not string
 	object = transformation.Clone().(*model.Config)
 	object.Content.Set(model.SharedCodePathContentKey, 123)
-	_, path, err = m.getSharedCodePath(object)
+	_, path, err = h.GetSharedCodePath(object)
 	assert.Error(t, err)
 	assert.Equal(t, `key "shared_code_path" must be string, found int, in config "branch:123/component:keboola.python-transformation-v2/config:456"`, err.Error())
 	assert.Empty(t, path)
@@ -71,7 +71,7 @@ func TestGetSharedCodeKey(t *testing.T) {
 	t.Parallel()
 	fs := testhelper.NewMemoryFs()
 	state := model.NewState(zap.NewNop().Sugar(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
-	m := NewMapper(nil, model.MapperContext{State: state})
+	h := New(state, model.DefaultNaming())
 
 	transformation := &model.Config{
 		ConfigKey: model.ConfigKey{
@@ -88,7 +88,7 @@ func TestGetSharedCodeKey(t *testing.T) {
 	}
 
 	// Valid
-	_, key, err := m.getSharedCodeKey(transformation)
+	_, key, err := h.GetSharedCodeKey(transformation)
 	assert.NoError(t, err)
 	assert.Equal(t, model.ConfigKey{
 		BranchId:    123,
@@ -98,28 +98,28 @@ func TestGetSharedCodeKey(t *testing.T) {
 
 	// Not config
 	row := &model.ConfigRow{}
-	_, key, err = m.getSharedCodeKey(row)
+	_, key, err = h.GetSharedCodeKey(row)
 	assert.NoError(t, err)
 	assert.Nil(t, key)
 
 	// Not transformation
 	object := transformation.Clone().(*model.Config)
 	object.ComponentId = `foo.bar`
-	_, key, err = m.getSharedCodeKey(object)
+	_, key, err = h.GetSharedCodeKey(object)
 	assert.NoError(t, err)
 	assert.Nil(t, key)
 
 	// No ID
 	object = transformation.Clone().(*model.Config)
 	object.Content = utils.NewOrderedMap()
-	_, key, err = m.getSharedCodeKey(object)
+	_, key, err = h.GetSharedCodeKey(object)
 	assert.NoError(t, err)
 	assert.Empty(t, key)
 
 	// ID is not string
 	object = transformation.Clone().(*model.Config)
 	object.Content.Set(model.SharedCodeIdContentKey, 123)
-	_, key, err = m.getSharedCodeKey(object)
+	_, key, err = h.GetSharedCodeKey(object)
 	assert.Error(t, err)
 	assert.Equal(t, `key "shared_code_id" must be string, found int, in config "branch:123/component:keboola.python-transformation-v2/config:456"`, err.Error())
 	assert.Empty(t, key)
@@ -130,19 +130,19 @@ func TestGetSharedCodeByPath(t *testing.T) {
 	fs := testhelper.NewMemoryFs()
 	state := model.NewState(zap.NewNop().Sugar(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
 	naming := model.DefaultNaming()
-	m := NewMapper(nil, model.MapperContext{Naming: naming, State: state})
+	h := New(state, naming)
 	sharedCodeKey := fixtures.CreateSharedCode(t, state, naming)
 
 	// Found
-	result := m.getSharedCodeByPath(model.BranchKey{Id: 123}, `_shared/keboola.python-transformation-v2`)
+	result := h.GetSharedCodeByPath(model.BranchKey{Id: 123}, `_shared/keboola.python-transformation-v2`)
 	assert.NotNil(t, result)
 	assert.Equal(t, sharedCodeKey, result.Key())
 
 	// Different branch
-	assert.Nil(t, m.getSharedCodeByPath(model.BranchKey{Id: 456}, `_shared/keboola.python-transformation-v2`))
+	assert.Nil(t, h.GetSharedCodeByPath(model.BranchKey{Id: 456}, `_shared/keboola.python-transformation-v2`))
 
 	// Not found
-	assert.Nil(t, m.getSharedCodeByPath(model.BranchKey{Id: 123}, `foo/bar`))
+	assert.Nil(t, h.GetSharedCodeByPath(model.BranchKey{Id: 123}, `foo/bar`))
 }
 
 func TestGetSharedCodeRowByPath(t *testing.T) {
@@ -150,12 +150,12 @@ func TestGetSharedCodeRowByPath(t *testing.T) {
 	fs := testhelper.NewMemoryFs()
 	state := model.NewState(zap.NewNop().Sugar(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
 	naming := model.DefaultNaming()
-	m := NewMapper(nil, model.MapperContext{Naming: naming, State: state})
+	h := New(state, naming)
 	sharedCodeKey := fixtures.CreateSharedCode(t, state, naming)
 	sharedCode := state.MustGet(sharedCodeKey).(*model.ConfigState)
 
 	// Found
-	result := m.getSharedCodeRowByPath(sharedCode, `codes/code1`)
+	result := h.GetSharedCodeRowByPath(sharedCode, `codes/code1`)
 	assert.NotNil(t, result)
 	assert.Equal(t, model.ConfigRowKey{
 		BranchId:    123,
@@ -165,5 +165,38 @@ func TestGetSharedCodeRowByPath(t *testing.T) {
 	}, result.Key())
 
 	// Not found
-	assert.Nil(t, m.getSharedCodeRowByPath(sharedCode, `foo/bar`))
+	assert.Nil(t, h.GetSharedCodeRowByPath(sharedCode, `foo/bar`))
+}
+
+func TestGetSharedCodeVariablesId(t *testing.T) {
+	t.Parallel()
+	fs := testhelper.NewMemoryFs()
+	state := model.NewState(zap.NewNop().Sugar(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
+	naming := model.DefaultNaming()
+	h := New(state, model.DefaultNaming())
+
+	fixtures.CreateSharedCode(t, state, naming)
+	sharedCodeRow1 := state.MustGet(model.ConfigRowKey{
+		BranchId:    123,
+		ComponentId: model.SharedCodeComponentId,
+		ConfigId:    `456`,
+		Id:          `1234`,
+	}).(*model.ConfigRowState)
+	sharedCodeRow2 := state.MustGet(model.ConfigRowKey{
+		BranchId:    123,
+		ComponentId: model.SharedCodeComponentId,
+		ConfigId:    `456`,
+		Id:          `5678`,
+	}).(*model.ConfigRowState)
+
+	sharedCodeRow1.Local.Content.Set(model.SharedCodeVariablesIdContentKey, `789`)
+
+	// Found
+	variablesId, found := h.GetSharedCodeVariablesId(sharedCodeRow1.Local)
+	assert.True(t, found)
+	assert.Equal(t, `789`, variablesId)
+
+	// Not found
+	_, found = h.GetSharedCodeVariablesId(sharedCodeRow2.Local)
+	assert.False(t, found)
 }

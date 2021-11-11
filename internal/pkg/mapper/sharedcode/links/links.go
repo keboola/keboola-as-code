@@ -4,6 +4,7 @@ import (
 	"regexp"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode/helper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
@@ -17,6 +18,7 @@ const (
 // mapper replaces "shared_code_id" with "shared_code_path" in local fs.
 type mapper struct {
 	model.MapperContext
+	*helper.SharedCodeHelper
 	localManager *local.Manager
 	idRegexp     *regexp.Regexp
 	pathRegexp   *regexp.Regexp
@@ -24,9 +26,10 @@ type mapper struct {
 
 func NewMapper(localManager *local.Manager, context model.MapperContext) *mapper {
 	return &mapper{
-		MapperContext: context,
-		localManager:  localManager,
-		idRegexp:      idRegexp(),
-		pathRegexp:    pathRegexp(),
+		MapperContext:    context,
+		SharedCodeHelper: helper.New(context.State, context.Naming),
+		localManager:     localManager,
+		idRegexp:         idRegexp(),
+		pathRegexp:       pathRegexp(),
 	}
 }

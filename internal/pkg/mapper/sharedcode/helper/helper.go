@@ -1,4 +1,4 @@
-package links
+package helper
 
 import (
 	"fmt"
@@ -7,7 +7,17 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func (m *mapper) isSharedCodeKey(key model.Key) (bool, error) {
+// SharedCodeHelper gets some values from shared codes.
+type SharedCodeHelper struct {
+	state  *model.State
+	naming *model.Naming
+}
+
+func New(state *model.State, naming *model.Naming) *SharedCodeHelper {
+	return &SharedCodeHelper{state: state, naming: naming}
+}
+
+func (h *SharedCodeHelper) IsSharedCodeKey(key model.Key) (bool, error) {
 	// Is config?
 	configKey, ok := key.(model.ConfigKey)
 	if !ok {
@@ -15,14 +25,14 @@ func (m *mapper) isSharedCodeKey(key model.Key) (bool, error) {
 	}
 
 	// Is shared code?
-	component, err := m.State.Components().Get(configKey.ComponentKey())
+	component, err := h.state.Components().Get(configKey.ComponentKey())
 	if err != nil || !component.IsSharedCode() {
 		return false, err
 	}
 	return true, nil
 }
 
-func (m *mapper) isSharedCodeRowKey(key model.Key) (bool, error) {
+func (h *SharedCodeHelper) IsSharedCodeRowKey(key model.Key) (bool, error) {
 	// Is config row?
 	configRowKey, ok := key.(model.ConfigRowKey)
 	if !ok {
@@ -30,14 +40,14 @@ func (m *mapper) isSharedCodeRowKey(key model.Key) (bool, error) {
 	}
 
 	// Is shared code?
-	component, err := m.State.Components().Get(configRowKey.ComponentKey())
+	component, err := h.state.Components().Get(configRowKey.ComponentKey())
 	if err != nil || !component.IsSharedCode() {
 		return false, err
 	}
 	return true, nil
 }
 
-func (m *mapper) isTransformation(key model.Key) (bool, error) {
+func (h *SharedCodeHelper) IsTransformation(key model.Key) (bool, error) {
 	// Is config?
 	configKey, ok := key.(model.ConfigKey)
 	if !ok {
@@ -45,15 +55,15 @@ func (m *mapper) isTransformation(key model.Key) (bool, error) {
 	}
 
 	// Is shared code?
-	component, err := m.State.Components().Get(configKey.ComponentKey())
+	component, err := h.state.Components().Get(configKey.ComponentKey())
 	if err != nil || !component.IsTransformation() {
 		return false, err
 	}
 	return true, nil
 }
 
-// getTargetComponentId returns the component for which the shared code is intended.
-func (m *mapper) getTargetComponentId(sharedCodeConfig *model.Config) (string, error) {
+// GetTargetComponentId returns the component for which the shared code is intended.
+func (h *SharedCodeHelper) GetTargetComponentId(sharedCodeConfig *model.Config) (string, error) {
 	componentIdRaw, found := sharedCodeConfig.Content.Get(model.SharedCodeComponentIdContentKey)
 	if !found {
 		return "", fmt.Errorf(`missing "%s" in %s`, model.SharedCodeComponentIdContentKey, sharedCodeConfig.Desc())
@@ -67,9 +77,9 @@ func (m *mapper) getTargetComponentId(sharedCodeConfig *model.Config) (string, e
 	return componentId, nil
 }
 
-func (m *mapper) getSharedCodePath(object model.Object) (*model.Config, string, error) {
+func (h *SharedCodeHelper) GetSharedCodePath(object model.Object) (*model.Config, string, error) {
 	// Shared code is used by transformation
-	ok, err := m.isTransformation(object.Key())
+	ok, err := h.IsTransformation(object.Key())
 	if err != nil || !ok {
 		return nil, "", err
 	}
@@ -89,9 +99,9 @@ func (m *mapper) getSharedCodePath(object model.Object) (*model.Config, string, 
 	return transformation, sharedCodePath, nil
 }
 
-func (m *mapper) getSharedCodeKey(object model.Object) (*model.Config, model.Key, error) {
+func (h *SharedCodeHelper) GetSharedCodeKey(object model.Object) (*model.Config, model.Key, error) {
 	// Shared code is used by transformation
-	ok, err := m.isTransformation(object.Key())
+	ok, err := h.IsTransformation(object.Key())
 	if err != nil || !ok {
 		return nil, nil, err
 	}
@@ -118,16 +128,16 @@ func (m *mapper) getSharedCodeKey(object model.Object) (*model.Config, model.Key
 	return transformation, sharedCodeKey, nil
 }
 
-func (m *mapper) getSharedCodeByPath(branchKey model.BranchKey, path string) *model.ConfigState {
+func (h *SharedCodeHelper) GetSharedCodeByPath(branchKey model.BranchKey, path string) *model.ConfigState {
 	// Get branch
-	branch, found := m.State.Get(branchKey)
+	branch, found := h.state.Get(branchKey)
 	if !found {
 		return nil
 	}
 
 	// Get key by path
 	path = filesystem.Join(branch.Path(), path)
-	keyRaw, found := m.Naming.FindByPath(path)
+	keyRaw, found := h.naming.FindByPath(path)
 	if !found {
 		return nil
 	}
@@ -149,13 +159,13 @@ func (m *mapper) getSharedCodeByPath(branchKey model.BranchKey, path string) *mo
 	}
 
 	// Ok
-	return m.State.MustGet(key).(*model.ConfigState)
+	return h.state.MustGet(key).(*model.ConfigState)
 }
 
-func (m *mapper) getSharedCodeRowByPath(sharedCode *model.ConfigState, path string) *model.ConfigRowState {
+func (h *SharedCodeHelper) GetSharedCodeRowByPath(sharedCode *model.ConfigState, path string) *model.ConfigRowState {
 	// Get key by path
 	path = filesystem.Join(sharedCode.Path(), path)
-	keyRaw, found := m.Naming.FindByPath(path)
+	keyRaw, found := h.naming.FindByPath(path)
 	if !found {
 		return nil
 	}
@@ -172,5 +182,21 @@ func (m *mapper) getSharedCodeRowByPath(sharedCode *model.ConfigState, path stri
 	}
 
 	// Ok
-	return m.State.MustGet(key).(*model.ConfigRowState)
+	return h.state.MustGet(key).(*model.ConfigRowState)
+}
+
+func (h *SharedCodeHelper) GetSharedCodeVariablesId(configRow *model.ConfigRow) (string, bool) {
+	// Variables ID is stored in configuration
+	variablesIdRaw, found := configRow.Content.Get(model.SharedCodeVariablesIdContentKey)
+	if !found {
+		return "", false
+	}
+
+	// Variables ID must be string
+	variablesId, ok := variablesIdRaw.(string)
+	if !ok {
+		return "", false
+	}
+
+	return variablesId, true
 }
