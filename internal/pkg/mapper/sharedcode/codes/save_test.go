@@ -22,7 +22,7 @@ func TestSharedCodeSaveMissingKey(t *testing.T) {
 	assert.Len(t, recipe.ExtraFiles, 0)
 }
 
-func TestSharedCodeSaveOk(t *testing.T) {
+func TestSharedCodeSaveString(t *testing.T) {
 	t.Parallel()
 	targetComponentId := `keboola.python-transformation-v2`
 	context, row, rowRecord := createTestFixtures(t, targetComponentId)
@@ -44,4 +44,28 @@ func TestSharedCodeSaveOk(t *testing.T) {
 	file := recipe.ExtraFiles[0]
 	assert.Equal(t, codeFilePath, file.Path)
 	assert.Equal(t, "foo bar\n", file.Content)
+}
+
+func TestSharedCodeSaveSlice(t *testing.T) {
+	t.Parallel()
+	targetComponentId := `keboola.python-transformation-v2`
+	context, row, rowRecord := createTestFixtures(t, targetComponentId)
+	recipe := createLocalSaveRecipe(row, rowRecord)
+	codeFilePath := filesystem.Join(context.Naming.SharedCodeFilePath(recipe.Record.Path(), targetComponentId))
+
+	// Set JSON value
+	row.Content.Set(model.ShareCodeContentKey, []interface{}{`foo`, `bar`})
+
+	// Create dir
+	assert.NoError(t, context.Fs.Mkdir(filesystem.Dir(codeFilePath)))
+
+	// Save to file
+	err := NewMapper(context).MapBeforeLocalSave(recipe)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.Len(t, recipe.ExtraFiles, 1)
+	file := recipe.ExtraFiles[0]
+	assert.Equal(t, codeFilePath, file.Path)
+	assert.Equal(t, "foo\nbar\n", file.Content)
 }

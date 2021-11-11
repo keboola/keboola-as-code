@@ -41,7 +41,9 @@
               "changeDescription": "Updated from #KeboolaCLI",
               "isDisabled": false,
               "configuration": {
-                "code_content": "num1 = {{num1}}\nnum2 = {{num2}}\nsum = num1 + num2\n",
+                "code_content": [
+                  "num1 = {{num1}}\nnum2 = {{num2}}\nsum = num1 + num2"
+                ],
                 "variables_id": "%%TEST_NEW_TICKET_5%%"
               }
             },
@@ -51,7 +53,9 @@
               "changeDescription": "Updated from #KeboolaCLI",
               "isDisabled": false,
               "configuration": {
-                "code_content": "# This program prints Hello, world!\n\nprint('Hello, world!')\n"
+                "code_content": [
+                  "# This program prints Hello, world!\n\nprint('Hello, world!')"
+                ]
               }
             },
             {
@@ -60,7 +64,9 @@
               "changeDescription": "Updated from #KeboolaCLI",
               "isDisabled": false,
               "configuration": {
-                "code_content": "num1 = 1.5\nnum2 = 6.3\nsum = num1 + num2\n"
+                "code_content": [
+                  "num1 = 1.5\nnum2 = 6.3\nsum = num1 + num2"
+                ]
               }
             }
           ]

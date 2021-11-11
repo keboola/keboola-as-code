@@ -295,7 +295,7 @@ func AssertExpectations(
 			t,
 			testhelper.ReplaceEnvsString(expectedSnapshot.Content, envProvider),
 			json.MustEncodeString(actualSnapshot, true),
-			`unexpected project state, compare "expected-state.json" from test and "actual-state.json" from ".out" dir`,
+			`unexpected project state, compare "expected-state.json" from test and "actual-state.json" from ".out" dir.`,
 		)
 	}
 }

@@ -414,8 +414,10 @@ func TestPersistSharedCode(t *testing.T) {
 					Description: "test code",
 					Content: utils.PairsToOrderedMap([]utils.Pair{
 						{
-							Key:   "code_content",
-							Value: "print('Hello, world!')\n",
+							Key: "code_content",
+							Value: []string{
+								"print('Hello, world!')",
+							},
 						},
 					}),
 				},
@@ -571,8 +573,10 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 					Description: "test code",
 					Content: utils.PairsToOrderedMap([]utils.Pair{
 						{
-							Key:   "code_content",
-							Value: "num1 = {{num1}}\nnum2 = {{num2}}\nsum = num1 + num2\n",
+							Key: "code_content",
+							Value: []string{
+								"num1 = {{num1}}\nnum2 = {{num2}}\nsum = num1 + num2",
+							},
 						},
 					}),
 					Relations: expectedCodeRelations,

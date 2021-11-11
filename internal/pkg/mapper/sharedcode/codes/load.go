@@ -2,6 +2,7 @@ package codes
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/strhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -51,7 +52,9 @@ func (l *loader) load() error {
 	l.Record.AddRelatedPath(codeFilePath)
 
 	// Set to config row JSON
-	l.configRow.Content.Set(model.ShareCodeContentKey, codeFile.Content)
-	normalizeContent(l.configRow.Content)
+	l.configRow.Content.Set(
+		model.ShareCodeContentKey,
+		strhelper.ParseTransformationScript(codeFile.Content, targetComponentId),
+	)
 	return nil
 }

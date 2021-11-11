@@ -36,7 +36,7 @@ func TestSharedCodeLoadOk(t *testing.T) {
 	assert.NoError(t, err)
 	codeContent, found := row.Content.Get(model.ShareCodeContentKey)
 	assert.True(t, found)
-	assert.Equal(t, "foo bar\n", codeContent)
+	assert.Equal(t, []string{"foo bar"}, codeContent)
 
 	// Path is present in related paths
 	assert.Equal(t, []string{
