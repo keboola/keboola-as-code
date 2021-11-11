@@ -23,6 +23,11 @@ const (
 	JuliaExt          = `jl`
 	RExt              = `r`
 	TxtExt            = `txt`
+	SqlComment        = `--`
+	PyComment         = `#`
+	JuliaComment      = `#`
+	RComment          = `#`
+	TxtComment        = `//`
 )
 
 // Naming of the files.
@@ -36,7 +41,7 @@ type Naming struct {
 	VariablesConfig     utils.PathTemplate `json:"variablesConfig" validate:"required"`
 	VariablesValuesRow  utils.PathTemplate `json:"variablesValuesRow" validate:"required"`
 	usedLock            *sync.Mutex
-	usedByPath          map[string]string        // path -> object key
+	usedByPath          map[string]Key           // path -> object key
 	usedByKey           map[string]PathInProject // object key -> path
 }
 
@@ -51,7 +56,7 @@ func DefaultNaming() *Naming {
 		VariablesConfig:     "variables",
 		VariablesValuesRow:  "values/{config_row_name}",
 		usedLock:            &sync.Mutex{},
-		usedByPath:          make(map[string]string),
+		usedByPath:          make(map[string]Key),
 		usedByKey:           make(map[string]PathInProject),
 	}
 }
@@ -68,21 +73,20 @@ func (n Naming) Attach(key Key, path PathInProject) {
 	}
 
 	// Check if the path is unique
-	keyStr := key.String()
-	if foundKey, found := n.usedByPath[pathStr]; found && foundKey != keyStr {
+	if foundKey, found := n.usedByPath[pathStr]; found && foundKey != key {
 		panic(fmt.Errorf(
-			`naming error: path "%s" is attached to object "%s", but new object "%s" has same path`,
-			pathStr, foundKey, keyStr,
+			`naming error: path "%s" is attached to %s, but new %s has same path`,
+			pathStr, foundKey.Desc(), key.Desc(),
 		))
 	}
 
 	// Remove the previous value attached to the key
-	if foundPath, found := n.usedByKey[keyStr]; found {
+	if foundPath, found := n.usedByKey[key.String()]; found {
 		delete(n.usedByPath, foundPath.Path())
 	}
 
-	n.usedByPath[pathStr] = keyStr
-	n.usedByKey[keyStr] = path
+	n.usedByPath[pathStr] = key
+	n.usedByKey[key.String()] = path
 }
 
 // Detach object's path from Naming, so it can be used by other object.
@@ -101,6 +105,11 @@ func (n Naming) GetCurrentPath(key Key) (PathInProject, bool) {
 	return path, found
 }
 
+func (n Naming) FindByPath(path string) (Key, bool) {
+	key, found := n.usedByPath[path]
+	return key, found
+}
+
 func (n Naming) ensureUniquePath(key Key, p PathInProject) PathInProject {
 	p = n.makeUniquePath(key, p)
 	n.Attach(key, p)
@@ -116,14 +125,13 @@ func (n Naming) makeUniquePath(key Key, p PathInProject) PathInProject {
 		p.ObjectPath = utils.NormalizeName(key.Kind().Name)
 	}
 
-	keyStr := key.String()
 	dir, file := filesystem.Split(p.ObjectPath)
 
 	// Add a suffix to the path if it is not unique
 	suffix := 0
 	for {
 		foundKey, found := n.usedByPath[p.Path()]
-		if !found || foundKey == keyStr {
+		if !found || foundKey == key {
 			break
 		}
 
@@ -331,6 +339,21 @@ func (n Naming) CodeFileExt(componentId string) string {
 		return PyExt
 	default:
 		return TxtExt
+	}
+}
+
+func (n Naming) CodeFileComment(ext string) string {
+	switch ext {
+	case SqlExt:
+		return SqlComment
+	case RExt:
+		return RComment
+	case JuliaExt:
+		return JuliaComment
+	case PyExt:
+		return PyComment
+	default:
+		return TxtComment
 	}
 }
 
