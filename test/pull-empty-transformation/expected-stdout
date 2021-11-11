@@ -1,0 +1,10 @@
+%A
+DEBUG	Project local and remote states have been successfully loaded.
+INFO	Plan for "pull" operation:
+INFO	  + B main
+INFO	  + C main/transformation/keboola.python-transformation-v2/empty-transformation
+%A
+DEBUG	Saved "main/transformation/keboola.python-transformation-v2/empty-transformation/blocks/.gitkeep"
+%A
+DEBUG	Sent "pull" successful event id: "%s"
+INFO	Pull done.

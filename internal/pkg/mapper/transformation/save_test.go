@@ -233,6 +233,7 @@ func TestLocalSaveTransformation(t *testing.T) {
 
 	// Check generated files
 	assert.Equal(t, []*filesystem.File{
+		filesystem.CreateFile(blocksDir+`/.gitkeep`, ``),
 		filesystem.CreateFile(blocksDir+`/001-block-1/meta.json`, "{\n  \"name\": \"block1\"\n}\n").SetDescription(`block metadata`),
 		filesystem.CreateFile(blocksDir+`/001-block-1/001-code-1/meta.json`, "{\n  \"name\": \"code1\"\n}\n").SetDescription(`code metadata`),
 		filesystem.CreateFile(blocksDir+`/001-block-1/001-code-1/code.sql`, "SELECT 1\n").SetDescription(`code`),

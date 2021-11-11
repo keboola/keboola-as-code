@@ -1,0 +1,12 @@
+{
+  "componentId": "keboola.python-transformation-v2",
+  "name": "empty-transformation",
+  "configuration": {
+    "parameters": {
+      "packages": [
+        "xgboost"
+      ]
+    }
+  },
+  "rows": null
+}
