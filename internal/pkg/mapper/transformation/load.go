@@ -8,7 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/sql"
+	"github.com/keboola/keboola-as-code/internal/pkg/strhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -313,14 +313,5 @@ func (l *localLoader) codeFileName(code *model.Code) string {
 }
 
 func (l *localLoader) parseScripts(content string) []string {
-	switch l.config.ComponentId {
-	case `keboola.snowflake-transformation`:
-		fallthrough
-	case `keboola.synapse-transformation`:
-		fallthrough
-	case `keboola.oracle-transformation`:
-		return sql.Split(content)
-	default:
-		return []string{strings.TrimSuffix(content, "\n")}
-	}
+	return strhelper.ParseTransformationScript(content, l.config.ComponentId)
 }

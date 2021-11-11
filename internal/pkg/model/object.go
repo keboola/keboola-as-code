@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
-	"strings"
 
 	"github.com/iancoleman/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/sql"
+	"github.com/keboola/keboola-as-code/internal/pkg/strhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -27,6 +26,7 @@ const (
 	SharedCodeVariablesIdContentKey   = `variables_id`
 	SharedCodeComponentIdContentKey   = `componentId`
 	SharedCodeIdContentKey            = `shared_code_id`
+	SharedCodeRowsIdContentKey        = `shared_code_row_ids`
 	SharedCodePathContentKey          = `shared_code_path`
 	SchedulerTargetKey                = `target`
 	SchedulerTargetComponentIdKey     = `componentId`
@@ -388,14 +388,5 @@ func (c Code) String() string {
 }
 
 func (c Code) ScriptsToString() string {
-	switch c.ComponentId {
-	case `keboola.snowflake-transformation`:
-		fallthrough
-	case `keboola.synapse-transformation`:
-		fallthrough
-	case `keboola.oracle-transformation`:
-		return sql.Join(c.Scripts) + "\n"
-	default:
-		return strings.Join(c.Scripts, "\n") + "\n"
-	}
+	return strhelper.TransformationScriptsToString(c.Scripts, c.ComponentId)
 }

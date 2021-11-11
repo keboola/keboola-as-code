@@ -7,6 +7,8 @@ import (
 
 	"github.com/jpillora/longestcommon"
 	"github.com/umisama/go-regexpcache"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/sql"
 )
 
 // FormatPathChange - example result "branch/config/{row -> row1}".
@@ -64,4 +66,30 @@ func MatchWords(value string, wordsStr string) bool {
 
 func FirstLower(str string) string {
 	return strings.ToLower(string(str[0])) + str[1:]
+}
+
+func ParseTransformationScript(content, componentId string) []string {
+	switch componentId {
+	case `keboola.snowflake-transformation`:
+		fallthrough
+	case `keboola.synapse-transformation`:
+		fallthrough
+	case `keboola.oracle-transformation`:
+		return sql.Split(content)
+	default:
+		return []string{strings.TrimSuffix(content, "\n")}
+	}
+}
+
+func TransformationScriptsToString(scripts []string, componentId string) string {
+	switch componentId {
+	case `keboola.snowflake-transformation`:
+		fallthrough
+	case `keboola.synapse-transformation`:
+		fallthrough
+	case `keboola.oracle-transformation`:
+		return sql.Join(scripts) + "\n"
+	default:
+		return strings.Join(scripts, "\n") + "\n"
+	}
 }
