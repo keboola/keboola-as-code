@@ -79,14 +79,17 @@
                     {
                       "name": "Shared Code Used",
                       "script": [
-                        "{{123456}}"
+                        "{{%%TEST_NEW_TICKET_2%%}}"
                       ]
                     }
                   ]
                 }
               ]
             },
-            "shared_code_id": "%%TEST_NEW_TICKET_1%%"
+            "shared_code_id": "%%TEST_NEW_TICKET_1%%",
+            "shared_code_row_ids": [
+              "%%TEST_NEW_TICKET_2%%"
+            ]
           },
           "rows": []
         }

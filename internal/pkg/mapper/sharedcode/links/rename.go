@@ -11,26 +11,37 @@ func (m *mapper) OnObjectsRename(event model.OnObjectsRenameEvent) error {
 	errors := utils.NewMultiError()
 
 	// Find renamed shared codes
-	renamedSharedCodes := make(map[string]bool)
+	renamedSharedCodes := make(map[string]model.Key)
 	for _, object := range event.RenamedObjects {
-		// Is config?
-		if record, ok := object.Record.(*model.ConfigManifest); ok {
-			// Get component
-			component, err := m.State.Components().Get(record.ComponentKey())
-			if err != nil {
-				errors.Append(err)
-				continue
-			}
+		key := object.Record.Key()
 
-			// Is shared code?
-			if component.IsSharedCode() {
-				renamedSharedCodes[record.Key().String()] = true
-			}
+		// Is shared code?
+		if ok, err := m.isSharedCodeKey(key); err != nil {
+			errors.Append(err)
+		} else if ok {
+			renamedSharedCodes[key.String()] = key
+			continue
+		}
+
+		// Is shared code row?
+		if ok, err := m.isSharedCodeRowKey(key); err != nil {
+			errors.Append(err)
+		} else if ok {
+			configKey := key.(model.ConfigRowKey).ConfigKey()
+			renamedSharedCodes[configKey.String()] = configKey
 		}
 	}
 
-	// Find configs using these shared codes
-	uow := m.NewUnitOfWork(context.Background())
+	// Log
+	if len(renamedSharedCodes) > 0 {
+		m.Logger.Debug(`Found renamed shared codes:`)
+		for _, key := range renamedSharedCodes {
+			m.Logger.Debugf(`  - %s`, key.Desc())
+		}
+	}
+
+	// Find transformations using these shared codes
+	uow := m.localManager.NewUnitOfWork(context.Background())
 	for _, objectState := range m.State.All() {
 		configState, err := m.getDependentConfig(objectState, renamedSharedCodes)
 		if err != nil {
@@ -40,7 +51,7 @@ func (m *mapper) OnObjectsRename(event model.OnObjectsRenameEvent) error {
 		}
 
 		// Re-save config -> new "shared_code_path" will be saved.
-		m.Logger.Debugf(`Updating "shared_code_path" in "%s"`, configState.Path())
+		m.Logger.Debugf(`Need to update shared codes in "%s"`, configState.Path())
 		uow.SaveObject(configState, configState.Local, model.NewChangedFields("configuration"))
 	}
 
@@ -52,40 +63,16 @@ func (m *mapper) OnObjectsRename(event model.OnObjectsRenameEvent) error {
 	return errors.ErrorOrNil()
 }
 
-func (m *mapper) getDependentConfig(object model.ObjectState, renamedSharedCodes map[string]bool) (*model.ConfigState, error) {
-	// Shared code is used by config
-	configState, ok := object.(*model.ConfigState)
-	if !ok {
-		return nil, nil
-	}
-
-	// Component must be transformation
-	component, err := m.State.Components().Get(configState.ComponentKey())
-	if err != nil {
+func (m *mapper) getDependentConfig(objectState model.ObjectState, renamedSharedCodes map[string]model.Key) (*model.ConfigState, error) {
+	// Must be transformation + have "shared_code_id" key
+	_, sharedCodeKey, err := m.getSharedCodeKey(objectState.LocalState())
+	if err != nil || sharedCodeKey == nil {
 		return nil, err
-	}
-	if !component.IsTransformation() {
-		return nil, nil
-	}
-
-	// Must have "shared_code_id" key
-	sharedCodeIdRaw, found := configState.Local.Content.Get(model.SharedCodeIdContentKey)
-	if !found {
-		return nil, nil
-	}
-	sharedCodeId, ok := sharedCodeIdRaw.(string)
-	if !ok {
-		return nil, nil
-	}
-	sharedCodeKey := model.ConfigKey{
-		BranchId:    configState.BranchId,
-		ComponentId: model.SharedCodeComponentId,
-		Id:          sharedCodeId,
 	}
 
 	// Check if shared code has been renamed.
 	if _, found := renamedSharedCodes[sharedCodeKey.String()]; found {
-		return configState, nil
+		return objectState.(*model.ConfigState), nil
 	}
 	return nil, nil
 }

@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -13,29 +14,8 @@ func TestSharedCodeLinksMapBeforeLocalSave(t *testing.T) {
 	t.Parallel()
 	mapperInst, context, logs := createMapper(t)
 
-	// Shared code
-	sharedCodeKey := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: model.SharedCodeComponentId,
-		Id:          `456`,
-	}
-	sharedCodeStateRaw, err := context.State.GetOrCreateFrom(&model.ConfigManifest{
-		ConfigKey: sharedCodeKey,
-		Paths: model.Paths{
-			PathInProject: model.NewPathInProject(
-				`branch`,
-				`_shared/keboola.python-transformation-v2`,
-			),
-		},
-	})
-	assert.NoError(t, err)
-	sharedCodeState := sharedCodeStateRaw.(*model.ConfigState)
-	sharedCodeState.SetLocalState(&model.Config{
-		ConfigKey: sharedCodeKey,
-		Content: utils.PairsToOrderedMap([]utils.Pair{
-			{Key: model.SharedCodeComponentIdContentKey, Value: `keboola.python-transformation-v2`},
-		}),
-	})
+	// Shared code config with rows
+	fixtures.CreateSharedCode(t, context.State, context.Naming)
 
 	// Config using shared code
 	configKey := model.ConfigKey{
@@ -43,23 +23,93 @@ func TestSharedCodeLinksMapBeforeLocalSave(t *testing.T) {
 		ComponentId: `keboola.python-transformation-v2`,
 		Id:          `789`,
 	}
-	config := &model.Config{
-		ConfigKey: configKey,
+	configState := &model.ConfigState{
+		ConfigManifest: &model.ConfigManifest{
+			ConfigKey: configKey,
+		},
+		Local: &model.Config{
+			ConfigKey: configKey,
+			Content: utils.PairsToOrderedMap([]utils.Pair{
+				{
+					Key:   model.SharedCodeIdContentKey,
+					Value: `456`,
+				},
+				{
+					Key:   model.SharedCodeRowsIdContentKey,
+					Value: []string{`1234`, `5678`},
+				},
+			}),
+			Blocks: model.Blocks{
+				{
+					Name: `Block 1`,
+					Codes: model.Codes{
+						{
+							CodeKey: model.CodeKey{
+								ComponentId: `keboola.python-transformation-v2`,
+							},
+							Name: `Code 1`,
+							Scripts: []string{
+								`print(100)`,
+								" {{1234}}\n",
+							},
+						},
+						{
+							CodeKey: model.CodeKey{
+								ComponentId: `keboola.python-transformation-v2`,
+							},
+							Name: `Code 2`,
+							Scripts: []string{
+								" {{5678}}\n",
+								"{{1234}}",
+							},
+						},
+					},
+				},
+			},
+		},
 	}
-	configManifest := &model.ConfigManifest{
-		ConfigKey: configKey,
-	}
-	recipe := createLocalSaveRecipe(config, configManifest)
-	recipe.Configuration.Content.Set(model.SharedCodeIdContentKey, `456`)
+	assert.NoError(t, context.State.Set(configState))
 
 	// Invoke
+	recipe := createLocalSaveRecipe(configState.Local, configState.ConfigManifest)
 	assert.NoError(t, mapperInst.MapBeforeLocalSave(recipe))
 	assert.Empty(t, logs.String())
 
 	// Path is replaced by ID
 	_, found := recipe.Configuration.Content.Get(model.SharedCodeIdContentKey)
 	assert.False(t, found)
+	_, found = recipe.Configuration.Content.Get(model.SharedCodeRowsIdContentKey)
+	assert.False(t, found)
 	sharedCodeId, found := recipe.Configuration.Content.Get(model.SharedCodePathContentKey)
 	assert.True(t, found)
 	assert.Equal(t, sharedCodeId, `_shared/keboola.python-transformation-v2`)
+
+	// IDs in transformation blocks are replaced by paths
+	assert.Equal(t, model.Blocks{
+		{
+			Name: `Block 1`,
+			Codes: model.Codes{
+				{
+					CodeKey: model.CodeKey{
+						ComponentId: `keboola.python-transformation-v2`,
+					},
+					Name: `Code 1`,
+					Scripts: []string{
+						`print(100)`,
+						"# {{:codes/code1}}",
+					},
+				},
+				{
+					CodeKey: model.CodeKey{
+						ComponentId: `keboola.python-transformation-v2`,
+					},
+					Name: `Code 2`,
+					Scripts: []string{
+						"# {{:codes/code2}}",
+						"# {{:codes/code1}}",
+					},
+				},
+			},
+		},
+	}, configState.Local.Blocks)
 }

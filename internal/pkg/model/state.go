@@ -257,17 +257,21 @@ func (s *State) MustGet(key Key) ObjectState {
 }
 
 func (s *State) CreateFrom(objectManifest Record) (ObjectState, error) {
+	objectState := objectManifest.NewObjectState()
+	return objectState, s.Set(objectState)
+}
+
+func (s *State) Set(objectState ObjectState) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	key := objectManifest.Key()
+	key := objectState.Key()
 	if _, found := s.objects.Get(key.String()); found {
-		return nil, fmt.Errorf(`object "%s" already exists`, key.Desc())
+		return fmt.Errorf(`object "%s" already exists`, key.Desc())
 	}
 
-	objectState := objectManifest.NewObjectState()
 	s.objects.Set(key.String(), objectState)
-	return objectState, nil
+	return nil
 }
 
 func (s *State) GetOrCreateFrom(objectManifest Record) (ObjectState, error) {

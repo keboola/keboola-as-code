@@ -1,1 +1,1 @@
-{{%%TEST_SHARED_CODE_ROW_ID%%}}
+# {{:codes/code-with-variables}}
