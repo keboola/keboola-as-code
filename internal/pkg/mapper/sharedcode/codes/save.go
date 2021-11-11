@@ -9,7 +9,7 @@ import (
 )
 
 type writer struct {
-	model.MapperContext
+	*mapper
 	*model.LocalSaveRecipe
 	config    *model.Config
 	configRow *model.ConfigRow
@@ -18,17 +18,15 @@ type writer struct {
 
 func (m *mapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
 	// Only for shared code config row
-	if ok, err := m.isSharedCodeConfigRow(recipe.Object); err != nil {
+	if ok, err := m.IsSharedCodeRowKey(recipe.Object.Key()); err != nil || !ok {
 		return err
-	} else if !ok {
-		return nil
 	}
 
 	// Create writer
 	configRow := recipe.Object.(*model.ConfigRow)
 	config := m.State.MustGet(configRow.ConfigKey()).RemoteOrLocalState().(*model.Config)
 	w := &writer{
-		MapperContext:   m.MapperContext,
+		mapper:          m,
 		LocalSaveRecipe: recipe,
 		config:          config,
 		configRow:       configRow,
@@ -57,7 +55,7 @@ func (w *writer) save() error {
 	}
 
 	// Get target component of the shared code -> needed for file extension
-	targetComponentId, err := getTargetComponentId(w.config)
+	targetComponentId, err := w.GetTargetComponentId(w.config)
 	if err != nil {
 		return err
 	}

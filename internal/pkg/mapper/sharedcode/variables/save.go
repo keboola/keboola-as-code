@@ -8,21 +8,11 @@ import (
 
 // MapBeforeRemoteSave - add "variables_id" to shared code.
 func (m *mapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
-	// Variables are used by shared code - config row.
-	internalObject, ok := recipe.InternalObject.(*model.ConfigRow)
-	if !ok {
-		return nil
-	}
-	apiObject := recipe.ApiObject.(*model.ConfigRow)
-
-	// Check component type
-	component, err := m.State.Components().Get(internalObject.ComponentKey())
-	if err != nil {
+	if ok, err := m.IsSharedCodeRowKey(recipe.InternalObject.Key()); err != nil || !ok {
 		return err
 	}
-	if !component.IsSharedCode() {
-		return nil
-	}
+	apiObject := recipe.ApiObject.(*model.ConfigRow)
+	internalObject := recipe.InternalObject.(*model.ConfigRow)
 
 	// Get relation
 	relType := model.SharedCodeVariablesFromRelType

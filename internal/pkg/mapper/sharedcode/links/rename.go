@@ -16,7 +16,7 @@ func (m *mapper) OnObjectsRename(event model.OnObjectsRenameEvent) error {
 		key := object.Record.Key()
 
 		// Is shared code?
-		if ok, err := m.isSharedCodeKey(key); err != nil {
+		if ok, err := m.IsSharedCodeKey(key); err != nil {
 			errors.Append(err)
 		} else if ok {
 			renamedSharedCodes[key.String()] = key
@@ -24,7 +24,7 @@ func (m *mapper) OnObjectsRename(event model.OnObjectsRenameEvent) error {
 		}
 
 		// Is shared code row?
-		if ok, err := m.isSharedCodeRowKey(key); err != nil {
+		if ok, err := m.IsSharedCodeRowKey(key); err != nil {
 			errors.Append(err)
 		} else if ok {
 			configKey := key.(model.ConfigRowKey).ConfigKey()
@@ -65,7 +65,7 @@ func (m *mapper) OnObjectsRename(event model.OnObjectsRenameEvent) error {
 
 func (m *mapper) getDependentConfig(objectState model.ObjectState, renamedSharedCodes map[string]model.Key) (*model.ConfigState, error) {
 	// Must be transformation + have "shared_code_id" key
-	_, sharedCodeKey, err := m.getSharedCodeKey(objectState.LocalState())
+	_, sharedCodeKey, err := m.GetSharedCodeKey(objectState.LocalState())
 	if err != nil || sharedCodeKey == nil {
 		return nil, err
 	}

@@ -18,7 +18,7 @@ func (m *mapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
 }
 
 func (m *mapper) replaceSharedCodeIdByPath(recipe *model.LocalSaveRecipe) error {
-	transformation, sharedCodeKey, err := m.getSharedCodeKey(recipe.Object)
+	transformation, sharedCodeKey, err := m.GetSharedCodeKey(recipe.Object)
 	if err != nil || transformation == nil {
 		return err
 	}
@@ -39,7 +39,7 @@ func (m *mapper) replaceSharedCodeIdByPath(recipe *model.LocalSaveRecipe) error 
 	}
 	sharedCodeState := sharedCodeRaw.(*model.ConfigState)
 	sharedCode := sharedCodeState.LocalOrRemoteState().(*model.Config)
-	targetComponentId, err := m.getTargetComponentId(sharedCode)
+	targetComponentId, err := m.GetTargetComponentId(sharedCode)
 	if err != nil {
 		return err
 	}

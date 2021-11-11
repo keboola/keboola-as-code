@@ -26,7 +26,7 @@ func (m *mapper) OnObjectsLoad(event model.OnObjectsLoadEvent) error {
 
 // replaceSharedCodePathById in transformation config + blocks.
 func (m *mapper) replaceSharedCodePathById(object model.Object) error {
-	transformation, sharedCodePath, err := m.getSharedCodePath(object)
+	transformation, sharedCodePath, err := m.GetSharedCodePath(object)
 	if err != nil {
 		return err
 	} else if transformation == nil {
@@ -39,7 +39,7 @@ func (m *mapper) replaceSharedCodePathById(object model.Object) error {
 	}()
 
 	// Get shared code transformation
-	sharedCodeState := m.getSharedCodeByPath(transformation.BranchKey(), sharedCodePath)
+	sharedCodeState := m.GetSharedCodeByPath(transformation.BranchKey(), sharedCodePath)
 	if sharedCodeState == nil {
 		errors := utils.NewMultiError()
 		errors.Append(fmt.Errorf(`shared code "%s" not found`, sharedCodePath))
@@ -47,7 +47,7 @@ func (m *mapper) replaceSharedCodePathById(object model.Object) error {
 		return errors
 	}
 	sharedCode := sharedCodeState.LocalOrRemoteState().(*model.Config)
-	targetComponentId, err := m.getTargetComponentId(sharedCode)
+	targetComponentId, err := m.GetTargetComponentId(sharedCode)
 	if err != nil {
 		return err
 	}
@@ -103,7 +103,7 @@ func (m *mapper) replacePathByIdInScript(script string, code *model.Code, shared
 	}
 
 	// Get shared code config row
-	row := m.getSharedCodeRowByPath(sharedCode, path)
+	row := m.GetSharedCodeRowByPath(sharedCode, path)
 	if row == nil {
 		errors := utils.NewMultiError()
 		errors.Append(fmt.Errorf(`shared code row "%s" not found`, path))
