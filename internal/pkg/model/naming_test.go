@@ -197,7 +197,7 @@ func TestNamingAttachDetach(t *testing.T) {
 	n.Attach(key1, NewPathInProject("", "my-branch-abc"))
 	assert.Len(t, n.usedByPath, 1)
 	assert.Len(t, n.usedByKey, 1)
-	assert.Equal(t, key1.String(), n.usedByPath["my-branch-abc"])
+	assert.Equal(t, key1, n.usedByPath["my-branch-abc"])
 	assert.Equal(t, NewPathInProject("", "my-branch-abc"), n.usedByKey[key1.String()])
 
 	// Attach another key
@@ -207,7 +207,7 @@ func TestNamingAttachDetach(t *testing.T) {
 	assert.Len(t, n.usedByKey, 2)
 
 	// Attach another key with same path
-	msg := `naming error: path "my-branch-456" is attached to object "01_456_branch", but new object "01_789_branch" has same path`
+	msg := `naming error: path "my-branch-456" is attached to branch "456", but new branch "789" has same path`
 	assert.PanicsWithError(t, msg, func() {
 		n.Attach(BranchKey{Id: 789}, NewPathInProject("", "my-branch-456"))
 	})
@@ -407,4 +407,18 @@ func TestNamingMatchConfigRowPathVariables(t *testing.T) {
 			"values/foo",
 		))
 	assert.True(t, matched)
+}
+
+func TestCodeFileExt(t *testing.T) {
+	t.Parallel()
+	n := DefaultNaming()
+	assert.Equal(t, `sql`, n.CodeFileExt(`keboola.snowflake-transformation`))
+	assert.Equal(t, `py`, n.CodeFileExt(`keboola.python-transformation-v2`))
+}
+
+func TestCodeFileComment(t *testing.T) {
+	t.Parallel()
+	n := DefaultNaming()
+	assert.Equal(t, `--`, n.CodeFileComment(`sql`))
+	assert.Equal(t, `#`, n.CodeFileComment(`py`))
 }
