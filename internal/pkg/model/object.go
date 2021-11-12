@@ -19,6 +19,7 @@ const (
 	DescriptionFileTag                = "descriptionFile:true"
 	TransformationType                = "transformation"
 	SharedCodeComponentId             = "keboola.shared-code"
+	OrchestratorComponentId           = "keboola.orchestrator"
 	ShareCodeTargetComponentKey       = `componentId`
 	SharedCodeContentKey              = `code_content`
 	VariablesIdContentKey             = `variables_id`
@@ -31,6 +32,8 @@ const (
 	SchedulerTargetKey                = `target`
 	SchedulerTargetComponentIdKey     = `componentId`
 	SchedulerTargetConfigurationIdKey = `configurationId`
+	OrchestratorPhasesContentKey      = `phases`
+	OrchestratorTasksContentKey       = `tasks`
 )
 
 type ObjectIdAndName interface {
@@ -115,6 +118,7 @@ type Config struct {
 	ChangeDescription string                 `json:"changeDescription"`
 	Content           *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
 	Blocks            Blocks                 `json:"-" validate:"dive" diff:"true"`
+	Orchestration     *Orchestration         `json:"-" validate:"omitempty,dive" diff:"true"`
 	Relations         Relations              `json:"-" validate:"dive" diff:"true"`
 }
 
@@ -286,6 +290,7 @@ func (c *Config) Clone() Object {
 	clone := *c
 	clone.Content = utils.CloneOrderedMap(c.Content)
 	clone.Blocks = c.Blocks.Clone()
+	clone.Orchestration = c.Orchestration.Clone()
 	clone.Relations = c.Relations.Clone()
 	return &clone
 }

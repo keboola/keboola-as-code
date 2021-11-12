@@ -56,6 +56,7 @@ func TestConfig_Clone(t *testing.T) {
 				},
 			},
 		},
+		Orchestration: &Orchestration{},
 		Relations: Relations{
 			&VariablesForRelation{
 				ComponentId: `foo.bar`,
