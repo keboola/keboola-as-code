@@ -236,6 +236,9 @@ func (l *localLoader) blockDirs() []string {
 		return nil
 	}
 
+	// Track blocks dir
+	l.Record.AddRelatedPath(l.blocksDir)
+
 	// Load all dir entries
 	items, err := l.Fs.ReadDir(l.blocksDir)
 	if err != nil {

@@ -88,6 +88,12 @@ type localWriter struct {
 }
 
 func (w *localWriter) save() error {
+	blocksDir := w.Naming.BlocksDir(w.Record.Path())
+
+	// Generate ".gitkeep" to preserve the "blocks" directory, even if there are no blocks.
+	gitKeep := filesystem.CreateFile(filesystem.Join(blocksDir, `.gitkeep`), ``)
+	w.ExtraFiles = append(w.ExtraFiles, gitKeep)
+
 	// Generate files for blocks
 	for _, block := range w.config.Blocks {
 		// Generate block files
@@ -96,7 +102,6 @@ func (w *localWriter) save() error {
 
 	// Delete all old files from blocks dir
 	// We always do full generation of blocks dir.
-	blocksDir := w.Naming.BlocksDir(w.Record.Path())
 	for _, path := range w.State.TrackedPaths() {
 		if filesystem.IsFrom(path, blocksDir) && w.State.IsFile(path) {
 			w.ToDelete = append(w.ToDelete, path)
