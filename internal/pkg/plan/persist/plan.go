@@ -1,4 +1,4 @@
-package plan
+package persist
 
 import (
 	"fmt"
@@ -10,19 +10,19 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 )
 
-type PersistPlan struct {
-	actions []PersistAction
+type Plan struct {
+	actions []action
 }
 
-func (p *PersistPlan) Empty() bool {
+func (p *Plan) Empty() bool {
 	return len(p.actions) == 0
 }
 
-func (p *PersistPlan) Name() string {
+func (p *Plan) Name() string {
 	return "persist"
 }
 
-func (p *PersistPlan) Log(writer *log.WriteCloser) {
+func (p *Plan) Log(writer *log.WriteCloser) {
 	writer.WriteStringNoErr(fmt.Sprintf(`Plan for "%s" operation:`, p.Name()))
 	actions := p.actions
 
@@ -35,6 +35,6 @@ func (p *PersistPlan) Log(writer *log.WriteCloser) {
 	}
 }
 
-func (p *PersistPlan) Invoke(logger *zap.SugaredLogger, api *remote.StorageApi, projectState *state.State) error {
-	return newPersistExecutor(logger, api, projectState, p).invoke()
+func (p *Plan) Invoke(logger *zap.SugaredLogger, api *remote.StorageApi, projectState *state.State) error {
+	return newExecutor(logger, api, projectState, p).invoke()
 }

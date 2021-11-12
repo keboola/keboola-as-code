@@ -1,4 +1,4 @@
-package plan
+package encrypt
 
 import (
 	"github.com/iancoleman/orderedmap"
@@ -9,23 +9,23 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-// Encrypt creates a plan for encrypt all unencrypted values in all configs and rows.
-func Encrypt(projectState *state.State) *EncryptPlan {
+// NewPlan creates a plan for encrypt all unencrypted values in all configs and rows.
+func NewPlan(projectState *state.State) *Plan {
 	builder := &encryptPlanBuilder{State: projectState}
 	actions := builder.build()
-	return &EncryptPlan{naming: projectState.Naming(), actions: actions}
+	return &Plan{naming: projectState.Naming(), actions: actions}
 }
 
 type encryptPlanBuilder struct {
 	*state.State
-	actions []*EncryptAction
+	actions []*action
 }
 
 type encryptActionBuilder struct {
 	values []*UnencryptedValue
 }
 
-func (b *encryptPlanBuilder) build() []*EncryptAction {
+func (b *encryptPlanBuilder) build() []*action {
 	for _, object := range b.All() {
 		b.processObject(object)
 	}
@@ -45,7 +45,7 @@ func (b *encryptPlanBuilder) processObject(objectState model.ObjectState) {
 		builder := &encryptActionBuilder{}
 		builder.processValue(o.GetContent(), nil)
 		if len(builder.values) > 0 {
-			b.actions = append(b.actions, &EncryptAction{
+			b.actions = append(b.actions, &action{
 				ObjectState: objectState,
 				object:      o,
 				values:      builder.values,

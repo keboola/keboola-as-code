@@ -1,4 +1,4 @@
-package plan
+package persist
 
 import (
 	"context"
@@ -24,7 +24,7 @@ type testCase struct {
 	inputDir        string
 	untrackedPaths  []string
 	expectedNewIds  int
-	expectedPlan    []PersistAction
+	expectedPlan    []action
 	expectedStates  []model.ObjectState
 	expectedMissing []model.Key
 }
@@ -50,8 +50,8 @@ func TestPersistNewConfig(t *testing.T) {
 			"main/extractor/ex-generic-v2/new-config/meta.json",
 		},
 		expectedNewIds: 1,
-		expectedPlan: []PersistAction{
-			&NewObjectAction{
+		expectedPlan: []action{
+			&newObjectAction{
 				PathInProject: model.NewPathInProject(
 					"main",
 					"extractor/ex-generic-v2/new-config",
@@ -124,8 +124,8 @@ func TestPersistNewConfigRow(t *testing.T) {
 			"main/extractor/keboola.ex-db-mysql/new-config/rows/some-row/meta.json",
 		},
 		expectedNewIds: 2,
-		expectedPlan: []PersistAction{
-			&NewObjectAction{
+		expectedPlan: []action{
+			&newObjectAction{
 				PathInProject: model.NewPathInProject(
 					"main",
 					"extractor/keboola.ex-db-mysql/new-config",
@@ -138,7 +138,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 					Id: 111,
 				},
 			},
-			&NewObjectAction{
+			&newObjectAction{
 				PathInProject: model.NewPathInProject(
 					"main/extractor/keboola.ex-db-mysql/new-config",
 					"rows/some-row",
@@ -238,8 +238,8 @@ func TestPersistDeleted(t *testing.T) {
 	tc := testCase{
 		inputDir:       `persist-deleted`,
 		untrackedPaths: nil,
-		expectedPlan: []PersistAction{
-			&DeleteRecordAction{
+		expectedPlan: []action{
+			&deleteRecordAction{
 				Record: &model.ConfigManifest{
 					ConfigKey: model.ConfigKey{
 						BranchId:    111,
@@ -259,7 +259,7 @@ func TestPersistDeleted(t *testing.T) {
 					},
 				},
 			},
-			&DeleteRecordAction{
+			&deleteRecordAction{
 				Record: &model.ConfigRowManifest{
 					ConfigRowKey: model.ConfigRowKey{
 						BranchId:    111,
@@ -316,8 +316,8 @@ func TestPersistSharedCode(t *testing.T) {
 			"main/_shared/keboola.python-transformation-v2/meta.json",
 		},
 		expectedNewIds: 2,
-		expectedPlan: []PersistAction{
-			&NewObjectAction{
+		expectedPlan: []action{
+			&newObjectAction{
 				PathInProject: model.NewPathInProject(
 					"main",
 					"_shared/keboola.python-transformation-v2",
@@ -330,7 +330,7 @@ func TestPersistSharedCode(t *testing.T) {
 					Id: 111,
 				},
 			},
-			&NewObjectAction{
+			&newObjectAction{
 				PathInProject: model.NewPathInProject(
 					"main/_shared/keboola.python-transformation-v2",
 					"codes/my-code",
@@ -461,8 +461,8 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 			"main/_shared/keboola.python-transformation-v2/meta.json",
 		},
 		expectedNewIds: 3,
-		expectedPlan: []PersistAction{
-			&NewObjectAction{
+		expectedPlan: []action{
+			&newObjectAction{
 				PathInProject: model.NewPathInProject(
 					"main",
 					"_shared/keboola.python-transformation-v2",
@@ -475,7 +475,7 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 					Id: 111,
 				},
 			},
-			&NewObjectAction{
+			&newObjectAction{
 				PathInProject: model.NewPathInProject(
 					"main/_shared/keboola.python-transformation-v2",
 					"codes/my-code",
@@ -489,7 +489,7 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 					ComponentId: model.SharedCodeComponentId,
 				},
 			},
-			&NewObjectAction{
+			&newObjectAction{
 				PathInProject: model.NewPathInProject(
 					"main/_shared/keboola.python-transformation-v2/codes/my-code",
 					"variables",
@@ -673,8 +673,8 @@ func TestPersistVariables(t *testing.T) {
 			"main/extractor/ex-generic-v2/456-todos/variables/values/default/meta.json",
 		},
 		expectedNewIds: 2,
-		expectedPlan: []PersistAction{
-			&NewObjectAction{
+		expectedPlan: []action{
+			&newObjectAction{
 				PathInProject: model.NewPathInProject(
 					"main/extractor/ex-generic-v2/456-todos",
 					"variables",
@@ -689,7 +689,7 @@ func TestPersistVariables(t *testing.T) {
 					Id:          `456`,
 				},
 			},
-			&NewObjectAction{
+			&newObjectAction{
 				PathInProject: model.NewPathInProject(
 					"main/extractor/ex-generic-v2/456-todos/variables",
 					"values/default",
@@ -845,8 +845,8 @@ func TestPersistScheduler(t *testing.T) {
 			"main/extractor/ex-generic-v2/456-todos/schedules/my-scheduler/meta.json",
 		},
 		expectedNewIds: 1,
-		expectedPlan: []PersistAction{
-			&NewObjectAction{
+		expectedPlan: []action{
+			&newObjectAction{
 				PathInProject: model.NewPathInProject(
 					"main/extractor/ex-generic-v2/456-todos",
 					"schedules/my-scheduler",
@@ -907,7 +907,7 @@ func (tc *testCase) run(t *testing.T) {
 	// Init project dir
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filesystem.Dir(testFile)
-	inputDir := filesystem.Join(testDir, `..`, `fixtures`, `local`, tc.inputDir)
+	inputDir := filesystem.Join(testDir, `..`, `..`, `fixtures`, `local`, tc.inputDir)
 
 	// Create Fs
 	fs := testhelper.NewMemoryFsFrom(inputDir)
@@ -954,12 +954,12 @@ func (tc *testCase) run(t *testing.T) {
 	}
 
 	// Get plan
-	plan, err := Persist(projectState)
+	plan, err := NewPlan(projectState)
 	assert.NoError(t, err)
 
 	// Delete callbacks for easier comparison (we only check callbacks result)
 	for _, action := range plan.actions {
-		if a, ok := action.(*NewObjectAction); ok {
+		if a, ok := action.(*newObjectAction); ok {
 			a.OnPersist = nil
 		}
 	}
@@ -968,7 +968,7 @@ func (tc *testCase) run(t *testing.T) {
 	assert.Equalf(t, tc.expectedPlan, plan.actions, `unexpected persist plan`)
 
 	// Invoke
-	plan, err = Persist(projectState) // plan with callbacks
+	plan, err = NewPlan(projectState) // plan with callbacks
 	assert.NoError(t, err)
 	assert.NoError(t, plan.Invoke(logger, api, projectState))
 

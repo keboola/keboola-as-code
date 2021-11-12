@@ -1,4 +1,4 @@
-package plan
+package persist
 
 import (
 	"context"
@@ -13,8 +13,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-type persistExecutor struct {
-	*PersistPlan
+type executor struct {
+	*Plan
 	*state.State
 	logger  *zap.SugaredLogger
 	tickets *remote.TicketProvider
@@ -22,23 +22,23 @@ type persistExecutor struct {
 	errors  *utils.Error
 }
 
-func newPersistExecutor(logger *zap.SugaredLogger, api *remote.StorageApi, projectState *state.State, plan *PersistPlan) *persistExecutor {
-	return &persistExecutor{
-		PersistPlan: plan,
-		State:       projectState,
-		logger:      logger,
-		tickets:     api.NewTicketProvider(),
-		uow:         projectState.LocalManager().NewUnitOfWork(context.Background()),
-		errors:      utils.NewMultiError(),
+func newExecutor(logger *zap.SugaredLogger, api *remote.StorageApi, projectState *state.State, plan *Plan) *executor {
+	return &executor{
+		Plan:    plan,
+		State:   projectState,
+		logger:  logger,
+		tickets: api.NewTicketProvider(),
+		uow:     projectState.LocalManager().NewUnitOfWork(context.Background()),
+		errors:  utils.NewMultiError(),
 	}
 }
 
-func (e *persistExecutor) invoke() error {
+func (e *executor) invoke() error {
 	for _, action := range e.actions {
 		switch a := action.(type) {
-		case *NewObjectAction:
+		case *newObjectAction:
 			e.persistNewObject(a)
-		case *DeleteRecordAction:
+		case *deleteRecordAction:
 			objectState, _ := e.State.Get(a.Key())
 			e.uow.DeleteObject(objectState, a.Record)
 		default:
@@ -64,7 +64,7 @@ func (e *persistExecutor) invoke() error {
 	return e.errors.ErrorOrNil()
 }
 
-func (e *persistExecutor) persistNewObject(action *NewObjectAction) {
+func (e *executor) persistNewObject(action *newObjectAction) {
 	// Generate unique ID
 	e.tickets.Request(func(ticket *model.Ticket) {
 		key := action.Key

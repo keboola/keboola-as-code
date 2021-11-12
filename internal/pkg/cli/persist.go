@@ -5,7 +5,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/plan"
+	"github.com/keboola/keboola-as-code/internal/pkg/plan/persist"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -75,13 +75,13 @@ func persistCommand(root *rootCommand) *cobra.Command {
 			}
 
 			// Get plan
-			persist, err := plan.Persist(projectState)
+			plan, err := persist.NewPlan(projectState)
 			if err != nil {
 				return err
 			}
 
 			// Log plan
-			persist.Log(log.ToInfoWriter(logger))
+			plan.Log(log.ToInfoWriter(logger))
 
 			// Dry run?
 			dryRun := root.options.GetBool("dry-run")
@@ -92,7 +92,7 @@ func persistCommand(root *rootCommand) *cobra.Command {
 			}
 
 			// Invoke
-			if err := persist.Invoke(logger, api, projectState); err != nil {
+			if err := plan.Invoke(logger, api, projectState); err != nil {
 				return utils.PrefixError(`cannot persist objects`, err)
 			}
 			logger.Info(`Persist done.`)

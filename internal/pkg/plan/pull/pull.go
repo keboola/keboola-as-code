@@ -1,14 +1,14 @@
-package plan
+package pull
 
 import (
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
+	"github.com/keboola/keboola-as-code/internal/pkg/plan/diffop"
 )
 
-func Pull(diffResults *diff.Results) (*DiffPlan, error) {
-	plan := &DiffPlan{name: "pull", State: diffResults.CurrentState}
-
+func NewPlan(diffResults *diff.Results) (*diffop.Plan, error) {
+	plan := diffop.NewPlan(`pull`, diffResults.CurrentState)
 	for _, result := range diffResults.Results {
 		switch result.State {
 		case diff.ResultEqual:
@@ -18,11 +18,11 @@ func Pull(diffResults *diff.Results) (*DiffPlan, error) {
 			if result.ChangedFields.String() == "relations" && !result.ChangedFields.Get("relations").HasPath("InManifest") {
 				continue
 			}
-			plan.add(result, ActionSaveLocal)
+			plan.Add(result, diffop.ActionSaveLocal)
 		case diff.ResultOnlyInLocal:
-			plan.add(result, ActionDeleteLocal)
+			plan.Add(result, diffop.ActionDeleteLocal)
 		case diff.ResultOnlyInRemote:
-			plan.add(result, ActionSaveLocal)
+			plan.Add(result, diffop.ActionSaveLocal)
 		case diff.ResultNotSet:
 			panic(fmt.Errorf("diff was not generated"))
 		}

@@ -1,4 +1,4 @@
-package plan
+package persist
 
 import (
 	"fmt"
@@ -10,19 +10,19 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-// Persist creates a plan to persist new/deleted objects from local filesystem.
-func Persist(projectState *state.State) (*PersistPlan, error) {
+// NewPlan creates a plan to persist new/deleted objects from local filesystem.
+func NewPlan(projectState *state.State) (*Plan, error) {
 	builder := &persistPlanBuilder{
-		PersistPlan: &PersistPlan{},
-		State:       projectState,
-		errors:      utils.NewMultiError(),
+		Plan:   &Plan{},
+		State:  projectState,
+		errors: utils.NewMultiError(),
 	}
 	builder.build()
-	return builder.PersistPlan, builder.errors.ErrorOrNil()
+	return builder.Plan, builder.errors.ErrorOrNil()
 }
 
 type persistPlanBuilder struct {
-	*PersistPlan
+	*Plan
 	*state.State
 	errors *utils.Error
 }
@@ -51,7 +51,7 @@ func (b *persistPlanBuilder) build() {
 		recordRaw, _ := records.Get(key)
 		record := recordRaw.(model.Record)
 		if record.State().IsNotFound() {
-			b.addAction(&DeleteRecordAction{record})
+			b.addAction(&deleteRecordAction{record})
 		}
 	}
 
@@ -98,7 +98,7 @@ func (b *persistPlanBuilder) tryAdd(fullPath string, parent model.RecordPaths) b
 		if b.tryAddConfig(path, parent.ConfigRowKey) != nil {
 			return true
 		}
-	case *NewObjectAction:
+	case *newObjectAction:
 		if parentKey, ok := parent.Key.(model.ConfigKey); ok {
 			if action := b.tryAddConfigRow(path, parentKey); action != nil {
 				// Set ConfigId on config persist, now it is unknown
@@ -124,7 +124,7 @@ func (b *persistPlanBuilder) tryAdd(fullPath string, parent model.RecordPaths) b
 	return false
 }
 
-func (b *persistPlanBuilder) tryAddConfig(path model.PathInProject, parentKey model.Key) *NewObjectAction {
+func (b *persistPlanBuilder) tryAddConfig(path model.PathInProject, parentKey model.Key) *newObjectAction {
 	// Is config path matching naming template?
 	componentId, err := b.Naming().MatchConfigPath(parentKey, path)
 	if err != nil {
@@ -148,13 +148,13 @@ func (b *persistPlanBuilder) tryAddConfig(path model.PathInProject, parentKey mo
 	}
 
 	// Create action
-	action := &NewObjectAction{PathInProject: path, Key: configKey, ParentKey: parentKey}
+	action := &newObjectAction{PathInProject: path, Key: configKey, ParentKey: parentKey}
 
 	b.addAction(action)
 	return action
 }
 
-func (b *persistPlanBuilder) tryAddConfigRow(path model.PathInProject, parentKey model.ConfigKey) *NewObjectAction {
+func (b *persistPlanBuilder) tryAddConfigRow(path model.PathInProject, parentKey model.ConfigKey) *newObjectAction {
 	component, err := b.State.Components().Get(parentKey.ComponentKey())
 	if err != nil {
 		b.errors.Append(err)
@@ -167,12 +167,12 @@ func (b *persistPlanBuilder) tryAddConfigRow(path model.PathInProject, parentKey
 
 	// Create action
 	rowKey := model.ConfigRowKey{BranchId: parentKey.BranchId, ComponentId: parentKey.ComponentId, ConfigId: parentKey.Id}
-	action := &NewObjectAction{PathInProject: path, Key: rowKey, ParentKey: parentKey}
+	action := &newObjectAction{PathInProject: path, Key: rowKey, ParentKey: parentKey}
 	b.addAction(action)
 	return action
 }
 
-func (b *persistPlanBuilder) addAction(action PersistAction) {
+func (b *persistPlanBuilder) addAction(action action) {
 	b.actions = append(b.actions, action)
 
 	// Process children of the new object
