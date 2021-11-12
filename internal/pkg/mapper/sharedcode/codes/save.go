@@ -45,9 +45,9 @@ func (w *writer) save() error {
 	rowContent := w.configRow.Content
 
 	// Load content
-	raw, found := rowContent.Get(model.ShareCodeContentKey)
+	raw, found := rowContent.Get(model.SharedCodeContentKey)
 	if !found {
-		return fmt.Errorf(`key "%s" not found in %s`, model.ShareCodeContentKey, w.configRow.Desc())
+		return fmt.Errorf(`key "%s" not found in %s`, model.SharedCodeContentKey, w.configRow.Desc())
 	}
 
 	// Get target component of the shared code -> needed for file extension
@@ -56,24 +56,25 @@ func (w *writer) save() error {
 		return err
 	}
 
-	// Content must be string or array
-	var codeContent string
-	if codeContentStr, ok := raw.(string); ok {
-		codeContent = strhelper.TransformationScriptsToString([]string{codeContentStr}, targetComponentId)
-	} else if codeContentSlice, ok := raw.([]interface{}); ok {
-		var scripts []string
-		for _, script := range codeContentSlice {
-			scripts = append(scripts, cast.ToString(script))
-		}
-		codeContent = strhelper.TransformationScriptsToString(scripts, targetComponentId)
-	} else {
-		return fmt.Errorf(`key "%s" must be string or string[], found %T, in %s`, model.ShareCodeContentKey, raw, w.configRow.Desc())
+	// Content must be []interface{}
+	codeContentSlice, ok := raw.([]interface{})
+	if !ok {
+		return fmt.Errorf(`key "%s" must be array, found %T, in %s`, model.SharedCodeContentKey, raw, w.configRow.Desc())
 	}
 
 	// Remove code content from JSON
-	rowContent.Delete(model.ShareCodeContentKey)
+	rowContent.Delete(model.SharedCodeContentKey)
 
-	// Generate code file
+	// Convert []interface{} -> []string
+	var scripts []string
+	for _, script := range codeContentSlice {
+		scripts = append(scripts, cast.ToString(script))
+	}
+
+	// Generate file content
+	codeContent := strhelper.TransformationScriptsToString(scripts, targetComponentId)
+
+	// Create code file
 	codeFilePath := w.Naming.SharedCodeFilePath(w.Path(), targetComponentId)
 	codeFile := filesystem.CreateFile(codeFilePath, codeContent).SetDescription(`shared code`)
 	w.ExtraFiles = append(w.ExtraFiles, codeFile)

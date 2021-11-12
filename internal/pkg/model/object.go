@@ -20,7 +20,7 @@ const (
 	TransformationType                = "transformation"
 	SharedCodeComponentId             = "keboola.shared-code"
 	ShareCodeTargetComponentKey       = `componentId`
-	ShareCodeContentKey               = `code_content`
+	SharedCodeContentKey              = `code_content`
 	VariablesIdContentKey             = `variables_id`
 	VariablesValuesIdContentKey       = `variables_values_id`
 	SharedCodeVariablesIdContentKey   = `variables_id`

@@ -68,7 +68,8 @@ func FirstLower(str string) string {
 	return strings.ToLower(string(str[0])) + str[1:]
 }
 
-func ParseTransformationScript(content, componentId string) []string {
+func ParseTransformationScripts(content, componentId string) []string {
+	content = NormalizeScript(content)
 	switch componentId {
 	case `keboola.snowflake-transformation`:
 		fallthrough
@@ -77,7 +78,7 @@ func ParseTransformationScript(content, componentId string) []string {
 	case `keboola.oracle-transformation`:
 		return sql.Split(content)
 	default:
-		return []string{strings.TrimSuffix(content, "\n")}
+		return []string{content}
 	}
 }
 
@@ -92,4 +93,8 @@ func TransformationScriptsToString(scripts []string, componentId string) string 
 	default:
 		return strings.Join(scripts, "\n") + "\n"
 	}
+}
+
+func NormalizeScript(script string) string {
+	return strings.TrimRight(script, "\n\r\t ")
 }
