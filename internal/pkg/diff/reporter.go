@@ -200,9 +200,31 @@ func (r *Reporter) objectPath(value reflect.Value) string {
 
 func valuesDiff(remote, local reflect.Value) []string {
 	var out []string
-	includeType := remote.IsValid() && local.IsValid() && remote.Type().String() != local.Type().String()
+
+	// Resolve interfaces
+	var remoteType reflect.Type
+	var localType reflect.Type
 	if remote.IsValid() {
-		formatted := formatValue(remote, includeType)
+		remoteType = remote.Type()
+		if remoteType.Kind().String() == `interface` {
+			remote = remote.Elem()
+			remoteType = remote.Type()
+		}
+	}
+	if local.IsValid() {
+		localType = local.Type()
+		if localType.Kind().String() == `interface` {
+			local = local.Elem()
+			localType = local.Type()
+		}
+	}
+
+	// Print types if differs
+	includeType := remote.IsValid() && local.IsValid() && remoteType.String() != localType.String()
+
+	// Format values
+	if remote.IsValid() {
+		formatted := formatValue(remote, remoteType, includeType)
 		if len(formatted) != 0 {
 			valueMark := ``
 			if local.IsValid() {
@@ -214,7 +236,7 @@ func valuesDiff(remote, local reflect.Value) []string {
 		}
 	}
 	if local.IsValid() {
-		formatted := formatValue(local, includeType)
+		formatted := formatValue(local, localType, includeType)
 		if len(formatted) != 0 {
 			valueMark := ``
 			if remote.IsValid() {
@@ -228,14 +250,10 @@ func valuesDiff(remote, local reflect.Value) []string {
 	return out
 }
 
-func formatValue(value reflect.Value, includeType bool) []string {
-	if value.Type().Kind().String() == `interface` {
-		value = value.Elem()
-	}
-
+func formatValue(value reflect.Value, t reflect.Type, includeType bool) []string {
 	var formatted string
 	switch {
-	case strings.HasPrefix(value.Type().String(), "map["):
+	case strings.HasPrefix(t.String(), "map["):
 		// Format map to JSON
 		formatted = strings.TrimRight(json.MustEncodeString(value.Interface(), true), "\n")
 	case includeType:

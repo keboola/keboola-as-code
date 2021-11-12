@@ -14,6 +14,30 @@ type loader struct {
 	errors    *utils.Error
 }
 
+// MapAfterRemoteLoad converts legacy "code_content" string -> []interface{}.
+func (m *mapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
+	// Only for shared code config row
+	if ok, err := m.IsSharedCodeRowKey(recipe.InternalObject.Key()); err != nil || !ok {
+		return err
+	}
+
+	// Get "code_content" value
+	configRow := recipe.InternalObject.(*model.ConfigRow)
+	raw, found := configRow.Content.Get(model.SharedCodeContentKey)
+	if !found {
+		return nil
+	}
+
+	// Convert legacy string value -> []interface{}
+	if codeContentStr, ok := raw.(string); ok {
+		configRow.Content.Set(model.SharedCodeContentKey, []interface{}{codeContentStr})
+	} else if _, ok := raw.([]interface{}); !ok {
+		configRow.Content.Delete(model.SharedCodeContentKey)
+		m.Logger.Warnf(`Warning: key "%s" must be string or string[], found %T, in %s`, model.SharedCodeContentKey, raw, configRow.Desc())
+	}
+	return nil
+}
+
 // MapAfterLocalLoad - load shared code from filesystem to target config.
 func (m *mapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
 	// Only for shared code config row
@@ -59,6 +83,6 @@ func (l *loader) load() error {
 	}
 
 	// Set to config row JSON
-	l.configRow.Content.Set(model.ShareCodeContentKey, scriptsRaw)
+	l.configRow.Content.Set(model.SharedCodeContentKey, scriptsRaw)
 	return nil
 }

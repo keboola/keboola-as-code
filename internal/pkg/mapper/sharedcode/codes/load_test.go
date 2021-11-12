@@ -10,6 +10,25 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
+func TestSharedCodeMapLegacyCodeContent(t *testing.T) {
+	t.Parallel()
+	context, row, _ := createTestFixtures(t, `foo.bar`)
+	row.Content.Set(model.SharedCodeContentKey, "foo\nbar\n")
+
+	apiObject := row
+	internalObject := apiObject.Clone().(*model.ConfigRow)
+	recipe := &model.RemoteLoadRecipe{ApiObject: apiObject, InternalObject: internalObject}
+
+	assert.NoError(t, NewMapper(context).MapAfterRemoteLoad(recipe))
+	v, found := apiObject.Content.Get(model.SharedCodeContentKey)
+	assert.True(t, found)
+	assert.Equal(t, "foo\nbar\n", v)
+
+	v, found = internalObject.Content.Get(model.SharedCodeContentKey)
+	assert.True(t, found)
+	assert.Equal(t, []interface{}{"foo\nbar\n"}, v)
+}
+
 func TestSharedCodeLoadMissingFile(t *testing.T) {
 	t.Parallel()
 	targetComponentId := `keboola.python-transformation-v2`
@@ -34,7 +53,7 @@ func TestSharedCodeLoadOk(t *testing.T) {
 	// Load
 	err := NewMapper(context).MapAfterLocalLoad(recipe)
 	assert.NoError(t, err)
-	codeContent, found := row.Content.Get(model.ShareCodeContentKey)
+	codeContent, found := row.Content.Get(model.SharedCodeContentKey)
 	assert.True(t, found)
 	assert.Equal(t, []interface{}{"foo bar"}, codeContent)
 

@@ -559,7 +559,7 @@ func TestDiffMap(t *testing.T) {
 	reporter := differ.diffValues(objectState, rObject.Content, lObject.Content)
 	expected := `
   foo.bar:
-    - value
+    - "value"
     + {
     +   "baz": {
     +     "key": "value"
