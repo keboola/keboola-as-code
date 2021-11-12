@@ -1,4 +1,4 @@
-project_name: "kbc"
+project_name: "keboola_cli"
 dist: "target"
 builds:
   - main: "./cmd/kbc/main.go"
@@ -46,9 +46,9 @@ snapshot:
 nfpms:
   - id: packages
     vendor: Keboola
-    homepage: https://keboola.com
+    homepage: https://cli.keboola.com
     maintainer: Keboola <support@keboola.com>
-    description: Keboola Connection CLI client.
+    description: Keboola CLI tool.
     license: MIT
     bindir: /usr/bin
     formats:

@@ -250,13 +250,13 @@ jobs:
           export LINUX_ARM_TARGET_SHA256=$(openssl dgst -sha256   target/gh-release/*linux_armv6.zip  | cut -f 2 -d ' ' )
           export LINUX_ARM64_TARGET_SHA256=$(openssl dgst -sha256 target/gh-release/*linux_arm64.zip  | cut -f 2 -d ' ' )
           export LINUX_AMD_TARGET_SHA256=$(openssl dgst -sha256   target/gh-release/*linux_amd64.zip  | cut -f 2 -d ' ' )
-          envsubst < build/package/homebrew/homebrew.template.rb > target/homebrew/keboola-as-code.rb
-          cat target/homebrew/keboola-as-code.rb
+          envsubst < build/package/homebrew/homebrew.template.rb > target/homebrew/keboola-cli.rb
+          cat target/homebrew/keboola-cli.rb
       - name: Upload Homebrew formulae
         uses: actions/upload-artifact@v2
         with:
           name: homebrew-formulae
-          path: target/homebrew/keboola-as-code.rb
+          path: target/homebrew/keboola-cli.rb
           retention-days: 1
 
 
@@ -292,7 +292,7 @@ jobs:
         with:
           source-directory: "target/homebrew"
           destination-github-username: "keboola"
-          destination-repository-name: "homebrew-tap"
+          destination-repository-name: "homebrew-keboola-cli"
           target-branch: main
       - name: Build DEB repo tools
         uses: ./.github/actions/build-repo-tools
@@ -327,7 +327,7 @@ jobs:
           wget -P /etc/apt/trusted.gpg.d https://cli-dist.keboola.com/deb/keboola.gpg
           echo "deb https://cli-dist.keboola.com/deb /" | tee /etc/apt/sources.list.d/keboola.list
           apt-get update
-          apt-get install kbc
+          apt-get install keboola-cli
           kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
           '
         env:
@@ -341,7 +341,7 @@ jobs:
           wget -P /etc/apt/trusted.gpg.d https://cli-dist.keboola.com/deb/keboola.gpg
           echo "deb https://cli-dist.keboola.com/deb /" | tee /etc/apt/sources.list.d/keboola.list
           apt-get update
-          apt-get install kbc
+          apt-get install keboola-cli
           kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
           '
         env:
@@ -359,7 +359,7 @@ jobs:
           gpgcheck=1
           gpgkey=https://cli-dist.keboola.com/rpm/keboola.gpg
           " | tee /etc/yum.repos.d/keboola.repo
-          dnf install -y kbc
+          dnf install -y keboola-cli
           kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
           '
         env:
@@ -372,7 +372,7 @@ jobs:
           echo "https://cli-dist.keboola.com/apk" | tee -a /etc/apk/repositories
           wget -P /etc/apk/keys/ https://cli-dist.keboola.com/apk/keboola.rsa.pub
           apk update
-          apk add kbc
+          apk add keboola-cli
           kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
           '
         env:
@@ -382,8 +382,7 @@ jobs:
         run: |
           docker run --rm homebrew/brew sh -c '
           set -e
-          brew tap keboola/homebrew-tap
-          brew install keboola-as-code
+          brew install keboola/keboola-cli/keboola-cli
           kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
           '
         env:
@@ -398,8 +397,7 @@ jobs:
     steps:
       - name: Install on MacOS by Homebrew
         run: |
-          brew tap keboola/homebrew-tap
-          brew install keboola-as-code
+          brew install keboola/keboola-cli/keboola-cli
           kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
         env:
           VERSION: ${{ needs.set_version.outputs.version }}
