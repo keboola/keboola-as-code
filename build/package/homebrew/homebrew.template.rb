@@ -1,6 +1,6 @@
-class KeboolaAsCode < Formula
-  desc "Keboola as Code cli tool"
-  homepage "https://github.com/keboola/keboola-as-code"
+class KeboolaCli < Formula
+  desc "Keboola CLI tool"
+  homepage "https://cli.keboola.com"
   license "MIT"
 
   if OS.mac? && Hardware::CPU.arm?

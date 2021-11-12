@@ -28,13 +28,16 @@ import (
 )
 
 const description = `
-Keboola Connection pull/push client
-for components configurations.
+Keboola CLI
 
-Configurations can be synchronized in both
-directions [KBC project] <-> [a local directory].
+Manage your Keboola Connection project
+from your local machine or CI pipeline.
+
+Project can be synchronized in both
+directions [Keboola Connection] <-> [local directory].
 
 Start by running the "init" sub-command in a new empty directory.
+Your project will be pulled and you can start working.
 `
 
 const usageTemplate = `Usage:{{if .HasAvailableSubCommands}}
