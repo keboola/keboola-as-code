@@ -1,7 +1,8 @@
 ### Command "create branch"
 
 - Creates a new dev branch in the project remote state.
-- Local changes have no effect, so it is recommended to first use the "push" command.
+- The new branch will be a copy of the current remote state of the main branch.
+- It is recommended to first "push" local changes in the main branch, if any.
 - When the branch is created, the new state is pulled to the local directory.
 
 
