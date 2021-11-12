@@ -60,6 +60,9 @@ func (m *transformationMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe
 			code.ConfigId = config.Id
 			code.BlockIndex = block.Index
 			code.Index = codeIndex
+			for i, script := range code.Scripts {
+				code.Scripts[i] = strhelper.NormalizeScript(script)
+			}
 		}
 	}
 
@@ -204,7 +207,7 @@ func (l *localLoader) addScripts(code *model.Code) {
 	}
 
 	// Split to scripts
-	code.Scripts = strhelper.ParseTransformationScript(file.Content, l.config.ComponentId)
+	code.Scripts = strhelper.ParseTransformationScripts(file.Content, l.config.ComponentId)
 	l.Record.AddRelatedPath(codeFilePath)
 	l.Logger.Debugf(`Parsed "%d" scripts from "%s"`, len(code.Scripts), codeFilePath)
 }
