@@ -12,7 +12,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/json/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/plan"
+	"github.com/keboola/keboola-as-code/internal/pkg/plan/encrypt"
+	"github.com/keboola/keboola-as-code/internal/pkg/plan/rename"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -149,8 +150,8 @@ func Validate(projectState *state.State, logger *zap.SugaredLogger, skipEncryptV
 
 	if !skipEncryptValidation {
 		// Validate all values encrypted
-		encryptPlan := plan.Encrypt(projectState)
-		if err := encryptPlan.ValidateAllEncrypted(); err != nil {
+		plan := encrypt.NewPlan(projectState)
+		if err := plan.ValidateAllEncrypted(); err != nil {
 			errors.Append(err)
 		}
 	}
@@ -166,14 +167,14 @@ func Validate(projectState *state.State, logger *zap.SugaredLogger, skipEncryptV
 
 func Rename(ctx context.Context, projectState *state.State, logger *zap.SugaredLogger, logEmpty, dryRun bool) error {
 	// Get plan
-	rename, err := plan.Rename(projectState)
+	plan, err := rename.NewPlan(projectState)
 	if err != nil {
 		return err
 	}
 
 	// Log plan
-	if logEmpty || !rename.Empty() {
-		rename.Log(log.ToInfoWriter(logger))
+	if logEmpty || !plan.Empty() {
+		plan.Log(log.ToInfoWriter(logger))
 	}
 
 	// Dry run?
@@ -183,11 +184,11 @@ func Rename(ctx context.Context, projectState *state.State, logger *zap.SugaredL
 	}
 
 	// Invoke
-	if err := rename.Invoke(ctx, projectState.LocalManager()); err != nil {
+	if err := plan.Invoke(ctx, projectState.LocalManager()); err != nil {
 		return utils.PrefixError(`cannot rename objects`, err)
 	}
 
-	if !rename.Empty() {
+	if !plan.Empty() {
 		logger.Info("Rename done.")
 	}
 

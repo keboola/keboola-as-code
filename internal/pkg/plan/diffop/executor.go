@@ -1,4 +1,4 @@
-package plan
+package diffop
 
 import (
 	"context"
@@ -11,8 +11,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-type diffExecutor struct {
-	*DiffPlan
+type executor struct {
+	*Plan
 	logger       *zap.SugaredLogger
 	localManager *local.Manager
 	localWork    *local.UnitOfWork
@@ -20,18 +20,18 @@ type diffExecutor struct {
 	errors       *utils.Error
 }
 
-func newDiffExecutor(plan *DiffPlan, logger *zap.SugaredLogger, ctx context.Context) *diffExecutor {
-	return &diffExecutor{
-		DiffPlan:     plan,
+func newExecutor(plan *Plan, logger *zap.SugaredLogger, ctx context.Context, changeDescription string) *executor {
+	return &executor{
+		Plan:         plan,
 		logger:       logger,
 		localManager: plan.State.LocalManager(),
 		localWork:    plan.State.LocalManager().NewUnitOfWork(ctx),
-		remoteWork:   plan.State.RemoteManager().NewUnitOfWork(ctx, plan.changeDescription),
+		remoteWork:   plan.State.RemoteManager().NewUnitOfWork(ctx, changeDescription),
 		errors:       utils.NewMultiError(),
 	}
 }
 
-func (e *diffExecutor) invoke() error {
+func (e *executor) invoke() error {
 	// Validate
 	if err := e.Validate(); err != nil {
 		return err

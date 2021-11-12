@@ -1,4 +1,4 @@
-package plan
+package persist
 
 import (
 	"fmt"
@@ -6,41 +6,41 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-type PersistAction interface {
+type action interface {
 	Order() int
 	String() string
 	Path() string
 }
 
-type NewObjectAction struct {
+type newObjectAction struct {
 	model.PathInProject
 	Key       model.Key
 	ParentKey model.Key
 	OnPersist []func(key model.Key)
 }
 
-type DeleteRecordAction struct {
+type deleteRecordAction struct {
 	model.Record
 }
 
-func (a *NewObjectAction) Order() int {
+func (a *newObjectAction) Order() int {
 	return 1
 }
 
-func (a *DeleteRecordAction) Order() int {
+func (a *deleteRecordAction) Order() int {
 	return 2
 }
 
-func (a *NewObjectAction) String() string {
+func (a *newObjectAction) String() string {
 	return fmt.Sprintf(`+ %s %s`, a.Key.Kind().Abbr, a.Path())
 }
 
-func (a *NewObjectAction) InvokeOnPersist(key model.Key) {
+func (a *newObjectAction) InvokeOnPersist(key model.Key) {
 	for _, callback := range a.OnPersist {
 		callback(key)
 	}
 }
 
-func (a *DeleteRecordAction) String() string {
+func (a *deleteRecordAction) String() string {
 	return fmt.Sprintf(`- %s %s`, a.Kind().Abbr, a.Path())
 }

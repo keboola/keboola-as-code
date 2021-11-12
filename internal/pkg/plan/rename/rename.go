@@ -1,4 +1,4 @@
-package plan
+package rename
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -6,14 +6,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/strhelper"
 )
 
-// Rename creates a plan for renaming objects that do not match the naming.
-func Rename(projectState *state.State) (*RenamePlan, error) {
+// NewPlan creates a plan for renaming objects that do not match the naming.
+func NewPlan(projectState *state.State) (*Plan, error) {
 	builder := &renamePlanBuilder{State: projectState}
 	actions, err := builder.build()
 	if err != nil {
 		return nil, err
 	}
-	return &RenamePlan{actions: actions}, nil
+	return &Plan{actions: actions}, nil
 }
 
 type renamePlanBuilder struct {

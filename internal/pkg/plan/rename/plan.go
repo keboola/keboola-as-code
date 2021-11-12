@@ -1,4 +1,4 @@
-package plan
+package rename
 
 import (
 	"context"
@@ -9,19 +9,19 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-type RenamePlan struct {
+type Plan struct {
 	actions []model.RenameAction
 }
 
-func (p *RenamePlan) Empty() bool {
+func (p *Plan) Empty() bool {
 	return len(p.actions) == 0
 }
 
-func (p *RenamePlan) Name() string {
+func (p *Plan) Name() string {
 	return "rename"
 }
 
-func (p *RenamePlan) Log(writer *log.WriteCloser) {
+func (p *Plan) Log(writer *log.WriteCloser) {
 	writer.WriteStringNoErr(fmt.Sprintf(`Plan for "%s" operation:`, p.Name()))
 	actions := p.actions
 
@@ -34,6 +34,6 @@ func (p *RenamePlan) Log(writer *log.WriteCloser) {
 	}
 }
 
-func (p *RenamePlan) Invoke(ctx context.Context, localManager *local.Manager) error {
+func (p *Plan) Invoke(ctx context.Context, localManager *local.Manager) error {
 	return newRenameExecutor(ctx, localManager, p).invoke()
 }

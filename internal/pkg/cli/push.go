@@ -6,7 +6,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/plan"
+	"github.com/keboola/keboola-as-code/internal/pkg/plan/push"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 )
 
@@ -70,18 +70,18 @@ func pushCommand(root *rootCommand) *cobra.Command {
 				}
 
 				// Get plan
-				push, err := plan.Push(diffResults, changeDescription)
+				plan, err := push.NewPlan(diffResults)
 				if err != nil {
 					return err
 				}
 
 				// Allow remote deletion, if --force
 				if force {
-					push.AllowRemoteDelete()
+					plan.AllowRemoteDelete()
 				}
 
 				// Log plan
-				push.Log(log.ToInfoWriter(logger))
+				plan.Log(log.ToInfoWriter(logger))
 
 				// Dry run?
 				dryRun := root.options.GetBool("dry-run")
@@ -91,7 +91,7 @@ func pushCommand(root *rootCommand) *cobra.Command {
 				}
 
 				// Invoke
-				if err := push.Invoke(logger, root.ctx); err != nil {
+				if err := plan.Invoke(logger, root.ctx, changeDescription); err != nil {
 					return err
 				}
 

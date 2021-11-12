@@ -1,4 +1,4 @@
-package plan
+package encrypt
 
 import (
 	"context"
@@ -14,8 +14,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-type encryptExecutor struct {
-	*EncryptPlan
+type executor struct {
+	*Plan
 	*state.State
 	projectId int
 	logger    *zap.SugaredLogger
@@ -25,20 +25,20 @@ type encryptExecutor struct {
 	errors    *utils.Error
 }
 
-func newEncryptExecutor(projectId int, logger *zap.SugaredLogger, api *encryption.Api, projectState *state.State, ctx context.Context, plan *EncryptPlan) *encryptExecutor {
-	return &encryptExecutor{
-		EncryptPlan: plan,
-		State:       projectState,
-		projectId:   projectId,
-		logger:      logger,
-		api:         api,
-		pool:        api.NewPool(),
-		uow:         projectState.LocalManager().NewUnitOfWork(ctx),
-		errors:      utils.NewMultiError(),
+func newExecutor(projectId int, logger *zap.SugaredLogger, api *encryption.Api, projectState *state.State, ctx context.Context, plan *Plan) *executor {
+	return &executor{
+		Plan:      plan,
+		State:     projectState,
+		projectId: projectId,
+		logger:    logger,
+		api:       api,
+		pool:      api.NewPool(),
+		uow:       projectState.LocalManager().NewUnitOfWork(ctx),
+		errors:    utils.NewMultiError(),
 	}
 }
 
-func (e *encryptExecutor) invoke() error {
+func (e *executor) invoke() error {
 	// Encrypt values
 	for _, action := range e.actions {
 		e.pool.Request(e.encryptRequest(action)).Send()
@@ -55,7 +55,7 @@ func (e *encryptExecutor) invoke() error {
 	return e.errors.ErrorOrNil()
 }
 
-func (e *encryptExecutor) encryptRequest(action *EncryptAction) *client.Request {
+func (e *executor) encryptRequest(action *action) *client.Request {
 	object := action.object
 
 	// Each key for encryption, in the API call, must start with #

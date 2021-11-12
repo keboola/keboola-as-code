@@ -1,4 +1,4 @@
-package plan
+package rename
 
 import (
 	"context"
@@ -30,7 +30,7 @@ func TestRename(t *testing.T) {
 	logs.Truncate()
 
 	// Plan
-	plan := &RenamePlan{
+	plan := &Plan{
 		actions: []model.RenameAction{
 			{
 				Record:      &fixtures.MockedRecord{},
@@ -47,7 +47,7 @@ func TestRename(t *testing.T) {
 		},
 	}
 
-	// Rename
+	// NewPlan
 	state := model.NewState(logger, fs, model.NewComponentsMap(nil), model.SortByPath)
 	localManager := local.NewManager(logger, fs, m, state, mapper.New(model.MapperContext{}))
 	executor := newRenameExecutor(context.Background(), localManager, plan)
@@ -86,7 +86,7 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 	logs.Truncate()
 
 	// Plan
-	plan := &RenamePlan{
+	plan := &Plan{
 		actions: []model.RenameAction{
 			{
 				Record:      &fixtures.MockedRecord{},
@@ -115,7 +115,7 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 		},
 	}
 
-	// Rename
+	// NewPlan
 	state := model.NewState(logger, fs, model.NewComponentsMap(nil), model.SortByPath)
 	localManager := local.NewManager(logger, fs, m, state, mapper.New(model.MapperContext{}))
 	executor := newRenameExecutor(context.Background(), localManager, plan)

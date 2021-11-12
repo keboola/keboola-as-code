@@ -1,4 +1,4 @@
-package plan
+package diffop
 
 import (
 	"fmt"
@@ -8,21 +8,21 @@ import (
 )
 
 const (
-	ActionSaveLocal DiffActionType = iota
+	ActionSaveLocal ActionType = iota
 	ActionSaveRemote
 	ActionDeleteLocal
 	ActionDeleteRemote
 )
 
-type DiffActionType int
+type ActionType int
 
-// DiffAction - an action on the diff result.
-type DiffAction struct {
+// action on the diff result.
+type action struct {
 	*diff.Result
-	action DiffActionType
+	action ActionType
 }
 
-func (a *DiffAction) String() string {
+func (a *action) String() string {
 	msg := a.markString() + " " + a.Kind().Abbr + " " + a.Path()
 	if !a.ChangedFields.IsEmpty() {
 		msg += " | changed: " + a.ChangedFields.String()
@@ -30,11 +30,11 @@ func (a *DiffAction) String() string {
 	return msg
 }
 
-func (a *DiffAction) StringVerbose() string {
+func (a *action) StringVerbose() string {
 	return a.opString() + " " + a.Kind().Name + " \"" + a.Path() + "\""
 }
 
-func (a *DiffAction) opString() string {
+func (a *action) opString() string {
 	switch a.State {
 	case diff.ResultNotEqual:
 		return "update"
@@ -47,7 +47,7 @@ func (a *DiffAction) opString() string {
 	}
 }
 
-func (a *DiffAction) markString() string {
+func (a *action) markString() string {
 	switch a.State {
 	case diff.ResultNotSet:
 		return "?"
@@ -64,7 +64,7 @@ func (a *DiffAction) markString() string {
 	}
 }
 
-func (a *DiffAction) validate() error {
+func (a *action) validate() error {
 	// Branch rules
 	if branchState, ok := a.ObjectState.(*model.BranchState); ok {
 		// Default branch cannot be delete

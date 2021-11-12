@@ -1,4 +1,4 @@
-package plan
+package diffop
 
 import (
 	"context"
@@ -13,29 +13,32 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-// DiffPlan - plan based on the diff results.
-type DiffPlan struct {
+// Plan is based on the diff results.
+type Plan struct {
 	*state.State
 	name                string
-	actions             []*DiffAction
+	actions             []*action
 	allowedRemoteDelete bool
-	changeDescription   string
 }
 
-func (p *DiffPlan) Name() string {
+func NewPlan(name string, state *state.State) *Plan {
+	return &Plan{name: name, State: state}
+}
+
+func (p *Plan) Name() string {
 	return p.name
 }
 
-func (p *DiffPlan) AllowRemoteDelete() {
+func (p *Plan) AllowRemoteDelete() {
 	p.allowedRemoteDelete = true
 }
 
-func (p *DiffPlan) Invoke(logger *zap.SugaredLogger, ctx context.Context) error {
-	executor := newDiffExecutor(p, logger, ctx)
+func (p *Plan) Invoke(logger *zap.SugaredLogger, ctx context.Context, changeDescription string) error {
+	executor := newExecutor(p, logger, ctx, changeDescription)
 	return executor.invoke()
 }
 
-func (p *DiffPlan) Log(writer *log.WriteCloser) {
+func (p *Plan) Log(writer *log.WriteCloser) {
 	writer.WriteStringNoErr(fmt.Sprintf(`Plan for "%s" operation:`, p.Name()))
 	actions := p.actions
 	sort.SliceStable(actions, func(i, j int) bool {
@@ -62,7 +65,7 @@ func (p *DiffPlan) Log(writer *log.WriteCloser) {
 	}
 }
 
-func (p *DiffPlan) Validate() error {
+func (p *Plan) Validate() error {
 	errors := utils.NewMultiError()
 	for _, action := range p.actions {
 		if err := action.validate(); err != nil {
@@ -77,6 +80,6 @@ func (p *DiffPlan) Validate() error {
 	return nil
 }
 
-func (p *DiffPlan) add(result *diff.Result, action DiffActionType) {
-	p.actions = append(p.actions, &DiffAction{Result: result, action: action})
+func (p *Plan) Add(result *diff.Result, actionType ActionType) {
+	p.actions = append(p.actions, &action{Result: result, action: actionType})
 }

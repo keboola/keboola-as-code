@@ -6,7 +6,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/encryption"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/plan"
+	"github.com/keboola/keboola-as-code/internal/pkg/plan/encrypt"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -74,10 +74,10 @@ func encryptCommand(root *rootCommand) *cobra.Command {
 			}
 
 			// Get plan
-			encrypt := plan.Encrypt(projectState)
+			plan := encrypt.NewPlan(projectState)
 
 			// Log plan
-			encrypt.Log(log.ToInfoWriter(logger))
+			plan.Log(log.ToInfoWriter(logger))
 
 			// Dry run?
 			dryRun := root.options.GetBool("dry-run")
@@ -94,7 +94,7 @@ func encryptCommand(root *rootCommand) *cobra.Command {
 
 			// Invoke
 			encryptionApi := encryption.NewEncryptionApi(encryptionApiUrl, root.ctx, logger, false)
-			if err := encrypt.Invoke(api.ProjectId(), logger, encryptionApi, projectState, root.ctx); err != nil {
+			if err := plan.Invoke(api.ProjectId(), logger, encryptionApi, projectState, root.ctx); err != nil {
 				return err
 			}
 

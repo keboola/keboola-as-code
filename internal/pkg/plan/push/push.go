@@ -1,20 +1,16 @@
-package plan
+package push
 
 import (
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/plan/diffop"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 )
 
-func Push(diffResults *diff.Results, changeDescription string) (*DiffPlan, error) {
-	plan := &DiffPlan{
-		name:              "push",
-		changeDescription: changeDescription,
-		State:             diffResults.CurrentState,
-	}
-
+func NewPlan(diffResults *diff.Results) (*diffop.Plan, error) {
+	plan := diffop.NewPlan(`push`, diffResults.CurrentState)
 	for _, result := range diffResults.Results {
 		switch result.State {
 		case diff.ResultEqual:
@@ -24,12 +20,12 @@ func Push(diffResults *diff.Results, changeDescription string) (*DiffPlan, error
 			if result.ChangedFields.String() == "relations" && !result.ChangedFields.Get("relations").HasPath("InApi") {
 				continue
 			}
-			plan.add(result, ActionSaveRemote)
+			plan.Add(result, diffop.ActionSaveRemote)
 		case diff.ResultOnlyInLocal:
-			plan.add(result, ActionSaveRemote)
+			plan.Add(result, diffop.ActionSaveRemote)
 		case diff.ResultOnlyInRemote:
 			if parentExists(result.ObjectState, plan.State) {
-				plan.add(result, ActionDeleteRemote)
+				plan.Add(result, diffop.ActionDeleteRemote)
 			}
 		case diff.ResultNotSet:
 			panic(fmt.Errorf("diff was not generated"))

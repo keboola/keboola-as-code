@@ -1,4 +1,4 @@
-package plan
+package rename
 
 import (
 	"context"
@@ -8,10 +8,13 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -19,7 +22,7 @@ func TestRenameAllPlan(t *testing.T) {
 	t.Parallel()
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filesystem.Dir(testFile)
-	m, _ := loadTestManifest(t, filesystem.Join(testDir, "..", "fixtures", "local", "to-rename"))
+	m, _ := loadTestManifest(t, filesystem.Join(testDir, "..", "..", "fixtures", "local", "to-rename"))
 
 	// Load state
 	logger, _ := utils.NewDebugLogger()
@@ -51,7 +54,7 @@ func TestRenameAllPlan(t *testing.T) {
 	}
 
 	// Get rename plan
-	plan, err := Rename(projectState)
+	plan, err := NewPlan(projectState)
 	assert.NoError(t, err)
 
 	// Clear manifest records before assert
@@ -65,7 +68,7 @@ func TestRenameAllPlan(t *testing.T) {
 	}
 
 	// Assert
-	assert.Equal(t, &RenamePlan{
+	assert.Equal(t, &Plan{
 		actions: []model.RenameAction{
 			{
 				OldPath:     "my-main-branch",
@@ -87,4 +90,22 @@ func TestRenameAllPlan(t *testing.T) {
 			},
 		},
 	}, plan)
+}
+
+func loadTestManifest(t *testing.T, inputDir string) (*manifest.Manifest, filesystem.Fs) {
+	t.Helper()
+
+	// Create Fs
+	fs := testhelper.NewMemoryFsFrom(inputDir)
+
+	// Replace ENVs
+	envs := env.Empty()
+	envs.Set("TEST_KBC_STORAGE_API_HOST", "foo.bar")
+	testhelper.ReplaceEnvsDir(fs, `/`, envs)
+
+	// Load manifest
+	m, err := manifest.LoadManifest(fs)
+	assert.NoError(t, err)
+
+	return m, fs
 }
