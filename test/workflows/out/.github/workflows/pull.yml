@@ -20,6 +20,7 @@ jobs:
       - name: Pull from Keboola Connection
         id: kbc_pull_step
         run: |
+          set -eo pipefail
           kbc pull --force 2>&1 | tee "$RUNNER_TEMP/log.txt"
       # Automatic pull can be canceled by push, wait a while
       - name: Wait
