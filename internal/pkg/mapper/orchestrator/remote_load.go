@@ -63,7 +63,7 @@ func (m *orchestratorMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) 
 	}
 
 	// Sort phases by dependencies
-	sortedPhases, err := m.sortPhases(phaseById)
+	sortedPhases, err := m.sortPhases(phaseById, config.ConfigKey)
 	if err != nil {
 		errors.Append(err)
 	}
@@ -225,6 +225,10 @@ func (m *orchestratorMapper) parseTasksFromRemote(phaseById map[string]*model.Ph
 
 		// Add to map
 		task := model.Task{
+			TaskKey: model.TaskKey{
+				PhaseKey: phase.PhaseKey,
+				Index:    len(phase.Tasks),
+			},
 			Name:        name,
 			Content:     &taskContent,
 			ComponentId: componentId,
@@ -235,7 +239,7 @@ func (m *orchestratorMapper) parseTasksFromRemote(phaseById map[string]*model.Ph
 	return errors.ErrorOrNil()
 }
 
-func (m *orchestratorMapper) sortPhases(phaseById map[string]*model.Phase) ([]*model.Phase, error) {
+func (m *orchestratorMapper) sortPhases(phaseById map[string]*model.Phase, configKey model.ConfigKey) ([]*model.Phase, error) {
 	errors := utils.NewMultiError()
 	graph := &toposort.Sorter{}
 
@@ -286,7 +290,12 @@ func (m *orchestratorMapper) sortPhases(phaseById map[string]*model.Phase) ([]*m
 	phases := make([]*model.Phase, 0)
 	for index, id := range order {
 		phase := phaseById[id.(string)]
-		phase.Key = model.PhaseKey{Index: index}
+		phase.PhaseKey = model.PhaseKey{
+			BranchId:    configKey.BranchId,
+			ComponentId: configKey.ComponentId,
+			ConfigId:    configKey.Id,
+			Index:       index,
+		}
 		phases = append(phases, phase)
 	}
 
@@ -308,13 +317,13 @@ func (m *orchestratorMapper) sortPhases(phaseById map[string]*model.Phase) ([]*m
 
 		// Sort dependsOn phases
 		sort.SliceStable(dependsOn, func(i, j int) bool {
-			return dependsOn[i].Key.Index < dependsOn[j].Key.Index
+			return dependsOn[i].Index < dependsOn[j].Index
 		})
 
 		// Convert ID -> PhaseKey (index)
 		phase.DependsOn = make([]model.PhaseKey, 0)
 		for _, depPhase := range dependsOn {
-			phase.DependsOn = append(phase.DependsOn, depPhase.Key)
+			phase.DependsOn = append(phase.DependsOn, depPhase.PhaseKey)
 		}
 	}
 

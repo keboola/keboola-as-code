@@ -8,20 +8,17 @@ type Orchestration struct {
 	Phases []Phase
 }
 
-type PhaseKey struct {
-	Index int
-}
-
 type Phase struct {
+	PhaseKey
 	PathInProject
-	Key       PhaseKey
 	DependsOn []PhaseKey
-	Tasks     []Task
+	Tasks     []Task                 `validate:"dive"`
 	Name      string                 `validate:"required"`
 	Content   *orderedmap.OrderedMap `validate:"required"`
 }
 
 type Task struct {
+	TaskKey
 	PathInProject `validate:"dive"`
 	Name          string                 `validate:"required"`
 	ComponentId   string                 `validate:"required"`

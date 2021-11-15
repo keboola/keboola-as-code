@@ -14,10 +14,15 @@ const (
 	MetaFile          = "meta.json"
 	ConfigFile        = "config.json"
 	DescriptionFile   = "description.md"
+	PhaseFile         = "phase.json"
+	TaskFile          = "task.json"
 	CodeFileName      = `code` // transformation code block name without ext
 	blocksDir         = `blocks`
 	blockNameTemplate = utils.PathTemplate(`{block_order}-{block_name}`)
 	codeNameTemplate  = utils.PathTemplate(`{code_order}-{code_name}`)
+	phasesDir         = `phases`
+	phaseNameTemplate = utils.PathTemplate(`{phase_order}-{phase_name}`)
+	taskNameTemplate  = utils.PathTemplate(`{task_order}-{task_name}`)
 	SqlExt            = `sql`
 	PyExt             = `py`
 	JuliaExt          = `jl`
@@ -281,10 +286,6 @@ func (n Naming) BlocksDir(configDir string) string {
 	return filesystem.Join(configDir, blocksDir)
 }
 
-func (n Naming) BlocksTmpDir(configDir string) string {
-	return filesystem.Join(configDir, `.new_`+blocksDir)
-}
-
 func (n Naming) BlockPath(parentPath string, block *Block) PathInProject {
 	p := PathInProject{}
 	p.SetParentPath(parentPath)
@@ -355,6 +356,38 @@ func (n Naming) CodeFileComment(ext string) string {
 	default:
 		return TxtComment
 	}
+}
+
+func (n Naming) PhasesDir(configDir string) string {
+	return filesystem.Join(configDir, phasesDir)
+}
+
+func (n Naming) PhasePath(parentPath string, phase Phase) PathInProject {
+	p := PathInProject{}
+	p.SetParentPath(parentPath)
+	p.ObjectPath = utils.ReplacePlaceholders(string(phaseNameTemplate), map[string]interface{}{
+		"phase_order": fmt.Sprintf(`%03d`, phase.Index+1),
+		"phase_name":  utils.NormalizeName(phase.Name),
+	})
+	return n.ensureUniquePath(phase.Key(), p)
+}
+
+func (n Naming) PhaseFilePath(phase Phase) string {
+	return filesystem.Join(phase.Path(), PhaseFile)
+}
+
+func (n Naming) TaskPath(parentPath string, task Task) PathInProject {
+	p := PathInProject{}
+	p.SetParentPath(parentPath)
+	p.ObjectPath = utils.ReplacePlaceholders(string(taskNameTemplate), map[string]interface{}{
+		"task_order": fmt.Sprintf(`%03d`, task.Index+1),
+		"task_name":  utils.NormalizeName(task.Name),
+	})
+	return n.ensureUniquePath(task.Key(), p)
+}
+
+func (n Naming) TaskFilePath(task Task) string {
+	return filesystem.Join(task.Path(), TaskFile)
 }
 
 func (n Naming) MatchConfigPath(parentKey Key, path PathInProject) (componentId string, err error) {
