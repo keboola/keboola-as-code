@@ -24,7 +24,8 @@ func TestMapAfterRemoteLoad(t *testing.T) {
       "name": "Phase With Deps",
       "dependsOn": [
         123
-      ]
+      ],
+      "foo": "bar"
     },
     {
       "id": 123,
@@ -139,7 +140,9 @@ func TestMapAfterRemoteLoad(t *testing.T) {
 				Key:       model.PhaseKey{Index: 1},
 				DependsOn: []model.PhaseKey{{Index: 0}},
 				Name:      `Phase With Deps`,
-				Content:   utils.NewOrderedMap(),
+				Content: utils.PairsToOrderedMap([]utils.Pair{
+					{Key: `foo`, Value: `bar`},
+				}),
 				Tasks: []model.Task{
 					{
 						Name:        `Task 2`,
