@@ -13,12 +13,16 @@ const (
 	ConfigRowKind = "config row"
 	BlockKind     = "block"
 	CodeKind      = "code"
+	PhaseKind     = "phase"
+	TaskKind      = "task"
 	BranchAbbr    = "B"
 	ComponentAbbr = "COM"
 	ConfigAbbr    = "C"
 	RowAbbr       = "R"
 	BlockAbbr     = "b"
 	CodeAbbr      = "c"
+	PhaseAbbr     = "p"
+	TaskAbbr      = "t"
 )
 
 type Key interface {
@@ -56,18 +60,30 @@ type ConfigRowKey struct {
 }
 
 type BlockKey struct {
-	BranchId    int    `json:"-"`
-	ComponentId string `json:"-"`
-	ConfigId    string `json:"-"`
-	Index       int    `json:"-"`
+	BranchId    int    `json:"-" validate:"required" `
+	ComponentId string `json:"-" validate:"required" `
+	ConfigId    string `json:"-" validate:"required" `
+	Index       int    `json:"-" validate:"min=0" `
 }
 
 type CodeKey struct {
-	BranchId    int    `json:"-"`
-	ComponentId string `json:"-"`
-	ConfigId    string `json:"-"`
-	BlockIndex  int    `json:"-"`
-	Index       int    `json:"-"`
+	BranchId    int    `json:"-" validate:"required" `
+	ComponentId string `json:"-" validate:"required" `
+	ConfigId    string `json:"-" validate:"required" `
+	BlockIndex  int    `json:"-" validate:"min=0" `
+	Index       int    `json:"-" validate:"min=0" `
+}
+
+type PhaseKey struct {
+	BranchId    int    `json:"-" validate:"required" `
+	ComponentId string `json:"-" validate:"required" `
+	ConfigId    string `json:"-" validate:"required" `
+	Index       int    `json:"-" validate:"min=0" `
+}
+
+type TaskKey struct {
+	PhaseKey `json:"-" validate:"dive" `
+	Index    int `json:"-" validate:"min=0" `
 }
 
 func (k BranchKey) Kind() Kind {
@@ -94,6 +110,14 @@ func (k CodeKey) Kind() Kind {
 	return Kind{Name: CodeKind, Abbr: CodeAbbr}
 }
 
+func (k PhaseKey) Kind() Kind {
+	return Kind{Name: PhaseKind, Abbr: PhaseAbbr}
+}
+
+func (k TaskKey) Kind() Kind {
+	return Kind{Name: TaskKind, Abbr: TaskAbbr}
+}
+
 func (k BranchKey) ObjectId() string {
 	return cast.ToString(k.Id)
 }
@@ -115,6 +139,14 @@ func (k BlockKey) ObjectId() string {
 }
 
 func (k CodeKey) ObjectId() string {
+	return cast.ToString(k.Index)
+}
+
+func (k PhaseKey) ObjectId() string {
+	return cast.ToString(k.Index)
+}
+
+func (k TaskKey) ObjectId() string {
 	return cast.ToString(k.Index)
 }
 
@@ -142,6 +174,14 @@ func (k CodeKey) Level() int {
 	return 6
 }
 
+func (k PhaseKey) Level() int {
+	return 5
+}
+
+func (k TaskKey) Level() int {
+	return 6
+}
+
 func (k BranchKey) Key() Key {
 	return k
 }
@@ -159,6 +199,14 @@ func (k ConfigRowKey) Key() Key {
 }
 
 func (k BlockKey) Key() Key {
+	return k
+}
+
+func (k PhaseKey) Key() Key {
+	return k
+}
+
+func (k TaskKey) Key() Key {
 	return k
 }
 
@@ -227,6 +275,14 @@ func (k CodeKey) Desc() string {
 	return fmt.Sprintf(`%s "branch:%d/component:%s/config:%s/block:%d/code:%d"`, k.Kind().Name, k.BranchId, k.ComponentId, k.ConfigId, k.BlockIndex, k.Index)
 }
 
+func (k PhaseKey) Desc() string {
+	return fmt.Sprintf(`%s "branch:%d/component:%s/config:%s/phase:%d"`, k.Kind().Name, k.BranchId, k.ComponentId, k.ConfigId, k.Index)
+}
+
+func (k TaskKey) Desc() string {
+	return fmt.Sprintf(`%s "branch:%d/component:%s/config:%s/phase:%d/task:%d"`, k.Kind().Name, k.BranchId, k.ComponentId, k.ConfigId, k.PhaseKey.Index, k.Index)
+}
+
 func (k BranchKey) String() string {
 	return fmt.Sprintf("%02d_%d_branch", k.Level(), k.Id)
 }
@@ -253,6 +309,14 @@ func (k BlockKey) String() string {
 
 func (k CodeKey) String() string {
 	return fmt.Sprintf("%02d_%d_%s_%s_%03d_%03d_code", k.Level(), k.BranchId, k.ComponentId, k.ConfigId, k.BlockIndex, k.Index)
+}
+
+func (k PhaseKey) String() string {
+	return fmt.Sprintf("%02d_%d_%s_%s_%03d_phase", k.Level(), k.BranchId, k.ComponentId, k.ConfigId, k.Index)
+}
+
+func (k TaskKey) String() string {
+	return fmt.Sprintf("%02d_%d_%s_%s_%03d_%03d_task", k.Level(), k.BranchId, k.ComponentId, k.ConfigId, k.PhaseKey.Index, k.Index)
 }
 
 func (k ConfigKey) ComponentKey() ComponentKey {
@@ -289,4 +353,24 @@ func (b Block) ConfigKey() ConfigKey {
 
 func (c Code) ConfigKey() ConfigKey {
 	return ConfigKey{BranchId: c.BranchId, ComponentId: c.ComponentId, Id: c.ConfigId}
+}
+
+func (k PhaseKey) ConfigKey() ConfigKey {
+	return ConfigKey{
+		BranchId:    k.BranchId,
+		ComponentId: k.ComponentId,
+		Id:          k.ConfigId,
+	}
+}
+
+func (k PhaseKey) ParentKey() (Key, error) {
+	return k.ConfigKey(), nil
+}
+
+func (k TaskKey) ConfigKey() ConfigKey {
+	return k.PhaseKey.ConfigKey()
+}
+
+func (k TaskKey) ParentKey() (Key, error) {
+	return k.PhaseKey, nil
 }

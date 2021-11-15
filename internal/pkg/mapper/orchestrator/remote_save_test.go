@@ -18,7 +18,12 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 	orchestration := &model.Orchestration{
 		Phases: []model.Phase{
 			{
-				Key:       model.PhaseKey{Index: 0},
+				PhaseKey: model.PhaseKey{
+					BranchId:    123,
+					ComponentId: model.OrchestratorComponentId,
+					ConfigId:    `456`,
+					Index:       0,
+				},
 				DependsOn: []model.PhaseKey{},
 				Name:      `Phase`,
 				Content: utils.PairsToOrderedMap([]utils.Pair{
@@ -26,6 +31,15 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 				}),
 				Tasks: []model.Task{
 					{
+						TaskKey: model.TaskKey{
+							PhaseKey: model.PhaseKey{
+								BranchId:    123,
+								ComponentId: model.OrchestratorComponentId,
+								ConfigId:    `456`,
+								Index:       0,
+							},
+							Index: 0,
+						},
 						Name:        `Task 1`,
 						ComponentId: `foo.bar1`,
 						ConfigId:    `123`,
@@ -41,6 +55,15 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 						}),
 					},
 					{
+						TaskKey: model.TaskKey{
+							PhaseKey: model.PhaseKey{
+								BranchId:    123,
+								ComponentId: model.OrchestratorComponentId,
+								ConfigId:    `456`,
+								Index:       0,
+							},
+							Index: 1,
+						},
 						Name:        `Task 3`,
 						ComponentId: `foo.bar2`,
 						ConfigId:    `789`,
@@ -58,12 +81,27 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 				},
 			},
 			{
-				Key:       model.PhaseKey{Index: 1},
+				PhaseKey: model.PhaseKey{
+					BranchId:    123,
+					ComponentId: model.OrchestratorComponentId,
+					ConfigId:    `456`,
+					Index:       1,
+				},
 				DependsOn: []model.PhaseKey{{Index: 0}},
 				Name:      `Phase With Deps`,
 				Content:   utils.NewOrderedMap(),
 				Tasks: []model.Task{
 					{
+
+						TaskKey: model.TaskKey{
+							PhaseKey: model.PhaseKey{
+								BranchId:    123,
+								ComponentId: model.OrchestratorComponentId,
+								ConfigId:    `456`,
+								Index:       1,
+							},
+							Index: 0,
+						},
 						Name:        `Task 2`,
 						ComponentId: `foo.bar2`,
 						ConfigId:    `456`,
@@ -129,7 +167,9 @@ func TestMapBeforeRemoteSave(t *testing.T) {
       "name": "Task 1",
       "phase": 1,
       "task": {
-        "mode": "run"
+        "mode": "run",
+        "componentId": "foo.bar1",
+        "configId": "123"
       },
       "continueOnFailure": false,
       "enabled": true
@@ -139,7 +179,9 @@ func TestMapBeforeRemoteSave(t *testing.T) {
       "name": "Task 3",
       "phase": 1,
       "task": {
-        "mode": "run"
+        "mode": "run",
+        "componentId": "foo.bar2",
+        "configId": "789"
       },
       "continueOnFailure": false,
       "enabled": false
@@ -149,7 +191,9 @@ func TestMapBeforeRemoteSave(t *testing.T) {
       "name": "Task 2",
       "phase": 2,
       "task": {
-        "mode": "run"
+        "mode": "run",
+        "componentId": "foo.bar2",
+        "configId": "456"
       },
       "continueOnFailure": false,
       "enabled": true

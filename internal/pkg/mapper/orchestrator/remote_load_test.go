@@ -99,12 +99,26 @@ func TestMapAfterRemoteLoad(t *testing.T) {
 	assert.Equal(t, &model.Orchestration{
 		Phases: []model.Phase{
 			{
-				Key:       model.PhaseKey{Index: 0},
+				PhaseKey: model.PhaseKey{
+					BranchId:    123,
+					ComponentId: model.OrchestratorComponentId,
+					ConfigId:    `456`,
+					Index:       0,
+				},
 				DependsOn: []model.PhaseKey{},
 				Name:      `Phase`,
 				Content:   utils.NewOrderedMap(),
 				Tasks: []model.Task{
 					{
+						TaskKey: model.TaskKey{
+							PhaseKey: model.PhaseKey{
+								BranchId:    123,
+								ComponentId: model.OrchestratorComponentId,
+								ConfigId:    `456`,
+								Index:       0,
+							},
+							Index: 0,
+						},
 						Name:        `Task 1`,
 						ComponentId: `foo.bar1`,
 						ConfigId:    `123`,
@@ -120,6 +134,15 @@ func TestMapAfterRemoteLoad(t *testing.T) {
 						}),
 					},
 					{
+						TaskKey: model.TaskKey{
+							PhaseKey: model.PhaseKey{
+								BranchId:    123,
+								ComponentId: model.OrchestratorComponentId,
+								ConfigId:    `456`,
+								Index:       0,
+							},
+							Index: 1,
+						},
 						Name:        `Task 3`,
 						ComponentId: `foo.bar2`,
 						ConfigId:    `789`,
@@ -137,14 +160,35 @@ func TestMapAfterRemoteLoad(t *testing.T) {
 				},
 			},
 			{
-				Key:       model.PhaseKey{Index: 1},
-				DependsOn: []model.PhaseKey{{Index: 0}},
-				Name:      `Phase With Deps`,
+				PhaseKey: model.PhaseKey{
+					BranchId:    123,
+					ComponentId: model.OrchestratorComponentId,
+					ConfigId:    `456`,
+					Index:       1,
+				},
+				DependsOn: []model.PhaseKey{
+					{
+						BranchId:    123,
+						ComponentId: model.OrchestratorComponentId,
+						ConfigId:    `456`,
+						Index:       0,
+					},
+				},
+				Name: `Phase With Deps`,
 				Content: utils.PairsToOrderedMap([]utils.Pair{
 					{Key: `foo`, Value: `bar`},
 				}),
 				Tasks: []model.Task{
 					{
+						TaskKey: model.TaskKey{
+							PhaseKey: model.PhaseKey{
+								BranchId:    123,
+								ComponentId: model.OrchestratorComponentId,
+								ConfigId:    `456`,
+								Index:       1,
+							},
+							Index: 0,
+						},
 						Name:        `Task 2`,
 						ComponentId: `foo.bar2`,
 						ConfigId:    `456`,
@@ -243,12 +287,26 @@ WARN  Warning: invalid orchestrator config "branch:123/component:keboola.orchest
 	assert.Equal(t, &model.Orchestration{
 		Phases: []model.Phase{
 			{
-				Key:       model.PhaseKey{Index: 0},
+				PhaseKey: model.PhaseKey{
+					BranchId:    123,
+					ComponentId: model.OrchestratorComponentId,
+					ConfigId:    `456`,
+					Index:       0,
+				},
 				DependsOn: []model.PhaseKey{},
 				Name:      `Phase`,
 				Content:   utils.NewOrderedMap(),
 				Tasks: []model.Task{
 					{
+						TaskKey: model.TaskKey{
+							PhaseKey: model.PhaseKey{
+								BranchId:    123,
+								ComponentId: model.OrchestratorComponentId,
+								ConfigId:    `456`,
+								Index:       0,
+							},
+							Index: 0,
+						},
 						Name:        `Task 1`,
 						ComponentId: `foo.bar1`,
 						ConfigId:    `123`,
@@ -326,34 +384,98 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 	assert.Equal(t, &model.Orchestration{
 		Phases: []model.Phase{
 			{
-				Key:       model.PhaseKey{Index: 0},
+				PhaseKey: model.PhaseKey{
+					BranchId:    123,
+					ComponentId: model.OrchestratorComponentId,
+					ConfigId:    `456`,
+					Index:       0,
+				},
 				DependsOn: []model.PhaseKey{},
 				Name:      `Phase 5`,
 				Content:   utils.NewOrderedMap(),
 			},
 			{
-				Key:       model.PhaseKey{Index: 1},
-				DependsOn: []model.PhaseKey{{Index: 0}},
-				Name:      `Phase 1`,
-				Content:   utils.NewOrderedMap(),
+				PhaseKey: model.PhaseKey{
+					BranchId:    123,
+					ComponentId: model.OrchestratorComponentId,
+					ConfigId:    `456`,
+					Index:       1,
+				},
+				DependsOn: []model.PhaseKey{
+					{
+						BranchId:    123,
+						ComponentId: model.OrchestratorComponentId,
+						ConfigId:    `456`,
+						Index:       0,
+					},
+				},
+				Name:    `Phase 1`,
+				Content: utils.NewOrderedMap(),
 			},
 			{
-				Key:       model.PhaseKey{Index: 2},
+				PhaseKey: model.PhaseKey{
+					BranchId:    123,
+					ComponentId: model.OrchestratorComponentId,
+					ConfigId:    `456`,
+					Index:       2,
+				},
 				DependsOn: []model.PhaseKey{},
 				Name:      `Phase 2`,
 				Content:   utils.NewOrderedMap(),
 			},
 			{
-				Key:       model.PhaseKey{Index: 3},
-				DependsOn: []model.PhaseKey{{Index: 0}, {Index: 2}},
-				Name:      `Phase 4`,
-				Content:   utils.NewOrderedMap(),
+				PhaseKey: model.PhaseKey{
+					BranchId:    123,
+					ComponentId: model.OrchestratorComponentId,
+					ConfigId:    `456`,
+					Index:       3,
+				},
+				DependsOn: []model.PhaseKey{
+					{
+						BranchId:    123,
+						ComponentId: model.OrchestratorComponentId,
+						ConfigId:    `456`,
+						Index:       0,
+					},
+					{
+						BranchId:    123,
+						ComponentId: model.OrchestratorComponentId,
+						ConfigId:    `456`,
+						Index:       2,
+					},
+				},
+				Name:    `Phase 4`,
+				Content: utils.NewOrderedMap(),
 			},
 			{
-				Key:       model.PhaseKey{Index: 4},
-				DependsOn: []model.PhaseKey{{Index: 0}, {Index: 1}, {Index: 3}},
-				Name:      `Phase 3`,
-				Content:   utils.NewOrderedMap(),
+				PhaseKey: model.PhaseKey{
+					BranchId:    123,
+					ComponentId: model.OrchestratorComponentId,
+					ConfigId:    `456`,
+					Index:       4,
+				},
+				DependsOn: []model.PhaseKey{
+					{
+						BranchId:    123,
+						ComponentId: model.OrchestratorComponentId,
+						ConfigId:    `456`,
+						Index:       0,
+					},
+					{
+						BranchId:    123,
+						ComponentId: model.OrchestratorComponentId,
+						ConfigId:    `456`,
+						Index:       1,
+					},
+					{
+						BranchId:    123,
+						ComponentId: model.OrchestratorComponentId,
+						ConfigId:    `456`,
+						Index:       3,
+					},
+				},
+				Name:    `Phase 3`,
+				Content: utils.NewOrderedMap(),
 			},
 		},
 	}, internalObject.Orchestration)

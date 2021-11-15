@@ -51,6 +51,12 @@ func (m *orchestratorMapper) serializeOrchestrationTo(config *model.Config, orch
 			taskContent.Set(`name`, task.Name)
 			taskContent.Set(`phase`, phaseId)
 
+			// Copy additional content
+			for _, k := range task.Content.Keys() {
+				v, _ := task.Content.Get(k)
+				taskContent.Set(k, v)
+			}
+
 			// Get "task" value
 			var target *orderedmap.OrderedMap
 			taskMapRaw, found := task.Content.Get(`task`)
@@ -67,12 +73,6 @@ func (m *orchestratorMapper) serializeOrchestrationTo(config *model.Config, orch
 			target.Set(`componentId`, task.ComponentId)
 			target.Set(`configId`, task.ConfigId)
 			taskContent.Set(`task`, *target)
-
-			// Copy additional content
-			for _, k := range task.Content.Keys() {
-				v, _ := task.Content.Get(k)
-				taskContent.Set(k, v)
-			}
 
 			// Add to output
 			tasks = append(tasks, *taskContent)
