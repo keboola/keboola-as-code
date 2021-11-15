@@ -12,7 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func TestRemoteSaveTransformation(t *testing.T) {
+func TestMapBeforeRemoteSave(t *testing.T) {
 	t.Parallel()
 	context, logs := createMapperContext(t)
 	orchestration := &model.Orchestration{
