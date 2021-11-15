@@ -3,6 +3,7 @@ package diff
 import (
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 
 	"github.com/google/go-cmp/cmp"
@@ -20,7 +21,7 @@ type Differ struct {
 	state     *state.State                      // model state
 	results   []*Result                         // diff results
 	typeCache map[typeName][]*utils.StructField // reflection cache
-	error     *utils.Error                      // errors
+	errors    *utils.Error                      // errors
 }
 
 type ResultState int
@@ -46,9 +47,12 @@ type Result struct {
 }
 
 type Results struct {
-	CurrentState *state.State
-	Equal        bool
-	Results      []*Result
+	CurrentState          *state.State
+	Equal                 bool
+	HasNotEqualResult     bool
+	HasOnlyInRemoteResult bool
+	HasOnlyInLocalResult  bool
+	Results               []*Result
 }
 
 func NewDiffer(state *state.State) *Differ {
@@ -60,29 +64,38 @@ func NewDiffer(state *state.State) *Differ {
 
 func (d *Differ) Diff() (*Results, error) {
 	d.results = []*Result{}
-	d.error = utils.NewMultiError()
+	d.errors = utils.NewMultiError()
 
 	// Diff all objects in state: branches, config, configRows
-	equal := true
+	results := &Results{CurrentState: d.state, Equal: true, Results: d.results}
 	for _, objectState := range d.state.All() {
 		result, err := d.diffState(objectState)
 		if err != nil {
-			d.error.Append(err)
+			d.errors.Append(err)
 		} else {
 			if result.State != ResultEqual {
-				equal = false
+				results.Equal = false
+			}
+			if result.State == ResultNotEqual {
+				results.HasNotEqualResult = true
+			}
+			if result.State != ResultOnlyInRemote {
+				results.HasOnlyInRemoteResult = true
+			}
+			if result.State != ResultOnlyInLocal {
+				results.HasOnlyInLocalResult = true
 			}
 			d.results = append(d.results, result)
 		}
 	}
 
-	// Check errors
-	var err error
-	if d.error.Len() > 0 {
-		err = fmt.Errorf("%s", d.error)
-	}
+	// Sort results
+	sort.SliceStable(d.results, func(i, j int) bool {
+		return d.results[i].Path() < d.results[j].Path()
+	})
 
-	return &Results{CurrentState: d.state, Equal: equal, Results: d.results}, err
+	results.Results = d.results
+	return results, d.errors.ErrorOrNil()
 }
 
 func (d *Differ) diffState(state model.ObjectState) (*Result, error) {

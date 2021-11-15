@@ -45,7 +45,7 @@ func diffCommand(root *rootCommand) *cobra.Command {
 					}
 				}
 
-				if !printDetails && !diffResults.Equal {
+				if !printDetails && diffResults.HasNotEqualResult {
 					root.logger.Info()
 					root.logger.Info(`Use --details flag to list the changed fields.`)
 				}
