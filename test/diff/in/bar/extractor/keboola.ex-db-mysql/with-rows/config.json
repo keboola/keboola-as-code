@@ -1,7 +1,7 @@
 {
   "parameters": {
     "db": {
-      "host": "mysql.example.com"
+      "host": "mysql.example2.com"
     }
   }
 }

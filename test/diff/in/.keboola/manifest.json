@@ -63,6 +63,12 @@
     },
     {
       "branchId": %%TEST_BRANCH_BAR_ID%%,
+      "componentId": "keboola.ex-db-mysql",
+      "id": "%%TEST_NEW_TICKET_1%%",
+      "path": "extractor/keboola.ex-db-mysql/xyz"
+    },
+    {
+      "branchId": %%TEST_BRANCH_BAR_ID%%,
       "componentId": "keboola.python-transformation-v2",
       "id": "%%TEST_BRANCH_BAR_CONFIG_PYTHON_TRANSFORMATION_ID%%",
       "path": "transformation/keboola.python-transformation-v2/python-transformation",
