@@ -122,7 +122,7 @@ func (r *Reporter) isPathHidden() bool {
 func (r *Reporter) relationToString(relation model.Relation, definedOn model.Object, allObjects *model.StateObjects) string {
 	otherSideDesc := ``
 	otherSideKey, _, err := relation.NewOtherSideRelation(definedOn, allObjects)
-	if err == nil {
+	if err == nil && otherSideKey != nil {
 		if otherSide, found := r.state.Get(otherSideKey); found {
 			otherSideDesc = `"` + otherSide.Path() + `"`
 		}

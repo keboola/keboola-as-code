@@ -1,0 +1,47 @@
+{
+  "componentId": "keboola.orchestrator",
+  "name": "orchestrator",
+  "configuration": {
+    "phases": [
+      {
+        "id": 123,
+        "name": "Phase 1",
+        "dependsOn": []
+      },
+      {
+        "id": 456,
+        "name": "Phase 2",
+        "dependsOn": [
+          123
+        ]
+      }
+    ],
+    "tasks": [
+      {
+        "id": 1001,
+        "name": "Task 1",
+        "phase": 123,
+        "task": {
+          "componentId": "%%TEST_ORCHESTRATOR_TASK_1_COMPONENT_ID%%",
+          "configId": "%%TEST_ORCHESTRATOR_TASK_1_CONFIG_ID%%",
+          "mode": "run"
+        },
+        "continueOnFailure": false,
+        "enabled": true
+      },
+      {
+        "id": 1002,
+        "name": "Task 2",
+        "phase": 456,
+        "task": {
+          "componentId": "%%TEST_ORCHESTRATOR_TASK_2_COMPONENT_ID%%",
+          "configId": "%%TEST_ORCHESTRATOR_TASK_2_CONFIG_ID%%",
+          "mode": "run"
+        },
+        "continueOnFailure": false,
+        "enabled": true
+      }
+    ]
+  },
+  "rows": []
+}

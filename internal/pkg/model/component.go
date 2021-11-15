@@ -60,6 +60,10 @@ func (c *Component) IsScheduler() bool {
 	return c.Id == SchedulerComponentId
 }
 
+func (c *Component) IsOrchestrator() bool {
+	return c.Id == OrchestratorComponentId
+}
+
 func (c *Component) IsDeprecated() bool {
 	for _, flag := range c.Flags {
 		if flag == DeprecatedFlag {

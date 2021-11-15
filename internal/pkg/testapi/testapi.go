@@ -76,6 +76,7 @@ func AddMockedComponents(httpTransport *httpmock.MockTransport) {
 		{model.SharedCodeComponentId, "other", "Shared Code"},
 		{model.VariablesComponentId, "other", "Variables"},
 		{model.SchedulerComponentId, "other", "Scheduler"},
+		{model.OrchestratorComponentId, "other", "Orchestrator"},
 	}
 
 	// Register responses
