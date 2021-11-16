@@ -243,36 +243,19 @@ func (l *localLoader) blockDirs() []string {
 	l.Record.AddRelatedPath(l.blocksDir)
 
 	// Load all dir entries
-	items, err := l.Fs.ReadDir(l.blocksDir)
+	dirs, err := filesystem.ReadSubDirs(l.Fs, l.blocksDir)
 	if err != nil {
 		l.errors.Append(fmt.Errorf(`cannot read transformation blocks from "%s": %w`, l.blocksDir, err))
 		return nil
-	}
-
-	// Only dirs
-	dirs := make([]string, 0)
-	for _, item := range items {
-		if item.IsDir() {
-			dirs = append(dirs, item.Name())
-		}
 	}
 	return dirs
 }
 
 func (l *localLoader) codeDirs(block *model.Block) []string {
-	// Load all dir entries
-	items, err := l.Fs.ReadDir(block.Path())
+	dirs, err := filesystem.ReadSubDirs(l.Fs, block.Path())
 	if err != nil {
 		l.errors.Append(fmt.Errorf(`cannot read transformation codes from "%s": %w`, block.Path(), err))
 		return nil
-	}
-
-	// Only dirs
-	dirs := make([]string, 0)
-	for _, item := range items {
-		if item.IsDir() {
-			dirs = append(dirs, item.Name())
-		}
 	}
 	return dirs
 }

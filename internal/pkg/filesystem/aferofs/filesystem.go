@@ -245,6 +245,11 @@ func (f *Fs) ReadFile(path, desc string) (*filesystem.File, error) {
 	file := filesystem.CreateFile(path, "")
 	file.Desc = desc
 
+	// Check if is dir
+	if f.IsDir(path) {
+		return nil, newFileError("cannot open", file, fmt.Errorf(`expected file, found dir`))
+	}
+
 	// Open
 	fd, err := f.fs.Open(f.fs.FromSlash(file.Path))
 	if err != nil {

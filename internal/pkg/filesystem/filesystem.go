@@ -110,3 +110,21 @@ func IsFrom(path, base string) bool {
 	baseWithSep := base + string(PathSeparator)
 	return strings.HasPrefix(path, baseWithSep)
 }
+
+// ReadSubDirs returns dir entries inside dir.
+func ReadSubDirs(fs Fs, root string) ([]string, error) {
+	// Load all dir entries
+	items, err := fs.ReadDir(root)
+	if err != nil {
+		return nil, err
+	}
+
+	// Return only dirs
+	dirs := make([]string, 0)
+	for _, item := range items {
+		if item.IsDir() {
+			dirs = append(dirs, item.Name())
+		}
+	}
+	return dirs, nil
+}

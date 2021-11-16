@@ -7,42 +7,19 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func TestMapBeforeLocalSave(t *testing.T) {
+func TestMapAfterLocalLoad(t *testing.T) {
 	t.Parallel()
 	context, logs := createMapperContext(t)
+	orchestratorConfigState := createLocalLoadFixtures(t, context, true)
 
-	// Recipe
-	orchestratorConfigState := createLocalSaveFixtures(t, context, true)
-	recipe := &model.LocalSaveRecipe{
-		Record:        orchestratorConfigState.ConfigManifest,
-		Object:        orchestratorConfigState.Remote,
-		Metadata:      filesystem.CreateJsonFile(model.MetaFile, utils.NewOrderedMap()),
-		Configuration: filesystem.CreateJsonFile(model.ConfigFile, utils.NewOrderedMap()),
-		Description:   filesystem.CreateFile(model.DescriptionFile, ``),
-	}
-
-	// Save
-	assert.NoError(t, NewMapper(context).MapBeforeLocalSave(recipe))
-	assert.Empty(t, logs.String())
-
-	// Minify JSON
-	for _, file := range recipe.ExtraFiles {
-		data := utils.NewOrderedMap()
-		if err := json.DecodeString(file.Content, data); err == nil {
-			file.Content = json.MustEncodeString(data, false)
-		}
-	}
-
-	// Check generated files
+	// Local files
 	phasesDir := context.Naming.PhasesDir(orchestratorConfigState.Path())
-	assert.Equal(t, []*filesystem.File{
-		filesystem.CreateFile(phasesDir+`/.gitkeep`, ``),
+	files := []*filesystem.File{
 		filesystem.
 			CreateFile(
 				phasesDir+`/001-phase/phase.json`,
@@ -73,41 +50,34 @@ func TestMapBeforeLocalSave(t *testing.T) {
 				`{"name":"Task 3","task":{"mode":"run","configPath":"extractor/target-config-3"},"continueOnFailure":false,"enabled":true}`,
 			).
 			SetDescription(`task config file`),
-	}, recipe.ExtraFiles)
-}
-
-func TestMapBeforeLocalSaveWarnings(t *testing.T) {
-	t.Parallel()
-	context, logs := createMapperContext(t)
+	}
+	for _, file := range files {
+		assert.NoError(t, context.Fs.WriteFile(file))
+	}
+	logs.Truncate()
 
 	// Recipe
-	orchestratorConfigState := createLocalSaveFixtures(t, context, false)
-	recipe := &model.LocalSaveRecipe{
-		Record:        orchestratorConfigState.ConfigManifest,
-		Object:        orchestratorConfigState.Remote,
-		Metadata:      filesystem.CreateJsonFile(model.MetaFile, utils.NewOrderedMap()),
-		Configuration: filesystem.CreateJsonFile(model.ConfigFile, utils.NewOrderedMap()),
-		Description:   filesystem.CreateFile(model.DescriptionFile, ``),
+	event := model.OnObjectsLoadEvent{
+		StateType:  model.StateTypeLocal,
+		NewObjects: []model.Object{orchestratorConfigState.Local},
+		AllObjects: context.State.LocalObjects(),
 	}
 
-	// Save
-	assert.NoError(t, NewMapper(context).MapBeforeLocalSave(recipe))
-	expectedWarnings := `
-WARN  Warning: invalid orchestrator config "branch:123/component:keboola.orchestrator/config:456":
-  - config "branch:123/component:foo.bar1/config:123" not found
-    - referenced from phase[0] "Phase", task[0] "Task 1"
-  - config "branch:123/component:foo.bar2/config:789" not found
-    - referenced from phase[0] "Phase", task[1] "Task 2"
-  - config "branch:123/component:foo.bar2/config:456" not found
-    - referenced from phase[1] "Phase With Deps", task[0] "Task 3"
+	// Load
+	assert.NoError(t, NewMapper(context).OnObjectsLoad(event))
+
+	// Logs
+	expectedLogs := `
+DEBUG  Loaded "branch/other/orchestrator/phases/001-phase/phase.json"
+DEBUG  Loaded "branch/other/orchestrator/phases/001-phase/001-task-1/task.json"
+DEBUG  Loaded "branch/other/orchestrator/phases/001-phase/002-task-2/task.json"
+DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/phase.json"
+DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/task.json"
 `
-	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logs.String())
-}
+	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logs.String())
 
-func createLocalSaveFixtures(t *testing.T, context model.MapperContext, createTargets bool) *model.ConfigState {
-	t.Helper()
-
-	orchestration := &model.Orchestration{
+	// Orchestration
+	expectedOrchestration := &model.Orchestration{
 		Phases: []model.Phase{
 			{
 				PhaseKey: model.PhaseKey{
@@ -223,6 +193,124 @@ func createLocalSaveFixtures(t *testing.T, context model.MapperContext, createTa
 			},
 		},
 	}
+	assert.Equal(t, expectedOrchestration, orchestratorConfigState.Local.Orchestration)
+}
+
+func TestMapAfterLocalLoadError(t *testing.T) {
+	t.Parallel()
+	context, logs := createMapperContext(t)
+	orchestratorConfigState := createLocalLoadFixtures(t, context, false)
+
+	// Local files
+	phasesDir := context.Naming.PhasesDir(orchestratorConfigState.Path())
+	files := []*filesystem.File{
+		filesystem.
+			CreateFile(
+				phasesDir+`/001-phase/phase.json`,
+				`{"name":"Phase","dependsOn":["missing-phase"],"foo":"bar"}`,
+			).
+			SetDescription(`phase config file`),
+		filesystem.
+			CreateFile(
+				phasesDir+`/001-phase/001-task-1/task.json`,
+				`{"name":"Task 1","task":{"mode":"run","configPath":"extractor/target-config-1"},"continueOnFailure":false,"enabled":true}`,
+			).
+			SetDescription(`task config file`),
+		filesystem.
+			CreateFile(
+				phasesDir+`/001-phase/002-task-2/task.json`,
+				`{"name":"Task 2","task":{"mode":"run","configPath":"extractor/target-config-2"},"continueOnFailure":false,"enabled":false}`,
+			).
+			SetDescription(`task config file`),
+	}
+	for _, file := range files {
+		assert.NoError(t, context.Fs.WriteFile(file))
+	}
+	assert.NoError(t, context.Fs.Mkdir(phasesDir+`/002-phase-with-deps`))
+	logs.Truncate()
+
+	// Recipe
+	event := model.OnObjectsLoadEvent{
+		StateType:  model.StateTypeLocal,
+		NewObjects: []model.Object{orchestratorConfigState.Local},
+		AllObjects: context.State.LocalObjects(),
+	}
+
+	// Load
+	err := NewMapper(context).OnObjectsLoad(event)
+	assert.Error(t, err)
+
+	// Assert error
+	expectedError := `
+- invalid config "branch/other/orchestrator/phases/001-phase/001-task-1/task.json":
+  - config "branch/extractor/target-config-1" not found, referenced from task[0] "Task 1"
+- invalid config "branch/other/orchestrator/phases/001-phase/002-task-2/task.json":
+  - config "branch/extractor/target-config-2" not found, referenced from task[1] "Task 2"
+- missing phase config file "branch/other/orchestrator/phases/002-phase-with-deps/phase.json"
+- missing phase "missing-phase", referenced from "branch/other/orchestrator/phases/001-phase"
+`
+	assert.Equal(t, strings.Trim(expectedError, "\n"), err.Error())
+}
+
+func TestMapAfterLocalLoadDepsCycle(t *testing.T) {
+	t.Parallel()
+	context, logs := createMapperContext(t)
+	orchestratorConfigState := createLocalLoadFixtures(t, context, true)
+
+	// Local files
+	phasesDir := context.Naming.PhasesDir(orchestratorConfigState.Path())
+	files := []*filesystem.File{
+		filesystem.
+			CreateFile(
+				phasesDir+`/001-phase/phase.json`,
+				`{"name":"Phase 1","dependsOn":[],"foo":"bar"}`,
+			).
+			SetDescription(`phase config file`),
+		filesystem.
+			CreateFile(
+				phasesDir+`/001-phase/001-task-1/task.json`,
+				`{"name":"Task 1","task":{"mode":"run","configPath":"extractor/target-config-1"},"continueOnFailure":false,"enabled":true}`,
+			).
+			SetDescription(`task config file`),
+		filesystem.
+			CreateFile(
+				phasesDir+`/002-phase/phase.json`,
+				`{"name":"Phase 2","dependsOn":["003-phase"],"foo":"bar"}`,
+			).
+			SetDescription(`phase config file`),
+		filesystem.
+			CreateFile(
+				phasesDir+`/003-phase/phase.json`,
+				`{"name":"Phase 3","dependsOn":["002-phase"],"foo":"bar"}`,
+			).
+			SetDescription(`phase config file`),
+	}
+	for _, file := range files {
+		assert.NoError(t, context.Fs.WriteFile(file))
+	}
+	logs.Truncate()
+
+	// Recipe
+	event := model.OnObjectsLoadEvent{
+		StateType:  model.StateTypeLocal,
+		NewObjects: []model.Object{orchestratorConfigState.Local},
+		AllObjects: context.State.LocalObjects(),
+	}
+
+	// Load
+	err := NewMapper(context).OnObjectsLoad(event)
+	assert.Error(t, err)
+
+	// Assert error
+	expectedError := `
+found cycles in phases "dependsOn" in "branch/other/orchestrator/phases"
+  - "002-phase" -> "003-phase" -> "002-phase"
+`
+	assert.Equal(t, strings.Trim(expectedError, "\n"), err.Error())
+}
+
+func createLocalLoadFixtures(t *testing.T, context model.MapperContext, createTargets bool) *model.ConfigState {
+	t.Helper()
 
 	// Branch
 	branchKey := model.BranchKey{
@@ -238,6 +326,7 @@ func createLocalSaveFixtures(t *testing.T, context model.MapperContext, createTa
 		Local: &model.Branch{BranchKey: branchKey},
 	}
 	assert.NoError(t, context.State.Set(branchState))
+	context.Naming.Attach(branchState.Key(), branchState.PathInProject)
 
 	// Orchestrator config
 	configKey := model.ConfigKey{
@@ -252,9 +341,10 @@ func createLocalSaveFixtures(t *testing.T, context model.MapperContext, createTa
 				PathInProject: model.NewPathInProject(`branch/other`, `orchestrator`),
 			},
 		},
-		Remote: &model.Config{ConfigKey: configKey, Content: utils.NewOrderedMap(), Orchestration: orchestration},
+		Local: &model.Config{ConfigKey: configKey, Content: utils.NewOrderedMap()},
 	}
 	assert.NoError(t, context.State.Set(configState))
+	context.Naming.Attach(configState.Key(), configState.PathInProject)
 
 	// Create targets
 	if !createTargets {
@@ -274,9 +364,10 @@ func createLocalSaveFixtures(t *testing.T, context model.MapperContext, createTa
 				PathInProject: model.NewPathInProject(`branch/extractor`, `target-config-1`),
 			},
 		},
-		Remote: &model.Config{ConfigKey: targetConfigKey1},
+		Local: &model.Config{ConfigKey: targetConfigKey1},
 	}
 	assert.NoError(t, context.State.Set(targetConfigState1))
+	context.Naming.Attach(targetConfigState1.Key(), targetConfigState1.PathInProject)
 
 	// Target config 2
 	targetConfigKey2 := model.ConfigKey{
@@ -291,9 +382,10 @@ func createLocalSaveFixtures(t *testing.T, context model.MapperContext, createTa
 				PathInProject: model.NewPathInProject(`branch/extractor`, `target-config-2`),
 			},
 		},
-		Remote: &model.Config{ConfigKey: targetConfigKey2},
+		Local: &model.Config{ConfigKey: targetConfigKey2},
 	}
 	assert.NoError(t, context.State.Set(targetConfigState2))
+	context.Naming.Attach(targetConfigState2.Key(), targetConfigState2.PathInProject)
 
 	// Target config 3
 	targetConfigKey3 := model.ConfigKey{
@@ -308,9 +400,10 @@ func createLocalSaveFixtures(t *testing.T, context model.MapperContext, createTa
 				PathInProject: model.NewPathInProject(`branch/extractor`, `target-config-3`),
 			},
 		},
-		Remote: &model.Config{ConfigKey: targetConfigKey3},
+		Local: &model.Config{ConfigKey: targetConfigKey3},
 	}
 	assert.NoError(t, context.State.Set(targetConfigState3))
+	context.Naming.Attach(targetConfigState3.Key(), targetConfigState3.PathInProject)
 
 	return configState
 }
