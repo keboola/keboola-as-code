@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/interaction"
@@ -112,6 +113,18 @@ func createBranchCommand(root *rootCommand) *cobra.Command {
 			branch := &model.Branch{Name: name}
 			if _, err := api.CreateBranch(branch); err != nil {
 				return fmt.Errorf(`cannot create branch: %w`, err)
+			}
+
+			// Add new branch to the allowed branches if needed
+			projectManifest, err := manifest.LoadManifest(root.fs)
+			if err != nil {
+				return fmt.Errorf(`cannot load manifest: %w`, err)
+			}
+			if !projectManifest.AllowedBranches.IsBranchAllowed(branch) {
+				projectManifest.AllowedBranches = append(projectManifest.AllowedBranches, model.AllowedBranch(cast.ToString(branch.Id)))
+				if err := projectManifest.Save(); err != nil {
+					return fmt.Errorf(`cannot save manifest: %w`, err)
+				}
 			}
 
 			// Pull remote state
