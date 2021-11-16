@@ -16,7 +16,8 @@
     "variablesValuesRow": "values/{config_row_name}"
   },
   "allowedBranches": [
-    "__all__"
+    "__main__",
+    "%s"
   ],
   "ignoredComponents": [],
   "branches": [
