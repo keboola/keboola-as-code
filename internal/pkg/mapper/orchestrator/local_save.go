@@ -21,7 +21,6 @@ func (m *orchestratorMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) e
 		MapperContext:   m.MapperContext,
 		LocalSaveRecipe: recipe,
 		config:          recipe.Object.(*model.Config),
-		errors:          utils.NewMultiError(),
 	}
 	writer.save()
 	return nil
@@ -31,7 +30,6 @@ type localWriter struct {
 	model.MapperContext
 	*model.LocalSaveRecipe
 	config *model.Config
-	errors *utils.Error
 }
 
 func (w *localWriter) save() {
@@ -42,9 +40,12 @@ func (w *localWriter) save() {
 	w.ExtraFiles = append(w.ExtraFiles, gitKeep)
 
 	// Generate files for phases
+	errors := utils.NewMultiError()
 	allPhases := w.config.Orchestration.Phases
 	for _, phase := range allPhases {
-		w.savePhase(phase, allPhases)
+		if err := w.savePhase(phase, allPhases); err != nil {
+			errors.Append(utils.PrefixError(fmt.Sprintf(`cannot save phase "%s"`, phase.ObjectPath), err))
+		}
 	}
 
 	// Delete all old files from blocks dir
@@ -56,19 +57,19 @@ func (w *localWriter) save() {
 	}
 
 	// Convert errors to warning
-	if w.errors.Len() > 0 {
-		w.Logger.Warn(utils.PrefixError(fmt.Sprintf(`Warning: invalid orchestrator %s`, w.config.Desc()), w.errors))
+	if errors.Len() > 0 {
+		w.Logger.Warn(utils.PrefixError(fmt.Sprintf(`Warning: cannot save orchestrator config "%s"`, w.Record.Path()), errors))
 	}
 }
 
-func (w *localWriter) savePhase(phase model.Phase, allPhases []model.Phase) {
+func (w *localWriter) savePhase(phase model.Phase, allPhases []model.Phase) error {
 	// Validate
 	if err := validator.Validate(phase); err != nil {
-		w.errors.Append(utils.PrefixError(fmt.Sprintf(`invalid phase \"%s\"`, phase.Path()), err))
-		return
+		return err
 	}
 
 	// Create content
+	errors := utils.NewMultiError()
 	phaseContent := utils.NewOrderedMap()
 	phaseContent.Set(`name`, phase.Name)
 
@@ -78,7 +79,7 @@ func (w *localWriter) savePhase(phase model.Phase, allPhases []model.Phase) {
 		depOnPhase := allPhases[depOnKey.Index]
 		depOnPath, err := filesystem.Rel(phase.GetParentPath(), depOnPhase.Path())
 		if err != nil {
-			w.errors.Append(err)
+			errors.Append(err)
 			continue
 		}
 		dependsOn = append(dependsOn, depOnPath)
@@ -99,18 +100,22 @@ func (w *localWriter) savePhase(phase model.Phase, allPhases []model.Phase) {
 	if err == nil {
 		w.ExtraFiles = append(w.ExtraFiles, file)
 	} else {
-		w.errors.Append(err)
-		return
+		errors.Append(err)
 	}
 
 	// Write tasks
 	for _, task := range phase.Tasks {
-		w.saveTask(phase, task)
+		if err := w.saveTask(task); err != nil {
+			errors.Append(utils.PrefixError(fmt.Sprintf(`cannot save task "%s"`, task.ObjectPath), err))
+		}
 	}
+
+	return errors.ErrorOrNil()
 }
 
-func (w *localWriter) saveTask(phase model.Phase, task model.Task) {
+func (w *localWriter) saveTask(task model.Task) error {
 	// Create content
+	errors := utils.NewMultiError()
 	taskContent := utils.NewOrderedMap()
 	taskContent.Set(`name`, task.Name)
 
@@ -144,24 +149,19 @@ func (w *localWriter) saveTask(phase model.Phase, task model.Task) {
 
 	// Get target config
 	targetConfig, found := w.State.Get(targetKey)
-	if !found {
-		err := utils.NewMultiError()
-		err.Append(fmt.Errorf(`%s not found`, targetKey.Desc()))
-		err.AppendRaw(fmt.Sprintf(`  - referenced from phase[%d] "%s", task[%d] "%s"`, phase.Index, phase.Name, task.Index, task.Name))
-		w.errors.Append(err)
-		return
-	}
+	if found {
+		// Get target path
+		targetPath, err := filesystem.Rel(branch.Path(), targetConfig.Path())
+		if err != nil {
+			errors.Append(err)
+		}
 
-	// Get target path
-	targetPath, err := filesystem.Rel(branch.Path(), targetConfig.Path())
-	if err != nil {
-		w.errors.Append(err)
-		return
+		// Set config path
+		target.Set(`configPath`, targetPath)
+		taskContent.Set(`task`, *target)
+	} else {
+		errors.Append(fmt.Errorf(`%s not found`, targetKey.Desc()))
 	}
-
-	// Set config path
-	target.Set(`configPath`, targetPath)
-	taskContent.Set(`task`, *target)
 
 	// Create file
 	file, err := filesystem.
@@ -171,7 +171,8 @@ func (w *localWriter) saveTask(phase model.Phase, task model.Task) {
 	if err == nil {
 		w.ExtraFiles = append(w.ExtraFiles, file)
 	} else {
-		w.errors.Append(err)
-		return
+		errors.Append(err)
 	}
+
+	return errors.ErrorOrNil()
 }

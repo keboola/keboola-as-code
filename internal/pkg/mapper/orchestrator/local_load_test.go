@@ -242,12 +242,15 @@ func TestMapAfterLocalLoadError(t *testing.T) {
 
 	// Assert error
 	expectedError := `
-- invalid config "branch/other/orchestrator/phases/001-phase/001-task-1/task.json":
-  - config "branch/extractor/target-config-1" not found, referenced from task[0] "Task 1"
-- invalid config "branch/other/orchestrator/phases/001-phase/002-task-2/task.json":
-  - config "branch/extractor/target-config-2" not found, referenced from task[1] "Task 2"
-- missing phase config file "branch/other/orchestrator/phases/002-phase-with-deps/phase.json"
-- missing phase "missing-phase", referenced from "branch/other/orchestrator/phases/001-phase"
+invalid orchestrator config "branch/other/orchestrator":
+  - invalid phase "001-phase":
+    - invalid task "001-task-1":
+      - config "branch/extractor/target-config-1" not found
+    - invalid task "002-task-2":
+      - config "branch/extractor/target-config-2" not found
+  - invalid phase "002-phase-with-deps":
+    - missing phase config file "phases/002-phase-with-deps/phase.json"
+  - missing phase "missing-phase", referenced from "001-phase"
 `
 	assert.Equal(t, strings.Trim(expectedError, "\n"), err.Error())
 }
@@ -303,8 +306,9 @@ func TestMapAfterLocalLoadDepsCycle(t *testing.T) {
 
 	// Assert error
 	expectedError := `
-found cycles in phases "dependsOn" in "branch/other/orchestrator/phases"
-  - "002-phase" -> "003-phase" -> "002-phase"
+invalid orchestrator config "branch/other/orchestrator":
+  - found cycles in phases "dependsOn"
+    - "002-phase" -> "003-phase" -> "002-phase"
 `
 	assert.Equal(t, strings.Trim(expectedError, "\n"), err.Error())
 }
