@@ -7,14 +7,13 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func TestMapAfterLocalLoad(t *testing.T) {
 	t.Parallel()
-	context, logs := createMapperContext(t)
+	mapper, context, logs := createMapper(t)
 	orchestratorConfigState := createLocalLoadFixtures(t, context, true)
 
 	// Local files
@@ -56,15 +55,8 @@ func TestMapAfterLocalLoad(t *testing.T) {
 	}
 	logs.Truncate()
 
-	// Recipe
-	event := model.OnObjectsLoadEvent{
-		StateType:  model.StateTypeLocal,
-		NewObjects: []model.Object{orchestratorConfigState.Local},
-		AllObjects: context.State.LocalObjects(),
-	}
-
 	// Load
-	assert.NoError(t, NewMapper(context).OnObjectsLoad(event))
+	assert.NoError(t, mapper.OnObjectsLoad(model.StateTypeLocal, []model.Object{orchestratorConfigState.Local}))
 
 	// Logs
 	expectedLogs := `
@@ -198,7 +190,7 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 
 func TestMapAfterLocalLoadError(t *testing.T) {
 	t.Parallel()
-	context, logs := createMapperContext(t)
+	mapper, context, logs := createMapper(t)
 	orchestratorConfigState := createLocalLoadFixtures(t, context, false)
 
 	// Local files
@@ -229,15 +221,8 @@ func TestMapAfterLocalLoadError(t *testing.T) {
 	assert.NoError(t, context.Fs.Mkdir(phasesDir+`/002-phase-with-deps`))
 	logs.Truncate()
 
-	// Recipe
-	event := model.OnObjectsLoadEvent{
-		StateType:  model.StateTypeLocal,
-		NewObjects: []model.Object{orchestratorConfigState.Local},
-		AllObjects: context.State.LocalObjects(),
-	}
-
 	// Load
-	err := NewMapper(context).OnObjectsLoad(event)
+	err := mapper.OnObjectsLoad(model.StateTypeLocal, []model.Object{orchestratorConfigState.Local})
 	assert.Error(t, err)
 
 	// Assert error
@@ -257,7 +242,7 @@ invalid orchestrator config "branch/other/orchestrator":
 
 func TestMapAfterLocalLoadDepsCycle(t *testing.T) {
 	t.Parallel()
-	context, logs := createMapperContext(t)
+	mapper, context, logs := createMapper(t)
 	orchestratorConfigState := createLocalLoadFixtures(t, context, true)
 
 	// Local files
@@ -293,15 +278,8 @@ func TestMapAfterLocalLoadDepsCycle(t *testing.T) {
 	}
 	logs.Truncate()
 
-	// Recipe
-	event := model.OnObjectsLoadEvent{
-		StateType:  model.StateTypeLocal,
-		NewObjects: []model.Object{orchestratorConfigState.Local},
-		AllObjects: context.State.LocalObjects(),
-	}
-
 	// Load
-	err := NewMapper(context).OnObjectsLoad(event)
+	err := mapper.OnObjectsLoad(model.StateTypeLocal, []model.Object{orchestratorConfigState.Local})
 	assert.Error(t, err)
 
 	// Assert error

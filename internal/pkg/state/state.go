@@ -120,7 +120,7 @@ func newState(options *Options) *State {
 		variables.NewMapper(mapperContext),
 		schedulerMapper.NewMapper(mapperContext),
 		sharedcode.NewVariablesMapper(mapperContext),
-		orchestrator.NewMapper(mapperContext),
+		orchestrator.NewMapper(s.localManager, mapperContext),
 		relations.NewMapper(mapperContext),
 		sharedcode.NewCodesMapper(mapperContext),
 		sharedcode.NewLinksMapper(s.localManager, mapperContext),

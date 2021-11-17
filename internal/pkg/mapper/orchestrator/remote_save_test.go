@@ -7,14 +7,13 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func TestMapBeforeRemoteSave(t *testing.T) {
 	t.Parallel()
-	context, logs := createMapperContext(t)
+	mapper, _, logs := createMapper(t)
 	orchestration := &model.Orchestration{
 		Phases: []*model.Phase{
 			{
@@ -138,7 +137,7 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 	}
 
 	// Save
-	assert.NoError(t, NewMapper(context).MapBeforeRemoteSave(recipe))
+	assert.NoError(t, mapper.MapBeforeRemoteSave(recipe))
 	assert.Empty(t, logs.String())
 
 	// Internal object is not modified
