@@ -46,7 +46,7 @@ func (s *phasesSorter) sortPhases() ([]*model.Phase, error) {
 		for _, cycle := range cycles {
 			var items []string
 			for _, item := range cycle {
-				items = append(items, item.(string))
+				items = append([]string{item.(string)}, items...) // prepend
 			}
 			err.AppendRaw(`  - ` + strings.Join(items, ` -> `))
 		}
