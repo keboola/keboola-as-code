@@ -62,7 +62,7 @@ func (w *localWriter) save() {
 	}
 }
 
-func (w *localWriter) savePhase(phase model.Phase, allPhases []model.Phase) error {
+func (w *localWriter) savePhase(phase *model.Phase, allPhases []*model.Phase) error {
 	// Validate
 	if err := validator.Validate(phase); err != nil {
 		return err
@@ -113,7 +113,7 @@ func (w *localWriter) savePhase(phase model.Phase, allPhases []model.Phase) erro
 	return errors.ErrorOrNil()
 }
 
-func (w *localWriter) saveTask(task model.Task) error {
+func (w *localWriter) saveTask(task *model.Task) error {
 	// Create content
 	errors := utils.NewMultiError()
 	taskContent := utils.NewOrderedMap()

@@ -16,7 +16,7 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 	t.Parallel()
 	context, logs := createMapperContext(t)
 	orchestration := &model.Orchestration{
-		Phases: []model.Phase{
+		Phases: []*model.Phase{
 			{
 				PhaseKey: model.PhaseKey{
 					BranchId:    123,
@@ -29,7 +29,7 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 				Content: utils.PairsToOrderedMap([]utils.Pair{
 					{Key: `foo`, Value: `bar`},
 				}),
-				Tasks: []model.Task{
+				Tasks: []*model.Task{
 					{
 						TaskKey: model.TaskKey{
 							PhaseKey: model.PhaseKey{
@@ -90,7 +90,7 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 				DependsOn: []model.PhaseKey{{Index: 0}},
 				Name:      `Phase With Deps`,
 				Content:   utils.NewOrderedMap(),
-				Tasks: []model.Task{
+				Tasks: []*model.Task{
 					{
 
 						TaskKey: model.TaskKey{
