@@ -23,3 +23,17 @@ func (m *orchestratorMapper) isOrchestratorConfig(object model.Object) (bool, er
 
 	return component.IsOrchestrator(), nil
 }
+
+func (m *orchestratorMapper) isOrchestratorConfigState(objectState model.ObjectState) (bool, error) {
+	config, ok := objectState.(*model.ConfigState)
+	if !ok {
+		return false, nil
+	}
+
+	component, err := m.State.Components().Get(config.ComponentKey())
+	if err != nil {
+		return false, err
+	}
+
+	return component.IsOrchestrator(), nil
+}
