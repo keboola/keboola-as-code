@@ -42,6 +42,11 @@ type OnObjectsPersistListener interface {
 	OnObjectsPersist(event model.OnObjectsPersistEvent) error
 }
 
+// OnObjectPathUpdateListener is called when a local path has been updated.
+type OnObjectPathUpdateListener interface {
+	OnObjectPathUpdate(event model.OnObjectPathUpdateEvent) error
+}
+
 // OnObjectsRenameListener is called when some object paths have been changed.
 type OnObjectsRenameListener interface {
 	OnObjectsRename(event model.OnObjectsRenameEvent) error
@@ -155,6 +160,19 @@ func (m *Mapper) OnObjectsPersist(persistedObjects []model.Object) error {
 	for _, mapper := range m.mappers {
 		if mapper, ok := mapper.(OnObjectsPersistListener); ok {
 			if err := mapper.OnObjectsPersist(event); err != nil {
+				errors.Append(err)
+			}
+		}
+	}
+
+	return errors.ErrorOrNil()
+}
+
+func (m *Mapper) OnObjectPathUpdate(event model.OnObjectPathUpdateEvent) error {
+	errors := utils.NewMultiError()
+	for _, mapper := range m.mappers {
+		if mapper, ok := mapper.(OnObjectPathUpdateListener); ok {
+			if err := mapper.OnObjectPathUpdate(event); err != nil {
 				errors.Append(err)
 			}
 		}

@@ -69,6 +69,20 @@ type OnObjectsPersistEvent struct {
 	AllObjects       *StateObjects // all local objects
 }
 
+type PathsGenerator interface {
+	AddRenamed(path RenamedPath)
+	RenameEnabled() bool // if true, existing paths will be renamed
+}
+
+// OnObjectPathUpdateEvent contains object with updated path.
+type OnObjectPathUpdateEvent struct {
+	PathsGenerator PathsGenerator
+	ObjectState    ObjectState
+	Renamed        bool
+	OldPath        string
+	NewPath        string
+}
+
 // OnObjectsRenameEvent contains old and new paths of renamed objects.
 type OnObjectsRenameEvent struct {
 	RenamedObjects []RenameAction
