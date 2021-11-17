@@ -71,8 +71,9 @@ func (l *localLoader) load() error {
 
 		// Process tasks
 		if errors.Len() == 0 {
-			for taskIndex, taskDir := range l.tasksDirs(phase) {
-				if task, err := l.addTask(taskIndex, phase, taskDir); err == nil {
+			tasksDir := l.Naming.TasksDir(phase.Path())
+			for taskIndex, taskDir := range l.tasksDirs(tasksDir) {
+				if task, err := l.addTask(taskIndex, tasksDir, taskDir); err == nil {
 					phase.Tasks = append(phase.Tasks, *task)
 				} else {
 					errors.Append(utils.PrefixError(fmt.Sprintf(`invalid task "%s"`, taskDir), err))
@@ -123,11 +124,11 @@ func (l *localLoader) addPhase(phaseIndex int, path string) (*model.Phase, []str
 	return phase, dependsOn, err
 }
 
-func (l *localLoader) addTask(taskIndex int, phase *model.Phase, path string) (*model.Task, error) {
+func (l *localLoader) addTask(taskIndex int, tasksDir, path string) (*model.Task, error) {
 	// Create struct
 	task := &model.Task{
 		TaskKey:       model.TaskKey{Index: taskIndex},
-		PathInProject: model.NewPathInProject(phase.Path(), path),
+		PathInProject: model.NewPathInProject(tasksDir, path),
 	}
 
 	// Track task path
@@ -220,7 +221,7 @@ func (l *localLoader) loadJsonFile(path, desc string) (*filesystem.JsonFile, err
 }
 
 func (l *localLoader) phasesDirs() []string {
-	// Check if blocks dir exists
+	// Check if phases dir exists
 	if !l.Fs.IsDir(l.phasesDir) {
 		l.errors.Append(fmt.Errorf(`missing phases dir "%s"`, l.phasesDir))
 		return nil
@@ -238,10 +239,17 @@ func (l *localLoader) phasesDirs() []string {
 	return dirs
 }
 
-func (l *localLoader) tasksDirs(phase *model.Phase) []string {
-	dirs, err := filesystem.ReadSubDirs(l.Fs, phase.Path())
+func (l *localLoader) tasksDirs(tasksDir string) []string {
+	// Check if tasks dir exists
+	if !l.Fs.IsDir(tasksDir) {
+		taskDirRel, _ := filesystem.Rel(l.manifest.Path(), tasksDir)
+		l.errors.Append(fmt.Errorf(`missing tasks dir "%s"`, taskDirRel))
+		return nil
+	}
+
+	dirs, err := filesystem.ReadSubDirs(l.Fs, tasksDir)
 	if err != nil {
-		l.errors.Append(fmt.Errorf(`cannot read orchestrator tasks from "%s": %w`, phase.Path(), err))
+		l.errors.Append(fmt.Errorf(`cannot read orchestrator tasks from "%s": %w`, tasksDir, err))
 		return nil
 	}
 	return dirs

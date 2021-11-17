@@ -103,6 +103,11 @@ func (w *localWriter) savePhase(phase model.Phase, allPhases []model.Phase) erro
 		errors.Append(err)
 	}
 
+	// Generate ".gitkeep" to preserve the "tasks" directory, even if there are no phases.
+	tasksDir := w.Naming.TasksDir(phase.Path())
+	gitKeep := filesystem.CreateFile(filesystem.Join(tasksDir, `.gitkeep`), ``)
+	w.ExtraFiles = append(w.ExtraFiles, gitKeep)
+
 	// Write tasks
 	for _, task := range phase.Tasks {
 		if err := w.saveTask(task); err != nil {

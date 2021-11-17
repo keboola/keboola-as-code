@@ -49,15 +49,16 @@ func TestMapBeforeLocalSave(t *testing.T) {
 				`{"name":"Phase","dependsOn":[],"foo":"bar"}`,
 			).
 			SetDescription(`phase config file`),
+		filesystem.CreateFile(phasesDir+`/001-phase/tasks/.gitkeep`, ``),
 		filesystem.
 			CreateFile(
-				phasesDir+`/001-phase/001-task-1/task.json`,
+				phasesDir+`/001-phase/tasks/001-task-1/task.json`,
 				`{"name":"Task 1","task":{"mode":"run","configPath":"extractor/target-config-1"},"continueOnFailure":false,"enabled":true}`,
 			).
 			SetDescription(`task config file`),
 		filesystem.
 			CreateFile(
-				phasesDir+`/001-phase/002-task-2/task.json`,
+				phasesDir+`/001-phase/tasks/002-task-2/task.json`,
 				`{"name":"Task 2","task":{"mode":"run","configPath":"extractor/target-config-2"},"continueOnFailure":false,"enabled":false}`,
 			).
 			SetDescription(`task config file`),
@@ -67,9 +68,10 @@ func TestMapBeforeLocalSave(t *testing.T) {
 				`{"name":"Phase With Deps","dependsOn":["001-phase"]}`,
 			).
 			SetDescription(`phase config file`),
+		filesystem.CreateFile(phasesDir+`/002-phase-with-deps/tasks/.gitkeep`, ``),
 		filesystem.
 			CreateFile(
-				phasesDir+`/002-phase-with-deps/001-task-3/task.json`,
+				phasesDir+`/002-phase-with-deps/tasks/001-task-3/task.json`,
 				`{"name":"Task 3","task":{"mode":"run","configPath":"extractor/target-config-3"},"continueOnFailure":false,"enabled":true}`,
 			).
 			SetDescription(`task config file`),
@@ -135,7 +137,7 @@ func createLocalSaveFixtures(t *testing.T, context model.MapperContext, createTa
 							},
 							Index: 0,
 						},
-						PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases/001-phase`, `001-task-1`),
+						PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases/001-phase/tasks`, `001-task-1`),
 						Name:          `Task 1`,
 						ComponentId:   `foo.bar1`,
 						ConfigId:      `123`,
@@ -160,7 +162,7 @@ func createLocalSaveFixtures(t *testing.T, context model.MapperContext, createTa
 							},
 							Index: 1,
 						},
-						PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases/001-phase`, `002-task-2`),
+						PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases/001-phase/tasks`, `002-task-2`),
 						Name:          `Task 2`,
 						ComponentId:   `foo.bar2`,
 						ConfigId:      `789`,
@@ -206,7 +208,7 @@ func createLocalSaveFixtures(t *testing.T, context model.MapperContext, createTa
 							},
 							Index: 0,
 						},
-						PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases/002-phase-with-deps`, `001-task-3`),
+						PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases/002-phase-with-deps/tasks`, `001-task-3`),
 						Name:          `Task 3`,
 						ComponentId:   `foo.bar2`,
 						ConfigId:      `456`,

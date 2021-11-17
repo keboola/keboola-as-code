@@ -21,6 +21,7 @@ const (
 	blockNameTemplate = utils.PathTemplate(`{block_order}-{block_name}`)
 	codeNameTemplate  = utils.PathTemplate(`{code_order}-{code_name}`)
 	phasesDir         = `phases`
+	tasksDir          = `tasks`
 	phaseNameTemplate = utils.PathTemplate(`{phase_order}-{phase_name}`)
 	taskNameTemplate  = utils.PathTemplate(`{task_order}-{task_name}`)
 	SqlExt            = `sql`
@@ -362,9 +363,9 @@ func (n Naming) PhasesDir(configDir string) string {
 	return filesystem.Join(configDir, phasesDir)
 }
 
-func (n Naming) PhasePath(parentPath string, phase Phase) PathInProject {
+func (n Naming) PhasePath(configDir string, phase Phase) PathInProject {
 	p := PathInProject{}
-	p.SetParentPath(parentPath)
+	p.SetParentPath(n.PhasesDir(configDir))
 	p.ObjectPath = utils.ReplacePlaceholders(string(phaseNameTemplate), map[string]interface{}{
 		"phase_order": fmt.Sprintf(`%03d`, phase.Index+1),
 		"phase_name":  utils.NormalizeName(phase.Name),
@@ -372,13 +373,17 @@ func (n Naming) PhasePath(parentPath string, phase Phase) PathInProject {
 	return n.ensureUniquePath(phase.Key(), p)
 }
 
+func (n Naming) TasksDir(phaseDir string) string {
+	return filesystem.Join(phaseDir, tasksDir)
+}
+
 func (n Naming) PhaseFilePath(phase Phase) string {
 	return filesystem.Join(phase.Path(), PhaseFile)
 }
 
-func (n Naming) TaskPath(parentPath string, task Task) PathInProject {
+func (n Naming) TaskPath(phaseDir string, task Task) PathInProject {
 	p := PathInProject{}
-	p.SetParentPath(parentPath)
+	p.SetParentPath(n.TasksDir(phaseDir))
 	p.ObjectPath = utils.ReplacePlaceholders(string(taskNameTemplate), map[string]interface{}{
 		"task_order": fmt.Sprintf(`%03d`, task.Index+1),
 		"task_name":  utils.NormalizeName(task.Name),

@@ -28,13 +28,13 @@ func TestMapAfterLocalLoad(t *testing.T) {
 			SetDescription(`phase config file`),
 		filesystem.
 			CreateFile(
-				phasesDir+`/001-phase/001-task-1/task.json`,
+				phasesDir+`/001-phase/tasks/001-task-1/task.json`,
 				`{"name":"Task 1","task":{"mode":"run","configPath":"extractor/target-config-1"},"continueOnFailure":false,"enabled":true}`,
 			).
 			SetDescription(`task config file`),
 		filesystem.
 			CreateFile(
-				phasesDir+`/001-phase/002-task-2/task.json`,
+				phasesDir+`/001-phase/tasks/002-task-2/task.json`,
 				`{"name":"Task 2","task":{"mode":"run","configPath":"extractor/target-config-2"},"continueOnFailure":false,"enabled":false}`,
 			).
 			SetDescription(`task config file`),
@@ -46,7 +46,7 @@ func TestMapAfterLocalLoad(t *testing.T) {
 			SetDescription(`phase config file`),
 		filesystem.
 			CreateFile(
-				phasesDir+`/002-phase-with-deps/001-task-3/task.json`,
+				phasesDir+`/002-phase-with-deps/tasks/001-task-3/task.json`,
 				`{"name":"Task 3","task":{"mode":"run","configPath":"extractor/target-config-3"},"continueOnFailure":false,"enabled":true}`,
 			).
 			SetDescription(`task config file`),
@@ -69,10 +69,10 @@ func TestMapAfterLocalLoad(t *testing.T) {
 	// Logs
 	expectedLogs := `
 DEBUG  Loaded "branch/other/orchestrator/phases/001-phase/phase.json"
-DEBUG  Loaded "branch/other/orchestrator/phases/001-phase/001-task-1/task.json"
-DEBUG  Loaded "branch/other/orchestrator/phases/001-phase/002-task-2/task.json"
+DEBUG  Loaded "branch/other/orchestrator/phases/001-phase/tasks/001-task-1/task.json"
+DEBUG  Loaded "branch/other/orchestrator/phases/001-phase/tasks/002-task-2/task.json"
 DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/phase.json"
-DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/task.json"
+DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/tasks/001-task-3/task.json"
 `
 	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logs.String())
 
@@ -103,7 +103,7 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 							},
 							Index: 0,
 						},
-						PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases/001-phase`, `001-task-1`),
+						PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases/001-phase/tasks`, `001-task-1`),
 						Name:          `Task 1`,
 						ComponentId:   `foo.bar1`,
 						ConfigId:      `123`,
@@ -128,7 +128,7 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 							},
 							Index: 1,
 						},
-						PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases/001-phase`, `002-task-2`),
+						PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases/001-phase/tasks`, `002-task-2`),
 						Name:          `Task 2`,
 						ComponentId:   `foo.bar2`,
 						ConfigId:      `789`,
@@ -174,7 +174,7 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 							},
 							Index: 0,
 						},
-						PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases/002-phase-with-deps`, `001-task-3`),
+						PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases/002-phase-with-deps/tasks`, `001-task-3`),
 						Name:          `Task 3`,
 						ComponentId:   `foo.bar2`,
 						ConfigId:      `456`,
@@ -212,13 +212,13 @@ func TestMapAfterLocalLoadError(t *testing.T) {
 			SetDescription(`phase config file`),
 		filesystem.
 			CreateFile(
-				phasesDir+`/001-phase/001-task-1/task.json`,
+				phasesDir+`/001-phase/tasks/001-task-1/task.json`,
 				`{"name":"Task 1","task":{"mode":"run","configPath":"extractor/target-config-1"},"continueOnFailure":false,"enabled":true}`,
 			).
 			SetDescription(`task config file`),
 		filesystem.
 			CreateFile(
-				phasesDir+`/001-phase/002-task-2/task.json`,
+				phasesDir+`/001-phase/tasks/002-task-2/task.json`,
 				`{"name":"Task 2","task":{"mode":"run","configPath":"extractor/target-config-2"},"continueOnFailure":false,"enabled":false}`,
 			).
 			SetDescription(`task config file`),
@@ -271,7 +271,7 @@ func TestMapAfterLocalLoadDepsCycle(t *testing.T) {
 			SetDescription(`phase config file`),
 		filesystem.
 			CreateFile(
-				phasesDir+`/001-phase/001-task-1/task.json`,
+				phasesDir+`/001-phase/tasks/001-task-1/task.json`,
 				`{"name":"Task 1","task":{"mode":"run","configPath":"extractor/target-config-1"},"continueOnFailure":false,"enabled":true}`,
 			).
 			SetDescription(`task config file`),
@@ -307,6 +307,8 @@ func TestMapAfterLocalLoadDepsCycle(t *testing.T) {
 	// Assert error
 	expectedError := `
 invalid orchestrator config "branch/other/orchestrator":
+  - missing tasks dir "phases/002-phase/tasks"
+  - missing tasks dir "phases/003-phase/tasks"
   - found cycles in phases "dependsOn"
     - 002-phase -> 003-phase -> 002-phase
 `
