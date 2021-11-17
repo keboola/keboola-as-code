@@ -28,6 +28,7 @@ func (m *orchestratorMapper) serializeOrchestrationTo(config *model.Config, orch
 	for index, phase := range orchestration.Phases {
 		phaseId := index + 1
 		phaseContent := utils.NewOrderedMap()
+		phaseContent.Set(`id`, phaseId)
 		phaseContent.Set(`name`, phase.Name)
 
 		// Map dependsOn

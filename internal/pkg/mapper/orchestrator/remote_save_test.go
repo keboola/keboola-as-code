@@ -150,11 +150,13 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 {
   "phases": [
     {
+      "id": 1,
       "name": "Phase",
       "dependsOn": [],
       "foo": "bar"
     },
     {
+      "id": 2,
       "name": "Phase With Deps",
       "dependsOn": [
         1
