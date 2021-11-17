@@ -23,6 +23,7 @@ func (m *orchestratorMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) 
 		MapperContext: m.MapperContext,
 		phasesSorter:  newPhasesSorter(),
 		config:        recipe.InternalObject.(*model.Config),
+		manifest:      recipe.Manifest.(*model.ConfigManifest),
 		errors:        utils.NewMultiError(),
 	}
 	return loader.load()
@@ -31,8 +32,9 @@ func (m *orchestratorMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) 
 type remoteLoader struct {
 	model.MapperContext
 	*phasesSorter
-	config *model.Config
-	errors *utils.Error
+	config   *model.Config
+	manifest *model.ConfigManifest
+	errors   *utils.Error
 }
 
 func (l *remoteLoader) load() error {
@@ -77,6 +79,27 @@ func (l *remoteLoader) load() error {
 	l.config.Orchestration = &model.Orchestration{}
 	for _, phase := range sortedPhases {
 		l.config.Orchestration.Phases = append(l.config.Orchestration.Phases, *phase)
+	}
+
+	// Set paths if parent path is set
+	if l.manifest.Path() != "" {
+		phasesDir := l.Naming.PhasesDir(l.manifest.Path())
+		for phaseIndex, phase := range l.config.Orchestration.Phases {
+			if path, found := l.Naming.GetCurrentPath(phase.Key()); found {
+				phase.PathInProject = path
+			} else {
+				phase.PathInProject = l.Naming.PhasePath(phasesDir, phase)
+			}
+			for taskIndex, task := range phase.Tasks {
+				if path, found := l.Naming.GetCurrentPath(task.Key()); found {
+					task.PathInProject = path
+				} else {
+					task.PathInProject = l.Naming.TaskPath(phase.Path(), task)
+				}
+				phase.Tasks[taskIndex] = task
+			}
+			l.config.Orchestration.Phases[phaseIndex] = phase
+		}
 	}
 
 	// Convert errors to warning

@@ -80,9 +80,15 @@ func TestMapAfterRemoteLoad(t *testing.T) {
 		ComponentId: model.OrchestratorComponentId,
 		Id:          `456`,
 	}
+	configManifest := &model.ConfigManifest{
+		ConfigKey: configKey,
+		Paths: model.Paths{
+			PathInProject: model.NewPathInProject(`branch`, `config`),
+		},
+	}
 	apiObject := &model.Config{ConfigKey: configKey, Content: content}
 	internalObject := apiObject.Clone().(*model.Config)
-	recipe := &model.RemoteLoadRecipe{ApiObject: apiObject, InternalObject: internalObject}
+	recipe := &model.RemoteLoadRecipe{Manifest: configManifest, ApiObject: apiObject, InternalObject: internalObject}
 
 	// Invoke
 	assert.Empty(t, apiObject.Relations)
@@ -105,9 +111,10 @@ func TestMapAfterRemoteLoad(t *testing.T) {
 					ConfigId:    `456`,
 					Index:       0,
 				},
-				DependsOn: []model.PhaseKey{},
-				Name:      `Phase`,
-				Content:   utils.NewOrderedMap(),
+				PathInProject: model.NewPathInProject(`branch/config/phases`, `001-phase`),
+				DependsOn:     []model.PhaseKey{},
+				Name:          `Phase`,
+				Content:       utils.NewOrderedMap(),
 				Tasks: []model.Task{
 					{
 						TaskKey: model.TaskKey{
@@ -119,9 +126,10 @@ func TestMapAfterRemoteLoad(t *testing.T) {
 							},
 							Index: 0,
 						},
-						Name:        `Task 1`,
-						ComponentId: `foo.bar1`,
-						ConfigId:    `123`,
+						PathInProject: model.NewPathInProject(`branch/config/phases/001-phase`, `001-task-1`),
+						Name:          `Task 1`,
+						ComponentId:   `foo.bar1`,
+						ConfigId:      `123`,
 						Content: utils.PairsToOrderedMap([]utils.Pair{
 							{
 								Key: `task`,
@@ -143,9 +151,10 @@ func TestMapAfterRemoteLoad(t *testing.T) {
 							},
 							Index: 1,
 						},
-						Name:        `Task 3`,
-						ComponentId: `foo.bar2`,
-						ConfigId:    `789`,
+						PathInProject: model.NewPathInProject(`branch/config/phases/001-phase`, `002-task-3`),
+						Name:          `Task 3`,
+						ComponentId:   `foo.bar2`,
+						ConfigId:      `789`,
 						Content: utils.PairsToOrderedMap([]utils.Pair{
 							{
 								Key: `task`,
@@ -166,6 +175,7 @@ func TestMapAfterRemoteLoad(t *testing.T) {
 					ConfigId:    `456`,
 					Index:       1,
 				},
+				PathInProject: model.NewPathInProject(`branch/config/phases`, `002-phase-with-deps`),
 				DependsOn: []model.PhaseKey{
 					{
 						BranchId:    123,
@@ -189,9 +199,10 @@ func TestMapAfterRemoteLoad(t *testing.T) {
 							},
 							Index: 0,
 						},
-						Name:        `Task 2`,
-						ComponentId: `foo.bar2`,
-						ConfigId:    `456`,
+						PathInProject: model.NewPathInProject(`branch/config/phases/002-phase-with-deps`, `001-task-2`),
+						Name:          `Task 2`,
+						ComponentId:   `foo.bar2`,
+						ConfigId:      `456`,
 						Content: utils.PairsToOrderedMap([]utils.Pair{
 							{
 								Key: `task`,
@@ -261,7 +272,7 @@ func TestMapAfterRemoteLoadWarnings(t *testing.T) {
 	}
 	apiObject := &model.Config{ConfigKey: configKey, Content: content}
 	internalObject := apiObject.Clone().(*model.Config)
-	recipe := &model.RemoteLoadRecipe{ApiObject: apiObject, InternalObject: internalObject}
+	recipe := &model.RemoteLoadRecipe{Manifest: &model.ConfigManifest{}, ApiObject: apiObject, InternalObject: internalObject}
 
 	// Invoke
 	assert.Empty(t, apiObject.Relations)
@@ -379,7 +390,7 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 	}
 	apiObject := &model.Config{ConfigKey: configKey, Content: content}
 	internalObject := apiObject.Clone().(*model.Config)
-	recipe := &model.RemoteLoadRecipe{ApiObject: apiObject, InternalObject: internalObject}
+	recipe := &model.RemoteLoadRecipe{Manifest: &model.ConfigManifest{}, ApiObject: apiObject, InternalObject: internalObject}
 
 	// Invoke
 	assert.Empty(t, apiObject.Relations)
@@ -550,7 +561,7 @@ func TestMapAfterRemoteLoadDepsCycles(t *testing.T) {
 	}
 	apiObject := &model.Config{ConfigKey: configKey, Content: content}
 	internalObject := apiObject.Clone().(*model.Config)
-	recipe := &model.RemoteLoadRecipe{ApiObject: apiObject, InternalObject: internalObject}
+	recipe := &model.RemoteLoadRecipe{Manifest: &model.ConfigManifest{}, ApiObject: apiObject, InternalObject: internalObject}
 
 	// Invoke
 	assert.Empty(t, apiObject.Relations)
