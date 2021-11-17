@@ -2,10 +2,7 @@ package orchestrator
 
 import (
 	"fmt"
-	"sort"
 	"strings"
-
-	"v.io/x/lib/toposort"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -35,28 +32,25 @@ func (m *orchestratorMapper) OnObjectsLoad(event model.OnObjectsLoadEvent) error
 func (m *orchestratorMapper) loadLocalPhases(config *model.Config) error {
 	manifest := m.State.MustGet(config.ConfigKey).Manifest().(*model.ConfigManifest)
 	loader := &localLoader{
-		MapperContext:  m.MapperContext,
-		branch:         m.State.MustGet(config.BranchKey()).(*model.BranchState),
-		config:         config,
-		manifest:       manifest,
-		phasesDir:      m.Naming.PhasesDir(manifest.Path()),
-		phasesByPath:   make(map[string]*model.Phase),
-		phaseDependsOn: make(map[string][]string),
-		errors:         utils.NewMultiError(),
+		MapperContext: m.MapperContext,
+		phasesSorter:  newPhasesSorter(),
+		branch:        m.State.MustGet(config.BranchKey()).(*model.BranchState),
+		config:        config,
+		manifest:      manifest,
+		phasesDir:     m.Naming.PhasesDir(manifest.Path()),
+		errors:        utils.NewMultiError(),
 	}
 	return loader.load()
 }
 
 type localLoader struct {
 	model.MapperContext
-	branch         *model.BranchState
-	config         *model.Config
-	manifest       *model.ConfigManifest
-	phasesDir      string
-	phases         []*model.Phase
-	phasesByPath   map[string]*model.Phase // phase path -> struct
-	phaseDependsOn map[string][]string     // phase path -> depends on phases paths
-	errors         *utils.Error
+	*phasesSorter
+	branch    *model.BranchState
+	config    *model.Config
+	manifest  *model.ConfigManifest
+	phasesDir string
+	errors    *utils.Error
 }
 
 func (l *localLoader) load() error {
@@ -67,9 +61,10 @@ func (l *localLoader) load() error {
 		// Process phase
 		phase, dependsOn, err := l.addPhase(phaseIndex, phaseDir)
 		if err == nil {
-			l.phases = append(l.phases, phase)
-			l.phasesByPath[phase.ObjectPath] = phase
-			l.phaseDependsOn[phase.ObjectPath] = dependsOn
+			key := phase.ObjectPath
+			l.phasesKeys = append(l.phasesKeys, key)
+			l.phaseByKey[key] = phase
+			l.phaseDependsOnKeys[key] = dependsOn
 		} else {
 			errors.Append(err)
 		}
@@ -212,80 +207,6 @@ func (l *localLoader) parseTaskConfig(task *model.Task) error {
 	// Add task to phase
 	task.Content = parser.additionalContent()
 	return errors.ErrorOrNil()
-}
-
-func (l *localLoader) sortPhases() ([]*model.Phase, error) {
-	errors := utils.NewMultiError()
-	graph := &toposort.Sorter{}
-
-	// Add dependencies to graph
-	for _, phase := range l.phases {
-		graph.AddNode(phase.ObjectPath)
-		for _, dependsOnPath := range l.phaseDependsOn[phase.ObjectPath] {
-			if l.phasesByPath[dependsOnPath] != nil {
-				graph.AddEdge(phase.ObjectPath, dependsOnPath)
-			}
-		}
-	}
-
-	// Topological sort by dependencies
-	order, cycles := graph.Sort()
-	if len(cycles) > 0 {
-		err := utils.NewMultiError()
-		err.Append(fmt.Errorf(`found cycles in phases "dependsOn"`))
-		for _, cycle := range cycles {
-			var items []string
-			for _, item := range cycle {
-				items = append(items, `"`+item.(string)+`"`)
-			}
-			err.AppendRaw(`  - ` + strings.Join(items, ` -> `))
-		}
-		errors.Append(err)
-	}
-
-	// Generate slice
-	var phases []*model.Phase
-	for phaseIndex, pathRaw := range order {
-		path := pathRaw.(string)
-		phase := l.phasesByPath[path]
-		phase.Index = phaseIndex
-		for taskIndex, task := range phase.Tasks {
-			task.TaskKey = model.TaskKey{
-				PhaseKey: phase.PhaseKey,
-				Index:    taskIndex,
-			}
-			phase.Tasks[taskIndex] = task
-		}
-		phases = append(phases, phase)
-	}
-
-	// Fill in "dependsOn"
-	for _, pathRaw := range order {
-		var dependsOn []*model.Phase
-		path := pathRaw.(string)
-		phase := l.phasesByPath[path]
-		for _, dependsOnPath := range l.phaseDependsOn[path] {
-			dependsOnPhase, found := l.phasesByPath[dependsOnPath]
-			if !found {
-				errors.Append(fmt.Errorf(`missing phase "%s", referenced from "%s"`, dependsOnPath, phase.ObjectPath))
-				continue
-			}
-			dependsOn = append(dependsOn, dependsOnPhase)
-		}
-
-		// Sort dependsOn phases
-		sort.SliceStable(dependsOn, func(i, j int) bool {
-			return dependsOn[i].Index < dependsOn[j].Index
-		})
-
-		// Convert ID -> PhaseKey (index)
-		phase.DependsOn = make([]model.PhaseKey, 0)
-		for _, depPhase := range dependsOn {
-			phase.DependsOn = append(phase.DependsOn, depPhase.PhaseKey)
-		}
-	}
-
-	return phases, errors.ErrorOrNil()
 }
 
 func (l *localLoader) loadJsonFile(path, desc string) (*filesystem.JsonFile, error) {
