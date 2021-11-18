@@ -130,7 +130,7 @@ func TestVerboseHideSecret(t *testing.T) {
 GET  /  HTTP/1.1
 HOST   : example.com
 HEADERS:
-	User-Agent: keboola-as-code/dev
+	User-Agent: keboola-cli/dev
 	X-Storageapi-Token: *****
 BODY   :
 ***** NO CONTENT *****

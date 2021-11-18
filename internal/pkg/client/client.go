@@ -113,7 +113,7 @@ func (c *Client) SetRetry(count int, waitTime time.Duration, maxWaitTime time.Du
 func createHttpClient(logger *Logger) *resty.Client {
 	r := resty.New()
 	r.SetLogger(logger)
-	r.SetHeader("User-Agent", fmt.Sprintf("keboola-as-code/%s", build.BuildVersion))
+	r.SetHeader("User-Agent", fmt.Sprintf("keboola-cli/%s", build.BuildVersion))
 	r.SetTimeout(RequestTimeout)
 	r.SetRetryCount(RetryCount)
 	r.SetRetryWaitTime(RetryWaitTime)
