@@ -69,7 +69,7 @@ func (t *Task) Clone() *Task {
 	return &clone
 }
 
-func (p *Phase) String() string {
+func (p Phase) String() string {
 	buf := new(bytes.Buffer)
 	_, _ = fmt.Fprintf(buf, "#  %03d %s\n", p.Index+1, p.Name)
 
@@ -79,13 +79,14 @@ func (p *Phase) String() string {
 	}
 
 	_, _ = fmt.Fprintf(buf, "depends on phases: [%s]\n", strings.Join(dependsOn, `, `))
+	_, _ = fmt.Fprintln(buf, json.MustEncodeString(p.Content, true))
 	for _, task := range p.Tasks {
 		_, _ = fmt.Fprint(buf, task.String())
 	}
-	return buf.String()
+	return strings.TrimRight(buf.String(), "\n")
 }
 
-func (t *Task) String() string {
+func (t Task) String() string {
 	targetConfigDesc := t.ConfigPath
 	if len(targetConfigDesc) == 0 {
 		targetConfigDesc = fmt.Sprintf(`branch:%d/componentId:%s/configId:%s`, t.BranchId, t.ComponentId, t.ConfigId)

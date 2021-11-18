@@ -640,6 +640,20 @@ func TestDiffOrchestration(t *testing.T) {
 						},
 					},
 				},
+				{
+					PhaseKey: model.PhaseKey{
+						BranchId:    123,
+						ComponentId: model.OrchestratorComponentId,
+						ConfigId:    `456`,
+						Index:       1,
+					},
+					PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases`, `002-phase`),
+					DependsOn:     []model.PhaseKey{},
+					Name:          `New Phase`,
+					Content: utils.PairsToOrderedMap([]utils.Pair{
+						{Key: `foo`, Value: `bar`},
+					}),
+				},
 			},
 		},
 	}
@@ -651,6 +665,9 @@ func TestDiffOrchestration(t *testing.T) {
   phases/001-phase:
       #  001 Phase
       depends on phases: []
+      {
+        "foo": "bar"
+      ...
     - ## 001 Task 1
     - >> branch/extractor/foo.bar1/config123
     + ## 001 Task 3
@@ -669,6 +686,12 @@ func TestDiffOrchestration(t *testing.T) {
     -   "continueOnFailure": false,
     -   "enabled": false
     - }
++ phases/002-phase:
++   #  002 New Phase
++   depends on phases: []
++   {
++     "foo": "bar"
++   }
 `
 	assert.Equal(t, strings.Trim(expected, "\n"), reporter.String())
 }
