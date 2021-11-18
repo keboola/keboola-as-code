@@ -18,8 +18,11 @@ func (m *orchestratorMapper) OnObjectsLoad(event model.OnObjectsLoadEvent) error
 	errors := utils.NewMultiError()
 	for _, object := range event.NewObjects {
 		// Object must be orchestrator config
-		if ok, err := m.isOrchestratorConfig(object); err != nil || !ok {
-			return err
+		if ok, err := m.isOrchestratorConfig(object); err != nil {
+			errors.Append(err)
+			continue
+		} else if !ok {
+			continue
 		}
 		if err := m.loadLocalPhases(object.(*model.Config)); err != nil {
 			manifest := m.State.MustGet(object.Key())

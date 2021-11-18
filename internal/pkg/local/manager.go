@@ -163,9 +163,6 @@ func (u *UnitOfWork) LoadObject(record model.Record) {
 				return err
 			}
 
-			// Update tracked paths
-			u.state.TrackRecord(record)
-
 			// Set local state
 			objectState.SetLocalState(object)
 
@@ -235,11 +232,16 @@ func (u *UnitOfWork) Invoke() error {
 		}
 	}
 
-	// OnObjectsLoad event
+	// OnObjectsRename event
 	if len(u.renamed) > 0 {
 		if err := u.mapper.OnObjectsRename(u.renamed); err != nil {
 			u.errors.Append(err)
 		}
+	}
+
+	// Update tracked paths
+	for _, objectState := range u.loadedObjectStates {
+		u.state.TrackRecord(objectState.Manifest())
 	}
 
 	u.invoked = true
