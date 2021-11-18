@@ -25,3 +25,17 @@ func (m *transformationMapper) isTransformationConfig(object interface{}) (bool,
 
 	return component.IsTransformation(), nil
 }
+
+func (m *transformationMapper) isTransformationConfigState(objectState model.ObjectState) (bool, error) {
+	v, ok := objectState.(*model.ConfigState)
+	if !ok {
+		return false, nil
+	}
+
+	component, err := m.State.Components().Get(v.ComponentKey())
+	if err != nil {
+		return false, err
+	}
+
+	return component.IsTransformation(), nil
+}
