@@ -72,8 +72,8 @@ func TestManifestLoad(t *testing.T) {
 		assert.Equal(t, c.data.Naming.ConfigRow, manifest.Content.Naming.ConfigRow, c.name)
 
 		// Assert
-		c.data.Naming = model.DefaultNaming()
-		manifest.Naming = model.DefaultNaming()
+		c.data.Naming = model.DefaultNamingWithIds()
+		manifest.Naming = model.DefaultNamingWithIds()
 		assert.Equal(t, c.data, manifest.Content, c.name)
 	}
 }
@@ -310,7 +310,7 @@ func minimalStruct() *Content {
 			ApiHost: "foo.bar",
 		},
 		SortBy:   model.SortById,
-		Naming:   model.DefaultNaming(),
+		Naming:   model.DefaultNamingWithIds(),
 		Filter:   model.DefaultFilter(),
 		Branches: make([]*model.BranchManifest, 0),
 		Configs:  make([]*model.ConfigManifestWithRows, 0),
@@ -421,7 +421,7 @@ func fullStruct() *Content {
 			ApiHost: "foo.bar",
 		},
 		SortBy: model.SortById,
-		Naming: model.DefaultNaming(),
+		Naming: model.DefaultNamingWithIds(),
 		Filter: model.Filter{
 			AllowedBranches:   model.AllowedBranches{"foo", "bar"},
 			IgnoredComponents: model.ComponentIds{"abc"},

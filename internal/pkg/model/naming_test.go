@@ -10,7 +10,7 @@ import (
 
 func TestDefaultNaming(t *testing.T) {
 	t.Parallel()
-	n := DefaultNaming()
+	n := DefaultNamingWithIds()
 
 	// Branch
 	assert.Equal(
@@ -188,7 +188,7 @@ func TestDefaultNaming(t *testing.T) {
 
 func TestNamingAttachDetach(t *testing.T) {
 	t.Parallel()
-	n := DefaultNaming()
+	n := DefaultNamingWithIds()
 
 	// Attach multiple times with same key
 	key1 := BranchKey{Id: 123}
@@ -225,7 +225,7 @@ func TestNamingAttachDetach(t *testing.T) {
 
 func TestUniquePathSameObjectType(t *testing.T) {
 	t.Parallel()
-	n := DefaultNaming()
+	n := DefaultNamingWithIds()
 	n.Branch = "{branch_name}"
 	n.Config = "{component_type}/{component_id}/{config_name}"
 	n.ConfigRow = "rows/{config_row_name}"
@@ -250,7 +250,7 @@ func TestUniquePathSameObjectType(t *testing.T) {
 
 func TestUniquePathDifferentObjects(t *testing.T) {
 	t.Parallel()
-	n := DefaultNaming()
+	n := DefaultNamingWithIds()
 	n.Branch = "prefix"
 	n.Config = "prefix"
 	n.ConfigRow = "prefix"
@@ -269,7 +269,7 @@ func TestUniquePathDifferentObjects(t *testing.T) {
 
 func TestNamingEmptyTemplate(t *testing.T) {
 	t.Parallel()
-	n := DefaultNaming()
+	n := DefaultNamingWithIds()
 	n.Branch = ""
 	n.Config = ""
 	n.ConfigRow = ""
@@ -288,7 +288,7 @@ func TestNamingEmptyTemplate(t *testing.T) {
 
 func TestNamingMatchConfigPathNotMatched(t *testing.T) {
 	t.Parallel()
-	n := DefaultNaming()
+	n := DefaultNamingWithIds()
 	componentId, err := n.MatchConfigPath(
 		BranchKey{},
 		NewPathInProject(
@@ -301,7 +301,7 @@ func TestNamingMatchConfigPathNotMatched(t *testing.T) {
 
 func TestNamingMatchConfigPathOrdinary(t *testing.T) {
 	t.Parallel()
-	n := DefaultNaming()
+	n := DefaultNamingWithIds()
 	componentId, err := n.MatchConfigPath(
 		BranchKey{},
 		NewPathInProject(
@@ -314,7 +314,7 @@ func TestNamingMatchConfigPathOrdinary(t *testing.T) {
 
 func TestNamingMatchConfigPathSharedCode(t *testing.T) {
 	t.Parallel()
-	n := DefaultNaming()
+	n := DefaultNamingWithIds()
 	componentId, err := n.MatchConfigPath(
 		BranchKey{},
 		NewPathInProject(
@@ -327,7 +327,7 @@ func TestNamingMatchConfigPathSharedCode(t *testing.T) {
 
 func TestNamingMatchConfigPathVariables(t *testing.T) {
 	t.Parallel()
-	n := DefaultNaming()
+	n := DefaultNamingWithIds()
 	componentId, err := n.MatchConfigPath(
 		ConfigKey{},
 		NewPathInProject(
@@ -340,7 +340,7 @@ func TestNamingMatchConfigPathVariables(t *testing.T) {
 
 func TestNamingMatchSharedCodeVariables(t *testing.T) {
 	t.Parallel()
-	n := DefaultNaming()
+	n := DefaultNamingWithIds()
 	componentId, err := n.MatchConfigPath(
 		ConfigRowKey{ComponentId: SharedCodeComponentId},
 		NewPathInProject(
@@ -353,7 +353,7 @@ func TestNamingMatchSharedCodeVariables(t *testing.T) {
 
 func TestNamingMatchConfigRowPathNotMatched(t *testing.T) {
 	t.Parallel()
-	n := DefaultNaming()
+	n := DefaultNamingWithIds()
 	matched := n.MatchConfigRowPath(
 		&Component{
 			ComponentKey: ComponentKey{Id: "foo.bar"},
@@ -368,7 +368,7 @@ func TestNamingMatchConfigRowPathNotMatched(t *testing.T) {
 
 func TestNamingMatchConfigRowPathOrdinary(t *testing.T) {
 	t.Parallel()
-	n := DefaultNaming()
+	n := DefaultNamingWithIds()
 	matched := n.MatchConfigRowPath(
 		&Component{
 			ComponentKey: ComponentKey{Id: "foo.bar"},
@@ -383,7 +383,7 @@ func TestNamingMatchConfigRowPathOrdinary(t *testing.T) {
 
 func TestNamingMatchConfigRowPathSharedCode(t *testing.T) {
 	t.Parallel()
-	n := DefaultNaming()
+	n := DefaultNamingWithIds()
 	matched := n.MatchConfigRowPath(
 		&Component{
 			ComponentKey: ComponentKey{Id: SharedCodeComponentId},
@@ -397,7 +397,7 @@ func TestNamingMatchConfigRowPathSharedCode(t *testing.T) {
 
 func TestNamingMatchConfigRowPathVariables(t *testing.T) {
 	t.Parallel()
-	n := DefaultNaming()
+	n := DefaultNamingWithIds()
 	matched := n.MatchConfigRowPath(
 		&Component{
 			ComponentKey: ComponentKey{Id: VariablesComponentId},
@@ -411,14 +411,14 @@ func TestNamingMatchConfigRowPathVariables(t *testing.T) {
 
 func TestCodeFileExt(t *testing.T) {
 	t.Parallel()
-	n := DefaultNaming()
+	n := DefaultNamingWithIds()
 	assert.Equal(t, `sql`, n.CodeFileExt(`keboola.snowflake-transformation`))
 	assert.Equal(t, `py`, n.CodeFileExt(`keboola.python-transformation-v2`))
 }
 
 func TestCodeFileComment(t *testing.T) {
 	t.Parallel()
-	n := DefaultNaming()
+	n := DefaultNamingWithIds()
 	assert.Equal(t, `--`, n.CodeFileComment(`sql`))
 	assert.Equal(t, `#`, n.CodeFileComment(`py`))
 }

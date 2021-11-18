@@ -51,7 +51,7 @@ func newManifest(projectId int, apiHost string, fs filesystem.Fs) *Manifest {
 			Version:  1,
 			Project:  model.Project{Id: projectId, ApiHost: apiHost},
 			SortBy:   model.SortById,
-			Naming:   model.DefaultNaming(),
+			Naming:   model.DefaultNamingWithIds(),
 			Filter:   model.DefaultFilter(),
 			Branches: make([]*model.BranchManifest, 0),
 			Configs:  make([]*model.ConfigManifestWithRows, 0),

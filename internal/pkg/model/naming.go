@@ -50,7 +50,23 @@ type Naming struct {
 	usedByKey           map[string]PathInProject // object key -> path
 }
 
-func DefaultNaming() *Naming {
+func DefaultNamingWithoutIds() *Naming {
+	return &Naming{
+		Branch:              "{branch_name}",
+		Config:              "{component_type}/{component_id}/{config_name}",
+		ConfigRow:           "rows/{config_row_name}",
+		SchedulerConfig:     "schedules/{config_name}",
+		SharedCodeConfig:    "_shared/{target_component_id}",
+		SharedCodeConfigRow: "codes/{config_row_name}",
+		VariablesConfig:     "variables",
+		VariablesValuesRow:  "values/{config_row_name}",
+		usedLock:            &sync.Mutex{},
+		usedByPath:          make(map[string]Key),
+		usedByKey:           make(map[string]PathInProject),
+	}
+}
+
+func DefaultNamingWithIds() *Naming {
 	return &Naming{
 		Branch:              "{branch_id}-{branch_name}",
 		Config:              "{component_type}/{component_id}/{config_id}-{config_name}",

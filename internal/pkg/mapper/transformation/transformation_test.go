@@ -42,7 +42,7 @@ func createTestFixtures(t *testing.T, componentId string) (model.MapperContext, 
 	assert.NoError(t, err)
 
 	state := model.NewState(zap.NewNop().Sugar(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
-	context := model.MapperContext{Logger: logger, Fs: fs, Naming: model.DefaultNaming(), State: state}
+	context := model.MapperContext{Logger: logger, Fs: fs, Naming: model.DefaultNamingWithIds(), State: state}
 	return context, config, record
 }
 
