@@ -1,0 +1,21 @@
+{
+  "allBranchesConfigs": [],
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "my description",
+        "isDefault": true
+      },
+      "configs": []
+    },
+    {
+      "branch": {
+        "name": "Dev",
+        "description": "my description",
+        "isDefault": false
+      },
+      "configs": []
+    }
+  ]
+}

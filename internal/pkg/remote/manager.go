@@ -285,7 +285,17 @@ func (u *UnitOfWork) create(objectState model.ObjectState, recipe *model.RemoteS
 			}
 		}).
 		OnSuccess(func(response *client.Response) {
-			u.schedulerApi.OnObjectCreateUpdate(object, u.schedulerApiPool)
+			if config, ok := object.(*model.Config); ok {
+				if config.ComponentId != model.SchedulerComponentId {
+					return
+				}
+				branch := u.state.MustGet(config.BranchKey()).(*model.BranchState)
+				if !branch.LocalOrRemoteState().(*model.Branch).IsDefault {
+					return
+				}
+
+				u.schedulerApi.OnObjectCreateUpdate(config.ConfigKey, u.schedulerApiPool)
+			}
 		}).
 		Send()
 	return nil
@@ -300,7 +310,18 @@ func (u *UnitOfWork) update(objectState model.ObjectState, recipe *model.RemoteS
 				objectState.SetRemoteState(recipe.InternalObject)
 			}).
 			OnSuccess(func(response *client.Response) {
-				u.schedulerApi.OnObjectCreateUpdate(object, u.schedulerApiPool)
+				if config, ok := object.(*model.Config); ok {
+					if config.ComponentId != model.SchedulerComponentId {
+						return
+					}
+
+					branch := u.state.MustGet(config.BranchKey()).(*model.BranchState)
+					if !branch.LocalOrRemoteState().(*model.Branch).IsDefault {
+						return
+					}
+
+					u.schedulerApi.OnObjectCreateUpdate(config.ConfigKey, u.schedulerApiPool)
+				}
 			}).
 			Send()
 	} else {
@@ -315,6 +336,20 @@ func (u *UnitOfWork) delete(objectState model.ObjectState) {
 		OnSuccess(func(response *client.Response) {
 			u.Manifest().DeleteRecord(objectState)
 			objectState.SetRemoteState(nil)
+		}).
+		OnSuccess(func(response *client.Response) {
+			if configState, ok := objectState.(*model.ConfigState); ok {
+				if configState.ComponentId != model.SchedulerComponentId {
+					return
+				}
+
+				branch := u.state.MustGet(configState.BranchKey()).(*model.BranchState)
+				if !branch.LocalOrRemoteState().(*model.Branch).IsDefault {
+					return
+				}
+
+				u.schedulerApi.OnObjectDelete(configState.ConfigKey, u.schedulerApiPool)
+			}
 		}).
 		Send()
 }

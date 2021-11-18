@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "project": {
+    "id": %%TEST_KBC_PROJECT_ID%%,
+    "apiHost": "%%TEST_KBC_STORAGE_API_HOST%%"
+  },
+  "sortBy": "path",
+  "naming": {
+    "branch": "{branch_name}",
+    "config": "{component_type}/{component_id}/{config_name}",
+    "configRow": "rows/{config_row_name}",
+    "schedulerConfig": "schedules/{config_name}",
+    "sharedCodeConfig": "_shared/{target_component_id}",
+    "sharedCodeConfigRow": "codes/{config_row_name}",
+    "variablesConfig": "variables",
+    "variablesValuesRow": "values/{config_row_name}"
+  },
+  "allowedBranches": [
+    "__all__"
+  ],
+  "ignoredComponents": [],
+  "branches": [
+    {
+      "id": %%TEST_BRANCH_MAIN_ID%%,
+      "path": "main"
+    },
+    {
+      "id": %%TEST_BRANCH_DEV_ID%%,
+      "path": "dev"
+    }
+  ],
+  "configurations": [
+    {
+      "branchId": %%TEST_BRANCH_DEV_ID%%,
+      "componentId": "ex-generic-v2",
+      "id": "123",
+      "path": "extractor/ex-generic-v2/books",
+      "rows": []
+    },
+    {
+      "branchId": %%TEST_BRANCH_DEV_ID%%,
+      "componentId": "keboola.scheduler",
+      "id": "456",
+      "path": "schedules/schedule1",
+      "rows": [],
+      "relations": [
+        {
+          "componentId": "ex-generic-v2",
+          "configId":  "123",
+          "type": "schedulerFor"
+        }
+      ]
+    }
+  ]
+}

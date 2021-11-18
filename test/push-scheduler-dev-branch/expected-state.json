@@ -1,0 +1,52 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Dev",
+        "description": "my description",
+        "isDefault": false
+      },
+      "configs": [
+        {
+          "componentId": "ex-generic-v2",
+          "name": "books",
+          "description": "test",
+          "changeDescription": "Updated from #KeboolaCLI",
+          "configuration": {
+            "parameters": {
+              "books": []
+            }
+          },
+          "rows": []
+        },
+        {
+          "componentId": "keboola.scheduler",
+          "name": "schedule1",
+          "description": "test fixture",
+          "changeDescription": "Updated from #KeboolaCLI",
+          "configuration": {
+            "schedule": {
+              "cronTab": "*/2 * * * *",
+              "timezone": "UTC",
+              "state": "disabled"
+            },
+            "target": {
+              "componentId": "ex-generic-v2",
+              "configurationId": "123",
+              "mode": "run"
+            }
+          },
+          "rows": []
+        }
+      ]
+    },
+    {
+      "branch": {
+        "name": "Main",
+        "description": "my description",
+        "isDefault": true
+      },
+      "configs": []
+    }
+  ]
+}
