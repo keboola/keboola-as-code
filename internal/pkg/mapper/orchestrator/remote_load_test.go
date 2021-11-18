@@ -515,6 +515,26 @@ func TestMapAfterRemoteLoadDepsCycles(t *testing.T) {
       "id": 4,
       "name": "Phase 4",
       "dependsOn": [3]
+    },
+    {
+      "id": 5,
+      "name": "Phase 5",
+      "dependsOn": [8]
+    },
+    {
+      "id": 6,
+      "name": "Phase 6",
+      "dependsOn": [5]
+    },
+    {
+      "id": 7,
+      "name": "Phase 7",
+      "dependsOn": [6]
+    },
+    {
+      "id": 8,
+      "name": "Phase 8",
+      "dependsOn": [7]
     }
   ],
   "tasks": []
@@ -543,6 +563,7 @@ WARN  Warning: invalid orchestrator config "branch:123/component:keboola.orchest
   - found cycles in phases "dependsOn"
     - 3 -> 4 -> 3
     - 1 -> 2 -> 1
+    - 5 -> 8 -> 7 -> 6 -> 5
 `
 	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logs.String())
 }

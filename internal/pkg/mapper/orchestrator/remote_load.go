@@ -2,12 +2,9 @@ package orchestrator
 
 import (
 	"fmt"
-	"sort"
-	"strings"
 
 	"github.com/iancoleman/orderedmap"
 	"github.com/spf13/cast"
-	"v.io/x/lib/toposort"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -23,22 +20,19 @@ func (m *orchestratorMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) 
 	}
 
 	loader := &remoteLoader{
-		MapperContext:  m.MapperContext,
-		config:         recipe.InternalObject.(*model.Config),
-		phaseIdByIndex: make(map[int]string),
-		phaseById:      make(map[string]*model.Phase),
-		errors:         utils.NewMultiError(),
+		MapperContext: m.MapperContext,
+		phasesSorter:  newPhasesSorter(),
+		config:        recipe.InternalObject.(*model.Config),
+		errors:        utils.NewMultiError(),
 	}
 	return loader.load()
 }
 
 type remoteLoader struct {
 	model.MapperContext
-	config         *model.Config
-	phases         []*model.Phase
-	phaseIdByIndex map[int]string
-	phaseById      map[string]*model.Phase
-	errors         *utils.Error
+	*phasesSorter
+	config *model.Config
+	errors *utils.Error
 }
 
 func (l *remoteLoader) load() error {
@@ -56,11 +50,11 @@ func (l *remoteLoader) load() error {
 
 	// Parse phases
 	for apiIndex, phaseRaw := range phases {
-		if phase, id, err := l.parsePhase(phaseRaw); err == nil {
-			index := len(l.phases)
-			l.phases = append(l.phases, phase)
-			l.phaseIdByIndex[index] = id
-			l.phaseById[id] = phase
+		if phase, id, dependsOn, err := l.parsePhase(phaseRaw); err == nil {
+			key := id
+			l.phasesKeys = append(l.phasesKeys, key)
+			l.phaseByKey[key] = phase
+			l.phaseDependsOnKeys[key] = dependsOn
 		} else {
 			l.errors.Append(utils.PrefixError(fmt.Sprintf(`invalid phase[%d]`, apiIndex), err))
 		}
@@ -119,14 +113,20 @@ func (l *remoteLoader) getTasks() ([]interface{}, error) {
 	return tasks, nil
 }
 
-func (l *remoteLoader) parsePhase(phaseRaw interface{}) (*model.Phase, string, error) {
+func (l *remoteLoader) parsePhase(phaseRaw interface{}) (*model.Phase, string, []string, error) {
 	errors := utils.NewMultiError()
 	content, ok := phaseRaw.(orderedmap.OrderedMap)
 	if !ok {
-		return nil, "", fmt.Errorf(`phase must be JSON object`)
+		return nil, "", nil, fmt.Errorf(`phase must be JSON object`)
 	}
 
-	phase := &model.Phase{}
+	phase := &model.Phase{
+		PhaseKey: model.PhaseKey{
+			BranchId:    l.config.BranchId,
+			ComponentId: l.config.ComponentId,
+			ConfigId:    l.config.Id,
+		},
+	}
 	parser := &phaseParser{content: &content}
 
 	// Get ID
@@ -141,9 +141,20 @@ func (l *remoteLoader) parsePhase(phaseRaw interface{}) (*model.Phase, string, e
 		errors.Append(err)
 	}
 
+	// Get dependsOn
+	var dependsOn []string
+	dependsOnIds, err := parser.dependsOnIds()
+	if err == nil {
+		for _, dependsOnId := range dependsOnIds {
+			dependsOn = append(dependsOn, cast.ToString(dependsOnId))
+		}
+	} else {
+		errors.Append(err)
+	}
+
 	// Additional content
 	phase.Content = parser.additionalContent()
-	return phase, cast.ToString(id), errors.ErrorOrNil()
+	return phase, cast.ToString(id), dependsOn, errors.ErrorOrNil()
 }
 
 func (l *remoteLoader) parseTask(taskRaw interface{}) error {
@@ -193,7 +204,7 @@ func (l *remoteLoader) parseTask(taskRaw interface{}) error {
 
 	// Get phase
 	if errors.Len() == 0 {
-		if phase, found := l.phaseById[cast.ToString(phaseId)]; found {
+		if phase, found := l.phaseByKey[cast.ToString(phaseId)]; found {
 			phase.Tasks = append(phase.Tasks, task)
 		} else {
 			errors.Append(fmt.Errorf(`phase "%d" not found`, phaseId))
@@ -201,94 +212,4 @@ func (l *remoteLoader) parseTask(taskRaw interface{}) error {
 	}
 
 	return errors.ErrorOrNil()
-}
-
-func (l *remoteLoader) sortPhases() ([]*model.Phase, error) {
-	errors := utils.NewMultiError()
-	graph := &toposort.Sorter{}
-
-	// Add dependencies to graph
-	for index, phase := range l.phases {
-		id := l.phaseIdByIndex[index]
-
-		// Get "dependsOn"
-		var dependsOn []interface{}
-		dependsOnRaw, found := phase.Content.Get(`dependsOn`)
-		if found {
-			if v, ok := dependsOnRaw.([]interface{}); ok {
-				dependsOn = v
-			}
-		}
-
-		// Add to graph
-		graph.AddNode(id)
-		for _, depsId := range dependsOn {
-			graph.AddEdge(id, cast.ToString(depsId))
-		}
-	}
-
-	// Topological sort by dependencies
-	order, cycles := graph.Sort()
-	if len(cycles) > 0 {
-		err := utils.NewMultiError()
-		err.Append(fmt.Errorf(`found cycles in phases "dependsOn"`))
-		for _, cycle := range cycles {
-			var items []string
-			for _, item := range cycle {
-				items = append(items, item.(string))
-			}
-			err.AppendRaw(`  - ` + strings.Join(items, ` -> `))
-		}
-		errors.Append(err)
-	}
-
-	// Generate slice
-	phases := make([]*model.Phase, 0)
-	for index, id := range order {
-		phase := l.phaseById[id.(string)]
-		phase.PhaseKey = model.PhaseKey{
-			BranchId:    l.config.BranchId,
-			ComponentId: l.config.ComponentId,
-			ConfigId:    l.config.Id,
-			Index:       index,
-		}
-		for taskIndex, task := range phase.Tasks {
-			task.TaskKey = model.TaskKey{
-				PhaseKey: phase.PhaseKey,
-				Index:    taskIndex,
-			}
-			phase.Tasks[taskIndex] = task
-		}
-		phases = append(phases, phase)
-	}
-
-	// Fill in "dependsOn"
-	for _, phase := range phases {
-		// Get "dependsOn"
-		var dependsOn []*model.Phase
-		dependsOnRaw, found := phase.Content.Get(`dependsOn`)
-		if found {
-			if v, ok := dependsOnRaw.([]interface{}); ok {
-				for _, id := range v {
-					dependsOn = append(dependsOn, l.phaseById[cast.ToString(id)])
-				}
-			}
-
-			// Remove "dependsOn" from content
-			phase.Content.Delete(`dependsOn`)
-		}
-
-		// Sort dependsOn phases
-		sort.SliceStable(dependsOn, func(i, j int) bool {
-			return dependsOn[i].Index < dependsOn[j].Index
-		})
-
-		// Convert ID -> PhaseKey (index)
-		phase.DependsOn = make([]model.PhaseKey, 0)
-		for _, depPhase := range dependsOn {
-			phase.DependsOn = append(phase.DependsOn, depPhase.PhaseKey)
-		}
-	}
-
-	return phases, errors.ErrorOrNil()
 }

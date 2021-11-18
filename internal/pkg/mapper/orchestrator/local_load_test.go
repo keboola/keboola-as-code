@@ -308,7 +308,7 @@ func TestMapAfterLocalLoadDepsCycle(t *testing.T) {
 	expectedError := `
 invalid orchestrator config "branch/other/orchestrator":
   - found cycles in phases "dependsOn"
-    - "002-phase" -> "003-phase" -> "002-phase"
+    - 002-phase -> 003-phase -> 002-phase
 `
 	assert.Equal(t, strings.Trim(expectedError, "\n"), err.Error())
 }
