@@ -66,6 +66,11 @@ func TestInteractiveInit(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		_, err = c.Send(testhelper.Enter) // enter, first option "only main branch"
 		assert.NoError(t, err)
+		_, err = c.ExpectString(`Do you want to include object IDs in directory structure?`)
+		assert.NoError(t, err)
+		time.Sleep(20 * time.Millisecond)
+		_, err = c.SendLine(`Y`) // yes
+		assert.NoError(t, err)
 		_, err = c.ExpectString(`Generate workflows files for GitHub Actions?`)
 		assert.NoError(t, err)
 		time.Sleep(20 * time.Millisecond)

@@ -22,7 +22,7 @@ func createMapper(t *testing.T) (*mapper.Mapper, model.MapperContext, *utils.Wri
 	fs, err := aferofs.NewMemoryFs(logger, ".")
 	assert.NoError(t, err)
 	state := model.NewState(zap.NewNop().Sugar(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
-	context := model.MapperContext{Logger: logger, Fs: fs, Naming: model.DefaultNaming(), State: state}
+	context := model.MapperContext{Logger: logger, Fs: fs, Naming: model.DefaultNamingWithIds(), State: state}
 	manifestInst, err := manifest.NewManifest(1, `foo.bar`, fs)
 	assert.NoError(t, err)
 	mapperInst := mapper.New(context)

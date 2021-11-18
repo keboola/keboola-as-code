@@ -18,5 +18,5 @@ func createMapperContext(t *testing.T) model.MapperContext {
 	fs, err := aferofs.NewMemoryFs(logger, ".")
 	assert.NoError(t, err)
 	state := model.NewState(zap.NewNop().Sugar(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
-	return model.MapperContext{Logger: logger, Fs: fs, Naming: model.DefaultNaming(), State: state}
+	return model.MapperContext{Logger: logger, Fs: fs, Naming: model.DefaultNamingWithIds(), State: state}
 }

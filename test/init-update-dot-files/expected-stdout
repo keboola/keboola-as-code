@@ -1,4 +1,3 @@
-Set allowed branches: "__all__"
 Created metadata directory ".keboola".
 Created manifest file ".keboola/manifest.json".
 Updated file ".env.local" - it contains the API token, keep it local and secret.

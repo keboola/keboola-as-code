@@ -91,7 +91,7 @@ func createTestFixtures(t *testing.T, targetComponentId string) (model.MapperCon
 	rowState.SetLocalState(row)
 	rowState.SetRemoteState(row)
 
-	context := model.MapperContext{Logger: logger, Fs: fs, Naming: model.DefaultNaming(), State: state}
+	context := model.MapperContext{Logger: logger, Fs: fs, Naming: model.DefaultNamingWithIds(), State: state}
 	return context, row, rowRecord
 }
 

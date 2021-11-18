@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/initenv"
 	"github.com/keboola/keboola-as-code/internal/pkg/interaction"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 const (
@@ -83,7 +84,20 @@ func initCommand(root *rootCommand) *cobra.Command {
 				root.options.IsSet("allowed-branches"),
 				root.options.GetString("allowed-branches"),
 			)
-			logger.Infof(`Set allowed branches: %s`, allowedBranches.String())
+
+			// Naming
+			var naming *model.Naming
+			if root.prompt.Confirm(&interaction.Confirm{
+				Label: "Do you want to include object IDs in directory structure?",
+				Description: `The directory structure can optionally contain object IDs. Example:
+- path with IDs:    83065-dev-branch/writer/keboola.wr-db-snowflake/734333057-power-bi/rows/734333064-orders
+- path without IDs: dev-branch/writer/keboola.wr-db-snowflake/power-bi/rows/orders`,
+				Default: false,
+			}) {
+				naming = model.DefaultNamingWithIds()
+			} else {
+				naming = model.DefaultNamingWithoutIds()
+			}
 
 			// Create metadata dir
 			if err = root.fs.Mkdir(filesystem.MetadataDir); err != nil {
@@ -93,6 +107,7 @@ func initCommand(root *rootCommand) *cobra.Command {
 
 			// Create and save manifest
 			projectManifest, err := manifest.NewManifest(api.ProjectId(), api.Host(), root.fs)
+			projectManifest.Content.Naming = naming
 			projectManifest.Content.AllowedBranches = allowedBranches
 			if err != nil {
 				return err

@@ -17,7 +17,7 @@ func TestGetSharedCodePath(t *testing.T) {
 	t.Parallel()
 	fs := testhelper.NewMemoryFs()
 	state := model.NewState(zap.NewNop().Sugar(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
-	h := New(state, model.DefaultNaming())
+	h := New(state, model.DefaultNamingWithIds())
 
 	transformation := &model.Config{
 		ConfigKey: model.ConfigKey{
@@ -71,7 +71,7 @@ func TestGetSharedCodeKey(t *testing.T) {
 	t.Parallel()
 	fs := testhelper.NewMemoryFs()
 	state := model.NewState(zap.NewNop().Sugar(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
-	h := New(state, model.DefaultNaming())
+	h := New(state, model.DefaultNamingWithIds())
 
 	transformation := &model.Config{
 		ConfigKey: model.ConfigKey{
@@ -129,7 +129,7 @@ func TestGetSharedCodeByPath(t *testing.T) {
 	t.Parallel()
 	fs := testhelper.NewMemoryFs()
 	state := model.NewState(zap.NewNop().Sugar(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
-	naming := model.DefaultNaming()
+	naming := model.DefaultNamingWithIds()
 	h := New(state, naming)
 	sharedCodeKey := fixtures.CreateSharedCode(t, state, naming)
 
@@ -149,7 +149,7 @@ func TestGetSharedCodeRowByPath(t *testing.T) {
 	t.Parallel()
 	fs := testhelper.NewMemoryFs()
 	state := model.NewState(zap.NewNop().Sugar(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
-	naming := model.DefaultNaming()
+	naming := model.DefaultNamingWithIds()
 	h := New(state, naming)
 	sharedCodeKey := fixtures.CreateSharedCode(t, state, naming)
 	sharedCode := state.MustGet(sharedCodeKey).(*model.ConfigState)
@@ -172,8 +172,8 @@ func TestGetSharedCodeVariablesId(t *testing.T) {
 	t.Parallel()
 	fs := testhelper.NewMemoryFs()
 	state := model.NewState(zap.NewNop().Sugar(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
-	naming := model.DefaultNaming()
-	h := New(state, model.DefaultNaming())
+	naming := model.DefaultNamingWithIds()
+	h := New(state, model.DefaultNamingWithIds())
 
 	fixtures.CreateSharedCode(t, state, naming)
 	sharedCodeRow1 := state.MustGet(model.ConfigRowKey{
