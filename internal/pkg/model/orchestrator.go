@@ -5,14 +5,14 @@ import (
 )
 
 type Orchestration struct {
-	Phases []Phase
+	Phases []*Phase
 }
 
 type Phase struct {
 	PhaseKey
 	PathInProject
 	DependsOn []PhaseKey
-	Tasks     []Task                 `validate:"dive"`
+	Tasks     []*Task                `validate:"dive"`
 	Name      string                 `validate:"required"`
 	Content   *orderedmap.OrderedMap `validate:"required"`
 }

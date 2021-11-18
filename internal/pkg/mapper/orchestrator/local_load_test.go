@@ -78,7 +78,7 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 
 	// Orchestration
 	expectedOrchestration := &model.Orchestration{
-		Phases: []model.Phase{
+		Phases: []*model.Phase{
 			{
 				PhaseKey: model.PhaseKey{
 					BranchId:    123,
@@ -92,7 +92,7 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 				Content: utils.PairsToOrderedMap([]utils.Pair{
 					{Key: `foo`, Value: `bar`},
 				}),
-				Tasks: []model.Task{
+				Tasks: []*model.Task{
 					{
 						TaskKey: model.TaskKey{
 							PhaseKey: model.PhaseKey{
@@ -163,7 +163,7 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 				},
 				Name:    `Phase With Deps`,
 				Content: utils.NewOrderedMap(),
-				Tasks: []model.Task{
+				Tasks: []*model.Task{
 					{
 						TaskKey: model.TaskKey{
 							PhaseKey: model.PhaseKey{

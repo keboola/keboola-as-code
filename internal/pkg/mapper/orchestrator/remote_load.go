@@ -76,29 +76,26 @@ func (l *remoteLoader) load() error {
 	}
 
 	// Convert pointers to values
-	l.config.Orchestration = &model.Orchestration{}
-	for _, phase := range sortedPhases {
-		l.config.Orchestration.Phases = append(l.config.Orchestration.Phases, *phase)
+	l.config.Orchestration = &model.Orchestration{
+		Phases: sortedPhases,
 	}
 
 	// Set paths if parent path is set
 	if l.manifest.Path() != "" {
 		phasesDir := l.Naming.PhasesDir(l.manifest.Path())
-		for phaseIndex, phase := range l.config.Orchestration.Phases {
+		for _, phase := range l.config.Orchestration.Phases {
 			if path, found := l.Naming.GetCurrentPath(phase.Key()); found {
 				phase.PathInProject = path
 			} else {
 				phase.PathInProject = l.Naming.PhasePath(phasesDir, phase)
 			}
-			for taskIndex, task := range phase.Tasks {
+			for _, task := range phase.Tasks {
 				if path, found := l.Naming.GetCurrentPath(task.Key()); found {
 					task.PathInProject = path
 				} else {
 					task.PathInProject = l.Naming.TaskPath(phase.Path(), task)
 				}
-				phase.Tasks[taskIndex] = task
 			}
-			l.config.Orchestration.Phases[phaseIndex] = phase
 		}
 	}
 
@@ -187,7 +184,7 @@ func (l *remoteLoader) parseTask(taskRaw interface{}) error {
 		return fmt.Errorf(`task must be JSON object`)
 	}
 
-	task := model.Task{}
+	task := &model.Task{}
 	parser := &taskParser{content: &content}
 
 	// Get ID

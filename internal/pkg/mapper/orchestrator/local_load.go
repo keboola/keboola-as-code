@@ -73,7 +73,7 @@ func (l *localLoader) load() error {
 		if errors.Len() == 0 {
 			for taskIndex, taskDir := range l.tasksDirs(phase) {
 				if task, err := l.addTask(taskIndex, phase, taskDir); err == nil {
-					phase.Tasks = append(phase.Tasks, *task)
+					phase.Tasks = append(phase.Tasks, task)
 				} else {
 					errors.Append(utils.PrefixError(fmt.Sprintf(`invalid task "%s"`, taskDir), err))
 				}
@@ -92,11 +92,9 @@ func (l *localLoader) load() error {
 	}
 
 	// Convert pointers to values
-	l.config.Orchestration = &model.Orchestration{}
-	for _, phase := range sortedPhases {
-		l.config.Orchestration.Phases = append(l.config.Orchestration.Phases, *phase)
+	l.config.Orchestration = &model.Orchestration{
+		Phases: sortedPhases,
 	}
-
 	return l.errors.ErrorOrNil()
 }
 
@@ -139,7 +137,7 @@ func (l *localLoader) addTask(taskIndex int, phase *model.Phase, path string) (*
 
 func (l *localLoader) parsePhaseConfig(phase *model.Phase) ([]string, error) {
 	// Load phase config
-	file, err := l.loadJsonFile(l.Naming.PhaseFilePath(*phase), `phase config`)
+	file, err := l.loadJsonFile(l.Naming.PhaseFilePath(phase), `phase config`)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +165,7 @@ func (l *localLoader) parsePhaseConfig(phase *model.Phase) ([]string, error) {
 
 func (l *localLoader) parseTaskConfig(task *model.Task) error {
 	// Load task config
-	file, err := l.loadJsonFile(l.Naming.TaskFilePath(*task), `task config`)
+	file, err := l.loadJsonFile(l.Naming.TaskFilePath(task), `task config`)
 	if err != nil {
 		return err
 	}

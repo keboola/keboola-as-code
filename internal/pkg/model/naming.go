@@ -362,7 +362,7 @@ func (n Naming) PhasesDir(configDir string) string {
 	return filesystem.Join(configDir, phasesDir)
 }
 
-func (n Naming) PhasePath(parentPath string, phase Phase) PathInProject {
+func (n Naming) PhasePath(parentPath string, phase *Phase) PathInProject {
 	p := PathInProject{}
 	p.SetParentPath(parentPath)
 	p.ObjectPath = utils.ReplacePlaceholders(string(phaseNameTemplate), map[string]interface{}{
@@ -372,11 +372,11 @@ func (n Naming) PhasePath(parentPath string, phase Phase) PathInProject {
 	return n.ensureUniquePath(phase.Key(), p)
 }
 
-func (n Naming) PhaseFilePath(phase Phase) string {
+func (n Naming) PhaseFilePath(phase *Phase) string {
 	return filesystem.Join(phase.Path(), PhaseFile)
 }
 
-func (n Naming) TaskPath(parentPath string, task Task) PathInProject {
+func (n Naming) TaskPath(parentPath string, task *Task) PathInProject {
 	p := PathInProject{}
 	p.SetParentPath(parentPath)
 	p.ObjectPath = utils.ReplacePlaceholders(string(taskNameTemplate), map[string]interface{}{
@@ -386,7 +386,7 @@ func (n Naming) TaskPath(parentPath string, task Task) PathInProject {
 	return n.ensureUniquePath(task.Key(), p)
 }
 
-func (n Naming) TaskFilePath(task Task) string {
+func (n Naming) TaskFilePath(task *Task) string {
 	return filesystem.Join(task.Path(), TaskFile)
 }
 

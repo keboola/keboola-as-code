@@ -103,7 +103,7 @@ func TestMapAfterRemoteLoad(t *testing.T) {
 	// Internal object
 	assert.Equal(t, `{}`, json.MustEncodeString(internalObject.Content, false))
 	assert.Equal(t, &model.Orchestration{
-		Phases: []model.Phase{
+		Phases: []*model.Phase{
 			{
 				PhaseKey: model.PhaseKey{
 					BranchId:    123,
@@ -115,7 +115,7 @@ func TestMapAfterRemoteLoad(t *testing.T) {
 				DependsOn:     []model.PhaseKey{},
 				Name:          `Phase`,
 				Content:       utils.NewOrderedMap(),
-				Tasks: []model.Task{
+				Tasks: []*model.Task{
 					{
 						TaskKey: model.TaskKey{
 							PhaseKey: model.PhaseKey{
@@ -188,7 +188,7 @@ func TestMapAfterRemoteLoad(t *testing.T) {
 				Content: utils.PairsToOrderedMap([]utils.Pair{
 					{Key: `foo`, Value: `bar`},
 				}),
-				Tasks: []model.Task{
+				Tasks: []*model.Task{
 					{
 						TaskKey: model.TaskKey{
 							PhaseKey: model.PhaseKey{
@@ -304,7 +304,7 @@ WARN  Warning: invalid orchestrator config "branch:123/component:keboola.orchest
 	// Internal object
 	assert.Equal(t, `{}`, json.MustEncodeString(internalObject.Content, false))
 	assert.Equal(t, &model.Orchestration{
-		Phases: []model.Phase{
+		Phases: []*model.Phase{
 			{
 				PhaseKey: model.PhaseKey{
 					BranchId:    123,
@@ -315,7 +315,7 @@ WARN  Warning: invalid orchestrator config "branch:123/component:keboola.orchest
 				DependsOn: []model.PhaseKey{},
 				Name:      `Phase`,
 				Content:   utils.NewOrderedMap(),
-				Tasks: []model.Task{
+				Tasks: []*model.Task{
 					{
 						TaskKey: model.TaskKey{
 							PhaseKey: model.PhaseKey{
@@ -401,7 +401,7 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 	// Internal object
 	assert.Equal(t, `{}`, json.MustEncodeString(internalObject.Content, false))
 	assert.Equal(t, &model.Orchestration{
-		Phases: []model.Phase{
+		Phases: []*model.Phase{
 			{
 				PhaseKey: model.PhaseKey{
 					BranchId:    123,

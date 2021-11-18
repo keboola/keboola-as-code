@@ -110,7 +110,7 @@ func createLocalSaveFixtures(t *testing.T, context model.MapperContext, createTa
 	t.Helper()
 
 	orchestration := &model.Orchestration{
-		Phases: []model.Phase{
+		Phases: []*model.Phase{
 			{
 				PhaseKey: model.PhaseKey{
 					BranchId:    123,
@@ -124,7 +124,7 @@ func createLocalSaveFixtures(t *testing.T, context model.MapperContext, createTa
 				Content: utils.PairsToOrderedMap([]utils.Pair{
 					{Key: `foo`, Value: `bar`},
 				}),
-				Tasks: []model.Task{
+				Tasks: []*model.Task{
 					{
 						TaskKey: model.TaskKey{
 							PhaseKey: model.PhaseKey{
@@ -195,7 +195,7 @@ func createLocalSaveFixtures(t *testing.T, context model.MapperContext, createTa
 				},
 				Name:    `Phase With Deps`,
 				Content: utils.NewOrderedMap(),
-				Tasks: []model.Task{
+				Tasks: []*model.Task{
 					{
 						TaskKey: model.TaskKey{
 							PhaseKey: model.PhaseKey{
