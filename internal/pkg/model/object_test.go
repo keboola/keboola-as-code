@@ -56,7 +56,20 @@ func TestConfig_Clone(t *testing.T) {
 				},
 			},
 		},
-		Orchestration: &Orchestration{},
+		Orchestration: &Orchestration{
+			Phases: []*Phase{
+				{
+					Name:    `foo`,
+					Content: utils.NewOrderedMap(),
+					Tasks: []*Task{
+						{
+							Name:    `bar`,
+							Content: utils.NewOrderedMap(),
+						},
+					},
+				},
+			},
+		},
 		Relations: Relations{
 			&VariablesForRelation{
 				ComponentId: `foo.bar`,

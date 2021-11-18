@@ -16,6 +16,13 @@ func (m *orchestratorMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe)
 	internalObject := recipe.InternalObject.(*model.Config)
 	apiObject := recipe.ApiObject.(*model.Config)
 	m.serializeOrchestrationTo(apiObject, internalObject.Orchestration)
+
+	if recipe.ChangedFields.Has(`orchestration`) {
+		// Orchestration is stored in configuration in the API
+		recipe.ChangedFields.Add(`configuration`)
+		recipe.ChangedFields.Remove(`orchestration`)
+	}
+
 	return nil
 }
 

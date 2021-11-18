@@ -216,6 +216,7 @@ func (l *remoteLoader) parseTask(taskRaw interface{}) error {
 	if err != nil {
 		errors.Append(err)
 	} else if targetConfig != nil {
+		task.ConfigPath = l.State.MustGet(targetConfig.Key()).Path()
 		markConfigUsedInOrchestrator(targetConfig, l.config)
 	}
 

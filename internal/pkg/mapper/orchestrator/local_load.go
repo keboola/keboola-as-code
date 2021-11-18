@@ -178,6 +178,7 @@ func (l *localLoader) parseTaskConfig(task *model.Task) error {
 	} else if targetConfig != nil {
 		task.ComponentId = targetConfig.ComponentId
 		task.ConfigId = targetConfig.Id
+		task.ConfigPath = l.State.MustGet(targetConfig.Key()).Path()
 		markConfigUsedInOrchestrator(targetConfig, l.config)
 	}
 

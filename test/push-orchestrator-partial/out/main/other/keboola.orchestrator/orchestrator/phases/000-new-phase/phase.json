@@ -1,0 +1,6 @@
+{
+  "name": "New phase",
+  "dependsOn": [
+    "002-phase-2"
+  ]
+}

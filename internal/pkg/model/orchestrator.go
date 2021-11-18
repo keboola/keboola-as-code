@@ -1,9 +1,15 @@
 package model
 
 import (
+	"bytes"
 	"fmt"
+	"strings"
 
 	"github.com/iancoleman/orderedmap"
+	"github.com/spf13/cast"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 type Orchestration struct {
@@ -25,6 +31,7 @@ type Task struct {
 	Name          string                 `validate:"required"`
 	ComponentId   string                 `validate:"required"`
 	ConfigId      string                 `validate:"required"`
+	ConfigPath    string                 // target config path if any
 	Content       *orderedmap.OrderedMap `validate:"dive"`
 }
 
@@ -33,7 +40,63 @@ func (v *Orchestration) Clone() *Orchestration {
 		return nil
 	}
 	clone := *v
+	clone.Phases = make([]*Phase, 0)
+	for _, phase := range v.Phases {
+		clone.Phases = append(clone.Phases, phase.Clone())
+	}
 	return &clone
+}
+
+func (p *Phase) Clone() *Phase {
+	if p == nil {
+		return nil
+	}
+	clone := *p
+	clone.Content = utils.CloneOrderedMap(p.Content)
+	clone.Tasks = make([]*Task, 0)
+	for _, task := range p.Tasks {
+		clone.Tasks = append(clone.Tasks, task.Clone())
+	}
+	return &clone
+}
+
+func (t *Task) Clone() *Task {
+	if t == nil {
+		return nil
+	}
+	clone := *t
+	clone.Content = utils.CloneOrderedMap(t.Content)
+	return &clone
+}
+
+func (p *Phase) String() string {
+	buf := new(bytes.Buffer)
+	_, _ = fmt.Fprintf(buf, "#  %03d %s\n", p.Index+1, p.Name)
+
+	var dependsOn []string
+	for _, dependsOnKey := range p.DependsOn {
+		dependsOn = append(dependsOn, cast.ToString(dependsOnKey.Index+1))
+	}
+
+	_, _ = fmt.Fprintf(buf, "depends on phases: [%s]\n", strings.Join(dependsOn, `, `))
+	for _, task := range p.Tasks {
+		_, _ = fmt.Fprint(buf, task.String())
+	}
+	return buf.String()
+}
+
+func (t *Task) String() string {
+	targetConfigDesc := t.ConfigPath
+	if len(targetConfigDesc) == 0 {
+		targetConfigDesc = fmt.Sprintf(`branch:%d/componentId:%s/configId:%s`, t.BranchId, t.ComponentId, t.ConfigId)
+	}
+	return fmt.Sprintf(
+		"## %03d %s\n>> %s\n%s",
+		t.Index+1,
+		t.Name,
+		targetConfigDesc,
+		json.MustEncodeString(t.Content, true),
+	)
 }
 
 // UsedInOrchestratorRelation indicates that the owner config is used in an orchestration.

@@ -141,6 +141,7 @@ func TestMapAfterRemoteLoad(t *testing.T) {
 						Name:          `Task 1`,
 						ComponentId:   `foo.bar1`,
 						ConfigId:      `123`,
+						ConfigPath:    `branch/extractor/target-config-1`,
 						Content: utils.PairsToOrderedMap([]utils.Pair{
 							{
 								Key: `task`,
@@ -166,6 +167,7 @@ func TestMapAfterRemoteLoad(t *testing.T) {
 						Name:          `Task 3`,
 						ComponentId:   `foo.bar2`,
 						ConfigId:      `789`,
+						ConfigPath:    `branch/extractor/target-config-2`,
 						Content: utils.PairsToOrderedMap([]utils.Pair{
 							{
 								Key: `task`,
@@ -214,6 +216,7 @@ func TestMapAfterRemoteLoad(t *testing.T) {
 						Name:          `Task 2`,
 						ComponentId:   `foo.bar2`,
 						ConfigId:      `456`,
+						ConfigPath:    `branch/extractor/target-config-3`,
 						Content: utils.PairsToOrderedMap([]utils.Pair{
 							{
 								Key: `task`,
@@ -344,6 +347,7 @@ WARN  Warning: invalid orchestrator config "branch:123/component:keboola.orchest
 						Name:        `Task 1`,
 						ComponentId: `foo.bar1`,
 						ConfigId:    `123`,
+						ConfigPath:  `branch/extractor/target-config-1`,
 						Content: utils.PairsToOrderedMap([]utils.Pair{
 							{
 								Key: `task`,

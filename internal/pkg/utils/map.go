@@ -55,6 +55,10 @@ func OrderedMapToMap(in *orderedmap.OrderedMap) map[string]interface{} {
 }
 
 func CloneOrderedMap(in *orderedmap.OrderedMap) *orderedmap.OrderedMap {
+	if in == nil {
+		return nil
+	}
+
 	out := NewOrderedMap()
 	if err := ConvertByJson(in, out); err != nil {
 		panic(err)
