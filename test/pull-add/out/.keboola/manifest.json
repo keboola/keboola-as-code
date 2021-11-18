@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "project": {
     "id": %%TEST_KBC_PROJECT_ID%%,
     "apiHost": "%%TEST_KBC_STORAGE_API_HOST%%"
