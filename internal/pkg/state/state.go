@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/description"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/relations"
 	schedulerMapper "github.com/keboola/keboola-as-code/internal/pkg/mapper/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode"
@@ -119,6 +120,7 @@ func newState(options *Options) *State {
 		variables.NewMapper(mapperContext),
 		schedulerMapper.NewMapper(mapperContext),
 		sharedcode.NewVariablesMapper(mapperContext),
+		orchestrator.NewMapper(mapperContext),
 		relations.NewMapper(mapperContext),
 		sharedcode.NewCodesMapper(mapperContext),
 		sharedcode.NewLinksMapper(s.localManager, mapperContext),

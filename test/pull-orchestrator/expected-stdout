@@ -1,0 +1,6 @@
+Plan for "pull" operation:
+  + B main
+  + C main/extractor/ex-generic-v2/empty
+  + C main/extractor/ex-generic-v2/without-rows
+  + C main/other/keboola.orchestrator/orchestrator
+Pull done.
