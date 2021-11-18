@@ -504,6 +504,175 @@ func TestDiffBlocks(t *testing.T) {
 	assert.Equal(t, strings.Trim(expected, "\n"), reporter.String())
 }
 
+func TestDiffOrchestration(t *testing.T) {
+	t.Parallel()
+	projectState := createProjectState(t)
+
+	// Object state
+	configKey := model.ConfigKey{BranchId: 123, ComponentId: model.OrchestratorComponentId, Id: `456`}
+	objectState, err := projectState.CreateFrom(&model.ConfigManifest{
+		ConfigKey: configKey,
+		Paths: model.Paths{
+			PathInProject: model.NewPathInProject("branch", "other/orchestrator"),
+		},
+	})
+	assert.NoError(t, err)
+
+	// Remote state
+	rObject := &model.Config{
+		Orchestration: &model.Orchestration{
+			Phases: []*model.Phase{
+				{
+					PhaseKey: model.PhaseKey{
+						BranchId:    123,
+						ComponentId: model.OrchestratorComponentId,
+						ConfigId:    `456`,
+						Index:       0,
+					},
+					PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases`, `001-phase`),
+					DependsOn:     []model.PhaseKey{},
+					Name:          `Phase`,
+					Content: utils.PairsToOrderedMap([]utils.Pair{
+						{Key: `foo`, Value: `bar`},
+					}),
+					Tasks: []*model.Task{
+						{
+							TaskKey: model.TaskKey{
+								PhaseKey: model.PhaseKey{
+									BranchId:    123,
+									ComponentId: model.OrchestratorComponentId,
+									ConfigId:    `456`,
+									Index:       0,
+								},
+								Index: 0,
+							},
+							PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases/001-phase`, `001-task-1`),
+							Name:          `Task 1`,
+							ComponentId:   `foo.bar1`,
+							ConfigId:      `123`,
+							ConfigPath:    `branch/extractor/foo.bar1/config123`,
+							Content: utils.PairsToOrderedMap([]utils.Pair{
+								{
+									Key: `task`,
+									Value: *utils.PairsToOrderedMap([]utils.Pair{
+										{Key: `mode`, Value: `run`},
+									}),
+								},
+								{Key: `continueOnFailure`, Value: false},
+								{Key: `enabled`, Value: true},
+							}),
+						},
+						{
+							TaskKey: model.TaskKey{
+								PhaseKey: model.PhaseKey{
+									BranchId:    123,
+									ComponentId: model.OrchestratorComponentId,
+									ConfigId:    `456`,
+									Index:       0,
+								},
+								Index: 1,
+							},
+							PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases/001-phase`, `002-task-2`),
+							Name:          `Task 2`,
+							ComponentId:   `foo.bar2`,
+							ConfigId:      `789`,
+							Content: utils.PairsToOrderedMap([]utils.Pair{
+								{
+									Key: `task`,
+									Value: *utils.PairsToOrderedMap([]utils.Pair{
+										{Key: `mode`, Value: `run`},
+									}),
+								},
+								{Key: `continueOnFailure`, Value: false},
+								{Key: `enabled`, Value: false},
+							}),
+						},
+					},
+				},
+			},
+		},
+	}
+	objectState.SetRemoteState(rObject)
+
+	// Local state
+	lObject := &model.Config{
+		Orchestration: &model.Orchestration{
+			Phases: []*model.Phase{
+				{
+					PhaseKey: model.PhaseKey{
+						BranchId:    123,
+						ComponentId: model.OrchestratorComponentId,
+						ConfigId:    `456`,
+						Index:       0,
+					},
+					PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases`, `001-phase`),
+					DependsOn:     []model.PhaseKey{},
+					Name:          `Phase`,
+					Content: utils.PairsToOrderedMap([]utils.Pair{
+						{Key: `foo`, Value: `bar`},
+					}),
+					Tasks: []*model.Task{
+						{
+							TaskKey: model.TaskKey{
+								PhaseKey: model.PhaseKey{
+									BranchId:    123,
+									ComponentId: model.OrchestratorComponentId,
+									ConfigId:    `456`,
+									Index:       0,
+								},
+								Index: 0,
+							},
+							PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases/001-phase`, `001-task-3`),
+							Name:          `Task 3`,
+							ComponentId:   `foo.bar3`,
+							ConfigId:      `123`,
+							ConfigPath:    `branch/extractor/foo.bar3/123`,
+							Content: utils.PairsToOrderedMap([]utils.Pair{
+								{
+									Key: `task`,
+									Value: *utils.PairsToOrderedMap([]utils.Pair{
+										{Key: `mode`, Value: `run`},
+									}),
+								},
+								{Key: `continueOnFailure`, Value: false},
+								{Key: `enabled`, Value: true},
+							}),
+						},
+					},
+				},
+			},
+		},
+	}
+	objectState.SetLocalState(lObject)
+
+	differ := NewDiffer(projectState)
+	reporter := differ.diffValues(objectState, rObject.Orchestration, lObject.Orchestration)
+	expected := `
+  phases/001-phase:
+      #  001 Phase
+      depends on phases: []
+    - ## 001 Task 1
+    - >> branch/extractor/foo.bar1/config123
+    + ## 001 Task 3
+    + >> branch/extractor/foo.bar3/123
+      {
+        "task": {
+          "mode": "run"
+        },
+      ...
+    - ## 002 Task 2
+    - >> branch:123/componentId:foo.bar2/configId:789
+    - {
+    -   "task": {
+    -     "mode": "run"
+    -   },
+    -   "continueOnFailure": false,
+    -   "enabled": false
+    - }
+`
+	assert.Equal(t, strings.Trim(expected, "\n"), reporter.String())
+}
+
 func TestDiffMap(t *testing.T) {
 	t.Parallel()
 	projectState := createProjectState(t)

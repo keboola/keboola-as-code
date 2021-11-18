@@ -189,6 +189,12 @@ func (d *Differ) newOptions(reporter *Reporter) cmp.Options {
 		cmp.Transformer("block", func(block model.Block) string {
 			return block.String()
 		}),
+		// Diff orchestrator phases as string
+		cmp.Transformer("phase", func(phase model.Phase) string {
+			return phase.String()
+		}),
+		// Do not compare local paths
+		cmpopts.IgnoreTypes(model.PathInProject{}),
 	}
 }
 

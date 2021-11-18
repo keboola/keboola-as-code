@@ -111,6 +111,7 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 						Name:          `Task 1`,
 						ComponentId:   `foo.bar1`,
 						ConfigId:      `123`,
+						ConfigPath:    `branch/extractor/target-config-1`,
 						Content: utils.PairsToOrderedMap([]utils.Pair{
 							{
 								Key: `task`,
@@ -136,6 +137,7 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 						Name:          `Task 2`,
 						ComponentId:   `foo.bar2`,
 						ConfigId:      `789`,
+						ConfigPath:    `branch/extractor/target-config-2`,
 						Content: utils.PairsToOrderedMap([]utils.Pair{
 							{
 								Key: `task`,
@@ -182,6 +184,7 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 						Name:          `Task 3`,
 						ComponentId:   `foo.bar2`,
 						ConfigId:      `456`,
+						ConfigPath:    `branch/extractor/target-config-3`,
 						Content: utils.PairsToOrderedMap([]utils.Pair{
 							{
 								Key: `task`,
