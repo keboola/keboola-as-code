@@ -18,7 +18,7 @@ func (m *orchestratorMapper) OnObjectsLoad(event model.OnObjectsLoadEvent) error
 	errors := utils.NewMultiError()
 	for _, object := range event.NewObjects {
 		// Object must be orchestrator config
-		if ok, err := m.isOrchestratorConfig(object); err != nil {
+		if ok, err := m.isOrchestratorConfigKey(object.Key()); err != nil {
 			errors.Append(err)
 			continue
 		} else if !ok {

@@ -4,11 +4,11 @@ import "github.com/keboola/keboola-as-code/internal/pkg/model"
 
 // OnObjectPathUpdate - update Phases/Tasks paths.
 func (m *orchestratorMapper) OnObjectPathUpdate(event model.OnObjectPathUpdateEvent) error {
-	if ok, err := m.isOrchestratorConfigState(event.ObjectState); err != nil || !ok {
+	if ok, err := m.isOrchestratorConfigKey(event.ObjectState.Key()); err != nil || !ok {
 		return err
 	}
 
-	// Rename transformation blocks/codes
+	// Rename orchestrator phases/tasks
 	configState := event.ObjectState.(*model.ConfigState)
 	if configState.HasLocalState() {
 		for _, phase := range configState.Local.Orchestration.Phases {

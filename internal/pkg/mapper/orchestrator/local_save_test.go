@@ -8,14 +8,13 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func TestMapBeforeLocalSave(t *testing.T) {
 	t.Parallel()
-	context, logs := createMapperContext(t)
+	mapper, context, logs := createMapper(t)
 
 	// Recipe
 	orchestratorConfigState := createLocalSaveFixtures(t, context, true)
@@ -28,7 +27,7 @@ func TestMapBeforeLocalSave(t *testing.T) {
 	}
 
 	// Save
-	assert.NoError(t, NewMapper(context).MapBeforeLocalSave(recipe))
+	assert.NoError(t, mapper.MapBeforeLocalSave(recipe))
 	assert.Empty(t, logs.String())
 
 	// Minify JSON
@@ -78,7 +77,7 @@ func TestMapBeforeLocalSave(t *testing.T) {
 
 func TestMapBeforeLocalSaveWarnings(t *testing.T) {
 	t.Parallel()
-	context, logs := createMapperContext(t)
+	mapper, context, logs := createMapper(t)
 
 	// Recipe
 	orchestratorConfigState := createLocalSaveFixtures(t, context, false)
@@ -91,7 +90,7 @@ func TestMapBeforeLocalSaveWarnings(t *testing.T) {
 	}
 
 	// Save
-	assert.NoError(t, NewMapper(context).MapBeforeLocalSave(recipe))
+	assert.NoError(t, mapper.MapBeforeLocalSave(recipe))
 	expectedWarnings := `
 WARN  Warning: cannot save orchestrator config "branch/other/orchestrator":
   - cannot save phase "001-phase":

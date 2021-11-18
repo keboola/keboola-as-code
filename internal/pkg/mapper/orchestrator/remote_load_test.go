@@ -7,14 +7,13 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func TestMapAfterRemoteLoad(t *testing.T) {
 	t.Parallel()
-	context, logs := createMapperContext(t)
+	mapper, _, logs := createMapper(t)
 
 	contentStr := `
 {
@@ -93,7 +92,7 @@ func TestMapAfterRemoteLoad(t *testing.T) {
 	// Invoke
 	assert.Empty(t, apiObject.Relations)
 	assert.Empty(t, internalObject.Relations)
-	assert.NoError(t, NewMapper(context).MapAfterRemoteLoad(recipe))
+	assert.NoError(t, mapper.MapAfterRemoteLoad(recipe))
 	assert.Empty(t, logs.String())
 
 	// ApiObject is not changed
@@ -222,7 +221,7 @@ func TestMapAfterRemoteLoad(t *testing.T) {
 
 func TestMapAfterRemoteLoadWarnings(t *testing.T) {
 	t.Parallel()
-	context, logs := createMapperContext(t)
+	mapper, _, logs := createMapper(t)
 
 	contentStr := `
 {
@@ -277,7 +276,7 @@ func TestMapAfterRemoteLoadWarnings(t *testing.T) {
 	// Invoke
 	assert.Empty(t, apiObject.Relations)
 	assert.Empty(t, internalObject.Relations)
-	assert.NoError(t, NewMapper(context).MapAfterRemoteLoad(recipe))
+	assert.NoError(t, mapper.MapAfterRemoteLoad(recipe))
 
 	// Warnings
 	expectedWarnings := `
@@ -346,7 +345,7 @@ WARN  Warning: invalid orchestrator config "branch:123/component:keboola.orchest
 
 func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 	t.Parallel()
-	context, logs := createMapperContext(t)
+	mapper, _, logs := createMapper(t)
 
 	contentStr := `
 {
@@ -395,7 +394,7 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 	// Invoke
 	assert.Empty(t, apiObject.Relations)
 	assert.Empty(t, internalObject.Relations)
-	assert.NoError(t, NewMapper(context).MapAfterRemoteLoad(recipe))
+	assert.NoError(t, mapper.MapAfterRemoteLoad(recipe))
 	assert.Empty(t, logs.String())
 
 	// Internal object
@@ -502,7 +501,7 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 
 func TestMapAfterRemoteLoadDepsCycles(t *testing.T) {
 	t.Parallel()
-	context, logs := createMapperContext(t)
+	mapper, _, logs := createMapper(t)
 
 	contentStr := `
 {
@@ -566,7 +565,7 @@ func TestMapAfterRemoteLoadDepsCycles(t *testing.T) {
 	// Invoke
 	assert.Empty(t, apiObject.Relations)
 	assert.Empty(t, internalObject.Relations)
-	assert.NoError(t, NewMapper(context).MapAfterRemoteLoad(recipe))
+	assert.NoError(t, mapper.MapAfterRemoteLoad(recipe))
 
 	// Warnings
 	expectedWarnings := `

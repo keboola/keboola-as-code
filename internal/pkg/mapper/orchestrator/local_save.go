@@ -13,7 +13,7 @@ import (
 
 func (m *orchestratorMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
 	// Object must be orchestrator config
-	if ok, err := m.isOrchestratorConfig(recipe.Object); err != nil || !ok {
+	if ok, err := m.isOrchestratorConfigKey(recipe.Object.Key()); err != nil || !ok {
 		return err
 	}
 

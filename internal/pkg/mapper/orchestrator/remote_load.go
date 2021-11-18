@@ -12,7 +12,7 @@ import (
 
 func (m *orchestratorMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
 	// Object must be orchestrator config
-	if ok, err := m.isOrchestratorConfig(recipe.InternalObject); err != nil {
+	if ok, err := m.isOrchestratorConfigKey(recipe.InternalObject.Key()); err != nil {
 		m.Logger.Warn(`Warning: `, err)
 		return nil
 	} else if !ok {

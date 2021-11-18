@@ -9,7 +9,7 @@ import (
 
 func (m *orchestratorMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
 	// Object must be orchestrator config
-	if ok, err := m.isOrchestratorConfig(recipe.ApiObject); err != nil || !ok {
+	if ok, err := m.isOrchestratorConfigKey(recipe.ApiObject.Key()); err != nil || !ok {
 		return err
 	}
 
