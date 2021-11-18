@@ -1,0 +1,12 @@
+{
+  "schedule": {
+    "cronTab": "*/2 * * * *",
+    "timezone": "UTC",
+    "state": "disabled"
+  },
+  "target": {
+    "componentId": "ex-generic-v2",
+    "configurationId": "123",
+    "mode": "run"
+  }
+}
