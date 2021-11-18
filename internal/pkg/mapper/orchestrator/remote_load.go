@@ -10,31 +10,28 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func (m *orchestratorMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
-	// Object must be orchestrator config
-	if ok, err := m.isOrchestratorConfigKey(recipe.InternalObject.Key()); err != nil {
-		m.Logger.Warn(`Warning: `, err)
-		return nil
-	} else if !ok {
-		return nil
-	}
-
+func (m *orchestratorMapper) onRemoteLoad(config *model.Config, allObjects *model.StateObjects) {
 	loader := &remoteLoader{
 		MapperContext: m.MapperContext,
 		phasesSorter:  newPhasesSorter(),
-		config:        recipe.InternalObject.(*model.Config),
-		manifest:      recipe.Manifest.(*model.ConfigManifest),
+		allObjects:    allObjects,
+		config:        config,
+		manifest:      m.State.MustGet(config.Key()).Manifest().(*model.ConfigManifest),
 		errors:        utils.NewMultiError(),
 	}
-	return loader.load()
+	if err := loader.load(); err != nil {
+		// Convert errors to warning
+		m.Logger.Warn(`Warning: `, utils.PrefixError(fmt.Sprintf(`invalid orchestrator %s`, config.Desc()), err))
+	}
 }
 
 type remoteLoader struct {
 	model.MapperContext
 	*phasesSorter
-	config   *model.Config
-	manifest *model.ConfigManifest
-	errors   *utils.Error
+	allObjects *model.StateObjects
+	config     *model.Config
+	manifest   *model.ConfigManifest
+	errors     *utils.Error
 }
 
 func (l *remoteLoader) load() error {
@@ -99,12 +96,7 @@ func (l *remoteLoader) load() error {
 		}
 	}
 
-	// Convert errors to warning
-	if l.errors.Len() > 0 {
-		l.Logger.Warn(`Warning: `, utils.PrefixError(fmt.Sprintf(`invalid orchestrator %s`, l.config.Desc()), l.errors))
-	}
-
-	return nil
+	return l.errors.ErrorOrNil()
 }
 
 func (l *remoteLoader) getPhases() ([]interface{}, error) {
@@ -219,6 +211,14 @@ func (l *remoteLoader) parseTask(taskRaw interface{}) error {
 		}
 	}
 
+	// Get target config
+	targetConfig, err := l.getTargetConfig(task.ComponentId, task.ConfigId)
+	if err != nil {
+		errors.Append(err)
+	} else if targetConfig != nil {
+		markConfigUsedInOrchestrator(targetConfig, l.config)
+	}
+
 	// Additional content
 	task.Content = parser.additionalContent()
 
@@ -232,4 +232,28 @@ func (l *remoteLoader) parseTask(taskRaw interface{}) error {
 	}
 
 	return errors.ErrorOrNil()
+}
+
+func (l *remoteLoader) getTargetConfig(componentId, configId string) (*model.Config, error) {
+	if len(componentId) == 0 || len(configId) == 0 {
+		return nil, nil
+	}
+
+	configKey := model.ConfigKey{
+		BranchId:    l.config.BranchId,
+		ComponentId: componentId,
+		Id:          configId,
+	}
+
+	configRaw, found := l.allObjects.Get(configKey)
+	if !found {
+		return nil, fmt.Errorf(`%s not found`, configKey.Desc())
+	}
+
+	config, ok := configRaw.(*model.Config)
+	if !ok {
+		return nil, fmt.Errorf(`expected %s, found %s`, configKey.Desc(), configRaw.Desc())
+	}
+
+	return config, nil
 }

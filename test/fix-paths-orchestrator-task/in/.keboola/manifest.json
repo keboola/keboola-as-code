@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "project": {
+    "id": %%TEST_KBC_PROJECT_ID%%,
+    "apiHost": "%%TEST_KBC_STORAGE_API_HOST%%"
+  },
+  "sortBy": "path",
+  "naming": {
+    "branch": "{branch_name}",
+    "config": "{component_type}/{component_id}/{config_name}",
+    "configRow": "rows/{config_row_name}",
+    "schedulerConfig": "schedules/{config_name}",
+    "sharedCodeConfig": "_shared/{target_component_id}",
+    "sharedCodeConfigRow": "codes/{config_row_name}",
+    "variablesConfig": "variables",
+    "variablesValuesRow": "values/{config_row_name}"
+  },
+  "allowedBranches": [
+    "__all__"
+  ],
+  "ignoredComponents": [],
+  "branches": [
+    {
+      "id": 1,
+      "path": "main"
+    }
+  ],
+  "configurations": [
+    {
+      "branchId": 1,
+      "componentId": "ex-generic-v2",
+      "id": "123",
+      "path": "extractor/ex-generic-v2/old-name",
+      "rows": []
+    },
+    {
+      "branchId": 1,
+      "componentId": "ex-generic-v2",
+      "id": "456",
+      "path": "extractor/ex-generic-v2/without-rows",
+      "rows": []
+    },
+    {
+      "branchId": 1,
+      "componentId": "keboola.orchestrator",
+      "id": "789",
+      "path": "other/keboola.orchestrator/orchestrator",
+      "rows": []
+    }
+  ]
+}
