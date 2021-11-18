@@ -20,6 +20,7 @@ const (
 	SharedCodeVariablesForRelType  = RelationType(`sharedCodeVariablesFor`)
 	SharedCodeVariablesFromRelType = RelationType(`sharedCodeVariablesFrom`)
 	SchedulerForRelType            = RelationType(`schedulerFor`)
+	UsedInOrchestratorRelType      = RelationType(`usedInOrchestrator`)
 )
 
 // OneToXRelations gets relations that can be defined on an object only once.
@@ -295,6 +296,8 @@ func newEmptyRelation(t RelationType) (Relation, error) {
 		return &SharedCodeVariablesFromRelation{}, nil
 	case SchedulerForRelType:
 		return &SchedulerForRelation{}, nil
+	case UsedInOrchestratorRelType:
+		return &UsedInOrchestratorRelation{}, nil
 	default:
 		return nil, fmt.Errorf(`unexpected RelationType "%s"`, t)
 	}

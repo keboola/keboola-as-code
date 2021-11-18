@@ -13,7 +13,7 @@ import (
 
 func TestMapAfterRemoteLoad(t *testing.T) {
 	t.Parallel()
-	mapper, _, logs := createMapper(t)
+	mapper, context, logs := createMapper(t)
 
 	contentStr := `
 {
@@ -72,6 +72,7 @@ func TestMapAfterRemoteLoad(t *testing.T) {
   ]
 }
 `
+	// Orchestrator config
 	content := utils.NewOrderedMap()
 	json.MustDecodeString(contentStr, content)
 	configKey := model.ConfigKey{
@@ -85,22 +86,33 @@ func TestMapAfterRemoteLoad(t *testing.T) {
 			PathInProject: model.NewPathInProject(`branch`, `config`),
 		},
 	}
-	apiObject := &model.Config{ConfigKey: configKey, Content: content}
-	internalObject := apiObject.Clone().(*model.Config)
-	recipe := &model.RemoteLoadRecipe{Manifest: configManifest, ApiObject: apiObject, InternalObject: internalObject}
+	config := &model.Config{ConfigKey: configKey, Content: content}
+	configState := &model.ConfigState{
+		ConfigManifest: configManifest,
+		Local:          config,
+	}
+	assert.NoError(t, context.State.Set(configState))
+
+	// Target configs
+	target1, target2, target3 := createTargetConfigs(t, context)
 
 	// Invoke
-	assert.Empty(t, apiObject.Relations)
-	assert.Empty(t, internalObject.Relations)
-	assert.NoError(t, mapper.MapAfterRemoteLoad(recipe))
+	assert.NoError(t, mapper.OnObjectsLoad(model.StateTypeRemote, []model.Object{configState.Local}))
 	assert.Empty(t, logs.String())
 
-	// ApiObject is not changed
-	assert.Equal(t, strings.TrimLeft(contentStr, "\n"), json.MustEncodeString(apiObject.Content, true))
-	assert.Nil(t, apiObject.Orchestration)
+	// Check target configs relation
+	rel1, err := target1.Remote.Relations.GetOneByType(model.UsedInOrchestratorRelType)
+	assert.NoError(t, err)
+	assert.Equal(t, config.Id, rel1.(*model.UsedInOrchestratorRelation).ConfigId)
+	rel2, err := target2.Remote.Relations.GetOneByType(model.UsedInOrchestratorRelType)
+	assert.NoError(t, err)
+	assert.Equal(t, config.Id, rel2.(*model.UsedInOrchestratorRelation).ConfigId)
+	rel3, err := target3.Remote.Relations.GetOneByType(model.UsedInOrchestratorRelType)
+	assert.NoError(t, err)
+	assert.Equal(t, config.Id, rel3.(*model.UsedInOrchestratorRelation).ConfigId)
 
-	// Internal object
-	assert.Equal(t, `{}`, json.MustEncodeString(internalObject.Content, false))
+	// Assert orchestration
+	assert.Equal(t, `{}`, json.MustEncodeString(config.Content, false))
 	assert.Equal(t, &model.Orchestration{
 		Phases: []*model.Phase{
 			{
@@ -216,12 +228,12 @@ func TestMapAfterRemoteLoad(t *testing.T) {
 				},
 			},
 		},
-	}, internalObject.Orchestration)
+	}, config.Orchestration)
 }
 
 func TestMapAfterRemoteLoadWarnings(t *testing.T) {
 	t.Parallel()
-	mapper, _, logs := createMapper(t)
+	mapper, context, logs := createMapper(t)
 
 	contentStr := `
 {
@@ -262,6 +274,7 @@ func TestMapAfterRemoteLoadWarnings(t *testing.T) {
 }
 `
 
+	// Orchestrator
 	content := utils.NewOrderedMap()
 	json.MustDecodeString(contentStr, content)
 	configKey := model.ConfigKey{
@@ -269,14 +282,21 @@ func TestMapAfterRemoteLoadWarnings(t *testing.T) {
 		ComponentId: model.OrchestratorComponentId,
 		Id:          `456`,
 	}
-	apiObject := &model.Config{ConfigKey: configKey, Content: content}
-	internalObject := apiObject.Clone().(*model.Config)
-	recipe := &model.RemoteLoadRecipe{Manifest: &model.ConfigManifest{}, ApiObject: apiObject, InternalObject: internalObject}
+	configManifest := &model.ConfigManifest{
+		ConfigKey: configKey,
+	}
+	config := &model.Config{ConfigKey: configKey, Content: content}
+	configState := &model.ConfigState{
+		ConfigManifest: configManifest,
+		Local:          config,
+	}
+	assert.NoError(t, context.State.Set(configState))
+
+	// Target configs
+	createTargetConfigs(t, context)
 
 	// Invoke
-	assert.Empty(t, apiObject.Relations)
-	assert.Empty(t, internalObject.Relations)
-	assert.NoError(t, mapper.MapAfterRemoteLoad(recipe))
+	assert.NoError(t, mapper.OnObjectsLoad(model.StateTypeRemote, []model.Object{configState.Local}))
 
 	// Warnings
 	expectedWarnings := `
@@ -296,12 +316,8 @@ WARN  Warning: invalid orchestrator config "branch:123/component:keboola.orchest
 `
 	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logs.String())
 
-	// ApiObject is not changed
-	assert.Equal(t, strings.TrimLeft(contentStr, "\n"), json.MustEncodeString(apiObject.Content, true))
-	assert.Nil(t, apiObject.Orchestration)
-
-	// Internal object
-	assert.Equal(t, `{}`, json.MustEncodeString(internalObject.Content, false))
+	// Assert orchestration
+	assert.Equal(t, `{}`, json.MustEncodeString(config.Content, false))
 	assert.Equal(t, &model.Orchestration{
 		Phases: []*model.Phase{
 			{
@@ -340,12 +356,12 @@ WARN  Warning: invalid orchestrator config "branch:123/component:keboola.orchest
 				},
 			},
 		},
-	}, internalObject.Orchestration)
+	}, config.Orchestration)
 }
 
 func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 	t.Parallel()
-	mapper, _, logs := createMapper(t)
+	mapper, context, logs := createMapper(t)
 
 	contentStr := `
 {
@@ -387,18 +403,22 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 		ComponentId: model.OrchestratorComponentId,
 		Id:          `456`,
 	}
-	apiObject := &model.Config{ConfigKey: configKey, Content: content}
-	internalObject := apiObject.Clone().(*model.Config)
-	recipe := &model.RemoteLoadRecipe{Manifest: &model.ConfigManifest{}, ApiObject: apiObject, InternalObject: internalObject}
+	configManifest := &model.ConfigManifest{
+		ConfigKey: configKey,
+	}
+	config := &model.Config{ConfigKey: configKey, Content: content}
+	configState := &model.ConfigState{
+		ConfigManifest: configManifest,
+		Local:          config,
+	}
+	assert.NoError(t, context.State.Set(configState))
 
 	// Invoke
-	assert.Empty(t, apiObject.Relations)
-	assert.Empty(t, internalObject.Relations)
-	assert.NoError(t, mapper.MapAfterRemoteLoad(recipe))
+	assert.NoError(t, mapper.OnObjectsLoad(model.StateTypeRemote, []model.Object{configState.Local}))
 	assert.Empty(t, logs.String())
 
 	// Internal object
-	assert.Equal(t, `{}`, json.MustEncodeString(internalObject.Content, false))
+	assert.Equal(t, `{}`, json.MustEncodeString(config.Content, false))
 	assert.Equal(t, &model.Orchestration{
 		Phases: []*model.Phase{
 			{
@@ -496,12 +516,12 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 				Content: utils.NewOrderedMap(),
 			},
 		},
-	}, internalObject.Orchestration)
+	}, config.Orchestration)
 }
 
 func TestMapAfterRemoteLoadDepsCycles(t *testing.T) {
 	t.Parallel()
-	mapper, _, logs := createMapper(t)
+	mapper, context, logs := createMapper(t)
 
 	contentStr := `
 {
@@ -558,14 +578,21 @@ func TestMapAfterRemoteLoadDepsCycles(t *testing.T) {
 		ComponentId: model.OrchestratorComponentId,
 		Id:          `456`,
 	}
-	apiObject := &model.Config{ConfigKey: configKey, Content: content}
-	internalObject := apiObject.Clone().(*model.Config)
-	recipe := &model.RemoteLoadRecipe{Manifest: &model.ConfigManifest{}, ApiObject: apiObject, InternalObject: internalObject}
+	configManifest := &model.ConfigManifest{
+		ConfigKey: configKey,
+		Paths: model.Paths{
+			PathInProject: model.NewPathInProject(`branch`, `config`),
+		},
+	}
+	config := &model.Config{ConfigKey: configKey, Content: content}
+	configState := &model.ConfigState{
+		ConfigManifest: configManifest,
+		Local:          config,
+	}
+	assert.NoError(t, context.State.Set(configState))
 
 	// Invoke
-	assert.Empty(t, apiObject.Relations)
-	assert.Empty(t, internalObject.Relations)
-	assert.NoError(t, mapper.MapAfterRemoteLoad(recipe))
+	assert.NoError(t, mapper.OnObjectsLoad(model.StateTypeRemote, []model.Object{configState.Local}))
 
 	// Warnings
 	expectedWarnings := `

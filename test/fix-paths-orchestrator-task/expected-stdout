@@ -1,0 +1,4 @@
+Plan for "rename" operation:
+  - main/extractor/ex-generic-v2/{old-name -> empty}
+Rename done.
+Fix paths done.

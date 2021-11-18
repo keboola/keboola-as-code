@@ -14,7 +14,8 @@ import (
 func TestMapAfterLocalLoad(t *testing.T) {
 	t.Parallel()
 	mapper, context, logs := createMapper(t)
-	orchestratorConfigState := createLocalLoadFixtures(t, context, true)
+	orchestratorConfigState := createLocalLoadFixtures(t, context)
+	target1, target2, target3 := createTargetConfigs(t, context)
 
 	// Local files
 	phasesDir := context.Naming.PhasesDir(orchestratorConfigState.Path())
@@ -67,6 +68,17 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/phase.json"
 DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/task.json"
 `
 	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logs.String())
+
+	// Check target configs relation
+	rel1, err := target1.Local.Relations.GetOneByType(model.UsedInOrchestratorRelType)
+	assert.NoError(t, err)
+	assert.Equal(t, orchestratorConfigState.Id, rel1.(*model.UsedInOrchestratorRelation).ConfigId)
+	rel2, err := target2.Local.Relations.GetOneByType(model.UsedInOrchestratorRelType)
+	assert.NoError(t, err)
+	assert.Equal(t, orchestratorConfigState.Id, rel2.(*model.UsedInOrchestratorRelation).ConfigId)
+	rel3, err := target3.Local.Relations.GetOneByType(model.UsedInOrchestratorRelType)
+	assert.NoError(t, err)
+	assert.Equal(t, orchestratorConfigState.Id, rel3.(*model.UsedInOrchestratorRelation).ConfigId)
 
 	// Orchestration
 	expectedOrchestration := &model.Orchestration{
@@ -191,7 +203,7 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 func TestMapAfterLocalLoadError(t *testing.T) {
 	t.Parallel()
 	mapper, context, logs := createMapper(t)
-	orchestratorConfigState := createLocalLoadFixtures(t, context, false)
+	orchestratorConfigState := createLocalLoadFixtures(t, context)
 
 	// Local files
 	phasesDir := context.Naming.PhasesDir(orchestratorConfigState.Path())
@@ -243,7 +255,8 @@ invalid orchestrator config "branch/other/orchestrator":
 func TestMapAfterLocalLoadDepsCycle(t *testing.T) {
 	t.Parallel()
 	mapper, context, logs := createMapper(t)
-	orchestratorConfigState := createLocalLoadFixtures(t, context, true)
+	orchestratorConfigState := createLocalLoadFixtures(t, context)
+	createTargetConfigs(t, context)
 
 	// Local files
 	phasesDir := context.Naming.PhasesDir(orchestratorConfigState.Path())
@@ -291,7 +304,7 @@ invalid orchestrator config "branch/other/orchestrator":
 	assert.Equal(t, strings.Trim(expectedError, "\n"), err.Error())
 }
 
-func createLocalLoadFixtures(t *testing.T, context model.MapperContext, createTargets bool) *model.ConfigState {
+func createLocalLoadFixtures(t *testing.T, context model.MapperContext) *model.ConfigState {
 	t.Helper()
 
 	// Branch
@@ -327,65 +340,6 @@ func createLocalLoadFixtures(t *testing.T, context model.MapperContext, createTa
 	}
 	assert.NoError(t, context.State.Set(configState))
 	context.Naming.Attach(configState.Key(), configState.PathInProject)
-
-	// Create targets
-	if !createTargets {
-		return configState
-	}
-
-	// Target config 1
-	targetConfigKey1 := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: `foo.bar1`,
-		Id:          `123`,
-	}
-	targetConfigState1 := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{
-			ConfigKey: targetConfigKey1,
-			Paths: model.Paths{
-				PathInProject: model.NewPathInProject(`branch/extractor`, `target-config-1`),
-			},
-		},
-		Local: &model.Config{ConfigKey: targetConfigKey1},
-	}
-	assert.NoError(t, context.State.Set(targetConfigState1))
-	context.Naming.Attach(targetConfigState1.Key(), targetConfigState1.PathInProject)
-
-	// Target config 2
-	targetConfigKey2 := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: `foo.bar2`,
-		Id:          `789`,
-	}
-	targetConfigState2 := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{
-			ConfigKey: targetConfigKey2,
-			Paths: model.Paths{
-				PathInProject: model.NewPathInProject(`branch/extractor`, `target-config-2`),
-			},
-		},
-		Local: &model.Config{ConfigKey: targetConfigKey2},
-	}
-	assert.NoError(t, context.State.Set(targetConfigState2))
-	context.Naming.Attach(targetConfigState2.Key(), targetConfigState2.PathInProject)
-
-	// Target config 3
-	targetConfigKey3 := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: `foo.bar2`,
-		Id:          `456`,
-	}
-	targetConfigState3 := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{
-			ConfigKey: targetConfigKey3,
-			Paths: model.Paths{
-				PathInProject: model.NewPathInProject(`branch/extractor`, `target-config-3`),
-			},
-		},
-		Local: &model.Config{ConfigKey: targetConfigKey3},
-	}
-	assert.NoError(t, context.State.Set(targetConfigState3))
-	context.Naming.Attach(targetConfigState3.Key(), targetConfigState3.PathInProject)
 
 	return configState
 }

@@ -9,51 +9,33 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func (m *orchestratorMapper) OnObjectsLoad(event model.OnObjectsLoadEvent) error {
-	// Only local load
-	if event.StateType != model.StateTypeLocal {
-		return nil
-	}
-
-	errors := utils.NewMultiError()
-	for _, object := range event.NewObjects {
-		// Object must be orchestrator config
-		if ok, err := m.isOrchestratorConfigKey(object.Key()); err != nil {
-			errors.Append(err)
-			continue
-		} else if !ok {
-			continue
-		}
-		if err := m.loadLocalPhases(object.(*model.Config)); err != nil {
-			manifest := m.State.MustGet(object.Key())
-			errors.Append(utils.PrefixError(fmt.Sprintf(`invalid orchestrator config "%s"`, manifest.Path()), err))
-		}
-	}
-	return errors.ErrorOrNil()
-}
-
-func (m *orchestratorMapper) loadLocalPhases(config *model.Config) error {
+func (m *orchestratorMapper) onLocalLoad(config *model.Config, allObjects *model.StateObjects) error {
 	manifest := m.State.MustGet(config.ConfigKey).Manifest().(*model.ConfigManifest)
 	loader := &localLoader{
 		MapperContext: m.MapperContext,
 		phasesSorter:  newPhasesSorter(),
+		allObjects:    allObjects,
 		branch:        m.State.MustGet(config.BranchKey()).(*model.BranchState),
 		config:        config,
 		manifest:      manifest,
 		phasesDir:     m.Naming.PhasesDir(manifest.Path()),
 		errors:        utils.NewMultiError(),
 	}
-	return loader.load()
+	if err := loader.load(); err != nil {
+		return utils.PrefixError(fmt.Sprintf(`invalid orchestrator config "%s"`, manifest.Path()), err)
+	}
+	return nil
 }
 
 type localLoader struct {
 	model.MapperContext
 	*phasesSorter
-	branch    *model.BranchState
-	config    *model.Config
-	manifest  *model.ConfigManifest
-	phasesDir string
-	errors    *utils.Error
+	allObjects *model.StateObjects
+	branch     *model.BranchState
+	config     *model.Config
+	manifest   *model.ConfigManifest
+	phasesDir  string
+	errors     *utils.Error
 }
 
 func (l *localLoader) load() error {
@@ -184,30 +166,48 @@ func (l *localLoader) parseTaskConfig(task *model.Task) error {
 	}
 
 	// Get target config path
-	configPath, err := parser.configPath()
+	targetConfigPath, err := parser.configPath()
 	if err != nil {
 		errors.Append(err)
 	}
 
 	// Get target config
-	if len(configPath) > 0 {
-		configPath = filesystem.Join(l.branch.Path(), configPath)
-		configKeyRaw, found := l.Naming.FindByPath(configPath)
-		if found {
-			if configKey, ok := configKeyRaw.(model.ConfigKey); ok {
-				task.ComponentId = configKey.ComponentId
-				task.ConfigId = configKey.Id
-			} else {
-				errors.Append(fmt.Errorf(`path "%s" must be config, found %s`, configPath, configKeyRaw.Kind().String()))
-			}
-		} else {
-			errors.Append(fmt.Errorf(`config "%s" not found`, configPath))
-		}
+	targetConfig, err := l.getTargetConfig(targetConfigPath)
+	if err != nil {
+		errors.Append(err)
+	} else if targetConfig != nil {
+		task.ComponentId = targetConfig.ComponentId
+		task.ConfigId = targetConfig.Id
+		markConfigUsedInOrchestrator(targetConfig, l.config)
 	}
 
 	// Add task to phase
 	task.Content = parser.additionalContent()
 	return errors.ErrorOrNil()
+}
+
+func (l *localLoader) getTargetConfig(configPath string) (*model.Config, error) {
+	if len(configPath) == 0 {
+		return nil, nil
+	}
+
+	configPath = filesystem.Join(l.branch.Path(), configPath)
+	configKeyRaw, found := l.Naming.FindByPath(configPath)
+	if !found {
+		return nil, fmt.Errorf(`config "%s" not found`, configPath)
+	}
+
+	configRaw, found := l.allObjects.Get(configKeyRaw)
+	if !found {
+		return nil, fmt.Errorf(`config "%s" not found`, configPath)
+	}
+
+	config, ok := configRaw.(*model.Config)
+	if !ok {
+		return nil, fmt.Errorf(`path "%s" must be config, found %s`, configPath, configKeyRaw.Kind().String())
+	}
+
+	return config, nil
 }
 
 func (l *localLoader) loadJsonFile(path, desc string) (*filesystem.JsonFile, error) {

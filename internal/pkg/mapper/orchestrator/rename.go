@@ -9,9 +9,10 @@ import (
 
 func (m *orchestratorMapper) OnObjectsRename(event model.OnObjectsRenameEvent) error {
 	errors := utils.NewMultiError()
+	localObjects := m.State.LocalObjects()
 
-	// Find renamed orchestrators
-	renamedOrchestrator := make(map[string]model.Key)
+	// Find renamed orchestrators and renamed configs used in an orchestrator
+	orchestratorsToUpdate := make(map[string]model.Key)
 	for _, object := range event.RenamedObjects {
 		key := object.Record.Key()
 
@@ -20,16 +21,34 @@ func (m *orchestratorMapper) OnObjectsRename(event model.OnObjectsRenameEvent) e
 			errors.Append(err)
 			continue
 		} else if ok {
-			renamedOrchestrator[key.String()] = key
+			orchestratorsToUpdate[key.String()] = key
 			continue
+		}
+
+		// Is config used in orchestrator?
+		if manifest, ok := object.Record.(*model.ConfigManifest); ok {
+			localConfigRaw, found := localObjects.Get(manifest.Key())
+			if found {
+				localConfig := localConfigRaw.(*model.Config)
+				relations := localConfig.Relations.GetByType(model.UsedInOrchestratorRelType)
+				for _, relationRaw := range relations {
+					relation := relationRaw.(*model.UsedInOrchestratorRelation)
+					orchestratorKey := model.ConfigKey{
+						BranchId:    localConfig.BranchId,
+						ComponentId: model.OrchestratorComponentId,
+						Id:          relation.ConfigId,
+					}
+					orchestratorsToUpdate[orchestratorKey.String()] = orchestratorKey
+				}
+			}
 		}
 	}
 
 	// Log and save
 	uow := m.localManager.NewUnitOfWork(context.Background())
-	if len(renamedOrchestrator) > 0 {
-		m.Logger.Debug(`Found renamed orchestrators:`)
-		for _, key := range renamedOrchestrator {
+	if len(orchestratorsToUpdate) > 0 {
+		m.Logger.Debug(`Need to update orchestrators:`)
+		for _, key := range orchestratorsToUpdate {
 			m.Logger.Debugf(`  - %s`, key.Desc())
 			orchestrator := m.State.MustGet(key)
 			uow.SaveObject(orchestrator, orchestrator.LocalState(), model.NewChangedFields(`orchestrator`))
