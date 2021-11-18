@@ -3,7 +3,6 @@ package orchestrator
 import (
 	"fmt"
 	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/iancoleman/orderedmap"
@@ -23,237 +22,194 @@ func (m *orchestratorMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) 
 		return nil
 	}
 
-	errors := utils.NewMultiError()
-	config := recipe.InternalObject.(*model.Config)
-
-	// Get phases
-	phasesRaw, found := config.Content.Get(model.OrchestratorPhasesContentKey)
-	if !found {
-		return nil
+	loader := &remoteLoader{
+		MapperContext:  m.MapperContext,
+		config:         recipe.InternalObject.(*model.Config),
+		phaseIdByIndex: make(map[int]string),
+		phaseById:      make(map[string]*model.Phase),
+		errors:         utils.NewMultiError(),
 	}
-	phases, ok := phasesRaw.([]interface{})
-	if !ok {
-		errors.Append(fmt.Errorf(`missing "%s" key in %s`, model.OrchestratorPhasesContentKey, config.Desc()))
+	return loader.load()
+}
+
+type remoteLoader struct {
+	model.MapperContext
+	config         *model.Config
+	phases         []*model.Phase
+	phaseIdByIndex map[int]string
+	phaseById      map[string]*model.Phase
+	errors         *utils.Error
+}
+
+func (l *remoteLoader) load() error {
+	// Get phases
+	phases, err := l.getPhases()
+	if err != nil {
+		l.errors.Append(err)
 	}
 
 	// Get tasks
-	tasksRaw, found := config.Content.Get(model.OrchestratorTasksContentKey)
-	if !found {
-		return nil
-	}
-	tasks, ok := tasksRaw.([]interface{})
-	if !ok {
-		errors.Append(fmt.Errorf(`missing "%s" key in %s`, model.OrchestratorTasksContentKey, config.Desc()))
-	}
-
-	// Can parsing continue?
-	if errors.Len() > 0 {
-		m.Logger.Warn(`Warning: `, utils.PrefixError(fmt.Sprintf(`invalid orchestrator %s`, config.Desc()), errors))
-		return nil
-	}
-
-	// Delete keys
-	config.Content.Delete(model.OrchestratorPhasesContentKey)
-	config.Content.Delete(model.OrchestratorTasksContentKey)
-
-	// Create ID -> phase map
-	phaseById, err := m.parsePhasesFromRemote(phases)
+	tasks, err := l.getTasks()
 	if err != nil {
-		errors.Append(err)
+		l.errors.Append(err)
 	}
 
-	// Sort phases by dependencies
-	sortedPhases, err := m.sortPhases(phaseById, config.ConfigKey)
-	if err != nil {
-		errors.Append(err)
+	// Parse phases
+	for apiIndex, phaseRaw := range phases {
+		if phase, id, err := l.parsePhase(phaseRaw); err == nil {
+			index := len(l.phases)
+			l.phases = append(l.phases, phase)
+			l.phaseIdByIndex[index] = id
+			l.phaseById[id] = phase
+		} else {
+			l.errors.Append(utils.PrefixError(fmt.Sprintf(`invalid phase[%d]`, apiIndex), err))
+		}
 	}
 
 	// Parse tasks
-	if err := m.parseTasksFromRemote(phaseById, tasks); err != nil {
-		errors.Append(err)
+	for apiIndex, taskRaw := range tasks {
+		if err := l.parseTask(taskRaw); err != nil {
+			l.errors.Append(utils.PrefixError(fmt.Sprintf(`invalid task[%d]`, apiIndex), err))
+		}
+	}
+
+	// Sort phases by dependencies
+	sortedPhases, err := l.sortPhases()
+	if err != nil {
+		l.errors.Append(err)
 	}
 
 	// Convert pointers to values
-	config.Orchestration = &model.Orchestration{}
+	l.config.Orchestration = &model.Orchestration{}
 	for _, phase := range sortedPhases {
-		config.Orchestration.Phases = append(config.Orchestration.Phases, *phase)
+		l.config.Orchestration.Phases = append(l.config.Orchestration.Phases, *phase)
 	}
 
 	// Convert errors to warning
-	if errors.Len() > 0 {
-		m.Logger.Warn(`Warning: `, utils.PrefixError(fmt.Sprintf(`invalid orchestrator %s`, config.Desc()), errors))
+	if l.errors.Len() > 0 {
+		l.Logger.Warn(`Warning: `, utils.PrefixError(fmt.Sprintf(`invalid orchestrator %s`, l.config.Desc()), l.errors))
 	}
 
 	return nil
 }
 
-func (m *orchestratorMapper) parsePhasesFromRemote(phases []interface{}) (map[string]*model.Phase, error) {
-	errors := utils.NewMultiError()
-	phaseById := make(map[string]*model.Phase)
-	for index, phaseRaw := range phases {
-		phaseContent, ok := phaseRaw.(orderedmap.OrderedMap)
-		if !ok {
-			continue
-		}
-
-		// Get ID
-		phaseIdRaw, found := phaseContent.Get(`id`)
-		if !found {
-			errors.Append(fmt.Errorf(`missing phase[%d] "id" key`, index))
-			continue
-		}
-		phaseId, err := strconv.Atoi(cast.ToString(phaseIdRaw))
-		if err != nil {
-			errors.Append(fmt.Errorf(`phase[%d] "id" must be int, found %T`, index, phaseIdRaw))
-			continue
-		}
-		phaseContent.Delete(`id`)
-
-		// Get name
-		nameRaw, found := phaseContent.Get(`name`)
-		if !found {
-			errors.Append(fmt.Errorf(`missing phase[%d] "name" key`, index))
-			continue
-		}
-		name, ok := nameRaw.(string)
-		if !ok {
-			errors.Append(fmt.Errorf(`phase[%d] "name" must be string, found %T`, index, nameRaw))
-			continue
-		}
-		phaseContent.Delete(`name`)
-
-		// Add to map
-		phaseById[cast.ToString(phaseId)] = &model.Phase{
-			Name:    name,
-			Content: &phaseContent,
-		}
+func (l *remoteLoader) getPhases() ([]interface{}, error) {
+	phasesRaw, found := l.config.Content.Get(model.OrchestratorPhasesContentKey)
+	if !found {
+		return nil, nil
 	}
-	return phaseById, errors.ErrorOrNil()
+	phases, ok := phasesRaw.([]interface{})
+	if !ok {
+		return nil, fmt.Errorf(`missing "%s" key`, model.OrchestratorPhasesContentKey)
+	}
+	l.config.Content.Delete(model.OrchestratorPhasesContentKey)
+	return phases, nil
 }
 
-func (m *orchestratorMapper) parseTasksFromRemote(phaseById map[string]*model.Phase, tasks []interface{}) error {
-	errors := utils.NewMultiError()
-	for index, taskRaw := range tasks {
-		taskContent, ok := taskRaw.(orderedmap.OrderedMap)
-		if !ok {
-			continue
-		}
-
-		// Get ID
-		taskIdRaw, found := taskContent.Get(`id`)
-		if !found {
-			errors.Append(fmt.Errorf(`missing task[%d] "id" key`, index))
-			continue
-		}
-		_, err := strconv.Atoi(cast.ToString(taskIdRaw))
-		if err != nil {
-			errors.Append(fmt.Errorf(`task[%d] "id" must be int, found %T`, index, taskIdRaw))
-			continue
-		}
-		taskContent.Delete(`id`)
-
-		// Get name
-		nameRaw, found := taskContent.Get(`name`)
-		if !found {
-			errors.Append(fmt.Errorf(`missing task[%d] "name" key`, index))
-			continue
-		}
-		name, ok := nameRaw.(string)
-		if !ok {
-			errors.Append(fmt.Errorf(`task[%d] "name" must be string, found %T`, index, nameRaw))
-			continue
-		}
-		taskContent.Delete(`name`)
-
-		// Get phase
-		phaseIdRaw, found := taskContent.Get(`phase`)
-		if !found {
-			errors.Append(fmt.Errorf(`missing "phase" key in task[%d] "%s"`, index, name))
-			continue
-		}
-		phaseId, err := strconv.Atoi(cast.ToString(phaseIdRaw))
-		if err != nil {
-			errors.Append(fmt.Errorf(`task "name" key must be string, found %T, in task[%d] "%s"`, phaseIdRaw, index, name))
-			continue
-		}
-		phase, found := phaseById[cast.ToString(phaseId)]
-		if !found {
-			errors.Append(fmt.Errorf(`phase "%d" not found, referenced from task[%d] "%s"`, phaseId, index, name))
-			continue
-		}
-		taskContent.Delete(`phase`)
-
-		// Get target config
-		targetRaw, found := taskContent.Get(`task`)
-		if !found {
-			errors.Append(fmt.Errorf(`missing "task" key in task[%d] "%s"`, index, name))
-			continue
-		}
-		target, ok := targetRaw.(orderedmap.OrderedMap)
-		if !ok {
-			errors.Append(fmt.Errorf(`"task" key must be object, found %T, in task[%d] "%s"`, targetRaw, index, name))
-			continue
-		}
-
-		// Get componentId
-		componentIdRaw, found := target.Get(`componentId`)
-		if !found {
-			errors.Append(fmt.Errorf(`missing "task.componentId" key in task[%d] "%s"`, index, name))
-			continue
-		}
-		componentId, ok := componentIdRaw.(string)
-		if !ok {
-			errors.Append(fmt.Errorf(`"task.componentId" must be string, found %T, in task[%d] "%s"`, componentIdRaw, index, name))
-			continue
-		}
-		target.Delete(`componentId`)
-		taskContent.Set(`task`, target)
-
-		// Get configId
-		configIdRaw, found := target.Get(`configId`)
-		if !found {
-			errors.Append(fmt.Errorf(`missing "task.configId" key in task[%d] "%s"`, index, name))
-			continue
-		}
-		configId, ok := configIdRaw.(string)
-		if !ok {
-			errors.Append(fmt.Errorf(`"task.configId" key must be string, found %T, in task[%d] "%s"`, configIdRaw, index, name))
-			continue
-		}
-		target.Delete(`configId`)
-		taskContent.Set(`task`, target)
-
-		// Add to map
-		task := model.Task{
-			TaskKey: model.TaskKey{
-				PhaseKey: phase.PhaseKey,
-				Index:    len(phase.Tasks),
-			},
-			Name:        name,
-			Content:     &taskContent,
-			ComponentId: componentId,
-			ConfigId:    configId,
-		}
-		phase.Tasks = append(phase.Tasks, task)
+func (l *remoteLoader) getTasks() ([]interface{}, error) {
+	tasksRaw, found := l.config.Content.Get(model.OrchestratorTasksContentKey)
+	if !found {
+		return nil, nil
 	}
+	tasks, ok := tasksRaw.([]interface{})
+	if !ok {
+		return nil, fmt.Errorf(`missing "%s" key`, model.OrchestratorTasksContentKey)
+	}
+	l.config.Content.Delete(model.OrchestratorTasksContentKey)
+	return tasks, nil
+}
+
+func (l *remoteLoader) parsePhase(phaseRaw interface{}) (*model.Phase, string, error) {
+	errors := utils.NewMultiError()
+	content, ok := phaseRaw.(orderedmap.OrderedMap)
+	if !ok {
+		return nil, "", fmt.Errorf(`phase must be JSON object`)
+	}
+
+	phase := &model.Phase{}
+	parser := &phaseParser{content: &content}
+
+	// Get ID
+	id, err := parser.id()
+	if err != nil {
+		errors.Append(err)
+	}
+
+	// Get name
+	phase.Name, err = parser.name()
+	if err != nil {
+		errors.Append(err)
+	}
+
+	// Additional content
+	phase.Content = parser.additionalContent()
+	return phase, cast.ToString(id), errors.ErrorOrNil()
+}
+
+func (l *remoteLoader) parseTask(taskRaw interface{}) error {
+	errors := utils.NewMultiError()
+	content, ok := taskRaw.(orderedmap.OrderedMap)
+	if !ok {
+		return fmt.Errorf(`task must be JSON object`)
+	}
+
+	task := model.Task{}
+	parser := &taskParser{content: &content}
+
+	// Get ID
+	_, err := parser.id()
+	if err != nil {
+		errors.Append(err)
+	}
+
+	// Get name
+	task.Name, err = parser.name()
+	if err != nil {
+		errors.Append(err)
+	}
+
+	// Get phase
+	phaseId, err := parser.phaseId()
+	if err != nil {
+		errors.Append(err)
+	}
+
+	// Component ID
+	task.ComponentId, err = parser.componentId()
+	if err != nil {
+		errors.Append(err)
+	}
+
+	// Config ID
+	if len(task.ComponentId) > 0 {
+		task.ConfigId, err = parser.configId()
+		if err != nil {
+			errors.Append(err)
+		}
+	}
+
+	// Additional content
+	task.Content = parser.additionalContent()
+
+	// Get phase
+	if errors.Len() == 0 {
+		if phase, found := l.phaseById[cast.ToString(phaseId)]; found {
+			phase.Tasks = append(phase.Tasks, task)
+		} else {
+			errors.Append(fmt.Errorf(`phase "%d" not found`, phaseId))
+		}
+	}
+
 	return errors.ErrorOrNil()
 }
 
-func (m *orchestratorMapper) sortPhases(phaseById map[string]*model.Phase, configKey model.ConfigKey) ([]*model.Phase, error) {
+func (l *remoteLoader) sortPhases() ([]*model.Phase, error) {
 	errors := utils.NewMultiError()
 	graph := &toposort.Sorter{}
 
-	// Sort keys, so sort results will be always same.
-	// Some phases can have same deps, but their order must not be random.
-	var keys []string
-	for key := range phaseById {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-
 	// Add dependencies to graph
-	for _, id := range keys {
-		phase := phaseById[id]
+	for index, phase := range l.phases {
+		id := l.phaseIdByIndex[index]
 
 		// Get "dependsOn"
 		var dependsOn []interface{}
@@ -289,12 +245,19 @@ func (m *orchestratorMapper) sortPhases(phaseById map[string]*model.Phase, confi
 	// Generate slice
 	phases := make([]*model.Phase, 0)
 	for index, id := range order {
-		phase := phaseById[id.(string)]
+		phase := l.phaseById[id.(string)]
 		phase.PhaseKey = model.PhaseKey{
-			BranchId:    configKey.BranchId,
-			ComponentId: configKey.ComponentId,
-			ConfigId:    configKey.Id,
+			BranchId:    l.config.BranchId,
+			ComponentId: l.config.ComponentId,
+			ConfigId:    l.config.Id,
 			Index:       index,
+		}
+		for taskIndex, task := range phase.Tasks {
+			task.TaskKey = model.TaskKey{
+				PhaseKey: phase.PhaseKey,
+				Index:    taskIndex,
+			}
+			phase.Tasks[taskIndex] = task
 		}
 		phases = append(phases, phase)
 	}
@@ -307,7 +270,7 @@ func (m *orchestratorMapper) sortPhases(phaseById map[string]*model.Phase, confi
 		if found {
 			if v, ok := dependsOnRaw.([]interface{}); ok {
 				for _, id := range v {
-					dependsOn = append(dependsOn, phaseById[cast.ToString(id)])
+					dependsOn = append(dependsOn, l.phaseById[cast.ToString(id)])
 				}
 			}
 

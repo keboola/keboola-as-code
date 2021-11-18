@@ -271,10 +271,18 @@ func TestMapAfterRemoteLoadWarnings(t *testing.T) {
 	// Warnings
 	expectedWarnings := `
 WARN  Warning: invalid orchestrator config "branch:123/component:keboola.orchestrator/config:456":
-  - missing phase[1] "name" key
-  - missing phase[2] "id" key
-  - phase "789" not found, referenced from task[1] "Task 2"
-  - missing task[2] "id" key
+  - invalid phase[1]:
+    - missing "name" key
+  - invalid phase[2]:
+    - missing "id" key
+    - missing "name" key
+  - invalid task[1]:
+    - phase "789" not found
+  - invalid task[2]:
+    - missing "id" key
+    - missing "name" key
+    - missing "phase" key
+    - missing "task" key
 `
 	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logs.String())
 

@@ -5,7 +5,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/iancoleman/orderedmap"
 	"v.io/x/lib/toposort"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -26,7 +25,8 @@ func (m *orchestratorMapper) OnObjectsLoad(event model.OnObjectsLoadEvent) error
 			return err
 		}
 		if err := m.loadLocalPhases(object.(*model.Config)); err != nil {
-			errors.Append(err)
+			manifest := m.State.MustGet(object.Key())
+			errors.Append(utils.PrefixError(fmt.Sprintf(`invalid orchestrator config "%s"`, manifest.Path()), err))
 		}
 	}
 	return errors.ErrorOrNil()
@@ -35,38 +35,58 @@ func (m *orchestratorMapper) OnObjectsLoad(event model.OnObjectsLoadEvent) error
 func (m *orchestratorMapper) loadLocalPhases(config *model.Config) error {
 	manifest := m.State.MustGet(config.ConfigKey).Manifest().(*model.ConfigManifest)
 	loader := &localLoader{
-		MapperContext: m.MapperContext,
-		branch:        m.State.MustGet(config.BranchKey()).(*model.BranchState),
-		config:        config,
-		manifest:      manifest,
-		phasesDir:     m.Naming.PhasesDir(manifest.Path()),
-		phasesByPath:  make(map[string]*model.Phase),
-		dependsOnMap:  make(map[string][]string),
-		errors:        utils.NewMultiError(),
+		MapperContext:  m.MapperContext,
+		branch:         m.State.MustGet(config.BranchKey()).(*model.BranchState),
+		config:         config,
+		manifest:       manifest,
+		phasesDir:      m.Naming.PhasesDir(manifest.Path()),
+		phasesByPath:   make(map[string]*model.Phase),
+		phaseDependsOn: make(map[string][]string),
+		errors:         utils.NewMultiError(),
 	}
 	return loader.load()
 }
 
 type localLoader struct {
 	model.MapperContext
-	branch       *model.BranchState
-	config       *model.Config
-	manifest     *model.ConfigManifest
-	phasesDir    string
-	phases       []*model.Phase
-	phasesByPath map[string]*model.Phase // phase path -> struct
-	dependsOnMap map[string][]string     // phase path -> depends on phases paths
-	errors       *utils.Error
+	branch         *model.BranchState
+	config         *model.Config
+	manifest       *model.ConfigManifest
+	phasesDir      string
+	phases         []*model.Phase
+	phasesByPath   map[string]*model.Phase // phase path -> struct
+	phaseDependsOn map[string][]string     // phase path -> depends on phases paths
+	errors         *utils.Error
 }
 
 func (l *localLoader) load() error {
 	// Load phases and tasks from filesystem
 	for phaseIndex, phaseDir := range l.phasesDirs() {
-		phase := l.addPhase(phaseIndex, phaseDir)
-		if phase != nil {
+		errors := utils.NewMultiError()
+
+		// Process phase
+		phase, dependsOn, err := l.addPhase(phaseIndex, phaseDir)
+		if err == nil {
+			l.phases = append(l.phases, phase)
+			l.phasesByPath[phase.ObjectPath] = phase
+			l.phaseDependsOn[phase.ObjectPath] = dependsOn
+		} else {
+			errors.Append(err)
+		}
+
+		// Process tasks
+		if errors.Len() == 0 {
 			for taskIndex, taskDir := range l.tasksDirs(phase) {
-				l.addTask(taskIndex, phase, taskDir)
+				if task, err := l.addTask(taskIndex, phase, taskDir); err == nil {
+					phase.Tasks = append(phase.Tasks, *task)
+				} else {
+					errors.Append(utils.PrefixError(fmt.Sprintf(`invalid task "%s"`, taskDir), err))
+				}
 			}
+		}
+
+		if errors.Len() > 0 {
+			l.errors.Append(utils.PrefixError(fmt.Sprintf(`invalid phase "%s"`, phaseDir), errors))
 		}
 	}
 
@@ -85,8 +105,8 @@ func (l *localLoader) load() error {
 	return l.errors.ErrorOrNil()
 }
 
-func (l *localLoader) addPhase(phaseIndex int, path string) *model.Phase {
-	// Create strict
+func (l *localLoader) addPhase(phaseIndex int, path string) (*model.Phase, []string, error) {
+	// Create struct
 	phase := &model.Phase{
 		PhaseKey: model.PhaseKey{
 			BranchId:    l.config.BranchId,
@@ -103,81 +123,95 @@ func (l *localLoader) addPhase(phaseIndex int, path string) *model.Phase {
 	// Track phase path
 	l.manifest.AddRelatedPath(phase.Path())
 
-	// Load phase config
-	file := l.loadJsonFile(l.Naming.PhaseFilePath(*phase), `phase config`)
-	if file == nil {
-		return nil
-	}
-	phaseContent := file.Content
-	errors := utils.NewMultiError()
-
-	// Get name
-	if err := l.parsePhaseName(phase, phaseContent); err != nil {
-		errors.Append(err)
-	}
-
-	// Get dependsOn
-	if err := l.parsePhaseDependsOn(phase, phaseContent); err != nil {
-		errors.Append(err)
-	}
-
-	// Set additional content
-	phase.Content = phaseContent
-
-	// Handle errors
-	if errors.Len() > 0 {
-		l.errors.Append(utils.PrefixError(fmt.Sprintf(`invalid config "%s"`, file.Path), errors))
-		return nil
-	}
-
-	l.phases = append(l.phases, phase)
-	l.phasesByPath[phase.ObjectPath] = phase
-	return phase
+	// Parse config file
+	dependsOn, err := l.parsePhaseConfig(phase)
+	return phase, dependsOn, err
 }
 
-func (l *localLoader) addTask(taskIndex int, phase *model.Phase, path string) {
+func (l *localLoader) addTask(taskIndex int, phase *model.Phase, path string) (*model.Task, error) {
 	// Create struct
-	task := model.Task{
-		TaskKey: model.TaskKey{
-			Index: taskIndex,
-		},
-		PathInProject: model.NewPathInProject(
-			phase.Path(),
-			path,
-		),
+	task := &model.Task{
+		TaskKey:       model.TaskKey{Index: taskIndex},
+		PathInProject: model.NewPathInProject(phase.Path(), path),
 	}
 
 	// Track task path
 	l.manifest.AddRelatedPath(task.Path())
 
-	// Load task config
-	file := l.loadJsonFile(l.Naming.TaskFilePath(task), `task config`)
-	if file == nil {
-		return
+	// Parse config file
+	return task, l.parseTaskConfig(task)
+}
+
+func (l *localLoader) parsePhaseConfig(phase *model.Phase) ([]string, error) {
+	// Load phase config
+	file, err := l.loadJsonFile(l.Naming.PhaseFilePath(*phase), `phase config`)
+	if err != nil {
+		return nil, err
 	}
-	taskContent := file.Content
+
 	errors := utils.NewMultiError()
+	phaseContent := file.Content
+	parser := &phaseParser{content: phaseContent}
 
 	// Get name
-	if err := l.parseTaskName(&task, taskContent); err != nil {
+	phase.Name, err = parser.name()
+	if err != nil {
 		errors.Append(err)
 	}
 
-	// Get target config
-	if err := l.parseTaskConfigPath(&task, taskContent); err != nil {
+	// Get dependsOn
+	dependsOn, err := parser.dependsOnPaths()
+	if err != nil {
 		errors.Append(err)
 	}
 
 	// Set additional content
-	task.Content = taskContent
+	phase.Content = parser.additionalContent()
+	return dependsOn, errors.ErrorOrNil()
+}
 
-	// Handle errors
-	if errors.Len() > 0 {
-		l.errors.Append(utils.PrefixError(fmt.Sprintf(`invalid config "%s"`, file.Path), errors))
-		return
+func (l *localLoader) parseTaskConfig(task *model.Task) error {
+	// Load task config
+	file, err := l.loadJsonFile(l.Naming.TaskFilePath(*task), `task config`)
+	if err != nil {
+		return err
 	}
 
-	phase.Tasks = append(phase.Tasks, task)
+	errors := utils.NewMultiError()
+	taskContent := file.Content
+	parser := &taskParser{content: taskContent}
+
+	// Get name
+	task.Name, err = parser.name()
+	if err != nil {
+		errors.Append(err)
+	}
+
+	// Get target config path
+	configPath, err := parser.configPath()
+	if err != nil {
+		errors.Append(err)
+	}
+
+	// Get target config
+	if len(configPath) > 0 {
+		configPath = filesystem.Join(l.branch.Path(), configPath)
+		configKeyRaw, found := l.Naming.FindByPath(configPath)
+		if found {
+			if configKey, ok := configKeyRaw.(model.ConfigKey); ok {
+				task.ComponentId = configKey.ComponentId
+				task.ConfigId = configKey.Id
+			} else {
+				errors.Append(fmt.Errorf(`path "%s" must be config, found %s`, configPath, configKeyRaw.Kind().String()))
+			}
+		} else {
+			errors.Append(fmt.Errorf(`config "%s" not found`, configPath))
+		}
+	}
+
+	// Add task to phase
+	task.Content = parser.additionalContent()
+	return errors.ErrorOrNil()
 }
 
 func (l *localLoader) sortPhases() ([]*model.Phase, error) {
@@ -187,7 +221,7 @@ func (l *localLoader) sortPhases() ([]*model.Phase, error) {
 	// Add dependencies to graph
 	for _, phase := range l.phases {
 		graph.AddNode(phase.ObjectPath)
-		for _, dependsOnPath := range l.dependsOnMap[phase.ObjectPath] {
+		for _, dependsOnPath := range l.phaseDependsOn[phase.ObjectPath] {
 			if l.phasesByPath[dependsOnPath] != nil {
 				graph.AddEdge(phase.ObjectPath, dependsOnPath)
 			}
@@ -198,7 +232,7 @@ func (l *localLoader) sortPhases() ([]*model.Phase, error) {
 	order, cycles := graph.Sort()
 	if len(cycles) > 0 {
 		err := utils.NewMultiError()
-		err.Append(fmt.Errorf(`found cycles in phases "dependsOn" in "%s"`, l.phasesDir))
+		err.Append(fmt.Errorf(`found cycles in phases "dependsOn"`))
 		for _, cycle := range cycles {
 			var items []string
 			for _, item := range cycle {
@@ -230,10 +264,10 @@ func (l *localLoader) sortPhases() ([]*model.Phase, error) {
 		var dependsOn []*model.Phase
 		path := pathRaw.(string)
 		phase := l.phasesByPath[path]
-		for _, dependsOnPath := range l.dependsOnMap[path] {
+		for _, dependsOnPath := range l.phaseDependsOn[path] {
 			dependsOnPhase, found := l.phasesByPath[dependsOnPath]
 			if !found {
-				errors.Append(fmt.Errorf(`missing phase "%s", referenced from "%s"`, dependsOnPath, phase.Path()))
+				errors.Append(fmt.Errorf(`missing phase "%s", referenced from "%s"`, dependsOnPath, phase.ObjectPath))
 				continue
 			}
 			dependsOn = append(dependsOn, dependsOnPhase)
@@ -254,108 +288,13 @@ func (l *localLoader) sortPhases() ([]*model.Phase, error) {
 	return phases, errors.ErrorOrNil()
 }
 
-func (l *localLoader) parsePhaseName(phase *model.Phase, phaseContent *orderedmap.OrderedMap) error {
-	nameRaw, found := phaseContent.Get(`name`)
-	if !found {
-		return fmt.Errorf(`missing phase[%d] "name" key`, phase.Index)
-	}
-
-	name, ok := nameRaw.(string)
-	if !ok {
-		return fmt.Errorf(`phase[%d] "name" must be string, found %T`, phase.Index, nameRaw)
-	}
-
-	phase.Name = name
-	phaseContent.Delete(`name`)
-	return nil
-}
-
-func (l *localLoader) parsePhaseDependsOn(phase *model.Phase, phaseContent *orderedmap.OrderedMap) error {
-	var dependsOnSliceRaw []interface{}
-	dependsOnValueRaw, found := phaseContent.Get(`dependsOn`)
-	if found {
-		if v, ok := dependsOnValueRaw.([]interface{}); ok {
-			dependsOnSliceRaw = v
-		}
-	}
-	phaseContent.Delete(`dependsOn`)
-
-	// Convert []interface{} -> []string
-	var dependsOnPaths []string
-	for i, item := range dependsOnSliceRaw {
-		if v, ok := item.(string); ok {
-			dependsOnPaths = append(dependsOnPaths, v)
-		} else {
-			return fmt.Errorf(`"dependsOn" key must contain only strings, found %T, index %d`, item, i)
-		}
-	}
-
-	// Store "dependsOn" to map -> for sorting
-	l.dependsOnMap[phase.ObjectPath] = dependsOnPaths
-	return nil
-}
-
-func (l *localLoader) parseTaskName(task *model.Task, taskContent *orderedmap.OrderedMap) error {
-	nameRaw, found := taskContent.Get(`name`)
-	if !found {
-		return fmt.Errorf(`missing task[%d] "name" key`, task.Index)
-	}
-
-	name, ok := nameRaw.(string)
-	if !ok {
-		return fmt.Errorf(`task[%d] "name" must be string, found %T`, task.Index, nameRaw)
-	}
-
-	task.Name = name
-	taskContent.Delete(`name`)
-	return nil
-}
-
-func (l *localLoader) parseTaskConfigPath(task *model.Task, taskContent *orderedmap.OrderedMap) error {
-	targetRaw, found := taskContent.Get(`task`)
-	if !found {
-		return fmt.Errorf(`missing "task" key in task[%d] "%s"`, task.Index, task.Name)
-	}
-
-	target, ok := targetRaw.(orderedmap.OrderedMap)
-	if !ok {
-		return fmt.Errorf(`"task" key must be object, found %T, in task[%d] "%s"`, targetRaw, task.Index, task.Name)
-	}
-
-	// Get target config path
-	configPathRaw, found := target.Get(`configPath`)
-	if !found {
-		return fmt.Errorf(`missing "task.configPath" key in task[%d] "%s"`, task.Index, task.Name)
-	}
-	configPath, ok := configPathRaw.(string)
-	if !ok {
-		return fmt.Errorf(`"task.configPath" key must be string, found %T, in task[%d] "%s"`, configPathRaw, task.Index, task.Name)
-	}
-	target.Delete(`configPath`)
-	taskContent.Set(`task`, target)
-
-	// Get target config
-	configPath = filesystem.Join(l.branch.Path(), configPath)
-	configKeyRaw, found := l.Naming.FindByPath(configPath)
-	if !found {
-		return fmt.Errorf(`config "%s" not found, referenced from task[%d] "%s"`, configPath, task.Index, task.Name)
-	}
-	configKey, ok := configKeyRaw.(model.ConfigKey)
-	if !ok {
-		return fmt.Errorf(`path "%s" must be config, found %s, referenced from task[%d] "%s"`, configPath, configKeyRaw.Kind().String(), task.Index, task.Name)
-	}
-	task.ComponentId = configKey.ComponentId
-	task.ConfigId = configKey.Id
-	return nil
-}
-
-func (l *localLoader) loadJsonFile(path, desc string) *filesystem.JsonFile {
+func (l *localLoader) loadJsonFile(path, desc string) (*filesystem.JsonFile, error) {
 	if file, err := l.Fs.ReadJsonFile(path, desc); err != nil {
-		l.errors.Append(err)
-		return nil
+		// Remove absolute path from error
+		return nil, fmt.Errorf(strings.ReplaceAll(err.Error(), l.manifest.Path()+string(filesystem.PathSeparator), ``))
 	} else {
 		l.manifest.AddRelatedPath(path)
-		return file
+		return file, nil
 	}
 }
 
