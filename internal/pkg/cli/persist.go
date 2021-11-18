@@ -45,7 +45,7 @@ func persistCommand(root *rootCommand) *cobra.Command {
 			}
 
 			// Load manifest
-			projectManifest, err := manifest.LoadManifest(root.fs)
+			projectManifest, err := manifest.LoadManifest(root.fs, root.logger)
 			if err != nil {
 				return err
 			}

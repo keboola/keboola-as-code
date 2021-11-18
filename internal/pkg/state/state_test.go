@@ -9,6 +9,7 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -231,7 +232,7 @@ func loadTestManifest(t *testing.T, envs *env.Map, localState string) *manifest.
 	testhelper.ReplaceEnvsDir(fs, `/`, envs)
 
 	// Load manifest
-	m, err := manifest.LoadManifest(fs)
+	m, err := manifest.LoadManifest(fs, zap.NewNop().Sugar())
 	assert.NoError(t, err)
 	m.Project.Id = 12345
 	m.Project.ApiHost = "connection.keboola.com"
