@@ -276,7 +276,7 @@ func TestManifestCyclicDependency(t *testing.T) {
 
 func minimalJson() string {
 	return `{
-  "version": 1,
+  "version": 2,
   "project": {
     "id": 12345,
     "apiHost": "foo.bar"
@@ -304,7 +304,7 @@ func minimalJson() string {
 
 func minimalStruct() *Content {
 	return &Content{
-		Version: 1,
+		Version: 2,
 		Project: model.Project{
 			Id:      12345,
 			ApiHost: "foo.bar",
@@ -319,7 +319,7 @@ func minimalStruct() *Content {
 
 func fullJson() string {
 	return `{
-  "version": 1,
+  "version": 2,
   "project": {
     "id": 12345,
     "apiHost": "foo.bar"
@@ -415,7 +415,7 @@ func fullJson() string {
 
 func fullStruct() *Content {
 	return &Content{
-		Version: 1,
+		Version: 2,
 		Project: model.Project{
 			Id:      12345,
 			ApiHost: "foo.bar",
@@ -631,7 +631,7 @@ func fullStruct() *Content {
 
 func cyclicDependencyJson() string {
 	return `{
-  "version": 1,
+  "version": 2,
   "project": {
     "id": 12345,
     "apiHost": "foo.bar"

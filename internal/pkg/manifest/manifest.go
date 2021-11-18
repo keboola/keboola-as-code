@@ -27,7 +27,7 @@ type Manifest struct {
 }
 
 type Content struct {
-	Version int           `json:"version" validate:"required,min=1,max=1"`
+	Version int           `json:"version" validate:"required,min=1,max=2"`
 	Project model.Project `json:"project" validate:"required"`
 	SortBy  string        `json:"sortBy" validate:"oneof=id path"`
 	Naming  *model.Naming `json:"naming" validate:"required"`
@@ -48,7 +48,7 @@ func newManifest(projectId int, apiHost string, fs filesystem.Fs) *Manifest {
 	return &Manifest{
 		fs: fs,
 		Content: &Content{
-			Version:  1,
+			Version:  2,
 			Project:  model.Project{Id: projectId, ApiHost: apiHost},
 			SortBy:   model.SortById,
 			Naming:   model.DefaultNamingWithIds(),
