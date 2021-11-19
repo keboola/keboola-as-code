@@ -54,8 +54,7 @@ kbc --version
 #### [Homebrew](https://brew.sh/)
 
 ```
-brew tap keboola/homebrew-tap
-brew install keboola-as-code
+brew install keboola/keboola-cli/keboola-cli
 kbc --version
 ```
 
