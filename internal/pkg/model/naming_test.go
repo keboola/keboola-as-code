@@ -168,7 +168,7 @@ func TestDefaultNaming(t *testing.T) {
 	// VariablesConfig values
 	assert.Equal(
 		t,
-		"my-branch/my-config/variables/values/default-values",
+		"my-branch/my-config/variables/values/789-default-values",
 		n.ConfigRowPath(
 			"my-branch/my-config/variables",
 			&Component{

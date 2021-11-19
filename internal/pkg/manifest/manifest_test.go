@@ -290,7 +290,7 @@ func minimalJson() string {
     "sharedCodeConfig": "_shared/{target_component_id}",
     "sharedCodeConfigRow": "codes/{config_row_id}-{config_row_name}",
     "variablesConfig": "variables",
-    "variablesValuesRow": "values/{config_row_name}"
+    "variablesValuesRow": "values/{config_row_id}-{config_row_name}"
   },
   "allowedBranches": [
     "*"
@@ -333,7 +333,7 @@ func fullJson() string {
     "sharedCodeConfig": "_shared/{target_component_id}",
     "sharedCodeConfigRow": "codes/{config_row_id}-{config_row_name}",
     "variablesConfig": "variables",
-    "variablesValuesRow": "values/{config_row_name}"
+    "variablesValuesRow": "values/{config_row_id}-{config_row_name}"
   },
   "allowedBranches": [
     "foo",

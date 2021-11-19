@@ -75,7 +75,7 @@ func DefaultNamingWithIds() *Naming {
 		SharedCodeConfig:    "_shared/{target_component_id}",
 		SharedCodeConfigRow: "codes/{config_row_id}-{config_row_name}",
 		VariablesConfig:     "variables",
-		VariablesValuesRow:  "values/{config_row_name}",
+		VariablesValuesRow:  "values/{config_row_id}-{config_row_name}",
 		usedLock:            &sync.Mutex{},
 		usedByPath:          make(map[string]Key),
 		usedByKey:           make(map[string]PathInProject),
