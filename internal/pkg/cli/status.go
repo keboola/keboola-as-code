@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
@@ -30,7 +31,7 @@ func statusCommand(root *rootCommand) *cobra.Command {
 			}
 
 			// Load manifest
-			projectManifest, err := manifest.LoadManifest(root.fs)
+			projectManifest, err := manifest.LoadManifest(root.fs, zap.NewNop().Sugar())
 			if err != nil {
 				return err
 			}

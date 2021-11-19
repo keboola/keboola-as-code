@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -147,7 +148,7 @@ func TestAfterLocalLoadMapper(t *testing.T) {
 	testhelper.ReplaceEnvsDir(fs, `/`, envs)
 
 	// Load objects
-	m, err := manifest.LoadManifest(fs)
+	m, err := manifest.LoadManifest(fs, zap.NewNop().Sugar())
 	assert.NoError(t, err)
 	uow.LoadAll(m.Content)
 	assert.NoError(t, uow.Invoke())

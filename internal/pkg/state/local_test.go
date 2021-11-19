@@ -7,6 +7,7 @@ import (
 
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -286,7 +287,7 @@ func loadManifest(t *testing.T, projectDirName string) *manifest.Manifest {
 	testhelper.ReplaceEnvsDir(fs, `/`, envs)
 
 	// Load manifest
-	m, err := manifest.LoadManifest(fs)
+	m, err := manifest.LoadManifest(fs, zap.NewNop().Sugar())
 	if err != nil {
 		assert.FailNow(t, err.Error())
 	}

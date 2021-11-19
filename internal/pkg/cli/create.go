@@ -116,7 +116,7 @@ func createBranchCommand(root *rootCommand) *cobra.Command {
 			}
 
 			// Add new branch to the allowed branches if needed
-			projectManifest, err := manifest.LoadManifest(root.fs)
+			projectManifest, err := manifest.LoadManifest(root.fs, root.logger)
 			if err != nil {
 				return fmt.Errorf(`cannot load manifest: %w`, err)
 			}
@@ -396,7 +396,7 @@ func loadLocalState(root *rootCommand) (*state.State, *remote.StorageApi, error)
 	}
 
 	// Load manifest
-	projectManifest, err := manifest.LoadManifest(root.fs)
+	projectManifest, err := manifest.LoadManifest(root.fs, root.logger)
 	if err != nil {
 		return nil, nil, err
 	}

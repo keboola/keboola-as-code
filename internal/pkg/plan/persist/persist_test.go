@@ -9,6 +9,7 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
@@ -913,7 +914,7 @@ func (tc *testCase) run(t *testing.T) {
 	fs := testhelper.NewMemoryFsFrom(inputDir)
 
 	// Load manifest
-	m, err := manifest.LoadManifest(fs)
+	m, err := manifest.LoadManifest(fs, zap.NewNop().Sugar())
 	assert.NoError(t, err)
 
 	// Create API

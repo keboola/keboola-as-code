@@ -50,7 +50,7 @@ func (a *diffProcessCmd) run() error {
 	}
 
 	// Load manifest
-	projectManifest, err := manifest.LoadManifest(a.root.fs)
+	projectManifest, err := manifest.LoadManifest(a.root.fs, a.root.logger)
 	if err != nil {
 		return err
 	}
