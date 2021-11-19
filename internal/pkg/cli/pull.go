@@ -46,7 +46,9 @@ func pullCommand(root *rootCommand) *cobra.Command {
 				projectManifest := projectState.Manifest()
 
 				// Log untracked paths
-				projectState.LogUntrackedPaths(logger)
+				if !force {
+					projectState.LogUntrackedPaths(logger)
+				}
 
 				// Get plan
 				plan, err := pull.NewPlan(diffResults)

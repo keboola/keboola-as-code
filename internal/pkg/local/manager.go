@@ -32,6 +32,7 @@ type UnitOfWork struct {
 	errors             *utils.Error
 	lock               *sync.Mutex
 	skipNotFoundErr    bool
+	localObjects       *model.StateObjects
 	loadedObjectStates []model.ObjectState
 	renamed            []model.RenameAction
 	invoked            bool
@@ -61,11 +62,12 @@ func (m *Manager) Fs() filesystem.Fs {
 
 func (m *Manager) NewUnitOfWork(ctx context.Context) *UnitOfWork {
 	u := &UnitOfWork{
-		Manager: m,
-		ctx:     ctx,
-		workers: utils.NewOrderedMap(),
-		lock:    &sync.Mutex{},
-		errors:  utils.NewMultiError(),
+		Manager:      m,
+		ctx:          ctx,
+		workers:      utils.NewOrderedMap(),
+		lock:         &sync.Mutex{},
+		errors:       utils.NewMultiError(),
+		localObjects: m.state.LocalObjects(),
 	}
 	return u
 }
@@ -136,6 +138,26 @@ func (u *UnitOfWork) LoadObject(record model.Record) {
 	u.
 		workersFor(record.Level()).
 		AddWorker(func() error {
+			// Has been parent loaded?
+			if parentKey, err := record.Key().ParentKey(); err != nil {
+				return err
+			} else if parentKey != nil {
+				// Has object a parent?
+				if _, found := u.localObjects.Get(parentKey); !found {
+					// Parent is not loaded -> skip
+					record.State().SetInvalid()
+					if parent, found := u.manifest.GetRecord(parentKey); found && parent.State().IsNotFound() {
+						// Parent is not found
+						record.State().SetNotFound()
+						if !u.skipNotFoundErr {
+							return fmt.Errorf(`%s "%s" not found`, record.Kind().Name, record.Path())
+						}
+					}
+					return nil
+				}
+			}
+
+			// Load object from filesystem
 			object := record.NewEmptyObject()
 			if found, err := u.Manager.loadObject(record, object); err != nil {
 				record.State().SetInvalid()

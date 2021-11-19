@@ -159,3 +159,57 @@ func TestAfterLocalLoadMapper(t *testing.T) {
 	// OnObjectsLoad event has been called
 	assert.Equal(t, []string{`branch "111"`, `config "branch:111/component:ex-generic-v2/config:456"`}, testMapperInst.onLoadCalls)
 }
+
+func TestSkipChildrenLoadIfParentIsInvalid(t *testing.T) {
+	t.Parallel()
+	manager, _ := newTestLocalManager(t)
+	fs := manager.Fs()
+	uow := manager.NewUnitOfWork(context.Background())
+
+	// Init dir
+	_, testFile, _, _ := runtime.Caller(0)
+	testDir := filesystem.Dir(testFile)
+	inputDir := filesystem.Join(testDir, `..`, `fixtures`, `local`, `branch-invalid-meta-json`)
+	assert.NoError(t, aferofs.CopyFs2Fs(nil, inputDir, fs, ``))
+
+	// Setup manifest
+	branchManifest := &model.BranchManifest{
+		BranchKey: model.BranchKey{Id: 123},
+		Paths: model.Paths{
+			PathInProject: model.NewPathInProject(``, `main`),
+		},
+	}
+	configManifest := &model.ConfigManifestWithRows{
+		ConfigManifest: &model.ConfigManifest{
+			ConfigKey: model.ConfigKey{BranchId: 123, ComponentId: `foo.bar`, Id: `456`},
+			Paths: model.Paths{
+				PathInProject: model.NewPathInProject(`main`, `config`),
+			},
+		},
+	}
+	manager.manifest.Content.Branches = []*model.BranchManifest{branchManifest}
+	manager.manifest.Content.Configs = []*model.ConfigManifestWithRows{configManifest}
+	assert.False(t, branchManifest.State().IsInvalid())
+	assert.False(t, configManifest.State().IsInvalid())
+	assert.False(t, branchManifest.State().IsNotFound())
+	assert.False(t, configManifest.State().IsNotFound())
+
+	// Load all
+	uow.LoadAll(manager.manifest.Content)
+
+	// Invoke and check error
+	// Branch is invalid, so config does not read at all (no error that it does not exist).
+	err := uow.Invoke()
+	expectedErr := `
+branch metadata file "main/meta.json" is invalid:
+  - invalid character 'f' looking for beginning of object key string, offset: 3
+`
+	assert.Error(t, err)
+	assert.Equal(t, strings.Trim(expectedErr, "\n"), err.Error())
+
+	// Check manifest records
+	assert.True(t, branchManifest.State().IsInvalid())
+	assert.True(t, configManifest.State().IsInvalid())
+	assert.False(t, branchManifest.State().IsNotFound())
+	assert.False(t, configManifest.State().IsNotFound())
+}
