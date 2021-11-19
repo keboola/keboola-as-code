@@ -321,6 +321,10 @@ func (v Blocks) Clone() Blocks {
 
 func (c *Code) Clone() *Code {
 	clone := *c
+	clone.Scripts = make([]string, len(c.Scripts))
+	for index, script := range c.Scripts {
+		clone.Scripts[index] = script
+	}
 	return &clone
 }
 

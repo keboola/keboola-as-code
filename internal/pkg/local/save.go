@@ -25,7 +25,7 @@ func (m *Manager) saveObject(record model.Record, object model.Object, changedFi
 
 	w := modelWriter{
 		Manager:         m,
-		LocalSaveRecipe: &model.LocalSaveRecipe{ChangedFields: changedFields, Object: object, Record: record},
+		LocalSaveRecipe: &model.LocalSaveRecipe{ChangedFields: changedFields, Object: object.Clone(), Record: record},
 		backups:         make(map[string]string),
 		errors:          utils.NewMultiError(),
 	}

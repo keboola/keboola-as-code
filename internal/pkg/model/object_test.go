@@ -148,6 +148,9 @@ func assertDeepEqualNotSame(t *testing.T, a, b interface{}, path string) {
 				valueB.Index(i).Interface(),
 				path+`.`+cast.ToString(i),
 			)
+
+			// Underlying array must be different, check address of the value
+			assert.NotSame(t, valueA.Index(i).Addr().Interface(), valueB.Index(i).Addr().Interface(), path+`.`+cast.ToString(i))
 		}
 	case reflect.Map:
 		for _, k := range valueA.MapKeys() {
