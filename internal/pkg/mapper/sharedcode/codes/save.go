@@ -63,7 +63,7 @@ func (w *writer) save() error {
 	}
 
 	// Remove code content from JSON
-	rowContent.Delete(model.SharedCodeContentKey)
+	w.Configuration.Content.Delete(model.SharedCodeContentKey)
 
 	// Convert []interface{} -> []string
 	var scripts []string

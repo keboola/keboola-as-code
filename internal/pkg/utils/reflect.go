@@ -41,7 +41,8 @@ func MapFromOneTaggedField(tag string, model interface{}) *orderedmap.OrderedMap
 	}
 
 	reflection := reflect.ValueOf(model).Elem()
-	return reflection.FieldByName(field.Name).Interface().(*orderedmap.OrderedMap)
+	m := reflection.FieldByName(field.Name).Interface().(*orderedmap.OrderedMap)
+	return CloneOrderedMap(m)
 }
 
 func StringFromOneTaggedField(tag string, model interface{}) (str string, found bool) {
