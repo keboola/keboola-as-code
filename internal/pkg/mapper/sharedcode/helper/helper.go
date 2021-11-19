@@ -128,61 +128,61 @@ func (h *SharedCodeHelper) GetSharedCodeKey(object model.Object) (*model.Config,
 	return transformation, sharedCodeKey, nil
 }
 
-func (h *SharedCodeHelper) GetSharedCodeByPath(branchKey model.BranchKey, path string) *model.ConfigState {
+func (h *SharedCodeHelper) GetSharedCodeByPath(branchKey model.BranchKey, path string) (*model.ConfigState, error) {
 	// Get branch
 	branch, found := h.state.Get(branchKey)
 	if !found {
-		return nil
+		return nil, fmt.Errorf(`%s not found`, branchKey.Desc())
 	}
 
 	// Get key by path
 	path = filesystem.Join(branch.Path(), path)
 	keyRaw, found := h.naming.FindByPath(path)
 	if !found {
-		return nil
+		return nil, fmt.Errorf(`shared code "%s" not found`, path)
 	}
 
 	// Is config?
 	key, ok := keyRaw.(model.ConfigKey)
 	if !ok {
-		return nil
+		return nil, fmt.Errorf(`path "%s" it not config`, path)
 	}
 
 	// Is from right parent?
 	if branchKey != key.BranchKey() {
-		return nil
+		return nil, fmt.Errorf(`config "%s" is not from branch "%s"`, path, branch.Path())
 	}
 
 	// Shared code?
 	if key.ComponentId != model.SharedCodeComponentId {
-		return nil
+		return nil, fmt.Errorf(`config "%s" is not shared code`, path)
 	}
 
 	// Ok
-	return h.state.MustGet(key).(*model.ConfigState)
+	return h.state.MustGet(key).(*model.ConfigState), nil
 }
 
-func (h *SharedCodeHelper) GetSharedCodeRowByPath(sharedCode *model.ConfigState, path string) *model.ConfigRowState {
+func (h *SharedCodeHelper) GetSharedCodeRowByPath(sharedCode *model.ConfigState, path string) (*model.ConfigRowState, error) {
 	// Get key by path
 	path = filesystem.Join(sharedCode.Path(), path)
 	keyRaw, found := h.naming.FindByPath(path)
 	if !found {
-		return nil
+		return nil, fmt.Errorf(`shared code row "%s" not found`, path)
 	}
 
 	// Is config row?
 	key, ok := keyRaw.(model.ConfigRowKey)
 	if !ok {
-		return nil
+		return nil, fmt.Errorf(`path "%s" is not config row`, path)
 	}
 
 	// Is from parent?
 	if sharedCode.Key() != key.ConfigKey() {
-		return nil
+		return nil, fmt.Errorf(`row "%s" is not from shared code "%s"`, path, sharedCode.Path())
 	}
 
 	// Ok
-	return h.state.MustGet(key).(*model.ConfigRowState)
+	return h.state.MustGet(key).(*model.ConfigRowState), nil
 }
 
 func (h *SharedCodeHelper) GetSharedCodeVariablesId(configRow *model.ConfigRow) (string, bool) {

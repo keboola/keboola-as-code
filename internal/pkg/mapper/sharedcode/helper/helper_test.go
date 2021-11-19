@@ -134,15 +134,22 @@ func TestGetSharedCodeByPath(t *testing.T) {
 	sharedCodeKey := fixtures.CreateSharedCode(t, state, naming)
 
 	// Found
-	result := h.GetSharedCodeByPath(model.BranchKey{Id: 123}, `_shared/keboola.python-transformation-v2`)
+	result, err := h.GetSharedCodeByPath(model.BranchKey{Id: 123}, `_shared/keboola.python-transformation-v2`)
+	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, sharedCodeKey, result.Key())
 
 	// Different branch
-	assert.Nil(t, h.GetSharedCodeByPath(model.BranchKey{Id: 456}, `_shared/keboola.python-transformation-v2`))
+	result, err = h.GetSharedCodeByPath(model.BranchKey{Id: 456}, `_shared/keboola.python-transformation-v2`)
+	assert.Nil(t, result)
+	assert.Error(t, err)
+	assert.Equal(t, `branch "456" not found`, err.Error())
 
 	// Not found
-	assert.Nil(t, h.GetSharedCodeByPath(model.BranchKey{Id: 123}, `foo/bar`))
+	result, err = h.GetSharedCodeByPath(model.BranchKey{Id: 123}, `foo/bar`)
+	assert.Nil(t, result)
+	assert.Error(t, err)
+	assert.Equal(t, `shared code "branch/foo/bar" not found`, err.Error())
 }
 
 func TestGetSharedCodeRowByPath(t *testing.T) {
@@ -155,7 +162,8 @@ func TestGetSharedCodeRowByPath(t *testing.T) {
 	sharedCode := state.MustGet(sharedCodeKey).(*model.ConfigState)
 
 	// Found
-	result := h.GetSharedCodeRowByPath(sharedCode, `codes/code1`)
+	result, err := h.GetSharedCodeRowByPath(sharedCode, `codes/code1`)
+	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, model.ConfigRowKey{
 		BranchId:    123,
@@ -165,7 +173,10 @@ func TestGetSharedCodeRowByPath(t *testing.T) {
 	}, result.Key())
 
 	// Not found
-	assert.Nil(t, h.GetSharedCodeRowByPath(sharedCode, `foo/bar`))
+	result, err = h.GetSharedCodeRowByPath(sharedCode, `foo/bar`)
+	assert.Nil(t, result)
+	assert.Error(t, err)
+	assert.Equal(t, `shared code row "branch/_shared/keboola.python-transformation-v2/foo/bar" not found`, err.Error())
 }
 
 func TestGetSharedCodeVariablesId(t *testing.T) {

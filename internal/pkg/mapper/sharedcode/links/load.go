@@ -39,10 +39,10 @@ func (m *mapper) replaceSharedCodePathById(object model.Object) error {
 	}()
 
 	// Get shared code transformation
-	sharedCodeState := m.GetSharedCodeByPath(transformation.BranchKey(), sharedCodePath)
-	if sharedCodeState == nil {
+	sharedCodeState, err := m.GetSharedCodeByPath(transformation.BranchKey(), sharedCodePath)
+	if err != nil {
 		errors := utils.NewMultiError()
-		errors.Append(fmt.Errorf(`shared code "%s" not found`, sharedCodePath))
+		errors.Append(err)
 		errors.AppendRaw(fmt.Sprintf(`  - referenced from %s`, transformation.Desc()))
 		return errors
 	}
@@ -105,11 +105,11 @@ func (m *mapper) replacePathByIdInScript(script string, code *model.Code, shared
 	}
 
 	// Get shared code config row
-	row := m.GetSharedCodeRowByPath(sharedCode, path)
-	if row == nil {
+	row, err := m.GetSharedCodeRowByPath(sharedCode, path)
+	if err != nil {
 		errors := utils.NewMultiError()
-		errors.Append(fmt.Errorf(`shared code row "%s" not found`, path))
-		errors.AppendRaw(fmt.Sprintf(`  - referenced from %s`, code.Desc()))
+		errors.Append(err)
+		errors.AppendRaw(fmt.Sprintf(`  - referenced from "%s"`, code.Path()))
 		return "", "", errors
 	}
 
