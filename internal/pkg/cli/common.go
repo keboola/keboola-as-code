@@ -88,7 +88,7 @@ func (a *diffProcessCmd) run() error {
 		}
 		if projectState.LocalErrors().Len() > 0 {
 			if a.ignoreInvalidState {
-				logger.Info(utils.PrefixError("Ignoring invalid local state", projectState.LocalErrors()))
+				logger.Info(`Ignoring invalid local state.`)
 			} else {
 				errors := utils.PrefixError("project local state is invalid", projectState.LocalErrors())
 				if a.invalidStateCanBeIgnored {
