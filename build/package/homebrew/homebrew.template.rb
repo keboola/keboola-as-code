@@ -4,23 +4,23 @@ class KeboolaCli < Formula
   license "MIT"
 
   if OS.mac? && Hardware::CPU.arm?
-    url "https://cli-dist.keboola.com/zip/kbc_${VERSION}_darwin_arm64.zip"
+    url "https://cli-dist.keboola.com/zip/keboola_cli_${VERSION}_darwin_arm64.zip"
     sha256 "${DARWIN_ARM_TARGET_SHA256}"
   end
   if OS.mac? && Hardware::CPU.intel?
-    url "https://cli-dist.keboola.com/zip/kbc_${VERSION}_darwin_amd64.zip"
+    url "https://cli-dist.keboola.com/zip/keboola_cli_${VERSION}_darwin_amd64.zip"
     sha256 "${DARWIN_AMD_TARGET_SHA256}"
   end
   if OS.linux? && Hardware::CPU.intel?
-    url "https://cli-dist.keboola.com/zip/kbc_${VERSION}_linux_amd64.zip"
+    url "https://cli-dist.keboola.com/zip/keboola_cli_${VERSION}_linux_amd64.zip"
     sha256 "${LINUX_AMD_TARGET_SHA256}"
   end
   if OS.linux? && Hardware::CPU.arm? && !Hardware::CPU.is_64_bit?
-    url "https://cli-dist.keboola.com/zip/kbc_${VERSION}_linux_armv6.zip"
+    url "https://cli-dist.keboola.com/zip/keboola_cli_${VERSION}_linux_armv6.zip"
     sha256 "${LINUX_ARM_TARGET_SHA256}"
   end
   if OS.linux? && Hardware::CPU.arm? && Hardware::CPU.is_64_bit?
-    url "https://cli-dist.keboola.com/zip/kbc_${VERSION}_linux_arm64.zip"
+    url "https://cli-dist.keboola.com/zip/keboola_cli_${VERSION}_linux_arm64.zip"
     sha256 "${LINUX_ARM64_TARGET_SHA256}"
   end
 

@@ -45,6 +45,7 @@ snapshot:
 
 nfpms:
   - id: packages
+    package_name: keboola-cli
     vendor: Keboola
     homepage: https://cli.keboola.com
     maintainer: Keboola <support@keboola.com>
