@@ -39,7 +39,7 @@ func (a *diffProcessCmd) run() error {
 	options := a.root.options
 
 	// Validate project directory
-	if err := ValidateMetadataFound(a.root.fs); err != nil {
+	if err := ValidateMetadataFound(a.root.logger, a.root.fs); err != nil {
 		return err
 	}
 
@@ -92,7 +92,8 @@ func (a *diffProcessCmd) run() error {
 			} else {
 				errors := utils.PrefixError("project local state is invalid", projectState.LocalErrors())
 				if a.invalidStateCanBeIgnored {
-					errors.AppendRaw("\nUse --force to override the invalid local state.")
+					logger.Info()
+					logger.Info("Use --force to override the invalid local state.")
 				}
 				return errors
 			}
@@ -129,12 +130,12 @@ func SaveManifest(projectManifest *manifest.Manifest, logger *zap.SugaredLogger)
 	return false, nil
 }
 
-func ValidateMetadataFound(fs filesystem.Fs) error {
+func ValidateMetadataFound(logger *zap.SugaredLogger, fs filesystem.Fs) error {
 	err := utils.NewMultiError()
 	if !fs.IsDir(filesystem.MetadataDir) {
 		err.Append(fmt.Errorf(`none of this and parent directories is project dir`))
-		err.AppendRaw(`  Project directory must contain the ".keboola" metadata directory.`)
-		err.AppendRaw(`  Please change working directory to a project directory or use the "init" command.`)
+		logger.Info(`Project directory must contain the ".keboola" metadata directory.`)
+		logger.Info(`Please change working directory to a project directory or use the "init" command.`)
 	}
 
 	return err.ErrorOrNil()

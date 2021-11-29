@@ -14,7 +14,7 @@ type modelWriter struct {
 	*Manager
 	*model.LocalSaveRecipe
 	backups map[string]string
-	errors  *utils.Error
+	errors  *utils.MultiError
 }
 
 // saveObject to manifest and filesystem.

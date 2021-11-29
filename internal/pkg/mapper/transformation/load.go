@@ -117,7 +117,7 @@ type localLoader struct {
 	config    *model.Config
 	blocksDir string
 	blocks    []*model.Block
-	errors    *utils.Error
+	errors    *utils.MultiError
 }
 
 func (l *localLoader) loadBlocks() error {

@@ -19,7 +19,7 @@ type executor struct {
 	logger  *zap.SugaredLogger
 	tickets *remote.TicketProvider
 	uow     *local.UnitOfWork
-	errors  *utils.Error
+	errors  *utils.MultiError
 }
 
 func newExecutor(logger *zap.SugaredLogger, api *remote.StorageApi, projectState *state.State, plan *Plan) *executor {

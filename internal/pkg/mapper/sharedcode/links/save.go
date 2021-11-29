@@ -34,7 +34,7 @@ func (m *mapper) replaceSharedCodeIdByPath(recipe *model.LocalSaveRecipe) error 
 	if !found {
 		errors := utils.NewMultiError()
 		errors.Append(fmt.Errorf(`missing shared code %s`, sharedCodeKey.Desc()))
-		errors.AppendRaw(fmt.Sprintf(`  - referenced from %s`, transformation.Desc()))
+		errors.Append(fmt.Errorf(`  - referenced from %s`, transformation.Desc()))
 		return errors
 	}
 	sharedCodeState := sharedCodeRaw.(*model.ConfigState)
@@ -48,9 +48,9 @@ func (m *mapper) replaceSharedCodeIdByPath(recipe *model.LocalSaveRecipe) error 
 	if targetComponentId != transformation.ComponentId {
 		errors := utils.NewMultiError()
 		errors.Append(fmt.Errorf(`unexpected shared code "%s" in %s`, model.SharedCodeComponentIdContentKey, sharedCodeState.Desc()))
-		errors.AppendRaw(fmt.Sprintf(`  - expected "%s"`, transformation.ComponentId))
-		errors.AppendRaw(fmt.Sprintf(`  - found "%s"`, targetComponentId))
-		errors.AppendRaw(fmt.Sprintf(`  - referenced from %s`, transformation.Desc()))
+		errors.Append(fmt.Errorf(`  - expected "%s"`, transformation.ComponentId))
+		errors.Append(fmt.Errorf(`  - found "%s"`, targetComponentId))
+		errors.Append(fmt.Errorf(`  - referenced from %s`, transformation.Desc()))
 		return errors
 	}
 
@@ -92,7 +92,7 @@ func (m *mapper) replaceIdByPathInScript(script string, code *model.Code, shared
 	if !found {
 		errors := utils.NewMultiError()
 		errors.Append(fmt.Errorf(`shared code %s not found`, rowKey.Desc()))
-		errors.AppendRaw(fmt.Sprintf(`  - referenced from %s`, code.Desc()))
+		errors.Append(fmt.Errorf(`  - referenced from %s`, code.Desc()))
 		return "", errors
 	}
 

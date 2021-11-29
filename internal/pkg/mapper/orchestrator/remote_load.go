@@ -31,7 +31,7 @@ type remoteLoader struct {
 	allObjects *model.StateObjects
 	config     *model.Config
 	manifest   *model.ConfigManifest
-	errors     *utils.Error
+	errors     *utils.MultiError
 }
 
 func (l *remoteLoader) load() error {

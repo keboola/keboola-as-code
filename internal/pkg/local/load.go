@@ -11,7 +11,7 @@ import (
 type modelLoader struct {
 	*Manager
 	*model.LocalLoadRecipe
-	errors *utils.Error
+	errors *utils.MultiError
 }
 
 // loadObject from manifest and filesystem.

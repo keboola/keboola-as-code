@@ -178,8 +178,8 @@ func (t *VariablesValuesForRelation) NewOtherSideRelation(relationDefinedOn Obje
 	if variablesForRaw == nil {
 		errors := utils.NewMultiError()
 		errors.Append(fmt.Errorf(`missing relation "%s" in %s`, VariablesForRelType, variablesConfig.Desc()))
-		errors.AppendRaw(fmt.Sprintf(`  - referenced from %s`, relationDefinedOn.Desc()))
-		errors.AppendRaw(fmt.Sprintf(`  - by relation "%s"`, t.Type()))
+		errors.Append(fmt.Errorf(`  - referenced from %s`, relationDefinedOn.Desc()))
+		errors.Append(fmt.Errorf(`  - by relation "%s"`, t.Type()))
 		return nil, nil, errors
 	}
 	variablesForRelation := variablesForRaw.(*VariablesForRelation)
@@ -241,8 +241,8 @@ func (t *VariablesValuesFromRelation) NewOtherSideRelation(relationDefinedOn Obj
 	} else if variablesFromRel == nil {
 		errors := utils.NewMultiError()
 		errors.Append(fmt.Errorf(`missing relation "%s" in %s`, VariablesFromRelType, config.Desc()))
-		errors.AppendRaw(fmt.Sprintf(`  - referenced from %s`, relationDefinedOn.Desc()))
-		errors.AppendRaw(fmt.Sprintf(`  - by relation "%s"`, t.Type()))
+		errors.Append(fmt.Errorf(`  - referenced from %s`, relationDefinedOn.Desc()))
+		errors.Append(fmt.Errorf(`  - by relation "%s"`, t.Type()))
 		return nil, nil, errors
 	}
 

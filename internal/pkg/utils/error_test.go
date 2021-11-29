@@ -19,7 +19,6 @@ func TestMultiError(t *testing.T) {
 	t.Parallel()
 	e := NewMultiError()
 	e.Append(fmt.Errorf(`12345`))
-	e.AppendRaw(`45678`)
 
 	merged := NewMultiError()
 	merged.Append(fmt.Errorf("merged 1"))
@@ -28,16 +27,18 @@ func TestMultiError(t *testing.T) {
 	sub := NewMultiError()
 	sub.Append(fmt.Errorf(`abc`))
 	sub.Append(fmt.Errorf(`def`))
-	sub.AppendRaw(`xyz`)
 
 	sub1 := NewMultiError()
 	sub1.Append(fmt.Errorf("x"))
 	sub1.Append(fmt.Errorf("y"))
 	sub2 := NewMultiError()
 	sub2.Append(fmt.Errorf("z"))
+	sub3 := NewMultiError()
+	sub3.Append(fmt.Errorf("this is a very long line from error message, it is printed on new line"))
 
 	sub.AppendWithPrefix("sub1", sub1)
-	sub.AppendWithPrefix("sub1", sub2)
+	sub.AppendWithPrefix("sub2", sub2)
+	sub.AppendWithPrefix("sub3", sub3)
 
 	e.Append(merged)
 	e.AppendWithPrefix("my prefix", sub)
@@ -45,18 +46,17 @@ func TestMultiError(t *testing.T) {
 
 	expected := `
 - 12345
-45678
 - merged 1
 - merged 2
 - my prefix:
   - abc
   - def
-  - xyz
   - sub1:
     - x
     - y
-  - sub1:
-    - z
+  - sub2: z
+  - sub3:
+    - this is a very long line from error message, it is printed on new line
 - last error
 `
 	assert.Equal(t, strings.TrimSpace(expected), e.Error())

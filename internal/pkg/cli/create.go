@@ -56,7 +56,7 @@ func createCommand(root *rootCommand) *cobra.Command {
 		Long:  longDesc,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Validate project directory
-			if err := ValidateMetadataFound(root.fs); err != nil {
+			if err := ValidateMetadataFound(root.logger, root.fs); err != nil {
 				return err
 			}
 
@@ -385,7 +385,7 @@ func loadLocalState(root *rootCommand) (*state.State, *remote.StorageApi, error)
 	logger := root.logger
 
 	// Validate project directory
-	if err := ValidateMetadataFound(root.fs); err != nil {
+	if err := ValidateMetadataFound(root.logger, root.fs); err != nil {
 		return nil, nil, err
 	}
 

@@ -304,13 +304,11 @@ func TestMapAfterRemoteLoadWarnings(t *testing.T) {
 	// Warnings
 	expectedWarnings := `
 WARN  Warning: invalid orchestrator config "branch:123/component:keboola.orchestrator/config:456":
-  - invalid phase[1]:
-    - missing "name" key
+  - invalid phase[1]: missing "name" key
   - invalid phase[2]:
     - missing "id" key
     - missing "name" key
-  - invalid task[1]:
-    - phase "789" not found
+  - invalid task[1]: phase "789" not found
   - invalid task[2]:
     - missing "id" key
     - missing "name" key
@@ -601,7 +599,7 @@ func TestMapAfterRemoteLoadDepsCycles(t *testing.T) {
 	// Warnings
 	expectedWarnings := `
 WARN  Warning: invalid orchestrator config "branch:123/component:keboola.orchestrator/config:456":
-  - found cycles in phases "dependsOn"
+  - found cycles in phases "dependsOn":
     - 3 -> 4 -> 3
     - 1 -> 2 -> 1
     - 5 -> 8 -> 7 -> 6 -> 5

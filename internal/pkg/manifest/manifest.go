@@ -2,6 +2,7 @@ package manifest
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/iancoleman/orderedmap"
@@ -80,8 +81,10 @@ func LoadManifest(fs filesystem.Fs, logger *zap.SugaredLogger) (*Manifest, error
 	}
 
 	// Validate version, print instructions about migration
-	if err := validateVersion(version.Version); err != nil {
-		logger.Warn(`Warning: `, err)
+	if warning, err := validateVersion(version.Version); err != nil {
+		return nil, err
+	} else if warning != "" {
+		logger.Warn(`Warning: `, warning)
 	}
 
 	// Read JSON file
@@ -401,21 +404,20 @@ func (m *Manifest) sortRecords() {
 	})
 }
 
-func validateVersion(version int) error {
+func validateVersion(version int) (warning string, err error) {
 	if version < 1 || version > 2 {
-		return fmt.Errorf(`unknown version "%d" found in manifest.json`, version)
+		return "", fmt.Errorf(`unknown version "%d" found in manifest.json`, version)
 	}
 
 	if version == 1 {
-		err := utils.NewMultiError()
-		err.AppendRaw(`Your project needs to be migrated to the new version of the Keboola CLI.`)
-		err.AppendRaw(`  1. Make sure you have a backup of the current project directory (eg. git commit, git push).`)
-		err.AppendRaw(`  2. Then run "kbc pull --force" to overwrite local state.`)
-		err.AppendRaw(`  3. Manually check that there are no unexpected changes in the project directory (git diff).`)
-		err.AppendRaw(``)
-		err.AppendRaw(``)
-		return err
+		warning = `
+Your project needs to be migrated to the new version of the Keboola CLI.
+  1. Make sure you have a backup of the current project directory (eg. git commit, git push).
+  2. Then run "kbc pull --force" to overwrite local state.
+  3. Manually check that there are no unexpected changes in the project directory (git diff).
+		`
+		return strings.TrimLeft(warning, "\n"), nil
 	}
 
-	return nil
+	return "", nil
 }

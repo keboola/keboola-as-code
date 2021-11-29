@@ -110,7 +110,7 @@ func validateDocument(schemaStr []byte, document *orderedmap.OrderedMap) error {
 	return schema.Validate(utils.OrderedMapToMap(document))
 }
 
-func processErrors(errs []*jsonschema.ValidationError, output *utils.Error) {
+func processErrors(errs []*jsonschema.ValidationError, output *utils.MultiError) {
 	// Sort errors
 	sort.Slice(errs, func(i, j int) bool {
 		return errs[i].InstanceLocation < errs[j].InstanceLocation

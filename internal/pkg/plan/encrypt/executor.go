@@ -22,7 +22,7 @@ type executor struct {
 	api       *encryption.Api
 	pool      *client.Pool
 	uow       *local.UnitOfWork
-	errors    *utils.Error
+	errors    *utils.MultiError
 }
 
 func newExecutor(projectId int, logger *zap.SugaredLogger, api *encryption.Api, projectState *state.State, ctx context.Context, plan *Plan) *executor {
