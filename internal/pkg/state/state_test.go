@@ -13,7 +13,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
@@ -21,26 +20,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
-
-func TestLoadStateDifferentProjectId(t *testing.T) {
-	t.Parallel()
-	logger, _ := utils.NewDebugLogger()
-	api, _, _ := testapi.TestMockedStorageApi()
-	api = api.WithToken(model.Token{Owner: model.TokenOwner{Id: 45678}})
-	fs, err := aferofs.NewMemoryFs(logger, ".")
-	assert.NoError(t, err)
-	m, err := manifest.NewManifest(12345, "connection.keboola.com", fs)
-	assert.NoError(t, err)
-
-	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
-	stateOptions := NewOptions(m, api, schedulerApi, context.Background(), logger)
-	stateOptions.LoadLocalState = true
-	stateOptions.LoadRemoteState = true
-	state, ok := LoadState(stateOptions)
-	assert.NotNil(t, state)
-	assert.False(t, ok)
-	assert.Equal(t, "used token is from the project \"45678\", but it must be from the project \"12345\"", state.LocalErrors().Error())
-}
 
 func TestLoadState(t *testing.T) {
 	t.Parallel()

@@ -131,7 +131,7 @@ func (c *Container) StorageApi() (*remote.StorageApi, error) {
 
 		// Token and manifest project ID must be same
 		if c.manifest != nil && c.manifest.Project.Id != c.storageApi.ProjectId() {
-			return nil, fmt.Errorf(`given token is from the project "%d", but in manifest is defined priject "%d"`, c.storageApi.ProjectId(), c.manifest.Project.Id)
+			return nil, fmt.Errorf(`given token is from the project "%d", but in manifest is defined project "%d"`, c.storageApi.ProjectId(), c.manifest.Project.Id)
 		}
 	}
 	return c.storageApi, nil

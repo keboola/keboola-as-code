@@ -64,12 +64,6 @@ func NewOptions(m *manifest.Manifest, api *remote.StorageApi, schedulerApi *sche
 func LoadState(options *Options) (state *State, ok bool) {
 	state = newState(options)
 
-	// Token and manifest project ID must be same
-	if state.manifest.Project.Id != state.api.ProjectId() {
-		state.AddLocalError(fmt.Errorf("used token is from the project \"%d\", but it must be from the project \"%d\"", state.api.ProjectId(), state.manifest.Project.Id))
-		return state, false
-	}
-
 	// Log allowed branches
 	state.logger.Debugf(`Allowed branches: %s`, state.manifest.Content.AllowedBranches)
 
