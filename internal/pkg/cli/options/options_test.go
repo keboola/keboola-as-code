@@ -1,7 +1,6 @@
 package options
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/spf13/pflag"
@@ -31,58 +30,39 @@ func TestValuesPriority(t *testing.T) {
 	// No values defined
 	err = options.Load(logger, env.Empty(), fs, flags)
 	assert.NoError(t, err)
-	assert.Equal(t, "", options.ApiHost)
+	assert.Equal(t, "", options.GetString(`storage-api-token`))
 
 	// 1. Lowest priority, ".env" file from project dir
 	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(".env", "KBC_STORAGE_API_TOKEN=1abcdef")))
 	err = options.Load(logger, env.Empty(), fs, flags)
 	assert.NoError(t, err)
-	assert.Equal(t, "1abcdef", options.ApiToken)
+	assert.Equal(t, "1abcdef", options.GetString(`storage-api-token`))
 
 	// 2. Higher priority, ".env" file from working dir
 	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filesystem.Join(workingDir, ".env"), "KBC_STORAGE_API_TOKEN=2abcdef")))
 	err = options.Load(logger, env.Empty(), fs, flags)
 	assert.NoError(t, err)
-	assert.Equal(t, "2abcdef", options.ApiToken)
+	assert.Equal(t, "2abcdef", options.GetString(`storage-api-token`))
 
 	// 3. Higher priority , ENV defined in OS
 	osEnvs := env.Empty()
 	osEnvs.Set("KBC_STORAGE_API_TOKEN", "3abcdef")
 	err = options.Load(logger, osEnvs, fs, flags)
 	assert.NoError(t, err)
-	assert.Equal(t, "3abcdef", options.ApiToken)
+	assert.Equal(t, "3abcdef", options.GetString(`storage-api-token`))
 
 	// 4. The highest priority, flag
 	assert.NoError(t, flags.Set("storage-api-token", "4abcdef"))
 	err = options.Load(logger, osEnvs, fs, flags)
 	assert.NoError(t, err)
-	assert.Equal(t, "4abcdef", options.ApiToken)
-}
-
-func TestValidateNoRequired(t *testing.T) {
-	t.Parallel()
-	options := NewOptions()
-	assert.Empty(t, options.Validate([]string{}))
-}
-
-func TestValidateAllRequired(t *testing.T) {
-	t.Parallel()
-	options := NewOptions()
-	errors := options.Validate([]string{"ApiHost", "ApiToken"})
-
-	// Assert
-	expected := []string{
-		`- Missing api host. Please use "--storage-api-host" flag or ENV variable "KBC_STORAGE_API_HOST".`,
-		`- Missing api token. Please use "--storage-api-token" flag or ENV variable "KBC_STORAGE_API_TOKEN".`,
-	}
-	assert.Equal(t, strings.Join(expected, "\n"), errors)
+	assert.Equal(t, "4abcdef", options.GetString(`storage-api-token`))
 }
 
 func TestDumpOptions(t *testing.T) {
 	t.Parallel()
 	options := NewOptions()
-	options.ApiHost = "connection.keboola.com"
-	options.ApiToken = "12345-67890123abcd"
-	expected := `Parsed options: {"Verbose":false,"VerboseApi":false,"LogFilePath":"","ApiHost":"connection.keboola.com","ApiToken":"12345-6*****"}`
+	options.Set(`storage-api-host`, "connection.keboola.com")
+	options.Set(`storage-api-token`, "12345-67890123abcd")
+	expected := "Parsed options:\n  storage-api-host = \"connection.keboola.com\"\n  storage-api-token = \"12345-6*****\"\n"
 	assert.Equal(t, expected, options.Dump())
 }
