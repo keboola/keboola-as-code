@@ -14,8 +14,6 @@ INFO	Created file ".env.dist" - an ".env.local" template.
 DEBUG	Saved ".gitignore"
 INFO	Created file ".gitignore" - to keep ".env.local" local.
 %A
-DEBUG	Sent "init" successful event id: "%s"
-%A
 INFO	Generating CI workflows ...
 DEBUG	Created directory ".github/workflows"
 DEBUG	Created directory ".github/actions/install"
@@ -45,5 +43,6 @@ DEBUG	Saved "main/meta.json"
 DEBUG	Saved "main/description.md"
 DEBUG	Saved ".keboola/manifest.json"
 %A
-DEBUG	Sent "pull" successful event id: "%s"
 INFO	Pull done.
+%A
+DEBUG	Sent "init" successful event id: "%s"

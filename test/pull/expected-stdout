@@ -27,5 +27,6 @@ INFO	  + C main/extractor/ex-generic-v2/empty
 %A
 DEBUG	Saved ".keboola/manifest.json"
 %A
-DEBUG	Sent "pull" successful event id: "%s"
 INFO	Pull done.
+%A
+DEBUG	Sent "pull" successful event id: "%s"
