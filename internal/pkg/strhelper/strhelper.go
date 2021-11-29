@@ -68,6 +68,10 @@ func FirstLower(str string) string {
 	return strings.ToLower(string(str[0])) + str[1:]
 }
 
+func FirstUpper(str string) string {
+	return strings.ToUpper(string(str[0])) + str[1:]
+}
+
 func ParseTransformationScripts(content, componentId string) []string {
 	content = NormalizeScript(content)
 	switch componentId {

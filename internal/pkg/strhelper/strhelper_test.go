@@ -89,3 +89,10 @@ func TestFirstLower(t *testing.T) {
 	assert.Equal(t, "fOO", FirstLower("FOO"))
 	assert.Equal(t, "foo", FirstLower("Foo"))
 }
+
+func TestFirstUpper(t *testing.T) {
+	t.Parallel()
+	assert.Equal(t, "Foo", FirstUpper("foo"))
+	assert.Equal(t, "FOO", FirstUpper("FOO"))
+	assert.Equal(t, "Foo", FirstUpper("Foo"))
+}
