@@ -28,6 +28,12 @@ type Component struct {
 	SchemaRow      json.RawMessage        `json:"configurationRowSchema,omitempty"`
 	EmptyConfig    *orderedmap.OrderedMap `json:"emptyConfiguration,omitempty"`
 	EmptyConfigRow *orderedmap.OrderedMap `json:"emptyConfigurationRow,omitempty"`
+	Data           ComponentData          `json:"data"`
+}
+
+type ComponentData struct {
+	DefaultBucket      bool   `json:"default_bucket"`       //nolint: tagliatelle
+	DefaultBucketStage string `json:"default_bucket_stage"` //nolint: tagliatelle
 }
 
 type ComponentWithConfigs struct {
