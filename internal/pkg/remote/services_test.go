@@ -9,29 +9,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func TestGetEncryptionApiUrl(t *testing.T) {
+func TestServicesUrls(t *testing.T) {
 	t.Parallel()
 	logger, _ := utils.NewDebugLogger()
 	api := NewStorageApi("connection.keboola.com", context.Background(), logger, false)
-	encryptionApiUrl, _ := api.GetEncryptionApiUrl()
-	assert.NotEmpty(t, encryptionApiUrl)
-	assert.Equal(t, encryptionApiUrl, "https://encryption.keboola.com")
-}
+	urls, err := api.ServicesUrlById()
+	assert.NoError(t, err)
 
-func TestErrorGetEncryptionApiUrl(t *testing.T) {
-	t.Parallel()
-	logger, _ := utils.NewDebugLogger()
-	api := NewStorageApi("connection.foobar.keboola.com", context.Background(), logger, false)
-	_, err := api.GetEncryptionApiUrl()
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "no such host")
-}
-
-func TestGetSchedulerApiUrl(t *testing.T) {
-	t.Parallel()
-	logger, _ := utils.NewDebugLogger()
-	api := NewStorageApi("connection.keboola.com", context.Background(), logger, false)
-	apiUrl, _ := api.GetSchedulerApiUrl()
-	assert.NotEmpty(t, apiUrl)
-	assert.Equal(t, apiUrl, "https://scheduler.keboola.com")
+	assert.Equal(t, urls[`encryption`], ServiceUrl("https://encryption.keboola.com"))
+	assert.Equal(t, urls[`scheduler`], ServiceUrl("https://scheduler.keboola.com"))
 }

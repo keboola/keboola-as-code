@@ -196,7 +196,7 @@ func (root *rootCommand) GetSchedulerApi() (api *scheduler.Api, err error) {
 }
 
 func (root *rootCommand) newStorageApi() (*remote.StorageApi, error) {
-	return remote.NewStorageApiFromOptions(root.options, root.ctx, root.logger)
+	return remote.NewStorageApiWithToken(root.ctx, root.logger, root.options.ApiHost, root.options.ApiToken, root.options.VerboseApi)
 }
 
 func (root *rootCommand) newSchedulerApi() (*scheduler.Api, error) {
@@ -205,12 +205,19 @@ func (root *rootCommand) newSchedulerApi() (*scheduler.Api, error) {
 		return nil, err
 	}
 
-	hostName, err := storageApi.GetSchedulerApiUrl()
+	// Get services
+	services, err := storageApi.ServicesUrlById()
 	if err != nil {
-		return nil, fmt.Errorf(`cannot get Scheduler API host: %w`, err)
+		return nil, err
 	}
 
-	return scheduler.NewSchedulerApi(hostName, storageApi.Token().Token, root.ctx, root.logger, false), nil
+	// Get API host
+	hostName, found := services["scheduler"]
+	if !found {
+		return nil, fmt.Errorf(`scheduler service not found`)
+	}
+
+	return scheduler.NewSchedulerApi(root.ctx, root.logger, string(hostName), storageApi.Token().Token, false), nil
 }
 
 // tearDown makes clean-up after command execution.

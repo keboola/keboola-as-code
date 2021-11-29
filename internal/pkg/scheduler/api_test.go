@@ -21,7 +21,11 @@ func TestSchedulerApiCalls(t *testing.T) {
 	project.SetState("empty.json")
 	storageApi := project.StorageApi()
 	token := storageApi.Token().Token
-	hostName, _ := storageApi.GetSchedulerApiUrl()
+	services, err := storageApi.ServicesUrlById()
+	assert.NoError(t, err)
+	hostName, found := services[`scheduler`]
+	assert.True(t, found)
+	api := scheduler.NewSchedulerApi(context.Background(), logger, string(hostName), token, true)
 
 	// Get default branch
 	branch, err := storageApi.GetDefaultBranch()
@@ -83,8 +87,6 @@ func TestSchedulerApiCalls(t *testing.T) {
 	}
 	resConfigScheduler, err := storageApi.CreateConfig(configScheduler)
 	assert.NoError(t, err)
-
-	api := scheduler.NewSchedulerApi(hostName, token, context.Background(), logger, true)
 
 	// List should return no schedule
 	schedules, err := api.ListSchedules()

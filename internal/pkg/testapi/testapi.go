@@ -31,7 +31,7 @@ func NewMockedSchedulerApi() (*scheduler.Api, *httpmock.MockTransport, *utils.Wr
 	logger, logs := utils.NewDebugLogger()
 
 	// Set short retry delay in tests
-	api := scheduler.NewSchedulerApi("scheduler.keboola.com", "my-token", context.Background(), logger, false)
+	api := scheduler.NewSchedulerApi(context.Background(), logger, "scheduler.keboola.com", "my-token", false)
 	api.SetRetry(3, 1*time.Millisecond, 1*time.Millisecond)
 
 	// Mocked resty transport

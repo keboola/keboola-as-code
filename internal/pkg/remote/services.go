@@ -8,7 +8,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/client"
 )
 
-func (a *StorageApi) GetServices() ([]interface{}, error) {
+type (
+	ServiceId  string
+	ServiceUrl string
+)
+
+func (a *StorageApi) Services() ([]interface{}, error) {
 	request := a.GetServicesRequest()
 	response := request.Send().Response
 	if response.HasResult() {
@@ -22,20 +27,19 @@ func (a *StorageApi) GetServices() ([]interface{}, error) {
 	return nil, response.Err()
 }
 
-func (a *StorageApi) getServiceApiUrl(serviceName string) (string, error) {
-	services, err := a.GetServices()
+func (a *StorageApi) ServicesUrlById() (map[ServiceId]ServiceUrl, error) {
+	services, err := a.Services()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
+	urls := make(map[ServiceId]ServiceUrl)
 	for _, object := range services {
 		service := object.(map[string]interface{})
-		if service["id"] == serviceName {
-			url := service["url"]
-			return url.(string), nil
-		}
+		urls[ServiceId(service["id"].(string))] = ServiceUrl(service["url"].(string))
 	}
-	return "", fmt.Errorf("API %s not found in services from Storage API: \"%s\"", serviceName, services)
+
+	return urls, nil
 }
 
 func (a *StorageApi) GetServicesRequest() *client.Request {
@@ -43,12 +47,4 @@ func (a *StorageApi) GetServicesRequest() *client.Request {
 	return a.NewRequest(resty.MethodGet, "/").
 		SetQueryParam("exclude", "components").
 		SetResult(&result)
-}
-
-func (a *StorageApi) GetEncryptionApiUrl() (string, error) {
-	return a.getServiceApiUrl("encryption")
-}
-
-func (a *StorageApi) GetSchedulerApiUrl() (string, error) {
-	return a.getServiceApiUrl("scheduler")
 }
