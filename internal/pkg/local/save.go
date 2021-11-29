@@ -122,6 +122,7 @@ func (w *modelWriter) write() {
 	}
 
 	// Delete
+	w.Record.ClearRelatedPaths()
 	for _, path := range toDelete {
 		if err := w.softDelete(path); err != nil {
 			w.errors.Append(err)
@@ -131,6 +132,7 @@ func (w *modelWriter) write() {
 
 	// Write new files
 	for _, file := range newFiles {
+		w.Record.AddRelatedPath(file.Path)
 		if err := w.fs.WriteFile(file); err != nil {
 			w.errors.Append(err)
 		}

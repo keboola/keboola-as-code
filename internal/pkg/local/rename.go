@@ -60,20 +60,6 @@ func (m *Manager) rename(actions []model.RenameAction) error {
 		m.logger.Info(`Error occurred, the rename operation was reverted.`)
 	}
 
-	// Reload paths state
-	if errors.Len() == 0 {
-		if err := m.state.ReloadPathsState(); err != nil {
-			errors.Append(err)
-		}
-	}
-
-	// Delete empty directories, eg. no extractor of a type left -> dir is empty
-	if errors.Len() == 0 {
-		if err := DeleteEmptyDirectories(m.fs, m.state.TrackedPaths()); err != nil {
-			errors.Append(err)
-		}
-	}
-
 	// Log warnings
 	if warnings.Len() > 0 {
 		m.logger.Warn(utils.PrefixError(`Warning: cannot finish objects renaming`, warnings))

@@ -261,9 +261,16 @@ func (u *UnitOfWork) Invoke() error {
 		}
 	}
 
+	if u.errors.Len() == 0 {
+		// Delete empty directories, eg. no extractor of a type left -> dir is empty
+		if err := DeleteEmptyDirectories(u.fs, u.state.TrackedPaths()); err != nil {
+			u.errors.Append(err)
+		}
+	}
+
 	// Update tracked paths
-	for _, objectState := range u.loadedObjectStates {
-		u.state.TrackRecord(objectState.Manifest())
+	if err := u.state.ReloadPathsState(); err != nil {
+		u.errors.Append(err)
 	}
 
 	u.invoked = true

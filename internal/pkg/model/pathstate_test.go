@@ -26,6 +26,20 @@ func TestPathsStateEmpty(t *testing.T) {
 	assert.Empty(t, paths.UntrackedPaths())
 }
 
+func TestPathsStateIgnoredFile(t *testing.T) {
+	t.Parallel()
+	paths, err := loadPathsState(t, "ignored-file")
+	assert.NotNil(t, paths)
+	assert.NoError(t, err)
+	assert.Empty(t, paths.TrackedPaths())
+	assert.Equal(t, []string{`dir`}, paths.UntrackedPaths())
+
+	// Mark tracked some ignored file -> parent dir is marked as tracked
+	paths.MarkTracked("dir/.gitkeep")
+	assert.Equal(t, []string{`dir`}, paths.TrackedPaths())
+	assert.Empty(t, paths.UntrackedPaths())
+}
+
 func TestPathsStateComplex(t *testing.T) {
 	t.Parallel()
 	paths, err := loadPathsState(t, "complex")

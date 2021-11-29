@@ -29,6 +29,9 @@ func TestLocalSaveModel(t *testing.T) {
 	_, found := manager.manifest.GetRecord(record.Key())
 	assert.True(t, found)
 
+	// No related paths
+	assert.Empty(t, record.RelatedPaths)
+
 	// Save
 	assert.NoError(t, manager.saveObject(record, source, model.ChangedFields{}))
 
@@ -48,4 +51,7 @@ func TestLocalSaveModel(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, expectedMeta, metaFile.Content)
 	assert.Equal(t, expectedConfig, configFile.Content)
+
+	// Related paths are updated
+	assert.Equal(t, []string{`test/meta.json`, `test/config.json`}, record.RelatedPaths)
 }

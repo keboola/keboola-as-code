@@ -28,6 +28,7 @@ type Record interface {
 	IsParentPathSet() bool      // is parent path resolved?
 	SetParentPath(string)       // set parent path
 	GetRelatedPaths() []string  // files related to the record, relative to the project dir, e.g. main/meta.json
+	ClearRelatedPaths()
 	AddRelatedPath(path string)
 	RenameRelatedPaths(oldPath, newPath string)
 	State() *RecordState
@@ -121,6 +122,10 @@ func (p *PathInProject) SetParentPath(parentPath string) {
 
 func (p PathInProject) Path() string {
 	return filesystem.Join(p.parentPath, p.ObjectPath)
+}
+
+func (p *Paths) ClearRelatedPaths() {
+	p.RelatedPaths = make([]string, 0)
 }
 
 func (p *Paths) GetRelatedPaths() []string {

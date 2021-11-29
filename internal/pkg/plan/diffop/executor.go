@@ -71,10 +71,5 @@ func (e *executor) invoke() error {
 		e.errors.Append(err)
 	}
 
-	// Delete empty directories, eg. no extractor of a type left -> dir is empty
-	if err := local.DeleteEmptyDirectories(e.Fs(), e.TrackedPaths()); err != nil {
-		e.errors.Append(err)
-	}
-
 	return e.errors.ErrorOrNil()
 }

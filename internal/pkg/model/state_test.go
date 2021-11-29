@@ -184,6 +184,77 @@ func TestStateMustGetNotFound(t *testing.T) {
 	})
 }
 
+func TestStateTrackRecordNotPersisted(t *testing.T) {
+	t.Parallel()
+	s := newTestState(t)
+	s.pathsState.all[`foo`] = true
+	s.pathsState.all[`foo/bar1`] = true
+	s.pathsState.all[`foo/bar2`] = true
+	s.pathsState.all[`foo/bar3`] = true
+
+	record := &ConfigManifest{
+		RecordState: RecordState{
+			Persisted: false,
+			Invalid:   true,
+		},
+	}
+	record.PathInProject = NewPathInProject(``, `foo`)
+	record.RelatedPaths = []string{`bar1`, `bar2`}
+
+	// Tracked are only paths from persisted records.
+	s.TrackRecord(record)
+	assert.Empty(t, s.TrackedPaths())
+	assert.Equal(t, []string{`foo`, `foo/bar1`, `foo/bar2`, `foo/bar3`}, s.UntrackedPaths())
+}
+
+func TestStateTrackRecordValid(t *testing.T) {
+	t.Parallel()
+	s := newTestState(t)
+	s.pathsState.all[`foo`] = true
+	s.pathsState.all[`foo/bar1`] = true
+	s.pathsState.all[`foo/bar2`] = true
+	s.pathsState.all[`foo/bar3`] = true
+
+	record := &ConfigManifest{
+		RecordState: RecordState{
+			Persisted: true,
+			Invalid:   false,
+		},
+	}
+	record.PathInProject = NewPathInProject(``, `foo`)
+	record.RelatedPaths = []string{`bar1`, `bar2`}
+
+	// For valid records, we will mark as tracked only those files that have been loaded.
+	s.TrackRecord(record)
+	assert.Equal(t, []string{`foo`, `foo/bar1`, `foo/bar2`}, s.TrackedPaths())
+	assert.Equal(t, []string{`foo/bar3`}, s.UntrackedPaths())
+}
+
+func TestStateTrackRecordInvalid(t *testing.T) {
+	t.Parallel()
+	s := newTestState(t)
+	s.pathsState.all[`foo`] = true
+	s.pathsState.all[`foo/bar1`] = true
+	s.pathsState.all[`foo/bar2`] = true
+	s.pathsState.all[`foo/bar3`] = true
+
+	record := &ConfigManifest{
+		RecordState: RecordState{
+			Persisted: true,
+			Invalid:   true,
+		},
+	}
+	record.PathInProject = NewPathInProject(``, `foo`)
+
+	// We do not load files for invalid records
+	// Therefore, we mark all files from the object directory as tracked.
+	// This will prevent duplicate error -> untracked files found.
+	// The user must primarily fix why the record is invalid.
+	s.TrackRecord(record)
+	assert.Equal(t, []string{`foo`, `foo/bar1`, `foo/bar2`, `foo/bar3`}, s.TrackedPaths())
+	assert.Empty(t, s.UntrackedPaths())
+}
+
 func newTestState(t *testing.T) *State {
 	t.Helper()
 	logger, _ := utils.NewDebugLogger()
