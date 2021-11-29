@@ -111,7 +111,7 @@ func TestTearDownKeepLogFile(t *testing.T) {
 	root, _ := newTestRootCommand(testhelper.NewMemoryFs())
 	tempDir := t.TempDir()
 
-	root.Options.LogFilePath = filepath.Join(tempDir, "log-file.txt")
+	root.Options.LogFilePath = filepath.Join(tempDir, "log-file.txt") // nolint: forbidigo
 	root.setupLogger()
 	assert.False(t, root.logFile.IsTemp())
 	assert.Equal(t, root.logFile.Path(), root.Options.LogFilePath)
