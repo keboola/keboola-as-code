@@ -84,7 +84,7 @@ type localWriter struct {
 	model.MapperContext
 	*model.LocalSaveRecipe
 	config *model.Config
-	errors *utils.Error
+	errors *utils.MultiError
 }
 
 func (w *localWriter) save() error {

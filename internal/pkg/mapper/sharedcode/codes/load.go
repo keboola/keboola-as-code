@@ -11,7 +11,7 @@ type loader struct {
 	*model.LocalLoadRecipe
 	config    *model.Config
 	configRow *model.ConfigRow
-	errors    *utils.Error
+	errors    *utils.MultiError
 }
 
 // OnObjectsLoad converts legacy "code_content" string -> []interface{}.

@@ -172,7 +172,7 @@ func (v Relations) GetOneByType(t RelationType) (Relation, error) {
 		errors := utils.NewMultiError()
 		errors.Append(fmt.Errorf(`only one relation "%s" expected, but found %d`, t, len(relations)))
 		for _, relation := range relations {
-			errors.AppendRaw(fmt.Sprintf(`  - %s`, jsonutils.MustEncodeString(relation, false)))
+			errors.Append(fmt.Errorf(`  - %s`, jsonutils.MustEncodeString(relation, false)))
 		}
 		return nil, errors
 	}

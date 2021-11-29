@@ -42,15 +42,14 @@ func (s *phasesSorter) sortPhases() ([]*model.Phase, error) {
 	order, cycles := graph.Sort()
 	if len(cycles) > 0 {
 		err := utils.NewMultiError()
-		err.Append(fmt.Errorf(`found cycles in phases "dependsOn"`))
 		for _, cycle := range cycles {
 			var items []string
 			for _, item := range cycle {
 				items = append([]string{item.(string)}, items...) // prepend
 			}
-			err.AppendRaw(`  - ` + strings.Join(items, ` -> `))
+			err.Append(fmt.Errorf(strings.Join(items, ` -> `)))
 		}
-		errors.Append(err)
+		errors.Append(utils.PrefixError(`found cycles in phases "dependsOn"`, err))
 	}
 
 	// Generate slice

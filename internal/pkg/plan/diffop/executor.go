@@ -17,7 +17,7 @@ type executor struct {
 	localManager *local.Manager
 	localWork    *local.UnitOfWork
 	remoteWork   *remote.UnitOfWork
-	errors       *utils.Error
+	errors       *utils.MultiError
 }
 
 func newExecutor(plan *Plan, logger *zap.SugaredLogger, ctx context.Context, changeDescription string) *executor {

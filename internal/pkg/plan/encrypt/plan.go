@@ -45,7 +45,7 @@ func (p *Plan) ValidateAllEncrypted() error {
 	for _, action := range p.actions {
 		objectErrors := utils.NewMultiError()
 		for _, value := range action.values {
-			objectErrors.AppendRaw(value.path.String())
+			objectErrors.Append(fmt.Errorf(value.path.String()))
 		}
 
 		errors.AppendWithPrefix(

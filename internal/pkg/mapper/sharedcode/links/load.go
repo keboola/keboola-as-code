@@ -43,7 +43,7 @@ func (m *mapper) replaceSharedCodePathById(object model.Object) error {
 	if err != nil {
 		errors := utils.NewMultiError()
 		errors.Append(err)
-		errors.AppendRaw(fmt.Sprintf(`  - referenced from %s`, transformation.Desc()))
+		errors.Append(fmt.Errorf(`  - referenced from %s`, transformation.Desc()))
 		return errors
 	}
 	sharedCode := sharedCodeState.LocalOrRemoteState().(*model.Config)
@@ -56,9 +56,9 @@ func (m *mapper) replaceSharedCodePathById(object model.Object) error {
 	if targetComponentId != transformation.ComponentId {
 		errors := utils.NewMultiError()
 		errors.Append(fmt.Errorf(`unexpected shared code "%s" in %s`, model.SharedCodeComponentIdContentKey, sharedCodeState.Desc()))
-		errors.AppendRaw(fmt.Sprintf(`  - expected "%s"`, transformation.ComponentId))
-		errors.AppendRaw(fmt.Sprintf(`  - found "%s"`, targetComponentId))
-		errors.AppendRaw(fmt.Sprintf(`  - referenced from %s`, transformation.Desc()))
+		errors.Append(fmt.Errorf(`  - expected "%s"`, transformation.ComponentId))
+		errors.Append(fmt.Errorf(`  - found "%s"`, targetComponentId))
+		errors.Append(fmt.Errorf(`  - referenced from %s`, transformation.Desc()))
 		return errors
 	}
 
@@ -109,7 +109,7 @@ func (m *mapper) replacePathByIdInScript(script string, code *model.Code, shared
 	if err != nil {
 		errors := utils.NewMultiError()
 		errors.Append(err)
-		errors.AppendRaw(fmt.Sprintf(`  - referenced from "%s"`, code.Path()))
+		errors.Append(fmt.Errorf(`  - referenced from "%s"`, code.Path()))
 		return "", "", errors
 	}
 

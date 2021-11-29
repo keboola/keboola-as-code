@@ -35,7 +35,7 @@ type localLoader struct {
 	config     *model.Config
 	manifest   *model.ConfigManifest
 	phasesDir  string
-	errors     *utils.Error
+	errors     *utils.MultiError
 }
 
 func (l *localLoader) load() error {

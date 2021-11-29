@@ -1,3 +1,1 @@
 Error: none of this and parent directories is project dir
-  Project directory must contain the ".keboola" metadata directory.
-  Please change working directory to a project directory or use the "init" command.

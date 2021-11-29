@@ -29,7 +29,7 @@ type UnitOfWork struct {
 	*Manager
 	ctx                context.Context
 	workers            *orderedmap.OrderedMap // separated workers for changes in branches, configs and rows
-	errors             *utils.Error
+	errors             *utils.MultiError
 	lock               *sync.Mutex
 	skipNotFoundErr    bool
 	localObjects       *model.StateObjects

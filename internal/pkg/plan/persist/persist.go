@@ -24,7 +24,7 @@ func NewPlan(projectState *state.State) (*Plan, error) {
 type persistPlanBuilder struct {
 	*Plan
 	*state.State
-	errors *utils.Error
+	errors *utils.MultiError
 }
 
 func (b *persistPlanBuilder) build() {

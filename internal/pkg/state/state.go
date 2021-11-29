@@ -33,8 +33,8 @@ type State struct {
 	mapper        *mapper.Mapper
 	localManager  *local.Manager
 	remoteManager *remote.Manager
-	localErrors   *utils.Error
-	remoteErrors  *utils.Error
+	localErrors   *utils.MultiError
+	remoteErrors  *utils.MultiError
 }
 
 type Options struct {
@@ -156,11 +156,11 @@ func (s *State) RemoteManager() *remote.Manager {
 	return s.remoteManager
 }
 
-func (s *State) RemoteErrors() *utils.Error {
+func (s *State) RemoteErrors() *utils.MultiError {
 	return s.remoteErrors
 }
 
-func (s *State) LocalErrors() *utils.Error {
+func (s *State) LocalErrors() *utils.MultiError {
 	return s.localErrors
 }
 

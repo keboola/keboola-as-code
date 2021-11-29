@@ -16,7 +16,7 @@ type writer struct {
 	*model.LocalSaveRecipe
 	config    *model.Config
 	configRow *model.ConfigRow
-	errors    *utils.Error
+	errors    *utils.MultiError
 }
 
 func (m *mapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {

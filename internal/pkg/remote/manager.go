@@ -34,7 +34,7 @@ type UnitOfWork struct {
 	storageApiPools   *orderedmap.OrderedMap // separated pool for changes in branches, configs and rows
 	schedulerApiPool  *client.Pool
 	newObjectStates   []model.ObjectState
-	errors            *utils.Error
+	errors            *utils.MultiError
 	invoked           bool
 }
 

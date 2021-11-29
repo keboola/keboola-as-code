@@ -70,8 +70,8 @@ func (m *relationsMapper) linkRelations(object model.ObjectWithRelations, event 
 			// Remove invalid relation
 			relations.Remove(relation)
 			errors.Append(fmt.Errorf(`%s not found`, otherSideKey.Desc()))
-			errors.AppendRaw(fmt.Sprintf(`  - referenced from %s`, object.Desc()))
-			errors.AppendRaw(fmt.Sprintf(`  - by relation "%s"`, relation.Type()))
+			errors.Append(fmt.Errorf(`  - referenced from %s`, object.Desc()))
+			errors.Append(fmt.Errorf(`  - by relation "%s"`, relation.Type()))
 			continue
 		}
 
@@ -82,8 +82,8 @@ func (m *relationsMapper) linkRelations(object model.ObjectWithRelations, event 
 			// Remove invalid relation
 			relations.Remove(relation)
 			errors.Append(fmt.Errorf(`%s cannot have relation`, otherSideKey.Desc()))
-			errors.AppendRaw(fmt.Sprintf(`  - referenced from %s`, object.Desc()))
-			errors.AppendRaw(fmt.Sprintf(`  - by relation "%s"`, relation.Type()))
+			errors.Append(fmt.Errorf(`  - referenced from %s`, object.Desc()))
+			errors.Append(fmt.Errorf(`  - by relation "%s"`, relation.Type()))
 			continue
 		}
 	}
@@ -103,7 +103,7 @@ func (m *relationsMapper) validateRelations(object model.ObjectWithRelations) er
 		if len(relationsMap[t]) > 1 {
 			errors.Append(fmt.Errorf(`only one relation "%s" expected, but found %d`, t, len(relationsMap[t])))
 			for _, relation := range relationsMap[t] {
-				errors.AppendRaw(fmt.Sprintf(`  - %s`, json.MustEncodeString(relation, false)))
+				errors.Append(fmt.Errorf(`  - %s`, json.MustEncodeString(relation, false)))
 			}
 
 			// Remove invalid relations

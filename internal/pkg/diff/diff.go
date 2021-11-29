@@ -21,7 +21,7 @@ type Differ struct {
 	state     *state.State                      // model state
 	results   []*Result                         // diff results
 	typeCache map[typeName][]*utils.StructField // reflection cache
-	errors    *utils.Error                      // errors
+	errors    *utils.MultiError                 // errors
 }
 
 type ResultState int
