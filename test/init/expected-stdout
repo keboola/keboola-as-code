@@ -31,10 +31,11 @@ INFO	Feel free to modify them.
 %A
 INFO	Please set the secret KBC_STORAGE_API_TOKEN in the GitHub settings.
 INFO	See: https://docs.github.com/en/actions/reference/encrypted-secrets
+INFO	Init done.
 %A
-INFO	Init done. Running pull.
+INFO	Running pull.
 %A
-DEBUG	Project local and remote states have been successfully loaded.
+DEBUG	Project state has been successfully loaded.
 INFO	Plan for "pull" operation:
 INFO	  + B main
 DEBUG	Execution plan is valid.

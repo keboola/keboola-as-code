@@ -1,5 +1,6 @@
 %A
-INFO	The branch was successfully created.
+INFO	Created new branch "new branch".
+%A
 INFO	Pulling objects to the local directory.
 %A
 INFO	Plan for "pull" operation:

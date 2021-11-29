@@ -4,7 +4,17 @@ DEBUG	Build date: %s
 DEBUG	Go version: %s
 DEBUG	Os/Arch:    %s
 DEBUG	Running command [%s --log-file ./log-file.txt]
-DEBUG	Parsed options: %s
+DEBUG	Parsed options:
+DEBUG	  log-file = "./log-file.txt"
+DEBUG	Default options:
+DEBUG	  help = false
+DEBUG	  storage-api-token = ""
+DEBUG	  verbose = false
+DEBUG	  verbose-api = false
+DEBUG	  version = false
+DEBUG	  working-dir = ""
+DEBUG	Log file: %s
+DEBUG	Working dir: %s
 DEBUG	Version check: %s
 INFO%w
 INFO	Keboola CLI
