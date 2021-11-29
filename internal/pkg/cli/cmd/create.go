@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -82,8 +83,9 @@ func CreateBranchCommand(root *RootCommand) *cobra.Command {
 		Use:   "branch",
 		Short: createBranchShortDescription,
 		Long:  createBranchLongDesc,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			d := root.Deps
+			start := time.Now()
 
 			// Metadata directory is required
 			d.LoadStorageApiHostFromManifest()
@@ -94,6 +96,15 @@ func CreateBranchCommand(root *RootCommand) *cobra.Command {
 			// Options
 			options, err := d.Dialogs().AskCreateBranch(d)
 			if err != nil {
+				return err
+			}
+
+			// Send cmd successful/failed event
+			if eventSender, err := d.EventSender(); err == nil {
+				defer func() {
+					eventSender.SendCmdEvent(start, cmdErr, "create-branch")
+				}()
+			} else {
 				return err
 			}
 
