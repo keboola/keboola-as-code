@@ -4,7 +4,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
-	"github.com/keboola/keboola-as-code/internal/pkg/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/push"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
@@ -41,14 +40,7 @@ func pushCommand(root *rootCommand) *cobra.Command {
 			}
 			// Define action on diff results
 			action := &diffProcessCmd{root: root, cmd: cmd}
-			action.onSuccess = func(api *remote.StorageApi) {
-				event.SendCmdSuccessfulEvent(root.start, root.logger, api, "push", "Push command done.")
-				root.logger.Info("Push done.")
-			}
-			action.onError = func(api *remote.StorageApi, err error) {
-				event.SendCmdFailedEvent(root.start, root.logger, api, err, "push", "Push command failed.")
-			}
-			action.action = func(api *remote.StorageApi, diffResults *diff.Results) error {
+			action.action = func(api *remote.StorageApi, diffResults *diff.Results) (cmdErr error) {
 				logger := root.logger
 				projectState := diffResults.CurrentState
 				projectManifest := projectState.Manifest()
@@ -87,7 +79,17 @@ func pushCommand(root *rootCommand) *cobra.Command {
 				dryRun := root.options.GetBool("dry-run")
 				if dryRun {
 					logger.Info("Dry run, nothing changed.")
+					logger.Info(`Push done.`)
 					return nil
+				}
+
+				// Send cmd successful/failed event
+				if eventSender, err := root.GetEventSender(); err == nil {
+					defer func() {
+						eventSender.SendCmdEvent(root.start, cmdErr, "push")
+					}()
+				} else {
+					return err
 				}
 
 				// Invoke
@@ -100,6 +102,7 @@ func pushCommand(root *rootCommand) *cobra.Command {
 					return err
 				}
 
+				logger.Info(`Push done.`)
 				return nil
 			}
 

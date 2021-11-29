@@ -6,5 +6,6 @@ INFO	  + C main/transformation/keboola.python-transformation-v2/empty-transforma
 %A
 DEBUG	Saved "main/transformation/keboola.python-transformation-v2/empty-transformation/blocks/.gitkeep"
 %A
-DEBUG	Sent "pull" successful event id: "%s"
 INFO	Pull done.
+%A
+DEBUG	Sent "pull" successful event id: "%s"

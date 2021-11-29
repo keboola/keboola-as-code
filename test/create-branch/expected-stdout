@@ -7,4 +7,6 @@ INFO	  + B new-branch
 INFO	  + C new-branch/extractor/ex-generic-v2/empty
 %A
 INFO	Pull done.
+%A
+DEBUG	Sent "pull" successful event id: "%s"
 INFO	Created new branch "new branch".

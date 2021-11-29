@@ -5,7 +5,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/initenv"
 	"github.com/keboola/keboola-as-code/internal/pkg/interaction"
@@ -39,9 +38,8 @@ func initCommand(root *rootCommand) *cobra.Command {
 		Use:   "init",
 		Short: initShortDescription,
 		Long:  initLongDescription,
-		RunE: func(cmd *cobra.Command, args []string) (err error) {
+		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			logger := root.logger
-			successful := false
 
 			// Is project directory already initialized?
 			if root.fs.Exists(filesystem.MetadataDir) {
@@ -65,12 +63,14 @@ func initCommand(root *rootCommand) *cobra.Command {
 				return err
 			}
 
-			// Send failed event on error
-			defer func() {
-				if err != nil && !successful {
-					event.SendCmdFailedEvent(root.start, logger, api, err, "init", "Init command failed.")
-				}
-			}()
+			// Send cmd successful/failed event
+			if eventSender, err := root.GetEventSender(); err == nil {
+				defer func() {
+					eventSender.SendCmdEvent(root.start, cmdErr, "init")
+				}()
+			} else {
+				return err
+			}
 
 			// Load all branches
 			allBranches, err := api.ListBranches()
@@ -121,10 +121,6 @@ func initCommand(root *rootCommand) *cobra.Command {
 			if err := initenv.CreateEnvFiles(logger, root.fs, api); err != nil {
 				return err
 			}
-
-			// Send successful event
-			successful = true
-			event.SendCmdSuccessfulEvent(root.start, logger, api, "init", "Initialized local project directory.")
 
 			// Generate CI workflows
 			if root.prompt.Confirm(&interaction.Confirm{Label: "Generate workflows files for GitHub Actions?", Default: true}) {

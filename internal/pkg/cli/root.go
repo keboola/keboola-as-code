@@ -17,6 +17,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/build"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/interaction"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -55,6 +56,7 @@ type rootCommand struct {
 	prompt       *interaction.Prompt // user interaction
 	ctx          context.Context     // context for parallel operations
 	api          *remote.StorageApi  // GetStorageApi should be used to initialize
+	eventSender  *event.Sender       // GetEventSender should be used to initialize
 	schedulerApi *scheduler.Api      // GetSchedulerApi should be used to initialize
 	start        time.Time           // cmd start time
 	initialized  bool                // init method was called
@@ -172,6 +174,19 @@ func (root *rootCommand) ValidateOptions(required []string) error {
 		return fmt.Errorf("invalid parameters, see output above")
 	}
 	return nil
+}
+
+func (root *rootCommand) GetEventSender() (*event.Sender, error) {
+	if root.eventSender == nil {
+		api, err := root.GetStorageApi()
+		if err != nil {
+			return nil, err
+		}
+
+		root.eventSender = event.NewSender(root.logger, api)
+	}
+
+	return root.eventSender, nil
 }
 
 // GetStorageApi returns API and initialize it first time.

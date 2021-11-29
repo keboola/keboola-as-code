@@ -27,14 +27,11 @@ type diffProcessCmd struct {
 		api *remote.StorageApi,
 		diffResults *diff.Results,
 	) error
-	onSuccess                func(api *remote.StorageApi)
-	onError                  func(api *remote.StorageApi, err error)
 	invalidStateCanBeIgnored bool
 	ignoreInvalidState       bool
 }
 
 func (a *diffProcessCmd) run() error {
-	successful := false
 	logger := a.root.logger
 	options := a.root.options
 
@@ -61,13 +58,6 @@ func (a *diffProcessCmd) run() error {
 	if err != nil {
 		return err
 	}
-
-	// Send failed event on error
-	defer func() {
-		if err != nil && !successful && a.onError != nil {
-			a.onError(api, err)
-		}
-	}()
 
 	// Get Scheduler API
 	schedulerApi, err := a.root.GetSchedulerApi()
@@ -112,11 +102,6 @@ func (a *diffProcessCmd) run() error {
 		return err
 	}
 
-	// Success
-	successful = true
-	if a.onSuccess != nil {
-		a.onSuccess(api)
-	}
 	return nil
 }
 

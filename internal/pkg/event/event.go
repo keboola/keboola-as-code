@@ -7,37 +7,74 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
+	"github.com/keboola/keboola-as-code/internal/pkg/strhelper"
 )
 
-func SendCmdSuccessfulEvent(cmdStart time.Time, logger *zap.SugaredLogger, api *remote.StorageApi, cmd, msg string) {
-	duration := time.Since(cmdStart)
-	params := map[string]interface{}{
-		"command": cmd,
+type Sender struct {
+	logger     *zap.SugaredLogger
+	storageApi *remote.StorageApi
+}
+
+func NewSender(logger *zap.SugaredLogger, storageApi *remote.StorageApi) *Sender {
+	return &Sender{logger: logger, storageApi: storageApi}
+}
+
+// SendCmdEvent sends failed event if an error occurred, otherwise it sends successful event.
+func (s *Sender) SendCmdEvent(cmdStart time.Time, err error, cmd string) {
+	// Catch panic
+	panicErr := recover()
+	if panicErr != nil {
+		err = fmt.Errorf(`%s`, panicErr)
 	}
-	results := map[string]interface{}{
-		"projectId": api.ProjectId(),
-	}
-	event, err := api.CreateEvent("info", msg, duration, params, results)
+
+	// Send successful event if no error
 	if err == nil {
-		logger.Debugf("Sent \"%s\" successful event id: \"%s\"", cmd, event.Id)
-	} else {
-		logger.Warnf("Cannot send \"%s\" successful event: %s", cmd, err)
+		msg := fmt.Sprintf(`%s command done.`, strhelper.FirstUpper(cmd))
+		s.sendCmdSuccessfulEvent(cmdStart, cmd, msg)
+		return
+	}
+
+	msg := fmt.Sprintf(`%s command failed.`, strhelper.FirstUpper(cmd))
+	s.sendCmdFailedEvent(cmdStart, err, cmd, msg)
+
+	// Throw panic
+	if panicErr != nil {
+		panic(panicErr)
 	}
 }
 
-func SendCmdFailedEvent(cmdStart time.Time, logger *zap.SugaredLogger, api *remote.StorageApi, err error, cmd, msg string) {
+// sendCmdSuccessful send command successful event.
+func (s *Sender) sendCmdSuccessfulEvent(cmdStart time.Time, cmd, msg string) {
 	duration := time.Since(cmdStart)
 	params := map[string]interface{}{
 		"command": cmd,
 	}
 	results := map[string]interface{}{
-		"projectId": api.ProjectId(),
+		"projectId": s.storageApi.ProjectId(),
+	}
+	event, err := s.storageApi.CreateEvent("info", msg, duration, params, results)
+	if err == nil {
+		s.logger.Debugf("Sent \"%s\" successful event id: \"%s\"", cmd, event.Id)
+	} else {
+		s.logger.Warnf("Cannot send \"%s\" successful event: %s", cmd, err)
+	}
+}
+
+// sendCmdFailed send command failed event.
+func (s *Sender) sendCmdFailedEvent(cmdStart time.Time, err error, cmd, msg string) {
+	// Log event
+	duration := time.Since(cmdStart)
+	params := map[string]interface{}{
+		"command": cmd,
+	}
+	results := map[string]interface{}{
+		"projectId": s.storageApi.ProjectId(),
 		"error":     fmt.Sprintf("%s", err),
 	}
-	event, err := api.CreateEvent("error", msg, duration, params, results)
+	event, err := s.storageApi.CreateEvent("error", msg, duration, params, results)
 	if err == nil {
-		logger.Debugf("Sent \"%s\" failed event id: \"%s\"", cmd, event.Id)
+		s.logger.Debugf("Sent \"%s\" failed event id: \"%s\"", cmd, event.Id)
 	} else {
-		logger.Warnf("Cannot send \"%s\" failed event: %s", cmd, err)
+		s.logger.Warnf("Cannot send \"%s\" failed event: %s", cmd, err)
 	}
 }
