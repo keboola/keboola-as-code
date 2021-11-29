@@ -93,8 +93,8 @@ func encryptCommand(root *rootCommand) *cobra.Command {
 			}
 
 			// Invoke
-			encryptionApi := encryption.NewEncryptionApi(encryptionApiUrl, root.ctx, logger, false)
-			if err := plan.Invoke(api.ProjectId(), logger, encryptionApi, projectState, root.ctx); err != nil {
+			encryptionApi := encryption.NewEncryptionApi(root.ctx, logger, encryptionApiUrl, api.ProjectId(), false)
+			if err := plan.Invoke(logger, encryptionApi, root.ctx); err != nil {
 				return err
 			}
 

@@ -13,7 +13,7 @@ import (
 func NewPlan(projectState *state.State) *Plan {
 	builder := &encryptPlanBuilder{State: projectState}
 	actions := builder.build()
-	return &Plan{naming: projectState.Naming(), actions: actions}
+	return &Plan{State: projectState, actions: actions}
 }
 
 type encryptPlanBuilder struct {
