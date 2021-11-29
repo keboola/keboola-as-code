@@ -1,6 +1,7 @@
-package cli
+package cmd
 
 import (
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -15,16 +16,18 @@ import (
 
 func TestMissingParams(t *testing.T) {
 	t.Parallel()
-	root, out := newTestRootCommand()
+	root, out := newTestRootCommand(testhelper.NewMemoryFs())
 	root.cmd.SetArgs([]string{"init"})
-	err := root.cmd.Execute()
+	exitCode := root.Execute()
+	assert.Equal(t, 1, exitCode)
 
 	// Assert
-	assert.Error(t, err)
-	assert.Equal(t, "invalid parameters, see output above", err.Error())
-	logStr := out.String()
-	assert.Contains(t, logStr, "Missing api host.")
-	assert.Contains(t, logStr, "Missing api token.")
+	expectedOut := `
+Error:
+  - missing Storage Api host, please use "--storage-api-host" flag or ENV variable "KBC_STORAGE_API_HOST"
+  - missing Storage Api token, please use "--storage-api-token" flag or ENV variable "KBC_STORAGE_API_TOKEN"
+`
+	assert.Equal(t, strings.TrimLeft(expectedOut, "\n"), out.String())
 }
 
 func TestInteractiveInit(t *testing.T) {
@@ -39,7 +42,7 @@ func TestInteractiveInit(t *testing.T) {
 	project.SetState(`empty.json`)
 
 	// Init prompt and cmd
-	root := newTestRootCommandWithTty(c.Tty())
+	root := newTestRootCommandWithTty(c.Tty(), testhelper.NewMemoryFs())
 	root.cmd.SetArgs([]string{"init"})
 
 	// Interaction

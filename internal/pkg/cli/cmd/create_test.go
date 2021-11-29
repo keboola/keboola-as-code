@@ -1,4 +1,4 @@
-package cli
+package cmd
 
 import (
 	"fmt"
@@ -8,7 +8,6 @@ import (
 
 	"github.com/Netflix/go-expect"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -16,7 +15,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func TestInteractiveCreateConfig(t *testing.T) {
@@ -29,17 +27,12 @@ func TestInteractiveCreateConfig(t *testing.T) {
 	project := testproject.GetTestProject(t, env.Empty())
 	project.SetState(`empty.json`)
 
-	// Init prompt and cmd
-	root := newTestRootCommandWithTty(c.Tty())
-	root.cmd.SetArgs([]string{"create", "--storage-api-token", project.Token()})
-
 	// Create fs
-	logger, _ := utils.NewDebugLogger()
-	fs, err := root.fsFactory(logger, `/`)
-	assert.NoError(t, err)
-	root.fsFactory = func(_ *zap.SugaredLogger, _ string) (filesystem.Fs, error) {
-		return fs, nil
-	}
+	fs := testhelper.NewMemoryFs()
+
+	// Init prompt and cmd
+	root := newTestRootCommandWithTty(c.Tty(), fs)
+	root.cmd.SetArgs([]string{"create", "--storage-api-token", project.Token()})
 
 	// Create manifest file
 	manifestContent := `
@@ -81,13 +74,6 @@ func TestInteractiveCreateConfig(t *testing.T) {
 		_, err = c.Send(testhelper.Enter) // enter - config
 		assert.NoError(t, err)
 
-		_, err = c.ExpectString("Enter a name for the new config")
-		assert.NoError(t, err)
-
-		time.Sleep(20 * time.Millisecond)
-		_, err = c.SendLine(`test`)
-		assert.NoError(t, err)
-
 		_, err = c.ExpectString("Select the target branch")
 		assert.NoError(t, err)
 
@@ -100,6 +86,13 @@ func TestInteractiveCreateConfig(t *testing.T) {
 
 		time.Sleep(20 * time.Millisecond)
 		_, err = c.SendLine("extractor generic\n")
+		assert.NoError(t, err)
+
+		_, err = c.ExpectString("Enter a name for the new config")
+		assert.NoError(t, err)
+
+		time.Sleep(20 * time.Millisecond)
+		_, err = c.SendLine(`test`)
 		assert.NoError(t, err)
 
 		_, err = c.ExpectEOF()
@@ -128,17 +121,12 @@ func TestInteractiveCreateConfigRow(t *testing.T) {
 	project := testproject.GetTestProject(t, env.Empty())
 	project.SetState(`empty.json`)
 
-	// Init prompt and cmd
-	root := newTestRootCommandWithTty(c.Tty())
-	root.cmd.SetArgs([]string{"create", "--storage-api-token", project.Token()})
-
 	// Create fs
-	logger, _ := utils.NewDebugLogger()
-	fs, err := root.fsFactory(logger, `/`)
-	assert.NoError(t, err)
-	root.fsFactory = func(_ *zap.SugaredLogger, _ string) (filesystem.Fs, error) {
-		return fs, nil
-	}
+	fs := testhelper.NewMemoryFs()
+
+	// Init prompt and cmd
+	root := newTestRootCommandWithTty(c.Tty(), fs)
+	root.cmd.SetArgs([]string{"create", "--storage-api-token", project.Token()})
 
 	// Create manifest file
 	manifestContent := `
@@ -196,13 +184,6 @@ func TestInteractiveCreateConfigRow(t *testing.T) {
 		_, err = c.Send(testhelper.Enter) // enter - config row
 		assert.NoError(t, err)
 
-		_, err = c.ExpectString("Enter a name for the new config row")
-		assert.NoError(t, err)
-
-		time.Sleep(20 * time.Millisecond)
-		_, err = c.SendLine(`test`)
-		assert.NoError(t, err)
-
 		_, err = c.ExpectString("Select the target branch")
 		assert.NoError(t, err)
 
@@ -215,6 +196,13 @@ func TestInteractiveCreateConfigRow(t *testing.T) {
 
 		time.Sleep(20 * time.Millisecond)
 		_, err = c.Send(testhelper.Enter) // enter - My Config
+		assert.NoError(t, err)
+
+		_, err = c.ExpectString("Enter a name for the new config row")
+		assert.NoError(t, err)
+
+		time.Sleep(20 * time.Millisecond)
+		_, err = c.SendLine(`test`)
 		assert.NoError(t, err)
 
 		_, err = c.ExpectEOF()
