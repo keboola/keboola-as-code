@@ -1,5 +1,6 @@
 %A
-INFO	The branch was successfully created.
+INFO	Created new branch "new branch".
+%A
 INFO	Pulling objects to the local directory.
 %A
 INFO	Plan for "pull" operation:
@@ -8,5 +9,4 @@ INFO	  + C new-branch/extractor/ex-generic-v2/empty
 %A
 INFO	Pull done.
 %A
-DEBUG	Sent "pull" successful event id: "%s"
-INFO	Created new branch "new branch".
+DEBUG	Sent "create-branch" successful event id: "%s"

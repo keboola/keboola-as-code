@@ -9,7 +9,7 @@ func (s *State) loadLocalState() {
 	s.localErrors = utils.NewMultiError()
 
 	uow := s.localManager.NewUnitOfWork(s.context)
-	if s.SkipNotFoundErr {
+	if s.IgnoreNotFoundErr {
 		uow.SkipNotFoundErr()
 	}
 

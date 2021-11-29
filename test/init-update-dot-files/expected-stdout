@@ -13,8 +13,9 @@ Feel free to modify them.
 
 Please set the secret KBC_STORAGE_API_TOKEN in the GitHub settings.
 See: https://docs.github.com/en/actions/reference/encrypted-secrets
+Init done.
 
-Init done. Running pull.
+Running pull.
 Plan for "pull" operation:
   + B main
 Pull done.

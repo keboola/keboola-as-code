@@ -1,0 +1,209 @@
+package interactive
+
+import (
+	"errors"
+	"fmt"
+	"io"
+	"os"
+
+	"github.com/AlecAivazis/survey/v2"
+	"github.com/AlecAivazis/survey/v2/terminal"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/nop"
+	"github.com/keboola/keboola-as-code/internal/pkg/strhelper"
+)
+
+type Prompt struct {
+	stdin  terminal.FileReader
+	stdout terminal.FileWriter
+	stderr terminal.FileWriter
+}
+
+// nolint: gochecknoinits
+func init() {
+	// Workaround for bug in 3rd party lib
+	// https://github.com/AlecAivazis/survey/issues/336
+	survey.MultilineQuestionTemplate += `{{"\n"}}`
+}
+
+func New(stdinRaw io.Reader, stdoutRaw io.Writer, stderrRaw io.Writer) prompt.Prompt {
+	stdin, ok1 := stdinRaw.(*os.File)
+	stdout, ok2 := stdoutRaw.(*os.File)
+	stderr, ok3 := stderrRaw.(*os.File)
+	if ok1 && ok2 && ok3 && isInteractiveTerminal(stdin, stdout) {
+		return &Prompt{
+			stdin:  stdin,
+			stdout: stdout,
+			stderr: stderr,
+		}
+	}
+
+	return nop.New()
+}
+
+func isInteractiveTerminal(stdin *os.File, stdout *os.File) bool {
+	if fileInfo, _ := stdin.Stat(); (fileInfo.Mode() & os.ModeCharDevice) == 0 {
+		return false
+	}
+
+	if fileInfo, _ := stdout.Stat(); (fileInfo.Mode() & os.ModeCharDevice) == 0 {
+		return false
+	}
+
+	return true
+}
+
+func (p *Prompt) IsInteractive() bool {
+	return true
+}
+
+func (p *Prompt) Printf(format string, a ...interface{}) {
+	if _, err := fmt.Fprintf(p.stdout, format, a...); err != nil {
+		panic(err)
+	}
+}
+
+func (p *Prompt) Confirm(c *prompt.Confirm) bool {
+	// Print description
+	if len(c.Description) > 0 {
+		p.Printf("\n%s\n", c.Description)
+	} else {
+		p.Printf("\n")
+	}
+
+	result := c.Default
+	opts := p.getOpts()
+	err := survey.AskOne(&survey.Confirm{Message: c.Label, Help: c.Help, Default: c.Default}, &result, opts...)
+	_ = p.handleError(err)
+	p.Printf("\n")
+	return result
+}
+
+func (p *Prompt) Ask(q *prompt.Question) (result string, ok bool) {
+	var err error
+
+	// Print description
+	if len(q.Description) > 0 {
+		p.Printf("\n%s\n", q.Description)
+	} else {
+		p.Printf("\n")
+	}
+
+	// Validator
+	opts := p.getOpts()
+	if q.Validator != nil {
+		opts = append(opts, survey.WithValidator(q.Validator))
+	}
+
+	// Ask
+	if q.Hidden {
+		err = survey.AskOne(&survey.Password{Message: q.Label, Help: q.Help}, &result, opts...)
+	} else {
+		err = survey.AskOne(&survey.Input{Message: q.Label, Default: q.Default, Help: q.Help}, &result, opts...)
+	}
+
+	p.Printf("\n")
+	return result, p.handleError(err)
+}
+
+func (p *Prompt) Select(s *prompt.Select) (value string, ok bool) {
+	// Print description
+	if len(s.Description) > 0 {
+		p.Printf("\n%s\n", s.Description)
+	} else {
+		p.Printf("\n")
+	}
+
+	// Validator
+	opts := p.getOpts()
+	if s.Validator != nil {
+		opts = append(opts, survey.WithValidator(s.Validator))
+	}
+
+	err := survey.AskOne(&survey.Select{Message: s.Label, Help: s.Help, Options: s.Options, Default: s.Default}, &value, opts...)
+	p.Printf("\n")
+	return value, p.handleError(err)
+}
+
+func (p *Prompt) SelectIndex(s *prompt.SelectIndex) (index int, ok bool) {
+	// Print description
+	if len(s.Description) > 0 {
+		p.Printf("\n%s\n", s.Description)
+	} else {
+		p.Printf("\n")
+	}
+
+	// Validator
+	opts := p.getOpts()
+	if s.Validator != nil {
+		opts = append(opts, survey.WithValidator(s.Validator))
+	}
+
+	err := survey.AskOne(&survey.Select{Message: s.Label, Help: s.Help, Options: s.Options, Default: s.Default}, &index, opts...)
+	p.Printf("\n")
+	return index, p.handleError(err)
+}
+
+func (p *Prompt) MultiSelect(s *prompt.MultiSelect) (result []string, ok bool) {
+	// Print description
+	if len(s.Description) > 0 {
+		p.Printf("\n%s\n", s.Description)
+	} else {
+		p.Printf("\n")
+	}
+
+	// Validator
+	opts := p.getOpts()
+	if s.Validator != nil {
+		opts = append(opts, survey.WithValidator(s.Validator))
+	}
+
+	err := survey.AskOne(&survey.MultiSelect{Message: s.Label, Help: s.Help, Options: s.Options, Default: s.Default}, &result, opts...)
+	p.Printf("\n")
+	return result, p.handleError(err)
+}
+
+func (p *Prompt) Multiline(q *prompt.Question) (result string, ok bool) {
+	// Print description
+	if len(q.Description) > 0 {
+		p.Printf("\n%s\n", q.Description)
+	} else {
+		p.Printf("\n")
+	}
+
+	// Validator
+	opts := p.getOpts()
+	if q.Validator != nil {
+		opts = append(opts, survey.WithValidator(q.Validator))
+	}
+
+	err := survey.AskOne(&survey.Multiline{Message: q.Label, Default: q.Default, Help: q.Help}, &result, opts...)
+	p.Printf("\n")
+	return result, p.handleError(err)
+}
+
+func (p *Prompt) getOpts() []survey.AskOpt {
+	var opts []survey.AskOpt
+	opts = append(opts, survey.WithStdio(p.stdin, p.stdout, p.stderr))
+	opts = append(opts, survey.WithShowCursor(true))
+	opts = append(opts, survey.WithFilter(func(filter string, value string, index int) (include bool) {
+		return strhelper.MatchWords(value, filter)
+	}))
+	return opts
+}
+
+func (p *Prompt) handleError(err error) (ok bool) {
+	if err == nil {
+		return true
+	} else if errors.Is(err, terminal.InterruptErr) {
+		// Ctrl+c -> append new line after prompt AND exit program
+		_, _ = p.stdout.Write([]byte("\n"))
+		if v, ok := p.stdout.(*os.File); ok {
+			_ = v.Sync()
+		}
+		os.Exit(1)
+	}
+
+	return false
+}

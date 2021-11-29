@@ -10,4 +10,3 @@ Plan for "rename" operation:
   - main/transformation/keboola.python-transformation-v2/python-transformation/blocks/002-block-2/001-code-z/{code.myext.py -> code.py}
   - main/extractor/keboola.ex-db-mysql/tables/rows/{my-row -> users}
 Dry run, nothing changed.
-Fix paths done.

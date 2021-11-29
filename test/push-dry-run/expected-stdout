@@ -4,4 +4,3 @@ Plan for "push" operation:
   × C main/extractor/ex-generic-v2/empty - SKIPPED
 Skipped remote objects deletion, use "--force" to delete them.
 Dry run, nothing changed.
-Push done.

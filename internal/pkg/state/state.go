@@ -38,15 +38,15 @@ type State struct {
 }
 
 type Options struct {
-	fs              filesystem.Fs
-	manifest        *manifest.Manifest
-	api             *remote.StorageApi
-	schedulerApi    *scheduler.Api
-	context         context.Context
-	logger          *zap.SugaredLogger
-	LoadLocalState  bool
-	LoadRemoteState bool
-	SkipNotFoundErr bool // not found error will be ignored
+	fs                filesystem.Fs
+	manifest          *manifest.Manifest
+	api               *remote.StorageApi
+	schedulerApi      *scheduler.Api
+	context           context.Context
+	logger            *zap.SugaredLogger
+	LoadLocalState    bool
+	LoadRemoteState   bool
+	IgnoreNotFoundErr bool // not found error will be ignored
 }
 
 func NewOptions(m *manifest.Manifest, api *remote.StorageApi, schedulerApi *scheduler.Api, ctx context.Context, logger *zap.SugaredLogger) *Options {
@@ -63,12 +63,6 @@ func NewOptions(m *manifest.Manifest, api *remote.StorageApi, schedulerApi *sche
 // LoadState - remote and local.
 func LoadState(options *Options) (state *State, ok bool) {
 	state = newState(options)
-
-	// Token and manifest project ID must be same
-	if state.manifest.Project.Id != state.api.ProjectId() {
-		state.AddLocalError(fmt.Errorf("used token is from the project \"%d\", but it must be from the project \"%d\"", state.api.ProjectId(), state.manifest.Project.Id))
-		return state, false
-	}
 
 	// Log allowed branches
 	state.logger.Debugf(`Allowed branches: %s`, state.manifest.Content.AllowedBranches)

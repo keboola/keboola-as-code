@@ -32,6 +32,5 @@ DEBUG	Removed "main/transformation/keboola.python-transformation-v2/python-trans
 DEBUG	Removed "main/transformation/keboola.python-transformation-v2/python-transformation/blocks/002-block-2/code"
 DEBUG	Removed "main/transformation/keboola.python-transformation-v2/python-transformation/blocks/002-block-2/001-code-z/code.myext.py"
 DEBUG	Removed "main/extractor/keboola.ex-db-mysql/tables/rows/my-row"
-INFO	Rename done.
 DEBUG	Saved ".keboola/manifest.json"
-INFO	Fix paths done.
+INFO	Rename done.

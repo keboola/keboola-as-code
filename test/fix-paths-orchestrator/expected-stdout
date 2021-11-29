@@ -6,4 +6,3 @@ Plan for "rename" operation:
   - main/other/keboola.orchestrator/orchestrator/phases/{b -> 002-phase-2}
   - main/other/keboola.orchestrator/orchestrator/phases/002-phase-2/{d -> 001-task-2}
 Rename done.
-Fix paths done.

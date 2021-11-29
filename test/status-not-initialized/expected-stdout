@@ -1,1 +1,2 @@
-Start by running the "init" sub-command in an empty directory.
+Project directory must contain the ".keboola" metadata directory.
+Please change working directory to a project directory or use the "init" command.

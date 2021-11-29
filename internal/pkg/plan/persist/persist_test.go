@@ -937,7 +937,7 @@ func (tc *testCase) run(t *testing.T) {
 
 	options.LoadLocalState = true
 	options.LoadRemoteState = false
-	options.SkipNotFoundErr = true
+	options.IgnoreNotFoundErr = true
 	projectState, ok := state.LoadState(options)
 	assert.NotNil(t, projectState)
 	assert.True(t, ok)

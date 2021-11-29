@@ -1,1 +1,2 @@
-Error: working directory "%s%efoo%ebar%ebaz" not found
+Error:
+  - working directory "%s%efoo%ebar%ebaz" not found
