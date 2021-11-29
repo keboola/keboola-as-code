@@ -25,6 +25,10 @@ func NewPlan(name string, state *state.State) *Plan {
 	return &Plan{name: name, State: state}
 }
 
+func (p *Plan) Empty() bool {
+	return len(p.actions) == 0
+}
+
 func (p *Plan) Name() string {
 	return p.name
 }

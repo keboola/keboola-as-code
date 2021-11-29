@@ -38,15 +38,15 @@ type State struct {
 }
 
 type Options struct {
-	fs              filesystem.Fs
-	manifest        *manifest.Manifest
-	api             *remote.StorageApi
-	schedulerApi    *scheduler.Api
-	context         context.Context
-	logger          *zap.SugaredLogger
-	LoadLocalState  bool
-	LoadRemoteState bool
-	SkipNotFoundErr bool // not found error will be ignored
+	fs                filesystem.Fs
+	manifest          *manifest.Manifest
+	api               *remote.StorageApi
+	schedulerApi      *scheduler.Api
+	context           context.Context
+	logger            *zap.SugaredLogger
+	LoadLocalState    bool
+	LoadRemoteState   bool
+	IgnoreNotFoundErr bool // not found error will be ignored
 }
 
 func NewOptions(m *manifest.Manifest, api *remote.StorageApi, schedulerApi *scheduler.Api, ctx context.Context, logger *zap.SugaredLogger) *Options {
