@@ -34,7 +34,7 @@ func (e *Error) Error() string {
 	return msg
 }
 
-func NewSchedulerApi(hostUrl string, token string, ctx context.Context, logger *zap.SugaredLogger, verbose bool) *Api {
+func NewSchedulerApi(ctx context.Context, logger *zap.SugaredLogger, hostUrl string, token string, verbose bool) *Api {
 	c := client.NewClient(ctx, logger, verbose).WithHostUrl(hostUrl)
 	c.SetHeader("X-StorageApi-Token", token)
 	c.SetError(&Error{})

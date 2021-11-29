@@ -73,17 +73,28 @@ func newProject(host string, id int, token string) *Project {
 	// Init API
 	p.api, _ = testapi.TestStorageApiWithToken(p.host, p.token, testhelper.TestIsVerbose())
 
+	// Load services
+	services, err := p.api.ServicesUrlById()
+	if err != nil {
+		assert.FailNow(p.t, "cannot get services: ", err)
+	}
+
+	// Get scheduler service host
+	schedulerHost, found := services["scheduler"]
+	if !found {
+		assert.FailNow(p.t, "missing scheduler service")
+	}
+
 	// Init Scheduler API
 	logger, logs := utils.NewDebugLogger()
 	if testhelper.TestIsVerbose() {
 		logs.ConnectTo(os.Stdout)
 	}
-	schedulerHostName, _ := p.api.GetSchedulerApiUrl()
 	p.schedulerApi = scheduler.NewSchedulerApi(
-		schedulerHostName,
-		p.api.Token().Token,
 		context.Background(),
 		logger,
+		string(schedulerHost),
+		p.api.Token().Token,
 		false,
 	)
 
@@ -93,7 +104,6 @@ func newProject(host string, id int, token string) *Project {
 	}
 
 	// Load default branch
-	var err error
 	p.defaultBranch, err = p.api.GetDefaultBranch()
 	if err != nil {
 		assert.FailNow(p.t, "cannot get default branch: ", err)
@@ -260,7 +270,7 @@ func (p *Project) createConfigsInDefaultBranch(names []string) {
 
 	// Prepare configs
 	tickets := p.api.NewTicketProvider()
-	configs := p.prepareConfigs(names, p.defaultBranch, tickets,"TEST_BRANCH_ALL_CONFIG")
+	configs := p.prepareConfigs(names, p.defaultBranch, tickets, "TEST_BRANCH_ALL_CONFIG")
 
 	// Generate new IDs
 	if err := tickets.Resolve(); err != nil {

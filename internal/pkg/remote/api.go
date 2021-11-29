@@ -12,7 +12,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -25,16 +24,16 @@ type StorageApi struct {
 	components *model.ComponentsMap
 }
 
-func NewStorageApiFromOptions(options *options.Options, ctx context.Context, logger *zap.SugaredLogger) (*StorageApi, error) {
-	if len(options.ApiHost) == 0 {
+func NewStorageApiWithToken(ctx context.Context, logger *zap.SugaredLogger, host, tokenStr string, verbose bool) (*StorageApi, error) {
+	if len(host) == 0 {
 		panic(fmt.Errorf("api host is not set"))
 	}
-	if len(options.ApiToken) == 0 {
+	if len(tokenStr) == 0 {
 		panic(fmt.Errorf("api token is not set"))
 	}
 
-	storageApi := NewStorageApi(options.ApiHost, ctx, logger, options.VerboseApi)
-	token, err := storageApi.GetToken(options.ApiToken)
+	storageApi := NewStorageApi(host, ctx, logger, verbose)
+	token, err := storageApi.GetToken(tokenStr)
 	if err != nil {
 		var errWithResponse client.ErrorWithResponse
 		if errors.As(err, &errWithResponse) && errWithResponse.IsUnauthorized() {

@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encryption"
@@ -86,14 +88,20 @@ func encryptCommand(root *rootCommand) *cobra.Command {
 				return nil
 			}
 
-			// Get encryption API
-			encryptionApiUrl, err := api.GetEncryptionApiUrl()
+			// Get services
+			services, err := api.ServicesUrlById()
 			if err != nil {
 				return err
 			}
 
+			// Get API host
+			encryptionApiUrl, found := services["encryption"]
+			if !found {
+				return fmt.Errorf(`encryption service not found`)
+			}
+
 			// Invoke
-			encryptionApi := encryption.NewEncryptionApi(root.ctx, logger, encryptionApiUrl, api.ProjectId(), false)
+			encryptionApi := encryption.NewEncryptionApi(root.ctx, logger, string(encryptionApiUrl), api.ProjectId(), false)
 			if err := plan.Invoke(logger, encryptionApi, root.ctx); err != nil {
 				return err
 			}
