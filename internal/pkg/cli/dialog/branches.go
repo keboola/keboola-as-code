@@ -1,4 +1,4 @@
-package interaction
+package dialog
 
 import (
 	"fmt"
@@ -7,7 +7,10 @@ import (
 
 	"github.com/spf13/cast"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -18,15 +21,24 @@ const (
 	ModeTypeList       = "type IDs or names"
 )
 
-type branchesPrompt struct {
-	prompt      *Prompt
+type branchesDialog struct {
+	prompt      prompt.Prompt
 	allBranches []*model.Branch
 	isFlagSet   bool
 	flagValue   string
-	defaultMode interface{}
+	defaultMode string
 }
 
-func (p *Prompt) GetAllowedBranches(allBranches []*model.Branch, isFlagSet bool, flagValue string) model.AllowedBranches {
+type branchesDialogDeps interface {
+	Options() *options.Options
+	StorageApi() (*remote.StorageApi, error)
+}
+
+func (p *Dialogs) AskAllowedBranches(d branchesDialogDeps) (model.AllowedBranches, error) {
+	o := d.Options()
+	isFlagSet := o.IsSet("allowed-branches")
+	flagValue := o.GetString("allowed-branches")
+
 	// Convert CLI values to internal
 	if flagValue == "*" {
 		flagValue = model.AllBranchesDef
@@ -34,22 +46,35 @@ func (p *Prompt) GetAllowedBranches(allBranches []*model.Branch, isFlagSet bool,
 		flagValue = model.MainBranchDef
 	}
 
-	return (&branchesPrompt{
-		prompt:      p,
+	// Get Storage API
+	storageApi, err := d.StorageApi()
+	if err != nil {
+		return nil, err
+	}
+
+	// List all branches
+	allBranches, err := storageApi.ListBranches()
+	if err != nil {
+		return nil, err
+	}
+
+	return (&branchesDialog{
+		prompt:      p.Prompt,
 		allBranches: allBranches,
 		isFlagSet:   isFlagSet,
 		flagValue:   flagValue,
-	}).ask()
+		defaultMode: ModeMainBranch,
+	}).ask(), nil
 }
 
-func (p *branchesPrompt) ask() model.AllowedBranches {
-	if p.prompt.Interactive && !p.isFlagSet {
+func (d *branchesDialog) ask() model.AllowedBranches {
+	if d.prompt.IsInteractive() && !d.isFlagSet {
 		for {
-			mode, results := p.doAsk()
+			mode, results := d.doAsk()
 
 			// Check that the definition meets at least one branch
 			matched := 0
-			for _, branch := range p.allBranches {
+			for _, branch := range d.allBranches {
 				for _, definition := range results {
 					if definition.IsBranchAllowed(branch) {
 						matched++
@@ -61,25 +86,25 @@ func (p *branchesPrompt) ask() model.AllowedBranches {
 			if matched > 0 {
 				if mode == ModeTypeList {
 					if matched == 1 {
-						p.prompt.Printf("\nOne project's branch match defined \"allowed branches\". Ok.\n")
+						d.prompt.Printf("\nOne project's branch match defined \"allowed branches\". Ok.\n")
 					} else {
-						p.prompt.Printf("\n%d project's branches match defined \"allowed branches\". Ok.\n", matched)
+						d.prompt.Printf("\n%d project's branches match defined \"allowed branches\". Ok.\n", matched)
 					}
 				}
 				return results
 			}
 
-			p.prompt.Printf("\nNo existing project's branch matches your definitions. Please try again.\n")
+			d.prompt.Printf("\nNo existing project's branch matches your definitions. Please try again.\n")
 		}
 	}
 
 	// Parse flag value
-	return p.parseString(p.flagValue, ",")
+	return d.parseString(d.flagValue, ",")
 }
 
-func (p *branchesPrompt) doAsk() (string, model.AllowedBranches) {
+func (d *branchesDialog) doAsk() (string, model.AllowedBranches) {
 	// Ask user for mode
-	mode, ok := p.prompt.Select(&Select{
+	mode, ok := d.prompt.Select(&prompt.Select{
 		Label: "Allowed project's branches:",
 		Description: "Please select which project's branches you want to use with this CLI.\n" +
 			"The other branches will still exist, but they will be invisible in the CLI.",
@@ -89,11 +114,11 @@ func (p *branchesPrompt) doAsk() (string, model.AllowedBranches) {
 			ModeSelectSpecific,
 			ModeTypeList,
 		},
-		Default: p.defaultMode,
+		Default: d.defaultMode,
 	})
 
 	// If it is necessary to repeat the selection (an error occurs), the option will be used as default
-	p.defaultMode = mode
+	d.defaultMode = mode
 
 	// Load definitions according to the specified mode
 	if ok {
@@ -103,28 +128,28 @@ func (p *branchesPrompt) doAsk() (string, model.AllowedBranches) {
 		case ModeAllBranches:
 			return mode, model.AllowedBranches{model.AllBranchesDef}
 		case ModeSelectSpecific:
-			return mode, p.selectBranches()
+			return mode, d.selectBranches()
 		case ModeTypeList:
-			return mode, p.typeBranchesList()
+			return mode, d.typeBranchesList()
 		}
 	}
 
 	return mode, nil
 }
 
-func (p *branchesPrompt) selectBranches() model.AllowedBranches {
+func (d *branchesDialog) selectBranches() model.AllowedBranches {
 	// Build options
-	options := utils.NewOrderedMap()
-	for _, branch := range p.allBranches {
+	o := utils.NewOrderedMap()
+	for _, branch := range d.allBranches {
 		msg := fmt.Sprintf(`[%d] %s`, branch.Id, branch.Name)
-		options.Set(msg, branch.Id)
+		o.Set(msg, branch.Id)
 	}
 
 	// Prompt
-	keys, ok := p.prompt.MultiSelect(&Select{
+	keys, ok := d.prompt.MultiSelect(&prompt.MultiSelect{
 		Label:       "Allowed project's branches:",
 		Description: "Please select one or more branches.",
-		Options:     options.Keys(),
+		Options:     o.Keys(),
 	})
 
 	if !ok {
@@ -133,30 +158,30 @@ func (p *branchesPrompt) selectBranches() model.AllowedBranches {
 
 	ids := make([]string, 0)
 	for _, key := range keys {
-		v, found := options.Get(key)
+		v, found := o.Get(key)
 		if !found {
 			panic(fmt.Errorf(`key "%s" not found`, key))
 		}
 		ids = append(ids, cast.ToString(v))
 	}
 
-	result := p.parseSlice(ids)
+	result := d.parseSlice(ids)
 	return result
 }
 
-func (p *branchesPrompt) typeBranchesList() model.AllowedBranches {
+func (d *branchesDialog) typeBranchesList() model.AllowedBranches {
 	// Print first 10 branches for inspiration
-	end := math.Min(10, float64(len(p.allBranches)))
-	p.prompt.Printf("\nExisting project's branches, for inspiration:\n")
-	for _, branch := range p.allBranches[:int(end)] {
-		p.prompt.Printf("[%d] %s\n", branch.Id, branch.Name)
+	end := math.Min(10, float64(len(d.allBranches)))
+	d.prompt.Printf("\nExisting project's branches, for inspiration:\n")
+	for _, branch := range d.allBranches[:int(end)] {
+		d.prompt.Printf("[%d] %s\n", branch.Id, branch.Name)
 	}
-	if len(p.allBranches) > 10 {
-		p.prompt.Printf(`...`)
+	if len(d.allBranches) > 10 {
+		d.prompt.Printf(`...`)
 	}
 
 	// Prompt
-	lines, ok := p.prompt.Multiline(&Question{
+	lines, ok := d.prompt.Multiline(&prompt.Question{
 		Label: "Allowed project's branches:",
 		Description: "\nPlease enter one branch definition per line.\n" +
 			"Each definition can be:\n" +
@@ -169,15 +194,15 @@ func (p *branchesPrompt) typeBranchesList() model.AllowedBranches {
 	}
 
 	// Normalize
-	results := p.parseString(lines, "\n")
+	results := d.parseString(lines, "\n")
 	return results
 }
 
-func (p *branchesPrompt) parseString(str, sep string) model.AllowedBranches {
-	return p.parseSlice(strings.Split(str, sep))
+func (d *branchesDialog) parseString(str, sep string) model.AllowedBranches {
+	return d.parseSlice(strings.Split(str, sep))
 }
 
-func (p *branchesPrompt) parseSlice(items []string) model.AllowedBranches {
+func (d *branchesDialog) parseSlice(items []string) model.AllowedBranches {
 	branches := model.AllowedBranches{}
 	for _, item := range items {
 		item = strings.TrimSpace(item)
@@ -186,11 +211,11 @@ func (p *branchesPrompt) parseSlice(items []string) model.AllowedBranches {
 		}
 		branches = append(branches, model.AllowedBranch(item))
 	}
-	return p.unique(branches)
+	return d.unique(branches)
 }
 
 // unique returns only unique items.
-func (p *branchesPrompt) unique(items model.AllowedBranches) model.AllowedBranches {
+func (d *branchesDialog) unique(items model.AllowedBranches) model.AllowedBranches {
 	m := utils.NewOrderedMap()
 	for _, item := range items {
 		m.Set(string(item), true)
