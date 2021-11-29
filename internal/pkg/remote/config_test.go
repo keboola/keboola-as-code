@@ -128,6 +128,10 @@ func expectedComponentsConfigTest() string {
     "configurationRowSchema": {},
     "emptyConfiguration": {},
     "emptyConfigurationRow": {},
+    "data": {
+      "default_bucket": false,
+      "default_bucket_stage": ""
+    },
     "configurations": [
       {
         "branchId": %s,
