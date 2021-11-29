@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -110,7 +111,7 @@ func TestTearDownKeepLogFile(t *testing.T) {
 	root, _ := newTestRootCommand(testhelper.NewMemoryFs())
 	tempDir := t.TempDir()
 
-	root.Options.LogFilePath = filesystem.Join(tempDir, "log-file.txt")
+	root.Options.LogFilePath = filepath.Join(tempDir, "log-file.txt")
 	root.setupLogger()
 	assert.False(t, root.logFile.IsTemp())
 	assert.Equal(t, root.logFile.Path(), root.Options.LogFilePath)
