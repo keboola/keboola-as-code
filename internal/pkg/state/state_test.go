@@ -26,7 +26,7 @@ func TestLoadStateDifferentProjectId(t *testing.T) {
 	t.Parallel()
 	logger, _ := utils.NewDebugLogger()
 	api, _, _ := testapi.TestMockedStorageApi()
-	api = api.WithToken(&model.Token{Owner: model.TokenOwner{Id: 45678}})
+	api = api.WithToken(model.Token{Owner: model.TokenOwner{Id: 45678}})
 	fs, err := aferofs.NewMemoryFs(logger, ".")
 	assert.NoError(t, err)
 	m, err := manifest.NewManifest(12345, "connection.keboola.com", fs)
