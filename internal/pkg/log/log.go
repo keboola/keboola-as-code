@@ -3,7 +3,6 @@ package log
 import (
 	"fmt"
 	"io"
-	"os"
 	"strings"
 
 	"go.uber.org/zap"
@@ -78,7 +77,7 @@ func ToErrorWriter(l *zap.SugaredLogger) *WriteCloser {
 	return &WriteCloser{zapcore.ErrorLevel, l}
 }
 
-func NewLogger(stdout io.Writer, stderr io.Writer, logFile *os.File, verbose bool) *zap.SugaredLogger {
+func NewLogger(stdout io.Writer, stderr io.Writer, logFile *File, verbose bool) *zap.SugaredLogger {
 	var cores []zapcore.Core
 
 	// Log to file
@@ -96,7 +95,7 @@ func NewLogger(stdout io.Writer, stderr io.Writer, logFile *os.File, verbose boo
 	return zap.New(zapcore.NewTee(cores...)).Sugar()
 }
 
-func getFileCore(logFile *os.File) zapcore.Core {
+func getFileCore(logFile *File) zapcore.Core {
 	// Log all
 	fileLevels := zap.LevelEnablerFunc(func(l zapcore.Level) bool { return true })
 
@@ -108,7 +107,7 @@ func getFileCore(logFile *os.File) zapcore.Core {
 		EncodeLevel:      zapcore.CapitalLevelEncoder,
 		ConsoleSeparator: "\t",
 	})
-	return zapcore.NewCore(encoder, logFile, fileLevels)
+	return zapcore.NewCore(encoder, logFile.File(), fileLevels)
 }
 
 func getStdoutCore(stdout io.Writer, verbose bool) zapcore.Core {

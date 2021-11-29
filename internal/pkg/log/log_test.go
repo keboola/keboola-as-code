@@ -23,7 +23,7 @@ func TestFileCore(t *testing.T) {
 	t.Parallel()
 	tempDir := t.TempDir()
 	filePath := filepath.Join(tempDir, "log-file.txt")
-	file, err := os.Create(filePath)
+	file, err := NewLogFile(filePath)
 	assert.NoError(t, err)
 
 	stdout := utils.NewBufferWriter()
@@ -34,7 +34,7 @@ func TestFileCore(t *testing.T) {
 	logger.Info("Info msg")
 	logger.Warn("Warn msg")
 	logger.Error("Error msg")
-	assert.NoError(t, file.Close())
+	assert.NoError(t, file.File().Close())
 
 	// Assert, all levels logged with the level prefix
 	expected := "DEBUG\tDebug msg\nINFO\tInfo msg\nWARN\tWarn msg\nERROR\tError msg\n"
@@ -116,7 +116,7 @@ func TestWriteStringNoErrIndent1(t *testing.T) {
 	t.Parallel()
 	tempDir := t.TempDir()
 	filePath := filepath.Join(tempDir, "log-file.txt")
-	file, err := os.Create(filePath)
+	file, err := NewLogFile(filePath)
 	assert.NoError(t, err)
 
 	stdout := utils.NewBufferWriter()
@@ -125,7 +125,7 @@ func TestWriteStringNoErrIndent1(t *testing.T) {
 
 	writer := ToInfoWriter(logger)
 	writer.WriteStringNoErrIndent1("test")
-	assert.NoError(t, file.Close())
+	assert.NoError(t, file.File().Close())
 
 	// Assert, all levels logged with the level prefix
 	expected := "INFO\t  test\n"
@@ -138,7 +138,7 @@ func TestWriteStringNoErrIndent(t *testing.T) {
 	t.Parallel()
 	tempDir := t.TempDir()
 	filePath := filepath.Join(tempDir, "log-file.txt")
-	file, err := os.Create(filePath)
+	file, err := NewLogFile(filePath)
 	assert.NoError(t, err)
 
 	stdout := utils.NewBufferWriter()
@@ -148,7 +148,7 @@ func TestWriteStringNoErrIndent(t *testing.T) {
 	writer := ToInfoWriter(logger)
 	writer.WriteStringNoErrIndent("test", 3)
 	writer.WriteStringNoErrIndent("test", 2)
-	assert.NoError(t, file.Close())
+	assert.NoError(t, file.File().Close())
 
 	// Assert, all levels logged with the level prefix
 	expected := "INFO\t      test\nINFO\t    test\n"
