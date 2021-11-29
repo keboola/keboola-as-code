@@ -53,16 +53,28 @@ func (s *State) ReloadPathsState() error {
 
 	// Track all known paths
 	for _, object := range s.All() {
-		if object.Manifest().State().IsPersisted() {
-			s.TrackRecord(object.Manifest())
-		}
+		s.TrackRecord(object.Manifest())
 	}
 	return nil
 }
 
 func (s *State) TrackRecord(record Record) {
-	for _, path := range record.GetRelatedPaths() {
-		s.pathsState.MarkTracked(path)
+	if !record.State().IsPersisted() {
+		return
+	}
+
+	// Track object path
+	s.pathsState.MarkTracked(record.Path())
+
+	// Track sub-paths
+	if record.State().IsInvalid() {
+		// Object is invalid, no sub-paths has been parsed -> mark all sub-paths tracked.
+		s.pathsState.MarkSubPathsTracked(record.Path())
+	} else {
+		// Object is valid, track loaded files.
+		for _, path := range record.GetRelatedPaths() {
+			s.pathsState.MarkTracked(path)
+		}
 	}
 }
 

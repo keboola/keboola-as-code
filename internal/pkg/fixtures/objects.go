@@ -14,8 +14,10 @@ type MockedKey struct {
 
 type MockedRecord struct {
 	MockedKey
-	PathValue string
-	Relations model.Relations
+	*model.RecordState
+	PathValue    string
+	Relations    model.Relations
+	RelatedPaths []string
 }
 
 type MockedObject struct {
@@ -78,11 +80,14 @@ func (r MockedRecord) Kind() model.Kind {
 	return r.Key().Kind()
 }
 
-func (MockedRecord) State() *model.RecordState {
-	return &model.RecordState{}
+func (r *MockedRecord) State() *model.RecordState {
+	if r.RecordState == nil {
+		return &model.RecordState{}
+	}
+	return r.RecordState
 }
 
-func (MockedRecord) SortKey(sort string) string {
+func (MockedRecord) SortKey(_ string) string {
 	return "key"
 }
 
@@ -118,15 +123,19 @@ func (r MockedRecord) Path() string {
 	return `test`
 }
 
-func (MockedRecord) GetRelatedPaths() []string {
-	return nil
+func (r *MockedRecord) ClearRelatedPaths() {
+	r.RelatedPaths = make([]string, 0)
 }
 
-func (MockedRecord) AddRelatedPath(path string) {
-	// nop
+func (r *MockedRecord) GetRelatedPaths() []string {
+	return r.RelatedPaths
 }
 
-func (MockedRecord) RenameRelatedPaths(oldPath, newPath string) {
+func (r *MockedRecord) AddRelatedPath(path string) {
+	r.RelatedPaths = append(r.RelatedPaths, path)
+}
+
+func (MockedRecord) RenameRelatedPaths(_, _ string) {
 	// nop
 }
 

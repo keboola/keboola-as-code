@@ -170,15 +170,16 @@ func (f *PathsState) MarkTracked(path string) {
 	// Add path and all parents
 	for {
 		// Is path known (not ignored)?
-		if _, ok := f.all[path]; !ok {
-			return
+		if _, ok := f.all[path]; ok {
+			// Mark
+			f.tracked[path] = true
 		}
-
-		// Mark
-		f.tracked[path] = true
 
 		// Process parent path
 		path = filesystem.Dir(path)
+		if path == "." {
+			break
+		}
 	}
 }
 
