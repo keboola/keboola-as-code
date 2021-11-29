@@ -12,9 +12,10 @@ import (
 )
 
 type Api struct {
-	hostUrl string
-	client  *client.Client
-	logger  *zap.SugaredLogger
+	hostUrl   string
+	projectId int
+	client    *client.Client
+	logger    *zap.SugaredLogger
 }
 
 // Error represents Encryption API error structure.
@@ -32,10 +33,10 @@ func (e *Error) Error() string {
 	return msg
 }
 
-func NewEncryptionApi(hostUrl string, ctx context.Context, logger *zap.SugaredLogger, verbose bool) *Api {
+func NewEncryptionApi(ctx context.Context, logger *zap.SugaredLogger, hostUrl string, projectId int, verbose bool) *Api {
 	c := client.NewClient(ctx, logger, verbose).WithHostUrl(hostUrl)
 	c.SetError(&Error{})
-	api := &Api{client: c, logger: logger, hostUrl: hostUrl}
+	api := &Api{projectId: projectId, client: c, logger: logger, hostUrl: hostUrl}
 	return api
 }
 
@@ -47,12 +48,12 @@ func (a *Api) NewRequest(method string, url string) *client.Request {
 	return a.client.NewRequest(method, url)
 }
 
-func (a *Api) CreateEncryptRequest(componentId string, projectId int, data map[string]string) *client.Request {
+func (a *Api) CreateEncryptRequest(componentId string, data map[string]string) *client.Request {
 	result := make(map[string]string)
 	return a.
 		client.NewRequest(resty.MethodPost, "encrypt").
 		SetQueryParam("componentId", componentId).
-		SetQueryParam("projectId", cast.ToString(projectId)).
+		SetQueryParam("projectId", cast.ToString(a.projectId)).
 		SetJsonBody(data).
 		SetResult(&result)
 }

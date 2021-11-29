@@ -10,31 +10,26 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/encryption"
 	"github.com/keboola/keboola-as-code/internal/pkg/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 type executor struct {
 	*Plan
-	*state.State
-	projectId int
-	logger    *zap.SugaredLogger
-	api       *encryption.Api
-	pool      *client.Pool
-	uow       *local.UnitOfWork
-	errors    *utils.MultiError
+	logger *zap.SugaredLogger
+	api    *encryption.Api
+	pool   *client.Pool
+	uow    *local.UnitOfWork
+	errors *utils.MultiError
 }
 
-func newExecutor(projectId int, logger *zap.SugaredLogger, api *encryption.Api, projectState *state.State, ctx context.Context, plan *Plan) *executor {
+func newExecutor(logger *zap.SugaredLogger, api *encryption.Api, ctx context.Context, plan *Plan) *executor {
 	return &executor{
-		Plan:      plan,
-		State:     projectState,
-		projectId: projectId,
-		logger:    logger,
-		api:       api,
-		pool:      api.NewPool(),
-		uow:       projectState.LocalManager().NewUnitOfWork(ctx),
-		errors:    utils.NewMultiError(),
+		Plan:   plan,
+		logger: logger,
+		api:    api,
+		pool:   api.NewPool(),
+		uow:    plan.LocalManager().NewUnitOfWork(ctx),
+		errors: utils.NewMultiError(),
 	}
 }
 
@@ -69,7 +64,7 @@ func (e *executor) encryptRequest(action *action) *client.Request {
 
 	// Prepare request
 	return e.api.
-		CreateEncryptRequest(object.GetComponentId(), e.projectId, data).
+		CreateEncryptRequest(object.GetComponentId(), data).
 		OnSuccess(func(response *client.Response) {
 			if !response.HasResult() {
 				panic(fmt.Errorf(`missing result of the encrypt API call`))

@@ -8,22 +8,25 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encryption"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 type Plan struct {
-	naming  *model.Naming
+	*state.State
 	actions []*action
+}
+
+func (p *Plan) Empty() bool {
+	return len(p.actions) == 0
 }
 
 func (p *Plan) Name() string {
 	return "encrypt"
 }
 
-func (p *Plan) Invoke(projectId int, logger *zap.SugaredLogger, encryptionApi *encryption.Api, projectState *state.State, ctx context.Context) error {
-	return newExecutor(projectId, logger, encryptionApi, projectState, ctx, p).invoke()
+func (p *Plan) Invoke(logger *zap.SugaredLogger, encryptionApi *encryption.Api, ctx context.Context) error {
+	return newExecutor(logger, encryptionApi, ctx, p).invoke()
 }
 
 func (p *Plan) Log(writer *log.WriteCloser) {
@@ -52,7 +55,7 @@ func (p *Plan) ValidateAllEncrypted() error {
 			fmt.Sprintf(
 				`%s "%s" contains unencrypted values`,
 				action.Kind().Name,
-				p.naming.ConfigFilePath(action.Path()),
+				p.Naming().ConfigFilePath(action.Path()),
 			),
 			objectErrors,
 		)
