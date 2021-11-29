@@ -16,13 +16,13 @@ import (
 func TestApiWithToken(t *testing.T) {
 	t.Parallel()
 	logger, _ := utils.NewDebugLogger()
-	token := &model.Token{Id: "123", Token: "mytoken", Owner: model.TokenOwner{Id: 456, Name: "name"}}
+	token := model.Token{Id: "123", Token: "mytoken", Owner: model.TokenOwner{Id: 456, Name: "name"}}
 	orgApi := NewStorageApi("foo.bar.com", context.Background(), logger, false)
 	tokenApi := orgApi.WithToken(token)
 
 	// Must be cloned, not modified
-	assert.NotSame(t, orgApi, tokenApi)
-	assert.Same(t, token, tokenApi.Token())
+	assert.NotEqual(t, orgApi, tokenApi)
+	assert.Equal(t, token, tokenApi.Token())
 	assert.Equal(t, "mytoken", tokenApi.RestyClient().Header.Get("X-StorageApi-Token"))
 }
 
@@ -54,7 +54,7 @@ func TestGetTokenEmpty(t *testing.T) {
 	assert.Equal(t, "Access token must be set", apiErr.Message)
 	assert.Equal(t, "", apiErr.ErrCode)
 	assert.Equal(t, 401, apiErr.HttpStatus())
-	assert.Nil(t, token)
+	assert.Empty(t, token)
 }
 
 func TestGetTokenInvalid(t *testing.T) {
@@ -70,5 +70,5 @@ func TestGetTokenInvalid(t *testing.T) {
 	assert.Equal(t, "Invalid access token", apiErr.Message)
 	assert.Equal(t, "storage.tokenInvalid", apiErr.ErrCode)
 	assert.Equal(t, 401, apiErr.HttpStatus())
-	assert.Nil(t, token)
+	assert.Empty(t, token)
 }

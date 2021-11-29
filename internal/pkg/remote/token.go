@@ -9,18 +9,18 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func (a StorageApi) WithToken(token *model.Token) *StorageApi {
-	a.token = token
+func (a StorageApi) WithToken(token model.Token) *StorageApi {
+	a.token = &token
 	a.client.SetHeader("X-StorageApi-Token", token.Token)
 	return &a
 }
 
-func (a *StorageApi) Token() *model.Token {
+func (a *StorageApi) Token() model.Token {
 	if a.token == nil {
 		panic(fmt.Errorf("token is not set"))
 	}
 
-	return a.token
+	return *a.token
 }
 
 func (a *StorageApi) ProjectId() int {
@@ -37,12 +37,12 @@ func (a *StorageApi) ProjectName() string {
 	return a.token.ProjectName()
 }
 
-func (a *StorageApi) GetToken(token string) (*model.Token, error) {
+func (a *StorageApi) GetToken(token string) (model.Token, error) {
 	response := a.GetTokenRequest(token).Send().Response
 	if response.HasResult() {
-		return response.Result().(*model.Token), nil
+		return *response.Result().(*model.Token), nil
 	}
-	return nil, response.Err()
+	return model.Token{}, response.Err()
 }
 
 func (a *StorageApi) GetTokenRequest(token string) *client.Request {
