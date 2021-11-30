@@ -1,0 +1,10 @@
+Command "workflows"
+
+Generate workflows for Github Actions:
+- "validate" all branches on change.
+- "push" - each change in the main branch will be pushed to the project.
+- "pull" - main branch will be synchronized every 5 minutes.
+
+You will be prompted which workflows you want to generate.
+
+The secret KBC_STORAGE_API_TOKEN must be added to the GitHub repository.

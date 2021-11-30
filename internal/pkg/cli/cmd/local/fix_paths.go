@@ -4,25 +4,15 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/local/rename"
-)
-
-const (
-	fixPathsShortDescription = `Normalize all local paths`
-	fixPathsLongDescription  = `Command "fix-paths"
-
-Manifest file ".keboola/manifest.json" contains a naming for all local paths.
-
-With this command you can rename all existing paths
-to match the configured naming (eg. if the naming has been changed).
-`
 )
 
 func FixPathsCommand(depsProvider dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "fix-paths",
-		Short: fixPathsShortDescription,
-		Long:  fixPathsLongDescription,
+		Short: helpmsg.Read(`local/fix-paths/short`),
+		Long:  helpmsg.Read(`local/fix-paths/long`),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			d := depsProvider.Dependencies()
 

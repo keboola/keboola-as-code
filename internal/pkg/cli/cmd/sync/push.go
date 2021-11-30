@@ -6,29 +6,15 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/sync/push"
-)
-
-const (
-	pushShortDescription = `Push configurations to the Keboola Connection project`
-	pushLongDescription  = `Command "push"
-
-Push configurations to the Keboola Connection project.
-Project's state will be overwritten to match the local files.
-
-You can specify an optional ["change description"].
-It will be visible in the config's versions.
-
-You can use the "--dry-run" flag to see
-what needs to be done without modifying the project's state.
-`
 )
 
 func PushCommand(depsProvider dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `push ["change description"]`,
-		Short: pushShortDescription,
-		Long:  pushLongDescription,
+		Short: helpmsg.Read(`sync/push/short`),
+		Long:  helpmsg.Read(`sync/push/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			d := depsProvider.Dependencies()
 			start := time.Now()

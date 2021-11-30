@@ -1,0 +1,5 @@
+Usage:{{if .HasAvailableSubCommands}}
+  {{.CommandPath}} [command]{{else if .Runnable}}
+  {{.UseLine}}{{end}}{{if gt (len .Aliases) 0}}
+
+Aliases:

@@ -1,0 +1,7 @@
+Command "pull"
+
+Pull configurations from the Keboola Connection project.
+Local files will be overwritten to match the project's state.
+
+You can use the "--dry-run" flag to see
+what needs to be done without modifying the files.

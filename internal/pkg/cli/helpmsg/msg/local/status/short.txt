@@ -1,0 +1,1 @@
+Print info about project directory

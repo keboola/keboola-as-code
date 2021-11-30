@@ -7,27 +7,16 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/sync/pull"
-)
-
-const (
-	pullShortDescription = `Pull configurations to the project directory`
-	pullLongDescription  = `Command "pull"
-
-Pull configurations from the Keboola Connection project.
-Local files will be overwritten to match the project's state.
-
-You can use the "--dry-run" flag to see
-what needs to be done without modifying the files.
-`
 )
 
 func PullCommand(depsProvider dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "pull",
-		Short: pullShortDescription,
-		Long:  pullLongDescription,
+		Short: helpmsg.Read(`sync/pull/short`),
+		Long:  helpmsg.Read(`sync/pull/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			d := depsProvider.Dependencies()
 			start := time.Now()
