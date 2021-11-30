@@ -1,4 +1,4 @@
-package cmd
+package sync
 
 import (
 	"errors"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/sync/pull"
 )
@@ -22,13 +23,13 @@ what needs to be done without modifying the files.
 `
 )
 
-func PullCommand(root *RootCommand) *cobra.Command {
+func PullCommand(depsProvider dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "pull",
 		Short: pullShortDescription,
 		Long:  pullLongDescription,
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			d := root.Deps
+			d := depsProvider.Dependencies()
 			start := time.Now()
 			logger := d.Logger()
 

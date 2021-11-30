@@ -1,4 +1,4 @@
-package cmd
+package local
 
 import (
 	"strings"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	createConfig "github.com/keboola/keboola-as-code/pkg/lib/operation/local/create/config"
 	createRow "github.com/keboola/keboola-as-code/pkg/lib/operation/local/create/row"
 	createBranch "github.com/keboola/keboola-as-code/pkg/lib/operation/remote/create/branch"
@@ -38,10 +39,10 @@ const createBranchLongDesc = `Command "create branch"
 - When the branch is created, the new state is pulled to the local directory.
 `
 
-func CreateCommand(root *RootCommand) *cobra.Command {
-	createBranchCmd := CreateBranchCommand(root)
-	createConfigCmd := CreateConfigCommand(root)
-	createRowCmd := CreateRowCommand(root)
+func CreateCommand(depsProvider dependencies.Provider) *cobra.Command {
+	createBranchCmd := CreateBranchCommand(depsProvider)
+	createConfigCmd := CreateConfigCommand(depsProvider)
+	createRowCmd := CreateRowCommand(depsProvider)
 
 	longDesc := `### ` + createBranchLongDesc + "\n\n### Command \"create config/row\"\n" + createConfigOrRowLongDesc
 	longDesc = strings.ReplaceAll(longDesc, `[object]`, `a new config or config row`)
@@ -51,7 +52,7 @@ func CreateCommand(root *RootCommand) *cobra.Command {
 		Short: createShortDescription,
 		Long:  longDesc,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			d := root.Deps
+			d := depsProvider.Dependencies()
 
 			// Metadata directory is required
 			d.LoadStorageApiHostFromManifest()
@@ -78,13 +79,13 @@ func CreateCommand(root *RootCommand) *cobra.Command {
 	return cmd
 }
 
-func CreateBranchCommand(root *RootCommand) *cobra.Command {
+func CreateBranchCommand(depsProvider dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "branch",
 		Short: createBranchShortDescription,
 		Long:  createBranchLongDesc,
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			d := root.Deps
+			d := depsProvider.Dependencies()
 			start := time.Now()
 
 			// Metadata directory is required
@@ -119,7 +120,7 @@ func CreateBranchCommand(root *RootCommand) *cobra.Command {
 }
 
 // nolint: dupl
-func CreateConfigCommand(root *RootCommand) *cobra.Command {
+func CreateConfigCommand(depsProvider dependencies.Provider) *cobra.Command {
 	longDesc := "Command \"create config\"\n" + createConfigOrRowLongDesc
 	longDesc = strings.ReplaceAll(longDesc, `[object]`, `a new config`)
 	longDesc = strings.ReplaceAll(longDesc, `[values]`, `name, branch and component ID`)
@@ -128,7 +129,7 @@ func CreateConfigCommand(root *RootCommand) *cobra.Command {
 		Short: createConfigShortDescription,
 		Long:  longDesc,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			d := root.Deps
+			d := depsProvider.Dependencies()
 
 			// Metadata directory is required
 			d.LoadStorageApiHostFromManifest()
@@ -161,7 +162,7 @@ func CreateConfigCommand(root *RootCommand) *cobra.Command {
 }
 
 // nolint: dupl
-func CreateRowCommand(root *RootCommand) *cobra.Command {
+func CreateRowCommand(depsProvider dependencies.Provider) *cobra.Command {
 	longDesc := "Command \"create row\"\n" + createConfigOrRowLongDesc
 	longDesc = strings.ReplaceAll(longDesc, `[object]`, `a new config row`)
 	longDesc = strings.ReplaceAll(longDesc, `[values]`, `name, branch and config`)
@@ -170,7 +171,7 @@ func CreateRowCommand(root *RootCommand) *cobra.Command {
 		Short: createRowShortDescription,
 		Long:  longDesc,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			d := root.Deps
+			d := depsProvider.Dependencies()
 
 			// Metadata directory is required
 			d.LoadStorageApiHostFromManifest()

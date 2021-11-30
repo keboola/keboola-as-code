@@ -1,4 +1,4 @@
-package cmd
+package sync_test
 
 import (
 	"strings"
@@ -10,14 +10,15 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/testcli"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
 )
 
 func TestMissingParams(t *testing.T) {
 	t.Parallel()
-	root, out := newTestRootCommand(testhelper.NewMemoryFs())
-	root.cmd.SetArgs([]string{"init"})
+	root, out := testcli.NewTestRootCommand(testhelper.NewMemoryFs())
+	root.SetArgs([]string{"init"})
 	exitCode := root.Execute()
 	assert.Equal(t, 1, exitCode)
 
@@ -42,8 +43,8 @@ func TestInteractiveInit(t *testing.T) {
 	project.SetState(`empty.json`)
 
 	// Init prompt and cmd
-	root := newTestRootCommandWithTty(c.Tty(), testhelper.NewMemoryFs())
-	root.cmd.SetArgs([]string{"init"})
+	root := testcli.NewTestRootCommandWithTty(c.Tty(), testhelper.NewMemoryFs())
+	root.SetArgs([]string{"init"})
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -106,7 +107,7 @@ func TestInteractiveInit(t *testing.T) {
 	}()
 
 	// Run cmd
-	assert.NoError(t, root.cmd.Execute())
+	assert.NoError(t, root.Cmd.Execute())
 	assert.NoError(t, c.Tty().Close())
 	wg.Wait()
 	assert.NoError(t, c.Close())

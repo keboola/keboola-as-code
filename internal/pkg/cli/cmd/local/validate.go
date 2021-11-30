@@ -1,8 +1,9 @@
-package cmd
+package local
 
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/local/validate"
 )
 
@@ -15,13 +16,13 @@ For components with a JSON schema, the content must match the schema.
 `
 )
 
-func ValidateCommand(root *RootCommand) *cobra.Command {
+func ValidateCommand(depsProvider dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "validate",
 		Short: validateShortDescription,
 		Long:  validateLongDescription,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			d := root.Deps
+			d := depsProvider.Dependencies()
 			logger := d.Logger()
 
 			// Metadata directory is required

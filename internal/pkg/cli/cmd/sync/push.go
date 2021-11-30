@@ -1,10 +1,11 @@
-package cmd
+package sync
 
 import (
 	"time"
 
 	"github.com/spf13/cobra"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/sync/push"
 )
 
@@ -23,13 +24,13 @@ what needs to be done without modifying the project's state.
 `
 )
 
-func PushCommand(root *RootCommand) *cobra.Command {
+func PushCommand(depsProvider dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `push ["change description"]`,
 		Short: pushShortDescription,
 		Long:  pushLongDescription,
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			d := root.Deps
+			d := depsProvider.Dependencies()
 			start := time.Now()
 			logger := d.Logger()
 

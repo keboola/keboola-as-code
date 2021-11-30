@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
-	interactivePrompt "github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/interactive"
 	nopPrompt "github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/nop"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -24,7 +23,7 @@ func TestRootSubCommands(t *testing.T) {
 
 	// Map commands to names
 	var names []string
-	for _, cmd := range root.cmd.Commands() {
+	for _, cmd := range root.Commands() {
 		names = append(names, cmd.Name())
 	}
 
@@ -50,7 +49,7 @@ func TestRootCmdPersistentFlags(t *testing.T) {
 
 	// Map flags to names
 	var names []string
-	root.cmd.PersistentFlags().VisitAll(func(flag *pflag.Flag) {
+	root.PersistentFlags().VisitAll(func(flag *pflag.Flag) {
 		names = append(names, flag.Name)
 	})
 
@@ -72,7 +71,7 @@ func TestRootCmdFlags(t *testing.T) {
 
 	// Map flags to names
 	var names []string
-	root.cmd.Flags().VisitAll(func(flag *pflag.Flag) {
+	root.Flags().VisitAll(func(flag *pflag.Flag) {
 		names = append(names, flag.Name)
 	})
 
@@ -156,12 +155,4 @@ func newTestRootCommand(fs filesystem.Fs) (*RootCommand, *utils.Writer) {
 		return fs, nil
 	}
 	return NewRootCommand(in, out, out, nopPrompt.New(), env.Empty(), fsFactory), out
-}
-
-func newTestRootCommandWithTty(tty *os.File, fs filesystem.Fs) *RootCommand {
-	prompt := interactivePrompt.New(tty, tty, tty)
-	fsFactory := func(logger *zap.SugaredLogger, workingDir string) (filesystem.Fs, error) {
-		return fs, nil
-	}
-	return NewRootCommand(tty, tty, tty, prompt, env.Empty(), fsFactory)
 }

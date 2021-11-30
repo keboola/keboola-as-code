@@ -1,8 +1,9 @@
-package cmd
+package local
 
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/local/encrypt"
 )
 
@@ -19,13 +20,13 @@ what needs to be done without modifying the files.
 `
 )
 
-func EncryptCommand(root *RootCommand) *cobra.Command {
+func EncryptCommand(depsProvider dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "encrypt",
 		Short: encryptShortDescription,
 		Long:  encryptLongDescription,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			d := root.Deps
+			d := depsProvider.Dependencies()
 
 			// Metadata directory is required
 			d.LoadStorageApiHostFromManifest()

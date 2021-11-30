@@ -1,8 +1,9 @@
-package cmd
+package local
 
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/local/persist"
 )
 
@@ -21,13 +22,13 @@ call the "push" command after the "persist" command.
 `
 )
 
-func PersistCommand(root *RootCommand) *cobra.Command {
+func PersistCommand(depsProvider dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "persist",
 		Short: persistShortDescription,
 		Long:  persistLongDescription,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			d := root.Deps
+			d := depsProvider.Dependencies()
 
 			// Metadata directory is required
 			d.LoadStorageApiHostFromManifest()

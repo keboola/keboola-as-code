@@ -1,10 +1,12 @@
-package cmd
+package sync
 
 import (
 	"time"
 
 	"github.com/spf13/cobra"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	initOp "github.com/keboola/keboola-as-code/pkg/lib/operation/sync/init"
 )
 
@@ -29,16 +31,16 @@ Others will be ignored, although they will still exist in the project.
 `
 )
 
-func InitCommand(root *RootCommand) *cobra.Command {
+func InitCommand(depsProvider dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init",
 		Short: initShortDescription,
 		Long:  initLongDescription,
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			d := root.Deps
+			d := depsProvider.Dependencies()
 			start := time.Now()
 
-			// Metadata directory is required
+			// Metadata directory must not exists
 			if err := d.AssertMetaDirNotExists(); err != nil {
 				return err
 			}
@@ -66,7 +68,7 @@ func InitCommand(root *RootCommand) *cobra.Command {
 	// Flags
 	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
 	cmd.Flags().StringP("allowed-branches", "b", "main", `comma separated IDs or name globs, use "*" for all`)
-	workflowsCmdFlags(cmd)
+	local.WorkflowsCmdFlags(cmd)
 
 	return cmd
 }
