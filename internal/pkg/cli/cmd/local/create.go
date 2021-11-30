@@ -1,56 +1,25 @@
 package local
 
 import (
-	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 	createConfig "github.com/keboola/keboola-as-code/pkg/lib/operation/local/create/config"
 	createRow "github.com/keboola/keboola-as-code/pkg/lib/operation/local/create/row"
 	createBranch "github.com/keboola/keboola-as-code/pkg/lib/operation/remote/create/branch"
 )
 
-const (
-	createShortDescription       = "Create branch, config or row"
-	createBranchShortDescription = "Create branch"
-	createConfigShortDescription = "Create config"
-	createRowShortDescription    = "Create config row"
-	createConfigOrRowLongDesc    = `
-Creates [object] in the local directory structure.
-A new unique ID is assigned to the new object (there is no need to call "persist").
-To save the new object to the project, call "push" after the "create".
-
-You will be prompted for [values].
-You can also specify them using flags or environment.
-
-Tip:
-  You can also create [object] by copying
-  an existing one and running the "persist" command.
-`
-)
-
-const createBranchLongDesc = `Command "create branch"
-
-- Creates a new dev branch in the project remote state.
-- The new branch will be a copy of the current remote state of the main branch.
-- It is recommended to first "push" local changes in the main branch if any.
-- When the branch is created, the new state is pulled to the local directory.
-`
-
 func CreateCommand(depsProvider dependencies.Provider) *cobra.Command {
 	createBranchCmd := CreateBranchCommand(depsProvider)
 	createConfigCmd := CreateConfigCommand(depsProvider)
 	createRowCmd := CreateRowCommand(depsProvider)
-
-	longDesc := `### ` + createBranchLongDesc + "\n\n### Command \"create config/row\"\n" + createConfigOrRowLongDesc
-	longDesc = strings.ReplaceAll(longDesc, `[object]`, `a new config or config row`)
-	longDesc = strings.ReplaceAll(longDesc, `[values]`, `all needed values`)
 	cmd := &cobra.Command{
 		Use:   `create`,
-		Short: createShortDescription,
-		Long:  longDesc,
+		Short: helpmsg.Read(`local/create/short`),
+		Long:  helpmsg.Read(`local/create/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			d := depsProvider.Dependencies()
 
@@ -82,8 +51,8 @@ func CreateCommand(depsProvider dependencies.Provider) *cobra.Command {
 func CreateBranchCommand(depsProvider dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "branch",
-		Short: createBranchShortDescription,
-		Long:  createBranchLongDesc,
+		Short: helpmsg.Read(`local/create/branch/short`),
+		Long:  helpmsg.Read(`local/create/branch/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			d := depsProvider.Dependencies()
 			start := time.Now()
@@ -121,13 +90,10 @@ func CreateBranchCommand(depsProvider dependencies.Provider) *cobra.Command {
 
 // nolint: dupl
 func CreateConfigCommand(depsProvider dependencies.Provider) *cobra.Command {
-	longDesc := "Command \"create config\"\n" + createConfigOrRowLongDesc
-	longDesc = strings.ReplaceAll(longDesc, `[object]`, `a new config`)
-	longDesc = strings.ReplaceAll(longDesc, `[values]`, `name, branch and component ID`)
 	cmd := &cobra.Command{
 		Use:   "config",
-		Short: createConfigShortDescription,
-		Long:  longDesc,
+		Short: helpmsg.Read(`local/create/config/short`),
+		Long:  helpmsg.Read(`local/create/config/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			d := depsProvider.Dependencies()
 
@@ -157,13 +123,10 @@ func CreateConfigCommand(depsProvider dependencies.Provider) *cobra.Command {
 
 // nolint: dupl
 func CreateRowCommand(depsProvider dependencies.Provider) *cobra.Command {
-	longDesc := "Command \"create row\"\n" + createConfigOrRowLongDesc
-	longDesc = strings.ReplaceAll(longDesc, `[object]`, `a new config row`)
-	longDesc = strings.ReplaceAll(longDesc, `[values]`, `name, branch and config`)
 	cmd := &cobra.Command{
 		Use:   "row",
-		Short: createRowShortDescription,
-		Long:  longDesc,
+		Short: helpmsg.Read(`local/create/row/short`),
+		Long:  helpmsg.Read(`local/create/row/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			d := depsProvider.Dependencies()
 

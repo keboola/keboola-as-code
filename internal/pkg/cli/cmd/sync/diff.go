@@ -4,22 +4,15 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/sync/diff/printDiff"
-)
-
-const (
-	diffShortDescription = `Print differences between local and remote state`
-	diffLongDescription  = `Command "diff"
-
-Print differences between local and remote state.
-`
 )
 
 func DiffCommand(depsProvider dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "diff",
-		Short: diffShortDescription,
-		Long:  diffLongDescription,
+		Short: helpmsg.Read(`sync/diff/short`),
+		Long:  helpmsg.Read(`sync/diff/long`),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			d := depsProvider.Dependencies()
 			logger := d.Logger()

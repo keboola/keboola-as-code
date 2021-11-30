@@ -4,23 +4,15 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/local/validate"
-)
-
-const (
-	validateShortDescription = `Validate the local project directory`
-	validateLongDescription  = `Command "validate"
-
-Validate existence and contents of all files in the local project dir.
-For components with a JSON schema, the content must match the schema.
-`
 )
 
 func ValidateCommand(depsProvider dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "validate",
-		Short: validateShortDescription,
-		Long:  validateLongDescription,
+		Short: helpmsg.Read(`local/validate/short`),
+		Long:  helpmsg.Read(`local/validate/long`),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			d := depsProvider.Dependencies()
 			logger := d.Logger()

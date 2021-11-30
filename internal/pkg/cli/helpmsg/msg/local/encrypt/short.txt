@@ -1,0 +1,1 @@
+Find unencrypted values in configurations and encrypt them

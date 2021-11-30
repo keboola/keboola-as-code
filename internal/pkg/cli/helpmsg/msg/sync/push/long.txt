@@ -1,0 +1,10 @@
+Command "push"
+
+Push configurations to the Keboola Connection project.
+Project's state will be overwritten to match the local files.
+
+You can specify an optional ["change description"].
+It will be visible in the config's versions.
+
+You can use the "--dry-run" flag to see
+what needs to be done without modifying the project's state.

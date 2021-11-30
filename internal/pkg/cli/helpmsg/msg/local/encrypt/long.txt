@@ -1,0 +1,8 @@
+Command "encrypt"
+
+This command searches for unencrypted values in al local configurations and encrypts them.
+- The encrypted values are properties that begin with '#' and contain string.
+- For example {"#someSecretProperty": "secret value"} will be transformed into {"#someSecretProperty": "KBC::ProjectSecure::<encryptedcontent>"}
+
+You can use the "--dry-run" flag to see
+what needs to be done without modifying the files.

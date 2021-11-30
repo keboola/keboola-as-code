@@ -1,0 +1,16 @@
+Command "init"
+
+Initialize local project's directory
+and make first sync from the Keboola Connection.
+
+You will be prompted to define:
+- storage API host
+- storage API token of your project
+- allowed branches
+- GitHub Actions workflows
+
+You can also enter these values
+by flags or environment variables.
+
+This CLI tool will only work with the specified "allowed branches".
+Others will be ignored, although they will still exist in the project.

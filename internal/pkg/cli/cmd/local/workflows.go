@@ -5,29 +5,15 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 	workflowsGen "github.com/keboola/keboola-as-code/pkg/lib/operation/local/workflows/generate"
-)
-
-const (
-	workflowsShortDescription = `Generate Github Actions workflows`
-	workflowsLongDescription  = `Command "workflows"
-
-Generate workflows for Github Actions:
-- "validate" all branches on change.
-- "push" - each change in the main branch will be pushed to the project.
-- "pull" - main branch will be synchronized every 5 minutes.
-
-You will be prompted which workflows you want to generate.
-
-The secret KBC_STORAGE_API_TOKEN must be added to the GitHub repository.
-`
 )
 
 func WorkflowsCommand(depsProvider dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "workflows",
-		Short: workflowsShortDescription,
-		Long:  workflowsLongDescription,
+		Short: helpmsg.Read(`local/workflows/short`),
+		Long:  helpmsg.Read(`local/workflows/long`),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			d := depsProvider.Dependencies()
 

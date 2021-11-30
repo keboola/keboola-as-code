@@ -15,6 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/sync"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dialog"
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -24,25 +25,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/version"
 	versionCheck "github.com/keboola/keboola-as-code/pkg/lib/operation/remote/version/check"
 )
-
-const description = `
-Keboola CLI
-
-Manage your Keboola Connection project
-from your local machine or CI pipeline.
-
-Project can be synchronized in both
-directions [Keboola Connection] <-> [local directory].
-
-Start by running the "init" sub-command in a new empty directory.
-Your project will be pulled and you can start working.
-`
-
-const usageTemplate = `Usage:{{if .HasAvailableSubCommands}}
-  {{.CommandPath}} [command]{{else if .Runnable}}
-  {{.UseLine}}{{end}}{{if gt (len .Aliases) 0}}
-
-Aliases:`
 
 type Cmd = cobra.Command
 
@@ -61,7 +43,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 	root.Cmd = &Cmd{
 		Use:           path.Base(os.Args[0]), // name of the binary
 		Version:       version.Version(),
-		Short:         description,
+		Short:         helpmsg.Read(`root/description`),
 		SilenceUsage:  true,
 		SilenceErrors: true, // custom error handling, see printError
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -78,7 +60,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 	// Setup templates
 	root.SetVersionTemplate("{{.Version}}")
 	root.SetUsageTemplate(
-		regexp.MustCompile(`Usage:(.|\n)*Aliases:`).ReplaceAllString(root.UsageTemplate(), usageTemplate),
+		regexp.MustCompile(`Usage:(.|\n)*Aliases:`).ReplaceAllString(root.UsageTemplate(), helpmsg.Read(`root/usage`)),
 	)
 
 	// Persistent flags for all sub-commands

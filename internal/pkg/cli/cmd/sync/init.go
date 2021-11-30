@@ -7,35 +7,15 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 	initOp "github.com/keboola/keboola-as-code/pkg/lib/operation/sync/init"
-)
-
-const (
-	initShortDescription = `Init local project directory and perform the first pull`
-	initLongDescription  = `Command "init"
-
-Initialize local project's directory
-and make first sync from the Keboola Connection.
-
-You will be prompted to define:
-- storage API host
-- storage API token of your project
-- allowed branches
-- GitHub Actions workflows
-
-You can also enter these values
-by flags or environment variables.
-
-This CLI tool will only work with the specified "allowed branches".
-Others will be ignored, although they will still exist in the project.
-`
 )
 
 func InitCommand(depsProvider dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init",
-		Short: initShortDescription,
-		Long:  initLongDescription,
+		Short: helpmsg.Read(`sync/init/short`),
+		Long:  helpmsg.Read(`sync/init/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			d := depsProvider.Dependencies()
 			start := time.Now()
