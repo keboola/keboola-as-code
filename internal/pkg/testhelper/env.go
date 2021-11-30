@@ -78,6 +78,14 @@ func newStripAnsiWriter(writer io.Writer) *stripAnsiWriter {
 	}
 }
 
+func (w *stripAnsiWriter) writeBuffer() error {
+	if _, err := w.writer.Write([]byte(stripansi.Strip(w.buf.String()))); err != nil {
+		return err
+	}
+	w.buf.Reset()
+	return nil
+}
+
 func (w *stripAnsiWriter) Write(p []byte) (int, error) {
 	// Append to the buffer
 	n, err := w.buf.Write(p)
@@ -85,13 +93,27 @@ func (w *stripAnsiWriter) Write(p []byte) (int, error) {
 	// We can only remove an ANSI escape seq if the whole expression is present.
 	// ... so if buffer contains new line -> flush
 	if bytes.Contains(w.buf.Bytes(), []byte("\n")) {
-		if _, err := w.writer.Write([]byte(stripansi.Strip(w.buf.String()))); err != nil {
+		if err := w.writeBuffer(); err != nil {
 			return 0, err
 		}
-		w.buf.Reset()
 	}
 
 	return n, err
+}
+
+func (w *stripAnsiWriter) Close() error {
+	if err := w.writeBuffer(); err != nil {
+		return err
+	}
+	return nil
+}
+
+type nopCloser struct {
+	io.Writer
+}
+
+func (n *nopCloser) Close() error {
+	return nil
 }
 
 func TestIsVerbose() bool {
@@ -102,18 +124,18 @@ func TestIsVerbose() bool {
 	return cast.ToBool(value)
 }
 
-func VerboseStdout() io.Writer {
+func VerboseStdout() io.WriteCloser {
 	if TestIsVerbose() {
 		return newStripAnsiWriter(os.Stdout)
 	}
 
-	return io.Discard
+	return &nopCloser{io.Discard}
 }
 
-func VerboseStderr() io.Writer {
+func VerboseStderr() io.WriteCloser {
 	if TestIsVerbose() {
 		return newStripAnsiWriter(os.Stderr)
 	}
 
-	return io.Discard
+	return &nopCloser{io.Discard}
 }

@@ -777,7 +777,7 @@ func createProjectState(t *testing.T) *state.State {
 		assert.FailNow(t, err.Error())
 	}
 
-	storageApi, _, _ := testapi.TestMockedStorageApi()
+	storageApi, _, _ := testapi.NewMockedStorageApi()
 	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
 	options := state.NewOptions(m, storageApi, schedulerApi, context.Background(), logger)
 	options.LoadLocalState = false
