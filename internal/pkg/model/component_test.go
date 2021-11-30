@@ -64,4 +64,32 @@ func TestComponentDefaultBucket(t *testing.T) {
 	assert.IsType(t, ComponentData{}, component.Data)
 	assert.Equal(t, true, component.Data.DefaultBucket)
 	assert.Equal(t, "in", component.Data.DefaultBucketStage)
+
+	componentsMap := NewComponentsMap(nil)
+	componentsMap.Set(&component)
+
+	expected := map[string]string{"in.c-keboola-ex-aws-s3-": "keboola.ex-aws-s3"}
+	assert.Equal(t, expected, componentsMap.defaultBucketPrefixes)
+}
+
+func TestMatchDefaultBucketInTableId(t *testing.T) {
+	t.Parallel()
+
+	componentsMap := NewComponentsMap(nil)
+	componentsMap.defaultBucketPrefixes = map[string]string{"in.c-keboola-ex-aws-s3-": "keboola.ex-aws-s3"}
+
+	componentId, configId, matchesDefaultBucket := componentsMap.MatchDefaultBucketInTableId("in.c-crm.orders")
+	assert.Equal(t, "", componentId)
+	assert.Equal(t, "", configId)
+	assert.False(t, matchesDefaultBucket)
+
+	componentId, configId, matchesDefaultBucket = componentsMap.MatchDefaultBucketInTableId("in.c-keboola-ex-aws-s3-123456.orders")
+	assert.Equal(t, "keboola.ex-aws-s3", componentId)
+	assert.Equal(t, "123456", configId)
+	assert.True(t, matchesDefaultBucket)
+
+	componentId, configId, matchesDefaultBucket = componentsMap.MatchDefaultBucketInTableId("in.c-keboola-ex-aws-s3.orders")
+	assert.Equal(t, "", componentId)
+	assert.Equal(t, "", configId)
+	assert.False(t, matchesDefaultBucket)
 }

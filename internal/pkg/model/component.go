@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/iancoleman/orderedmap"
+	"github.com/umisama/go-regexpcache"
 )
 
 const (
@@ -94,16 +96,18 @@ type RemoteComponentsProvider interface {
 }
 
 type ComponentsMap struct {
-	mutex          *sync.Mutex
-	remoteProvider RemoteComponentsProvider
-	components     map[string]*Component
+	mutex                 *sync.Mutex
+	remoteProvider        RemoteComponentsProvider
+	components            map[string]*Component
+	defaultBucketPrefixes map[string]string
 }
 
 func NewComponentsMap(remoteProvider RemoteComponentsProvider) *ComponentsMap {
 	return &ComponentsMap{
-		mutex:          &sync.Mutex{},
-		remoteProvider: remoteProvider,
-		components:     make(map[string]*Component),
+		mutex:                 &sync.Mutex{},
+		remoteProvider:        remoteProvider,
+		components:            make(map[string]*Component),
+		defaultBucketPrefixes: make(map[string]string),
 	}
 }
 
@@ -155,4 +159,24 @@ func (c *ComponentsMap) doSet(component *Component) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	c.components[component.String()] = component
+	if component.Data.DefaultBucket && component.Data.DefaultBucketStage != "" {
+		c.addDefaultBucketPrefix(component)
+	}
+}
+
+func (c *ComponentsMap) addDefaultBucketPrefix(component *Component) {
+	r := regexpcache.MustCompile(`(?i)[^a-zA-Z0-9-]`)
+	bucketPrefix := fmt.Sprintf(`%s.c-%s-`, component.Data.DefaultBucketStage, r.ReplaceAllString(component.Id, `-`))
+	c.defaultBucketPrefixes[bucketPrefix] = component.Id
+}
+
+func (c *ComponentsMap) MatchDefaultBucketInTableId(tableId string) (string, string, bool) {
+	for bucketPrefix, componentId := range c.defaultBucketPrefixes {
+		if strings.HasPrefix(tableId, bucketPrefix) {
+			trimmedTableId := strings.TrimPrefix(tableId, bucketPrefix)
+			configId := strings.Split(trimmedTableId, ".")[0]
+			return componentId, configId, componentId != "" && configId != ""
+		}
+	}
+	return "", "", false
 }
