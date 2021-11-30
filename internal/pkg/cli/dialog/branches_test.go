@@ -1,4 +1,4 @@
-package dialog
+package dialog_test
 
 import (
 	"sync"
@@ -6,16 +6,11 @@ import (
 	"time"
 
 	"github.com/Netflix/go-expect"
-	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
-	interactivePrompt "github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/interactive"
-	nopPrompt "github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/nop"
+	. "github.com/keboola/keboola-as-code/internal/pkg/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
-	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 )
 
 const (
@@ -25,7 +20,7 @@ const (
 )
 
 // TestAllowedBranchesByFlag use flag value if present.
-func TestAllowedBranchesByFlag(t *testing.T) {
+func TestAskAllowedBranchesByFlag(t *testing.T) {
 	t.Parallel()
 	dialog, console := createDialogs(t, true)
 	d := testdeps.NewDependencies()
@@ -42,7 +37,7 @@ func TestAllowedBranchesByFlag(t *testing.T) {
 }
 
 // TestAllowedBranchesDefaultValue use default value if terminal is not interactive.
-func TestAllowedBranchesDefaultValue(t *testing.T) {
+func TestAskAllowedBranchesDefaultValue(t *testing.T) {
 	t.Parallel()
 	dialog, _ := createDialogs(t, false)
 	d := testdeps.NewDependencies()
@@ -57,7 +52,7 @@ func TestAllowedBranchesDefaultValue(t *testing.T) {
 
 // TestAllowedBranchesOnlyMain - select first option from the interactive select box
 // -> only main branch.
-func TestAllowedBranchesOnlyMain(t *testing.T) {
+func TestAskAllowedBranchesOnlyMain(t *testing.T) {
 	t.Parallel()
 	dialog, console := createDialogs(t, true)
 	d := testdeps.NewDependencies()
@@ -86,7 +81,7 @@ func TestAllowedBranchesOnlyMain(t *testing.T) {
 
 // TestAllowedBranchesOnlyMain - select second option from the interactive select box
 // -> all branches.
-func TestAllowedBranchesAllBranches(t *testing.T) {
+func TestAskAllowedBranchesAllBranches(t *testing.T) {
 	t.Parallel()
 	dialog, console := createDialogs(t, true)
 	d := testdeps.NewDependencies()
@@ -115,7 +110,7 @@ func TestAllowedBranchesAllBranches(t *testing.T) {
 
 // TestAllowedBranchesOnlyMain - select third option from the interactive select box
 // -> select branches, and select 2/4 of the listed brances.
-func TestAllowedBranchesSelectedBranches(t *testing.T) {
+func TestAskAllowedBranchesSelectedBranches(t *testing.T) {
 	t.Parallel()
 	dialog, console := createDialogs(t, true)
 	d := testdeps.NewDependencies()
@@ -175,7 +170,7 @@ func TestAllowedBranchesSelectedBranches(t *testing.T) {
 
 // TestAllowedBranchesOnlyMain - select fourth option from the interactive select box
 // -> type IDs or names and type two custom definitions.
-func TestAllowedBranchesTypeList(t *testing.T) {
+func TestAskAllowedBranchesTypeList(t *testing.T) {
 	t.Parallel()
 	dialog, console := createDialogs(t, true)
 	d := testdeps.NewDependencies()
@@ -236,31 +231,4 @@ func selectOption(t *testing.T, option int, c *expect.Console) {
 	}
 	_, err = c.Send(Enter) // enter
 	assert.NoError(t, err)
-}
-
-func mockedStorageApi(branches []*model.Branch) *remote.StorageApi {
-	api, httpTransport, _ := testapi.TestMockedStorageApi()
-	httpTransport.RegisterResponder(
-		"GET", `=~/storage/dev-branches`,
-		httpmock.NewJsonResponderOrPanic(200, branches),
-	)
-	return api
-}
-
-func createDialogs(t *testing.T, interactive bool) (*Dialogs, *expect.Console) {
-	t.Helper()
-
-	if interactive {
-		// Create virtual console
-		console, _, err := testhelper.NewVirtualTerminal(t, expect.WithStdout(testhelper.VerboseStdout()), expect.WithDefaultTimeout(5*time.Second))
-		assert.NoError(t, err)
-
-		// Create prompt
-		prompt := interactivePrompt.New(console.Tty(), console.Tty(), console.Tty())
-
-		// Create dialogs
-		return New(prompt), console
-	} else {
-		return New(nopPrompt.New()), nil
-	}
 }

@@ -71,7 +71,7 @@ func newProject(host string, id int, token string) *Project {
 	}
 
 	// Init API
-	p.api, _ = testapi.TestStorageApiWithToken(p.host, p.token, testhelper.TestIsVerbose())
+	p.api, _ = testapi.NewStorageApiWithToken(p.host, p.token, testhelper.TestIsVerbose())
 
 	// Load services
 	services, err := p.api.ServicesUrlById()

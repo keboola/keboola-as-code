@@ -13,7 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func TestMockedStorageApi() (*remote.StorageApi, *httpmock.MockTransport, *utils.Writer) {
+func NewMockedStorageApi() (*remote.StorageApi, *httpmock.MockTransport, *utils.Writer) {
 	logger, logs := utils.NewDebugLogger()
 
 	// Set short retry delay in tests
@@ -40,7 +40,7 @@ func NewMockedSchedulerApi() (*scheduler.Api, *httpmock.MockTransport, *utils.Wr
 	return api, transport, logs
 }
 
-func TestStorageApi(host string, verbose bool) (*remote.StorageApi, *utils.Writer) {
+func NewStorageApi(host string, verbose bool) (*remote.StorageApi, *utils.Writer) {
 	logger, logs := utils.NewDebugLogger()
 	if verbose {
 		logs.ConnectTo(os.Stdout)
@@ -50,8 +50,8 @@ func TestStorageApi(host string, verbose bool) (*remote.StorageApi, *utils.Write
 	return a, logs
 }
 
-func TestStorageApiWithToken(host, tokenStr string, verbose bool) (*remote.StorageApi, *utils.Writer) {
-	a, logs := TestStorageApi(host, verbose)
+func NewStorageApiWithToken(host, tokenStr string, verbose bool) (*remote.StorageApi, *utils.Writer) {
+	a, logs := NewStorageApi(host, verbose)
 	token, err := a.GetToken(tokenStr)
 	if err != nil {
 		panic(err)
@@ -60,14 +60,44 @@ func TestStorageApiWithToken(host, tokenStr string, verbose bool) (*remote.Stora
 }
 
 func NewMockedComponentsProvider() model.RemoteComponentsProvider {
-	api, httpTransport, _ := TestMockedStorageApi()
+	api, httpTransport, _ := NewMockedStorageApi()
 	AddMockedComponents(httpTransport)
 	return api
 }
 
 func AddMockedComponents(httpTransport *httpmock.MockTransport) {
-	// Define mocked components
-	components := []struct{ Id, Type, Name string }{
+	// Register responses
+	for _, component := range mockedComponents() {
+		responder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
+			"id": component.Id, "type": component.Type, "name": component.Name,
+		})
+		if err != nil {
+			panic(err)
+		}
+		url := `=~/storage/components/` + component.Id
+		httpTransport.RegisterResponder("GET", url, responder)
+	}
+}
+
+func AddMockedApiIndex(httpTransport *httpmock.MockTransport) {
+	var components []interface{}
+	for _, component := range mockedComponents() {
+		components = append(components, map[string]interface{}{
+			"id": component.Id, "type": component.Type, "name": component.Name,
+		})
+	}
+	responder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
+		"components": components,
+	})
+	if err != nil {
+		panic(err)
+	}
+	url := `=~/storage$`
+	httpTransport.RegisterResponder("GET", url, responder)
+}
+
+func mockedComponents() []struct{ Id, Type, Name string } {
+	return []struct{ Id, Type, Name string }{
 		{"foo.bar", "other", "Foo Bar"},
 		{"ex-generic-v2", "extractor", "Generic"},
 		{"keboola.ex-db-mysql", "extractor", "MySQL"},
@@ -77,17 +107,5 @@ func AddMockedComponents(httpTransport *httpmock.MockTransport) {
 		{model.VariablesComponentId, "other", "Variables"},
 		{model.SchedulerComponentId, "other", "Scheduler"},
 		{model.OrchestratorComponentId, "other", "Orchestrator"},
-	}
-
-	// Register responses
-	for _, component := range components {
-		responder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
-			"id": component.Id, "type": component.Type, "name": component.Name,
-		})
-		if err != nil {
-			panic(err)
-		}
-		url := `=~/storage/components/` + component.Id
-		httpTransport.RegisterResponder("GET", url, responder)
 	}
 }

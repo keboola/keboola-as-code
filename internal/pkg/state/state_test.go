@@ -151,7 +151,7 @@ func TestValidateState(t *testing.T) {
 	m := loadTestManifest(t, envs, "minimal")
 	m.Project.Id = 123
 
-	api, httpTransport, _ := testapi.TestMockedStorageApi()
+	api, httpTransport, _ := testapi.NewMockedStorageApi()
 
 	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
 	stateOptions := NewOptions(m, api, schedulerApi, context.Background(), logger)

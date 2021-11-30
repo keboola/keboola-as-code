@@ -918,7 +918,7 @@ func (tc *testCase) run(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Create API
-	api, httpTransport, _ := testapi.TestMockedStorageApi()
+	api, httpTransport, _ := testapi.NewMockedStorageApi()
 	testapi.AddMockedComponents(httpTransport)
 
 	// Register new IDs API responses

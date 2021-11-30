@@ -38,7 +38,7 @@ func TestGetComponentNotFound(t *testing.T) {
 
 func TestComponentIsDeprecated(t *testing.T) {
 	t.Parallel()
-	api, httpTransport, _ := testapi.TestMockedStorageApi()
+	api, httpTransport, _ := testapi.NewMockedStorageApi()
 
 	responder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
 		"id":   "wr-dropbox",

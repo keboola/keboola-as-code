@@ -137,14 +137,8 @@ func CreateConfigCommand(depsProvider dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			// Load state, required for interactive prompt
-			projectState, err := d.LoadStateOnce(createConfig.LoadStateOptions())
-			if err != nil {
-				return err
-			}
-
 			// Options
-			options, err := d.Dialogs().AskCreateConfig(d, projectState)
+			options, err := d.Dialogs().AskCreateConfig(d, createConfig.LoadStateOptions())
 			if err != nil {
 				return err
 			}
@@ -179,14 +173,8 @@ func CreateRowCommand(depsProvider dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			// Load state, required for interactive prompt
-			projectState, err := d.LoadStateOnce(createRow.LoadStateOptions())
-			if err != nil {
-				return err
-			}
-
 			// Options
-			options, err := d.Dialogs().AskCreateRow(d, projectState)
+			options, err := d.Dialogs().AskCreateRow(d, createRow.LoadStateOptions())
 			if err != nil {
 				return err
 			}

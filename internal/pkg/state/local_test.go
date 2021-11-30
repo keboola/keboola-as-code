@@ -237,7 +237,7 @@ func loadLocalTestState(t *testing.T, m *manifest.Manifest) *State {
 
 	// Mocked API
 	logger, _ := utils.NewDebugLogger()
-	api, httpTransport, _ := testapi.TestMockedStorageApi()
+	api, httpTransport, _ := testapi.NewMockedStorageApi()
 
 	// Mocked API response
 	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{

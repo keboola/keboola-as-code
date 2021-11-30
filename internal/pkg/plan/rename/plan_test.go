@@ -27,7 +27,7 @@ func TestRenameAllPlan(t *testing.T) {
 
 	// Load state
 	logger, _ := utils.NewDebugLogger()
-	api, httpTransport, _ := testapi.TestMockedStorageApi()
+	api, httpTransport, _ := testapi.NewMockedStorageApi()
 
 	// Mocked API response
 	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
