@@ -1,4 +1,4 @@
-Command "create row"
+Command "local create row"
 
 Creates a new config row in the local directory structure.
 A new unique ID is assigned to the new object (there is no need to call "persist").

@@ -1,1 +1,1 @@
-Persist created and deleted configs/rows in manifest
+Detect created/deleted configs/rows.

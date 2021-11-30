@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 
@@ -21,6 +22,27 @@ func TestRootSubCommands(t *testing.T) {
 	t.Parallel()
 	root, _ := newTestRootCommand(testhelper.NewMemoryFs())
 
+	// Map commands to names, skip hidden
+	var names []string
+	for _, cmd := range root.Commands() {
+		if !cmd.Hidden {
+			names = append(names, cmd.Name())
+		}
+	}
+
+	// Assert
+	assert.Equal(t, []string{
+		"sync",
+		"local",
+		"ci",
+		"remote",
+	}, names)
+}
+
+func TestRootSubCommandsAndAliases(t *testing.T) {
+	t.Parallel()
+	root, _ := newTestRootCommand(testhelper.NewMemoryFs())
+
 	// Map commands to names
 	var names []string
 	for _, cmd := range root.Commands() {
@@ -28,16 +50,23 @@ func TestRootSubCommands(t *testing.T) {
 	}
 
 	// Assert
+	sort.Strings(names)
 	assert.Equal(t, []string{
-		"create",
+		"branch",
+		"ci",
+		"config",
 		"diff",
 		"encrypt",
 		"fix-paths",
 		"init",
+		"local",
 		"persist",
 		"pull",
 		"push",
+		"remote",
+		"row",
 		"status",
+		"sync",
 		"validate",
 		"workflows",
 	}, names)

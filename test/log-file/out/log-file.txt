@@ -17,6 +17,6 @@ DEBUG	Log file: %s
 DEBUG	Working dir: %s
 DEBUG	Version check: %s
 INFO%w
-INFO	Keboola CLI
+INFO	Keboola CLI is %A
 INFO	%A
 INFO	Use "%s [command] --help" for more information about a command.

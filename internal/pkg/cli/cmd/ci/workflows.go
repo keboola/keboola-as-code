@@ -1,4 +1,4 @@
-package local
+package ci
 
 import (
 	"github.com/spf13/cobra"
@@ -12,8 +12,8 @@ import (
 func WorkflowsCommand(depsProvider dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "workflows",
-		Short: helpmsg.Read(`local/workflows/short`),
-		Long:  helpmsg.Read(`local/workflows/long`),
+		Short: helpmsg.Read(`ci/workflows/short`),
+		Long:  helpmsg.Read(`ci/workflows/long`),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			d := depsProvider.Dependencies()
 

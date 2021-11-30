@@ -1,1 +1,1 @@
-Print differences between local and remote state
+Print differences between local and remote state.

@@ -1,0 +1,8 @@
+Commands from the "local" context
+only change the local directory.
+
+If you want to see what the difference is
+between the local directory and the project,
+use "kbc diff".
+
+Changes can be saved to the project using "kbc push".

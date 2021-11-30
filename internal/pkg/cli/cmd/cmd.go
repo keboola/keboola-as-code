@@ -6,12 +6,14 @@ import (
 	"io"
 	"os"
 	"path"
-	"regexp"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/ci"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/sync"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dialog"
@@ -25,6 +27,34 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/version"
 	versionCheck "github.com/keboola/keboola-as-code/pkg/lib/operation/remote/version/check"
 )
+
+// nolint: gochecknoinits
+func init() {
+	// Disable commands auto-sorting
+	cobra.EnableCommandSorting = false
+
+	// Add custom template functions
+	cobra.AddTemplateFunc(`cmds`, func(root *cobra.Command) string {
+		var out strings.Builder
+		visitSubCommands(root, func(cmd *cobra.Command) {
+			if !cmd.IsAvailableCommand() && cmd.Name() != `help` {
+				return
+			}
+
+			// Separate context by new line
+			level := cmdLevel(cmd) - cmdLevel(root)
+			if level == 1 && !root.HasParent() {
+				out.WriteString("\n")
+			}
+
+			// Indent and pad right
+			template := fmt.Sprintf("%%s%%-%ds%%s", cmd.NamePadding()-level*2+6)
+			out.WriteString(strings.TrimRight(fmt.Sprintf(template, strings.Repeat("  ", level), cmd.Name(), cmd.Short), " "))
+			out.WriteString("\n")
+		})
+		return strings.Trim(out.String(), "\n")
+	})
+}
 
 type Cmd = cobra.Command
 
@@ -43,7 +73,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 	root.Cmd = &Cmd{
 		Use:           path.Base(os.Args[0]), // name of the binary
 		Version:       version.Version(),
-		Short:         helpmsg.Read(`root/description`),
+		Short:         helpmsg.Read(`app`),
 		SilenceUsage:  true,
 		SilenceErrors: true, // custom error handling, see printError
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -59,9 +89,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 
 	// Setup templates
 	root.SetVersionTemplate("{{.Version}}")
-	root.SetUsageTemplate(
-		regexp.MustCompile(`Usage:(.|\n)*Aliases:`).ReplaceAllString(root.UsageTemplate(), helpmsg.Read(`root/usage`)),
-	)
+	root.SetUsageTemplate(helpmsg.Read(`usage`))
 
 	// Persistent flags for all sub-commands
 	flags := root.PersistentFlags()
@@ -113,18 +141,31 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 
 	// Sub-commands
 	root.AddCommand(
-		local.StatusCommand(root),
-		sync.InitCommand(root),
-		local.ValidateCommand(root),
-		sync.PullCommand(root),
-		sync.PushCommand(root),
-		sync.DiffCommand(root),
-		local.PersistCommand(root),
-		local.FixPathsCommand(root),
-		local.EncryptCommand(root),
-		local.WorkflowsCommand(root),
-		local.CreateCommand(root),
+		sync.Commands(root),
+		local.Commands(root),
+		ci.Commands(root),
+		remote.Commands(root),
 	)
+
+	// Get all sub-commands by name
+	cmdsByName := make(map[string][]*cobra.Command)
+	visitSubCommands(root.Cmd, func(cmd *cobra.Command) {
+		if cmd.Parent() == root.Cmd {
+			// Skip top-level commands
+			return
+		}
+		cmdsByName[cmd.Name()] = append(cmdsByName[cmd.Name()], cmd)
+	})
+
+	// Create alias for all unique sub-commands.
+	// For example: "kbc init" can be used instead of "kbc sync init".
+	for _, cmds := range cmdsByName {
+		if len(cmds) == 1 {
+			alias := *cmds[0]
+			alias.Hidden = true
+			root.AddCommand(&alias)
+		}
+	}
 
 	return root
 }
@@ -219,4 +260,21 @@ func (root *RootCommand) tearDown(exitCode int) int {
 	// Close log file
 	root.logFile.TearDown(exitCode != 0)
 	return exitCode
+}
+
+// cmdLevel gets number of command parents.
+func cmdLevel(cmd *cobra.Command) int {
+	// Get number of parents
+	level := 0
+	cmd.VisitParents(func(_ *cobra.Command) {
+		level++
+	})
+	return level
+}
+
+func visitSubCommands(root *cobra.Command, callback func(cmd *cobra.Command)) {
+	for _, cmd := range root.Commands() {
+		callback(cmd)
+		visitSubCommands(cmd, callback)
+	}
 }

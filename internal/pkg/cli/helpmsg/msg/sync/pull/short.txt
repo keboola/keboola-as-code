@@ -1,1 +1,1 @@
-Pull configurations to the project directory
+Pull configurations to the project directory.

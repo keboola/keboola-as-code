@@ -1,4 +1,4 @@
-Command "workflows"
+Command "ci workflows"
 
 Generate workflows for Github Actions:
 - "validate" all branches on change.

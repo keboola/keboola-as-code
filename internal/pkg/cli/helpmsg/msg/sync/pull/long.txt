@@ -1,4 +1,4 @@
-Command "pull"
+Command "sync pull"
 
 Pull configurations from the Keboola Connection project.
 Local files will be overwritten to match the project's state.

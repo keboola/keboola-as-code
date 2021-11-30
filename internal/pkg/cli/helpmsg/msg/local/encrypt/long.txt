@@ -1,4 +1,4 @@
-Command "encrypt"
+Command "local encrypt"
 
 This command searches for unencrypted values in al local configurations and encrypts them.
 - The encrypted values are properties that begin with '#' and contain string.

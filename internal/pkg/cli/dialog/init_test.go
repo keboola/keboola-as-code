@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/ci"
 	. "github.com/keboola/keboola-as-code/internal/pkg/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -46,7 +46,7 @@ func TestAskInitOptions(t *testing.T) {
 
 	// Default values are defined by options
 	flags := pflag.NewFlagSet(``, pflag.ExitOnError)
-	local.WorkflowsCmdFlags(flags)
+	ci.WorkflowsCmdFlags(flags)
 	assert.NoError(t, d.Options().BindPFlags(flags))
 
 	// Interaction

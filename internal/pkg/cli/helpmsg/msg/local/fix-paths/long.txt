@@ -1,4 +1,4 @@
-Command "fix-paths"
+Command "local fix-paths"
 
 Manifest file ".keboola/manifest.json" contains a naming for all local paths.
 

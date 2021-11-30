@@ -21,10 +21,18 @@ type createDeps interface {
 	LoadStateOnce(loadOptions loadState.Options) (*state.State, error)
 }
 
-func (p *Dialogs) AskWhatCreate() string {
+func (p *Dialogs) AskWhatCreateRemote() string {
 	out, _ := p.Select(&prompt.Select{
 		Label:   `What do you want to create?`,
-		Options: []string{`branch`, `config`, `config row`},
+		Options: []string{`branch`},
+	})
+	return out
+}
+
+func (p *Dialogs) AskWhatCreateLocal() string {
+	out, _ := p.Select(&prompt.Select{
+		Label:   `What do you want to create?`,
+		Options: []string{`config`, `config row`},
 	})
 	return out
 }

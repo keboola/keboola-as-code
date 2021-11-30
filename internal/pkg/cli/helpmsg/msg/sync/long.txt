@@ -1,0 +1,2 @@
+Commands from the "sync" context synchronize
+changes between the local directory and the project.

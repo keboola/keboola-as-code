@@ -1,1 +1,1 @@
-Normalize all local paths
+Normalize all local paths.

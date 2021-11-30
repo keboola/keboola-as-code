@@ -1,30 +1,43 @@
-Keboola CLI
+Keboola CLI is a set of commands
+for operating your cloud data pipeline.
 
-Manage your Keboola Connection project
-from your local machine or CI pipeline.
+The whole Keboola project is represented
+by a local directory structure.
 
 Project can be synchronized in both
-directions [Keboola Connection] <-> [local directory].
+directions: Keboola project <-> local directory.
 
-Start by running the "init" sub-command in a new empty directory.
-Your project will be pulled and you can start working.
+Start by running the "kbc init" in a new empty directory.
+Your project will be pulled, and you can start working.
 
 Usage:
   %s [command]
 
 Available Commands:
-  create      Create branch, config or row
-  diff        Print differences between local and remote state
-  encrypt     Find unencrypted values in configurations and encrypt them
-  fix-paths   Normalize all local paths
-  help        Help about any command
-  init        Init local project directory and perform the first pull
-  persist     Persist created and deleted configs/rows in manifest
-  pull        Pull configurations to the project directory
-  push        Push configurations to the Keboola Connection project
-  status      Print info about project directory
-  validate    Validate the local project directory
-  workflows   Generate Github Actions workflows
+  sync
+    init         Init local project directory and perform the first pull.
+    diff         Print differences between local and remote state.
+    pull         Pull configurations to the project directory.
+    push         Push configurations to the Keboola project.
+
+  local
+    status       Print info about project directory.
+    validate     Validate the local project directory.
+    persist      Detect created/deleted configs/rows.
+    create
+      config     Create config.
+      row        Create config row.
+    encrypt      Encrypt all unencrypted secrets.
+    fix-paths    Normalize all local paths.
+
+  ci
+    workflows    Generate Github Actions workflows.
+
+  remote
+    create
+      branch     Create branch.
+
+  help           Help about any command
 
 Flags:
   -h, --help                       print help for command
