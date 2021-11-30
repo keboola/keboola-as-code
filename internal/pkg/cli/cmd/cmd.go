@@ -11,6 +11,8 @@ import (
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/sync"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
@@ -42,11 +44,13 @@ const usageTemplate = `Usage:{{if .HasAvailableSubCommands}}
 
 Aliases:`
 
+type Cmd = cobra.Command
+
 type RootCommand struct {
+	*Cmd
 	Options *options.Options
 	Logger  *zap.SugaredLogger
 	Deps    *dependencies.Container
-	cmd     *cobra.Command
 	logFile *log.File
 }
 
@@ -54,7 +58,7 @@ type RootCommand struct {
 func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt prompt.Prompt, envs *env.Map, fsFactory filesystem.Factory) *RootCommand {
 	// Command definition
 	root := &RootCommand{Options: options.NewOptions()}
-	root.cmd = &cobra.Command{
+	root.Cmd = &Cmd{
 		Use:           path.Base(os.Args[0]), // name of the binary
 		Version:       version.Version(),
 		Short:         description,
@@ -62,23 +66,23 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 		SilenceErrors: true, // custom error handling, see printError
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Print help if no command specified
-			return root.cmd.Help()
+			return root.Help()
 		},
 	}
 
 	// Setup in/out
-	root.cmd.SetIn(stdin)
-	root.cmd.SetOut(stdout)
-	root.cmd.SetErr(stderr)
+	root.SetIn(stdin)
+	root.SetOut(stdout)
+	root.SetErr(stderr)
 
 	// Setup templates
-	root.cmd.SetVersionTemplate("{{.Version}}")
-	root.cmd.SetUsageTemplate(
-		regexp.MustCompile(`Usage:(.|\n)*Aliases:`).ReplaceAllString(root.cmd.UsageTemplate(), usageTemplate),
+	root.SetVersionTemplate("{{.Version}}")
+	root.SetUsageTemplate(
+		regexp.MustCompile(`Usage:(.|\n)*Aliases:`).ReplaceAllString(root.UsageTemplate(), usageTemplate),
 	)
 
 	// Persistent flags for all sub-commands
-	flags := root.cmd.PersistentFlags()
+	flags := root.PersistentFlags()
 	flags.SortFlags = true
 	flags.BoolP("help", "h", false, "print help for command")
 	flags.StringP("log-file", "l", "", "path to a log file for details")
@@ -88,11 +92,11 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 	flags.BoolP("verbose-api", "", false, "log each API request and response")
 
 	// Root command flags
-	root.cmd.Flags().SortFlags = true
-	root.cmd.Flags().BoolP("version", "V", false, "print version")
+	root.Flags().SortFlags = true
+	root.Flags().BoolP("version", "V", false, "print version")
 
 	// Init when flags are parsed
-	root.cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+	root.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		// Temporary logger
 		tmpLogger := zap.NewNop().Sugar()
 
@@ -114,7 +118,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 		root.Logger.Debug(`Working dir: `, filesystem.Join(fs.BasePath(), fs.WorkingDir()))
 
 		// Create dependencies container
-		root.Deps = dependencies.NewContainer(root.cmd.Context(), envs, fs, dialog.New(prompt), root.Logger, root.Options)
+		root.Deps = dependencies.NewContainer(root.Context(), envs, fs, dialog.New(prompt), root.Logger, root.Options)
 
 		// Check version
 		if err := versionCheck.Run(root.Deps); err != nil {
@@ -126,21 +130,25 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 	}
 
 	// Sub-commands
-	root.cmd.AddCommand(
-		StatusCommand(root),
-		InitCommand(root),
-		ValidateCommand(root),
-		PullCommand(root),
-		PushCommand(root),
-		DiffCommand(root),
-		PersistCommand(root),
-		FixPathsCommand(root),
-		EncryptCommand(root),
-		WorkflowsCommand(root),
-		CreateCommand(root),
+	root.AddCommand(
+		local.StatusCommand(root),
+		sync.InitCommand(root),
+		local.ValidateCommand(root),
+		sync.PullCommand(root),
+		sync.PushCommand(root),
+		sync.DiffCommand(root),
+		local.PersistCommand(root),
+		local.FixPathsCommand(root),
+		local.EncryptCommand(root),
+		local.WorkflowsCommand(root),
+		local.CreateCommand(root),
 	)
 
 	return root
+}
+
+func (root *RootCommand) Dependencies() *dependencies.Container {
+	return root.Deps
 }
 
 // Execute command or sub-command.
@@ -154,7 +162,7 @@ func (root *RootCommand) Execute() (exitCode int) {
 		root.setupLogger()
 	}
 
-	if err := root.cmd.Execute(); err != nil {
+	if err := root.Cmd.Execute(); err != nil {
 		root.printError(err)
 		return 1
 	}
@@ -189,7 +197,7 @@ func (root *RootCommand) printError(errRaw error) {
 		}
 	}
 
-	root.cmd.PrintErrln(utils.PrefixError(`Error`, modifiedErrs))
+	root.PrintErrln(utils.PrefixError(`Error`, modifiedErrs))
 }
 
 func (root *RootCommand) setupLogger() {
@@ -198,9 +206,9 @@ func (root *RootCommand) setupLogger() {
 	root.logFile, logFileErr = log.NewLogFile(root.Options.LogFilePath)
 
 	// Create logger
-	root.Logger = log.NewLogger(root.cmd.OutOrStdout(), root.cmd.ErrOrStderr(), root.logFile, root.Options.Verbose)
-	root.cmd.SetOut(log.ToInfoWriter(root.Logger))
-	root.cmd.SetErr(log.ToWarnWriter(root.Logger))
+	root.Logger = log.NewLogger(root.OutOrStdout(), root.ErrOrStderr(), root.logFile, root.Options.Verbose)
+	root.SetOut(log.ToInfoWriter(root.Logger))
+	root.SetErr(log.ToWarnWriter(root.Logger))
 
 	// Warn if user specified log file + it cannot be opened
 	if logFileErr != nil && root.Options.LogFilePath != "" {
@@ -209,7 +217,7 @@ func (root *RootCommand) setupLogger() {
 
 	// Log info
 	w := log.ToDebugWriter(root.Logger)
-	w.WriteStringNoErr(root.cmd.Version)
+	w.WriteStringNoErr(root.Version)
 	w.WriteStringNoErr(fmt.Sprintf("Running command %v", os.Args))
 	w.WriteStringNoErr(root.Options.Dump())
 	if root.logFile == nil {

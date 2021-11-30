@@ -1,8 +1,9 @@
-package cmd
+package local
 
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/local/rename"
 )
 
@@ -17,13 +18,13 @@ to match the configured naming (eg. if the naming has been changed).
 `
 )
 
-func FixPathsCommand(root *RootCommand) *cobra.Command {
+func FixPathsCommand(depsProvider dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "fix-paths",
 		Short: fixPathsShortDescription,
 		Long:  fixPathsLongDescription,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			d := root.Deps
+			d := depsProvider.Dependencies()
 
 			// Metadata directory is required
 			d.LoadStorageApiHostFromManifest()

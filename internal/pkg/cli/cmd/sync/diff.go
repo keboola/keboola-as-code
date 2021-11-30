@@ -1,8 +1,9 @@
-package cmd
+package sync
 
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/sync/diff/printDiff"
 )
 
@@ -14,13 +15,14 @@ Print differences between local and remote state.
 `
 )
 
-func DiffCommand(root *RootCommand) *cobra.Command {
+func DiffCommand(depsProvider dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "diff",
 		Short: diffShortDescription,
 		Long:  diffLongDescription,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			d := root.Deps
+			d := depsProvider.Dependencies()
+			logger := d.Logger()
 
 			// Metadata directory is required
 			d.LoadStorageApiHostFromManifest()
@@ -42,8 +44,8 @@ func DiffCommand(root *RootCommand) *cobra.Command {
 
 			// Print info about --details flag
 			if !options.PrintDetails && results.HasNotEqualResult {
-				root.Logger.Info()
-				root.Logger.Info(`Use --details flag to list the changed fields.`)
+				logger.Info()
+				logger.Info(`Use --details flag to list the changed fields.`)
 			}
 			return nil
 		},

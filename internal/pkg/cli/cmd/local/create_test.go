@@ -1,4 +1,4 @@
-package cmd
+package local_test
 
 import (
 	"fmt"
@@ -13,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/testcli"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
 )
@@ -31,8 +32,8 @@ func TestInteractiveCreateConfig(t *testing.T) {
 	fs := testhelper.NewMemoryFs()
 
 	// Init prompt and cmd
-	root := newTestRootCommandWithTty(c.Tty(), fs)
-	root.cmd.SetArgs([]string{"create", "--storage-api-token", project.Token()})
+	root := testcli.NewTestRootCommandWithTty(c.Tty(), fs)
+	root.SetArgs([]string{"create", "--storage-api-token", project.Token()})
 
 	// Create manifest file
 	manifestContent := `
@@ -100,7 +101,7 @@ func TestInteractiveCreateConfig(t *testing.T) {
 	}()
 
 	// Run cmd
-	assert.NoError(t, root.cmd.Execute())
+	assert.NoError(t, root.Cmd.Execute())
 	assert.NoError(t, c.Tty().Close())
 	wg.Wait()
 	assert.NoError(t, c.Close())
@@ -125,8 +126,8 @@ func TestInteractiveCreateConfigRow(t *testing.T) {
 	fs := testhelper.NewMemoryFs()
 
 	// Init prompt and cmd
-	root := newTestRootCommandWithTty(c.Tty(), fs)
-	root.cmd.SetArgs([]string{"create", "--storage-api-token", project.Token()})
+	root := testcli.NewTestRootCommandWithTty(c.Tty(), fs)
+	root.SetArgs([]string{"create", "--storage-api-token", project.Token()})
 
 	// Create manifest file
 	manifestContent := `
@@ -210,7 +211,7 @@ func TestInteractiveCreateConfigRow(t *testing.T) {
 	}()
 
 	// Run cmd
-	assert.NoError(t, root.cmd.Execute())
+	assert.NoError(t, root.Cmd.Execute())
 	assert.NoError(t, c.Tty().Close())
 	wg.Wait()
 	assert.NoError(t, c.Close())

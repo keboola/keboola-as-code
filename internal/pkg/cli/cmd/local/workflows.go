@@ -1,8 +1,9 @@
-package cmd
+package local
 
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	workflowsGen "github.com/keboola/keboola-as-code/pkg/lib/operation/local/workflows/generate"
 )
 
@@ -21,13 +22,13 @@ The secret KBC_STORAGE_API_TOKEN must be added to the GitHub repository.
 `
 )
 
-func WorkflowsCommand(root *RootCommand) *cobra.Command {
+func WorkflowsCommand(depsProvider dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "workflows",
 		Short: workflowsShortDescription,
 		Long:  workflowsLongDescription,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			d := root.Deps
+			d := depsProvider.Dependencies()
 
 			// Metadata directory is required
 			d.LoadStorageApiHostFromManifest()
@@ -44,13 +45,13 @@ func WorkflowsCommand(root *RootCommand) *cobra.Command {
 	}
 
 	// Flags
-	workflowsCmdFlags(cmd)
+	WorkflowsCmdFlags(cmd)
 
 	return cmd
 }
 
-// workflowsCmdFlags are used also by init command.
-func workflowsCmdFlags(cmd *cobra.Command) {
+// WorkflowsCmdFlags are used also by init command.
+func WorkflowsCmdFlags(cmd *cobra.Command) {
 	cmd.Flags().Bool("ci-validate", true, "create workflow to validate all branches on change")
 	cmd.Flags().Bool("ci-push", true, "create workflow to push change in main branch to the project")
 	cmd.Flags().Bool("ci-pull", true, "create workflow to sync main branch every 5 minutes")
