@@ -14,27 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 )
 
-func TestRelationsMapperLocalLoad(t *testing.T) {
-	t.Parallel()
-	context, _ := createMapperContext(t)
-	record := &fixtures.MockedManifest{}
-	object := &fixtures.MockedObject{}
-	recipe := &model.LocalLoadRecipe{ObjectManifest: record, Object: object}
-
-	relation := &fixtures.MockedManifestSideRelation{}
-	record.Relations = append(record.Relations, relation)
-
-	assert.NotEmpty(t, record.Relations)
-	assert.Empty(t, object.Relations)
-	assert.NoError(t, NewMapper(context).MapAfterLocalLoad(recipe))
-
-	// Copied, record.Relations -> object.Relations
-	assert.NotEmpty(t, record.Relations)
-	assert.NotEmpty(t, object.Relations)
-	assert.Equal(t, record.Relations, object.Relations)
-}
-
-func TestRelationsMapperOnLoad(t *testing.T) {
+func TestRelationsMapperLinkOnObjectsLoad(t *testing.T) {
 	t.Parallel()
 	components := model.NewComponentsMap(testapi.NewMockedComponentsProvider())
 	fs := testhelper.NewMemoryFs()

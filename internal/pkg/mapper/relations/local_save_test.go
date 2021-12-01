@@ -10,7 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func TestRelationsMapperSave(t *testing.T) {
+func TestRelationsMapperSaveLocal(t *testing.T) {
 	t.Parallel()
 	context, _ := createMapperContext(t)
 	objectManifest := &model.ConfigManifest{}

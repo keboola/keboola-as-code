@@ -8,22 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-// MapAfterLocalLoad - load relations from manifest to object.
-func (m *relationsMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
-	manifest, ok := recipe.ObjectManifest.(model.ObjectManifestWithRelations)
-	if !ok {
-		return nil
-	}
-
-	object, ok := recipe.Object.(model.ObjectWithRelations)
-	if !ok {
-		return nil
-	}
-
-	object.SetRelations(manifest.GetRelations())
-	return nil
-}
-
+// OnObjectsLoad links relation sides on remote and  local load.
 func (m *relationsMapper) OnObjectsLoad(event model.OnObjectsLoadEvent) error {
 	errors := utils.NewMultiError()
 
