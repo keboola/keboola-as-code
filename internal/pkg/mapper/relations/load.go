@@ -10,7 +10,7 @@ import (
 
 // MapAfterLocalLoad - load relations from manifest to object.
 func (m *relationsMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
-	manifest, ok := recipe.Record.(model.ObjectManifestWithRelations)
+	manifest, ok := recipe.ObjectManifest.(model.ObjectManifestWithRelations)
 	if !ok {
 		return nil
 	}

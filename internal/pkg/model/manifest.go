@@ -18,8 +18,8 @@ type RecordPaths interface {
 	GetParentPath() string // parent path relative to the project dir
 }
 
-// Record - manifest record.
-type Record interface {
+// ObjectManifest - manifest record for a object.
+type ObjectManifest interface {
 	Key
 	RecordPaths
 	Key() Key                   // unique key for map -> for fast access
@@ -37,7 +37,7 @@ type Record interface {
 }
 
 type ObjectManifestWithRelations interface {
-	Record
+	ObjectManifest
 	GetRelations() Relations
 	SetRelations(relations Relations)
 	AddRelation(relation Relation)

@@ -10,8 +10,8 @@ type ObjectState interface {
 	Key() Key
 	ObjectName() string
 	HasManifest() bool
-	SetManifest(record Record)
-	Manifest() Record
+	SetManifest(record ObjectManifest)
+	Manifest() ObjectManifest
 	HasState(stateType StateType) bool
 	GetState(stateType StateType) Object
 	HasLocalState() bool
@@ -282,27 +282,27 @@ func (r *ConfigRowState) HasManifest() bool {
 	return r.ConfigRowManifest != nil
 }
 
-func (b *BranchState) SetManifest(record Record) {
+func (b *BranchState) SetManifest(record ObjectManifest) {
 	b.BranchManifest = record.(*BranchManifest)
 }
 
-func (c *ConfigState) SetManifest(record Record) {
+func (c *ConfigState) SetManifest(record ObjectManifest) {
 	c.ConfigManifest = record.(*ConfigManifest)
 }
 
-func (r *ConfigRowState) SetManifest(record Record) {
+func (r *ConfigRowState) SetManifest(record ObjectManifest) {
 	r.ConfigRowManifest = record.(*ConfigRowManifest)
 }
 
-func (b *BranchState) Manifest() Record {
+func (b *BranchState) Manifest() ObjectManifest {
 	return b.BranchManifest
 }
 
-func (c *ConfigState) Manifest() Record {
+func (c *ConfigState) Manifest() ObjectManifest {
 	return c.ConfigManifest
 }
 
-func (r *ConfigRowState) Manifest() Record {
+func (r *ConfigRowState) Manifest() ObjectManifest {
 	return r.ConfigRowManifest
 }
 

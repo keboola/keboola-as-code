@@ -29,7 +29,7 @@ func TestLocalLoadModel(t *testing.T) {
 `
 	// Save files
 	target := &fixtures.MockedObject{}
-	record := &fixtures.MockedRecord{}
+	record := &fixtures.MockedManifest{}
 	assert.NoError(t, fs.Mkdir(record.Path()))
 	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(manager.Naming().MetaFilePath(record.Path()), metaFile)))
 	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(manager.Naming().ConfigFilePath(record.Path()), configFile)))
@@ -57,7 +57,7 @@ func TestLocalLoadModelNotFound(t *testing.T) {
 
 	// Save files
 	target := &fixtures.MockedObject{}
-	record := &fixtures.MockedRecord{}
+	record := &fixtures.MockedManifest{}
 
 	// Load
 	found, err := manager.loadObject(record, target)

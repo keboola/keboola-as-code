@@ -19,11 +19,11 @@ func TestMapBeforeLocalSave(t *testing.T) {
 	// Recipe
 	orchestratorConfigState := createLocalSaveFixtures(t, context, true)
 	recipe := &model.LocalSaveRecipe{
-		Record:        orchestratorConfigState.ConfigManifest,
-		Object:        orchestratorConfigState.Remote,
-		Metadata:      filesystem.CreateJsonFile(model.MetaFile, utils.NewOrderedMap()),
-		Configuration: filesystem.CreateJsonFile(model.ConfigFile, utils.NewOrderedMap()),
-		Description:   filesystem.CreateFile(model.DescriptionFile, ``),
+		ObjectManifest: orchestratorConfigState.ConfigManifest,
+		Object:         orchestratorConfigState.Remote,
+		Metadata:       filesystem.CreateJsonFile(model.MetaFile, utils.NewOrderedMap()),
+		Configuration:  filesystem.CreateJsonFile(model.ConfigFile, utils.NewOrderedMap()),
+		Description:    filesystem.CreateFile(model.DescriptionFile, ``),
 	}
 
 	// Save
@@ -82,11 +82,11 @@ func TestMapBeforeLocalSaveWarnings(t *testing.T) {
 	// Recipe
 	orchestratorConfigState := createLocalSaveFixtures(t, context, false)
 	recipe := &model.LocalSaveRecipe{
-		Record:        orchestratorConfigState.ConfigManifest,
-		Object:        orchestratorConfigState.Remote,
-		Metadata:      filesystem.CreateJsonFile(model.MetaFile, utils.NewOrderedMap()),
-		Configuration: filesystem.CreateJsonFile(model.ConfigFile, utils.NewOrderedMap()),
-		Description:   filesystem.CreateFile(model.DescriptionFile, ``),
+		ObjectManifest: orchestratorConfigState.ConfigManifest,
+		Object:         orchestratorConfigState.Remote,
+		Metadata:       filesystem.CreateJsonFile(model.MetaFile, utils.NewOrderedMap()),
+		Configuration:  filesystem.CreateJsonFile(model.ConfigFile, utils.NewOrderedMap()),
+		Description:    filesystem.CreateFile(model.DescriptionFile, ``),
 	}
 
 	// Save

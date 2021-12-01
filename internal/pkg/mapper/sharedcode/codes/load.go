@@ -95,12 +95,12 @@ func (l *loader) load() error {
 	}
 
 	// Load file
-	codeFilePath := l.Naming.SharedCodeFilePath(l.Record.Path(), targetComponentId)
+	codeFilePath := l.Naming.SharedCodeFilePath(l.ObjectManifest.Path(), targetComponentId)
 	codeFile, err := l.Fs.ReadFile(codeFilePath, `shared code`)
 	if err != nil {
 		return err
 	}
-	l.Record.AddRelatedPath(codeFilePath)
+	l.ObjectManifest.AddRelatedPath(codeFilePath)
 
 	// Convert []string -> []interface{} (so there is no type difference against API type)
 	scripts := strhelper.ParseTransformationScripts(codeFile.Content, targetComponentId)

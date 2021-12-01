@@ -17,9 +17,9 @@ import (
 func TestRelationsMapperLocalLoad(t *testing.T) {
 	t.Parallel()
 	context, _ := createMapperContext(t)
-	record := &fixtures.MockedRecord{}
+	record := &fixtures.MockedManifest{}
 	object := &fixtures.MockedObject{}
-	recipe := &model.LocalLoadRecipe{Record: record, Object: object}
+	recipe := &model.LocalLoadRecipe{ObjectManifest: record, Object: object}
 
 	relation := &fixtures.MockedManifestSideRelation{}
 	record.Relations = append(record.Relations, relation)
@@ -43,8 +43,8 @@ func TestRelationsMapperOnLoad(t *testing.T) {
 	key1 := fixtures.MockedKey{Id: "123"}
 	key2 := fixtures.MockedKey{Id: "456"}
 
-	// Manifest side
-	manifest1 := &fixtures.MockedRecord{MockedKey: key1}
+	// ObjectManifest side
+	manifest1 := &fixtures.MockedManifest{MockedKey: key1}
 	object1 := &fixtures.MockedObject{
 		MockedKey: key1,
 		Relations: model.Relations{
@@ -58,7 +58,7 @@ func TestRelationsMapperOnLoad(t *testing.T) {
 	objectState1.SetLocalState(object1)
 
 	// API side
-	manifest2 := &fixtures.MockedRecord{MockedKey: key2}
+	manifest2 := &fixtures.MockedManifest{MockedKey: key2}
 	object2 := &fixtures.MockedObject{
 		MockedKey: key2,
 		Relations: model.Relations{},
@@ -98,8 +98,8 @@ func TestRelationsMapperOnLoadOtherSideMissing(t *testing.T) {
 	key1 := fixtures.MockedKey{Id: "123"}
 	key2 := fixtures.MockedKey{Id: "456"}
 
-	// Manifest side
-	manifest1 := &fixtures.MockedRecord{MockedKey: key1}
+	// ObjectManifest side
+	manifest1 := &fixtures.MockedManifest{MockedKey: key1}
 	object1 := &fixtures.MockedObject{
 		MockedKey: key1,
 		Relations: model.Relations{

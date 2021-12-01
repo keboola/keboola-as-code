@@ -48,20 +48,20 @@ func createTestFixtures(t *testing.T, componentId string) (model.MapperContext, 
 
 func createLocalLoadRecipe(config *model.Config, configRecord *model.ConfigManifest) *model.LocalLoadRecipe {
 	return &model.LocalLoadRecipe{
-		Object:        config,
-		Record:        configRecord,
-		Metadata:      filesystem.CreateJsonFile(model.MetaFile, utils.NewOrderedMap()),
-		Configuration: filesystem.CreateJsonFile(model.ConfigFile, utils.NewOrderedMap()),
-		Description:   filesystem.CreateFile(model.DescriptionFile, ``),
+		Object:         config,
+		ObjectManifest: configRecord,
+		Metadata:       filesystem.CreateJsonFile(model.MetaFile, utils.NewOrderedMap()),
+		Configuration:  filesystem.CreateJsonFile(model.ConfigFile, utils.NewOrderedMap()),
+		Description:    filesystem.CreateFile(model.DescriptionFile, ``),
 	}
 }
 
 func createLocalSaveRecipe(config *model.Config, configRecord *model.ConfigManifest) *model.LocalSaveRecipe {
 	return &model.LocalSaveRecipe{
-		Object:        config,
-		Record:        configRecord,
-		Metadata:      filesystem.CreateJsonFile(model.MetaFile, utils.NewOrderedMap()),
-		Configuration: filesystem.CreateJsonFile(model.ConfigFile, utils.NewOrderedMap()),
-		Description:   filesystem.CreateFile(model.DescriptionFile, ``),
+		Object:         config,
+		ObjectManifest: configRecord,
+		Metadata:       filesystem.CreateJsonFile(model.MetaFile, utils.NewOrderedMap()),
+		Configuration:  filesystem.CreateJsonFile(model.ConfigFile, utils.NewOrderedMap()),
+		Description:    filesystem.CreateFile(model.DescriptionFile, ``),
 	}
 }

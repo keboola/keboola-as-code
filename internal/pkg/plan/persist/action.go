@@ -19,15 +19,15 @@ type newObjectAction struct {
 	OnPersist []func(key model.Key)
 }
 
-type deleteRecordAction struct {
-	model.Record
+type deleteManifestRecordAction struct {
+	model.ObjectManifest
 }
 
 func (a *newObjectAction) Order() int {
 	return 1
 }
 
-func (a *deleteRecordAction) Order() int {
+func (a *deleteManifestRecordAction) Order() int {
 	return 2
 }
 
@@ -41,6 +41,6 @@ func (a *newObjectAction) InvokeOnPersist(key model.Key) {
 	}
 }
 
-func (a *deleteRecordAction) String() string {
+func (a *deleteManifestRecordAction) String() string {
 	return fmt.Sprintf(`- %s %s`, a.Kind().Abbr, a.Path())
 }

@@ -13,7 +13,7 @@ func (m *mapper) OnObjectsRename(event model.OnObjectsRenameEvent) error {
 	// Find renamed shared codes
 	renamedSharedCodes := make(map[string]model.Key)
 	for _, object := range event.RenamedObjects {
-		key := object.Record.Key()
+		key := object.Manifest.Key()
 
 		// Is shared code?
 		if ok, err := m.IsSharedCodeKey(key); err != nil {

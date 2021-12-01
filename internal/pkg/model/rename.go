@@ -8,7 +8,7 @@ type RenamedPath struct {
 }
 
 type RenameAction struct {
-	Record      Record
+	Manifest    ObjectManifest
 	OldPath     string
 	RenameFrom  string // old path with renamed parents dirs
 	NewPath     string

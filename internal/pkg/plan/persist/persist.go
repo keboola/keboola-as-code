@@ -48,10 +48,10 @@ func (b *persistPlanBuilder) build() {
 	records := b.Manifest().GetRecords()
 	keys := append([]string(nil), records.Keys()...)
 	for _, key := range keys {
-		recordRaw, _ := records.Get(key)
-		record := recordRaw.(model.Record)
-		if record.State().IsNotFound() {
-			b.addAction(&deleteRecordAction{record})
+		manifestRaw, _ := records.Get(key)
+		manifest := manifestRaw.(model.ObjectManifest)
+		if manifest.State().IsNotFound() {
+			b.addAction(&deleteManifestRecordAction{manifest})
 		}
 	}
 

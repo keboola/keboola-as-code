@@ -39,7 +39,7 @@ func (b *renamePlanBuilder) build() ([]model.RenameAction, error) {
 			Description: strhelper.FormatPathChange(item.RenameFrom, item.NewPath, false),
 		}
 		if item.ObjectState != nil {
-			action.Record = item.ObjectState.Manifest()
+			action.Manifest = item.ObjectState.Manifest()
 		}
 		b.actions = append(b.actions, action)
 	}

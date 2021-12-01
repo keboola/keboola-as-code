@@ -15,29 +15,29 @@ type MapperContext struct {
 
 // LocalLoadRecipe - all items related to the object, when loading from local fs.
 type LocalLoadRecipe struct {
-	Record        Record               // manifest record, eg *ConfigManifest
-	Object        Object               // object, eg. Config
-	Metadata      *filesystem.JsonFile // meta.json
-	Configuration *filesystem.JsonFile // config.json
-	Description   *filesystem.File     // description.md
-	ExtraFiles    []*filesystem.File   // extra files
+	ObjectManifest                      // manifest record, eg *ConfigManifest
+	Object         Object               // object, eg. Config
+	Metadata       *filesystem.JsonFile // meta.json
+	Configuration  *filesystem.JsonFile // config.json
+	Description    *filesystem.File     // description.md
+	ExtraFiles     []*filesystem.File   // extra files
 }
 
 // LocalSaveRecipe - all items related to the object, when saving to local fs.
 type LocalSaveRecipe struct {
-	ChangedFields ChangedFields
-	Record                             // manifest record, eg *ConfigManifest
-	Object        Object               // object, eg. Config
-	Metadata      *filesystem.JsonFile // meta.json
-	Configuration *filesystem.JsonFile // config.json
-	Description   *filesystem.File     // description.md
-	ExtraFiles    []*filesystem.File   // extra files
-	ToDelete      []string             // paths to delete, on save
+	ChangedFields  ChangedFields
+	ObjectManifest                      // manifest record, eg *ConfigManifest
+	Object         Object               // object, eg. Config
+	Metadata       *filesystem.JsonFile // meta.json
+	Configuration  *filesystem.JsonFile // config.json
+	Description    *filesystem.File     // description.md
+	ExtraFiles     []*filesystem.File   // extra files
+	ToDelete       []string             // paths to delete, on save
 }
 
 // RemoteLoadRecipe - all items related to the object, when loading from Storage API.
 type RemoteLoadRecipe struct {
-	Manifest       Record
+	Manifest       ObjectManifest
 	ApiObject      Object // eg. Config, original version, API representation
 	InternalObject Object // eg. Config, modified version, internal representation
 }
@@ -45,7 +45,7 @@ type RemoteLoadRecipe struct {
 // RemoteSaveRecipe - all items related to the object, when saving to Storage API.
 type RemoteSaveRecipe struct {
 	ChangedFields  ChangedFields
-	Manifest       Record
+	Manifest       ObjectManifest
 	InternalObject Object // eg. Config, original version, internal representation
 	ApiObject      Object // eg. Config, modified version, API representation
 }
@@ -53,7 +53,7 @@ type RemoteSaveRecipe struct {
 // PersistRecipe contains object to persist.
 type PersistRecipe struct {
 	ParentKey Key
-	Manifest  Record
+	Manifest  ObjectManifest
 }
 
 // OnObjectsLoadEvent contains new and all objects in the same state.

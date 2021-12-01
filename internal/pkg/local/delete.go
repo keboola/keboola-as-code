@@ -17,9 +17,9 @@ func (m *Manager) DeleteInvalidObjects() error {
 	records := m.manifest.GetRecords()
 	for _, key := range append([]string(nil), records.Keys()...) {
 		v, _ := records.Get(key)
-		record := v.(model.Record)
-		if record.State().IsInvalid() {
-			if err := m.deleteObject(record); err != nil {
+		manifest := v.(model.ObjectManifest)
+		if manifest.State().IsInvalid() {
+			if err := m.deleteObject(manifest); err != nil {
 				errors.Append(err)
 			}
 		}
@@ -102,15 +102,15 @@ func DeleteEmptyDirectories(fs filesystem.Fs, trackedPaths []string) error {
 }
 
 // deleteObject from manifest and filesystem.
-func (m *Manager) deleteObject(record model.Record) error {
+func (m *Manager) deleteObject(manifest model.ObjectManifest) error {
 	errors := utils.NewMultiError()
 
-	// Remove record from manifest content
-	m.manifest.DeleteRecord(record)
+	// Remove manifest from manifest content
+	m.manifest.DeleteRecord(manifest)
 
 	// Remove dir
-	if err := m.fs.Remove(record.Path()); err != nil {
-		errors.Append(utils.PrefixError(fmt.Sprintf(`cannot delete directory "%s"`, record.Path()), err))
+	if err := m.fs.Remove(manifest.Path()); err != nil {
+		errors.Append(utils.PrefixError(fmt.Sprintf(`cannot delete directory "%s"`, manifest.Path()), err))
 	}
 
 	return errors.ErrorOrNil()

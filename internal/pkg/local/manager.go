@@ -134,23 +134,23 @@ func (u *UnitOfWork) CreateObject(key model.Key, name string) {
 	u.SaveObject(objectState, object, model.ChangedFields{})
 }
 
-func (u *UnitOfWork) LoadObject(record model.Record) {
+func (u *UnitOfWork) LoadObject(manifest model.ObjectManifest) {
 	u.
-		workersFor(record.Level()).
+		workersFor(manifest.Level()).
 		AddWorker(func() error {
 			// Has been parent loaded?
-			if parentKey, err := record.Key().ParentKey(); err != nil {
+			if parentKey, err := manifest.Key().ParentKey(); err != nil {
 				return err
 			} else if parentKey != nil {
 				// Has object a parent?
 				if _, found := u.localObjects.Get(parentKey); !found {
 					// Parent is not loaded -> skip
-					record.State().SetInvalid()
+					manifest.State().SetInvalid()
 					if parent, found := u.manifest.GetRecord(parentKey); found && parent.State().IsNotFound() {
 						// Parent is not found
-						record.State().SetNotFound()
+						manifest.State().SetNotFound()
 						if !u.skipNotFoundErr {
-							return fmt.Errorf(`%s "%s" not found`, record.Kind().Name, record.Path())
+							return fmt.Errorf(`%s "%s" not found`, manifest.Kind().Name, manifest.Path())
 						}
 					}
 					return nil
@@ -158,11 +158,11 @@ func (u *UnitOfWork) LoadObject(record model.Record) {
 			}
 
 			// Load object from filesystem
-			object := record.NewEmptyObject()
-			if found, err := u.Manager.loadObject(record, object); err != nil {
-				record.State().SetInvalid()
+			object := manifest.NewEmptyObject()
+			if found, err := u.Manager.loadObject(manifest, object); err != nil {
+				manifest.State().SetInvalid()
 				if !found {
-					record.State().SetNotFound()
+					manifest.State().SetNotFound()
 				}
 				if found || !u.skipNotFoundErr {
 					return err
@@ -180,7 +180,7 @@ func (u *UnitOfWork) LoadObject(record model.Record) {
 			}
 
 			// Get or create object state
-			objectState, err := u.state.GetOrCreateFrom(record)
+			objectState, err := u.state.GetOrCreateFrom(manifest)
 			if err != nil {
 				return err
 			}
@@ -205,11 +205,11 @@ func (u *UnitOfWork) SaveObject(objectState model.ObjectState, object model.Obje
 		})
 }
 
-func (u *UnitOfWork) DeleteObject(objectState model.ObjectState, record model.Record) {
+func (u *UnitOfWork) DeleteObject(objectState model.ObjectState, manifest model.ObjectManifest) {
 	u.
-		workersFor(record.Level()).
+		workersFor(manifest.Level()).
 		AddWorker(func() error {
-			if err := u.Manager.deleteObject(record); err != nil {
+			if err := u.Manager.deleteObject(manifest); err != nil {
 				return err
 			}
 			// ObjectState can be nil, if object exists only in manifest, but not in local/remote state

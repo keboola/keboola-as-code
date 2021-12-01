@@ -33,7 +33,7 @@ type localWriter struct {
 }
 
 func (w *localWriter) save() {
-	phasesDir := w.Naming.PhasesDir(w.Record.Path())
+	phasesDir := w.Naming.PhasesDir(w.ObjectManifest.Path())
 
 	// Generate ".gitkeep" to preserve the "phases" directory, even if there are no phases.
 	gitKeep := filesystem.CreateFile(filesystem.Join(phasesDir, `.gitkeep`), ``)
@@ -58,7 +58,7 @@ func (w *localWriter) save() {
 
 	// Convert errors to warning
 	if errors.Len() > 0 {
-		w.Logger.Warn(utils.PrefixError(fmt.Sprintf(`Warning: cannot save orchestrator config "%s"`, w.Record.Path()), errors))
+		w.Logger.Warn(utils.PrefixError(fmt.Sprintf(`Warning: cannot save orchestrator config "%s"`, w.ObjectManifest.Path()), errors))
 	}
 }
 

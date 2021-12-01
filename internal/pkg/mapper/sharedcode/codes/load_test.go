@@ -45,7 +45,7 @@ func TestSharedCodeLoadOk(t *testing.T) {
 	recipe := createLocalLoadRecipe(row, rowRecord)
 
 	// Write file
-	codeFilePath := filesystem.Join(context.Naming.SharedCodeFilePath(recipe.Record.Path(), targetComponentId))
+	codeFilePath := filesystem.Join(context.Naming.SharedCodeFilePath(recipe.ObjectManifest.Path(), targetComponentId))
 	assert.NoError(t, context.Fs.WriteFile(filesystem.CreateFile(codeFilePath, `foo bar`)))
 
 	// Load
@@ -58,5 +58,5 @@ func TestSharedCodeLoadOk(t *testing.T) {
 	// Path is present in related paths
 	assert.Equal(t, []string{
 		"branch/config/row/code.py",
-	}, recipe.Record.GetRelatedPaths())
+	}, recipe.ObjectManifest.GetRelatedPaths())
 }

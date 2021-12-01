@@ -60,12 +60,12 @@ func TestRenameAllPlan(t *testing.T) {
 
 	// Clear manifest records before assert
 	for _, action := range plan.actions {
-		action.Record = nil
+		action.Manifest = nil
 	}
 
-	// Clear manifest Record from actions for easier comparison
+	// Clear manifest ObjectManifest from actions for easier comparison
 	for i := range plan.actions {
-		plan.actions[i].Record = nil
+		plan.actions[i].Manifest = nil
 	}
 
 	// Assert

@@ -124,8 +124,8 @@ func LoadManifest(fs filesystem.Fs, logger *zap.SugaredLogger) (*Manifest, error
 	// Connect records together and resolve parent path
 	for _, key := range m.records.Keys() {
 		r, _ := m.records.Get(key)
-		record := r.(model.Record)
-		if err := m.PersistRecord(record); err != nil {
+		manifest := r.(model.ObjectManifest)
+		if err := m.PersistRecord(manifest); err != nil {
 			return nil, err
 		}
 	}
@@ -150,20 +150,20 @@ func (m *Manifest) Save() error {
 
 	for _, key := range m.records.Keys() {
 		r, _ := m.records.Get(key)
-		record := r.(model.Record)
+		manifest := r.(model.ObjectManifest)
 
 		// Skip invalid (eg. missing config file)
-		if record.State().IsInvalid() {
+		if manifest.State().IsInvalid() {
 			continue
 		}
 
 		// Skip not persisted
-		if !record.State().IsPersisted() {
+		if !manifest.State().IsPersisted() {
 			continue
 		}
 
 		// Generate content, we have to check if parent exists (eg. branch could have been deleted)
-		switch v := record.(type) {
+		switch v := manifest.(type) {
 		case *model.BranchManifest:
 			m.Content.Branches = append(m.Content.Branches, v)
 			branchesMap[v.String()] = v
@@ -183,7 +183,7 @@ func (m *Manifest) Save() error {
 				config.Rows = append(config.Rows, v)
 			}
 		default:
-			panic(fmt.Errorf(`unexpected type "%T"`, record))
+			panic(fmt.Errorf(`unexpected type "%T"`, manifest))
 		}
 	}
 
@@ -238,7 +238,7 @@ func (m *Manifest) GetRecords() orderedmap.OrderedMap {
 	return m.records
 }
 
-func (m *Manifest) MustGetRecord(key model.Key) model.Record {
+func (m *Manifest) MustGetRecord(key model.Key) model.ObjectManifest {
 	record, found := m.GetRecord(key)
 	if !found {
 		panic(fmt.Errorf("manifest record with key \"%s\"", key.String()))
@@ -246,43 +246,43 @@ func (m *Manifest) MustGetRecord(key model.Key) model.Record {
 	return record
 }
 
-func (m *Manifest) GetRecord(key model.Key) (model.Record, bool) {
+func (m *Manifest) GetRecord(key model.Key) (model.ObjectManifest, bool) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	if r, found := m.records.Get(key.String()); found {
-		return r.(model.Record), found
+		return r.(model.ObjectManifest), found
 	}
 	return nil, false
 }
 
-func (m *Manifest) CreateOrGetRecord(key model.Key) (record model.Record, found bool, err error) {
+func (m *Manifest) CreateOrGetRecord(key model.Key) (manifest model.ObjectManifest, found bool, err error) {
 	// Get
-	record, found = m.GetRecord(key)
+	manifest, found = m.GetRecord(key)
 	if found {
-		return record, found, nil
+		return manifest, found, nil
 	}
 
 	// Create
 	switch v := key.(type) {
 	case model.BranchKey:
-		record = &model.BranchManifest{BranchKey: v}
+		manifest = &model.BranchManifest{BranchKey: v}
 	case model.ConfigKey:
-		record = &model.ConfigManifest{ConfigKey: v}
+		manifest = &model.ConfigManifest{ConfigKey: v}
 	case model.ConfigRowKey:
-		record = &model.ConfigRowManifest{ConfigRowKey: v}
+		manifest = &model.ConfigRowManifest{ConfigRowKey: v}
 	default:
 		panic(fmt.Errorf("unexpected type \"%s\"", key))
 	}
 
-	if err := m.trackRecord(record); err != nil {
+	if err := m.trackRecord(manifest); err != nil {
 		return nil, false, err
 	}
 
-	return record, false, nil
+	return manifest, false, nil
 }
 
 // PersistRecord - store a new or existing record, and marks it as persisted.
-func (m *Manifest) PersistRecord(record model.Record) error {
+func (m *Manifest) PersistRecord(record model.ObjectManifest) error {
 	// Resolve parent path
 	if !record.IsParentPathSet() {
 		if err := m.ResolveParentPath(record); err != nil {
@@ -305,7 +305,7 @@ func (m *Manifest) PersistRecord(record model.Record) error {
 }
 
 // trackRecord - store a new record and make sure it has unique key.
-func (m *Manifest) trackRecord(record model.Record) error {
+func (m *Manifest) trackRecord(record model.ObjectManifest) error {
 	// Resolve parent path and attach record to the naming
 	if m.loaded {
 		// All records must be loaded to resolve parent path
@@ -341,8 +341,8 @@ func (m *Manifest) DeleteRecordByKey(key model.Key) {
 	}
 }
 
-func (m *Manifest) GetParent(record model.Record) (model.Record, error) {
-	parentKey, err := record.ParentKey()
+func (m *Manifest) GetParent(manifest model.ObjectManifest) (model.ObjectManifest, error) {
+	parentKey, err := manifest.ParentKey()
 	if err != nil {
 		return nil, err
 	} else if parentKey == nil {
@@ -351,17 +351,17 @@ func (m *Manifest) GetParent(record model.Record) (model.Record, error) {
 
 	parent, found := m.GetRecord(parentKey)
 	if !found {
-		return nil, fmt.Errorf(`manifest record for %s not found, referenced from %s`, parentKey.Desc(), record.Desc())
+		return nil, fmt.Errorf(`manifest record for %s not found, referenced from %s`, parentKey.Desc(), manifest.Desc())
 	}
 	return parent, nil
 }
 
-func (m *Manifest) ResolveParentPath(record model.Record) error {
+func (m *Manifest) ResolveParentPath(record model.ObjectManifest) error {
 	return m.doResolveParentPath(record, nil)
 }
 
 // doResolveParentPath recursive + fail on cyclic relations.
-func (m *Manifest) doResolveParentPath(record, origin model.Record) error {
+func (m *Manifest) doResolveParentPath(record, origin model.ObjectManifest) error {
 	if origin != nil && record.Key().String() == origin.Key().String() {
 		return fmt.Errorf(`a cyclic relation was found when resolving path to %s`, origin.Desc())
 	}
@@ -400,7 +400,7 @@ func (m *Manifest) validate() error {
 // sortRecords in manifest + ensure order of processing: branch, config, configRow.
 func (m *Manifest) sortRecords() {
 	m.records.Sort(func(a *orderedmap.Pair, b *orderedmap.Pair) bool {
-		return a.Value().(model.Record).SortKey(m.SortBy) < b.Value().(model.Record).SortKey(m.SortBy)
+		return a.Value().(model.ObjectManifest).SortKey(m.SortBy) < b.Value().(model.ObjectManifest).SortKey(m.SortBy)
 	})
 }
 
