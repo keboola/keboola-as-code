@@ -1,4 +1,4 @@
-Command "push"
+Command "sync push"
 
 Push configurations to the Keboola Connection project.
 Project's state will be overwritten to match the local files.

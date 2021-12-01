@@ -1,1 +1,1 @@
-Push configurations to the Keboola Connection project
+Push configurations to the Keboola project.

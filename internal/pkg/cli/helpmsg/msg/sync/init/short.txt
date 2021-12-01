@@ -1,1 +1,1 @@
-Init local project directory and perform the first pull
+Init local project directory and perform the first pull.

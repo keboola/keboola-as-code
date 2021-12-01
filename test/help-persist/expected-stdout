@@ -1,4 +1,4 @@
-Command "persist"
+Command "local persist"
 
 This command writes the changes from the filesystem to the manifest.
 - If you have created a new config/row, this command will write record to the manifest with a unique ID.

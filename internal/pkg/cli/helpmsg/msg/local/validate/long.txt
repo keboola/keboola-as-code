@@ -1,4 +1,4 @@
-Command "validate"
+Command "local validate"
 
 Validate existence and contents of all files in the local project dir.
 For components with a JSON schema, the content must match the schema.

@@ -1,25 +1,20 @@
 package local
 
 import (
-	"time"
-
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 	createConfig "github.com/keboola/keboola-as-code/pkg/lib/operation/local/create/config"
 	createRow "github.com/keboola/keboola-as-code/pkg/lib/operation/local/create/row"
-	createBranch "github.com/keboola/keboola-as-code/pkg/lib/operation/remote/create/branch"
 )
 
 func CreateCommand(depsProvider dependencies.Provider) *cobra.Command {
-	createBranchCmd := CreateBranchCommand(depsProvider)
 	createConfigCmd := CreateConfigCommand(depsProvider)
 	createRowCmd := CreateRowCommand(depsProvider)
 	cmd := &cobra.Command{
-		Use:   `create`,
-		Short: helpmsg.Read(`local/create/short`),
-		Long:  helpmsg.Read(`local/create/long`),
+		Use:  `create`,
+		Long: helpmsg.Read(`local/create/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			d := depsProvider.Dependencies()
 
@@ -30,9 +25,7 @@ func CreateCommand(depsProvider dependencies.Provider) *cobra.Command {
 			}
 
 			// We ask the user what he wants to create.
-			switch d.Dialogs().AskWhatCreate() {
-			case `branch`:
-				return createBranchCmd.RunE(createBranchCmd, nil)
+			switch d.Dialogs().AskWhatCreateLocal() {
 			case `config`:
 				return createConfigCmd.RunE(createConfigCmd, nil)
 			case `config row`:
@@ -44,47 +37,7 @@ func CreateCommand(depsProvider dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(createBranchCmd, createConfigCmd, createRowCmd)
-	return cmd
-}
-
-func CreateBranchCommand(depsProvider dependencies.Provider) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "branch",
-		Short: helpmsg.Read(`local/create/branch/short`),
-		Long:  helpmsg.Read(`local/create/branch/long`),
-		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			d := depsProvider.Dependencies()
-			start := time.Now()
-
-			// Metadata directory is required
-			d.LoadStorageApiHostFromManifest()
-			if err := d.AssertMetaDirExists(); err != nil {
-				return err
-			}
-
-			// Options
-			options, err := d.Dialogs().AskCreateBranch(d)
-			if err != nil {
-				return err
-			}
-
-			// Send cmd successful/failed event
-			if eventSender, err := d.EventSender(); err == nil {
-				defer func() {
-					eventSender.SendCmdEvent(start, cmdErr, "create-branch")
-				}()
-			} else {
-				return err
-			}
-
-			// Create branch
-			return createBranch.Run(options, d)
-		},
-	}
-
-	cmd.Flags().SortFlags = true
-	cmd.Flags().StringP(`name`, "n", ``, "name of the new branch")
+	cmd.AddCommand(createConfigCmd, createRowCmd)
 	return cmd
 }
 

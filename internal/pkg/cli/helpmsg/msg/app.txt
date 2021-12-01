@@ -1,0 +1,12 @@
+
+Keboola CLI is a set of commands
+for operating your cloud data pipeline.
+
+The whole Keboola project is represented
+by a local directory structure.
+
+Project can be synchronized in both
+directions: Keboola project <-> local directory.
+
+Start by running the "kbc init" in a new empty directory.
+Your project will be pulled, and you can start working.

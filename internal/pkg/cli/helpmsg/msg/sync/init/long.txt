@@ -1,4 +1,4 @@
-Command "init"
+Command "sync init"
 
 Initialize local project's directory
 and make first sync from the Keboola Connection.

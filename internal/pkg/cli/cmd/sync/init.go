@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/ci"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 	initOp "github.com/keboola/keboola-as-code/pkg/lib/operation/sync/init"
@@ -48,7 +48,7 @@ func InitCommand(depsProvider dependencies.Provider) *cobra.Command {
 	// Flags
 	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
 	cmd.Flags().StringP("allowed-branches", "b", "main", `comma separated IDs or name globs, use "*" for all`)
-	local.WorkflowsCmdFlags(cmd.Flags())
+	ci.WorkflowsCmdFlags(cmd.Flags())
 
 	return cmd
 }
