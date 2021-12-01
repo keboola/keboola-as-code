@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
+// MapBeforeLocalSave - replace shared codes IDs by paths on local save.
 func (m *mapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
 	if err := m.replaceSharedCodeIdByPath(recipe); err != nil {
 		// Log errors as warning

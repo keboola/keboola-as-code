@@ -19,6 +19,7 @@ type writer struct {
 	errors    *utils.MultiError
 }
 
+// MapBeforeLocalSave - save shared code as native file to filesystem.
 func (m *mapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
 	// Only for shared code config row
 	if ok, err := m.IsSharedCodeRowKey(recipe.Object.Key()); err != nil || !ok {
