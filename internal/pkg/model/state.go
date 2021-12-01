@@ -53,26 +53,26 @@ func (s *State) ReloadPathsState() error {
 
 	// Track all known paths
 	for _, object := range s.All() {
-		s.TrackRecord(object.Manifest())
+		s.TrackObjectPaths(object.Manifest())
 	}
 	return nil
 }
 
-func (s *State) TrackRecord(record Record) {
-	if !record.State().IsPersisted() {
+func (s *State) TrackObjectPaths(manifest ObjectManifest) {
+	if !manifest.State().IsPersisted() {
 		return
 	}
 
 	// Track object path
-	s.pathsState.MarkTracked(record.Path())
+	s.pathsState.MarkTracked(manifest.Path())
 
 	// Track sub-paths
-	if record.State().IsInvalid() {
+	if manifest.State().IsInvalid() {
 		// Object is invalid, no sub-paths has been parsed -> mark all sub-paths tracked.
-		s.pathsState.MarkSubPathsTracked(record.Path())
+		s.pathsState.MarkSubPathsTracked(manifest.Path())
 	} else {
 		// Object is valid, track loaded files.
-		for _, path := range record.GetRelatedPaths() {
+		for _, path := range manifest.GetRelatedPaths() {
 			s.pathsState.MarkTracked(path)
 		}
 	}
@@ -268,8 +268,8 @@ func (s *State) MustGet(key Key) ObjectState {
 	return state
 }
 
-func (s *State) CreateFrom(objectManifest Record) (ObjectState, error) {
-	objectState := objectManifest.NewObjectState()
+func (s *State) CreateFrom(manifest ObjectManifest) (ObjectState, error) {
+	objectState := manifest.NewObjectState()
 	return objectState, s.Set(objectState)
 }
 
@@ -286,13 +286,13 @@ func (s *State) Set(objectState ObjectState) error {
 	return nil
 }
 
-func (s *State) GetOrCreateFrom(objectManifest Record) (ObjectState, error) {
-	if objectState, found := s.Get(objectManifest.Key()); found {
-		objectState.SetManifest(objectManifest)
+func (s *State) GetOrCreateFrom(manifest ObjectManifest) (ObjectState, error) {
+	if objectState, found := s.Get(manifest.Key()); found {
+		objectState.SetManifest(manifest)
 		return objectState, nil
 	}
 
-	return s.CreateFrom(objectManifest)
+	return s.CreateFrom(manifest)
 }
 
 func (s *State) IsTracked(path string) bool {

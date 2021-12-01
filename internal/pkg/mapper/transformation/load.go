@@ -103,7 +103,7 @@ func (m *transformationMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) 
 		MapperContext:   m.MapperContext,
 		LocalLoadRecipe: recipe,
 		config:          recipe.Object.(*model.Config),
-		blocksDir:       m.Naming.BlocksDir(recipe.Record.Path()),
+		blocksDir:       m.Naming.BlocksDir(recipe.ObjectManifest.Path()),
 		errors:          utils.NewMultiError(),
 	}
 
@@ -161,7 +161,7 @@ func (l *localLoader) addBlock(blockIndex int, path string) *model.Block {
 		Codes: make([]*model.Code, 0),
 	}
 
-	l.Record.AddRelatedPath(block.Path())
+	l.ObjectManifest.AddRelatedPath(block.Path())
 	l.loadBlockMetaFile(block)
 	l.blocks = append(l.blocks, block)
 
@@ -184,7 +184,7 @@ func (l *localLoader) addCode(block *model.Block, codeIndex int, path string) *m
 		Scripts: make([]string, 0),
 	}
 
-	l.Record.AddRelatedPath(code.Path())
+	l.ObjectManifest.AddRelatedPath(code.Path())
 	l.loadCodeMetaFile(code)
 	l.addScripts(code)
 	block.Codes = append(block.Codes, code)
@@ -208,7 +208,7 @@ func (l *localLoader) addScripts(code *model.Code) {
 
 	// Split to scripts
 	code.Scripts = strhelper.ParseTransformationScripts(file.Content, l.config.ComponentId)
-	l.Record.AddRelatedPath(codeFilePath)
+	l.ObjectManifest.AddRelatedPath(codeFilePath)
 	l.Logger.Debugf(`Parsed "%d" scripts from "%s"`, len(code.Scripts), codeFilePath)
 }
 
@@ -218,7 +218,7 @@ func (l *localLoader) loadBlockMetaFile(block *model.Block) {
 	if file, err := l.Fs.ReadJsonFieldsTo(path, desc, block, model.MetaFileTag); err != nil {
 		l.errors.Append(err)
 	} else if file != nil {
-		l.Record.AddRelatedPath(path)
+		l.ObjectManifest.AddRelatedPath(path)
 	}
 }
 
@@ -228,7 +228,7 @@ func (l *localLoader) loadCodeMetaFile(code *model.Code) {
 	if file, err := l.Fs.ReadJsonFieldsTo(path, desc, code, model.MetaFileTag); err != nil {
 		l.errors.Append(err)
 	} else if file != nil {
-		l.Record.AddRelatedPath(path)
+		l.ObjectManifest.AddRelatedPath(path)
 	}
 }
 
@@ -240,7 +240,7 @@ func (l *localLoader) blockDirs() []string {
 	}
 
 	// Track blocks dir
-	l.Record.AddRelatedPath(l.blocksDir)
+	l.ObjectManifest.AddRelatedPath(l.blocksDir)
 
 	// Load all dir entries
 	dirs, err := filesystem.ReadSubDirs(l.Fs, l.blocksDir)

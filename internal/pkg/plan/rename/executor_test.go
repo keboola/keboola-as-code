@@ -33,13 +33,13 @@ func TestRename(t *testing.T) {
 	plan := &Plan{
 		actions: []model.RenameAction{
 			{
-				Record:      &fixtures.MockedRecord{},
+				Manifest:    &fixtures.MockedManifest{},
 				RenameFrom:  "foo1",
 				NewPath:     "bar1",
 				Description: "foo1 -> bar1",
 			},
 			{
-				Record:      &fixtures.MockedRecord{},
+				Manifest:    &fixtures.MockedManifest{},
 				RenameFrom:  "foo2",
 				NewPath:     "bar2",
 				Description: "foo2 -> bar2",
@@ -89,25 +89,25 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 	plan := &Plan{
 		actions: []model.RenameAction{
 			{
-				Record:      &fixtures.MockedRecord{},
+				Manifest:    &fixtures.MockedManifest{},
 				RenameFrom:  "foo1",
 				NewPath:     "bar1",
 				Description: "foo1 -> bar1",
 			},
 			{
-				Record:      &fixtures.MockedRecord{},
+				Manifest:    &fixtures.MockedManifest{},
 				RenameFrom:  "foo2",
 				NewPath:     "bar2",
 				Description: "foo2 -> bar2",
 			},
 			{
-				Record:      &fixtures.MockedRecord{},
+				Manifest:    &fixtures.MockedManifest{},
 				RenameFrom:  "missing3",
 				NewPath:     "missing4",
 				Description: "missing3 -> missing4",
 			},
 			{
-				Record:      &fixtures.MockedRecord{},
+				Manifest:    &fixtures.MockedManifest{},
 				RenameFrom:  "foo5",
 				NewPath:     "bar5",
 				Description: "foo5 -> bar5",

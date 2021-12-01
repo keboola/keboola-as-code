@@ -354,7 +354,7 @@ func TestDiffRelations(t *testing.T) {
 	targetKey := fixtures.MockedKey{
 		Id: `123`,
 	}
-	_, err := projectState.CreateFrom(&fixtures.MockedRecord{
+	_, err := projectState.CreateFrom(&fixtures.MockedManifest{
 		MockedKey: targetKey,
 		PathValue: `path/to/target`,
 	})
@@ -398,7 +398,7 @@ func TestDiffRelations(t *testing.T) {
 	}
 
 	// Object state
-	objectState, err := projectState.CreateFrom(&fixtures.MockedRecord{
+	objectState, err := projectState.CreateFrom(&fixtures.MockedManifest{
 		MockedKey: objectKey,
 		PathValue: `path/to/object`,
 	})

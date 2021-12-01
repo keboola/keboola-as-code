@@ -6,7 +6,7 @@ import (
 
 // MapBeforeLocalSave - store config relations from object to manifest.
 func (m *relationsMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
-	manifest, ok := recipe.Record.(model.ObjectManifestWithRelations)
+	manifest, ok := recipe.ObjectManifest.(model.ObjectManifestWithRelations)
 	if !ok {
 		return nil
 	}

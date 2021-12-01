@@ -12,7 +12,7 @@ type MockedKey struct {
 	Id string
 }
 
-type MockedRecord struct {
+type MockedManifest struct {
 	MockedKey
 	*model.RecordState
 	PathValue    string
@@ -31,7 +31,7 @@ type MockedObject struct {
 }
 
 type MockedObjectState struct {
-	*MockedRecord
+	*MockedManifest
 	Local  *MockedObject
 	Remote *MockedObject
 }
@@ -68,83 +68,83 @@ func (m MockedKey) ParentKey() (model.Key, error) {
 	return nil, nil
 }
 
-func (r *MockedRecord) Key() model.Key {
+func (r *MockedManifest) Key() model.Key {
 	return r.MockedKey
 }
 
-func (MockedRecord) ParentKey() (model.Key, error) {
+func (MockedManifest) ParentKey() (model.Key, error) {
 	return nil, nil
 }
 
-func (r MockedRecord) Kind() model.Kind {
+func (r MockedManifest) Kind() model.Kind {
 	return r.Key().Kind()
 }
 
-func (r *MockedRecord) State() *model.RecordState {
+func (r *MockedManifest) State() *model.RecordState {
 	if r.RecordState == nil {
 		return &model.RecordState{}
 	}
 	return r.RecordState
 }
 
-func (MockedRecord) SortKey(_ string) string {
+func (MockedManifest) SortKey(_ string) string {
 	return "key"
 }
 
-func (MockedRecord) GetObjectPath() string {
+func (MockedManifest) GetObjectPath() string {
 	return "foo"
 }
 
-func (MockedRecord) SetObjectPath(string) {
+func (MockedManifest) SetObjectPath(string) {
 }
 
-func (MockedRecord) GetParentPath() string {
+func (MockedManifest) GetParentPath() string {
 	return "bar"
 }
 
-func (MockedRecord) IsParentPathSet() bool {
+func (MockedManifest) IsParentPathSet() bool {
 	return true
 }
 
-func (MockedRecord) SetParentPath(string) {
+func (MockedManifest) SetParentPath(string) {
 }
 
-func (r MockedRecord) GetPathInProject() model.PathInProject {
+func (r MockedManifest) GetPathInProject() model.PathInProject {
 	if len(r.PathValue) > 0 {
 		return model.NewPathInProject("", r.PathValue)
 	}
 	return model.NewPathInProject("", "test")
 }
 
-func (r MockedRecord) Path() string {
+func (r MockedManifest) Path() string {
 	if len(r.PathValue) > 0 {
 		return r.PathValue
 	}
 	return `test`
 }
 
-func (r *MockedRecord) ClearRelatedPaths() {
+func (r *MockedManifest) ClearRelatedPaths() {
 	r.RelatedPaths = make([]string, 0)
 }
 
-func (r *MockedRecord) GetRelatedPaths() []string {
+func (r *MockedManifest) GetRelatedPaths() []string {
 	return r.RelatedPaths
 }
 
-func (r *MockedRecord) AddRelatedPath(path string) {
+func (r *MockedManifest) AddRelatedPath(path string) {
 	r.RelatedPaths = append(r.RelatedPaths, path)
 }
 
-func (MockedRecord) RenameRelatedPaths(_, _ string) {
+func (MockedManifest) RenameRelatedPaths(_, _ string) {
 	// nop
 }
 
-func (r MockedRecord) NewEmptyObject() model.Object {
+func (r MockedManifest) NewEmptyObject() model.Object {
 	return &MockedObject{}
 }
 
-func (r *MockedRecord) NewObjectState() model.ObjectState {
-	return &MockedObjectState{MockedRecord: r}
+func (r *MockedManifest) NewObjectState() model.ObjectState {
+	return &MockedObjectState{MockedManifest: r}
 }
 
 func (o MockedObject) Key() model.Key {
@@ -160,15 +160,15 @@ func (o *MockedObject) Clone() model.Object {
 	return &clone
 }
 
-func (r *MockedRecord) GetRelations() model.Relations {
+func (r *MockedManifest) GetRelations() model.Relations {
 	return r.Relations
 }
 
-func (r *MockedRecord) SetRelations(relations model.Relations) {
+func (r *MockedManifest) SetRelations(relations model.Relations) {
 	r.Relations = relations
 }
 
-func (r *MockedRecord) AddRelation(relation model.Relation) {
+func (r *MockedManifest) AddRelation(relation model.Relation) {
 	r.Relations.Add(relation)
 }
 
@@ -189,15 +189,15 @@ func (o *MockedObjectState) ObjectName() string {
 }
 
 func (o *MockedObjectState) HasManifest() bool {
-	return o.MockedRecord != nil
+	return o.MockedManifest != nil
 }
 
-func (o *MockedObjectState) SetManifest(record model.Record) {
-	o.MockedRecord = record.(*MockedRecord)
+func (o *MockedObjectState) SetManifest(manifest model.ObjectManifest) {
+	o.MockedManifest = manifest.(*MockedManifest)
 }
 
-func (o *MockedObjectState) Manifest() model.Record {
-	return o.MockedRecord
+func (o *MockedObjectState) Manifest() model.ObjectManifest {
+	return o.MockedManifest
 }
 
 func (o *MockedObjectState) HasState(stateType model.StateType) bool {

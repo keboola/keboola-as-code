@@ -32,12 +32,12 @@ func createMapper(t *testing.T) (*mapper.Mapper, model.MapperContext, *utils.Wri
 	return mapperInst, context, logs
 }
 
-func createLocalSaveRecipe(object model.ObjectWithContent, objectManifest model.Record) *model.LocalSaveRecipe {
+func createLocalSaveRecipe(object model.ObjectWithContent, manifest model.ObjectManifest) *model.LocalSaveRecipe {
 	return &model.LocalSaveRecipe{
-		Object:        object,
-		Record:        objectManifest,
-		Metadata:      filesystem.CreateJsonFile(model.MetaFile, utils.NewOrderedMap()),
-		Configuration: filesystem.CreateJsonFile(model.ConfigFile, object.GetContent()),
-		Description:   filesystem.CreateFile(model.DescriptionFile, ``),
+		Object:         object,
+		ObjectManifest: manifest,
+		Metadata:       filesystem.CreateJsonFile(model.MetaFile, utils.NewOrderedMap()),
+		Configuration:  filesystem.CreateJsonFile(model.ConfigFile, object.GetContent()),
+		Description:    filesystem.CreateFile(model.DescriptionFile, ``),
 	}
 }

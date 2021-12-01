@@ -97,20 +97,20 @@ func createTestFixtures(t *testing.T, targetComponentId string) (model.MapperCon
 
 func createLocalLoadRecipe(row *model.ConfigRow, rowRecord *model.ConfigRowManifest) *model.LocalLoadRecipe {
 	return &model.LocalLoadRecipe{
-		Object:        row,
-		Record:        rowRecord,
-		Metadata:      filesystem.CreateJsonFile(model.MetaFile, utils.NewOrderedMap()),
-		Configuration: filesystem.CreateJsonFile(model.ConfigFile, utils.NewOrderedMap()),
-		Description:   filesystem.CreateFile(model.DescriptionFile, ``),
+		Object:         row,
+		ObjectManifest: rowRecord,
+		Metadata:       filesystem.CreateJsonFile(model.MetaFile, utils.NewOrderedMap()),
+		Configuration:  filesystem.CreateJsonFile(model.ConfigFile, utils.NewOrderedMap()),
+		Description:    filesystem.CreateFile(model.DescriptionFile, ``),
 	}
 }
 
 func createLocalSaveRecipe(row *model.ConfigRow, rowRecord *model.ConfigRowManifest) *model.LocalSaveRecipe {
 	return &model.LocalSaveRecipe{
-		Object:        row,
-		Record:        rowRecord,
-		Metadata:      filesystem.CreateJsonFile(model.MetaFile, utils.NewOrderedMap()),
-		Configuration: filesystem.CreateJsonFile(model.ConfigFile, utils.NewOrderedMap()),
-		Description:   filesystem.CreateFile(model.DescriptionFile, ``),
+		Object:         row,
+		ObjectManifest: rowRecord,
+		Metadata:       filesystem.CreateJsonFile(model.MetaFile, utils.NewOrderedMap()),
+		Configuration:  filesystem.CreateJsonFile(model.ConfigFile, utils.NewOrderedMap()),
+		Description:    filesystem.CreateFile(model.DescriptionFile, ``),
 	}
 }

@@ -240,8 +240,8 @@ func TestPersistDeleted(t *testing.T) {
 		inputDir:       `persist-deleted`,
 		untrackedPaths: nil,
 		expectedPlan: []action{
-			&deleteRecordAction{
-				Record: &model.ConfigManifest{
+			&deleteManifestRecordAction{
+				ObjectManifest: &model.ConfigManifest{
 					ConfigKey: model.ConfigKey{
 						BranchId:    111,
 						ComponentId: "keboola.ex-db-mysql",
@@ -260,8 +260,8 @@ func TestPersistDeleted(t *testing.T) {
 					},
 				},
 			},
-			&deleteRecordAction{
-				Record: &model.ConfigRowManifest{
+			&deleteManifestRecordAction{
+				ObjectManifest: &model.ConfigRowManifest{
 					ConfigRowKey: model.ConfigRowKey{
 						BranchId:    111,
 						ComponentId: "keboola.ex-db-mysql",

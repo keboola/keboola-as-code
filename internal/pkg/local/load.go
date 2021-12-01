@@ -15,10 +15,10 @@ type modelLoader struct {
 }
 
 // loadObject from manifest and filesystem.
-func (m *Manager) loadObject(record model.Record, object model.Object) (found bool, err error) {
+func (m *Manager) loadObject(manifest model.ObjectManifest, object model.Object) (found bool, err error) {
 	l := &modelLoader{
 		Manager:         m,
-		LocalLoadRecipe: &model.LocalLoadRecipe{Object: object, Record: record},
+		LocalLoadRecipe: &model.LocalLoadRecipe{Object: object, ObjectManifest: manifest},
 		errors:          utils.NewMultiError(),
 	}
 	return l.load()
@@ -26,8 +26,8 @@ func (m *Manager) loadObject(record model.Record, object model.Object) (found bo
 
 func (l *modelLoader) load() (found bool, err error) {
 	// Check if directory exists
-	if !l.fs.IsDir(l.Record.Path()) {
-		l.errors.Append(fmt.Errorf(`%s "%s" not found`, l.Record.Kind().Name, l.Record.Path()))
+	if !l.fs.IsDir(l.ObjectManifest.Path()) {
+		l.errors.Append(fmt.Errorf(`%s "%s" not found`, l.ObjectManifest.Kind().Name, l.ObjectManifest.Path()))
 		return false, l.errors.ErrorOrNil()
 	}
 
@@ -38,7 +38,7 @@ func (l *modelLoader) load() (found bool, err error) {
 	// Validate, if all files loaded without error
 	if l.errors.Len() == 0 {
 		if err := validator.Validate(l.Object); err != nil {
-			l.errors.AppendWithPrefix(fmt.Sprintf(`%s "%s" is invalid`, l.Record.Kind().Name, l.Record.Path()), err)
+			l.errors.AppendWithPrefix(fmt.Sprintf(`%s "%s" is invalid`, l.ObjectManifest.Kind().Name, l.ObjectManifest.Path()), err)
 		}
 	}
 
@@ -53,38 +53,38 @@ func (l *modelLoader) loadFiles() {
 
 // loadMetaFile from meta.json.
 func (l *modelLoader) loadMetaFile() {
-	path := l.Naming().MetaFilePath(l.Record.Path())
-	desc := l.Record.Kind().Name + " metadata"
+	path := l.Naming().MetaFilePath(l.ObjectManifest.Path())
+	desc := l.ObjectManifest.Kind().Name + " metadata"
 	if file, err := l.fs.ReadJsonFieldsTo(path, desc, l.Object, model.MetaFileTag); err != nil {
 		l.errors.Append(err)
 	} else if file != nil {
 		l.Metadata = file
-		l.Record.AddRelatedPath(path)
+		l.ObjectManifest.AddRelatedPath(path)
 	}
 }
 
 // loadConfigFile from config.json.
 func (l *modelLoader) loadConfigFile() {
 	// config.json
-	path := l.Naming().ConfigFilePath(l.Record.Path())
-	desc := l.Record.Kind().Name
+	path := l.Naming().ConfigFilePath(l.ObjectManifest.Path())
+	desc := l.ObjectManifest.Kind().Name
 	if file, err := l.fs.ReadJsonMapTo(path, desc, l.Object, model.ConfigFileTag); err != nil {
 		l.errors.Append(err)
 	} else if file != nil {
 		l.Configuration = file
-		l.Record.AddRelatedPath(path)
+		l.ObjectManifest.AddRelatedPath(path)
 	}
 }
 
 // loadDescriptionFile from description.md.
 func (l *modelLoader) loadDescriptionFile() {
-	path := l.Naming().DescriptionFilePath(l.Record.Path())
-	desc := l.Record.Kind().Name + " description"
+	path := l.Naming().DescriptionFilePath(l.ObjectManifest.Path())
+	desc := l.ObjectManifest.Kind().Name + " description"
 	if file, err := l.fs.ReadFileContentTo(path, desc, l.Object, model.DescriptionFileTag); err != nil {
 		l.errors.Append(err)
 	} else if file != nil {
 		l.Description = file
-		l.Record.AddRelatedPath(path)
+		l.ObjectManifest.AddRelatedPath(path)
 	}
 }
 

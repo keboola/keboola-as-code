@@ -20,7 +20,7 @@ const MaxEqualLinesInString = 5 // maximum of equal lines returned by strings di
 
 // Reporter contains path to the compared values and generates human-readable difference report.
 type Reporter struct {
-	manifest     model.Record
+	manifest     model.ObjectManifest
 	remoteObject model.Object
 	localObject  model.Object
 	state        *model.State // state of the other objects (to get objects path if needed)

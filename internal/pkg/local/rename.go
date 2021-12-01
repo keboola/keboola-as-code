@@ -28,11 +28,11 @@ func (m *Manager) rename(actions []model.RenameAction) error {
 			errors.AppendWithPrefix(fmt.Sprintf(`cannot copy "%s"`, action.Description), err)
 		} else {
 			// Update manifest
-			if err := m.manifest.PersistRecord(action.Record); err != nil {
-				errors.AppendWithPrefix(fmt.Sprintf(`cannot persist "%s"`, action.Record.Desc()), err)
+			if err := m.manifest.PersistRecord(action.Manifest); err != nil {
+				errors.AppendWithPrefix(fmt.Sprintf(`cannot persist "%s"`, action.Manifest.Desc()), err)
 			}
-			if filesystem.IsFrom(action.NewPath, action.Record.Path()) {
-				action.Record.RenameRelatedPaths(action.RenameFrom, action.NewPath)
+			if filesystem.IsFrom(action.NewPath, action.Manifest.Path()) {
+				action.Manifest.RenameRelatedPaths(action.RenameFrom, action.NewPath)
 			}
 
 			// Remove old path

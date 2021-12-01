@@ -18,14 +18,14 @@ type modelWriter struct {
 }
 
 // saveObject to manifest and filesystem.
-func (m *Manager) saveObject(record model.Record, object model.Object, changedFields model.ChangedFields) error {
-	if record.Key() != object.Key() {
-		panic(fmt.Errorf(`record "%T" and object "%T" type mismatch`, record, object))
+func (m *Manager) saveObject(manifest model.ObjectManifest, object model.Object, changedFields model.ChangedFields) error {
+	if manifest.Key() != object.Key() {
+		panic(fmt.Errorf(`manifest "%T" and object "%T" type mismatch`, manifest, object))
 	}
 
 	w := modelWriter{
 		Manager:         m,
-		LocalSaveRecipe: &model.LocalSaveRecipe{ChangedFields: changedFields, Object: object.Clone(), Record: record},
+		LocalSaveRecipe: &model.LocalSaveRecipe{ChangedFields: changedFields, Object: object.Clone(), ObjectManifest: manifest},
 		backups:         make(map[string]string),
 		errors:          utils.NewMultiError(),
 	}
@@ -40,7 +40,7 @@ func (w *modelWriter) save() error {
 	}
 
 	// Add record to manifest content + mark it for saving
-	if err := w.manifest.PersistRecord(w.Record); err != nil {
+	if err := w.manifest.PersistRecord(w.ObjectManifest); err != nil {
 		return err
 	}
 
@@ -122,7 +122,7 @@ func (w *modelWriter) write() {
 	}
 
 	// Delete
-	w.Record.ClearRelatedPaths()
+	w.ObjectManifest.ClearRelatedPaths()
 	for _, path := range toDelete {
 		if err := w.softDelete(path); err != nil {
 			w.errors.Append(err)
@@ -132,7 +132,7 @@ func (w *modelWriter) write() {
 
 	// Write new files
 	for _, file := range newFiles {
-		w.Record.AddRelatedPath(file.Path)
+		w.ObjectManifest.AddRelatedPath(file.Path)
 		if err := w.fs.WriteFile(file); err != nil {
 			w.errors.Append(err)
 		}

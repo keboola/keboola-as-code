@@ -88,7 +88,7 @@ type localWriter struct {
 }
 
 func (w *localWriter) save() error {
-	blocksDir := w.Naming.BlocksDir(w.Record.Path())
+	blocksDir := w.Naming.BlocksDir(w.ObjectManifest.Path())
 
 	// Generate ".gitkeep" to preserve the "blocks" directory, even if there are no blocks.
 	gitKeep := filesystem.CreateFile(filesystem.Join(blocksDir, `.gitkeep`), ``)

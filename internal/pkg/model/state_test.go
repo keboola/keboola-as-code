@@ -202,7 +202,7 @@ func TestStateTrackRecordNotPersisted(t *testing.T) {
 	record.RelatedPaths = []string{`bar1`, `bar2`}
 
 	// Tracked are only paths from persisted records.
-	s.TrackRecord(record)
+	s.TrackObjectPaths(record)
 	assert.Empty(t, s.TrackedPaths())
 	assert.Equal(t, []string{`foo`, `foo/bar1`, `foo/bar2`, `foo/bar3`}, s.UntrackedPaths())
 }
@@ -225,7 +225,7 @@ func TestStateTrackRecordValid(t *testing.T) {
 	record.RelatedPaths = []string{`bar1`, `bar2`}
 
 	// For valid records, we will mark as tracked only those files that have been loaded.
-	s.TrackRecord(record)
+	s.TrackObjectPaths(record)
 	assert.Equal(t, []string{`foo`, `foo/bar1`, `foo/bar2`}, s.TrackedPaths())
 	assert.Equal(t, []string{`foo/bar3`}, s.UntrackedPaths())
 }
@@ -250,7 +250,7 @@ func TestStateTrackRecordInvalid(t *testing.T) {
 	// Therefore, we mark all files from the object directory as tracked.
 	// This will prevent duplicate error -> untracked files found.
 	// The user must primarily fix why the record is invalid.
-	s.TrackRecord(record)
+	s.TrackObjectPaths(record)
 	assert.Equal(t, []string{`foo`, `foo/bar1`, `foo/bar2`, `foo/bar3`}, s.TrackedPaths())
 	assert.Empty(t, s.UntrackedPaths())
 }

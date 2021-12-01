@@ -14,7 +14,7 @@ func (m *orchestratorMapper) OnObjectsRename(event model.OnObjectsRenameEvent) e
 	// Find renamed orchestrators and renamed configs used in an orchestrator
 	orchestratorsToUpdate := make(map[string]model.Key)
 	for _, object := range event.RenamedObjects {
-		key := object.Record.Key()
+		key := object.Manifest.Key()
 
 		// Is orchestrator?
 		if ok, err := m.isOrchestratorConfigKey(key); err != nil {
@@ -26,7 +26,7 @@ func (m *orchestratorMapper) OnObjectsRename(event model.OnObjectsRenameEvent) e
 		}
 
 		// Is config used in orchestrator?
-		if manifest, ok := object.Record.(*model.ConfigManifest); ok {
+		if manifest, ok := object.Manifest.(*model.ConfigManifest); ok {
 			localConfigRaw, found := localObjects.Get(manifest.Key())
 			if found {
 				localConfig := localConfigRaw.(*model.Config)
