@@ -145,78 +145,81 @@ func TestVariablesValuesPersistFirstRowIsDefault(t *testing.T) {
 func createTestObjectForPersist(t *testing.T, state *model.State) {
 	t.Helper()
 
+	// Config
 	configKey := model.ConfigKey{
 		BranchId:    123,
 		ComponentId: model.VariablesComponentId,
 		Id:          `456`,
 	}
-	row1Key := model.ConfigRowKey{
-		BranchId:    123,
-		ComponentId: model.VariablesComponentId,
-		ConfigId:    `456`,
-		Id:          `1`,
-	}
-	row2Key := model.ConfigRowKey{
-		BranchId:    123,
-		ComponentId: model.VariablesComponentId,
-		ConfigId:    `456`,
-		Id:          `2`,
-	}
-	row3Key := model.ConfigRowKey{
-		BranchId:    123,
-		ComponentId: model.VariablesComponentId,
-		ConfigId:    `456`,
-		Id:          `3`,
-	}
-
 	configRelations := model.Relations{
 		&model.VariablesForRelation{
 			ComponentId: `foo.bar`,
 			ConfigId:    `789`,
 		},
 	}
+	configState := &model.ConfigState{
+		ConfigManifest: &model.ConfigManifest{
+			ConfigKey: configKey,
+			Relations: configRelations,
+		},
+		Local: &model.Config{
+			ConfigKey: configKey,
+			Relations: configRelations,
+		},
+	}
+	assert.NoError(t, state.Set(configState))
 
-	config := &model.Config{
-		ConfigKey: configKey,
-		Relations: configRelations,
+	// Row 1
+	row1Key := model.ConfigRowKey{
+		BranchId:    123,
+		ComponentId: model.VariablesComponentId,
+		ConfigId:    `456`,
+		Id:          `1`,
 	}
-	row1 := &model.ConfigRow{
-		ConfigRowKey: row1Key,
-		Name:         `first`,
+	row1State := &model.ConfigRowState{
+		ConfigRowManifest: &model.ConfigRowManifest{
+			ConfigRowKey: row1Key,
+		},
+		Local: &model.ConfigRow{
+			ConfigRowKey: row1Key,
+			Name:         `first`,
+		},
 	}
-	row2 := &model.ConfigRow{
-		ConfigRowKey: row2Key,
-		Name:         `second`,
-	}
-	row3 := &model.ConfigRow{
-		ConfigRowKey: row3Key,
-		Name:         `third`,
-	}
+	assert.NoError(t, state.Set(row1State))
 
-	configManifest := &model.ConfigManifest{
-		ConfigKey: configKey,
-		Relations: configRelations,
+	// Row 2
+	row2Key := model.ConfigRowKey{
+		BranchId:    123,
+		ComponentId: model.VariablesComponentId,
+		ConfigId:    `456`,
+		Id:          `2`,
 	}
-	row1Manifest := &model.ConfigRowManifest{
-		ConfigRowKey: row1Key,
+	row2State := &model.ConfigRowState{
+		ConfigRowManifest: &model.ConfigRowManifest{
+			ConfigRowKey: row2Key,
+		},
+		Local: &model.ConfigRow{
+			ConfigRowKey: row2Key,
+			Name:         `second`,
+		},
 	}
-	row2Manifest := &model.ConfigRowManifest{
-		ConfigRowKey: row2Key,
-	}
-	row3Manifest := &model.ConfigRowManifest{
-		ConfigRowKey: row3Key,
-	}
+	assert.NoError(t, state.Set(row2State))
 
-	configState, err := state.CreateFrom(configManifest)
-	assert.NoError(t, err)
-	configState.SetLocalState(config)
-	row1State, err := state.CreateFrom(row1Manifest)
-	assert.NoError(t, err)
-	row1State.SetLocalState(row1)
-	row2State, err := state.CreateFrom(row2Manifest)
-	assert.NoError(t, err)
-	row2State.SetLocalState(row2)
-	row3State, err := state.CreateFrom(row3Manifest)
-	assert.NoError(t, err)
-	row3State.SetLocalState(row3)
+	// Row 3
+	row3Key := model.ConfigRowKey{
+		BranchId:    123,
+		ComponentId: model.VariablesComponentId,
+		ConfigId:    `456`,
+		Id:          `3`,
+	}
+	row3State := &model.ConfigRowState{
+		ConfigRowManifest: &model.ConfigRowManifest{
+			ConfigRowKey: row3Key,
+		},
+		Local: &model.ConfigRow{
+			ConfigRowKey: row3Key,
+			Name:         `third`,
+		},
+	}
+	assert.NoError(t, state.Set(row3State))
 }

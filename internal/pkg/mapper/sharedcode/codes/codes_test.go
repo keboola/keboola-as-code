@@ -14,7 +14,7 @@ import (
 )
 
 // nolint: unparam
-func createTestFixtures(t *testing.T, targetComponentId string) (model.MapperContext, *model.ConfigRow, *model.ConfigRowManifest) {
+func createTestFixtures(t *testing.T, targetComponentId string) (model.MapperContext, *model.ConfigRowState) {
 	t.Helper()
 
 	logger, _ := utils.NewDebugLogger()
@@ -47,24 +47,28 @@ func createTestFixtures(t *testing.T, targetComponentId string) (model.MapperCon
 		Id:          `123`,
 		ComponentId: model.SharedCodeComponentId,
 	}
-	configRecord := &model.ConfigManifest{
-		ConfigKey: configKey,
-		Paths: model.Paths{
-			PathInProject: model.NewPathInProject(
-				"branch",
-				"config",
-			),
+	configContent := utils.NewOrderedMap()
+	configContent.Set(model.ShareCodeTargetComponentKey, targetComponentId)
+	configState := &model.ConfigState{
+		ConfigManifest: &model.ConfigManifest{
+			ConfigKey: configKey,
+			Paths: model.Paths{
+				PathInProject: model.NewPathInProject(
+					"branch",
+					"config",
+				),
+			},
+		},
+		Local: &model.Config{
+			ConfigKey: configKey,
+			Content:   configContent,
+		},
+		Remote: &model.Config{
+			ConfigKey: configKey,
+			Content:   configContent,
 		},
 	}
-	config := &model.Config{
-		ConfigKey: configKey,
-		Content:   utils.NewOrderedMap(),
-	}
-	config.Content.Set(model.ShareCodeTargetComponentKey, targetComponentId)
-	configState, err := state.CreateFrom(configRecord)
-	assert.NoError(t, err)
-	configState.SetLocalState(config)
-	configState.SetRemoteState(config)
+	assert.NoError(t, state.Set(configState))
 
 	// Row
 	rowKey := model.ConfigRowKey{
@@ -73,42 +77,45 @@ func createTestFixtures(t *testing.T, targetComponentId string) (model.MapperCon
 		Id:          `456`,
 		ComponentId: model.SharedCodeComponentId,
 	}
-	rowRecord := &model.ConfigRowManifest{
-		ConfigRowKey: rowKey,
-		Paths: model.Paths{
-			PathInProject: model.NewPathInProject(
-				"branch/config",
-				"row",
-			),
+	rowState := &model.ConfigRowState{
+		ConfigRowManifest: &model.ConfigRowManifest{
+			ConfigRowKey: rowKey,
+			Paths: model.Paths{
+				PathInProject: model.NewPathInProject(
+					"branch/config",
+					"row",
+				),
+			},
+		},
+		Local: &model.ConfigRow{
+			ConfigRowKey: rowKey,
+			Content:      utils.NewOrderedMap(),
+		},
+		Remote: &model.ConfigRow{
+			ConfigRowKey: rowKey,
+			Content:      utils.NewOrderedMap(),
 		},
 	}
-	row := &model.ConfigRow{
-		ConfigRowKey: rowKey,
-		Content:      utils.NewOrderedMap(),
-	}
-	rowState, err := state.GetOrCreateFrom(rowRecord)
-	assert.NoError(t, err)
-	rowState.SetLocalState(row)
-	rowState.SetRemoteState(row)
+	assert.NoError(t, state.Set(rowState))
 
 	context := model.MapperContext{Logger: logger, Fs: fs, Naming: model.DefaultNamingWithIds(), State: state}
-	return context, row, rowRecord
+	return context, rowState
 }
 
-func createLocalLoadRecipe(row *model.ConfigRow, rowRecord *model.ConfigRowManifest) *model.LocalLoadRecipe {
+func createLocalLoadRecipe(rowState *model.ConfigRowState) *model.LocalLoadRecipe {
 	return &model.LocalLoadRecipe{
-		Object:         row,
-		ObjectManifest: rowRecord,
+		Object:         rowState.Local,
+		ObjectManifest: rowState.ConfigRowManifest,
 		Metadata:       filesystem.CreateJsonFile(model.MetaFile, utils.NewOrderedMap()),
 		Configuration:  filesystem.CreateJsonFile(model.ConfigFile, utils.NewOrderedMap()),
 		Description:    filesystem.CreateFile(model.DescriptionFile, ``),
 	}
 }
 
-func createLocalSaveRecipe(row *model.ConfigRow, rowRecord *model.ConfigRowManifest) *model.LocalSaveRecipe {
+func createLocalSaveRecipe(rowState *model.ConfigRowState) *model.LocalSaveRecipe {
 	return &model.LocalSaveRecipe{
-		Object:         row,
-		ObjectManifest: rowRecord,
+		Object:         rowState.Local,
+		ObjectManifest: rowState.ConfigRowManifest,
 		Metadata:       filesystem.CreateJsonFile(model.MetaFile, utils.NewOrderedMap()),
 		Configuration:  filesystem.CreateJsonFile(model.ConfigFile, utils.NewOrderedMap()),
 		Description:    filesystem.CreateFile(model.DescriptionFile, ``),

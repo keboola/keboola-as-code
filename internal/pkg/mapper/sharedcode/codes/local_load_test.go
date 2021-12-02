@@ -13,8 +13,8 @@ import (
 func TestSharedCodeLoadMissingFile(t *testing.T) {
 	t.Parallel()
 	targetComponentId := `keboola.python-transformation-v2`
-	context, row, rowRecord := createTestFixtures(t, targetComponentId)
-	recipe := createLocalLoadRecipe(row, rowRecord)
+	context, rowState := createTestFixtures(t, targetComponentId)
+	recipe := createLocalLoadRecipe(rowState)
 
 	err := NewMapper(context).MapAfterLocalLoad(recipe)
 	assert.Error(t, err)
@@ -24,8 +24,8 @@ func TestSharedCodeLoadMissingFile(t *testing.T) {
 func TestSharedCodeLoadOk(t *testing.T) {
 	t.Parallel()
 	targetComponentId := `keboola.python-transformation-v2`
-	context, row, rowRecord := createTestFixtures(t, targetComponentId)
-	recipe := createLocalLoadRecipe(row, rowRecord)
+	context, rowState := createTestFixtures(t, targetComponentId)
+	recipe := createLocalLoadRecipe(rowState)
 
 	// Write file
 	codeFilePath := filesystem.Join(context.Naming.SharedCodeFilePath(recipe.ObjectManifest.Path(), targetComponentId))
@@ -34,7 +34,7 @@ func TestSharedCodeLoadOk(t *testing.T) {
 	// Load
 	err := NewMapper(context).MapAfterLocalLoad(recipe)
 	assert.NoError(t, err)
-	codeContent, found := row.Content.Get(model.SharedCodeContentKey)
+	codeContent, found := rowState.Local.Content.Get(model.SharedCodeContentKey)
 	assert.True(t, found)
 	assert.Equal(t, []interface{}{"foo bar"}, codeContent)
 
