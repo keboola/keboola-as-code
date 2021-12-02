@@ -13,7 +13,7 @@ import (
 
 func TestRelationsMapperLinkRelations(t *testing.T) {
 	t.Parallel()
-	context, _ := createMapperContext(t)
+	context, logs := createMapperContext(t)
 
 	key1 := fixtures.MockedKey{Id: "123"}
 	key2 := fixtures.MockedKey{Id: "456"}
@@ -42,18 +42,14 @@ func TestRelationsMapperLinkRelations(t *testing.T) {
 	}
 	assert.NoError(t, context.State.Set(object2))
 
-	// OnObjectsLoad event
-	event := model.OnObjectsLoadEvent{
-		StateType:  model.StateTypeLocal,
-		NewObjects: []model.Object{object1.Local},
-		AllObjects: context.State.LocalObjects(),
-	}
-
 	// No other side relation
 	assert.Empty(t, object2.Local.Relations)
 
-	// Call OnObjectsLoad
-	assert.NoError(t, NewMapper(context).OnObjectsLoad(event))
+	// Call OnLocalChange
+	changes := model.NewLocalChanges()
+	changes.AddLoaded(object1)
+	assert.NoError(t, NewMapper(context).OnLocalChange(changes))
+	assert.Empty(t, logs.String())
 
 	// Other side relation has been created
 	assert.Equal(t, model.Relations{
@@ -84,16 +80,10 @@ func TestRelationsMapperOtherSideMissing(t *testing.T) {
 	}
 	assert.NoError(t, context.State.Set(object1))
 
-	// OnObjectsLoad event
-	event := model.OnObjectsLoadEvent{
-		StateType:  model.StateTypeLocal,
-		NewObjects: []model.Object{object1.Local},
-		AllObjects: context.State.LocalObjects(),
-	}
-
-	// Call OnObjectsLoad
-	// Other side is not found, but error is ignored
-	assert.NoError(t, NewMapper(context).OnObjectsLoad(event))
+	// Call OnLocalChange
+	changes := model.NewLocalChanges()
+	changes.AddLoaded(object1)
+	assert.NoError(t, NewMapper(context).OnLocalChange(changes))
 
 	// Warning is logged
 	expected := `
