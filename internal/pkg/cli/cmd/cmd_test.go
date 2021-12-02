@@ -3,7 +3,6 @@ package cmd
 import (
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"testing"
 
@@ -50,25 +49,27 @@ func TestRootSubCommandsAndAliases(t *testing.T) {
 	}
 
 	// Assert
-	sort.Strings(names)
 	assert.Equal(t, []string{
-		"branch",
-		"ci",
-		"config",
-		"diff",
-		"encrypt",
-		"fix-paths",
-		"init",
+		"sync",
 		"local",
-		"persist",
+		"ci",
+		"remote",
+		"i",
+		"d",
+		"pl",
+		"ph",
+		"v",
+		"pt",
+		"c",
+		"e",
+		"init",
+		"diff",
 		"pull",
 		"push",
-		"remote",
-		"row",
-		"status",
-		"sync",
 		"validate",
-		"workflows",
+		"persist",
+		"create",
+		"encrypt",
 	}, names)
 }
 

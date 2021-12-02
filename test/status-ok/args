@@ -1,1 +1,1 @@
-status --working-dir foo/bar/baz
+local status --working-dir foo/bar/baz

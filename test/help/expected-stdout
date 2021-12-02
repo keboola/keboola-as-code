@@ -37,7 +37,26 @@ Available Commands:
     create
       branch     Create branch.
 
+  template
+    use          Apply template to the project directory.
+    editor       Create or update template in repository directory.
+    describe     Describe template inputs.
+    repo
+      init       Init repository directory.
+      validate   Validate all templates in the repository.
+      fix-paths  Normalize all paths in the repository.
+
   help           Help about any command
+
+Aliases:
+  sync init       i, init
+  sync diff       d, diff
+  sync pull       pl, pull
+  sync push       ph, push
+  local validate  v, validate
+  local persist   pt, persist
+  local create    c, create
+  local encrypt   e, encrypt
 
 Flags:
   -h, --help                       print help for command

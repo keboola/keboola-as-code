@@ -99,9 +99,11 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	// Init working dir from "in" dir
 	assert.NoError(t, aferofs.CopyFs2Fs(testDirFs, inDir, workingDirFs, `/`))
 
-	// Get test project
+	// Get ENVs
 	envs, err := env.FromOs()
 	assert.NoError(t, err)
+
+	// Get test project
 	project := testproject.GetTestProject(t, envs)
 	api := project.StorageApi()
 
@@ -132,9 +134,15 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 		t.Fatalf(`Cannot parse args "%s": %s`, argsStr, err)
 	}
 
+	// Enable templates private beta in tests
+	cmdEnvs, err := env.FromOs()
+	assert.NoError(t, err)
+	cmdEnvs.Set(`KBC_TEMPLATES_PRIVATE_BETA`, `true`)
+
 	// Prepare command
 	var stdout, stderr bytes.Buffer
 	cmd := exec.Command(binary, args...)
+	cmd.Env = cmdEnvs.ToSlice()
 	cmd.Dir = workingDir
 	cmd.Stdout = io.MultiWriter(&stdout, testhelper.VerboseStdout())
 	cmd.Stderr = io.MultiWriter(&stderr, testhelper.VerboseStderr())

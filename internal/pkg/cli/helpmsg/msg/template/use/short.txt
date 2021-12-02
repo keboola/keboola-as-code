@@ -1,0 +1,1 @@
+Apply template to the project directory.
