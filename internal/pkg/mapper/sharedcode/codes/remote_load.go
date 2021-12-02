@@ -5,26 +5,22 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/strhelper"
 )
 
-// OnObjectsLoad converts legacy "code_content" string -> []interface{}.
-func (m *mapper) OnObjectsLoad(event model.OnObjectsLoadEvent) error {
-	// Only remote load
-	if event.StateType != model.StateTypeRemote {
-		return nil
-	}
-
-	for _, object := range event.NewObjects {
+// OnRemoteChange converts legacy "code_content" string -> []interface{}.
+func (m *mapper) OnRemoteChange(changes *model.RemoteChanges) error {
+	allObjects := m.State.RemoteObjects()
+	for _, objectState := range changes.Loaded() {
 		// Only for shared code config row
-		if ok, err := m.IsSharedCodeRowKey(object.Key()); err != nil {
+		if ok, err := m.IsSharedCodeRowKey(objectState.Key()); err != nil {
 			return err
 		} else if ok {
-			m.normalizeRemoteSharedCodeRow(object.(*model.ConfigRow), event)
+			m.normalizeRemoteSharedCodeRow(objectState.(*model.ConfigRowState).Remote, allObjects)
 		}
 	}
 
 	return nil
 }
 
-func (m *mapper) normalizeRemoteSharedCodeRow(row *model.ConfigRow, event model.OnObjectsLoadEvent) {
+func (m *mapper) normalizeRemoteSharedCodeRow(row *model.ConfigRow, allObjects *model.StateObjects) {
 	// Get "code_content" value
 	raw, found := row.Content.Get(model.SharedCodeContentKey)
 	if !found {
@@ -34,7 +30,7 @@ func (m *mapper) normalizeRemoteSharedCodeRow(row *model.ConfigRow, event model.
 	// Convert legacy string -> []interface{}
 	if codeContentStr, ok := raw.(string); ok {
 		// Get target component of the shared code -> needed for scripts parsing
-		config := event.AllObjects.MustGet(row.ConfigKey()).(*model.Config)
+		config := allObjects.MustGet(row.ConfigKey()).(*model.Config)
 		targetComponentId, err := m.GetTargetComponentId(config)
 		if err != nil {
 			m.Logger.Warn(`Warning: `, err)

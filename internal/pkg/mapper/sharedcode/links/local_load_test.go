@@ -71,7 +71,9 @@ func TestSharedCodeLinksAfterLocalLoad(t *testing.T) {
 	context.Naming.Attach(configState.Key(), configState.PathInProject)
 
 	// Invoke
-	assert.NoError(t, mapperInst.OnObjectsLoad(model.StateTypeLocal, []model.Object{configState.Local}))
+	changes := model.NewLocalChanges()
+	changes.AddLoaded(configState)
+	assert.NoError(t, mapperInst.OnLocalChange(changes))
 	assert.Empty(t, logs.String())
 
 	// Path is replaced by ID

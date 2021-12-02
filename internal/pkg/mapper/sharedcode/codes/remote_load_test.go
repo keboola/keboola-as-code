@@ -14,12 +14,9 @@ func TestSharedCodeLegacyRemoteCodeContent(t *testing.T) {
 	context, rowState := createTestFixtures(t, `keboola.snowflake-transformation`)
 	rowState.Remote.Content.Set(model.SharedCodeContentKey, "SELECT 1; \n  SELECT 2; \n ")
 
-	event := model.OnObjectsLoadEvent{
-		StateType:  model.StateTypeRemote,
-		NewObjects: []model.Object{rowState.Remote},
-		AllObjects: context.State.RemoteObjects(),
-	}
-	assert.NoError(t, NewMapper(context).OnObjectsLoad(event))
+	changes := model.NewRemoteChanges()
+	changes.AddLoaded(rowState)
+	assert.NoError(t, NewMapper(context).OnRemoteChange(changes))
 
 	v, found := rowState.Remote.Content.Get(model.SharedCodeContentKey)
 	assert.True(t, found)

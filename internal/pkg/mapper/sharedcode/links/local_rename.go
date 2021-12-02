@@ -7,12 +7,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func (m *mapper) OnObjectsRename(event model.OnObjectsRenameEvent) error {
+func (m *mapper) onRename(renamedObjects []model.RenameAction) error {
 	errors := utils.NewMultiError()
 
 	// Find renamed shared codes
 	renamedSharedCodes := make(map[string]model.Key)
-	for _, object := range event.RenamedObjects {
+	for _, object := range renamedObjects {
 		key := object.Manifest.Key()
 
 		// Is shared code?
