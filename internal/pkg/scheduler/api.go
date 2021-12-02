@@ -53,14 +53,6 @@ func (a *Api) NewPool() *client.Pool {
 	return a.client.NewPool(a.logger)
 }
 
-func (a *Api) OnObjectCreateUpdate(configKey model.ConfigKey, pool *client.Pool) {
-	pool.Request(a.ActivateScheduleRequest(configKey.Id, "")).Send()
-}
-
-func (a *Api) OnObjectDelete(configKey model.ConfigKey, pool *client.Pool) {
-	pool.Request(a.DeleteSchedulesForConfigurationRequest(configKey.Id)).Send()
-}
-
 // ActivateScheduleRequest https://app.swaggerhub.com/apis/odinuv/scheduler/1.0.0#/schedules/activate
 func (a *Api) ActivateScheduleRequest(configurationId string, configurationVersionId string) *client.Request {
 	schedule := &model.Schedule{}

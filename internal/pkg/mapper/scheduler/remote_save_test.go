@@ -9,12 +9,15 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func TestSchedulerMapBeforeRemoteSave(t *testing.T) {
 	t.Parallel()
 	context := createMapperContext(t)
+	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
+	mapper := NewMapper(context, schedulerApi)
 
 	// Scheduler config
 	content := utils.NewOrderedMap()
@@ -34,7 +37,7 @@ func TestSchedulerMapBeforeRemoteSave(t *testing.T) {
 	// Invoke
 	assert.NotEmpty(t, apiObject.Relations)
 	assert.NotEmpty(t, internalObject.Relations)
-	assert.NoError(t, NewMapper(context).MapBeforeRemoteSave(recipe))
+	assert.NoError(t, mapper.MapBeforeRemoteSave(recipe))
 
 	// Internal object is not changed
 	assert.Equal(t, model.Relations{
