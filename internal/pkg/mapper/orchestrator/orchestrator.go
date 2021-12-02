@@ -27,3 +27,9 @@ func (m *orchestratorMapper) isOrchestratorConfigKey(key model.Key) (bool, error
 
 	return component.IsOrchestrator(), nil
 }
+
+func markConfigUsedInOrchestrator(targetConfig, orchestratorConfig *model.Config) {
+	targetConfig.Relations.Add(&model.UsedInOrchestratorRelation{
+		ConfigId: orchestratorConfig.Id,
+	})
+}

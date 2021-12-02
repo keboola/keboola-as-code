@@ -8,25 +8,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-// OnObjectsLoad - resolve shared codes paths, and replace them by IDs on local load.
-func (m *mapper) OnObjectsLoad(event model.OnObjectsLoadEvent) error {
-	// Only on local load
-	if event.StateType != model.StateTypeLocal {
-		return nil
-	}
-
-	// Check all new objects
-	errors := utils.NewMultiError()
-	for _, object := range event.NewObjects {
-		if err := m.replaceSharedCodePathById(object); err != nil {
-			errors.Append(err)
-		}
-	}
-	return errors.ErrorOrNil()
-}
-
-// replaceSharedCodePathById in transformation config + blocks.
-func (m *mapper) replaceSharedCodePathById(object model.Object) error {
+// onLocalLoad replaces shared code path by id in transformation config and blocks.
+func (m *mapper) onLocalLoad(object model.Object) error {
 	transformation, sharedCodePath, err := m.GetSharedCodePath(object)
 	if err != nil {
 		return err

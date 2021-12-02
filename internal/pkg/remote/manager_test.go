@@ -2,6 +2,7 @@ package remote_test
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -24,7 +25,7 @@ import (
 )
 
 type testMapper struct {
-	onLoadCalls []string
+	remoteChanges []string
 }
 
 func (*testMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
@@ -45,16 +46,25 @@ func (*testMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
 	return nil
 }
 
-func (t *testMapper) OnObjectsLoad(event model.OnObjectsLoadEvent) error {
-	for _, object := range event.NewObjects {
-		t.onLoadCalls = append(t.onLoadCalls, object.Desc())
+func (t *testMapper) OnRemoteChange(changes *model.RemoteChanges) error {
+	for _, objectState := range changes.Created() {
+		t.remoteChanges = append(t.remoteChanges, fmt.Sprintf(`created %s`, objectState.Desc()))
+	}
+	for _, objectState := range changes.Loaded() {
+		t.remoteChanges = append(t.remoteChanges, fmt.Sprintf(`loaded %s`, objectState.Desc()))
+	}
+	for _, objectState := range changes.Saved() {
+		t.remoteChanges = append(t.remoteChanges, fmt.Sprintf(`saved %s`, objectState.Desc()))
+	}
+	for _, objectState := range changes.Deleted() {
+		t.remoteChanges = append(t.remoteChanges, fmt.Sprintf(`deleted %s`, objectState.Desc()))
 	}
 	return nil
 }
 
-func TestBeforeRemoteSaveMapper(t *testing.T) {
+func TestRemoteSaveMapper(t *testing.T) {
 	t.Parallel()
-	_, uow, httpTransport, _ := newTestRemoteUOW(t)
+	testMapperInst, uow, httpTransport, _ := newTestRemoteUOW(t)
 
 	// Test object
 	configKey := model.ConfigKey{BranchId: 123, ComponentId: `foo.bar`, Id: `456`}
@@ -95,9 +105,15 @@ func TestBeforeRemoteSaveMapper(t *testing.T) {
 	// But the internal state is unchanged
 	assert.Equal(t, `internal name`, configState.Local.Name)
 	assert.Equal(t, `{"key":"internal value"}`, json.MustEncodeString(configState.Local.Content, false))
+
+	// OnRemoteChange event has been called
+	assert.Equal(t, []string{
+		`created config "branch:123/component:foo.bar/config:456"`,
+		`saved config "branch:123/component:foo.bar/config:456"`,
+	}, testMapperInst.remoteChanges)
 }
 
-func TestAfterRemoteLoadMapper(t *testing.T) {
+func TestRemoteLoadMapper(t *testing.T) {
 	t.Parallel()
 	testMapperInst, uow, httpTransport, state := newTestRemoteUOW(t)
 
@@ -151,8 +167,11 @@ func TestAfterRemoteLoadMapper(t *testing.T) {
 	assert.Equal(t, `internal name`, config.Name)
 	assert.Equal(t, `{"key":"internal value","new":"value"}`, json.MustEncodeString(config.Content, false))
 
-	// OnObjectsLoad event has been called
-	assert.Equal(t, []string{`branch "123"`, `config "branch:123/component:foo.bar/config:456"`}, testMapperInst.onLoadCalls)
+	// OnRemoteChange event has been called
+	assert.Equal(t, []string{
+		`loaded branch "123"`,
+		`loaded config "branch:123/component:foo.bar/config:456"`,
+	}, testMapperInst.remoteChanges)
 }
 
 func newTestRemoteUOW(t *testing.T) (*testMapper, *remote.UnitOfWork, *httpmock.MockTransport, *model.State) {
@@ -160,7 +179,6 @@ func newTestRemoteUOW(t *testing.T) (*testMapper, *remote.UnitOfWork, *httpmock.
 	testMapperInst := &testMapper{}
 	mappers := []interface{}{testMapperInst}
 	storageApi, httpTransport, _ := testapi.NewMockedStorageApi()
-	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
 	localManager, state := newTestLocalManager(t, mappers)
 	mapperContext := model.MapperContext{
 		Logger: zap.NewNop().Sugar(),
@@ -170,7 +188,7 @@ func newTestRemoteUOW(t *testing.T) (*testMapper, *remote.UnitOfWork, *httpmock.
 	}
 	mapperInst := mapper.New(mapperContext).AddMapper(mappers...)
 
-	remoteManager := remote.NewManager(localManager, storageApi, schedulerApi, state, mapperInst)
+	remoteManager := remote.NewManager(localManager, storageApi, state, mapperInst)
 	return testMapperInst, remoteManager.NewUnitOfWork(context.Background(), `change desc`), httpTransport, state
 }
 

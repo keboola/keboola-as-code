@@ -11,7 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func TestMapAfterRemoteLoad(t *testing.T) {
+func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 	t.Parallel()
 	mapper, context, logs := createMapper(t)
 
@@ -89,7 +89,7 @@ func TestMapAfterRemoteLoad(t *testing.T) {
 	config := &model.Config{ConfigKey: configKey, Content: content}
 	configState := &model.ConfigState{
 		ConfigManifest: configManifest,
-		Local:          config,
+		Remote:         config,
 	}
 	assert.NoError(t, context.State.Set(configState))
 
@@ -97,7 +97,9 @@ func TestMapAfterRemoteLoad(t *testing.T) {
 	target1, target2, target3 := createTargetConfigs(t, context)
 
 	// Invoke
-	assert.NoError(t, mapper.OnObjectsLoad(model.StateTypeRemote, []model.Object{configState.Local}))
+	changes := model.NewRemoteChanges()
+	changes.AddLoaded(configState)
+	assert.NoError(t, mapper.OnRemoteChange(changes))
 	assert.Empty(t, logs.String())
 
 	// Check target configs relation
@@ -291,7 +293,7 @@ func TestMapAfterRemoteLoadWarnings(t *testing.T) {
 	config := &model.Config{ConfigKey: configKey, Content: content}
 	configState := &model.ConfigState{
 		ConfigManifest: configManifest,
-		Local:          config,
+		Remote:         config,
 	}
 	assert.NoError(t, context.State.Set(configState))
 
@@ -299,7 +301,9 @@ func TestMapAfterRemoteLoadWarnings(t *testing.T) {
 	createTargetConfigs(t, context)
 
 	// Invoke
-	assert.NoError(t, mapper.OnObjectsLoad(model.StateTypeRemote, []model.Object{configState.Local}))
+	changes := model.NewRemoteChanges()
+	changes.AddLoaded(configState)
+	assert.NoError(t, mapper.OnRemoteChange(changes))
 
 	// Warnings
 	expectedWarnings := `
@@ -411,12 +415,14 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 	config := &model.Config{ConfigKey: configKey, Content: content}
 	configState := &model.ConfigState{
 		ConfigManifest: configManifest,
-		Local:          config,
+		Remote:         config,
 	}
 	assert.NoError(t, context.State.Set(configState))
 
 	// Invoke
-	assert.NoError(t, mapper.OnObjectsLoad(model.StateTypeRemote, []model.Object{configState.Local}))
+	changes := model.NewRemoteChanges()
+	changes.AddLoaded(configState)
+	assert.NoError(t, mapper.OnRemoteChange(changes))
 	assert.Empty(t, logs.String())
 
 	// Internal object
@@ -589,12 +595,14 @@ func TestMapAfterRemoteLoadDepsCycles(t *testing.T) {
 	config := &model.Config{ConfigKey: configKey, Content: content}
 	configState := &model.ConfigState{
 		ConfigManifest: configManifest,
-		Local:          config,
+		Remote:         config,
 	}
 	assert.NoError(t, context.State.Set(configState))
 
 	// Invoke
-	assert.NoError(t, mapper.OnObjectsLoad(model.StateTypeRemote, []model.Object{configState.Local}))
+	changes := model.NewRemoteChanges()
+	changes.AddLoaded(configState)
+	assert.NoError(t, mapper.OnRemoteChange(changes))
 
 	// Warnings
 	expectedWarnings := `

@@ -8,12 +8,15 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func TestSchedulerMapAfterRemoteLoad(t *testing.T) {
 	t.Parallel()
 	context := createMapperContext(t)
+	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
+	mapper := NewMapper(context, schedulerApi)
 
 	// Create api and internal object
 	key := model.ConfigKey{BranchId: 1, ComponentId: model.SchedulerComponentId, Id: `123`}
@@ -33,7 +36,7 @@ func TestSchedulerMapAfterRemoteLoad(t *testing.T) {
 	// Invoke
 	assert.Empty(t, apiObject.Relations)
 	assert.Empty(t, internalObject.Relations)
-	assert.NoError(t, NewMapper(context).MapAfterRemoteLoad(recipe))
+	assert.NoError(t, mapper.MapAfterRemoteLoad(recipe))
 
 	// Api object is not changed
 	assert.Empty(t, apiObject.Relations)

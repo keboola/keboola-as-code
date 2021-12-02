@@ -56,19 +56,6 @@ type PersistRecipe struct {
 	Manifest  ObjectManifest
 }
 
-// OnObjectsLoadEvent contains new and all objects in the same state.
-type OnObjectsLoadEvent struct {
-	StateType  StateType     // StateTypeLocal or StateTypeRemote
-	NewObjects []Object      // new objects loaded into the local / remote state
-	AllObjects *StateObjects // eg. if has been loaded a new object to local state -> all objects in local state
-}
-
-// OnObjectsPersistEvent contains new persisted and all local objects.
-type OnObjectsPersistEvent struct {
-	PersistedObjects []Object      // new persisted objects
-	AllObjects       *StateObjects // all local objects
-}
-
 type PathsGenerator interface {
 	AddRenamed(path RenamedPath)
 	RenameEnabled() bool // if true, existing paths will be renamed
@@ -81,9 +68,4 @@ type OnObjectPathUpdateEvent struct {
 	Renamed        bool
 	OldPath        string
 	NewPath        string
-}
-
-// OnObjectsRenameEvent contains old and new paths of renamed objects.
-type OnObjectsRenameEvent struct {
-	RenamedObjects []RenameAction
 }

@@ -8,19 +8,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-// OnObjectsLoad links relation sides on remote and  local load.
-func (m *relationsMapper) OnObjectsLoad(event model.OnObjectsLoadEvent) error {
+// OnLocalChange links relation sides on local load.
+func (m *relationsMapper) OnLocalChange(changes *model.LocalChanges) error {
 	errors := utils.NewMultiError()
-
-	// Link and validate
-	for _, object := range event.NewObjects {
-		if o, ok := object.(model.ObjectWithRelations); ok {
-			if err := m.linkRelations(o, event); err != nil {
-				errors.Append(err)
-			}
-			if err := m.validateRelations(o); err != nil {
-				errors.Append(utils.PrefixError(fmt.Sprintf(`invalid %s`, object.Desc()), err))
-			}
+	allObjects := m.State.LocalObjects()
+	for _, objectState := range changes.Loaded() {
+		if err := m.linkAndValidateRelations(objectState.LocalState(), allObjects); err != nil {
+			errors.Append(err)
 		}
 	}
 
@@ -32,14 +26,45 @@ func (m *relationsMapper) OnObjectsLoad(event model.OnObjectsLoadEvent) error {
 	return nil
 }
 
+// OnRemoteChange links relation sides on remote load.
+func (m *relationsMapper) OnRemoteChange(changes *model.RemoteChanges) error {
+	errors := utils.NewMultiError()
+	allObjects := m.State.RemoteObjects()
+	for _, objectState := range changes.Loaded() {
+		if err := m.linkAndValidateRelations(objectState.RemoteState(), allObjects); err != nil {
+			errors.Append(err)
+		}
+	}
+
+	// Log errors as warning
+	if errors.Len() > 0 {
+		m.Logger.Warn(utils.PrefixError(`Warning`, errors))
+	}
+
+	return nil
+}
+
+func (m *relationsMapper) linkAndValidateRelations(object model.Object, allObjects *model.StateObjects) error {
+	errors := utils.NewMultiError()
+	if o, ok := object.(model.ObjectWithRelations); ok {
+		if err := m.linkRelations(o, allObjects); err != nil {
+			errors.Append(err)
+		}
+		if err := m.validateRelations(o); err != nil {
+			errors.Append(utils.PrefixError(fmt.Sprintf(`invalid %s`, object.Desc()), err))
+		}
+	}
+	return errors.ErrorOrNil()
+}
+
 // lintRelations finds the other side of the relation and create a corresponding relation on the other side.
-func (m *relationsMapper) linkRelations(object model.ObjectWithRelations, event model.OnObjectsLoadEvent) error {
+func (m *relationsMapper) linkRelations(object model.ObjectWithRelations, allObjects *model.StateObjects) error {
 	errors := utils.NewMultiError()
 	relations := object.GetRelations()
 
 	for _, relation := range relations {
 		// Get other side relation
-		otherSideKey, otherSideRelation, err := relation.NewOtherSideRelation(object, event.AllObjects)
+		otherSideKey, otherSideRelation, err := relation.NewOtherSideRelation(object, allObjects)
 		if err != nil {
 			// Remove invalid relation
 			relations.Remove(relation)
@@ -50,7 +75,7 @@ func (m *relationsMapper) linkRelations(object model.ObjectWithRelations, event 
 		}
 
 		// Get other side object
-		otherSideObject, found := event.AllObjects.Get(otherSideKey)
+		otherSideObject, found := allObjects.Get(otherSideKey)
 		if !found {
 			// Remove invalid relation
 			relations.Remove(relation)

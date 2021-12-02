@@ -7,11 +7,14 @@ import (
 
 	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 )
 
 func TestVariablesMapBeforePersist(t *testing.T) {
 	t.Parallel()
 	context := createMapperContext(t)
+	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
+	mapper := NewMapper(context, schedulerApi)
 
 	parentKey := model.ConfigKey{
 		BranchId:    123,
@@ -32,7 +35,7 @@ func TestVariablesMapBeforePersist(t *testing.T) {
 
 	// Invoke
 	assert.Empty(t, configManifest.Relations)
-	assert.NoError(t, NewMapper(context).MapBeforePersist(recipe))
+	assert.NoError(t, mapper.MapBeforePersist(recipe))
 
 	// Relation has been created
 	assert.Equal(t, model.Relations{

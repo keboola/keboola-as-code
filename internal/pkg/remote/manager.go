@@ -14,7 +14,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -22,7 +21,6 @@ type Manager struct {
 	state        *model.State
 	localManager *local.Manager
 	api          *StorageApi
-	schedulerApi *scheduler.Api
 	mapper       *mapper.Mapper
 }
 
@@ -32,18 +30,16 @@ type UnitOfWork struct {
 	lock              *sync.Mutex
 	changeDescription string                 // change description used for all modified configs and rows
 	storageApiPools   *orderedmap.OrderedMap // separated pool for changes in branches, configs and rows
-	schedulerApiPool  *client.Pool
-	newObjectStates   []model.ObjectState
+	changes           *model.RemoteChanges
 	errors            *utils.MultiError
 	invoked           bool
 }
 
-func NewManager(localManager *local.Manager, api *StorageApi, schedulerApi *scheduler.Api, state *model.State, mapper *mapper.Mapper) *Manager {
+func NewManager(localManager *local.Manager, api *StorageApi, state *model.State, mapper *mapper.Mapper) *Manager {
 	return &Manager{
 		state:        state,
 		localManager: localManager,
 		api:          api,
-		schedulerApi: schedulerApi,
 		mapper:       mapper,
 	}
 }
@@ -59,7 +55,7 @@ func (m *Manager) NewUnitOfWork(ctx context.Context, changeDescription string) *
 		lock:              &sync.Mutex{},
 		changeDescription: changeDescription,
 		storageApiPools:   utils.NewOrderedMap(),
-		schedulerApiPool:  m.schedulerApi.NewPool(),
+		changes:           model.NewRemoteChanges(),
 		errors:            utils.NewMultiError(),
 	}
 }
@@ -157,7 +153,7 @@ func (u *UnitOfWork) loadObject(object model.Object) (model.ObjectState, error) 
 		return nil, err
 	}
 
-	u.addNewObjectState(objectState)
+	u.changes.AddLoaded(objectState)
 	return objectState, nil
 }
 
@@ -219,18 +215,16 @@ func (u *UnitOfWork) Invoke() error {
 		}
 	}
 
-	if err := u.schedulerApiPool.StartAndWait(); err != nil {
-		u.errors.Append(err)
-	}
-
-	// OnObjectsLoad event
-	if err := u.mapper.OnObjectsLoad(model.StateTypeRemote, u.newObjects()); err != nil {
-		u.errors.Append(err)
+	// OnRemoteChange event
+	if !u.changes.Empty() {
+		if err := u.mapper.OnRemoteChange(u.changes); err != nil {
+			u.errors.Append(err)
+		}
 	}
 
 	// Generate local path if needed
 	pathsUpdater := u.localManager.NewPathsGenerator(false)
-	for _, objectState := range u.newObjectStates {
+	for _, objectState := range u.changes.Loaded() {
 		if objectState.GetObjectPath() == "" {
 			pathsUpdater.Add(objectState)
 		}
@@ -276,25 +270,16 @@ func (u *UnitOfWork) create(objectState model.ObjectState, recipe *model.RemoteS
 			// Save new ID to manifest
 			objectState.SetRemoteState(recipe.InternalObject)
 		}).
+		OnSuccess(func(response *client.Response) {
+			u.changes.AddCreated(objectState)
+			u.changes.AddSaved(objectState)
+		}).
 		OnError(func(response *client.Response) {
 			if e, ok := response.Error().(*Error); ok {
 				if e.ErrCode == "configurationAlreadyExists" || e.ErrCode == "configurationRowAlreadyExists" {
 					// Object exists -> update instead of create + clear error
 					response.SetErr(u.update(objectState, recipe, nil))
 				}
-			}
-		}).
-		OnSuccess(func(response *client.Response) {
-			if config, ok := object.(*model.Config); ok {
-				if config.ComponentId != model.SchedulerComponentId {
-					return
-				}
-				branch := u.state.MustGet(config.BranchKey()).(*model.BranchState)
-				if !branch.LocalOrRemoteState().(*model.Branch).IsDefault {
-					return
-				}
-
-				u.schedulerApi.OnObjectCreateUpdate(config.ConfigKey, u.schedulerApiPool)
 			}
 		}).
 		Send()
@@ -310,18 +295,7 @@ func (u *UnitOfWork) update(objectState model.ObjectState, recipe *model.RemoteS
 				objectState.SetRemoteState(recipe.InternalObject)
 			}).
 			OnSuccess(func(response *client.Response) {
-				if config, ok := object.(*model.Config); ok {
-					if config.ComponentId != model.SchedulerComponentId {
-						return
-					}
-
-					branch := u.state.MustGet(config.BranchKey()).(*model.BranchState)
-					if !branch.LocalOrRemoteState().(*model.Branch).IsDefault {
-						return
-					}
-
-					u.schedulerApi.OnObjectCreateUpdate(config.ConfigKey, u.schedulerApiPool)
-				}
+				u.changes.AddSaved(objectState)
 			}).
 			Send()
 	} else {
@@ -338,34 +312,9 @@ func (u *UnitOfWork) delete(objectState model.ObjectState) {
 			objectState.SetRemoteState(nil)
 		}).
 		OnSuccess(func(response *client.Response) {
-			if configState, ok := objectState.(*model.ConfigState); ok {
-				if configState.ComponentId != model.SchedulerComponentId {
-					return
-				}
-
-				branch := u.state.MustGet(configState.BranchKey()).(*model.BranchState)
-				if !branch.LocalOrRemoteState().(*model.Branch).IsDefault {
-					return
-				}
-
-				u.schedulerApi.OnObjectDelete(configState.ConfigKey, u.schedulerApiPool)
-			}
+			u.changes.AddDeleted(objectState)
 		}).
 		Send()
-}
-
-func (u *UnitOfWork) addNewObjectState(objectState model.ObjectState) {
-	u.lock.Lock()
-	defer u.lock.Unlock()
-	u.newObjectStates = append(u.newObjectStates, objectState)
-}
-
-func (u *UnitOfWork) newObjects() []model.Object {
-	var newObjects []model.Object
-	for _, objectState := range u.newObjectStates {
-		newObjects = append(newObjects, objectState.RemoteState())
-	}
-	return newObjects
 }
 
 // poolFor each level (branches, configs, rows).

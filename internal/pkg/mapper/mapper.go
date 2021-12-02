@@ -11,7 +11,7 @@ type LocalSaveMapper interface {
 }
 
 // LocalLoadMapper to modify/normalize the object internal representation after loading from the filesystem.
-// Note: do not rely on other objects, they may not be loaded yet, see OnObjectsLoadListener.
+// Note: do not rely on other objects, they may not be loaded yet, see OnLocalChangeListener.
 type LocalLoadMapper interface {
 	MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error
 }
@@ -22,7 +22,7 @@ type RemoteSaveMapper interface {
 }
 
 // RemoteLoadMapper to modify/normalize the object internal representation after loading from the Storage API.
-// Note: do not rely on other objects, they may not be loaded yet, see OnObjectsLoadListener.
+// Note: do not rely on other objects, they may not be loaded yet, see OnRemoteChangeListener.
 type RemoteLoadMapper interface {
 	MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error
 }
@@ -32,24 +32,17 @@ type BeforePersistMapper interface {
 	MapBeforePersist(recipe *model.PersistRecipe) error
 }
 
-// OnObjectsLoadListener is called when all new objects are loaded in local/remote state.
-type OnObjectsLoadListener interface {
-	OnObjectsLoad(event model.OnObjectsLoadEvent) error
-}
-
-// OnObjectsPersistListener is called when all new objects are persisted.
-type OnObjectsPersistListener interface {
-	OnObjectsPersist(event model.OnObjectsPersistEvent) error
-}
-
 // OnObjectPathUpdateListener is called when a local path has been updated.
 type OnObjectPathUpdateListener interface {
 	OnObjectPathUpdate(event model.OnObjectPathUpdateEvent) error
 }
 
-// OnObjectsRenameListener is called when some object paths have been changed.
-type OnObjectsRenameListener interface {
-	OnObjectsRename(event model.OnObjectsRenameEvent) error
+type OnLocalChangeListener interface {
+	OnLocalChange(changes *model.LocalChanges) error
+}
+
+type OnRemoteChangeListener interface {
+	OnRemoteChange(changes *model.RemoteChanges) error
 }
 
 // Mapper maps Objects between internal/filesystem/API representations.
@@ -127,45 +120,7 @@ func (m *Mapper) MapBeforePersist(recipe *model.PersistRecipe) error {
 			}
 		}
 	}
-
 	return nil
-}
-
-func (m *Mapper) OnObjectsLoad(stateType model.StateType, newObjects []model.Object) error {
-	errors := utils.NewMultiError()
-	event := model.OnObjectsLoadEvent{
-		StateType:  stateType,
-		NewObjects: newObjects,
-		AllObjects: m.context.State.StateObjects(stateType),
-	}
-
-	for _, mapper := range m.mappers {
-		if mapper, ok := mapper.(OnObjectsLoadListener); ok {
-			if err := mapper.OnObjectsLoad(event); err != nil {
-				errors.Append(err)
-			}
-		}
-	}
-
-	return errors.ErrorOrNil()
-}
-
-func (m *Mapper) OnObjectsPersist(persistedObjects []model.Object) error {
-	errors := utils.NewMultiError()
-	event := model.OnObjectsPersistEvent{
-		PersistedObjects: persistedObjects,
-		AllObjects:       m.context.State.LocalObjects(),
-	}
-
-	for _, mapper := range m.mappers {
-		if mapper, ok := mapper.(OnObjectsPersistListener); ok {
-			if err := mapper.OnObjectsPersist(event); err != nil {
-				errors.Append(err)
-			}
-		}
-	}
-
-	return errors.ErrorOrNil()
 }
 
 func (m *Mapper) OnObjectPathUpdate(event model.OnObjectPathUpdateEvent) error {
@@ -177,23 +132,29 @@ func (m *Mapper) OnObjectPathUpdate(event model.OnObjectPathUpdateEvent) error {
 			}
 		}
 	}
-
 	return errors.ErrorOrNil()
 }
 
-func (m *Mapper) OnObjectsRename(renamedObjects []model.RenameAction) error {
+func (m *Mapper) OnLocalChange(changes *model.LocalChanges) error {
 	errors := utils.NewMultiError()
-	event := model.OnObjectsRenameEvent{
-		RenamedObjects: renamedObjects,
-	}
-
 	for _, mapper := range m.mappers {
-		if mapper, ok := mapper.(OnObjectsRenameListener); ok {
-			if err := mapper.OnObjectsRename(event); err != nil {
+		if mapper, ok := mapper.(OnLocalChangeListener); ok {
+			if err := mapper.OnLocalChange(changes); err != nil {
 				errors.Append(err)
 			}
 		}
 	}
+	return errors.ErrorOrNil()
+}
 
+func (m *Mapper) OnRemoteChange(changes *model.RemoteChanges) error {
+	errors := utils.NewMultiError()
+	for _, mapper := range m.mappers {
+		if mapper, ok := mapper.(OnRemoteChangeListener); ok {
+			if err := mapper.OnRemoteChange(changes); err != nil {
+				errors.Append(err)
+			}
+		}
+	}
 	return errors.ErrorOrNil()
 }
