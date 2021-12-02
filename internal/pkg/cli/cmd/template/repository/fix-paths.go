@@ -1,4 +1,4 @@
-package repo
+package repository
 
 import (
 	"fmt"
@@ -12,8 +12,8 @@ import (
 func FixPathsCommand(d dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `fix-paths`,
-		Short: helpmsg.Read(`template/repo/fix-paths/short`),
-		Long:  helpmsg.Read(`template/repo/fix-paths/long`),
+		Short: helpmsg.Read(`template/repository/fix-paths/short`),
+		Long:  helpmsg.Read(`template/repository/fix-paths/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf(`not implemented`)
 		},

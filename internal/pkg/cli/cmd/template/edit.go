@@ -9,11 +9,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 )
 
-func EditorCommand(depsProvider dependencies.Provider) *cobra.Command {
+func EditCommand(depsProvider dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "editor",
-		Short: helpmsg.Read(`template/editor/short`),
-		Long:  helpmsg.Read(`template/editor/long`),
+		Use:   "edit",
+		Short: helpmsg.Read(`template/edit/short`),
+		Long:  helpmsg.Read(`template/edit/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf(`not implemented`)
 		},

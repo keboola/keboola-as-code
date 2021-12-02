@@ -1,4 +1,4 @@
-package repo
+package repository
 
 import (
 	"fmt"
@@ -12,8 +12,8 @@ import (
 func ValidateCommand(d dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `validate`,
-		Short: helpmsg.Read(`template/repo/validate/short`),
-		Long:  helpmsg.Read(`template/repo/validate/long`),
+		Short: helpmsg.Read(`template/repository/validate/short`),
+		Long:  helpmsg.Read(`template/repository/validate/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf(`not implemented`)
 		},

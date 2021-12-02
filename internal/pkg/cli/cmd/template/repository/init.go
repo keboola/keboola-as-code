@@ -1,4 +1,4 @@
-package repo
+package repository
 
 import (
 	"fmt"
@@ -12,8 +12,8 @@ import (
 func InitCommand(d dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `init`,
-		Short: helpmsg.Read(`template/repo/init/short`),
-		Long:  helpmsg.Read(`template/repo/init/long`),
+		Short: helpmsg.Read(`template/repository/init/short`),
+		Long:  helpmsg.Read(`template/repository/init/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf(`not implemented`)
 		},

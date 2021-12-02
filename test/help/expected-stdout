@@ -39,9 +39,9 @@ Available Commands:
 
   template
     use          Apply template to the project directory.
-    editor       Create or update template in repository directory.
     describe     Describe template inputs.
-    repo
+    edit         Create or update template in repository directory.
+    repository
       init       Init repository directory.
       validate   Validate all templates in the repository.
       fix-paths  Normalize all paths in the repository.

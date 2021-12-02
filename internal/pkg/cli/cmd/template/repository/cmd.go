@@ -1,4 +1,4 @@
-package repo
+package repository
 
 import (
 	"github.com/spf13/cobra"
@@ -9,8 +9,8 @@ import (
 
 func Commands(d dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:  `repo`,
-		Long: helpmsg.Read(`template/repo/long`),
+		Use:  `repository`,
+		Long: helpmsg.Read(`template/repository/long`),
 	}
 	cmd.AddCommand(
 		InitCommand(d),
