@@ -46,12 +46,13 @@ func (m *variablesMapper) MapBeforePersist(recipe *model.PersistRecipe) error {
 	return nil
 }
 
-// OnObjectsPersist ensures there is one config row with default variables values.
-func (m *variablesMapper) OnObjectsPersist(event model.OnObjectsPersistEvent) error {
+// OnLocalChange ensures there is one config row with default variables values after persist.
+func (m *variablesMapper) OnLocalChange(changes *model.LocalChanges) error {
 	// Find new persisted variables configs + include those that have a new persisted row
 	configs := make(map[model.ConfigKey]bool)
 	errors := utils.NewMultiError()
-	for _, object := range event.PersistedObjects {
+	for _, objectState := range changes.Persisted() {
+		object := objectState.LocalState()
 		if config, ok := object.(*model.Config); ok {
 			// Variables config?
 			component, err := m.State.Components().Get(config.ComponentKey())

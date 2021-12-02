@@ -76,11 +76,9 @@ func TestVariablesValuesPersistDefaultInName(t *testing.T) {
 	assert.Empty(t, row3.ConfigRowManifest.Relations)
 
 	// Invoke
-	event := model.OnObjectsPersistEvent{
-		PersistedObjects: context.State.LocalObjects().All(),
-		AllObjects:       context.State.LocalObjects(),
-	}
-	assert.NoError(t, NewMapper(context).OnObjectsPersist(event))
+	changes := model.NewLocalChanges()
+	changes.AddPersisted(context.State.All()...)
+	assert.NoError(t, NewMapper(context).OnLocalChange(changes))
 
 	// Row 2 has relation -> contains default variables values, because it has "default" in the name
 	expectedRelation := model.Relations{
@@ -124,11 +122,9 @@ func TestVariablesValuesPersistFirstRowIsDefault(t *testing.T) {
 	assert.Empty(t, row3.ConfigRowManifest.Relations)
 
 	// Invoke
-	event := model.OnObjectsPersistEvent{
-		PersistedObjects: context.State.LocalObjects().All(),
-		AllObjects:       context.State.LocalObjects(),
-	}
-	assert.NoError(t, NewMapper(context).OnObjectsPersist(event))
+	changes := model.NewLocalChanges()
+	changes.AddPersisted(context.State.All()...)
+	assert.NoError(t, NewMapper(context).OnLocalChange(changes))
 
 	// Row1 has relation -> contains default variables values, because it is first
 	expectedRelation := model.Relations{
