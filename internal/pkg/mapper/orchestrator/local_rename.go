@@ -7,13 +7,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func (m *orchestratorMapper) OnObjectsRename(event model.OnObjectsRenameEvent) error {
+// onObjectsRename - find renamed orchestrators and renamed configs used in an orchestrator.
+func (m *orchestratorMapper) onObjectsRename(renamed []model.RenameAction, allObjects *model.StateObjects) error {
 	errors := utils.NewMultiError()
-	localObjects := m.State.LocalObjects()
 
 	// Find renamed orchestrators and renamed configs used in an orchestrator
 	orchestratorsToUpdate := make(map[string]model.Key)
-	for _, object := range event.RenamedObjects {
+	for _, object := range renamed {
 		key := object.Manifest.Key()
 
 		// Is orchestrator?
@@ -27,7 +27,7 @@ func (m *orchestratorMapper) OnObjectsRename(event model.OnObjectsRenameEvent) e
 
 		// Is config used in orchestrator?
 		if manifest, ok := object.Manifest.(*model.ConfigManifest); ok {
-			localConfigRaw, found := localObjects.Get(manifest.Key())
+			localConfigRaw, found := allObjects.Get(manifest.Key())
 			if found {
 				localConfig := localConfigRaw.(*model.Config)
 				relations := localConfig.Relations.GetByType(model.UsedInOrchestratorRelType)

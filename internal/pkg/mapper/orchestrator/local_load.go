@@ -9,8 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func (m *orchestratorMapper) onLocalLoad(config *model.Config, allObjects *model.StateObjects) error {
-	manifest := m.State.MustGet(config.ConfigKey).Manifest().(*model.ConfigManifest)
+func (m *orchestratorMapper) onLocalLoad(config *model.Config, manifest *model.ConfigManifest, allObjects *model.StateObjects) error {
 	loader := &localLoader{
 		MapperContext: m.MapperContext,
 		phasesSorter:  newPhasesSorter(),

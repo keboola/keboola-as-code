@@ -10,13 +10,28 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func (m *orchestratorMapper) onRemoteLoad(config *model.Config, allObjects *model.StateObjects) {
+func (m *orchestratorMapper) OnRemoteChange(changes *model.RemoteChanges) error {
+	errors := utils.NewMultiError()
+	allObjects := m.State.RemoteObjects()
+	for _, objectState := range changes.Loaded() {
+		if ok, err := m.isOrchestratorConfigKey(objectState.Key()); err != nil {
+			errors.Append(err)
+			continue
+		} else if ok {
+			configState := objectState.(*model.ConfigState)
+			m.onRemoteLoad(configState.Remote, configState.ConfigManifest, allObjects)
+		}
+	}
+	return errors.ErrorOrNil()
+}
+
+func (m *orchestratorMapper) onRemoteLoad(config *model.Config, manifest *model.ConfigManifest, allObjects *model.StateObjects) {
 	loader := &remoteLoader{
 		MapperContext: m.MapperContext,
 		phasesSorter:  newPhasesSorter(),
 		allObjects:    allObjects,
 		config:        config,
-		manifest:      m.State.MustGet(config.Key()).Manifest().(*model.ConfigManifest),
+		manifest:      manifest,
 		errors:        utils.NewMultiError(),
 	}
 	if err := loader.load(); err != nil {
