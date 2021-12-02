@@ -5,60 +5,54 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/relations"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 )
 
-func TestRelationsMapperLinkOnObjectsLoad(t *testing.T) {
+func TestRelationsMapperLinkRelations(t *testing.T) {
 	t.Parallel()
-	components := model.NewComponentsMap(testapi.NewMockedComponentsProvider())
-	fs := testhelper.NewMemoryFs()
-	state := model.NewState(zap.NewNop().Sugar(), fs, components, model.SortByPath)
+	context, _ := createMapperContext(t)
 
 	key1 := fixtures.MockedKey{Id: "123"}
 	key2 := fixtures.MockedKey{Id: "456"}
 
-	// ObjectManifest side
-	manifest1 := &fixtures.MockedManifest{MockedKey: key1}
-	object1 := &fixtures.MockedObject{
-		MockedKey: key1,
-		Relations: model.Relations{
-			&fixtures.MockedManifestSideRelation{
-				OtherSide: key2,
+	// Manifest side
+	object1 := &fixtures.MockedObjectState{
+		MockedManifest: &fixtures.MockedManifest{MockedKey: key1},
+		Local: &fixtures.MockedObject{
+			MockedKey: key1,
+			Relations: model.Relations{
+				&fixtures.MockedManifestSideRelation{
+					OtherSide: key2,
+				},
 			},
 		},
 	}
-	objectState1, err := state.GetOrCreateFrom(manifest1)
-	assert.NoError(t, err)
-	objectState1.SetLocalState(object1)
+	assert.NoError(t, context.State.Set(object1))
 
 	// API side
-	manifest2 := &fixtures.MockedManifest{MockedKey: key2}
-	object2 := &fixtures.MockedObject{
-		MockedKey: key2,
-		Relations: model.Relations{},
+	object2 := &fixtures.MockedObjectState{
+		MockedManifest: &fixtures.MockedManifest{MockedKey: key2},
+		Local: &fixtures.MockedObject{
+			MockedKey: key2,
+			Relations: model.Relations{},
+		},
 	}
-	objectState2, err := state.GetOrCreateFrom(manifest2)
-	assert.NoError(t, err)
-	objectState2.SetLocalState(object2)
+	assert.NoError(t, context.State.Set(object2))
 
 	// OnObjectsLoad event
 	event := model.OnObjectsLoadEvent{
 		StateType:  model.StateTypeLocal,
-		NewObjects: []model.Object{object1},
-		AllObjects: state.LocalObjects(),
+		NewObjects: []model.Object{object1.Local},
+		AllObjects: context.State.LocalObjects(),
 	}
 
 	// No other side relation
-	assert.Empty(t, object2.Relations)
+	assert.Empty(t, object2.Local.Relations)
 
 	// Call OnObjectsLoad
-	context, _ := createMapperContext(t)
 	assert.NoError(t, NewMapper(context).OnObjectsLoad(event))
 
 	// Other side relation has been created
@@ -66,42 +60,38 @@ func TestRelationsMapperLinkOnObjectsLoad(t *testing.T) {
 		&fixtures.MockedApiSideRelation{
 			OtherSide: key1,
 		},
-	}, object2.Relations)
+	}, object2.Local.Relations)
 }
 
-func TestRelationsMapperOnLoadOtherSideMissing(t *testing.T) {
+func TestRelationsMapperOtherSideMissing(t *testing.T) {
 	t.Parallel()
-	components := model.NewComponentsMap(testapi.NewMockedComponentsProvider())
-	fs := testhelper.NewMemoryFs()
-	state := model.NewState(zap.NewNop().Sugar(), fs, components, model.SortByPath)
+	context, logs := createMapperContext(t)
 
 	key1 := fixtures.MockedKey{Id: "123"}
 	key2 := fixtures.MockedKey{Id: "456"}
 
-	// ObjectManifest side
-	manifest1 := &fixtures.MockedManifest{MockedKey: key1}
-	object1 := &fixtures.MockedObject{
-		MockedKey: key1,
-		Relations: model.Relations{
-			&fixtures.MockedManifestSideRelation{
-				OtherSide: key2,
+	// Manifest side
+	object1 := &fixtures.MockedObjectState{
+		MockedManifest: &fixtures.MockedManifest{MockedKey: key1},
+		Local: &fixtures.MockedObject{
+			MockedKey: key1,
+			Relations: model.Relations{
+				&fixtures.MockedManifestSideRelation{
+					OtherSide: key2,
+				},
 			},
 		},
 	}
-	objectState1, err := state.GetOrCreateFrom(manifest1)
-	assert.NoError(t, err)
-	objectState1.SetLocalState(object1)
+	assert.NoError(t, context.State.Set(object1))
 
 	// OnObjectsLoad event
 	event := model.OnObjectsLoadEvent{
 		StateType:  model.StateTypeLocal,
-		NewObjects: []model.Object{object1},
-		AllObjects: state.LocalObjects(),
+		NewObjects: []model.Object{object1.Local},
+		AllObjects: context.State.LocalObjects(),
 	}
 
 	// Call OnObjectsLoad
-	context, logs := createMapperContext(t)
-
 	// Other side is not found, but error is ignored
 	assert.NoError(t, NewMapper(context).OnObjectsLoad(event))
 

@@ -13,8 +13,8 @@ import (
 func TestSharedCodeSaveMissingKey(t *testing.T) {
 	t.Parallel()
 	targetComponentId := `keboola.python-transformation-v2`
-	context, row, rowRecord := createTestFixtures(t, targetComponentId)
-	recipe := createLocalSaveRecipe(row, rowRecord)
+	context, rowState := createTestFixtures(t, targetComponentId)
+	recipe := createLocalSaveRecipe(rowState)
 
 	err := NewMapper(context).MapBeforeLocalSave(recipe)
 	assert.Error(t, err)
@@ -25,12 +25,12 @@ func TestSharedCodeSaveMissingKey(t *testing.T) {
 func TestSharedCodeSave(t *testing.T) {
 	t.Parallel()
 	targetComponentId := `keboola.python-transformation-v2`
-	context, row, rowRecord := createTestFixtures(t, targetComponentId)
-	recipe := createLocalSaveRecipe(row, rowRecord)
+	context, rowState := createTestFixtures(t, targetComponentId)
+	recipe := createLocalSaveRecipe(rowState)
 	codeFilePath := filesystem.Join(context.Naming.SharedCodeFilePath(recipe.ObjectManifest.Path(), targetComponentId))
 
 	// Set JSON value
-	row.Content.Set(model.SharedCodeContentKey, []interface{}{`foo`, `bar`})
+	rowState.Local.Content.Set(model.SharedCodeContentKey, []interface{}{`foo`, `bar`})
 
 	// Create dir
 	assert.NoError(t, context.Fs.Mkdir(filesystem.Dir(codeFilePath)))
