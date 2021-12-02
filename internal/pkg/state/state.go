@@ -108,11 +108,11 @@ func newState(options *Options) *State {
 	s.localManager = local.NewManager(options.logger, options.fs, options.manifest, s.State, s.mapper)
 
 	// Local manager for API operations
-	s.remoteManager = remote.NewManager(s.localManager, options.api, options.schedulerApi, s.State, s.mapper)
+	s.remoteManager = remote.NewManager(s.localManager, options.api, s.State, s.mapper)
 
 	mappers := []interface{}{
 		variables.NewMapper(mapperContext),
-		schedulerMapper.NewMapper(mapperContext),
+		schedulerMapper.NewMapper(mapperContext, options.schedulerApi),
 		sharedcode.NewVariablesMapper(mapperContext),
 		orchestrator.NewMapper(s.localManager, mapperContext),
 		relations.NewMapper(mapperContext),

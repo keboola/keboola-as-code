@@ -56,11 +56,6 @@ func (e *executor) invoke() error {
 		e.errors.Append(err)
 	}
 
-	// OnObjectsPersist event
-	if err := e.State.Mapper().OnObjectsPersist(e.uow.LoadedObjects()); err != nil {
-		e.errors.Append(err)
-	}
-
 	return e.errors.ErrorOrNil()
 }
 
@@ -114,14 +109,14 @@ func (e *executor) persistNewObject(action *newObjectAction) {
 		// Set local path
 		record.SetObjectPath(action.ObjectPath)
 
+		// Load model
+		e.uow.LoadObject(record)
+
 		// Save to manifest.json
 		if err := e.Manifest().PersistRecord(record); err != nil {
 			e.errors.Append(err)
 			return
 		}
-
-		// Load model
-		e.uow.LoadObject(record)
 
 		// Setup related objects
 		action.InvokeOnPersist(key)

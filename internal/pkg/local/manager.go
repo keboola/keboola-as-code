@@ -27,15 +27,14 @@ type Manager struct {
 
 type UnitOfWork struct {
 	*Manager
-	ctx                context.Context
-	workers            *orderedmap.OrderedMap // separated workers for changes in branches, configs and rows
-	errors             *utils.MultiError
-	lock               *sync.Mutex
-	skipNotFoundErr    bool
-	localObjects       *model.StateObjects
-	loadedObjectStates []model.ObjectState
-	renamed            []model.RenameAction
-	invoked            bool
+	ctx             context.Context
+	workers         *orderedmap.OrderedMap // separated workers for changes in branches, configs and rows
+	errors          *utils.MultiError
+	lock            *sync.Mutex
+	skipNotFoundErr bool
+	localObjects    *model.StateObjects
+	changes         *model.LocalChanges
+	invoked         bool
 }
 
 func NewManager(logger *zap.SugaredLogger, fs filesystem.Fs, m *manifest.Manifest, state *model.State, mapper *mapper.Mapper) *Manager {
@@ -68,19 +67,13 @@ func (m *Manager) NewUnitOfWork(ctx context.Context) *UnitOfWork {
 		lock:         &sync.Mutex{},
 		errors:       utils.NewMultiError(),
 		localObjects: m.state.LocalObjects(),
+		changes:      model.NewLocalChanges(),
 	}
 	return u
 }
 
 func (u *UnitOfWork) SkipNotFoundErr() {
 	u.skipNotFoundErr = true
-}
-
-func (u *UnitOfWork) LoadedObjects() []model.Object {
-	if !u.invoked {
-		panic(`UnitOfWork must be invoked`)
-	}
-	return u.loadedObjects()
 }
 
 func (u *UnitOfWork) LoadAll(manifestContent *manifest.Content) {
@@ -122,7 +115,7 @@ func (u *UnitOfWork) CreateObject(key model.Key, name string) {
 		return
 	}
 	objectState.SetLocalState(object)
-	u.addLoaded(objectState)
+	u.changes.AddCreated(objectState)
 
 	// Generate local path
 	if err := u.NewPathsGenerator(false).Add(objectState).Invoke(); err != nil {
@@ -135,6 +128,7 @@ func (u *UnitOfWork) CreateObject(key model.Key, name string) {
 }
 
 func (u *UnitOfWork) LoadObject(manifest model.ObjectManifest) {
+	persist := !manifest.State().Persisted
 	u.
 		workersFor(manifest.Level()).
 		AddWorker(func() error {
@@ -188,7 +182,10 @@ func (u *UnitOfWork) LoadObject(manifest model.ObjectManifest) {
 			// Set local state
 			objectState.SetLocalState(object)
 
-			u.addLoaded(objectState)
+			if persist {
+				u.changes.AddPersisted(objectState)
+			}
+			u.changes.AddLoaded(objectState)
 			return nil
 		})
 }
@@ -201,6 +198,7 @@ func (u *UnitOfWork) SaveObject(objectState model.ObjectState, object model.Obje
 				return err
 			}
 			objectState.SetLocalState(object)
+			u.changes.AddSaved(objectState)
 			return nil
 		})
 }
@@ -216,6 +214,7 @@ func (u *UnitOfWork) DeleteObject(objectState model.ObjectState, manifest model.
 			if objectState != nil {
 				objectState.SetLocalState(nil)
 			}
+			u.changes.AddDeleted(manifest)
 			return nil
 		})
 }
@@ -227,7 +226,7 @@ func (u *UnitOfWork) Rename(actions []model.RenameAction) {
 			if err := u.rename(actions); err != nil {
 				return err
 			}
-			u.renamed = append(u.renamed, actions...)
+			u.changes.AddRenamed(actions...)
 			return nil
 		})
 }
@@ -246,17 +245,9 @@ func (u *UnitOfWork) Invoke() error {
 		}
 	}
 
-	// OnObjectsLoad event
-	loadedObjects := u.loadedObjects()
-	if len(loadedObjects) > 0 {
-		if err := u.mapper.OnObjectsLoad(model.StateTypeLocal, loadedObjects); err != nil {
-			u.errors.Append(err)
-		}
-	}
-
-	// OnObjectsRename event
-	if len(u.renamed) > 0 {
-		if err := u.mapper.OnObjectsRename(u.renamed); err != nil {
+	// OnLocalChange event
+	if !u.changes.Empty() {
+		if err := u.mapper.OnLocalChange(u.changes); err != nil {
 			u.errors.Append(err)
 		}
 	}
@@ -291,18 +282,4 @@ func (u *UnitOfWork) workersFor(level int) *Workers {
 	workers := NewWorkers(u.ctx)
 	u.workers.Set(key, workers)
 	return workers
-}
-
-func (u *UnitOfWork) addLoaded(objectState model.ObjectState) {
-	u.lock.Lock()
-	defer u.lock.Unlock()
-	u.loadedObjectStates = append(u.loadedObjectStates, objectState)
-}
-
-func (u *UnitOfWork) loadedObjects() []model.Object {
-	var objects []model.Object
-	for _, objectState := range u.loadedObjectStates {
-		objects = append(objects, objectState.LocalState())
-	}
-	return objects
 }
