@@ -1,0 +1,9 @@
+Command "status"
+
+Print info about current project or template repository directory.
+
+Usage:
+  %s status [flags]
+
+Global Flags:
+%A

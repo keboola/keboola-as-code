@@ -1,1 +1,1 @@
-local status --working-dir foo.txt
+status --working-dir foo.txt

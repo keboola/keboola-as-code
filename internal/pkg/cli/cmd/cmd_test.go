@@ -17,7 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func TestRootSubCommands(t *testing.T) {
+func TestCliSubCommands(t *testing.T) {
 	t.Parallel()
 	root, _ := newTestRootCommand(testhelper.NewMemoryFs())
 
@@ -31,6 +31,7 @@ func TestRootSubCommands(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, []string{
+		"status",
 		"sync",
 		"local",
 		"ci",
@@ -38,7 +39,7 @@ func TestRootSubCommands(t *testing.T) {
 	}, names)
 }
 
-func TestRootSubCommandsAndAliases(t *testing.T) {
+func TestCliSubCommandsAndAliases(t *testing.T) {
 	t.Parallel()
 	root, _ := newTestRootCommand(testhelper.NewMemoryFs())
 
@@ -50,6 +51,7 @@ func TestRootSubCommandsAndAliases(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, []string{
+		"status",
 		"sync",
 		"local",
 		"ci",
@@ -73,7 +75,7 @@ func TestRootSubCommandsAndAliases(t *testing.T) {
 	}, names)
 }
 
-func TestRootCmdPersistentFlags(t *testing.T) {
+func TestCliCmdPersistentFlags(t *testing.T) {
 	t.Parallel()
 	root, _ := newTestRootCommand(testhelper.NewMemoryFs())
 
@@ -95,7 +97,7 @@ func TestRootCmdPersistentFlags(t *testing.T) {
 	assert.Equal(t, expected, names)
 }
 
-func TestRootCmdFlags(t *testing.T) {
+func TestCliCmdFlags(t *testing.T) {
 	t.Parallel()
 	root, _ := newTestRootCommand(testhelper.NewMemoryFs())
 

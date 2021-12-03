@@ -13,7 +13,6 @@ func Commands(d dependencies.Provider) *cobra.Command {
 		Long: helpmsg.Read(`local/long`),
 	}
 	cmd.AddCommand(
-		StatusCommand(d),
 		ValidateCommand(d),
 		PersistCommand(d),
 		CreateCommand(d),
