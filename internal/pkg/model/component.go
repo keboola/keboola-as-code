@@ -136,6 +136,7 @@ func (c *ComponentsMap) Get(key ComponentKey) (*Component, error) {
 
 	// Or by API
 	if component, err := c.remoteProvider.GetComponent(key.Id); err == nil {
+		c.doSet(component)
 		return component, nil
 	} else {
 		return nil, err
