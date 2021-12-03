@@ -14,6 +14,8 @@ Usage:
   %s [command]
 
 Available Commands:
+  status         Print info about current directory.
+
   sync
     init         Init local project directory and perform the first pull.
     diff         Print differences between local and remote state.
@@ -21,7 +23,6 @@ Available Commands:
     push         Push configurations to the Keboola project.
 
   local
-    status       Print info about project directory.
     validate     Validate the local project directory.
     persist      Detect created/deleted configs/rows.
     create

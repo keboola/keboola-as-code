@@ -78,15 +78,25 @@ func (c *Container) BasePath() string {
 	return c.fs.BasePath()
 }
 
+func (c *Container) ProjectManifestExists() bool {
+	path := filesystem.Join(filesystem.MetadataDir, manifest.FileName)
+	return c.fs.IsFile(path)
+}
+
+func (c *Container) RepositoryManifestExists() bool {
+	path := filesystem.Join(filesystem.MetadataDir, repository.FileName)
+	return c.fs.IsFile(path)
+}
+
 func (c *Container) EmptyDir() (filesystem.Fs, error) {
 	if c.emptyDir == nil {
 		// Project dir is not expected
-		if c.projectManifestExists() {
+		if c.ProjectManifestExists() {
 			return nil, ErrProjectDirFound
 		}
 
 		// Repository dir is not expected
-		if c.repositoryManifestExists() {
+		if c.RepositoryManifestExists() {
 			return nil, ErrRepoDirFound
 		}
 
@@ -123,8 +133,8 @@ func (c *Container) EmptyDir() (filesystem.Fs, error) {
 
 func (c *Container) ProjectDir() (filesystem.Fs, error) {
 	if c.projectDir == nil {
-		if !c.projectManifestExists() {
-			if c.repositoryManifestExists() {
+		if !c.ProjectManifestExists() {
+			if c.RepositoryManifestExists() {
 				return nil, ErrExpectedProjectFoundRepository
 			}
 			return nil, ErrProjectManifestNotFound
@@ -137,8 +147,8 @@ func (c *Container) ProjectDir() (filesystem.Fs, error) {
 
 func (c *Container) RepositoryDir() (filesystem.Fs, error) {
 	if c.repositoryDir == nil {
-		if !c.repositoryManifestExists() {
-			if c.projectManifestExists() {
+		if !c.RepositoryManifestExists() {
+			if c.ProjectManifestExists() {
 				return nil, ErrExpectedRepositoryFoundProject
 			}
 			return nil, ErrRepoManifestNotFound
@@ -297,16 +307,6 @@ func (c *Container) LoadStateOnce(loadOptions loadState.Options) (*state.State, 
 		}
 	}
 	return c.state, nil
-}
-
-func (c *Container) projectManifestExists() bool {
-	path := filesystem.Join(filesystem.MetadataDir, manifest.FileName)
-	return c.fs.IsFile(path)
-}
-
-func (c *Container) repositoryManifestExists() bool {
-	path := filesystem.Join(filesystem.MetadataDir, repository.FileName)
-	return c.fs.IsFile(path)
 }
 
 func (c *Container) serviceUrl(id string) (string, error) {

@@ -152,6 +152,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 
 	// Sub-commands
 	root.AddCommand(
+		StatusCommand(root),
 		sync.Commands(root),
 		local.Commands(root),
 		ci.Commands(root),

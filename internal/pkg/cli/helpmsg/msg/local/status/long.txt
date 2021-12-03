@@ -1,3 +1,0 @@
-Command "local status"
-
-Print info about current project dir, metadata dir and working dir.

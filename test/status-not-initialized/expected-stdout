@@ -1,3 +1,0 @@
-Project directory must contain the ".keboola/manifest.json" file.
-Please change working directory to a project directory.
-Or use the "sync init" command in an empty directory.
