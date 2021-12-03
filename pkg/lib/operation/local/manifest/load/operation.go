@@ -25,6 +25,6 @@ func Run(d dependencies) (*manifest.Manifest, error) {
 		return nil, err
 	}
 
-	logger.Debugf(`ProjectManifest loaded.`)
+	logger.Debugf(`Manifest loaded.`)
 	return m, nil
 }

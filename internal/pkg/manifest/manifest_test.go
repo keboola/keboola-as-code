@@ -7,7 +7,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 )
@@ -41,8 +40,7 @@ func TestNewManifest(t *testing.T) {
 
 func TestManifestLoadNotFound(t *testing.T) {
 	t.Parallel()
-	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
-	assert.NoError(t, err)
+	fs := testhelper.NewMemoryFs()
 
 	// Load
 	manifest, err := Load(fs, zap.NewNop().Sugar())
@@ -54,8 +52,7 @@ func TestManifestLoadNotFound(t *testing.T) {
 func TestManifestLoad(t *testing.T) {
 	t.Parallel()
 	for _, c := range cases() {
-		fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
-		assert.NoError(t, err)
+		fs := testhelper.NewMemoryFs()
 
 		// Write file
 		path := filesystem.Join(filesystem.MetadataDir, FileName)
@@ -124,8 +121,7 @@ func TestManifestValidateEmpty(t *testing.T) {
 
 func TestManifestValidateMinimal(t *testing.T) {
 	t.Parallel()
-	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
-	assert.NoError(t, err)
+	fs := testhelper.NewMemoryFs()
 	m := newManifest(0, "", fs)
 	m.Content = minimalStruct()
 	assert.NoError(t, m.validate())
@@ -133,8 +129,7 @@ func TestManifestValidateMinimal(t *testing.T) {
 
 func TestManifestValidateFull(t *testing.T) {
 	t.Parallel()
-	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
-	assert.NoError(t, err)
+	fs := testhelper.NewMemoryFs()
 	m := newManifest(0, "", fs)
 	m.Content = fullStruct()
 	assert.NoError(t, m.validate())
@@ -142,12 +137,11 @@ func TestManifestValidateFull(t *testing.T) {
 
 func TestManifestValidateBadVersion(t *testing.T) {
 	t.Parallel()
-	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
-	assert.NoError(t, err)
+	fs := testhelper.NewMemoryFs()
 	m := newManifest(0, "", fs)
 	m.Content = minimalStruct()
 	m.Version = 123
-	err = m.validate()
+	err := m.validate()
 	assert.Error(t, err)
 	expected := "manifest is not valid:\n  - key=\"version\", value=\"123\", failed \"max\" validation"
 	assert.Equal(t, expected, err.Error())
@@ -155,8 +149,7 @@ func TestManifestValidateBadVersion(t *testing.T) {
 
 func TestManifestValidateNestedField(t *testing.T) {
 	t.Parallel()
-	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
-	assert.NoError(t, err)
+	fs := testhelper.NewMemoryFs()
 	m := newManifest(1, "connection.keboola.com", fs)
 	m.Content = minimalStruct()
 	m.Content.Branches = append(m.Content.Branches, &model.BranchManifest{
@@ -168,7 +161,7 @@ func TestManifestValidateNestedField(t *testing.T) {
 			),
 		},
 	})
-	err = m.validate()
+	err := m.validate()
 	assert.Error(t, err)
 	expected := "manifest is not valid:\n  - key=\"branches[0].id\", value=\"0\", failed \"required\" validation"
 	assert.Equal(t, expected, err.Error())
@@ -176,8 +169,7 @@ func TestManifestValidateNestedField(t *testing.T) {
 
 func TestIsObjectIgnored(t *testing.T) {
 	t.Parallel()
-	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
-	assert.NoError(t, err)
+	fs := testhelper.NewMemoryFs()
 	m := newManifest(1, "connection.keboola.com", fs)
 	m.Content = minimalStruct()
 	m.Content.AllowedBranches = model.AllowedBranches{"dev-*", "123", "abc"}
@@ -217,8 +209,7 @@ func TestIsObjectIgnored(t *testing.T) {
 
 func TestManifestRecordGetParent(t *testing.T) {
 	t.Parallel()
-	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
-	assert.NoError(t, err)
+	fs := testhelper.NewMemoryFs()
 	m := newManifest(0, "", fs)
 	branchManifest := &model.BranchManifest{BranchKey: model.BranchKey{Id: 123}}
 	configManifest := &model.ConfigManifest{ConfigKey: model.ConfigKey{
@@ -234,8 +225,7 @@ func TestManifestRecordGetParent(t *testing.T) {
 
 func TestManifestRecordGetParentNotFound(t *testing.T) {
 	t.Parallel()
-	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
-	assert.NoError(t, err)
+	fs := testhelper.NewMemoryFs()
 	m := newManifest(0, "", fs)
 	configManifest := &model.ConfigManifest{ConfigKey: model.ConfigKey{
 		BranchId:    123,
@@ -250,8 +240,7 @@ func TestManifestRecordGetParentNotFound(t *testing.T) {
 
 func TestManifestRecordGetParentNil(t *testing.T) {
 	t.Parallel()
-	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
-	assert.NoError(t, err)
+	fs := testhelper.NewMemoryFs()
 	m := newManifest(0, "", fs)
 	parent, err := m.GetParent(&model.BranchManifest{})
 	assert.Nil(t, parent)
@@ -260,8 +249,7 @@ func TestManifestRecordGetParentNil(t *testing.T) {
 
 func TestManifestCyclicDependency(t *testing.T) {
 	t.Parallel()
-	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
-	assert.NoError(t, err)
+	fs := testhelper.NewMemoryFs()
 
 	// Write file
 	path := filesystem.Join(filesystem.MetadataDir, FileName)
@@ -689,8 +677,7 @@ func cyclicDependencyJson() string {
 
 func newTestManifest(t *testing.T) *Manifest {
 	t.Helper()
-	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), "")
-	assert.NoError(t, err)
+	fs := testhelper.NewMemoryFs()
 	manifest, err := NewManifest(123, "foo.bar", fs)
 	assert.NoError(t, err)
 	return manifest
