@@ -16,13 +16,18 @@ type Options struct {
 
 type dependencies interface {
 	Logger() *zap.SugaredLogger
-	Fs() filesystem.Fs
+	EmptyDir() (filesystem.Fs, error)
 	StorageApi() (*remote.StorageApi, error)
 }
 
 func Run(o Options, d dependencies) (*manifest.Manifest, error) {
 	logger := d.Logger()
-	fs := d.Fs()
+
+	// Target dir must be empty
+	fs, err := d.EmptyDir()
+	if err != nil {
+		return nil, err
+	}
 
 	// Get Storage API
 	storageApi, err := d.StorageApi()

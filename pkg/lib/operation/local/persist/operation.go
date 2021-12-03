@@ -5,7 +5,6 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/persist"
@@ -25,7 +24,6 @@ type Options struct {
 type dependencies interface {
 	Ctx() context.Context
 	Logger() *zap.SugaredLogger
-	Fs() filesystem.Fs
 	StorageApi() (*remote.StorageApi, error)
 	Manifest() (*manifest.Manifest, error)
 	LoadStateOnce(loadOptions loadState.Options) (*state.State, error)

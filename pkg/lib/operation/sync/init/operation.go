@@ -28,10 +28,10 @@ type Options struct {
 type dependencies interface {
 	Ctx() context.Context
 	Logger() *zap.SugaredLogger
-	Fs() filesystem.Fs
-	AssertMetaDirNotExists() error
 	StorageApi() (*remote.StorageApi, error)
 	SchedulerApi() (*scheduler.Api, error)
+	EmptyDir() (filesystem.Fs, error)
+	ProjectDir() (filesystem.Fs, error)
 	CreateManifest(o createManifest.Options) (*manifest.Manifest, error)
 	Manifest() (*manifest.Manifest, error)
 	LoadStateOnce(loadOptions loadState.Options) (*state.State, error)
@@ -39,11 +39,6 @@ type dependencies interface {
 
 func Run(o Options, d dependencies) (err error) {
 	logger := d.Logger()
-
-	// Is project directory already initialized?
-	if err := d.AssertMetaDirNotExists(); err != nil {
-		return err
-	}
 
 	// Create metadata dir
 	if err := createMetaDir.Run(d); err != nil {

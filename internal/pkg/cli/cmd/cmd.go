@@ -25,6 +25,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/version"
 	versionCheck "github.com/keboola/keboola-as-code/pkg/lib/operation/remote/version/check"
@@ -272,11 +273,14 @@ func (root *RootCommand) printError(errRaw error) {
 	for _, err := range err.Errors {
 		switch {
 		case errors.Is(err, dependencies.ErrMetadataDirFound):
-			root.Logger.Infof(`The path "%s" is already an project directory.`, root.Deps.Fs().BasePath())
+			root.Logger.Infof(`The path "%s" is already an project directory.`, root.Deps.BasePath())
 			root.Logger.Info(`Please use a different directory or synchronize the current with "pull" command.`)
 			modifiedErrs.Append(fmt.Errorf(`metadata directory "%s" already exists`, filesystem.MetadataDir))
-		case errors.Is(err, dependencies.ErrMetadataDirNotFound):
-			root.Logger.Infof(`Project directory must contain the ".keboola" metadata directory.`)
+		case errors.Is(err, dependencies.ErrDirIsNotEmpty):
+			root.Logger.Info(`Please use an empty directory.`)
+			modifiedErrs.Append(err)
+		case errors.Is(err, dependencies.ErrProjectManifestNotFound):
+			root.Logger.Infof(`Project directory must contain the "%s/%s" file.`, filesystem.MetadataDir, manifest.FileName)
 			root.Logger.Infof(`Please change working directory to a project directory or use the "init" command.`)
 			modifiedErrs.Append(fmt.Errorf(`none of this and parent directories is project dir`))
 		case errors.Is(err, dependencies.ErrMissingStorageApiHost):

@@ -23,16 +23,19 @@ import (
 )
 
 var (
-	ErrMissingStorageApiHost  = fmt.Errorf(`missing Storage API host`)
-	ErrMissingStorageApiToken = fmt.Errorf(`missing Storage API token`)
-	ErrMetadataDirNotFound    = fmt.Errorf("metadata directory not found")
-	ErrMetadataDirFound       = fmt.Errorf("metadata directory not expected, but found")
+	ErrMissingStorageApiHost   = fmt.Errorf(`missing Storage API host`)
+	ErrMissingStorageApiToken  = fmt.Errorf(`missing Storage API token`)
+	ErrProjectManifestNotFound = fmt.Errorf("project manifest not found")
+	ErrMetadataDirFound        = fmt.Errorf("metadata directory not expected, but found")
+	ErrDirIsNotEmpty           = fmt.Errorf("dir is not empty")
 )
 
 type Container struct {
 	ctx              context.Context
 	envs             *env.Map
 	fs               filesystem.Fs
+	emptyDir         filesystem.Fs
+	projectDir       filesystem.Fs
 	dialogs          *dialog.Dialogs
 	logger           *zap.SugaredLogger
 	options          *options.Options
@@ -65,8 +68,58 @@ func (c *Container) Envs() *env.Map {
 	return c.envs
 }
 
-func (c *Container) Fs() filesystem.Fs {
-	return c.fs
+func (c *Container) BasePath() string {
+	return c.fs.BasePath()
+}
+
+func (c *Container) EmptyDir() (filesystem.Fs, error) {
+	if c.emptyDir == nil {
+		// Metadata dir is not expected
+		if c.fs.Exists(filesystem.MetadataDir) {
+			return nil, ErrMetadataDirFound
+		}
+
+		// Read directory
+		items, err := c.fs.ReadDir(`.`)
+		if err != nil {
+			return nil, err
+		}
+
+		// Filter out ignored files
+		found := utils.NewMultiError()
+		for _, item := range items {
+			if !filesystem.IsIgnoredPath(item.Name(), item) {
+				path := item.Name()
+				if found.Len() > 5 {
+					found.Append(fmt.Errorf(path + ` ...`))
+					break
+				} else {
+					found.Append(fmt.Errorf(path))
+				}
+			}
+		}
+
+		// Directory must be empty
+		if found.Len() > 0 {
+			return nil, utils.PrefixError(fmt.Sprintf(`directory "%s" it not empty, found`, c.fs.BasePath()), found)
+		}
+
+		c.emptyDir = c.fs
+	}
+
+	return c.emptyDir, nil
+}
+
+func (c *Container) ProjectDir() (filesystem.Fs, error) {
+	if c.projectDir == nil {
+		manifestPath := filesystem.Join(filesystem.MetadataDir, manifest.FileName)
+		if !c.fs.IsFile(manifestPath) {
+			return nil, ErrProjectManifestNotFound
+		}
+
+		c.projectDir = c.fs
+	}
+	return c.projectDir, nil
 }
 
 func (c *Container) Dialogs() *dialog.Dialogs {
@@ -186,23 +239,11 @@ func (c *Container) EventSender() (*event.Sender, error) {
 	return c.eventSender, nil
 }
 
-func (c *Container) AssertMetaDirExists() error {
-	if !c.Fs().IsDir(filesystem.MetadataDir) {
-		return ErrMetadataDirNotFound
-	}
-	return nil
-}
-
-func (c *Container) AssertMetaDirNotExists() error {
-	if c.Fs().Exists(filesystem.MetadataDir) {
-		return ErrMetadataDirFound
-	}
-	return nil
-}
-
 func (c *Container) CreateManifest(o createManifest.Options) (*manifest.Manifest, error) {
 	if m, err := createManifest.Run(o, c); err == nil {
 		c.manifest = m
+		c.projectDir = c.fs
+		c.emptyDir = nil
 		return m, nil
 	} else {
 		return nil, fmt.Errorf(`cannot create manifest: %w`, err)

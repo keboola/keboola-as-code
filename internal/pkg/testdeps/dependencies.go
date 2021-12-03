@@ -56,11 +56,25 @@ func (c Dependencies) Envs() *env.Map {
 	return c.EnvsValue
 }
 
-func (c Dependencies) Fs() filesystem.Fs {
+func (c Dependencies) BasePath() string {
 	if c.FsValue == nil {
 		panic(fmt.Errorf(`"fs" is not set in testing dependencies`))
 	}
-	return c.FsValue
+	return c.FsValue.BasePath()
+}
+
+func (c Dependencies) EmptyDir() (filesystem.Fs, error) {
+	if c.FsValue == nil {
+		panic(fmt.Errorf(`"fs" is not set in testing dependencies`))
+	}
+	return c.FsValue, nil
+}
+
+func (c Dependencies) ProjectDir() (filesystem.Fs, error) {
+	if c.FsValue == nil {
+		panic(fmt.Errorf(`"fs" is not set in testing dependencies`))
+	}
+	return c.FsValue, nil
 }
 
 func (c Dependencies) Logger() *zap.SugaredLogger {
@@ -117,13 +131,6 @@ func (c Dependencies) EventSender() (*event.Sender, error) {
 		panic(fmt.Errorf(`"eventSender" is not set in testing dependencies`))
 	}
 	return c.EventSenderValue, nil
-}
-
-func (c Dependencies) AssertMetaDirExists() error {
-	if !c.Fs().IsDir(filesystem.MetadataDir) {
-		return fmt.Errorf("metadata directory not found")
-	}
-	return nil
 }
 
 func (c Dependencies) Manifest() (*manifest.Manifest, error) {

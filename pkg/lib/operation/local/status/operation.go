@@ -9,13 +9,18 @@ import (
 
 type dependencies interface {
 	Logger() *zap.SugaredLogger
-	Fs() filesystem.Fs
+	ProjectDir() (filesystem.Fs, error)
 	Manifest() (*manifest.Manifest, error)
 }
 
 func Run(d dependencies) (err error) {
 	logger := d.Logger()
-	fs := d.Fs()
+
+	fs, err := d.ProjectDir()
+	if err != nil {
+		return err
+	}
+
 	projectManifest, err := d.Manifest()
 	if err != nil {
 		return err
