@@ -14,7 +14,7 @@ type dependencies interface {
 	BasePath() string
 	ProjectDir() (filesystem.Fs, error)
 	RepositoryDir() (filesystem.Fs, error)
-	Manifest() (*manifest.Manifest, error)
+	ProjectManifest() (*manifest.Manifest, error)
 }
 
 func Run(d dependencies) (err error) {
@@ -26,7 +26,7 @@ func Run(d dependencies) (err error) {
 			return err
 		}
 
-		projectManifest, err := d.Manifest()
+		projectManifest, err := d.ProjectManifest()
 		if err != nil {
 			return err
 		}

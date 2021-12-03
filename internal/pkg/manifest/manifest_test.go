@@ -45,7 +45,7 @@ func TestManifestLoadNotFound(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Load
-	manifest, err := LoadManifest(fs, zap.NewNop().Sugar())
+	manifest, err := Load(fs, zap.NewNop().Sugar())
 	assert.Nil(t, manifest)
 	assert.Error(t, err)
 	assert.Equal(t, `manifest ".keboola/manifest.json" not found`, err.Error())
@@ -62,7 +62,7 @@ func TestManifestLoad(t *testing.T) {
 		assert.NoError(t, fs.WriteFile(filesystem.CreateFile(path, c.json)))
 
 		// Load
-		manifest, err := LoadManifest(fs, zap.NewNop().Sugar())
+		manifest, err := Load(fs, zap.NewNop().Sugar())
 		assert.NotNil(t, manifest)
 		assert.NoError(t, err)
 
@@ -268,7 +268,7 @@ func TestManifestCyclicDependency(t *testing.T) {
 	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(path, cyclicDependencyJson())))
 
 	// Load
-	manifest, err := LoadManifest(fs, zap.NewNop().Sugar())
+	manifest, err := Load(fs, zap.NewNop().Sugar())
 	assert.Nil(t, manifest)
 	assert.Error(t, err)
 	assert.Equal(t, `a cyclic relation was found when resolving path to config "branch:123/component:keboola.variables/config:111"`, err.Error())

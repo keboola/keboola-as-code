@@ -25,7 +25,7 @@ func TestDifferentProjectIdInManifestAndToken(t *testing.T) {
 	d := NewContainer(context.Background(), nil, testhelper.NewMemoryFs(), nil, logger, opts)
 	d.hostFromManifest = true
 	d.options.Set(options.StorageApiTokenOpt, project.Token())
-	d.manifest = &manifest.Manifest{
+	d.projectManifest = &manifest.Manifest{
 		Content: &manifest.Content{
 			Project: model.Project{
 				Id:      12345,

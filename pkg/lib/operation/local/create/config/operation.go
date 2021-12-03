@@ -24,7 +24,7 @@ type dependencies interface {
 	Ctx() context.Context
 	Logger() *zap.SugaredLogger
 	StorageApi() (*remote.StorageApi, error)
-	Manifest() (*manifest.Manifest, error)
+	ProjectManifest() (*manifest.Manifest, error)
 	LoadStateOnce(loadOptions loadState.Options) (*state.State, error)
 }
 

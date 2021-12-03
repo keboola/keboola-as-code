@@ -287,7 +287,7 @@ func loadManifest(t *testing.T, projectDirName string) *manifest.Manifest {
 	testhelper.ReplaceEnvsDir(fs, `/`, envs)
 
 	// Load manifest
-	m, err := manifest.LoadManifest(fs, zap.NewNop().Sugar())
+	m, err := manifest.Load(fs, zap.NewNop().Sugar())
 	if err != nil {
 		assert.FailNow(t, err.Error())
 	}

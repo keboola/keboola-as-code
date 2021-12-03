@@ -11,26 +11,28 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
+	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 type Dependencies struct {
-	CtxValue           context.Context
-	EnvsValue          *env.Map
-	FsValue            filesystem.Fs
-	LoggerValue        *zap.SugaredLogger
-	OptionsValue       *options.Options
-	StorageApiValue    *remote.StorageApi
-	EncryptionApiValue *encryption.Api
-	SchedulerApiValue  *scheduler.Api
-	EventSenderValue   *event.Sender
-	ManifestValue      *manifest.Manifest
-	StateValue         *state.State
+	CtxValue                context.Context
+	EnvsValue               *env.Map
+	FsValue                 filesystem.Fs
+	LoggerValue             *zap.SugaredLogger
+	OptionsValue            *options.Options
+	StorageApiValue         *remote.StorageApi
+	EncryptionApiValue      *encryption.Api
+	SchedulerApiValue       *scheduler.Api
+	EventSenderValue        *event.Sender
+	ProjectManifestValue    *projectManifest.Manifest
+	RepositoryManifestValue *repositoryManifest.Manifest
+	StateValue              *state.State
 }
 
 func NewDependencies() *Dependencies {
@@ -133,11 +135,18 @@ func (c Dependencies) EventSender() (*event.Sender, error) {
 	return c.EventSenderValue, nil
 }
 
-func (c Dependencies) Manifest() (*manifest.Manifest, error) {
-	if c.ManifestValue == nil {
-		panic(fmt.Errorf(`"manifest" is not set in testing dependencies`))
+func (c Dependencies) ProjectManifest() (*projectManifest.Manifest, error) {
+	if c.ProjectManifestValue == nil {
+		panic(fmt.Errorf(`"project manifest" is not set in testing dependencies`))
 	}
-	return c.ManifestValue, nil
+	return c.ProjectManifestValue, nil
+}
+
+func (c Dependencies) RepositoryManifest() (*repositoryManifest.Manifest, error) {
+	if c.RepositoryManifestValue == nil {
+		panic(fmt.Errorf(`"repository manifest" is not set in testing dependencies`))
+	}
+	return c.RepositoryManifestValue, nil
 }
 
 func (c Dependencies) LoadStateOnce(_ loadState.Options) (*state.State, error) {

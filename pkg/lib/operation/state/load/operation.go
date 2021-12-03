@@ -40,7 +40,7 @@ type dependencies interface {
 	Logger() *zap.SugaredLogger
 	StorageApi() (*remote.StorageApi, error)
 	SchedulerApi() (*scheduler.Api, error)
-	Manifest() (*manifest.Manifest, error)
+	ProjectManifest() (*manifest.Manifest, error)
 }
 
 func Run(o Options, d dependencies) (*state.State, error) {
@@ -48,7 +48,7 @@ func Run(o Options, d dependencies) (*state.State, error) {
 	logger := d.Logger()
 
 	// Get manifest
-	projectManifest, err := d.Manifest()
+	projectManifest, err := d.ProjectManifest()
 	if err != nil {
 		return nil, err
 	}

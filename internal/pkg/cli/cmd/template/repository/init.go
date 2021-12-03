@@ -1,12 +1,11 @@
 package repository
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
+	initOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/repository/init"
 )
 
 func InitCommand(depsProvider dependencies.Provider) *cobra.Command {
@@ -22,7 +21,7 @@ func InitCommand(depsProvider dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			return fmt.Errorf(`not implemented`)
+			return initOp.Run(d)
 		},
 	}
 	return cmd

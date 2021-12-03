@@ -4,23 +4,23 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
+	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 )
 
 type dependencies interface {
 	Logger() *zap.SugaredLogger
-	ProjectDir() (filesystem.Fs, error)
+	RepositoryDir() (filesystem.Fs, error)
 }
 
-func Run(d dependencies) (*manifest.Manifest, error) {
+func Run(d dependencies) (*repositoryManifest.Manifest, error) {
 	logger := d.Logger()
 
-	fs, err := d.ProjectDir()
+	fs, err := d.RepositoryDir()
 	if err != nil {
 		return nil, err
 	}
 
-	m, err := manifest.Load(fs, logger)
+	m, err := repositoryManifest.Load(fs, logger)
 	if err != nil {
 		return nil, err
 	}

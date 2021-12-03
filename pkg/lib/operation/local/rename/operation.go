@@ -22,7 +22,7 @@ type Options struct {
 type dependencies interface {
 	Ctx() context.Context
 	Logger() *zap.SugaredLogger
-	Manifest() (*manifest.Manifest, error)
+	ProjectManifest() (*manifest.Manifest, error)
 	LoadStateOnce(loadOptions loadState.Options) (*state.State, error)
 }
 

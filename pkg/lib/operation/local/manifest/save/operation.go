@@ -8,12 +8,12 @@ import (
 
 type Dependencies interface {
 	Logger() *zap.SugaredLogger
-	Manifest() (*manifest.Manifest, error)
+	ProjectManifest() (*manifest.Manifest, error)
 }
 
 func Run(d Dependencies) (changed bool, err error) {
 	// Get manifest
-	projectManifest, err := d.Manifest()
+	projectManifest, err := d.ProjectManifest()
 	if err != nil {
 		return false, err
 	}
@@ -26,6 +26,6 @@ func Run(d Dependencies) (changed bool, err error) {
 		return true, nil
 	}
 
-	d.Logger().Debugf(`Manifest has not changed.`)
+	d.Logger().Debugf(`ProjectManifest has not changed.`)
 	return false, nil
 }

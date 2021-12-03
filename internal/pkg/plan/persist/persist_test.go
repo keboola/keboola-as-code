@@ -914,7 +914,7 @@ func (tc *testCase) run(t *testing.T) {
 	fs := testhelper.NewMemoryFsFrom(inputDir)
 
 	// Load manifest
-	m, err := manifest.LoadManifest(fs, zap.NewNop().Sugar())
+	m, err := manifest.Load(fs, zap.NewNop().Sugar())
 	assert.NoError(t, err)
 
 	// Create API
