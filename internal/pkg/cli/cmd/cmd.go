@@ -26,6 +26,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/version"
 	versionCheck "github.com/keboola/keboola-as-code/pkg/lib/operation/remote/version/check"
@@ -272,17 +273,42 @@ func (root *RootCommand) printError(errRaw error) {
 	modifiedErrs := utils.NewMultiError()
 	for _, err := range err.Errors {
 		switch {
-		case errors.Is(err, dependencies.ErrMetadataDirFound):
-			root.Logger.Infof(`The path "%s" is already an project directory.`, root.Deps.BasePath())
-			root.Logger.Info(`Please use a different directory or synchronize the current with "pull" command.`)
-			modifiedErrs.Append(fmt.Errorf(`metadata directory "%s" already exists`, filesystem.MetadataDir))
+		case errors.Is(err, dependencies.ErrProjectDirFound):
+			root.Logger.Infof(`The path "%s" is an project directory.`, root.Deps.BasePath())
+			root.Logger.Info(`Please use an empty directory.`)
+			if root.CalledAs() == `init` {
+				root.Logger.Info(`Or synchronize the current directory with the "pull" command.`)
+			}
+			modifiedErrs.Append(fmt.Errorf(`manifest "%s/%s" exists`, filesystem.MetadataDir, manifest.FileName))
+		case errors.Is(err, dependencies.ErrRepoDirFound):
+			root.Logger.Infof(`The path "%s" is an repository directory.`, root.Deps.BasePath())
+			root.Logger.Info(`Please use an empty directory.`)
+			modifiedErrs.Append(fmt.Errorf(`manifest "%s/%s" exists`, filesystem.MetadataDir, repository.FileName))
 		case errors.Is(err, dependencies.ErrDirIsNotEmpty):
 			root.Logger.Info(`Please use an empty directory.`)
 			modifiedErrs.Append(err)
 		case errors.Is(err, dependencies.ErrProjectManifestNotFound):
 			root.Logger.Infof(`Project directory must contain the "%s/%s" file.`, filesystem.MetadataDir, manifest.FileName)
-			root.Logger.Infof(`Please change working directory to a project directory or use the "init" command.`)
+			root.Logger.Infof(`Please change working directory to a project directory.`)
+			root.Logger.Infof(`Or use the "sync init" command in an empty directory.`)
 			modifiedErrs.Append(fmt.Errorf(`none of this and parent directories is project dir`))
+		case errors.Is(err, dependencies.ErrExpectedProjectFoundRepository):
+			root.Logger.Infof(`Project directory must contain the "%s/%s" file.`, filesystem.MetadataDir, manifest.FileName)
+			root.Logger.Infof(`You are in the template repository, not in the project directory.`)
+			root.Logger.Infof(`Please change working directory to a project directory.`)
+			root.Logger.Infof(`Or use the "sync init" command in an empty directory.`)
+			modifiedErrs.Append(fmt.Errorf(`none of this and parent directories is project dir`))
+		case errors.Is(err, dependencies.ErrRepoManifestNotFound):
+			root.Logger.Infof(`Repository directory must contain the "%s/%s" file.`, filesystem.MetadataDir, repository.FileName)
+			root.Logger.Infof(`Please change working directory to a repository directory.`)
+			root.Logger.Infof(`Or use the "template repository init" command in an empty directory.`)
+			modifiedErrs.Append(fmt.Errorf(`none of this and parent directories is repository dir`))
+		case errors.Is(err, dependencies.ErrExpectedRepositoryFoundProject):
+			root.Logger.Infof(`Repository directory must contain the "%s/%s" file.`, filesystem.MetadataDir, repository.FileName)
+			root.Logger.Infof(`You are in the project directory, not in the template repository.`)
+			root.Logger.Infof(`Please change working directory to a repository directory.`)
+			root.Logger.Infof(`Or use the "template repository init" command in an empty directory.`)
+			modifiedErrs.Append(fmt.Errorf(`none of this and parent directories is repository dir`))
 		case errors.Is(err, dependencies.ErrMissingStorageApiHost):
 			modifiedErrs.Append(fmt.Errorf(`- missing Storage Api host, please use "--%s" flag or ENV variable "%s"`, options.StorageApiHostOpt, root.Options.GetEnvName(options.StorageApiHostOpt)))
 		case errors.Is(err, dependencies.ErrMissingStorageApiToken):

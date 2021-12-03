@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "project": {
+    "id": 123,
+    "apiHost": "%%TEST_KBC_STORAGE_API_HOST%%"
+  },
+  "ignoredComponents": [],
+  "branches": [],
+  "configurations": []
+}

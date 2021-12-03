@@ -16,6 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	createManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/local/manifest/create"
 	loadManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/local/manifest/load"
@@ -23,11 +24,15 @@ import (
 )
 
 var (
-	ErrMissingStorageApiHost   = fmt.Errorf(`missing Storage API host`)
-	ErrMissingStorageApiToken  = fmt.Errorf(`missing Storage API token`)
-	ErrProjectManifestNotFound = fmt.Errorf("project manifest not found")
-	ErrMetadataDirFound        = fmt.Errorf("metadata directory not expected, but found")
-	ErrDirIsNotEmpty           = fmt.Errorf("dir is not empty")
+	ErrMissingStorageApiHost          = fmt.Errorf(`missing Storage API host`)
+	ErrMissingStorageApiToken         = fmt.Errorf(`missing Storage API token`)
+	ErrProjectManifestNotFound        = fmt.Errorf("project manifest not found")
+	ErrRepoManifestNotFound           = fmt.Errorf("repository manifest not found")
+	ErrExpectedProjectFoundRepository = fmt.Errorf("project manifest not found, found repository manifest")
+	ErrExpectedRepositoryFoundProject = fmt.Errorf("repository manifest not found, found project manifest")
+	ErrProjectDirFound                = fmt.Errorf("project directory not expected, but found")
+	ErrRepoDirFound                   = fmt.Errorf("repository directory not expected, but found")
+	ErrDirIsNotEmpty                  = fmt.Errorf("dir is not empty")
 )
 
 type Container struct {
@@ -36,6 +41,7 @@ type Container struct {
 	fs               filesystem.Fs
 	emptyDir         filesystem.Fs
 	projectDir       filesystem.Fs
+	repositoryDir    filesystem.Fs
 	dialogs          *dialog.Dialogs
 	logger           *zap.SugaredLogger
 	options          *options.Options
@@ -74,9 +80,14 @@ func (c *Container) BasePath() string {
 
 func (c *Container) EmptyDir() (filesystem.Fs, error) {
 	if c.emptyDir == nil {
-		// Metadata dir is not expected
-		if c.fs.Exists(filesystem.MetadataDir) {
-			return nil, ErrMetadataDirFound
+		// Project dir is not expected
+		if c.projectManifestExists() {
+			return nil, ErrProjectDirFound
+		}
+
+		// Repository dir is not expected
+		if c.repositoryManifestExists() {
+			return nil, ErrRepoDirFound
 		}
 
 		// Read directory
@@ -112,14 +123,30 @@ func (c *Container) EmptyDir() (filesystem.Fs, error) {
 
 func (c *Container) ProjectDir() (filesystem.Fs, error) {
 	if c.projectDir == nil {
-		manifestPath := filesystem.Join(filesystem.MetadataDir, manifest.FileName)
-		if !c.fs.IsFile(manifestPath) {
+		if !c.projectManifestExists() {
+			if c.repositoryManifestExists() {
+				return nil, ErrExpectedProjectFoundRepository
+			}
 			return nil, ErrProjectManifestNotFound
 		}
 
 		c.projectDir = c.fs
 	}
 	return c.projectDir, nil
+}
+
+func (c *Container) RepositoryDir() (filesystem.Fs, error) {
+	if c.repositoryDir == nil {
+		if !c.repositoryManifestExists() {
+			if c.projectManifestExists() {
+				return nil, ErrExpectedRepositoryFoundProject
+			}
+			return nil, ErrRepoManifestNotFound
+		}
+
+		c.repositoryDir = c.fs
+	}
+	return c.repositoryDir, nil
 }
 
 func (c *Container) Dialogs() *dialog.Dialogs {
@@ -270,6 +297,16 @@ func (c *Container) LoadStateOnce(loadOptions loadState.Options) (*state.State, 
 		}
 	}
 	return c.state, nil
+}
+
+func (c *Container) projectManifestExists() bool {
+	path := filesystem.Join(filesystem.MetadataDir, manifest.FileName)
+	return c.fs.IsFile(path)
+}
+
+func (c *Container) repositoryManifestExists() bool {
+	path := filesystem.Join(filesystem.MetadataDir, repository.FileName)
+	return c.fs.IsFile(path)
 }
 
 func (c *Container) serviceUrl(id string) (string, error) {
