@@ -3,6 +3,7 @@ package state
 import (
 	"context"
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/defaultbucket"
 	"sync"
 
 	"go.uber.org/zap"
@@ -125,6 +126,7 @@ func newState(options *Options) *State {
 		sharedcode.NewLinksMapper(s.localManager, mapperContext),
 		transformation.NewMapper(mapperContext),
 		description.NewMapper(),
+		defaultbucket.NewMapper(mapperContext),
 	}
 	s.mapper.AddMapper(mappers...)
 
