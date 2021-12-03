@@ -9,7 +9,14 @@ Examples:
 {{.Example}}{{end}}{{if .HasAvailableSubCommands}}
 
 Available Commands:
-{{ cmds . }}{{end}}{{ if .HasAvailableLocalFlags }}
+{{ cmds . }}
+{{- end -}}
+{{- if .Annotations.aliases }}
+
+Aliases:
+{{ .Annotations.aliases }}
+{{- end -}}
+{{- if .HasAvailableLocalFlags }}
 
 Flags:
 {{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}

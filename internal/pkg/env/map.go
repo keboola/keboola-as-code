@@ -48,6 +48,15 @@ func (m *Map) ToString() (string, error) {
 	return godotenv.Marshal(m.data)
 }
 
+func (m *Map) ToSlice() []string {
+	var out []string
+	for _, k := range m.Keys() {
+		v := m.Get(k)
+		out = append(out, fmt.Sprintf(`%s=%s`, k, v))
+	}
+	return out
+}
+
 func (m *Map) ToMap() map[string]string {
 	data := make(map[string]string)
 	for k, v := range m.data {

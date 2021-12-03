@@ -1,1 +1,1 @@
-workflows --ci-push=false
+ci workflows --ci-push=false

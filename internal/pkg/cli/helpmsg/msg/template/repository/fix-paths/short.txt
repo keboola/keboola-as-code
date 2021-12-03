@@ -1,0 +1,1 @@
+Normalize all paths in the repository.
