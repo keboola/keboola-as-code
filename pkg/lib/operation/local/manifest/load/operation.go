@@ -9,15 +9,14 @@ import (
 
 type dependencies interface {
 	Logger() *zap.SugaredLogger
-	Fs() filesystem.Fs
-	AssertMetaDirExists() error
+	ProjectDir() (filesystem.Fs, error)
 }
 
 func Run(d dependencies) (*manifest.Manifest, error) {
 	logger := d.Logger()
-	fs := d.Fs()
 
-	if err := d.AssertMetaDirExists(); err != nil {
+	fs, err := d.ProjectDir()
+	if err != nil {
 		return nil, err
 	}
 

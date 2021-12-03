@@ -10,13 +10,19 @@ import (
 
 type dependencies interface {
 	Logger() *zap.SugaredLogger
-	Fs() filesystem.Fs
+	EmptyDir() (filesystem.Fs, error)
 }
 
 func Run(d dependencies) error {
-	if err := d.Fs().Mkdir(filesystem.MetadataDir); err != nil {
+	fs, err := d.EmptyDir()
+	if err != nil {
+		return err
+	}
+
+	if err := fs.Mkdir(filesystem.MetadataDir); err != nil {
 		return fmt.Errorf("cannot create metadata directory \"%s\": %w", filesystem.MetadataDir, err)
 	}
+
 	d.Logger().Infof("Created metadata directory \"%s\".", filesystem.MetadataDir)
 	return nil
 }

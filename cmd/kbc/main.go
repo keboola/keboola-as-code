@@ -20,6 +20,6 @@ func main() {
 	}
 
 	// Run command
-	rootCmd := cmd.NewRootCommand(os.Stdin, os.Stdout, os.Stderr, prompt, osEnvs, aferofs.NewLocalFsFindProjectDir)
+	rootCmd := cmd.NewRootCommand(os.Stdin, os.Stdout, os.Stderr, prompt, osEnvs, aferofs.NewLocalFsFindKeboolaDir)
 	os.Exit(rootCmd.Execute())
 }

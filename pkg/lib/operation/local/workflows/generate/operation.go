@@ -23,7 +23,7 @@ func (o Options) Enabled() bool {
 type dependencies interface {
 	Ctx() context.Context
 	Logger() *zap.SugaredLogger
-	Fs() filesystem.Fs
+	ProjectDir() (filesystem.Fs, error)
 }
 
 func Run(o Options, d dependencies) (err error) {
@@ -31,7 +31,12 @@ func Run(o Options, d dependencies) (err error) {
 		return nil
 	}
 
-	return workflows.GenerateFiles(d.Logger(), d.Fs(), &workflows.Options{
+	fs, err := d.ProjectDir()
+	if err != nil {
+		return err
+	}
+
+	return workflows.GenerateFiles(d.Logger(), fs, &workflows.Options{
 		Validate:   o.Validate,
 		Push:       o.Push,
 		Pull:       o.Pull,

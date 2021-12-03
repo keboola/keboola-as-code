@@ -21,7 +21,7 @@ func InitCommand(depsProvider dependencies.Provider) *cobra.Command {
 			start := time.Now()
 
 			// Metadata directory must not exists
-			if err := d.AssertMetaDirNotExists(); err != nil {
+			if _, err := d.EmptyDir(); err != nil {
 				return err
 			}
 

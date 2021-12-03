@@ -27,7 +27,7 @@ func TestFindProjectDir(t *testing.T) {
 	assert.NoError(t, os.MkdirAll(metadataDir, 0o755))
 	assert.NoError(t, os.MkdirAll(workingDir, 0o755))
 
-	dir, err := FindProjectDir(zap.NewNop().Sugar(), workingDir)
+	dir, err := FindKeboolaDir(zap.NewNop().Sugar(), workingDir)
 	assert.NoError(t, err)
 	assert.Equal(t, projectDir, dir)
 }
@@ -35,7 +35,7 @@ func TestFindProjectDir(t *testing.T) {
 func TestFindProjectDirNotFound(t *testing.T) {
 	t.Parallel()
 	workingDir := t.TempDir()
-	dir, err := FindProjectDir(zap.NewNop().Sugar(), workingDir)
+	dir, err := FindKeboolaDir(zap.NewNop().Sugar(), workingDir)
 	assert.NoError(t, err)
 	assert.Equal(t, workingDir, dir)
 }
