@@ -32,8 +32,8 @@ type dependencies interface {
 	SchedulerApi() (*scheduler.Api, error)
 	EmptyDir() (filesystem.Fs, error)
 	ProjectDir() (filesystem.Fs, error)
-	CreateManifest(o createManifest.Options) (*manifest.Manifest, error)
-	Manifest() (*manifest.Manifest, error)
+	CreateProjectManifest(o createManifest.Options) (*manifest.Manifest, error)
+	ProjectManifest() (*manifest.Manifest, error)
 	LoadStateOnce(loadOptions loadState.Options) (*state.State, error)
 }
 
@@ -46,7 +46,7 @@ func Run(o Options, d dependencies) (err error) {
 	}
 
 	// Create manifest
-	if _, err := d.CreateManifest(o.ManifestOptions); err != nil {
+	if _, err := d.CreateProjectManifest(o.ManifestOptions); err != nil {
 		return err
 	}
 

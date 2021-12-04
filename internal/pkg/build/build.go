@@ -1,7 +1,10 @@
 //nolint:gochecknoglobals
 package build
 
-const DevVersionValue = "dev"
+const (
+	DevVersionValue = "dev"
+	MajorVersion    = 2
+)
 
 // Defined on build time:
 

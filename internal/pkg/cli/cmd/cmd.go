@@ -26,7 +26,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
+	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/version"
 	versionCheck "github.com/keboola/keboola-as-code/pkg/lib/operation/remote/version/check"
@@ -284,7 +284,7 @@ func (root *RootCommand) printError(errRaw error) {
 		case errors.Is(err, dependencies.ErrRepoDirFound):
 			root.Logger.Infof(`The path "%s" is an repository directory.`, root.Deps.BasePath())
 			root.Logger.Info(`Please use an empty directory.`)
-			modifiedErrs.Append(fmt.Errorf(`manifest "%s/%s" exists`, filesystem.MetadataDir, repository.FileName))
+			modifiedErrs.Append(fmt.Errorf(`manifest "%s/%s" exists`, filesystem.MetadataDir, repositoryManifest.FileName))
 		case errors.Is(err, dependencies.ErrDirIsNotEmpty):
 			root.Logger.Info(`Please use an empty directory.`)
 			modifiedErrs.Append(err)
@@ -300,12 +300,12 @@ func (root *RootCommand) printError(errRaw error) {
 			root.Logger.Infof(`Or use the "sync init" command in an empty directory.`)
 			modifiedErrs.Append(fmt.Errorf(`none of this and parent directories is project dir`))
 		case errors.Is(err, dependencies.ErrRepoManifestNotFound):
-			root.Logger.Infof(`Repository directory must contain the "%s/%s" file.`, filesystem.MetadataDir, repository.FileName)
+			root.Logger.Infof(`Repository directory must contain the "%s/%s" file.`, filesystem.MetadataDir, repositoryManifest.FileName)
 			root.Logger.Infof(`Please change working directory to a repository directory.`)
 			root.Logger.Infof(`Or use the "template repository init" command in an empty directory.`)
 			modifiedErrs.Append(fmt.Errorf(`none of this and parent directories is repository dir`))
 		case errors.Is(err, dependencies.ErrExpectedRepositoryFoundProject):
-			root.Logger.Infof(`Repository directory must contain the "%s/%s" file.`, filesystem.MetadataDir, repository.FileName)
+			root.Logger.Infof(`Repository directory must contain the "%s/%s" file.`, filesystem.MetadataDir, repositoryManifest.FileName)
 			root.Logger.Infof(`You are in the project directory, not in the template repository.`)
 			root.Logger.Infof(`Please change working directory to a repository directory.`)
 			root.Logger.Infof(`Or use the "template repository init" command in an empty directory.`)

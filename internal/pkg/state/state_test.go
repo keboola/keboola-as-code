@@ -211,7 +211,7 @@ func loadTestManifest(t *testing.T, envs *env.Map, localState string) *manifest.
 	testhelper.ReplaceEnvsDir(fs, `/`, envs)
 
 	// Load manifest
-	m, err := manifest.LoadManifest(fs, zap.NewNop().Sugar())
+	m, err := manifest.Load(fs, zap.NewNop().Sugar())
 	assert.NoError(t, err)
 	m.Project.Id = 12345
 	m.Project.ApiHost = "connection.keboola.com"

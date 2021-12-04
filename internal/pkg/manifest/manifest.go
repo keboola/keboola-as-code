@@ -8,6 +8,7 @@ import (
 	"github.com/iancoleman/orderedmap"
 	"go.uber.org/zap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/build"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -54,7 +55,7 @@ func newManifest(projectId int, apiHost string, fs filesystem.Fs) *Manifest {
 	return &Manifest{
 		fs: fs,
 		Content: &Content{
-			Version:  2,
+			Version:  build.MajorVersion,
 			Project:  model.Project{Id: projectId, ApiHost: apiHost},
 			SortBy:   model.SortById,
 			Naming:   model.DefaultNamingWithIds(),
@@ -67,7 +68,7 @@ func newManifest(projectId int, apiHost string, fs filesystem.Fs) *Manifest {
 	}
 }
 
-func LoadManifest(fs filesystem.Fs, logger *zap.SugaredLogger) (*Manifest, error) {
+func Load(fs filesystem.Fs, logger *zap.SugaredLogger) (*Manifest, error) {
 	// Exists?
 	path := filesystem.Join(filesystem.MetadataDir, FileName)
 	if !fs.IsFile(path) {
@@ -94,7 +95,7 @@ func LoadManifest(fs filesystem.Fs, logger *zap.SugaredLogger) (*Manifest, error
 	}
 
 	// Set new version
-	m.Content.Version = 2
+	m.Content.Version = build.MajorVersion
 
 	// Read all manifest records
 	for _, branch := range m.Content.Branches {
@@ -194,12 +195,11 @@ func (m *Manifest) Save() error {
 	}
 
 	// Write JSON file
-	path := filesystem.Join(filesystem.MetadataDir, FileName)
 	content, err := json.EncodeString(m.Content, true)
 	if err != nil {
 		return utils.PrefixError(`cannot encode manifest`, err)
 	}
-	file := filesystem.CreateFile(path, content)
+	file := filesystem.CreateFile(m.Path(), content)
 	if err := m.fs.WriteFile(file); err != nil {
 		return err
 	}

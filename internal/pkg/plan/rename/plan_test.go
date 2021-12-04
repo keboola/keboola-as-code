@@ -105,7 +105,7 @@ func loadTestManifest(t *testing.T, inputDir string) (*manifest.Manifest, filesy
 	testhelper.ReplaceEnvsDir(fs, `/`, envs)
 
 	// Load manifest
-	m, err := manifest.LoadManifest(fs, zap.NewNop().Sugar())
+	m, err := manifest.Load(fs, zap.NewNop().Sugar())
 	assert.NoError(t, err)
 
 	return m, fs

@@ -20,7 +20,7 @@ func Run(d dependencies) (*manifest.Manifest, error) {
 		return nil, err
 	}
 
-	m, err := manifest.LoadManifest(fs, logger)
+	m, err := manifest.Load(fs, logger)
 	if err != nil {
 		return nil, err
 	}

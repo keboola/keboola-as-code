@@ -12,15 +12,17 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
+	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
+	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
-	createManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/local/manifest/create"
-	loadManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/local/manifest/load"
+	createProjectManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/local/manifest/create"
+	loadProjectManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/local/manifest/load"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
+	createRepositoryManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/manifest/create"
+	loadRepositoryManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/manifest/load"
 )
 
 var (
@@ -36,23 +38,24 @@ var (
 )
 
 type Container struct {
-	ctx              context.Context
-	envs             *env.Map
-	fs               filesystem.Fs
-	emptyDir         filesystem.Fs
-	projectDir       filesystem.Fs
-	repositoryDir    filesystem.Fs
-	dialogs          *dialog.Dialogs
-	logger           *zap.SugaredLogger
-	options          *options.Options
-	hostFromManifest bool // load Storage Api host from manifest
-	serviceUrls      map[remote.ServiceId]remote.ServiceUrl
-	storageApi       *remote.StorageApi
-	encryptionApi    *encryption.Api
-	schedulerApi     *scheduler.Api
-	eventSender      *event.Sender
-	manifest         *manifest.Manifest
-	state            *state.State
+	ctx                context.Context
+	envs               *env.Map
+	fs                 filesystem.Fs
+	emptyDir           filesystem.Fs
+	projectDir         filesystem.Fs
+	repositoryDir      filesystem.Fs
+	dialogs            *dialog.Dialogs
+	logger             *zap.SugaredLogger
+	options            *options.Options
+	hostFromManifest   bool // load Storage Api host from manifest
+	serviceUrls        map[remote.ServiceId]remote.ServiceUrl
+	storageApi         *remote.StorageApi
+	encryptionApi      *encryption.Api
+	schedulerApi       *scheduler.Api
+	eventSender        *event.Sender
+	projectManifest    *projectManifest.Manifest
+	repositoryManifest *repositoryManifest.Manifest
+	state              *state.State
 }
 
 func NewContainer(ctx context.Context, envs *env.Map, fs filesystem.Fs, dialogs *dialog.Dialogs, logger *zap.SugaredLogger, options *options.Options) *Container {
@@ -79,12 +82,12 @@ func (c *Container) BasePath() string {
 }
 
 func (c *Container) ProjectManifestExists() bool {
-	path := filesystem.Join(filesystem.MetadataDir, manifest.FileName)
+	path := filesystem.Join(filesystem.MetadataDir, projectManifest.FileName)
 	return c.fs.IsFile(path)
 }
 
 func (c *Container) RepositoryManifestExists() bool {
-	path := filesystem.Join(filesystem.MetadataDir, repository.FileName)
+	path := filesystem.Join(filesystem.MetadataDir, repositoryManifest.FileName)
 	return c.fs.IsFile(path)
 }
 
@@ -188,7 +191,7 @@ func (c *Container) StorageApi() (*remote.StorageApi, error) {
 		// Get host
 		var host string
 		if c.hostFromManifest {
-			if m, err := c.Manifest(); err == nil {
+			if m, err := c.ProjectManifest(); err == nil {
 				host = m.Project.ApiHost
 			} else {
 				return nil, err
@@ -220,8 +223,8 @@ func (c *Container) StorageApi() (*remote.StorageApi, error) {
 		}
 
 		// Token and manifest project ID must be same
-		if c.manifest != nil && c.manifest.Project.Id != c.storageApi.ProjectId() {
-			return nil, fmt.Errorf(`given token is from the project "%d", but in manifest is defined project "%d"`, c.storageApi.ProjectId(), c.manifest.Project.Id)
+		if c.projectManifest != nil && c.projectManifest.Project.Id != c.storageApi.ProjectId() {
+			return nil, fmt.Errorf(`given token is from the project "%d", but in manifest is defined project "%d"`, c.storageApi.ProjectId(), c.projectManifest.Project.Id)
 		}
 	}
 	return c.storageApi, nil
@@ -276,9 +279,9 @@ func (c *Container) EventSender() (*event.Sender, error) {
 	return c.eventSender, nil
 }
 
-func (c *Container) CreateManifest(o createManifest.Options) (*manifest.Manifest, error) {
-	if m, err := createManifest.Run(o, c); err == nil {
-		c.manifest = m
+func (c *Container) CreateProjectManifest(o createProjectManifest.Options) (*projectManifest.Manifest, error) {
+	if m, err := createProjectManifest.Run(o, c); err == nil {
+		c.projectManifest = m
 		c.projectDir = c.fs
 		c.emptyDir = nil
 		return m, nil
@@ -287,15 +290,37 @@ func (c *Container) CreateManifest(o createManifest.Options) (*manifest.Manifest
 	}
 }
 
-func (c *Container) Manifest() (*manifest.Manifest, error) {
-	if c.manifest == nil {
-		if m, err := loadManifest.Run(c); err == nil {
-			c.manifest = m
+func (c *Container) ProjectManifest() (*projectManifest.Manifest, error) {
+	if c.projectManifest == nil {
+		if m, err := loadProjectManifest.Run(c); err == nil {
+			c.projectManifest = m
 		} else {
 			return nil, err
 		}
 	}
-	return c.manifest, nil
+	return c.projectManifest, nil
+}
+
+func (c *Container) CreateRepositoryManifest() (*repositoryManifest.Manifest, error) {
+	if m, err := createRepositoryManifest.Run(c); err == nil {
+		c.repositoryManifest = m
+		c.repositoryDir = c.fs
+		c.emptyDir = nil
+		return m, nil
+	} else {
+		return nil, fmt.Errorf(`cannot create manifest: %w`, err)
+	}
+}
+
+func (c *Container) RepositoryManifest() (*repositoryManifest.Manifest, error) {
+	if c.projectManifest == nil {
+		if m, err := loadRepositoryManifest.Run(c); err == nil {
+			c.repositoryManifest = m
+		} else {
+			return nil, err
+		}
+	}
+	return c.repositoryManifest, nil
 }
 
 func (c *Container) LoadStateOnce(loadOptions loadState.Options) (*state.State, error) {
