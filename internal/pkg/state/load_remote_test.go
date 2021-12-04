@@ -20,9 +20,9 @@ import (
 func TestLoadRemoteStateEmpty(t *testing.T) {
 	t.Parallel()
 	m := createManifest(t)
-	state, _ := loadRemoteState(t, m, "empty.json")
+	state, _, remoteErr := loadRemoteState(t, m, "empty.json")
 	assert.NotNil(t, state)
-	assert.Empty(t, state.RemoteErrors().Errors)
+	assert.Empty(t, remoteErr)
 	assert.Len(t, state.Branches(), 1)
 	assert.Len(t, state.Configs(), 0)
 }
@@ -30,9 +30,9 @@ func TestLoadRemoteStateEmpty(t *testing.T) {
 func TestLoadRemoteStateComplex(t *testing.T) {
 	t.Parallel()
 	m := createManifest(t)
-	state, envs := loadRemoteState(t, m, "complex.json")
+	state, envs, remoteErr := loadRemoteState(t, m, "complex.json")
 	assert.NotNil(t, state)
-	assert.Empty(t, state.RemoteErrors().Errors)
+	assert.Empty(t, remoteErr)
 	assert.Equal(t, complexRemoteExpectedBranches(envs), state.Branches())
 	assert.Equal(t, complexRemoteExpectedConfigs(envs), state.Configs())
 	assert.Equal(t, complexRemoteExpectedConfigsRows(envs), state.ConfigRows())
@@ -42,9 +42,9 @@ func TestLoadRemoteStateAllowedBranches(t *testing.T) {
 	t.Parallel()
 	m := createManifest(t)
 	m.Content.AllowedBranches = model.AllowedBranches{"f??"} // foo
-	state, envs := loadRemoteState(t, m, "complex.json")
+	state, envs, remoteErr := loadRemoteState(t, m, "complex.json")
 	assert.NotNil(t, state)
-	assert.Empty(t, state.RemoteErrors().Errors)
+	assert.Empty(t, remoteErr)
 	// Only Foo branch is loaded, other are "invisible"
 	assert.Equal(t, []*model.BranchState{
 		{
@@ -448,7 +448,7 @@ func createManifest(t *testing.T) *manifest.Manifest {
 	return m
 }
 
-func loadRemoteState(t *testing.T, m *manifest.Manifest, projectStateFile string) (*State, *env.Map) {
+func loadRemoteState(t *testing.T, m *manifest.Manifest, projectStateFile string) (*State, *env.Map, error) {
 	t.Helper()
 
 	envs := env.Empty()
@@ -457,6 +457,6 @@ func loadRemoteState(t *testing.T, m *manifest.Manifest, projectStateFile string
 
 	logger, _ := utils.NewDebugLogger()
 	state := newState(NewOptions(m, project.StorageApi(), project.SchedulerApi(), context.Background(), logger))
-	state.loadRemoteState()
-	return state, envs
+	remoteErr := state.loadRemoteState()
+	return state, envs, remoteErr
 }

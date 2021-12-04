@@ -49,10 +49,10 @@ func TestRenameAllPlan(t *testing.T) {
 	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
 	options := state.NewOptions(m, api, schedulerApi, context.Background(), logger)
 	options.LoadLocalState = true
-	projectState, ok := state.LoadState(options)
-	if !ok {
-		assert.FailNow(t, projectState.LocalErrors().Error())
-	}
+	projectState, ok, localErr, remoteErr := state.LoadState(options)
+	assert.True(t, ok)
+	assert.NoError(t, localErr)
+	assert.NoError(t, remoteErr)
 
 	// Get rename plan
 	plan, err := NewPlan(projectState)

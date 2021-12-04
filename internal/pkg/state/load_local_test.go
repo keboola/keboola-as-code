@@ -22,9 +22,9 @@ func TestLoadLocalStateMinimal(t *testing.T) {
 	t.Parallel()
 
 	m := loadManifest(t, "minimal")
-	state := loadLocalTestState(t, m)
+	state, localErr := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
-	assert.Empty(t, state.LocalErrors().Errors)
+	assert.Empty(t, localErr)
 	assert.Len(t, state.Branches(), 1)
 	assert.Len(t, state.Configs(), 1)
 	assert.Empty(t, state.UntrackedPaths())
@@ -45,9 +45,9 @@ func TestLoadLocalStateComplex(t *testing.T) {
 	t.Parallel()
 
 	m := loadManifest(t, "complex")
-	state := loadLocalTestState(t, m)
+	state, localErr := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
-	assert.Empty(t, state.LocalErrors().Errors)
+	assert.Empty(t, localErr)
 	assert.Equal(t, complexLocalExpectedBranches(), utils.SortByName(state.Branches()))
 	assert.Equal(t, complexLocalExpectedConfigs(), utils.SortByName(state.Configs()))
 	assert.Equal(t, complexLocalExpectedConfigRows(), utils.SortByName(state.ConfigRows()))
@@ -101,138 +101,138 @@ func TestLoadLocalStateAllowedBranches(t *testing.T) {
 
 	m := loadManifest(t, "minimal")
 	m.Content.AllowedBranches = model.AllowedBranches{"main"}
-	state := loadLocalTestState(t, m)
+	state, localErr := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
-	assert.Empty(t, state.LocalErrors().Errors)
+	assert.Empty(t, localErr)
 }
 
 func TestLoadLocalStateAllowedBranchesError(t *testing.T) {
 	t.Parallel()
 	m := loadManifest(t, "complex")
 	m.Content.AllowedBranches = model.AllowedBranches{"main"}
-	state := loadLocalTestState(t, m)
+	state, localErr := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
-	assert.Equal(t, `found manifest record for branch "123", but it is not allowed by the manifest definition`, state.LocalErrors().Error())
+	assert.Equal(t, `found manifest record for branch "123", but it is not allowed by the manifest definition`, localErr.Error())
 }
 
 func TestLoadLocalStateBranchMissingMetaJson(t *testing.T) {
 	t.Parallel()
 	m := loadManifest(t, "branch-missing-meta-json")
-	state := loadLocalTestState(t, m)
+	state, localErr := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
-	assert.Greater(t, state.LocalErrors().Len(), 0)
-	assert.Equal(t, `missing branch metadata file "main/meta.json"`, state.LocalErrors().Error())
+	assert.Error(t, localErr)
+	assert.Equal(t, `missing branch metadata file "main/meta.json"`, localErr.Error())
 }
 
 func TestLoadLocalStateBranchMissingDescription(t *testing.T) {
 	t.Parallel()
 	m := loadManifest(t, "branch-missing-description")
-	state := loadLocalTestState(t, m)
+	state, localErr := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
-	assert.Greater(t, state.LocalErrors().Len(), 0)
-	assert.Equal(t, `missing branch description file "main/description.md"`, state.LocalErrors().Error())
+	assert.Error(t, localErr)
+	assert.Equal(t, `missing branch description file "main/description.md"`, localErr.Error())
 }
 
 func TestLoadLocalStateConfigMissingConfigJson(t *testing.T) {
 	t.Parallel()
 	m := loadManifest(t, "config-missing-config-json")
-	state := loadLocalTestState(t, m)
+	state, localErr := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
-	assert.Greater(t, state.LocalErrors().Len(), 0)
-	assert.Equal(t, `missing config file "123-branch/extractor/ex-generic-v2/456-todos/config.json"`, state.LocalErrors().Error())
+	assert.Error(t, localErr)
+	assert.Equal(t, `missing config file "123-branch/extractor/ex-generic-v2/456-todos/config.json"`, localErr.Error())
 }
 
 func TestLoadLocalStateConfigMissingMetaJson(t *testing.T) {
 	t.Parallel()
 	m := loadManifest(t, "config-missing-meta-json")
-	state := loadLocalTestState(t, m)
+	state, localErr := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
-	assert.Greater(t, state.LocalErrors().Len(), 0)
-	assert.Equal(t, `missing config metadata file "123-branch/extractor/ex-generic-v2/456-todos/meta.json"`, state.LocalErrors().Error())
+	assert.Error(t, localErr)
+	assert.Equal(t, `missing config metadata file "123-branch/extractor/ex-generic-v2/456-todos/meta.json"`, localErr.Error())
 }
 
 func TestLoadLocalStateConfigMissingDescription(t *testing.T) {
 	t.Parallel()
 	m := loadManifest(t, "config-missing-description")
-	state := loadLocalTestState(t, m)
+	state, localErr := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
-	assert.Greater(t, state.LocalErrors().Len(), 0)
-	assert.Equal(t, `missing config description file "123-branch/extractor/ex-generic-v2/456-todos/description.md"`, state.LocalErrors().Error())
+	assert.Error(t, localErr)
+	assert.Equal(t, `missing config description file "123-branch/extractor/ex-generic-v2/456-todos/description.md"`, localErr.Error())
 }
 
 func TestLoadLocalStateConfigRowMissingConfigJson(t *testing.T) {
 	t.Parallel()
 	m := loadManifest(t, "config-row-missing-config-json")
-	state := loadLocalTestState(t, m)
+	state, localErr := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
-	assert.Greater(t, state.LocalErrors().Len(), 0)
-	assert.Equal(t, `missing config row file "123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users/config.json"`, state.LocalErrors().Error())
+	assert.Error(t, localErr)
+	assert.Equal(t, `missing config row file "123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users/config.json"`, localErr.Error())
 }
 
 func TestLoadLocalStateConfigRowMissingMetaJson(t *testing.T) {
 	t.Parallel()
 	m := loadManifest(t, "config-row-missing-meta-json")
-	state := loadLocalTestState(t, m)
+	state, localErr := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
-	assert.Greater(t, state.LocalErrors().Len(), 0)
-	assert.Equal(t, `missing config row metadata file "123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json"`, state.LocalErrors().Error())
+	assert.Error(t, localErr)
+	assert.Equal(t, `missing config row metadata file "123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json"`, localErr.Error())
 }
 
 func TestLoadLocalStateBranchInvalidMetaJson(t *testing.T) {
 	t.Parallel()
 	m := loadManifest(t, "branch-invalid-meta-json")
-	state := loadLocalTestState(t, m)
+	state, localErr := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
-	assert.Greater(t, state.LocalErrors().Len(), 0)
-	assert.Equal(t, "branch metadata file \"main/meta.json\" is invalid:\n  - invalid character 'f' looking for beginning of object key string, offset: 3", state.LocalErrors().Error())
+	assert.Error(t, localErr)
+	assert.Equal(t, "branch metadata file \"main/meta.json\" is invalid:\n  - invalid character 'f' looking for beginning of object key string, offset: 3", localErr.Error())
 }
 
 func TestLoadLocalStateConfigRowMissingDescription(t *testing.T) {
 	t.Parallel()
 	m := loadManifest(t, "config-row-missing-description")
-	state := loadLocalTestState(t, m)
+	state, localErr := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
-	assert.Greater(t, state.LocalErrors().Len(), 0)
-	assert.Equal(t, `missing config row description file "123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users/description.md"`, state.LocalErrors().Error())
+	assert.Error(t, localErr)
+	assert.Equal(t, `missing config row description file "123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users/description.md"`, localErr.Error())
 }
 
 func TestLoadLocalStateConfigInvalidConfigJson(t *testing.T) {
 	t.Parallel()
 	m := loadManifest(t, "config-invalid-config-json")
-	state := loadLocalTestState(t, m)
+	state, localErr := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
-	assert.Greater(t, state.LocalErrors().Len(), 0)
-	assert.Equal(t, "config file \"123-branch/extractor/ex-generic-v2/456-todos/config.json\" is invalid:\n  - invalid character 'f' looking for beginning of object key string, offset: 3", state.LocalErrors().Error())
+	assert.Error(t, localErr)
+	assert.Equal(t, "config file \"123-branch/extractor/ex-generic-v2/456-todos/config.json\" is invalid:\n  - invalid character 'f' looking for beginning of object key string, offset: 3", localErr.Error())
 }
 
 func TestLoadLocalStateConfigInvalidMetaJson(t *testing.T) {
 	t.Parallel()
 	m := loadManifest(t, "config-invalid-meta-json")
-	state := loadLocalTestState(t, m)
+	state, localErr := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
-	assert.Greater(t, state.LocalErrors().Len(), 0)
-	assert.Equal(t, "config metadata file \"123-branch/extractor/ex-generic-v2/456-todos/meta.json\" is invalid:\n  - invalid character 'f' looking for beginning of object key string, offset: 3", state.LocalErrors().Error())
+	assert.Error(t, localErr)
+	assert.Equal(t, "config metadata file \"123-branch/extractor/ex-generic-v2/456-todos/meta.json\" is invalid:\n  - invalid character 'f' looking for beginning of object key string, offset: 3", localErr.Error())
 }
 
 func TestLoadLocalStateConfigRowInvalidConfigJson(t *testing.T) {
 	t.Parallel()
 	m := loadManifest(t, "config-row-invalid-config-json")
-	state := loadLocalTestState(t, m)
+	state, localErr := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
-	assert.Greater(t, state.LocalErrors().Len(), 0)
-	assert.Equal(t, "config row file \"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/56-disabled/config.json\" is invalid:\n  - invalid character 'f' looking for beginning of object key string, offset: 3", state.LocalErrors().Error())
+	assert.Error(t, localErr)
+	assert.Equal(t, "config row file \"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/56-disabled/config.json\" is invalid:\n  - invalid character 'f' looking for beginning of object key string, offset: 3", localErr.Error())
 }
 
 func TestLoadLocalStateConfigRowInvalidMetaJson(t *testing.T) {
 	t.Parallel()
 	m := loadManifest(t, "config-row-invalid-meta-json")
-	state := loadLocalTestState(t, m)
+	state, localErr := loadLocalTestState(t, m)
 	assert.NotNil(t, state)
-	assert.Greater(t, state.LocalErrors().Len(), 0)
-	assert.Equal(t, "config row metadata file \"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json\" is invalid:\n  - invalid character 'f' looking for beginning of object key string, offset: 3", state.LocalErrors().Error())
+	assert.Error(t, localErr)
+	assert.Equal(t, "config row metadata file \"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json\" is invalid:\n  - invalid character 'f' looking for beginning of object key string, offset: 3", localErr.Error())
 }
 
-func loadLocalTestState(t *testing.T, m *manifest.Manifest) *State {
+func loadLocalTestState(t *testing.T, m *manifest.Manifest) (*State, error) {
 	t.Helper()
 
 	// Mocked API
@@ -263,8 +263,9 @@ func loadLocalTestState(t *testing.T, m *manifest.Manifest) *State {
 	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
 	options := NewOptions(m, api, schedulerApi, context.Background(), logger)
 	options.LoadLocalState = true
-	state, _ := LoadState(options)
-	return state
+	state, _, localErr, remoteErr := LoadState(options)
+	assert.NoError(t, remoteErr)
+	return state, localErr
 }
 
 func loadManifest(t *testing.T, projectDirName string) *manifest.Manifest {

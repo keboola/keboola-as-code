@@ -763,6 +763,8 @@ func createProjectState(t *testing.T) *state.State {
 	options := state.NewOptions(m, storageApi, schedulerApi, context.Background(), logger)
 	options.LoadLocalState = false
 	options.LoadRemoteState = false
-	s, _ := state.LoadState(options)
+	s, _, localErr, remoteErr := state.LoadState(options)
+	assert.NoError(t, localErr)
+	assert.NoError(t, remoteErr)
 	return s
 }
