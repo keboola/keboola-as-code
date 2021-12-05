@@ -43,7 +43,7 @@ func (w *localWriter) save() error {
 	blocksDir := w.Naming.BlocksDir(w.ObjectManifest.Path())
 
 	// Generate ".gitkeep" to preserve the "blocks" directory, even if there are no blocks.
-	gitKeep := filesystem.CreateFile(filesystem.Join(blocksDir, `.gitkeep`), ``)
+	gitKeep := filesystem.NewFile(filesystem.Join(blocksDir, `.gitkeep`), ``)
 	w.ExtraFiles = append(w.ExtraFiles, gitKeep)
 
 	// Generate files for blocks
@@ -91,14 +91,14 @@ func (w *localWriter) generateCodeFiles(code *model.Code) {
 
 	// Create code file
 	file := filesystem.
-		CreateFile(w.Naming.CodeFilePath(code), code.ScriptsToString()).
+		NewFile(w.Naming.CodeFilePath(code), code.ScriptsToString()).
 		SetDescription(`code`)
 	w.ExtraFiles = append(w.ExtraFiles, file)
 }
 
 func (w *localWriter) createMetadataFile(path, desc string, content *orderedmap.OrderedMap) {
 	file, err := filesystem.
-		CreateJsonFile(path, content).
+		NewJsonFile(path, content).
 		SetDescription(desc).
 		ToFile()
 	if err == nil {

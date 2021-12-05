@@ -85,7 +85,7 @@ func (m *Manifest) Save() error {
 	if err != nil {
 		return utils.PrefixError(`cannot encode manifest`, err)
 	}
-	file := filesystem.CreateFile(m.Path(), content)
+	file := filesystem.NewFile(m.Path(), content)
 	if err := m.fs.WriteFile(file); err != nil {
 		return err
 	}

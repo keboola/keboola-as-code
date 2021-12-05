@@ -27,14 +27,20 @@ type JsonFile struct {
 	Path    string
 }
 
-func CreateFile(path, content string) *File {
+// FileWrapper is anything that can be converted to File.
+type FileWrapper interface {
+	GetPath() string
+	ToFile() (*File, error)
+}
+
+func NewFile(path, content string) *File {
 	file := &File{}
 	file.Path = path
 	file.Content = content
 	return file
 }
 
-func CreateJsonFile(path string, content *orderedmap.OrderedMap) *JsonFile {
+func NewJsonFile(path string, content *orderedmap.OrderedMap) *JsonFile {
 	file := &JsonFile{}
 	file.Path = path
 	file.Content = content
@@ -44,6 +50,14 @@ func CreateJsonFile(path string, content *orderedmap.OrderedMap) *JsonFile {
 func (f *File) SetDescription(desc string) *File {
 	f.Desc = desc
 	return f
+}
+
+func (f *File) GetPath() string {
+	return f.Path
+}
+
+func (f *File) ToFile() (*File, error) {
+	return f, nil
 }
 
 func (f *File) ToJsonFile() (*JsonFile, error) {
@@ -63,6 +77,10 @@ func (f *File) ToJsonFile() (*JsonFile, error) {
 func (f *JsonFile) SetDescription(desc string) *JsonFile {
 	f.Desc = desc
 	return f
+}
+
+func (f *JsonFile) GetPath() string {
+	return f.Path
 }
 
 func (f *JsonFile) ToFile() (*File, error) {

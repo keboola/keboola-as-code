@@ -293,7 +293,7 @@ func AssertExpectations(
 		}
 
 		// Write actual state
-		err = workingDirFs.WriteFile(filesystem.CreateFile("actual-state.json", json.MustEncodeString(actualSnapshot, true)))
+		err = workingDirFs.WriteFile(filesystem.NewFile("actual-state.json", json.MustEncodeString(actualSnapshot, true)))
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}

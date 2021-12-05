@@ -21,9 +21,9 @@ func TestMapBeforeLocalSave(t *testing.T) {
 	recipe := &model.LocalSaveRecipe{
 		ObjectManifest: orchestratorConfigState.ConfigManifest,
 		Object:         orchestratorConfigState.Remote,
-		Metadata:       filesystem.CreateJsonFile(model.MetaFile, utils.NewOrderedMap()),
-		Configuration:  filesystem.CreateJsonFile(model.ConfigFile, utils.NewOrderedMap()),
-		Description:    filesystem.CreateFile(model.DescriptionFile, ``),
+		Metadata:       filesystem.NewJsonFile(model.MetaFile, utils.NewOrderedMap()),
+		Configuration:  filesystem.NewJsonFile(model.ConfigFile, utils.NewOrderedMap()),
+		Description:    filesystem.NewFile(model.DescriptionFile, ``),
 	}
 
 	// Save
@@ -41,33 +41,33 @@ func TestMapBeforeLocalSave(t *testing.T) {
 	// Check generated files
 	phasesDir := context.Naming.PhasesDir(orchestratorConfigState.Path())
 	assert.Equal(t, []*filesystem.File{
-		filesystem.CreateFile(phasesDir+`/.gitkeep`, ``),
+		filesystem.NewFile(phasesDir+`/.gitkeep`, ``),
 		filesystem.
-			CreateFile(
+			NewFile(
 				phasesDir+`/001-phase/phase.json`,
 				`{"name":"Phase","dependsOn":[],"foo":"bar"}`,
 			).
 			SetDescription(`phase config file`),
 		filesystem.
-			CreateFile(
+			NewFile(
 				phasesDir+`/001-phase/001-task-1/task.json`,
 				`{"name":"Task 1","task":{"mode":"run","configPath":"extractor/target-config-1"},"continueOnFailure":false,"enabled":true}`,
 			).
 			SetDescription(`task config file`),
 		filesystem.
-			CreateFile(
+			NewFile(
 				phasesDir+`/001-phase/002-task-2/task.json`,
 				`{"name":"Task 2","task":{"mode":"run","configPath":"extractor/target-config-2"},"continueOnFailure":false,"enabled":false}`,
 			).
 			SetDescription(`task config file`),
 		filesystem.
-			CreateFile(
+			NewFile(
 				phasesDir+`/002-phase-with-deps/phase.json`,
 				`{"name":"Phase With Deps","dependsOn":["001-phase"]}`,
 			).
 			SetDescription(`phase config file`),
 		filesystem.
-			CreateFile(
+			NewFile(
 				phasesDir+`/002-phase-with-deps/001-task-3/task.json`,
 				`{"name":"Task 3","task":{"mode":"run","configPath":"extractor/target-config-3"},"continueOnFailure":false,"enabled":true}`,
 			).
@@ -84,9 +84,9 @@ func TestMapBeforeLocalSaveWarnings(t *testing.T) {
 	recipe := &model.LocalSaveRecipe{
 		ObjectManifest: orchestratorConfigState.ConfigManifest,
 		Object:         orchestratorConfigState.Remote,
-		Metadata:       filesystem.CreateJsonFile(model.MetaFile, utils.NewOrderedMap()),
-		Configuration:  filesystem.CreateJsonFile(model.ConfigFile, utils.NewOrderedMap()),
-		Description:    filesystem.CreateFile(model.DescriptionFile, ``),
+		Metadata:       filesystem.NewJsonFile(model.MetaFile, utils.NewOrderedMap()),
+		Configuration:  filesystem.NewJsonFile(model.ConfigFile, utils.NewOrderedMap()),
+		Description:    filesystem.NewFile(model.DescriptionFile, ``),
 	}
 
 	// Save

@@ -18,8 +18,8 @@ func TestCopyFs2FsRootToRoot(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Create files
-	assert.NoError(t, localFs.WriteFile(filesystem.CreateFile(`foo.txt`, `content1`)))
-	assert.NoError(t, localFs.WriteFile(filesystem.CreateFile(filesystem.Join(`my-dir`, `bar.txt`), `content2`)))
+	assert.NoError(t, localFs.WriteFile(filesystem.NewFile(`foo.txt`, `content1`)))
+	assert.NoError(t, localFs.WriteFile(filesystem.NewFile(filesystem.Join(`my-dir`, `bar.txt`), `content2`)))
 
 	// Copy
 	assert.NoError(t, CopyFs2Fs(localFs, ``, memoryFs, ``))
@@ -42,7 +42,7 @@ func TestCopyFs2FsDirToDir(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Create files
-	assert.NoError(t, localFs.WriteFile(filesystem.CreateFile(filesystem.Join(`my-dir`, `bar.txt`), `content`)))
+	assert.NoError(t, localFs.WriteFile(filesystem.NewFile(filesystem.Join(`my-dir`, `bar.txt`), `content`)))
 
 	// Copy
 	assert.NoError(t, CopyFs2Fs(localFs, `my-dir`, memoryFs, `my-dir-2`))

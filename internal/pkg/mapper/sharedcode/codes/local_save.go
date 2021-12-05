@@ -77,7 +77,7 @@ func (w *writer) save() error {
 
 	// Create code file
 	codeFilePath := w.Naming.SharedCodeFilePath(w.Path(), targetComponentId)
-	codeFile := filesystem.CreateFile(codeFilePath, codeContent).SetDescription(`shared code`)
+	codeFile := filesystem.NewFile(codeFilePath, codeContent).SetDescription(`shared code`)
 	w.ExtraFiles = append(w.ExtraFiles, codeFile)
 
 	// Remove "isDisabled" unnecessary value from "meta.json".

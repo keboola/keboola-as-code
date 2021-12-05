@@ -50,9 +50,9 @@ func createLocalLoadRecipe(config *model.Config, configRecord *model.ConfigManif
 	return &model.LocalLoadRecipe{
 		Object:         config,
 		ObjectManifest: configRecord,
-		Metadata:       filesystem.CreateJsonFile(model.MetaFile, utils.NewOrderedMap()),
-		Configuration:  filesystem.CreateJsonFile(model.ConfigFile, utils.NewOrderedMap()),
-		Description:    filesystem.CreateFile(model.DescriptionFile, ``),
+		Metadata:       filesystem.NewJsonFile(model.MetaFile, utils.NewOrderedMap()),
+		Configuration:  filesystem.NewJsonFile(model.ConfigFile, utils.NewOrderedMap()),
+		Description:    filesystem.NewFile(model.DescriptionFile, ``),
 	}
 }
 
@@ -60,8 +60,8 @@ func createLocalSaveRecipe(config *model.Config, configRecord *model.ConfigManif
 	return &model.LocalSaveRecipe{
 		Object:         config,
 		ObjectManifest: configRecord,
-		Metadata:       filesystem.CreateJsonFile(model.MetaFile, utils.NewOrderedMap()),
-		Configuration:  filesystem.CreateJsonFile(model.ConfigFile, utils.NewOrderedMap()),
-		Description:    filesystem.CreateFile(model.DescriptionFile, ``),
+		Metadata:       filesystem.NewJsonFile(model.MetaFile, utils.NewOrderedMap()),
+		Configuration:  filesystem.NewJsonFile(model.ConfigFile, utils.NewOrderedMap()),
+		Description:    filesystem.NewFile(model.DescriptionFile, ``),
 	}
 }

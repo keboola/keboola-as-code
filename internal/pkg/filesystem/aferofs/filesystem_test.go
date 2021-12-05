@@ -98,7 +98,7 @@ func (*testCases) TestSetLogger(t *testing.T, fs filesystem.Fs, _ *utils.Writer)
 
 func (*testCases) TestWalk(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile("my/dir2/file.txt", "foo\n")))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir2/file.txt", "foo\n")))
 
 	paths := make([]string, 0)
 	root := "."
@@ -123,7 +123,7 @@ func (*testCases) TestWalk(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 
 func (*testCases) TestGlob(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile("my/dir2/file.txt", "foo\n")))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir2/file.txt", "foo\n")))
 
 	matches, err := fs.Glob(`my/abc/*`)
 	assert.NoError(t, err)
@@ -143,7 +143,7 @@ func (*testCases) TestGlob(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 }
 
 func (*testCases) TestStat(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile("my/dir/file.txt", "foo\n")))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir/file.txt", "foo\n")))
 	s, err := fs.Stat(`my/dir/file.txt`)
 	assert.NoError(t, err)
 	assert.False(t, s.IsDir())
@@ -151,7 +151,7 @@ func (*testCases) TestStat(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 
 func (*testCases) TestReadDir(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Mkdir("my/dir/subdir"))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile("my/dir/file.txt", "foo\n")))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir/file.txt", "foo\n")))
 
 	items, err := fs.ReadDir(`my/dir`)
 	assert.NoError(t, err)
@@ -161,7 +161,7 @@ func (*testCases) TestReadDir(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 func (*testCases) TestExists(t *testing.T, fs filesystem.Fs, log *utils.Writer) {
 	// Create file
 	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filePath, "foo\n")))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filePath, "foo\n")))
 
 	// Assert
 	log.Truncate()
@@ -172,7 +172,7 @@ func (*testCases) TestExists(t *testing.T, fs filesystem.Fs, log *utils.Writer) 
 
 func (*testCases) TestIsFile(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Mkdir("my/dir"))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile("my/dir/file.txt", "foo\n")))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir/file.txt", "foo\n")))
 
 	// Assert
 	assert.True(t, fs.IsFile("my/dir/file.txt"))
@@ -182,7 +182,7 @@ func (*testCases) TestIsFile(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 
 func (*testCases) TestIsDir(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Mkdir("my/dir"))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile("my/dir/file.txt", "foo\n")))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir/file.txt", "foo\n")))
 
 	// Assert
 	assert.True(t, fs.IsDir("my/dir"))
@@ -205,7 +205,7 @@ func (*testCases) TestCreate(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 }
 
 func (*testCases) TestOpen(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(`file.txt`, "foo\n")))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(`file.txt`, "foo\n")))
 
 	fd, err := fs.Open(`file.txt`)
 	assert.NoError(t, err)
@@ -217,7 +217,7 @@ func (*testCases) TestOpen(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 }
 
 func (*testCases) TestOpenFile(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(`file.txt`, "foo\n")))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(`file.txt`, "foo\n")))
 
 	fd, err := fs.OpenFile(`file.txt`, os.O_RDONLY, 0o600)
 	assert.NoError(t, err)
@@ -239,7 +239,7 @@ func (*testCases) TestMkdir(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 func (*testCases) TestCopyFile(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
 	assert.NoError(t, fs.Mkdir("my/dir2"))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile("my/dir1/file.txt", "foo\n")))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir1/file.txt", "foo\n")))
 
 	assert.True(t, fs.Exists("my/dir1/file.txt"))
 	assert.False(t, fs.Exists("my/dir2/file.txt"))
@@ -253,8 +253,8 @@ func (*testCases) TestCopyFile(t *testing.T, fs filesystem.Fs, _ *utils.Writer) 
 func (*testCases) TestCopyFileExists(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
 	assert.NoError(t, fs.Mkdir("my/dir2"))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile("my/dir1/file.txt", "foo\n")))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile("my/dir2/file.txt", "bar\n")))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir1/file.txt", "foo\n")))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir2/file.txt", "bar\n")))
 
 	assert.True(t, fs.Exists("my/dir1/file.txt"))
 	assert.True(t, fs.Exists("my/dir2/file.txt"))
@@ -266,8 +266,8 @@ func (*testCases) TestCopyFileExists(t *testing.T, fs filesystem.Fs, _ *utils.Wr
 func (*testCases) TestCopyForce(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
 	assert.NoError(t, fs.Mkdir("my/dir2"))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile("my/dir1/file.txt", "foo\n")))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile("my/dir2/file.txt", "bar\n")))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir1/file.txt", "foo\n")))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir2/file.txt", "bar\n")))
 
 	assert.True(t, fs.Exists("my/dir1/file.txt"))
 	assert.True(t, fs.Exists("my/dir2/file.txt"))
@@ -282,7 +282,7 @@ func (*testCases) TestCopyForce(t *testing.T, fs filesystem.Fs, _ *utils.Writer)
 
 func (*testCases) TestCopyDir(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile("my/dir1/file.txt", "foo\n")))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir1/file.txt", "foo\n")))
 
 	assert.True(t, fs.Exists("my/dir1/file.txt"))
 	assert.False(t, fs.Exists("my/dir2/file.txt"))
@@ -295,7 +295,7 @@ func (*testCases) TestCopyDir(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 
 func (*testCases) TestCopyDirExists(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile("my/dir1/file.txt", "foo\n")))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir1/file.txt", "foo\n")))
 	assert.NoError(t, fs.Mkdir("my/dir2"))
 
 	assert.True(t, fs.Exists("my/dir1/file.txt"))
@@ -307,7 +307,7 @@ func (*testCases) TestCopyDirExists(t *testing.T, fs filesystem.Fs, _ *utils.Wri
 func (*testCases) TestMoveFile(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
 	assert.NoError(t, fs.Mkdir("my/dir2"))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile("my/dir1/file.txt", "foo\n")))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir1/file.txt", "foo\n")))
 
 	assert.True(t, fs.Exists("my/dir1/file.txt"))
 	assert.False(t, fs.Exists("my/dir2/file.txt"))
@@ -321,8 +321,8 @@ func (*testCases) TestMoveFile(t *testing.T, fs filesystem.Fs, _ *utils.Writer) 
 func (*testCases) TestMoveFileExists(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
 	assert.NoError(t, fs.Mkdir("my/dir2"))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile("my/dir1/file.txt", "foo\n")))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile("my/dir2/file.txt", "bar\n")))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir1/file.txt", "foo\n")))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir2/file.txt", "bar\n")))
 
 	assert.True(t, fs.Exists("my/dir1/file.txt"))
 	assert.True(t, fs.Exists("my/dir2/file.txt"))
@@ -334,8 +334,8 @@ func (*testCases) TestMoveFileExists(t *testing.T, fs filesystem.Fs, _ *utils.Wr
 func (*testCases) TestMoveForce(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
 	assert.NoError(t, fs.Mkdir("my/dir2"))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile("my/dir1/file.txt", "foo\n")))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile("my/dir2/file.txt", "bar\n")))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir1/file.txt", "foo\n")))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir2/file.txt", "bar\n")))
 
 	assert.True(t, fs.Exists("my/dir1/file.txt"))
 	assert.True(t, fs.Exists("my/dir2/file.txt"))
@@ -350,7 +350,7 @@ func (*testCases) TestMoveForce(t *testing.T, fs filesystem.Fs, _ *utils.Writer)
 
 func (*testCases) TestMoveDir(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile("my/dir1/file.txt", "foo\n")))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir1/file.txt", "foo\n")))
 
 	assert.True(t, fs.Exists("my/dir1/file.txt"))
 	assert.False(t, fs.Exists("my/dir2/file.txt"))
@@ -363,7 +363,7 @@ func (*testCases) TestMoveDir(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 
 func (*testCases) TestMoveDirExists(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile("my/dir1/file.txt", "foo\n")))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir1/file.txt", "foo\n")))
 	assert.NoError(t, fs.Mkdir("my/dir2"))
 
 	assert.True(t, fs.Exists("my/dir1/file.txt"))
@@ -374,7 +374,7 @@ func (*testCases) TestMoveDirExists(t *testing.T, fs filesystem.Fs, _ *utils.Wri
 
 func (*testCases) TestRemoveFile(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile("my/dir1/file.txt", "foo\n")))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir1/file.txt", "foo\n")))
 
 	assert.True(t, fs.Exists("my/dir1/file.txt"))
 	assert.NoError(t, fs.Remove("my/dir1/file.txt"))
@@ -383,7 +383,7 @@ func (*testCases) TestRemoveFile(t *testing.T, fs filesystem.Fs, _ *utils.Writer
 
 func (*testCases) TestRemoveDir(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile("my/dir1/file.txt", "foo\n")))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir1/file.txt", "foo\n")))
 
 	assert.True(t, fs.Exists("my/dir1"))
 	assert.NoError(t, fs.Remove("my/dir1"))
@@ -397,7 +397,7 @@ func (*testCases) TestRemoveNotExist(t *testing.T, fs filesystem.Fs, _ *utils.Wr
 func (*testCases) TestReadFile(t *testing.T, fs filesystem.Fs, log *utils.Writer) {
 	// Create file
 	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filePath, "foo\n")))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filePath, "foo\n")))
 
 	// Read
 	log.Truncate()
@@ -421,7 +421,7 @@ func (*testCases) TestWriteFile(t *testing.T, fs filesystem.Fs, log *utils.Write
 	filePath := "file.txt"
 
 	// Write
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filePath, "foo\n")))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filePath, "foo\n")))
 	assert.Equal(t, `DEBUG  Saved "file.txt"`, strings.TrimSpace(log.String()))
 
 	// Read
@@ -435,7 +435,7 @@ func (*testCases) TestWriteFileDirNotFound(t *testing.T, fs filesystem.Fs, log *
 	filePath := "my/dir/file.txt"
 
 	// Write
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filePath, "foo\n")))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filePath, "foo\n")))
 	expectedLogs := `
 DEBUG  Created directory "my/dir"
 DEBUG  Saved "my/dir/file.txt"
@@ -455,7 +455,7 @@ func (*testCases) TestWriteJsonFile(t *testing.T, fs filesystem.Fs, log *utils.W
 	// Write
 	data := utils.NewOrderedMap()
 	data.Set(`foo`, `bar`)
-	assert.NoError(t, fs.WriteJsonFile(filesystem.CreateJsonFile(filePath, data)))
+	assert.NoError(t, fs.WriteJsonFile(filesystem.NewJsonFile(filePath, data)))
 	assert.Equal(t, `DEBUG  Saved "file.json"`, strings.TrimSpace(log.String()))
 
 	// Read
@@ -507,7 +507,7 @@ func (*testCases) TestCreateOrUpdateFile(t *testing.T, fs filesystem.Fs, _ *util
 func (*testCases) TestReadJsonFile(t *testing.T, fs filesystem.Fs, log *utils.Writer) {
 	// Create file
 	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filePath, `{"foo": "bar"}`)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filePath, `{"foo": "bar"}`)))
 
 	// Read
 	log.Truncate()
@@ -521,7 +521,7 @@ func (*testCases) TestReadJsonFile(t *testing.T, fs filesystem.Fs, log *utils.Wr
 func (*testCases) TestReadJsonFileTo(t *testing.T, fs filesystem.Fs, log *utils.Writer) {
 	// Create file
 	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filePath, `{"foo": "bar"}`)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filePath, `{"foo": "bar"}`)))
 
 	// Read
 	log.Truncate()
@@ -535,7 +535,7 @@ func (*testCases) TestReadJsonFileTo(t *testing.T, fs filesystem.Fs, log *utils.
 func (*testCases) TestReadJsonFileToInvalid(t *testing.T, fs filesystem.Fs, log *utils.Writer) {
 	// Create file
 	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filePath, `{"foo":`)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filePath, `{"foo":`)))
 
 	// Read
 	log.Truncate()
@@ -552,7 +552,7 @@ file "file.txt" is invalid:
 func (*testCases) TestReadJsonFileInvalid(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 	// Create file
 	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filePath, `{"foo":`)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filePath, `{"foo":`)))
 
 	// Read
 	file, err := fs.ReadJsonFile(filePath, "")
@@ -568,7 +568,7 @@ file "file.txt" is invalid:
 func (*testCases) TestReadJsonFieldsTo(t *testing.T, fs filesystem.Fs, log *utils.Writer) {
 	// Create file
 	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filePath, `{"field1": "foo", "field2": "bar"}`)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filePath, `{"field1": "foo", "field2": "bar"}`)))
 
 	// Read
 	log.Truncate()
@@ -585,7 +585,7 @@ func (*testCases) TestReadJsonFieldsTo(t *testing.T, fs filesystem.Fs, log *util
 func (*testCases) TestReadJsonMapTo(t *testing.T, fs filesystem.Fs, log *utils.Writer) {
 	// Create file
 	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filePath, `{"field1": "foo", "field2": "bar"}`)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filePath, `{"field1": "foo", "field2": "bar"}`)))
 
 	// Read
 	log.Truncate()
@@ -601,7 +601,7 @@ func (*testCases) TestReadJsonMapTo(t *testing.T, fs filesystem.Fs, log *utils.W
 func (*testCases) TestReadFileContentTo(t *testing.T, fs filesystem.Fs, log *utils.Writer) {
 	// Create file
 	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(filePath, `{"field1": "foo", "field2": "bar"}`)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filePath, `{"field1": "foo", "field2": "bar"}`)))
 
 	// Read
 	log.Truncate()

@@ -29,7 +29,7 @@ func TestSharedCodeLoadOk(t *testing.T) {
 
 	// Write file
 	codeFilePath := filesystem.Join(context.Naming.SharedCodeFilePath(recipe.ObjectManifest.Path(), targetComponentId))
-	assert.NoError(t, context.Fs.WriteFile(filesystem.CreateFile(codeFilePath, `foo bar`)))
+	assert.NoError(t, context.Fs.WriteFile(filesystem.NewFile(codeFilePath, `foo bar`)))
 
 	// Load
 	err := NewMapper(context).MapAfterLocalLoad(recipe)
