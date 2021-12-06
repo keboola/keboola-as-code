@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
@@ -100,24 +99,4 @@ func createTestFixtures(t *testing.T, targetComponentId string) (model.MapperCon
 
 	context := model.MapperContext{Logger: logger, Fs: fs, Naming: model.DefaultNamingWithIds(), State: state}
 	return context, rowState
-}
-
-func createLocalLoadRecipe(rowState *model.ConfigRowState) *model.LocalLoadRecipe {
-	return &model.LocalLoadRecipe{
-		Object:         rowState.Local,
-		ObjectManifest: rowState.ConfigRowManifest,
-		Metadata:       filesystem.NewJsonFile(model.MetaFile, utils.NewOrderedMap()),
-		Configuration:  filesystem.NewJsonFile(model.ConfigFile, utils.NewOrderedMap()),
-		Description:    filesystem.NewFile(model.DescriptionFile, ``),
-	}
-}
-
-func createLocalSaveRecipe(rowState *model.ConfigRowState) *model.LocalSaveRecipe {
-	return &model.LocalSaveRecipe{
-		Object:         rowState.Local,
-		ObjectManifest: rowState.ConfigRowManifest,
-		Metadata:       filesystem.NewJsonFile(model.MetaFile, utils.NewOrderedMap()),
-		Configuration:  filesystem.NewJsonFile(model.ConfigFile, utils.NewOrderedMap()),
-		Description:    filesystem.NewFile(model.DescriptionFile, ``),
-	}
 }

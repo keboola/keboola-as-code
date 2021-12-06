@@ -7,14 +7,15 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 func TestLoadTransformationMissingBlockMetaSql(t *testing.T) {
 	t.Parallel()
-	context, config, configRecord := createTestFixtures(t, "keboola.snowflake-transformation")
-	recipe := createLocalLoadRecipe(config, configRecord)
+	context, configState := createTestFixtures(t, "keboola.snowflake-transformation")
+	recipe := fixtures.NewLocalLoadRecipe(configState.Manifest(), configState.Local)
 	fs := context.Fs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
 
@@ -31,8 +32,8 @@ func TestLoadTransformationMissingBlockMetaSql(t *testing.T) {
 
 func TestLoadTransformationMissingCodeMeta(t *testing.T) {
 	t.Parallel()
-	context, config, configRecord := createTestFixtures(t, "keboola.snowflake-transformation")
-	recipe := createLocalLoadRecipe(config, configRecord)
+	context, configState := createTestFixtures(t, "keboola.snowflake-transformation")
+	recipe := fixtures.NewLocalLoadRecipe(configState.Manifest(), configState.Local)
 	fs := context.Fs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
 
@@ -55,8 +56,8 @@ func TestLoadTransformationMissingCodeMeta(t *testing.T) {
 
 func TestLoadLocalTransformationSql(t *testing.T) {
 	t.Parallel()
-	context, config, configRecord := createTestFixtures(t, `keboola.snowflake-transformation`)
-	recipe := createLocalLoadRecipe(config, configRecord)
+	context, configState := createTestFixtures(t, `keboola.snowflake-transformation`)
+	recipe := fixtures.NewLocalLoadRecipe(configState.Manifest(), configState.Local)
 	fs := context.Fs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
 
@@ -189,13 +190,13 @@ func TestLoadLocalTransformationSql(t *testing.T) {
 			Codes: model.Codes{},
 		},
 	}
-	assert.Equal(t, expected, config.Blocks)
+	assert.Equal(t, expected, configState.Local.Blocks)
 }
 
 func TestLoadLocalTransformationPy(t *testing.T) {
 	t.Parallel()
-	context, config, configRecord := createTestFixtures(t, `keboola.python-transformation-v2`)
-	recipe := createLocalLoadRecipe(config, configRecord)
+	context, configState := createTestFixtures(t, `keboola.python-transformation-v2`)
+	recipe := fixtures.NewLocalLoadRecipe(configState.Manifest(), configState.Local)
 	fs := context.Fs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
 
@@ -327,5 +328,5 @@ func TestLoadLocalTransformationPy(t *testing.T) {
 			Codes: model.Codes{},
 		},
 	}
-	assert.Equal(t, expected, config.Blocks)
+	assert.Equal(t, expected, configState.Local.Blocks)
 }

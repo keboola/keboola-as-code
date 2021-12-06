@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode/codes"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
@@ -14,7 +15,7 @@ func TestSharedCodeLoadMissingFile(t *testing.T) {
 	t.Parallel()
 	targetComponentId := `keboola.python-transformation-v2`
 	context, rowState := createTestFixtures(t, targetComponentId)
-	recipe := createLocalLoadRecipe(rowState)
+	recipe := fixtures.NewLocalLoadRecipe(rowState.Manifest(), rowState.Local)
 
 	err := NewMapper(context).MapAfterLocalLoad(recipe)
 	assert.Error(t, err)
@@ -25,7 +26,7 @@ func TestSharedCodeLoadOk(t *testing.T) {
 	t.Parallel()
 	targetComponentId := `keboola.python-transformation-v2`
 	context, rowState := createTestFixtures(t, targetComponentId)
-	recipe := createLocalLoadRecipe(rowState)
+	recipe := fixtures.NewLocalLoadRecipe(rowState.Manifest(), rowState.Local)
 
 	// Write file
 	codeFilePath := filesystem.Join(context.Naming.SharedCodeFilePath(recipe.ObjectManifest.Path(), targetComponentId))
@@ -38,8 +39,7 @@ func TestSharedCodeLoadOk(t *testing.T) {
 	assert.True(t, found)
 	assert.Equal(t, []interface{}{"foo bar"}, codeContent)
 
-	// Path is present in related paths
-	assert.Equal(t, []string{
-		"branch/config/row/code.py",
-	}, recipe.ObjectManifest.GetRelatedPaths())
+	// Shared code is loaded
+	sharedCodeFile := recipe.Files.GetOneByTag(model.FileTypeNativeSharedCode)
+	assert.NotNil(t, sharedCodeFile)
 }

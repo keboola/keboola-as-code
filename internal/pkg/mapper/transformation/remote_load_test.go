@@ -9,11 +9,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func TestLoadRemoteTransformation(t *testing.T) {
 	t.Parallel()
-	context, apiObject, configManifest := createTestFixtures(t, `keboola.snowflake-transformation`)
+	context, configState := createTestFixtures(t, `keboola.snowflake-transformation`)
 
 	// Api representation
 	configInApi := `
@@ -55,9 +56,13 @@ func TestLoadRemoteTransformation(t *testing.T) {
 `
 
 	// Load
+	apiObject := &model.Config{
+		ConfigKey: configState.ConfigKey,
+		Content:   utils.NewOrderedMap(),
+	}
 	json.MustDecodeString(configInApi, apiObject.Content)
 	internalObject := apiObject.Clone().(*model.Config)
-	recipe := &model.RemoteLoadRecipe{Manifest: configManifest, ApiObject: apiObject, InternalObject: internalObject}
+	recipe := &model.RemoteLoadRecipe{Manifest: configState.ConfigManifest, ApiObject: apiObject, InternalObject: internalObject}
 	assert.NoError(t, NewMapper(context).MapAfterRemoteLoad(recipe))
 
 	// Internal representation

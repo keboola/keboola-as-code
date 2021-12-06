@@ -125,13 +125,13 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 		ComponentId: model.OrchestratorComponentId,
 		Id:          `456`,
 	}
-	record := &model.ConfigManifest{ConfigKey: key}
+	manifest := &model.ConfigManifest{ConfigKey: key}
 	internalObject := &model.Config{ConfigKey: key, Content: utils.NewOrderedMap()}
 	internalObject.Orchestration = orchestration
 	apiObject := internalObject.Clone().(*model.Config)
 	recipe := &model.RemoteSaveRecipe{
 		ChangedFields:  model.NewChangedFields("orchestration"),
-		Manifest:       record,
+		Manifest:       manifest,
 		InternalObject: internalObject,
 		ApiObject:      apiObject,
 	}
