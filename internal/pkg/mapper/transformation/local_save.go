@@ -43,8 +43,9 @@ func (w *localWriter) save() error {
 	blocksDir := w.Naming.BlocksDir(w.ObjectManifest.Path())
 
 	// Generate ".gitkeep" to preserve the "blocks" directory, even if there are no blocks.
-	gitKeep := filesystem.NewFile(filesystem.Join(blocksDir, `.gitkeep`), ``)
-	w.ExtraFiles = append(w.ExtraFiles, gitKeep)
+	w.Files.
+		Add(filesystem.NewFile(filesystem.Join(blocksDir, `.gitkeep`), ``)).
+		AddTag(model.FileTypeOther)
 
 	// Generate files for blocks
 	for _, block := range w.config.Blocks {
@@ -71,7 +72,7 @@ func (w *localWriter) generateBlockFiles(block *model.Block) {
 	}
 
 	// Create metadata file
-	if metadata := utils.MapFromTaggedFields(model.MetaFileTag, block); metadata != nil {
+	if metadata := utils.MapFromTaggedFields(model.MetaFileFieldsTag, block); metadata != nil {
 		metadataPath := w.Naming.MetaFilePath(block.Path())
 		w.createMetadataFile(metadataPath, `block metadata`, metadata)
 	}
@@ -84,26 +85,20 @@ func (w *localWriter) generateBlockFiles(block *model.Block) {
 
 func (w *localWriter) generateCodeFiles(code *model.Code) {
 	// Create metadata file
-	if metadata := utils.MapFromTaggedFields(model.MetaFileTag, code); metadata != nil {
+	if metadata := utils.MapFromTaggedFields(model.MetaFileFieldsTag, code); metadata != nil {
 		metadataPath := w.Naming.MetaFilePath(code.Path())
 		w.createMetadataFile(metadataPath, `code metadata`, metadata)
 	}
 
 	// Create code file
-	file := filesystem.
-		NewFile(w.Naming.CodeFilePath(code), code.ScriptsToString()).
-		SetDescription(`code`)
-	w.ExtraFiles = append(w.ExtraFiles, file)
+	w.Files.
+		Add(filesystem.NewFile(w.Naming.CodeFilePath(code), code.ScriptsToString()).SetDescription(`code`)).
+		AddTag(model.FileTypeNativeCode)
 }
 
 func (w *localWriter) createMetadataFile(path, desc string, content *orderedmap.OrderedMap) {
-	file, err := filesystem.
-		NewJsonFile(path, content).
-		SetDescription(desc).
-		ToFile()
-	if err == nil {
-		w.ExtraFiles = append(w.ExtraFiles, file)
-	} else {
-		w.errors.Append(err)
-	}
+	w.Files.
+		Add(filesystem.NewJsonFile(path, content).SetDescription(desc)).
+		AddTag(model.MetaFile).
+		AddTag(model.FileTypeJson)
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -18,61 +19,60 @@ func TestMapBeforeLocalSave(t *testing.T) {
 
 	// Recipe
 	orchestratorConfigState := createLocalSaveFixtures(t, context, true)
-	recipe := &model.LocalSaveRecipe{
-		ObjectManifest: orchestratorConfigState.ConfigManifest,
-		Object:         orchestratorConfigState.Remote,
-		Metadata:       filesystem.NewJsonFile(model.MetaFile, utils.NewOrderedMap()),
-		Configuration:  filesystem.NewJsonFile(model.ConfigFile, utils.NewOrderedMap()),
-		Description:    filesystem.NewFile(model.DescriptionFile, ``),
-	}
+	recipe := fixtures.NewLocalSaveRecipe(orchestratorConfigState.Manifest(), orchestratorConfigState.Remote)
 
 	// Save
 	assert.NoError(t, mapper.MapBeforeLocalSave(recipe))
 	assert.Empty(t, logs.String())
 
-	// Minify JSON
-	for _, file := range recipe.ExtraFiles {
-		data := utils.NewOrderedMap()
-		if err := json.DecodeString(file.Content, data); err == nil {
-			file.Content = json.MustEncodeString(data, false)
+	// Minify JSON + remove file description
+	var files []*filesystem.File
+	for _, fileRaw := range recipe.Files.All() {
+		var file *filesystem.File
+		if f, ok := fileRaw.File().(*filesystem.JsonFile); ok {
+			file = filesystem.NewFile(f.GetPath(), json.MustEncodeString(f.Content, false))
+		} else {
+			var err error
+			file, err = fileRaw.ToFile()
+			assert.NoError(t, err)
+			file.SetDescription(``)
 		}
+		files = append(files, file)
 	}
 
 	// Check generated files
 	phasesDir := context.Naming.PhasesDir(orchestratorConfigState.Path())
 	assert.Equal(t, []*filesystem.File{
+		filesystem.NewFile(`meta.json`, `{}`),
+		filesystem.NewFile(`config.json`, `{}`),
+		filesystem.NewFile(`description.md`, ``),
 		filesystem.NewFile(phasesDir+`/.gitkeep`, ``),
 		filesystem.
 			NewFile(
 				phasesDir+`/001-phase/phase.json`,
 				`{"name":"Phase","dependsOn":[],"foo":"bar"}`,
-			).
-			SetDescription(`phase config file`),
+			),
 		filesystem.
 			NewFile(
 				phasesDir+`/001-phase/001-task-1/task.json`,
 				`{"name":"Task 1","task":{"mode":"run","configPath":"extractor/target-config-1"},"continueOnFailure":false,"enabled":true}`,
-			).
-			SetDescription(`task config file`),
+			),
 		filesystem.
 			NewFile(
 				phasesDir+`/001-phase/002-task-2/task.json`,
 				`{"name":"Task 2","task":{"mode":"run","configPath":"extractor/target-config-2"},"continueOnFailure":false,"enabled":false}`,
-			).
-			SetDescription(`task config file`),
+			),
 		filesystem.
 			NewFile(
 				phasesDir+`/002-phase-with-deps/phase.json`,
 				`{"name":"Phase With Deps","dependsOn":["001-phase"]}`,
-			).
-			SetDescription(`phase config file`),
+			),
 		filesystem.
 			NewFile(
 				phasesDir+`/002-phase-with-deps/001-task-3/task.json`,
 				`{"name":"Task 3","task":{"mode":"run","configPath":"extractor/target-config-3"},"continueOnFailure":false,"enabled":true}`,
-			).
-			SetDescription(`task config file`),
-	}, recipe.ExtraFiles)
+			),
+	}, files)
 }
 
 func TestMapBeforeLocalSaveWarnings(t *testing.T) {
@@ -81,13 +81,7 @@ func TestMapBeforeLocalSaveWarnings(t *testing.T) {
 
 	// Recipe
 	orchestratorConfigState := createLocalSaveFixtures(t, context, false)
-	recipe := &model.LocalSaveRecipe{
-		ObjectManifest: orchestratorConfigState.ConfigManifest,
-		Object:         orchestratorConfigState.Remote,
-		Metadata:       filesystem.NewJsonFile(model.MetaFile, utils.NewOrderedMap()),
-		Configuration:  filesystem.NewJsonFile(model.ConfigFile, utils.NewOrderedMap()),
-		Description:    filesystem.NewFile(model.DescriptionFile, ``),
-	}
+	recipe := fixtures.NewLocalSaveRecipe(orchestratorConfigState.Manifest(), orchestratorConfigState.Remote)
 
 	// Save
 	assert.NoError(t, mapper.MapBeforeLocalSave(recipe))

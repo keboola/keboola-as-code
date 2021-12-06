@@ -24,10 +24,16 @@ func (m *mapper) replaceSharedCodeIdByPath(recipe *model.LocalSaveRecipe) error 
 		return err
 	}
 
+	// Get config file
+	configFile, err := recipe.Files.ConfigJsonFile()
+	if err != nil {
+		panic(err)
+	}
+
 	// Remove shared code id
 	defer func() {
-		recipe.Configuration.Content.Delete(model.SharedCodeIdContentKey)
-		recipe.Configuration.Content.Delete(model.SharedCodeRowsIdContentKey)
+		configFile.Content.Delete(model.SharedCodeIdContentKey)
+		configFile.Content.Delete(model.SharedCodeRowsIdContentKey)
 	}()
 
 	// Load shared code config
@@ -56,7 +62,7 @@ func (m *mapper) replaceSharedCodeIdByPath(recipe *model.LocalSaveRecipe) error 
 	}
 
 	// Replace Shared Code ID -> Shared Code Path
-	recipe.Configuration.Content.Set(model.SharedCodePathContentKey, sharedCodeState.GetObjectPath())
+	configFile.Content.Set(model.SharedCodePathContentKey, sharedCodeState.GetObjectPath())
 
 	// Replace IDs -> paths in scripts
 	errors := utils.NewMultiError()

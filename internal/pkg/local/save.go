@@ -56,51 +56,28 @@ func (w *modelWriter) save() error {
 
 func (w *modelWriter) createFiles() {
 	// meta.json
-	if metadata := utils.MapFromTaggedFields(model.MetaFileTag, w.Object); metadata != nil {
-		w.Metadata = filesystem.NewJsonFile(w.Naming().MetaFilePath(w.Path()), metadata)
+	if metadata := utils.MapFromTaggedFields(model.MetaFileFieldsTag, w.Object); metadata != nil {
+		w.Files.
+			Add(filesystem.NewJsonFile(w.Naming().MetaFilePath(w.Path()), metadata)).
+			AddTag(model.MetaFile).
+			AddTag(model.FileTypeJson)
 	}
 
 	// config.json
-	if configuration := utils.MapFromOneTaggedField(model.ConfigFileTag, w.Object); configuration != nil {
-		w.Configuration = filesystem.NewJsonFile(w.Naming().ConfigFilePath(w.Path()), configuration)
+	if configuration := utils.MapFromOneTaggedField(model.ConfigFileFieldTag, w.Object); configuration != nil {
+		w.Files.
+			Add(filesystem.NewJsonFile(w.Naming().ConfigFilePath(w.Path()), configuration)).
+			AddTag(model.ConfigFile).
+			AddTag(model.FileTypeJson)
 	}
 
 	// description.md
-	if description, found := utils.StringFromOneTaggedField(model.DescriptionFileTag, w.Object); found {
-		w.Description = filesystem.NewFile(w.Naming().DescriptionFilePath(w.Path()), strings.TrimRight(description, " \r\n\t")+"\n")
+	if description, found := utils.StringFromOneTaggedField(model.DescriptionFileFieldTag, w.Object); found {
+		w.Files.
+			Add(filesystem.NewFile(w.Naming().DescriptionFilePath(w.Path()), strings.TrimRight(description, " \r\n\t")+"\n")).
+			AddTag(model.DescriptionFile).
+			AddTag(model.FileTypeMarkdown)
 	}
-}
-
-func (w *modelWriter) allFiles() []*filesystem.File {
-	// Get all files
-	files := make([]*filesystem.File, 0)
-
-	// meta.json
-	if jsonFile := w.Metadata; jsonFile != nil {
-		if file, err := jsonFile.ToFile(); err == nil {
-			files = append(files, file)
-		} else {
-			w.errors.Append(err)
-		}
-	}
-
-	// config.json
-	if jsonFile := w.Configuration; jsonFile != nil {
-		if file, err := jsonFile.ToFile(); err == nil {
-			files = append(files, file)
-		} else {
-			w.errors.Append(err)
-		}
-	}
-
-	// description.md
-	if file := w.Description; file != nil {
-		files = append(files, file)
-	}
-
-	// other
-	files = append(files, w.ExtraFiles...)
-	return files
 }
 
 func (w *modelWriter) transform() {
@@ -115,10 +92,9 @@ func (w *modelWriter) write() {
 
 	// Load files
 	toDelete := w.ToDelete
-	newFiles := w.allFiles()
-	for _, file := range newFiles {
+	for _, file := range w.Files.All() {
 		// Previous versions must be deleted
-		toDelete = append(toDelete, file.Path)
+		toDelete = append(toDelete, file.Path())
 	}
 
 	// Delete
@@ -131,8 +107,16 @@ func (w *modelWriter) write() {
 	}
 
 	// Write new files
-	for _, file := range newFiles {
-		w.ObjectManifest.AddRelatedPath(file.Path)
+	for _, fileRaw := range w.Files.All() {
+		// Convert to File, eg. JsonFile -> File
+		file, err := fileRaw.ToFile()
+		if err != nil {
+			w.errors.Append(err)
+			continue
+		}
+
+		// Write
+		w.ObjectManifest.AddRelatedPath(file.GetPath())
 		if err := w.fs.WriteFile(file); err != nil {
 			w.errors.Append(err)
 		}

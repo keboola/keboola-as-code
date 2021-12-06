@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
@@ -30,14 +29,4 @@ func createMapper(t *testing.T) (*mapper.Mapper, model.MapperContext, *utils.Wri
 	localManager := local.NewManager(logger, fs, manifestInst, state, mapperInst)
 	mapperInst.AddMapper(links.NewMapper(localManager, context))
 	return mapperInst, context, logs
-}
-
-func createLocalSaveRecipe(object model.ObjectWithContent, manifest model.ObjectManifest) *model.LocalSaveRecipe {
-	return &model.LocalSaveRecipe{
-		Object:         object,
-		ObjectManifest: manifest,
-		Metadata:       filesystem.NewJsonFile(model.MetaFile, utils.NewOrderedMap()),
-		Configuration:  filesystem.NewJsonFile(model.ConfigFile, object.GetContent()),
-		Description:    filesystem.NewFile(model.DescriptionFile, ``),
-	}
 }

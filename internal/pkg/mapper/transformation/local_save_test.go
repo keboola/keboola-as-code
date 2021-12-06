@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -13,8 +14,8 @@ import (
 
 func TestLocalSaveTransformationEmpty(t *testing.T) {
 	t.Parallel()
-	context, config, configRecord := createTestFixtures(t, "keboola.snowflake-transformation")
-	recipe := createLocalSaveRecipe(config, configRecord)
+	context, configState := createTestFixtures(t, "keboola.snowflake-transformation")
+	recipe := fixtures.NewLocalSaveRecipe(configState.Manifest(), configState.Local)
 	fs := context.Fs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
 	assert.NoError(t, fs.Mkdir(blocksDir))
@@ -22,21 +23,23 @@ func TestLocalSaveTransformationEmpty(t *testing.T) {
 	// Save
 	err := NewMapper(context).MapBeforeLocalSave(recipe)
 	assert.NoError(t, err)
-	configContent := json.MustEncodeString(recipe.Configuration.Content, false)
-	assert.Equal(t, `{}`, configContent)
+	configFile, err := recipe.Files.GetOneByTag(model.ConfigFile).ToFile()
+	assert.NoError(t, err)
+	assert.Equal(t, "{}\n", configFile.Content)
 }
 
 func TestLocalSaveTransformation(t *testing.T) {
 	t.Parallel()
-	context, config, configRecord := createTestFixtures(t, "keboola.snowflake-transformation")
-	recipe := createLocalSaveRecipe(config, configRecord)
+	context, configState := createTestFixtures(t, "keboola.snowflake-transformation")
+	recipe := fixtures.NewLocalSaveRecipe(configState.Manifest(), configState.Local)
 	fs := context.Fs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
 	assert.NoError(t, fs.Mkdir(blocksDir))
 
 	// Prepare
-	recipe.Configuration.Content.Set(`foo`, `bar`)
-	config.Blocks = model.Blocks{
+	configFile := recipe.Files.GetOneByTag(model.ConfigFile).File().(*filesystem.JsonFile)
+	configFile.Content.Set(`foo`, `bar`)
+	configState.Local.Blocks = model.Blocks{
 		{
 			BlockKey: model.BlockKey{
 				BranchId:    123,
@@ -124,20 +127,34 @@ func TestLocalSaveTransformation(t *testing.T) {
 	// Save
 	assert.NoError(t, NewMapper(context).MapBeforeLocalSave(recipe))
 
-	// Blocks are not part of the config.json
-	configContent := json.MustEncodeString(recipe.Configuration.Content, false)
-	assert.Equal(t, `{"foo":"bar"}`, configContent)
+	// Minify JSON + remove file description
+	var files []*filesystem.File
+	for _, fileRaw := range recipe.Files.All() {
+		var file *filesystem.File
+		if f, ok := fileRaw.File().(*filesystem.JsonFile); ok {
+			file = filesystem.NewFile(f.GetPath(), json.MustEncodeString(f.Content, false))
+		} else {
+			var err error
+			file, err = fileRaw.ToFile()
+			assert.NoError(t, err)
+			file.SetDescription(``)
+		}
+		files = append(files, file)
+	}
 
-	// Check generated files
+	// Check files
 	assert.Equal(t, []*filesystem.File{
+		filesystem.NewFile(`meta.json`, `{}`),
+		filesystem.NewFile(`config.json`, `{"foo":"bar"}`),
+		filesystem.NewFile(`description.md`, ``),
 		filesystem.NewFile(blocksDir+`/.gitkeep`, ``),
-		filesystem.NewFile(blocksDir+`/001-block-1/meta.json`, "{\n  \"name\": \"block1\"\n}\n").SetDescription(`block metadata`),
-		filesystem.NewFile(blocksDir+`/001-block-1/001-code-1/meta.json`, "{\n  \"name\": \"code1\"\n}\n").SetDescription(`code metadata`),
-		filesystem.NewFile(blocksDir+`/001-block-1/001-code-1/code.sql`, "SELECT 1\n").SetDescription(`code`),
-		filesystem.NewFile(blocksDir+`/001-block-1/002-code-2/meta.json`, "{\n  \"name\": \"code2\"\n}\n").SetDescription(`code metadata`),
-		filesystem.NewFile(blocksDir+`/001-block-1/002-code-2/code.sql`, "SELECT 2;\n\nSELECT 3;\n").SetDescription(`code`),
-		filesystem.NewFile(blocksDir+`/002-block-2/meta.json`, "{\n  \"name\": \"block2\"\n}\n").SetDescription(`block metadata`),
-		filesystem.NewFile(blocksDir+`/002-block-2/001-code-3/meta.json`, "{\n  \"name\": \"code3\"\n}\n").SetDescription(`code metadata`),
-		filesystem.NewFile(blocksDir+`/002-block-2/001-code-3/code.sql`, "\n").SetDescription(`code`),
-	}, recipe.ExtraFiles)
+		filesystem.NewFile(blocksDir+`/001-block-1/meta.json`, `{"name":"block1"}`),
+		filesystem.NewFile(blocksDir+`/001-block-1/001-code-1/meta.json`, `{"name":"code1"}`),
+		filesystem.NewFile(blocksDir+`/001-block-1/001-code-1/code.sql`, "SELECT 1\n"),
+		filesystem.NewFile(blocksDir+`/001-block-1/002-code-2/meta.json`, `{"name":"code2"}`),
+		filesystem.NewFile(blocksDir+`/001-block-1/002-code-2/code.sql`, "SELECT 2;\n\nSELECT 3;\n"),
+		filesystem.NewFile(blocksDir+`/002-block-2/meta.json`, `{"name":"block2"}`),
+		filesystem.NewFile(blocksDir+`/002-block-2/001-code-3/meta.json`, `{"name":"code3"}`),
+		filesystem.NewFile(blocksDir+`/002-block-2/001-code-3/code.sql`, "\n"),
+	}, files)
 }

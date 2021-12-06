@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode/codes"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
@@ -14,19 +15,19 @@ func TestSharedCodeSaveMissingKey(t *testing.T) {
 	t.Parallel()
 	targetComponentId := `keboola.python-transformation-v2`
 	context, rowState := createTestFixtures(t, targetComponentId)
-	recipe := createLocalSaveRecipe(rowState)
+	recipe := fixtures.NewLocalSaveRecipe(rowState.Manifest(), rowState.Local)
 
 	err := NewMapper(context).MapBeforeLocalSave(recipe)
 	assert.Error(t, err)
 	assert.Equal(t, `key "code_content" not found in config row "branch:789/component:keboola.shared-code/config:123/row:456"`, err.Error())
-	assert.Len(t, recipe.ExtraFiles, 0)
+	assert.Nil(t, recipe.Files.GetOneByTag(model.FileTypeNativeSharedCode))
 }
 
 func TestSharedCodeSave(t *testing.T) {
 	t.Parallel()
 	targetComponentId := `keboola.python-transformation-v2`
 	context, rowState := createTestFixtures(t, targetComponentId)
-	recipe := createLocalSaveRecipe(rowState)
+	recipe := fixtures.NewLocalSaveRecipe(rowState.Manifest(), rowState.Local)
 	codeFilePath := filesystem.Join(context.Naming.SharedCodeFilePath(recipe.ObjectManifest.Path(), targetComponentId))
 
 	// Set JSON value
@@ -40,8 +41,10 @@ func TestSharedCodeSave(t *testing.T) {
 
 	// Assert
 	assert.NoError(t, err)
-	assert.Len(t, recipe.ExtraFiles, 1)
-	file := recipe.ExtraFiles[0]
-	assert.Equal(t, codeFilePath, file.Path)
-	assert.Equal(t, "foo\nbar\n", file.Content)
+	sharedCodeFileRaw := recipe.Files.GetOneByTag(model.FileTypeNativeSharedCode)
+	assert.NotNil(t, sharedCodeFileRaw)
+	sharedCodeFile, err := sharedCodeFileRaw.ToFile()
+	assert.NoError(t, err)
+	assert.Equal(t, codeFilePath, sharedCodeFile.Path)
+	assert.Equal(t, "foo\nbar\n", sharedCodeFile.Content)
 }

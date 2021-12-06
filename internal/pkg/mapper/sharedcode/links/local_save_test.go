@@ -71,16 +71,18 @@ func TestSharedCodeLinksMapBeforeLocalSave(t *testing.T) {
 	assert.NoError(t, context.State.Set(configState))
 
 	// Invoke
-	recipe := createLocalSaveRecipe(configState.Local, configState.ConfigManifest)
+	recipe := fixtures.NewLocalSaveRecipe(configState.Manifest(), configState.Local)
 	assert.NoError(t, mapperInst.MapBeforeLocalSave(recipe))
 	assert.Empty(t, logs.String())
 
 	// Path is replaced by ID
-	_, found := recipe.Configuration.Content.Get(model.SharedCodeIdContentKey)
+	configFile, err := recipe.Files.ConfigJsonFile()
+	assert.NoError(t, err)
+	_, found := configFile.Content.Get(model.SharedCodeIdContentKey)
 	assert.False(t, found)
-	_, found = recipe.Configuration.Content.Get(model.SharedCodeRowsIdContentKey)
+	_, found = configFile.Content.Get(model.SharedCodeRowsIdContentKey)
 	assert.False(t, found)
-	sharedCodeId, found := recipe.Configuration.Content.Get(model.SharedCodePathContentKey)
+	sharedCodeId, found := configFile.Content.Get(model.SharedCodePathContentKey)
 	assert.True(t, found)
 	assert.Equal(t, sharedCodeId, `_shared/keboola.python-transformation-v2`)
 

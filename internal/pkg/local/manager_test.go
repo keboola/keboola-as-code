@@ -28,16 +28,24 @@ type testMapper struct {
 
 func (*testMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
 	if _, ok := recipe.Object.(*model.Config); ok {
-		recipe.Configuration.Content.Set("key", "overwritten")
-		recipe.Configuration.Content.Set("new", "value")
+		configFile, err := recipe.Files.ConfigJsonFile()
+		if err != nil {
+			panic(err)
+		}
+		configFile.Content.Set("key", "overwritten")
+		configFile.Content.Set("new", "value")
 	}
 	return nil
 }
 
 func (*testMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
 	if _, ok := recipe.Object.(*model.Config); ok {
-		recipe.Configuration.Content.Set("parameters", "overwritten")
-		recipe.Configuration.Content.Set("new", "value")
+		configFile, err := recipe.Files.ConfigJsonFile()
+		if err != nil {
+			panic(err)
+		}
+		configFile.Content.Set("parameters", "overwritten")
+		configFile.Content.Set("new", "value")
 	}
 	return nil
 }

@@ -127,30 +127,38 @@ func (l *localLoader) addScripts(code *model.Code) {
 		l.errors.Append(err)
 		return
 	}
+	l.Files.
+		Add(file).
+		AddTag(model.FileTypeNativeCode)
 
 	// Split to scripts
 	code.Scripts = strhelper.ParseTransformationScripts(file.Content, l.config.ComponentId)
-	l.ObjectManifest.AddRelatedPath(codeFilePath)
 	l.Logger.Debugf(`Parsed "%d" scripts from "%s"`, len(code.Scripts), codeFilePath)
 }
 
 func (l *localLoader) loadBlockMetaFile(block *model.Block) {
 	path := l.Naming.MetaFilePath(block.Path())
 	desc := "block metadata"
-	if file, err := l.Fs.ReadJsonFieldsTo(path, desc, block, model.MetaFileTag); err != nil {
+	if file, err := l.Fs.ReadJsonFieldsTo(path, desc, block, model.MetaFileFieldsTag); err != nil {
 		l.errors.Append(err)
 	} else if file != nil {
-		l.ObjectManifest.AddRelatedPath(path)
+		l.Files.
+			Add(file).
+			AddTag(model.FileTypeJson).
+			AddTag(model.MetaFile)
 	}
 }
 
 func (l *localLoader) loadCodeMetaFile(code *model.Code) {
 	path := l.Naming.MetaFilePath(code.Path())
 	desc := "code metadata"
-	if file, err := l.Fs.ReadJsonFieldsTo(path, desc, code, model.MetaFileTag); err != nil {
+	if file, err := l.Fs.ReadJsonFieldsTo(path, desc, code, model.MetaFileFieldsTag); err != nil {
 		l.errors.Append(err)
 	} else if file != nil {
-		l.ObjectManifest.AddRelatedPath(path)
+		l.Files.
+			Add(file).
+			AddTag(model.FileTypeJson).
+			AddTag(model.MetaFile)
 	}
 }
 

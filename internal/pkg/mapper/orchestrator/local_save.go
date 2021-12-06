@@ -36,8 +36,9 @@ func (w *localWriter) save() {
 	phasesDir := w.Naming.PhasesDir(w.ObjectManifest.Path())
 
 	// Generate ".gitkeep" to preserve the "phases" directory, even if there are no phases.
-	gitKeep := filesystem.NewFile(filesystem.Join(phasesDir, `.gitkeep`), ``)
-	w.ExtraFiles = append(w.ExtraFiles, gitKeep)
+	w.Files.
+		Add(filesystem.NewFile(filesystem.Join(phasesDir, `.gitkeep`), ``)).
+		AddTag(model.FileTypeOther)
 
 	// Generate files for phases
 	errors := utils.NewMultiError()
@@ -93,15 +94,13 @@ func (w *localWriter) savePhase(phase *model.Phase, allPhases []*model.Phase) er
 	}
 
 	// Create file
-	file, err := filesystem.
+	file := filesystem.
 		NewJsonFile(filesystem.Join(w.Naming.PhaseFilePath(phase)), phaseContent).
-		SetDescription(`phase config file`).
-		ToFile()
-	if err == nil {
-		w.ExtraFiles = append(w.ExtraFiles, file)
-	} else {
-		errors.Append(err)
-	}
+		SetDescription(`phase config file`)
+	w.Files.
+		Add(file).
+		AddTag(model.ConfigFile).
+		AddTag(model.FileTypeJson)
 
 	// Write tasks
 	for _, task := range phase.Tasks {
@@ -164,15 +163,13 @@ func (w *localWriter) saveTask(task *model.Task) error {
 	}
 
 	// Create file
-	file, err := filesystem.
+	file := filesystem.
 		NewJsonFile(filesystem.Join(w.Naming.TaskFilePath(task)), taskContent).
-		SetDescription(`task config file`).
-		ToFile()
-	if err == nil {
-		w.ExtraFiles = append(w.ExtraFiles, file)
-	} else {
-		errors.Append(err)
-	}
+		SetDescription(`task config file`)
+	w.Files.
+		Add(file).
+		AddTag(model.ConfigFile).
+		AddTag(model.FileTypeJson)
 
 	return errors.ErrorOrNil()
 }

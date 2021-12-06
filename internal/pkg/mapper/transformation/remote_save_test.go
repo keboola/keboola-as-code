@@ -14,7 +14,7 @@ import (
 
 func TestRemoteSaveTransformation(t *testing.T) {
 	t.Parallel()
-	context, internalConfig, configRecord := createTestFixtures(t, "keboola.snowflake-transformation")
+	context, configState := createTestFixtures(t, "keboola.snowflake-transformation")
 	blocks := model.Blocks{
 		{
 			Name: "001",
@@ -50,11 +50,16 @@ func TestRemoteSaveTransformation(t *testing.T) {
 			Codes: model.Codes{},
 		},
 	}
+
+	internalConfig := &model.Config{
+		ConfigKey: configState.ConfigKey,
+		Content:   utils.NewOrderedMap(),
+	}
 	internalConfig.Blocks = blocks
 	apiConfig := internalConfig.Clone().(*model.Config)
 	recipe := &model.RemoteSaveRecipe{
 		ChangedFields:  model.NewChangedFields("blocks"),
-		Manifest:       configRecord,
+		Manifest:       configState.Manifest(),
 		InternalObject: internalConfig,
 		ApiObject:      apiConfig,
 	}

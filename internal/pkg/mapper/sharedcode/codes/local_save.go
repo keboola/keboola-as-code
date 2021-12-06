@@ -63,8 +63,14 @@ func (w *writer) save() error {
 		return fmt.Errorf(`key "%s" must be array, found %T, in %s`, model.SharedCodeContentKey, raw, w.configRow.Desc())
 	}
 
+	// Get config file
+	configFile, err := w.Files.ConfigJsonFile()
+	if err != nil {
+		panic(err)
+	}
+
 	// Remove code content from JSON
-	w.Configuration.Content.Delete(model.SharedCodeContentKey)
+	configFile.Content.Delete(model.SharedCodeContentKey)
 
 	// Convert []interface{} -> []string
 	var scripts []string
@@ -72,24 +78,24 @@ func (w *writer) save() error {
 		scripts = append(scripts, cast.ToString(script))
 	}
 
-	// Generate file content
-	codeContent := strhelper.TransformationScriptsToString(scripts, targetComponentId)
-
 	// Create code file
+	codeContent := strhelper.TransformationScriptsToString(scripts, targetComponentId)
 	codeFilePath := w.Naming.SharedCodeFilePath(w.Path(), targetComponentId)
-	codeFile := filesystem.NewFile(codeFilePath, codeContent).SetDescription(`shared code`)
-	w.ExtraFiles = append(w.ExtraFiles, codeFile)
+	w.Files.
+		Add(filesystem.NewFile(codeFilePath, codeContent).SetDescription(`shared code`)).
+		AddTag(model.FileTypeNativeSharedCode)
 
 	// Remove "isDisabled" unnecessary value from "meta.json".
 	// Shared code is represented as config row
 	// and always contains `"isDisabled": false` in metadata.
-	meta := w.Metadata
-	if meta != nil && meta.Content != nil {
-		if value, found := meta.Content.Get(`isDisabled`); found {
-			if v, ok := value.(bool); ok && !v {
-				// Found `"isDisabled": false` -> delete
-				meta.Content.Delete(`isDisabled`)
-			}
+	metaFile, err := w.Files.MetaJsonFile()
+	if err != nil {
+		panic(err)
+	}
+	if value, found := metaFile.Content.Get(`isDisabled`); found {
+		if v, ok := value.(bool); ok && !v {
+			// Found `"isDisabled": false` -> delete
+			metaFile.Content.Delete(`isDisabled`)
 		}
 	}
 
