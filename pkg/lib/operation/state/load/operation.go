@@ -70,18 +70,18 @@ func Run(o Options, d dependencies) (*state.State, error) {
 	stateOptions.LoadRemoteState = o.LoadRemoteState
 	stateOptions.IgnoreNotFoundErr = o.IgnoreNotFoundErr
 
-	projectState, ok := state.LoadState(stateOptions)
+	projectState, ok, localErr, remoteErr := state.LoadState(stateOptions)
 	if ok {
 		logger.Debugf("Project state has been successfully loaded.")
 	} else {
-		if projectState.RemoteErrors().Len() > 0 {
-			return nil, InvalidRemoteStateError{utils.PrefixError("cannot load project remote state", projectState.RemoteErrors())}
+		if remoteErr != nil {
+			return nil, InvalidRemoteStateError{utils.PrefixError("cannot load project remote state", remoteErr)}
 		}
-		if projectState.LocalErrors().Len() > 0 {
+		if localErr != nil {
 			if o.IgnoreInvalidLocalState {
 				logger.Info(`Ignoring invalid local state.`)
 			} else {
-				return nil, InvalidLocalStateError{utils.PrefixError("project local state is invalid", projectState.LocalErrors())}
+				return nil, InvalidLocalStateError{utils.PrefixError("project local state is invalid", localErr)}
 			}
 		}
 	}

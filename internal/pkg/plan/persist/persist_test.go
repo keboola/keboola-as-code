@@ -938,10 +938,11 @@ func (tc *testCase) run(t *testing.T) {
 	options.LoadLocalState = true
 	options.LoadRemoteState = false
 	options.IgnoreNotFoundErr = true
-	projectState, ok := state.LoadState(options)
+	projectState, ok, localErr, remoteErr := state.LoadState(options)
 	assert.NotNil(t, projectState)
 	assert.True(t, ok)
-	assert.NoError(t, projectState.LocalErrors().ErrorOrNil())
+	assert.NoError(t, localErr)
+	assert.NoError(t, remoteErr)
 
 	// Assert state before
 	assert.Equal(t, tc.untrackedPaths, projectState.UntrackedPaths())

@@ -33,8 +33,6 @@ type State struct {
 	mapper        *mapper.Mapper
 	localManager  *local.Manager
 	remoteManager *remote.Manager
-	localErrors   *utils.MultiError
-	remoteErrors  *utils.MultiError
 }
 
 type Options struct {
@@ -61,35 +59,42 @@ func NewOptions(m *manifest.Manifest, api *remote.StorageApi, schedulerApi *sche
 }
 
 // LoadState - remote and local.
-func LoadState(options *Options) (state *State, ok bool) {
+func LoadState(options *Options) (state *State, ok bool, localErr error, remoteErr error) {
+	localErrors := utils.NewMultiError()
+	remoteErrors := utils.NewMultiError()
 	state = newState(options)
 
 	// Log allowed branches
 	state.logger.Debugf(`Allowed branches: %s`, state.manifest.Content.AllowedBranches)
 
+	// Remote
 	if state.LoadRemoteState {
 		state.logger.Debugf("Loading project remote state.")
-		state.loadRemoteState()
+		remoteErrors.Append(state.loadRemoteState())
 	}
 
+	// Local
 	if state.LoadLocalState {
 		state.logger.Debugf("Loading local state.")
-		state.loadLocalState()
+		localErrors.Append(state.loadLocalState())
 	}
 
-	state.validate()
+	// Validate
+	localValidateErr, remoteValidateErr := state.validate()
+	if localValidateErr != nil {
+		localErrors.Append(localValidateErr)
+	}
+	if remoteValidateErr != nil {
+		remoteErrors.Append(remoteValidateErr)
+	}
 
-	ok = state.LocalErrors().Len() == 0 && state.RemoteErrors().Len() == 0
-	return state, ok
+	// Process errors
+	ok = localErrors.Len() == 0 && remoteErrors.Len() == 0
+	return state, ok, localErrors.ErrorOrNil(), remoteErrors.ErrorOrNil()
 }
 
 func newState(options *Options) *State {
-	s := &State{
-		Options:      options,
-		mutex:        &sync.Mutex{},
-		remoteErrors: utils.NewMultiError(),
-		localErrors:  utils.NewMultiError(),
-	}
+	s := &State{Options: options, mutex: &sync.Mutex{}}
 
 	// State model struct
 	s.State = model.NewState(options.logger, options.fs, options.api.Components(), options.manifest.SortBy)
@@ -150,39 +155,57 @@ func (s *State) RemoteManager() *remote.Manager {
 	return s.remoteManager
 }
 
-func (s *State) RemoteErrors() *utils.MultiError {
-	return s.remoteErrors
-}
+func (s *State) validate() (error, error) {
+	localErrors := utils.NewMultiError()
+	remoteErrors := utils.NewMultiError()
 
-func (s *State) LocalErrors() *utils.MultiError {
-	return s.localErrors
-}
-
-func (s *State) AddRemoteError(err error) {
-	s.remoteErrors.Append(err)
-}
-
-func (s *State) AddLocalError(err error) {
-	s.localErrors.Append(err)
-}
-
-func (s *State) validate() {
 	for _, component := range s.Components().AllLoaded() {
 		if err := validator.Validate(component); err != nil {
-			s.AddLocalError(utils.PrefixError(fmt.Sprintf(`component \"%s\" is not valid`, component.Key()), err))
+			localErrors.Append(utils.PrefixError(fmt.Sprintf(`component \"%s\" is not valid`, component.Key()), err))
 		}
 	}
+
 	for _, objectState := range s.All() {
 		if objectState.HasRemoteState() {
 			if err := validator.Validate(objectState.RemoteState()); err != nil {
-				s.AddRemoteError(utils.PrefixError(fmt.Sprintf(`remote %s is not valid`, objectState.Desc()), err))
+				remoteErrors.Append(utils.PrefixError(fmt.Sprintf(`remote %s is not valid`, objectState.Desc()), err))
 			}
 		}
 
 		if objectState.HasLocalState() {
 			if err := validator.Validate(objectState.LocalState()); err != nil {
-				s.AddLocalError(utils.PrefixError(fmt.Sprintf(`local %s "%s" is not valid`, objectState.Kind(), objectState.Path()), err))
+				localErrors.Append(utils.PrefixError(fmt.Sprintf(`local %s "%s" is not valid`, objectState.Kind(), objectState.Path()), err))
 			}
 		}
 	}
+
+	return localErrors.ErrorOrNil(), remoteErrors.ErrorOrNil()
+}
+
+// loadLocalState - manifest -> local files -> unified model.
+func (s *State) loadLocalState() error {
+	errors := utils.NewMultiError()
+
+	uow := s.localManager.NewUnitOfWork(s.context)
+	if s.IgnoreNotFoundErr {
+		uow.SkipNotFoundErr()
+	}
+
+	uow.LoadAll(s.manifest.Content)
+	if err := uow.Invoke(); err != nil {
+		errors.Append(err)
+	}
+
+	return errors.ErrorOrNil()
+}
+
+// loadRemoteState - API -> unified model.
+func (s *State) loadRemoteState() error {
+	errors := utils.NewMultiError()
+	uow := s.remoteManager.NewUnitOfWork(s.context, "")
+	uow.LoadAll()
+	if err := uow.Invoke(); err != nil {
+		errors.Append(err)
+	}
+	return errors.ErrorOrNil()
 }
