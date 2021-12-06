@@ -9,6 +9,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 )
 
+const (
+	FileTypeJson             = `json`
+	FileTypeMarkdown         = `markdown`
+	FileTypeNativeCode       = `code`
+	FileTypeNativeSharedCode = `sharedCode`
+	FileTypeOther            = `other`
+)
+
 type MapperContext struct {
 	Logger *zap.SugaredLogger
 	Fs     filesystem.Fs
@@ -63,11 +71,39 @@ func (f *ObjectFiles) GetByTag(tag string) []*objectFile {
 	return out
 }
 
+func (f *ObjectFiles) ConfigJsonFile() (*filesystem.JsonFile, error) {
+	raw := f.GetOneByTag(ConfigFile)
+	if raw == nil {
+		return nil, fmt.Errorf(`missing config file`)
+	}
+	file, ok := raw.File().(*filesystem.JsonFile)
+	if !ok {
+		return nil, fmt.Errorf(`expected JsonFile, found "%T"`, raw)
+	}
+	return file, nil
+}
+
+func (f *ObjectFiles) MetaJsonFile() (*filesystem.JsonFile, error) {
+	raw := f.GetOneByTag(MetaFile)
+	if raw == nil {
+		return nil, fmt.Errorf(`missing config file`)
+	}
+	file, ok := raw.File().(*filesystem.JsonFile)
+	if !ok {
+		return nil, fmt.Errorf(`expected JsonFile, found "%T"`, raw)
+	}
+	return file, nil
+}
+
 func newObjectFile(file filesystem.FileWrapper) *objectFile {
 	return &objectFile{
 		file: file,
 		tags: make(map[string]bool),
 	}
+}
+
+func (f *objectFile) Description() string {
+	return f.file.GetDescription()
 }
 
 func (f *objectFile) Path() string {
@@ -103,24 +139,18 @@ func (f *objectFile) DeleteTag(tag string) *objectFile {
 
 // LocalLoadRecipe - all items related to the object, when loading from local fs.
 type LocalLoadRecipe struct {
-	ObjectManifest                      // manifest record, eg *ConfigManifest
-	Object         Object               // object, eg. Config
-	Metadata       *filesystem.JsonFile // meta.json
-	Configuration  *filesystem.JsonFile // config.json
-	Description    *filesystem.File     // description.md
-	ExtraFiles     []*filesystem.File   // extra files
+	ObjectManifest             // manifest record, eg *ConfigManifest
+	Object         Object      // object, eg. Config
+	Files          ObjectFiles // eg. config.json, meta.json, description.md, ...
 }
 
 // LocalSaveRecipe - all items related to the object, when saving to local fs.
 type LocalSaveRecipe struct {
 	ChangedFields  ChangedFields
-	ObjectManifest                      // manifest record, eg *ConfigManifest
-	Object         Object               // object, eg. Config
-	Metadata       *filesystem.JsonFile // meta.json
-	Configuration  *filesystem.JsonFile // config.json
-	Description    *filesystem.File     // description.md
-	ExtraFiles     []*filesystem.File   // extra files
-	ToDelete       []string             // paths to delete, on save
+	ObjectManifest             // manifest record, eg *ConfigManifest
+	Object         Object      // object, eg. Config
+	Files          ObjectFiles // eg. config.json, meta.json, description.md, ...
+	ToDelete       []string    // paths to delete, on save
 }
 
 // RemoteLoadRecipe - all items related to the object, when loading from Storage API.

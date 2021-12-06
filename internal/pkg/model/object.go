@@ -14,9 +14,9 @@ import (
 )
 
 const (
-	MetaFileTag                       = "metaFile:true"
-	ConfigFileTag                     = "configFile:true"
-	DescriptionFileTag                = "descriptionFile:true"
+	MetaFileFieldsTag                 = "metaFile:true"        // marks meta fields in object struct
+	ConfigFileFieldTag                = "configFile:true"      // marks config field in object struct
+	DescriptionFileFieldTag           = "descriptionFile:true" // marks description field in object struct
 	TransformationType                = "transformation"
 	SharedCodeComponentId             = "keboola.shared-code"
 	OrchestratorComponentId           = "keboola.orchestrator"

@@ -35,6 +35,11 @@ func (l *modelLoader) load() (found bool, err error) {
 	l.loadFiles()
 	l.transform()
 
+	// Set related paths
+	for _, file := range l.Files.All() {
+		l.ObjectManifest.AddRelatedPath(file.Path())
+	}
+
 	// Validate, if all files loaded without error
 	if l.errors.Len() == 0 {
 		if err := validator.Validate(l.Object); err != nil {
@@ -55,11 +60,13 @@ func (l *modelLoader) loadFiles() {
 func (l *modelLoader) loadMetaFile() {
 	path := l.Naming().MetaFilePath(l.ObjectManifest.Path())
 	desc := l.ObjectManifest.Kind().Name + " metadata"
-	if file, err := l.fs.ReadJsonFieldsTo(path, desc, l.Object, model.MetaFileTag); err != nil {
+	if file, err := l.fs.ReadJsonFieldsTo(path, desc, l.Object, model.MetaFileFieldsTag); err != nil {
 		l.errors.Append(err)
 	} else if file != nil {
-		l.Metadata = file
-		l.ObjectManifest.AddRelatedPath(path)
+		l.Files.
+			Add(file).
+			AddTag(model.MetaFile).
+			AddTag(model.FileTypeJson)
 	}
 }
 
@@ -68,11 +75,13 @@ func (l *modelLoader) loadConfigFile() {
 	// config.json
 	path := l.Naming().ConfigFilePath(l.ObjectManifest.Path())
 	desc := l.ObjectManifest.Kind().Name
-	if file, err := l.fs.ReadJsonMapTo(path, desc, l.Object, model.ConfigFileTag); err != nil {
+	if file, err := l.fs.ReadJsonMapTo(path, desc, l.Object, model.ConfigFileFieldTag); err != nil {
 		l.errors.Append(err)
 	} else if file != nil {
-		l.Configuration = file
-		l.ObjectManifest.AddRelatedPath(path)
+		l.Files.
+			Add(file).
+			AddTag(model.ConfigFile).
+			AddTag(model.FileTypeJson)
 	}
 }
 
@@ -80,11 +89,13 @@ func (l *modelLoader) loadConfigFile() {
 func (l *modelLoader) loadDescriptionFile() {
 	path := l.Naming().DescriptionFilePath(l.ObjectManifest.Path())
 	desc := l.ObjectManifest.Kind().Name + " description"
-	if file, err := l.fs.ReadFileContentTo(path, desc, l.Object, model.DescriptionFileTag); err != nil {
+	if file, err := l.fs.ReadFileContentTo(path, desc, l.Object, model.DescriptionFileFieldTag); err != nil {
 		l.errors.Append(err)
 	} else if file != nil {
-		l.Description = file
-		l.ObjectManifest.AddRelatedPath(path)
+		l.Files.
+			Add(file).
+			AddTag(model.DescriptionFile).
+			AddTag(model.FileTypeMarkdown)
 	}
 }
 
