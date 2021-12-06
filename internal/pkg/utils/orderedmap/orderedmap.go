@@ -1,23 +1,16 @@
-// Modified version of: https://github.com/iancoleman/orderedmap
+// Package orderedmap is modified version of: https://github.com/iancoleman/orderedmap
 package orderedmap
 
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"sort"
 )
 
 type Pair struct {
-	key   string
-	value interface{}
-}
-
-func (kv *Pair) Key() string {
-	return kv.key
-}
-
-func (kv *Pair) Value() interface{} {
-	return kv.value
+	Key   string
+	Value interface{}
 }
 
 type ByPair struct {
@@ -34,11 +27,51 @@ type OrderedMap struct {
 	values map[string]interface{}
 }
 
+type visitCallback func(path Key, value interface{}, parent interface{})
+
 func New() *OrderedMap {
 	o := OrderedMap{}
 	o.keys = []string{}
 	o.values = map[string]interface{}{}
 	return &o
+}
+
+func FromPairs(pairs []Pair) *OrderedMap {
+	ordered := New()
+	for _, pair := range pairs {
+		ordered.Set(pair.Key, pair.Value)
+	}
+	return ordered
+}
+
+func (o *OrderedMap) Clone() *OrderedMap {
+	if o == nil {
+		return nil
+	}
+
+	// Clone using JSON encode/decode
+	out := New()
+	data, err := json.Marshal(o)
+	if err != nil {
+		panic(fmt.Errorf(`encode error: %w`, err))
+	}
+	if err := json.Unmarshal(data, out); err != nil {
+		panic(fmt.Errorf(`decode error: %w`, err))
+	}
+	return out
+}
+
+func (o *OrderedMap) ToMap() map[string]interface{} {
+	if o == nil {
+		return nil
+	}
+
+	out := make(map[string]interface{})
+	for k, v := range o.values {
+		out[k] = convertToMap(v)
+	}
+
+	return out
 }
 
 func (o *OrderedMap) Get(key string) (interface{}, bool) {
@@ -52,6 +85,151 @@ func (o *OrderedMap) Set(key string, value interface{}) {
 		o.keys = append(o.keys, key)
 	}
 	o.values[key] = value
+}
+
+// SetNested value defined by key, eg. "parameters.foo[123]".
+func (o *OrderedMap) SetNested(keysStr string, value interface{}) error {
+	return o.SetNestedPath(KeyFromStr(keysStr), value)
+}
+
+// SetNestedPath value defined by key, eg. Key{MapStep("parameters), MapStep("foo"), SliceStep(123)}.
+func (o *OrderedMap) SetNestedPath(keys Key, value interface{}) error {
+	if len(keys) == 0 {
+		panic(fmt.Errorf(`keys cannot be empty`))
+	}
+
+	currentKey := make(Key, 0)
+	var current interface{} = o
+
+	parentKeys := keys.WithoutLast()
+	lastKey := keys.Last()
+
+	// Get nested map
+	for _, key := range parentKeys {
+		currentKey = append(currentKey, key)
+		switch key := key.(type) {
+		case MapStep:
+			if m, ok := current.(*OrderedMap); ok {
+				if v, found := m.Get(string(key)); found {
+					current = v
+					continue
+				} else {
+					newMap := New()
+					current = newMap
+					m.Set(string(key), newMap)
+				}
+			} else {
+				return fmt.Errorf(`key "%s": expected object found "%T"`, currentKey, current)
+			}
+		case SliceStep:
+			if s, ok := current.([]interface{}); ok {
+				if len(s) >= int(key) {
+					current = s[key]
+					continue
+				} else {
+					return fmt.Errorf(`key "%s" not found`, currentKey)
+				}
+			} else {
+				return fmt.Errorf(`key "%s": expected array found "%T"`, currentKey.WithoutLast(), current)
+			}
+		default:
+			panic(fmt.Errorf(`unexpected type "%T"`, key))
+		}
+	}
+
+	// Set value to map
+	if key, ok := lastKey.(MapStep); ok {
+		if m, ok := current.(*OrderedMap); ok {
+			m.Set(string(key), value)
+			return nil
+		} else {
+			return fmt.Errorf(`key "%s": expected object found "%T"`, currentKey, current)
+		}
+	}
+
+	panic(fmt.Errorf(`last key must be MapStep, found "%T"`, lastKey))
+}
+
+// GetNestedOrNil returns nil if values is not found or an error occurred.
+func (o *OrderedMap) GetNestedOrNil(keysStr string) interface{} {
+	return o.GetNestedPathOrNil(KeyFromStr(keysStr))
+}
+
+func (o *OrderedMap) GetNestedMap(keysStr string) (m *OrderedMap, found bool, err error) {
+	return o.GetNestedPathMap(KeyFromStr(keysStr))
+}
+
+// GetNestedPathOrNil returns nil if values is not found or an error occurred.
+func (o *OrderedMap) GetNestedPathOrNil(keys Key) interface{} {
+	value, found, err := o.GetNestedPath(keys)
+	if !found {
+		return nil
+	} else if err != nil {
+		panic(err)
+	}
+	return value
+}
+
+func (o *OrderedMap) GetNestedPathMap(keys Key) (m *OrderedMap, found bool, err error) {
+	value, found, err := o.GetNestedPath(keys)
+	if !found {
+		return nil, false, nil
+	} else if err != nil {
+		return nil, true, err
+	}
+	if v, ok := value.(*OrderedMap); ok {
+		return v, true, nil
+	}
+	return nil, true, fmt.Errorf(`key "%s": expected object, found "%T"`, keys, value)
+}
+
+func (o *OrderedMap) GetNested(keysStr string) (value interface{}, found bool, err error) {
+	return o.GetNestedPath(KeyFromStr(keysStr))
+}
+
+func (o *OrderedMap) GetNestedPath(keys Key) (value interface{}, found bool, err error) {
+	if len(keys) == 0 {
+		panic(fmt.Errorf(`keys cannot be empty`))
+	}
+
+	currentKey := make(Key, 0)
+	var current interface{} = o
+
+	for _, key := range keys {
+		currentKey = append(currentKey, key)
+		switch key := key.(type) {
+		case MapStep:
+			if m, ok := current.(*OrderedMap); ok {
+				if v, found := m.Get(string(key)); found {
+					current = v
+					continue
+				} else {
+					return nil, false, fmt.Errorf(`key "%s" not found`, currentKey)
+				}
+			} else {
+				return nil, true, fmt.Errorf(`key "%s": expected object found "%T"`, currentKey.WithoutLast(), current)
+			}
+		case SliceStep:
+			if s, ok := current.([]interface{}); ok {
+				if len(s) >= int(key) {
+					current = s[key]
+					continue
+				} else {
+					return nil, false, fmt.Errorf(`key "%s" not found`, currentKey)
+				}
+			} else {
+				return nil, true, fmt.Errorf(`key "%s": expected array found "%T"`, currentKey.WithoutLast(), current)
+			}
+		default:
+			panic(fmt.Errorf(`unexpected type "%T"`, key))
+		}
+	}
+	return current, true, nil
+}
+
+// VisitAllRecursive calls callback for each nested key in OrderedMap or []interface{}.
+func (o *OrderedMap) VisitAllRecursive(callback visitCallback) {
+	visit(Key{}, o, nil, callback)
 }
 
 func (o *OrderedMap) Delete(key string) {
@@ -90,7 +268,7 @@ func (o *OrderedMap) Sort(lessFunc func(a *Pair, b *Pair) bool) {
 	sort.Sort(ByPair{pairs, lessFunc})
 
 	for i, pair := range pairs {
-		o.keys[i] = pair.key
+		o.keys[i] = pair.Key
 	}
 }
 
@@ -249,4 +427,43 @@ func (o OrderedMap) MarshalJSON() ([]byte, error) {
 	}
 	buf.WriteByte('}')
 	return buf.Bytes(), nil
+}
+
+func visit(key Key, valueRaw interface{}, parent interface{}, callback visitCallback) {
+	// Call callback for not-root item
+	if len(key) != 0 {
+		callback(key, valueRaw, parent)
+	}
+
+	// Go deep
+	switch parent := valueRaw.(type) {
+	case *OrderedMap:
+		for _, k := range parent.Keys() {
+			subValue, _ := parent.Get(k)
+			subKey := append(make(Key, 0), key...)
+			subKey = append(subKey, MapStep(k))
+			visit(subKey, subValue, parent, callback)
+		}
+	case []interface{}:
+		for index, subValue := range parent {
+			subKey := append(make(Key, 0), key...)
+			subKey = append(subKey, SliceStep(index))
+			visit(subKey, subValue, parent, callback)
+		}
+	}
+}
+
+func convertToMap(value interface{}) interface{} {
+	switch v := value.(type) {
+	case *OrderedMap:
+		return v.ToMap()
+	case []interface{}:
+		mapped := make([]interface{}, 0)
+		for _, item := range v {
+			mapped = append(mapped, convertToMap(item))
+		}
+		return mapped
+	default:
+		return value
+	}
 }
