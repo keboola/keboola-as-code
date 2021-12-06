@@ -98,7 +98,9 @@ func TestDefaultBucketMapper_MapBeforeLocalSave(t *testing.T) {
 
 	// Check warning of missing default bucket config
 	expectedWarnings := `
-WARN  Warning: configuration "456" of component "keboola.ex-db-mysql" that was supposed to create table "in.c-keboola-ex-db-mysql-456.contacts" in the input mapping of configuration "789" not found
+WARN  Warning: - config "branch:123/component:keboola.ex-db-mysql/config:456" not found
+  - referenced  from configuration config "branch:123/component:keboola.snowflake-transformation/config:789"
+  - input mapping "in.c-keboola-ex-db-mysql-456.contacts"
 `
 	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logs.String())
 

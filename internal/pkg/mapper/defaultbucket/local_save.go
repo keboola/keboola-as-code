@@ -16,46 +16,32 @@ func (m *defaultBucketMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) 
 		return nil
 	}
 
-	inputTablesRaw := utils.GetFromMap(config.Content, []string{"storage", "input", "tables"})
-	inputTables, ok := inputTablesRaw.([]interface{})
-	if !ok {
+	err := m.visitStorageInputTables(config, m.replaceDefaultBucketWithPlaceholder)
+	if err != nil {
+		m.Logger.Warnf(`Warning: %s`, err)
+	}
+	return nil
+}
+
+func (m *defaultBucketMapper) replaceDefaultBucketWithPlaceholder(config *model.Config, sourceTableId string, inputTable *orderedmap.OrderedMap) error {
+	sourceConfigPath, found, err := m.getDefaultBucketSourceConfigurationPath(config, sourceTableId)
+	if err != nil {
+		return err
+	}
+	if !found {
 		return nil
 	}
 
-	for _, inputTableRaw := range inputTables {
-		inputTable, ok := inputTableRaw.(*orderedmap.OrderedMap)
-		if !ok {
-			continue
-		}
-		inputTableSourceRaw, ok := inputTable.Get(`source`)
-		if !ok {
-			continue
-		}
-		inputTableSource, ok := inputTableSourceRaw.(string)
-		if !ok {
-			continue
-		}
-
-		m.replaceDefaultBucketWithPlaceholder(config, inputTableSource, inputTable)
-	}
+	tableName := strings.SplitN(sourceTableId, ".", 3)[2]
+	inputTable.Set(`source`, fmt.Sprintf(`{{:default-bucket:%s}}.%s`, sourceConfigPath, tableName))
 
 	return nil
 }
 
-func (m *defaultBucketMapper) replaceDefaultBucketWithPlaceholder(config *model.Config, sourceTableId string, inputTable *orderedmap.OrderedMap) {
-	sourceConfigPath, found := m.getDefaultBucketSourceConfigurationPath(config, sourceTableId)
-	if !found {
-		return
-	}
-
-	tableName := strings.Split(sourceTableId, ".")[2]
-	inputTable.Set(`source`, fmt.Sprintf(`{{:default-bucket:%s}}.%s`, sourceConfigPath, tableName))
-}
-
-func (m *defaultBucketMapper) getDefaultBucketSourceConfigurationPath(config *model.Config, tableId string) (string, bool) {
+func (m *defaultBucketMapper) getDefaultBucketSourceConfigurationPath(config *model.Config, tableId string) (string, bool, error) {
 	componentId, configId, match := m.State.Components().MatchDefaultBucketInTableId(tableId)
 	if !match {
-		return "", false
+		return "", false, nil
 	}
 
 	sourceConfigKey := model.ConfigKey{
@@ -65,8 +51,11 @@ func (m *defaultBucketMapper) getDefaultBucketSourceConfigurationPath(config *mo
 	}
 	sourceConfig, found := m.State.Get(sourceConfigKey)
 	if !found {
-		m.Logger.Warnf(`Warning: configuration "%s" of component "%s" that was supposed to create table "%s" in the input mapping of configuration "%s" not found`, configId, componentId, tableId, config.Id)
-		return "", false
+		errors := utils.NewMultiError()
+		errors.Append(fmt.Errorf(`%s not found`, sourceConfigKey.Desc()))
+		errors.Append(fmt.Errorf(`  - referenced  from configuration %s`, config.Desc()))
+		errors.Append(fmt.Errorf(`  - input mapping "%s"`, tableId))
+		return "", false, errors
 	}
-	return sourceConfig.GetObjectPath(), true
+	return sourceConfig.GetObjectPath(), true, nil
 }
