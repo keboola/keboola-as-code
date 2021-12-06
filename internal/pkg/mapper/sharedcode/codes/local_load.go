@@ -49,7 +49,9 @@ func (l *loader) load() error {
 	if err != nil {
 		return err
 	}
-	l.ObjectManifest.AddRelatedPath(codeFilePath)
+	l.Files.
+		Add(codeFile).
+		AddTag(model.FileTypeNativeSharedCode)
 
 	// Convert []string -> []interface{} (so there is no type difference against API type)
 	scripts := strhelper.ParseTransformationScripts(codeFile.Content, targetComponentId)
