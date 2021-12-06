@@ -28,7 +28,7 @@ func (m *schedulerMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) er
 
 	// Get target
 	targetRaw, found := apiObject.Content.Get(model.SchedulerTargetKey)
-	target, ok := targetRaw.(orderedmap.OrderedMap)
+	target, ok := targetRaw.(*orderedmap.OrderedMap)
 	if !found {
 		return utils.PrefixError(
 			fmt.Sprintf(`scheduler %s is invalid`, recipe.Manifest.Desc()),

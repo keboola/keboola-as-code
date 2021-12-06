@@ -616,7 +616,7 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 						{
 							Key: "variables",
 							Value: []interface{}{
-								*utils.PairsToOrderedMap([]utils.Pair{
+								utils.PairsToOrderedMap([]utils.Pair{
 									{
 										Key:   "name",
 										Value: "num1",
@@ -626,7 +626,7 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 										Value: "string",
 									},
 								}),
-								*utils.PairsToOrderedMap([]utils.Pair{
+								utils.PairsToOrderedMap([]utils.Pair{
 									{
 										Key:   "name",
 										Value: "num2",
@@ -739,7 +739,7 @@ func TestPersistVariables(t *testing.T) {
 						{
 							Key: "variables",
 							Value: []interface{}{
-								*utils.PairsToOrderedMap([]utils.Pair{
+								utils.PairsToOrderedMap([]utils.Pair{
 									{
 										Key:   "name",
 										Value: "foo",
@@ -790,7 +790,7 @@ func TestPersistVariables(t *testing.T) {
 						{
 							Key: "values",
 							Value: []interface{}{
-								*utils.PairsToOrderedMap([]utils.Pair{
+								utils.PairsToOrderedMap([]utils.Pair{
 									{
 										Key:   "name",
 										Value: "foo",

@@ -78,10 +78,6 @@ func GetFromMap(m *orderedmap.OrderedMap, keys []string) interface{} {
 			m = v
 			continue
 		}
-		if v, ok := v.(orderedmap.OrderedMap); ok {
-			m = &v
-			continue
-		}
 		return nil
 	}
 	return m
@@ -89,8 +85,6 @@ func GetFromMap(m *orderedmap.OrderedMap, keys []string) interface{} {
 
 func convertValue(value interface{}) interface{} {
 	switch v := value.(type) {
-	case orderedmap.OrderedMap:
-		return OrderedMapToMap(&v)
 	case *orderedmap.OrderedMap:
 		return OrderedMapToMap(v)
 	case []interface{}:
@@ -114,16 +108,6 @@ func updateInElement(element interface{}, path KeyPath, value interface{}) inter
 	switch currentElement := element.(type) {
 	case *orderedmap.OrderedMap:
 
-		childStep := path[0].String()
-		childElement, ok := currentElement.Get(childStep)
-		if !ok {
-			panic(fmt.Errorf("orderedMap \"%v\" missing key %v", element, childStep))
-		}
-		// currentElement is map so we update it recursively on key defined as path[0]
-		newChildElement := updateInElement(childElement, path[1:], value)
-		currentElement.Set(childStep, newChildElement)
-		return currentElement
-	case orderedmap.OrderedMap:
 		childStep := path[0].String()
 		childElement, ok := currentElement.Get(childStep)
 		if !ok {

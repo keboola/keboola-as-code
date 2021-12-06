@@ -48,7 +48,7 @@ func TestSchedulerMapBeforeRemoteSave(t *testing.T) {
 	}, internalObject.Relations)
 	targetInternalRaw, found := internalObject.Content.Get(model.SchedulerTargetKey)
 	assert.True(t, found)
-	targetInternal, ok := targetInternalRaw.(orderedmap.OrderedMap)
+	targetInternal, ok := targetInternalRaw.(*orderedmap.OrderedMap)
 	assert.True(t, ok)
 	_, found = targetInternal.Get(model.SchedulerTargetComponentIdKey)
 	assert.False(t, found)
@@ -61,7 +61,7 @@ func TestSchedulerMapBeforeRemoteSave(t *testing.T) {
 	// Api object contains target
 	targetRaw, found := apiObject.Content.Get(model.SchedulerTargetKey)
 	assert.True(t, found)
-	target, ok := targetRaw.(orderedmap.OrderedMap)
+	target, ok := targetRaw.(*orderedmap.OrderedMap)
 	assert.True(t, ok)
 
 	// Api object contains componentId and configurationId

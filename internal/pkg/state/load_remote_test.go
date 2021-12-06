@@ -184,10 +184,10 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 				Content: utils.PairsToOrderedMap([]utils.Pair{
 					{
 						Key: "parameters",
-						Value: *utils.PairsToOrderedMap([]utils.Pair{
+						Value: utils.PairsToOrderedMap([]utils.Pair{
 							{
 								Key: "api",
-								Value: *utils.PairsToOrderedMap([]utils.Pair{
+								Value: utils.PairsToOrderedMap([]utils.Pair{
 									{
 										Key:   "baseUrl",
 										Value: "https://jsonplaceholder.typicode.com",
@@ -253,10 +253,10 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 				Content: utils.PairsToOrderedMap([]utils.Pair{
 					{
 						Key: "parameters",
-						Value: *utils.PairsToOrderedMap([]utils.Pair{
+						Value: utils.PairsToOrderedMap([]utils.Pair{
 							{
 								Key: "db",
-								Value: *utils.PairsToOrderedMap([]utils.Pair{
+								Value: utils.PairsToOrderedMap([]utils.Pair{
 									{
 										Key:   "host",
 										Value: "mysql.example.com",
@@ -329,7 +329,7 @@ func complexRemoteExpectedConfigsRows(envs *env.Map) []*model.ConfigRowState {
 				Content: utils.PairsToOrderedMap([]utils.Pair{
 					{
 						Key: "parameters",
-						Value: *utils.PairsToOrderedMap([]utils.Pair{
+						Value: utils.PairsToOrderedMap([]utils.Pair{
 							{Key: "incremental", Value: false},
 						}),
 					},
@@ -365,7 +365,7 @@ func complexRemoteExpectedConfigsRows(envs *env.Map) []*model.ConfigRowState {
 				Content: utils.PairsToOrderedMap([]utils.Pair{
 					{
 						Key: "parameters",
-						Value: *utils.PairsToOrderedMap([]utils.Pair{
+						Value: utils.PairsToOrderedMap([]utils.Pair{
 							{Key: "incremental", Value: false},
 						}),
 					},
@@ -401,7 +401,7 @@ func complexRemoteExpectedConfigsRows(envs *env.Map) []*model.ConfigRowState {
 				Content: utils.PairsToOrderedMap([]utils.Pair{
 					{
 						Key: "parameters",
-						Value: *utils.PairsToOrderedMap([]utils.Pair{
+						Value: utils.PairsToOrderedMap([]utils.Pair{
 							{Key: "incremental", Value: false},
 						}),
 					},

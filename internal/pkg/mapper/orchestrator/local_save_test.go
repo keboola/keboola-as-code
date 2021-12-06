@@ -136,7 +136,7 @@ func createLocalSaveFixtures(t *testing.T, context model.MapperContext, createTa
 						Content: utils.PairsToOrderedMap([]utils.Pair{
 							{
 								Key: `task`,
-								Value: *utils.PairsToOrderedMap([]utils.Pair{
+								Value: utils.PairsToOrderedMap([]utils.Pair{
 									{Key: `mode`, Value: `run`},
 								}),
 							},
@@ -162,7 +162,7 @@ func createLocalSaveFixtures(t *testing.T, context model.MapperContext, createTa
 						Content: utils.PairsToOrderedMap([]utils.Pair{
 							{
 								Key: `task`,
-								Value: *utils.PairsToOrderedMap([]utils.Pair{
+								Value: utils.PairsToOrderedMap([]utils.Pair{
 									{Key: `mode`, Value: `run`},
 								}),
 							},
@@ -209,7 +209,7 @@ func createLocalSaveFixtures(t *testing.T, context model.MapperContext, createTa
 						Content: utils.PairsToOrderedMap([]utils.Pair{
 							{
 								Key: `task`,
-								Value: *utils.PairsToOrderedMap([]utils.Pair{
+								Value: utils.PairsToOrderedMap([]utils.Pair{
 									{Key: `mode`, Value: `run`},
 								}),
 							},

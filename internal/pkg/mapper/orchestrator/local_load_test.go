@@ -117,7 +117,7 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 						Content: utils.PairsToOrderedMap([]utils.Pair{
 							{
 								Key: `task`,
-								Value: *utils.PairsToOrderedMap([]utils.Pair{
+								Value: utils.PairsToOrderedMap([]utils.Pair{
 									{Key: `mode`, Value: `run`},
 								}),
 							},
@@ -143,7 +143,7 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 						Content: utils.PairsToOrderedMap([]utils.Pair{
 							{
 								Key: `task`,
-								Value: *utils.PairsToOrderedMap([]utils.Pair{
+								Value: utils.PairsToOrderedMap([]utils.Pair{
 									{Key: `mode`, Value: `run`},
 								}),
 							},
@@ -190,7 +190,7 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 						Content: utils.PairsToOrderedMap([]utils.Pair{
 							{
 								Key: `task`,
-								Value: *utils.PairsToOrderedMap([]utils.Pair{
+								Value: utils.PairsToOrderedMap([]utils.Pair{
 									{Key: `mode`, Value: `run`},
 								}),
 							},

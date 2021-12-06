@@ -235,7 +235,7 @@ func TestUnmarshalJSON(t *testing.T) {
 	if !ok {
 		t.Error("Missing key for nested map 1 deep")
 	}
-	v := vi.(OrderedMap)
+	v := vi.(*OrderedMap)
 	k = v.Keys()
 	for i := range k {
 		if k[i] != expectedKeys[i] {
@@ -250,7 +250,7 @@ func TestUnmarshalJSON(t *testing.T) {
 	if !ok {
 		t.Error("Missing key for nested map 2 deep")
 	}
-	v = vi.(OrderedMap)
+	v = vi.(*OrderedMap)
 	k = v.Keys()
 	for i := range k {
 		if k[i] != expectedKeys[i] {
@@ -268,7 +268,7 @@ func TestUnmarshalJSON(t *testing.T) {
 		t.Error("Missing key for multitype array")
 	}
 	vslice := vislice.([]interface{})
-	vmap := vslice[2].(OrderedMap)
+	vmap := vslice[2].(*OrderedMap)
 	k = vmap.Keys()
 	for i := range k {
 		if k[i] != expectedKeys[i] {
@@ -280,7 +280,7 @@ func TestUnmarshalJSON(t *testing.T) {
 	vslice = vislice.([]interface{})
 	expectedKeys = []string{"inner"}
 	vinnerslice := vslice[3].([]interface{})
-	vinnermap := vinnerslice[0].(OrderedMap)
+	vinnermap := vinnerslice[0].(*OrderedMap)
 	k = vinnermap.Keys()
 	for i := range k {
 		if k[i] != expectedKeys[i] {
@@ -327,14 +327,14 @@ func TestUnmarshalJSONDuplicateKeys(t *testing.T) {
 		}
 	}
 	vimap, _ := o.Get("a")
-	_ = vimap.(OrderedMap)
+	_ = vimap.(*OrderedMap)
 	vislice, _ := o.Get("b")
 	_ = vislice.([]interface{})
 	vival, _ := o.Get("c")
 	_ = vival.(float64)
 
 	vimap, _ = o.Get("d")
-	m := vimap.(OrderedMap)
+	m := vimap.(*OrderedMap)
 	expectedKeys = []string{"y"}
 	keys = m.Keys()
 	if len(keys) != len(expectedKeys) {
@@ -347,7 +347,7 @@ func TestUnmarshalJSONDuplicateKeys(t *testing.T) {
 	}
 
 	vislice, _ = o.Get("e")
-	m = vislice.([]interface{})[0].(OrderedMap)
+	m = vislice.([]interface{})[0].(*OrderedMap)
 	expectedKeys = []string{"z"}
 	keys = m.Keys()
 	if len(keys) != len(expectedKeys) {
@@ -439,7 +439,7 @@ func TestUnmarshalJSONArrayOfMaps(t *testing.T) {
 	}
 	vs := vi.([]interface{})
 	for _, vInterface := range vs {
-		v := vInterface.(OrderedMap)
+		v := vInterface.(*OrderedMap)
 		k = v.Keys()
 		for i := range k {
 			if k[i] != expectedKeys[i] {

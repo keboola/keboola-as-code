@@ -18,7 +18,7 @@ func TestValidateJsonSchemaOk(t *testing.T) {
 		{Key: "age", Value: 25},
 	})
 	content := utils.NewOrderedMap()
-	content.Set(`parameters`, *parameters)
+	content.Set(`parameters`, parameters)
 	assert.NoError(t, validateContent(schema, content))
 }
 
@@ -36,7 +36,7 @@ func TestValidateJsonSchemaErr(t *testing.T) {
 		},
 	})
 	content := utils.NewOrderedMap()
-	content.Set(`parameters`, *parameters)
+	content.Set(`parameters`, parameters)
 	err := validateContent(schema, content)
 	assert.Error(t, err)
 	expectedErr := `
@@ -59,7 +59,7 @@ func TestValidateJsonSchemaSkipEmptyParameters(t *testing.T) {
 	t.Parallel()
 	schema := getTestSchema()
 	content := utils.NewOrderedMap()
-	content.Set(`parameters`, *utils.NewOrderedMap())
+	content.Set(`parameters`, utils.NewOrderedMap())
 	assert.NoError(t, validateContent(schema, content))
 }
 

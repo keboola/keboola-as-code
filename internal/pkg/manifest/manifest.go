@@ -25,7 +25,7 @@ type Manifest struct {
 	*Content `validate:"required,dive"` // content of the file, updated only on load/save
 	loaded   bool
 	changed  bool
-	records  orderedmap.OrderedMap // common map for all: branches, configs and rows manifests
+	records  *orderedmap.OrderedMap // common map for all: branches, configs and rows manifests
 	lock     *sync.Mutex
 }
 
@@ -63,7 +63,7 @@ func newManifest(projectId int, apiHost string, fs filesystem.Fs) *Manifest {
 			Branches: make([]*model.BranchManifest, 0),
 			Configs:  make([]*model.ConfigManifestWithRows, 0),
 		},
-		records: *utils.NewOrderedMap(),
+		records: utils.NewOrderedMap(),
 		lock:    &sync.Mutex{},
 	}
 }
@@ -233,7 +233,7 @@ func (m *Manifest) Path() string {
 	return filesystem.Join(filesystem.MetadataDir, FileName)
 }
 
-func (m *Manifest) GetRecords() orderedmap.OrderedMap {
+func (m *Manifest) GetRecords() *orderedmap.OrderedMap {
 	m.sortRecords()
 	return m.records
 }

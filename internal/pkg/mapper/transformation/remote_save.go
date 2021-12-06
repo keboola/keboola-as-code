@@ -20,18 +20,18 @@ func (m *transformationMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecip
 	apiObject := recipe.ApiObject.(*model.Config)
 
 	// Get parameters
-	var parameters orderedmap.OrderedMap
+	var parameters *orderedmap.OrderedMap
 	parametersRaw := utils.GetFromMap(apiObject.Content, []string{`parameters`})
-	if v, ok := parametersRaw.(orderedmap.OrderedMap); ok {
+	if v, ok := parametersRaw.(*orderedmap.OrderedMap); ok {
 		parameters = v
 	} else {
-		parameters = *utils.NewOrderedMap()
+		parameters = utils.NewOrderedMap()
 	}
 
 	// Convert blocks to map
 	blocks := make([]interface{}, 0)
 	for _, block := range internalObject.Blocks {
-		blockRaw := *utils.NewOrderedMap()
+		blockRaw := utils.NewOrderedMap()
 		if err := utils.ConvertByJson(block, &blockRaw); err != nil {
 			return fmt.Errorf(`cannot convert block to JSON: %w`, err)
 		}

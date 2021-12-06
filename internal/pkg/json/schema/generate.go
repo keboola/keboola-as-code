@@ -26,8 +26,8 @@ func GenerateDocument(schemaDef []byte) (*orderedmap.OrderedMap, error) {
 	if len(schema.Types) == 0 {
 		schema.Types = []string{`object`}
 	}
-	content := getDefaultValueFor(schema, 0).(orderedmap.OrderedMap)
-	return &content, nil
+	content := getDefaultValueFor(schema, 0).(*orderedmap.OrderedMap)
+	return content, nil
 }
 
 func getDefaultValueFor(schema *jsonschema.Schema, level int) interface{} {
@@ -77,7 +77,7 @@ func getDefaultValueFor(schema *jsonschema.Schema, level int) interface{} {
 		}
 		return values
 	case `object`:
-		values := *utils.NewOrderedMap()
+		values := utils.NewOrderedMap()
 		if schema.Properties != nil {
 			props := make([]*jsonschema.Schema, 0)
 			keys := make(map[string]string)
@@ -165,10 +165,10 @@ func mergeDefaultValues(schemas []*jsonschema.Schema, level int) interface{} {
 	}
 
 	// Multiple schemas, are there some objects?
-	values := *utils.NewOrderedMap()
+	values := utils.NewOrderedMap()
 	for _, schema := range schemas {
 		def := getDefaultValueFor(schema, level)
-		if m, ok := def.(orderedmap.OrderedMap); ok {
+		if m, ok := def.(*orderedmap.OrderedMap); ok {
 			for _, k := range m.Keys() {
 				v, _ := m.Get(k)
 				values.Set(k, v)
