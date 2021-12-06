@@ -14,7 +14,6 @@ require (
 	github.com/google/go-cmp v0.5.6
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/hashicorp/go-multierror v1.0.0
-	github.com/iancoleman/orderedmap v0.2.0
 	github.com/iancoleman/strcase v0.1.3
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/joho/godotenv v1.3.0

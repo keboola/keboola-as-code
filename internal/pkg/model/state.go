@@ -5,12 +5,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/iancoleman/orderedmap"
 	"github.com/spf13/cast"
 	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 type State struct {

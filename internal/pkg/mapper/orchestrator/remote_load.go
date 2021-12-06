@@ -3,11 +3,11 @@ package orchestrator
 import (
 	"fmt"
 
-	"github.com/iancoleman/orderedmap"
 	"github.com/spf13/cast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func (m *orchestratorMapper) OnRemoteChange(changes *model.RemoteChanges) error {

@@ -6,11 +6,10 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/iancoleman/orderedmap"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/strhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 const (

@@ -1,9 +1,8 @@
 package scheduler
 
 import (
-	"github.com/iancoleman/orderedmap"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func (m *schedulerMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {

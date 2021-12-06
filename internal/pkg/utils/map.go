@@ -3,9 +3,8 @@ package utils
 import (
 	"fmt"
 
-	"github.com/iancoleman/orderedmap"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 type Pair struct {

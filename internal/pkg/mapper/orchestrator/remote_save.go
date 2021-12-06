@@ -1,10 +1,9 @@
 package orchestrator
 
 import (
-	"github.com/iancoleman/orderedmap"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func (m *orchestratorMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {

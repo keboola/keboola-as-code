@@ -3,10 +3,9 @@ package transformation
 import (
 	"fmt"
 
-	"github.com/iancoleman/orderedmap"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 // MapBeforeRemoteSave - save code blocks to the API.
