@@ -8,7 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestDefaultBucketMapper_MapBeforeLocalSave(t *testing.T) {
@@ -30,10 +30,10 @@ func TestDefaultBucketMapper_MapBeforeLocalSave(t *testing.T) {
 		},
 		Local: &model.Config{
 			ConfigKey: configKey1,
-			Content: utils.PairsToOrderedMap([]utils.Pair{
+			Content: orderedmap.FromPairs([]orderedmap.Pair{
 				{
 					Key: "foo",
-					Value: utils.PairsToOrderedMap([]utils.Pair{
+					Value: orderedmap.FromPairs([]orderedmap.Pair{
 						{Key: "bar", Value: "baz"},
 					}),
 				},
@@ -79,7 +79,7 @@ func TestDefaultBucketMapper_MapBeforeLocalSave(t *testing.T) {
     }
   }
 }`
-	content := utils.NewOrderedMap()
+	content := orderedmap.New()
 	json.MustDecodeString(contentStr, content)
 	configState2 := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{

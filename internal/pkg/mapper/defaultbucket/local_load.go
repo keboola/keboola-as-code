@@ -41,7 +41,7 @@ func (m *defaultBucketMapper) replacePlaceholderWithDefaultBucket(config *model.
 	path := filesystem.Join(branch.Path(), splitSource[0])
 	configKeyRaw, found := m.Naming.FindByPath(path)
 	if !found {
-		return fmt.Errorf(`configuration "%s" contains table "%s" in input mapping referencing to a non-existing configuration`, config.Id, inputTableSource)
+		return fmt.Errorf(`configuration %s contains table "%s" in input mapping referencing to a non-existing configuration`, config.Desc(), inputTableSource)
 	}
 	configKey, ok := configKeyRaw.(model.ConfigKey)
 	if !ok {

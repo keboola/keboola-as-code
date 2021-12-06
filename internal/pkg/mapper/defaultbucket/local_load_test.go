@@ -8,7 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestDefaultBucketMapper_MapBeforeLocalLoad(t *testing.T) {
@@ -42,10 +42,10 @@ func TestDefaultBucketMapper_MapBeforeLocalLoad(t *testing.T) {
 		},
 		Local: &model.Config{
 			ConfigKey: configKey1,
-			Content: utils.PairsToOrderedMap([]utils.Pair{
+			Content: orderedmap.FromPairs([]orderedmap.Pair{
 				{
 					Key: "foo",
-					Value: utils.PairsToOrderedMap([]utils.Pair{
+					Value: orderedmap.FromPairs([]orderedmap.Pair{
 						{Key: "bar", Value: "baz"},
 					}),
 				},
@@ -92,7 +92,7 @@ func TestDefaultBucketMapper_MapBeforeLocalLoad(t *testing.T) {
     }
   }
 }`
-	content := utils.NewOrderedMap()
+	content := orderedmap.New()
 	json.MustDecodeString(contentStr, content)
 	configState2 := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{
@@ -111,7 +111,7 @@ func TestDefaultBucketMapper_MapBeforeLocalLoad(t *testing.T) {
 
 	// Check warning of missing default bucket config
 	expectedWarnings := `
-WARN  Warning: configuration "789" contains table "{{:default-bucket:extractor/keboola.ex-db-mysql/test2}}.contacts" in input mapping referencing to a non-existing configuration
+WARN  Warning: configuration config "branch:123/component:keboola.snowflake-transformation/config:789" contains table "{{:default-bucket:extractor/keboola.ex-db-mysql/test2}}.contacts" in input mapping referencing to a non-existing configuration
 `
 	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logs.String())
 

@@ -2,7 +2,6 @@ package defaultbucket
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -15,7 +14,13 @@ func NewMapper(context model.MapperContext) *defaultBucketMapper {
 }
 
 func (m *defaultBucketMapper) visitStorageInputTables(config *model.Config, callback func(config *model.Config, inputTableSource string, inputTable *orderedmap.OrderedMap) error) error {
-	inputTablesRaw := utils.GetFromMap(config.Content, []string{"storage", "input", "tables"})
+	inputTablesRaw, found, err := config.Content.GetNested("storage.input.tables")
+	if !found {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
 	inputTables, ok := inputTablesRaw.([]interface{})
 	if !ok {
 		return nil
