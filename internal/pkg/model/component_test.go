@@ -68,7 +68,7 @@ func TestComponentDefaultBucket(t *testing.T) {
 	componentsMap := NewComponentsMap(nil)
 	componentsMap.Set(&component)
 
-	expected := map[string]string{"in.c-keboola-ex-aws-s3-": "keboola.ex-aws-s3"}
+	expected := map[string]string{"keboola.ex-aws-s3": "in.c-keboola-ex-aws-s3-"}
 	assert.Equal(t, expected, componentsMap.defaultBucketPrefixes)
 }
 

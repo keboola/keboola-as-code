@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/defaultbucket"
@@ -38,8 +37,12 @@ func createLocalSaveRecipe(object model.ObjectWithContent, manifest model.Object
 	return &model.LocalSaveRecipe{
 		Object:         object,
 		ObjectManifest: manifest,
-		Metadata:       filesystem.CreateJsonFile(model.MetaFile, utils.NewOrderedMap()),
-		Configuration:  filesystem.CreateJsonFile(model.ConfigFile, object.GetContent()),
-		Description:    filesystem.CreateFile(model.DescriptionFile, ``),
+	}
+}
+
+func createLocalLoadRecipe(object model.ObjectWithContent, manifest model.ObjectManifest) *model.LocalLoadRecipe {
+	return &model.LocalLoadRecipe{
+		Object:         object,
+		ObjectManifest: manifest,
 	}
 }

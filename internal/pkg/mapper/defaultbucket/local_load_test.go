@@ -11,9 +11,21 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func TestDefaultBucketMapper_MapBeforeLocalSave(t *testing.T) {
+func TestDefaultBucketMapper_MapBeforeLocalLoad(t *testing.T) {
 	t.Parallel()
 	mapperInst, context, logs := createMapper(t)
+
+	// Branch
+	branchKey := model.BranchKey{Id: 123}
+	branchState := &model.BranchState{
+		BranchManifest: &model.BranchManifest{
+			BranchKey: branchKey,
+			Paths:     model.Paths{PathInProject: model.NewPathInProject(``, `branch`)},
+		},
+		Local: &model.Branch{BranchKey: branchKey},
+	}
+	assert.NoError(t, context.State.Set(branchState))
+	context.Naming.Attach(branchKey, branchState.PathInProject)
 
 	// Config referenced by the default bucket
 	configKey1 := model.ConfigKey{
@@ -41,6 +53,7 @@ func TestDefaultBucketMapper_MapBeforeLocalSave(t *testing.T) {
 		},
 	}
 	assert.NoError(t, context.State.Set(configState1))
+	context.Naming.Attach(configState1.Key(), configState1.PathInProject)
 
 	// Config with the input mapping
 	configKey2 := model.ConfigKey{
@@ -56,7 +69,7 @@ func TestDefaultBucketMapper_MapBeforeLocalSave(t *testing.T) {
       "tables": [
         {
           "columns": [],
-          "source": "in.c-keboola-ex-db-mysql-123.accounts",
+          "source": "{{:default-bucket:extractor/keboola.ex-db-mysql/test}}.accounts",
           "destination": "accounts",
           "where_column": "",
           "where_operator": "eq",
@@ -64,7 +77,7 @@ func TestDefaultBucketMapper_MapBeforeLocalSave(t *testing.T) {
         },
         {
           "columns": [],
-          "source": "in.c-keboola-ex-db-mysql-456.contacts",
+          "source": "{{:default-bucket:extractor/keboola.ex-db-mysql/test2}}.contacts",
           "destination": "contacts",
           "where_column": "",
           "where_operator": "eq",
@@ -93,16 +106,16 @@ func TestDefaultBucketMapper_MapBeforeLocalSave(t *testing.T) {
 	assert.NoError(t, context.State.Set(configState2))
 
 	// Invoke
-	recipe := createLocalSaveRecipe(configState2.Local, configState2.ConfigManifest)
-	assert.NoError(t, mapperInst.MapBeforeLocalSave(recipe))
+	recipe := createLocalLoadRecipe(configState2.Local, configState2.ConfigManifest)
+	assert.NoError(t, mapperInst.MapAfterLocalLoad(recipe))
 
 	// Check warning of missing default bucket config
 	expectedWarnings := `
-WARN  Warning: configuration "456" of component "keboola.ex-db-mysql" that was supposed to create table "in.c-keboola-ex-db-mysql-456.contacts" in the input mapping of configuration "789" not found
+WARN  Warning: configuration "789" contains table "{{:default-bucket:extractor/keboola.ex-db-mysql/test2}}.contacts" in input mapping referencing to a non-existing configuration
 `
 	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logs.String())
 
 	// Check default bucket replacement
 	configContent := json.MustEncodeString(recipe.Object.(*model.Config).Content, false)
-	assert.Equal(t, `{"parameters":{},"storage":{"input":{"tables":[{"columns":[],"source":"{{:default-bucket:extractor/keboola.ex-db-mysql/test}}.accounts","destination":"accounts","where_column":"","where_operator":"eq","where_values":[]},{"columns":[],"source":"in.c-keboola-ex-db-mysql-456.contacts","destination":"contacts","where_column":"","where_operator":"eq","where_values":[]}],"files":[]},"output":{"tables":[],"files":[]}}}`, configContent)
+	assert.Equal(t, `{"parameters":{},"storage":{"input":{"tables":[{"columns":[],"source":"in.c-keboola-ex-db-mysql-123.accounts","destination":"accounts","where_column":"","where_operator":"eq","where_values":[]},{"columns":[],"source":"{{:default-bucket:extractor/keboola.ex-db-mysql/test2}}.contacts","destination":"contacts","where_column":"","where_operator":"eq","where_values":[]}],"files":[]},"output":{"tables":[],"files":[]}}}`, configContent)
 }
