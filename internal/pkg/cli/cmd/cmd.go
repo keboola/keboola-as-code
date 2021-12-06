@@ -79,7 +79,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 	root := &RootCommand{
 		Options:   options.NewOptions(),
 		cmdByPath: make(map[string]*cobra.Command),
-		aliases:   utils.NewOrderedMap(),
+		aliases:   orderedmap.New(),
 	}
 	root.Cmd = &Cmd{
 		Use:           path.Base(os.Args[0]), // name of the binary

@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 // DeleteInvalidObjects from disk, eg. if pull --force used.
@@ -32,7 +33,7 @@ func (m *Manager) DeleteInvalidObjects() error {
 // Hidden dirs are ignored.
 func DeleteEmptyDirectories(fs filesystem.Fs, trackedPaths []string) error {
 	errors := utils.NewMultiError()
-	emptyDirs := utils.NewOrderedMap()
+	emptyDirs := orderedmap.New()
 	root := `.`
 	err := fs.Walk(root, func(path string, info filesystem.FileInfo, err error) error {
 		// Stop on error

@@ -13,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/strhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 type typeName string
@@ -180,7 +181,9 @@ func (d *Differ) newOptions(reporter *Reporter) cmp.Options {
 	return cmp.Options{
 		cmp.Reporter(reporter),
 		// Compare Config/ConfigRow configuration content ("orderedmap" type) as map (keys order doesn't matter)
-		cmp.Transformer("orderedmap", utils.OrderedMapToMap),
+		cmp.Transformer("orderedmap", func(m *orderedmap.OrderedMap) map[string]interface{} {
+			return m.ToMap()
+		}),
 		// Separately compares the relations for the manifest and API side
 		cmpopts.AcyclicTransformer("relations", func(relations model.Relations) model.RelationsBySide {
 			return relations.RelationsBySide()

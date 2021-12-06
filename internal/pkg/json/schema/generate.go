@@ -6,14 +6,13 @@ import (
 
 	"github.com/santhosh-tekuri/jsonschema/v5"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func GenerateDocument(schemaDef []byte) (*orderedmap.OrderedMap, error) {
 	// Is schema empty?
 	if len(schemaDef) == 0 {
-		return utils.NewOrderedMap(), nil
+		return orderedmap.New(), nil
 	}
 
 	// Generate schema
@@ -77,7 +76,7 @@ func getDefaultValueFor(schema *jsonschema.Schema, level int) interface{} {
 		}
 		return values
 	case `object`:
-		values := utils.NewOrderedMap()
+		values := orderedmap.New()
 		if schema.Properties != nil {
 			props := make([]*jsonschema.Schema, 0)
 			keys := make(map[string]string)
@@ -165,7 +164,7 @@ func mergeDefaultValues(schemas []*jsonschema.Schema, level int) interface{} {
 	}
 
 	// Multiple schemas, are there some objects?
-	values := utils.NewOrderedMap()
+	values := orderedmap.New()
 	for _, schema := range schemas {
 		def := getDefaultValueFor(schema, level)
 		if m, ok := def.(*orderedmap.OrderedMap); ok {

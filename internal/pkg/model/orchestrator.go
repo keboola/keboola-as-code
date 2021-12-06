@@ -8,7 +8,6 @@ import (
 	"github.com/spf13/cast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -52,7 +51,7 @@ func (p *Phase) Clone() *Phase {
 		return nil
 	}
 	clone := *p
-	clone.Content = utils.CloneOrderedMap(p.Content)
+	clone.Content = p.Content.Clone()
 	clone.Tasks = make([]*Task, 0)
 	for _, task := range p.Tasks {
 		clone.Tasks = append(clone.Tasks, task.Clone())
@@ -65,7 +64,7 @@ func (t *Task) Clone() *Task {
 		return nil
 	}
 	clone := *t
-	clone.Content = utils.CloneOrderedMap(t.Content)
+	clone.Content = t.Content.Clone()
 	return &clone
 }
 

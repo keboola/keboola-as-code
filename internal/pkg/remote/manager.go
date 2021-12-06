@@ -54,7 +54,7 @@ func (m *Manager) NewUnitOfWork(ctx context.Context, changeDescription string) *
 		ctx:               ctx,
 		lock:              &sync.Mutex{},
 		changeDescription: changeDescription,
-		storageApiPools:   utils.NewOrderedMap(),
+		storageApiPools:   orderedmap.New(),
 		changes:           model.NewRemoteChanges(),
 		errors:            utils.NewMultiError(),
 	}

@@ -31,7 +31,7 @@ func NewState(logger *zap.SugaredLogger, fs filesystem.Fs, components *Component
 		sortBy:     sortBy,
 		lock:       &sync.Mutex{},
 		components: components,
-		objects:    utils.NewOrderedMap(),
+		objects:    orderedmap.New(),
 	}
 }
 
@@ -83,8 +83,8 @@ func (s *State) All() []ObjectState {
 	defer s.lock.Unlock()
 
 	s.objects.Sort(func(a *orderedmap.Pair, b *orderedmap.Pair) bool {
-		aKey := a.Value().(ObjectState).Manifest().SortKey(s.sortBy)
-		bKey := b.Value().(ObjectState).Manifest().SortKey(s.sortBy)
+		aKey := a.Value.(ObjectState).Manifest().SortKey(s.sortBy)
+		bKey := b.Value.(ObjectState).Manifest().SortKey(s.sortBy)
 		return aKey < bKey
 	})
 

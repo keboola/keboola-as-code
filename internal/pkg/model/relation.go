@@ -270,8 +270,8 @@ func (v Relations) MarshalJSON() ([]byte, error) {
 		}
 
 		// Convert struct -> map
-		relationMap := utils.NewOrderedMap()
-		if err := utils.ConvertByJson(relation, &relationMap); err != nil {
+		relationMap := orderedmap.New()
+		if err := jsonutils.ConvertByJson(relation, &relationMap); err != nil {
 			return nil, err
 		}
 		relationMap.Set(`type`, relation.Type().String())

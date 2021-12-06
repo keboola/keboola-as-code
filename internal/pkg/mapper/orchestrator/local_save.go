@@ -70,7 +70,7 @@ func (w *localWriter) savePhase(phase *model.Phase, allPhases []*model.Phase) er
 
 	// Create content
 	errors := utils.NewMultiError()
-	phaseContent := utils.NewOrderedMap()
+	phaseContent := orderedmap.New()
 	phaseContent.Set(`name`, phase.Name)
 
 	// Map dependsOn key -> path
@@ -114,7 +114,7 @@ func (w *localWriter) savePhase(phase *model.Phase, allPhases []*model.Phase) er
 func (w *localWriter) saveTask(task *model.Task) error {
 	// Create content
 	errors := utils.NewMultiError()
-	taskContent := utils.NewOrderedMap()
+	taskContent := orderedmap.New()
 	taskContent.Set(`name`, task.Name)
 
 	// Copy additional content
@@ -132,7 +132,7 @@ func (w *localWriter) saveTask(task *model.Task) error {
 		}
 	}
 	if target == nil {
-		target = utils.NewOrderedMap()
+		target = orderedmap.New()
 	}
 
 	// Get parent branch

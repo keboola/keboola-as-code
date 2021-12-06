@@ -75,10 +75,10 @@ func validateContent(schema []byte, content *orderedmap.OrderedMap) error {
 		if v, ok := parameters.(*orderedmap.OrderedMap); ok {
 			parametersMap = v
 		} else {
-			parametersMap = utils.NewOrderedMap()
+			parametersMap = orderedmap.New()
 		}
 	} else {
-		parametersMap = utils.NewOrderedMap()
+		parametersMap = orderedmap.New()
 	}
 
 	// Skip empty configurations.
@@ -107,7 +107,7 @@ func validateDocument(schemaStr []byte, document *orderedmap.OrderedMap) error {
 	if err != nil {
 		return fmt.Errorf(`invalid JSON schema: %w`, err)
 	}
-	return schema.Validate(utils.OrderedMapToMap(document))
+	return schema.Validate(document.ToMap())
 }
 
 func processErrors(errs []*jsonschema.ValidationError, output *utils.MultiError) {

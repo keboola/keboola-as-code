@@ -11,7 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 const (
@@ -139,7 +139,7 @@ func (d *branchesDialog) doAsk() (string, model.AllowedBranches) {
 
 func (d *branchesDialog) selectBranches() model.AllowedBranches {
 	// Build options
-	o := utils.NewOrderedMap()
+	o := orderedmap.New()
 	for _, branch := range d.allBranches {
 		msg := fmt.Sprintf(`[%d] %s`, branch.Id, branch.Name)
 		o.Set(msg, branch.Id)
@@ -216,7 +216,7 @@ func (d *branchesDialog) parseSlice(items []string) model.AllowedBranches {
 
 // unique returns only unique items.
 func (d *branchesDialog) unique(items model.AllowedBranches) model.AllowedBranches {
-	m := utils.NewOrderedMap()
+	m := orderedmap.New()
 	for _, item := range items {
 		m.Set(string(item), true)
 	}

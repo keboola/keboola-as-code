@@ -66,6 +66,17 @@ func MustDecodeString(data string, m interface{}) {
 	}
 }
 
+func ConvertByJson(input, target interface{}) error {
+	data, err := Encode(input, false)
+	if err != nil {
+		return fmt.Errorf(`encode error: %w`, err)
+	}
+	if err := Decode(data, target); err != nil {
+		return fmt.Errorf(`decode error: %w`, err)
+	}
+	return nil
+}
+
 func processJsonEncodeError(err error) error {
 	var typeError *json.UnmarshalTypeError
 	var syntaxError *json.SyntaxError
