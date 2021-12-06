@@ -1,8 +1,8 @@
+// nolint: ifshort
 package orderedmap
 
 import (
 	"encoding/json"
-	"fmt"
 	"sort"
 	"strings"
 	"testing"
@@ -77,8 +77,7 @@ func TestOrderedMap(t *testing.T) {
 	if len(o.Keys()) != 3 {
 		t.Error("Delete method")
 	}
-	_, ok := o.Get("strings")
-	if ok {
+	if _, ok := o.Get("strings"); ok {
 		t.Error("Delete did not remove 'strings' key")
 	}
 }
@@ -91,9 +90,9 @@ func TestBlankMarshalJSON(t *testing.T) {
 	if err != nil {
 		t.Error("Marshalling blank map to json", err)
 	}
-	s := string(b)
+
 	// check json is correctly ordered
-	if s != `{}` {
+	if s := string(b); s != `{}` {
 		t.Error("JSON Marshaling blank map value is incorrect", s)
 	}
 	// convert to indented json
@@ -104,8 +103,6 @@ func TestBlankMarshalJSON(t *testing.T) {
 	si := string(bi)
 	ei := `{}`
 	if si != ei {
-		fmt.Println(ei)
-		fmt.Println(si)
 		t.Error("JSON MarshalIndent blank map value is incorrect", si)
 	}
 }
@@ -142,9 +139,8 @@ func TestMarshalJSON(t *testing.T) {
 	if err != nil {
 		t.Error("Marshalling json", err)
 	}
-	s := string(b)
 	// check json is correctly ordered
-	if s != `{"number":4,"string":"x","specialstring":"\\.\u003c\u003e[]{}_-","z":1,"a":2,"b":3,"slice":["1",1],"orderedmap":{"e":1,"a":2},"test\n\r\t\\\"ing":9}` {
+	if s := string(b); s != `{"number":4,"string":"x","specialstring":"\\.\u003c\u003e[]{}_-","z":1,"a":2,"b":3,"slice":["1",1],"orderedmap":{"e":1,"a":2},"test\n\r\t\\\"ing":9}` {
 		t.Error("JSON Marshal value is incorrect", s)
 	}
 	// convert to indented json
@@ -171,8 +167,6 @@ func TestMarshalJSON(t *testing.T) {
   "test\n\r\t\\\"ing": 9
 }`
 	if si != ei {
-		fmt.Println(ei)
-		fmt.Println(si)
 		t.Error("JSON MarshalIndent value is incorrect", si)
 	}
 }
@@ -188,7 +182,7 @@ func TestMarshalJSONNoEscapeHTML(t *testing.T) {
 	if err != nil {
 		t.Error("Marshalling json", err)
 	}
-	s := strings.Replace(string(b), "\n", "", -1)
+	s := strings.ReplaceAll(string(b), "\n", "")
 	// check json is correctly ordered
 	if s != `{"specialstring":"\\.<>[]{}_-"}` {
 		t.Error("JSON Marshal value is incorrect", s)
@@ -196,6 +190,7 @@ func TestMarshalJSONNoEscapeHTML(t *testing.T) {
 }
 
 func TestMarshalJSONNoEscapeHTMLRecursive(t *testing.T) {
+	t.Parallel()
 	src := `{"x":"<>","y":[{"z":["<>"]}]}`
 	o := New()
 	o.SetEscapeHTML(false)
@@ -207,7 +202,7 @@ func TestMarshalJSONNoEscapeHTMLRecursive(t *testing.T) {
 	if err != nil {
 		t.Error("Marshalling json", err)
 	}
-	s := strings.Replace(string(b), "\n", "", -1)
+	s := strings.ReplaceAll(string(b), "\n", "")
 	if s != src {
 		t.Error("JSON Marshal value is incorrect", s)
 	}
