@@ -21,8 +21,8 @@ func TestLoadDotEnv(t *testing.T) {
 	osEnvs := Empty()
 	osEnvs.Set(`FOO1`, `BAR1`)
 	osEnvs.Set(`OS_ONLY`, `123`)
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(".env.local", "FOO1=BAR2\nFOO2=BAR2\n")))
-	assert.NoError(t, fs.WriteFile(filesystem.CreateFile(".env", "FOO1=BAZ\nFOO3=BAR3\n")))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(".env.local", "FOO1=BAR2\nFOO2=BAR2\n")))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(".env", "FOO1=BAZ\nFOO3=BAR3\n")))
 
 	// Load envs
 	envs, err := LoadDotEnv(osEnvs, fs, []string{"."})

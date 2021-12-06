@@ -242,7 +242,7 @@ func (f *Fs) Remove(path string) error {
 
 // ReadFile content as string.
 func (f *Fs) ReadFile(path, desc string) (*filesystem.File, error) {
-	file := filesystem.CreateFile(path, "")
+	file := filesystem.NewFile(path, "")
 	file.Desc = desc
 
 	// Check if is dir
@@ -318,7 +318,7 @@ func (f *Fs) WriteJsonFile(jsonFile *filesystem.JsonFile) error {
 func (f *Fs) CreateOrUpdateFile(path, desc string, lines []filesystem.FileLine) (updated bool, err error) {
 	// Create file OR read if exists
 	updated = false
-	file := filesystem.CreateFile(path, "")
+	file := filesystem.NewFile(path, "")
 	if f.Exists(path) {
 		updated = true
 		if file, err = f.ReadFile(path, desc); err != nil {

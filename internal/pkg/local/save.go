@@ -57,17 +57,17 @@ func (w *modelWriter) save() error {
 func (w *modelWriter) createFiles() {
 	// meta.json
 	if metadata := utils.MapFromTaggedFields(model.MetaFileTag, w.Object); metadata != nil {
-		w.Metadata = filesystem.CreateJsonFile(w.Naming().MetaFilePath(w.Path()), metadata)
+		w.Metadata = filesystem.NewJsonFile(w.Naming().MetaFilePath(w.Path()), metadata)
 	}
 
 	// config.json
 	if configuration := utils.MapFromOneTaggedField(model.ConfigFileTag, w.Object); configuration != nil {
-		w.Configuration = filesystem.CreateJsonFile(w.Naming().ConfigFilePath(w.Path()), configuration)
+		w.Configuration = filesystem.NewJsonFile(w.Naming().ConfigFilePath(w.Path()), configuration)
 	}
 
 	// description.md
 	if description, found := utils.StringFromOneTaggedField(model.DescriptionFileTag, w.Object); found {
-		w.Description = filesystem.CreateFile(w.Naming().DescriptionFilePath(w.Path()), strings.TrimRight(description, " \r\n\t")+"\n")
+		w.Description = filesystem.NewFile(w.Naming().DescriptionFilePath(w.Path()), strings.TrimRight(description, " \r\n\t")+"\n")
 	}
 }
 

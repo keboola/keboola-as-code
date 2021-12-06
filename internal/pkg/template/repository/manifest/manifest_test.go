@@ -55,7 +55,7 @@ func TestManifestLoad(t *testing.T) {
 
 		// Write file
 		path := filesystem.Join(filesystem.MetadataDir, FileName)
-		assert.NoError(t, fs.WriteFile(filesystem.CreateFile(path, c.json)))
+		assert.NoError(t, fs.WriteFile(filesystem.NewFile(path, c.json)))
 
 		// Load
 		manifest, err := Load(fs, zap.NewNop().Sugar())

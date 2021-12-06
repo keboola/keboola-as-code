@@ -36,8 +36,8 @@ func createLocalSaveRecipe(object model.ObjectWithContent, manifest model.Object
 	return &model.LocalSaveRecipe{
 		Object:         object,
 		ObjectManifest: manifest,
-		Metadata:       filesystem.CreateJsonFile(model.MetaFile, utils.NewOrderedMap()),
-		Configuration:  filesystem.CreateJsonFile(model.ConfigFile, object.GetContent()),
-		Description:    filesystem.CreateFile(model.DescriptionFile, ``),
+		Metadata:       filesystem.NewJsonFile(model.MetaFile, utils.NewOrderedMap()),
+		Configuration:  filesystem.NewJsonFile(model.ConfigFile, object.GetContent()),
+		Description:    filesystem.NewFile(model.DescriptionFile, ``),
 	}
 }

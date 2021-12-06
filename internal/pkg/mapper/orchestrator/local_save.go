@@ -36,7 +36,7 @@ func (w *localWriter) save() {
 	phasesDir := w.Naming.PhasesDir(w.ObjectManifest.Path())
 
 	// Generate ".gitkeep" to preserve the "phases" directory, even if there are no phases.
-	gitKeep := filesystem.CreateFile(filesystem.Join(phasesDir, `.gitkeep`), ``)
+	gitKeep := filesystem.NewFile(filesystem.Join(phasesDir, `.gitkeep`), ``)
 	w.ExtraFiles = append(w.ExtraFiles, gitKeep)
 
 	// Generate files for phases
@@ -94,7 +94,7 @@ func (w *localWriter) savePhase(phase *model.Phase, allPhases []*model.Phase) er
 
 	// Create file
 	file, err := filesystem.
-		CreateJsonFile(filesystem.Join(w.Naming.PhaseFilePath(phase)), phaseContent).
+		NewJsonFile(filesystem.Join(w.Naming.PhaseFilePath(phase)), phaseContent).
 		SetDescription(`phase config file`).
 		ToFile()
 	if err == nil {
@@ -165,7 +165,7 @@ func (w *localWriter) saveTask(task *model.Task) error {
 
 	// Create file
 	file, err := filesystem.
-		CreateJsonFile(filesystem.Join(w.Naming.TaskFilePath(task)), taskContent).
+		NewJsonFile(filesystem.Join(w.Naming.TaskFilePath(task)), taskContent).
 		SetDescription(`task config file`).
 		ToFile()
 	if err == nil {

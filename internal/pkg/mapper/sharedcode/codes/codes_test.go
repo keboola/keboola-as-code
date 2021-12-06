@@ -106,9 +106,9 @@ func createLocalLoadRecipe(rowState *model.ConfigRowState) *model.LocalLoadRecip
 	return &model.LocalLoadRecipe{
 		Object:         rowState.Local,
 		ObjectManifest: rowState.ConfigRowManifest,
-		Metadata:       filesystem.CreateJsonFile(model.MetaFile, utils.NewOrderedMap()),
-		Configuration:  filesystem.CreateJsonFile(model.ConfigFile, utils.NewOrderedMap()),
-		Description:    filesystem.CreateFile(model.DescriptionFile, ``),
+		Metadata:       filesystem.NewJsonFile(model.MetaFile, utils.NewOrderedMap()),
+		Configuration:  filesystem.NewJsonFile(model.ConfigFile, utils.NewOrderedMap()),
+		Description:    filesystem.NewFile(model.DescriptionFile, ``),
 	}
 }
 
@@ -116,8 +116,8 @@ func createLocalSaveRecipe(rowState *model.ConfigRowState) *model.LocalSaveRecip
 	return &model.LocalSaveRecipe{
 		Object:         rowState.Local,
 		ObjectManifest: rowState.ConfigRowManifest,
-		Metadata:       filesystem.CreateJsonFile(model.MetaFile, utils.NewOrderedMap()),
-		Configuration:  filesystem.CreateJsonFile(model.ConfigFile, utils.NewOrderedMap()),
-		Description:    filesystem.CreateFile(model.DescriptionFile, ``),
+		Metadata:       filesystem.NewJsonFile(model.MetaFile, utils.NewOrderedMap()),
+		Configuration:  filesystem.NewJsonFile(model.ConfigFile, utils.NewOrderedMap()),
+		Description:    filesystem.NewFile(model.DescriptionFile, ``),
 	}
 }
