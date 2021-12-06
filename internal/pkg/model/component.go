@@ -97,18 +97,20 @@ type RemoteComponentsProvider interface {
 }
 
 type ComponentsMap struct {
-	mutex                 *sync.Mutex
-	remoteProvider        RemoteComponentsProvider
-	components            map[string]*Component
-	defaultBucketPrefixes map[string]string
+	mutex                       *sync.Mutex
+	remoteProvider              RemoteComponentsProvider
+	components                  map[string]*Component
+	defaultBucketsByComponentId map[string]string
+	defaultBucketsByPrefix      map[string]string
 }
 
 func NewComponentsMap(remoteProvider RemoteComponentsProvider) *ComponentsMap {
 	return &ComponentsMap{
-		mutex:                 &sync.Mutex{},
-		remoteProvider:        remoteProvider,
-		components:            make(map[string]*Component),
-		defaultBucketPrefixes: make(map[string]string),
+		mutex:                       &sync.Mutex{},
+		remoteProvider:              remoteProvider,
+		components:                  make(map[string]*Component),
+		defaultBucketsByComponentId: make(map[string]string),
+		defaultBucketsByPrefix:      make(map[string]string),
 	}
 }
 
@@ -169,22 +171,27 @@ func (c *ComponentsMap) doSet(component *Component) {
 func (c *ComponentsMap) addDefaultBucketPrefix(component *Component) {
 	r := regexpcache.MustCompile(`(?i)[^a-zA-Z0-9-]`)
 	bucketPrefix := fmt.Sprintf(`%s.c-%s-`, component.Data.DefaultBucketStage, r.ReplaceAllString(component.Id, `-`))
-	c.defaultBucketPrefixes[component.Id] = bucketPrefix
+	c.defaultBucketsByComponentId[component.Id] = bucketPrefix
+	c.defaultBucketsByPrefix[bucketPrefix] = component.Id
 }
 
-func (c *ComponentsMap) MatchDefaultBucketInTableId(tableId string) (string, string, bool) {
-	for componentId, bucketPrefix := range c.defaultBucketPrefixes {
-		if strings.HasPrefix(tableId, bucketPrefix) {
-			trimmedTableId := strings.TrimPrefix(tableId, bucketPrefix)
-			configId := strings.Split(trimmedTableId, ".")[0]
-			return componentId, configId, componentId != "" && configId != ""
-		}
+func (c *ComponentsMap) GetDefaultBucketByTableId(tableId string) (string, string, bool) {
+	bucketId := tableId[0:strings.LastIndex(tableId, ".")]
+	if !strings.Contains(bucketId, "-") {
+		return "", "", false
 	}
-	return "", "", false
+	bucketPrefix := bucketId[0 : strings.LastIndex(tableId, "-")+1]
+	configId := bucketId[strings.LastIndex(tableId, "-")+1:]
+
+	componentId, found := c.defaultBucketsByPrefix[bucketPrefix]
+	if !found {
+		return "", "", false
+	}
+	return componentId, configId, componentId != "" && configId != ""
 }
 
-func (c *ComponentsMap) GetDefaultBucket(componentId string, configId string) (string, bool) {
-	defaultBucketPrefix, found := c.defaultBucketPrefixes[componentId]
+func (c *ComponentsMap) GetDefaultBucketByComponentId(componentId string, configId string) (string, bool) {
+	defaultBucketPrefix, found := c.defaultBucketsByComponentId[componentId]
 	if !found {
 		return "", false
 	}

@@ -39,7 +39,7 @@ func (m *defaultBucketMapper) replaceDefaultBucketWithPlaceholder(config *model.
 }
 
 func (m *defaultBucketMapper) getDefaultBucketSourceConfigurationPath(config *model.Config, tableId string) (string, bool, error) {
-	componentId, configId, match := m.State.Components().MatchDefaultBucketInTableId(tableId)
+	componentId, configId, match := m.State.Components().GetDefaultBucketByTableId(tableId)
 	if !match {
 		return "", false, nil
 	}

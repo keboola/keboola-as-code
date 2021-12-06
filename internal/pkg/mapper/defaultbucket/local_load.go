@@ -48,7 +48,7 @@ func (m *defaultBucketMapper) replacePlaceholderWithDefaultBucket(config *model.
 		return nil
 	}
 
-	defaultBucket, found := m.State.Components().GetDefaultBucket(configKey.ComponentId, configKey.Id)
+	defaultBucket, found := m.State.Components().GetDefaultBucketByComponentId(configKey.ComponentId, configKey.Id)
 	if !found {
 		return nil
 	}
