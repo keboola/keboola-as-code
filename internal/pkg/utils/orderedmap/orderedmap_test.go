@@ -9,6 +9,7 @@ import (
 )
 
 func TestOrderedMap(t *testing.T) {
+	t.Parallel()
 	o := New()
 	// number
 	o.Set("number", 3)
@@ -83,6 +84,7 @@ func TestOrderedMap(t *testing.T) {
 }
 
 func TestBlankMarshalJSON(t *testing.T) {
+	t.Parallel()
 	o := New()
 	// blank map
 	b, err := json.Marshal(o)
@@ -109,6 +111,7 @@ func TestBlankMarshalJSON(t *testing.T) {
 }
 
 func TestMarshalJSON(t *testing.T) {
+	t.Parallel()
 	o := New()
 	// number
 	o.Set("number", 3)
@@ -175,6 +178,7 @@ func TestMarshalJSON(t *testing.T) {
 }
 
 func TestMarshalJSONNoEscapeHTML(t *testing.T) {
+	t.Parallel()
 	o := New()
 	o.SetEscapeHTML(false)
 	// string special characters
@@ -210,6 +214,7 @@ func TestMarshalJSONNoEscapeHTMLRecursive(t *testing.T) {
 }
 
 func TestUnmarshalJSON(t *testing.T) {
+	t.Parallel()
 	s := `{
   "number": 4,
   "string": "x",
@@ -328,6 +333,7 @@ func TestUnmarshalJSON(t *testing.T) {
 }
 
 func TestUnmarshalJSONDuplicateKeys(t *testing.T) {
+	t.Parallel()
 	s := `{
 		"a": [{}, []],
 		"b": {"x":[1]},
@@ -398,6 +404,7 @@ func TestUnmarshalJSONDuplicateKeys(t *testing.T) {
 }
 
 func TestUnmarshalJSONSpecialChars(t *testing.T) {
+	t.Parallel()
 	s := `{ " \u0041\n\r\t\\\\\\\\\\\\ "  : { "\\\\\\" : "\\\\\"\\" }, "\\":  " \\\\ test ", "\n": "\r" }`
 	o := New()
 	err := json.Unmarshal([]byte(s), &o)
@@ -421,6 +428,7 @@ func TestUnmarshalJSONSpecialChars(t *testing.T) {
 }
 
 func TestUnmarshalJSONArrayOfMaps(t *testing.T) {
+	t.Parallel()
 	s := `
 {
   "name": "test",
@@ -485,6 +493,7 @@ func TestUnmarshalJSONArrayOfMaps(t *testing.T) {
 }
 
 func TestUnmarshalJSONStruct(t *testing.T) {
+	t.Parallel()
 	var v struct {
 		Data *OrderedMap `json:"data"`
 	}
@@ -503,6 +512,7 @@ func TestUnmarshalJSONStruct(t *testing.T) {
 }
 
 func TestOrderedMap_SortKeys(t *testing.T) {
+	t.Parallel()
 	s := `
 {
   "b": 2,
@@ -530,6 +540,7 @@ func TestOrderedMap_SortKeys(t *testing.T) {
 }
 
 func TestOrderedMap_Sort(t *testing.T) {
+	t.Parallel()
 	s := `
 {
   "b": 2,
@@ -559,6 +570,7 @@ func TestOrderedMap_Sort(t *testing.T) {
 
 // https://github.com/iancoleman/orderedmap/issues/11
 func TestOrderedMap_empty_array(t *testing.T) {
+	t.Parallel()
 	srcStr := `{"x":[]}`
 	src := []byte(srcStr)
 	om := New()
@@ -574,8 +586,9 @@ func TestOrderedMap_empty_array(t *testing.T) {
 
 // Inspired by
 // https://github.com/iancoleman/orderedmap/issues/11
-// but using empty maps instead of empty slices
+// but using empty maps instead of empty slices.
 func TestOrderedMap_empty_map(t *testing.T) {
+	t.Parallel()
 	srcStr := `{"x":{}}`
 	src := []byte(srcStr)
 	om := New()

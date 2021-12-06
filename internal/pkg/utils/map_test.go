@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/iancoleman/orderedmap"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestUpdateMapStep(t *testing.T) {

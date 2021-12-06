@@ -5,7 +5,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/iancoleman/orderedmap"
 	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/build"
@@ -13,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 

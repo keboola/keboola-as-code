@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/iancoleman/orderedmap"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 type FileLine struct {

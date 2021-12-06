@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/iancoleman/orderedmap"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
@@ -16,6 +15,7 @@ import (
 	. "github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 type myStruct struct {

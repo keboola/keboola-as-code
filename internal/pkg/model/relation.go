@@ -6,10 +6,10 @@ import (
 	"sort"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/iancoleman/orderedmap"
 
 	jsonutils "github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 const (

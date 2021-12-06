@@ -7,8 +7,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/iancoleman/orderedmap"
 	"github.com/umisama/go-regexpcache"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 const (

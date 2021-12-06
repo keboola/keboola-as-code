@@ -7,10 +7,9 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/iancoleman/orderedmap"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 type ProjectSnapshot struct {

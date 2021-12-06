@@ -8,7 +8,6 @@ import (
 	"path"
 	"strings"
 
-	"github.com/iancoleman/orderedmap"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 
@@ -28,6 +27,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/version"
 	versionCheck "github.com/keboola/keboola-as-code/pkg/lib/operation/remote/version/check"
 )

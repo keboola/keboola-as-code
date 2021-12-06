@@ -81,12 +81,12 @@ func (o *OrderedMap) Keys() []string {
 	return o.keys
 }
 
-// SortKeys Sort the map keys using your sort func
+// SortKeys Sort the map keys using your sort func.
 func (o *OrderedMap) SortKeys(sortFunc func(keys []string)) {
 	sortFunc(o.keys)
 }
 
-// Sort Sort the map using your sort func
+// Sort Sort the map using your sort func.
 func (o *OrderedMap) Sort(lessFunc func(a *Pair, b *Pair) bool) {
 	pairs := make([]*Pair, len(o.keys))
 	for i, key := range o.keys {
