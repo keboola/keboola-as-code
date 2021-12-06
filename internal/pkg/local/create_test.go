@@ -8,7 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestLocalCreateConfigDefaultContent(t *testing.T) {
@@ -20,9 +20,9 @@ func TestLocalCreateConfigDefaultContent(t *testing.T) {
 	manager.state.Components().Set(component)
 
 	// Empty config (used)
-	component.EmptyConfig = utils.PairsToOrderedMap([]utils.Pair{
+	component.EmptyConfig = orderedmap.FromPairs([]orderedmap.Pair{
 		{Key: `configValue`, Value: 123},
-		{Key: `configObject`, Value: utils.Pair{
+		{Key: `configObject`, Value: orderedmap.Pair{
 			Key:   `foo`,
 			Value: `bar`,
 		}},
@@ -57,9 +57,9 @@ func TestLocalCreateConfigRowDefaultContent(t *testing.T) {
 	manager.state.Components().Set(component)
 
 	// Empty config (used)
-	component.EmptyConfigRow = utils.PairsToOrderedMap([]utils.Pair{
+	component.EmptyConfigRow = orderedmap.FromPairs([]orderedmap.Pair{
 		{Key: `configValue`, Value: 123},
-		{Key: `configObject`, Value: utils.Pair{
+		{Key: `configObject`, Value: orderedmap.Pair{
 			Key:   `foo`,
 			Value: `bar`,
 		}},
@@ -198,8 +198,8 @@ func getTestComponent() *model.Component {
 	return &model.Component{
 		ComponentKey:   model.ComponentKey{Id: `keboola.foo`},
 		Type:           `other`,
-		EmptyConfig:    utils.NewOrderedMap(),
-		EmptyConfigRow: utils.NewOrderedMap(),
+		EmptyConfig:    orderedmap.New(),
+		EmptyConfigRow: orderedmap.New(),
 	}
 }
 

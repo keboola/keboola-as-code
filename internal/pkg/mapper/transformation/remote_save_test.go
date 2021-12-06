@@ -9,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestRemoteSaveTransformation(t *testing.T) {
@@ -53,7 +53,7 @@ func TestRemoteSaveTransformation(t *testing.T) {
 
 	internalConfig := &model.Config{
 		ConfigKey: configState.ConfigKey,
-		Content:   utils.NewOrderedMap(),
+		Content:   orderedmap.New(),
 	}
 	internalConfig.Blocks = blocks
 	apiConfig := internalConfig.Clone().(*model.Config)
@@ -69,7 +69,7 @@ func TestRemoteSaveTransformation(t *testing.T) {
 
 	// Internal object is not modified
 	assert.NotEmpty(t, internalConfig.Blocks)
-	assert.Nil(t, utils.GetFromMap(internalConfig.Content, []string{`parameters`, `blocks`}))
+	assert.Nil(t, internalConfig.Content.GetNestedOrNil(`parameters.blocks`))
 
 	// Blocks are stored in API object content
 	expectedBlocks := `
@@ -110,7 +110,7 @@ func TestRemoteSaveTransformation(t *testing.T) {
 ]
 `
 	assert.Empty(t, apiConfig.Blocks)
-	apiBlocks := utils.GetFromMap(apiConfig.Content, []string{`parameters`, `blocks`})
+	apiBlocks := apiConfig.Content.GetNestedOrNil(`parameters.blocks`)
 	assert.NotNil(t, blocks)
 	assert.Equal(t, strings.TrimLeft(expectedBlocks, "\n"), json.MustEncodeString(apiBlocks, true))
 

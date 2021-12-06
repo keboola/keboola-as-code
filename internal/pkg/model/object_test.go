@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestBranch_Clone(t *testing.T) {
@@ -29,7 +29,7 @@ func TestConfig_Clone(t *testing.T) {
 		Name:              "foo",
 		Description:       "bar",
 		ChangeDescription: `my change`,
-		Content: utils.PairsToOrderedMap([]utils.Pair{
+		Content: orderedmap.FromPairs([]orderedmap.Pair{
 			{Key: "key", Value: "value"},
 		}),
 		Blocks: Blocks{
@@ -60,11 +60,11 @@ func TestConfig_Clone(t *testing.T) {
 			Phases: []*Phase{
 				{
 					Name:    `foo`,
-					Content: utils.NewOrderedMap(),
+					Content: orderedmap.New(),
 					Tasks: []*Task{
 						{
 							Name:    `bar`,
-							Content: utils.NewOrderedMap(),
+							Content: orderedmap.New(),
 						},
 					},
 				},
@@ -88,7 +88,7 @@ func TestConfigRow_Clone(t *testing.T) {
 		Description:       "bar",
 		ChangeDescription: `my change`,
 		IsDisabled:        true,
-		Content: utils.PairsToOrderedMap([]utils.Pair{
+		Content: orderedmap.FromPairs([]orderedmap.Pair{
 			{Key: "key", Value: "value"},
 		}),
 	}

@@ -10,7 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestConfigApiCalls(t *testing.T) {
@@ -36,7 +36,7 @@ func TestConfigApiCalls(t *testing.T) {
 		Description:       "Row1 description",
 		ChangeDescription: "Row1 test",
 		IsDisabled:        false,
-		Content: utils.PairsToOrderedMap([]utils.Pair{
+		Content: orderedmap.FromPairs([]orderedmap.Pair{
 			{Key: "row1", Value: "value1"},
 		}),
 	}
@@ -45,7 +45,7 @@ func TestConfigApiCalls(t *testing.T) {
 		Description:       "Row2 description",
 		ChangeDescription: "Row2 test",
 		IsDisabled:        true,
-		Content: utils.PairsToOrderedMap([]utils.Pair{
+		Content: orderedmap.FromPairs([]orderedmap.Pair{
 			{Key: "row2", Value: "value2"},
 		}),
 	}
@@ -58,10 +58,10 @@ func TestConfigApiCalls(t *testing.T) {
 			Name:              "Test",
 			Description:       "Test description",
 			ChangeDescription: "My test",
-			Content: utils.PairsToOrderedMap([]utils.Pair{
+			Content: orderedmap.FromPairs([]orderedmap.Pair{
 				{
 					Key: "foo",
-					Value: utils.PairsToOrderedMap([]utils.Pair{
+					Value: orderedmap.FromPairs([]orderedmap.Pair{
 						{Key: "bar", Value: "baz"},
 					}),
 				},
@@ -84,10 +84,10 @@ func TestConfigApiCalls(t *testing.T) {
 	config.Name = "Test modified +++úěš!@#"
 	config.Description = "Test description modified"
 	config.ChangeDescription = "updated"
-	config.Content = utils.PairsToOrderedMap([]utils.Pair{
+	config.Content = orderedmap.FromPairs([]orderedmap.Pair{
 		{
 			Key: "foo",
-			Value: utils.PairsToOrderedMap([]utils.Pair{
+			Value: orderedmap.FromPairs([]orderedmap.Pair{
 				{Key: "bar", Value: "modified"},
 			}),
 		},

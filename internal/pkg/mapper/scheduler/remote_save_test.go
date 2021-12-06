@@ -9,7 +9,6 @@ import (
 	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -20,7 +19,7 @@ func TestSchedulerMapBeforeRemoteSave(t *testing.T) {
 	mapper := NewMapper(context, schedulerApi)
 
 	// Scheduler config
-	content := utils.NewOrderedMap()
+	content := orderedmap.New()
 	json.MustDecodeString(`{"target": {"mode": "run"}}`, content)
 	apiObject := &model.Config{Content: content}
 	apiObject.AddRelation(&model.SchedulerForRelation{

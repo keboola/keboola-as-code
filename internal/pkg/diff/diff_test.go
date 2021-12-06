@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestDiffOnlyInLocal(t *testing.T) {
@@ -299,10 +300,10 @@ func TestDiffNotEqualConfigConfiguration(t *testing.T) {
 			Name:              "name",
 			Description:       "description",
 			ChangeDescription: "remote", // no diff:"true" tag
-			Content: utils.PairsToOrderedMap([]utils.Pair{
+			Content: orderedmap.FromPairs([]orderedmap.Pair{
 				{
 					Key: "foo",
-					Value: utils.PairsToOrderedMap([]utils.Pair{
+					Value: orderedmap.FromPairs([]orderedmap.Pair{
 						{Key: "bar", Value: "456"},
 					}),
 				},
@@ -313,10 +314,10 @@ func TestDiffNotEqualConfigConfiguration(t *testing.T) {
 			Name:              "name",
 			Description:       "description",
 			ChangeDescription: "local", // no diff:"true" tag
-			Content: utils.PairsToOrderedMap([]utils.Pair{
+			Content: orderedmap.FromPairs([]orderedmap.Pair{
 				{
 					Key: "foo",
-					Value: utils.PairsToOrderedMap([]utils.Pair{
+					Value: orderedmap.FromPairs([]orderedmap.Pair{
 						{Key: "bar", Value: "123"},
 					}),
 				},
@@ -519,7 +520,7 @@ func TestDiffOrchestration(t *testing.T) {
 						PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases`, `001-phase`),
 						DependsOn:     []model.PhaseKey{},
 						Name:          `Phase`,
-						Content: utils.PairsToOrderedMap([]utils.Pair{
+						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{Key: `foo`, Value: `bar`},
 						}),
 						Tasks: []*model.Task{
@@ -538,10 +539,10 @@ func TestDiffOrchestration(t *testing.T) {
 								ComponentId:   `foo.bar3`,
 								ConfigId:      `123`,
 								ConfigPath:    `branch/extractor/foo.bar3/123`,
-								Content: utils.PairsToOrderedMap([]utils.Pair{
+								Content: orderedmap.FromPairs([]orderedmap.Pair{
 									{
 										Key: `task`,
-										Value: utils.PairsToOrderedMap([]utils.Pair{
+										Value: orderedmap.FromPairs([]orderedmap.Pair{
 											{Key: `mode`, Value: `run`},
 										}),
 									},
@@ -561,7 +562,7 @@ func TestDiffOrchestration(t *testing.T) {
 						PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases`, `002-phase`),
 						DependsOn:     []model.PhaseKey{},
 						Name:          `New Phase`,
-						Content: utils.PairsToOrderedMap([]utils.Pair{
+						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{Key: `foo`, Value: `bar`},
 						}),
 					},
@@ -581,7 +582,7 @@ func TestDiffOrchestration(t *testing.T) {
 						PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases`, `001-phase`),
 						DependsOn:     []model.PhaseKey{},
 						Name:          `Phase`,
-						Content: utils.PairsToOrderedMap([]utils.Pair{
+						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{Key: `foo`, Value: `bar`},
 						}),
 						Tasks: []*model.Task{
@@ -600,10 +601,10 @@ func TestDiffOrchestration(t *testing.T) {
 								ComponentId:   `foo.bar1`,
 								ConfigId:      `123`,
 								ConfigPath:    `branch/extractor/foo.bar1/config123`,
-								Content: utils.PairsToOrderedMap([]utils.Pair{
+								Content: orderedmap.FromPairs([]orderedmap.Pair{
 									{
 										Key: `task`,
-										Value: utils.PairsToOrderedMap([]utils.Pair{
+										Value: orderedmap.FromPairs([]orderedmap.Pair{
 											{Key: `mode`, Value: `run`},
 										}),
 									},
@@ -625,10 +626,10 @@ func TestDiffOrchestration(t *testing.T) {
 								Name:          `Task 2`,
 								ComponentId:   `foo.bar2`,
 								ConfigId:      `789`,
-								Content: utils.PairsToOrderedMap([]utils.Pair{
+								Content: orderedmap.FromPairs([]orderedmap.Pair{
 									{
 										Key: `task`,
-										Value: utils.PairsToOrderedMap([]utils.Pair{
+										Value: orderedmap.FromPairs([]orderedmap.Pair{
 											{Key: `mode`, Value: `run`},
 										}),
 									},
@@ -695,16 +696,16 @@ func TestDiffMap(t *testing.T) {
 			},
 		},
 		Local: &model.Config{
-			Content: utils.PairsToOrderedMap([]utils.Pair{
+			Content: orderedmap.FromPairs([]orderedmap.Pair{
 				{
 					Key: "foo",
-					Value: utils.PairsToOrderedMap([]utils.Pair{
+					Value: orderedmap.FromPairs([]orderedmap.Pair{
 						{
 							Key: "bar",
-							Value: utils.PairsToOrderedMap([]utils.Pair{
+							Value: orderedmap.FromPairs([]orderedmap.Pair{
 								{
 									Key: "baz",
-									Value: utils.PairsToOrderedMap([]utils.Pair{
+									Value: orderedmap.FromPairs([]orderedmap.Pair{
 										{Key: "key", Value: "value"},
 									}),
 								},
@@ -715,10 +716,10 @@ func TestDiffMap(t *testing.T) {
 			}),
 		},
 		Remote: &model.Config{
-			Content: utils.PairsToOrderedMap([]utils.Pair{
+			Content: orderedmap.FromPairs([]orderedmap.Pair{
 				{
 					Key: "foo",
-					Value: utils.PairsToOrderedMap([]utils.Pair{
+					Value: orderedmap.FromPairs([]orderedmap.Pair{
 						{Key: "bar", Value: "value"},
 					}),
 				},

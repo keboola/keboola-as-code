@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestParsePhase(t *testing.T) {
@@ -142,7 +142,7 @@ func TestParsePhase(t *testing.T) {
 			`{"foo":"bar"}`,
 			`{"foo":"bar"}`,
 			func(p *phaseParser) (interface{}, error) { return p.additionalContent(), nil },
-			utils.PairsToOrderedMap([]utils.Pair{
+			orderedmap.FromPairs([]orderedmap.Pair{
 				{Key: `foo`, Value: `bar`},
 			}),
 			nil,
@@ -151,7 +151,7 @@ func TestParsePhase(t *testing.T) {
 
 	for i, c := range cases {
 		desc := fmt.Sprintf(`Case "%d"`, i+1)
-		content := utils.NewOrderedMap()
+		content := orderedmap.New()
 		json.MustDecodeString(c.before, content)
 
 		p := &phaseParser{content: content}

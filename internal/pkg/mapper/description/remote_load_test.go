@@ -6,13 +6,13 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestDescriptionMapAfterRemoteLoad(t *testing.T) {
 	t.Parallel()
 
-	apiObject := &model.Config{Description: "foo\nbar\n\r\t ", Content: utils.NewOrderedMap()}
+	apiObject := &model.Config{Description: "foo\nbar\n\r\t ", Content: orderedmap.New()}
 	internalObject := apiObject.Clone().(*model.Config)
 	recipe := &model.RemoteLoadRecipe{ApiObject: apiObject, InternalObject: internalObject}
 

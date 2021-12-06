@@ -9,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestLoadRemoteTransformation(t *testing.T) {
@@ -58,7 +58,7 @@ func TestLoadRemoteTransformation(t *testing.T) {
 	// Load
 	apiObject := &model.Config{
 		ConfigKey: configState.ConfigKey,
-		Content:   utils.NewOrderedMap(),
+		Content:   orderedmap.New(),
 	}
 	json.MustDecodeString(configInApi, apiObject.Content)
 	internalObject := apiObject.Clone().(*model.Config)

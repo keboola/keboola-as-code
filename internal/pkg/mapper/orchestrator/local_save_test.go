@@ -10,7 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestMapBeforeLocalSave(t *testing.T) {
@@ -114,7 +114,7 @@ func createLocalSaveFixtures(t *testing.T, context model.MapperContext, createTa
 				PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases`, `001-phase`),
 				DependsOn:     []model.PhaseKey{},
 				Name:          `Phase`,
-				Content: utils.PairsToOrderedMap([]utils.Pair{
+				Content: orderedmap.FromPairs([]orderedmap.Pair{
 					{Key: `foo`, Value: `bar`},
 				}),
 				Tasks: []*model.Task{
@@ -133,10 +133,10 @@ func createLocalSaveFixtures(t *testing.T, context model.MapperContext, createTa
 						ComponentId:   `foo.bar1`,
 						ConfigId:      `123`,
 						ConfigPath:    `branch/extractor/target-config-1`,
-						Content: utils.PairsToOrderedMap([]utils.Pair{
+						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,
-								Value: utils.PairsToOrderedMap([]utils.Pair{
+								Value: orderedmap.FromPairs([]orderedmap.Pair{
 									{Key: `mode`, Value: `run`},
 								}),
 							},
@@ -159,10 +159,10 @@ func createLocalSaveFixtures(t *testing.T, context model.MapperContext, createTa
 						ComponentId:   `foo.bar2`,
 						ConfigId:      `789`,
 						ConfigPath:    `branch/extractor/target-config-2`,
-						Content: utils.PairsToOrderedMap([]utils.Pair{
+						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,
-								Value: utils.PairsToOrderedMap([]utils.Pair{
+								Value: orderedmap.FromPairs([]orderedmap.Pair{
 									{Key: `mode`, Value: `run`},
 								}),
 							},
@@ -189,7 +189,7 @@ func createLocalSaveFixtures(t *testing.T, context model.MapperContext, createTa
 					},
 				},
 				Name:    `Phase With Deps`,
-				Content: utils.NewOrderedMap(),
+				Content: orderedmap.New(),
 				Tasks: []*model.Task{
 					{
 						TaskKey: model.TaskKey{
@@ -206,10 +206,10 @@ func createLocalSaveFixtures(t *testing.T, context model.MapperContext, createTa
 						ComponentId:   `foo.bar2`,
 						ConfigId:      `456`,
 						ConfigPath:    `branch/extractor/target-config-3`,
-						Content: utils.PairsToOrderedMap([]utils.Pair{
+						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,
-								Value: utils.PairsToOrderedMap([]utils.Pair{
+								Value: orderedmap.FromPairs([]orderedmap.Pair{
 									{Key: `mode`, Value: `run`},
 								}),
 							},
@@ -250,7 +250,7 @@ func createLocalSaveFixtures(t *testing.T, context model.MapperContext, createTa
 				PathInProject: model.NewPathInProject(`branch/other`, `orchestrator`),
 			},
 		},
-		Remote: &model.Config{ConfigKey: configKey, Content: utils.NewOrderedMap(), Orchestration: orchestration},
+		Remote: &model.Config{ConfigKey: configKey, Content: orderedmap.New(), Orchestration: orchestration},
 	}
 	assert.NoError(t, context.State.Set(configState))
 

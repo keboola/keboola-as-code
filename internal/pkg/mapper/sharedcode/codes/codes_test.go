@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 // nolint: unparam
@@ -46,7 +47,7 @@ func createTestFixtures(t *testing.T, targetComponentId string) (model.MapperCon
 		Id:          `123`,
 		ComponentId: model.SharedCodeComponentId,
 	}
-	configContent := utils.NewOrderedMap()
+	configContent := orderedmap.New()
 	configContent.Set(model.ShareCodeTargetComponentKey, targetComponentId)
 	configState := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{
@@ -88,11 +89,11 @@ func createTestFixtures(t *testing.T, targetComponentId string) (model.MapperCon
 		},
 		Local: &model.ConfigRow{
 			ConfigRowKey: rowKey,
-			Content:      utils.NewOrderedMap(),
+			Content:      orderedmap.New(),
 		},
 		Remote: &model.ConfigRow{
 			ConfigRowKey: rowKey,
-			Content:      utils.NewOrderedMap(),
+			Content:      orderedmap.New(),
 		},
 	}
 	assert.NoError(t, state.Set(rowState))
