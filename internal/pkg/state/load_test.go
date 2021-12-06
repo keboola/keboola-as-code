@@ -100,10 +100,10 @@ func TestLoadState(t *testing.T) {
 				Content: utils.PairsToOrderedMap([]utils.Pair{
 					{
 						Key: "parameters",
-						Value: *utils.PairsToOrderedMap([]utils.Pair{
+						Value: utils.PairsToOrderedMap([]utils.Pair{
 							{
 								Key: "api",
-								Value: *utils.PairsToOrderedMap([]utils.Pair{
+								Value: utils.PairsToOrderedMap([]utils.Pair{
 									{
 										Key:   "baseUrl",
 										Value: "https://jsonplaceholder.typicode.com",

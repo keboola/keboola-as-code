@@ -67,7 +67,7 @@ func (p *taskParser) componentId() (string, error) {
 	if !found {
 		return "", fmt.Errorf(`missing "task" key`)
 	}
-	task, ok := taskRaw.(orderedmap.OrderedMap)
+	task, ok := taskRaw.(*orderedmap.OrderedMap)
 	if !ok {
 		return "", fmt.Errorf(`"task" key must be object, found %T`, taskRaw)
 	}
@@ -92,7 +92,7 @@ func (p *taskParser) configId() (string, error) {
 	if !found {
 		return "", fmt.Errorf(`missing "task" key`)
 	}
-	task, ok := taskRaw.(orderedmap.OrderedMap)
+	task, ok := taskRaw.(*orderedmap.OrderedMap)
 	if !ok {
 		return "", fmt.Errorf(`"task" key must be object, found %T`, taskRaw)
 	}
@@ -117,7 +117,7 @@ func (p *taskParser) configPath() (string, error) {
 	if !found {
 		return "", fmt.Errorf(`missing "task" key`)
 	}
-	task, ok := taskRaw.(orderedmap.OrderedMap)
+	task, ok := taskRaw.(*orderedmap.OrderedMap)
 	if !ok {
 		return "", fmt.Errorf(`"task" key must be object, found %T`, taskRaw)
 	}

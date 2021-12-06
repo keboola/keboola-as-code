@@ -72,8 +72,8 @@ func validateContent(schema []byte, content *orderedmap.OrderedMap) error {
 	var parametersMap *orderedmap.OrderedMap
 	parameters, found := content.Get("parameters")
 	if found {
-		if v, ok := parameters.(orderedmap.OrderedMap); ok {
-			parametersMap = &v
+		if v, ok := parameters.(*orderedmap.OrderedMap); ok {
+			parametersMap = v
 		} else {
 			parametersMap = utils.NewOrderedMap()
 		}

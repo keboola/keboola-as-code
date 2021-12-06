@@ -367,10 +367,10 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 				Content: utils.PairsToOrderedMap([]utils.Pair{
 					{
 						Key: "parameters",
-						Value: *utils.PairsToOrderedMap([]utils.Pair{
+						Value: utils.PairsToOrderedMap([]utils.Pair{
 							{
 								Key: "db",
-								Value: *utils.PairsToOrderedMap([]utils.Pair{
+								Value: utils.PairsToOrderedMap([]utils.Pair{
 									{
 										Key:   "host",
 										Value: "mysql.example.com",
@@ -412,10 +412,10 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 				Content: utils.PairsToOrderedMap([]utils.Pair{
 					{
 						Key: "parameters",
-						Value: *utils.PairsToOrderedMap([]utils.Pair{
+						Value: utils.PairsToOrderedMap([]utils.Pair{
 							{
 								Key: "api",
-								Value: *utils.PairsToOrderedMap([]utils.Pair{
+								Value: utils.PairsToOrderedMap([]utils.Pair{
 									{
 										Key:   "baseUrl",
 										Value: "https://jsonplaceholder.typicode.com",
@@ -457,10 +457,10 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 				Content: utils.PairsToOrderedMap([]utils.Pair{
 					{
 						Key: "parameters",
-						Value: *utils.PairsToOrderedMap([]utils.Pair{
+						Value: utils.PairsToOrderedMap([]utils.Pair{
 							{
 								Key: "api",
-								Value: *utils.PairsToOrderedMap([]utils.Pair{
+								Value: utils.PairsToOrderedMap([]utils.Pair{
 									{
 										Key:   "baseUrl",
 										Value: "https://jsonplaceholder.typicode.com",
@@ -509,7 +509,7 @@ func complexLocalExpectedConfigRows() []*model.ConfigRowState {
 				Content: utils.PairsToOrderedMap([]utils.Pair{
 					{
 						Key: "parameters",
-						Value: *utils.PairsToOrderedMap([]utils.Pair{
+						Value: utils.PairsToOrderedMap([]utils.Pair{
 							{Key: "incremental", Value: false},
 						}),
 					},
@@ -549,7 +549,7 @@ func complexLocalExpectedConfigRows() []*model.ConfigRowState {
 				Content: utils.PairsToOrderedMap([]utils.Pair{
 					{
 						Key: "parameters",
-						Value: *utils.PairsToOrderedMap([]utils.Pair{
+						Value: utils.PairsToOrderedMap([]utils.Pair{
 							{Key: "incremental", Value: false},
 						}),
 					},
@@ -589,7 +589,7 @@ func complexLocalExpectedConfigRows() []*model.ConfigRowState {
 				Content: utils.PairsToOrderedMap([]utils.Pair{
 					{
 						Key: "parameters",
-						Value: *utils.PairsToOrderedMap([]utils.Pair{
+						Value: utils.PairsToOrderedMap([]utils.Pair{
 							{Key: "incremental", Value: false},
 						}),
 					},

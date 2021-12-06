@@ -142,7 +142,7 @@ func (l *remoteLoader) getTasks() ([]interface{}, error) {
 
 func (l *remoteLoader) parsePhase(phaseRaw interface{}) (*model.Phase, string, []string, error) {
 	errors := utils.NewMultiError()
-	content, ok := phaseRaw.(orderedmap.OrderedMap)
+	content, ok := phaseRaw.(*orderedmap.OrderedMap)
 	if !ok {
 		return nil, "", nil, fmt.Errorf(`phase must be JSON object`)
 	}
@@ -154,7 +154,7 @@ func (l *remoteLoader) parsePhase(phaseRaw interface{}) (*model.Phase, string, [
 			ConfigId:    l.config.Id,
 		},
 	}
-	parser := &phaseParser{content: &content}
+	parser := &phaseParser{content: content}
 
 	// Get ID
 	id, err := parser.id()
@@ -186,13 +186,13 @@ func (l *remoteLoader) parsePhase(phaseRaw interface{}) (*model.Phase, string, [
 
 func (l *remoteLoader) parseTask(taskRaw interface{}) error {
 	errors := utils.NewMultiError()
-	content, ok := taskRaw.(orderedmap.OrderedMap)
+	content, ok := taskRaw.(*orderedmap.OrderedMap)
 	if !ok {
 		return fmt.Errorf(`task must be JSON object`)
 	}
 
 	task := &model.Task{}
-	parser := &taskParser{content: &content}
+	parser := &taskParser{content: content}
 
 	// Get ID
 	_, err := parser.id()

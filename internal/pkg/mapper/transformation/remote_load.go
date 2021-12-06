@@ -18,17 +18,17 @@ func (m *transformationMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe
 	config := recipe.InternalObject.(*model.Config)
 
 	// Get parameters
-	var parameters orderedmap.OrderedMap
+	var parameters *orderedmap.OrderedMap
 	parametersRaw := utils.GetFromMap(config.Content, []string{`parameters`})
-	if v, ok := parametersRaw.(orderedmap.OrderedMap); ok {
+	if v, ok := parametersRaw.(*orderedmap.OrderedMap); ok {
 		parameters = v
 	} else {
-		parameters = *utils.NewOrderedMap()
+		parameters = utils.NewOrderedMap()
 	}
 
 	// Get blocks
 	var blocks []interface{}
-	blocksRaw := utils.GetFromMap(&parameters, []string{`blocks`})
+	blocksRaw := utils.GetFromMap(parameters, []string{`blocks`})
 	if v, ok := blocksRaw.([]interface{}); ok {
 		blocks = v
 	}

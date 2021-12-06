@@ -28,7 +28,7 @@ func (m *schedulerMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) err
 	}
 
 	// Target must be JSON object
-	target, ok := targetRaw.(orderedmap.OrderedMap)
+	target, ok := targetRaw.(*orderedmap.OrderedMap)
 	if !ok {
 		return nil
 	}

@@ -45,7 +45,7 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 						Content: utils.PairsToOrderedMap([]utils.Pair{
 							{
 								Key: `task`,
-								Value: *utils.PairsToOrderedMap([]utils.Pair{
+								Value: utils.PairsToOrderedMap([]utils.Pair{
 									{Key: `mode`, Value: `run`},
 								}),
 							},
@@ -69,7 +69,7 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 						Content: utils.PairsToOrderedMap([]utils.Pair{
 							{
 								Key: `task`,
-								Value: *utils.PairsToOrderedMap([]utils.Pair{
+								Value: utils.PairsToOrderedMap([]utils.Pair{
 									{Key: `mode`, Value: `run`},
 								}),
 							},
@@ -107,7 +107,7 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 						Content: utils.PairsToOrderedMap([]utils.Pair{
 							{
 								Key: `task`,
-								Value: *utils.PairsToOrderedMap([]utils.Pair{
+								Value: utils.PairsToOrderedMap([]utils.Pair{
 									{Key: `mode`, Value: `run`},
 								}),
 							},

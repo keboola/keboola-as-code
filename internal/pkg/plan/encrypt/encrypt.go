@@ -57,8 +57,6 @@ func (b *encryptActionBuilder) processValue(value interface{}, path utils.KeyPat
 	switch v := value.(type) {
 	case *orderedmap.OrderedMap:
 		b.processMap(v, path)
-	case orderedmap.OrderedMap:
-		b.processMap(&v, path)
 	case []interface{}:
 		b.processSlice(v, path)
 	case string:

@@ -127,8 +127,8 @@ func (w *localWriter) saveTask(task *model.Task) error {
 	var target *orderedmap.OrderedMap
 	taskMapRaw, found := task.Content.Get(`task`)
 	if found {
-		if v, ok := taskMapRaw.(orderedmap.OrderedMap); ok {
-			target = &v
+		if v, ok := taskMapRaw.(*orderedmap.OrderedMap); ok {
+			target = v
 		}
 	}
 	if target == nil {
