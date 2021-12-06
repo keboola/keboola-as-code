@@ -30,21 +30,15 @@ func (a ByPair) Swap(i, j int)      { a.Pairs[i], a.Pairs[j] = a.Pairs[j], a.Pai
 func (a ByPair) Less(i, j int) bool { return a.LessFunc(a.Pairs[i], a.Pairs[j]) }
 
 type OrderedMap struct {
-	keys       []string
-	values     map[string]interface{}
-	escapeHTML bool
+	keys   []string
+	values map[string]interface{}
 }
 
 func New() *OrderedMap {
 	o := OrderedMap{}
 	o.keys = []string{}
 	o.values = map[string]interface{}{}
-	o.escapeHTML = true
 	return &o
-}
-
-func (o *OrderedMap) SetEscapeHTML(on bool) {
-	o.escapeHTML = on
 }
 
 func (o *OrderedMap) Get(key string) (interface{}, bool) {
@@ -150,9 +144,8 @@ func decodeOrderedMap(dec *json.Decoder, o *OrderedMap) error {
 			case '{':
 				if values, ok := o.values[key].(map[string]interface{}); ok {
 					newMap := OrderedMap{
-						keys:       make([]string, 0, len(values)),
-						values:     values,
-						escapeHTML: o.escapeHTML,
+						keys:   make([]string, 0, len(values)),
+						values: values,
 					}
 					if err = decodeOrderedMap(dec, &newMap); err != nil {
 						return err
@@ -160,9 +153,8 @@ func decodeOrderedMap(dec *json.Decoder, o *OrderedMap) error {
 					o.values[key] = newMap
 				} else if oldMap, ok := o.values[key].(OrderedMap); ok {
 					newMap := OrderedMap{
-						keys:       make([]string, 0, len(oldMap.values)),
-						values:     oldMap.values,
-						escapeHTML: o.escapeHTML,
+						keys:   make([]string, 0, len(oldMap.values)),
+						values: oldMap.values,
 					}
 					if err = decodeOrderedMap(dec, &newMap); err != nil {
 						return err
@@ -173,10 +165,10 @@ func decodeOrderedMap(dec *json.Decoder, o *OrderedMap) error {
 				}
 			case '[':
 				if values, ok := o.values[key].([]interface{}); ok {
-					if err = decodeSlice(dec, values, o.escapeHTML); err != nil {
+					if err = decodeSlice(dec, values); err != nil {
 						return err
 					}
-				} else if err = decodeSlice(dec, []interface{}{}, o.escapeHTML); err != nil {
+				} else if err = decodeSlice(dec, []interface{}{}); err != nil {
 					return err
 				}
 			}
@@ -184,7 +176,7 @@ func decodeOrderedMap(dec *json.Decoder, o *OrderedMap) error {
 	}
 }
 
-func decodeSlice(dec *json.Decoder, s []interface{}, escapeHTML bool) error {
+func decodeSlice(dec *json.Decoder, s []interface{}) error {
 	for index := 0; ; index++ {
 		token, err := dec.Token()
 		if err != nil {
@@ -196,9 +188,8 @@ func decodeSlice(dec *json.Decoder, s []interface{}, escapeHTML bool) error {
 				if index < len(s) {
 					if values, ok := s[index].(map[string]interface{}); ok {
 						newMap := OrderedMap{
-							keys:       make([]string, 0, len(values)),
-							values:     values,
-							escapeHTML: escapeHTML,
+							keys:   make([]string, 0, len(values)),
+							values: values,
 						}
 						if err = decodeOrderedMap(dec, &newMap); err != nil {
 							return err
@@ -206,9 +197,8 @@ func decodeSlice(dec *json.Decoder, s []interface{}, escapeHTML bool) error {
 						s[index] = newMap
 					} else if oldMap, ok := s[index].(OrderedMap); ok {
 						newMap := OrderedMap{
-							keys:       make([]string, 0, len(oldMap.values)),
-							values:     oldMap.values,
-							escapeHTML: escapeHTML,
+							keys:   make([]string, 0, len(oldMap.values)),
+							values: oldMap.values,
 						}
 						if err = decodeOrderedMap(dec, &newMap); err != nil {
 							return err
@@ -223,13 +213,13 @@ func decodeSlice(dec *json.Decoder, s []interface{}, escapeHTML bool) error {
 			case '[':
 				if index < len(s) {
 					if values, ok := s[index].([]interface{}); ok {
-						if err = decodeSlice(dec, values, escapeHTML); err != nil {
+						if err = decodeSlice(dec, values); err != nil {
 							return err
 						}
-					} else if err = decodeSlice(dec, []interface{}{}, escapeHTML); err != nil {
+					} else if err = decodeSlice(dec, []interface{}{}); err != nil {
 						return err
 					}
-				} else if err = decodeSlice(dec, []interface{}{}, escapeHTML); err != nil {
+				} else if err = decodeSlice(dec, []interface{}{}); err != nil {
 					return err
 				}
 			case ']':
@@ -243,7 +233,6 @@ func (o OrderedMap) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	buf.WriteByte('{')
 	encoder := json.NewEncoder(&buf)
-	encoder.SetEscapeHTML(o.escapeHTML)
 	for i, k := range o.keys {
 		if i > 0 {
 			buf.WriteByte(',')

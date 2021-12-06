@@ -4,7 +4,6 @@ package orderedmap
 import (
 	"encoding/json"
 	"sort"
-	"strings"
 	"testing"
 )
 
@@ -168,43 +167,6 @@ func TestMarshalJSON(t *testing.T) {
 }`
 	if si != ei {
 		t.Error("JSON MarshalIndent value is incorrect", si)
-	}
-}
-
-func TestMarshalJSONNoEscapeHTML(t *testing.T) {
-	t.Parallel()
-	o := New()
-	o.SetEscapeHTML(false)
-	// string special characters
-	o.Set("specialstring", "\\.<>[]{}_-")
-	// convert to json
-	b, err := o.MarshalJSON()
-	if err != nil {
-		t.Error("Marshalling json", err)
-	}
-	s := strings.ReplaceAll(string(b), "\n", "")
-	// check json is correctly ordered
-	if s != `{"specialstring":"\\.<>[]{}_-"}` {
-		t.Error("JSON Marshal value is incorrect", s)
-	}
-}
-
-func TestMarshalJSONNoEscapeHTMLRecursive(t *testing.T) {
-	t.Parallel()
-	src := `{"x":"<>","y":[{"z":["<>"]}]}`
-	o := New()
-	o.SetEscapeHTML(false)
-	err := json.Unmarshal([]byte(src), &o)
-	if err != nil {
-		t.Error("JSON Unmarshal error with special chars", err)
-	}
-	b, err := o.MarshalJSON()
-	if err != nil {
-		t.Error("Marshalling json", err)
-	}
-	s := strings.ReplaceAll(string(b), "\n", "")
-	if s != src {
-		t.Error("JSON Marshal value is incorrect", s)
 	}
 }
 
