@@ -6,18 +6,18 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestValidateJsonSchemaOk(t *testing.T) {
 	t.Parallel()
 	schema := getTestSchema()
-	parameters := utils.PairsToOrderedMap([]utils.Pair{
+	parameters := orderedmap.FromPairs([]orderedmap.Pair{
 		{Key: "firstName", Value: "John"},
 		{Key: "lastName", Value: "Brown"},
 		{Key: "age", Value: 25},
 	})
-	content := utils.NewOrderedMap()
+	content := orderedmap.New()
 	content.Set(`parameters`, parameters)
 	assert.NoError(t, validateContent(schema, content))
 }
@@ -25,17 +25,17 @@ func TestValidateJsonSchemaOk(t *testing.T) {
 func TestValidateJsonSchemaErr(t *testing.T) {
 	t.Parallel()
 	schema := getTestSchema()
-	parameters := utils.PairsToOrderedMap([]utils.Pair{
+	parameters := orderedmap.FromPairs([]orderedmap.Pair{
 		{Key: "lastName", Value: "Brown"},
 		{Key: "age", Value: -1},
 		{
 			Key: "address",
-			Value: utils.PairsToOrderedMap([]utils.Pair{
+			Value: orderedmap.FromPairs([]orderedmap.Pair{
 				{Key: "number", Value: "abc"},
 			}),
 		},
 	})
-	content := utils.NewOrderedMap()
+	content := orderedmap.New()
 	content.Set(`parameters`, parameters)
 	err := validateContent(schema, content)
 	assert.Error(t, err)
@@ -51,15 +51,15 @@ func TestValidateJsonSchemaErr(t *testing.T) {
 func TestValidateJsonSchemaSkipEmpty(t *testing.T) {
 	t.Parallel()
 	schema := getTestSchema()
-	content := utils.NewOrderedMap()
+	content := orderedmap.New()
 	assert.NoError(t, validateContent(schema, content))
 }
 
 func TestValidateJsonSchemaSkipEmptyParameters(t *testing.T) {
 	t.Parallel()
 	schema := getTestSchema()
-	content := utils.NewOrderedMap()
-	content.Set(`parameters`, utils.NewOrderedMap())
+	content := orderedmap.New()
+	content.Set(`parameters`, orderedmap.New())
 	assert.NoError(t, validateContent(schema, content))
 }
 

@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func CreateSharedCode(t *testing.T, state *model.State, naming *model.Naming) model.ConfigKey {
@@ -39,7 +39,7 @@ func CreateSharedCode(t *testing.T, state *model.State, naming *model.Naming) mo
 		},
 		Local: &model.Config{
 			ConfigKey: sharedCodeKey,
-			Content: utils.PairsToOrderedMap([]utils.Pair{
+			Content: orderedmap.FromPairs([]orderedmap.Pair{
 				{Key: model.SharedCodeComponentIdContentKey, Value: `keboola.python-transformation-v2`},
 			}),
 		},
@@ -61,7 +61,7 @@ func CreateSharedCode(t *testing.T, state *model.State, naming *model.Naming) mo
 				PathInProject: model.NewPathInProject(`branch/_shared/keboola.python-transformation-v2`, `codes/code1`),
 			},
 		},
-		Local: &model.ConfigRow{ConfigRowKey: row1Key, Content: utils.NewOrderedMap()},
+		Local: &model.ConfigRow{ConfigRowKey: row1Key, Content: orderedmap.New()},
 	}
 	assert.NoError(t, state.Set(row1State))
 	naming.Attach(row1State.Key(), row1State.PathInProject)
@@ -80,7 +80,7 @@ func CreateSharedCode(t *testing.T, state *model.State, naming *model.Naming) mo
 				PathInProject: model.NewPathInProject(`branch/_shared/keboola.python-transformation-v2`, `codes/code2`),
 			},
 		},
-		Local: &model.ConfigRow{ConfigRowKey: row2Key, Content: utils.NewOrderedMap()},
+		Local: &model.ConfigRow{ConfigRowKey: row2Key, Content: orderedmap.New()},
 	}
 	assert.NoError(t, state.Set(row2State))
 	naming.Attach(row2State.Key(), row2State.PathInProject)

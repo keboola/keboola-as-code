@@ -22,6 +22,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 type testMapper struct {
@@ -75,7 +76,7 @@ func TestRemoteSaveMapper(t *testing.T) {
 		Local: &model.Config{
 			ConfigKey: configKey,
 			Name:      "internal name",
-			Content: utils.PairsToOrderedMap([]utils.Pair{
+			Content: orderedmap.FromPairs([]orderedmap.Pair{
 				{Key: "key", Value: "internal value"},
 			}),
 		},

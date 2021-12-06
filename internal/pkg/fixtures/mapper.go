@@ -3,7 +3,7 @@ package fixtures
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func NewLocalLoadRecipe(manifest model.ObjectManifest, object model.Object) *model.LocalLoadRecipe {
@@ -13,12 +13,12 @@ func NewLocalLoadRecipe(manifest model.ObjectManifest, object model.Object) *mod
 	}
 
 	recipe.Files.
-		Add(filesystem.NewJsonFile(`meta.json`, utils.NewOrderedMap())).
+		Add(filesystem.NewJsonFile(`meta.json`, orderedmap.New())).
 		AddTag(model.MetaFile).
 		AddTag(model.FileTypeJson)
 
 	recipe.Files.
-		Add(filesystem.NewJsonFile(`config.json`, utils.NewOrderedMap())).
+		Add(filesystem.NewJsonFile(`config.json`, orderedmap.New())).
 		AddTag(model.ConfigFile).
 		AddTag(model.FileTypeJson)
 
@@ -37,12 +37,12 @@ func NewLocalSaveRecipe(manifest model.ObjectManifest, object model.Object) *mod
 	}
 
 	recipe.Files.
-		Add(filesystem.NewJsonFile(`meta.json`, utils.NewOrderedMap())).
+		Add(filesystem.NewJsonFile(`meta.json`, orderedmap.New())).
 		AddTag(model.MetaFile).
 		AddTag(model.FileTypeJson)
 
 	recipe.Files.
-		Add(filesystem.NewJsonFile(`config.json`, utils.NewOrderedMap())).
+		Add(filesystem.NewJsonFile(`config.json`, orderedmap.New())).
 		AddTag(model.ConfigFile).
 		AddTag(model.FileTypeJson)
 

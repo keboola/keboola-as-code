@@ -4,7 +4,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/encryption"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -18,10 +17,6 @@ func NewPlan(projectState *state.State) *Plan {
 type encryptPlanBuilder struct {
 	*state.State
 	actions []*action
-}
-
-type encryptActionBuilder struct {
-	values []*UnencryptedValue
 }
 
 func (b *encryptPlanBuilder) build() []*action {
@@ -40,42 +35,23 @@ func (b *encryptPlanBuilder) processObject(objectState model.ObjectState) {
 
 	// Only config or row
 	if o, ok := objectState.LocalState().(model.ObjectWithContent); ok {
-		// Wall through AND store if some unencrypted values are found
-		builder := &encryptActionBuilder{}
-		builder.processValue(o.GetContent(), nil)
-		if len(builder.values) > 0 {
+		// Wall through
+		var values []*UnencryptedValue
+		o.GetContent().VisitAllRecursive(func(path orderedmap.Key, value interface{}, parent interface{}) {
+			if v, ok := value.(string); ok {
+				if key, ok := path.Last().(orderedmap.MapStep); ok && encryption.IsKeyToEncrypt(key.String()) && !encryption.IsEncrypted(v) {
+					values = append(values, &UnencryptedValue{path: path, value: v})
+				}
+			}
+		})
+
+		// Store action if some unencrypted values are found
+		if len(values) > 0 {
 			b.actions = append(b.actions, &action{
 				ObjectState: objectState,
 				object:      o,
-				values:      builder.values,
+				values:      values,
 			})
 		}
-	}
-}
-
-func (b *encryptActionBuilder) processValue(value interface{}, path utils.KeyPath) {
-	switch v := value.(type) {
-	case *orderedmap.OrderedMap:
-		b.processMap(v, path)
-	case []interface{}:
-		b.processSlice(v, path)
-	case string:
-		lastStep := path.LastStep()
-		if s, ok := lastStep.(utils.MapStep); ok && encryption.IsKeyToEncrypt(s.String()) && !encryption.IsEncrypted(v) {
-			b.values = append(b.values, &UnencryptedValue{path: path, value: v})
-		}
-	}
-}
-
-func (b *encryptActionBuilder) processMap(content *orderedmap.OrderedMap, path utils.KeyPath) {
-	for _, key := range content.Keys() {
-		value, _ := content.Get(key)
-		b.processValue(value, append(path, utils.MapStep(key)))
-	}
-}
-
-func (b *encryptActionBuilder) processSlice(slice []interface{}, path utils.KeyPath) {
-	for i, value := range slice {
-		b.processValue(value, append(path, utils.SliceStep(i)))
 	}
 }

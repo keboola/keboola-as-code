@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func createTestFixtures(t *testing.T, componentId string) (model.MapperContext, *model.ConfigState) {
@@ -32,7 +33,7 @@ func createTestFixtures(t *testing.T, componentId string) (model.MapperContext, 
 		},
 		Local: &model.Config{
 			ConfigKey: configKey,
-			Content:   utils.NewOrderedMap(),
+			Content:   orderedmap.New(),
 		},
 	}
 

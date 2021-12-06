@@ -16,6 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestLoadState(t *testing.T) {
@@ -86,7 +87,7 @@ func TestLoadState(t *testing.T) {
 				Name:              "empty",
 				Description:       "test fixture",
 				ChangeDescription: "created by test",
-				Content:           utils.NewOrderedMap(),
+				Content:           orderedmap.New(),
 			},
 			Local: &model.Config{
 				ConfigKey: model.ConfigKey{
@@ -97,13 +98,13 @@ func TestLoadState(t *testing.T) {
 				Name:              "todos",
 				Description:       "todos config",
 				ChangeDescription: "",
-				Content: utils.PairsToOrderedMap([]utils.Pair{
+				Content: orderedmap.FromPairs([]orderedmap.Pair{
 					{
 						Key: "parameters",
-						Value: utils.PairsToOrderedMap([]utils.Pair{
+						Value: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: "api",
-								Value: utils.PairsToOrderedMap([]utils.Pair{
+								Value: orderedmap.FromPairs([]orderedmap.Pair{
 									{
 										Key:   "baseUrl",
 										Value: "https://jsonplaceholder.typicode.com",

@@ -65,7 +65,7 @@ func (f *File) ToFile() (*File, error) {
 }
 
 func (f *File) ToJsonFile() (*JsonFile, error) {
-	m := utils.NewOrderedMap()
+	m := orderedmap.New()
 	if err := json.DecodeString(f.Content, m); err != nil {
 		fileDesc := strings.TrimSpace(f.Desc + " file")
 		return nil, utils.PrefixError(fmt.Sprintf("%s \"%s\" is invalid", fileDesc, f.Path), err)

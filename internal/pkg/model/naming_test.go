@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestDefaultNaming(t *testing.T) {
@@ -87,7 +87,7 @@ func TestDefaultNaming(t *testing.T) {
 					Id:          "456",
 				},
 				Name: "MySharedCode",
-				Content: utils.PairsToOrderedMap([]utils.Pair{
+				Content: orderedmap.FromPairs([]orderedmap.Pair{
 					{Key: ShareCodeTargetComponentKey, Value: `keboola.python-transformation-v2`},
 				}),
 			},
@@ -115,7 +115,7 @@ func TestDefaultNaming(t *testing.T) {
 					},
 				},
 				Name:    "schedule-1",
-				Content: utils.NewOrderedMap(),
+				Content: orderedmap.New(),
 			},
 		).Path())
 
@@ -161,7 +161,7 @@ func TestDefaultNaming(t *testing.T) {
 					},
 				},
 				Name:    "Variables",
-				Content: utils.NewOrderedMap(),
+				Content: orderedmap.New(),
 			},
 		).Path())
 
@@ -255,8 +255,8 @@ func TestUniquePathDifferentObjects(t *testing.T) {
 	n.Config = "prefix"
 	n.ConfigRow = "prefix"
 	component := &Component{ComponentKey: ComponentKey{Id: "foo"}, Type: "writer"}
-	rowWithName := utils.PairsToOrderedMap([]utils.Pair{{Key: "name", Value: "my-name"}})
-	rowWithoutName := utils.PairsToOrderedMap([]utils.Pair{{Key: "foo", Value: "bar"}})
+	rowWithName := orderedmap.FromPairs([]orderedmap.Pair{{Key: "name", Value: "my-name"}})
+	rowWithoutName := orderedmap.FromPairs([]orderedmap.Pair{{Key: "foo", Value: "bar"}})
 	parentPath := "foo"
 
 	assert.Equal(t, "foo/prefix", n.ConfigPath(parentPath, component, &Config{ConfigKey: ConfigKey{Id: "123"}, Name: "a"}).Path())
@@ -274,8 +274,8 @@ func TestNamingEmptyTemplate(t *testing.T) {
 	n.Config = ""
 	n.ConfigRow = ""
 	component := &Component{ComponentKey: ComponentKey{Id: "foo"}, Type: "writer"}
-	rowWithName := utils.PairsToOrderedMap([]utils.Pair{{Key: "name", Value: "my-name"}})
-	rowWithoutName := utils.PairsToOrderedMap([]utils.Pair{{Key: "foo", Value: "bar"}})
+	rowWithName := orderedmap.FromPairs([]orderedmap.Pair{{Key: "name", Value: "my-name"}})
+	rowWithoutName := orderedmap.FromPairs([]orderedmap.Pair{{Key: "foo", Value: "bar"}})
 	parentPath := "foo"
 
 	assert.Equal(t, "foo/config", n.ConfigPath(parentPath, component, &Config{ConfigKey: ConfigKey{Id: "123"}, Name: "a"}).Path())

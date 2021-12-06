@@ -9,7 +9,7 @@ import (
 	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestSchedulerMapAfterRemoteLoad(t *testing.T) {
@@ -20,7 +20,7 @@ func TestSchedulerMapAfterRemoteLoad(t *testing.T) {
 
 	// Create api and internal object
 	key := model.ConfigKey{BranchId: 1, ComponentId: model.SchedulerComponentId, Id: `123`}
-	apiObject := &model.Config{ConfigKey: key, Content: utils.NewOrderedMap()}
+	apiObject := &model.Config{ConfigKey: key, Content: orderedmap.New()}
 	apiContentStr := `{
   "target": {
     "componentId": "foo.bar",

@@ -453,7 +453,7 @@ func (*testCases) TestWriteJsonFile(t *testing.T, fs filesystem.Fs, log *utils.W
 	filePath := "file.json"
 
 	// Write
-	data := utils.NewOrderedMap()
+	data := orderedmap.New()
 	data.Set(`foo`, `bar`)
 	assert.NoError(t, fs.WriteJsonFile(filesystem.NewJsonFile(filePath, data)))
 	assert.Equal(t, `DEBUG  Saved "file.json"`, strings.TrimSpace(log.String()))

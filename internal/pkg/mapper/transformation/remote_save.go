@@ -3,8 +3,8 @@ package transformation
 import (
 	"fmt"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -20,19 +20,18 @@ func (m *transformationMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecip
 	apiObject := recipe.ApiObject.(*model.Config)
 
 	// Get parameters
-	var parameters *orderedmap.OrderedMap
-	parametersRaw := utils.GetFromMap(apiObject.Content, []string{`parameters`})
-	if v, ok := parametersRaw.(*orderedmap.OrderedMap); ok {
-		parameters = v
-	} else {
-		parameters = utils.NewOrderedMap()
+	parameters, _, _ := apiObject.Content.GetNestedMap(`parameters`)
+	if parameters == nil {
+		// Create if not found or has invalid type
+		parameters = orderedmap.New()
+		apiObject.Content.Set(`parameters`, parameters)
 	}
 
 	// Convert blocks to map
 	blocks := make([]interface{}, 0)
 	for _, block := range internalObject.Blocks {
-		blockRaw := utils.NewOrderedMap()
-		if err := utils.ConvertByJson(block, &blockRaw); err != nil {
+		blockRaw := orderedmap.New()
+		if err := json.ConvertByJson(block, &blockRaw); err != nil {
 			return fmt.Errorf(`cannot convert block to JSON: %w`, err)
 		}
 		blocks = append(blocks, blockRaw)
@@ -40,9 +39,6 @@ func (m *transformationMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecip
 
 	// Add "parameters.blocks" to configuration content
 	parameters.Set("blocks", blocks)
-
-	// Set parameters
-	apiObject.Content.Set(`parameters`, parameters)
 
 	// Clear blocks in API object
 	apiObject.Blocks = nil

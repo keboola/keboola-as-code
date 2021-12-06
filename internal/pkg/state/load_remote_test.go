@@ -15,6 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestLoadRemoteStateEmpty(t *testing.T) {
@@ -154,7 +155,7 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 				Name:              "empty",
 				Description:       "test fixture",
 				ChangeDescription: fmt.Sprintf(`Copied from default branch configuration "empty" (%s) version 1`, envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
-				Content:           utils.NewOrderedMap(),
+				Content:           orderedmap.New(),
 			},
 			// Generated manifest
 			ConfigManifest: &model.ConfigManifest{
@@ -181,13 +182,13 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 				Name:              "without-rows",
 				Description:       "test fixture",
 				ChangeDescription: "created by test",
-				Content: utils.PairsToOrderedMap([]utils.Pair{
+				Content: orderedmap.FromPairs([]orderedmap.Pair{
 					{
 						Key: "parameters",
-						Value: utils.PairsToOrderedMap([]utils.Pair{
+						Value: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: "api",
-								Value: utils.PairsToOrderedMap([]utils.Pair{
+								Value: orderedmap.FromPairs([]orderedmap.Pair{
 									{
 										Key:   "baseUrl",
 										Value: "https://jsonplaceholder.typicode.com",
@@ -223,7 +224,7 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 				Name:              "empty",
 				Description:       "test fixture",
 				ChangeDescription: fmt.Sprintf(`Copied from default branch configuration "empty" (%s) version 1`, envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
-				Content:           utils.NewOrderedMap(),
+				Content:           orderedmap.New(),
 			},
 			// Generated manifest
 			ConfigManifest: &model.ConfigManifest{
@@ -250,13 +251,13 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 				Name:              "with-rows",
 				Description:       "test fixture",
 				ChangeDescription: "created by test",
-				Content: utils.PairsToOrderedMap([]utils.Pair{
+				Content: orderedmap.FromPairs([]orderedmap.Pair{
 					{
 						Key: "parameters",
-						Value: utils.PairsToOrderedMap([]utils.Pair{
+						Value: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: "db",
-								Value: utils.PairsToOrderedMap([]utils.Pair{
+								Value: orderedmap.FromPairs([]orderedmap.Pair{
 									{
 										Key:   "host",
 										Value: "mysql.example.com",
@@ -292,7 +293,7 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 				Name:              "empty",
 				Description:       "test fixture",
 				ChangeDescription: "created by test",
-				Content:           utils.NewOrderedMap(),
+				Content:           orderedmap.New(),
 			},
 			// Generated manifest
 			ConfigManifest: &model.ConfigManifest{
@@ -326,10 +327,10 @@ func complexRemoteExpectedConfigsRows(envs *env.Map) []*model.ConfigRowState {
 				Description:       "test fixture",
 				ChangeDescription: "created by test",
 				IsDisabled:        true,
-				Content: utils.PairsToOrderedMap([]utils.Pair{
+				Content: orderedmap.FromPairs([]orderedmap.Pair{
 					{
 						Key: "parameters",
-						Value: utils.PairsToOrderedMap([]utils.Pair{
+						Value: orderedmap.FromPairs([]orderedmap.Pair{
 							{Key: "incremental", Value: false},
 						}),
 					},
@@ -362,10 +363,10 @@ func complexRemoteExpectedConfigsRows(envs *env.Map) []*model.ConfigRowState {
 				Description:       "test fixture",
 				ChangeDescription: "created by test",
 				IsDisabled:        false,
-				Content: utils.PairsToOrderedMap([]utils.Pair{
+				Content: orderedmap.FromPairs([]orderedmap.Pair{
 					{
 						Key: "parameters",
-						Value: utils.PairsToOrderedMap([]utils.Pair{
+						Value: orderedmap.FromPairs([]orderedmap.Pair{
 							{Key: "incremental", Value: false},
 						}),
 					},
@@ -398,10 +399,10 @@ func complexRemoteExpectedConfigsRows(envs *env.Map) []*model.ConfigRowState {
 				Description:       "test fixture",
 				ChangeDescription: "created by test",
 				IsDisabled:        false,
-				Content: utils.PairsToOrderedMap([]utils.Pair{
+				Content: orderedmap.FromPairs([]orderedmap.Pair{
 					{
 						Key: "parameters",
-						Value: utils.PairsToOrderedMap([]utils.Pair{
+						Value: orderedmap.FromPairs([]orderedmap.Pair{
 							{Key: "incremental", Value: false},
 						}),
 					},

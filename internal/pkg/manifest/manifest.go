@@ -63,7 +63,7 @@ func newManifest(projectId int, apiHost string, fs filesystem.Fs) *Manifest {
 			Branches: make([]*model.BranchManifest, 0),
 			Configs:  make([]*model.ConfigManifestWithRows, 0),
 		},
-		records: utils.NewOrderedMap(),
+		records: orderedmap.New(),
 		lock:    &sync.Mutex{},
 	}
 }
@@ -400,7 +400,7 @@ func (m *Manifest) validate() error {
 // sortRecords in manifest + ensure order of processing: branch, config, configRow.
 func (m *Manifest) sortRecords() {
 	m.records.Sort(func(a *orderedmap.Pair, b *orderedmap.Pair) bool {
-		return a.Value().(model.ObjectManifest).SortKey(m.SortBy) < b.Value().(model.ObjectManifest).SortKey(m.SortBy)
+		return a.Value.(model.ObjectManifest).SortKey(m.SortBy) < b.Value.(model.ObjectManifest).SortKey(m.SortBy)
 	})
 }
 

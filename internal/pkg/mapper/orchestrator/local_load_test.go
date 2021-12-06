@@ -8,7 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestMapAfterLocalLoad(t *testing.T) {
@@ -95,7 +95,7 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 				PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases`, `001-phase`),
 				DependsOn:     []model.PhaseKey{},
 				Name:          `Phase`,
-				Content: utils.PairsToOrderedMap([]utils.Pair{
+				Content: orderedmap.FromPairs([]orderedmap.Pair{
 					{Key: `foo`, Value: `bar`},
 				}),
 				Tasks: []*model.Task{
@@ -114,10 +114,10 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 						ComponentId:   `foo.bar1`,
 						ConfigId:      `123`,
 						ConfigPath:    `branch/extractor/target-config-1`,
-						Content: utils.PairsToOrderedMap([]utils.Pair{
+						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,
-								Value: utils.PairsToOrderedMap([]utils.Pair{
+								Value: orderedmap.FromPairs([]orderedmap.Pair{
 									{Key: `mode`, Value: `run`},
 								}),
 							},
@@ -140,10 +140,10 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 						ComponentId:   `foo.bar2`,
 						ConfigId:      `789`,
 						ConfigPath:    `branch/extractor/target-config-2`,
-						Content: utils.PairsToOrderedMap([]utils.Pair{
+						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,
-								Value: utils.PairsToOrderedMap([]utils.Pair{
+								Value: orderedmap.FromPairs([]orderedmap.Pair{
 									{Key: `mode`, Value: `run`},
 								}),
 							},
@@ -170,7 +170,7 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 					},
 				},
 				Name:    `Phase With Deps`,
-				Content: utils.NewOrderedMap(),
+				Content: orderedmap.New(),
 				Tasks: []*model.Task{
 					{
 						TaskKey: model.TaskKey{
@@ -187,10 +187,10 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 						ComponentId:   `foo.bar2`,
 						ConfigId:      `456`,
 						ConfigPath:    `branch/extractor/target-config-3`,
-						Content: utils.PairsToOrderedMap([]utils.Pair{
+						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,
-								Value: utils.PairsToOrderedMap([]utils.Pair{
+								Value: orderedmap.FromPairs([]orderedmap.Pair{
 									{Key: `mode`, Value: `run`},
 								}),
 							},
@@ -345,7 +345,7 @@ func createLocalLoadFixtures(t *testing.T, context model.MapperContext) *model.C
 				PathInProject: model.NewPathInProject(`branch/other`, `orchestrator`),
 			},
 		},
-		Local: &model.Config{ConfigKey: configKey, Content: utils.NewOrderedMap()},
+		Local: &model.Config{ConfigKey: configKey, Content: orderedmap.New()},
 	}
 	assert.NoError(t, context.State.Set(configState))
 	context.Naming.Attach(configState.Key(), configState.PathInProject)

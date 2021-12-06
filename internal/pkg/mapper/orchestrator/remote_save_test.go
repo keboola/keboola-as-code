@@ -8,7 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestMapBeforeRemoteSave(t *testing.T) {
@@ -25,7 +25,7 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 				},
 				DependsOn: []model.PhaseKey{},
 				Name:      `Phase`,
-				Content: utils.PairsToOrderedMap([]utils.Pair{
+				Content: orderedmap.FromPairs([]orderedmap.Pair{
 					{Key: `foo`, Value: `bar`},
 				}),
 				Tasks: []*model.Task{
@@ -42,10 +42,10 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 						Name:        `Task 1`,
 						ComponentId: `foo.bar1`,
 						ConfigId:    `123`,
-						Content: utils.PairsToOrderedMap([]utils.Pair{
+						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,
-								Value: utils.PairsToOrderedMap([]utils.Pair{
+								Value: orderedmap.FromPairs([]orderedmap.Pair{
 									{Key: `mode`, Value: `run`},
 								}),
 							},
@@ -66,10 +66,10 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 						Name:        `Task 3`,
 						ComponentId: `foo.bar2`,
 						ConfigId:    `789`,
-						Content: utils.PairsToOrderedMap([]utils.Pair{
+						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,
-								Value: utils.PairsToOrderedMap([]utils.Pair{
+								Value: orderedmap.FromPairs([]orderedmap.Pair{
 									{Key: `mode`, Value: `run`},
 								}),
 							},
@@ -88,7 +88,7 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 				},
 				DependsOn: []model.PhaseKey{{Index: 0}},
 				Name:      `Phase With Deps`,
-				Content:   utils.NewOrderedMap(),
+				Content:   orderedmap.New(),
 				Tasks: []*model.Task{
 					{
 
@@ -104,10 +104,10 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 						Name:        `Task 2`,
 						ComponentId: `foo.bar2`,
 						ConfigId:    `456`,
-						Content: utils.PairsToOrderedMap([]utils.Pair{
+						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,
-								Value: utils.PairsToOrderedMap([]utils.Pair{
+								Value: orderedmap.FromPairs([]orderedmap.Pair{
 									{Key: `mode`, Value: `run`},
 								}),
 							},
@@ -126,7 +126,7 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 		Id:          `456`,
 	}
 	manifest := &model.ConfigManifest{ConfigKey: key}
-	internalObject := &model.Config{ConfigKey: key, Content: utils.NewOrderedMap()}
+	internalObject := &model.Config{ConfigKey: key, Content: orderedmap.New()}
 	internalObject.Orchestration = orchestration
 	apiObject := internalObject.Clone().(*model.Config)
 	recipe := &model.RemoteSaveRecipe{
@@ -142,7 +142,7 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 
 	// Internal object is not modified
 	assert.NotNil(t, internalObject.Orchestration)
-	assert.Nil(t, utils.GetFromMap(internalObject.Content, []string{`parameters`, `orchestration`}))
+	assert.Nil(t, internalObject.Content.GetNestedOrNil(`parameters.orchestration`))
 
 	// Orchestration is stored in API object content
 	expectedContent := `

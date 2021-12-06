@@ -18,6 +18,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/strhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 type backend interface {
@@ -406,7 +407,7 @@ func (f *Fs) ReadJsonMapTo(path, desc string, target interface{}, tag string) (*
 			return file, nil
 		} else {
 			// Set empty map if error occurred
-			utils.SetField(field, utils.NewOrderedMap(), target)
+			utils.SetField(field, orderedmap.New(), target)
 			return nil, err
 		}
 	}

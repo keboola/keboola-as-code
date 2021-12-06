@@ -7,7 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestLocalSaveModel(t *testing.T) {
@@ -15,7 +15,7 @@ func TestLocalSaveModel(t *testing.T) {
 	manager, _ := newTestLocalManager(t)
 	fs := manager.fs
 
-	config := utils.NewOrderedMap()
+	config := orderedmap.New()
 	config.Set("foo", "bar")
 	record := &fixtures.MockedManifest{}
 	source := &fixtures.MockedObject{

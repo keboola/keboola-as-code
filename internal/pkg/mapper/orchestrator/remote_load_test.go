@@ -8,7 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
@@ -73,7 +73,7 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 }
 `
 	// Orchestrator config
-	content := utils.NewOrderedMap()
+	content := orderedmap.New()
 	json.MustDecodeString(contentStr, content)
 	configKey := model.ConfigKey{
 		BranchId:    123,
@@ -127,7 +127,7 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 				PathInProject: model.NewPathInProject(`branch/config/phases`, `001-phase`),
 				DependsOn:     []model.PhaseKey{},
 				Name:          `Phase`,
-				Content:       utils.NewOrderedMap(),
+				Content:       orderedmap.New(),
 				Tasks: []*model.Task{
 					{
 						TaskKey: model.TaskKey{
@@ -144,10 +144,10 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 						ComponentId:   `foo.bar1`,
 						ConfigId:      `123`,
 						ConfigPath:    `branch/extractor/target-config-1`,
-						Content: utils.PairsToOrderedMap([]utils.Pair{
+						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,
-								Value: utils.PairsToOrderedMap([]utils.Pair{
+								Value: orderedmap.FromPairs([]orderedmap.Pair{
 									{Key: `mode`, Value: `run`},
 								}),
 							},
@@ -170,10 +170,10 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 						ComponentId:   `foo.bar2`,
 						ConfigId:      `789`,
 						ConfigPath:    `branch/extractor/target-config-2`,
-						Content: utils.PairsToOrderedMap([]utils.Pair{
+						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,
-								Value: utils.PairsToOrderedMap([]utils.Pair{
+								Value: orderedmap.FromPairs([]orderedmap.Pair{
 									{Key: `mode`, Value: `run`},
 								}),
 							},
@@ -200,7 +200,7 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 					},
 				},
 				Name: `Phase With Deps`,
-				Content: utils.PairsToOrderedMap([]utils.Pair{
+				Content: orderedmap.FromPairs([]orderedmap.Pair{
 					{Key: `foo`, Value: `bar`},
 				}),
 				Tasks: []*model.Task{
@@ -219,10 +219,10 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 						ComponentId:   `foo.bar2`,
 						ConfigId:      `456`,
 						ConfigPath:    `branch/extractor/target-config-3`,
-						Content: utils.PairsToOrderedMap([]utils.Pair{
+						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,
-								Value: utils.PairsToOrderedMap([]utils.Pair{
+								Value: orderedmap.FromPairs([]orderedmap.Pair{
 									{Key: `mode`, Value: `run`},
 								}),
 							},
@@ -280,7 +280,7 @@ func TestMapAfterRemoteLoadWarnings(t *testing.T) {
 `
 
 	// Orchestrator
-	content := utils.NewOrderedMap()
+	content := orderedmap.New()
 	json.MustDecodeString(contentStr, content)
 	configKey := model.ConfigKey{
 		BranchId:    123,
@@ -334,7 +334,7 @@ WARN  Warning: invalid orchestrator config "branch:123/component:keboola.orchest
 				},
 				DependsOn: []model.PhaseKey{},
 				Name:      `Phase`,
-				Content:   utils.NewOrderedMap(),
+				Content:   orderedmap.New(),
 				Tasks: []*model.Task{
 					{
 						TaskKey: model.TaskKey{
@@ -350,10 +350,10 @@ WARN  Warning: invalid orchestrator config "branch:123/component:keboola.orchest
 						ComponentId: `foo.bar1`,
 						ConfigId:    `123`,
 						ConfigPath:  `branch/extractor/target-config-1`,
-						Content: utils.PairsToOrderedMap([]utils.Pair{
+						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,
-								Value: utils.PairsToOrderedMap([]utils.Pair{
+								Value: orderedmap.FromPairs([]orderedmap.Pair{
 									{Key: `mode`, Value: `run`},
 								}),
 							},
@@ -402,7 +402,7 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 }
 `
 
-	content := utils.NewOrderedMap()
+	content := orderedmap.New()
 	json.MustDecodeString(contentStr, content)
 	configKey := model.ConfigKey{
 		BranchId:    123,
@@ -438,7 +438,7 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 				},
 				DependsOn: []model.PhaseKey{},
 				Name:      `Phase 5`,
-				Content:   utils.NewOrderedMap(),
+				Content:   orderedmap.New(),
 			},
 			{
 				PhaseKey: model.PhaseKey{
@@ -456,7 +456,7 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 					},
 				},
 				Name:    `Phase 1`,
-				Content: utils.NewOrderedMap(),
+				Content: orderedmap.New(),
 			},
 			{
 				PhaseKey: model.PhaseKey{
@@ -467,7 +467,7 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 				},
 				DependsOn: []model.PhaseKey{},
 				Name:      `Phase 2`,
-				Content:   utils.NewOrderedMap(),
+				Content:   orderedmap.New(),
 			},
 			{
 				PhaseKey: model.PhaseKey{
@@ -491,7 +491,7 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 					},
 				},
 				Name:    `Phase 4`,
-				Content: utils.NewOrderedMap(),
+				Content: orderedmap.New(),
 			},
 			{
 				PhaseKey: model.PhaseKey{
@@ -521,7 +521,7 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 					},
 				},
 				Name:    `Phase 3`,
-				Content: utils.NewOrderedMap(),
+				Content: orderedmap.New(),
 			},
 		},
 	}, config.Orchestration)
@@ -579,7 +579,7 @@ func TestMapAfterRemoteLoadDepsCycles(t *testing.T) {
 }
 `
 
-	content := utils.NewOrderedMap()
+	content := orderedmap.New()
 	json.MustDecodeString(contentStr, content)
 	configKey := model.ConfigKey{
 		BranchId:    123,

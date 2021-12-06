@@ -16,6 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestLoadLocalStateMinimal(t *testing.T) {
@@ -364,13 +365,13 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 				Name:              "tables",
 				Description:       "tables config",
 				ChangeDescription: "",
-				Content: utils.PairsToOrderedMap([]utils.Pair{
+				Content: orderedmap.FromPairs([]orderedmap.Pair{
 					{
 						Key: "parameters",
-						Value: utils.PairsToOrderedMap([]utils.Pair{
+						Value: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: "db",
-								Value: utils.PairsToOrderedMap([]utils.Pair{
+								Value: orderedmap.FromPairs([]orderedmap.Pair{
 									{
 										Key:   "host",
 										Value: "mysql.example.com",
@@ -409,13 +410,13 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 				Name:              "todos",
 				Description:       "todos config",
 				ChangeDescription: "",
-				Content: utils.PairsToOrderedMap([]utils.Pair{
+				Content: orderedmap.FromPairs([]orderedmap.Pair{
 					{
 						Key: "parameters",
-						Value: utils.PairsToOrderedMap([]utils.Pair{
+						Value: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: "api",
-								Value: utils.PairsToOrderedMap([]utils.Pair{
+								Value: orderedmap.FromPairs([]orderedmap.Pair{
 									{
 										Key:   "baseUrl",
 										Value: "https://jsonplaceholder.typicode.com",
@@ -454,13 +455,13 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 				Name:              "todos",
 				Description:       "todos config",
 				ChangeDescription: "",
-				Content: utils.PairsToOrderedMap([]utils.Pair{
+				Content: orderedmap.FromPairs([]orderedmap.Pair{
 					{
 						Key: "parameters",
-						Value: utils.PairsToOrderedMap([]utils.Pair{
+						Value: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: "api",
-								Value: utils.PairsToOrderedMap([]utils.Pair{
+								Value: orderedmap.FromPairs([]orderedmap.Pair{
 									{
 										Key:   "baseUrl",
 										Value: "https://jsonplaceholder.typicode.com",
@@ -506,10 +507,10 @@ func complexLocalExpectedConfigRows() []*model.ConfigRowState {
 				Description:       "",
 				ChangeDescription: "",
 				IsDisabled:        true,
-				Content: utils.PairsToOrderedMap([]utils.Pair{
+				Content: orderedmap.FromPairs([]orderedmap.Pair{
 					{
 						Key: "parameters",
-						Value: utils.PairsToOrderedMap([]utils.Pair{
+						Value: orderedmap.FromPairs([]orderedmap.Pair{
 							{Key: "incremental", Value: false},
 						}),
 					},
@@ -546,10 +547,10 @@ func complexLocalExpectedConfigRows() []*model.ConfigRowState {
 				Description:       "row description",
 				ChangeDescription: "",
 				IsDisabled:        false,
-				Content: utils.PairsToOrderedMap([]utils.Pair{
+				Content: orderedmap.FromPairs([]orderedmap.Pair{
 					{
 						Key: "parameters",
-						Value: utils.PairsToOrderedMap([]utils.Pair{
+						Value: orderedmap.FromPairs([]orderedmap.Pair{
 							{Key: "incremental", Value: false},
 						}),
 					},
@@ -586,10 +587,10 @@ func complexLocalExpectedConfigRows() []*model.ConfigRowState {
 				Description:       "",
 				ChangeDescription: "",
 				IsDisabled:        false,
-				Content: utils.PairsToOrderedMap([]utils.Pair{
+				Content: orderedmap.FromPairs([]orderedmap.Pair{
 					{
 						Key: "parameters",
-						Value: utils.PairsToOrderedMap([]utils.Pair{
+						Value: orderedmap.FromPairs([]orderedmap.Pair{
 							{Key: "incremental", Value: false},
 						}),
 					},

@@ -7,7 +7,7 @@ import (
 
 	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode/variables"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestSharedCodeMapAfterRemoteLoad(t *testing.T) {
@@ -15,7 +15,7 @@ func TestSharedCodeMapAfterRemoteLoad(t *testing.T) {
 	context := createMapperContext(t)
 
 	variablesConfigId := `123456`
-	content := utils.NewOrderedMap()
+	content := orderedmap.New()
 	content.Set(model.SharedCodeVariablesIdContentKey, variablesConfigId)
 	apiObject := &model.ConfigRow{
 		ConfigRowKey: model.ConfigRowKey{ComponentId: model.SharedCodeComponentId},

@@ -3,8 +3,14 @@ package orderedmap
 
 import (
 	"encoding/json"
+	"fmt"
 	"sort"
+	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	jsonutils "github.com/keboola/keboola-as-code/internal/pkg/json"
 )
 
 func TestOrderedMap(t *testing.T) {
@@ -508,7 +514,7 @@ func TestOrderedMap_Sort(t *testing.T) {
 	o := New()
 	json.Unmarshal([]byte(s), &o)
 	o.Sort(func(a *Pair, b *Pair) bool {
-		return a.value.(float64) > b.value.(float64)
+		return a.Value.(float64) > b.Value.(float64)
 	})
 
 	// Check the root keys
@@ -557,4 +563,255 @@ func TestOrderedMap_empty_map(t *testing.T) {
 		t.Error("Expect", srcStr)
 		t.Error("Got", marshalledStr)
 	}
+}
+
+func TestOrderedMap_Clone(t *testing.T) {
+	t.Parallel()
+	root := New()
+	nested := New()
+	nested.Set(`key`, `value`)
+	root.Set(`nested`, nested)
+
+	rootClone := root.Clone()
+	assert.NotSame(t, root, rootClone)
+	assert.Equal(t, root, rootClone)
+
+	nestedClone, found := rootClone.Get(`nested`)
+	assert.True(t, found)
+	assert.NotSame(t, nested, nestedClone)
+	assert.Equal(t, nested, nestedClone)
+}
+
+func TestOrderedMap_ToMap(t *testing.T) {
+	t.Parallel()
+	root := New()
+	nested := New()
+	nested.Set(`key`, `value`)
+	root.Set(`nested`, nested)
+
+	assert.Equal(t, map[string]interface{}{
+		`nested`: map[string]interface{}{
+			`key`: `value`,
+		},
+	}, root.ToMap())
+}
+
+func TestOrderedMapGetNested(t *testing.T) {
+	t.Parallel()
+	root := New()
+	nested := New()
+	nested.Set(`key`, `value`)
+	nested.Set(`slice`, []interface{}{1, 2, 3})
+	root.Set(`nested`, nested)
+	root.Set(`slice`, []interface{}{1, 2, 3})
+
+	// Missing root map key
+	value, found, err := root.GetNested(`foo`)
+	assert.Nil(t, value)
+	assert.False(t, found)
+	assert.Error(t, err)
+	assert.Equal(t, `key "foo" not found`, err.Error())
+	value = root.GetNestedOrNil(`foo`)
+	assert.Nil(t, value)
+	value, found, err = root.GetNestedPath(Key{MapStep(`foo`)})
+	assert.Nil(t, value)
+	assert.False(t, found)
+	assert.Error(t, err)
+	assert.Equal(t, `key "foo" not found`, err.Error())
+	value = root.GetNestedPathOrNil(Key{MapStep(`foo`)})
+	assert.Nil(t, value)
+
+	// Missing root slice key
+	value, found, err = root.GetNested(`foo[123]`)
+	assert.Nil(t, value)
+	assert.False(t, found)
+	assert.Error(t, err)
+	assert.Equal(t, `key "foo" not found`, err.Error())
+	value = root.GetNestedOrNil(`foo[123]`)
+	assert.Nil(t, value)
+	value, found, err = root.GetNestedPath(Key{MapStep(`foo`), SliceStep(123)})
+	assert.Nil(t, value)
+	assert.False(t, found)
+	assert.Error(t, err)
+	assert.Equal(t, `key "foo" not found`, err.Error())
+	value = root.GetNestedPathOrNil(Key{MapStep(`foo`), SliceStep(123)})
+	assert.Nil(t, value)
+
+	// Missing nested map key
+	value, found, err = root.GetNested(`nested.foo`)
+	assert.Nil(t, value)
+	assert.False(t, found)
+	assert.Error(t, err)
+	assert.Equal(t, `key "nested.foo" not found`, err.Error())
+	value = root.GetNestedOrNil(`nested.foo`)
+	assert.Nil(t, value)
+	value, found, err = root.GetNestedPath(Key{MapStep(`nested`), MapStep(`foo`)})
+	assert.Nil(t, value)
+	assert.False(t, found)
+	assert.Error(t, err)
+	assert.Equal(t, `key "nested.foo" not found`, err.Error())
+	value = root.GetNestedPathOrNil(Key{MapStep(`nested`), MapStep(`foo`)})
+	assert.Nil(t, value)
+
+	// Missing nested slice key
+	value, found, err = root.GetNested(`nested.slice[123]`)
+	assert.Nil(t, value)
+	assert.False(t, found)
+	assert.Error(t, err)
+	assert.Equal(t, `key "nested.slice[123]" not found`, err.Error())
+	value = root.GetNestedOrNil(`nested.slice[123]`)
+	assert.Nil(t, value)
+	value, found, err = root.GetNestedPath(Key{MapStep(`nested`), MapStep(`slice`), SliceStep(123)})
+	assert.Nil(t, value)
+	assert.False(t, found)
+	assert.Error(t, err)
+	assert.Equal(t, `key "nested.slice[123]" not found`, err.Error())
+	value = root.GetNestedPathOrNil(Key{MapStep(`nested`), MapStep(`slice`), SliceStep(123)})
+	assert.Nil(t, value)
+
+	// Get nested map - not found
+	value, found, err = root.GetNestedMap(`nested.foo`)
+	assert.Nil(t, value)
+	assert.False(t, found)
+	assert.NoError(t, err)
+	value, found, err = root.GetNestedPathMap(Key{MapStep(`nested`), MapStep(`foo`)})
+	assert.Nil(t, value)
+	assert.False(t, found)
+	assert.NoError(t, err)
+
+	// Get nested map - found
+	value, found, err = root.GetNestedMap(`nested`)
+	assert.Equal(t, nested, value)
+	assert.True(t, found)
+	assert.NoError(t, err)
+	value, found, err = root.GetNestedPathMap(Key{MapStep(`nested`)})
+	assert.Equal(t, nested, value)
+	assert.True(t, found)
+	assert.NoError(t, err)
+
+	// Get nested map - invalid type
+	value, found, err = root.GetNestedMap(`nested.key`)
+	assert.Nil(t, value)
+	assert.True(t, found)
+	assert.Error(t, err)
+	assert.Equal(t, `key "nested.key": expected object, found "string"`, err.Error())
+	value, found, err = root.GetNestedPathMap(Key{MapStep(`nested`), MapStep(`key`)})
+	assert.Nil(t, value)
+	assert.True(t, found)
+	assert.Error(t, err)
+	assert.Equal(t, `key "nested.key": expected object, found "string"`, err.Error())
+}
+
+func TestOrderedMapSetNested(t *testing.T) {
+	t.Parallel()
+	root := New()
+
+	// Set top level key
+	assert.NoError(t, root.SetNested(`foo1`, `bar1`))
+	assert.NoError(t, root.SetNestedPath(Key{MapStep(`foo2`)}, `bar2`))
+
+	// Set nested key
+	assert.NoError(t, root.SetNested(`nested`, New()))
+	assert.NoError(t, root.SetNested(`nested.foo3`, `bar3`))
+	assert.NoError(t, root.SetNestedPath(Key{MapStep(`nested`), MapStep(`foo4`)}, `bar4`))
+
+	// Set nested - parent not found
+	assert.NoError(t, root.SetNested(`nested.missing.key`, `value`))
+	assert.NoError(t, root.SetNestedPath(Key{MapStep(`nested`), MapStep(`missing`), MapStep(`key`)}, `value`))
+
+	// Set nested - invalid type
+	assert.NoError(t, root.SetNested(`str`, `value`))
+	err := root.SetNested(`str.key`, `value`)
+	assert.Error(t, err)
+	assert.Equal(t, `key "str": expected object found "string"`, err.Error())
+	err = root.SetNestedPath(Key{MapStep(`str`), MapStep(`key`)}, `value`)
+	assert.Error(t, err)
+	assert.Equal(t, `key "str": expected object found "string"`, err.Error())
+
+	expected := `
+{
+  "foo1": "bar1",
+  "foo2": "bar2",
+  "nested": {
+    "foo3": "bar3",
+    "foo4": "bar4",
+    "missing": {
+      "key": "value"
+    }
+  },
+  "str": "value"
+}
+`
+	assert.Equal(t, strings.TrimLeft(expected, "\n"), jsonutils.MustEncodeString(root, true))
+}
+
+func TestOrderedMap_VisitAllRecursive(t *testing.T) {
+	t.Parallel()
+	input := `
+{
+    "foo1": "bar1",
+    "foo2": "bar2",
+    "nested1": {
+        "foo3": "bar3",
+        "foo4": "bar4",
+        "nested2": {
+            "key": "value"
+        },
+        "slice": [
+            123,
+            "abc",
+            {
+                "nested3": {
+                    "foo5": "bar5"
+                }
+            },
+            {
+                "subSlice": [
+                    456,
+                    "def",
+                    {
+                        "nested4": {
+                            "foo6": "bar6"
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "str": "value"
+}
+`
+
+	expected := `
+path=foo1, parent=*orderedmap.OrderedMap, value=string
+path=foo2, parent=*orderedmap.OrderedMap, value=string
+path=nested1, parent=*orderedmap.OrderedMap, value=*orderedmap.OrderedMap
+path=nested1.foo3, parent=*orderedmap.OrderedMap, value=string
+path=nested1.foo4, parent=*orderedmap.OrderedMap, value=string
+path=nested1.nested2, parent=*orderedmap.OrderedMap, value=*orderedmap.OrderedMap
+path=nested1.nested2.key, parent=*orderedmap.OrderedMap, value=string
+path=nested1.slice, parent=*orderedmap.OrderedMap, value=[]interface {}
+path=nested1.slice[0], parent=[]interface {}, value=float64
+path=nested1.slice[1], parent=[]interface {}, value=string
+path=nested1.slice[2], parent=[]interface {}, value=*orderedmap.OrderedMap
+path=nested1.slice[2].nested3, parent=*orderedmap.OrderedMap, value=*orderedmap.OrderedMap
+path=nested1.slice[2].nested3.foo5, parent=*orderedmap.OrderedMap, value=string
+path=nested1.slice[3], parent=[]interface {}, value=*orderedmap.OrderedMap
+path=nested1.slice[3].subSlice, parent=*orderedmap.OrderedMap, value=[]interface {}
+path=nested1.slice[3].subSlice[0], parent=[]interface {}, value=float64
+path=nested1.slice[3].subSlice[1], parent=[]interface {}, value=string
+path=nested1.slice[3].subSlice[2], parent=[]interface {}, value=*orderedmap.OrderedMap
+path=nested1.slice[3].subSlice[2].nested4, parent=*orderedmap.OrderedMap, value=*orderedmap.OrderedMap
+path=nested1.slice[3].subSlice[2].nested4.foo6, parent=*orderedmap.OrderedMap, value=string
+path=str, parent=*orderedmap.OrderedMap, value=string
+`
+
+	m := New()
+	jsonutils.MustDecodeString(input, m)
+
+	var visited []string
+	m.VisitAllRecursive(func(path Key, value interface{}, parent interface{}) {
+		visited = append(visited, fmt.Sprintf(`path=%s, parent=%T, value=%T`, path, parent, value))
+	})
+	assert.Equal(t, strings.TrimSpace(expected), strings.Join(visited, "\n"))
 }

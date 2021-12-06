@@ -10,6 +10,6 @@ WARN	  - config row "foo/extractor/keboola.ex-azure-cost-management/with-schema/
 WARN	    - "export.type": value must be one of "ActualCost", "AmortizedCost", "Usage"
 WARN	  - config "foo/extractor/ex-generic-v2/testUnencrypted/config.json" contains unencrypted values:
 WARN	    - #unencrypedValue
-WARN	    - parameters.tokens.[1].#value
+WARN	    - parameters.tokens[1].#value
 WARN	  - config row "foo/extractor/keboola.ex-azure-cost-management/with-schema/rows/row-3/config.json" contains unencrypted values:
 WARN	    - parameters.export.#password

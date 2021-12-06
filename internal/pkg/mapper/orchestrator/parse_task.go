@@ -6,7 +6,6 @@ import (
 
 	"github.com/spf13/cast"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -138,5 +137,5 @@ func (p *taskParser) configPath() (string, error) {
 }
 
 func (p *taskParser) additionalContent() *orderedmap.OrderedMap {
-	return utils.CloneOrderedMap(p.content)
+	return p.content.Clone()
 }

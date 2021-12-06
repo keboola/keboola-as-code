@@ -7,7 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestSharedCodeLinksMapBeforeLocalSave(t *testing.T) {
@@ -29,7 +29,7 @@ func TestSharedCodeLinksMapBeforeLocalSave(t *testing.T) {
 		},
 		Local: &model.Config{
 			ConfigKey: configKey,
-			Content: utils.PairsToOrderedMap([]utils.Pair{
+			Content: orderedmap.FromPairs([]orderedmap.Pair{
 				{
 					Key:   model.SharedCodeIdContentKey,
 					Value: `456`,

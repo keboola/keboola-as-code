@@ -10,7 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestLocalLoadModel(t *testing.T) {
@@ -40,7 +40,7 @@ func TestLocalLoadModel(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Assert
-	config := utils.NewOrderedMap()
+	config := orderedmap.New()
 	config.Set("foo", "bar")
 	assert.Equal(t, &fixtures.MockedObject{
 		Foo1:   "",

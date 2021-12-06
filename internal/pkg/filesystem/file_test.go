@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestCreateFile(t *testing.T) {
@@ -18,7 +18,7 @@ func TestCreateFile(t *testing.T) {
 
 func TestCreateJsonFile(t *testing.T) {
 	t.Parallel()
-	m := utils.NewOrderedMap()
+	m := orderedmap.New()
 	f := NewJsonFile(`path`, m).SetDescription(`desc`)
 	assert.Equal(t, `path`, f.Path)
 	assert.Equal(t, `desc`, f.Desc)
@@ -27,7 +27,7 @@ func TestCreateJsonFile(t *testing.T) {
 
 func TestJsonFile_ToFile(t *testing.T) {
 	t.Parallel()
-	m := utils.NewOrderedMap()
+	m := orderedmap.New()
 	m.Set(`foo`, `bar`)
 	f, err := NewJsonFile(`path`, m).SetDescription(`desc`).ToFile()
 	assert.NoError(t, err)

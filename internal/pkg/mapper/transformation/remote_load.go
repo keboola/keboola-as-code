@@ -1,9 +1,9 @@
 package transformation
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/strhelper"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -18,17 +18,16 @@ func (m *transformationMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe
 	config := recipe.InternalObject.(*model.Config)
 
 	// Get parameters
-	var parameters *orderedmap.OrderedMap
-	parametersRaw := utils.GetFromMap(config.Content, []string{`parameters`})
-	if v, ok := parametersRaw.(*orderedmap.OrderedMap); ok {
-		parameters = v
-	} else {
-		parameters = utils.NewOrderedMap()
+	parameters, _, _ := config.Content.GetNestedMap(`parameters`)
+	if parameters == nil {
+		// Create if not found or has invalid type
+		parameters = orderedmap.New()
+		config.Content.Set(`parameters`, parameters)
 	}
 
 	// Get blocks
 	var blocks []interface{}
-	blocksRaw := utils.GetFromMap(parameters, []string{`blocks`})
+	blocksRaw, _ := parameters.Get(`blocks`)
 	if v, ok := blocksRaw.([]interface{}); ok {
 		blocks = v
 	}
@@ -38,7 +37,7 @@ func (m *transformationMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe
 	config.Content.Set(`parameters`, parameters)
 
 	// Convert map to Block structs
-	if err := utils.ConvertByJson(blocks, &config.Blocks); err != nil {
+	if err := json.ConvertByJson(blocks, &config.Blocks); err != nil {
 		return err
 	}
 

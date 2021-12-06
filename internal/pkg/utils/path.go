@@ -49,38 +49,3 @@ func (p PathTemplate) regexp() *regexp.Regexp {
 func (p PathTemplate) placeholderToRegexp(placeholder string) string {
 	return `(?P<` + strings.Trim(placeholder, `\{}`) + `>[^/]+)`
 }
-
-// KeyPath - path to a value in the OrderedMap (JSON file).
-type KeyPath []Step
-
-type Step interface {
-	String() string
-}
-
-type MapStep string
-
-type SliceStep int
-
-func (v KeyPath) String() string {
-	parts := make([]string, 0)
-	for _, step := range v {
-		parts = append(parts, step.String())
-	}
-	return strings.Join(parts, ".")
-}
-
-func (v KeyPath) LastStep() Step {
-	l := len(v)
-	if l == 0 {
-		return nil
-	}
-	return v[l-1]
-}
-
-func (v MapStep) String() string {
-	return string(v)
-}
-
-func (v SliceStep) String() string {
-	return fmt.Sprintf("[%v]", int(v))
-}

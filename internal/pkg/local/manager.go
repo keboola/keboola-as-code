@@ -63,7 +63,7 @@ func (m *Manager) NewUnitOfWork(ctx context.Context) *UnitOfWork {
 	u := &UnitOfWork{
 		Manager:      m,
 		ctx:          ctx,
-		workers:      utils.NewOrderedMap(),
+		workers:      orderedmap.New(),
 		lock:         &sync.Mutex{},
 		errors:       utils.NewMultiError(),
 		localObjects: m.state.LocalObjects(),

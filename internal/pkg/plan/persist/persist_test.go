@@ -19,6 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 type testCase struct {
@@ -95,7 +96,7 @@ func TestPersistNewConfig(t *testing.T) {
 					},
 					Name:        "foo",
 					Description: "bar",
-					Content: utils.PairsToOrderedMap([]utils.Pair{
+					Content: orderedmap.FromPairs([]orderedmap.Pair{
 						{
 							Key:   "key",
 							Value: "value",
@@ -183,7 +184,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 					},
 					Name:        "foo1",
 					Description: "bar1",
-					Content: utils.PairsToOrderedMap([]utils.Pair{
+					Content: orderedmap.FromPairs([]orderedmap.Pair{
 						{
 							Key:   "key1",
 							Value: "value1",
@@ -221,7 +222,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 					},
 					Name:        "foo2",
 					Description: "bar2",
-					Content: utils.PairsToOrderedMap([]utils.Pair{
+					Content: orderedmap.FromPairs([]orderedmap.Pair{
 						{
 							Key:   "key2",
 							Value: "value2",
@@ -375,7 +376,7 @@ func TestPersistSharedCode(t *testing.T) {
 					},
 					Name:        "Shared Codes",
 					Description: "foo bar",
-					Content: utils.PairsToOrderedMap([]utils.Pair{
+					Content: orderedmap.FromPairs([]orderedmap.Pair{
 						{
 							Key:   "componentId",
 							Value: "keboola.python-transformation-v2",
@@ -413,7 +414,7 @@ func TestPersistSharedCode(t *testing.T) {
 					},
 					Name:        "My code",
 					Description: "test code",
-					Content: utils.PairsToOrderedMap([]utils.Pair{
+					Content: orderedmap.FromPairs([]orderedmap.Pair{
 						{
 							Key: "code_content",
 							Value: []interface{}{
@@ -534,7 +535,7 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 					},
 					Name:        "Shared Codes",
 					Description: "foo bar",
-					Content: utils.PairsToOrderedMap([]utils.Pair{
+					Content: orderedmap.FromPairs([]orderedmap.Pair{
 						{
 							Key:   "componentId",
 							Value: "keboola.python-transformation-v2",
@@ -572,7 +573,7 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 					},
 					Name:        "My code",
 					Description: "test code",
-					Content: utils.PairsToOrderedMap([]utils.Pair{
+					Content: orderedmap.FromPairs([]orderedmap.Pair{
 						{
 							Key: "code_content",
 							Value: []interface{}{
@@ -612,11 +613,11 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 					},
 					Name:        "Shared Code Variables",
 					Description: "test fixture",
-					Content: utils.PairsToOrderedMap([]utils.Pair{
+					Content: orderedmap.FromPairs([]orderedmap.Pair{
 						{
 							Key: "variables",
 							Value: []interface{}{
-								utils.PairsToOrderedMap([]utils.Pair{
+								orderedmap.FromPairs([]orderedmap.Pair{
 									{
 										Key:   "name",
 										Value: "num1",
@@ -626,7 +627,7 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 										Value: "string",
 									},
 								}),
-								utils.PairsToOrderedMap([]utils.Pair{
+								orderedmap.FromPairs([]orderedmap.Pair{
 									{
 										Key:   "name",
 										Value: "num2",
@@ -735,11 +736,11 @@ func TestPersistVariables(t *testing.T) {
 					},
 					Name:        "Variables",
 					Description: "test1",
-					Content: utils.PairsToOrderedMap([]utils.Pair{
+					Content: orderedmap.FromPairs([]orderedmap.Pair{
 						{
 							Key: "variables",
 							Value: []interface{}{
-								utils.PairsToOrderedMap([]utils.Pair{
+								orderedmap.FromPairs([]orderedmap.Pair{
 									{
 										Key:   "name",
 										Value: "foo",
@@ -786,11 +787,11 @@ func TestPersistVariables(t *testing.T) {
 					},
 					Name:        "Default values",
 					Description: "test2",
-					Content: utils.PairsToOrderedMap([]utils.Pair{
+					Content: orderedmap.FromPairs([]orderedmap.Pair{
 						{
 							Key: "values",
 							Value: []interface{}{
-								utils.PairsToOrderedMap([]utils.Pair{
+								orderedmap.FromPairs([]orderedmap.Pair{
 									{
 										Key:   "name",
 										Value: "foo",
@@ -833,7 +834,7 @@ func TestPersistScheduler(t *testing.T) {
   }
 }
 `
-	expectedContent := utils.NewOrderedMap()
+	expectedContent := orderedmap.New()
 	json.MustDecodeString(expectedContentStr, expectedContent)
 
 	tc := testCase{

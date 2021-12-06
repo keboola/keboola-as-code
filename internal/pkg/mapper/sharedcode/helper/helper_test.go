@@ -10,7 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestGetSharedCodePath(t *testing.T) {
@@ -25,7 +25,7 @@ func TestGetSharedCodePath(t *testing.T) {
 			ComponentId: `keboola.python-transformation-v2`,
 			Id:          `456`,
 		},
-		Content: utils.PairsToOrderedMap([]utils.Pair{
+		Content: orderedmap.FromPairs([]orderedmap.Pair{
 			{
 				Key:   model.SharedCodePathContentKey,
 				Value: `_shared/keboola.python-transformation-v2`,
@@ -53,7 +53,7 @@ func TestGetSharedCodePath(t *testing.T) {
 
 	// No path
 	object = transformation.Clone().(*model.Config)
-	object.Content = utils.NewOrderedMap()
+	object.Content = orderedmap.New()
 	_, path, err = h.GetSharedCodePath(object)
 	assert.NoError(t, err)
 	assert.Empty(t, path)
@@ -79,7 +79,7 @@ func TestGetSharedCodeKey(t *testing.T) {
 			ComponentId: `keboola.python-transformation-v2`,
 			Id:          `456`,
 		},
-		Content: utils.PairsToOrderedMap([]utils.Pair{
+		Content: orderedmap.FromPairs([]orderedmap.Pair{
 			{
 				Key:   model.SharedCodeIdContentKey,
 				Value: `789`,
@@ -111,7 +111,7 @@ func TestGetSharedCodeKey(t *testing.T) {
 
 	// No ID
 	object = transformation.Clone().(*model.Config)
-	object.Content = utils.NewOrderedMap()
+	object.Content = orderedmap.New()
 	_, key, err = h.GetSharedCodeKey(object)
 	assert.NoError(t, err)
 	assert.Empty(t, key)

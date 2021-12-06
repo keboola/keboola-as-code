@@ -11,6 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestSchedulerApiCalls(t *testing.T) {
@@ -41,10 +42,10 @@ func TestSchedulerApiCalls(t *testing.T) {
 			Name:              "Test",
 			Description:       "Test description",
 			ChangeDescription: "My test",
-			Content: utils.PairsToOrderedMap([]utils.Pair{
+			Content: orderedmap.FromPairs([]orderedmap.Pair{
 				{
 					Key: "foo",
-					Value: utils.PairsToOrderedMap([]utils.Pair{
+					Value: orderedmap.FromPairs([]orderedmap.Pair{
 						{Key: "bar", Value: "baz"},
 					}),
 				},
@@ -65,10 +66,10 @@ func TestSchedulerApiCalls(t *testing.T) {
 			Name:              "Test",
 			Description:       "Test description",
 			ChangeDescription: "My test",
-			Content: utils.PairsToOrderedMap([]utils.Pair{
+			Content: orderedmap.FromPairs([]orderedmap.Pair{
 				{
 					Key: "schedule",
-					Value: utils.PairsToOrderedMap([]utils.Pair{
+					Value: orderedmap.FromPairs([]orderedmap.Pair{
 						{Key: "cronTab", Value: "*/2 * * * *"},
 						{Key: "timezone", Value: "UTC"},
 						{Key: "state", Value: "disabled"},
@@ -76,7 +77,7 @@ func TestSchedulerApiCalls(t *testing.T) {
 				},
 				{
 					Key: "target",
-					Value: utils.PairsToOrderedMap([]utils.Pair{
+					Value: orderedmap.FromPairs([]orderedmap.Pair{
 						{Key: "componentId", Value: "ex-generic-v2"},
 						{Key: "configurationId", Value: configTarget.Id},
 						{Key: "mode", Value: "run"},

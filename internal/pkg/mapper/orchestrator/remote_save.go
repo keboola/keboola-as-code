@@ -2,7 +2,6 @@ package orchestrator
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -33,7 +32,7 @@ func (m *orchestratorMapper) serializeOrchestrationTo(config *model.Config, orch
 	taskId := 0
 	for index, phase := range orchestration.Phases {
 		phaseId := index + 1
-		phaseContent := utils.NewOrderedMap()
+		phaseContent := orderedmap.New()
 		phaseContent.Set(`id`, phaseId)
 		phaseContent.Set(`name`, phase.Name)
 
@@ -53,7 +52,7 @@ func (m *orchestratorMapper) serializeOrchestrationTo(config *model.Config, orch
 		// Map tasks
 		for _, task := range phase.Tasks {
 			taskId++
-			taskContent := utils.NewOrderedMap()
+			taskContent := orderedmap.New()
 			taskContent.Set(`id`, taskId)
 			taskContent.Set(`name`, task.Name)
 			taskContent.Set(`phase`, phaseId)
@@ -73,7 +72,7 @@ func (m *orchestratorMapper) serializeOrchestrationTo(config *model.Config, orch
 				}
 			}
 			if target == nil {
-				target = utils.NewOrderedMap()
+				target = orderedmap.New()
 			}
 
 			// Set componentId/configId

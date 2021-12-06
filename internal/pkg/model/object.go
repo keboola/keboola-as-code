@@ -287,7 +287,7 @@ func (b *Branch) Clone() Object {
 
 func (c *Config) Clone() Object {
 	clone := *c
-	clone.Content = utils.CloneOrderedMap(c.Content)
+	clone.Content = c.Content.Clone()
 	clone.Blocks = c.Blocks.Clone()
 	clone.Orchestration = c.Orchestration.Clone()
 	clone.Relations = c.Relations.Clone()
@@ -296,7 +296,7 @@ func (c *Config) Clone() Object {
 
 func (r *ConfigRow) Clone() Object {
 	clone := *r
-	clone.Content = utils.CloneOrderedMap(r.Content)
+	clone.Content = r.Content.Clone()
 	return &clone
 }
 
@@ -350,7 +350,7 @@ func (v Relations) Clone() Relations {
 		if err != nil {
 			panic(err)
 		}
-		if err := utils.ConvertByJson(r, &rClone); err != nil {
+		if err := json.ConvertByJson(r, &rClone); err != nil {
 			panic(err)
 		}
 		out.Add(rClone)

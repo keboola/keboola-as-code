@@ -7,7 +7,7 @@ import (
 
 	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/variables"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestVariablesMapAfterRemoteLoad(t *testing.T) {
@@ -16,7 +16,7 @@ func TestVariablesMapAfterRemoteLoad(t *testing.T) {
 
 	variablesConfigId := `123456`
 	valuesConfigRowId := `456789`
-	content := utils.NewOrderedMap()
+	content := orderedmap.New()
 	content.Set(model.VariablesIdContentKey, variablesConfigId)
 	content.Set(model.VariablesValuesIdContentKey, valuesConfigRowId)
 	apiObject := &model.Config{Content: content}

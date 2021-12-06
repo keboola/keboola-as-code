@@ -2,7 +2,7 @@ package encrypt
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 type action struct {
@@ -12,6 +12,6 @@ type action struct {
 }
 
 type UnencryptedValue struct {
-	path  utils.KeyPath
+	path  orderedmap.Key
 	value string
 }
