@@ -169,11 +169,11 @@ func (c *ComponentsMap) doSet(component *Component) {
 func (c *ComponentsMap) addDefaultBucketPrefix(component *Component) {
 	r := regexpcache.MustCompile(`(?i)[^a-zA-Z0-9-]`)
 	bucketPrefix := fmt.Sprintf(`%s.c-%s-`, component.Data.DefaultBucketStage, r.ReplaceAllString(component.Id, `-`))
-	c.defaultBucketPrefixes[bucketPrefix] = component.Id
+	c.defaultBucketPrefixes[component.Id] = bucketPrefix
 }
 
 func (c *ComponentsMap) MatchDefaultBucketInTableId(tableId string) (string, string, bool) {
-	for bucketPrefix, componentId := range c.defaultBucketPrefixes {
+	for componentId, bucketPrefix := range c.defaultBucketPrefixes {
 		if strings.HasPrefix(tableId, bucketPrefix) {
 			trimmedTableId := strings.TrimPrefix(tableId, bucketPrefix)
 			configId := strings.Split(trimmedTableId, ".")[0]
@@ -181,4 +181,12 @@ func (c *ComponentsMap) MatchDefaultBucketInTableId(tableId string) (string, str
 		}
 	}
 	return "", "", false
+}
+
+func (c *ComponentsMap) GetDefaultBucket(componentId string, configId string) (string, bool) {
+	defaultBucketPrefix, found := c.defaultBucketPrefixes[componentId]
+	if !found {
+		return "", false
+	}
+	return fmt.Sprintf("%s%s", defaultBucketPrefix, configId), true
 }
