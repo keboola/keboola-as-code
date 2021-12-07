@@ -53,7 +53,7 @@ func (m *defaultBucketMapper) getDefaultBucketSourceConfigurationPath(config *mo
 	if !found {
 		errors := utils.NewMultiError()
 		errors.Append(fmt.Errorf(`%s not found`, sourceConfigKey.Desc()))
-		errors.Append(fmt.Errorf(`  - referenced  from configuration %s`, config.Desc()))
+		errors.Append(fmt.Errorf(`  - referenced from %s`, config.Desc()))
 		errors.Append(fmt.Errorf(`  - input mapping "%s"`, tableId))
 		return "", false, errors
 	}

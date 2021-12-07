@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
@@ -93,13 +94,13 @@ func TestDefaultBucketMapper_MapBeforeLocalSave(t *testing.T) {
 	assert.NoError(t, context.State.Set(configState2))
 
 	// Invoke
-	recipe := createLocalSaveRecipe(configState2.Local, configState2.ConfigManifest)
+	recipe := fixtures.NewLocalSaveRecipe(configState2.ConfigManifest, configState2.Local)
 	assert.NoError(t, mapperInst.MapBeforeLocalSave(recipe))
 
 	// Check warning of missing default bucket config
 	expectedWarnings := `
 WARN  Warning: - config "branch:123/component:keboola.ex-db-mysql/config:456" not found
-  - referenced  from configuration config "branch:123/component:keboola.snowflake-transformation/config:789"
+  - referenced from config "branch:123/component:keboola.snowflake-transformation/config:789"
   - input mapping "in.c-keboola-ex-db-mysql-456.contacts"
 `
 	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logs.String())

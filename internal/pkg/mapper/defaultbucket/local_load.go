@@ -6,20 +6,28 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-// MapAfterLocalLoad - replace placeholders with default buckets in IM.
-func (m *defaultBucketMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
-	config, ok := recipe.Object.(*model.Config)
-	if !ok {
-		return nil
+// OnLocalChange - replace placeholders with default buckets in IM.
+func (m *defaultBucketMapper) OnLocalChange(changes *model.LocalChanges) error {
+	errors := utils.NewMultiError()
+	for _, objectState := range changes.Loaded() {
+		config, ok := objectState.LocalState().(*model.Config)
+		if !ok {
+			continue
+		}
+		if err := m.visitStorageInputTables(config, m.replacePlaceholderWithDefaultBucket); err != nil {
+			errors.Append(err)
+		}
 	}
 
-	err := m.visitStorageInputTables(config, m.replacePlaceholderWithDefaultBucket)
-	if err != nil {
-		m.Logger.Warnf(`Warning: %s`, err)
+	// Log errors as warning
+	if errors.Len() > 0 {
+		m.Logger.Warn(utils.PrefixError(`Warning`, errors))
 	}
+
 	return nil
 }
 
@@ -41,7 +49,7 @@ func (m *defaultBucketMapper) replacePlaceholderWithDefaultBucket(config *model.
 	path := filesystem.Join(branch.Path(), splitSource[0])
 	configKeyRaw, found := m.Naming.FindByPath(path)
 	if !found {
-		return fmt.Errorf(`configuration %s contains table "%s" in input mapping referencing to a non-existing configuration`, config.Desc(), inputTableSource)
+		return fmt.Errorf(`%s contains table "%s" in input mapping referencing to a non-existing configuration`, config.Desc(), inputTableSource)
 	}
 	configKey, ok := configKeyRaw.(model.ConfigKey)
 	if !ok {

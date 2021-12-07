@@ -14,13 +14,7 @@ func NewMapper(context model.MapperContext) *defaultBucketMapper {
 }
 
 func (m *defaultBucketMapper) visitStorageInputTables(config *model.Config, callback func(config *model.Config, inputTableSource string, inputTable *orderedmap.OrderedMap) error) error {
-	inputTablesRaw, found, err := config.Content.GetNested("storage.input.tables")
-	if !found {
-		return nil
-	}
-	if err != nil {
-		return err
-	}
+	inputTablesRaw, _, _ := config.Content.GetNested("storage.input.tables")
 	inputTables, ok := inputTablesRaw.([]interface{})
 	if !ok {
 		return nil

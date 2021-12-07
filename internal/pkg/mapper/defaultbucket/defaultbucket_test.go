@@ -30,17 +30,3 @@ func createMapper(t *testing.T) (*mapper.Mapper, model.MapperContext, *utils.Wri
 	mapperInst.AddMapper(defaultBucketMapper)
 	return mapperInst, context, logs
 }
-
-func createLocalSaveRecipe(object model.ObjectWithContent, manifest model.ObjectManifest) *model.LocalSaveRecipe {
-	return &model.LocalSaveRecipe{
-		Object:         object,
-		ObjectManifest: manifest,
-	}
-}
-
-func createLocalLoadRecipe(object model.ObjectWithContent, manifest model.ObjectManifest) *model.LocalLoadRecipe {
-	return &model.LocalLoadRecipe{
-		Object:         object,
-		ObjectManifest: manifest,
-	}
-}

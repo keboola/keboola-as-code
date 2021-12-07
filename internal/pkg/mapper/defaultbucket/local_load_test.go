@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
@@ -106,12 +107,15 @@ func TestDefaultBucketMapper_MapBeforeLocalLoad(t *testing.T) {
 	assert.NoError(t, context.State.Set(configState2))
 
 	// Invoke
-	recipe := createLocalLoadRecipe(configState2.Local, configState2.ConfigManifest)
-	assert.NoError(t, mapperInst.MapAfterLocalLoad(recipe))
+	changes := model.NewLocalChanges()
+	changes.AddLoaded(configState2)
+	recipe := fixtures.NewLocalLoadRecipe(configState2.ConfigManifest, configState2.Local)
+	assert.NoError(t, mapperInst.OnLocalChange(changes))
 
 	// Check warning of missing default bucket config
 	expectedWarnings := `
-WARN  Warning: configuration config "branch:123/component:keboola.snowflake-transformation/config:789" contains table "{{:default-bucket:extractor/keboola.ex-db-mysql/test2}}.contacts" in input mapping referencing to a non-existing configuration
+WARN  Warning:
+  - config "branch:123/component:keboola.snowflake-transformation/config:789" contains table "{{:default-bucket:extractor/keboola.ex-db-mysql/test2}}.contacts" in input mapping referencing to a non-existing configuration
 `
 	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logs.String())
 
