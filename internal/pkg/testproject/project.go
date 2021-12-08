@@ -5,10 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -17,6 +13,11 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 
 	"github.com/juju/fslock"
 	"github.com/spf13/cast"
@@ -173,7 +174,9 @@ func (p *Project) Clear() {
 	// Delete all dev-branches sequentially, parallel requests don't work with this endpoint
 	for _, branch := range branches {
 		if !branch.IsDefault {
-			p.api.DeleteBranchRequest(branch.BranchKey).Send()
+			if _, err := p.api.DeleteBranch(branch.BranchKey); err != nil {
+				assert.FailNow(p.t, fmt.Sprintf("cannot delete branch: %s", err))
+			}
 		}
 	}
 

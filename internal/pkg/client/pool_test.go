@@ -174,6 +174,40 @@ func TestNetworkError(t *testing.T) {
 	assert.GreaterOrEqual(t, httpTransport.GetCallCountInfo()["GET https://example.com"], 10)
 }
 
+func TestErrorInSubRequest(t *testing.T) {
+	t.Parallel()
+	client, httpTransport, logger, _ := getMockedClientAndLogs(t, false)
+	httpTransport.RegisterResponder("GET", `https://example.com`, httpmock.NewStringResponder(200, `test`))
+	httpTransport.RegisterResponder("GET", `https://example.com/error`, httpmock.NewErrorResponder(errors.New("network error")))
+
+	c := utils.NewSafeCounter(0)
+	pool := client.NewPool(logger)
+	var onSuccess ResponseCallback
+	onSuccess = func(response *Response) {
+		url := "https://example.com"
+		if c.IncAndGet() == 10 {
+			url = "https://example.com/error"
+		}
+		subRequest := pool.Request(client.NewRequest(resty.MethodGet, url)).OnSuccess(onSuccess)
+		response.Request.WaitFor(subRequest)
+		subRequest.Send()
+	}
+
+	mainRequest := pool.Request(client.NewRequest(resty.MethodGet, "https://example.com")).OnSuccess(onSuccess).Send()
+
+	// Error is returned by pool
+	err := pool.StartAndWait()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "network error")
+
+	// Error is also set to the main request
+	assert.True(t, mainRequest.HasError())
+	assert.Contains(t, mainRequest.Err().Error(), "network error")
+
+	assert.GreaterOrEqual(t, c.Get(), 10)
+	assert.GreaterOrEqual(t, httpTransport.GetCallCountInfo()["GET https://example.com"], 10)
+}
+
 func TestOnSuccess(t *testing.T) {
 	t.Parallel()
 	client, httpTransport, logger, _ := getMockedClientAndLogs(t, false)

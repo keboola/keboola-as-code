@@ -14,14 +14,20 @@ type Response struct {
 }
 
 func (r *Response) HasResponse() bool {
+	r.lock.Lock()
+	defer r.lock.Unlock()
 	return r.Response != nil
 }
 
 func (r *Response) HasResult() bool {
+	r.lock.Lock()
+	defer r.lock.Unlock()
 	return r.Response.Result() != nil
 }
 
 func (r *Response) HasError() bool {
+	r.lock.Lock()
+	defer r.lock.Unlock()
 	return r.err != nil
 }
 
@@ -34,6 +40,8 @@ func (r *Response) SetResult(result interface{}) *Response {
 }
 
 func (r *Response) Err() error {
+	r.lock.Lock()
+	defer r.lock.Unlock()
 	return r.err
 }
 

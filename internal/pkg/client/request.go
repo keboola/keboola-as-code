@@ -177,7 +177,12 @@ func (r *Request) WaitFor(subRequest *Request) {
 	// Continue execution of the listeners, when the sub-request completes
 	r.waitingForGrp.Add(1)
 	subRequest.OnResponse(func(response *Response) {
-		r.waitingForGrp.Done()
+		defer r.waitingForGrp.Done()
+
+		// Copy error from sub-request to parent request
+		if subRequest.HasError() && !r.HasError() {
+			r.SetErr(subRequest.Err())
+		}
 	})
 }
 
