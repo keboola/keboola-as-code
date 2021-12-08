@@ -1,0 +1,23 @@
+{
+  "allBranchesConfigs": [],
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "isDefault": true
+      }
+    },
+    {
+      "branch": {
+        "name": "foo",
+        "isDefault": false
+      },
+      "configs": [
+        "im-default-bucket"
+      ]
+    }
+  ],
+  "envs": {
+    "TEST_IM_DEFAULT_BUCKET": "in.c-keboola-ex-aws-s3-1234567"
+  }
+}

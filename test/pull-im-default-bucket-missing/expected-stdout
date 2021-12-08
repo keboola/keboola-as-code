@@ -1,0 +1,5 @@
+Plan for "pull" operation:
+  + B foo
+  + C foo/extractor/ex-generic-v2/im-default-bucket
+  + B main
+Pull done.
