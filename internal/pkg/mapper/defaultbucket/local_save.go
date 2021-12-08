@@ -11,17 +11,12 @@ import (
 
 // MapBeforeLocalSave - replace default buckets in IM with placeholders.
 func (m *defaultBucketMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
-	config, ok := recipe.Object.(*model.Config)
+	config, ok := recipe.Object.(configOrRow)
 	if !ok {
 		return nil
 	}
 
-	err := m.visitStorageInputTables(
-		config.BranchKey(),
-		config.Desc(),
-		config.GetContent(),
-		m.replaceDefaultBucketWithPlaceholder,
-	)
+	err := m.visitStorageInputTables(config, m.replaceDefaultBucketWithPlaceholder)
 	if err != nil {
 		m.Logger.Warnf(`Warning: %s`, err)
 	}
@@ -29,16 +24,11 @@ func (m *defaultBucketMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) 
 }
 
 func (m *defaultBucketMapper) replaceDefaultBucketWithPlaceholder(
-	branchKey model.BranchKey,
-	configDesc string,
+	config configOrRow,
 	sourceTableId string,
 	inputTable *orderedmap.OrderedMap,
 ) error {
-	sourceConfigPath, found, err := m.getDefaultBucketSourceConfigurationPath(
-		branchKey,
-		configDesc,
-		sourceTableId,
-	)
+	sourceConfigPath, found, err := m.getDefaultBucketSourceConfigurationPath(config, sourceTableId)
 	if err != nil {
 		return err
 	}
@@ -52,18 +42,14 @@ func (m *defaultBucketMapper) replaceDefaultBucketWithPlaceholder(
 	return nil
 }
 
-func (m *defaultBucketMapper) getDefaultBucketSourceConfigurationPath(
-	branchKey model.BranchKey,
-	configDesc string,
-	tableId string,
-) (string, bool, error) {
+func (m *defaultBucketMapper) getDefaultBucketSourceConfigurationPath(config configOrRow, tableId string) (string, bool, error) {
 	componentId, configId, match := m.State.Components().GetDefaultBucketByTableId(tableId)
 	if !match {
 		return "", false, nil
 	}
 
 	sourceConfigKey := model.ConfigKey{
-		BranchId:    branchKey.Id,
+		BranchId:    config.BranchKey().Id,
 		ComponentId: componentId,
 		Id:          configId,
 	}
@@ -71,7 +57,7 @@ func (m *defaultBucketMapper) getDefaultBucketSourceConfigurationPath(
 	if !found {
 		errors := utils.NewMultiError()
 		errors.Append(fmt.Errorf(`%s not found`, sourceConfigKey.Desc()))
-		errors.Append(fmt.Errorf(`  - referenced from %s`, configDesc))
+		errors.Append(fmt.Errorf(`  - referenced from %s`, config.Desc()))
 		errors.Append(fmt.Errorf(`  - input mapping "%s"`, tableId))
 		return "", false, errors
 	}
