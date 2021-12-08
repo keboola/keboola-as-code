@@ -54,7 +54,11 @@ func waitForJob(a *StorageApi, parentRequest *client.Request, job *model.Job, on
 		}
 
 		// Try again
-		request := a.GetJobRequest(job.Id).SetResult(job).OnSuccess(checkJobStatus)
+		request := a.
+			GetJobRequest(job.Id).
+			SetResult(job).
+			OnSuccess(checkJobStatus)
+
 		parentRequest.WaitFor(request)
 		time.Sleep(delay)
 		response.Sender().Request(request).Send()
