@@ -76,7 +76,7 @@ func TestSharedCodeLinksMapBeforeLocalSave(t *testing.T) {
 	assert.Empty(t, logs.String())
 
 	// Path is replaced by ID
-	configFile, err := recipe.Files.ConfigJsonFile()
+	configFile, err := recipe.Files.ObjectConfigFile()
 	assert.NoError(t, err)
 	_, found := configFile.Content.Get(model.SharedCodeIdContentKey)
 	assert.False(t, found)

@@ -28,7 +28,7 @@ type testMapper struct {
 
 func (*testMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
 	if _, ok := recipe.Object.(*model.Config); ok {
-		configFile, err := recipe.Files.ConfigJsonFile()
+		configFile, err := recipe.Files.ObjectConfigFile()
 		if err != nil {
 			panic(err)
 		}
@@ -40,7 +40,7 @@ func (*testMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
 
 func (*testMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
 	if _, ok := recipe.Object.(*model.Config); ok {
-		configFile, err := recipe.Files.ConfigJsonFile()
+		configFile, err := recipe.Files.ObjectConfigFile()
 		if err != nil {
 			panic(err)
 		}

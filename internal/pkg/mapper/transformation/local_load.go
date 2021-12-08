@@ -129,7 +129,7 @@ func (l *localLoader) addScripts(code *model.Code) {
 	}
 	l.Files.
 		Add(file).
-		AddTag(model.FileTypeNativeCode)
+		AddTag(model.FileKindNativeCode)
 
 	// Split to scripts
 	code.Scripts = strhelper.ParseTransformationScripts(file.Content, l.config.ComponentId)
@@ -145,7 +145,7 @@ func (l *localLoader) loadBlockMetaFile(block *model.Block) {
 		l.Files.
 			Add(file).
 			AddTag(model.FileTypeJson).
-			AddTag(model.MetaFile)
+			AddTag(model.FileKindBlockMeta)
 	}
 }
 
@@ -158,7 +158,7 @@ func (l *localLoader) loadCodeMetaFile(code *model.Code) {
 		l.Files.
 			Add(file).
 			AddTag(model.FileTypeJson).
-			AddTag(model.MetaFile)
+			AddTag(model.FileKindCodeMeta)
 	}
 }
 

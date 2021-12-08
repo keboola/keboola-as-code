@@ -16,7 +16,7 @@ func (m *defaultBucketMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) 
 		return nil
 	}
 
-	configFile, err := recipe.Files.ConfigJsonFile()
+	configFile, err := recipe.Files.ObjectConfigFile()
 	if err != nil {
 		panic(err)
 	}

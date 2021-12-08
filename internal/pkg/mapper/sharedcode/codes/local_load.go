@@ -51,7 +51,8 @@ func (l *loader) load() error {
 	}
 	l.Files.
 		Add(codeFile).
-		AddTag(model.FileTypeNativeSharedCode)
+		AddTag(model.FileTypeOther).
+		AddTag(model.FileKindNativeSharedCode)
 
 	// Convert []string -> []interface{} (so there is no type difference against API type)
 	scripts := strhelper.ParseTransformationScripts(codeFile.Content, targetComponentId)

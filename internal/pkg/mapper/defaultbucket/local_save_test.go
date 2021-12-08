@@ -97,7 +97,7 @@ func TestDefaultBucketMapper_MapBeforeLocalSaveConfig(t *testing.T) {
 
 	// Invoke
 	recipe := fixtures.NewLocalSaveRecipe(configState2.ConfigManifest, configState2.Local)
-	configFile, err := recipe.Files.ConfigJsonFile()
+	configFile, err := recipe.Files.ObjectConfigFile()
 	assert.NoError(t, err)
 	configFile.Content = content
 	assert.NoError(t, mapperInst.MapBeforeLocalSave(recipe))
@@ -111,7 +111,7 @@ WARN  Warning: - config "branch:123/component:keboola.ex-db-mysql/config:456" no
 	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logs.String())
 
 	// Check default bucket replacement
-	configFile, err = recipe.Files.ConfigJsonFile()
+	configFile, err = recipe.Files.ObjectConfigFile()
 	assert.NoError(t, err)
 	configContent := json.MustEncodeString(configFile.Content, false)
 	assert.Equal(t, `{"parameters":{},"storage":{"input":{"tables":[{"columns":[],"source":"{{:default-bucket:extractor/keboola.ex-db-mysql/test}}.accounts","destination":"accounts","where_column":"","where_operator":"eq","where_values":[]},{"columns":[],"source":"in.c-keboola-ex-db-mysql-456.contacts","destination":"contacts","where_column":"","where_operator":"eq","where_values":[]}],"files":[]},"output":{"tables":[],"files":[]}}}`, configContent)
@@ -193,7 +193,7 @@ func TestDefaultBucketMapper_MapBeforeLocalSaveRow(t *testing.T) {
 
 	// Invoke
 	recipe := fixtures.NewLocalSaveRecipe(rowState.ConfigRowManifest, rowState.Local)
-	configFile, err := recipe.Files.ConfigJsonFile()
+	configFile, err := recipe.Files.ObjectConfigFile()
 	assert.NoError(t, err)
 	configFile.Content = content
 	assert.NoError(t, mapperInst.MapBeforeLocalSave(recipe))
@@ -207,7 +207,7 @@ WARN  Warning: - config "branch:123/component:keboola.ex-db-mysql/config:456" no
 	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logs.String())
 
 	// Check default bucket replacement
-	configFile, err = recipe.Files.ConfigJsonFile()
+	configFile, err = recipe.Files.ObjectConfigFile()
 	assert.NoError(t, err)
 	configContent := json.MustEncodeString(configFile.Content, false)
 	assert.Equal(t, `{"parameters":{},"storage":{"input":{"tables":[{"columns":[],"source":"{{:default-bucket:extractor/keboola.ex-db-mysql/test}}.accounts","destination":"accounts","where_column":"","where_operator":"eq","where_values":[]},{"columns":[],"source":"in.c-keboola-ex-db-mysql-456.contacts","destination":"contacts","where_column":"","where_operator":"eq","where_values":[]}],"files":[]},"output":{"tables":[],"files":[]}}}`, configContent)

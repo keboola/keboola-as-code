@@ -25,7 +25,7 @@ func (m *mapper) replaceSharedCodeIdByPath(recipe *model.LocalSaveRecipe) error 
 	}
 
 	// Get config file
-	configFile, err := recipe.Files.ConfigJsonFile()
+	configFile, err := recipe.Files.ObjectConfigFile()
 	if err != nil {
 		panic(err)
 	}
