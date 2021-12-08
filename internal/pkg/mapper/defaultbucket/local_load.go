@@ -18,7 +18,12 @@ func (m *defaultBucketMapper) OnLocalChange(changes *model.LocalChanges) error {
 		if !ok {
 			continue
 		}
-		if err := m.visitStorageInputTables(config, m.replacePlaceholderWithDefaultBucket); err != nil {
+		if err := m.visitStorageInputTables(
+			config.BranchKey(),
+			config.Desc(),
+			config.GetContent(),
+			m.replacePlaceholderWithDefaultBucket,
+		); err != nil {
 			errors.Append(err)
 		}
 	}
@@ -31,7 +36,12 @@ func (m *defaultBucketMapper) OnLocalChange(changes *model.LocalChanges) error {
 	return nil
 }
 
-func (m *defaultBucketMapper) replacePlaceholderWithDefaultBucket(config *model.Config, inputTableSource string, inputTable *orderedmap.OrderedMap) error {
+func (m *defaultBucketMapper) replacePlaceholderWithDefaultBucket(
+	branchKey model.BranchKey,
+	configDesc string,
+	inputTableSource string,
+	inputTable *orderedmap.OrderedMap,
+) error {
 	if !strings.HasPrefix(inputTableSource, "{{:default-bucket:") {
 		return nil
 	}
@@ -43,13 +53,13 @@ func (m *defaultBucketMapper) replacePlaceholderWithDefaultBucket(config *model.
 	}
 
 	// Get branch
-	branch := m.State.MustGet(config.BranchKey())
+	branch := m.State.MustGet(branchKey)
 
 	// Get key by path
 	path := filesystem.Join(branch.Path(), splitSource[0])
 	configKeyRaw, found := m.Naming.FindByPath(path)
 	if !found {
-		return fmt.Errorf(`%s contains table "%s" in input mapping referencing to a non-existing configuration`, config.Desc(), inputTableSource)
+		return fmt.Errorf(`%s contains table "%s" in input mapping referencing to a non-existing configuration`, configDesc, inputTableSource)
 	}
 	configKey, ok := configKeyRaw.(model.ConfigKey)
 	if !ok {

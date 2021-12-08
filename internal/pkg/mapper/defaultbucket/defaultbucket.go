@@ -13,8 +13,18 @@ func NewMapper(context model.MapperContext) *defaultBucketMapper {
 	return &defaultBucketMapper{MapperContext: context}
 }
 
-func (m *defaultBucketMapper) visitStorageInputTables(config *model.Config, callback func(config *model.Config, inputTableSource string, inputTable *orderedmap.OrderedMap) error) error {
-	inputTablesRaw, _, _ := config.Content.GetNested("storage.input.tables")
+func (m *defaultBucketMapper) visitStorageInputTables(
+	branchKey model.BranchKey,
+	configDesc string,
+	configContent *orderedmap.OrderedMap,
+	callback func(
+		branchKey model.BranchKey,
+		configDesc string,
+		sourceTableId string,
+		storageInputTable *orderedmap.OrderedMap,
+	) error,
+) error {
+	inputTablesRaw, _, _ := configContent.GetNested("storage.input.tables")
 	inputTables, ok := inputTablesRaw.([]interface{})
 	if !ok {
 		return nil
@@ -34,7 +44,7 @@ func (m *defaultBucketMapper) visitStorageInputTables(config *model.Config, call
 			continue
 		}
 
-		err := callback(config, inputTableSource, inputTable)
+		err := callback(branchKey, configDesc, inputTableSource, inputTable)
 		if err != nil {
 			return err
 		}
