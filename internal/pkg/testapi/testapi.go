@@ -69,7 +69,7 @@ func AddMockedComponents(httpTransport *httpmock.MockTransport) {
 	// Register responses
 	for _, component := range mockedComponents() {
 		responder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
-			"id": component.Id, "type": component.Type, "name": component.Name,
+			"id": component.Id, "type": component.Type, "name": component.Name, "data": component.Data,
 		})
 		if err != nil {
 			panic(err)
@@ -83,7 +83,7 @@ func AddMockedApiIndex(httpTransport *httpmock.MockTransport) {
 	var components []interface{}
 	for _, component := range mockedComponents() {
 		components = append(components, map[string]interface{}{
-			"id": component.Id, "type": component.Type, "name": component.Name,
+			"id": component.Id, "type": component.Type, "name": component.Name, "data": component.Data,
 		})
 	}
 	responder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
@@ -96,16 +96,23 @@ func AddMockedApiIndex(httpTransport *httpmock.MockTransport) {
 	httpTransport.RegisterResponder("GET", url, responder)
 }
 
-func mockedComponents() []struct{ Id, Type, Name string } {
-	return []struct{ Id, Type, Name string }{
-		{"foo.bar", "other", "Foo Bar"},
-		{"ex-generic-v2", "extractor", "Generic"},
-		{"keboola.ex-db-mysql", "extractor", "MySQL"},
-		{"keboola.snowflake-transformation", "transformation", "Snowflake"},
-		{"keboola.python-transformation-v2", "transformation", "Python"},
-		{model.SharedCodeComponentId, "other", "Shared Code"},
-		{model.VariablesComponentId, "other", "Variables"},
-		{model.SchedulerComponentId, "other", "Scheduler"},
-		{model.OrchestratorComponentId, "other", "Orchestrator"},
+type MockedComponent struct {
+	Id,
+	Type,
+	Name string
+	Data model.ComponentData
+}
+
+func mockedComponents() []MockedComponent {
+	return []MockedComponent{
+		{"foo.bar", "other", "Foo Bar", model.ComponentData{}},
+		{"ex-generic-v2", "extractor", "Generic", model.ComponentData{}},
+		{"keboola.ex-db-mysql", "extractor", "MySQL", model.ComponentData{DefaultBucket: true, DefaultBucketStage: "in"}},
+		{"keboola.snowflake-transformation", "transformation", "Snowflake", model.ComponentData{}},
+		{"keboola.python-transformation-v2", "transformation", "Python", model.ComponentData{}},
+		{model.SharedCodeComponentId, "other", "Shared Code", model.ComponentData{}},
+		{model.VariablesComponentId, "other", "Variables", model.ComponentData{}},
+		{model.SchedulerComponentId, "other", "Scheduler", model.ComponentData{}},
+		{model.OrchestratorComponentId, "other", "Orchestrator", model.ComponentData{}},
 	}
 }
