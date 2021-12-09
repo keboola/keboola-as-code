@@ -35,11 +35,6 @@ const (
 	OrchestratorTasksContentKey       = `tasks`
 )
 
-type ObjectIdAndName interface {
-	ObjectId() string
-	ObjectName() string
-}
-
 type Object interface {
 	Key
 	Key() Key

@@ -27,17 +27,25 @@ func (p *Prompt) Ask(q *prompt.Question) (result string, ok bool) {
 }
 
 func (p *Prompt) Select(s *prompt.Select) (value string, ok bool) {
-	return s.Default, true
+	return s.Default, s.UseDefault
 }
 
 func (p *Prompt) SelectIndex(s *prompt.SelectIndex) (index int, ok bool) {
-	return s.Default, true
+	return s.Default, s.UseDefault
 }
 
 func (p *Prompt) MultiSelect(s *prompt.MultiSelect) (result []string, ok bool) {
 	return s.Default, true
 }
 
+func (p *Prompt) MultiSelectIndex(s *prompt.MultiSelectIndex) (result []int, ok bool) {
+	return s.Default, true
+}
+
 func (p *Prompt) Multiline(q *prompt.Question) (result string, ok bool) {
+	return q.Default, true
+}
+
+func (p *Prompt) Editor(q *prompt.Question) (result string, ok bool) {
 	return q.Default, true
 }

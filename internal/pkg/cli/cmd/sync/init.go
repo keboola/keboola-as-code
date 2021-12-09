@@ -47,7 +47,7 @@ func InitCommand(depsProvider dependencies.Provider) *cobra.Command {
 
 	// Flags
 	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
-	cmd.Flags().StringP("allowed-branches", "b", "main", `comma separated IDs or name globs, use "*" for all`)
+	cmd.Flags().StringP("branches", "b", "main", `comma separated IDs or name globs, use "*" for all`)
 	ci.WorkflowsCmdFlags(cmd.Flags())
 
 	return cmd

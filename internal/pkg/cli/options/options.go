@@ -31,7 +31,7 @@ type Options struct {
 	LogFilePath string // path to the log file
 }
 
-func NewOptions() *Options {
+func New() *Options {
 	envNaming := env.NewNamingConvention()
 	return &Options{
 		envNaming: envNaming,

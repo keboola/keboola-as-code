@@ -40,7 +40,7 @@ func NewDependencies() *Dependencies {
 	d.CtxValue = context.Background()
 	d.EnvsValue = env.Empty()
 	d.FsValue = testhelper.NewMemoryFs()
-	d.OptionsValue = options.NewOptions()
+	d.OptionsValue = options.New()
 	return d
 }
 

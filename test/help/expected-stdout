@@ -50,14 +50,15 @@ Available Commands:
   help           Help about any command
 
 Aliases:
-  sync init       i, init
-  sync diff       d, diff
-  sync pull       pl, pull
-  sync push       ph, push
-  local validate  v, validate
-  local persist   pt, persist
-  local create    c, create
-  local encrypt   e, encrypt
+  sync init            i, init
+  sync diff            d, diff
+  sync pull            pl, pull
+  sync push            ph, push
+  local validate       v, validate
+  local persist        pt, persist
+  local create         c, create
+  local encrypt        e, encrypt
+  template repository  r, repo
 
 Flags:
   -h, --help                       print help for command

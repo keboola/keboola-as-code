@@ -1,7 +1,6 @@
 package dialog_test
 
 import (
-	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -12,7 +11,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/ci"
-	. "github.com/keboola/keboola-as-code/internal/pkg/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
@@ -58,7 +56,7 @@ func TestAskInitOptions(t *testing.T) {
 		_, err := console.ExpectString("Please enter Keboola Storage API host, eg. \"connection.keboola.com\".")
 		assert.NoError(t, err)
 
-		_, err = console.ExpectString("API host ")
+		_, err = console.ExpectString("API host: ")
 		assert.NoError(t, err)
 
 		time.Sleep(20 * time.Millisecond)
@@ -68,7 +66,7 @@ func TestAskInitOptions(t *testing.T) {
 		_, err = console.ExpectString("Please enter Keboola Storage API token. The value will be hidden.")
 		assert.NoError(t, err)
 
-		_, err = console.ExpectString("API token ")
+		_, err = console.ExpectString("API token: ")
 		assert.NoError(t, err)
 
 		time.Sleep(20 * time.Millisecond)
@@ -151,14 +149,4 @@ func TestAskInitOptions(t *testing.T) {
 			MainBranch: `main`,
 		},
 	}, opts)
-}
-
-func TestApiHostValidator(t *testing.T) {
-	t.Parallel()
-	assert.NoError(t, StorageApiHostValidator("connection.keboola.com"))
-	assert.NoError(t, StorageApiHostValidator("connection.keboola.com/"))
-	assert.NoError(t, StorageApiHostValidator("https://connection.keboola.com"))
-	assert.NoError(t, StorageApiHostValidator("https://connection.keboola.com/"))
-	assert.Equal(t, errors.New("value is required"), StorageApiHostValidator(""))
-	assert.Equal(t, errors.New("invalid host"), StorageApiHostValidator("@#$$%^&%#$&"))
 }

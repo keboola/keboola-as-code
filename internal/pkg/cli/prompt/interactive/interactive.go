@@ -8,6 +8,7 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/AlecAivazis/survey/v2/terminal"
+	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/nop"
@@ -74,7 +75,7 @@ func (p *Prompt) Confirm(c *prompt.Confirm) bool {
 
 	result := c.Default
 	opts := p.getOpts()
-	err := survey.AskOne(&survey.Confirm{Message: c.Label, Help: c.Help, Default: c.Default}, &result, opts...)
+	err := survey.AskOne(&survey.Confirm{Message: formatLabel(c.Label), Help: c.Help, Default: c.Default}, &result, opts...)
 	_ = p.handleError(err)
 	p.Printf("\n")
 	return result
@@ -98,9 +99,9 @@ func (p *Prompt) Ask(q *prompt.Question) (result string, ok bool) {
 
 	// Ask
 	if q.Hidden {
-		err = survey.AskOne(&survey.Password{Message: q.Label, Help: q.Help}, &result, opts...)
+		err = survey.AskOne(&survey.Password{Message: formatLabel(q.Label), Help: q.Help}, &result, opts...)
 	} else {
-		err = survey.AskOne(&survey.Input{Message: q.Label, Default: q.Default, Help: q.Help}, &result, opts...)
+		err = survey.AskOne(&survey.Input{Message: formatLabel(q.Label), Default: q.Default, Help: q.Help}, &result, opts...)
 	}
 
 	p.Printf("\n")
@@ -121,7 +122,12 @@ func (p *Prompt) Select(s *prompt.Select) (value string, ok bool) {
 		opts = append(opts, survey.WithValidator(s.Validator))
 	}
 
-	err := survey.AskOne(&survey.Select{Message: s.Label, Help: s.Help, Options: s.Options, Default: s.Default}, &value, opts...)
+	question := &survey.Select{Message: formatLabel(s.Label), Help: s.Help, Options: s.Options}
+	if s.UseDefault {
+		question.Default = s.Default
+	}
+
+	err := survey.AskOne(question, &value, opts...)
 	p.Printf("\n")
 	return value, p.handleError(err)
 }
@@ -140,7 +146,12 @@ func (p *Prompt) SelectIndex(s *prompt.SelectIndex) (index int, ok bool) {
 		opts = append(opts, survey.WithValidator(s.Validator))
 	}
 
-	err := survey.AskOne(&survey.Select{Message: s.Label, Help: s.Help, Options: s.Options, Default: s.Default}, &index, opts...)
+	question := &survey.Select{Message: formatLabel(s.Label), Help: s.Help, Options: s.Options}
+	if s.UseDefault {
+		question.Default = s.Default
+	}
+
+	err := survey.AskOne(question, &index, opts...)
 	p.Printf("\n")
 	return index, p.handleError(err)
 }
@@ -159,7 +170,26 @@ func (p *Prompt) MultiSelect(s *prompt.MultiSelect) (result []string, ok bool) {
 		opts = append(opts, survey.WithValidator(s.Validator))
 	}
 
-	err := survey.AskOne(&survey.MultiSelect{Message: s.Label, Help: s.Help, Options: s.Options, Default: s.Default}, &result, opts...)
+	err := survey.AskOne(&survey.MultiSelect{Message: formatLabel(s.Label), Help: s.Help, Options: s.Options, Default: s.Default}, &result, opts...)
+	p.Printf("\n")
+	return result, p.handleError(err)
+}
+
+func (p *Prompt) MultiSelectIndex(s *prompt.MultiSelectIndex) (result []int, ok bool) {
+	// Print description
+	if len(s.Description) > 0 {
+		p.Printf("\n%s\n", s.Description)
+	} else {
+		p.Printf("\n")
+	}
+
+	// Validator
+	opts := p.getOpts()
+	if s.Validator != nil {
+		opts = append(opts, survey.WithValidator(s.Validator))
+	}
+
+	err := survey.AskOne(&survey.MultiSelect{Message: formatLabel(s.Label), Help: s.Help, Options: s.Options, Default: s.Default}, &result, opts...)
 	p.Printf("\n")
 	return result, p.handleError(err)
 }
@@ -178,7 +208,27 @@ func (p *Prompt) Multiline(q *prompt.Question) (result string, ok bool) {
 		opts = append(opts, survey.WithValidator(q.Validator))
 	}
 
-	err := survey.AskOne(&survey.Multiline{Message: q.Label, Default: q.Default, Help: q.Help}, &result, opts...)
+	err := survey.AskOne(&survey.Multiline{Message: formatLabel(q.Label), Default: q.Default, Help: q.Help}, &result, opts...)
+	p.Printf("\n")
+	return result, p.handleError(err)
+}
+
+func (p *Prompt) Editor(q *prompt.Question) (result string, ok bool) {
+	// Print description
+	if len(q.Description) > 0 {
+		p.Printf("\n%s\n", q.Description)
+	} else {
+		p.Printf("\n")
+	}
+
+	// Validator
+	opts := p.getOpts()
+	if q.Validator != nil {
+		opts = append(opts, survey.WithValidator(q.Validator))
+	}
+
+	editor := &survey.Editor{Message: formatLabel(q.Label), Default: q.Default, Help: q.Help, HideDefault: true, AppendDefault: true, FileName: `kbc-editor-*.txt`}
+	err := survey.AskOne(editor, &result, opts...)
 	p.Printf("\n")
 	return result, p.handleError(err)
 }
@@ -206,4 +256,12 @@ func (p *Prompt) handleError(err error) (ok bool) {
 	}
 
 	return false
+}
+
+func formatLabel(label string) string {
+	// Add ":" if string ends with alphanumeric char
+	if regexpcache.MustCompile(`[a-zA-Z0-9]$`).MatchString(label) {
+		label += `:`
+	}
+	return label
 }
