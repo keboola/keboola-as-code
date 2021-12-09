@@ -2,6 +2,7 @@ package dialog
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
 	"strings"
 
@@ -9,7 +10,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 )
 
-func (p *Dialogs) AskStorageApiHost(options *options.Options) string {
+var ErrMissingStorageApiHost = fmt.Errorf(`missing Storage API host`)
+
+func (p *Dialogs) AskStorageApiHost(options *options.Options) (string, error) {
 	host := options.GetString(`storage-api-host`)
 	if len(host) == 0 {
 		host, _ = p.Ask(&prompt.Question{
@@ -22,8 +25,13 @@ func (p *Dialogs) AskStorageApiHost(options *options.Options) string {
 	host = strings.TrimRight(host, "/")
 	host = strings.TrimPrefix(host, "https://")
 	host = strings.TrimPrefix(host, "http://")
+
+	if len(host) == 0 {
+		return "", ErrMissingStorageApiHost
+	}
+
 	options.Set(`storage-api-host`, host)
-	return host
+	return host, nil
 }
 
 func StorageApiHostValidator(val interface{}) error {
