@@ -19,7 +19,7 @@ Usage:
   %s init [flags]
 
 Flags:
-  -b, --allowed-branches string   comma separated IDs or name globs, use "*" for all (default "main")
+  -b, --branches string           comma separated IDs or name globs, use "*" for all (default "main")
       --ci-main-branch string     name of the main branch for push/pull workflows (default "main")
       --ci-pull                   create workflow to sync main branch every 5 minutes (default true)
       --ci-push                   create workflow to push change in main branch to the project (default true)
