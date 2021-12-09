@@ -137,6 +137,8 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	// Enable templates private beta in tests
 	cmdEnvs, err := env.FromOs()
 	assert.NoError(t, err)
+	cmdEnvs.Unset(`KBC_STORAGE_API_HOST`)
+	cmdEnvs.Unset(`KBC_STORAGE_API_TOKEN`)
 	cmdEnvs.Set(`KBC_TEMPLATES_PRIVATE_BETA`, `true`)
 
 	// Prepare command
