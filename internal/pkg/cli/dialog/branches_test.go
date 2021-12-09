@@ -5,234 +5,221 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Netflix/go-expect"
 	"github.com/stretchr/testify/assert"
 
-	. "github.com/keboola/keboola-as-code/internal/pkg/cli/dialog"
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
+	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 )
 
-const (
-	DownArrow = "\u001B[B"
-	Space     = " "
-	Enter     = "\n"
-)
-
-// TestAllowedBranchesByFlag use flag value if present.
-func TestAskAllowedBranchesByFlag(t *testing.T) {
+func TestSelectBranchInteractive(t *testing.T) {
 	t.Parallel()
-	dialog, console := createDialogs(t, true)
-	d := testdeps.NewDependencies()
-	d.StorageApiValue = mockedStorageApi([]*model.Branch{{BranchKey: model.BranchKey{Id: 123}, Name: "Main", IsDefault: true}})
-	d.Options().SetDefault(`allowed-branches`, `*`)
-	d.Options().Set(`allowed-branches`, `foo, bar`)
 
-	// No interaction expected
-	allowedBranches, err := dialog.AskAllowedBranches(d)
+	// Dependencies
+	dialog, console := createDialogs(t, true)
+	o := options.New()
+
+	// All branches
+	branch1 := &model.Branch{BranchKey: model.BranchKey{Id: 1}, Name: `Branch 1`}
+	branch2 := &model.Branch{BranchKey: model.BranchKey{Id: 2}, Name: `Branch 2`}
+	branch3 := &model.Branch{BranchKey: model.BranchKey{Id: 3}, Name: `Branch 3`}
+	allBranches := []*model.Branch{branch1, branch2, branch3}
+
+	// Interaction
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		_, err := console.ExpectString("LABEL:")
+		assert.NoError(t, err)
+
+		_, err = console.ExpectString("Branch 1 (1)")
+		assert.NoError(t, err)
+
+		_, err = console.ExpectString("Branch 2 (2)")
+		assert.NoError(t, err)
+
+		_, err = console.ExpectString("Branch 3 (3)")
+		assert.NoError(t, err)
+
+		time.Sleep(20 * time.Millisecond)
+		_, err = console.SendLine(testhelper.DownArrow) // down arrow -> select Branch 2
+		assert.NoError(t, err)
+
+		_, err = console.ExpectEOF()
+		assert.NoError(t, err)
+	}()
+
+	// Run
+	out, err := dialog.SelectBranch(o, allBranches, `LABEL`)
+	assert.Same(t, branch2, out)
 	assert.NoError(t, err)
-	assert.Equal(t, model.AllowedBranches{"foo", "bar"}, allowedBranches)
+
+	// Close terminal
 	assert.NoError(t, console.Tty().Close())
+	wg.Wait()
 	assert.NoError(t, console.Close())
 }
 
-// TestAllowedBranchesDefaultValue use default value if terminal is not interactive.
-func TestAskAllowedBranchesDefaultValue(t *testing.T) {
+func TestSelectBranchByFlag(t *testing.T) {
 	t.Parallel()
+
+	// Dependencies
 	dialog, _ := createDialogs(t, false)
-	d := testdeps.NewDependencies()
-	d.StorageApiValue = mockedStorageApi([]*model.Branch{{BranchKey: model.BranchKey{Id: 123}, Name: "Main", IsDefault: true}})
-	d.Options().SetDefault(`allowed-branches`, `*`)
+	o := options.New()
+	o.Set(`branch`, 2)
 
-	// No interaction expected
-	allowedBranches, err := dialog.AskAllowedBranches(d)
-	assert.NoError(t, err)
-	assert.Equal(t, model.AllowedBranches{model.AllBranchesDef}, allowedBranches)
-}
-
-// TestAllowedBranchesOnlyMain - select first option from the interactive select box
-// -> only main branch.
-func TestAskAllowedBranchesOnlyMain(t *testing.T) {
-	t.Parallel()
-	dialog, console := createDialogs(t, true)
-	d := testdeps.NewDependencies()
-	d.StorageApiValue = mockedStorageApi([]*model.Branch{{BranchKey: model.BranchKey{Id: 123}, Name: "Main", IsDefault: true}})
-
-	// Interaction
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		selectOption(t, 1, console) // only main branch
-		_, err := console.ExpectEOF()
-		assert.NoError(t, err)
-	}()
+	// All branches
+	branch1 := &model.Branch{BranchKey: model.BranchKey{Id: 1}, Name: `Branch 1`}
+	branch2 := &model.Branch{BranchKey: model.BranchKey{Id: 2}, Name: `Branch 2`}
+	branch3 := &model.Branch{BranchKey: model.BranchKey{Id: 3}, Name: `Branch 3`}
+	allBranches := []*model.Branch{branch1, branch2, branch3}
 
 	// Run
-	allowedBranches, err := dialog.AskAllowedBranches(d)
+	out, err := dialog.SelectBranch(o, allBranches, `LABEL`)
+	assert.Same(t, branch2, out)
 	assert.NoError(t, err)
-	assert.NoError(t, console.Tty().Close())
-	wg.Wait()
-	assert.NoError(t, console.Close())
-
-	// Assert
-	assert.Equal(t, model.AllowedBranches{model.MainBranchDef}, allowedBranches)
 }
 
-// TestAllowedBranchesOnlyMain - select second option from the interactive select box
-// -> all branches.
-func TestAskAllowedBranchesAllBranches(t *testing.T) {
+func TestSelectBranchMissing(t *testing.T) {
 	t.Parallel()
-	dialog, console := createDialogs(t, true)
-	d := testdeps.NewDependencies()
-	d.StorageApiValue = mockedStorageApi([]*model.Branch{{BranchKey: model.BranchKey{Id: 123}, Name: "Main", IsDefault: true}})
 
-	// Interaction
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		selectOption(t, 2, console) // all branches
-		_, err := console.ExpectEOF()
-		assert.NoError(t, err)
-	}()
+	// Dependencies
+	dialog, _ := createDialogs(t, false)
+	o := options.New()
+
+	// All branches
+	branch1 := &model.Branch{BranchKey: model.BranchKey{Id: 1}, Name: `Branch 1`}
+	branch2 := &model.Branch{BranchKey: model.BranchKey{Id: 2}, Name: `Branch 2`}
+	branch3 := &model.Branch{BranchKey: model.BranchKey{Id: 3}, Name: `Branch 3`}
+	allBranches := []*model.Branch{branch1, branch2, branch3}
 
 	// Run
-	allowedBranches, err := dialog.AskAllowedBranches(d)
-	assert.NoError(t, err)
-	assert.NoError(t, console.Tty().Close())
-	wg.Wait()
-	assert.NoError(t, console.Close())
-
-	// Assert
-	assert.Equal(t, model.AllowedBranches{model.AllBranchesDef}, allowedBranches)
+	out, err := dialog.SelectBranch(o, allBranches, `LABEL`)
+	assert.Nil(t, out)
+	assert.Error(t, err)
+	assert.Equal(t, `please specify branch`, err.Error())
 }
 
-// TestAllowedBranchesOnlyMain - select third option from the interactive select box
-// -> select branches, and select 2/4 of the listed brances.
-func TestAskAllowedBranchesSelectedBranches(t *testing.T) {
+func TestSelectBranchesInteractive(t *testing.T) {
 	t.Parallel()
+
+	// Dependencies
 	dialog, console := createDialogs(t, true)
-	d := testdeps.NewDependencies()
-	d.StorageApiValue = mockedStorageApi([]*model.Branch{
-		{BranchKey: model.BranchKey{Id: 10}, Name: "Main", IsDefault: true},
-		{BranchKey: model.BranchKey{Id: 20}, Name: "foo", IsDefault: false},
-		{BranchKey: model.BranchKey{Id: 30}, Name: "bar", IsDefault: false},
-		{BranchKey: model.BranchKey{Id: 40}, Name: "baz", IsDefault: false},
-	})
+	o := options.New()
+
+	// All branches
+	branch1 := &model.Branch{BranchKey: model.BranchKey{Id: 1}, Name: `Branch 1`}
+	branch2 := &model.Branch{BranchKey: model.BranchKey{Id: 2}, Name: `Branch 2`}
+	branch3 := &model.Branch{BranchKey: model.BranchKey{Id: 3}, Name: `Branch 3`}
+	branch4 := &model.Branch{BranchKey: model.BranchKey{Id: 4}, Name: `Branch 4`}
+	branch5 := &model.Branch{BranchKey: model.BranchKey{Id: 5}, Name: `Branch 5`}
+	allBranches := []*model.Branch{branch1, branch2, branch3, branch4, branch5}
 
 	// Interaction
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		selectOption(t, 3, console) // selected branches
-		_, err := console.ExpectString(`[10] Main`)
-		assert.NoError(t, err)
-		_, err = console.ExpectString(`[20] foo`)
-		assert.NoError(t, err)
-		_, err = console.ExpectString(`[30] bar`)
-		assert.NoError(t, err)
-		_, err = console.ExpectString(`[40] baz`)
-		assert.NoError(t, err)
-		time.Sleep(50 * time.Millisecond)
 
-		// Skip Main
-		_, err = console.Send(DownArrow)
+		_, err := console.ExpectString("LABEL:")
 		assert.NoError(t, err)
-		// Select foo
-		_, err = console.Send(Space)
+
+		_, err = console.ExpectString("Branch 1 (1)")
 		assert.NoError(t, err)
-		_, err = console.Send(DownArrow)
+
+		_, err = console.ExpectString("Branch 2 (2)")
 		assert.NoError(t, err)
-		// Skip bar
-		_, err = console.Send(DownArrow)
+
+		_, err = console.ExpectString("Branch 3 (3)")
 		assert.NoError(t, err)
-		// Select baz
-		_, err = console.Send(Space)
+
+		_, err = console.ExpectString("Branch 4 (4)")
 		assert.NoError(t, err)
-		_, err = console.Send(Enter)
+
+		_, err = console.ExpectString("Branch 5 (5)")
 		assert.NoError(t, err)
+
+		time.Sleep(20 * time.Millisecond)
+		_, err = console.Send(testhelper.DownArrow) // -> Branch 2
+		assert.NoError(t, err)
+
+		time.Sleep(20 * time.Millisecond)
+		_, err = console.Send(testhelper.Space) // -> select
+		assert.NoError(t, err)
+
+		time.Sleep(20 * time.Millisecond)
+		_, err = console.Send(testhelper.DownArrow) // -> Branch 3
+		assert.NoError(t, err)
+
+		time.Sleep(20 * time.Millisecond)
+		_, err = console.Send(testhelper.DownArrow) // -> Branch 4
+		assert.NoError(t, err)
+
+		time.Sleep(20 * time.Millisecond)
+		_, err = console.Send(testhelper.Space) // -> select
+		assert.NoError(t, err)
+
+		time.Sleep(20 * time.Millisecond)
+		_, err = console.Send(testhelper.Enter) // -> confirm
+		assert.NoError(t, err)
+
 		_, err = console.ExpectEOF()
 		assert.NoError(t, err)
 	}()
 
 	// Run
-	allowedBranches, err := dialog.AskAllowedBranches(d)
+	out, err := dialog.SelectBranches(o, allBranches, `LABEL`)
+	assert.Equal(t, []*model.Branch{branch2, branch4}, out)
 	assert.NoError(t, err)
+
+	// Close terminal
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
 	assert.NoError(t, console.Close())
-
-	// Assert, foo and baz IDs
-	assert.Equal(t, model.AllowedBranches{"20", "40"}, allowedBranches)
 }
 
-// TestAllowedBranchesOnlyMain - select fourth option from the interactive select box
-// -> type IDs or names and type two custom definitions.
-func TestAskAllowedBranchesTypeList(t *testing.T) {
+func TestSelectBranchesByFlag(t *testing.T) {
 	t.Parallel()
-	dialog, console := createDialogs(t, true)
-	d := testdeps.NewDependencies()
-	d.StorageApiValue = mockedStorageApi([]*model.Branch{
-		{BranchKey: model.BranchKey{Id: 10}, Name: "Main", IsDefault: true},
-		{BranchKey: model.BranchKey{Id: 20}, Name: "foo", IsDefault: false},
-		{BranchKey: model.BranchKey{Id: 30}, Name: "bar", IsDefault: false},
-		{BranchKey: model.BranchKey{Id: 40}, Name: "baz", IsDefault: false},
-	})
 
-	// Interaction
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		selectOption(t, 4, console) // type custom definitions
-		_, err := console.ExpectString("Please enter one branch definition per line.")
-		assert.NoError(t, err)
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send("f**\n")
-		assert.NoError(t, err)
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send("b*z\n")
-		assert.NoError(t, err)
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send("\n\n\n")
-		assert.NoError(t, err)
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
-	}()
+	// Dependencies
+	dialog, _ := createDialogs(t, false)
+	o := options.New()
+	o.Set(`branches`, `2,4`)
+
+	// All branches
+	branch1 := &model.Branch{BranchKey: model.BranchKey{Id: 1}, Name: `Branch 1`}
+	branch2 := &model.Branch{BranchKey: model.BranchKey{Id: 2}, Name: `Branch 2`}
+	branch3 := &model.Branch{BranchKey: model.BranchKey{Id: 3}, Name: `Branch 3`}
+	branch4 := &model.Branch{BranchKey: model.BranchKey{Id: 4}, Name: `Branch 4`}
+	branch5 := &model.Branch{BranchKey: model.BranchKey{Id: 5}, Name: `Branch 5`}
+	allBranches := []*model.Branch{branch1, branch2, branch3, branch4, branch5}
 
 	// Run
-	allowedBranches, err := dialog.AskAllowedBranches(d)
+	out, err := dialog.SelectBranches(o, allBranches, `LABEL`)
+	assert.Equal(t, []*model.Branch{branch2, branch4}, out)
 	assert.NoError(t, err)
-	assert.NoError(t, console.Tty().Close())
-	wg.Wait()
-	assert.NoError(t, console.Close())
-
-	// Assert, foo and baz IDs
-	assert.Equal(t, model.AllowedBranches{"f**", "b*z"}, allowedBranches)
 }
 
-// selectOption from interactive select box.
-func selectOption(t *testing.T, option int, c *expect.Console) {
-	t.Helper()
+func TestSelectBranchesMissing(t *testing.T) {
+	t.Parallel()
 
-	var err error
-	_, err = c.ExpectString("Allowed project's branches:")
-	assert.NoError(t, err)
-	_, err = c.ExpectString(ModeMainBranch)
-	assert.NoError(t, err)
-	_, err = c.ExpectString(ModeAllBranches)
-	assert.NoError(t, err)
-	_, err = c.ExpectString(ModeSelectSpecific)
-	assert.NoError(t, err)
-	_, err = c.ExpectString(ModeTypeList)
-	assert.NoError(t, err)
-	time.Sleep(50 * time.Millisecond)
-	for i := 1; i < option; i++ {
-		_, err = c.Send(DownArrow)
-		assert.NoError(t, err)
-	}
-	_, err = c.Send(Enter) // enter
-	assert.NoError(t, err)
+	// Dependencies
+	dialog, _ := createDialogs(t, false)
+	o := options.New()
+
+	// All branches
+	branch1 := &model.Branch{BranchKey: model.BranchKey{Id: 1}, Name: `Branch 1`}
+	branch2 := &model.Branch{BranchKey: model.BranchKey{Id: 2}, Name: `Branch 2`}
+	branch3 := &model.Branch{BranchKey: model.BranchKey{Id: 3}, Name: `Branch 3`}
+	branch4 := &model.Branch{BranchKey: model.BranchKey{Id: 4}, Name: `Branch 4`}
+	branch5 := &model.Branch{BranchKey: model.BranchKey{Id: 5}, Name: `Branch 5`}
+	allBranches := []*model.Branch{branch1, branch2, branch3, branch4, branch5}
+
+	// Run
+	out, err := dialog.SelectBranches(o, allBranches, `LABEL`)
+	assert.Nil(t, out)
+	assert.Error(t, err)
+	assert.Equal(t, `please specify at least one branch`, err.Error())
 }
