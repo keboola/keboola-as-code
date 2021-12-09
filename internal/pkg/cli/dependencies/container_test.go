@@ -21,7 +21,7 @@ func TestDifferentProjectIdInManifestAndToken(t *testing.T) {
 	project := testproject.GetTestProject(t, env.Empty())
 
 	logger := zap.NewNop().Sugar()
-	opts := options.NewOptions()
+	opts := options.New()
 	d := NewContainer(context.Background(), nil, testhelper.NewMemoryFs(), nil, logger, opts)
 	d.hostFromManifest = true
 	d.options.Set(options.StorageApiTokenOpt, project.Token())

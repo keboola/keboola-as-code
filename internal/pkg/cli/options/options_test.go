@@ -25,7 +25,7 @@ func TestValuesPriority(t *testing.T) {
 	// Create structs
 	flags := &pflag.FlagSet{}
 	flags.String("storage-api-token", "", "")
-	options := NewOptions()
+	options := New()
 
 	// No values defined
 	err = options.Load(logger, env.Empty(), fs, flags)
@@ -60,7 +60,7 @@ func TestValuesPriority(t *testing.T) {
 
 func TestDumpOptions(t *testing.T) {
 	t.Parallel()
-	options := NewOptions()
+	options := New()
 	options.Set(`storage-api-host`, "connection.keboola.com")
 	options.Set(`storage-api-token`, "12345-67890123abcd")
 	expected := "Parsed options:\n  storage-api-host = \"connection.keboola.com\"\n  storage-api-token = \"12345-6*****\"\n"
