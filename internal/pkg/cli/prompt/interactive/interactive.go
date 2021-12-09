@@ -19,6 +19,7 @@ type Prompt struct {
 	stdin  terminal.FileReader
 	stdout terminal.FileWriter
 	stderr terminal.FileWriter
+	editor string // the editor is started when Editor() is called, if empty, the default is system editor is used
 }
 
 // nolint: gochecknoinits
@@ -53,6 +54,10 @@ func isInteractiveTerminal(stdin *os.File, stdout *os.File) bool {
 	}
 
 	return true
+}
+
+func (p *Prompt) SetEditor(editor string) {
+	p.editor = editor
 }
 
 func (p *Prompt) IsInteractive() bool {
@@ -227,7 +232,7 @@ func (p *Prompt) Editor(q *prompt.Question) (result string, ok bool) {
 		opts = append(opts, survey.WithValidator(q.Validator))
 	}
 
-	editor := &survey.Editor{Message: formatLabel(q.Label), Default: q.Default, Help: q.Help, HideDefault: true, AppendDefault: true, FileName: `kbc-editor-*.txt`}
+	editor := &survey.Editor{Message: formatLabel(q.Label), Default: q.Default, Help: q.Help, HideDefault: true, AppendDefault: true, Editor: p.editor, FileName: `kbc-editor-*.txt`}
 	err := survey.AskOne(editor, &result, opts...)
 	p.Printf("\n")
 	return result, p.handleError(err)

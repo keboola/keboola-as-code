@@ -192,6 +192,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 
 	// Templates are private beta, can be enabled by ENV
 	if envs.Get(`KBC_TEMPLATES_PRIVATE_BETA`) == `true` {
+		root.addAlias(`t`, `template`)
 		root.addAlias(`r`, `template repository`)
 		root.addAlias(`repo`, `template repository`)
 	}
