@@ -5,6 +5,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	createManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/local/manifest/create"
 	initOp "github.com/keboola/keboola-as-code/pkg/lib/operation/sync/init"
 )
@@ -15,14 +16,24 @@ type initDeps interface {
 }
 
 func (p *Dialogs) AskInitOptions(d initDeps) (initOp.Options, error) {
-	o := d.Options()
-	p.AskStorageApiHost(o)
-	p.AskStorageApiToken(o)
-
 	// Default values + values for non-interactive terminal
 	out := initOp.Options{
 		Pull:            true,
 		ManifestOptions: createManifest.Options{},
+	}
+
+	o := d.Options()
+
+	// Host and token
+	errors := utils.NewMultiError()
+	if _, err := p.AskStorageApiHost(o); err != nil {
+		errors.Append(err)
+	}
+	if _, err := p.AskStorageApiToken(o); err != nil {
+		errors.Append(err)
+	}
+	if errors.Len() > 0 {
+		return out, errors
 	}
 
 	// Allowed branches
