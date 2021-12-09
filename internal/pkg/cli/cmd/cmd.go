@@ -77,7 +77,7 @@ type RootCommand struct {
 func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt prompt.Prompt, envs *env.Map, fsFactory filesystem.Factory) *RootCommand {
 	// Command definition
 	root := &RootCommand{
-		Options:   options.NewOptions(),
+		Options:   options.New(),
 		cmdByPath: make(map[string]*cobra.Command),
 		aliases:   orderedmap.New(),
 	}
@@ -189,6 +189,14 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 	root.addAlias(`persist`, `local persist`)
 	root.addAlias(`create`, `local create`)
 	root.addAlias(`encrypt`, `local encrypt`)
+
+	// Templates are private beta, can be enabled by ENV
+	if envs.Get(`KBC_TEMPLATES_PRIVATE_BETA`) == `true` {
+		root.addAlias(`r`, `template repository`)
+		root.addAlias(`repo`, `template repository`)
+	}
+
+	// Add aliases to usage template
 	root.Cmd.Annotations = map[string]string{`aliases`: root.listAliases()}
 
 	return root

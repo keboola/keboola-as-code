@@ -26,8 +26,8 @@ import (
 )
 
 var (
-	ErrMissingStorageApiHost          = fmt.Errorf(`missing Storage API host`)
-	ErrMissingStorageApiToken         = fmt.Errorf(`missing Storage API token`)
+	ErrMissingStorageApiHost          = dialog.ErrMissingStorageApiHost
+	ErrMissingStorageApiToken         = dialog.ErrMissingStorageApiToken
 	ErrProjectManifestNotFound        = fmt.Errorf("project manifest not found")
 	ErrRepoManifestNotFound           = fmt.Errorf("repository manifest not found")
 	ErrExpectedProjectFoundRepository = fmt.Errorf("project manifest not found, found repository manifest")
