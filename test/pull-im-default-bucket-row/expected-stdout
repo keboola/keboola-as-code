@@ -1,0 +1,7 @@
+Plan for "pull" operation:
+  + B foo
+  + C foo/extractor/ex-generic-v2/im-default-bucket
+  + R foo/extractor/ex-generic-v2/im-default-bucket/rows/test
+  + C foo/extractor/keboola.ex-aws-s3/om-default-bucket
+  + B main
+Pull done.

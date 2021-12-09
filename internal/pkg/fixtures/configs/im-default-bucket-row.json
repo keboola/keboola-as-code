@@ -1,0 +1,28 @@
+{
+  "componentId": "ex-generic-v2",
+  "name": "im-default-bucket",
+  "configuration": {},
+  "rows": [
+    {
+      "name": "test",
+      "isDisabled": false,
+      "configuration": {
+        "parameters": {},
+        "storage": {
+          "input": {
+            "tables": [
+              {
+                "columns": [],
+                "source": "%%TEST_IM_DEFAULT_BUCKET%%.table",
+                "destination": "table",
+                "where_column": "",
+                "where_operator": "eq",
+                "where_values": []
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true
+      },
+      "configs": []
+    },
+    {
+      "branch": {
+        "name": "foo",
+        "description": "",
+        "isDefault": false
+      },
+      "configs": [
+        {
+          "componentId": "ex-generic-v2",
+          "name": "im-default-bucket",
+          "description": "test fixture",
+          "changeDescription": "Updated from #KeboolaCLI",
+          "configuration": {
+            "parameters": {},
+            "storage": {
+              "input": {
+                "tables": [
+                  {
+                    "columns": [],
+                    "source": "in.c-keboola-ex-aws-s3-%%TEST_NEW_TICKET_2%%.table",
+                    "destination": "table",
+                    "where_column": "",
+                    "where_operator": "eq",
+                    "where_values": []
+                  }
+                ]
+              }
+            }
+          },
+          "rows": []
+        },
+        {
+          "componentId": "keboola.ex-aws-s3",
+          "name": "om-default-bucket",
+          "description": "test fixture",
+          "changeDescription": "Updated from #KeboolaCLI",
+          "configuration": {},
+          "rows": []
+        }
+      ]
+    }
+  ]
+}
