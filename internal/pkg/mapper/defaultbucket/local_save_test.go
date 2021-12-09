@@ -61,7 +61,7 @@ func TestDefaultBucketMapper_MapBeforeLocalSaveConfig(t *testing.T) {
 				PathInProject: model.NewPathInProject("branch", "extractor/keboola.ex-db-mysql/test"),
 			},
 		},
-		Local: &model.Config{
+		Remote: &model.Config{
 			ConfigKey: configKey1,
 			Content: orderedmap.FromPairs([]orderedmap.Pair{
 				{
@@ -134,7 +134,7 @@ func TestDefaultBucketMapper_MapBeforeLocalSaveRow(t *testing.T) {
 				PathInProject: model.NewPathInProject("branch", "extractor/keboola.ex-db-mysql/test"),
 			},
 		},
-		Local: &model.Config{
+		Remote: &model.Config{
 			ConfigKey: configKey1,
 			Content: orderedmap.FromPairs([]orderedmap.Pair{
 				{

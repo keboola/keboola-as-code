@@ -32,7 +32,7 @@ func (m *defaultBucketMapper) replaceDefaultBucketWithPlaceholder(
 	sourceTableId string,
 	inputTable *orderedmap.OrderedMap,
 ) error {
-	sourceConfigPath, found, err := m.getDefaultBucketSourceConfigurationPath(config, sourceTableId)
+	sourceConfigState, found, err := m.getDefaultBucketSourceConfig(config, sourceTableId)
 	if err != nil {
 		return err
 	}
@@ -41,14 +41,15 @@ func (m *defaultBucketMapper) replaceDefaultBucketWithPlaceholder(
 	}
 
 	tableName := strings.SplitN(sourceTableId, ".", 3)[2]
-	inputTable.Set(`source`, fmt.Sprintf(`{{:default-bucket:%s}}.%s`, sourceConfigPath, tableName))
+	inputTable.Set(`source`, fmt.Sprintf(`{{:default-bucket:%s}}.%s`, sourceConfigState.GetObjectPath(), tableName))
+
 	return nil
 }
 
-func (m *defaultBucketMapper) getDefaultBucketSourceConfigurationPath(config configOrRow, tableId string) (string, bool, error) {
+func (m *defaultBucketMapper) getDefaultBucketSourceConfig(config configOrRow, tableId string) (model.ObjectState, bool, error) {
 	componentId, configId, match := m.State.Components().GetDefaultBucketByTableId(tableId)
 	if !match {
-		return "", false, nil
+		return nil, false, nil
 	}
 
 	sourceConfigKey := model.ConfigKey{
@@ -56,13 +57,13 @@ func (m *defaultBucketMapper) getDefaultBucketSourceConfigurationPath(config con
 		ComponentId: componentId,
 		Id:          configId,
 	}
-	sourceConfig, found := m.State.Get(sourceConfigKey)
+	sourceConfigState, found := m.State.Get(sourceConfigKey)
 	if !found {
 		errors := utils.NewMultiError()
 		errors.Append(fmt.Errorf(`%s not found`, sourceConfigKey.Desc()))
 		errors.Append(fmt.Errorf(`  - referenced from %s`, config.Desc()))
 		errors.Append(fmt.Errorf(`  - input mapping "%s"`, tableId))
-		return "", false, errors
+		return nil, false, errors
 	}
-	return sourceConfig.GetObjectPath(), true, nil
+	return sourceConfigState, true, nil
 }

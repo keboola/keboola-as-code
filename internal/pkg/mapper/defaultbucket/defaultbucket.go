@@ -1,12 +1,14 @@
 package defaultbucket
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 type defaultBucketMapper struct {
 	model.MapperContext
+	localManager *local.Manager
 }
 
 type configOrRow interface {
@@ -14,8 +16,11 @@ type configOrRow interface {
 	BranchKey() model.BranchKey
 }
 
-func NewMapper(context model.MapperContext) *defaultBucketMapper {
-	return &defaultBucketMapper{MapperContext: context}
+func NewMapper(localManager *local.Manager, context model.MapperContext) *defaultBucketMapper {
+	return &defaultBucketMapper{
+		MapperContext: context,
+		localManager:  localManager,
+	}
 }
 
 func (m *defaultBucketMapper) visitStorageInputTables(config configOrRow, content *orderedmap.OrderedMap, callback func(
@@ -50,4 +55,10 @@ func (m *defaultBucketMapper) visitStorageInputTables(config configOrRow, conten
 	}
 
 	return nil
+}
+
+func markConfigUsedInInputMapping(omConfig *model.Config, imConfig configOrRow) {
+	omConfig.Relations.Add(&model.UsedInInputMappingRelation{
+		ConfigKey: imConfig.Key(),
+	})
 }

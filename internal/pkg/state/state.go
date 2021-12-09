@@ -14,7 +14,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/defaultbucket"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/description"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/orchestrator"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper/relations"
 	schedulerMapper "github.com/keboola/keboola-as-code/internal/pkg/mapper/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
@@ -120,7 +119,7 @@ func newState(options *Options) *State {
 		// Core files
 		description.NewMapper(),
 		// Storage
-		defaultbucket.NewMapper(mapperContext),
+		defaultbucket.NewMapper(s.localManager, mapperContext),
 		// Variables
 		variables.NewMapper(mapperContext),
 		sharedcode.NewVariablesMapper(mapperContext),
@@ -132,8 +131,6 @@ func newState(options *Options) *State {
 		sharedcode.NewCodesMapper(mapperContext),
 		// Shared code links
 		sharedcode.NewLinksMapper(s.localManager, mapperContext),
-		// Relations between objects
-		relations.NewMapper(mapperContext),
 	}
 	s.mapper.AddMapper(mappers...)
 
