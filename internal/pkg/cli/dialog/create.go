@@ -60,7 +60,8 @@ func (p *Dialogs) AskCreateConfig(d createDeps, loadStateOptions loadState.Optio
 	}
 
 	// Branch
-	branch, err := p.selectTargetBranch(d, projectState)
+	allBranches := projectState.LocalObjects().Branches()
+	branch, err := p.SelectBranch(d.Options(), allBranches, `Select the target branch`)
 	if err != nil {
 		return out, err
 	}
@@ -93,14 +94,16 @@ func (p *Dialogs) AskCreateRow(d createDeps, loadStateOptions loadState.Options)
 	}
 
 	// Branch
-	branch, err := p.selectTargetBranch(d, projectState)
+	allBranches := projectState.LocalObjects().Branches()
+	branch, err := p.SelectBranch(d.Options(), allBranches, `Select the target branch`)
 	if err != nil {
 		return out, err
 	}
 	out.BranchId = branch.Id
 
 	// Config
-	config, err := p.selectTargetConfig(d, projectState, branch.BranchKey)
+	allConfigs := projectState.LocalObjects().ConfigsFrom(branch.BranchKey)
+	config, err := p.SelectConfig(d.Options(), allConfigs, `Select the target config`)
 	if err != nil {
 		return out, err
 	}
@@ -131,63 +134,6 @@ func (p *Dialogs) askObjectName(d createDeps, desc string) (string, error) {
 		return ``, fmt.Errorf(`missing name, please specify it`)
 	}
 	return name, nil
-}
-
-func (p *Dialogs) selectTargetBranch(d createDeps, projectState *state.State) (*model.BranchState, error) {
-	var branch *model.BranchState
-	if d.Options().IsSet(`branch`) {
-		if b, err := projectState.SearchForBranch(d.Options().GetString(`branch`)); err == nil {
-			branch = b
-		} else {
-			return nil, err
-		}
-	} else {
-		branches := projectState.Branches()
-		selectOpts := make([]string, 0)
-		for _, b := range branches {
-			selectOpts = append(selectOpts, fmt.Sprintf(`%s (%s)`, b.ObjectName(), b.ObjectId()))
-		}
-		if index, ok := p.SelectIndex(&prompt.SelectIndex{
-			Label:   `Select the target branch`,
-			Options: selectOpts,
-		}); ok {
-			branch = branches[index]
-		}
-	}
-	if branch == nil {
-		return nil, fmt.Errorf(`missing branch, please specify it`)
-	}
-
-	return branch, nil
-}
-
-func (p *Dialogs) selectTargetConfig(d createDeps, projectState *state.State, branch model.BranchKey) (*model.ConfigState, error) {
-	var config *model.ConfigState
-	if d.Options().IsSet(`config`) {
-		if c, err := projectState.SearchForConfig(d.Options().GetString(`config`), branch); err == nil {
-			config = c
-		} else {
-			return nil, err
-		}
-	} else {
-		// Show select prompt
-		configs := projectState.ConfigsFrom(branch)
-		selectOpts := make([]string, 0)
-		for _, b := range configs {
-			selectOpts = append(selectOpts, fmt.Sprintf(`%s (%s)`, b.ObjectName(), b.ObjectId()))
-		}
-		if index, ok := p.SelectIndex(&prompt.SelectIndex{
-			Label:   `Select the target config`,
-			Options: selectOpts,
-		}); ok {
-			config = configs[index]
-		}
-	}
-	if config == nil {
-		return nil, fmt.Errorf(`missing config, please specify it`)
-	}
-
-	return config, nil
 }
 
 func (p *Dialogs) askComponentId(d createDeps) (string, error) {

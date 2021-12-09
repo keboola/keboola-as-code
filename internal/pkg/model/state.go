@@ -2,10 +2,8 @@ package model
 
 import (
 	"fmt"
-	"strings"
 	"sync"
 
-	"github.com/spf13/cast"
 	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -133,31 +131,6 @@ func (s *State) Branches() (branches []*BranchState) {
 	return branches
 }
 
-// SearchForBranches by ID and name.
-func (s *State) SearchForBranches(str string) []*BranchState {
-	matches := make([]*BranchState, 0)
-	for _, object := range s.Branches() {
-		if matchObjectIdOrName(str, object) {
-			matches = append(matches, object)
-		}
-	}
-	return matches
-}
-
-// SearchForBranch by ID and name.
-func (s *State) SearchForBranch(str string) (*BranchState, error) {
-	branches := s.SearchForBranches(str)
-	switch len(branches) {
-	case 1:
-		// ok, one match
-		return branches[0], nil
-	case 0:
-		return nil, fmt.Errorf(`no branch matches the specified "%s"`, str)
-	default:
-		return nil, fmt.Errorf(`multiple branches match the specified "%s"`, str)
-	}
-}
-
 func (s *State) Configs() (configs []*ConfigState) {
 	for _, object := range s.All() {
 		if v, ok := object.(*ConfigState); ok {
@@ -179,31 +152,6 @@ func (s *State) ConfigsFrom(branch BranchKey) (configs []*ConfigState) {
 	return configs
 }
 
-// SearchForConfigs by ID and name.
-func (s *State) SearchForConfigs(str string, branch BranchKey) []*ConfigState {
-	matches := make([]*ConfigState, 0)
-	for _, object := range s.ConfigsFrom(branch) {
-		if matchObjectIdOrName(str, object) {
-			matches = append(matches, object)
-		}
-	}
-	return matches
-}
-
-// SearchForConfig by ID and name.
-func (s *State) SearchForConfig(str string, branch BranchKey) (*ConfigState, error) {
-	configs := s.SearchForConfigs(str, branch)
-	switch len(configs) {
-	case 1:
-		// ok, one match
-		return configs[0], nil
-	case 0:
-		return nil, fmt.Errorf(`no config matches the specified "%s"`, str)
-	default:
-		return nil, fmt.Errorf(`multiple configs match the specified "%s"`, str)
-	}
-}
-
 func (s *State) ConfigRows() (rows []*ConfigRowState) {
 	for _, object := range s.All() {
 		if v, ok := object.(*ConfigRowState); ok {
@@ -223,31 +171,6 @@ func (s *State) ConfigRowsFrom(config ConfigKey) (rows []*ConfigRowState) {
 		}
 	}
 	return rows
-}
-
-// SearchForConfigRows by ID and name.
-func (s *State) SearchForConfigRows(str string, config ConfigKey) []*ConfigRowState {
-	matches := make([]*ConfigRowState, 0)
-	for _, object := range s.ConfigRowsFrom(config) {
-		if matchObjectIdOrName(str, object) {
-			matches = append(matches, object)
-		}
-	}
-	return matches
-}
-
-// SearchForConfigRow by ID and name.
-func (s *State) SearchForConfigRow(str string, config ConfigKey) (*ConfigRowState, error) {
-	rows := s.SearchForConfigRows(str, config)
-	switch len(rows) {
-	case 1:
-		// ok, one match
-		return rows[0], nil
-	case 0:
-		return nil, fmt.Errorf(`no row matches the specified "%s"`, str)
-	default:
-		return nil, fmt.Errorf(`multiple rows match the specified "%s"`, str)
-	}
 }
 
 func (s *State) Get(key Key) (ObjectState, bool) {
@@ -333,16 +256,6 @@ func (s *State) LogUntrackedPaths(logger *zap.SugaredLogger) {
 	s.pathsState.LogUntrackedPaths(logger)
 }
 
-// matchObjectIdOrName returns true if str == objectId or objectName contains str.
-func matchObjectIdOrName(str string, object ObjectIdAndName) bool {
-	if cast.ToString(object.ObjectId()) == str {
-		return true
-	}
-
-	// Matched by name
-	return strings.Contains(strings.ToLower(object.ObjectName()), strings.ToLower(str))
-}
-
 type StateType int
 
 const (
@@ -369,6 +282,15 @@ func (f *StateObjects) All() []Object {
 	return out
 }
 
+func (f *StateObjects) Branches() (branches []*Branch) {
+	for _, branch := range f.state.Branches() {
+		if branch.HasState(f.stateType) {
+			branches = append(branches, branch.GetState(f.stateType).(*Branch))
+		}
+	}
+	return branches
+}
+
 func (f *StateObjects) Get(key Key) (Object, bool) {
 	objectState, found := f.state.Get(key)
 	if !found || !objectState.HasState(f.stateType) {
@@ -383,6 +305,15 @@ func (f *StateObjects) MustGet(key Key) Object {
 		panic(fmt.Errorf(`%s not found`, key.Desc()))
 	}
 	return objectState.GetState(f.stateType)
+}
+
+func (f *StateObjects) ConfigsFrom(branch BranchKey) (configs []*Config) {
+	for _, config := range f.state.ConfigsFrom(branch) {
+		if config.HasState(f.stateType) {
+			configs = append(configs, config.GetState(f.stateType).(*Config))
+		}
+	}
+	return configs
 }
 
 func (f *StateObjects) ConfigRowsFrom(config ConfigKey) (rows []*ConfigRow) {
