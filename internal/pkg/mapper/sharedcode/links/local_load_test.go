@@ -38,28 +38,30 @@ func TestSharedCodeLinksAfterLocalLoad(t *testing.T) {
 					Value: `_shared/keboola.python-transformation-v2`,
 				},
 			}),
-			Blocks: model.Blocks{
-				{
-					Name: `Block 1`,
-					Codes: model.Codes{
-						{
-							CodeKey: model.CodeKey{
-								ComponentId: `keboola.python-transformation-v2`,
+			Transformation: &model.Transformation{
+				Blocks: []*model.Block{
+					{
+						Name: `Block 1`,
+						Codes: model.Codes{
+							{
+								CodeKey: model.CodeKey{
+									ComponentId: `keboola.python-transformation-v2`,
+								},
+								Name: `Code 1`,
+								Scripts: []string{
+									`print(100)`,
+									"# {{:codes/code1}}\n",
+								},
 							},
-							Name: `Code 1`,
-							Scripts: []string{
-								`print(100)`,
-								"# {{:codes/code1}}\n",
-							},
-						},
-						{
-							CodeKey: model.CodeKey{
-								ComponentId: `keboola.python-transformation-v2`,
-							},
-							Name: `Code 2`,
-							Scripts: []string{
-								" {{:codes/code2}}\n",
-								"#     {{:codes/code1}}",
+							{
+								CodeKey: model.CodeKey{
+									ComponentId: `keboola.python-transformation-v2`,
+								},
+								Name: `Code 2`,
+								Scripts: []string{
+									" {{:codes/code2}}\n",
+									"#     {{:codes/code1}}",
+								},
 							},
 						},
 					},
@@ -87,7 +89,7 @@ func TestSharedCodeLinksAfterLocalLoad(t *testing.T) {
 	assert.Equal(t, sharedCodeRowIds, []interface{}{`1234`, `5678`})
 
 	// Paths in transformation blocks are replaced by IDs
-	assert.Equal(t, model.Blocks{
+	assert.Equal(t, []*model.Block{
 		{
 			Name: `Block 1`,
 			Codes: model.Codes{
@@ -113,5 +115,5 @@ func TestSharedCodeLinksAfterLocalLoad(t *testing.T) {
 				},
 			},
 		},
-	}, configState.Local.Blocks)
+	}, configState.Local.Transformation.Blocks)
 }

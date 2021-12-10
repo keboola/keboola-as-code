@@ -66,7 +66,7 @@ func (m *mapper) replaceSharedCodeIdByPath(recipe *model.LocalSaveRecipe) error 
 
 	// Replace IDs -> paths in scripts
 	errors := utils.NewMultiError()
-	for _, block := range transformation.Blocks {
+	for _, block := range transformation.Transformation.Blocks {
 		for _, code := range block.Codes {
 			for index, script := range code.Scripts {
 				if v, err := m.replaceIdByPathInScript(script, code, sharedCodeState); err != nil {

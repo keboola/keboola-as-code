@@ -48,7 +48,7 @@ func (w *localWriter) save() error {
 		AddTag(model.FileKindGitKeep)
 
 	// Generate files for blocks
-	for _, block := range w.config.Blocks {
+	for _, block := range w.config.Transformation.Blocks {
 		// Generate block files
 		w.generateBlockFiles(block)
 	}

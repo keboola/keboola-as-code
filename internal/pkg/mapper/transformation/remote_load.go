@@ -37,12 +37,13 @@ func (m *transformationMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe
 	config.Content.Set(`parameters`, parameters)
 
 	// Convert map to Block structs
-	if err := json.ConvertByJson(blocks, &config.Blocks); err != nil {
+	config.Transformation = &model.Transformation{}
+	if err := json.ConvertByJson(blocks, &config.Transformation.Blocks); err != nil {
 		return err
 	}
 
 	// Fill in keys
-	for blockIndex, block := range config.Blocks {
+	for blockIndex, block := range config.Transformation.Blocks {
 		block.BranchId = config.BranchId
 		block.ComponentId = config.ComponentId
 		block.ConfigId = config.Id
@@ -62,7 +63,7 @@ func (m *transformationMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe
 	// Set paths if parent path is set
 	if recipe.Manifest.Path() != "" {
 		blocksDir := m.Naming.BlocksDir(recipe.Manifest.Path())
-		for _, block := range config.Blocks {
+		for _, block := range config.Transformation.Blocks {
 			if path, found := m.Naming.GetCurrentPath(block.Key()); found {
 				block.PathInProject = path
 			} else {

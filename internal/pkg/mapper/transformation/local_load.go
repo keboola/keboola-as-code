@@ -54,7 +54,7 @@ func (l *localLoader) loadBlocks() error {
 	// Validate, if all loaded without error
 	l.validate()
 
-	l.config.Blocks = l.blocks
+	l.config.Transformation = &model.Transformation{Blocks: l.blocks}
 	return l.errors.ErrorOrNil()
 }
 

@@ -32,26 +32,28 @@ func TestConfig_Clone(t *testing.T) {
 		Content: orderedmap.FromPairs([]orderedmap.Pair{
 			{Key: "key", Value: "value"},
 		}),
-		Blocks: Blocks{
-			{
-				BlockKey: BlockKey{
-					BranchId:    123,
-					ComponentId: `foo.bar`,
-					ConfigId:    `456`,
-					Index:       1,
-				},
-				Name: "my block",
-				Codes: Codes{
-					{
-						CodeKey: CodeKey{
-							BranchId:    123,
-							ComponentId: `foo.bar`,
-							ConfigId:    `456`,
-							BlockIndex:  1,
-							Index:       1,
+		Transformation: &Transformation{
+			Blocks: []*Block{
+				{
+					BlockKey: BlockKey{
+						BranchId:    123,
+						ComponentId: `foo.bar`,
+						ConfigId:    `456`,
+						Index:       1,
+					},
+					Name: "my block",
+					Codes: Codes{
+						{
+							CodeKey: CodeKey{
+								BranchId:    123,
+								ComponentId: `foo.bar`,
+								ConfigId:    `456`,
+								BlockIndex:  1,
+								Index:       1,
+							},
+							Name:    "my code",
+							Scripts: []string{"foo", "bar"},
 						},
-						Name:    "my code",
-						Scripts: []string{"foo", "bar"},
 					},
 				},
 			},

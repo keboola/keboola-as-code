@@ -134,5 +134,5 @@ func TestLocalLoadModelInvalidTransformation(t *testing.T) {
 	assert.Equal(t, strings.TrimSpace(expectedErr), err.Error())
 
 	// But the blocks are parsed, no crash
-	assert.Len(t, target.Blocks, 1)
+	assert.Len(t, target.Transformation.Blocks, 1)
 }

@@ -39,28 +39,30 @@ func TestSharedCodeLinksMapBeforeLocalSave(t *testing.T) {
 					Value: []string{`1234`, `5678`},
 				},
 			}),
-			Blocks: model.Blocks{
-				{
-					Name: `Block 1`,
-					Codes: model.Codes{
-						{
-							CodeKey: model.CodeKey{
-								ComponentId: `keboola.python-transformation-v2`,
+			Transformation: &model.Transformation{
+				Blocks: []*model.Block{
+					{
+						Name: `Block 1`,
+						Codes: model.Codes{
+							{
+								CodeKey: model.CodeKey{
+									ComponentId: `keboola.python-transformation-v2`,
+								},
+								Name: `Code 1`,
+								Scripts: []string{
+									`print(100)`,
+									" {{1234}}\n",
+								},
 							},
-							Name: `Code 1`,
-							Scripts: []string{
-								`print(100)`,
-								" {{1234}}\n",
-							},
-						},
-						{
-							CodeKey: model.CodeKey{
-								ComponentId: `keboola.python-transformation-v2`,
-							},
-							Name: `Code 2`,
-							Scripts: []string{
-								" {{5678}}\n",
-								"{{1234}}",
+							{
+								CodeKey: model.CodeKey{
+									ComponentId: `keboola.python-transformation-v2`,
+								},
+								Name: `Code 2`,
+								Scripts: []string{
+									" {{5678}}\n",
+									"{{1234}}",
+								},
 							},
 						},
 					},
@@ -87,7 +89,7 @@ func TestSharedCodeLinksMapBeforeLocalSave(t *testing.T) {
 	assert.Equal(t, sharedCodeId, `_shared/keboola.python-transformation-v2`)
 
 	// IDs in transformation blocks are replaced by paths
-	assert.Equal(t, model.Blocks{
+	assert.Equal(t, []*model.Block{
 		{
 			Name: `Block 1`,
 			Codes: model.Codes{
@@ -113,5 +115,5 @@ func TestSharedCodeLinksMapBeforeLocalSave(t *testing.T) {
 				},
 			},
 		},
-	}, configState.Local.Blocks)
+	}, configState.Local.Transformation.Blocks)
 }

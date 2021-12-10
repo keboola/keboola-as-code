@@ -15,7 +15,7 @@ import (
 func TestRemoteSaveTransformation(t *testing.T) {
 	t.Parallel()
 	context, configState := createTestFixtures(t, "keboola.snowflake-transformation")
-	blocks := model.Blocks{
+	blocks := []*model.Block{
 		{
 			Name: "001",
 			Codes: model.Codes{
@@ -55,7 +55,7 @@ func TestRemoteSaveTransformation(t *testing.T) {
 		ConfigKey: configState.ConfigKey,
 		Content:   orderedmap.New(),
 	}
-	internalConfig.Blocks = blocks
+	internalConfig.Transformation = &model.Transformation{Blocks: blocks}
 	apiConfig := internalConfig.Clone().(*model.Config)
 	recipe := &model.RemoteSaveRecipe{
 		ChangedFields:  model.NewChangedFields("blocks"),
@@ -68,7 +68,7 @@ func TestRemoteSaveTransformation(t *testing.T) {
 	assert.NoError(t, NewMapper(context).MapBeforeRemoteSave(recipe))
 
 	// Internal object is not modified
-	assert.NotEmpty(t, internalConfig.Blocks)
+	assert.NotEmpty(t, internalConfig.Transformation.Blocks)
 	assert.Nil(t, internalConfig.Content.GetNestedOrNil(`parameters.blocks`))
 
 	// Blocks are stored in API object content
@@ -109,7 +109,7 @@ func TestRemoteSaveTransformation(t *testing.T) {
   }
 ]
 `
-	assert.Empty(t, apiConfig.Blocks)
+	assert.Empty(t, apiConfig.Transformation)
 	apiBlocks := apiConfig.Content.GetNestedOrNil(`parameters.blocks`)
 	assert.NotNil(t, blocks)
 	assert.Equal(t, strings.TrimLeft(expectedBlocks, "\n"), json.MustEncodeString(apiBlocks, true))

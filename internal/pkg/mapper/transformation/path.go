@@ -11,12 +11,12 @@ func (m *transformationMapper) OnObjectPathUpdate(event model.OnObjectPathUpdate
 	// Rename transformation blocks/codes
 	configState := event.ObjectState.(*model.ConfigState)
 	if configState.HasLocalState() {
-		for _, block := range configState.Local.Blocks {
+		for _, block := range configState.Local.Transformation.Blocks {
 			m.updateBlockPath(event.PathsGenerator, configState, block)
 		}
 	}
 	if configState.HasRemoteState() {
-		for _, block := range configState.Remote.Blocks {
+		for _, block := range configState.Remote.Transformation.Blocks {
 			m.updateBlockPath(event.PathsGenerator, configState, block)
 		}
 	}
