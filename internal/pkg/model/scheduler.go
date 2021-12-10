@@ -6,8 +6,8 @@ import (
 
 // SchedulerForRelation - scheduler for a configuration.
 type SchedulerForRelation struct {
-	ComponentId string `json:"componentId" validate:"required"`
-	ConfigId    string `json:"configId" validate:"required"`
+	ComponentId ComponentId `json:"componentId" validate:"required"`
+	ConfigId    ConfigId    `json:"configId" validate:"required"`
 }
 
 func (t *SchedulerForRelation) Type() RelationType {

@@ -44,7 +44,7 @@ func (m *variablesMapper) saveVariables(apiObject, internalObject *model.Config,
 	relation := relationRaw.(*model.VariablesFromRelation)
 
 	// Set variables ID
-	apiObject.Content.Set(model.VariablesIdContentKey, relation.VariablesId)
+	apiObject.Content.Set(model.VariablesIdContentKey, relation.VariablesId.String())
 
 	// Delete relation
 	apiObject.Relations.RemoveByType(relType)
@@ -63,7 +63,7 @@ func (m *variablesMapper) saveVariablesValues(apiObject, internalObject *model.C
 	relation := relationRaw.(*model.VariablesValuesFromRelation)
 
 	// Set values ID
-	apiObject.Content.Set(model.VariablesValuesIdContentKey, relation.VariablesValuesId)
+	apiObject.Content.Set(model.VariablesValuesIdContentKey, relation.VariablesValuesId.String())
 
 	// Delete relation
 	apiObject.Relations.RemoveByType(relType)

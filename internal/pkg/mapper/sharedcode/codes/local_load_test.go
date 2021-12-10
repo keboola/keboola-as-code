@@ -13,7 +13,7 @@ import (
 
 func TestSharedCodeLoadMissingFile(t *testing.T) {
 	t.Parallel()
-	targetComponentId := `keboola.python-transformation-v2`
+	targetComponentId := model.ComponentId(`keboola.python-transformation-v2`)
 	context, rowState := createTestFixtures(t, targetComponentId)
 	recipe := fixtures.NewLocalLoadRecipe(rowState.Manifest(), rowState.Local)
 
@@ -24,7 +24,7 @@ func TestSharedCodeLoadMissingFile(t *testing.T) {
 
 func TestSharedCodeLoadOk(t *testing.T) {
 	t.Parallel()
-	targetComponentId := `keboola.python-transformation-v2`
+	targetComponentId := model.ComponentId(`keboola.python-transformation-v2`)
 	context, rowState := createTestFixtures(t, targetComponentId)
 	recipe := fixtures.NewLocalLoadRecipe(rowState.Manifest(), rowState.Local)
 

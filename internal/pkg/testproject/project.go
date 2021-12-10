@@ -43,7 +43,7 @@ type Project struct {
 	api            *remote.StorageApi
 	schedulerApi   *scheduler.Api
 	defaultBranch  *model.Branch
-	branchesById   map[int]*model.Branch
+	branchesById   map[model.BranchId]*model.Branch
 	branchesByName map[string]*model.Branch
 	envLock        *sync.Mutex
 	envs           *env.Map
@@ -155,7 +155,7 @@ func (p *Project) Clear() {
 	startTime := time.Now()
 
 	// Clear branches maps
-	p.branchesById = make(map[int]*model.Branch)
+	p.branchesById = make(map[model.BranchId]*model.Branch)
 	p.branchesByName = make(map[string]*model.Branch)
 
 	// Delete all configs in default branch, it cannot be deleted
@@ -252,13 +252,13 @@ func (p *Project) createBranches(branches []*fixtures.BranchState) {
 			if _, err := p.api.UpdateBranch(p.defaultBranch, model.NewChangedFields("description")); err != nil {
 				assert.FailNow(p.t, fmt.Sprintf("cannot set default branch description: %s", err))
 			}
-			p.setEnv(fmt.Sprintf("TEST_BRANCH_%s_ID", branch.Name), cast.ToString(branch.Id))
+			p.setEnv(fmt.Sprintf("TEST_BRANCH_%s_ID", branch.Name), branch.Id.String())
 		} else {
 			p.api.
 				CreateBranchRequest(branch).
 				OnSuccess(func(response *client.Response) {
 					p.logf(`crated branch "%s", id: "%d"`, branch.Name, branch.Id)
-					p.setEnv(fmt.Sprintf("TEST_BRANCH_%s_ID", branch.Name), cast.ToString(branch.Id))
+					p.setEnv(fmt.Sprintf("TEST_BRANCH_%s_ID", branch.Name), branch.Id.String())
 					p.branchesById[branch.Id] = branch
 					p.branchesByName[branch.Name] = branch
 				}).
@@ -352,8 +352,8 @@ func (p *Project) prepareConfigs(names []string, branch *model.Branch, tickets *
 		// In tests must be rows IDs order always equal
 		p.logf("creating IDs for config \"%s/%s/%s\"", branch.Name, config.ComponentId, config.Name)
 		tickets.Request(func(ticket *model.Ticket) {
-			config.Id = ticket.Id
-			p.setEnv(fmt.Sprintf("%s_%s_ID", envPrefix, config.Name), config.Id)
+			config.Id = model.ConfigId(ticket.Id)
+			p.setEnv(fmt.Sprintf("%s_%s_ID", envPrefix, config.Name), config.Id.String())
 		})
 		for rowIndex, r := range config.Rows {
 			row := r
@@ -362,8 +362,8 @@ func (p *Project) prepareConfigs(names []string, branch *model.Branch, tickets *
 				rowName = cast.ToString(rowIndex + 1)
 			}
 			tickets.Request(func(ticket *model.Ticket) {
-				row.Id = ticket.Id
-				p.setEnv(fmt.Sprintf("%s_%s_ROW_%s_ID", envPrefix, config.Name, rowName), row.Id)
+				row.Id = model.RowId(ticket.Id)
+				p.setEnv(fmt.Sprintf("%s_%s_ROW_%s_ID", envPrefix, config.Name, rowName), row.Id.String())
 			})
 		}
 	}

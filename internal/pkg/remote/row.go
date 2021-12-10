@@ -4,13 +4,12 @@ import (
 	"fmt"
 
 	"github.com/go-resty/resty/v2"
-	"github.com/spf13/cast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func (a *StorageApi) GetConfigRow(branchId int, componentId string, configId string, rowId string) (*model.ConfigRow, error) {
+func (a *StorageApi) GetConfigRow(branchId model.BranchId, componentId model.ComponentId, configId model.ConfigId, rowId model.RowId) (*model.ConfigRow, error) {
 	response := a.GetConfigRowRequest(branchId, componentId, configId, rowId).Send().Response
 	if response.HasResult() {
 		return response.Result().(*model.ConfigRow), nil
@@ -49,7 +48,7 @@ func (a *StorageApi) DeleteConfigRow(row model.ConfigRowKey) error {
 }
 
 // GetConfigRowRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/manage-configuration-rows/row-detail
-func (a *StorageApi) GetConfigRowRequest(branchId int, componentId string, configId string, rowId string) *client.Request {
+func (a *StorageApi) GetConfigRowRequest(branchId model.BranchId, componentId model.ComponentId, configId model.ConfigId, rowId model.RowId) *client.Request {
 	row := &model.ConfigRow{}
 	row.BranchId = branchId
 	row.ComponentId = componentId
@@ -69,15 +68,15 @@ func (a *StorageApi) CreateConfigRowRequest(row *model.ConfigRow) (*client.Reque
 
 	// Create row with the defined ID
 	if row.Id != "" {
-		values["rowId"] = row.Id
+		values["rowId"] = row.Id.String()
 	}
 
 	// Create request
 	request := a.
 		NewRequest(resty.MethodPost, "branch/{branchId}/components/{componentId}/configs/{configId}/rows").
-		SetPathParam("branchId", cast.ToString(row.BranchId)).
-		SetPathParam("componentId", row.ComponentId).
-		SetPathParam("configId", row.ConfigId).
+		SetPathParam("branchId", row.BranchId.String()).
+		SetPathParam("componentId", row.ComponentId.String()).
+		SetPathParam("configId", row.ConfigId.String()).
 		SetFormBody(values).
 		SetResult(row)
 
@@ -100,10 +99,10 @@ func (a *StorageApi) UpdateConfigRowRequest(row *model.ConfigRow, changed model.
 	// Create request
 	request := a.
 		NewRequest(resty.MethodPut, "branch/{branchId}/components/{componentId}/configs/{configId}/rows/{rowId}").
-		SetPathParam("branchId", cast.ToString(row.BranchId)).
-		SetPathParam("componentId", row.ComponentId).
-		SetPathParam("configId", row.ConfigId).
-		SetPathParam("rowId", row.Id).
+		SetPathParam("branchId", row.BranchId.String()).
+		SetPathParam("componentId", row.ComponentId.String()).
+		SetPathParam("configId", row.ConfigId.String()).
+		SetPathParam("rowId", row.Id.String()).
 		SetFormBody(getChangedValues(values, changed)).
 		SetResult(row)
 
@@ -113,8 +112,8 @@ func (a *StorageApi) UpdateConfigRowRequest(row *model.ConfigRow, changed model.
 // DeleteConfigRowRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/manage-configuration-rows/update-row
 func (a *StorageApi) DeleteConfigRowRequest(key model.ConfigRowKey) *client.Request {
 	return a.NewRequest(resty.MethodDelete, "branch/{branchId}/components/{componentId}/configs/{configId}/rows/{rowId}").
-		SetPathParam("branchId", cast.ToString(key.BranchId)).
-		SetPathParam("componentId", key.ComponentId).
-		SetPathParam("configId", key.ConfigId).
-		SetPathParam("rowId", key.Id)
+		SetPathParam("branchId", key.BranchId.String()).
+		SetPathParam("componentId", key.ComponentId.String()).
+		SetPathParam("configId", key.ConfigId.String()).
+		SetPathParam("rowId", key.Id.String())
 }

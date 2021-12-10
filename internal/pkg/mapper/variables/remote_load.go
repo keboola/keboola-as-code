@@ -32,7 +32,7 @@ func (m *variablesMapper) loadVariables(apiObject, internalObject *model.Config)
 
 	// Create relation
 	internalObject.AddRelation(&model.VariablesFromRelation{
-		VariablesId: variablesId,
+		VariablesId: model.ConfigId(variablesId),
 	})
 
 	// Remove variables ID from configuration content
@@ -60,7 +60,7 @@ func (m *variablesMapper) loadVariablesValues(apiObject, internalObject *model.C
 
 	// Create relation
 	internalObject.AddRelation(&model.VariablesValuesFromRelation{
-		VariablesValuesId: valuesId,
+		VariablesValuesId: model.RowId(valuesId),
 	})
 
 	// Remove variables ID from configuration content

@@ -326,15 +326,15 @@ func (n Naming) CodeFilePath(code *Code) string {
 	return filesystem.Join(code.Path(), code.CodeFileName)
 }
 
-func (n Naming) SharedCodeFilePath(parentPath, targetComponentId string) string {
+func (n Naming) SharedCodeFilePath(parentPath string, targetComponentId ComponentId) string {
 	return filesystem.Join(parentPath, n.CodeFileName(targetComponentId))
 }
 
-func (n Naming) CodeFileName(componentId string) string {
+func (n Naming) CodeFileName(componentId ComponentId) string {
 	return CodeFileName + "." + n.CodeFileExt(componentId)
 }
 
-func (n Naming) CodeFileExt(componentId string) string {
+func (n Naming) CodeFileExt(componentId ComponentId) string {
 	switch componentId {
 	case `keboola.snowflake-transformation`:
 		return SqlExt
@@ -406,7 +406,7 @@ func (n Naming) TaskFilePath(task *Task) string {
 	return filesystem.Join(task.Path(), TaskFile)
 }
 
-func (n Naming) MatchConfigPath(parentKey Key, path PathInProject) (componentId string, err error) {
+func (n Naming) MatchConfigPath(parentKey Key, path PathInProject) (componentId ComponentId, err error) {
 	parent := parentKey.Kind()
 	if parent.IsBranch() {
 		// Shared code
@@ -421,7 +421,7 @@ func (n Naming) MatchConfigPath(parentKey Key, path PathInProject) (componentId 
 			if !ok || componentId == "" {
 				return "", fmt.Errorf(`config's component id cannot be determined, path: "%s", path template: "%s"`, path.Path(), n.Config)
 			}
-			return componentId, nil
+			return ComponentId(componentId), nil
 		}
 	}
 

@@ -4,18 +4,20 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func (m *mapper) matchId(script string) string {
+func (m *mapper) matchId(script string) model.RowId {
 	script = strings.TrimSpace(script)
 	match := m.idRegexp.FindStringSubmatch(script)
 	if len(match) > 0 {
-		return match[1]
+		return model.RowId(match[1])
 	}
 	return ""
 }
 
-func (m *mapper) matchPath(script, componentId string) string {
+func (m *mapper) matchPath(script string, componentId model.ComponentId) string {
 	comment := m.Naming.CodeFileComment(m.Naming.CodeFileExt(componentId))
 	script = strings.TrimSpace(script)
 	script = strings.TrimPrefix(script, comment)
@@ -27,15 +29,15 @@ func (m *mapper) matchPath(script, componentId string) string {
 	return ""
 }
 
-func (m *mapper) formatId(id string) string {
-	placeholder := strings.ReplaceAll(IdFormat, `<ID>`, id)
+func (m *mapper) formatId(id model.RowId) string {
+	placeholder := strings.ReplaceAll(IdFormat, `<ID>`, id.String())
 	if ok := m.idRegexp.MatchString(placeholder); !ok {
 		panic(fmt.Errorf(`shared code id "%s" is invalid`, id))
 	}
 	return placeholder
 }
 
-func (m *mapper) formatPath(path, componentId string) string {
+func (m *mapper) formatPath(path string, componentId model.ComponentId) string {
 	placeholder := strings.ReplaceAll(PathFormat, `<PATH>`, path)
 	if ok := m.pathRegexp.MatchString(placeholder); !ok {
 		panic(fmt.Errorf(`shared code path "%s" is invalid`, path))

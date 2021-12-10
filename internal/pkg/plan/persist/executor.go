@@ -67,10 +67,10 @@ func (e *executor) persistNewObject(action *newObjectAction) {
 		// Set new id to the key
 		switch k := key.(type) {
 		case model.ConfigKey:
-			k.Id = ticket.Id
+			k.Id = model.ConfigId(ticket.Id)
 			key = k
 		case model.ConfigRowKey:
-			k.Id = ticket.Id
+			k.Id = model.RowId(ticket.Id)
 			key = k
 		default:
 			panic(fmt.Errorf(`unexpected type "%s" of the persisted object "%s"`, key.Kind(), key.Desc()))

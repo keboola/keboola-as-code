@@ -39,7 +39,7 @@ func (m *mapper) onLocalLoad(object model.Object) error {
 	// Check componentId
 	if targetComponentId != transformation.ComponentId {
 		errors := utils.NewMultiError()
-		errors.Append(fmt.Errorf(`unexpected shared code "%s" in %s`, model.SharedCodeComponentIdContentKey, sharedCodeState.Desc()))
+		errors.Append(fmt.Errorf(`unexpected shared code "%s" in %s`, model.ShareCodeTargetComponentKey, sharedCodeState.Desc()))
 		errors.Append(fmt.Errorf(`  - expected "%s"`, transformation.ComponentId))
 		errors.Append(fmt.Errorf(`  - found "%s"`, targetComponentId))
 		errors.Append(fmt.Errorf(`  - referenced from %s`, transformation.Desc()))
@@ -47,11 +47,11 @@ func (m *mapper) onLocalLoad(object model.Object) error {
 	}
 
 	// Replace Shared Code Path -> Shared Code ID
-	transformation.Content.Set(model.SharedCodeIdContentKey, sharedCodeState.Id)
+	transformation.Content.Set(model.SharedCodeIdContentKey, sharedCodeState.Id.String())
 
 	// Replace paths -> IDs in scripts
 	errors := utils.NewMultiError()
-	rowIdsMap := make(map[string]bool)
+	rowIdsMap := make(map[model.RowId]bool)
 	for _, block := range transformation.Blocks {
 		for _, code := range block.Codes {
 			for index, script := range code.Scripts {
@@ -69,7 +69,7 @@ func (m *mapper) onLocalLoad(object model.Object) error {
 	// Convert row IDs map -> slice
 	rowIds := make([]interface{}, 0)
 	for id := range rowIdsMap {
-		rowIds = append(rowIds, id)
+		rowIds = append(rowIds, id.String())
 	}
 	sort.SliceStable(rowIds, func(i, j int) bool {
 		return rowIds[i].(string) < rowIds[j].(string)
@@ -81,7 +81,7 @@ func (m *mapper) onLocalLoad(object model.Object) error {
 }
 
 // replacePathByIdInScript from transformation code.
-func (m *mapper) replacePathByIdInScript(script string, code *model.Code, sharedCode *model.ConfigState) (string, string, error) {
+func (m *mapper) replacePathByIdInScript(script string, code *model.Code, sharedCode *model.ConfigState) (model.RowId, string, error) {
 	path := m.matchPath(script, code.ComponentId)
 	if path == "" {
 		// Not found

@@ -28,5 +28,5 @@ func TestNewComponentList(t *testing.T) {
 	components, err := api.NewComponentList()
 	assert.NoError(t, err)
 	assert.Greater(t, len(components), 0)
-	assert.True(t, strings.HasPrefix(components[0].Id, `keboola.`))
+	assert.True(t, strings.HasPrefix(components[0].Id.String(), `keboola.`))
 }

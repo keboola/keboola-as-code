@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/spf13/cast"
 	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
@@ -53,7 +52,7 @@ func Run(o Options, d dependencies) (err error) {
 
 	// Add new branch to the allowed branches if needed
 	if !projectManifest.AllowedBranches.IsBranchAllowed(branch) {
-		projectManifest.AllowedBranches = append(projectManifest.AllowedBranches, model.AllowedBranch(cast.ToString(branch.Id)))
+		projectManifest.AllowedBranches = append(projectManifest.AllowedBranches, model.AllowedBranch(branch.Id.String()))
 		if err := projectManifest.Save(); err != nil {
 			return fmt.Errorf(`cannot save manifest: %w`, err)
 		}

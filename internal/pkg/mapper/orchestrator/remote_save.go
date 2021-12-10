@@ -76,8 +76,8 @@ func (m *orchestratorMapper) serializeOrchestrationTo(config *model.Config, orch
 			}
 
 			// Set componentId/configId
-			target.Set(`componentId`, task.ComponentId)
-			target.Set(`configId`, task.ConfigId)
+			target.Set(`componentId`, task.ComponentId.String())
+			target.Set(`configId`, task.ConfigId.String())
 			taskContent.Set(`task`, *target)
 
 			// Add to output

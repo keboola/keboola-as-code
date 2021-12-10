@@ -20,7 +20,7 @@ func TestSharedCodeMapBeforeRemoteSave(t *testing.T) {
 		Content:      orderedmap.New(),
 	}
 	apiObject.AddRelation(&model.SharedCodeVariablesFromRelation{
-		VariablesId: variablesConfigId,
+		VariablesId: model.ConfigId(variablesConfigId),
 	})
 	internalObject := apiObject.Clone().(*model.ConfigRow)
 	recipe := &model.RemoteSaveRecipe{
@@ -37,7 +37,7 @@ func TestSharedCodeMapBeforeRemoteSave(t *testing.T) {
 	// Internal object is not changed
 	assert.Equal(t, model.Relations{
 		&model.SharedCodeVariablesFromRelation{
-			VariablesId: variablesConfigId,
+			VariablesId: model.ConfigId(variablesConfigId),
 		},
 	}, internalObject.Relations)
 	_, found := internalObject.Content.Get(model.SharedCodeVariablesIdContentKey)

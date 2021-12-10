@@ -18,7 +18,7 @@ func createTestFixtures(t *testing.T, componentId string) (model.MapperContext, 
 
 	configKey := model.ConfigKey{
 		BranchId:    123,
-		ComponentId: componentId,
+		ComponentId: model.ComponentId(componentId),
 		Id:          `456`,
 	}
 	configState := &model.ConfigState{

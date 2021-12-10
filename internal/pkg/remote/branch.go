@@ -25,7 +25,7 @@ func (a *StorageApi) GetDefaultBranch() (*model.Branch, error) {
 	return nil, fmt.Errorf("default branch not found")
 }
 
-func (a *StorageApi) GetBranch(branchId int) (*model.Branch, error) {
+func (a *StorageApi) GetBranch(branchId model.BranchId) (*model.Branch, error) {
 	response := a.GetBranchRequest(branchId).Send().Response
 	if response.HasResult() {
 		return response.Result().(*model.Branch), nil
@@ -66,11 +66,11 @@ func (a *StorageApi) DeleteBranch(key model.BranchKey) (*model.Job, error) {
 }
 
 // GetBranchRequest https://keboola.docs.apiary.io/#reference/development-branches/branch-manipulation/branch-detail
-func (a *StorageApi) GetBranchRequest(branchId int) *client.Request {
+func (a *StorageApi) GetBranchRequest(branchId model.BranchId) *client.Request {
 	branch := &model.Branch{}
 	return a.
 		NewRequest(resty.MethodGet, "dev-branches/{branchId}").
-		SetPathParam("branchId", cast.ToString(branchId)).
+		SetPathParam("branchId", branchId.String()).
 		SetResult(branch)
 }
 
@@ -98,7 +98,7 @@ func (a *StorageApi) CreateBranchRequest(branch *model.Branch) *client.Request {
 
 	request.OnSuccess(waitForJob(a, request, job, func(response *client.Response) {
 		// Set branch id from the job results
-		branch.Id = cast.ToInt(job.Results["id"])
+		branch.Id = model.BranchId(cast.ToInt(job.Results["id"]))
 	}))
 
 	return request
@@ -124,7 +124,7 @@ func (a *StorageApi) UpdateBranchRequest(branch *model.Branch, changed model.Cha
 	// Create request
 	request := a.
 		NewRequest(resty.MethodPut, "dev-branches/{branchId}").
-		SetPathParam("branchId", cast.ToString(branch.Id)).
+		SetPathParam("branchId", branch.Id.String()).
 		SetFormBody(getChangedValues(all, changed)).
 		SetResult(branch)
 
@@ -144,7 +144,7 @@ func (a *StorageApi) DeleteBranchRequest(key model.BranchKey) *client.Request {
 	job := &model.Job{}
 	request := a.
 		NewRequest(resty.MethodDelete, "dev-branches/{branchId}").
-		SetPathParam("branchId", cast.ToString(key.Id)).
+		SetPathParam("branchId", key.Id.String()).
 		SetResult(job)
 	request.OnSuccess(waitForJob(a, request, job, nil))
 	return request

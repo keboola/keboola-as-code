@@ -132,7 +132,7 @@ func (l *localLoader) addScripts(code *model.Code) {
 		AddTag(model.FileKindNativeCode)
 
 	// Split to scripts
-	code.Scripts = strhelper.ParseTransformationScripts(file.Content, l.config.ComponentId)
+	code.Scripts = strhelper.ParseTransformationScripts(file.Content, l.config.ComponentId.String())
 	l.Logger.Debugf(`Parsed "%d" scripts from "%s"`, len(code.Scripts), codeFilePath)
 }
 

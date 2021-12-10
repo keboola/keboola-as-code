@@ -18,10 +18,10 @@ func TestVariablesMapBeforeRemoteSave(t *testing.T) {
 	valuesConfigRowId := `456789`
 	apiObject := &model.Config{Content: orderedmap.New()}
 	apiObject.AddRelation(&model.VariablesFromRelation{
-		VariablesId: variablesConfigId,
+		VariablesId: model.ConfigId(variablesConfigId),
 	})
 	apiObject.AddRelation(&model.VariablesValuesFromRelation{
-		VariablesValuesId: valuesConfigRowId,
+		VariablesValuesId: model.RowId(valuesConfigRowId),
 	})
 	internalObject := apiObject.Clone().(*model.Config)
 	recipe := &model.RemoteSaveRecipe{
@@ -38,10 +38,10 @@ func TestVariablesMapBeforeRemoteSave(t *testing.T) {
 	// Internal object is not changed
 	assert.Equal(t, model.Relations{
 		&model.VariablesFromRelation{
-			VariablesId: variablesConfigId,
+			VariablesId: model.ConfigId(variablesConfigId),
 		},
 		&model.VariablesValuesFromRelation{
-			VariablesValuesId: valuesConfigRowId,
+			VariablesValuesId: model.RowId(valuesConfigRowId),
 		},
 	}, internalObject.Relations)
 	_, found := internalObject.Content.Get(model.VariablesIdContentKey)

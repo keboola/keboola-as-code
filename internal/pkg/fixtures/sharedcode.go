@@ -40,7 +40,7 @@ func CreateSharedCode(t *testing.T, state *model.State, naming *model.Naming) mo
 		Local: &model.Config{
 			ConfigKey: sharedCodeKey,
 			Content: orderedmap.FromPairs([]orderedmap.Pair{
-				{Key: model.SharedCodeComponentIdContentKey, Value: `keboola.python-transformation-v2`},
+				{Key: model.ShareCodeTargetComponentKey, Value: `keboola.python-transformation-v2`},
 			}),
 		},
 	}

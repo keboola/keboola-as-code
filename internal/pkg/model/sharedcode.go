@@ -6,13 +6,13 @@ import (
 
 // SharedCodeVariablesForRelation - variables for shared code.
 type SharedCodeVariablesForRelation struct {
-	ConfigId string `json:"configId" validate:"required"`
-	RowId    string `json:"rowId" validate:"required"`
+	ConfigId ConfigId `json:"configId" validate:"required"`
+	RowId    RowId    `json:"rowId" validate:"required"`
 }
 
 // SharedCodeVariablesFromRelation - variables from source configuration.
 type SharedCodeVariablesFromRelation struct {
-	VariablesId string `json:"variablesId" validate:"required"`
+	VariablesId ConfigId `json:"variablesId" validate:"required"`
 }
 
 func (t *SharedCodeVariablesForRelation) Type() RelationType {

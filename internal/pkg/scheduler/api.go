@@ -54,10 +54,10 @@ func (a *Api) NewPool() *client.Pool {
 }
 
 // ActivateScheduleRequest https://app.swaggerhub.com/apis/odinuv/scheduler/1.0.0#/schedules/activate
-func (a *Api) ActivateScheduleRequest(configurationId string, configurationVersionId string) *client.Request {
+func (a *Api) ActivateScheduleRequest(configId model.ConfigId, configurationVersionId string) *client.Request {
 	schedule := &model.Schedule{}
 	body := map[string]string{
-		"configurationId": configurationId,
+		"configurationId": configId.String(),
 	}
 	if configurationVersionId != "" {
 		body["configurationVersionId"] = configurationVersionId
@@ -68,8 +68,8 @@ func (a *Api) ActivateScheduleRequest(configurationId string, configurationVersi
 		SetResult(schedule)
 }
 
-func (a *Api) ActivateSchedule(configurationId string, configurationVersionId string) (*model.Schedule, error) {
-	response := a.ActivateScheduleRequest(configurationId, configurationVersionId).Send().Response
+func (a *Api) ActivateSchedule(configId model.ConfigId, configurationVersionId string) (*model.Schedule, error) {
+	response := a.ActivateScheduleRequest(configId, configurationVersionId).Send().Response
 	if response.HasResult() {
 		return response.Result().(*model.Schedule), nil
 	}
@@ -88,14 +88,14 @@ func (a *Api) DeleteSchedule(scheduleId string) error {
 }
 
 // DeleteSchedulesForConfigurationRequest https://app.swaggerhub.com/apis/odinuv/scheduler/1.0.0#/schedules/deleteSchedulesForConfiguration
-func (a *Api) DeleteSchedulesForConfigurationRequest(configurationId string) *client.Request {
+func (a *Api) DeleteSchedulesForConfigurationRequest(configId model.ConfigId) *client.Request {
 	return a.client.
 		NewRequest(resty.MethodDelete, "configurations/{configurationId}").
-		SetPathParam("configurationId", configurationId)
+		SetPathParam("configurationId", configId.String())
 }
 
-func (a *Api) DeleteSchedulesForConfiguration(configurationId string) error {
-	return a.DeleteSchedulesForConfigurationRequest(configurationId).Send().Err()
+func (a *Api) DeleteSchedulesForConfiguration(configId model.ConfigId) error {
+	return a.DeleteSchedulesForConfigurationRequest(configId).Send().Err()
 }
 
 // ListSchedulesRequest https://app.swaggerhub.com/apis/odinuv/scheduler/1.0.0#/schedules/get_schedules

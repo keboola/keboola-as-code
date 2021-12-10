@@ -136,16 +136,16 @@ func (p *Dialogs) askObjectName(d createDeps, desc string) (string, error) {
 	return name, nil
 }
 
-func (p *Dialogs) askComponentId(d createDeps) (string, error) {
+func (p *Dialogs) askComponentId(d createDeps) (model.ComponentId, error) {
 	// Get Storage API
 	storageApi, err := d.StorageApi()
 	if err != nil {
 		return "", err
 	}
 
-	componentId := ""
+	componentId := model.ComponentId("")
 	if d.Options().IsSet(`component-id`) {
-		componentId = strings.TrimSpace(d.Options().GetString(`component-id`))
+		componentId = model.ComponentId(strings.TrimSpace(d.Options().GetString(`component-id`)))
 	} else {
 		// Load components
 		components, err := storageApi.NewComponentList()

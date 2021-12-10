@@ -7,7 +7,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func (a *StorageApi) GetComponent(componentId string) (*model.Component, error) {
+func (a *StorageApi) GetComponent(componentId model.ComponentId) (*model.Component, error) {
 	response := a.GetComponentRequest(componentId).Send().Response
 	if response.HasResult() {
 		return response.Result().(*model.Component), nil
@@ -16,12 +16,12 @@ func (a *StorageApi) GetComponent(componentId string) (*model.Component, error) 
 }
 
 // GetComponentRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/get-component/get-component
-func (a *StorageApi) GetComponentRequest(componentId string) *client.Request {
+func (a *StorageApi) GetComponentRequest(componentId model.ComponentId) *client.Request {
 	component := &model.Component{}
 	component.Id = componentId
 	return a.
 		NewRequest(resty.MethodGet, "components/{componentId}").
-		SetPathParam("componentId", componentId).
+		SetPathParam("componentId", componentId.String()).
 		SetResult(component).
 		OnSuccess(func(response *client.Response) {
 			a.Components().Set(component)

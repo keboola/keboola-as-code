@@ -28,7 +28,7 @@ func TestSharedCodeLinksMatchId(t *testing.T) {
 	}
 	m := NewMapper(nil, model.MapperContext{Naming: model.DefaultNamingWithIds()})
 	for i, c := range cases {
-		assert.Equal(t, c.expected, m.matchId(c.input), fmt.Sprintf(`Case "%d"`, i))
+		assert.Equal(t, model.RowId(c.expected), m.matchId(c.input), fmt.Sprintf(`Case "%d"`, i))
 	}
 }
 

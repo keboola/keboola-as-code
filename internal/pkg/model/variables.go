@@ -8,13 +8,13 @@ import (
 
 // VariablesForRelation - variables for target configuration.
 type VariablesForRelation struct {
-	ComponentId string `json:"componentId" validate:"required"`
-	ConfigId    string `json:"configId" validate:"required"`
+	ComponentId ComponentId `json:"componentId" validate:"required"`
+	ConfigId    ConfigId    `json:"configId" validate:"required"`
 }
 
 // VariablesFromRelation - variables from source configuration.
 type VariablesFromRelation struct {
-	VariablesId string `json:"variablesId" validate:"required"`
+	VariablesId ConfigId `json:"variablesId" validate:"required"`
 }
 
 // VariablesValuesForRelation - variables default values for target configuration.
@@ -22,7 +22,7 @@ type VariablesValuesForRelation struct{}
 
 // VariablesValuesFromRelation - variables default values from source config row.
 type VariablesValuesFromRelation struct {
-	VariablesValuesId string `json:"variablesValuesId" validate:"required" `
+	VariablesValuesId RowId `json:"variablesValuesId" validate:"required" `
 }
 
 func (t *VariablesForRelation) Type() RelationType {

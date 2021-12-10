@@ -74,20 +74,14 @@ func AddMockedComponents(httpTransport *httpmock.MockTransport) {
 		if err != nil {
 			panic(err)
 		}
-		url := `=~/storage/components/` + component.Id
+		url := `=~/storage/components/` + component.Id.String()
 		httpTransport.RegisterResponder("GET", url, responder)
 	}
 }
 
 func AddMockedApiIndex(httpTransport *httpmock.MockTransport) {
-	var components []interface{}
-	for _, component := range mockedComponents() {
-		components = append(components, map[string]interface{}{
-			"id": component.Id, "type": component.Type, "name": component.Name, "data": component.Data,
-		})
-	}
 	responder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
-		"components": components,
+		"components": mockedComponents(),
 	})
 	if err != nil {
 		panic(err)
@@ -97,10 +91,10 @@ func AddMockedApiIndex(httpTransport *httpmock.MockTransport) {
 }
 
 type MockedComponent struct {
-	Id,
-	Type,
-	Name string
-	Data model.ComponentData
+	Id   model.ComponentId   `json:"id"`
+	Type string              `json:"type"`
+	Name string              `json:"name"`
+	Data model.ComponentData `json:"data"`
 }
 
 func mockedComponents() []MockedComponent {
