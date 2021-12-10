@@ -38,7 +38,7 @@ type Schedule struct {
 }
 
 type Config struct {
-	ComponentId       string                 `json:"componentId" validate:"required"`
+	ComponentId       model.ComponentId      `json:"componentId" validate:"required"`
 	Name              string                 `json:"name" validate:"required"`
 	Description       string                 `json:"description"`
 	ChangeDescription string                 `json:"changeDescription,omitempty"`

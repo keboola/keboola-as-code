@@ -74,10 +74,10 @@ func TestConfigApiCalls(t *testing.T) {
 	assert.Same(t, config, resConfig)
 	assert.NotEmpty(t, config.Id)
 	assert.Equal(t, config.Id, row1.ConfigId)
-	assert.Equal(t, "ex-generic-v2", row1.ComponentId)
+	assert.Equal(t, model.ComponentId("ex-generic-v2"), row1.ComponentId)
 	assert.Equal(t, branch.Id, row1.BranchId)
 	assert.Equal(t, config.Id, row2.ConfigId)
-	assert.Equal(t, "ex-generic-v2", row2.ComponentId)
+	assert.Equal(t, model.ComponentId("ex-generic-v2"), row2.ComponentId)
 	assert.Equal(t, branch.Id, row2.BranchId)
 
 	// Update config

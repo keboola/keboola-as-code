@@ -14,18 +14,16 @@ const (
 	MainBranchDef  = "__main__"
 )
 
-type Filter struct {
-	AllowedBranches   AllowedBranches `json:"allowedBranches" validate:"required,min=1"`
-	IgnoredComponents ComponentIds    `json:"ignoredComponents"`
-}
-
 type AllowedBranch string
 
 type AllowedBranches []AllowedBranch
 
-type ComponentId string
-
 type ComponentIds []ComponentId
+
+type Filter struct {
+	AllowedBranches   AllowedBranches `json:"allowedBranches" validate:"required,min=1"`
+	IgnoredComponents ComponentIds    `json:"ignoredComponents"`
+}
 
 func DefaultFilter() Filter {
 	return Filter{
@@ -69,7 +67,7 @@ func (v AllowedBranch) IsBranchAllowed(branch *Branch) bool {
 	}
 
 	// Defined by ID
-	if cast.ToInt(pattern) == branch.Id {
+	if cast.ToInt(pattern) == int(branch.Id) {
 		return true
 	}
 
@@ -98,9 +96,9 @@ func (v ComponentIds) String() string {
 	return `"` + strings.Join(items, `", "`) + `"`
 }
 
-func (v ComponentIds) Contains(componentId string) bool {
+func (v ComponentIds) Contains(componentId ComponentId) bool {
 	for _, id := range v {
-		if id == ComponentId(componentId) {
+		if id == componentId {
 			return true
 		}
 	}

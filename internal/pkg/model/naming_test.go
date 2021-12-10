@@ -309,7 +309,7 @@ func TestNamingMatchConfigPathOrdinary(t *testing.T) {
 			"extractor/keboola.ex-db-mysql/with-rows",
 		))
 	assert.NoError(t, err)
-	assert.Equal(t, `keboola.ex-db-mysql`, componentId)
+	assert.Equal(t, ComponentId(`keboola.ex-db-mysql`), componentId)
 }
 
 func TestNamingMatchConfigPathSharedCode(t *testing.T) {

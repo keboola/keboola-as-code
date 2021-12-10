@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/spf13/cast"
 )
@@ -38,47 +39,70 @@ type WithKey interface {
 	Key() Key
 }
 
+type (
+	BranchId    int
+	ComponentId string
+	ConfigId    string
+	RowId       string
+)
+
+func (v BranchId) String() string {
+	return strconv.Itoa(int(v))
+}
+
+func (v ComponentId) String() string {
+	return string(v)
+}
+
+func (v ConfigId) String() string {
+	return string(v)
+}
+
+func (v RowId) String() string {
+	return string(v)
+}
+
 type BranchKey struct {
-	Id int `json:"id" validate:"required,min=1"`
+	Id BranchId `json:"id" validate:"required,min=1"`
 }
 
 type ComponentKey struct {
-	Id string `json:"id" validate:"required"`
+	Id ComponentId `json:"id" validate:"required"`
 }
 
 type ConfigKey struct {
-	BranchId    int    `json:"branchId" validate:"required"`
-	ComponentId string `json:"componentId" validate:"required"`
-	Id          string `json:"id" validate:"required"`
+	BranchId    BranchId    `json:"branchId" validate:"required"`
+	ComponentId ComponentId `json:"componentId" validate:"required"`
+	Id          ConfigId    `json:"id" validate:"required"`
 }
 
 type ConfigRowKey struct {
-	BranchId    int    `json:"-" validate:"required"`
-	ComponentId string `json:"-" validate:"required"`
-	ConfigId    string `json:"-" validate:"required"`
-	Id          string `json:"id" validate:"required" `
+	BranchId    BranchId    `json:"-" validate:"required"`
+	ComponentId ComponentId `json:"-" validate:"required"`
+	ConfigId    ConfigId    `json:"-" validate:"required"`
+	Id          RowId       `json:"id" validate:"required" `
 }
 
 type BlockKey struct {
-	BranchId    int    `json:"-" validate:"required" `
-	ComponentId string `json:"-" validate:"required" `
-	ConfigId    string `json:"-" validate:"required" `
-	Index       int    `json:"-" validate:"min=0" `
+	BranchId    BranchId    `json:"-" validate:"required" `
+	ComponentId ComponentId `json:"-" validate:"required" `
+	ConfigId    ConfigId    `json:"-" validate:"required" `
+	Index       int         `json:"-" validate:"min=0" `
 }
 
 type CodeKey struct {
-	BranchId    int    `json:"-" validate:"required" `
-	ComponentId string `json:"-" validate:"required" `
-	ConfigId    string `json:"-" validate:"required" `
-	BlockIndex  int    `json:"-" validate:"min=0" `
-	Index       int    `json:"-" validate:"min=0" `
+	BranchId    BranchId    `json:"-" validate:"required" `
+	ComponentId ComponentId `json:"-" validate:"required" `
+	ConfigId    ConfigId    `json:"-" validate:"required" `
+	BlockIndex  int         `json:"-" validate:"min=0" `
+	Index       int         `json:"-" validate:"min=0" `
 }
 
 type PhaseKey struct {
-	BranchId    int    `json:"-" validate:"required" `
-	ComponentId string `json:"-" validate:"required" `
-	ConfigId    string `json:"-" validate:"required" `
-	Index       int    `json:"-" validate:"min=0" `
+	BranchId    BranchId    `json:"-" validate:"required" `
+	ComponentId ComponentId `json:"-" validate:"required" `
+	ConfigId    ConfigId    `json:"-" validate:"required" `
+	Index       int         `json:"-" validate:"min=0" `
 }
 
 type TaskKey struct {
@@ -119,19 +143,19 @@ func (k TaskKey) Kind() Kind {
 }
 
 func (k BranchKey) ObjectId() string {
-	return cast.ToString(k.Id)
+	return k.Id.String()
 }
 
 func (k ComponentKey) ObjectId() string {
-	return k.Id
+	return k.Id.String()
 }
 
 func (k ConfigKey) ObjectId() string {
-	return k.Id
+	return k.Id.String()
 }
 
 func (k ConfigRowKey) ObjectId() string {
-	return k.Id
+	return k.Id.String()
 }
 
 func (k BlockKey) ObjectId() string {

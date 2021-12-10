@@ -250,7 +250,7 @@ func (l *remoteLoader) parseTask(taskRaw interface{}) error {
 	return errors.ErrorOrNil()
 }
 
-func (l *remoteLoader) getTargetConfig(componentId, configId string) (*model.Config, error) {
+func (l *remoteLoader) getTargetConfig(componentId model.ComponentId, configId model.ConfigId) (*model.Config, error) {
 	if len(componentId) == 0 || len(configId) == 0 {
 		return nil, nil
 	}

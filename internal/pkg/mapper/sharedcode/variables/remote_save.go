@@ -25,7 +25,7 @@ func (m *mapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
 	relation := relationRaw.(*model.SharedCodeVariablesFromRelation)
 
 	// Set variables ID
-	apiObject.Content.Set(model.SharedCodeVariablesIdContentKey, relation.VariablesId)
+	apiObject.Content.Set(model.SharedCodeVariablesIdContentKey, relation.VariablesId.String())
 
 	// Delete relation
 	apiObject.Relations.RemoveByType(relType)

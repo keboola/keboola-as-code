@@ -54,7 +54,7 @@ func (m *mapper) replaceSharedCodeIdByPath(recipe *model.LocalSaveRecipe) error 
 	// Check componentId
 	if targetComponentId != transformation.ComponentId {
 		errors := utils.NewMultiError()
-		errors.Append(fmt.Errorf(`unexpected shared code "%s" in %s`, model.SharedCodeComponentIdContentKey, sharedCodeState.Desc()))
+		errors.Append(fmt.Errorf(`unexpected shared code "%s" in %s`, model.ShareCodeTargetComponentKey, sharedCodeState.Desc()))
 		errors.Append(fmt.Errorf(`  - expected "%s"`, transformation.ComponentId))
 		errors.Append(fmt.Errorf(`  - found "%s"`, targetComponentId))
 		errors.Append(fmt.Errorf(`  - referenced from %s`, transformation.Desc()))

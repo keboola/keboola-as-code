@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 type Api struct {
@@ -48,11 +49,11 @@ func (a *Api) NewRequest(method string, url string) *client.Request {
 	return a.client.NewRequest(method, url)
 }
 
-func (a *Api) CreateEncryptRequest(componentId string, data map[string]string) *client.Request {
+func (a *Api) CreateEncryptRequest(componentId model.ComponentId, data map[string]string) *client.Request {
 	result := make(map[string]string)
 	return a.
 		client.NewRequest(resty.MethodPost, "encrypt").
-		SetQueryParam("componentId", componentId).
+		SetQueryParam("componentId", componentId.String()).
 		SetQueryParam("projectId", cast.ToString(a.projectId)).
 		SetJsonBody(data).
 		SetResult(&result)

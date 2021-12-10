@@ -21,7 +21,7 @@ func TestGetComponent(t *testing.T) {
 	assert.False(t, component.IsDeprecated())
 	assert.NoError(t, err)
 	assert.NotNil(t, component)
-	assert.Equal(t, "ex-generic-v2", component.Id)
+	assert.Equal(t, model.ComponentId("ex-generic-v2"), component.Id)
 	assert.Equal(t, "extractor", component.Type)
 }
 

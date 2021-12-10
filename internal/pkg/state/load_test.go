@@ -45,7 +45,7 @@ func TestLoadState(t *testing.T) {
 		{
 			Remote: &model.Branch{
 				BranchKey: model.BranchKey{
-					Id: cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`)),
+					Id: model.BranchId(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
 				},
 				Name:        "Main",
 				Description: "Main branch",
@@ -53,7 +53,7 @@ func TestLoadState(t *testing.T) {
 			},
 			Local: &model.Branch{
 				BranchKey: model.BranchKey{
-					Id: cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`)),
+					Id: model.BranchId(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
 				},
 				Name:        "Main",
 				Description: "Main branch",
@@ -64,7 +64,7 @@ func TestLoadState(t *testing.T) {
 					Persisted: true,
 				},
 				BranchKey: model.BranchKey{
-					Id: cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`)),
+					Id: model.BranchId(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
 				},
 				Paths: model.Paths{
 					PathInProject: model.NewPathInProject(
@@ -80,9 +80,9 @@ func TestLoadState(t *testing.T) {
 		{
 			Remote: &model.Config{
 				ConfigKey: model.ConfigKey{
-					BranchId:    cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`)),
+					BranchId:    model.BranchId(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
 					ComponentId: "ex-generic-v2",
-					Id:          envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
+					Id:          model.ConfigId(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
 				},
 				Name:              "empty",
 				Description:       "test fixture",
@@ -91,9 +91,9 @@ func TestLoadState(t *testing.T) {
 			},
 			Local: &model.Config{
 				ConfigKey: model.ConfigKey{
-					BranchId:    cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`)),
+					BranchId:    model.BranchId(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
 					ComponentId: "ex-generic-v2",
-					Id:          envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
+					Id:          model.ConfigId(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
 				},
 				Name:              "todos",
 				Description:       "todos config",
@@ -120,9 +120,9 @@ func TestLoadState(t *testing.T) {
 					Persisted: true,
 				},
 				ConfigKey: model.ConfigKey{
-					BranchId:    cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`)),
+					BranchId:    model.BranchId(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
 					ComponentId: "ex-generic-v2",
-					Id:          envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`),
+					Id:          model.ConfigId(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
 				},
 				Paths: model.Paths{
 					PathInProject: model.NewPathInProject(

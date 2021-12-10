@@ -13,7 +13,7 @@ import (
 
 func TestSharedCodeSaveMissingKey(t *testing.T) {
 	t.Parallel()
-	targetComponentId := `keboola.python-transformation-v2`
+	targetComponentId := model.ComponentId(`keboola.python-transformation-v2`)
 	context, rowState := createTestFixtures(t, targetComponentId)
 	recipe := fixtures.NewLocalSaveRecipe(rowState.Manifest(), rowState.Local)
 
@@ -25,7 +25,7 @@ func TestSharedCodeSaveMissingKey(t *testing.T) {
 
 func TestSharedCodeSave(t *testing.T) {
 	t.Parallel()
-	targetComponentId := `keboola.python-transformation-v2`
+	targetComponentId := model.ComponentId(`keboola.python-transformation-v2`)
 	context, rowState := createTestFixtures(t, targetComponentId)
 	recipe := fixtures.NewLocalSaveRecipe(rowState.Manifest(), rowState.Local)
 	codeFilePath := filesystem.Join(context.Naming.SharedCodeFilePath(recipe.ObjectManifest.Path(), targetComponentId))

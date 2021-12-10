@@ -17,14 +17,13 @@ const (
 	ConfigFileFieldTag                = "configFile:true"      // marks config field in object struct
 	DescriptionFileFieldTag           = "descriptionFile:true" // marks description field in object struct
 	TransformationType                = "transformation"
-	SharedCodeComponentId             = "keboola.shared-code"
-	OrchestratorComponentId           = "keboola.orchestrator"
+	SharedCodeComponentId             = ComponentId("keboola.shared-code")
+	OrchestratorComponentId           = ComponentId("keboola.orchestrator")
 	ShareCodeTargetComponentKey       = `componentId`
 	SharedCodeContentKey              = `code_content`
 	VariablesIdContentKey             = `variables_id`
 	VariablesValuesIdContentKey       = `variables_values_id`
 	SharedCodeVariablesIdContentKey   = `variables_id`
-	SharedCodeComponentIdContentKey   = `componentId`
 	SharedCodeIdContentKey            = `shared_code_id`
 	SharedCodeRowsIdContentKey        = `shared_code_row_ids`
 	SharedCodePathContentKey          = `shared_code_path`
@@ -44,7 +43,7 @@ type Object interface {
 
 type ObjectWithContent interface {
 	Object
-	GetComponentId() string
+	GetComponentId() ComponentId
 	GetContent() *orderedmap.OrderedMap
 }
 
@@ -174,8 +173,8 @@ type Code struct {
 
 // Schedule - https://app.swaggerhub.com/apis/odinuv/scheduler/1.0.0#/schedules/get_schedules
 type Schedule struct {
-	Id              string `json:"id" validate:"required"`
-	ConfigurationId string `json:"configurationId" validate:"required"`
+	Id       string   `json:"id" validate:"required"`
+	ConfigId ConfigId `json:"configurationId" validate:"required"`
 }
 
 func (b *Branch) ObjectName() string {
@@ -190,11 +189,11 @@ func (r *ConfigRow) ObjectName() string {
 	return r.Name
 }
 
-func (c *Config) GetComponentId() string {
+func (c *Config) GetComponentId() ComponentId {
 	return c.ComponentId
 }
 
-func (r *ConfigRow) GetComponentId() string {
+func (r *ConfigRow) GetComponentId() ComponentId {
 	return r.ComponentId
 }
 
@@ -391,5 +390,5 @@ func (c Code) String() string {
 }
 
 func (c Code) ScriptsToString() string {
-	return strhelper.TransformationScriptsToString(c.Scripts, c.ComponentId)
+	return strhelper.TransformationScriptsToString(c.Scripts, c.ComponentId.String())
 }

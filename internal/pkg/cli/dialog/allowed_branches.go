@@ -5,8 +5,6 @@ import (
 	"math"
 	"strings"
 
-	"github.com/spf13/cast"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -172,7 +170,7 @@ func (d *branchesDialog) unique(items model.AllowedBranches) model.AllowedBranch
 
 func branchesToAllowedBranches(branches []*model.Branch) (out model.AllowedBranches) {
 	for _, b := range branches {
-		out = append(out, model.AllowedBranch(cast.ToString(b.Id)))
+		out = append(out, model.AllowedBranch(b.Id.String()))
 	}
 	return out
 }

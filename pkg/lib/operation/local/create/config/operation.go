@@ -15,8 +15,8 @@ import (
 )
 
 type Options struct {
-	BranchId    int
-	ComponentId string
+	BranchId    model.BranchId
+	ComponentId model.ComponentId
 	Name        string
 }
 
@@ -61,7 +61,7 @@ func Run(o Options, d dependencies) (err error) {
 	// Generate unique ID
 	ticketProvider := storageApi.NewTicketProvider()
 	ticketProvider.Request(func(ticket *model.Ticket) {
-		key.Id = ticket.Id
+		key.Id = model.ConfigId(ticket.Id)
 	})
 	if err := ticketProvider.Resolve(); err != nil {
 		return fmt.Errorf(`cannot generate new ID: %w`, err)

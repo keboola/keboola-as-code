@@ -46,6 +46,7 @@ func (m *mapper) onRename(renamedObjects []model.RenameAction) error {
 		configState, err := m.getDependentConfig(objectState, renamedSharedCodes)
 		if err != nil {
 			errors.Append(err)
+			continue
 		} else if configState == nil {
 			continue
 		}

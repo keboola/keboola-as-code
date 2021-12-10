@@ -38,7 +38,7 @@ func TestSharedCodeMapAfterRemoteLoad(t *testing.T) {
 	// Internal object has new relation + content without variables ID
 	assert.Equal(t, model.Relations{
 		&model.SharedCodeVariablesFromRelation{
-			VariablesId: variablesConfigId,
+			VariablesId: model.ConfigId(variablesConfigId),
 		},
 	}, internalObject.Relations)
 	_, found = internalObject.Content.Get(model.SharedCodeVariablesIdContentKey)

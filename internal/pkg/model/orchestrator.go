@@ -28,8 +28,8 @@ type Task struct {
 	TaskKey
 	PathInProject `validate:"dive"`
 	Name          string                 `validate:"required"`
-	ComponentId   string                 `validate:"required"`
-	ConfigId      string                 `validate:"required"`
+	ComponentId   ComponentId            `validate:"required"`
+	ConfigId      ConfigId               `validate:"required"`
 	ConfigPath    string                 // target config path if any
 	Content       *orderedmap.OrderedMap `validate:"dive"`
 }
@@ -101,7 +101,7 @@ func (t Task) String() string {
 
 // UsedInOrchestratorRelation indicates that the owner config is used in an orchestration.
 type UsedInOrchestratorRelation struct {
-	ConfigId string
+	ConfigId ConfigId
 }
 
 func (t *UsedInOrchestratorRelation) Type() RelationType {

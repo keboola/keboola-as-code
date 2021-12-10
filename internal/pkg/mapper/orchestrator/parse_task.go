@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cast"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -61,7 +62,7 @@ func (p *taskParser) phaseId() (int, error) {
 	return int(value), nil
 }
 
-func (p *taskParser) componentId() (string, error) {
+func (p *taskParser) componentId() (model.ComponentId, error) {
 	taskRaw, found := p.content.Get(`task`)
 	if !found {
 		return "", fmt.Errorf(`missing "task" key`)
@@ -83,10 +84,10 @@ func (p *taskParser) componentId() (string, error) {
 	}
 	task.Delete(`componentId`)
 	p.content.Set(`task`, task)
-	return value, nil
+	return model.ComponentId(value), nil
 }
 
-func (p *taskParser) configId() (string, error) {
+func (p *taskParser) configId() (model.ConfigId, error) {
 	taskRaw, found := p.content.Get(`task`)
 	if !found {
 		return "", fmt.Errorf(`missing "task" key`)
@@ -108,7 +109,7 @@ func (p *taskParser) configId() (string, error) {
 	}
 	task.Delete(`configId`)
 	p.content.Set(`task`, task)
-	return value, nil
+	return model.ConfigId(value), nil
 }
 
 func (p *taskParser) configPath() (string, error) {

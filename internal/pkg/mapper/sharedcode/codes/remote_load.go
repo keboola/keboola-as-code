@@ -38,7 +38,7 @@ func (m *mapper) normalizeRemoteSharedCodeRow(row *model.ConfigRow, allObjects *
 		}
 
 		// Parse scripts
-		scripts := strhelper.ParseTransformationScripts(codeContentStr, targetComponentId)
+		scripts := strhelper.ParseTransformationScripts(codeContentStr, targetComponentId.String())
 
 		// Convert []string -> []interface{}
 		scriptsRaw := make([]interface{}, 0)

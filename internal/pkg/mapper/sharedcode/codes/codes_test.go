@@ -14,7 +14,7 @@ import (
 )
 
 // nolint: unparam
-func createTestFixtures(t *testing.T, targetComponentId string) (model.MapperContext, *model.ConfigRowState) {
+func createTestFixtures(t *testing.T, targetComponentId model.ComponentId) (model.MapperContext, *model.ConfigRowState) {
 	t.Helper()
 
 	logger, _ := utils.NewDebugLogger()
@@ -48,7 +48,7 @@ func createTestFixtures(t *testing.T, targetComponentId string) (model.MapperCon
 		ComponentId: model.SharedCodeComponentId,
 	}
 	configContent := orderedmap.New()
-	configContent.Set(model.ShareCodeTargetComponentKey, targetComponentId)
+	configContent.Set(model.ShareCodeTargetComponentKey, targetComponentId.String())
 	configState := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: configKey,

@@ -43,8 +43,8 @@ func (a *StorageApi) NewComponentList() ([]*model.Component, error) {
 
 		// Components from keboola vendor will be first
 		vendor := `keboola.`
-		vendorI := strings.HasPrefix(idI, vendor)
-		vendorJ := strings.HasPrefix(idJ, vendor)
+		vendorI := strings.HasPrefix(string(idI), vendor)
+		vendorJ := strings.HasPrefix(string(idJ), vendor)
 		if vendorI != vendorJ {
 			return vendorI
 		}

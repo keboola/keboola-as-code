@@ -63,18 +63,18 @@ func (h *SharedCodeHelper) IsTransformation(key model.Key) (bool, error) {
 }
 
 // GetTargetComponentId returns the component for which the shared code is intended.
-func (h *SharedCodeHelper) GetTargetComponentId(sharedCodeConfig *model.Config) (string, error) {
-	componentIdRaw, found := sharedCodeConfig.Content.Get(model.SharedCodeComponentIdContentKey)
+func (h *SharedCodeHelper) GetTargetComponentId(sharedCodeConfig *model.Config) (model.ComponentId, error) {
+	componentIdRaw, found := sharedCodeConfig.Content.Get(model.ShareCodeTargetComponentKey)
 	if !found {
-		return "", fmt.Errorf(`missing "%s" in %s`, model.SharedCodeComponentIdContentKey, sharedCodeConfig.Desc())
+		return "", fmt.Errorf(`missing "%s" in %s`, model.ShareCodeTargetComponentKey, sharedCodeConfig.Desc())
 	}
 
 	componentId, ok := componentIdRaw.(string)
 	if !ok {
-		return "", fmt.Errorf(`key "%s" must be string, found %T, in %s`, model.SharedCodeComponentIdContentKey, componentIdRaw, sharedCodeConfig.Desc())
+		return "", fmt.Errorf(`key "%s" must be string, found %T, in %s`, model.ShareCodeTargetComponentKey, componentIdRaw, sharedCodeConfig.Desc())
 	}
 
-	return componentId, nil
+	return model.ComponentId(componentId), nil
 }
 
 func (h *SharedCodeHelper) GetSharedCodePath(object model.Object) (*model.Config, string, error) {
@@ -123,7 +123,7 @@ func (h *SharedCodeHelper) GetSharedCodeKey(object model.Object) (*model.Config,
 	sharedCodeKey := model.ConfigKey{
 		BranchId:    transformation.BranchId, // same branch
 		ComponentId: model.SharedCodeComponentId,
-		Id:          sharedCodeConfigId,
+		Id:          model.ConfigId(sharedCodeConfigId),
 	}
 	return transformation, sharedCodeKey, nil
 }

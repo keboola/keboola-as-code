@@ -190,7 +190,7 @@ func (d *createTmplDialog) parseObjectsIds(result string) ([]createTemplate.Conf
 				errors.Append(fmt.Errorf(`line %d: cannot parse "%s"`, lineNum, line))
 				continue
 			}
-			key = model.ConfigKey{BranchId: d.selectedBranch.Id, ComponentId: m[1], Id: m[2]}
+			key = model.ConfigKey{BranchId: d.selectedBranch.Id, ComponentId: model.ComponentId(m[1]), Id: model.ConfigId(m[2])}
 		case strings.HasPrefix(line, `### Row`):
 			// Row ID definition
 			m := regexpcache.MustCompile(` ([a-zA-Z0-9\.\-]+):([a-zA-Z0-9\.\-]+):([a-zA-Z0-9\.\-]+)$`).FindStringSubmatch(line)
@@ -198,7 +198,7 @@ func (d *createTmplDialog) parseObjectsIds(result string) ([]createTemplate.Conf
 				errors.Append(fmt.Errorf(`line %d: cannot parse "%s"`, lineNum, line))
 				continue
 			}
-			key = model.ConfigRowKey{BranchId: d.selectedBranch.Id, ComponentId: m[1], ConfigId: m[2], Id: m[3]}
+			key = model.ConfigRowKey{BranchId: d.selectedBranch.Id, ComponentId: model.ComponentId(m[1]), ConfigId: model.ConfigId(m[2]), Id: model.RowId(m[3])}
 		default:
 			errors.Append(fmt.Errorf(`line %d: cannot parse "%s"`, lineNum, line))
 			continue

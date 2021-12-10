@@ -79,7 +79,7 @@ func (w *writer) save() error {
 	}
 
 	// Create code file
-	codeContent := strhelper.TransformationScriptsToString(scripts, targetComponentId)
+	codeContent := strhelper.TransformationScriptsToString(scripts, targetComponentId.String())
 	codeFilePath := w.Naming.SharedCodeFilePath(w.Path(), targetComponentId)
 	w.Files.
 		Add(filesystem.NewFile(codeFilePath, codeContent).SetDescription(`shared code`)).

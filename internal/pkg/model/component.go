@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	VariablesComponentId     = `keboola.variables`
-	SchedulerComponentId     = "keboola.scheduler"
+	VariablesComponentId     = ComponentId(`keboola.variables`)
+	SchedulerComponentId     = ComponentId("keboola.scheduler")
 	DeprecatedFlag           = `deprecated`
 	ExcludeFromNewListFlag   = `excludeFromNewList`
 	ComponentTypeCodePattern = `code-pattern`
@@ -40,7 +40,7 @@ type ComponentData struct {
 }
 
 type ComponentWithConfigs struct {
-	BranchId int `json:"branchId" validate:"required"`
+	BranchId BranchId `json:"branchId" validate:"required"`
 	*Component
 	Configs []*ConfigWithRows `json:"configurations" validate:"required"`
 }
@@ -93,15 +93,15 @@ func (c *Component) IsExcludedFromNewList() bool {
 
 // RemoteComponentsProvider - interface for Storage API.
 type RemoteComponentsProvider interface {
-	GetComponent(componentId string) (*Component, error)
+	GetComponent(componentId ComponentId) (*Component, error)
 }
 
 type ComponentsMap struct {
 	mutex                       *sync.Mutex
 	remoteProvider              RemoteComponentsProvider
 	components                  map[string]*Component
-	defaultBucketsByComponentId map[string]string
-	defaultBucketsByPrefix      map[string]string
+	defaultBucketsByComponentId map[ComponentId]string
+	defaultBucketsByPrefix      map[string]ComponentId
 }
 
 func NewComponentsMap(remoteProvider RemoteComponentsProvider) *ComponentsMap {
@@ -109,8 +109,8 @@ func NewComponentsMap(remoteProvider RemoteComponentsProvider) *ComponentsMap {
 		mutex:                       &sync.Mutex{},
 		remoteProvider:              remoteProvider,
 		components:                  make(map[string]*Component),
-		defaultBucketsByComponentId: make(map[string]string),
-		defaultBucketsByPrefix:      make(map[string]string),
+		defaultBucketsByComponentId: make(map[ComponentId]string),
+		defaultBucketsByPrefix:      make(map[string]ComponentId),
 	}
 }
 
@@ -170,27 +170,27 @@ func (c *ComponentsMap) doSet(component *Component) {
 
 func (c *ComponentsMap) addDefaultBucketPrefix(component *Component) {
 	r := regexpcache.MustCompile(`(?i)[^a-zA-Z0-9-]`)
-	bucketPrefix := fmt.Sprintf(`%s.c-%s-`, component.Data.DefaultBucketStage, r.ReplaceAllString(component.Id, `-`))
+	bucketPrefix := fmt.Sprintf(`%s.c-%s-`, component.Data.DefaultBucketStage, r.ReplaceAllString(component.Id.String(), `-`))
 	c.defaultBucketsByComponentId[component.Id] = bucketPrefix
 	c.defaultBucketsByPrefix[bucketPrefix] = component.Id
 }
 
-func (c *ComponentsMap) GetDefaultBucketByTableId(tableId string) (string, string, bool) {
+func (c *ComponentsMap) GetDefaultBucketByTableId(tableId string) (ComponentId, ConfigId, bool) {
 	bucketId := tableId[0:strings.LastIndex(tableId, ".")]
 	if !strings.Contains(bucketId, "-") {
 		return "", "", false
 	}
 	bucketPrefix := bucketId[0 : strings.LastIndex(tableId, "-")+1]
-	configId := bucketId[strings.LastIndex(tableId, "-")+1:]
+	configId := ConfigId(bucketId[strings.LastIndex(tableId, "-")+1:])
 
 	componentId, found := c.defaultBucketsByPrefix[bucketPrefix]
 	if !found {
 		return "", "", false
 	}
-	return componentId, configId, componentId != "" && configId != ""
+	return componentId, configId, len(componentId) > 0 && len(configId) > 0
 }
 
-func (c *ComponentsMap) GetDefaultBucketByComponentId(componentId string, configId string) (string, bool) {
+func (c *ComponentsMap) GetDefaultBucketByComponentId(componentId ComponentId, configId ConfigId) (string, bool) {
 	defaultBucketPrefix, found := c.defaultBucketsByComponentId[componentId]
 	if !found {
 		return "", false

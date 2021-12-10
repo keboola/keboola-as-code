@@ -2,13 +2,12 @@ package remote
 
 import (
 	"github.com/go-resty/resty/v2"
-	"github.com/spf13/cast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func (a *StorageApi) ListComponents(branchId int) ([]*model.ComponentWithConfigs, error) {
+func (a *StorageApi) ListComponents(branchId model.BranchId) ([]*model.ComponentWithConfigs, error) {
 	response := a.ListComponentsRequest(branchId).Send().Response
 	if response.HasResult() {
 		return *response.Result().(*[]*model.ComponentWithConfigs), nil
@@ -16,7 +15,7 @@ func (a *StorageApi) ListComponents(branchId int) ([]*model.ComponentWithConfigs
 	return nil, response.Err()
 }
 
-func (a *StorageApi) GetConfig(branchId int, componentId string, configId string) (*model.Config, error) {
+func (a *StorageApi) GetConfig(branchId model.BranchId, componentId model.ComponentId, configId model.ConfigId) (*model.Config, error) {
 	response := a.GetConfigRequest(branchId, componentId, configId).Send().Response
 	if response.HasResult() {
 		return response.Result().(*model.Config), nil
@@ -54,11 +53,11 @@ func (a *StorageApi) DeleteConfig(key model.ConfigKey) error {
 	return a.DeleteConfigRequest(key).Send().Err()
 }
 
-func (a *StorageApi) ListComponentsRequest(branchId int) *client.Request {
+func (a *StorageApi) ListComponentsRequest(branchId model.BranchId) *client.Request {
 	components := make([]*model.ComponentWithConfigs, 0)
 	return a.
 		NewRequest(resty.MethodGet, "branch/{branchId}/components").
-		SetPathParam("branchId", cast.ToString(branchId)).
+		SetPathParam("branchId", branchId.String()).
 		SetQueryParam("include", "configuration,rows").
 		SetResult(&components).
 		OnSuccess(func(response *client.Response) {
@@ -89,15 +88,15 @@ func (a *StorageApi) ListComponentsRequest(branchId int) *client.Request {
 }
 
 // GetConfigRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/manage-configurations/development-branch-configuration-detail
-func (a *StorageApi) GetConfigRequest(branchId int, componentId string, configId string) *client.Request {
+func (a *StorageApi) GetConfigRequest(branchId model.BranchId, componentId model.ComponentId, configId model.ConfigId) *client.Request {
 	config := &model.Config{}
 	config.BranchId = branchId
 	config.ComponentId = componentId
 	return a.
 		NewRequest(resty.MethodGet, "branch/{branchId}/components/{componentId}/configs/{configId}").
-		SetPathParam("branchId", cast.ToString(branchId)).
-		SetPathParam("componentId", componentId).
-		SetPathParam("configId", configId).
+		SetPathParam("branchId", branchId.String()).
+		SetPathParam("componentId", componentId.String()).
+		SetPathParam("configId", configId.String()).
 		SetResult(config)
 }
 
@@ -111,15 +110,15 @@ func (a *StorageApi) CreateConfigRequest(config *model.ConfigWithRows) (*client.
 
 	// Create config with the defined ID
 	if config.Id != "" {
-		values["configurationId"] = config.Id
+		values["configurationId"] = config.Id.String()
 	}
 
 	// Create config
 	var configRequest *client.Request
 	configRequest = a.
 		NewRequest(resty.MethodPost, "branch/{branchId}/components/{componentId}/configs").
-		SetPathParam("branchId", cast.ToString(config.BranchId)).
-		SetPathParam("componentId", config.ComponentId).
+		SetPathParam("branchId", config.BranchId.String()).
+		SetPathParam("componentId", config.ComponentId.String()).
 		SetFormBody(values).
 		SetResult(config).
 		// Create config rows
@@ -156,9 +155,9 @@ func (a *StorageApi) UpdateConfigRequest(config *model.Config, changed model.Cha
 	// Update config
 	request := a.
 		NewRequest(resty.MethodPut, "branch/{branchId}/components/{componentId}/configs/{configId}").
-		SetPathParam("branchId", cast.ToString(config.BranchId)).
-		SetPathParam("componentId", config.ComponentId).
-		SetPathParam("configId", config.Id).
+		SetPathParam("branchId", config.BranchId.String()).
+		SetPathParam("componentId", config.ComponentId.String()).
+		SetPathParam("configId", config.Id.String()).
 		SetFormBody(getChangedValues(values, changed)).
 		SetResult(config)
 
@@ -168,9 +167,9 @@ func (a *StorageApi) UpdateConfigRequest(config *model.Config, changed model.Cha
 // DeleteConfigRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/manage-configurations/delete-configuration
 func (a *StorageApi) DeleteConfigRequest(key model.ConfigKey) *client.Request {
 	return a.NewRequest(resty.MethodDelete, "branch/{branchId}/components/{componentId}/configs/{configId}").
-		SetPathParam("branchId", cast.ToString(key.BranchId)).
-		SetPathParam("componentId", key.ComponentId).
-		SetPathParam("configId", key.Id)
+		SetPathParam("branchId", key.BranchId.String()).
+		SetPathParam("componentId", key.ComponentId.String()).
+		SetPathParam("configId", key.Id.String())
 }
 
 func (a *StorageApi) DeleteConfigsInBranchRequest(key model.BranchKey) *client.Request {

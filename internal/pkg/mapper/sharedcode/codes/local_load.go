@@ -55,7 +55,7 @@ func (l *loader) load() error {
 		AddTag(model.FileKindNativeSharedCode)
 
 	// Convert []string -> []interface{} (so there is no type difference against API type)
-	scripts := strhelper.ParseTransformationScripts(codeFile.Content, targetComponentId)
+	scripts := strhelper.ParseTransformationScripts(codeFile.Content, targetComponentId.String())
 	scriptsRaw := make([]interface{}, 0)
 	for _, script := range scripts {
 		scriptsRaw = append(scriptsRaw, script)
