@@ -24,16 +24,13 @@ import (
 func TestAskInitOptions(t *testing.T) {
 	t.Parallel()
 
-	// Fs
-	fs := testhelper.NewMemoryFs()
-
 	// Dependencies
 	var err error
 	var httpTransport *httpmock.MockTransport
 	dialog, console := createDialogs(t, true)
 	d := testdeps.NewDependencies()
 	d.LoggerValue = zap.NewNop().Sugar()
-	d.FsValue = fs
+	d.FsValue = testhelper.NewMemoryFs()
 	d.StorageApiValue, httpTransport, _ = testapi.NewMockedStorageApi()
 
 	branches := []*model.Branch{{BranchKey: model.BranchKey{Id: 123}, Name: "Main", IsDefault: true}}
