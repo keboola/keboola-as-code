@@ -1,0 +1,5 @@
+{
+  "componentId": "keboola.ex-aws-s3",
+  "name": "om-default-bucket",
+  "configuration": {}
+}

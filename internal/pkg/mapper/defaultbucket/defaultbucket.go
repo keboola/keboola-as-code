@@ -18,12 +18,12 @@ func NewMapper(context model.MapperContext) *defaultBucketMapper {
 	return &defaultBucketMapper{MapperContext: context}
 }
 
-func (m *defaultBucketMapper) visitStorageInputTables(config configOrRow, callback func(
+func (m *defaultBucketMapper) visitStorageInputTables(config configOrRow, content *orderedmap.OrderedMap, callback func(
 	config configOrRow,
 	sourceTableId string,
 	storageInputTable *orderedmap.OrderedMap,
 ) error) error {
-	inputTablesRaw, _, _ := config.GetContent().GetNested("storage.input.tables")
+	inputTablesRaw, _, _ := content.GetNested("storage.input.tables")
 	inputTables, ok := inputTablesRaw.([]interface{})
 	if !ok {
 		return nil

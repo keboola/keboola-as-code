@@ -23,9 +23,9 @@ func TestLocalSaveTransformationEmpty(t *testing.T) {
 	// Save
 	err := NewMapper(context).MapBeforeLocalSave(recipe)
 	assert.NoError(t, err)
-	configFile, err := recipe.Files.GetOneByTag(model.ConfigFile).ToFile()
+	configFile, err := recipe.Files.ObjectConfigFile()
 	assert.NoError(t, err)
-	assert.Equal(t, "{}\n", configFile.Content)
+	assert.Equal(t, "{}\n", json.MustEncodeString(configFile.Content, true))
 }
 
 func TestLocalSaveTransformation(t *testing.T) {
@@ -37,7 +37,8 @@ func TestLocalSaveTransformation(t *testing.T) {
 	assert.NoError(t, fs.Mkdir(blocksDir))
 
 	// Prepare
-	configFile := recipe.Files.GetOneByTag(model.ConfigFile).File().(*filesystem.JsonFile)
+	configFile, err := recipe.Files.ObjectConfigFile()
+	assert.NoError(t, err)
 	configFile.Content.Set(`foo`, `bar`)
 	configState.Local.Blocks = model.Blocks{
 		{

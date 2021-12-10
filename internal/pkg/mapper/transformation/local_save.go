@@ -44,7 +44,8 @@ func (w *localWriter) save() error {
 	// Generate ".gitkeep" to preserve the "blocks" directory, even if there are no blocks.
 	w.Files.
 		Add(filesystem.NewFile(filesystem.Join(blocksDir, `.gitkeep`), ``)).
-		AddTag(model.FileTypeOther)
+		AddTag(model.FileTypeOther).
+		AddTag(model.FileKindGitKeep)
 
 	// Generate files for blocks
 	for _, block := range w.config.Blocks {
@@ -73,7 +74,7 @@ func (w *localWriter) generateBlockFiles(block *model.Block) {
 	// Create metadata file
 	if metadata := utils.MapFromTaggedFields(model.MetaFileFieldsTag, block); metadata != nil {
 		metadataPath := w.Naming.MetaFilePath(block.Path())
-		w.createMetadataFile(metadataPath, `block metadata`, metadata)
+		w.createMetadataFile(metadataPath, `block metadata`, model.FileKindBlockMeta, metadata)
 	}
 
 	// Create codes
@@ -86,18 +87,19 @@ func (w *localWriter) generateCodeFiles(code *model.Code) {
 	// Create metadata file
 	if metadata := utils.MapFromTaggedFields(model.MetaFileFieldsTag, code); metadata != nil {
 		metadataPath := w.Naming.MetaFilePath(code.Path())
-		w.createMetadataFile(metadataPath, `code metadata`, metadata)
+		w.createMetadataFile(metadataPath, `code metadata`, model.FileKindCodeMeta, metadata)
 	}
 
 	// Create code file
 	w.Files.
 		Add(filesystem.NewFile(w.Naming.CodeFilePath(code), code.ScriptsToString()).SetDescription(`code`)).
-		AddTag(model.FileTypeNativeCode)
+		AddTag(model.FileTypeOther).
+		AddTag(model.FileKindNativeCode)
 }
 
-func (w *localWriter) createMetadataFile(path, desc string, content *orderedmap.OrderedMap) {
+func (w *localWriter) createMetadataFile(path, desc, tag string, content *orderedmap.OrderedMap) {
 	w.Files.
 		Add(filesystem.NewJsonFile(path, content).SetDescription(desc)).
-		AddTag(model.MetaFile).
-		AddTag(model.FileTypeJson)
+		AddTag(model.FileTypeJson).
+		AddTag(tag)
 }

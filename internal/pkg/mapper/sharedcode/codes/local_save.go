@@ -64,7 +64,7 @@ func (w *writer) save() error {
 	}
 
 	// Get config file
-	configFile, err := w.Files.ConfigJsonFile()
+	configFile, err := w.Files.ObjectConfigFile()
 	if err != nil {
 		panic(err)
 	}
@@ -83,12 +83,13 @@ func (w *writer) save() error {
 	codeFilePath := w.Naming.SharedCodeFilePath(w.Path(), targetComponentId)
 	w.Files.
 		Add(filesystem.NewFile(codeFilePath, codeContent).SetDescription(`shared code`)).
-		AddTag(model.FileTypeNativeSharedCode)
+		AddTag(model.FileTypeOther).
+		AddTag(model.FileKindNativeSharedCode)
 
 	// Remove "isDisabled" unnecessary value from "meta.json".
 	// Shared code is represented as config row
 	// and always contains `"isDisabled": false` in metadata.
-	metaFile, err := w.Files.MetaJsonFile()
+	metaFile, err := w.Files.ObjectMetaFile()
 	if err != nil {
 		panic(err)
 	}

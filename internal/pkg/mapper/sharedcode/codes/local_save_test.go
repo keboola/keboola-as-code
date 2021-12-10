@@ -20,7 +20,7 @@ func TestSharedCodeSaveMissingKey(t *testing.T) {
 	err := NewMapper(context).MapBeforeLocalSave(recipe)
 	assert.Error(t, err)
 	assert.Equal(t, `key "code_content" not found in config row "branch:789/component:keboola.shared-code/config:123/row:456"`, err.Error())
-	assert.Nil(t, recipe.Files.GetOneByTag(model.FileTypeNativeSharedCode))
+	assert.Nil(t, recipe.Files.GetOneByTag(model.FileKindNativeSharedCode))
 }
 
 func TestSharedCodeSave(t *testing.T) {
@@ -41,7 +41,7 @@ func TestSharedCodeSave(t *testing.T) {
 
 	// Assert
 	assert.NoError(t, err)
-	sharedCodeFileRaw := recipe.Files.GetOneByTag(model.FileTypeNativeSharedCode)
+	sharedCodeFileRaw := recipe.Files.GetOneByTag(model.FileKindNativeSharedCode)
 	assert.NotNil(t, sharedCodeFileRaw)
 	sharedCodeFile, err := sharedCodeFileRaw.ToFile()
 	assert.NoError(t, err)

@@ -1,0 +1,53 @@
+{
+  "version": 2,
+  "project": {
+    "id": %%TEST_KBC_PROJECT_ID%%,
+    "apiHost": "%%TEST_KBC_STORAGE_API_HOST%%"
+  },
+  "sortBy": "path",
+  "naming": {
+    "branch": "{branch_name}",
+    "config": "{component_type}/{component_id}/{config_name}",
+    "configRow": "rows/{config_row_name}",
+    "schedulerConfig": "schedules/{config_name}",
+    "sharedCodeConfig": "_shared/{target_component_id}",
+    "sharedCodeConfigRow": "codes/{config_row_name}",
+    "variablesConfig": "variables",
+    "variablesValuesRow": "values/{config_row_name}"
+  },
+  "allowedBranches": [
+    "__all__"
+  ],
+  "ignoredComponents": [],
+  "branches": [
+    {
+      "id": %%TEST_BRANCH_FOO_ID%%,
+      "path": "foo"
+    },
+    {
+      "id": %%TEST_BRANCH_MAIN_ID%%,
+      "path": "main"
+    }
+  ],
+  "configurations": [
+    {
+      "branchId": %%TEST_BRANCH_FOO_ID%%,
+      "componentId": "ex-generic-v2",
+      "id": "%%TEST_BRANCH_FOO_CONFIG_IM_DEFAULT_BUCKET_ID%%",
+      "path": "extractor/ex-generic-v2/im-default-bucket",
+      "rows": [
+        {
+          "id": "%%TEST_BRANCH_FOO_CONFIG_IM_DEFAULT_BUCKET_ROW_TEST_ID%%",
+          "path": "rows/test"
+        }
+      ]
+    },
+    {
+      "branchId": %%TEST_BRANCH_FOO_ID%%,
+      "componentId": "keboola.ex-aws-s3",
+      "id": "%%TEST_BRANCH_FOO_CONFIG_OM_DEFAULT_BUCKET_ID%%",
+      "path": "extractor/keboola.ex-aws-s3/om-default-bucket",
+      "rows": []
+    }
+  ]
+}

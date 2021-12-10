@@ -18,7 +18,7 @@ func (m *defaultBucketMapper) OnLocalChange(changes *model.LocalChanges) error {
 		if !ok {
 			continue
 		}
-		if err := m.visitStorageInputTables(config, m.replacePlaceholderWithDefaultBucket); err != nil {
+		if err := m.visitStorageInputTables(config, config.GetContent(), m.replacePlaceholderWithDefaultBucket); err != nil {
 			errors.Append(err)
 		}
 	}

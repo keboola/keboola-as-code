@@ -10,11 +10,19 @@ import (
 )
 
 const (
-	FileTypeJson             = `json`
-	FileTypeMarkdown         = `markdown`
-	FileTypeNativeCode       = `code`
-	FileTypeNativeSharedCode = `sharedCode`
-	FileTypeOther            = `other`
+	FileTypeJson              = `json`
+	FileTypeMarkdown          = `markdown`
+	FileTypeOther             = `other`
+	FileKindObjectConfig      = `objectConfig`
+	FileKindObjectMeta        = `objectMeta`
+	FileKindObjectDescription = `objectDescription`
+	FileKindBlockMeta         = `blockMeta`
+	FileKindCodeMeta          = `codeMeta`
+	FileKindPhaseConfig       = `phaseConfig`
+	FileKindTaskConfig        = `taskConfig`
+	FileKindNativeCode        = `nativeCode`
+	FileKindNativeSharedCode  = `nativeSharedCode`
+	FileKindGitKeep           = `gitkeep`
 )
 
 type MapperContext struct {
@@ -71,8 +79,8 @@ func (f *ObjectFiles) GetByTag(tag string) []*objectFile {
 	return out
 }
 
-func (f *ObjectFiles) ConfigJsonFile() (*filesystem.JsonFile, error) {
-	raw := f.GetOneByTag(ConfigFile)
+func (f *ObjectFiles) ObjectConfigFile() (*filesystem.JsonFile, error) {
+	raw := f.GetOneByTag(FileKindObjectConfig)
 	if raw == nil {
 		return nil, fmt.Errorf(`missing config file`)
 	}
@@ -83,8 +91,8 @@ func (f *ObjectFiles) ConfigJsonFile() (*filesystem.JsonFile, error) {
 	return file, nil
 }
 
-func (f *ObjectFiles) MetaJsonFile() (*filesystem.JsonFile, error) {
-	raw := f.GetOneByTag(MetaFile)
+func (f *ObjectFiles) ObjectMetaFile() (*filesystem.JsonFile, error) {
+	raw := f.GetOneByTag(FileKindObjectMeta)
 	if raw == nil {
 		return nil, fmt.Errorf(`missing config file`)
 	}

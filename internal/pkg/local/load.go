@@ -65,8 +65,8 @@ func (l *modelLoader) loadMetaFile() {
 	} else if file != nil {
 		l.Files.
 			Add(file).
-			AddTag(model.MetaFile).
-			AddTag(model.FileTypeJson)
+			AddTag(model.FileTypeJson).
+			AddTag(model.FileKindObjectMeta)
 	}
 }
 
@@ -80,8 +80,8 @@ func (l *modelLoader) loadConfigFile() {
 	} else if file != nil {
 		l.Files.
 			Add(file).
-			AddTag(model.ConfigFile).
-			AddTag(model.FileTypeJson)
+			AddTag(model.FileTypeJson).
+			AddTag(model.FileKindObjectConfig)
 	}
 }
 
@@ -94,8 +94,8 @@ func (l *modelLoader) loadDescriptionFile() {
 	} else if file != nil {
 		l.Files.
 			Add(file).
-			AddTag(model.DescriptionFile).
-			AddTag(model.FileTypeMarkdown)
+			AddTag(model.FileTypeMarkdown).
+			AddTag(model.FileKindObjectDescription)
 	}
 }
 

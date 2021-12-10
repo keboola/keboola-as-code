@@ -16,8 +16,12 @@ func (m *defaultBucketMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) 
 		return nil
 	}
 
-	err := m.visitStorageInputTables(config, m.replaceDefaultBucketWithPlaceholder)
+	configFile, err := recipe.Files.ObjectConfigFile()
 	if err != nil {
+		panic(err)
+	}
+
+	if err := m.visitStorageInputTables(config, configFile.Content, m.replaceDefaultBucketWithPlaceholder); err != nil {
 		m.Logger.Warnf(`Warning: %s`, err)
 	}
 	return nil
@@ -38,7 +42,6 @@ func (m *defaultBucketMapper) replaceDefaultBucketWithPlaceholder(
 
 	tableName := strings.SplitN(sourceTableId, ".", 3)[2]
 	inputTable.Set(`source`, fmt.Sprintf(`{{:default-bucket:%s}}.%s`, sourceConfigPath, tableName))
-
 	return nil
 }
 

@@ -40,6 +40,6 @@ func TestSharedCodeLoadOk(t *testing.T) {
 	assert.Equal(t, []interface{}{"foo bar"}, codeContent)
 
 	// Shared code is loaded
-	sharedCodeFile := recipe.Files.GetOneByTag(model.FileTypeNativeSharedCode)
+	sharedCodeFile := recipe.Files.GetOneByTag(model.FileKindNativeSharedCode)
 	assert.NotNil(t, sharedCodeFile)
 }

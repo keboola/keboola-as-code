@@ -14,18 +14,18 @@ func NewLocalLoadRecipe(manifest model.ObjectManifest, object model.Object) *mod
 
 	recipe.Files.
 		Add(filesystem.NewJsonFile(`meta.json`, orderedmap.New())).
-		AddTag(model.MetaFile).
-		AddTag(model.FileTypeJson)
+		AddTag(model.FileTypeJson).
+		AddTag(model.FileKindObjectMeta)
 
 	recipe.Files.
 		Add(filesystem.NewJsonFile(`config.json`, orderedmap.New())).
-		AddTag(model.ConfigFile).
-		AddTag(model.FileTypeJson)
+		AddTag(model.FileTypeJson).
+		AddTag(model.FileKindObjectConfig)
 
 	recipe.Files.
 		Add(filesystem.NewFile(`description.md`, ``)).
-		AddTag(model.DescriptionFile).
-		AddTag(model.FileTypeMarkdown)
+		AddTag(model.FileTypeMarkdown).
+		AddTag(model.FileKindObjectDescription)
 
 	return recipe
 }
@@ -38,18 +38,18 @@ func NewLocalSaveRecipe(manifest model.ObjectManifest, object model.Object) *mod
 
 	recipe.Files.
 		Add(filesystem.NewJsonFile(`meta.json`, orderedmap.New())).
-		AddTag(model.MetaFile).
-		AddTag(model.FileTypeJson)
+		AddTag(model.FileTypeJson).
+		AddTag(model.FileKindObjectMeta)
 
 	recipe.Files.
 		Add(filesystem.NewJsonFile(`config.json`, orderedmap.New())).
-		AddTag(model.ConfigFile).
-		AddTag(model.FileTypeJson)
+		AddTag(model.FileTypeJson).
+		AddTag(model.FileKindObjectConfig)
 
 	recipe.Files.
 		Add(filesystem.NewFile(`description.md`, ``)).
-		AddTag(model.DescriptionFile).
-		AddTag(model.FileTypeMarkdown)
+		AddTag(model.FileTypeMarkdown).
+		AddTag(model.FileKindObjectDescription)
 
 	return recipe
 }

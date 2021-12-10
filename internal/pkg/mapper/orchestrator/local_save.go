@@ -37,7 +37,8 @@ func (w *localWriter) save() {
 	// Generate ".gitkeep" to preserve the "phases" directory, even if there are no phases.
 	w.Files.
 		Add(filesystem.NewFile(filesystem.Join(phasesDir, `.gitkeep`), ``)).
-		AddTag(model.FileTypeOther)
+		AddTag(model.FileTypeOther).
+		AddTag(model.FileKindGitKeep)
 
 	// Generate files for phases
 	errors := utils.NewMultiError()
@@ -98,8 +99,8 @@ func (w *localWriter) savePhase(phase *model.Phase, allPhases []*model.Phase) er
 		SetDescription(`phase config file`)
 	w.Files.
 		Add(file).
-		AddTag(model.ConfigFile).
-		AddTag(model.FileTypeJson)
+		AddTag(model.FileTypeJson).
+		AddTag(model.FileKindPhaseConfig)
 
 	// Write tasks
 	for _, task := range phase.Tasks {
@@ -167,8 +168,8 @@ func (w *localWriter) saveTask(task *model.Task) error {
 		SetDescription(`task config file`)
 	w.Files.
 		Add(file).
-		AddTag(model.ConfigFile).
-		AddTag(model.FileTypeJson)
+		AddTag(model.FileTypeJson).
+		AddTag(model.FileKindTaskConfig)
 
 	return errors.ErrorOrNil()
 }
