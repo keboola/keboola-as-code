@@ -39,9 +39,9 @@ func (v *Orchestration) Clone() *Orchestration {
 		return nil
 	}
 	clone := *v
-	clone.Phases = make([]*Phase, 0)
-	for _, phase := range v.Phases {
-		clone.Phases = append(clone.Phases, phase.Clone())
+	clone.Phases = make([]*Phase, len(v.Phases))
+	for i, phase := range v.Phases {
+		clone.Phases[i] = phase.Clone()
 	}
 	return &clone
 }

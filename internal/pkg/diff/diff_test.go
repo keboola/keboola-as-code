@@ -412,7 +412,7 @@ func TestDiffRelations(t *testing.T) {
 	assert.Equal(t, []string{"InManifest", "InApi"}, reporter.Paths()) // see model.RelationsBySide
 }
 
-func TestDiffBlocks(t *testing.T) {
+func TestDiffTransformation(t *testing.T) {
 	t.Parallel()
 	projectState := createProjectState(t)
 
@@ -426,49 +426,53 @@ func TestDiffBlocks(t *testing.T) {
 			},
 		},
 		Local: &model.Config{
-			Blocks: model.Blocks{
-				{
-					Name: "My block",
-					Codes: model.Codes{
-						{
-							Name: "Code 1",
-							Scripts: []string{
-								"SELECT 1;",
-								"SELECT 2;",
-								"SELECT 3;",
+			Transformation: &model.Transformation{
+				Blocks: []*model.Block{
+					{
+						Name: "My block",
+						Codes: model.Codes{
+							{
+								Name: "Code 1",
+								Scripts: []string{
+									"SELECT 1;",
+									"SELECT 2;",
+									"SELECT 3;",
+								},
+								PathInProject: model.NewPathInProject(`branch/config/blocks/001-block-1`, `001-code-1`),
 							},
-							PathInProject: model.NewPathInProject(`branch/config/blocks/001-block-1`, `001-code-1`),
 						},
+						PathInProject: model.NewPathInProject(`branch/config/blocks`, `001-my-block`),
 					},
-					PathInProject: model.NewPathInProject(`branch/config/blocks`, `001-my-block`),
 				},
 			},
 		},
 		Remote: &model.Config{
-			Blocks: model.Blocks{
-				{
-					Name: "Block 1",
-					Codes: model.Codes{
-						{
-							Name: "Code 1",
-							Scripts: []string{
-								"SELECT 1;",
+			Transformation: &model.Transformation{
+				Blocks: []*model.Block{
+					{
+						Name: "Block 1",
+						Codes: model.Codes{
+							{
+								Name: "Code 1",
+								Scripts: []string{
+									"SELECT 1;",
+								},
 							},
 						},
+						PathInProject: model.NewPathInProject(`branch/config/blocks`, `001-block-1`),
 					},
-					PathInProject: model.NewPathInProject(`branch/config/blocks`, `001-block-1`),
-				},
-				{
-					Name: "Block 2",
-					Codes: model.Codes{
-						{
-							Name: "Code 2",
-							Scripts: []string{
-								"SELECT 2;",
+					{
+						Name: "Block 2",
+						Codes: model.Codes{
+							{
+								Name: "Code 2",
+								Scripts: []string{
+									"SELECT 2;",
+								},
 							},
 						},
+						PathInProject: model.NewPathInProject(`branch/config/blocks/001-block-1`, `001-code-1`),
 					},
-					PathInProject: model.NewPathInProject(`branch/config/blocks/001-block-1`, `001-code-1`),
 				},
 			},
 		},
@@ -476,7 +480,7 @@ func TestDiffBlocks(t *testing.T) {
 	assert.NoError(t, projectState.Set(configState))
 
 	differ := NewDiffer(projectState)
-	reporter := differ.diffValues(configState, configState.Remote.Blocks, configState.Local.Blocks)
+	reporter := differ.diffValues(configState, configState.Remote.Transformation, configState.Local.Transformation)
 	expected := `
   blocks/001-my-block:
     - #  Block 1

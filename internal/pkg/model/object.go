@@ -1,13 +1,10 @@
 package model
 
 import (
-	"bytes"
-	"fmt"
 	"sort"
 	"strconv"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/strhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
@@ -110,7 +107,7 @@ type Config struct {
 	Description       string                 `json:"description" diff:"true" descriptionFile:"true"`
 	ChangeDescription string                 `json:"changeDescription"`
 	Content           *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
-	Blocks            Blocks                 `json:"-" validate:"dive" diff:"true"`
+	Transformation    *Transformation        `json:"-" validate:"omitempty,dive" diff:"true"`
 	Orchestration     *Orchestration         `json:"-" validate:"omitempty,dive" diff:"true"`
 	Relations         Relations              `json:"-" validate:"dive" diff:"true"`
 }
@@ -148,27 +145,6 @@ type Job struct {
 // Event https://keboola.docs.apiary.io/#reference/events/events/create-event
 type Event struct {
 	Id string `json:"id"`
-}
-
-type Blocks []*Block
-
-// Block - transformation block.
-type Block struct {
-	BlockKey
-	PathInProject `json:"-"`
-	Name          string `json:"name" validate:"required" metaFile:"true"`
-	Codes         Codes  `json:"codes" validate:"omitempty,dive"`
-}
-
-type Codes []*Code
-
-// Code - transformation code.
-type Code struct {
-	CodeKey
-	PathInProject `json:"-"`
-	CodeFileName  string   `json:"-"` // eg. "code.sql", "code.py", ...
-	Name          string   `json:"name" validate:"required" metaFile:"true"`
-	Scripts       []string `json:"script"` // scripts, eg. SQL statements
 }
 
 // Schedule - https://app.swaggerhub.com/apis/odinuv/scheduler/1.0.0#/schedules/get_schedules
@@ -266,14 +242,6 @@ func (k Kind) IsConfigRow() bool {
 	return k.Name == ConfigRowKind
 }
 
-func (k Kind) IsBlock() bool {
-	return k.Name == BlockKind
-}
-
-func (k Kind) IsCode() bool {
-	return k.Name == CodeKind
-}
-
 func (b *Branch) Clone() Object {
 	clone := *b
 	return &clone
@@ -282,7 +250,7 @@ func (b *Branch) Clone() Object {
 func (c *Config) Clone() Object {
 	clone := *c
 	clone.Content = c.Content.Clone()
-	clone.Blocks = c.Blocks.Clone()
+	clone.Transformation = c.Transformation.Clone()
 	clone.Orchestration = c.Orchestration.Clone()
 	clone.Relations = c.Relations.Clone()
 	return &clone
@@ -292,45 +260,6 @@ func (r *ConfigRow) Clone() Object {
 	clone := *r
 	clone.Content = r.Content.Clone()
 	return &clone
-}
-
-func (b *Block) Clone() *Block {
-	clone := *b
-	clone.Codes = b.Codes.Clone()
-	return &clone
-}
-
-func (v Blocks) Clone() Blocks {
-	if v == nil {
-		return nil
-	}
-
-	out := make(Blocks, len(v))
-	for index, item := range v {
-		out[index] = item.Clone()
-	}
-	return out
-}
-
-func (c *Code) Clone() *Code {
-	clone := *c
-	clone.Scripts = make([]string, len(c.Scripts))
-	for index, script := range c.Scripts {
-		clone.Scripts[index] = script
-	}
-	return &clone
-}
-
-func (v Codes) Clone() Codes {
-	if v == nil {
-		return nil
-	}
-
-	out := make(Codes, len(v))
-	for index, item := range v {
-		out[index] = item.Clone()
-	}
-	return out
 }
 
 func (v Relations) Clone() Relations {
@@ -374,21 +303,4 @@ func (c *Config) AddRelation(relation Relation) {
 
 func (r *ConfigRow) AddRelation(relation Relation) {
 	r.Relations.Add(relation)
-}
-
-func (b Block) String() string {
-	buf := new(bytes.Buffer)
-	_, _ = fmt.Fprintln(buf, `# `, b.Name)
-	for _, code := range b.Codes {
-		_, _ = fmt.Fprint(buf, code.String())
-	}
-	return buf.String()
-}
-
-func (c Code) String() string {
-	return fmt.Sprintf("## %s\n%s", c.Name, c.ScriptsToString())
-}
-
-func (c Code) ScriptsToString() string {
-	return strhelper.TransformationScriptsToString(c.Scripts, c.ComponentId.String())
 }

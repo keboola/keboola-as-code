@@ -52,7 +52,7 @@ func (m *mapper) onLocalLoad(object model.Object) error {
 	// Replace paths -> IDs in scripts
 	errors := utils.NewMultiError()
 	rowIdsMap := make(map[model.RowId]bool)
-	for _, block := range transformation.Blocks {
+	for _, block := range transformation.Transformation.Blocks {
 		for _, code := range block.Codes {
 			for index, script := range code.Scripts {
 				if id, v, err := m.replacePathByIdInScript(script, code, sharedCodeState); err != nil {

@@ -29,7 +29,7 @@ func (m *transformationMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecip
 
 	// Convert blocks to map
 	blocks := make([]interface{}, 0)
-	for _, block := range internalObject.Blocks {
+	for _, block := range internalObject.Transformation.Blocks {
 		blockRaw := orderedmap.New()
 		if err := json.ConvertByJson(block, &blockRaw); err != nil {
 			return fmt.Errorf(`cannot convert block to JSON: %w`, err)
@@ -40,8 +40,8 @@ func (m *transformationMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecip
 	// Add "parameters.blocks" to configuration content
 	parameters.Set("blocks", blocks)
 
-	// Clear blocks in API object
-	apiObject.Blocks = nil
+	// Clear transformation in API object
+	apiObject.Transformation = nil
 
 	// Update changed fields
 	if recipe.ChangedFields.Has(`blocks`) {

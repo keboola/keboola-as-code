@@ -32,8 +32,9 @@ func createTestFixtures(t *testing.T, componentId string) (model.MapperContext, 
 			},
 		},
 		Local: &model.Config{
-			ConfigKey: configKey,
-			Content:   orderedmap.New(),
+			ConfigKey:      configKey,
+			Content:        orderedmap.New(),
+			Transformation: &model.Transformation{},
 		},
 	}
 

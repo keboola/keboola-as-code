@@ -66,7 +66,7 @@ func TestLoadRemoteTransformation(t *testing.T) {
 	assert.NoError(t, NewMapper(context).MapAfterRemoteLoad(recipe))
 
 	// Internal representation
-	expected := model.Blocks{
+	expected := []*model.Block{
 		{
 			BlockKey: model.BlockKey{
 				BranchId:    123,
@@ -156,9 +156,9 @@ func TestLoadRemoteTransformation(t *testing.T) {
 
 	// Api object is not modified
 	assert.Equal(t, strings.TrimSpace(configInApi), strings.TrimSpace(json.MustEncodeString(apiObject.Content, true)))
-	assert.Empty(t, apiObject.Blocks)
+	assert.Empty(t, apiObject.Transformation)
 
 	// In internal object are blocks in Blocks field, not in Content
 	assert.Equal(t, `{"parameters":{}}`, json.MustEncodeString(internalObject.Content, false))
-	assert.Equal(t, expected, internalObject.Blocks)
+	assert.Equal(t, expected, internalObject.Transformation.Blocks)
 }

@@ -40,86 +40,88 @@ func TestLocalSaveTransformation(t *testing.T) {
 	configFile, err := recipe.Files.ObjectConfigFile()
 	assert.NoError(t, err)
 	configFile.Content.Set(`foo`, `bar`)
-	configState.Local.Blocks = model.Blocks{
-		{
-			BlockKey: model.BlockKey{
-				BranchId:    123,
-				ComponentId: "keboola.snowflake-transformation",
-				ConfigId:    `456`,
-				Index:       0,
-			},
-			PathInProject: model.NewPathInProject(
-				`branch/config/blocks`,
-				`001-block-1`,
-			),
-			Name: "block1",
-			Codes: model.Codes{
-				{
-					CodeKey: model.CodeKey{
-						BranchId:    123,
-						ComponentId: "keboola.snowflake-transformation",
-						ConfigId:    `456`,
-						BlockIndex:  0,
-						Index:       0,
+	configState.Local.Transformation = &model.Transformation{
+		Blocks: []*model.Block{
+			{
+				BlockKey: model.BlockKey{
+					BranchId:    123,
+					ComponentId: "keboola.snowflake-transformation",
+					ConfigId:    `456`,
+					Index:       0,
+				},
+				PathInProject: model.NewPathInProject(
+					`branch/config/blocks`,
+					`001-block-1`,
+				),
+				Name: "block1",
+				Codes: model.Codes{
+					{
+						CodeKey: model.CodeKey{
+							BranchId:    123,
+							ComponentId: "keboola.snowflake-transformation",
+							ConfigId:    `456`,
+							BlockIndex:  0,
+							Index:       0,
+						},
+						CodeFileName: `code.sql`,
+						PathInProject: model.NewPathInProject(
+							`branch/config/blocks/001-block-1`,
+							`001-code-1`,
+						),
+						Name: "code1",
+						Scripts: []string{
+							"SELECT 1",
+						},
 					},
-					CodeFileName: `code.sql`,
-					PathInProject: model.NewPathInProject(
-						`branch/config/blocks/001-block-1`,
-						`001-code-1`,
-					),
-					Name: "code1",
-					Scripts: []string{
-						"SELECT 1",
+					{
+						CodeKey: model.CodeKey{
+							BranchId:    123,
+							ComponentId: "keboola.snowflake-transformation",
+							ConfigId:    `456`,
+							BlockIndex:  0,
+							Index:       1,
+						},
+						CodeFileName: `code.sql`,
+						PathInProject: model.NewPathInProject(
+							`branch/config/blocks/001-block-1`,
+							`002-code-2`,
+						),
+						Name: "code2",
+						Scripts: []string{
+							"SELECT 2;",
+							"SELECT 3;",
+						},
 					},
 				},
-				{
-					CodeKey: model.CodeKey{
-						BranchId:    123,
-						ComponentId: "keboola.snowflake-transformation",
-						ConfigId:    `456`,
-						BlockIndex:  0,
-						Index:       1,
-					},
-					CodeFileName: `code.sql`,
-					PathInProject: model.NewPathInProject(
-						`branch/config/blocks/001-block-1`,
-						`002-code-2`,
-					),
-					Name: "code2",
-					Scripts: []string{
-						"SELECT 2;",
-						"SELECT 3;",
-					},
+			},
+			{
+				BlockKey: model.BlockKey{
+					BranchId:    123,
+					ComponentId: "keboola.snowflake-transformation",
+					ConfigId:    `456`,
+					Index:       1,
 				},
-			},
-		},
-		{
-			BlockKey: model.BlockKey{
-				BranchId:    123,
-				ComponentId: "keboola.snowflake-transformation",
-				ConfigId:    `456`,
-				Index:       1,
-			},
-			PathInProject: model.NewPathInProject(
-				`branch/config/blocks`,
-				`002-block-2`,
-			),
-			Name: "block2",
-			Codes: model.Codes{
-				{
-					CodeKey: model.CodeKey{
-						BranchId:    123,
-						ComponentId: "keboola.snowflake-transformation",
-						ConfigId:    `456`,
-						BlockIndex:  1,
-						Index:       0,
+				PathInProject: model.NewPathInProject(
+					`branch/config/blocks`,
+					`002-block-2`,
+				),
+				Name: "block2",
+				Codes: model.Codes{
+					{
+						CodeKey: model.CodeKey{
+							BranchId:    123,
+							ComponentId: "keboola.snowflake-transformation",
+							ConfigId:    `456`,
+							BlockIndex:  1,
+							Index:       0,
+						},
+						Name:         "code3",
+						CodeFileName: `code.sql`,
+						PathInProject: model.NewPathInProject(
+							`branch/config/blocks/002-block-2`,
+							`001-code-3`,
+						),
 					},
-					Name:         "code3",
-					CodeFileName: `code.sql`,
-					PathInProject: model.NewPathInProject(
-						`branch/config/blocks/002-block-2`,
-						`001-code-3`,
-					),
 				},
 			},
 		},

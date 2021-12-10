@@ -89,7 +89,7 @@ func TestLoadLocalTransformationSql(t *testing.T) {
 	assert.NoError(t, NewMapper(context).MapAfterLocalLoad(recipe))
 
 	// Assert
-	expected := model.Blocks{
+	expected := []*model.Block{
 		{
 			BlockKey: model.BlockKey{
 				BranchId:    123,
@@ -190,7 +190,7 @@ func TestLoadLocalTransformationSql(t *testing.T) {
 			Codes: model.Codes{},
 		},
 	}
-	assert.Equal(t, expected, configState.Local.Blocks)
+	assert.Equal(t, expected, configState.Local.Transformation.Blocks)
 }
 
 func TestLoadLocalTransformationPy(t *testing.T) {
@@ -228,7 +228,7 @@ func TestLoadLocalTransformationPy(t *testing.T) {
 	assert.NoError(t, NewMapper(context).MapAfterLocalLoad(recipe))
 
 	// Assert
-	expected := model.Blocks{
+	expected := []*model.Block{
 		{
 			BlockKey: model.BlockKey{
 				BranchId:    123,
@@ -328,5 +328,5 @@ func TestLoadLocalTransformationPy(t *testing.T) {
 			Codes: model.Codes{},
 		},
 	}
-	assert.Equal(t, expected, configState.Local.Blocks)
+	assert.Equal(t, expected, configState.Local.Transformation.Blocks)
 }
