@@ -10,7 +10,7 @@ type UsedInInputMappingRelation struct {
 }
 
 func (t *UsedInInputMappingRelation) Type() RelationType {
-	return UsedInOrchestratorRelType
+	return UsedInInputMappingRelType
 }
 
 func (t *UsedInInputMappingRelation) Desc() string {
