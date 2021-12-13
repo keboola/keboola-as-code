@@ -117,16 +117,23 @@ func newState(options *Options) *State {
 	s.remoteManager = remote.NewManager(s.localManager, options.api, s.State, s.mapper)
 
 	mappers := []interface{}{
-		variables.NewMapper(mapperContext),
-		schedulerMapper.NewMapper(mapperContext, options.schedulerApi),
-		sharedcode.NewVariablesMapper(mapperContext),
-		orchestrator.NewMapper(s.localManager, mapperContext),
-		relations.NewMapper(mapperContext),
-		sharedcode.NewCodesMapper(mapperContext),
-		sharedcode.NewLinksMapper(s.localManager, mapperContext),
-		transformation.NewMapper(mapperContext),
+		// Core files
 		description.NewMapper(),
+		// Storage
 		defaultbucket.NewMapper(mapperContext),
+		// Variables
+		variables.NewMapper(mapperContext),
+		sharedcode.NewVariablesMapper(mapperContext),
+		// Special components
+		schedulerMapper.NewMapper(mapperContext, options.schedulerApi),
+		orchestrator.NewMapper(s.localManager, mapperContext),
+		// Native codes
+		transformation.NewMapper(mapperContext),
+		sharedcode.NewCodesMapper(mapperContext),
+		// Shared code links
+		sharedcode.NewLinksMapper(s.localManager, mapperContext),
+		// Relations between objects
+		relations.NewMapper(mapperContext),
 	}
 	s.mapper.AddMapper(mappers...)
 
