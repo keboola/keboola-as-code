@@ -376,12 +376,10 @@ func TestPersistSharedCode(t *testing.T) {
 					},
 					Name:        "Shared Codes",
 					Description: "foo bar",
-					Content: orderedmap.FromPairs([]orderedmap.Pair{
-						{
-							Key:   "componentId",
-							Value: "keboola.python-transformation-v2",
-						},
-					}),
+					Content:     orderedmap.New(),
+					SharedCode: &model.SharedCodeConfig{
+						Target: model.ComponentId("keboola.python-transformation-v2"),
+					},
 				},
 			},
 			&model.ConfigRowState{
@@ -414,14 +412,13 @@ func TestPersistSharedCode(t *testing.T) {
 					},
 					Name:        "My code",
 					Description: "test code",
-					Content: orderedmap.FromPairs([]orderedmap.Pair{
-						{
-							Key: "code_content",
-							Value: []interface{}{
-								"print('Hello, world!')",
-							},
+					Content:     orderedmap.New(),
+					SharedCode: &model.SharedCodeRow{
+						Target: "keboola.python-transformation-v2",
+						Scripts: model.Scripts{
+							model.StaticScript{Value: "print('Hello, world!')"},
 						},
-					}),
+					},
 				},
 			},
 		},
@@ -535,12 +532,10 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 					},
 					Name:        "Shared Codes",
 					Description: "foo bar",
-					Content: orderedmap.FromPairs([]orderedmap.Pair{
-						{
-							Key:   "componentId",
-							Value: "keboola.python-transformation-v2",
-						},
-					}),
+					Content:     orderedmap.New(),
+					SharedCode: &model.SharedCodeConfig{
+						Target: model.ComponentId("keboola.python-transformation-v2"),
+					},
 				},
 			},
 			&model.ConfigRowState{
@@ -573,14 +568,15 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 					},
 					Name:        "My code",
 					Description: "test code",
-					Content: orderedmap.FromPairs([]orderedmap.Pair{
-						{
-							Key: "code_content",
-							Value: []interface{}{
-								"num1 = {{num1}}\nnum2 = {{num2}}\nsum = num1 + num2",
+					Content:     orderedmap.New(),
+					SharedCode: &model.SharedCodeRow{
+						Target: "keboola.python-transformation-v2",
+						Scripts: model.Scripts{
+							model.StaticScript{
+								Value: "num1 = {{num1}}\nnum2 = {{num2}}\nsum = num1 + num2",
 							},
 						},
-					}),
+					},
 					Relations: expectedCodeRelations,
 				},
 			},

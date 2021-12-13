@@ -6,7 +6,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/strhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -103,7 +102,7 @@ func (l *localLoader) addCode(block *model.Block, codeIndex int, path string) *m
 			block.Path(),
 			path,
 		),
-		Scripts: make([]string, 0),
+		Scripts: make(model.Scripts, 0),
 	}
 
 	l.ObjectManifest.AddRelatedPath(code.Path())
@@ -132,7 +131,7 @@ func (l *localLoader) addScripts(code *model.Code) {
 		AddTag(model.FileKindNativeCode)
 
 	// Split to scripts
-	code.Scripts = strhelper.ParseTransformationScripts(file.Content, l.config.ComponentId.String())
+	code.Scripts = model.ScriptsFromStr(file.Content, l.config.ComponentId)
 	l.Logger.Debugf(`Parsed "%d" scripts from "%s"`, len(code.Scripts), codeFilePath)
 }
 

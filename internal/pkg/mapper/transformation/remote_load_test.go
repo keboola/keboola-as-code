@@ -94,8 +94,8 @@ func TestLoadRemoteTransformation(t *testing.T) {
 					),
 					Name:         "code-1",
 					CodeFileName: `code.sql`,
-					Scripts: []string{
-						"SELECT 1",
+					Scripts: model.Scripts{
+						model.StaticScript{Value: "SELECT 1"},
 					},
 				},
 				{
@@ -112,9 +112,9 @@ func TestLoadRemoteTransformation(t *testing.T) {
 					),
 					Name:         "code-2",
 					CodeFileName: `code.sql`,
-					Scripts: []string{
-						"SELECT 1;",
-						"SELECT 2;",
+					Scripts: model.Scripts{
+						model.StaticScript{Value: "SELECT 1;"},
+						model.StaticScript{Value: "SELECT 2;"},
 					},
 				},
 			},
@@ -146,8 +146,8 @@ func TestLoadRemoteTransformation(t *testing.T) {
 					),
 					Name:         "code-3",
 					CodeFileName: `code.sql`,
-					Scripts: []string{
-						"SELECT 3",
+					Scripts: model.Scripts{
+						model.StaticScript{Value: "SELECT 3"},
 					},
 				},
 			},

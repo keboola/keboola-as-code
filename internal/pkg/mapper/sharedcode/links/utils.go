@@ -9,8 +9,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func (m *mapper) sharedCodeRowByScriptId(code *model.Code, script string, sharedCode model.ConfigKey) (*model.ConfigRowState, error) {
-	id := m.matchId(script)
+func (m *mapper) sharedCodeRowByScript(code *model.Code, script model.Script, sharedCode model.ConfigKey) (*model.ConfigRowState, error) {
+	id := m.matchId(script.Content())
 	if id == "" {
 		// Not found
 		return nil, nil

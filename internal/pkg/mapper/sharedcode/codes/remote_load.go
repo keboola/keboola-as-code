@@ -1,53 +1,97 @@
 package codes
 
 import (
+	"fmt"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/strhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // OnRemoteChange converts legacy "code_content" string -> []interface{}.
 func (m *mapper) OnRemoteChange(changes *model.RemoteChanges) error {
-	allObjects := m.State.RemoteObjects()
+	errors := utils.NewMultiError()
 	for _, objectState := range changes.Loaded() {
-		// Only for shared code config row
-		if ok, err := m.IsSharedCodeRowKey(objectState.Key()); err != nil {
-			return err
+		if ok, err := m.IsSharedCodeKey(objectState.Key()); err != nil {
+			errors.Append(err)
+			continue
 		} else if ok {
-			m.normalizeRemoteSharedCodeRow(objectState.(*model.ConfigRowState).Remote, allObjects)
+			if err := m.onConfigRemoteLoad(objectState.(*model.ConfigState).Remote); err != nil {
+				errors.Append(err)
+			}
 		}
+	}
+
+	if errors.Len() > 0 {
+		// Convert errors to warning
+		m.Logger.Warn(utils.PrefixError(`Warning`, errors))
 	}
 
 	return nil
 }
 
-func (m *mapper) normalizeRemoteSharedCodeRow(row *model.ConfigRow, allObjects *model.StateObjects) {
+func (m *mapper) onConfigRemoteLoad(config *model.Config) error {
+	// Get "code_content" value
+	targetRaw, found := config.Content.Get(model.ShareCodeTargetComponentKey)
+	if !found {
+		return nil
+	}
+
+	// Always delete key from the Content
+	defer func() {
+		config.Content.Delete(model.ShareCodeTargetComponentKey)
+	}()
+
+	// Value should be string
+	target, ok := targetRaw.(string)
+	if !ok {
+		return utils.PrefixError(
+			fmt.Sprintf(`invalid %s`, config.Desc()),
+			fmt.Errorf(`key "%s" should be string, found "%T"`, model.ShareCodeTargetComponentKey, targetRaw),
+		)
+	}
+
+	// Store target component ID to struct
+	config.SharedCode = &model.SharedCodeConfig{Target: model.ComponentId(target)}
+
+	errors := utils.NewMultiError()
+	for _, row := range m.State.RemoteObjects().ConfigRowsFrom(config.ConfigKey) {
+		if err := m.onRowRemoteLoad(config, row); err != nil {
+			errors.Append(err)
+		}
+	}
+	return errors.ErrorOrNil()
+}
+
+func (m *mapper) onRowRemoteLoad(config *model.Config, row *model.ConfigRow) error {
 	// Get "code_content" value
 	raw, found := row.Content.Get(model.SharedCodeContentKey)
 	if !found {
-		return
+		return nil
 	}
 
-	// Convert legacy string -> []interface{}
-	if codeContentStr, ok := raw.(string); ok {
-		// Get target component of the shared code -> needed for scripts parsing
-		config := allObjects.MustGet(row.ConfigKey()).(*model.Config)
-		targetComponentId, err := m.GetTargetComponentId(config)
-		if err != nil {
-			m.Logger.Warn(`Warning: `, err)
-			return
-		}
-
-		// Parse scripts
-		scripts := strhelper.ParseTransformationScripts(codeContentStr, targetComponentId.String())
-
-		// Convert []string -> []interface{}
-		scriptsRaw := make([]interface{}, 0)
-		for _, script := range scripts {
-			scriptsRaw = append(scriptsRaw, script)
-		}
-		row.Content.Set(model.SharedCodeContentKey, scriptsRaw)
-	} else if _, ok := raw.([]interface{}); !ok {
+	// Always delete key from the Content
+	defer func() {
 		row.Content.Delete(model.SharedCodeContentKey)
-		m.Logger.Warnf(`Warning: key "%s" must be string or string[], found %T, in %s`, model.SharedCodeContentKey, raw, row.Desc())
+	}()
+
+	// Parse value
+	var scripts model.Scripts
+	switch v := raw.(type) {
+	case string:
+		scripts = model.ScriptsFromStr(v, config.SharedCode.Target)
+	case []interface{}:
+		scripts = model.ScriptsFromSlice(v)
+	default:
+		return utils.PrefixError(
+			fmt.Sprintf(`invalid %s`, row.Desc()),
+			fmt.Errorf(`key "%s" should be string or array, found "%T"`, model.SharedCodeContentKey, raw),
+		)
 	}
+
+	// Store scripts to struct
+	row.SharedCode = &model.SharedCodeRow{
+		Target:  config.SharedCode.Target,
+		Scripts: scripts,
+	}
+	return nil
 }

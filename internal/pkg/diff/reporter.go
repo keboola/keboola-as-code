@@ -206,21 +206,25 @@ func valuesDiff(remote, local reflect.Value) []string {
 	var localType reflect.Type
 	if remote.IsValid() {
 		remoteType = remote.Type()
-		if remoteType.Kind().String() == `interface` || remoteType.Kind().String() == `ptr` {
-			remote = remote.Elem()
+		if remoteType.Kind() == reflect.Interface || remoteType.Kind() == reflect.Ptr {
+			if !remote.IsZero() {
+				remote = remote.Elem()
+			}
 			remoteType = remote.Type()
 		}
 	}
 	if local.IsValid() {
 		localType = local.Type()
-		if localType.Kind().String() == `interface` || localType.Kind().String() == `ptr` {
-			local = local.Elem()
+		if localType.Kind() == reflect.Interface || localType.Kind() == reflect.Ptr {
+			if !local.IsZero() {
+				local = local.Elem()
+			}
 			localType = local.Type()
 		}
 	}
 
 	// Print types if differs
-	includeType := remote.IsValid() && local.IsValid() && remoteType.String() != localType.String()
+	includeType := remote.IsValid() && local.IsValid() && !remote.IsZero() && !local.IsZero() && remoteType.String() != localType.String()
 
 	// Format values
 	if remote.IsValid() {
@@ -253,6 +257,8 @@ func valuesDiff(remote, local reflect.Value) []string {
 func formatValue(value reflect.Value, t reflect.Type, includeType bool) []string {
 	var formatted string
 	switch {
+	case t.Kind() == reflect.Ptr && value.IsNil():
+		formatted = `(null)`
 	case t.Kind() == reflect.Map:
 		// Format map to JSON
 		formatted = strings.TrimRight(json.MustEncodeString(value.Interface(), true), "\n")

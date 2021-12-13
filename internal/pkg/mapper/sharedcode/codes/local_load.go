@@ -1,67 +1,86 @@
 package codes
 
 import (
+	"fmt"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/strhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-type loader struct {
-	*mapper
-	*model.LocalLoadRecipe
-	config    *model.Config
-	configRow *model.ConfigRow
-	errors    *utils.MultiError
-}
-
-// MapAfterLocalLoad - load shared code from filesystem to target config.
+// MapAfterLocalLoad loads shared code from filesystem to target config.
 func (m *mapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
-	// Only for shared code config row
-	if ok, err := m.IsSharedCodeRowKey(recipe.Object.Key()); err != nil || !ok {
+	errors := utils.NewMultiError()
+
+	// Shared code config
+	if ok, err := m.IsSharedCodeKey(recipe.Object.Key()); err != nil {
 		return err
+	} else if ok {
+		config := recipe.Object.(*model.Config)
+		if err := m.onConfigLocalLoad(config); err != nil {
+			errors.Append(err)
+		}
 	}
 
-	// Create loader
-	configRow := recipe.Object.(*model.ConfigRow)
-	config := m.State.MustGet(configRow.ConfigKey()).LocalState().(*model.Config)
-	l := &loader{
-		mapper:          m,
-		LocalLoadRecipe: recipe,
-		config:          config,
-		configRow:       configRow,
-		errors:          utils.NewMultiError(),
+	// Shared code config row
+	if ok, err := m.IsSharedCodeRowKey(recipe.Object.Key()); err != nil {
+		return err
+	} else if ok {
+		row := recipe.Object.(*model.ConfigRow)
+		config := m.State.MustGet(row.ConfigKey()).LocalState().(*model.Config)
+		if err := m.onRowLocalLoad(config, row, recipe); err != nil {
+			errors.Append(err)
+		}
 	}
 
-	// Load
-	return l.load()
+	return errors.ErrorOrNil()
 }
 
-func (l *loader) load() error {
-	// Get target component of the shared code -> needed for file extension
-	targetComponentId, err := l.GetTargetComponentId(l.config)
-	if err != nil {
-		return err
+func (m *mapper) onConfigLocalLoad(config *model.Config) error {
+	// Get "code_content" value
+	targetRaw, found := config.Content.Get(model.ShareCodeTargetComponentKey)
+	if !found {
+		return nil
+	}
+
+	// Always delete key from the Content
+	defer func() {
+		config.Content.Delete(model.ShareCodeTargetComponentKey)
+	}()
+
+	// Value should be string
+	target, ok := targetRaw.(string)
+	if !ok {
+		return utils.PrefixError(
+			fmt.Sprintf(`invalid %s`, config.Desc()),
+			fmt.Errorf(`key "%s" should be string, found "%T"`, model.ShareCodeTargetComponentKey, targetRaw),
+		)
+	}
+
+	// Store target component ID to struct
+	config.SharedCode = &model.SharedCodeConfig{Target: model.ComponentId(target)}
+	return nil
+}
+
+func (m *mapper) onRowLocalLoad(config *model.Config, row *model.ConfigRow, recipe *model.LocalLoadRecipe) error {
+	if config.SharedCode == nil {
+		return nil
 	}
 
 	// Load file
-	codeFilePath := l.Naming.SharedCodeFilePath(l.ObjectManifest.Path(), targetComponentId)
-	codeFile, err := l.Fs.ReadFile(codeFilePath, `shared code`)
+	codeFilePath := m.Naming.SharedCodeFilePath(recipe.Path(), config.SharedCode.Target)
+	codeFile, err := m.Fs.ReadFile(codeFilePath, `shared code`)
 	if err != nil {
 		return err
 	}
-	l.Files.
+	recipe.Files.
 		Add(codeFile).
 		AddTag(model.FileTypeOther).
 		AddTag(model.FileKindNativeSharedCode)
 
-	// Convert []string -> []interface{} (so there is no type difference against API type)
-	scripts := strhelper.ParseTransformationScripts(codeFile.Content, targetComponentId.String())
-	scriptsRaw := make([]interface{}, 0)
-	for _, script := range scripts {
-		scriptsRaw = append(scriptsRaw, script)
+	// Store scripts to struct
+	row.SharedCode = &model.SharedCodeRow{
+		Target:  config.SharedCode.Target,
+		Scripts: model.ScriptsFromStr(codeFile.Content, config.SharedCode.Target),
 	}
-
-	// Set to config row JSON
-	l.configRow.Content.Set(model.SharedCodeContentKey, scriptsRaw)
 	return nil
 }

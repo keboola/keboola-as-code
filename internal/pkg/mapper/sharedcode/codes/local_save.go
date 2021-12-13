@@ -1,87 +1,51 @@
 package codes
 
 import (
-	"fmt"
-
-	"github.com/spf13/cast"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/strhelper"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-type writer struct {
-	*mapper
-	*model.LocalSaveRecipe
-	config    *model.Config
-	configRow *model.ConfigRow
-	errors    *utils.MultiError
-}
-
-// MapBeforeLocalSave - save shared code as native file to filesystem.
+// MapBeforeLocalSave saves shared code as native file to filesystem.
 func (m *mapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
-	// Only for shared code config row
-	if ok, err := m.IsSharedCodeRowKey(recipe.Object.Key()); err != nil || !ok {
-		return err
+	// Save config
+	if config, ok := recipe.Object.(*model.Config); ok {
+		m.onConfigLocalSave(config, recipe)
 	}
 
-	// Create writer
-	configRow := recipe.Object.(*model.ConfigRow)
-	config := m.State.MustGet(configRow.ConfigKey()).RemoteOrLocalState().(*model.Config)
-	w := &writer{
-		mapper:          m,
-		LocalSaveRecipe: recipe,
-		config:          config,
-		configRow:       configRow,
-		errors:          utils.NewMultiError(),
+	// Save row
+	if row, ok := recipe.Object.(*model.ConfigRow); ok {
+		m.onRowLocalSave(row, recipe)
 	}
 
-	// Save
-	return w.save()
+	return nil
 }
 
-func (w *writer) save() error {
-	// Load content from config row JSON
-	rowContent := w.configRow.Content
-
-	// Load content
-	raw, found := rowContent.Get(model.SharedCodeContentKey)
-	if !found {
-		return fmt.Errorf(`key "%s" not found in %s`, model.SharedCodeContentKey, w.configRow.Desc())
-	}
-
-	// Get target component of the shared code -> needed for file extension
-	targetComponentId, err := w.GetTargetComponentId(w.config)
-	if err != nil {
-		return err
-	}
-
-	// Content must be []interface{}
-	codeContentSlice, ok := raw.([]interface{})
-	if !ok {
-		return fmt.Errorf(`key "%s" must be array, found %T, in %s`, model.SharedCodeContentKey, raw, w.configRow.Desc())
+func (m *mapper) onConfigLocalSave(config *model.Config, recipe *model.LocalSaveRecipe) {
+	// Is shared code?
+	if config.SharedCode == nil {
+		return
 	}
 
 	// Get config file
-	configFile, err := w.Files.ObjectConfigFile()
+	configFile, err := recipe.Files.ObjectConfigFile()
 	if err != nil {
 		panic(err)
 	}
 
-	// Remove code content from JSON
-	configFile.Content.Delete(model.SharedCodeContentKey)
+	// Set target component ID
+	configFile.Content.Set(model.ShareCodeTargetComponentKey, config.SharedCode.Target.String())
+}
 
-	// Convert []interface{} -> []string
-	var scripts []string
-	for _, script := range codeContentSlice {
-		scripts = append(scripts, cast.ToString(script))
+func (m *mapper) onRowLocalSave(row *model.ConfigRow, recipe *model.LocalSaveRecipe) {
+	// Is shared code?
+	if row.SharedCode == nil {
+		return
 	}
 
 	// Create code file
-	codeContent := strhelper.TransformationScriptsToString(scripts, targetComponentId.String())
-	codeFilePath := w.Naming.SharedCodeFilePath(w.Path(), targetComponentId)
-	w.Files.
+	codeContent := row.SharedCode.String()
+	codeFilePath := m.Naming.SharedCodeFilePath(recipe.Path(), row.SharedCode.Target)
+	recipe.Files.
 		Add(filesystem.NewFile(codeFilePath, codeContent).SetDescription(`shared code`)).
 		AddTag(model.FileTypeOther).
 		AddTag(model.FileKindNativeSharedCode)
@@ -89,7 +53,7 @@ func (w *writer) save() error {
 	// Remove "isDisabled" unnecessary value from "meta.json".
 	// Shared code is represented as config row
 	// and always contains `"isDisabled": false` in metadata.
-	metaFile, err := w.Files.ObjectMetaFile()
+	metaFile, err := recipe.Files.ObjectMetaFile()
 	if err != nil {
 		panic(err)
 	}
@@ -99,6 +63,4 @@ func (w *writer) save() error {
 			metaFile.Content.Delete(`isDisabled`)
 		}
 	}
-
-	return nil
 }

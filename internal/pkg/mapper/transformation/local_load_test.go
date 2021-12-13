@@ -117,8 +117,8 @@ func TestLoadLocalTransformationSql(t *testing.T) {
 					),
 					Name:         "001-001",
 					CodeFileName: `code.sql`,
-					Scripts: []string{
-						"SELECT 1",
+					Scripts: model.Scripts{
+						model.StaticScript{Value: "SELECT 1"},
 					},
 				},
 				{
@@ -135,9 +135,9 @@ func TestLoadLocalTransformationSql(t *testing.T) {
 					),
 					Name:         "001-002",
 					CodeFileName: `code.sql`,
-					Scripts: []string{
-						"SELECT 1;",
-						"SELECT 2;",
+					Scripts: model.Scripts{
+						model.StaticScript{Value: "SELECT 1;"},
+						model.StaticScript{Value: "SELECT 2;"},
 					},
 				},
 			},
@@ -169,8 +169,8 @@ func TestLoadLocalTransformationSql(t *testing.T) {
 					),
 					Name:         "002-001",
 					CodeFileName: `code.sql`,
-					Scripts: []string{
-						"SELECT 3",
+					Scripts: model.Scripts{
+						model.StaticScript{Value: "SELECT 3"},
 					},
 				},
 			},
@@ -256,8 +256,8 @@ func TestLoadLocalTransformationPy(t *testing.T) {
 					),
 					Name:         "001-001",
 					CodeFileName: `code.py`,
-					Scripts: []string{
-						"print('1')",
+					Scripts: model.Scripts{
+						model.StaticScript{Value: "print('1')"},
 					},
 				},
 				{
@@ -274,8 +274,8 @@ func TestLoadLocalTransformationPy(t *testing.T) {
 					),
 					Name:         "001-002",
 					CodeFileName: `code.py`,
-					Scripts: []string{
-						"print('1')\nprint('2')",
+					Scripts: model.Scripts{
+						model.StaticScript{Value: "print('1')\nprint('2')"},
 					},
 				},
 			},
@@ -307,8 +307,8 @@ func TestLoadLocalTransformationPy(t *testing.T) {
 					),
 					Name:         "002-001",
 					CodeFileName: `code.py`,
-					Scripts: []string{
-						"print('3')",
+					Scripts: model.Scripts{
+						model.StaticScript{Value: "print('3')"},
 					},
 				},
 			},

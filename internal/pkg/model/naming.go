@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/spf13/cast"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -206,17 +204,12 @@ func (n Naming) ConfigPath(parentPath string, component *Component, config *Conf
 	var template, targetComponentId string
 	switch {
 	case parent.IsBranch() && component.IsSharedCode():
-		// Get target component ID for shared code config
-		if config.Content == nil {
-			panic(fmt.Errorf(`shared code config "%s" must have set key "%s"`, config.Desc(), ShareCodeTargetComponentKey))
-		}
-		targetComponentIdRaw, found := config.Content.Get(ShareCodeTargetComponentKey)
-		if !found {
-			panic(fmt.Errorf(`shared code config "%s" must have set key "%s"`, config.Desc(), ShareCodeTargetComponentKey))
+		if config.SharedCode == nil {
+			panic(fmt.Errorf(`invalid shared code config "%s", value is not set`, config.Desc()))
 		}
 		// Shared code
 		template = string(n.SharedCodeConfig)
-		targetComponentId = cast.ToString(targetComponentIdRaw)
+		targetComponentId = config.SharedCode.Target.String()
 	case parent.IsConfig() && component.IsScheduler():
 		template = string(n.SchedulerConfig)
 	case parent.IsConfig() && component.IsVariables():

@@ -52,7 +52,7 @@ func (m *mapper) onRemoteLoad(objectState model.ObjectState) error {
 	}
 
 	// Check: target component of the shared code = transformation component
-	if err := m.CheckTargetComponent(sharedCodeState, transformation.ConfigKey); err != nil {
+	if err := m.CheckTargetComponent(sharedCodeState.LocalOrRemoteState().(*model.Config), transformation.ConfigKey); err != nil {
 		return err
 	}
 
@@ -88,5 +88,6 @@ func (m *mapper) onRemoteLoad(objectState model.ObjectState) error {
 			))
 		}
 	}
+
 	return errors.ErrorOrNil()
 }

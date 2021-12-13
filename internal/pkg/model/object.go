@@ -108,6 +108,7 @@ type Config struct {
 	ChangeDescription string                 `json:"changeDescription"`
 	Content           *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
 	Transformation    *Transformation        `json:"-" validate:"omitempty,dive" diff:"true"`
+	SharedCode        *SharedCodeConfig      `json:"-" validate:"omitempty,dive" diff:"true"`
 	Orchestration     *Orchestration         `json:"-" validate:"omitempty,dive" diff:"true"`
 	Relations         Relations              `json:"-" validate:"dive" diff:"true"`
 }
@@ -131,6 +132,7 @@ type ConfigRow struct {
 	ChangeDescription string                 `json:"changeDescription"`
 	IsDisabled        bool                   `json:"isDisabled" diff:"true" metaFile:"true"`
 	Content           *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
+	SharedCode        *SharedCodeRow         `json:"-" validate:"omitempty,dive" diff:"true"`
 	Relations         Relations              `json:"-" validate:"dive" diff:"true"`
 }
 
@@ -251,6 +253,7 @@ func (c *Config) Clone() Object {
 	clone := *c
 	clone.Content = c.Content.Clone()
 	clone.Transformation = c.Transformation.Clone()
+	clone.SharedCode = c.SharedCode.Clone()
 	clone.Orchestration = c.Orchestration.Clone()
 	clone.Relations = c.Relations.Clone()
 	return &clone
@@ -259,6 +262,7 @@ func (c *Config) Clone() Object {
 func (r *ConfigRow) Clone() Object {
 	clone := *r
 	clone.Content = r.Content.Clone()
+	clone.SharedCode = r.SharedCode.Clone()
 	return &clone
 }
 

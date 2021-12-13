@@ -37,9 +37,9 @@ func TestLocalLoadTranWithSharedCode(t *testing.T) {
 					},
 					Name:          `Code 1`,
 					PathInProject: model.NewPathInProject(`branch/transformation/blocks/block-1`, `code-1`),
-					Scripts: []string{
-						`print(100)`,
-						"{{1234}}",
+					Scripts: model.Scripts{
+						model.StaticScript{Value: `print(100)`},
+						model.StaticScript{Value: "{{1234}}"},
 					},
 				},
 				{
@@ -48,9 +48,9 @@ func TestLocalLoadTranWithSharedCode(t *testing.T) {
 					},
 					Name:          `Code 2`,
 					PathInProject: model.NewPathInProject(`branch/transformation/blocks/block-1`, `code-2`),
-					Scripts: []string{
-						"{{5678}}",
-						"{{1234}}",
+					Scripts: model.Scripts{
+						model.StaticScript{Value: "{{5678}}"},
+						model.StaticScript{Value: "{{1234}}"},
 					},
 				},
 			},
@@ -101,7 +101,7 @@ func TestLocalLoadTranWithSharedCode_InvalidSharedCodeRowPath(t *testing.T) {
 
 	// Create transformation with shared code
 	transformation := createLocalTranWithSharedCode(t, context)
-	transformation.Local.Transformation.Blocks[0].Codes[1].Scripts[0] = "# {{:codes/missing}}\n" // <<<<<<<<<<<<
+	transformation.Local.Transformation.Blocks[0].Codes[1].Scripts[0] = model.StaticScript{Value: "# {{:codes/missing}}\n"} // <<<<<<<<<<<<
 
 	// Invoke
 	changes := model.NewLocalChanges()
@@ -159,9 +159,9 @@ func createLocalTranWithSharedCode(t *testing.T, context model.MapperContext) *m
 								},
 								Name:          `Code 1`,
 								PathInProject: model.NewPathInProject(`branch/transformation/blocks/block-1`, `code-1`),
-								Scripts: []string{
-									`print(100)`,
-									"# {{:codes/code1}}\n",
+								Scripts: model.Scripts{
+									model.StaticScript{Value: `print(100)`},
+									model.StaticScript{Value: "# {{:codes/code1}}\n"},
 								},
 							},
 							{
@@ -170,9 +170,9 @@ func createLocalTranWithSharedCode(t *testing.T, context model.MapperContext) *m
 								},
 								Name:          `Code 2`,
 								PathInProject: model.NewPathInProject(`branch/transformation/blocks/block-1`, `code-2`),
-								Scripts: []string{
-									" {{:codes/code2}}\n",
-									"#     {{:codes/code1}}",
+								Scripts: model.Scripts{
+									model.StaticScript{Value: " {{:codes/code2}}\n"},
+									model.StaticScript{Value: "#     {{:codes/code1}}"},
 								},
 							},
 						},

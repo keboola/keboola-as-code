@@ -32,6 +32,9 @@ func TestConfig_Clone(t *testing.T) {
 		Content: orderedmap.FromPairs([]orderedmap.Pair{
 			{Key: "key", Value: "value"},
 		}),
+		SharedCode: &SharedCodeConfig{
+			Target: ComponentId(`foo.bar`),
+		},
 		Transformation: &Transformation{
 			Blocks: []*Block{
 				{
@@ -52,7 +55,7 @@ func TestConfig_Clone(t *testing.T) {
 								Index:       1,
 							},
 							Name:    "my code",
-							Scripts: []string{"foo", "bar"},
+							Scripts: Scripts{StaticScript{"foo"}, StaticScript{"bar"}},
 						},
 					},
 				},
@@ -108,6 +111,12 @@ func TestConfigRow_Clone(t *testing.T) {
 		Content: orderedmap.FromPairs([]orderedmap.Pair{
 			{Key: "key", Value: "value"},
 		}),
+		SharedCode: &SharedCodeRow{
+			Target: "keboola.snowflake-transformation",
+			Scripts: Scripts{
+				StaticScript{`SELECT 1;`},
+			},
+		},
 	}
 	assertDeepEqualNotSame(t, value, value.Clone(), "")
 }

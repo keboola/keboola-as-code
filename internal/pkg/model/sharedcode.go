@@ -4,6 +4,40 @@ import (
 	"fmt"
 )
 
+type SharedCodeConfig struct {
+	Target ComponentId
+}
+
+type SharedCodeRow struct {
+	Target  ComponentId
+	Scripts Scripts
+}
+
+func (v SharedCodeConfig) String() string {
+	return v.Target.String()
+}
+
+func (v SharedCodeRow) String() string {
+	return v.Scripts.String(v.Target)
+}
+
+func (v *SharedCodeConfig) Clone() *SharedCodeConfig {
+	if v == nil {
+		return nil
+	}
+	clone := *v
+	return &clone
+}
+
+func (v *SharedCodeRow) Clone() *SharedCodeRow {
+	if v == nil {
+		return nil
+	}
+	clone := *v
+	clone.Scripts = v.Scripts.Clone()
+	return &clone
+}
+
 // SharedCodeVariablesForRelation - variables for shared code.
 type SharedCodeVariablesForRelation struct {
 	ConfigId ConfigId `json:"configId" validate:"required"`

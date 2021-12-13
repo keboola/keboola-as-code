@@ -426,6 +426,9 @@ func TestDiffTransformation(t *testing.T) {
 			},
 		},
 		Local: &model.Config{
+			SharedCode: &model.SharedCodeConfig{
+				Target: model.ComponentId(`12345`),
+			},
 			Transformation: &model.Transformation{
 				Blocks: []*model.Block{
 					{
@@ -433,10 +436,10 @@ func TestDiffTransformation(t *testing.T) {
 						Codes: model.Codes{
 							{
 								Name: "Code 1",
-								Scripts: []string{
-									"SELECT 1;",
-									"SELECT 2;",
-									"SELECT 3;",
+								Scripts: model.Scripts{
+									model.StaticScript{Value: "SELECT 1;"},
+									model.StaticScript{Value: "SELECT 2;"},
+									model.StaticScript{Value: "SELECT 3;"},
 								},
 								PathInProject: model.NewPathInProject(`branch/config/blocks/001-block-1`, `001-code-1`),
 							},
@@ -454,8 +457,8 @@ func TestDiffTransformation(t *testing.T) {
 						Codes: model.Codes{
 							{
 								Name: "Code 1",
-								Scripts: []string{
-									"SELECT 1;",
+								Scripts: model.Scripts{
+									model.StaticScript{Value: "SELECT 1;"},
 								},
 							},
 						},
@@ -466,8 +469,8 @@ func TestDiffTransformation(t *testing.T) {
 						Codes: model.Codes{
 							{
 								Name: "Code 2",
-								Scripts: []string{
-									"SELECT 2;",
+								Scripts: model.Scripts{
+									model.StaticScript{Value: "SELECT 2;"},
 								},
 							},
 						},
@@ -479,6 +482,7 @@ func TestDiffTransformation(t *testing.T) {
 	}
 	assert.NoError(t, projectState.Set(configState))
 
+	// Transformation
 	differ := NewDiffer(projectState)
 	reporter := differ.diffValues(configState, configState.Remote.Transformation, configState.Local.Transformation)
 	expected := `
@@ -494,6 +498,63 @@ func TestDiffTransformation(t *testing.T) {
 -   ## Code 2
 -   SELECT 2;
 -   
+`
+	assert.Equal(t, strings.Trim(expected, "\n"), reporter.String())
+
+	// SharedCode link
+	reporter = differ.diffValues(configState, configState.Remote.SharedCode, configState.Local.SharedCode)
+	expected = `
+  - (null)
+  + 12345
+`
+	assert.Equal(t, strings.Trim(expected, "\n"), reporter.String())
+}
+
+func TestDiffSharedCode(t *testing.T) {
+	t.Parallel()
+	projectState := createProjectState(t)
+
+	// Object state
+	configRowKey := model.ConfigRowKey{BranchId: 123, ComponentId: model.SharedCodeComponentId, Id: `456`}
+	configRowState := &model.ConfigRowState{
+		ConfigRowManifest: &model.ConfigRowManifest{
+			ConfigRowKey: configRowKey,
+			Paths: model.Paths{
+				PathInProject: model.NewPathInProject("branch/config", "row"),
+			},
+		},
+		Local: &model.ConfigRow{
+			SharedCode: &model.SharedCodeRow{
+				Target: model.ComponentId(`keboola.snowflake-transformation`),
+				Scripts: model.Scripts{
+					model.StaticScript{Value: "SELECT 1;"},
+					model.StaticScript{Value: "SELECT 2;"},
+					model.StaticScript{Value: "SELECT 3;"},
+				},
+			},
+		},
+		Remote: &model.ConfigRow{
+			SharedCode: &model.SharedCodeRow{
+				Target: model.ComponentId(`keboola.snowflake-transformation`),
+				Scripts: model.Scripts{
+					model.StaticScript{Value: "SELECT 4;"},
+					model.StaticScript{Value: "SELECT 3;"},
+				},
+			},
+		},
+	}
+	assert.NoError(t, projectState.Set(configRowState))
+
+	// Transformation
+	differ := NewDiffer(projectState)
+	reporter := differ.diffValues(configRowState, configRowState.Remote.SharedCode, configRowState.Local.SharedCode)
+	expected := `
+  - SELECT 4;
+  + SELECT 1;
+  
+  + SELECT 2;
+  + 
+    SELECT 3;
 `
 	assert.Equal(t, strings.Trim(expected, "\n"), reporter.String())
 }

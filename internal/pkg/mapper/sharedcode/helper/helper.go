@@ -63,36 +63,18 @@ func (h *SharedCodeHelper) IsTransformation(key model.Key) (bool, error) {
 	return true, nil
 }
 
-func (h *SharedCodeHelper) CheckTargetComponent(sharedCode *model.ConfigState, transformation model.ConfigKey) error {
-	sharedCodeConfig := sharedCode.LocalOrRemoteState().(*model.Config)
-	targetComponentId, err := h.GetTargetComponentId(sharedCodeConfig)
-	if err != nil {
-		return err
+func (h *SharedCodeHelper) CheckTargetComponent(sharedCodeConfig *model.Config, transformation model.ConfigKey) error {
+	if sharedCodeConfig.SharedCode == nil {
+		panic(fmt.Errorf(`shared code value is not set`))
 	}
-
-	if targetComponentId != transformation.ComponentId {
+	if sharedCodeConfig.SharedCode.Target != transformation.ComponentId {
 		errors := utils.NewMultiError()
-		errors.Append(fmt.Errorf(`unexpected shared code "%s" in %s`, model.ShareCodeTargetComponentKey, sharedCode.Desc()))
+		errors.Append(fmt.Errorf(`unexpected shared code "%s" in %s`, model.ShareCodeTargetComponentKey, sharedCodeConfig.Desc()))
 		errors.Append(fmt.Errorf(`  - expected "%s"`, transformation.ComponentId))
-		errors.Append(fmt.Errorf(`  - found "%s"`, targetComponentId))
+		errors.Append(fmt.Errorf(`  - found "%s"`, sharedCodeConfig.SharedCode.Target))
 		return errors
 	}
 	return nil
-}
-
-// GetTargetComponentId returns the component for which the shared code is intended.
-func (h *SharedCodeHelper) GetTargetComponentId(sharedCodeConfig *model.Config) (model.ComponentId, error) {
-	componentIdRaw, found := sharedCodeConfig.Content.Get(model.ShareCodeTargetComponentKey)
-	if !found {
-		return "", fmt.Errorf(`missing "%s" in %s`, model.ShareCodeTargetComponentKey, sharedCodeConfig.Desc())
-	}
-
-	componentId, ok := componentIdRaw.(string)
-	if !ok {
-		return "", fmt.Errorf(`key "%s" must be string, found %T, in %s`, model.ShareCodeTargetComponentKey, componentIdRaw, sharedCodeConfig.Desc())
-	}
-
-	return model.ComponentId(componentId), nil
 }
 
 func (h *SharedCodeHelper) GetSharedCodeByPath(branchKey model.BranchKey, path string) (*model.ConfigState, error) {
