@@ -45,10 +45,43 @@ type OnRemoteChangeListener interface {
 	OnRemoteChange(changes *model.RemoteChanges) error
 }
 
+type Mappers []interface{}
+
+func (m Mappers) ForEach(stopOnFailure bool, callback func(mapper interface{}) error) error {
+	errors := utils.NewMultiError()
+	for _, mapper := range m {
+		if err := callback(mapper); err != nil {
+			if stopOnFailure {
+				return err
+			}
+			errors.Append(err)
+		}
+	}
+	return errors.ErrorOrNil()
+}
+
+func (m Mappers) ForEachReverse(stopOnFailure bool, callback func(mapper interface{}) error) error {
+	errors := utils.NewMultiError()
+	l := len(m)
+	for i := l - 1; i >= 0; i-- {
+		if err := callback(m[i]); err != nil {
+			if stopOnFailure {
+				return err
+			}
+			errors.Append(err)
+		}
+	}
+	return errors.ErrorOrNil()
+}
+
 // Mapper maps Objects between internal/filesystem/API representations.
+//
+// The mappers are called in the order in which they were entered (Mappers.ForEach).
+// Except for save methods: MapBeforeLocalSave, MapBeforeRemoteSave.
+// For these, the mappers are called in reverse order (Mappers.ForEachReverse).
 type Mapper struct {
 	context model.MapperContext
-	mappers []interface{} // implement part of the interfaces above
+	mappers Mappers // implement part of the interfaces above
 }
 
 func New(context model.MapperContext) *Mapper {
@@ -65,96 +98,89 @@ func (m *Mapper) Context() model.MapperContext {
 }
 
 func (m *Mapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
-	for _, mapper := range m.mappers {
+	return m.mappers.ForEachReverse(true, func(mapper interface{}) error {
 		if mapper, ok := mapper.(LocalSaveMapper); ok {
 			if err := mapper.MapBeforeLocalSave(recipe); err != nil {
 				return err
 			}
 		}
-	}
-
-	return nil
+		return nil
+	})
 }
 
 func (m *Mapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
-	for _, mapper := range m.mappers {
+	return m.mappers.ForEach(true, func(mapper interface{}) error {
 		if mapper, ok := mapper.(LocalLoadMapper); ok {
 			if err := mapper.MapAfterLocalLoad(recipe); err != nil {
 				return err
 			}
 		}
-	}
-
-	return nil
+		return nil
+	})
 }
 
 func (m *Mapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
-	for _, mapper := range m.mappers {
+	return m.mappers.ForEachReverse(true, func(mapper interface{}) error {
 		if mapper, ok := mapper.(RemoteSaveMapper); ok {
 			if err := mapper.MapBeforeRemoteSave(recipe); err != nil {
 				return err
 			}
 		}
-	}
-
-	return nil
+		return nil
+	})
 }
 
 func (m *Mapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
-	for _, mapper := range m.mappers {
+	return m.mappers.ForEach(true, func(mapper interface{}) error {
 		if mapper, ok := mapper.(RemoteLoadMapper); ok {
 			if err := mapper.MapAfterRemoteLoad(recipe); err != nil {
 				return err
 			}
 		}
-	}
-
-	return nil
+		return nil
+	})
 }
 
 func (m *Mapper) MapBeforePersist(recipe *model.PersistRecipe) error {
-	for _, mapper := range m.mappers {
+	return m.mappers.ForEach(false, func(mapper interface{}) error {
 		if mapper, ok := mapper.(BeforePersistMapper); ok {
 			if err := mapper.MapBeforePersist(recipe); err != nil {
 				return err
 			}
 		}
-	}
-	return nil
+		return nil
+	})
 }
 
 func (m *Mapper) OnObjectPathUpdate(event model.OnObjectPathUpdateEvent) error {
-	errors := utils.NewMultiError()
-	for _, mapper := range m.mappers {
+	return m.mappers.ForEach(false, func(mapper interface{}) error {
 		if mapper, ok := mapper.(OnObjectPathUpdateListener); ok {
 			if err := mapper.OnObjectPathUpdate(event); err != nil {
-				errors.Append(err)
+				return err
 			}
 		}
-	}
-	return errors.ErrorOrNil()
+		return nil
+	})
 }
 
 func (m *Mapper) OnLocalChange(changes *model.LocalChanges) error {
-	errors := utils.NewMultiError()
-	for _, mapper := range m.mappers {
+	return m.mappers.ForEach(false, func(mapper interface{}) error {
 		if mapper, ok := mapper.(OnLocalChangeListener); ok {
 			if err := mapper.OnLocalChange(changes); err != nil {
-				errors.Append(err)
+				return err
 			}
 		}
-	}
-	return errors.ErrorOrNil()
+		return nil
+	})
 }
 
 func (m *Mapper) OnRemoteChange(changes *model.RemoteChanges) error {
-	errors := utils.NewMultiError()
-	for _, mapper := range m.mappers {
+	return m.mappers.ForEach(false, func(mapper interface{}) error {
 		if mapper, ok := mapper.(OnRemoteChangeListener); ok {
 			if err := mapper.OnRemoteChange(changes); err != nil {
-				errors.Append(err)
+				return err
 			}
 		}
-	}
-	return errors.ErrorOrNil()
+		return nil
+	})
 }
