@@ -26,7 +26,7 @@ func TestSharedCodeMapBeforeRemoteSave(t *testing.T) {
 	recipe := &model.RemoteSaveRecipe{
 		ApiObject:      apiObject,
 		InternalObject: internalObject,
-		Manifest:       &model.ConfigManifest{},
+		ObjectManifest: &model.ConfigManifest{},
 	}
 
 	// Invoke

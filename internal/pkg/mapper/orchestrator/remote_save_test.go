@@ -131,7 +131,7 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 	apiObject := internalObject.Clone().(*model.Config)
 	recipe := &model.RemoteSaveRecipe{
 		ChangedFields:  model.NewChangedFields("orchestration"),
-		Manifest:       manifest,
+		ObjectManifest: manifest,
 		InternalObject: internalObject,
 		ApiObject:      apiObject,
 	}

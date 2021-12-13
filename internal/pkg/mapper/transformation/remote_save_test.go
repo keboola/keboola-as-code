@@ -59,7 +59,7 @@ func TestRemoteSaveTransformation(t *testing.T) {
 	apiConfig := internalConfig.Clone().(*model.Config)
 	recipe := &model.RemoteSaveRecipe{
 		ChangedFields:  model.NewChangedFields("blocks"),
-		Manifest:       configState.Manifest(),
+		ObjectManifest: configState.Manifest(),
 		InternalObject: internalConfig,
 		ApiObject:      apiConfig,
 	}

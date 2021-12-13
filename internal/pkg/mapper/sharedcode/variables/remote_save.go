@@ -18,7 +18,7 @@ func (m *mapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
 	relType := model.SharedCodeVariablesFromRelType
 	relationRaw, err := internalObject.Relations.GetOneByType(relType)
 	if err != nil {
-		return fmt.Errorf(`unexpected state of %s: %w`, recipe.Manifest.Desc(), err)
+		return fmt.Errorf(`unexpected state of %s: %w`, recipe.Desc(), err)
 	} else if relationRaw == nil {
 		return nil
 	}

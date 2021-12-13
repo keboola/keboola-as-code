@@ -61,8 +61,8 @@ func (m *transformationMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe
 	}
 
 	// Set paths if parent path is set
-	if recipe.Manifest.Path() != "" {
-		blocksDir := m.Naming.BlocksDir(recipe.Manifest.Path())
+	if recipe.Path() != "" {
+		blocksDir := m.Naming.BlocksDir(recipe.Path())
 		for _, block := range config.Transformation.Blocks {
 			if path, found := m.Naming.GetCurrentPath(block.Key()); found {
 				block.PathInProject = path
