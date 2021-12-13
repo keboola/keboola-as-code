@@ -30,9 +30,9 @@ func TestLocalSaveTranWithSharedCode(t *testing.T) {
 	// Path to shared code is part of the Content
 	configFile, err := recipe.Files.ObjectConfigFile()
 	assert.NoError(t, err)
-	sharedCodeId, found := configFile.Content.Get(model.SharedCodePathContentKey)
+	sharedCodePath, found := configFile.Content.Get(model.SharedCodePathContentKey)
 	assert.True(t, found)
-	assert.Equal(t, sharedCodeId, `_shared/keboola.python-transformation-v2`)
+	assert.Equal(t, sharedCodePath, `_shared/keboola.python-transformation-v2`)
 
 	// IDs in transformation blocks are replaced by paths
 	assert.Equal(t, []*model.Block{
