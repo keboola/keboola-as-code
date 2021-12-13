@@ -112,7 +112,7 @@ func (h *SharedCodeHelper) GetSharedCodeByPath(branchKey model.BranchKey, path s
 	// Is config?
 	key, ok := keyRaw.(model.ConfigKey)
 	if !ok {
-		return nil, fmt.Errorf(`path "%s" it not shared code config`, path)
+		return nil, fmt.Errorf(`path "%s" is not shared code config`, path)
 	}
 
 	// Is from right parent?
