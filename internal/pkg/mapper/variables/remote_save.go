@@ -37,7 +37,7 @@ func (m *variablesMapper) saveVariables(apiObject, internalObject *model.Config,
 	relType := model.VariablesFromRelType
 	relationRaw, err := internalObject.Relations.GetOneByType(relType)
 	if err != nil {
-		return nil, fmt.Errorf(`unexpected state of %s: %w`, recipe.Manifest.Desc(), err)
+		return nil, fmt.Errorf(`unexpected state of %s: %w`, recipe.Desc(), err)
 	} else if relationRaw == nil {
 		return nil, nil
 	}
@@ -56,7 +56,7 @@ func (m *variablesMapper) saveVariablesValues(apiObject, internalObject *model.C
 	relType := model.VariablesValuesFromRelType
 	relationRaw, err := internalObject.Relations.GetOneByType(relType)
 	if err != nil {
-		return fmt.Errorf(`unexpected state of %s: %w`, recipe.Manifest.Desc(), err)
+		return fmt.Errorf(`unexpected state of %s: %w`, recipe.Desc(), err)
 	} else if relationRaw == nil {
 		return nil
 	}

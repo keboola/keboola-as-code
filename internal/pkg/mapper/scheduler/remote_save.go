@@ -20,7 +20,7 @@ func (m *schedulerMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) er
 	relType := model.SchedulerForRelType
 	relationRaw, err := internalObject.Relations.GetOneByType(relType)
 	if err != nil {
-		return fmt.Errorf(`unexpected state of %s: %w`, recipe.Manifest.Desc(), err)
+		return fmt.Errorf(`unexpected state of %s: %w`, recipe.Desc(), err)
 	} else if relationRaw == nil {
 		return nil
 	}
@@ -31,12 +31,12 @@ func (m *schedulerMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) er
 	target, ok := targetRaw.(*orderedmap.OrderedMap)
 	if !found {
 		return utils.PrefixError(
-			fmt.Sprintf(`scheduler %s is invalid`, recipe.Manifest.Desc()),
+			fmt.Sprintf(`scheduler %s is invalid`, recipe.Desc()),
 			fmt.Errorf(`key "%s" not found`, model.SchedulerTargetKey),
 		)
 	} else if !ok {
 		return utils.PrefixError(
-			fmt.Sprintf(`scheduler %s is invalid`, recipe.Manifest.Desc()),
+			fmt.Sprintf(`scheduler %s is invalid`, recipe.Desc()),
 			fmt.Errorf(`key "%s" must be object, found "%T"`, model.SchedulerTargetKey, targetRaw),
 		)
 	}

@@ -62,7 +62,7 @@ func TestLoadRemoteTransformation(t *testing.T) {
 	}
 	json.MustDecodeString(configInApi, apiObject.Content)
 	internalObject := apiObject.Clone().(*model.Config)
-	recipe := &model.RemoteLoadRecipe{Manifest: configState.ConfigManifest, ApiObject: apiObject, InternalObject: internalObject}
+	recipe := &model.RemoteLoadRecipe{ObjectManifest: configState.ConfigManifest, ApiObject: apiObject, InternalObject: internalObject}
 	assert.NoError(t, NewMapper(context).MapAfterRemoteLoad(recipe))
 
 	// Internal representation
