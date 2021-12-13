@@ -1,0 +1,3 @@
+Plan for "rename" operation:
+  - main/extractor/keboola.ex-aws-s3/{om-default-bucket -> renamed}
+Rename done.

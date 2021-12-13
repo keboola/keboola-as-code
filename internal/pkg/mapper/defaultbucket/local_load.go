@@ -12,27 +12,35 @@ import (
 
 // OnLocalChange - replace placeholders with default buckets in IM.
 func (m *defaultBucketMapper) OnLocalChange(changes *model.LocalChanges) error {
-	errors := utils.NewMultiError()
+	warnings := utils.NewMultiError()
 	for _, objectState := range changes.Loaded() {
 		config, ok := objectState.LocalState().(configOrRow)
 		if !ok {
 			continue
 		}
 		if err := m.visitStorageInputTables(config, config.GetContent(), m.replacePlaceholderWithDefaultBucket); err != nil {
-			errors.Append(err)
+			warnings.Append(err)
 		}
 	}
 
 	// Log errors as warning
-	if errors.Len() > 0 {
-		m.Logger.Warn(utils.PrefixError(`Warning`, errors))
+	if warnings.Len() > 0 {
+		m.Logger.Warn(utils.PrefixError(`Warning`, warnings))
 	}
 
-	return nil
+	// Process renamed objects
+	errors := utils.NewMultiError()
+	if len(changes.Renamed()) > 0 {
+		if err := m.onObjectsRename(changes.Renamed(), m.State.LocalObjects()); err != nil {
+			errors.Append(err)
+		}
+	}
+
+	return errors.ErrorOrNil()
 }
 
 func (m *defaultBucketMapper) replacePlaceholderWithDefaultBucket(
-	config configOrRow,
+	targetConfig configOrRow,
 	inputTableSource string,
 	inputTable *orderedmap.OrderedMap,
 ) error {
@@ -47,29 +55,36 @@ func (m *defaultBucketMapper) replacePlaceholderWithDefaultBucket(
 	}
 
 	// Get branch
-	branch := m.State.MustGet(config.BranchKey())
+	branchState := m.State.MustGet(targetConfig.BranchKey())
 
 	// Get key by path
-	path := filesystem.Join(branch.Path(), splitSource[0])
-	configKeyRaw, found := m.Naming.FindByPath(path)
+	path := filesystem.Join(branchState.Path(), splitSource[0])
+	sourceConfigKeyRaw, found := m.Naming.FindByPath(path)
 	if !found {
 		return fmt.Errorf(
 			`%s contains table "%s" in input mapping referencing to a non-existing configuration`,
-			config.Desc(),
+			targetConfig.Desc(),
 			inputTableSource,
 		)
 	}
-	configKey, ok := configKeyRaw.(model.ConfigKey)
+	sourceConfigKey, ok := sourceConfigKeyRaw.(model.ConfigKey)
 	if !ok {
 		return nil
 	}
 
-	defaultBucket, found := m.State.Components().GetDefaultBucketByComponentId(configKey.ComponentId, configKey.Id)
+	defaultBucket, found := m.State.Components().GetDefaultBucketByComponentId(sourceConfigKey.ComponentId, sourceConfigKey.Id)
 	if !found {
 		return nil
 	}
 
 	inputTable.Set(`source`, fmt.Sprintf("%s.%s", defaultBucket, splitSource[1]))
+
+	sourceConfigRaw, found := m.State.LocalObjects().Get(sourceConfigKey)
+	if !found {
+		return nil
+	}
+	sourceConfig := sourceConfigRaw.(*model.Config)
+	markUsedInInputMapping(sourceConfig, targetConfig)
 
 	return nil
 }

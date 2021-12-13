@@ -13,14 +13,16 @@ import (
 )
 
 const (
-	VariablesForRelType            = RelationType(`variablesFor`)
-	VariablesFromRelType           = RelationType(`variablesFrom`)
-	VariablesValuesForRelType      = RelationType(`variablesValuesFor`)
-	VariablesValuesFromRelType     = RelationType(`variablesValuesFrom`)
-	SharedCodeVariablesForRelType  = RelationType(`sharedCodeVariablesFor`)
-	SharedCodeVariablesFromRelType = RelationType(`sharedCodeVariablesFrom`)
-	SchedulerForRelType            = RelationType(`schedulerFor`)
-	UsedInOrchestratorRelType      = RelationType(`usedInOrchestrator`)
+	VariablesForRelType             = RelationType(`variablesFor`)
+	VariablesFromRelType            = RelationType(`variablesFrom`)
+	VariablesValuesForRelType       = RelationType(`variablesValuesFor`)
+	VariablesValuesFromRelType      = RelationType(`variablesValuesFrom`)
+	SharedCodeVariablesForRelType   = RelationType(`sharedCodeVariablesFor`)
+	SharedCodeVariablesFromRelType  = RelationType(`sharedCodeVariablesFrom`)
+	SchedulerForRelType             = RelationType(`schedulerFor`)
+	UsedInOrchestratorRelType       = RelationType(`usedInOrchestrator`)
+	UsedInConfigInputMappingRelType = RelationType(`usedInConfigInputMapping`)
+	UsedInRowInputMappingRelType    = RelationType(`usedInRowInputMapping`)
 )
 
 // OneToXRelations gets relations that can be defined on an object only once.
@@ -253,7 +255,7 @@ func (v *Relations) UnmarshalJSON(data []byte) error {
 
 		// Validate, only manifest side should be present in JSON
 		if !value.IsDefinedInManifest() {
-			return fmt.Errorf(`unexpected state: relation "%T" should not be present in JSON, it is not an manifest side`, value)
+			return fmt.Errorf(`unexpected state: relation "%T" should not be present in JSON, it is not a manifest side`, value)
 		}
 
 		*v = append(*v, value)
@@ -298,6 +300,10 @@ func newEmptyRelation(t RelationType) (Relation, error) {
 		return &SchedulerForRelation{}, nil
 	case UsedInOrchestratorRelType:
 		return &UsedInOrchestratorRelation{}, nil
+	case UsedInConfigInputMappingRelType:
+		return &UsedInConfigInputMappingRelation{}, nil
+	case UsedInRowInputMappingRelType:
+		return &UsedInRowInputMappingRelation{}, nil
 	default:
 		return nil, fmt.Errorf(`unexpected RelationType "%s"`, t)
 	}

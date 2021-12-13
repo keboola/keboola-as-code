@@ -120,7 +120,7 @@ func newState(options *Options) *State {
 		// Core files
 		description.NewMapper(),
 		// Storage
-		defaultbucket.NewMapper(mapperContext),
+		defaultbucket.NewMapper(s.localManager, mapperContext),
 		// Variables
 		variables.NewMapper(mapperContext),
 		sharedcode.NewVariablesMapper(mapperContext),
