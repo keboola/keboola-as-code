@@ -84,7 +84,7 @@ func (m *defaultBucketMapper) replacePlaceholderWithDefaultBucket(
 		return nil
 	}
 	sourceConfig := sourceConfigRaw.(*model.Config)
-	markConfigUsedInInputMapping(sourceConfig, targetConfig)
+	markUsedInInputMapping(sourceConfig, targetConfig)
 
 	return nil
 }

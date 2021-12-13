@@ -1,6 +1,8 @@
 package defaultbucket
 
 import (
+	"fmt"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
@@ -57,8 +59,17 @@ func (m *defaultBucketMapper) visitStorageInputTables(config configOrRow, conten
 	return nil
 }
 
-func markConfigUsedInInputMapping(omConfig *model.Config, imConfig configOrRow) {
-	omConfig.Relations.Add(&model.UsedInInputMappingRelation{
-		ConfigKey: imConfig.Key(),
-	})
+func markUsedInInputMapping(omConfig *model.Config, usedIn configOrRow) {
+	switch v := usedIn.(type) {
+	case *model.Config:
+		omConfig.Relations.Add(&model.UsedInConfigInputMappingRelation{
+			UsedIn: v.ConfigKey,
+		})
+	case *model.ConfigRow:
+		omConfig.Relations.Add(&model.UsedInRowInputMappingRelation{
+			UsedIn: v.ConfigRowKey,
+		})
+	default:
+		panic(fmt.Errorf(`unexpected type "%T"`, usedIn))
+	}
 }

@@ -13,15 +13,16 @@ import (
 )
 
 const (
-	VariablesForRelType            = RelationType(`variablesFor`)
-	VariablesFromRelType           = RelationType(`variablesFrom`)
-	VariablesValuesForRelType      = RelationType(`variablesValuesFor`)
-	VariablesValuesFromRelType     = RelationType(`variablesValuesFrom`)
-	SharedCodeVariablesForRelType  = RelationType(`sharedCodeVariablesFor`)
-	SharedCodeVariablesFromRelType = RelationType(`sharedCodeVariablesFrom`)
-	SchedulerForRelType            = RelationType(`schedulerFor`)
-	UsedInOrchestratorRelType      = RelationType(`usedInOrchestrator`)
-	UsedInInputMappingRelType      = RelationType(`usedInInputMapping`)
+	VariablesForRelType             = RelationType(`variablesFor`)
+	VariablesFromRelType            = RelationType(`variablesFrom`)
+	VariablesValuesForRelType       = RelationType(`variablesValuesFor`)
+	VariablesValuesFromRelType      = RelationType(`variablesValuesFrom`)
+	SharedCodeVariablesForRelType   = RelationType(`sharedCodeVariablesFor`)
+	SharedCodeVariablesFromRelType  = RelationType(`sharedCodeVariablesFrom`)
+	SchedulerForRelType             = RelationType(`schedulerFor`)
+	UsedInOrchestratorRelType       = RelationType(`usedInOrchestrator`)
+	UsedInConfigInputMappingRelType = RelationType(`usedInConfigInputMapping`)
+	UsedInRowInputMappingRelType    = RelationType(`usedInRowInputMapping`)
 )
 
 // OneToXRelations gets relations that can be defined on an object only once.
@@ -299,8 +300,10 @@ func newEmptyRelation(t RelationType) (Relation, error) {
 		return &SchedulerForRelation{}, nil
 	case UsedInOrchestratorRelType:
 		return &UsedInOrchestratorRelation{}, nil
-	case UsedInInputMappingRelType:
-		return &UsedInInputMappingRelation{}, nil
+	case UsedInConfigInputMappingRelType:
+		return &UsedInConfigInputMappingRelation{}, nil
+	case UsedInRowInputMappingRelType:
+		return &UsedInRowInputMappingRelation{}, nil
 	default:
 		return nil, fmt.Errorf(`unexpected RelationType "%s"`, t)
 	}

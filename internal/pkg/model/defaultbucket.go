@@ -4,39 +4,76 @@ import (
 	"fmt"
 )
 
-// UsedInInputMappingRelation indicates that the owner config is used in an input mapping.
-type UsedInInputMappingRelation struct {
-	ConfigKey Key
+// UsedInConfigInputMappingRelation indicates that the owner config is used in a config input mapping.
+type UsedInConfigInputMappingRelation struct {
+	UsedIn ConfigKey
 }
 
-func (t *UsedInInputMappingRelation) Type() RelationType {
-	return UsedInInputMappingRelType
+func (t *UsedInConfigInputMappingRelation) Type() RelationType {
+	return UsedInConfigInputMappingRelType
 }
 
-func (t *UsedInInputMappingRelation) Desc() string {
-	return fmt.Sprintf(`used in input mapping "%s"`, t.ConfigKey.Desc())
+func (t *UsedInConfigInputMappingRelation) Desc() string {
+	return fmt.Sprintf(`used in input mapping "%s"`, t.UsedIn.Desc())
 }
 
-func (t *UsedInInputMappingRelation) Key() string {
-	return fmt.Sprintf(`%s_%s`, t.Type(), t.ConfigKey.ObjectId())
+func (t *UsedInConfigInputMappingRelation) Key() string {
+	return fmt.Sprintf(`%s_%s`, t.Type(), t.UsedIn.ObjectId())
 }
 
-func (t *UsedInInputMappingRelation) ParentKey(_ Key) (Key, error) {
+func (t *UsedInConfigInputMappingRelation) ParentKey(_ Key) (Key, error) {
 	return nil, nil
 }
 
-func (t *UsedInInputMappingRelation) OtherSideKey(_ Key) Key {
+func (t *UsedInConfigInputMappingRelation) OtherSideKey(_ Key) Key {
 	return nil
 }
 
-func (t *UsedInInputMappingRelation) IsDefinedInManifest() bool {
+func (t *UsedInConfigInputMappingRelation) IsDefinedInManifest() bool {
 	return false
 }
 
-func (t *UsedInInputMappingRelation) IsDefinedInApi() bool {
+func (t *UsedInConfigInputMappingRelation) IsDefinedInApi() bool {
 	return false
 }
 
-func (t *UsedInInputMappingRelation) NewOtherSideRelation(_ Object, _ *StateObjects) (Key, Relation, error) {
+func (t *UsedInConfigInputMappingRelation) NewOtherSideRelation(_ Object, _ *StateObjects) (Key, Relation, error) {
+	return nil, nil, nil
+}
+
+// UsedInRowInputMappingRelation indicates that the owner config is used in a row input mapping.
+type UsedInRowInputMappingRelation struct {
+	UsedIn ConfigRowKey
+}
+
+func (t *UsedInRowInputMappingRelation) Type() RelationType {
+	return UsedInRowInputMappingRelType
+}
+
+func (t *UsedInRowInputMappingRelation) Desc() string {
+	return fmt.Sprintf(`used in input mapping "%s"`, t.UsedIn.Desc())
+}
+
+func (t *UsedInRowInputMappingRelation) Key() string {
+	return fmt.Sprintf(`%s_%s`, t.Type(), t.UsedIn.ObjectId())
+}
+
+func (t *UsedInRowInputMappingRelation) ParentKey(_ Key) (Key, error) {
+	return nil, nil
+}
+
+func (t *UsedInRowInputMappingRelation) OtherSideKey(_ Key) Key {
+	return nil
+}
+
+func (t *UsedInRowInputMappingRelation) IsDefinedInManifest() bool {
+	return false
+}
+
+func (t *UsedInRowInputMappingRelation) IsDefinedInApi() bool {
+	return false
+}
+
+func (t *UsedInRowInputMappingRelation) NewOtherSideRelation(_ Object, _ *StateObjects) (Key, Relation, error) {
 	return nil, nil, nil
 }

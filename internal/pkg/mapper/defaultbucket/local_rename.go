@@ -10,7 +10,7 @@ import (
 // onObjectsRename - find renamed configurations that are used in default buckets placeholders.
 func (m *defaultBucketMapper) onObjectsRename(renamed []model.RenameAction, allObjects *model.StateObjects) error {
 	// Find renamed configurations used in IM.
-	configurationsToUpdate := make(map[string]model.Key)
+	objectsToUpdate := make(map[string]model.Key)
 	for _, object := range renamed {
 		manifest, ok := object.Manifest.(*model.ConfigManifest)
 		if !ok {
@@ -23,22 +23,25 @@ func (m *defaultBucketMapper) onObjectsRename(renamed []model.RenameAction, allO
 		}
 		localConfig := localConfigRaw.(*model.Config)
 
-		relations := localConfig.Relations.GetByType(model.UsedInInputMappingRelType)
-		for _, relationRaw := range relations {
-			relation := relationRaw.(*model.UsedInInputMappingRelation)
-			configurationsToUpdate[relation.ConfigKey.String()] = relation.ConfigKey
+		for _, relationRaw := range localConfig.Relations.GetByType(model.UsedInConfigInputMappingRelType) {
+			relation := relationRaw.(*model.UsedInConfigInputMappingRelation)
+			objectsToUpdate[relation.UsedIn.String()] = relation.UsedIn
+		}
+		for _, relationRaw := range localConfig.Relations.GetByType(model.UsedInRowInputMappingRelType) {
+			relation := relationRaw.(*model.UsedInRowInputMappingRelation)
+			objectsToUpdate[relation.UsedIn.String()] = relation.UsedIn
 		}
 	}
 
 	// Log and save
 	uow := m.localManager.NewUnitOfWork(context.Background())
 	errors := utils.NewMultiError()
-	if len(configurationsToUpdate) > 0 {
+	if len(objectsToUpdate) > 0 {
 		m.Logger.Debug(`Need to update configurations:`)
-		for _, key := range configurationsToUpdate {
+		for _, key := range objectsToUpdate {
 			m.Logger.Debugf(`  - %s`, key.Desc())
-			configState := m.State.MustGet(key)
-			uow.SaveObject(configState, configState.LocalState(), model.NewChangedFields(`configuration`))
+			objectState := m.State.MustGet(key)
+			uow.SaveObject(objectState, objectState.LocalState(), model.NewChangedFields(`configuration`))
 		}
 	}
 
