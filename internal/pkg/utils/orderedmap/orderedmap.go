@@ -79,6 +79,10 @@ func (o *OrderedMap) Get(key string) (interface{}, bool) {
 	return val, exists
 }
 
+func (o *OrderedMap) GetOrNil(key string) interface{} {
+	return o.values[key]
+}
+
 func (o *OrderedMap) Set(key string, value interface{}) {
 	_, exists := o.values[key]
 	if !exists {

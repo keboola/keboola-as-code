@@ -9,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-func CreateSharedCode(t *testing.T, state *model.State, naming *model.Naming) model.ConfigKey {
+func CreateSharedCode(t *testing.T, state *model.State, naming *model.Naming) (model.ConfigKey, []model.ConfigRowKey) {
 	t.Helper()
 
 	// Branch
@@ -19,7 +19,8 @@ func CreateSharedCode(t *testing.T, state *model.State, naming *model.Naming) mo
 			BranchKey: branchKey,
 			Paths:     model.Paths{PathInProject: model.NewPathInProject(``, `branch`)},
 		},
-		Local: &model.Branch{BranchKey: branchKey},
+		Local:  &model.Branch{BranchKey: branchKey},
+		Remote: &model.Branch{BranchKey: branchKey},
 	}
 	assert.NoError(t, state.Set(branchState))
 	naming.Attach(branchState.Key(), branchState.PathInProject)
@@ -43,6 +44,12 @@ func CreateSharedCode(t *testing.T, state *model.State, naming *model.Naming) mo
 				{Key: model.ShareCodeTargetComponentKey, Value: `keboola.python-transformation-v2`},
 			}),
 		},
+		Remote: &model.Config{
+			ConfigKey: sharedCodeKey,
+			Content: orderedmap.FromPairs([]orderedmap.Pair{
+				{Key: model.ShareCodeTargetComponentKey, Value: `keboola.python-transformation-v2`},
+			}),
+		},
 	}
 	assert.NoError(t, state.Set(sharedCodeState))
 	naming.Attach(sharedCodeState.Key(), sharedCodeState.PathInProject)
@@ -61,7 +68,8 @@ func CreateSharedCode(t *testing.T, state *model.State, naming *model.Naming) mo
 				PathInProject: model.NewPathInProject(`branch/_shared/keboola.python-transformation-v2`, `codes/code1`),
 			},
 		},
-		Local: &model.ConfigRow{ConfigRowKey: row1Key, Content: orderedmap.New()},
+		Local:  &model.ConfigRow{ConfigRowKey: row1Key, Content: orderedmap.New()},
+		Remote: &model.ConfigRow{ConfigRowKey: row1Key, Content: orderedmap.New()},
 	}
 	assert.NoError(t, state.Set(row1State))
 	naming.Attach(row1State.Key(), row1State.PathInProject)
@@ -80,10 +88,11 @@ func CreateSharedCode(t *testing.T, state *model.State, naming *model.Naming) mo
 				PathInProject: model.NewPathInProject(`branch/_shared/keboola.python-transformation-v2`, `codes/code2`),
 			},
 		},
-		Local: &model.ConfigRow{ConfigRowKey: row2Key, Content: orderedmap.New()},
+		Local:  &model.ConfigRow{ConfigRowKey: row2Key, Content: orderedmap.New()},
+		Remote: &model.ConfigRow{ConfigRowKey: row2Key, Content: orderedmap.New()},
 	}
 	assert.NoError(t, state.Set(row2State))
 	naming.Attach(row2State.Key(), row2State.PathInProject)
 
-	return sharedCodeKey
+	return sharedCodeKey, []model.ConfigRowKey{row1Key, row2Key}
 }

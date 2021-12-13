@@ -7,8 +7,16 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/strhelper"
 )
 
+type UsedSharedCodeRows []ConfigRowKey
+
+type LinkToSharedCode struct {
+	Config ConfigKey
+	Rows   UsedSharedCodeRows
+}
+
 type Transformation struct {
-	Blocks []*Block
+	Blocks           []*Block
+	LinkToSharedCode *LinkToSharedCode
 }
 
 // Block - transformation block.
@@ -30,14 +38,61 @@ type Code struct {
 	Scripts       []string `json:"script"` // scripts, eg. SQL statements
 }
 
+func (v UsedSharedCodeRows) IdsSlice() []interface{} {
+	var ids []interface{}
+	for _, rowKey := range v {
+		ids = append(ids, rowKey.Id.String())
+	}
+	return ids
+}
+
+func (v *Transformation) VisitCodes(callback func(code *Code)) {
+	for _, block := range v.Blocks {
+		for _, code := range block.Codes {
+			callback(code)
+		}
+	}
+}
+
+func (v *Transformation) VisitScripts(callback func(code *Code, script string)) {
+	for _, block := range v.Blocks {
+		for _, code := range block.Codes {
+			for _, script := range code.Scripts {
+				callback(code, script)
+			}
+		}
+	}
+}
+
+func (v *Transformation) MapScripts(callback func(code *Code, script string) string) {
+	v.VisitCodes(func(code *Code) {
+		for index, script := range code.Scripts {
+			code.Scripts[index] = callback(code, script)
+		}
+	})
+}
+
 func (v *Transformation) Clone() *Transformation {
 	if v == nil {
 		return nil
 	}
 	clone := *v
+	clone.LinkToSharedCode = v.LinkToSharedCode.Clone()
 	clone.Blocks = make([]*Block, len(v.Blocks))
 	for i, block := range v.Blocks {
 		clone.Blocks[i] = block.Clone()
+	}
+	return &clone
+}
+
+func (v *LinkToSharedCode) Clone() *LinkToSharedCode {
+	if v == nil {
+		return nil
+	}
+	clone := *v
+	clone.Rows = make([]ConfigRowKey, len(v.Rows))
+	for i, row := range v.Rows {
+		clone.Rows[i] = row
 	}
 	return &clone
 }

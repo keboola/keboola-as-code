@@ -43,11 +43,8 @@ func (m *mapper) onRename(renamedObjects []model.RenameAction) error {
 	// Find transformations using these shared codes
 	uow := m.localManager.NewUnitOfWork(context.Background())
 	for _, objectState := range m.State.All() {
-		configState, err := m.getDependentConfig(objectState, renamedSharedCodes)
-		if err != nil {
-			errors.Append(err)
-			continue
-		} else if configState == nil {
+		configState := m.getDependentConfig(objectState, renamedSharedCodes)
+		if configState == nil {
 			continue
 		}
 
@@ -64,16 +61,20 @@ func (m *mapper) onRename(renamedObjects []model.RenameAction) error {
 	return errors.ErrorOrNil()
 }
 
-func (m *mapper) getDependentConfig(objectState model.ObjectState, renamedSharedCodes map[string]model.Key) (*model.ConfigState, error) {
+func (m *mapper) getDependentConfig(objectState model.ObjectState, renamedSharedCodes map[string]model.Key) *model.ConfigState {
 	// Must be transformation + have "shared_code_id" key
-	_, sharedCodeKey, err := m.GetSharedCodeKey(objectState.LocalState())
-	if err != nil || sharedCodeKey == nil {
-		return nil, err
+	configState, ok := objectState.(*model.ConfigState)
+	if !ok || !configState.HasLocalState() {
+		return nil
+	}
+	config := configState.Local
+	if config.Transformation == nil || config.Transformation.LinkToSharedCode == nil {
+		return nil
 	}
 
 	// Check if shared code has been renamed.
-	if _, found := renamedSharedCodes[sharedCodeKey.String()]; found {
-		return objectState.(*model.ConfigState), nil
+	if _, found := renamedSharedCodes[config.Transformation.LinkToSharedCode.Config.String()]; found {
+		return configState
 	}
-	return nil, nil
+	return nil
 }

@@ -57,6 +57,21 @@ func TestConfig_Clone(t *testing.T) {
 					},
 				},
 			},
+			LinkToSharedCode: &LinkToSharedCode{
+				Config: ConfigKey{
+					BranchId:    123,
+					ComponentId: SharedCodeComponentId,
+					Id:          `456`,
+				},
+				Rows: UsedSharedCodeRows{
+					ConfigRowKey{
+						BranchId:    123,
+						ComponentId: SharedCodeComponentId,
+						ConfigId:    `456`,
+						Id:          `789`,
+					},
+				},
+			},
 		},
 		Orchestration: &Orchestration{
 			Phases: []*Phase{
