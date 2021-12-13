@@ -1,10 +1,10 @@
 Warning:
-  - config "branch:%s/component:keboola.variables/config:%s" not found
+  - missing shared code config "branch:%s/component:keboola.shared-code/config:321":
+    - referenced from config "branch:%s/component:keboola.python-transformation-v2/config:%s"
+Warning:
+  - config "branch:%s/component:keboola.variables/config:123456" not found
     - referenced from config "branch:%s/component:keboola.python-transformation-v2/config:%s"
     - by relation "variablesFrom"
-  - config row "branch:%s/component:keboola.variables/config:%s/row:%s" not found
+  - config row "branch:%s/component:keboola.variables/config:123456/row:456789" not found
     - referenced from config "branch:%s/component:keboola.python-transformation-v2/config:%s"
     - by relation "variablesValuesFrom"
-Warning:
-  - missing shared code config "branch:%s/component:keboola.shared-code/config:%s"
-    - referenced from config "branch:%s/component:keboola.python-transformation-v2/config:%s"

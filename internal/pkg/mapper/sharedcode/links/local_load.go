@@ -9,94 +9,93 @@ import (
 )
 
 // onLocalLoad replaces shared code path by id in transformation config and blocks.
-func (m *mapper) onLocalLoad(object model.Object) error {
-	transformation, sharedCodePath, err := m.GetSharedCodePath(object)
-	if err != nil {
-		return err
-	} else if transformation == nil {
+func (m *mapper) onLocalLoad(objectState model.ObjectState) error {
+	// Shared code can be used only by transformation - struct must be set
+	transformation, ok := objectState.LocalState().(*model.Config)
+	if !ok || transformation.Transformation == nil {
 		return nil
 	}
 
-	// Remove shared code id
+	// Always remove shared code path from Content
 	defer func() {
 		transformation.Content.Delete(model.SharedCodePathContentKey)
 	}()
 
-	// Get shared code transformation
+	// Get shared code path
+	sharedCodePathRaw, found := transformation.Content.Get(model.SharedCodePathContentKey)
+	sharedCodePath, ok := sharedCodePathRaw.(string)
+	if !found {
+		return nil
+	} else if !ok {
+		return utils.PrefixError(
+			fmt.Sprintf(`invalid transformation %s`, transformation.Desc()),
+			fmt.Errorf(`key "%s" must be string, found %T`, model.SharedCodePathContentKey, sharedCodePathRaw),
+		)
+	}
+
+	// Get shared code
 	sharedCodeState, err := m.GetSharedCodeByPath(transformation.BranchKey(), sharedCodePath)
 	if err != nil {
-		errors := utils.NewMultiError()
-		errors.Append(err)
-		errors.Append(fmt.Errorf(`  - referenced from %s`, transformation.Desc()))
-		return errors
+		return utils.PrefixError(
+			err.Error(),
+			fmt.Errorf(`referenced from %s`, objectState.Desc()),
+		)
+	} else if !sharedCodeState.HasLocalState() {
+		return utils.PrefixError(
+			fmt.Sprintf(`missing shared code %s`, sharedCodeState.Desc()),
+			fmt.Errorf(`referenced from %s`, objectState.Desc()),
+		)
 	}
-	sharedCode := sharedCodeState.LocalOrRemoteState().(*model.Config)
-	targetComponentId, err := m.GetTargetComponentId(sharedCode)
-	if err != nil {
+
+	// Check: target component of the shared code = transformation component
+	if err := m.CheckTargetComponent(sharedCodeState, transformation.ConfigKey); err != nil {
 		return err
 	}
 
-	// Check componentId
-	if targetComponentId != transformation.ComponentId {
-		errors := utils.NewMultiError()
-		errors.Append(fmt.Errorf(`unexpected shared code "%s" in %s`, model.ShareCodeTargetComponentKey, sharedCodeState.Desc()))
-		errors.Append(fmt.Errorf(`  - expected "%s"`, transformation.ComponentId))
-		errors.Append(fmt.Errorf(`  - found "%s"`, targetComponentId))
-		errors.Append(fmt.Errorf(`  - referenced from %s`, transformation.Desc()))
-		return errors
-	}
+	// Store shared code config key in Transformation structure
+	linkToSharedCode := &model.LinkToSharedCode{Config: sharedCodeState.ConfigKey}
+	transformation.Transformation.LinkToSharedCode = linkToSharedCode
 
-	// Replace Shared Code Path -> Shared Code ID
-	transformation.Content.Set(model.SharedCodeIdContentKey, sharedCodeState.Id.String())
-
-	// Replace paths -> IDs in scripts
+	// Replace paths -> IDs in code scripts
 	errors := utils.NewMultiError()
-	rowIdsMap := make(map[model.RowId]bool)
-	for _, block := range transformation.Transformation.Blocks {
-		for _, code := range block.Codes {
-			for index, script := range code.Scripts {
-				if id, v, err := m.replacePathByIdInScript(script, code, sharedCodeState); err != nil {
-					errors.Append(err)
-					continue
-				} else if v != "" {
-					rowIdsMap[id] = true
-					code.Scripts[index] = v
-				}
-			}
+	foundSharedCodeRows := make(map[model.RowId]model.ConfigRowKey)
+	transformation.Transformation.MapScripts(func(code *model.Code, script string) string {
+		if sharedCodeRow, id, err := m.replacePathByIdInScript(code, script, sharedCodeState); err != nil {
+			errors.Append(err)
+		} else if id != "" {
+			foundSharedCodeRows[sharedCodeRow.Id] = sharedCodeRow.ConfigRowKey
+			return id
 		}
-	}
-
-	// Convert row IDs map -> slice
-	rowIds := make([]interface{}, 0)
-	for id := range rowIdsMap {
-		rowIds = append(rowIds, id.String())
-	}
-	sort.SliceStable(rowIds, func(i, j int) bool {
-		return rowIds[i].(string) < rowIds[j].(string)
+		return script
 	})
 
-	// Set rows IDs
-	transformation.Content.Set(model.SharedCodeRowsIdContentKey, rowIds)
+	// Sort rows IDs
+	for _, rowKey := range foundSharedCodeRows {
+		linkToSharedCode.Rows = append(linkToSharedCode.Rows, rowKey)
+	}
+	sort.SliceStable(linkToSharedCode.Rows, func(i, j int) bool {
+		return linkToSharedCode.Rows[i].String() < linkToSharedCode.Rows[j].String()
+	})
 	return errors.ErrorOrNil()
 }
 
 // replacePathByIdInScript from transformation code.
-func (m *mapper) replacePathByIdInScript(script string, code *model.Code, sharedCode *model.ConfigState) (model.RowId, string, error) {
+func (m *mapper) replacePathByIdInScript(code *model.Code, script string, sharedCode *model.ConfigState) (*model.ConfigRowState, string, error) {
 	path := m.matchPath(script, code.ComponentId)
 	if path == "" {
 		// Not found
-		return "", "", nil
+		return nil, "", nil
 	}
 
-	// Get shared code config row
+	// Get shared code row
 	row, err := m.GetSharedCodeRowByPath(sharedCode, path)
 	if err != nil {
-		errors := utils.NewMultiError()
-		errors.Append(err)
-		errors.Append(fmt.Errorf(`  - referenced from "%s"`, code.Path()))
-		return "", "", errors
+		return nil, "", utils.PrefixError(
+			err.Error(),
+			fmt.Errorf(`referenced from "%s"`, code.Path()),
+		)
 	}
 
 	// Return ID instead of path
-	return row.Id, m.formatId(row.Id), nil
+	return row, m.formatId(row.Id), nil
 }

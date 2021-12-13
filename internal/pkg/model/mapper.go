@@ -170,8 +170,8 @@ type RemoteLoadRecipe struct {
 
 // RemoteSaveRecipe - all items related to the object, when saving to Storage API.
 type RemoteSaveRecipe struct {
-	ChangedFields ChangedFields
-	ObjectManifest
+	ChangedFields  ChangedFields
+	ObjectManifest        // manifest record, eg *ConfigManifest
 	InternalObject Object // eg. Config, original version, internal representation
 	ApiObject      Object // eg. Config, modified version, API representation
 }

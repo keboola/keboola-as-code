@@ -183,6 +183,11 @@ func (s *State) Get(key Key) (ObjectState, bool) {
 	return nil, false
 }
 
+func (s *State) GetOrNil(key Key) ObjectState {
+	v, _ := s.Get(key)
+	return v
+}
+
 func (s *State) MustGet(key Key) ObjectState {
 	state, found := s.Get(key)
 	if !found {

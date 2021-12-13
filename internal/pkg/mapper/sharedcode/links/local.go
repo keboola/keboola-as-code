@@ -10,7 +10,7 @@ func (m *mapper) OnLocalChange(changes *model.LocalChanges) error {
 	// Process loaded objects
 	errors := utils.NewMultiError()
 	for _, objectState := range changes.Loaded() {
-		if err := m.onLocalLoad(objectState.LocalState()); err != nil {
+		if err := m.onLocalLoad(objectState); err != nil {
 			errors.Append(err)
 		}
 	}
