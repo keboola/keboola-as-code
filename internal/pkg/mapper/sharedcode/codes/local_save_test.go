@@ -11,36 +11,22 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func TestSharedCodeSaveMissingKey(t *testing.T) {
+func TestSharedCodeLocalSave(t *testing.T) {
 	t.Parallel()
 	targetComponentId := model.ComponentId(`keboola.python-transformation-v2`)
-	context, rowState := createTestFixtures(t, targetComponentId)
-	recipe := fixtures.NewLocalSaveRecipe(rowState.Manifest(), rowState.Local)
-
-	err := NewMapper(context).MapBeforeLocalSave(recipe)
-	assert.Error(t, err)
-	assert.Equal(t, `key "code_content" not found in config row "branch:789/component:keboola.shared-code/config:123/row:456"`, err.Error())
-	assert.Nil(t, recipe.Files.GetOneByTag(model.FileKindNativeSharedCode))
-}
-
-func TestSharedCodeSave(t *testing.T) {
-	t.Parallel()
-	targetComponentId := model.ComponentId(`keboola.python-transformation-v2`)
-	context, rowState := createTestFixtures(t, targetComponentId)
-	recipe := fixtures.NewLocalSaveRecipe(rowState.Manifest(), rowState.Local)
+	context, logs, _, rowState := createInternalSharedCode(t, targetComponentId)
+	recipe := fixtures.NewLocalSaveRecipe(rowState.Manifest(), rowState.Remote)
 	codeFilePath := filesystem.Join(context.Naming.SharedCodeFilePath(recipe.ObjectManifest.Path(), targetComponentId))
-
-	// Set JSON value
-	rowState.Local.Content.Set(model.SharedCodeContentKey, []interface{}{`foo`, `bar`})
 
 	// Create dir
 	assert.NoError(t, context.Fs.Mkdir(filesystem.Dir(codeFilePath)))
+	logs.Truncate()
 
 	// Save to file
-	err := NewMapper(context).MapBeforeLocalSave(recipe)
+	assert.NoError(t, NewMapper(context).MapBeforeLocalSave(recipe))
+	assert.Empty(t, logs.String())
 
 	// Assert
-	assert.NoError(t, err)
 	sharedCodeFileRaw := recipe.Files.GetOneByTag(model.FileKindNativeSharedCode)
 	assert.NotNil(t, sharedCodeFileRaw)
 	sharedCodeFile, err := sharedCodeFileRaw.ToFile()

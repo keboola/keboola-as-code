@@ -44,9 +44,9 @@ func TestLocalSaveTranWithSharedCode(t *testing.T) {
 						ComponentId: `keboola.python-transformation-v2`,
 					},
 					Name: `Code 1`,
-					Scripts: []string{
-						`print(100)`,
-						"# {{:codes/code1}}",
+					Scripts: model.Scripts{
+						model.StaticScript{Value: `print(100)`},
+						model.StaticScript{Value: "# {{:codes/code1}}"},
 					},
 					PathInProject: model.NewPathInProject(`branch/transformation/blocks/block-1`, `code-1`),
 				},
@@ -55,9 +55,9 @@ func TestLocalSaveTranWithSharedCode(t *testing.T) {
 						ComponentId: `keboola.python-transformation-v2`,
 					},
 					Name: `Code 2`,
-					Scripts: []string{
-						"# {{:codes/code2}}",
-						"# {{:codes/code1}}",
+					Scripts: model.Scripts{
+						model.StaticScript{Value: "# {{:codes/code2}}"},
+						model.StaticScript{Value: "# {{:codes/code1}}"},
 					},
 					PathInProject: model.NewPathInProject(`branch/transformation/blocks/block-1`, `code-2`),
 				},
@@ -104,9 +104,9 @@ WARN  Warning:
 						ComponentId: `keboola.python-transformation-v2`,
 					},
 					Name: `Code 1`,
-					Scripts: []string{
-						`print(100)`,
-						fmt.Sprintf(" {{%s}}\n", sharedCodeRowsKeys[0].ObjectId()),
+					Scripts: model.Scripts{
+						model.StaticScript{Value: `print(100)`},
+						model.StaticScript{Value: fmt.Sprintf(" {{%s}}\n", sharedCodeRowsKeys[0].ObjectId())},
 					},
 					PathInProject: model.NewPathInProject(`branch/transformation/blocks/block-1`, `code-1`),
 				},
@@ -116,9 +116,9 @@ WARN  Warning:
 					},
 					Name: `Code 2`,
 
-					Scripts: []string{
-						fmt.Sprintf(" {{%s}}\n", sharedCodeRowsKeys[1].ObjectId()),
-						fmt.Sprintf("{{%s}}", sharedCodeRowsKeys[0].ObjectId()),
+					Scripts: model.Scripts{
+						model.StaticScript{Value: fmt.Sprintf(" {{%s}}\n", sharedCodeRowsKeys[1].ObjectId())},
+						model.StaticScript{Value: fmt.Sprintf("{{%s}}", sharedCodeRowsKeys[0].ObjectId())},
 					},
 					PathInProject: model.NewPathInProject(`branch/transformation/blocks/block-1`, `code-2`),
 				},
@@ -137,7 +137,7 @@ func TestLocalSaveTranWithSharedCode_SharedCodeRowNotFound(t *testing.T) {
 
 	// Create transformation with shared code
 	transformation := createInternalTranWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, context)
-	transformation.Local.Transformation.Blocks[0].Codes[1].Scripts[0] = "{{missing}}" // <<<<<<<<<<<<
+	transformation.Local.Transformation.Blocks[0].Codes[1].Scripts[0] = model.StaticScript{Value: "{{missing}}"} // <<<<<<<<<<<<
 
 	// Invoke
 	recipe := fixtures.NewLocalSaveRecipe(transformation.ConfigManifest, transformation.Local)
@@ -166,9 +166,9 @@ WARN  Warning:
 						ComponentId: `keboola.python-transformation-v2`,
 					},
 					Name: `Code 1`,
-					Scripts: []string{
-						`print(100)`,
-						"# {{:codes/code1}}",
+					Scripts: model.Scripts{
+						model.StaticScript{Value: `print(100)`},
+						model.StaticScript{Value: "# {{:codes/code1}}"},
 					},
 					PathInProject: model.NewPathInProject(`branch/transformation/blocks/block-1`, `code-1`),
 				},
@@ -177,9 +177,9 @@ WARN  Warning:
 						ComponentId: `keboola.python-transformation-v2`,
 					},
 					Name: `Code 2`,
-					Scripts: []string{
-						"{{missing}}", // <<<<<<<<<<<<<<
-						"# {{:codes/code1}}",
+					Scripts: model.Scripts{
+						model.StaticScript{Value: "{{missing}}"}, // <<<<<<<<<<<<<<
+						model.StaticScript{Value: "# {{:codes/code1}}"},
 					},
 					PathInProject: model.NewPathInProject(`branch/transformation/blocks/block-1`, `code-2`),
 				},
@@ -222,9 +222,9 @@ func createInternalTranWithSharedCode(t *testing.T, sharedCodeKey model.ConfigKe
 									ComponentId: `keboola.python-transformation-v2`,
 								},
 								Name: `Code 1`,
-								Scripts: []string{
-									`print(100)`,
-									fmt.Sprintf(" {{%s}}\n", sharedCodeRowsKeys[0].ObjectId()),
+								Scripts: model.Scripts{
+									model.StaticScript{Value: `print(100)`},
+									model.StaticScript{Value: fmt.Sprintf(" {{%s}}\n", sharedCodeRowsKeys[0].ObjectId())},
 								},
 								PathInProject: model.NewPathInProject(`branch/transformation/blocks/block-1`, `code-1`),
 							},
@@ -233,10 +233,9 @@ func createInternalTranWithSharedCode(t *testing.T, sharedCodeKey model.ConfigKe
 									ComponentId: `keboola.python-transformation-v2`,
 								},
 								Name: `Code 2`,
-
-								Scripts: []string{
-									fmt.Sprintf(" {{%s}}\n", sharedCodeRowsKeys[1].ObjectId()),
-									fmt.Sprintf("{{%s}}", sharedCodeRowsKeys[0].ObjectId()),
+								Scripts: model.Scripts{
+									model.StaticScript{Value: fmt.Sprintf(" {{%s}}\n", sharedCodeRowsKeys[1].ObjectId())},
+									model.StaticScript{Value: fmt.Sprintf("{{%s}}", sharedCodeRowsKeys[0].ObjectId())},
 								},
 								PathInProject: model.NewPathInProject(`branch/transformation/blocks/block-1`, `code-2`),
 							},

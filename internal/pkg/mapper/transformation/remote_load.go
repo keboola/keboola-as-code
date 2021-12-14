@@ -3,7 +3,6 @@ package transformation
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/strhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -54,8 +53,10 @@ func (m *transformationMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe
 			code.ConfigId = config.Id
 			code.BlockIndex = block.Index
 			code.Index = codeIndex
-			for i, script := range code.Scripts {
-				code.Scripts[i] = strhelper.NormalizeScript(script)
+			for _, script := range code.Scripts {
+				if v, ok := script.(model.StaticScript); ok {
+					v.Value = model.NormalizeScript(v.Value)
+				}
 			}
 		}
 	}

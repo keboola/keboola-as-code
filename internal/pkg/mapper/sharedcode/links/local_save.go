@@ -3,7 +3,6 @@ package links
 import (
 	"fmt"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -48,7 +47,7 @@ func (m *mapper) replaceSharedCodeIdByPath(transformation *model.Config, recipe 
 	}
 
 	// Check: target component of the shared code = transformation component
-	if err := m.CheckTargetComponent(sharedCodeState, transformation.ConfigKey); err != nil {
+	if err := m.CheckTargetComponent(sharedCodeState.LocalOrRemoteState().(*model.Config), transformation.ConfigKey); err != nil {
 		return err
 	}
 
@@ -57,29 +56,13 @@ func (m *mapper) replaceSharedCodeIdByPath(transformation *model.Config, recipe 
 
 	// Replace IDs -> paths in scripts
 	errors := utils.NewMultiError()
-	transformation.Transformation.MapScripts(func(code *model.Code, script string) string {
-		if path, err := m.replaceIdByPathInScript(code, script, sharedCodeState); err != nil {
+	transformation.Transformation.MapScripts(func(code *model.Code, script model.Script) model.Script {
+		if v, err := m.replaceIdByPathInScript(code, script, sharedCodeState); err != nil {
 			errors.Append(err)
-		} else if path != "" {
-			return path
+		} else if v != nil {
+			return v
 		}
 		return script
 	})
 	return errors.ErrorOrNil()
-}
-
-func (m *mapper) replaceIdByPathInScript(code *model.Code, script string, sharedCode *model.ConfigState) (string, error) {
-	row, err := m.sharedCodeRowByScriptId(code, script, sharedCode.ConfigKey)
-	if err != nil {
-		return "", err
-	} else if row == nil {
-		return "", nil
-	}
-
-	// Return path instead of ID
-	path, err := filesystem.Rel(sharedCode.Path(), row.Path())
-	if err != nil {
-		return "", err
-	}
-	return m.formatPath(path, code.ComponentId), nil
 }

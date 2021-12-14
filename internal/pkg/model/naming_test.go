@@ -86,10 +86,11 @@ func TestDefaultNaming(t *testing.T) {
 					ComponentId: SharedCodeComponentId,
 					Id:          "456",
 				},
-				Name: "MySharedCode",
-				Content: orderedmap.FromPairs([]orderedmap.Pair{
-					{Key: ShareCodeTargetComponentKey, Value: `keboola.python-transformation-v2`},
-				}),
+				Name:    "MySharedCode",
+				Content: orderedmap.New(),
+				SharedCode: &SharedCodeConfig{
+					Target: `keboola.python-transformation-v2`,
+				},
 			},
 		).Path())
 

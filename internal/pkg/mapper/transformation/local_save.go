@@ -92,7 +92,7 @@ func (w *localWriter) generateCodeFiles(code *model.Code) {
 
 	// Create code file
 	w.Files.
-		Add(filesystem.NewFile(w.Naming.CodeFilePath(code), code.ScriptsToString()).SetDescription(`code`)).
+		Add(filesystem.NewFile(w.Naming.CodeFilePath(code), code.Scripts.String(code.ComponentId)).SetDescription(`code`)).
 		AddTag(model.FileTypeOther).
 		AddTag(model.FileKindNativeCode)
 }

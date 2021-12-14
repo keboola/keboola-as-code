@@ -21,15 +21,15 @@ func TestRemoteSaveTransformation(t *testing.T) {
 			Codes: model.Codes{
 				{
 					Name: "001-001",
-					Scripts: []string{
-						"SELECT 1",
+					Scripts: model.Scripts{
+						model.StaticScript{Value: "SELECT 1"},
 					},
 				},
 				{
 					Name: "001-002",
-					Scripts: []string{
-						"SELECT 1;",
-						"SELECT 2;",
+					Scripts: model.Scripts{
+						model.StaticScript{Value: "SELECT 1;"},
+						model.StaticScript{Value: "SELECT 2;"},
 					},
 				},
 			},
@@ -39,8 +39,8 @@ func TestRemoteSaveTransformation(t *testing.T) {
 			Codes: model.Codes{
 				{
 					Name: "002-001",
-					Scripts: []string{
-						"SELECT 3",
+					Scripts: model.Scripts{
+						model.StaticScript{Value: "SELECT 3"},
 					},
 				},
 			},

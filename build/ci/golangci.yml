@@ -111,6 +111,7 @@ issues:
   # List of regexps of issue texts to exclude
   exclude:
     - 'G306: Expect WriteFile permissions to be 0600 or less'
+    - 'string `keboola.*` has .* occurrences, make it a constant'
 
   # Excluding configuration per-path, per-linter, per-text and per-source
   exclude-rules:

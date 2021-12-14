@@ -7,8 +7,6 @@ import (
 
 	"github.com/jpillora/longestcommon"
 	"github.com/umisama/go-regexpcache"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/sql"
 )
 
 // FormatPathChange - example result "branch/config/{row -> row1}".
@@ -70,35 +68,4 @@ func FirstLower(str string) string {
 
 func FirstUpper(str string) string {
 	return strings.ToUpper(string(str[0])) + str[1:]
-}
-
-func ParseTransformationScripts(content, componentId string) []string {
-	content = NormalizeScript(content)
-	switch componentId {
-	case `keboola.snowflake-transformation`:
-		fallthrough
-	case `keboola.synapse-transformation`:
-		fallthrough
-	case `keboola.oracle-transformation`:
-		return sql.Split(content)
-	default:
-		return []string{content}
-	}
-}
-
-func TransformationScriptsToString(scripts []string, componentId string) string {
-	switch componentId {
-	case `keboola.snowflake-transformation`:
-		fallthrough
-	case `keboola.synapse-transformation`:
-		fallthrough
-	case `keboola.oracle-transformation`:
-		return sql.Join(scripts) + "\n"
-	default:
-		return strings.Join(scripts, "\n") + "\n"
-	}
-}
-
-func NormalizeScript(script string) string {
-	return strings.TrimRight(script, "\n\r\t ")
 }

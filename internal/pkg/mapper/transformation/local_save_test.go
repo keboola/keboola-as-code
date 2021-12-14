@@ -69,8 +69,8 @@ func TestLocalSaveTransformation(t *testing.T) {
 							`001-code-1`,
 						),
 						Name: "code1",
-						Scripts: []string{
-							"SELECT 1",
+						Scripts: model.Scripts{
+							model.StaticScript{Value: "SELECT 1"},
 						},
 					},
 					{
@@ -87,9 +87,9 @@ func TestLocalSaveTransformation(t *testing.T) {
 							`002-code-2`,
 						),
 						Name: "code2",
-						Scripts: []string{
-							"SELECT 2;",
-							"SELECT 3;",
+						Scripts: model.Scripts{
+							model.StaticScript{Value: "SELECT 2;"},
+							model.StaticScript{Value: "SELECT 3;"},
 						},
 					},
 				},

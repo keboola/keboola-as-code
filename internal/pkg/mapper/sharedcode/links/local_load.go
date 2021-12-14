@@ -46,9 +46,14 @@ func (m *mapper) onLocalLoad(objectState model.ObjectState) error {
 			fmt.Errorf(`referenced from %s`, objectState.Desc()),
 		)
 	}
+	sharedCodeConfig := sharedCodeState.LocalState().(*model.Config)
+	if sharedCodeConfig.SharedCode == nil {
+		// Value is not set, shared code is not valid -> skip
+		return nil
+	}
 
 	// Check: target component of the shared code = transformation component
-	if err := m.CheckTargetComponent(sharedCodeState, transformation.ConfigKey); err != nil {
+	if err := m.CheckTargetComponent(sharedCodeConfig, transformation.ConfigKey); err != nil {
 		return err
 	}
 
@@ -59,12 +64,12 @@ func (m *mapper) onLocalLoad(objectState model.ObjectState) error {
 	// Replace paths -> IDs in code scripts
 	errors := utils.NewMultiError()
 	foundSharedCodeRows := make(map[model.RowId]model.ConfigRowKey)
-	transformation.Transformation.MapScripts(func(code *model.Code, script string) string {
-		if sharedCodeRow, id, err := m.replacePathByIdInScript(code, script, sharedCodeState); err != nil {
+	transformation.Transformation.MapScripts(func(code *model.Code, script model.Script) model.Script {
+		if sharedCodeRow, v, err := m.replacePathByIdInScript(code, script, sharedCodeState); err != nil {
 			errors.Append(err)
-		} else if id != "" {
+		} else if v != nil {
 			foundSharedCodeRows[sharedCodeRow.Id] = sharedCodeRow.ConfigRowKey
-			return id
+			return v
 		}
 		return script
 	})
@@ -77,25 +82,4 @@ func (m *mapper) onLocalLoad(objectState model.ObjectState) error {
 		return linkToSharedCode.Rows[i].String() < linkToSharedCode.Rows[j].String()
 	})
 	return errors.ErrorOrNil()
-}
-
-// replacePathByIdInScript from transformation code.
-func (m *mapper) replacePathByIdInScript(code *model.Code, script string, sharedCode *model.ConfigState) (*model.ConfigRowState, string, error) {
-	path := m.matchPath(script, code.ComponentId)
-	if path == "" {
-		// Not found
-		return nil, "", nil
-	}
-
-	// Get shared code row
-	row, err := m.GetSharedCodeRowByPath(sharedCode, path)
-	if err != nil {
-		return nil, "", utils.PrefixError(
-			err.Error(),
-			fmt.Errorf(`referenced from "%s"`, code.Path()),
-		)
-	}
-
-	// Return ID instead of path
-	return row, m.formatId(row.Id), nil
 }

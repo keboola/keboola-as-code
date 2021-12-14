@@ -196,6 +196,10 @@ func (d *Differ) newOptions(reporter *Reporter) cmp.Options {
 		cmp.Transformer("phase", func(phase model.Phase) string {
 			return phase.String()
 		}),
+		// Diff SharedCode row as string
+		cmp.Transformer("sharedCodeRow", func(code model.SharedCodeRow) string {
+			return code.String()
+		}),
 		// Do not compare local paths
 		cmpopts.IgnoreTypes(model.PathInProject{}),
 	}
