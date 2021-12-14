@@ -6,10 +6,49 @@ Diff:
 * B bar
   description:
     + new description
+* R bar/_shared/keboola.python-transformation-v2/codes/code-with-variables
+  sharedCode:
+    - num1 = {{num1}}
+    - num2 = {{num2}}
+    - sum = num1 + num2
+    + num3 = {{num3}}
+    + num4 = {{num4}}
+    + sum = num3 + num4
+* C bar/_shared/keboola.python-transformation-v2/codes/code-with-variables/variables
+  configuration:
+    variables.0.name:
+      - num1
+      + num3
+    variables.1.name:
+      - num2
+      + num4
+* R bar/_shared/keboola.python-transformation-v2/codes/my-code-1
+  sharedCode:
+    - # This program prints Hello, world!
+    + # This program prints some text
+%w
+    - print('Hello, world!')
+    + print('Changed text!')
 * C bar/extractor/ex-generic-v2/empty
   name:
     - empty
     + new name
+* C bar/transformation/keboola.python-transformation-v2/transformation-with-shared-code/variables
+  configuration:
+    variables.0.name:
+      - num1
+      + num3
+    variables.1.name:
+      - num2
+      + num4
+* R bar/transformation/keboola.python-transformation-v2/transformation-with-shared-code/variables/values/default
+  configuration:
+    values.0.name:
+      - num1
+      + num3
+    values.1.name:
+      - num2
+      + num4
 * C foo/extractor/ex-generic-v2/without-rows
   configuration:
     parameters.api.baseUrl:
