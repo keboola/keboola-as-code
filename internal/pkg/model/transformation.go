@@ -54,10 +54,6 @@ type StaticScript struct {
 	Value string
 }
 
-type ScriptSharedCode struct {
-	Target ConfigRowKey
-}
-
 func (v UsedSharedCodeRows) IdsSlice() []interface{} {
 	var ids []interface{}
 	for _, rowKey := range v {
@@ -206,7 +202,7 @@ func (v Scripts) String(componentId ComponentId) string {
 func (v Scripts) MarshalJSON() ([]byte, error) {
 	var scripts []string
 	for _, script := range v {
-		scripts = append(scripts, script.Content())
+		scripts = append(scripts, script.(StaticScript).Value)
 	}
 	return json.Marshal(scripts)
 }
@@ -233,14 +229,6 @@ func (v StaticScript) Content() string {
 }
 
 func (v StaticScript) Clone() Script {
-	return v
-}
-
-func (v ScriptSharedCode) Content() string {
-	panic(fmt.Errorf(`ScriptSharedCode must be converted to StaticScript before save`))
-}
-
-func (v ScriptSharedCode) Clone() Script {
 	return v
 }
 

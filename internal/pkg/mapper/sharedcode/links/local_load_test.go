@@ -39,7 +39,14 @@ func TestLocalLoadTranWithSharedCode(t *testing.T) {
 					PathInProject: model.NewPathInProject(`branch/transformation/blocks/block-1`, `code-1`),
 					Scripts: model.Scripts{
 						model.StaticScript{Value: `print(100)`},
-						model.StaticScript{Value: "{{1234}}"},
+						model.LinkScript{
+							Target: model.ConfigRowKey{
+								BranchId:    123,
+								ComponentId: `keboola.shared-code`,
+								ConfigId:    `456`,
+								Id:          `1234`,
+							},
+						},
 					},
 				},
 				{
@@ -49,8 +56,22 @@ func TestLocalLoadTranWithSharedCode(t *testing.T) {
 					Name:          `Code 2`,
 					PathInProject: model.NewPathInProject(`branch/transformation/blocks/block-1`, `code-2`),
 					Scripts: model.Scripts{
-						model.StaticScript{Value: "{{5678}}"},
-						model.StaticScript{Value: "{{1234}}"},
+						model.LinkScript{
+							Target: model.ConfigRowKey{
+								BranchId:    123,
+								ComponentId: `keboola.shared-code`,
+								ConfigId:    `456`,
+								Id:          `5678`,
+							},
+						},
+						model.LinkScript{
+							Target: model.ConfigRowKey{
+								BranchId:    123,
+								ComponentId: `keboola.shared-code`,
+								ConfigId:    `456`,
+								Id:          `1234`,
+							},
+						},
 					},
 				},
 			},

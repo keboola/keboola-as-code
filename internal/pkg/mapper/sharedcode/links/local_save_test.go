@@ -106,7 +106,7 @@ WARN  Warning:
 					Name: `Code 1`,
 					Scripts: model.Scripts{
 						model.StaticScript{Value: `print(100)`},
-						model.StaticScript{Value: fmt.Sprintf(" {{%s}}\n", sharedCodeRowsKeys[0].ObjectId())},
+						model.StaticScript{Value: fmt.Sprintf("{{%s}}", sharedCodeRowsKeys[0].ObjectId())},
 					},
 					PathInProject: model.NewPathInProject(`branch/transformation/blocks/block-1`, `code-1`),
 				},
@@ -117,7 +117,7 @@ WARN  Warning:
 					Name: `Code 2`,
 
 					Scripts: model.Scripts{
-						model.StaticScript{Value: fmt.Sprintf(" {{%s}}\n", sharedCodeRowsKeys[1].ObjectId())},
+						model.StaticScript{Value: fmt.Sprintf("{{%s}}", sharedCodeRowsKeys[1].ObjectId())},
 						model.StaticScript{Value: fmt.Sprintf("{{%s}}", sharedCodeRowsKeys[0].ObjectId())},
 					},
 					PathInProject: model.NewPathInProject(`branch/transformation/blocks/block-1`, `code-2`),
@@ -137,7 +137,12 @@ func TestLocalSaveTranWithSharedCode_SharedCodeRowNotFound(t *testing.T) {
 
 	// Create transformation with shared code
 	transformation := createInternalTranWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, context)
-	transformation.Local.Transformation.Blocks[0].Codes[1].Scripts[0] = model.StaticScript{Value: "{{missing}}"} // <<<<<<<<<<<<
+	transformation.Local.Transformation.Blocks[0].Codes[1].Scripts[0] = model.LinkScript{Target: model.ConfigRowKey{
+		BranchId:    sharedCodeKey.BranchId,
+		ComponentId: sharedCodeKey.ComponentId,
+		ConfigId:    sharedCodeKey.Id,
+		Id:          `missing`, // <<<<<<<<<<<<
+	}}
 
 	// Invoke
 	recipe := fixtures.NewLocalSaveRecipe(transformation.ConfigManifest, transformation.Local)
@@ -224,7 +229,7 @@ func createInternalTranWithSharedCode(t *testing.T, sharedCodeKey model.ConfigKe
 								Name: `Code 1`,
 								Scripts: model.Scripts{
 									model.StaticScript{Value: `print(100)`},
-									model.StaticScript{Value: fmt.Sprintf(" {{%s}}\n", sharedCodeRowsKeys[0].ObjectId())},
+									model.LinkScript{Target: sharedCodeRowsKeys[0]},
 								},
 								PathInProject: model.NewPathInProject(`branch/transformation/blocks/block-1`, `code-1`),
 							},
@@ -234,8 +239,8 @@ func createInternalTranWithSharedCode(t *testing.T, sharedCodeKey model.ConfigKe
 								},
 								Name: `Code 2`,
 								Scripts: model.Scripts{
-									model.StaticScript{Value: fmt.Sprintf(" {{%s}}\n", sharedCodeRowsKeys[1].ObjectId())},
-									model.StaticScript{Value: fmt.Sprintf("{{%s}}", sharedCodeRowsKeys[0].ObjectId())},
+									model.LinkScript{Target: sharedCodeRowsKeys[1]},
+									model.LinkScript{Target: sharedCodeRowsKeys[0]},
 								},
 								PathInProject: model.NewPathInProject(`branch/transformation/blocks/block-1`, `code-2`),
 							},

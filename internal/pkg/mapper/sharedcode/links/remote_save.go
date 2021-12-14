@@ -2,6 +2,7 @@ package links
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // MapBeforeRemoteSave move shared code from Transformation struct to Content.
@@ -23,10 +24,23 @@ func (m *mapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
 		transformation.Transformation.LinkToSharedCode = nil
 	}()
 
+	// Convert LinkScript to ID placeholder
+	errors := utils.NewMultiError()
+	transformation.Transformation.MapScripts(func(code *model.Code, script model.Script) model.Script {
+		v, err := m.linkToIdPlaceholder(code, script)
+		if err != nil {
+			errors.Append(err)
+		}
+		if v != nil {
+			return v
+		}
+		return script
+	})
+
 	// Set shared code config ID and rows IDs
 	// Note: IDs are already validated on remote/local load
 	transformation.Content.Set(model.SharedCodeIdContentKey, sharedCodeLink.Config.Id.String())
 	transformation.Content.Set(model.SharedCodeRowsIdContentKey, sharedCodeLink.Rows.IdsSlice())
 
-	return nil
+	return errors.ErrorOrNil()
 }

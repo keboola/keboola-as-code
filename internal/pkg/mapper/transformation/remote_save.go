@@ -11,12 +11,11 @@ import (
 // MapBeforeRemoteSave - save code blocks to the API.
 func (m *transformationMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
 	// Only for transformation config
-	if ok, err := m.isTransformationConfig(recipe.InternalObject); err != nil {
+	if ok, err := m.isTransformationConfig(recipe.ApiObject); err != nil {
 		return err
 	} else if !ok {
 		return nil
 	}
-	internalObject := recipe.InternalObject.(*model.Config)
 	apiObject := recipe.ApiObject.(*model.Config)
 
 	// Get parameters
@@ -29,7 +28,7 @@ func (m *transformationMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecip
 
 	// Convert blocks to map
 	blocks := make([]interface{}, 0)
-	for _, block := range internalObject.Transformation.Blocks {
+	for _, block := range apiObject.Transformation.Blocks {
 		blockRaw := orderedmap.New()
 		if err := json.ConvertByJson(block, &blockRaw); err != nil {
 			return fmt.Errorf(`cannot convert block to JSON: %w`, err)

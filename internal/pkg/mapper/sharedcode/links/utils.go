@@ -6,33 +6,7 @@ import (
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
-
-func (m *mapper) sharedCodeRowByScript(code *model.Code, script model.Script, sharedCode model.ConfigKey) (*model.ConfigRowState, error) {
-	id := m.matchId(script.Content())
-	if id == "" {
-		// Not found
-		return nil, nil
-	}
-
-	// Get shared code config row
-	rowKey := model.ConfigRowKey{
-		BranchId:    sharedCode.BranchId,
-		ComponentId: sharedCode.ComponentId,
-		ConfigId:    sharedCode.Id,
-		Id:          id,
-	}
-	row, found := m.State.Get(rowKey)
-	if !found {
-		return nil, utils.PrefixError(
-			fmt.Sprintf(`missing shared code %s`, rowKey.Desc()),
-			fmt.Errorf(`referenced from %s`, code.Path()),
-		)
-	}
-
-	return row.(*model.ConfigRowState), nil
-}
 
 func (m *mapper) matchId(script string) model.RowId {
 	script = strings.TrimSpace(script)

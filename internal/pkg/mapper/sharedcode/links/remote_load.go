@@ -71,7 +71,18 @@ func (m *mapper) onRemoteLoad(objectState model.ObjectState) error {
 		)
 	}
 
+	// Replace ID placeholder with LinkScript struct
 	errors := utils.NewMultiError()
+	transformation.Transformation.MapScripts(func(code *model.Code, script model.Script) model.Script {
+		if _, v, err := m.parseIdPlaceholder(code, script, sharedCodeState); err != nil {
+			errors.Append(err)
+		} else if v != nil {
+			return v
+		}
+		return script
+	})
+
+	// Check rows IDs
 	for _, rowId := range v {
 		rowKey := model.ConfigRowKey{
 			BranchId:    linkToSharedCode.Config.BranchId,
