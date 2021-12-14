@@ -212,3 +212,28 @@ func TestCheckTypeAgainstKind(t *testing.T) {
 	assert.Error(t, checkTypeAgainstKind(false, "textarea"))
 	assert.NoError(t, checkTypeAgainstKind("string", "textarea"))
 }
+
+func TestInputValidate(t *testing.T) {
+	t.Parallel()
+
+	input := &Input{
+		Id:          "input.id",
+		Name:        "input",
+		Description: "input description",
+		Kind:        "input",
+		Type:        "int",
+		Rules:       "gte=5,lte=10",
+	}
+	assert.Error(t, input.Validate(1, nil))
+	assert.Error(t, input.Validate("1", nil))
+	assert.NoError(t, input.Validate(7, nil))
+
+	input = &Input{
+		Id:          "input.id",
+		Name:        "input",
+		Description: "input description",
+		Kind:        "confirm",
+	}
+	assert.Error(t, input.Validate(1, nil))
+	assert.NoError(t, input.Validate(true, nil))
+}

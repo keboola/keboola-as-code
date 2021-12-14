@@ -1,6 +1,7 @@
 package template
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 
@@ -97,6 +98,16 @@ func checkTypeAgainstKind(value interface{}, kind string) error {
 		}
 	}
 	return nil
+}
+
+func (i Input) Validate(userInput interface{}, ctx context.Context) error {
+	err := checkTypeAgainstKind(userInput, i.Kind)
+	if err != nil {
+		return err
+	}
+
+	validate := goValidator.New()
+	return validate.VarCtx(ctx, userInput, i.Rules)
 }
 
 type Option string
