@@ -5,12 +5,24 @@ import (
 )
 
 type SharedCodeConfig struct {
-	Target ComponentId
+	Target ComponentId `validate:"required"`
 }
 
 type SharedCodeRow struct {
-	Target  ComponentId
-	Scripts Scripts
+	Target  ComponentId `validate:"required"`
+	Scripts Scripts     `validate:"required"`
+}
+
+type LinkScript struct {
+	Target ConfigRowKey
+}
+
+func (v LinkScript) Content() string {
+	return fmt.Sprintf(`shared code "%s"`, v.Target.Id.String())
+}
+
+func (v LinkScript) Clone() Script {
+	return v
 }
 
 func (v SharedCodeConfig) String() string {

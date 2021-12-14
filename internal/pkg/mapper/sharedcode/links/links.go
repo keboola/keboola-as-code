@@ -37,25 +37,70 @@ func NewMapper(localManager *local.Manager, context model.MapperContext) *mapper
 	}
 }
 
-func (m *mapper) replaceIdByPathInScript(code *model.Code, script model.Script, sharedCode *model.ConfigState) (model.Script, error) {
-	row, err := m.sharedCodeRowByScript(code, script, sharedCode.ConfigKey)
-	if err != nil {
-		return nil, err
-	} else if row == nil {
-		return nil, nil
+func (m *mapper) linkToIdPlaceholder(code *model.Code, link model.Script) (model.Script, error) {
+	if link, ok := link.(model.LinkScript); ok {
+		row, ok := m.State.GetOrNil(link.Target).(*model.ConfigRowState)
+		script := model.StaticScript{Value: m.formatId(row.Id)}
+		if !ok {
+			return script, utils.PrefixError(
+				fmt.Sprintf(`missing shared code "%s"`, link.Target.Desc()),
+				fmt.Errorf(`referenced from %s`, code.Path()),
+			)
+		}
+		return script, nil
 	}
-
-	path, err := filesystem.Rel(sharedCode.Path(), row.Path())
-	if err != nil {
-		return nil, err
-	}
-
-	// Return path instead of ID
-	return model.StaticScript{Value: m.formatPath(path, code.ComponentId)}, nil
+	return nil, nil
 }
 
-// replacePathByIdInScript from transformation code.
-func (m *mapper) replacePathByIdInScript(code *model.Code, script model.Script, sharedCode *model.ConfigState) (*model.ConfigRowState, model.Script, error) {
+func (m *mapper) linkToPathPlaceholder(code *model.Code, link model.Script, sharedCode *model.ConfigState) (model.Script, error) {
+	if link, ok := link.(model.LinkScript); ok {
+		row, ok := m.State.GetOrNil(link.Target).(*model.ConfigRowState)
+		if !ok || sharedCode == nil {
+			// Return ID placeholder, if row is not found
+			return model.StaticScript{Value: m.formatId(link.Target.Id)}, utils.PrefixError(
+				fmt.Sprintf(`missing shared code %s`, link.Target.Desc()),
+				fmt.Errorf(`referenced from %s`, code.Path()),
+			)
+		}
+
+		path, err := filesystem.Rel(sharedCode.Path(), row.Path())
+		if err != nil {
+			return nil, err
+		}
+		return model.StaticScript{Value: m.formatPath(path, code.ComponentId)}, nil
+	}
+	return nil, nil
+}
+
+// parseIdPlaceholder in transformation script.
+func (m *mapper) parseIdPlaceholder(code *model.Code, script model.Script, sharedCode *model.ConfigState) (*model.ConfigRowState, model.Script, error) {
+	id := m.matchId(script.Content())
+	if id == "" {
+		// Not found
+		return nil, nil, nil
+	}
+
+	// Get shared code config row
+	rowKey := model.ConfigRowKey{
+		BranchId:    sharedCode.BranchId,
+		ComponentId: sharedCode.ComponentId,
+		ConfigId:    sharedCode.Id,
+		Id:          id,
+	}
+	row, found := m.State.GetOrNil(rowKey).(*model.ConfigRowState)
+	if !found {
+		return nil, nil, utils.PrefixError(
+			fmt.Sprintf(`missing shared code %s`, rowKey.Desc()),
+			fmt.Errorf(`referenced from %s`, code.Path()),
+		)
+	}
+
+	// Return LinkScript instead of ID
+	return row, model.LinkScript{Target: row.ConfigRowKey}, nil
+}
+
+// parsePathPlaceholder in transformation script.
+func (m *mapper) parsePathPlaceholder(code *model.Code, script model.Script, sharedCode *model.ConfigState) (*model.ConfigRowState, model.Script, error) {
 	path := m.matchPath(script.Content(), code.ComponentId)
 	if path == "" {
 		// Not found
@@ -71,6 +116,6 @@ func (m *mapper) replacePathByIdInScript(code *model.Code, script model.Script, 
 		)
 	}
 
-	// Return ID instead of path
-	return row, model.StaticScript{Value: m.formatId(row.Id)}, nil
+	// Return LinkScript instead of path
+	return row, model.LinkScript{Target: row.ConfigRowKey}, nil
 }

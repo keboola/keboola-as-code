@@ -65,7 +65,7 @@ func (m *mapper) onLocalLoad(objectState model.ObjectState) error {
 	errors := utils.NewMultiError()
 	foundSharedCodeRows := make(map[model.RowId]model.ConfigRowKey)
 	transformation.Transformation.MapScripts(func(code *model.Code, script model.Script) model.Script {
-		if sharedCodeRow, v, err := m.replacePathByIdInScript(code, script, sharedCodeState); err != nil {
+		if sharedCodeRow, v, err := m.parsePathPlaceholder(code, script, sharedCodeState); err != nil {
 			errors.Append(err)
 		} else if v != nil {
 			foundSharedCodeRows[sharedCodeRow.Id] = sharedCodeRow.ConfigRowKey

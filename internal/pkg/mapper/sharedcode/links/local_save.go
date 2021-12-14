@@ -39,6 +39,21 @@ func (m *mapper) replaceSharedCodeIdByPath(transformation *model.Config, recipe 
 	// Get shared code
 	sharedCodeKey := transformation.Transformation.LinkToSharedCode.Config
 	sharedCodeState, found := m.State.GetOrNil(sharedCodeKey).(*model.ConfigState)
+
+	// Convert LinkScript to path placeholder
+	errors := utils.NewMultiError()
+	transformation.Transformation.MapScripts(func(code *model.Code, script model.Script) model.Script {
+		v, err := m.linkToPathPlaceholder(code, script, sharedCodeState)
+		if err != nil {
+			errors.Append(err)
+		}
+		if v != nil {
+			return v
+		}
+		return script
+	})
+
+	// Check if shared code is found
 	if !found {
 		return utils.PrefixError(
 			fmt.Sprintf(`missing shared code %s`, sharedCodeKey.Desc()),
@@ -54,15 +69,5 @@ func (m *mapper) replaceSharedCodeIdByPath(transformation *model.Config, recipe 
 	// Replace Shared Code ID -> Shared Code Path
 	configFile.Content.Set(model.SharedCodePathContentKey, sharedCodeState.GetObjectPath())
 
-	// Replace IDs -> paths in scripts
-	errors := utils.NewMultiError()
-	transformation.Transformation.MapScripts(func(code *model.Code, script model.Script) model.Script {
-		if v, err := m.replaceIdByPathInScript(code, script, sharedCodeState); err != nil {
-			errors.Append(err)
-		} else if v != nil {
-			return v
-		}
-		return script
-	})
 	return errors.ErrorOrNil()
 }
