@@ -5,54 +5,52 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 func TestTemplateInput(t *testing.T) {
 	t.Parallel()
 
 	// Fail - Id with a number
-	input := &Input{
+	inputs := Inputs{{
 		Id:          "fb.extractor.password2",
 		Name:        "input",
 		Description: "input desc",
 		Type:        "string",
 		Default:     "def",
 		Kind:        "input",
-	}
-	err := validator.Validate(input)
+	}}
+	err := inputs.Validate()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), `key="id"`)
 
 	// Fail - Id with a dash
-	input = &Input{
+	inputs = Inputs{{
 		Id:          "fb.extractor-password",
 		Name:        "input",
 		Description: "input desc",
 		Type:        "string",
 		Default:     "def",
 		Kind:        "input",
-	}
-	err = validator.Validate(input)
+	}}
+	err = inputs.Validate()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), `key="id"`)
 
 	// Fail - wrong default type
-	input = &Input{
+	inputs = Inputs{{
 		Id:          "fb.extractor.password",
 		Name:        "input",
 		Description: "input desc",
 		Type:        "int",
 		Default:     "def",
 		Kind:        "input",
-	}
-	err = validator.Validate(input)
+	}}
+	err = inputs.Validate()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), `key="default"`)
 
 	// Fail - defined options for wrong Kind
-	input = &Input{
+	inputs = Inputs{{
 		Id:          "fb.extractor.password",
 		Name:        "input",
 		Description: "input desc",
@@ -60,13 +58,13 @@ func TestTemplateInput(t *testing.T) {
 		Default:     "def",
 		Options:     []Option{"a", "b"},
 		Kind:        "input",
-	}
-	err = validator.Validate(input)
+	}}
+	err = inputs.Validate()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), `key="options"`)
 
 	// Fail - defined options with wrong Type
-	input = &Input{
+	inputs = Inputs{{
 		Id:          "fb.extractor.password",
 		Name:        "input",
 		Description: "input desc",
@@ -74,13 +72,13 @@ func TestTemplateInput(t *testing.T) {
 		Default:     "def",
 		Options:     []Option{"a", 1},
 		Kind:        "input",
-	}
-	err = validator.Validate(input)
+	}}
+	err = inputs.Validate()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), `key="options"`)
 
 	// Success - with Options
-	input = &Input{
+	inputs = Inputs{{
 		Id:          "fb.extractor.password",
 		Name:        "input",
 		Description: "input desc",
@@ -88,12 +86,12 @@ func TestTemplateInput(t *testing.T) {
 		Default:     "def",
 		Options:     []Option{"a", "b"},
 		Kind:        "select",
-	}
-	err = validator.Validate(input)
+	}}
+	err = inputs.Validate()
 	assert.NoError(t, err)
 
 	// Success - int Default and empty Options
-	input = &Input{
+	inputs = Inputs{{
 		Id:          "fb.extractor.password",
 		Name:        "input",
 		Description: "input desc",
@@ -101,19 +99,19 @@ func TestTemplateInput(t *testing.T) {
 		Default:     33,
 		Options:     []Option{},
 		Kind:        "input",
-	}
-	err = validator.Validate(input)
+	}}
+	err = inputs.Validate()
 	assert.NoError(t, err)
 
 	// Success - no Default
-	input = &Input{
+	inputs = Inputs{{
 		Id:          "fb.extractor.password",
 		Name:        "input",
 		Description: "input desc",
 		Type:        "string",
 		Kind:        "input",
-	}
-	err = validator.Validate(input)
+	}}
+	err = inputs.Validate()
 	assert.NoError(t, err)
 }
 
