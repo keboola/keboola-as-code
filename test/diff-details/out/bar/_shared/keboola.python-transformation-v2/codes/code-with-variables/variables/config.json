@@ -1,0 +1,12 @@
+{
+  "variables": [
+    {
+      "name": "num3",
+      "type": "string"
+    },
+    {
+      "name": "num4",
+      "type": "string"
+    }
+  ]
+}
