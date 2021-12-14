@@ -1,7 +1,6 @@
 package transformation_test
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -56,13 +55,12 @@ func TestLoadRemoteTransformation(t *testing.T) {
 `
 
 	// Load
-	apiObject := &model.Config{
+	object := &model.Config{
 		ConfigKey: configState.ConfigKey,
 		Content:   orderedmap.New(),
 	}
-	json.MustDecodeString(configInApi, apiObject.Content)
-	internalObject := apiObject.Clone().(*model.Config)
-	recipe := &model.RemoteLoadRecipe{ObjectManifest: configState.ConfigManifest, ApiObject: apiObject, InternalObject: internalObject}
+	json.MustDecodeString(configInApi, object.Content)
+	recipe := &model.RemoteLoadRecipe{ObjectManifest: configState.ConfigManifest, Object: object}
 	assert.NoError(t, NewMapper(context).MapAfterRemoteLoad(recipe))
 
 	// Internal representation
@@ -154,11 +152,7 @@ func TestLoadRemoteTransformation(t *testing.T) {
 		},
 	}
 
-	// Api object is not modified
-	assert.Equal(t, strings.TrimSpace(configInApi), strings.TrimSpace(json.MustEncodeString(apiObject.Content, true)))
-	assert.Empty(t, apiObject.Transformation)
-
 	// In internal object are blocks in Blocks field, not in Content
-	assert.Equal(t, `{"parameters":{}}`, json.MustEncodeString(internalObject.Content, false))
-	assert.Equal(t, expected, internalObject.Transformation.Blocks)
+	assert.Equal(t, `{"parameters":{}}`, json.MustEncodeString(object.Content, false))
+	assert.Equal(t, expected, object.Transformation.Blocks)
 }

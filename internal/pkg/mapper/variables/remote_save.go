@@ -9,22 +9,21 @@ import (
 
 func (m *variablesMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
 	// Variables are used by config
-	internalObject, ok := recipe.InternalObject.(*model.Config)
+	config, ok := recipe.Object.(*model.Config)
 	if !ok {
 		return nil
 	}
-	apiObject := recipe.ApiObject.(*model.Config)
 
 	// Save variables_id
 	errors := utils.NewMultiError()
-	variablesRelation, err := m.saveVariables(apiObject, internalObject, recipe)
+	variablesRelation, err := m.saveVariables(config, recipe)
 	if err != nil {
 		errors.Append(err)
 	}
 
 	// Save variables_values_id if variables are present
 	if variablesRelation != nil {
-		if err := m.saveVariablesValues(apiObject, internalObject, recipe); err != nil {
+		if err := m.saveVariablesValues(config, recipe); err != nil {
 			errors.Append(err)
 		}
 	}
@@ -32,10 +31,10 @@ func (m *variablesMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) er
 	return nil
 }
 
-func (m *variablesMapper) saveVariables(apiObject, internalObject *model.Config, recipe *model.RemoteSaveRecipe) (*model.VariablesFromRelation, error) {
+func (m *variablesMapper) saveVariables(config *model.Config, recipe *model.RemoteSaveRecipe) (*model.VariablesFromRelation, error) {
 	// Get relation
 	relType := model.VariablesFromRelType
-	relationRaw, err := internalObject.Relations.GetOneByType(relType)
+	relationRaw, err := config.Relations.GetOneByType(relType)
 	if err != nil {
 		return nil, fmt.Errorf(`unexpected state of %s: %w`, recipe.Desc(), err)
 	} else if relationRaw == nil {
@@ -44,17 +43,17 @@ func (m *variablesMapper) saveVariables(apiObject, internalObject *model.Config,
 	relation := relationRaw.(*model.VariablesFromRelation)
 
 	// Set variables ID
-	apiObject.Content.Set(model.VariablesIdContentKey, relation.VariablesId.String())
+	config.Content.Set(model.VariablesIdContentKey, relation.VariablesId.String())
 
 	// Delete relation
-	apiObject.Relations.RemoveByType(relType)
+	config.Relations.RemoveByType(relType)
 	return relation, nil
 }
 
-func (m *variablesMapper) saveVariablesValues(apiObject, internalObject *model.Config, recipe *model.RemoteSaveRecipe) error {
+func (m *variablesMapper) saveVariablesValues(config *model.Config, recipe *model.RemoteSaveRecipe) error {
 	// Get relation
 	relType := model.VariablesValuesFromRelType
-	relationRaw, err := internalObject.Relations.GetOneByType(relType)
+	relationRaw, err := config.Relations.GetOneByType(relType)
 	if err != nil {
 		return fmt.Errorf(`unexpected state of %s: %w`, recipe.Desc(), err)
 	} else if relationRaw == nil {
@@ -63,9 +62,9 @@ func (m *variablesMapper) saveVariablesValues(apiObject, internalObject *model.C
 	relation := relationRaw.(*model.VariablesValuesFromRelation)
 
 	// Set values ID
-	apiObject.Content.Set(model.VariablesValuesIdContentKey, relation.VariablesValuesId.String())
+	config.Content.Set(model.VariablesValuesIdContentKey, relation.VariablesValuesId.String())
 
 	// Delete relation
-	apiObject.Relations.RemoveByType(relType)
+	config.Relations.RemoveByType(relType)
 	return nil
 }

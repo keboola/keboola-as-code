@@ -15,39 +15,28 @@ func TestSharedCodeMapBeforeRemoteSave(t *testing.T) {
 	context := createMapperContext(t)
 
 	variablesConfigId := `123456`
-	apiObject := &model.ConfigRow{
+	object := &model.ConfigRow{
 		ConfigRowKey: model.ConfigRowKey{ComponentId: model.SharedCodeComponentId},
 		Content:      orderedmap.New(),
 	}
-	apiObject.AddRelation(&model.SharedCodeVariablesFromRelation{
+	object.AddRelation(&model.SharedCodeVariablesFromRelation{
 		VariablesId: model.ConfigId(variablesConfigId),
 	})
-	internalObject := apiObject.Clone().(*model.ConfigRow)
 	recipe := &model.RemoteSaveRecipe{
-		ApiObject:      apiObject,
-		InternalObject: internalObject,
+		Object:         object,
 		ObjectManifest: &model.ConfigManifest{},
 	}
 
 	// Invoke
-	assert.NotEmpty(t, apiObject.Relations)
-	assert.NotEmpty(t, internalObject.Relations)
+	assert.NotEmpty(t, object.Relations)
+	assert.NotEmpty(t, object.Relations)
 	assert.NoError(t, NewMapper(context).MapBeforeRemoteSave(recipe))
 
-	// Internal object is not changed
-	assert.Equal(t, model.Relations{
-		&model.SharedCodeVariablesFromRelation{
-			VariablesId: model.ConfigId(variablesConfigId),
-		},
-	}, internalObject.Relations)
-	_, found := internalObject.Content.Get(model.SharedCodeVariablesIdContentKey)
-	assert.False(t, found)
-
 	// All relations have been mapped
-	assert.Empty(t, apiObject.Relations)
+	assert.Empty(t, object.Relations)
 
 	// Api object contains variables ID in content
-	v, found := apiObject.Content.Get(model.SharedCodeVariablesIdContentKey)
+	v, found := object.Content.Get(model.SharedCodeVariablesIdContentKey)
 	assert.True(t, found)
 	assert.Equal(t, variablesConfigId, v)
 }

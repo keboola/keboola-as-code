@@ -51,25 +51,19 @@ func TestRemoteSaveTransformation(t *testing.T) {
 		},
 	}
 
-	internalConfig := &model.Config{
+	object := &model.Config{
 		ConfigKey: configState.ConfigKey,
 		Content:   orderedmap.New(),
 	}
-	internalConfig.Transformation = &model.Transformation{Blocks: blocks}
-	apiConfig := internalConfig.Clone().(*model.Config)
+	object.Transformation = &model.Transformation{Blocks: blocks}
 	recipe := &model.RemoteSaveRecipe{
 		ChangedFields:  model.NewChangedFields("blocks"),
 		ObjectManifest: configState.Manifest(),
-		InternalObject: internalConfig,
-		ApiObject:      apiConfig,
+		Object:         object,
 	}
 
 	// Save
 	assert.NoError(t, NewMapper(context).MapBeforeRemoteSave(recipe))
-
-	// Internal object is not modified
-	assert.NotEmpty(t, internalConfig.Transformation.Blocks)
-	assert.Nil(t, internalConfig.Content.GetNestedOrNil(`parameters.blocks`))
 
 	// Blocks are stored in API object content
 	expectedBlocks := `
@@ -109,8 +103,8 @@ func TestRemoteSaveTransformation(t *testing.T) {
   }
 ]
 `
-	assert.Empty(t, apiConfig.Transformation)
-	apiBlocks := apiConfig.Content.GetNestedOrNil(`parameters.blocks`)
+	assert.Empty(t, object.Transformation)
+	apiBlocks := object.Content.GetNestedOrNil(`parameters.blocks`)
 	assert.NotNil(t, blocks)
 	assert.Equal(t, strings.TrimLeft(expectedBlocks, "\n"), json.MustEncodeString(apiBlocks, true))
 

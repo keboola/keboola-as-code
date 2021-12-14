@@ -10,15 +10,14 @@ import (
 
 func (m *schedulerMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
 	// Scheduler is a config
-	internalObject, ok := recipe.InternalObject.(*model.Config)
+	object, ok := recipe.Object.(*model.Config)
 	if !ok {
 		return nil
 	}
-	apiObject := recipe.ApiObject.(*model.Config)
 
 	// Get relation
 	relType := model.SchedulerForRelType
-	relationRaw, err := internalObject.Relations.GetOneByType(relType)
+	relationRaw, err := object.Relations.GetOneByType(relType)
 	if err != nil {
 		return fmt.Errorf(`unexpected state of %s: %w`, recipe.Desc(), err)
 	} else if relationRaw == nil {
@@ -27,7 +26,7 @@ func (m *schedulerMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) er
 	relation := relationRaw.(*model.SchedulerForRelation)
 
 	// Get target
-	targetRaw, found := apiObject.Content.Get(model.SchedulerTargetKey)
+	targetRaw, found := object.Content.Get(model.SchedulerTargetKey)
 	target, ok := targetRaw.(*orderedmap.OrderedMap)
 	if !found {
 		return utils.PrefixError(
@@ -44,9 +43,9 @@ func (m *schedulerMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) er
 	// Set componentId and configurationId
 	target.Set(model.SchedulerTargetComponentIdKey, relation.ComponentId.String())
 	target.Set(model.SchedulerTargetConfigurationIdKey, relation.ConfigId.String())
-	apiObject.Content.Set(model.SchedulerTargetKey, target)
+	object.Content.Set(model.SchedulerTargetKey, target)
 
 	// Delete relation
-	apiObject.Relations.RemoveByType(relType)
+	object.Relations.RemoveByType(relType)
 	return nil
 }

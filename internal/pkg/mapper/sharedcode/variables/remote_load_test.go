@@ -17,30 +17,22 @@ func TestSharedCodeMapAfterRemoteLoad(t *testing.T) {
 	variablesConfigId := `123456`
 	content := orderedmap.New()
 	content.Set(model.SharedCodeVariablesIdContentKey, variablesConfigId)
-	apiObject := &model.ConfigRow{
+	object := &model.ConfigRow{
 		ConfigRowKey: model.ConfigRowKey{ComponentId: model.SharedCodeComponentId},
 		Content:      content,
 	}
-	internalObject := apiObject.Clone().(*model.ConfigRow)
-	recipe := &model.RemoteLoadRecipe{ApiObject: apiObject, InternalObject: internalObject}
+	recipe := &model.RemoteLoadRecipe{Object: object}
 
 	// Invoke
-	assert.Empty(t, apiObject.Relations)
-	assert.Empty(t, internalObject.Relations)
+	assert.Empty(t, object.Relations)
 	assert.NoError(t, NewMapper(context).MapAfterRemoteLoad(recipe))
 
-	// Api object is not changed
-	assert.Empty(t, apiObject.Relations)
-	v, found := apiObject.Content.Get(model.SharedCodeVariablesIdContentKey)
-	assert.True(t, found)
-	assert.Equal(t, variablesConfigId, v)
-
-	// Internal object has new relation + content without variables ID
+	// Object has new relation + content without variables ID
 	assert.Equal(t, model.Relations{
 		&model.SharedCodeVariablesFromRelation{
 			VariablesId: model.ConfigId(variablesConfigId),
 		},
-	}, internalObject.Relations)
-	_, found = internalObject.Content.Get(model.SharedCodeVariablesIdContentKey)
+	}, object.Relations)
+	_, found := object.Content.Get(model.SharedCodeVariablesIdContentKey)
 	assert.False(t, found)
 }

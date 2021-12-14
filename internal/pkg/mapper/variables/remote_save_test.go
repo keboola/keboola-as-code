@@ -16,47 +16,33 @@ func TestVariablesMapBeforeRemoteSave(t *testing.T) {
 
 	variablesConfigId := `123456`
 	valuesConfigRowId := `456789`
-	apiObject := &model.Config{Content: orderedmap.New()}
-	apiObject.AddRelation(&model.VariablesFromRelation{
+	object := &model.Config{Content: orderedmap.New()}
+	object.AddRelation(&model.VariablesFromRelation{
 		VariablesId: model.ConfigId(variablesConfigId),
 	})
-	apiObject.AddRelation(&model.VariablesValuesFromRelation{
+	object.AddRelation(&model.VariablesValuesFromRelation{
 		VariablesValuesId: model.RowId(valuesConfigRowId),
 	})
-	internalObject := apiObject.Clone().(*model.Config)
 	recipe := &model.RemoteSaveRecipe{
-		ApiObject:      apiObject,
-		InternalObject: internalObject,
+		Object:         object,
 		ObjectManifest: &model.ConfigManifest{},
 	}
 
 	// Invoke
-	assert.NotEmpty(t, apiObject.Relations)
-	assert.NotEmpty(t, internalObject.Relations)
+	assert.NotEmpty(t, object.Relations)
+	assert.NotEmpty(t, object.Relations)
 	assert.NoError(t, NewMapper(context).MapBeforeRemoteSave(recipe))
 
-	// Internal object is not changed
-	assert.Equal(t, model.Relations{
-		&model.VariablesFromRelation{
-			VariablesId: model.ConfigId(variablesConfigId),
-		},
-		&model.VariablesValuesFromRelation{
-			VariablesValuesId: model.RowId(valuesConfigRowId),
-		},
-	}, internalObject.Relations)
-	_, found := internalObject.Content.Get(model.VariablesIdContentKey)
-	assert.False(t, found)
-
 	// All relations have been mapped
-	assert.Empty(t, apiObject.Relations)
+	assert.Empty(t, object.Relations)
 
-	// Api object contains variables ID in content
-	v, found := apiObject.Content.Get(model.VariablesIdContentKey)
+	// Object contains variables ID in content
+	v, found := object.Content.Get(model.VariablesIdContentKey)
 	assert.True(t, found)
 	assert.Equal(t, variablesConfigId, v)
 
-	// Api object contains variables values ID in content
-	v, found = apiObject.Content.Get(model.VariablesValuesIdContentKey)
+	// Object contains variables values ID in content
+	v, found = object.Content.Get(model.VariablesValuesIdContentKey)
 	assert.True(t, found)
 	assert.Equal(t, valuesConfigRowId, v)
 }

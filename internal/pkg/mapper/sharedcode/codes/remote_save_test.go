@@ -17,8 +17,7 @@ func TestSharedCodeRemoteSave(t *testing.T) {
 	// Map config
 	configRecipe := &model.RemoteSaveRecipe{
 		ObjectManifest: configState.Manifest(),
-		InternalObject: configState.Remote,
-		ApiObject:      configState.Remote.Clone().(*model.Config),
+		Object:         configState.Remote.Clone(),
 		ChangedFields:  model.NewChangedFields(`configuration`),
 	}
 	err := NewMapper(context).MapBeforeRemoteSave(configRecipe)
@@ -28,8 +27,7 @@ func TestSharedCodeRemoteSave(t *testing.T) {
 	// Map row
 	rowRecipe := &model.RemoteSaveRecipe{
 		ObjectManifest: rowState.Manifest(),
-		InternalObject: rowState.Remote,
-		ApiObject:      rowState.Remote.Clone().(*model.ConfigRow),
+		Object:         rowState.Remote.Clone(),
 		ChangedFields:  model.NewChangedFields(`configuration`),
 	}
 	err = NewMapper(context).MapBeforeRemoteSave(rowRecipe)
@@ -39,13 +37,13 @@ func TestSharedCodeRemoteSave(t *testing.T) {
 	// Assert
 	assert.Equal(t,
 		`keboola.python-transformation-v2`,
-		configRecipe.ApiObject.(*model.Config).Content.GetOrNil(model.ShareCodeTargetComponentKey),
+		configRecipe.Object.(*model.Config).Content.GetOrNil(model.ShareCodeTargetComponentKey),
 	)
 	assert.Equal(t,
 		[]interface{}{
 			`foo`,
 			`bar`,
 		},
-		rowRecipe.ApiObject.(*model.ConfigRow).Content.GetOrNil(model.SharedCodeContentKey),
+		rowRecipe.Object.(*model.ConfigRow).Content.GetOrNil(model.SharedCodeContentKey),
 	)
 }

@@ -164,16 +164,14 @@ type LocalSaveRecipe struct {
 // RemoteLoadRecipe - all items related to the object, when loading from Storage API.
 type RemoteLoadRecipe struct {
 	ObjectManifest
-	ApiObject      Object // eg. Config, original version, API representation
-	InternalObject Object // eg. Config, modified version, internal representation
+	Object Object
 }
 
 // RemoteSaveRecipe - all items related to the object, when saving to Storage API.
 type RemoteSaveRecipe struct {
-	ChangedFields  ChangedFields
-	ObjectManifest        // manifest record, eg *ConfigManifest
-	InternalObject Object // eg. Config, original version, internal representation
-	ApiObject      Object // eg. Config, modified version, API representation
+	ChangedFields ChangedFields
+	ObjectManifest
+	Object Object
 }
 
 // PersistRecipe contains object to persist.

@@ -16,7 +16,7 @@ func NewMapper() *descriptionMapper {
 }
 
 func (m *descriptionMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
-	switch o := recipe.InternalObject.(type) {
+	switch o := recipe.Object.(type) {
 	case *model.Branch:
 		o.Description = m.normalize(o.Description)
 	case *model.Config:

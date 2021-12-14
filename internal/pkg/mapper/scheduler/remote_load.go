@@ -7,13 +7,13 @@ import (
 
 func (m *schedulerMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
 	// Scheduler is a config
-	internalObject, ok := recipe.InternalObject.(*model.Config)
+	object, ok := recipe.Object.(*model.Config)
 	if !ok {
 		return nil
 	}
 
 	// Check component type
-	component, err := m.State.Components().Get(internalObject.ComponentKey())
+	component, err := m.State.Components().Get(object.ComponentKey())
 	if err != nil {
 		return err
 	}
@@ -22,7 +22,7 @@ func (m *schedulerMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) err
 	}
 
 	// Target is stored in configuration
-	targetRaw, found := internalObject.Content.Get(model.SchedulerTargetKey)
+	targetRaw, found := object.Content.Get(model.SchedulerTargetKey)
 	if !found {
 		return nil
 	}
@@ -58,7 +58,7 @@ func (m *schedulerMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) err
 	}
 
 	// Create relation
-	internalObject.AddRelation(&model.SchedulerForRelation{
+	object.AddRelation(&model.SchedulerForRelation{
 		ComponentId: model.ComponentId(componentId),
 		ConfigId:    model.ConfigId(configurationId),
 	})
@@ -66,6 +66,6 @@ func (m *schedulerMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) err
 	// Remove component and configuration ID
 	target.Delete(model.SchedulerTargetComponentIdKey)
 	target.Delete(model.SchedulerTargetConfigurationIdKey)
-	internalObject.Content.Set(model.SchedulerTargetKey, target)
+	object.Content.Set(model.SchedulerTargetKey, target)
 	return nil
 }

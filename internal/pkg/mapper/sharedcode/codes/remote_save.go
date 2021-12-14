@@ -7,12 +7,12 @@ import (
 // MapBeforeRemoteSave saves shared code target component and code to Content.
 func (m *mapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
 	// Save config
-	if config, ok := recipe.ApiObject.(*model.Config); ok {
+	if config, ok := recipe.Object.(*model.Config); ok {
 		m.onConfigRemoteSave(config, recipe)
 	}
 
 	// Save row
-	if row, ok := recipe.ApiObject.(*model.ConfigRow); ok {
+	if row, ok := recipe.Object.(*model.ConfigRow); ok {
 		m.onRowRemoteSave(row, recipe)
 	}
 

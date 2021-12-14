@@ -21,49 +21,30 @@ func TestSchedulerMapBeforeRemoteSave(t *testing.T) {
 	// Scheduler config
 	content := orderedmap.New()
 	json.MustDecodeString(`{"target": {"mode": "run"}}`, content)
-	apiObject := &model.Config{Content: content}
-	apiObject.AddRelation(&model.SchedulerForRelation{
+	object := &model.Config{Content: content}
+	object.AddRelation(&model.SchedulerForRelation{
 		ComponentId: `foo.bar`,
 		ConfigId:    `12345`,
 	})
-	internalObject := apiObject.Clone().(*model.Config)
 	recipe := &model.RemoteSaveRecipe{
-		ApiObject:      apiObject,
-		InternalObject: internalObject,
+		Object:         object,
 		ObjectManifest: &model.ConfigManifest{},
 	}
 
 	// Invoke
-	assert.NotEmpty(t, apiObject.Relations)
-	assert.NotEmpty(t, internalObject.Relations)
+	assert.NotEmpty(t, object.Relations)
 	assert.NoError(t, mapper.MapBeforeRemoteSave(recipe))
 
-	// Internal object is not changed
-	assert.Equal(t, model.Relations{
-		&model.SchedulerForRelation{
-			ComponentId: `foo.bar`,
-			ConfigId:    `12345`,
-		},
-	}, internalObject.Relations)
-	targetInternalRaw, found := internalObject.Content.Get(model.SchedulerTargetKey)
-	assert.True(t, found)
-	targetInternal, ok := targetInternalRaw.(*orderedmap.OrderedMap)
-	assert.True(t, ok)
-	_, found = targetInternal.Get(model.SchedulerTargetComponentIdKey)
-	assert.False(t, found)
-	_, found = targetInternal.Get(model.SchedulerTargetConfigurationIdKey)
-	assert.False(t, found)
-
 	// All relations have been mapped
-	assert.Empty(t, apiObject.Relations)
+	assert.Empty(t, object.Relations)
 
-	// Api object contains target
-	targetRaw, found := apiObject.Content.Get(model.SchedulerTargetKey)
+	// Object contains target
+	targetRaw, found := object.Content.Get(model.SchedulerTargetKey)
 	assert.True(t, found)
 	target, ok := targetRaw.(*orderedmap.OrderedMap)
 	assert.True(t, ok)
 
-	// Api object contains componentId and configurationId
+	// Object contains componentId and configurationId
 	componentId, found := target.Get(model.SchedulerTargetComponentIdKey)
 	assert.True(t, found)
 	assert.Equal(t, `foo.bar`, componentId)

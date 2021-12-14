@@ -126,23 +126,17 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 		Id:          `456`,
 	}
 	manifest := &model.ConfigManifest{ConfigKey: key}
-	internalObject := &model.Config{ConfigKey: key, Content: orderedmap.New()}
-	internalObject.Orchestration = orchestration
-	apiObject := internalObject.Clone().(*model.Config)
+	object := &model.Config{ConfigKey: key, Content: orderedmap.New()}
+	object.Orchestration = orchestration
 	recipe := &model.RemoteSaveRecipe{
 		ChangedFields:  model.NewChangedFields("orchestration"),
 		ObjectManifest: manifest,
-		InternalObject: internalObject,
-		ApiObject:      apiObject,
+		Object:         object,
 	}
 
 	// Save
 	assert.NoError(t, mapper.MapBeforeRemoteSave(recipe))
 	assert.Empty(t, logs.String())
-
-	// Internal object is not modified
-	assert.NotNil(t, internalObject.Orchestration)
-	assert.Nil(t, internalObject.Content.GetNestedOrNil(`parameters.orchestration`))
 
 	// Orchestration is stored in API object content
 	expectedContent := `
@@ -202,6 +196,6 @@ func TestMapBeforeRemoteSave(t *testing.T) {
   ]
 }
 `
-	assert.Nil(t, apiObject.Orchestration)
-	assert.Equal(t, strings.TrimLeft(expectedContent, "\n"), json.MustEncodeString(apiObject.Content, true))
+	assert.Nil(t, object.Orchestration)
+	assert.Equal(t, strings.TrimLeft(expectedContent, "\n"), json.MustEncodeString(object.Content, true))
 }

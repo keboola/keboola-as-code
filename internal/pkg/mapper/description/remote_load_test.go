@@ -12,11 +12,9 @@ import (
 func TestDescriptionMapAfterRemoteLoad(t *testing.T) {
 	t.Parallel()
 
-	apiObject := &model.Config{Description: "foo\nbar\n\r\t ", Content: orderedmap.New()}
-	internalObject := apiObject.Clone().(*model.Config)
-	recipe := &model.RemoteLoadRecipe{ApiObject: apiObject, InternalObject: internalObject}
+	object := &model.Config{Description: "foo\nbar\n\r\t ", Content: orderedmap.New()}
+	recipe := &model.RemoteLoadRecipe{Object: object}
 
 	assert.NoError(t, NewMapper().MapAfterRemoteLoad(recipe))
-	assert.Equal(t, "foo\nbar\n\r\t ", apiObject.Description)
-	assert.Equal(t, "foo\nbar", internalObject.Description)
+	assert.Equal(t, "foo\nbar", object.Description)
 }
