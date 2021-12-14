@@ -30,7 +30,7 @@ type testMapper struct {
 }
 
 func (*testMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
-	if config, ok := recipe.ApiObject.(*model.Config); ok {
+	if config, ok := recipe.Object.(*model.Config); ok {
 		config.Name = "modified name"
 		config.Content.Set(`key`, `api value`)
 		config.Content.Set(`new`, `value`)
@@ -39,7 +39,7 @@ func (*testMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
 }
 
 func (*testMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
-	if config, ok := recipe.InternalObject.(*model.Config); ok {
+	if config, ok := recipe.Object.(*model.Config); ok {
 		config.Name = "internal name"
 		config.Content.Set(`key`, `internal value`)
 		config.Content.Set(`new`, `value`)

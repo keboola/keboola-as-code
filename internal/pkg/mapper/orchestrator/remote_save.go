@@ -7,13 +7,12 @@ import (
 
 func (m *orchestratorMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
 	// Object must be orchestrator config
-	if ok, err := m.isOrchestratorConfigKey(recipe.ApiObject.Key()); err != nil || !ok {
+	if ok, err := m.isOrchestratorConfigKey(recipe.Object.Key()); err != nil || !ok {
 		return err
 	}
 
-	internalObject := recipe.InternalObject.(*model.Config)
-	apiObject := recipe.ApiObject.(*model.Config)
-	m.serializeOrchestrationTo(apiObject, internalObject.Orchestration)
+	object := recipe.Object.(*model.Config)
+	m.serializeOrchestrationTo(object, object.Orchestration)
 
 	if recipe.ChangedFields.Has(`orchestration`) {
 		// Orchestration is stored in configuration in the API

@@ -6,20 +6,19 @@ import (
 
 func (m *variablesMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
 	// Variables are used by config
-	apiObject, ok := recipe.ApiObject.(*model.Config)
+	object, ok := recipe.Object.(*model.Config)
 	if !ok {
 		return nil
 	}
-	internalObject := recipe.InternalObject.(*model.Config)
 
-	m.loadVariables(apiObject, internalObject)
-	m.loadVariablesValues(apiObject, internalObject)
+	m.loadVariables(object)
+	m.loadVariablesValues(object)
 	return nil
 }
 
-func (m *variablesMapper) loadVariables(apiObject, internalObject *model.Config) {
+func (m *variablesMapper) loadVariables(object *model.Config) {
 	// Variables ID is stored in configuration
-	variablesIdRaw, found := apiObject.Content.Get(model.VariablesIdContentKey)
+	variablesIdRaw, found := object.Content.Get(model.VariablesIdContentKey)
 	if !found {
 		return
 	}
@@ -31,17 +30,17 @@ func (m *variablesMapper) loadVariables(apiObject, internalObject *model.Config)
 	}
 
 	// Create relation
-	internalObject.AddRelation(&model.VariablesFromRelation{
+	object.AddRelation(&model.VariablesFromRelation{
 		VariablesId: model.ConfigId(variablesId),
 	})
 
 	// Remove variables ID from configuration content
-	internalObject.Content.Delete(model.VariablesIdContentKey)
+	object.Content.Delete(model.VariablesIdContentKey)
 }
 
-func (m *variablesMapper) loadVariablesValues(apiObject, internalObject *model.Config) {
+func (m *variablesMapper) loadVariablesValues(object *model.Config) {
 	// Values ID is stored in configuration
-	valuesIdRaw, found := apiObject.Content.Get(model.VariablesValuesIdContentKey)
+	valuesIdRaw, found := object.Content.Get(model.VariablesValuesIdContentKey)
 	if !found {
 		return
 	}
@@ -53,16 +52,16 @@ func (m *variablesMapper) loadVariablesValues(apiObject, internalObject *model.C
 	}
 
 	// Config must have define variables config
-	variablesRelations := internalObject.Relations.GetByType(model.VariablesFromRelType)
+	variablesRelations := object.Relations.GetByType(model.VariablesFromRelType)
 	if len(variablesRelations) != 1 {
 		return
 	}
 
 	// Create relation
-	internalObject.AddRelation(&model.VariablesValuesFromRelation{
+	object.AddRelation(&model.VariablesValuesFromRelation{
 		VariablesValuesId: model.RowId(valuesId),
 	})
 
 	// Remove variables ID from configuration content
-	internalObject.Content.Delete(model.VariablesValuesIdContentKey)
+	object.Content.Delete(model.VariablesValuesIdContentKey)
 }

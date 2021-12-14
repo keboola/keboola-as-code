@@ -6,23 +6,23 @@ import (
 
 // MapAfterRemoteLoad - extract shared code "variables_id".
 func (m *mapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
-	if ok, err := m.IsSharedCodeRowKey(recipe.InternalObject.Key()); err != nil || !ok {
+	if ok, err := m.IsSharedCodeRowKey(recipe.Object.Key()); err != nil || !ok {
 		return err
 	}
-	internalObject := recipe.InternalObject.(*model.ConfigRow)
+	object := recipe.Object.(*model.ConfigRow)
 
 	// Variables ID must be string
-	variablesId, ok := m.GetSharedCodeVariablesId(internalObject)
+	variablesId, ok := m.GetSharedCodeVariablesId(object)
 	if !ok {
 		return nil
 	}
 
 	// Create relation
-	internalObject.AddRelation(&model.SharedCodeVariablesFromRelation{
+	object.AddRelation(&model.SharedCodeVariablesFromRelation{
 		VariablesId: model.ConfigId(variablesId),
 	})
 
 	// Remove variables ID from configuration content
-	internalObject.Content.Delete(model.SharedCodeVariablesIdContentKey)
+	object.Content.Delete(model.SharedCodeVariablesIdContentKey)
 	return nil
 }

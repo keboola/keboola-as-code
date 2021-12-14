@@ -20,8 +20,8 @@ func TestSchedulerMapAfterRemoteLoad(t *testing.T) {
 
 	// Create api and internal object
 	key := model.ConfigKey{BranchId: 1, ComponentId: model.SchedulerComponentId, Id: `123`}
-	apiObject := &model.Config{ConfigKey: key, Content: orderedmap.New()}
-	apiContentStr := `{
+	object := &model.Config{ConfigKey: key, Content: orderedmap.New()}
+	contentStr := `{
   "target": {
     "componentId": "foo.bar",
     "configurationId": "123",
@@ -29,18 +29,12 @@ func TestSchedulerMapAfterRemoteLoad(t *testing.T) {
   }
 }
 `
-	json.MustDecodeString(apiContentStr, apiObject.Content)
-	internalObject := apiObject.Clone().(*model.Config)
-	recipe := &model.RemoteLoadRecipe{ApiObject: apiObject, InternalObject: internalObject}
+	json.MustDecodeString(contentStr, object.Content)
+	recipe := &model.RemoteLoadRecipe{Object: object}
 
 	// Invoke
-	assert.Empty(t, apiObject.Relations)
-	assert.Empty(t, internalObject.Relations)
+	assert.Empty(t, object.Relations)
 	assert.NoError(t, mapper.MapAfterRemoteLoad(recipe))
-
-	// Api object is not changed
-	assert.Empty(t, apiObject.Relations)
-	assert.Equal(t, apiContentStr, json.MustEncodeString(apiObject.Content, true))
 
 	// Internal object has new relation
 	assert.Equal(t, model.Relations{
@@ -48,14 +42,14 @@ func TestSchedulerMapAfterRemoteLoad(t *testing.T) {
 			ComponentId: `foo.bar`,
 			ConfigId:    `123`,
 		},
-	}, internalObject.Relations)
+	}, object.Relations)
 
-	// Internal object target is without component and configuration ID
-	expectedInternalContent := `{
+	// Object target is without component and configuration ID
+	exoected := `{
   "target": {
     "mode": "run"
   }
 }
 `
-	assert.Equal(t, expectedInternalContent, json.MustEncodeString(internalObject.Content, true))
+	assert.Equal(t, exoected, json.MustEncodeString(object.Content, true))
 }

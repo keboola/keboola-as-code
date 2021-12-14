@@ -19,20 +19,12 @@ func TestVariablesMapAfterRemoteLoad(t *testing.T) {
 	content := orderedmap.New()
 	content.Set(model.VariablesIdContentKey, variablesConfigId)
 	content.Set(model.VariablesValuesIdContentKey, valuesConfigRowId)
-	apiObject := &model.Config{Content: content}
-	internalObject := apiObject.Clone().(*model.Config)
-	recipe := &model.RemoteLoadRecipe{ApiObject: apiObject, InternalObject: internalObject}
+	object := &model.Config{Content: content}
+	recipe := &model.RemoteLoadRecipe{Object: object}
 
 	// Invoke
-	assert.Empty(t, apiObject.Relations)
-	assert.Empty(t, internalObject.Relations)
+	assert.Empty(t, object.Relations)
 	assert.NoError(t, NewMapper(context).MapAfterRemoteLoad(recipe))
-
-	// Api object is not changed
-	assert.Empty(t, apiObject.Relations)
-	v, found := apiObject.Content.Get(model.VariablesIdContentKey)
-	assert.True(t, found)
-	assert.Equal(t, variablesConfigId, v)
 
 	// Internal object has new relation + content without variables ID
 	assert.Equal(t, model.Relations{
@@ -42,9 +34,9 @@ func TestVariablesMapAfterRemoteLoad(t *testing.T) {
 		&model.VariablesValuesFromRelation{
 			VariablesValuesId: model.RowId(valuesConfigRowId),
 		},
-	}, internalObject.Relations)
-	_, found = internalObject.Content.Get(model.VariablesIdContentKey)
+	}, object.Relations)
+	_, found := object.Content.Get(model.VariablesIdContentKey)
 	assert.False(t, found)
-	_, found = internalObject.Content.Get(model.VariablesValuesIdContentKey)
+	_, found = object.Content.Get(model.VariablesValuesIdContentKey)
 	assert.False(t, found)
 }

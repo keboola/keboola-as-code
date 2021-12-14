@@ -13,6 +13,7 @@ type SharedCodeRow struct {
 	Scripts Scripts     `validate:"required"`
 }
 
+// LinkScript is reference to shared code used in transformation.
 type LinkScript struct {
 	Target ConfigRowKey
 }

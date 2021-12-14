@@ -148,7 +148,7 @@ func (u *UnitOfWork) loadObject(object model.Object) (model.ObjectState, error) 
 	objectState.SetRemoteState(internalObject)
 
 	// Invoke mapper
-	recipe := &model.RemoteLoadRecipe{ObjectManifest: objectState.Manifest(), ApiObject: object, InternalObject: internalObject}
+	recipe := &model.RemoteLoadRecipe{ObjectManifest: objectState.Manifest(), Object: internalObject}
 	if err := u.mapper.MapAfterRemoteLoad(recipe); err != nil {
 		return nil, err
 	}
@@ -165,18 +165,18 @@ func (u *UnitOfWork) SaveObject(objectState model.ObjectState, object model.Obje
 	}
 
 	// Invoke mapper
+	apiObject := object.Clone()
 	recipe := &model.RemoteSaveRecipe{
 		ChangedFields:  changedFields,
 		ObjectManifest: objectState.Manifest(),
-		InternalObject: object,
-		ApiObject:      object.Clone(),
+		Object:         apiObject,
 	}
 	if err := u.mapper.MapBeforeRemoteSave(recipe); err != nil {
 		u.errors.Append(err)
 		return
 	}
 
-	if err := u.createOrUpdate(objectState, recipe, changedFields); err != nil {
+	if err := u.createOrUpdate(objectState, object, recipe, changedFields); err != nil {
 		u.errors.Append(err)
 	}
 }
@@ -237,9 +237,9 @@ func (u *UnitOfWork) Invoke() error {
 	return u.errors.ErrorOrNil()
 }
 
-func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, recipe *model.RemoteSaveRecipe, changedFields model.ChangedFields) error {
+func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe, changedFields model.ChangedFields) error {
 	// Set changeDescription
-	switch v := recipe.ApiObject.(type) {
+	switch v := recipe.Object.(type) {
 	case *model.Config:
 		v.ChangeDescription = u.changeDescription
 		changedFields.Add("changeDescription")
@@ -251,16 +251,15 @@ func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, recipe *model
 	// Create or update
 	if !objectState.HasRemoteState() {
 		// Create
-		return u.create(objectState, recipe)
+		return u.create(objectState, object, recipe)
 	}
 
 	// Update
-	return u.update(objectState, recipe, changedFields)
+	return u.update(objectState, object, recipe, changedFields)
 }
 
-func (u *UnitOfWork) create(objectState model.ObjectState, recipe *model.RemoteSaveRecipe) error {
-	object := recipe.ApiObject
-	request, err := u.api.CreateRequest(object)
+func (u *UnitOfWork) create(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe) error {
+	request, err := u.api.CreateRequest(recipe.Object)
 	if err != nil {
 		return err
 	}
@@ -268,7 +267,7 @@ func (u *UnitOfWork) create(objectState model.ObjectState, recipe *model.RemoteS
 		Request(request).
 		OnSuccess(func(response *client.Response) {
 			// Save new ID to manifest
-			objectState.SetRemoteState(recipe.InternalObject)
+			objectState.SetRemoteState(object)
 		}).
 		OnSuccess(func(response *client.Response) {
 			u.changes.AddCreated(objectState)
@@ -278,7 +277,7 @@ func (u *UnitOfWork) create(objectState model.ObjectState, recipe *model.RemoteS
 			if e, ok := response.Error().(*Error); ok {
 				if e.ErrCode == "configurationAlreadyExists" || e.ErrCode == "configurationRowAlreadyExists" {
 					// Object exists -> update instead of create + clear error
-					response.SetErr(u.update(objectState, recipe, nil))
+					response.SetErr(u.update(objectState, object, recipe, nil))
 				}
 			}
 		}).
@@ -286,13 +285,12 @@ func (u *UnitOfWork) create(objectState model.ObjectState, recipe *model.RemoteS
 	return nil
 }
 
-func (u *UnitOfWork) update(objectState model.ObjectState, recipe *model.RemoteSaveRecipe, changedFields model.ChangedFields) error {
-	object := recipe.ApiObject
-	if request, err := u.api.UpdateRequest(object, changedFields); err == nil {
+func (u *UnitOfWork) update(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe, changedFields model.ChangedFields) error {
+	if request, err := u.api.UpdateRequest(recipe.Object, changedFields); err == nil {
 		u.poolFor(object.Level()).
 			Request(request).
 			OnSuccess(func(response *client.Response) {
-				objectState.SetRemoteState(recipe.InternalObject)
+				objectState.SetRemoteState(object)
 			}).
 			OnSuccess(func(response *client.Response) {
 				u.changes.AddSaved(objectState)
