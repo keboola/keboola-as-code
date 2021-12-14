@@ -42,7 +42,8 @@ func Validate(value interface{}, rules ...Validation) error {
 	})
 
 	// Do
-	if err := validate.Struct(value); err != nil {
+
+	if err := validate.Var(value, `dive`); err != nil {
 		var validationErrs validator.ValidationErrors
 		switch {
 		case errors.As(err, &validationErrs):
