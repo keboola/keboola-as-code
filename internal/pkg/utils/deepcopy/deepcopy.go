@@ -81,7 +81,7 @@ func translateRecursive(clone, original reflect.Value, callback TranslateFunc, s
 	if kind == reflect.Ptr && !original.IsNil() {
 		ptr := original.Pointer()
 		if visited[ptr] {
-			panic(fmt.Errorf("deepcopy cycle detected\neach pointer can be used only once\nsteps: %s\nvalue:%#v", steps.String(), original.Interface()))
+			panic(fmt.Errorf("deepcopy cycle detected\neach pointer can be used only once\nsteps: %s", steps.String()))
 		}
 		visited[ptr] = true
 	}
@@ -131,7 +131,7 @@ func translateRecursive(clone, original reflect.Value, callback TranslateFunc, s
 			steps := steps.Add(t.String(), t.Field(i).Name)
 			cloneField := clone.Field(i)
 			if !cloneField.CanSet() {
-				panic(fmt.Errorf("deepcopy found unexported field:\nsteps: %s\nvalue:%#v", steps.String(), original.Interface()))
+				panic(fmt.Errorf("deepcopy found unexported field\nsteps: %s\nvalue:%#v", steps.String(), original.Interface()))
 			}
 			translateRecursive(cloneField, original.Field(i), callback, steps, visited)
 		}
