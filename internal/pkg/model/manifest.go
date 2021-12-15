@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
 )
 
 const (
@@ -93,6 +94,10 @@ type ConfigManifestWithRows struct {
 
 func NewPathInProject(parentPath, objectPath string) PathInProject {
 	return PathInProject{parentPath: parentPath, parentPathSet: true, ObjectPath: objectPath}
+}
+
+func (p PathInProject) DeepCopy(_ deepcopy.TranslateFunc, _ deepcopy.Steps, _ deepcopy.VisitedMap) PathInProject {
+	return p
 }
 
 func (p PathInProject) GetPathInProject() PathInProject {
