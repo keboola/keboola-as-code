@@ -7,6 +7,7 @@ import (
 
 	goValidator "github.com/go-playground/validator/v10"
 	"github.com/umisama/go-regexpcache"
+	goValuate "gopkg.in/Knetic/govaluate.v3"
 )
 
 func validateInputId(fl goValidator.FieldLevel) bool {
@@ -57,6 +58,15 @@ func validateInputRules(fl goValidator.FieldLevel) bool {
 	}
 	_, panicErr := catchPanicOnRulesValidation(func() error { return validateUserInputWithRules("string", fl.Field().String(), nil) })
 	return panicErr == nil
+}
+
+// Validate If definition.
+func validateInputIf(fl goValidator.FieldLevel) bool {
+	if fl.Field().IsZero() {
+		return true
+	}
+	_, err := goValuate.NewEvaluableExpression(fl.Field().String())
+	return err == nil
 }
 
 // Some input Kinds require specific Type of the input.
