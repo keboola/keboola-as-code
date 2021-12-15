@@ -75,6 +75,20 @@ func TestTemplateInput(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), `failed "template-input-options"`)
 
+	// Fail - wrong Rules
+	inputs = Inputs{{
+		Id:          "input.id",
+		Name:        "input",
+		Description: "input desc",
+		Type:        "int",
+		Default:     33,
+		Kind:        "input",
+		Rules:       "gtex=5",
+	}}
+	err = inputs.Validate()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), `failed "template-input-rules"`)
+
 	// Success - with Options
 	inputs = Inputs{{
 		Id:          "input.id",
@@ -96,6 +110,7 @@ func TestTemplateInput(t *testing.T) {
 		Default:     33,
 		Options:     []Option{},
 		Kind:        "input",
+		Rules:       "gte=5",
 	}}
 	err = inputs.Validate()
 	assert.NoError(t, err)
@@ -197,7 +212,7 @@ func TestTemplateInputsJsonMarshal(t *testing.T) {
 	assert.Equal(t, inputsJson, string(resultJson))
 }
 
-func TestCheckTypeAgainstKind(t *testing.T) {
+func TestTemplateCheckTypeAgainstKind(t *testing.T) {
 	t.Parallel()
 
 	// Confirm Kind
@@ -213,7 +228,7 @@ func TestCheckTypeAgainstKind(t *testing.T) {
 	assert.NoError(t, checkTypeAgainstKind("string", "textarea"))
 }
 
-func TestInputValidate(t *testing.T) {
+func TestTemplateInputValidate(t *testing.T) {
 	t.Parallel()
 
 	input := &Input{

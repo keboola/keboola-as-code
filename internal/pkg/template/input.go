@@ -31,6 +31,10 @@ func (i Inputs) Validate() error {
 			Tag:  "template-input-type",
 			Func: validateType,
 		},
+		{
+			Tag:  "template-input-rules",
+			Func: validateRules,
+		},
 	}
 	return validator.Validate(i, validations...)
 }
@@ -73,6 +77,14 @@ func validateType(fl goValidator.FieldLevel) bool {
 	return fl.Parent().FieldByName("Kind").String() == "input"
 }
 
+func validateRules(fl goValidator.FieldLevel) bool {
+	if fl.Field().IsZero() {
+		return true
+	}
+	_, panicErr := checkPanic(func() error { return validateAgainstRulesString("string", fl.Field().String(), nil) })
+	return panicErr == nil
+}
+
 type Input struct {
 	Id          string      `json:"id" validate:"required,template-input-id"`
 	Name        string      `json:"name" validate:"required"`
@@ -81,7 +93,7 @@ type Input struct {
 	Kind        string      `json:"kind" validate:"required,oneof=input password textarea confirm select multiselect"`
 	Type        string      `json:"type,omitempty" validate:"required_if=Kind input,omitempty,oneof=string int float64,template-input-type"`
 	Options     []Option    `json:"options,omitempty" validate:"required_if=Type select Type multiselect,template-input-options"`
-	Rules       string      `json:"rules,omitempty"`
+	Rules       string      `json:"rules,omitempty" validate:"template-input-rules"`
 	If          string      `json:"if,omitempty"`
 }
 
@@ -100,14 +112,25 @@ func checkTypeAgainstKind(value interface{}, kind string) error {
 	return nil
 }
 
+func validateAgainstRulesString(userInput interface{}, rules string, ctx context.Context) error {
+	validate := goValidator.New()
+	return validate.VarCtx(ctx, userInput, rules)
+}
+
+func checkPanic(fn func() error) (err, recovered interface{}) {
+	defer func() {
+		recovered = recover()
+	}()
+	return fn(), recovered
+}
+
 func (i Input) Validate(userInput interface{}, ctx context.Context) error {
 	err := checkTypeAgainstKind(userInput, i.Kind)
 	if err != nil {
 		return err
 	}
 
-	validate := goValidator.New()
-	return validate.VarCtx(ctx, userInput, i.Rules)
+	return validateAgainstRulesString(userInput, i.Rules, ctx)
 }
 
 type Option string
