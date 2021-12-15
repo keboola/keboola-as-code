@@ -6,7 +6,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -36,7 +35,6 @@ type Object interface {
 	Key
 	Key() Key
 	ObjectName() string
-	Clone() Object
 }
 
 type ObjectWithContent interface {
@@ -243,22 +241,6 @@ func (k Kind) IsConfig() bool {
 
 func (k Kind) IsConfigRow() bool {
 	return k.Name == ConfigRowKind
-}
-
-func (b *Branch) Clone() Object {
-	return deepcopy.Copy(b).(Object)
-}
-
-func (c *Config) Clone() Object {
-	return deepcopy.Copy(c).(Object)
-}
-
-func (r *ConfigRow) Clone() Object {
-	return deepcopy.Copy(r).(Object)
-}
-
-func (v Relations) Clone() Relations {
-	return deepcopy.Copy(v).(Relations)
 }
 
 func (c *Config) GetRelations() Relations {

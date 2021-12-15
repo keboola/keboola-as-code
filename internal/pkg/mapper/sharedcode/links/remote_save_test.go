@@ -20,7 +20,7 @@ func TestRemoteSaveTranWithSharedCode(t *testing.T) {
 	transformation := createInternalTranWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, context)
 
 	// Invoke
-	object := transformation.Local.Clone().(*model.Config)
+	object := transformation.Local
 	recipe := &model.RemoteSaveRecipe{
 		Object:         object,
 		ObjectManifest: transformation.Manifest(),

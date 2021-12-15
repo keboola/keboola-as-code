@@ -17,7 +17,7 @@ func TestSharedCodeRemoteSave(t *testing.T) {
 	// Map config
 	configRecipe := &model.RemoteSaveRecipe{
 		ObjectManifest: configState.Manifest(),
-		Object:         configState.Remote.Clone(),
+		Object:         configState.Remote,
 		ChangedFields:  model.NewChangedFields(`configuration`),
 	}
 	err := NewMapper(context).MapBeforeRemoteSave(configRecipe)
@@ -27,7 +27,7 @@ func TestSharedCodeRemoteSave(t *testing.T) {
 	// Map row
 	rowRecipe := &model.RemoteSaveRecipe{
 		ObjectManifest: rowState.Manifest(),
-		Object:         rowState.Remote.Clone(),
+		Object:         rowState.Remote,
 		ChangedFields:  model.NewChangedFields(`configuration`),
 	}
 	err = NewMapper(context).MapBeforeRemoteSave(rowRecipe)
