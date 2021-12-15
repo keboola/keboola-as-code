@@ -47,19 +47,10 @@ func FromPairs(pairs []Pair) *OrderedMap {
 }
 
 func (o *OrderedMap) Clone() *OrderedMap {
-	if o == nil {
-		return nil
-	}
-
-	out := New()
-	for _, k := range o.Keys() {
-		v, _ := o.Get(k)
-		out.Set(k, deepcopy.Copy(v))
-	}
-	return out
+	return deepcopy.Copy(o).(*OrderedMap)
 }
 
-func (o *OrderedMap) CloneTranslate(callback deepcopy.TranslateFunc, steps deepcopy.Steps) *OrderedMap {
+func (o *OrderedMap) DeepCopy(callback deepcopy.TranslateFunc, steps deepcopy.Steps, visited deepcopy.VisitedMap) *OrderedMap {
 	if o == nil {
 		return nil
 	}
@@ -68,7 +59,7 @@ func (o *OrderedMap) CloneTranslate(callback deepcopy.TranslateFunc, steps deepc
 	for _, k := range o.Keys() {
 		v, _ := o.Get(k)
 		steps := steps.Add(``, k)
-		out.Set(k, deepcopy.CopyTranslateSteps(v, callback, steps))
+		out.Set(k, deepcopy.CopyTranslateSteps(v, callback, steps, visited))
 	}
 	return out
 }

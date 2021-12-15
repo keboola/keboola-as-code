@@ -22,6 +22,11 @@ type Bar struct {
 	Key2 string
 }
 
+type UnExportedFields struct {
+	key1 string
+	key2 string
+}
+
 func TestCopy(t *testing.T) {
 	t.Parallel()
 	original := testValue()
@@ -123,6 +128,34 @@ func TestCopyWithTranslateSteps(t *testing.T) {
 }
 `
 	assert.Equal(t, strings.TrimLeft(expected, "\n"), json.MustEncodeString(clone, true))
+}
+
+func TestCopyCycle(t *testing.T) {
+	t.Parallel()
+	m := orderedmap.New()
+	m.Set(`key`, m)
+	expected := `
+deepcopy cycle detected
+each pointer can be used only once
+steps: *orderedmap.OrderedMap[key]
+`
+	assert.PanicsWithError(t, strings.TrimSpace(expected), func() {
+		Copy(m)
+	})
+}
+
+func TestCopyUnexportedFields(t *testing.T) {
+	t.Parallel()
+	m := orderedmap.New()
+	m.Set(`key`, &UnExportedFields{key1: `a`, key2: `b`})
+	expected := `
+deepcopy found unexported field
+steps: *orderedmap.OrderedMap[key].*deepcopy_test.UnExportedFields[key1]
+value:deepcopy_test.UnExportedFields{key1:"a", key2:"b"}
+`
+	assert.PanicsWithError(t, strings.TrimSpace(expected), func() {
+		Copy(m)
+	})
 }
 
 func testValue() interface{} {

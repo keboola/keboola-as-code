@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -245,44 +246,19 @@ func (k Kind) IsConfigRow() bool {
 }
 
 func (b *Branch) Clone() Object {
-	clone := *b
-	return &clone
+	return deepcopy.Copy(b).(Object)
 }
 
 func (c *Config) Clone() Object {
-	clone := *c
-	clone.Content = c.Content.Clone()
-	clone.Transformation = c.Transformation.Clone()
-	clone.SharedCode = c.SharedCode.Clone()
-	clone.Orchestration = c.Orchestration.Clone()
-	clone.Relations = c.Relations.Clone()
-	return &clone
+	return deepcopy.Copy(c).(Object)
 }
 
 func (r *ConfigRow) Clone() Object {
-	clone := *r
-	clone.Content = r.Content.Clone()
-	clone.SharedCode = r.SharedCode.Clone()
-	return &clone
+	return deepcopy.Copy(r).(Object)
 }
 
 func (v Relations) Clone() Relations {
-	if v == nil {
-		return nil
-	}
-
-	var out Relations
-	for _, r := range v {
-		rClone, err := newEmptyRelation(r.Type())
-		if err != nil {
-			panic(err)
-		}
-		if err := json.ConvertByJson(r, &rClone); err != nil {
-			panic(err)
-		}
-		out.Add(rClone)
-	}
-	return out
+	return deepcopy.Copy(v).(Relations)
 }
 
 func (c *Config) GetRelations() Relations {
