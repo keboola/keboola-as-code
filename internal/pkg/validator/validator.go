@@ -4,17 +4,30 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"regexp"
 	"strings"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func Validate(value interface{}) error {
+type Validation struct {
+	Tag  string
+	Func validator.Func
+}
+
+func Validate(value interface{}, rules ...Validation) error {
 	// Setup
 	validate := validator.New()
+
+	for _, rule := range rules {
+		err := validate.RegisterValidation(rule.Tag, rule.Func)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
 		if fld.Anonymous {
 			return "__nested__"
@@ -29,7 +42,8 @@ func Validate(value interface{}) error {
 	})
 
 	// Do
-	if err := validate.Struct(value); err != nil {
+
+	if err := validate.Var(value, `dive`); err != nil {
 		var validationErrs validator.ValidationErrors
 		switch {
 		case errors.As(err, &validationErrs):
@@ -46,7 +60,7 @@ func processValidateError(err validator.ValidationErrors) error {
 	result := utils.NewMultiError()
 	for _, e := range err {
 		// Remove struct name, first part
-		namespace := regexp.MustCompile(`^([^.]+\.)?(.*)$`).ReplaceAllString(e.Namespace(), `$2`)
+		namespace := regexpcache.MustCompile(`^([^.]+\.)?(.*)$`).ReplaceAllString(e.Namespace(), `$2`)
 		// Hide nested fields
 		namespace = strings.ReplaceAll(namespace, `__nested__.`, ``)
 		result.Append(fmt.Errorf(
