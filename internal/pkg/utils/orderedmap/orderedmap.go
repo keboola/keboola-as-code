@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
 )
 
 type Pair struct {
@@ -49,14 +51,24 @@ func (o *OrderedMap) Clone() *OrderedMap {
 		return nil
 	}
 
-	// Clone using JSON encode/decode
 	out := New()
-	data, err := json.Marshal(o)
-	if err != nil {
-		panic(fmt.Errorf(`encode error: %w`, err))
+	for _, k := range o.Keys() {
+		v, _ := o.Get(k)
+		out.Set(k, deepcopy.Copy(v))
 	}
-	if err := json.Unmarshal(data, out); err != nil {
-		panic(fmt.Errorf(`decode error: %w`, err))
+	return out
+}
+
+func (o *OrderedMap) CloneTranslate(callback deepcopy.TranslateFunc, steps deepcopy.Steps) *OrderedMap {
+	if o == nil {
+		return nil
+	}
+
+	out := New()
+	for _, k := range o.Keys() {
+		v, _ := o.Get(k)
+		steps := steps.Add(``, k)
+		out.Set(k, deepcopy.CopyTranslateSteps(v, callback, steps))
 	}
 	return out
 }
