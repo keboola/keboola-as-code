@@ -34,40 +34,6 @@ type Task struct {
 	Content       *orderedmap.OrderedMap `validate:"dive"`
 }
 
-func (v *Orchestration) Clone() *Orchestration {
-	if v == nil {
-		return nil
-	}
-	clone := *v
-	clone.Phases = make([]*Phase, len(v.Phases))
-	for i, phase := range v.Phases {
-		clone.Phases[i] = phase.Clone()
-	}
-	return &clone
-}
-
-func (p *Phase) Clone() *Phase {
-	if p == nil {
-		return nil
-	}
-	clone := *p
-	clone.Content = p.Content.Clone()
-	clone.Tasks = make([]*Task, 0)
-	for _, task := range p.Tasks {
-		clone.Tasks = append(clone.Tasks, task.Clone())
-	}
-	return &clone
-}
-
-func (t *Task) Clone() *Task {
-	if t == nil {
-		return nil
-	}
-	clone := *t
-	clone.Content = t.Content.Clone()
-	return &clone
-}
-
 func (p Phase) String() string {
 	buf := new(bytes.Buffer)
 	_, _ = fmt.Fprintf(buf, "#  %03d %s\n", p.Index+1, p.Name)

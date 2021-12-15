@@ -46,7 +46,6 @@ type Scripts []Script
 
 type Script interface {
 	Content() string
-	Clone() Script
 }
 
 // StaticScript is script defined by user (it is not link to shared code).
@@ -90,73 +89,12 @@ func (v *Transformation) MapScripts(callback func(code *Code, script Script) Scr
 	}
 }
 
-func (v *Transformation) Clone() *Transformation {
-	if v == nil {
-		return nil
-	}
-	clone := *v
-	clone.LinkToSharedCode = v.LinkToSharedCode.Clone()
-	clone.Blocks = make([]*Block, len(v.Blocks))
-	for i, block := range v.Blocks {
-		clone.Blocks[i] = block.Clone()
-	}
-	return &clone
-}
-
-func (v *LinkToSharedCode) Clone() *LinkToSharedCode {
-	if v == nil {
-		return nil
-	}
-	clone := *v
-	clone.Rows = make([]ConfigRowKey, len(v.Rows))
-	for i, row := range v.Rows {
-		clone.Rows[i] = row
-	}
-	return &clone
-}
-
 func (k Kind) IsBlock() bool {
 	return k.Name == BlockKind
 }
 
 func (k Kind) IsCode() bool {
 	return k.Name == CodeKind
-}
-
-func (b *Block) Clone() *Block {
-	clone := *b
-	clone.Codes = b.Codes.Clone()
-	return &clone
-}
-
-func (c *Code) Clone() *Code {
-	clone := *c
-	clone.Scripts = c.Scripts.Clone()
-	return &clone
-}
-
-func (v Codes) Clone() Codes {
-	if v == nil {
-		return nil
-	}
-
-	out := make(Codes, len(v))
-	for index, item := range v {
-		out[index] = item.Clone()
-	}
-	return out
-}
-
-func (v Scripts) Clone() Scripts {
-	if v == nil {
-		return nil
-	}
-
-	out := make(Scripts, len(v))
-	for index, item := range v {
-		out[index] = item.Clone()
-	}
-	return out
 }
 
 func (b Block) String() string {
@@ -226,10 +164,6 @@ func (v *Scripts) UnmarshalJSON(data []byte) error {
 
 func (v StaticScript) Content() string {
 	return v.Value
-}
-
-func (v StaticScript) Clone() Script {
-	return v
 }
 
 func NormalizeScript(script string) string {

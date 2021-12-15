@@ -22,33 +22,12 @@ func (v LinkScript) Content() string {
 	return fmt.Sprintf(`shared code "%s"`, v.Target.Id.String())
 }
 
-func (v LinkScript) Clone() Script {
-	return v
-}
-
 func (v SharedCodeConfig) String() string {
 	return v.Target.String()
 }
 
 func (v SharedCodeRow) String() string {
 	return v.Scripts.String(v.Target)
-}
-
-func (v *SharedCodeConfig) Clone() *SharedCodeConfig {
-	if v == nil {
-		return nil
-	}
-	clone := *v
-	return &clone
-}
-
-func (v *SharedCodeRow) Clone() *SharedCodeRow {
-	if v == nil {
-		return nil
-	}
-	clone := *v
-	clone.Scripts = v.Scripts.Clone()
-	return &clone
 }
 
 // SharedCodeVariablesForRelation - variables for shared code.

@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -144,7 +145,7 @@ func (u *UnitOfWork) loadObject(object model.Object) (model.ObjectState, error) 
 	}
 
 	// Set remote state
-	internalObject := object.Clone()
+	internalObject := deepcopy.Copy(object).(model.Object)
 	objectState.SetRemoteState(internalObject)
 
 	// Invoke mapper
@@ -165,7 +166,7 @@ func (u *UnitOfWork) SaveObject(objectState model.ObjectState, object model.Obje
 	}
 
 	// Invoke mapper
-	apiObject := object.Clone()
+	apiObject := deepcopy.Copy(object).(model.Object)
 	recipe := &model.RemoteSaveRecipe{
 		ChangedFields:  changedFields,
 		ObjectManifest: objectState.Manifest(),

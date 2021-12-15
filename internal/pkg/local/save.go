@@ -7,6 +7,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
@@ -23,9 +24,10 @@ func (m *Manager) saveObject(manifest model.ObjectManifest, object model.Object,
 		panic(fmt.Errorf(`manifest "%T" and object "%T" type mismatch`, manifest, object))
 	}
 
+	objectClone := deepcopy.Copy(object).(model.Object)
 	w := modelWriter{
 		Manager:         m,
-		LocalSaveRecipe: &model.LocalSaveRecipe{ChangedFields: changedFields, Object: object.Clone(), ObjectManifest: manifest},
+		LocalSaveRecipe: &model.LocalSaveRecipe{ChangedFields: changedFields, Object: objectClone, ObjectManifest: manifest},
 		backups:         make(map[string]string),
 		errors:          utils.NewMultiError(),
 	}

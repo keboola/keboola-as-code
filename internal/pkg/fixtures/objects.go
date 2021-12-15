@@ -154,11 +154,6 @@ func (MockedObject) ObjectName() string {
 	return "object"
 }
 
-func (o *MockedObject) Clone() model.Object {
-	clone := *o
-	return &clone
-}
-
 func (r *MockedManifest) GetRelations() model.Relations {
 	return r.Relations
 }
