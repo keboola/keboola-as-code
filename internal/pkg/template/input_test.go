@@ -143,28 +143,28 @@ func TestTemplateInputsJsonUnmarshal(t *testing.T) {
 
 	var inputs Inputs
 	assert.NoError(t, json.Unmarshal([]byte(inputsJson), &inputs))
-	assert.Len(t, inputs, 3)
-
-	assert.Equal(t, &Input{
-		Id:          "fb.extractor.username",
-		Name:        "Facebook username",
-		Description: "Facebook username description",
-		Type:        "string",
-		Kind:        "input",
-	}, inputs[0])
-	assert.Equal(t, &Input{
-		Id:          "fb.extractor.password",
-		Name:        "Facebook password",
-		Description: "Facebook password description",
-		Kind:        "password",
-	}, inputs[1])
-	assert.Equal(t, &Input{
-		Id:          "fb.extractor.options",
-		Name:        "Facebook options",
-		Description: "Facebook options description",
-		Kind:        "select",
-		Options:     []Option{"1", "2"},
-	}, inputs[2])
+	assert.Equal(t, Inputs{
+		{
+			Id:          "fb.extractor.username",
+			Name:        "Facebook username",
+			Description: "Facebook username description",
+			Type:        "string",
+			Kind:        "input",
+		},
+		{
+			Id:          "fb.extractor.password",
+			Name:        "Facebook password",
+			Description: "Facebook password description",
+			Kind:        "password",
+		},
+		{
+			Id:          "fb.extractor.options",
+			Name:        "Facebook options",
+			Description: "Facebook options description",
+			Kind:        "select",
+			Options:     []Option{"1", "2"},
+		},
+	}, inputs)
 }
 
 func TestTemplateInputsJsonMarshal(t *testing.T) {
