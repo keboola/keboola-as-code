@@ -49,7 +49,20 @@ func TestTemplateInput(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), `key="options"`)
 
-	/*// Fail - default value missing in options
+	// Fail - input Kind with missing Type
+	inputs = Inputs{{
+		Id:          "input.id",
+		Name:        "input",
+		Description: "input desc",
+		Default:     "def",
+		Kind:        "input",
+	}}
+	err = inputs.Validate()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), `key="type"`)
+	assert.Contains(t, err.Error(), `failed "required_if"`)
+
+	// Fail - Default value missing in Options
 	inputs = Inputs{{
 		Id:          "input.id",
 		Name:        "input",
@@ -60,7 +73,7 @@ func TestTemplateInput(t *testing.T) {
 	}}
 	err = inputs.Validate()
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), `key="default"`)*/
+	assert.Contains(t, err.Error(), `failed "template-input-options"`)
 
 	// Success - with Options
 	inputs = Inputs{{
@@ -99,17 +112,13 @@ func TestTemplateInput(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestTemplateInputsJsonUnmarshal(t *testing.T) {
-	t.Parallel()
-
-	inputsJson := `
-[
+const inputsJson = `[
   {
     "id": "fb.extractor.username",
     "name": "Facebook username",
     "description": "Facebook username description",
-    "type": "string",
-    "kind": "input"
+    "kind": "input",
+    "type": "string"
   },
   {
     "id": "fb.extractor.password",
@@ -121,10 +130,17 @@ func TestTemplateInputsJsonUnmarshal(t *testing.T) {
     "id": "fb.extractor.options",
     "name": "Facebook options",
     "description": "Facebook options description",
-    "options": ["1", "2"],
-    "kind": "select"
+    "kind": "select",
+    "options": [
+      "1",
+      "2"
+    ]
   }
 ]`
+
+func TestTemplateInputsJsonUnmarshal(t *testing.T) {
+	t.Parallel()
+
 	var inputs Inputs
 	assert.NoError(t, json.Unmarshal([]byte(inputsJson), &inputs))
 	assert.Len(t, inputs, 3)
@@ -176,34 +192,9 @@ func TestTemplateInputsJsonMarshal(t *testing.T) {
 			Options:     []Option{"1", "2"},
 		},
 	}
-	inputsJson, err := json.MarshalIndent(inputs, "", "  ")
+	resultJson, err := json.MarshalIndent(inputs, "", "  ")
 	assert.NoError(t, err)
-	expectedJson := `[
-  {
-    "id": "fb.extractor.username",
-    "name": "Facebook username",
-    "description": "Facebook username description",
-    "kind": "input",
-    "type": "string"
-  },
-  {
-    "id": "fb.extractor.password",
-    "name": "Facebook password",
-    "description": "Facebook password description",
-    "kind": "password"
-  },
-  {
-    "id": "fb.extractor.options",
-    "name": "Facebook options",
-    "description": "Facebook options description",
-    "kind": "select",
-    "options": [
-      "1",
-      "2"
-    ]
-  }
-]`
-	assert.Equal(t, expectedJson, string(inputsJson))
+	assert.Equal(t, inputsJson, string(resultJson))
 }
 
 func TestCheckTypeAgainstKind(t *testing.T) {

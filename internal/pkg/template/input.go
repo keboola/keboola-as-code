@@ -48,13 +48,12 @@ func validateDefault(fl goValidator.FieldLevel) bool {
 	}
 	// Check if Default is present in Options
 	if fl.Parent().FieldByName("Kind").String() == "select" || fl.Parent().FieldByName("Kind").String() == "multiselect" {
-		/*for _, x := range fl.Parent().FieldByName("Options")..([]Option)
-		{
-			if x == fl.Field().String() {
+		for _, x := range fl.Parent().FieldByName("Options").Interface().([]Option) {
+			if string(x) == fl.Field().String() {
 				return true
 			}
-		}*/
-		return true
+		}
+		return false
 	}
 	err := checkTypeAgainstKind(fl.Field(), fl.Field().Kind().String())
 	return err == nil
