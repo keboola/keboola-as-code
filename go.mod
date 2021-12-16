@@ -32,6 +32,7 @@ require (
 	github.com/umisama/go-regexpcache v0.0.0-20150417035358-2444a542492f
 	go.uber.org/zap v1.17.0
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
+	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	v.io/x/lib v0.1.9
 )
 

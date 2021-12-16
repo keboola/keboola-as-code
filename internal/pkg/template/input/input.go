@@ -3,6 +3,8 @@ package input
 import (
 	"context"
 
+	goValuate "gopkg.in/Knetic/govaluate.v3"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
@@ -31,6 +33,10 @@ func (i Inputs) ValidateDefinitions() error {
 			Tag:  "template-input-rules",
 			Func: validateInputRules,
 		},
+		{
+			Tag:  "template-input-if",
+			Func: validateInputIf,
+		},
 	}
 	return validator.Validate(i, validations...)
 }
@@ -44,7 +50,7 @@ type Input struct {
 	Type        string      `json:"type,omitempty" validate:"required_if=Kind input,omitempty,oneof=string int float64,template-input-type"`
 	Options     []Option    `json:"options,omitempty" validate:"required_if=Type select Type multiselect,template-input-options"`
 	Rules       string      `json:"rules,omitempty" validate:"template-input-rules"`
-	If          string      `json:"if,omitempty"`
+	If          string      `json:"if,omitempty" validate:"template-input-if"`
 }
 
 // ValidateUserInput validates input from the template user using Input.Rules.
@@ -54,6 +60,22 @@ func (i Input) ValidateUserInput(userInput interface{}, ctx context.Context) err
 	}
 
 	return validateUserInputWithRules(userInput, i.Rules, ctx)
+}
+
+// Available decides if the input should be visible to user according to Input.If.
+func (i Input) Available(params map[string]interface{}) bool {
+	if i.If == "" {
+		return true
+	}
+	expression, err := goValuate.NewEvaluableExpression(i.If)
+	if err != nil {
+		panic(err)
+	}
+	result, err := expression.Evaluate(params)
+	if err != nil {
+		panic(err)
+	}
+	return result.(bool)
 }
 
 type Option string

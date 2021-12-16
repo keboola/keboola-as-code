@@ -89,6 +89,19 @@ func TestTemplateInputsValidateDefinitions(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), `failed "template-input-rules"`)
 
+	// Fail - wrong If
+	inputs = Inputs{{
+		Id:          "input.id2",
+		Name:        "input",
+		Description: "input desc",
+		Type:        "string",
+		Kind:        "input",
+		If:          "1+(2-1>1",
+	}}
+	err = inputs.ValidateDefinitions()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), `failed "template-input-if"`)
+
 	// Success - with Options
 	inputs = Inputs{{
 		Id:          "input.id",
@@ -111,6 +124,7 @@ func TestTemplateInputsValidateDefinitions(t *testing.T) {
 		Options:     []Option{},
 		Kind:        "input",
 		Rules:       "gte=5",
+		If:          "1+(2-1)>1",
 	}}
 	err = inputs.ValidateDefinitions()
 	assert.NoError(t, err)
@@ -235,4 +249,44 @@ func TestTemplateInputValidateUserInput(t *testing.T) {
 	}
 	assert.Error(t, input.ValidateUserInput(1, nil))
 	assert.NoError(t, input.ValidateUserInput(true, nil))
+}
+
+func TestTemplateInputAvailable(t *testing.T) {
+	t.Parallel()
+
+	// Check If evaluated as true
+	input := &Input{
+		Id:          "input.id",
+		Name:        "input",
+		Description: "input description",
+		Kind:        "input",
+		Type:        "int",
+		If:          "facebook_integration == true",
+	}
+	params := make(map[string]interface{}, 1)
+	params["facebook_integration"] = true
+	assert.True(t, input.Available(params))
+
+	// Check empty If evaluated as true
+	input = &Input{
+		Id:          "input.id",
+		Name:        "input",
+		Description: "input description",
+		Kind:        "input",
+		Type:        "int",
+	}
+	assert.True(t, input.Available(nil))
+
+	// Check If evaluated as false
+	input = &Input{
+		Id:          "input.id",
+		Name:        "input",
+		Description: "input description",
+		Kind:        "input",
+		Type:        "int",
+		If:          "facebook_integration == true",
+	}
+	params = make(map[string]interface{}, 1)
+	params["facebook_integration"] = false
+	assert.False(t, input.Available(params))
 }
