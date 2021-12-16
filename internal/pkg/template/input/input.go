@@ -8,7 +8,8 @@ import (
 
 type Inputs []*Input
 
-func (i Inputs) Validate() error {
+// ValidateDefinitions validates template inputs definition.
+func (i Inputs) ValidateDefinitions() error {
 	validations := []validator.Validation{
 		{
 			Tag:  "template-input-id",
@@ -46,7 +47,8 @@ type Input struct {
 	If          string      `json:"if,omitempty"`
 }
 
-func (i Input) Validate(userInput interface{}, ctx context.Context) error {
+// ValidateUserInput validates input from the template user using Input.Rules.
+func (i Input) ValidateUserInput(userInput interface{}, ctx context.Context) error {
 	if err := validateUserInputTypeByKind(userInput, i.Kind); err != nil {
 		return err
 	}

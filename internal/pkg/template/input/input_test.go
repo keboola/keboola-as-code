@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTemplateInputsValidate(t *testing.T) {
+func TestTemplateInputsValidateDefinitions(t *testing.T) {
 	t.Parallel()
 
 	// Fail - Id with a dash
@@ -19,7 +19,7 @@ func TestTemplateInputsValidate(t *testing.T) {
 		Default:     "def",
 		Kind:        "input",
 	}}
-	err := inputs.Validate()
+	err := inputs.ValidateDefinitions()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), `key="id"`)
 
@@ -32,7 +32,7 @@ func TestTemplateInputsValidate(t *testing.T) {
 		Default:     "def",
 		Kind:        "password",
 	}}
-	err = inputs.Validate()
+	err = inputs.ValidateDefinitions()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), `key="type"`)
 
@@ -45,7 +45,7 @@ func TestTemplateInputsValidate(t *testing.T) {
 		Options:     []Option{"a", "b"},
 		Kind:        "input",
 	}}
-	err = inputs.Validate()
+	err = inputs.ValidateDefinitions()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), `key="options"`)
 
@@ -57,7 +57,7 @@ func TestTemplateInputsValidate(t *testing.T) {
 		Default:     "def",
 		Kind:        "input",
 	}}
-	err = inputs.Validate()
+	err = inputs.ValidateDefinitions()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), `key="type"`)
 	assert.Contains(t, err.Error(), `failed "required_if"`)
@@ -71,7 +71,7 @@ func TestTemplateInputsValidate(t *testing.T) {
 		Options:     []Option{"a", "b"},
 		Kind:        "input",
 	}}
-	err = inputs.Validate()
+	err = inputs.ValidateDefinitions()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), `failed "template-input-options"`)
 
@@ -85,7 +85,7 @@ func TestTemplateInputsValidate(t *testing.T) {
 		Kind:        "input",
 		Rules:       "gtex=5",
 	}}
-	err = inputs.Validate()
+	err = inputs.ValidateDefinitions()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), `failed "template-input-rules"`)
 
@@ -98,7 +98,7 @@ func TestTemplateInputsValidate(t *testing.T) {
 		Options:     []Option{"a", "b"},
 		Kind:        "select",
 	}}
-	err = inputs.Validate()
+	err = inputs.ValidateDefinitions()
 	assert.NoError(t, err)
 
 	// Success - int Default and empty Options
@@ -112,7 +112,7 @@ func TestTemplateInputsValidate(t *testing.T) {
 		Kind:        "input",
 		Rules:       "gte=5",
 	}}
-	err = inputs.Validate()
+	err = inputs.ValidateDefinitions()
 	assert.NoError(t, err)
 
 	// Success - no Default
@@ -123,7 +123,7 @@ func TestTemplateInputsValidate(t *testing.T) {
 		Type:        "string",
 		Kind:        "input",
 	}}
-	err = inputs.Validate()
+	err = inputs.ValidateDefinitions()
 	assert.NoError(t, err)
 }
 
@@ -212,7 +212,7 @@ func TestTemplateInputsJsonMarshal(t *testing.T) {
 	assert.Equal(t, inputsJson, string(resultJson))
 }
 
-func TestTemplateInputValidate(t *testing.T) {
+func TestTemplateInputValidateUserInput(t *testing.T) {
 	t.Parallel()
 
 	input := &Input{
@@ -223,9 +223,9 @@ func TestTemplateInputValidate(t *testing.T) {
 		Type:        "int",
 		Rules:       "gte=5,lte=10",
 	}
-	assert.Error(t, input.Validate(1, nil))
-	assert.Error(t, input.Validate("1", nil))
-	assert.NoError(t, input.Validate(7, nil))
+	assert.Error(t, input.ValidateUserInput(1, nil))
+	assert.Error(t, input.ValidateUserInput("1", nil))
+	assert.NoError(t, input.ValidateUserInput(7, nil))
 
 	input = &Input{
 		Id:          "input.id",
@@ -233,6 +233,6 @@ func TestTemplateInputValidate(t *testing.T) {
 		Description: "input description",
 		Kind:        "confirm",
 	}
-	assert.Error(t, input.Validate(1, nil))
-	assert.NoError(t, input.Validate(true, nil))
+	assert.Error(t, input.ValidateUserInput(1, nil))
+	assert.NoError(t, input.ValidateUserInput(true, nil))
 }
