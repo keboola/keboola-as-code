@@ -1,4 +1,4 @@
-package template
+package input
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTemplateInput(t *testing.T) {
+func TestTemplateInputsValidate(t *testing.T) {
 	t.Parallel()
 
 	// Fail - Id with a dash
@@ -210,22 +210,6 @@ func TestTemplateInputsJsonMarshal(t *testing.T) {
 	resultJson, err := json.MarshalIndent(inputs, "", "  ")
 	assert.NoError(t, err)
 	assert.Equal(t, inputsJson, string(resultJson))
-}
-
-func TestTemplateCheckTypeAgainstKind(t *testing.T) {
-	t.Parallel()
-
-	// Confirm Kind
-	assert.Error(t, checkTypeAgainstKind("string", "confirm"))
-	assert.NoError(t, checkTypeAgainstKind(true, "confirm"))
-
-	// Password Kind
-	assert.Error(t, checkTypeAgainstKind(123, "password"))
-	assert.NoError(t, checkTypeAgainstKind("string", "password"))
-
-	// Textarea Kind
-	assert.Error(t, checkTypeAgainstKind(false, "textarea"))
-	assert.NoError(t, checkTypeAgainstKind("string", "textarea"))
 }
 
 func TestTemplateInputValidate(t *testing.T) {
