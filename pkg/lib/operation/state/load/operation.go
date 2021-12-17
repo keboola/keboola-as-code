@@ -5,7 +5,8 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
@@ -40,12 +41,19 @@ type dependencies interface {
 	Logger() *zap.SugaredLogger
 	StorageApi() (*remote.StorageApi, error)
 	SchedulerApi() (*scheduler.Api, error)
+	ProjectDir() (filesystem.Fs, error)
 	ProjectManifest() (*manifest.Manifest, error)
 }
 
 func Run(o Options, d dependencies) (*state.State, error) {
 	ctx := d.Ctx()
 	logger := d.Logger()
+
+	// Get project dir
+	projectDir, err := d.ProjectDir()
+	if err != nil {
+		return nil, err
+	}
 
 	// Get manifest
 	projectManifest, err := d.ProjectManifest()
@@ -65,7 +73,7 @@ func Run(o Options, d dependencies) (*state.State, error) {
 		return nil, err
 	}
 
-	stateOptions := state.NewOptions(projectManifest, storageApi, schedulerApi, ctx, logger)
+	stateOptions := state.NewOptions(projectDir, projectManifest, storageApi, schedulerApi, ctx, logger)
 	stateOptions.LoadLocalState = o.LoadLocalState
 	stateOptions.LoadRemoteState = o.LoadRemoteState
 	stateOptions.IgnoreNotFoundErr = o.IgnoreNotFoundErr

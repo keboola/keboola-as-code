@@ -32,6 +32,18 @@ func DefaultFilter() Filter {
 	}
 }
 
+func (f Filter) IsObjectIgnored(object Object) bool {
+	switch o := object.(type) {
+	case *Branch:
+		return !f.AllowedBranches.IsBranchAllowed(o)
+	case *Config:
+		return f.IgnoredComponents.Contains(o.ComponentId)
+	case *ConfigRow:
+		return f.IgnoredComponents.Contains(o.ComponentId)
+	}
+	return false
+}
+
 func (v AllowedBranches) String() string {
 	if len(v) == 0 {
 		return `[]`

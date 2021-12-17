@@ -6,7 +6,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"

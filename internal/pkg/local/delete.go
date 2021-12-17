@@ -15,12 +15,9 @@ import (
 // DeleteInvalidObjects from disk, eg. if pull --force used.
 func (m *Manager) DeleteInvalidObjects() error {
 	errors := utils.NewMultiError()
-	records := m.manifest.GetRecords()
-	for _, key := range append([]string(nil), records.Keys()...) {
-		v, _ := records.Get(key)
-		manifest := v.(model.ObjectManifest)
-		if manifest.State().IsInvalid() {
-			if err := m.deleteObject(manifest); err != nil {
+	for _, objectManifest := range m.manifest.All() {
+		if objectManifest.State().IsInvalid() {
+			if err := m.deleteObject(objectManifest); err != nil {
 				errors.Append(err)
 			}
 		}
@@ -103,15 +100,15 @@ func DeleteEmptyDirectories(fs filesystem.Fs, trackedPaths []string) error {
 }
 
 // deleteObject from manifest and filesystem.
-func (m *Manager) deleteObject(manifest model.ObjectManifest) error {
+func (m *Manager) deleteObject(objectManifest model.ObjectManifest) error {
 	errors := utils.NewMultiError()
 
 	// Remove manifest from manifest content
-	m.manifest.DeleteRecord(manifest)
+	m.manifest.Delete(objectManifest)
 
 	// Remove dir
-	if err := m.fs.Remove(manifest.Path()); err != nil {
-		errors.Append(utils.PrefixError(fmt.Sprintf(`cannot delete directory "%s"`, manifest.Path()), err))
+	if err := m.fs.Remove(objectManifest.Path()); err != nil {
+		errors.Append(utils.PrefixError(fmt.Sprintf(`cannot delete directory "%s"`, objectManifest.Path()), err))
 	}
 
 	return errors.ErrorOrNil()

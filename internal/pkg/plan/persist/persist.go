@@ -45,13 +45,9 @@ func (b *persistPlanBuilder) build() {
 	}
 
 	// Deleted objects
-	records := b.Manifest().GetRecords()
-	keys := append([]string(nil), records.Keys()...)
-	for _, key := range keys {
-		manifestRaw, _ := records.Get(key)
-		manifest := manifestRaw.(model.ObjectManifest)
-		if manifest.State().IsNotFound() {
-			b.addAction(&deleteManifestRecordAction{manifest})
+	for _, objectManifest := range b.Manifest().All() {
+		if objectManifest.State().IsNotFound() {
+			b.addAction(&deleteManifestRecordAction{objectManifest})
 		}
 	}
 

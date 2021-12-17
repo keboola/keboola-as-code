@@ -10,9 +10,9 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
@@ -21,7 +21,7 @@ type Manager struct {
 	state    *model.State
 	logger   *zap.SugaredLogger
 	fs       filesystem.Fs
-	manifest *manifest.Manifest
+	manifest *projectManifest.Manifest
 	mapper   *mapper.Mapper
 }
 
@@ -37,7 +37,7 @@ type UnitOfWork struct {
 	invoked         bool
 }
 
-func NewManager(logger *zap.SugaredLogger, fs filesystem.Fs, m *manifest.Manifest, state *model.State, mapper *mapper.Mapper) *Manager {
+func NewManager(logger *zap.SugaredLogger, fs filesystem.Fs, m *projectManifest.Manifest, state *model.State, mapper *mapper.Mapper) *Manager {
 	return &Manager{
 		state:    state,
 		logger:   logger,
@@ -47,12 +47,12 @@ func NewManager(logger *zap.SugaredLogger, fs filesystem.Fs, m *manifest.Manifes
 	}
 }
 
-func (m *Manager) Manifest() *manifest.Manifest {
+func (m *Manager) Manifest() *projectManifest.Manifest {
 	return m.manifest
 }
 
 func (m *Manager) Naming() *model.Naming {
-	return m.manifest.Naming
+	return m.manifest.Naming()
 }
 
 func (m *Manager) Fs() filesystem.Fs {
@@ -76,20 +76,9 @@ func (u *UnitOfWork) SkipNotFoundErr() {
 	u.skipNotFoundErr = true
 }
 
-func (u *UnitOfWork) LoadAll(manifestContent *manifest.Content) {
-	// Branches
-	for _, b := range manifestContent.Branches {
-		u.LoadObject(b)
-	}
-
-	// Configs
-	for _, c := range manifestContent.Configs {
-		u.LoadObject(c.ConfigManifest)
-
-		// Rows
-		for _, r := range c.Rows {
-			u.LoadObject(r)
-		}
+func (u *UnitOfWork) LoadAll(manifest *projectManifest.Manifest) {
+	for _, objectManifest := range manifest.AllPersisted() {
+		u.LoadObject(objectManifest)
 	}
 }
 
@@ -128,7 +117,7 @@ func (u *UnitOfWork) CreateObject(key model.Key, name string) {
 }
 
 func (u *UnitOfWork) LoadObject(manifest model.ObjectManifest) {
-	persist := !manifest.State().Persisted
+	persist := !manifest.State().IsPersisted()
 	u.
 		workersFor(manifest.Level()).
 		AddWorker(func() error {

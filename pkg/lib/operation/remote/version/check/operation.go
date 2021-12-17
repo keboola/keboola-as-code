@@ -18,6 +18,6 @@ type dependencies interface {
 
 func Run(d dependencies) (err error) {
 	return version.
-		NewChecker(d.Ctx(), d.Logger(), d.Envs()).
+		NewGitHubChecker(d.Ctx(), d.Logger(), d.Envs()).
 		CheckIfLatest(build.BuildVersion)
 }

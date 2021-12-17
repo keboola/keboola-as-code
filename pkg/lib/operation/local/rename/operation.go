@@ -5,9 +5,10 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/rename"
+	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/local/manifest/save"
@@ -22,6 +23,7 @@ type Options struct {
 type dependencies interface {
 	Ctx() context.Context
 	Logger() *zap.SugaredLogger
+	ProjectDir() (filesystem.Fs, error)
 	ProjectManifest() (*manifest.Manifest, error)
 	LoadStateOnce(loadOptions loadState.Options) (*state.State, error)
 }

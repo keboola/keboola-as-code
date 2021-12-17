@@ -6,8 +6,9 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/local/manifest/save"
@@ -24,6 +25,7 @@ type dependencies interface {
 	Ctx() context.Context
 	Logger() *zap.SugaredLogger
 	StorageApi() (*remote.StorageApi, error)
+	ProjectDir() (filesystem.Fs, error)
 	ProjectManifest() (*manifest.Manifest, error)
 	LoadStateOnce(loadOptions loadState.Options) (*state.State, error)
 }

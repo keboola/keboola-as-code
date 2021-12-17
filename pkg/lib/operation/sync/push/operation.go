@@ -6,9 +6,10 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encryption"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/push"
+	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/local/encrypt"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/local/validate"
@@ -28,6 +29,7 @@ type dependencies interface {
 	Ctx() context.Context
 	Logger() *zap.SugaredLogger
 	EncryptionApi() (*encryption.Api, error)
+	ProjectDir() (filesystem.Fs, error)
 	ProjectManifest() (*manifest.Manifest, error)
 	LoadStateOnce(loadOptions loadState.Options) (*state.State, error)
 }
