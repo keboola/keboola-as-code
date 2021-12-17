@@ -143,6 +143,11 @@ func (c *Container) ProjectDir() (filesystem.Fs, error) {
 			return nil, ErrProjectManifestNotFound
 		}
 
+		// Check version field
+		if err := version.CheckLocalVersion(c.Logger(), c.fs, projectManifest.Path()); err != nil {
+			return nil, err
+		}
+
 		c.projectDir = c.fs
 	}
 	return c.projectDir, nil

@@ -22,7 +22,7 @@ type checker struct {
 	logger *zap.SugaredLogger
 }
 
-func NewChecker(parentCtx context.Context, logger *zap.SugaredLogger, envs *env.Map) *checker {
+func NewGitHubChecker(parentCtx context.Context, logger *zap.SugaredLogger, envs *env.Map) *checker {
 	// Timeout 3 seconds
 	ctx, cancel := context.WithTimeout(parentCtx, 3*time.Second)
 
