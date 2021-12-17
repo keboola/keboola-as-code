@@ -1,8 +1,8 @@
 {
   "version": 2,
   "project": {
-    "id": %%TEST_KBC_PROJECT_ID%%,
-    "apiHost": "%%TEST_KBC_STORAGE_API_HOST%%"
+    "id": "12345",
+    "apiHost": "foo.bar"
   },
   "sortBy": "path",
   "naming": {
@@ -16,7 +16,7 @@
   "ignoredComponents": [],
   "branches": [
     {
-      "id": %s,
+      "id": 111,
       "path": "main"
     }
   ],
