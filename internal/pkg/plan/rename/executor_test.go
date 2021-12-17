@@ -6,22 +6,23 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func TestRename(t *testing.T) {
 	t.Parallel()
-	m, logger, logs := newTestManifest(t)
-	fs := m.Fs()
+	logger, logs := utils.NewDebugLogger()
+	fs, err := aferofs.NewMemoryFs(logger, `/`)
+	assert.NoError(t, err)
+	manifest := projectManifest.NewManifest(1, "foo")
 
 	// Dir structure
 	assert.NoError(t, fs.Mkdir(`foo1/sub`))
@@ -49,10 +50,9 @@ func TestRename(t *testing.T) {
 
 	// NewPlan
 	state := model.NewState(logger, fs, model.NewComponentsMap(nil), model.SortByPath)
-	localManager := local.NewManager(logger, fs, m, state, mapper.New(model.MapperContext{}))
+	localManager := local.NewManager(logger, fs, manifest, state, mapper.New(model.MapperContext{}))
 	executor := newRenameExecutor(context.Background(), localManager, plan)
-	err := executor.invoke()
-	assert.NoError(t, err)
+	assert.NoError(t, executor.invoke())
 	logsStr := logs.String()
 	assert.NotContains(t, logsStr, `WARN`)
 	assert.True(t, fs.IsFile(`bar1/sub/file`))
@@ -75,8 +75,10 @@ DEBUG  Removed "foo2"
 
 func TestRenameFailedKeepOldState(t *testing.T) {
 	t.Parallel()
-	m, logger, logs := newTestManifest(t)
-	fs := m.Fs()
+	logger, logs := utils.NewDebugLogger()
+	fs, err := aferofs.NewMemoryFs(logger, `/`)
+	assert.NoError(t, err)
+	manifest := projectManifest.NewManifest(1, "foo")
 
 	// Dir structure
 	assert.NoError(t, fs.Mkdir(`foo1/sub`))
@@ -117,9 +119,9 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 
 	// NewPlan
 	state := model.NewState(logger, fs, model.NewComponentsMap(nil), model.SortByPath)
-	localManager := local.NewManager(logger, fs, m, state, mapper.New(model.MapperContext{}))
+	localManager := local.NewManager(logger, fs, manifest, state, mapper.New(model.MapperContext{}))
 	executor := newRenameExecutor(context.Background(), localManager, plan)
-	err := executor.invoke()
+	err = executor.invoke()
 	assert.Error(t, err)
 	logsStr := logs.String()
 	assert.NotContains(t, logsStr, `WARN`)
@@ -145,14 +147,4 @@ DEBUG  Removed "bar5"
 INFO  Error occurred, the rename operation was reverted.
 `
 	assert.Equal(t, strings.TrimLeft(expectedLog, "\n"), logsStr)
-}
-
-func newTestManifest(t *testing.T) (*manifest.Manifest, *zap.SugaredLogger, *utils.Writer) {
-	t.Helper()
-	logger, logs := utils.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger, ".")
-	assert.NoError(t, err)
-	m, err := manifest.NewManifest(1, "foo", fs)
-	assert.NoError(t, err)
-	return m, logger, logs
 }

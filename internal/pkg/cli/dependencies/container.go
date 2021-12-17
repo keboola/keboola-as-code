@@ -12,12 +12,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/manifest"
+	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/version"
 	createProjectManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/local/manifest/create"
 	loadProjectManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/local/manifest/load"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
@@ -143,6 +144,11 @@ func (c *Container) ProjectDir() (filesystem.Fs, error) {
 			return nil, ErrProjectManifestNotFound
 		}
 
+		// Check version field
+		if err := version.CheckLocalVersion(c.Logger(), c.fs, projectManifest.Path()); err != nil {
+			return nil, err
+		}
+
 		c.projectDir = c.fs
 	}
 	return c.projectDir, nil
@@ -192,7 +198,7 @@ func (c *Container) StorageApi() (*remote.StorageApi, error) {
 		var host string
 		if c.hostFromManifest {
 			if m, err := c.ProjectManifest(); err == nil {
-				host = m.Project.ApiHost
+				host = m.ApiHost()
 			} else {
 				return nil, err
 			}
@@ -223,8 +229,8 @@ func (c *Container) StorageApi() (*remote.StorageApi, error) {
 		}
 
 		// Token and manifest project ID must be same
-		if c.projectManifest != nil && c.projectManifest.Project.Id != c.storageApi.ProjectId() {
-			return nil, fmt.Errorf(`given token is from the project "%d", but in manifest is defined project "%d"`, c.storageApi.ProjectId(), c.projectManifest.Project.Id)
+		if c.projectManifest != nil && c.projectManifest.ProjectId() != c.storageApi.ProjectId() {
+			return nil, fmt.Errorf(`given token is from the project "%d", but in manifest is defined project "%d"`, c.storageApi.ProjectId(), c.projectManifest.ProjectId())
 		}
 	}
 	return c.storageApi, nil

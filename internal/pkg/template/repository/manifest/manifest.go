@@ -41,8 +41,12 @@ func newManifest(fs filesystem.Fs) *Manifest {
 	}
 }
 
-func (m *Manifest) Path() string {
+func Path() string {
 	return filesystem.Join(filesystem.MetadataDir, FileName)
+}
+
+func (m *Manifest) Path() string {
+	return Path()
 }
 
 func Load(fs filesystem.Fs, _ *zap.SugaredLogger) (*Manifest, error) {

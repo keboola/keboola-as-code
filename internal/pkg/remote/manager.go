@@ -10,9 +10,9 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
@@ -307,7 +307,7 @@ func (u *UnitOfWork) delete(objectState model.ObjectState) {
 	u.poolFor(objectState.Level()).
 		Request(u.api.DeleteRequest(objectState.Key())).
 		OnSuccess(func(response *client.Response) {
-			u.Manifest().DeleteRecord(objectState)
+			u.Manifest().Delete(objectState)
 			objectState.SetRemoteState(nil)
 		}).
 		OnSuccess(func(response *client.Response) {

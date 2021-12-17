@@ -3,16 +3,22 @@ package save
 import (
 	"go.uber.org/zap"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 )
 
 type Dependencies interface {
 	Logger() *zap.SugaredLogger
+	ProjectDir() (filesystem.Fs, error)
 	ProjectManifest() (*manifest.Manifest, error)
 }
 
 func Run(d Dependencies) (changed bool, err error) {
-	// Get manifest
+	// Get dependencies
+	projectDir, err := d.ProjectDir()
+	if err != nil {
+		return false, err
+	}
 	projectManifest, err := d.ProjectManifest()
 	if err != nil {
 		return false, err
@@ -20,7 +26,7 @@ func Run(d Dependencies) (changed bool, err error) {
 
 	// Save if manifest is changed
 	if projectManifest.IsChanged() {
-		if err := projectManifest.Save(); err != nil {
+		if err := projectManifest.Save(projectDir); err != nil {
 			return false, err
 		}
 		return true, nil

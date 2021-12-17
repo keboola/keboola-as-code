@@ -9,7 +9,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/defaultbucket"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/description"
@@ -20,6 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/variables"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -48,9 +48,9 @@ type Options struct {
 	IgnoreNotFoundErr bool // not found error will be ignored
 }
 
-func NewOptions(m *manifest.Manifest, api *remote.StorageApi, schedulerApi *scheduler.Api, ctx context.Context, logger *zap.SugaredLogger) *Options {
+func NewOptions(projectDir filesystem.Fs, m *manifest.Manifest, api *remote.StorageApi, schedulerApi *scheduler.Api, ctx context.Context, logger *zap.SugaredLogger) *Options {
 	return &Options{
-		fs:           m.Fs(),
+		fs:           projectDir,
 		manifest:     m,
 		api:          api,
 		schedulerApi: schedulerApi,
@@ -66,7 +66,7 @@ func LoadState(options *Options) (state *State, ok bool, localErr error, remoteE
 	state = newState(options)
 
 	// Log allowed branches
-	state.logger.Debugf(`Allowed branches: %s`, state.manifest.Content.AllowedBranches)
+	state.logger.Debugf(`Allowed branches: %s`, state.manifest.AllowedBranches())
 
 	// Remote
 	if state.LoadRemoteState {
@@ -98,13 +98,13 @@ func newState(options *Options) *State {
 	s := &State{Options: options, mutex: &sync.Mutex{}}
 
 	// State model struct
-	s.State = model.NewState(options.logger, options.fs, options.api.Components(), options.manifest.SortBy)
+	s.State = model.NewState(options.logger, options.fs, options.api.Components(), options.manifest.SortBy())
 
 	// Mapper
 	mapperContext := model.MapperContext{
 		Logger: options.logger,
 		Fs:     options.fs,
-		Naming: options.manifest.Naming,
+		Naming: options.manifest.Naming(),
 		State:  s.State,
 	}
 
@@ -141,7 +141,7 @@ func newState(options *Options) *State {
 }
 
 func (s *State) Fs() filesystem.Fs {
-	return s.manifest.Fs()
+	return s.fs
 }
 
 func (s *State) Manifest() *manifest.Manifest {
@@ -149,7 +149,7 @@ func (s *State) Manifest() *manifest.Manifest {
 }
 
 func (s *State) Naming() *model.Naming {
-	return s.manifest.Naming
+	return s.manifest.Naming()
 }
 
 func (s *State) Mapper() *mapper.Mapper {
@@ -200,7 +200,7 @@ func (s *State) loadLocalState() error {
 		uow.SkipNotFoundErr()
 	}
 
-	uow.LoadAll(s.manifest.Content)
+	uow.LoadAll(s.manifest)
 	if err := uow.Invoke(); err != nil {
 		errors.Append(err)
 	}

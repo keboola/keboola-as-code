@@ -7,12 +7,11 @@ import (
 
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -27,14 +26,15 @@ func TestLoadState(t *testing.T) {
 	project.SetState("minimal.json")
 
 	// Same IDs in local and remote state
+	envs.Set("LOCAL_PROJECT_ID", cast.ToString(project.Id()))
+	envs.Set("TEST_KBC_STORAGE_API_HOST", project.StorageApi().Host())
 	envs.Set("LOCAL_STATE_MAIN_BRANCH_ID", envs.MustGet(`TEST_BRANCH_MAIN_ID`))
 	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`))
 
 	logger, _ := utils.NewDebugLogger()
-	m := loadTestManifest(t, envs, "minimal")
-	m.Project.Id = project.Id()
+	m, fs := loadTestManifest(t, envs, "minimal")
 
-	stateOptions := NewOptions(m, project.StorageApi(), project.SchedulerApi(), context.Background(), logger)
+	stateOptions := NewOptions(fs, m, project.StorageApi(), project.SchedulerApi(), context.Background(), logger)
 	stateOptions.LoadLocalState = true
 	stateOptions.LoadRemoteState = true
 	state, ok, localErr, remoteErr := LoadState(stateOptions)
@@ -137,7 +137,7 @@ func TestLoadState(t *testing.T) {
 	assert.Empty(t, utils.SortByName(state.ConfigRows()))
 }
 
-func loadTestManifest(t *testing.T, envs *env.Map, localState string) *manifest.Manifest {
+func loadTestManifest(t *testing.T, envs *env.Map, localState string) (*manifest.Manifest, filesystem.Fs) {
 	t.Helper()
 
 	// Prepare temp dir with defined state
@@ -150,10 +150,8 @@ func loadTestManifest(t *testing.T, envs *env.Map, localState string) *manifest.
 	testhelper.ReplaceEnvsDir(fs, `/`, envs)
 
 	// Load manifest
-	m, err := manifest.Load(fs, zap.NewNop().Sugar())
+	m, err := manifest.Load(fs)
 	assert.NoError(t, err)
-	m.Project.Id = 12345
-	m.Project.ApiHost = "connection.keboola.com"
 
-	return m
+	return m, fs
 }

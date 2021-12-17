@@ -10,8 +10,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
 )
@@ -25,14 +24,7 @@ func TestDifferentProjectIdInManifestAndToken(t *testing.T) {
 	d := NewContainer(context.Background(), nil, testhelper.NewMemoryFs(), nil, logger, opts)
 	d.hostFromManifest = true
 	d.options.Set(options.StorageApiTokenOpt, project.Token())
-	d.projectManifest = &manifest.Manifest{
-		Content: &manifest.Content{
-			Project: model.Project{
-				Id:      12345,
-				ApiHost: project.StorageApiHost(),
-			},
-		},
-	}
+	d.projectManifest = manifest.NewManifest(12345, project.StorageApiHost())
 
 	_, err := d.StorageApi()
 	expected := fmt.Sprintf(`given token is from the project "%d", but in manifest is defined project "12345"`, project.Id())

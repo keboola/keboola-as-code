@@ -4,8 +4,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 )
 
@@ -24,7 +24,7 @@ func Run(o Options, d dependencies) (*manifest.Manifest, error) {
 	logger := d.Logger()
 
 	// Target dir must be empty
-	fs, err := d.EmptyDir()
+	emptyDir, err := d.EmptyDir()
 	if err != nil {
 		return nil, err
 	}
@@ -35,17 +35,14 @@ func Run(o Options, d dependencies) (*manifest.Manifest, error) {
 		return nil, err
 	}
 	// Create
-	projectManifest, err := manifest.NewManifest(storageApi.ProjectId(), storageApi.Host(), fs)
-	if err != nil {
-		return nil, err
-	}
+	projectManifest := manifest.NewManifest(storageApi.ProjectId(), storageApi.Host())
 
 	// Configure
-	projectManifest.Naming = o.Naming
-	projectManifest.AllowedBranches = o.AllowedBranches
+	projectManifest.SetNaming(o.Naming)
+	projectManifest.SetAllowedBranches(o.AllowedBranches)
 
 	// Save
-	if err = projectManifest.Save(); err != nil {
+	if err = projectManifest.Save(emptyDir); err != nil {
 		return nil, err
 	}
 

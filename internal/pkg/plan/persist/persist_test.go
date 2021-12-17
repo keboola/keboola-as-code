@@ -9,12 +9,12 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
@@ -909,9 +909,12 @@ func (tc *testCase) run(t *testing.T) {
 
 	// Create Fs
 	fs := testhelper.NewMemoryFsFrom(inputDir)
+	envs := env.Empty()
+	envs.Set(`LOCAL_PROJECT_ID`, `12345`)
+	testhelper.ReplaceEnvsDir(fs, `/`, envs)
 
 	// Load manifest
-	m, err := manifest.Load(fs, zap.NewNop().Sugar())
+	m, err := manifest.Load(fs)
 	assert.NoError(t, err)
 
 	// Create API
@@ -930,7 +933,7 @@ func (tc *testCase) run(t *testing.T) {
 	// Load state
 	logger, _ := utils.NewDebugLogger()
 	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
-	options := state.NewOptions(m, api, schedulerApi, context.Background(), logger)
+	options := state.NewOptions(fs, m, api, schedulerApi, context.Background(), logger)
 
 	options.LoadLocalState = true
 	options.LoadRemoteState = false
