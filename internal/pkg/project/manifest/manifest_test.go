@@ -4,12 +4,17 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 )
+
+type fakeNaming struct{}
+
+func (fakeNaming) Attach(_ model.Key, _ model.PathInProject) {
+	// nop
+}
 
 type test struct {
 	name string
@@ -34,8 +39,10 @@ func cases() []test {
 
 func TestNewManifest(t *testing.T) {
 	t.Parallel()
-	manifest := newTestManifest(t)
-	assert.NotNil(t, manifest)
+	m := NewManifest(123, `foo.bar`)
+	assert.NotNil(t, m)
+	assert.Equal(t, 123, m.content.Project.Id)
+	assert.Equal(t, `foo.bar`, m.content.Project.ApiHost)
 }
 
 func TestManifestLoadNotFound(t *testing.T) {
@@ -43,7 +50,7 @@ func TestManifestLoadNotFound(t *testing.T) {
 	fs := testhelper.NewMemoryFs()
 
 	// Load
-	manifest, err := Load(fs, zap.NewNop().Sugar())
+	manifest, err := Load(fs)
 	assert.Nil(t, manifest)
 	assert.Error(t, err)
 	assert.Equal(t, `manifest ".keboola/manifest.json" not found`, err.Error())
@@ -59,46 +66,38 @@ func TestManifestLoad(t *testing.T) {
 		assert.NoError(t, fs.WriteFile(filesystem.NewFile(path, c.json)))
 
 		// Load
-		manifest, err := Load(fs, zap.NewNop().Sugar())
+		manifest, err := Load(fs)
 		assert.NotNil(t, manifest)
 		assert.NoError(t, err)
 
 		// Assert naming (without internal fields)
-		assert.Equal(t, c.data.Naming.Branch, manifest.Content.Naming.Branch, c.name)
-		assert.Equal(t, c.data.Naming.Config, manifest.Content.Naming.Config, c.name)
-		assert.Equal(t, c.data.Naming.ConfigRow, manifest.Content.Naming.ConfigRow, c.name)
+		assert.Equal(t, c.data.Naming.Branch, manifest.content.Naming.Branch, c.name)
+		assert.Equal(t, c.data.Naming.Config, manifest.content.Naming.Config, c.name)
+		assert.Equal(t, c.data.Naming.ConfigRow, manifest.content.Naming.ConfigRow, c.name)
 
 		// Assert
-		c.data.Naming = model.DefaultNamingWithIds()
-		manifest.Naming = model.DefaultNamingWithIds()
-		assert.Equal(t, c.data, manifest.Content, c.name)
+		c.data.Naming = nil
+		manifest.content.Naming = nil
+		assert.Equal(t, c.data, manifest.content, c.name)
 	}
 }
 
 func TestManifestSave(t *testing.T) {
 	t.Parallel()
 	for _, c := range cases() {
+		fs := testhelper.NewMemoryFs()
+
 		// Create
-		m := newTestManifest(t)
-		m.AllowedBranches = c.data.AllowedBranches
-		m.IgnoredComponents = c.data.IgnoredComponents
-		m.Project.Id = c.data.Project.Id
-		for _, branch := range c.data.Branches {
-			assert.NoError(t, m.trackRecord(branch))
-		}
-		for _, config := range c.data.Configs {
-			assert.NoError(t, m.trackRecord(config.ConfigManifest))
-			for _, row := range config.Rows {
-				assert.NoError(t, m.trackRecord(row))
-			}
-		}
+		m := NewManifest(c.data.Project.Id, `foo.bar`)
+		m.content.AllowedBranches = c.data.AllowedBranches
+		m.content.IgnoredComponents = c.data.IgnoredComponents
+		assert.NoError(t, m.records.LoadFromContent(c.data))
 
 		// Save
-		assert.NoError(t, m.Save())
+		assert.NoError(t, m.Save(fs))
 
 		// Load file
-		path := filesystem.Join(filesystem.MetadataDir, FileName)
-		file, err := m.fs.ReadFile(path, "")
+		file, err := fs.ReadFile(Path(), "")
 		assert.NoError(t, err)
 		assert.Equal(t, testhelper.EscapeWhitespaces(c.json), testhelper.EscapeWhitespaces(file.Content), c.name)
 	}
@@ -106,8 +105,8 @@ func TestManifestSave(t *testing.T) {
 
 func TestManifestValidateEmpty(t *testing.T) {
 	t.Parallel()
-	m := &Manifest{Content: &Content{}}
-	err := m.validate()
+	content := &Content{}
+	err := content.validate()
 	assert.NotNil(t, err)
 	expected := `manifest is not valid:
   - key="version", value="0", failed "required" validation
@@ -121,27 +120,21 @@ func TestManifestValidateEmpty(t *testing.T) {
 
 func TestManifestValidateMinimal(t *testing.T) {
 	t.Parallel()
-	fs := testhelper.NewMemoryFs()
-	m := newManifest(0, "", fs)
-	m.Content = minimalStruct()
-	assert.NoError(t, m.validate())
+	content := minimalStruct()
+	assert.NoError(t, content.validate())
 }
 
 func TestManifestValidateFull(t *testing.T) {
 	t.Parallel()
-	fs := testhelper.NewMemoryFs()
-	m := newManifest(0, "", fs)
-	m.Content = fullStruct()
-	assert.NoError(t, m.validate())
+	content := fullStruct()
+	assert.NoError(t, content.validate())
 }
 
 func TestManifestValidateBadVersion(t *testing.T) {
 	t.Parallel()
-	fs := testhelper.NewMemoryFs()
-	m := newManifest(0, "", fs)
-	m.Content = minimalStruct()
-	m.Version = 123
-	err := m.validate()
+	content := minimalStruct()
+	content.Version = 123
+	err := content.validate()
 	assert.Error(t, err)
 	expected := "manifest is not valid:\n  - key=\"version\", value=\"123\", failed \"max\" validation"
 	assert.Equal(t, expected, err.Error())
@@ -149,10 +142,8 @@ func TestManifestValidateBadVersion(t *testing.T) {
 
 func TestManifestValidateNestedField(t *testing.T) {
 	t.Parallel()
-	fs := testhelper.NewMemoryFs()
-	m := newManifest(1, "connection.keboola.com", fs)
-	m.Content = minimalStruct()
-	m.Content.Branches = append(m.Content.Branches, &model.BranchManifest{
+	content := minimalStruct()
+	content.Branches = append(content.Branches, &model.BranchManifest{
 		BranchKey: model.BranchKey{Id: 0},
 		Paths: model.Paths{
 			PathInProject: model.NewPathInProject(
@@ -161,90 +152,10 @@ func TestManifestValidateNestedField(t *testing.T) {
 			),
 		},
 	})
-	err := m.validate()
+	err := content.validate()
 	assert.Error(t, err)
 	expected := "manifest is not valid:\n  - key=\"branches[0].id\", value=\"0\", failed \"required\" validation"
 	assert.Equal(t, expected, err.Error())
-}
-
-func TestIsObjectIgnored(t *testing.T) {
-	t.Parallel()
-	fs := testhelper.NewMemoryFs()
-	m := newManifest(1, "connection.keboola.com", fs)
-	m.Content = minimalStruct()
-	m.Content.AllowedBranches = model.AllowedBranches{"dev-*", "123", "abc"}
-	m.Content.IgnoredComponents = model.ComponentIds{"aaa", "bbb"}
-
-	assert.False(t, m.IsObjectIgnored(
-		&model.Branch{BranchKey: model.BranchKey{Id: 789}, Name: "dev-1"}),
-	)
-	assert.False(t, m.IsObjectIgnored(
-		&model.Branch{BranchKey: model.BranchKey{Id: 123}, Name: "xyz"}),
-	)
-	assert.False(t, m.IsObjectIgnored(
-		&model.Branch{BranchKey: model.BranchKey{Id: 789}, Name: "abc"}),
-	)
-	assert.True(t, m.IsObjectIgnored(
-		&model.Branch{BranchKey: model.BranchKey{Id: 789}, Name: "xyz"}),
-	)
-	assert.True(t, m.IsObjectIgnored(
-		&model.Config{ConfigKey: model.ConfigKey{ComponentId: "aaa"}}),
-	)
-	assert.True(t, m.IsObjectIgnored(
-		&model.Config{ConfigKey: model.ConfigKey{ComponentId: "bbb"}}),
-	)
-	assert.False(t, m.IsObjectIgnored(
-		&model.Config{ConfigKey: model.ConfigKey{ComponentId: "ccc"}}),
-	)
-	assert.True(t, m.IsObjectIgnored(
-		&model.ConfigRow{ConfigRowKey: model.ConfigRowKey{ComponentId: "aaa"}}),
-	)
-	assert.True(t, m.IsObjectIgnored(
-		&model.ConfigRow{ConfigRowKey: model.ConfigRowKey{ComponentId: "bbb"}}),
-	)
-	assert.False(t, m.IsObjectIgnored(
-		&model.ConfigRow{ConfigRowKey: model.ConfigRowKey{ComponentId: "ccc"}}),
-	)
-}
-
-func TestManifestRecordGetParent(t *testing.T) {
-	t.Parallel()
-	fs := testhelper.NewMemoryFs()
-	m := newManifest(0, "", fs)
-	branchManifest := &model.BranchManifest{BranchKey: model.BranchKey{Id: 123}}
-	configManifest := &model.ConfigManifest{ConfigKey: model.ConfigKey{
-		BranchId:    123,
-		ComponentId: "keboola.foo",
-		Id:          "456",
-	}}
-	assert.NoError(t, m.trackRecord(branchManifest))
-	parent, err := m.GetParent(configManifest)
-	assert.Equal(t, branchManifest, parent)
-	assert.NoError(t, err)
-}
-
-func TestManifestRecordGetParentNotFound(t *testing.T) {
-	t.Parallel()
-	fs := testhelper.NewMemoryFs()
-	m := newManifest(0, "", fs)
-	configManifest := &model.ConfigManifest{ConfigKey: model.ConfigKey{
-		BranchId:    123,
-		ComponentId: "keboola.foo",
-		Id:          "456",
-	}}
-	parent, err := m.GetParent(configManifest)
-	assert.Nil(t, parent)
-	assert.Error(t, err)
-	assert.Equal(t, `manifest record for branch "123" not found, referenced from config "branch:123/component:keboola.foo/config:456"`, err.Error())
-}
-
-func TestManifestRecordGetParentNil(t *testing.T) {
-	t.Parallel()
-	fs := testhelper.NewMemoryFs()
-	m := newManifest(0, "", fs)
-	parent, err := m.GetParent(&model.BranchManifest{})
-	assert.Nil(t, parent)
-	assert.NoError(t, err)
 }
 
 func TestManifestCyclicDependency(t *testing.T) {
@@ -256,10 +167,10 @@ func TestManifestCyclicDependency(t *testing.T) {
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile(path, cyclicDependencyJson())))
 
 	// Load
-	manifest, err := Load(fs, zap.NewNop().Sugar())
+	manifest, err := Load(fs)
 	assert.Nil(t, manifest)
 	assert.Error(t, err)
-	assert.Equal(t, `a cyclic relation was found when resolving path to config "branch:123/component:keboola.variables/config:111"`, err.Error())
+	assert.Equal(t, `cannot load manifest: a cyclic relation was found when resolving path to config "branch:123/component:keboola.variables/config:111"`, err.Error())
 }
 
 func minimalJson() string {
@@ -673,12 +584,4 @@ func cyclicDependencyJson() string {
   ]
 }
 `
-}
-
-func newTestManifest(t *testing.T) *Manifest {
-	t.Helper()
-	fs := testhelper.NewMemoryFs()
-	manifest, err := NewManifest(123, "foo.bar", fs)
-	assert.NoError(t, err)
-	return manifest
 }
