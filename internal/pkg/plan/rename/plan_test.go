@@ -7,12 +7,11 @@ import (
 
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
@@ -23,7 +22,7 @@ func TestRenameAllPlan(t *testing.T) {
 	t.Parallel()
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filesystem.Dir(testFile)
-	m, _ := loadTestManifest(t, filesystem.Join(testDir, "..", "..", "fixtures", "local", "to-rename"))
+	m, fs := loadTestManifest(t, filesystem.Join(testDir, "..", "..", "fixtures", "local", "to-rename"))
 
 	// Load state
 	logger, _ := utils.NewDebugLogger()
@@ -47,7 +46,7 @@ func TestRenameAllPlan(t *testing.T) {
 
 	// Load state
 	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
-	options := state.NewOptions(m, api, schedulerApi, context.Background(), logger)
+	options := state.NewOptions(fs, m, api, schedulerApi, context.Background(), logger)
 	options.LoadLocalState = true
 	projectState, ok, localErr, remoteErr := state.LoadState(options)
 	assert.True(t, ok)
@@ -101,11 +100,12 @@ func loadTestManifest(t *testing.T, inputDir string) (*manifest.Manifest, filesy
 
 	// Replace ENVs
 	envs := env.Empty()
+	envs.Set("LOCAL_PROJECT_ID", "12345")
 	envs.Set("TEST_KBC_STORAGE_API_HOST", "foo.bar")
 	testhelper.ReplaceEnvsDir(fs, `/`, envs)
 
 	// Load manifest
-	m, err := manifest.Load(fs, zap.NewNop().Sugar())
+	m, err := manifest.Load(fs)
 	assert.NoError(t, err)
 
 	return m, fs

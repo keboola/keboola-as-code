@@ -7,12 +7,11 @@ import (
 
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
-	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
@@ -42,7 +41,7 @@ func TestLoadRemoteStateComplex(t *testing.T) {
 func TestLoadRemoteStateAllowedBranches(t *testing.T) {
 	t.Parallel()
 	m := createManifest(t)
-	m.Content.AllowedBranches = model.AllowedBranches{"f??"} // foo
+	m.SetAllowedBranches(model.AllowedBranches{"f??"}) // foo
 	state, envs, remoteErr := loadRemoteState(t, m, "complex.json")
 	assert.NotNil(t, state)
 	assert.Empty(t, remoteErr)
@@ -428,24 +427,9 @@ func complexRemoteExpectedConfigsRows(envs *env.Map) []*model.ConfigRowState {
 
 func createManifest(t *testing.T) *manifest.Manifest {
 	t.Helper()
-
-	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), ".")
-	assert.NoError(t, err)
-	m, err := manifest.NewManifest(1, "connection.keboola.com", fs)
-	if err != nil {
-		assert.FailNow(t, err.Error())
-	}
-
-	// Force stable sort in tests
-	m.SortBy = model.SortByPath
-	m.Naming.Branch = "{branch_name}"
-	m.Naming.Config = "{component_type}/{component_id}/{config_name}"
-	m.Naming.ConfigRow = "rows/{config_row_name}"
-	m.Naming.SharedCodeConfig = "_shared/{target_component_id}"
-	m.Naming.SharedCodeConfigRow = "codes/{config_row_name}"
-	m.Naming.VariablesConfig = "variables"
-	m.Naming.VariablesValuesRow = "values/{config_row_name}"
-
+	m := manifest.NewManifest(1, "connection.keboola.com")
+	m.SetSortBy(model.SortByPath)
+	m.SetNaming(model.DefaultNamingWithoutIds())
 	return m
 }
 
@@ -456,8 +440,9 @@ func loadRemoteState(t *testing.T, m *manifest.Manifest, projectStateFile string
 	project := testproject.GetTestProject(t, envs)
 	project.SetState(projectStateFile)
 
+	fs := testhelper.NewMemoryFs()
 	logger, _ := utils.NewDebugLogger()
-	state := newState(NewOptions(m, project.StorageApi(), project.SchedulerApi(), context.Background(), logger))
+	state := newState(NewOptions(fs, m, project.StorageApi(), project.SchedulerApi(), context.Background(), logger))
 	remoteErr := state.loadRemoteState()
 	return state, envs, remoteErr
 }

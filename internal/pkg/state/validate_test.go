@@ -19,17 +19,17 @@ func TestValidateState(t *testing.T) {
 	// Create state
 	envs := env.Empty()
 	envs.Set("TEST_KBC_STORAGE_API_HOST", "foo.bar")
+	envs.Set("LOCAL_PROJECT_ID", `123`)
 	envs.Set("LOCAL_STATE_MAIN_BRANCH_ID", `123`)
 	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", `456`)
 
 	logger, _ := utils.NewDebugLogger()
-	m := loadTestManifest(t, envs, "minimal")
-	m.Project.Id = 123
+	m, fs := loadTestManifest(t, envs, "minimal")
 
 	api, httpTransport, _ := testapi.NewMockedStorageApi()
 
 	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
-	stateOptions := NewOptions(m, api, schedulerApi, context.Background(), logger)
+	stateOptions := NewOptions(fs, m, api, schedulerApi, context.Background(), logger)
 	s := newState(stateOptions)
 
 	// Mocked component response

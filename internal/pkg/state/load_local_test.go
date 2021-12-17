@@ -7,12 +7,11 @@ import (
 
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -22,8 +21,8 @@ import (
 func TestLoadLocalStateMinimal(t *testing.T) {
 	t.Parallel()
 
-	m := loadManifest(t, "minimal")
-	state, localErr := loadLocalTestState(t, m)
+	m, fs := loadManifest(t, "minimal")
+	state, localErr := loadLocalTestState(t, m, fs)
 	assert.NotNil(t, state)
 	assert.Empty(t, localErr)
 	assert.Len(t, state.Branches(), 1)
@@ -45,8 +44,8 @@ func TestLoadLocalStateMinimal(t *testing.T) {
 func TestLoadLocalStateComplex(t *testing.T) {
 	t.Parallel()
 
-	m := loadManifest(t, "complex")
-	state, localErr := loadLocalTestState(t, m)
+	m, fs := loadManifest(t, "complex")
+	state, localErr := loadLocalTestState(t, m, fs)
 	assert.NotNil(t, state)
 	assert.Empty(t, localErr)
 	assert.Equal(t, complexLocalExpectedBranches(), utils.SortByName(state.Branches()))
@@ -100,26 +99,26 @@ func TestLoadLocalStateComplex(t *testing.T) {
 func TestLoadLocalStateAllowedBranches(t *testing.T) {
 	t.Parallel()
 
-	m := loadManifest(t, "minimal")
-	m.Content.AllowedBranches = model.AllowedBranches{"main"}
-	state, localErr := loadLocalTestState(t, m)
+	m, fs := loadManifest(t, "minimal")
+	m.SetAllowedBranches(model.AllowedBranches{"main"})
+	state, localErr := loadLocalTestState(t, m, fs)
 	assert.NotNil(t, state)
 	assert.Empty(t, localErr)
 }
 
 func TestLoadLocalStateAllowedBranchesError(t *testing.T) {
 	t.Parallel()
-	m := loadManifest(t, "complex")
-	m.Content.AllowedBranches = model.AllowedBranches{"main"}
-	state, localErr := loadLocalTestState(t, m)
+	m, fs := loadManifest(t, "complex")
+	m.SetAllowedBranches(model.AllowedBranches{"main"})
+	state, localErr := loadLocalTestState(t, m, fs)
 	assert.NotNil(t, state)
 	assert.Equal(t, `found manifest record for branch "123", but it is not allowed by the manifest definition`, localErr.Error())
 }
 
 func TestLoadLocalStateBranchMissingMetaJson(t *testing.T) {
 	t.Parallel()
-	m := loadManifest(t, "branch-missing-meta-json")
-	state, localErr := loadLocalTestState(t, m)
+	m, fs := loadManifest(t, "branch-missing-meta-json")
+	state, localErr := loadLocalTestState(t, m, fs)
 	assert.NotNil(t, state)
 	assert.Error(t, localErr)
 	assert.Equal(t, `missing branch metadata file "main/meta.json"`, localErr.Error())
@@ -127,8 +126,8 @@ func TestLoadLocalStateBranchMissingMetaJson(t *testing.T) {
 
 func TestLoadLocalStateBranchMissingDescription(t *testing.T) {
 	t.Parallel()
-	m := loadManifest(t, "branch-missing-description")
-	state, localErr := loadLocalTestState(t, m)
+	m, fs := loadManifest(t, "branch-missing-description")
+	state, localErr := loadLocalTestState(t, m, fs)
 	assert.NotNil(t, state)
 	assert.Error(t, localErr)
 	assert.Equal(t, `missing branch description file "main/description.md"`, localErr.Error())
@@ -136,8 +135,8 @@ func TestLoadLocalStateBranchMissingDescription(t *testing.T) {
 
 func TestLoadLocalStateConfigMissingConfigJson(t *testing.T) {
 	t.Parallel()
-	m := loadManifest(t, "config-missing-config-json")
-	state, localErr := loadLocalTestState(t, m)
+	m, fs := loadManifest(t, "config-missing-config-json")
+	state, localErr := loadLocalTestState(t, m, fs)
 	assert.NotNil(t, state)
 	assert.Error(t, localErr)
 	assert.Equal(t, `missing config file "123-branch/extractor/ex-generic-v2/456-todos/config.json"`, localErr.Error())
@@ -145,8 +144,8 @@ func TestLoadLocalStateConfigMissingConfigJson(t *testing.T) {
 
 func TestLoadLocalStateConfigMissingMetaJson(t *testing.T) {
 	t.Parallel()
-	m := loadManifest(t, "config-missing-meta-json")
-	state, localErr := loadLocalTestState(t, m)
+	m, fs := loadManifest(t, "config-missing-meta-json")
+	state, localErr := loadLocalTestState(t, m, fs)
 	assert.NotNil(t, state)
 	assert.Error(t, localErr)
 	assert.Equal(t, `missing config metadata file "123-branch/extractor/ex-generic-v2/456-todos/meta.json"`, localErr.Error())
@@ -154,8 +153,8 @@ func TestLoadLocalStateConfigMissingMetaJson(t *testing.T) {
 
 func TestLoadLocalStateConfigMissingDescription(t *testing.T) {
 	t.Parallel()
-	m := loadManifest(t, "config-missing-description")
-	state, localErr := loadLocalTestState(t, m)
+	m, fs := loadManifest(t, "config-missing-description")
+	state, localErr := loadLocalTestState(t, m, fs)
 	assert.NotNil(t, state)
 	assert.Error(t, localErr)
 	assert.Equal(t, `missing config description file "123-branch/extractor/ex-generic-v2/456-todos/description.md"`, localErr.Error())
@@ -163,8 +162,8 @@ func TestLoadLocalStateConfigMissingDescription(t *testing.T) {
 
 func TestLoadLocalStateConfigRowMissingConfigJson(t *testing.T) {
 	t.Parallel()
-	m := loadManifest(t, "config-row-missing-config-json")
-	state, localErr := loadLocalTestState(t, m)
+	m, fs := loadManifest(t, "config-row-missing-config-json")
+	state, localErr := loadLocalTestState(t, m, fs)
 	assert.NotNil(t, state)
 	assert.Error(t, localErr)
 	assert.Equal(t, `missing config row file "123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users/config.json"`, localErr.Error())
@@ -172,8 +171,8 @@ func TestLoadLocalStateConfigRowMissingConfigJson(t *testing.T) {
 
 func TestLoadLocalStateConfigRowMissingMetaJson(t *testing.T) {
 	t.Parallel()
-	m := loadManifest(t, "config-row-missing-meta-json")
-	state, localErr := loadLocalTestState(t, m)
+	m, fs := loadManifest(t, "config-row-missing-meta-json")
+	state, localErr := loadLocalTestState(t, m, fs)
 	assert.NotNil(t, state)
 	assert.Error(t, localErr)
 	assert.Equal(t, `missing config row metadata file "123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json"`, localErr.Error())
@@ -181,8 +180,8 @@ func TestLoadLocalStateConfigRowMissingMetaJson(t *testing.T) {
 
 func TestLoadLocalStateBranchInvalidMetaJson(t *testing.T) {
 	t.Parallel()
-	m := loadManifest(t, "branch-invalid-meta-json")
-	state, localErr := loadLocalTestState(t, m)
+	m, fs := loadManifest(t, "branch-invalid-meta-json")
+	state, localErr := loadLocalTestState(t, m, fs)
 	assert.NotNil(t, state)
 	assert.Error(t, localErr)
 	assert.Equal(t, "branch metadata file \"main/meta.json\" is invalid:\n  - invalid character 'f' looking for beginning of object key string, offset: 3", localErr.Error())
@@ -190,8 +189,8 @@ func TestLoadLocalStateBranchInvalidMetaJson(t *testing.T) {
 
 func TestLoadLocalStateConfigRowMissingDescription(t *testing.T) {
 	t.Parallel()
-	m := loadManifest(t, "config-row-missing-description")
-	state, localErr := loadLocalTestState(t, m)
+	m, fs := loadManifest(t, "config-row-missing-description")
+	state, localErr := loadLocalTestState(t, m, fs)
 	assert.NotNil(t, state)
 	assert.Error(t, localErr)
 	assert.Equal(t, `missing config row description file "123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users/description.md"`, localErr.Error())
@@ -199,8 +198,8 @@ func TestLoadLocalStateConfigRowMissingDescription(t *testing.T) {
 
 func TestLoadLocalStateConfigInvalidConfigJson(t *testing.T) {
 	t.Parallel()
-	m := loadManifest(t, "config-invalid-config-json")
-	state, localErr := loadLocalTestState(t, m)
+	m, fs := loadManifest(t, "config-invalid-config-json")
+	state, localErr := loadLocalTestState(t, m, fs)
 	assert.NotNil(t, state)
 	assert.Error(t, localErr)
 	assert.Equal(t, "config file \"123-branch/extractor/ex-generic-v2/456-todos/config.json\" is invalid:\n  - invalid character 'f' looking for beginning of object key string, offset: 3", localErr.Error())
@@ -208,8 +207,8 @@ func TestLoadLocalStateConfigInvalidConfigJson(t *testing.T) {
 
 func TestLoadLocalStateConfigInvalidMetaJson(t *testing.T) {
 	t.Parallel()
-	m := loadManifest(t, "config-invalid-meta-json")
-	state, localErr := loadLocalTestState(t, m)
+	m, fs := loadManifest(t, "config-invalid-meta-json")
+	state, localErr := loadLocalTestState(t, m, fs)
 	assert.NotNil(t, state)
 	assert.Error(t, localErr)
 	assert.Equal(t, "config metadata file \"123-branch/extractor/ex-generic-v2/456-todos/meta.json\" is invalid:\n  - invalid character 'f' looking for beginning of object key string, offset: 3", localErr.Error())
@@ -217,8 +216,8 @@ func TestLoadLocalStateConfigInvalidMetaJson(t *testing.T) {
 
 func TestLoadLocalStateConfigRowInvalidConfigJson(t *testing.T) {
 	t.Parallel()
-	m := loadManifest(t, "config-row-invalid-config-json")
-	state, localErr := loadLocalTestState(t, m)
+	m, fs := loadManifest(t, "config-row-invalid-config-json")
+	state, localErr := loadLocalTestState(t, m, fs)
 	assert.NotNil(t, state)
 	assert.Error(t, localErr)
 	assert.Equal(t, "config row file \"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/56-disabled/config.json\" is invalid:\n  - invalid character 'f' looking for beginning of object key string, offset: 3", localErr.Error())
@@ -226,14 +225,14 @@ func TestLoadLocalStateConfigRowInvalidConfigJson(t *testing.T) {
 
 func TestLoadLocalStateConfigRowInvalidMetaJson(t *testing.T) {
 	t.Parallel()
-	m := loadManifest(t, "config-row-invalid-meta-json")
-	state, localErr := loadLocalTestState(t, m)
+	m, fs := loadManifest(t, "config-row-invalid-meta-json")
+	state, localErr := loadLocalTestState(t, m, fs)
 	assert.NotNil(t, state)
 	assert.Error(t, localErr)
 	assert.Equal(t, "config row metadata file \"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json\" is invalid:\n  - invalid character 'f' looking for beginning of object key string, offset: 3", localErr.Error())
 }
 
-func loadLocalTestState(t *testing.T, m *manifest.Manifest) (*State, error) {
+func loadLocalTestState(t *testing.T, m *manifest.Manifest, fs filesystem.Fs) (*State, error) {
 	t.Helper()
 
 	// Mocked API
@@ -262,18 +261,19 @@ func loadLocalTestState(t *testing.T, m *manifest.Manifest) (*State, error) {
 
 	// Load state
 	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
-	options := NewOptions(m, api, schedulerApi, context.Background(), logger)
+	options := NewOptions(fs, m, api, schedulerApi, context.Background(), logger)
 	options.LoadLocalState = true
 	state, _, localErr, remoteErr := LoadState(options)
 	assert.NoError(t, remoteErr)
 	return state, localErr
 }
 
-func loadManifest(t *testing.T, projectDirName string) *manifest.Manifest {
+func loadManifest(t *testing.T, projectDirName string) (*manifest.Manifest, filesystem.Fs) {
 	t.Helper()
 
 	envs := env.Empty()
 	envs.Set("TEST_KBC_STORAGE_API_HOST", "foo.bar")
+	envs.Set("LOCAL_PROJECT_ID", "12345")
 	envs.Set("LOCAL_STATE_MAIN_BRANCH_ID", "111")
 	envs.Set("LOCAL_STATE_MY_BRANCH_ID", "123")
 	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", "456")
@@ -289,11 +289,11 @@ func loadManifest(t *testing.T, projectDirName string) *manifest.Manifest {
 	testhelper.ReplaceEnvsDir(fs, `/`, envs)
 
 	// Load manifest
-	m, err := manifest.Load(fs, zap.NewNop().Sugar())
+	m, err := manifest.Load(fs)
 	if err != nil {
 		assert.FailNow(t, err.Error())
 	}
-	return m
+	return m, fs
 }
 
 func complexLocalExpectedBranches() []*model.BranchState {

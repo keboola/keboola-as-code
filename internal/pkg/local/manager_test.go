@@ -10,14 +10,13 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
@@ -172,14 +171,15 @@ func TestLocalLoadMapper(t *testing.T) {
 	// Replace placeholders in files
 	envs := env.Empty()
 	envs.Set("TEST_KBC_STORAGE_API_HOST", "foo.bar")
+	envs.Set("LOCAL_PROJECT_ID", "12345")
 	envs.Set("LOCAL_STATE_MAIN_BRANCH_ID", "111")
 	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", "456")
 	testhelper.ReplaceEnvsDir(fs, `/`, envs)
 
 	// Load objects
-	m, err := manifest.Load(fs, zap.NewNop().Sugar())
+	m, err := manifest.Load(fs)
 	assert.NoError(t, err)
-	uow.LoadAll(m.Content)
+	uow.LoadAll(m)
 	assert.NoError(t, uow.Invoke())
 
 	// Internal state has been mapped
@@ -220,15 +220,17 @@ func TestSkipChildrenLoadIfParentIsInvalid(t *testing.T) {
 			},
 		},
 	}
-	manager.manifest.Content.Branches = []*model.BranchManifest{branchManifest}
-	manager.manifest.Content.Configs = []*model.ConfigManifestWithRows{configManifest}
 	assert.False(t, branchManifest.State().IsInvalid())
 	assert.False(t, configManifest.State().IsInvalid())
 	assert.False(t, branchManifest.State().IsNotFound())
 	assert.False(t, configManifest.State().IsNotFound())
+	assert.NoError(t, manager.manifest.SetContent(
+		[]*model.BranchManifest{branchManifest},
+		[]*model.ConfigManifestWithRows{configManifest},
+	))
 
 	// Load all
-	uow.LoadAll(manager.manifest.Content)
+	uow.LoadAll(manager.manifest)
 
 	// Invoke and check error
 	// Branch is invalid, so config does not read at all (no error that it does not exist).

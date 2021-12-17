@@ -48,3 +48,41 @@ func TestComponentsIds(t *testing.T) {
 	assert.True(t, ids.Contains("bar"))
 	assert.False(t, ids.Contains("baz"))
 }
+
+func TestFilterIsObjectIgnored(t *testing.T) {
+	t.Parallel()
+	m := Filter{
+		AllowedBranches:   AllowedBranches{"dev-*", "123", "abc"},
+		IgnoredComponents: ComponentIds{"aaa", "bbb"},
+	}
+	assert.False(t, m.IsObjectIgnored(
+		&Branch{BranchKey: BranchKey{Id: 789}, Name: "dev-1"}),
+	)
+	assert.False(t, m.IsObjectIgnored(
+		&Branch{BranchKey: BranchKey{Id: 123}, Name: "xyz"}),
+	)
+	assert.False(t, m.IsObjectIgnored(
+		&Branch{BranchKey: BranchKey{Id: 789}, Name: "abc"}),
+	)
+	assert.True(t, m.IsObjectIgnored(
+		&Branch{BranchKey: BranchKey{Id: 789}, Name: "xyz"}),
+	)
+	assert.True(t, m.IsObjectIgnored(
+		&Config{ConfigKey: ConfigKey{ComponentId: "aaa"}}),
+	)
+	assert.True(t, m.IsObjectIgnored(
+		&Config{ConfigKey: ConfigKey{ComponentId: "bbb"}}),
+	)
+	assert.False(t, m.IsObjectIgnored(
+		&Config{ConfigKey: ConfigKey{ComponentId: "ccc"}}),
+	)
+	assert.True(t, m.IsObjectIgnored(
+		&ConfigRow{ConfigRowKey: ConfigRowKey{ComponentId: "aaa"}}),
+	)
+	assert.True(t, m.IsObjectIgnored(
+		&ConfigRow{ConfigRowKey: ConfigRowKey{ComponentId: "bbb"}}),
+	)
+	assert.False(t, m.IsObjectIgnored(
+		&ConfigRow{ConfigRowKey: ConfigRowKey{ComponentId: "ccc"}}),
+	)
+}
