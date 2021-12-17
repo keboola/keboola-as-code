@@ -10,25 +10,25 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
-// records contains model.ObjectManifest for each object: branch, config, row.
-type records struct {
-	naming naming
-	sortBy string
+// Records contains model.ObjectManifest for each object: branch, config, row.
+type Records struct {
+	naming Naming
+	SortBy string
 
 	lock    *sync.Mutex
-	all     *orderedmap.OrderedMap // common map for all records: branches, configs and rows manifests
+	all     *orderedmap.OrderedMap // common map for all Records: branches, configs and rows manifests
 	loaded  bool
 	changed bool
 }
 
-type naming interface {
+type Naming interface {
 	Attach(key model.Key, path model.PathInProject)
 }
 
-func newRecords(naming naming, sortBy string) *records {
-	return &records{
+func NewRecords(naming Naming, sortBy string) *Records {
+	return &Records{
 		naming:  naming,
-		sortBy:  sortBy,
+		SortBy:  sortBy,
 		lock:    &sync.Mutex{},
 		all:     orderedmap.New(),
 		loaded:  true,
@@ -36,26 +36,26 @@ func newRecords(naming naming, sortBy string) *records {
 	}
 }
 
-func (r *records) LoadFromContent(content *Content) error {
-	// Read all manifest records
+func (r *Records) SetRecords(records []model.ObjectManifest) error {
 	r.loaded = false
-	for _, branch := range content.Branches {
-		if err := r.trackRecord(branch); err != nil {
-			return err
+	defer func() {
+		// Track if manifest was changed after load
+		r.loaded = true
+		r.changed = false
+	}()
+
+	// Clear
+	r.all = orderedmap.New()
+
+	// Track records
+	errors := utils.NewMultiError()
+	for _, record := range records {
+		if err := r.trackRecord(record); err != nil {
+			errors.Append(err)
 		}
 	}
-	for _, config := range content.Configs {
-		if err := r.trackRecord(config.ConfigManifest); err != nil {
-			return err
-		}
-		for _, row := range config.Rows {
-			row.BranchId = config.BranchId
-			row.ComponentId = config.ComponentId
-			row.ConfigId = config.Id
-			if err := r.trackRecord(row); err != nil {
-				return err
-			}
-		}
+	if errors.Len() > 0 {
+		return errors
 	}
 
 	// Validate
@@ -63,7 +63,7 @@ func (r *records) LoadFromContent(content *Content) error {
 		return err
 	}
 
-	// Connect records together and resolve parent path
+	// Resolve parent paths, we can do it when all the records are loaded
 	for _, key := range r.all.Keys() {
 		record, _ := r.all.Get(key)
 		if err := r.PersistRecord(record.(model.ObjectManifest)); err != nil {
@@ -71,13 +71,10 @@ func (r *records) LoadFromContent(content *Content) error {
 		}
 	}
 
-	// Track if manifest was changed after load
-	r.loaded = true
-	r.changed = false
 	return nil
 }
 
-func (r *records) All() []model.ObjectManifest {
+func (r *Records) All() []model.ObjectManifest {
 	r.SortRecords()
 	out := make([]model.ObjectManifest, len(r.all.Keys()))
 	for i, k := range r.all.Keys() {
@@ -87,7 +84,7 @@ func (r *records) All() []model.ObjectManifest {
 	return out
 }
 
-func (r *records) AllPersisted() []model.ObjectManifest {
+func (r *Records) AllPersisted() []model.ObjectManifest {
 	r.SortRecords()
 	var out []model.ObjectManifest
 	for _, k := range r.all.Keys() {
@@ -101,23 +98,23 @@ func (r *records) AllPersisted() []model.ObjectManifest {
 }
 
 // SortRecords in manifest + ensure order of processing: branch, config, configRow.
-func (r *records) SortRecords() {
+func (r *Records) SortRecords() {
 	r.all.Sort(func(a *orderedmap.Pair, b *orderedmap.Pair) bool {
-		aKey := a.Value.(model.ObjectManifest).SortKey(r.sortBy)
-		bKey := b.Value.(model.ObjectManifest).SortKey(r.sortBy)
+		aKey := a.Value.(model.ObjectManifest).SortKey(r.SortBy)
+		bKey := b.Value.(model.ObjectManifest).SortKey(r.SortBy)
 		return aKey < bKey
 	})
 }
 
-func (r *records) IsChanged() bool {
+func (r *Records) IsChanged() bool {
 	return r.changed
 }
 
-func (r *records) ResetChanged() {
+func (r *Records) ResetChanged() {
 	r.changed = false
 }
 
-func (r *records) MustGetRecord(key model.Key) model.ObjectManifest {
+func (r *Records) MustGetRecord(key model.Key) model.ObjectManifest {
 	if record, found := r.GetRecord(key); found {
 		return record
 	} else {
@@ -125,7 +122,7 @@ func (r *records) MustGetRecord(key model.Key) model.ObjectManifest {
 	}
 }
 
-func (r *records) GetRecord(key model.Key) (model.ObjectManifest, bool) {
+func (r *Records) GetRecord(key model.Key) (model.ObjectManifest, bool) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	if r, found := r.all.Get(key.String()); found {
@@ -134,7 +131,7 @@ func (r *records) GetRecord(key model.Key) (model.ObjectManifest, bool) {
 	return nil, false
 }
 
-func (r *records) CreateOrGetRecord(key model.Key) (manifest model.ObjectManifest, found bool, err error) {
+func (r *Records) CreateOrGetRecord(key model.Key) (manifest model.ObjectManifest, found bool, err error) {
 	// Get
 	manifest, found = r.GetRecord(key)
 	if found {
@@ -160,7 +157,7 @@ func (r *records) CreateOrGetRecord(key model.Key) (manifest model.ObjectManifes
 	return manifest, false, nil
 }
 
-func (r *records) GetParent(manifest model.ObjectManifest) (model.ObjectManifest, error) {
+func (r *Records) GetParent(manifest model.ObjectManifest) (model.ObjectManifest, error) {
 	parentKey, err := manifest.ParentKey()
 	if err != nil {
 		return nil, err
@@ -176,7 +173,7 @@ func (r *records) GetParent(manifest model.ObjectManifest) (model.ObjectManifest
 }
 
 // PersistRecord - store a new or existing record, and marks it as persisted.
-func (r *records) PersistRecord(record model.ObjectManifest) error {
+func (r *Records) PersistRecord(record model.ObjectManifest) error {
 	// Resolve parent path
 	if !record.IsParentPathSet() {
 		if err := r.ResolveParentPath(record); err != nil {
@@ -184,7 +181,7 @@ func (r *records) PersistRecord(record model.ObjectManifest) error {
 		}
 	}
 
-	// Attach record to the naming
+	// Attach record to the Naming
 	r.naming.Attach(record.Key(), record.GetPathInProject())
 
 	r.lock.Lock()
@@ -199,10 +196,10 @@ func (r *records) PersistRecord(record model.ObjectManifest) error {
 }
 
 // trackRecord - store a new record and make sure it has unique key.
-func (r *records) trackRecord(record model.ObjectManifest) error {
-	// Resolve parent path and attach record to the naming
+func (r *Records) trackRecord(record model.ObjectManifest) error {
+	// Resolve parent path and attach record to the Naming
 	if r.loaded {
-		// All records must be loaded to resolve parent path
+		// All Records must be loaded to resolve parent path
 		if err := r.ResolveParentPath(record); err != nil {
 			return err
 		}
@@ -220,11 +217,11 @@ func (r *records) trackRecord(record model.ObjectManifest) error {
 	return nil
 }
 
-func (r *records) Delete(object model.WithKey) {
+func (r *Records) Delete(object model.WithKey) {
 	r.DeleteByKey(object.Key())
 }
 
-func (r *records) DeleteByKey(key model.Key) {
+func (r *Records) DeleteByKey(key model.Key) {
 	record, found := r.GetRecord(key)
 	if found {
 		r.lock.Lock()
@@ -235,12 +232,12 @@ func (r *records) DeleteByKey(key model.Key) {
 	}
 }
 
-func (r *records) ResolveParentPath(record model.ObjectManifest) error {
+func (r *Records) ResolveParentPath(record model.ObjectManifest) error {
 	return r.doResolveParentPath(record, nil)
 }
 
 // doResolveParentPath recursive + fail on cyclic relations.
-func (r *records) doResolveParentPath(record, origin model.ObjectManifest) error {
+func (r *Records) doResolveParentPath(record, origin model.ObjectManifest) error {
 	if origin != nil && record.Key().String() == origin.Key().String() {
 		return fmt.Errorf(`a cyclic relation was found when resolving path to %s`, origin.Desc())
 	}
@@ -269,7 +266,7 @@ func (r *records) doResolveParentPath(record, origin model.ObjectManifest) error
 	return nil
 }
 
-func (r *records) validate() error {
+func (r *Records) validate() error {
 	if err := validator.Validate(r.All()); err != nil {
 		return utils.PrefixError("manifest is not valid", err)
 	}
