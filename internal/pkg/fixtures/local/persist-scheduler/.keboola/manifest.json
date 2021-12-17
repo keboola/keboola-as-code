@@ -1,7 +1,7 @@
 {
   "version": 1,
   "project": {
-    "id": 12345,
+    "id": %%LOCAL_PROJECT_ID%%,
     "apiHost": "foo.bar"
   },
   "branches": [
