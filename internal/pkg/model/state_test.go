@@ -5,7 +5,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -20,37 +22,37 @@ func TestNewState(t *testing.T) {
 
 func TestStateComponents(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t)
+	s := newTestState(t, testhelper.NewMemoryFs())
 	assert.NotNil(t, s.Components())
 }
 
 func TestStateAll(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t)
+	s := newTestState(t, testhelper.NewMemoryFs())
 	assert.Len(t, s.All(), 6)
 }
 
 func TestStateBranches(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t)
+	s := newTestState(t, testhelper.NewMemoryFs())
 	assert.Len(t, s.Branches(), 2)
 }
 
 func TestStateConfigs(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t)
+	s := newTestState(t, testhelper.NewMemoryFs())
 	assert.Len(t, s.Configs(), 2)
 }
 
 func TestStateConfigRows(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t)
+	s := newTestState(t, testhelper.NewMemoryFs())
 	assert.Len(t, s.ConfigRows(), 2)
 }
 
 func TestStateConfigsFrom(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t)
+	s := newTestState(t, testhelper.NewMemoryFs())
 	assert.Len(t, s.ConfigsFrom(BranchKey{Id: 123}), 2)
 	assert.Len(t, s.ConfigsFrom(BranchKey{Id: 567}), 0)
 	assert.Len(t, s.ConfigsFrom(BranchKey{Id: 111}), 0)
@@ -58,7 +60,7 @@ func TestStateConfigsFrom(t *testing.T) {
 
 func TestStateConfigRowsFrom(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t)
+	s := newTestState(t, testhelper.NewMemoryFs())
 	assert.Len(t, s.ConfigRowsFrom(ConfigKey{BranchId: 123, ComponentId: "keboola.bar", Id: `678`}), 2)
 	assert.Len(t, s.ConfigRowsFrom(ConfigKey{BranchId: 123, ComponentId: "keboola.bar", Id: `345`}), 0)
 	assert.Len(t, s.ConfigRowsFrom(ConfigKey{BranchId: 123, ComponentId: "keboola.bar", Id: `111`}), 0)
@@ -66,7 +68,7 @@ func TestStateConfigRowsFrom(t *testing.T) {
 
 func TestStateGet(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t)
+	s := newTestState(t, testhelper.NewMemoryFs())
 	state, found := s.Get(BranchKey{Id: 567})
 	assert.NotNil(t, state)
 	assert.True(t, found)
@@ -74,7 +76,7 @@ func TestStateGet(t *testing.T) {
 
 func TestStateGetNotFound(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t)
+	s := newTestState(t, testhelper.NewMemoryFs())
 	state, found := s.Get(BranchKey{Id: 111})
 	assert.Nil(t, state)
 	assert.False(t, found)
@@ -82,13 +84,13 @@ func TestStateGetNotFound(t *testing.T) {
 
 func TestStateMustGet(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t)
+	s := newTestState(t, testhelper.NewMemoryFs())
 	assert.Equal(t, "Foo Bar Branch", s.MustGet(BranchKey{Id: 567}).ObjectName())
 }
 
 func TestStateMustGetNotFound(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t)
+	s := newTestState(t, testhelper.NewMemoryFs())
 	assert.PanicsWithError(t, `branch "111" not found`, func() {
 		s.MustGet(BranchKey{Id: 111})
 	})
@@ -96,11 +98,11 @@ func TestStateMustGetNotFound(t *testing.T) {
 
 func TestStateTrackRecordNotPersisted(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t)
-	s.pathsState.all[`foo`] = true
-	s.pathsState.all[`foo/bar1`] = true
-	s.pathsState.all[`foo/bar2`] = true
-	s.pathsState.all[`foo/bar3`] = true
+	fs := testhelper.NewMemoryFs()
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(`foo/bar1`, `foo`)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(`foo/bar2`, `foo`)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(`foo/bar3`, `foo`)))
+	s := newTestState(t, fs)
 
 	record := &ConfigManifest{
 		RecordState: RecordState{
@@ -119,11 +121,11 @@ func TestStateTrackRecordNotPersisted(t *testing.T) {
 
 func TestStateTrackRecordValid(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t)
-	s.pathsState.all[`foo`] = true
-	s.pathsState.all[`foo/bar1`] = true
-	s.pathsState.all[`foo/bar2`] = true
-	s.pathsState.all[`foo/bar3`] = true
+	fs := testhelper.NewMemoryFs()
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(`foo/bar1`, `foo`)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(`foo/bar2`, `foo`)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(`foo/bar3`, `foo`)))
+	s := newTestState(t, fs)
 
 	record := &ConfigManifest{
 		RecordState: RecordState{
@@ -142,11 +144,11 @@ func TestStateTrackRecordValid(t *testing.T) {
 
 func TestStateTrackRecordInvalid(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t)
-	s.pathsState.all[`foo`] = true
-	s.pathsState.all[`foo/bar1`] = true
-	s.pathsState.all[`foo/bar2`] = true
-	s.pathsState.all[`foo/bar3`] = true
+	fs := testhelper.NewMemoryFs()
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(`foo/bar1`, `foo`)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(`foo/bar2`, `foo`)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(`foo/bar3`, `foo`)))
+	s := newTestState(t, fs)
 
 	record := &ConfigManifest{
 		RecordState: RecordState{
@@ -165,11 +167,9 @@ func TestStateTrackRecordInvalid(t *testing.T) {
 	assert.Empty(t, s.UntrackedPaths())
 }
 
-func newTestState(t *testing.T) *State {
+func newTestState(t *testing.T, fs filesystem.Fs) *State {
 	t.Helper()
 	logger, _ := utils.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger, `/`)
-	assert.NoError(t, err)
 	s := NewState(logger, fs, NewComponentsMap(nil), SortByPath)
 	assert.NotNil(t, s)
 

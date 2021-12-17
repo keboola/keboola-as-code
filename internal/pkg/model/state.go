@@ -7,12 +7,16 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
+type pathsRO = knownpaths.PathsReadOnly
+
 type State struct {
-	pathsState *PathsState
+	*pathsRO
+	paths      *knownpaths.Paths
 	sortBy     string
 	lock       *sync.Mutex
 	components *ComponentsMap
@@ -20,12 +24,13 @@ type State struct {
 }
 
 func NewState(logger *zap.SugaredLogger, fs filesystem.Fs, components *ComponentsMap, sortBy string) *State {
-	ps, err := NewPathsState(fs)
+	paths, err := knownpaths.New(fs)
 	if err != nil {
 		logger.Debug(utils.PrefixError(`error loading directory structure`, err).Error())
 	}
 	return &State{
-		pathsState: ps,
+		pathsRO:    paths.ReadOnly(),
+		paths:      paths,
 		sortBy:     sortBy,
 		lock:       &sync.Mutex{},
 		components: components,
@@ -37,17 +42,15 @@ func (s *State) Components() *ComponentsMap {
 	return s.components
 }
 
-func (s *State) PathsState() *PathsState {
-	return s.pathsState.Clone()
+func (s *State) PathsState() *knownpaths.Paths {
+	return s.paths.Clone()
 }
 
 func (s *State) ReloadPathsState() error {
 	// Create a new paths state -> all paths are untracked
-	ps, err := NewPathsState(s.pathsState.fs)
-	if err != nil {
+	if err := s.paths.Reset(); err != nil {
 		return fmt.Errorf(`cannot reload paths state: %w`, err)
 	}
-	s.pathsState = ps
 
 	// Track all known paths
 	for _, object := range s.All() {
@@ -62,16 +65,16 @@ func (s *State) TrackObjectPaths(manifest ObjectManifest) {
 	}
 
 	// Track object path
-	s.pathsState.MarkTracked(manifest.Path())
+	s.paths.MarkTracked(manifest.Path())
 
 	// Track sub-paths
 	if manifest.State().IsInvalid() {
 		// Object is invalid, no sub-paths has been parsed -> mark all sub-paths tracked.
-		s.pathsState.MarkSubPathsTracked(manifest.Path())
+		s.paths.MarkSubPathsTracked(manifest.Path())
 	} else {
 		// Object is valid, track loaded files.
 		for _, path := range manifest.GetRelatedPaths() {
-			s.pathsState.MarkTracked(path)
+			s.paths.MarkTracked(path)
 		}
 	}
 }
@@ -221,44 +224,6 @@ func (s *State) GetOrCreateFrom(manifest ObjectManifest) (ObjectState, error) {
 	}
 
 	return s.CreateFrom(manifest)
-}
-
-func (s *State) IsTracked(path string) bool {
-	return s.pathsState.IsTracked(path)
-}
-
-func (s *State) IsUntracked(path string) bool {
-	return s.pathsState.IsUntracked(path)
-}
-
-// TrackedPaths returns all tracked paths.
-func (s *State) TrackedPaths() []string {
-	return s.pathsState.TrackedPaths()
-}
-
-// UntrackedPaths returns all untracked paths.
-func (s *State) UntrackedPaths() []string {
-	return s.pathsState.UntrackedPaths()
-}
-
-func (s *State) UntrackedDirs() (dirs []string) {
-	return s.pathsState.UntrackedPaths()
-}
-
-func (s *State) UntrackedDirsFrom(base string) (dirs []string) {
-	return s.pathsState.UntrackedDirsFrom(base)
-}
-
-func (s *State) IsFile(path string) bool {
-	return s.pathsState.IsFile(path)
-}
-
-func (s *State) IsDir(path string) bool {
-	return s.pathsState.IsDir(path)
-}
-
-func (s *State) LogUntrackedPaths(logger *zap.SugaredLogger) {
-	s.pathsState.LogUntrackedPaths(logger)
 }
 
 type StateType int
