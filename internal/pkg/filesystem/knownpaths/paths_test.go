@@ -1,4 +1,4 @@
-package model_test
+package knownpaths_test
 
 import (
 	"runtime"
@@ -9,12 +9,12 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
-	. "github.com/keboola/keboola-as-code/internal/pkg/model"
+	. "github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
 )
 
-func TestPathsStateEmpty(t *testing.T) {
+func TestKnownPathsEmpty(t *testing.T) {
 	t.Parallel()
-	paths, err := loadPathsState(t, "empty")
+	paths, err := loadKnownPaths(t, "empty")
 	assert.NotNil(t, paths)
 	assert.NoError(t, err)
 	assert.Empty(t, paths.TrackedPaths())
@@ -26,9 +26,9 @@ func TestPathsStateEmpty(t *testing.T) {
 	assert.Empty(t, paths.UntrackedPaths())
 }
 
-func TestPathsStateIgnoredFile(t *testing.T) {
+func TestKnownPathsIgnoredFile(t *testing.T) {
 	t.Parallel()
-	paths, err := loadPathsState(t, "ignored-file")
+	paths, err := loadKnownPaths(t, "ignored-file")
 	assert.NotNil(t, paths)
 	assert.NoError(t, err)
 	assert.Empty(t, paths.TrackedPaths())
@@ -40,9 +40,9 @@ func TestPathsStateIgnoredFile(t *testing.T) {
 	assert.Empty(t, paths.UntrackedPaths())
 }
 
-func TestPathsStateComplex(t *testing.T) {
+func TestKnownPathsComplex(t *testing.T) {
 	t.Parallel()
-	paths, err := loadPathsState(t, "complex")
+	paths, err := loadKnownPaths(t, "complex")
 	assert.NotNil(t, paths)
 	assert.NoError(t, err)
 
@@ -241,10 +241,10 @@ func TestPathsStateComplex(t *testing.T) {
 	}, paths.UntrackedPaths())
 }
 
-func TestPathsStateClone(t *testing.T) {
+func TestKnownPathsClone(t *testing.T) {
 	t.Parallel()
 
-	paths, err := loadPathsState(t, "complex")
+	paths, err := loadKnownPaths(t, "complex")
 	assert.NotNil(t, paths)
 	assert.NoError(t, err)
 
@@ -256,9 +256,9 @@ func TestPathsStateClone(t *testing.T) {
 	assert.NotEqual(t, paths, clone)
 }
 
-func TestPathsStateStateMethods(t *testing.T) {
+func TestKnownPathsStateMethods(t *testing.T) {
 	t.Parallel()
-	paths, err := loadPathsState(t, "complex")
+	paths, err := loadKnownPaths(t, "complex")
 	assert.NotNil(t, paths)
 	assert.NoError(t, err)
 
@@ -273,9 +273,9 @@ func TestPathsStateStateMethods(t *testing.T) {
 	assert.False(t, paths.IsUntracked(path))
 }
 
-func TestPathsStateUntrackedDirs(t *testing.T) {
+func TestKnownPathsUntrackedDirs(t *testing.T) {
 	t.Parallel()
-	paths, err := loadPathsState(t, "complex")
+	paths, err := loadKnownPaths(t, "complex")
 	assert.NotNil(t, paths)
 	assert.NoError(t, err)
 
@@ -298,9 +298,9 @@ func TestPathsStateUntrackedDirs(t *testing.T) {
 	}, paths.UntrackedDirs())
 }
 
-func TestPathsStateUntrackedDirsFrom(t *testing.T) {
+func TestKnownPathsUntrackedDirsFrom(t *testing.T) {
 	t.Parallel()
-	paths, err := loadPathsState(t, "complex")
+	paths, err := loadKnownPaths(t, "complex")
 	assert.NotNil(t, paths)
 	assert.NoError(t, err)
 
@@ -310,12 +310,12 @@ func TestPathsStateUntrackedDirsFrom(t *testing.T) {
 	}, paths.UntrackedDirsFrom(`main/extractor`))
 }
 
-func loadPathsState(t *testing.T, fixture string) (*PathsState, error) {
+func loadKnownPaths(t *testing.T, fixture string) (*Paths, error) {
 	t.Helper()
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filesystem.Dir(testFile)
-	projectDir := filesystem.Join(testDir, "..", "fixtures", "local", fixture)
+	projectDir := filesystem.Join(testDir, "..", "..", "fixtures", "local", fixture)
 	fs, err := aferofs.NewLocalFs(zap.NewNop().Sugar(), projectDir, ".")
 	assert.NoError(t, err)
-	return NewPathsState(fs)
+	return New(fs)
 }
