@@ -10,12 +10,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 )
 
-type fakeNaming struct{}
-
-func (fakeNaming) Attach(_ model.Key, _ model.PathInProject) {
-	// nop
-}
-
 type test struct {
 	name string
 	json string
@@ -91,7 +85,7 @@ func TestManifestSave(t *testing.T) {
 		m := NewManifest(c.data.Project.Id, `foo.bar`)
 		m.content.AllowedBranches = c.data.AllowedBranches
 		m.content.IgnoredComponents = c.data.IgnoredComponents
-		assert.NoError(t, m.records.LoadFromContent(c.data))
+		assert.NoError(t, m.records.SetRecords(c.data.allRecords()))
 
 		// Save
 		assert.NoError(t, m.Save(fs))

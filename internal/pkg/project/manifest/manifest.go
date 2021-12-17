@@ -5,12 +5,15 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/build"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 const (
 	FileName = "manifest.json"
 )
+
+type records = manifest.Records
 
 // Manifest of the project directory
 // Content contains IDs and paths of the all objects: branches, configs, rows.
@@ -27,7 +30,7 @@ func NewManifest(projectId int, apiHost string) *Manifest {
 	n := model.DefaultNamingWithIds()
 	content := newContent(projectId, apiHost)
 	return &Manifest{
-		records: newRecords(n, content.SortBy),
+		records: manifest.NewRecords(n, content.SortBy),
 		content: content,
 	}
 }
@@ -45,7 +48,7 @@ func Load(fs filesystem.Fs) (*Manifest, error) {
 	m := newManifest(content.Naming, content)
 
 	// Load records
-	if err := m.records.LoadFromContent(m.content); err != nil {
+	if err := m.records.SetRecords(m.content.allRecords()); err != nil {
 		return nil, fmt.Errorf(`cannot load manifest: %w`, err)
 	}
 
@@ -81,7 +84,7 @@ func (m *Manifest) SortBy() string {
 
 func (m *Manifest) SetSortBy(sortBy string) {
 	m.content.SortBy = sortBy
-	m.records.sortBy = sortBy
+	m.records.SortBy = sortBy
 }
 
 func (m *Manifest) Naming() *model.Naming {
@@ -103,7 +106,7 @@ func (m *Manifest) SetAllowedBranches(v model.AllowedBranches) {
 func (m *Manifest) SetContent(branches []*model.BranchManifest, configs []*model.ConfigManifestWithRows) error {
 	m.content.Branches = branches
 	m.content.Configs = configs
-	return m.records.LoadFromContent(m.content)
+	return m.records.SetRecords(m.content.allRecords())
 }
 
 func (m *Manifest) IsChanged() bool {
@@ -114,9 +117,9 @@ func (m *Manifest) IsObjectIgnored(object model.Object) bool {
 	return m.content.Filter.IsObjectIgnored(object)
 }
 
-func newManifest(naming naming, content *Content) *Manifest {
+func newManifest(naming manifest.Naming, content *Content) *Manifest {
 	return &Manifest{
-		records: newRecords(naming, content.SortBy),
+		records: manifest.NewRecords(naming, content.SortBy),
 		content: content,
 	}
 }

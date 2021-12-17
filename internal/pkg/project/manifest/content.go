@@ -124,3 +124,20 @@ func (c *Content) validate() error {
 	}
 	return nil
 }
+
+func (c *Content) allRecords() []model.ObjectManifest {
+	var out []model.ObjectManifest
+	for _, branch := range c.Branches {
+		out = append(out, branch)
+	}
+	for _, config := range c.Configs {
+		out = append(out, config.ConfigManifest)
+		for _, row := range config.Rows {
+			row.BranchId = config.BranchId
+			row.ComponentId = config.ComponentId
+			row.ConfigId = config.Id
+			out = append(out, row)
+		}
+	}
+	return out
+}
