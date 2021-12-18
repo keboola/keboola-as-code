@@ -61,7 +61,9 @@ func (w *Writer) Flush() (err error) {
 	return nil
 }
 
-func (*Writer) Close() error { return nil }
+func (w *Writer) Close() error {
+	return w.Flush()
+}
 
 // Fd fake terminal file descriptor.
 func (*Writer) Fd() uintptr {
