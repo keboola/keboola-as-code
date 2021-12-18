@@ -15,6 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
+	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	createConfig "github.com/keboola/keboola-as-code/pkg/lib/operation/local/create/config"
 	createRow "github.com/keboola/keboola-as-code/pkg/lib/operation/local/create/row"
@@ -63,7 +64,7 @@ func TestAskCreateConfig(t *testing.T) {
 	t.Parallel()
 
 	// Fs
-	fs := testhelper.NewMemoryFs()
+	fs := testfs.NewMemoryFs()
 
 	// Create manifest file
 	manifestContent := `
@@ -156,7 +157,7 @@ func TestAskCreateRow(t *testing.T) {
 	t.Parallel()
 
 	// Fs
-	fs := testhelper.NewMemoryFs()
+	fs := testfs.NewMemoryFs()
 
 	// Create manifest file
 	manifestContent := `

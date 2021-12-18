@@ -15,6 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 )
 
@@ -96,7 +97,7 @@ func loadTestManifest(t *testing.T, inputDir string) (*manifest.Manifest, filesy
 	t.Helper()
 
 	// Create Fs
-	fs := testhelper.NewMemoryFsFrom(inputDir)
+	fs := testfs.NewMemoryFsFrom(inputDir)
 
 	// Replace ENVs
 	envs := env.Empty()

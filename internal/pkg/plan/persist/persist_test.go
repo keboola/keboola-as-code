@@ -18,6 +18,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
@@ -908,7 +909,7 @@ func (tc *testCase) run(t *testing.T) {
 	inputDir := filesystem.Join(testDir, `..`, `..`, `fixtures`, `local`, tc.inputDir)
 
 	// Create Fs
-	fs := testhelper.NewMemoryFsFrom(inputDir)
+	fs := testfs.NewMemoryFsFrom(inputDir)
 	envs := env.Empty()
 	envs.Set(`LOCAL_PROJECT_ID`, `12345`)
 	testhelper.ReplaceEnvsDir(fs, `/`, envs)

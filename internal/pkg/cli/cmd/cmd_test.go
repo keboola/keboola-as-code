@@ -13,13 +13,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/ioutil"
 )
 
 func TestCliSubCommands(t *testing.T) {
 	t.Parallel()
-	root, _ := newTestRootCommand(testhelper.NewMemoryFs())
+	root, _ := newTestRootCommand(testfs.NewMemoryFs())
 
 	// Map commands to names, skip hidden
 	var names []string
@@ -41,7 +41,7 @@ func TestCliSubCommands(t *testing.T) {
 
 func TestCliSubCommandsAndAliases(t *testing.T) {
 	t.Parallel()
-	root, _ := newTestRootCommand(testhelper.NewMemoryFs())
+	root, _ := newTestRootCommand(testfs.NewMemoryFs())
 
 	// Map commands to names
 	var names []string
@@ -77,7 +77,7 @@ func TestCliSubCommandsAndAliases(t *testing.T) {
 
 func TestCliCmdPersistentFlags(t *testing.T) {
 	t.Parallel()
-	root, _ := newTestRootCommand(testhelper.NewMemoryFs())
+	root, _ := newTestRootCommand(testfs.NewMemoryFs())
 
 	// Map flags to names
 	var names []string
@@ -99,7 +99,7 @@ func TestCliCmdPersistentFlags(t *testing.T) {
 
 func TestCliCmdFlags(t *testing.T) {
 	t.Parallel()
-	root, _ := newTestRootCommand(testhelper.NewMemoryFs())
+	root, _ := newTestRootCommand(testfs.NewMemoryFs())
 
 	// Map flags to names
 	var names []string
@@ -116,7 +116,7 @@ func TestCliCmdFlags(t *testing.T) {
 
 func TestExecute(t *testing.T) {
 	t.Parallel()
-	root, out := newTestRootCommand(testhelper.NewMemoryFs())
+	root, out := newTestRootCommand(testfs.NewMemoryFs())
 
 	// Execute
 	root.Logger = log.NewNopLogger()
@@ -126,7 +126,7 @@ func TestExecute(t *testing.T) {
 
 func TestTearDownRemoveLogFile(t *testing.T) {
 	t.Parallel()
-	root, _ := newTestRootCommand(testhelper.NewMemoryFs())
+	root, _ := newTestRootCommand(testfs.NewMemoryFs())
 
 	root.Options.LogFilePath = ""
 	root.setupLogger()
@@ -139,7 +139,7 @@ func TestTearDownRemoveLogFile(t *testing.T) {
 
 func TestTearDownKeepLogFile(t *testing.T) {
 	t.Parallel()
-	root, _ := newTestRootCommand(testhelper.NewMemoryFs())
+	root, _ := newTestRootCommand(testfs.NewMemoryFs())
 	tempDir := t.TempDir()
 
 	root.Options.LogFilePath = filepath.Join(tempDir, "log-file.txt") // nolint: forbidigo
@@ -154,7 +154,7 @@ func TestTearDownKeepLogFile(t *testing.T) {
 
 func TestGetLogFileTempFile(t *testing.T) {
 	t.Parallel()
-	root, _ := newTestRootCommand(testhelper.NewMemoryFs())
+	root, _ := newTestRootCommand(testfs.NewMemoryFs())
 	root.Options.LogFilePath = ""
 	root.setupLogger()
 	assert.True(t, root.logFile.IsTemp())
@@ -169,7 +169,7 @@ func TestGetLogFileTempFile(t *testing.T) {
 
 func TestGetLogFileFromFlags(t *testing.T) {
 	t.Parallel()
-	root, _ := newTestRootCommand(testhelper.NewMemoryFs())
+	root, _ := newTestRootCommand(testfs.NewMemoryFs())
 
 	// Note: log file can be outside project directory, so it is NOT using virtual filesystem
 	tempDir := t.TempDir()

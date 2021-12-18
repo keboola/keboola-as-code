@@ -12,13 +12,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 )
 
 func createMapper(t *testing.T) (*mapper.Mapper, model.MapperContext, log.DebugLogger) {
 	t.Helper()
 	logger := log.NewDebugLogger()
-	fs := testhelper.NewMemoryFs()
+	fs := testfs.NewMemoryFs()
 	state := model.NewState(log.NewNopLogger(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
 	manifest := projectManifest.NewManifest(1, `foo.bar`)
 	context := model.MapperContext{Logger: logger, Fs: fs, Naming: model.DefaultNamingWithIds(), State: state}

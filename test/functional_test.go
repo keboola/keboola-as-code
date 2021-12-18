@@ -22,6 +22,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
+	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
 )
@@ -87,8 +88,8 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	assert.NoError(t, os.Chdir(workingDir))
 
 	// Virtual fs for test and working dir
-	testDirFs := testhelper.NewBasePathLocalFs(testDir)
-	workingDirFs := testhelper.NewBasePathLocalFs(workingDir)
+	testDirFs := testfs.NewBasePathLocalFs(testDir)
+	workingDirFs := testfs.NewBasePathLocalFs(workingDir)
 
 	// Copy all from "in" dir to "runtime" dir
 	inDir := `in`
@@ -273,7 +274,7 @@ func AssertExpectations(
 	}
 
 	// Copy expected state and replace ENVs
-	expectedDirFs := testhelper.NewMemoryFsFrom(filesystem.Join(testDirFs.BasePath(), expectedDir))
+	expectedDirFs := testfs.NewMemoryFsFrom(filesystem.Join(testDirFs.BasePath(), expectedDir))
 	testhelper.ReplaceEnvsDir(expectedDirFs, `/`, envProvider)
 
 	// Compare actual and expected dirs

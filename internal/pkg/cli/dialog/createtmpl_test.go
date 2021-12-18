@@ -13,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
+	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	createTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/create"
 )
@@ -26,7 +27,7 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 	dialog, console := createDialogs(t, true)
 	d := testdeps.NewDependencies()
 	d.LoggerValue = log.NewNopLogger()
-	d.FsValue = testhelper.NewMemoryFs()
+	d.FsValue = testfs.NewMemoryFs()
 	d.StorageApiValue, httpTransport, _ = testapi.NewMockedStorageApi()
 	setupCreateTemplateApiResponses(httpTransport)
 
@@ -178,7 +179,7 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 	dialog, _ := createDialogs(t, false)
 	d := testdeps.NewDependencies()
 	d.LoggerValue = log.NewNopLogger()
-	d.FsValue = testhelper.NewMemoryFs()
+	d.FsValue = testfs.NewMemoryFs()
 	d.StorageApiValue, httpTransport, _ = testapi.NewMockedStorageApi()
 	setupCreateTemplateApiResponses(httpTransport)
 
@@ -239,7 +240,7 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 	dialog, _ := createDialogs(t, false)
 	d := testdeps.NewDependencies()
 	d.LoggerValue = log.NewNopLogger()
-	d.FsValue = testhelper.NewMemoryFs()
+	d.FsValue = testfs.NewMemoryFs()
 	d.StorageApiValue, httpTransport, _ = testapi.NewMockedStorageApi()
 	setupCreateTemplateApiResponses(httpTransport)
 
