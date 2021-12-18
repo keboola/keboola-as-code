@@ -8,12 +8,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -813,12 +813,12 @@ func TestDiffMap(t *testing.T) {
 func createProjectState(t *testing.T) *state.State {
 	t.Helper()
 
-	logger, _ := utils.NewDebugLogger()
+	logger := log.NewDebugLogger()
 	fs := testhelper.NewMemoryFs()
 	manifest := projectManifest.NewManifest(1, `foo.bar`)
 	storageApi, _, _ := testapi.NewMockedStorageApi()
 	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
-	options := state.NewOptions(fs, manifest, storageApi, schedulerApi, context.Background(), logger)
+	options := state.NewOptions(fs, manifest, storageApi, schedulerApi, context.Background(), logger.Logger)
 	options.LoadLocalState = false
 	options.LoadRemoteState = false
 	s, _, localErr, remoteErr := state.LoadState(options)

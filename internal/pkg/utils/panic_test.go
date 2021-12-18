@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
 func TestNewUserError(t *testing.T) {
@@ -23,11 +25,11 @@ func TestNewUserErrorWithCode(t *testing.T) {
 
 func TestProcessPanicUserError(t *testing.T) {
 	t.Parallel()
-	logger, log := NewDebugLogger()
+	logger := log.NewDebugLogger()
 	logFilePath := "/foo/bar.log"
-	exitCode := ProcessPanic(NewUserErrorWithCode(123, "test"), logger, logFilePath)
+	exitCode := ProcessPanic(NewUserErrorWithCode(123, "test"), logger.Logger, logFilePath)
 	assert.Equal(t, 123, exitCode)
-	logStr := log.String()
+	logStr := logger.String()
 	assert.Contains(t, logStr, "DEBUG  User error panic: test")
 	assert.Contains(t, logStr, "DEBUG  Trace:")
 	assert.Contains(t, logStr, "Details can be found in the log file \"/foo/bar.log\".")
@@ -35,11 +37,11 @@ func TestProcessPanicUserError(t *testing.T) {
 
 func TestProcessPanicUnexpected(t *testing.T) {
 	t.Parallel()
-	logger, log := NewDebugLogger()
+	logger := log.NewDebugLogger()
 	logFilePath := "/foo/bar.log"
-	exitCode := ProcessPanic(fmt.Errorf("test"), logger, logFilePath)
+	exitCode := ProcessPanic(fmt.Errorf("test"), logger.Logger, logFilePath)
 	assert.Equal(t, 1, exitCode)
-	logStr := log.String()
+	logStr := logger.String()
 	assert.Contains(t, logStr, "DEBUG  Unexpected panic: test")
 	assert.Contains(t, logStr, "DEBUG  Trace:")
 	assert.Contains(t, logStr, "To help us diagnose the problem you can send us a crash report.")

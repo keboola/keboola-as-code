@@ -7,9 +7,9 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -38,11 +38,11 @@ func createTestFixtures(t *testing.T, componentId string) (model.MapperContext, 
 		},
 	}
 
-	logger, _ := utils.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger, ".")
+	logger := log.NewDebugLogger()
+	fs, err := aferofs.NewMemoryFs(logger.Logger, ".")
 	assert.NoError(t, err)
 
 	state := model.NewState(zap.NewNop().Sugar(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
-	context := model.MapperContext{Logger: logger, Fs: fs, Naming: model.DefaultNamingWithIds(), State: state}
+	context := model.MapperContext{Logger: logger.Logger, Fs: fs, Naming: model.DefaultNamingWithIds(), State: state}
 	return context, configState
 }

@@ -7,16 +7,16 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func TestNewState(t *testing.T) {
 	t.Parallel()
-	logger, _ := utils.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger, `/`)
+	logger := log.NewDebugLogger()
+	fs, err := aferofs.NewMemoryFs(logger.Logger, `/`)
 	assert.NoError(t, err)
-	s := NewState(logger, fs, NewComponentsMap(nil), SortByPath)
+	s := NewState(logger.Logger, fs, NewComponentsMap(nil), SortByPath)
 	assert.NotNil(t, s)
 }
 
@@ -169,8 +169,8 @@ func TestStateTrackRecordInvalid(t *testing.T) {
 
 func newTestState(t *testing.T, fs filesystem.Fs) *State {
 	t.Helper()
-	logger, _ := utils.NewDebugLogger()
-	s := NewState(logger, fs, NewComponentsMap(nil), SortByPath)
+	logger := log.NewDebugLogger()
+	s := NewState(logger.Logger, fs, NewComponentsMap(nil), SortByPath)
 	assert.NotNil(t, s)
 
 	// Branch 1

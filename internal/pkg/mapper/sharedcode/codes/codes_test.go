@@ -7,18 +7,18 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-func createRemoteSharedCode(t *testing.T) (model.MapperContext, *utils.Writer, *model.ConfigState, *model.ConfigRowState) {
+func createRemoteSharedCode(t *testing.T) (model.MapperContext, *log.DebugLogger, *model.ConfigState, *model.ConfigRowState) {
 	t.Helper()
 
 	targetComponentId := model.ComponentId(`keboola.snowflake-transformation`)
-	logger, logs := utils.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger, ".")
+	logger := log.NewDebugLogger()
+	fs, err := aferofs.NewMemoryFs(logger.Logger, ".")
 	assert.NoError(t, err)
 
 	state := model.NewState(zap.NewNop().Sugar(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
@@ -90,15 +90,15 @@ func createRemoteSharedCode(t *testing.T) (model.MapperContext, *utils.Writer, *
 	}
 	assert.NoError(t, state.Set(rowState))
 
-	context := model.MapperContext{Logger: logger, Fs: fs, Naming: model.DefaultNamingWithIds(), State: state}
-	return context, logs, configState, rowState
+	context := model.MapperContext{Logger: logger.Logger, Fs: fs, Naming: model.DefaultNamingWithIds(), State: state}
+	return context, logger, configState, rowState
 }
 
-func createLocalSharedCode(t *testing.T, targetComponentId model.ComponentId) (model.MapperContext, *utils.Writer, *model.ConfigState, *model.ConfigRowState) {
+func createLocalSharedCode(t *testing.T, targetComponentId model.ComponentId) (model.MapperContext, *log.DebugLogger, *model.ConfigState, *model.ConfigRowState) {
 	t.Helper()
 
-	logger, logs := utils.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger, ".")
+	logger := log.NewDebugLogger()
+	fs, err := aferofs.NewMemoryFs(logger.Logger, ".")
 	assert.NoError(t, err)
 
 	state := model.NewState(zap.NewNop().Sugar(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
@@ -170,16 +170,16 @@ func createLocalSharedCode(t *testing.T, targetComponentId model.ComponentId) (m
 	}
 	assert.NoError(t, state.Set(rowState))
 
-	context := model.MapperContext{Logger: logger, Fs: fs, Naming: model.DefaultNamingWithIds(), State: state}
-	return context, logs, configState, rowState
+	context := model.MapperContext{Logger: logger.Logger, Fs: fs, Naming: model.DefaultNamingWithIds(), State: state}
+	return context, logger, configState, rowState
 }
 
 // nolint: unparam
-func createInternalSharedCode(t *testing.T, targetComponentId model.ComponentId) (model.MapperContext, *utils.Writer, *model.ConfigState, *model.ConfigRowState) {
+func createInternalSharedCode(t *testing.T, targetComponentId model.ComponentId) (model.MapperContext, *log.DebugLogger, *model.ConfigState, *model.ConfigRowState) {
 	t.Helper()
 
-	logger, logs := utils.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger, ".")
+	logger := log.NewDebugLogger()
+	fs, err := aferofs.NewMemoryFs(logger.Logger, ".")
 	assert.NoError(t, err)
 
 	state := model.NewState(zap.NewNop().Sugar(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
@@ -277,6 +277,6 @@ func createInternalSharedCode(t *testing.T, targetComponentId model.ComponentId)
 	}
 	assert.NoError(t, state.Set(rowState))
 
-	context := model.MapperContext{Logger: logger, Fs: fs, Naming: model.DefaultNamingWithIds(), State: state}
-	return context, logs, configState, rowState
+	context := model.MapperContext{Logger: logger.Logger, Fs: fs, Naming: model.DefaultNamingWithIds(), State: state}
+	return context, logger, configState, rowState
 }

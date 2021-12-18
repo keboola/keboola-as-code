@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func TestValidateState(t *testing.T) {
@@ -23,13 +23,13 @@ func TestValidateState(t *testing.T) {
 	envs.Set("LOCAL_STATE_MAIN_BRANCH_ID", `123`)
 	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", `456`)
 
-	logger, _ := utils.NewDebugLogger()
+	logger := log.NewDebugLogger()
 	m, fs := loadTestManifest(t, envs, "minimal")
 
 	api, httpTransport, _ := testapi.NewMockedStorageApi()
 
 	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
-	stateOptions := NewOptions(fs, m, api, schedulerApi, context.Background(), logger)
+	stateOptions := NewOptions(fs, m, api, schedulerApi, context.Background(), logger.Logger)
 	s := newState(stateOptions)
 
 	// Mocked component response

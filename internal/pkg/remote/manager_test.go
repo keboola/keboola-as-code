@@ -16,12 +16,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -196,13 +196,13 @@ func newTestRemoteUOW(t *testing.T) (*testMapper, *remote.UnitOfWork, *httpmock.
 func newTestLocalManager(t *testing.T, mappers []interface{}) (*local.Manager, *model.State) {
 	t.Helper()
 
-	logger, _ := utils.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger, "")
+	logger := log.NewDebugLogger()
+	fs, err := aferofs.NewMemoryFs(logger.Logger, "")
 	assert.NoError(t, err)
 
 	m := manifest.NewManifest(1, "foo.bar")
 	components := model.NewComponentsMap(testapi.NewMockedComponentsProvider())
 	state := model.NewState(zap.NewNop().Sugar(), fs, components, model.SortByPath)
-	mapperContext := model.MapperContext{Logger: logger, Fs: fs, Naming: m.Naming(), State: state}
-	return local.NewManager(logger, fs, m, state, mapper.New(mapperContext).AddMapper(mappers...)), state
+	mapperContext := model.MapperContext{Logger: logger.Logger, Fs: fs, Naming: m.Naming(), State: state}
+	return local.NewManager(logger.Logger, fs, m, state, mapper.New(mapperContext).AddMapper(mappers...)), state
 }

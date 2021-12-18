@@ -15,19 +15,19 @@ import (
 
 func TestEmpty(t *testing.T) {
 	t.Parallel()
-	client, _, logger, _ := getMockedClientAndLogs(t, false)
-	pool := client.NewPool(logger)
+	client, _, logger := getMockedClientAndLogs(t, false)
+	pool := client.NewPool(logger.Logger)
 	assert.NoError(t, pool.StartAndWait())
 }
 
 func TestSimple(t *testing.T) {
 	t.Parallel()
-	client, httpTransport, logger, _ := getMockedClientAndLogs(t, false)
+	client, httpTransport, logger := getMockedClientAndLogs(t, false)
 	httpTransport.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(200, `test`))
 
 	successCounter := utils.NewSafeCounter(0)
 	responseCounter := utils.NewSafeCounter(0)
-	pool := client.NewPool(logger)
+	pool := client.NewPool(logger.Logger)
 	pool.Request(client.NewRequest(resty.MethodGet, "https://example.com")).
 		OnResponse(func(response *Response) {
 			responseCounter.Inc()
@@ -48,11 +48,11 @@ func TestSimple(t *testing.T) {
 
 func TestSubRequestDelayed(t *testing.T) {
 	t.Parallel()
-	client, httpTransport, logger, _ := getMockedClientAndLogs(t, false)
+	client, httpTransport, logger := getMockedClientAndLogs(t, false)
 	httpTransport.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(200, `test`))
 
 	var invokeOrder []int
-	pool := client.NewPool(logger)
+	pool := client.NewPool(logger.Logger)
 	pool.Request(client.NewRequest(resty.MethodGet, "https://example.com")).
 		OnSuccess(func(response *Response) {
 			subRequest := pool.Request(client.NewRequest(resty.MethodGet, "https://example.com/sub"))
@@ -83,12 +83,12 @@ func TestSubRequestDelayed(t *testing.T) {
 
 func TestSubRequest(t *testing.T) {
 	t.Parallel()
-	client, httpTransport, logger, _ := getMockedClientAndLogs(t, false)
+	client, httpTransport, logger := getMockedClientAndLogs(t, false)
 	httpTransport.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(200, `test`))
 
 	successCounter := utils.NewSafeCounter(0)
 	responseCounter := utils.NewSafeCounter(0)
-	pool := client.NewPool(logger)
+	pool := client.NewPool(logger.Logger)
 	onResponse := func(*Response) {
 		responseCounter.Inc()
 	}
@@ -122,11 +122,11 @@ func TestSubRequest(t *testing.T) {
 
 func TestErrorInCallback(t *testing.T) {
 	t.Parallel()
-	client, httpTransport, logger, _ := getMockedClientAndLogs(t, false)
+	client, httpTransport, logger := getMockedClientAndLogs(t, false)
 	httpTransport.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(200, `test`))
 
 	c := utils.NewSafeCounter(0)
-	pool := client.NewPool(logger)
+	pool := client.NewPool(logger.Logger)
 	var onSuccess ResponseCallback
 	onSuccess = func(response *Response) {
 		pool.Request(client.NewRequest(resty.MethodGet, "https://example.com")).
@@ -148,12 +148,12 @@ func TestErrorInCallback(t *testing.T) {
 
 func TestNetworkError(t *testing.T) {
 	t.Parallel()
-	client, httpTransport, logger, _ := getMockedClientAndLogs(t, false)
+	client, httpTransport, logger := getMockedClientAndLogs(t, false)
 	httpTransport.RegisterResponder("GET", `https://example.com`, httpmock.NewStringResponder(200, `test`))
 	httpTransport.RegisterResponder("GET", `https://example.com/error`, httpmock.NewErrorResponder(errors.New("network error")))
 
 	c := utils.NewSafeCounter(0)
-	pool := client.NewPool(logger)
+	pool := client.NewPool(logger.Logger)
 	var onSuccess ResponseCallback
 	onSuccess = func(response *Response) {
 		if c.Inc(); c.Get() == 10 {
@@ -176,12 +176,12 @@ func TestNetworkError(t *testing.T) {
 
 func TestErrorInSubRequest(t *testing.T) {
 	t.Parallel()
-	client, httpTransport, logger, _ := getMockedClientAndLogs(t, false)
+	client, httpTransport, logger := getMockedClientAndLogs(t, false)
 	httpTransport.RegisterResponder("GET", `https://example.com`, httpmock.NewStringResponder(200, `test`))
 	httpTransport.RegisterResponder("GET", `https://example.com/error`, httpmock.NewErrorResponder(errors.New("network error")))
 
 	c := utils.NewSafeCounter(0)
-	pool := client.NewPool(logger)
+	pool := client.NewPool(logger.Logger)
 	var onSuccess ResponseCallback
 	onSuccess = func(response *Response) {
 		url := "https://example.com"
@@ -210,12 +210,12 @@ func TestErrorInSubRequest(t *testing.T) {
 
 func TestOnSuccess(t *testing.T) {
 	t.Parallel()
-	client, httpTransport, logger, _ := getMockedClientAndLogs(t, false)
+	client, httpTransport, logger := getMockedClientAndLogs(t, false)
 	httpTransport.RegisterResponder("GET", `https://example.com`, httpmock.NewStringResponder(200, `test`))
 
 	successCaught := false
 	responseCaught := false
-	pool := client.NewPool(logger)
+	pool := client.NewPool(logger.Logger)
 	pool.Request(client.NewRequest(resty.MethodGet, "https://example.com")).
 		OnSuccess(func(response *Response) {
 			successCaught = true
@@ -236,13 +236,13 @@ func TestOnSuccess(t *testing.T) {
 
 func TestOnError(t *testing.T) {
 	t.Parallel()
-	client, httpTransport, logger, _ := getMockedClientAndLogs(t, false)
+	client, httpTransport, logger := getMockedClientAndLogs(t, false)
 	httpTransport.RegisterResponder("GET", `https://example.com`, httpmock.NewStringResponder(200, `test`))
 	httpTransport.RegisterResponder("GET", `https://example.com/error`, httpmock.NewErrorResponder(errors.New("network error")))
 
 	errorCaught := false
 	responseCaught := false
-	pool := client.NewPool(logger)
+	pool := client.NewPool(logger.Logger)
 	pool.Request(client.NewRequest(resty.MethodGet, "https://example.com")).
 		OnSuccess(func(response *Response) {
 			pool.Request(client.NewRequest(resty.MethodGet, "https://example.com/error")).
@@ -272,9 +272,9 @@ func TestOnError(t *testing.T) {
 
 func TestSendWasNotCalled(t *testing.T) {
 	t.Parallel()
-	client, _, logger, _ := getMockedClientAndLogs(t, false)
+	client, _, logger := getMockedClientAndLogs(t, false)
 
-	pool := client.NewPool(logger)
+	pool := client.NewPool(logger.Logger)
 	pool.Request(client.NewRequest(resty.MethodGet, "https://example.com"))
 	assert.PanicsWithError(t, `request[1] GET "https://example.com" was not sent - Send() method was not called`, func() {
 		pool.StartAndWait()
@@ -283,7 +283,7 @@ func TestSendWasNotCalled(t *testing.T) {
 
 func TestWaitForSubRequest(t *testing.T) {
 	t.Parallel()
-	client, httpTransport, logger, _ := getMockedClientAndLogs(t, false)
+	client, httpTransport, logger := getMockedClientAndLogs(t, false)
 	httpTransport.RegisterResponder("GET", `https://example.com`, httpmock.NewStringResponder(200, `test`))
 	httpTransport.RegisterResponder("GET", `https://example.com/sub`, httpmock.NewStringResponder(200, `test`))
 
@@ -291,7 +291,7 @@ func TestWaitForSubRequest(t *testing.T) {
 
 	var mainRequest *Request
 	var subRequestCallback ResponseCallback
-	pool := client.NewPool(logger)
+	pool := client.NewPool(logger.Logger)
 	subRequestCallback = func(response *Response) {
 		if counter.IncAndGet() <= 10 {
 			// Send sub-request
@@ -340,14 +340,14 @@ func TestWaitForSubRequest(t *testing.T) {
 
 func TestWaitForSubRequestChain(t *testing.T) {
 	t.Parallel()
-	client, httpTransport, logger, _ := getMockedClientAndLogs(t, false)
+	client, httpTransport, logger := getMockedClientAndLogs(t, false)
 	httpTransport.RegisterResponder("GET", `https://example.com`, httpmock.NewStringResponder(200, `test`))
 	httpTransport.RegisterResponder("GET", `https://example.com/sub`, httpmock.NewStringResponder(200, `test`))
 
 	var invokeOrder []int
 	var subRequestCallback ResponseCallback
 	counter := utils.NewSafeCounter(0)
-	pool := client.NewPool(logger)
+	pool := client.NewPool(logger.Logger)
 	subRequestCallback = func(response *Response) {
 		if counter.IncAndGet() <= 10 {
 			// Send sub-request
@@ -389,9 +389,9 @@ func TestWaitForSubRequestChain(t *testing.T) {
 
 func TestPoolManyRequestsUnderLimit(t *testing.T) {
 	t.Parallel()
-	client, httpTransport, logger, _ := getMockedClientAndLogs(t, false)
+	client, httpTransport, logger := getMockedClientAndLogs(t, false)
 	httpTransport.RegisterResponder(`GET`, `https://example.com`, httpmock.NewStringResponder(200, `test`))
-	pool := client.NewPool(logger)
+	pool := client.NewPool(logger.Logger)
 
 	count := REQUESTS_BUFFER_SIZE - 1
 	for i := 0; i < count; i++ {
@@ -404,9 +404,9 @@ func TestPoolManyRequestsUnderLimit(t *testing.T) {
 
 func TestPoolTooManyRequests(t *testing.T) {
 	t.Parallel()
-	client, httpTransport, logger, _ := getMockedClientAndLogs(t, false)
+	client, httpTransport, logger := getMockedClientAndLogs(t, false)
 	httpTransport.RegisterResponder(`GET`, `https://example.com`, httpmock.NewStringResponder(200, `test`))
-	pool := client.NewPool(logger)
+	pool := client.NewPool(logger.Logger)
 
 	// Pool can handle it ...
 	for i := 0; i < REQUESTS_BUFFER_SIZE-1; i++ {

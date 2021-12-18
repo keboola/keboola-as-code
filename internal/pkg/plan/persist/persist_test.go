@@ -13,12 +13,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -931,9 +931,9 @@ func (tc *testCase) run(t *testing.T) {
 	httpTransport.RegisterResponder("POST", `=~/storage/tickets`, httpmock.ResponderFromMultipleResponses(ticketResponses))
 
 	// Load state
-	logger, _ := utils.NewDebugLogger()
+	logger := log.NewDebugLogger()
 	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
-	options := state.NewOptions(fs, m, api, schedulerApi, context.Background(), logger)
+	options := state.NewOptions(fs, m, api, schedulerApi, context.Background(), logger.Logger)
 
 	options.LoadLocalState = true
 	options.LoadRemoteState = false
@@ -972,7 +972,7 @@ func (tc *testCase) run(t *testing.T) {
 	// Invoke
 	plan, err = NewPlan(projectState) // plan with callbacks
 	assert.NoError(t, err)
-	assert.NoError(t, plan.Invoke(logger, api, projectState))
+	assert.NoError(t, plan.Invoke(logger.Logger, api, projectState))
 
 	// Assert new IDs requests count
 	assert.Equal(t, tc.expectedNewIds, httpTransport.GetCallCountInfo()["POST =~/storage/tickets"])

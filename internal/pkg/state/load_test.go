@@ -10,6 +10,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
@@ -31,10 +32,10 @@ func TestLoadState(t *testing.T) {
 	envs.Set("LOCAL_STATE_MAIN_BRANCH_ID", envs.MustGet(`TEST_BRANCH_MAIN_ID`))
 	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`))
 
-	logger, _ := utils.NewDebugLogger()
+	logger := log.NewDebugLogger()
 	m, fs := loadTestManifest(t, envs, "minimal")
 
-	stateOptions := NewOptions(fs, m, project.StorageApi(), project.SchedulerApi(), context.Background(), logger)
+	stateOptions := NewOptions(fs, m, project.StorageApi(), project.SchedulerApi(), context.Background(), logger.Logger)
 	stateOptions.LoadLocalState = true
 	stateOptions.LoadRemoteState = true
 	state, ok, localErr, remoteErr := LoadState(stateOptions)

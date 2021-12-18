@@ -1,4 +1,4 @@
-package utils
+package ioutil
 
 import (
 	"bufio"
@@ -8,24 +8,17 @@ import (
 	"go.uber.org/zap/buffer"
 )
 
-func TestNewBufferWriter(t *testing.T) {
+func TestBufferedWriter(t *testing.T) {
 	t.Parallel()
-	writer := NewBufferWriter()
+	writer := NewBufferedWriter()
 	_, err := writer.WriteString("test")
 	assert.NoError(t, err)
 	assert.Equal(t, "test", writer.String())
 }
 
-func TestNewDebugLogger(t *testing.T) {
+func TestBufferedWriter_ConnectTo(t *testing.T) {
 	t.Parallel()
-	logger, writer := NewDebugLogger()
-	logger.Warn("test")
-	assert.Equal(t, "WARN  test\n", writer.String())
-}
-
-func TestConnectTo(t *testing.T) {
-	t.Parallel()
-	writer := NewBufferWriter()
+	writer := NewBufferedWriter()
 	otherBuffer := buffer.Buffer{}
 	otherWriter := bufio.NewWriter(&otherBuffer)
 	writer.ConnectTo(otherWriter)

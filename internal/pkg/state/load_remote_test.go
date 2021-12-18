@@ -9,11 +9,11 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -441,8 +441,8 @@ func loadRemoteState(t *testing.T, m *manifest.Manifest, projectStateFile string
 	project.SetState(projectStateFile)
 
 	fs := testhelper.NewMemoryFs()
-	logger, _ := utils.NewDebugLogger()
-	state := newState(NewOptions(fs, m, project.StorageApi(), project.SchedulerApi(), context.Background(), logger))
+	logger := log.NewDebugLogger()
+	state := newState(NewOptions(fs, m, project.StorageApi(), project.SchedulerApi(), context.Background(), logger.Logger))
 	remoteErr := state.loadRemoteState()
 	return state, envs, remoteErr
 }

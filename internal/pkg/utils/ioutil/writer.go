@@ -1,4 +1,4 @@
-package utils
+package ioutil
 
 import (
 	"bufio"
@@ -7,15 +7,23 @@ import (
 	"io"
 	"os"
 	"sync"
-
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
+// Writer is a simple buffer writer for testing.
+// It implements these interfaces:
+// - io.Writer
+// - io.WriteCloser
+// - io.Closer
+// - terminal.FileWriter.
 type Writer struct {
 	mutex   *sync.Mutex
 	writers []io.Writer
 	buffer  *bytes.Buffer
+}
+
+func NewBufferedWriter() *Writer {
+	var buffer bytes.Buffer
+	return &Writer{&sync.Mutex{}, []io.Writer{bufio.NewWriter(&buffer)}, &buffer}
 }
 
 // ConnectTo allows write to multiple targets.
@@ -74,49 +82,4 @@ func (w *Writer) String() string {
 	str := w.buffer.String()
 	w.Truncate()
 	return str
-}
-
-type Reader struct {
-	Reader *bufio.Reader
-	Buffer *bytes.Buffer
-}
-
-func (r *Reader) Read(p []byte) (n int, err error) {
-	return r.Reader.Read(p)
-}
-
-func (*Reader) Close() error { return nil }
-
-// Fd fake terminal file descriptor.
-func (*Reader) Fd() uintptr {
-	return os.Stdin.Fd()
-}
-
-func NewBufferWriter() *Writer {
-	var buffer bytes.Buffer
-	return &Writer{&sync.Mutex{}, []io.Writer{bufio.NewWriter(&buffer)}, &buffer}
-}
-
-func NewBufferReader() *Reader {
-	var buffer bytes.Buffer
-	return &Reader{bufio.NewReader(&buffer), &buffer}
-}
-
-func NewDebugLogger() (*zap.SugaredLogger, *Writer) {
-	writer := NewBufferWriter()
-	encoderConfig := zapcore.EncoderConfig{
-		TimeKey:          "ts",
-		LevelKey:         "level",
-		MessageKey:       "msg",
-		EncodeLevel:      zapcore.CapitalLevelEncoder,
-		ConsoleSeparator: "  ",
-	}
-	loggerRaw := zap.New(zapcore.NewCore(
-		zapcore.NewConsoleEncoder(encoderConfig),
-		zapcore.AddSync(writer),
-		zapcore.DebugLevel,
-	))
-	logger := loggerRaw.Sugar()
-
-	return logger, writer
 }

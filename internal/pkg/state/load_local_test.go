@@ -10,6 +10,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
@@ -236,7 +237,7 @@ func loadLocalTestState(t *testing.T, m *manifest.Manifest, fs filesystem.Fs) (*
 	t.Helper()
 
 	// Mocked API
-	logger, _ := utils.NewDebugLogger()
+	logger := log.NewDebugLogger()
 	api, httpTransport, _ := testapi.NewMockedStorageApi()
 
 	// Mocked API response
@@ -261,7 +262,7 @@ func loadLocalTestState(t *testing.T, m *manifest.Manifest, fs filesystem.Fs) (*
 
 	// Load state
 	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
-	options := NewOptions(fs, m, api, schedulerApi, context.Background(), logger)
+	options := NewOptions(fs, m, api, schedulerApi, context.Background(), logger.Logger)
 	options.LoadLocalState = true
 	state, _, localErr, remoteErr := LoadState(options)
 	assert.NoError(t, remoteErr)

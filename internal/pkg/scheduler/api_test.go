@@ -7,16 +7,16 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestSchedulerApiCalls(t *testing.T) {
 	t.Parallel()
-	logger, _ := utils.NewDebugLogger()
+	logger := log.NewDebugLogger()
 
 	project := testproject.GetTestProject(t, env.Empty())
 	project.SetState("empty.json")
@@ -26,7 +26,7 @@ func TestSchedulerApiCalls(t *testing.T) {
 	assert.NoError(t, err)
 	hostName, found := services[`scheduler`]
 	assert.True(t, found)
-	api := scheduler.NewSchedulerApi(context.Background(), logger, string(hostName), token, true)
+	api := scheduler.NewSchedulerApi(context.Background(), logger.Logger, string(hostName), token, true)
 
 	// Get default branch
 	branch, err := storageApi.GetDefaultBranch()
