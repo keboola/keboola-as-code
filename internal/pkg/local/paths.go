@@ -115,18 +115,18 @@ func (g *PathsGenerator) doUpdate(objectState model.ObjectState, origin model.Ke
 	if objectState.GetObjectPath() == "" || g.rename {
 		switch v := objectState.(type) {
 		case *model.BranchState:
-			v.PathInProject = g.Naming().BranchPath(object.(*model.Branch))
+			v.PathInProject = g.NamingGenerator().BranchPath(object.(*model.Branch))
 		case *model.ConfigState:
 			config := object.(*model.Config)
 			if component, err := g.state.Components().Get(config.ComponentKey()); err == nil {
-				v.PathInProject = g.Naming().ConfigPath(v.GetParentPath(), component, config)
+				v.PathInProject = g.NamingGenerator().ConfigPath(v.GetParentPath(), component, config)
 			} else {
 				return err
 			}
 		case *model.ConfigRowState:
 			row := object.(*model.ConfigRow)
 			if component, err := g.state.Components().Get(row.ComponentKey()); err == nil {
-				v.PathInProject = g.Naming().ConfigRowPath(v.GetParentPath(), component, row)
+				v.PathInProject = g.NamingGenerator().ConfigRowPath(v.GetParentPath(), component, row)
 			} else {
 				return err
 			}

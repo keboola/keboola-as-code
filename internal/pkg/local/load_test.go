@@ -8,8 +8,11 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -31,8 +34,8 @@ func TestLocalLoadModel(t *testing.T) {
 	target := &fixtures.MockedObject{}
 	record := &fixtures.MockedManifest{}
 	assert.NoError(t, fs.Mkdir(record.Path()))
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(manager.Naming().MetaFilePath(record.Path()), metaFile)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(manager.Naming().ConfigFilePath(record.Path()), configFile)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(manager.NamingGenerator().MetaFilePath(record.Path()), metaFile)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(manager.NamingGenerator().ConfigFilePath(record.Path()), configFile)))
 
 	// Load
 	found, err := manager.loadObject(record, target)

@@ -54,7 +54,7 @@ func (p *Plan) ValidateAllEncrypted() error {
 			fmt.Sprintf(
 				`%s "%s" contains unencrypted values`,
 				action.Kind().Name,
-				p.Naming().ConfigFilePath(action.Path()),
+				p.NamingGenerator().ConfigFilePath(action.Path()),
 			),
 			objectErrors,
 		)

@@ -22,13 +22,13 @@ func TestLocalDeleteModel(t *testing.T) {
 
 	dirPath := record.Path()
 
-	metaFilePath := manager.Naming().MetaFilePath(record.Path())
+	metaFilePath := manager.NamingGenerator().MetaFilePath(record.Path())
 	metaFile := `{
   "myKey": "3",
   "Meta2": "4"
 }
 `
-	configFilePath := manager.Naming().ConfigFilePath(record.Path())
+	configFilePath := manager.NamingGenerator().ConfigFilePath(record.Path())
 	configFile := `{
   "foo": "bar"
 }

@@ -51,8 +51,8 @@ func (m *Manager) Manifest() *projectManifest.Manifest {
 	return m.manifest
 }
 
-func (m *Manager) Naming() *model.Naming {
-	return m.manifest.Naming()
+func (m *Manager) NamingGenerator() *naming.Generator {
+	return m.namingGenerator
 }
 
 func (m *Manager) Fs() filesystem.Fs {
