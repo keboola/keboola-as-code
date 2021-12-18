@@ -24,7 +24,7 @@ func TestDifferentProjectIdInManifestAndToken(t *testing.T) {
 	d := NewContainer(context.Background(), nil, testfs.NewMemoryFs(), nil, logger, opts)
 	d.hostFromManifest = true
 	d.options.Set(options.StorageApiTokenOpt, project.Token())
-	d.projectManifest = manifest.NewManifest(12345, project.StorageApiHost())
+	d.projectManifest = manifest.New(12345, project.StorageApiHost())
 
 	_, err := d.StorageApi()
 	expected := fmt.Sprintf(`given token is from the project "%d", but in manifest is defined project "12345"`, project.Id())

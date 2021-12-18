@@ -34,7 +34,7 @@ func cases() []test {
 
 func TestNewManifest(t *testing.T) {
 	t.Parallel()
-	m := NewManifest(123, `foo.bar`)
+	m := New(123, `foo.bar`)
 	assert.NotNil(t, m)
 	assert.Equal(t, 123, m.content.Project.Id)
 	assert.Equal(t, `foo.bar`, m.content.Project.ApiHost)
@@ -83,7 +83,7 @@ func TestManifestSave(t *testing.T) {
 		fs := testfs.NewMemoryFs()
 
 		// Create
-		m := NewManifest(c.data.Project.Id, `foo.bar`)
+		m := New(c.data.Project.Id, `foo.bar`)
 		m.content.AllowedBranches = c.data.AllowedBranches
 		m.content.IgnoredComponents = c.data.IgnoredComponents
 		assert.NoError(t, m.records.SetRecords(c.data.allRecords()))

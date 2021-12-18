@@ -427,7 +427,7 @@ func complexRemoteExpectedConfigsRows(envs *env.Map) []*model.ConfigRowState {
 
 func createManifest(t *testing.T) *manifest.Manifest {
 	t.Helper()
-	m := manifest.NewManifest(1, "connection.keboola.com")
+	m := manifest.New(1, "connection.keboola.com")
 	m.SetSortBy(model.SortByPath)
 	m.SetNaming(model.DefaultNamingWithoutIds())
 	return m

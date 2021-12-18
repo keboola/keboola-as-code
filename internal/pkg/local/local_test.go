@@ -19,7 +19,7 @@ func newTestLocalManager(t *testing.T) (*Manager, *mapper.Mapper) {
 	fs, err := aferofs.NewMemoryFs(logger, "")
 	assert.NoError(t, err)
 
-	manifest := projectManifest.NewManifest(1, "foo.bar")
+	manifest := projectManifest.New(1, "foo.bar")
 	components := model.NewComponentsMap(nil)
 	state := model.NewState(log.NewNopLogger(), fs, components, model.SortByPath)
 	mapperContext := model.MapperContext{Logger: logger, Fs: fs, Naming: manifest.Naming(), State: state}

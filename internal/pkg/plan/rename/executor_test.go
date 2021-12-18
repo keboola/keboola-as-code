@@ -22,7 +22,7 @@ func TestRename(t *testing.T) {
 	logger := log.NewDebugLogger()
 	fs, err := aferofs.NewMemoryFs(logger, `/`)
 	assert.NoError(t, err)
-	manifest := projectManifest.NewManifest(1, "foo")
+	manifest := projectManifest.New(1, "foo")
 
 	// Dir structure
 	assert.NoError(t, fs.Mkdir(`foo1/sub`))
@@ -78,7 +78,7 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 	logger := log.NewDebugLogger()
 	fs, err := aferofs.NewMemoryFs(logger, `/`)
 	assert.NoError(t, err)
-	manifest := projectManifest.NewManifest(1, "foo")
+	manifest := projectManifest.New(1, "foo")
 
 	// Dir structure
 	assert.NoError(t, fs.Mkdir(`foo1/sub`))
