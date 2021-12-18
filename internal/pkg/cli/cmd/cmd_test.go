@@ -14,7 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/ioutil"
 )
 
 func TestCliSubCommands(t *testing.T) {
@@ -180,9 +180,9 @@ func TestGetLogFileFromFlags(t *testing.T) {
 	assert.NoError(t, root.logFile.File().Close())
 }
 
-func newTestRootCommand(fs filesystem.Fs) (*RootCommand, *utils.Writer) {
-	in := utils.NewBufferReader()
-	out := utils.NewBufferWriter()
+func newTestRootCommand(fs filesystem.Fs) (*RootCommand, *ioutil.Writer) {
+	in := ioutil.NewBufferedReader()
+	out := ioutil.NewBufferedWriter()
 	fsFactory := func(logger *zap.SugaredLogger, workingDir string) (filesystem.Fs, error) {
 		return fs, nil
 	}

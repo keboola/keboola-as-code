@@ -8,13 +8,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/ioutil"
 )
 
 func TestNewLogger(t *testing.T) {
 	t.Parallel()
-	stdout := utils.NewBufferWriter()
-	stderr := utils.NewBufferWriter()
+	stdout := ioutil.NewBufferedWriter()
+	stderr := ioutil.NewBufferedWriter()
 	logger := NewLogger(stdout, stderr, nil, false)
 	assert.NotNil(t, logger)
 }
@@ -26,8 +26,8 @@ func TestFileCore(t *testing.T) {
 	file, err := NewLogFile(filePath)
 	assert.NoError(t, err)
 
-	stdout := utils.NewBufferWriter()
-	stderr := utils.NewBufferWriter()
+	stdout := ioutil.NewBufferedWriter()
+	stderr := ioutil.NewBufferedWriter()
 	logger := NewLogger(stdout, stderr, file, false)
 
 	logger.Debug("Debug msg")
@@ -45,8 +45,8 @@ func TestFileCore(t *testing.T) {
 
 func TestConsoleCoreVerboseFalse(t *testing.T) {
 	t.Parallel()
-	stdout := utils.NewBufferWriter()
-	stderr := utils.NewBufferWriter()
+	stdout := ioutil.NewBufferedWriter()
+	stderr := ioutil.NewBufferedWriter()
 	logger := NewLogger(stdout, stderr, nil, false)
 
 	logger.Debug("Debug msg")
@@ -65,8 +65,8 @@ func TestConsoleCoreVerboseFalse(t *testing.T) {
 
 func TestConsoleCoreVerboseTrue(t *testing.T) {
 	t.Parallel()
-	stdout := utils.NewBufferWriter()
-	stderr := utils.NewBufferWriter()
+	stdout := ioutil.NewBufferedWriter()
+	stderr := ioutil.NewBufferedWriter()
 	logger := NewLogger(stdout, stderr, nil, true)
 	logger.Debug("Debug msg")
 	logger.Info("Info msg")
@@ -84,8 +84,8 @@ func TestConsoleCoreVerboseTrue(t *testing.T) {
 
 func TestToInfoWriter(t *testing.T) {
 	t.Parallel()
-	stdout := utils.NewBufferWriter()
-	stderr := utils.NewBufferWriter()
+	stdout := ioutil.NewBufferedWriter()
+	stderr := ioutil.NewBufferedWriter()
 
 	// Write
 	logger := NewLogger(stdout, stderr, nil, false)
@@ -99,8 +99,8 @@ func TestToInfoWriter(t *testing.T) {
 
 func TestToWarnWriter(t *testing.T) {
 	t.Parallel()
-	stdout := utils.NewBufferWriter()
-	stderr := utils.NewBufferWriter()
+	stdout := ioutil.NewBufferedWriter()
+	stderr := ioutil.NewBufferedWriter()
 
 	// Write
 	logger := NewLogger(stdout, stderr, nil, false)
@@ -119,8 +119,8 @@ func TestWriteStringNoErrIndent1(t *testing.T) {
 	file, err := NewLogFile(filePath)
 	assert.NoError(t, err)
 
-	stdout := utils.NewBufferWriter()
-	stderr := utils.NewBufferWriter()
+	stdout := ioutil.NewBufferedWriter()
+	stderr := ioutil.NewBufferedWriter()
 	logger := NewLogger(stdout, stderr, file, false)
 
 	writer := ToInfoWriter(logger)
@@ -141,8 +141,8 @@ func TestWriteStringNoErrIndent(t *testing.T) {
 	file, err := NewLogFile(filePath)
 	assert.NoError(t, err)
 
-	stdout := utils.NewBufferWriter()
-	stderr := utils.NewBufferWriter()
+	stdout := ioutil.NewBufferedWriter()
+	stderr := ioutil.NewBufferedWriter()
 	logger := NewLogger(stdout, stderr, file, false)
 
 	writer := ToInfoWriter(logger)
