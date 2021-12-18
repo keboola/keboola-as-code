@@ -4,11 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"go.uber.org/zap"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/encryption"
 	"github.com/keboola/keboola-as-code/internal/pkg/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
@@ -16,14 +15,14 @@ import (
 
 type executor struct {
 	*Plan
-	logger *zap.SugaredLogger
+	logger log.Logger
 	api    *encryption.Api
 	pool   *client.Pool
 	uow    *local.UnitOfWork
 	errors *utils.MultiError
 }
 
-func newExecutor(logger *zap.SugaredLogger, api *encryption.Api, ctx context.Context, plan *Plan) *executor {
+func newExecutor(logger log.Logger, api *encryption.Api, ctx context.Context, plan *Plan) *executor {
 	return &executor{
 		Plan:   plan,
 		logger: logger,

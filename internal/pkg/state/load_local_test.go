@@ -262,7 +262,7 @@ func loadLocalTestState(t *testing.T, m *manifest.Manifest, fs filesystem.Fs) (*
 
 	// Load state
 	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
-	options := NewOptions(fs, m, api, schedulerApi, context.Background(), logger.Logger)
+	options := NewOptions(fs, m, api, schedulerApi, context.Background(), logger)
 	options.LoadLocalState = true
 	state, _, localErr, remoteErr := LoadState(options)
 	assert.NoError(t, remoteErr)

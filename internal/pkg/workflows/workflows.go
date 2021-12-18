@@ -6,9 +6,8 @@ import (
 	"embed"
 	"text/template"
 
-	"go.uber.org/zap"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -30,11 +29,11 @@ func (o *Options) Enabled() bool {
 type generator struct {
 	fs      filesystem.Fs
 	options *Options
-	logger  *zap.SugaredLogger
+	logger  log.Logger
 	errors  *utils.MultiError
 }
 
-func GenerateFiles(logger *zap.SugaredLogger, fs filesystem.Fs, options *Options) error {
+func GenerateFiles(logger log.Logger, fs filesystem.Fs, options *Options) error {
 	g := &generator{fs: fs, options: options, logger: logger, errors: utils.NewMultiError()}
 	return g.generateFiles()
 }

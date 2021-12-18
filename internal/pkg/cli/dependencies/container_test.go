@@ -6,10 +6,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
@@ -19,7 +19,7 @@ func TestDifferentProjectIdInManifestAndToken(t *testing.T) {
 	t.Parallel()
 	project := testproject.GetTestProject(t, env.Empty())
 
-	logger := zap.NewNop().Sugar()
+	logger := log.NewNopLogger()
 	opts := options.New()
 	d := NewContainer(context.Background(), nil, testhelper.NewMemoryFs(), nil, logger, opts)
 	d.hostFromManifest = true

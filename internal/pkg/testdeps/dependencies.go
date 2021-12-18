@@ -4,13 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"go.uber.org/zap"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/encryption"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
@@ -24,7 +23,7 @@ type Dependencies struct {
 	CtxValue                context.Context
 	EnvsValue               *env.Map
 	FsValue                 filesystem.Fs
-	LoggerValue             *zap.SugaredLogger
+	LoggerValue             log.Logger
 	OptionsValue            *options.Options
 	StorageApiValue         *remote.StorageApi
 	EncryptionApiValue      *encryption.Api
@@ -79,7 +78,7 @@ func (c Dependencies) ProjectDir() (filesystem.Fs, error) {
 	return c.FsValue, nil
 }
 
-func (c Dependencies) Logger() *zap.SugaredLogger {
+func (c Dependencies) Logger() log.Logger {
 	if c.LoggerValue == nil {
 		panic(fmt.Errorf(`"logger" is not set in testing dependencies`))
 	}

@@ -818,7 +818,7 @@ func createProjectState(t *testing.T) *state.State {
 	manifest := projectManifest.NewManifest(1, `foo.bar`)
 	storageApi, _, _ := testapi.NewMockedStorageApi()
 	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
-	options := state.NewOptions(fs, manifest, storageApi, schedulerApi, context.Background(), logger.Logger)
+	options := state.NewOptions(fs, manifest, storageApi, schedulerApi, context.Background(), logger)
 	options.LoadLocalState = false
 	options.LoadRemoteState = false
 	s, _, localErr, remoteErr := state.LoadState(options)

@@ -17,7 +17,7 @@ func TestApiWithToken(t *testing.T) {
 	t.Parallel()
 	logger := log.NewDebugLogger()
 	token := model.Token{Id: "123", Token: "mytoken", Owner: model.TokenOwner{Id: 456, Name: "name"}}
-	orgApi := NewStorageApi("foo.bar.com", context.Background(), logger.Logger, false)
+	orgApi := NewStorageApi("foo.bar.com", context.Background(), logger, false)
 	tokenApi := orgApi.WithToken(token)
 
 	// Must be cloned, not modified
@@ -30,7 +30,7 @@ func TestGetToken(t *testing.T) {
 	t.Parallel()
 	project := testproject.GetTestProject(t, env.Empty())
 	logger := log.NewDebugLogger()
-	api := NewStorageApi(project.StorageApiHost(), context.Background(), logger.Logger, false)
+	api := NewStorageApi(project.StorageApiHost(), context.Background(), logger, false)
 
 	tokenValue := project.Token()
 	token, err := api.GetToken(tokenValue)
@@ -45,7 +45,7 @@ func TestGetTokenEmpty(t *testing.T) {
 	t.Parallel()
 	project := testproject.GetTestProject(t, env.Empty())
 	logger := log.NewDebugLogger()
-	api := NewStorageApi(project.StorageApiHost(), context.Background(), logger.Logger, false)
+	api := NewStorageApi(project.StorageApiHost(), context.Background(), logger, false)
 
 	tokenValue := ""
 	token, err := api.GetToken(tokenValue)
@@ -61,7 +61,7 @@ func TestGetTokenInvalid(t *testing.T) {
 	t.Parallel()
 	project := testproject.GetTestProject(t, env.Empty())
 	logger := log.NewDebugLogger()
-	api := NewStorageApi(project.StorageApiHost(), context.Background(), logger.Logger, false)
+	api := NewStorageApi(project.StorageApiHost(), context.Background(), logger, false)
 
 	tokenValue := "mytoken"
 	token, err := api.GetToken(tokenValue)

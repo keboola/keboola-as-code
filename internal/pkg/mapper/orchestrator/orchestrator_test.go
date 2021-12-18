@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/local"
@@ -16,16 +15,16 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 )
 
-func createMapper(t *testing.T) (*mapper.Mapper, model.MapperContext, *log.DebugLogger) {
+func createMapper(t *testing.T) (*mapper.Mapper, model.MapperContext, log.DebugLogger) {
 	t.Helper()
 	logger := log.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger.Logger, ".")
+	fs, err := aferofs.NewMemoryFs(logger, ".")
 	assert.NoError(t, err)
-	state := model.NewState(zap.NewNop().Sugar(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
-	context := model.MapperContext{Logger: logger.Logger, Fs: fs, Naming: model.DefaultNamingWithIds(), State: state}
+	state := model.NewState(log.NewNopLogger(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
+	context := model.MapperContext{Logger: logger, Fs: fs, Naming: model.DefaultNamingWithIds(), State: state}
 	manifest := projectManifest.NewManifest(1, `foo.bar`)
 	mapperInst := mapper.New(context)
-	localManager := local.NewManager(logger.Logger, fs, manifest, state, mapperInst)
+	localManager := local.NewManager(logger, fs, manifest, state, mapperInst)
 	mapperInst.AddMapper(orchestrator.NewMapper(localManager, context))
 	return mapperInst, context, logger
 }

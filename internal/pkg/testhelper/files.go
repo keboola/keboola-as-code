@@ -6,14 +6,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"go.uber.org/zap"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
 func NewBasePathLocalFs(basePath string) filesystem.Fs {
-	fs, err := aferofs.NewLocalFs(zap.NewNop().Sugar(), basePath, `/`)
+	fs, err := aferofs.NewLocalFs(log.NewNopLogger(), basePath, `/`)
 	if err != nil {
 		panic(err)
 	}
@@ -21,7 +20,7 @@ func NewBasePathLocalFs(basePath string) filesystem.Fs {
 }
 
 func NewMemoryFs() filesystem.Fs {
-	fs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), `/`)
+	fs, err := aferofs.NewMemoryFs(log.NewNopLogger(), `/`)
 	if err != nil {
 		panic(err)
 	}

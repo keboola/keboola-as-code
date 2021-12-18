@@ -4,14 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"go.uber.org/zap"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/encryption"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
@@ -46,7 +45,7 @@ type Container struct {
 	projectDir         filesystem.Fs
 	repositoryDir      filesystem.Fs
 	dialogs            *dialog.Dialogs
-	logger             *zap.SugaredLogger
+	logger             log.Logger
 	options            *options.Options
 	hostFromManifest   bool // load Storage Api host from manifest
 	serviceUrls        map[remote.ServiceId]remote.ServiceUrl
@@ -59,7 +58,7 @@ type Container struct {
 	state              *state.State
 }
 
-func NewContainer(ctx context.Context, envs *env.Map, fs filesystem.Fs, dialogs *dialog.Dialogs, logger *zap.SugaredLogger, options *options.Options) *Container {
+func NewContainer(ctx context.Context, envs *env.Map, fs filesystem.Fs, dialogs *dialog.Dialogs, logger log.Logger, options *options.Options) *Container {
 	c := &Container{}
 	c.ctx = ctx
 	c.envs = envs
@@ -172,7 +171,7 @@ func (c *Container) Dialogs() *dialog.Dialogs {
 	return c.dialogs
 }
 
-func (c *Container) Logger() *zap.SugaredLogger {
+func (c *Container) Logger() log.Logger {
 	return c.logger
 }
 

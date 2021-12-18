@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"sync"
 
-	"go.uber.org/zap"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/defaultbucket"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/description"
@@ -42,13 +41,13 @@ type Options struct {
 	api               *remote.StorageApi
 	schedulerApi      *scheduler.Api
 	context           context.Context
-	logger            *zap.SugaredLogger
+	logger            log.Logger
 	LoadLocalState    bool
 	LoadRemoteState   bool
 	IgnoreNotFoundErr bool // not found error will be ignored
 }
 
-func NewOptions(projectDir filesystem.Fs, m *manifest.Manifest, api *remote.StorageApi, schedulerApi *scheduler.Api, ctx context.Context, logger *zap.SugaredLogger) *Options {
+func NewOptions(projectDir filesystem.Fs, m *manifest.Manifest, api *remote.StorageApi, schedulerApi *scheduler.Api, ctx context.Context, logger log.Logger) *Options {
 	return &Options{
 		fs:           projectDir,
 		manifest:     m,

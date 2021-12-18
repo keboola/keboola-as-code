@@ -3,16 +3,15 @@ package init
 import (
 	"context"
 
-	"go.uber.org/zap"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 	createMetaDir "github.com/keboola/keboola-as-code/pkg/lib/operation/local/metadir/create"
 )
 
 type dependencies interface {
 	Ctx() context.Context
-	Logger() *zap.SugaredLogger
+	Logger() log.Logger
 	EmptyDir() (filesystem.Fs, error)
 	CreateRepositoryManifest() (*manifest.Manifest, error)
 }

@@ -8,9 +8,9 @@ import (
 
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
@@ -95,7 +95,7 @@ func TestAskCreateConfig(t *testing.T) {
 	dialog, console := createDialogs(t, true)
 	loadStateOpts := createConfig.LoadStateOptions()
 	d := testdeps.NewDependencies()
-	d.LoggerValue = zap.NewNop().Sugar()
+	d.LoggerValue = log.NewNopLogger()
 	d.FsValue = fs
 	d.StorageApiValue, httpTransport, _ = testapi.NewMockedStorageApi()
 	testapi.AddMockedComponents(httpTransport)
@@ -202,7 +202,7 @@ func TestAskCreateRow(t *testing.T) {
 	dialog, console := createDialogs(t, true)
 	loadStateOpts := createConfig.LoadStateOptions()
 	d := testdeps.NewDependencies()
-	d.LoggerValue = zap.NewNop().Sugar()
+	d.LoggerValue = log.NewNopLogger()
 	d.FsValue = fs
 	d.StorageApiValue, httpTransport, _ = testapi.NewMockedStorageApi()
 	testapi.AddMockedComponents(httpTransport)

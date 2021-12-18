@@ -933,7 +933,7 @@ func (tc *testCase) run(t *testing.T) {
 	// Load state
 	logger := log.NewDebugLogger()
 	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
-	options := state.NewOptions(fs, m, api, schedulerApi, context.Background(), logger.Logger)
+	options := state.NewOptions(fs, m, api, schedulerApi, context.Background(), logger)
 
 	options.LoadLocalState = true
 	options.LoadRemoteState = false
@@ -972,7 +972,7 @@ func (tc *testCase) run(t *testing.T) {
 	// Invoke
 	plan, err = NewPlan(projectState) // plan with callbacks
 	assert.NoError(t, err)
-	assert.NoError(t, plan.Invoke(logger.Logger, api, projectState))
+	assert.NoError(t, plan.Invoke(logger, api, projectState))
 
 	// Assert new IDs requests count
 	assert.Equal(t, tc.expectedNewIds, httpTransport.GetCallCountInfo()["POST =~/storage/tickets"])

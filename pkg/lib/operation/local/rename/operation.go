@@ -3,8 +3,6 @@ package rename
 import (
 	"context"
 
-	"go.uber.org/zap"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/rename"
@@ -22,7 +20,7 @@ type Options struct {
 
 type dependencies interface {
 	Ctx() context.Context
-	Logger() *zap.SugaredLogger
+	Logger() log.Logger
 	ProjectDir() (filesystem.Fs, error)
 	ProjectManifest() (*manifest.Manifest, error)
 	LoadStateOnce(loadOptions loadState.Options) (*state.State, error)
@@ -51,7 +49,7 @@ func Run(o Options, d dependencies) (changed bool, err error) {
 
 	// Log plan
 	if o.LogEmpty || !plan.Empty() {
-		plan.Log(log.ToInfoWriter(logger))
+		plan.Log(logger)
 	}
 
 	if !plan.Empty() {

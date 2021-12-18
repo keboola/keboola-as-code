@@ -27,7 +27,7 @@ func TestProcessPanicUserError(t *testing.T) {
 	t.Parallel()
 	logger := log.NewDebugLogger()
 	logFilePath := "/foo/bar.log"
-	exitCode := ProcessPanic(NewUserErrorWithCode(123, "test"), logger.Logger, logFilePath)
+	exitCode := ProcessPanic(NewUserErrorWithCode(123, "test"), logger, logFilePath)
 	assert.Equal(t, 123, exitCode)
 	logStr := logger.String()
 	assert.Contains(t, logStr, "DEBUG  User error panic: test")
@@ -39,7 +39,7 @@ func TestProcessPanicUnexpected(t *testing.T) {
 	t.Parallel()
 	logger := log.NewDebugLogger()
 	logFilePath := "/foo/bar.log"
-	exitCode := ProcessPanic(fmt.Errorf("test"), logger.Logger, logFilePath)
+	exitCode := ProcessPanic(fmt.Errorf("test"), logger, logFilePath)
 	assert.Equal(t, 1, exitCode)
 	logStr := logger.String()
 	assert.Contains(t, logStr, "DEBUG  Unexpected panic: test")

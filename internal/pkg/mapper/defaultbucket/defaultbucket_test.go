@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -16,15 +15,15 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 )
 
-func createMapper(t *testing.T) (*mapper.Mapper, model.MapperContext, *log.DebugLogger) {
+func createMapper(t *testing.T) (*mapper.Mapper, model.MapperContext, log.DebugLogger) {
 	t.Helper()
 	logger := log.NewDebugLogger()
 	fs := testhelper.NewMemoryFs()
-	state := model.NewState(zap.NewNop().Sugar(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
+	state := model.NewState(log.NewNopLogger(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
 	manifest := projectManifest.NewManifest(1, `foo.bar`)
-	context := model.MapperContext{Logger: logger.Logger, Fs: fs, Naming: model.DefaultNamingWithIds(), State: state}
+	context := model.MapperContext{Logger: logger, Fs: fs, Naming: model.DefaultNamingWithIds(), State: state}
 	mapperInst := mapper.New(context)
-	localManager := local.NewManager(logger.Logger, fs, manifest, state, mapperInst)
+	localManager := local.NewManager(logger, fs, manifest, state, mapperInst)
 	defaultBucketMapper := defaultbucket.NewMapper(localManager, context)
 
 	// Preload the ex-db-mysql component to use as the default bucket source

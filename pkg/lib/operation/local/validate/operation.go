@@ -1,9 +1,8 @@
 package validate
 
 import (
-	"go.uber.org/zap"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/json/schema"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/encrypt"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -16,7 +15,7 @@ type Options struct {
 }
 
 type dependencies interface {
-	Logger() *zap.SugaredLogger
+	Logger() log.Logger
 	LoadStateOnce(loadOptions loadState.Options) (*state.State, error)
 }
 

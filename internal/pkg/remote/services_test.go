@@ -12,7 +12,7 @@ import (
 func TestServicesUrls(t *testing.T) {
 	t.Parallel()
 	logger := log.NewDebugLogger()
-	api := NewStorageApi("connection.keboola.com", context.Background(), logger.Logger, false)
+	api := NewStorageApi("connection.keboola.com", context.Background(), logger, false)
 	urls, err := api.ServicesUrlById()
 	assert.NoError(t, err)
 

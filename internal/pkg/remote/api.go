@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/go-resty/resty/v2"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -19,12 +19,12 @@ type StorageApi struct {
 	apiHost    string
 	apiHostUrl string
 	client     *client.Client
-	logger     *zap.SugaredLogger
+	logger     log.Logger
 	token      *model.Token
 	components *model.ComponentsMap
 }
 
-func NewStorageApiWithToken(ctx context.Context, logger *zap.SugaredLogger, host, tokenStr string, verbose bool) (*StorageApi, error) {
+func NewStorageApiWithToken(ctx context.Context, logger log.Logger, host, tokenStr string, verbose bool) (*StorageApi, error) {
 	if len(host) == 0 {
 		panic(fmt.Errorf("api host is not set"))
 	}
@@ -51,7 +51,7 @@ func NewStorageApiWithToken(ctx context.Context, logger *zap.SugaredLogger, host
 	return storageApi.WithToken(token), nil
 }
 
-func NewStorageApi(apiHost string, ctx context.Context, logger *zap.SugaredLogger, verbose bool) *StorageApi {
+func NewStorageApi(apiHost string, ctx context.Context, logger log.Logger, verbose bool) *StorageApi {
 	apiHostUrl := "https://" + apiHost + "/v2/storage"
 	c := client.NewClient(ctx, logger, verbose).WithHostUrl(apiHostUrl)
 	c.SetError(&Error{})

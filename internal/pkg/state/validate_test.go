@@ -29,7 +29,7 @@ func TestValidateState(t *testing.T) {
 	api, httpTransport, _ := testapi.NewMockedStorageApi()
 
 	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
-	stateOptions := NewOptions(fs, m, api, schedulerApi, context.Background(), logger.Logger)
+	stateOptions := NewOptions(fs, m, api, schedulerApi, context.Background(), logger)
 	s := newState(stateOptions)
 
 	// Mocked component response

@@ -12,7 +12,7 @@ import (
 func TestNewEncryptionApi(t *testing.T) {
 	t.Parallel()
 	logger := log.NewDebugLogger()
-	a := NewEncryptionApi(context.Background(), logger.Logger, "https://encryption.keboola.com", 1234, true)
+	a := NewEncryptionApi(context.Background(), logger, "https://encryption.keboola.com", 1234, true)
 	assert.NotNil(t, a)
 	assert.Equal(t, "https://encryption.keboola.com", a.hostUrl)
 	mapToEncrypt := map[string]string{"#keyToEncrypt": "value"}
@@ -27,7 +27,7 @@ func TestNewEncryptionApi(t *testing.T) {
 func TestErrorEncryptionApi(t *testing.T) {
 	t.Parallel()
 	logger := log.NewDebugLogger()
-	a := NewEncryptionApi(context.Background(), logger.Logger, "https://encryption.keboola.com", 1234, true)
+	a := NewEncryptionApi(context.Background(), logger, "https://encryption.keboola.com", 1234, true)
 	assert.NotNil(t, a)
 	mapToEncrypt := map[string]string{"#keyToEncrypt": "value"}
 	request := a.CreateEncryptRequest("", mapToEncrypt).Send()

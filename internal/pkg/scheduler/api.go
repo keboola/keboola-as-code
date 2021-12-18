@@ -7,16 +7,16 @@ import (
 	"time"
 
 	"github.com/go-resty/resty/v2"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 type Api struct {
 	hostUrl string
 	client  *client.Client
-	logger  *zap.SugaredLogger
+	logger  log.Logger
 }
 
 // Error represents Scheduler API error structure.
@@ -34,7 +34,7 @@ func (e *Error) Error() string {
 	return msg
 }
 
-func NewSchedulerApi(ctx context.Context, logger *zap.SugaredLogger, hostUrl string, token string, verbose bool) *Api {
+func NewSchedulerApi(ctx context.Context, logger log.Logger, hostUrl string, token string, verbose bool) *Api {
 	c := client.NewClient(ctx, logger, verbose).WithHostUrl(hostUrl)
 	c.SetHeader("X-StorageApi-Token", token)
 	c.SetError(&Error{})

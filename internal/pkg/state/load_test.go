@@ -35,7 +35,7 @@ func TestLoadState(t *testing.T) {
 	logger := log.NewDebugLogger()
 	m, fs := loadTestManifest(t, envs, "minimal")
 
-	stateOptions := NewOptions(fs, m, project.StorageApi(), project.SchedulerApi(), context.Background(), logger.Logger)
+	stateOptions := NewOptions(fs, m, project.StorageApi(), project.SchedulerApi(), context.Background(), logger)
 	stateOptions.LoadLocalState = true
 	stateOptions.LoadRemoteState = true
 	state, ok, localErr, remoteErr := LoadState(stateOptions)

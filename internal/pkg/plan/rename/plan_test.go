@@ -46,7 +46,7 @@ func TestRenameAllPlan(t *testing.T) {
 
 	// Load state
 	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
-	options := state.NewOptions(fs, m, api, schedulerApi, context.Background(), logger.Logger)
+	options := state.NewOptions(fs, m, api, schedulerApi, context.Background(), logger)
 	options.LoadLocalState = true
 	projectState, ok, localErr, remoteErr := state.LoadState(options)
 	assert.True(t, ok)

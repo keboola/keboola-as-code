@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
@@ -15,7 +15,7 @@ import (
 func TestGetSharedCodeByPath(t *testing.T) {
 	t.Parallel()
 	fs := testhelper.NewMemoryFs()
-	state := model.NewState(zap.NewNop().Sugar(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
+	state := model.NewState(log.NewNopLogger(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
 	naming := model.DefaultNamingWithIds()
 	h := New(state, naming)
 	sharedCodeKey, _ := fixtures.CreateSharedCode(t, state, naming)
@@ -42,7 +42,7 @@ func TestGetSharedCodeByPath(t *testing.T) {
 func TestGetSharedCodeRowByPath(t *testing.T) {
 	t.Parallel()
 	fs := testhelper.NewMemoryFs()
-	state := model.NewState(zap.NewNop().Sugar(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
+	state := model.NewState(log.NewNopLogger(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
 	naming := model.DefaultNamingWithIds()
 	h := New(state, naming)
 	sharedCodeKey, _ := fixtures.CreateSharedCode(t, state, naming)
@@ -69,7 +69,7 @@ func TestGetSharedCodeRowByPath(t *testing.T) {
 func TestGetSharedCodeVariablesId(t *testing.T) {
 	t.Parallel()
 	fs := testhelper.NewMemoryFs()
-	state := model.NewState(zap.NewNop().Sugar(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
+	state := model.NewState(log.NewNopLogger(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
 	naming := model.DefaultNamingWithIds()
 	h := New(state, model.DefaultNamingWithIds())
 

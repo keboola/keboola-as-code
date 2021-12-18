@@ -5,16 +5,16 @@ import (
 
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
 func TestValuesPriority(t *testing.T) {
 	t.Parallel()
-	logger := zap.NewNop().Sugar()
+	logger := log.NewNopLogger()
 	workingDir := filesystem.Join("foo", "bar")
 	fs, err := aferofs.NewMemoryFs(logger, workingDir)
 	assert.NoError(t, err)

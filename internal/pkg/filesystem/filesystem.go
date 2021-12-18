@@ -10,7 +10,8 @@ import (
 	"strings"
 
 	"github.com/spf13/afero"
-	"go.uber.org/zap"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
 const (
@@ -20,7 +21,7 @@ const (
 
 var SkipDir = fs.SkipDir // nolint: gochecknoglobals
 
-type Factory func(logger *zap.SugaredLogger, workingDir string) (fs Fs, err error)
+type Factory func(logger log.Logger, workingDir string) (fs Fs, err error)
 
 type FileInfo = fs.FileInfo
 
@@ -29,7 +30,7 @@ type Fs interface {
 	ApiName() string // name of the used implementation, for example local, memory, ...
 	BasePath() string
 	WorkingDir() string
-	SetLogger(logger *zap.SugaredLogger)
+	SetLogger(logger log.Logger)
 	Walk(root string, walkFn filepath.WalkFunc) error
 	Glob(pattern string) (matches []string, err error)
 	Stat(path string) (os.FileInfo, error)

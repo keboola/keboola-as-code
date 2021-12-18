@@ -6,14 +6,13 @@ import (
 	"os"
 	"path/filepath"
 
-	"go.uber.org/zap"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs/localfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs/memoryfs"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
-func NewLocalFsFindKeboolaDir(logger *zap.SugaredLogger, workingDir string) (fs filesystem.Fs, err error) {
+func NewLocalFsFindKeboolaDir(logger log.Logger, workingDir string) (fs filesystem.Fs, err error) {
 	if workingDir == "" {
 		workingDir, err = os.Getwd()
 		if err != nil {
@@ -42,12 +41,12 @@ func NewLocalFsFindKeboolaDir(logger *zap.SugaredLogger, workingDir string) (fs 
 	return New(logger, localfs.New(keboolaDir), workingDirRel), nil
 }
 
-func NewLocalFs(logger *zap.SugaredLogger, rootDir string, workingDirRel string) (fs filesystem.Fs, err error) {
+func NewLocalFs(logger log.Logger, rootDir string, workingDirRel string) (fs filesystem.Fs, err error) {
 	// Create filesystem abstraction
 	return New(logger, localfs.New(rootDir), workingDirRel), nil
 }
 
-func NewMemoryFs(logger *zap.SugaredLogger, workingDir string) (fs filesystem.Fs, err error) {
+func NewMemoryFs(logger log.Logger, workingDir string) (fs filesystem.Fs, err error) {
 	// Create filesystem abstraction
 	return New(logger, memoryfs.New(), workingDir), nil
 }

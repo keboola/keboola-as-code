@@ -1,14 +1,13 @@
 package save
 
 import (
-	"go.uber.org/zap"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 )
 
 type Dependencies interface {
-	Logger() *zap.SugaredLogger
+	Logger() log.Logger
 	ProjectDir() (filesystem.Fs, error)
 	ProjectManifest() (*manifest.Manifest, error)
 }

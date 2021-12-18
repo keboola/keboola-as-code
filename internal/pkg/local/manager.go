@@ -7,9 +7,9 @@ import (
 	"sync"
 
 	"github.com/spf13/cast"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
@@ -19,7 +19,7 @@ import (
 
 type Manager struct {
 	state    *model.State
-	logger   *zap.SugaredLogger
+	logger   log.Logger
 	fs       filesystem.Fs
 	manifest *projectManifest.Manifest
 	mapper   *mapper.Mapper
@@ -37,7 +37,7 @@ type UnitOfWork struct {
 	invoked         bool
 }
 
-func NewManager(logger *zap.SugaredLogger, fs filesystem.Fs, m *projectManifest.Manifest, state *model.State, mapper *mapper.Mapper) *Manager {
+func NewManager(logger log.Logger, fs filesystem.Fs, m *projectManifest.Manifest, state *model.State, mapper *mapper.Mapper) *Manager {
 	return &Manager{
 		state:    state,
 		logger:   logger,

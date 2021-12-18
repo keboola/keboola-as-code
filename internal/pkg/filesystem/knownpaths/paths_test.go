@@ -5,11 +5,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	. "github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
 func TestKnownPathsEmpty(t *testing.T) {
@@ -315,7 +315,7 @@ func loadKnownPaths(t *testing.T, fixture string) (*Paths, error) {
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filesystem.Dir(testFile)
 	projectDir := filesystem.Join(testDir, "..", "..", "fixtures", "local", fixture)
-	fs, err := aferofs.NewLocalFs(zap.NewNop().Sugar(), projectDir, ".")
+	fs, err := aferofs.NewLocalFs(log.NewNopLogger(), projectDir, ".")
 	assert.NoError(t, err)
 	return New(fs)
 }

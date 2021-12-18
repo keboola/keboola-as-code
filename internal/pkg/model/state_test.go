@@ -14,9 +14,9 @@ import (
 func TestNewState(t *testing.T) {
 	t.Parallel()
 	logger := log.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger.Logger, `/`)
+	fs, err := aferofs.NewMemoryFs(logger, `/`)
 	assert.NoError(t, err)
-	s := NewState(logger.Logger, fs, NewComponentsMap(nil), SortByPath)
+	s := NewState(logger, fs, NewComponentsMap(nil), SortByPath)
 	assert.NotNil(t, s)
 }
 
@@ -170,7 +170,7 @@ func TestStateTrackRecordInvalid(t *testing.T) {
 func newTestState(t *testing.T, fs filesystem.Fs) *State {
 	t.Helper()
 	logger := log.NewDebugLogger()
-	s := NewState(logger.Logger, fs, NewComponentsMap(nil), SortByPath)
+	s := NewState(logger, fs, NewComponentsMap(nil), SortByPath)
 	assert.NotNil(t, s)
 
 	// Branch 1

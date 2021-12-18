@@ -4,17 +4,17 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
 func TestCopyFs2FsRootToRoot(t *testing.T) {
 	t.Parallel()
 	tempDir := t.TempDir()
-	localFs, err := NewLocalFs(zap.NewNop().Sugar(), tempDir, `/`)
+	localFs, err := NewLocalFs(log.NewNopLogger(), tempDir, `/`)
 	assert.NoError(t, err)
-	memoryFs, err := NewMemoryFs(zap.NewNop().Sugar(), `/`)
+	memoryFs, err := NewMemoryFs(log.NewNopLogger(), `/`)
 	assert.NoError(t, err)
 
 	// Create files
@@ -36,9 +36,9 @@ func TestCopyFs2FsRootToRoot(t *testing.T) {
 func TestCopyFs2FsDirToDir(t *testing.T) {
 	t.Parallel()
 	tempDir := t.TempDir()
-	localFs, err := NewLocalFs(zap.NewNop().Sugar(), tempDir, `/`)
+	localFs, err := NewLocalFs(log.NewNopLogger(), tempDir, `/`)
 	assert.NoError(t, err)
-	memoryFs, err := NewMemoryFs(zap.NewNop().Sugar(), `/`)
+	memoryFs, err := NewMemoryFs(log.NewNopLogger(), `/`)
 	assert.NoError(t, err)
 
 	// Create files
