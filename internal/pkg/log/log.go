@@ -1,157 +1,50 @@
 package log
 
 import (
-	"fmt"
 	"io"
-	"strings"
 
-	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
-type WriteCloser struct {
-	level  zapcore.Level
-	logger *zap.SugaredLogger
+const (
+	DebugLevel = zapcore.DebugLevel
+	InfoLevel  = zapcore.InfoLevel
+	WarnLevel  = zapcore.WarnLevel
+	ErrorLevel = zapcore.ErrorLevel
+)
+
+type Logger interface {
+	baseLogger
+	sugaredLogger
+	toWriter
 }
 
-// Write messages with the defined level to logger.
-func (w *WriteCloser) Write(p []byte) (n int, err error) {
-	lines := strings.TrimRight(string(p), "\n")
-	for _, line := range strings.Split(lines, "\n") {
-		msg := strings.TrimRight(line, "\n")
-		switch w.level {
-		case zapcore.DebugLevel:
-			w.logger.Debug(msg)
-		case zapcore.InfoLevel:
-			w.logger.Info(msg)
-		case zapcore.WarnLevel:
-			w.logger.Warn(msg)
-		default:
-			w.logger.Error(msg)
-		}
-	}
-	return len(p), nil
+// DebugLogger returns logs as string in tests.
+type DebugLogger interface {
+	Logger
+	String() string
+	Truncate()
+	ConnectTo(writer io.Writer)
 }
 
-func (w *WriteCloser) Close() error {
-	return w.logger.Sync()
+type baseLogger interface {
+	Debug(args ...interface{})
+	Info(args ...interface{})
+	Warn(args ...interface{})
+	Error(args ...interface{})
+	Sync() error
 }
 
-func (w *WriteCloser) WriteString(s string) (n int, err error) {
-	return w.Write([]byte(s))
+type sugaredLogger interface {
+	Debugf(template string, args ...interface{})
+	Infof(template string, args ...interface{})
+	Warnf(template string, args ...interface{})
+	Errorf(template string, args ...interface{})
 }
 
-func (w *WriteCloser) WriteNoErr(p []byte) {
-	if _, err := w.Write(p); err != nil {
-		panic(fmt.Errorf("cannot write: %w", err))
-	}
-}
-
-func (w *WriteCloser) WriteStringNoErr(s string) {
-	if _, err := w.WriteString(s); err != nil {
-		panic(fmt.Errorf("cannot write: %w", err))
-	}
-}
-
-func (w *WriteCloser) WriteStringNoErrIndent1(s string) {
-	w.WriteStringNoErrIndent(s, 1)
-}
-
-func (w *WriteCloser) WriteStringNoErrIndent(s string, indent int) {
-	w.WriteStringNoErr(strings.Repeat("  ", indent) + s)
-}
-
-func ToDebugWriter(l *zap.SugaredLogger) *WriteCloser {
-	return &WriteCloser{zapcore.DebugLevel, l}
-}
-
-func ToInfoWriter(l *zap.SugaredLogger) *WriteCloser {
-	return &WriteCloser{zapcore.InfoLevel, l}
-}
-
-func ToWarnWriter(l *zap.SugaredLogger) *WriteCloser {
-	return &WriteCloser{zapcore.WarnLevel, l}
-}
-
-func ToErrorWriter(l *zap.SugaredLogger) *WriteCloser {
-	return &WriteCloser{zapcore.ErrorLevel, l}
-}
-
-func NewLogger(stdout io.Writer, stderr io.Writer, logFile *File, verbose bool) *zap.SugaredLogger {
-	var cores []zapcore.Core
-
-	// Log to file
-	if logFile != nil {
-		cores = append(cores, getFileCore(logFile))
-	}
-
-	// Log to stdout
-	cores = append(cores, getStdoutCore(stdout, verbose))
-
-	// Log to stderr
-	cores = append(cores, getStderrCore(stderr, verbose))
-
-	// Create logger
-	return zap.New(zapcore.NewTee(cores...)).Sugar()
-}
-
-func getFileCore(logFile *File) zapcore.Core {
-	// Log all
-	fileLevels := zap.LevelEnablerFunc(func(l zapcore.Level) bool { return true })
-
-	// Log time, level, msg
-	encoder := zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
-		TimeKey:          "ts",
-		LevelKey:         "level",
-		MessageKey:       "msg",
-		EncodeLevel:      zapcore.CapitalLevelEncoder,
-		ConsoleSeparator: "\t",
-	})
-	return zapcore.NewCore(encoder, logFile.File(), fileLevels)
-}
-
-func getStdoutCore(stdout io.Writer, verbose bool) zapcore.Core {
-	consoleLevels := zap.LevelEnablerFunc(func(l zapcore.Level) bool {
-		// Log debug, info -> if verbose output enabled
-		if verbose {
-			return l == zapcore.DebugLevel || l == zapcore.InfoLevel
-		}
-
-		// Log info only
-		return l == zapcore.InfoLevel
-	})
-
-	// Prefix messages with level only when verbose enabled
-	levelKey := ""
-	if verbose {
-		levelKey = "level"
-	}
-
-	// Create encoder
-	encoder := zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
-		MessageKey:       "msg",
-		LevelKey:         levelKey,
-		EncodeLevel:      zapcore.CapitalLevelEncoder,
-		ConsoleSeparator: "\t",
-	})
-
-	return zapcore.NewCore(encoder, zapcore.AddSync(stdout), consoleLevels)
-}
-
-func getStderrCore(stderr io.Writer, verbose bool) zapcore.Core {
-	// Prefix messages with level only when verbose enabled
-	levelKey := ""
-	if verbose {
-		levelKey = "level"
-	}
-
-	// Create encoder
-	encoder := zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
-		MessageKey:       "msg",
-		LevelKey:         levelKey,
-		EncodeLevel:      zapcore.CapitalLevelEncoder,
-		ConsoleSeparator: "\t",
-	})
-
-	return zapcore.NewCore(encoder, zapcore.AddSync(stderr), zapcore.WarnLevel)
+type toWriter interface {
+	DebugWriter() *LevelWriter
+	InfoWriter() *LevelWriter
+	WarnWriter() *LevelWriter
+	ErrorWriter() *LevelWriter
 }
