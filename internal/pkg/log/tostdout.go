@@ -1,3 +1,4 @@
+// nolint:forbidigo // allow usage of the "zap" package
 package log
 
 import (

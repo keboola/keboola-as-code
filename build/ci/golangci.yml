@@ -39,6 +39,8 @@ linters-settings:
       - ^.*\.SetBody$
       # Instead of aferocopy.Copy use aferofs.CopyFs2Fs
       - ^aferocopy\.Copy$
+      # Instead of "zap" package use "internal/log" package
+      - ^zap\.
 
 # https://golangci-lint.run/usage/linters
 linters:
