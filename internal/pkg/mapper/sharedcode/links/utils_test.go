@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	mapperPkg "github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
@@ -26,7 +27,7 @@ func TestSharedCodeLinksMatchId(t *testing.T) {
 		{input: "{{ABC}}", expected: "ABC"},
 		{input: "  {{ABC}}  \n", expected: "ABC"},
 	}
-	m := NewMapper(nil, model.MapperContext{Naming: model.DefaultNamingWithIds()})
+	m := NewMapper(nil, mapperPkg.Context{})
 	for i, c := range cases {
 		assert.Equal(t, model.RowId(c.expected), m.matchId(c.input), fmt.Sprintf(`Case "%d"`, i))
 	}
@@ -52,7 +53,7 @@ func TestSharedCodeLinksMatchPath(t *testing.T) {
 		{input: "{{:codes/my-code}}", expected: "codes/my-code"},
 		{input: "-- {{:codes/my-code}}", expected: "codes/my-code"}, // SQL comment
 	}
-	m := NewMapper(nil, model.MapperContext{Naming: model.DefaultNamingWithIds()})
+	m := NewMapper(nil, mapperPkg.Context{})
 	for i, c := range cases {
 		assert.Equal(t, c.expected, m.matchPath(c.input, `keboola.snowflake-transformation`), fmt.Sprintf(`Case "%d"`, i))
 	}
@@ -60,13 +61,13 @@ func TestSharedCodeLinksMatchPath(t *testing.T) {
 
 func TestSharedCodeLinksFormatId(t *testing.T) {
 	t.Parallel()
-	m := NewMapper(nil, model.MapperContext{Naming: model.DefaultNamingWithIds()})
+	m := NewMapper(nil, mapperPkg.Context{})
 	assert.Equal(t, `{{12345}}`, m.formatId(`12345`))
 }
 
 func TestSharedCodeLinksFormatPath(t *testing.T) {
 	t.Parallel()
-	m := NewMapper(nil, model.MapperContext{Naming: model.DefaultNamingWithIds()})
+	m := NewMapper(nil, mapperPkg.Context{})
 
 	assert.Equal(t, `-- {{:foo/bar}}`, m.formatPath(`foo/bar`, `keboola.snowflake-transformation`))
 	assert.Equal(t, `# {{:foo/bar}}`, m.formatPath(`foo/bar`, `keboola.python-transformation-v2`))

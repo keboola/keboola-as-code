@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 )
@@ -16,9 +17,9 @@ func TestGetSharedCodeByPath(t *testing.T) {
 	t.Parallel()
 	fs := testfs.NewMemoryFs()
 	state := model.NewState(log.NewNopLogger(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
-	naming := model.DefaultNamingWithIds()
-	h := New(state, naming)
-	sharedCodeKey, _ := fixtures.CreateSharedCode(t, state, naming)
+	namingRegistry := naming.NewRegistry()
+	h := New(state, namingRegistry)
+	sharedCodeKey, _ := fixtures.CreateSharedCode(t, state, namingRegistry)
 
 	// Found
 	result, err := h.GetSharedCodeByPath(model.BranchKey{Id: 123}, `_shared/keboola.python-transformation-v2`)
@@ -43,9 +44,9 @@ func TestGetSharedCodeRowByPath(t *testing.T) {
 	t.Parallel()
 	fs := testfs.NewMemoryFs()
 	state := model.NewState(log.NewNopLogger(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
-	naming := model.DefaultNamingWithIds()
-	h := New(state, naming)
-	sharedCodeKey, _ := fixtures.CreateSharedCode(t, state, naming)
+	namingRegistry := naming.NewRegistry()
+	h := New(state, namingRegistry)
+	sharedCodeKey, _ := fixtures.CreateSharedCode(t, state, namingRegistry)
 	sharedCode := state.MustGet(sharedCodeKey).(*model.ConfigState)
 
 	// Found
@@ -70,10 +71,10 @@ func TestGetSharedCodeVariablesId(t *testing.T) {
 	t.Parallel()
 	fs := testfs.NewMemoryFs()
 	state := model.NewState(log.NewNopLogger(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
-	naming := model.DefaultNamingWithIds()
-	h := New(state, model.DefaultNamingWithIds())
+	namingRegistry := naming.NewRegistry()
+	h := New(state, namingRegistry)
 
-	fixtures.CreateSharedCode(t, state, naming)
+	fixtures.CreateSharedCode(t, state, namingRegistry)
 	sharedCodeRow1 := state.MustGet(model.ConfigRowKey{
 		BranchId:    123,
 		ComponentId: model.SharedCodeComponentId,

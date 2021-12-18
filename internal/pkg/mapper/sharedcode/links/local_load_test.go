@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
@@ -14,7 +15,7 @@ import (
 func TestLocalLoadTranWithSharedCode(t *testing.T) {
 	t.Parallel()
 	mapperInst, context, logs := createMapper(t)
-	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, context.State, context.Naming)
+	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, context.State, context.NamingRegistry)
 
 	// Create transformation with shared code
 	transformation := createLocalTranWithSharedCode(t, context)
@@ -89,7 +90,7 @@ func TestLocalLoadTranWithSharedCode(t *testing.T) {
 func TestLocalLoadTranWithSharedCode_InvalidSharedCodePath(t *testing.T) {
 	t.Parallel()
 	mapperInst, context, logs := createMapper(t)
-	fixtures.CreateSharedCode(t, context.State, context.Naming)
+	fixtures.CreateSharedCode(t, context.State, context.NamingRegistry)
 
 	// Create transformation with shared code
 	transformation := createLocalTranWithSharedCode(t, context)
@@ -118,7 +119,7 @@ missing shared code "branch/missing":
 func TestLocalLoadTranWithSharedCode_InvalidSharedCodeRowPath(t *testing.T) {
 	t.Parallel()
 	mapperInst, context, logs := createMapper(t)
-	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, context.State, context.Naming)
+	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, context.State, context.NamingRegistry)
 
 	// Create transformation with shared code
 	transformation := createLocalTranWithSharedCode(t, context)
@@ -144,7 +145,7 @@ missing shared code "branch/_shared/keboola.python-transformation-v2/codes/missi
 	assert.False(t, found)
 }
 
-func createLocalTranWithSharedCode(t *testing.T, context model.MapperContext) *model.ConfigState {
+func createLocalTranWithSharedCode(t *testing.T, context mapper.Context) *model.ConfigState {
 	t.Helper()
 
 	key := model.ConfigKey{

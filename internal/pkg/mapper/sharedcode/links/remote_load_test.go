@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
@@ -14,7 +15,7 @@ import (
 func TestRemoteLoadTranWithSharedCode(t *testing.T) {
 	t.Parallel()
 	mapperInst, context, logs := createMapper(t)
-	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, context.State, context.Naming)
+	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, context.State, context.NamingRegistry)
 
 	// Create transformation with shared code
 	transformation := createRemoteTranWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, context)
@@ -38,7 +39,7 @@ func TestRemoteLoadTranWithSharedCode(t *testing.T) {
 func TestRemoteLoadTranWithSharedCode_InvalidSharedCodeId(t *testing.T) {
 	t.Parallel()
 	mapperInst, context, logs := createMapper(t)
-	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, context.State, context.Naming)
+	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, context.State, context.NamingRegistry)
 
 	// Create transformation with shared code
 	transformation := createRemoteTranWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, context)
@@ -68,7 +69,7 @@ WARN  Warning:
 func TestRemoteLoadTranWithSharedCode_InvalidSharedCodeRowId(t *testing.T) {
 	t.Parallel()
 	mapperInst, context, logs := createMapper(t)
-	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, context.State, context.Naming)
+	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, context.State, context.NamingRegistry)
 
 	// Create transformation with shared code
 	transformation := createRemoteTranWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, context)
@@ -95,7 +96,7 @@ WARN  Warning:
 	assert.False(t, found)
 }
 
-func createRemoteTranWithSharedCode(t *testing.T, sharedCodeKey model.ConfigKey, sharedCodeRowsKeys []model.ConfigRowKey, context model.MapperContext) *model.ConfigState {
+func createRemoteTranWithSharedCode(t *testing.T, sharedCodeKey model.ConfigKey, sharedCodeRowsKeys []model.ConfigRowKey, context mapper.Context) *model.ConfigState {
 	t.Helper()
 
 	// Rows -> rows IDs

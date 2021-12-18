@@ -7,12 +7,14 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-func createRemoteSharedCode(t *testing.T) (model.MapperContext, log.DebugLogger, *model.ConfigState, *model.ConfigRowState) {
+func createRemoteSharedCode(t *testing.T) (mapper.Context, log.DebugLogger, *model.ConfigState, *model.ConfigRowState) {
 	t.Helper()
 
 	targetComponentId := model.ComponentId(`keboola.snowflake-transformation`)
@@ -89,11 +91,14 @@ func createRemoteSharedCode(t *testing.T) (model.MapperContext, log.DebugLogger,
 	}
 	assert.NoError(t, state.Set(rowState))
 
-	context := model.MapperContext{Logger: logger, Fs: fs, Naming: model.DefaultNamingWithIds(), State: state}
+	namingTemplate := naming.TemplateWithIds()
+	namingRegistry := naming.NewRegistry()
+	namingGenerator := naming.NewGenerator(namingTemplate, namingRegistry)
+	context := mapper.Context{Logger: logger, Fs: fs, NamingGenerator: namingGenerator, NamingRegistry: namingRegistry, State: state}
 	return context, logger, configState, rowState
 }
 
-func createLocalSharedCode(t *testing.T, targetComponentId model.ComponentId) (model.MapperContext, log.DebugLogger, *model.ConfigState, *model.ConfigRowState) {
+func createLocalSharedCode(t *testing.T, targetComponentId model.ComponentId) (mapper.Context, log.DebugLogger, *model.ConfigState, *model.ConfigRowState) {
 	t.Helper()
 
 	logger := log.NewDebugLogger()
@@ -169,12 +174,15 @@ func createLocalSharedCode(t *testing.T, targetComponentId model.ComponentId) (m
 	}
 	assert.NoError(t, state.Set(rowState))
 
-	context := model.MapperContext{Logger: logger, Fs: fs, Naming: model.DefaultNamingWithIds(), State: state}
+	namingTemplate := naming.TemplateWithIds()
+	namingRegistry := naming.NewRegistry()
+	namingGenerator := naming.NewGenerator(namingTemplate, namingRegistry)
+	context := mapper.Context{Logger: logger, Fs: fs, NamingRegistry: namingRegistry, NamingGenerator: namingGenerator, State: state}
 	return context, logger, configState, rowState
 }
 
 // nolint: unparam
-func createInternalSharedCode(t *testing.T, targetComponentId model.ComponentId) (model.MapperContext, log.DebugLogger, *model.ConfigState, *model.ConfigRowState) {
+func createInternalSharedCode(t *testing.T, targetComponentId model.ComponentId) (mapper.Context, log.DebugLogger, *model.ConfigState, *model.ConfigRowState) {
 	t.Helper()
 
 	logger := log.NewDebugLogger()
@@ -276,6 +284,9 @@ func createInternalSharedCode(t *testing.T, targetComponentId model.ComponentId)
 	}
 	assert.NoError(t, state.Set(rowState))
 
-	context := model.MapperContext{Logger: logger, Fs: fs, Naming: model.DefaultNamingWithIds(), State: state}
+	namingTemplate := naming.TemplateWithIds()
+	namingRegistry := naming.NewRegistry()
+	namingGenerator := naming.NewGenerator(namingTemplate, namingRegistry)
+	context := mapper.Context{Logger: logger, Fs: fs, NamingRegistry: namingRegistry, NamingGenerator: namingGenerator, State: state}
 	return context, logger, configState, rowState
 }

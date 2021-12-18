@@ -72,10 +72,19 @@ func TestLocalLoadModelNotFound(t *testing.T) {
 func TestLocalLoadModelInvalidTransformation(t *testing.T) {
 	t.Parallel()
 
-	manager, mapperIst := newTestLocalManager(t)
-	mapperIst.AddMapper(transformation.NewMapper(mapperIst.Context()))
+	namingTemplate := naming.TemplateWithIds()
+	namingRegistry := naming.NewRegistry()
+	namingGenerator := naming.NewGenerator(namingTemplate, namingRegistry)
 
+	manager, mapperIst := newTestLocalManager(t)
 	fs := manager.fs
+	mapperIst.AddMapper(transformation.NewMapper(mapper.Context{
+		Logger:          log.NewDebugLogger(),
+		State:           manager.state,
+		NamingGenerator: namingGenerator,
+		Fs:              fs,
+	}))
+
 	componentProvider := manager.state.Components()
 	component := &model.Component{
 		ComponentKey: model.ComponentKey{Id: "keboola.foo-bar"},
@@ -104,23 +113,22 @@ func TestLocalLoadModelInvalidTransformation(t *testing.T) {
 		ConfigKey: configKey,
 		Paths:     model.Paths{PathInProject: model.PathInProject{ObjectPath: "config"}},
 	}
-	naming := manager.Naming()
 	assert.NoError(t, fs.Mkdir(record.Path()))
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(naming.MetaFilePath(record.Path()), metaFile)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(naming.DescriptionFilePath(record.Path()), descFile)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(naming.ConfigFilePath(record.Path()), configFile)))
-	blocksDir := naming.BlocksDir(record.Path())
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(namingGenerator.MetaFilePath(record.Path()), metaFile)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(namingGenerator.DescriptionFilePath(record.Path()), descFile)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(namingGenerator.ConfigFilePath(record.Path()), configFile)))
+	blocksDir := namingGenerator.BlocksDir(record.Path())
 	assert.NoError(t, fs.Mkdir(blocksDir))
 	block := &model.Block{BlockKey: model.BlockKey{Index: 123}, Name: `block`}
-	block.PathInProject = naming.BlockPath(blocksDir, block)
+	block.PathInProject = namingGenerator.BlockPath(blocksDir, block)
 	assert.NoError(t, fs.Mkdir(block.Path()))
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(naming.MetaFilePath(block.Path()), blockMeta)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(namingGenerator.MetaFilePath(block.Path()), blockMeta)))
 	code := &model.Code{CodeKey: model.CodeKey{Index: 123}, Name: `code`}
-	code.PathInProject = naming.CodePath(block.Path(), code)
-	code.CodeFileName = naming.CodeFileName(component.Id)
+	code.PathInProject = namingGenerator.CodePath(block.Path(), code)
+	code.CodeFileName = namingGenerator.CodeFileName(component.Id)
 	assert.NoError(t, fs.Mkdir(code.Path()))
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(naming.MetaFilePath(code.Path()), codeMeta)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(naming.CodeFilePath(code), codeContent)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(namingGenerator.MetaFilePath(code.Path()), codeMeta)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(namingGenerator.CodeFilePath(code), codeContent)))
 
 	// Load
 	found, err := manager.loadObject(record, target)

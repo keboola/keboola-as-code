@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	mapperPkg "github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
@@ -41,7 +42,7 @@ func TestMapBeforeLocalSave(t *testing.T) {
 	}
 
 	// Check generated files
-	phasesDir := context.Naming.PhasesDir(orchestratorConfigState.Path())
+	phasesDir := context.NamingGenerator.PhasesDir(orchestratorConfigState.Path())
 	assert.Equal(t, []*filesystem.File{
 		filesystem.NewFile(`meta.json`, `{}`),
 		filesystem.NewFile(`config.json`, `{}`),
@@ -99,7 +100,7 @@ WARN  Warning: cannot save orchestrator config "branch/other/orchestrator":
 	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logs.String())
 }
 
-func createLocalSaveFixtures(t *testing.T, context model.MapperContext, createTargets bool) *model.ConfigState {
+func createLocalSaveFixtures(t *testing.T, context mapperPkg.Context, createTargets bool) *model.ConfigState {
 	t.Helper()
 
 	orchestration := &model.Orchestration{
