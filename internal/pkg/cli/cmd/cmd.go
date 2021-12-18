@@ -338,8 +338,8 @@ func (root *RootCommand) setupLogger() {
 
 	// Create logger
 	root.Logger = log.NewLogger(root.OutOrStdout(), root.ErrOrStderr(), root.logFile, root.Options.Verbose)
-	root.SetOut(log.ToInfoWriter(root.Logger))
-	root.SetErr(log.ToWarnWriter(root.Logger))
+	root.SetOut(root.Logger.InfoWriter())
+	root.SetErr(root.Logger.WarnWriter())
 
 	// Warn if user specified log file + it cannot be opened
 	if logFileErr != nil && root.Options.LogFilePath != "" {
@@ -347,14 +347,14 @@ func (root *RootCommand) setupLogger() {
 	}
 
 	// Log info
-	w := log.ToDebugWriter(root.Logger)
-	w.WriteStringNoErr(root.Version)
-	w.WriteStringNoErr(fmt.Sprintf("Running command %v", os.Args))
-	w.WriteStringNoErr(root.Options.Dump())
+	w := root.Logger.DebugWriter()
+	w.WriteString(root.Version)
+	w.WriteString(fmt.Sprintf("Running command %v", os.Args))
+	w.WriteString(root.Options.Dump())
 	if root.logFile == nil {
-		w.WriteStringNoErr(`Log file: -`)
+		w.WriteString(`Log file: -`)
 	} else {
-		w.WriteStringNoErr(`Log file: ` + root.logFile.Path())
+		w.WriteString(`Log file: ` + root.logFile.Path())
 	}
 }
 

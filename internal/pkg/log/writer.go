@@ -13,7 +13,7 @@ type LevelWriter struct {
 }
 
 // Write messages with the defined level to zapLogger.
-func (w *LevelWriter) write(p []byte) (n int, err error) {
+func (w *LevelWriter) Write(p []byte) (n int, err error) {
 	lines := strings.TrimRight(string(p), "\n")
 	for _, line := range strings.Split(lines, "\n") {
 		msg := strings.TrimRight(line, "\n")
@@ -33,17 +33,17 @@ func (w *LevelWriter) write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-func (w *LevelWriter) Write(p []byte) {
-	if _, err := w.write(p); err != nil {
+func (w *LevelWriter) WriteNoErr(p []byte) {
+	if _, err := w.Write(p); err != nil {
 		panic(fmt.Errorf("cannot write: %w", err))
 	}
 }
 
 func (w *LevelWriter) WriteString(s string) {
-	w.Write([]byte(s))
+	w.WriteNoErr([]byte(s))
 }
 
-func (w *LevelWriter) WriteStringIndent(s string, indent int) {
+func (w *LevelWriter) WriteStringIndent(indent int, s string) {
 	w.WriteString(strings.Repeat("  ", indent) + s)
 }
 

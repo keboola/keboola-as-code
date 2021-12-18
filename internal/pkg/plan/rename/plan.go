@@ -21,15 +21,16 @@ func (p *Plan) Name() string {
 	return "rename"
 }
 
-func (p *Plan) Log(writer *log.WriteCloser) {
-	writer.WriteStringNoErr(fmt.Sprintf(`Plan for "%s" operation:`, p.Name()))
+func (p *Plan) Log(log log.Logger) {
+	writer := log.InfoWriter()
+	writer.WriteString(fmt.Sprintf(`Plan for "%s" operation:`, p.Name()))
 	actions := p.actions
 
 	if len(actions) == 0 {
-		writer.WriteStringNoErrIndent1("no paths to rename")
+		writer.WriteStringIndent(1, "no paths to rename")
 	} else {
 		for _, action := range actions {
-			writer.WriteStringNoErrIndent1("- " + action.String())
+			writer.WriteStringIndent(1, "- "+action.String())
 		}
 	}
 }

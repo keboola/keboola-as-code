@@ -48,9 +48,9 @@ func TestWriteStringIndent(t *testing.T) {
 	t.Parallel()
 	logger := NewDebugLogger()
 	writer := logger.InfoWriter()
-	writer.WriteStringIndent("test1", 1)
-	writer.WriteStringIndent("test2", 2)
-	writer.WriteStringIndent("test3", 3)
+	writer.WriteStringIndent(1, "test1")
+	writer.WriteStringIndent(2, "test2")
+	writer.WriteStringIndent(3, "test3")
 	expected := `
 INFO    test1
 INFO      test2

@@ -51,7 +51,7 @@ func Run(o Options, d dependencies) (changed bool, err error) {
 
 	// Log plan
 	if o.LogEmpty || !plan.Empty() {
-		plan.Log(log.ToInfoWriter(logger))
+		plan.Log(logger)
 	}
 
 	if !plan.Empty() {

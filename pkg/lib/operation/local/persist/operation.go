@@ -62,7 +62,7 @@ func Run(o Options, d dependencies) error {
 	}
 
 	// Log plan
-	plan.Log(log.ToInfoWriter(logger))
+	plan.Log(logger)
 
 	if !plan.Empty() {
 		// Dry run?

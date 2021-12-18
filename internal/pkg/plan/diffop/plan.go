@@ -42,15 +42,16 @@ func (p *Plan) Invoke(logger *zap.SugaredLogger, ctx context.Context, changeDesc
 	return executor.invoke()
 }
 
-func (p *Plan) Log(writer *log.WriteCloser) {
-	writer.WriteStringNoErr(fmt.Sprintf(`Plan for "%s" operation:`, p.Name()))
+func (p *Plan) Log(logger log.Logger) {
+	writer := logger.InfoWriter()
+	writer.WriteString(fmt.Sprintf(`Plan for "%s" operation:`, p.Name()))
 	actions := p.actions
 	sort.SliceStable(actions, func(i, j int) bool {
 		return actions[i].Path() < actions[j].Path()
 	})
 
 	if len(actions) == 0 {
-		writer.WriteStringNoErrIndent1("no difference")
+		writer.WriteStringIndent(1, "no difference")
 	} else {
 		skippedDeleteCount := 0
 		for _, action := range actions {
@@ -60,11 +61,11 @@ func (p *Plan) Log(writer *log.WriteCloser) {
 				msg += " - SKIPPED"
 				skippedDeleteCount++
 			}
-			writer.WriteStringNoErrIndent1(msg)
+			writer.WriteStringIndent(1, msg)
 		}
 
 		if skippedDeleteCount > 0 {
-			writer.WriteStringNoErr("Skipped remote objects deletion, use \"--force\" to delete them.")
+			writer.WriteString("Skipped remote objects deletion, use \"--force\" to delete them.")
 		}
 	}
 }

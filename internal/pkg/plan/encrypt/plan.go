@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"go.uber.org/zap"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/encryption"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
@@ -25,19 +23,20 @@ func (p *Plan) Name() string {
 	return "encrypt"
 }
 
-func (p *Plan) Invoke(logger *zap.SugaredLogger, encryptionApi *encryption.Api, ctx context.Context) error {
+func (p *Plan) Invoke(logger log.Logger, encryptionApi *encryption.Api, ctx context.Context) error {
 	return newExecutor(logger, encryptionApi, ctx, p).invoke()
 }
 
-func (p *Plan) Log(writer *log.WriteCloser) {
-	writer.WriteStringNoErr(fmt.Sprintf(`Plan for "%s" operation:`, p.Name()))
+func (p *Plan) Log(logger log.Logger) {
+	writer := logger.InfoWriter()
+	writer.WriteString(fmt.Sprintf(`Plan for "%s" operation:`, p.Name()))
 	if len(p.actions) == 0 {
-		writer.WriteStringNoErrIndent1("no values to encrypt")
+		writer.WriteStringIndent(1, "no values to encrypt")
 	} else {
 		for _, action := range p.actions {
-			writer.WriteStringNoErrIndent1(action.Kind().Abbr + " " + action.Path())
+			writer.WriteStringIndent(1, action.Kind().Abbr+" "+action.Path())
 			for _, value := range action.values {
-				writer.WriteStringNoErrIndent(fmt.Sprintf("%v", value.path), 2)
+				writer.WriteStringIndent(2, fmt.Sprintf("%v", value.path))
 			}
 		}
 	}

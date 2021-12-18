@@ -50,7 +50,7 @@ func Run(o Options, d dependencies) (err error) {
 	plan := encrypt.NewPlan(projectState)
 
 	// Log plan
-	plan.Log(log.ToInfoWriter(logger))
+	plan.Log(logger)
 
 	if !plan.Empty() {
 		// Dry run?
