@@ -7,9 +7,6 @@ import (
 	"io"
 	"os"
 	"sync"
-
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 type Writer struct {
@@ -100,23 +97,4 @@ func NewBufferWriter() *Writer {
 func NewBufferReader() *Reader {
 	var buffer bytes.Buffer
 	return &Reader{bufio.NewReader(&buffer), &buffer}
-}
-
-func NewDebugLogger() (*zap.SugaredLogger, *Writer) {
-	writer := NewBufferWriter()
-	encoderConfig := zapcore.EncoderConfig{
-		TimeKey:          "ts",
-		LevelKey:         "level",
-		MessageKey:       "msg",
-		EncodeLevel:      zapcore.CapitalLevelEncoder,
-		ConsoleSeparator: "  ",
-	}
-	loggerRaw := zap.New(zapcore.NewCore(
-		zapcore.NewConsoleEncoder(encoderConfig),
-		zapcore.AddSync(writer),
-		zapcore.DebugLevel,
-	))
-	logger := loggerRaw.Sugar()
-
-	return logger, writer
 }

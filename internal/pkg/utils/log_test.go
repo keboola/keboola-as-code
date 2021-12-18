@@ -16,13 +16,6 @@ func TestNewBufferWriter(t *testing.T) {
 	assert.Equal(t, "test", writer.String())
 }
 
-func TestNewDebugLogger(t *testing.T) {
-	t.Parallel()
-	logger, writer := NewDebugLogger()
-	logger.Warn("test")
-	assert.Equal(t, "WARN  test\n", writer.String())
-}
-
 func TestConnectTo(t *testing.T) {
 	t.Parallel()
 	writer := NewBufferWriter()
