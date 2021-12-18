@@ -80,21 +80,16 @@ func (m Mappers) ForEachReverse(stopOnFailure bool, callback func(mapper interfa
 // Except for save methods: MapBeforeLocalSave, MapBeforeRemoteSave.
 // For these, the mappers are called in reverse order (Mappers.ForEachReverse).
 type Mapper struct {
-	context model.MapperContext
 	mappers Mappers // implement part of the interfaces above
 }
 
-func New(context model.MapperContext) *Mapper {
-	return &Mapper{context: context}
+func New() *Mapper {
+	return &Mapper{}
 }
 
 func (m *Mapper) AddMapper(mapper ...interface{}) *Mapper {
 	m.mappers = append(m.mappers, mapper...)
 	return m
-}
-
-func (m *Mapper) Context() model.MapperContext {
-	return m.context
 }
 
 func (m *Mapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
