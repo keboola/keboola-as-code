@@ -8,7 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 )
 
 func TestNewState(t *testing.T) {
@@ -22,37 +22,37 @@ func TestNewState(t *testing.T) {
 
 func TestStateComponents(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t, testhelper.NewMemoryFs())
+	s := newTestState(t, testfs.NewMemoryFs())
 	assert.NotNil(t, s.Components())
 }
 
 func TestStateAll(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t, testhelper.NewMemoryFs())
+	s := newTestState(t, testfs.NewMemoryFs())
 	assert.Len(t, s.All(), 6)
 }
 
 func TestStateBranches(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t, testhelper.NewMemoryFs())
+	s := newTestState(t, testfs.NewMemoryFs())
 	assert.Len(t, s.Branches(), 2)
 }
 
 func TestStateConfigs(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t, testhelper.NewMemoryFs())
+	s := newTestState(t, testfs.NewMemoryFs())
 	assert.Len(t, s.Configs(), 2)
 }
 
 func TestStateConfigRows(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t, testhelper.NewMemoryFs())
+	s := newTestState(t, testfs.NewMemoryFs())
 	assert.Len(t, s.ConfigRows(), 2)
 }
 
 func TestStateConfigsFrom(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t, testhelper.NewMemoryFs())
+	s := newTestState(t, testfs.NewMemoryFs())
 	assert.Len(t, s.ConfigsFrom(BranchKey{Id: 123}), 2)
 	assert.Len(t, s.ConfigsFrom(BranchKey{Id: 567}), 0)
 	assert.Len(t, s.ConfigsFrom(BranchKey{Id: 111}), 0)
@@ -60,7 +60,7 @@ func TestStateConfigsFrom(t *testing.T) {
 
 func TestStateConfigRowsFrom(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t, testhelper.NewMemoryFs())
+	s := newTestState(t, testfs.NewMemoryFs())
 	assert.Len(t, s.ConfigRowsFrom(ConfigKey{BranchId: 123, ComponentId: "keboola.bar", Id: `678`}), 2)
 	assert.Len(t, s.ConfigRowsFrom(ConfigKey{BranchId: 123, ComponentId: "keboola.bar", Id: `345`}), 0)
 	assert.Len(t, s.ConfigRowsFrom(ConfigKey{BranchId: 123, ComponentId: "keboola.bar", Id: `111`}), 0)
@@ -68,7 +68,7 @@ func TestStateConfigRowsFrom(t *testing.T) {
 
 func TestStateGet(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t, testhelper.NewMemoryFs())
+	s := newTestState(t, testfs.NewMemoryFs())
 	state, found := s.Get(BranchKey{Id: 567})
 	assert.NotNil(t, state)
 	assert.True(t, found)
@@ -76,7 +76,7 @@ func TestStateGet(t *testing.T) {
 
 func TestStateGetNotFound(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t, testhelper.NewMemoryFs())
+	s := newTestState(t, testfs.NewMemoryFs())
 	state, found := s.Get(BranchKey{Id: 111})
 	assert.Nil(t, state)
 	assert.False(t, found)
@@ -84,13 +84,13 @@ func TestStateGetNotFound(t *testing.T) {
 
 func TestStateMustGet(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t, testhelper.NewMemoryFs())
+	s := newTestState(t, testfs.NewMemoryFs())
 	assert.Equal(t, "Foo Bar Branch", s.MustGet(BranchKey{Id: 567}).ObjectName())
 }
 
 func TestStateMustGetNotFound(t *testing.T) {
 	t.Parallel()
-	s := newTestState(t, testhelper.NewMemoryFs())
+	s := newTestState(t, testfs.NewMemoryFs())
 	assert.PanicsWithError(t, `branch "111" not found`, func() {
 		s.MustGet(BranchKey{Id: 111})
 	})
@@ -98,7 +98,7 @@ func TestStateMustGetNotFound(t *testing.T) {
 
 func TestStateTrackRecordNotPersisted(t *testing.T) {
 	t.Parallel()
-	fs := testhelper.NewMemoryFs()
+	fs := testfs.NewMemoryFs()
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile(`foo/bar1`, `foo`)))
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile(`foo/bar2`, `foo`)))
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile(`foo/bar3`, `foo`)))
@@ -121,7 +121,7 @@ func TestStateTrackRecordNotPersisted(t *testing.T) {
 
 func TestStateTrackRecordValid(t *testing.T) {
 	t.Parallel()
-	fs := testhelper.NewMemoryFs()
+	fs := testfs.NewMemoryFs()
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile(`foo/bar1`, `foo`)))
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile(`foo/bar2`, `foo`)))
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile(`foo/bar3`, `foo`)))
@@ -144,7 +144,7 @@ func TestStateTrackRecordValid(t *testing.T) {
 
 func TestStateTrackRecordInvalid(t *testing.T) {
 	t.Parallel()
-	fs := testhelper.NewMemoryFs()
+	fs := testfs.NewMemoryFs()
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile(`foo/bar1`, `foo`)))
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile(`foo/bar2`, `foo`)))
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile(`foo/bar3`, `foo`)))

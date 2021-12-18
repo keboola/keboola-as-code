@@ -15,6 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
+	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	createManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/local/manifest/create"
 	genWorkflows "github.com/keboola/keboola-as-code/pkg/lib/operation/local/workflows/generate"
@@ -30,7 +31,7 @@ func TestAskInitOptions(t *testing.T) {
 	dialog, console := createDialogs(t, true)
 	d := testdeps.NewDependencies()
 	d.LoggerValue = log.NewNopLogger()
-	d.FsValue = testhelper.NewMemoryFs()
+	d.FsValue = testfs.NewMemoryFs()
 	d.StorageApiValue, httpTransport, _ = testapi.NewMockedStorageApi()
 
 	branches := []*model.Branch{{BranchKey: model.BranchKey{Id: 123}, Name: "Main", IsDefault: true}}

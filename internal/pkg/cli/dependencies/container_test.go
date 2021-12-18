@@ -11,7 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
 )
 
@@ -21,7 +21,7 @@ func TestDifferentProjectIdInManifestAndToken(t *testing.T) {
 
 	logger := log.NewNopLogger()
 	opts := options.New()
-	d := NewContainer(context.Background(), nil, testhelper.NewMemoryFs(), nil, logger, opts)
+	d := NewContainer(context.Background(), nil, testfs.NewMemoryFs(), nil, logger, opts)
 	d.hostFromManifest = true
 	d.options.Set(options.StorageApiTokenOpt, project.Token())
 	d.projectManifest = manifest.NewManifest(12345, project.StorageApiHost())

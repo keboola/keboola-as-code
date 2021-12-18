@@ -15,7 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
@@ -38,7 +38,7 @@ func NewDependencies() *Dependencies {
 	d := &Dependencies{}
 	d.CtxValue = context.Background()
 	d.EnvsValue = env.Empty()
-	d.FsValue = testhelper.NewMemoryFs()
+	d.FsValue = testfs.NewMemoryFs()
 	d.OptionsValue = options.New()
 	return d
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 )
 
@@ -39,7 +40,7 @@ func TestNewManifest(t *testing.T) {
 
 func TestManifestLoadNotFound(t *testing.T) {
 	t.Parallel()
-	fs := testhelper.NewMemoryFs()
+	fs := testfs.NewMemoryFs()
 
 	// Load
 	manifest, err := Load(fs, log.NewNopLogger())
@@ -51,7 +52,7 @@ func TestManifestLoadNotFound(t *testing.T) {
 func TestManifestLoad(t *testing.T) {
 	t.Parallel()
 	for _, c := range cases() {
-		fs := testhelper.NewMemoryFs()
+		fs := testfs.NewMemoryFs()
 
 		// Write file
 		path := filesystem.Join(filesystem.MetadataDir, FileName)
@@ -96,7 +97,7 @@ func TestManifestValidateEmpty(t *testing.T) {
 
 func TestManifestValidateMinimal(t *testing.T) {
 	t.Parallel()
-	fs := testhelper.NewMemoryFs()
+	fs := testfs.NewMemoryFs()
 	m := newManifest(fs)
 	m.Content = minimalStruct()
 	assert.NoError(t, m.validate())
@@ -104,7 +105,7 @@ func TestManifestValidateMinimal(t *testing.T) {
 
 func TestManifestValidateFull(t *testing.T) {
 	t.Parallel()
-	fs := testhelper.NewMemoryFs()
+	fs := testfs.NewMemoryFs()
 	m := newManifest(fs)
 	m.Content = fullStruct()
 	assert.NoError(t, m.validate())
@@ -112,7 +113,7 @@ func TestManifestValidateFull(t *testing.T) {
 
 func TestManifestValidateBadVersion(t *testing.T) {
 	t.Parallel()
-	fs := testhelper.NewMemoryFs()
+	fs := testfs.NewMemoryFs()
 	m := newManifest(fs)
 	m.Content = minimalStruct()
 	m.Version = 123
@@ -150,7 +151,7 @@ func fullStruct() *Content {
 
 func newTestManifest(t *testing.T) *Manifest {
 	t.Helper()
-	fs := testhelper.NewMemoryFs()
+	fs := testfs.NewMemoryFs()
 	manifest, err := NewManifest(fs)
 	assert.NoError(t, err)
 	return manifest

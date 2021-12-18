@@ -13,7 +13,7 @@ import (
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -814,7 +814,7 @@ func createProjectState(t *testing.T) *state.State {
 	t.Helper()
 
 	logger := log.NewDebugLogger()
-	fs := testhelper.NewMemoryFs()
+	fs := testfs.NewMemoryFs()
 	manifest := projectManifest.NewManifest(1, `foo.bar`)
 	storageApi, _, _ := testapi.NewMockedStorageApi()
 	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()

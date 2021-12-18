@@ -13,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -147,7 +148,7 @@ func loadTestManifest(t *testing.T, envs *env.Map, localState string) (*manifest
 	stateDir := filesystem.Join(testDir, "..", "fixtures", "local", localState)
 
 	// Create Fs
-	fs := testhelper.NewMemoryFsFrom(stateDir)
+	fs := testfs.NewMemoryFsFrom(stateDir)
 	testhelper.ReplaceEnvsDir(fs, `/`, envs)
 
 	// Load manifest

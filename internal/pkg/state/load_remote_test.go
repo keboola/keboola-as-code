@@ -12,7 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
@@ -440,7 +440,7 @@ func loadRemoteState(t *testing.T, m *manifest.Manifest, projectStateFile string
 	project := testproject.GetTestProject(t, envs)
 	project.SetState(projectStateFile)
 
-	fs := testhelper.NewMemoryFs()
+	fs := testfs.NewMemoryFs()
 	logger := log.NewDebugLogger()
 	state := newState(NewOptions(fs, m, project.StorageApi(), project.SchedulerApi(), context.Background(), logger))
 	remoteErr := state.loadRemoteState()

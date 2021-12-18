@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 )
 
@@ -41,7 +42,7 @@ func TestNewManifest(t *testing.T) {
 
 func TestManifestLoadNotFound(t *testing.T) {
 	t.Parallel()
-	fs := testhelper.NewMemoryFs()
+	fs := testfs.NewMemoryFs()
 
 	// Load
 	manifest, err := Load(fs)
@@ -53,7 +54,7 @@ func TestManifestLoadNotFound(t *testing.T) {
 func TestManifestLoad(t *testing.T) {
 	t.Parallel()
 	for _, c := range cases() {
-		fs := testhelper.NewMemoryFs()
+		fs := testfs.NewMemoryFs()
 
 		// Write file
 		path := filesystem.Join(filesystem.MetadataDir, FileName)
@@ -79,7 +80,7 @@ func TestManifestLoad(t *testing.T) {
 func TestManifestSave(t *testing.T) {
 	t.Parallel()
 	for _, c := range cases() {
-		fs := testhelper.NewMemoryFs()
+		fs := testfs.NewMemoryFs()
 
 		// Create
 		m := NewManifest(c.data.Project.Id, `foo.bar`)
@@ -154,7 +155,7 @@ func TestManifestValidateNestedField(t *testing.T) {
 
 func TestManifestCyclicDependency(t *testing.T) {
 	t.Parallel()
-	fs := testhelper.NewMemoryFs()
+	fs := testfs.NewMemoryFs()
 
 	// Write file
 	path := filesystem.Join(filesystem.MetadataDir, FileName)
