@@ -9,12 +9,14 @@ import (
 
 	"github.com/santhosh-tekuri/jsonschema/v5"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-func ValidateSchemas(objects model.ObjectsProvider) error {
+func ValidateSchemas(objects *model.State) error {
 	errs := utils.NewMultiError()
 	for _, config := range objects.Configs() {
 		// Validate only local files
@@ -28,7 +30,7 @@ func ValidateSchemas(objects model.ObjectsProvider) error {
 		}
 
 		if err := ValidateConfig(component, config.Local); err != nil {
-			errs.AppendWithPrefix(fmt.Sprintf("config \"%s\" doesn't match schema", objects.Naming().ConfigFilePath(config.Path())), err)
+			errs.AppendWithPrefix(fmt.Sprintf("config \"%s\" doesn't match schema", filesystem.Join(config.Path(), naming.ConfigFile)), err)
 		}
 	}
 
@@ -44,7 +46,7 @@ func ValidateSchemas(objects model.ObjectsProvider) error {
 		}
 
 		if err := ValidateConfigRow(component, row.Local); err != nil {
-			errs.AppendWithPrefix(fmt.Sprintf("config row \"%s\" doesn't match schema", objects.Naming().ConfigFilePath(row.Path())), err)
+			errs.AppendWithPrefix(fmt.Sprintf("config row \"%s\" doesn't match schema", filesystem.Join(row.Path(), naming.ConfigFile)), err)
 		}
 	}
 

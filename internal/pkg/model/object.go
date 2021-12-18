@@ -50,15 +50,6 @@ type ObjectWithRelations interface {
 	AddRelation(relation Relation)
 }
 
-type ObjectsProvider interface {
-	Naming() *Naming
-	Components() *ComponentsMap
-	All() []ObjectState
-	Branches() (branches []*BranchState)
-	Configs() (configs []*ConfigState)
-	ConfigRows() (rows []*ConfigRowState)
-}
-
 // Kind - type of the object, branch, config ...
 type Kind struct {
 	Name string
