@@ -7,10 +7,9 @@ import (
 	"strings"
 	"sync"
 
-	"go.uber.org/zap"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -41,7 +40,7 @@ func New(fs filesystem.Fs) (*Paths, error) {
 }
 
 func NewNop() *Paths {
-	memoryFs, err := aferofs.NewMemoryFs(zap.NewNop().Sugar(), `/`)
+	memoryFs, err := aferofs.NewMemoryFs(log.NewNopLogger(), `/`)
 	if err != nil {
 		panic(err)
 	}
@@ -158,7 +157,7 @@ func (p *Paths) UntrackedDirsFrom(base string) (dirs []string) {
 	return dirs
 }
 
-func (p *Paths) LogUntrackedPaths(logger *zap.SugaredLogger) {
+func (p *Paths) LogUntrackedPaths(logger log.Logger) {
 	untracked := p.UntrackedPaths()
 	if len(untracked) > 0 {
 		logger.Warn("Unknown paths found:")
@@ -304,6 +303,6 @@ func (p *PathsReadOnly) IsDir(path string) bool {
 	return p.paths.IsDir(path)
 }
 
-func (p *PathsReadOnly) LogUntrackedPaths(logger *zap.SugaredLogger) {
+func (p *PathsReadOnly) LogUntrackedPaths(logger log.Logger) {
 	p.paths.LogUntrackedPaths(logger)
 }

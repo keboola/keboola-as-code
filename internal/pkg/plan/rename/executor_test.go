@@ -20,7 +20,7 @@ import (
 func TestRename(t *testing.T) {
 	t.Parallel()
 	logger := log.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger.Logger, `/`)
+	fs, err := aferofs.NewMemoryFs(logger, `/`)
 	assert.NoError(t, err)
 	manifest := projectManifest.NewManifest(1, "foo")
 
@@ -49,8 +49,8 @@ func TestRename(t *testing.T) {
 	}
 
 	// NewPlan
-	state := model.NewState(logger.Logger, fs, model.NewComponentsMap(nil), model.SortByPath)
-	localManager := local.NewManager(logger.Logger, fs, manifest, state, mapper.New(model.MapperContext{}))
+	state := model.NewState(logger, fs, model.NewComponentsMap(nil), model.SortByPath)
+	localManager := local.NewManager(logger, fs, manifest, state, mapper.New(model.MapperContext{}))
 	executor := newRenameExecutor(context.Background(), localManager, plan)
 	assert.NoError(t, executor.invoke())
 	logsStr := logger.String()
@@ -76,7 +76,7 @@ DEBUG  Removed "foo2"
 func TestRenameFailedKeepOldState(t *testing.T) {
 	t.Parallel()
 	logger := log.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger.Logger, `/`)
+	fs, err := aferofs.NewMemoryFs(logger, `/`)
 	assert.NoError(t, err)
 	manifest := projectManifest.NewManifest(1, "foo")
 
@@ -118,8 +118,8 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 	}
 
 	// NewPlan
-	state := model.NewState(logger.Logger, fs, model.NewComponentsMap(nil), model.SortByPath)
-	localManager := local.NewManager(logger.Logger, fs, manifest, state, mapper.New(model.MapperContext{}))
+	state := model.NewState(logger, fs, model.NewComponentsMap(nil), model.SortByPath)
+	localManager := local.NewManager(logger, fs, manifest, state, mapper.New(model.MapperContext{}))
 	executor := newRenameExecutor(context.Background(), localManager, plan)
 	err = executor.invoke()
 	assert.Error(t, err)

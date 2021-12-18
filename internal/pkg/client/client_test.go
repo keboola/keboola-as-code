@@ -18,7 +18,7 @@ import (
 func TestNewHttpClient(t *testing.T) {
 	t.Parallel()
 	logger := log.NewDebugLogger()
-	c := NewClient(context.Background(), logger.Logger, false)
+	c := NewClient(context.Background(), logger, false)
 	assert.NotNil(t, c)
 }
 
@@ -150,12 +150,12 @@ DEBUG  HTTP	GET https://example.com | 200 | %s
 	testhelper.AssertWildcards(t, expectedLog, out.String(), "Unexpected log")
 }
 
-func getMockedClientAndLogs(t *testing.T, verbose bool) (*Client, *httpmock.MockTransport, *log.DebugLogger) {
+func getMockedClientAndLogs(t *testing.T, verbose bool) (*Client, *httpmock.MockTransport, log.DebugLogger) {
 	t.Helper()
 
 	// Create
 	logger := log.NewDebugLogger()
-	c := NewClient(context.Background(), logger.Logger, verbose)
+	c := NewClient(context.Background(), logger, verbose)
 
 	// Set short retry delay in tests
 	c.resty.RetryWaitTime = 1 * time.Millisecond

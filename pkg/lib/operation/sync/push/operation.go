@@ -3,8 +3,6 @@ package push
 import (
 	"context"
 
-	"go.uber.org/zap"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/encryption"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -27,7 +25,7 @@ type Options struct {
 
 type dependencies interface {
 	Ctx() context.Context
-	Logger() *zap.SugaredLogger
+	Logger() log.Logger
 	EncryptionApi() (*encryption.Api, error)
 	ProjectDir() (filesystem.Fs, error)
 	ProjectManifest() (*manifest.Manifest, error)

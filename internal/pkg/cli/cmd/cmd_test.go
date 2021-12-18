@@ -8,11 +8,11 @@ import (
 
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	nopPrompt "github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/nop"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/ioutil"
 )
@@ -119,7 +119,7 @@ func TestExecute(t *testing.T) {
 	root, out := newTestRootCommand(testhelper.NewMemoryFs())
 
 	// Execute
-	root.Logger = zap.NewNop().Sugar()
+	root.Logger = log.NewNopLogger()
 	assert.Equal(t, 0, root.Execute())
 	assert.Contains(t, out.String(), "Available Commands:")
 }
@@ -183,7 +183,7 @@ func TestGetLogFileFromFlags(t *testing.T) {
 func newTestRootCommand(fs filesystem.Fs) (*RootCommand, *ioutil.Writer) {
 	in := ioutil.NewBufferedReader()
 	out := ioutil.NewBufferedWriter()
-	fsFactory := func(logger *zap.SugaredLogger, workingDir string) (filesystem.Fs, error) {
+	fsFactory := func(logger log.Logger, workingDir string) (filesystem.Fs, error) {
 		return fs, nil
 	}
 	return NewRootCommand(in, out, out, nopPrompt.New(), env.Empty(), fsFactory), out

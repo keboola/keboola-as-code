@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"go.uber.org/zap"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
 const (
@@ -26,7 +25,7 @@ const (
 )
 
 type MapperContext struct {
-	Logger *zap.SugaredLogger
+	Logger log.Logger
 	Fs     filesystem.Fs
 	Naming *Naming
 	State  *State

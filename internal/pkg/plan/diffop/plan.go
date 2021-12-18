@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"sort"
 
-	"go.uber.org/zap"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
@@ -37,7 +35,7 @@ func (p *Plan) AllowRemoteDelete() {
 	p.allowedRemoteDelete = true
 }
 
-func (p *Plan) Invoke(logger *zap.SugaredLogger, ctx context.Context, changeDescription string) error {
+func (p *Plan) Invoke(logger log.Logger, ctx context.Context, changeDescription string) error {
 	executor := newExecutor(p, logger, ctx, changeDescription)
 	return executor.invoke()
 }

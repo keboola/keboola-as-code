@@ -3,11 +3,10 @@ package manifest
 import (
 	"fmt"
 
-	"go.uber.org/zap"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/build"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -49,7 +48,7 @@ func (m *Manifest) Path() string {
 	return Path()
 }
 
-func Load(fs filesystem.Fs, _ *zap.SugaredLogger) (*Manifest, error) {
+func Load(fs filesystem.Fs, _ log.Logger) (*Manifest, error) {
 	// Exists?
 	path := filesystem.Join(filesystem.MetadataDir, FileName)
 	if !fs.IsFile(path) {

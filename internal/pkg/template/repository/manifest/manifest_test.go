@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 )
 
@@ -42,7 +42,7 @@ func TestManifestLoadNotFound(t *testing.T) {
 	fs := testhelper.NewMemoryFs()
 
 	// Load
-	manifest, err := Load(fs, zap.NewNop().Sugar())
+	manifest, err := Load(fs, log.NewNopLogger())
 	assert.Nil(t, manifest)
 	assert.Error(t, err)
 	assert.Equal(t, `manifest ".keboola/repository.json" not found`, err.Error())
@@ -58,7 +58,7 @@ func TestManifestLoad(t *testing.T) {
 		assert.NoError(t, fs.WriteFile(filesystem.NewFile(path, c.json)))
 
 		// Load
-		manifest, err := Load(fs, zap.NewNop().Sugar())
+		manifest, err := Load(fs, log.NewNopLogger())
 		assert.NotNil(t, manifest)
 		assert.NoError(t, err)
 

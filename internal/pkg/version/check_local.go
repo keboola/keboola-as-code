@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"go.uber.org/zap"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
 // Version field from manifest.
@@ -14,7 +13,7 @@ type versionInfo struct {
 	Version int `json:"version"`
 }
 
-func CheckLocalVersion(logger *zap.SugaredLogger, fs filesystem.Fs, manifestPath string) (err error) {
+func CheckLocalVersion(logger log.Logger, fs filesystem.Fs, manifestPath string) (err error) {
 	// Read version first
 	info := &versionInfo{}
 	if err := fs.ReadJsonFileTo(manifestPath, ``, info); err != nil {

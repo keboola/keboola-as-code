@@ -7,9 +7,9 @@ import (
 
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/interactive"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
@@ -25,7 +25,7 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 	var httpTransport *httpmock.MockTransport
 	dialog, console := createDialogs(t, true)
 	d := testdeps.NewDependencies()
-	d.LoggerValue = zap.NewNop().Sugar()
+	d.LoggerValue = log.NewNopLogger()
 	d.FsValue = testhelper.NewMemoryFs()
 	d.StorageApiValue, httpTransport, _ = testapi.NewMockedStorageApi()
 	setupCreateTemplateApiResponses(httpTransport)
@@ -177,7 +177,7 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 	var httpTransport *httpmock.MockTransport
 	dialog, _ := createDialogs(t, false)
 	d := testdeps.NewDependencies()
-	d.LoggerValue = zap.NewNop().Sugar()
+	d.LoggerValue = log.NewNopLogger()
 	d.FsValue = testhelper.NewMemoryFs()
 	d.StorageApiValue, httpTransport, _ = testapi.NewMockedStorageApi()
 	setupCreateTemplateApiResponses(httpTransport)
@@ -238,7 +238,7 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 	var httpTransport *httpmock.MockTransport
 	dialog, _ := createDialogs(t, false)
 	d := testdeps.NewDependencies()
-	d.LoggerValue = zap.NewNop().Sugar()
+	d.LoggerValue = log.NewNopLogger()
 	d.FsValue = testhelper.NewMemoryFs()
 	d.StorageApiValue, httpTransport, _ = testapi.NewMockedStorageApi()
 	setupCreateTemplateApiResponses(httpTransport)

@@ -26,7 +26,7 @@ func TestSchedulerApiCalls(t *testing.T) {
 	assert.NoError(t, err)
 	hostName, found := services[`scheduler`]
 	assert.True(t, found)
-	api := scheduler.NewSchedulerApi(context.Background(), logger.Logger, string(hostName), token, true)
+	api := scheduler.NewSchedulerApi(context.Background(), logger, string(hostName), token, true)
 
 	// Get default branch
 	branch, err := storageApi.GetDefaultBranch()

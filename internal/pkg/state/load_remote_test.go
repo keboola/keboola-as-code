@@ -442,7 +442,7 @@ func loadRemoteState(t *testing.T, m *manifest.Manifest, projectStateFile string
 
 	fs := testhelper.NewMemoryFs()
 	logger := log.NewDebugLogger()
-	state := newState(NewOptions(fs, m, project.StorageApi(), project.SchedulerApi(), context.Background(), logger.Logger))
+	state := newState(NewOptions(fs, m, project.StorageApi(), project.SchedulerApi(), context.Background(), logger))
 	remoteErr := state.loadRemoteState()
 	return state, envs, remoteErr
 }

@@ -46,11 +46,11 @@ func TestCheckIfLatestVersionLess(t *testing.T) {
 	assert.Contains(t, logs.String(), `WARN  WARNING: A new version "v1.2.3" is available.`)
 }
 
-func createMockedChecker(t *testing.T) (*checker, *log.DebugLogger) {
+func createMockedChecker(t *testing.T) (*checker, log.DebugLogger) {
 	t.Helper()
 
 	logger := log.NewDebugLogger()
-	c := NewGitHubChecker(context.Background(), logger.Logger, env.Empty())
+	c := NewGitHubChecker(context.Background(), logger, env.Empty())
 	resty := c.api.GetRestyClient()
 
 	// Set short retry delay in tests

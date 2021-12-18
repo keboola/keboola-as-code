@@ -4,9 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"go.uber.org/zap"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
@@ -23,7 +22,7 @@ type Options struct {
 
 type dependencies interface {
 	Ctx() context.Context
-	Logger() *zap.SugaredLogger
+	Logger() log.Logger
 	StorageApi() (*remote.StorageApi, error)
 	ProjectDir() (filesystem.Fs, error)
 	ProjectManifest() (*manifest.Manifest, error)

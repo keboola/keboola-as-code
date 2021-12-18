@@ -3,8 +3,7 @@ package create
 import (
 	"context"
 
-	"go.uber.org/zap"
-
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
@@ -27,7 +26,7 @@ type Options struct {
 
 type dependencies interface {
 	Ctx() context.Context
-	Logger() *zap.SugaredLogger
+	Logger() log.Logger
 }
 
 func Run(o Options, d dependencies) (err error) {

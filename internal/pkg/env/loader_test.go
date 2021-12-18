@@ -14,7 +14,7 @@ func TestLoadDotEnv(t *testing.T) {
 	t.Parallel()
 	// Memory fs
 	logger := log.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger.Logger, ".")
+	fs, err := aferofs.NewMemoryFs(logger, ".")
 	assert.NoError(t, err)
 
 	// Write envs to file

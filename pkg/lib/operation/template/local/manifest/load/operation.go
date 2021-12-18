@@ -1,14 +1,13 @@
 package load
 
 import (
-	"go.uber.org/zap"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 )
 
 type dependencies interface {
-	Logger() *zap.SugaredLogger
+	Logger() log.Logger
 	RepositoryDir() (filesystem.Fs, error)
 }
 

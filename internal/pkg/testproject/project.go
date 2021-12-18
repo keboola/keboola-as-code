@@ -92,7 +92,7 @@ func newProject(host string, id int, token string) *Project {
 	}
 	p.schedulerApi = scheduler.NewSchedulerApi(
 		context.Background(),
-		logger.Logger,
+		logger,
 		string(schedulerHost),
 		p.api.Token().Token,
 		false,

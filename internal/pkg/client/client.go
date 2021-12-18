@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/go-resty/resty/v2"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/build"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -40,7 +40,7 @@ type Client struct {
 
 type contextKey string
 
-func NewClient(ctx context.Context, logger *zap.SugaredLogger, verbose bool) *Client {
+func NewClient(ctx context.Context, logger log.Logger, verbose bool) *Client {
 	client := &Client{}
 	client.logger = &Logger{logger}
 	client.parentCtx = ctx

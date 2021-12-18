@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"sync"
 
-	"go.uber.org/zap"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
@@ -23,7 +22,7 @@ type State struct {
 	objects    *orderedmap.OrderedMap
 }
 
-func NewState(logger *zap.SugaredLogger, fs filesystem.Fs, components *ComponentsMap, sortBy string) *State {
+func NewState(logger log.Logger, fs filesystem.Fs, components *ComponentsMap, sortBy string) *State {
 	paths, err := knownpaths.New(fs)
 	if err != nil {
 		logger.Debug(utils.PrefixError(`error loading directory structure`, err).Error())

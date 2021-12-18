@@ -8,9 +8,9 @@ import (
 	"strings"
 
 	"github.com/spf13/afero"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
 type aferoFs = afero.Fs
@@ -64,7 +64,7 @@ func (fs *LocalFs) ReadDir(path string) ([]os.FileInfo, error) {
 
 // FindKeboolaDir -> working dir or its parent that contains ".keboola" metadata dir.
 // If no metadata dir is found, then workingDir is returned (this occurs, for example, during the init op).
-func FindKeboolaDir(logger *zap.SugaredLogger, workingDir string) (string, error) {
+func FindKeboolaDir(logger log.Logger, workingDir string) (string, error) {
 	// Working dir must be absolute
 
 	if !filepath.IsAbs(workingDir) {

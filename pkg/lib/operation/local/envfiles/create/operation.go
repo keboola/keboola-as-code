@@ -3,14 +3,13 @@ package init
 import (
 	"fmt"
 
-	"go.uber.org/zap"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 )
 
 type dependencies interface {
-	Logger() *zap.SugaredLogger
+	Logger() log.Logger
 	ProjectDir() (filesystem.Fs, error)
 	StorageApi() (*remote.StorageApi, error)
 }
@@ -59,7 +58,7 @@ func Run(d dependencies) (err error) {
 	return nil
 }
 
-func createFile(logger *zap.SugaredLogger, fs filesystem.Fs, path, desc string, lines []filesystem.FileLine) error {
+func createFile(logger log.Logger, fs filesystem.Fs, path, desc string, lines []filesystem.FileLine) error {
 	updated, err := fs.CreateOrUpdateFile(path, desc, lines)
 	if err != nil {
 		return err

@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/ci"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/local"
@@ -66,7 +65,7 @@ type Cmd = cobra.Command
 type RootCommand struct {
 	*Cmd
 	Options   *options.Options
-	Logger    *zap.SugaredLogger
+	Logger    log.Logger
 	Deps      *dependencies.Container
 	logFile   *log.File
 	cmdByPath map[string]*cobra.Command
@@ -119,7 +118,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 	// Init when flags are parsed
 	root.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		// Temporary logger
-		tmpLogger := zap.NewNop().Sugar()
+		tmpLogger := log.NewNopLogger()
 
 		// Create filesystem abstraction
 		workingDir, _ := cmd.Flags().GetString(`working-dir`)
@@ -337,7 +336,7 @@ func (root *RootCommand) setupLogger() {
 	root.logFile, logFileErr = log.NewLogFile(root.Options.LogFilePath)
 
 	// Create logger
-	root.Logger = log.NewLogger(root.OutOrStdout(), root.ErrOrStderr(), root.logFile, root.Options.Verbose)
+	root.Logger = log.NewCliLogger(root.OutOrStdout(), root.ErrOrStderr(), root.logFile, root.Options.Verbose)
 	root.SetOut(root.Logger.InfoWriter())
 	root.SetErr(root.Logger.WarnWriter())
 

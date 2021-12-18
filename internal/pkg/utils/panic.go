@@ -6,7 +6,7 @@ import (
 	"runtime/debug"
 	"text/template"
 
-	"go.uber.org/zap"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
 const userFriendlyPanicTmpl = `
@@ -46,7 +46,7 @@ func NewUserErrorWithCode(exitCode int, message string) *UserError {
 	return &UserError{message, exitCode}
 }
 
-func ProcessPanic(err interface{}, logger *zap.SugaredLogger, logFilePath string) int {
+func ProcessPanic(err interface{}, logger log.Logger, logFilePath string) int {
 	switch v := err.(type) {
 	case *UserError:
 		logger.Debugf("User error panic: %s", v.Message)

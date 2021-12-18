@@ -6,9 +6,9 @@ import (
 
 	"github.com/go-resty/resty/v2"
 	"github.com/spf13/cast"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
@@ -16,7 +16,7 @@ type Api struct {
 	hostUrl   string
 	projectId int
 	client    *client.Client
-	logger    *zap.SugaredLogger
+	logger    log.Logger
 }
 
 // Error represents Encryption API error structure.
@@ -34,7 +34,7 @@ func (e *Error) Error() string {
 	return msg
 }
 
-func NewEncryptionApi(ctx context.Context, logger *zap.SugaredLogger, hostUrl string, projectId int, verbose bool) *Api {
+func NewEncryptionApi(ctx context.Context, logger log.Logger, hostUrl string, projectId int, verbose bool) *Api {
 	c := client.NewClient(ctx, logger, verbose).WithHostUrl(hostUrl)
 	c.SetError(&Error{})
 	api := &Api{projectId: projectId, client: c, logger: logger, hostUrl: hostUrl}

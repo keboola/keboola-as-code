@@ -1,9 +1,8 @@
 package create
 
 import (
-	"go.uber.org/zap"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
@@ -15,7 +14,7 @@ type Options struct {
 }
 
 type dependencies interface {
-	Logger() *zap.SugaredLogger
+	Logger() log.Logger
 	EmptyDir() (filesystem.Fs, error)
 	StorageApi() (*remote.StorageApi, error)
 }

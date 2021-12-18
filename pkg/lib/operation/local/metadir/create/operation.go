@@ -3,13 +3,12 @@ package create
 import (
 	"fmt"
 
-	"go.uber.org/zap"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
 type dependencies interface {
-	Logger() *zap.SugaredLogger
+	Logger() log.Logger
 	EmptyDir() (filesystem.Fs, error)
 }
 

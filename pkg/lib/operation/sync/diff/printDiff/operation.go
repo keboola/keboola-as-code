@@ -1,9 +1,8 @@
 package printDiff
 
 import (
-	"go.uber.org/zap"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 	createDiff "github.com/keboola/keboola-as-code/pkg/lib/operation/sync/diff/create"
@@ -15,7 +14,7 @@ type Options struct {
 }
 
 type dependencies interface {
-	Logger() *zap.SugaredLogger
+	Logger() log.Logger
 	LoadStateOnce(loadOptions loadState.Options) (*state.State, error)
 }
 

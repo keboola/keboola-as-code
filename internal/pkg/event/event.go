@@ -4,18 +4,17 @@ import (
 	"fmt"
 	"time"
 
-	"go.uber.org/zap"
-
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/strhelper"
 )
 
 type Sender struct {
-	logger     *zap.SugaredLogger
+	logger     log.Logger
 	storageApi *remote.StorageApi
 }
 
-func NewSender(logger *zap.SugaredLogger, storageApi *remote.StorageApi) *Sender {
+func NewSender(logger log.Logger, storageApi *remote.StorageApi) *Sender {
 	return &Sender{logger: logger, storageApi: storageApi}
 }
 

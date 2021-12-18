@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -13,15 +12,15 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-func createRemoteSharedCode(t *testing.T) (model.MapperContext, *log.DebugLogger, *model.ConfigState, *model.ConfigRowState) {
+func createRemoteSharedCode(t *testing.T) (model.MapperContext, log.DebugLogger, *model.ConfigState, *model.ConfigRowState) {
 	t.Helper()
 
 	targetComponentId := model.ComponentId(`keboola.snowflake-transformation`)
 	logger := log.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger.Logger, ".")
+	fs, err := aferofs.NewMemoryFs(logger, ".")
 	assert.NoError(t, err)
 
-	state := model.NewState(zap.NewNop().Sugar(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
+	state := model.NewState(log.NewNopLogger(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
 
 	// Component
 	state.Components().Set(&model.Component{
@@ -90,18 +89,18 @@ func createRemoteSharedCode(t *testing.T) (model.MapperContext, *log.DebugLogger
 	}
 	assert.NoError(t, state.Set(rowState))
 
-	context := model.MapperContext{Logger: logger.Logger, Fs: fs, Naming: model.DefaultNamingWithIds(), State: state}
+	context := model.MapperContext{Logger: logger, Fs: fs, Naming: model.DefaultNamingWithIds(), State: state}
 	return context, logger, configState, rowState
 }
 
-func createLocalSharedCode(t *testing.T, targetComponentId model.ComponentId) (model.MapperContext, *log.DebugLogger, *model.ConfigState, *model.ConfigRowState) {
+func createLocalSharedCode(t *testing.T, targetComponentId model.ComponentId) (model.MapperContext, log.DebugLogger, *model.ConfigState, *model.ConfigRowState) {
 	t.Helper()
 
 	logger := log.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger.Logger, ".")
+	fs, err := aferofs.NewMemoryFs(logger, ".")
 	assert.NoError(t, err)
 
-	state := model.NewState(zap.NewNop().Sugar(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
+	state := model.NewState(log.NewNopLogger(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
 
 	// Component
 	state.Components().Set(&model.Component{
@@ -170,19 +169,19 @@ func createLocalSharedCode(t *testing.T, targetComponentId model.ComponentId) (m
 	}
 	assert.NoError(t, state.Set(rowState))
 
-	context := model.MapperContext{Logger: logger.Logger, Fs: fs, Naming: model.DefaultNamingWithIds(), State: state}
+	context := model.MapperContext{Logger: logger, Fs: fs, Naming: model.DefaultNamingWithIds(), State: state}
 	return context, logger, configState, rowState
 }
 
 // nolint: unparam
-func createInternalSharedCode(t *testing.T, targetComponentId model.ComponentId) (model.MapperContext, *log.DebugLogger, *model.ConfigState, *model.ConfigRowState) {
+func createInternalSharedCode(t *testing.T, targetComponentId model.ComponentId) (model.MapperContext, log.DebugLogger, *model.ConfigState, *model.ConfigRowState) {
 	t.Helper()
 
 	logger := log.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger.Logger, ".")
+	fs, err := aferofs.NewMemoryFs(logger, ".")
 	assert.NoError(t, err)
 
-	state := model.NewState(zap.NewNop().Sugar(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
+	state := model.NewState(log.NewNopLogger(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
 
 	// Component
 	state.Components().Set(&model.Component{
@@ -277,6 +276,6 @@ func createInternalSharedCode(t *testing.T, targetComponentId model.ComponentId)
 	}
 	assert.NoError(t, state.Set(rowState))
 
-	context := model.MapperContext{Logger: logger.Logger, Fs: fs, Naming: model.DefaultNamingWithIds(), State: state}
+	context := model.MapperContext{Logger: logger, Fs: fs, Naming: model.DefaultNamingWithIds(), State: state}
 	return context, logger, configState, rowState
 }

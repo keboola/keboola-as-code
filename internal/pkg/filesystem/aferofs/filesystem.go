@@ -12,10 +12,10 @@ import (
 
 	"github.com/nhatthm/aferocopy"
 	"github.com/spf13/afero"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/strhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
@@ -34,11 +34,11 @@ type backend interface {
 // Fs - filesystem abstraction.
 type Fs struct {
 	fs         backend
-	logger     *zap.SugaredLogger
+	logger     log.Logger
 	workingDir string
 }
 
-func New(logger *zap.SugaredLogger, fs backend, workingDir string) filesystem.Fs {
+func New(logger log.Logger, fs backend, workingDir string) filesystem.Fs {
 	return &Fs{fs: fs, logger: logger, workingDir: fs.ToSlash(workingDir)}
 }
 
@@ -61,7 +61,7 @@ func (f *Fs) WorkingDir() string {
 	return f.workingDir
 }
 
-func (f *Fs) SetLogger(logger *zap.SugaredLogger) {
+func (f *Fs) SetLogger(logger log.Logger) {
 	f.logger = logger
 }
 

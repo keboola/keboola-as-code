@@ -11,7 +11,6 @@ import (
 	"github.com/go-resty/resty/v2"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
@@ -182,7 +181,7 @@ func newTestRemoteUOW(t *testing.T) (*testMapper, *remote.UnitOfWork, *httpmock.
 	storageApi, httpTransport, _ := testapi.NewMockedStorageApi()
 	localManager, state := newTestLocalManager(t, mappers)
 	mapperContext := model.MapperContext{
-		Logger: zap.NewNop().Sugar(),
+		Logger: log.NewNopLogger(),
 		Fs:     localManager.Fs(),
 		Naming: localManager.Naming(),
 		State:  state,
@@ -197,12 +196,12 @@ func newTestLocalManager(t *testing.T, mappers []interface{}) (*local.Manager, *
 	t.Helper()
 
 	logger := log.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger.Logger, "")
+	fs, err := aferofs.NewMemoryFs(logger, "")
 	assert.NoError(t, err)
 
 	m := manifest.NewManifest(1, "foo.bar")
 	components := model.NewComponentsMap(testapi.NewMockedComponentsProvider())
-	state := model.NewState(zap.NewNop().Sugar(), fs, components, model.SortByPath)
-	mapperContext := model.MapperContext{Logger: logger.Logger, Fs: fs, Naming: m.Naming(), State: state}
-	return local.NewManager(logger.Logger, fs, m, state, mapper.New(mapperContext).AddMapper(mappers...)), state
+	state := model.NewState(log.NewNopLogger(), fs, components, model.SortByPath)
+	mapperContext := model.MapperContext{Logger: logger, Fs: fs, Naming: m.Naming(), State: state}
+	return local.NewManager(logger, fs, m, state, mapper.New(mapperContext).AddMapper(mappers...)), state
 }

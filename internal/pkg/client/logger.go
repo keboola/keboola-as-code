@@ -5,14 +5,14 @@ import (
 	"regexp"
 	"strings"
 
-	"go.uber.org/zap"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
 const LoggerPrefix = "HTTP%s\t"
 
 // Logger for HTTP client.
 type Logger struct {
-	logger *zap.SugaredLogger
+	logger log.Logger
 }
 
 func (l *Logger) Debugf(format string, v ...interface{}) {

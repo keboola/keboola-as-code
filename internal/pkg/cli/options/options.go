@@ -7,10 +7,10 @@ import (
 
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -39,7 +39,7 @@ func New() *Options {
 	}
 }
 
-func (o *Options) Load(logger *zap.SugaredLogger, osEnvs *env.Map, fs filesystem.Fs, flags *pflag.FlagSet) error {
+func (o *Options) Load(logger log.Logger, osEnvs *env.Map, fs filesystem.Fs, flags *pflag.FlagSet) error {
 	// Load ENVs from OS and files
 	envs, err := o.loadEnvFiles(osEnvs, fs)
 	if err == nil {

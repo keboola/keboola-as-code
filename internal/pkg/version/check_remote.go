@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
 const EnvVersionCheck = "KBC_VERSION_CHECK"
@@ -19,10 +19,10 @@ type checker struct {
 	envs   *env.Map
 	api    *client.Client
 	cancel context.CancelFunc
-	logger *zap.SugaredLogger
+	logger log.Logger
 }
 
-func NewGitHubChecker(parentCtx context.Context, logger *zap.SugaredLogger, envs *env.Map) *checker {
+func NewGitHubChecker(parentCtx context.Context, logger log.Logger, envs *env.Map) *checker {
 	// Timeout 3 seconds
 	ctx, cancel := context.WithTimeout(parentCtx, 3*time.Second)
 

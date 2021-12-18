@@ -8,10 +8,10 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/ci"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
@@ -29,7 +29,7 @@ func TestAskInitOptions(t *testing.T) {
 	var httpTransport *httpmock.MockTransport
 	dialog, console := createDialogs(t, true)
 	d := testdeps.NewDependencies()
-	d.LoggerValue = zap.NewNop().Sugar()
+	d.LoggerValue = log.NewNopLogger()
 	d.FsValue = testhelper.NewMemoryFs()
 	d.StorageApiValue, httpTransport, _ = testapi.NewMockedStorageApi()
 

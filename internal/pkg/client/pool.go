@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -20,7 +20,7 @@ type Pool struct {
 	id                  int
 	started             bool
 	finished            bool
-	logger              *zap.SugaredLogger
+	logger              log.Logger
 	client              *Client            // resty client
 	ctx                 context.Context    // context of the parallel work
 	workers             *errgroup.Group    // error group -> if one worker fails, all will be stopped
@@ -37,7 +37,7 @@ type Pool struct {
 	responsesChan       chan *Response     // channel for outgoing responses
 }
 
-func (c *Client) NewPool(logger *zap.SugaredLogger) *Pool {
+func (c *Client) NewPool(logger log.Logger) *Pool {
 	workers, ctx := errgroup.WithContext(c.parentCtx)
 	return &Pool{
 		id:                  c.poolIdCounter.IncAndGet(),
