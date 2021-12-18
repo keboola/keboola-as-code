@@ -10,12 +10,12 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func TestRenameAllPlan(t *testing.T) {
@@ -25,7 +25,7 @@ func TestRenameAllPlan(t *testing.T) {
 	m, fs := loadTestManifest(t, filesystem.Join(testDir, "..", "..", "fixtures", "local", "to-rename"))
 
 	// Load state
-	logger, _ := utils.NewDebugLogger()
+	logger := log.NewDebugLogger()
 	api, httpTransport, _ := testapi.NewMockedStorageApi()
 
 	// Mocked API response
@@ -46,7 +46,7 @@ func TestRenameAllPlan(t *testing.T) {
 
 	// Load state
 	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
-	options := state.NewOptions(fs, m, api, schedulerApi, context.Background(), logger)
+	options := state.NewOptions(fs, m, api, schedulerApi, context.Background(), logger.Logger)
 	options.LoadLocalState = true
 	projectState, ok, localErr, remoteErr := state.LoadState(options)
 	assert.True(t, ok)

@@ -11,7 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/build"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
 func TestCheckIfLatestVersionDev(t *testing.T) {
@@ -46,11 +46,11 @@ func TestCheckIfLatestVersionLess(t *testing.T) {
 	assert.Contains(t, logs.String(), `WARN  WARNING: A new version "v1.2.3" is available.`)
 }
 
-func createMockedChecker(t *testing.T) (*checker, *utils.Writer) {
+func createMockedChecker(t *testing.T) (*checker, *log.DebugLogger) {
 	t.Helper()
 
-	logger, logs := utils.NewDebugLogger()
-	c := NewGitHubChecker(context.Background(), logger, env.Empty())
+	logger := log.NewDebugLogger()
+	c := NewGitHubChecker(context.Background(), logger.Logger, env.Empty())
 	resty := c.api.GetRestyClient()
 
 	// Set short retry delay in tests
@@ -85,5 +85,5 @@ func createMockedChecker(t *testing.T) (*checker, *utils.Writer) {
 	assert.NoError(t, err)
 	httpTransport.RegisterResponder("GET", `=~.+repos/keboola/keboola-as-code/releases.+`, responder)
 
-	return c, logs
+	return c, logger
 }

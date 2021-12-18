@@ -7,17 +7,17 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	. "github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func TestApiWithToken(t *testing.T) {
 	t.Parallel()
-	logger, _ := utils.NewDebugLogger()
+	logger := log.NewDebugLogger()
 	token := model.Token{Id: "123", Token: "mytoken", Owner: model.TokenOwner{Id: 456, Name: "name"}}
-	orgApi := NewStorageApi("foo.bar.com", context.Background(), logger, false)
+	orgApi := NewStorageApi("foo.bar.com", context.Background(), logger.Logger, false)
 	tokenApi := orgApi.WithToken(token)
 
 	// Must be cloned, not modified
@@ -29,13 +29,13 @@ func TestApiWithToken(t *testing.T) {
 func TestGetToken(t *testing.T) {
 	t.Parallel()
 	project := testproject.GetTestProject(t, env.Empty())
-	logger, logs := utils.NewDebugLogger()
-	api := NewStorageApi(project.StorageApiHost(), context.Background(), logger, false)
+	logger := log.NewDebugLogger()
+	api := NewStorageApi(project.StorageApiHost(), context.Background(), logger.Logger, false)
 
 	tokenValue := project.Token()
 	token, err := api.GetToken(tokenValue)
 	assert.NoError(t, err)
-	assert.Regexp(t, `DEBUG  HTTP      GET https://.*/v2/storage/tokens/verify | 200 | .*`, logs.String())
+	assert.Regexp(t, `DEBUG  HTTP      GET https://.*/v2/storage/tokens/verify | 200 | .*`, logger.String())
 	assert.Equal(t, tokenValue, token.Token)
 	assert.Equal(t, project.Id(), token.ProjectId())
 	assert.NotEmpty(t, token.ProjectName())
@@ -44,8 +44,8 @@ func TestGetToken(t *testing.T) {
 func TestGetTokenEmpty(t *testing.T) {
 	t.Parallel()
 	project := testproject.GetTestProject(t, env.Empty())
-	logger, _ := utils.NewDebugLogger()
-	api := NewStorageApi(project.StorageApiHost(), context.Background(), logger, false)
+	logger := log.NewDebugLogger()
+	api := NewStorageApi(project.StorageApiHost(), context.Background(), logger.Logger, false)
 
 	tokenValue := ""
 	token, err := api.GetToken(tokenValue)
@@ -60,8 +60,8 @@ func TestGetTokenEmpty(t *testing.T) {
 func TestGetTokenInvalid(t *testing.T) {
 	t.Parallel()
 	project := testproject.GetTestProject(t, env.Empty())
-	logger, _ := utils.NewDebugLogger()
-	api := NewStorageApi(project.StorageApiHost(), context.Background(), logger, false)
+	logger := log.NewDebugLogger()
+	api := NewStorageApi(project.StorageApiHost(), context.Background(), logger.Logger, false)
 
 	tokenValue := "mytoken"
 	token, err := api.GetToken(tokenValue)

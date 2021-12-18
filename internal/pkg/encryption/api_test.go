@@ -6,13 +6,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
 func TestNewEncryptionApi(t *testing.T) {
 	t.Parallel()
-	logger, _ := utils.NewDebugLogger()
-	a := NewEncryptionApi(context.Background(), logger, "https://encryption.keboola.com", 1234, true)
+	logger := log.NewDebugLogger()
+	a := NewEncryptionApi(context.Background(), logger.Logger, "https://encryption.keboola.com", 1234, true)
 	assert.NotNil(t, a)
 	assert.Equal(t, "https://encryption.keboola.com", a.hostUrl)
 	mapToEncrypt := map[string]string{"#keyToEncrypt": "value"}
@@ -26,8 +26,8 @@ func TestNewEncryptionApi(t *testing.T) {
 
 func TestErrorEncryptionApi(t *testing.T) {
 	t.Parallel()
-	logger, _ := utils.NewDebugLogger()
-	a := NewEncryptionApi(context.Background(), logger, "https://encryption.keboola.com", 1234, true)
+	logger := log.NewDebugLogger()
+	a := NewEncryptionApi(context.Background(), logger.Logger, "https://encryption.keboola.com", 1234, true)
 	assert.NotNil(t, a)
 	mapToEncrypt := map[string]string{"#keyToEncrypt": "value"}
 	request := a.CreateEncryptRequest("", mapToEncrypt).Send()

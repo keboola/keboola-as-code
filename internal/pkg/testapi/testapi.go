@@ -7,56 +7,56 @@ import (
 
 	"github.com/jarcoal/httpmock"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func NewMockedStorageApi() (*remote.StorageApi, *httpmock.MockTransport, *utils.Writer) {
-	logger, logs := utils.NewDebugLogger()
+func NewMockedStorageApi() (*remote.StorageApi, *httpmock.MockTransport, *log.DebugLogger) {
+	logger := log.NewDebugLogger()
 
 	// Set short retry delay in tests
-	api := remote.NewStorageApi("connection.keboola.com", context.Background(), logger, false)
+	api := remote.NewStorageApi("connection.keboola.com", context.Background(), logger.Logger, false)
 	api.SetRetry(3, 1*time.Millisecond, 1*time.Millisecond)
 	api = api.WithToken(model.Token{Owner: model.TokenOwner{Id: 12345}})
 
 	// Mocked resty transport
 	transport := httpmock.NewMockTransport()
 	api.HttpClient().Transport = transport
-	return api, transport, logs
+	return api, transport, logger
 }
 
-func NewMockedSchedulerApi() (*scheduler.Api, *httpmock.MockTransport, *utils.Writer) {
-	logger, logs := utils.NewDebugLogger()
+func NewMockedSchedulerApi() (*scheduler.Api, *httpmock.MockTransport, *log.DebugLogger) {
+	logger := log.NewDebugLogger()
 
 	// Set short retry delay in tests
-	api := scheduler.NewSchedulerApi(context.Background(), logger, "scheduler.keboola.com", "my-token", false)
+	api := scheduler.NewSchedulerApi(context.Background(), logger.Logger, "scheduler.keboola.com", "my-token", false)
 	api.SetRetry(3, 1*time.Millisecond, 1*time.Millisecond)
 
 	// Mocked resty transport
 	transport := httpmock.NewMockTransport()
 	api.HttpClient().Transport = transport
-	return api, transport, logs
+	return api, transport, logger
 }
 
-func NewStorageApi(host string, verbose bool) (*remote.StorageApi, *utils.Writer) {
-	logger, logs := utils.NewDebugLogger()
+func NewStorageApi(host string, verbose bool) (*remote.StorageApi, *log.DebugLogger) {
+	logger := log.NewDebugLogger()
 	if verbose {
-		logs.ConnectTo(os.Stdout)
+		logger.ConnectTo(os.Stdout)
 	}
-	a := remote.NewStorageApi(host, context.Background(), logger, false)
+	a := remote.NewStorageApi(host, context.Background(), logger.Logger, false)
 	a.SetRetry(3, 100*time.Millisecond, 100*time.Millisecond)
-	return a, logs
+	return a, logger
 }
 
-func NewStorageApiWithToken(host, tokenStr string, verbose bool) (*remote.StorageApi, *utils.Writer) {
-	a, logs := NewStorageApi(host, verbose)
+func NewStorageApiWithToken(host, tokenStr string, verbose bool) (*remote.StorageApi, *log.DebugLogger) {
+	a, logger := NewStorageApi(host, verbose)
 	token, err := a.GetToken(tokenStr)
 	if err != nil {
 		panic(err)
 	}
-	return a.WithToken(token), logs
+	return a.WithToken(token), logger
 }
 
 func NewMockedComponentsProvider() model.RemoteComponentsProvider {

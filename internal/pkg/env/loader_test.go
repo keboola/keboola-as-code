@@ -7,14 +7,14 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
 func TestLoadDotEnv(t *testing.T) {
 	t.Parallel()
 	// Memory fs
-	logger, _ := utils.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger, ".")
+	logger := log.NewDebugLogger()
+	fs, err := aferofs.NewMemoryFs(logger.Logger, ".")
 	assert.NoError(t, err)
 
 	// Write envs to file

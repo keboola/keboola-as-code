@@ -14,15 +14,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
-
 	"github.com/juju/fslock"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
@@ -87,13 +86,13 @@ func newProject(host string, id int, token string) *Project {
 	}
 
 	// Init Scheduler API
-	logger, logs := utils.NewDebugLogger()
+	logger := log.NewDebugLogger()
 	if testhelper.TestIsVerbose() {
-		logs.ConnectTo(os.Stdout)
+		logger.ConnectTo(os.Stdout)
 	}
 	p.schedulerApi = scheduler.NewSchedulerApi(
 		context.Background(),
-		logger,
+		logger.Logger,
 		string(schedulerHost),
 		p.api.Token().Token,
 		false,

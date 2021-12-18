@@ -14,7 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	. "github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -28,12 +28,12 @@ type myStruct struct {
 
 func TestLocalFilesystem(t *testing.T) {
 	t.Parallel()
-	createFs := func() (filesystem.Fs, *utils.Writer) {
-		logger, out := utils.NewDebugLogger()
+	createFs := func() (filesystem.Fs, *log.DebugLogger) {
+		logger := log.NewDebugLogger()
 		projectDir := t.TempDir()
-		fs, err := NewLocalFs(logger, projectDir, "/")
+		fs, err := NewLocalFs(logger.Logger, projectDir, "/")
 		assert.NoError(t, err)
-		return fs, out
+		return fs, logger
 	}
 	cases := &testCases{createFs}
 	cases.runTests(t)
@@ -41,18 +41,18 @@ func TestLocalFilesystem(t *testing.T) {
 
 func TestMemoryFilesystem(t *testing.T) {
 	t.Parallel()
-	createFs := func() (filesystem.Fs, *utils.Writer) {
-		logger, out := utils.NewDebugLogger()
-		fs, err := NewMemoryFs(logger, "/")
+	createFs := func() (filesystem.Fs, *log.DebugLogger) {
+		logger := log.NewDebugLogger()
+		fs, err := NewMemoryFs(logger.Logger, "/")
 		assert.NoError(t, err)
-		return fs, out
+		return fs, logger
 	}
 	cases := &testCases{createFs}
 	cases.runTests(t)
 }
 
 type testCases struct {
-	createFs func() (filesystem.Fs, *utils.Writer)
+	createFs func() (filesystem.Fs, *log.DebugLogger)
 }
 
 func (tc *testCases) runTests(t *testing.T) {
@@ -63,40 +63,40 @@ func (tc *testCases) runTests(t *testing.T) {
 	for i := 0; i < tp.NumMethod(); i++ {
 		method := tp.Method(i)
 		if strings.HasPrefix(method.Name, prefix) {
-			fs, log := tc.createFs()
+			fs, logger := tc.createFs()
 			testName := strings.TrimPrefix(method.Name, prefix)
 			t.Run(testName, func(t *testing.T) {
 				t.Parallel()
 				reflect.ValueOf(tc).MethodByName(method.Name).Call([]reflect.Value{
 					reflect.ValueOf(t),
 					reflect.ValueOf(fs),
-					reflect.ValueOf(log),
+					reflect.ValueOf(logger),
 				})
 			})
 		}
 	}
 }
 
-func (*testCases) TestApiName(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
+func (*testCases) TestApiName(t *testing.T, fs filesystem.Fs, _ *log.DebugLogger) {
 	assert.NotEmpty(t, fs.ApiName())
 }
 
-func (*testCases) TestBasePath(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
+func (*testCases) TestBasePath(t *testing.T, fs filesystem.Fs, _ *log.DebugLogger) {
 	assert.NotEmpty(t, fs.BasePath())
 }
 
-func (*testCases) TestWorkingDir(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
+func (*testCases) TestWorkingDir(t *testing.T, fs filesystem.Fs, _ *log.DebugLogger) {
 	assert.Equal(t, "/", fs.WorkingDir())
 }
 
-func (*testCases) TestSetLogger(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
+func (*testCases) TestSetLogger(t *testing.T, fs filesystem.Fs, _ *log.DebugLogger) {
 	logger := zap.NewNop().Sugar()
 	assert.NotPanics(t, func() {
 		fs.SetLogger(logger)
 	})
 }
 
-func (*testCases) TestWalk(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
+func (*testCases) TestWalk(t *testing.T, fs filesystem.Fs, _ *log.DebugLogger) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir2/file.txt", "foo\n")))
 
@@ -121,7 +121,7 @@ func (*testCases) TestWalk(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 	}, paths)
 }
 
-func (*testCases) TestGlob(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
+func (*testCases) TestGlob(t *testing.T, fs filesystem.Fs, _ *log.DebugLogger) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir2/file.txt", "foo\n")))
 
@@ -142,14 +142,14 @@ func (*testCases) TestGlob(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 	assert.Equal(t, []string{`my/dir2/file.txt`}, matches)
 }
 
-func (*testCases) TestStat(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
+func (*testCases) TestStat(t *testing.T, fs filesystem.Fs, _ *log.DebugLogger) {
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir/file.txt", "foo\n")))
 	s, err := fs.Stat(`my/dir/file.txt`)
 	assert.NoError(t, err)
 	assert.False(t, s.IsDir())
 }
 
-func (*testCases) TestReadDir(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
+func (*testCases) TestReadDir(t *testing.T, fs filesystem.Fs, _ *log.DebugLogger) {
 	assert.NoError(t, fs.Mkdir("my/dir/subdir"))
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir/file.txt", "foo\n")))
 
@@ -158,19 +158,19 @@ func (*testCases) TestReadDir(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 	assert.Len(t, items, 2)
 }
 
-func (*testCases) TestExists(t *testing.T, fs filesystem.Fs, log *utils.Writer) {
+func (*testCases) TestExists(t *testing.T, fs filesystem.Fs, logger *log.DebugLogger) {
 	// Create file
 	filePath := "file.txt"
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filePath, "foo\n")))
 
 	// Assert
-	log.Truncate()
+	logger.Truncate()
 	assert.True(t, fs.Exists(filePath))
 	assert.False(t, fs.Exists("file-non-exists.txt"))
-	assert.Equal(t, "", log.String())
+	assert.Equal(t, "", logger.String())
 }
 
-func (*testCases) TestIsFile(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
+func (*testCases) TestIsFile(t *testing.T, fs filesystem.Fs, _ *log.DebugLogger) {
 	assert.NoError(t, fs.Mkdir("my/dir"))
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir/file.txt", "foo\n")))
 
@@ -180,7 +180,7 @@ func (*testCases) TestIsFile(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 	assert.False(t, fs.IsFile("file-non-exists.txt"))
 }
 
-func (*testCases) TestIsDir(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
+func (*testCases) TestIsDir(t *testing.T, fs filesystem.Fs, _ *log.DebugLogger) {
 	assert.NoError(t, fs.Mkdir("my/dir"))
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir/file.txt", "foo\n")))
 
@@ -190,7 +190,7 @@ func (*testCases) TestIsDir(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 	assert.False(t, fs.IsDir("file-non-exists.txt"))
 }
 
-func (*testCases) TestCreate(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
+func (*testCases) TestCreate(t *testing.T, fs filesystem.Fs, _ *log.DebugLogger) {
 	fd, err := fs.Create(`file.txt`)
 	assert.NoError(t, err)
 
@@ -204,7 +204,7 @@ func (*testCases) TestCreate(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 	assert.Equal(t, "foo\n", file.Content)
 }
 
-func (*testCases) TestOpen(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
+func (*testCases) TestOpen(t *testing.T, fs filesystem.Fs, _ *log.DebugLogger) {
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile(`file.txt`, "foo\n")))
 
 	fd, err := fs.Open(`file.txt`)
@@ -216,7 +216,7 @@ func (*testCases) TestOpen(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 	assert.NoError(t, fd.Close())
 }
 
-func (*testCases) TestOpenFile(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
+func (*testCases) TestOpenFile(t *testing.T, fs filesystem.Fs, _ *log.DebugLogger) {
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile(`file.txt`, "foo\n")))
 
 	fd, err := fs.OpenFile(`file.txt`, os.O_RDONLY, 0o600)
@@ -228,7 +228,7 @@ func (*testCases) TestOpenFile(t *testing.T, fs filesystem.Fs, _ *utils.Writer) 
 	assert.NoError(t, fd.Close())
 }
 
-func (*testCases) TestMkdir(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
+func (*testCases) TestMkdir(t *testing.T, fs filesystem.Fs, _ *log.DebugLogger) {
 	assert.False(t, fs.Exists("my/dir"))
 	assert.NoError(t, fs.Mkdir("my/dir"))
 	assert.True(t, fs.Exists("my/dir"))
@@ -236,7 +236,7 @@ func (*testCases) TestMkdir(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 	assert.True(t, fs.Exists("my/dir"))
 }
 
-func (*testCases) TestCopyFile(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
+func (*testCases) TestCopyFile(t *testing.T, fs filesystem.Fs, _ *log.DebugLogger) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
 	assert.NoError(t, fs.Mkdir("my/dir2"))
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir1/file.txt", "foo\n")))
@@ -250,7 +250,7 @@ func (*testCases) TestCopyFile(t *testing.T, fs filesystem.Fs, _ *utils.Writer) 
 	assert.True(t, fs.Exists("my/dir2/file.txt"))
 }
 
-func (*testCases) TestCopyFileExists(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
+func (*testCases) TestCopyFileExists(t *testing.T, fs filesystem.Fs, _ *log.DebugLogger) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
 	assert.NoError(t, fs.Mkdir("my/dir2"))
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir1/file.txt", "foo\n")))
@@ -263,7 +263,7 @@ func (*testCases) TestCopyFileExists(t *testing.T, fs filesystem.Fs, _ *utils.Wr
 	assert.True(t, strings.HasPrefix(err.Error(), `cannot copy "my/dir1/file.txt" -> "my/dir2/file.txt": destination exists`))
 }
 
-func (*testCases) TestCopyForce(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
+func (*testCases) TestCopyForce(t *testing.T, fs filesystem.Fs, _ *log.DebugLogger) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
 	assert.NoError(t, fs.Mkdir("my/dir2"))
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir1/file.txt", "foo\n")))
@@ -280,7 +280,7 @@ func (*testCases) TestCopyForce(t *testing.T, fs filesystem.Fs, _ *utils.Writer)
 	assert.True(t, fs.Exists("my/dir2/file.txt"))
 }
 
-func (*testCases) TestCopyDir(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
+func (*testCases) TestCopyDir(t *testing.T, fs filesystem.Fs, _ *log.DebugLogger) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir1/file.txt", "foo\n")))
 
@@ -293,7 +293,7 @@ func (*testCases) TestCopyDir(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 	assert.True(t, fs.Exists("my/dir2/file.txt"))
 }
 
-func (*testCases) TestCopyDirExists(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
+func (*testCases) TestCopyDirExists(t *testing.T, fs filesystem.Fs, _ *log.DebugLogger) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir1/file.txt", "foo\n")))
 	assert.NoError(t, fs.Mkdir("my/dir2"))
@@ -304,7 +304,7 @@ func (*testCases) TestCopyDirExists(t *testing.T, fs filesystem.Fs, _ *utils.Wri
 	assert.True(t, strings.HasPrefix(err.Error(), `cannot copy "my/dir1" -> "my/dir2": destination exists`))
 }
 
-func (*testCases) TestMoveFile(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
+func (*testCases) TestMoveFile(t *testing.T, fs filesystem.Fs, _ *log.DebugLogger) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
 	assert.NoError(t, fs.Mkdir("my/dir2"))
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir1/file.txt", "foo\n")))
@@ -318,7 +318,7 @@ func (*testCases) TestMoveFile(t *testing.T, fs filesystem.Fs, _ *utils.Writer) 
 	assert.True(t, fs.Exists("my/dir2/file.txt"))
 }
 
-func (*testCases) TestMoveFileExists(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
+func (*testCases) TestMoveFileExists(t *testing.T, fs filesystem.Fs, _ *log.DebugLogger) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
 	assert.NoError(t, fs.Mkdir("my/dir2"))
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir1/file.txt", "foo\n")))
@@ -331,7 +331,7 @@ func (*testCases) TestMoveFileExists(t *testing.T, fs filesystem.Fs, _ *utils.Wr
 	assert.Equal(t, `cannot move "my/{dir1/file.txt -> dir2/file.txt}": destination exists`, err.Error())
 }
 
-func (*testCases) TestMoveForce(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
+func (*testCases) TestMoveForce(t *testing.T, fs filesystem.Fs, _ *log.DebugLogger) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
 	assert.NoError(t, fs.Mkdir("my/dir2"))
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir1/file.txt", "foo\n")))
@@ -348,7 +348,7 @@ func (*testCases) TestMoveForce(t *testing.T, fs filesystem.Fs, _ *utils.Writer)
 	assert.True(t, fs.Exists("my/dir2/file.txt"))
 }
 
-func (*testCases) TestMoveDir(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
+func (*testCases) TestMoveDir(t *testing.T, fs filesystem.Fs, _ *log.DebugLogger) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir1/file.txt", "foo\n")))
 
@@ -361,7 +361,7 @@ func (*testCases) TestMoveDir(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
 	assert.True(t, fs.Exists("my/dir2/file.txt"))
 }
 
-func (*testCases) TestMoveDirExists(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
+func (*testCases) TestMoveDirExists(t *testing.T, fs filesystem.Fs, _ *log.DebugLogger) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir1/file.txt", "foo\n")))
 	assert.NoError(t, fs.Mkdir("my/dir2"))
@@ -372,7 +372,7 @@ func (*testCases) TestMoveDirExists(t *testing.T, fs filesystem.Fs, _ *utils.Wri
 	assert.Equal(t, `cannot move "my/{dir1 -> dir2}": destination exists`, err.Error())
 }
 
-func (*testCases) TestRemoveFile(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
+func (*testCases) TestRemoveFile(t *testing.T, fs filesystem.Fs, _ *log.DebugLogger) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir1/file.txt", "foo\n")))
 
@@ -381,7 +381,7 @@ func (*testCases) TestRemoveFile(t *testing.T, fs filesystem.Fs, _ *utils.Writer
 	assert.False(t, fs.Exists("my/dir1/file.txt"))
 }
 
-func (*testCases) TestRemoveDir(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
+func (*testCases) TestRemoveDir(t *testing.T, fs filesystem.Fs, _ *log.DebugLogger) {
 	assert.NoError(t, fs.Mkdir("my/dir1"))
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile("my/dir1/file.txt", "foo\n")))
 
@@ -390,39 +390,39 @@ func (*testCases) TestRemoveDir(t *testing.T, fs filesystem.Fs, _ *utils.Writer)
 	assert.False(t, fs.Exists("my/dir1"))
 }
 
-func (*testCases) TestRemoveNotExist(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
+func (*testCases) TestRemoveNotExist(t *testing.T, fs filesystem.Fs, _ *log.DebugLogger) {
 	assert.NoError(t, fs.Remove("my/dir1/file.txt"))
 }
 
-func (*testCases) TestReadFile(t *testing.T, fs filesystem.Fs, log *utils.Writer) {
+func (*testCases) TestReadFile(t *testing.T, fs filesystem.Fs, logger *log.DebugLogger) {
 	// Create file
 	filePath := "file.txt"
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filePath, "foo\n")))
 
 	// Read
-	log.Truncate()
+	logger.Truncate()
 	file, err := fs.ReadFile(filePath, "")
 	assert.NoError(t, err)
 	assert.NotNil(t, file)
 	assert.Equal(t, "foo\n", file.Content)
-	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(log.String()))
+	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.String()))
 }
 
-func (*testCases) TestReadFileNotFound(t *testing.T, fs filesystem.Fs, log *utils.Writer) {
+func (*testCases) TestReadFileNotFound(t *testing.T, fs filesystem.Fs, logger *log.DebugLogger) {
 	filePath := "file.txt"
 	file, err := fs.ReadFile(filePath, "")
 	assert.Error(t, err)
 	assert.Nil(t, file)
 	assert.True(t, strings.HasPrefix(err.Error(), `missing file "file.txt"`))
-	assert.Equal(t, "", log.String())
+	assert.Equal(t, "", logger.String())
 }
 
-func (*testCases) TestWriteFile(t *testing.T, fs filesystem.Fs, log *utils.Writer) {
+func (*testCases) TestWriteFile(t *testing.T, fs filesystem.Fs, logger *log.DebugLogger) {
 	filePath := "file.txt"
 
 	// Write
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filePath, "foo\n")))
-	assert.Equal(t, `DEBUG  Saved "file.txt"`, strings.TrimSpace(log.String()))
+	assert.Equal(t, `DEBUG  Saved "file.txt"`, strings.TrimSpace(logger.String()))
 
 	// Read
 	file, err := fs.ReadFile(filePath, "")
@@ -431,7 +431,7 @@ func (*testCases) TestWriteFile(t *testing.T, fs filesystem.Fs, log *utils.Write
 	assert.Equal(t, "foo\n", file.Content)
 }
 
-func (*testCases) TestWriteFileDirNotFound(t *testing.T, fs filesystem.Fs, log *utils.Writer) {
+func (*testCases) TestWriteFileDirNotFound(t *testing.T, fs filesystem.Fs, logger *log.DebugLogger) {
 	filePath := "my/dir/file.txt"
 
 	// Write
@@ -440,7 +440,7 @@ func (*testCases) TestWriteFileDirNotFound(t *testing.T, fs filesystem.Fs, log *
 DEBUG  Created directory "my/dir"
 DEBUG  Saved "my/dir/file.txt"
 `
-	assert.Equal(t, strings.TrimSpace(expectedLogs), strings.TrimSpace(log.String()))
+	assert.Equal(t, strings.TrimSpace(expectedLogs), strings.TrimSpace(logger.String()))
 
 	// Read - dir is auto created
 	file, err := fs.ReadFile(filePath, "")
@@ -449,14 +449,14 @@ DEBUG  Saved "my/dir/file.txt"
 	assert.Equal(t, "foo\n", file.Content)
 }
 
-func (*testCases) TestWriteJsonFile(t *testing.T, fs filesystem.Fs, log *utils.Writer) {
+func (*testCases) TestWriteJsonFile(t *testing.T, fs filesystem.Fs, logger *log.DebugLogger) {
 	filePath := "file.json"
 
 	// Write
 	data := orderedmap.New()
 	data.Set(`foo`, `bar`)
 	assert.NoError(t, fs.WriteJsonFile(filesystem.NewJsonFile(filePath, data)))
-	assert.Equal(t, `DEBUG  Saved "file.json"`, strings.TrimSpace(log.String()))
+	assert.Equal(t, `DEBUG  Saved "file.json"`, strings.TrimSpace(logger.String()))
 
 	// Read
 	file, err := fs.ReadFile(filePath, "")
@@ -465,7 +465,7 @@ func (*testCases) TestWriteJsonFile(t *testing.T, fs filesystem.Fs, log *utils.W
 	assert.Equal(t, "{\n  \"foo\": \"bar\"\n}\n", file.Content)
 }
 
-func (*testCases) TestCreateOrUpdateFile(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
+func (*testCases) TestCreateOrUpdateFile(t *testing.T, fs filesystem.Fs, _ *log.DebugLogger) {
 	filePath := "file.txt"
 
 	// Create empty file
@@ -504,41 +504,41 @@ func (*testCases) TestCreateOrUpdateFile(t *testing.T, fs filesystem.Fs, _ *util
 	assert.Equal(t, "foo\nbar\nBAZ1=new123\nBAZ2=new456\n", file.Content)
 }
 
-func (*testCases) TestReadJsonFile(t *testing.T, fs filesystem.Fs, log *utils.Writer) {
+func (*testCases) TestReadJsonFile(t *testing.T, fs filesystem.Fs, logger *log.DebugLogger) {
 	// Create file
 	filePath := "file.txt"
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filePath, `{"foo": "bar"}`)))
 
 	// Read
-	log.Truncate()
+	logger.Truncate()
 	file, err := fs.ReadJsonFile(filePath, "")
 	assert.NoError(t, err)
 	assert.NotNil(t, file)
 	assert.Equal(t, `{"foo":"bar"}`, json.MustEncodeString(file.Content, false))
-	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(log.String()))
+	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.String()))
 }
 
-func (*testCases) TestReadJsonFileTo(t *testing.T, fs filesystem.Fs, log *utils.Writer) {
+func (*testCases) TestReadJsonFileTo(t *testing.T, fs filesystem.Fs, logger *log.DebugLogger) {
 	// Create file
 	filePath := "file.txt"
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filePath, `{"foo": "bar"}`)))
 
 	// Read
-	log.Truncate()
+	logger.Truncate()
 	target := &myStruct{}
 	err := fs.ReadJsonFileTo(filePath, "", target)
 	assert.NoError(t, err)
 	assert.Equal(t, `bar`, target.FooField)
-	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(log.String()))
+	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.String()))
 }
 
-func (*testCases) TestReadJsonFileToInvalid(t *testing.T, fs filesystem.Fs, log *utils.Writer) {
+func (*testCases) TestReadJsonFileToInvalid(t *testing.T, fs filesystem.Fs, logger *log.DebugLogger) {
 	// Create file
 	filePath := "file.txt"
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filePath, `{"foo":`)))
 
 	// Read
-	log.Truncate()
+	logger.Truncate()
 	target := &myStruct{}
 	err := fs.ReadJsonFileTo(filePath, "", target)
 	assert.Error(t, err)
@@ -549,7 +549,7 @@ file "file.txt" is invalid:
 	assert.Equal(t, strings.TrimSpace(expectedError), err.Error())
 }
 
-func (*testCases) TestReadJsonFileInvalid(t *testing.T, fs filesystem.Fs, _ *utils.Writer) {
+func (*testCases) TestReadJsonFileInvalid(t *testing.T, fs filesystem.Fs, _ *log.DebugLogger) {
 	// Create file
 	filePath := "file.txt"
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filePath, `{"foo":`)))
@@ -565,13 +565,13 @@ file "file.txt" is invalid:
 	assert.Equal(t, strings.TrimSpace(expectedError), err.Error())
 }
 
-func (*testCases) TestReadJsonFieldsTo(t *testing.T, fs filesystem.Fs, log *utils.Writer) {
+func (*testCases) TestReadJsonFieldsTo(t *testing.T, fs filesystem.Fs, logger *log.DebugLogger) {
 	// Create file
 	filePath := "file.txt"
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filePath, `{"field1": "foo", "field2": "bar"}`)))
 
 	// Read
-	log.Truncate()
+	logger.Truncate()
 	target := &myStruct{}
 	file, err := fs.ReadJsonFieldsTo(filePath, "", target, `mytag:field`)
 	assert.NoError(t, err)
@@ -579,37 +579,37 @@ func (*testCases) TestReadJsonFieldsTo(t *testing.T, fs filesystem.Fs, log *util
 	assert.Equal(t, `{"field1":"foo","field2":"bar"}`, json.MustEncodeString(file.Content, false))
 	assert.Equal(t, `foo`, target.Field1)
 	assert.Equal(t, `bar`, target.Field2)
-	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(log.String()))
+	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.String()))
 }
 
-func (*testCases) TestReadJsonMapTo(t *testing.T, fs filesystem.Fs, log *utils.Writer) {
+func (*testCases) TestReadJsonMapTo(t *testing.T, fs filesystem.Fs, logger *log.DebugLogger) {
 	// Create file
 	filePath := "file.txt"
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filePath, `{"field1": "foo", "field2": "bar"}`)))
 
 	// Read
-	log.Truncate()
+	logger.Truncate()
 	target := &myStruct{}
 	file, err := fs.ReadJsonMapTo(filePath, "", target, `mytag:map`)
 	assert.NoError(t, err)
 	assert.NotNil(t, file)
 	assert.Equal(t, `{"field1":"foo","field2":"bar"}`, json.MustEncodeString(file.Content, false))
 	assert.Equal(t, `{"field1":"foo","field2":"bar"}`, json.MustEncodeString(target.Map, false))
-	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(log.String()))
+	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.String()))
 }
 
-func (*testCases) TestReadFileContentTo(t *testing.T, fs filesystem.Fs, log *utils.Writer) {
+func (*testCases) TestReadFileContentTo(t *testing.T, fs filesystem.Fs, logger *log.DebugLogger) {
 	// Create file
 	filePath := "file.txt"
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filePath, `{"field1": "foo", "field2": "bar"}`)))
 
 	// Read
-	log.Truncate()
+	logger.Truncate()
 	target := &myStruct{}
 	file, err := fs.ReadFileContentTo(filePath, "", target, `mytag:content`)
 	assert.NoError(t, err)
 	assert.NotNil(t, file)
 	assert.Equal(t, `{"field1": "foo", "field2": "bar"}`, file.Content)
 	assert.Equal(t, `{"field1": "foo", "field2": "bar"}`, target.Content)
-	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(log.String()))
+	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.String()))
 }

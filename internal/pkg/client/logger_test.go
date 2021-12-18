@@ -3,21 +3,21 @@ package client
 import (
 	"testing"
 
-	assert "github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
 func TestClientLogger(t *testing.T) {
 	t.Parallel()
-	logger, out := utils.NewDebugLogger()
-	clientLogger := &Logger{logger}
+	logger := log.NewDebugLogger()
+	clientLogger := &Logger{logger.Logger}
 	clientLogger.Debugf("Some debug")
 	clientLogger.Warnf("Some warning")
 	clientLogger.Errorf("Some error")
 
 	expected := "DEBUG  HTTP\tSome debug\nDEBUG  HTTP-WARN\tSome warning\nDEBUG  HTTP-ERROR\tSome error\n"
-	assert.Equal(t, expected, out.String())
+	assert.Equal(t, expected, logger.String())
 }
 
 func TestRemoveSecrets(t *testing.T) {

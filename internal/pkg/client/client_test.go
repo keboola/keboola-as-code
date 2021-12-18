@@ -10,22 +10,21 @@ import (
 	"github.com/go-resty/resty/v2"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func TestNewHttpClient(t *testing.T) {
 	t.Parallel()
-	logger, _ := utils.NewDebugLogger()
-	c := NewClient(context.Background(), logger, false)
+	logger := log.NewDebugLogger()
+	c := NewClient(context.Background(), logger.Logger, false)
 	assert.NotNil(t, c)
 }
 
 func TestWithHostUrl(t *testing.T) {
 	t.Parallel()
-	orgClient, httpTransport, _, _ := getMockedClientAndLogs(t, false)
+	orgClient, httpTransport, _ := getMockedClientAndLogs(t, false)
 	hostClient := orgClient.WithHostUrl("https://foo.bar")
 
 	// Mocked response
@@ -42,7 +41,7 @@ func TestWithHostUrl(t *testing.T) {
 
 func TestSimpleRequest(t *testing.T) {
 	t.Parallel()
-	c, httpTransport, _, out := getMockedClientAndLogs(t, false)
+	c, httpTransport, logger := getMockedClientAndLogs(t, false)
 
 	// Mocked response
 	httpTransport.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(200, `test`))
@@ -52,12 +51,12 @@ func TestSimpleRequest(t *testing.T) {
 	assert.NoError(t, response.Err())
 	assert.Equal(t, "test", response.String())
 	expected := "DEBUG  HTTP\tGET https://example.com | 200 | %s"
-	testhelper.AssertWildcards(t, expected, out.String(), "Unexpected log")
+	testhelper.AssertWildcards(t, expected, logger.String(), "Unexpected log")
 }
 
 func TestRetry(t *testing.T) {
 	t.Parallel()
-	c, httpTransport, _, out := getMockedClientAndLogs(t, false)
+	c, httpTransport, logger := getMockedClientAndLogs(t, false)
 
 	// Mocked response
 	httpTransport.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(504, `test`))
@@ -66,7 +65,7 @@ func TestRetry(t *testing.T) {
 	response := c.NewRequest(resty.MethodGet, "https://example.com").Send().Response
 	assert.Equal(t, errors.New(`GET https://example.com | returned http code 504`), response.Err())
 	assert.Equal(t, "test", response.String())
-	logs := out.String()
+	logs := logger.String()
 
 	// Check number of requests
 	assert.Equal(t, 1+c.resty.RetryCount, httpTransport.GetCallCountInfo()["GET https://example.com"])
@@ -88,7 +87,7 @@ func TestRetry(t *testing.T) {
 
 func TestDoNotRetry(t *testing.T) {
 	t.Parallel()
-	c, httpTransport, _, out := getMockedClientAndLogs(t, false)
+	c, httpTransport, logger := getMockedClientAndLogs(t, false)
 
 	// Mocked response
 	httpTransport.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(403, `test`))
@@ -97,7 +96,7 @@ func TestDoNotRetry(t *testing.T) {
 	response := c.NewRequest(resty.MethodGet, "https://example.com").Send().Response
 	assert.Equal(t, errors.New(`GET https://example.com | returned http code 403`), response.Err())
 	assert.Equal(t, "test", response.String())
-	logs := out.String()
+	logs := logger.String()
 
 	// Only one request, HTTP code 403 is not retried
 	assert.Equal(t, 1, httpTransport.GetCallCountInfo()["GET https://example.com"])
@@ -112,7 +111,7 @@ func TestDoNotRetry(t *testing.T) {
 
 func TestVerboseHideSecret(t *testing.T) {
 	t.Parallel()
-	c, httpTransport, _, out := getMockedClientAndLogs(t, true)
+	c, httpTransport, out := getMockedClientAndLogs(t, true)
 
 	// Mocked response
 	httpTransport.RegisterResponder("GET", `=~.+`, httpmock.NewStringResponder(200, `test`))
@@ -151,12 +150,12 @@ DEBUG  HTTP	GET https://example.com | 200 | %s
 	testhelper.AssertWildcards(t, expectedLog, out.String(), "Unexpected log")
 }
 
-func getMockedClientAndLogs(t *testing.T, verbose bool) (*Client, *httpmock.MockTransport, *zap.SugaredLogger, *utils.Writer) {
+func getMockedClientAndLogs(t *testing.T, verbose bool) (*Client, *httpmock.MockTransport, *log.DebugLogger) {
 	t.Helper()
 
 	// Create
-	logger, out := utils.NewDebugLogger()
-	c := NewClient(context.Background(), logger, verbose)
+	logger := log.NewDebugLogger()
+	c := NewClient(context.Background(), logger.Logger, verbose)
 
 	// Set short retry delay in tests
 	c.resty.RetryWaitTime = 1 * time.Millisecond
@@ -165,5 +164,5 @@ func getMockedClientAndLogs(t *testing.T, verbose bool) (*Client, *httpmock.Mock
 	// Mocked resty transport
 	transport := httpmock.NewMockTransport()
 	c.resty.GetClient().Transport = transport
-	return c, transport, logger, out
+	return c, transport, logger
 }

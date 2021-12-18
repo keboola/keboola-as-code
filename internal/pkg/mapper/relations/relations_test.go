@@ -7,16 +7,16 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func createMapperContext(t *testing.T) (model.MapperContext, *utils.Writer) {
+func createMapperContext(t *testing.T) (model.MapperContext, *log.DebugLogger) {
 	t.Helper()
-	logger, logs := utils.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger, ".")
+	logger := log.NewDebugLogger()
+	fs, err := aferofs.NewMemoryFs(logger.Logger, ".")
 	assert.NoError(t, err)
 	state := model.NewState(zap.NewNop().Sugar(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
-	return model.MapperContext{Logger: logger, Fs: fs, Naming: model.DefaultNamingWithIds(), State: state}, logs
+	return model.MapperContext{Logger: logger.Logger, Fs: fs, Naming: model.DefaultNamingWithIds(), State: state}, logger
 }
