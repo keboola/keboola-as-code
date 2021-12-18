@@ -58,7 +58,7 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadConfig(t *testing.T) {
 		Local: &model.Branch{BranchKey: branchKey},
 	}
 	assert.NoError(t, context.State.Set(branchState))
-	context.Naming.Attach(branchKey, branchState.PathInProject)
+	assert.NoError(t, context.NamingRegistry.Attach(branchKey, branchState.PathInProject))
 
 	// Config referenced by the default bucket
 	configKey1 := model.ConfigKey{
@@ -86,7 +86,7 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadConfig(t *testing.T) {
 		},
 	}
 	assert.NoError(t, context.State.Set(configState1))
-	context.Naming.Attach(configState1.Key(), configState1.PathInProject)
+	assert.NoError(t, context.NamingRegistry.Attach(configState1.Key(), configState1.PathInProject))
 
 	// Config with the input mapping
 	configKey2 := model.ConfigKey{
@@ -140,7 +140,7 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadRow(t *testing.T) {
 		Local: &model.Branch{BranchKey: branchKey},
 	}
 	assert.NoError(t, context.State.Set(branchState))
-	context.Naming.Attach(branchKey, branchState.PathInProject)
+	assert.NoError(t, context.NamingRegistry.Attach(branchKey, branchState.PathInProject))
 
 	// Config referenced by the default bucket
 	configKey1 := model.ConfigKey{
@@ -168,7 +168,7 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadRow(t *testing.T) {
 		},
 	}
 	assert.NoError(t, context.State.Set(configState1))
-	context.Naming.Attach(configState1.Key(), configState1.PathInProject)
+	assert.NoError(t, context.NamingRegistry.Attach(configState1.Key(), configState1.PathInProject))
 
 	// Config with the input mapping
 	configKey2 := model.ConfigKey{

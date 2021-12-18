@@ -49,7 +49,7 @@ func createTargetConfigs(t *testing.T, context model.MapperContext) (*model.Conf
 		Remote: &model.Config{ConfigKey: targetConfigKey1},
 	}
 	assert.NoError(t, context.State.Set(targetConfigState1))
-	context.Naming.Attach(targetConfigState1.Key(), targetConfigState1.PathInProject)
+	assert.NoError(t, context.NamingRegistry.Attach(targetConfigState1.Key(), targetConfigState1.PathInProject))
 
 	// Target config 2
 	targetConfigKey2 := model.ConfigKey{
@@ -68,7 +68,7 @@ func createTargetConfigs(t *testing.T, context model.MapperContext) (*model.Conf
 		Remote: &model.Config{ConfigKey: targetConfigKey2},
 	}
 	assert.NoError(t, context.State.Set(targetConfigState2))
-	context.Naming.Attach(targetConfigState2.Key(), targetConfigState2.PathInProject)
+	assert.NoError(t, context.NamingRegistry.Attach(targetConfigState2.Key(), targetConfigState2.PathInProject))
 
 	// Target config 3
 	targetConfigKey3 := model.ConfigKey{
@@ -87,7 +87,7 @@ func createTargetConfigs(t *testing.T, context model.MapperContext) (*model.Conf
 		Remote: &model.Config{ConfigKey: targetConfigKey3},
 	}
 	assert.NoError(t, context.State.Set(targetConfigState3))
-	context.Naming.Attach(targetConfigState3.Key(), targetConfigState3.PathInProject)
+	assert.NoError(t, context.NamingRegistry.Attach(targetConfigState3.Key(), targetConfigState3.PathInProject))
 
 	return targetConfigState1, targetConfigState2, targetConfigState3
 }

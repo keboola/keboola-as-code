@@ -203,6 +203,6 @@ func createLocalTranWithSharedCode(t *testing.T, context model.MapperContext) *m
 		},
 	}
 	assert.NoError(t, context.State.Set(transformation))
-	context.Naming.Attach(transformation.Key(), transformation.PathInProject)
+	assert.NoError(t, context.NamingRegistry.Attach(transformation.Key(), transformation.PathInProject))
 	return transformation
 }

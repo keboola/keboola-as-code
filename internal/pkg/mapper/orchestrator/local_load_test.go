@@ -330,7 +330,7 @@ func createLocalLoadFixtures(t *testing.T, context model.MapperContext) *model.C
 		Local: &model.Branch{BranchKey: branchKey},
 	}
 	assert.NoError(t, context.State.Set(branchState))
-	context.Naming.Attach(branchState.Key(), branchState.PathInProject)
+	assert.NoError(t, context.NamingRegistry.Attach(branchState.Key(), branchState.PathInProject))
 
 	// Orchestrator config
 	configKey := model.ConfigKey{
@@ -348,7 +348,7 @@ func createLocalLoadFixtures(t *testing.T, context model.MapperContext) *model.C
 		Local: &model.Config{ConfigKey: configKey, Content: orderedmap.New()},
 	}
 	assert.NoError(t, context.State.Set(configState))
-	context.Naming.Attach(configState.Key(), configState.PathInProject)
+	assert.NoError(t, context.NamingRegistry.Attach(configState.Key(), configState.PathInProject))
 
 	return configState
 }
