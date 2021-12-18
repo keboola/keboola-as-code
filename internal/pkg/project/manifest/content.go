@@ -24,6 +24,11 @@ type Content struct {
 	Configs  []*model.ConfigManifestWithRows `json:"configurations" validate:"dive"`
 }
 
+type Project struct {
+	Id      int    `json:"id" validate:"required"`
+	ApiHost string `json:"apiHost" validate:"required,hostname"`
+}
+
 func newContent(projectId int, apiHost string) *Content {
 	return &Content{
 		Version:  build.MajorVersion,
