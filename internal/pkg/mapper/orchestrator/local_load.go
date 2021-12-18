@@ -5,20 +5,21 @@ import (
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func (m *orchestratorMapper) onLocalLoad(config *model.Config, manifest *model.ConfigManifest, allObjects *model.StateObjects) error {
 	loader := &localLoader{
-		MapperContext: m.MapperContext,
-		phasesSorter:  newPhasesSorter(),
-		allObjects:    allObjects,
-		branch:        m.State.MustGet(config.BranchKey()).(*model.BranchState),
-		config:        config,
-		manifest:      manifest,
-		phasesDir:     m.Naming.PhasesDir(manifest.Path()),
-		errors:        utils.NewMultiError(),
+		Context:      m.Context,
+		phasesSorter: newPhasesSorter(),
+		allObjects:   allObjects,
+		branch:       m.State.MustGet(config.BranchKey()).(*model.BranchState),
+		config:       config,
+		manifest:     manifest,
+		phasesDir:    m.NamingGenerator.PhasesDir(manifest.Path()),
+		errors:       utils.NewMultiError(),
 	}
 	if err := loader.load(); err != nil {
 		return utils.PrefixError(fmt.Sprintf(`invalid orchestrator config "%s"`, manifest.Path()), err)
@@ -27,7 +28,7 @@ func (m *orchestratorMapper) onLocalLoad(config *model.Config, manifest *model.C
 }
 
 type localLoader struct {
-	model.MapperContext
+	mapper.Context
 	*phasesSorter
 	allObjects *model.StateObjects
 	branch     *model.BranchState
@@ -121,7 +122,7 @@ func (l *localLoader) addTask(taskIndex int, phase *model.Phase, path string) (*
 
 func (l *localLoader) parsePhaseConfig(phase *model.Phase) ([]string, error) {
 	// Load phase config
-	file, err := l.loadJsonFile(l.Naming.PhaseFilePath(phase), `phase config`)
+	file, err := l.loadJsonFile(l.NamingGenerator.PhaseFilePath(phase), `phase config`)
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +150,7 @@ func (l *localLoader) parsePhaseConfig(phase *model.Phase) ([]string, error) {
 
 func (l *localLoader) parseTaskConfig(task *model.Task) error {
 	// Load task config
-	file, err := l.loadJsonFile(l.Naming.TaskFilePath(task), `task config`)
+	file, err := l.loadJsonFile(l.NamingGenerator.TaskFilePath(task), `task config`)
 	if err != nil {
 		return err
 	}
@@ -192,7 +193,7 @@ func (l *localLoader) getTargetConfig(configPath string) (*model.Config, error) 
 	}
 
 	configPath = filesystem.Join(l.branch.Path(), configPath)
-	configKeyRaw, found := l.Naming.FindByPath(configPath)
+	configKeyRaw, found := l.NamingRegistry.KeyByPath(configPath)
 	if !found {
 		return nil, fmt.Errorf(`config "%s" not found`, configPath)
 	}

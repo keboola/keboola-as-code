@@ -5,17 +5,18 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // SharedCodeHelper gets some values from shared codes.
 type SharedCodeHelper struct {
-	state  *model.State
-	naming *model.Naming
+	state          *model.State
+	namingRegistry *naming.Registry
 }
 
-func New(state *model.State, naming *model.Naming) *SharedCodeHelper {
-	return &SharedCodeHelper{state: state, naming: naming}
+func New(state *model.State, naming *naming.Registry) *SharedCodeHelper {
+	return &SharedCodeHelper{state: state, namingRegistry: naming}
 }
 
 func (h *SharedCodeHelper) IsSharedCodeKey(key model.Key) (bool, error) {
@@ -86,7 +87,7 @@ func (h *SharedCodeHelper) GetSharedCodeByPath(branchKey model.BranchKey, path s
 
 	// Get key by path
 	path = filesystem.Join(branch.Path(), path)
-	keyRaw, found := h.naming.FindByPath(path)
+	keyRaw, found := h.namingRegistry.KeyByPath(path)
 	if !found {
 		return nil, fmt.Errorf(`missing shared code "%s"`, path)
 	}
@@ -114,7 +115,7 @@ func (h *SharedCodeHelper) GetSharedCodeByPath(branchKey model.BranchKey, path s
 func (h *SharedCodeHelper) GetSharedCodeRowByPath(sharedCode *model.ConfigState, path string) (*model.ConfigRowState, error) {
 	// Get key by path
 	path = filesystem.Join(sharedCode.Path(), path)
-	keyRaw, found := h.naming.FindByPath(path)
+	keyRaw, found := h.namingRegistry.KeyByPath(path)
 	if !found {
 		return nil, fmt.Errorf(`missing shared code "%s"`, path)
 	}

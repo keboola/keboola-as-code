@@ -59,7 +59,7 @@ func (m *defaultBucketMapper) replacePlaceholderWithDefaultBucket(
 
 	// Get key by path
 	path := filesystem.Join(branchState.Path(), splitSource[0])
-	sourceConfigKeyRaw, found := m.Naming.FindByPath(path)
+	sourceConfigKeyRaw, found := m.NamingRegistry.KeyByPath(path)
 	if !found {
 		return fmt.Errorf(
 			`%s contains table "%s" in input mapping referencing to a non-existing configuration`,

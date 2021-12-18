@@ -44,7 +44,7 @@ func (m *mapper) onRowLocalSave(row *model.ConfigRow, recipe *model.LocalSaveRec
 
 	// Create code file
 	codeContent := row.SharedCode.String()
-	codeFilePath := m.Naming.SharedCodeFilePath(recipe.Path(), row.SharedCode.Target)
+	codeFilePath := m.NamingGenerator.SharedCodeFilePath(recipe.Path(), row.SharedCode.Target)
 	recipe.Files.
 		Add(filesystem.NewFile(codeFilePath, codeContent).SetDescription(`shared code`)).
 		AddTag(model.FileTypeOther).

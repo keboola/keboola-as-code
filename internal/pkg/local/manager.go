@@ -12,17 +12,19 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 type Manager struct {
-	state    *model.State
-	logger   log.Logger
-	fs       filesystem.Fs
-	manifest *projectManifest.Manifest
-	mapper   *mapper.Mapper
+	state           *model.State
+	logger          log.Logger
+	fs              filesystem.Fs
+	manifest        *projectManifest.Manifest
+	namingGenerator *naming.Generator
+	mapper          *mapper.Mapper
 }
 
 type UnitOfWork struct {
@@ -37,13 +39,14 @@ type UnitOfWork struct {
 	invoked         bool
 }
 
-func NewManager(logger log.Logger, fs filesystem.Fs, m *projectManifest.Manifest, state *model.State, mapper *mapper.Mapper) *Manager {
+func NewManager(logger log.Logger, fs filesystem.Fs, m *projectManifest.Manifest, namingGenerator *naming.Generator, state *model.State, mapper *mapper.Mapper) *Manager {
 	return &Manager{
-		state:    state,
-		logger:   logger,
-		fs:       fs,
-		manifest: m,
-		mapper:   mapper,
+		state:           state,
+		logger:          logger,
+		fs:              fs,
+		manifest:        m,
+		namingGenerator: namingGenerator,
+		mapper:          mapper,
 	}
 }
 

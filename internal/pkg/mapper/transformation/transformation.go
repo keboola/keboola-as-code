@@ -1,15 +1,16 @@
 package transformation
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 type transformationMapper struct {
-	model.MapperContext
+	mapper.Context
 }
 
-func NewMapper(context model.MapperContext) *transformationMapper {
-	return &transformationMapper{MapperContext: context}
+func NewMapper(context mapper.Context) *transformationMapper {
+	return &transformationMapper{Context: context}
 }
 
 func (m *transformationMapper) isTransformationConfig(object interface{}) (bool, error) {

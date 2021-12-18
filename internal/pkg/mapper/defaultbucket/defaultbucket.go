@@ -4,12 +4,13 @@ import (
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 type defaultBucketMapper struct {
-	model.MapperContext
+	mapper.Context
 	localManager *local.Manager
 }
 
@@ -18,10 +19,10 @@ type configOrRow interface {
 	BranchKey() model.BranchKey
 }
 
-func NewMapper(localManager *local.Manager, context model.MapperContext) *defaultBucketMapper {
+func NewMapper(localManager *local.Manager, context mapper.Context) *defaultBucketMapper {
 	return &defaultBucketMapper{
-		MapperContext: context,
-		localManager:  localManager,
+		Context:      context,
+		localManager: localManager,
 	}
 }
 

@@ -18,6 +18,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/variables"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
@@ -29,10 +30,12 @@ import (
 type State struct {
 	*Options
 	*model.State
-	mutex         *sync.Mutex
-	mapper        *mapper.Mapper
-	localManager  *local.Manager
-	remoteManager *remote.Manager
+	mutex           *sync.Mutex
+	mapper          *mapper.Mapper
+	namingGenerator *naming.Generator
+	pathMatcher     *naming.PathMatcher
+	localManager    *local.Manager
+	remoteManager   *remote.Manager
 }
 
 type Options struct {
@@ -94,23 +97,31 @@ func LoadState(options *Options) (state *State, ok bool, localErr error, remoteE
 }
 
 func newState(options *Options) *State {
-	s := &State{Options: options, mutex: &sync.Mutex{}}
+	namingGenerator := naming.NewGenerator(options.manifest.NamingTemplate(), options.manifest.NamingRegistry())
+	pathMatcher := naming.NewPathMatcher(options.manifest.NamingTemplate())
+	s := &State{
+		Options:         options,
+		mutex:           &sync.Mutex{},
+		namingGenerator: namingGenerator,
+		pathMatcher:     pathMatcher,
+	}
 
 	// State model struct
 	s.State = model.NewState(options.logger, options.fs, options.api.Components(), options.manifest.SortBy())
 
 	// Mapper
-	mapperContext := model.MapperContext{
-		Logger: options.logger,
-		Fs:     options.fs,
-		Naming: options.manifest.Naming(),
-		State:  s.State,
+	mapperContext := mapper.Context{
+		Logger:          options.logger,
+		Fs:              options.fs,
+		NamingGenerator: namingGenerator,
+		NamingRegistry:  options.manifest.NamingRegistry(),
+		State:           s.State,
 	}
 
-	s.mapper = mapper.New(mapperContext)
+	s.mapper = mapper.New()
 
 	// Local manager for load,save,delete ... operations
-	s.localManager = local.NewManager(options.logger, options.fs, options.manifest, s.State, s.mapper)
+	s.localManager = local.NewManager(options.logger, options.fs, options.manifest, namingGenerator, s.State, s.mapper)
 
 	// Local manager for API operations
 	s.remoteManager = remote.NewManager(s.localManager, options.api, s.State, s.mapper)
@@ -147,8 +158,12 @@ func (s *State) Manifest() *manifest.Manifest {
 	return s.manifest
 }
 
-func (s *State) Naming() *model.Naming {
-	return s.manifest.Naming()
+func (s *State) NamingGenerator() *naming.Generator {
+	return s.namingGenerator
+}
+
+func (s *State) PathMatcher() *naming.PathMatcher {
+	return s.pathMatcher
 }
 
 func (s *State) Mapper() *mapper.Mapper {

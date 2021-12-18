@@ -103,6 +103,10 @@ func (r *Records) SortRecords() {
 	})
 }
 
+func (r *Records) NamingRegistry() *naming.Registry {
+	return r.naming
+}
+
 func (r *Records) IsChanged() bool {
 	return r.changed
 }
@@ -178,8 +182,10 @@ func (r *Records) PersistRecord(record model.ObjectManifest) error {
 		}
 	}
 
-	// Attach record to the Naming
-	r.naming.Attach(record.Key(), record.GetPathInProject())
+	// Attach record to the NamingRegistry
+	if err := r.naming.Attach(record.Key(), record.GetPathInProject()); err != nil {
+		return err
+	}
 
 	r.lock.Lock()
 	defer r.lock.Unlock()

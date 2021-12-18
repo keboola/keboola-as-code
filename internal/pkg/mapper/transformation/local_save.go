@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
@@ -21,7 +22,7 @@ func (m *transformationMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe)
 
 	// Create local writer
 	w := &localWriter{
-		MapperContext:   m.MapperContext,
+		Context:         m.Context,
 		LocalSaveRecipe: recipe,
 		config:          recipe.Object.(*model.Config),
 		errors:          utils.NewMultiError(),
@@ -32,14 +33,14 @@ func (m *transformationMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe)
 }
 
 type localWriter struct {
-	model.MapperContext
+	mapper.Context
 	*model.LocalSaveRecipe
 	config *model.Config
 	errors *utils.MultiError
 }
 
 func (w *localWriter) save() error {
-	blocksDir := w.Naming.BlocksDir(w.ObjectManifest.Path())
+	blocksDir := w.NamingGenerator.BlocksDir(w.ObjectManifest.Path())
 
 	// Generate ".gitkeep" to preserve the "blocks" directory, even if there are no blocks.
 	w.Files.
@@ -73,7 +74,7 @@ func (w *localWriter) generateBlockFiles(block *model.Block) {
 
 	// Create metadata file
 	if metadata := utils.MapFromTaggedFields(model.MetaFileFieldsTag, block); metadata != nil {
-		metadataPath := w.Naming.MetaFilePath(block.Path())
+		metadataPath := w.NamingGenerator.MetaFilePath(block.Path())
 		w.createMetadataFile(metadataPath, `block metadata`, model.FileKindBlockMeta, metadata)
 	}
 
@@ -86,13 +87,13 @@ func (w *localWriter) generateBlockFiles(block *model.Block) {
 func (w *localWriter) generateCodeFiles(code *model.Code) {
 	// Create metadata file
 	if metadata := utils.MapFromTaggedFields(model.MetaFileFieldsTag, code); metadata != nil {
-		metadataPath := w.Naming.MetaFilePath(code.Path())
+		metadataPath := w.NamingGenerator.MetaFilePath(code.Path())
 		w.createMetadataFile(metadataPath, `code metadata`, model.FileKindCodeMeta, metadata)
 	}
 
 	// Create code file
 	w.Files.
-		Add(filesystem.NewFile(w.Naming.CodeFilePath(code), code.Scripts.String(code.ComponentId)).SetDescription(`code`)).
+		Add(filesystem.NewFile(w.NamingGenerator.CodeFilePath(code), code.Scripts.String(code.ComponentId)).SetDescription(`code`)).
 		AddTag(model.FileTypeOther).
 		AddTag(model.FileKindNativeCode)
 }

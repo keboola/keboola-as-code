@@ -43,7 +43,7 @@ func (m *mapper) formatPath(path string, componentId model.ComponentId) string {
 	if ok := m.pathRegexp.MatchString(placeholder); !ok {
 		panic(fmt.Errorf(`shared code path "%s" is invalid`, path))
 	}
-	comment := m.Naming.CodeFileComment(m.Naming.CodeFileExt(componentId))
+	comment := naming.CodeFileComment(naming.CodeFileExt(componentId))
 	return comment + ` ` + placeholder
 }
 
