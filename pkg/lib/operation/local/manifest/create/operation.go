@@ -34,7 +34,7 @@ func Run(o Options, d dependencies) (*manifest.Manifest, error) {
 		return nil, err
 	}
 	// Create
-	projectManifest := manifest.NewManifest(storageApi.ProjectId(), storageApi.Host())
+	projectManifest := manifest.New(storageApi.ProjectId(), storageApi.Host())
 
 	// Configure
 	projectManifest.SetNaming(o.Naming)

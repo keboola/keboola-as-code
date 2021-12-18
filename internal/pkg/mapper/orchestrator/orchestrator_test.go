@@ -22,7 +22,7 @@ func createMapper(t *testing.T) (*mapper.Mapper, model.MapperContext, log.DebugL
 	assert.NoError(t, err)
 	state := model.NewState(log.NewNopLogger(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
 	context := model.MapperContext{Logger: logger, Fs: fs, Naming: model.DefaultNamingWithIds(), State: state}
-	manifest := projectManifest.NewManifest(1, `foo.bar`)
+	manifest := projectManifest.New(1, `foo.bar`)
 	mapperInst := mapper.New(context)
 	localManager := local.NewManager(logger, fs, manifest, state, mapperInst)
 	mapperInst.AddMapper(orchestrator.NewMapper(localManager, context))

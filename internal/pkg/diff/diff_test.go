@@ -815,7 +815,7 @@ func createProjectState(t *testing.T) *state.State {
 
 	logger := log.NewDebugLogger()
 	fs := testfs.NewMemoryFs()
-	manifest := projectManifest.NewManifest(1, `foo.bar`)
+	manifest := projectManifest.New(1, `foo.bar`)
 	storageApi, _, _ := testapi.NewMockedStorageApi()
 	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
 	options := state.NewOptions(fs, manifest, storageApi, schedulerApi, context.Background(), logger)

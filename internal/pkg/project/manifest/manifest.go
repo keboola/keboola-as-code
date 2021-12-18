@@ -26,7 +26,7 @@ func Path() string {
 	return filesystem.Join(filesystem.MetadataDir, FileName)
 }
 
-func NewManifest(projectId int, apiHost string) *Manifest {
+func New(projectId int, apiHost string) *Manifest {
 	n := model.DefaultNamingWithIds()
 	content := newContent(projectId, apiHost)
 	return &Manifest{
