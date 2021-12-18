@@ -16,6 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
@@ -142,7 +143,7 @@ func TestLocalSaveMapper(t *testing.T) {
 	assert.NoError(t, uow.Invoke())
 
 	// File content has been mapped
-	configFile, err := fs.ReadFile(filesystem.Join(`branch`, `config`, model.ConfigFile), `config file`)
+	configFile, err := fs.ReadFile(filesystem.Join(`branch`, `config`, naming.ConfigFile), `config file`)
 	assert.NoError(t, err)
 	assert.Equal(t, "{\n  \"key\": \"overwritten\",\n  \"new\": \"value\"\n}", strings.TrimSpace(configFile.Content))
 

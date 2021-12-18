@@ -6,10 +6,11 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-func CreateSharedCode(t *testing.T, state *model.State, naming *model.Naming) (model.ConfigKey, []model.ConfigRowKey) {
+func CreateSharedCode(t *testing.T, state *model.State, naming *naming.Registry) (model.ConfigKey, []model.ConfigRowKey) {
 	t.Helper()
 
 	// Branch

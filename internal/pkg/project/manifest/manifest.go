@@ -87,12 +87,12 @@ func (m *Manifest) SetSortBy(sortBy string) {
 	m.records.SortBy = sortBy
 }
 
-func (m *Manifest) Naming() *model.Naming {
+func (m *Manifest) NamingTemplate() naming.Template {
 	return m.content.Naming
 }
 
-func (m *Manifest) SetNaming(naming *model.Naming) {
-	m.content.Naming = naming
+func (m *Manifest) SetNamingTemplate(v naming.Template) {
+	m.content.Naming = v
 }
 
 func (m *Manifest) AllowedBranches() model.AllowedBranches {

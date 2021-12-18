@@ -13,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
 	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
@@ -137,7 +138,7 @@ func TestAskInitOptions(t *testing.T) {
 	assert.Equal(t, initOp.Options{
 		Pull: true,
 		ManifestOptions: createManifest.Options{
-			Naming:          model.DefaultNamingWithIds(),
+			Naming:          naming.TemplateWithIds(),
 			AllowedBranches: model.AllowedBranches{model.MainBranchDef},
 		},
 		Workflows: genWorkflows.Options{

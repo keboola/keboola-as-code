@@ -199,12 +199,12 @@ func minimalJson() string {
 func minimalStruct() *Content {
 	return &Content{
 		Version: 2,
-		Project: model.Project{
+		Project: Project{
 			Id:      12345,
 			ApiHost: "foo.bar",
 		},
 		SortBy:   model.SortById,
-		Naming:   model.DefaultNamingWithIds(),
+		Naming:   naming.TemplateWithIds(),
 		Filter:   model.DefaultFilter(),
 		Branches: make([]*model.BranchManifest, 0),
 		Configs:  make([]*model.ConfigManifestWithRows, 0),
@@ -310,12 +310,12 @@ func fullJson() string {
 func fullStruct() *Content {
 	return &Content{
 		Version: 2,
-		Project: model.Project{
+		Project: Project{
 			Id:      12345,
 			ApiHost: "foo.bar",
 		},
 		SortBy: model.SortById,
-		Naming: model.DefaultNamingWithIds(),
+		Naming: naming.TemplateWithIds(),
 		Filter: model.Filter{
 			AllowedBranches:   model.AllowedBranches{"foo", "bar"},
 			IgnoredComponents: model.ComponentIds{"abc"},

@@ -3,7 +3,7 @@ package dialog
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	createManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/local/manifest/create"
@@ -51,9 +51,9 @@ func (p *Dialogs) AskInitOptions(d initDeps) (initOp.Options, error) {
 - path without IDs: dev-branch/writer/keboola.wr-db-snowflake/power-bi/rows/orders`,
 		Default: false,
 	}) {
-		out.ManifestOptions.Naming = model.DefaultNamingWithIds()
+		out.ManifestOptions.Naming = naming.TemplateWithIds()
 	} else {
-		out.ManifestOptions.Naming = model.DefaultNamingWithoutIds()
+		out.ManifestOptions.Naming = naming.TemplateWithoutIds()
 	}
 
 	// Ask for workflows options
