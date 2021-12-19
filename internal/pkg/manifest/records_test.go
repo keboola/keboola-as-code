@@ -8,15 +8,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-type fakeNaming struct{}
-
-func (fakeNaming) Attach(_ model.Key, _ model.PathInProject) {
-	// nop
-}
-
 func TestManifestRecordGetParent(t *testing.T) {
 	t.Parallel()
-	r := NewRecords(fakeNaming{}, model.SortById)
+	r := NewRecords(model.SortById)
 	branchManifest := &model.BranchManifest{BranchKey: model.BranchKey{Id: 123}}
 	configManifest := &model.ConfigManifest{ConfigKey: model.ConfigKey{
 		BranchId:    123,
@@ -31,7 +25,7 @@ func TestManifestRecordGetParent(t *testing.T) {
 
 func TestManifestRecordGetParentNotFound(t *testing.T) {
 	t.Parallel()
-	r := NewRecords(fakeNaming{}, model.SortById)
+	r := NewRecords(model.SortById)
 	configManifest := &model.ConfigManifest{ConfigKey: model.ConfigKey{
 		BranchId:    123,
 		ComponentId: "keboola.foo",
@@ -45,7 +39,7 @@ func TestManifestRecordGetParentNotFound(t *testing.T) {
 
 func TestManifestRecordGetParentNil(t *testing.T) {
 	t.Parallel()
-	r := NewRecords(fakeNaming{}, model.SortById)
+	r := NewRecords(model.SortById)
 	parent, err := r.GetParent(&model.BranchManifest{})
 	assert.Nil(t, parent)
 	assert.NoError(t, err)

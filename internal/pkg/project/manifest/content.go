@@ -7,6 +7,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -14,21 +15,26 @@ import (
 // Content of the project directory manifest.
 // Content contains IDs and paths of the all objects: branches, configs, rows.
 type Content struct {
-	Version int           `json:"version" validate:"required,min=1,max=2"`
-	Project model.Project `json:"project" validate:"required"`
-	SortBy  string        `json:"sortBy" validate:"oneof=id path"`
-	Naming  *model.Naming `json:"naming" validate:"required"`
+	Version int             `json:"version" validate:"required,min=1,max=2"`
+	Project Project         `json:"project" validate:"required"`
+	SortBy  string          `json:"sortBy" validate:"oneof=id path"`
+	Naming  naming.Template `json:"naming" validate:"required"`
 	model.Filter
 	Branches []*model.BranchManifest         `json:"branches" validate:"dive"`
 	Configs  []*model.ConfigManifestWithRows `json:"configurations" validate:"dive"`
 }
 
+type Project struct {
+	Id      int    `json:"id" validate:"required"`
+	ApiHost string `json:"apiHost" validate:"required,hostname"`
+}
+
 func newContent(projectId int, apiHost string) *Content {
 	return &Content{
 		Version:  build.MajorVersion,
-		Project:  model.Project{Id: projectId, ApiHost: apiHost},
+		Project:  Project{Id: projectId, ApiHost: apiHost},
 		SortBy:   model.SortById,
-		Naming:   model.DefaultNamingWithIds(),
+		Naming:   naming.TemplateWithIds(),
 		Filter:   model.DefaultFilter(),
 		Branches: make([]*model.BranchManifest, 0),
 		Configs:  make([]*model.ConfigManifestWithRows, 0),

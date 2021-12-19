@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
@@ -12,7 +13,7 @@ import (
 
 // Records contains model.ObjectManifest for each object: branch, config, row.
 type Records struct {
-	naming Naming
+	naming *naming.Registry
 	SortBy string
 
 	lock    *sync.Mutex
@@ -21,13 +22,9 @@ type Records struct {
 	changed bool
 }
 
-type Naming interface {
-	Attach(key model.Key, path model.PathInProject)
-}
-
-func NewRecords(naming Naming, sortBy string) *Records {
+func NewRecords(sortBy string) *Records {
 	return &Records{
-		naming:  naming,
+		naming:  naming.NewRegistry(),
 		SortBy:  sortBy,
 		lock:    &sync.Mutex{},
 		all:     orderedmap.New(),
@@ -106,6 +103,10 @@ func (r *Records) SortRecords() {
 	})
 }
 
+func (r *Records) NamingRegistry() *naming.Registry {
+	return r.naming
+}
+
 func (r *Records) IsChanged() bool {
 	return r.changed
 }
@@ -181,8 +182,10 @@ func (r *Records) PersistRecord(record model.ObjectManifest) error {
 		}
 	}
 
-	// Attach record to the Naming
-	r.naming.Attach(record.Key(), record.GetPathInProject())
+	// Attach record to the NamingRegistry
+	if err := r.naming.Attach(record.Key(), record.GetPathInProject()); err != nil {
+		return err
+	}
 
 	r.lock.Lock()
 	defer r.lock.Unlock()

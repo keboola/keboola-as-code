@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
 const (
@@ -23,13 +22,6 @@ const (
 	FileKindNativeSharedCode  = `nativeSharedCode`
 	FileKindGitKeep           = `gitkeep`
 )
-
-type MapperContext struct {
-	Logger log.Logger
-	Fs     filesystem.Fs
-	Naming *Naming
-	State  *State
-}
 
 type ObjectFiles struct {
 	Files []*objectFile

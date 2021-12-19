@@ -4,12 +4,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
+	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 )
 
 type Options struct {
-	Naming          *model.Naming
+	Naming          naming.Template
 	AllowedBranches model.AllowedBranches
 }
 
@@ -19,7 +20,7 @@ type dependencies interface {
 	StorageApi() (*remote.StorageApi, error)
 }
 
-func Run(o Options, d dependencies) (*manifest.Manifest, error) {
+func Run(o Options, d dependencies) (*projectManifest.Manifest, error) {
 	logger := d.Logger()
 
 	// Target dir must be empty
@@ -33,18 +34,19 @@ func Run(o Options, d dependencies) (*manifest.Manifest, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	// Create
-	projectManifest := manifest.New(storageApi.ProjectId(), storageApi.Host())
+	manifest := projectManifest.New(storageApi.ProjectId(), storageApi.Host())
 
 	// Configure
-	projectManifest.SetNaming(o.Naming)
-	projectManifest.SetAllowedBranches(o.AllowedBranches)
+	manifest.SetNamingTemplate(o.Naming)
+	manifest.SetAllowedBranches(o.AllowedBranches)
 
 	// Save
-	if err = projectManifest.Save(emptyDir); err != nil {
+	if err = manifest.Save(emptyDir); err != nil {
 		return nil, err
 	}
 
 	logger.Infof("Created manifest file \"%s\".", projectManifest.Path())
-	return projectManifest, nil
+	return manifest, nil
 }

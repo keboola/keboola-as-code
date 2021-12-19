@@ -39,7 +39,7 @@ func Run(o Options, d dependencies) (err error) {
 
 	// Validate schemas
 	if o.ValidateJsonSchema {
-		if err := schema.ValidateSchemas(projectState); err != nil {
+		if err := schema.ValidateSchemas(projectState.State); err != nil {
 			errors.Append(err)
 		}
 	}

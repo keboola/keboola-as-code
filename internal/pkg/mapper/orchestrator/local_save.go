@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
@@ -17,7 +18,7 @@ func (m *orchestratorMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) e
 	}
 
 	writer := &localWriter{
-		MapperContext:   m.MapperContext,
+		Context:         m.Context,
 		LocalSaveRecipe: recipe,
 		config:          recipe.Object.(*model.Config),
 	}
@@ -26,13 +27,13 @@ func (m *orchestratorMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) e
 }
 
 type localWriter struct {
-	model.MapperContext
+	mapper.Context
 	*model.LocalSaveRecipe
 	config *model.Config
 }
 
 func (w *localWriter) save() {
-	phasesDir := w.Naming.PhasesDir(w.ObjectManifest.Path())
+	phasesDir := w.NamingGenerator.PhasesDir(w.ObjectManifest.Path())
 
 	// Generate ".gitkeep" to preserve the "phases" directory, even if there are no phases.
 	w.Files.
@@ -95,7 +96,7 @@ func (w *localWriter) savePhase(phase *model.Phase, allPhases []*model.Phase) er
 
 	// Create file
 	file := filesystem.
-		NewJsonFile(filesystem.Join(w.Naming.PhaseFilePath(phase)), phaseContent).
+		NewJsonFile(filesystem.Join(w.NamingGenerator.PhaseFilePath(phase)), phaseContent).
 		SetDescription(`phase config file`)
 	w.Files.
 		Add(file).
@@ -164,7 +165,7 @@ func (w *localWriter) saveTask(task *model.Task) error {
 
 	// Create file
 	file := filesystem.
-		NewJsonFile(filesystem.Join(w.Naming.TaskFilePath(task)), taskContent).
+		NewJsonFile(filesystem.Join(w.NamingGenerator.TaskFilePath(task)), taskContent).
 		SetDescription(`task config file`)
 	w.Files.
 		Add(file).

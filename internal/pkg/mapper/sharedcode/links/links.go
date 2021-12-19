@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/local"
+	mapperPkg "github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode/helper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -20,17 +21,17 @@ const (
 
 // mapper replaces "shared_code_id" with "shared_code_path" in local fs.
 type mapper struct {
-	model.MapperContext
+	mapperPkg.Context
 	*helper.SharedCodeHelper
 	localManager *local.Manager
 	idRegexp     *regexp.Regexp
 	pathRegexp   *regexp.Regexp
 }
 
-func NewMapper(localManager *local.Manager, context model.MapperContext) *mapper {
+func NewMapper(localManager *local.Manager, context mapperPkg.Context) *mapper {
 	return &mapper{
-		MapperContext:    context,
-		SharedCodeHelper: helper.New(context.State, context.Naming),
+		Context:          context,
+		SharedCodeHelper: helper.New(context.State, context.NamingRegistry),
 		localManager:     localManager,
 		idRegexp:         idRegexp(),
 		pathRegexp:       pathRegexp(),

@@ -67,7 +67,7 @@ func (m *mapper) onRowLocalLoad(config *model.Config, row *model.ConfigRow, reci
 	}
 
 	// Load file
-	codeFilePath := m.Naming.SharedCodeFilePath(recipe.Path(), config.SharedCode.Target)
+	codeFilePath := m.NamingGenerator.SharedCodeFilePath(recipe.Path(), config.SharedCode.Target)
 	codeFile, err := m.Fs.ReadFile(codeFilePath, `shared code`)
 	if err != nil {
 		return err

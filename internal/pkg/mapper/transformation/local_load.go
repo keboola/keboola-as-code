@@ -5,7 +5,9 @@ import (
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -21,10 +23,10 @@ func (m *transformationMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) 
 
 	// Create local loader
 	l := &localLoader{
-		MapperContext:   m.MapperContext,
+		Context:         m.Context,
 		LocalLoadRecipe: recipe,
 		config:          recipe.Object.(*model.Config),
-		blocksDir:       m.Naming.BlocksDir(recipe.ObjectManifest.Path()),
+		blocksDir:       m.Context.NamingGenerator.BlocksDir(recipe.ObjectManifest.Path()),
 		errors:          utils.NewMultiError(),
 	}
 
@@ -33,7 +35,7 @@ func (m *transformationMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) 
 }
 
 type localLoader struct {
-	model.MapperContext
+	mapper.Context
 	*model.LocalLoadRecipe
 	config    *model.Config
 	blocksDir string
@@ -120,7 +122,7 @@ func (l *localLoader) addScripts(code *model.Code) {
 	}
 
 	// Load file content
-	codeFilePath := l.Naming.CodeFilePath(code)
+	codeFilePath := l.NamingGenerator.CodeFilePath(code)
 	file, err := l.Fs.ReadFile(codeFilePath, "code file")
 	if err != nil {
 		l.errors.Append(err)
@@ -136,7 +138,7 @@ func (l *localLoader) addScripts(code *model.Code) {
 }
 
 func (l *localLoader) loadBlockMetaFile(block *model.Block) {
-	path := l.Naming.MetaFilePath(block.Path())
+	path := l.NamingGenerator.MetaFilePath(block.Path())
 	desc := "block metadata"
 	if file, err := l.Fs.ReadJsonFieldsTo(path, desc, block, model.MetaFileFieldsTag); err != nil {
 		l.errors.Append(err)
@@ -149,7 +151,7 @@ func (l *localLoader) loadBlockMetaFile(block *model.Block) {
 }
 
 func (l *localLoader) loadCodeMetaFile(code *model.Code) {
-	path := l.Naming.MetaFilePath(code.Path())
+	path := l.NamingGenerator.MetaFilePath(code.Path())
 	desc := "code metadata"
 	if file, err := l.Fs.ReadJsonFieldsTo(path, desc, code, model.MetaFileFieldsTag); err != nil {
 		l.errors.Append(err)
@@ -192,7 +194,7 @@ func (l *localLoader) codeDirs(block *model.Block) []string {
 func (l *localLoader) codeFileName(code *model.Code) string {
 	// Search for code file, glob "code.*"
 	// File can use an old naming, so the file extension is not specified
-	matches, err := l.Fs.Glob(filesystem.Join(code.Path(), model.CodeFileName+`.*`))
+	matches, err := l.Fs.Glob(filesystem.Join(code.Path(), naming.CodeFileName+`.*`))
 	if err != nil {
 		l.errors.Append(fmt.Errorf(`cannot search for code file in %s": %w`, code.Path(), err))
 		return ""

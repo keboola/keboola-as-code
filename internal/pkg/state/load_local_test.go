@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
@@ -322,7 +323,7 @@ func complexLocalExpectedBranches() []*model.BranchState {
 						"",
 						"123-branch",
 					),
-					RelatedPaths: []string{model.MetaFile, model.DescriptionFile},
+					RelatedPaths: []string{naming.MetaFile, naming.DescriptionFile},
 				},
 			},
 		},
@@ -348,7 +349,7 @@ func complexLocalExpectedBranches() []*model.BranchState {
 						"",
 						"main",
 					),
-					RelatedPaths: []string{model.MetaFile, model.DescriptionFile},
+					RelatedPaths: []string{naming.MetaFile, naming.DescriptionFile},
 				},
 			},
 		},
@@ -398,7 +399,7 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 						"123-branch",
 						"extractor/keboola.ex-db-mysql/896-tables",
 					),
-					RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
+					RelatedPaths: []string{naming.MetaFile, naming.ConfigFile, naming.DescriptionFile},
 				},
 			},
 		},
@@ -443,7 +444,7 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 						"main",
 						"extractor/ex-generic-v2/456-todos",
 					),
-					RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
+					RelatedPaths: []string{naming.MetaFile, naming.ConfigFile, naming.DescriptionFile},
 				},
 			},
 		},
@@ -488,7 +489,7 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 						"123-branch",
 						"extractor/ex-generic-v2/456-todos",
 					),
-					RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
+					RelatedPaths: []string{naming.MetaFile, naming.ConfigFile, naming.DescriptionFile},
 				},
 			},
 		},
@@ -533,7 +534,7 @@ func complexLocalExpectedConfigRows() []*model.ConfigRowState {
 						"123-branch/extractor/keboola.ex-db-mysql/896-tables",
 						"rows/56-disabled",
 					),
-					RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
+					RelatedPaths: []string{naming.MetaFile, naming.ConfigFile, naming.DescriptionFile},
 				},
 			},
 		},
@@ -573,7 +574,7 @@ func complexLocalExpectedConfigRows() []*model.ConfigRowState {
 						"123-branch/extractor/keboola.ex-db-mysql/896-tables",
 						"rows/34-test-view",
 					),
-					RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
+					RelatedPaths: []string{naming.MetaFile, naming.ConfigFile, naming.DescriptionFile},
 				},
 			},
 		},
@@ -613,7 +614,7 @@ func complexLocalExpectedConfigRows() []*model.ConfigRowState {
 						"123-branch/extractor/keboola.ex-db-mysql/896-tables",
 						"rows/12-users",
 					),
-					RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
+					RelatedPaths: []string{naming.MetaFile, naming.ConfigFile, naming.DescriptionFile},
 				},
 			},
 		},

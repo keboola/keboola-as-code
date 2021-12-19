@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cast"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
@@ -27,12 +28,12 @@ func (m *orchestratorMapper) OnRemoteChange(changes *model.RemoteChanges) error 
 
 func (m *orchestratorMapper) onRemoteLoad(config *model.Config, manifest *model.ConfigManifest, allObjects *model.StateObjects) {
 	loader := &remoteLoader{
-		MapperContext: m.MapperContext,
-		phasesSorter:  newPhasesSorter(),
-		allObjects:    allObjects,
-		config:        config,
-		manifest:      manifest,
-		errors:        utils.NewMultiError(),
+		Context:      m.Context,
+		phasesSorter: newPhasesSorter(),
+		allObjects:   allObjects,
+		config:       config,
+		manifest:     manifest,
+		errors:       utils.NewMultiError(),
 	}
 	if err := loader.load(); err != nil {
 		// Convert errors to warning
@@ -41,7 +42,7 @@ func (m *orchestratorMapper) onRemoteLoad(config *model.Config, manifest *model.
 }
 
 type remoteLoader struct {
-	model.MapperContext
+	mapper.Context
 	*phasesSorter
 	allObjects *model.StateObjects
 	config     *model.Config
@@ -94,18 +95,18 @@ func (l *remoteLoader) load() error {
 
 	// Set paths if parent path is set
 	if l.manifest.Path() != "" {
-		phasesDir := l.Naming.PhasesDir(l.manifest.Path())
+		phasesDir := l.NamingGenerator.PhasesDir(l.manifest.Path())
 		for _, phase := range l.config.Orchestration.Phases {
-			if path, found := l.Naming.GetCurrentPath(phase.Key()); found {
+			if path, found := l.NamingRegistry.PathByKey(phase.Key()); found {
 				phase.PathInProject = path
 			} else {
-				phase.PathInProject = l.Naming.PhasePath(phasesDir, phase)
+				phase.PathInProject = l.NamingGenerator.PhasePath(phasesDir, phase)
 			}
 			for _, task := range phase.Tasks {
-				if path, found := l.Naming.GetCurrentPath(task.Key()); found {
+				if path, found := l.NamingRegistry.PathByKey(task.Key()); found {
 					task.PathInProject = path
 				} else {
-					task.PathInProject = l.Naming.TaskPath(phase.Path(), task)
+					task.PathInProject = l.NamingGenerator.TaskPath(phase.Path(), task)
 				}
 			}
 		}

@@ -1,13 +1,13 @@
 package relations
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 )
 
 type relationsMapper struct {
-	model.MapperContext
+	mapper.Context
 }
 
-func NewMapper(context model.MapperContext) *relationsMapper {
-	return &relationsMapper{MapperContext: context}
+func NewMapper(context mapper.Context) *relationsMapper {
+	return &relationsMapper{Context: context}
 }

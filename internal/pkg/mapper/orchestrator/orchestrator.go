@@ -2,16 +2,17 @@ package orchestrator
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 type orchestratorMapper struct {
-	model.MapperContext
+	mapper.Context
 	localManager *local.Manager
 }
 
-func NewMapper(localManager *local.Manager, context model.MapperContext) *orchestratorMapper {
-	return &orchestratorMapper{MapperContext: context, localManager: localManager}
+func NewMapper(localManager *local.Manager, context mapper.Context) *orchestratorMapper {
+	return &orchestratorMapper{Context: context, localManager: localManager}
 }
 
 func (m *orchestratorMapper) isOrchestratorConfigKey(key model.Key) (bool, error) {

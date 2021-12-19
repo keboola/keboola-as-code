@@ -16,7 +16,7 @@ func TestSharedCodeLocalSave(t *testing.T) {
 	targetComponentId := model.ComponentId(`keboola.python-transformation-v2`)
 	context, logs, _, rowState := createInternalSharedCode(t, targetComponentId)
 	recipe := fixtures.NewLocalSaveRecipe(rowState.Manifest(), rowState.Remote)
-	codeFilePath := filesystem.Join(context.Naming.SharedCodeFilePath(recipe.ObjectManifest.Path(), targetComponentId))
+	codeFilePath := filesystem.Join(context.NamingGenerator.SharedCodeFilePath(recipe.ObjectManifest.Path(), targetComponentId))
 
 	// Create dir
 	assert.NoError(t, context.Fs.Mkdir(filesystem.Dir(codeFilePath)))

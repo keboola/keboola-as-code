@@ -6,10 +6,11 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-func CreateSharedCode(t *testing.T, state *model.State, naming *model.Naming) (model.ConfigKey, []model.ConfigRowKey) {
+func CreateSharedCode(t *testing.T, state *model.State, naming *naming.Registry) (model.ConfigKey, []model.ConfigRowKey) {
 	t.Helper()
 
 	// Branch
@@ -23,7 +24,7 @@ func CreateSharedCode(t *testing.T, state *model.State, naming *model.Naming) (m
 		Remote: &model.Branch{BranchKey: branchKey},
 	}
 	assert.NoError(t, state.Set(branchState))
-	naming.Attach(branchState.Key(), branchState.PathInProject)
+	assert.NoError(t, naming.Attach(branchState.Key(), branchState.PathInProject))
 
 	// Shared code
 	sharedCodeKey := model.ConfigKey{
@@ -54,7 +55,7 @@ func CreateSharedCode(t *testing.T, state *model.State, naming *model.Naming) (m
 		},
 	}
 	assert.NoError(t, state.Set(sharedCodeState))
-	naming.Attach(sharedCodeState.Key(), sharedCodeState.PathInProject)
+	assert.NoError(t, naming.Attach(sharedCodeState.Key(), sharedCodeState.PathInProject))
 
 	// Shared code row 1
 	row1Key := model.ConfigRowKey{
@@ -74,7 +75,7 @@ func CreateSharedCode(t *testing.T, state *model.State, naming *model.Naming) (m
 		Remote: &model.ConfigRow{ConfigRowKey: row1Key, Content: orderedmap.New()},
 	}
 	assert.NoError(t, state.Set(row1State))
-	naming.Attach(row1State.Key(), row1State.PathInProject)
+	assert.NoError(t, naming.Attach(row1State.Key(), row1State.PathInProject))
 
 	// Shared code row 2
 	row2Key := model.ConfigRowKey{
@@ -94,7 +95,7 @@ func CreateSharedCode(t *testing.T, state *model.State, naming *model.Naming) (m
 		Remote: &model.ConfigRow{ConfigRowKey: row2Key, Content: orderedmap.New()},
 	}
 	assert.NoError(t, state.Set(row2State))
-	naming.Attach(row2State.Key(), row2State.PathInProject)
+	assert.NoError(t, naming.Attach(row2State.Key(), row2State.PathInProject))
 
 	return sharedCodeKey, []model.ConfigRowKey{row1Key, row2Key}
 }

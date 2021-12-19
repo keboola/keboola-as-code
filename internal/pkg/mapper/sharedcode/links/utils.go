@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 )
 
 func (m *mapper) matchId(script string) model.RowId {
@@ -18,7 +19,7 @@ func (m *mapper) matchId(script string) model.RowId {
 }
 
 func (m *mapper) matchPath(script string, componentId model.ComponentId) string {
-	comment := m.Naming.CodeFileComment(m.Naming.CodeFileExt(componentId))
+	comment := naming.CodeFileComment(naming.CodeFileExt(componentId))
 	script = strings.TrimSpace(script)
 	script = strings.TrimPrefix(script, comment)
 	script = strings.TrimSpace(script)
@@ -42,7 +43,7 @@ func (m *mapper) formatPath(path string, componentId model.ComponentId) string {
 	if ok := m.pathRegexp.MatchString(placeholder); !ok {
 		panic(fmt.Errorf(`shared code path "%s" is invalid`, path))
 	}
-	comment := m.Naming.CodeFileComment(m.Naming.CodeFileExt(componentId))
+	comment := naming.CodeFileComment(naming.CodeFileExt(componentId))
 	return comment + ` ` + placeholder
 }
 

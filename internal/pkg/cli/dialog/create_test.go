@@ -11,7 +11,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
@@ -87,8 +87,8 @@ func TestAskCreateConfig(t *testing.T) {
 	)))
 
 	// Create branch files
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filesystem.Join(`main`, model.MetaFile), `{"name": "Main"}`)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filesystem.Join(`main`, model.DescriptionFile), ``)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filesystem.Join(`main`, naming.MetaFile), `{"name": "Main"}`)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filesystem.Join(`main`, naming.DescriptionFile), ``)))
 
 	// Dependencies
 	var err error
@@ -188,14 +188,14 @@ func TestAskCreateRow(t *testing.T) {
 	)))
 
 	// Create branch files
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filesystem.Join(`main`, model.MetaFile), `{"name": "Main"}`)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filesystem.Join(`main`, model.DescriptionFile), ``)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filesystem.Join(`main`, naming.MetaFile), `{"name": "Main"}`)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filesystem.Join(`main`, naming.DescriptionFile), ``)))
 
 	// Create config files
 	configDir := filesystem.Join(`main`, `extractor`, `keboola.ex-db-mysql`, `my-config`)
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filesystem.Join(configDir, model.MetaFile), `{"name": "My Config"}`)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filesystem.Join(configDir, model.ConfigFile), `{}`)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filesystem.Join(configDir, model.DescriptionFile), ``)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filesystem.Join(configDir, naming.MetaFile), `{"name": "My Config"}`)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filesystem.Join(configDir, naming.ConfigFile), `{}`)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filesystem.Join(configDir, naming.DescriptionFile), ``)))
 
 	// Dependencies
 	var err error

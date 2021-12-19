@@ -63,20 +63,20 @@ func (m *transformationMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe
 
 	// Set paths if parent path is set
 	if recipe.Path() != "" {
-		blocksDir := m.Naming.BlocksDir(recipe.Path())
+		blocksDir := m.NamingGenerator.BlocksDir(recipe.Path())
 		for _, block := range config.Transformation.Blocks {
-			if path, found := m.Naming.GetCurrentPath(block.Key()); found {
+			if path, found := m.NamingRegistry.PathByKey(block.Key()); found {
 				block.PathInProject = path
 			} else {
-				block.PathInProject = m.Naming.BlockPath(blocksDir, block)
+				block.PathInProject = m.NamingGenerator.BlockPath(blocksDir, block)
 			}
 			for _, code := range block.Codes {
-				if path, found := m.Naming.GetCurrentPath(code.Key()); found {
+				if path, found := m.NamingRegistry.PathByKey(code.Key()); found {
 					code.PathInProject = path
 				} else {
-					code.PathInProject = m.Naming.CodePath(block.Path(), code)
+					code.PathInProject = m.NamingGenerator.CodePath(block.Path(), code)
 				}
-				code.CodeFileName = m.Naming.CodeFileName(config.ComponentId)
+				code.CodeFileName = m.NamingGenerator.CodeFileName(config.ComponentId)
 			}
 		}
 	}

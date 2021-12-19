@@ -14,7 +14,7 @@ func TestRemoteSaveTranWithSharedCode(t *testing.T) {
 	mapperInst, context, logs := createMapper(t)
 
 	// Shared code config with rows
-	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, context.State, context.Naming)
+	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, context.State, context.NamingRegistry)
 
 	// Create transformation with shared code
 	transformation := createInternalTranWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, context)

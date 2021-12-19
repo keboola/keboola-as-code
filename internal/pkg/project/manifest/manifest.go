@@ -7,6 +7,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 )
 
 const (
@@ -27,10 +28,9 @@ func Path() string {
 }
 
 func New(projectId int, apiHost string) *Manifest {
-	n := model.DefaultNamingWithIds()
 	content := newContent(projectId, apiHost)
 	return &Manifest{
-		records: manifest.NewRecords(n, content.SortBy),
+		records: manifest.NewRecords(content.SortBy),
 		content: content,
 	}
 }
@@ -45,7 +45,7 @@ func Load(fs filesystem.Fs) (*Manifest, error) {
 	content.Version = build.MajorVersion
 
 	// Create manifest
-	m := newManifest(content.Naming, content)
+	m := newManifest(content)
 
 	// Load records
 	if err := m.records.SetRecords(m.content.allRecords()); err != nil {
@@ -70,6 +70,10 @@ func (m *Manifest) Path() string {
 	return Path()
 }
 
+func (m *Manifest) Filter() model.Filter {
+	return m.content.Filter
+}
+
 func (m *Manifest) ApiHost() string {
 	return m.content.Project.ApiHost
 }
@@ -87,12 +91,12 @@ func (m *Manifest) SetSortBy(sortBy string) {
 	m.records.SortBy = sortBy
 }
 
-func (m *Manifest) Naming() *model.Naming {
+func (m *Manifest) NamingTemplate() naming.Template {
 	return m.content.Naming
 }
 
-func (m *Manifest) SetNaming(naming *model.Naming) {
-	m.content.Naming = naming
+func (m *Manifest) SetNamingTemplate(v naming.Template) {
+	m.content.Naming = v
 }
 
 func (m *Manifest) AllowedBranches() model.AllowedBranches {
@@ -117,9 +121,9 @@ func (m *Manifest) IsObjectIgnored(object model.Object) bool {
 	return m.content.Filter.IsObjectIgnored(object)
 }
 
-func newManifest(naming manifest.Naming, content *Content) *Manifest {
+func newManifest(content *Content) *Manifest {
 	return &Manifest{
-		records: manifest.NewRecords(naming, content.SortBy),
+		records: manifest.NewRecords(content.SortBy),
 		content: content,
 	}
 }

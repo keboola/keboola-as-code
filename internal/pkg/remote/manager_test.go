@@ -18,6 +18,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
@@ -180,13 +181,7 @@ func newTestRemoteUOW(t *testing.T) (*testMapper, *remote.UnitOfWork, *httpmock.
 	mappers := []interface{}{testMapperInst}
 	storageApi, httpTransport, _ := testapi.NewMockedStorageApi()
 	localManager, state := newTestLocalManager(t, mappers)
-	mapperContext := model.MapperContext{
-		Logger: log.NewNopLogger(),
-		Fs:     localManager.Fs(),
-		Naming: localManager.Naming(),
-		State:  state,
-	}
-	mapperInst := mapper.New(mapperContext).AddMapper(mappers...)
+	mapperInst := mapper.New().AddMapper(mappers...)
 
 	remoteManager := remote.NewManager(localManager, storageApi, state, mapperInst)
 	return testMapperInst, remoteManager.NewUnitOfWork(context.Background(), `change desc`), httpTransport, state
@@ -202,6 +197,9 @@ func newTestLocalManager(t *testing.T, mappers []interface{}) (*local.Manager, *
 	m := manifest.New(1, "foo.bar")
 	components := model.NewComponentsMap(testapi.NewMockedComponentsProvider())
 	state := model.NewState(log.NewNopLogger(), fs, components, model.SortByPath)
-	mapperContext := model.MapperContext{Logger: logger, Fs: fs, Naming: m.Naming(), State: state}
-	return local.NewManager(logger, fs, m, state, mapper.New(mapperContext).AddMapper(mappers...)), state
+
+	namingTemplate := naming.TemplateWithIds()
+	namingRegistry := naming.NewRegistry()
+	namingGenerator := naming.NewGenerator(namingTemplate, namingRegistry)
+	return local.NewManager(logger, fs, m, namingGenerator, state, mapper.New().AddMapper(mappers...)), state
 }

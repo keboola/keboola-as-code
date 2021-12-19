@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
@@ -73,7 +74,7 @@ func TestLoadState(t *testing.T) {
 						"",
 						"main",
 					),
-					RelatedPaths: []string{model.MetaFile, model.DescriptionFile},
+					RelatedPaths: []string{naming.MetaFile, naming.DescriptionFile},
 				},
 			},
 		},
@@ -131,7 +132,7 @@ func TestLoadState(t *testing.T) {
 						"main",
 						"extractor/ex-generic-v2/456-todos",
 					),
-					RelatedPaths: []string{model.MetaFile, model.ConfigFile, model.DescriptionFile},
+					RelatedPaths: []string{naming.MetaFile, naming.ConfigFile, naming.DescriptionFile},
 				},
 			},
 		},

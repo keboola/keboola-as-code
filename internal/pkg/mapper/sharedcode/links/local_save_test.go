@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
@@ -17,7 +18,7 @@ func TestLocalSaveTranWithSharedCode(t *testing.T) {
 	mapperInst, context, logs := createMapper(t)
 
 	// Shared code config with rows
-	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, context.State, context.Naming)
+	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, context.State, context.NamingRegistry)
 
 	// Create transformation with shared code
 	transformation := createInternalTranWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, context)
@@ -72,7 +73,7 @@ func TestLocalSaveTranWithSharedCode_SharedCodeConfigNotFound(t *testing.T) {
 	mapperInst, context, logs := createMapper(t)
 
 	// Shared code config with rows
-	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, context.State, context.Naming)
+	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, context.State, context.NamingRegistry)
 
 	// Create transformation with shared code
 	transformation := createInternalTranWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, context)
@@ -133,7 +134,7 @@ func TestLocalSaveTranWithSharedCode_SharedCodeRowNotFound(t *testing.T) {
 	mapperInst, context, logs := createMapper(t)
 
 	// Shared code config with rows
-	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, context.State, context.Naming)
+	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, context.State, context.NamingRegistry)
 
 	// Create transformation with shared code
 	transformation := createInternalTranWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, context)
@@ -194,7 +195,7 @@ WARN  Warning:
 	}, transformation.Local.Transformation.Blocks)
 }
 
-func createInternalTranWithSharedCode(t *testing.T, sharedCodeKey model.ConfigKey, sharedCodeRowsKeys []model.ConfigRowKey, context model.MapperContext) *model.ConfigState {
+func createInternalTranWithSharedCode(t *testing.T, sharedCodeKey model.ConfigKey, sharedCodeRowsKeys []model.ConfigRowKey, context mapper.Context) *model.ConfigState {
 	t.Helper()
 
 	key := model.ConfigKey{

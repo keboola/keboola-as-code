@@ -50,7 +50,7 @@ func TestRename(t *testing.T) {
 
 	// NewPlan
 	state := model.NewState(logger, fs, model.NewComponentsMap(nil), model.SortByPath)
-	localManager := local.NewManager(logger, fs, manifest, state, mapper.New(model.MapperContext{}))
+	localManager := local.NewManager(logger, fs, manifest, nil, state, mapper.New())
 	executor := newRenameExecutor(context.Background(), localManager, plan)
 	assert.NoError(t, executor.invoke())
 	logsStr := logger.String()
@@ -119,7 +119,7 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 
 	// NewPlan
 	state := model.NewState(logger, fs, model.NewComponentsMap(nil), model.SortByPath)
-	localManager := local.NewManager(logger, fs, manifest, state, mapper.New(model.MapperContext{}))
+	localManager := local.NewManager(logger, fs, manifest, nil, state, mapper.New())
 	executor := newRenameExecutor(context.Background(), localManager, plan)
 	err = executor.invoke()
 	assert.Error(t, err)

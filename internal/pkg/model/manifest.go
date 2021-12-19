@@ -62,11 +62,6 @@ type Paths struct {
 	RelatedPaths []string `json:"-"` // not serialized, slice is generated when the object is loaded
 }
 
-type Project struct {
-	Id      int    `json:"id" validate:"required"`
-	ApiHost string `json:"apiHost" validate:"required,hostname"`
-}
-
 type BranchManifest struct {
 	RecordState `json:"-"`
 	BranchKey

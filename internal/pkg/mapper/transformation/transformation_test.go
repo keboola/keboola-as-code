@@ -7,12 +7,14 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-func createTestFixtures(t *testing.T, componentId string) (model.MapperContext, *model.ConfigState) {
+func createTestFixtures(t *testing.T, componentId string) (mapper.Context, *model.ConfigState) {
 	t.Helper()
 
 	configKey := model.ConfigKey{
@@ -42,6 +44,9 @@ func createTestFixtures(t *testing.T, componentId string) (model.MapperContext, 
 	assert.NoError(t, err)
 
 	state := model.NewState(log.NewNopLogger(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
-	context := model.MapperContext{Logger: logger, Fs: fs, Naming: model.DefaultNamingWithIds(), State: state}
+	namingTemplate := naming.TemplateWithIds()
+	namingRegistry := naming.NewRegistry()
+	namingGenerator := naming.NewGenerator(namingTemplate, namingRegistry)
+	context := mapper.Context{Logger: logger, Fs: fs, NamingGenerator: namingGenerator, NamingRegistry: namingRegistry, State: state}
 	return context, configState
 }

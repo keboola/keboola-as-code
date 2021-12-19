@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
@@ -18,7 +19,7 @@ func TestMapAfterLocalLoad(t *testing.T) {
 	target1, target2, target3 := createTargetConfigs(t, context)
 
 	// Local files
-	phasesDir := context.Naming.PhasesDir(orchestratorConfigState.Path())
+	phasesDir := context.NamingGenerator.PhasesDir(orchestratorConfigState.Path())
 	files := []*filesystem.File{
 		filesystem.
 			NewFile(
@@ -211,7 +212,7 @@ func TestMapAfterLocalLoadError(t *testing.T) {
 	orchestratorConfigState := createLocalLoadFixtures(t, context)
 
 	// Local files
-	phasesDir := context.Naming.PhasesDir(orchestratorConfigState.Path())
+	phasesDir := context.NamingGenerator.PhasesDir(orchestratorConfigState.Path())
 	files := []*filesystem.File{
 		filesystem.
 			NewFile(
@@ -266,7 +267,7 @@ func TestMapAfterLocalLoadDepsCycle(t *testing.T) {
 	createTargetConfigs(t, context)
 
 	// Local files
-	phasesDir := context.Naming.PhasesDir(orchestratorConfigState.Path())
+	phasesDir := context.NamingGenerator.PhasesDir(orchestratorConfigState.Path())
 	files := []*filesystem.File{
 		filesystem.
 			NewFile(
@@ -313,7 +314,7 @@ invalid orchestrator config "branch/other/orchestrator":
 	assert.Equal(t, strings.Trim(expectedError, "\n"), err.Error())
 }
 
-func createLocalLoadFixtures(t *testing.T, context model.MapperContext) *model.ConfigState {
+func createLocalLoadFixtures(t *testing.T, context mapper.Context) *model.ConfigState {
 	t.Helper()
 
 	// Branch
@@ -330,7 +331,7 @@ func createLocalLoadFixtures(t *testing.T, context model.MapperContext) *model.C
 		Local: &model.Branch{BranchKey: branchKey},
 	}
 	assert.NoError(t, context.State.Set(branchState))
-	context.Naming.Attach(branchState.Key(), branchState.PathInProject)
+	assert.NoError(t, context.NamingRegistry.Attach(branchState.Key(), branchState.PathInProject))
 
 	// Orchestrator config
 	configKey := model.ConfigKey{
@@ -348,7 +349,7 @@ func createLocalLoadFixtures(t *testing.T, context model.MapperContext) *model.C
 		Local: &model.Config{ConfigKey: configKey, Content: orderedmap.New()},
 	}
 	assert.NoError(t, context.State.Set(configState))
-	context.Naming.Attach(configState.Key(), configState.PathInProject)
+	assert.NoError(t, context.NamingRegistry.Attach(configState.Key(), configState.PathInProject))
 
 	return configState
 }

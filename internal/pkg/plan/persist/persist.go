@@ -122,7 +122,7 @@ func (b *persistPlanBuilder) tryAdd(fullPath string, parent model.RecordPaths) b
 
 func (b *persistPlanBuilder) tryAddConfig(path model.PathInProject, parentKey model.Key) *newObjectAction {
 	// Is config path matching naming template?
-	componentId, err := b.Naming().MatchConfigPath(parentKey, path)
+	componentId, err := b.PathMatcher().MatchConfigPath(parentKey, path)
 	if err != nil {
 		b.errors.Append(err)
 		return nil
@@ -157,7 +157,7 @@ func (b *persistPlanBuilder) tryAddConfigRow(path model.PathInProject, parentKey
 		return nil
 	}
 
-	if !b.Naming().MatchConfigRowPath(component, path) {
+	if !b.PathMatcher().MatchConfigRowPath(component, path) {
 		return nil
 	}
 

@@ -11,6 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
@@ -429,7 +430,7 @@ func createManifest(t *testing.T) *manifest.Manifest {
 	t.Helper()
 	m := manifest.New(1, "connection.keboola.com")
 	m.SetSortBy(model.SortByPath)
-	m.SetNaming(model.DefaultNamingWithoutIds())
+	m.SetNamingTemplate(naming.TemplateWithoutIds())
 	return m
 }
 

@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 )
@@ -65,14 +66,7 @@ func TestManifestLoad(t *testing.T) {
 		assert.NotNil(t, manifest)
 		assert.NoError(t, err)
 
-		// Assert naming (without internal fields)
-		assert.Equal(t, c.data.Naming.Branch, manifest.content.Naming.Branch, c.name)
-		assert.Equal(t, c.data.Naming.Config, manifest.content.Naming.Config, c.name)
-		assert.Equal(t, c.data.Naming.ConfigRow, manifest.content.Naming.ConfigRow, c.name)
-
 		// Assert
-		c.data.Naming = nil
-		manifest.content.Naming = nil
 		assert.Equal(t, c.data, manifest.content, c.name)
 	}
 }
@@ -108,7 +102,14 @@ func TestManifestValidateEmpty(t *testing.T) {
   - key="project.id", value="0", failed "required" validation
   - key="project.apiHost", value="", failed "required" validation
   - key="sortBy", value="", failed "oneof" validation
-  - key="naming", value="<nil>", failed "required" validation
+  - key="naming.branch", value="", failed "required" validation
+  - key="naming.config", value="", failed "required" validation
+  - key="naming.configRow", value="", failed "required" validation
+  - key="naming.schedulerConfig", value="", failed "required" validation
+  - key="naming.sharedCodeConfig", value="", failed "required" validation
+  - key="naming.sharedCodeConfigRow", value="", failed "required" validation
+  - key="naming.variablesConfig", value="", failed "required" validation
+  - key="naming.variablesValuesRow", value="", failed "required" validation
   - key="allowedBranches", value="[]", failed "required" validation`
 	assert.Equal(t, expected, err.Error())
 }
@@ -199,12 +200,12 @@ func minimalJson() string {
 func minimalStruct() *Content {
 	return &Content{
 		Version: 2,
-		Project: model.Project{
+		Project: Project{
 			Id:      12345,
 			ApiHost: "foo.bar",
 		},
 		SortBy:   model.SortById,
-		Naming:   model.DefaultNamingWithIds(),
+		Naming:   naming.TemplateWithIds(),
 		Filter:   model.DefaultFilter(),
 		Branches: make([]*model.BranchManifest, 0),
 		Configs:  make([]*model.ConfigManifestWithRows, 0),
@@ -310,12 +311,12 @@ func fullJson() string {
 func fullStruct() *Content {
 	return &Content{
 		Version: 2,
-		Project: model.Project{
+		Project: Project{
 			Id:      12345,
 			ApiHost: "foo.bar",
 		},
 		SortBy: model.SortById,
-		Naming: model.DefaultNamingWithIds(),
+		Naming: naming.TemplateWithIds(),
 		Filter: model.Filter{
 			AllowedBranches:   model.AllowedBranches{"foo", "bar"},
 			IgnoredComponents: model.ComponentIds{"abc"},

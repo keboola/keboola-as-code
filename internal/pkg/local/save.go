@@ -60,7 +60,7 @@ func (w *modelWriter) createFiles() {
 	// meta.json
 	if metadata := utils.MapFromTaggedFields(model.MetaFileFieldsTag, w.Object); metadata != nil {
 		w.Files.
-			Add(filesystem.NewJsonFile(w.Naming().MetaFilePath(w.Path()), metadata)).
+			Add(filesystem.NewJsonFile(w.NamingGenerator().MetaFilePath(w.Path()), metadata)).
 			AddTag(model.FileTypeJson).
 			AddTag(model.FileKindObjectMeta)
 	}
@@ -68,7 +68,7 @@ func (w *modelWriter) createFiles() {
 	// config.json
 	if configuration := utils.MapFromOneTaggedField(model.ConfigFileFieldTag, w.Object); configuration != nil {
 		w.Files.
-			Add(filesystem.NewJsonFile(w.Naming().ConfigFilePath(w.Path()), configuration)).
+			Add(filesystem.NewJsonFile(w.NamingGenerator().ConfigFilePath(w.Path()), configuration)).
 			AddTag(model.FileTypeJson).
 			AddTag(model.FileKindObjectConfig)
 	}
@@ -76,7 +76,7 @@ func (w *modelWriter) createFiles() {
 	// description.md
 	if description, found := utils.StringFromOneTaggedField(model.DescriptionFileFieldTag, w.Object); found {
 		w.Files.
-			Add(filesystem.NewFile(w.Naming().DescriptionFilePath(w.Path()), strings.TrimRight(description, " \r\n\t")+"\n")).
+			Add(filesystem.NewFile(w.NamingGenerator().DescriptionFilePath(w.Path()), strings.TrimRight(description, " \r\n\t")+"\n")).
 			AddTag(model.FileTypeMarkdown).
 			AddTag(model.FileKindObjectDescription)
 	}

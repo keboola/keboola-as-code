@@ -58,7 +58,7 @@ func (l *modelLoader) loadFiles() {
 
 // loadMetaFile from meta.json.
 func (l *modelLoader) loadMetaFile() {
-	path := l.Naming().MetaFilePath(l.ObjectManifest.Path())
+	path := l.NamingGenerator().MetaFilePath(l.ObjectManifest.Path())
 	desc := l.ObjectManifest.Kind().Name + " metadata"
 	if file, err := l.fs.ReadJsonFieldsTo(path, desc, l.Object, model.MetaFileFieldsTag); err != nil {
 		l.errors.Append(err)
@@ -73,7 +73,7 @@ func (l *modelLoader) loadMetaFile() {
 // loadConfigFile from config.json.
 func (l *modelLoader) loadConfigFile() {
 	// config.json
-	path := l.Naming().ConfigFilePath(l.ObjectManifest.Path())
+	path := l.NamingGenerator().ConfigFilePath(l.ObjectManifest.Path())
 	desc := l.ObjectManifest.Kind().Name
 	if file, err := l.fs.ReadJsonMapTo(path, desc, l.Object, model.ConfigFileFieldTag); err != nil {
 		l.errors.Append(err)
@@ -87,7 +87,7 @@ func (l *modelLoader) loadConfigFile() {
 
 // loadDescriptionFile from description.md.
 func (l *modelLoader) loadDescriptionFile() {
-	path := l.Naming().DescriptionFilePath(l.ObjectManifest.Path())
+	path := l.NamingGenerator().DescriptionFilePath(l.ObjectManifest.Path())
 	desc := l.ObjectManifest.Kind().Name + " description"
 	if file, err := l.fs.ReadFileContentTo(path, desc, l.Object, model.DescriptionFileFieldTag); err != nil {
 		l.errors.Append(err)
