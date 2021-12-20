@@ -82,15 +82,6 @@ func (m *Manifest) ProjectId() int {
 	return m.content.Project.Id
 }
 
-func (m *Manifest) SortBy() string {
-	return m.content.SortBy
-}
-
-func (m *Manifest) SetSortBy(sortBy string) {
-	m.content.SortBy = sortBy
-	m.records.SortBy = sortBy
-}
-
 func (m *Manifest) NamingTemplate() naming.Template {
 	return m.content.Naming
 }
