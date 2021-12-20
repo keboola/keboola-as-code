@@ -15,7 +15,7 @@ func (m *Manager) createObject(key model.Key, name string) (model.Object, error)
 		if err != nil {
 			return nil, err
 		}
-		content, err := m.generateContent(component.Schema, component.EmptyConfig)
+		content, err := generateContent(component.Schema, component.EmptyConfig)
 		if err != nil {
 			return nil, err
 		}
@@ -29,7 +29,7 @@ func (m *Manager) createObject(key model.Key, name string) (model.Object, error)
 		if err != nil {
 			return nil, err
 		}
-		content, err := m.generateContent(component.SchemaRow, component.EmptyConfigRow)
+		content, err := generateContent(component.SchemaRow, component.EmptyConfigRow)
 		if err != nil {
 			return nil, err
 		}
@@ -43,7 +43,7 @@ func (m *Manager) createObject(key model.Key, name string) (model.Object, error)
 	}
 }
 
-func (m *Manager) generateContent(schemaDef []byte, defaultConfig *orderedmap.OrderedMap) (*orderedmap.OrderedMap, error) {
+func generateContent(schemaDef []byte, defaultConfig *orderedmap.OrderedMap) (*orderedmap.OrderedMap, error) {
 	// Use default configuration if defined in the component's metadata
 	if len(defaultConfig.Keys()) > 0 {
 		return defaultConfig, nil
