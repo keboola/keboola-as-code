@@ -1,6 +1,7 @@
 package dialog_test
 
 import (
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -57,9 +58,19 @@ func TestAskUseTemplateOptions(t *testing.T) {
 		assert.NoError(t, err)
 
 		time.Sleep(20 * time.Millisecond)
-		_, err = console.SendLine("text")
+		_, err = console.SendLine("text") // enter invalid string value
 		assert.NoError(t, err)
-		assert.Error(t, err)
+
+		_, err = console.ExpectString(`Sorry, your reply was invalid: value "text" is not integer`)
+		assert.NoError(t, err)
+
+		time.Sleep(20 * time.Millisecond)
+		_, err = console.SendLine(strings.Repeat(Backspace, 4)) // remove "text"
+		assert.NoError(t, err)
+
+		time.Sleep(20 * time.Millisecond)
+		_, err = console.SendLine("25") // enter valid numeric value
+		assert.NoError(t, err)
 
 		_, err = console.ExpectEOF()
 		assert.NoError(t, err)
@@ -96,5 +107,5 @@ func TestAskUseTemplateOptions(t *testing.T) {
 	assert.NoError(t, console.Close())
 
 	// Assert
-	assert.Equal(t, "", opts)
+	assert.Equal(t, map[string]interface{}{"facebook.username": "username", "facebook.password": "password", "age": "25"}, opts)
 }

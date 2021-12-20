@@ -17,6 +17,7 @@ const (
 	DownArrow = "\u001B[B"
 	Space     = " "
 	Enter     = "\n"
+	Backspace = "\b"
 )
 
 // TestAllowedBranchesByFlag use flag value if present.

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strconv"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
@@ -20,9 +21,25 @@ func (p *Dialogs) AskUseTemplateOptions(inputs input.Inputs) (results map[string
 			question := &prompt.Question{
 				Label:       i.Name,
 				Description: i.Description,
-				Validator: func(val interface{}) error {
-					fmt.Printf("LOG %#v %#v\n", val, i)
-					return i.ValidateUserInput(val, ctx)
+				Validator: func(raw interface{}) error {
+					value := raw
+					fmt.Printf("LOG %#v %#v\n", raw, i)
+					switch i.Type {
+					case `int`:
+						if v, err := strconv.Atoi(value.(string)); err == nil {
+							value = v
+						} else {
+							return fmt.Errorf(`value "%s" is not integer`, raw)
+						}
+					case `float64`:
+						if v, err := strconv.ParseFloat(value.(string), 64); err != nil {
+							value = v
+						} else {
+							return fmt.Errorf(`value "%s" is not float`, raw)
+						}
+					}
+
+					return i.ValidateUserInput(value, ctx)
 				},
 				Hidden: i.Kind == "password",
 			}
@@ -34,7 +51,7 @@ func (p *Dialogs) AskUseTemplateOptions(inputs input.Inputs) (results map[string
 				errors.Append(fmt.Errorf(""))
 			}
 			ctx = context.WithValue(ctx, i.Name, value)
-			results[i.Name] = value
+			results[i.Id] = value
 		case "confirm":
 			confirm := &prompt.Confirm{
 				Label:       i.Name,
@@ -46,7 +63,7 @@ func (p *Dialogs) AskUseTemplateOptions(inputs input.Inputs) (results map[string
 			}
 			value := p.Confirm(confirm)
 			ctx = context.WithValue(ctx, i.Name, value)
-			results[i.Name] = value
+			results[i.Id] = value
 		case "select":
 			value, ok := p.Select(&prompt.Select{
 				Label:       i.Name,
@@ -62,7 +79,7 @@ func (p *Dialogs) AskUseTemplateOptions(inputs input.Inputs) (results map[string
 
 			}
 			ctx = context.WithValue(ctx, i.Name, value)
-			results[i.Name] = value
+			results[i.Id] = value
 		case "multiselect":
 			value, ok := p.MultiSelect(&prompt.MultiSelect{
 				Label:       i.Name,
@@ -77,9 +94,9 @@ func (p *Dialogs) AskUseTemplateOptions(inputs input.Inputs) (results map[string
 
 			}
 			ctx = context.WithValue(ctx, i.Name, value)
-			results[i.Name] = value
+			results[i.Id] = value
 		}
 	}
 
-	return results, errors
+	return results, errors.ErrorOrNil()
 }
