@@ -10,8 +10,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
@@ -21,7 +21,7 @@ import (
 type createTmplDialogDeps interface {
 	Options() *options.Options
 	StorageApi() (*remote.StorageApi, error)
-	LoadStateOnce(loadOptions loadState.Options) (*state.State, error)
+	ProjectState(loadOptions loadState.Options) (*project.State, error)
 }
 
 type createTmplDialog struct {

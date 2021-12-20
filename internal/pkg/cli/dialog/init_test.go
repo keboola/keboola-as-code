@@ -11,12 +11,9 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/ci"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
-	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	createManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/local/manifest/create"
 	genWorkflows "github.com/keboola/keboola-as-code/pkg/lib/operation/local/workflows/generate"
@@ -26,14 +23,10 @@ import (
 func TestAskInitOptions(t *testing.T) {
 	t.Parallel()
 
-	// Dependencies
-	var err error
-	var httpTransport *httpmock.MockTransport
+	// testDependencies
 	dialog, console := createDialogs(t, true)
-	d := testdeps.NewDependencies()
-	d.LoggerValue = log.NewNopLogger()
-	d.FsValue = testfs.NewMemoryFs()
-	d.StorageApiValue, httpTransport, _ = testapi.NewMockedStorageApi()
+	d := testdeps.New()
+	_, httpTransport := d.UseMockedStorageApi()
 
 	branches := []*model.Branch{{BranchKey: model.BranchKey{Id: 123}, Name: "Main", IsDefault: true}}
 	httpTransport.RegisterResponder(

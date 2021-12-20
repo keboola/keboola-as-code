@@ -7,8 +7,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	createConfig "github.com/keboola/keboola-as-code/pkg/lib/operation/local/create/config"
 	createRow "github.com/keboola/keboola-as-code/pkg/lib/operation/local/create/row"
 	createBranch "github.com/keboola/keboola-as-code/pkg/lib/operation/remote/create/branch"
@@ -18,7 +18,7 @@ import (
 type createDeps interface {
 	Options() *options.Options
 	StorageApi() (*remote.StorageApi, error)
-	LoadStateOnce(loadOptions loadState.Options) (*state.State, error)
+	ProjectState(loadOptions loadState.Options) (*project.State, error)
 }
 
 func (p *Dialogs) AskWhatCreateRemote() string {
@@ -54,7 +54,7 @@ func (p *Dialogs) AskCreateConfig(d createDeps, loadStateOptions loadState.Optio
 	out := createConfig.Options{}
 
 	// Load state
-	projectState, err := d.LoadStateOnce(loadStateOptions)
+	projectState, err := d.ProjectState(loadStateOptions)
 	if err != nil {
 		return out, err
 	}
@@ -88,7 +88,7 @@ func (p *Dialogs) AskCreateRow(d createDeps, loadStateOptions loadState.Options)
 	out := createRow.Options{}
 
 	// Load state
-	projectState, err := d.LoadStateOnce(loadStateOptions)
+	projectState, err := d.ProjectState(loadStateOptions)
 	if err != nil {
 		return out, err
 	}
