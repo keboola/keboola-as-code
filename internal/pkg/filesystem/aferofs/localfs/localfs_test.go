@@ -15,7 +15,8 @@ import (
 func TestNewLocalFs(t *testing.T) {
 	t.Parallel()
 	projectDir := t.TempDir()
-	fs := New(projectDir)
+	fs, err := New(projectDir)
+	assert.NoError(t, err)
 	assert.Equal(t, projectDir, fs.BasePath())
 }
 

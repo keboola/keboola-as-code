@@ -30,6 +30,7 @@ type Fs interface {
 	ApiName() string // name of the used implementation, for example local, memory, ...
 	BasePath() string
 	WorkingDir() string
+	SubDirFs(path string) (Fs, error)
 	SetLogger(logger log.Logger)
 	Walk(root string, walkFn filepath.WalkFunc) error
 	Glob(pattern string) (matches []string, err error)

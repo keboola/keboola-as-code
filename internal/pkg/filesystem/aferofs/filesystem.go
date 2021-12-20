@@ -25,6 +25,7 @@ type backend interface {
 	afero.Fs
 	Name() string
 	BasePath() string
+	SubDirFs(path string) (interface{}, error)
 	FromSlash(path string) string // returns OS representation of the path
 	ToSlash(path string) string   // returns internal representation of the path
 	Walk(root string, walkFn filepath.WalkFunc) error
@@ -54,6 +55,20 @@ func (f *Fs) BasePath() string {
 
 func (f *Fs) AferoFs() afero.Fs {
 	return f.fs
+}
+
+func (f *Fs) SubDirFs(path string) (filesystem.Fs, error) {
+	workingDir, err := filesystem.Rel(f.workingDir, path)
+	if err == nil {
+		workingDir = `/`
+	}
+
+	subDirFs, err := f.fs.SubDirFs(f.fs.FromSlash(path))
+	if err != nil {
+		return nil, err
+	}
+
+	return New(f.logger, subDirFs.(backend), f.fs.FromSlash(workingDir)), nil
 }
 
 // WorkingDir - user current working directory.

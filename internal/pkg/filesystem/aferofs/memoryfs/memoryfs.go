@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/afero"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs/basepathfs"
 )
 
 type aferoFs = afero.Fs
@@ -33,6 +34,10 @@ func (fs *MemoryFs) Name() string {
 
 func (fs *MemoryFs) BasePath() string {
 	return "__memory__"
+}
+
+func (fs *MemoryFs) SubDirFs(path string) (interface{}, error) {
+	return basepathfs.New(fs, path)
 }
 
 // FromSlash returns OS representation of the path.

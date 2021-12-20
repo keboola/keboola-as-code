@@ -88,6 +88,41 @@ func (*testCases) TestWorkingDir(t *testing.T, fs filesystem.Fs, _ log.DebugLogg
 	assert.Equal(t, "/", fs.WorkingDir())
 }
 
+func (*testCases) TestSubDirFs(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile("sub/dir1/dir2/file.txt", "foo\n")))
+	assert.True(t, fs.IsFile(`sub/dir1/dir2/file.txt`))
+
+	// /sub/dir1
+	subDirFs1, err := fs.SubDirFs(`/sub/dir1`)
+	assert.NoError(t, err)
+	assert.False(t, subDirFs1.IsFile(`sub/dir1/dir2/file.txt`))
+	assert.True(t, subDirFs1.IsFile(`dir2/file.txt`))
+	file1, err := subDirFs1.ReadFile(`dir2/file.txt`, ``)
+	assert.NoError(t, err)
+	assert.Equal(t, "foo\n", file1.Content)
+
+	// /sub/dir1/dir2
+	subDirFs2, err := subDirFs1.SubDirFs(`/dir2`)
+	assert.NoError(t, err)
+	assert.False(t, subDirFs2.IsFile(`sub/dir1/dir2/file.txt`))
+	assert.False(t, subDirFs2.IsFile(`dir2/file.txt`))
+	assert.True(t, subDirFs2.IsFile(`file.txt`))
+	file2, err := subDirFs2.ReadFile(`file.txt`, ``)
+	assert.NoError(t, err)
+	assert.Equal(t, "foo\n", file2.Content)
+
+	// file
+	subDirFs3, err := subDirFs2.SubDirFs(`/file.txt`)
+	assert.Error(t, err)
+	assert.Equal(t, `path "/file.txt" is not directory`, err.Error())
+	assert.Nil(t, subDirFs3)
+
+	// not found
+	subDirFs4, err := subDirFs2.SubDirFs(`/abc`)
+	assert.Error(t, err) // msg differs between backends
+	assert.Nil(t, subDirFs4)
+}
+
 func (*testCases) TestSetLogger(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
 	logger := log.NewNopLogger()
 	assert.NotPanics(t, func() {
