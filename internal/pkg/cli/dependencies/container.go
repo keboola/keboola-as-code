@@ -6,21 +6,20 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
-	"github.com/keboola/keboola-as-code/internal/pkg/encryption"
+	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
-	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/template"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/version"
 	createProjectManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/local/manifest/create"
 	loadProjectManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/local/manifest/load"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 	createRepositoryManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/manifest/create"
 	loadRepositoryManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/manifest/load"
 )
@@ -37,74 +36,72 @@ var (
 	ErrDirIsNotEmpty                  = fmt.Errorf("dir is not empty")
 )
 
-type Container struct {
-	ctx                context.Context
-	envs               *env.Map
-	fs                 filesystem.Fs
-	emptyDir           filesystem.Fs
-	projectDir         filesystem.Fs
-	repositoryDir      filesystem.Fs
-	dialogs            *dialog.Dialogs
-	logger             log.Logger
-	options            *options.Options
-	hostFromManifest   bool // load Storage Api host from manifest
-	serviceUrls        map[remote.ServiceId]remote.ServiceUrl
-	storageApi         *remote.StorageApi
-	encryptionApi      *encryption.Api
-	schedulerApi       *scheduler.Api
-	eventSender        *event.Sender
-	projectManifest    *projectManifest.Manifest
-	repositoryManifest *repositoryManifest.Manifest
-	state              *state.State
-}
-
 func NewContainer(ctx context.Context, envs *env.Map, fs filesystem.Fs, dialogs *dialog.Dialogs, logger log.Logger, options *options.Options) *Container {
-	c := &Container{}
-	c.ctx = ctx
-	c.envs = envs
-	c.fs = fs
-	c.dialogs = dialogs
-	c.logger = logger
-	c.options = options
-	return c
+	c := &cliDeps{logger: logger, envs: envs, fs: fs, dialogs: dialogs, options: options}
+	return &Container{commonDeps: dependencies.NewContainer(c, ctx), cliDeps: c}
 }
 
-func (c *Container) Ctx() context.Context {
-	return c.ctx
+type commonDeps = dependencies.CommonDeps
+
+type Container struct {
+	commonDeps
+	*cliDeps
+	storageApi *remote.StorageApi // see StorageApi(), projectId check
 }
 
-func (c *Container) Envs() *env.Map {
-	return c.envs
+type cliDeps struct {
+	logger   log.Logger
+	dialogs  *dialog.Dialogs
+	options  *options.Options
+	envs     *env.Map
+	fs       filesystem.Fs
+	emptyDir filesystem.Fs
+	// Project
+	project         *project.Project
+	projectDir      filesystem.Fs
+	projectManifest *projectManifest.Manifest
+	// Template
+	template *template.Template
+	// Template repository
+	templateRepository         *repository.Repository
+	templateRepositoryDir      filesystem.Fs
+	templateRepositoryManifest *repositoryManifest.Manifest
 }
 
-func (c *Container) BasePath() string {
-	return c.fs.BasePath()
+func (v *cliDeps) Logger() log.Logger {
+	return v.logger
 }
 
-func (c *Container) ProjectManifestExists() bool {
-	path := filesystem.Join(filesystem.MetadataDir, projectManifest.FileName)
-	return c.fs.IsFile(path)
+func (v *cliDeps) Envs() *env.Map {
+	return v.envs
 }
 
-func (c *Container) RepositoryManifestExists() bool {
-	path := filesystem.Join(filesystem.MetadataDir, repositoryManifest.FileName)
-	return c.fs.IsFile(path)
+func (v *cliDeps) Dialogs() *dialog.Dialogs {
+	return v.dialogs
 }
 
-func (c *Container) EmptyDir() (filesystem.Fs, error) {
-	if c.emptyDir == nil {
+func (v *cliDeps) Options() *options.Options {
+	return v.options
+}
+
+func (v *cliDeps) BasePath() string {
+	return v.fs.BasePath()
+}
+
+func (v *cliDeps) EmptyDir() (filesystem.Fs, error) {
+	if v.emptyDir == nil {
 		// Project dir is not expected
-		if c.ProjectManifestExists() {
+		if v.ProjectManifestExists() {
 			return nil, ErrProjectDirFound
 		}
 
 		// Repository dir is not expected
-		if c.RepositoryManifestExists() {
+		if v.TemplateRepositoryManifestExists() {
 			return nil, ErrRepoDirFound
 		}
 
 		// Read directory
-		items, err := c.fs.ReadDir(`.`)
+		items, err := v.fs.ReadDir(`.`)
 		if err != nil {
 			return nil, err
 		}
@@ -125,244 +122,195 @@ func (c *Container) EmptyDir() (filesystem.Fs, error) {
 
 		// Directory must be empty
 		if found.Len() > 0 {
-			return nil, utils.PrefixError(fmt.Sprintf(`directory "%s" it not empty, found`, c.fs.BasePath()), found)
+			return nil, utils.PrefixError(fmt.Sprintf(`directory "%s" it not empty, found`, v.fs.BasePath()), found)
 		}
 
-		c.emptyDir = c.fs
+		v.emptyDir = v.fs
 	}
 
-	return c.emptyDir, nil
+	return v.emptyDir, nil
 }
 
-func (c *Container) ProjectDir() (filesystem.Fs, error) {
-	if c.projectDir == nil {
-		if !c.ProjectManifestExists() {
-			if c.RepositoryManifestExists() {
+func (v *cliDeps) Project() (*project.Project, error) {
+	if v.project == nil {
+		projectDir, err := v.ProjectDir()
+		if err != nil {
+			return nil, err
+		}
+		manifest, err := v.ProjectManifest()
+		if err != nil {
+			return nil, err
+		}
+		v.project = project.New(projectDir, manifest)
+	}
+	return v.project, nil
+}
+
+func (v *cliDeps) ProjectDir() (filesystem.Fs, error) {
+	if v.projectDir == nil {
+		if !v.ProjectManifestExists() {
+			if v.TemplateRepositoryManifestExists() {
 				return nil, ErrExpectedProjectFoundRepository
 			}
 			return nil, ErrProjectManifestNotFound
 		}
 
 		// Check version field
-		if err := version.CheckLocalVersion(c.Logger(), c.fs, projectManifest.Path()); err != nil {
+		if err := version.CheckLocalVersion(v.logger, v.fs, projectManifest.Path()); err != nil {
 			return nil, err
 		}
 
-		c.projectDir = c.fs
+		v.projectDir = v.fs
 	}
-	return c.projectDir, nil
+	return v.projectDir, nil
 }
 
-func (c *Container) RepositoryDir() (filesystem.Fs, error) {
-	if c.repositoryDir == nil {
-		if !c.RepositoryManifestExists() {
-			if c.ProjectManifestExists() {
+func (v *cliDeps) ProjectManifestExists() bool {
+	if v.projectManifest != nil {
+		return true
+	}
+	path := filesystem.Join(filesystem.MetadataDir, projectManifest.FileName)
+	return v.fs.IsFile(path)
+}
+
+func (v *cliDeps) ProjectManifest() (*projectManifest.Manifest, error) {
+	if v.projectManifest == nil {
+		if m, err := loadProjectManifest.Run(v); err == nil {
+			v.projectManifest = m
+		} else {
+			return nil, err
+		}
+	}
+	return v.projectManifest, nil
+}
+
+func (v *cliDeps) Template() (*template.Template, error) {
+	if v.template == nil {
+		v.template = &template.Template{}
+	}
+	return v.template, nil
+}
+
+func (v *cliDeps) TemplateRepository() (*repository.Repository, error) {
+	if v.templateRepository == nil {
+		templateDir, err := v.TemplateRepositoryDir()
+		if err != nil {
+			return nil, err
+		}
+		manifest, err := v.TemplateRepositoryManifest()
+		if err != nil {
+			return nil, err
+		}
+		v.templateRepository = repository.New(templateDir, manifest)
+	}
+	return v.templateRepository, nil
+}
+
+func (v *cliDeps) TemplateRepositoryDir() (filesystem.Fs, error) {
+	if v.templateRepositoryDir == nil {
+		if !v.TemplateRepositoryManifestExists() {
+			if v.ProjectManifestExists() {
 				return nil, ErrExpectedRepositoryFoundProject
 			}
 			return nil, ErrRepoManifestNotFound
 		}
 
-		c.repositoryDir = c.fs
+		v.templateRepositoryDir = v.fs
 	}
-	return c.repositoryDir, nil
+	return v.templateRepositoryDir, nil
 }
 
-func (c *Container) Dialogs() *dialog.Dialogs {
-	return c.dialogs
+func (v *cliDeps) TemplateRepositoryManifestExists() bool {
+	if v.templateRepositoryManifest != nil {
+		return true
+	}
+	path := filesystem.Join(filesystem.MetadataDir, repositoryManifest.FileName)
+	return v.fs.IsFile(path)
 }
 
-func (c *Container) Logger() log.Logger {
-	return c.logger
-}
-
-func (c *Container) Options() *options.Options {
-	return c.options
-}
-
-func (c *Container) SetStorageApiHost(host string) {
-	c.options.Set(`storage-api-host`, host)
-}
-
-func (c *Container) SetStorageApiToken(host string) {
-	c.options.Set(`storage-api-token`, host)
-}
-
-func (c *Container) LoadStorageApiHostFromManifest() {
-	c.hostFromManifest = true
-}
-
-func (c *Container) StorageApi() (*remote.StorageApi, error) {
-	if c.storageApi == nil {
-		// Get host
-		var host string
-		if c.hostFromManifest {
-			if m, err := c.ProjectManifest(); err == nil {
-				host = m.ApiHost()
-			} else {
-				return nil, err
-			}
+func (v *cliDeps) TemplateRepositoryManifest() (*repositoryManifest.Manifest, error) {
+	if v.projectManifest == nil {
+		if m, err := loadRepositoryManifest.Run(v); err == nil {
+			v.templateRepositoryManifest = m
 		} else {
-			host = c.options.GetString(options.StorageApiHostOpt)
+			return nil, err
 		}
+	}
+	return v.templateRepositoryManifest, nil
+}
 
-		// Get token
-		token := c.options.GetString(options.StorageApiTokenOpt)
+func (v *cliDeps) CreateTemplateRepositoryManifest() (*repositoryManifest.Manifest, error) {
+	if m, err := createRepositoryManifest.Run(v); err == nil {
+		v.templateRepositoryManifest = m
+		v.templateRepositoryDir = v.fs
+		v.emptyDir = nil
+		return m, nil
+	} else {
+		return nil, fmt.Errorf(`cannot create manifest: %w`, err)
+	}
+}
 
-		// Validate
-		errors := utils.NewMultiError()
-		if host == "" {
-			errors.Append(ErrMissingStorageApiHost)
-		}
-		if token == "" {
-			errors.Append(ErrMissingStorageApiToken)
-		}
-		if errors.Len() > 0 {
-			return nil, errors
-		}
+func (v *cliDeps) ApiVerboseLogs() bool {
+	return v.options.VerboseApi
+}
 
-		// Create API
-		if api, err := remote.NewStorageApiWithToken(c.Ctx(), c.Logger(), host, token, c.options.VerboseApi); err == nil {
-			c.storageApi = api
+func (v *cliDeps) StorageApiHost() (string, error) {
+	var host string
+	if v.ProjectManifestExists() {
+		if m, err := v.ProjectManifest(); err == nil {
+			host = m.ApiHost()
 		} else {
+			return "", err
+		}
+	} else {
+		host = v.options.GetString(options.StorageApiHostOpt)
+	}
+	if host == "" {
+		return "", ErrMissingStorageApiHost
+	}
+	return host, nil
+}
+
+func (v *cliDeps) StorageApiToken() (string, error) {
+	token := v.options.GetString(options.StorageApiTokenOpt)
+	if token == "" {
+		return "", ErrMissingStorageApiToken
+	}
+	return token, nil
+}
+
+func (v *cliDeps) SetStorageApiHost(host string) {
+	v.options.Set(`storage-api-host`, host)
+}
+
+func (v *cliDeps) SetStorageApiToken(host string) {
+	v.options.Set(`storage-api-token`, host)
+}
+
+func (v *Container) StorageApi() (*remote.StorageApi, error) {
+	if v.storageApi == nil {
+		storageApi, err := v.commonDeps.StorageApi()
+		if err != nil {
 			return nil, err
 		}
 
 		// Token and manifest project ID must be same
-		if c.projectManifest != nil && c.projectManifest.ProjectId() != c.storageApi.ProjectId() {
-			return nil, fmt.Errorf(`given token is from the project "%d", but in manifest is defined project "%d"`, c.storageApi.ProjectId(), c.projectManifest.ProjectId())
+		if v.projectManifest != nil && v.projectManifest.ProjectId() != storageApi.ProjectId() {
+			return nil, fmt.Errorf(`given token is from the project "%d", but in manifest is defined project "%d"`, storageApi.ProjectId(), v.projectManifest.ProjectId())
 		}
+		v.storageApi = storageApi
 	}
-	return c.storageApi, nil
+
+	return v.storageApi, nil
 }
 
-func (c *Container) EncryptionApi() (*encryption.Api, error) {
-	if c.encryptionApi == nil {
-		// Get Storage API
-		storageApi, err := c.StorageApi()
-		if err != nil {
-			return nil, err
-		}
-
-		// Get Host
-		host, err := c.serviceUrl(`encryption`)
-		if err != nil {
-			return nil, fmt.Errorf(`cannot get Encryption API host: %w`, err)
-		}
-
-		c.encryptionApi = encryption.NewEncryptionApi(c.Ctx(), c.Logger(), host, storageApi.ProjectId(), c.options.VerboseApi)
-	}
-	return c.encryptionApi, nil
-}
-
-func (c *Container) SchedulerApi() (*scheduler.Api, error) {
-	if c.schedulerApi == nil {
-		// Get Storage API
-		storageApi, err := c.StorageApi()
-		if err != nil {
-			return nil, err
-		}
-
-		// Get Host
-		host, err := c.serviceUrl(`scheduler`)
-		if err != nil {
-			return nil, fmt.Errorf(`cannot get Scheduler API host: %w`, err)
-		}
-
-		c.schedulerApi = scheduler.NewSchedulerApi(c.Ctx(), c.Logger(), host, storageApi.Token().Token, c.options.VerboseApi)
-	}
-	return c.schedulerApi, nil
-}
-
-func (c *Container) EventSender() (*event.Sender, error) {
-	if c.eventSender == nil {
-		storageApi, err := c.StorageApi()
-		if err != nil {
-			return nil, err
-		}
-		c.eventSender = event.NewSender(c.Logger(), storageApi)
-	}
-	return c.eventSender, nil
-}
-
-func (c *Container) CreateProjectManifest(o createProjectManifest.Options) (*projectManifest.Manifest, error) {
-	if m, err := createProjectManifest.Run(o, c); err == nil {
-		c.projectManifest = m
-		c.projectDir = c.fs
-		c.emptyDir = nil
+func (v *Container) CreateProjectManifest(o createProjectManifest.Options) (*projectManifest.Manifest, error) {
+	if m, err := createProjectManifest.Run(o, v); err == nil {
+		v.projectManifest = m
+		v.projectDir = v.fs
+		v.emptyDir = nil
 		return m, nil
 	} else {
 		return nil, fmt.Errorf(`cannot create manifest: %w`, err)
 	}
-}
-
-func (c *Container) ProjectManifest() (*projectManifest.Manifest, error) {
-	if c.projectManifest == nil {
-		if m, err := loadProjectManifest.Run(c); err == nil {
-			c.projectManifest = m
-		} else {
-			return nil, err
-		}
-	}
-	return c.projectManifest, nil
-}
-
-func (c *Container) CreateRepositoryManifest() (*repositoryManifest.Manifest, error) {
-	if m, err := createRepositoryManifest.Run(c); err == nil {
-		c.repositoryManifest = m
-		c.repositoryDir = c.fs
-		c.emptyDir = nil
-		return m, nil
-	} else {
-		return nil, fmt.Errorf(`cannot create manifest: %w`, err)
-	}
-}
-
-func (c *Container) RepositoryManifest() (*repositoryManifest.Manifest, error) {
-	if c.projectManifest == nil {
-		if m, err := loadRepositoryManifest.Run(c); err == nil {
-			c.repositoryManifest = m
-		} else {
-			return nil, err
-		}
-	}
-	return c.repositoryManifest, nil
-}
-
-func (c *Container) LoadStateOnce(loadOptions loadState.Options) (*state.State, error) {
-	if c.state == nil {
-		if s, err := loadState.Run(loadOptions, c); err == nil {
-			c.state = s
-		} else {
-			return nil, err
-		}
-	}
-	return c.state, nil
-}
-
-func (c *Container) serviceUrl(id string) (string, error) {
-	serviceUrlById, err := c.serviceUrlById()
-	if err != nil {
-		return "", err
-	}
-	if url, found := serviceUrlById[remote.ServiceId(id)]; found {
-		return string(url), nil
-	} else {
-		return "", fmt.Errorf(`service "%s" not found`, id)
-	}
-}
-
-func (c *Container) serviceUrlById() (map[remote.ServiceId]remote.ServiceUrl, error) {
-	if c.serviceUrls == nil {
-		storageApi, err := c.StorageApi()
-		if err != nil {
-			return nil, err
-		}
-		urlById, err := storageApi.ServicesUrlById()
-		if err == nil {
-			c.serviceUrls = urlById
-		} else {
-			return nil, err
-		}
-	}
-	return c.serviceUrls, nil
 }

@@ -22,7 +22,6 @@ func TestDifferentProjectIdInManifestAndToken(t *testing.T) {
 	logger := log.NewNopLogger()
 	opts := options.New()
 	d := NewContainer(context.Background(), nil, testfs.NewMemoryFs(), nil, logger, opts)
-	d.hostFromManifest = true
 	d.options.Set(options.StorageApiTokenOpt, project.Token())
 	d.projectManifest = manifest.New(12345, project.StorageApiHost())
 
