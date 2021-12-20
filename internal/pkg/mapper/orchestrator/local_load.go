@@ -10,7 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func (m *orchestratorMapper) onLocalLoad(config *model.Config, manifest *model.ConfigManifest, allObjects *model.StateObjects) error {
+func (m *orchestratorMapper) onLocalLoad(config *model.Config, manifest *model.ConfigManifest, allObjects model.Objects) error {
 	loader := &localLoader{
 		Context:      m.Context,
 		phasesSorter: newPhasesSorter(),
@@ -30,7 +30,7 @@ func (m *orchestratorMapper) onLocalLoad(config *model.Config, manifest *model.C
 type localLoader struct {
 	mapper.Context
 	*phasesSorter
-	allObjects *model.StateObjects
+	allObjects model.Objects
 	branch     *model.BranchState
 	config     *model.Config
 	manifest   *model.ConfigManifest

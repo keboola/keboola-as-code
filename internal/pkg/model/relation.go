@@ -54,7 +54,7 @@ type Relation interface {
 	ParentKey(relationDefinedOn Key) (Key, error) // if relation type is parent <-> child, then parent key is returned, otherwise nil
 	IsDefinedInManifest() bool                    // if true, relation will be present in the manifest
 	IsDefinedInApi() bool                         // if true, relation will be present in API calls
-	NewOtherSideRelation(relationDefinedOn Object, allObjects *StateObjects) (otherSide Key, relation Relation, err error)
+	NewOtherSideRelation(relationDefinedOn Object, allObjects Objects) (otherSide Key, relation Relation, err error)
 }
 
 type Relations []Relation

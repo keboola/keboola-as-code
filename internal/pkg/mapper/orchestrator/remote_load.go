@@ -26,7 +26,7 @@ func (m *orchestratorMapper) OnRemoteChange(changes *model.RemoteChanges) error 
 	return errors.ErrorOrNil()
 }
 
-func (m *orchestratorMapper) onRemoteLoad(config *model.Config, manifest *model.ConfigManifest, allObjects *model.StateObjects) {
+func (m *orchestratorMapper) onRemoteLoad(config *model.Config, manifest *model.ConfigManifest, allObjects model.Objects) {
 	loader := &remoteLoader{
 		Context:      m.Context,
 		phasesSorter: newPhasesSorter(),
@@ -44,7 +44,7 @@ func (m *orchestratorMapper) onRemoteLoad(config *model.Config, manifest *model.
 type remoteLoader struct {
 	mapper.Context
 	*phasesSorter
-	allObjects *model.StateObjects
+	allObjects model.Objects
 	config     *model.Config
 	manifest   *model.ConfigManifest
 	errors     *utils.MultiError

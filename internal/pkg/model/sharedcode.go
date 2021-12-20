@@ -74,7 +74,7 @@ func (t *SharedCodeVariablesForRelation) IsDefinedInApi() bool {
 	return false
 }
 
-func (t *SharedCodeVariablesForRelation) NewOtherSideRelation(relationDefinedOn Object, _ *StateObjects) (Key, Relation, error) {
+func (t *SharedCodeVariablesForRelation) NewOtherSideRelation(relationDefinedOn Object, _ Objects) (Key, Relation, error) {
 	variables, err := t.checkDefinedOn(relationDefinedOn.Key())
 	if err != nil {
 		return nil, nil, err
@@ -126,7 +126,7 @@ func (t *SharedCodeVariablesFromRelation) IsDefinedInApi() bool {
 	return true
 }
 
-func (t *SharedCodeVariablesFromRelation) NewOtherSideRelation(relationDefinedOn Object, _ *StateObjects) (Key, Relation, error) {
+func (t *SharedCodeVariablesFromRelation) NewOtherSideRelation(relationDefinedOn Object, _ Objects) (Key, Relation, error) {
 	row, err := t.checkDefinedOn(relationDefinedOn.Key())
 	if err != nil {
 		return nil, nil, err

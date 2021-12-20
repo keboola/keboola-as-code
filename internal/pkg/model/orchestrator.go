@@ -98,6 +98,6 @@ func (t *UsedInOrchestratorRelation) IsDefinedInApi() bool {
 	return false
 }
 
-func (t *UsedInOrchestratorRelation) NewOtherSideRelation(_ Object, _ *StateObjects) (Key, Relation, error) {
+func (t *UsedInOrchestratorRelation) NewOtherSideRelation(_ Object, _ Objects) (Key, Relation, error) {
 	return nil, nil, nil
 }

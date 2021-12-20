@@ -8,8 +8,8 @@ type template struct {
 	objects []model.Object
 }
 
-func FromState(state *model.State, stateType model.StateType) *template {
-	return &template{objects: objectFromState(state, stateType)}
+func FromState(objects model.ObjectStates, stateType model.StateType) *template {
+	return &template{objects: objectFromState(objects, stateType)}
 }
 
 func (t *template) ReplaceKeys(keys KeysReplacement) error {
@@ -21,8 +21,8 @@ func (t *template) ReplaceKeys(keys KeysReplacement) error {
 	return nil
 }
 
-func objectFromState(state *model.State, stateType model.StateType) []model.Object {
-	all := model.NewStateObjects(state, stateType).All()
+func objectFromState(allObjects model.ObjectStates, stateType model.StateType) []model.Object {
+	all := allObjects.ObjectsInState(stateType).All()
 	objects := make([]model.Object, len(all))
 	copy(objects, all)
 	return objects

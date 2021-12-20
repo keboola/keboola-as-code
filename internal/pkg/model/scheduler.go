@@ -46,7 +46,7 @@ func (t *SchedulerForRelation) IsDefinedInApi() bool {
 	return true
 }
 
-func (t *SchedulerForRelation) NewOtherSideRelation(_ Object, _ *StateObjects) (Key, Relation, error) {
+func (t *SchedulerForRelation) NewOtherSideRelation(_ Object, _ Objects) (Key, Relation, error) {
 	return nil, nil, nil
 }
 

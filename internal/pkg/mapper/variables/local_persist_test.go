@@ -138,7 +138,7 @@ func TestVariablesValuesPersistFirstRowIsDefault(t *testing.T) {
 	assert.Empty(t, row3.ConfigRowManifest.Relations)
 }
 
-func createTestObjectForPersist(t *testing.T, state *model.State) {
+func createTestObjectForPersist(t *testing.T, state model.ObjectStates) {
 	t.Helper()
 
 	// Config
