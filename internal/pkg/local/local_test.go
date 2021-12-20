@@ -11,6 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/registry"
 )
 
 func newTestLocalManager(t *testing.T) (*Manager, *mapper.Mapper) {
@@ -22,12 +23,12 @@ func newTestLocalManager(t *testing.T) (*Manager, *mapper.Mapper) {
 
 	manifest := projectManifest.New(1, "foo.bar")
 	components := model.NewComponentsMap(nil)
-	state := model.NewState(log.NewNopLogger(), fs, components, model.SortByPath)
+	projectState := registry.New(log.NewNopLogger(), fs, components, model.SortByPath)
 
 	namingTemplate := naming.TemplateWithIds()
 	namingRegistry := naming.NewRegistry()
 	namingGenerator := naming.NewGenerator(namingTemplate, namingRegistry)
 
 	mapperInst := mapper.New()
-	return NewManager(logger, fs, manifest, namingGenerator, state, mapperInst), mapperInst
+	return NewManager(logger, fs, manifest, namingGenerator, projectState, mapperInst), mapperInst
 }

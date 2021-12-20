@@ -10,7 +10,6 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/strhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
@@ -19,7 +18,7 @@ import (
 type typeName string
 
 type Differ struct {
-	state     *state.State                      // model state
+	objects   model.ObjectStates
 	results   []*Result                         // diff results
 	typeCache map[typeName][]*utils.StructField // reflection cache
 	errors    *utils.MultiError                 // errors
@@ -48,17 +47,17 @@ type Result struct {
 }
 
 type Results struct {
-	CurrentState          *state.State
 	Equal                 bool
 	HasNotEqualResult     bool
 	HasOnlyInRemoteResult bool
 	HasOnlyInLocalResult  bool
 	Results               []*Result
+	Objects               model.ObjectStates
 }
 
-func NewDiffer(state *state.State) *Differ {
+func NewDiffer(objects model.ObjectStates) *Differ {
 	return &Differ{
-		state:     state,
+		objects:   objects,
 		typeCache: make(map[typeName][]*utils.StructField),
 	}
 }
@@ -67,9 +66,9 @@ func (d *Differ) Diff() (*Results, error) {
 	d.results = []*Result{}
 	d.errors = utils.NewMultiError()
 
-	// Diff all objects in state: branches, config, configRows
-	results := &Results{CurrentState: d.state, Equal: true, Results: d.results}
-	for _, objectState := range d.state.All() {
+	// Diff all objects : branches, config, configRows
+	results := &Results{Equal: true, Results: d.results, Objects: d.objects}
+	for _, objectState := range d.objects.All() {
 		result, err := d.diffState(objectState)
 		if err != nil {
 			d.errors.Append(err)
@@ -172,7 +171,7 @@ func (d *Differ) diffState(state model.ObjectState) (*Result, error) {
 }
 
 func (d *Differ) diffValues(objectState model.ObjectState, remoteValue, localValue interface{}) *Reporter {
-	reporter := newReporter(objectState, d.state.State)
+	reporter := newReporter(objectState, d.objects)
 	cmp.Diff(remoteValue, localValue, d.newOptions(reporter))
 	return reporter
 }

@@ -294,7 +294,7 @@ func (r *MockedManifestSideRelation) IsDefinedInApi() bool {
 	return false
 }
 
-func (r *MockedManifestSideRelation) NewOtherSideRelation(relationDefinedOn model.Object, _ *model.StateObjects) (model.Key, model.Relation, error) {
+func (r *MockedManifestSideRelation) NewOtherSideRelation(relationDefinedOn model.Object, _ model.Objects) (model.Key, model.Relation, error) {
 	if r.OtherSide != nil {
 		return r.OtherSide, &MockedApiSideRelation{OtherSide: relationDefinedOn.Key()}, nil
 	}
@@ -329,7 +329,7 @@ func (r *MockedApiSideRelation) IsDefinedInApi() bool {
 	return true
 }
 
-func (r *MockedApiSideRelation) NewOtherSideRelation(relationDefinedOn model.Object, _ *model.StateObjects) (model.Key, model.Relation, error) {
+func (r *MockedApiSideRelation) NewOtherSideRelation(relationDefinedOn model.Object, _ model.Objects) (model.Key, model.Relation, error) {
 	if r.OtherSide != nil {
 		return r.OtherSide, &MockedManifestSideRelation{OtherSide: relationDefinedOn.Key()}, nil
 	}

@@ -19,7 +19,7 @@ import (
 )
 
 type Manager struct {
-	state        *model.State
+	state        model.ObjectStates
 	localManager *local.Manager
 	api          *StorageApi
 	mapper       *mapper.Mapper
@@ -36,9 +36,9 @@ type UnitOfWork struct {
 	invoked           bool
 }
 
-func NewManager(localManager *local.Manager, api *StorageApi, state *model.State, mapper *mapper.Mapper) *Manager {
+func NewManager(localManager *local.Manager, api *StorageApi, objects model.ObjectStates, mapper *mapper.Mapper) *Manager {
 	return &Manager{
-		state:        state,
+		state:        objects,
 		localManager: localManager,
 		api:          api,
 		mapper:       mapper,

@@ -11,11 +11,11 @@ import (
 
 // SharedCodeHelper gets some values from shared codes.
 type SharedCodeHelper struct {
-	state          *model.State
+	state          model.ObjectStates
 	namingRegistry *naming.Registry
 }
 
-func New(state *model.State, naming *naming.Registry) *SharedCodeHelper {
+func New(state model.ObjectStates, naming *naming.Registry) *SharedCodeHelper {
 	return &SharedCodeHelper{state: state, namingRegistry: naming}
 }
 

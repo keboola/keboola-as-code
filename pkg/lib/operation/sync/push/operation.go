@@ -103,7 +103,7 @@ func Run(o Options, d dependencies) error {
 		}
 
 		// Invoke
-		if err := plan.Invoke(logger, ctx, o.ChangeDescription); err != nil {
+		if err := plan.Invoke(logger, ctx, projectState.LocalManager(), projectState.RemoteManager(), o.ChangeDescription); err != nil {
 			return err
 		}
 

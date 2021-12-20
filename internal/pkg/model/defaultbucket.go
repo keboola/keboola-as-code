@@ -37,7 +37,7 @@ func (t *UsedInConfigInputMappingRelation) IsDefinedInApi() bool {
 	return false
 }
 
-func (t *UsedInConfigInputMappingRelation) NewOtherSideRelation(_ Object, _ *StateObjects) (Key, Relation, error) {
+func (t *UsedInConfigInputMappingRelation) NewOtherSideRelation(_ Object, _ Objects) (Key, Relation, error) {
 	return nil, nil, nil
 }
 
@@ -74,6 +74,6 @@ func (t *UsedInRowInputMappingRelation) IsDefinedInApi() bool {
 	return false
 }
 
-func (t *UsedInRowInputMappingRelation) NewOtherSideRelation(_ Object, _ *StateObjects) (Key, Relation, error) {
+func (t *UsedInRowInputMappingRelation) NewOtherSideRelation(_ Object, _ Objects) (Key, Relation, error) {
 	return nil, nil, nil
 }

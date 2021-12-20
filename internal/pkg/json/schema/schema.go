@@ -16,7 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-func ValidateSchemas(objects *model.State) error {
+func ValidateSchemas(objects model.ObjectStates) error {
 	errs := utils.NewMultiError()
 	for _, config := range objects.Configs() {
 		// Validate only local files

@@ -23,18 +23,18 @@ type Reporter struct {
 	manifest     model.ObjectManifest
 	remoteObject model.Object
 	localObject  model.Object
-	state        *model.State // state of the other objects (to get objects path if needed)
-	path         cmp.Path     // current path to the compared value
-	paths        []string     // list of the non-equal paths
-	diffs        []string     // list of the found differences in human-readable format
+	objects      model.ObjectStates // objects of the other objects (to get objects path if needed)
+	path         cmp.Path           // current path to the compared value
+	paths        []string           // list of the non-equal paths
+	diffs        []string           // list of the found differences in human-readable format
 }
 
-func newReporter(objectState model.ObjectState, state *model.State) *Reporter {
+func newReporter(objectState model.ObjectState, objects model.ObjectStates) *Reporter {
 	return &Reporter{
 		manifest:     objectState.Manifest(),
 		remoteObject: objectState.RemoteState(),
 		localObject:  objectState.LocalState(),
-		state:        state,
+		objects:      objects,
 	}
 }
 
@@ -104,10 +104,10 @@ func (r *Reporter) relationsDiff(remoteValue, localValue reflect.Value) ([]strin
 		onlyInRemote, onlyInLocal := remoteValue.Interface().(model.Relations).Diff(localValue.Interface().(model.Relations))
 		var out []string
 		for _, v := range onlyInRemote {
-			out = append(out, fmt.Sprintf("%s %s", OnlyInRemoteMark, r.relationToString(v, r.remoteObject, r.state.RemoteObjects())))
+			out = append(out, fmt.Sprintf("%s %s", OnlyInRemoteMark, r.relationToString(v, r.remoteObject, r.objects.RemoteObjects())))
 		}
 		for _, v := range onlyInLocal {
-			out = append(out, fmt.Sprintf("%s %s", OnlyInLocalMark, r.relationToString(v, r.localObject, r.state.LocalObjects())))
+			out = append(out, fmt.Sprintf("%s %s", OnlyInLocalMark, r.relationToString(v, r.localObject, r.objects.LocalObjects())))
 		}
 		return out, true
 	}
@@ -119,11 +119,11 @@ func (r *Reporter) isPathHidden() bool {
 	return r.path.Last().Type().String() == "model.Relations"
 }
 
-func (r *Reporter) relationToString(relation model.Relation, definedOn model.Object, allObjects *model.StateObjects) string {
+func (r *Reporter) relationToString(relation model.Relation, definedOn model.Object, allObjects model.Objects) string {
 	otherSideDesc := ``
 	otherSideKey, _, err := relation.NewOtherSideRelation(definedOn, allObjects)
 	if err == nil && otherSideKey != nil {
-		if otherSide, found := r.state.Get(otherSideKey); found {
+		if otherSide, found := r.objects.Get(otherSideKey); found {
 			otherSideDesc = `"` + otherSide.Path() + `"`
 		}
 		if len(otherSideDesc) == 0 {

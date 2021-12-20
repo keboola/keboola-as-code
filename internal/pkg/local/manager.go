@@ -19,8 +19,8 @@ import (
 )
 
 type Manager struct {
-	state           *model.State
 	logger          log.Logger
+	state           model.ObjectStates
 	fs              filesystem.Fs
 	manifest        *projectManifest.Manifest
 	namingGenerator *naming.Generator
@@ -34,15 +34,15 @@ type UnitOfWork struct {
 	errors          *utils.MultiError
 	lock            *sync.Mutex
 	skipNotFoundErr bool
-	localObjects    *model.StateObjects
+	localObjects    model.Objects
 	changes         *model.LocalChanges
 	invoked         bool
 }
 
-func NewManager(logger log.Logger, fs filesystem.Fs, m *projectManifest.Manifest, namingGenerator *naming.Generator, state *model.State, mapper *mapper.Mapper) *Manager {
+func NewManager(logger log.Logger, fs filesystem.Fs, m *projectManifest.Manifest, namingGenerator *naming.Generator, objects model.ObjectStates, mapper *mapper.Mapper) *Manager {
 	return &Manager{
-		state:           state,
 		logger:          logger,
+		state:           objects,
 		fs:              fs,
 		manifest:        m,
 		namingGenerator: namingGenerator,

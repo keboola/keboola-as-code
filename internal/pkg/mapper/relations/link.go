@@ -44,7 +44,7 @@ func (m *relationsMapper) OnRemoteChange(changes *model.RemoteChanges) error {
 	return nil
 }
 
-func (m *relationsMapper) linkAndValidateRelations(object model.Object, allObjects *model.StateObjects) error {
+func (m *relationsMapper) linkAndValidateRelations(object model.Object, allObjects model.Objects) error {
 	errors := utils.NewMultiError()
 	if o, ok := object.(model.ObjectWithRelations); ok {
 		if err := m.linkRelations(o, allObjects); err != nil {
@@ -58,7 +58,7 @@ func (m *relationsMapper) linkAndValidateRelations(object model.Object, allObjec
 }
 
 // lintRelations finds the other side of the relation and create a corresponding relation on the other side.
-func (m *relationsMapper) linkRelations(object model.ObjectWithRelations, allObjects *model.StateObjects) error {
+func (m *relationsMapper) linkRelations(object model.ObjectWithRelations, allObjects model.Objects) error {
 	errors := utils.NewMultiError()
 	relations := object.GetRelations()
 

@@ -57,7 +57,7 @@ func (t *VariablesForRelation) IsDefinedInApi() bool {
 	return false
 }
 
-func (t *VariablesForRelation) NewOtherSideRelation(relationDefinedOn Object, _ *StateObjects) (Key, Relation, error) {
+func (t *VariablesForRelation) NewOtherSideRelation(relationDefinedOn Object, _ Objects) (Key, Relation, error) {
 	variables, err := t.checkDefinedOn(relationDefinedOn.Key())
 	if err != nil {
 		return nil, nil, err
@@ -108,7 +108,7 @@ func (t *VariablesFromRelation) IsDefinedInApi() bool {
 	return true
 }
 
-func (t *VariablesFromRelation) NewOtherSideRelation(relationDefinedOn Object, _ *StateObjects) (Key, Relation, error) {
+func (t *VariablesFromRelation) NewOtherSideRelation(relationDefinedOn Object, _ Objects) (Key, Relation, error) {
 	config, err := t.checkDefinedOn(relationDefinedOn.Key())
 	if err != nil {
 		return nil, nil, err
@@ -157,7 +157,7 @@ func (t *VariablesValuesForRelation) IsDefinedInApi() bool {
 	return false
 }
 
-func (t *VariablesValuesForRelation) NewOtherSideRelation(relationDefinedOn Object, allObjects *StateObjects) (Key, Relation, error) {
+func (t *VariablesValuesForRelation) NewOtherSideRelation(relationDefinedOn Object, allObjects Objects) (Key, Relation, error) {
 	valuesRowKey, err := t.checkDefinedOn(relationDefinedOn.Key())
 	if err != nil {
 		return nil, nil, err
@@ -229,7 +229,7 @@ func (t *VariablesValuesFromRelation) IsDefinedInApi() bool {
 	return true
 }
 
-func (t *VariablesValuesFromRelation) NewOtherSideRelation(relationDefinedOn Object, _ *StateObjects) (Key, Relation, error) {
+func (t *VariablesValuesFromRelation) NewOtherSideRelation(relationDefinedOn Object, _ Objects) (Key, Relation, error) {
 	_, err := t.checkDefinedOn(relationDefinedOn.Key())
 	if err != nil {
 		return nil, nil, err

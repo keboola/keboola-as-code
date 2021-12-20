@@ -21,6 +21,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
@@ -116,7 +117,7 @@ func TestRemoteSaveMapper(t *testing.T) {
 
 func TestRemoteLoadMapper(t *testing.T) {
 	t.Parallel()
-	testMapperInst, uow, httpTransport, state := newTestRemoteUOW(t)
+	testMapperInst, uow, httpTransport, projectState := newTestRemoteUOW(t)
 
 	// Mocked response: branches
 	httpTransport.RegisterResponder(
@@ -155,8 +156,8 @@ func TestRemoteLoadMapper(t *testing.T) {
 	assert.NoError(t, uow.Invoke())
 
 	// Config has been loaded
-	assert.Len(t, state.Configs(), 1)
-	configRaw, found := state.Get(model.ConfigKey{
+	assert.Len(t, projectState.Configs(), 1)
+	configRaw, found := projectState.Get(model.ConfigKey{
 		BranchId:    123,
 		ComponentId: `foo.bar`,
 		Id:          `456`,
@@ -175,19 +176,19 @@ func TestRemoteLoadMapper(t *testing.T) {
 	}, testMapperInst.remoteChanges)
 }
 
-func newTestRemoteUOW(t *testing.T) (*testMapper, *remote.UnitOfWork, *httpmock.MockTransport, *model.State) {
+func newTestRemoteUOW(t *testing.T) (*testMapper, *remote.UnitOfWork, *httpmock.MockTransport, *state.Registry) {
 	t.Helper()
 	testMapperInst := &testMapper{}
 	mappers := []interface{}{testMapperInst}
 	storageApi, httpTransport, _ := testapi.NewMockedStorageApi()
-	localManager, state := newTestLocalManager(t, mappers)
+	localManager, projectState := newTestLocalManager(t, mappers)
 	mapperInst := mapper.New().AddMapper(mappers...)
 
-	remoteManager := remote.NewManager(localManager, storageApi, state, mapperInst)
-	return testMapperInst, remoteManager.NewUnitOfWork(context.Background(), `change desc`), httpTransport, state
+	remoteManager := remote.NewManager(localManager, storageApi, projectState, mapperInst)
+	return testMapperInst, remoteManager.NewUnitOfWork(context.Background(), `change desc`), httpTransport, projectState
 }
 
-func newTestLocalManager(t *testing.T, mappers []interface{}) (*local.Manager, *model.State) {
+func newTestLocalManager(t *testing.T, mappers []interface{}) (*local.Manager, *state.Registry) {
 	t.Helper()
 
 	logger := log.NewDebugLogger()
@@ -196,10 +197,10 @@ func newTestLocalManager(t *testing.T, mappers []interface{}) (*local.Manager, *
 
 	m := manifest.New(1, "foo.bar")
 	components := model.NewComponentsMap(testapi.NewMockedComponentsProvider())
-	state := model.NewState(log.NewNopLogger(), fs, components, model.SortByPath)
+	projectState := state.NewRegistry(log.NewNopLogger(), fs, components, model.SortByPath)
 
 	namingTemplate := naming.TemplateWithIds()
 	namingRegistry := naming.NewRegistry()
 	namingGenerator := naming.NewGenerator(namingTemplate, namingRegistry)
-	return local.NewManager(logger, fs, m, namingGenerator, state, mapper.New().AddMapper(mappers...)), state
+	return local.NewManager(logger, fs, m, namingGenerator, projectState, mapper.New().AddMapper(mappers...)), projectState
 }

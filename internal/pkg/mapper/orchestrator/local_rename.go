@@ -8,7 +8,7 @@ import (
 )
 
 // onObjectsRename - find renamed orchestrators and renamed configs used in an orchestrator.
-func (m *orchestratorMapper) onObjectsRename(renamed []model.RenameAction, allObjects *model.StateObjects) error {
+func (m *orchestratorMapper) onObjectsRename(renamed []model.RenameAction, allObjects model.Objects) error {
 	errors := utils.NewMultiError()
 
 	// Find renamed orchestrators and renamed configs used in an orchestrator

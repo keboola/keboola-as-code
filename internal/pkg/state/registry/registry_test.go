@@ -1,4 +1,4 @@
-package model
+package registry
 
 import (
 	"testing"
@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	. "github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 )
 
@@ -16,7 +17,7 @@ func TestNewState(t *testing.T) {
 	logger := log.NewDebugLogger()
 	fs, err := aferofs.NewMemoryFs(logger, `/`)
 	assert.NoError(t, err)
-	s := NewState(logger, fs, NewComponentsMap(nil), SortByPath)
+	s := New(logger, fs, NewComponentsMap(nil), SortByPath)
 	assert.NotNil(t, s)
 }
 
@@ -167,10 +168,10 @@ func TestStateTrackRecordInvalid(t *testing.T) {
 	assert.Empty(t, s.UntrackedPaths())
 }
 
-func newTestState(t *testing.T, fs filesystem.Fs) *State {
+func newTestState(t *testing.T, fs filesystem.Fs) *Registry {
 	t.Helper()
 	logger := log.NewDebugLogger()
-	s := NewState(logger, fs, NewComponentsMap(nil), SortByPath)
+	s := New(logger, fs, NewComponentsMap(nil), SortByPath)
 	assert.NotNil(t, s)
 
 	// Branch 1

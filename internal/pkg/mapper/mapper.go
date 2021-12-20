@@ -13,7 +13,7 @@ type Context struct {
 	Fs              filesystem.Fs
 	NamingGenerator *naming.Generator
 	NamingRegistry  *naming.Registry
-	State           *model.State
+	State           model.ObjectStates
 }
 
 // LocalSaveMapper to modify how the object will be saved in the filesystem.

@@ -8,7 +8,7 @@ import (
 )
 
 // onObjectsRename - find renamed configurations that are used in default buckets placeholders.
-func (m *defaultBucketMapper) onObjectsRename(renamed []model.RenameAction, allObjects *model.StateObjects) error {
+func (m *defaultBucketMapper) onObjectsRename(renamed []model.RenameAction, allObjects model.Objects) error {
 	// Find renamed configurations used in IM.
 	objectsToUpdate := make(map[string]model.Key)
 	for _, object := range renamed {

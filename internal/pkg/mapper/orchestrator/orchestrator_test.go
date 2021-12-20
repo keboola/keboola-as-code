@@ -13,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 )
 
@@ -21,14 +22,14 @@ func createMapper(t *testing.T) (*mapper.Mapper, mapper.Context, log.DebugLogger
 	logger := log.NewDebugLogger()
 	fs, err := aferofs.NewMemoryFs(logger, ".")
 	assert.NoError(t, err)
-	state := model.NewState(log.NewNopLogger(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
+	projectState := state.NewRegistry(log.NewNopLogger(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
 	namingTemplate := naming.TemplateWithIds()
 	namingRegistry := naming.NewRegistry()
 	namingGenerator := naming.NewGenerator(namingTemplate, namingRegistry)
-	context := mapper.Context{Logger: logger, Fs: fs, NamingGenerator: namingGenerator, NamingRegistry: namingRegistry, State: state}
+	context := mapper.Context{Logger: logger, Fs: fs, NamingGenerator: namingGenerator, NamingRegistry: namingRegistry, State: projectState}
 	manifest := projectManifest.New(1, `foo.bar`)
 	mapperInst := mapper.New()
-	localManager := local.NewManager(logger, fs, manifest, namingGenerator, state, mapperInst)
+	localManager := local.NewManager(logger, fs, manifest, namingGenerator, projectState, mapperInst)
 	mapperInst.AddMapper(orchestrator.NewMapper(localManager, context))
 	return mapperInst, context, logger
 }
