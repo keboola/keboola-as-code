@@ -5,10 +5,10 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
-	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	createEnvFiles "github.com/keboola/keboola-as-code/pkg/lib/operation/local/envfiles/create"
 	createManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/local/manifest/create"
@@ -33,7 +33,7 @@ type dependencies interface {
 	ProjectDir() (filesystem.Fs, error)
 	CreateProjectManifest(o createManifest.Options) (*manifest.Manifest, error)
 	ProjectManifest() (*manifest.Manifest, error)
-	LoadStateOnce(loadOptions loadState.Options) (*state.State, error)
+	ProjectState(loadOptions loadState.Options) (*project.State, error)
 }
 
 func Run(o Options, d dependencies) (err error) {

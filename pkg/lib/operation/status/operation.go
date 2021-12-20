@@ -9,10 +9,10 @@ import (
 type dependencies interface {
 	Logger() log.Logger
 	ProjectManifestExists() bool
-	RepositoryManifestExists() bool
+	TemplateRepositoryManifestExists() bool
 	BasePath() string
 	ProjectDir() (filesystem.Fs, error)
-	RepositoryDir() (filesystem.Fs, error)
+	TemplateRepositoryDir() (filesystem.Fs, error)
 	ProjectManifest() (*manifest.Manifest, error)
 }
 
@@ -36,8 +36,8 @@ func Run(d dependencies) (err error) {
 		return nil
 	}
 
-	if d.RepositoryManifestExists() {
-		fs, err := d.RepositoryDir()
+	if d.TemplateRepositoryManifestExists() {
+		fs, err := d.TemplateRepositoryDir()
 		if err != nil {
 			return err
 		}

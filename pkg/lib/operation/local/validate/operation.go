@@ -4,7 +4,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/json/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/encrypt"
-	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
@@ -16,7 +16,7 @@ type Options struct {
 
 type dependencies interface {
 	Logger() log.Logger
-	LoadStateOnce(loadOptions loadState.Options) (*state.State, error)
+	ProjectState(loadOptions loadState.Options) (*project.State, error)
 }
 
 func LoadStateOptions() loadState.Options {
@@ -30,7 +30,7 @@ func LoadStateOptions() loadState.Options {
 
 func Run(o Options, d dependencies) (err error) {
 	logger := d.Logger()
-	projectState, err := d.LoadStateOnce(LoadStateOptions())
+	projectState, err := d.ProjectState(LoadStateOptions())
 	if err != nil {
 		return err
 	}

@@ -13,7 +13,7 @@ type dependencies interface {
 	Ctx() context.Context
 	Logger() log.Logger
 	EmptyDir() (filesystem.Fs, error)
-	CreateRepositoryManifest() (*manifest.Manifest, error)
+	CreateTemplateRepositoryManifest() (*manifest.Manifest, error)
 }
 
 func Run(d dependencies) (err error) {
@@ -25,7 +25,7 @@ func Run(d dependencies) (err error) {
 	}
 
 	// Create manifest
-	if _, err := d.CreateRepositoryManifest(); err != nil {
+	if _, err := d.CreateTemplateRepositoryManifest(); err != nil {
 		return err
 	}
 

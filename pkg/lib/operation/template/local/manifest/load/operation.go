@@ -8,18 +8,18 @@ import (
 
 type dependencies interface {
 	Logger() log.Logger
-	RepositoryDir() (filesystem.Fs, error)
+	TemplateRepositoryDir() (filesystem.Fs, error)
 }
 
 func Run(d dependencies) (*repositoryManifest.Manifest, error) {
 	logger := d.Logger()
 
-	fs, err := d.RepositoryDir()
+	fs, err := d.TemplateRepositoryDir()
 	if err != nil {
 		return nil, err
 	}
 
-	m, err := repositoryManifest.Load(fs, logger)
+	m, err := repositoryManifest.Load(fs)
 	if err != nil {
 		return nil, err
 	}

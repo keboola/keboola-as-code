@@ -6,8 +6,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/pull"
+	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/local/manifest/save"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/local/rename"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/local/validate"
@@ -26,7 +26,7 @@ type dependencies interface {
 	Logger() log.Logger
 	ProjectDir() (filesystem.Fs, error)
 	ProjectManifest() (*manifest.Manifest, error)
-	LoadStateOnce(loadOptions loadState.Options) (*state.State, error)
+	ProjectState(loadOptions loadState.Options) (*project.State, error)
 }
 
 func LoadStateOptions(force bool) loadState.Options {
@@ -43,13 +43,13 @@ func Run(o Options, d dependencies) (err error) {
 	logger := d.Logger()
 
 	// Load state
-	projectState, err := d.LoadStateOnce(LoadStateOptions(o.Force))
+	projectState, err := d.ProjectState(LoadStateOptions(o.Force))
 	if err != nil {
 		return err
 	}
 
 	// Diff
-	results, err := createDiff.Run(createDiff.Options{State: projectState})
+	results, err := createDiff.Run(createDiff.Options{Objects: projectState})
 	if err != nil {
 		return err
 	}
