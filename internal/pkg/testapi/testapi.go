@@ -13,9 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 )
 
-func NewMockedStorageApi() (*remote.StorageApi, *httpmock.MockTransport, log.DebugLogger) {
-	logger := log.NewDebugLogger()
-
+func NewMockedStorageApi(logger log.DebugLogger) (*remote.StorageApi, *httpmock.MockTransport) {
 	// Set short retry delay in tests
 	api := remote.NewStorageApi("connection.keboola.com", context.Background(), logger, false)
 	api.SetRetry(3, 1*time.Millisecond, 1*time.Millisecond)
@@ -24,12 +22,10 @@ func NewMockedStorageApi() (*remote.StorageApi, *httpmock.MockTransport, log.Deb
 	// Mocked resty transport
 	transport := httpmock.NewMockTransport()
 	api.HttpClient().Transport = transport
-	return api, transport, logger
+	return api, transport
 }
 
-func NewMockedSchedulerApi() (*scheduler.Api, *httpmock.MockTransport, log.DebugLogger) {
-	logger := log.NewDebugLogger()
-
+func NewMockedSchedulerApi(logger log.DebugLogger) (*scheduler.Api, *httpmock.MockTransport) {
 	// Set short retry delay in tests
 	api := scheduler.NewSchedulerApi(context.Background(), logger, "scheduler.keboola.com", "my-token", false)
 	api.SetRetry(3, 1*time.Millisecond, 1*time.Millisecond)
@@ -37,7 +33,7 @@ func NewMockedSchedulerApi() (*scheduler.Api, *httpmock.MockTransport, log.Debug
 	// Mocked resty transport
 	transport := httpmock.NewMockTransport()
 	api.HttpClient().Transport = transport
-	return api, transport, logger
+	return api, transport
 }
 
 func NewStorageApi(host string, verbose bool) (*remote.StorageApi, log.DebugLogger) {
@@ -60,7 +56,7 @@ func NewStorageApiWithToken(host, tokenStr string, verbose bool) (*remote.Storag
 }
 
 func NewMockedComponentsProvider() model.RemoteComponentsProvider {
-	api, httpTransport, _ := NewMockedStorageApi()
+	api, httpTransport := NewMockedStorageApi(log.NewDebugLogger())
 	AddMockedComponents(httpTransport)
 	return api
 }
