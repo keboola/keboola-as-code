@@ -3,24 +3,23 @@ package encrypt
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/encryption"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 // NewPlan creates a plan for encrypt all unencrypted values in all configs and rows.
-func NewPlan(projectState *state.State) *Plan {
-	builder := &encryptPlanBuilder{State: projectState}
+func NewPlan(objects model.ObjectStates) *Plan {
+	builder := &encryptPlanBuilder{objects: objects}
 	actions := builder.build()
-	return &Plan{State: projectState, actions: actions}
+	return &Plan{actions: actions}
 }
 
 type encryptPlanBuilder struct {
-	*state.State
+	objects model.ObjectStates
 	actions []*action
 }
 
 func (b *encryptPlanBuilder) build() []*action {
-	for _, object := range b.All() {
+	for _, object := range b.objects.All() {
 		b.processObject(object)
 	}
 
