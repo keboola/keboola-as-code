@@ -6,16 +6,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
-	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
-
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/interactive"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
+	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 )
 
 func TestAskUseTemplateOptions(t *testing.T) {
@@ -98,6 +97,13 @@ func TestAskUseTemplateOptions(t *testing.T) {
 			Description: "Enter your age",
 			Type:        "int",
 			Kind:        "input",
+		},
+		{
+			Id:          "restricted",
+			Name:        "Restricted content",
+			Description: "Do you want to see restricted content?",
+			Kind:        "confirm",
+			If:          "age>18",
 		},
 	}
 	opts, err := dialog.AskUseTemplateOptions(inputs)

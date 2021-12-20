@@ -41,6 +41,15 @@ func (i Inputs) ValidateDefinitions() error {
 	return validator.Validate(i, validations...)
 }
 
+const (
+	KindInput       = "input"
+	KindPassword    = "password"
+	KindTextarea    = "textarea"
+	KindConfirm     = "confirm"
+	KindSelect      = "select"
+	KindMultiSelect = "multiselect"
+)
+
 type Input struct {
 	Id          string      `json:"id" validate:"required,template-input-id"`
 	Name        string      `json:"name" validate:"required"`
@@ -59,7 +68,7 @@ func (i Input) ValidateUserInput(userInput interface{}, ctx context.Context) err
 		return err
 	}
 
-	if i.Kind == "input" && i.Type != "" {
+	if i.Kind == KindInput && i.Type != "" {
 		err := validateUserInputByType(userInput, i.Type)
 		if err != nil {
 			return err

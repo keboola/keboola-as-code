@@ -11,19 +11,20 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
+type contextKey string
+
 func (p *Dialogs) AskUseTemplateOptions(inputs input.Inputs) (results map[string]interface{}, err error) {
 	results = make(map[string]interface{})
 	ctx := context.Background()
 	errors := utils.NewMultiError()
 	for _, i := range inputs {
 		switch i.Kind {
-		case "input", "password", "textarea":
+		case input.KindInput, input.KindPassword, input.KindTextarea:
 			question := &prompt.Question{
 				Label:       i.Name,
 				Description: i.Description,
 				Validator: func(raw interface{}) error {
 					value := raw
-					fmt.Printf("LOG %#v %#v\n", raw, i)
 					switch i.Type {
 					case `int`:
 						if v, err := strconv.Atoi(value.(string)); err == nil {
@@ -41,18 +42,15 @@ func (p *Dialogs) AskUseTemplateOptions(inputs input.Inputs) (results map[string
 
 					return i.ValidateUserInput(value, ctx)
 				},
-				Hidden: i.Kind == "password",
+				Hidden: i.Kind == input.KindPassword,
 			}
 			if i.Default != nil {
 				question.Default = i.Default.(string)
 			}
-			value, ok := p.Ask(question)
-			if !ok {
-				errors.Append(fmt.Errorf(""))
-			}
-			ctx = context.WithValue(ctx, i.Name, value)
+			value, _ := p.Ask(question)
+			ctx = context.WithValue(ctx, contextKey(i.Id), value)
 			results[i.Id] = value
-		case "confirm":
+		case input.KindConfirm:
 			confirm := &prompt.Confirm{
 				Label:       i.Name,
 				Description: i.Description,
@@ -62,10 +60,10 @@ func (p *Dialogs) AskUseTemplateOptions(inputs input.Inputs) (results map[string
 				confirm.Default = i.Default.(bool)
 			}
 			value := p.Confirm(confirm)
-			ctx = context.WithValue(ctx, i.Name, value)
+			ctx = context.WithValue(ctx, contextKey(i.Id), value)
 			results[i.Id] = value
-		case "select":
-			value, ok := p.Select(&prompt.Select{
+		case input.KindSelect:
+			value, _ := p.Select(&prompt.Select{
 				Label:       i.Name,
 				Description: i.Description,
 				Options:     i.Options,
@@ -75,13 +73,10 @@ func (p *Dialogs) AskUseTemplateOptions(inputs input.Inputs) (results map[string
 					return i.ValidateUserInput(val, ctx)
 				},
 			})
-			if !ok {
-
-			}
-			ctx = context.WithValue(ctx, i.Name, value)
+			ctx = context.WithValue(ctx, contextKey(i.Id), value)
 			results[i.Id] = value
-		case "multiselect":
-			value, ok := p.MultiSelect(&prompt.MultiSelect{
+		case input.KindMultiSelect:
+			value, _ := p.MultiSelect(&prompt.MultiSelect{
 				Label:       i.Name,
 				Description: i.Description,
 				Options:     i.Options,
@@ -90,10 +85,7 @@ func (p *Dialogs) AskUseTemplateOptions(inputs input.Inputs) (results map[string
 					return i.ValidateUserInput(val, ctx)
 				},
 			})
-			if !ok {
-
-			}
-			ctx = context.WithValue(ctx, i.Name, value)
+			ctx = context.WithValue(ctx, contextKey(i.Id), value)
 			results[i.Id] = value
 		}
 	}
