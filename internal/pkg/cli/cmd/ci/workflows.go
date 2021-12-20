@@ -18,7 +18,6 @@ func WorkflowsCommand(depsProvider dependencies.Provider) *cobra.Command {
 			d := depsProvider.Dependencies()
 
 			// Metadata directory is required
-			d.LoadStorageApiHostFromManifest()
 			if _, err := d.ProjectDir(); err != nil {
 				return err
 			}

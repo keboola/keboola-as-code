@@ -7,9 +7,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/local/manifest/save"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
@@ -27,7 +27,7 @@ type dependencies interface {
 	StorageApi() (*remote.StorageApi, error)
 	ProjectDir() (filesystem.Fs, error)
 	ProjectManifest() (*manifest.Manifest, error)
-	LoadStateOnce(loadOptions loadState.Options) (*state.State, error)
+	ProjectState(loadOptions loadState.Options) (*project.State, error)
 }
 
 func LoadStateOptions() loadState.Options {
@@ -49,7 +49,7 @@ func Run(o Options, d dependencies) (err error) {
 	}
 
 	// Load state
-	projectState, err := d.LoadStateOnce(LoadStateOptions())
+	projectState, err := d.ProjectState(LoadStateOptions())
 	if err != nil {
 		return err
 	}

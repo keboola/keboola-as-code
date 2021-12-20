@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
@@ -38,7 +39,7 @@ func TestGetComponentNotFound(t *testing.T) {
 
 func TestComponentIsDeprecated(t *testing.T) {
 	t.Parallel()
-	api, httpTransport, _ := testapi.NewMockedStorageApi()
+	api, httpTransport := testapi.NewMockedStorageApi(log.NewDebugLogger())
 
 	responder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
 		"id":   "wr-dropbox",

@@ -1,20 +1,18 @@
 package diff
 
 import (
-	"context"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
+	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 func TestDiffOnlyInLocal(t *testing.T) {
@@ -812,17 +810,14 @@ func TestDiffMap(t *testing.T) {
 
 func createProjectState(t *testing.T) *state.State {
 	t.Helper()
-
-	logger := log.NewDebugLogger()
-	fs := testfs.NewMemoryFs()
-	manifest := projectManifest.New(1, `foo.bar`)
-	storageApi, _, _ := testapi.NewMockedStorageApi()
-	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
-	options := state.NewOptions(fs, manifest, storageApi, schedulerApi, context.Background(), logger)
-	options.LoadLocalState = false
-	options.LoadRemoteState = false
-	s, _, localErr, remoteErr := state.LoadState(options)
-	assert.NoError(t, localErr)
-	assert.NoError(t, remoteErr)
-	return s
+	d := testdeps.New()
+	d.SetProjectManifest(projectManifest.New(12345, `foo.bar`))
+	d.UseMockedStorageApi()
+	d.UseMockedSchedulerApi()
+	projectState, err := d.ProjectState(loadState.Options{
+		LoadLocalState:  false,
+		LoadRemoteState: false,
+	})
+	assert.NoError(t, err)
+	return projectState.State()
 }

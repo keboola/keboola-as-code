@@ -21,7 +21,7 @@ func Run(d dependencies) (*manifest.Manifest, error) {
 	}
 
 	// Create
-	repositoryManifest, err := manifest.NewManifest(fs)
+	repositoryManifest, err := manifest.New(fs)
 	if err != nil {
 		return nil, err
 	}

@@ -2,15 +2,15 @@ package create
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
-	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 type Options struct {
-	State *state.State
+	Objects model.ObjectStates
 }
 
 func Run(o Options) (*diff.Results, error) {
-	differ := diff.NewDiffer(o.State)
+	differ := diff.NewDiffer(o.Objects)
 	results, err := differ.Diff()
 	if err != nil {
 		return nil, err

@@ -18,15 +18,16 @@ import (
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/encryption"
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
+	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
+	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 )
@@ -39,7 +40,8 @@ type Project struct {
 	lock           *fslock.Lock
 	locked         bool
 	mutex          *sync.Mutex
-	api            *remote.StorageApi
+	storageApi     *remote.StorageApi
+	encryptionApi  *encryption.Api
 	schedulerApi   *scheduler.Api
 	defaultBranch  *model.Branch
 	branchesById   map[model.BranchId]*model.Branch
@@ -71,10 +73,10 @@ func newProject(host string, id int, token string) *Project {
 	}
 
 	// Init API
-	p.api, _ = testapi.NewStorageApiWithToken(p.host, p.token, testhelper.TestIsVerbose())
+	p.storageApi, _ = testapi.NewStorageApiWithToken(p.host, p.token, testhelper.TestIsVerbose())
 
 	// Load services
-	services, err := p.api.ServicesUrlById()
+	services, err := p.storageApi.ServicesUrlById()
 	if err != nil {
 		assert.FailNow(p.t, "cannot get services: ", err)
 	}
@@ -85,6 +87,8 @@ func newProject(host string, id int, token string) *Project {
 		assert.FailNow(p.t, "missing scheduler service")
 	}
 
+	// Init encrypt API
+
 	// Init Scheduler API
 	logger := log.NewDebugLogger()
 	if testhelper.TestIsVerbose() {
@@ -94,17 +98,17 @@ func newProject(host string, id int, token string) *Project {
 		context.Background(),
 		logger,
 		string(schedulerHost),
-		p.api.Token().Token,
+		p.storageApi.Token().Token,
 		false,
 	)
 
 	// Check project ID
-	if p.id != p.api.ProjectId() {
+	if p.id != p.storageApi.ProjectId() {
 		assert.FailNow(p.t, "test project id and token project id are different.")
 	}
 
 	// Load default branch
-	p.defaultBranch, err = p.api.GetDefaultBranch()
+	p.defaultBranch, err = p.storageApi.GetDefaultBranch()
 	if err != nil {
 		assert.FailNow(p.t, "cannot get default branch: ", err)
 	}
@@ -129,17 +133,22 @@ func (p *Project) StorageApiHost() string {
 
 func (p *Project) Name() string {
 	p.assertLocked()
-	return p.api.ProjectName()
+	return p.storageApi.ProjectName()
 }
 
 func (p *Project) Token() string {
 	p.assertLocked()
-	return p.api.Token().Token
+	return p.storageApi.Token().Token
 }
 
 func (p *Project) StorageApi() *remote.StorageApi {
 	p.assertLocked()
-	return p.api
+	return p.storageApi
+}
+
+func (p *Project) EncryptionApi() *encryption.Api {
+	p.assertLocked()
+	return p.encryptionApi
 }
 
 func (p *Project) SchedulerApi() *scheduler.Api {
@@ -158,14 +167,14 @@ func (p *Project) Clear() {
 	p.branchesByName = make(map[string]*model.Branch)
 
 	// Delete all configs in default branch, it cannot be deleted
-	pool := p.api.NewPool()
-	pool.Request(p.api.DeleteConfigsInBranchRequest(p.defaultBranch.BranchKey)).Send()
+	pool := p.storageApi.NewPool()
+	pool.Request(p.storageApi.DeleteConfigsInBranchRequest(p.defaultBranch.BranchKey)).Send()
 	if err := pool.StartAndWait(); err != nil {
 		assert.FailNow(p.t, fmt.Sprintf("cannot delete branches: %s", err))
 	}
 
 	// Load branches
-	branches, err := p.api.ListBranches()
+	branches, err := p.storageApi.ListBranches()
 	if err != nil {
 		assert.FailNow(p.t, fmt.Sprintf("cannot load branches: %s", err))
 	}
@@ -173,7 +182,7 @@ func (p *Project) Clear() {
 	// Delete all dev-branches sequentially, parallel requests don't work with this endpoint
 	for _, branch := range branches {
 		if !branch.IsDefault {
-			if _, err := p.api.DeleteBranch(branch.BranchKey); err != nil {
+			if _, err := p.storageApi.DeleteBranch(branch.BranchKey); err != nil {
 				assert.FailNow(p.t, fmt.Sprintf("cannot delete branch: %s", err))
 			}
 		}
@@ -248,12 +257,12 @@ func (p *Project) createBranches(branches []*fixtures.BranchState) {
 		branch := fixture.Branch.ToModel(p.defaultBranch)
 		if branch.IsDefault {
 			p.defaultBranch.Description = fixture.Branch.Description
-			if _, err := p.api.UpdateBranch(p.defaultBranch, model.NewChangedFields("description")); err != nil {
+			if _, err := p.storageApi.UpdateBranch(p.defaultBranch, model.NewChangedFields("description")); err != nil {
 				assert.FailNow(p.t, fmt.Sprintf("cannot set default branch description: %s", err))
 			}
 			p.setEnv(fmt.Sprintf("TEST_BRANCH_%s_ID", branch.Name), branch.Id.String())
 		} else {
-			p.api.
+			p.storageApi.
 				CreateBranchRequest(branch).
 				OnSuccess(func(response *client.Response) {
 					p.logf(`crated branch "%s", id: "%d"`, branch.Name, branch.Id)
@@ -271,7 +280,7 @@ func (p *Project) createConfigsInDefaultBranch(names []string) {
 	p.branchesByName[p.defaultBranch.Name] = p.defaultBranch
 
 	// Prepare configs
-	tickets := p.api.NewTicketProvider()
+	tickets := p.storageApi.NewTicketProvider()
 	configs := p.prepareConfigs(names, p.defaultBranch, tickets, "TEST_BRANCH_ALL_CONFIG")
 
 	// Generate new IDs
@@ -280,7 +289,7 @@ func (p *Project) createConfigsInDefaultBranch(names []string) {
 	}
 
 	// Create requests
-	pool := p.api.NewPool()
+	pool := p.storageApi.NewPool()
 	p.createConfigsRequests(configs, pool)
 
 	// Send requests
@@ -291,7 +300,7 @@ func (p *Project) createConfigsInDefaultBranch(names []string) {
 
 func (p *Project) createConfigs(branches []*fixtures.BranchState, additionalEnvs map[string]string) {
 	// Prepare configs
-	tickets := p.api.NewTicketProvider()
+	tickets := p.storageApi.NewTicketProvider()
 	var configs []*model.ConfigWithRows
 	for _, branch := range branches {
 		modelBranch := p.branchesByName[branch.Branch.Name]
@@ -312,7 +321,7 @@ func (p *Project) createConfigs(branches []*fixtures.BranchState, additionalEnvs
 	}
 
 	// Create requests
-	pool := p.api.NewPool()
+	pool := p.storageApi.NewPool()
 	p.createConfigsRequests(configs, pool)
 
 	// Send requests
@@ -330,7 +339,7 @@ func (p *Project) createConfigsRequests(configs []*model.ConfigWithRows, pool *c
 		}
 
 		// Create config request
-		if request, err := p.api.CreateConfigRequest(config); err == nil {
+		if request, err := p.storageApi.CreateConfigRequest(config); err == nil {
 			branch := p.branchesById[config.BranchId]
 			p.logf("creating config \"%s/%s/%s\"", branch.Name, config.ComponentId, config.Name)
 			pool.Request(request).Send()

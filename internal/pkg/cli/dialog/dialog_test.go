@@ -11,6 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dialog"
 	interactivePrompt "github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/interactive"
 	nopPrompt "github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/nop"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
@@ -18,7 +19,7 @@ import (
 )
 
 func mockedStorageApi(branches []*model.Branch) *remote.StorageApi {
-	api, httpTransport, _ := testapi.NewMockedStorageApi()
+	api, httpTransport := testapi.NewMockedStorageApi(log.NewDebugLogger())
 	httpTransport.RegisterResponder(
 		"GET", `=~/storage/dev-branches`,
 		httpmock.NewJsonResponderOrPanic(200, branches),

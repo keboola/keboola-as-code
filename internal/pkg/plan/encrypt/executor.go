@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
@@ -22,13 +23,13 @@ type executor struct {
 	errors *utils.MultiError
 }
 
-func newExecutor(logger log.Logger, api *encryption.Api, ctx context.Context, plan *Plan) *executor {
+func newExecutor(logger log.Logger, api *encryption.Api, state *state.State, ctx context.Context, plan *Plan) *executor {
 	return &executor{
 		Plan:   plan,
 		logger: logger,
 		api:    api,
 		pool:   api.NewPool(),
-		uow:    plan.LocalManager().NewUnitOfWork(ctx),
+		uow:    state.LocalManager().NewUnitOfWork(ctx),
 		errors: utils.NewMultiError(),
 	}
 }

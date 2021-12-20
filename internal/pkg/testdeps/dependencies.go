@@ -4,153 +4,186 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jarcoal/httpmock"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
-	"github.com/keboola/keboola-as-code/internal/pkg/encryption"
+	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
-	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/template"
+	templateRepository "github.com/keboola/keboola-as-code/internal/pkg/template/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
+	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
 )
 
-type Dependencies struct {
-	CtxValue                context.Context
-	EnvsValue               *env.Map
-	FsValue                 filesystem.Fs
-	LoggerValue             log.Logger
-	OptionsValue            *options.Options
-	StorageApiValue         *remote.StorageApi
-	EncryptionApiValue      *encryption.Api
-	SchedulerApiValue       *scheduler.Api
-	EventSenderValue        *event.Sender
-	ProjectManifestValue    *projectManifest.Manifest
-	RepositoryManifestValue *repositoryManifest.Manifest
-	StateValue              *state.State
+type commonDeps = dependencies.TestContainer
+
+type TestContainer struct {
+	*testDependencies
+	*commonDeps
 }
 
-func NewDependencies() *Dependencies {
-	d := &Dependencies{}
-	d.CtxValue = context.Background()
-	d.EnvsValue = env.Empty()
-	d.FsValue = testfs.NewMemoryFs()
-	d.OptionsValue = options.New()
-	return d
+func New() *TestContainer {
+	test := &testDependencies{}
+	test.logger = log.NewDebugLogger()
+	test.envs = env.Empty()
+	test.fs = testfs.NewMemoryFs()
+	test.options = options.New()
+	test.SetStorageApiHost(`storage.foo.bar`)
+	test.SetStorageApiToken(`my-secret`)
+	common := dependencies.NewTestContainer(test, context.Background())
+	return &TestContainer{testDependencies: test, commonDeps: common}
 }
 
-func (c Dependencies) Ctx() context.Context {
-	if c.CtxValue == nil {
-		panic(fmt.Errorf(`"ctx" is not set in testing dependencies`))
+type testDependencies struct {
+	logger             log.DebugLogger
+	envs               *env.Map
+	fs                 filesystem.Fs
+	options            *options.Options
+	projectId          int
+	project            *project.Project
+	template           *template.Template
+	templateRepository *templateRepository.Repository
+	apiVerboseLogs     bool
+	storageApiHost     string
+	storageApiToken    string
+}
+
+// InitFromTestProject init test dependencies from testing project.
+func (v TestContainer) InitFromTestProject(project *testproject.Project) {
+	storageApi := project.StorageApi()
+	v.SetProjectId(project.Id())
+	v.SetStorageApiHost(storageApi.Host())
+	v.SetStorageApiToken(storageApi.Token().Token)
+	v.SetStorageApi(storageApi)
+	v.SetSchedulerApi(project.SchedulerApi())
+	v.SetEncryptionApi(project.EncryptionApi())
+}
+
+func (v TestContainer) UseMockedStorageApi() (*remote.StorageApi, *httpmock.MockTransport) {
+	storageApi, httpTransport := testapi.NewMockedStorageApi(v.DebugLogger())
+	v.SetStorageApi(storageApi)
+	return storageApi, httpTransport
+}
+
+func (v TestContainer) UseMockedSchedulerApi() (*scheduler.Api, *httpmock.MockTransport) {
+	schedulerApi, httpTransport := testapi.NewMockedSchedulerApi(v.DebugLogger())
+	v.SetSchedulerApi(schedulerApi)
+	return schedulerApi, httpTransport
+}
+
+func (v *testDependencies) Logger() log.Logger {
+	return v.logger
+}
+
+func (v *testDependencies) DebugLogger() log.DebugLogger {
+	return v.logger
+}
+
+func (v *testDependencies) Fs() filesystem.Fs {
+	return v.fs
+}
+
+func (v *testDependencies) SetFs(fs filesystem.Fs) {
+	v.fs = fs
+}
+
+func (v *testDependencies) Options() *options.Options {
+	return v.options
+}
+
+func (v *testDependencies) SetProjectId(projectId int) {
+	v.projectId = projectId
+}
+
+func (v *testDependencies) Project() (*project.Project, error) {
+	if v.project == nil {
+		manifest, err := project.LoadManifest(v.fs)
+		if err != nil {
+			return nil, err
+		}
+		v.project = project.New(v.fs, manifest)
 	}
-	return c.CtxValue
+	return v.project, nil
 }
 
-func (c Dependencies) Envs() *env.Map {
-	if c.EnvsValue == nil {
-		panic(fmt.Errorf(`"envs" is not set in testing dependencies`))
-	}
-	return c.EnvsValue
+func (v *testDependencies) SetProject(project *project.Project) {
+	v.project = project
 }
 
-func (c Dependencies) BasePath() string {
-	if c.FsValue == nil {
-		panic(fmt.Errorf(`"fs" is not set in testing dependencies`))
-	}
-	return c.FsValue.BasePath()
+func (v *testDependencies) SetProjectManifest(manifest *project.Manifest) {
+	v.project = project.New(v.fs, manifest)
 }
 
-func (c Dependencies) EmptyDir() (filesystem.Fs, error) {
-	if c.FsValue == nil {
-		panic(fmt.Errorf(`"fs" is not set in testing dependencies`))
+func (v *testDependencies) Template() (*template.Template, error) {
+	if v.template == nil {
+		manifest, err := template.LoadManifest(v.fs)
+		if err != nil {
+			return nil, err
+		}
+		v.template = template.New(v.fs, manifest)
 	}
-	return c.FsValue, nil
+	return v.template, nil
 }
 
-func (c Dependencies) ProjectDir() (filesystem.Fs, error) {
-	if c.FsValue == nil {
-		panic(fmt.Errorf(`"fs" is not set in testing dependencies`))
-	}
-	return c.FsValue, nil
+func (v *testDependencies) SetTemplate(template *template.Template) {
+	v.template = template
 }
 
-func (c Dependencies) Logger() log.Logger {
-	if c.LoggerValue == nil {
-		panic(fmt.Errorf(`"logger" is not set in testing dependencies`))
-	}
-	return c.LoggerValue
+func (v *testDependencies) SetTemplateManifest(manifest *template.Manifest) {
+	v.template = template.New(v.fs, manifest)
 }
 
-func (c Dependencies) Options() *options.Options {
-	if c.OptionsValue == nil {
-		panic(fmt.Errorf(`"options" is not set in testing dependencies`))
+func (v *testDependencies) TemplateRepository() (*templateRepository.Repository, error) {
+	if v.templateRepository == nil {
+		manifest, err := templateRepository.LoadManifest(v.fs)
+		if err != nil {
+			return nil, err
+		}
+		v.templateRepository = templateRepository.New(v.fs, manifest)
 	}
-	return c.OptionsValue
+	return v.templateRepository, nil
 }
 
-func (c Dependencies) SetStorageApiHost(host string) {
-	if c.OptionsValue == nil {
-		panic(fmt.Errorf(`"options" is not set in testing dependencies`))
-	}
-	c.OptionsValue.Set(`storage-api-host`, host)
+func (v *testDependencies) SetTemplateRepository(repository *templateRepository.Repository) {
+	v.templateRepository = repository
 }
 
-func (c Dependencies) SetStorageApiToken(host string) {
-	if c.OptionsValue == nil {
-		panic(fmt.Errorf(`"options" is not set in testing dependencies`))
-	}
-	c.OptionsValue.Set(`storage-api-token`, host)
+func (v *testDependencies) SetTemplateRepositoryManifest(manifest *templateRepository.Manifest) {
+	v.templateRepository = templateRepository.New(v.fs, manifest)
 }
 
-func (c Dependencies) StorageApi() (*remote.StorageApi, error) {
-	if c.StorageApiValue == nil {
-		panic(fmt.Errorf(`"storageApi" is not set in testing dependencies`))
-	}
-	return c.StorageApiValue, nil
+func (v *testDependencies) ApiVerboseLogs() bool {
+	return v.apiVerboseLogs
 }
 
-func (c Dependencies) EncryptionApi() (*encryption.Api, error) {
-	if c.EncryptionApiValue == nil {
-		panic(fmt.Errorf(`"encryptionApi" is not set in testing dependencies`))
-	}
-	return c.EncryptionApiValue, nil
+func (v *testDependencies) SetApiVerboseLogs(value bool) {
+	v.apiVerboseLogs = value
 }
 
-func (c Dependencies) SchedulerApi() (*scheduler.Api, error) {
-	if c.SchedulerApiValue == nil {
-		panic(fmt.Errorf(`"schedulerApi" is not set in testing dependencies`))
+func (v *testDependencies) StorageApiHost() (string, error) {
+	if v.storageApiHost == `` {
+		return ``, fmt.Errorf(`dependencies: Storage API host is not set in test dependencies`)
 	}
-	return c.SchedulerApiValue, nil
+	return v.storageApiHost, nil
 }
 
-func (c Dependencies) EventSender() (*event.Sender, error) {
-	if c.EventSenderValue == nil {
-		panic(fmt.Errorf(`"eventSender" is not set in testing dependencies`))
-	}
-	return c.EventSenderValue, nil
+func (v *testDependencies) SetStorageApiHost(host string) {
+	v.storageApiHost = host
 }
 
-func (c Dependencies) ProjectManifest() (*projectManifest.Manifest, error) {
-	if c.ProjectManifestValue == nil {
-		panic(fmt.Errorf(`"project manifest" is not set in testing dependencies`))
+func (v *testDependencies) StorageApiToken() (string, error) {
+	if v.storageApiToken == `` {
+		return ``, fmt.Errorf(`dependencies: Storage API host is not set in test dependencies`)
 	}
-	return c.ProjectManifestValue, nil
+	return v.storageApiToken, nil
 }
 
-func (c Dependencies) RepositoryManifest() (*repositoryManifest.Manifest, error) {
-	if c.RepositoryManifestValue == nil {
-		panic(fmt.Errorf(`"repository manifest" is not set in testing dependencies`))
-	}
-	return c.RepositoryManifestValue, nil
-}
-
-func (c Dependencies) LoadStateOnce(_ loadState.Options) (*state.State, error) {
-	if c.StateValue == nil {
-		panic(fmt.Errorf(`"state" is not set in testing dependencies`))
-	}
-	return c.StateValue, nil
+func (v *testDependencies) SetStorageApiToken(token string) {
+	v.storageApiToken = token
 }

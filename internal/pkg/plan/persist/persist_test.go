@@ -1,7 +1,6 @@
 package persist
 
 import (
-	"context"
 	"net/http"
 	"runtime"
 	"testing"
@@ -13,15 +12,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
 	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 type testCase struct {
@@ -915,12 +913,11 @@ func (tc *testCase) run(t *testing.T) {
 	envs.Set(`LOCAL_PROJECT_ID`, `12345`)
 	testhelper.ReplaceEnvsDir(fs, `/`, envs)
 
-	// Load manifest
-	m, err := manifest.Load(fs)
-	assert.NoError(t, err)
-
-	// Create API
-	api, httpTransport, _ := testapi.NewMockedStorageApi()
+	// Dependencies
+	d := testdeps.New()
+	d.SetFs(fs)
+	d.UseMockedSchedulerApi()
+	storageApi, httpTransport := d.UseMockedStorageApi()
 	testapi.AddMockedComponents(httpTransport)
 
 	// Register new IDs API responses
@@ -933,18 +930,8 @@ func (tc *testCase) run(t *testing.T) {
 	httpTransport.RegisterResponder("POST", `=~/storage/tickets`, httpmock.ResponderFromMultipleResponses(ticketResponses))
 
 	// Load state
-	logger := log.NewDebugLogger()
-	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
-	options := state.NewOptions(fs, m, api, schedulerApi, context.Background(), logger)
-
-	options.LoadLocalState = true
-	options.LoadRemoteState = false
-	options.IgnoreNotFoundErr = true
-	projectState, ok, localErr, remoteErr := state.LoadState(options)
-	assert.NotNil(t, projectState)
-	assert.True(t, ok)
-	assert.NoError(t, localErr)
-	assert.NoError(t, remoteErr)
+	projectState, err := d.ProjectState(loadState.Options{LoadLocalState: true, IgnoreNotFoundErr: true})
+	assert.NoError(t, err)
 
 	// Assert state before
 	assert.Equal(t, tc.untrackedPaths, projectState.UntrackedPaths())
@@ -953,12 +940,12 @@ func (tc *testCase) run(t *testing.T) {
 		assert.Falsef(t, found, `%s should not exists`, objectState.Desc())
 	}
 	for _, key := range tc.expectedMissing {
-		_, found := m.GetRecord(key)
+		_, found := projectState.Manifest().GetRecord(key)
 		assert.Truef(t, found, `%s should exists`, key.Desc())
 	}
 
 	// Get plan
-	plan, err := NewPlan(projectState)
+	plan, err := NewPlan(projectState.State())
 	assert.NoError(t, err)
 
 	// Delete callbacks for easier comparison (we only check callbacks result)
@@ -972,9 +959,9 @@ func (tc *testCase) run(t *testing.T) {
 	assert.Equalf(t, tc.expectedPlan, plan.actions, `unexpected persist plan`)
 
 	// Invoke
-	plan, err = NewPlan(projectState) // plan with callbacks
+	plan, err = NewPlan(projectState.State()) // plan with callbacks
 	assert.NoError(t, err)
-	assert.NoError(t, plan.Invoke(logger, api, projectState))
+	assert.NoError(t, plan.Invoke(d.Logger(), storageApi, projectState.State()))
 
 	// Assert new IDs requests count
 	assert.Equal(t, tc.expectedNewIds, httpTransport.GetCallCountInfo()["POST =~/storage/tickets"])
@@ -987,7 +974,7 @@ func (tc *testCase) run(t *testing.T) {
 		assert.Equalf(t, objectState, realState, `object "%s" has unexpected content`, objectState.Desc())
 	}
 	for _, key := range tc.expectedMissing {
-		_, found := m.GetRecord(key)
+		_, found := projectState.Manifest().GetRecord(key)
 		assert.Falsef(t, found, `%s should not exists`, key.Desc())
 	}
 }

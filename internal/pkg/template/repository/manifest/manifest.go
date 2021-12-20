@@ -6,7 +6,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/build"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -23,7 +22,7 @@ type Content struct {
 	Version int `json:"version" validate:"required,min=1,max=2"`
 }
 
-func NewManifest(fs filesystem.Fs) (*Manifest, error) {
+func New(fs filesystem.Fs) (*Manifest, error) {
 	m := newManifest(fs)
 	if err := m.validate(); err != nil {
 		return nil, err
@@ -48,7 +47,7 @@ func (m *Manifest) Path() string {
 	return Path()
 }
 
-func Load(fs filesystem.Fs, _ log.Logger) (*Manifest, error) {
+func Load(fs filesystem.Fs) (*Manifest, error) {
 	// Exists?
 	path := filesystem.Join(filesystem.MetadataDir, FileName)
 	if !fs.IsFile(path) {

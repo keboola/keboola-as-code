@@ -18,7 +18,6 @@ func DiffCommand(depsProvider dependencies.Provider) *cobra.Command {
 			logger := d.Logger()
 
 			// Metadata directory is required
-			d.LoadStorageApiHostFromManifest()
 			if _, err := d.ProjectDir(); err != nil {
 				return err
 			}

@@ -3,7 +3,7 @@ package printDiff
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 	createDiff "github.com/keboola/keboola-as-code/pkg/lib/operation/sync/diff/create"
 )
@@ -15,7 +15,7 @@ type Options struct {
 
 type dependencies interface {
 	Logger() log.Logger
-	LoadStateOnce(loadOptions loadState.Options) (*state.State, error)
+	ProjectState(loadOptions loadState.Options) (*project.State, error)
 }
 
 func LoadStateOptions() loadState.Options {
@@ -31,13 +31,13 @@ func Run(o Options, d dependencies) (*diff.Results, error) {
 	logger := d.Logger()
 
 	// Load state
-	projectState, err := d.LoadStateOnce(LoadStateOptions())
+	projectState, err := d.ProjectState(LoadStateOptions())
 	if err != nil {
 		return nil, err
 	}
 
 	// Diff
-	results, err := createDiff.Run(createDiff.Options{State: projectState})
+	results, err := createDiff.Run(createDiff.Options{Objects: projectState})
 	if err != nil {
 		return nil, err
 	}

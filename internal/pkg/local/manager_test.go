@@ -17,7 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
+	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
@@ -178,7 +178,7 @@ func TestLocalLoadMapper(t *testing.T) {
 	testhelper.ReplaceEnvsDir(fs, `/`, envs)
 
 	// Load objects
-	m, err := manifest.Load(fs)
+	m, err := projectManifest.Load(fs)
 	assert.NoError(t, err)
 	uow.LoadAll(m)
 	assert.NoError(t, uow.Invoke())
@@ -225,7 +225,7 @@ func TestSkipChildrenLoadIfParentIsInvalid(t *testing.T) {
 	assert.False(t, configManifest.State().IsInvalid())
 	assert.False(t, branchManifest.State().IsNotFound())
 	assert.False(t, configManifest.State().IsNotFound())
-	assert.NoError(t, manager.manifest.SetContent(
+	assert.NoError(t, manager.manifest.(*projectManifest.Manifest).SetContent(
 		[]*model.BranchManifest{branchManifest},
 		[]*model.ConfigManifestWithRows{configManifest},
 	))

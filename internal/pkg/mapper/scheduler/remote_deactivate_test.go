@@ -8,6 +8,7 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
@@ -16,7 +17,7 @@ import (
 func TestSchedulerMapperRemoteDeactivate(t *testing.T) {
 	t.Parallel()
 	context := createMapperContext(t)
-	schedulerApi, httpTransport, _ := testapi.NewMockedSchedulerApi()
+	schedulerApi, httpTransport := testapi.NewMockedSchedulerApi(log.NewDebugLogger())
 	mapper := NewMapper(context, schedulerApi)
 
 	// Branch

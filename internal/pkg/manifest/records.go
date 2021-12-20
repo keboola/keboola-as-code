@@ -14,7 +14,7 @@ import (
 // Records contains model.ObjectManifest for each object: branch, config, row.
 type Records struct {
 	naming *naming.Registry
-	SortBy string
+	sortBy string
 
 	lock    *sync.Mutex
 	all     *orderedmap.OrderedMap // common map for all Records: branches, configs and rows manifests
@@ -25,7 +25,7 @@ type Records struct {
 func NewRecords(sortBy string) *Records {
 	return &Records{
 		naming:  naming.NewRegistry(),
-		SortBy:  sortBy,
+		sortBy:  sortBy,
 		lock:    &sync.Mutex{},
 		all:     orderedmap.New(),
 		loaded:  true,
@@ -71,6 +71,14 @@ func (r *Records) SetRecords(records []model.ObjectManifest) error {
 	return nil
 }
 
+func (r *Records) SortBy() string {
+	return r.sortBy
+}
+
+func (r *Records) SetSortBy(sortBy string) {
+	r.sortBy = sortBy
+}
+
 func (r *Records) All() []model.ObjectManifest {
 	r.SortRecords()
 	out := make([]model.ObjectManifest, len(r.all.Keys()))
@@ -97,8 +105,8 @@ func (r *Records) AllPersisted() []model.ObjectManifest {
 // SortRecords in manifest + ensure order of processing: branch, config, configRow.
 func (r *Records) SortRecords() {
 	r.all.Sort(func(a *orderedmap.Pair, b *orderedmap.Pair) bool {
-		aKey := a.Value.(model.ObjectManifest).SortKey(r.SortBy)
-		bKey := b.Value.(model.ObjectManifest).SortKey(r.SortBy)
+		aKey := a.Value.(model.ObjectManifest).SortKey(r.sortBy)
+		bKey := b.Value.(model.ObjectManifest).SortKey(r.sortBy)
 		return aKey < bKey
 	})
 }

@@ -180,7 +180,7 @@ func newTestRemoteUOW(t *testing.T) (*testMapper, *remote.UnitOfWork, *httpmock.
 	t.Helper()
 	testMapperInst := &testMapper{}
 	mappers := []interface{}{testMapperInst}
-	storageApi, httpTransport, _ := testapi.NewMockedStorageApi()
+	storageApi, httpTransport := testapi.NewMockedStorageApi(log.NewDebugLogger())
 	localManager, projectState := newTestLocalManager(t, mappers)
 	mapperInst := mapper.New().AddMapper(mappers...)
 

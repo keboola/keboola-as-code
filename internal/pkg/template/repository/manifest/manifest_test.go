@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 )
@@ -43,7 +42,7 @@ func TestManifestLoadNotFound(t *testing.T) {
 	fs := testfs.NewMemoryFs()
 
 	// Load
-	manifest, err := Load(fs, log.NewNopLogger())
+	manifest, err := Load(fs)
 	assert.Nil(t, manifest)
 	assert.Error(t, err)
 	assert.Equal(t, `manifest ".keboola/repository.json" not found`, err.Error())
@@ -59,7 +58,7 @@ func TestManifestLoad(t *testing.T) {
 		assert.NoError(t, fs.WriteFile(filesystem.NewFile(path, c.json)))
 
 		// Load
-		manifest, err := Load(fs, log.NewNopLogger())
+		manifest, err := Load(fs)
 		assert.NotNil(t, manifest)
 		assert.NoError(t, err)
 
@@ -152,7 +151,7 @@ func fullStruct() *Content {
 func newTestManifest(t *testing.T) *Manifest {
 	t.Helper()
 	fs := testfs.NewMemoryFs()
-	manifest, err := NewManifest(fs)
+	manifest, err := New(fs)
 	assert.NoError(t, err)
 	return manifest
 }

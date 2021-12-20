@@ -6,8 +6,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/rename"
+	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/local/manifest/save"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
@@ -23,7 +23,7 @@ type dependencies interface {
 	Logger() log.Logger
 	ProjectDir() (filesystem.Fs, error)
 	ProjectManifest() (*manifest.Manifest, error)
-	LoadStateOnce(loadOptions loadState.Options) (*state.State, error)
+	ProjectState(loadOptions loadState.Options) (*project.State, error)
 }
 
 func Run(o Options, d dependencies) (changed bool, err error) {
@@ -36,13 +36,13 @@ func Run(o Options, d dependencies) (changed bool, err error) {
 		IgnoreNotFoundErr:       false,
 		IgnoreInvalidLocalState: false,
 	}
-	projectState, err := d.LoadStateOnce(loadOptions)
+	projectState, err := d.ProjectState(loadOptions)
 	if err != nil {
 		return false, err
 	}
 
 	// Get plan
-	plan, err := rename.NewPlan(projectState)
+	plan, err := rename.NewPlan(projectState.State())
 	if err != nil {
 		return false, err
 	}

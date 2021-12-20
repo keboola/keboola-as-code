@@ -1,7 +1,6 @@
-package state
+package state_test
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -9,11 +8,11 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
+	. "github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
 	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
@@ -438,12 +437,16 @@ func loadRemoteState(t *testing.T, m *manifest.Manifest, projectStateFile string
 	t.Helper()
 
 	envs := env.Empty()
-	project := testproject.GetTestProject(t, envs)
-	project.SetState(projectStateFile)
+	testProject := testproject.GetTestProject(t, envs)
+	testProject.SetState(projectStateFile)
 
-	fs := testfs.NewMemoryFs()
-	logger := log.NewDebugLogger()
-	state := newState(NewOptions(fs, m, project.StorageApi(), project.SchedulerApi(), context.Background(), logger))
-	remoteErr := state.loadRemoteState()
+	d := testdeps.New()
+	d.SetProjectManifest(m)
+	d.InitFromTestProject(testProject)
+	project, err := d.Project()
+	assert.NoError(t, err)
+
+	state, _, localErr, remoteErr := LoadState(project, Options{LoadRemoteState: true}, d)
+	assert.NoError(t, localErr)
 	return state, envs, remoteErr
 }
