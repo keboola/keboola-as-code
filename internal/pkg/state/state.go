@@ -3,11 +3,11 @@ package state
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/defaultbucket"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/description"
@@ -19,7 +19,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/variables"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/registry"
@@ -35,9 +34,11 @@ func NewRegistry(logger log.Logger, fs filesystem.Fs, components *model.Componen
 
 // State - Local and Remote state of the project.
 type State struct {
-	*Options
 	*Registry
-	mutex           *sync.Mutex
+	ctx             context.Context
+	logger          log.Logger
+	fs              filesystem.Fs
+	manifest        manifest.Manifest
 	mapper          *mapper.Mapper
 	namingGenerator *naming.Generator
 	pathMatcher     *naming.PathMatcher
@@ -46,51 +47,47 @@ type State struct {
 }
 
 type Options struct {
-	fs                filesystem.Fs
-	manifest          *manifest.Manifest
-	api               *remote.StorageApi
-	schedulerApi      *scheduler.Api
-	context           context.Context
-	logger            log.Logger
 	LoadLocalState    bool
 	LoadRemoteState   bool
 	IgnoreNotFoundErr bool // not found error will be ignored
 }
 
-func NewOptions(projectDir filesystem.Fs, m *manifest.Manifest, api *remote.StorageApi, schedulerApi *scheduler.Api, ctx context.Context, logger log.Logger) *Options {
-	return &Options{
-		fs:           projectDir,
-		manifest:     m,
-		api:          api,
-		schedulerApi: schedulerApi,
-		context:      ctx,
-		logger:       logger,
-	}
+// ObjectsContainer is Project or Template.
+type ObjectsContainer interface {
+	Fs() filesystem.Fs
+	Manifest() manifest.Manifest
+}
+
+type dependencies interface {
+	Ctx() context.Context
+	Logger() log.Logger
+	StorageApi() (*remote.StorageApi, error)
+	SchedulerApi() (*scheduler.Api, error)
 }
 
 // LoadState - remote and local.
-func LoadState(options *Options) (state *State, ok bool, localErr error, remoteErr error) {
+func LoadState(container ObjectsContainer, options Options, d dependencies) (state *State, ok bool, localErr error, remoteErr error) {
 	localErrors := utils.NewMultiError()
 	remoteErrors := utils.NewMultiError()
-	state = newState(options)
-
-	// Log allowed branches
-	state.logger.Debugf(`Allowed branches: %s`, state.manifest.AllowedBranches())
+	state, err := NewState(container, d)
+	if err != nil {
+		return nil, false, err, err
+	}
 
 	// Remote
-	if state.LoadRemoteState {
+	if options.LoadRemoteState {
 		state.logger.Debugf("Loading project remote state.")
 		remoteErrors.Append(state.loadRemoteState())
 	}
 
 	// Local
-	if state.LoadLocalState {
+	if options.LoadLocalState {
 		state.logger.Debugf("Loading local state.")
-		localErrors.Append(state.loadLocalState())
+		localErrors.Append(state.loadLocalState(options))
 	}
 
 	// Validate
-	localValidateErr, remoteValidateErr := state.validate()
+	localValidateErr, remoteValidateErr := state.Validate()
 	if localValidateErr != nil {
 		localErrors.Append(localValidateErr)
 	}
@@ -103,35 +100,47 @@ func LoadState(options *Options) (state *State, ok bool, localErr error, remoteE
 	return state, ok, localErrors.ErrorOrNil(), remoteErrors.ErrorOrNil()
 }
 
-func newState(options *Options) *State {
-	namingGenerator := naming.NewGenerator(options.manifest.NamingTemplate(), options.manifest.NamingRegistry())
-	pathMatcher := naming.NewPathMatcher(options.manifest.NamingTemplate())
+func NewState(container ObjectsContainer, d dependencies) (*State, error) {
+	storageApi, err := d.StorageApi()
+	if err != nil {
+		return nil, err
+	}
+	schedulerApi, err := d.SchedulerApi()
+	if err != nil {
+		return nil, err
+	}
+
+	m := container.Manifest()
+	namingGenerator := naming.NewGenerator(m.NamingTemplate(), m.NamingRegistry())
+	pathMatcher := naming.NewPathMatcher(m.NamingTemplate())
+
+	// Create state
 	s := &State{
-		Options:         options,
-		mutex:           &sync.Mutex{},
+		ctx:             d.Ctx(),
+		logger:          d.Logger(),
+		fs:              container.Fs(),
+		manifest:        m,
 		namingGenerator: namingGenerator,
 		pathMatcher:     pathMatcher,
 	}
-
-	// State model struct
-	s.Registry = NewRegistry(options.logger, options.fs, options.api.Components(), options.manifest.SortBy())
+	s.Registry = NewRegistry(s.logger, s.fs, storageApi.Components(), m.SortBy())
 
 	// Mapper
 	mapperContext := mapper.Context{
-		Logger:          options.logger,
-		Fs:              options.fs,
+		Logger:          d.Logger(),
+		Fs:              container.Fs(),
 		NamingGenerator: namingGenerator,
-		NamingRegistry:  options.manifest.NamingRegistry(),
+		NamingRegistry:  m.NamingRegistry(),
 		State:           s.Registry,
 	}
 
 	s.mapper = mapper.New()
 
 	// Local manager for load,save,delete ... operations
-	s.localManager = local.NewManager(options.logger, options.fs, options.manifest, namingGenerator, s.Registry, s.mapper)
+	s.localManager = local.NewManager(s.logger, s.fs, m, namingGenerator, s.Registry, s.mapper)
 
 	// Local manager for API operations
-	s.remoteManager = remote.NewManager(s.localManager, options.api, s.Registry, s.mapper)
+	s.remoteManager = remote.NewManager(s.localManager, storageApi, s.Registry, s.mapper)
 
 	mappers := []interface{}{
 		// Core files
@@ -142,7 +151,7 @@ func newState(options *Options) *State {
 		variables.NewMapper(mapperContext),
 		sharedcode.NewVariablesMapper(mapperContext),
 		// Special components
-		schedulerMapper.NewMapper(mapperContext, options.schedulerApi),
+		schedulerMapper.NewMapper(mapperContext, schedulerApi),
 		orchestrator.NewMapper(s.localManager, mapperContext),
 		// Native codes
 		transformation.NewMapper(mapperContext),
@@ -154,14 +163,14 @@ func newState(options *Options) *State {
 	}
 	s.mapper.AddMapper(mappers...)
 
-	return s
+	return s, nil
 }
 
 func (s *State) Fs() filesystem.Fs {
 	return s.fs
 }
 
-func (s *State) Manifest() *manifest.Manifest {
+func (s *State) Manifest() manifest.Manifest {
 	return s.manifest
 }
 
@@ -185,7 +194,7 @@ func (s *State) RemoteManager() *remote.Manager {
 	return s.remoteManager
 }
 
-func (s *State) validate() (error, error) {
+func (s *State) Validate() (error, error) {
 	localErrors := utils.NewMultiError()
 	remoteErrors := utils.NewMultiError()
 
@@ -213,11 +222,11 @@ func (s *State) validate() (error, error) {
 }
 
 // loadLocalState - manifest -> local files -> unified model.
-func (s *State) loadLocalState() error {
+func (s *State) loadLocalState(options Options) error {
 	errors := utils.NewMultiError()
 
-	uow := s.localManager.NewUnitOfWork(s.context)
-	if s.IgnoreNotFoundErr {
+	uow := s.localManager.NewUnitOfWork(s.ctx)
+	if options.IgnoreNotFoundErr {
 		uow.SkipNotFoundErr()
 	}
 
@@ -232,7 +241,7 @@ func (s *State) loadLocalState() error {
 // loadRemoteState - API -> unified model.
 func (s *State) loadRemoteState() error {
 	errors := utils.NewMultiError()
-	uow := s.remoteManager.NewUnitOfWork(s.context, "")
+	uow := s.remoteManager.NewUnitOfWork(s.ctx, "")
 	uow.LoadAll()
 	if err := uow.Invoke(); err != nil {
 		errors.Append(err)
