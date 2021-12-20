@@ -24,13 +24,19 @@ func validateInputDefault(fl goValidator.FieldLevel) bool {
 	}
 
 	// Check if Default is present in Options
-	if fl.Parent().FieldByName("Kind").String() == KindSelect || fl.Parent().FieldByName("Kind").String() == KindMultiSelect {
-		for _, x := range fl.Parent().FieldByName("Options").Interface().([]string) {
-			if x == fl.Field().String() {
-				return true
+	if fl.Parent().FieldByName("Kind").String() == KindSelect {
+		return findValueInOptions(fl.Field().String(), fl)
+	}
+
+	if fl.Parent().FieldByName("Kind").String() == KindMultiSelect {
+		defaultValues := fl.Field().Interface().([]string)
+		for _, defaultValue := range defaultValues {
+			found := findValueInOptions(defaultValue, fl)
+			if !found {
+				return false
 			}
 		}
-		return false
+		return true
 	}
 
 	if fl.Parent().FieldByName("Kind").String() == KindInput && fl.Parent().FieldByName("Type").String() != "" {
@@ -43,6 +49,15 @@ func validateInputDefault(fl goValidator.FieldLevel) bool {
 	// Check that the Default has the right Type for the Kind
 	err := validateUserInputTypeByKind(fl.Field(), fl.Parent().FieldByName("Kind").String())
 	return err == nil
+}
+
+func findValueInOptions(value string, fl goValidator.FieldLevel) bool {
+	for _, option := range fl.Parent().FieldByName("Options").Interface().([]string) {
+		if option == value {
+			return true
+		}
+	}
+	return false
 }
 
 // Options must be filled only for select or multiselect Kind.
@@ -93,9 +108,38 @@ func validateUserInputTypeByKind(value interface{}, kind string) error {
 }
 
 func validateUserInputByType(userInput interface{}, inputType string) error {
-	userType := reflect.TypeOf(userInput).String()
-	if inputType != userType {
-		return fmt.Errorf("the input should be a type %s, got %s instead", inputType, userType)
+	switch inputType {
+	case reflect.Float64.String():
+		return validateUserInputByReflectKind(userInput, reflect.Float64)
+	case reflect.Int.String():
+		return validateUserInputByReflectKind(userInput, reflect.Int)
+	case reflect.String.String():
+		return validateUserInputByReflectKind(userInput, reflect.String)
+	default:
+		panic(fmt.Errorf("unknown type %s", inputType))
+	}
+}
+
+func validateUserInputByReflectKind(userInput interface{}, expectedType reflect.Kind) error {
+	userInputIsValue := reflect.TypeOf(userInput).String() == "reflect.Value"
+	if userInputIsValue {
+		userInputValue := userInput.(reflect.Value)
+		if userInputValue.Kind() != expectedType {
+			return fmt.Errorf(
+				"the input should be a type %s, got %s instead",
+				expectedType.String(),
+				userInputValue.Kind().String(),
+			)
+		}
+		return nil
+	}
+
+	if reflect.TypeOf(userInput).Kind() != expectedType {
+		return fmt.Errorf(
+			"the input should be a type %s, got %s instead",
+			expectedType.String(),
+			reflect.TypeOf(userInput).Kind().String(),
+		)
 	}
 	return nil
 }

@@ -6,29 +6,21 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/interactive"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
-	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
-	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 )
 
 // If condition for restricted input is met by setting the age above the limit.
 func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 	t.Parallel()
 
-	// Dependencies
-	var err error
-	var httpTransport *httpmock.MockTransport
+	// test dependencies
 	dialog, console := createDialogs(t, true)
-	d := testdeps.NewDependencies()
-	d.LoggerValue = log.NewNopLogger()
-	d.FsValue = testfs.NewMemoryFs()
-	d.StorageApiValue, httpTransport, _ = testapi.NewMockedStorageApi()
+	d := testdeps.New()
+	_, httpTransport := d.UseMockedStorageApi()
 	setupCreateTemplateApiResponses(httpTransport)
 
 	// Set fake file editor
@@ -44,14 +36,14 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 		assert.NoError(t, err)
 
 		time.Sleep(20 * time.Millisecond)
-		_, err = console.SendLine(`username`)
+		_, err = console.SendLine("username")
 		assert.NoError(t, err)
 
 		_, err = console.ExpectString("Enter your Facebook password")
 		assert.NoError(t, err)
 
 		time.Sleep(20 * time.Millisecond)
-		_, err = console.SendLine(`password`)
+		_, err = console.SendLine("password")
 		assert.NoError(t, err)
 
 		_, err = console.ExpectString("Enter your age")
@@ -73,7 +65,7 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 		assert.NoError(t, err)
 
 		time.Sleep(20 * time.Millisecond)
-		_, err = console.SendLine("yes") // enter valid numeric value
+		_, err = console.SendLine("yes")
 		assert.NoError(t, err)
 
 		_, err = console.ExpectEOF()
@@ -125,14 +117,10 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 func TestAskUseTemplateOptionsIfNotMet(t *testing.T) {
 	t.Parallel()
 
-	// Dependencies
-	var err error
-	var httpTransport *httpmock.MockTransport
+	// test ependencies
 	dialog, console := createDialogs(t, true)
-	d := testdeps.NewDependencies()
-	d.LoggerValue = log.NewNopLogger()
-	d.FsValue = testfs.NewMemoryFs()
-	d.StorageApiValue, httpTransport, _ = testapi.NewMockedStorageApi()
+	d := testdeps.New()
+	_, httpTransport := d.UseMockedStorageApi()
 	setupCreateTemplateApiResponses(httpTransport)
 
 	// Set fake file editor
@@ -148,25 +136,21 @@ func TestAskUseTemplateOptionsIfNotMet(t *testing.T) {
 		assert.NoError(t, err)
 
 		time.Sleep(20 * time.Millisecond)
-		_, err = console.SendLine(`username`)
+		_, err = console.SendLine("username")
 		assert.NoError(t, err)
 
 		_, err = console.ExpectString("Enter your Facebook password")
 		assert.NoError(t, err)
 
 		time.Sleep(20 * time.Millisecond)
-		_, err = console.SendLine(`password`)
+		_, err = console.SendLine("password")
 		assert.NoError(t, err)
 
 		_, err = console.ExpectString("Enter your age")
 		assert.NoError(t, err)
 
 		time.Sleep(20 * time.Millisecond)
-		_, err = console.SendLine("15") // enter valid numeric value
-		assert.NoError(t, err)
-
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.SendLine("yes") // enter valid numeric value
+		_, err = console.SendLine("15")
 		assert.NoError(t, err)
 
 		_, err = console.ExpectEOF()
