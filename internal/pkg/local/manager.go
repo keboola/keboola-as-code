@@ -10,10 +10,10 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
-	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
@@ -22,7 +22,7 @@ type Manager struct {
 	logger          log.Logger
 	state           model.ObjectStates
 	fs              filesystem.Fs
-	manifest        *projectManifest.Manifest
+	manifest        manifest.Manifest
 	namingGenerator *naming.Generator
 	mapper          *mapper.Mapper
 }
@@ -39,7 +39,7 @@ type UnitOfWork struct {
 	invoked         bool
 }
 
-func NewManager(logger log.Logger, fs filesystem.Fs, m *projectManifest.Manifest, namingGenerator *naming.Generator, objects model.ObjectStates, mapper *mapper.Mapper) *Manager {
+func NewManager(logger log.Logger, fs filesystem.Fs, m manifest.Manifest, namingGenerator *naming.Generator, objects model.ObjectStates, mapper *mapper.Mapper) *Manager {
 	return &Manager{
 		logger:          logger,
 		state:           objects,
@@ -50,7 +50,7 @@ func NewManager(logger log.Logger, fs filesystem.Fs, m *projectManifest.Manifest
 	}
 }
 
-func (m *Manager) Manifest() *projectManifest.Manifest {
+func (m *Manager) Manifest() manifest.Manifest {
 	return m.manifest
 }
 
@@ -79,7 +79,7 @@ func (u *UnitOfWork) SkipNotFoundErr() {
 	u.skipNotFoundErr = true
 }
 
-func (u *UnitOfWork) LoadAll(manifest *projectManifest.Manifest) {
+func (u *UnitOfWork) LoadAll(manifest manifest.Manifest) {
 	for _, objectManifest := range manifest.AllPersisted() {
 		u.LoadObject(objectManifest)
 	}

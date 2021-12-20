@@ -10,9 +10,9 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
@@ -45,7 +45,7 @@ func NewManager(localManager *local.Manager, api *StorageApi, objects model.Obje
 	}
 }
 
-func (m *Manager) Manifest() *manifest.Manifest {
+func (m *Manager) Manifest() manifest.Manifest {
 	return m.localManager.Manifest()
 }
 
