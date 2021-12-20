@@ -18,7 +18,7 @@ func EditCommand(depsProvider dependencies.Provider) *cobra.Command {
 			d := depsProvider.Dependencies()
 
 			// Require template repository dir
-			if _, err := d.RepositoryDir(); err != nil {
+			if _, err := d.TemplateRepositoryDir(); err != nil {
 				return err
 			}
 
