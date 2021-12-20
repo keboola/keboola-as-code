@@ -5,13 +5,14 @@ import (
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encryption"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 type Plan struct {
-	*state.State
 	actions []*action
 }
 
@@ -23,8 +24,8 @@ func (p *Plan) Name() string {
 	return "encrypt"
 }
 
-func (p *Plan) Invoke(logger log.Logger, encryptionApi *encryption.Api, ctx context.Context) error {
-	return newExecutor(logger, encryptionApi, ctx, p).invoke()
+func (p *Plan) Invoke(logger log.Logger, encryptionApi *encryption.Api, state *state.State, ctx context.Context) error {
+	return newExecutor(logger, encryptionApi, state, ctx, p).invoke()
 }
 
 func (p *Plan) Log(logger log.Logger) {
@@ -53,8 +54,8 @@ func (p *Plan) ValidateAllEncrypted() error {
 		errors.AppendWithPrefix(
 			fmt.Sprintf(
 				`%s "%s" contains unencrypted values`,
-				action.Kind().Name,
-				p.NamingGenerator().ConfigFilePath(action.Path()),
+				action.Kind(),
+				filesystem.Join(action.ObjectState.Manifest().Path(), naming.ConfigFile),
 			),
 			objectErrors,
 		)
