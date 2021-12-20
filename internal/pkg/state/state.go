@@ -22,14 +22,21 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/registry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
+type Registry = registry.Registry
+
+func NewRegistry(logger log.Logger, fs filesystem.Fs, components *model.ComponentsMap, sortBy string) *Registry {
+	return registry.New(logger, fs, components, sortBy)
+}
+
 // State - Local and Remote state of the project.
 type State struct {
 	*Options
-	*model.State
+	*Registry
 	mutex           *sync.Mutex
 	mapper          *mapper.Mapper
 	namingGenerator *naming.Generator
@@ -107,7 +114,7 @@ func newState(options *Options) *State {
 	}
 
 	// State model struct
-	s.State = model.NewState(options.logger, options.fs, options.api.Components(), options.manifest.SortBy())
+	s.Registry = NewRegistry(options.logger, options.fs, options.api.Components(), options.manifest.SortBy())
 
 	// Mapper
 	mapperContext := mapper.Context{
@@ -115,16 +122,16 @@ func newState(options *Options) *State {
 		Fs:              options.fs,
 		NamingGenerator: namingGenerator,
 		NamingRegistry:  options.manifest.NamingRegistry(),
-		State:           s.State,
+		State:           s.Registry,
 	}
 
 	s.mapper = mapper.New()
 
 	// Local manager for load,save,delete ... operations
-	s.localManager = local.NewManager(options.logger, options.fs, options.manifest, namingGenerator, s.State, s.mapper)
+	s.localManager = local.NewManager(options.logger, options.fs, options.manifest, namingGenerator, s.Registry, s.mapper)
 
 	// Local manager for API operations
-	s.remoteManager = remote.NewManager(s.localManager, options.api, s.State, s.mapper)
+	s.remoteManager = remote.NewManager(s.localManager, options.api, s.Registry, s.mapper)
 
 	mappers := []interface{}{
 		// Core files

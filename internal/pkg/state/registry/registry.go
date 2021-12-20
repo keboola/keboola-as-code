@@ -1,4 +1,4 @@
-package model
+package registry
 
 import (
 	"fmt"
@@ -7,13 +7,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	. "github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 type pathsRO = knownpaths.PathsReadOnly
 
-type State struct {
+type Registry struct {
 	*pathsRO
 	paths      *knownpaths.Paths
 	sortBy     string
@@ -22,12 +23,12 @@ type State struct {
 	objects    *orderedmap.OrderedMap
 }
 
-func NewState(logger log.Logger, fs filesystem.Fs, components *ComponentsMap, sortBy string) *State {
+func New(logger log.Logger, fs filesystem.Fs, components *ComponentsMap, sortBy string) *Registry {
 	paths, err := knownpaths.New(fs)
 	if err != nil {
 		logger.Debug(utils.PrefixError(`error loading directory structure`, err).Error())
 	}
-	return &State{
+	return &Registry{
 		pathsRO:    paths.ReadOnly(),
 		paths:      paths,
 		sortBy:     sortBy,
@@ -37,15 +38,15 @@ func NewState(logger log.Logger, fs filesystem.Fs, components *ComponentsMap, so
 	}
 }
 
-func (s *State) Components() *ComponentsMap {
+func (s *Registry) Components() *ComponentsMap {
 	return s.components
 }
 
-func (s *State) PathsState() *knownpaths.Paths {
+func (s *Registry) PathsState() *knownpaths.Paths {
 	return s.paths.Clone()
 }
 
-func (s *State) ReloadPathsState() error {
+func (s *Registry) ReloadPathsState() error {
 	// Create a new paths state -> all paths are untracked
 	if err := s.paths.Reset(); err != nil {
 		return fmt.Errorf(`cannot reload paths state: %w`, err)
@@ -58,7 +59,7 @@ func (s *State) ReloadPathsState() error {
 	return nil
 }
 
-func (s *State) TrackObjectPaths(manifest ObjectManifest) {
+func (s *Registry) TrackObjectPaths(manifest ObjectManifest) {
 	if !manifest.State().IsPersisted() {
 		return
 	}
@@ -78,7 +79,7 @@ func (s *State) TrackObjectPaths(manifest ObjectManifest) {
 	}
 }
 
-func (s *State) All() []ObjectState {
+func (s *Registry) All() []ObjectState {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -105,7 +106,7 @@ func (s *State) All() []ObjectState {
 	return out
 }
 
-func (s *State) StateObjects(stateType StateType) *StateObjects {
+func (s *Registry) ObjectsInState(stateType StateType) Objects {
 	switch stateType {
 	case StateTypeRemote:
 		return s.RemoteObjects()
@@ -116,15 +117,15 @@ func (s *State) StateObjects(stateType StateType) *StateObjects {
 	}
 }
 
-func (s *State) LocalObjects() *StateObjects {
-	return NewStateObjects(s, StateTypeLocal)
+func (s *Registry) LocalObjects() Objects {
+	return NewProxy(s, StateTypeLocal)
 }
 
-func (s *State) RemoteObjects() *StateObjects {
-	return NewStateObjects(s, StateTypeRemote)
+func (s *Registry) RemoteObjects() Objects {
+	return NewProxy(s, StateTypeRemote)
 }
 
-func (s *State) Branches() (branches []*BranchState) {
+func (s *Registry) Branches() (branches []*BranchState) {
 	for _, object := range s.All() {
 		if v, ok := object.(*BranchState); ok {
 			branches = append(branches, v)
@@ -133,7 +134,7 @@ func (s *State) Branches() (branches []*BranchState) {
 	return branches
 }
 
-func (s *State) Configs() (configs []*ConfigState) {
+func (s *Registry) Configs() (configs []*ConfigState) {
 	for _, object := range s.All() {
 		if v, ok := object.(*ConfigState); ok {
 			configs = append(configs, v)
@@ -142,7 +143,7 @@ func (s *State) Configs() (configs []*ConfigState) {
 	return configs
 }
 
-func (s *State) ConfigsFrom(branch BranchKey) (configs []*ConfigState) {
+func (s *Registry) ConfigsFrom(branch BranchKey) (configs []*ConfigState) {
 	for _, object := range s.All() {
 		if v, ok := object.(*ConfigState); ok {
 			if v.BranchId != branch.Id {
@@ -154,7 +155,7 @@ func (s *State) ConfigsFrom(branch BranchKey) (configs []*ConfigState) {
 	return configs
 }
 
-func (s *State) ConfigRows() (rows []*ConfigRowState) {
+func (s *Registry) ConfigRows() (rows []*ConfigRowState) {
 	for _, object := range s.All() {
 		if v, ok := object.(*ConfigRowState); ok {
 			rows = append(rows, v)
@@ -163,7 +164,7 @@ func (s *State) ConfigRows() (rows []*ConfigRowState) {
 	return rows
 }
 
-func (s *State) ConfigRowsFrom(config ConfigKey) (rows []*ConfigRowState) {
+func (s *Registry) ConfigRowsFrom(config ConfigKey) (rows []*ConfigRowState) {
 	for _, object := range s.All() {
 		if v, ok := object.(*ConfigRowState); ok {
 			if v.BranchId != config.BranchId || v.ComponentId != config.ComponentId || v.ConfigId != config.Id {
@@ -175,7 +176,7 @@ func (s *State) ConfigRowsFrom(config ConfigKey) (rows []*ConfigRowState) {
 	return rows
 }
 
-func (s *State) Get(key Key) (ObjectState, bool) {
+func (s *Registry) Get(key Key) (ObjectState, bool) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -185,12 +186,12 @@ func (s *State) Get(key Key) (ObjectState, bool) {
 	return nil, false
 }
 
-func (s *State) GetOrNil(key Key) ObjectState {
+func (s *Registry) GetOrNil(key Key) ObjectState {
 	v, _ := s.Get(key)
 	return v
 }
 
-func (s *State) MustGet(key Key) ObjectState {
+func (s *Registry) MustGet(key Key) ObjectState {
 	state, found := s.Get(key)
 	if !found {
 		panic(fmt.Errorf(`%s not found`, key.Desc()))
@@ -198,12 +199,12 @@ func (s *State) MustGet(key Key) ObjectState {
 	return state
 }
 
-func (s *State) CreateFrom(manifest ObjectManifest) (ObjectState, error) {
+func (s *Registry) CreateFrom(manifest ObjectManifest) (ObjectState, error) {
 	objectState := manifest.NewObjectState()
 	return objectState, s.Set(objectState)
 }
 
-func (s *State) Set(objectState ObjectState) error {
+func (s *Registry) Set(objectState ObjectState) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -216,81 +217,11 @@ func (s *State) Set(objectState ObjectState) error {
 	return nil
 }
 
-func (s *State) GetOrCreateFrom(manifest ObjectManifest) (ObjectState, error) {
+func (s *Registry) GetOrCreateFrom(manifest ObjectManifest) (ObjectState, error) {
 	if objectState, found := s.Get(manifest.Key()); found {
 		objectState.SetManifest(manifest)
 		return objectState, nil
 	}
 
 	return s.CreateFrom(manifest)
-}
-
-type StateType int
-
-const (
-	StateTypeLocal StateType = iota
-	StateTypeRemote
-)
-
-type StateObjects struct {
-	state     *State
-	stateType StateType
-}
-
-func NewStateObjects(state *State, stateType StateType) *StateObjects {
-	return &StateObjects{state: state, stateType: stateType}
-}
-
-func (f *StateObjects) All() []Object {
-	var out []Object
-	for _, object := range f.state.All() {
-		if object.HasState(f.stateType) {
-			out = append(out, object.GetState(f.stateType))
-		}
-	}
-	return out
-}
-
-func (f *StateObjects) Branches() (branches []*Branch) {
-	for _, branch := range f.state.Branches() {
-		if branch.HasState(f.stateType) {
-			branches = append(branches, branch.GetState(f.stateType).(*Branch))
-		}
-	}
-	return branches
-}
-
-func (f *StateObjects) Get(key Key) (Object, bool) {
-	objectState, found := f.state.Get(key)
-	if !found || !objectState.HasState(f.stateType) {
-		return nil, false
-	}
-	return objectState.GetState(f.stateType), true
-}
-
-func (f *StateObjects) MustGet(key Key) Object {
-	objectState, found := f.state.Get(key)
-	if !found || !objectState.HasState(f.stateType) {
-		panic(fmt.Errorf(`%s not found`, key.Desc()))
-	}
-	return objectState.GetState(f.stateType)
-}
-
-func (f *StateObjects) ConfigsFrom(branch BranchKey) (configs []*Config) {
-	for _, config := range f.state.ConfigsFrom(branch) {
-		if config.HasState(f.stateType) {
-			configs = append(configs, config.GetState(f.stateType).(*Config))
-		}
-	}
-	return configs
-}
-
-func (f *StateObjects) ConfigRowsFrom(config ConfigKey) (rows []*ConfigRow) {
-	var out []*ConfigRow
-	for _, row := range f.state.ConfigRowsFrom(config) {
-		if row.HasState(f.stateType) {
-			out = append(out, row.GetState(f.stateType).(*ConfigRow))
-		}
-	}
-	return out
 }
