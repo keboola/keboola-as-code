@@ -42,7 +42,7 @@ func TestTemplateInputsValidateDefinitions(t *testing.T) {
 		Name:        "input",
 		Description: "input desc",
 		Default:     "def",
-		Options:     []Option{"a", "b"},
+		Options:     []string{"a", "b"},
 		Kind:        "input",
 	}}
 	err = inputs.ValidateDefinitions()
@@ -68,7 +68,7 @@ func TestTemplateInputsValidateDefinitions(t *testing.T) {
 		Name:        "input",
 		Description: "input desc",
 		Default:     "c",
-		Options:     []Option{"a", "b"},
+		Options:     []string{"a", "b"},
 		Kind:        "input",
 	}}
 	err = inputs.ValidateDefinitions()
@@ -108,7 +108,7 @@ func TestTemplateInputsValidateDefinitions(t *testing.T) {
 		Name:        "input",
 		Description: "input desc",
 		Default:     "a",
-		Options:     []Option{"a", "b"},
+		Options:     []string{"a", "b"},
 		Kind:        "select",
 	}}
 	err = inputs.ValidateDefinitions()
@@ -121,7 +121,7 @@ func TestTemplateInputsValidateDefinitions(t *testing.T) {
 		Description: "input desc",
 		Type:        "int",
 		Default:     33,
-		Options:     []Option{},
+		Options:     []string{},
 		Kind:        "input",
 		Rules:       "gte=5",
 		If:          "1+(2-1)>1",
@@ -191,7 +191,7 @@ func TestTemplateInputsJsonUnmarshal(t *testing.T) {
 			Name:        "Facebook options",
 			Description: "Facebook options description",
 			Kind:        "select",
-			Options:     []Option{"1", "2"},
+			Options:     []string{"1", "2"},
 		},
 	}, inputs)
 }
@@ -218,7 +218,7 @@ func TestTemplateInputsJsonMarshal(t *testing.T) {
 			Name:        "Facebook options",
 			Description: "Facebook options description",
 			Kind:        "select",
-			Options:     []Option{"1", "2"},
+			Options:     []string{"1", "2"},
 		},
 	}
 	resultJson, err := json.MarshalIndent(inputs, "", "  ")
@@ -240,6 +240,16 @@ func TestTemplateInputValidateUserInput(t *testing.T) {
 	assert.Error(t, input.ValidateUserInput(1, nil))
 	assert.Error(t, input.ValidateUserInput("1", nil))
 	assert.NoError(t, input.ValidateUserInput(7, nil))
+
+	input = &Input{
+		Id:          "input.id",
+		Name:        "input",
+		Description: "input description",
+		Kind:        "input",
+		Type:        "int",
+	}
+	assert.NoError(t, input.ValidateUserInput(1, nil))
+	assert.Error(t, input.ValidateUserInput("1", nil))
 
 	input = &Input{
 		Id:          "input.id",
@@ -289,4 +299,20 @@ func TestTemplateInputAvailable(t *testing.T) {
 	params = make(map[string]interface{}, 1)
 	params["facebook_integration"] = false
 	assert.False(t, input.Available(params))
+}
+
+func TestValidateUserInputByType(t *testing.T) {
+	t.Parallel()
+
+	err := validateUserInputByType("str", "string")
+	assert.NoError(t, err)
+
+	err = validateUserInputByType(3, "string")
+	assert.Error(t, err)
+
+	err = validateUserInputByType(3, "int")
+	assert.NoError(t, err)
+
+	err = validateUserInputByType("3", "int")
+	assert.Error(t, err)
 }

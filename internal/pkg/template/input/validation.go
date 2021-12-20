@@ -33,8 +33,15 @@ func validateInputDefault(fl goValidator.FieldLevel) bool {
 		return false
 	}
 
+	if fl.Parent().FieldByName("Kind").String() == "input" && fl.Parent().FieldByName("Type").String() != "" {
+		err := validateUserInputByType(fl.Field(), fl.Parent().FieldByName("Type").String())
+		if err != nil {
+			return false
+		}
+	}
+
 	// Check that the Default has the right Type for the Kind
-	err := validateUserInputTypeByKind(fl.Field(), fl.Field().Kind().String())
+	err := validateUserInputTypeByKind(fl.Field(), fl.Parent().FieldByName("Kind").String())
 	return err == nil
 }
 
@@ -81,6 +88,14 @@ func validateUserInputTypeByKind(value interface{}, kind string) error {
 		if inputType != reflect.Bool.String() {
 			return fmt.Errorf("the input is of confirm kind and should be a bool, got %s instead", inputType)
 		}
+	}
+	return nil
+}
+
+func validateUserInputByType(userInput interface{}, inputType string) error {
+	userType := reflect.TypeOf(userInput).String()
+	if inputType != userType {
+		return fmt.Errorf("the input should be a type %s, got %s instead", inputType, userType)
 	}
 	return nil
 }
