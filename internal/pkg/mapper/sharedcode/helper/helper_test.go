@@ -1,4 +1,4 @@
-package helper
+package helper_test
 
 import (
 	"testing"
@@ -7,8 +7,10 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode/helper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 )
@@ -16,10 +18,10 @@ import (
 func TestGetSharedCodeByPath(t *testing.T) {
 	t.Parallel()
 	fs := testfs.NewMemoryFs()
-	state := model.NewState(log.NewNopLogger(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
+	projectState := state.NewRegistry(log.NewNopLogger(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
 	namingRegistry := naming.NewRegistry()
-	h := New(state, namingRegistry)
-	sharedCodeKey, _ := fixtures.CreateSharedCode(t, state, namingRegistry)
+	h := New(projectState, namingRegistry)
+	sharedCodeKey, _ := fixtures.CreateSharedCode(t, projectState, namingRegistry)
 
 	// Found
 	result, err := h.GetSharedCodeByPath(model.BranchKey{Id: 123}, `_shared/keboola.python-transformation-v2`)
@@ -43,11 +45,11 @@ func TestGetSharedCodeByPath(t *testing.T) {
 func TestGetSharedCodeRowByPath(t *testing.T) {
 	t.Parallel()
 	fs := testfs.NewMemoryFs()
-	state := model.NewState(log.NewNopLogger(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
+	projectState := state.NewRegistry(log.NewNopLogger(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
 	namingRegistry := naming.NewRegistry()
-	h := New(state, namingRegistry)
-	sharedCodeKey, _ := fixtures.CreateSharedCode(t, state, namingRegistry)
-	sharedCode := state.MustGet(sharedCodeKey).(*model.ConfigState)
+	h := New(projectState, namingRegistry)
+	sharedCodeKey, _ := fixtures.CreateSharedCode(t, projectState, namingRegistry)
+	sharedCode := projectState.MustGet(sharedCodeKey).(*model.ConfigState)
 
 	// Found
 	result, err := h.GetSharedCodeRowByPath(sharedCode, `codes/code1`)
@@ -70,18 +72,18 @@ func TestGetSharedCodeRowByPath(t *testing.T) {
 func TestGetSharedCodeVariablesId(t *testing.T) {
 	t.Parallel()
 	fs := testfs.NewMemoryFs()
-	state := model.NewState(log.NewNopLogger(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
+	projectState := state.NewRegistry(log.NewNopLogger(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
 	namingRegistry := naming.NewRegistry()
-	h := New(state, namingRegistry)
+	h := New(projectState, namingRegistry)
 
-	fixtures.CreateSharedCode(t, state, namingRegistry)
-	sharedCodeRow1 := state.MustGet(model.ConfigRowKey{
+	fixtures.CreateSharedCode(t, projectState, namingRegistry)
+	sharedCodeRow1 := projectState.MustGet(model.ConfigRowKey{
 		BranchId:    123,
 		ComponentId: model.SharedCodeComponentId,
 		ConfigId:    `456`,
 		Id:          `1234`,
 	}).(*model.ConfigRowState)
-	sharedCodeRow2 := state.MustGet(model.ConfigRowKey{
+	sharedCodeRow2 := projectState.MustGet(model.ConfigRowKey{
 		BranchId:    123,
 		ComponentId: model.SharedCodeComponentId,
 		ConfigId:    `456`,

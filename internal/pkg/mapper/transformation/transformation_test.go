@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
@@ -43,10 +44,10 @@ func createTestFixtures(t *testing.T, componentId string) (mapper.Context, *mode
 	fs, err := aferofs.NewMemoryFs(logger, ".")
 	assert.NoError(t, err)
 
-	state := model.NewState(log.NewNopLogger(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
+	projectState := state.NewRegistry(log.NewNopLogger(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
 	namingTemplate := naming.TemplateWithIds()
 	namingRegistry := naming.NewRegistry()
 	namingGenerator := naming.NewGenerator(namingTemplate, namingRegistry)
-	context := mapper.Context{Logger: logger, Fs: fs, NamingGenerator: namingGenerator, NamingRegistry: namingRegistry, State: state}
+	context := mapper.Context{Logger: logger, Fs: fs, NamingGenerator: namingGenerator, NamingRegistry: namingRegistry, State: projectState}
 	return context, configState
 }
