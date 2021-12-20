@@ -50,6 +50,37 @@ type ObjectWithRelations interface {
 	AddRelation(relation Relation)
 }
 
+type ObjectStates interface {
+	ObjectsInState(stateType StateType) Objects
+	RemoteObjects() Objects
+	LocalObjects() Objects
+	All() []ObjectState
+	Components() *ComponentsMap
+	Branches() (branches []*BranchState)
+	Configs() []*ConfigState
+	ConfigsFrom(branch BranchKey) (configs []*ConfigState)
+	ConfigRows() []*ConfigRowState
+	ConfigRowsFrom(config ConfigKey) (rows []*ConfigRowState)
+	Get(key Key) (ObjectState, bool)
+	GetOrNil(key Key) ObjectState
+	MustGet(key Key) ObjectState
+	CreateFrom(manifest ObjectManifest) (ObjectState, error)
+	GetOrCreateFrom(manifest ObjectManifest) (ObjectState, error)
+	Set(objectState ObjectState) error
+	TrackedPaths() []string
+	ReloadPathsState() error
+	IsFile(path string) bool
+	IsDir(path string) bool
+}
+
+type Objects interface {
+	Get(key Key) (Object, bool)
+	All() []Object
+	Branches() (branches []*Branch)
+	ConfigsFrom(branch BranchKey) (configs []*Config)
+	ConfigRowsFrom(config ConfigKey) (rows []*ConfigRow)
+}
+
 // Kind - type of the object, branch, config ...
 type Kind struct {
 	Name string

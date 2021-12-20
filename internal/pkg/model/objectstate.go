@@ -4,6 +4,13 @@ import (
 	"fmt"
 )
 
+type StateType int
+
+const (
+	StateTypeLocal StateType = iota
+	StateTypeRemote
+)
+
 type ObjectState interface {
 	RecordPaths
 	Key
