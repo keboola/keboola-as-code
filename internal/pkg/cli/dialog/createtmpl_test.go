@@ -9,11 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/interactive"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
-	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	createTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/create"
 )
@@ -21,14 +18,10 @@ import (
 func TestAskCreateTemplateInteractive(t *testing.T) {
 	t.Parallel()
 
-	// Dependencies
-	var err error
-	var httpTransport *httpmock.MockTransport
+	// testDependencies
 	dialog, console := createDialogs(t, true)
-	d := testdeps.NewDependencies()
-	d.LoggerValue = log.NewNopLogger()
-	d.FsValue = testfs.NewMemoryFs()
-	d.StorageApiValue, httpTransport, _ = testapi.NewMockedStorageApi()
+	d := testdeps.New()
+	_, httpTransport := d.UseMockedStorageApi()
 	setupCreateTemplateApiResponses(httpTransport)
 
 	// Set fake file editor
@@ -173,14 +166,10 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 func TestAskCreateTemplateNonInteractive(t *testing.T) {
 	t.Parallel()
 
-	// Dependencies
-	var err error
-	var httpTransport *httpmock.MockTransport
+	// testDependencies
 	dialog, _ := createDialogs(t, false)
-	d := testdeps.NewDependencies()
-	d.LoggerValue = log.NewNopLogger()
-	d.FsValue = testfs.NewMemoryFs()
-	d.StorageApiValue, httpTransport, _ = testapi.NewMockedStorageApi()
+	d := testdeps.New()
+	_, httpTransport := d.UseMockedStorageApi()
 	setupCreateTemplateApiResponses(httpTransport)
 
 	// Flags
@@ -234,14 +223,10 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 func TestAskCreateTemplateAllConfigs(t *testing.T) {
 	t.Parallel()
 
-	// Dependencies
-	var err error
-	var httpTransport *httpmock.MockTransport
+	// testDependencies
 	dialog, _ := createDialogs(t, false)
-	d := testdeps.NewDependencies()
-	d.LoggerValue = log.NewNopLogger()
-	d.FsValue = testfs.NewMemoryFs()
-	d.StorageApiValue, httpTransport, _ = testapi.NewMockedStorageApi()
+	d := testdeps.New()
+	_, httpTransport := d.UseMockedStorageApi()
 	setupCreateTemplateApiResponses(httpTransport)
 
 	// Flags

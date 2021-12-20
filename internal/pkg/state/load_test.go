@@ -1,7 +1,6 @@
-package state
+package state_test
 
 import (
-	"context"
 	"runtime"
 	"testing"
 
@@ -10,10 +9,11 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
+	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
+	. "github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
 	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
@@ -25,25 +25,37 @@ func TestLoadState(t *testing.T) {
 	t.Parallel()
 	envs := env.Empty()
 
-	project := testproject.GetTestProject(t, envs)
-	project.SetState("minimal.json")
+	testProject := testproject.GetTestProject(t, envs)
+	testProject.SetState("minimal.json")
 
 	// Same IDs in local and remote state
-	envs.Set("LOCAL_PROJECT_ID", cast.ToString(project.Id()))
-	envs.Set("TEST_KBC_STORAGE_API_HOST", project.StorageApi().Host())
+	envs.Set("LOCAL_PROJECT_ID", cast.ToString(testProject.Id()))
+	envs.Set("TEST_KBC_STORAGE_API_HOST", testProject.StorageApi().Host())
 	envs.Set("LOCAL_STATE_MAIN_BRANCH_ID", envs.MustGet(`TEST_BRANCH_MAIN_ID`))
 	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`))
 
-	logger := log.NewDebugLogger()
+	// Dependencies
 	m, fs := loadTestManifest(t, envs, "minimal")
+	d := testdeps.New()
+	d.InitFromTestProject(testProject)
+	d.SetFs(fs)
+	d.SetProjectManifest(m)
+	project, err := d.Project()
+	assert.NoError(t, err)
 
-	stateOptions := NewOptions(fs, m, project.StorageApi(), project.SchedulerApi(), context.Background(), logger)
-	stateOptions.LoadLocalState = true
-	stateOptions.LoadRemoteState = true
-	state, ok, localErr, remoteErr := LoadState(stateOptions)
+	// Load
+	options := Options{
+		LoadLocalState:  true,
+		LoadRemoteState: true,
+	}
+	state, ok, localErr, remoteErr := LoadState(project, options, d)
+
+	// Check errors
 	assert.True(t, ok)
 	assert.Empty(t, localErr)
 	assert.Empty(t, remoteErr)
+
+	// Check results
 	assert.Equal(t, []*model.BranchState{
 		{
 			Remote: &model.Branch{
@@ -140,7 +152,7 @@ func TestLoadState(t *testing.T) {
 	assert.Empty(t, utils.SortByName(state.ConfigRows()))
 }
 
-func loadTestManifest(t *testing.T, envs *env.Map, localState string) (*manifest.Manifest, filesystem.Fs) {
+func loadTestManifest(t *testing.T, envs *env.Map, localState string) (*projectManifest.Manifest, filesystem.Fs) {
 	t.Helper()
 
 	// Prepare temp dir with defined state
@@ -153,7 +165,7 @@ func loadTestManifest(t *testing.T, envs *env.Map, localState string) (*manifest
 	testhelper.ReplaceEnvsDir(fs, `/`, envs)
 
 	// Load manifest
-	m, err := manifest.Load(fs)
+	m, err := projectManifest.Load(fs)
 	assert.NoError(t, err)
 
 	return m, fs

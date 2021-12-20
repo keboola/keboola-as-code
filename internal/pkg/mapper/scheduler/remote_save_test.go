@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
@@ -15,7 +16,7 @@ import (
 func TestSchedulerMapBeforeRemoteSave(t *testing.T) {
 	t.Parallel()
 	context := createMapperContext(t)
-	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
+	schedulerApi, _ := testapi.NewMockedSchedulerApi(log.NewDebugLogger())
 	mapper := NewMapper(context, schedulerApi)
 
 	// Scheduler config

@@ -1,7 +1,6 @@
 package rename
 
 import (
-	"context"
 	"runtime"
 	"testing"
 
@@ -10,26 +9,24 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
 	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 func TestRenameAllPlan(t *testing.T) {
 	t.Parallel()
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filesystem.Dir(testFile)
-	m, fs := loadTestManifest(t, filesystem.Join(testDir, "..", "..", "fixtures", "local", "to-rename"))
-
-	// Load state
-	logger := log.NewDebugLogger()
-	api, httpTransport, _ := testapi.NewMockedStorageApi()
+	fs := testFs(t, filesystem.Join(testDir, "..", "..", "fixtures", "local", "to-rename"))
+	d := testdeps.New()
+	d.SetFs(fs)
 
 	// Mocked API response
+	d.UseMockedSchedulerApi()
+	_, httpTransport := d.UseMockedStorageApi()
 	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
 		"id":   "ex-generic-v2",
 		"type": "extractor",
@@ -46,16 +43,11 @@ func TestRenameAllPlan(t *testing.T) {
 	httpTransport.RegisterResponder("GET", `=~/storage/components/keboola.ex-db-mysql`, getMySqlExResponder.Once())
 
 	// Load state
-	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
-	options := state.NewOptions(fs, m, api, schedulerApi, context.Background(), logger)
-	options.LoadLocalState = true
-	projectState, ok, localErr, remoteErr := state.LoadState(options)
-	assert.True(t, ok)
-	assert.NoError(t, localErr)
-	assert.NoError(t, remoteErr)
+	projectState, err := d.ProjectState(loadState.Options{LoadLocalState: true})
+	assert.NoError(t, err)
 
 	// Get rename plan
-	plan, err := NewPlan(projectState)
+	plan, err := NewPlan(projectState.State())
 	assert.NoError(t, err)
 
 	// Clear manifest records before assert
@@ -93,7 +85,7 @@ func TestRenameAllPlan(t *testing.T) {
 	}, plan)
 }
 
-func loadTestManifest(t *testing.T, inputDir string) (*manifest.Manifest, filesystem.Fs) {
+func testFs(t *testing.T, inputDir string) filesystem.Fs {
 	t.Helper()
 
 	// Create Fs
@@ -104,10 +96,5 @@ func loadTestManifest(t *testing.T, inputDir string) (*manifest.Manifest, filesy
 	envs.Set("LOCAL_PROJECT_ID", "12345")
 	envs.Set("TEST_KBC_STORAGE_API_HOST", "foo.bar")
 	testhelper.ReplaceEnvsDir(fs, `/`, envs)
-
-	// Load manifest
-	m, err := manifest.Load(fs)
-	assert.NoError(t, err)
-
-	return m, fs
+	return fs
 }

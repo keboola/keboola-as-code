@@ -1,7 +1,6 @@
-package state
+package state_test
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -9,9 +8,9 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
+	. "github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
 )
 
 func TestValidateState(t *testing.T) {
@@ -23,14 +22,19 @@ func TestValidateState(t *testing.T) {
 	envs.Set("LOCAL_STATE_MAIN_BRANCH_ID", `123`)
 	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", `456`)
 
-	logger := log.NewDebugLogger()
+	// Dependencies
 	m, fs := loadTestManifest(t, envs, "minimal")
+	d := testdeps.New()
+	d.SetFs(fs)
+	d.SetProjectManifest(m)
+	d.UseMockedSchedulerApi()
+	_, httpTransport := d.UseMockedStorageApi()
+	project, err := d.Project()
+	assert.NoError(t, err)
 
-	api, httpTransport, _ := testapi.NewMockedStorageApi()
-
-	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
-	stateOptions := NewOptions(fs, m, api, schedulerApi, context.Background(), logger)
-	s := newState(stateOptions)
+	// Create state
+	s, err := NewState(project, d)
+	assert.NoError(t, err)
 
 	// Mocked component response
 	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
@@ -49,7 +53,7 @@ func TestValidateState(t *testing.T) {
 	configKey := model.ConfigKey{BranchId: 456, ComponentId: "keboola.foo", Id: "234"}
 	config := &model.Config{ConfigKey: configKey}
 	configManifest := &model.ConfigManifest{ConfigKey: configKey}
-	assert.NoError(t, s.manifest.PersistRecord(branchManifest))
+	assert.NoError(t, s.Manifest().PersistRecord(branchManifest))
 	branchState, err := s.CreateFrom(branchManifest)
 	assert.NoError(t, err)
 	branchState.SetLocalState(branch)
@@ -59,7 +63,7 @@ func TestValidateState(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Validate
-	localErr, remoteErr := s.validate()
+	localErr, remoteErr := s.Validate()
 	expectedLocalError := `
 local branch "branch" is not valid:
   - key="name", value="", failed "required" validation

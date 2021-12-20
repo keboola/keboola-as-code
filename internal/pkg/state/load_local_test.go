@@ -1,7 +1,6 @@
-package state
+package state_test
 
 import (
-	"context"
 	"runtime"
 	"testing"
 
@@ -10,11 +9,11 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
+	. "github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
 	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -238,11 +237,12 @@ func TestLoadLocalStateConfigRowInvalidMetaJson(t *testing.T) {
 func loadLocalTestState(t *testing.T, m *manifest.Manifest, fs filesystem.Fs) (*State, error) {
 	t.Helper()
 
-	// Mocked API
-	logger := log.NewDebugLogger()
-	api, httpTransport, _ := testapi.NewMockedStorageApi()
-
 	// Mocked API response
+	d := testdeps.New()
+	d.SetFs(fs)
+	d.SetProjectManifest(m)
+	d.UseMockedSchedulerApi()
+	_, httpTransport := d.UseMockedStorageApi()
 	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
 		"id":                     "ex-generic-v2",
 		"type":                   "extractor",
@@ -263,10 +263,9 @@ func loadLocalTestState(t *testing.T, m *manifest.Manifest, fs filesystem.Fs) (*
 	httpTransport.RegisterResponder("GET", `=~/storage/components/keboola.ex-db-mysql`, getMySqlExResponder)
 
 	// Load state
-	schedulerApi, _, _ := testapi.NewMockedSchedulerApi()
-	options := NewOptions(fs, m, api, schedulerApi, context.Background(), logger)
-	options.LoadLocalState = true
-	state, _, localErr, remoteErr := LoadState(options)
+	project, err := d.Project()
+	assert.NoError(t, err)
+	state, _, localErr, remoteErr := LoadState(project, Options{LoadLocalState: true}, d)
 	assert.NoError(t, remoteErr)
 	return state, localErr
 }
@@ -282,7 +281,7 @@ func loadManifest(t *testing.T, projectDirName string) (*manifest.Manifest, file
 	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", "456")
 	envs.Set("LOCAL_STATE_MYSQL_CONFIG_ID", "896")
 
-	// State dir
+	// Objects dir
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filesystem.Dir(testFile)
 	stateDir := filesystem.Join(testDir, "..", "fixtures", "local", projectDirName)
