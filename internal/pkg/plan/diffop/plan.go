@@ -6,21 +6,21 @@ import (
 	"sort"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
+	"github.com/keboola/keboola-as-code/internal/pkg/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // Plan is based on the diff results.
 type Plan struct {
-	*state.State
 	name                string
 	actions             []*action
 	allowedRemoteDelete bool
 }
 
-func NewPlan(name string, state *state.State) *Plan {
-	return &Plan{name: name, State: state}
+func NewPlan(name string) *Plan {
+	return &Plan{name: name}
 }
 
 func (p *Plan) Empty() bool {
@@ -35,8 +35,8 @@ func (p *Plan) AllowRemoteDelete() {
 	p.allowedRemoteDelete = true
 }
 
-func (p *Plan) Invoke(logger log.Logger, ctx context.Context, changeDescription string) error {
-	executor := newExecutor(p, logger, ctx, changeDescription)
+func (p *Plan) Invoke(logger log.Logger, ctx context.Context, localManager *local.Manager, remoteManager *remote.Manager, changeDescription string) error {
+	executor := newExecutor(p, logger, ctx, localManager, remoteManager, changeDescription)
 	return executor.invoke()
 }
 

@@ -6,11 +6,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/diffop"
-	"github.com/keboola/keboola-as-code/internal/pkg/state"
 )
 
 func NewPlan(diffResults *diff.Results) (*diffop.Plan, error) {
-	plan := diffop.NewPlan(`push`, diffResults.CurrentState)
+	plan := diffop.NewPlan(`push`)
 	for _, result := range diffResults.Results {
 		switch result.State {
 		case diff.ResultEqual:
@@ -24,7 +23,7 @@ func NewPlan(diffResults *diff.Results) (*diffop.Plan, error) {
 		case diff.ResultOnlyInLocal:
 			plan.Add(result, diffop.ActionSaveRemote)
 		case diff.ResultOnlyInRemote:
-			if parentExists(result.ObjectState, plan.State) {
+			if parentExists(result.ObjectState, diffResults.Objects) {
 				plan.Add(result, diffop.ActionDeleteRemote)
 			}
 		case diff.ResultNotSet:
@@ -39,18 +38,18 @@ func NewPlan(diffResults *diff.Results) (*diffop.Plan, error) {
 	return plan, nil
 }
 
-func parentExists(objectState model.ObjectState, currentState *state.State) bool {
+func parentExists(objectState model.ObjectState, objects model.ObjectStates) bool {
 	switch v := objectState.(type) {
 	case *model.BranchState:
 		return true
 	case *model.ConfigState:
 		config := v.Remote
-		branch, branchFound := currentState.Get(config.BranchKey())
+		branch, branchFound := objects.Get(config.BranchKey())
 		return branchFound && branch.HasLocalState()
 	case *model.ConfigRowState:
 		row := v.Remote
-		config, configFound := currentState.Get(row.ConfigKey())
-		branch, branchFound := currentState.Get(row.BranchKey())
+		config, configFound := objects.Get(row.ConfigKey())
+		branch, branchFound := objects.Get(row.BranchKey())
 		return configFound && config.HasLocalState() && branchFound && branch.HasLocalState()
 
 	default:

@@ -19,13 +19,13 @@ type executor struct {
 	errors       *utils.MultiError
 }
 
-func newExecutor(plan *Plan, logger log.Logger, ctx context.Context, changeDescription string) *executor {
+func newExecutor(plan *Plan, logger log.Logger, ctx context.Context, localManager *local.Manager, remoteManager *remote.Manager, changeDescription string) *executor {
 	return &executor{
 		Plan:         plan,
 		logger:       logger,
-		localManager: plan.State.LocalManager(),
-		localWork:    plan.State.LocalManager().NewUnitOfWork(ctx),
-		remoteWork:   plan.State.RemoteManager().NewUnitOfWork(ctx, changeDescription),
+		localManager: localManager,
+		localWork:    localManager.NewUnitOfWork(ctx),
+		remoteWork:   remoteManager.NewUnitOfWork(ctx, changeDescription),
 		errors:       utils.NewMultiError(),
 	}
 }

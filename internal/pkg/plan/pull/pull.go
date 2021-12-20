@@ -8,7 +8,7 @@ import (
 )
 
 func NewPlan(diffResults *diff.Results) (*diffop.Plan, error) {
-	plan := diffop.NewPlan(`pull`, diffResults.CurrentState)
+	plan := diffop.NewPlan(`pull`)
 	for _, result := range diffResults.Results {
 		switch result.State {
 		case diff.ResultEqual:
