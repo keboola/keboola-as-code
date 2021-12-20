@@ -19,7 +19,6 @@ func CreateCommand(depsProvider dependencies.Provider) *cobra.Command {
 			d := depsProvider.Dependencies()
 
 			// Metadata directory is required
-			d.LoadStorageApiHostFromManifest()
 			if _, err := d.ProjectDir(); err != nil {
 				return err
 			}
@@ -49,7 +48,6 @@ func CreateBranchCommand(depsProvider dependencies.Provider) *cobra.Command {
 			start := time.Now()
 
 			// Metadata directory is required
-			d.LoadStorageApiHostFromManifest()
 			if _, err := d.ProjectDir(); err != nil {
 				return err
 			}
