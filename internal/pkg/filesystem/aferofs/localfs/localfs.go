@@ -10,56 +10,18 @@ import (
 	"github.com/spf13/afero"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs/basepathfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
-type aferoFs = afero.Fs
-
-// LocalFs is abstraction of the local filesystem implemented by "os" package
+// New - LocalFs is abstraction of the local filesystem implemented by "os" package
 // All paths are relative to the basePath.
-type LocalFs struct {
-	aferoFs
-	utils    *afero.Afero
-	basePath string
-}
-
-func New(basePath string) *LocalFs {
+func New(basePath string) (*basepathfs.BasePathFs, error) {
 	if !filepath.IsAbs(basePath) {
 		panic(fmt.Errorf(`base path "%s" must be absolute`, basePath))
 	}
 
-	fs := afero.NewBasePathFs(afero.NewOsFs(), basePath)
-	return &LocalFs{
-		aferoFs:  fs,
-		utils:    &afero.Afero{Fs: fs},
-		basePath: basePath,
-	}
-}
-
-func (fs *LocalFs) Name() string {
-	return `local`
-}
-
-func (fs *LocalFs) BasePath() string {
-	return fs.basePath
-}
-
-// FromSlash returns OS representation of the path.
-func (fs *LocalFs) FromSlash(path string) string {
-	return strings.ReplaceAll(path, string(filesystem.PathSeparator), string(os.PathSeparator))
-}
-
-// ToSlash returns internal representation of the path.
-func (fs *LocalFs) ToSlash(path string) string {
-	return strings.ReplaceAll(path, string(os.PathSeparator), string(filesystem.PathSeparator))
-}
-
-func (fs *LocalFs) Walk(root string, walkFn filepath.WalkFunc) error {
-	return fs.utils.Walk(root, walkFn)
-}
-
-func (fs *LocalFs) ReadDir(path string) ([]os.FileInfo, error) {
-	return fs.utils.ReadDir(path)
+	return basepathfs.New(afero.NewOsFs(), basePath)
 }
 
 // FindKeboolaDir -> working dir or its parent that contains ".keboola" metadata dir.

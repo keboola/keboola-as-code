@@ -37,16 +37,23 @@ func NewLocalFsFindKeboolaDir(logger log.Logger, workingDir string) (fs filesyst
 		return nil, fmt.Errorf(`cannot determine working dir relative path: %w`, err)
 	}
 
+	backendFs, err := localfs.New(keboolaDir)
+	if err != nil {
+		return nil, err
+	}
+
 	// Create filesystem abstraction
-	return New(logger, localfs.New(keboolaDir), workingDirRel), nil
+	return New(logger, backendFs, workingDirRel), nil
 }
 
 func NewLocalFs(logger log.Logger, rootDir string, workingDirRel string) (fs filesystem.Fs, err error) {
-	// Create filesystem abstraction
-	return New(logger, localfs.New(rootDir), workingDirRel), nil
+	backendFs, err := localfs.New(rootDir)
+	if err != nil {
+		return nil, err
+	}
+	return New(logger, backendFs, workingDirRel), nil
 }
 
 func NewMemoryFs(logger log.Logger, workingDir string) (fs filesystem.Fs, err error) {
-	// Create filesystem abstraction
 	return New(logger, memoryfs.New(), workingDir), nil
 }
