@@ -21,3 +21,19 @@ func TestValidateUserInputTypeByKind(t *testing.T) {
 	assert.Error(t, validateUserInputTypeByKind(false, "textarea"))
 	assert.NoError(t, validateUserInputTypeByKind("string", "textarea"))
 }
+
+func TestValidateUserInputByType(t *testing.T) {
+	t.Parallel()
+
+	err := validateUserInputByType("str", "string")
+	assert.NoError(t, err)
+
+	err = validateUserInputByType(3, "string")
+	assert.Error(t, err)
+
+	err = validateUserInputByType(3, "int")
+	assert.NoError(t, err)
+
+	err = validateUserInputByType("3", "int")
+	assert.Error(t, err)
+}

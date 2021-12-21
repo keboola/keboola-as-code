@@ -36,19 +36,6 @@ func TestTemplateInputsValidateDefinitions(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), `key="type"`)
 
-	// Fail - defined options for wrong Kind
-	inputs = Inputs{{
-		Id:          "input.id",
-		Name:        "input",
-		Description: "input desc",
-		Default:     "def",
-		Options:     []Option{"a", "b"},
-		Kind:        "input",
-	}}
-	err = inputs.ValidateDefinitions()
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), `key="options"`)
-
 	// Fail - input Kind with missing Type
 	inputs = Inputs{{
 		Id:          "input.id",
@@ -61,19 +48,6 @@ func TestTemplateInputsValidateDefinitions(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), `key="type"`)
 	assert.Contains(t, err.Error(), `failed "required_if"`)
-
-	// Fail - Default value missing in Options
-	inputs = Inputs{{
-		Id:          "input.id",
-		Name:        "input",
-		Description: "input desc",
-		Default:     "c",
-		Options:     []Option{"a", "b"},
-		Kind:        "input",
-	}}
-	err = inputs.ValidateDefinitions()
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), `failed "template-input-options"`)
 
 	// Fail - wrong Rules
 	inputs = Inputs{{
@@ -102,18 +76,6 @@ func TestTemplateInputsValidateDefinitions(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), `failed "template-input-if"`)
 
-	// Success - with Options
-	inputs = Inputs{{
-		Id:          "input.id",
-		Name:        "input",
-		Description: "input desc",
-		Default:     "a",
-		Options:     []Option{"a", "b"},
-		Kind:        "select",
-	}}
-	err = inputs.ValidateDefinitions()
-	assert.NoError(t, err)
-
 	// Success - int Default and empty Options
 	inputs = Inputs{{
 		Id:          "input.id",
@@ -121,7 +83,7 @@ func TestTemplateInputsValidateDefinitions(t *testing.T) {
 		Description: "input desc",
 		Type:        "int",
 		Default:     33,
-		Options:     []Option{},
+		Options:     []string{},
 		Kind:        "input",
 		Rules:       "gte=5",
 		If:          "1+(2-1)>1",
@@ -136,6 +98,73 @@ func TestTemplateInputsValidateDefinitions(t *testing.T) {
 		Description: "input desc",
 		Type:        "string",
 		Kind:        "input",
+	}}
+	err = inputs.ValidateDefinitions()
+	assert.NoError(t, err)
+}
+
+func TestTemplateInputsValidateDefinitionsSelect(t *testing.T) {
+	t.Parallel()
+
+	// Fail - defined options for wrong Kind
+	inputs := Inputs{{
+		Id:          "input.id",
+		Name:        "input",
+		Description: "input desc",
+		Default:     "def",
+		Options:     []string{"a", "b"},
+		Kind:        "input",
+	}}
+	err := inputs.ValidateDefinitions()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), `key="options"`)
+
+	// Fail - Default value missing in Options
+	inputs = Inputs{{
+		Id:          "input.id",
+		Name:        "input",
+		Description: "input desc",
+		Default:     "c",
+		Options:     []string{"a", "b"},
+		Kind:        "select",
+	}}
+	err = inputs.ValidateDefinitions()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), `failed "template-input-default"`)
+
+	// Success - with Options
+	inputs = Inputs{{
+		Id:          "input.id",
+		Name:        "input",
+		Description: "input desc",
+		Default:     "a",
+		Options:     []string{"a", "b"},
+		Kind:        "select",
+	}}
+	err = inputs.ValidateDefinitions()
+	assert.NoError(t, err)
+
+	// Fail - Default value missing in MultiOptions
+	inputs = Inputs{{
+		Id:          "input.id",
+		Name:        "input",
+		Description: "input desc",
+		Default:     []string{"a", "d"},
+		Options:     []string{"a", "b", "c"},
+		Kind:        "multiselect",
+	}}
+	err = inputs.ValidateDefinitions()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), `failed "template-input-default"`)
+
+	// Success - Default for MultiOptions
+	inputs = Inputs{{
+		Id:          "input.id",
+		Name:        "input",
+		Description: "input desc",
+		Default:     []string{"a", "c"},
+		Options:     []string{"a", "b", "c"},
+		Kind:        "multiselect",
 	}}
 	err = inputs.ValidateDefinitions()
 	assert.NoError(t, err)
@@ -191,7 +220,7 @@ func TestTemplateInputsJsonUnmarshal(t *testing.T) {
 			Name:        "Facebook options",
 			Description: "Facebook options description",
 			Kind:        "select",
-			Options:     []Option{"1", "2"},
+			Options:     []string{"1", "2"},
 		},
 	}, inputs)
 }
@@ -218,7 +247,7 @@ func TestTemplateInputsJsonMarshal(t *testing.T) {
 			Name:        "Facebook options",
 			Description: "Facebook options description",
 			Kind:        "select",
-			Options:     []Option{"1", "2"},
+			Options:     []string{"1", "2"},
 		},
 	}
 	resultJson, err := json.MarshalIndent(inputs, "", "  ")
@@ -240,6 +269,16 @@ func TestTemplateInputValidateUserInput(t *testing.T) {
 	assert.Error(t, input.ValidateUserInput(1, nil))
 	assert.Error(t, input.ValidateUserInput("1", nil))
 	assert.NoError(t, input.ValidateUserInput(7, nil))
+
+	input = &Input{
+		Id:          "input.id",
+		Name:        "input",
+		Description: "input description",
+		Kind:        "input",
+		Type:        "int",
+	}
+	assert.NoError(t, input.ValidateUserInput(1, nil))
+	assert.Error(t, input.ValidateUserInput("1", nil))
 
 	input = &Input{
 		Id:          "input.id",
