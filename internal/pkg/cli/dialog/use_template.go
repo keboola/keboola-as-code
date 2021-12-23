@@ -55,7 +55,7 @@ func (p *Dialogs) AskUseTemplateOptions(inputs input.Inputs) (results map[string
 			selectPrompt := &prompt.Select{
 				Label:       i.Name,
 				Description: i.Description,
-				Options:     i.Options,
+				Options:     input.GetOptionsNames(i.Options),
 				UseDefault:  true,
 				Validator: func(val interface{}) error {
 					return i.ValidateUserInput(val, ctx)
@@ -64,14 +64,15 @@ func (p *Dialogs) AskUseTemplateOptions(inputs input.Inputs) (results map[string
 			if i.Default != nil {
 				selectPrompt.Default = i.Default.(string)
 			}
-			value, _ := p.Select(selectPrompt)
-			ctx = context.WithValue(ctx, contextKey(i.Id), value)
-			results[i.Id] = value
+			selectedOptionName, _ := p.Select(selectPrompt)
+			selectedValue := input.MapOptionsByName(i.Options)[selectedOptionName]
+			ctx = context.WithValue(ctx, contextKey(i.Id), selectedValue)
+			results[i.Id] = selectedValue
 		case input.KindMultiSelect:
 			multiSelect := &prompt.MultiSelect{
 				Label:       i.Name,
 				Description: i.Description,
-				Options:     i.Options,
+				Options:     input.GetOptionsNames(i.Options),
 				Validator: func(val interface{}) error {
 					return i.ValidateUserInput(val, ctx)
 				},
@@ -79,9 +80,15 @@ func (p *Dialogs) AskUseTemplateOptions(inputs input.Inputs) (results map[string
 			if i.Default != nil {
 				multiSelect.Default = i.Default.([]string)
 			}
-			value, _ := p.MultiSelect(multiSelect)
-			ctx = context.WithValue(ctx, contextKey(i.Id), value)
-			results[i.Id] = value
+			optionsByName := input.MapOptionsByName(i.Options)
+			selectedOptionNames, _ := p.MultiSelect(multiSelect)
+			selectedValues := make([]string, 0)
+			for _, v := range selectedOptionNames {
+				selectedValues = append(selectedValues, optionsByName[v])
+			}
+
+			ctx = context.WithValue(ctx, contextKey(i.Id), selectedValues)
+			results[i.Id] = selectedValues
 		}
 	}
 
