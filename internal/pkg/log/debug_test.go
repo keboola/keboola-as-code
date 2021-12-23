@@ -60,9 +60,9 @@ func TestNewDebugLogger_WarnOrError(t *testing.T) {
 	logger.Info("info")
 	logger.Warn("warn")
 	logger.Error("error")
-	assert.Equal(t, "WARN  warn\nERROR  error\n", logger.WarnOrErrorMsgs())
+	assert.Equal(t, "WARN  warn\nERROR  error\n", logger.WarnAndErrorMsgs())
 	assert.Empty(t, logger.AllMsgs())
-	assert.Empty(t, logger.WarnOrErrorMsgs())
+	assert.Empty(t, logger.WarnAndErrorMsgs())
 }
 
 func TestNewDebugLogger_Error(t *testing.T) {

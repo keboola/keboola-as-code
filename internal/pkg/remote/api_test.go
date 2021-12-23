@@ -28,7 +28,7 @@ func TestHostnameNotFound(t *testing.T) {
 	assert.Empty(t, token)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), `Get "https://foo.bar.com/v2/storage/tokens/verify": dial tcp`)
-	assert.Regexp(t, `DEBUG  HTTP-ERROR\tGet "https://foo.bar.com/v2/storage/tokens/verify": dial tcp`, logger.String())
+	assert.Regexp(t, `DEBUG  HTTP-ERROR\tGet "https://foo.bar.com/v2/storage/tokens/verify": dial tcp`, logger.AllMsgs())
 }
 
 func TestInvalidHost(t *testing.T) {
@@ -39,5 +39,5 @@ func TestInvalidHost(t *testing.T) {
 	assert.Empty(t, token)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), `GET https://google.com/v2/storage/tokens/verify | returned http code 404`)
-	assert.Regexp(t, `DEBUG  HTTP-ERROR	GET https://google.com/v2/storage/tokens/verify | returned http code 404`, logger.String())
+	assert.Regexp(t, `DEBUG  HTTP-ERROR	GET https://google.com/v2/storage/tokens/verify | returned http code 404`, logger.AllMsgs())
 }

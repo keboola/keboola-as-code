@@ -28,7 +28,7 @@ type DebugLogger interface {
 	DebugMsgs() string
 	InfoMsgs() string
 	WarnMsgs() string
-	WarnOrErrorMsgs() string
+	WarnAndErrorMsgs() string
 	ErrorMsgs() string
 }
 

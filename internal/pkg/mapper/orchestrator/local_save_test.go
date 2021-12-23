@@ -24,7 +24,7 @@ func TestMapBeforeLocalSave(t *testing.T) {
 
 	// Save
 	assert.NoError(t, mapper.MapBeforeLocalSave(recipe))
-	assert.Empty(t, logs.String())
+	assert.Empty(t, logs.AllMsgs())
 
 	// Minify JSON + remove file description
 	var files []*filesystem.File
@@ -97,7 +97,7 @@ WARN  Warning: cannot save orchestrator config "branch/other/orchestrator":
     - cannot save task "001-task-3":
       - config "branch:123/component:foo.bar2/config:456" not found
 `
-	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logs.String())
+	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logs.AllMsgs())
 }
 
 func createLocalSaveFixtures(t *testing.T, context mapperPkg.Context, createTargets bool) *model.ConfigState {

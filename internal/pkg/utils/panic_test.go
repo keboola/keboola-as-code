@@ -29,7 +29,7 @@ func TestProcessPanicUserError(t *testing.T) {
 	logFilePath := "/foo/bar.log"
 	exitCode := ProcessPanic(NewUserErrorWithCode(123, "test"), logger, logFilePath)
 	assert.Equal(t, 123, exitCode)
-	logStr := logger.String()
+	logStr := logger.AllMsgs()
 	assert.Contains(t, logStr, "DEBUG  User error panic: test")
 	assert.Contains(t, logStr, "DEBUG  Trace:")
 	assert.Contains(t, logStr, "Details can be found in the log file \"/foo/bar.log\".")
@@ -41,7 +41,7 @@ func TestProcessPanicUnexpected(t *testing.T) {
 	logFilePath := "/foo/bar.log"
 	exitCode := ProcessPanic(fmt.Errorf("test"), logger, logFilePath)
 	assert.Equal(t, 1, exitCode)
-	logStr := logger.String()
+	logStr := logger.AllMsgs()
 	assert.Contains(t, logStr, "DEBUG  Unexpected panic: test")
 	assert.Contains(t, logStr, "DEBUG  Trace:")
 	assert.Contains(t, logStr, "To help us diagnose the problem you can send us a crash report.")

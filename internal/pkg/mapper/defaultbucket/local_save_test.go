@@ -108,7 +108,7 @@ WARN  Warning: - config "branch:123/component:keboola.ex-db-mysql/config:456" no
   - referenced from config "branch:123/component:keboola.snowflake-transformation/config:789"
   - input mapping "in.c-keboola-ex-db-mysql-456.contacts"
 `
-	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logs.String())
+	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logs.AllMsgs())
 
 	// Check default bucket replacement
 	configFile, err = recipe.Files.ObjectConfigFile()
@@ -204,7 +204,7 @@ WARN  Warning: - config "branch:123/component:keboola.ex-db-mysql/config:456" no
   - referenced from config row "branch:123/component:keboola.snowflake-transformation/config:789/row:456"
   - input mapping "in.c-keboola-ex-db-mysql-456.contacts"
 `
-	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logs.String())
+	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logs.AllMsgs())
 
 	// Check default bucket replacement
 	configFile, err = recipe.Files.ObjectConfigFile()

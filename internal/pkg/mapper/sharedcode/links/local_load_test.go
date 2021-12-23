@@ -24,7 +24,7 @@ func TestLocalLoadTranWithSharedCode(t *testing.T) {
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(transformation)
 	assert.NoError(t, mapperInst.OnLocalChange(changes))
-	assert.Empty(t, logs.String())
+	assert.Empty(t, logs.AllMsgs())
 
 	// Paths in transformation blocks are replaced by IDs
 	assert.Equal(t, []*model.Block{
@@ -106,7 +106,7 @@ missing shared code "branch/missing":
 	err := mapperInst.OnLocalChange(changes)
 	assert.Error(t, err)
 	assert.Equal(t, strings.TrimSpace(expectedErr), err.Error())
-	assert.Empty(t, logs.String())
+	assert.Empty(t, logs.AllMsgs())
 
 	// Link to shared code is not set
 	assert.Nil(t, transformation.Local.Transformation.LinkToSharedCode)
@@ -135,7 +135,7 @@ missing shared code "branch/_shared/keboola.python-transformation-v2/codes/missi
 	err := mapperInst.OnLocalChange(changes)
 	assert.Error(t, err)
 	assert.Equal(t, strings.TrimSpace(expectedErr), err.Error())
-	assert.Empty(t, logs.String())
+	assert.Empty(t, logs.AllMsgs())
 
 	// Link to shared code is set, but without invalid row
 	assert.Equal(t, &model.LinkToSharedCode{Config: sharedCodeKey, Rows: []model.ConfigRowKey{sharedCodeRowsKeys[0]}}, transformation.Local.Transformation.LinkToSharedCode)

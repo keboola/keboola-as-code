@@ -100,7 +100,7 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(configState)
 	assert.NoError(t, mapper.OnRemoteChange(changes))
-	assert.Empty(t, logs.String())
+	assert.Empty(t, logs.AllMsgs())
 
 	// Check target configs relation
 	rel1, err := target1.Remote.Relations.GetOneByType(model.UsedInOrchestratorRelType)
@@ -319,7 +319,7 @@ WARN  Warning: invalid orchestrator config "branch:123/component:keboola.orchest
     - missing "phase" key
     - missing "task" key
 `
-	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logs.String())
+	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logs.AllMsgs())
 
 	// Assert orchestration
 	assert.Equal(t, `{}`, json.MustEncodeString(config.Content, false))
@@ -423,7 +423,7 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(configState)
 	assert.NoError(t, mapper.OnRemoteChange(changes))
-	assert.Empty(t, logs.String())
+	assert.Empty(t, logs.AllMsgs())
 
 	// Internal object
 	assert.Equal(t, `{}`, json.MustEncodeString(config.Content, false))
@@ -612,5 +612,5 @@ WARN  Warning: invalid orchestrator config "branch:123/component:keboola.orchest
     - 1 -> 2 -> 1
     - 5 -> 8 -> 7 -> 6 -> 5
 `
-	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logs.String())
+	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logs.AllMsgs())
 }

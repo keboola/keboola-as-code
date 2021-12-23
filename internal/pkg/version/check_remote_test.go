@@ -27,7 +27,7 @@ func TestCheckIfLatestVersionEqual(t *testing.T) {
 	c, logs := createMockedChecker(t)
 	err := c.CheckIfLatest(`v1.2.3`)
 	assert.Nil(t, err)
-	assert.NotContains(t, logs.String(), `WARN`)
+	assert.NotContains(t, logs.AllMsgs(), `WARN`)
 }
 
 func TestCheckIfLatestVersionGreater(t *testing.T) {
@@ -35,7 +35,7 @@ func TestCheckIfLatestVersionGreater(t *testing.T) {
 	c, logs := createMockedChecker(t)
 	err := c.CheckIfLatest(`v1.2.5`)
 	assert.Nil(t, err)
-	assert.NotContains(t, logs.String(), `WARN`)
+	assert.NotContains(t, logs.AllMsgs(), `WARN`)
 }
 
 func TestCheckIfLatestVersionLess(t *testing.T) {
@@ -43,7 +43,7 @@ func TestCheckIfLatestVersionLess(t *testing.T) {
 	c, logs := createMockedChecker(t)
 	err := c.CheckIfLatest(`v1.2.2`)
 	assert.Nil(t, err)
-	assert.Contains(t, logs.String(), `WARN  WARNING: A new version "v1.2.3" is available.`)
+	assert.Contains(t, logs.AllMsgs(), `WARN  WARNING: A new version "v1.2.3" is available.`)
 }
 
 func createMockedChecker(t *testing.T) (*checker, log.DebugLogger) {

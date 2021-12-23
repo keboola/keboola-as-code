@@ -22,7 +22,7 @@ func TestSharedCodeRemoteSave(t *testing.T) {
 	}
 	err := NewMapper(context).MapBeforeRemoteSave(configRecipe)
 	assert.NoError(t, err)
-	assert.Empty(t, logs.String())
+	assert.Empty(t, logs.AllMsgs())
 
 	// Map row
 	rowRecipe := &model.RemoteSaveRecipe{
@@ -32,7 +32,7 @@ func TestSharedCodeRemoteSave(t *testing.T) {
 	}
 	err = NewMapper(context).MapBeforeRemoteSave(rowRecipe)
 	assert.NoError(t, err)
-	assert.Empty(t, logs.String())
+	assert.Empty(t, logs.AllMsgs())
 
 	// Assert
 	assert.Equal(t,

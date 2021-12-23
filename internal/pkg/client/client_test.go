@@ -51,7 +51,7 @@ func TestSimpleRequest(t *testing.T) {
 	assert.NoError(t, response.Err())
 	assert.Equal(t, "test", response.String())
 	expected := "DEBUG  HTTP\tGET https://example.com | 200 | %s"
-	testhelper.AssertWildcards(t, expected, logger.String(), "Unexpected log")
+	testhelper.AssertWildcards(t, expected, logger.AllMsgs(), "Unexpected log")
 }
 
 func TestRetry(t *testing.T) {
@@ -65,7 +65,7 @@ func TestRetry(t *testing.T) {
 	response := c.NewRequest(resty.MethodGet, "https://example.com").Send().Response
 	assert.Equal(t, errors.New(`GET https://example.com | returned http code 504`), response.Err())
 	assert.Equal(t, "test", response.String())
-	logs := logger.String()
+	logs := logger.AllMsgs()
 
 	// Check number of requests
 	assert.Equal(t, 1+c.resty.RetryCount, httpTransport.GetCallCountInfo()["GET https://example.com"])
@@ -96,7 +96,7 @@ func TestDoNotRetry(t *testing.T) {
 	response := c.NewRequest(resty.MethodGet, "https://example.com").Send().Response
 	assert.Equal(t, errors.New(`GET https://example.com | returned http code 403`), response.Err())
 	assert.Equal(t, "test", response.String())
-	logs := logger.String()
+	logs := logger.AllMsgs()
 
 	// Only one request, HTTP code 403 is not retried
 	assert.Equal(t, 1, httpTransport.GetCallCountInfo()["GET https://example.com"])
@@ -147,7 +147,7 @@ test
 DEBUG  HTTP	GET https://example.com | 200 | %s
 
 `
-	testhelper.AssertWildcards(t, expectedLog, out.String(), "Unexpected log")
+	testhelper.AssertWildcards(t, expectedLog, out.AllMsgs(), "Unexpected log")
 }
 
 func getMockedClientAndLogs(t *testing.T, verbose bool) (*Client, *httpmock.MockTransport, log.DebugLogger) {

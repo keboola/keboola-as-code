@@ -201,7 +201,7 @@ func (*testCases) TestExists(t *testing.T, fs filesystem.Fs, logger log.DebugLog
 	logger.Truncate()
 	assert.True(t, fs.Exists(filePath))
 	assert.False(t, fs.Exists("file-non-exists.txt"))
-	assert.Equal(t, "", logger.String())
+	assert.Equal(t, "", logger.AllMsgs())
 }
 
 func (*testCases) TestIsFile(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
@@ -439,7 +439,7 @@ func (*testCases) TestReadFile(t *testing.T, fs filesystem.Fs, logger log.DebugL
 	assert.NoError(t, err)
 	assert.NotNil(t, file)
 	assert.Equal(t, "foo\n", file.Content)
-	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.String()))
+	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.AllMsgs()))
 }
 
 func (*testCases) TestReadFileNotFound(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
@@ -448,7 +448,7 @@ func (*testCases) TestReadFileNotFound(t *testing.T, fs filesystem.Fs, logger lo
 	assert.Error(t, err)
 	assert.Nil(t, file)
 	assert.True(t, strings.HasPrefix(err.Error(), `missing file "file.txt"`))
-	assert.Equal(t, "", logger.String())
+	assert.Equal(t, "", logger.AllMsgs())
 }
 
 func (*testCases) TestWriteFile(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
@@ -456,7 +456,7 @@ func (*testCases) TestWriteFile(t *testing.T, fs filesystem.Fs, logger log.Debug
 
 	// Write
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filePath, "foo\n")))
-	assert.Equal(t, `DEBUG  Saved "file.txt"`, strings.TrimSpace(logger.String()))
+	assert.Equal(t, `DEBUG  Saved "file.txt"`, strings.TrimSpace(logger.AllMsgs()))
 
 	// Read
 	file, err := fs.ReadFile(filePath, "")
@@ -474,7 +474,7 @@ func (*testCases) TestWriteFileDirNotFound(t *testing.T, fs filesystem.Fs, logge
 DEBUG  Created directory "my/dir"
 DEBUG  Saved "my/dir/file.txt"
 `
-	assert.Equal(t, strings.TrimSpace(expectedLogs), strings.TrimSpace(logger.String()))
+	assert.Equal(t, strings.TrimSpace(expectedLogs), strings.TrimSpace(logger.AllMsgs()))
 
 	// Read - dir is auto created
 	file, err := fs.ReadFile(filePath, "")
@@ -490,7 +490,7 @@ func (*testCases) TestWriteJsonFile(t *testing.T, fs filesystem.Fs, logger log.D
 	data := orderedmap.New()
 	data.Set(`foo`, `bar`)
 	assert.NoError(t, fs.WriteJsonFile(filesystem.NewJsonFile(filePath, data)))
-	assert.Equal(t, `DEBUG  Saved "file.json"`, strings.TrimSpace(logger.String()))
+	assert.Equal(t, `DEBUG  Saved "file.json"`, strings.TrimSpace(logger.AllMsgs()))
 
 	// Read
 	file, err := fs.ReadFile(filePath, "")
@@ -549,7 +549,7 @@ func (*testCases) TestReadJsonFile(t *testing.T, fs filesystem.Fs, logger log.De
 	assert.NoError(t, err)
 	assert.NotNil(t, file)
 	assert.Equal(t, `{"foo":"bar"}`, json.MustEncodeString(file.Content, false))
-	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.String()))
+	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.AllMsgs()))
 }
 
 func (*testCases) TestReadJsonFileTo(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
@@ -563,7 +563,7 @@ func (*testCases) TestReadJsonFileTo(t *testing.T, fs filesystem.Fs, logger log.
 	err := fs.ReadJsonFileTo(filePath, "", target)
 	assert.NoError(t, err)
 	assert.Equal(t, `bar`, target.FooField)
-	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.String()))
+	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.AllMsgs()))
 }
 
 func (*testCases) TestReadJsonFileToInvalid(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
@@ -613,7 +613,7 @@ func (*testCases) TestReadJsonFieldsTo(t *testing.T, fs filesystem.Fs, logger lo
 	assert.Equal(t, `{"field1":"foo","field2":"bar"}`, json.MustEncodeString(file.Content, false))
 	assert.Equal(t, `foo`, target.Field1)
 	assert.Equal(t, `bar`, target.Field2)
-	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.String()))
+	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.AllMsgs()))
 }
 
 func (*testCases) TestReadJsonMapTo(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
@@ -629,7 +629,7 @@ func (*testCases) TestReadJsonMapTo(t *testing.T, fs filesystem.Fs, logger log.D
 	assert.NotNil(t, file)
 	assert.Equal(t, `{"field1":"foo","field2":"bar"}`, json.MustEncodeString(file.Content, false))
 	assert.Equal(t, `{"field1":"foo","field2":"bar"}`, json.MustEncodeString(target.Map, false))
-	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.String()))
+	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.AllMsgs()))
 }
 
 func (*testCases) TestReadFileContentTo(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
@@ -645,5 +645,5 @@ func (*testCases) TestReadFileContentTo(t *testing.T, fs filesystem.Fs, logger l
 	assert.NotNil(t, file)
 	assert.Equal(t, `{"field1": "foo", "field2": "bar"}`, file.Content)
 	assert.Equal(t, `{"field1": "foo", "field2": "bar"}`, target.Content)
-	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.String()))
+	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.AllMsgs()))
 }

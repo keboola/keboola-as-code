@@ -14,7 +14,7 @@ func TestToDebugWriter(t *testing.T) {
 	writer := logger.DebugWriter()
 	_, err := writer.Write([]byte("test\n"))
 	assert.NoError(t, err)
-	assert.Equal(t, "DEBUG  test\n", logger.String())
+	assert.Equal(t, "DEBUG  test\n", logger.AllMsgs())
 }
 
 func TestToInfoWriter(t *testing.T) {
@@ -23,7 +23,7 @@ func TestToInfoWriter(t *testing.T) {
 	writer := logger.InfoWriter()
 	_, err := writer.Write([]byte("test\n"))
 	assert.NoError(t, err)
-	assert.Equal(t, "INFO  test\n", logger.String())
+	assert.Equal(t, "INFO  test\n", logger.AllMsgs())
 }
 
 func TestToWarnWriter(t *testing.T) {
@@ -32,7 +32,7 @@ func TestToWarnWriter(t *testing.T) {
 	writer := logger.WarnWriter()
 	_, err := writer.Write([]byte("test\n"))
 	assert.NoError(t, err)
-	assert.Equal(t, "WARN  test\n", logger.String())
+	assert.Equal(t, "WARN  test\n", logger.AllMsgs())
 }
 
 func TestToErrorWriter(t *testing.T) {
@@ -41,7 +41,7 @@ func TestToErrorWriter(t *testing.T) {
 	writer := logger.ErrorWriter()
 	_, err := writer.Write([]byte("test\n"))
 	assert.NoError(t, err)
-	assert.Equal(t, "ERROR  test\n", logger.String())
+	assert.Equal(t, "ERROR  test\n", logger.AllMsgs())
 }
 
 func TestWriteStringIndent(t *testing.T) {
@@ -56,5 +56,5 @@ INFO    test1
 INFO      test2
 INFO        test3
 `
-	assert.Equal(t, strings.TrimLeft(expected, "\n"), logger.String())
+	assert.Equal(t, strings.TrimLeft(expected, "\n"), logger.AllMsgs())
 }

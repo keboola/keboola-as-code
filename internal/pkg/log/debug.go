@@ -89,7 +89,7 @@ func (l *debugLogger) WarnMsgs() string {
 }
 
 // WarnOrErrorMsgs returns all warn or error messages and Truncate all messages.
-func (l *debugLogger) WarnOrErrorMsgs() string {
+func (l *debugLogger) WarnAndErrorMsgs() string {
 	defer l.Truncate()
 	return l.warnOrError.String()
 }
