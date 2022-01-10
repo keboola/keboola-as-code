@@ -14,7 +14,7 @@ func (m *mapper) MapBeforePersist(recipe *model.PersistRecipe) error {
 	}
 
 	// Component must be "variables"
-	variablesComponent, err := m.State.Components().Get(configManifest.ComponentKey())
+	variablesComponent, err := m.state.Components().Get(configManifest.ComponentKey())
 	if err != nil {
 		return err
 	}
@@ -29,7 +29,7 @@ func (m *mapper) MapBeforePersist(recipe *model.PersistRecipe) error {
 	}
 
 	// Parent component must be "variables"
-	parentComponent, err := m.State.Components().Get(sharedCodeRowKey.ComponentKey())
+	parentComponent, err := m.state.Components().Get(sharedCodeRowKey.ComponentKey())
 	if err != nil {
 		return err
 	}

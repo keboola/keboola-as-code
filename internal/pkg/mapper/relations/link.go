@@ -11,7 +11,7 @@ import (
 // OnLocalChange links relation sides on local load.
 func (m *relationsMapper) OnLocalChange(changes *model.LocalChanges) error {
 	errors := utils.NewMultiError()
-	allObjects := m.State.LocalObjects()
+	allObjects := m.state.LocalObjects()
 	for _, objectState := range changes.Loaded() {
 		if err := m.linkAndValidateRelations(objectState.LocalState(), allObjects); err != nil {
 			errors.Append(err)
@@ -20,7 +20,7 @@ func (m *relationsMapper) OnLocalChange(changes *model.LocalChanges) error {
 
 	// Log errors as warning
 	if errors.Len() > 0 {
-		m.Logger.Warn(utils.PrefixError(`Warning`, errors))
+		m.logger.Warn(utils.PrefixError(`Warning`, errors))
 	}
 
 	return nil
@@ -29,7 +29,7 @@ func (m *relationsMapper) OnLocalChange(changes *model.LocalChanges) error {
 // OnRemoteChange links relation sides on remote load.
 func (m *relationsMapper) OnRemoteChange(changes *model.RemoteChanges) error {
 	errors := utils.NewMultiError()
-	allObjects := m.State.RemoteObjects()
+	allObjects := m.state.RemoteObjects()
 	for _, objectState := range changes.Loaded() {
 		if err := m.linkAndValidateRelations(objectState.RemoteState(), allObjects); err != nil {
 			errors.Append(err)
@@ -38,7 +38,7 @@ func (m *relationsMapper) OnRemoteChange(changes *model.RemoteChanges) error {
 
 	// Log errors as warning
 	if errors.Len() > 0 {
-		m.Logger.Warn(utils.PrefixError(`Warning`, errors))
+		m.logger.Warn(utils.PrefixError(`Warning`, errors))
 	}
 
 	return nil

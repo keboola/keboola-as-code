@@ -86,52 +86,52 @@ func (h *SharedCodeHelper) GetSharedCodeByPath(branchKey model.BranchKey, path s
 
 	// Get key by path
 	path = filesystem.Join(branch.Path(), path)
-	keyRaw, found := h.namingRegistry.KeyByPath(path)
+	configStateRaw, found := h.state.GetByPath(path)
 	if !found {
 		return nil, fmt.Errorf(`missing shared code "%s"`, path)
 	}
 
 	// Is config?
-	key, ok := keyRaw.(model.ConfigKey)
+	configState, ok := configStateRaw.(*model.ConfigState)
 	if !ok {
 		return nil, fmt.Errorf(`path "%s" is not shared code config`, path)
 	}
 
 	// Is from right parent?
-	if branchKey != key.BranchKey() {
+	if branchKey != configState.BranchKey() {
 		return nil, fmt.Errorf(`config "%s" is not from branch "%s"`, path, branch.Path())
 	}
 
 	// Shared code?
-	if key.ComponentId != model.SharedCodeComponentId {
+	if configState.ComponentId != model.SharedCodeComponentId {
 		return nil, fmt.Errorf(`config "%s" is not shared code`, path)
 	}
 
 	// Ok
-	return h.state.MustGet(key).(*model.ConfigState), nil
+	return configState, nil
 }
 
 func (h *SharedCodeHelper) GetSharedCodeRowByPath(sharedCode *model.ConfigState, path string) (*model.ConfigRowState, error) {
 	// Get key by path
 	path = filesystem.Join(sharedCode.Path(), path)
-	keyRaw, found := h.namingRegistry.KeyByPath(path)
+	configRowStateRaw, found := h.state.GetByPath(path)
 	if !found {
 		return nil, fmt.Errorf(`missing shared code "%s"`, path)
 	}
 
 	// Is config row?
-	key, ok := keyRaw.(model.ConfigRowKey)
+	configRowState, ok := configRowStateRaw.(*model.ConfigRowState)
 	if !ok {
 		return nil, fmt.Errorf(`path "%s" is not config row`, path)
 	}
 
 	// Is from parent?
-	if sharedCode.Key() != key.ConfigKey() {
+	if sharedCode.Key() != configRowState.ConfigKey() {
 		return nil, fmt.Errorf(`row "%s" is not from shared code "%s"`, path, sharedCode.Path())
 	}
 
 	// Ok
-	return h.state.MustGet(key).(*model.ConfigRowState), nil
+	return configRowState, nil
 }
 
 func (h *SharedCodeHelper) GetSharedCodeVariablesId(configRow *model.ConfigRow) (string, bool) {

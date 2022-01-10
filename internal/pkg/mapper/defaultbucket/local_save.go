@@ -22,7 +22,7 @@ func (m *defaultBucketMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) 
 	}
 
 	if err := m.visitStorageInputTables(config, configFile.Content, m.replaceDefaultBucketWithPlaceholder); err != nil {
-		m.Logger.Warnf(`Warning: %s`, err)
+		m.logger.Warnf(`Warning: %s`, err)
 	}
 	return nil
 }
@@ -47,7 +47,7 @@ func (m *defaultBucketMapper) replaceDefaultBucketWithPlaceholder(
 }
 
 func (m *defaultBucketMapper) getDefaultBucketSourceConfig(config configOrRow, tableId string) (model.ObjectState, bool, error) {
-	componentId, configId, match := m.State.Components().GetDefaultBucketByTableId(tableId)
+	componentId, configId, match := m.state.Components().GetDefaultBucketByTableId(tableId)
 	if !match {
 		return nil, false, nil
 	}
@@ -57,7 +57,7 @@ func (m *defaultBucketMapper) getDefaultBucketSourceConfig(config configOrRow, t
 		ComponentId: componentId,
 		Id:          configId,
 	}
-	sourceConfigState, found := m.State.Get(sourceConfigKey)
+	sourceConfigState, found := m.state.Get(sourceConfigKey)
 	if !found {
 		errors := utils.NewMultiError()
 		errors.Append(fmt.Errorf(`%s not found`, sourceConfigKey.Desc()))

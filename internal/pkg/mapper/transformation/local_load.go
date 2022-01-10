@@ -5,9 +5,10 @@ import (
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -23,10 +24,11 @@ func (m *transformationMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) 
 
 	// Create local loader
 	l := &localLoader{
-		Context:         m.Context,
+		State:           m.state,
 		LocalLoadRecipe: recipe,
+		logger:          m.logger,
 		config:          recipe.Object.(*model.Config),
-		blocksDir:       m.Context.NamingGenerator.BlocksDir(recipe.ObjectManifest.Path()),
+		blocksDir:       m.state.NamingGenerator().BlocksDir(recipe.ObjectManifest.Path()),
 		errors:          utils.NewMultiError(),
 	}
 
@@ -35,8 +37,9 @@ func (m *transformationMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) 
 }
 
 type localLoader struct {
-	mapper.Context
+	*state.State
 	*model.LocalLoadRecipe
+	logger    log.Logger
 	config    *model.Config
 	blocksDir string
 	blocks    []*model.Block
@@ -122,8 +125,8 @@ func (l *localLoader) addScripts(code *model.Code) {
 	}
 
 	// Load file content
-	codeFilePath := l.NamingGenerator.CodeFilePath(code)
-	file, err := l.Fs.ReadFile(codeFilePath, "code file")
+	codeFilePath := l.NamingGenerator().CodeFilePath(code)
+	file, err := l.Fs().ReadFile(codeFilePath, "code file")
 	if err != nil {
 		l.errors.Append(err)
 		return
@@ -134,13 +137,13 @@ func (l *localLoader) addScripts(code *model.Code) {
 
 	// Split to scripts
 	code.Scripts = model.ScriptsFromStr(file.Content, l.config.ComponentId)
-	l.Logger.Debugf(`Parsed "%d" scripts from "%s"`, len(code.Scripts), codeFilePath)
+	l.logger.Debugf(`Parsed "%d" scripts from "%s"`, len(code.Scripts), codeFilePath)
 }
 
 func (l *localLoader) loadBlockMetaFile(block *model.Block) {
-	path := l.NamingGenerator.MetaFilePath(block.Path())
+	path := l.NamingGenerator().MetaFilePath(block.Path())
 	desc := "block metadata"
-	if file, err := l.Fs.ReadJsonFieldsTo(path, desc, block, model.MetaFileFieldsTag); err != nil {
+	if file, err := l.Fs().ReadJsonFieldsTo(path, desc, block, model.MetaFileFieldsTag); err != nil {
 		l.errors.Append(err)
 	} else if file != nil {
 		l.Files.
@@ -151,9 +154,9 @@ func (l *localLoader) loadBlockMetaFile(block *model.Block) {
 }
 
 func (l *localLoader) loadCodeMetaFile(code *model.Code) {
-	path := l.NamingGenerator.MetaFilePath(code.Path())
+	path := l.NamingGenerator().MetaFilePath(code.Path())
 	desc := "code metadata"
-	if file, err := l.Fs.ReadJsonFieldsTo(path, desc, code, model.MetaFileFieldsTag); err != nil {
+	if file, err := l.Fs().ReadJsonFieldsTo(path, desc, code, model.MetaFileFieldsTag); err != nil {
 		l.errors.Append(err)
 	} else if file != nil {
 		l.Files.
@@ -165,7 +168,7 @@ func (l *localLoader) loadCodeMetaFile(code *model.Code) {
 
 func (l *localLoader) blockDirs() []string {
 	// Check if blocks dir exists
-	if !l.Fs.IsDir(l.blocksDir) {
+	if !l.Fs().IsDir(l.blocksDir) {
 		l.errors.Append(fmt.Errorf(`missing blocks dir "%s"`, l.blocksDir))
 		return nil
 	}
@@ -174,7 +177,7 @@ func (l *localLoader) blockDirs() []string {
 	l.ObjectManifest.AddRelatedPath(l.blocksDir)
 
 	// Load all dir entries
-	dirs, err := filesystem.ReadSubDirs(l.Fs, l.blocksDir)
+	dirs, err := filesystem.ReadSubDirs(l.Fs(), l.blocksDir)
 	if err != nil {
 		l.errors.Append(fmt.Errorf(`cannot read transformation blocks from "%s": %w`, l.blocksDir, err))
 		return nil
@@ -183,7 +186,7 @@ func (l *localLoader) blockDirs() []string {
 }
 
 func (l *localLoader) codeDirs(block *model.Block) []string {
-	dirs, err := filesystem.ReadSubDirs(l.Fs, block.Path())
+	dirs, err := filesystem.ReadSubDirs(l.Fs(), block.Path())
 	if err != nil {
 		l.errors.Append(fmt.Errorf(`cannot read transformation codes from "%s": %w`, block.Path(), err))
 		return nil
@@ -194,7 +197,7 @@ func (l *localLoader) codeDirs(block *model.Block) []string {
 func (l *localLoader) codeFileName(code *model.Code) string {
 	// Search for code file, glob "code.*"
 	// File can use an old naming, so the file extension is not specified
-	matches, err := l.Fs.Glob(filesystem.Join(code.Path(), naming.CodeFileName+`.*`))
+	matches, err := l.Fs().Glob(filesystem.Join(code.Path(), naming.CodeFileName+`.*`))
 	if err != nil {
 		l.errors.Append(fmt.Errorf(`cannot search for code file in %s": %w`, code.Path(), err))
 		return ""
@@ -207,7 +210,7 @@ func (l *localLoader) codeFileName(code *model.Code) string {
 			continue
 		}
 
-		if l.Fs.IsFile(match) {
+		if l.Fs().IsFile(match) {
 			files = append(files, relPath)
 		}
 	}

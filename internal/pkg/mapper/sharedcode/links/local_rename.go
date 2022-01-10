@@ -16,7 +16,7 @@ func (m *mapper) onRename(renamedObjects []model.RenameAction) error {
 		key := object.Manifest.Key()
 
 		// Is shared code?
-		if ok, err := m.IsSharedCodeKey(key); err != nil {
+		if ok, err := m.helper.IsSharedCodeKey(key); err != nil {
 			errors.Append(err)
 		} else if ok {
 			renamedSharedCodes[key.String()] = key
@@ -24,7 +24,7 @@ func (m *mapper) onRename(renamedObjects []model.RenameAction) error {
 		}
 
 		// Is shared code row?
-		if ok, err := m.IsSharedCodeRowKey(key); err != nil {
+		if ok, err := m.helper.IsSharedCodeRowKey(key); err != nil {
 			errors.Append(err)
 		} else if ok {
 			configKey := key.(model.ConfigRowKey).ConfigKey()
@@ -34,22 +34,22 @@ func (m *mapper) onRename(renamedObjects []model.RenameAction) error {
 
 	// Log
 	if len(renamedSharedCodes) > 0 {
-		m.Logger.Debug(`Found renamed shared codes:`)
+		m.logger.Debug(`Found renamed shared codes:`)
 		for _, key := range renamedSharedCodes {
-			m.Logger.Debugf(`  - %s`, key.Desc())
+			m.logger.Debugf(`  - %s`, key.Desc())
 		}
 	}
 
 	// Find transformations using these shared codes
-	uow := m.localManager.NewUnitOfWork(context.Background())
-	for _, objectState := range m.State.All() {
+	uow := m.state.LocalManager().NewUnitOfWork(context.Background())
+	for _, objectState := range m.state.All() {
 		configState := m.getDependentConfig(objectState, renamedSharedCodes)
 		if configState == nil {
 			continue
 		}
 
 		// Re-save config -> new "shared_code_path" will be saved.
-		m.Logger.Debugf(`Need to update shared codes in "%s"`, configState.Path())
+		m.logger.Debugf(`Need to update shared codes in "%s"`, configState.Path())
 		uow.SaveObject(configState, configState.Local, model.NewChangedFields("configuration"))
 	}
 

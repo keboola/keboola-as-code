@@ -16,7 +16,7 @@ func (m *mapper) OnRemoteChange(changes *model.RemoteChanges) error {
 
 	if errors.Len() > 0 {
 		// Convert errors to warning
-		m.Logger.Warn(utils.PrefixError(`Warning`, errors))
+		m.logger.Warn(utils.PrefixError(`Warning`, errors))
 	}
 	return nil
 }

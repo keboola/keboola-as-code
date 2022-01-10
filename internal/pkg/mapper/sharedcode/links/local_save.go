@@ -22,7 +22,7 @@ func (m *mapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
 
 	if err := m.replaceSharedCodeIdByPath(transformation, recipe); err != nil {
 		// Log errors as warning
-		m.Logger.Warn(utils.PrefixError(`Warning`, err))
+		m.logger.Warn(utils.PrefixError(`Warning`, err))
 	}
 
 	return nil
@@ -38,7 +38,7 @@ func (m *mapper) replaceSharedCodeIdByPath(transformation *model.Config, recipe 
 
 	// Get shared code
 	sharedCodeKey := transformation.Transformation.LinkToSharedCode.Config
-	sharedCodeState, found := m.State.GetOrNil(sharedCodeKey).(*model.ConfigState)
+	sharedCodeState, found := m.state.GetOrNil(sharedCodeKey).(*model.ConfigState)
 
 	// Convert LinkScript to path placeholder
 	errors := utils.NewMultiError()
@@ -62,7 +62,7 @@ func (m *mapper) replaceSharedCodeIdByPath(transformation *model.Config, recipe 
 	}
 
 	// Check: target component of the shared code = transformation component
-	if err := m.CheckTargetComponent(sharedCodeState.LocalOrRemoteState().(*model.Config), transformation.ConfigKey); err != nil {
+	if err := m.helper.CheckTargetComponent(sharedCodeState.LocalOrRemoteState().(*model.Config), transformation.ConfigKey); err != nil {
 		return err
 	}
 

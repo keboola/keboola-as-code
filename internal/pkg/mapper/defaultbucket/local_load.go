@@ -25,13 +25,13 @@ func (m *defaultBucketMapper) OnLocalChange(changes *model.LocalChanges) error {
 
 	// Log errors as warning
 	if warnings.Len() > 0 {
-		m.Logger.Warn(utils.PrefixError(`Warning`, warnings))
+		m.logger.Warn(utils.PrefixError(`Warning`, warnings))
 	}
 
 	// Process renamed objects
 	errors := utils.NewMultiError()
 	if len(changes.Renamed()) > 0 {
-		if err := m.onObjectsRename(changes.Renamed(), m.State.LocalObjects()); err != nil {
+		if err := m.onObjectsRename(changes.Renamed(), m.state.LocalObjects()); err != nil {
 			errors.Append(err)
 		}
 	}
@@ -55,36 +55,26 @@ func (m *defaultBucketMapper) replacePlaceholderWithDefaultBucket(
 	}
 
 	// Get branch
-	branchState := m.State.MustGet(targetConfig.BranchKey())
+	branchState := m.state.MustGet(targetConfig.BranchKey())
 
 	// Get key by path
 	path := filesystem.Join(branchState.Path(), splitSource[0])
-	sourceConfigKeyRaw, found := m.NamingRegistry.KeyByPath(path)
-	if !found {
+	sourceConfigState, found := m.state.GetByPath(path)
+	if !found || !sourceConfigState.HasLocalState() {
 		return fmt.Errorf(
 			`%s contains table "%s" in input mapping referencing to a non-existing configuration`,
 			targetConfig.Desc(),
 			inputTableSource,
 		)
 	}
-	sourceConfigKey, ok := sourceConfigKeyRaw.(model.ConfigKey)
-	if !ok {
-		return nil
-	}
+	sourceConfig := sourceConfigState.LocalState().(*model.Config)
 
-	defaultBucket, found := m.State.Components().GetDefaultBucketByComponentId(sourceConfigKey.ComponentId, sourceConfigKey.Id)
+	defaultBucket, found := m.state.Components().GetDefaultBucketByComponentId(sourceConfig.ComponentId, sourceConfig.Id)
 	if !found {
 		return nil
 	}
 
 	inputTable.Set(`source`, fmt.Sprintf("%s.%s", defaultBucket, splitSource[1]))
-
-	sourceConfigRaw, found := m.State.LocalObjects().Get(sourceConfigKey)
-	if !found {
-		return nil
-	}
-	sourceConfig := sourceConfigRaw.(*model.Config)
 	markUsedInInputMapping(sourceConfig, targetConfig)
-
 	return nil
 }

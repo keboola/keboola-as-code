@@ -23,7 +23,7 @@ func (m *mapper) OnRemoteChange(changes *model.RemoteChanges) error {
 
 	if errors.Len() > 0 {
 		// Convert errors to warning
-		m.Logger.Warn(utils.PrefixError(`Warning`, errors))
+		m.logger.Warn(utils.PrefixError(`Warning`, errors))
 	}
 
 	return nil
@@ -54,7 +54,7 @@ func (m *mapper) onConfigRemoteLoad(config *model.Config) error {
 	config.SharedCode = &model.SharedCodeConfig{Target: model.ComponentId(target)}
 
 	errors := utils.NewMultiError()
-	for _, row := range m.State.RemoteObjects().ConfigRowsFrom(config.ConfigKey) {
+	for _, row := range m.state.RemoteObjects().ConfigRowsFrom(config.ConfigKey) {
 		if err := m.onRowRemoteLoad(config, row); err != nil {
 			errors.Append(err)
 		}

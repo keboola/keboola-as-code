@@ -43,7 +43,7 @@ func (m *mapper) onRemoteLoad(objectState model.ObjectState) error {
 			Id:          model.ConfigId(sharedCodeId),
 		},
 	}
-	sharedCodeState, found := m.State.GetOrNil(linkToSharedCode.Config).(*model.ConfigState)
+	sharedCodeState, found := m.state.GetOrNil(linkToSharedCode.Config).(*model.ConfigState)
 	if !found || !sharedCodeState.HasRemoteState() {
 		return utils.PrefixError(
 			fmt.Sprintf(`missing shared code %s`, linkToSharedCode.Config.Desc()),
@@ -52,7 +52,7 @@ func (m *mapper) onRemoteLoad(objectState model.ObjectState) error {
 	}
 
 	// Check: target component of the shared code = transformation component
-	if err := m.CheckTargetComponent(sharedCodeState.LocalOrRemoteState().(*model.Config), transformation.ConfigKey); err != nil {
+	if err := m.helper.CheckTargetComponent(sharedCodeState.LocalOrRemoteState().(*model.Config), transformation.ConfigKey); err != nil {
 		return err
 	}
 
@@ -90,7 +90,7 @@ func (m *mapper) onRemoteLoad(objectState model.ObjectState) error {
 			ConfigId:    linkToSharedCode.Config.Id,
 			Id:          model.RowId(cast.ToString(rowId)),
 		}
-		if _, found := m.State.Get(rowKey); found {
+		if _, found := m.state.Get(rowKey); found {
 			linkToSharedCode.Rows = append(linkToSharedCode.Rows, rowKey)
 		} else {
 			errors.Append(utils.PrefixError(

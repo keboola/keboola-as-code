@@ -26,7 +26,7 @@ func (m *mapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
 		return err
 	} else if ok {
 		row := recipe.Object.(*model.ConfigRow)
-		config := m.State.MustGet(row.ConfigKey()).LocalState().(*model.Config)
+		config := m.state.MustGet(row.ConfigKey()).LocalState().(*model.Config)
 		if err := m.onRowLocalLoad(config, row, recipe); err != nil {
 			errors.Append(err)
 		}
@@ -67,8 +67,8 @@ func (m *mapper) onRowLocalLoad(config *model.Config, row *model.ConfigRow, reci
 	}
 
 	// Load file
-	codeFilePath := m.NamingGenerator.SharedCodeFilePath(recipe.Path(), config.SharedCode.Target)
-	codeFile, err := m.Fs.ReadFile(codeFilePath, `shared code`)
+	codeFilePath := m.state.NamingGenerator().SharedCodeFilePath(recipe.Path(), config.SharedCode.Target)
+	codeFile, err := m.state.Fs().ReadFile(codeFilePath, `shared code`)
 	if err != nil {
 		return err
 	}

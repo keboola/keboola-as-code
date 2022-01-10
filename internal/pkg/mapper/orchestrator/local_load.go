@@ -5,22 +5,23 @@ import (
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func (m *orchestratorMapper) onLocalLoad(config *model.Config, manifest *model.ConfigManifest, allObjects model.Objects) error {
 	loader := &localLoader{
-		Context:      m.Context,
+		State:        m.state,
 		phasesSorter: newPhasesSorter(),
 		allObjects:   allObjects,
-		branch:       m.State.MustGet(config.BranchKey()).(*model.BranchState),
+		branch:       m.state.MustGet(config.BranchKey()).(*model.BranchState),
 		config:       config,
 		manifest:     manifest,
-		phasesDir:    m.NamingGenerator.PhasesDir(manifest.Path()),
+		phasesDir:    m.state.NamingGenerator().PhasesDir(manifest.Path()),
 		errors:       utils.NewMultiError(),
 	}
+
 	if err := loader.load(); err != nil {
 		return utils.PrefixError(fmt.Sprintf(`invalid orchestrator config "%s"`, manifest.Path()), err)
 	}
@@ -28,7 +29,7 @@ func (m *orchestratorMapper) onLocalLoad(config *model.Config, manifest *model.C
 }
 
 type localLoader struct {
-	mapper.Context
+	*state.State
 	*phasesSorter
 	allObjects model.Objects
 	branch     *model.BranchState
@@ -122,7 +123,7 @@ func (l *localLoader) addTask(taskIndex int, phase *model.Phase, path string) (*
 
 func (l *localLoader) parsePhaseConfig(phase *model.Phase) ([]string, error) {
 	// Load phase config
-	file, err := l.loadJsonFile(l.NamingGenerator.PhaseFilePath(phase), `phase config`)
+	file, err := l.loadJsonFile(l.NamingGenerator().PhaseFilePath(phase), `phase config`)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +151,7 @@ func (l *localLoader) parsePhaseConfig(phase *model.Phase) ([]string, error) {
 
 func (l *localLoader) parseTaskConfig(task *model.Task) error {
 	// Load task config
-	file, err := l.loadJsonFile(l.NamingGenerator.TaskFilePath(task), `task config`)
+	file, err := l.loadJsonFile(l.NamingGenerator().TaskFilePath(task), `task config`)
 	if err != nil {
 		return err
 	}
@@ -178,7 +179,7 @@ func (l *localLoader) parseTaskConfig(task *model.Task) error {
 	} else if targetConfig != nil {
 		task.ComponentId = targetConfig.ComponentId
 		task.ConfigId = targetConfig.Id
-		task.ConfigPath = l.State.MustGet(targetConfig.Key()).Path()
+		task.ConfigPath = l.MustGet(targetConfig.Key()).Path()
 		markConfigUsedInOrchestrator(targetConfig, l.config)
 	}
 
@@ -193,26 +194,21 @@ func (l *localLoader) getTargetConfig(configPath string) (*model.Config, error) 
 	}
 
 	configPath = filesystem.Join(l.branch.Path(), configPath)
-	configKeyRaw, found := l.NamingRegistry.KeyByPath(configPath)
-	if !found {
-		return nil, fmt.Errorf(`config "%s" not found`, configPath)
+	configStateRaw, found := l.GetByPath(configPath)
+	if !found || !configStateRaw.HasLocalState() {
+		return nil, fmt.Errorf(`target config "%s" not found`, configPath)
 	}
 
-	configRaw, found := l.allObjects.Get(configKeyRaw)
-	if !found {
-		return nil, fmt.Errorf(`config "%s" not found`, configPath)
-	}
-
-	config, ok := configRaw.(*model.Config)
+	configState, ok := configStateRaw.(*model.ConfigState)
 	if !ok {
-		return nil, fmt.Errorf(`path "%s" must be config, found %s`, configPath, configKeyRaw.Kind().String())
+		return nil, fmt.Errorf(`path "%s" must be config, found "%s"`, configPath, configStateRaw.Kind().String())
 	}
 
-	return config, nil
+	return configState.Local, nil
 }
 
 func (l *localLoader) loadJsonFile(path, desc string) (*filesystem.JsonFile, error) {
-	if file, err := l.Fs.ReadJsonFile(path, desc); err != nil {
+	if file, err := l.Fs().ReadJsonFile(path, desc); err != nil {
 		// Remove absolute path from error
 		return nil, fmt.Errorf(strings.ReplaceAll(err.Error(), l.manifest.Path()+string(filesystem.PathSeparator), ``))
 	} else {
@@ -223,7 +219,7 @@ func (l *localLoader) loadJsonFile(path, desc string) (*filesystem.JsonFile, err
 
 func (l *localLoader) phasesDirs() []string {
 	// Check if blocks dir exists
-	if !l.Fs.IsDir(l.phasesDir) {
+	if !l.Fs().IsDir(l.phasesDir) {
 		l.errors.Append(fmt.Errorf(`missing phases dir "%s"`, l.phasesDir))
 		return nil
 	}
@@ -232,7 +228,7 @@ func (l *localLoader) phasesDirs() []string {
 	l.manifest.AddRelatedPath(l.phasesDir)
 
 	// Load all dir entries
-	dirs, err := filesystem.ReadSubDirs(l.Fs, l.phasesDir)
+	dirs, err := filesystem.ReadSubDirs(l.Fs(), l.phasesDir)
 	if err != nil {
 		l.errors.Append(fmt.Errorf(`cannot read orchestrator phases from "%s": %w`, l.phasesDir, err))
 		return nil
@@ -241,7 +237,7 @@ func (l *localLoader) phasesDirs() []string {
 }
 
 func (l *localLoader) tasksDirs(phase *model.Phase) []string {
-	dirs, err := filesystem.ReadSubDirs(l.Fs, phase.Path())
+	dirs, err := filesystem.ReadSubDirs(l.Fs(), phase.Path())
 	if err != nil {
 		l.errors.Append(fmt.Errorf(`cannot read orchestrator tasks from "%s": %w`, phase.Path(), err))
 		return nil

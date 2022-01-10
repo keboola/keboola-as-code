@@ -26,13 +26,13 @@ func (m *transformationMapper) OnObjectPathUpdate(event model.OnObjectPathUpdate
 func (m *transformationMapper) updateBlockPath(g model.PathsGenerator, parent *model.ConfigState, block *model.Block) {
 	// Update parent path
 	oldPath := block.Path()
-	blocksDir := m.NamingGenerator.BlocksDir(parent.Path())
+	blocksDir := m.state.NamingGenerator().BlocksDir(parent.Path())
 	block.SetParentPath(blocksDir)
 
 	// Re-generate object path IF rename is enabled OR path is not set
 	if block.ObjectPath == "" || g.RenameEnabled() {
 		renameFrom := block.Path()
-		block.PathInProject = m.NamingGenerator.BlockPath(block.GetParentPath(), block)
+		block.PathInProject = m.state.NamingGenerator().BlockPath(block.GetParentPath(), block)
 
 		// Has been block renamed?
 		newPath := block.Path()
@@ -50,13 +50,13 @@ func (m *transformationMapper) updateBlockPath(g model.PathsGenerator, parent *m
 func (m *transformationMapper) updateCodePath(g model.PathsGenerator, parent *model.ConfigState, block *model.Block, code *model.Code) {
 	// Update parent path
 	oldPath := code.Path()
-	oldPathCodeFile := m.NamingGenerator.CodeFilePath(code)
+	oldPathCodeFile := m.state.NamingGenerator().CodeFilePath(code)
 	code.SetParentPath(block.Path())
 
 	// Re-generate object path IF rename is enabled OR path is not set
 	if code.ObjectPath == "" || g.RenameEnabled() {
 		renameFrom := code.Path()
-		code.PathInProject = m.NamingGenerator.CodePath(code.GetParentPath(), code)
+		code.PathInProject = m.state.NamingGenerator().CodePath(code.GetParentPath(), code)
 		// Has been code renamed?
 		newPath := code.Path()
 		if renameFrom != newPath {
@@ -69,9 +69,9 @@ func (m *transformationMapper) updateCodePath(g model.PathsGenerator, parent *mo
 }
 
 func (m *transformationMapper) updateCodeFilePath(g model.PathsGenerator, parent *model.ConfigState, code *model.Code, oldPath string) {
-	renameFrom := m.NamingGenerator.CodeFilePath(code)
-	code.CodeFileName = m.NamingGenerator.CodeFileName(code.ComponentId)
-	newPath := m.NamingGenerator.CodeFilePath(code)
+	renameFrom := m.state.NamingGenerator().CodeFilePath(code)
+	code.CodeFileName = m.state.NamingGenerator().CodeFileName(code.ComponentId)
+	newPath := m.state.NamingGenerator().CodeFilePath(code)
 	if renameFrom != newPath {
 		g.AddRenamed(model.RenamedPath{ObjectState: parent, OldPath: oldPath, RenameFrom: renameFrom, NewPath: newPath})
 	}

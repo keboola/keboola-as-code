@@ -5,24 +5,48 @@ import (
 )
 
 func (m *schedulerMapper) OnRemoteChange(changes *model.RemoteChanges) error {
-	pool := m.api.NewPool()
+	var saved []*model.ConfigState
+	var deleted []*model.ConfigState
 
 	// Activate scheduler on remote save
 	for _, objectState := range changes.Saved() {
 		if m.isSchedulerConfigFromMainBranch(objectState) {
-			m.onRemoteSave(pool, objectState.(*model.ConfigState))
+			saved = append(saved, objectState.(*model.ConfigState))
 		}
 	}
 
 	// Deactivate scheduler on remote delete
 	for _, objectState := range changes.Deleted() {
 		if m.isSchedulerConfigFromMainBranch(objectState) {
-			m.onRemoteDelete(pool, objectState.(*model.ConfigState))
+			deleted = append(deleted, objectState.(*model.ConfigState))
 		}
 	}
 
-	// Run requests
-	return pool.StartAndWait()
+	if len(saved) > 0 || len(deleted) > 0 {
+		// Get Scheduler API - only if it is needed
+		api, err := m.SchedulerApi()
+		if err != nil {
+			return err
+		}
+
+		// Create requests pool
+		pool := api.NewPool()
+
+		// Activate saved configs
+		for _, o := range saved {
+			m.onRemoteSave(api, pool, o)
+		}
+
+		// Deactivate deleted configs
+		for _, o := range deleted {
+			m.onRemoteDelete(api, pool, o)
+		}
+
+		// Run requests
+		return pool.StartAndWait()
+	}
+
+	return nil
 }
 
 func (m *schedulerMapper) isSchedulerConfigFromMainBranch(objectState model.ObjectState) bool {
@@ -35,6 +59,6 @@ func (m *schedulerMapper) isSchedulerConfigFromMainBranch(objectState model.Obje
 		return false
 	}
 
-	branch := m.State.MustGet(configState.BranchKey()).(*model.BranchState)
+	branch := m.state.MustGet(configState.BranchKey()).(*model.BranchState)
 	return branch.LocalOrRemoteState().(*model.Branch).IsDefault
 }
