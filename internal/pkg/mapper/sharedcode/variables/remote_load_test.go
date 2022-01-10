@@ -5,14 +5,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode/variables"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestSharedCodeMapAfterRemoteLoad(t *testing.T) {
 	t.Parallel()
-	context := createMapperContext(t)
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
 
 	variablesConfigId := `123456`
 	content := orderedmap.New()
@@ -25,7 +25,8 @@ func TestSharedCodeMapAfterRemoteLoad(t *testing.T) {
 
 	// Invoke
 	assert.Empty(t, object.Relations)
-	assert.NoError(t, NewMapper(context).MapAfterRemoteLoad(recipe))
+	assert.NoError(t, state.Mapper().MapAfterRemoteLoad(recipe))
+	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Object has new relation + content without variables ID
 	assert.Equal(t, model.Relations{

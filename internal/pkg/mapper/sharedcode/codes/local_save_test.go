@@ -7,24 +7,27 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
-	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode/codes"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 func TestSharedCodeLocalSave(t *testing.T) {
 	t.Parallel()
 	targetComponentId := model.ComponentId(`keboola.python-transformation-v2`)
-	context, logs, _, rowState := createInternalSharedCode(t, targetComponentId)
+
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
+	fs := d.Fs()
+	_, rowState := createInternalSharedCode(t, targetComponentId, state)
+
 	recipe := fixtures.NewLocalSaveRecipe(rowState.Manifest(), rowState.Remote)
-	codeFilePath := filesystem.Join(context.NamingGenerator.SharedCodeFilePath(recipe.ObjectManifest.Path(), targetComponentId))
+	codeFilePath := filesystem.Join(state.NamingGenerator().SharedCodeFilePath(recipe.ObjectManifest.Path(), targetComponentId))
 
 	// Create dir
-	assert.NoError(t, context.Fs.Mkdir(filesystem.Dir(codeFilePath)))
-	logs.Truncate()
+	assert.NoError(t, fs.Mkdir(filesystem.Dir(codeFilePath)))
 
 	// Save to file
-	assert.NoError(t, NewMapper(context).MapBeforeLocalSave(recipe))
-	assert.Empty(t, logs.AllMessages())
+	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
+	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Assert
 	sharedCodeFileRaw := recipe.Files.GetOneByTag(model.FileKindNativeSharedCode)

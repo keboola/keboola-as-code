@@ -5,13 +5,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode/variables"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 func TestSharedCodeMapBeforePersist(t *testing.T) {
 	t.Parallel()
-	context := createMapperContext(t)
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
 
 	parentKey := model.ConfigRowKey{
 		BranchId:    123,
@@ -33,7 +33,8 @@ func TestSharedCodeMapBeforePersist(t *testing.T) {
 
 	// Invoke
 	assert.Empty(t, configManifest.Relations)
-	assert.NoError(t, NewMapper(context).MapBeforePersist(recipe))
+	assert.NoError(t, state.Mapper().MapBeforePersist(recipe))
+	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Relation has been created
 	assert.Equal(t, model.Relations{

@@ -1,4 +1,4 @@
-package description
+package description_test
 
 import (
 	"testing"
@@ -11,10 +11,11 @@ import (
 
 func TestDescriptionMapAfterRemoteLoad(t *testing.T) {
 	t.Parallel()
+	state, _ := createStateWithMapper(t)
 
 	object := &model.Config{Description: "foo\nbar\n\r\t ", Content: orderedmap.New()}
 	recipe := &model.RemoteLoadRecipe{Object: object}
 
-	assert.NoError(t, NewMapper().MapAfterRemoteLoad(recipe))
+	assert.NoError(t, state.Mapper().MapAfterRemoteLoad(recipe))
 	assert.Equal(t, "foo\nbar", object.Description)
 }

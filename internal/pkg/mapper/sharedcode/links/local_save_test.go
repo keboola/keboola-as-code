@@ -13,18 +13,19 @@ import (
 
 func TestLocalSaveTranWithSharedCode(t *testing.T) {
 	t.Parallel()
-	mapperInst, context, logs := createMapper(t)
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
 
 	// Shared code config with rows
-	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, context.State, context.NamingRegistry)
+	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, state)
 
 	// Create transformation with shared code
-	transformation := createInternalTranWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, context)
+	transformation := createInternalTranWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, state)
 
 	// Invoke
 	recipe := fixtures.NewLocalSaveRecipe(transformation.ConfigManifest, transformation.Local)
-	assert.NoError(t, mapperInst.MapBeforeLocalSave(recipe))
-	assert.Empty(t, logs.AllMessages())
+	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
+	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Path to shared code is part of the Content
 	configFile, err := recipe.Files.ObjectConfigFile()
@@ -68,24 +69,25 @@ func TestLocalSaveTranWithSharedCode(t *testing.T) {
 
 func TestLocalSaveTranWithSharedCode_SharedCodeConfigNotFound(t *testing.T) {
 	t.Parallel()
-	mapperInst, context, logs := createMapper(t)
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
 
 	// Shared code config with rows
-	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, context.State, context.NamingRegistry)
+	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, state)
 
 	// Create transformation with shared code
-	transformation := createInternalTranWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, context)
+	transformation := createInternalTranWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, state)
 	transformation.Local.Transformation.LinkToSharedCode.Config.Id = `missing` // <<<<<<<<<<<
 
 	// Invoke
 	recipe := fixtures.NewLocalSaveRecipe(transformation.ConfigManifest, transformation.Local)
-	assert.NoError(t, mapperInst.MapBeforeLocalSave(recipe))
+	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
 	expectedLogs := `
 WARN  Warning:
   - missing shared code config "branch:123/component:keboola.shared-code/config:missing":
     - referenced from config "branch:123/component:keboola.python-transformation-v2/config:789"
 `
-	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logs.AllMessages())
+	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessages())
 
 	// Config file doesn't contain shared code path
 	configFile, err := recipe.Files.ObjectConfigFile()
@@ -129,13 +131,14 @@ WARN  Warning:
 
 func TestLocalSaveTranWithSharedCode_SharedCodeRowNotFound(t *testing.T) {
 	t.Parallel()
-	mapperInst, context, logs := createMapper(t)
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
 
 	// Shared code config with rows
-	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, context.State, context.NamingRegistry)
+	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, state)
 
 	// Create transformation with shared code
-	transformation := createInternalTranWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, context)
+	transformation := createInternalTranWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, state)
 	transformation.Local.Transformation.Blocks[0].Codes[1].Scripts[0] = model.LinkScript{Target: model.ConfigRowKey{
 		BranchId:    sharedCodeKey.BranchId,
 		ComponentId: sharedCodeKey.ComponentId,
@@ -145,13 +148,13 @@ func TestLocalSaveTranWithSharedCode_SharedCodeRowNotFound(t *testing.T) {
 
 	// Invoke
 	recipe := fixtures.NewLocalSaveRecipe(transformation.ConfigManifest, transformation.Local)
-	assert.NoError(t, mapperInst.MapBeforeLocalSave(recipe))
+	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
 	expectedLogs := `
 WARN  Warning:
   - missing shared code config row "branch:123/component:keboola.shared-code/config:456/row:missing":
     - referenced from branch/transformation/blocks/block-1/code-2
 `
-	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logs.AllMessages())
+	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessages())
 
 	// Link to shared code is set, but without missing row
 	configFile, err := recipe.Files.ObjectConfigFile()

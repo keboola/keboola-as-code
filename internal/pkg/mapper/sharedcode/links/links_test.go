@@ -5,39 +5,22 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
-	"github.com/keboola/keboola-as-code/internal/pkg/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode/links"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/naming"
-	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-func createMapper(t *testing.T) (*mapper.Mapper, mapper.Context, log.DebugLogger) {
+func createStateWithMapper(t *testing.T) (*state.State, *testdeps.TestContainer) {
 	t.Helper()
-	logger := log.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger, ".")
-	assert.NoError(t, err)
-	namingRegistry := naming.NewRegistry()
-	projectState := state.NewRegistry(knownpaths.NewNop(), namingRegistry, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
-	namingTemplate := naming.TemplateWithIds()
-	namingGenerator := naming.NewGenerator(namingTemplate, namingRegistry)
-	context := mapper.Context{Logger: logger, Fs: fs, NamingGenerator: namingGenerator, NamingRegistry: namingRegistry, State: projectState}
-	manifest := projectManifest.New(1, `foo.bar`)
-	assert.NoError(t, err)
-	mapperInst := mapper.New()
-	localManager := local.NewManager(logger, fs, manifest, namingGenerator, projectState, mapperInst)
-	mapperInst.AddMapper(links.NewMapper(localManager, context))
-	return mapperInst, context, logger
+	d := testdeps.New()
+	mockedState := d.EmptyState()
+	mockedState.Mapper().AddMapper(links.NewMapper(mockedState))
+	return mockedState, d
 }
 
-func createLocalTranWithSharedCode(t *testing.T, context mapper.Context) *model.ConfigState {
+func createLocalTranWithSharedCode(t *testing.T, state *state.State) *model.ConfigState {
 	t.Helper()
 
 	key := model.ConfigKey{
@@ -95,12 +78,11 @@ func createLocalTranWithSharedCode(t *testing.T, context mapper.Context) *model.
 			},
 		},
 	}
-	assert.NoError(t, context.State.Set(transformation))
-	assert.NoError(t, context.NamingRegistry.Attach(transformation.Key(), transformation.PathInProject))
+	assert.NoError(t, state.Set(transformation))
 	return transformation
 }
 
-func createInternalTranWithSharedCode(t *testing.T, sharedCodeKey model.ConfigKey, sharedCodeRowsKeys []model.ConfigRowKey, context mapper.Context) *model.ConfigState {
+func createInternalTranWithSharedCode(t *testing.T, sharedCodeKey model.ConfigKey, sharedCodeRowsKeys []model.ConfigRowKey, state *state.State) *model.ConfigState {
 	t.Helper()
 
 	key := model.ConfigKey{
@@ -158,11 +140,11 @@ func createInternalTranWithSharedCode(t *testing.T, sharedCodeKey model.ConfigKe
 		},
 	}
 
-	assert.NoError(t, context.State.Set(transformation))
+	assert.NoError(t, state.Set(transformation))
 	return transformation
 }
 
-func createRemoteTranWithSharedCode(t *testing.T, sharedCodeKey model.ConfigKey, sharedCodeRowsKeys []model.ConfigRowKey, context mapper.Context) *model.ConfigState {
+func createRemoteTranWithSharedCode(t *testing.T, sharedCodeKey model.ConfigKey, sharedCodeRowsKeys []model.ConfigRowKey, state *state.State) *model.ConfigState {
 	t.Helper()
 
 	// Rows -> rows IDs
@@ -191,6 +173,6 @@ func createRemoteTranWithSharedCode(t *testing.T, sharedCodeKey model.ConfigKey,
 		},
 	}
 
-	assert.NoError(t, context.State.Set(transformation))
+	assert.NoError(t, state.Set(transformation))
 	return transformation
 }

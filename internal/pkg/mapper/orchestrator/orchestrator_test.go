@@ -5,38 +5,22 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
-	"github.com/keboola/keboola-as-code/internal/pkg/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/naming"
-	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-func createMapper(t *testing.T) (*mapper.Mapper, mapper.Context, log.DebugLogger) {
+func createStateWithMapper(t *testing.T) (*state.State, *testdeps.TestContainer) {
 	t.Helper()
-	logger := log.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger, ".")
-	assert.NoError(t, err)
-	namingRegistry := naming.NewRegistry()
-	projectState := state.NewRegistry(knownpaths.NewNop(), namingRegistry, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
-	namingTemplate := naming.TemplateWithIds()
-	namingGenerator := naming.NewGenerator(namingTemplate, namingRegistry)
-	context := mapper.Context{Logger: logger, Fs: fs, NamingGenerator: namingGenerator, NamingRegistry: namingRegistry, State: projectState}
-	manifest := projectManifest.New(1, `foo.bar`)
-	mapperInst := mapper.New()
-	localManager := local.NewManager(logger, fs, manifest, namingGenerator, projectState, mapperInst)
-	mapperInst.AddMapper(orchestrator.NewMapper(localManager, context))
-	return mapperInst, context, logger
+	d := testdeps.New()
+	mockedState := d.EmptyState()
+	mockedState.Mapper().AddMapper(orchestrator.NewMapper(mockedState))
+	return mockedState, d
 }
 
-func createTargetConfigs(t *testing.T, context mapper.Context) (*model.ConfigState, *model.ConfigState, *model.ConfigState) {
+func createTargetConfigs(t *testing.T, state *state.State) (*model.ConfigState, *model.ConfigState, *model.ConfigState) {
 	t.Helper()
 
 	// Target config 1
@@ -55,7 +39,7 @@ func createTargetConfigs(t *testing.T, context mapper.Context) (*model.ConfigSta
 		Local:  &model.Config{ConfigKey: targetConfigKey1},
 		Remote: &model.Config{ConfigKey: targetConfigKey1},
 	}
-	assert.NoError(t, context.State.Set(targetConfigState1))
+	assert.NoError(t, state.Set(targetConfigState1))
 
 	// Target config 2
 	targetConfigKey2 := model.ConfigKey{
@@ -73,7 +57,7 @@ func createTargetConfigs(t *testing.T, context mapper.Context) (*model.ConfigSta
 		Local:  &model.Config{ConfigKey: targetConfigKey2},
 		Remote: &model.Config{ConfigKey: targetConfigKey2},
 	}
-	assert.NoError(t, context.State.Set(targetConfigState2))
+	assert.NoError(t, state.Set(targetConfigState2))
 
 	// Target config 3
 	targetConfigKey3 := model.ConfigKey{
@@ -91,12 +75,12 @@ func createTargetConfigs(t *testing.T, context mapper.Context) (*model.ConfigSta
 		Local:  &model.Config{ConfigKey: targetConfigKey3},
 		Remote: &model.Config{ConfigKey: targetConfigKey3},
 	}
-	assert.NoError(t, context.State.Set(targetConfigState3))
+	assert.NoError(t, state.Set(targetConfigState3))
 
 	return targetConfigState1, targetConfigState2, targetConfigState3
 }
 
-func createLocalLoadFixtures(t *testing.T, context mapper.Context) *model.ConfigState {
+func createLocalLoadFixtures(t *testing.T, state *state.State) *model.ConfigState {
 	t.Helper()
 
 	// Branch
@@ -112,7 +96,7 @@ func createLocalLoadFixtures(t *testing.T, context mapper.Context) *model.Config
 		},
 		Local: &model.Branch{BranchKey: branchKey},
 	}
-	assert.NoError(t, context.State.Set(branchState))
+	assert.NoError(t, state.Set(branchState))
 
 	// Orchestrator config
 	configKey := model.ConfigKey{
@@ -129,12 +113,12 @@ func createLocalLoadFixtures(t *testing.T, context mapper.Context) *model.Config
 		},
 		Local: &model.Config{ConfigKey: configKey, Content: orderedmap.New()},
 	}
-	assert.NoError(t, context.State.Set(configState))
 
+	assert.NoError(t, state.Set(configState))
 	return configState
 }
 
-func createLocalSaveFixtures(t *testing.T, context mapper.Context, createTargets bool) *model.ConfigState {
+func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets bool) *model.ConfigState {
 	t.Helper()
 
 	orchestration := &model.Orchestration{
@@ -270,7 +254,7 @@ func createLocalSaveFixtures(t *testing.T, context mapper.Context, createTargets
 		},
 		Local: &model.Branch{BranchKey: branchKey},
 	}
-	assert.NoError(t, context.State.Set(branchState))
+	assert.NoError(t, state.Set(branchState))
 
 	// Orchestrator config
 	configKey := model.ConfigKey{
@@ -287,7 +271,7 @@ func createLocalSaveFixtures(t *testing.T, context mapper.Context, createTargets
 		},
 		Remote: &model.Config{ConfigKey: configKey, Content: orderedmap.New(), Orchestration: orchestration},
 	}
-	assert.NoError(t, context.State.Set(configState))
+	assert.NoError(t, state.Set(configState))
 
 	// Create targets
 	if !createTargets {
@@ -309,7 +293,7 @@ func createLocalSaveFixtures(t *testing.T, context mapper.Context, createTargets
 		},
 		Remote: &model.Config{ConfigKey: targetConfigKey1},
 	}
-	assert.NoError(t, context.State.Set(targetConfigState1))
+	assert.NoError(t, state.Set(targetConfigState1))
 
 	// Target config 2
 	targetConfigKey2 := model.ConfigKey{
@@ -326,7 +310,7 @@ func createLocalSaveFixtures(t *testing.T, context mapper.Context, createTargets
 		},
 		Remote: &model.Config{ConfigKey: targetConfigKey2},
 	}
-	assert.NoError(t, context.State.Set(targetConfigState2))
+	assert.NoError(t, state.Set(targetConfigState2))
 
 	// Target config 3
 	targetConfigKey3 := model.ConfigKey{
@@ -343,7 +327,7 @@ func createLocalSaveFixtures(t *testing.T, context mapper.Context, createTargets
 		},
 		Remote: &model.Config{ConfigKey: targetConfigKey3},
 	}
-	assert.NoError(t, context.State.Set(targetConfigState3))
+	assert.NoError(t, state.Set(targetConfigState3))
 
 	return configState
 }

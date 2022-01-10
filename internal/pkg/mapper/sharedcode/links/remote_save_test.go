@@ -11,13 +11,14 @@ import (
 
 func TestRemoteSaveTranWithSharedCode(t *testing.T) {
 	t.Parallel()
-	mapperInst, context, logs := createMapper(t)
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
 
 	// Shared code config with rows
-	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, context.State, context.NamingRegistry)
+	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, state)
 
 	// Create transformation with shared code
-	transformation := createInternalTranWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, context)
+	transformation := createInternalTranWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, state)
 
 	// Invoke
 	object := transformation.Local
@@ -25,8 +26,8 @@ func TestRemoteSaveTranWithSharedCode(t *testing.T) {
 		Object:         object,
 		ObjectManifest: transformation.Manifest(),
 	}
-	assert.NoError(t, mapperInst.MapBeforeRemoteSave(recipe))
-	assert.Empty(t, logs.AllMessages())
+	assert.NoError(t, state.Mapper().MapBeforeRemoteSave(recipe))
+	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Config ID and rows ID are set in Content
 	id, found := object.Content.Get(model.SharedCodeIdContentKey)

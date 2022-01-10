@@ -8,21 +8,25 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 func TestLocalSaveTransformationEmpty(t *testing.T) {
 	t.Parallel()
-	context, configState := createTestFixtures(t, "keboola.snowflake-transformation")
+	state, d := createStateWithMapper(t)
+	fs := d.Fs()
+	logger := d.DebugLogger()
+
+	configState := createTestFixtures(t, "keboola.snowflake-transformation")
 	recipe := fixtures.NewLocalSaveRecipe(configState.Manifest(), configState.Local)
-	fs := context.Fs
+
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
 	assert.NoError(t, fs.Mkdir(blocksDir))
 
 	// Save
-	err := NewMapper(context).MapBeforeLocalSave(recipe)
+	err := state.Mapper().MapBeforeLocalSave(recipe)
 	assert.NoError(t, err)
+	assert.Empty(t, logger.WarnAndErrorMessages())
 	configFile, err := recipe.Files.ObjectConfigFile()
 	assert.NoError(t, err)
 	assert.Equal(t, "{}\n", json.MustEncodeString(configFile.Content, true))
@@ -30,9 +34,13 @@ func TestLocalSaveTransformationEmpty(t *testing.T) {
 
 func TestLocalSaveTransformation(t *testing.T) {
 	t.Parallel()
-	context, configState := createTestFixtures(t, "keboola.snowflake-transformation")
+	state, d := createStateWithMapper(t)
+	fs := d.Fs()
+	logger := d.DebugLogger()
+
+	configState := createTestFixtures(t, "keboola.snowflake-transformation")
 	recipe := fixtures.NewLocalSaveRecipe(configState.Manifest(), configState.Local)
-	fs := context.Fs
+
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
 	assert.NoError(t, fs.Mkdir(blocksDir))
 
@@ -128,7 +136,8 @@ func TestLocalSaveTransformation(t *testing.T) {
 	}
 
 	// Save
-	assert.NoError(t, NewMapper(context).MapBeforeLocalSave(recipe))
+	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
+	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Minify JSON + remove file description
 	var files []*filesystem.File

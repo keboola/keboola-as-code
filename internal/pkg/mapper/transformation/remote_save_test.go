@@ -7,14 +7,17 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestRemoteSaveTransformation(t *testing.T) {
 	t.Parallel()
-	context, configState := createTestFixtures(t, "keboola.snowflake-transformation")
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
+
+	configState := createTestFixtures(t, "keboola.snowflake-transformation")
+
 	blocks := []*model.Block{
 		{
 			Name: "001",
@@ -63,7 +66,8 @@ func TestRemoteSaveTransformation(t *testing.T) {
 	}
 
 	// Save
-	assert.NoError(t, NewMapper(context).MapBeforeRemoteSave(recipe))
+	assert.NoError(t, state.Mapper().MapBeforeRemoteSave(recipe))
+	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Blocks are stored in API object content
 	expectedBlocks := `

@@ -8,36 +8,42 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
-	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 func TestLoadTransformationMissingBlockMetaSql(t *testing.T) {
 	t.Parallel()
-	context, configState := createTestFixtures(t, "keboola.snowflake-transformation")
+	state, d := createStateWithMapper(t)
+	fs := d.Fs()
+	logger := d.DebugLogger()
+
+	configState := createTestFixtures(t, "keboola.snowflake-transformation")
 	recipe := fixtures.NewLocalLoadRecipe(configState.Manifest(), configState.Local)
-	fs := context.Fs
-	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
 
 	// Create files/dirs
+	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
 	assert.NoError(t, fs.Mkdir(blocksDir))
 	block1 := filesystem.Join(blocksDir, `001-block-1`)
 	assert.NoError(t, fs.Mkdir(block1))
 
 	// Load, assert
-	err := NewMapper(context).MapAfterLocalLoad(recipe)
+	err := state.Mapper().MapAfterLocalLoad(recipe)
 	assert.Error(t, err)
 	assert.Equal(t, `missing block metadata file "branch/config/blocks/001-block-1/meta.json"`, err.Error())
+	assert.Empty(t, logger.WarnAndErrorMessages())
 }
 
 func TestLoadTransformationMissingCodeMeta(t *testing.T) {
 	t.Parallel()
-	context, configState := createTestFixtures(t, "keboola.snowflake-transformation")
+	state, d := createStateWithMapper(t)
+	fs := d.Fs()
+	logger := d.DebugLogger()
+
+	configState := createTestFixtures(t, "keboola.snowflake-transformation")
 	recipe := fixtures.NewLocalLoadRecipe(configState.Manifest(), configState.Local)
-	fs := context.Fs
-	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
 
 	// Create files/dirs
+	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
 	assert.NoError(t, fs.Mkdir(blocksDir))
 	block1 := filesystem.Join(blocksDir, `001-block-1`)
 	assert.NoError(t, fs.Mkdir(block1))
@@ -46,22 +52,26 @@ func TestLoadTransformationMissingCodeMeta(t *testing.T) {
 	assert.NoError(t, fs.Mkdir(block1Code1))
 
 	// Load, assert
-	err := NewMapper(context).MapAfterLocalLoad(recipe)
+	err := state.Mapper().MapAfterLocalLoad(recipe)
 	assert.Error(t, err)
 	assert.Equal(t, strings.Join([]string{
 		`- missing code metadata file "branch/config/blocks/001-block-1/001-code-1/meta.json"`,
 		`- missing code file in "branch/config/blocks/001-block-1/001-code-1"`,
 	}, "\n"), err.Error())
+	assert.Empty(t, logger.WarnAndErrorMessages())
 }
 
 func TestLoadLocalTransformationSql(t *testing.T) {
 	t.Parallel()
-	context, configState := createTestFixtures(t, `keboola.snowflake-transformation`)
+	state, d := createStateWithMapper(t)
+	fs := d.Fs()
+	logger := d.DebugLogger()
+
+	configState := createTestFixtures(t, "keboola.snowflake-transformation")
 	recipe := fixtures.NewLocalLoadRecipe(configState.Manifest(), configState.Local)
-	fs := context.Fs
-	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
 
 	// Create files/dirs
+	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
 	assert.NoError(t, fs.Mkdir(blocksDir))
 	block1 := filesystem.Join(blocksDir, `001-block-1`)
 	assert.NoError(t, fs.Mkdir(block1))
@@ -86,7 +96,8 @@ func TestLoadLocalTransformationSql(t *testing.T) {
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filesystem.Join(block3, `meta.json`), `{"name": "003"}`)))
 
 	// Load
-	assert.NoError(t, NewMapper(context).MapAfterLocalLoad(recipe))
+	assert.NoError(t, state.Mapper().MapAfterLocalLoad(recipe))
+	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Assert
 	expected := []*model.Block{
@@ -195,12 +206,15 @@ func TestLoadLocalTransformationSql(t *testing.T) {
 
 func TestLoadLocalTransformationPy(t *testing.T) {
 	t.Parallel()
-	context, configState := createTestFixtures(t, `keboola.python-transformation-v2`)
+	state, d := createStateWithMapper(t)
+	fs := d.Fs()
+	logger := d.DebugLogger()
+
+	configState := createTestFixtures(t, `keboola.python-transformation-v2`)
 	recipe := fixtures.NewLocalLoadRecipe(configState.Manifest(), configState.Local)
-	fs := context.Fs
-	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
 
 	// Create files/dirs
+	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
 	assert.NoError(t, fs.Mkdir(blocksDir))
 	block1 := filesystem.Join(blocksDir, `001-block-1`)
 	assert.NoError(t, fs.Mkdir(block1))
@@ -225,7 +239,8 @@ func TestLoadLocalTransformationPy(t *testing.T) {
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filesystem.Join(block3, `meta.json`), `{"name": "003"}`)))
 
 	// Load
-	assert.NoError(t, NewMapper(context).MapAfterLocalLoad(recipe))
+	assert.NoError(t, state.Mapper().MapAfterLocalLoad(recipe))
+	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Assert
 	expected := []*model.Block{

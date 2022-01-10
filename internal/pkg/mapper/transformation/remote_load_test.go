@@ -6,14 +6,16 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestLoadRemoteTransformation(t *testing.T) {
 	t.Parallel()
-	context, configState := createTestFixtures(t, `keboola.snowflake-transformation`)
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
+
+	configState := createTestFixtures(t, "keboola.snowflake-transformation")
 
 	// Api representation
 	configInApi := `
@@ -61,7 +63,8 @@ func TestLoadRemoteTransformation(t *testing.T) {
 	}
 	json.MustDecodeString(configInApi, object.Content)
 	recipe := &model.RemoteLoadRecipe{ObjectManifest: configState.ConfigManifest, Object: object}
-	assert.NoError(t, NewMapper(context).MapAfterRemoteLoad(recipe))
+	assert.NoError(t, state.Mapper().MapAfterRemoteLoad(recipe))
+	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Internal representation
 	expected := []*model.Block{

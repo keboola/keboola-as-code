@@ -3,26 +3,15 @@ package relations_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/naming"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/relations"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
 )
 
-func createMapperContext(t *testing.T) (mapper.Context, log.DebugLogger) {
+func createStateWithMapper(t *testing.T) (*state.State, *testdeps.TestContainer) {
 	t.Helper()
-	logger := log.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger, ".")
-	assert.NoError(t, err)
-	namingRegistry := naming.NewRegistry()
-	projectState := state.NewRegistry(knownpaths.NewNop(), namingRegistry, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
-	namingTemplate := naming.TemplateWithIds()
-	namingGenerator := naming.NewGenerator(namingTemplate, namingRegistry)
-	return mapper.Context{Logger: logger, Fs: fs, NamingGenerator: namingGenerator, NamingRegistry: namingRegistry, State: projectState}, logger
+	d := testdeps.New()
+	mockedState := d.EmptyState()
+	mockedState.Mapper().AddMapper(relations.NewMapper(mockedState))
+	return mockedState, d
 }

@@ -5,37 +5,21 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
-	"github.com/keboola/keboola-as-code/internal/pkg/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/defaultbucket"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/naming"
-	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
+	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
 )
 
-func createMapper(t *testing.T) (*mapper.Mapper, mapper.Context, log.DebugLogger) {
+func createStateWithMapper(t *testing.T) (*state.State, *testdeps.TestContainer) {
 	t.Helper()
-	logger := log.NewDebugLogger()
-	fs := testfs.NewMemoryFs()
-	namingRegistry := naming.NewRegistry()
-	projectState := state.NewRegistry(knownpaths.NewNop(), namingRegistry, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
-	manifest := projectManifest.New(1, `foo.bar`)
-	namingTemplate := naming.TemplateWithIds()
-	namingGenerator := naming.NewGenerator(namingTemplate, namingRegistry)
-	context := mapper.Context{Logger: logger, Fs: fs, NamingGenerator: namingGenerator, NamingRegistry: namingRegistry, State: projectState}
-	mapperInst := mapper.New()
-	localManager := local.NewManager(logger, fs, manifest, namingGenerator, projectState, mapperInst)
-	defaultBucketMapper := defaultbucket.NewMapper(localManager, context)
+	d := testdeps.New()
+	mockedState := d.EmptyState()
+	mockedState.Mapper().AddMapper(defaultbucket.NewMapper(mockedState))
 
 	// Preload the ex-db-mysql component to use as the default bucket source
-	_, err := defaultBucketMapper.State.Components().Get(model.ComponentKey{Id: "keboola.ex-db-mysql"})
+	_, err := mockedState.Components().Get(model.ComponentKey{Id: "keboola.ex-db-mysql"})
 	assert.NoError(t, err)
 
-	mapperInst.AddMapper(defaultBucketMapper)
-	return mapperInst, context, logger
+	return mockedState, d
 }

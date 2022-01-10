@@ -5,30 +5,27 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode/codes"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-func createRemoteSharedCode(t *testing.T) (mapper.Context, log.DebugLogger, *model.ConfigState, *model.ConfigRowState) {
+func createStateWithMapper(t *testing.T) (*state.State, *testdeps.TestContainer) {
 	t.Helper()
+	d := testdeps.New()
+	mockedState := d.EmptyState()
+	mockedState.Mapper().AddMapper(codes.NewMapper(mockedState))
+	return mockedState, d
+}
 
+func createRemoteSharedCode(t *testing.T, state *state.State) (*model.ConfigState, *model.ConfigRowState) {
+	t.Helper()
 	targetComponentId := model.ComponentId(`keboola.snowflake-transformation`)
-	logger := log.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger, ".")
-	assert.NoError(t, err)
-
-	namingRegistry := naming.NewRegistry()
-	projectState := state.NewRegistry(knownpaths.NewNop(), namingRegistry, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
 
 	// Component
-	projectState.Components().Set(&model.Component{
+	state.Components().Set(&model.Component{
 		ComponentKey: model.ComponentKey{
 			Id: model.SharedCodeComponentId,
 		},
@@ -37,7 +34,7 @@ func createRemoteSharedCode(t *testing.T) (mapper.Context, log.DebugLogger, *mod
 	})
 
 	// Target component
-	projectState.Components().Set(&model.Component{
+	state.Components().Set(&model.Component{
 		ComponentKey: model.ComponentKey{
 			Id: targetComponentId,
 		},
@@ -68,7 +65,7 @@ func createRemoteSharedCode(t *testing.T) (mapper.Context, log.DebugLogger, *mod
 			Content:   configContent,
 		},
 	}
-	assert.NoError(t, projectState.Set(configState))
+	assert.NoError(t, state.Set(configState))
 
 	// Row
 	rowKey := model.ConfigRowKey{
@@ -92,26 +89,16 @@ func createRemoteSharedCode(t *testing.T) (mapper.Context, log.DebugLogger, *mod
 			Content:      orderedmap.New(),
 		},
 	}
-	assert.NoError(t, projectState.Set(rowState))
+	assert.NoError(t, state.Set(rowState))
 
-	namingTemplate := naming.TemplateWithIds()
-	namingGenerator := naming.NewGenerator(namingTemplate, namingRegistry)
-	context := mapper.Context{Logger: logger, Fs: fs, NamingGenerator: namingGenerator, NamingRegistry: namingRegistry, State: projectState}
-	return context, logger, configState, rowState
+	return configState, rowState
 }
 
-func createLocalSharedCode(t *testing.T, targetComponentId model.ComponentId) (mapper.Context, log.DebugLogger, *model.ConfigState, *model.ConfigRowState) {
+func createLocalSharedCode(t *testing.T, targetComponentId model.ComponentId, state *state.State) (*model.ConfigState, *model.ConfigRowState) {
 	t.Helper()
 
-	logger := log.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger, ".")
-	assert.NoError(t, err)
-
-	namingRegistry := naming.NewRegistry()
-	projectState := state.NewRegistry(knownpaths.NewNop(), namingRegistry, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
-
 	// Component
-	projectState.Components().Set(&model.Component{
+	state.Components().Set(&model.Component{
 		ComponentKey: model.ComponentKey{
 			Id: model.SharedCodeComponentId,
 		},
@@ -120,7 +107,7 @@ func createLocalSharedCode(t *testing.T, targetComponentId model.ComponentId) (m
 	})
 
 	// Target component
-	projectState.Components().Set(&model.Component{
+	state.Components().Set(&model.Component{
 		ComponentKey: model.ComponentKey{
 			Id: targetComponentId,
 		},
@@ -151,7 +138,7 @@ func createLocalSharedCode(t *testing.T, targetComponentId model.ComponentId) (m
 			Content:   configContent,
 		},
 	}
-	assert.NoError(t, projectState.Set(configState))
+	assert.NoError(t, state.Set(configState))
 
 	// Row
 	rowKey := model.ConfigRowKey{
@@ -175,27 +162,17 @@ func createLocalSharedCode(t *testing.T, targetComponentId model.ComponentId) (m
 			Content:      orderedmap.New(),
 		},
 	}
-	assert.NoError(t, projectState.Set(rowState))
+	assert.NoError(t, state.Set(rowState))
 
-	namingTemplate := naming.TemplateWithIds()
-	namingGenerator := naming.NewGenerator(namingTemplate, namingRegistry)
-	context := mapper.Context{Logger: logger, Fs: fs, NamingRegistry: namingRegistry, NamingGenerator: namingGenerator, State: projectState}
-	return context, logger, configState, rowState
+	return configState, rowState
 }
 
 // nolint: unparam
-func createInternalSharedCode(t *testing.T, targetComponentId model.ComponentId) (mapper.Context, log.DebugLogger, *model.ConfigState, *model.ConfigRowState) {
+func createInternalSharedCode(t *testing.T, targetComponentId model.ComponentId, state *state.State) (*model.ConfigState, *model.ConfigRowState) {
 	t.Helper()
 
-	logger := log.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger, ".")
-	assert.NoError(t, err)
-
-	namingRegistry := naming.NewRegistry()
-	projectState := state.NewRegistry(knownpaths.NewNop(), namingRegistry, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
-
 	// Component
-	projectState.Components().Set(&model.Component{
+	state.Components().Set(&model.Component{
 		ComponentKey: model.ComponentKey{
 			Id: model.SharedCodeComponentId,
 		},
@@ -204,7 +181,7 @@ func createInternalSharedCode(t *testing.T, targetComponentId model.ComponentId)
 	})
 
 	// Target component
-	projectState.Components().Set(&model.Component{
+	state.Components().Set(&model.Component{
 		ComponentKey: model.ComponentKey{
 			Id: targetComponentId,
 		},
@@ -243,7 +220,7 @@ func createInternalSharedCode(t *testing.T, targetComponentId model.ComponentId)
 			},
 		},
 	}
-	assert.NoError(t, projectState.Set(configState))
+	assert.NoError(t, state.Set(configState))
 
 	// Row
 	rowKey := model.ConfigRowKey{
@@ -285,10 +262,7 @@ func createInternalSharedCode(t *testing.T, targetComponentId model.ComponentId)
 			},
 		},
 	}
-	assert.NoError(t, projectState.Set(rowState))
+	assert.NoError(t, state.Set(rowState))
 
-	namingTemplate := naming.TemplateWithIds()
-	namingGenerator := naming.NewGenerator(namingTemplate, namingRegistry)
-	context := mapper.Context{Logger: logger, Fs: fs, NamingRegistry: namingRegistry, NamingGenerator: namingGenerator, State: projectState}
-	return context, logger, configState, rowState
+	return configState, rowState
 }

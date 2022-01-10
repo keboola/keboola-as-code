@@ -7,31 +7,34 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
-	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode/codes"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 func TestSharedCodeLocalLoad(t *testing.T) {
 	t.Parallel()
 	targetComponentId := model.ComponentId(`keboola.python-transformation-v2`)
-	context, logs, configState, rowState := createLocalSharedCode(t, targetComponentId)
+
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
+	fs := d.Fs()
+	configState, rowState := createLocalSharedCode(t, targetComponentId, state)
 
 	// Write file
-	codeFilePath := filesystem.Join(context.NamingGenerator.SharedCodeFilePath(rowState.ConfigRowManifest.Path(), targetComponentId))
-	assert.NoError(t, context.Fs.WriteFile(filesystem.NewFile(codeFilePath, `foo bar`)))
-	logs.Truncate()
+	codeFilePath := filesystem.Join(state.NamingGenerator().SharedCodeFilePath(rowState.ConfigRowManifest.Path(), targetComponentId))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(codeFilePath, `foo bar`)))
+	logger.Truncate()
 
 	// Load config
 	configRecipe := fixtures.NewLocalLoadRecipe(configState.Manifest(), configState.Local)
-	err := NewMapper(context).MapAfterLocalLoad(configRecipe)
+	err := state.Mapper().MapAfterLocalLoad(configRecipe)
 	assert.NoError(t, err)
-	assert.Empty(t, logs.AllMessages())
+	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Load row
 	rowRecipe := fixtures.NewLocalLoadRecipe(rowState.Manifest(), rowState.Local)
-	err = NewMapper(context).MapAfterLocalLoad(rowRecipe)
+	err = state.Mapper().MapAfterLocalLoad(rowRecipe)
 	assert.NoError(t, err)
-	assert.Equal(t, "DEBUG  Loaded \"branch/config/row/code.py\"\n", logs.AllMessages())
+	assert.Equal(t, "DEBUG  Loaded \"branch/config/row/code.py\"\n", logger.AllMessages())
 
 	// Structs are set
 	assert.Equal(t, &model.SharedCodeConfig{
@@ -52,18 +55,21 @@ func TestSharedCodeLocalLoad(t *testing.T) {
 func TestSharedCodeLocalLoad_MissingCodeFile(t *testing.T) {
 	t.Parallel()
 	targetComponentId := model.ComponentId(`keboola.python-transformation-v2`)
-	context, logs, configState, rowState := createLocalSharedCode(t, targetComponentId)
+
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
+	configState, rowState := createLocalSharedCode(t, targetComponentId, state)
 
 	// Load config
 	configRecipe := fixtures.NewLocalLoadRecipe(configState.Manifest(), configState.Local)
-	err := NewMapper(context).MapAfterLocalLoad(configRecipe)
+	err := state.Mapper().MapAfterLocalLoad(configRecipe)
 	assert.NoError(t, err)
-	assert.Empty(t, logs.AllMessages())
+	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Load row
 	rowRecipe := fixtures.NewLocalLoadRecipe(rowState.Manifest(), rowState.Local)
-	err = NewMapper(context).MapAfterLocalLoad(rowRecipe)
+	err = state.Mapper().MapAfterLocalLoad(rowRecipe)
 	assert.Error(t, err)
 	assert.Equal(t, `missing shared code file "branch/config/row/code.py"`, err.Error())
-	assert.Empty(t, logs.AllMessages())
+	assert.Empty(t, logger.WarnAndErrorMessages())
 }

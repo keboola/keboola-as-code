@@ -13,7 +13,8 @@ import (
 
 func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 	t.Parallel()
-	mapper, context, logs := createMapper(t)
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
 
 	contentStr := `
 {
@@ -91,16 +92,16 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 		ConfigManifest: configManifest,
 		Remote:         config,
 	}
-	assert.NoError(t, context.State.Set(configState))
+	assert.NoError(t, state.Set(configState))
 
 	// Target configs
-	target1, target2, target3 := createTargetConfigs(t, context)
+	target1, target2, target3 := createTargetConfigs(t, state)
 
 	// Invoke
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(configState)
-	assert.NoError(t, mapper.OnRemoteChange(changes))
-	assert.Empty(t, logs.AllMessages())
+	assert.NoError(t, state.Mapper().OnRemoteChange(changes))
+	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Check target configs relation
 	rel1, err := target1.Remote.Relations.GetOneByType(model.UsedInOrchestratorRelType)
@@ -238,7 +239,8 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 
 func TestMapAfterRemoteLoadWarnings(t *testing.T) {
 	t.Parallel()
-	mapper, context, logs := createMapper(t)
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
 
 	contentStr := `
 {
@@ -295,15 +297,15 @@ func TestMapAfterRemoteLoadWarnings(t *testing.T) {
 		ConfigManifest: configManifest,
 		Remote:         config,
 	}
-	assert.NoError(t, context.State.Set(configState))
+	assert.NoError(t, state.Set(configState))
 
 	// Target configs
-	createTargetConfigs(t, context)
+	createTargetConfigs(t, state)
 
 	// Invoke
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(configState)
-	assert.NoError(t, mapper.OnRemoteChange(changes))
+	assert.NoError(t, state.Mapper().OnRemoteChange(changes))
 
 	// Warnings
 	expectedWarnings := `
@@ -319,7 +321,7 @@ WARN  Warning: invalid orchestrator config "branch:123/component:keboola.orchest
     - missing "phase" key
     - missing "task" key
 `
-	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logs.AllMessages())
+	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.WarnAndErrorMessages())
 
 	// Assert orchestration
 	assert.Equal(t, `{}`, json.MustEncodeString(config.Content, false))
@@ -367,7 +369,8 @@ WARN  Warning: invalid orchestrator config "branch:123/component:keboola.orchest
 
 func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 	t.Parallel()
-	mapper, context, logs := createMapper(t)
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
 
 	contentStr := `
 {
@@ -417,13 +420,13 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 		ConfigManifest: configManifest,
 		Remote:         config,
 	}
-	assert.NoError(t, context.State.Set(configState))
+	assert.NoError(t, state.Set(configState))
 
 	// Invoke
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(configState)
-	assert.NoError(t, mapper.OnRemoteChange(changes))
-	assert.Empty(t, logs.AllMessages())
+	assert.NoError(t, state.Mapper().OnRemoteChange(changes))
+	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Internal object
 	assert.Equal(t, `{}`, json.MustEncodeString(config.Content, false))
@@ -529,7 +532,8 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 
 func TestMapAfterRemoteLoadDepsCycles(t *testing.T) {
 	t.Parallel()
-	mapper, context, logs := createMapper(t)
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
 
 	contentStr := `
 {
@@ -597,12 +601,12 @@ func TestMapAfterRemoteLoadDepsCycles(t *testing.T) {
 		ConfigManifest: configManifest,
 		Remote:         config,
 	}
-	assert.NoError(t, context.State.Set(configState))
+	assert.NoError(t, state.Set(configState))
 
 	// Invoke
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(configState)
-	assert.NoError(t, mapper.OnRemoteChange(changes))
+	assert.NoError(t, state.Mapper().OnRemoteChange(changes))
 
 	// Warnings
 	expectedWarnings := `
@@ -612,5 +616,5 @@ WARN  Warning: invalid orchestrator config "branch:123/component:keboola.orchest
     - 1 -> 2 -> 1
     - 5 -> 8 -> 7 -> 6 -> 5
 `
-	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logs.AllMessages())
+	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.WarnAndErrorMessages())
 }

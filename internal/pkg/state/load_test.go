@@ -44,7 +44,7 @@ func TestLoadState(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Load
-	options := Options{
+	options := LoadOptions{
 		LoadLocalState:  true,
 		LoadRemoteState: true,
 	}

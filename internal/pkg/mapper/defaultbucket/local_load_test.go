@@ -46,7 +46,8 @@ const localLoadConfigContentSample = `
 
 func TestDefaultBucketMapper_MapBeforeLocalLoadConfig(t *testing.T) {
 	t.Parallel()
-	mapperInst, context, logs := createMapper(t)
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
 
 	// Branch
 	branchKey := model.BranchKey{Id: 123}
@@ -57,7 +58,7 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadConfig(t *testing.T) {
 		},
 		Local: &model.Branch{BranchKey: branchKey},
 	}
-	assert.NoError(t, context.State.Set(branchState))
+	assert.NoError(t, state.Set(branchState))
 
 	// Config referenced by the default bucket
 	configKey1 := model.ConfigKey{
@@ -84,7 +85,7 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadConfig(t *testing.T) {
 			}),
 		},
 	}
-	assert.NoError(t, context.State.Set(configState1))
+	assert.NoError(t, state.Set(configState1))
 
 	// Config with the input mapping
 	configKey2 := model.ConfigKey{
@@ -104,20 +105,20 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadConfig(t *testing.T) {
 			Content:   content,
 		},
 	}
-	assert.NoError(t, context.State.Set(configState2))
+	assert.NoError(t, state.Set(configState2))
 
 	// Invoke
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(configState2)
 	recipe := fixtures.NewLocalLoadRecipe(configState2.ConfigManifest, configState2.Local)
-	assert.NoError(t, mapperInst.OnLocalChange(changes))
+	assert.NoError(t, state.Mapper().OnLocalChange(changes))
 
 	// Check warning of missing default bucket config
 	expectedWarnings := `
 WARN  Warning:
   - config "branch:123/component:keboola.snowflake-transformation/config:789" contains table "{{:default-bucket:extractor/keboola.ex-db-mysql/test2}}.contacts" in input mapping referencing to a non-existing configuration
 `
-	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logs.AllMessages())
+	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.WarnAndErrorMessages())
 
 	// Check default bucket replacement
 	configContent := json.MustEncodeString(recipe.Object.(*model.Config).Content, false)
@@ -126,7 +127,8 @@ WARN  Warning:
 
 func TestDefaultBucketMapper_MapBeforeLocalLoadRow(t *testing.T) {
 	t.Parallel()
-	mapperInst, context, logs := createMapper(t)
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
 
 	// Branch
 	branchKey := model.BranchKey{Id: 123}
@@ -137,7 +139,7 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadRow(t *testing.T) {
 		},
 		Local: &model.Branch{BranchKey: branchKey},
 	}
-	assert.NoError(t, context.State.Set(branchState))
+	assert.NoError(t, state.Set(branchState))
 
 	// Config referenced by the default bucket
 	configKey1 := model.ConfigKey{
@@ -164,7 +166,7 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadRow(t *testing.T) {
 			}),
 		},
 	}
-	assert.NoError(t, context.State.Set(configState1))
+	assert.NoError(t, state.Set(configState1))
 
 	// Config with the input mapping
 	configKey2 := model.ConfigKey{
@@ -182,7 +184,7 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadRow(t *testing.T) {
 			Content:   orderedmap.New(),
 		},
 	}
-	assert.NoError(t, context.State.Set(configState2))
+	assert.NoError(t, state.Set(configState2))
 
 	rowKey := model.ConfigRowKey{
 		BranchId:    123,
@@ -207,20 +209,20 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadRow(t *testing.T) {
 			Content:      content,
 		},
 	}
-	assert.NoError(t, context.State.Set(rowState))
+	assert.NoError(t, state.Set(rowState))
 
 	// Invoke
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(rowState)
 	recipe := fixtures.NewLocalLoadRecipe(rowState.ConfigRowManifest, rowState.Local)
-	assert.NoError(t, mapperInst.OnLocalChange(changes))
+	assert.NoError(t, state.Mapper().OnLocalChange(changes))
 
 	// Check warning of missing default bucket config
 	expectedWarnings := `
 WARN  Warning:
   - config row "branch:123/component:keboola.snowflake-transformation/config:789/row:456" contains table "{{:default-bucket:extractor/keboola.ex-db-mysql/test2}}.contacts" in input mapping referencing to a non-existing configuration
 `
-	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logs.AllMessages())
+	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.WarnAndErrorMessages())
 
 	// Check default bucket replacement
 	configContent := json.MustEncodeString(recipe.Object.(*model.ConfigRow).Content, false)
