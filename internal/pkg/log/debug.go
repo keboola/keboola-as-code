@@ -65,37 +65,37 @@ func (l *debugLogger) Truncate() {
 	}
 }
 
-// AllMsgs returns all messages and Truncate all messages.
-func (l *debugLogger) AllMsgs() string {
+// AllMessages returns all messages and Truncate all messages.
+func (l *debugLogger) AllMessages() string {
 	return l.all.String()
 }
 
-// DebugMsgs returns all debug messages and Truncate all messages.
-func (l *debugLogger) DebugMsgs() string {
+// DebugMessages returns all debug messages and Truncate all messages.
+func (l *debugLogger) DebugMessages() string {
 	defer l.Truncate()
 	return l.debug.String()
 }
 
-// InfoMsgs returns all info messages and Truncate all messages.
-func (l *debugLogger) InfoMsgs() string {
+// InfoMessages returns all info messages and Truncate all messages.
+func (l *debugLogger) InfoMessages() string {
 	defer l.Truncate()
 	return l.info.String()
 }
 
-// WarnMsgs returns all warn messages and Truncate all messages.
-func (l *debugLogger) WarnMsgs() string {
+// WarnMessages returns all warn messages and Truncate all messages.
+func (l *debugLogger) WarnMessages() string {
 	defer l.Truncate()
 	return l.warn.String()
 }
 
-// WarnOrErrorMsgs returns all warn or error messages and Truncate all messages.
-func (l *debugLogger) WarnAndErrorMsgs() string {
+// WarnAndErrorMessages returns all warn or error messages and Truncate all messages.
+func (l *debugLogger) WarnAndErrorMessages() string {
 	defer l.Truncate()
 	return l.warnOrError.String()
 }
 
-// ErrorMsgs returns all error messages and Truncate all messages.
-func (l *debugLogger) ErrorMsgs() string {
+// ErrorMessages returns all error messages and Truncate all messages.
+func (l *debugLogger) ErrorMessages() string {
 	defer l.Truncate()
 	return l.error.String()
 }

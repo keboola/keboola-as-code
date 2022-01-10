@@ -119,7 +119,7 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadConfig(t *testing.T) {
 WARN  Warning:
   - config "branch:123/component:keboola.snowflake-transformation/config:789" contains table "{{:default-bucket:extractor/keboola.ex-db-mysql/test2}}.contacts" in input mapping referencing to a non-existing configuration
 `
-	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logs.AllMsgs())
+	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logs.AllMessages())
 
 	// Check default bucket replacement
 	configContent := json.MustEncodeString(recipe.Object.(*model.Config).Content, false)
@@ -224,7 +224,7 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadRow(t *testing.T) {
 WARN  Warning:
   - config row "branch:123/component:keboola.snowflake-transformation/config:789/row:456" contains table "{{:default-bucket:extractor/keboola.ex-db-mysql/test2}}.contacts" in input mapping referencing to a non-existing configuration
 `
-	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logs.AllMsgs())
+	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logs.AllMessages())
 
 	// Check default bucket replacement
 	configContent := json.MustEncodeString(recipe.Object.(*model.ConfigRow).Content, false)

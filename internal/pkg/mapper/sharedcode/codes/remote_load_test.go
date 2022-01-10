@@ -23,7 +23,7 @@ func TestSharedCodeRemoteLoad(t *testing.T) {
 	changes.AddLoaded(configState)
 	changes.AddLoaded(rowState)
 	assert.NoError(t, NewMapper(context).OnRemoteChange(changes))
-	assert.Empty(t, logs.AllMsgs())
+	assert.Empty(t, logs.AllMessages())
 
 	// Check config
 	assert.Equal(t, &model.SharedCodeConfig{
@@ -54,7 +54,7 @@ func TestSharedCodeRemoteLoad_Legacy(t *testing.T) {
 	changes.AddLoaded(configState)
 	changes.AddLoaded(rowState)
 	assert.NoError(t, NewMapper(context).OnRemoteChange(changes))
-	assert.Empty(t, logs.AllMsgs())
+	assert.Empty(t, logs.AllMessages())
 
 	// Check config
 	assert.Equal(t, &model.SharedCodeConfig{
@@ -92,7 +92,7 @@ WARN  Warning:
   - invalid config "branch:789/component:keboola.shared-code/config:123":
     - key "componentId" should be string, found "int"
 `
-	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logs.AllMsgs())
+	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logs.AllMessages())
 
 	// Check config and row
 	assert.Empty(t, configState.Remote.SharedCode)
@@ -116,7 +116,7 @@ WARN  Warning:
   - invalid config row "branch:789/component:keboola.shared-code/config:123/row:456":
     - key "code_content" should be string or array, found "int"
 `
-	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logs.AllMsgs())
+	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logs.AllMessages())
 
 	// Check config and row
 	assert.Equal(t, &model.SharedCodeConfig{

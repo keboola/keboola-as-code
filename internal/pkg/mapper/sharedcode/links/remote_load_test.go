@@ -24,7 +24,7 @@ func TestRemoteLoadTranWithSharedCode(t *testing.T) {
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(transformation)
 	assert.NoError(t, mapperInst.OnRemoteChange(changes))
-	assert.Empty(t, logs.AllMsgs())
+	assert.Empty(t, logs.AllMessages())
 
 	// Values from content are converted to struct
 	assert.Equal(t, &model.LinkToSharedCode{Config: sharedCodeKey, Rows: sharedCodeRowsKeys}, transformation.Remote.Transformation.LinkToSharedCode)
@@ -54,7 +54,7 @@ WARN  Warning:
   - missing shared code config "branch:123/component:keboola.shared-code/config:missing":
     - referenced from config "branch:123/component:keboola.python-transformation-v2/config:001"
 `
-	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logs.AllMsgs())
+	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logs.AllMessages())
 
 	// Link to shared code is not set
 	assert.Nil(t, transformation.Remote.Transformation.LinkToSharedCode)
@@ -84,7 +84,7 @@ WARN  Warning:
   - missing shared code config row "branch:123/component:keboola.shared-code/config:456/row:missing":
     - referenced from config "branch:123/component:keboola.python-transformation-v2/config:001"
 `
-	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logs.AllMsgs())
+	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logs.AllMessages())
 
 	// Link to shared code is set, but without invalid row
 	assert.Equal(t, &model.LinkToSharedCode{Config: sharedCodeKey}, transformation.Remote.Transformation.LinkToSharedCode)

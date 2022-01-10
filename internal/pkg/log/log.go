@@ -24,12 +24,12 @@ type DebugLogger interface {
 	Logger
 	ConnectTo(writer io.Writer)
 	Truncate()
-	AllMsgs() string
-	DebugMsgs() string
-	InfoMsgs() string
-	WarnMsgs() string
-	WarnAndErrorMsgs() string
-	ErrorMsgs() string
+	AllMessages() string
+	DebugMessages() string
+	InfoMessages() string
+	WarnMessages() string
+	WarnAndErrorMessages() string
+	ErrorMessages() string
 }
 
 type baseLogger interface {

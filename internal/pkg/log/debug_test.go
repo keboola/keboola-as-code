@@ -13,8 +13,8 @@ func TestNewDebugLogger_All(t *testing.T) {
 	logger.Info("info")
 	logger.Warn("warn")
 	logger.Error("error")
-	assert.Equal(t, "DEBUG  debug\nINFO  info\nWARN  warn\nERROR  error\n", logger.AllMsgs())
-	assert.Empty(t, logger.AllMsgs())
+	assert.Equal(t, "DEBUG  debug\nINFO  info\nWARN  warn\nERROR  error\n", logger.AllMessages())
+	assert.Empty(t, logger.AllMessages())
 }
 
 func TestNewDebugLogger_Debug(t *testing.T) {
@@ -24,9 +24,9 @@ func TestNewDebugLogger_Debug(t *testing.T) {
 	logger.Info("info")
 	logger.Warn("warn")
 	logger.Errorf("error")
-	assert.Equal(t, "DEBUG  debug\n", logger.DebugMsgs())
-	assert.Empty(t, logger.AllMsgs())
-	assert.Empty(t, logger.DebugMsgs())
+	assert.Equal(t, "DEBUG  debug\n", logger.DebugMessages())
+	assert.Empty(t, logger.AllMessages())
+	assert.Empty(t, logger.DebugMessages())
 }
 
 func TestNewDebugLogger_Info(t *testing.T) {
@@ -36,9 +36,9 @@ func TestNewDebugLogger_Info(t *testing.T) {
 	logger.Info("info")
 	logger.Warn("warn")
 	logger.Errorf("error")
-	assert.Equal(t, "INFO  info\n", logger.InfoMsgs())
-	assert.Empty(t, logger.AllMsgs())
-	assert.Empty(t, logger.InfoMsgs())
+	assert.Equal(t, "INFO  info\n", logger.InfoMessages())
+	assert.Empty(t, logger.AllMessages())
+	assert.Empty(t, logger.InfoMessages())
 }
 
 func TestNewDebugLogger_Warn(t *testing.T) {
@@ -48,9 +48,9 @@ func TestNewDebugLogger_Warn(t *testing.T) {
 	logger.Info("info")
 	logger.Warn("warn")
 	logger.Errorf("error")
-	assert.Equal(t, "WARN  warn\n", logger.WarnMsgs())
-	assert.Empty(t, logger.AllMsgs())
-	assert.Empty(t, logger.WarnMsgs())
+	assert.Equal(t, "WARN  warn\n", logger.WarnMessages())
+	assert.Empty(t, logger.AllMessages())
+	assert.Empty(t, logger.WarnMessages())
 }
 
 func TestNewDebugLogger_WarnOrError(t *testing.T) {
@@ -60,9 +60,9 @@ func TestNewDebugLogger_WarnOrError(t *testing.T) {
 	logger.Info("info")
 	logger.Warn("warn")
 	logger.Error("error")
-	assert.Equal(t, "WARN  warn\nERROR  error\n", logger.WarnAndErrorMsgs())
-	assert.Empty(t, logger.AllMsgs())
-	assert.Empty(t, logger.WarnAndErrorMsgs())
+	assert.Equal(t, "WARN  warn\nERROR  error\n", logger.WarnAndErrorMessages())
+	assert.Empty(t, logger.AllMessages())
+	assert.Empty(t, logger.WarnAndErrorMessages())
 }
 
 func TestNewDebugLogger_Error(t *testing.T) {
@@ -72,7 +72,7 @@ func TestNewDebugLogger_Error(t *testing.T) {
 	logger.Info("info")
 	logger.Warn("warn")
 	logger.Errorf("error")
-	assert.Equal(t, "ERROR  error\n", logger.ErrorMsgs())
-	assert.Empty(t, logger.AllMsgs())
-	assert.Empty(t, logger.ErrorMsgs())
+	assert.Equal(t, "ERROR  error\n", logger.ErrorMessages())
+	assert.Empty(t, logger.AllMessages())
+	assert.Empty(t, logger.ErrorMessages())
 }

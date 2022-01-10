@@ -70,7 +70,7 @@ DEBUG  Loaded "branch/other/orchestrator/phases/001-phase/002-task-2/task.json"
 DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/phase.json"
 DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/task.json"
 `
-	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logs.AllMsgs())
+	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logs.AllMessages())
 
 	// Check target configs relation
 	rel1, err := target1.Local.Relations.GetOneByType(model.UsedInOrchestratorRelType)

@@ -26,7 +26,7 @@ func TestLocalSaveTranWithSharedCode(t *testing.T) {
 	// Invoke
 	recipe := fixtures.NewLocalSaveRecipe(transformation.ConfigManifest, transformation.Local)
 	assert.NoError(t, mapperInst.MapBeforeLocalSave(recipe))
-	assert.Empty(t, logs.AllMsgs())
+	assert.Empty(t, logs.AllMessages())
 
 	// Path to shared code is part of the Content
 	configFile, err := recipe.Files.ObjectConfigFile()
@@ -87,7 +87,7 @@ WARN  Warning:
   - missing shared code config "branch:123/component:keboola.shared-code/config:missing":
     - referenced from config "branch:123/component:keboola.python-transformation-v2/config:789"
 `
-	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logs.AllMsgs())
+	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logs.AllMessages())
 
 	// Config file doesn't contain shared code path
 	configFile, err := recipe.Files.ObjectConfigFile()
@@ -153,7 +153,7 @@ WARN  Warning:
   - missing shared code config row "branch:123/component:keboola.shared-code/config:456/row:missing":
     - referenced from branch/transformation/blocks/block-1/code-2
 `
-	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logs.AllMsgs())
+	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logs.AllMessages())
 
 	// Link to shared code is set, but without missing row
 	configFile, err := recipe.Files.ObjectConfigFile()

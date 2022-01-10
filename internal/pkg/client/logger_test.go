@@ -17,7 +17,7 @@ func TestClientLogger(t *testing.T) {
 	clientLogger.Errorf("Some error")
 
 	expected := "DEBUG  HTTP\tSome debug\nDEBUG  HTTP-WARN\tSome warning\nDEBUG  HTTP-ERROR\tSome error\n"
-	assert.Equal(t, expected, logger.AllMsgs())
+	assert.Equal(t, expected, logger.AllMessages())
 }
 
 func TestRemoveSecrets(t *testing.T) {
