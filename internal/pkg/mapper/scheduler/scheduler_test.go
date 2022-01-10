@@ -20,9 +20,9 @@ func createMapperContext(t *testing.T) mapper.Context {
 	logger := log.NewDebugLogger()
 	fs, err := aferofs.NewMemoryFs(logger, ".")
 	assert.NoError(t, err)
-	projectState := state.NewRegistry(knownpaths.NewNop(), model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
-	namingTemplate := naming.TemplateWithIds()
 	namingRegistry := naming.NewRegistry()
+	projectState := state.NewRegistry(knownpaths.NewNop(), namingRegistry, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
+	namingTemplate := naming.TemplateWithIds()
 	namingGenerator := naming.NewGenerator(namingTemplate, namingRegistry)
 	return mapper.Context{Logger: logger, Fs: fs, NamingGenerator: namingGenerator, NamingRegistry: namingRegistry, State: projectState}
 }

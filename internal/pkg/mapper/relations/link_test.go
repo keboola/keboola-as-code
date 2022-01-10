@@ -20,7 +20,7 @@ func TestRelationsMapperLinkRelations(t *testing.T) {
 
 	// Manifest side
 	object1 := &fixtures.MockedObjectState{
-		MockedManifest: &fixtures.MockedManifest{MockedKey: key1},
+		MockedManifest: &fixtures.MockedManifest{MockedKey: key1, PathValue: `object1`},
 		Local: &fixtures.MockedObject{
 			MockedKey: key1,
 			Relations: model.Relations{
@@ -34,7 +34,7 @@ func TestRelationsMapperLinkRelations(t *testing.T) {
 
 	// API side
 	object2 := &fixtures.MockedObjectState{
-		MockedManifest: &fixtures.MockedManifest{MockedKey: key2},
+		MockedManifest: &fixtures.MockedManifest{MockedKey: key2, PathValue: `object2`},
 		Local: &fixtures.MockedObject{
 			MockedKey: key2,
 			Relations: model.Relations{},

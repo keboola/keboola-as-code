@@ -8,12 +8,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 )
 
 func TestNewState(t *testing.T) {
 	t.Parallel()
-	s := New(knownpaths.NewNop(), NewComponentsMap(nil), SortByPath)
+	s := New(knownpaths.NewNop(), naming.NewRegistry(), NewComponentsMap(nil), SortByPath)
 	assert.NotNil(t, s)
 }
 
@@ -161,7 +162,7 @@ func TestStateTrackRecordInvalid(t *testing.T) {
 	}
 	record.PathInProject = NewPathInProject(``, `foo`)
 
-	// We do not load files for invalid records
+	// We do not load files for invalid records.
 	// Therefore, we mark all files from the object directory as tracked.
 	// This will prevent duplicate error -> untracked files found.
 	// The user must primarily fix why the record is invalid.
@@ -172,7 +173,7 @@ func TestStateTrackRecordInvalid(t *testing.T) {
 
 func newTestState(t *testing.T, paths *knownpaths.Paths) *Registry {
 	t.Helper()
-	s := New(paths, NewComponentsMap(nil), SortByPath)
+	s := New(paths, naming.NewRegistry(), NewComponentsMap(nil), SortByPath)
 	assert.NotNil(t, s)
 
 	// Branch 1

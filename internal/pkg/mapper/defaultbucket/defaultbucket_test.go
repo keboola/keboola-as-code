@@ -22,10 +22,10 @@ func createMapper(t *testing.T) (*mapper.Mapper, mapper.Context, log.DebugLogger
 	t.Helper()
 	logger := log.NewDebugLogger()
 	fs := testfs.NewMemoryFs()
-	projectState := state.NewRegistry(knownpaths.NewNop(), model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
+	namingRegistry := naming.NewRegistry()
+	projectState := state.NewRegistry(knownpaths.NewNop(), namingRegistry, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
 	manifest := projectManifest.New(1, `foo.bar`)
 	namingTemplate := naming.TemplateWithIds()
-	namingRegistry := naming.NewRegistry()
 	namingGenerator := naming.NewGenerator(namingTemplate, namingRegistry)
 	context := mapper.Context{Logger: logger, Fs: fs, NamingGenerator: namingGenerator, NamingRegistry: namingRegistry, State: projectState}
 	mapperInst := mapper.New()

@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -13,21 +14,23 @@ type pathsRO = knownpaths.PathsReadOnly
 
 type Registry struct {
 	*pathsRO
-	paths      *knownpaths.Paths
-	sortBy     string
-	lock       *sync.Mutex
-	components *ComponentsMap
-	objects    *orderedmap.OrderedMap
+	paths          *knownpaths.Paths
+	sortBy         string
+	lock           *sync.Mutex
+	namingRegistry *naming.Registry
+	components     *ComponentsMap
+	objects        *orderedmap.OrderedMap
 }
 
-func New(paths *knownpaths.Paths, components *ComponentsMap, sortBy string) *Registry {
+func New(paths *knownpaths.Paths, namingRegistry *naming.Registry, components *ComponentsMap, sortBy string) *Registry {
 	return &Registry{
-		pathsRO:    paths.ReadOnly(),
-		paths:      paths,
-		sortBy:     sortBy,
-		lock:       &sync.Mutex{},
-		components: components,
-		objects:    orderedmap.New(),
+		pathsRO:        paths.ReadOnly(),
+		paths:          paths,
+		sortBy:         sortBy,
+		lock:           &sync.Mutex{},
+		namingRegistry: namingRegistry,
+		components:     components,
+		objects:        orderedmap.New(),
 	}
 }
 
@@ -169,6 +172,22 @@ func (s *Registry) ConfigRowsFrom(config ConfigKey) (rows []*ConfigRowState) {
 	return rows
 }
 
+func (s *Registry) GetPath(key Key) (PathInProject, bool) {
+	objectState, found := s.Get(key)
+	if !found {
+		return PathInProject{}, false
+	}
+	return objectState.GetPathInProject(), true
+}
+
+func (s *Registry) GetByPath(path string) (ObjectState, bool) {
+	key, found := s.namingRegistry.KeyByPath(path)
+	if !found {
+		return nil, false
+	}
+	return s.Get(key)
+}
+
 func (s *Registry) Get(key Key) (ObjectState, bool) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -204,6 +223,12 @@ func (s *Registry) Set(objectState ObjectState) error {
 	key := objectState.Key()
 	if _, found := s.objects.Get(key.String()); found {
 		return fmt.Errorf(`object "%s" already exists`, key.Desc())
+	}
+
+	if objectState.GetObjectPath() != "" {
+		if err := s.namingRegistry.Attach(key, objectState.GetPathInProject()); err != nil {
+			return err
+		}
 	}
 
 	s.objects.Set(key.String(), objectState)
