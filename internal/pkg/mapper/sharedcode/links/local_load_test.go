@@ -7,9 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestLocalLoadTranWithSharedCode(t *testing.T) {
@@ -143,67 +141,4 @@ missing shared code "branch/_shared/keboola.python-transformation-v2/codes/missi
 	// Key from Content is deleted
 	_, found := transformation.Local.Content.Get(model.SharedCodePathContentKey)
 	assert.False(t, found)
-}
-
-func createLocalTranWithSharedCode(t *testing.T, context mapper.Context) *model.ConfigState {
-	t.Helper()
-
-	key := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: `keboola.python-transformation-v2`,
-		Id:          `789`,
-	}
-
-	transformation := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{
-			ConfigKey: key,
-			Paths: model.Paths{
-				PathInProject: model.NewPathInProject(`branch`, `transformation`),
-			},
-		},
-		Local: &model.Config{
-			ConfigKey: key,
-			Content: orderedmap.FromPairs([]orderedmap.Pair{
-				{
-					Key:   model.SharedCodePathContentKey,
-					Value: `_shared/keboola.python-transformation-v2`,
-				},
-			}),
-			Transformation: &model.Transformation{
-				Blocks: []*model.Block{
-					{
-						Name:          `Block 1`,
-						PathInProject: model.NewPathInProject(`branch/transformation/blocks`, `block-1`),
-						Codes: model.Codes{
-							{
-								CodeKey: model.CodeKey{
-									ComponentId: `keboola.python-transformation-v2`,
-								},
-								Name:          `Code 1`,
-								PathInProject: model.NewPathInProject(`branch/transformation/blocks/block-1`, `code-1`),
-								Scripts: model.Scripts{
-									model.StaticScript{Value: `print(100)`},
-									model.StaticScript{Value: "# {{:codes/code1}}\n"},
-								},
-							},
-							{
-								CodeKey: model.CodeKey{
-									ComponentId: `keboola.python-transformation-v2`,
-								},
-								Name:          `Code 2`,
-								PathInProject: model.NewPathInProject(`branch/transformation/blocks/block-1`, `code-2`),
-								Scripts: model.Scripts{
-									model.StaticScript{Value: " {{:codes/code2}}\n"},
-									model.StaticScript{Value: "#     {{:codes/code1}}"},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-	assert.NoError(t, context.State.Set(transformation))
-	assert.NoError(t, context.NamingRegistry.Attach(transformation.Key(), transformation.PathInProject))
-	return transformation
 }

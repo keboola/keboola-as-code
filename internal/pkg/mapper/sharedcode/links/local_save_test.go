@@ -8,9 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestLocalSaveTranWithSharedCode(t *testing.T) {
@@ -193,66 +191,4 @@ WARN  Warning:
 			PathInProject: model.NewPathInProject(`branch/transformation/blocks`, `block-1`),
 		},
 	}, transformation.Local.Transformation.Blocks)
-}
-
-func createInternalTranWithSharedCode(t *testing.T, sharedCodeKey model.ConfigKey, sharedCodeRowsKeys []model.ConfigRowKey, context mapper.Context) *model.ConfigState {
-	t.Helper()
-
-	key := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: `keboola.python-transformation-v2`,
-		Id:          `789`,
-	}
-
-	transformation := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{
-			ConfigKey: key,
-			Paths: model.Paths{
-				PathInProject: model.NewPathInProject(`branch`, `transformation`),
-			},
-		},
-		Local: &model.Config{
-			ConfigKey: key,
-			Content:   orderedmap.New(),
-			Transformation: &model.Transformation{
-				LinkToSharedCode: &model.LinkToSharedCode{
-					Config: sharedCodeKey,
-					Rows:   sharedCodeRowsKeys,
-				},
-				Blocks: []*model.Block{
-					{
-						Name: `Block 1`,
-						Codes: model.Codes{
-							{
-								CodeKey: model.CodeKey{
-									ComponentId: `keboola.python-transformation-v2`,
-								},
-								Name: `Code 1`,
-								Scripts: model.Scripts{
-									model.StaticScript{Value: `print(100)`},
-									model.LinkScript{Target: sharedCodeRowsKeys[0]},
-								},
-								PathInProject: model.NewPathInProject(`branch/transformation/blocks/block-1`, `code-1`),
-							},
-							{
-								CodeKey: model.CodeKey{
-									ComponentId: `keboola.python-transformation-v2`,
-								},
-								Name: `Code 2`,
-								Scripts: model.Scripts{
-									model.LinkScript{Target: sharedCodeRowsKeys[1]},
-									model.LinkScript{Target: sharedCodeRowsKeys[0]},
-								},
-								PathInProject: model.NewPathInProject(`branch/transformation/blocks/block-1`, `code-2`),
-							},
-						},
-						PathInProject: model.NewPathInProject(`branch/transformation/blocks`, `block-1`),
-					},
-				},
-			},
-		},
-	}
-
-	assert.NoError(t, context.State.Set(transformation))
-	return transformation
 }

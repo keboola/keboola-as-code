@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
@@ -312,44 +311,4 @@ invalid orchestrator config "branch/other/orchestrator":
     - 002-phase -> 003-phase -> 002-phase
 `
 	assert.Equal(t, strings.Trim(expectedError, "\n"), err.Error())
-}
-
-func createLocalLoadFixtures(t *testing.T, context mapper.Context) *model.ConfigState {
-	t.Helper()
-
-	// Branch
-	branchKey := model.BranchKey{
-		Id: 123,
-	}
-	branchState := &model.BranchState{
-		BranchManifest: &model.BranchManifest{
-			BranchKey: branchKey,
-			Paths: model.Paths{
-				PathInProject: model.NewPathInProject(``, `branch`),
-			},
-		},
-		Local: &model.Branch{BranchKey: branchKey},
-	}
-	assert.NoError(t, context.State.Set(branchState))
-	assert.NoError(t, context.NamingRegistry.Attach(branchState.Key(), branchState.PathInProject))
-
-	// Orchestrator config
-	configKey := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: model.OrchestratorComponentId,
-		Id:          `456`,
-	}
-	configState := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{
-			ConfigKey: configKey,
-			Paths: model.Paths{
-				PathInProject: model.NewPathInProject(`branch/other`, `orchestrator`),
-			},
-		},
-		Local: &model.Config{ConfigKey: configKey, Content: orderedmap.New()},
-	}
-	assert.NoError(t, context.State.Set(configState))
-	assert.NoError(t, context.NamingRegistry.Attach(configState.Key(), configState.PathInProject))
-
-	return configState
 }
