@@ -28,7 +28,7 @@ var (
 	ErrMissingStorageApiHost          = dialog.ErrMissingStorageApiHost
 	ErrMissingStorageApiToken         = dialog.ErrMissingStorageApiToken
 	ErrProjectManifestNotFound        = fmt.Errorf("project manifest not found")
-	ErrRepoManifestNotFound           = fmt.Errorf("repository manifest not found")
+	ErrRepositoryManifestNotFound     = fmt.Errorf("repository manifest not found")
 	ErrExpectedProjectFoundRepository = fmt.Errorf("project manifest not found, found repository manifest")
 	ErrExpectedRepositoryFoundProject = fmt.Errorf("repository manifest not found, found project manifest")
 	ErrProjectDirFound                = fmt.Errorf("project directory not expected, but found")
@@ -37,8 +37,10 @@ var (
 )
 
 func NewContainer(ctx context.Context, envs *env.Map, fs filesystem.Fs, dialogs *dialog.Dialogs, logger log.Logger, options *options.Options) *Container {
-	c := &cliDeps{logger: logger, envs: envs, fs: fs, dialogs: dialogs, options: options}
-	return &Container{commonDeps: dependencies.NewContainer(c, ctx), cliDeps: c}
+	cli := &cliDeps{logger: logger, envs: envs, fs: fs, dialogs: dialogs, options: options}
+	all := &Container{commonDeps: dependencies.NewContainer(cli, ctx), cliDeps: cli}
+	cli._all = all
+	return all
 }
 
 type commonDeps = dependencies.CommonDeps
@@ -50,22 +52,24 @@ type Container struct {
 }
 
 type cliDeps struct {
-	logger   log.Logger
-	dialogs  *dialog.Dialogs
-	options  *options.Options
-	envs     *env.Map
+	_all    *Container // link back to all dependencies
+	logger  log.Logger
+	dialogs *dialog.Dialogs
+	options *options.Options
+	envs    *env.Map
+	// Filesystem
 	fs       filesystem.Fs
 	emptyDir filesystem.Fs
 	// Project
 	project         *project.Project
 	projectDir      filesystem.Fs
-	projectManifest *projectManifest.Manifest
+	projectManifest *project.Manifest
 	// Template
 	template *template.Template
 	// Template repository
 	templateRepository         *repository.Repository
 	templateRepositoryDir      filesystem.Fs
-	templateRepositoryManifest *repositoryManifest.Manifest
+	templateRepositoryManifest *repository.Manifest
 }
 
 func (v *cliDeps) Logger() log.Logger {
@@ -141,7 +145,7 @@ func (v *cliDeps) Project() (*project.Project, error) {
 		if err != nil {
 			return nil, err
 		}
-		v.project = project.New(projectDir, manifest)
+		v.project = project.New(projectDir, manifest, v._all)
 	}
 	return v.project, nil
 }
@@ -173,7 +177,7 @@ func (v *cliDeps) ProjectManifestExists() bool {
 	return v.fs.IsFile(path)
 }
 
-func (v *cliDeps) ProjectManifest() (*projectManifest.Manifest, error) {
+func (v *cliDeps) ProjectManifest() (*project.Manifest, error) {
 	if v.projectManifest == nil {
 		if m, err := loadProjectManifest.Run(v); err == nil {
 			v.projectManifest = m
@@ -186,7 +190,7 @@ func (v *cliDeps) ProjectManifest() (*projectManifest.Manifest, error) {
 
 func (v *cliDeps) Template() (*template.Template, error) {
 	if v.template == nil {
-		v.template = &template.Template{}
+		panic(`TODO`)
 	}
 	return v.template, nil
 }
@@ -212,7 +216,7 @@ func (v *cliDeps) TemplateRepositoryDir() (filesystem.Fs, error) {
 			if v.ProjectManifestExists() {
 				return nil, ErrExpectedRepositoryFoundProject
 			}
-			return nil, ErrRepoManifestNotFound
+			return nil, ErrRepositoryManifestNotFound
 		}
 
 		v.templateRepositoryDir = v.fs
@@ -228,7 +232,7 @@ func (v *cliDeps) TemplateRepositoryManifestExists() bool {
 	return v.fs.IsFile(path)
 }
 
-func (v *cliDeps) TemplateRepositoryManifest() (*repositoryManifest.Manifest, error) {
+func (v *cliDeps) TemplateRepositoryManifest() (*repository.Manifest, error) {
 	if v.projectManifest == nil {
 		if m, err := loadRepositoryManifest.Run(v); err == nil {
 			v.templateRepositoryManifest = m
@@ -239,7 +243,7 @@ func (v *cliDeps) TemplateRepositoryManifest() (*repositoryManifest.Manifest, er
 	return v.templateRepositoryManifest, nil
 }
 
-func (v *cliDeps) CreateTemplateRepositoryManifest() (*repositoryManifest.Manifest, error) {
+func (v *cliDeps) CreateTemplateRepositoryManifest() (*repository.Manifest, error) {
 	if m, err := createRepositoryManifest.Run(v); err == nil {
 		v.templateRepositoryManifest = m
 		v.templateRepositoryDir = v.fs
@@ -304,7 +308,7 @@ func (v *Container) StorageApi() (*remote.StorageApi, error) {
 	return v.storageApi, nil
 }
 
-func (v *Container) CreateProjectManifest(o createProjectManifest.Options) (*projectManifest.Manifest, error) {
+func (v *Container) CreateProjectManifest(o createProjectManifest.Options) (*project.Manifest, error) {
 	if m, err := createProjectManifest.Run(o, v); err == nil {
 		v.projectManifest = m
 		v.projectDir = v.fs

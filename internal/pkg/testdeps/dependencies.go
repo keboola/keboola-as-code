@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	templateRepository "github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
@@ -32,15 +33,18 @@ func New() *TestContainer {
 	test := &testDependencies{}
 	test.logger = log.NewDebugLogger()
 	test.envs = env.Empty()
-	test.fs = testfs.NewMemoryFs()
+	test.fs = testfs.NewMemoryFsWithLogger(test.logger)
 	test.options = options.New()
 	test.SetStorageApiHost(`storage.foo.bar`)
 	test.SetStorageApiToken(`my-secret`)
 	common := dependencies.NewTestContainer(test, context.Background())
-	return &TestContainer{testDependencies: test, commonDeps: common}
+	all := &TestContainer{testDependencies: test, commonDeps: common}
+	test._all = all
+	return all
 }
 
 type testDependencies struct {
+	_all               *TestContainer
 	logger             log.DebugLogger
 	envs               *env.Map
 	fs                 filesystem.Fs
@@ -55,7 +59,7 @@ type testDependencies struct {
 }
 
 // InitFromTestProject init test dependencies from testing project.
-func (v TestContainer) InitFromTestProject(project *testproject.Project) {
+func (v *TestContainer) InitFromTestProject(project *testproject.Project) {
 	storageApi := project.StorageApi()
 	v.SetProjectId(project.Id())
 	v.SetStorageApiHost(storageApi.Host())
@@ -65,16 +69,24 @@ func (v TestContainer) InitFromTestProject(project *testproject.Project) {
 	v.SetEncryptionApi(project.EncryptionApi())
 }
 
-func (v TestContainer) UseMockedStorageApi() (*remote.StorageApi, *httpmock.MockTransport) {
+func (v *TestContainer) UseMockedStorageApi() (*remote.StorageApi, *httpmock.MockTransport) {
 	storageApi, httpTransport := testapi.NewMockedStorageApi(v.DebugLogger())
 	v.SetStorageApi(storageApi)
 	return storageApi, httpTransport
 }
 
-func (v TestContainer) UseMockedSchedulerApi() (*scheduler.Api, *httpmock.MockTransport) {
+func (v *TestContainer) UseMockedSchedulerApi() (*scheduler.Api, *httpmock.MockTransport) {
 	schedulerApi, httpTransport := testapi.NewMockedSchedulerApi(v.DebugLogger())
 	v.SetSchedulerApi(schedulerApi)
 	return schedulerApi, httpTransport
+}
+
+// EmptyState without mappers. Useful for mappers unit tests.
+func (v *TestContainer) EmptyState() *state.State {
+	v.UseMockedSchedulerApi()
+	_, httpTransport := v.UseMockedStorageApi()
+	testapi.AddMockedComponents(httpTransport)
+	return NewEmptyState(v, NewManifest())
 }
 
 func (v *testDependencies) Logger() log.Logger {
@@ -107,7 +119,7 @@ func (v *testDependencies) Project() (*project.Project, error) {
 		if err != nil {
 			return nil, err
 		}
-		v.project = project.New(v.fs, manifest)
+		v.project = project.New(v.fs, manifest, v._all)
 	}
 	return v.project, nil
 }
@@ -117,7 +129,7 @@ func (v *testDependencies) SetProject(project *project.Project) {
 }
 
 func (v *testDependencies) SetProjectManifest(manifest *project.Manifest) {
-	v.project = project.New(v.fs, manifest)
+	v.project = project.New(v.Fs(), manifest, v._all)
 }
 
 func (v *testDependencies) Template() (*template.Template, error) {
@@ -126,7 +138,7 @@ func (v *testDependencies) Template() (*template.Template, error) {
 		if err != nil {
 			return nil, err
 		}
-		v.template = template.New(v.fs, manifest)
+		v.template = template.New(v.fs, manifest, v._all)
 	}
 	return v.template, nil
 }
@@ -136,16 +148,16 @@ func (v *testDependencies) SetTemplate(template *template.Template) {
 }
 
 func (v *testDependencies) SetTemplateManifest(manifest *template.Manifest) {
-	v.template = template.New(v.fs, manifest)
+	v.template = template.New(v.fs, manifest, v._all)
 }
 
 func (v *testDependencies) TemplateRepository() (*templateRepository.Repository, error) {
 	if v.templateRepository == nil {
-		manifest, err := templateRepository.LoadManifest(v.fs)
+		manifest, err := templateRepository.LoadManifest(v.Fs())
 		if err != nil {
 			return nil, err
 		}
-		v.templateRepository = templateRepository.New(v.fs, manifest)
+		v.templateRepository = templateRepository.New(v.Fs(), manifest)
 	}
 	return v.templateRepository, nil
 }
@@ -155,7 +167,7 @@ func (v *testDependencies) SetTemplateRepository(repository *templateRepository.
 }
 
 func (v *testDependencies) SetTemplateRepositoryManifest(manifest *templateRepository.Manifest) {
-	v.templateRepository = templateRepository.New(v.fs, manifest)
+	v.templateRepository = templateRepository.New(v.Fs(), manifest)
 }
 
 func (v *testDependencies) ApiVerboseLogs() bool {

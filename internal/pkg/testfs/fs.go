@@ -17,7 +17,11 @@ func NewBasePathLocalFs(basePath string) filesystem.Fs {
 }
 
 func NewMemoryFs() filesystem.Fs {
-	fs, err := aferofs.NewMemoryFs(log.NewNopLogger(), `/`)
+	return NewMemoryFsWithLogger(log.NewNopLogger())
+}
+
+func NewMemoryFsWithLogger(logger log.Logger) filesystem.Fs {
+	fs, err := aferofs.NewMemoryFs(logger, `/`)
 	if err != nil {
 		panic(err)
 	}
