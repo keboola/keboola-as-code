@@ -26,7 +26,7 @@ func TestRemoteSaveTranWithSharedCode(t *testing.T) {
 		ObjectManifest: transformation.Manifest(),
 	}
 	assert.NoError(t, mapperInst.MapBeforeRemoteSave(recipe))
-	assert.Empty(t, logs.String())
+	assert.Empty(t, logs.AllMessages())
 
 	// Config ID and rows ID are set in Content
 	id, found := object.Content.Get(model.SharedCodeIdContentKey)

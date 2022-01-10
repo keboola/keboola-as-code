@@ -22,9 +22,14 @@ type Logger interface {
 // DebugLogger returns logs as string in tests.
 type DebugLogger interface {
 	Logger
-	String() string
-	Truncate()
 	ConnectTo(writer io.Writer)
+	Truncate()
+	AllMessages() string
+	DebugMessages() string
+	InfoMessages() string
+	WarnMessages() string
+	WarnAndErrorMessages() string
+	ErrorMessages() string
 }
 
 type baseLogger interface {

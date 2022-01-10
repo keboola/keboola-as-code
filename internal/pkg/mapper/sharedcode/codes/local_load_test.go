@@ -25,13 +25,13 @@ func TestSharedCodeLocalLoad(t *testing.T) {
 	configRecipe := fixtures.NewLocalLoadRecipe(configState.Manifest(), configState.Local)
 	err := NewMapper(context).MapAfterLocalLoad(configRecipe)
 	assert.NoError(t, err)
-	assert.Empty(t, logs.String())
+	assert.Empty(t, logs.AllMessages())
 
 	// Load row
 	rowRecipe := fixtures.NewLocalLoadRecipe(rowState.Manifest(), rowState.Local)
 	err = NewMapper(context).MapAfterLocalLoad(rowRecipe)
 	assert.NoError(t, err)
-	assert.Equal(t, "DEBUG  Loaded \"branch/config/row/code.py\"\n", logs.String())
+	assert.Equal(t, "DEBUG  Loaded \"branch/config/row/code.py\"\n", logs.AllMessages())
 
 	// Structs are set
 	assert.Equal(t, &model.SharedCodeConfig{
@@ -58,12 +58,12 @@ func TestSharedCodeLocalLoad_MissingCodeFile(t *testing.T) {
 	configRecipe := fixtures.NewLocalLoadRecipe(configState.Manifest(), configState.Local)
 	err := NewMapper(context).MapAfterLocalLoad(configRecipe)
 	assert.NoError(t, err)
-	assert.Empty(t, logs.String())
+	assert.Empty(t, logs.AllMessages())
 
 	// Load row
 	rowRecipe := fixtures.NewLocalLoadRecipe(rowState.Manifest(), rowState.Local)
 	err = NewMapper(context).MapAfterLocalLoad(rowRecipe)
 	assert.Error(t, err)
 	assert.Equal(t, `missing shared code file "branch/config/row/code.py"`, err.Error())
-	assert.Empty(t, logs.String())
+	assert.Empty(t, logs.AllMessages())
 }

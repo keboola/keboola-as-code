@@ -49,7 +49,7 @@ func TestRelationsMapperLinkRelations(t *testing.T) {
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(object1)
 	assert.NoError(t, NewMapper(context).OnLocalChange(changes))
-	assert.Empty(t, logs.String())
+	assert.Empty(t, logs.AllMessages())
 
 	// Other side relation has been created
 	assert.Equal(t, model.Relations{
@@ -92,5 +92,5 @@ WARN  Warning:
     - referenced from mocked key "123"
     - by relation "manifest_side_relation"
 `
-	assert.Equal(t, strings.TrimLeft(expected, "\n"), logs.String())
+	assert.Equal(t, strings.TrimLeft(expected, "\n"), logs.AllMessages())
 }

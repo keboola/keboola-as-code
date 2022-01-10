@@ -136,7 +136,7 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 
 	// Save
 	assert.NoError(t, mapper.MapBeforeRemoteSave(recipe))
-	assert.Empty(t, logs.String())
+	assert.Empty(t, logs.AllMessages())
 
 	// Orchestration is stored in API object content
 	expectedContent := `

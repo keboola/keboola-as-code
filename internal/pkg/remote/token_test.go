@@ -35,7 +35,7 @@ func TestGetToken(t *testing.T) {
 	tokenValue := project.Token()
 	token, err := api.GetToken(tokenValue)
 	assert.NoError(t, err)
-	assert.Regexp(t, `DEBUG  HTTP      GET https://.*/v2/storage/tokens/verify | 200 | .*`, logger.String())
+	assert.Regexp(t, `DEBUG  HTTP      GET https://.*/v2/storage/tokens/verify | 200 | .*`, logger.AllMessages())
 	assert.Equal(t, tokenValue, token.Token)
 	assert.Equal(t, project.Id(), token.ProjectId())
 	assert.NotEmpty(t, token.ProjectName())

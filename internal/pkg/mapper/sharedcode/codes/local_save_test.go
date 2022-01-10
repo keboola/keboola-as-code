@@ -24,7 +24,7 @@ func TestSharedCodeLocalSave(t *testing.T) {
 
 	// Save to file
 	assert.NoError(t, NewMapper(context).MapBeforeLocalSave(recipe))
-	assert.Empty(t, logs.String())
+	assert.Empty(t, logs.AllMessages())
 
 	// Assert
 	sharedCodeFileRaw := recipe.Files.GetOneByTag(model.FileKindNativeSharedCode)
