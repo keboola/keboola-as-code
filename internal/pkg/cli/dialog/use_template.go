@@ -52,39 +52,42 @@ func (p *Dialogs) AskUseTemplateOptions(inputs input.Inputs) (results map[string
 			ctx = context.WithValue(ctx, contextKey(i.Id), value)
 			results[i.Id] = value
 		case input.KindSelect:
-			selectPrompt := &prompt.Select{
+			selectPrompt := &prompt.SelectIndex{
 				Label:       i.Name,
 				Description: i.Description,
-				Options:     input.GetOptionsNames(i.Options),
+				Options:     i.Options.Names(),
 				UseDefault:  true,
 				Validator: func(val interface{}) error {
 					return i.ValidateUserInput(val, ctx)
 				},
 			}
 			if i.Default != nil {
-				selectPrompt.Default = i.Default.(string)
+				selectPrompt.Default = i.Options.GetIndexByName(i.Default.(string))
 			}
-			selectedOptionName, _ := p.Select(selectPrompt)
-			selectedValue := input.MapOptionsByName(i.Options)[selectedOptionName]
+			selectedIndex, _ := p.SelectIndex(selectPrompt)
+			selectedValue := i.Options[selectedIndex].Id
 			ctx = context.WithValue(ctx, contextKey(i.Id), selectedValue)
 			results[i.Id] = selectedValue
 		case input.KindMultiSelect:
-			multiSelect := &prompt.MultiSelect{
+			multiSelect := &prompt.MultiSelectIndex{
 				Label:       i.Name,
 				Description: i.Description,
-				Options:     input.GetOptionsNames(i.Options),
+				Options:     i.Options.Names(),
 				Validator: func(val interface{}) error {
 					return i.ValidateUserInput(val, ctx)
 				},
 			}
 			if i.Default != nil {
-				multiSelect.Default = i.Default.([]string)
+				defaultIndices := make([]int, 0)
+				for _, o := range i.Default.([]string) {
+					defaultIndices = append(defaultIndices, i.Options.GetIndexByName(o))
+				}
+				multiSelect.Default = defaultIndices
 			}
-			optionsByName := input.MapOptionsByName(i.Options)
-			selectedOptionNames, _ := p.MultiSelect(multiSelect)
+			selectedIndices, _ := p.MultiSelectIndex(multiSelect)
 			selectedValues := make([]string, 0)
-			for _, v := range selectedOptionNames {
-				selectedValues = append(selectedValues, optionsByName[v])
+			for _, selectedIndex := range selectedIndices {
+				selectedValues = append(selectedValues, i.Options[selectedIndex].Id)
 			}
 
 			ctx = context.WithValue(ctx, contextKey(i.Id), selectedValues)

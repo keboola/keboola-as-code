@@ -83,7 +83,7 @@ func TestTemplateInputsValidateDefinitions(t *testing.T) {
 		Description: "input desc",
 		Type:        "int",
 		Default:     33,
-		Options:     []Option{},
+		Options:     Options{},
 		Kind:        "input",
 		Rules:       "gte=5",
 		If:          "1+(2-1)>1",
@@ -112,7 +112,7 @@ func TestTemplateInputsValidateDefinitionsSelect(t *testing.T) {
 		Name:        "input",
 		Description: "input desc",
 		Default:     "def",
-		Options: []Option{
+		Options: Options{
 			{Id: "a", Name: "A"},
 			{Id: "b", Name: "B"},
 		},
@@ -122,13 +122,25 @@ func TestTemplateInputsValidateDefinitionsSelect(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), `key="options"`)
 
+	// Fail - empty Options
+	inputs = Inputs{{
+		Id:          "input.id",
+		Name:        "input",
+		Description: "input desc",
+		Options:     Options{},
+		Kind:        "select",
+	}}
+	err = inputs.ValidateDefinitions()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), `failed "template-input-options"`)
+
 	// Fail - Default value missing in Options
 	inputs = Inputs{{
 		Id:          "input.id",
 		Name:        "input",
 		Description: "input desc",
 		Default:     "c",
-		Options: []Option{
+		Options: Options{
 			{Id: "a", Name: "A"},
 			{Id: "b", Name: "B"},
 		},
@@ -144,7 +156,7 @@ func TestTemplateInputsValidateDefinitionsSelect(t *testing.T) {
 		Name:        "input",
 		Description: "input desc",
 		Default:     "a",
-		Options: []Option{
+		Options: Options{
 			{Id: "a", Name: "A"},
 			{Id: "b", Name: "B"},
 		},
@@ -159,7 +171,7 @@ func TestTemplateInputsValidateDefinitionsSelect(t *testing.T) {
 		Name:        "input",
 		Description: "input desc",
 		Default:     []string{"a", "d"},
-		Options: []Option{
+		Options: Options{
 			{Id: "a", Name: "A"},
 			{Id: "b", Name: "B"},
 			{Id: "c", Name: "C"},
@@ -176,7 +188,7 @@ func TestTemplateInputsValidateDefinitionsSelect(t *testing.T) {
 		Name:        "input",
 		Description: "input desc",
 		Default:     []string{"a", "c"},
-		Options: []Option{
+		Options: Options{
 			{Id: "a", Name: "A"},
 			{Id: "b", Name: "B"},
 			{Id: "c", Name: "C"},
@@ -243,7 +255,7 @@ func TestTemplateInputsJsonUnmarshal(t *testing.T) {
 			Name:        "Facebook options",
 			Description: "Facebook options description",
 			Kind:        "select",
-			Options: []Option{
+			Options: Options{
 				{Id: "a", Name: "A"},
 				{Id: "b", Name: "B"},
 			},
@@ -273,7 +285,7 @@ func TestTemplateInputsJsonMarshal(t *testing.T) {
 			Name:        "Facebook options",
 			Description: "Facebook options description",
 			Kind:        "select",
-			Options: []Option{
+			Options: Options{
 				{Id: "a", Name: "A"},
 				{Id: "b", Name: "B"},
 			},

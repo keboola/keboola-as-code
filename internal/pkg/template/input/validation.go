@@ -52,7 +52,7 @@ func validateInputDefault(fl goValidator.FieldLevel) bool {
 }
 
 func findValueInOptions(value string, fl goValidator.FieldLevel) bool {
-	for _, option := range fl.Parent().FieldByName("Options").Interface().([]Option) {
+	for _, option := range fl.Parent().FieldByName("Options").Interface().(Options) {
 		if option.Id == value {
 			return true
 		}

@@ -164,7 +164,7 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 			Description: "What do you like to drink?",
 			Kind:        "select",
 			If:          "age>18",
-			Options:     []input.Option{{Id: "beer", Name: "Beer"}, {Id: "wine", Name: "Wine"}},
+			Options:     input.Options{{Id: "beer", Name: "Beer"}, {Id: "wine", Name: "Wine"}},
 		},
 		{
 			Id:          "drinks",
@@ -172,7 +172,7 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 			Description: "Anything stronger?",
 			Kind:        "multiselect",
 			If:          "age>18",
-			Options:     []input.Option{{Id: "rum", Name: "Rum"}, {Id: "vodka", Name: "Vodka"}, {Id: "whiskey", Name: "Whiskey"}},
+			Options:     input.Options{{Id: "rum", Name: "Rum"}, {Id: "vodka", Name: "Vodka"}, {Id: "whiskey", Name: "Whiskey"}},
 		},
 	}
 	opts, err := dialog.AskUseTemplateOptions(inputs)
@@ -265,7 +265,7 @@ func TestAskUseTemplateOptionsIfNotMet(t *testing.T) {
 			Description: "What do you like to drink?",
 			Kind:        "select",
 			If:          "age>18",
-			Options:     []input.Option{{Id: "beer", Name: "Beer"}, {Id: "wine", Name: "Wine"}},
+			Options:     input.Options{{Id: "beer", Name: "Beer"}, {Id: "wine", Name: "Wine"}},
 		},
 	}
 	opts, err := dialog.AskUseTemplateOptions(inputs)

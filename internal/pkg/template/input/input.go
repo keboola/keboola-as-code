@@ -57,7 +57,7 @@ type Input struct {
 	Default     interface{} `json:"default,omitempty" validate:"omitempty,template-input-default"`
 	Kind        string      `json:"kind" validate:"required,oneof=input password textarea confirm select multiselect"`
 	Type        string      `json:"type,omitempty" validate:"required_if=Kind input,omitempty,oneof=string int float64,template-input-type"`
-	Options     []Option    `json:"options,omitempty" validate:"required_if=Type select Type multiselect,template-input-options"`
+	Options     Options     `json:"options,omitempty" validate:"required_if=Type select Type multiselect,template-input-options"`
 	Rules       string      `json:"rules,omitempty" validate:"template-input-rules"`
 	If          string      `json:"if,omitempty" validate:"template-input-if"`
 }
@@ -99,15 +99,18 @@ type Option struct {
 	Name string `json:"name" validate:"required"`
 }
 
-func MapOptionsByName(options []Option) map[string]string {
-	optionsByName := make(map[string]string)
-	for _, o := range options {
-		optionsByName[o.Name] = o.Id
+type Options []Option
+
+func (options Options) GetIndexByName(name string) int {
+	for i, o := range options {
+		if o.Name == name {
+			return i
+		}
 	}
-	return optionsByName
+	return 0
 }
 
-func GetOptionsNames(options []Option) []string {
+func (options Options) Names() []string {
 	optionsNames := make([]string, 0)
 	for _, o := range options {
 		optionsNames = append(optionsNames, o.Name)
