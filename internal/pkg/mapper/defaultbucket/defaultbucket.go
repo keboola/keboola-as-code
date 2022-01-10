@@ -3,15 +3,15 @@ package defaultbucket
 import (
 	"fmt"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 type defaultBucketMapper struct {
-	mapper.Context
-	localManager *local.Manager
+	state  *state.State
+	logger log.Logger
 }
 
 type configOrRow interface {
@@ -19,11 +19,8 @@ type configOrRow interface {
 	BranchKey() model.BranchKey
 }
 
-func NewMapper(localManager *local.Manager, context mapper.Context) *defaultBucketMapper {
-	return &defaultBucketMapper{
-		Context:      context,
-		localManager: localManager,
-	}
+func NewMapper(s *state.State) *defaultBucketMapper {
+	return &defaultBucketMapper{state: s, logger: s.Logger()}
 }
 
 func (m *defaultBucketMapper) visitStorageInputTables(config configOrRow, content *orderedmap.OrderedMap, callback func(

@@ -5,18 +5,17 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/naming"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // SharedCodeHelper gets some values from shared codes.
 type SharedCodeHelper struct {
-	state          model.ObjectStates
-	namingRegistry *naming.Registry
+	state *state.State
 }
 
-func New(state model.ObjectStates, naming *naming.Registry) *SharedCodeHelper {
-	return &SharedCodeHelper{state: state, namingRegistry: naming}
+func New(s *state.State) *SharedCodeHelper {
+	return &SharedCodeHelper{state: s}
 }
 
 func (h *SharedCodeHelper) IsSharedCodeKey(key model.Key) (bool, error) {

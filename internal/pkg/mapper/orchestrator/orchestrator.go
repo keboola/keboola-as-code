@@ -1,18 +1,18 @@
 package orchestrator
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 )
 
 type orchestratorMapper struct {
-	mapper.Context
-	localManager *local.Manager
+	state  *state.State
+	logger log.Logger
 }
 
-func NewMapper(localManager *local.Manager, context mapper.Context) *orchestratorMapper {
-	return &orchestratorMapper{Context: context, localManager: localManager}
+func NewMapper(s *state.State) *orchestratorMapper {
+	return &orchestratorMapper{state: s, logger: s.Logger()}
 }
 
 func (m *orchestratorMapper) isOrchestratorConfigKey(key model.Key) (bool, error) {
@@ -21,7 +21,7 @@ func (m *orchestratorMapper) isOrchestratorConfigKey(key model.Key) (bool, error
 		return false, nil
 	}
 
-	component, err := m.State.Components().Get(config.ComponentKey())
+	component, err := m.state.Components().Get(config.ComponentKey())
 	if err != nil {
 		return false, err
 	}

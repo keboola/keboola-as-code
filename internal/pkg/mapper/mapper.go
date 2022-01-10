@@ -1,20 +1,9 @@
 package mapper
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
-
-type Context struct {
-	Logger          log.Logger
-	Fs              filesystem.Fs
-	NamingGenerator *naming.Generator
-	NamingRegistry  *naming.Registry
-	State           model.ObjectStates
-}
 
 // LocalSaveMapper to modify how the object will be saved in the filesystem.
 type LocalSaveMapper interface {

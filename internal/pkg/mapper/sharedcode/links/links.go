@@ -4,29 +4,29 @@ import (
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/local"
-	mapperPkg "github.com/keboola/keboola-as-code/internal/pkg/mapper"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode/helper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // mapper replaces "shared_code_id" with "shared_code_path" in local fs.
 type mapper struct {
-	mapperPkg.Context
-	*helper.SharedCodeHelper
-	localManager *local.Manager
-	id           *idUtils
-	path         *pathUtils
+	state  *state.State
+	logger log.Logger
+	helper *helper.SharedCodeHelper
+	id     *idUtils
+	path   *pathUtils
 }
 
-func NewMapper(localManager *local.Manager, context mapperPkg.Context) *mapper {
+func NewMapper(s *state.State) *mapper {
 	return &mapper{
-		Context:          context,
-		SharedCodeHelper: helper.New(context.State, context.NamingRegistry),
-		localManager:     localManager,
-		id:               newIdUtils(),
-		path:             newPathUtils(),
+		state:  s,
+		logger: s.Logger(),
+		helper: helper.New(s),
+		id:     newIdUtils(),
+		path:   newPathUtils(),
 	}
 }
 
