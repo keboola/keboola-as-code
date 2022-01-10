@@ -17,7 +17,7 @@ import (
 
 func TestDiffOnlyInLocal(t *testing.T) {
 	t.Parallel()
-	projectState := createProjectState(t)
+	projectState := newProjectState(t)
 	branchKey := model.BranchKey{Id: 123}
 	branchState := &model.BranchState{
 		BranchManifest: &model.BranchManifest{BranchKey: branchKey},
@@ -37,7 +37,7 @@ func TestDiffOnlyInLocal(t *testing.T) {
 
 func TestDiffOnlyInRemote(t *testing.T) {
 	t.Parallel()
-	projectState := createProjectState(t)
+	projectState := newProjectState(t)
 	branchKey := model.BranchKey{Id: 123}
 	branchState := &model.BranchState{
 		BranchManifest: &model.BranchManifest{BranchKey: branchKey},
@@ -57,7 +57,7 @@ func TestDiffOnlyInRemote(t *testing.T) {
 
 func TestDiffEqual(t *testing.T) {
 	t.Parallel()
-	projectState := createProjectState(t)
+	projectState := newProjectState(t)
 	branchKey := model.BranchKey{Id: 123}
 	branchState := &model.BranchState{
 		BranchManifest: &model.BranchManifest{BranchKey: branchKey},
@@ -89,7 +89,7 @@ func TestDiffEqual(t *testing.T) {
 
 func TestDiffNotEqual(t *testing.T) {
 	t.Parallel()
-	projectState := createProjectState(t)
+	projectState := newProjectState(t)
 	branchKey := model.BranchKey{Id: 123}
 	branchState := &model.BranchState{
 		BranchManifest: &model.BranchManifest{BranchKey: branchKey},
@@ -123,7 +123,7 @@ func TestDiffNotEqual(t *testing.T) {
 
 func TestDiffEqualConfig(t *testing.T) {
 	t.Parallel()
-	projectState := createProjectState(t)
+	projectState := newProjectState(t)
 
 	component := &model.Component{
 		ComponentKey: model.ComponentKey{
@@ -190,7 +190,7 @@ func TestDiffEqualConfig(t *testing.T) {
 
 func TestDiffNotEqualConfig(t *testing.T) {
 	t.Parallel()
-	projectState := createProjectState(t)
+	projectState := newProjectState(t)
 
 	component := &model.Component{
 		ComponentKey: model.ComponentKey{
@@ -259,7 +259,7 @@ func TestDiffNotEqualConfig(t *testing.T) {
 
 func TestDiffNotEqualConfigConfiguration(t *testing.T) {
 	t.Parallel()
-	projectState := createProjectState(t)
+	projectState := newProjectState(t)
 
 	component := &model.Component{
 		ComponentKey: model.ComponentKey{
@@ -345,7 +345,7 @@ func TestDiffNotEqualConfigConfiguration(t *testing.T) {
 
 func TestDiffRelations(t *testing.T) {
 	t.Parallel()
-	projectState := createProjectState(t)
+	projectState := newProjectState(t)
 
 	// Target object
 	targetKey := fixtures.MockedKey{
@@ -412,7 +412,7 @@ func TestDiffRelations(t *testing.T) {
 
 func TestDiffTransformation(t *testing.T) {
 	t.Parallel()
-	projectState := createProjectState(t)
+	projectState := newProjectState(t)
 
 	// Object state
 	configKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.python-transformation-v2`, Id: `456`}
@@ -510,7 +510,7 @@ func TestDiffTransformation(t *testing.T) {
 
 func TestDiffSharedCode(t *testing.T) {
 	t.Parallel()
-	projectState := createProjectState(t)
+	projectState := newProjectState(t)
 
 	// Object state
 	configRowKey := model.ConfigRowKey{BranchId: 123, ComponentId: model.SharedCodeComponentId, Id: `456`}
@@ -559,7 +559,7 @@ func TestDiffSharedCode(t *testing.T) {
 
 func TestDiffOrchestration(t *testing.T) {
 	t.Parallel()
-	projectState := createProjectState(t)
+	projectState := newProjectState(t)
 
 	// Object state
 	configKey := model.ConfigKey{BranchId: 123, ComponentId: model.OrchestratorComponentId, Id: `456`}
@@ -747,7 +747,7 @@ func TestDiffOrchestration(t *testing.T) {
 
 func TestDiffMap(t *testing.T) {
 	t.Parallel()
-	projectState := createProjectState(t)
+	projectState := newProjectState(t)
 
 	// Object state
 	configKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.python-transformation-v2`, Id: `456`}
@@ -808,7 +808,7 @@ func TestDiffMap(t *testing.T) {
 	assert.Equal(t, strings.Trim(expected, "\n"), reporter.String())
 }
 
-func createProjectState(t *testing.T) *state.State {
+func newProjectState(t *testing.T) *state.State {
 	t.Helper()
 	d := testdeps.New()
 	d.SetProjectManifest(projectManifest.New(12345, `foo.bar`))
