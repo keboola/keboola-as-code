@@ -33,7 +33,7 @@ func TestValidateState(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Create state
-	s, err := NewState(project, d)
+	s, err := New(project, d)
 	assert.NoError(t, err)
 
 	// Mocked component response

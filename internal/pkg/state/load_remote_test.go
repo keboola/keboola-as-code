@@ -446,7 +446,9 @@ func loadRemoteState(t *testing.T, m *manifest.Manifest, projectStateFile string
 	project, err := d.Project()
 	assert.NoError(t, err)
 
-	state, _, localErr, remoteErr := LoadState(project, Options{LoadRemoteState: true}, d)
+	state, err := New(project, d)
+	assert.NoError(t, err)
+	_, localErr, remoteErr := state.Load(Options{LoadRemoteState: true})
 	assert.NoError(t, localErr)
 	return state, envs, remoteErr
 }
