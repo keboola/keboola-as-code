@@ -5,20 +5,18 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode/helper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 )
 
 func TestGetSharedCodeByPath(t *testing.T) {
 	t.Parallel()
-	fs := testfs.NewMemoryFs()
-	projectState := state.NewRegistry(log.NewNopLogger(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
+	projectState := state.NewRegistry(knownpaths.NewNop(), model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
 	namingRegistry := naming.NewRegistry()
 	h := New(projectState, namingRegistry)
 	sharedCodeKey, _ := fixtures.CreateSharedCode(t, projectState, namingRegistry)
@@ -44,8 +42,7 @@ func TestGetSharedCodeByPath(t *testing.T) {
 
 func TestGetSharedCodeRowByPath(t *testing.T) {
 	t.Parallel()
-	fs := testfs.NewMemoryFs()
-	projectState := state.NewRegistry(log.NewNopLogger(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
+	projectState := state.NewRegistry(knownpaths.NewNop(), model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
 	namingRegistry := naming.NewRegistry()
 	h := New(projectState, namingRegistry)
 	sharedCodeKey, _ := fixtures.CreateSharedCode(t, projectState, namingRegistry)
@@ -71,8 +68,7 @@ func TestGetSharedCodeRowByPath(t *testing.T) {
 
 func TestGetSharedCodeVariablesId(t *testing.T) {
 	t.Parallel()
-	fs := testfs.NewMemoryFs()
-	projectState := state.NewRegistry(log.NewNopLogger(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
+	projectState := state.NewRegistry(knownpaths.NewNop(), model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
 	namingRegistry := naming.NewRegistry()
 	h := New(projectState, namingRegistry)
 

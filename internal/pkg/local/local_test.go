@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -23,7 +24,7 @@ func newTestLocalManager(t *testing.T) (*Manager, *mapper.Mapper) {
 
 	manifest := projectManifest.New(1, "foo.bar")
 	components := model.NewComponentsMap(nil)
-	projectState := registry.New(log.NewNopLogger(), fs, components, model.SortByPath)
+	projectState := registry.New(knownpaths.NewNop(), components, model.SortByPath)
 
 	namingTemplate := naming.TemplateWithIds()
 	namingRegistry := naming.NewRegistry()
