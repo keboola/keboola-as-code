@@ -65,42 +65,7 @@ type dependencies interface {
 	SchedulerApi() (*scheduler.Api, error)
 }
 
-// LoadState - remote and local.
-func LoadState(container ObjectsContainer, options Options, d dependencies) (state *State, ok bool, localErr error, remoteErr error) {
-	localErrors := utils.NewMultiError()
-	remoteErrors := utils.NewMultiError()
-	state, err := NewState(container, d)
-	if err != nil {
-		return nil, false, err, err
-	}
-
-	// Remote
-	if options.LoadRemoteState {
-		state.logger.Debugf("Loading project remote state.")
-		remoteErrors.Append(state.loadRemoteState())
-	}
-
-	// Local
-	if options.LoadLocalState {
-		state.logger.Debugf("Loading local state.")
-		localErrors.Append(state.loadLocalState(options))
-	}
-
-	// Validate
-	localValidateErr, remoteValidateErr := state.Validate()
-	if localValidateErr != nil {
-		localErrors.Append(localValidateErr)
-	}
-	if remoteValidateErr != nil {
-		remoteErrors.Append(remoteValidateErr)
-	}
-
-	// Process errors
-	ok = localErrors.Len() == 0 && remoteErrors.Len() == 0
-	return state, ok, localErrors.ErrorOrNil(), remoteErrors.ErrorOrNil()
-}
-
-func NewState(container ObjectsContainer, d dependencies) (*State, error) {
+func New(container ObjectsContainer, d dependencies) (*State, error) {
 	storageApi, err := d.StorageApi()
 	if err != nil {
 		return nil, err
@@ -166,6 +131,37 @@ func NewState(container ObjectsContainer, d dependencies) (*State, error) {
 	return s, nil
 }
 
+// Load remote and local objects.
+func (s *State) Load(options Options) (ok bool, localErr error, remoteErr error) {
+	localErrors := utils.NewMultiError()
+	remoteErrors := utils.NewMultiError()
+
+	// Remote
+	if options.LoadRemoteState {
+		s.logger.Debugf("Loading project remote state.")
+		remoteErrors.Append(s.loadRemoteState())
+	}
+
+	// Local
+	if options.LoadLocalState {
+		s.logger.Debugf("Loading local state.")
+		localErrors.Append(s.loadLocalState(options.IgnoreNotFoundErr))
+	}
+
+	// Validate
+	localValidateErr, remoteValidateErr := s.Validate()
+	if localValidateErr != nil {
+		localErrors.Append(localValidateErr)
+	}
+	if remoteValidateErr != nil {
+		remoteErrors.Append(remoteValidateErr)
+	}
+
+	// Process errors
+	ok = localErrors.Len() == 0 && remoteErrors.Len() == 0
+	return ok, localErrors.ErrorOrNil(), remoteErrors.ErrorOrNil()
+}
+
 func (s *State) Fs() filesystem.Fs {
 	return s.fs
 }
@@ -222,11 +218,11 @@ func (s *State) Validate() (error, error) {
 }
 
 // loadLocalState - manifest -> local files -> unified model.
-func (s *State) loadLocalState(options Options) error {
+func (s *State) loadLocalState(ignoreNotFoundErr bool) error {
 	errors := utils.NewMultiError()
 
 	uow := s.localManager.NewUnitOfWork(s.ctx)
-	if options.IgnoreNotFoundErr {
+	if ignoreNotFoundErr {
 		uow.SkipNotFoundErr()
 	}
 

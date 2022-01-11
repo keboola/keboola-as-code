@@ -48,12 +48,14 @@ func TestLoadState(t *testing.T) {
 		LoadLocalState:  true,
 		LoadRemoteState: true,
 	}
-	state, ok, localErr, remoteErr := LoadState(project, options, d)
+	state, err := New(project, d)
+	assert.NoError(t, err)
+	ok, localErr, remoteErr := state.Load(options)
 
 	// Check errors
 	assert.True(t, ok)
-	assert.Empty(t, localErr)
-	assert.Empty(t, remoteErr)
+	assert.NoError(t, localErr)
+	assert.NoError(t, remoteErr)
 
 	// Check results
 	assert.Equal(t, []*model.BranchState{

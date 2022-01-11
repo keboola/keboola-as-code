@@ -47,7 +47,15 @@ func Run(container state.ObjectsContainer, o Options, d dependencies) (*state.St
 		LoadRemoteState:   o.LoadRemoteState,
 		IgnoreNotFoundErr: o.IgnoreNotFoundErr,
 	}
-	projectState, ok, localErr, remoteErr := state.LoadState(container, loadOptions, d)
+
+	// Create state
+	projectState, err := state.New(container, d)
+	if err != nil {
+		return nil, err
+	}
+
+	// Load objects
+	ok, localErr, remoteErr := projectState.Load(loadOptions)
 	if ok {
 		logger.Debugf("Project state has been successfully loaded.")
 	} else {
