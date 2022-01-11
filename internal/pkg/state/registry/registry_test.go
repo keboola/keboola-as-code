@@ -8,12 +8,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 )
 
 func TestNewState(t *testing.T) {
 	t.Parallel()
-	s := New(knownpaths.NewNop(), NewComponentsMap(nil), SortByPath)
+	s := New(knownpaths.NewNop(), naming.NewRegistry(), NewComponentsMap(nil), SortByPath)
 	assert.NotNil(t, s)
 }
 
@@ -161,7 +162,7 @@ func TestStateTrackRecordInvalid(t *testing.T) {
 	}
 	record.PathInProject = NewPathInProject(``, `foo`)
 
-	// We do not load files for invalid records
+	// We do not load files for invalid records.
 	// Therefore, we mark all files from the object directory as tracked.
 	// This will prevent duplicate error -> untracked files found.
 	// The user must primarily fix why the record is invalid.
@@ -170,9 +171,60 @@ func TestStateTrackRecordInvalid(t *testing.T) {
 	assert.Empty(t, s.UntrackedPaths())
 }
 
+func TestRegistry_GetPath(t *testing.T) {
+	t.Parallel()
+	registry := New(knownpaths.NewNop(), naming.NewRegistry(), NewComponentsMap(nil), SortByPath)
+
+	// Not found
+	path, found := registry.GetPath(BranchKey{Id: 123})
+	assert.Empty(t, path)
+	assert.False(t, found)
+
+	// Add branch
+	assert.NoError(t, registry.Set(&BranchState{
+		BranchManifest: &BranchManifest{
+			BranchKey: BranchKey{Id: 123},
+			Paths: Paths{
+				PathInProject: NewPathInProject(``, `my-branch`),
+			},
+		},
+	}))
+
+	// Found
+	path, found = registry.GetPath(BranchKey{Id: 123})
+	assert.Equal(t, NewPathInProject(``, `my-branch`), path)
+	assert.True(t, found)
+}
+
+func TestRegistry_GetByPath(t *testing.T) {
+	t.Parallel()
+	registry := New(knownpaths.NewNop(), naming.NewRegistry(), NewComponentsMap(nil), SortByPath)
+
+	// Not found
+	objectState, found := registry.GetByPath(`my-branch`)
+	assert.Nil(t, objectState)
+	assert.False(t, found)
+
+	// Add branch
+	branchState := &BranchState{
+		BranchManifest: &BranchManifest{
+			BranchKey: BranchKey{Id: 123},
+			Paths: Paths{
+				PathInProject: NewPathInProject(``, `my-branch`),
+			},
+		},
+	}
+	assert.NoError(t, registry.Set(branchState))
+
+	// Found
+	objectState, found = registry.GetByPath(`my-branch`)
+	assert.Equal(t, branchState, objectState)
+	assert.True(t, found)
+}
+
 func newTestState(t *testing.T, paths *knownpaths.Paths) *Registry {
 	t.Helper()
-	s := New(paths, NewComponentsMap(nil), SortByPath)
+	s := New(paths, naming.NewRegistry(), NewComponentsMap(nil), SortByPath)
 	assert.NotNil(t, s)
 
 	// Branch 1

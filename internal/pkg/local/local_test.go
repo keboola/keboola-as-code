@@ -24,7 +24,7 @@ func newTestLocalManager(t *testing.T) (*Manager, *mapper.Mapper) {
 
 	manifest := projectManifest.New(1, "foo.bar")
 	components := model.NewComponentsMap(nil)
-	projectState := registry.New(knownpaths.NewNop(), components, model.SortByPath)
+	projectState := registry.New(knownpaths.NewNop(), naming.NewRegistry(), components, model.SortByPath)
 
 	namingTemplate := naming.TemplateWithIds()
 	namingRegistry := naming.NewRegistry()

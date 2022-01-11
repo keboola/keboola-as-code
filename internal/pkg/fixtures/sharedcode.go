@@ -24,7 +24,6 @@ func CreateSharedCode(t *testing.T, state model.ObjectStates, naming *naming.Reg
 		Remote: &model.Branch{BranchKey: branchKey},
 	}
 	assert.NoError(t, state.Set(branchState))
-	assert.NoError(t, naming.Attach(branchState.Key(), branchState.PathInProject))
 
 	// Shared code
 	sharedCodeKey := model.ConfigKey{
@@ -55,7 +54,6 @@ func CreateSharedCode(t *testing.T, state model.ObjectStates, naming *naming.Reg
 		},
 	}
 	assert.NoError(t, state.Set(sharedCodeState))
-	assert.NoError(t, naming.Attach(sharedCodeState.Key(), sharedCodeState.PathInProject))
 
 	// Shared code row 1
 	row1Key := model.ConfigRowKey{
@@ -75,7 +73,6 @@ func CreateSharedCode(t *testing.T, state model.ObjectStates, naming *naming.Reg
 		Remote: &model.ConfigRow{ConfigRowKey: row1Key, Content: orderedmap.New()},
 	}
 	assert.NoError(t, state.Set(row1State))
-	assert.NoError(t, naming.Attach(row1State.Key(), row1State.PathInProject))
 
 	// Shared code row 2
 	row2Key := model.ConfigRowKey{
@@ -95,7 +92,5 @@ func CreateSharedCode(t *testing.T, state model.ObjectStates, naming *naming.Reg
 		Remote: &model.ConfigRow{ConfigRowKey: row2Key, Content: orderedmap.New()},
 	}
 	assert.NoError(t, state.Set(row2State))
-	assert.NoError(t, naming.Attach(row2State.Key(), row2State.PathInProject))
-
 	return sharedCodeKey, []model.ConfigRowKey{row1Key, row2Key}
 }

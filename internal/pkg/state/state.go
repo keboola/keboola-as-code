@@ -29,8 +29,8 @@ import (
 
 type Registry = registry.Registry
 
-func NewRegistry(paths *knownpaths.Paths, components *model.ComponentsMap, sortBy string) *Registry {
-	return registry.New(paths, components, sortBy)
+func NewRegistry(paths *knownpaths.Paths, namingRegistry *naming.Registry, components *model.ComponentsMap, sortBy string) *Registry {
+	return registry.New(paths, namingRegistry, components, sortBy)
 }
 
 // State - Local and Remote state of the project.
@@ -93,7 +93,7 @@ func New(container ObjectsContainer, d dependencies) (*State, error) {
 		namingGenerator: namingGenerator,
 		pathMatcher:     pathMatcher,
 	}
-	s.Registry = NewRegistry(knownPaths, storageApi.Components(), m.SortBy())
+	s.Registry = NewRegistry(knownPaths, m.NamingRegistry(), storageApi.Components(), m.SortBy())
 
 	// Mapper
 	mapperContext := mapper.Context{

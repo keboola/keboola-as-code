@@ -24,7 +24,8 @@ func createRemoteSharedCode(t *testing.T) (mapper.Context, log.DebugLogger, *mod
 	fs, err := aferofs.NewMemoryFs(logger, ".")
 	assert.NoError(t, err)
 
-	projectState := state.NewRegistry(knownpaths.NewNop(), model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
+	namingRegistry := naming.NewRegistry()
+	projectState := state.NewRegistry(knownpaths.NewNop(), namingRegistry, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
 
 	// Component
 	projectState.Components().Set(&model.Component{
@@ -94,7 +95,6 @@ func createRemoteSharedCode(t *testing.T) (mapper.Context, log.DebugLogger, *mod
 	assert.NoError(t, projectState.Set(rowState))
 
 	namingTemplate := naming.TemplateWithIds()
-	namingRegistry := naming.NewRegistry()
 	namingGenerator := naming.NewGenerator(namingTemplate, namingRegistry)
 	context := mapper.Context{Logger: logger, Fs: fs, NamingGenerator: namingGenerator, NamingRegistry: namingRegistry, State: projectState}
 	return context, logger, configState, rowState
@@ -107,7 +107,8 @@ func createLocalSharedCode(t *testing.T, targetComponentId model.ComponentId) (m
 	fs, err := aferofs.NewMemoryFs(logger, ".")
 	assert.NoError(t, err)
 
-	projectState := state.NewRegistry(knownpaths.NewNop(), model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
+	namingRegistry := naming.NewRegistry()
+	projectState := state.NewRegistry(knownpaths.NewNop(), namingRegistry, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
 
 	// Component
 	projectState.Components().Set(&model.Component{
@@ -177,7 +178,6 @@ func createLocalSharedCode(t *testing.T, targetComponentId model.ComponentId) (m
 	assert.NoError(t, projectState.Set(rowState))
 
 	namingTemplate := naming.TemplateWithIds()
-	namingRegistry := naming.NewRegistry()
 	namingGenerator := naming.NewGenerator(namingTemplate, namingRegistry)
 	context := mapper.Context{Logger: logger, Fs: fs, NamingRegistry: namingRegistry, NamingGenerator: namingGenerator, State: projectState}
 	return context, logger, configState, rowState
@@ -191,7 +191,8 @@ func createInternalSharedCode(t *testing.T, targetComponentId model.ComponentId)
 	fs, err := aferofs.NewMemoryFs(logger, ".")
 	assert.NoError(t, err)
 
-	projectState := state.NewRegistry(knownpaths.NewNop(), model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
+	namingRegistry := naming.NewRegistry()
+	projectState := state.NewRegistry(knownpaths.NewNop(), namingRegistry, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
 
 	// Component
 	projectState.Components().Set(&model.Component{
@@ -287,7 +288,6 @@ func createInternalSharedCode(t *testing.T, targetComponentId model.ComponentId)
 	assert.NoError(t, projectState.Set(rowState))
 
 	namingTemplate := naming.TemplateWithIds()
-	namingRegistry := naming.NewRegistry()
 	namingGenerator := naming.NewGenerator(namingTemplate, namingRegistry)
 	context := mapper.Context{Logger: logger, Fs: fs, NamingRegistry: namingRegistry, NamingGenerator: namingGenerator, State: projectState}
 	return context, logger, configState, rowState

@@ -16,25 +16,25 @@ import (
 
 func TestGetSharedCodeByPath(t *testing.T) {
 	t.Parallel()
-	projectState := state.NewRegistry(knownpaths.NewNop(), model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
 	namingRegistry := naming.NewRegistry()
-	h := New(projectState, namingRegistry)
+	projectState := state.NewRegistry(knownpaths.NewNop(), namingRegistry, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
+	helper := New(projectState, namingRegistry)
 	sharedCodeKey, _ := fixtures.CreateSharedCode(t, projectState, namingRegistry)
 
 	// Found
-	result, err := h.GetSharedCodeByPath(model.BranchKey{Id: 123}, `_shared/keboola.python-transformation-v2`)
+	result, err := helper.GetSharedCodeByPath(model.BranchKey{Id: 123}, `_shared/keboola.python-transformation-v2`)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, sharedCodeKey, result.Key())
 
 	// Different branch
-	result, err = h.GetSharedCodeByPath(model.BranchKey{Id: 456}, `_shared/keboola.python-transformation-v2`)
+	result, err = helper.GetSharedCodeByPath(model.BranchKey{Id: 456}, `_shared/keboola.python-transformation-v2`)
 	assert.Nil(t, result)
 	assert.Error(t, err)
 	assert.Equal(t, `missing branch "456"`, err.Error())
 
 	// Not found
-	result, err = h.GetSharedCodeByPath(model.BranchKey{Id: 123}, `foo/bar`)
+	result, err = helper.GetSharedCodeByPath(model.BranchKey{Id: 123}, `foo/bar`)
 	assert.Nil(t, result)
 	assert.Error(t, err)
 	assert.Equal(t, `missing shared code "branch/foo/bar"`, err.Error())
@@ -42,14 +42,14 @@ func TestGetSharedCodeByPath(t *testing.T) {
 
 func TestGetSharedCodeRowByPath(t *testing.T) {
 	t.Parallel()
-	projectState := state.NewRegistry(knownpaths.NewNop(), model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
 	namingRegistry := naming.NewRegistry()
-	h := New(projectState, namingRegistry)
+	projectState := state.NewRegistry(knownpaths.NewNop(), namingRegistry, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
+	helper := New(projectState, namingRegistry)
 	sharedCodeKey, _ := fixtures.CreateSharedCode(t, projectState, namingRegistry)
 	sharedCode := projectState.MustGet(sharedCodeKey).(*model.ConfigState)
 
 	// Found
-	result, err := h.GetSharedCodeRowByPath(sharedCode, `codes/code1`)
+	result, err := helper.GetSharedCodeRowByPath(sharedCode, `codes/code1`)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, model.ConfigRowKey{
@@ -60,7 +60,7 @@ func TestGetSharedCodeRowByPath(t *testing.T) {
 	}, result.Key())
 
 	// Not found
-	result, err = h.GetSharedCodeRowByPath(sharedCode, `foo/bar`)
+	result, err = helper.GetSharedCodeRowByPath(sharedCode, `foo/bar`)
 	assert.Nil(t, result)
 	assert.Error(t, err)
 	assert.Equal(t, `missing shared code "branch/_shared/keboola.python-transformation-v2/foo/bar"`, err.Error())
@@ -68,8 +68,8 @@ func TestGetSharedCodeRowByPath(t *testing.T) {
 
 func TestGetSharedCodeVariablesId(t *testing.T) {
 	t.Parallel()
-	projectState := state.NewRegistry(knownpaths.NewNop(), model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
 	namingRegistry := naming.NewRegistry()
+	projectState := state.NewRegistry(knownpaths.NewNop(), namingRegistry, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
 	h := New(projectState, namingRegistry)
 
 	fixtures.CreateSharedCode(t, projectState, namingRegistry)

@@ -198,7 +198,7 @@ func newTestLocalManager(t *testing.T, mappers []interface{}) (*local.Manager, *
 
 	m := manifest.New(1, "foo.bar")
 	components := model.NewComponentsMap(testapi.NewMockedComponentsProvider())
-	projectState := state.NewRegistry(knownpaths.NewNop(), components, model.SortByPath)
+	projectState := state.NewRegistry(knownpaths.NewNop(), naming.NewRegistry(), components, model.SortByPath)
 
 	namingTemplate := naming.TemplateWithIds()
 	namingRegistry := naming.NewRegistry()

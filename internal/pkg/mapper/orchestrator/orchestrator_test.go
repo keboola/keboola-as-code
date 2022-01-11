@@ -24,9 +24,9 @@ func createMapper(t *testing.T) (*mapper.Mapper, mapper.Context, log.DebugLogger
 	logger := log.NewDebugLogger()
 	fs, err := aferofs.NewMemoryFs(logger, ".")
 	assert.NoError(t, err)
-	projectState := state.NewRegistry(knownpaths.NewNop(), model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
-	namingTemplate := naming.TemplateWithIds()
 	namingRegistry := naming.NewRegistry()
+	projectState := state.NewRegistry(knownpaths.NewNop(), namingRegistry, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
+	namingTemplate := naming.TemplateWithIds()
 	namingGenerator := naming.NewGenerator(namingTemplate, namingRegistry)
 	context := mapper.Context{Logger: logger, Fs: fs, NamingGenerator: namingGenerator, NamingRegistry: namingRegistry, State: projectState}
 	manifest := projectManifest.New(1, `foo.bar`)
@@ -56,7 +56,6 @@ func createTargetConfigs(t *testing.T, context mapper.Context) (*model.ConfigSta
 		Remote: &model.Config{ConfigKey: targetConfigKey1},
 	}
 	assert.NoError(t, context.State.Set(targetConfigState1))
-	assert.NoError(t, context.NamingRegistry.Attach(targetConfigState1.Key(), targetConfigState1.PathInProject))
 
 	// Target config 2
 	targetConfigKey2 := model.ConfigKey{
@@ -75,7 +74,6 @@ func createTargetConfigs(t *testing.T, context mapper.Context) (*model.ConfigSta
 		Remote: &model.Config{ConfigKey: targetConfigKey2},
 	}
 	assert.NoError(t, context.State.Set(targetConfigState2))
-	assert.NoError(t, context.NamingRegistry.Attach(targetConfigState2.Key(), targetConfigState2.PathInProject))
 
 	// Target config 3
 	targetConfigKey3 := model.ConfigKey{
@@ -94,7 +92,6 @@ func createTargetConfigs(t *testing.T, context mapper.Context) (*model.ConfigSta
 		Remote: &model.Config{ConfigKey: targetConfigKey3},
 	}
 	assert.NoError(t, context.State.Set(targetConfigState3))
-	assert.NoError(t, context.NamingRegistry.Attach(targetConfigState3.Key(), targetConfigState3.PathInProject))
 
 	return targetConfigState1, targetConfigState2, targetConfigState3
 }
@@ -116,7 +113,6 @@ func createLocalLoadFixtures(t *testing.T, context mapper.Context) *model.Config
 		Local: &model.Branch{BranchKey: branchKey},
 	}
 	assert.NoError(t, context.State.Set(branchState))
-	assert.NoError(t, context.NamingRegistry.Attach(branchState.Key(), branchState.PathInProject))
 
 	// Orchestrator config
 	configKey := model.ConfigKey{
@@ -134,7 +130,6 @@ func createLocalLoadFixtures(t *testing.T, context mapper.Context) *model.Config
 		Local: &model.Config{ConfigKey: configKey, Content: orderedmap.New()},
 	}
 	assert.NoError(t, context.State.Set(configState))
-	assert.NoError(t, context.NamingRegistry.Attach(configState.Key(), configState.PathInProject))
 
 	return configState
 }
