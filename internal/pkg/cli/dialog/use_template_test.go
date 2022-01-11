@@ -57,7 +57,7 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 		assert.NoError(t, err)
 
 		time.Sleep(20 * time.Millisecond)
-		_, err = console.SendLine(strings.Repeat(Backspace, 4)) // remove "text"
+		_, err = console.Send(strings.Repeat(Backspace, 4)) // remove "text"
 		assert.NoError(t, err)
 
 		time.Sleep(20 * time.Millisecond)
