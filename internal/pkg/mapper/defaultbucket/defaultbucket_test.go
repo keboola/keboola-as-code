@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
 	"github.com/keboola/keboola-as-code/internal/pkg/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
@@ -21,7 +22,7 @@ func createMapper(t *testing.T) (*mapper.Mapper, mapper.Context, log.DebugLogger
 	t.Helper()
 	logger := log.NewDebugLogger()
 	fs := testfs.NewMemoryFs()
-	projectState := state.NewRegistry(log.NewNopLogger(), fs, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
+	projectState := state.NewRegistry(knownpaths.NewNop(), model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
 	manifest := projectManifest.New(1, `foo.bar`)
 	namingTemplate := naming.TemplateWithIds()
 	namingRegistry := naming.NewRegistry()

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
 	"github.com/keboola/keboola-as-code/internal/pkg/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
@@ -28,8 +29,8 @@ import (
 
 type Registry = registry.Registry
 
-func NewRegistry(logger log.Logger, fs filesystem.Fs, components *model.ComponentsMap, sortBy string) *Registry {
-	return registry.New(logger, fs, components, sortBy)
+func NewRegistry(paths *knownpaths.Paths, components *model.ComponentsMap, sortBy string) *Registry {
+	return registry.New(paths, components, sortBy)
 }
 
 // State - Local and Remote state of the project.
@@ -74,6 +75,10 @@ func New(container ObjectsContainer, d dependencies) (*State, error) {
 	if err != nil {
 		return nil, err
 	}
+	knownPaths, err := knownpaths.New(container.Fs())
+	if err != nil {
+		return nil, utils.PrefixError(`error loading directory structure`, err)
+	}
 
 	m := container.Manifest()
 	namingGenerator := naming.NewGenerator(m.NamingTemplate(), m.NamingRegistry())
@@ -88,7 +93,7 @@ func New(container ObjectsContainer, d dependencies) (*State, error) {
 		namingGenerator: namingGenerator,
 		pathMatcher:     pathMatcher,
 	}
-	s.Registry = NewRegistry(s.logger, s.fs, storageApi.Components(), m.SortBy())
+	s.Registry = NewRegistry(knownPaths, storageApi.Components(), m.SortBy())
 
 	// Mapper
 	mapperContext := mapper.Context{

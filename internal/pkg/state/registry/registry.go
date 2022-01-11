@@ -4,11 +4,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -23,11 +20,7 @@ type Registry struct {
 	objects    *orderedmap.OrderedMap
 }
 
-func New(logger log.Logger, fs filesystem.Fs, components *ComponentsMap, sortBy string) *Registry {
-	paths, err := knownpaths.New(fs)
-	if err != nil {
-		logger.Debug(utils.PrefixError(`error loading directory structure`, err).Error())
-	}
+func New(paths *knownpaths.Paths, components *ComponentsMap, sortBy string) *Registry {
 	return &Registry{
 		pathsRO:    paths.ReadOnly(),
 		paths:      paths,

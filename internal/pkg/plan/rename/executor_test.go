@@ -9,6 +9,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -50,7 +51,7 @@ func TestRename(t *testing.T) {
 	}
 
 	// NewPlan
-	projectState := state.NewRegistry(logger, fs, model.NewComponentsMap(nil), model.SortByPath)
+	projectState := state.NewRegistry(knownpaths.NewNop(), model.NewComponentsMap(nil), model.SortByPath)
 	localManager := local.NewManager(logger, fs, manifest, nil, projectState, mapper.New())
 	executor := newRenameExecutor(context.Background(), localManager, plan)
 	assert.NoError(t, executor.invoke())
@@ -119,7 +120,7 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 	}
 
 	// NewPlan
-	projectState := state.NewRegistry(logger, fs, model.NewComponentsMap(nil), model.SortByPath)
+	projectState := state.NewRegistry(knownpaths.NewNop(), model.NewComponentsMap(nil), model.SortByPath)
 	localManager := local.NewManager(logger, fs, manifest, nil, projectState, mapper.New())
 	executor := newRenameExecutor(context.Background(), localManager, plan)
 	err = executor.invoke()
