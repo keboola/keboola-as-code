@@ -36,6 +36,18 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 		_, err := console.ExpectString("Enter your Facebook username")
 		assert.NoError(t, err)
 
+		// username can contain alphanum only
+		time.Sleep(20 * time.Millisecond)
+		_, err = console.SendLine("u-s")
+		assert.NoError(t, err)
+
+		_, err = console.ExpectString("Sorry, your reply was invalid: Key: '' Error:Field validation for '' failed on the 'alphanum' tag")
+		assert.NoError(t, err)
+
+		time.Sleep(20 * time.Millisecond)
+		_, err = console.Send(strings.Repeat(Backspace, 3)) // remove "u-s"
+		assert.NoError(t, err)
+
 		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine("username")
 		assert.NoError(t, err)
@@ -136,6 +148,7 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 			Description: "Enter your Facebook username",
 			Type:        "string",
 			Kind:        "input",
+			Rules:       "alphanum",
 		},
 		{
 			Id:          "facebook.password",

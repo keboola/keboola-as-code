@@ -37,7 +37,14 @@ func (p *Dialogs) AskUseTemplateOptions(inputs input.Inputs) (results map[string
 			if i.Default != nil {
 				question.Default = i.Default.(string)
 			}
-			value, _ := p.Ask(question)
+			value, ok := p.Ask(question)
+			if !ok {
+				err := i.ValidateUserInput(value, ctx)
+				if err == nil {
+					err = fmt.Errorf("validation of %s field failed with unknown error", i.Name)
+				}
+				return nil, err
+			}
 			ctx = context.WithValue(ctx, contextKey(i.Id), value)
 			results[i.Id], _ = convertType(value, i.Type)
 		case input.KindConfirm:
