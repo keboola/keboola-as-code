@@ -37,7 +37,14 @@ func (p *Dialogs) AskUseTemplateOptions(inputs input.Inputs) (results map[string
 			if i.Default != nil {
 				question.Default = i.Default.(string)
 			}
-			value, _ := p.Ask(question)
+			value, ok := p.Ask(question)
+			if !ok {
+				err := i.ValidateUserInput(value, ctx)
+				if err == nil {
+					err = fmt.Errorf("validation of %s field failed with unknown error", i.Name)
+				}
+				return nil, err
+			}
 			ctx = context.WithValue(ctx, contextKey(i.Id), value)
 			results[i.Id], _ = convertType(value, i.Type)
 		case input.KindConfirm:
@@ -52,36 +59,46 @@ func (p *Dialogs) AskUseTemplateOptions(inputs input.Inputs) (results map[string
 			ctx = context.WithValue(ctx, contextKey(i.Id), value)
 			results[i.Id] = value
 		case input.KindSelect:
-			selectPrompt := &prompt.Select{
+			selectPrompt := &prompt.SelectIndex{
 				Label:       i.Name,
 				Description: i.Description,
-				Options:     i.Options,
+				Options:     i.Options.Names(),
 				UseDefault:  true,
 				Validator: func(val interface{}) error {
 					return i.ValidateUserInput(val, ctx)
 				},
 			}
 			if i.Default != nil {
-				selectPrompt.Default = i.Default.(string)
+				selectPrompt.Default = i.Options.GetIndexByName(i.Default.(string))
 			}
-			value, _ := p.Select(selectPrompt)
-			ctx = context.WithValue(ctx, contextKey(i.Id), value)
-			results[i.Id] = value
+			selectedIndex, _ := p.SelectIndex(selectPrompt)
+			selectedValue := i.Options[selectedIndex].Id
+			ctx = context.WithValue(ctx, contextKey(i.Id), selectedValue)
+			results[i.Id] = selectedValue
 		case input.KindMultiSelect:
-			multiSelect := &prompt.MultiSelect{
+			multiSelect := &prompt.MultiSelectIndex{
 				Label:       i.Name,
 				Description: i.Description,
-				Options:     i.Options,
+				Options:     i.Options.Names(),
 				Validator: func(val interface{}) error {
 					return i.ValidateUserInput(val, ctx)
 				},
 			}
 			if i.Default != nil {
-				multiSelect.Default = i.Default.([]string)
+				defaultIndices := make([]int, 0)
+				for _, o := range i.Default.([]string) {
+					defaultIndices = append(defaultIndices, i.Options.GetIndexByName(o))
+				}
+				multiSelect.Default = defaultIndices
 			}
-			value, _ := p.MultiSelect(multiSelect)
-			ctx = context.WithValue(ctx, contextKey(i.Id), value)
-			results[i.Id] = value
+			selectedIndices, _ := p.MultiSelectIndex(multiSelect)
+			selectedValues := make([]string, 0)
+			for _, selectedIndex := range selectedIndices {
+				selectedValues = append(selectedValues, i.Options[selectedIndex].Id)
+			}
+
+			ctx = context.WithValue(ctx, contextKey(i.Id), selectedValues)
+			results[i.Id] = selectedValues
 		}
 	}
 
