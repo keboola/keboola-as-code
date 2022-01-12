@@ -9,7 +9,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	. "github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
 )
 
@@ -23,18 +22,9 @@ func TestValidateState(t *testing.T) {
 	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", `456`)
 
 	// Dependencies
-	m, fs := loadTestManifest(t, envs, "minimal")
 	d := testdeps.New()
-	d.SetFs(fs)
-	d.SetProjectManifest(m)
-	d.UseMockedSchedulerApi()
+	state := d.EmptyState()
 	_, httpTransport := d.UseMockedStorageApi()
-	project, err := d.Project()
-	assert.NoError(t, err)
-
-	// Create state
-	state, err := New(project, d)
-	assert.NoError(t, err)
 
 	// Mocked component response
 	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{

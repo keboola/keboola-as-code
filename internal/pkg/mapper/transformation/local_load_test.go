@@ -9,9 +9,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
 )
 
 func TestLoadTransformationInvalidConfigAndMeta(t *testing.T) {
@@ -22,11 +20,9 @@ func TestLoadTransformationInvalidConfigAndMeta(t *testing.T) {
 		Type:         model.TransformationType,
 	}
 
-	d := testdeps.New()
-	fs := d.Fs()
-	state := d.EmptyState()
-	state.Mapper().AddMapper(transformation.NewMapper(state))
+	state, d := createStateWithMapper(t)
 	state.Components().Set(component)
+	fs := d.Fs()
 	namingGenerator := state.NamingGenerator()
 
 	// Files content
