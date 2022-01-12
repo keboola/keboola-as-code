@@ -2,6 +2,7 @@ package template
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/corefiles"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/defaultbucket"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/description"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/orchestrator"
@@ -16,6 +17,7 @@ import (
 func MappersFor(s *state.State, d dependencies) mapper.Mappers {
 	return mapper.Mappers{
 		// Core files
+		corefiles.NewMapper(s),
 		description.NewMapper(),
 		// Storage
 		defaultbucket.NewMapper(s),
