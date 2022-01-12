@@ -33,7 +33,7 @@ func TestValidateState(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Create state
-	s, err := New(project, d)
+	state, err := New(project, d)
 	assert.NoError(t, err)
 
 	// Mocked component response
@@ -47,23 +47,36 @@ func TestValidateState(t *testing.T) {
 
 	// Add invalid objects
 	branchKey := model.BranchKey{Id: 456}
-	branch := &model.Branch{BranchKey: branchKey}
-	branchManifest := &model.BranchManifest{BranchKey: branchKey}
-	branchManifest.ObjectPath = "branch"
+	branchState := &model.BranchState{
+		BranchManifest: &model.BranchManifest{
+			BranchKey: branchKey,
+			Paths: model.Paths{
+				PathInProject: model.NewPathInProject(``, `branch`),
+			},
+		},
+		Local: &model.Branch{
+			BranchKey: branchKey,
+		},
+	}
+	assert.NoError(t, state.Set(branchState))
+
+	// Add invalid config
 	configKey := model.ConfigKey{BranchId: 456, ComponentId: "keboola.foo", Id: "234"}
-	config := &model.Config{ConfigKey: configKey}
-	configManifest := &model.ConfigManifest{ConfigKey: configKey}
-	assert.NoError(t, s.Manifest().PersistRecord(branchManifest))
-	branchState, err := s.CreateFrom(branchManifest)
-	assert.NoError(t, err)
-	branchState.SetLocalState(branch)
-	configState, err := s.CreateFrom(configManifest)
-	assert.NoError(t, err)
-	configState.SetRemoteState(config)
-	assert.NoError(t, err)
+	configState := &model.ConfigState{
+		ConfigManifest: &model.ConfigManifest{
+			ConfigKey: configKey,
+			Paths: model.Paths{
+				PathInProject: model.NewPathInProject(`branch`, `config`),
+			},
+		},
+		Remote: &model.Config{
+			ConfigKey: configKey,
+		},
+	}
+	assert.NoError(t, state.Set(configState))
 
 	// Validate
-	localErr, remoteErr := s.Validate()
+	localErr, remoteErr := state.Validate()
 	expectedLocalError := `
 local branch "branch" is not valid:
   - key="name", value="", failed "required" validation
