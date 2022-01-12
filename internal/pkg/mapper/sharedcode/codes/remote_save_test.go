@@ -5,14 +5,16 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode/codes"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 func TestSharedCodeRemoteSave(t *testing.T) {
 	t.Parallel()
 	targetComponentId := model.ComponentId(`keboola.python-transformation-v2`)
-	context, logs, configState, rowState := createInternalSharedCode(t, targetComponentId)
+
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
+	configState, rowState := createInternalSharedCode(t, targetComponentId, state)
 
 	// Map config
 	configRecipe := &model.RemoteSaveRecipe{
@@ -20,9 +22,9 @@ func TestSharedCodeRemoteSave(t *testing.T) {
 		Object:         configState.Remote,
 		ChangedFields:  model.NewChangedFields(`configuration`),
 	}
-	err := NewMapper(context).MapBeforeRemoteSave(configRecipe)
+	err := state.Mapper().MapBeforeRemoteSave(configRecipe)
 	assert.NoError(t, err)
-	assert.Empty(t, logs.AllMessages())
+	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Map row
 	rowRecipe := &model.RemoteSaveRecipe{
@@ -30,9 +32,9 @@ func TestSharedCodeRemoteSave(t *testing.T) {
 		Object:         rowState.Remote,
 		ChangedFields:  model.NewChangedFields(`configuration`),
 	}
-	err = NewMapper(context).MapBeforeRemoteSave(rowRecipe)
+	err = state.Mapper().MapBeforeRemoteSave(rowRecipe)
 	assert.NoError(t, err)
-	assert.Empty(t, logs.AllMessages())
+	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Assert
 	assert.Equal(t,

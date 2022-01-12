@@ -7,7 +7,7 @@ import (
 
 func (m *orchestratorMapper) OnLocalChange(changes *model.LocalChanges) error {
 	errors := utils.NewMultiError()
-	allObjects := m.State.LocalObjects()
+	allObjects := m.state.LocalObjects()
 
 	// Map loaded objects
 	for _, objectState := range changes.Loaded() {

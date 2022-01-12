@@ -13,7 +13,9 @@ import (
 
 func TestMapBeforeRemoteSave(t *testing.T) {
 	t.Parallel()
-	mapper, _, logs := createMapper(t)
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
+
 	orchestration := &model.Orchestration{
 		Phases: []*model.Phase{
 			{
@@ -135,8 +137,8 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 	}
 
 	// Save
-	assert.NoError(t, mapper.MapBeforeRemoteSave(recipe))
-	assert.Empty(t, logs.AllMessages())
+	assert.NoError(t, state.Mapper().MapBeforeRemoteSave(recipe))
+	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Orchestration is stored in API object content
 	expectedContent := `

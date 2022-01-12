@@ -5,14 +5,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/variables"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestVariablesMapAfterRemoteLoad(t *testing.T) {
 	t.Parallel()
-	context := createMapperContext(t)
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
 
 	variablesConfigId := `123456`
 	valuesConfigRowId := `456789`
@@ -24,7 +24,8 @@ func TestVariablesMapAfterRemoteLoad(t *testing.T) {
 
 	// Invoke
 	assert.Empty(t, object.Relations)
-	assert.NoError(t, NewMapper(context).MapAfterRemoteLoad(recipe))
+	assert.NoError(t, state.Mapper().MapAfterRemoteLoad(recipe))
+	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Internal object has new relation + content without variables ID
 	assert.Equal(t, model.Relations{

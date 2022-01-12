@@ -5,13 +5,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/variables"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 func TestVariablesMapBeforePersist(t *testing.T) {
 	t.Parallel()
-	context := createMapperContext(t)
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
 
 	parentKey := model.ConfigKey{
 		BranchId:    123,
@@ -32,7 +32,8 @@ func TestVariablesMapBeforePersist(t *testing.T) {
 
 	// Invoke
 	assert.Empty(t, configManifest.Relations)
-	assert.NoError(t, NewMapper(context).MapBeforePersist(recipe))
+	assert.NoError(t, state.Mapper().MapBeforePersist(recipe))
+	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Relation has been created
 	assert.Equal(t, model.Relations{
@@ -45,8 +46,10 @@ func TestVariablesMapBeforePersist(t *testing.T) {
 
 func TestVariablesValuesPersistDefaultInName(t *testing.T) {
 	t.Parallel()
-	context := createMapperContext(t)
-	createTestObjectForPersist(t, context.State)
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
+
+	createTestObjectForPersist(t, state)
 
 	// Get objects
 	rowKey := model.ConfigRowKey{
@@ -60,9 +63,9 @@ func TestVariablesValuesPersistDefaultInName(t *testing.T) {
 	row2Key.Id = `2`
 	row3Key := rowKey
 	row3Key.Id = `3`
-	row1 := context.State.MustGet(row1Key).(*model.ConfigRowState)
-	row2 := context.State.MustGet(row2Key).(*model.ConfigRowState)
-	row3 := context.State.MustGet(row3Key).(*model.ConfigRowState)
+	row1 := state.MustGet(row1Key).(*model.ConfigRowState)
+	row2 := state.MustGet(row2Key).(*model.ConfigRowState)
+	row3 := state.MustGet(row3Key).(*model.ConfigRowState)
 
 	// Row 2 contains "default" in name
 	row2.Local.Name = `Foo Default Bar`
@@ -77,8 +80,9 @@ func TestVariablesValuesPersistDefaultInName(t *testing.T) {
 
 	// Invoke
 	changes := model.NewLocalChanges()
-	changes.AddPersisted(context.State.All()...)
-	assert.NoError(t, NewMapper(context).OnLocalChange(changes))
+	changes.AddPersisted(state.All()...)
+	assert.NoError(t, state.Mapper().OnLocalChange(changes))
+	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Row 2 has relation -> contains default variables values, because it has "default" in the name
 	expectedRelation := model.Relations{
@@ -94,8 +98,9 @@ func TestVariablesValuesPersistDefaultInName(t *testing.T) {
 
 func TestVariablesValuesPersistFirstRowIsDefault(t *testing.T) {
 	t.Parallel()
-	context := createMapperContext(t)
-	createTestObjectForPersist(t, context.State)
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
+	createTestObjectForPersist(t, state)
 
 	// Get objects
 	rowKey := model.ConfigRowKey{
@@ -109,9 +114,9 @@ func TestVariablesValuesPersistFirstRowIsDefault(t *testing.T) {
 	row2Key.Id = `2`
 	row3Key := rowKey
 	row3Key.Id = `3`
-	row1 := context.State.MustGet(row1Key).(*model.ConfigRowState)
-	row2 := context.State.MustGet(row2Key).(*model.ConfigRowState)
-	row3 := context.State.MustGet(row3Key).(*model.ConfigRowState)
+	row1 := state.MustGet(row1Key).(*model.ConfigRowState)
+	row2 := state.MustGet(row2Key).(*model.ConfigRowState)
+	row3 := state.MustGet(row3Key).(*model.ConfigRowState)
 
 	// All rows are without relations
 	assert.Empty(t, row1.Local.Relations)
@@ -123,8 +128,9 @@ func TestVariablesValuesPersistFirstRowIsDefault(t *testing.T) {
 
 	// Invoke
 	changes := model.NewLocalChanges()
-	changes.AddPersisted(context.State.All()...)
-	assert.NoError(t, NewMapper(context).OnLocalChange(changes))
+	changes.AddPersisted(state.All()...)
+	assert.NoError(t, state.Mapper().OnLocalChange(changes))
+	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Row1 has relation -> contains default variables values, because it is first
 	expectedRelation := model.Relations{

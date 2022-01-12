@@ -10,18 +10,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper/defaultbucket"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper/description"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper/orchestrator"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper/relations"
-	schedulerMapper "github.com/keboola/keboola-as-code/internal/pkg/mapper/scheduler"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper/variables"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/registry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
@@ -47,7 +38,7 @@ type State struct {
 	remoteManager   *remote.Manager
 }
 
-type Options struct {
+type LoadOptions struct {
 	LoadLocalState    bool
 	LoadRemoteState   bool
 	IgnoreNotFoundErr bool // not found error will be ignored
@@ -57,21 +48,21 @@ type Options struct {
 type ObjectsContainer interface {
 	Fs() filesystem.Fs
 	Manifest() manifest.Manifest
+	MappersFor(state *State) mapper.Mappers
 }
 
 type dependencies interface {
 	Ctx() context.Context
 	Logger() log.Logger
 	StorageApi() (*remote.StorageApi, error)
-	SchedulerApi() (*scheduler.Api, error)
 }
 
 func New(container ObjectsContainer, d dependencies) (*State, error) {
+	// Get dependencies
+	logger := d.Logger()
+	fs := container.Fs()
+	m := container.Manifest()
 	storageApi, err := d.StorageApi()
-	if err != nil {
-		return nil, err
-	}
-	schedulerApi, err := d.SchedulerApi()
 	if err != nil {
 		return nil, err
 	}
@@ -80,64 +71,34 @@ func New(container ObjectsContainer, d dependencies) (*State, error) {
 		return nil, utils.PrefixError(`error loading directory structure`, err)
 	}
 
-	m := container.Manifest()
-	namingGenerator := naming.NewGenerator(m.NamingTemplate(), m.NamingRegistry())
-	pathMatcher := naming.NewPathMatcher(m.NamingTemplate())
-
 	// Create state
+	namingRegistry := m.NamingRegistry()
+	namingTemplate := m.NamingTemplate()
 	s := &State{
+		Registry:        NewRegistry(knownPaths, namingRegistry, storageApi.Components(), m.SortBy()),
 		ctx:             d.Ctx(),
-		logger:          d.Logger(),
-		fs:              container.Fs(),
+		fs:              fs,
+		logger:          logger,
 		manifest:        m,
-		namingGenerator: namingGenerator,
-		pathMatcher:     pathMatcher,
-	}
-	s.Registry = NewRegistry(knownPaths, m.NamingRegistry(), storageApi.Components(), m.SortBy())
-
-	// Mapper
-	mapperContext := mapper.Context{
-		Logger:          d.Logger(),
-		Fs:              container.Fs(),
-		NamingGenerator: namingGenerator,
-		NamingRegistry:  m.NamingRegistry(),
-		State:           s.Registry,
+		namingGenerator: naming.NewGenerator(namingTemplate, namingRegistry),
+		pathMatcher:     naming.NewPathMatcher(namingTemplate),
 	}
 
 	s.mapper = mapper.New()
 
 	// Local manager for load,save,delete ... operations
-	s.localManager = local.NewManager(s.logger, s.fs, m, namingGenerator, s.Registry, s.mapper)
+	s.localManager = local.NewManager(s.logger, fs, m, s.namingGenerator, s.Registry, s.mapper)
 
 	// Local manager for API operations
 	s.remoteManager = remote.NewManager(s.localManager, storageApi, s.Registry, s.mapper)
 
-	mappers := []interface{}{
-		// Core files
-		description.NewMapper(),
-		// Storage
-		defaultbucket.NewMapper(s.localManager, mapperContext),
-		// Variables
-		variables.NewMapper(mapperContext),
-		sharedcode.NewVariablesMapper(mapperContext),
-		// Special components
-		schedulerMapper.NewMapper(mapperContext, schedulerApi),
-		orchestrator.NewMapper(s.localManager, mapperContext),
-		// Native codes
-		transformation.NewMapper(mapperContext),
-		sharedcode.NewCodesMapper(mapperContext),
-		// Shared code links
-		sharedcode.NewLinksMapper(s.localManager, mapperContext),
-		// Relations between objects
-		relations.NewMapper(mapperContext),
-	}
-	s.mapper.AddMapper(mappers...)
+	s.mapper.AddMapper(container.MappersFor(s)...)
 
 	return s, nil
 }
 
-// Load remote and local objects.
-func (s *State) Load(options Options) (ok bool, localErr error, remoteErr error) {
+// Load - remote and local.
+func (s *State) Load(options LoadOptions) (ok bool, localErr error, remoteErr error) {
 	localErrors := utils.NewMultiError()
 	remoteErrors := utils.NewMultiError()
 
@@ -165,6 +126,10 @@ func (s *State) Load(options Options) (ok bool, localErr error, remoteErr error)
 	// Process errors
 	ok = localErrors.Len() == 0 && remoteErrors.Len() == 0
 	return ok, localErrors.ErrorOrNil(), remoteErrors.ErrorOrNil()
+}
+
+func (s *State) Logger() log.Logger {
+	return s.logger
 }
 
 func (s *State) Fs() filesystem.Fs {

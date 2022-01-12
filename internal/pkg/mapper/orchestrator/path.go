@@ -26,13 +26,13 @@ func (m *orchestratorMapper) OnObjectPathUpdate(event model.OnObjectPathUpdateEv
 func (m *orchestratorMapper) updatePhasePath(g model.PathsGenerator, parent *model.ConfigState, phase *model.Phase) {
 	// Update parent path
 	oldPath := phase.Path()
-	phasesDir := m.NamingGenerator.PhasesDir(parent.Path())
+	phasesDir := m.state.NamingGenerator().PhasesDir(parent.Path())
 	phase.SetParentPath(phasesDir)
 
 	// Re-generate object path IF rename is enabled OR path is not set
 	if phase.ObjectPath == "" || g.RenameEnabled() {
 		renameFrom := phase.Path()
-		phase.PathInProject = m.NamingGenerator.PhasePath(phase.GetParentPath(), phase)
+		phase.PathInProject = m.state.NamingGenerator().PhasePath(phase.GetParentPath(), phase)
 
 		// Has been phase renamed?
 		newPath := phase.Path()
@@ -55,7 +55,7 @@ func (m *orchestratorMapper) updateTaskPath(g model.PathsGenerator, parent *mode
 	// Re-generate object path IF rename is enabled OR path is not set
 	if task.ObjectPath == "" || g.RenameEnabled() {
 		renameFrom := task.Path()
-		task.PathInProject = m.NamingGenerator.TaskPath(task.GetParentPath(), task)
+		task.PathInProject = m.state.NamingGenerator().TaskPath(task.GetParentPath(), task)
 		// Has been task renamed?
 		newPath := task.Path()
 		if renameFrom != newPath {

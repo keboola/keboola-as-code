@@ -42,7 +42,7 @@ type dependencies interface {
 
 func Run(container state.ObjectsContainer, o Options, d dependencies) (*state.State, error) {
 	logger := d.Logger()
-	loadOptions := state.Options{
+	loadOptions := state.LoadOptions{
 		LoadLocalState:    o.LoadLocalState,
 		LoadRemoteState:   o.LoadRemoteState,
 		IgnoreNotFoundErr: o.IgnoreNotFoundErr,

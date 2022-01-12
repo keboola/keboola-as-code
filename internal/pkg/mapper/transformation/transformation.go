@@ -1,16 +1,18 @@
 package transformation
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 )
 
 type transformationMapper struct {
-	mapper.Context
+	state  *state.State
+	logger log.Logger
 }
 
-func NewMapper(context mapper.Context) *transformationMapper {
-	return &transformationMapper{Context: context}
+func NewMapper(s *state.State) *transformationMapper {
+	return &transformationMapper{state: s, logger: s.Logger()}
 }
 
 func (m *transformationMapper) isTransformationConfig(object interface{}) (bool, error) {
@@ -19,7 +21,7 @@ func (m *transformationMapper) isTransformationConfig(object interface{}) (bool,
 		return false, nil
 	}
 
-	component, err := m.State.Components().Get(v.ComponentKey())
+	component, err := m.state.Components().Get(v.ComponentKey())
 	if err != nil {
 		return false, err
 	}
@@ -33,7 +35,7 @@ func (m *transformationMapper) isTransformationConfigState(objectState model.Obj
 		return false, nil
 	}
 
-	component, err := m.State.Components().Get(v.ComponentKey())
+	component, err := m.state.Components().Get(v.ComponentKey())
 	if err != nil {
 		return false, err
 	}

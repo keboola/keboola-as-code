@@ -8,17 +8,21 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestMapAfterLocalLoad(t *testing.T) {
 	t.Parallel()
-	mapper, context, logs := createMapper(t)
-	orchestratorConfigState := createLocalLoadFixtures(t, context)
-	target1, target2, target3 := createTargetConfigs(t, context)
+	state, d := createStateWithMapper(t)
+	fs := d.Fs()
+	logger := d.DebugLogger()
+
+	orchestratorConfigState := createLocalLoadFixtures(t, state)
+	target1, target2, target3 := createTargetConfigs(t, state)
 
 	// Local files
-	phasesDir := context.NamingGenerator.PhasesDir(orchestratorConfigState.Path())
+	phasesDir := state.NamingGenerator().PhasesDir(orchestratorConfigState.Path())
 	files := []*filesystem.File{
 		filesystem.
 			NewFile(
@@ -52,24 +56,25 @@ func TestMapAfterLocalLoad(t *testing.T) {
 			SetDescription(`task config file`),
 	}
 	for _, file := range files {
-		assert.NoError(t, context.Fs.WriteFile(file))
+		assert.NoError(t, fs.WriteFile(file))
 	}
-	logs.Truncate()
+	logger.Truncate()
 
 	// Load
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(orchestratorConfigState)
-	assert.NoError(t, mapper.OnLocalChange(changes))
+	assert.NoError(t, state.Mapper().OnLocalChange(changes))
 
 	// Logs
 	expectedLogs := `
+DEBUG  %aGET https://connection.keboola.com/v2/storage/components/keboola.orchestrator %a
 DEBUG  Loaded "branch/other/orchestrator/phases/001-phase/phase.json"
 DEBUG  Loaded "branch/other/orchestrator/phases/001-phase/001-task-1/task.json"
 DEBUG  Loaded "branch/other/orchestrator/phases/001-phase/002-task-2/task.json"
 DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/phase.json"
 DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/task.json"
 `
-	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logs.AllMessages())
+	testhelper.AssertWildcards(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessages(), ``)
 
 	// Check target configs relation
 	rel1, err := target1.Local.Relations.GetOneByType(model.UsedInOrchestratorRelType)
@@ -207,11 +212,13 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 
 func TestMapAfterLocalLoadError(t *testing.T) {
 	t.Parallel()
-	mapper, context, logs := createMapper(t)
-	orchestratorConfigState := createLocalLoadFixtures(t, context)
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
+	fs := d.Fs()
+	orchestratorConfigState := createLocalLoadFixtures(t, state)
 
 	// Local files
-	phasesDir := context.NamingGenerator.PhasesDir(orchestratorConfigState.Path())
+	phasesDir := state.NamingGenerator().PhasesDir(orchestratorConfigState.Path())
 	files := []*filesystem.File{
 		filesystem.
 			NewFile(
@@ -233,15 +240,15 @@ func TestMapAfterLocalLoadError(t *testing.T) {
 			SetDescription(`task config file`),
 	}
 	for _, file := range files {
-		assert.NoError(t, context.Fs.WriteFile(file))
+		assert.NoError(t, fs.WriteFile(file))
 	}
-	assert.NoError(t, context.Fs.Mkdir(phasesDir+`/002-phase-with-deps`))
-	logs.Truncate()
+	assert.NoError(t, fs.Mkdir(phasesDir+`/002-phase-with-deps`))
+	logger.Truncate()
 
 	// Load
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(orchestratorConfigState)
-	err := mapper.OnLocalChange(changes)
+	err := state.Mapper().OnLocalChange(changes)
 	assert.Error(t, err)
 
 	// Assert error
@@ -249,9 +256,9 @@ func TestMapAfterLocalLoadError(t *testing.T) {
 invalid orchestrator config "branch/other/orchestrator":
   - invalid phase "001-phase":
     - invalid task "001-task-1":
-      - config "branch/extractor/target-config-1" not found
+      - target config "branch/extractor/target-config-1" not found
     - invalid task "002-task-2":
-      - config "branch/extractor/target-config-2" not found
+      - target config "branch/extractor/target-config-2" not found
   - invalid phase "002-phase-with-deps":
     - missing phase config file "phases/002-phase-with-deps/phase.json"
   - missing phase "missing-phase", referenced from "001-phase"
@@ -261,12 +268,14 @@ invalid orchestrator config "branch/other/orchestrator":
 
 func TestMapAfterLocalLoadDepsCycle(t *testing.T) {
 	t.Parallel()
-	mapper, context, logs := createMapper(t)
-	orchestratorConfigState := createLocalLoadFixtures(t, context)
-	createTargetConfigs(t, context)
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
+	fs := d.Fs()
+	orchestratorConfigState := createLocalLoadFixtures(t, state)
+	createTargetConfigs(t, state)
 
 	// Local files
-	phasesDir := context.NamingGenerator.PhasesDir(orchestratorConfigState.Path())
+	phasesDir := state.NamingGenerator().PhasesDir(orchestratorConfigState.Path())
 	files := []*filesystem.File{
 		filesystem.
 			NewFile(
@@ -294,14 +303,14 @@ func TestMapAfterLocalLoadDepsCycle(t *testing.T) {
 			SetDescription(`phase config file`),
 	}
 	for _, file := range files {
-		assert.NoError(t, context.Fs.WriteFile(file))
+		assert.NoError(t, fs.WriteFile(file))
 	}
-	logs.Truncate()
+	logger.Truncate()
 
 	// Load
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(orchestratorConfigState)
-	err := mapper.OnLocalChange(changes)
+	err := state.Mapper().OnLocalChange(changes)
 	assert.Error(t, err)
 
 	// Assert error

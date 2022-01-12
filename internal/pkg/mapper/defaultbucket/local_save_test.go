@@ -46,7 +46,8 @@ const localSaveConfigContentSample = `
 
 func TestDefaultBucketMapper_MapBeforeLocalSaveConfig(t *testing.T) {
 	t.Parallel()
-	mapperInst, context, logs := createMapper(t)
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
 
 	// Config referenced by the default bucket
 	configKey1 := model.ConfigKey{
@@ -73,7 +74,7 @@ func TestDefaultBucketMapper_MapBeforeLocalSaveConfig(t *testing.T) {
 			}),
 		},
 	}
-	assert.NoError(t, context.State.Set(configState1))
+	assert.NoError(t, state.Set(configState1))
 
 	// Config with the input mapping
 	configKey2 := model.ConfigKey{
@@ -93,14 +94,14 @@ func TestDefaultBucketMapper_MapBeforeLocalSaveConfig(t *testing.T) {
 			Content:   content,
 		},
 	}
-	assert.NoError(t, context.State.Set(configState2))
+	assert.NoError(t, state.Set(configState2))
 
 	// Invoke
 	recipe := fixtures.NewLocalSaveRecipe(configState2.ConfigManifest, configState2.Local)
 	configFile, err := recipe.Files.ObjectConfigFile()
 	assert.NoError(t, err)
 	configFile.Content = content
-	assert.NoError(t, mapperInst.MapBeforeLocalSave(recipe))
+	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
 
 	// Check warning of missing default bucket config
 	expectedWarnings := `
@@ -108,7 +109,7 @@ WARN  Warning: - config "branch:123/component:keboola.ex-db-mysql/config:456" no
   - referenced from config "branch:123/component:keboola.snowflake-transformation/config:789"
   - input mapping "in.c-keboola-ex-db-mysql-456.contacts"
 `
-	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logs.AllMessages())
+	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.WarnAndErrorMessages())
 
 	// Check default bucket replacement
 	configFile, err = recipe.Files.ObjectConfigFile()
@@ -119,7 +120,8 @@ WARN  Warning: - config "branch:123/component:keboola.ex-db-mysql/config:456" no
 
 func TestDefaultBucketMapper_MapBeforeLocalSaveRow(t *testing.T) {
 	t.Parallel()
-	mapperInst, context, logs := createMapper(t)
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
 
 	// Config referenced by the default bucket
 	configKey1 := model.ConfigKey{
@@ -146,7 +148,7 @@ func TestDefaultBucketMapper_MapBeforeLocalSaveRow(t *testing.T) {
 			}),
 		},
 	}
-	assert.NoError(t, context.State.Set(configState1))
+	assert.NoError(t, state.Set(configState1))
 
 	// Config with the input mapping
 	configKey2 := model.ConfigKey{
@@ -164,7 +166,7 @@ func TestDefaultBucketMapper_MapBeforeLocalSaveRow(t *testing.T) {
 			Content:   orderedmap.New(),
 		},
 	}
-	assert.NoError(t, context.State.Set(configState2))
+	assert.NoError(t, state.Set(configState2))
 
 	rowKey := model.ConfigRowKey{
 		BranchId:    123,
@@ -189,14 +191,14 @@ func TestDefaultBucketMapper_MapBeforeLocalSaveRow(t *testing.T) {
 			Content:      content,
 		},
 	}
-	assert.NoError(t, context.State.Set(rowState))
+	assert.NoError(t, state.Set(rowState))
 
 	// Invoke
 	recipe := fixtures.NewLocalSaveRecipe(rowState.ConfigRowManifest, rowState.Local)
 	configFile, err := recipe.Files.ObjectConfigFile()
 	assert.NoError(t, err)
 	configFile.Content = content
-	assert.NoError(t, mapperInst.MapBeforeLocalSave(recipe))
+	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
 
 	// Check warning of missing default bucket config
 	expectedWarnings := `
@@ -204,7 +206,7 @@ WARN  Warning: - config "branch:123/component:keboola.ex-db-mysql/config:456" no
   - referenced from config row "branch:123/component:keboola.snowflake-transformation/config:789/row:456"
   - input mapping "in.c-keboola-ex-db-mysql-456.contacts"
 `
-	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logs.AllMessages())
+	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.WarnAndErrorMessages())
 
 	// Check default bucket replacement
 	configFile, err = recipe.Files.ObjectConfigFile()

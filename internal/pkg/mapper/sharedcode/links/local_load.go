@@ -34,7 +34,7 @@ func (m *mapper) onLocalLoad(objectState model.ObjectState) error {
 	}
 
 	// Get shared code
-	sharedCodeState, err := m.GetSharedCodeByPath(transformation.BranchKey(), sharedCodePath)
+	sharedCodeState, err := m.helper.GetSharedCodeByPath(transformation.BranchKey(), sharedCodePath)
 	if err != nil {
 		return utils.PrefixError(
 			err.Error(),
@@ -53,7 +53,7 @@ func (m *mapper) onLocalLoad(objectState model.ObjectState) error {
 	}
 
 	// Check: target component of the shared code = transformation component
-	if err := m.CheckTargetComponent(sharedCodeConfig, transformation.ConfigKey); err != nil {
+	if err := m.helper.CheckTargetComponent(sharedCodeConfig, transformation.ConfigKey); err != nil {
 		return err
 	}
 

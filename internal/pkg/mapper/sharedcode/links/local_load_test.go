@@ -12,17 +12,18 @@ import (
 
 func TestLocalLoadTranWithSharedCode(t *testing.T) {
 	t.Parallel()
-	mapperInst, context, logs := createMapper(t)
-	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, context.State, context.NamingRegistry)
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
 
 	// Create transformation with shared code
-	transformation := createLocalTranWithSharedCode(t, context)
+	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, state)
+	transformation := createLocalTranWithSharedCode(t, state)
 
 	// Invoke
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(transformation)
-	assert.NoError(t, mapperInst.OnLocalChange(changes))
-	assert.Empty(t, logs.AllMessages())
+	assert.NoError(t, state.Mapper().OnLocalChange(changes))
+	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Paths in transformation blocks are replaced by IDs
 	assert.Equal(t, []*model.Block{
@@ -87,11 +88,12 @@ func TestLocalLoadTranWithSharedCode(t *testing.T) {
 
 func TestLocalLoadTranWithSharedCode_InvalidSharedCodePath(t *testing.T) {
 	t.Parallel()
-	mapperInst, context, logs := createMapper(t)
-	fixtures.CreateSharedCode(t, context.State, context.NamingRegistry)
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
 
 	// Create transformation with shared code
-	transformation := createLocalTranWithSharedCode(t, context)
+	fixtures.CreateSharedCode(t, state)
+	transformation := createLocalTranWithSharedCode(t, state)
 	transformation.Local.Content.Set(model.SharedCodePathContentKey, `missing`) // <<<<<<<<<<<
 
 	// Invoke
@@ -101,10 +103,10 @@ func TestLocalLoadTranWithSharedCode_InvalidSharedCodePath(t *testing.T) {
 missing shared code "branch/missing":
   - referenced from config "branch:123/component:keboola.python-transformation-v2/config:789"
 `
-	err := mapperInst.OnLocalChange(changes)
+	err := state.Mapper().OnLocalChange(changes)
 	assert.Error(t, err)
 	assert.Equal(t, strings.TrimSpace(expectedErr), err.Error())
-	assert.Empty(t, logs.AllMessages())
+	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Link to shared code is not set
 	assert.Nil(t, transformation.Local.Transformation.LinkToSharedCode)
@@ -116,11 +118,12 @@ missing shared code "branch/missing":
 
 func TestLocalLoadTranWithSharedCode_InvalidSharedCodeRowPath(t *testing.T) {
 	t.Parallel()
-	mapperInst, context, logs := createMapper(t)
-	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, context.State, context.NamingRegistry)
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
 
 	// Create transformation with shared code
-	transformation := createLocalTranWithSharedCode(t, context)
+	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, state)
+	transformation := createLocalTranWithSharedCode(t, state)
 	transformation.Local.Transformation.Blocks[0].Codes[1].Scripts[0] = model.StaticScript{Value: "# {{:codes/missing}}\n"} // <<<<<<<<<<<<
 
 	// Invoke
@@ -130,10 +133,10 @@ func TestLocalLoadTranWithSharedCode_InvalidSharedCodeRowPath(t *testing.T) {
 missing shared code "branch/_shared/keboola.python-transformation-v2/codes/missing":
   - referenced from "branch/transformation/blocks/block-1/code-2"
 `
-	err := mapperInst.OnLocalChange(changes)
+	err := state.Mapper().OnLocalChange(changes)
 	assert.Error(t, err)
 	assert.Equal(t, strings.TrimSpace(expectedErr), err.Error())
-	assert.Empty(t, logs.AllMessages())
+	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Link to shared code is set, but without invalid row
 	assert.Equal(t, &model.LinkToSharedCode{Config: sharedCodeKey, Rows: []model.ConfigRowKey{sharedCodeRowsKeys[0]}}, transformation.Local.Transformation.LinkToSharedCode)

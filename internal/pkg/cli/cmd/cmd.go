@@ -307,7 +307,7 @@ func (root *RootCommand) printError(errRaw error) {
 			root.Logger.Infof(`Please change working directory to a project directory.`)
 			root.Logger.Infof(`Or use the "sync init" command in an empty directory.`)
 			modifiedErrs.Append(fmt.Errorf(`none of this and parent directories is project dir`))
-		case errors.Is(err, dependencies.ErrRepoManifestNotFound):
+		case errors.Is(err, dependencies.ErrRepositoryManifestNotFound):
 			root.Logger.Infof(`Repository directory must contain the "%s" file.`, repositoryManifest.Path())
 			root.Logger.Infof(`Please change working directory to a repository directory.`)
 			root.Logger.Infof(`Or use the "template repository init" command in an empty directory.`)

@@ -13,7 +13,7 @@ func (m *schedulerMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) err
 	}
 
 	// Check component type
-	component, err := m.State.Components().Get(object.ComponentKey())
+	component, err := m.state.Components().Get(object.ComponentKey())
 	if err != nil {
 		return err
 	}

@@ -5,14 +5,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/variables"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestVariablesMapBeforeRemoteSave(t *testing.T) {
 	t.Parallel()
-	context := createMapperContext(t)
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
 
 	variablesConfigId := `123456`
 	valuesConfigRowId := `456789`
@@ -31,7 +31,8 @@ func TestVariablesMapBeforeRemoteSave(t *testing.T) {
 	// Invoke
 	assert.NotEmpty(t, object.Relations)
 	assert.NotEmpty(t, object.Relations)
-	assert.NoError(t, NewMapper(context).MapBeforeRemoteSave(recipe))
+	assert.NoError(t, state.Mapper().MapBeforeRemoteSave(recipe))
+	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// All relations have been mapped
 	assert.Empty(t, object.Relations)

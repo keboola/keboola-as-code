@@ -1,15 +1,19 @@
 package scheduler
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 )
 
-type schedulerMapper struct {
-	mapper.Context
-	api *scheduler.Api
+type dependencies interface {
+	SchedulerApi() (*scheduler.Api, error)
 }
 
-func NewMapper(context mapper.Context, api *scheduler.Api) *schedulerMapper {
-	return &schedulerMapper{Context: context, api: api}
+type schedulerMapper struct {
+	dependencies
+	state *state.State
+}
+
+func NewMapper(s *state.State, d dependencies) *schedulerMapper {
+	return &schedulerMapper{state: s, dependencies: d}
 }

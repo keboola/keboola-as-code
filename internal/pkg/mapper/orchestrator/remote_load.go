@@ -5,15 +5,15 @@ import (
 
 	"github.com/spf13/cast"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func (m *orchestratorMapper) OnRemoteChange(changes *model.RemoteChanges) error {
 	errors := utils.NewMultiError()
-	allObjects := m.State.RemoteObjects()
+	allObjects := m.state.RemoteObjects()
 	for _, objectState := range changes.Loaded() {
 		if ok, err := m.isOrchestratorConfigKey(objectState.Key()); err != nil {
 			errors.Append(err)
@@ -28,7 +28,7 @@ func (m *orchestratorMapper) OnRemoteChange(changes *model.RemoteChanges) error 
 
 func (m *orchestratorMapper) onRemoteLoad(config *model.Config, manifest *model.ConfigManifest, allObjects model.Objects) {
 	loader := &remoteLoader{
-		Context:      m.Context,
+		State:        m.state,
 		phasesSorter: newPhasesSorter(),
 		allObjects:   allObjects,
 		config:       config,
@@ -37,12 +37,12 @@ func (m *orchestratorMapper) onRemoteLoad(config *model.Config, manifest *model.
 	}
 	if err := loader.load(); err != nil {
 		// Convert errors to warning
-		m.Logger.Warn(`Warning: `, utils.PrefixError(fmt.Sprintf(`invalid orchestrator %s`, config.Desc()), err))
+		m.logger.Warn(`Warning: `, utils.PrefixError(fmt.Sprintf(`invalid orchestrator %s`, config.Desc()), err))
 	}
 }
 
 type remoteLoader struct {
-	mapper.Context
+	*state.State
 	*phasesSorter
 	allObjects model.Objects
 	config     *model.Config
@@ -95,18 +95,18 @@ func (l *remoteLoader) load() error {
 
 	// Set paths if parent path is set
 	if l.manifest.Path() != "" {
-		phasesDir := l.NamingGenerator.PhasesDir(l.manifest.Path())
+		phasesDir := l.NamingGenerator().PhasesDir(l.manifest.Path())
 		for _, phase := range l.config.Orchestration.Phases {
-			if path, found := l.NamingRegistry.PathByKey(phase.Key()); found {
+			if path, found := l.GetPath(phase.Key()); found {
 				phase.PathInProject = path
 			} else {
-				phase.PathInProject = l.NamingGenerator.PhasePath(phasesDir, phase)
+				phase.PathInProject = l.NamingGenerator().PhasePath(phasesDir, phase)
 			}
 			for _, task := range phase.Tasks {
-				if path, found := l.NamingRegistry.PathByKey(task.Key()); found {
+				if path, found := l.GetPath(task.Key()); found {
 					task.PathInProject = path
 				} else {
-					task.PathInProject = l.NamingGenerator.TaskPath(phase.Path(), task)
+					task.PathInProject = l.NamingGenerator().TaskPath(phase.Path(), task)
 				}
 			}
 		}
@@ -232,7 +232,7 @@ func (l *remoteLoader) parseTask(taskRaw interface{}) error {
 	if err != nil {
 		errors.Append(err)
 	} else if targetConfig != nil {
-		task.ConfigPath = l.State.MustGet(targetConfig.Key()).Path()
+		task.ConfigPath = l.MustGet(targetConfig.Key()).Path()
 		markConfigUsedInOrchestrator(targetConfig, l.config)
 	}
 

@@ -9,17 +9,14 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 )
 
 func TestSchedulerMapperRemoteActivate(t *testing.T) {
 	t.Parallel()
-	context := createMapperContext(t)
-	schedulerApi, httpTransport := testapi.NewMockedSchedulerApi(log.NewDebugLogger())
-	mapper := NewMapper(context, schedulerApi)
+	state, d := createStateWithMapper(t)
+	_, httpTransport := d.UseMockedSchedulerApi()
+	logger := d.DebugLogger()
 
 	// Branch
 	branchKey := model.BranchKey{
@@ -34,7 +31,7 @@ func TestSchedulerMapperRemoteActivate(t *testing.T) {
 			IsDefault: true,
 		},
 	}
-	assert.NoError(t, context.State.Set(branchState))
+	assert.NoError(t, state.Set(branchState))
 
 	// Scheduler config
 	schedulerKey := model.ConfigKey{
@@ -50,7 +47,7 @@ func TestSchedulerMapperRemoteActivate(t *testing.T) {
 			ConfigKey: schedulerKey,
 		},
 	}
-	assert.NoError(t, context.State.Set(schedulerConfigState))
+	assert.NoError(t, state.Set(schedulerConfigState))
 
 	// Expected HTTP call
 	var httpRequest *http.Request
@@ -64,7 +61,8 @@ func TestSchedulerMapperRemoteActivate(t *testing.T) {
 	// Invoke
 	changes := model.NewRemoteChanges()
 	changes.AddSaved(schedulerConfigState)
-	assert.NoError(t, mapper.OnRemoteChange(changes))
+	assert.NoError(t, state.Mapper().OnRemoteChange(changes))
+	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Check API request
 	reqBody, err := io.ReadAll(httpRequest.Body)

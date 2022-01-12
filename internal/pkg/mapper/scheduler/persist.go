@@ -20,7 +20,7 @@ func (m *schedulerMapper) MapBeforePersist(recipe *model.PersistRecipe) error {
 	}
 
 	// Get component
-	component, err := m.State.Components().Get(configManifest.ComponentKey())
+	component, err := m.state.Components().Get(configManifest.ComponentKey())
 	if err != nil {
 		return err
 	}

@@ -31,6 +31,6 @@ func Run(d Dependencies) (changed bool, err error) {
 		return true, nil
 	}
 
-	d.Logger().Debugf(`ProjectManifest has not changed.`)
+	d.Logger().Debugf(`Project manifest has not changed.`)
 	return false, nil
 }

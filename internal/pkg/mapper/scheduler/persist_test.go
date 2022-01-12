@@ -5,17 +5,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 )
 
 func TestVariablesMapBeforePersist(t *testing.T) {
 	t.Parallel()
-	context := createMapperContext(t)
-	schedulerApi, _ := testapi.NewMockedSchedulerApi(context.Logger.(log.DebugLogger))
-	mapper := NewMapper(context, schedulerApi)
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
 
 	parentKey := model.ConfigKey{
 		BranchId:    123,
@@ -36,7 +32,8 @@ func TestVariablesMapBeforePersist(t *testing.T) {
 
 	// Invoke
 	assert.Empty(t, configManifest.Relations)
-	assert.NoError(t, mapper.MapBeforePersist(recipe))
+	assert.NoError(t, state.Mapper().MapBeforePersist(recipe))
+	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Relation has been created
 	assert.Equal(t, model.Relations{

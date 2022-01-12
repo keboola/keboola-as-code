@@ -13,15 +13,16 @@ import (
 
 func TestMapBeforeLocalSave(t *testing.T) {
 	t.Parallel()
-	mapper, context, logs := createMapper(t)
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
 
 	// Recipe
-	orchestratorConfigState := createLocalSaveFixtures(t, context, true)
+	orchestratorConfigState := createLocalSaveFixtures(t, state, true)
 	recipe := fixtures.NewLocalSaveRecipe(orchestratorConfigState.Manifest(), orchestratorConfigState.Remote)
 
 	// Save
-	assert.NoError(t, mapper.MapBeforeLocalSave(recipe))
-	assert.Empty(t, logs.AllMessages())
+	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
+	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Minify JSON + remove file description
 	var files []*filesystem.File
@@ -39,7 +40,7 @@ func TestMapBeforeLocalSave(t *testing.T) {
 	}
 
 	// Check generated files
-	phasesDir := context.NamingGenerator.PhasesDir(orchestratorConfigState.Path())
+	phasesDir := state.NamingGenerator().PhasesDir(orchestratorConfigState.Path())
 	assert.Equal(t, []*filesystem.File{
 		filesystem.NewFile(`meta.json`, `{}`),
 		filesystem.NewFile(`config.json`, `{}`),
@@ -75,14 +76,15 @@ func TestMapBeforeLocalSave(t *testing.T) {
 
 func TestMapBeforeLocalSaveWarnings(t *testing.T) {
 	t.Parallel()
-	mapper, context, logs := createMapper(t)
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
 
 	// Recipe
-	orchestratorConfigState := createLocalSaveFixtures(t, context, false)
+	orchestratorConfigState := createLocalSaveFixtures(t, state, false)
 	recipe := fixtures.NewLocalSaveRecipe(orchestratorConfigState.Manifest(), orchestratorConfigState.Remote)
 
 	// Save
-	assert.NoError(t, mapper.MapBeforeLocalSave(recipe))
+	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
 	expectedWarnings := `
 WARN  Warning: cannot save orchestrator config "branch/other/orchestrator":
   - cannot save phase "001-phase":
@@ -94,5 +96,5 @@ WARN  Warning: cannot save orchestrator config "branch/other/orchestrator":
     - cannot save task "001-task-3":
       - config "branch:123/component:foo.bar2/config:456" not found
 `
-	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logs.AllMessages())
+	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.WarnAndErrorMessages())
 }

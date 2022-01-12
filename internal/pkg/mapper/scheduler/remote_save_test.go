@@ -6,18 +6,14 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestSchedulerMapBeforeRemoteSave(t *testing.T) {
 	t.Parallel()
-	context := createMapperContext(t)
-	schedulerApi, _ := testapi.NewMockedSchedulerApi(log.NewDebugLogger())
-	mapper := NewMapper(context, schedulerApi)
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
 
 	// Scheduler config
 	content := orderedmap.New()
@@ -34,7 +30,8 @@ func TestSchedulerMapBeforeRemoteSave(t *testing.T) {
 
 	// Invoke
 	assert.NotEmpty(t, object.Relations)
-	assert.NoError(t, mapper.MapBeforeRemoteSave(recipe))
+	assert.NoError(t, state.Mapper().MapBeforeRemoteSave(recipe))
+	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// All relations have been mapped
 	assert.Empty(t, object.Relations)

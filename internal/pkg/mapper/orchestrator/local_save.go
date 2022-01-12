@@ -4,8 +4,9 @@ import (
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
@@ -18,8 +19,9 @@ func (m *orchestratorMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) e
 	}
 
 	writer := &localWriter{
-		Context:         m.Context,
+		State:           m.state,
 		LocalSaveRecipe: recipe,
+		logger:          m.logger,
 		config:          recipe.Object.(*model.Config),
 	}
 	writer.save()
@@ -27,13 +29,14 @@ func (m *orchestratorMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) e
 }
 
 type localWriter struct {
-	mapper.Context
+	*state.State
 	*model.LocalSaveRecipe
+	logger log.Logger
 	config *model.Config
 }
 
 func (w *localWriter) save() {
-	phasesDir := w.NamingGenerator.PhasesDir(w.ObjectManifest.Path())
+	phasesDir := w.NamingGenerator().PhasesDir(w.ObjectManifest.Path())
 
 	// Generate ".gitkeep" to preserve the "phases" directory, even if there are no phases.
 	w.Files.
@@ -52,15 +55,15 @@ func (w *localWriter) save() {
 
 	// Delete all old files from blocks dir
 	// We always do full generation of phases dir.
-	for _, path := range w.State.TrackedPaths() {
-		if filesystem.IsFrom(path, phasesDir) && w.State.IsFile(path) {
+	for _, path := range w.TrackedPaths() {
+		if filesystem.IsFrom(path, phasesDir) && w.IsFile(path) {
 			w.ToDelete = append(w.ToDelete, path)
 		}
 	}
 
 	// Convert errors to warning
 	if errors.Len() > 0 {
-		w.Logger.Warn(utils.PrefixError(fmt.Sprintf(`Warning: cannot save orchestrator config "%s"`, w.ObjectManifest.Path()), errors))
+		w.logger.Warn(utils.PrefixError(fmt.Sprintf(`Warning: cannot save orchestrator config "%s"`, w.ObjectManifest.Path()), errors))
 	}
 }
 
@@ -96,7 +99,7 @@ func (w *localWriter) savePhase(phase *model.Phase, allPhases []*model.Phase) er
 
 	// Create file
 	file := filesystem.
-		NewJsonFile(filesystem.Join(w.NamingGenerator.PhaseFilePath(phase)), phaseContent).
+		NewJsonFile(filesystem.Join(w.NamingGenerator().PhaseFilePath(phase)), phaseContent).
 		SetDescription(`phase config file`)
 	w.Files.
 		Add(file).
@@ -138,7 +141,7 @@ func (w *localWriter) saveTask(task *model.Task) error {
 	}
 
 	// Get parent branch
-	branch := w.State.MustGet(task.ConfigKey().BranchKey())
+	branch := w.MustGet(task.ConfigKey().BranchKey())
 
 	// Target key
 	targetKey := &model.ConfigKey{
@@ -148,7 +151,7 @@ func (w *localWriter) saveTask(task *model.Task) error {
 	}
 
 	// Get target config
-	targetConfig, found := w.State.Get(targetKey)
+	targetConfig, found := w.Get(targetKey)
 	if found {
 		// Get target path
 		targetPath, err := filesystem.Rel(branch.Path(), targetConfig.Path())
@@ -165,7 +168,7 @@ func (w *localWriter) saveTask(task *model.Task) error {
 
 	// Create file
 	file := filesystem.
-		NewJsonFile(filesystem.Join(w.NamingGenerator.TaskFilePath(task)), taskContent).
+		NewJsonFile(filesystem.Join(w.NamingGenerator().TaskFilePath(task)), taskContent).
 		SetDescription(`task config file`)
 	w.Files.
 		Add(file).

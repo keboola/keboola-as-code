@@ -4,35 +4,35 @@ import (
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/local"
-	mapperPkg "github.com/keboola/keboola-as-code/internal/pkg/mapper"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode/helper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // mapper replaces "shared_code_id" with "shared_code_path" in local fs.
 type mapper struct {
-	mapperPkg.Context
-	*helper.SharedCodeHelper
-	localManager *local.Manager
-	id           *idUtils
-	path         *pathUtils
+	state  *state.State
+	logger log.Logger
+	helper *helper.SharedCodeHelper
+	id     *idUtils
+	path   *pathUtils
 }
 
-func NewMapper(localManager *local.Manager, context mapperPkg.Context) *mapper {
+func NewMapper(s *state.State) *mapper {
 	return &mapper{
-		Context:          context,
-		SharedCodeHelper: helper.New(context.State, context.NamingRegistry),
-		localManager:     localManager,
-		id:               newIdUtils(),
-		path:             newPathUtils(),
+		state:  s,
+		logger: s.Logger(),
+		helper: helper.New(s),
+		id:     newIdUtils(),
+		path:   newPathUtils(),
 	}
 }
 
 func (m *mapper) linkToIdPlaceholder(code *model.Code, link model.Script) (model.Script, error) {
 	if link, ok := link.(model.LinkScript); ok {
-		row, ok := m.State.GetOrNil(link.Target).(*model.ConfigRowState)
+		row, ok := m.state.GetOrNil(link.Target).(*model.ConfigRowState)
 		script := model.StaticScript{Value: m.id.format(row.Id)}
 		if !ok {
 			return script, utils.PrefixError(
@@ -47,7 +47,7 @@ func (m *mapper) linkToIdPlaceholder(code *model.Code, link model.Script) (model
 
 func (m *mapper) linkToPathPlaceholder(code *model.Code, link model.Script, sharedCode *model.ConfigState) (model.Script, error) {
 	if link, ok := link.(model.LinkScript); ok {
-		row, ok := m.State.GetOrNil(link.Target).(*model.ConfigRowState)
+		row, ok := m.state.GetOrNil(link.Target).(*model.ConfigRowState)
 		if !ok || sharedCode == nil {
 			// Return ID placeholder, if row is not found
 			return model.StaticScript{Value: m.id.format(link.Target.Id)}, utils.PrefixError(
@@ -80,7 +80,7 @@ func (m *mapper) parseIdPlaceholder(code *model.Code, script model.Script, share
 		ConfigId:    sharedCode.Id,
 		Id:          id,
 	}
-	row, found := m.State.GetOrNil(rowKey).(*model.ConfigRowState)
+	row, found := m.state.GetOrNil(rowKey).(*model.ConfigRowState)
 	if !found {
 		return nil, nil, utils.PrefixError(
 			fmt.Sprintf(`missing shared code %s`, rowKey.Desc()),
@@ -101,7 +101,7 @@ func (m *mapper) parsePathPlaceholder(code *model.Code, script model.Script, sha
 	}
 
 	// Get shared code row
-	row, err := m.GetSharedCodeRowByPath(sharedCode, path)
+	row, err := m.helper.GetSharedCodeRowByPath(sharedCode, path)
 	if err != nil {
 		return nil, nil, utils.PrefixError(
 			err.Error(),

@@ -6,18 +6,14 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestSchedulerMapAfterRemoteLoad(t *testing.T) {
 	t.Parallel()
-	context := createMapperContext(t)
-	schedulerApi, _ := testapi.NewMockedSchedulerApi(log.NewDebugLogger())
-	mapper := NewMapper(context, schedulerApi)
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
 
 	// Create api and internal object
 	key := model.ConfigKey{BranchId: 1, ComponentId: model.SchedulerComponentId, Id: `123`}
@@ -35,7 +31,8 @@ func TestSchedulerMapAfterRemoteLoad(t *testing.T) {
 
 	// Invoke
 	assert.Empty(t, object.Relations)
-	assert.NoError(t, mapper.MapAfterRemoteLoad(recipe))
+	assert.NoError(t, state.Mapper().MapAfterRemoteLoad(recipe))
+	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Internal object has new relation
 	assert.Equal(t, model.Relations{

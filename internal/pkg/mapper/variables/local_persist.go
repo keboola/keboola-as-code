@@ -22,7 +22,7 @@ func (m *variablesMapper) MapBeforePersist(recipe *model.PersistRecipe) error {
 	}
 
 	// Get component
-	component, err := m.State.Components().Get(configManifest.ComponentKey())
+	component, err := m.state.Components().Get(configManifest.ComponentKey())
 	if err != nil {
 		return err
 	}
@@ -55,7 +55,7 @@ func (m *variablesMapper) OnLocalChange(changes *model.LocalChanges) error {
 		object := objectState.LocalState()
 		if config, ok := object.(*model.Config); ok {
 			// Variables config?
-			component, err := m.State.Components().Get(config.ComponentKey())
+			component, err := m.state.Components().Get(config.ComponentKey())
 			if err != nil {
 				errors.Append(err)
 				continue
@@ -65,7 +65,7 @@ func (m *variablesMapper) OnLocalChange(changes *model.LocalChanges) error {
 			}
 		} else if row, ok := object.(*model.ConfigRow); ok {
 			// Variables values row?
-			component, err := m.State.Components().Get(row.ComponentKey())
+			component, err := m.state.Components().Get(row.ComponentKey())
 			if err != nil {
 				errors.Append(err)
 				continue
@@ -78,7 +78,7 @@ func (m *variablesMapper) OnLocalChange(changes *model.LocalChanges) error {
 
 	// Ensure that each variables config has one row with default values
 	for configKey := range configs {
-		config := m.State.MustGet(configKey).LocalState().(*model.Config)
+		config := m.state.MustGet(configKey).LocalState().(*model.Config)
 		if err := m.ensureOneRowHasRelation(config); err != nil {
 			errors.Append(err)
 		}
@@ -95,7 +95,7 @@ func (m *variablesMapper) ensureOneRowHasRelation(config *model.Config) error {
 	}
 
 	// Process rows
-	rows := m.State.ConfigRowsFrom(config.ConfigKey)
+	rows := m.state.ConfigRowsFrom(config.ConfigKey)
 	var rowsWithRelation []*model.ConfigRowState
 	var rowsWithDefaultInName []*model.ConfigRowState
 	for _, row := range rows {

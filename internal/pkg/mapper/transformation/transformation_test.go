@@ -3,20 +3,22 @@ package transformation_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-func createTestFixtures(t *testing.T, componentId string) (mapper.Context, *model.ConfigState) {
+func createStateWithMapper(t *testing.T) (*state.State, *testdeps.TestContainer) {
+	t.Helper()
+	d := testdeps.New()
+	mockedState := d.EmptyState()
+	mockedState.Mapper().AddMapper(transformation.NewMapper(mockedState))
+	return mockedState, d
+}
+
+func createTestFixtures(t *testing.T, componentId string) *model.ConfigState {
 	t.Helper()
 
 	configKey := model.ConfigKey{
@@ -41,14 +43,5 @@ func createTestFixtures(t *testing.T, componentId string) (mapper.Context, *mode
 		},
 	}
 
-	logger := log.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger, ".")
-	assert.NoError(t, err)
-
-	namingRegistry := naming.NewRegistry()
-	projectState := state.NewRegistry(knownpaths.NewNop(), namingRegistry, model.NewComponentsMap(testapi.NewMockedComponentsProvider()), model.SortByPath)
-	namingTemplate := naming.TemplateWithIds()
-	namingGenerator := naming.NewGenerator(namingTemplate, namingRegistry)
-	context := mapper.Context{Logger: logger, Fs: fs, NamingGenerator: namingGenerator, NamingRegistry: namingRegistry, State: projectState}
-	return context, configState
+	return configState
 }

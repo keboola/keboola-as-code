@@ -1,13 +1,15 @@
 package relations
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 )
 
 type relationsMapper struct {
-	mapper.Context
+	state  *state.State
+	logger log.Logger
 }
 
-func NewMapper(context mapper.Context) *relationsMapper {
-	return &relationsMapper{Context: context}
+func NewMapper(s *state.State) *relationsMapper {
+	return &relationsMapper{state: s, logger: s.Logger()}
 }

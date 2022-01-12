@@ -34,13 +34,13 @@ func (m *defaultBucketMapper) onObjectsRename(renamed []model.RenameAction, allO
 	}
 
 	// Log and save
-	uow := m.localManager.NewUnitOfWork(context.Background())
+	uow := m.state.LocalManager().NewUnitOfWork(context.Background())
 	errors := utils.NewMultiError()
 	if len(objectsToUpdate) > 0 {
-		m.Logger.Debug(`Need to update configurations:`)
+		m.logger.Debug(`Need to update configurations:`)
 		for _, key := range objectsToUpdate {
-			m.Logger.Debugf(`  - %s`, key.Desc())
-			objectState := m.State.MustGet(key)
+			m.logger.Debugf(`  - %s`, key.Desc())
+			objectState := m.state.MustGet(key)
 			uow.SaveObject(objectState, objectState.LocalState(), model.NewChangedFields(`configuration`))
 		}
 	}
