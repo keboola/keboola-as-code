@@ -1,1 +1,4 @@
 DEBUG	Version: %A
+%A
+INFO	Loaded env file ".env"
+%A

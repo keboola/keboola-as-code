@@ -41,7 +41,7 @@ func New() *Options {
 
 func (o *Options) Load(logger log.Logger, osEnvs *env.Map, fs filesystem.Fs, flags *pflag.FlagSet) error {
 	// Load ENVs from OS and files
-	envs, err := o.loadEnvFiles(osEnvs, fs)
+	envs, err := o.loadEnvFiles(logger, osEnvs, fs)
 	if err == nil {
 		o.envs = envs
 	} else {
@@ -83,7 +83,7 @@ func (o *Options) bindFlagsAndEnvs(flags *pflag.FlagSet) error {
 	return o.MergeConfigMap(envs)
 }
 
-func (o *Options) loadEnvFiles(osEnvs *env.Map, fs filesystem.Fs) (*env.Map, error) {
+func (o *Options) loadEnvFiles(logger log.Logger, osEnvs *env.Map, fs filesystem.Fs) (*env.Map, error) {
 	// File system basePath = projectDir, so here we are using current/top level dir
 	projectDir := `.` // nolint
 	workingDir := fs.WorkingDir()
@@ -96,7 +96,7 @@ func (o *Options) loadEnvFiles(osEnvs *env.Map, fs filesystem.Fs) (*env.Map, err
 	}
 
 	// Load ENVs from files
-	if envs, err := env.LoadDotEnv(osEnvs, fs, dirs); err == nil {
+	if envs, err := env.LoadDotEnv(logger, osEnvs, fs, dirs); err == nil {
 		return envs, nil
 	} else {
 		return nil, utils.PrefixError(fmt.Sprintf(`error loading ENV files: %s`, err.Error()), err)

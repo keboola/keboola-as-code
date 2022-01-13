@@ -25,7 +25,7 @@ func TestLoadDotEnv(t *testing.T) {
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile(".env", "FOO1=BAZ\nFOO3=BAR3\n")))
 
 	// Load envs
-	envs, err := LoadDotEnv(osEnvs, fs, []string{"."})
+	envs, err := LoadDotEnv(logger, osEnvs, fs, []string{"."})
 	assert.NoError(t, err)
 
 	// Assert
@@ -35,4 +35,13 @@ func TestLoadDotEnv(t *testing.T) {
 		"FOO2":    "BAR2",
 		"FOO3":    "BAR3",
 	}, envs.ToMap())
+
+	assert.Equal(t, `DEBUG  Saved ".env.local"
+DEBUG  Saved ".env"
+DEBUG  Loaded ".env.local"
+INFO  Loaded env file ".env.local"
+DEBUG  Loaded ".env"
+INFO  Loaded env file ".env"
+`, logger.AllMessages(),
+	)
 }
