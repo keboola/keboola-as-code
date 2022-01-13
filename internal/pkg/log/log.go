@@ -19,6 +19,11 @@ type Logger interface {
 	toWriter
 }
 
+type loggerWithZapCore interface {
+	Logger
+	zapCore() zapcore.Core
+}
+
 // DebugLogger returns logs as string in tests.
 type DebugLogger interface {
 	Logger
@@ -41,6 +46,7 @@ type baseLogger interface {
 }
 
 type sugaredLogger interface {
+	With(args ...interface{}) Logger // creates a child logger and adds structured context to it.
 	Debugf(template string, args ...interface{})
 	Infof(template string, args ...interface{})
 	Warnf(template string, args ...interface{})
