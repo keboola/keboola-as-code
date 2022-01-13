@@ -117,18 +117,18 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 
 	// Init when flags are parsed
 	root.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
-		// Temporary logger
-		tmpLogger := log.NewNopLogger()
+		// Temporary logger, we don't have a path to the log file yet
+		memoryLogger := log.NewMemoryLogger()
 
 		// Create filesystem abstraction
 		workingDir, _ := cmd.Flags().GetString(`working-dir`)
-		fs, err := fsFactory(tmpLogger, workingDir)
+		fs, err := fsFactory(memoryLogger, workingDir)
 		if err != nil {
 			return err
 		}
 
 		// Load values from flags and envs
-		if err = root.Options.Load(tmpLogger, envs, fs, cmd.Flags()); err != nil {
+		if err = root.Options.Load(memoryLogger, envs, fs, cmd.Flags()); err != nil {
 			return err
 		}
 
@@ -136,6 +136,9 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 		root.setupLogger()
 		fs.SetLogger(root.Logger)
 		root.Logger.Debug(`Working dir: `, filesystem.Join(fs.BasePath(), fs.WorkingDir()))
+
+		// Copy logs from the temporary logger
+		memoryLogger.CopyLogsTo(root.Logger)
 
 		// Create dependencies container
 		root.Deps = dependencies.NewContainer(root.Context(), envs, fs, dialog.New(prompt), root.Logger, root.Options)

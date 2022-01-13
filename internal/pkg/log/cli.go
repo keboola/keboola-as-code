@@ -4,7 +4,6 @@ package log
 import (
 	"io"
 
-	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -24,5 +23,5 @@ func NewCliLogger(stdout io.Writer, stderr io.Writer, logFile *File, verbose boo
 	cores = append(cores, stderrCore(stderr, verbose))
 
 	// Create zapLogger
-	return loggerFromZap(zap.New(zapcore.NewTee(cores...)))
+	return loggerFromZapCore(zapcore.NewTee(cores...))
 }

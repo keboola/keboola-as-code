@@ -2,10 +2,10 @@
 package log
 
 import (
-	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 // NewNopLogger returns no operation log. The logs are discarded.
 func NewNopLogger() Logger {
-	return loggerFromZap(zap.NewNop())
+	return loggerFromZapCore(zapcore.NewNopCore())
 }

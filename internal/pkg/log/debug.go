@@ -4,7 +4,6 @@ package log
 import (
 	"io"
 
-	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/ioutil"
@@ -42,14 +41,14 @@ func NewDebugLogger() DebugLogger {
 		warnOrError: ioutil.NewBufferedWriter(),
 		error:       ioutil.NewBufferedWriter(),
 	}
-	l.zapLogger = loggerFromZap(zap.New(zapcore.NewTee(
+	l.zapLogger = loggerFromZapCore(zapcore.NewTee(
 		debugCore(l.all, DebugLevel),                            // all = debug level and higher
 		debugCore(l.debug, &oneLevelEnabler{level: DebugLevel}), // only debug msgs
 		debugCore(l.info, &oneLevelEnabler{level: InfoLevel}),   // only info msgs
 		debugCore(l.warn, &oneLevelEnabler{level: WarnLevel}),   // only warn msgs
 		debugCore(l.warnOrError, WarnLevel),                     // warn or error = warn level and higher
 		debugCore(l.error, ErrorLevel),                          // error = error level and higher
-	)))
+	))
 	return l
 }
 
