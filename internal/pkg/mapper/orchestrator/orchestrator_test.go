@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/corefiles"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
@@ -16,6 +17,7 @@ func createStateWithMapper(t *testing.T) (*state.State, *testdeps.TestContainer)
 	t.Helper()
 	d := testdeps.New()
 	mockedState := d.EmptyState()
+	mockedState.Mapper().AddMapper(corefiles.NewMapper(mockedState))
 	mockedState.Mapper().AddMapper(orchestrator.NewMapper(mockedState))
 	return mockedState, d
 }
@@ -269,7 +271,12 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 				PathInProject: model.NewPathInProject(`branch/other`, `orchestrator`),
 			},
 		},
-		Remote: &model.Config{ConfigKey: configKey, Content: orderedmap.New(), Orchestration: orchestration},
+		Remote: &model.Config{
+			ConfigKey:     configKey,
+			Name:          "My Orchestration",
+			Content:       orderedmap.New(),
+			Orchestration: orchestration,
+		},
 	}
 	assert.NoError(t, state.Set(configState))
 
