@@ -14,20 +14,20 @@ func TestRelationsMapperLocalLoad(t *testing.T) {
 	state, d := createStateWithMapper(t)
 	logger := d.DebugLogger()
 
-	record := &fixtures.MockedManifest{}
+	manifest := &fixtures.MockedManifest{}
 	object := &fixtures.MockedObject{}
-	recipe := &model.LocalLoadRecipe{ObjectManifest: record, Object: object}
+	recipe := model.NewLocalLoadRecipe(manifest, object)
 
 	relation := &fixtures.MockedManifestSideRelation{}
-	record.Relations = append(record.Relations, relation)
+	manifest.Relations = append(manifest.Relations, relation)
 
-	assert.NotEmpty(t, record.Relations)
+	assert.NotEmpty(t, manifest.Relations)
 	assert.Empty(t, object.Relations)
 	assert.NoError(t, state.Mapper().MapAfterLocalLoad(recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
-	// Copied, record.Relations -> object.Relations
-	assert.NotEmpty(t, record.Relations)
+	// Copied, manifest.Relations -> object.Relations
+	assert.NotEmpty(t, manifest.Relations)
 	assert.NotEmpty(t, object.Relations)
-	assert.Equal(t, record.Relations, object.Relations)
+	assert.Equal(t, manifest.Relations, object.Relations)
 }

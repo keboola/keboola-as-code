@@ -22,10 +22,7 @@ func TestRemoteSaveTranWithSharedCode(t *testing.T) {
 
 	// Invoke
 	object := transformation.Local
-	recipe := &model.RemoteSaveRecipe{
-		Object:         object,
-		ObjectManifest: transformation.Manifest(),
-	}
+	recipe := model.NewRemoteSaveRecipe(transformation.Manifest(), object, model.NewChangedFields())
 	assert.NoError(t, state.Mapper().MapBeforeRemoteSave(recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 

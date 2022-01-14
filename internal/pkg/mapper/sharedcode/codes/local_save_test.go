@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
@@ -19,7 +18,7 @@ func TestSharedCodeLocalSave(t *testing.T) {
 	fs := d.Fs()
 	_, rowState := createInternalSharedCode(t, targetComponentId, state)
 
-	recipe := fixtures.NewLocalSaveRecipe(rowState.Manifest(), rowState.Remote)
+	recipe := model.NewLocalSaveRecipe(rowState.Manifest(), rowState.Remote, model.NewChangedFields())
 	codeFilePath := filesystem.Join(state.NamingGenerator().SharedCodeFilePath(recipe.ObjectManifest.Path(), targetComponentId))
 
 	// Create dir

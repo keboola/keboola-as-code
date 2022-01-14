@@ -25,7 +25,7 @@ func (m *Manager) saveObject(manifest model.ObjectManifest, object model.Object,
 	objectClone := deepcopy.Copy(object).(model.Object)
 	w := modelWriter{
 		Manager:         m,
-		LocalSaveRecipe: &model.LocalSaveRecipe{ChangedFields: changedFields, Object: objectClone, ObjectManifest: manifest},
+		LocalSaveRecipe: model.NewLocalSaveRecipe(manifest, objectClone, changedFields),
 		backups:         make(map[string]string),
 		errors:          utils.NewMultiError(),
 	}

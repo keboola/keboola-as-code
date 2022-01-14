@@ -23,7 +23,7 @@ func TestLocalSaveTranWithSharedCode(t *testing.T) {
 	transformation := createInternalTranWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, state)
 
 	// Invoke
-	recipe := fixtures.NewLocalSaveRecipe(transformation.ConfigManifest, transformation.Local)
+	recipe := model.NewLocalSaveRecipe(transformation.ConfigManifest, transformation.Local, model.NewChangedFields())
 	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
@@ -78,7 +78,7 @@ func TestLocalSaveTranWithSharedCode_SharedCodeConfigNotFound(t *testing.T) {
 	transformation.Local.Transformation.LinkToSharedCode.Config.Id = `missing` // <<<<<<<<<<<
 
 	// Invoke
-	recipe := fixtures.NewLocalSaveRecipe(transformation.ConfigManifest, transformation.Local)
+	recipe := model.NewLocalSaveRecipe(transformation.ConfigManifest, transformation.Local, model.NewChangedFields())
 	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
 	expectedLogs := `
 WARN  Warning:
@@ -143,7 +143,7 @@ func TestLocalSaveTranWithSharedCode_SharedCodeRowNotFound(t *testing.T) {
 	}}
 
 	// Invoke
-	recipe := fixtures.NewLocalSaveRecipe(transformation.ConfigManifest, transformation.Local)
+	recipe := model.NewLocalSaveRecipe(transformation.ConfigManifest, transformation.Local, model.NewChangedFields())
 	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
 	expectedLogs := `
 WARN  Warning:

@@ -17,7 +17,7 @@ func (m *Manager) loadObject(manifest model.ObjectManifest, object model.Object)
 
 	// Call mappers
 	errors := utils.NewMultiError()
-	recipe := &model.LocalLoadRecipe{Object: object, ObjectManifest: manifest}
+	recipe := model.NewLocalLoadRecipe(manifest, object)
 	if err := m.mapper.MapAfterLocalLoad(recipe); err != nil {
 		errors.Append(err)
 	}

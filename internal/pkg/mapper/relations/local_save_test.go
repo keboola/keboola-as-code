@@ -16,7 +16,7 @@ func TestRelationsMapperSaveLocal(t *testing.T) {
 
 	objectManifest := &model.ConfigManifest{}
 	object := &fixtures.MockedObject{}
-	recipe := &model.LocalSaveRecipe{ChangedFields: model.ChangedFields{}, ObjectManifest: objectManifest, Object: object}
+	recipe := model.NewLocalSaveRecipe(objectManifest, object, model.NewChangedFields())
 
 	// Object has 2 relations
 	manifestSideRel := &fixtures.MockedManifestSideRelation{}

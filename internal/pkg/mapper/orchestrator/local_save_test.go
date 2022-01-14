@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 func TestMapBeforeLocalSave(t *testing.T) {
@@ -18,7 +18,7 @@ func TestMapBeforeLocalSave(t *testing.T) {
 
 	// Recipe
 	orchestratorConfigState := createLocalSaveFixtures(t, state, true)
-	recipe := fixtures.NewLocalSaveRecipe(orchestratorConfigState.Manifest(), orchestratorConfigState.Remote)
+	recipe := model.NewLocalSaveRecipe(orchestratorConfigState.Manifest(), orchestratorConfigState.Remote, model.NewChangedFields())
 
 	// Save
 	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
@@ -81,7 +81,7 @@ func TestMapBeforeLocalSaveWarnings(t *testing.T) {
 
 	// Recipe
 	orchestratorConfigState := createLocalSaveFixtures(t, state, false)
-	recipe := fixtures.NewLocalSaveRecipe(orchestratorConfigState.Manifest(), orchestratorConfigState.Remote)
+	recipe := model.NewLocalSaveRecipe(orchestratorConfigState.Manifest(), orchestratorConfigState.Remote, model.NewChangedFields())
 
 	// Save
 	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))

@@ -17,21 +17,13 @@ func TestSharedCodeRemoteSave(t *testing.T) {
 	configState, rowState := createInternalSharedCode(t, targetComponentId, state)
 
 	// Map config
-	configRecipe := &model.RemoteSaveRecipe{
-		ObjectManifest: configState.Manifest(),
-		Object:         configState.Remote,
-		ChangedFields:  model.NewChangedFields(`configuration`),
-	}
+	configRecipe := model.NewRemoteSaveRecipe(configState.Manifest(), configState.Remote, model.NewChangedFields(`configuration`))
 	err := state.Mapper().MapBeforeRemoteSave(configRecipe)
 	assert.NoError(t, err)
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Map row
-	rowRecipe := &model.RemoteSaveRecipe{
-		ObjectManifest: rowState.Manifest(),
-		Object:         rowState.Remote,
-		ChangedFields:  model.NewChangedFields(`configuration`),
-	}
+	rowRecipe := model.NewRemoteSaveRecipe(rowState.Manifest(), rowState.Remote, model.NewChangedFields(`configuration`))
 	err = state.Mapper().MapBeforeRemoteSave(rowRecipe)
 	assert.NoError(t, err)
 	assert.Empty(t, logger.WarnAndErrorMessages())

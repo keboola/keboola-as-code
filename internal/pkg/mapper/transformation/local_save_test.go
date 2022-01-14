@@ -39,7 +39,8 @@ func TestLocalSaveTransformation(t *testing.T) {
 	logger := d.DebugLogger()
 
 	configState := createTestFixtures(t, "keboola.snowflake-transformation")
-	recipe := fixtures.NewLocalSaveRecipe(configState.Manifest(), configState.Local)
+	object := deepcopy.Copy(configState.Local).(*model.Config)
+	recipe := model.NewLocalSaveRecipe(configState.Manifest(), configState.Local, model.NewChangedFields())
 
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
 	assert.NoError(t, fs.Mkdir(blocksDir))
