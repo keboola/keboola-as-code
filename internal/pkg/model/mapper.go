@@ -114,31 +114,35 @@ func (f *objectFile) DeleteTag(tag string) *objectFile {
 
 // LocalLoadRecipe - all items related to the object, when loading from local fs.
 type LocalLoadRecipe struct {
-	ObjectManifest             // manifest record, eg *ConfigManifest
-	Object         Object      // object, eg. Config
-	Files          ObjectFiles // eg. config.json, meta.json, description.md, ...
+	ObjectManifest                        // manifest record, eg *ConfigManifest
+	Object         Object                 // object, eg. Config
+	Files          ObjectFiles            // eg. config.json, meta.json, description.md, ...
+	Annotations    map[string]interface{} // key/value pairs that can be used by to affect mappers behavior
 }
 
 // LocalSaveRecipe - all items related to the object, when saving to local fs.
 type LocalSaveRecipe struct {
 	ChangedFields  ChangedFields
-	ObjectManifest             // manifest record, eg *ConfigManifest
-	Object         Object      // object, eg. Config
-	Files          ObjectFiles // eg. config.json, meta.json, description.md, ...
-	ToDelete       []string    // paths to delete, on save
+	ObjectManifest                        // manifest record, eg *ConfigManifest
+	Object         Object                 // object, eg. Config
+	Files          ObjectFiles            // eg. config.json, meta.json, description.md, ...
+	ToDelete       []string               // paths to delete, on save
+	Annotations    map[string]interface{} // key/value pairs that can be used by to affect mappers behavior
 }
 
 // RemoteLoadRecipe - all items related to the object, when loading from Storage API.
 type RemoteLoadRecipe struct {
 	ObjectManifest
-	Object Object
+	Object      Object
+	Annotations map[string]interface{} // key/value pairs that can be used by to affect mappers behavior
 }
 
 // RemoteSaveRecipe - all items related to the object, when saving to Storage API.
 type RemoteSaveRecipe struct {
 	ChangedFields ChangedFields
 	ObjectManifest
-	Object Object
+	Object      Object
+	Annotations map[string]interface{} // key/value pairs that can be used by to affect mappers behavior
 }
 
 // PersistRecipe contains object to persist.
