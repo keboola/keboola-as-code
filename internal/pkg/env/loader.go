@@ -7,11 +7,12 @@ import (
 	"github.com/joho/godotenv"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // LoadDotEnv loads envs from ".env" if exists. Existing envs take precedence.
-func LoadDotEnv(osEnvs *Map, fs filesystem.Fs, dirs []string) (*Map, error) {
+func LoadDotEnv(logger log.Logger, osEnvs *Map, fs filesystem.Fs, dirs []string) (*Map, error) {
 	errors := utils.NewMultiError()
 	envs := FromMap(osEnvs.ToMap()) // copy
 
@@ -45,6 +46,8 @@ func LoadDotEnv(osEnvs *Map, fs filesystem.Fs, dirs []string) (*Map, error) {
 				errors.Append(err)
 				continue
 			}
+
+			logger.Infof("Loaded env file \"%s\"", path)
 
 			// Merge ENVs, existing keys take precedence.
 			envs.Merge(FromMap(fileEnvs), false)

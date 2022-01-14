@@ -1,3 +1,4 @@
+Loaded env file ".env"
 Plan for "rename" operation:
   - my-main-branch -> main
   - main/extractor/keboola.ex-db-mysql/{my-table -> tables}
