@@ -23,10 +23,7 @@ func TestVariablesMapBeforeRemoteSave(t *testing.T) {
 	object.AddRelation(&model.VariablesValuesFromRelation{
 		VariablesValuesId: model.RowId(valuesConfigRowId),
 	})
-	recipe := &model.RemoteSaveRecipe{
-		Object:         object,
-		ObjectManifest: &model.ConfigManifest{},
-	}
+	recipe := model.NewRemoteSaveRecipe(&model.ConfigManifest{}, object, model.NewChangedFields())
 
 	// Invoke
 	assert.NotEmpty(t, object.Relations)

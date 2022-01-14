@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 func TestMapBeforeLocalSave(t *testing.T) {
@@ -18,7 +18,7 @@ func TestMapBeforeLocalSave(t *testing.T) {
 
 	// Recipe
 	orchestratorConfigState := createLocalSaveFixtures(t, state, true)
-	recipe := fixtures.NewLocalSaveRecipe(orchestratorConfigState.Manifest(), orchestratorConfigState.Remote)
+	recipe := model.NewLocalSaveRecipe(orchestratorConfigState.Manifest(), orchestratorConfigState.Remote, model.NewChangedFields())
 
 	// Save
 	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
@@ -40,11 +40,9 @@ func TestMapBeforeLocalSave(t *testing.T) {
 	}
 
 	// Check generated files
-	phasesDir := state.NamingGenerator().PhasesDir(orchestratorConfigState.Path())
+	configDir := orchestratorConfigState.Path()
+	phasesDir := state.NamingGenerator().PhasesDir(configDir)
 	assert.Equal(t, []*filesystem.File{
-		filesystem.NewFile(`meta.json`, `{}`),
-		filesystem.NewFile(`config.json`, `{}`),
-		filesystem.NewFile(`description.md`, ``),
 		filesystem.NewFile(phasesDir+`/.gitkeep`, ``),
 		filesystem.
 			NewFile(
@@ -71,6 +69,9 @@ func TestMapBeforeLocalSave(t *testing.T) {
 				phasesDir+`/002-phase-with-deps/001-task-3/task.json`,
 				`{"name":"Task 3","task":{"mode":"run","configPath":"extractor/target-config-3"},"continueOnFailure":false,"enabled":true}`,
 			),
+		filesystem.NewFile(configDir+`/meta.json`, `{"name":"My Orchestration"}`),
+		filesystem.NewFile(configDir+`/config.json`, `{}`),
+		filesystem.NewFile(configDir+`/description.md`, "\n"),
 	}, files)
 }
 
@@ -81,7 +82,7 @@ func TestMapBeforeLocalSaveWarnings(t *testing.T) {
 
 	// Recipe
 	orchestratorConfigState := createLocalSaveFixtures(t, state, false)
-	recipe := fixtures.NewLocalSaveRecipe(orchestratorConfigState.Manifest(), orchestratorConfigState.Remote)
+	recipe := model.NewLocalSaveRecipe(orchestratorConfigState.Manifest(), orchestratorConfigState.Remote, model.NewChangedFields())
 
 	// Save
 	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))

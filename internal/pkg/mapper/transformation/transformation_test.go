@@ -37,8 +37,11 @@ func createTestFixtures(t *testing.T, componentId string) *model.ConfigState {
 			},
 		},
 		Local: &model.Config{
-			ConfigKey:      configKey,
-			Content:        orderedmap.New(),
+			ConfigKey: configKey,
+			Name:      "My Config",
+			Content: orderedmap.FromPairs([]orderedmap.Pair{
+				{Key: "foo", Value: "bar"},
+			}),
 			Transformation: &model.Transformation{},
 		},
 	}

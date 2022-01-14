@@ -27,7 +27,7 @@ func TestSchedulerMapAfterRemoteLoad(t *testing.T) {
 }
 `
 	json.MustDecodeString(contentStr, object.Content)
-	recipe := &model.RemoteLoadRecipe{Object: object}
+	recipe := model.NewRemoteLoadRecipe(&model.ConfigManifest{}, object)
 
 	// Invoke
 	assert.Empty(t, object.Relations)

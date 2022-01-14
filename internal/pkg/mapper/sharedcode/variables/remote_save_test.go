@@ -22,10 +22,7 @@ func TestSharedCodeMapBeforeRemoteSave(t *testing.T) {
 	object.AddRelation(&model.SharedCodeVariablesFromRelation{
 		VariablesId: model.ConfigId(variablesConfigId),
 	})
-	recipe := &model.RemoteSaveRecipe{
-		Object:         object,
-		ObjectManifest: &model.ConfigManifest{},
-	}
+	recipe := model.NewRemoteSaveRecipe(&model.ConfigManifest{}, object, model.NewChangedFields())
 
 	// Invoke
 	assert.NotEmpty(t, object.Relations)

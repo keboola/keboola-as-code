@@ -15,7 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state/registry"
 )
 
-func newTestLocalManager(t *testing.T) (*Manager, *mapper.Mapper) {
+func newTestLocalManager(t *testing.T) *Manager {
 	t.Helper()
 
 	logger := log.NewDebugLogger()
@@ -29,7 +29,5 @@ func newTestLocalManager(t *testing.T) (*Manager, *mapper.Mapper) {
 	namingTemplate := naming.TemplateWithIds()
 	namingRegistry := naming.NewRegistry()
 	namingGenerator := naming.NewGenerator(namingTemplate, namingRegistry)
-
-	mapperInst := mapper.New()
-	return NewManager(logger, fs, manifest, namingGenerator, projectState, mapperInst), mapperInst
+	return NewManager(logger, fs, manifest, namingGenerator, projectState, mapper.New())
 }

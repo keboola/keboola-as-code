@@ -23,10 +23,7 @@ func TestSchedulerMapBeforeRemoteSave(t *testing.T) {
 		ComponentId: `foo.bar`,
 		ConfigId:    `12345`,
 	})
-	recipe := &model.RemoteSaveRecipe{
-		Object:         object,
-		ObjectManifest: &model.ConfigManifest{},
-	}
+	recipe := model.NewRemoteSaveRecipe(&model.ConfigManifest{}, object, model.NewChangedFields())
 
 	// Invoke
 	assert.NotEmpty(t, object.Relations)

@@ -62,7 +62,7 @@ func TestLoadRemoteTransformation(t *testing.T) {
 		Content:   orderedmap.New(),
 	}
 	json.MustDecodeString(configInApi, object.Content)
-	recipe := &model.RemoteLoadRecipe{ObjectManifest: configState.ConfigManifest, Object: object}
+	recipe := model.NewRemoteLoadRecipe(configState.ConfigManifest, object)
 	assert.NoError(t, state.Mapper().MapAfterRemoteLoad(recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 

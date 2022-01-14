@@ -149,7 +149,7 @@ func (u *UnitOfWork) loadObject(object model.Object) (model.ObjectState, error) 
 	objectState.SetRemoteState(internalObject)
 
 	// Invoke mapper
-	recipe := &model.RemoteLoadRecipe{ObjectManifest: objectState.Manifest(), Object: internalObject}
+	recipe := model.NewRemoteLoadRecipe(objectState.Manifest(), internalObject)
 	if err := u.mapper.MapAfterRemoteLoad(recipe); err != nil {
 		return nil, err
 	}
@@ -167,11 +167,7 @@ func (u *UnitOfWork) SaveObject(objectState model.ObjectState, object model.Obje
 
 	// Invoke mapper
 	apiObject := deepcopy.Copy(object).(model.Object)
-	recipe := &model.RemoteSaveRecipe{
-		ChangedFields:  changedFields,
-		ObjectManifest: objectState.Manifest(),
-		Object:         apiObject,
-	}
+	recipe := model.NewRemoteSaveRecipe(objectState.Manifest(), apiObject, changedFields)
 	if err := u.mapper.MapBeforeRemoteSave(recipe); err != nil {
 		u.errors.Append(err)
 		return

@@ -2,9 +2,7 @@ package local
 
 import (
 	"fmt"
-	"strings"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
@@ -27,7 +25,7 @@ func (m *Manager) saveObject(manifest model.ObjectManifest, object model.Object,
 	objectClone := deepcopy.Copy(object).(model.Object)
 	w := modelWriter{
 		Manager:         m,
-		LocalSaveRecipe: &model.LocalSaveRecipe{ChangedFields: changedFields, Object: objectClone, ObjectManifest: manifest},
+		LocalSaveRecipe: model.NewLocalSaveRecipe(manifest, objectClone, changedFields),
 		backups:         make(map[string]string),
 		errors:          utils.NewMultiError(),
 	}
@@ -46,46 +44,17 @@ func (w *modelWriter) save() error {
 		return err
 	}
 
+	// Call mappers
+	if err := w.mapper.MapBeforeLocalSave(w.LocalSaveRecipe); err != nil {
+		w.errors.Append(err)
+	}
+
 	// Save
-	w.createFiles()
-	w.transform()
 	if w.errors.Len() == 0 {
 		w.write()
 	}
 
 	return w.errors.ErrorOrNil()
-}
-
-func (w *modelWriter) createFiles() {
-	// meta.json
-	if metadata := utils.MapFromTaggedFields(model.MetaFileFieldsTag, w.Object); metadata != nil {
-		w.Files.
-			Add(filesystem.NewJsonFile(w.NamingGenerator().MetaFilePath(w.Path()), metadata)).
-			AddTag(model.FileTypeJson).
-			AddTag(model.FileKindObjectMeta)
-	}
-
-	// config.json
-	if configuration := utils.MapFromOneTaggedField(model.ConfigFileFieldTag, w.Object); configuration != nil {
-		w.Files.
-			Add(filesystem.NewJsonFile(w.NamingGenerator().ConfigFilePath(w.Path()), configuration)).
-			AddTag(model.FileTypeJson).
-			AddTag(model.FileKindObjectConfig)
-	}
-
-	// description.md
-	if description, found := utils.StringFromOneTaggedField(model.DescriptionFileFieldTag, w.Object); found {
-		w.Files.
-			Add(filesystem.NewFile(w.NamingGenerator().DescriptionFilePath(w.Path()), strings.TrimRight(description, " \r\n\t")+"\n")).
-			AddTag(model.FileTypeMarkdown).
-			AddTag(model.FileKindObjectDescription)
-	}
-}
-
-func (w *modelWriter) transform() {
-	if err := w.mapper.MapBeforeLocalSave(w.LocalSaveRecipe); err != nil {
-		w.errors.Append(err)
-	}
 }
 
 func (w *modelWriter) write() {

@@ -21,7 +21,7 @@ func TestSharedCodeMapAfterRemoteLoad(t *testing.T) {
 		ConfigRowKey: model.ConfigRowKey{ComponentId: model.SharedCodeComponentId},
 		Content:      content,
 	}
-	recipe := &model.RemoteLoadRecipe{Object: object}
+	recipe := model.NewRemoteLoadRecipe(&model.ConfigRowManifest{}, object)
 
 	// Invoke
 	assert.Empty(t, object.Relations)

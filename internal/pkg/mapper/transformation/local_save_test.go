@@ -6,19 +6,25 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/corefiles"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
 )
 
 func TestLocalSaveTransformationEmpty(t *testing.T) {
 	t.Parallel()
-	state, d := createStateWithMapper(t)
+	d := testdeps.New()
+	state := d.EmptyState()
+	state.Mapper().AddMapper(corefiles.NewMapper(state))
+	state.Mapper().AddMapper(transformation.NewMapper(state))
 	fs := d.Fs()
-	logger := d.DebugLogger()
 
 	configState := createTestFixtures(t, "keboola.snowflake-transformation")
-	recipe := fixtures.NewLocalSaveRecipe(configState.Manifest(), configState.Local)
+	object := deepcopy.Copy(configState.Local).(*model.Config)
+	recipe := model.NewLocalSaveRecipe(configState.Manifest(), object, model.NewChangedFields())
 
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
 	assert.NoError(t, fs.Mkdir(blocksDir))
@@ -26,28 +32,29 @@ func TestLocalSaveTransformationEmpty(t *testing.T) {
 	// Save
 	err := state.Mapper().MapBeforeLocalSave(recipe)
 	assert.NoError(t, err)
-	assert.Empty(t, logger.WarnAndErrorMessages())
-	configFile, err := recipe.Files.ObjectConfigFile()
 	assert.NoError(t, err)
-	assert.Equal(t, "{}\n", json.MustEncodeString(configFile.Content, true))
+	assert.Equal(t, `{"foo":"bar"}`, json.MustEncodeString(object.Content, false))
 }
 
 func TestLocalSaveTransformation(t *testing.T) {
 	t.Parallel()
-	state, d := createStateWithMapper(t)
+	d := testdeps.New()
+	state := d.EmptyState()
+	state.Mapper().AddMapper(corefiles.NewMapper(state))
+	state.Mapper().AddMapper(transformation.NewMapper(state))
 	fs := d.Fs()
 	logger := d.DebugLogger()
 
 	configState := createTestFixtures(t, "keboola.snowflake-transformation")
-	recipe := fixtures.NewLocalSaveRecipe(configState.Manifest(), configState.Local)
+	object := deepcopy.Copy(configState.Local).(*model.Config)
+	recipe := model.NewLocalSaveRecipe(configState.Manifest(), configState.Local, model.NewChangedFields())
 
-	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
+	configDir := filesystem.Join(`branch`, `config`)
+	blocksDir := filesystem.Join(configDir, `blocks`)
 	assert.NoError(t, fs.Mkdir(blocksDir))
 
 	// Prepare
-	configFile, err := recipe.Files.ObjectConfigFile()
-	assert.NoError(t, err)
-	configFile.Content.Set(`foo`, `bar`)
+	object.Content.Set(`foo`, `bar`)
 	configState.Local.Transformation = &model.Transformation{
 		Blocks: []*model.Block{
 			{
@@ -156,9 +163,6 @@ func TestLocalSaveTransformation(t *testing.T) {
 
 	// Check files
 	assert.Equal(t, []*filesystem.File{
-		filesystem.NewFile(`meta.json`, `{}`),
-		filesystem.NewFile(`config.json`, `{"foo":"bar"}`),
-		filesystem.NewFile(`description.md`, ``),
 		filesystem.NewFile(blocksDir+`/.gitkeep`, ``),
 		filesystem.NewFile(blocksDir+`/001-block-1/meta.json`, `{"name":"block1"}`),
 		filesystem.NewFile(blocksDir+`/001-block-1/001-code-1/meta.json`, `{"name":"code1"}`),
@@ -168,5 +172,8 @@ func TestLocalSaveTransformation(t *testing.T) {
 		filesystem.NewFile(blocksDir+`/002-block-2/meta.json`, `{"name":"block2"}`),
 		filesystem.NewFile(blocksDir+`/002-block-2/001-code-3/meta.json`, `{"name":"code3"}`),
 		filesystem.NewFile(blocksDir+`/002-block-2/001-code-3/code.sql`, "\n"),
+		filesystem.NewFile(configDir+`/meta.json`, `{"name":"My Config"}`),
+		filesystem.NewFile(configDir+`/config.json`, `{"foo":"bar"}`),
+		filesystem.NewFile(configDir+`/description.md`, "\n"),
 	}, files)
 }

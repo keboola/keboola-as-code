@@ -16,12 +16,7 @@ func (m *defaultBucketMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) 
 		return nil
 	}
 
-	configFile, err := recipe.Files.ObjectConfigFile()
-	if err != nil {
-		panic(err)
-	}
-
-	if err := m.visitStorageInputTables(config, configFile.Content, m.replaceDefaultBucketWithPlaceholder); err != nil {
+	if err := m.visitStorageInputTables(config, config.GetContent(), m.replaceDefaultBucketWithPlaceholder); err != nil {
 		m.logger.Warnf(`Warning: %s`, err)
 	}
 	return nil

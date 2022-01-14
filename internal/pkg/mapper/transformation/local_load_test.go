@@ -8,8 +8,10 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/corefiles"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
 )
 
 func TestLoadTransformationInvalidConfigAndMeta(t *testing.T) {
@@ -20,7 +22,11 @@ func TestLoadTransformationInvalidConfigAndMeta(t *testing.T) {
 		Type:         model.TransformationType,
 	}
 
-	state, d := createStateWithMapper(t)
+	d := testdeps.New()
+	state := d.EmptyState()
+	state.Mapper().AddMapper(corefiles.NewMapper(state))
+	state.Mapper().AddMapper(transformation.NewMapper(state))
+
 	state.Components().Set(component)
 	fs := d.Fs()
 	namingGenerator := state.NamingGenerator()
@@ -93,7 +99,7 @@ func TestLoadTransformationMissingBlockMetaSql(t *testing.T) {
 	logger := d.DebugLogger()
 
 	configState := createTestFixtures(t, "keboola.snowflake-transformation")
-	recipe := fixtures.NewLocalLoadRecipe(configState.Manifest(), configState.Local)
+	recipe := model.NewLocalLoadRecipe(configState.Manifest(), configState.Local)
 
 	// Create files/dirs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
@@ -115,7 +121,7 @@ func TestLoadTransformationMissingCodeMeta(t *testing.T) {
 	logger := d.DebugLogger()
 
 	configState := createTestFixtures(t, "keboola.snowflake-transformation")
-	recipe := fixtures.NewLocalLoadRecipe(configState.Manifest(), configState.Local)
+	recipe := model.NewLocalLoadRecipe(configState.Manifest(), configState.Local)
 
 	// Create files/dirs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
@@ -143,7 +149,7 @@ func TestLoadLocalTransformationSql(t *testing.T) {
 	logger := d.DebugLogger()
 
 	configState := createTestFixtures(t, "keboola.snowflake-transformation")
-	recipe := fixtures.NewLocalLoadRecipe(configState.Manifest(), configState.Local)
+	recipe := model.NewLocalLoadRecipe(configState.Manifest(), configState.Local)
 
 	// Create files/dirs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
@@ -286,7 +292,7 @@ func TestLoadLocalTransformationPy(t *testing.T) {
 	logger := d.DebugLogger()
 
 	configState := createTestFixtures(t, `keboola.python-transformation-v2`)
-	recipe := fixtures.NewLocalLoadRecipe(configState.Manifest(), configState.Local)
+	recipe := model.NewLocalLoadRecipe(configState.Manifest(), configState.Local)
 
 	// Create files/dirs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)

@@ -130,11 +130,7 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 	manifest := &model.ConfigManifest{ConfigKey: key}
 	object := &model.Config{ConfigKey: key, Content: orderedmap.New()}
 	object.Orchestration = orchestration
-	recipe := &model.RemoteSaveRecipe{
-		ChangedFields:  model.NewChangedFields("orchestration"),
-		ObjectManifest: manifest,
-		Object:         object,
-	}
+	recipe := model.NewRemoteSaveRecipe(manifest, object, model.NewChangedFields("orchestration"))
 
 	// Save
 	assert.NoError(t, state.Mapper().MapBeforeRemoteSave(recipe))

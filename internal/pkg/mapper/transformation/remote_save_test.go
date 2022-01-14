@@ -59,11 +59,7 @@ func TestRemoteSaveTransformation(t *testing.T) {
 		Content:   orderedmap.New(),
 	}
 	object.Transformation = &model.Transformation{Blocks: blocks}
-	recipe := &model.RemoteSaveRecipe{
-		ChangedFields:  model.NewChangedFields("blocks"),
-		ObjectManifest: configState.Manifest(),
-		Object:         object,
-	}
+	recipe := model.NewRemoteSaveRecipe(configState.Manifest(), object, model.NewChangedFields("blocks"))
 
 	// Save
 	assert.NoError(t, state.Mapper().MapBeforeRemoteSave(recipe))

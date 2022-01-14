@@ -20,7 +20,7 @@ func TestVariablesMapAfterRemoteLoad(t *testing.T) {
 	content.Set(model.VariablesIdContentKey, variablesConfigId)
 	content.Set(model.VariablesValuesIdContentKey, valuesConfigRowId)
 	object := &model.Config{Content: content}
-	recipe := &model.RemoteLoadRecipe{Object: object}
+	recipe := model.NewRemoteLoadRecipe(&model.ConfigManifest{}, object)
 
 	// Invoke
 	assert.Empty(t, object.Relations)

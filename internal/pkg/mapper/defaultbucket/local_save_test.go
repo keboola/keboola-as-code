@@ -6,9 +6,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -97,10 +97,8 @@ func TestDefaultBucketMapper_MapBeforeLocalSaveConfig(t *testing.T) {
 	assert.NoError(t, state.Set(configState2))
 
 	// Invoke
-	recipe := fixtures.NewLocalSaveRecipe(configState2.ConfigManifest, configState2.Local)
-	configFile, err := recipe.Files.ObjectConfigFile()
-	assert.NoError(t, err)
-	configFile.Content = content
+	object := deepcopy.Copy(configState2.Local).(*model.Config)
+	recipe := model.NewLocalSaveRecipe(configState2.ConfigManifest, object, model.NewChangedFields())
 	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
 
 	// Check warning of missing default bucket config
@@ -112,9 +110,7 @@ WARN  Warning: - config "branch:123/component:keboola.ex-db-mysql/config:456" no
 	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.WarnAndErrorMessages())
 
 	// Check default bucket replacement
-	configFile, err = recipe.Files.ObjectConfigFile()
-	assert.NoError(t, err)
-	configContent := json.MustEncodeString(configFile.Content, false)
+	configContent := json.MustEncodeString(object.Content, false)
 	assert.Equal(t, `{"parameters":{},"storage":{"input":{"tables":[{"columns":[],"source":"{{:default-bucket:extractor/keboola.ex-db-mysql/test}}.accounts","destination":"accounts","where_column":"","where_operator":"eq","where_values":[]},{"columns":[],"source":"in.c-keboola-ex-db-mysql-456.contacts","destination":"contacts","where_column":"","where_operator":"eq","where_values":[]}],"files":[]},"output":{"tables":[],"files":[]}}}`, configContent)
 }
 
@@ -194,10 +190,9 @@ func TestDefaultBucketMapper_MapBeforeLocalSaveRow(t *testing.T) {
 	assert.NoError(t, state.Set(rowState))
 
 	// Invoke
-	recipe := fixtures.NewLocalSaveRecipe(rowState.ConfigRowManifest, rowState.Local)
-	configFile, err := recipe.Files.ObjectConfigFile()
-	assert.NoError(t, err)
-	configFile.Content = content
+	object := deepcopy.Copy(rowState.Local).(*model.ConfigRow)
+	recipe := model.NewLocalSaveRecipe(rowState.ConfigRowManifest, object, model.NewChangedFields())
+	object.Content = content
 	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
 
 	// Check warning of missing default bucket config
@@ -209,8 +204,6 @@ WARN  Warning: - config "branch:123/component:keboola.ex-db-mysql/config:456" no
 	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.WarnAndErrorMessages())
 
 	// Check default bucket replacement
-	configFile, err = recipe.Files.ObjectConfigFile()
-	assert.NoError(t, err)
-	configContent := json.MustEncodeString(configFile.Content, false)
+	configContent := json.MustEncodeString(object.Content, false)
 	assert.Equal(t, `{"parameters":{},"storage":{"input":{"tables":[{"columns":[],"source":"{{:default-bucket:extractor/keboola.ex-db-mysql/test}}.accounts","destination":"accounts","where_column":"","where_operator":"eq","where_values":[]},{"columns":[],"source":"in.c-keboola-ex-db-mysql-456.contacts","destination":"contacts","where_column":"","where_operator":"eq","where_values":[]}],"files":[]},"output":{"tables":[],"files":[]}}}`, configContent)
 }
