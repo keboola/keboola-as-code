@@ -98,19 +98,19 @@ func TestManifestValidateEmpty(t *testing.T) {
 	err := content.validate()
 	assert.NotNil(t, err)
 	expected := `manifest is not valid:
-  - key="version", value="0", failed "required" validation
-  - key="project.id", value="0", failed "required" validation
-  - key="project.apiHost", value="", failed "required" validation
-  - key="sortBy", value="", failed "oneof" validation
-  - key="naming.branch", value="", failed "required" validation
-  - key="naming.config", value="", failed "required" validation
-  - key="naming.configRow", value="", failed "required" validation
-  - key="naming.schedulerConfig", value="", failed "required" validation
-  - key="naming.sharedCodeConfig", value="", failed "required" validation
-  - key="naming.sharedCodeConfigRow", value="", failed "required" validation
-  - key="naming.variablesConfig", value="", failed "required" validation
-  - key="naming.variablesValuesRow", value="", failed "required" validation
-  - key="allowedBranches", value="[]", failed "required" validation`
+  - version is a required field
+  - project.id is a required field
+  - project.apiHost is a required field
+  - project.sortBy must be one of [id path]
+  - naming.branch is a required field
+  - naming.config is a required field
+  - naming.configRow is a required field
+  - naming.schedulerConfig is a required field
+  - naming.sharedCodeConfig is a required field
+  - naming.sharedCodeConfigRow is a required field
+  - naming.variablesConfig is a required field
+  - naming.variablesValuesRow is a required field
+  - naming.allowedBranches is a required field`
 	assert.Equal(t, expected, err.Error())
 }
 
@@ -132,7 +132,7 @@ func TestManifestValidateBadVersion(t *testing.T) {
 	content.Version = 123
 	err := content.validate()
 	assert.Error(t, err)
-	expected := "manifest is not valid:\n  - key=\"version\", value=\"123\", failed \"max\" validation"
+	expected := "manifest is not valid: version must be 2 or less"
 	assert.Equal(t, expected, err.Error())
 }
 
@@ -150,7 +150,7 @@ func TestManifestValidateNestedField(t *testing.T) {
 	})
 	err := content.validate()
 	assert.Error(t, err)
-	expected := "manifest is not valid:\n  - key=\"branches[0].id\", value=\"0\", failed \"required\" validation"
+	expected := "manifest is not valid: branches[0].id is a required field"
 	assert.Equal(t, expected, err.Error())
 }
 
