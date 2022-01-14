@@ -164,3 +164,37 @@ type OnObjectPathUpdateEvent struct {
 	OldPath        string
 	NewPath        string
 }
+
+func NewLocalLoadRecipe(manifest ObjectManifest, object Object) *LocalLoadRecipe {
+	return &LocalLoadRecipe{
+		Object:         object,
+		ObjectManifest: manifest,
+		Annotations:    make(map[string]interface{}),
+	}
+}
+
+func NewLocalSaveRecipe(manifest ObjectManifest, object Object, changedFields ChangedFields) *LocalSaveRecipe {
+	return &LocalSaveRecipe{
+		ChangedFields:  changedFields,
+		Object:         object,
+		ObjectManifest: manifest,
+		Annotations:    make(map[string]interface{}),
+	}
+}
+
+func NewRemoteLoadRecipe(manifest ObjectManifest, object Object) *RemoteLoadRecipe {
+	return &RemoteLoadRecipe{
+		Object:         object,
+		ObjectManifest: manifest,
+		Annotations:    make(map[string]interface{}),
+	}
+}
+
+func NewRemoteSaveRecipe(manifest ObjectManifest, object Object, changedFields ChangedFields) *RemoteSaveRecipe {
+	return &RemoteSaveRecipe{
+		ChangedFields:  changedFields,
+		Object:         object,
+		ObjectManifest: manifest,
+		Annotations:    make(map[string]interface{}),
+	}
+}
