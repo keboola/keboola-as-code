@@ -2,12 +2,18 @@ package input
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 
+	"github.com/go-playground/locales/en"
+	ut "github.com/go-playground/universal-translator"
 	goValidator "github.com/go-playground/validator/v10"
+	enTranslation "github.com/go-playground/validator/v10/translations/en"
 	"github.com/umisama/go-regexpcache"
 	goValuate "gopkg.in/Knetic/govaluate.v3"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func validateInputId(fl goValidator.FieldLevel) bool {
@@ -40,14 +46,14 @@ func validateInputDefault(fl goValidator.FieldLevel) bool {
 	}
 
 	if fl.Parent().FieldByName("Kind").String() == KindInput && fl.Parent().FieldByName("Type").String() != "" {
-		err := validateUserInputByType(fl.Field(), fl.Parent().FieldByName("Type").String())
+		err := validateUserInputByType(fl.Field(), fl.Parent().FieldByName("Type").String(), "input")
 		if err != nil {
 			return false
 		}
 	}
 
 	// Check that the Default has the right Type for the Kind
-	err := validateUserInputTypeByKind(fl.Field(), fl.Parent().FieldByName("Kind").String())
+	err := validateUserInputTypeByKind(fl.Field(), fl.Parent().FieldByName("Kind").String(), "input")
 	return err == nil
 }
 
@@ -78,7 +84,7 @@ func validateInputRules(fl goValidator.FieldLevel) bool {
 	if fl.Field().IsZero() {
 		return true
 	}
-	_, panicErr := catchPanicOnRulesValidation(func() error { return validateUserInputWithRules("string", fl.Field().String(), nil) })
+	_, panicErr := catchPanicOnRulesValidation(func() error { return validateUserInputWithRules("string", fl.Field().String(), nil, "input") })
 	return panicErr == nil
 }
 
@@ -92,41 +98,42 @@ func validateInputIf(fl goValidator.FieldLevel) bool {
 }
 
 // Some input Kinds require specific Type of the input.
-func validateUserInputTypeByKind(value interface{}, kind string) error {
+func validateUserInputTypeByKind(value interface{}, kind string, fieldName string) error {
 	inputType := reflect.TypeOf(value).String()
 	switch kind {
 	case KindPassword, KindTextarea:
 		if inputType != reflect.String.String() {
-			return fmt.Errorf("the input is of %s kind and should be a string, got %s instead", kind, inputType)
+			return fmt.Errorf("%s is of %s kind and should be a string, got %s instead", fieldName, kind, inputType)
 		}
 	case KindConfirm:
 		if inputType != reflect.Bool.String() {
-			return fmt.Errorf("the input is of confirm kind and should be a bool, got %s instead", inputType)
+			return fmt.Errorf("%s is of confirm kind and should be a bool, got %s instead", fieldName, inputType)
 		}
 	}
 	return nil
 }
 
-func validateUserInputByType(userInput interface{}, inputType string) error {
+func validateUserInputByType(userInput interface{}, inputType string, fieldName string) error {
 	switch inputType {
 	case reflect.Float64.String():
-		return validateUserInputByReflectKind(userInput, reflect.Float64)
+		return validateUserInputByReflectKind(userInput, reflect.Float64, fieldName)
 	case reflect.Int.String():
-		return validateUserInputByReflectKind(userInput, reflect.Int)
+		return validateUserInputByReflectKind(userInput, reflect.Int, fieldName)
 	case reflect.String.String():
-		return validateUserInputByReflectKind(userInput, reflect.String)
+		return validateUserInputByReflectKind(userInput, reflect.String, fieldName)
 	default:
 		panic(fmt.Errorf("unknown type %s", inputType))
 	}
 }
 
-func validateUserInputByReflectKind(userInput interface{}, expectedType reflect.Kind) error {
+func validateUserInputByReflectKind(userInput interface{}, expectedType reflect.Kind, fieldName string) error {
 	userInputIsValue := reflect.TypeOf(userInput).String() == "reflect.Value"
 	if userInputIsValue {
 		userInputValue := userInput.(reflect.Value)
 		if userInputValue.Kind() != expectedType {
 			return fmt.Errorf(
-				"the input should be a type %s, got %s instead",
+				"%s should have type %s, got %s instead",
+				fieldName,
 				expectedType.String(),
 				userInputValue.Kind().String(),
 			)
@@ -136,7 +143,8 @@ func validateUserInputByReflectKind(userInput interface{}, expectedType reflect.
 
 	if reflect.TypeOf(userInput).Kind() != expectedType {
 		return fmt.Errorf(
-			"the input should be a type %s, got %s instead",
+			"%s should have type %s, got %s instead",
+			fieldName,
 			expectedType.String(),
 			reflect.TypeOf(userInput).Kind().String(),
 		)
@@ -144,9 +152,20 @@ func validateUserInputByReflectKind(userInput interface{}, expectedType reflect.
 	return nil
 }
 
-func validateUserInputWithRules(userInput interface{}, rules string, ctx context.Context) error {
+func validateUserInputWithRules(userInput interface{}, rules string, ctx context.Context, fieldName string) error {
 	validate := goValidator.New()
-	return validate.VarCtx(ctx, userInput, rules)
+	enLocale := en.New()
+	universalTranslator := ut.New(enLocale, enLocale)
+	enTranslator, found := universalTranslator.GetTranslator("en")
+	if !found {
+		panic(fmt.Errorf("en translator was not found"))
+	}
+	err := enTranslation.RegisterDefaultTranslations(validate, enTranslator)
+	if err != nil {
+		panic(fmt.Errorf("translator was not registered: %w", err))
+	}
+
+	return translateError(validate.VarCtx(ctx, userInput, rules), enTranslator, fieldName)
 }
 
 func catchPanicOnRulesValidation(fn func() error) (err, recovered interface{}) {
@@ -154,4 +173,18 @@ func catchPanicOnRulesValidation(fn func() error) (err, recovered interface{}) {
 		recovered = recover()
 	}()
 	return fn(), recovered
+}
+
+func translateError(err error, trans ut.Translator, fieldName string) error {
+	if err == nil {
+		return nil
+	}
+	multiError := utils.NewMultiError()
+	var validatorErrs goValidator.ValidationErrors
+	errors.As(err, &validatorErrs)
+	for _, e := range validatorErrs {
+		translatedErr := fmt.Errorf("%s%s", fieldName, e.Translate(trans))
+		multiError.Append(translatedErr)
+	}
+	return multiError
 }

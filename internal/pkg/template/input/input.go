@@ -64,18 +64,22 @@ type Input struct {
 
 // ValidateUserInput validates input from the template user using Input.Rules.
 func (i Input) ValidateUserInput(userInput interface{}, ctx context.Context) error {
-	if err := validateUserInputTypeByKind(userInput, i.Kind); err != nil {
+	if err := validateUserInputTypeByKind(userInput, i.Kind, i.Name); err != nil {
 		return err
 	}
 
 	if i.Kind == KindInput && i.Type != "" {
-		err := validateUserInputByType(userInput, i.Type)
+		err := validateUserInputByType(userInput, i.Type, i.Name)
 		if err != nil {
 			return err
 		}
 	}
 
-	return validateUserInputWithRules(userInput, i.Rules, ctx)
+	if i.Rules == "" {
+		return nil
+	}
+
+	return validateUserInputWithRules(userInput, i.Rules, ctx, i.Name)
 }
 
 // Available decides if the input should be visible to user according to Input.If.
