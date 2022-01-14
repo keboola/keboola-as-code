@@ -8,10 +8,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 )
 
-
 func TestLocalLoadModelNotFound(t *testing.T) {
 	t.Parallel()
-	manager, _ := newTestLocalManager(t)
+	manager := newTestLocalManager(t)
 
 	// Save files
 	target := &fixtures.MockedObject{}
