@@ -103,11 +103,11 @@ func validateUserInputTypeByKind(value interface{}, kind string, fieldName strin
 	switch kind {
 	case KindPassword, KindTextarea:
 		if inputType != reflect.String.String() {
-			return fmt.Errorf("%s is of %s kind and should be a string, got %s instead", fieldName, kind, inputType)
+			return fmt.Errorf("%s should be a string, got %s", fieldName, inputType)
 		}
 	case KindConfirm:
 		if inputType != reflect.Bool.String() {
-			return fmt.Errorf("%s is of confirm kind and should be a bool, got %s instead", fieldName, inputType)
+			return fmt.Errorf("%s should be a bool, got %s", fieldName, inputType)
 		}
 	}
 	return nil

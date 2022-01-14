@@ -12,7 +12,7 @@ func TestValidateUserInputTypeByKind(t *testing.T) {
 	// Confirm Kind
 	err := validateUserInputTypeByKind("string", "confirm", "input")
 	assert.Error(t, err)
-	assert.Equal(t, "input is of confirm kind and should be a bool, got string instead", err.Error())
+	assert.Equal(t, "input should be a bool, got string", err.Error())
 	assert.NoError(t, validateUserInputTypeByKind(true, "confirm", "input"))
 
 	// Password Kind

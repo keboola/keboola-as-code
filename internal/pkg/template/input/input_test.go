@@ -326,7 +326,7 @@ func TestTemplateInputValidateUserInput(t *testing.T) {
 	}
 	err = input.ValidateUserInput(1, nil)
 	assert.Error(t, err)
-	assert.Equal(t, "input is of confirm kind and should be a bool, got int instead", err.Error())
+	assert.Equal(t, "input should be a bool, got int", err.Error())
 	assert.NoError(t, input.ValidateUserInput(true, nil))
 }
 
