@@ -307,19 +307,16 @@ func TestTemplateInputValidateUserInput(t *testing.T) {
 		Type:        "int",
 		Rules:       "gte=5,lte=10",
 	}
-	assert.Error(t, input.ValidateUserInput(1, nil))
-	assert.Error(t, input.ValidateUserInput("1", nil))
-	assert.NoError(t, input.ValidateUserInput(7, nil))
+	err := input.ValidateUserInput(1, nil)
+	assert.Error(t, err)
+	assert.Equal(t, "input must be 5 or greater", err.Error())
 
-	input = &Input{
-		Id:          "input.id",
-		Name:        "input",
-		Description: "input description",
-		Kind:        "input",
-		Type:        "int",
-	}
-	assert.NoError(t, input.ValidateUserInput(1, nil))
-	assert.Error(t, input.ValidateUserInput("1", nil))
+	err = input.ValidateUserInput("1", nil)
+	assert.Error(t, err)
+	assert.Equal(t, "input should have type int, got string instead", err.Error())
+
+	assert.Error(t, err)
+	assert.NoError(t, input.ValidateUserInput(7, nil))
 
 	input = &Input{
 		Id:          "input.id",
@@ -327,7 +324,9 @@ func TestTemplateInputValidateUserInput(t *testing.T) {
 		Description: "input description",
 		Kind:        "confirm",
 	}
-	assert.Error(t, input.ValidateUserInput(1, nil))
+	err = input.ValidateUserInput(1, nil)
+	assert.Error(t, err)
+	assert.Equal(t, "input should be a bool, got int", err.Error())
 	assert.NoError(t, input.ValidateUserInput(true, nil))
 }
 

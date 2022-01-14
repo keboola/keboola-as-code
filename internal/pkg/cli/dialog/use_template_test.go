@@ -41,7 +41,7 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 		_, err = console.SendLine("u-s")
 		assert.NoError(t, err)
 
-		_, err = console.ExpectString("Sorry, your reply was invalid: Key: '' Error:Field validation for '' failed on the 'alphanum' tag")
+		_, err = console.ExpectString("username can only contain alphanumeric characters")
 		assert.NoError(t, err)
 
 		time.Sleep(20 * time.Millisecond)
