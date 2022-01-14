@@ -27,25 +27,17 @@ type testMapper struct {
 }
 
 func (*testMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
-	if _, ok := recipe.Object.(*model.Config); ok {
-		configFile, err := recipe.Files.ObjectConfigFile()
-		if err != nil {
-			panic(err)
-		}
-		configFile.Content.Set("key", "overwritten")
-		configFile.Content.Set("new", "value")
+	if config, ok := recipe.Object.(*model.Config); ok {
+		config.Content.Set("key", "overwritten")
+		config.Content.Set("new", "value")
 	}
 	return nil
 }
 
 func (*testMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
-	if _, ok := recipe.Object.(*model.Config); ok {
-		configFile, err := recipe.Files.ObjectConfigFile()
-		if err != nil {
-			panic(err)
-		}
-		configFile.Content.Set("parameters", "overwritten")
-		configFile.Content.Set("new", "value")
+	if config, ok := recipe.Object.(*model.Config); ok {
+		config.Content.Set("parameters", "overwritten")
+		config.Content.Set("new", "value")
 	}
 	return nil
 }

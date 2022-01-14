@@ -20,20 +20,14 @@ func (m *mapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
 	return nil
 }
 
-func (m *mapper) onConfigLocalSave(config *model.Config, recipe *model.LocalSaveRecipe) {
+func (m *mapper) onConfigLocalSave(config *model.Config) {
 	// Is shared code?
 	if config.SharedCode == nil {
 		return
 	}
 
-	// Get config file
-	configFile, err := recipe.Files.ObjectConfigFile()
-	if err != nil {
-		panic(err)
-	}
-
 	// Set target component ID
-	configFile.Content.Set(model.ShareCodeTargetComponentKey, config.SharedCode.Target.String())
+	config.Content.Set(model.ShareCodeTargetComponentKey, config.SharedCode.Target.String())
 }
 
 func (m *mapper) onRowLocalSave(row *model.ConfigRow, recipe *model.LocalSaveRecipe) {

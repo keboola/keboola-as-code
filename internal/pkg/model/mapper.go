@@ -70,30 +70,6 @@ func (f *ObjectFiles) GetByTag(tag string) []*objectFile {
 	return out
 }
 
-func (f *ObjectFiles) ObjectConfigFile() (*filesystem.JsonFile, error) {
-	raw := f.GetOneByTag(FileKindObjectConfig)
-	if raw == nil {
-		return nil, fmt.Errorf(`missing config file`)
-	}
-	file, ok := raw.File().(*filesystem.JsonFile)
-	if !ok {
-		return nil, fmt.Errorf(`expected JsonFile, found "%T"`, raw)
-	}
-	return file, nil
-}
-
-func (f *ObjectFiles) ObjectMetaFile() (*filesystem.JsonFile, error) {
-	raw := f.GetOneByTag(FileKindObjectMeta)
-	if raw == nil {
-		return nil, fmt.Errorf(`missing config file`)
-	}
-	file, ok := raw.File().(*filesystem.JsonFile)
-	if !ok {
-		return nil, fmt.Errorf(`expected JsonFile, found "%T"`, raw)
-	}
-	return file, nil
-}
-
 func newObjectFile(file filesystem.FileWrapper) *objectFile {
 	return &objectFile{
 		file: file,

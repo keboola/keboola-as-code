@@ -28,9 +28,7 @@ func TestLocalSaveTranWithSharedCode(t *testing.T) {
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Path to shared code is part of the Content
-	configFile, err := recipe.Files.ObjectConfigFile()
-	assert.NoError(t, err)
-	sharedCodePath, found := configFile.Content.Get(model.SharedCodePathContentKey)
+	sharedCodePath, found := transformation.Local.Content.Get(model.SharedCodePathContentKey)
 	assert.True(t, found)
 	assert.Equal(t, sharedCodePath, `_shared/keboola.python-transformation-v2`)
 
@@ -90,9 +88,7 @@ WARN  Warning:
 	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessages())
 
 	// Config file doesn't contain shared code path
-	configFile, err := recipe.Files.ObjectConfigFile()
-	assert.NoError(t, err)
-	_, found := configFile.Content.Get(model.SharedCodePathContentKey)
+	_, found := transformation.Local.Content.Get(model.SharedCodePathContentKey)
 	assert.False(t, found)
 
 	// IDs in transformation blocks are NOT replaced by paths
@@ -157,9 +153,7 @@ WARN  Warning:
 	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessages())
 
 	// Link to shared code is set, but without missing row
-	configFile, err := recipe.Files.ObjectConfigFile()
-	assert.NoError(t, err)
-	sharedCodeId, found := configFile.Content.Get(model.SharedCodePathContentKey)
+	sharedCodeId, found := transformation.Local.Content.Get(model.SharedCodePathContentKey)
 	assert.True(t, found)
 	assert.Equal(t, sharedCodeId, `_shared/keboola.python-transformation-v2`)
 

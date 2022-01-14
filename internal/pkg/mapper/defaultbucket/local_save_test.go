@@ -112,9 +112,7 @@ WARN  Warning: - config "branch:123/component:keboola.ex-db-mysql/config:456" no
 	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.WarnAndErrorMessages())
 
 	// Check default bucket replacement
-	configFile, err = recipe.Files.ObjectConfigFile()
-	assert.NoError(t, err)
-	configContent := json.MustEncodeString(configFile.Content, false)
+	configContent := json.MustEncodeString(object.Content, false)
 	assert.Equal(t, `{"parameters":{},"storage":{"input":{"tables":[{"columns":[],"source":"{{:default-bucket:extractor/keboola.ex-db-mysql/test}}.accounts","destination":"accounts","where_column":"","where_operator":"eq","where_values":[]},{"columns":[],"source":"in.c-keboola-ex-db-mysql-456.contacts","destination":"contacts","where_column":"","where_operator":"eq","where_values":[]}],"files":[]},"output":{"tables":[],"files":[]}}}`, configContent)
 }
 
@@ -209,8 +207,6 @@ WARN  Warning: - config "branch:123/component:keboola.ex-db-mysql/config:456" no
 	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.WarnAndErrorMessages())
 
 	// Check default bucket replacement
-	configFile, err = recipe.Files.ObjectConfigFile()
-	assert.NoError(t, err)
-	configContent := json.MustEncodeString(configFile.Content, false)
+	configContent := json.MustEncodeString(object.Content, false)
 	assert.Equal(t, `{"parameters":{},"storage":{"input":{"tables":[{"columns":[],"source":"{{:default-bucket:extractor/keboola.ex-db-mysql/test}}.accounts","destination":"accounts","where_column":"","where_operator":"eq","where_values":[]},{"columns":[],"source":"in.c-keboola-ex-db-mysql-456.contacts","destination":"contacts","where_column":"","where_operator":"eq","where_values":[]}],"files":[]},"output":{"tables":[],"files":[]}}}`, configContent)
 }
