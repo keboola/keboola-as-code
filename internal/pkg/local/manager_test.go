@@ -1,13 +1,11 @@
-package local
+package local_test
 
 import (
 	"context"
 	"fmt"
 	"runtime"
 	"strings"
-	"sync"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -15,9 +13,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/corefiles"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
@@ -66,13 +67,13 @@ func (t *testMapper) OnLocalChange(changes *model.LocalChanges) error {
 
 func TestLocalSaveMapper(t *testing.T) {
 	t.Parallel()
-	manager, mapper := newTestLocalManager(t)
-	fs := manager.Fs()
-	uow := manager.NewUnitOfWork(context.Background())
+	projectState := newEmptyState(t)
+	fs := projectState.Fs()
+	uow := projectState.LocalManager().NewUnitOfWork(context.Background())
 
 	// Add test mapper
 	testMapperInst := &testMapper{}
-	mapper.AddMapper(testMapperInst)
+	projectState.Mapper().AddMapper(testMapperInst)
 
 	// Test object
 	configKey := model.ConfigKey{BranchId: 123, ComponentId: `foo.bar`, Id: `456`}
@@ -109,13 +110,13 @@ func TestLocalSaveMapper(t *testing.T) {
 
 func TestLocalLoadMapper(t *testing.T) {
 	t.Parallel()
-	manager, mapper := newTestLocalManager(t)
-	fs := manager.Fs()
-	uow := manager.NewUnitOfWork(context.Background())
+	projectState := newEmptyState(t)
+	fs := projectState.Fs()
+	uow := projectState.LocalManager().NewUnitOfWork(context.Background())
 
 	// Add test mapper
 	testMapperInst := &testMapper{}
-	mapper.AddMapper(testMapperInst)
+	projectState.Mapper().AddMapper(testMapperInst)
 
 	// Init dir
 	_, testFile, _, _ := runtime.Caller(0)
@@ -138,7 +139,7 @@ func TestLocalLoadMapper(t *testing.T) {
 	assert.NoError(t, uow.Invoke())
 
 	// Internal state has been mapped
-	configState := manager.state.MustGet(model.ConfigKey{BranchId: 111, ComponentId: `ex-generic-v2`, Id: `456`}).(*model.ConfigState)
+	configState := projectState.MustGet(model.ConfigKey{BranchId: 111, ComponentId: `ex-generic-v2`, Id: `456`}).(*model.ConfigState)
 	assert.Equal(t, `{"parameters":"overwritten","new":"value"}`, json.MustEncodeString(configState.Local.Content, false))
 
 	// OnLocalChange event has been called
@@ -148,4 +149,10 @@ func TestLocalLoadMapper(t *testing.T) {
 	}, testMapperInst.localChanges)
 }
 
+func newEmptyState(t *testing.T) *state.State {
+	t.Helper()
+	d := testdeps.New()
+	mockedState := d.EmptyState()
+	mockedState.Mapper().AddMapper(corefiles.NewMapper(mockedState))
+	return mockedState
 }
