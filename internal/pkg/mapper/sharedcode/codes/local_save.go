@@ -2,6 +2,7 @@ package codes
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/corefiles"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
@@ -9,7 +10,7 @@ import (
 func (m *mapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
 	// Save config
 	if config, ok := recipe.Object.(*model.Config); ok {
-		m.onConfigLocalSave(config, recipe)
+		m.onConfigLocalSave(config)
 	}
 
 	// Save row
@@ -47,14 +48,9 @@ func (m *mapper) onRowLocalSave(row *model.ConfigRow, recipe *model.LocalSaveRec
 	// Remove "isDisabled" unnecessary value from "meta.json".
 	// Shared code is represented as config row
 	// and always contains `"isDisabled": false` in metadata.
-	metaFile, err := recipe.Files.ObjectMetaFile()
-	if err != nil {
-		panic(err)
-	}
-	if value, found := metaFile.Content.Get(`isDisabled`); found {
-		if v, ok := value.(bool); ok && !v {
-			// Found `"isDisabled": false` -> delete
-			metaFile.Content.Delete(`isDisabled`)
-		}
+	if !row.IsDisabled {
+		// isDisabled == false -> hide "isDisabled" field in meta.json
+		fields, _ := recipe.Annotations[corefiles.HideMetaFileFieldsAnnotation].([]string)
+		recipe.Annotations[corefiles.HideMetaFileFieldsAnnotation] = append(fields, `isDisabled`)
 	}
 }
