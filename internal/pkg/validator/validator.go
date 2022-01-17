@@ -20,6 +20,26 @@ type Validation struct {
 	Func validator.Func
 }
 
+func Validate(value interface{}, rules ...Validation) error {
+	return ValidateCtx(value, context.Background(), "dive", "", rules...)
+}
+
+func ValidateCtx(value interface{}, ctx context.Context, tag string, fieldName string, rules ...Validation) error {
+	validate, enTranslator := newValidator(rules...)
+
+	if err := validate.VarCtx(ctx, value, tag); err != nil {
+		var validationErrs validator.ValidationErrors
+		switch {
+		case errors.As(err, &validationErrs):
+			return processValidateError(validationErrs, enTranslator, fieldName)
+		default:
+			panic(err)
+		}
+	}
+
+	return nil
+}
+
 func newValidator(rules ...Validation) (*validator.Validate, ut.Translator) {
 	validate := validator.New()
 	enLocale := en.New()
@@ -53,26 +73,6 @@ func newValidator(rules ...Validation) (*validator.Validate, ut.Translator) {
 		return name
 	})
 	return validate, enTranslator
-}
-
-func Validate(value interface{}, rules ...Validation) error {
-	return ValidateCtx(value, context.Background(), "dive", "", rules...)
-}
-
-func ValidateCtx(value interface{}, ctx context.Context, tag string, fieldName string, rules ...Validation) error {
-	validate, enTranslator := newValidator(rules...)
-
-	if err := validate.VarCtx(ctx, value, tag); err != nil {
-		var validationErrs validator.ValidationErrors
-		switch {
-		case errors.As(err, &validationErrs):
-			return processValidateError(validationErrs, enTranslator, fieldName)
-		default:
-			panic(err)
-		}
-	}
-
-	return nil
 }
 
 // Remove struct name (first part), field name (last part) and __nested__ parts.
