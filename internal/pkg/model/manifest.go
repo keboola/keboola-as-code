@@ -51,17 +51,6 @@ type RecordState struct {
 	Deleted   bool // record has been deleted in this command run
 }
 
-type PathInProject struct {
-	ObjectPath    string `json:"path" validate:"required"`
-	parentPath    string
-	parentPathSet bool
-}
-
-type Paths struct {
-	PathInProject
-	RelatedPaths []string `json:"-"` // not serialized, slice is generated when the object is loaded
-}
-
 type BranchManifest struct {
 	RecordState `json:"-"`
 	BranchKey
@@ -85,10 +74,6 @@ type ConfigRowManifest struct {
 type ConfigManifestWithRows struct {
 	*ConfigManifest
 	Rows []*ConfigRowManifest `json:"rows"`
-}
-
-func NewPathInProject(parentPath, objectPath string) PathInProject {
-	return PathInProject{parentPath: parentPath, parentPathSet: true, ObjectPath: objectPath}
 }
 
 func (p PathInProject) DeepCopy(_ deepcopy.TranslateFunc, _ deepcopy.Steps, _ deepcopy.VisitedMap) PathInProject {
