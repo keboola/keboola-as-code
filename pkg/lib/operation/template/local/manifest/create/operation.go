@@ -21,16 +21,13 @@ func Run(d dependencies) (*manifest.Manifest, error) {
 	}
 
 	// Create
-	repositoryManifest, err := manifest.New(fs)
-	if err != nil {
-		return nil, err
-	}
+	repositoryManifest := manifest.New(fs)
 
 	// Save
 	if err = repositoryManifest.Save(); err != nil {
 		return nil, err
 	}
 
-	logger.Infof("Created manifest file \"%s\".", repositoryManifest.Path())
+	logger.Infof("Created repository manifest file \"%s\".", repositoryManifest.Path())
 	return repositoryManifest, nil
 }
