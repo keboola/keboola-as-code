@@ -11,7 +11,6 @@ import (
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
 	enTranslation "github.com/go-playground/validator/v10/translations/en"
-	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -21,12 +20,7 @@ type Validation struct {
 	Func validator.Func
 }
 
-func Validate(value interface{}, rules ...Validation) error {
-	return ValidateCtx(value, context.Background(), "dive", "", rules...)
-}
-
-func ValidateCtx(value interface{}, ctx context.Context, tag string, fieldName string, rules ...Validation) error {
-	// Setup
+func newValidator(rules ...Validation) (*validator.Validate, ut.Translator) {
 	validate := validator.New()
 	enLocale := en.New()
 	universalTranslator := ut.New(enLocale, enLocale)
@@ -58,8 +52,15 @@ func ValidateCtx(value interface{}, ctx context.Context, tag string, fieldName s
 		}
 		return name
 	})
+	return validate, enTranslator
+}
 
-	// Do
+func Validate(value interface{}, rules ...Validation) error {
+	return ValidateCtx(value, context.Background(), "dive", "", rules...)
+}
+
+func ValidateCtx(value interface{}, ctx context.Context, tag string, fieldName string, rules ...Validation) error {
+	validate, enTranslator := newValidator(rules...)
 
 	if err := validate.VarCtx(ctx, value, tag); err != nil {
 		var validationErrs validator.ValidationErrors
@@ -74,33 +75,25 @@ func ValidateCtx(value interface{}, ctx context.Context, tag string, fieldName s
 	return nil
 }
 
+// Remove struct name (first part), field name (last part) and __nested__ parts.
 func processNamespace(namespace string) string {
-	// Remove struct name (first part)
-	result := regexpcache.MustCompile(`^([^.]+\.)?(.*)$`).ReplaceAllString(namespace, `$2`)
-
-	// Hide nested fields
-	result = strings.ReplaceAll(result, `__nested__.`, ``)
-
-	// Field with one level only does not need namespace
-	lastDotIndex := strings.LastIndex(result, ".")
-	if lastDotIndex == -1 {
+	namespace = strings.ReplaceAll(namespace, `__nested__.`, ``)
+	parts := strings.Split(namespace, ".")
+	if len(parts) <= 2 {
 		return ""
 	}
-
-	// Remove field name (last part) from the namespace
-	return result[:lastDotIndex]
+	return strings.Join(parts[1:len(parts)-1], ".")
 }
 
 func processValidateError(err validator.ValidationErrors, translator ut.Translator, fieldName string) error {
 	result := utils.NewMultiError()
 	for _, e := range err {
-		if e.Namespace() != "" {
-			processedNamespace := processNamespace(e.Namespace())
-			if processedNamespace != "" {
-				fieldName = fmt.Sprintf("%s.", processedNamespace)
-			}
+		errorFieldName := fieldName
+		// Prefix error message by field namespace
+		if namespace := processNamespace(e.Namespace()); namespace != "" {
+			errorFieldName = fmt.Sprintf("%s.", namespace)
 		}
-		result.Append(fmt.Errorf("%s%s", fieldName, e.Translate(translator)))
+		result.Append(fmt.Errorf("%s%s", errorFieldName, e.Translate(translator)))
 	}
 
 	return result.ErrorOrNil()

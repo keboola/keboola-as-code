@@ -101,7 +101,7 @@ func TestManifestValidateEmpty(t *testing.T) {
   - version is a required field
   - project.id is a required field
   - project.apiHost is a required field
-  - project.sortBy must be one of [id path]
+  - sortBy must be one of [id path]
   - naming.branch is a required field
   - naming.config is a required field
   - naming.configRow is a required field
@@ -110,7 +110,7 @@ func TestManifestValidateEmpty(t *testing.T) {
   - naming.sharedCodeConfigRow is a required field
   - naming.variablesConfig is a required field
   - naming.variablesValuesRow is a required field
-  - naming.allowedBranches is a required field`
+  - allowedBranches is a required field`
 	assert.Equal(t, expected, err.Error())
 }
 
