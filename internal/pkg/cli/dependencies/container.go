@@ -20,8 +20,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/version"
 	createProjectManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/local/manifest/create"
 	loadProjectManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/local/manifest/load"
-	createRepositoryManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/manifest/create"
-	loadRepositoryManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/manifest/load"
+	createRepositoryManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/repository/manifest/create"
+	loadRepositoryManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/repository/manifest/load"
 )
 
 var (
