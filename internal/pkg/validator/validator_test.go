@@ -85,3 +85,22 @@ func TestValidateValueAddNamespace(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, `my.value is a required field`, err.Error())
 }
+
+func TestValidatorRequiredInProject(t *testing.T) {
+	t.Parallel()
+
+	// Project
+	projectCtx := context.Background()
+	err := ValidateCtx(projectCtx, `value`, `required_in_project`, `some_field`)
+	assert.NoError(t, err)
+	err = ValidateCtx(projectCtx, ``, `required_in_project`, `some_field`)
+	assert.Error(t, err)
+	// assert.Equal(t, "...", err.Error())
+
+	// Template
+	templateCtx := context.WithValue(context.Background(), DisableRequiredInProjectKey, true)
+	err = ValidateCtx(templateCtx, ``, `required_in_project`, `some_field`)
+	assert.NoError(t, err)
+	err = ValidateCtx(templateCtx, `value`, `required_in_project`, `some_field`)
+	assert.NoError(t, err)
+}

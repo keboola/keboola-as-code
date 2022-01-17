@@ -21,14 +21,20 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-const anonymousField = "__anonymous__"
+const (
+	DisableRequiredInProjectKey = contextKey(`disable_required_in_project`) // disables "required_in_project" validation by Context
+	anonymousField              = "__anonymous__"
+)
 
 // Rule is custom validation rule/tag.
 type Rule struct {
 	Tag          string
 	Func         validator.Func
+	FuncCtx      validator.FuncCtx
 	ErrorMessage string
 }
+
+type contextKey string
 
 // Validate nested struct fields or slice items.
 func Validate(value interface{}, rules ...Rule) error {
@@ -59,6 +65,8 @@ func newValidator() *wrapper {
 		translator: ut.New(en.New()).GetFallback(),
 	}
 
+	v.registerCustomRules()
+
 	// Register error messages
 	v.registerDefaultErrorMessages()
 	v.registerErrorMessage("required_if", "{0} is a required field")
@@ -85,15 +93,52 @@ func newValidator() *wrapper {
 // registerRule by tag and function.
 func (v *wrapper) registerRule(rules ...Rule) {
 	for _, rule := range rules {
-		if err := v.validator.RegisterValidation(rule.Tag, rule.Func); err != nil {
-			panic(err)
+		// Register validation function
+		switch {
+		case rule.FuncCtx != nil:
+			if err := v.validator.RegisterValidationCtx(rule.Tag, rule.FuncCtx); err != nil {
+				panic(err)
+			}
+		case rule.Func != nil:
+			if err := v.validator.RegisterValidation(rule.Tag, rule.Func); err != nil {
+				panic(err)
+			}
+		default:
+			panic(fmt.Errorf(`please specify validator.Rulw.FuncCtx or Func`))
 		}
+
+		// Register error message
 		v.registerErrorMessage(rule.Tag, rule.ErrorMessage)
 	}
 }
 
+func (v *wrapper) registerCustomRules() {
+	// Register default validation for "required_in_project"
+	// Some values are requited in the project scope, but ignored in the template scope.
+	// We validate them by default.
+	v.registerRule(Rule{
+		Tag: "required_in_project",
+		FuncCtx: func(ctx context.Context, fl validator.FieldLevel) bool {
+			if v, _ := ctx.Value(DisableRequiredInProjectKey).(bool); v {
+				// Template mode, value is valid.
+				return true
+			}
+			// Project mode, value must be set.
+			return !fl.Field().IsZero()
+		},
+		ErrorMessage: "{0} is a required field",
+	})
+}
+
 // registerErrorMessage for a tag.
 func (v *wrapper) registerErrorMessage(tag, message string) {
+	if tag == "" {
+		panic(fmt.Errorf(`tag cannot by empty`))
+	}
+	if message == "" {
+		panic(fmt.Errorf(`message cannot by empty`))
+	}
+
 	registerFn := func(ut ut.Translator) error {
 		return ut.Add(tag, message, true)
 	}
