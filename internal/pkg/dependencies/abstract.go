@@ -11,7 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/state/load"
 )
 
 // Container contains dependencies for all use-cases.

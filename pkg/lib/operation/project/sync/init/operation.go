@@ -10,12 +10,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
-	createEnvFiles "github.com/keboola/keboola-as-code/pkg/lib/operation/local/envfiles/create"
-	createManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/local/manifest/create"
-	createMetaDir "github.com/keboola/keboola-as-code/pkg/lib/operation/local/metadir/create"
-	genWorkflows "github.com/keboola/keboola-as-code/pkg/lib/operation/local/workflows/generate"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
-	"github.com/keboola/keboola-as-code/pkg/lib/operation/sync/pull"
+	createEnvFiles "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/envfiles/create"
+	createManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/create"
+	createMetaDir "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/metadir/create"
+	genWorkflows "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/workflows/generate"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/state/load"
+	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/pull"
 )
 
 type Options struct {

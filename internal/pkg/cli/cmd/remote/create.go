@@ -7,7 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
-	createBranch "github.com/keboola/keboola-as-code/pkg/lib/operation/remote/create/branch"
+	createBranch "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/branch"
 )
 
 func CreateCommand(depsProvider dependencies.Provider) *cobra.Command {

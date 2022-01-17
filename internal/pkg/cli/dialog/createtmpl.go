@@ -14,7 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/state/load"
 	createTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/create"
 )
 

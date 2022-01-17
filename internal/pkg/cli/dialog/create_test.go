@@ -15,9 +15,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
 	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
-	createConfig "github.com/keboola/keboola-as-code/pkg/lib/operation/local/create/config"
-	createRow "github.com/keboola/keboola-as-code/pkg/lib/operation/local/create/row"
-	createBranch "github.com/keboola/keboola-as-code/pkg/lib/operation/remote/create/branch"
+	createConfig "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/config"
+	createRow "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/row"
+	createBranch "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/branch"
 )
 
 func TestAskCreateBranch(t *testing.T) {

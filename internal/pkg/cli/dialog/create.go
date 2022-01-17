@@ -9,10 +9,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
-	createConfig "github.com/keboola/keboola-as-code/pkg/lib/operation/local/create/config"
-	createRow "github.com/keboola/keboola-as-code/pkg/lib/operation/local/create/row"
-	createBranch "github.com/keboola/keboola-as-code/pkg/lib/operation/remote/create/branch"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
+	createConfig "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/config"
+	createRow "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/row"
+	createBranch "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/branch"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/state/load"
 )
 
 type createDeps interface {

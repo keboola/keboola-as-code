@@ -8,11 +8,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/pull"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
-	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/local/manifest/save"
-	"github.com/keboola/keboola-as-code/pkg/lib/operation/local/rename"
-	"github.com/keboola/keboola-as-code/pkg/lib/operation/local/validate"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
-	createDiff "github.com/keboola/keboola-as-code/pkg/lib/operation/sync/diff/create"
+	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/save"
+	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/rename"
+	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/validate"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/state/load"
+	createDiff "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/diff/create"
 )
 
 type Options struct {

@@ -3,7 +3,7 @@ package dialog
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
-	workflowsGen "github.com/keboola/keboola-as-code/pkg/lib/operation/local/workflows/generate"
+	workflowsGen "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/workflows/generate"
 )
 
 func (p *Dialogs) AskWorkflowsOptions(options *options.Options) workflowsGen.Options {

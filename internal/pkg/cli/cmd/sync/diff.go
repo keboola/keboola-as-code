@@ -5,7 +5,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
-	"github.com/keboola/keboola-as-code/pkg/lib/operation/sync/diff/printDiff"
+	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/diff/printDiff"
 )
 
 func DiffCommand(depsProvider dependencies.Provider) *cobra.Command {

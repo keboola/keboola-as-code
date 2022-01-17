@@ -6,7 +6,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/encrypt"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/state/load"
 )
 
 type Options struct {

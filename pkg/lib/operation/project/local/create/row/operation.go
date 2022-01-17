@@ -1,4 +1,4 @@
-package config
+package row
 
 import (
 	"context"
@@ -10,13 +10,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
-	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/local/manifest/save"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
+	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/save"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/state/load"
 )
 
 type Options struct {
 	BranchId    model.BranchId
 	ComponentId model.ComponentId
+	ConfigId    model.ConfigId
 	Name        string
 }
 
@@ -53,16 +54,17 @@ func Run(o Options, d dependencies) (err error) {
 		return err
 	}
 
-	// Config key
-	key := model.ConfigKey{
+	// Config row key
+	key := model.ConfigRowKey{
 		BranchId:    o.BranchId,
 		ComponentId: o.ComponentId,
+		ConfigId:    o.ConfigId,
 	}
 
 	// Generate unique ID
 	ticketProvider := storageApi.NewTicketProvider()
 	ticketProvider.Request(func(ticket *model.Ticket) {
-		key.Id = model.ConfigId(ticket.Id)
+		key.Id = model.RowId(ticket.Id)
 	})
 	if err := ticketProvider.Resolve(); err != nil {
 		return fmt.Errorf(`cannot generate new ID: %w`, err)
@@ -72,7 +74,7 @@ func Run(o Options, d dependencies) (err error) {
 	uow := projectState.LocalManager().NewUnitOfWork(d.Ctx())
 	uow.CreateObject(key, o.Name)
 	if err := uow.Invoke(); err != nil {
-		return fmt.Errorf(`cannot create config: %w`, err)
+		return fmt.Errorf(`cannot create row: %w`, err)
 	}
 
 	// Save manifest
