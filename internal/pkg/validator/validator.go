@@ -42,17 +42,30 @@ func ValidateCtx(value interface{}, ctx context.Context, tag string, fieldName s
 
 func newValidator(rules ...Validation) (*validator.Validate, ut.Translator) {
 	validate := validator.New()
+
+	// Register default EN translator
 	enLocale := en.New()
-	universalTranslator := ut.New(enLocale, enLocale)
-	enTranslator, found := universalTranslator.GetTranslator("en")
+	enTranslator, found := ut.New(enLocale, enLocale).GetTranslator("en")
 	if !found {
 		panic(fmt.Errorf("en translator was not found"))
 	}
-	err := enTranslation.RegisterDefaultTranslations(validate, enTranslator)
-	if err != nil {
+	if err := enTranslation.RegisterDefaultTranslations(validate, enTranslator); err != nil {
 		panic(fmt.Errorf("translator was not registered: %w", err))
 	}
 
+	// Register default validation for "required_in_project"
+	// Some values are requited in the project scope, but ignored in the template scope.
+	// We validate them by default.
+	rules = append([]Validation{
+		{
+			Tag: "required_in_project",
+			Func: func(fl validator.FieldLevel) bool {
+				return !fl.Field().IsZero()
+			},
+		},
+	}, rules...)
+
+	// Register custom validation rules
 	for _, rule := range rules {
 		err := validate.RegisterValidation(rule.Tag, rule.Func)
 		if err != nil {
@@ -60,6 +73,7 @@ func newValidator(rules ...Validation) (*validator.Validate, ut.Translator) {
 		}
 	}
 
+	// Set "__nested__" name for anonymous fields, so they can be removed from the error namespace.
 	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
 		if fld.Anonymous {
 			return "__nested__"
@@ -72,6 +86,7 @@ func newValidator(rules ...Validation) (*validator.Validate, ut.Translator) {
 		}
 		return name
 	})
+
 	return validate, enTranslator
 }
 
