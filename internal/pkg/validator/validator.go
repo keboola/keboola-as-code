@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"reflect"
 	"strings"
 
@@ -16,43 +17,9 @@ import (
 )
 
 type Validation struct {
-	Tag  string
-	Func validator.Func
-}
-
-func newValidator(rules ...Validation) (*validator.Validate, ut.Translator) {
-	validate := validator.New()
-	enLocale := en.New()
-	universalTranslator := ut.New(enLocale, enLocale)
-	enTranslator, found := universalTranslator.GetTranslator("en")
-	if !found {
-		panic(fmt.Errorf("en translator was not found"))
-	}
-	err := enTranslation.RegisterDefaultTranslations(validate, enTranslator)
-	if err != nil {
-		panic(fmt.Errorf("translator was not registered: %w", err))
-	}
-
-	for _, rule := range rules {
-		err := validate.RegisterValidation(rule.Tag, rule.Func)
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
-		if fld.Anonymous {
-			return "__nested__"
-		}
-
-		// Use JSON field name in error messages
-		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
-		if name == "-" {
-			return fld.Name
-		}
-		return name
-	})
-	return validate, enTranslator
+	Tag          string
+	Func         validator.Func
+	ErrorMessage string
 }
 
 func Validate(value interface{}, rules ...Validation) error {
@@ -97,4 +64,64 @@ func processValidateError(err validator.ValidationErrors, translator ut.Translat
 	}
 
 	return result.ErrorOrNil()
+}
+
+func registerTranslationsFunc(tag string, translation string, override bool) validator.RegisterTranslationsFunc {
+	return func(ut ut.Translator) (err error) {
+		if err = ut.Add(tag, translation, override); err != nil {
+			return
+		}
+		return
+	}
+}
+
+func translateFunc(ut ut.Translator, fe validator.FieldError) string {
+	t, err := ut.T(fe.Tag(), fe.Field())
+	if err != nil {
+		log.Printf("warning: error translating FieldError: %#v", fe)
+		return fe.(error).Error()
+	}
+
+	return t
+}
+
+func newValidator(rules ...Validation) (*validator.Validate, ut.Translator) {
+	validate := validator.New()
+	enLocale := en.New()
+	universalTranslator := ut.New(enLocale, enLocale)
+	enTranslator, found := universalTranslator.GetTranslator("en")
+	if !found {
+		panic(fmt.Errorf("en translator was not found"))
+	}
+	err := enTranslation.RegisterDefaultTranslations(validate, enTranslator)
+	if err != nil {
+		panic(fmt.Errorf("translator was not registered: %w", err))
+	}
+
+	for _, rule := range rules {
+		if err := validate.RegisterValidation(rule.Tag, rule.Func); err != nil {
+			panic(err)
+		}
+		if err := validate.RegisterTranslation(rule.Tag, enTranslator, registerTranslationsFunc(rule.Tag, rule.ErrorMessage, true), translateFunc); err != nil {
+			panic(err)
+		}
+	}
+
+	if err := validate.RegisterTranslation("required_if", enTranslator, registerTranslationsFunc("required_if", "{0} is a required field", true), translateFunc); err != nil {
+		panic(err)
+	}
+
+	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
+		if fld.Anonymous {
+			return "__nested__"
+		}
+
+		// Use JSON field name in error messages
+		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
+		if name == "-" {
+			return fld.Name
+		}
+		return name
+	})
+	return validate, enTranslator
 }

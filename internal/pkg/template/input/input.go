@@ -14,28 +14,34 @@ type Inputs []*Input
 func (i Inputs) ValidateDefinitions() error {
 	validations := []validator.Validation{
 		{
-			Tag:  "template-input-id",
-			Func: validateInputId,
+			Tag:          "template-input-id",
+			Func:         validateInputId,
+			ErrorMessage: "{0} can only contain alphanumeric characters, dots and underscores",
 		},
 		{
-			Tag:  "template-input-default",
-			Func: validateInputDefault,
+			Tag:          "template-input-default",
+			Func:         validateInputDefault,
+			ErrorMessage: "{0} must be the same type as type or options",
 		},
 		{
-			Tag:  "template-input-options",
-			Func: validateInputOptions,
+			Tag:          "template-input-options",
+			Func:         validateInputOptions,
+			ErrorMessage: "{0} allowed only for select and multiselect",
 		},
 		{
-			Tag:  "template-input-type",
-			Func: validateInputType,
+			Tag:          "template-input-type",
+			Func:         validateInputType,
+			ErrorMessage: "{0} allowed only for input type",
 		},
 		{
-			Tag:  "template-input-rules",
-			Func: validateInputRules,
+			Tag:          "template-input-rules",
+			Func:         validateInputRules,
+			ErrorMessage: "{0} is not valid",
 		},
 		{
-			Tag:  "template-input-if",
-			Func: validateInputIf,
+			Tag:          "template-input-if",
+			Func:         validateInputIf,
+			ErrorMessage: "{0} is not valid",
 		},
 	}
 	return validator.Validate(i, validations...)
