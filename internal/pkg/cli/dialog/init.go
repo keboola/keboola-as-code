@@ -6,8 +6,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
-	createManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/local/manifest/create"
-	initOp "github.com/keboola/keboola-as-code/pkg/lib/operation/sync/init"
+	createManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/create"
+	initOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/init"
 )
 
 type initDeps interface {

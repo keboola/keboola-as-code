@@ -11,7 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/ci"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
-	genWorkflows "github.com/keboola/keboola-as-code/pkg/lib/operation/local/workflows/generate"
+	genWorkflows "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/workflows/generate"
 )
 
 func TestAskWorkflowsOptionsInteractive(t *testing.T) {

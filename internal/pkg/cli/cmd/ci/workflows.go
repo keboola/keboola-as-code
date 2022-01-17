@@ -6,7 +6,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
-	workflowsGen "github.com/keboola/keboola-as-code/pkg/lib/operation/local/workflows/generate"
+	workflowsGen "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/workflows/generate"
 )
 
 func WorkflowsCommand(depsProvider dependencies.Provider) *cobra.Command {

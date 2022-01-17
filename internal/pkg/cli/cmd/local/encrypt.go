@@ -5,7 +5,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
-	"github.com/keboola/keboola-as-code/pkg/lib/operation/local/encrypt"
+	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/encrypt"
 )
 
 func EncryptCommand(depsProvider dependencies.Provider) *cobra.Command {

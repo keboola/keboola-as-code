@@ -8,7 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/ci"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
-	initOp "github.com/keboola/keboola-as-code/pkg/lib/operation/sync/init"
+	initOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/init"
 )
 
 func InitCommand(depsProvider dependencies.Provider) *cobra.Command {

@@ -28,7 +28,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/version"
-	versionCheck "github.com/keboola/keboola-as-code/pkg/lib/operation/remote/version/check"
+	versionCheck "github.com/keboola/keboola-as-code/pkg/lib/operation/version/check"
 )
 
 // nolint: gochecknoinits

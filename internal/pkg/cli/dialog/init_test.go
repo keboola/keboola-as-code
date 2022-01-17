@@ -15,9 +15,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
-	createManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/local/manifest/create"
-	genWorkflows "github.com/keboola/keboola-as-code/pkg/lib/operation/local/workflows/generate"
-	initOp "github.com/keboola/keboola-as-code/pkg/lib/operation/sync/init"
+	createManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/create"
+	genWorkflows "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/workflows/generate"
+	initOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/init"
 )
 
 func TestAskInitOptions(t *testing.T) {

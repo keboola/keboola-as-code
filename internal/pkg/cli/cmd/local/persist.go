@@ -5,7 +5,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
-	"github.com/keboola/keboola-as-code/pkg/lib/operation/local/persist"
+	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/persist"
 )
 
 func PersistCommand(depsProvider dependencies.Provider) *cobra.Command {

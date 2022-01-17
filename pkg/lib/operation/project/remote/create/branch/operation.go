@@ -11,9 +11,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
-	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/local/manifest/save"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
-	"github.com/keboola/keboola-as-code/pkg/lib/operation/sync/pull"
+	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/save"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/state/load"
+	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/pull"
 )
 
 type Options struct {

@@ -5,8 +5,8 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
-	createConfig "github.com/keboola/keboola-as-code/pkg/lib/operation/local/create/config"
-	createRow "github.com/keboola/keboola-as-code/pkg/lib/operation/local/create/row"
+	createConfig "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/config"
+	createRow "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/row"
 )
 
 func CreateCommand(depsProvider dependencies.Provider) *cobra.Command {

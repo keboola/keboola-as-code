@@ -18,8 +18,8 @@ import (
 	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/version"
-	createProjectManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/local/manifest/create"
-	loadProjectManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/local/manifest/load"
+	createProjectManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/create"
+	loadProjectManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/load"
 	createRepositoryManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/repository/manifest/create"
 	loadRepositoryManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/repository/manifest/load"
 )

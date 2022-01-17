@@ -11,7 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/state/load"
 )
 
 func newCommonDeps(d AbstractDeps, ctx context.Context) *common {

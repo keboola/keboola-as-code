@@ -6,7 +6,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
-	createMetaDir "github.com/keboola/keboola-as-code/pkg/lib/operation/local/metadir/create"
+	createMetaDir "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/metadir/create"
 )
 
 type dependencies interface {
