@@ -200,7 +200,7 @@ func (d *Differ) newOptions(reporter *Reporter) cmp.Options {
 			return code.String()
 		}),
 		// Do not compare local paths
-		cmpopts.IgnoreTypes(model.PathInProject{}),
+		cmpopts.IgnoreTypes(model.AbsPath{}),
 	}
 }
 

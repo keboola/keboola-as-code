@@ -41,7 +41,7 @@ func TestValidateState(t *testing.T) {
 		BranchManifest: &model.BranchManifest{
 			BranchKey: branchKey,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject(``, `branch`),
+				AbsPath: model.NewAbsPath(``, `branch`),
 			},
 		},
 		Local: &model.Branch{
@@ -56,7 +56,7 @@ func TestValidateState(t *testing.T) {
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: configKey,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject(`branch`, `config`),
+				AbsPath: model.NewAbsPath(`branch`, `config`),
 			},
 		},
 		Remote: &model.Config{

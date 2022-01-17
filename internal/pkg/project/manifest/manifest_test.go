@@ -142,7 +142,7 @@ func TestManifestValidateNestedField(t *testing.T) {
 	content.Branches = append(content.Branches, &model.BranchManifest{
 		BranchKey: model.BranchKey{Id: 0},
 		Paths: model.Paths{
-			PathInProject: model.NewPathInProject(
+			AbsPath: model.NewAbsPath(
 				"bar",
 				"foo",
 			),
@@ -330,7 +330,7 @@ func fullStruct() *Content {
 					Id: 10,
 				},
 				Paths: model.Paths{
-					PathInProject: model.NewPathInProject(
+					AbsPath: model.NewAbsPath(
 						"",
 						"main",
 					),
@@ -344,7 +344,7 @@ func fullStruct() *Content {
 					Id: 11,
 				},
 				Paths: model.Paths{
-					PathInProject: model.NewPathInProject(
+					AbsPath: model.NewAbsPath(
 						"",
 						"11-dev",
 					),
@@ -363,7 +363,7 @@ func fullStruct() *Content {
 						Id:          "11",
 					},
 					Paths: model.Paths{
-						PathInProject: model.NewPathInProject(
+						AbsPath: model.NewAbsPath(
 							"main",
 							"11-raw-data",
 						),
@@ -381,7 +381,7 @@ func fullStruct() *Content {
 							ConfigId:    "11",
 						},
 						Paths: model.Paths{
-							PathInProject: model.NewPathInProject(
+							AbsPath: model.NewAbsPath(
 								"main/11-raw-data",
 								"rows/101-region-1",
 							),
@@ -398,7 +398,7 @@ func fullStruct() *Content {
 							ConfigId:    "11",
 						},
 						Paths: model.Paths{
-							PathInProject: model.NewPathInProject(
+							AbsPath: model.NewAbsPath(
 								"main/11-raw-data",
 								"rows/102-region-2",
 							),
@@ -417,7 +417,7 @@ func fullStruct() *Content {
 						Id:          "13",
 					},
 					Paths: model.Paths{
-						PathInProject: model.NewPathInProject(
+						AbsPath: model.NewAbsPath(
 							"11-dev/12-current-month",
 							"variables",
 						),
@@ -441,7 +441,7 @@ func fullStruct() *Content {
 							ConfigId:    "13",
 						},
 						Paths: model.Paths{
-							PathInProject: model.NewPathInProject(
+							AbsPath: model.NewAbsPath(
 								"11-dev/12-current-month/variables",
 								"values/default",
 							),
@@ -458,7 +458,7 @@ func fullStruct() *Content {
 							ConfigId:    "13",
 						},
 						Paths: model.Paths{
-							PathInProject: model.NewPathInProject(
+							AbsPath: model.NewAbsPath(
 								"11-dev/12-current-month/variables",
 								"values/other",
 							),
@@ -477,7 +477,7 @@ func fullStruct() *Content {
 						Id:          "12",
 					},
 					Paths: model.Paths{
-						PathInProject: model.NewPathInProject(
+						AbsPath: model.NewAbsPath(
 							"11-dev",
 							"12-current-month",
 						),
@@ -495,7 +495,7 @@ func fullStruct() *Content {
 							ConfigId:    "12",
 						},
 						Paths: model.Paths{
-							PathInProject: model.NewPathInProject(
+							AbsPath: model.NewAbsPath(
 								"11-dev/12-current-month",
 								"rows/103-all",
 							),
@@ -512,7 +512,7 @@ func fullStruct() *Content {
 							ConfigId:    "12",
 						},
 						Paths: model.Paths{
-							PathInProject: model.NewPathInProject(
+							AbsPath: model.NewAbsPath(
 								"11-dev/12-current-month",
 								"rows/104-sum",
 							),

@@ -33,7 +33,7 @@ func createLocalTranWithSharedCode(t *testing.T, state *state.State) *model.Conf
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: key,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject(`branch`, `transformation`),
+				AbsPath: model.NewAbsPath(`branch`, `transformation`),
 			},
 		},
 		Local: &model.Config{
@@ -47,15 +47,15 @@ func createLocalTranWithSharedCode(t *testing.T, state *state.State) *model.Conf
 			Transformation: &model.Transformation{
 				Blocks: []*model.Block{
 					{
-						Name:          `Block 1`,
-						PathInProject: model.NewPathInProject(`branch/transformation/blocks`, `block-1`),
+						Name:    `Block 1`,
+						AbsPath: model.NewAbsPath(`branch/transformation/blocks`, `block-1`),
 						Codes: model.Codes{
 							{
 								CodeKey: model.CodeKey{
 									ComponentId: `keboola.python-transformation-v2`,
 								},
-								Name:          `Code 1`,
-								PathInProject: model.NewPathInProject(`branch/transformation/blocks/block-1`, `code-1`),
+								Name:    `Code 1`,
+								AbsPath: model.NewAbsPath(`branch/transformation/blocks/block-1`, `code-1`),
 								Scripts: model.Scripts{
 									model.StaticScript{Value: `print(100)`},
 									model.StaticScript{Value: "# {{:codes/code1}}\n"},
@@ -65,8 +65,8 @@ func createLocalTranWithSharedCode(t *testing.T, state *state.State) *model.Conf
 								CodeKey: model.CodeKey{
 									ComponentId: `keboola.python-transformation-v2`,
 								},
-								Name:          `Code 2`,
-								PathInProject: model.NewPathInProject(`branch/transformation/blocks/block-1`, `code-2`),
+								Name:    `Code 2`,
+								AbsPath: model.NewAbsPath(`branch/transformation/blocks/block-1`, `code-2`),
 								Scripts: model.Scripts{
 									model.StaticScript{Value: " {{:codes/code2}}\n"},
 									model.StaticScript{Value: "#     {{:codes/code1}}"},
@@ -95,7 +95,7 @@ func createInternalTranWithSharedCode(t *testing.T, sharedCodeKey model.ConfigKe
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: key,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject(`branch`, `transformation`),
+				AbsPath: model.NewAbsPath(`branch`, `transformation`),
 			},
 		},
 		Local: &model.Config{
@@ -119,7 +119,7 @@ func createInternalTranWithSharedCode(t *testing.T, sharedCodeKey model.ConfigKe
 									model.StaticScript{Value: `print(100)`},
 									model.LinkScript{Target: sharedCodeRowsKeys[0]},
 								},
-								PathInProject: model.NewPathInProject(`branch/transformation/blocks/block-1`, `code-1`),
+								AbsPath: model.NewAbsPath(`branch/transformation/blocks/block-1`, `code-1`),
 							},
 							{
 								CodeKey: model.CodeKey{
@@ -130,10 +130,10 @@ func createInternalTranWithSharedCode(t *testing.T, sharedCodeKey model.ConfigKe
 									model.LinkScript{Target: sharedCodeRowsKeys[1]},
 									model.LinkScript{Target: sharedCodeRowsKeys[0]},
 								},
-								PathInProject: model.NewPathInProject(`branch/transformation/blocks/block-1`, `code-2`),
+								AbsPath: model.NewAbsPath(`branch/transformation/blocks/block-1`, `code-2`),
 							},
 						},
-						PathInProject: model.NewPathInProject(`branch/transformation/blocks`, `block-1`),
+						AbsPath: model.NewAbsPath(`branch/transformation/blocks`, `block-1`),
 					},
 				},
 			},

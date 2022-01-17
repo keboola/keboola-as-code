@@ -61,7 +61,7 @@ func TestLoadRemoteStateAllowedBranches(t *testing.T) {
 					Id: model.BranchId(cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`))),
 				},
 				Paths: model.Paths{
-					PathInProject: model.NewPathInProject(
+					AbsPath: model.NewAbsPath(
 						"",
 						"foo",
 					),
@@ -88,7 +88,7 @@ func complexRemoteExpectedBranches(envs *env.Map) []*model.BranchState {
 					Id: model.BranchId(cast.ToInt(envs.MustGet(`TEST_BRANCH_BAR_ID`))),
 				},
 				Paths: model.Paths{
-					PathInProject: model.NewPathInProject(
+					AbsPath: model.NewAbsPath(
 						"",
 						"bar",
 					),
@@ -110,7 +110,7 @@ func complexRemoteExpectedBranches(envs *env.Map) []*model.BranchState {
 					Id: model.BranchId(cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`))),
 				},
 				Paths: model.Paths{
-					PathInProject: model.NewPathInProject(
+					AbsPath: model.NewAbsPath(
 						"",
 						"foo",
 					),
@@ -132,7 +132,7 @@ func complexRemoteExpectedBranches(envs *env.Map) []*model.BranchState {
 					Id: model.BranchId(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
 				},
 				Paths: model.Paths{
-					PathInProject: model.NewPathInProject(
+					AbsPath: model.NewAbsPath(
 						"",
 						"main",
 					),
@@ -164,7 +164,7 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 					Id:          model.ConfigId(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
 				},
 				Paths: model.Paths{
-					PathInProject: model.NewPathInProject(
+					AbsPath: model.NewAbsPath(
 						"bar",
 						"extractor/ex-generic-v2/empty",
 					),
@@ -206,7 +206,7 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 					Id:          model.ConfigId(envs.MustGet(`TEST_BRANCH_BAR_CONFIG_WITHOUT_ROWS_ID`)),
 				},
 				Paths: model.Paths{
-					PathInProject: model.NewPathInProject(
+					AbsPath: model.NewAbsPath(
 						"bar",
 						"extractor/ex-generic-v2/without-rows",
 					),
@@ -233,7 +233,7 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 					Id:          model.ConfigId(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
 				},
 				Paths: model.Paths{
-					PathInProject: model.NewPathInProject(
+					AbsPath: model.NewAbsPath(
 						"foo",
 						"extractor/ex-generic-v2/empty",
 					),
@@ -275,7 +275,7 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 					Id:          model.ConfigId(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`)),
 				},
 				Paths: model.Paths{
-					PathInProject: model.NewPathInProject(
+					AbsPath: model.NewAbsPath(
 						"foo",
 						"extractor/keboola.ex-db-mysql/with-rows",
 					),
@@ -302,7 +302,7 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 					Id:          model.ConfigId(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
 				},
 				Paths: model.Paths{
-					PathInProject: model.NewPathInProject(
+					AbsPath: model.NewAbsPath(
 						"main",
 						"extractor/ex-generic-v2/empty",
 					),
@@ -343,7 +343,7 @@ func complexRemoteExpectedConfigsRows(envs *env.Map) []*model.ConfigRowState {
 					Id:          model.RowId(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_DISABLED_ID`)),
 				},
 				Paths: model.Paths{
-					PathInProject: model.NewPathInProject(
+					AbsPath: model.NewAbsPath(
 						`foo/extractor/keboola.ex-db-mysql/with-rows`,
 						`rows/disabled`,
 					),
@@ -379,7 +379,7 @@ func complexRemoteExpectedConfigsRows(envs *env.Map) []*model.ConfigRowState {
 					Id:          model.RowId(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_TEST_VIEW_ID`)),
 				},
 				Paths: model.Paths{
-					PathInProject: model.NewPathInProject(
+					AbsPath: model.NewAbsPath(
 						`foo/extractor/keboola.ex-db-mysql/with-rows`,
 						`rows/test-view`,
 					),
@@ -415,7 +415,7 @@ func complexRemoteExpectedConfigsRows(envs *env.Map) []*model.ConfigRowState {
 					Id:          model.RowId(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_USERS_ID`)),
 				},
 				Paths: model.Paths{
-					PathInProject: model.NewPathInProject(
+					AbsPath: model.NewAbsPath(
 						`foo/extractor/keboola.ex-db-mysql/with-rows`,
 						`rows/users`,
 					),

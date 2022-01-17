@@ -13,7 +13,7 @@ const (
 )
 
 type RecordPaths interface {
-	GetPathInProject() PathInProject
+	GetPathInProject() AbsPath
 	Path() string          // parent path + object path -> path relative to the project dir
 	GetObjectPath() string // path relative to the parent object
 	GetParentPath() string // parent path relative to the project dir
@@ -76,36 +76,36 @@ type ConfigManifestWithRows struct {
 	Rows []*ConfigRowManifest `json:"rows"`
 }
 
-func (p PathInProject) DeepCopy(_ deepcopy.TranslateFunc, _ deepcopy.Steps, _ deepcopy.VisitedMap) PathInProject {
+func (p AbsPath) DeepCopy(_ deepcopy.TranslateFunc, _ deepcopy.Steps, _ deepcopy.VisitedMap) AbsPath {
 	return p
 }
 
-func (p PathInProject) GetPathInProject() PathInProject {
+func (p AbsPath) GetPathInProject() AbsPath {
 	return p
 }
 
-func (p *PathInProject) GetObjectPath() string {
+func (p *AbsPath) GetObjectPath() string {
 	return p.ObjectPath
 }
 
-func (p *PathInProject) SetObjectPath(path string) {
+func (p *AbsPath) SetObjectPath(path string) {
 	p.ObjectPath = path
 }
 
-func (p *PathInProject) GetParentPath() string {
+func (p *AbsPath) GetParentPath() string {
 	return p.parentPath
 }
 
-func (p *PathInProject) IsParentPathSet() bool {
+func (p *AbsPath) IsParentPathSet() bool {
 	return p.parentPathSet
 }
 
-func (p *PathInProject) SetParentPath(parentPath string) {
+func (p *AbsPath) SetParentPath(parentPath string) {
 	p.parentPathSet = true
 	p.parentPath = parentPath
 }
 
-func (p PathInProject) Path() string {
+func (p AbsPath) Path() string {
 	return filesystem.Join(p.parentPath, p.ObjectPath)
 }
 

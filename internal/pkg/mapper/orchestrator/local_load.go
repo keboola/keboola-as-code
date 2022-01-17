@@ -93,7 +93,7 @@ func (l *localLoader) addPhase(phaseIndex int, path string) (*model.Phase, []str
 			ConfigId:    l.config.Id,
 			Index:       phaseIndex,
 		},
-		PathInProject: model.NewPathInProject(
+		AbsPath: model.NewAbsPath(
 			l.phasesDir,
 			path,
 		),
@@ -110,8 +110,8 @@ func (l *localLoader) addPhase(phaseIndex int, path string) (*model.Phase, []str
 func (l *localLoader) addTask(taskIndex int, phase *model.Phase, path string) (*model.Task, error) {
 	// Create struct
 	task := &model.Task{
-		TaskKey:       model.TaskKey{Index: taskIndex},
-		PathInProject: model.NewPathInProject(phase.Path(), path),
+		TaskKey: model.TaskKey{Index: taskIndex},
+		AbsPath: model.NewAbsPath(phase.Path(), path),
 	}
 
 	// Track task path

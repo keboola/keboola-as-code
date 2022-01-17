@@ -13,7 +13,7 @@ type action interface {
 }
 
 type newObjectAction struct {
-	model.PathInProject
+	model.AbsPath
 	Key       model.Key
 	ParentKey model.Key
 	OnPersist []func(key model.Key)

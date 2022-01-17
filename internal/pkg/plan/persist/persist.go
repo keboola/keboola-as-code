@@ -75,7 +75,7 @@ func (b *persistPlanBuilder) tryAdd(fullPath string, parent model.RecordPaths) b
 		return false
 	}
 
-	path := model.NewPathInProject(parent.Path(), objectPath)
+	path := model.NewAbsPath(parent.Path(), objectPath)
 
 	// Add object according to the parent type
 	switch parent := parent.(type) {
@@ -120,7 +120,7 @@ func (b *persistPlanBuilder) tryAdd(fullPath string, parent model.RecordPaths) b
 	return false
 }
 
-func (b *persistPlanBuilder) tryAddConfig(path model.PathInProject, parentKey model.Key) *newObjectAction {
+func (b *persistPlanBuilder) tryAddConfig(path model.AbsPath, parentKey model.Key) *newObjectAction {
 	// Is config path matching naming template?
 	componentId, err := b.PathMatcher().MatchConfigPath(parentKey, path)
 	if err != nil {
@@ -144,13 +144,13 @@ func (b *persistPlanBuilder) tryAddConfig(path model.PathInProject, parentKey mo
 	}
 
 	// Create action
-	action := &newObjectAction{PathInProject: path, Key: configKey, ParentKey: parentKey}
+	action := &newObjectAction{AbsPath: path, Key: configKey, ParentKey: parentKey}
 
 	b.addAction(action)
 	return action
 }
 
-func (b *persistPlanBuilder) tryAddConfigRow(path model.PathInProject, parentKey model.ConfigKey) *newObjectAction {
+func (b *persistPlanBuilder) tryAddConfigRow(path model.AbsPath, parentKey model.ConfigKey) *newObjectAction {
 	component, err := b.State.Components().Get(parentKey.ComponentKey())
 	if err != nil {
 		b.errors.Append(err)
@@ -163,7 +163,7 @@ func (b *persistPlanBuilder) tryAddConfigRow(path model.PathInProject, parentKey
 
 	// Create action
 	rowKey := model.ConfigRowKey{BranchId: parentKey.BranchId, ComponentId: parentKey.ComponentId, ConfigId: parentKey.Id}
-	action := &newObjectAction{PathInProject: path, Key: rowKey, ParentKey: parentKey}
+	action := &newObjectAction{AbsPath: path, Key: rowKey, ParentKey: parentKey}
 	b.addAction(action)
 	return action
 }

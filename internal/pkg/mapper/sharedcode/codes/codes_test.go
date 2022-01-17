@@ -54,7 +54,7 @@ func createRemoteSharedCode(t *testing.T, state *state.State) (*model.ConfigStat
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: configKey,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject(
+				AbsPath: model.NewAbsPath(
 					"branch",
 					"config",
 				),
@@ -78,7 +78,7 @@ func createRemoteSharedCode(t *testing.T, state *state.State) (*model.ConfigStat
 		ConfigRowManifest: &model.ConfigRowManifest{
 			ConfigRowKey: rowKey,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject(
+				AbsPath: model.NewAbsPath(
 					"branch/config",
 					"row",
 				),
@@ -127,7 +127,7 @@ func createLocalSharedCode(t *testing.T, targetComponentId model.ComponentId, st
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: configKey,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject(
+				AbsPath: model.NewAbsPath(
 					"branch",
 					"config",
 				),
@@ -151,7 +151,7 @@ func createLocalSharedCode(t *testing.T, targetComponentId model.ComponentId, st
 		ConfigRowManifest: &model.ConfigRowManifest{
 			ConfigRowKey: rowKey,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject(
+				AbsPath: model.NewAbsPath(
 					"branch/config",
 					"row",
 				),
@@ -199,7 +199,7 @@ func createInternalSharedCode(t *testing.T, targetComponentId model.ComponentId,
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: configKey,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject(
+				AbsPath: model.NewAbsPath(
 					"branch",
 					"config",
 				),
@@ -233,7 +233,7 @@ func createInternalSharedCode(t *testing.T, targetComponentId model.ComponentId,
 		ConfigRowManifest: &model.ConfigRowManifest{
 			ConfigRowKey: rowKey,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject(
+				AbsPath: model.NewAbsPath(
 					"branch/config",
 					"row",
 				),

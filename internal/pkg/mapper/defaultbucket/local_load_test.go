@@ -53,7 +53,7 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadConfig(t *testing.T) {
 	branchState := &model.BranchState{
 		BranchManifest: &model.BranchManifest{
 			BranchKey: branchKey,
-			Paths:     model.Paths{PathInProject: model.NewPathInProject(``, `branch`)},
+			Paths:     model.Paths{AbsPath: model.NewAbsPath(``, `branch`)},
 		},
 		Local: &model.Branch{BranchKey: branchKey},
 	}
@@ -69,7 +69,7 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadConfig(t *testing.T) {
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: configKey1,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject("branch", "extractor/keboola.ex-db-mysql/test"),
+				AbsPath: model.NewAbsPath("branch", "extractor/keboola.ex-db-mysql/test"),
 			},
 		},
 		Local: &model.Config{
@@ -134,7 +134,7 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadRow(t *testing.T) {
 	branchState := &model.BranchState{
 		BranchManifest: &model.BranchManifest{
 			BranchKey: branchKey,
-			Paths:     model.Paths{PathInProject: model.NewPathInProject(``, `branch`)},
+			Paths:     model.Paths{AbsPath: model.NewAbsPath(``, `branch`)},
 		},
 		Local: &model.Branch{BranchKey: branchKey},
 	}
@@ -150,7 +150,7 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadRow(t *testing.T) {
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: configKey1,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject("branch", "extractor/keboola.ex-db-mysql/test"),
+				AbsPath: model.NewAbsPath("branch", "extractor/keboola.ex-db-mysql/test"),
 			},
 		},
 		Local: &model.Config{
@@ -197,7 +197,7 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadRow(t *testing.T) {
 		ConfigRowManifest: &model.ConfigRowManifest{
 			ConfigRowKey: rowKey,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject(
+				AbsPath: model.NewAbsPath(
 					"branch/config",
 					"row",
 				),

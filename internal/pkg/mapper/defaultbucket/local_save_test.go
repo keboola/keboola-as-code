@@ -59,7 +59,7 @@ func TestDefaultBucketMapper_MapBeforeLocalSaveConfig(t *testing.T) {
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: configKey1,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject("branch", "extractor/keboola.ex-db-mysql/test"),
+				AbsPath: model.NewAbsPath("branch", "extractor/keboola.ex-db-mysql/test"),
 			},
 		},
 		Remote: &model.Config{
@@ -129,7 +129,7 @@ func TestDefaultBucketMapper_MapBeforeLocalSaveRow(t *testing.T) {
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: configKey1,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject("branch", "extractor/keboola.ex-db-mysql/test"),
+				AbsPath: model.NewAbsPath("branch", "extractor/keboola.ex-db-mysql/test"),
 			},
 		},
 		Remote: &model.Config{
@@ -176,7 +176,7 @@ func TestDefaultBucketMapper_MapBeforeLocalSaveRow(t *testing.T) {
 		ConfigRowManifest: &model.ConfigRowManifest{
 			ConfigRowKey: rowKey,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject(
+				AbsPath: model.NewAbsPath(
 					"branch/config",
 					"row",
 				),

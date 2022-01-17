@@ -420,7 +420,7 @@ func TestDiffTransformation(t *testing.T) {
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: configKey,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject("branch", "config"),
+				AbsPath: model.NewAbsPath("branch", "config"),
 			},
 		},
 		Local: &model.Config{
@@ -439,10 +439,10 @@ func TestDiffTransformation(t *testing.T) {
 									model.StaticScript{Value: "SELECT 2;"},
 									model.StaticScript{Value: "SELECT 3;"},
 								},
-								PathInProject: model.NewPathInProject(`branch/config/blocks/001-block-1`, `001-code-1`),
+								AbsPath: model.NewAbsPath(`branch/config/blocks/001-block-1`, `001-code-1`),
 							},
 						},
-						PathInProject: model.NewPathInProject(`branch/config/blocks`, `001-my-block`),
+						AbsPath: model.NewAbsPath(`branch/config/blocks`, `001-my-block`),
 					},
 				},
 			},
@@ -460,7 +460,7 @@ func TestDiffTransformation(t *testing.T) {
 								},
 							},
 						},
-						PathInProject: model.NewPathInProject(`branch/config/blocks`, `001-block-1`),
+						AbsPath: model.NewAbsPath(`branch/config/blocks`, `001-block-1`),
 					},
 					{
 						Name: "Block 2",
@@ -472,7 +472,7 @@ func TestDiffTransformation(t *testing.T) {
 								},
 							},
 						},
-						PathInProject: model.NewPathInProject(`branch/config/blocks/001-block-1`, `001-code-1`),
+						AbsPath: model.NewAbsPath(`branch/config/blocks/001-block-1`, `001-code-1`),
 					},
 				},
 			},
@@ -518,7 +518,7 @@ func TestDiffSharedCode(t *testing.T) {
 		ConfigRowManifest: &model.ConfigRowManifest{
 			ConfigRowKey: configRowKey,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject("branch/config", "row"),
+				AbsPath: model.NewAbsPath("branch/config", "row"),
 			},
 		},
 		Local: &model.ConfigRow{
@@ -567,7 +567,7 @@ func TestDiffOrchestration(t *testing.T) {
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: configKey,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject("branch", "other/orchestrator"),
+				AbsPath: model.NewAbsPath("branch", "other/orchestrator"),
 			},
 		},
 		Local: &model.Config{
@@ -580,9 +580,9 @@ func TestDiffOrchestration(t *testing.T) {
 							ConfigId:    `456`,
 							Index:       0,
 						},
-						PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases`, `001-phase`),
-						DependsOn:     []model.PhaseKey{},
-						Name:          `Phase`,
+						AbsPath:   model.NewAbsPath(`branch/other/orchestrator/phases`, `001-phase`),
+						DependsOn: []model.PhaseKey{},
+						Name:      `Phase`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{Key: `foo`, Value: `bar`},
 						}),
@@ -597,11 +597,11 @@ func TestDiffOrchestration(t *testing.T) {
 									},
 									Index: 0,
 								},
-								PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases/001-phase`, `001-task-3`),
-								Name:          `Task 3`,
-								ComponentId:   `foo.bar3`,
-								ConfigId:      `123`,
-								ConfigPath:    `branch/extractor/foo.bar3/123`,
+								AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `001-task-3`),
+								Name:        `Task 3`,
+								ComponentId: `foo.bar3`,
+								ConfigId:    `123`,
+								ConfigPath:  `branch/extractor/foo.bar3/123`,
 								Content: orderedmap.FromPairs([]orderedmap.Pair{
 									{
 										Key: `task`,
@@ -622,9 +622,9 @@ func TestDiffOrchestration(t *testing.T) {
 							ConfigId:    `456`,
 							Index:       1,
 						},
-						PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases`, `002-phase`),
-						DependsOn:     []model.PhaseKey{},
-						Name:          `New Phase`,
+						AbsPath:   model.NewAbsPath(`branch/other/orchestrator/phases`, `002-phase`),
+						DependsOn: []model.PhaseKey{},
+						Name:      `New Phase`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{Key: `foo`, Value: `bar`},
 						}),
@@ -642,9 +642,9 @@ func TestDiffOrchestration(t *testing.T) {
 							ConfigId:    `456`,
 							Index:       0,
 						},
-						PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases`, `001-phase`),
-						DependsOn:     []model.PhaseKey{},
-						Name:          `Phase`,
+						AbsPath:   model.NewAbsPath(`branch/other/orchestrator/phases`, `001-phase`),
+						DependsOn: []model.PhaseKey{},
+						Name:      `Phase`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{Key: `foo`, Value: `bar`},
 						}),
@@ -659,11 +659,11 @@ func TestDiffOrchestration(t *testing.T) {
 									},
 									Index: 0,
 								},
-								PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases/001-phase`, `001-task-1`),
-								Name:          `Task 1`,
-								ComponentId:   `foo.bar1`,
-								ConfigId:      `123`,
-								ConfigPath:    `branch/extractor/foo.bar1/config123`,
+								AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `001-task-1`),
+								Name:        `Task 1`,
+								ComponentId: `foo.bar1`,
+								ConfigId:    `123`,
+								ConfigPath:  `branch/extractor/foo.bar1/config123`,
 								Content: orderedmap.FromPairs([]orderedmap.Pair{
 									{
 										Key: `task`,
@@ -685,10 +685,10 @@ func TestDiffOrchestration(t *testing.T) {
 									},
 									Index: 1,
 								},
-								PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases/001-phase`, `002-task-2`),
-								Name:          `Task 2`,
-								ComponentId:   `foo.bar2`,
-								ConfigId:      `789`,
+								AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `002-task-2`),
+								Name:        `Task 2`,
+								ComponentId: `foo.bar2`,
+								ConfigId:    `789`,
 								Content: orderedmap.FromPairs([]orderedmap.Pair{
 									{
 										Key: `task`,
@@ -755,7 +755,7 @@ func TestDiffMap(t *testing.T) {
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: configKey,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject("branch", "config"),
+				AbsPath: model.NewAbsPath("branch", "config"),
 			},
 		},
 		Local: &model.Config{

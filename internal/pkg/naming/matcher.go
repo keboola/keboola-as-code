@@ -14,7 +14,7 @@ func NewPathMatcher(template Template) *PathMatcher {
 	return &PathMatcher{template: template}
 }
 
-func (m PathMatcher) MatchConfigPath(parentKey Key, path PathInProject) (componentId ComponentId, err error) {
+func (m PathMatcher) MatchConfigPath(parentKey Key, path AbsPath) (componentId ComponentId, err error) {
 	parent := parentKey.Kind()
 	if parent.IsBranch() {
 		// Shared code
@@ -55,7 +55,7 @@ func (m PathMatcher) MatchConfigPath(parentKey Key, path PathInProject) (compone
 	return "", nil
 }
 
-func (m PathMatcher) MatchConfigRowPath(component *Component, path PathInProject) bool {
+func (m PathMatcher) MatchConfigRowPath(component *Component, path AbsPath) bool {
 	// Shared code
 	if component.IsSharedCode() {
 		matched, _ := m.template.SharedCodeConfigRow.MatchPath(path.ObjectPath)

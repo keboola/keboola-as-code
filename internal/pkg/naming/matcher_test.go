@@ -13,7 +13,7 @@ func TestNamingMatchConfigPathNotMatched(t *testing.T) {
 	m := NewPathMatcher(TemplateWithIds())
 	componentId, err := m.MatchConfigPath(
 		BranchKey{},
-		NewPathInProject(
+		NewAbsPath(
 			"parent/path",
 			"foo",
 		))
@@ -26,7 +26,7 @@ func TestNamingMatchConfigPathOrdinary(t *testing.T) {
 	m := NewPathMatcher(TemplateWithIds())
 	componentId, err := m.MatchConfigPath(
 		BranchKey{},
-		NewPathInProject(
+		NewAbsPath(
 			"parent/path",
 			"extractor/keboola.ex-db-mysql/with-rows",
 		))
@@ -39,7 +39,7 @@ func TestNamingMatchConfigPathSharedCode(t *testing.T) {
 	m := NewPathMatcher(TemplateWithIds())
 	componentId, err := m.MatchConfigPath(
 		BranchKey{},
-		NewPathInProject(
+		NewAbsPath(
 			"parent/path",
 			"_shared/keboola.python-transformation-v2",
 		))
@@ -52,7 +52,7 @@ func TestNamingMatchConfigPathVariables(t *testing.T) {
 	n := NewPathMatcher(TemplateWithIds())
 	componentId, err := n.MatchConfigPath(
 		ConfigKey{},
-		NewPathInProject(
+		NewAbsPath(
 			"parent/path",
 			"variables",
 		))
@@ -65,7 +65,7 @@ func TestNamingMatchSharedCodeVariables(t *testing.T) {
 	m := NewPathMatcher(TemplateWithIds())
 	componentId, err := m.MatchConfigPath(
 		ConfigRowKey{ComponentId: SharedCodeComponentId},
-		NewPathInProject(
+		NewAbsPath(
 			"shared/code/path",
 			"variables",
 		))
@@ -80,7 +80,7 @@ func TestNamingMatchConfigRowPathNotMatched(t *testing.T) {
 		&Component{
 			ComponentKey: ComponentKey{Id: "foo.bar"},
 		},
-		NewPathInProject(
+		NewAbsPath(
 			"parent/path",
 			"foo",
 		),
@@ -95,7 +95,7 @@ func TestNamingMatchConfigRowPathOrdinary(t *testing.T) {
 		&Component{
 			ComponentKey: ComponentKey{Id: "foo.bar"},
 		},
-		NewPathInProject(
+		NewAbsPath(
 			"parent/path",
 			"rows/foo",
 		),
@@ -110,7 +110,7 @@ func TestNamingMatchConfigRowPathSharedCode(t *testing.T) {
 		&Component{
 			ComponentKey: ComponentKey{Id: SharedCodeComponentId},
 		},
-		NewPathInProject(
+		NewAbsPath(
 			"parent/path",
 			"codes/foo",
 		))
@@ -124,7 +124,7 @@ func TestNamingMatchConfigRowPathVariables(t *testing.T) {
 		&Component{
 			ComponentKey: ComponentKey{Id: VariablesComponentId},
 		},
-		NewPathInProject(
+		NewAbsPath(
 			"parent/path",
 			"values/foo",
 		))

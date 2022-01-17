@@ -110,7 +110,7 @@ func TestStateTrackRecordNotPersisted(t *testing.T) {
 			Invalid:   true,
 		},
 	}
-	record.PathInProject = NewPathInProject(``, `foo`)
+	record.AbsPath = NewAbsPath(``, `foo`)
 	record.RelatedPaths = []string{`bar1`, `bar2`}
 
 	// Tracked are only paths from persisted records.
@@ -135,7 +135,7 @@ func TestStateTrackRecordValid(t *testing.T) {
 			Invalid:   false,
 		},
 	}
-	record.PathInProject = NewPathInProject(``, `foo`)
+	record.AbsPath = NewAbsPath(``, `foo`)
 	record.RelatedPaths = []string{`bar1`, `bar2`}
 
 	// For valid records, we will mark as tracked only those files that have been loaded.
@@ -160,7 +160,7 @@ func TestStateTrackRecordInvalid(t *testing.T) {
 			Invalid:   true,
 		},
 	}
-	record.PathInProject = NewPathInProject(``, `foo`)
+	record.AbsPath = NewAbsPath(``, `foo`)
 
 	// We do not load files for invalid records.
 	// Therefore, we mark all files from the object directory as tracked.
@@ -185,14 +185,14 @@ func TestRegistry_GetPath(t *testing.T) {
 		BranchManifest: &BranchManifest{
 			BranchKey: BranchKey{Id: 123},
 			Paths: Paths{
-				PathInProject: NewPathInProject(``, `my-branch`),
+				AbsPath: NewAbsPath(``, `my-branch`),
 			},
 		},
 	}))
 
 	// Found
 	path, found = registry.GetPath(BranchKey{Id: 123})
-	assert.Equal(t, NewPathInProject(``, `my-branch`), path)
+	assert.Equal(t, NewAbsPath(``, `my-branch`), path)
 	assert.True(t, found)
 }
 
@@ -210,7 +210,7 @@ func TestRegistry_GetByPath(t *testing.T) {
 		BranchManifest: &BranchManifest{
 			BranchKey: BranchKey{Id: 123},
 			Paths: Paths{
-				PathInProject: NewPathInProject(``, `my-branch`),
+				AbsPath: NewAbsPath(``, `my-branch`),
 			},
 		},
 	}

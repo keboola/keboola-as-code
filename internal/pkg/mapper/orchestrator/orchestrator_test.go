@@ -35,7 +35,7 @@ func createTargetConfigs(t *testing.T, state *state.State) (*model.ConfigState, 
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: targetConfigKey1,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject(`branch/extractor`, `target-config-1`),
+				AbsPath: model.NewAbsPath(`branch/extractor`, `target-config-1`),
 			},
 		},
 		Local:  &model.Config{ConfigKey: targetConfigKey1},
@@ -53,7 +53,7 @@ func createTargetConfigs(t *testing.T, state *state.State) (*model.ConfigState, 
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: targetConfigKey2,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject(`branch/extractor`, `target-config-2`),
+				AbsPath: model.NewAbsPath(`branch/extractor`, `target-config-2`),
 			},
 		},
 		Local:  &model.Config{ConfigKey: targetConfigKey2},
@@ -71,7 +71,7 @@ func createTargetConfigs(t *testing.T, state *state.State) (*model.ConfigState, 
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: targetConfigKey3,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject(`branch/extractor`, `target-config-3`),
+				AbsPath: model.NewAbsPath(`branch/extractor`, `target-config-3`),
 			},
 		},
 		Local:  &model.Config{ConfigKey: targetConfigKey3},
@@ -93,7 +93,7 @@ func createLocalLoadFixtures(t *testing.T, state *state.State) *model.ConfigStat
 		BranchManifest: &model.BranchManifest{
 			BranchKey: branchKey,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject(``, `branch`),
+				AbsPath: model.NewAbsPath(``, `branch`),
 			},
 		},
 		Local: &model.Branch{BranchKey: branchKey},
@@ -110,7 +110,7 @@ func createLocalLoadFixtures(t *testing.T, state *state.State) *model.ConfigStat
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: configKey,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject(`branch/other`, `orchestrator`),
+				AbsPath: model.NewAbsPath(`branch/other`, `orchestrator`),
 			},
 		},
 		Local: &model.Config{ConfigKey: configKey, Content: orderedmap.New()},
@@ -132,9 +132,9 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 					ConfigId:    `456`,
 					Index:       0,
 				},
-				PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases`, `001-phase`),
-				DependsOn:     []model.PhaseKey{},
-				Name:          `Phase`,
+				AbsPath:   model.NewAbsPath(`branch/other/orchestrator/phases`, `001-phase`),
+				DependsOn: []model.PhaseKey{},
+				Name:      `Phase`,
 				Content: orderedmap.FromPairs([]orderedmap.Pair{
 					{Key: `foo`, Value: `bar`},
 				}),
@@ -149,11 +149,11 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 							},
 							Index: 0,
 						},
-						PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases/001-phase`, `001-task-1`),
-						Name:          `Task 1`,
-						ComponentId:   `foo.bar1`,
-						ConfigId:      `123`,
-						ConfigPath:    `branch/extractor/target-config-1`,
+						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `001-task-1`),
+						Name:        `Task 1`,
+						ComponentId: `foo.bar1`,
+						ConfigId:    `123`,
+						ConfigPath:  `branch/extractor/target-config-1`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,
@@ -175,11 +175,11 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 							},
 							Index: 1,
 						},
-						PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases/001-phase`, `002-task-2`),
-						Name:          `Task 2`,
-						ComponentId:   `foo.bar2`,
-						ConfigId:      `789`,
-						ConfigPath:    `branch/extractor/target-config-2`,
+						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `002-task-2`),
+						Name:        `Task 2`,
+						ComponentId: `foo.bar2`,
+						ConfigId:    `789`,
+						ConfigPath:  `branch/extractor/target-config-2`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,
@@ -200,7 +200,7 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 					ConfigId:    `456`,
 					Index:       1,
 				},
-				PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases`, `002-phase-with-deps`),
+				AbsPath: model.NewAbsPath(`branch/other/orchestrator/phases`, `002-phase-with-deps`),
 				DependsOn: []model.PhaseKey{
 					{
 						BranchId:    123,
@@ -222,11 +222,11 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 							},
 							Index: 0,
 						},
-						PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases/002-phase-with-deps`, `001-task-3`),
-						Name:          `Task 3`,
-						ComponentId:   `foo.bar2`,
-						ConfigId:      `456`,
-						ConfigPath:    `branch/extractor/target-config-3`,
+						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/002-phase-with-deps`, `001-task-3`),
+						Name:        `Task 3`,
+						ComponentId: `foo.bar2`,
+						ConfigId:    `456`,
+						ConfigPath:  `branch/extractor/target-config-3`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,
@@ -251,7 +251,7 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 		BranchManifest: &model.BranchManifest{
 			BranchKey: branchKey,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject(``, `branch`),
+				AbsPath: model.NewAbsPath(``, `branch`),
 			},
 		},
 		Local: &model.Branch{BranchKey: branchKey},
@@ -268,7 +268,7 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: configKey,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject(`branch/other`, `orchestrator`),
+				AbsPath: model.NewAbsPath(`branch/other`, `orchestrator`),
 			},
 		},
 		Remote: &model.Config{
@@ -295,7 +295,7 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: targetConfigKey1,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject(`branch/extractor`, `target-config-1`),
+				AbsPath: model.NewAbsPath(`branch/extractor`, `target-config-1`),
 			},
 		},
 		Remote: &model.Config{ConfigKey: targetConfigKey1},
@@ -312,7 +312,7 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: targetConfigKey2,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject(`branch/extractor`, `target-config-2`),
+				AbsPath: model.NewAbsPath(`branch/extractor`, `target-config-2`),
 			},
 		},
 		Remote: &model.Config{ConfigKey: targetConfigKey2},
@@ -329,7 +329,7 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: targetConfigKey3,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject(`branch/extractor`, `target-config-3`),
+				AbsPath: model.NewAbsPath(`branch/extractor`, `target-config-3`),
 			},
 		},
 		Remote: &model.Config{ConfigKey: targetConfigKey3},

@@ -66,15 +66,15 @@ func (m *transformationMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe
 		blocksDir := m.state.NamingGenerator().BlocksDir(recipe.Path())
 		for _, block := range config.Transformation.Blocks {
 			if path, found := m.state.GetPath(block.Key()); found {
-				block.PathInProject = path
+				block.AbsPath = path
 			} else {
-				block.PathInProject = m.state.NamingGenerator().BlockPath(blocksDir, block)
+				block.AbsPath = m.state.NamingGenerator().BlockPath(blocksDir, block)
 			}
 			for _, code := range block.Codes {
 				if path, found := m.state.GetPath(code.Key()); found {
-					code.PathInProject = path
+					code.AbsPath = path
 				} else {
-					code.PathInProject = m.state.NamingGenerator().CodePath(block.Path(), code)
+					code.AbsPath = m.state.NamingGenerator().CodePath(block.Path(), code)
 				}
 				code.CodeFileName = m.state.NamingGenerator().CodeFileName(config.ComponentId)
 			}

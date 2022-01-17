@@ -319,7 +319,7 @@ func complexLocalExpectedBranches() []*model.BranchState {
 					Id: 123,
 				},
 				Paths: model.Paths{
-					PathInProject: model.NewPathInProject(
+					AbsPath: model.NewAbsPath(
 
 						"",
 						"123-branch",
@@ -345,7 +345,7 @@ func complexLocalExpectedBranches() []*model.BranchState {
 					Id: 111,
 				},
 				Paths: model.Paths{
-					PathInProject: model.NewPathInProject(
+					AbsPath: model.NewAbsPath(
 
 						"",
 						"main",
@@ -396,7 +396,7 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 					Id:          "896",
 				},
 				Paths: model.Paths{
-					PathInProject: model.NewPathInProject(
+					AbsPath: model.NewAbsPath(
 						"123-branch",
 						"extractor/keboola.ex-db-mysql/896-tables",
 					),
@@ -441,7 +441,7 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 					Id:          "456",
 				},
 				Paths: model.Paths{
-					PathInProject: model.NewPathInProject(
+					AbsPath: model.NewAbsPath(
 						"main",
 						"extractor/ex-generic-v2/456-todos",
 					),
@@ -486,7 +486,7 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 					Id:          "456",
 				},
 				Paths: model.Paths{
-					PathInProject: model.NewPathInProject(
+					AbsPath: model.NewAbsPath(
 						"123-branch",
 						"extractor/ex-generic-v2/456-todos",
 					),
@@ -531,7 +531,7 @@ func complexLocalExpectedConfigRows() []*model.ConfigRowState {
 					Id:          "56",
 				},
 				Paths: model.Paths{
-					PathInProject: model.NewPathInProject(
+					AbsPath: model.NewAbsPath(
 						"123-branch/extractor/keboola.ex-db-mysql/896-tables",
 						"rows/56-disabled",
 					),
@@ -571,7 +571,7 @@ func complexLocalExpectedConfigRows() []*model.ConfigRowState {
 					Id:          "34",
 				},
 				Paths: model.Paths{
-					PathInProject: model.NewPathInProject(
+					AbsPath: model.NewAbsPath(
 						"123-branch/extractor/keboola.ex-db-mysql/896-tables",
 						"rows/34-test-view",
 					),
@@ -611,7 +611,7 @@ func complexLocalExpectedConfigRows() []*model.ConfigRowState {
 					Id:          "12",
 				},
 				Paths: model.Paths{
-					PathInProject: model.NewPathInProject(
+					AbsPath: model.NewAbsPath(
 						"123-branch/extractor/keboola.ex-db-mysql/896-tables",
 						"rows/12-users",
 					),

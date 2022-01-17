@@ -64,7 +64,7 @@ func TestLocalSaveTransformation(t *testing.T) {
 					ConfigId:    `456`,
 					Index:       0,
 				},
-				PathInProject: model.NewPathInProject(
+				AbsPath: model.NewAbsPath(
 					`branch/config/blocks`,
 					`001-block-1`,
 				),
@@ -79,7 +79,7 @@ func TestLocalSaveTransformation(t *testing.T) {
 							Index:       0,
 						},
 						CodeFileName: `code.sql`,
-						PathInProject: model.NewPathInProject(
+						AbsPath: model.NewAbsPath(
 							`branch/config/blocks/001-block-1`,
 							`001-code-1`,
 						),
@@ -97,7 +97,7 @@ func TestLocalSaveTransformation(t *testing.T) {
 							Index:       1,
 						},
 						CodeFileName: `code.sql`,
-						PathInProject: model.NewPathInProject(
+						AbsPath: model.NewAbsPath(
 							`branch/config/blocks/001-block-1`,
 							`002-code-2`,
 						),
@@ -116,7 +116,7 @@ func TestLocalSaveTransformation(t *testing.T) {
 					ConfigId:    `456`,
 					Index:       1,
 				},
-				PathInProject: model.NewPathInProject(
+				AbsPath: model.NewAbsPath(
 					`branch/config/blocks`,
 					`002-block-2`,
 				),
@@ -132,7 +132,7 @@ func TestLocalSaveTransformation(t *testing.T) {
 						},
 						Name:         "code3",
 						CodeFileName: `code.sql`,
-						PathInProject: model.NewPathInProject(
+						AbsPath: model.NewAbsPath(
 							`branch/config/blocks/002-block-2`,
 							`001-code-3`,
 						),

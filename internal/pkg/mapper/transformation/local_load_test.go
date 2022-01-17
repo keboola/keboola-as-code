@@ -47,7 +47,7 @@ func TestLoadTransformationInvalidConfigAndMeta(t *testing.T) {
 	}
 	record := &model.ConfigManifest{
 		ConfigKey: configKey,
-		Paths:     model.Paths{PathInProject: model.PathInProject{ObjectPath: "config"}},
+		Paths:     model.Paths{AbsPath: model.AbsPath{ObjectPath: "config"}},
 	}
 	assert.NoError(t, fs.Mkdir(record.Path()))
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile(namingGenerator.MetaFilePath(record.Path()), metaFile)))
@@ -56,11 +56,11 @@ func TestLoadTransformationInvalidConfigAndMeta(t *testing.T) {
 	blocksDir := namingGenerator.BlocksDir(record.Path())
 	assert.NoError(t, fs.Mkdir(blocksDir))
 	block := &model.Block{BlockKey: model.BlockKey{Index: 123}, Name: `block`}
-	block.PathInProject = namingGenerator.BlockPath(blocksDir, block)
+	block.AbsPath = namingGenerator.BlockPath(blocksDir, block)
 	assert.NoError(t, fs.Mkdir(block.Path()))
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile(namingGenerator.MetaFilePath(block.Path()), blockMeta)))
 	code := &model.Code{CodeKey: model.CodeKey{Index: 123}, Name: `code`}
-	code.PathInProject = namingGenerator.CodePath(block.Path(), code)
+	code.AbsPath = namingGenerator.CodePath(block.Path(), code)
 	code.CodeFileName = namingGenerator.CodeFileName(component.Id)
 	assert.NoError(t, fs.Mkdir(code.Path()))
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile(namingGenerator.MetaFilePath(code.Path()), codeMeta)))
@@ -189,7 +189,7 @@ func TestLoadLocalTransformationSql(t *testing.T) {
 				ConfigId:    `456`,
 				Index:       0,
 			},
-			PathInProject: model.NewPathInProject(
+			AbsPath: model.NewAbsPath(
 				`branch/config/blocks`,
 				`001-block-1`,
 			),
@@ -203,7 +203,7 @@ func TestLoadLocalTransformationSql(t *testing.T) {
 						BlockIndex:  0,
 						Index:       0,
 					},
-					PathInProject: model.NewPathInProject(
+					AbsPath: model.NewAbsPath(
 						`branch/config/blocks/001-block-1`,
 						`001-code-1`,
 					),
@@ -221,7 +221,7 @@ func TestLoadLocalTransformationSql(t *testing.T) {
 						BlockIndex:  0,
 						Index:       1,
 					},
-					PathInProject: model.NewPathInProject(
+					AbsPath: model.NewAbsPath(
 						`branch/config/blocks/001-block-1`,
 						`002-code-2`,
 					),
@@ -241,7 +241,7 @@ func TestLoadLocalTransformationSql(t *testing.T) {
 				ConfigId:    `456`,
 				Index:       1,
 			},
-			PathInProject: model.NewPathInProject(
+			AbsPath: model.NewAbsPath(
 				`branch/config/blocks`,
 				`002-block-2`,
 			),
@@ -255,7 +255,7 @@ func TestLoadLocalTransformationSql(t *testing.T) {
 						BlockIndex:  1,
 						Index:       0,
 					},
-					PathInProject: model.NewPathInProject(
+					AbsPath: model.NewAbsPath(
 						`branch/config/blocks/002-block-2`,
 						`002-code-1`,
 					),
@@ -274,7 +274,7 @@ func TestLoadLocalTransformationSql(t *testing.T) {
 				ConfigId:    `456`,
 				Index:       2,
 			},
-			PathInProject: model.NewPathInProject(
+			AbsPath: model.NewAbsPath(
 				`branch/config/blocks`,
 				`003-block-3`,
 			),
@@ -332,7 +332,7 @@ func TestLoadLocalTransformationPy(t *testing.T) {
 				ConfigId:    `456`,
 				Index:       0,
 			},
-			PathInProject: model.NewPathInProject(
+			AbsPath: model.NewAbsPath(
 				`branch/config/blocks`,
 				`001-block-1`,
 			),
@@ -346,7 +346,7 @@ func TestLoadLocalTransformationPy(t *testing.T) {
 						BlockIndex:  0,
 						Index:       0,
 					},
-					PathInProject: model.NewPathInProject(
+					AbsPath: model.NewAbsPath(
 						`branch/config/blocks/001-block-1`,
 						`001-code-1`,
 					),
@@ -364,7 +364,7 @@ func TestLoadLocalTransformationPy(t *testing.T) {
 						BlockIndex:  0,
 						Index:       1,
 					},
-					PathInProject: model.NewPathInProject(
+					AbsPath: model.NewAbsPath(
 						`branch/config/blocks/001-block-1`,
 						`002-code-2`,
 					),
@@ -383,7 +383,7 @@ func TestLoadLocalTransformationPy(t *testing.T) {
 				ConfigId:    `456`,
 				Index:       1,
 			},
-			PathInProject: model.NewPathInProject(
+			AbsPath: model.NewAbsPath(
 				`branch/config/blocks`,
 				`002-block-2`,
 			),
@@ -397,7 +397,7 @@ func TestLoadLocalTransformationPy(t *testing.T) {
 						BlockIndex:  1,
 						Index:       0,
 					},
-					PathInProject: model.NewPathInProject(
+					AbsPath: model.NewAbsPath(
 						`branch/config/blocks/002-block-2`,
 						`002-code-1`,
 					),
@@ -416,7 +416,7 @@ func TestLoadLocalTransformationPy(t *testing.T) {
 				ConfigId:    `456`,
 				Index:       2,
 			},
-			PathInProject: model.NewPathInProject(
+			AbsPath: model.NewAbsPath(
 				`branch/config/blocks`,
 				`003-block-3`,
 			),
