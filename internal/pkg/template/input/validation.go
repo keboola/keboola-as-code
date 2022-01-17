@@ -2,18 +2,14 @@ package input
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"reflect"
 
-	"github.com/go-playground/locales/en"
-	ut "github.com/go-playground/universal-translator"
 	goValidator "github.com/go-playground/validator/v10"
-	enTranslation "github.com/go-playground/validator/v10/translations/en"
 	"github.com/umisama/go-regexpcache"
 	goValuate "gopkg.in/Knetic/govaluate.v3"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 func validateInputId(fl goValidator.FieldLevel) bool {
@@ -152,20 +148,8 @@ func validateUserInputByReflectKind(userInput interface{}, expectedType reflect.
 	return nil
 }
 
-func validateUserInputWithRules(userInput interface{}, rules string, ctx context.Context, fieldName string) error {
-	validate := goValidator.New()
-	enLocale := en.New()
-	universalTranslator := ut.New(enLocale, enLocale)
-	enTranslator, found := universalTranslator.GetTranslator("en")
-	if !found {
-		panic(fmt.Errorf("en translator was not found"))
-	}
-	err := enTranslation.RegisterDefaultTranslations(validate, enTranslator)
-	if err != nil {
-		panic(fmt.Errorf("translator was not registered: %w", err))
-	}
-
-	return translateError(validate.VarCtx(ctx, userInput, rules), enTranslator, fieldName)
+func validateUserInputWithRules(userInput interface{}, rulesTag string, ctx context.Context, fieldName string) error {
+	return validator.ValidateCtx(userInput, ctx, rulesTag, fieldName)
 }
 
 func catchPanicOnRulesValidation(fn func() error) (err, recovered interface{}) {
@@ -173,18 +157,4 @@ func catchPanicOnRulesValidation(fn func() error) (err, recovered interface{}) {
 		recovered = recover()
 	}()
 	return fn(), recovered
-}
-
-func translateError(err error, trans ut.Translator, fieldName string) error {
-	if err == nil {
-		return nil
-	}
-	multiError := utils.NewMultiError()
-	var validatorErrs goValidator.ValidationErrors
-	errors.As(err, &validatorErrs)
-	for _, e := range validatorErrs {
-		translatedErr := fmt.Errorf("%s%s", fieldName, e.Translate(trans))
-		multiError.Append(translatedErr)
-	}
-	return multiError
 }

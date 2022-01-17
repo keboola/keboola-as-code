@@ -87,8 +87,7 @@ func TestManifestContentValidateEmpty(t *testing.T) {
 	c := &file{}
 	err := c.validate()
 	assert.NotNil(t, err)
-	expected := `manifest is not valid:
-  - key="version", value="0", failed "required" validation`
+	expected := `manifest is not valid: version is a required field`
 	assert.Equal(t, expected, err.Error())
 }
 
@@ -108,7 +107,7 @@ func TestManifestContentValidateBadVersion(t *testing.T) {
 	manifestContent.Version = 123
 	err := manifestContent.validate()
 	assert.Error(t, err)
-	expected := "manifest is not valid:\n  - key=\"version\", value=\"123\", failed \"max\" validation"
+	expected := "manifest is not valid: version must be 2 or less"
 	assert.Equal(t, expected, err.Error())
 }
 
