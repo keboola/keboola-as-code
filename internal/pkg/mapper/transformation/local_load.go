@@ -80,7 +80,7 @@ func (l *localLoader) addBlock(blockIndex int, path string) *model.Block {
 			ConfigId:    l.config.Id,
 			Index:       blockIndex,
 		},
-		PathInProject: model.NewPathInProject(
+		AbsPath: model.NewAbsPath(
 			l.blocksDir,
 			path,
 		),
@@ -103,7 +103,7 @@ func (l *localLoader) addCode(block *model.Block, codeIndex int, path string) *m
 			BlockIndex:  block.Index,
 			Index:       codeIndex,
 		},
-		PathInProject: model.NewPathInProject(
+		AbsPath: model.NewAbsPath(
 			block.Path(),
 			path,
 		),

@@ -11,20 +11,20 @@ import (
 
 type Registry struct {
 	lock   *sync.Mutex
-	byPath map[string]Key           // path -> object key
-	byKey  map[string]PathInProject // object key -> path
+	byPath map[string]Key     // path -> object key
+	byKey  map[string]AbsPath // object key -> path
 }
 
 func NewRegistry() *Registry {
 	return &Registry{
 		lock:   &sync.Mutex{},
 		byPath: make(map[string]Key),
-		byKey:  make(map[string]PathInProject),
+		byKey:  make(map[string]AbsPath),
 	}
 }
 
 // Attach object's path to NamingTemplate, it guarantees the path will remain unique and will not be used again.
-func (r Registry) Attach(key Key, path PathInProject) error {
+func (r Registry) Attach(key Key, path AbsPath) error {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
@@ -63,7 +63,7 @@ func (r Registry) Detach(key Key) {
 	}
 }
 
-func (r Registry) PathByKey(key Key) (PathInProject, bool) {
+func (r Registry) PathByKey(key Key) (AbsPath, bool) {
 	path, found := r.byKey[key.String()]
 	return path, found
 }
@@ -73,7 +73,7 @@ func (r Registry) KeyByPath(path string) (Key, bool) {
 	return key, found
 }
 
-func (r Registry) ensureUniquePath(key Key, p PathInProject) PathInProject {
+func (r Registry) ensureUniquePath(key Key, p AbsPath) AbsPath {
 	p = r.makeUniquePath(key, p)
 	if err := r.Attach(key, p); err != nil {
 		panic(err)
@@ -81,7 +81,7 @@ func (r Registry) ensureUniquePath(key Key, p PathInProject) PathInProject {
 	return p
 }
 
-func (r Registry) makeUniquePath(key Key, p PathInProject) PathInProject {
+func (r Registry) makeUniquePath(key Key, p AbsPath) AbsPath {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 

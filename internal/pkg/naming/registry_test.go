@@ -14,22 +14,22 @@ func TestNamingPathsStorage(t *testing.T) {
 
 	// Attach multiple times with same key
 	key1 := BranchKey{Id: 123}
-	assert.NoError(t, s.Attach(key1, NewPathInProject("", "my-branch")))
-	assert.NoError(t, s.Attach(key1, NewPathInProject("", "my-branch-123")))
-	assert.NoError(t, s.Attach(key1, NewPathInProject("", "my-branch-abc")))
+	assert.NoError(t, s.Attach(key1, NewAbsPath("", "my-branch")))
+	assert.NoError(t, s.Attach(key1, NewAbsPath("", "my-branch-123")))
+	assert.NoError(t, s.Attach(key1, NewAbsPath("", "my-branch-abc")))
 	assert.Len(t, s.byPath, 1)
 	assert.Len(t, s.byKey, 1)
 	assert.Equal(t, key1, s.byPath["my-branch-abc"])
-	assert.Equal(t, NewPathInProject("", "my-branch-abc"), s.byKey[key1.String()])
+	assert.Equal(t, NewAbsPath("", "my-branch-abc"), s.byKey[key1.String()])
 
 	// Attach another key
 	key2 := BranchKey{Id: 456}
-	assert.NoError(t, s.Attach(key2, NewPathInProject("", "my-branch-456")))
+	assert.NoError(t, s.Attach(key2, NewAbsPath("", "my-branch-456")))
 	assert.Len(t, s.byPath, 2)
 	assert.Len(t, s.byKey, 2)
 
 	// Attach another key with same path
-	err := s.Attach(BranchKey{Id: 789}, NewPathInProject("", "my-branch-456"))
+	err := s.Attach(BranchKey{Id: 789}, NewAbsPath("", "my-branch-456"))
 	assert.Error(t, err)
 	msg := `naming error: path "my-branch-456" is attached to branch "456", but new branch "789" has same path`
 	assert.Equal(t, msg, err.Error())
@@ -40,7 +40,7 @@ func TestNamingPathsStorage(t *testing.T) {
 	assert.Len(t, s.byKey, 1)
 
 	// Re-use path
-	assert.NoError(t, s.Attach(BranchKey{Id: 789}, NewPathInProject("", "my-branch-456")))
+	assert.NoError(t, s.Attach(BranchKey{Id: 789}, NewAbsPath("", "my-branch-456")))
 	assert.Len(t, s.byPath, 2)
 	assert.Len(t, s.byKey, 2)
 }

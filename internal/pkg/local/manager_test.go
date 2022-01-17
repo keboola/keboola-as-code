@@ -81,7 +81,7 @@ func TestLocalSaveMapper(t *testing.T) {
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: configKey,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject(`branch`, `config`),
+				AbsPath: model.NewAbsPath(`branch`, `config`),
 			},
 		},
 		Remote: &model.Config{

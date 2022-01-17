@@ -84,7 +84,7 @@ func TestLoadState(t *testing.T) {
 					Id: model.BranchId(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
 				},
 				Paths: model.Paths{
-					PathInProject: model.NewPathInProject(
+					AbsPath: model.NewAbsPath(
 						"",
 						"main",
 					),
@@ -142,7 +142,7 @@ func TestLoadState(t *testing.T) {
 					Id:          model.ConfigId(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
 				},
 				Paths: model.Paths{
-					PathInProject: model.NewPathInProject(
+					AbsPath: model.NewAbsPath(
 						"main",
 						"extractor/ex-generic-v2/456-todos",
 					),

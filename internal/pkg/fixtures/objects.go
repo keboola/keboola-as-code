@@ -108,11 +108,11 @@ func (MockedManifest) IsParentPathSet() bool {
 func (MockedManifest) SetParentPath(string) {
 }
 
-func (r MockedManifest) GetPathInProject() model.PathInProject {
+func (r MockedManifest) GetPathInProject() model.AbsPath {
 	if len(r.PathValue) > 0 {
-		return model.NewPathInProject("", r.PathValue)
+		return model.NewAbsPath("", r.PathValue)
 	}
-	return model.NewPathInProject("", "test")
+	return model.NewAbsPath("", "test")
 }
 
 func (r MockedManifest) Path() string {

@@ -172,10 +172,10 @@ func (s *Registry) ConfigRowsFrom(config ConfigKey) (rows []*ConfigRowState) {
 	return rows
 }
 
-func (s *Registry) GetPath(key Key) (PathInProject, bool) {
+func (s *Registry) GetPath(key Key) (AbsPath, bool) {
 	objectState, found := s.Get(key)
 	if !found {
-		return PathInProject{}, false
+		return AbsPath{}, false
 	}
 	return objectState.GetPathInProject(), true
 }

@@ -28,15 +28,15 @@ func TestLocalLoadTranWithSharedCode(t *testing.T) {
 	// Paths in transformation blocks are replaced by IDs
 	assert.Equal(t, []*model.Block{
 		{
-			Name:          `Block 1`,
-			PathInProject: model.NewPathInProject(`branch/transformation/blocks`, `block-1`),
+			Name:    `Block 1`,
+			AbsPath: model.NewAbsPath(`branch/transformation/blocks`, `block-1`),
 			Codes: model.Codes{
 				{
 					CodeKey: model.CodeKey{
 						ComponentId: `keboola.python-transformation-v2`,
 					},
-					Name:          `Code 1`,
-					PathInProject: model.NewPathInProject(`branch/transformation/blocks/block-1`, `code-1`),
+					Name:    `Code 1`,
+					AbsPath: model.NewAbsPath(`branch/transformation/blocks/block-1`, `code-1`),
 					Scripts: model.Scripts{
 						model.StaticScript{Value: `print(100)`},
 						model.LinkScript{
@@ -53,8 +53,8 @@ func TestLocalLoadTranWithSharedCode(t *testing.T) {
 					CodeKey: model.CodeKey{
 						ComponentId: `keboola.python-transformation-v2`,
 					},
-					Name:          `Code 2`,
-					PathInProject: model.NewPathInProject(`branch/transformation/blocks/block-1`, `code-2`),
+					Name:    `Code 2`,
+					AbsPath: model.NewAbsPath(`branch/transformation/blocks/block-1`, `code-2`),
 					Scripts: model.Scripts{
 						model.LinkScript{
 							Target: model.ConfigRowKey{

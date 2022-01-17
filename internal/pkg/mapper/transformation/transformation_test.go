@@ -30,7 +30,7 @@ func createTestFixtures(t *testing.T, componentId string) *model.ConfigState {
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: configKey,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject(
+				AbsPath: model.NewAbsPath(
 					"branch",
 					"config",
 				),

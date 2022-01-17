@@ -17,7 +17,7 @@ func CreateSharedCode(t *testing.T, state model.ObjectStates) (model.ConfigKey, 
 	branchState := &model.BranchState{
 		BranchManifest: &model.BranchManifest{
 			BranchKey: branchKey,
-			Paths:     model.Paths{PathInProject: model.NewPathInProject(``, `branch`)},
+			Paths:     model.Paths{AbsPath: model.NewAbsPath(``, `branch`)},
 		},
 		Local:  &model.Branch{BranchKey: branchKey},
 		Remote: &model.Branch{BranchKey: branchKey},
@@ -34,7 +34,7 @@ func CreateSharedCode(t *testing.T, state model.ObjectStates) (model.ConfigKey, 
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: sharedCodeKey,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject(`branch`, `_shared/keboola.python-transformation-v2`),
+				AbsPath: model.NewAbsPath(`branch`, `_shared/keboola.python-transformation-v2`),
 			},
 		},
 		Local: &model.Config{
@@ -65,7 +65,7 @@ func CreateSharedCode(t *testing.T, state model.ObjectStates) (model.ConfigKey, 
 		ConfigRowManifest: &model.ConfigRowManifest{
 			ConfigRowKey: row1Key,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject(`branch/_shared/keboola.python-transformation-v2`, `codes/code1`),
+				AbsPath: model.NewAbsPath(`branch/_shared/keboola.python-transformation-v2`, `codes/code1`),
 			},
 		},
 		Local:  &model.ConfigRow{ConfigRowKey: row1Key, Content: orderedmap.New()},
@@ -84,7 +84,7 @@ func CreateSharedCode(t *testing.T, state model.ObjectStates) (model.ConfigKey, 
 		ConfigRowManifest: &model.ConfigRowManifest{
 			ConfigRowKey: row2Key,
 			Paths: model.Paths{
-				PathInProject: model.NewPathInProject(`branch/_shared/keboola.python-transformation-v2`, `codes/code2`),
+				AbsPath: model.NewAbsPath(`branch/_shared/keboola.python-transformation-v2`, `codes/code2`),
 			},
 		},
 		Local:  &model.ConfigRow{ConfigRowKey: row2Key, Content: orderedmap.New()},

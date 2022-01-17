@@ -54,7 +54,7 @@ func TestPersistNewConfig(t *testing.T) {
 		expectedNewIds: 1,
 		expectedPlan: []action{
 			&newObjectAction{
-				PathInProject: model.NewPathInProject(
+				AbsPath: model.NewAbsPath(
 					"main",
 					"extractor/ex-generic-v2/new-config",
 				),
@@ -80,7 +80,7 @@ func TestPersistNewConfig(t *testing.T) {
 						Persisted: true,
 					},
 					Paths: model.Paths{
-						PathInProject: model.NewPathInProject(
+						AbsPath: model.NewAbsPath(
 							"main",
 							"extractor/ex-generic-v2/new-config",
 						),
@@ -128,7 +128,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 		expectedNewIds: 2,
 		expectedPlan: []action{
 			&newObjectAction{
-				PathInProject: model.NewPathInProject(
+				AbsPath: model.NewAbsPath(
 					"main",
 					"extractor/keboola.ex-db-mysql/new-config",
 				),
@@ -141,7 +141,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 				},
 			},
 			&newObjectAction{
-				PathInProject: model.NewPathInProject(
+				AbsPath: model.NewAbsPath(
 					"main/extractor/keboola.ex-db-mysql/new-config",
 					"rows/some-row",
 				),
@@ -168,7 +168,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 						Persisted: true,
 					},
 					Paths: model.Paths{
-						PathInProject: model.NewPathInProject(
+						AbsPath: model.NewAbsPath(
 							"main",
 							"extractor/keboola.ex-db-mysql/new-config",
 						),
@@ -205,7 +205,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 						Persisted: true,
 					},
 					Paths: model.Paths{
-						PathInProject: model.NewPathInProject(
+						AbsPath: model.NewAbsPath(
 							"main/extractor/keboola.ex-db-mysql/new-config",
 							"rows/some-row",
 						),
@@ -254,7 +254,7 @@ func TestPersistDeleted(t *testing.T) {
 						Persisted: true,
 					},
 					Paths: model.Paths{
-						PathInProject: model.NewPathInProject(
+						AbsPath: model.NewAbsPath(
 							"main",
 							"extractor/keboola.ex-db-mysql/missing",
 						),
@@ -275,7 +275,7 @@ func TestPersistDeleted(t *testing.T) {
 						Persisted: true,
 					},
 					Paths: model.Paths{
-						PathInProject: model.NewPathInProject(
+						AbsPath: model.NewAbsPath(
 							"main/extractor/keboola.ex-db-mysql/missing",
 							"rows/some-row",
 						),
@@ -320,7 +320,7 @@ func TestPersistSharedCode(t *testing.T) {
 		expectedNewIds: 2,
 		expectedPlan: []action{
 			&newObjectAction{
-				PathInProject: model.NewPathInProject(
+				AbsPath: model.NewAbsPath(
 					"main",
 					"_shared/keboola.python-transformation-v2",
 				),
@@ -333,7 +333,7 @@ func TestPersistSharedCode(t *testing.T) {
 				},
 			},
 			&newObjectAction{
-				PathInProject: model.NewPathInProject(
+				AbsPath: model.NewAbsPath(
 					"main/_shared/keboola.python-transformation-v2",
 					"codes/my-code",
 				),
@@ -360,7 +360,7 @@ func TestPersistSharedCode(t *testing.T) {
 						Persisted: true,
 					},
 					Paths: model.Paths{
-						PathInProject: model.NewPathInProject(
+						AbsPath: model.NewAbsPath(
 							"main",
 							"_shared/keboola.python-transformation-v2",
 						),
@@ -395,7 +395,7 @@ func TestPersistSharedCode(t *testing.T) {
 						Persisted: true,
 					},
 					Paths: model.Paths{
-						PathInProject: model.NewPathInProject(
+						AbsPath: model.NewAbsPath(
 							"main/_shared/keboola.python-transformation-v2",
 							"codes/my-code",
 						),
@@ -462,7 +462,7 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 		expectedNewIds: 3,
 		expectedPlan: []action{
 			&newObjectAction{
-				PathInProject: model.NewPathInProject(
+				AbsPath: model.NewAbsPath(
 					"main",
 					"_shared/keboola.python-transformation-v2",
 				),
@@ -475,7 +475,7 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 				},
 			},
 			&newObjectAction{
-				PathInProject: model.NewPathInProject(
+				AbsPath: model.NewAbsPath(
 					"main/_shared/keboola.python-transformation-v2",
 					"codes/my-code",
 				),
@@ -489,7 +489,7 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 				},
 			},
 			&newObjectAction{
-				PathInProject: model.NewPathInProject(
+				AbsPath: model.NewAbsPath(
 					"main/_shared/keboola.python-transformation-v2/codes/my-code",
 					"variables",
 				),
@@ -516,7 +516,7 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 						Persisted: true,
 					},
 					Paths: model.Paths{
-						PathInProject: model.NewPathInProject(
+						AbsPath: model.NewAbsPath(
 							"main",
 							"_shared/keboola.python-transformation-v2",
 						),
@@ -551,7 +551,7 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 						Persisted: true,
 					},
 					Paths: model.Paths{
-						PathInProject: model.NewPathInProject(
+						AbsPath: model.NewAbsPath(
 							"main/_shared/keboola.python-transformation-v2",
 							"codes/my-code",
 						),
@@ -592,7 +592,7 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 						Persisted: true,
 					},
 					Paths: model.Paths{
-						PathInProject: model.NewPathInProject(
+						AbsPath: model.NewAbsPath(
 							"main/_shared/keboola.python-transformation-v2/codes/my-code",
 							"variables",
 						),
@@ -673,7 +673,7 @@ func TestPersistVariables(t *testing.T) {
 		expectedNewIds: 2,
 		expectedPlan: []action{
 			&newObjectAction{
-				PathInProject: model.NewPathInProject(
+				AbsPath: model.NewAbsPath(
 					"main/extractor/ex-generic-v2/456-todos",
 					"variables",
 				),
@@ -688,7 +688,7 @@ func TestPersistVariables(t *testing.T) {
 				},
 			},
 			&newObjectAction{
-				PathInProject: model.NewPathInProject(
+				AbsPath: model.NewAbsPath(
 					"main/extractor/ex-generic-v2/456-todos/variables",
 					"values/default",
 				),
@@ -715,7 +715,7 @@ func TestPersistVariables(t *testing.T) {
 						Persisted: true,
 					},
 					Paths: model.Paths{
-						PathInProject: model.NewPathInProject(
+						AbsPath: model.NewAbsPath(
 							"main/extractor/ex-generic-v2/456-todos",
 							"variables",
 						),
@@ -765,7 +765,7 @@ func TestPersistVariables(t *testing.T) {
 						Persisted: true,
 					},
 					Paths: model.Paths{
-						PathInProject: model.NewPathInProject(
+						AbsPath: model.NewAbsPath(
 							"main/extractor/ex-generic-v2/456-todos/variables",
 							"values/default",
 						),
@@ -845,7 +845,7 @@ func TestPersistScheduler(t *testing.T) {
 		expectedNewIds: 1,
 		expectedPlan: []action{
 			&newObjectAction{
-				PathInProject: model.NewPathInProject(
+				AbsPath: model.NewAbsPath(
 					"main/extractor/ex-generic-v2/456-todos",
 					"schedules/my-scheduler",
 				),
@@ -873,7 +873,7 @@ func TestPersistScheduler(t *testing.T) {
 						Persisted: true,
 					},
 					Paths: model.Paths{
-						PathInProject: model.NewPathInProject(
+						AbsPath: model.NewAbsPath(
 							"main/extractor/ex-generic-v2/456-todos",
 							"schedules/my-scheduler",
 						),

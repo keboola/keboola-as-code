@@ -98,15 +98,15 @@ func (l *remoteLoader) load() error {
 		phasesDir := l.NamingGenerator().PhasesDir(l.manifest.Path())
 		for _, phase := range l.config.Orchestration.Phases {
 			if path, found := l.GetPath(phase.Key()); found {
-				phase.PathInProject = path
+				phase.AbsPath = path
 			} else {
-				phase.PathInProject = l.NamingGenerator().PhasePath(phasesDir, phase)
+				phase.AbsPath = l.NamingGenerator().PhasePath(phasesDir, phase)
 			}
 			for _, task := range phase.Tasks {
 				if path, found := l.GetPath(task.Key()); found {
-					task.PathInProject = path
+					task.AbsPath = path
 				} else {
-					task.PathInProject = l.NamingGenerator().TaskPath(phase.Path(), task)
+					task.AbsPath = l.NamingGenerator().TaskPath(phase.Path(), task)
 				}
 			}
 		}

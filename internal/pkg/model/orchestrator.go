@@ -17,7 +17,7 @@ type Orchestration struct {
 
 type Phase struct {
 	PhaseKey
-	PathInProject
+	AbsPath
 	DependsOn []PhaseKey
 	Tasks     []*Task                `validate:"dive"`
 	Name      string                 `validate:"required"`
@@ -26,12 +26,12 @@ type Phase struct {
 
 type Task struct {
 	TaskKey
-	PathInProject `validate:"dive"`
-	Name          string                 `validate:"required"`
-	ComponentId   ComponentId            `validate:"required"`
-	ConfigId      ConfigId               `validate:"required"`
-	ConfigPath    string                 // target config path if any
-	Content       *orderedmap.OrderedMap `validate:"dive"`
+	AbsPath     `validate:"dive"`
+	Name        string                 `validate:"required"`
+	ComponentId ComponentId            `validate:"required"`
+	ConfigId    ConfigId               `validate:"required"`
+	ConfigPath  string                 // target config path if any
+	Content     *orderedmap.OrderedMap `validate:"dive"`
 }
 
 func (p Phase) String() string {

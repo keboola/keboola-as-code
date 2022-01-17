@@ -75,7 +75,7 @@ func TestLoadRemoteTransformation(t *testing.T) {
 				ConfigId:    `456`,
 				Index:       0,
 			},
-			PathInProject: model.NewPathInProject(
+			AbsPath: model.NewAbsPath(
 				`branch/config/blocks`,
 				`001-block-1`,
 			),
@@ -89,7 +89,7 @@ func TestLoadRemoteTransformation(t *testing.T) {
 						BlockIndex:  0,
 						Index:       0,
 					},
-					PathInProject: model.NewPathInProject(
+					AbsPath: model.NewAbsPath(
 						`branch/config/blocks/001-block-1`,
 						`001-code-1`,
 					),
@@ -107,7 +107,7 @@ func TestLoadRemoteTransformation(t *testing.T) {
 						BlockIndex:  0,
 						Index:       1,
 					},
-					PathInProject: model.NewPathInProject(
+					AbsPath: model.NewAbsPath(
 						`branch/config/blocks/001-block-1`,
 						`002-code-2`,
 					),
@@ -127,7 +127,7 @@ func TestLoadRemoteTransformation(t *testing.T) {
 				ConfigId:    `456`,
 				Index:       1,
 			},
-			PathInProject: model.NewPathInProject(
+			AbsPath: model.NewAbsPath(
 				`branch/config/blocks`,
 				`002-block-2`,
 			),
@@ -141,7 +141,7 @@ func TestLoadRemoteTransformation(t *testing.T) {
 						BlockIndex:  1,
 						Index:       0,
 					},
-					PathInProject: model.NewPathInProject(
+					AbsPath: model.NewAbsPath(
 						`branch/config/blocks/002-block-2`,
 						`001-code-3`,
 					),

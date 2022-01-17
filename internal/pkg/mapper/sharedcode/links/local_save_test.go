@@ -46,7 +46,7 @@ func TestLocalSaveTranWithSharedCode(t *testing.T) {
 						model.StaticScript{Value: `print(100)`},
 						model.StaticScript{Value: "# {{:codes/code1}}"},
 					},
-					PathInProject: model.NewPathInProject(`branch/transformation/blocks/block-1`, `code-1`),
+					AbsPath: model.NewAbsPath(`branch/transformation/blocks/block-1`, `code-1`),
 				},
 				{
 					CodeKey: model.CodeKey{
@@ -57,10 +57,10 @@ func TestLocalSaveTranWithSharedCode(t *testing.T) {
 						model.StaticScript{Value: "# {{:codes/code2}}"},
 						model.StaticScript{Value: "# {{:codes/code1}}"},
 					},
-					PathInProject: model.NewPathInProject(`branch/transformation/blocks/block-1`, `code-2`),
+					AbsPath: model.NewAbsPath(`branch/transformation/blocks/block-1`, `code-2`),
 				},
 			},
-			PathInProject: model.NewPathInProject(`branch/transformation/blocks`, `block-1`),
+			AbsPath: model.NewAbsPath(`branch/transformation/blocks`, `block-1`),
 		},
 	}, transformation.Local.Transformation.Blocks)
 }
@@ -105,7 +105,7 @@ WARN  Warning:
 						model.StaticScript{Value: `print(100)`},
 						model.StaticScript{Value: fmt.Sprintf("{{%s}}", sharedCodeRowsKeys[0].ObjectId())},
 					},
-					PathInProject: model.NewPathInProject(`branch/transformation/blocks/block-1`, `code-1`),
+					AbsPath: model.NewAbsPath(`branch/transformation/blocks/block-1`, `code-1`),
 				},
 				{
 					CodeKey: model.CodeKey{
@@ -117,10 +117,10 @@ WARN  Warning:
 						model.StaticScript{Value: fmt.Sprintf("{{%s}}", sharedCodeRowsKeys[1].ObjectId())},
 						model.StaticScript{Value: fmt.Sprintf("{{%s}}", sharedCodeRowsKeys[0].ObjectId())},
 					},
-					PathInProject: model.NewPathInProject(`branch/transformation/blocks/block-1`, `code-2`),
+					AbsPath: model.NewAbsPath(`branch/transformation/blocks/block-1`, `code-2`),
 				},
 			},
-			PathInProject: model.NewPathInProject(`branch/transformation/blocks`, `block-1`),
+			AbsPath: model.NewAbsPath(`branch/transformation/blocks`, `block-1`),
 		},
 	}, transformation.Local.Transformation.Blocks)
 }
@@ -171,7 +171,7 @@ WARN  Warning:
 						model.StaticScript{Value: `print(100)`},
 						model.StaticScript{Value: "# {{:codes/code1}}"},
 					},
-					PathInProject: model.NewPathInProject(`branch/transformation/blocks/block-1`, `code-1`),
+					AbsPath: model.NewAbsPath(`branch/transformation/blocks/block-1`, `code-1`),
 				},
 				{
 					CodeKey: model.CodeKey{
@@ -182,10 +182,10 @@ WARN  Warning:
 						model.StaticScript{Value: "{{missing}}"}, // <<<<<<<<<<<<<<
 						model.StaticScript{Value: "# {{:codes/code1}}"},
 					},
-					PathInProject: model.NewPathInProject(`branch/transformation/blocks/block-1`, `code-2`),
+					AbsPath: model.NewAbsPath(`branch/transformation/blocks/block-1`, `code-2`),
 				},
 			},
-			PathInProject: model.NewPathInProject(`branch/transformation/blocks`, `block-1`),
+			AbsPath: model.NewAbsPath(`branch/transformation/blocks`, `block-1`),
 		},
 	}, transformation.Local.Transformation.Blocks)
 }

@@ -97,9 +97,9 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 					ConfigId:    `456`,
 					Index:       0,
 				},
-				PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases`, `001-phase`),
-				DependsOn:     []model.PhaseKey{},
-				Name:          `Phase`,
+				AbsPath:   model.NewAbsPath(`branch/other/orchestrator/phases`, `001-phase`),
+				DependsOn: []model.PhaseKey{},
+				Name:      `Phase`,
 				Content: orderedmap.FromPairs([]orderedmap.Pair{
 					{Key: `foo`, Value: `bar`},
 				}),
@@ -114,11 +114,11 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 							},
 							Index: 0,
 						},
-						PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases/001-phase`, `001-task-1`),
-						Name:          `Task 1`,
-						ComponentId:   `foo.bar1`,
-						ConfigId:      `123`,
-						ConfigPath:    `branch/extractor/target-config-1`,
+						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `001-task-1`),
+						Name:        `Task 1`,
+						ComponentId: `foo.bar1`,
+						ConfigId:    `123`,
+						ConfigPath:  `branch/extractor/target-config-1`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,
@@ -140,11 +140,11 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 							},
 							Index: 1,
 						},
-						PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases/001-phase`, `002-task-2`),
-						Name:          `Task 2`,
-						ComponentId:   `foo.bar2`,
-						ConfigId:      `789`,
-						ConfigPath:    `branch/extractor/target-config-2`,
+						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `002-task-2`),
+						Name:        `Task 2`,
+						ComponentId: `foo.bar2`,
+						ConfigId:    `789`,
+						ConfigPath:  `branch/extractor/target-config-2`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,
@@ -165,7 +165,7 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 					ConfigId:    `456`,
 					Index:       1,
 				},
-				PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases`, `002-phase-with-deps`),
+				AbsPath: model.NewAbsPath(`branch/other/orchestrator/phases`, `002-phase-with-deps`),
 				DependsOn: []model.PhaseKey{
 					{
 						BranchId:    123,
@@ -187,11 +187,11 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 							},
 							Index: 0,
 						},
-						PathInProject: model.NewPathInProject(`branch/other/orchestrator/phases/002-phase-with-deps`, `001-task-3`),
-						Name:          `Task 3`,
-						ComponentId:   `foo.bar2`,
-						ConfigId:      `456`,
-						ConfigPath:    `branch/extractor/target-config-3`,
+						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/002-phase-with-deps`, `001-task-3`),
+						Name:        `Task 3`,
+						ComponentId: `foo.bar2`,
+						ConfigId:    `456`,
+						ConfigPath:  `branch/extractor/target-config-3`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,

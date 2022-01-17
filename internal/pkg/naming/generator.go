@@ -44,8 +44,8 @@ func (g Generator) DescriptionFilePath(dir string) string {
 	return filesystem.Join(dir, DescriptionFile)
 }
 
-func (g Generator) BranchPath(branch *Branch) PathInProject {
-	p := PathInProject{}
+func (g Generator) BranchPath(branch *Branch) AbsPath {
+	p := AbsPath{}
 	p.SetParentPath("") // branch is top level object
 
 	if branch.IsDefault {
@@ -60,7 +60,7 @@ func (g Generator) BranchPath(branch *Branch) PathInProject {
 	return g.registry.ensureUniquePath(branch.Key(), p)
 }
 
-func (g Generator) ConfigPath(parentPath string, component *Component, config *Config) PathInProject {
+func (g Generator) ConfigPath(parentPath string, component *Component, config *Config) AbsPath {
 	if len(parentPath) == 0 {
 		panic(fmt.Errorf(`config "%s" parent path cannot be empty"`, config))
 	}
@@ -97,7 +97,7 @@ func (g Generator) ConfigPath(parentPath string, component *Component, config *C
 		panic(fmt.Errorf(`unexpected config parent type "%s"`, parentKey.Kind()))
 	}
 
-	p := PathInProject{}
+	p := AbsPath{}
 	p.SetParentPath(parentPath)
 	p.ObjectPath = utils.ReplacePlaceholders(template, map[string]interface{}{
 		"target_component_id": targetComponentId, // for shared code
@@ -109,7 +109,7 @@ func (g Generator) ConfigPath(parentPath string, component *Component, config *C
 	return g.registry.ensureUniquePath(config.Key(), p)
 }
 
-func (g Generator) ConfigRowPath(parentPath string, component *Component, row *ConfigRow) PathInProject {
+func (g Generator) ConfigRowPath(parentPath string, component *Component, row *ConfigRow) AbsPath {
 	if len(parentPath) == 0 {
 		panic(fmt.Errorf(`config row "%s" parent path cannot be empty"`, row))
 	}
@@ -154,7 +154,7 @@ func (g Generator) ConfigRowPath(parentPath string, component *Component, row *C
 		}
 	}
 
-	p := PathInProject{}
+	p := AbsPath{}
 	p.SetParentPath(parentPath)
 	p.ObjectPath = utils.ReplacePlaceholders(template, map[string]interface{}{
 		"config_row_id":   row.Id,
@@ -167,8 +167,8 @@ func (g Generator) BlocksDir(configDir string) string {
 	return filesystem.Join(configDir, blocksDir)
 }
 
-func (g Generator) BlockPath(parentPath string, block *Block) PathInProject {
-	p := PathInProject{}
+func (g Generator) BlockPath(parentPath string, block *Block) AbsPath {
+	p := AbsPath{}
 	p.SetParentPath(parentPath)
 	p.ObjectPath = utils.ReplacePlaceholders(string(blockNameTemplate), map[string]interface{}{
 		"block_order": fmt.Sprintf(`%03d`, block.Index+1),
@@ -177,8 +177,8 @@ func (g Generator) BlockPath(parentPath string, block *Block) PathInProject {
 	return g.registry.ensureUniquePath(block.Key(), p)
 }
 
-func (g Generator) CodePath(parentPath string, code *Code) PathInProject {
-	p := PathInProject{}
+func (g Generator) CodePath(parentPath string, code *Code) AbsPath {
+	p := AbsPath{}
 	p.SetParentPath(parentPath)
 	p.ObjectPath = utils.ReplacePlaceholders(string(codeNameTemplate), map[string]interface{}{
 		"code_order": fmt.Sprintf(`%03d`, code.Index+1),
@@ -203,8 +203,8 @@ func (g Generator) PhasesDir(configDir string) string {
 	return filesystem.Join(configDir, phasesDir)
 }
 
-func (g Generator) PhasePath(parentPath string, phase *Phase) PathInProject {
-	p := PathInProject{}
+func (g Generator) PhasePath(parentPath string, phase *Phase) AbsPath {
+	p := AbsPath{}
 	p.SetParentPath(parentPath)
 	p.ObjectPath = utils.ReplacePlaceholders(string(phaseNameTemplate), map[string]interface{}{
 		"phase_order": fmt.Sprintf(`%03d`, phase.Index+1),
@@ -217,8 +217,8 @@ func (g Generator) PhaseFilePath(phase *Phase) string {
 	return filesystem.Join(phase.Path(), PhaseFile)
 }
 
-func (g Generator) TaskPath(parentPath string, task *Task) PathInProject {
-	p := PathInProject{}
+func (g Generator) TaskPath(parentPath string, task *Task) AbsPath {
+	p := AbsPath{}
 	p.SetParentPath(parentPath)
 	p.ObjectPath = utils.ReplacePlaceholders(string(taskNameTemplate), map[string]interface{}{
 		"task_order": fmt.Sprintf(`%03d`, task.Index+1),
