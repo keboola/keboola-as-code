@@ -1,10 +1,15 @@
+// Package validator is a wrapper around go-playground/validator library.
+// A custom validation rules (tags) can be specified.
+//
+// Note:
+// Setting up a translator in the go-validator library is a bit tricky.
+// This package has it solved. See library examples if needed:
+// https://github.com/go-playground/validator/blob/master/_examples/translations
 package validator
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"log"
 	"reflect"
 	"strings"
 
@@ -16,112 +21,161 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-type Validation struct {
+const anonymousField = "__anonymous__"
+
+// Rule is custom validation rule/tag.
+type Rule struct {
 	Tag          string
 	Func         validator.Func
 	ErrorMessage string
 }
 
-func Validate(value interface{}, rules ...Validation) error {
-	return ValidateCtx(value, context.Background(), "dive", "", rules...)
+// Validate nested struct fields or slice items.
+func Validate(value interface{}, rules ...Rule) error {
+	return ValidateCtx(context.Background(), value, "dive", "", rules...)
 }
 
-func ValidateCtx(value interface{}, ctx context.Context, tag string, fieldName string, rules ...Validation) error {
-	validate, enTranslator := newValidator(rules...)
+// ValidateCtx validates any value.
+func ValidateCtx(ctx context.Context, value interface{}, tag string, namespace string, rules ...Rule) error {
+	v := newValidator()
+	v.registerRule(rules...)
 
-	if err := validate.VarCtx(ctx, value, tag); err != nil {
-		var validationErrs validator.ValidationErrors
-		switch {
-		case errors.As(err, &validationErrs):
-			return processValidateError(validationErrs, enTranslator, fieldName)
-		default:
-			panic(err)
-		}
+	// nolint: errorlint // library always returns validator.ValidationErrors
+	if err := v.validator.VarCtx(ctx, value, tag); err != nil {
+		return v.formatError(err.(validator.ValidationErrors), namespace, reflect.ValueOf(value))
 	}
-
 	return nil
 }
 
-// Remove struct name (first part), field name (last part) and __nested__ parts.
-func processNamespace(namespace string) string {
-	namespace = strings.ReplaceAll(namespace, `__nested__.`, ``)
-	parts := strings.Split(namespace, ".")
-	if len(parts) <= 2 {
-		return ""
-	}
-	return strings.Join(parts[1:len(parts)-1], ".")
+type wrapper struct {
+	validator  *validator.Validate
+	translator ut.Translator
 }
 
-func processValidateError(err validator.ValidationErrors, translator ut.Translator, fieldName string) error {
-	result := utils.NewMultiError()
-	for _, e := range err {
-		errorFieldName := fieldName
-		// Prefix error message by field namespace
-		if namespace := processNamespace(e.Namespace()); namespace != "" {
-			errorFieldName = fmt.Sprintf("%s.", namespace)
-		}
-		result.Append(fmt.Errorf("%s%s", errorFieldName, e.Translate(translator)))
+func newValidator() *wrapper {
+	// Create validator and translator
+	v := &wrapper{
+		validator:  validator.New(),
+		translator: ut.New(en.New()).GetFallback(),
 	}
 
-	return result.ErrorOrNil()
-}
+	// Register error messages
+	v.registerDefaultErrorMessages()
+	v.registerErrorMessage("required_if", "{0} is a required field")
 
-func registerTranslationsFunc(tag string, translation string, override bool) validator.RegisterTranslationsFunc {
-	return func(ut ut.Translator) (err error) {
-		if err = ut.Add(tag, translation, override); err != nil {
-			return
-		}
-		return
-	}
-}
-
-func translateFunc(ut ut.Translator, fe validator.FieldError) string {
-	t, err := ut.T(fe.Tag(), fe.Field())
-	if err != nil {
-		log.Printf("warning: error translating FieldError: %#v", fe)
-		return fe.(error).Error()
-	}
-
-	return t
-}
-
-func newValidator(rules ...Validation) (*validator.Validate, ut.Translator) {
-	validate := validator.New()
-	enLocale := en.New()
-	universalTranslator := ut.New(enLocale, enLocale)
-	enTranslator, found := universalTranslator.GetTranslator("en")
-	if !found {
-		panic(fmt.Errorf("en translator was not found"))
-	}
-	err := enTranslation.RegisterDefaultTranslations(validate, enTranslator)
-	if err != nil {
-		panic(fmt.Errorf("translator was not registered: %w", err))
-	}
-
-	for _, rule := range rules {
-		if err := validate.RegisterValidation(rule.Tag, rule.Func); err != nil {
-			panic(err)
-		}
-		if err := validate.RegisterTranslation(rule.Tag, enTranslator, registerTranslationsFunc(rule.Tag, rule.ErrorMessage, true), translateFunc); err != nil {
-			panic(err)
-		}
-	}
-
-	if err := validate.RegisterTranslation("required_if", enTranslator, registerTranslationsFunc("required_if", "{0} is a required field", true), translateFunc); err != nil {
-		panic(err)
-	}
-
-	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
+	// Modify fields names in error "namespace".
+	v.validator.RegisterTagNameFunc(func(fld reflect.StructField) string {
+		// Use "anonymousField" name for anonymous fields, so they can be removed from the error namespace.
+		// See "formatError" method.
 		if fld.Anonymous {
-			return "__nested__"
+			return anonymousField
 		}
 
-		// Use JSON field name in error messages
+		// Prefer JSON field name in error messages
 		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
 		if name == "-" {
 			return fld.Name
 		}
 		return name
 	})
-	return validate, enTranslator
+
+	return v
+}
+
+// registerRule by tag and function.
+func (v *wrapper) registerRule(rules ...Rule) {
+	for _, rule := range rules {
+		if err := v.validator.RegisterValidation(rule.Tag, rule.Func); err != nil {
+			panic(err)
+		}
+		v.registerErrorMessage(rule.Tag, rule.ErrorMessage)
+	}
+}
+
+// registerErrorMessage for a tag.
+func (v *wrapper) registerErrorMessage(tag, message string) {
+	registerFn := func(ut ut.Translator) error {
+		return ut.Add(tag, message, true)
+	}
+	translationFn := func(ut ut.Translator, fe validator.FieldError) string {
+		t, err := ut.T(fe.Tag(), fe.Field())
+		if err != nil {
+			panic(err)
+		}
+		return t
+	}
+	if err := v.validator.RegisterTranslation(tag, v.translator, registerFn, translationFn); err != nil {
+		panic(err)
+	}
+}
+
+func (v *wrapper) registerDefaultErrorMessages() {
+	if err := enTranslation.RegisterDefaultTranslations(v.validator, v.translator); err != nil {
+		panic(err)
+	}
+}
+
+// formatError creates human-readable error message.
+func (v *wrapper) formatError(err validator.ValidationErrors, namespace string, value reflect.Value) error {
+	result := utils.NewMultiError()
+	for _, e := range err {
+		// Translate error
+		errString := strings.TrimSpace(e.Translate(v.translator))
+		if strings.HasPrefix(errString, "Key: ") {
+			// Use generic message if the error has not been translated
+			errString = fmt.Sprintf("%s is invalid", e.Field())
+		}
+
+		// Prefix error with namespace
+		result.Append(fmt.Errorf("%s", prefixErrorWithNamespace(e, errString, namespace, value)))
+	}
+
+	return result.ErrorOrNil()
+}
+
+// processNamespace removes struct name (first part), field name (last part) and anonymous fields.
+func prefixErrorWithNamespace(e validator.FieldError, errMsg string, customNamespace string, value reflect.Value) string {
+	// Remove anonymous fields
+	errNamespace := strings.ReplaceAll(e.Namespace(), anonymousField+".", "")
+
+	// Split error namespace
+	var namespaceParts []string
+	if errNamespace != "" {
+		namespaceParts = strings.Split(errNamespace, ".")
+	}
+
+	// Is field present at the beginning of the error message?
+	errMsgFirstWord := strings.SplitN(errMsg, " ", 2)[0]
+	errMsgContainsField := len(namespaceParts) > 0 && namespaceParts[len(namespaceParts)-1] == errMsgFirstWord
+
+	// Remove first part, if it is a struct name
+	valueType := value.Type()
+	for valueType.Kind() == reflect.Ptr {
+		// Type to which the pointer refers
+		valueType = valueType.Elem()
+	}
+	if valueType.Kind() == reflect.Struct && namespaceParts[0] == valueType.Name() {
+		namespaceParts = namespaceParts[1:]
+	}
+
+	// Remove field name from namespace, if it is present in the error message
+	if errMsgContainsField {
+		namespaceParts = namespaceParts[:len(namespaceParts)-1]
+	}
+
+	// Prepend custom namespace
+	if customNamespace != "" {
+		namespaceParts = append(strings.Split(customNamespace, "."), namespaceParts...)
+	}
+
+	// Prefix error message with namespace
+	namespace := strings.Join(namespaceParts, ".")
+	switch {
+	case namespace == "":
+		return errMsg
+	case errMsgContainsField:
+		return namespace + "." + errMsg
+	default:
+		return namespace + " " + errMsg
+	}
 }
