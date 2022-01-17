@@ -71,27 +71,27 @@ type ComponentKey struct {
 }
 
 type ConfigKey struct {
-	BranchId    BranchId    `json:"branchId" validate:"required"`
+	BranchId    BranchId    `json:"branchId" validate:"required_in_project"`
 	ComponentId ComponentId `json:"componentId" validate:"required"`
 	Id          ConfigId    `json:"id" validate:"required"`
 }
 
 type ConfigRowKey struct {
-	BranchId    BranchId    `json:"-" validate:"required"`
+	BranchId    BranchId    `json:"-" validate:"required_in_project"`
 	ComponentId ComponentId `json:"-" validate:"required"`
 	ConfigId    ConfigId    `json:"-" validate:"required"`
 	Id          RowId       `json:"id" validate:"required" `
 }
 
 type BlockKey struct {
-	BranchId    BranchId    `json:"-" validate:"required" `
+	BranchId    BranchId    `json:"-" validate:"required_in_project" `
 	ComponentId ComponentId `json:"-" validate:"required" `
 	ConfigId    ConfigId    `json:"-" validate:"required" `
 	Index       int         `json:"-" validate:"min=0" `
 }
 
 type CodeKey struct {
-	BranchId    BranchId    `json:"-" validate:"required" `
+	BranchId    BranchId    `json:"-" validate:"required_in_project" `
 	ComponentId ComponentId `json:"-" validate:"required" `
 	ConfigId    ConfigId    `json:"-" validate:"required" `
 	BlockIndex  int         `json:"-" validate:"min=0" `
@@ -99,7 +99,7 @@ type CodeKey struct {
 }
 
 type PhaseKey struct {
-	BranchId    BranchId    `json:"-" validate:"required" `
+	BranchId    BranchId    `json:"-" validate:"required_in_project" `
 	ComponentId ComponentId `json:"-" validate:"required" `
 	ConfigId    ConfigId    `json:"-" validate:"required" `
 	Index       int         `json:"-" validate:"min=0" `
