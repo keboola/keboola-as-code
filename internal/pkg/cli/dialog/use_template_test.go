@@ -36,6 +36,9 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 		_, err := console.ExpectString("Enter your Facebook username")
 		assert.NoError(t, err)
 
+		_, err = console.ExpectString("Facebook username")
+		assert.NoError(t, err)
+
 		// username can contain alphanum only
 		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine("u-s")
@@ -53,6 +56,9 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 		assert.NoError(t, err)
 
 		_, err = console.ExpectString("Enter your Facebook password")
+		assert.NoError(t, err)
+
+		_, err = console.ExpectString("Facebook password")
 		assert.NoError(t, err)
 
 		time.Sleep(20 * time.Millisecond)
@@ -77,12 +83,20 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 		_, err = console.SendLine("25") // enter valid numeric value
 		assert.NoError(t, err)
 
+		_, err = console.ExpectString("Do you want to see restricted content?")
+		assert.NoError(t, err)
+
+		_, err = console.ExpectString("Restricted content")
+		assert.NoError(t, err)
+
 		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine("yes")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.ExpectString("What do you like to drink?")
+		assert.NoError(t, err)
+
+		_, err = console.ExpectString("Favorite drink")
 		assert.NoError(t, err)
 
 		_, err = console.ExpectString("Beer")
@@ -103,8 +117,10 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 		_, err = console.Send(testhelper.Enter) // -> confirm
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.ExpectString("Anything stronger?")
+		assert.NoError(t, err)
+
+		_, err = console.ExpectString("Stronger drinks")
 		assert.NoError(t, err)
 
 		_, err = console.ExpectString("Rum")
