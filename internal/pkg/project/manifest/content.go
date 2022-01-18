@@ -63,8 +63,7 @@ func LoadContent(fs filesystem.Fs, path string) (*Content, error) {
 
 func (c *Content) Save(fs filesystem.Fs, path string) error {
 	// Validate
-	err := c.validate()
-	if err != nil {
+	if err := c.validate(); err != nil {
 		return err
 	}
 
