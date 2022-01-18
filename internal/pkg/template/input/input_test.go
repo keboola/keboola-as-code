@@ -21,7 +21,7 @@ func TestTemplateInputsValidateDefinitions(t *testing.T) {
 	}}
 	err := inputs.ValidateDefinitions()
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), `validation for 'id' failed on the 'template-input-id' tag`)
+	assert.Equal(t, `id can only contain alphanumeric characters, dots and underscores`, err.Error())
 
 	// Fail - type for wrong kind
 	inputs = Inputs{{
@@ -34,7 +34,8 @@ func TestTemplateInputsValidateDefinitions(t *testing.T) {
 	}}
 	err = inputs.ValidateDefinitions()
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), `validation for 'default' failed on the 'template-input-default' tag`)
+	assert.Equal(t, `- default must be the same type as type or options
+- type allowed only for input type`, err.Error())
 
 	// Fail - input Kind with missing Type
 	inputs = Inputs{{
@@ -46,7 +47,7 @@ func TestTemplateInputsValidateDefinitions(t *testing.T) {
 	}}
 	err = inputs.ValidateDefinitions()
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), `validation for 'type' failed on the 'required_if' tag`)
+	assert.Equal(t, `type is a required field`, err.Error())
 
 	// Fail - wrong Rules
 	inputs = Inputs{{
@@ -60,7 +61,7 @@ func TestTemplateInputsValidateDefinitions(t *testing.T) {
 	}}
 	err = inputs.ValidateDefinitions()
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), `validation for 'rules' failed on the 'template-input-rules' tag`)
+	assert.Equal(t, `rules is not valid`, err.Error())
 
 	// Fail - wrong If
 	inputs = Inputs{{
@@ -73,7 +74,7 @@ func TestTemplateInputsValidateDefinitions(t *testing.T) {
 	}}
 	err = inputs.ValidateDefinitions()
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), `validation for 'if' failed on the 'template-input-if' tag`)
+	assert.Equal(t, `if is not valid`, err.Error())
 
 	// Success - int Default and empty Options
 	inputs = Inputs{{
@@ -119,7 +120,8 @@ func TestTemplateInputsValidateDefinitionsSelect(t *testing.T) {
 	}}
 	err := inputs.ValidateDefinitions()
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), `failed on the 'template-input-options' tag`)
+	assert.Equal(t, `- type is a required field
+- options allowed only for select and multiselect`, err.Error())
 
 	// Fail - empty Options
 	inputs = Inputs{{
@@ -131,7 +133,7 @@ func TestTemplateInputsValidateDefinitionsSelect(t *testing.T) {
 	}}
 	err = inputs.ValidateDefinitions()
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), `failed on the 'template-input-options' tag`)
+	assert.Equal(t, `options allowed only for select and multiselect`, err.Error())
 
 	// Fail - Default value missing in Options
 	inputs = Inputs{{
@@ -147,7 +149,7 @@ func TestTemplateInputsValidateDefinitionsSelect(t *testing.T) {
 	}}
 	err = inputs.ValidateDefinitions()
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), `failed on the 'template-input-default'`)
+	assert.Equal(t, `default must be the same type as type or options`, err.Error())
 
 	// Success - with Options
 	inputs = Inputs{{
@@ -179,7 +181,7 @@ func TestTemplateInputsValidateDefinitionsSelect(t *testing.T) {
 	}}
 	err = inputs.ValidateDefinitions()
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), `failed on the 'template-input-default'`)
+	assert.Equal(t, `default must be the same type as type or options`, err.Error())
 
 	// Success - Default for MultiOptions
 	inputs = Inputs{{
