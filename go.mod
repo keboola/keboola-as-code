@@ -14,6 +14,7 @@ require (
 	github.com/go-playground/validator/v10 v10.10.0
 	github.com/go-resty/resty/v2 v2.6.0
 	github.com/google/go-cmp v0.5.6
+	github.com/google/go-jsonnet v0.18.0
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/hashicorp/go-multierror v1.0.0
 	github.com/iancoleman/strcase v0.1.3
@@ -67,4 +68,5 @@ require (
 	gopkg.in/ini.v1 v1.51.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	sigs.k8s.io/yaml v1.1.0 // indirect
 )

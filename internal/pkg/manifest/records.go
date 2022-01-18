@@ -8,7 +8,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
-	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 // Records contains model.ObjectManifest for each object: branch, config, row.
@@ -53,11 +52,6 @@ func (r *Records) SetRecords(records []model.ObjectManifest) error {
 	}
 	if errors.Len() > 0 {
 		return errors
-	}
-
-	// Validate
-	if err := r.validate(); err != nil {
-		return err
 	}
 
 	// Resolve parent paths, we can do it when all the records are loaded
@@ -274,12 +268,5 @@ func (r *Records) doResolveParentPath(record, origin model.ObjectManifest) error
 		record.SetParentPath("")
 	}
 
-	return nil
-}
-
-func (r *Records) validate() error {
-	if err := validator.Validate(r.All()); err != nil {
-		return utils.PrefixError("manifest is not valid", err)
-	}
 	return nil
 }

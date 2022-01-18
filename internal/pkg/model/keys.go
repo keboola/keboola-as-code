@@ -63,7 +63,7 @@ func (v RowId) String() string {
 }
 
 type BranchKey struct {
-	Id BranchId `json:"id" validate:"required,min=1"`
+	Id BranchId `json:"id" validate:"required"`
 }
 
 type ComponentKey struct {
@@ -71,7 +71,7 @@ type ComponentKey struct {
 }
 
 type ConfigKey struct {
-	BranchId    BranchId    `json:"branchId" validate:"required_in_project"`
+	BranchId    BranchId    `json:"branchId,omitempty" validate:"required_in_project"`
 	ComponentId ComponentId `json:"componentId" validate:"required"`
 	Id          ConfigId    `json:"id" validate:"required"`
 }
@@ -352,6 +352,10 @@ func (k ConfigKey) BranchKey() BranchKey {
 }
 
 func (k ConfigKey) ParentKey() (Key, error) {
+	if k.BranchId == 0 {
+		// Configs in template are not related to any branch
+		return nil, nil
+	}
 	return k.BranchKey(), nil
 }
 

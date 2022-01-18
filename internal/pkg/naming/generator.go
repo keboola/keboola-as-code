@@ -70,27 +70,30 @@ func (g Generator) ConfigPath(parentPath string, component *Component, config *C
 	if err != nil {
 		panic(err)
 	}
-	parent := parentKey.Kind()
+	var parentKind Kind
+	if parentKey != nil {
+		parentKind = parentKey.Kind()
+	}
 
 	// Shared code is handled differently
 	var template, targetComponentId string
 	switch {
-	case parent.IsBranch() && component.IsSharedCode():
+	case parentKind.IsBranch() && component.IsSharedCode():
 		if config.SharedCode == nil {
 			panic(fmt.Errorf(`invalid shared code %s, value is not set`, config.Desc()))
 		}
 		// Shared code
 		template = string(g.template.SharedCodeConfig)
 		targetComponentId = config.SharedCode.Target.String()
-	case parent.IsConfig() && component.IsScheduler():
+	case parentKind.IsConfig() && component.IsScheduler():
 		template = string(g.template.SchedulerConfig)
-	case parent.IsConfig() && component.IsVariables():
+	case parentKind.IsConfig() && component.IsVariables():
 		// Regular component with variables
 		template = string(g.template.VariablesConfig)
-	case parent.IsConfigRow() && component.IsVariables() && parentKey.(ConfigRowKey).ComponentId == SharedCodeComponentId:
+	case parentKind.IsConfigRow() && component.IsVariables() && parentKey.(ConfigRowKey).ComponentId == SharedCodeComponentId:
 		// Shared code is config row and can have variables
 		template = string(g.template.VariablesConfig)
-	case parent.IsBranch():
+	case parentKind.IsEmpty() || parentKind.IsBranch():
 		// Ordinary config
 		template = string(g.template.Config)
 	default:

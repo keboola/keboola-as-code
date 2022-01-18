@@ -56,7 +56,7 @@ func (m *Manifest) Path() string {
 
 func Load(fs filesystem.Fs) (*Manifest, error) {
 	// Read manifest file
-	manifestContent, err := loadManifestFile(fs)
+	manifestContent, err := loadFile(fs)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func (m *Manifest) Save() error {
 	content.Templates = m.templates
 
 	// Save manifest file
-	if err := saveManifestFile(m.fs, content); err != nil {
+	if err := saveFile(m.fs, content); err != nil {
 		return err
 	}
 
@@ -92,7 +92,7 @@ func newFile() *file {
 	}
 }
 
-func loadManifestFile(fs filesystem.Fs) (*file, error) {
+func loadFile(fs filesystem.Fs) (*file, error) {
 	// Check if file exists
 	path := Path()
 	if !fs.IsFile(path) {
@@ -100,13 +100,13 @@ func loadManifestFile(fs filesystem.Fs) (*file, error) {
 	}
 
 	// Read JSON file
-	manifestContent := newFile()
-	if err := fs.ReadJsonFileTo(path, "manifest", manifestContent); err != nil {
+	content := newFile()
+	if err := fs.ReadJsonFileTo(path, "manifest", content); err != nil {
 		return nil, err
 	}
 
 	// Fill in parent paths
-	for _, template := range manifestContent.Templates {
+	for _, template := range content.Templates {
 		template.AbsPath.SetParentPath(``)
 		for _, version := range template.Versions {
 			version.AbsPath.SetParentPath(template.Path())
@@ -114,17 +114,17 @@ func loadManifestFile(fs filesystem.Fs) (*file, error) {
 	}
 
 	// Validate
-	if err := manifestContent.validate(); err != nil {
+	if err := content.validate(); err != nil {
 		return nil, err
 	}
 
 	// Set new version
-	manifestContent.Version = build.MajorVersion
+	content.Version = build.MajorVersion
 
-	return manifestContent, nil
+	return content, nil
 }
 
-func saveManifestFile(fs filesystem.Fs, manifestContent *file) error {
+func saveFile(fs filesystem.Fs, manifestContent *file) error {
 	// Validate
 	err := manifestContent.validate()
 	if err != nil {
@@ -144,9 +144,9 @@ func saveManifestFile(fs filesystem.Fs, manifestContent *file) error {
 	return nil
 }
 
-func (c *file) validate() error {
-	if err := validator.Validate(c); err != nil {
-		return utils.PrefixError("manifest is not valid", err)
+func (f *file) validate() error {
+	if err := validator.Validate(f); err != nil {
+		return utils.PrefixError("repository manifest is not valid", err)
 	}
 	return nil
 }

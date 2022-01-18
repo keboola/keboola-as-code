@@ -10,7 +10,7 @@ import (
 
 // Template of the files names.
 type Template struct {
-	Branch              PathTemplate `json:"branch" validate:"required_in_project"`
+	Branch              PathTemplate `json:"branch,omitempty" validate:"required_in_project"`
 	Config              PathTemplate `json:"config" validate:"required"`
 	ConfigRow           PathTemplate `json:"configRow" validate:"required"`
 	SchedulerConfig     PathTemplate `json:"schedulerConfig" validate:"required"`
@@ -60,6 +60,12 @@ func (p PathTemplate) regexp() *regexp.Regexp {
 
 func (p PathTemplate) placeholderToRegexp(placeholder string) string {
 	return `(?P<` + strings.Trim(placeholder, `\{}`) + `>[^/]+)`
+}
+
+func ForTemplate() Template {
+	t := TemplateWithoutIds()
+	t.Branch = ``
+	return t
 }
 
 func TemplateWithoutIds() Template {

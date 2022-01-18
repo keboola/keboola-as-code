@@ -249,6 +249,10 @@ func (k Kind) String() string {
 	return k.Name
 }
 
+func (k Kind) IsEmpty() bool {
+	return k.Name == "" && k.Abbr == ""
+}
+
 func (k Kind) IsBranch() bool {
 	return k.Name == BranchKind
 }

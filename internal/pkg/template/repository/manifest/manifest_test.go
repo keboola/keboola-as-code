@@ -58,7 +58,7 @@ func TestLoadManifestFile(t *testing.T) {
 		assert.NoError(t, fs.WriteFile(filesystem.NewFile(path, c.json)))
 
 		// Load
-		manifestContent, err := loadManifestFile(fs)
+		manifestContent, err := loadFile(fs)
 		assert.NotNil(t, manifestContent)
 		assert.NoError(t, err)
 
@@ -73,7 +73,7 @@ func TestSaveManifestFile(t *testing.T) {
 		fs := testfs.NewMemoryFs()
 
 		// Save
-		assert.NoError(t, saveManifestFile(fs, c.data))
+		assert.NoError(t, saveFile(fs, c.data))
 
 		// Load file
 		file, err := fs.ReadFile(Path(), "")
@@ -87,7 +87,7 @@ func TestManifestContentValidateEmpty(t *testing.T) {
 	c := &file{}
 	err := c.validate()
 	assert.NotNil(t, err)
-	expected := `manifest is not valid: version is a required field`
+	expected := "repository manifest is not valid:\n  - version is a required field"
 	assert.Equal(t, expected, err.Error())
 }
 
@@ -107,7 +107,7 @@ func TestManifestContentValidateBadVersion(t *testing.T) {
 	manifestContent.Version = 123
 	err := manifestContent.validate()
 	assert.Error(t, err)
-	expected := "manifest is not valid: version must be 2 or less"
+	expected := "repository manifest is not valid: version must be 2 or less"
 	assert.Equal(t, expected, err.Error())
 }
 
