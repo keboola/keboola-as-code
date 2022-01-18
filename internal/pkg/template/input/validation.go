@@ -80,7 +80,10 @@ func validateInputRules(fl goValidator.FieldLevel) bool {
 	if fl.Field().IsZero() {
 		return true
 	}
-	_, panicErr := catchPanicOnRulesValidation(func() error { return validateUserInputWithRules("string", fl.Field().String(), nil, "input") })
+	_, panicErr := catchPanicOnRulesValidation(func() error {
+		rules := fl.Field().String()
+		return validateUserInputWithRules(context.Background(), "", rules, "")
+	})
 	return panicErr == nil
 }
 
@@ -148,8 +151,8 @@ func validateUserInputByReflectKind(userInput interface{}, expectedType reflect.
 	return nil
 }
 
-func validateUserInputWithRules(userInput interface{}, rulesTag string, ctx context.Context, fieldName string) error {
-	return validator.ValidateCtx(userInput, ctx, rulesTag, fieldName)
+func validateUserInputWithRules(ctx context.Context, userInput interface{}, rulesTag string, fieldName string) error {
+	return validator.ValidateCtx(ctx, userInput, rulesTag, fieldName)
 }
 
 func catchPanicOnRulesValidation(fn func() error) (err, recovered interface{}) {

@@ -1,15 +1,87 @@
 package validator
 
 import (
+	"context"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestValidatorProcessNamespace(t *testing.T) {
-	t.Parallel()
+type testStruct1 struct {
+	Field1      string        `json:"field1" validate:"required"`
+	Field2      string        `json:"-" validate:"required"`
+	Field3      string        `validate:"required"`
+	Nested      []testStruct2 `validate:"dive"`
+	testStruct2               // anonymous
+}
 
-	assert.Equal(t, "", processNamespace(""))
-	assert.Equal(t, "", processNamespace("Struct.field"))
-	assert.Equal(t, "field1.field2", processNamespace("Struct.field1.__nested__.field2.field3"))
+type testStruct2 struct {
+	Field4 string `json:"field4" validate:"required"`
+}
+
+func TestValidateStruct(t *testing.T) {
+	t.Parallel()
+	err := Validate(testStruct1{Nested: []testStruct2{{}, {}}})
+	expected := `
+- field1 is a required field
+- Field2 is a required field
+- Field3 is a required field
+- Nested[0].field4 is a required field
+- Nested[1].field4 is a required field
+- field4 is a required field
+`
+	assert.Error(t, err)
+	assert.Equal(t, strings.TrimSpace(expected), err.Error())
+}
+
+func TestValidateStructWithNamespace(t *testing.T) {
+	t.Parallel()
+	err := ValidateCtx(context.Background(), testStruct1{Nested: []testStruct2{{}, {}}}, "dive", "my.value")
+	expected := `
+- my.value.field1 is a required field
+- my.value.Field2 is a required field
+- my.value.Field3 is a required field
+- my.value.Nested[0].field4 is a required field
+- my.value.Nested[1].field4 is a required field
+- my.value.field4 is a required field
+`
+	assert.Error(t, err)
+	assert.Equal(t, strings.TrimSpace(expected), err.Error())
+}
+
+func TestValidateSlice(t *testing.T) {
+	t.Parallel()
+	err := Validate([]testStruct2{{}, {}})
+	expected := `
+- [0].field4 is a required field
+- [1].field4 is a required field
+`
+	assert.Error(t, err)
+	assert.Equal(t, strings.TrimSpace(expected), err.Error())
+}
+
+func TestValidateSliceWithNamespace(t *testing.T) {
+	t.Parallel()
+	err := ValidateCtx(context.Background(), []testStruct2{{}, {}}, "dive", "my.value")
+	expected := `
+- my.value.[0].field4 is a required field
+- my.value.[1].field4 is a required field
+`
+	assert.Error(t, err)
+	assert.Equal(t, strings.TrimSpace(expected), err.Error())
+}
+
+func TestValidateValue(t *testing.T) {
+	t.Parallel()
+	err := ValidateCtx(context.Background(), "", "required", "")
+	assert.Error(t, err)
+	assert.Equal(t, `is a required field`, err.Error())
+}
+
+func TestValidateValueAddNamespace(t *testing.T) {
+	t.Parallel()
+	err := ValidateCtx(context.Background(), "", "required", "my.value")
+	assert.Error(t, err)
+	assert.Equal(t, `my.value is a required field`, err.Error())
 }

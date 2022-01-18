@@ -12,7 +12,7 @@ type Inputs []*Input
 
 // ValidateDefinitions validates template inputs definition.
 func (i Inputs) ValidateDefinitions() error {
-	validations := []validator.Validation{
+	rules := []validator.Rule{
 		{
 			Tag:          "template-input-id",
 			Func:         validateInputId,
@@ -44,7 +44,7 @@ func (i Inputs) ValidateDefinitions() error {
 			ErrorMessage: "{0} is not valid",
 		},
 	}
-	return validator.Validate(i, validations...)
+	return validator.Validate(i, rules...)
 }
 
 const (
@@ -85,7 +85,7 @@ func (i Input) ValidateUserInput(userInput interface{}, ctx context.Context) err
 		return nil
 	}
 
-	return validateUserInputWithRules(userInput, i.Rules, ctx, i.Name)
+	return validateUserInputWithRules(ctx, userInput, i.Rules, i.Name)
 }
 
 // Available decides if the input should be visible to user according to Input.If.
