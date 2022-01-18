@@ -34,7 +34,7 @@ func cases() []test {
 
 func TestNewManifest(t *testing.T) {
 	t.Parallel()
-	assert.NotNil(t, New(testfs.NewMemoryFs()))
+	assert.NotNil(t, New())
 }
 
 func TestManifestFileNotFound(t *testing.T) {
