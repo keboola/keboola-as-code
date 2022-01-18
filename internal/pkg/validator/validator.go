@@ -114,7 +114,7 @@ func (v *wrapper) registerRule(rules ...Rule) {
 
 func (v *wrapper) registerCustomRules() {
 	// Register default validation for "required_in_project"
-	// Some values are requited in the project scope, but ignored in the template scope.
+	// Some values are required in the project scope, but ignored in the template scope.
 	// We validate them by default.
 	v.registerRule(Rule{
 		Tag: "required_in_project",
@@ -133,10 +133,10 @@ func (v *wrapper) registerCustomRules() {
 // registerErrorMessage for a tag.
 func (v *wrapper) registerErrorMessage(tag, message string) {
 	if tag == "" {
-		panic(fmt.Errorf(`tag cannot by empty`))
+		panic(fmt.Errorf(`tag cannot be empty`))
 	}
 	if message == "" {
-		panic(fmt.Errorf(`message cannot by empty`))
+		panic(fmt.Errorf(`message cannot be empty`))
 	}
 
 	registerFn := func(ut ut.Translator) error {
