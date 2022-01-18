@@ -3,52 +3,52 @@ package manifest
 import (
 	"fmt"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/build"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 )
 
-const (
-	FileName = "manifest.json"
-)
-
 type records = manifest.Records
 
 // Manifest of the project directory
-// Content contains IDs and paths of the all objects: branches, configs, rows.
+// file contains IDs and paths of the all objects: branches, configs, rows.
 type Manifest struct {
 	*records
-	content *Content `validate:"dive"`
+	project Project
+	naming  naming.Template
+	filter  model.Filter
 }
 
-func Path() string {
-	return filesystem.Join(filesystem.MetadataDir, FileName)
+type Project struct {
+	Id      int    `json:"id" validate:"required"`
+	ApiHost string `json:"apiHost" validate:"required,hostname"`
 }
 
 func New(projectId int, apiHost string) *Manifest {
-	content := newContent(projectId, apiHost)
 	return &Manifest{
-		records: manifest.NewRecords(content.SortBy),
-		content: content,
+		records: manifest.NewRecords(model.SortById),
+		project: Project{Id: projectId, ApiHost: apiHost},
+		naming:  naming.TemplateWithIds(),
+		filter:  model.DefaultFilter(),
 	}
 }
 
 func Load(fs filesystem.Fs) (*Manifest, error) {
-	content, err := LoadContent(fs, Path())
+	// Load file content
+	content, err := loadFile(fs)
 	if err != nil {
 		return nil, err
 	}
 
-	// Set new version
-	content.Version = build.MajorVersion
-
 	// Create manifest
-	m := newManifest(content)
+	m := New(content.Project.Id, content.Project.ApiHost)
+	m.SetSortBy(content.SortBy)
+	m.naming = content.Naming
+	m.filter = content.Filter
 
-	// Load records
-	if err := m.records.SetRecords(m.content.allRecords()); err != nil {
+	// Set records
+	if err := m.records.SetRecords(content.records()); err != nil {
 		return nil, fmt.Errorf(`cannot load manifest: %w`, err)
 	}
 
@@ -57,8 +57,15 @@ func Load(fs filesystem.Fs) (*Manifest, error) {
 }
 
 func (m *Manifest) Save(fs filesystem.Fs) error {
-	m.content.SetRecords(m.records.All())
-	if err := m.content.Save(fs, Path()); err != nil {
+	// Create file content
+	content := newFile(m.ProjectId(), m.ApiHost())
+	content.SortBy = m.SortBy()
+	content.Naming = m.naming
+	content.Filter = m.filter
+	content.setRecords(m.records.All())
+
+	// Save file
+	if err := saveFile(fs, content); err != nil {
 		return err
 	}
 
@@ -71,37 +78,39 @@ func (m *Manifest) Path() string {
 }
 
 func (m *Manifest) Filter() model.Filter {
-	return m.content.Filter
+	return m.filter
 }
 
 func (m *Manifest) ApiHost() string {
-	return m.content.Project.ApiHost
+	return m.project.ApiHost
 }
 
 func (m *Manifest) ProjectId() int {
-	return m.content.Project.Id
+	return m.project.Id
 }
 
 func (m *Manifest) NamingTemplate() naming.Template {
-	return m.content.Naming
+	return m.naming
 }
 
 func (m *Manifest) SetNamingTemplate(v naming.Template) {
-	m.content.Naming = v
+	m.naming = v
 }
 
 func (m *Manifest) AllowedBranches() model.AllowedBranches {
-	return m.content.AllowedBranches
+	return m.filter.AllowedBranches
 }
 
 func (m *Manifest) SetAllowedBranches(v model.AllowedBranches) {
-	m.content.AllowedBranches = v
+	m.filter.AllowedBranches = v
 }
 
-func (m *Manifest) SetContent(branches []*model.BranchManifest, configs []*model.ConfigManifestWithRows) error {
-	m.content.Branches = branches
-	m.content.Configs = configs
-	return m.records.SetRecords(m.content.allRecords())
+func (m *Manifest) IgnoredComponents() model.ComponentIds {
+	return m.filter.IgnoredComponents
+}
+
+func (m *Manifest) SetIgnoredComponents(v model.ComponentIds) {
+	m.filter.IgnoredComponents = v
 }
 
 func (m *Manifest) IsChanged() bool {
@@ -109,12 +118,5 @@ func (m *Manifest) IsChanged() bool {
 }
 
 func (m *Manifest) IsObjectIgnored(object model.Object) bool {
-	return m.content.Filter.IsObjectIgnored(object)
-}
-
-func newManifest(content *Content) *Manifest {
-	return &Manifest{
-		records: manifest.NewRecords(content.SortBy),
-		content: content,
-	}
+	return m.filter.IsObjectIgnored(object)
 }
