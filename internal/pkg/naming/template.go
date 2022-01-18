@@ -10,7 +10,7 @@ import (
 
 // Template of the files names.
 type Template struct {
-	Branch              PathTemplate `json:"branch" validate:"required"`
+	Branch              PathTemplate `json:"branch" validate:"required_in_project"`
 	Config              PathTemplate `json:"config" validate:"required"`
 	ConfigRow           PathTemplate `json:"configRow" validate:"required"`
 	SchedulerConfig     PathTemplate `json:"schedulerConfig" validate:"required"`
