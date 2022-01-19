@@ -5,47 +5,10 @@ import (
 
 	goValuate "gopkg.in/Knetic/govaluate.v3"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/validator"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 )
 
-type Inputs []*Input
-
-// ValidateDefinitions validates template inputs definition.
-func (i Inputs) ValidateDefinitions() error {
-	rules := []validator.Rule{
-		{
-			Tag:          "template-input-id",
-			Func:         validateInputId,
-			ErrorMessage: "{0} can only contain alphanumeric characters, dots and underscores",
-		},
-		{
-			Tag:          "template-input-default",
-			Func:         validateInputDefault,
-			ErrorMessage: "{0} must be the same type as type or options",
-		},
-		{
-			Tag:          "template-input-options",
-			Func:         validateInputOptions,
-			ErrorMessage: "{0} allowed only for select and multiselect",
-		},
-		{
-			Tag:          "template-input-type",
-			Func:         validateInputType,
-			ErrorMessage: "{0} allowed only for input type",
-		},
-		{
-			Tag:          "template-input-rules",
-			Func:         validateInputRules,
-			ErrorMessage: "{0} is not valid",
-		},
-		{
-			Tag:          "template-input-if",
-			Func:         validateInputIf,
-			ErrorMessage: "{0} is not valid",
-		},
-	}
-	return validator.Validate(i, rules...)
-}
+type Inputs []Input
 
 const (
 	KindInput       = "input"
@@ -55,6 +18,23 @@ const (
 	KindSelect      = "select"
 	KindMultiSelect = "multiselect"
 )
+
+// Load inputs from the FileName.
+func Load(fs filesystem.Fs) (Inputs, error) {
+	f, err := loadFile(fs)
+	if err != nil {
+		return nil, err
+	}
+	return f.Inputs, nil
+}
+
+// Save inputs to the FileName.
+func Save(fs filesystem.Fs, inputs Inputs) error {
+	if err := saveFile(fs, &file{Inputs: inputs}); err != nil {
+		return err
+	}
+	return nil
+}
 
 type Input struct {
 	Id          string      `json:"id" validate:"required,template-input-id"`

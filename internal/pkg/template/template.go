@@ -9,10 +9,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	templateInput "github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
 )
 
-type Manifest = templateManifest.Manifest
+type (
+	Manifest = templateManifest.Manifest
+	Inputs   = templateInput.Inputs
+)
 
 func LoadManifest(fs filesystem.Fs) (*Manifest, error) {
 	return templateManifest.Load(fs)
