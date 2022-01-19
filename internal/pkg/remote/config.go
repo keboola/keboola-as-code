@@ -15,6 +15,14 @@ func (a *StorageApi) ListComponents(branchId model.BranchId) ([]*model.Component
 	return nil, response.Err()
 }
 
+func (a *StorageApi) ListConfigMetadata(branchId model.BranchId) (*ConfigMetadataResponse, error) {
+	response := a.ListConfigMetadataRequest(branchId).Send().Response
+	if response.HasResult() {
+		return response.Result().(*ConfigMetadataResponse), nil
+	}
+	return nil, response.Err()
+}
+
 func (a *StorageApi) GetConfig(branchId model.BranchId, componentId model.ComponentId, configId model.ConfigId) (*model.Config, error) {
 	response := a.GetConfigRequest(branchId, componentId, configId).Send().Response
 	if response.HasResult() {
@@ -86,6 +94,31 @@ func (a *StorageApi) ListComponentsRequest(branchId model.BranchId) *client.Requ
 			}
 		})
 }
+
+// ListConfigMetadataRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/copy-configuration-rows/search-component-configurations
+func (a *StorageApi) ListConfigMetadataRequest(branchId model.BranchId) *client.Request {
+	metadata := ConfigMetadataResponse{}
+	return a.
+		NewRequest(resty.MethodGet, "branch/{branchId}/search/component-configurations").
+		SetPathParam("branchId", branchId.String()).
+		SetQueryParam("include", "filteredMetadata").
+		SetResult(metadata)
+}
+
+type (
+	ConfigMetadataResponse []ConfigMetadataWrapper
+	ConfigMetadataWrapper  struct {
+		ComponentId model.ComponentId `json:"idComponent"`
+		ConfigId    model.ConfigId    `json:"configurationId"`
+		Metadata    []ConfigMetadata  `json:"metadata"`
+	}
+	ConfigMetadata struct {
+		Id        string `json:"id"`
+		Key       string `json:"key" diff:"true"`
+		Value     string `json:"value" diff:"true"`
+		Timestamp string `json:"timestamp"`
+	}
+)
 
 // GetConfigRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/manage-configurations/development-branch-configuration-detail
 func (a *StorageApi) GetConfigRequest(branchId model.BranchId, componentId model.ComponentId, configId model.ConfigId) *client.Request {
