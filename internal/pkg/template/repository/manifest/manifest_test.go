@@ -111,6 +111,50 @@ func TestManifestContentValidateBadVersion(t *testing.T) {
 	assert.Equal(t, expected, err.Error())
 }
 
+func TestManifestRecords(t *testing.T) {
+	t.Parallel()
+	m := New()
+	assert.Len(t, m.records, 0)
+
+	// Get - not found
+	v, found := m.Get("foo-bar")
+	assert.Nil(t, v)
+	assert.False(t, found)
+
+	// GetOrCreate if record does not exist
+	v = m.GetOrCreate("foo-bar")
+	assert.NotNil(t, v)
+	assert.Equal(t, "foo-bar", v.Id)
+	assert.Equal(t, "foo-bar", v.Path())
+
+	// Get - found
+	v2, found := m.Get("foo-bar")
+	assert.Same(t, v, v2)
+	assert.True(t, found)
+
+	// GetOrCreate if record exists
+	v3 := m.GetOrCreate("foo-bar")
+	assert.Same(t, v, v3)
+
+	// Get all records, sorted by ID
+	m.GetOrCreate("xyz")
+	m.GetOrCreate("abc")
+	assert.Equal(t, []*TemplateRecord{
+		{
+			Id:      "abc",
+			AbsPath: model.NewAbsPath("", "abc"),
+		},
+		{
+			Id:      "foo-bar",
+			AbsPath: model.NewAbsPath("", "foo-bar"),
+		},
+		{
+			Id:      "xyz",
+			AbsPath: model.NewAbsPath("", "xyz"),
+		},
+	}, m.all())
+}
+
 func minimalJson() string {
 	return `{
   "version": 2,
