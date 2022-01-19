@@ -148,14 +148,16 @@ func translateRecursive(clone, original reflect.Value, callback TranslateFunc, s
 
 	// If it is a map we create a new map and translate each value
 	case kind == reflect.Map:
-		clone.Set(reflect.MakeMap(originalType))
-		for _, key := range original.MapKeys() {
-			originalValue := original.MapIndex(key)
-			// New gives us a pointer, but again we want the value
-			cloneValue := reflect.New(originalValue.Type()).Elem()
-			steps := steps.Add(kind.String(), cast.ToString(key))
-			translateRecursive(cloneValue, originalValue, callback, steps, visited)
-			clone.SetMapIndex(key, cloneValue)
+		if !original.IsNil() {
+			clone.Set(reflect.MakeMap(originalType))
+			for _, key := range original.MapKeys() {
+				originalValue := original.MapIndex(key)
+				// New gives us a pointer, but again we want the value
+				cloneValue := reflect.New(originalValue.Type()).Elem()
+				steps := steps.Add(kind.String(), cast.ToString(key))
+				translateRecursive(cloneValue, originalValue, callback, steps, visited)
+				clone.SetMapIndex(key, cloneValue)
+			}
 		}
 
 	// And everything else will simply be taken from the original
