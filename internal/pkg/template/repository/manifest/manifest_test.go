@@ -111,6 +111,42 @@ func TestManifestContentValidateBadVersion(t *testing.T) {
 	assert.Equal(t, expected, err.Error())
 }
 
+func TestManifestBadRecordSemanticVersion(t *testing.T) {
+	t.Parallel()
+	fs := testfs.NewMemoryFs()
+
+	fileContent := `
+{
+  "version": 2,
+  "templates": [
+    {
+      "id": "template-1",
+      "name": "Template 1",
+      "description": "My Template 1",
+      "path": "template-1",
+      "versions": [
+        {
+          "version": "foo-bar",
+          "description": "Version Bad",
+          "stable": false,
+          "path": "v0"
+        }
+      ]
+    }
+  ]
+}
+`
+
+	// Write file
+	path := filesystem.Join(filesystem.MetadataDir, FileName)
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile(path, fileContent)))
+
+	// Load
+	_, err := loadFile(fs)
+	assert.Error(t, err)
+	assert.Equal(t, "manifest file \".keboola/repository.json\" is invalid:\n  - invalid semantic version \"foo-bar\"", err.Error())
+}
+
 func TestManifestRecords(t *testing.T) {
 	t.Parallel()
 	m := New()
@@ -214,13 +250,13 @@ func fullStruct() *file {
 				Versions: []VersionRecord{
 					{
 						AbsPath:     model.NewAbsPath(`template-1`, `v0`),
-						Version:     `0.0.1`,
+						Version:     version(`0.0.1`),
 						Stable:      false,
 						Description: `Version 0`,
 					},
 					{
 						AbsPath:     model.NewAbsPath(`template-1`, `v1`),
-						Version:     `1.2.3`,
+						Version:     version(`1.2.3`),
 						Stable:      true,
 						Description: `Version 1`,
 					},
@@ -228,4 +264,12 @@ func fullStruct() *file {
 			},
 		},
 	}
+}
+
+func version(str string) Version {
+	v, err := NewVersion(str)
+	if err != nil {
+		panic(err)
+	}
+	return v
 }
