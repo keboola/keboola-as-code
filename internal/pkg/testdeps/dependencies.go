@@ -27,6 +27,10 @@ type commonDeps = dependencies.TestContainer
 type TestContainer struct {
 	*testDependencies
 	*commonDeps
+	mockedStorageApi            *remote.StorageApi
+	mockedStorageApiTransport   *httpmock.MockTransport
+	mockedSchedulerApi          *scheduler.Api
+	mockedSchedulerApiTransport *httpmock.MockTransport
 }
 
 func New() *TestContainer {
@@ -70,15 +74,21 @@ func (v *TestContainer) InitFromTestProject(project *testproject.Project) {
 }
 
 func (v *TestContainer) UseMockedStorageApi() (*remote.StorageApi, *httpmock.MockTransport) {
-	storageApi, httpTransport := testapi.NewMockedStorageApi(v.DebugLogger())
-	v.SetStorageApi(storageApi)
-	return storageApi, httpTransport
+	if v.mockedStorageApi == nil {
+		v.mockedStorageApi, v.mockedStorageApiTransport = testapi.NewMockedStorageApi(v.DebugLogger())
+	}
+
+	v.SetStorageApi(v.mockedStorageApi)
+	return v.mockedStorageApi, v.mockedStorageApiTransport
 }
 
 func (v *TestContainer) UseMockedSchedulerApi() (*scheduler.Api, *httpmock.MockTransport) {
-	schedulerApi, httpTransport := testapi.NewMockedSchedulerApi(v.DebugLogger())
-	v.SetSchedulerApi(schedulerApi)
-	return schedulerApi, httpTransport
+	if v.mockedSchedulerApi == nil {
+		v.mockedSchedulerApi, v.mockedSchedulerApiTransport = testapi.NewMockedSchedulerApi(v.DebugLogger())
+	}
+
+	v.SetSchedulerApi(v.mockedSchedulerApi)
+	return v.mockedSchedulerApi, v.mockedSchedulerApiTransport
 }
 
 // EmptyState without mappers. Useful for mappers unit tests.
