@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 )
@@ -266,8 +267,8 @@ func fullStruct() *file {
 	}
 }
 
-func version(str string) Version {
-	v, err := NewVersion(str)
+func version(str string) template.Version {
+	v, err := template.NewVersion(str)
 	if err != nil {
 		panic(err)
 	}
