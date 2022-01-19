@@ -13,21 +13,6 @@ type Manifest struct {
 	records map[string]TemplateRecord // template record by template ID
 }
 
-type TemplateRecord struct {
-	Id            string `json:"id" validate:"required,alphanumdash"`
-	Name          string `json:"name" validate:"required"`
-	Description   string `json:"description" validate:"required"`
-	model.AbsPath `validate:"dive"`
-	Versions      []VersionRecord `json:"versions" validate:"required,dive"`
-}
-
-type VersionRecord struct {
-	Version       string `json:"version" validate:"required,semver"`
-	Description   string `json:"description" validate:"required"`
-	Stable        bool   `json:"stable" validate:"required"`
-	model.AbsPath `validate:"dive"`
-}
-
 func New() *Manifest {
 	return &Manifest{
 		records: make(map[string]TemplateRecord),
