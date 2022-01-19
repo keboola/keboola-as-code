@@ -19,6 +19,10 @@ type Manifest struct {
 	NamingTemplateValue naming.Template
 }
 
+func (m *Manifest) Path() string {
+	return "path/to/manifest"
+}
+
 func (m *Manifest) IsObjectIgnored(object model.Object) bool {
 	return false
 }

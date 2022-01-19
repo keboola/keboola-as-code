@@ -7,6 +7,7 @@ import (
 
 // Manifest is common interface form Project and Template manifest.
 type Manifest interface {
+	Path() string
 	All() []model.ObjectManifest
 	AllPersisted() []model.ObjectManifest
 	SortBy() string

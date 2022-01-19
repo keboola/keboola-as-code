@@ -21,10 +21,10 @@ func Run(d dependencies) (*manifest.Manifest, error) {
 	}
 
 	// Create
-	repositoryManifest := manifest.New(fs)
+	repositoryManifest := manifest.New()
 
 	// Save
-	if err = repositoryManifest.Save(); err != nil {
+	if err = repositoryManifest.Save(fs); err != nil {
 		return nil, err
 	}
 

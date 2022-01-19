@@ -18,22 +18,24 @@ type Manifest struct {
 
 func New() *Manifest {
 	return &Manifest{
+		naming:  naming.ForTemplate(),
 		records: manifest.NewRecords(model.SortByPath),
 	}
 }
 
 func Load(fs filesystem.Fs) (*Manifest, error) {
-	// Read manifest file
+	// Load file content
 	content, err := loadFile(fs)
 	if err != nil {
 		return nil, err
 	}
 
-	// Create manifest struct
+	// Create manifest
 	m := New()
+	m.naming = content.Naming
 
 	// Set records
-	if err := m.records.SetRecords(content.allRecords()); err != nil {
+	if err := m.records.SetRecords(content.records()); err != nil {
 		return nil, fmt.Errorf(`cannot load manifest: %w`, err)
 	}
 
@@ -42,9 +44,12 @@ func Load(fs filesystem.Fs) (*Manifest, error) {
 }
 
 func (m *Manifest) Save(fs filesystem.Fs) error {
-	// Get records
+	// Create file content
 	content := newFile()
+	content.Naming = m.naming
 	content.setRecords(m.records.All())
+
+	// Save file
 	if err := saveFile(fs, content); err != nil {
 		return err
 	}
@@ -53,8 +58,16 @@ func (m *Manifest) Save(fs filesystem.Fs) error {
 	return nil
 }
 
+func (m *Manifest) Path() string {
+	return Path()
+}
+
 func (m *Manifest) NamingTemplate() naming.Template {
 	return m.naming
+}
+
+func (m *Manifest) SetNamingTemplate(v naming.Template) {
+	m.naming = v
 }
 
 func (m *Manifest) IsObjectIgnored(_ model.Object) bool {

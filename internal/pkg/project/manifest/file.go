@@ -12,9 +12,16 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
-// Content of the project directory manifest.
-// Content contains IDs and paths of the all objects: branches, configs, rows.
-type Content struct {
+const (
+	FileName = "manifest.json"
+)
+
+func Path() string {
+	return filesystem.Join(filesystem.MetadataDir, FileName)
+}
+
+// file is template repository manifest JSON file.
+type file struct {
 	Version int             `json:"version" validate:"required,min=1,max=2"`
 	Project Project         `json:"project" validate:"required"`
 	SortBy  string          `json:"sortBy" validate:"oneof=id path"`
@@ -24,13 +31,8 @@ type Content struct {
 	Configs  []*model.ConfigManifestWithRows `json:"configurations" validate:"dive"`
 }
 
-type Project struct {
-	Id      int    `json:"id" validate:"required"`
-	ApiHost string `json:"apiHost" validate:"required,hostname"`
-}
-
-func newContent(projectId int, apiHost string) *Content {
-	return &Content{
+func newFile(projectId int, apiHost string) *file {
+	return &file{
 		Version:  build.MajorVersion,
 		Project:  Project{Id: projectId, ApiHost: apiHost},
 		SortBy:   model.SortById,
@@ -41,14 +43,16 @@ func newContent(projectId int, apiHost string) *Content {
 	}
 }
 
-func LoadContent(fs filesystem.Fs, path string) (*Content, error) {
+func loadFile(fs filesystem.Fs) (*file, error) {
+	path := Path()
+
 	// Exists?
 	if !fs.IsFile(path) {
 		return nil, fmt.Errorf("manifest \"%s\" not found", path)
 	}
 
 	// Read JSON file
-	content := newContent(0, "")
+	content := newFile(0, "")
 	if err := fs.ReadJsonFileTo(path, "manifest", content); err != nil {
 		return nil, err
 	}
@@ -61,25 +65,49 @@ func LoadContent(fs filesystem.Fs, path string) (*Content, error) {
 	return content, nil
 }
 
-func (c *Content) Save(fs filesystem.Fs, path string) error {
+func saveFile(fs filesystem.Fs, f *file) error {
 	// Validate
-	if err := c.validate(); err != nil {
+	if err := f.validate(); err != nil {
 		return err
 	}
 
 	// Write JSON file
-	content, err := json.EncodeString(c, true)
+	content, err := json.EncodeString(f, true)
 	if err != nil {
 		return utils.PrefixError(`cannot encode manifest`, err)
 	}
-	file := filesystem.NewFile(path, content)
+	file := filesystem.NewFile(Path(), content)
 	if err := fs.WriteFile(file); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c *Content) SetRecords(records []model.ObjectManifest) {
+func (c *file) validate() error {
+	if err := validator.Validate(c); err != nil {
+		return utils.PrefixError("manifest is not valid", err)
+	}
+	return nil
+}
+
+func (c *file) records() []model.ObjectManifest {
+	var out []model.ObjectManifest
+	for _, branch := range c.Branches {
+		out = append(out, branch)
+	}
+	for _, config := range c.Configs {
+		out = append(out, config.ConfigManifest)
+		for _, row := range config.Rows {
+			row.BranchId = config.BranchId
+			row.ComponentId = config.ComponentId
+			row.ConfigId = config.Id
+			out = append(out, row)
+		}
+	}
+	return out
+}
+
+func (c *file) setRecords(records []model.ObjectManifest) {
 	// Convert records map to slices
 	branchesMap := make(map[string]*model.BranchManifest)
 	configsMap := make(map[string]*model.ConfigManifestWithRows)
@@ -121,28 +149,4 @@ func (c *Content) SetRecords(records []model.ObjectManifest) {
 			panic(fmt.Errorf(`unexpected type "%T"`, manifest))
 		}
 	}
-}
-
-func (c *Content) validate() error {
-	if err := validator.Validate(c); err != nil {
-		return utils.PrefixError("manifest is not valid", err)
-	}
-	return nil
-}
-
-func (c *Content) allRecords() []model.ObjectManifest {
-	var out []model.ObjectManifest
-	for _, branch := range c.Branches {
-		out = append(out, branch)
-	}
-	for _, config := range c.Configs {
-		out = append(out, config.ConfigManifest)
-		for _, row := range config.Rows {
-			row.BranchId = config.BranchId
-			row.ComponentId = config.ComponentId
-			row.ConfigId = config.Id
-			out = append(out, row)
-		}
-	}
-	return out
 }

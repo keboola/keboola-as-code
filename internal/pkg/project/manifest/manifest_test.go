@@ -13,22 +13,31 @@ import (
 )
 
 type test struct {
-	name string
-	json string
-	data *Content
+	name    string
+	json    string
+	naming  naming.Template
+	filter  model.Filter
+	records []model.ObjectManifest
 }
 
 func cases() []test {
 	return []test{
 		{
-			name: `minimal`,
-			json: minimalJson(),
-			data: minimalStruct(),
+			name:    `minimal`,
+			json:    minimalJson(),
+			naming:  naming.TemplateWithIds(),
+			filter:  model.DefaultFilter(),
+			records: minimalRecords(),
 		},
 		{
-			name: `full`,
-			json: fullJson(),
-			data: fullStruct(),
+			name:   `full`,
+			json:   fullJson(),
+			naming: naming.TemplateWithoutIds(),
+			filter: model.Filter{
+				AllowedBranches:   model.AllowedBranches{"foo", "bar"},
+				IgnoredComponents: model.ComponentIds{"abc"},
+			},
+			records: fullRecords(),
 		},
 	}
 }
@@ -37,8 +46,8 @@ func TestNewManifest(t *testing.T) {
 	t.Parallel()
 	m := New(123, `foo.bar`)
 	assert.NotNil(t, m)
-	assert.Equal(t, 123, m.content.Project.Id)
-	assert.Equal(t, `foo.bar`, m.content.Project.ApiHost)
+	assert.Equal(t, 123, m.project.Id)
+	assert.Equal(t, `foo.bar`, m.project.ApiHost)
 }
 
 func TestManifestLoadNotFound(t *testing.T) {
@@ -52,13 +61,13 @@ func TestManifestLoadNotFound(t *testing.T) {
 	assert.Equal(t, `manifest ".keboola/manifest.json" not found`, err.Error())
 }
 
-func TestManifestLoad(t *testing.T) {
+func TestLoadManifestFile(t *testing.T) {
 	t.Parallel()
 	for _, c := range cases() {
 		fs := testfs.NewMemoryFs()
 
 		// Write file
-		path := filesystem.Join(filesystem.MetadataDir, FileName)
+		path := Path()
 		assert.NoError(t, fs.WriteFile(filesystem.NewFile(path, c.json)))
 
 		// Load
@@ -67,23 +76,25 @@ func TestManifestLoad(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Assert
-		assert.Equal(t, c.data, manifest.content, c.name)
+		assert.Equal(t, c.naming, manifest.NamingTemplate(), c.name)
+		assert.Equal(t, c.filter.AllowedBranches, manifest.AllowedBranches(), c.name)
+		assert.Equal(t, c.filter.IgnoredComponents, manifest.IgnoredComponents(), c.name)
+		assert.Equal(t, c.records, manifest.records.All(), c.name)
 	}
 }
 
-func TestManifestSave(t *testing.T) {
+func TestSaveManifestFile(t *testing.T) {
 	t.Parallel()
 	for _, c := range cases() {
 		fs := testfs.NewMemoryFs()
 
-		// Create
-		m := New(c.data.Project.Id, `foo.bar`)
-		m.content.AllowedBranches = c.data.AllowedBranches
-		m.content.IgnoredComponents = c.data.IgnoredComponents
-		assert.NoError(t, m.records.SetRecords(c.data.allRecords()))
-
 		// Save
-		assert.NoError(t, m.Save(fs))
+		manifest := New(12345, "foo.bar")
+		manifest.SetNamingTemplate(c.naming)
+		manifest.SetAllowedBranches(c.filter.AllowedBranches)
+		manifest.SetIgnoredComponents(c.filter.IgnoredComponents)
+		assert.NoError(t, manifest.records.SetRecords(c.records))
+		assert.NoError(t, manifest.Save(fs))
 
 		// Load file
 		file, err := fs.ReadFile(Path(), "")
@@ -94,7 +105,7 @@ func TestManifestSave(t *testing.T) {
 
 func TestManifestValidateEmpty(t *testing.T) {
 	t.Parallel()
-	content := &Content{}
+	content := &file{}
 	err := content.validate()
 	assert.NotNil(t, err)
 	expected := `manifest is not valid:
@@ -116,19 +127,22 @@ func TestManifestValidateEmpty(t *testing.T) {
 
 func TestManifestValidateMinimal(t *testing.T) {
 	t.Parallel()
-	content := minimalStruct()
+	content := newFile(12345, "foo.bar")
+	content.setRecords(minimalRecords())
 	assert.NoError(t, content.validate())
 }
 
 func TestManifestValidateFull(t *testing.T) {
 	t.Parallel()
-	content := fullStruct()
+	content := newFile(12345, "foo.bar")
+	content.setRecords(fullRecords())
 	assert.NoError(t, content.validate())
 }
 
 func TestManifestValidateBadVersion(t *testing.T) {
 	t.Parallel()
-	content := minimalStruct()
+	content := newFile(12345, "foo.bar")
+	content.setRecords(minimalRecords())
 	content.Version = 123
 	err := content.validate()
 	assert.Error(t, err)
@@ -138,7 +152,8 @@ func TestManifestValidateBadVersion(t *testing.T) {
 
 func TestManifestValidateNestedField(t *testing.T) {
 	t.Parallel()
-	content := minimalStruct()
+	content := newFile(12345, "foo.bar")
+	content.setRecords(minimalRecords())
 	content.Branches = append(content.Branches, &model.BranchManifest{
 		BranchKey: model.BranchKey{Id: 0},
 		Paths: model.Paths{
@@ -197,19 +212,8 @@ func minimalJson() string {
 `
 }
 
-func minimalStruct() *Content {
-	return &Content{
-		Version: 2,
-		Project: Project{
-			Id:      12345,
-			ApiHost: "foo.bar",
-		},
-		SortBy:   model.SortById,
-		Naming:   naming.TemplateWithIds(),
-		Filter:   model.DefaultFilter(),
-		Branches: make([]*model.BranchManifest, 0),
-		Configs:  make([]*model.ConfigManifestWithRows, 0),
-	}
+func minimalRecords() []model.ObjectManifest {
+	return []model.ObjectManifest{}
 }
 
 func fullJson() string {
@@ -221,14 +225,14 @@ func fullJson() string {
   },
   "sortBy": "id",
   "naming": {
-    "branch": "{branch_id}-{branch_name}",
-    "config": "{component_type}/{component_id}/{config_id}-{config_name}",
-    "configRow": "rows/{config_row_id}-{config_row_name}",
-    "schedulerConfig": "schedules/{config_id}-{config_name}",
+    "branch": "{branch_name}",
+    "config": "{component_type}/{component_id}/{config_name}",
+    "configRow": "rows/{config_row_name}",
+    "schedulerConfig": "schedules/{config_name}",
     "sharedCodeConfig": "_shared/{target_component_id}",
-    "sharedCodeConfigRow": "codes/{config_row_id}-{config_row_name}",
+    "sharedCodeConfigRow": "codes/{config_row_name}",
     "variablesConfig": "variables",
-    "variablesValuesRow": "values/{config_row_id}-{config_row_name}"
+    "variablesValuesRow": "values/{config_row_name}"
   },
   "allowedBranches": [
     "foo",
@@ -308,217 +312,191 @@ func fullJson() string {
 `
 }
 
-func fullStruct() *Content {
-	return &Content{
-		Version: 2,
-		Project: Project{
-			Id:      12345,
-			ApiHost: "foo.bar",
-		},
-		SortBy: model.SortById,
-		Naming: naming.TemplateWithIds(),
-		Filter: model.Filter{
-			AllowedBranches:   model.AllowedBranches{"foo", "bar"},
-			IgnoredComponents: model.ComponentIds{"abc"},
-		},
-		Branches: []*model.BranchManifest{
-			{
-				RecordState: model.RecordState{
-					Persisted: true,
-				},
-				BranchKey: model.BranchKey{
-					Id: 10,
-				},
-				Paths: model.Paths{
-					AbsPath: model.NewAbsPath(
-						"",
-						"main",
-					),
-				},
+func fullRecords() []model.ObjectManifest {
+	return []model.ObjectManifest{
+		&model.BranchManifest{
+			RecordState: model.RecordState{
+				Persisted: true,
 			},
-			{
-				RecordState: model.RecordState{
-					Persisted: true,
-				},
-				BranchKey: model.BranchKey{
-					Id: 11,
-				},
-				Paths: model.Paths{
-					AbsPath: model.NewAbsPath(
-						"",
-						"11-dev",
-					),
-				},
+			BranchKey: model.BranchKey{
+				Id: 10,
+			},
+			Paths: model.Paths{
+				AbsPath: model.NewAbsPath(
+					"",
+					"main",
+				),
 			},
 		},
-		Configs: []*model.ConfigManifestWithRows{
-			{
-				ConfigManifest: &model.ConfigManifest{
-					RecordState: model.RecordState{
-						Persisted: true,
-					},
-					ConfigKey: model.ConfigKey{
-						BranchId:    10,
-						ComponentId: "keboola.ex-db-oracle",
-						Id:          "11",
-					},
-					Paths: model.Paths{
-						AbsPath: model.NewAbsPath(
-							"main",
-							"11-raw-data",
-						),
-					},
-				},
-				Rows: []*model.ConfigRowManifest{
-					{
-						RecordState: model.RecordState{
-							Persisted: true,
-						},
-						ConfigRowKey: model.ConfigRowKey{
-							Id:          "101",
-							BranchId:    10,
-							ComponentId: "keboola.ex-db-oracle",
-							ConfigId:    "11",
-						},
-						Paths: model.Paths{
-							AbsPath: model.NewAbsPath(
-								"main/11-raw-data",
-								"rows/101-region-1",
-							),
-						},
-					},
-					{
-						RecordState: model.RecordState{
-							Persisted: true,
-						},
-						ConfigRowKey: model.ConfigRowKey{
-							Id:          "102",
-							BranchId:    10,
-							ComponentId: "keboola.ex-db-oracle",
-							ConfigId:    "11",
-						},
-						Paths: model.Paths{
-							AbsPath: model.NewAbsPath(
-								"main/11-raw-data",
-								"rows/102-region-2",
-							),
-						},
-					},
+		&model.BranchManifest{
+			RecordState: model.RecordState{
+				Persisted: true,
+			},
+			BranchKey: model.BranchKey{
+				Id: 11,
+			},
+			Paths: model.Paths{
+				AbsPath: model.NewAbsPath(
+					"",
+					"11-dev",
+				),
+			},
+		},
+
+		&model.ConfigManifest{
+			RecordState: model.RecordState{
+				Persisted: true,
+			},
+			ConfigKey: model.ConfigKey{
+				BranchId:    10,
+				ComponentId: "keboola.ex-db-oracle",
+				Id:          "11",
+			},
+			Paths: model.Paths{
+				AbsPath: model.NewAbsPath(
+					"main",
+					"11-raw-data",
+				),
+			},
+		},
+		&model.ConfigManifest{
+			RecordState: model.RecordState{
+				Persisted: true,
+			},
+			ConfigKey: model.ConfigKey{
+				BranchId:    11,
+				ComponentId: "keboola.variables",
+				Id:          "13",
+			},
+			Paths: model.Paths{
+				AbsPath: model.NewAbsPath(
+					"11-dev/12-current-month",
+					"variables",
+				),
+			},
+			Relations: model.Relations{
+				&model.VariablesForRelation{
+					ComponentId: "keboola.wr-db-mysql",
+					ConfigId:    "12",
 				},
 			},
-			{
-				ConfigManifest: &model.ConfigManifest{
-					RecordState: model.RecordState{
-						Persisted: true,
-					},
-					ConfigKey: model.ConfigKey{
-						BranchId:    11,
-						ComponentId: "keboola.variables",
-						Id:          "13",
-					},
-					Paths: model.Paths{
-						AbsPath: model.NewAbsPath(
-							"11-dev/12-current-month",
-							"variables",
-						),
-					},
-					Relations: model.Relations{
-						&model.VariablesForRelation{
-							ComponentId: "keboola.wr-db-mysql",
-							ConfigId:    "12",
-						},
-					},
-				},
-				Rows: []*model.ConfigRowManifest{
-					{
-						RecordState: model.RecordState{
-							Persisted: true,
-						},
-						ConfigRowKey: model.ConfigRowKey{
-							Id:          "105",
-							BranchId:    11,
-							ComponentId: "keboola.variables",
-							ConfigId:    "13",
-						},
-						Paths: model.Paths{
-							AbsPath: model.NewAbsPath(
-								"11-dev/12-current-month/variables",
-								"values/default",
-							),
-						},
-					},
-					{
-						RecordState: model.RecordState{
-							Persisted: true,
-						},
-						ConfigRowKey: model.ConfigRowKey{
-							Id:          "106",
-							BranchId:    11,
-							ComponentId: "keboola.variables",
-							ConfigId:    "13",
-						},
-						Paths: model.Paths{
-							AbsPath: model.NewAbsPath(
-								"11-dev/12-current-month/variables",
-								"values/other",
-							),
-						},
-					},
-				},
+		},
+		&model.ConfigManifest{
+			RecordState: model.RecordState{
+				Persisted: true,
 			},
-			{
-				ConfigManifest: &model.ConfigManifest{
-					RecordState: model.RecordState{
-						Persisted: true,
-					},
-					ConfigKey: model.ConfigKey{
-						BranchId:    11,
-						ComponentId: "keboola.wr-db-mysql",
-						Id:          "12",
-					},
-					Paths: model.Paths{
-						AbsPath: model.NewAbsPath(
-							"11-dev",
-							"12-current-month",
-						),
-					},
-				},
-				Rows: []*model.ConfigRowManifest{
-					{
-						RecordState: model.RecordState{
-							Persisted: true,
-						},
-						ConfigRowKey: model.ConfigRowKey{
-							Id:          "103",
-							BranchId:    11,
-							ComponentId: "keboola.wr-db-mysql",
-							ConfigId:    "12",
-						},
-						Paths: model.Paths{
-							AbsPath: model.NewAbsPath(
-								"11-dev/12-current-month",
-								"rows/103-all",
-							),
-						},
-					},
-					{
-						RecordState: model.RecordState{
-							Persisted: true,
-						},
-						ConfigRowKey: model.ConfigRowKey{
-							Id:          "104",
-							BranchId:    11,
-							ComponentId: "keboola.wr-db-mysql",
-							ConfigId:    "12",
-						},
-						Paths: model.Paths{
-							AbsPath: model.NewAbsPath(
-								"11-dev/12-current-month",
-								"rows/104-sum",
-							),
-						},
-					},
-				},
+			ConfigKey: model.ConfigKey{
+				BranchId:    11,
+				ComponentId: "keboola.wr-db-mysql",
+				Id:          "12",
+			},
+			Paths: model.Paths{
+				AbsPath: model.NewAbsPath(
+					"11-dev",
+					"12-current-month",
+				),
+			},
+		},
+		&model.ConfigRowManifest{
+			RecordState: model.RecordState{
+				Persisted: true,
+			},
+			ConfigRowKey: model.ConfigRowKey{
+				Id:          "101",
+				BranchId:    10,
+				ComponentId: "keboola.ex-db-oracle",
+				ConfigId:    "11",
+			},
+			Paths: model.Paths{
+				AbsPath: model.NewAbsPath(
+					"main/11-raw-data",
+					"rows/101-region-1",
+				),
+			},
+		},
+		&model.ConfigRowManifest{
+			RecordState: model.RecordState{
+				Persisted: true,
+			},
+			ConfigRowKey: model.ConfigRowKey{
+				Id:          "102",
+				BranchId:    10,
+				ComponentId: "keboola.ex-db-oracle",
+				ConfigId:    "11",
+			},
+			Paths: model.Paths{
+				AbsPath: model.NewAbsPath(
+					"main/11-raw-data",
+					"rows/102-region-2",
+				),
+			},
+		},
+		&model.ConfigRowManifest{
+			RecordState: model.RecordState{
+				Persisted: true,
+			},
+			ConfigRowKey: model.ConfigRowKey{
+				Id:          "105",
+				BranchId:    11,
+				ComponentId: "keboola.variables",
+				ConfigId:    "13",
+			},
+			Paths: model.Paths{
+				AbsPath: model.NewAbsPath(
+					"11-dev/12-current-month/variables",
+					"values/default",
+				),
+			},
+		},
+		&model.ConfigRowManifest{
+			RecordState: model.RecordState{
+				Persisted: true,
+			},
+			ConfigRowKey: model.ConfigRowKey{
+				Id:          "106",
+				BranchId:    11,
+				ComponentId: "keboola.variables",
+				ConfigId:    "13",
+			},
+			Paths: model.Paths{
+				AbsPath: model.NewAbsPath(
+					"11-dev/12-current-month/variables",
+					"values/other",
+				),
+			},
+		},
+		&model.ConfigRowManifest{
+			RecordState: model.RecordState{
+				Persisted: true,
+			},
+			ConfigRowKey: model.ConfigRowKey{
+				Id:          "103",
+				BranchId:    11,
+				ComponentId: "keboola.wr-db-mysql",
+				ConfigId:    "12",
+			},
+			Paths: model.Paths{
+				AbsPath: model.NewAbsPath(
+					"11-dev/12-current-month",
+					"rows/103-all",
+				),
+			},
+		},
+		&model.ConfigRowManifest{
+			RecordState: model.RecordState{
+				Persisted: true,
+			},
+			ConfigRowKey: model.ConfigRowKey{
+				Id:          "104",
+				BranchId:    11,
+				ComponentId: "keboola.wr-db-mysql",
+				ConfigId:    "12",
+			},
+			Paths: model.Paths{
+				AbsPath: model.NewAbsPath(
+					"11-dev/12-current-month",
+					"rows/104-sum",
+				),
 			},
 		},
 	}
