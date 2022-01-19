@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "templates": [
+    {
+      "id": "my-template-id",
+      "name": "My Template Name",
+      "description": "My Template Description",
+      "path": "my-template",
+      "versions": [
+        {
+          "version": "1.2.3",
+          "description": "Version 1",
+          "stable": true,
+          "path": "v1"
+        }
+      ]
+    }
+  ]
+}
