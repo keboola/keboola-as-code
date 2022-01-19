@@ -131,9 +131,10 @@ func fullJson() string {
   "version": 2,
   "templates": [
     {
+      "id": "template-1",
       "name": "Template 1",
       "description": "My Template 1",
-      "path": "template1",
+      "path": "template-1",
       "versions": [
         {
           "version": "0.0.1",
@@ -159,18 +160,19 @@ func fullStruct() *file {
 		Version: 2,
 		Templates: []*TemplateRecord{
 			{
-				AbsPath:     model.NewAbsPath(``, `template1`),
+				AbsPath:     model.NewAbsPath(``, `template-1`),
+				Id:          "template-1",
 				Name:        `Template 1`,
 				Description: `My Template 1`,
 				Versions: []*VersionRecord{
 					{
-						AbsPath:     model.NewAbsPath(`template1`, `v0`),
+						AbsPath:     model.NewAbsPath(`template-1`, `v0`),
 						Version:     `0.0.1`,
 						Stable:      false,
 						Description: `Version 0`,
 					},
 					{
-						AbsPath:     model.NewAbsPath(`template1`, `v1`),
+						AbsPath:     model.NewAbsPath(`template-1`, `v1`),
 						Version:     `1.2.3`,
 						Stable:      true,
 						Description: `Version 1`,

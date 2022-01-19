@@ -11,6 +11,7 @@ type Manifest struct {
 }
 
 type TemplateRecord struct {
+	Id            string `json:"id" validate:"required"`
 	Name          string `json:"name" validate:"required"`
 	Description   string `json:"description" validate:"required"`
 	model.AbsPath `validate:"dive"`
