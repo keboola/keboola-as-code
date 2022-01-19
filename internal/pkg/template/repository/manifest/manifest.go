@@ -10,7 +10,7 @@ import (
 
 type Manifest struct {
 	changed bool
-	records map[string]*TemplateRecord // template record by template ID
+	records map[string]TemplateRecord // template record by template ID
 }
 
 type TemplateRecord struct {
@@ -18,7 +18,7 @@ type TemplateRecord struct {
 	Name          string `json:"name" validate:"required"`
 	Description   string `json:"description" validate:"required"`
 	model.AbsPath `validate:"dive"`
-	Versions      []*VersionRecord `json:"versions" validate:"required,dive"`
+	Versions      []VersionRecord `json:"versions" validate:"required,dive"`
 }
 
 type VersionRecord struct {
@@ -30,7 +30,7 @@ type VersionRecord struct {
 
 func New() *Manifest {
 	return &Manifest{
-		records: make(map[string]*TemplateRecord),
+		records: make(map[string]TemplateRecord),
 	}
 }
 
@@ -47,7 +47,7 @@ func Load(fs filesystem.Fs) (*Manifest, error) {
 
 	// Create manifest
 	m := New()
-	m.add(manifestContent.Templates...)
+	m.Persist(manifestContent.records()...)
 
 	// Track if manifest was changed after load
 	m.changed = false
@@ -70,29 +70,33 @@ func (m *Manifest) Save(fs filesystem.Fs) error {
 	return nil
 }
 
-func (m *Manifest) Get(templateId string) (*TemplateRecord, bool) {
+func (m *Manifest) IsChanged() bool {
+	return m.changed
+}
+
+func (m *Manifest) Persist(records ...TemplateRecord) {
+	for _, record := range records {
+		m.records[record.Id] = record
+		m.changed = true
+	}
+}
+
+func (m *Manifest) Get(templateId string) (TemplateRecord, bool) {
 	v, ok := m.records[templateId]
 	return v, ok
 }
 
-func (m *Manifest) GetOrCreate(templateId string) *TemplateRecord {
+func (m *Manifest) GetOrCreate(templateId string) TemplateRecord {
 	record, found := m.Get(templateId)
-	if !found {
-		record = newRecord(templateId)
-		m.add(record)
+	if found {
+		return record
 	}
-	return record
-}
-
-func (m *Manifest) add(records ...*TemplateRecord) {
-	for _, record := range records {
-		m.records[record.Id] = record
-	}
+	return newRecord(templateId)
 }
 
 // all template records sorted by ID.
-func (m *Manifest) all() []*TemplateRecord {
-	out := make([]*TemplateRecord, 0)
+func (m *Manifest) all() []TemplateRecord {
+	out := make([]TemplateRecord, 0)
 	for _, template := range m.records {
 		out = append(out, template)
 	}
@@ -102,8 +106,8 @@ func (m *Manifest) all() []*TemplateRecord {
 	return out
 }
 
-func newRecord(templateId string) *TemplateRecord {
-	record := &TemplateRecord{Id: templateId}
+func newRecord(templateId string) TemplateRecord {
+	record := TemplateRecord{Id: templateId}
 	record.AbsPath = model.NewAbsPath("", utils.NormalizeName(templateId))
 	return record
 }

@@ -118,28 +118,31 @@ func TestManifestRecords(t *testing.T) {
 
 	// Get - not found
 	v, found := m.Get("foo-bar")
-	assert.Nil(t, v)
+	assert.Empty(t, v)
 	assert.False(t, found)
 
 	// GetOrCreate if record does not exist
 	v = m.GetOrCreate("foo-bar")
-	assert.NotNil(t, v)
+	assert.NotEmpty(t, v)
 	assert.Equal(t, "foo-bar", v.Id)
 	assert.Equal(t, "foo-bar", v.Path())
 
+	// Persist
+	m.Persist(v)
+
 	// Get - found
 	v2, found := m.Get("foo-bar")
-	assert.Same(t, v, v2)
+	assert.Equal(t, v, v2)
 	assert.True(t, found)
 
 	// GetOrCreate if record exists
 	v3 := m.GetOrCreate("foo-bar")
-	assert.Same(t, v, v3)
+	assert.Equal(t, v, v3)
 
 	// Get all records, sorted by ID
-	m.GetOrCreate("xyz")
-	m.GetOrCreate("abc")
-	assert.Equal(t, []*TemplateRecord{
+	m.Persist(m.GetOrCreate("xyz"))
+	m.Persist(m.GetOrCreate("abc"))
+	assert.Equal(t, []TemplateRecord{
 		{
 			Id:      "abc",
 			AbsPath: model.NewAbsPath("", "abc"),
@@ -166,7 +169,7 @@ func minimalJson() string {
 func minimalStruct() *file {
 	return &file{
 		Version:   2,
-		Templates: []*TemplateRecord{},
+		Templates: []TemplateRecord{},
 	}
 }
 
@@ -202,13 +205,13 @@ func fullJson() string {
 func fullStruct() *file {
 	return &file{
 		Version: 2,
-		Templates: []*TemplateRecord{
+		Templates: []TemplateRecord{
 			{
 				AbsPath:     model.NewAbsPath(``, `template-1`),
 				Id:          "template-1",
 				Name:        `Template 1`,
 				Description: `My Template 1`,
-				Versions: []*VersionRecord{
+				Versions: []VersionRecord{
 					{
 						AbsPath:     model.NewAbsPath(`template-1`, `v0`),
 						Version:     `0.0.1`,
