@@ -29,8 +29,8 @@ func Load(fs filesystem.Fs) (Inputs, error) {
 }
 
 // Save inputs to the FileName.
-func Save(fs filesystem.Fs, inputs Inputs) error {
-	if err := saveFile(fs, &file{Inputs: inputs}); err != nil {
+func (i Inputs) Save(fs filesystem.Fs) error {
+	if err := saveFile(fs, &file{Inputs: i}); err != nil {
 		return err
 	}
 	return nil

@@ -274,7 +274,7 @@ func TestSaveInputs(t *testing.T) {
 	fs := testfs.NewMemoryFs()
 
 	// Save
-	assert.NoError(t, Save(fs, testInputs()))
+	assert.NoError(t, testInputs().Save(fs))
 
 	// Load file
 	file, err := fs.ReadFile(Path(), "")

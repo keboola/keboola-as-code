@@ -22,6 +22,10 @@ func LoadManifest(fs filesystem.Fs) (*Manifest, error) {
 	return templateManifest.Load(fs)
 }
 
+func LoadInputs(fs filesystem.Fs) (Inputs, error) {
+	return templateInput.Load(fs)
+}
+
 type dependencies interface {
 	Logger() log.Logger
 	StorageApi() (*remote.StorageApi, error)
