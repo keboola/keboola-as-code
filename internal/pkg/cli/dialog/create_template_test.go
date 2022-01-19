@@ -73,6 +73,13 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 		_, err = console.Send(testhelper.Enter) // enter - use generated default value, "my-super-template"
 		assert.NoError(t, err)
 
+		_, err = console.ExpectString("Please enter a short template description.")
+		assert.NoError(t, err)
+
+		time.Sleep(20 * time.Millisecond)
+		_, err = console.Send(testhelper.Enter) // -> start editor
+		assert.NoError(t, err)
+
 		_, err = console.ExpectString("Select the source branch:")
 		assert.NoError(t, err)
 
@@ -112,6 +119,9 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 		_, err = console.Send(testhelper.Enter) // -> confirm
 		assert.NoError(t, err)
 
+		_, err = console.ExpectString("Please enter a human readable ID for each config and config row.")
+		assert.NoError(t, err)
+
 		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.Enter) // -> start editor
 		assert.NoError(t, err)
@@ -129,8 +139,9 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, createTemplate.Options{
-		Id:   `my-super-template`,
-		Name: `My Super Template`,
+		Id:          `my-super-template`,
+		Name:        `My Super Template`,
+		Description: `Full workflow to ...`,
 		Configs: []createTemplate.ConfigDef{
 			{
 				Key: model.ConfigKey{
@@ -186,8 +197,9 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, createTemplate.Options{
-		Id:   `my-super-template`,
-		Name: `My Super Template`,
+		Id:          `my-super-template`,
+		Name:        `My Super Template`,
+		Description: `Full workflow to ...`,
 		Configs: []createTemplate.ConfigDef{
 			{
 				Key: model.ConfigKey{
@@ -243,8 +255,9 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, createTemplate.Options{
-		Id:   `my-super-template`,
-		Name: `My Super Template`,
+		Id:          `my-super-template`,
+		Name:        `My Super Template`,
+		Description: `Full workflow to ...`,
 		Configs: []createTemplate.ConfigDef{
 			{
 				Key: model.ConfigKey{

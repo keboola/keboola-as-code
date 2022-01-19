@@ -19,9 +19,10 @@ type ConfigRowDef struct {
 }
 
 type Options struct {
-	Id      string
-	Name    string
-	Configs []ConfigDef
+	Id          string
+	Name        string
+	Description string
+	Configs     []ConfigDef
 }
 
 type dependencies interface {
