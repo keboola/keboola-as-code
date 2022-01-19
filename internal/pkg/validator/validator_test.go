@@ -104,3 +104,18 @@ func TestValidatorRequiredInProject(t *testing.T) {
 	err = ValidateCtx(templateCtx, `value`, `required_in_project`, `some_field`)
 	assert.NoError(t, err)
 }
+
+func TestValidatorAlphaNumDash(t *testing.T) {
+	t.Parallel()
+	err := ValidateCtx(context.Background(), `123`, `alphanumdash`, `some_field`)
+	assert.NoError(t, err)
+	err = ValidateCtx(context.Background(), `abc`, `alphanumdash`, `some_field`)
+	assert.NoError(t, err)
+	err = ValidateCtx(context.Background(), `123abc`, `alphanumdash`, `some_field`)
+	assert.NoError(t, err)
+	err = ValidateCtx(context.Background(), `123-abc-456-def`, `alphanumdash`, `some_field`)
+	assert.NoError(t, err)
+	err = ValidateCtx(context.Background(), `123-abc-#`, `alphanumdash`, `some_field`)
+	assert.Error(t, err)
+	assert.Equal(t, "some_field can only contain alphanumeric characters and dash", err.Error())
+}

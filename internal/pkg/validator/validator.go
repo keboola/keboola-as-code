@@ -17,6 +17,7 @@ import (
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
 	enTranslation "github.com/go-playground/validator/v10/translations/en"
+	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -113,21 +114,31 @@ func (v *wrapper) registerRule(rules ...Rule) {
 }
 
 func (v *wrapper) registerCustomRules() {
-	// Register default validation for "required_in_project"
-	// Some values are required in the project scope, but ignored in the template scope.
-	// We validate them by default.
-	v.registerRule(Rule{
-		Tag: "required_in_project",
-		FuncCtx: func(ctx context.Context, fl validator.FieldLevel) bool {
-			if v, _ := ctx.Value(DisableRequiredInProjectKey).(bool); v {
-				// Template mode, value is valid.
-				return true
-			}
-			// Project mode, value must be set.
-			return !fl.Field().IsZero()
+	v.registerRule(
+		// Register default validation for "required_in_project"
+		// Some values are required in the project scope, but ignored in the template scope.
+		// We validate them by default.
+		Rule{
+			Tag: "required_in_project",
+			FuncCtx: func(ctx context.Context, fl validator.FieldLevel) bool {
+				if v, _ := ctx.Value(DisableRequiredInProjectKey).(bool); v {
+					// Template mode, value is valid.
+					return true
+				}
+				// Project mode, value must be set.
+				return !fl.Field().IsZero()
+			},
+			ErrorMessage: "{0} is a required field",
 		},
-		ErrorMessage: "{0} is a required field",
-	})
+		// Alphanumeric string with allowed dash character.
+		Rule{
+			Tag: "alphanumdash",
+			FuncCtx: func(ctx context.Context, fl validator.FieldLevel) bool {
+				return regexpcache.MustCompile(`[a-zA-Z0-9\-]+$`).MatchString(fl.Field().String())
+			},
+			ErrorMessage: "{0} can only contain alphanumeric characters and dash",
+		},
+	)
 }
 
 // registerErrorMessage for a tag.
