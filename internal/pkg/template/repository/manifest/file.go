@@ -18,14 +18,14 @@ func Path() string {
 
 // file is repository manifest JSON file.
 type file struct {
-	Version   int               `json:"version" validate:"required,min=1,max=2"`
-	Templates []*TemplateRecord `json:"templates"`
+	Version   int              `json:"version" validate:"required,min=1,max=2"`
+	Templates []TemplateRecord `json:"templates"`
 }
 
 func newFile() *file {
 	return &file{
 		Version:   build.MajorVersion,
-		Templates: make([]*TemplateRecord, 0),
+		Templates: make([]TemplateRecord, 0),
 	}
 }
 
@@ -43,9 +43,11 @@ func loadFile(fs filesystem.Fs) (*file, error) {
 	}
 
 	// Fill in parent paths
-	for _, template := range content.Templates {
+	for i := range content.Templates {
+		template := &content.Templates[i]
 		template.AbsPath.SetParentPath(``)
-		for _, version := range template.Versions {
+		for j := range template.Versions {
+			version := &template.Versions[j]
 			version.AbsPath.SetParentPath(template.Path())
 		}
 	}
@@ -86,4 +88,10 @@ func (f *file) validate() error {
 		return utils.PrefixError("repository manifest is not valid", err)
 	}
 	return nil
+}
+
+func (f *file) records() []TemplateRecord {
+	out := make([]TemplateRecord, len(f.Templates))
+	copy(out, f.Templates)
+	return out
 }
