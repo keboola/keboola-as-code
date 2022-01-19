@@ -22,6 +22,10 @@ type BasePathFs struct {
 	basePath string
 }
 
+type basePathProvider interface {
+	BasePath() string
+}
+
 func New(rootFs aferoFs, basePath string) (*BasePathFs, error) {
 	// Check target dir
 	if stat, err := rootFs.Stat(basePath); err != nil {
@@ -30,11 +34,19 @@ func New(rootFs aferoFs, basePath string) (*BasePathFs, error) {
 		return nil, fmt.Errorf(`path "%s" is not directory`, filesystem.ToSlash(basePath))
 	}
 
+	// Create FS backend
 	fs := afero.NewBasePathFs(rootFs, basePath)
+
+	// Get full base path - include base path of the rootFs
+	fullBasePath := basePath
+	if v, ok := rootFs.(basePathProvider); ok {
+		fullBasePath = filepath.Join(v.BasePath(), fullBasePath)
+	}
+
 	return &BasePathFs{
 		aferoFs:  fs,
 		utils:    &afero.Afero{Fs: fs},
-		basePath: basePath,
+		basePath: fullBasePath,
 	}, nil
 }
 
