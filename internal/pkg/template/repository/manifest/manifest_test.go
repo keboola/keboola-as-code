@@ -148,7 +148,7 @@ func TestManifestBadRecordSemanticVersion(t *testing.T) {
 	assert.Equal(t, "manifest file \".keboola/repository.json\" is invalid:\n  - invalid semantic version \"foo-bar\"", err.Error())
 }
 
-func TestManifestRecords(t *testing.T) {
+func TestManifest_Records(t *testing.T) {
 	t.Parallel()
 	m := New()
 	assert.Len(t, m.records, 0)
@@ -193,6 +193,26 @@ func TestManifestRecords(t *testing.T) {
 			AbsPath: model.NewAbsPath("", "xyz"),
 		},
 	}, m.all())
+}
+
+func TestManifest_GetByPath_NotFound(t *testing.T) {
+	t.Parallel()
+	m := New()
+	record, found := m.GetByPath(`foo`)
+	assert.Empty(t, record)
+	assert.False(t, found)
+}
+
+func TestManifest_GetByPath_Found(t *testing.T) {
+	t.Parallel()
+	m := New()
+	record1 := TemplateRecord{Id: "foo", AbsPath: model.NewAbsPath("parent", "foo")}
+	m.Persist(record1)
+	record2 := TemplateRecord{Id: "bar", AbsPath: model.NewAbsPath("parent", "bar")}
+	m.Persist(record2)
+	record, found := m.GetByPath(`foo`)
+	assert.Equal(t, record1, record)
+	assert.True(t, found)
 }
 
 func minimalJson() string {
