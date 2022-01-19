@@ -1,17 +1,20 @@
 package manifest
 
 import (
+	"sort"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 type Manifest struct {
-	changed   bool
-	templates []*TemplateRecord
+	changed bool
+	records map[string]*TemplateRecord // template record by template ID
 }
 
 type TemplateRecord struct {
-	Id            string `json:"id" validate:"required"`
+	Id            string `json:"id" validate:"required,alphanumdash"`
 	Name          string `json:"name" validate:"required"`
 	Description   string `json:"description" validate:"required"`
 	model.AbsPath `validate:"dive"`
@@ -27,7 +30,7 @@ type VersionRecord struct {
 
 func New() *Manifest {
 	return &Manifest{
-		templates: make([]*TemplateRecord, 0),
+		records: make(map[string]*TemplateRecord),
 	}
 }
 
@@ -44,7 +47,7 @@ func Load(fs filesystem.Fs) (*Manifest, error) {
 
 	// Create manifest
 	m := New()
-	m.templates = manifestContent.Templates
+	m.add(manifestContent.Templates...)
 
 	// Track if manifest was changed after load
 	m.changed = false
@@ -56,7 +59,7 @@ func Load(fs filesystem.Fs) (*Manifest, error) {
 func (m *Manifest) Save(fs filesystem.Fs) error {
 	// Create file content
 	content := newFile()
-	content.Templates = m.templates
+	content.Templates = m.all()
 
 	// Save file
 	if err := saveFile(fs, content); err != nil {
@@ -65,4 +68,42 @@ func (m *Manifest) Save(fs filesystem.Fs) error {
 
 	m.changed = false
 	return nil
+}
+
+func (m *Manifest) Get(templateId string) (*TemplateRecord, bool) {
+	v, ok := m.records[templateId]
+	return v, ok
+}
+
+func (m *Manifest) GetOrCreate(templateId string) *TemplateRecord {
+	record, found := m.Get(templateId)
+	if !found {
+		record = newRecord(templateId)
+		m.add(record)
+	}
+	return record
+}
+
+func (m *Manifest) add(records ...*TemplateRecord) {
+	for _, record := range records {
+		m.records[record.Id] = record
+	}
+}
+
+// all template records sorted by ID.
+func (m *Manifest) all() []*TemplateRecord {
+	out := make([]*TemplateRecord, 0)
+	for _, template := range m.records {
+		out = append(out, template)
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		return out[i].Id < out[j].Id
+	})
+	return out
+}
+
+func newRecord(templateId string) *TemplateRecord {
+	record := &TemplateRecord{Id: templateId}
+	record.AbsPath = model.NewAbsPath("", utils.NormalizeName(templateId))
+	return record
 }
