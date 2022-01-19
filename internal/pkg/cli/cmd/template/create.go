@@ -9,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 )
 
-func EditCommand(depsProvider dependencies.Provider) *cobra.Command {
+func CreateCommand(depsProvider dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: helpmsg.Read(`template/edit/short`),
@@ -36,6 +36,9 @@ func EditCommand(depsProvider dependencies.Provider) *cobra.Command {
 	}
 
 	cmd.Flags().SortFlags = true
+	cmd.Flags().String(`id`, ``, "template ID")
+	cmd.Flags().String(`name`, ``, "template name")
+	cmd.Flags().String(`description`, ``, "template description")
 	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
 	cmd.Flags().StringP(`branch`, "b", ``, "branch ID or name")
 	cmd.Flags().StringP(`configs`, "c", ``, "comma separated list of {componentId}:{configId}")

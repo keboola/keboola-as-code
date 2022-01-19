@@ -91,6 +91,16 @@ func (d *createTmplDialog) ask() (createTemplate.Options, error) {
 		return d.out, err
 	}
 
+	// Description
+	if d.deps.Options().IsSet(`description`) {
+		d.out.Description = d.deps.Options().GetString(`description`)
+	} else {
+		d.out.Description = d.askDescription()
+	}
+	if err := validateTemplateDescription(d.out.Name); err != nil {
+		return d.out, err
+	}
+
 	// Branch
 	d.selectedBranch, err = d.SelectBranch(d.deps.Options(), allBranches, `Select the source branch`)
 	if err != nil {
@@ -148,6 +158,15 @@ func (d *createTmplDialog) askId() string {
 		Validator:   validateId,
 	})
 	return strings.TrimSpace(name)
+}
+
+func (d *createTmplDialog) askDescription() string {
+	result, _ := d.prompt.Editor(&prompt.Question{
+		Description: `Please enter a short template description.`,
+		Default:     `Full workflow to ...`,
+		Validator:   validateTemplateDescription,
+	})
+	return strings.TrimSpace(result)
 }
 
 func (d *createTmplDialog) askObjectsIds() ([]createTemplate.ConfigDef, error) {
@@ -314,7 +333,15 @@ func makeUniqueId(object model.Object, idByKey map[string]string, ids map[string
 func validateTemplateName(val interface{}) error {
 	str := strings.TrimSpace(val.(string))
 	if len(str) == 0 {
-		return fmt.Errorf(`template name is required`)
+		return fmt.Errorf(`template name is required and cannot be empty`)
+	}
+	return nil
+}
+
+func validateTemplateDescription(val interface{}) error {
+	str := strings.TrimSpace(val.(string))
+	if len(str) == 0 {
+		return fmt.Errorf(`template description is required and cannot be empty`)
 	}
 	return nil
 }
