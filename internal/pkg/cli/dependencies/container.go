@@ -160,7 +160,7 @@ func (v *cliDeps) ProjectDir() (filesystem.Fs, error) {
 		}
 
 		// Check version field
-		if err := version.CheckLocalVersion(v.logger, v.fs, projectManifest.Path()); err != nil {
+		if err := version.CheckManifestVersion(v.logger, v.fs, projectManifest.Path()); err != nil {
 			return nil, err
 		}
 
