@@ -58,8 +58,8 @@ func (f *Fs) AferoFs() afero.Fs {
 }
 
 func (f *Fs) SubDirFs(path string) (filesystem.Fs, error) {
-	workingDir, err := filesystem.Rel(f.workingDir, path)
-	if err == nil {
+	workingDir, err := filesystem.Rel(path, f.workingDir)
+	if err != nil {
 		workingDir = `/`
 	}
 

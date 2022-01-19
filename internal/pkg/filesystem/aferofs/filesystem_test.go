@@ -29,8 +29,7 @@ func TestLocalFilesystem(t *testing.T) {
 	t.Parallel()
 	createFs := func() (filesystem.Fs, log.DebugLogger) {
 		logger := log.NewDebugLogger()
-		projectDir := t.TempDir()
-		fs, err := NewLocalFs(logger, projectDir, "/")
+		fs, err := NewLocalFs(logger, t.TempDir(), filesystem.Join("my", "dir"))
 		assert.NoError(t, err)
 		return fs, logger
 	}
@@ -42,7 +41,7 @@ func TestMemoryFilesystem(t *testing.T) {
 	t.Parallel()
 	createFs := func() (filesystem.Fs, log.DebugLogger) {
 		logger := log.NewDebugLogger()
-		fs, err := NewMemoryFs(logger, "/")
+		fs, err := NewMemoryFs(logger, filesystem.Join("my", "dir"))
 		assert.NoError(t, err)
 		return fs, logger
 	}
@@ -85,7 +84,7 @@ func (*testCases) TestBasePath(t *testing.T, fs filesystem.Fs, _ log.DebugLogger
 }
 
 func (*testCases) TestWorkingDir(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
-	assert.Equal(t, "/", fs.WorkingDir())
+	assert.Equal(t, "my/dir", fs.WorkingDir())
 }
 
 func (*testCases) TestSubDirFs(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
@@ -95,6 +94,7 @@ func (*testCases) TestSubDirFs(t *testing.T, fs filesystem.Fs, _ log.DebugLogger
 	// /sub/dir1
 	subDirFs1, err := fs.SubDirFs(`/sub/dir1`)
 	assert.NoError(t, err)
+	assert.Equal(t, `/`, subDirFs1.WorkingDir())
 	assert.False(t, subDirFs1.IsFile(`sub/dir1/dir2/file.txt`))
 	assert.True(t, subDirFs1.IsFile(`dir2/file.txt`))
 	file1, err := subDirFs1.ReadFile(`dir2/file.txt`, ``)
@@ -104,6 +104,7 @@ func (*testCases) TestSubDirFs(t *testing.T, fs filesystem.Fs, _ log.DebugLogger
 	// /sub/dir1/dir2
 	subDirFs2, err := subDirFs1.SubDirFs(`/dir2`)
 	assert.NoError(t, err)
+	assert.Equal(t, `/`, subDirFs2.WorkingDir())
 	assert.False(t, subDirFs2.IsFile(`sub/dir1/dir2/file.txt`))
 	assert.False(t, subDirFs2.IsFile(`dir2/file.txt`))
 	assert.True(t, subDirFs2.IsFile(`file.txt`))
@@ -121,6 +122,24 @@ func (*testCases) TestSubDirFs(t *testing.T, fs filesystem.Fs, _ log.DebugLogger
 	subDirFs4, err := subDirFs2.SubDirFs(`/abc`)
 	assert.Error(t, err) // msg differs between backends
 	assert.Nil(t, subDirFs4)
+
+	// check working dir inheritance
+	// original FS has working dir "my/dir"
+	assert.Equal(t, filesystem.Join(`my`, `dir`), fs.WorkingDir())
+	// create directory "my/dir/foo/bar"
+	assert.NoError(t, fs.Mkdir(filesystem.Join(`my`, `dir`, `foo`, `bar`)))
+	// get sub FS for "my" dir -> working dir is inherited "dir"
+	subDirFs5, err := fs.SubDirFs(`my`)
+	assert.NoError(t, err)
+	assert.Equal(t, `dir`, subDirFs5.WorkingDir())
+	// get sub FS for "my/dir" dir -> working dir is "/"
+	subDirFs6, err := fs.SubDirFs(filesystem.Join(`my`, `dir`))
+	assert.NoError(t, err)
+	assert.Equal(t, ``, subDirFs6.WorkingDir())
+	// get sub FS for "my/dir/foo/bar" dir -> working dir is "/"
+	subDirFs7, err := fs.SubDirFs(filesystem.Join(`my`, `dir`, `foo`, `bar`))
+	assert.NoError(t, err)
+	assert.Equal(t, `/`, subDirFs7.WorkingDir())
 }
 
 func (*testCases) TestSetLogger(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
