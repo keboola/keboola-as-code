@@ -22,24 +22,26 @@ func Path() string {
 
 // file is template repository manifest JSON file.
 type file struct {
-	Version int             `json:"version" validate:"required,min=1,max=2"`
-	Project Project         `json:"project" validate:"required"`
-	SortBy  string          `json:"sortBy" validate:"oneof=id path"`
-	Naming  naming.Template `json:"naming" validate:"required"`
-	model.Filter
-	Branches []*model.BranchManifest         `json:"branches" validate:"dive"`
-	Configs  []*model.ConfigManifestWithRows `json:"configurations" validate:"dive"`
+	Version           int                             `json:"version" validate:"required,min=1,max=2"`
+	Project           Project                         `json:"project" validate:"required"`
+	SortBy            string                          `json:"sortBy" validate:"oneof=id path"`
+	Naming            naming.Template                 `json:"naming" validate:"required"`
+	AllowedBranches   model.AllowedBranches           `json:"allowedBranches" validate:"required,min=1"`
+	IgnoredComponents model.ComponentIds              `json:"ignoredComponents"`
+	Branches          []*model.BranchManifest         `json:"branches" validate:"dive"`
+	Configs           []*model.ConfigManifestWithRows `json:"configurations" validate:"dive"`
 }
 
 func newFile(projectId int, apiHost string) *file {
 	return &file{
-		Version:  build.MajorVersion,
-		Project:  Project{Id: projectId, ApiHost: apiHost},
-		SortBy:   model.SortById,
-		Naming:   naming.TemplateWithIds(),
-		Filter:   model.DefaultFilter(),
-		Branches: make([]*model.BranchManifest, 0),
-		Configs:  make([]*model.ConfigManifestWithRows, 0),
+		Version:           build.MajorVersion,
+		Project:           Project{Id: projectId, ApiHost: apiHost},
+		SortBy:            model.SortById,
+		Naming:            naming.TemplateWithIds(),
+		AllowedBranches:   model.DefaultAllowedBranches(),
+		IgnoredComponents: model.ComponentIds{},
+		Branches:          make([]*model.BranchManifest, 0),
+		Configs:           make([]*model.ConfigManifestWithRows, 0),
 	}
 }
 

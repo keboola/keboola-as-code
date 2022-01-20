@@ -20,28 +20,71 @@ type AllowedBranches []AllowedBranch
 
 type ComponentIds []ComponentId
 
-type Filter struct {
-	AllowedBranches   AllowedBranches `json:"allowedBranches" validate:"required,min=1"`
-	IgnoredComponents ComponentIds    `json:"ignoredComponents"`
+// ObjectsFilter filters objects by allowed keys, allowed branches and ignored components.
+type ObjectsFilter struct {
+	allowedKeys       map[string]bool
+	allowedBranches   AllowedBranches
+	ignoredComponents ComponentIds
 }
 
-func DefaultFilter() Filter {
-	return Filter{
-		AllowedBranches:   AllowedBranches{"*"},
-		IgnoredComponents: ComponentIds{},
+func DefaultAllowedBranches() AllowedBranches {
+	return AllowedBranches{"*"}
+}
+
+func NewFilter(branches AllowedBranches, ignoredComponents ComponentIds) ObjectsFilter {
+	return ObjectsFilter{
+		allowedBranches:   branches,
+		ignoredComponents: ignoredComponents,
 	}
 }
 
-func (f Filter) IsObjectIgnored(object Object) bool {
+func DefaultFilter() ObjectsFilter {
+	return ObjectsFilter{
+		allowedBranches:   DefaultAllowedBranches(),
+		ignoredComponents: ComponentIds{},
+	}
+}
+
+func (f ObjectsFilter) IsObjectIgnored(object Object) bool {
+	if len(f.allowedKeys) > 0 {
+		if !f.allowedKeys[object.Key().String()] {
+			// Object key is not allowed -> object is ignored
+			return true
+		}
+	}
+
 	switch o := object.(type) {
 	case *Branch:
-		return !f.AllowedBranches.IsBranchAllowed(o)
+		return !f.allowedBranches.IsBranchAllowed(o)
 	case *Config:
-		return f.IgnoredComponents.Contains(o.ComponentId)
+		return f.ignoredComponents.Contains(o.ComponentId)
 	case *ConfigRow:
-		return f.IgnoredComponents.Contains(o.ComponentId)
+		return f.ignoredComponents.Contains(o.ComponentId)
 	}
 	return false
+}
+
+func (f *ObjectsFilter) SetAllowedKeys(keys []Key) {
+	f.allowedKeys = make(map[string]bool)
+	for _, key := range keys {
+		f.allowedKeys[key.String()] = true
+	}
+}
+
+func (f *ObjectsFilter) AllowedBranches() AllowedBranches {
+	return f.allowedBranches
+}
+
+func (f *ObjectsFilter) SetAllowedBranches(branches AllowedBranches) {
+	f.allowedBranches = branches
+}
+
+func (f *ObjectsFilter) IgnoredComponents() ComponentIds {
+	return f.ignoredComponents
+}
+
+func (f *ObjectsFilter) SetIgnoredComponents(ids ComponentIds) {
+	f.ignoredComponents = ids
 }
 
 func (v AllowedBranches) String() string {

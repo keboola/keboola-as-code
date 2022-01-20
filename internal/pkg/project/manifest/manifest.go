@@ -17,7 +17,7 @@ type Manifest struct {
 	*records
 	project Project
 	naming  naming.Template
-	filter  model.Filter
+	filter  model.ObjectsFilter
 }
 
 type Project struct {
@@ -45,7 +45,8 @@ func Load(fs filesystem.Fs) (*Manifest, error) {
 	m := New(content.Project.Id, content.Project.ApiHost)
 	m.SetSortBy(content.SortBy)
 	m.naming = content.Naming
-	m.filter = content.Filter
+	m.filter.SetAllowedBranches(content.AllowedBranches)
+	m.filter.SetIgnoredComponents(content.IgnoredComponents)
 
 	// Set records
 	if err := m.records.SetRecords(content.records()); err != nil {
@@ -61,7 +62,8 @@ func (m *Manifest) Save(fs filesystem.Fs) error {
 	content := newFile(m.ProjectId(), m.ApiHost())
 	content.SortBy = m.SortBy()
 	content.Naming = m.naming
-	content.Filter = m.filter
+	content.AllowedBranches = m.filter.AllowedBranches()
+	content.IgnoredComponents = m.filter.IgnoredComponents()
 	content.setRecords(m.records.All())
 
 	// Save file
@@ -77,7 +79,7 @@ func (m *Manifest) Path() string {
 	return Path()
 }
 
-func (m *Manifest) Filter() model.Filter {
+func (m *Manifest) Filter() model.ObjectsFilter {
 	return m.filter
 }
 
@@ -98,19 +100,19 @@ func (m *Manifest) SetNamingTemplate(v naming.Template) {
 }
 
 func (m *Manifest) AllowedBranches() model.AllowedBranches {
-	return m.filter.AllowedBranches
+	return m.filter.AllowedBranches()
 }
 
-func (m *Manifest) SetAllowedBranches(v model.AllowedBranches) {
-	m.filter.AllowedBranches = v
+func (m *Manifest) SetAllowedBranches(branches model.AllowedBranches) {
+	m.filter.SetAllowedBranches(branches)
 }
 
 func (m *Manifest) IgnoredComponents() model.ComponentIds {
-	return m.filter.IgnoredComponents
+	return m.filter.IgnoredComponents()
 }
 
-func (m *Manifest) SetIgnoredComponents(v model.ComponentIds) {
-	m.filter.IgnoredComponents = v
+func (m *Manifest) SetIgnoredComponents(ids model.ComponentIds) {
+	m.filter.SetIgnoredComponents(ids)
 }
 
 func (m *Manifest) IsChanged() bool {

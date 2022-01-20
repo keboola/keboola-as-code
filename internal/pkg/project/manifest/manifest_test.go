@@ -16,7 +16,7 @@ type test struct {
 	name    string
 	json    string
 	naming  naming.Template
-	filter  model.Filter
+	filter  model.ObjectsFilter
 	records []model.ObjectManifest
 }
 
@@ -33,10 +33,10 @@ func cases() []test {
 			name:   `full`,
 			json:   fullJson(),
 			naming: naming.TemplateWithoutIds(),
-			filter: model.Filter{
-				AllowedBranches:   model.AllowedBranches{"foo", "bar"},
-				IgnoredComponents: model.ComponentIds{"abc"},
-			},
+			filter: model.NewFilter(
+				model.AllowedBranches{"foo", "bar"},
+				model.ComponentIds{"abc"},
+			),
 			records: fullRecords(),
 		},
 	}
@@ -77,8 +77,8 @@ func TestLoadManifestFile(t *testing.T) {
 
 		// Assert
 		assert.Equal(t, c.naming, manifest.NamingTemplate(), c.name)
-		assert.Equal(t, c.filter.AllowedBranches, manifest.AllowedBranches(), c.name)
-		assert.Equal(t, c.filter.IgnoredComponents, manifest.IgnoredComponents(), c.name)
+		assert.Equal(t, c.filter.AllowedBranches(), manifest.AllowedBranches(), c.name)
+		assert.Equal(t, c.filter.IgnoredComponents(), manifest.IgnoredComponents(), c.name)
 		assert.Equal(t, c.records, manifest.records.All(), c.name)
 	}
 }
@@ -91,8 +91,8 @@ func TestSaveManifestFile(t *testing.T) {
 		// Save
 		manifest := New(12345, "foo.bar")
 		manifest.SetNamingTemplate(c.naming)
-		manifest.SetAllowedBranches(c.filter.AllowedBranches)
-		manifest.SetIgnoredComponents(c.filter.IgnoredComponents)
+		manifest.SetAllowedBranches(c.filter.AllowedBranches())
+		manifest.SetIgnoredComponents(c.filter.IgnoredComponents())
 		assert.NoError(t, manifest.records.SetRecords(c.records))
 		assert.NoError(t, manifest.Save(fs))
 
