@@ -30,7 +30,7 @@ func New(projectId int, apiHost string) *Manifest {
 		records: manifest.NewRecords(model.SortById),
 		project: Project{Id: projectId, ApiHost: apiHost},
 		naming:  naming.TemplateWithIds(),
-		filter:  model.DefaultFilter(),
+		filter:  model.NoFilter(),
 	}
 }
 

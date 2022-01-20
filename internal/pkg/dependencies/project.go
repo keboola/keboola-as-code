@@ -35,11 +35,22 @@ func (c *common) Project() (*project.Project, error) {
 
 func (c *common) ProjectState(loadOptions loadState.Options) (*project.State, error) {
 	if c.projectState == nil {
+		// Get project
 		prj, err := c.Project()
 		if err != nil {
 			return nil, err
 		}
-		if state, err := loadState.Run(prj, loadOptions, c); err == nil {
+
+		// User filter from the project manifest
+		filter := prj.Filter()
+		loadOptionsWithFilter := loadState.OptionsWithFilter{
+			Options:      loadOptions,
+			LocalFilter:  &filter,
+			RemoteFilter: &filter,
+		}
+
+		// Run operation
+		if state, err := loadState.Run(prj, loadOptionsWithFilter, c); err == nil {
 			c.projectState = project.NewState(state, prj)
 		} else {
 			return nil, err

@@ -95,7 +95,7 @@ func TestLoadCoreFiles_SkipChildrenLoadIfParentIsInvalid(t *testing.T) {
 	}))
 
 	// Load all
-	uow.LoadAll(manager.Manifest())
+	uow.LoadAll(manager.Manifest(), model.NoFilter())
 
 	// Invoke and check error
 	// Branch is invalid, so config does not read at all (no error: config does not exist).

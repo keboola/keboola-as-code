@@ -59,7 +59,7 @@ type CommonDeps interface {
 	ProjectManifest() (*project.Manifest, error)
 	CreateProjectManifest(o createProjectManifest.Options) (*project.Manifest, error)
 	Template() (*template.Template, error)
-	TemplateState(loadOptions loadState.Options) (*template.State, error)
+	TemplateState(loadOptions loadState.OptionsWithFilter) (*template.State, error)
 	TemplateDir() (filesystem.Fs, error)
 	TemplateManifestExists() bool
 	TemplateManifest() (*template.Manifest, error)

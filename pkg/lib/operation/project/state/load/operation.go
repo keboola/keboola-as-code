@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
@@ -33,6 +34,12 @@ type Options struct {
 	IgnoreInvalidLocalState bool
 }
 
+type OptionsWithFilter struct {
+	Options
+	LocalFilter  *model.ObjectsFilter
+	RemoteFilter *model.ObjectsFilter
+}
+
 type dependencies interface {
 	Ctx() context.Context
 	Logger() log.Logger
@@ -40,12 +47,14 @@ type dependencies interface {
 	SchedulerApi() (*scheduler.Api, error)
 }
 
-func Run(container state.ObjectsContainer, o Options, d dependencies) (*state.State, error) {
+func Run(container state.ObjectsContainer, o OptionsWithFilter, d dependencies) (*state.State, error) {
 	logger := d.Logger()
 	loadOptions := state.LoadOptions{
 		LoadLocalState:    o.LoadLocalState,
 		LoadRemoteState:   o.LoadRemoteState,
 		IgnoreNotFoundErr: o.IgnoreNotFoundErr,
+		LocalFilter:       o.LocalFilter,
+		RemoteFilter:      o.RemoteFilter,
 	}
 
 	// Create state

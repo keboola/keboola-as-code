@@ -38,7 +38,7 @@ func NewFilter(branches AllowedBranches, ignoredComponents ComponentIds) Objects
 	}
 }
 
-func DefaultFilter() ObjectsFilter {
+func NoFilter() ObjectsFilter {
 	return ObjectsFilter{
 		allowedBranches:   DefaultAllowedBranches(),
 		ignoredComponents: ComponentIds{},

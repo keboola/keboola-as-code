@@ -104,7 +104,7 @@ func TestObjectsFilter_SetAllowedKeys(t *testing.T) {
 		},
 	}
 
-	f := DefaultFilter()
+	f := NoFilter()
 	assert.False(t, f.IsObjectIgnored(object1))
 	assert.False(t, f.IsObjectIgnored(object2))
 

@@ -26,7 +26,7 @@ func cases() []test {
 			name:    `minimal`,
 			json:    minimalJson(),
 			naming:  naming.TemplateWithIds(),
-			filter:  model.DefaultFilter(),
+			filter:  model.NoFilter(),
 			records: minimalRecords(),
 		},
 		{
