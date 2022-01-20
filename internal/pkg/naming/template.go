@@ -63,9 +63,15 @@ func (p PathTemplate) placeholderToRegexp(placeholder string) string {
 }
 
 func ForTemplate() Template {
-	t := TemplateWithoutIds()
-	t.Branch = ``
-	return t
+	return Template{
+		Config:              "{component_type}/{component_id}/{config_id}",
+		ConfigRow:           "rows/{config_row_id}",
+		SchedulerConfig:     "schedules/{config_id}",
+		SharedCodeConfig:    "_shared/{target_component_id}",
+		SharedCodeConfigRow: "codes/{config_row_id}",
+		VariablesConfig:     "variables",
+		VariablesValuesRow:  "values/{config_row_id}",
+	}
 }
 
 func TemplateWithoutIds() Template {
