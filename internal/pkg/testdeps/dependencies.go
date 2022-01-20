@@ -11,12 +11,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/template"
-	templateRepository "github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
@@ -48,18 +45,15 @@ func New() *TestContainer {
 }
 
 type testDependencies struct {
-	_all               *TestContainer
-	logger             log.DebugLogger
-	envs               *env.Map
-	fs                 filesystem.Fs
-	options            *options.Options
-	projectId          int
-	project            *project.Project
-	template           *template.Template
-	templateRepository *templateRepository.Repository
-	apiVerboseLogs     bool
-	storageApiHost     string
-	storageApiToken    string
+	_all            *TestContainer
+	logger          log.DebugLogger
+	envs            *env.Map
+	fs              filesystem.Fs
+	options         *options.Options
+	projectId       int
+	apiVerboseLogs  bool
+	storageApiHost  string
+	storageApiToken string
 }
 
 // InitFromTestProject init test dependencies from testing project.
@@ -93,10 +87,17 @@ func (v *TestContainer) UseMockedSchedulerApi() (*scheduler.Api, *httpmock.MockT
 
 // EmptyState without mappers. Useful for mappers unit tests.
 func (v *TestContainer) EmptyState() *state.State {
+	// Enable mocked APIs
 	v.UseMockedSchedulerApi()
 	_, httpTransport := v.UseMockedStorageApi()
 	testapi.AddMockedComponents(httpTransport)
-	return NewEmptyState(v, NewManifest())
+
+	// Create mocked state
+	mockedState, err := NewEmptyState(v, NewManifest())
+	if err != nil {
+		panic(err)
+	}
+	return mockedState
 }
 
 func (v *testDependencies) Logger() log.Logger {
@@ -111,6 +112,10 @@ func (v *testDependencies) Fs() filesystem.Fs {
 	return v.fs
 }
 
+func (v *testDependencies) Envs() *env.Map {
+	return v.envs
+}
+
 func (v *testDependencies) SetFs(fs filesystem.Fs) {
 	v.fs = fs
 }
@@ -121,63 +126,6 @@ func (v *testDependencies) Options() *options.Options {
 
 func (v *testDependencies) SetProjectId(projectId int) {
 	v.projectId = projectId
-}
-
-func (v *testDependencies) Project() (*project.Project, error) {
-	if v.project == nil {
-		manifest, err := project.LoadManifest(v.fs)
-		if err != nil {
-			return nil, err
-		}
-		v.project = project.New(v.fs, manifest, v._all)
-	}
-	return v.project, nil
-}
-
-func (v *testDependencies) SetProject(project *project.Project) {
-	v.project = project
-}
-
-func (v *testDependencies) SetProjectManifest(manifest *project.Manifest) {
-	v.project = project.New(v.Fs(), manifest, v._all)
-}
-
-func (v *testDependencies) Template() (*template.Template, error) {
-	if v.template == nil {
-		manifest, err := template.LoadManifest(v.fs)
-		if err != nil {
-			return nil, err
-		}
-		v.template = template.New(v.fs, manifest, v._all)
-	}
-	return v.template, nil
-}
-
-func (v *testDependencies) SetTemplate(template *template.Template) {
-	v.template = template
-}
-
-func (v *testDependencies) SetTemplateManifest(manifest *template.Manifest) {
-	v.template = template.New(v.fs, manifest, v._all)
-}
-
-func (v *testDependencies) TemplateRepository() (*templateRepository.Repository, error) {
-	if v.templateRepository == nil {
-		manifest, err := templateRepository.LoadManifest(v.Fs())
-		if err != nil {
-			return nil, err
-		}
-		v.templateRepository = templateRepository.New(v.Fs(), manifest)
-	}
-	return v.templateRepository, nil
-}
-
-func (v *testDependencies) SetTemplateRepository(repository *templateRepository.Repository) {
-	v.templateRepository = repository
-}
-
-func (v *testDependencies) SetTemplateRepositoryManifest(manifest *templateRepository.Manifest) {
-	v.templateRepository = templateRepository.New(v.Fs(), manifest)
 }
 
 func (v *testDependencies) ApiVerboseLogs() bool {

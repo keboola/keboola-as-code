@@ -8,11 +8,11 @@ import (
 
 type dependencies interface {
 	Logger() log.Logger
-	ProjectManifestExists() bool
-	TemplateRepositoryManifestExists() bool
 	BasePath() string
 	ProjectDir() (filesystem.Fs, error)
+	ProjectManifestExists() bool
 	TemplateRepositoryDir() (filesystem.Fs, error)
+	TemplateRepositoryManifestExists() bool
 	ProjectManifest() (*manifest.Manifest, error)
 }
 

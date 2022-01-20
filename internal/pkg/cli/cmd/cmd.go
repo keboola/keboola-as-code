@@ -15,15 +15,17 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/sync"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/template"
-	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
+	cliDependencies "github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
+	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
+	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
 	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
@@ -66,7 +68,7 @@ type RootCommand struct {
 	*Cmd
 	Options   *options.Options
 	Logger    log.Logger
-	Deps      *dependencies.Container
+	Deps      *cliDependencies.Container
 	logFile   *log.File
 	cmdByPath map[string]*cobra.Command
 	aliases   *orderedmap.OrderedMap
@@ -141,7 +143,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 		memoryLogger.CopyLogsTo(root.Logger)
 
 		// Create dependencies container
-		root.Deps = dependencies.NewContainer(root.Context(), envs, fs, dialog.New(prompt), root.Logger, root.Options)
+		root.Deps = cliDependencies.NewContainer(root.Context(), envs, fs, dialog.New(prompt), root.Logger, root.Options)
 
 		// Check version
 		if err := versionCheck.Run(root.Deps); err != nil {

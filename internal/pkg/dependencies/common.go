@@ -6,12 +6,13 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encryption"
 	"github.com/keboola/keboola-as-code/internal/pkg/event"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/state/load"
 )
 
 func newCommonDeps(d AbstractDeps, ctx context.Context) *common {
@@ -21,13 +22,27 @@ func newCommonDeps(d AbstractDeps, ctx context.Context) *common {
 type common struct {
 	AbstractDeps
 	ctx           context.Context
+	emptyDir      filesystem.Fs
 	serviceUrls   map[remote.ServiceId]remote.ServiceUrl
 	storageApi    *remote.StorageApi
 	encryptionApi *encryption.Api
 	schedulerApi  *scheduler.Api
 	eventSender   *event.Sender
-	projectState  *project.State
-	templateState *template.State
+	// Project
+	project         *project.Project
+	projectDir      filesystem.Fs
+	projectManifest *project.Manifest
+	projectState    *project.State
+	// Template
+	template         *template.Template
+	templateDir      filesystem.Fs
+	templateManifest *template.Manifest
+	templateInputs   *template.Inputs
+	templateState    *template.State
+	// Template repository
+	templateRepository         *repository.Repository
+	templateRepositoryDir      filesystem.Fs
+	templateRepositoryManifest *repository.Manifest
 }
 
 func (c *common) Ctx() context.Context {
@@ -59,6 +74,11 @@ func (c *common) StorageApi() (*remote.StorageApi, error) {
 			c.storageApi = api
 		} else {
 			return nil, err
+		}
+
+		// Token and manifest project ID must be same
+		if c.projectManifest != nil && c.projectManifest.ProjectId() != c.storageApi.ProjectId() {
+			return nil, fmt.Errorf(`given token is from the project "%d", but in manifest is defined project "%d"`, c.storageApi.ProjectId(), c.projectManifest.ProjectId())
 		}
 	}
 	return c.storageApi, nil
@@ -111,36 +131,6 @@ func (c *common) EventSender() (*event.Sender, error) {
 		c.eventSender = event.NewSender(c.Logger(), storageApi)
 	}
 	return c.eventSender, nil
-}
-
-func (c *common) ProjectState(loadOptions loadState.Options) (*project.State, error) {
-	if c.projectState == nil {
-		prj, err := c.Project()
-		if err != nil {
-			return nil, err
-		}
-		if state, err := loadState.Run(prj, loadOptions, c); err == nil {
-			c.projectState = project.NewState(state, prj)
-		} else {
-			return nil, err
-		}
-	}
-	return c.projectState, nil
-}
-
-func (c *common) TemplateState(loadOptions loadState.Options) (*template.State, error) {
-	if c.templateState == nil {
-		tmpl, err := c.Template()
-		if err != nil {
-			return nil, err
-		}
-		if state, err := loadState.Run(tmpl, loadOptions, c); err == nil {
-			c.templateState = template.NewState(state, tmpl)
-		} else {
-			return nil, err
-		}
-	}
-	return c.templateState, nil
 }
 
 func (c *common) serviceUrl(id string) (string, error) {

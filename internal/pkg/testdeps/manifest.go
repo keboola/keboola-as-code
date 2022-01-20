@@ -23,7 +23,7 @@ func (m *Manifest) Path() string {
 	return "path/to/manifest"
 }
 
-func (m *Manifest) IsObjectIgnored(object model.Object) bool {
+func (m *Manifest) IsObjectIgnored(_ model.Object) bool {
 	return false
 }
 
