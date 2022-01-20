@@ -9,7 +9,7 @@ type dependencies interface {
 	TemplateDir() (filesystem.Fs, error)
 }
 
-func Run(d dependencies) (template.Inputs, error) {
+func Run(d dependencies) (*template.Inputs, error) {
 	fs, err := d.TemplateDir()
 	if err != nil {
 		return nil, err

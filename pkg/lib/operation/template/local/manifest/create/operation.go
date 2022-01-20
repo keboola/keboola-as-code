@@ -12,8 +12,6 @@ type dependencies interface {
 }
 
 func Run(d dependencies) (*manifest.Manifest, error) {
-	logger := d.Logger()
-
 	// Target dir must be empty
 	fs, err := d.TemplateDir()
 	if err != nil {
@@ -28,6 +26,6 @@ func Run(d dependencies) (*manifest.Manifest, error) {
 		return nil, err
 	}
 
-	logger.Infof("Created template manifest file \"%s\".", templateManifest.Path())
+	d.Logger().Infof("Created template manifest file \"%s\".", templateManifest.Path())
 	return templateManifest, nil
 }

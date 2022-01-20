@@ -3,7 +3,7 @@ package create
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/template"
 )
 
 type dependencies interface {
@@ -11,7 +11,7 @@ type dependencies interface {
 	TemplateDir() (filesystem.Fs, error)
 }
 
-func Run(d dependencies) (*manifest.Manifest, error) {
+func Run(d dependencies) (*template.Inputs, error) {
 	logger := d.Logger()
 
 	// Target dir must be empty
@@ -21,13 +21,13 @@ func Run(d dependencies) (*manifest.Manifest, error) {
 	}
 
 	// Create
-	templateManifest := manifest.New()
+	inputs := template.NewInputs()
 
 	// Save
-	if err = templateManifest.Save(fs); err != nil {
+	if err = inputs.Save(fs); err != nil {
 		return nil, err
 	}
 
-	logger.Infof("Created template manifest file \"%s\".", templateManifest.Path())
-	return templateManifest, nil
+	logger.Infof("Created template inputs file \"%s\".", inputs.Path())
+	return inputs, nil
 }
