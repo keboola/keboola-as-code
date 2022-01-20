@@ -11,17 +11,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
-	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
-	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
-	"github.com/keboola/keboola-as-code/internal/pkg/version"
-	createProjectManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/create"
-	loadProjectManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/load"
-	createRepositoryManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/repository/manifest/create"
-	loadRepositoryManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/repository/manifest/load"
 )
 
 var (
@@ -135,125 +128,6 @@ func (v *cliDeps) EmptyDir() (filesystem.Fs, error) {
 	return v.emptyDir, nil
 }
 
-func (v *cliDeps) Project() (*project.Project, error) {
-	if v.project == nil {
-		projectDir, err := v.ProjectDir()
-		if err != nil {
-			return nil, err
-		}
-		manifest, err := v.ProjectManifest()
-		if err != nil {
-			return nil, err
-		}
-		v.project = project.New(projectDir, manifest, v._all)
-	}
-	return v.project, nil
-}
-
-func (v *cliDeps) ProjectDir() (filesystem.Fs, error) {
-	if v.projectDir == nil {
-		if !v.ProjectManifestExists() {
-			if v.TemplateRepositoryManifestExists() {
-				return nil, ErrExpectedProjectFoundRepository
-			}
-			return nil, ErrProjectManifestNotFound
-		}
-
-		// Check version field
-		if err := version.CheckManifestVersion(v.logger, v.fs, projectManifest.Path()); err != nil {
-			return nil, err
-		}
-
-		v.projectDir = v.fs
-	}
-	return v.projectDir, nil
-}
-
-func (v *cliDeps) ProjectManifestExists() bool {
-	if v.projectManifest != nil {
-		return true
-	}
-	path := filesystem.Join(filesystem.MetadataDir, projectManifest.FileName)
-	return v.fs.IsFile(path)
-}
-
-func (v *cliDeps) ProjectManifest() (*project.Manifest, error) {
-	if v.projectManifest == nil {
-		if m, err := loadProjectManifest.Run(v); err == nil {
-			v.projectManifest = m
-		} else {
-			return nil, err
-		}
-	}
-	return v.projectManifest, nil
-}
-
-func (v *cliDeps) Template() (*template.Template, error) {
-	if v.template == nil {
-		panic(`TODO`)
-	}
-	return v.template, nil
-}
-
-func (v *cliDeps) TemplateRepository() (*repository.Repository, error) {
-	if v.templateRepository == nil {
-		templateDir, err := v.TemplateRepositoryDir()
-		if err != nil {
-			return nil, err
-		}
-		manifest, err := v.TemplateRepositoryManifest()
-		if err != nil {
-			return nil, err
-		}
-		v.templateRepository = repository.New(templateDir, manifest)
-	}
-	return v.templateRepository, nil
-}
-
-func (v *cliDeps) TemplateRepositoryDir() (filesystem.Fs, error) {
-	if v.templateRepositoryDir == nil {
-		if !v.TemplateRepositoryManifestExists() {
-			if v.ProjectManifestExists() {
-				return nil, ErrExpectedRepositoryFoundProject
-			}
-			return nil, ErrRepositoryManifestNotFound
-		}
-
-		v.templateRepositoryDir = v.fs
-	}
-	return v.templateRepositoryDir, nil
-}
-
-func (v *cliDeps) TemplateRepositoryManifestExists() bool {
-	if v.templateRepositoryManifest != nil {
-		return true
-	}
-	path := filesystem.Join(filesystem.MetadataDir, repositoryManifest.FileName)
-	return v.fs.IsFile(path)
-}
-
-func (v *cliDeps) TemplateRepositoryManifest() (*repository.Manifest, error) {
-	if v.projectManifest == nil {
-		if m, err := loadRepositoryManifest.Run(v); err == nil {
-			v.templateRepositoryManifest = m
-		} else {
-			return nil, err
-		}
-	}
-	return v.templateRepositoryManifest, nil
-}
-
-func (v *cliDeps) CreateTemplateRepositoryManifest() (*repository.Manifest, error) {
-	if m, err := createRepositoryManifest.Run(v); err == nil {
-		v.templateRepositoryManifest = m
-		v.templateRepositoryDir = v.fs
-		v.emptyDir = nil
-		return m, nil
-	} else {
-		return nil, fmt.Errorf(`cannot create manifest: %w`, err)
-	}
-}
-
 func (v *cliDeps) ApiVerboseLogs() bool {
 	return v.options.VerboseApi
 }
@@ -306,15 +180,4 @@ func (v *Container) StorageApi() (*remote.StorageApi, error) {
 	}
 
 	return v.storageApi, nil
-}
-
-func (v *Container) CreateProjectManifest(o createProjectManifest.Options) (*project.Manifest, error) {
-	if m, err := createProjectManifest.Run(o, v); err == nil {
-		v.projectManifest = m
-		v.projectDir = v.fs
-		v.emptyDir = nil
-		return m, nil
-	} else {
-		return nil, fmt.Errorf(`cannot create manifest: %w`, err)
-	}
 }
