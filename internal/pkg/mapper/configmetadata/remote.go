@@ -67,7 +67,7 @@ func (m *configMetadataMapper) GetMetadataMap() (map[string]map[string]string, e
 				lock.Lock()
 				defer lock.Unlock()
 				metadataResponse := *response.Result().(*remote.ConfigMetadataResponse)
-				for key, metadata := range metadataResponse.GetMetadataMapByConfigKey(b.Id) {
+				for key, metadata := range metadataResponse.MetadataMap(b.Id) {
 					metadataMap := make(map[string]string)
 					for _, m := range metadata {
 						metadataMap[m.Key] = m.Value

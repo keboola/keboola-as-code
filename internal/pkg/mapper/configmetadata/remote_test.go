@@ -22,7 +22,7 @@ func TestConfigMetadataMapAfterRemoteLoad(t *testing.T) {
 	httpTransport.RegisterResponder(
 		"GET", `=~/storage/branch/123/search/component-configurations`,
 		httpmock.NewJsonResponderOrPanic(200, remote.ConfigMetadataResponse{
-			remote.ConfigMetadataWrapper{
+			remote.ConfigMetadataResponseItem{
 				ComponentId: "keboola.ex-aws-s3",
 				ConfigId:    "456",
 				Metadata: []remote.ConfigMetadata{

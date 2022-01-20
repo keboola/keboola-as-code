@@ -98,21 +98,21 @@ func (a *StorageApi) ListConfigMetadataRequest(branchId model.BranchId) *client.
 }
 
 type (
-	ConfigMetadataResponse []ConfigMetadataWrapper
-	ConfigMetadataWrapper  struct {
+	ConfigMetadataResponse     []ConfigMetadataResponseItem
+	ConfigMetadataResponseItem struct {
 		ComponentId model.ComponentId `json:"idComponent"`
 		ConfigId    model.ConfigId    `json:"configurationId"`
 		Metadata    []ConfigMetadata  `json:"metadata"`
 	}
 	ConfigMetadata struct {
 		Id        string `json:"id"`
-		Key       string `json:"key" diff:"true"`
-		Value     string `json:"value" diff:"true"`
+		Key       string `json:"key"`
+		Value     string `json:"value"`
 		Timestamp string `json:"timestamp"`
 	}
 )
 
-func (c ConfigMetadataResponse) GetMetadataMapByConfigKey(branchId model.BranchId) map[model.ConfigKey][]ConfigMetadata {
+func (c ConfigMetadataResponse) MetadataMap(branchId model.BranchId) map[model.ConfigKey][]ConfigMetadata {
 	result := make(map[model.ConfigKey][]ConfigMetadata)
 	for _, metadataWrapper := range c {
 		configKey := model.ConfigKey{BranchId: branchId, ComponentId: metadataWrapper.ComponentId, Id: metadataWrapper.ConfigId}
