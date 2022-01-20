@@ -28,13 +28,13 @@ func TestConfigMetadataMapAfterRemoteLoad(t *testing.T) {
 				Metadata: []remote.ConfigMetadata{
 					{
 						Id:        "1",
-						Key:       "KBC.KaaC.Meta",
+						Key:       "KBC.KaC.Meta",
 						Value:     "value1",
 						Timestamp: "xxx",
 					},
 					{
 						Id:        "2",
-						Key:       "KBC.KaaC.Meta2",
+						Key:       "KBC.KaC.Meta2",
 						Value:     "value2",
 						Timestamp: "xxx",
 					},
@@ -43,6 +43,10 @@ func TestConfigMetadataMapAfterRemoteLoad(t *testing.T) {
 		}),
 	)
 	mockedState := d.EmptyState()
+	assert.NoError(t, mockedState.Set(&model.BranchState{
+		BranchManifest: &model.BranchManifest{BranchKey: model.BranchKey{Id: 123}},
+		Remote:         &model.Branch{BranchKey: model.BranchKey{Id: 123}},
+	}))
 	mockedState.Mapper().AddMapper(configmetadata.NewMapper(mockedState, d))
 
 	content := orderedmap.New()
@@ -86,6 +90,6 @@ func TestConfigMetadataMapAfterRemoteLoad(t *testing.T) {
 	changes.AddLoaded(configState2)
 
 	assert.NoError(t, mockedState.Mapper().OnRemoteChange(changes))
-	assert.Equal(t, map[string]string{"KBC.KaaC.Meta": "value1", "KBC.KaaC.Meta2": "value2"}, config.Metadata)
+	assert.Equal(t, map[string]string{"KBC.KaC.Meta": "value1", "KBC.KaC.Meta2": "value2"}, config.Metadata)
 	assert.Equal(t, map[string]string(nil), config2.Metadata)
 }

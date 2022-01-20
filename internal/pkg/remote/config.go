@@ -15,14 +15,6 @@ func (a *StorageApi) ListComponents(branchId model.BranchId) ([]*model.Component
 	return nil, response.Err()
 }
 
-func (a *StorageApi) ListConfigMetadata(branchId model.BranchId) (*ConfigMetadataResponse, error) {
-	response := a.ListConfigMetadataRequest(branchId).Send().Response
-	if response.HasResult() {
-		return response.Result().(*ConfigMetadataResponse), nil
-	}
-	return nil, response.Err()
-}
-
 func (a *StorageApi) GetConfig(branchId model.BranchId, componentId model.ComponentId, configId model.ConfigId) (*model.Config, error) {
 	response := a.GetConfigRequest(branchId, componentId, configId).Send().Response
 	if response.HasResult() {
@@ -119,6 +111,15 @@ type (
 		Timestamp string `json:"timestamp"`
 	}
 )
+
+func (c ConfigMetadataResponse) GetMetadataMapByConfigKey(branchId model.BranchId) map[model.ConfigKey][]ConfigMetadata {
+	result := make(map[model.ConfigKey][]ConfigMetadata)
+	for _, metadataWrapper := range c {
+		configKey := model.ConfigKey{BranchId: branchId, ComponentId: metadataWrapper.ComponentId, Id: metadataWrapper.ConfigId}
+		result[configKey] = metadataWrapper.Metadata
+	}
+	return result
+}
 
 // GetConfigRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/manage-configurations/development-branch-configuration-detail
 func (a *StorageApi) GetConfigRequest(branchId model.BranchId, componentId model.ComponentId, configId model.ConfigId) *client.Request {
