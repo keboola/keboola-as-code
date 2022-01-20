@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/interactive"
+	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
@@ -157,7 +158,7 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 	}()
 
 	// Run
-	inputs := input.Inputs{
+	inputs := []input.Input{
 		{
 			Id:          "facebook.username",
 			Name:        "Facebook username",
@@ -204,7 +205,10 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 			Options:     input.Options{{Id: "rum", Name: "Rum"}, {Id: "vodka", Name: "Vodka"}, {Id: "whiskey", Name: "Whiskey"}},
 		},
 	}
-	opts, err := dialog.AskUseTemplateOptions(inputs)
+
+	inputsInst := template.NewInputs()
+	inputsInst.Set(inputs)
+	opts, err := dialog.AskUseTemplateOptions(inputsInst)
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -259,7 +263,7 @@ func TestAskUseTemplateOptionsIfNotMet(t *testing.T) {
 	}()
 
 	// Run
-	inputs := input.Inputs{
+	inputs := []input.Input{
 		{
 			Id:          "facebook.username",
 			Name:        "Facebook username",
@@ -297,7 +301,10 @@ func TestAskUseTemplateOptionsIfNotMet(t *testing.T) {
 			Options:     input.Options{{Id: "beer", Name: "Beer"}, {Id: "wine", Name: "Wine"}},
 		},
 	}
-	opts, err := dialog.AskUseTemplateOptions(inputs)
+
+	inputsInst := template.NewInputs()
+	inputsInst.Set(inputs)
+	opts, err := dialog.AskUseTemplateOptions(inputsInst)
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
