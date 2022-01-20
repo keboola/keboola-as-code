@@ -2,6 +2,7 @@ package project
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/configmetadata"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/corefiles"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/defaultbucket"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/description"
@@ -34,5 +35,7 @@ func MappersFor(s *state.State, d dependencies) mapper.Mappers {
 		sharedcode.NewLinksMapper(s),
 		// Relations between objects
 		relations.NewMapper(s),
+		// Configurations metadata
+		configmetadata.NewMapper(s, d),
 	}
 }
