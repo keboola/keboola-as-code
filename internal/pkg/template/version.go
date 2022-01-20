@@ -23,9 +23,22 @@ func NewVersion(str string) (Version, error) {
 	return Version{value: *v}, nil
 }
 
-func (v *Version) Value() *semver.Version {
+func ZeroVersion() Version {
+	v, err := NewVersion(`0.0.1`)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+func (v Version) Value() *semver.Version {
 	value := v.value
 	return &value
+}
+
+// IncMajor increments major version, for example 1.2.3 -> 2.0.0.
+func (v Version) IncMajor() Version {
+	return Version{value: v.Value().IncMajor()}
 }
 
 // UnmarshalJSON returns human-readable error message, if semantic version is invalid.
