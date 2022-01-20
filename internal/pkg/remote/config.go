@@ -87,6 +87,40 @@ func (a *StorageApi) ListComponentsRequest(branchId model.BranchId) *client.Requ
 		})
 }
 
+// ListConfigMetadataRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/copy-configuration-rows/search-component-configurations
+func (a *StorageApi) ListConfigMetadataRequest(branchId model.BranchId) *client.Request {
+	metadata := ConfigMetadataResponse{}
+	return a.
+		NewRequest(resty.MethodGet, "branch/{branchId}/search/component-configurations").
+		SetPathParam("branchId", branchId.String()).
+		SetQueryParam("include", "filteredMetadata").
+		SetResult(metadata)
+}
+
+type (
+	ConfigMetadataResponse     []ConfigMetadataResponseItem
+	ConfigMetadataResponseItem struct {
+		ComponentId model.ComponentId `json:"idComponent"`
+		ConfigId    model.ConfigId    `json:"configurationId"`
+		Metadata    []ConfigMetadata  `json:"metadata"`
+	}
+	ConfigMetadata struct {
+		Id        string `json:"id"`
+		Key       string `json:"key"`
+		Value     string `json:"value"`
+		Timestamp string `json:"timestamp"`
+	}
+)
+
+func (c ConfigMetadataResponse) MetadataMap(branchId model.BranchId) map[model.ConfigKey][]ConfigMetadata {
+	result := make(map[model.ConfigKey][]ConfigMetadata)
+	for _, metadataWrapper := range c {
+		configKey := model.ConfigKey{BranchId: branchId, ComponentId: metadataWrapper.ComponentId, Id: metadataWrapper.ConfigId}
+		result[configKey] = metadataWrapper.Metadata
+	}
+	return result
+}
+
 // GetConfigRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/manage-configurations/development-branch-configuration-detail
 func (a *StorageApi) GetConfigRequest(branchId model.BranchId, componentId model.ComponentId, configId model.ConfigId) *client.Request {
 	config := &model.Config{}
