@@ -5,26 +5,39 @@ import (
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
 // Version field from manifest.
 type versionInfo struct {
-	Version int `json:"version"`
+	Version *int `json:"version"`
 }
 
-func CheckLocalVersion(logger log.Logger, fs filesystem.Fs, manifestPath string) (err error) {
-	// Read version first
-	info := &versionInfo{}
-	if err := fs.ReadJsonFileTo(manifestPath, ``, info); err != nil {
+func CheckManifestVersion(logger log.Logger, fs filesystem.Fs, manifestPath string) (err error) {
+	// Read manifest file
+	file, err := fs.ReadFile(manifestPath, `manifest`)
+	if err != nil {
 		return err
 	}
 
-	if info.Version < 1 || info.Version > 2 {
-		return fmt.Errorf(`unknown version "%d" found in "%s"`, info.Version, manifestPath)
+	// Read version field
+	info := &versionInfo{}
+	if err := json.DecodeString(file.Content, info); err != nil {
+		return fmt.Errorf(`cannot decode manifest "%s": %w`, manifestPath, err)
 	}
 
-	if info.Version == 1 {
+	// Check version
+	if info.Version == nil {
+		return fmt.Errorf(`version field not found in "%s"`, manifestPath)
+	}
+
+	version := *info.Version
+	if version < 1 || version > 2 {
+		return fmt.Errorf(`unknown version "%d" found in "%s"`, version, manifestPath)
+	}
+
+	if version == 1 {
 		warning := `
 Your project needs to be migrated to the new version of the Keboola CLI.
   1. Make sure you have a backup of the current project directory (eg. git commit, git push).
