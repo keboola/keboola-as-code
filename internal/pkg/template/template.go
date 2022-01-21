@@ -1,6 +1,8 @@
 package template
 
 import (
+	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
@@ -10,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	templateInput "github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 const IdRegexp = `^[a-zA-Z0-9\-]+$`
@@ -32,6 +35,7 @@ func LoadInputs(fs filesystem.Fs) (*Inputs, error) {
 }
 
 type dependencies interface {
+	Ctx() context.Context
 	Logger() log.Logger
 	StorageApi() (*remote.StorageApi, error)
 	SchedulerApi() (*scheduler.Api, error)
@@ -53,18 +57,22 @@ func New(fs filesystem.Fs, manifest *Manifest, inputs *Inputs, d dependencies) *
 	}
 }
 
-func (p *Template) Fs() filesystem.Fs {
-	return p.fs
+func (t *Template) Fs() filesystem.Fs {
+	return t.fs
 }
 
-func (p *Template) Manifest() manifest.Manifest {
-	return p.manifest
+func (t *Template) Manifest() manifest.Manifest {
+	return t.manifest
 }
 
-func (p *Template) Inputs() *Inputs {
-	return p.inputs
+func (t *Template) Inputs() *Inputs {
+	return t.inputs
 }
 
-func (p *Template) MappersFor(state *state.State) mapper.Mappers {
-	return MappersFor(state, p.dependencies)
+func (t *Template) Ctx() context.Context {
+	return context.WithValue(t.dependencies.Ctx(), validator.DisableRequiredInProjectKey, true)
+}
+
+func (t *Template) MappersFor(state *state.State) mapper.Mappers {
+	return MappersFor(state, t.dependencies)
 }

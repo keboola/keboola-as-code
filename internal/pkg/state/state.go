@@ -48,13 +48,13 @@ type LoadOptions struct {
 
 // ObjectsContainer is Project or Template.
 type ObjectsContainer interface {
+	Ctx() context.Context
 	Fs() filesystem.Fs
 	Manifest() manifest.Manifest
 	MappersFor(state *State) mapper.Mappers
 }
 
 type dependencies interface {
-	Ctx() context.Context
 	Logger() log.Logger
 	StorageApi() (*remote.StorageApi, error)
 }
@@ -76,14 +76,16 @@ func New(container ObjectsContainer, d dependencies) (*State, error) {
 	// Create state
 	namingRegistry := m.NamingRegistry()
 	namingTemplate := m.NamingTemplate()
+	namingGenerator := naming.NewGenerator(namingTemplate, namingRegistry)
+	pathMatcher := naming.NewPathMatcher(namingTemplate)
 	s := &State{
 		Registry:        NewRegistry(knownPaths, namingRegistry, storageApi.Components(), m.SortBy()),
-		ctx:             d.Ctx(),
+		ctx:             container.Ctx(),
 		fs:              fs,
 		logger:          logger,
 		manifest:        m,
-		namingGenerator: naming.NewGenerator(namingTemplate, namingRegistry),
-		pathMatcher:     naming.NewPathMatcher(namingTemplate),
+		namingGenerator: namingGenerator,
+		pathMatcher:     pathMatcher,
 	}
 
 	s.mapper = mapper.New()
@@ -167,26 +169,30 @@ func (s *State) Validate() (error, error) {
 	remoteErrors := utils.NewMultiError()
 
 	for _, component := range s.Components().AllLoaded() {
-		if err := validator.Validate(component); err != nil {
+		if err := s.validateValue(component); err != nil {
 			localErrors.Append(utils.PrefixError(fmt.Sprintf(`component \"%s\" is not valid`, component.Key()), err))
 		}
 	}
 
 	for _, objectState := range s.All() {
 		if objectState.HasRemoteState() {
-			if err := validator.Validate(objectState.RemoteState()); err != nil {
+			if err := s.validateValue(objectState.RemoteState()); err != nil {
 				remoteErrors.Append(utils.PrefixError(fmt.Sprintf(`remote %s is not valid`, objectState.Desc()), err))
 			}
 		}
 
 		if objectState.HasLocalState() {
-			if err := validator.Validate(objectState.LocalState()); err != nil {
+			if err := s.validateValue(objectState.LocalState()); err != nil {
 				localErrors.Append(utils.PrefixError(fmt.Sprintf(`local %s "%s" is not valid`, objectState.Kind(), objectState.Path()), err))
 			}
 		}
 	}
 
 	return localErrors.ErrorOrNil(), remoteErrors.ErrorOrNil()
+}
+
+func (s *State) validateValue(value interface{}) error {
+	return validator.ValidateCtx(s.ctx, value, "dive", "")
 }
 
 // loadLocalState from manifest and local files to unified internal state.

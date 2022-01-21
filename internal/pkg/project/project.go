@@ -1,6 +1,8 @@
 package project
 
 import (
+	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
@@ -19,6 +21,7 @@ func LoadManifest(fs filesystem.Fs) (*Manifest, error) {
 }
 
 type dependencies interface {
+	Ctx() context.Context
 	Logger() log.Logger
 	StorageApi() (*remote.StorageApi, error)
 	SchedulerApi() (*scheduler.Api, error)
@@ -48,6 +51,10 @@ func (p *Project) Manifest() manifest.Manifest {
 
 func (p *Project) Filter() model.ObjectsFilter {
 	return p.manifest.Filter()
+}
+
+func (p *Project) Ctx() context.Context {
+	return p.dependencies.Ctx()
 }
 
 func (p *Project) MappersFor(state *state.State) mapper.Mappers {

@@ -1,6 +1,8 @@
 package testdeps
 
 import (
+	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
@@ -18,6 +20,10 @@ func NewObjectsContainer(fs filesystem.Fs, m manifest.Manifest) *ObjectsContaine
 type ObjectsContainer struct {
 	FsValue       filesystem.Fs
 	ManifestValue manifest.Manifest
+}
+
+func (p *ObjectsContainer) Ctx() context.Context {
+	return context.Background()
 }
 
 func (p *ObjectsContainer) Fs() filesystem.Fs {
