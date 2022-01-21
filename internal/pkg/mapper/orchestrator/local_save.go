@@ -69,7 +69,7 @@ func (w *localWriter) save() {
 
 func (w *localWriter) savePhase(phase *model.Phase, allPhases []*model.Phase) error {
 	// Validate
-	if err := validator.Validate(phase); err != nil {
+	if err := validator.Validate(w.State.Ctx(), phase); err != nil {
 		return err
 	}
 

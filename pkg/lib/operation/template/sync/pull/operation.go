@@ -1,8 +1,6 @@
 package pull
 
 import (
-	"context"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacekeys"
@@ -20,7 +18,6 @@ type Options struct {
 }
 
 type dependencies interface {
-	Ctx() context.Context
 	Logger() log.Logger
 	TemplateDir() (filesystem.Fs, error)
 	TemplateManifest() (*template.Manifest, error)
@@ -39,7 +36,6 @@ func LoadStateOptions(remoteFilter model.ObjectsFilter) loadState.OptionsWithFil
 }
 
 func Run(o Options, d dependencies) (err error) {
-	ctx := d.Ctx()
 	logger := d.Logger()
 
 	// Load state
@@ -65,7 +61,7 @@ func Run(o Options, d dependencies) (err error) {
 
 	if !plan.Empty() {
 		// Invoke
-		if err := plan.Invoke(logger, ctx, templateState.LocalManager(), templateState.RemoteManager(), ``); err != nil {
+		if err := plan.Invoke(logger, templateState.Ctx(), templateState.LocalManager(), templateState.RemoteManager(), ``); err != nil {
 			return err
 		}
 

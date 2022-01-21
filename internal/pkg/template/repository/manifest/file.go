@@ -1,6 +1,7 @@
 package manifest
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/build"
@@ -84,7 +85,7 @@ func saveFile(fs filesystem.Fs, manifestContent *file) error {
 }
 
 func (f *file) validate() error {
-	if err := validator.Validate(f); err != nil {
+	if err := validator.Validate(context.Background(), f); err != nil {
 		return utils.PrefixError("repository manifest is not valid", err)
 	}
 	return nil

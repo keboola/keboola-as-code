@@ -65,7 +65,7 @@ func (l *localLoader) loadBlocks() error {
 func (l *localLoader) validate() {
 	if l.errors.Len() == 0 {
 		for _, block := range l.blocks {
-			if err := validator.Validate(block); err != nil {
+			if err := validator.Validate(l.State.Ctx(), block); err != nil {
 				l.errors.Append(utils.PrefixError(fmt.Sprintf(`block "%s" is not valid`, block.Path()), err))
 			}
 		}

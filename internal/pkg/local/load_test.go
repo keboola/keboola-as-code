@@ -1,6 +1,7 @@
 package local
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,7 +18,7 @@ func TestLocalLoadModelNotFound(t *testing.T) {
 	record := &fixtures.MockedManifest{}
 
 	// Load
-	found, err := manager.loadObject(record, target)
+	found, err := manager.loadObject(context.Background(), record, target)
 	assert.False(t, found)
 	assert.Error(t, err)
 	assert.Equal(t, "kind \"test\" not found", err.Error())

@@ -145,7 +145,7 @@ func (u *UnitOfWork) LoadObject(manifest model.ObjectManifest, filter model.Obje
 
 			// Load object from filesystem
 			object := manifest.NewEmptyObject()
-			if found, err := u.Manager.loadObject(manifest, object); err != nil {
+			if found, err := u.Manager.loadObject(u.ctx, manifest, object); err != nil {
 				manifest.State().SetInvalid()
 				if !found {
 					manifest.State().SetNotFound()
@@ -186,7 +186,7 @@ func (u *UnitOfWork) SaveObject(objectState model.ObjectState, object model.Obje
 	u.
 		workersFor(objectState.Level()).
 		AddWorker(func() error {
-			if err := u.Manager.saveObject(objectState.Manifest(), object, changedFields); err != nil {
+			if err := u.Manager.saveObject(u.ctx, objectState.Manifest(), object, changedFields); err != nil {
 				return err
 			}
 			objectState.SetLocalState(object)

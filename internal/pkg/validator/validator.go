@@ -38,8 +38,8 @@ type Rule struct {
 type contextKey string
 
 // Validate nested struct fields or slice items.
-func Validate(value interface{}, rules ...Rule) error {
-	return ValidateCtx(context.Background(), value, "dive", "", rules...)
+func Validate(ctx context.Context, value interface{}, rules ...Rule) error {
+	return ValidateCtx(ctx, value, "dive", "", rules...)
 }
 
 // ValidateCtx validates any value.
