@@ -43,7 +43,7 @@ func (m *replaceKeysMapper) OnRemoteChange(changes *model.RemoteChanges) error {
 
 		replaced[original.Key().String()] = modified
 	}
-	
+
 	changes.Replace(func(v model.ObjectState) model.ObjectState {
 		if modified, found := replaced[v.Key().String()]; found {
 			return modified
