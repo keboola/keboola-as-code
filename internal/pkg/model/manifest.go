@@ -5,6 +5,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 const (
@@ -61,7 +62,8 @@ type ConfigManifest struct {
 	RecordState `json:"-"`
 	ConfigKey
 	Paths
-	Relations Relations `json:"relations,omitempty" validate:"dive"` // relations with other objects, for example variables definition
+	Relations Relations              `json:"relations,omitempty" validate:"dive"` // relations with other objects, for example variables definition
+	Metadata  *orderedmap.OrderedMap `json:"metadata,omitempty"`
 }
 
 type ConfigRowManifest struct {
@@ -291,4 +293,12 @@ func (c *ConfigManifest) AddRelation(relation Relation) {
 
 func (r *ConfigRowManifest) AddRelation(relation Relation) {
 	r.Relations.Add(relation)
+}
+
+func (r *ConfigManifest) GetMetadata() *orderedmap.OrderedMap {
+	return r.Metadata
+}
+
+func (c *ConfigManifest) SetMetadata(metadata *orderedmap.OrderedMap) {
+	c.Metadata = metadata
 }
