@@ -61,10 +61,6 @@ func (g Generator) BranchPath(branch *Branch) AbsPath {
 }
 
 func (g Generator) ConfigPath(parentPath string, component *Component, config *Config) AbsPath {
-	if len(parentPath) == 0 {
-		panic(fmt.Errorf(`config "%s" parent path cannot be empty"`, config))
-	}
-
 	// Get parent in the local filesystem
 	parentKey, err := config.ParentKey()
 	if err != nil {
@@ -73,6 +69,10 @@ func (g Generator) ConfigPath(parentPath string, component *Component, config *C
 	var parentKind Kind
 	if parentKey != nil {
 		parentKind = parentKey.Kind()
+	}
+
+	if !parentKind.IsEmpty() && len(parentPath) == 0 {
+		panic(fmt.Errorf(`config "%s" parent path cannot be empty"`, config))
 	}
 
 	// Shared code is handled differently
