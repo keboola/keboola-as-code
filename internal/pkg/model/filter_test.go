@@ -1,9 +1,12 @@
-package model
+package model_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
+	. "github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 func TestIsBranchAllowed(t *testing.T) {
@@ -51,10 +54,10 @@ func TestComponentsIds(t *testing.T) {
 
 func TestFilterIsObjectIgnored(t *testing.T) {
 	t.Parallel()
-	m := Filter{
-		AllowedBranches:   AllowedBranches{"dev-*", "123", "abc"},
-		IgnoredComponents: ComponentIds{"aaa", "bbb"},
-	}
+	m := NewFilter(
+		AllowedBranches{"dev-*", "123", "abc"},
+		ComponentIds{"aaa", "bbb"},
+	)
 	assert.False(t, m.IsObjectIgnored(
 		&Branch{BranchKey: BranchKey{Id: 789}, Name: "dev-1"}),
 	)
@@ -85,4 +88,31 @@ func TestFilterIsObjectIgnored(t *testing.T) {
 	assert.False(t, m.IsObjectIgnored(
 		&ConfigRow{ConfigRowKey: ConfigRowKey{ComponentId: "ccc"}}),
 	)
+}
+
+func TestObjectsFilter_SetAllowedKeys(t *testing.T) {
+	t.Parallel()
+
+	object1 := fixtures.MockedObject{
+		MockedKey: fixtures.MockedKey{
+			Id: "123",
+		},
+	}
+	object2 := fixtures.MockedObject{
+		MockedKey: fixtures.MockedKey{
+			Id: "456",
+		},
+	}
+
+	f := DefaultFilter()
+	assert.False(t, f.IsObjectIgnored(object1))
+	assert.False(t, f.IsObjectIgnored(object2))
+
+	f.SetAllowedKeys([]Key{object1.Key()})
+	assert.False(t, f.IsObjectIgnored(object1))
+	assert.True(t, f.IsObjectIgnored(object2))
+
+	f.SetAllowedKeys([]Key{object1.Key(), object2.Key()})
+	assert.False(t, f.IsObjectIgnored(object1))
+	assert.False(t, f.IsObjectIgnored(object2))
 }
