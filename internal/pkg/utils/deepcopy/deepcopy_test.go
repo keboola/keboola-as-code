@@ -39,7 +39,7 @@ func TestCopy(t *testing.T) {
 func TestCopyWithTranslate(t *testing.T) {
 	t.Parallel()
 	original := testValue()
-	clone := CopyTranslate(original, func(clone reflect.Value, _ Steps) {
+	clone := CopyTranslate(original, func(_, clone reflect.Value, _ Steps) {
 		// Modify all strings
 		if clone.Kind() == reflect.String {
 			clone.Set(reflect.ValueOf(clone.Interface().(string) + `_modified`))
@@ -86,7 +86,7 @@ func TestCopyWithTranslate(t *testing.T) {
 func TestCopyWithTranslateSteps(t *testing.T) {
 	t.Parallel()
 	original := testValue()
-	clone := CopyTranslate(original, func(clone reflect.Value, steps Steps) {
+	clone := CopyTranslate(original, func(_, clone reflect.Value, steps Steps) {
 		// Modify all strings
 		if clone.Kind() == reflect.String {
 			clone.Set(reflect.ValueOf(steps.String()))

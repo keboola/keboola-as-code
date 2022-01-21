@@ -49,7 +49,7 @@ func Copy(value interface{}) interface{} {
 	return CopyTranslate(value, nil)
 }
 
-type TranslateFunc func(clone reflect.Value, steps Steps)
+type TranslateFunc func(original, clone reflect.Value, steps Steps)
 
 func CopyTranslate(value interface{}, callback TranslateFunc) interface{} {
 	return CopyTranslateSteps(value, callback, Steps{}, make(VisitedMap))
@@ -168,6 +168,6 @@ func translateRecursive(clone, original reflect.Value, callback TranslateFunc, s
 	// Custom modifications
 	if callback != nil {
 		steps := steps.Add(kind.String(), ``)
-		callback(clone, steps)
+		callback(original, clone, steps)
 	}
 }

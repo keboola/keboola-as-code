@@ -34,7 +34,7 @@ func TestTemplate_ReplaceKeys(t *testing.T) {
 			New: model.ConfigRowKey{
 				BranchId:    1,
 				ComponentId: `foo.bar`,
-				ConfigId:    `12`,
+				ConfigId:    `config-in-template`,
 				Id:          `row-in-template`,
 			},
 		},

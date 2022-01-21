@@ -83,9 +83,9 @@ func (keys KeysReplacement) Values() (ValuesReplacement, error) {
 }
 
 func replaceValues(replacement ValuesReplacement, value interface{}) interface{} {
-	return deepcopy.CopyTranslate(value, func(clone reflect.Value, steps deepcopy.Steps) {
+	return deepcopy.CopyTranslate(value, func(original, clone reflect.Value, steps deepcopy.Steps) {
 		for _, item := range replacement {
-			if clone.IsValid() && clone.Interface() == item.Old {
+			if original.IsValid() && original.Interface() == item.Old {
 				clone.Set(reflect.ValueOf(item.New))
 			}
 		}
