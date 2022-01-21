@@ -69,7 +69,8 @@ func (o *Options) Replacement() replacekeys.Keys {
 		for _, row := range config.Rows {
 			newKey := row.Key
 			newKey.BranchId = 0
-			newKey.Id = model.RowId(config.TemplateId)
+			newKey.ConfigId = model.ConfigId(config.TemplateId)
+			newKey.Id = model.RowId(row.TemplateId)
 			keys = append(keys, replacekeys.Key{Old: row.Key, New: newKey})
 		}
 	}
