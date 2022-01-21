@@ -1,12 +1,12 @@
 {
   naming: {
-    config: "{component_type}/{component_id}/{config_name}",
-    configRow: "rows/{config_row_name}",
-    schedulerConfig: "schedules/{config_name}",
+    config: "{component_type}/{component_id}/{config_id}",
+    configRow: "rows/{config_row_id}",
+    schedulerConfig: "schedules/{config_id}",
     sharedCodeConfig: "_shared/{target_component_id}",
-    sharedCodeConfigRow: "codes/{config_row_name}",
+    sharedCodeConfigRow: "codes/{config_row_id}",
     variablesConfig: "variables",
-    variablesValuesRow: "values/{config_row_name}",
+    variablesValuesRow: "values/{config_row_id}",
   },
   configurations: [],
 }
