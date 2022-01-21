@@ -54,7 +54,7 @@ func (o *Options) ObjectsFilter() model.ObjectsFilter {
 	return filter
 }
 
-func (o *Options) Replacement() replacekeys.Keys {
+func (o *Options) Replacements() replacekeys.Keys {
 	var keys replacekeys.Keys
 
 	// Branch
@@ -127,7 +127,7 @@ func Run(o Options, d dependencies) (err error) {
 	// Pull remote objects
 	pullOptions := pull.Options{
 		RemoteFilter: o.ObjectsFilter(),
-		Replacements: o.Replacement(),
+		Replacements: o.Replacements(),
 	}
 	if err := pull.Run(pullOptions, d); err != nil {
 		return err
