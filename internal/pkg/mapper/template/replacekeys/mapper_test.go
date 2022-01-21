@@ -54,7 +54,7 @@ func TestReplaceKeysMapper_OnRemoteChange(t *testing.T) {
 	newBranchKey := model.BranchKey{Id: 0}
 	newConfigKey := model.ConfigKey{BranchId: 0, ComponentId: "foo.bar", Id: "my-config"}
 	newRowKey := model.ConfigRowKey{BranchId: 0, ComponentId: "foo.bar", ConfigId: "my-config", Id: "my-row"}
-	replacement := replacekeys.KeysReplacement{
+	replacement := replacekeys.Keys{
 		{Old: oldBranchKey, New: newBranchKey},
 		{Old: oldConfigKey, New: newConfigKey},
 		{Old: oldRowKey, New: newRowKey},
@@ -117,7 +117,7 @@ func TestReplaceKeysMapper_OnRemoteChange(t *testing.T) {
 	assert.True(t, found)
 }
 
-func createStateWithMapper(t *testing.T, replacement replacekeys.KeysReplacement) *state.State {
+func createStateWithMapper(t *testing.T, replacement replacekeys.Keys) *state.State {
 	t.Helper()
 	d := testdeps.New()
 	mockedState := d.EmptyState()

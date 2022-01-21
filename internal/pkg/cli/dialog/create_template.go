@@ -106,6 +106,7 @@ func (d *createTmplDialog) ask() (createTemplate.Options, error) {
 	if err != nil {
 		return d.out, err
 	}
+	d.out.Branch = d.selectedBranch.BranchKey
 
 	// Load configs
 	components, err := storageApi.ListComponents(d.selectedBranch.Id)

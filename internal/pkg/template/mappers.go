@@ -9,12 +9,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/relations"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacekeys"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/variables"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 )
 
-func MappersFor(s *state.State, d dependencies) mapper.Mappers {
+func MappersFor(s *state.State, d dependencies, replacements replacekeys.Keys) mapper.Mappers {
 	return mapper.Mappers{
 		// Core files
 		corefiles.NewMapper(s),
@@ -34,5 +35,7 @@ func MappersFor(s *state.State, d dependencies) mapper.Mappers {
 		sharedcode.NewLinksMapper(s),
 		// Relations between objects
 		relations.NewMapper(s),
+		// Template
+		replacekeys.NewMapper(s, replacements),
 	}
 }

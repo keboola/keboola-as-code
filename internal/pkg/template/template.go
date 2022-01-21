@@ -7,6 +7,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacekeys"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
@@ -43,17 +44,19 @@ type dependencies interface {
 
 type Template struct {
 	dependencies
-	fs       filesystem.Fs
-	manifest *Manifest
-	inputs   *Inputs
+	fs           filesystem.Fs
+	manifest     *Manifest
+	inputs       *Inputs
+	replacements replacekeys.Keys
 }
 
-func New(fs filesystem.Fs, manifest *Manifest, inputs *Inputs, d dependencies) *Template {
+func New(fs filesystem.Fs, manifest *Manifest, inputs *Inputs, replacements replacekeys.Keys, d dependencies) *Template {
 	return &Template{
 		dependencies: d,
 		fs:           fs,
 		manifest:     manifest,
 		inputs:       inputs,
+		replacements: replacements,
 	}
 }
 
@@ -74,5 +77,5 @@ func (t *Template) Ctx() context.Context {
 }
 
 func (t *Template) MappersFor(state *state.State) mapper.Mappers {
-	return MappersFor(state, t.dependencies)
+	return MappersFor(state, t.dependencies, t.replacements)
 }

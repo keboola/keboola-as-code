@@ -142,6 +142,7 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 		Id:          `my-super-template`,
 		Name:        `My Super Template`,
 		Description: `Full workflow to ...`,
+		Branch:      model.BranchKey{Id: 123},
 		Configs: []createTemplate.ConfigDef{
 			{
 				Key: model.ConfigKey{
@@ -200,6 +201,7 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 		Id:          `my-super-template`,
 		Name:        `My Super Template`,
 		Description: `Full workflow to ...`,
+		Branch:      model.BranchKey{Id: 123},
 		Configs: []createTemplate.ConfigDef{
 			{
 				Key: model.ConfigKey{
@@ -258,6 +260,7 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 		Id:          `my-super-template`,
 		Name:        `My Super Template`,
 		Description: `Full workflow to ...`,
+		Branch:      model.BranchKey{Id: 123},
 		Configs: []createTemplate.ConfigDef{
 			{
 				Key: model.ConfigKey{

@@ -235,7 +235,7 @@ func (s *Registry) Set(objectState ObjectState) error {
 	return nil
 }
 
-func (s *Registry) Delete(key Key) {
+func (s *Registry) Remove(key Key) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.objects.Delete(key.String())

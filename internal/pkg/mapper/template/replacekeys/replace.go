@@ -10,54 +10,58 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
 )
 
-type ValuesReplacement []ValueReplacement
+// Keys to be replaced.
+type Keys []Key
 
-type ValueReplacement struct {
-	Old interface{}
-	New interface{}
-}
-
-type KeysReplacement []KeyReplacement
-
-type KeyReplacement struct {
+// Key to be replaced.
+type Key struct {
 	Old model.Key
 	New model.Key
 }
 
-func (keys KeysReplacement) Values() (ValuesReplacement, error) {
-	var out ValuesReplacement
+// values to be replaced- processed Keys.
+type values []value
+
+// value to be replaced.
+type value struct {
+	Old interface{}
+	New interface{}
+}
+
+func (keys Keys) values() (values, error) {
+	var out values
 	for _, item := range keys {
 		switch v := item.Old.(type) {
 		case model.BranchKey:
 			// BranchKey
-			out = append(out, ValueReplacement{
+			out = append(out, value{
 				Old: v,
 				New: item.New.(model.BranchKey),
 			})
 			// BranchId
-			out = append(out, ValueReplacement{
+			out = append(out, value{
 				Old: v.Id,
 				New: item.New.(model.BranchKey).Id,
 			})
 		case model.ConfigKey:
 			// ConfigKey
-			out = append(out, ValueReplacement{
+			out = append(out, value{
 				Old: v,
 				New: item.New.(model.ConfigKey),
 			})
 			// ConfigId
-			out = append(out, ValueReplacement{
+			out = append(out, value{
 				Old: v.Id,
 				New: item.New.(model.ConfigKey).Id,
 			})
 		case model.ConfigRowKey:
 			// ConfigRowKey
-			out = append(out, ValueReplacement{
+			out = append(out, value{
 				Old: v,
 				New: item.New.(model.ConfigRowKey),
 			})
 			// ConfigRowId
-			out = append(out, ValueReplacement{
+			out = append(out, value{
 				Old: v.Id,
 				New: item.New.(model.ConfigRowKey).Id,
 			})
@@ -91,7 +95,7 @@ func (keys KeysReplacement) Values() (ValuesReplacement, error) {
 	return out, nil
 }
 
-func replaceValues(replacement ValuesReplacement, input interface{}) interface{} {
+func replaceValues(replacement values, input interface{}) interface{} {
 	return deepcopy.CopyTranslate(input, func(original, clone reflect.Value, steps deepcopy.Steps) {
 		for _, item := range replacement {
 			if original.IsValid() && original.Interface() == item.Old {

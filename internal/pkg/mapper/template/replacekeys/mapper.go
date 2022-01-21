@@ -10,23 +10,31 @@ import (
 type replaceKeysMapper struct {
 	state  *state.State
 	logger log.Logger
-	keys   KeysReplacement
+	keys   Keys
 }
 
-func NewMapper(state *state.State, keys KeysReplacement) *replaceKeysMapper {
+func NewMapper(state *state.State, keys Keys) *replaceKeysMapper {
 	return &replaceKeysMapper{state: state, logger: state.Logger(), keys: keys}
 }
 
 func (m *replaceKeysMapper) OnRemoteChange(changes *model.RemoteChanges) error {
-	replacement, err := m.keys.Values()
+	replacement, err := m.keys.values()
 	if err != nil {
 		return err
 	}
 
 	errors := utils.NewMultiError()
 	for _, original := range changes.Loaded() {
+		// Replace keys and delete original object state
 		modified := replaceValues(replacement, original).(model.ObjectState)
-		m.state.Delete(original.Key())
+		m.state.Remove(original.Key())
+
+		// Branches are not part of the template
+		if original.Kind().IsBranch() {
+			continue
+		}
+
+		// Set modified object state
 		if err := m.state.Set(modified); err != nil {
 			errors.Append(err)
 		}
