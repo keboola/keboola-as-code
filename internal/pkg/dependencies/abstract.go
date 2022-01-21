@@ -8,13 +8,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacekeys"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	createProjectManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/create"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/state/load"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 // Container contains dependencies for all use-cases.
@@ -58,8 +59,8 @@ type CommonDeps interface {
 	ProjectManifestExists() bool
 	ProjectManifest() (*project.Manifest, error)
 	CreateProjectManifest(o createProjectManifest.Options) (*project.Manifest, error)
-	Template() (*template.Template, error)
-	TemplateState(loadOptions loadState.OptionsWithFilter) (*template.State, error)
+	Template(replacements replacekeys.Keys) (*template.Template, error)
+	TemplateState(loadOptions loadState.OptionsWithFilter, replacements replacekeys.Keys) (*template.State, error)
 	TemplateDir() (filesystem.Fs, error)
 	TemplateManifestExists() bool
 	TemplateManifest() (*template.Manifest, error)

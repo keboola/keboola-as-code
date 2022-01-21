@@ -1,6 +1,7 @@
 package local
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -12,12 +13,13 @@ import (
 type modelWriter struct {
 	*Manager
 	*model.LocalSaveRecipe
+	ctx     context.Context
 	backups map[string]string
 	errors  *utils.MultiError
 }
 
 // saveObject to manifest and filesystem.
-func (m *Manager) saveObject(manifest model.ObjectManifest, object model.Object, changedFields model.ChangedFields) error {
+func (m *Manager) saveObject(ctx context.Context, manifest model.ObjectManifest, object model.Object, changedFields model.ChangedFields) error {
 	if manifest.Key() != object.Key() {
 		panic(fmt.Errorf(`manifest "%T" and object "%T" type mismatch`, manifest, object))
 	}
@@ -26,6 +28,7 @@ func (m *Manager) saveObject(manifest model.ObjectManifest, object model.Object,
 	w := modelWriter{
 		Manager:         m,
 		LocalSaveRecipe: model.NewLocalSaveRecipe(manifest, objectClone, changedFields),
+		ctx:             ctx,
 		backups:         make(map[string]string),
 		errors:          utils.NewMultiError(),
 	}
@@ -34,7 +37,7 @@ func (m *Manager) saveObject(manifest model.ObjectManifest, object model.Object,
 
 func (w *modelWriter) save() error {
 	// Validate
-	if err := validator.Validate(w.Object); err != nil {
+	if err := validator.Validate(w.ctx, w.Object); err != nil {
 		w.errors.AppendWithPrefix(fmt.Sprintf(`%s "%s" is invalid`, w.Kind().Name, w.Path()), err)
 		return w.errors
 	}

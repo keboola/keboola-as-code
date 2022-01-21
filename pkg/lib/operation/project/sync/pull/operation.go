@@ -11,8 +11,8 @@ import (
 	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/save"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/rename"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/validate"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/state/load"
 	createDiff "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/diff/create"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 type Options struct {

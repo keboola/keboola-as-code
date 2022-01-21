@@ -19,7 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/state/load"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 type testCase struct {

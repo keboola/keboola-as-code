@@ -101,6 +101,10 @@ func New(container ObjectsContainer, d dependencies) (*State, error) {
 	return s, nil
 }
 
+func (s *State) Ctx() context.Context {
+	return s.ctx
+}
+
 // Load - remote and local.
 func (s *State) Load(options LoadOptions) (ok bool, localErr error, remoteErr error) {
 	localErrors := utils.NewMultiError()

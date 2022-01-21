@@ -2,6 +2,8 @@ package model
 
 import "sync"
 
+type replaceFunc func(ObjectState) ObjectState
+
 // LocalChanges contains all processed objects in local.UnitOfWork.
 type LocalChanges struct {
 	lock      *sync.Mutex
@@ -94,6 +96,21 @@ func (c *LocalChanges) AddRenamed(actions ...RenameAction) {
 	c.renamed = append(c.renamed, actions...)
 }
 
+func (c *LocalChanges) Replace(callback replaceFunc) {
+	for i, v := range c.created {
+		c.created[i] = callback(v)
+	}
+	for i, v := range c.persisted {
+		c.persisted[i] = callback(v)
+	}
+	for i, v := range c.loaded {
+		c.loaded[i] = callback(v)
+	}
+	for i, v := range c.saved {
+		c.saved[i] = callback(v)
+	}
+}
+
 func (c *RemoteChanges) Empty() bool {
 	return len(c.created) == 0 && len(c.loaded) == 0 && len(c.saved) == 0 && len(c.deleted) == 0
 }
@@ -136,4 +153,19 @@ func (c *RemoteChanges) AddDeleted(objectState ...ObjectState) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	c.deleted = append(c.deleted, objectState...)
+}
+
+func (c *RemoteChanges) Replace(callback replaceFunc) {
+	for i, v := range c.created {
+		c.created[i] = callback(v)
+	}
+	for i, v := range c.loaded {
+		c.loaded[i] = callback(v)
+	}
+	for i, v := range c.saved {
+		c.saved[i] = callback(v)
+	}
+	for i, v := range c.deleted {
+		c.deleted[i] = callback(v)
+	}
 }

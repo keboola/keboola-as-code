@@ -1,6 +1,7 @@
 package input
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -120,5 +121,5 @@ func (i file) validate() error {
 			ErrorMessage: "{0} is not valid",
 		},
 	}
-	return validator.Validate(i, rules...)
+	return validator.Validate(context.Background(), i, rules...)
 }

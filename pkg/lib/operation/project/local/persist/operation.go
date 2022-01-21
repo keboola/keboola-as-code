@@ -12,7 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/save"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/rename"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/state/load"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 type Options struct {

@@ -13,7 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
 	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/state/load"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 func TestRenameAllPlan(t *testing.T) {

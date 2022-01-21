@@ -22,7 +22,7 @@ type testStruct2 struct {
 
 func TestValidateStruct(t *testing.T) {
 	t.Parallel()
-	err := Validate(testStruct1{Nested: []testStruct2{{}, {}}})
+	err := Validate(context.Background(), testStruct1{Nested: []testStruct2{{}, {}}})
 	expected := `
 - field1 is a required field
 - Field2 is a required field
@@ -52,7 +52,7 @@ func TestValidateStructWithNamespace(t *testing.T) {
 
 func TestValidateSlice(t *testing.T) {
 	t.Parallel()
-	err := Validate([]testStruct2{{}, {}})
+	err := Validate(context.Background(), []testStruct2{{}, {}})
 	expected := `
 - [0].field4 is a required field
 - [1].field4 is a required field

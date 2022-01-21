@@ -5,9 +5,10 @@ import (
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacekeys"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/state/load"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 	createTemplateDir "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/dir/create"
 	createTemplateInputs "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/inputs/create"
 	loadTemplateInputs "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/inputs/load"
@@ -17,7 +18,7 @@ import (
 
 var ErrTemplateManifestNotFound = fmt.Errorf("template manifest not found")
 
-func (c *common) Template() (*template.Template, error) {
+func (c *common) Template(replacements replacekeys.Keys) (*template.Template, error) {
 	if c.template == nil {
 		templateDir, err := c.TemplateDir()
 		if err != nil {
@@ -31,15 +32,15 @@ func (c *common) Template() (*template.Template, error) {
 		if err != nil {
 			return nil, err
 		}
-		c.template = template.New(templateDir, manifest, inputs, c)
+		c.template = template.New(templateDir, manifest, inputs, replacements, c)
 	}
 	return c.template, nil
 }
 
-func (c *common) TemplateState(loadOptions loadState.OptionsWithFilter) (*template.State, error) {
+func (c *common) TemplateState(loadOptions loadState.OptionsWithFilter, replacements replacekeys.Keys) (*template.State, error) {
 	if c.templateState == nil {
 		// Get template
-		tmpl, err := c.Template()
+		tmpl, err := c.Template(replacements)
 		if err != nil {
 			return nil, err
 		}

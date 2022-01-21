@@ -4,8 +4,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/state/load"
 	createDiff "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/diff/create"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 type Options struct {

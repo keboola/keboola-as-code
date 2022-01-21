@@ -67,7 +67,7 @@ func (w *localWriter) save() error {
 
 func (w *localWriter) generateBlockFiles(block *model.Block) {
 	// Validate
-	if err := validator.Validate(block); err != nil {
+	if err := validator.Validate(w.State.Ctx(), block); err != nil {
 		w.errors.Append(utils.PrefixError(fmt.Sprintf(`invalid block \"%s\"`, block.Path()), err))
 		return
 	}

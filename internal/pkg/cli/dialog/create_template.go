@@ -14,7 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/state/load"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 	createTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/create"
 )
 
@@ -106,6 +106,7 @@ func (d *createTmplDialog) ask() (createTemplate.Options, error) {
 	if err != nil {
 		return d.out, err
 	}
+	d.out.Branch = d.selectedBranch.BranchKey
 
 	// Load configs
 	components, err := storageApi.ListComponents(d.selectedBranch.Id)
