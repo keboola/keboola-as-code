@@ -16,7 +16,6 @@ import (
 
 func TestConfigMetadataMapAfterRemoteLoad(t *testing.T) {
 	t.Parallel()
-	t.Helper()
 	d := testdeps.New()
 	_, httpTransport := d.UseMockedStorageApi()
 	httpTransport.RegisterResponder(

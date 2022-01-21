@@ -1,4 +1,4 @@
-package template
+package replacekeys
 
 import (
 	"fmt"
@@ -9,8 +9,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
 )
-
-const IdRegexp = `^[a-zA-Z0-9\-]+$`
 
 type ValuesReplacement []ValueReplacement
 
@@ -30,6 +28,17 @@ func (keys KeysReplacement) Values() (ValuesReplacement, error) {
 	var out ValuesReplacement
 	for _, item := range keys {
 		switch v := item.Old.(type) {
+		case model.BranchKey:
+			// BranchKey
+			out = append(out, ValueReplacement{
+				Old: v,
+				New: item.New.(model.BranchKey),
+			})
+			// BranchId
+			out = append(out, ValueReplacement{
+				Old: v.Id,
+				New: item.New.(model.BranchKey).Id,
+			})
 		case model.ConfigKey:
 			// ConfigKey
 			out = append(out, ValueReplacement{
@@ -82,8 +91,8 @@ func (keys KeysReplacement) Values() (ValuesReplacement, error) {
 	return out, nil
 }
 
-func replaceValues(replacement ValuesReplacement, value interface{}) interface{} {
-	return deepcopy.CopyTranslate(value, func(original, clone reflect.Value, steps deepcopy.Steps) {
+func replaceValues(replacement ValuesReplacement, input interface{}) interface{} {
+	return deepcopy.CopyTranslate(input, func(original, clone reflect.Value, steps deepcopy.Steps) {
 		for _, item := range replacement {
 			if original.IsValid() && original.Interface() == item.Old {
 				clone.Set(reflect.ValueOf(item.New))

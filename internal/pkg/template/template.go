@@ -5,13 +5,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	templateInput "github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
 )
+
+const IdRegexp = `^[a-zA-Z0-9\-]+$`
 
 type (
 	Manifest = templateManifest.Manifest
@@ -66,30 +67,4 @@ func (p *Template) Inputs() *Inputs {
 
 func (p *Template) MappersFor(state *state.State) mapper.Mappers {
 	return MappersFor(state, p.dependencies)
-}
-
-// --- move next code - ReplacesKeys to mapper
-
-type template struct {
-	objects []model.Object
-}
-
-func FromState(objects model.ObjectStates, stateType model.StateType) *template {
-	return &template{objects: objectFromState(objects, stateType)}
-}
-
-func (t *template) ReplaceKeys(keys KeysReplacement) error {
-	values, err := keys.Values()
-	if err != nil {
-		return err
-	}
-	t.objects = replaceValues(values, t.objects).([]model.Object)
-	return nil
-}
-
-func objectFromState(allObjects model.ObjectStates, stateType model.StateType) []model.Object {
-	all := allObjects.ObjectsInState(stateType).All()
-	objects := make([]model.Object, len(all))
-	copy(objects, all)
-	return objects
 }

@@ -235,6 +235,13 @@ func (s *Registry) Set(objectState ObjectState) error {
 	return nil
 }
 
+func (s *Registry) Delete(key Key) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.objects.Delete(key.String())
+	s.namingRegistry.Detach(key)
+}
+
 func (s *Registry) GetOrCreateFrom(manifest ObjectManifest) (ObjectState, error) {
 	if objectState, found := s.Get(manifest.Key()); found {
 		objectState.SetManifest(manifest)
