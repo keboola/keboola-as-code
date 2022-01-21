@@ -43,3 +43,23 @@ func TestTemplateRecord_LatestVersion_Found(t *testing.T) {
 		Description: `Version 1`,
 	}, v)
 }
+
+func TestTemplateRecord_GetByPath_NotFound(t *testing.T) {
+	t.Parallel()
+	r := &TemplateRecord{}
+	value, found := r.GetByPath(`v1`)
+	assert.Empty(t, value)
+	assert.False(t, found)
+}
+
+func TestTemplateRecord_GetByPath_Found(t *testing.T) {
+	t.Parallel()
+	r := &TemplateRecord{}
+	version1 := version(`v1.2.3`)
+	r.AddVersion(version1)
+	version2 := version(`v2.0.0`)
+	r.AddVersion(version2)
+	value, found := r.GetByPath(`v1`)
+	assert.Equal(t, version1, value.Version)
+	assert.True(t, found)
+}

@@ -274,7 +274,7 @@ func TestSaveInputs(t *testing.T) {
 	fs := testfs.NewMemoryFs()
 
 	// Save
-	assert.NoError(t, Save(fs, testInputs()))
+	assert.NoError(t, testInputs().Save(fs))
 
 	// Load file
 	file, err := fs.ReadFile(Path(), "")
@@ -317,8 +317,9 @@ const inputsJsonNet = `{
 }
 `
 
-func testInputs() Inputs {
-	return Inputs{
+func testInputs() *Inputs {
+	inputs := NewInputs()
+	inputs.Set([]Input{
 		{
 			Id:          "fb.extractor.username",
 			Name:        "Facebook username",
@@ -342,5 +343,6 @@ func testInputs() Inputs {
 				{Id: "b", Name: "B"},
 			},
 		},
-	}
+	})
+	return inputs
 }

@@ -3,17 +3,21 @@ package status
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
+	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
+	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
 )
 
 type dependencies interface {
 	Logger() log.Logger
-	ProjectManifestExists() bool
-	TemplateRepositoryManifestExists() bool
 	BasePath() string
 	ProjectDir() (filesystem.Fs, error)
+	ProjectManifest() (*projectManifest.Manifest, error)
+	ProjectManifestExists() bool
+	TemplateDir() (filesystem.Fs, error)
+	TemplateManifest() (*templateManifest.Manifest, error)
+	TemplateManifestExists() bool
 	TemplateRepositoryDir() (filesystem.Fs, error)
-	ProjectManifest() (*manifest.Manifest, error)
+	TemplateRepositoryManifestExists() bool
 }
 
 func Run(d dependencies) (err error) {
@@ -25,14 +29,31 @@ func Run(d dependencies) (err error) {
 			return err
 		}
 
-		projectManifest, err := d.ProjectManifest()
+		manifest, err := d.ProjectManifest()
 		if err != nil {
 			return err
 		}
 
 		logger.Infof("Project directory:  %s", fs.BasePath())
 		logger.Infof("Working directory:  %s", fs.WorkingDir())
-		logger.Infof("Manifest path:      %s", projectManifest.Path())
+		logger.Infof("Manifest path:      %s", manifest.Path())
+		return nil
+	}
+
+	if d.TemplateManifestExists() {
+		fs, err := d.TemplateDir()
+		if err != nil {
+			return err
+		}
+
+		manifest, err := d.TemplateManifest()
+		if err != nil {
+			return err
+		}
+
+		logger.Infof("Template directory:  %s", fs.BasePath())
+		logger.Infof("Working directory:   %s", fs.WorkingDir())
+		logger.Infof("Manifest path:       %s", manifest.Path())
 		return nil
 	}
 

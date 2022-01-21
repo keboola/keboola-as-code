@@ -40,6 +40,16 @@ func (c *TestContainer) SetProjectState(state *project.State) {
 	c.projectState = state
 }
 
+func (c *TestContainer) SetProjectManifest(manifest *project.Manifest) {
+	c.projectDir = c.Fs()
+	c.projectManifest = manifest
+}
+
 func (c *TestContainer) SetTemplateState(state *template.State) {
 	c.templateState = state
+}
+
+func (c *TestContainer) SetTemplateManifest(manifest *template.Manifest) {
+	c.templateDir = c.Fs()
+	c.templateManifest = manifest
 }

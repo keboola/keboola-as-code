@@ -8,7 +8,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 )
 
-type Inputs []Input
+type Inputs struct {
+	inputs []Input
+}
 
 const (
 	KindInput       = "input"
@@ -19,21 +21,41 @@ const (
 	KindMultiSelect = "multiselect"
 )
 
+func NewInputs() *Inputs {
+	return &Inputs{
+		inputs: make([]Input, 0),
+	}
+}
+
 // Load inputs from the FileName.
-func Load(fs filesystem.Fs) (Inputs, error) {
+func Load(fs filesystem.Fs) (*Inputs, error) {
 	f, err := loadFile(fs)
 	if err != nil {
 		return nil, err
 	}
-	return f.Inputs, nil
+	return &Inputs{inputs: f.Inputs}, nil
 }
 
 // Save inputs to the FileName.
-func Save(fs filesystem.Fs, inputs Inputs) error {
-	if err := saveFile(fs, &file{Inputs: inputs}); err != nil {
+func (i *Inputs) Save(fs filesystem.Fs) error {
+	if err := saveFile(fs, &file{Inputs: i.inputs}); err != nil {
 		return err
 	}
 	return nil
+}
+
+func (i *Inputs) All() []Input {
+	out := make([]Input, len(i.inputs))
+	copy(out, i.inputs)
+	return out
+}
+
+func (i *Inputs) Set(inputs []Input) {
+	i.inputs = inputs
+}
+
+func (i Inputs) Path() string {
+	return Path()
 }
 
 type Input struct {

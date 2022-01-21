@@ -4,6 +4,7 @@ import (
 	"io"
 	iofs "io/fs"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -95,6 +96,7 @@ func (*testCases) TestSubDirFs(t *testing.T, fs filesystem.Fs, _ log.DebugLogger
 	subDirFs1, err := fs.SubDirFs(`/sub/dir1`)
 	assert.NoError(t, err)
 	assert.Equal(t, `/`, subDirFs1.WorkingDir())
+	assert.Equal(t, filepath.Join(fs.BasePath(), `sub`, `dir1`), subDirFs1.BasePath()) // nolint: forbidigo
 	assert.False(t, subDirFs1.IsFile(`sub/dir1/dir2/file.txt`))
 	assert.True(t, subDirFs1.IsFile(`dir2/file.txt`))
 	file1, err := subDirFs1.ReadFile(`dir2/file.txt`, ``)

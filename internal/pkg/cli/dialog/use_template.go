@@ -12,11 +12,11 @@ import (
 
 type contextKey string
 
-func (p *Dialogs) AskUseTemplateOptions(inputs input.Inputs) (results map[string]interface{}, err error) {
+func (p *Dialogs) AskUseTemplateOptions(inputs *input.Inputs) (results map[string]interface{}, err error) {
 	results = make(map[string]interface{})
 	ctx := context.Background()
 	errors := utils.NewMultiError()
-	for _, i := range inputs {
+	for _, i := range inputs.All() {
 		if !i.Available(results) {
 			continue
 		}

@@ -18,7 +18,7 @@ const (
 )
 
 func Path() string {
-	return filesystem.Join(filesystem.MetadataDir, FileName)
+	return FileName
 }
 
 // file is template manifest JSON file.
