@@ -42,12 +42,7 @@ func (v *TemplateRecord) GetByPath(path string) (VersionRecord, bool) {
 }
 
 func (v *TemplateRecord) LatestVersion() (latest VersionRecord, found bool) {
-	zeroVersion, err := template.NewVersion(`0.0.0`)
-	if err != nil {
-		panic(err)
-	}
-
-	latest = VersionRecord{Version: zeroVersion}
+	latest = VersionRecord{Version: template.ZeroVersion()}
 	for _, item := range v.Versions {
 		if item.Version.GreaterThan(latest.Version.Value()) {
 			latest = item

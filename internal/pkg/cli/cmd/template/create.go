@@ -1,12 +1,11 @@
 package template
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
+	createOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/create"
 )
 
 func CreateCommand(depsProvider dependencies.Provider) *cobra.Command {
@@ -28,10 +27,8 @@ func CreateCommand(depsProvider dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			// nolint: forbidigo
-			fmt.Printf("%#v\n\n", options)
-
-			return fmt.Errorf(`not implemented`)
+			// Create template
+			return createOp.Run(options, d)
 		},
 	}
 

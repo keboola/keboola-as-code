@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "templates": [
+    {
+      "id": "my-template",
+      "name": "My Template",
+      "description": "Full workflow to ...",
+      "path": "my-template",
+      "versions": [
+        {
+          "version": "0.0.1",
+          "description": "",
+          "stable": false,
+          "path": "v0"
+        }
+      ]
+    }
+  ]
+}
