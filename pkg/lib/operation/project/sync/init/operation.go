@@ -14,8 +14,8 @@ import (
 	createManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/create"
 	createMetaDir "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/metadir/create"
 	genWorkflows "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/workflows/generate"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/state/load"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/pull"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 type Options struct {
