@@ -36,12 +36,15 @@ func (c *common) Template() (*template.Template, error) {
 	return c.template, nil
 }
 
-func (c *common) TemplateState(loadOptions loadState.Options) (*template.State, error) {
+func (c *common) TemplateState(loadOptions loadState.OptionsWithFilter) (*template.State, error) {
 	if c.templateState == nil {
+		// Get template
 		tmpl, err := c.Template()
 		if err != nil {
 			return nil, err
 		}
+
+		// Run operation
 		if state, err := loadState.Run(tmpl, loadOptions, c); err == nil {
 			c.templateState = template.NewState(state, tmpl)
 		} else {

@@ -5,6 +5,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
@@ -43,6 +44,10 @@ func (p *Project) Fs() filesystem.Fs {
 
 func (p *Project) Manifest() manifest.Manifest {
 	return p.manifest
+}
+
+func (p *Project) Filter() model.ObjectsFilter {
+	return p.manifest.Filter()
 }
 
 func (p *Project) MappersFor(state *state.State) mapper.Mappers {

@@ -61,7 +61,7 @@ func (m *Manager) NewUnitOfWork(ctx context.Context, changeDescription string) *
 	}
 }
 
-func (u *UnitOfWork) LoadAll() {
+func (u *UnitOfWork) LoadAll(filter model.ObjectsFilter) {
 	// Run all requests in one pool
 	pool := u.poolFor(-1)
 
@@ -72,7 +72,7 @@ func (u *UnitOfWork) LoadAll() {
 			// Save branch + load branch components
 			for _, branch := range *response.Result().(*[]*model.Branch) {
 				// Store branch to state
-				if objectState, err := u.loadObject(branch); err != nil {
+				if objectState, err := u.loadObject(branch, filter); err != nil {
 					u.errors.Append(err)
 					continue
 				} else if objectState == nil {
@@ -81,13 +81,13 @@ func (u *UnitOfWork) LoadAll() {
 				}
 
 				// Load components
-				u.loadBranch(branch, pool)
+				u.loadBranch(branch, filter, pool)
 			}
 		}).
 		Send()
 }
 
-func (u *UnitOfWork) loadBranch(branch *model.Branch, pool *client.Pool) {
+func (u *UnitOfWork) loadBranch(branch *model.Branch, filter model.ObjectsFilter, pool *client.Pool) {
 	pool.
 		Request(u.api.ListComponentsRequest(branch.Id)).
 		OnSuccess(func(response *client.Response) {
@@ -98,7 +98,7 @@ func (u *UnitOfWork) loadBranch(branch *model.Branch, pool *client.Pool) {
 				// Configs
 				for _, config := range component.Configs {
 					// Store config to state
-					if objectState, err := u.loadObject(config.Config); err != nil {
+					if objectState, err := u.loadObject(config.Config, filter); err != nil {
 						u.errors.Append(err)
 						continue
 					} else if objectState == nil {
@@ -109,7 +109,7 @@ func (u *UnitOfWork) loadBranch(branch *model.Branch, pool *client.Pool) {
 					// Rows
 					for _, row := range config.Rows {
 						//  Store row to state
-						if _, err := u.loadObject(row); err != nil {
+						if _, err := u.loadObject(row, filter); err != nil {
 							u.errors.Append(err)
 							continue
 						}
@@ -120,9 +120,9 @@ func (u *UnitOfWork) loadBranch(branch *model.Branch, pool *client.Pool) {
 		Send()
 }
 
-func (u *UnitOfWork) loadObject(object model.Object) (model.ObjectState, error) {
+func (u *UnitOfWork) loadObject(object model.Object, filter model.ObjectsFilter) (model.ObjectState, error) {
 	// Skip ignored objects
-	if u.Manifest().IsObjectIgnored(object) {
+	if filter.IsObjectIgnored(object) {
 		return nil, nil
 	}
 

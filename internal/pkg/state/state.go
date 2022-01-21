@@ -42,6 +42,8 @@ type LoadOptions struct {
 	LoadLocalState    bool
 	LoadRemoteState   bool
 	IgnoreNotFoundErr bool // not found error will be ignored
+	LocalFilter       *model.ObjectsFilter
+	RemoteFilter      *model.ObjectsFilter
 }
 
 // ObjectsContainer is Project or Template.
@@ -105,13 +107,13 @@ func (s *State) Load(options LoadOptions) (ok bool, localErr error, remoteErr er
 	// Remote
 	if options.LoadRemoteState {
 		s.logger.Debugf("Loading project remote state.")
-		remoteErrors.Append(s.loadRemoteState())
+		remoteErrors.Append(s.loadRemoteState(options.RemoteFilter))
 	}
 
 	// Local
 	if options.LoadLocalState {
 		s.logger.Debugf("Loading local state.")
-		localErrors.Append(s.loadLocalState(options.IgnoreNotFoundErr))
+		localErrors.Append(s.loadLocalState(options.LocalFilter, options.IgnoreNotFoundErr))
 	}
 
 	// Validate
@@ -187,30 +189,35 @@ func (s *State) Validate() (error, error) {
 	return localErrors.ErrorOrNil(), remoteErrors.ErrorOrNil()
 }
 
-// loadLocalState - manifest -> local files -> unified model.
-func (s *State) loadLocalState(ignoreNotFoundErr bool) error {
-	errors := utils.NewMultiError()
+// loadLocalState from manifest and local files to unified internal state.
+func (s *State) loadLocalState(_filter *model.ObjectsFilter, ignoreNotFoundErr bool) error {
+	// Create filter if not set
+	var filter model.ObjectsFilter
+	if _filter != nil {
+		filter = *_filter
+	} else {
+		filter = model.NoFilter()
+	}
 
 	uow := s.localManager.NewUnitOfWork(s.ctx)
 	if ignoreNotFoundErr {
 		uow.SkipNotFoundErr()
 	}
-
-	uow.LoadAll(s.manifest)
-	if err := uow.Invoke(); err != nil {
-		errors.Append(err)
-	}
-
-	return errors.ErrorOrNil()
+	uow.LoadAll(s.manifest, filter)
+	return uow.Invoke()
 }
 
-// loadRemoteState - API -> unified model.
-func (s *State) loadRemoteState() error {
-	errors := utils.NewMultiError()
-	uow := s.remoteManager.NewUnitOfWork(s.ctx, "")
-	uow.LoadAll()
-	if err := uow.Invoke(); err != nil {
-		errors.Append(err)
+// loadRemoteState from API to unified internal state.
+func (s *State) loadRemoteState(_filter *model.ObjectsFilter) error {
+	// Create filter if not set
+	var filter model.ObjectsFilter
+	if _filter != nil {
+		filter = *_filter
+	} else {
+		filter = model.NoFilter()
 	}
-	return errors.ErrorOrNil()
+
+	uow := s.remoteManager.NewUnitOfWork(s.ctx, "")
+	uow.LoadAll(filter)
+	return uow.Invoke()
 }

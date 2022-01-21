@@ -153,7 +153,7 @@ func TestRemoteLoadMapper(t *testing.T) {
 	)
 
 	// Load all
-	uow.LoadAll()
+	uow.LoadAll(model.NoFilter())
 	assert.NoError(t, uow.Invoke())
 
 	// Config has been loaded

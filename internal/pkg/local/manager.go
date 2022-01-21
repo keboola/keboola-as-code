@@ -79,9 +79,9 @@ func (u *UnitOfWork) SkipNotFoundErr() {
 	u.skipNotFoundErr = true
 }
 
-func (u *UnitOfWork) LoadAll(manifest manifest.Manifest) {
+func (u *UnitOfWork) LoadAll(manifest manifest.Manifest, filter model.ObjectsFilter) {
 	for _, objectManifest := range manifest.AllPersisted() {
-		u.LoadObject(objectManifest)
+		u.LoadObject(objectManifest, filter)
 	}
 }
 
@@ -119,7 +119,7 @@ func (u *UnitOfWork) CreateObject(key model.Key, name string) {
 	u.SaveObject(objectState, object, model.ChangedFields{})
 }
 
-func (u *UnitOfWork) LoadObject(manifest model.ObjectManifest) {
+func (u *UnitOfWork) LoadObject(manifest model.ObjectManifest, filter model.ObjectsFilter) {
 	persist := !manifest.State().IsPersisted()
 	u.
 		workersFor(manifest.Level()).
@@ -157,7 +157,7 @@ func (u *UnitOfWork) LoadObject(manifest model.ObjectManifest) {
 			}
 
 			// Validate, object must be allowed
-			if u.manifest.IsObjectIgnored(object) {
+			if filter.IsObjectIgnored(object) {
 				return fmt.Errorf(
 					`found manifest record for %s "%s", but it is not allowed by the manifest definition`,
 					object.Kind().Name,

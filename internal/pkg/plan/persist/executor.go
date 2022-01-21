@@ -109,7 +109,7 @@ func (e *executor) persistNewObject(action *newObjectAction) {
 		record.SetObjectPath(action.ObjectPath)
 
 		// Load model
-		e.uow.LoadObject(record)
+		e.uow.LoadObject(record, model.NoFilter())
 
 		// Save to manifest.json
 		if err := e.Manifest().PersistRecord(record); err != nil {
