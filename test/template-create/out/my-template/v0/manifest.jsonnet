@@ -22,6 +22,12 @@
       rows: [],
     },
     {
+      componentId: "keboola.ex-aws-s3",
+      id: "om-default-bucket",
+      path: "extractor/keboola.ex-aws-s3/om-default-bucket",
+      rows: [],
+    },
+    {
       componentId: "keboola.ex-db-mysql",
       id: "with-rows",
       path: "extractor/keboola.ex-db-mysql/with-rows",
@@ -122,6 +128,12 @@
       componentId: "keboola.snowflake-transformation",
       id: "snowflake-transformation",
       path: "transformation/keboola.snowflake-transformation/snowflake-transformation",
+      rows: [],
+    },
+    {
+      componentId: "keboola.wr-db-mysql",
+      id: "im-default-bucket",
+      path: "writer/keboola.wr-db-mysql/im-default-bucket",
       rows: [],
     },
   ],
