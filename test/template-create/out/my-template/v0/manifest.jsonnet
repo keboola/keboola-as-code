@@ -17,6 +17,12 @@
     },
     {
       componentId: "ex-generic-v2",
+      id: "om-config",
+      path: "extractor/ex-generic-v2/om-config",
+      rows: [],
+    },
+    {
+      componentId: "ex-generic-v2",
       id: "without-rows",
       path: "extractor/ex-generic-v2/without-rows",
       rows: [],
@@ -121,6 +127,17 @@
               type: "variablesValuesFor",
             },
           ],
+        },
+      ],
+    },
+    {
+      componentId: "keboola.snowflake-transformation",
+      id: "im-transformation",
+      path: "transformation/keboola.snowflake-transformation/im-transformation",
+      rows: [
+        {
+          id: "test",
+          path: "rows/test",
         },
       ],
     },

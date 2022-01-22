@@ -126,7 +126,6 @@ func replaceValues(replacement values, input interface{}) interface{} {
 					clone.Set(reflect.ValueOf(item.New))
 				}
 			}
-
 		}
 	})
 }

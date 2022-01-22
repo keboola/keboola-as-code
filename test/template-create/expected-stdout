@@ -4,6 +4,7 @@ Created template inputs file "inputs.jsonnet".
 Created readme file "README.md".
 Plan for "pull" operation:
   + C extractor/ex-generic-v2/empty
+  + C extractor/ex-generic-v2/om-config
   + C extractor/ex-generic-v2/without-rows
   + C extractor/keboola.ex-aws-s3/om-default-bucket
   + C extractor/keboola.ex-db-mysql/with-rows
@@ -21,6 +22,8 @@ Plan for "pull" operation:
   + C transformation/keboola.python-transformation-v2/transformation-with-shared-code
   + C transformation/keboola.python-transformation-v2/transformation-with-shared-code/variables
   + R transformation/keboola.python-transformation-v2/transformation-with-shared-code/variables/values/default-values
+  + C transformation/keboola.snowflake-transformation/im-transformation
+  + R transformation/keboola.snowflake-transformation/im-transformation/rows/test
   + C transformation/keboola.snowflake-transformation/snowflake-transformation
   + C writer/keboola.wr-db-mysql/im-default-bucket
 Pull done.

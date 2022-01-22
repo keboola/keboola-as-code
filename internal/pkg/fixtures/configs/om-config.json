@@ -1,0 +1,22 @@
+{
+  "componentId": "ex-generic-v2",
+  "name": "om-config",
+  "configuration": {
+    "storage": {
+      "output": {
+        "tables": [
+          {
+            "source": "table",
+            "destination": "%%TEST_OM_CONFIG%%.table"
+          }
+        ]
+      }
+    },
+    "parameters": {
+      "api": {
+        "baseUrl": "https://jsonplaceholder.typicode.com"
+      }
+    }
+  },
+  "rows": null
+}
