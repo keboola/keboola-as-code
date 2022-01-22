@@ -23,8 +23,8 @@ func (m *replaceKeysMapper) OnRemoteChange(changes *model.RemoteChanges) error {
 		return err
 	}
 
+	// Replace keys in the loaded remote objects
 	replaced := make(map[string]model.ObjectState)
-
 	errors := utils.NewMultiError()
 	for _, original := range changes.Loaded() {
 		// Replace keys and delete original object state
@@ -44,6 +44,7 @@ func (m *replaceKeysMapper) OnRemoteChange(changes *model.RemoteChanges) error {
 		replaced[original.Key().String()] = modified
 	}
 
+	// Fix list of the changed objects
 	changes.Replace(func(v model.ObjectState) model.ObjectState {
 		if modified, found := replaced[v.Key().String()]; found {
 			return modified

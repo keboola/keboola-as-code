@@ -9,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-func TestKeysReplacement_Values(t *testing.T) {
+func TestReplaceValues(t *testing.T) {
 	t.Parallel()
 	keys := Keys{
 		{
@@ -67,6 +67,10 @@ func TestKeysReplacement_Values(t *testing.T) {
 			New: model.ConfigId("23"),
 		},
 		value{
+			Old: subString("12"),
+			New: "23",
+		},
+		value{
 			Old: model.ConfigRowKey{BranchId: 1, ComponentId: "foo.bar", ConfigId: "12", Id: "45"},
 			New: model.ConfigRowKey{BranchId: 1, ComponentId: "foo.bar", ConfigId: "23", Id: "67"},
 		},
@@ -74,10 +78,14 @@ func TestKeysReplacement_Values(t *testing.T) {
 			Old: model.RowId("45"),
 			New: model.RowId("67"),
 		},
+		value{
+			Old: subString("45"),
+			New: "67",
+		},
 	}, replacements)
 }
 
-func TestKeysReplacement_Values_DuplicateOld(t *testing.T) {
+func TestReplaceValues_DuplicateOld(t *testing.T) {
 	t.Parallel()
 	keys := Keys{
 		{
@@ -112,7 +120,7 @@ func TestKeysReplacement_Values_DuplicateOld(t *testing.T) {
 	assert.Equal(t, `the old ID "12" is defined 2x`, err.Error())
 }
 
-func TestKeysReplacement_Values_DuplicateNew(t *testing.T) {
+func TestReplaceValues_DuplicateNew(t *testing.T) {
 	t.Parallel()
 	keys := Keys{
 		{
@@ -147,7 +155,7 @@ func TestKeysReplacement_Values_DuplicateNew(t *testing.T) {
 	assert.Equal(t, `the new ID "23" is defined 2x`, err.Error())
 }
 
-func TestTemplate_ReplaceKeys(t *testing.T) {
+func TestReplaceKeys(t *testing.T) {
 	t.Parallel()
 	keys := Keys{
 		{
@@ -255,4 +263,38 @@ func TestTemplate_ReplaceKeys(t *testing.T) {
 	values, err := keys.values()
 	assert.NoError(t, err)
 	assert.Equal(t, expected, replaceValues(values, input))
+}
+
+func TestReplaceSubString(t *testing.T) {
+	t.Parallel()
+
+	// Not found
+	s := subString(`foo123`)
+	out, found := s.replace(`bar`, `replaced`)
+	assert.Equal(t, "", out)
+	assert.False(t, found)
+
+	// Full match
+	s = subString(`foo123`)
+	out, found = s.replace(`foo123`, `replaced`)
+	assert.Equal(t, "replaced", out)
+	assert.True(t, found)
+
+	// At start
+	s = subString(`foo123`)
+	out, found = s.replace(`foo123-abc`, `replaced`)
+	assert.Equal(t, "replaced-abc", out)
+	assert.True(t, found)
+
+	// At end
+	s = subString(`foo123`)
+	out, found = s.replace(`abc-foo123`, `replaced`)
+	assert.Equal(t, "abc-replaced", out)
+	assert.True(t, found)
+
+	// Multiple matches
+	s = subString(`foo123`)
+	out, found = s.replace(`foo123-foo123-abc-foo123-def-foo123`, `replaced`)
+	assert.Equal(t, "replaced-foo123-abc-replaced-def-replaced", out)
+	assert.True(t, found)
 }
