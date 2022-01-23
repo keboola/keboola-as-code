@@ -152,7 +152,14 @@ func Format(filename string, input string, options Options) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	return formatAst(node, finalFodder, options)
+}
 
+func FormatAst(node ast.Node, options Options) (string, error) {
+	return formatAst(node, nil, options)
+}
+
+func formatAst(node ast.Node, finalFodder ast.Fodder, options Options) (string, error) {
 	// Passes to enforce style on the AST.
 	if options.SortImports {
 		SortImports(&node)
