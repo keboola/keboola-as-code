@@ -53,10 +53,10 @@ func TestObjectFiles(t *testing.T) {
 	})
 
 	// Delete tag which is not set
-	file1.DeleteTag(`my-tag-3`)
+	file1.RemoveTag(`my-tag-3`)
 
 	// Delete tag which is not set
-	file1.DeleteTag(tag2)
+	file1.RemoveTag(tag2)
 	assert.False(t, file1.HasTag(tag2))
 	assert.True(t, file2.HasTag(tag2))
 	assert.Equal(t, []*objectFile{file2}, files.GetByTag(tag2))

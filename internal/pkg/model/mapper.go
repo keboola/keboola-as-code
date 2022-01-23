@@ -9,6 +9,7 @@ import (
 
 const (
 	FileTypeJson              = `json`
+	FileTypeJsonNet           = `jsonnet`
 	FileTypeMarkdown          = `markdown`
 	FileTypeOther             = `other`
 	FileKindObjectConfig      = `objectConfig`
@@ -30,6 +31,10 @@ type ObjectFiles struct {
 type objectFile struct {
 	file filesystem.FileWrapper
 	tags map[string]bool
+}
+
+func NewObjectFiles() *ObjectFiles {
+	return &ObjectFiles{}
 }
 
 func (f *ObjectFiles) Add(file filesystem.FileWrapper) *objectFile {
@@ -107,7 +112,7 @@ func (f *objectFile) AddTag(tag string) *objectFile {
 	return f
 }
 
-func (f *objectFile) DeleteTag(tag string) *objectFile {
+func (f *objectFile) RemoveTag(tag string) *objectFile {
 	delete(f.tags, tag)
 	return f
 }

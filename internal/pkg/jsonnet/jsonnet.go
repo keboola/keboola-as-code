@@ -52,7 +52,10 @@ func FormatAst(node ast.Node) (string, error) {
 
 func ToAst(code string) (ast.Node, error) {
 	node, _, err := parser.SnippetToRawAST(``, ``, code)
-	return node, err
+	if err != nil {
+		return nil, fmt.Errorf(`cannot parse jsonnet: %w`, err)
+	}
+	return node, nil
 }
 
 func DefaultOptions() formatter.Options {
