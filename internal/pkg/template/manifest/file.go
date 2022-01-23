@@ -48,7 +48,7 @@ func loadFile(fs filesystem.Fs) (*file, error) {
 	}
 
 	// Decode JsonNet
-	jsonContent, err := jsonnet.Decode(f.Content)
+	jsonContent, err := jsonnet.Evaluate(f.Content)
 	if err != nil {
 		return nil, err
 	}
