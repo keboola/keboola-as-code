@@ -24,7 +24,7 @@ const (
 )
 
 type ObjectFiles struct {
-	Files []*objectFile
+	files []*objectFile
 }
 
 type objectFile struct {
@@ -34,13 +34,13 @@ type objectFile struct {
 
 func (f *ObjectFiles) Add(file filesystem.FileWrapper) *objectFile {
 	out := newObjectFile(file)
-	f.Files = append(f.Files, out)
+	f.files = append(f.files, out)
 	return out
 }
 
 func (f *ObjectFiles) All() []*objectFile {
-	out := make([]*objectFile, len(f.Files))
-	for i, file := range f.Files {
+	out := make([]*objectFile, len(f.files))
+	for i, file := range f.files {
 		out[i] = file
 	}
 	return out
@@ -62,7 +62,7 @@ func (f *ObjectFiles) GetOneByTag(tag string) *objectFile {
 
 func (f *ObjectFiles) GetByTag(tag string) []*objectFile {
 	var out []*objectFile
-	for _, file := range f.Files {
+	for _, file := range f.files {
 		if file.HasTag(tag) {
 			out = append(out, file)
 		}
