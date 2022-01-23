@@ -21,7 +21,8 @@ import (
 	"fmt"
 
 	"github.com/google/go-jsonnet/ast"
-	"github.com/google/go-jsonnet/internal/errors"
+
+	"github.com/keboola/keboola-as-code/third_party/jsonnet/lib/errors"
 )
 
 type precedence int

@@ -18,7 +18,8 @@ package formatter
 
 import (
 	"github.com/google/go-jsonnet/ast"
-	"github.com/google/go-jsonnet/internal/pass"
+
+	"github.com/keboola/keboola-as-code/third_party/jsonnet/lib/pass"
 )
 
 // EnforceMaxBlankLines is a formatter pass that ensures there are not

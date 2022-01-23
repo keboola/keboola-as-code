@@ -18,8 +18,9 @@ package formatter
 
 import (
 	"github.com/google/go-jsonnet/ast"
-	"github.com/google/go-jsonnet/internal/parser"
-	"github.com/google/go-jsonnet/internal/pass"
+
+	"github.com/keboola/keboola-as-code/third_party/jsonnet/lib/parser"
+	"github.com/keboola/keboola-as-code/third_party/jsonnet/lib/pass"
 )
 
 // PrettyFieldNames forces minimal syntax with field lookups and definitions

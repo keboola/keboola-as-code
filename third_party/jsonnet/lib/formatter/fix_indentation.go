@@ -20,7 +20,8 @@ import (
 	"strings"
 
 	"github.com/google/go-jsonnet/ast"
-	"github.com/google/go-jsonnet/internal/pass"
+
+	"github.com/keboola/keboola-as-code/third_party/jsonnet/lib/pass"
 )
 
 // FixIndentation is a formatter pass that changes the indentation of new line

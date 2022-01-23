@@ -21,8 +21,9 @@ import (
 	"reflect"
 
 	"github.com/google/go-jsonnet/ast"
-	"github.com/google/go-jsonnet/internal/errors"
-	"github.com/google/go-jsonnet/internal/parser"
+
+	"github.com/keboola/keboola-as-code/third_party/jsonnet/lib/errors"
+	"github.com/keboola/keboola-as-code/third_party/jsonnet/lib/parser"
 )
 
 var desugaredBop = map[ast.BinaryOp]ast.Identifier{
