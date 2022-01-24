@@ -86,12 +86,16 @@ func New(container ObjectsContainer, d dependencies) (*State, error) {
 		pathMatcher:     pathMatcher,
 	}
 
+	// Create mapper
 	s.mapper = mapper.New()
 
-	// Local manager for load,save,delete ... operations
-	s.localManager = local.NewManager(s.logger, container.Fs(), container.FileLoader(), m, s.namingGenerator, s.Registry, s.mapper)
+	// Create file loader
+	s.fileLoader = s.mapper.NewFileLoader(container.Fs())
 
-	// Local manager for API operations
+	// Local manager for load,save,delete ... operations
+	s.localManager = local.NewManager(s.logger, container.Fs(), s.fileLoader, m, s.namingGenerator, s.Registry, s.mapper)
+
+	// Remote manager for API operations
 	s.remoteManager = remote.NewManager(s.localManager, storageApi, s.Registry, s.mapper)
 
 	s.mapper.AddMapper(container.MappersFor(s)...)
