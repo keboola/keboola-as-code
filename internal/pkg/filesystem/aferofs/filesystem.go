@@ -254,17 +254,16 @@ func (f *Fs) Remove(path string) error {
 }
 
 // ReadFile content as string.
-func (f *Fs) ReadFile(path, desc string) (*filesystem.File, error) {
-	file := filesystem.NewFile(path, "")
-	file.Desc = desc
+func (f *Fs) ReadFile(def *filesystem.FileDef) (*filesystem.RawFile, error) {
+	file := def.ToFile()
 
 	// Check if is dir
-	if f.IsDir(path) {
+	if f.IsDir(file.Path()) {
 		return nil, newFileError("cannot open", file, fmt.Errorf(`expected file, found dir`))
 	}
 
 	// Open
-	fd, err := f.fs.Open(f.fs.FromSlash(file.Path))
+	fd, err := f.fs.Open(f.fs.FromSlash(file.Path()))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, newFileError("missing", file, nil)
@@ -283,15 +282,21 @@ func (f *Fs) ReadFile(path, desc string) (*filesystem.File, error) {
 		return nil, err
 	}
 
-	f.logger.Debugf(`Loaded "%s"`, path)
+	f.logger.Debugf(`Loaded "%s"`, file.Path())
 	file.Content = string(content)
 	return file, nil
 }
 
 // WriteFile from string.
-func (f *Fs) WriteFile(file *filesystem.File) error {
+func (f *Fs) WriteFile(file filesystem.File) error {
+	// Convert
+	fileRaw, err := file.ToRawFile()
+	if err != nil {
+		return err
+	}
+
 	// Create dir
-	dir := filesystem.Dir(file.Path)
+	dir := filesystem.Dir(fileRaw.Path())
 	if !f.Exists(dir) {
 		if err := f.Mkdir(dir); err != nil {
 			return err
@@ -299,15 +304,15 @@ func (f *Fs) WriteFile(file *filesystem.File) error {
 	}
 
 	// Open
-	fd, err := f.OpenFile(file.Path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644)
+	fd, err := f.OpenFile(fileRaw.Path(), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644)
 	if err != nil {
 		return err
 	}
 
 	// Write
-	_, err = fd.WriteString(file.Content)
+	_, err = fd.WriteString(fileRaw.Content)
 	if err != nil {
-		return newFileError("cannot write to", file, err)
+		return newFileError("cannot write to", fileRaw, err)
 	}
 
 	// Close
@@ -315,26 +320,18 @@ func (f *Fs) WriteFile(file *filesystem.File) error {
 		return err
 	}
 
-	f.logger.Debugf(`Saved "%s"`, file.Path)
+	f.logger.Debugf(`Saved "%s"`, fileRaw.Path())
 	return nil
 }
 
-func (f *Fs) WriteJsonFile(jsonFile *filesystem.JsonFile) error {
-	if file, err := jsonFile.ToFile(); err == nil {
-		return f.WriteFile(file)
-	} else {
-		return err
-	}
-}
-
 // CreateOrUpdateFile lines.
-func (f *Fs) CreateOrUpdateFile(path, desc string, lines []filesystem.FileLine) (updated bool, err error) {
+func (f *Fs) CreateOrUpdateFile(def *filesystem.FileDef, lines []filesystem.FileLine) (updated bool, err error) {
 	// Create file OR read if exists
 	updated = false
-	file := filesystem.NewFile(path, "")
-	if f.Exists(path) {
+	file := def.ToFile()
+	if f.Exists(file.Path()) {
 		updated = true
-		if file, err = f.ReadFile(path, desc); err != nil {
+		if file, err = f.ReadFile(def); err != nil {
 			return false, err
 		}
 	}
@@ -367,11 +364,11 @@ func (f *Fs) CreateOrUpdateFile(path, desc string, lines []filesystem.FileLine) 
 	return updated, f.WriteFile(file)
 }
 
-func newFileError(msg string, file *filesystem.File, err error) error {
-	fileDesc := strings.TrimSpace(file.Desc + " file")
+func newFileError(msg string, file *filesystem.RawFile, err error) error {
+	fileDesc := strings.TrimSpace(file.Description() + " file")
 	if err == nil {
-		return fmt.Errorf("%s %s \"%s\"", msg, fileDesc, file.Path)
+		return fmt.Errorf("%s %s \"%s\"", msg, fileDesc, file.Path())
 	} else {
-		return fmt.Errorf("%s %s \"%s\": %w", msg, fileDesc, file.Path, err)
+		return fmt.Errorf("%s %s \"%s\": %w", msg, fileDesc, file.Path(), err)
 	}
 }
