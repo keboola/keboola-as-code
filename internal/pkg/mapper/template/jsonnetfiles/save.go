@@ -9,9 +9,10 @@ import (
 func (m *jsonNetMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
 	// Convert all Json files to JsonNet
 	errors := utils.NewMultiError()
+	modified := model.NewFilesToSave()
 	for _, file := range recipe.Files.All() {
 		if file.HasTag(model.FileTypeJson) {
-			jsonFile := file.File().(*filesystem.JsonFile)
+			jsonFile := file.(*filesystem.JsonFile)
 
 			// Convert
 			jsonNetFile, err := jsonFile.ToJsonNetFile()
@@ -21,10 +22,14 @@ func (m *jsonNetMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error 
 			}
 
 			// Replace file
-			file.SetFile(jsonNetFile)
-			file.RemoveTag(model.FileTypeJson)
-			file.AddTag(model.FileTypeJsonNet)
+			jsonNetFile.RemoveTag(model.FileTypeJson)
+			jsonNetFile.AddTag(model.FileTypeJsonNet)
+			modified.Add(jsonNetFile)
+		} else {
+			modified.Add(file)
 		}
 	}
+
+	recipe.Files = modified
 	return errors.ErrorOrNil()
 }

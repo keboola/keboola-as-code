@@ -81,17 +81,17 @@ func (w *modelWriter) write() {
 	}
 
 	// Write new files
-	for _, fileRaw := range w.Files.All() {
+	for _, file := range w.Files.All() {
 		// Convert to File, eg. JsonFile -> File
-		file, err := fileRaw.ToFile()
+		fileRaw, err := file.ToRawFile()
 		if err != nil {
 			w.errors.Append(err)
 			continue
 		}
 
 		// Write
-		w.ObjectManifest.AddRelatedPath(file.GetPath())
-		if err := w.fs.WriteFile(file); err != nil {
+		w.ObjectManifest.AddRelatedPath(fileRaw.Path())
+		if err := w.fs.WriteFile(fileRaw); err != nil {
 			w.errors.Append(err)
 		}
 	}

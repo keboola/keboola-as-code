@@ -36,7 +36,7 @@ func loadFile(fs filesystem.Fs) (*file, error) {
 	}
 
 	// Read file
-	f, err := fs.ReadFile(path, "inputs")
+	f, err := fs.ReadFile(filesystem.NewFileDef(path).SetDescription("inputs"))
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func saveFile(fs filesystem.Fs, content *file) error {
 	}
 
 	// Write file
-	f := filesystem.NewFile(Path(), jsonNet)
+	f := filesystem.NewRawFile(Path(), jsonNet)
 	if err := fs.WriteFile(f); err != nil {
 		return err
 	}

@@ -56,7 +56,7 @@ func (m *coreFilesMapper) createConfigFile(recipe *model.LocalSaveRecipe) {
 func (m *coreFilesMapper) createDescriptionFile(recipe *model.LocalSaveRecipe) {
 	if description, found := utils.StringFromOneTaggedField(model.DescriptionFileFieldTag, recipe.Object); found {
 		path := m.state.NamingGenerator().DescriptionFilePath(recipe.Path())
-		markdownFile := filesystem.NewFile(path, strings.TrimRight(description, " \r\n\t")+"\n")
+		markdownFile := filesystem.NewRawFile(path, strings.TrimRight(description, " \r\n\t")+"\n")
 		recipe.Files.
 			Add(markdownFile).
 			AddTag(model.FileTypeMarkdown).
