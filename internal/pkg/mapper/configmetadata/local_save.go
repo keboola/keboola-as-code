@@ -1,10 +1,7 @@
 package configmetadata
 
 import (
-	"sort"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 // MapBeforeLocalSave - store config metadata to manifest.
@@ -20,12 +17,7 @@ func (m *configMetadataMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe)
 	}
 
 	if config.Metadata != nil {
-		ordered := orderedmap.New()
-		for key, val := range config.Metadata {
-			ordered.Set(key, val)
-		}
-		ordered.SortKeys(sort.Strings)
-		manifest.SetMetadata(ordered)
+		manifest.Metadata = config.MetadataOrderedMap()
 		recipe.ChangedFields.Remove(`metadata`)
 	}
 	return nil

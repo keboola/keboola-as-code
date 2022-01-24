@@ -38,7 +38,7 @@ func TestConfigMetadataMapper_MapAfterLocalLoad(t *testing.T) {
 		},
 	}
 
-	recipe := model.NewLocalLoadRecipe(configState.Manifest(), configState.Local)
+	recipe := model.NewLocalLoadRecipe(d.FileLoader(), configState.Manifest(), configState.Local)
 	assert.NoError(t, mockedState.Mapper().MapAfterLocalLoad(recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 

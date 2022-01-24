@@ -295,10 +295,13 @@ func (r *ConfigRowManifest) AddRelation(relation Relation) {
 	r.Relations.Add(relation)
 }
 
-func (r *ConfigManifest) GetMetadata() *orderedmap.OrderedMap {
-	return r.Metadata
-}
-
-func (c *ConfigManifest) SetMetadata(metadata *orderedmap.OrderedMap) {
-	c.Metadata = metadata
+func (r *ConfigManifest) MetadataMap() map[string]string {
+	metadata := make(map[string]string)
+	if r.Metadata != nil {
+		for _, key := range r.Metadata.Keys() {
+			val, _ := r.Metadata.Get(key)
+			metadata[key] = val.(string)
+		}
+	}
+	return metadata
 }

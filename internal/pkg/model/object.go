@@ -293,3 +293,12 @@ func (c *Config) AddRelation(relation Relation) {
 func (r *ConfigRow) AddRelation(relation Relation) {
 	r.Relations.Add(relation)
 }
+
+func (c *Config) MetadataOrderedMap() *orderedmap.OrderedMap {
+	ordered := orderedmap.New()
+	for key, val := range c.Metadata {
+		ordered.Set(key, val)
+	}
+	ordered.SortKeys(sort.Strings)
+	return ordered
+}

@@ -16,13 +16,8 @@ func (m *configMetadataMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) 
 		return nil
 	}
 
-	if manifest.GetMetadata() != nil {
-		metadata := make(map[string]string)
-		for _, key := range manifest.GetMetadata().Keys() {
-			val, _ := manifest.GetMetadata().Get(key)
-			metadata[key] = val.(string)
-		}
-		config.Metadata = metadata
+	if manifest.Metadata != nil {
+		config.Metadata = manifest.MetadataMap()
 	}
 	return nil
 }
