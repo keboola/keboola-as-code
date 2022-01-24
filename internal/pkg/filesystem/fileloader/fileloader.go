@@ -115,7 +115,7 @@ func (l *loader) ReadJsonNetFileTo(def *filesystem.FileDef, target interface{}) 
 		return nil, formatFileError(def, err)
 	}
 
-	jsonContent, err := jsonnet.EvaluateAst(file.Content)
+	jsonContent, err := jsonnet.EvaluateAst(file.Content, nil)
 	if err != nil {
 		return nil, formatFileError(def, err)
 	}

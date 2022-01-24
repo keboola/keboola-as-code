@@ -19,7 +19,7 @@ import (
 func MappersFor(s *state.State, d dependencies, replacements replacekeys.Keys) mapper.Mappers {
 	return mapper.Mappers{
 		// Template
-		jsonnetfiles.NewMapper(),
+		jsonnetfiles.NewMapper(nil),
 		// Core files
 		corefiles.NewMapper(s),
 		description.NewMapper(),

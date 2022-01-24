@@ -36,16 +36,6 @@ type RawFile struct {
 	Content string
 }
 
-type JsonFile struct {
-	*FileDef
-	Content *orderedmap.OrderedMap
-}
-
-type JsonNetFile struct {
-	*FileDef
-	Content jsonnetast.Node
-}
-
 type Files struct {
 	files []File
 }
@@ -150,6 +140,11 @@ func (f *RawFile) RemoveTag(tags ...string) File {
 	return f
 }
 
+type JsonFile struct {
+	*FileDef
+	Content *orderedmap.OrderedMap
+}
+
 func NewJsonFile(path string, content *orderedmap.OrderedMap) *JsonFile {
 	file := &JsonFile{FileDef: NewFileDef(path)}
 	file.Content = content
@@ -201,10 +196,21 @@ func (f *JsonFile) ToJsonNetFile() (*JsonNetFile, error) {
 	return fileRaw.ToJsonNetFile()
 }
 
+type JsonNetFile struct {
+	*FileDef
+	variables map[string]interface{}
+	Content   jsonnetast.Node
+}
+
 func NewJsonNetFile(path string, content jsonnetast.Node) *JsonNetFile {
 	file := &JsonNetFile{FileDef: NewFileDef(path)}
 	file.Content = content
 	return file
+}
+
+func (f *JsonNetFile) SetVariables(variables map[string]interface{}) File {
+	f.variables = variables
+	return f
 }
 
 func (f *JsonNetFile) Description() string {
@@ -221,7 +227,7 @@ func (f *JsonNetFile) Path() string {
 }
 
 func (f *JsonNetFile) ToJsonFile() (*JsonFile, error) {
-	jsonContent, err := jsonnet.EvaluateAst(f.Content)
+	jsonContent, err := jsonnet.EvaluateAst(f.Content, f.variables)
 	if err != nil {
 		return nil, err
 	}

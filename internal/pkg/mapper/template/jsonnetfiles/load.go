@@ -24,12 +24,21 @@ func (m *jsonNetMapper) LoadLocalFile(def *filesystem.FileDef, fileType filesyst
 		}
 		jsonNetFile := f.(*filesystem.JsonNetFile)
 
-		// Convert to Json/Raw
+		// Set variables
+		jsonNetFile.SetVariables(m.variables)
+
+		// Evaluate JsonNet to Json file
+		jsonFile, err := jsonNetFile.ToJsonFile()
+		if err != nil {
+			return nil, err
+		}
+
+		// Convert to target file type
 		switch fileType {
 		case filesystem.FileTypeRaw:
-			return jsonNetFile.ToRawFile()
+			return jsonFile.ToRawFile()
 		case filesystem.FileTypeJson:
-			return jsonNetFile.ToJsonFile()
+			return jsonFile, nil
 		default:
 			panic(fmt.Errorf(`unexpected filesystem.FileType = %v`, fileType))
 		}

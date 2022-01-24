@@ -10,7 +10,7 @@ import (
 func TestEvaluate(t *testing.T) {
 	t.Parallel()
 	code := `{ foo: "bar" }`
-	json, err := Evaluate(code)
+	json, err := Evaluate(code, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, "{\n  \"foo\": \"bar\"\n}\n", json)
 }
@@ -27,7 +27,7 @@ func TestEvaluateAst(t *testing.T) {
 			},
 		},
 	}
-	json, err := EvaluateAst(astNode)
+	json, err := EvaluateAst(astNode, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, "{\n  \"foo\": \"bar\"\n}\n", json)
 }
