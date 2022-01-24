@@ -33,6 +33,11 @@ Diff:
   name:
     - empty
     + new name
+  metadata:
+  + KBC.KaC.meta1:
+  +   val1
+  + KBC.KaC.meta2:
+  +   val2
 * C bar/transformation/keboola.python-transformation-v2/transformation-with-shared-code/variables
   configuration:
     variables.0.name:

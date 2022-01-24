@@ -73,7 +73,11 @@
       "componentId": "ex-generic-v2",
       "id": "%%TEST_BRANCH_ALL_CONFIG_EMPTY_ID%%",
       "path": "extractor/ex-generic-v2/empty",
-      "rows": []
+      "rows": [],
+      "metadata": {
+        "KBC.KaC.meta1": "val1",
+        "KBC.KaC.meta2": "val2"
+      }
     },
     {
       "branchId": %%TEST_BRANCH_BAR_ID%%,

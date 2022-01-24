@@ -16,9 +16,7 @@ func (m *configMetadataMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe)
 		return nil
 	}
 
-	if config.Metadata != nil {
-		manifest.Metadata = config.MetadataOrderedMap()
-		recipe.ChangedFields.Remove(`metadata`)
-	}
+	manifest.Metadata = config.MetadataOrderedMap()
+	recipe.ChangedFields.Remove(`metadata`)
 	return nil
 }

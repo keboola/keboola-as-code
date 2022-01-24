@@ -29,7 +29,7 @@ func (m *configMetadataMapper) onRemoteLoad(objectState model.ObjectState, metad
 	}
 	metadata, found := metadataMap[config.ConfigKey.String()]
 	if !found {
-		return
+		metadata = make(map[string]string)
 	}
 	config.Metadata = metadata
 }

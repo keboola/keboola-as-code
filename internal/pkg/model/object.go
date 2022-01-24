@@ -132,7 +132,7 @@ type Config struct {
 	SharedCode        *SharedCodeConfig      `json:"-" validate:"omitempty,dive" diff:"true"`
 	Orchestration     *Orchestration         `json:"-" validate:"omitempty,dive" diff:"true"`
 	Relations         Relations              `json:"-" validate:"dive" diff:"true"`
-	Metadata          map[string]string      `json:"-" validate:"omitempty,dive" diff:"true"`
+	Metadata          map[string]string      `json:"-" validate:"dive" diff:"true"`
 }
 
 type ConfigWithRows struct {
