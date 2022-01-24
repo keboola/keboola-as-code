@@ -24,34 +24,168 @@ const (
 	FileKindGitKeep           = `gitkeep`
 )
 
-type ObjectFiles struct {
+type FilesToSave struct {
+	*objectFiles
+}
+
+func NewFilesToSave() *FilesToSave {
+	return &FilesToSave{objectFiles: newObjectFiles()}
+}
+
+type FilesLoader struct {
+	fsLoader filesystem.FileLoader
+	loaded   *objectFiles
+}
+
+type fileToLoad struct {
+	loader   *FilesLoader
+	fsLoader filesystem.FileLoader
+	path     string
+	desc     string
+	tags     map[string]bool
+}
+
+func NewFilesLoader(fsLoader filesystem.FileLoader) *FilesLoader {
+	return &FilesLoader{fsLoader: fsLoader, loaded: newObjectFiles()}
+}
+
+func (l *FilesLoader) Load(path string) *fileToLoad {
+	return &fileToLoad{loader: l, fsLoader: l.fsLoader, path: path, tags: make(map[string]bool)}
+}
+
+func (l *FilesLoader) Loaded() []*objectFile {
+	return l.loaded.All()
+}
+
+func (l *FilesLoader) GetOneByTag(tag string) *objectFile {
+	return l.loaded.GetOneByTag(tag)
+}
+
+func (l *FilesLoader) GetByTag(tag string) []*objectFile {
+	return l.loaded.GetByTag(tag)
+}
+
+func (l *FilesLoader) addLoaded(def *fileToLoad, file filesystem.FileWrapper) {
+	if file == nil {
+		panic(fmt.Errorf(`file cannot be nil`))
+	}
+	l.loaded.Add(file).AddTag(def.Tags()...)
+}
+
+func (f *fileToLoad) SetDescription(v string) *fileToLoad {
+	f.desc = v
+	return f
+}
+
+func (f *fileToLoad) Tags() []string {
+	out := make([]string, len(f.tags))
+	i := 0
+	for tag := range f.tags {
+		out[i] = tag
+		i++
+	}
+	return out
+}
+
+func (f *fileToLoad) HasTag(tag string) bool {
+	return f.tags[tag]
+}
+
+func (f *fileToLoad) AddTag(tags ...string) *fileToLoad {
+	for _, tag := range tags {
+		f.tags[tag] = true
+	}
+	return f
+}
+
+func (f *fileToLoad) RemoveTag(tags ...string) *fileToLoad {
+	for _, tag := range tags {
+		delete(f.tags, tag)
+	}
+	return f
+}
+
+func (f *fileToLoad) ReadFile() (*filesystem.File, error) {
+	file, err := f.fsLoader.ReadFile(f.path, f.desc)
+	if err != nil {
+		return nil, err
+	}
+	f.loader.addLoaded(f, file)
+	return file, nil
+}
+
+func (f *fileToLoad) ReadJsonFieldsTo(target interface{}, tag string) (*filesystem.JsonFile, bool, error) {
+	file, tagFound, err := f.fsLoader.ReadJsonFieldsTo(f.path, f.desc, target, tag)
+	if err != nil {
+		return nil, false, err
+	}
+	if tagFound {
+		f.loader.addLoaded(f, file)
+	}
+	return file, tagFound, nil
+}
+
+func (f *fileToLoad) ReadJsonMapTo(target interface{}, tag string) (*filesystem.JsonFile, bool, error) {
+	file, tagFound, err := f.fsLoader.ReadJsonMapTo(f.path, f.desc, target, tag)
+	if err != nil {
+		return nil, false, err
+	}
+	if tagFound {
+		f.loader.addLoaded(f, file)
+	}
+	return file, tagFound, nil
+}
+
+func (f *fileToLoad) ReadFileContentTo(target interface{}, tag string) (*filesystem.File, bool, error) {
+	file, tagFound, err := f.fsLoader.ReadFileContentTo(f.path, f.desc, target, tag)
+	if err != nil {
+		return nil, false, err
+	}
+	if tagFound {
+		f.loader.addLoaded(f, file)
+	}
+	return file, tagFound, nil
+}
+
+func (f *fileToLoad) ReadJsonFile() (*filesystem.JsonFile, error) {
+	file, err := f.fsLoader.ReadJsonFile(f.path, f.desc)
+	if err != nil {
+		return nil, err
+	}
+	f.loader.addLoaded(f, file)
+	return file, nil
+}
+
+func (f *fileToLoad) ReadJsonFileTo(target interface{}) (*filesystem.File, error) {
+	file, err := f.fsLoader.ReadJsonFileTo(f.path, f.desc, target)
+	if err != nil {
+		return nil, err
+	}
+	f.loader.addLoaded(f, file)
+	return file, nil
+}
+
+type objectFiles struct {
 	files []*objectFile
 }
 
-type objectFile struct {
-	file filesystem.FileWrapper
-	tags map[string]bool
+func newObjectFiles() *objectFiles {
+	return &objectFiles{}
 }
 
-func NewObjectFiles() *ObjectFiles {
-	return &ObjectFiles{}
+func (f *objectFiles) All() []*objectFile {
+	out := make([]*objectFile, len(f.files))
+	copy(out, f.files)
+	return out
 }
 
-func (f *ObjectFiles) Add(file filesystem.FileWrapper) *objectFile {
+func (f *objectFiles) Add(file filesystem.FileWrapper) *objectFile {
 	out := newObjectFile(file)
 	f.files = append(f.files, out)
 	return out
 }
 
-func (f *ObjectFiles) All() []*objectFile {
-	out := make([]*objectFile, len(f.files))
-	for i, file := range f.files {
-		out[i] = file
-	}
-	return out
-}
-
-func (f *ObjectFiles) GetOneByTag(tag string) *objectFile {
+func (f *objectFiles) GetOneByTag(tag string) *objectFile {
 	files := f.GetByTag(tag)
 	if len(files) == 1 {
 		return files[0]
@@ -65,7 +199,7 @@ func (f *ObjectFiles) GetOneByTag(tag string) *objectFile {
 	return nil
 }
 
-func (f *ObjectFiles) GetByTag(tag string) []*objectFile {
+func (f *objectFiles) GetByTag(tag string) []*objectFile {
 	var out []*objectFile
 	for _, file := range f.files {
 		if file.HasTag(tag) {
@@ -73,6 +207,11 @@ func (f *ObjectFiles) GetByTag(tag string) []*objectFile {
 		}
 	}
 	return out
+}
+
+type objectFile struct {
+	file filesystem.FileWrapper
+	tags map[string]bool
 }
 
 func newObjectFile(file filesystem.FileWrapper) *objectFile {
@@ -107,13 +246,17 @@ func (f *objectFile) HasTag(tag string) bool {
 	return f.tags[tag]
 }
 
-func (f *objectFile) AddTag(tag string) *objectFile {
-	f.tags[tag] = true
+func (f *objectFile) AddTag(tags ...string) *objectFile {
+	for _, tag := range tags {
+		f.tags[tag] = true
+	}
 	return f
 }
 
-func (f *objectFile) RemoveTag(tag string) *objectFile {
-	delete(f.tags, tag)
+func (f *objectFile) RemoveTag(tags ...string) *objectFile {
+	for _, tag := range tags {
+		delete(f.tags, tag)
+	}
 	return f
 }
 
@@ -121,7 +264,7 @@ func (f *objectFile) RemoveTag(tag string) *objectFile {
 type LocalLoadRecipe struct {
 	ObjectManifest                        // manifest record, eg *ConfigManifest
 	Object         Object                 // object, eg. Config
-	Files          ObjectFiles            // eg. config.json, meta.json, description.md, ...
+	Files          *FilesLoader           // eg. config.json, meta.json, description.md, ...
 	Annotations    map[string]interface{} // key/value pairs that can be used by to affect mappers behavior
 }
 
@@ -130,7 +273,7 @@ type LocalSaveRecipe struct {
 	ChangedFields  ChangedFields
 	ObjectManifest                        // manifest record, eg *ConfigManifest
 	Object         Object                 // object, eg. Config
-	Files          ObjectFiles            // eg. config.json, meta.json, description.md, ...
+	Files          *FilesToSave           // eg. config.json, meta.json, description.md, ...
 	ToDelete       []string               // paths to delete, on save
 	Annotations    map[string]interface{} // key/value pairs that can be used by to affect mappers behavior
 }
@@ -170,10 +313,11 @@ type OnObjectPathUpdateEvent struct {
 	NewPath        string
 }
 
-func NewLocalLoadRecipe(manifest ObjectManifest, object Object) *LocalLoadRecipe {
+func NewLocalLoadRecipe(fsLoader filesystem.FileLoader, manifest ObjectManifest, object Object) *LocalLoadRecipe {
 	return &LocalLoadRecipe{
 		Object:         object,
 		ObjectManifest: manifest,
+		Files:          NewFilesLoader(fsLoader),
 		Annotations:    make(map[string]interface{}),
 	}
 }
@@ -183,6 +327,7 @@ func NewLocalSaveRecipe(manifest ObjectManifest, object Object, changedFields Ch
 		ChangedFields:  changedFields,
 		Object:         object,
 		ObjectManifest: manifest,
+		Files:          NewFilesToSave(),
 		Annotations:    make(map[string]interface{}),
 	}
 }

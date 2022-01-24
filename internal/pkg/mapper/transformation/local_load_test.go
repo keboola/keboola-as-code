@@ -99,7 +99,7 @@ func TestLoadTransformationMissingBlockMetaSql(t *testing.T) {
 	logger := d.DebugLogger()
 
 	configState := createTestFixtures(t, "keboola.snowflake-transformation")
-	recipe := model.NewLocalLoadRecipe(configState.Manifest(), configState.Local)
+	recipe := model.NewLocalLoadRecipe(d.FileLoader(), configState.Manifest(), configState.Local)
 
 	// Create files/dirs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
@@ -121,7 +121,7 @@ func TestLoadTransformationMissingCodeMeta(t *testing.T) {
 	logger := d.DebugLogger()
 
 	configState := createTestFixtures(t, "keboola.snowflake-transformation")
-	recipe := model.NewLocalLoadRecipe(configState.Manifest(), configState.Local)
+	recipe := model.NewLocalLoadRecipe(d.FileLoader(), configState.Manifest(), configState.Local)
 
 	// Create files/dirs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
@@ -149,7 +149,7 @@ func TestLoadLocalTransformationSql(t *testing.T) {
 	logger := d.DebugLogger()
 
 	configState := createTestFixtures(t, "keboola.snowflake-transformation")
-	recipe := model.NewLocalLoadRecipe(configState.Manifest(), configState.Local)
+	recipe := model.NewLocalLoadRecipe(d.FileLoader(), configState.Manifest(), configState.Local)
 
 	// Create files/dirs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
@@ -292,7 +292,7 @@ func TestLoadLocalTransformationPy(t *testing.T) {
 	logger := d.DebugLogger()
 
 	configState := createTestFixtures(t, `keboola.python-transformation-v2`)
-	recipe := model.NewLocalLoadRecipe(configState.Manifest(), configState.Local)
+	recipe := model.NewLocalLoadRecipe(d.FileLoader(), configState.Manifest(), configState.Local)
 
 	// Create files/dirs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)

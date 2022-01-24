@@ -6,11 +6,14 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/fileloader"
+	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-func TestObjectFiles(t *testing.T) {
+func TestFilesToSave(t *testing.T) {
 	t.Parallel()
-	files := ObjectFiles{}
+	files := NewFilesToSave()
 
 	// Add file
 	fileRaw1 := filesystem.NewFile(`path1`, `content1`)
@@ -64,4 +67,111 @@ func TestObjectFiles(t *testing.T) {
 
 	// All
 	assert.Equal(t, []*objectFile{file1, file2}, files.All())
+}
+
+type myStruct struct {
+	Field1   string                 `json:"field1" mytag:"field"`
+	Field2   string                 `json:"field2" mytag:"field"`
+	FooField string                 `json:"foo"`
+	Map      *orderedmap.OrderedMap `mytag:"map"`
+	Content  string                 `mytag:"content"`
+}
+
+func TestFilesLoader(t *testing.T) {
+	t.Parallel()
+	fs := testfs.NewMemoryFs()
+	files := NewFilesLoader(fileloader.New(fs))
+
+	// No files
+	assert.Empty(t, files.Loaded())
+
+	// Create files
+	jsonContent := "{\"field1\": \"foo\", \"field2\": \"bar\"}"
+	jsonMap := orderedmap.FromPairs([]orderedmap.Pair{{Key: "field1", Value: "foo"}, {Key: "field2", Value: "bar"}})
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile("foo1.json", jsonContent)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile("foo2.json", jsonContent)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile("foo3.json", jsonContent)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile("foo4.json", jsonContent)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewFile("foo5.json", jsonContent)))
+
+	// ReadFile
+	rawFile1, err := files.
+		Load(`foo1.json`).
+		SetDescription(`my description`).
+		AddTag(`tag1`).
+		AddTag(`tag2`).
+		ReadFile()
+	assert.NoError(t, err)
+	assert.Equal(t, `foo1.json`, rawFile1.Path)
+	assert.Equal(t, `my description`, rawFile1.Desc)
+	assert.Equal(t, jsonContent, rawFile1.Content)
+
+	// ReadJsonFile
+	jsonFile1, err := files.
+		Load(`foo2.json`).
+		SetDescription(`my description`).
+		AddTag(`tag3`).
+		AddTag(`tag4`).
+		ReadJsonFile()
+	assert.NoError(t, err)
+	assert.Equal(t, `foo2.json`, jsonFile1.Path)
+	assert.Equal(t, `my description`, jsonFile1.Desc)
+	assert.Equal(t, jsonMap, jsonFile1.Content)
+
+	// ReadJsonFieldsTo
+	target1 := &myStruct{}
+	jsonFile2, tagFound, err := files.
+		Load(`foo3.json`).
+		SetDescription(`my description`).
+		AddTag(`tag5`).
+		AddTag(`tag6`).
+		ReadJsonFieldsTo(target1, `mytag:field`)
+	assert.True(t, tagFound)
+	assert.NoError(t, err)
+	assert.Equal(t, `foo3.json`, jsonFile2.Path)
+	assert.Equal(t, `my description`, jsonFile2.Desc)
+	assert.Equal(t, `foo`, target1.Field1)
+	assert.Equal(t, `bar`, target1.Field2)
+
+	// ReadFileContentTo
+	target2 := &myStruct{}
+	rawFile2, tagFound, err := files.
+		Load(`foo4.json`).
+		SetDescription(`my description`).
+		AddTag(`tag7`).
+		AddTag(`tag8`).
+		ReadFileContentTo(target2, `mytag:content`)
+	assert.True(t, tagFound)
+	assert.NoError(t, err)
+	assert.Equal(t, `foo4.json`, rawFile2.Path)
+	assert.Equal(t, `my description`, rawFile2.Desc)
+	assert.Equal(t, jsonContent, target2.Content)
+
+	// ReadJsonMapTo
+	target3 := &myStruct{}
+	jsonFile3, tagFound, err := files.
+		Load(`foo5.json`).
+		SetDescription(`my description`).
+		AddTag(`tag9`).
+		AddTag(`tag10`).
+		ReadJsonMapTo(target3, `mytag:map`)
+	assert.True(t, tagFound)
+	assert.NoError(t, err)
+	assert.Equal(t, `foo5.json`, jsonFile3.Path)
+	assert.Equal(t, `my description`, jsonFile3.Desc)
+	assert.Equal(t, jsonMap, target3.Map)
+
+	// Check loaded files
+	assert.Len(t, files.Loaded(), 5)
+	assert.Equal(t, rawFile1, files.GetOneByTag("tag1").File())
+	assert.Equal(t, rawFile1, files.GetOneByTag("tag2").File())
+	assert.Equal(t, jsonFile1, files.GetOneByTag("tag3").File())
+	assert.Equal(t, jsonFile1, files.GetOneByTag("tag4").File())
+	assert.Equal(t, jsonFile2, files.GetOneByTag("tag5").File())
+	assert.Equal(t, jsonFile2, files.GetOneByTag("tag6").File())
+	assert.Equal(t, rawFile2, files.GetOneByTag("tag7").File())
+	assert.Equal(t, rawFile2, files.GetOneByTag("tag8").File())
+	assert.Equal(t, jsonFile3, files.GetOneByTag("tag9").File())
+	assert.Equal(t, jsonFile3, files.GetOneByTag("tag10").File())
+	assert.Nil(t, files.GetOneByTag("missing"))
 }

@@ -48,15 +48,19 @@ type Fs interface {
 	Move(src, dst string) error
 	MoveForce(src, dst string) error
 	Remove(path string) error
-	ReadJsonFieldsTo(path, desc string, target interface{}, tag string) (*JsonFile, error)
-	ReadJsonMapTo(path, desc string, target interface{}, tag string) (*JsonFile, error)
-	ReadFileContentTo(path, desc string, target interface{}, tag string) (*File, error)
-	ReadJsonFile(path, desc string) (*JsonFile, error)
-	ReadJsonFileTo(path, desc string, target interface{}) error
 	ReadFile(path, desc string) (*File, error)
 	WriteFile(file *File) error
 	WriteJsonFile(file *JsonFile) error
 	CreateOrUpdateFile(path, desc string, lines []FileLine) (updated bool, err error)
+}
+
+type FileLoader interface {
+	ReadFile(path, desc string) (*File, error)
+	ReadJsonFieldsTo(path, desc string, target interface{}, tag string) (*JsonFile, bool, error)
+	ReadJsonMapTo(path, desc string, target interface{}, tag string) (*JsonFile, bool, error)
+	ReadFileContentTo(path, desc string, target interface{}, tag string) (*File, bool, error)
+	ReadJsonFile(path, desc string) (*JsonFile, error)
+	ReadJsonFileTo(path, desc string, target interface{}) (*File, error)
 }
 
 func FromSlash(path string) string {

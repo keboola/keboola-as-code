@@ -125,44 +125,42 @@ func (l *localLoader) addScripts(code *model.Code) {
 	}
 
 	// Load file content
-	codeFilePath := l.NamingGenerator().CodeFilePath(code)
-	file, err := l.Fs().ReadFile(codeFilePath, "code file")
+	file, err := l.Files.
+		Load(l.NamingGenerator().CodeFilePath(code)).
+		SetDescription("code file").
+		AddTag(model.FileKindNativeCode).
+		ReadFile()
 	if err != nil {
 		l.errors.Append(err)
 		return
 	}
-	l.Files.
-		Add(file).
-		AddTag(model.FileKindNativeCode)
 
 	// Split to scripts
 	code.Scripts = model.ScriptsFromStr(file.Content, l.config.ComponentId)
-	l.logger.Debugf(`Parsed "%d" scripts from "%s"`, len(code.Scripts), codeFilePath)
+	l.logger.Debugf(`Parsed "%d" scripts from "%s"`, len(code.Scripts), file.Path)
 }
 
 func (l *localLoader) loadBlockMetaFile(block *model.Block) {
-	path := l.NamingGenerator().MetaFilePath(block.Path())
-	desc := "block metadata"
-	if file, err := l.Fs().ReadJsonFieldsTo(path, desc, block, model.MetaFileFieldsTag); err != nil {
+	_, _, err := l.Files.
+		Load(l.NamingGenerator().MetaFilePath(block.Path())).
+		SetDescription("block metadata").
+		AddTag(model.FileTypeJson).
+		AddTag(model.FileKindBlockMeta).
+		ReadJsonFieldsTo(block, model.MetaFileFieldsTag)
+	if err != nil {
 		l.errors.Append(err)
-	} else if file != nil {
-		l.Files.
-			Add(file).
-			AddTag(model.FileTypeJson).
-			AddTag(model.FileKindBlockMeta)
 	}
 }
 
 func (l *localLoader) loadCodeMetaFile(code *model.Code) {
-	path := l.NamingGenerator().MetaFilePath(code.Path())
-	desc := "code metadata"
-	if file, err := l.Fs().ReadJsonFieldsTo(path, desc, code, model.MetaFileFieldsTag); err != nil {
+	_, _, err := l.Files.
+		Load(l.NamingGenerator().MetaFilePath(code.Path())).
+		SetDescription("code metadata").
+		AddTag(model.FileTypeJson).
+		AddTag(model.FileKindCodeMeta).
+		ReadJsonFieldsTo(code, model.MetaFileFieldsTag)
+	if err != nil {
 		l.errors.Append(err)
-	} else if file != nil {
-		l.Files.
-			Add(file).
-			AddTag(model.FileTypeJson).
-			AddTag(model.FileKindCodeMeta)
 	}
 }
 

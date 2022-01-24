@@ -22,6 +22,7 @@ type Manager struct {
 	logger          log.Logger
 	state           model.ObjectStates
 	fs              filesystem.Fs
+	fileLoader      filesystem.FileLoader
 	manifest        manifest.Manifest
 	namingGenerator *naming.Generator
 	mapper          *mapper.Mapper
@@ -39,11 +40,12 @@ type UnitOfWork struct {
 	invoked         bool
 }
 
-func NewManager(logger log.Logger, fs filesystem.Fs, m manifest.Manifest, namingGenerator *naming.Generator, objects model.ObjectStates, mapper *mapper.Mapper) *Manager {
+func NewManager(logger log.Logger, fs filesystem.Fs, fileLoader filesystem.FileLoader, m manifest.Manifest, namingGenerator *naming.Generator, objects model.ObjectStates, mapper *mapper.Mapper) *Manager {
 	return &Manager{
 		logger:          logger,
 		state:           objects,
 		fs:              fs,
+		fileLoader:      fileLoader,
 		manifest:        m,
 		namingGenerator: namingGenerator,
 		mapper:          mapper,
@@ -60,6 +62,10 @@ func (m *Manager) NamingGenerator() *naming.Generator {
 
 func (m *Manager) Fs() filesystem.Fs {
 	return m.fs
+}
+
+func (m *Manager) FileLoader() filesystem.FileLoader {
+	return m.fileLoader
 }
 
 func (m *Manager) NewUnitOfWork(ctx context.Context) *UnitOfWork {

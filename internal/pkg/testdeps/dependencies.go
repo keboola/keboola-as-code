@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/fileloader"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
@@ -110,6 +111,10 @@ func (v *testDependencies) DebugLogger() log.DebugLogger {
 
 func (v *testDependencies) Fs() filesystem.Fs {
 	return v.fs
+}
+
+func (v *testDependencies) FileLoader() filesystem.FileLoader {
+	return fileloader.New(v.fs)
 }
 
 func (v *testDependencies) Envs() *env.Map {

@@ -14,6 +14,7 @@ func (m *orchestratorMapper) onLocalLoad(config *model.Config, manifest *model.C
 	loader := &localLoader{
 		State:        m.state,
 		phasesSorter: newPhasesSorter(),
+		files:        model.NewFilesLoader(m.state.FileLoader()),
 		allObjects:   allObjects,
 		branch:       m.state.MustGet(config.BranchKey()).(*model.BranchState),
 		config:       config,
@@ -31,6 +32,7 @@ func (m *orchestratorMapper) onLocalLoad(config *model.Config, manifest *model.C
 type localLoader struct {
 	*state.State
 	*phasesSorter
+	files      *model.FilesLoader
 	allObjects model.Objects
 	branch     *model.BranchState
 	config     *model.Config
@@ -81,6 +83,12 @@ func (l *localLoader) load() error {
 	l.config.Orchestration = &model.Orchestration{
 		Phases: sortedPhases,
 	}
+
+	// Track loaded files
+	for _, file := range l.files.Loaded() {
+		l.manifest.AddRelatedPath(file.Path())
+	}
+
 	return l.errors.ErrorOrNil()
 }
 
@@ -123,14 +131,18 @@ func (l *localLoader) addTask(taskIndex int, phase *model.Phase, path string) (*
 
 func (l *localLoader) parsePhaseConfig(phase *model.Phase) ([]string, error) {
 	// Load phase config
-	file, err := l.loadJsonFile(l.NamingGenerator().PhaseFilePath(phase), `phase config`)
+	file, err := l.files.
+		Load(l.NamingGenerator().PhaseFilePath(phase)).
+		SetDescription("phase config").
+		AddTag(model.FileTypeJson).
+		AddTag(model.FileKindPhaseConfig).
+		ReadJsonFile()
 	if err != nil {
-		return nil, err
+		return nil, l.formatError(err)
 	}
 
+	parser := &phaseParser{content: file.Content}
 	errors := utils.NewMultiError()
-	phaseContent := file.Content
-	parser := &phaseParser{content: phaseContent}
 
 	// Get name
 	phase.Name, err = parser.name()
@@ -151,14 +163,18 @@ func (l *localLoader) parsePhaseConfig(phase *model.Phase) ([]string, error) {
 
 func (l *localLoader) parseTaskConfig(task *model.Task) error {
 	// Load task config
-	file, err := l.loadJsonFile(l.NamingGenerator().TaskFilePath(task), `task config`)
+	file, err := l.files.
+		Load(l.NamingGenerator().TaskFilePath(task)).
+		SetDescription("task config").
+		AddTag(model.FileTypeJson).
+		AddTag(model.FileKindTaskConfig).
+		ReadJsonFile()
 	if err != nil {
-		return err
+		return l.formatError(err)
 	}
 
+	parser := &taskParser{content: file.Content}
 	errors := utils.NewMultiError()
-	taskContent := file.Content
-	parser := &taskParser{content: taskContent}
 
 	// Get name
 	task.Name, err = parser.name()
@@ -207,25 +223,12 @@ func (l *localLoader) getTargetConfig(configPath string) (*model.Config, error) 
 	return configState.Local, nil
 }
 
-func (l *localLoader) loadJsonFile(path, desc string) (*filesystem.JsonFile, error) {
-	if file, err := l.Fs().ReadJsonFile(path, desc); err != nil {
-		// Remove absolute path from error
-		return nil, fmt.Errorf(strings.ReplaceAll(err.Error(), l.manifest.Path()+string(filesystem.PathSeparator), ``))
-	} else {
-		l.manifest.AddRelatedPath(path)
-		return file, nil
-	}
-}
-
 func (l *localLoader) phasesDirs() []string {
 	// Check if blocks dir exists
 	if !l.Fs().IsDir(l.phasesDir) {
 		l.errors.Append(fmt.Errorf(`missing phases dir "%s"`, l.phasesDir))
 		return nil
 	}
-
-	// Track phases dir
-	l.manifest.AddRelatedPath(l.phasesDir)
 
 	// Load all dir entries
 	dirs, err := filesystem.ReadSubDirs(l.Fs(), l.phasesDir)
@@ -243,4 +246,9 @@ func (l *localLoader) tasksDirs(phase *model.Phase) []string {
 		return nil
 	}
 	return dirs
+}
+
+func (l *localLoader) formatError(err error) error {
+	// Remove absolute path from error
+	return fmt.Errorf(strings.ReplaceAll(err.Error(), l.manifest.Path()+string(filesystem.PathSeparator), ``))
 }
