@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/fileloader"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
@@ -22,7 +21,7 @@ func newTestLocalManager(t *testing.T) *Manager {
 	logger := log.NewDebugLogger()
 	fs, err := aferofs.NewMemoryFs(logger, "")
 	assert.NoError(t, err)
-	fileLoader := fileloader.New(fs)
+	fileLoader := fs.FileLoader()
 
 	manifest := projectManifest.New(1, "foo.bar")
 	components := model.NewComponentsMap(nil)

@@ -17,6 +17,14 @@ type FileLine struct {
 	Regexp string
 }
 
+type FileType int
+
+const (
+	FileTypeRaw     FileType = iota // RawFile
+	FileTypeJson                    // JsonFile
+	FileTypeJsonNet                 // JsonNetFile
+)
+
 type FileDef struct {
 	*FileTags
 	desc string
@@ -58,6 +66,19 @@ func NewFileDef(path string) *FileDef {
 	return &FileDef{FileTags: NewFileTags(), path: path}
 }
 
+func (f *FileDef) Path() string {
+	return f.path
+}
+
+func (f *FileDef) SetPath(v string) *FileDef {
+	f.path = v
+	return f
+}
+
+func (f *FileDef) Description() string {
+	return f.desc
+}
+
 func (f *FileDef) SetDescription(v string) *FileDef {
 	f.desc = v
 	return f
@@ -69,8 +90,8 @@ func NewRawFile(path, content string) *RawFile {
 	return file
 }
 
-// ToFile converts FileDef to a File with empty content.
-func (f *FileDef) ToFile() *RawFile {
+// ToEmptyFile converts FileDef to a File with empty content.
+func (f *FileDef) ToEmptyFile() *RawFile {
 	file := NewRawFile(f.path, "")
 	file.desc = f.desc
 	file.AddTag(f.AllTags()...)
@@ -102,6 +123,18 @@ func (f *RawFile) ToJsonFile() (*JsonFile, error) {
 	}
 
 	file := NewJsonFile(f.path, jsonMap)
+	file.SetDescription(f.desc)
+	file.AddTag(f.AllTags()...)
+	return file, nil
+}
+
+func (f *RawFile) ToJsonNetFile() (*JsonNetFile, error) {
+	ast, err := jsonnet.ToAst(f.Content)
+	if err != nil {
+		return nil, err
+	}
+
+	file := NewJsonNetFile(f.path, ast)
 	file.SetDescription(f.desc)
 	file.AddTag(f.AllTags()...)
 	return file, nil
@@ -160,21 +193,12 @@ func (f *JsonFile) RemoveTag(tags ...string) File {
 }
 
 func (f *JsonFile) ToJsonNetFile() (*JsonNetFile, error) {
-	jsonContent, err := json.EncodeString(f.Content, true)
+	fileRaw, err := f.ToRawFile()
 	if err != nil {
 		return nil, err
 	}
-
-	ast, err := jsonnet.ToAst(jsonContent)
-	if err != nil {
-		return nil, err
-	}
-
-	path := strings.TrimSuffix(f.path, `.json`) + `.jsonnet`
-	file := NewJsonNetFile(path, ast)
-	file.SetDescription(f.desc)
-	file.AddTag(f.AllTags()...)
-	return file, nil
+	fileRaw.SetPath(strings.TrimSuffix(f.path, `.json`) + `.jsonnet`)
+	return fileRaw.ToJsonNetFile()
 }
 
 func NewJsonNetFile(path string, content jsonnetast.Node) *JsonNetFile {
