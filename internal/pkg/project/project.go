@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/fileloader"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
@@ -29,20 +30,26 @@ type dependencies interface {
 
 type Project struct {
 	dependencies
-	fs       filesystem.Fs
-	manifest *Manifest
+	fs         filesystem.Fs
+	fileLoader filesystem.FileLoader
+	manifest   *Manifest
 }
 
 func New(fs filesystem.Fs, manifest *Manifest, d dependencies) *Project {
 	return &Project{
 		dependencies: d,
 		fs:           fs,
+		fileLoader:   fileloader.New(fs),
 		manifest:     manifest,
 	}
 }
 
 func (p *Project) Fs() filesystem.Fs {
 	return p.fs
+}
+
+func (p *Project) FileLoader() filesystem.FileLoader {
+	return p.fileLoader
 }
 
 func (p *Project) Manifest() manifest.Manifest {

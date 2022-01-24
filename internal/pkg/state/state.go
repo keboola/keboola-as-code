@@ -27,9 +27,8 @@ func NewRegistry(paths *knownpaths.Paths, namingRegistry *naming.Registry, compo
 // State - Local and Remote state of the project.
 type State struct {
 	*Registry
-	ctx             context.Context
+	container       ObjectsContainer
 	logger          log.Logger
-	fs              filesystem.Fs
 	manifest        manifest.Manifest
 	mapper          *mapper.Mapper
 	namingGenerator *naming.Generator
@@ -50,6 +49,7 @@ type LoadOptions struct {
 type ObjectsContainer interface {
 	Ctx() context.Context
 	Fs() filesystem.Fs
+	FileLoader() filesystem.FileLoader
 	Manifest() manifest.Manifest
 	MappersFor(state *State) mapper.Mappers
 }
@@ -62,7 +62,6 @@ type dependencies interface {
 func New(container ObjectsContainer, d dependencies) (*State, error) {
 	// Get dependencies
 	logger := d.Logger()
-	fs := container.Fs()
 	m := container.Manifest()
 	storageApi, err := d.StorageApi()
 	if err != nil {
@@ -80,8 +79,7 @@ func New(container ObjectsContainer, d dependencies) (*State, error) {
 	pathMatcher := naming.NewPathMatcher(namingTemplate)
 	s := &State{
 		Registry:        NewRegistry(knownPaths, namingRegistry, storageApi.Components(), m.SortBy()),
-		ctx:             container.Ctx(),
-		fs:              fs,
+		container:       container,
 		logger:          logger,
 		manifest:        m,
 		namingGenerator: namingGenerator,
@@ -91,7 +89,7 @@ func New(container ObjectsContainer, d dependencies) (*State, error) {
 	s.mapper = mapper.New()
 
 	// Local manager for load,save,delete ... operations
-	s.localManager = local.NewManager(s.logger, fs, m, s.namingGenerator, s.Registry, s.mapper)
+	s.localManager = local.NewManager(s.logger, container.Fs(), container.FileLoader(), m, s.namingGenerator, s.Registry, s.mapper)
 
 	// Local manager for API operations
 	s.remoteManager = remote.NewManager(s.localManager, storageApi, s.Registry, s.mapper)
@@ -99,10 +97,6 @@ func New(container ObjectsContainer, d dependencies) (*State, error) {
 	s.mapper.AddMapper(container.MappersFor(s)...)
 
 	return s, nil
-}
-
-func (s *State) Ctx() context.Context {
-	return s.ctx
 }
 
 // Load - remote and local.
@@ -140,8 +134,16 @@ func (s *State) Logger() log.Logger {
 	return s.logger
 }
 
+func (s *State) Ctx() context.Context {
+	return s.container.Ctx()
+}
+
 func (s *State) Fs() filesystem.Fs {
-	return s.fs
+	return s.container.Fs()
+}
+
+func (s *State) FileLoader() filesystem.FileLoader {
+	return s.container.FileLoader()
 }
 
 func (s *State) Manifest() manifest.Manifest {
@@ -196,7 +198,7 @@ func (s *State) Validate() (error, error) {
 }
 
 func (s *State) validateValue(value interface{}) error {
-	return validator.ValidateCtx(s.ctx, value, "dive", "")
+	return validator.ValidateCtx(s.Ctx(), value, "dive", "")
 }
 
 // loadLocalState from manifest and local files to unified internal state.
@@ -209,7 +211,7 @@ func (s *State) loadLocalState(_filter *model.ObjectsFilter, ignoreNotFoundErr b
 		filter = model.NoFilter()
 	}
 
-	uow := s.localManager.NewUnitOfWork(s.ctx)
+	uow := s.localManager.NewUnitOfWork(s.Ctx())
 	if ignoreNotFoundErr {
 		uow.SkipNotFoundErr()
 	}
@@ -227,7 +229,7 @@ func (s *State) loadRemoteState(_filter *model.ObjectsFilter) error {
 		filter = model.NoFilter()
 	}
 
-	uow := s.remoteManager.NewUnitOfWork(s.ctx, "")
+	uow := s.remoteManager.NewUnitOfWork(s.Ctx(), "")
 	uow.LoadAll(filter)
 	return uow.Invoke()
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/fileloader"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
@@ -28,6 +29,10 @@ func (p *ObjectsContainer) Ctx() context.Context {
 
 func (p *ObjectsContainer) Fs() filesystem.Fs {
 	return p.FsValue
+}
+
+func (p *ObjectsContainer) FileLoader() filesystem.FileLoader {
+	return fileloader.New(p.FsValue)
 }
 
 func (p *ObjectsContainer) Manifest() manifest.Manifest {
