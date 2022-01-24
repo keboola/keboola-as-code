@@ -13,18 +13,9 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	. "github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
-	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
-
-type myStruct struct {
-	Field1   string                 `json:"field1" mytag:"field"`
-	Field2   string                 `json:"field2" mytag:"field"`
-	FooField string                 `json:"foo"`
-	Map      *orderedmap.OrderedMap `mytag:"map"`
-	Content  string                 `mytag:"content"`
-}
 
 func TestLocalFilesystem(t *testing.T) {
 	t.Parallel()
@@ -557,114 +548,4 @@ func (*testCases) TestCreateOrUpdateFile(t *testing.T, fs filesystem.Fs, _ log.D
 	file, err = fs.ReadFile(filePath, "")
 	assert.NoError(t, err)
 	assert.Equal(t, "foo\nbar\nBAZ1=new123\nBAZ2=new456\n", file.Content)
-}
-
-func (*testCases) TestReadJsonFile(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
-	// Create file
-	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filePath, `{"foo": "bar"}`)))
-
-	// Read
-	logger.Truncate()
-	file, err := fs.ReadJsonFile(filePath, "")
-	assert.NoError(t, err)
-	assert.NotNil(t, file)
-	assert.Equal(t, `{"foo":"bar"}`, json.MustEncodeString(file.Content, false))
-	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.AllMessages()))
-}
-
-func (*testCases) TestReadJsonFileTo(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
-	// Create file
-	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filePath, `{"foo": "bar"}`)))
-
-	// Read
-	logger.Truncate()
-	target := &myStruct{}
-	err := fs.ReadJsonFileTo(filePath, "", target)
-	assert.NoError(t, err)
-	assert.Equal(t, `bar`, target.FooField)
-	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.AllMessages()))
-}
-
-func (*testCases) TestReadJsonFileToInvalid(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
-	// Create file
-	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filePath, `{"foo":`)))
-
-	// Read
-	logger.Truncate()
-	target := &myStruct{}
-	err := fs.ReadJsonFileTo(filePath, "", target)
-	assert.Error(t, err)
-	expectedError := `
-file "file.txt" is invalid:
-  - unexpected end of JSON input, offset: 7
-`
-	assert.Equal(t, strings.TrimSpace(expectedError), err.Error())
-}
-
-func (*testCases) TestReadJsonFileInvalid(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
-	// Create file
-	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filePath, `{"foo":`)))
-
-	// Read
-	file, err := fs.ReadJsonFile(filePath, "")
-	assert.Error(t, err)
-	assert.Nil(t, file)
-	expectedError := `
-file "file.txt" is invalid:
-  - unexpected end of JSON input, offset: 7
-`
-	assert.Equal(t, strings.TrimSpace(expectedError), err.Error())
-}
-
-func (*testCases) TestReadJsonFieldsTo(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
-	// Create file
-	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filePath, `{"field1": "foo", "field2": "bar"}`)))
-
-	// Read
-	logger.Truncate()
-	target := &myStruct{}
-	file, err := fs.ReadJsonFieldsTo(filePath, "", target, `mytag:field`)
-	assert.NoError(t, err)
-	assert.NotNil(t, file)
-	assert.Equal(t, `{"field1":"foo","field2":"bar"}`, json.MustEncodeString(file.Content, false))
-	assert.Equal(t, `foo`, target.Field1)
-	assert.Equal(t, `bar`, target.Field2)
-	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.AllMessages()))
-}
-
-func (*testCases) TestReadJsonMapTo(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
-	// Create file
-	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filePath, `{"field1": "foo", "field2": "bar"}`)))
-
-	// Read
-	logger.Truncate()
-	target := &myStruct{}
-	file, err := fs.ReadJsonMapTo(filePath, "", target, `mytag:map`)
-	assert.NoError(t, err)
-	assert.NotNil(t, file)
-	assert.Equal(t, `{"field1":"foo","field2":"bar"}`, json.MustEncodeString(file.Content, false))
-	assert.Equal(t, `{"field1":"foo","field2":"bar"}`, json.MustEncodeString(target.Map, false))
-	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.AllMessages()))
-}
-
-func (*testCases) TestReadFileContentTo(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
-	// Create file
-	filePath := "file.txt"
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filePath, `{"field1": "foo", "field2": "bar"}`)))
-
-	// Read
-	logger.Truncate()
-	target := &myStruct{}
-	file, err := fs.ReadFileContentTo(filePath, "", target, `mytag:content`)
-	assert.NoError(t, err)
-	assert.NotNil(t, file)
-	assert.Equal(t, `{"field1": "foo", "field2": "bar"}`, file.Content)
-	assert.Equal(t, `{"field1": "foo", "field2": "bar"}`, target.Content)
-	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.AllMessages()))
 }

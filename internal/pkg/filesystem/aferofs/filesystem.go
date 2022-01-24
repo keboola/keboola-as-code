@@ -14,11 +14,8 @@ import (
 	"github.com/spf13/afero"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/strhelper"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 type backend interface {
@@ -368,79 +365,6 @@ func (f *Fs) CreateOrUpdateFile(path, desc string, lines []filesystem.FileLine) 
 
 	// Write file
 	return updated, f.WriteFile(file)
-}
-
-// ReadJsonFile to ordered map.
-func (f *Fs) ReadJsonFile(path, desc string) (*filesystem.JsonFile, error) {
-	file, err := f.ReadFile(path, desc)
-	if err != nil {
-		return nil, err
-	}
-
-	jsonFile, err := file.ToJsonFile()
-	if err != nil {
-		return nil, err
-	}
-
-	return jsonFile, nil
-}
-
-// ReadJsonFileTo to target struct.
-func (f *Fs) ReadJsonFileTo(path, desc string, target interface{}) error {
-	file, err := f.ReadFile(path, desc)
-	if err != nil {
-		return err
-	}
-
-	if err := json.DecodeString(file.Content, target); err != nil {
-		fileDesc := strings.TrimSpace(file.Desc + " file")
-		return utils.PrefixError(fmt.Sprintf("%s \"%s\" is invalid", fileDesc, file.Path), err)
-	}
-
-	return nil
-}
-
-// ReadJsonFieldsTo target struct by tag.
-func (f *Fs) ReadJsonFieldsTo(path, desc string, target interface{}, tag string) (*filesystem.JsonFile, error) {
-	if fields := utils.GetFieldsWithTag(tag, target); len(fields) > 0 {
-		if file, err := f.ReadJsonFile(path, desc); err == nil {
-			utils.SetFields(fields, file.Content, target)
-			return file, nil
-		} else {
-			return nil, err
-		}
-	}
-
-	return nil, nil
-}
-
-// ReadJsonMapTo tagged field in target struct as ordered map.
-func (f *Fs) ReadJsonMapTo(path, desc string, target interface{}, tag string) (*filesystem.JsonFile, error) {
-	if field := utils.GetOneFieldWithTag(tag, target); field != nil {
-		if file, err := f.ReadJsonFile(path, desc); err == nil {
-			utils.SetField(field, file.Content, target)
-			return file, nil
-		} else {
-			// Set empty map if error occurred
-			utils.SetField(field, orderedmap.New(), target)
-			return nil, err
-		}
-	}
-	return nil, nil
-}
-
-// ReadFileContentTo to tagged field in target struct as string.
-func (f *Fs) ReadFileContentTo(path, desc string, target interface{}, tag string) (*filesystem.File, error) {
-	if field := utils.GetOneFieldWithTag(tag, target); field != nil {
-		if file, err := f.ReadFile(path, desc); err == nil {
-			content := strings.TrimRight(file.Content, " \r\n\t")
-			utils.SetField(field, content, target)
-			return file, nil
-		} else {
-			return nil, err
-		}
-	}
-	return nil, nil
 }
 
 func newFileError(msg string, file *filesystem.File, err error) error {
