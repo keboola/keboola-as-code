@@ -1,6 +1,8 @@
 package remote
 
 import (
+	"fmt"
+
 	"github.com/go-resty/resty/v2"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/client"
@@ -119,6 +121,23 @@ func (c ConfigMetadataResponse) MetadataMap(branchId model.BranchId) map[model.C
 		result[configKey] = metadataWrapper.Metadata
 	}
 	return result
+}
+
+// UpdateConfigMetadataRequest https://keboola.docs.apiary.io/#reference/metadata/components-configurations-metadata/create-or-update
+func (a *StorageApi) UpdateConfigMetadataRequest(config *model.Config) *client.Request {
+	formBody := make(map[string]string)
+	i := 0
+	for k, v := range config.Metadata {
+		formBody[fmt.Sprintf("metadata[%d][key]", i)] = k
+		formBody[fmt.Sprintf("metadata[%d][value]", i)] = v
+		i++
+	}
+	return a.
+		NewRequest(resty.MethodPost, "branch/{branchId}/components/{componentId}/configs/{configId}/metadata").
+		SetPathParam("branchId", config.BranchId.String()).
+		SetPathParam("componentId", config.ComponentId.String()).
+		SetPathParam("configId", config.Id.String()).
+		SetFormBody(formBody)
 }
 
 // GetConfigRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/manage-configurations/development-branch-configuration-detail
