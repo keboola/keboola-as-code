@@ -38,7 +38,7 @@ func TestSaveCoreFiles(t *testing.T) {
 	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
 
 	// Files are generated
-	expectedFiles := model.ObjectFiles{}
+	expectedFiles := model.NewFilesToSave()
 	expectedFiles.
 		Add(
 			filesystem.NewJsonFile(state.NamingGenerator().MetaFilePath(manifest.Path()),
