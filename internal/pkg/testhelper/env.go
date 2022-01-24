@@ -4,12 +4,14 @@ package testhelper
 import (
 	"bytes"
 	"fmt"
-	"github.com/acarl005/stripansi"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"io"
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/acarl005/stripansi"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 
 	"github.com/spf13/cast"
 )
@@ -29,7 +31,7 @@ func ReplaceEnvsString(str string, provider EnvProvider) string {
 
 // ReplaceEnvsFile replaces ENVs in given file.
 func ReplaceEnvsFile(fs filesystem.Fs, path string, provider EnvProvider) {
-	file, err := fs.ReadFile(path, ``)
+	file, err := fs.ReadFile(filesystem.NewFileDef(path))
 	if err != nil {
 		panic(err)
 	}

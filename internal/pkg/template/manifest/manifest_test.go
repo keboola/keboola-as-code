@@ -43,7 +43,7 @@ func TestLoadManifestFile(t *testing.T) {
 
 		// Write file
 		path := Path()
-		assert.NoError(t, fs.WriteFile(filesystem.NewFile(path, c.jsonNet)))
+		assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(path, c.jsonNet)))
 
 		// Load
 		manifest, err := Load(fs)
@@ -68,7 +68,7 @@ func TestSaveManifestFile(t *testing.T) {
 		assert.NoError(t, manifest.Save(fs))
 
 		// Load file
-		file, err := fs.ReadFile(Path(), "")
+		file, err := fs.ReadFile(filesystem.NewFileDef(Path()))
 		assert.NoError(t, err)
 		assert.Equal(t, testhelper.EscapeWhitespaces(c.jsonNet), testhelper.EscapeWhitespaces(file.Content), c.name)
 	}

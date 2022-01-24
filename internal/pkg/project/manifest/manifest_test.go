@@ -68,7 +68,7 @@ func TestLoadManifestFile(t *testing.T) {
 
 		// Write file
 		path := Path()
-		assert.NoError(t, fs.WriteFile(filesystem.NewFile(path, c.json)))
+		assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(path, c.json)))
 
 		// Load
 		manifest, err := Load(fs)
@@ -97,7 +97,7 @@ func TestSaveManifestFile(t *testing.T) {
 		assert.NoError(t, manifest.Save(fs))
 
 		// Load file
-		file, err := fs.ReadFile(Path(), "")
+		file, err := fs.ReadFile(filesystem.NewFileDef(Path()))
 		assert.NoError(t, err)
 		assert.Equal(t, testhelper.EscapeWhitespaces(c.json), testhelper.EscapeWhitespaces(file.Content), c.name)
 	}
@@ -175,7 +175,7 @@ func TestManifestCyclicDependency(t *testing.T) {
 
 	// Write file
 	path := filesystem.Join(filesystem.MetadataDir, FileName)
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(path, cyclicDependencyJson())))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(path, cyclicDependencyJson())))
 
 	// Load
 	manifest, err := Load(fs)

@@ -31,8 +31,8 @@ func TestSharedCodeLocalSave(t *testing.T) {
 	// Assert
 	sharedCodeFileRaw := recipe.Files.GetOneByTag(model.FileKindNativeSharedCode)
 	assert.NotNil(t, sharedCodeFileRaw)
-	sharedCodeFile, err := sharedCodeFileRaw.ToFile()
+	sharedCodeFile, err := sharedCodeFileRaw.ToRawFile()
 	assert.NoError(t, err)
-	assert.Equal(t, codeFilePath, sharedCodeFile.Path)
+	assert.Equal(t, codeFilePath, sharedCodeFile.Path())
 	assert.Equal(t, "foo\nbar\n", sharedCodeFile.Content)
 }

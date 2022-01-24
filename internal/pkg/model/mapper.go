@@ -2,7 +2,6 @@ package model
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 )
@@ -24,240 +23,127 @@ const (
 	FileKindGitKeep           = `gitkeep`
 )
 
+type files = filesystem.Files
+
 type FilesToSave struct {
-	*objectFiles
+	*files
 }
 
 func NewFilesToSave() *FilesToSave {
-	return &FilesToSave{objectFiles: newObjectFiles()}
+	return &FilesToSave{files: filesystem.NewFiles()}
 }
 
 type FilesLoader struct {
 	fsLoader filesystem.FileLoader
-	loaded   *objectFiles
+	loaded   *filesystem.Files
 }
 
 type fileToLoad struct {
+	*filesystem.FileDef
 	loader   *FilesLoader
 	fsLoader filesystem.FileLoader
-	path     string
-	desc     string
-	tags     map[string]bool
 }
 
 func NewFilesLoader(fsLoader filesystem.FileLoader) *FilesLoader {
-	return &FilesLoader{fsLoader: fsLoader, loaded: newObjectFiles()}
+	return &FilesLoader{fsLoader: fsLoader, loaded: filesystem.NewFiles()}
 }
 
 func (l *FilesLoader) Load(path string) *fileToLoad {
-	return &fileToLoad{loader: l, fsLoader: l.fsLoader, path: path, tags: make(map[string]bool)}
+	return &fileToLoad{loader: l, fsLoader: l.fsLoader, FileDef: filesystem.NewFileDef(path)}
 }
 
-func (l *FilesLoader) Loaded() []*objectFile {
+func (l *FilesLoader) Loaded() []filesystem.File {
 	return l.loaded.All()
 }
 
-func (l *FilesLoader) GetOneByTag(tag string) *objectFile {
+func (l *FilesLoader) GetOneByTag(tag string) filesystem.File {
 	return l.loaded.GetOneByTag(tag)
 }
 
-func (l *FilesLoader) GetByTag(tag string) []*objectFile {
+func (l *FilesLoader) GetByTag(tag string) []filesystem.File {
 	return l.loaded.GetByTag(tag)
 }
 
-func (l *FilesLoader) addLoaded(def *fileToLoad, file filesystem.FileWrapper) {
+func (l *FilesLoader) addLoaded(file filesystem.File) {
 	if file == nil {
 		panic(fmt.Errorf(`file cannot be nil`))
 	}
-	l.loaded.Add(file).AddTag(def.Tags()...)
+	l.loaded.Add(file)
 }
 
 func (f *fileToLoad) SetDescription(v string) *fileToLoad {
-	f.desc = v
+	f.FileDef.SetDescription(v)
 	return f
 }
 
-func (f *fileToLoad) Tags() []string {
-	out := make([]string, len(f.tags))
-	i := 0
-	for tag := range f.tags {
-		out[i] = tag
-		i++
-	}
-	return out
-}
-
-func (f *fileToLoad) HasTag(tag string) bool {
-	return f.tags[tag]
-}
-
-func (f *fileToLoad) AddTag(tags ...string) *fileToLoad {
-	for _, tag := range tags {
-		f.tags[tag] = true
-	}
+func (f *fileToLoad) AddTag(tag string) *fileToLoad {
+	f.FileDef.AddTag(tag)
 	return f
 }
 
-func (f *fileToLoad) RemoveTag(tags ...string) *fileToLoad {
-	for _, tag := range tags {
-		delete(f.tags, tag)
-	}
+func (f *fileToLoad) RemoveTag(tag string) *fileToLoad {
+	f.FileDef.RemoveTag(tag)
 	return f
 }
 
-func (f *fileToLoad) ReadFile() (*filesystem.File, error) {
-	file, err := f.fsLoader.ReadFile(f.path, f.desc)
+func (f *fileToLoad) ReadFile() (*filesystem.RawFile, error) {
+	file, err := f.fsLoader.ReadFile(f.FileDef)
 	if err != nil {
 		return nil, err
 	}
-	f.loader.addLoaded(f, file)
+	f.loader.addLoaded(file)
 	return file, nil
 }
 
 func (f *fileToLoad) ReadJsonFieldsTo(target interface{}, tag string) (*filesystem.JsonFile, bool, error) {
-	file, tagFound, err := f.fsLoader.ReadJsonFieldsTo(f.path, f.desc, target, tag)
+	file, tagFound, err := f.fsLoader.ReadJsonFieldsTo(f.FileDef, target, tag)
 	if err != nil {
 		return nil, false, err
 	}
 	if tagFound {
-		f.loader.addLoaded(f, file)
+		f.loader.addLoaded(file)
 	}
 	return file, tagFound, nil
 }
 
 func (f *fileToLoad) ReadJsonMapTo(target interface{}, tag string) (*filesystem.JsonFile, bool, error) {
-	file, tagFound, err := f.fsLoader.ReadJsonMapTo(f.path, f.desc, target, tag)
+	file, tagFound, err := f.fsLoader.ReadJsonMapTo(f.FileDef, target, tag)
 	if err != nil {
 		return nil, false, err
 	}
 	if tagFound {
-		f.loader.addLoaded(f, file)
+		f.loader.addLoaded(file)
 	}
 	return file, tagFound, nil
 }
 
-func (f *fileToLoad) ReadFileContentTo(target interface{}, tag string) (*filesystem.File, bool, error) {
-	file, tagFound, err := f.fsLoader.ReadFileContentTo(f.path, f.desc, target, tag)
+func (f *fileToLoad) ReadFileContentTo(target interface{}, tag string) (*filesystem.RawFile, bool, error) {
+	file, tagFound, err := f.fsLoader.ReadFileContentTo(f.FileDef, target, tag)
 	if err != nil {
 		return nil, false, err
 	}
 	if tagFound {
-		f.loader.addLoaded(f, file)
+		f.loader.addLoaded(file)
 	}
 	return file, tagFound, nil
 }
 
 func (f *fileToLoad) ReadJsonFile() (*filesystem.JsonFile, error) {
-	file, err := f.fsLoader.ReadJsonFile(f.path, f.desc)
+	file, err := f.fsLoader.ReadJsonFile(f.FileDef)
 	if err != nil {
 		return nil, err
 	}
-	f.loader.addLoaded(f, file)
+	f.loader.addLoaded(file)
 	return file, nil
 }
 
-func (f *fileToLoad) ReadJsonFileTo(target interface{}) (*filesystem.File, error) {
-	file, err := f.fsLoader.ReadJsonFileTo(f.path, f.desc, target)
+func (f *fileToLoad) ReadJsonFileTo(target interface{}) (*filesystem.RawFile, error) {
+	file, err := f.fsLoader.ReadJsonFileTo(f.FileDef, target)
 	if err != nil {
 		return nil, err
 	}
-	f.loader.addLoaded(f, file)
+	f.loader.addLoaded(file)
 	return file, nil
-}
-
-type objectFiles struct {
-	files []*objectFile
-}
-
-func newObjectFiles() *objectFiles {
-	return &objectFiles{}
-}
-
-func (f *objectFiles) All() []*objectFile {
-	out := make([]*objectFile, len(f.files))
-	copy(out, f.files)
-	return out
-}
-
-func (f *objectFiles) Add(file filesystem.FileWrapper) *objectFile {
-	out := newObjectFile(file)
-	f.files = append(f.files, out)
-	return out
-}
-
-func (f *objectFiles) GetOneByTag(tag string) *objectFile {
-	files := f.GetByTag(tag)
-	if len(files) == 1 {
-		return files[0]
-	} else if len(files) > 1 {
-		var paths []string
-		for _, file := range files {
-			paths = append(paths, file.Path())
-		}
-		panic(fmt.Errorf(`found multiple files with tag "%s": "%s"`, tag, strings.Join(paths, `", "`)))
-	}
-	return nil
-}
-
-func (f *objectFiles) GetByTag(tag string) []*objectFile {
-	var out []*objectFile
-	for _, file := range f.files {
-		if file.HasTag(tag) {
-			out = append(out, file)
-		}
-	}
-	return out
-}
-
-type objectFile struct {
-	file filesystem.FileWrapper
-	tags map[string]bool
-}
-
-func newObjectFile(file filesystem.FileWrapper) *objectFile {
-	return &objectFile{
-		file: file,
-		tags: make(map[string]bool),
-	}
-}
-
-func (f *objectFile) Description() string {
-	return f.file.GetDescription()
-}
-
-func (f *objectFile) Path() string {
-	return f.file.GetPath()
-}
-
-func (f *objectFile) File() filesystem.FileWrapper {
-	return f.file
-}
-
-func (f *objectFile) ToFile() (*filesystem.File, error) {
-	return f.file.ToFile()
-}
-
-func (f *objectFile) SetFile(file filesystem.FileWrapper) *objectFile {
-	f.file = file
-	return f
-}
-
-func (f *objectFile) HasTag(tag string) bool {
-	return f.tags[tag]
-}
-
-func (f *objectFile) AddTag(tags ...string) *objectFile {
-	for _, tag := range tags {
-		f.tags[tag] = true
-	}
-	return f
-}
-
-func (f *objectFile) RemoveTag(tags ...string) *objectFile {
-	for _, tag := range tags {
-		delete(f.tags, tag)
-	}
-	return f
 }
 
 // LocalLoadRecipe - all items related to the object, when loading from local fs.

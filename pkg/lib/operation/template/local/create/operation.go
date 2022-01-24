@@ -161,10 +161,10 @@ func initTemplateDir(o Options, d dependencies, record repositoryManifest.Versio
 
 func createReadme(o Options, d dependencies, fs filesystem.Fs) error {
 	content := "### %s\n\n%s\n\n"
-	file := filesystem.NewFile(`README.md`, fmt.Sprintf(content, o.Name, o.Description)).SetDescription(`readme`)
+	file := filesystem.NewRawFile(`README.md`, fmt.Sprintf(content, o.Name, o.Description)).SetDescription(`readme`)
 	if err := fs.WriteFile(file); err != nil {
 		return err
 	}
-	d.Logger().Infof("Created readme file \"%s\".", file.Path)
+	d.Logger().Infof("Created readme file \"%s\".", file.Path())
 	return nil
 }

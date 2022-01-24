@@ -16,13 +16,13 @@ func TestFilesToSave(t *testing.T) {
 	files := NewFilesToSave()
 
 	// Add file
-	fileRaw1 := filesystem.NewFile(`path1`, `content1`)
+	fileRaw1 := filesystem.NewRawFile(`path1`, `content1`)
 	file1 := files.Add(fileRaw1)
-	assert.Same(t, fileRaw1, file1.File())
-	result, err := fileRaw1.ToFile()
+	assert.Same(t, fileRaw1, file1)
+	result, err := fileRaw1.ToRawFile()
 	assert.NoError(t, err)
 	assert.Same(t, fileRaw1, result)
-	assert.Equal(t, fileRaw1.GetPath(), file1.Path())
+	assert.Equal(t, fileRaw1.Path(), file1.Path())
 
 	// Add tag 1
 	tag1 := `my-tag-1`
@@ -31,7 +31,7 @@ func TestFilesToSave(t *testing.T) {
 	assert.Nil(t, files.GetOneByTag(tag1))
 	file1.AddTag(tag1)
 	assert.True(t, file1.HasTag(tag1))
-	assert.Equal(t, []*objectFile{file1}, files.GetByTag(tag1))
+	assert.Equal(t, []filesystem.File{file1}, files.GetByTag(tag1))
 	assert.Equal(t, file1, files.GetOneByTag(tag1))
 
 	// Add tag 2
@@ -41,16 +41,16 @@ func TestFilesToSave(t *testing.T) {
 	assert.Nil(t, files.GetOneByTag(tag2))
 	file1.AddTag(tag2)
 	assert.True(t, file1.HasTag(tag2))
-	assert.Equal(t, []*objectFile{file1}, files.GetByTag(tag2))
+	assert.Equal(t, []filesystem.File{file1}, files.GetByTag(tag2))
 	assert.Equal(t, file1, files.GetOneByTag(tag2))
 
 	// Two files with same tag
-	fileRaw2 := filesystem.NewFile(`path2`, `content2`)
+	fileRaw2 := filesystem.NewRawFile(`path2`, `content2`)
 	file2 := files.Add(fileRaw2)
 	assert.False(t, file2.HasTag(tag2))
 	file2.AddTag(tag2)
 	assert.True(t, file2.HasTag(tag2))
-	assert.Equal(t, []*objectFile{file1, file2}, files.GetByTag(tag2))
+	assert.Equal(t, []filesystem.File{file1, file2}, files.GetByTag(tag2))
 	assert.PanicsWithError(t, `found multiple files with tag "my-tag-2": "path1", "path2"`, func() {
 		files.GetOneByTag(tag2)
 	})
@@ -62,11 +62,11 @@ func TestFilesToSave(t *testing.T) {
 	file1.RemoveTag(tag2)
 	assert.False(t, file1.HasTag(tag2))
 	assert.True(t, file2.HasTag(tag2))
-	assert.Equal(t, []*objectFile{file2}, files.GetByTag(tag2))
+	assert.Equal(t, []filesystem.File{file2}, files.GetByTag(tag2))
 	assert.Equal(t, file2, files.GetOneByTag(tag2))
 
 	// All
-	assert.Equal(t, []*objectFile{file1, file2}, files.All())
+	assert.Equal(t, []filesystem.File{file1, file2}, files.All())
 }
 
 type myStruct struct {
@@ -88,11 +88,11 @@ func TestFilesLoader(t *testing.T) {
 	// Create files
 	jsonContent := "{\"field1\": \"foo\", \"field2\": \"bar\"}"
 	jsonMap := orderedmap.FromPairs([]orderedmap.Pair{{Key: "field1", Value: "foo"}, {Key: "field2", Value: "bar"}})
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile("foo1.json", jsonContent)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile("foo2.json", jsonContent)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile("foo3.json", jsonContent)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile("foo4.json", jsonContent)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile("foo5.json", jsonContent)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile("foo1.json", jsonContent)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile("foo2.json", jsonContent)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile("foo3.json", jsonContent)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile("foo4.json", jsonContent)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile("foo5.json", jsonContent)))
 
 	// ReadFile
 	rawFile1, err := files.
@@ -102,8 +102,8 @@ func TestFilesLoader(t *testing.T) {
 		AddTag(`tag2`).
 		ReadFile()
 	assert.NoError(t, err)
-	assert.Equal(t, `foo1.json`, rawFile1.Path)
-	assert.Equal(t, `my description`, rawFile1.Desc)
+	assert.Equal(t, `foo1.json`, rawFile1.Path())
+	assert.Equal(t, `my description`, rawFile1.Description())
 	assert.Equal(t, jsonContent, rawFile1.Content)
 
 	// ReadJsonFile
@@ -114,8 +114,8 @@ func TestFilesLoader(t *testing.T) {
 		AddTag(`tag4`).
 		ReadJsonFile()
 	assert.NoError(t, err)
-	assert.Equal(t, `foo2.json`, jsonFile1.Path)
-	assert.Equal(t, `my description`, jsonFile1.Desc)
+	assert.Equal(t, `foo2.json`, jsonFile1.Path())
+	assert.Equal(t, `my description`, jsonFile1.Description())
 	assert.Equal(t, jsonMap, jsonFile1.Content)
 
 	// ReadJsonFieldsTo
@@ -128,8 +128,8 @@ func TestFilesLoader(t *testing.T) {
 		ReadJsonFieldsTo(target1, `mytag:field`)
 	assert.True(t, tagFound)
 	assert.NoError(t, err)
-	assert.Equal(t, `foo3.json`, jsonFile2.Path)
-	assert.Equal(t, `my description`, jsonFile2.Desc)
+	assert.Equal(t, `foo3.json`, jsonFile2.Path())
+	assert.Equal(t, `my description`, jsonFile2.Description())
 	assert.Equal(t, `foo`, target1.Field1)
 	assert.Equal(t, `bar`, target1.Field2)
 
@@ -143,8 +143,8 @@ func TestFilesLoader(t *testing.T) {
 		ReadFileContentTo(target2, `mytag:content`)
 	assert.True(t, tagFound)
 	assert.NoError(t, err)
-	assert.Equal(t, `foo4.json`, rawFile2.Path)
-	assert.Equal(t, `my description`, rawFile2.Desc)
+	assert.Equal(t, `foo4.json`, rawFile2.Path())
+	assert.Equal(t, `my description`, rawFile2.Description())
 	assert.Equal(t, jsonContent, target2.Content)
 
 	// ReadJsonMapTo
@@ -157,21 +157,21 @@ func TestFilesLoader(t *testing.T) {
 		ReadJsonMapTo(target3, `mytag:map`)
 	assert.True(t, tagFound)
 	assert.NoError(t, err)
-	assert.Equal(t, `foo5.json`, jsonFile3.Path)
-	assert.Equal(t, `my description`, jsonFile3.Desc)
+	assert.Equal(t, `foo5.json`, jsonFile3.Path())
+	assert.Equal(t, `my description`, jsonFile3.Description())
 	assert.Equal(t, jsonMap, target3.Map)
 
 	// Check loaded files
 	assert.Len(t, files.Loaded(), 5)
-	assert.Equal(t, rawFile1, files.GetOneByTag("tag1").File())
-	assert.Equal(t, rawFile1, files.GetOneByTag("tag2").File())
-	assert.Equal(t, jsonFile1, files.GetOneByTag("tag3").File())
-	assert.Equal(t, jsonFile1, files.GetOneByTag("tag4").File())
-	assert.Equal(t, jsonFile2, files.GetOneByTag("tag5").File())
-	assert.Equal(t, jsonFile2, files.GetOneByTag("tag6").File())
-	assert.Equal(t, rawFile2, files.GetOneByTag("tag7").File())
-	assert.Equal(t, rawFile2, files.GetOneByTag("tag8").File())
-	assert.Equal(t, jsonFile3, files.GetOneByTag("tag9").File())
-	assert.Equal(t, jsonFile3, files.GetOneByTag("tag10").File())
+	assert.Equal(t, rawFile1, files.GetOneByTag("tag1"))
+	assert.Equal(t, rawFile1, files.GetOneByTag("tag2"))
+	assert.Equal(t, jsonFile1, files.GetOneByTag("tag3"))
+	assert.Equal(t, jsonFile1, files.GetOneByTag("tag4"))
+	assert.Equal(t, jsonFile2, files.GetOneByTag("tag5"))
+	assert.Equal(t, jsonFile2, files.GetOneByTag("tag6"))
+	assert.Equal(t, rawFile2, files.GetOneByTag("tag7"))
+	assert.Equal(t, rawFile2, files.GetOneByTag("tag8"))
+	assert.Equal(t, jsonFile3, files.GetOneByTag("tag9"))
+	assert.Equal(t, jsonFile3, files.GetOneByTag("tag10"))
 	assert.Nil(t, files.GetOneByTag("missing"))
 }

@@ -43,9 +43,9 @@ func AssertDirectoryContentsSame(t assert.TestingT, expectedFs filesystem.Fs, ex
 		default:
 			// Compare content
 			if !node.actual.isDir {
-				expectedFile, err := expectedFs.ReadFile(node.expected.absPath, ``)
+				expectedFile, err := expectedFs.ReadFile(filesystem.NewFileDef(node.expected.absPath))
 				assert.NoError(t, err)
-				actualFile, err := actualFs.ReadFile(node.actual.absPath, ``)
+				actualFile, err := actualFs.ReadFile(filesystem.NewFileDef(node.actual.absPath))
 				assert.NoError(t, err)
 				AssertWildcards(
 					t,

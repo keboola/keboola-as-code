@@ -30,8 +30,8 @@ func TestRename(t *testing.T) {
 
 	// Dir structure
 	assert.NoError(t, fs.Mkdir(`foo1/sub`))
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filesystem.Join(`foo1/sub/file`), `content`)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filesystem.Join(`foo2`), `content`)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(`foo1/sub/file`), `content`)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(`foo2`), `content`)))
 	logger.Truncate()
 
 	// Plan
@@ -86,9 +86,9 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 
 	// Dir structure
 	assert.NoError(t, fs.Mkdir(`foo1/sub`))
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(`foo1/sub/file`, `content`)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(`foo2`, `content`)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(`foo5`, `content`)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(`foo1/sub/file`, `content`)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(`foo2`, `content`)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(`foo5`, `content`)))
 	logger.Truncate()
 
 	// Plan

@@ -36,7 +36,7 @@ func TestLocalSaveTransformationEmpty(t *testing.T) {
 	assert.Equal(t, `{"foo":"bar"}`, json.MustEncodeString(object.Content, false))
 }
 
-func TestLocalSaveTransformation(t *testing.T) {
+func TestTransformationMapper_MapBeforeLocalSave(t *testing.T) {
 	t.Parallel()
 	d := testdeps.New()
 	state := d.EmptyState()
@@ -147,33 +147,60 @@ func TestLocalSaveTransformation(t *testing.T) {
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Minify JSON + remove file description
-	var files []*filesystem.File
-	for _, fileRaw := range recipe.Files.All() {
-		var file *filesystem.File
-		if f, ok := fileRaw.File().(*filesystem.JsonFile); ok {
-			file = filesystem.NewFile(f.GetPath(), json.MustEncodeString(f.Content, false))
+	var files []filesystem.File
+	for _, file := range recipe.Files.All() {
+		var fileRaw *filesystem.RawFile
+		if f, ok := file.(*filesystem.JsonFile); ok {
+			// Minify JSON
+			fileRaw = filesystem.NewRawFile(f.Path(), json.MustEncodeString(f.Content, false))
+			fileRaw.AddTag(f.AllTags()...)
 		} else {
 			var err error
-			file, err = fileRaw.ToFile()
+			fileRaw, err = file.ToRawFile()
 			assert.NoError(t, err)
-			file.SetDescription(``)
+			fileRaw.SetDescription(``)
 		}
-		files = append(files, file)
+		files = append(files, fileRaw)
 	}
 
 	// Check files
-	assert.Equal(t, []*filesystem.File{
-		filesystem.NewFile(blocksDir+`/.gitkeep`, ``),
-		filesystem.NewFile(blocksDir+`/001-block-1/meta.json`, `{"name":"block1"}`),
-		filesystem.NewFile(blocksDir+`/001-block-1/001-code-1/meta.json`, `{"name":"code1"}`),
-		filesystem.NewFile(blocksDir+`/001-block-1/001-code-1/code.sql`, "SELECT 1\n"),
-		filesystem.NewFile(blocksDir+`/001-block-1/002-code-2/meta.json`, `{"name":"code2"}`),
-		filesystem.NewFile(blocksDir+`/001-block-1/002-code-2/code.sql`, "SELECT 2;\n\nSELECT 3;\n"),
-		filesystem.NewFile(blocksDir+`/002-block-2/meta.json`, `{"name":"block2"}`),
-		filesystem.NewFile(blocksDir+`/002-block-2/001-code-3/meta.json`, `{"name":"code3"}`),
-		filesystem.NewFile(blocksDir+`/002-block-2/001-code-3/code.sql`, "\n"),
-		filesystem.NewFile(configDir+`/meta.json`, `{"name":"My Config"}`),
-		filesystem.NewFile(configDir+`/config.json`, `{"foo":"bar"}`),
-		filesystem.NewFile(configDir+`/description.md`, "\n"),
+	assert.Equal(t, []filesystem.File{
+		filesystem.
+			NewRawFile(blocksDir+`/.gitkeep`, ``).
+			AddTag(model.FileKindGitKeep).
+			AddTag(model.FileTypeOther),
+		filesystem.NewRawFile(blocksDir+`/001-block-1/meta.json`, `{"name":"block1"}`).
+			AddTag(model.FileKindBlockMeta).
+			AddTag(model.FileTypeJson),
+		filesystem.NewRawFile(blocksDir+`/001-block-1/001-code-1/meta.json`, `{"name":"code1"}`).
+			AddTag(model.FileKindCodeMeta).
+			AddTag(model.FileTypeJson),
+		filesystem.NewRawFile(blocksDir+`/001-block-1/001-code-1/code.sql`, "SELECT 1\n").
+			AddTag(model.FileKindNativeCode).
+			AddTag(model.FileTypeOther),
+		filesystem.NewRawFile(blocksDir+`/001-block-1/002-code-2/meta.json`, `{"name":"code2"}`).
+			AddTag(model.FileKindCodeMeta).
+			AddTag(model.FileTypeJson),
+		filesystem.NewRawFile(blocksDir+`/001-block-1/002-code-2/code.sql`, "SELECT 2;\n\nSELECT 3;\n").
+			AddTag(model.FileKindNativeCode).
+			AddTag(model.FileTypeOther),
+		filesystem.NewRawFile(blocksDir+`/002-block-2/meta.json`, `{"name":"block2"}`).
+			AddTag(model.FileKindBlockMeta).
+			AddTag(model.FileTypeJson),
+		filesystem.NewRawFile(blocksDir+`/002-block-2/001-code-3/meta.json`, `{"name":"code3"}`).
+			AddTag(model.FileKindCodeMeta).
+			AddTag(model.FileTypeJson),
+		filesystem.NewRawFile(blocksDir+`/002-block-2/001-code-3/code.sql`, "\n").
+			AddTag(model.FileKindNativeCode).
+			AddTag(model.FileTypeOther),
+		filesystem.NewRawFile(configDir+`/meta.json`, `{"name":"My Config"}`).
+			AddTag(model.FileKindObjectMeta).
+			AddTag(model.FileTypeJson),
+		filesystem.NewRawFile(configDir+`/config.json`, `{"foo":"bar"}`).
+			AddTag(model.FileKindObjectConfig).
+			AddTag(model.FileTypeJson),
+		filesystem.NewRawFile(configDir+`/description.md`, "\n").
+			AddTag(model.FileKindObjectDescription).
+			AddTag(model.FileTypeMarkdown),
 	}, files)
 }

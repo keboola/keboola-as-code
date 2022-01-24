@@ -34,7 +34,7 @@ func LoadDotEnv(logger log.Logger, osEnvs *Map, fs filesystem.Fs, dirs []string)
 			}
 
 			// Read file
-			file, err := fs.ReadFile(path, "env file")
+			file, err := fs.ReadFile(filesystem.NewFileDef(path).SetDescription("env file"))
 			if err != nil {
 				errors.Append(fmt.Errorf("cannot read env file \"%s\": %w", path, err))
 				continue

@@ -18,17 +18,17 @@ func TestCopyFs2FsRootToRoot(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Create files
-	assert.NoError(t, localFs.WriteFile(filesystem.NewFile(`foo.txt`, `content1`)))
-	assert.NoError(t, localFs.WriteFile(filesystem.NewFile(filesystem.Join(`my-dir`, `bar.txt`), `content2`)))
+	assert.NoError(t, localFs.WriteFile(filesystem.NewRawFile(`foo.txt`, `content1`)))
+	assert.NoError(t, localFs.WriteFile(filesystem.NewRawFile(filesystem.Join(`my-dir`, `bar.txt`), `content2`)))
 
 	// Copy
 	assert.NoError(t, CopyFs2Fs(localFs, ``, memoryFs, ``))
 
 	// Assert
-	file1, err := memoryFs.ReadFile(`foo.txt`, ``)
+	file1, err := memoryFs.ReadFile(filesystem.NewFileDef(`foo.txt`))
 	assert.NoError(t, err)
 	assert.Equal(t, `content1`, file1.Content)
-	file2, err := memoryFs.ReadFile(filesystem.Join(`my-dir`, `bar.txt`), ``)
+	file2, err := memoryFs.ReadFile(filesystem.NewFileDef(filesystem.Join(`my-dir`, `bar.txt`)))
 	assert.NoError(t, err)
 	assert.Equal(t, `content2`, file2.Content)
 }
@@ -42,13 +42,13 @@ func TestCopyFs2FsDirToDir(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Create files
-	assert.NoError(t, localFs.WriteFile(filesystem.NewFile(filesystem.Join(`my-dir`, `bar.txt`), `content`)))
+	assert.NoError(t, localFs.WriteFile(filesystem.NewRawFile(filesystem.Join(`my-dir`, `bar.txt`), `content`)))
 
 	// Copy
 	assert.NoError(t, CopyFs2Fs(localFs, `my-dir`, memoryFs, `my-dir-2`))
 
 	// Assert
-	file, err := memoryFs.ReadFile(filesystem.Join(`my-dir-2`, `bar.txt`), ``)
+	file, err := memoryFs.ReadFile(filesystem.NewFileDef(filesystem.Join(`my-dir-2`, `bar.txt`)))
 	assert.NoError(t, err)
 	assert.Equal(t, `content`, file.Content)
 }

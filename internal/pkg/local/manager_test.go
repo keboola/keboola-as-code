@@ -98,7 +98,7 @@ func TestLocalSaveMapper(t *testing.T) {
 	assert.NoError(t, uow.Invoke())
 
 	// File content has been mapped
-	configFile, err := fs.ReadFile(filesystem.Join(`branch`, `config`, naming.ConfigFile), `config file`)
+	configFile, err := fs.ReadFile(filesystem.NewFileDef(filesystem.Join(`branch`, `config`, naming.ConfigFile)).SetDescription(`config file`))
 	assert.NoError(t, err)
 	assert.Equal(t, "{\n  \"key\": \"overwritten\",\n  \"new\": \"value\"\n}", strings.TrimSpace(configFile.Content))
 

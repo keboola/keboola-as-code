@@ -40,7 +40,7 @@ func loadFile(fs filesystem.Fs) (*file, error) {
 
 	// Read JSON file
 	content := newFile()
-	if _, err := fileloader.New(fs).ReadJsonFileTo(path, "manifest", content); err != nil {
+	if _, err := fileloader.New(fs).ReadJsonFileTo(filesystem.NewFileDef(path).SetDescription("manifest"), content); err != nil {
 		return nil, err
 	}
 
@@ -77,7 +77,7 @@ func saveFile(fs filesystem.Fs, manifestContent *file) error {
 	if err != nil {
 		return utils.PrefixError(`cannot encode manifest`, err)
 	}
-	file := filesystem.NewFile(Path(), content)
+	file := filesystem.NewRawFile(Path(), content)
 	if err := fs.WriteFile(file); err != nil {
 		return err
 	}

@@ -27,7 +27,7 @@ func TestLocalSaveTranWithSharedCode(t *testing.T) {
 	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
-	// Path to shared code is part of the Content
+	// path to shared code is part of the Content
 	sharedCodePath, found := transformation.Local.Content.Get(model.SharedCodePathContentKey)
 	assert.True(t, found)
 	assert.Equal(t, sharedCodePath, `_shared/keboola.python-transformation-v2`)

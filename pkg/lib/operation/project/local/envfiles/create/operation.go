@@ -59,7 +59,7 @@ func Run(d dependencies) (err error) {
 }
 
 func createFile(logger log.Logger, fs filesystem.Fs, path, desc string, lines []filesystem.FileLine) error {
-	updated, err := fs.CreateOrUpdateFile(path, desc, lines)
+	updated, err := fs.CreateOrUpdateFile(filesystem.NewFileDef(path).SetDescription(desc), lines)
 	if err != nil {
 		return err
 	}

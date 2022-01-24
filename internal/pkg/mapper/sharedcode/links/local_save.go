@@ -59,7 +59,7 @@ func (m *mapper) replaceSharedCodeIdByPath(transformation *model.Config) error {
 		return err
 	}
 
-	// Replace Shared Code ID -> Shared Code Path
+	// Replace Shared Code ID -> Shared Code path
 	transformation.Content.Set(model.SharedCodePathContentKey, sharedCodeState.GetObjectPath())
 
 	return errors.ErrorOrNil()
