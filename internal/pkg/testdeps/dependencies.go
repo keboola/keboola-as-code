@@ -94,7 +94,7 @@ func (v *TestContainer) EmptyState() *state.State {
 	testapi.AddMockedComponents(httpTransport)
 
 	// Create mocked state
-	mockedState, err := NewEmptyState(v, NewManifest())
+	mockedState, err := NewEmptyState(v, NewManifest(), fileloader.NewVariables())
 	if err != nil {
 		panic(err)
 	}
@@ -114,7 +114,7 @@ func (v *testDependencies) Fs() filesystem.Fs {
 }
 
 func (v *testDependencies) FileLoader() filesystem.FileLoader {
-	return fileloader.New(v.fs)
+	return v.fs.FileLoader()
 }
 
 func (v *testDependencies) Envs() *env.Map {

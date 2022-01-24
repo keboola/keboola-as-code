@@ -39,7 +39,7 @@ func New(fs filesystem.Fs, manifest *Manifest, d dependencies) *Project {
 	return &Project{
 		dependencies: d,
 		fs:           fs,
-		fileLoader:   fileloader.New(fs),
+		fileLoader:   fs.FileLoader(),
 		manifest:     manifest,
 	}
 }
@@ -48,8 +48,8 @@ func (p *Project) Fs() filesystem.Fs {
 	return p.fs
 }
 
-func (p *Project) FileLoader() filesystem.FileLoader {
-	return p.fileLoader
+func (p *Project) Variables() *fileloader.Variables {
+	return fileloader.NewVariables()
 }
 
 func (p *Project) Manifest() manifest.Manifest {

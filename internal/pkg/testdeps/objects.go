@@ -10,35 +10,37 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 )
 
-func NewObjectsContainer(fs filesystem.Fs, m manifest.Manifest) *ObjectsContainer {
+// ObjectsContainer implementation for tests.
+type ObjectsContainer struct {
+	FsValue        filesystem.Fs
+	ManifestValue  manifest.Manifest
+	VariablesValue *fileloader.Variables
+}
+
+func NewObjectsContainer(fs filesystem.Fs, m manifest.Manifest, variables *fileloader.Variables) *ObjectsContainer {
 	return &ObjectsContainer{
-		FsValue:       fs,
-		ManifestValue: m,
+		FsValue:        fs,
+		ManifestValue:  m,
+		VariablesValue: variables,
 	}
 }
 
-// ObjectsContainer implementation for tests.
-type ObjectsContainer struct {
-	FsValue       filesystem.Fs
-	ManifestValue manifest.Manifest
-}
-
-func (p *ObjectsContainer) Ctx() context.Context {
+func (c *ObjectsContainer) Ctx() context.Context {
 	return context.Background()
 }
 
-func (p *ObjectsContainer) Fs() filesystem.Fs {
-	return p.FsValue
+func (c *ObjectsContainer) Fs() filesystem.Fs {
+	return c.FsValue
 }
 
-func (p *ObjectsContainer) FileLoader() filesystem.FileLoader {
-	return fileloader.New(p.FsValue)
+func (c *ObjectsContainer) Variables() *fileloader.Variables {
+	return c.VariablesValue
 }
 
-func (p *ObjectsContainer) Manifest() manifest.Manifest {
-	return p.ManifestValue
+func (c *ObjectsContainer) Manifest() manifest.Manifest {
+	return c.ManifestValue
 }
 
-func (p *ObjectsContainer) MappersFor(_ *state.State) mapper.Mappers {
+func (c *ObjectsContainer) MappersFor(_ *state.State) mapper.Mappers {
 	return mapper.Mappers{}
 }

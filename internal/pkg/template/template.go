@@ -56,7 +56,7 @@ func New(fs filesystem.Fs, manifest *Manifest, inputs *Inputs, replacements repl
 	return &Template{
 		dependencies: d,
 		fs:           fs,
-		fileLoader:   fileloader.New(fs),
+		fileLoader:   fs.FileLoader(),
 		manifest:     manifest,
 		inputs:       inputs,
 		replacements: replacements,
@@ -67,8 +67,8 @@ func (t *Template) Fs() filesystem.Fs {
 	return t.fs
 }
 
-func (t *Template) FileLoader() filesystem.FileLoader {
-	return t.fileLoader
+func (t *Template) Variables() *fileloader.Variables {
+	return fileloader.NewVariables()
 }
 
 func (t *Template) Manifest() manifest.Manifest {
