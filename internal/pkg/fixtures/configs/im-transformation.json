@@ -1,0 +1,24 @@
+{
+  "componentId": "keboola.snowflake-transformation",
+  "name": "im-transformation",
+  "configuration": {},
+  "rows": [
+    {
+      "name": "test",
+      "isDisabled": false,
+      "configuration": {
+        "parameters": {},
+        "storage": {
+          "input": {
+            "tables": [
+              {
+                "source": "%%TEST_IM_TRANSFORMATION%%.table",
+                "destination": "table"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

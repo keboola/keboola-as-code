@@ -17,8 +17,20 @@
     },
     {
       componentId: "ex-generic-v2",
+      id: "om-config",
+      path: "extractor/ex-generic-v2/om-config",
+      rows: [],
+    },
+    {
+      componentId: "ex-generic-v2",
       id: "without-rows",
       path: "extractor/ex-generic-v2/without-rows",
+      rows: [],
+    },
+    {
+      componentId: "keboola.ex-aws-s3",
+      id: "om-default-bucket",
+      path: "extractor/keboola.ex-aws-s3/om-default-bucket",
       rows: [],
     },
     {
@@ -120,8 +132,25 @@
     },
     {
       componentId: "keboola.snowflake-transformation",
+      id: "im-transformation",
+      path: "transformation/keboola.snowflake-transformation/im-transformation",
+      rows: [
+        {
+          id: "test",
+          path: "rows/test",
+        },
+      ],
+    },
+    {
+      componentId: "keboola.snowflake-transformation",
       id: "snowflake-transformation",
       path: "transformation/keboola.snowflake-transformation/snowflake-transformation",
+      rows: [],
+    },
+    {
+      componentId: "keboola.wr-db-mysql",
+      id: "im-default-bucket",
+      path: "writer/keboola.wr-db-mysql/im-default-bucket",
       rows: [],
     },
   ],

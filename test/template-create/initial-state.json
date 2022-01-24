@@ -23,7 +23,11 @@
         "shared-codes-variables",
         "transformation-with-shared-code",
         "transformation-with-shared-code-variables",
-        "snowflake-transformation"
+        "snowflake-transformation",
+        "om-default-bucket",
+        "im-default-bucket",
+        "om-config",
+        "im-transformation"
       ]
     }
   ],
@@ -32,6 +36,9 @@
     "TEST_SHARED_CODE_ROW_ID": "%%TEST_BRANCH_FOO_CONFIG_SHARED_CODES_ROW_CODE_WITH_VARIABLES_ID%%",
     "TEST_SHARED_CODE_VARIABLES_ID": "%%TEST_BRANCH_FOO_CONFIG_SHARED_CODE_VARIABLES_ID%%",
     "TEST_TRANSFORMATION_WITH_SHARED_CODE_VARIABLES_ID": "%%TEST_BRANCH_FOO_CONFIG_TRANSFORMATION_WITH_SHARED_CODE_VARIABLES_ID%%",
-    "TEST_TRANSFORMATION_WITH_SHARED_CODE_VARIABLES_VALUES_ID": "%%TEST_BRANCH_FOO_CONFIG_TRANSFORMATION_WITH_SHARED_CODE_VARIABLES_ROW_DEFAULT_VALUES_ID%%"
+    "TEST_TRANSFORMATION_WITH_SHARED_CODE_VARIABLES_VALUES_ID": "%%TEST_BRANCH_FOO_CONFIG_TRANSFORMATION_WITH_SHARED_CODE_VARIABLES_ROW_DEFAULT_VALUES_ID%%",
+    "TEST_IM_DEFAULT_BUCKET": "in.c-keboola-ex-aws-s3-%%TEST_BRANCH_FOO_CONFIG_OM_DEFAULT_BUCKET_ID%%",
+    "TEST_OM_CONFIG": "in.c-my-super-bucket-%%TEST_BRANCH_FOO_CONFIG_OM_CONFIG_ID%%",
+    "TEST_IM_TRANSFORMATION": "in.c-my-super-bucket-%%TEST_BRANCH_FOO_CONFIG_OM_CONFIG_ID%%"
   }
 }
