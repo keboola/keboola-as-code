@@ -2,7 +2,8 @@ run:
   concurrency: 8
   tests: true # check test files
   skip-files: []
-  skip-dirs: []
+  skip-dirs:
+    - third_party
   skip-dirs-use-default: true
   modules-download-mode: readonly
 
