@@ -67,15 +67,15 @@ func (m *mapper) onRowLocalLoad(config *model.Config, row *model.ConfigRow, reci
 	}
 
 	// Load file
-	codeFilePath := m.state.NamingGenerator().SharedCodeFilePath(recipe.Path(), config.SharedCode.Target)
-	codeFile, err := m.state.Fs().ReadFile(codeFilePath, `shared code`)
+	codeFile, err := recipe.Files.
+		Load(m.state.NamingGenerator().SharedCodeFilePath(recipe.Path(), config.SharedCode.Target)).
+		SetDescription("shared code").
+		AddTag(model.FileTypeOther).
+		AddTag(model.FileKindNativeSharedCode).
+		ReadFile()
 	if err != nil {
 		return err
 	}
-	recipe.Files.
-		Add(codeFile).
-		AddTag(model.FileTypeOther).
-		AddTag(model.FileKindNativeSharedCode)
 
 	// Store scripts to struct
 	row.SharedCode = &model.SharedCodeRow{

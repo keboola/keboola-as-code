@@ -16,7 +16,7 @@ func TestRelationsMapperLocalLoad(t *testing.T) {
 
 	manifest := &fixtures.MockedManifest{}
 	object := &fixtures.MockedObject{}
-	recipe := model.NewLocalLoadRecipe(manifest, object)
+	recipe := model.NewLocalLoadRecipe(d.FileLoader(), manifest, object)
 
 	relation := &fixtures.MockedManifestSideRelation{}
 	manifest.Relations = append(manifest.Relations, relation)

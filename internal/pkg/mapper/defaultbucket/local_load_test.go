@@ -109,7 +109,7 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadConfig(t *testing.T) {
 	// Invoke
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(configState2)
-	recipe := model.NewLocalLoadRecipe(configState2.ConfigManifest, configState2.Local)
+	recipe := model.NewLocalLoadRecipe(d.FileLoader(), configState2.ConfigManifest, configState2.Local)
 	assert.NoError(t, state.Mapper().OnLocalChange(changes))
 
 	// Check warning of missing default bucket config
@@ -213,7 +213,7 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadRow(t *testing.T) {
 	// Invoke
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(rowState)
-	recipe := model.NewLocalLoadRecipe(rowState.ConfigRowManifest, rowState.Local)
+	recipe := model.NewLocalLoadRecipe(d.FileLoader(), rowState.ConfigRowManifest, rowState.Local)
 	assert.NoError(t, state.Mapper().OnLocalChange(changes))
 
 	// Check warning of missing default bucket config

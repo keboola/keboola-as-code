@@ -38,7 +38,7 @@ func TestLoadCoreFiles(t *testing.T) {
 	assert.NoError(t, fs.WriteFile(filesystem.NewFile(state.NamingGenerator().ConfigFilePath(manifest.Path()), configFile)))
 
 	// Call mapper
-	recipe := model.NewLocalLoadRecipe(manifest, object)
+	recipe := model.NewLocalLoadRecipe(d.FileLoader(), manifest, object)
 	assert.NoError(t, state.Mapper().MapAfterLocalLoad(recipe))
 
 	// Values are loaded and set
