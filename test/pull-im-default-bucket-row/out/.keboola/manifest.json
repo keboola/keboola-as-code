@@ -32,22 +32,22 @@
   "configurations": [
     {
       "branchId": %%TEST_BRANCH_FOO_ID%%,
-      "componentId": "ex-generic-v2",
+      "componentId": "keboola.ex-aws-s3",
+      "id": "%%TEST_BRANCH_FOO_CONFIG_OM_DEFAULT_BUCKET_ID%%",
+      "path": "extractor/keboola.ex-aws-s3/om-default-bucket",
+      "rows": []
+    },
+    {
+      "branchId": %%TEST_BRANCH_FOO_ID%%,
+      "componentId": "keboola.wr-db-mysql",
       "id": "%%TEST_BRANCH_FOO_CONFIG_IM_DEFAULT_BUCKET_ID%%",
-      "path": "extractor/ex-generic-v2/im-default-bucket",
+      "path": "writer/keboola.wr-db-mysql/im-default-bucket",
       "rows": [
         {
           "id": "%%TEST_BRANCH_FOO_CONFIG_IM_DEFAULT_BUCKET_ROW_TEST_ID%%",
           "path": "rows/test"
         }
       ]
-    },
-    {
-      "branchId": %%TEST_BRANCH_FOO_ID%%,
-      "componentId": "keboola.ex-aws-s3",
-      "id": "%%TEST_BRANCH_FOO_CONFIG_OM_DEFAULT_BUCKET_ID%%",
-      "path": "extractor/keboola.ex-aws-s3/om-default-bucket",
-      "rows": []
     }
   ]
 }

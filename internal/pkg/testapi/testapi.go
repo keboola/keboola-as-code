@@ -97,7 +97,9 @@ func mockedComponents() []MockedComponent {
 	return []MockedComponent{
 		{"foo.bar", "other", "Foo Bar", model.ComponentData{}},
 		{"ex-generic-v2", "extractor", "Generic", model.ComponentData{}},
-		{"keboola.ex-db-mysql", "extractor", "MySQL", model.ComponentData{DefaultBucket: true, DefaultBucketStage: "in"}},
+		{"keboola.wr-db-mysql", "writer", "MySQL", model.ComponentData{}},
+		{"keboola.ex-db-mysql", "extractor", "MySQL", model.ComponentData{}},
+		{"keboola.ex-aws-s3", "extractor", "AWS S3", model.ComponentData{DefaultBucket: true, DefaultBucketStage: "in"}},
 		{"keboola.snowflake-transformation", "transformation", "Snowflake", model.ComponentData{}},
 		{"keboola.python-transformation-v2", "transformation", "Python", model.ComponentData{}},
 		{model.SharedCodeComponentId, "other", "Shared Code", model.ComponentData{}},

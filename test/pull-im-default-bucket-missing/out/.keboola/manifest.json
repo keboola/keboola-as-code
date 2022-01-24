@@ -32,9 +32,9 @@
   "configurations": [
     {
       "branchId": %%TEST_BRANCH_FOO_ID%%,
-      "componentId": "ex-generic-v2",
+      "componentId": "keboola.wr-db-mysql",
       "id": "%%TEST_BRANCH_FOO_CONFIG_IM_DEFAULT_BUCKET_ID%%",
-      "path": "extractor/ex-generic-v2/im-default-bucket",
+      "path": "writer/keboola.wr-db-mysql/im-default-bucket",
       "rows": []
     }
   ]

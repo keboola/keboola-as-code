@@ -1,5 +1,5 @@
 Plan for "pull" operation:
   + B foo
-  + C foo/extractor/ex-generic-v2/im-default-bucket
+  + C foo/writer/keboola.wr-db-mysql/im-default-bucket
   + B main
 Pull done.

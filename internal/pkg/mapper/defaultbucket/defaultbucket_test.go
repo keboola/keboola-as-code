@@ -17,8 +17,8 @@ func createStateWithMapper(t *testing.T) (*state.State, *testdeps.TestContainer)
 	mockedState := d.EmptyState()
 	mockedState.Mapper().AddMapper(defaultbucket.NewMapper(mockedState))
 
-	// Preload the ex-db-mysql component to use as the default bucket source
-	_, err := mockedState.Components().Get(model.ComponentKey{Id: "keboola.ex-db-mysql"})
+	// Preload the keboola.ex-aws-s3 component to use as the default bucket source
+	_, err := mockedState.Components().Get(model.ComponentKey{Id: "keboola.ex-aws-s3"})
 	assert.NoError(t, err)
 
 	return mockedState, d

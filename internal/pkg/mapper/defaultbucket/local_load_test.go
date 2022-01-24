@@ -19,7 +19,7 @@ const localLoadConfigContentSample = `
       "tables": [
         {
           "columns": [],
-          "source": "{{:default-bucket:extractor/keboola.ex-db-mysql/test}}.accounts",
+          "source": "{{:default-bucket:extractor/keboola.ex-aws-s3/test}}.accounts",
           "destination": "accounts",
           "where_column": "",
           "where_operator": "eq",
@@ -27,7 +27,7 @@ const localLoadConfigContentSample = `
         },
         {
           "columns": [],
-          "source": "{{:default-bucket:extractor/keboola.ex-db-mysql/test2}}.contacts",
+          "source": "{{:default-bucket:extractor/keboola.ex-aws-s3/test2}}.contacts",
           "destination": "contacts",
           "where_column": "",
           "where_operator": "eq",
@@ -62,14 +62,14 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadConfig(t *testing.T) {
 	// Config referenced by the default bucket
 	configKey1 := model.ConfigKey{
 		BranchId:    123,
-		ComponentId: `keboola.ex-db-mysql`,
+		ComponentId: `keboola.ex-aws-s3`,
 		Id:          `123`,
 	}
 	configState1 := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: configKey1,
 			Paths: model.Paths{
-				AbsPath: model.NewAbsPath("branch", "extractor/keboola.ex-db-mysql/test"),
+				AbsPath: model.NewAbsPath("branch", "extractor/keboola.ex-aws-s3/test"),
 			},
 		},
 		Local: &model.Config{
@@ -115,13 +115,13 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadConfig(t *testing.T) {
 	// Check warning of missing default bucket config
 	expectedWarnings := `
 WARN  Warning:
-  - config "branch:123/component:keboola.snowflake-transformation/config:789" contains table "{{:default-bucket:extractor/keboola.ex-db-mysql/test2}}.contacts" in input mapping referencing to a non-existing configuration
+  - config "branch:123/component:keboola.snowflake-transformation/config:789" contains table "{{:default-bucket:extractor/keboola.ex-aws-s3/test2}}.contacts" in input mapping referencing to a non-existing configuration
 `
 	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.WarnAndErrorMessages())
 
 	// Check default bucket replacement
 	configContent := json.MustEncodeString(recipe.Object.(*model.Config).Content, false)
-	assert.Equal(t, `{"parameters":{},"storage":{"input":{"tables":[{"columns":[],"source":"in.c-keboola-ex-db-mysql-123.accounts","destination":"accounts","where_column":"","where_operator":"eq","where_values":[]},{"columns":[],"source":"{{:default-bucket:extractor/keboola.ex-db-mysql/test2}}.contacts","destination":"contacts","where_column":"","where_operator":"eq","where_values":[]}],"files":[]},"output":{"tables":[],"files":[]}}}`, configContent)
+	assert.Equal(t, `{"parameters":{},"storage":{"input":{"tables":[{"columns":[],"source":"in.c-keboola-ex-aws-s3-123.accounts","destination":"accounts","where_column":"","where_operator":"eq","where_values":[]},{"columns":[],"source":"{{:default-bucket:extractor/keboola.ex-aws-s3/test2}}.contacts","destination":"contacts","where_column":"","where_operator":"eq","where_values":[]}],"files":[]},"output":{"tables":[],"files":[]}}}`, configContent)
 }
 
 func TestDefaultBucketMapper_MapBeforeLocalLoadRow(t *testing.T) {
@@ -143,14 +143,14 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadRow(t *testing.T) {
 	// Config referenced by the default bucket
 	configKey1 := model.ConfigKey{
 		BranchId:    123,
-		ComponentId: `keboola.ex-db-mysql`,
+		ComponentId: `keboola.ex-aws-s3`,
 		Id:          `123`,
 	}
 	configState1 := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: configKey1,
 			Paths: model.Paths{
-				AbsPath: model.NewAbsPath("branch", "extractor/keboola.ex-db-mysql/test"),
+				AbsPath: model.NewAbsPath("branch", "extractor/keboola.ex-aws-s3/test"),
 			},
 		},
 		Local: &model.Config{
@@ -219,11 +219,11 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadRow(t *testing.T) {
 	// Check warning of missing default bucket config
 	expectedWarnings := `
 WARN  Warning:
-  - config row "branch:123/component:keboola.snowflake-transformation/config:789/row:456" contains table "{{:default-bucket:extractor/keboola.ex-db-mysql/test2}}.contacts" in input mapping referencing to a non-existing configuration
+  - config row "branch:123/component:keboola.snowflake-transformation/config:789/row:456" contains table "{{:default-bucket:extractor/keboola.ex-aws-s3/test2}}.contacts" in input mapping referencing to a non-existing configuration
 `
 	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.WarnAndErrorMessages())
 
 	// Check default bucket replacement
 	configContent := json.MustEncodeString(recipe.Object.(*model.ConfigRow).Content, false)
-	assert.Equal(t, `{"parameters":{},"storage":{"input":{"tables":[{"columns":[],"source":"in.c-keboola-ex-db-mysql-123.accounts","destination":"accounts","where_column":"","where_operator":"eq","where_values":[]},{"columns":[],"source":"{{:default-bucket:extractor/keboola.ex-db-mysql/test2}}.contacts","destination":"contacts","where_column":"","where_operator":"eq","where_values":[]}],"files":[]},"output":{"tables":[],"files":[]}}}`, configContent)
+	assert.Equal(t, `{"parameters":{},"storage":{"input":{"tables":[{"columns":[],"source":"in.c-keboola-ex-aws-s3-123.accounts","destination":"accounts","where_column":"","where_operator":"eq","where_values":[]},{"columns":[],"source":"{{:default-bucket:extractor/keboola.ex-aws-s3/test2}}.contacts","destination":"contacts","where_column":"","where_operator":"eq","where_values":[]}],"files":[]},"output":{"tables":[],"files":[]}}}`, configContent)
 }

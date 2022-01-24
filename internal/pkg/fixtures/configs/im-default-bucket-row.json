@@ -1,5 +1,5 @@
 {
-  "componentId": "ex-generic-v2",
+  "componentId": "keboola.wr-db-mysql",
   "name": "im-default-bucket",
   "configuration": {},
   "rows": [
