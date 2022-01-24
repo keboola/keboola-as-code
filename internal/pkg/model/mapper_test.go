@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/fileloader"
 	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
@@ -80,7 +79,7 @@ type myStruct struct {
 func TestFilesLoader(t *testing.T) {
 	t.Parallel()
 	fs := testfs.NewMemoryFs()
-	files := NewFilesLoader(fileloader.New(fs))
+	files := NewFilesLoader(fs.FileLoader())
 
 	// No files
 	assert.Empty(t, files.Loaded())

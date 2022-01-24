@@ -87,7 +87,7 @@ func (f *fileToLoad) RemoveTag(tag string) *fileToLoad {
 }
 
 func (f *fileToLoad) ReadFile() (*filesystem.RawFile, error) {
-	file, err := f.fsLoader.ReadFile(f.FileDef)
+	file, err := f.fsLoader.ReadRawFile(f.FileDef)
 	if err != nil {
 		return nil, err
 	}

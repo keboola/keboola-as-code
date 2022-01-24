@@ -42,20 +42,9 @@ func loadFile(fs filesystem.Fs) (*file, error) {
 	}
 
 	// Read file
-	f, err := fs.ReadFile(filesystem.NewFileDef(path).SetDescription("manifest"))
-	if err != nil {
-		return nil, err
-	}
-
-	// Decode JsonNet
-	jsonContent, err := jsonnet.Evaluate(f.Content)
-	if err != nil {
-		return nil, err
-	}
-
-	// Decode Json
+	fileDef := filesystem.NewFileDef(path).SetDescription("manifest")
 	content := newFile()
-	if err := json.DecodeString(jsonContent, content); err != nil {
+	if _, err := fs.FileLoader().ReadJsonNetFileTo(fileDef, content); err != nil {
 		return nil, err
 	}
 

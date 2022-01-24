@@ -6,47 +6,118 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
+// Variables for JsonNet templates.
+type Variables struct {
+	vars map[string]interface{}
+}
+
+func NewVariables() *Variables {
+	return &Variables{
+		vars: make(map[string]interface{}),
+	}
+}
+
+// Handler is a callback that loads file by definition.
+type Handler func(def *filesystem.FileDef, fileType filesystem.FileType) (filesystem.File, error)
+
+// loader implements filesystem.FileLoader.
 type loader struct {
-	fs filesystem.Fs
+	handler   Handler
+	variables *Variables
 }
 
-func New(fs filesystem.Fs) filesystem.FileLoader {
-	return &loader{fs: fs}
+func HandlerFromFs(fs filesystem.Fs) Handler {
+	return func(def *filesystem.FileDef, _ filesystem.FileType) (filesystem.File, error) {
+		return fs.ReadFile(def)
+	}
 }
 
-func (l *loader) ReadFile(def *filesystem.FileDef) (*filesystem.RawFile, error) {
-	return l.fs.ReadFile(def)
+func New(handler Handler, variables *Variables) filesystem.FileLoader {
+	return &loader{handler: handler, variables: variables}
+}
+
+func (l *loader) ReadRawFile(def *filesystem.FileDef) (*filesystem.RawFile, error) {
+	file, err := l.handler(def, filesystem.FileTypeRaw)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to RawFile
+	if f, ok := file.(*filesystem.RawFile); ok {
+		return f, nil
+	}
+	return file.ToRawFile()
 }
 
 // ReadJsonFile to ordered map.
 func (l *loader) ReadJsonFile(def *filesystem.FileDef) (*filesystem.JsonFile, error) {
-	file, err := l.fs.ReadFile(def)
+	file, err := l.handler(def, filesystem.FileTypeJson)
 	if err != nil {
 		return nil, err
 	}
 
-	jsonFile, err := file.ToJsonFile()
+	// Convert to JsonFile
+	if f, ok := file.(*filesystem.JsonFile); ok {
+		return f, nil
+	}
+	fileRaw, err := file.ToRawFile()
+	if err != nil {
+		return nil, err
+	}
+	return fileRaw.ToJsonFile()
+}
+
+// ReadJsonNetFile to AST.
+func (l *loader) ReadJsonNetFile(def *filesystem.FileDef) (*filesystem.JsonNetFile, error) {
+	file, err := l.handler(def, filesystem.FileTypeJsonNet)
 	if err != nil {
 		return nil, err
 	}
 
-	return jsonFile, nil
+	// Convert to JsonNetFile
+	if f, ok := file.(*filesystem.JsonNetFile); ok {
+		return f, nil
+	}
+	fileRaw, err := file.ToRawFile()
+	if err != nil {
+		return nil, err
+	}
+	return fileRaw.ToJsonNetFile()
 }
 
 // ReadJsonFileTo to target struct.
 func (l *loader) ReadJsonFileTo(def *filesystem.FileDef, target interface{}) (*filesystem.RawFile, error) {
-	file, err := l.fs.ReadFile(def)
+	file, err := l.ReadRawFile(def)
 	if err != nil {
 		return nil, err
 	}
 
 	if err := json.DecodeString(file.Content, target); err != nil {
-		fileDesc := strings.TrimSpace(file.Description() + " file")
-		return nil, utils.PrefixError(fmt.Sprintf("%s \"%s\" is invalid", fileDesc, file.Path()), err)
+		return nil, formatFileError(def, err)
+	}
+
+	return file, nil
+}
+
+// ReadJsonNetFileTo to target struct.
+func (l *loader) ReadJsonNetFileTo(def *filesystem.FileDef, target interface{}) (*filesystem.JsonNetFile, error) {
+	file, err := l.ReadJsonNetFile(def)
+	if err != nil {
+		return nil, formatFileError(def, err)
+	}
+
+	jsonContent, err := jsonnet.EvaluateAst(file.Content)
+	if err != nil {
+		return nil, formatFileError(def, err)
+	}
+
+	if err := json.DecodeString(jsonContent, target); err != nil {
+		return nil, formatFileError(def, err)
 	}
 
 	return file, nil
@@ -84,7 +155,7 @@ func (l *loader) ReadJsonMapTo(def *filesystem.FileDef, target interface{}, tag 
 // ReadFileContentTo to tagged field in target struct as string.
 func (l *loader) ReadFileContentTo(def *filesystem.FileDef, target interface{}, tag string) (*filesystem.RawFile, bool, error) {
 	if field := utils.GetOneFieldWithTag(tag, target); field != nil {
-		if file, err := l.fs.ReadFile(def); err == nil {
+		if file, err := l.ReadRawFile(def); err == nil {
 			content := strings.TrimRight(file.Content, " \r\n\t")
 			utils.SetField(field, content, target)
 			return file, true, nil
@@ -93,4 +164,9 @@ func (l *loader) ReadFileContentTo(def *filesystem.FileDef, target interface{}, 
 		}
 	}
 	return nil, false, nil
+}
+
+func formatFileError(def *filesystem.FileDef, err error) error {
+	fileDesc := strings.TrimSpace(def.Description() + " file")
+	return utils.PrefixError(fmt.Sprintf("%s \"%s\" is invalid", fileDesc, def.Path()), err)
 }

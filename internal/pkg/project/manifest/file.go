@@ -6,7 +6,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/build"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/fileloader"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
@@ -57,7 +56,7 @@ func loadFile(fs filesystem.Fs) (*file, error) {
 
 	// Read JSON file
 	content := newFile(0, "")
-	if _, err := fileloader.New(fs).ReadJsonFileTo(filesystem.NewFileDef(path).SetDescription("manifest"), content); err != nil {
+	if _, err := fs.FileLoader().ReadJsonFileTo(filesystem.NewFileDef(path).SetDescription("manifest"), content); err != nil {
 		return nil, err
 	}
 

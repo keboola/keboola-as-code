@@ -48,18 +48,21 @@ type Fs interface {
 	Move(src, dst string) error
 	MoveForce(src, dst string) error
 	Remove(path string) error
+	FileLoader() FileLoader
 	ReadFile(file *FileDef) (*RawFile, error)
 	WriteFile(file File) error
 	CreateOrUpdateFile(file *FileDef, lines []FileLine) (updated bool, err error)
 }
 
 type FileLoader interface {
-	ReadFile(file *FileDef) (*RawFile, error)
-	ReadJsonFieldsTo(file *FileDef, target interface{}, structTag string) (*JsonFile, bool, error)
-	ReadJsonMapTo(file *FileDef, target interface{}, structTag string) (*JsonFile, bool, error)
-	ReadFileContentTo(file *FileDef, target interface{}, structTag string) (*RawFile, bool, error)
+	ReadRawFile(file *FileDef) (*RawFile, error)
 	ReadJsonFile(file *FileDef) (*JsonFile, error)
+	ReadJsonNetFile(file *FileDef) (*JsonNetFile, error)
+	ReadFileContentTo(file *FileDef, target interface{}, structTag string) (*RawFile, bool, error)
 	ReadJsonFileTo(file *FileDef, target interface{}) (*RawFile, error)
+	ReadJsonNetFileTo(file *FileDef, target interface{}) (*JsonNetFile, error)
+	ReadJsonMapTo(file *FileDef, target interface{}, structTag string) (*JsonFile, bool, error)
+	ReadJsonFieldsTo(file *FileDef, target interface{}, structTag string) (*JsonFile, bool, error)
 }
 
 func FromSlash(path string) string {
