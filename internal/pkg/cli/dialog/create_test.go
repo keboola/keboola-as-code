@@ -77,14 +77,14 @@ func TestAskCreateConfig(t *testing.T) {
   "branches": [{"id": 123, "path": "main"}]
 }
 `
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(
 		filesystem.Join(filesystem.MetadataDir, manifest.FileName),
 		fmt.Sprintf(manifestContent, 123, `foo.bar.com`),
 	)))
 
 	// Create branch files
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filesystem.Join(`main`, naming.MetaFile), `{"name": "Main"}`)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filesystem.Join(`main`, naming.DescriptionFile), ``)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(`main`, naming.MetaFile), `{"name": "Main"}`)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(`main`, naming.DescriptionFile), ``)))
 
 	// testDependencies
 	dialog, console := createDialogs(t, true)
@@ -170,20 +170,20 @@ func TestAskCreateRow(t *testing.T) {
   ]
 }
 `
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(
 		filesystem.Join(filesystem.MetadataDir, manifest.FileName),
 		fmt.Sprintf(manifestContent, 123, `foo.bar.com`),
 	)))
 
 	// Create branch files
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filesystem.Join(`main`, naming.MetaFile), `{"name": "Main"}`)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filesystem.Join(`main`, naming.DescriptionFile), ``)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(`main`, naming.MetaFile), `{"name": "Main"}`)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(`main`, naming.DescriptionFile), ``)))
 
 	// Create config files
 	configDir := filesystem.Join(`main`, `extractor`, `keboola.ex-db-mysql`, `my-config`)
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filesystem.Join(configDir, naming.MetaFile), `{"name": "My Config"}`)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filesystem.Join(configDir, naming.ConfigFile), `{}`)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filesystem.Join(configDir, naming.DescriptionFile), ``)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(configDir, naming.MetaFile), `{"name": "My Config"}`)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(configDir, naming.ConfigFile), `{}`)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(configDir, naming.DescriptionFile), ``)))
 
 	// testDependencies
 	dialog, console := createDialogs(t, true)

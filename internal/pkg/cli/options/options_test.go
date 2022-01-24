@@ -33,13 +33,13 @@ func TestValuesPriority(t *testing.T) {
 	assert.Equal(t, "", options.GetString(`storage-api-token`))
 
 	// 1. Lowest priority, ".env" file from project dir
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(".env", "KBC_STORAGE_API_TOKEN=1abcdef")))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(".env", "KBC_STORAGE_API_TOKEN=1abcdef")))
 	err = options.Load(logger, env.Empty(), fs, flags)
 	assert.NoError(t, err)
 	assert.Equal(t, "1abcdef", options.GetString(`storage-api-token`))
 
 	// 2. Higher priority, ".env" file from working dir
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filesystem.Join(workingDir, ".env"), "KBC_STORAGE_API_TOKEN=2abcdef")))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(workingDir, ".env"), "KBC_STORAGE_API_TOKEN=2abcdef")))
 	err = options.Load(logger, env.Empty(), fs, flags)
 	assert.NoError(t, err)
 	assert.Equal(t, "2abcdef", options.GetString(`storage-api-token`))

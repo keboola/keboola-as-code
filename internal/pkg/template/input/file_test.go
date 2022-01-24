@@ -261,7 +261,7 @@ func TestLoadInputs(t *testing.T) {
 
 	// Write file
 	path := Path()
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(path, inputsJsonNet)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(path, inputsJsonNet)))
 
 	// Load
 	inputs, err := Load(fs)
@@ -277,7 +277,7 @@ func TestSaveInputs(t *testing.T) {
 	assert.NoError(t, testInputs().Save(fs))
 
 	// Load file
-	file, err := fs.ReadFile(Path(), "")
+	file, err := fs.ReadFile(filesystem.NewFileDef(Path()))
 	assert.NoError(t, err)
 	assert.Equal(t, testhelper.EscapeWhitespaces(inputsJsonNet), testhelper.EscapeWhitespaces(file.Content))
 }

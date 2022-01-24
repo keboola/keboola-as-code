@@ -56,7 +56,7 @@ func TestLoadManifestFile(t *testing.T) {
 
 		// Write file
 		path := filesystem.Join(filesystem.MetadataDir, FileName)
-		assert.NoError(t, fs.WriteFile(filesystem.NewFile(path, c.json)))
+		assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(path, c.json)))
 
 		// Load
 		manifestContent, err := loadFile(fs)
@@ -77,7 +77,7 @@ func TestSaveManifestFile(t *testing.T) {
 		assert.NoError(t, saveFile(fs, c.data))
 
 		// Load file
-		file, err := fs.ReadFile(Path(), "")
+		file, err := fs.ReadFile(filesystem.NewFileDef(Path()))
 		assert.NoError(t, err)
 		assert.Equal(t, testhelper.EscapeWhitespaces(c.json), testhelper.EscapeWhitespaces(file.Content), c.name)
 	}
@@ -140,7 +140,7 @@ func TestManifestBadRecordSemanticVersion(t *testing.T) {
 
 	// Write file
 	path := filesystem.Join(filesystem.MetadataDir, FileName)
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(path, fileContent)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(path, fileContent)))
 
 	// Load
 	_, err := loadFile(fs)

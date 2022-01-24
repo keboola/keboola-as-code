@@ -36,8 +36,8 @@ func TestLocalDeleteModel(t *testing.T) {
 
 	// Save files
 	assert.NoError(t, fs.Mkdir(dirPath))
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(metaFilePath, metaFile)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(configFilePath, configFile)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(metaFilePath, metaFile)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(configFilePath, configFile)))
 
 	// Delete
 	assert.NoError(t, manager.deleteObject(record))
@@ -78,8 +78,8 @@ func TestDeleteEmptyDirectories(t *testing.T) {
 	assert.NoError(t, fs.Mkdir(`tracked`))
 	assert.NoError(t, fs.Mkdir(`non-tracked`))
 	assert.NoError(t, fs.Mkdir(filesystem.Join(`tracked-with-hidden`, `.git`)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filesystem.Join(`tracked`, `foo.txt`), `bar`)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewFile(filesystem.Join(`non-tracked`, `foo.txt`), `bar`)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(`tracked`, `foo.txt`), `bar`)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(`non-tracked`, `foo.txt`), `bar`)))
 
 	// Delete
 	trackedPaths := []string{

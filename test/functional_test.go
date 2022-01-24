@@ -122,7 +122,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 
 	// Load command arguments from file
 	argsFileName := `args`
-	argsFile, err := testDirFs.ReadFile(argsFileName, ``)
+	argsFile, err := testDirFs.ReadFile(filesystem.NewFileDef(argsFileName))
 	if err != nil {
 		t.Fatalf(`cannot open "%s" test file %s`, argsFileName, err)
 	}
@@ -241,17 +241,17 @@ func AssertExpectations(
 	t.Helper()
 
 	// Compare stdout
-	expectedStdoutFile, err := testDirFs.ReadFile("expected-stdout", ``)
+	expectedStdoutFile, err := testDirFs.ReadFile(filesystem.NewFileDef("expected-stdout"))
 	assert.NoError(t, err)
 	expectedStdout := testhelper.ReplaceEnvsString(expectedStdoutFile.Content, envProvider)
 
 	// Compare stderr
-	expectedStderrFile, err := testDirFs.ReadFile("expected-stderr", ``)
+	expectedStderrFile, err := testDirFs.ReadFile(filesystem.NewFileDef("expected-stderr"))
 	assert.NoError(t, err)
 	expectedStderr := testhelper.ReplaceEnvsString(expectedStderrFile.Content, envProvider)
 
 	// Compare exit code
-	expectedCodeFile, err := testDirFs.ReadFile("expected-code", ``)
+	expectedCodeFile, err := testDirFs.ReadFile(filesystem.NewFileDef("expected-code"))
 	assert.NoError(t, err)
 	expectedCode := cast.ToInt(strings.TrimSpace(expectedCodeFile.Content))
 	assert.Equal(
@@ -284,7 +284,7 @@ func AssertExpectations(
 	expectedStatePath := "expected-state.json"
 	if testDirFs.IsFile(expectedStatePath) {
 		// Read expected state
-		expectedSnapshot, err := testDirFs.ReadFile(expectedStatePath, ``)
+		expectedSnapshot, err := testDirFs.ReadFile(filesystem.NewFileDef(expectedStatePath))
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}
@@ -296,7 +296,7 @@ func AssertExpectations(
 		}
 
 		// Write actual state
-		err = workingDirFs.WriteFile(filesystem.NewFile("actual-state.json", json.MustEncodeString(actualSnapshot, true)))
+		err = workingDirFs.WriteFile(filesystem.NewRawFile("actual-state.json", json.MustEncodeString(actualSnapshot, true)))
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}

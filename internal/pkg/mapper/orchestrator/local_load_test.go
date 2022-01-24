@@ -23,33 +23,33 @@ func TestMapAfterLocalLoad(t *testing.T) {
 
 	// Local files
 	phasesDir := state.NamingGenerator().PhasesDir(orchestratorConfigState.Path())
-	files := []*filesystem.File{
+	files := []filesystem.File{
 		filesystem.
-			NewFile(
+			NewRawFile(
 				phasesDir+`/001-phase/phase.json`,
 				`{"name":"Phase","dependsOn":[],"foo":"bar"}`,
 			).
 			SetDescription(`phase config file`),
 		filesystem.
-			NewFile(
+			NewRawFile(
 				phasesDir+`/001-phase/001-task-1/task.json`,
 				`{"name":"Task 1","task":{"mode":"run","configPath":"extractor/target-config-1"},"continueOnFailure":false,"enabled":true}`,
 			).
 			SetDescription(`task config file`),
 		filesystem.
-			NewFile(
+			NewRawFile(
 				phasesDir+`/001-phase/002-task-2/task.json`,
 				`{"name":"Task 2","task":{"mode":"run","configPath":"extractor/target-config-2"},"continueOnFailure":false,"enabled":false}`,
 			).
 			SetDescription(`task config file`),
 		filesystem.
-			NewFile(
+			NewRawFile(
 				phasesDir+`/002-phase-with-deps/phase.json`,
 				`{"name":"Phase With Deps","dependsOn":["001-phase"]}`,
 			).
 			SetDescription(`phase config file`),
 		filesystem.
-			NewFile(
+			NewRawFile(
 				phasesDir+`/002-phase-with-deps/001-task-3/task.json`,
 				`{"name":"Task 3","task":{"mode":"run","configPath":"extractor/target-config-3"},"continueOnFailure":false,"enabled":true}`,
 			).
@@ -219,21 +219,21 @@ func TestMapAfterLocalLoadError(t *testing.T) {
 
 	// Local files
 	phasesDir := state.NamingGenerator().PhasesDir(orchestratorConfigState.Path())
-	files := []*filesystem.File{
+	files := []filesystem.File{
 		filesystem.
-			NewFile(
+			NewRawFile(
 				phasesDir+`/001-phase/phase.json`,
 				`{"name":"Phase","dependsOn":["missing-phase"],"foo":"bar"}`,
 			).
 			SetDescription(`phase config file`),
 		filesystem.
-			NewFile(
+			NewRawFile(
 				phasesDir+`/001-phase/001-task-1/task.json`,
 				`{"name":"Task 1","task":{"mode":"run","configPath":"extractor/target-config-1"},"continueOnFailure":false,"enabled":true}`,
 			).
 			SetDescription(`task config file`),
 		filesystem.
-			NewFile(
+			NewRawFile(
 				phasesDir+`/001-phase/002-task-2/task.json`,
 				`{"name":"Task 2","task":{"mode":"run","configPath":"extractor/target-config-2"},"continueOnFailure":false,"enabled":false}`,
 			).
@@ -276,27 +276,27 @@ func TestMapAfterLocalLoadDepsCycle(t *testing.T) {
 
 	// Local files
 	phasesDir := state.NamingGenerator().PhasesDir(orchestratorConfigState.Path())
-	files := []*filesystem.File{
+	files := []filesystem.File{
 		filesystem.
-			NewFile(
+			NewRawFile(
 				phasesDir+`/001-phase/phase.json`,
 				`{"name":"Phase 1","dependsOn":[],"foo":"bar"}`,
 			).
 			SetDescription(`phase config file`),
 		filesystem.
-			NewFile(
+			NewRawFile(
 				phasesDir+`/001-phase/001-task-1/task.json`,
 				`{"name":"Task 1","task":{"mode":"run","configPath":"extractor/target-config-1"},"continueOnFailure":false,"enabled":true}`,
 			).
 			SetDescription(`task config file`),
 		filesystem.
-			NewFile(
+			NewRawFile(
 				phasesDir+`/002-phase/phase.json`,
 				`{"name":"Phase 2","dependsOn":["003-phase"],"foo":"bar"}`,
 			).
 			SetDescription(`phase config file`),
 		filesystem.
-			NewFile(
+			NewRawFile(
 				phasesDir+`/003-phase/phase.json`,
 				`{"name":"Phase 3","dependsOn":["002-phase"],"foo":"bar"}`,
 			).
