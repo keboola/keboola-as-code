@@ -1,5 +1,9 @@
 package filesystem
 
+import (
+	"sort"
+)
+
 type FileTags struct {
 	tags map[string]bool
 }
@@ -15,6 +19,7 @@ func (f *FileTags) AllTags() []string {
 		out[i] = tag
 		i++
 	}
+	sort.Strings(out)
 	return out
 }
 
