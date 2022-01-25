@@ -28,6 +28,7 @@ func NewRegistry(paths *knownpaths.Paths, namingRegistry *naming.Registry, compo
 type State struct {
 	*Registry
 	container       ObjectsContainer
+	fileLoader      filesystem.FileLoader
 	logger          log.Logger
 	manifest        manifest.Manifest
 	mapper          *mapper.Mapper
@@ -49,7 +50,6 @@ type LoadOptions struct {
 type ObjectsContainer interface {
 	Ctx() context.Context
 	Fs() filesystem.Fs
-	FileLoader() filesystem.FileLoader
 	Manifest() manifest.Manifest
 	MappersFor(state *State) mapper.Mappers
 }
@@ -147,7 +147,7 @@ func (s *State) Fs() filesystem.Fs {
 }
 
 func (s *State) FileLoader() filesystem.FileLoader {
-	return s.container.FileLoader()
+	return s.fileLoader
 }
 
 func (s *State) Manifest() manifest.Manifest {

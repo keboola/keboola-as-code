@@ -66,10 +66,6 @@ func (t *Template) Fs() filesystem.Fs {
 	return t.fs
 }
 
-func (t *Template) FileLoader() filesystem.FileLoader {
-	return t.fileLoader
-}
-
 func (t *Template) Manifest() manifest.Manifest {
 	return t.manifest
 }

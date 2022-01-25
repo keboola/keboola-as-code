@@ -47,10 +47,6 @@ func (p *Project) Fs() filesystem.Fs {
 	return p.fs
 }
 
-func (p *Project) FileLoader() filesystem.FileLoader {
-	return p.fileLoader
-}
-
 func (p *Project) Manifest() manifest.Manifest {
 	return p.manifest
 }
