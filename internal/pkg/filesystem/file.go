@@ -17,6 +17,14 @@ type FileLine struct {
 	Regexp string
 }
 
+type FileType int
+
+const (
+	FileTypeRaw     FileType = iota // RawFile
+	FileTypeJson                    // JsonFile
+	FileTypeJsonNet                 // JsonNetFile
+)
+
 type FileDef struct {
 	*FileTags
 	desc string
@@ -26,16 +34,6 @@ type FileDef struct {
 type RawFile struct {
 	*FileDef
 	Content string
-}
-
-type JsonFile struct {
-	*FileDef
-	Content *orderedmap.OrderedMap
-}
-
-type JsonNetFile struct {
-	*FileDef
-	Content jsonnetast.Node
 }
 
 type Files struct {
@@ -58,6 +56,19 @@ func NewFileDef(path string) *FileDef {
 	return &FileDef{FileTags: NewFileTags(), path: path}
 }
 
+func (f *FileDef) Path() string {
+	return f.path
+}
+
+func (f *FileDef) SetPath(v string) *FileDef {
+	f.path = v
+	return f
+}
+
+func (f *FileDef) Description() string {
+	return f.desc
+}
+
 func (f *FileDef) SetDescription(v string) *FileDef {
 	f.desc = v
 	return f
@@ -69,8 +80,8 @@ func NewRawFile(path, content string) *RawFile {
 	return file
 }
 
-// ToFile converts FileDef to a File with empty content.
-func (f *FileDef) ToFile() *RawFile {
+// ToEmptyFile converts FileDef to a File with empty content.
+func (f *FileDef) ToEmptyFile() *RawFile {
 	file := NewRawFile(f.path, "")
 	file.desc = f.desc
 	file.AddTag(f.AllTags()...)
@@ -107,6 +118,18 @@ func (f *RawFile) ToJsonFile() (*JsonFile, error) {
 	return file, nil
 }
 
+func (f *RawFile) ToJsonNetFile() (*JsonNetFile, error) {
+	ast, err := jsonnet.ToAst(f.Content)
+	if err != nil {
+		return nil, err
+	}
+
+	file := NewJsonNetFile(f.path, ast)
+	file.SetDescription(f.desc)
+	file.AddTag(f.AllTags()...)
+	return file, nil
+}
+
 func (f *RawFile) AddTag(tags ...string) File {
 	f.FileDef.AddTag(tags...)
 	return f
@@ -115,6 +138,11 @@ func (f *RawFile) AddTag(tags ...string) File {
 func (f *RawFile) RemoveTag(tags ...string) File {
 	f.FileDef.RemoveTag(tags...)
 	return f
+}
+
+type JsonFile struct {
+	*FileDef
+	Content *orderedmap.OrderedMap
 }
 
 func NewJsonFile(path string, content *orderedmap.OrderedMap) *JsonFile {
@@ -136,6 +164,16 @@ func (f *JsonFile) Path() string {
 	return f.path
 }
 
+func (f *JsonFile) AddTag(tags ...string) File {
+	f.FileDef.AddTag(tags...)
+	return f
+}
+
+func (f *JsonFile) RemoveTag(tags ...string) File {
+	f.FileDef.RemoveTag(tags...)
+	return f
+}
+
 func (f *JsonFile) ToRawFile() (*RawFile, error) {
 	content, err := json.EncodeString(f.Content, true)
 	if err != nil {
@@ -149,32 +187,18 @@ func (f *JsonFile) ToRawFile() (*RawFile, error) {
 	return file, nil
 }
 
-func (f *JsonFile) AddTag(tags ...string) File {
-	f.FileDef.AddTag(tags...)
-	return f
-}
-
-func (f *JsonFile) RemoveTag(tags ...string) File {
-	f.FileDef.RemoveTag(tags...)
-	return f
-}
-
 func (f *JsonFile) ToJsonNetFile() (*JsonNetFile, error) {
-	jsonContent, err := json.EncodeString(f.Content, true)
+	fileRaw, err := f.ToRawFile()
 	if err != nil {
 		return nil, err
 	}
+	fileRaw.SetPath(strings.TrimSuffix(f.path, `.json`) + `.jsonnet`)
+	return fileRaw.ToJsonNetFile()
+}
 
-	ast, err := jsonnet.ToAst(jsonContent)
-	if err != nil {
-		return nil, err
-	}
-
-	path := strings.TrimSuffix(f.path, `.json`) + `.jsonnet`
-	file := NewJsonNetFile(path, ast)
-	file.SetDescription(f.desc)
-	file.AddTag(f.AllTags()...)
-	return file, nil
+type JsonNetFile struct {
+	*FileDef
+	Content jsonnetast.Node
 }
 
 func NewJsonNetFile(path string, content jsonnetast.Node) *JsonNetFile {
@@ -196,23 +220,6 @@ func (f *JsonNetFile) Path() string {
 	return f.path
 }
 
-func (f *JsonNetFile) ToJsonFile() (*JsonFile, error) {
-	jsonContent, err := jsonnet.EvaluateAst(f.Content)
-	if err != nil {
-		return nil, err
-	}
-
-	jsonMap := orderedmap.New()
-	if err := json.DecodeString(jsonContent, jsonMap); err != nil {
-		return nil, err
-	}
-
-	file := NewJsonFile(f.path, jsonMap)
-	file.SetDescription(f.desc)
-	file.AddTag(f.AllTags()...)
-	return file, nil
-}
-
 func (f *JsonNetFile) AddTag(tags ...string) File {
 	f.FileDef.AddTag(tags...)
 	return f
@@ -221,6 +228,26 @@ func (f *JsonNetFile) AddTag(tags ...string) File {
 func (f *JsonNetFile) RemoveTag(tags ...string) File {
 	f.FileDef.RemoveTag(tags...)
 	return f
+}
+
+func (f *JsonNetFile) ToJsonFile() (*JsonFile, error) {
+	fileRaw, err := f.ToJsonRawFile()
+	if err != nil {
+		return nil, err
+	}
+	return fileRaw.ToJsonFile()
+}
+
+func (f *JsonNetFile) ToJsonRawFile() (*RawFile, error) {
+	jsonContent, err := jsonnet.EvaluateAst(f.Content)
+	if err != nil {
+		return nil, err
+	}
+
+	file := NewRawFile(f.path, jsonContent)
+	file.SetDescription(f.desc)
+	file.AddTag(f.AllTags()...)
+	return file, nil
 }
 
 func (f *JsonNetFile) ToRawFile() (*RawFile, error) {

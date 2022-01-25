@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/afero"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/fileloader"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/strhelper"
 )
@@ -253,9 +254,13 @@ func (f *Fs) Remove(path string) error {
 	return err
 }
 
+func (f *Fs) FileLoader() filesystem.FileLoader {
+	return fileloader.New(f)
+}
+
 // ReadFile content as string.
 func (f *Fs) ReadFile(def *filesystem.FileDef) (*filesystem.RawFile, error) {
-	file := def.ToFile()
+	file := def.ToEmptyFile()
 
 	// Check if is dir
 	if f.IsDir(file.Path()) {
@@ -282,6 +287,7 @@ func (f *Fs) ReadFile(def *filesystem.FileDef) (*filesystem.RawFile, error) {
 		return nil, err
 	}
 
+	// File has been loaded
 	f.logger.Debugf(`Loaded "%s"`, file.Path())
 	file.Content = string(content)
 	return file, nil
@@ -328,7 +334,7 @@ func (f *Fs) WriteFile(file filesystem.File) error {
 func (f *Fs) CreateOrUpdateFile(def *filesystem.FileDef, lines []filesystem.FileLine) (updated bool, err error) {
 	// Create file OR read if exists
 	updated = false
-	file := def.ToFile()
+	file := def.ToEmptyFile()
 	if f.Exists(file.Path()) {
 		updated = true
 		if file, err = f.ReadFile(def); err != nil {
