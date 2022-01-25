@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
@@ -48,6 +49,7 @@ type Template struct {
 	fileLoader   filesystem.FileLoader
 	manifest     *Manifest
 	inputs       *Inputs
+	variables    jsonnet.VariablesValues
 	replacements replacekeys.Keys
 }
 
@@ -79,5 +81,5 @@ func (t *Template) Ctx() context.Context {
 }
 
 func (t *Template) MappersFor(state *state.State) mapper.Mappers {
-	return MappersFor(state, t.dependencies, t.replacements)
+	return MappersFor(state, t.dependencies, t.variables, t.replacements)
 }

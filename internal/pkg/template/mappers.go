@@ -1,6 +1,7 @@
 package template
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/corefiles"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/defaultbucket"
@@ -16,10 +17,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 )
 
-func MappersFor(s *state.State, d dependencies, replacements replacekeys.Keys) mapper.Mappers {
+func MappersFor(s *state.State, d dependencies, vars jsonnet.VariablesValues, replacements replacekeys.Keys) mapper.Mappers {
 	return mapper.Mappers{
 		// Template
-		jsonnetfiles.NewMapper(),
+		jsonnetfiles.NewMapper(vars),
 		// Core files
 		corefiles.NewMapper(s),
 		description.NewMapper(),

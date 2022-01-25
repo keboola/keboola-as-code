@@ -6,17 +6,25 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestJsonNetMapper_LoadLocalFile(t *testing.T) {
 	t.Parallel()
-	state := createStateWithMapper(t)
 
-	// Write JsonNet file
+	// Variables
+	variables := jsonnet.VariablesValues{
+		"myKey": "bar",
+	}
+
+	// Create state
+	state := createStateWithMapper(t, variables)
+
+	// Write JsonNet file with a variable
 	fs := state.Fs()
-	jsonNetContent := `{ foo: "bar"}`
+	jsonNetContent := `{ foo: std.extVar("myKey")}`
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(`my/dir/file.jsonnet`, jsonNetContent)))
 
 	// Create file loader

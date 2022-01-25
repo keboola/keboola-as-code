@@ -207,6 +207,10 @@ func NewJsonNetFile(path string, content jsonnetast.Node, variables jsonnet.Vari
 	return &JsonNetFile{FileDef: NewFileDef(path), variables: variables, Content: content}
 }
 
+func (f *JsonNetFile) SetVariables(v jsonnet.VariablesValues) {
+	f.variables = v
+}
+
 func (f *JsonNetFile) Description() string {
 	return f.desc
 }

@@ -1,8 +1,13 @@
 package jsonnetfiles
 
-type jsonNetMapper struct { // no dependencies
+import (
+	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
+)
+
+type jsonNetMapper struct {
+	variables jsonnet.VariablesValues
 }
 
-func NewMapper() *jsonNetMapper {
-	return &jsonNetMapper{}
+func NewMapper(variables jsonnet.VariablesValues) *jsonNetMapper {
+	return &jsonNetMapper{variables: variables}
 }

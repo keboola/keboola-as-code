@@ -13,7 +13,7 @@ import (
 
 func TestJsonNetMapper_MapBeforeLocalSave(t *testing.T) {
 	t.Parallel()
-	state := createStateWithMapper(t)
+	state := createStateWithMapper(t, nil)
 
 	manifest := &model.ConfigManifest{}
 	object := &model.Config{}
