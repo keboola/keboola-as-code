@@ -132,7 +132,7 @@ type Config struct {
 	SharedCode        *SharedCodeConfig      `json:"-" validate:"omitempty,dive" diff:"true"`
 	Orchestration     *Orchestration         `json:"-" validate:"omitempty,dive" diff:"true"`
 	Relations         Relations              `json:"-" validate:"dive" diff:"true"`
-	Metadata          map[string]string      `json:"-" validate:"omitempty,dive" diff:"true"`
+	Metadata          map[string]string      `json:"-" validate:"dive" diff:"true"`
 }
 
 type ConfigWithRows struct {
@@ -292,4 +292,13 @@ func (c *Config) AddRelation(relation Relation) {
 
 func (r *ConfigRow) AddRelation(relation Relation) {
 	r.Relations.Add(relation)
+}
+
+func (c *Config) MetadataOrderedMap() *orderedmap.OrderedMap {
+	ordered := orderedmap.New()
+	for key, val := range c.Metadata {
+		ordered.Set(key, val)
+	}
+	ordered.SortKeys(sort.Strings)
+	return ordered
 }

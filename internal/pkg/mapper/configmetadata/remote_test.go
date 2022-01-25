@@ -90,5 +90,5 @@ func TestConfigMetadataMapAfterRemoteLoad(t *testing.T) {
 
 	assert.NoError(t, mockedState.Mapper().OnRemoteChange(changes))
 	assert.Equal(t, map[string]string{"KBC.KaC.Meta": "value1", "KBC.KaC.Meta2": "value2"}, config.Metadata)
-	assert.Equal(t, map[string]string(nil), config2.Metadata)
+	assert.Equal(t, make(map[string]string), config2.Metadata)
 }

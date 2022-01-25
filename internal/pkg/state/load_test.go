@@ -105,6 +105,7 @@ func TestLoadState(t *testing.T) {
 				Description:       "test fixture",
 				ChangeDescription: "created by test",
 				Content:           orderedmap.New(),
+				Metadata:          make(map[string]string),
 			},
 			Local: &model.Config{
 				ConfigKey: model.ConfigKey{
@@ -131,6 +132,7 @@ func TestLoadState(t *testing.T) {
 						}),
 					},
 				}),
+				Metadata: make(map[string]string),
 			},
 			ConfigManifest: &model.ConfigManifest{
 				RecordState: model.RecordState{

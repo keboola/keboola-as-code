@@ -4,26 +4,9 @@ import (
 	"sync"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/client"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/state"
 )
-
-// configMetadataMapper add metadata to configurations loaded from API.
-type configMetadataMapper struct {
-	dependencies
-	logger log.Logger
-	state  *state.State
-}
-
-type dependencies interface {
-	StorageApi() (*remote.StorageApi, error)
-}
-
-func NewMapper(s *state.State, d dependencies) *configMetadataMapper {
-	return &configMetadataMapper{dependencies: d, logger: s.Logger(), state: s}
-}
 
 func (m *configMetadataMapper) OnRemoteChange(changes *model.RemoteChanges) error {
 	metadataMap, err := m.GetMetadataMap()
@@ -46,7 +29,7 @@ func (m *configMetadataMapper) onRemoteLoad(objectState model.ObjectState, metad
 	}
 	metadata, found := metadataMap[config.ConfigKey.String()]
 	if !found {
-		return
+		metadata = make(map[string]string)
 	}
 	config.Metadata = metadata
 }

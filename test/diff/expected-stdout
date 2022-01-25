@@ -4,7 +4,7 @@
 
 Diff:
 * B bar | changed: description
-* C bar/extractor/ex-generic-v2/empty | changed: name
+* C bar/extractor/ex-generic-v2/empty | changed: metadata, name
 * C bar/extractor/keboola.ex-db-mysql/with-rows | changed: configuration
 * R bar/extractor/keboola.ex-db-mysql/with-rows/rows/users | changed: configuration
 + C bar/extractor/keboola.ex-db-mysql/xyz

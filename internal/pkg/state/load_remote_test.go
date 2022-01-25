@@ -155,6 +155,7 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 				Description:       "test fixture",
 				ChangeDescription: fmt.Sprintf(`Copied from default branch configuration "empty" (%s) version 1`, envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
 				Content:           orderedmap.New(),
+				Metadata:          make(map[string]string),
 			},
 			// Generated manifest
 			ConfigManifest: &model.ConfigManifest{
@@ -197,6 +198,7 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 						}),
 					},
 				}),
+				Metadata: make(map[string]string),
 			},
 			// Generated manifest
 			ConfigManifest: &model.ConfigManifest{
@@ -224,6 +226,7 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 				Description:       "test fixture",
 				ChangeDescription: fmt.Sprintf(`Copied from default branch configuration "empty" (%s) version 1`, envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
 				Content:           orderedmap.New(),
+				Metadata:          make(map[string]string),
 			},
 			// Generated manifest
 			ConfigManifest: &model.ConfigManifest{
@@ -266,6 +269,7 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 						}),
 					},
 				}),
+				Metadata: make(map[string]string),
 			},
 			// Generated manifest
 			ConfigManifest: &model.ConfigManifest{
@@ -293,6 +297,7 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 				Description:       "test fixture",
 				ChangeDescription: "created by test",
 				Content:           orderedmap.New(),
+				Metadata:          make(map[string]string),
 			},
 			// Generated manifest
 			ConfigManifest: &model.ConfigManifest{
