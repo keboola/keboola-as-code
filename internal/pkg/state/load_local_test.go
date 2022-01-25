@@ -386,6 +386,7 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 						}),
 					},
 				}),
+				Metadata: make(map[string]string),
 			},
 			ConfigManifest: &model.ConfigManifest{
 				RecordState: model.RecordState{
@@ -431,6 +432,7 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 						}),
 					},
 				}),
+				Metadata: make(map[string]string),
 			},
 			ConfigManifest: &model.ConfigManifest{
 				RecordState: model.RecordState{
@@ -476,6 +478,7 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 						}),
 					},
 				}),
+				Metadata: make(map[string]string),
 			},
 			ConfigManifest: &model.ConfigManifest{
 				RecordState: model.RecordState{

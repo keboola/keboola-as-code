@@ -102,6 +102,7 @@ func TestPersistNewConfig(t *testing.T) {
 							Value: "value",
 						},
 					}),
+					Metadata: make(map[string]string),
 				},
 			},
 		},
@@ -190,6 +191,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 							Value: "value1",
 						},
 					}),
+					Metadata: make(map[string]string),
 				},
 			},
 			&model.ConfigRowState{
@@ -380,6 +382,7 @@ func TestPersistSharedCode(t *testing.T) {
 					SharedCode: &model.SharedCodeConfig{
 						Target: model.ComponentId("keboola.python-transformation-v2"),
 					},
+					Metadata: make(map[string]string),
 				},
 			},
 			&model.ConfigRowState{
@@ -536,6 +539,7 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 					SharedCode: &model.SharedCodeConfig{
 						Target: model.ComponentId("keboola.python-transformation-v2"),
 					},
+					Metadata: make(map[string]string),
 				},
 			},
 			&model.ConfigRowState{
@@ -637,6 +641,7 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 						},
 					}),
 					Relations: expectedVariablesRelations,
+					Metadata:  make(map[string]string),
 				},
 			},
 		},
@@ -750,6 +755,7 @@ func TestPersistVariables(t *testing.T) {
 						},
 					}),
 					Relations: expectedConfigRelations,
+					Metadata:  make(map[string]string),
 				},
 			},
 			&model.ConfigRowState{
@@ -892,6 +898,7 @@ func TestPersistScheduler(t *testing.T) {
 					Description: "",
 					Content:     expectedContent,
 					Relations:   expectedRelations,
+					Metadata:    make(map[string]string),
 				},
 			},
 		},
