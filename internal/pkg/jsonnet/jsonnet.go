@@ -7,29 +7,32 @@ import (
 
 	"github.com/google/go-jsonnet"
 	"github.com/google/go-jsonnet/ast"
+	"github.com/spf13/cast"
 
 	"github.com/keboola/keboola-as-code/third_party/jsonnet/lib/formatter"
 	"github.com/keboola/keboola-as-code/third_party/jsonnet/lib/parser"
 	"github.com/keboola/keboola-as-code/third_party/jsonnet/lib/program"
 )
 
-func Evaluate(code string) (jsonOut string, err error) {
+type VariablesValues map[string]interface{}
+
+func Evaluate(code string, vars VariablesValues) (jsonOut string, err error) {
 	node, err := ToAst(code)
 	if err != nil {
 		return "", err
 	}
-	return EvaluateAst(node)
+	return EvaluateAst(node, vars)
 }
 
-func MustEvaluate(code string) (jsonOut string) {
-	jsonOut, err := Evaluate(code)
+func MustEvaluate(code string, vars VariablesValues) (jsonOut string) {
+	jsonOut, err := Evaluate(code, vars)
 	if err != nil {
 		panic(err)
 	}
 	return jsonOut
 }
 
-func EvaluateAst(input ast.Node) (jsonOut string, err error) {
+func EvaluateAst(input ast.Node, vars VariablesValues) (jsonOut string, err error) {
 	// Pre-process
 	node := ast.Clone(input)
 	if err := program.PreprocessAst(&node); err != nil {
@@ -37,7 +40,9 @@ func EvaluateAst(input ast.Node) (jsonOut string, err error) {
 	}
 
 	// Evaluate
-	jsonContent, err := jsonnet.MakeVM().Evaluate(node)
+	vm := jsonnet.MakeVM()
+	registerVariables(vm, vars)
+	jsonContent, err := vm.Evaluate(node)
 	if err != nil {
 		return "", fmt.Errorf(`jsonnet error: %w`, err)
 	}
@@ -50,8 +55,8 @@ func EvaluateAst(input ast.Node) (jsonOut string, err error) {
 	return out.String(), nil
 }
 
-func MustEvaluateAst(input ast.Node) (jsonOut string) {
-	jsonOut, err := EvaluateAst(input)
+func MustEvaluateAst(input ast.Node, vars VariablesValues) (jsonOut string) {
+	jsonOut, err := EvaluateAst(input, vars)
 	if err != nil {
 		panic(err)
 	}
@@ -90,6 +95,14 @@ func ToAst(code string) (ast.Node, error) {
 	return node, nil
 }
 
+func MustToAst(code string) ast.Node {
+	node, err := ToAst(code)
+	if err != nil {
+		panic(err)
+	}
+	return node
+}
+
 func DefaultOptions() formatter.Options {
 	return formatter.Options{
 		Indent:           2,
@@ -100,5 +113,31 @@ func DefaultOptions() formatter.Options {
 		SortImports:      true,
 		StringStyle:      formatter.StringStyleDouble,
 		CommentStyle:     formatter.CommentStyleSlash,
+	}
+}
+
+func registerVariables(vm *jsonnet.VM, vars VariablesValues) {
+	for k, v := range vars {
+		if v == nil {
+			vm.ExtNode(k, &ast.LiteralNull{})
+			continue
+		}
+
+		switch v := v.(type) {
+		case bool:
+			vm.ExtNode(k, &ast.LiteralBoolean{Value: v})
+		case int:
+			vm.ExtNode(k, &ast.LiteralNumber{OriginalString: cast.ToString(v)})
+		case int32:
+			vm.ExtNode(k, &ast.LiteralNumber{OriginalString: cast.ToString(v)})
+		case int64:
+			vm.ExtNode(k, &ast.LiteralNumber{OriginalString: cast.ToString(v)})
+		case float32:
+			vm.ExtNode(k, &ast.LiteralNumber{OriginalString: cast.ToString(v)})
+		case float64:
+			vm.ExtNode(k, &ast.LiteralNumber{OriginalString: cast.ToString(v)})
+		default:
+			vm.ExtVar(k, cast.ToString(v))
+		}
 	}
 }

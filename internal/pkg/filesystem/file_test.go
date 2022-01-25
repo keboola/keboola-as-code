@@ -29,10 +29,10 @@ func TestRawFile_ToJsonFile(t *testing.T) {
 
 func TestRawFile_ToJsonNetFile(t *testing.T) {
 	t.Parallel()
-	f, err := NewRawFile(`path`, `{foo:"bar"}`).ToJsonNetFile()
+	f, err := NewRawFile(`path`, `{foo:"bar"}`).ToJsonNetFile(nil)
 	assert.NoError(t, err)
 	assert.Equal(t, `path`, f.Path())
-	assert.Equal(t, "{\n  \"foo\": \"bar\"\n}\n", jsonnet.MustEvaluateAst(f.Content))
+	assert.Equal(t, "{\n  \"foo\": \"bar\"\n}\n", jsonnet.MustEvaluateAst(f.Content, nil))
 }
 
 func TestNewJsonFile(t *testing.T) {
@@ -69,7 +69,7 @@ func TestJsonFile_ToJsonNetFile(t *testing.T) {
 func TestNewJsonNetFile(t *testing.T) {
 	t.Parallel()
 	astNode := &ast.Object{}
-	f := NewJsonNetFile(`path`, astNode)
+	f := NewJsonNetFile(`path`, astNode, nil)
 	f.SetDescription(`desc`)
 	assert.Equal(t, `path`, f.Path())
 	assert.Equal(t, `desc`, f.Description())
@@ -88,7 +88,7 @@ func TestJsonNetFile_ToRawFile(t *testing.T) {
 			},
 		},
 	}
-	jsonNetFile := NewJsonNetFile(`path`, astNode).SetDescription(`desc`)
+	jsonNetFile := NewJsonNetFile(`path`, astNode, nil).SetDescription(`desc`)
 	file, err := jsonNetFile.ToRawFile()
 	assert.NoError(t, err)
 	assert.Equal(t, `path`, file.Path())
@@ -108,12 +108,21 @@ func TestJsonNetFile_ToJsonFile(t *testing.T) {
 			},
 		},
 	}
-	jsonNetFile := NewJsonNetFile(`path`, astNode)
+	jsonNetFile := NewJsonNetFile(`path`, astNode, nil)
 	jsonNetFile.SetDescription(`desc`)
 	jsonFile, err := jsonNetFile.ToJsonFile()
 	assert.NoError(t, err)
 	assert.Equal(t, `path`, jsonFile.Path())
 	assert.Equal(t, `desc`, jsonFile.Description())
+	assert.Equal(t, orderedmap.FromPairs([]orderedmap.Pair{{Key: "foo", Value: "bar"}}), jsonFile.Content)
+}
+
+func TestJsonNetFile_ToJsonFile_Variables(t *testing.T) {
+	t.Parallel()
+	variables := jsonnet.VariablesValues{"myKey": "bar"}
+	jsonNetFile := NewJsonNetFile(`path`, jsonnet.MustToAst(`{foo: std.extVar("myKey")}`), variables)
+	jsonFile, err := jsonNetFile.ToJsonFile()
+	assert.NoError(t, err)
 	assert.Equal(t, orderedmap.FromPairs([]orderedmap.Pair{{Key: "foo", Value: "bar"}}), jsonFile.Content)
 }
 
@@ -129,7 +138,7 @@ func TestJsonNetFile_ToRawJsonFile(t *testing.T) {
 			},
 		},
 	}
-	jsonNetFile := NewJsonNetFile(`path`, astNode)
+	jsonNetFile := NewJsonNetFile(`path`, astNode, nil)
 	jsonNetFile.SetDescription(`desc`)
 	rawJsonFile, err := jsonNetFile.ToJsonRawFile()
 	assert.NoError(t, err)

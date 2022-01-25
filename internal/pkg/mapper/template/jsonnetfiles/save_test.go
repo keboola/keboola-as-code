@@ -36,7 +36,7 @@ func TestJsonNetMapper_MapBeforeLocalSave(t *testing.T) {
 	assert.NoError(t, err)
 	expected := model.NewFilesToSave()
 	expected.
-		Add(filesystem.NewJsonNetFile(`foo.jsonnet`, expectedAst)). // <<<<<<<
+		Add(filesystem.NewJsonNetFile(`foo.jsonnet`, expectedAst, nil)). // <<<<<<<
 		AddTag(model.FileTypeJsonNet)
 	expected.
 		Add(filesystem.NewRawFile(`README.md`, `content`)).
