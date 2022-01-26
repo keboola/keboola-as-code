@@ -10,6 +10,38 @@
   },
   configurations: [
     {
+      componentId: "keboola.shared-code",
+      id: "shared-codes",
+      path: "_shared/keboola.python-transformation-v2",
+      rows: [
+        {
+          id: "code-with-variables",
+          path: "codes/code-with-variables",
+        },
+        {
+          id: "my-code-1",
+          path: "codes/my-code-1",
+        },
+        {
+          id: "my-code-2",
+          path: "codes/my-code-2",
+        },
+      ],
+    },
+    {
+      componentId: "keboola.variables",
+      id: "shared-code-variables",
+      path: "variables",
+      relations: [
+        {
+          configId: "shared-codes",
+          rowId: "code-with-variables",
+          type: "sharedCodeVariablesFor",
+        },
+      ],
+      rows: [],
+    },
+    {
       componentId: "ex-generic-v2",
       id: "empty",
       path: "extractor/ex-generic-v2/empty",
@@ -56,38 +88,6 @@
       componentId: "keboola.orchestrator",
       id: "orchestrator",
       path: "other/keboola.orchestrator/orchestrator",
-      rows: [],
-    },
-    {
-      componentId: "keboola.shared-code",
-      id: "shared-codes",
-      path: "other/keboola.shared-code/shared-codes",
-      rows: [
-        {
-          id: "code-with-variables",
-          path: "codes/code-with-variables",
-        },
-        {
-          id: "my-code-1",
-          path: "codes/my-code-1",
-        },
-        {
-          id: "my-code-2",
-          path: "codes/my-code-2",
-        },
-      ],
-    },
-    {
-      componentId: "keboola.variables",
-      id: "shared-code-variables",
-      path: "variables",
-      relations: [
-        {
-          configId: "shared-codes",
-          rowId: "code-with-variables",
-          type: "sharedCodeVariablesFor",
-        },
-      ],
       rows: [],
     },
     {
