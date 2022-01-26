@@ -10,6 +10,7 @@ type ChangedFields map[string]*ChangedField
 
 // ChangedField one changed field, contains diff string and changed paths in any.
 type ChangedField struct {
+	name  string
 	paths map[string]bool
 	diff  string
 }
@@ -17,13 +18,26 @@ type ChangedField struct {
 func NewChangedFields(fields ...string) ChangedFields {
 	v := make(ChangedFields)
 	for _, field := range fields {
-		v[field] = newChangedField()
+		v[field] = newChangedField(field)
 	}
 	return v
 }
 
-func newChangedField() *ChangedField {
-	return &ChangedField{paths: make(map[string]bool)}
+func newChangedField(name string) *ChangedField {
+	return &ChangedField{name: name, paths: make(map[string]bool)}
+}
+
+func (v ChangedFields) All() []*ChangedField {
+	out := make([]*ChangedField, len(v))
+	i := 0
+	for _, field := range v {
+		out[i] = field
+		i++
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		return out[i].name < out[j].name
+	})
+	return out
 }
 
 func (v ChangedFields) IsEmpty() bool {
@@ -32,7 +46,7 @@ func (v ChangedFields) IsEmpty() bool {
 
 func (v ChangedFields) Add(field string) *ChangedField {
 	if !v.Has(field) {
-		v[field] = newChangedField()
+		v[field] = newChangedField(field)
 	}
 	return v[field]
 }
@@ -58,6 +72,10 @@ func (v ChangedFields) String() string {
 	}
 	sort.Strings(out)
 	return strings.Join(out, `, `)
+}
+
+func (v *ChangedField) Name() string {
+	return v.name
 }
 
 func (v *ChangedField) SetDiff(diff string) *ChangedField {

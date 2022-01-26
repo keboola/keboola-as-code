@@ -228,8 +228,8 @@ func (r *Results) Format(details bool) []string {
 
 			// Changed fields
 			if details {
-				for name, field := range result.ChangedFields {
-					out = append(out, fmt.Sprintf("  %s:", name))
+				for _, field := range result.ChangedFields.All() {
+					out = append(out, fmt.Sprintf("  %s:", field.Name()))
 					for _, line := range strings.Split(field.Diff(), "\n") {
 						out = append(out, fmt.Sprintf("  %s", line))
 					}

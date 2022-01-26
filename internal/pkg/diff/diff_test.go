@@ -808,6 +808,27 @@ func TestDiffMap(t *testing.T) {
 	assert.Equal(t, strings.Trim(expected, "\n"), reporter.String())
 }
 
+func TestResults_Format(t *testing.T) {
+	t.Parallel()
+	changedFields := model.NewChangedFields()
+	changedFields.Add("xyz").SetDiff(`diff 1`)
+	changedFields.Add("123").SetDiff(`diff 2`)
+	changedFields.Add("abc").SetDiff(`diff 3`)
+	objectState := &fixtures.MockedObjectState{MockedManifest: &fixtures.MockedManifest{}}
+	result := &Result{ChangedFields: changedFields, State: ResultNotEqual, ObjectState: objectState}
+	results := &Results{Results: []*Result{result}}
+	output := strings.Join(results.Format(true), "\n")
+
+	expected := `* K test
+  123:
+  diff 2
+  abc:
+  diff 3
+  xyz:
+  diff 1`
+	assert.Equal(t, expected, output)
+}
+
 func newProjectState(t *testing.T) *state.State {
 	t.Helper()
 	d := testdeps.New()
