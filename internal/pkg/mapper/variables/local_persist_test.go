@@ -81,7 +81,7 @@ func TestVariablesValuesPersistDefaultInName(t *testing.T) {
 	// Invoke
 	changes := model.NewLocalChanges()
 	changes.AddPersisted(state.All()...)
-	assert.NoError(t, state.Mapper().OnLocalChange(changes))
+	assert.NoError(t, state.Mapper().AfterLocalOperation(changes))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Row 2 has relation -> contains default variables values, because it has "default" in the name
@@ -129,7 +129,7 @@ func TestVariablesValuesPersistFirstRowIsDefault(t *testing.T) {
 	// Invoke
 	changes := model.NewLocalChanges()
 	changes.AddPersisted(state.All()...)
-	assert.NoError(t, state.Mapper().OnLocalChange(changes))
+	assert.NoError(t, state.Mapper().AfterLocalOperation(changes))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Row1 has relation -> contains default variables values, because it is first

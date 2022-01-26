@@ -51,10 +51,10 @@ func TestRelationsMapperLinkRelations(t *testing.T) {
 	// No other side relation
 	assert.Empty(t, object2.Local.Relations)
 
-	// Call OnLocalChange
+	// Call AfterLocalOperation
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(object1)
-	assert.NoError(t, state.Mapper().OnLocalChange(changes))
+	assert.NoError(t, state.Mapper().AfterLocalOperation(changes))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Other side relation has been created
@@ -87,10 +87,10 @@ func TestRelationsMapperOtherSideMissing(t *testing.T) {
 	}
 	assert.NoError(t, state.Set(object1))
 
-	// Call OnLocalChange
+	// Call AfterLocalOperation
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(object1)
-	assert.NoError(t, state.Mapper().OnLocalChange(changes))
+	assert.NoError(t, state.Mapper().AfterLocalOperation(changes))
 
 	// Warning is logged
 	expected := `

@@ -63,7 +63,7 @@ func TestMapAfterLocalLoad(t *testing.T) {
 	// Load
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(orchestratorConfigState)
-	assert.NoError(t, state.Mapper().OnLocalChange(changes))
+	assert.NoError(t, state.Mapper().AfterLocalOperation(changes))
 
 	// Logs
 	expectedLogs := `
@@ -248,7 +248,7 @@ func TestMapAfterLocalLoadError(t *testing.T) {
 	// Load
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(orchestratorConfigState)
-	err := state.Mapper().OnLocalChange(changes)
+	err := state.Mapper().AfterLocalOperation(changes)
 	assert.Error(t, err)
 
 	// Assert error
@@ -310,7 +310,7 @@ func TestMapAfterLocalLoadDepsCycle(t *testing.T) {
 	// Load
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(orchestratorConfigState)
-	err := state.Mapper().OnLocalChange(changes)
+	err := state.Mapper().AfterLocalOperation(changes)
 	assert.Error(t, err)
 
 	// Assert error

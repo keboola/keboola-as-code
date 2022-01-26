@@ -106,7 +106,8 @@ func TestConfigMetadataOnRemoteChangeLoaded(t *testing.T) {
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(configState)
 	changes.AddLoaded(configState2)
-	assert.NoError(t, mockedState.Mapper().OnRemoteChange(changes))
+
+	assert.NoError(t, mockedState.Mapper().AfterRemoteOperation(changes))
 	assert.Equal(t, map[string]string{"KBC.KaC.Meta": "value1", "KBC.KaC.Meta2": "value2"}, config.Metadata)
 	assert.Equal(t, make(map[string]string), config2.Metadata)
 }
@@ -136,7 +137,7 @@ func TestConfigMetadataOnRemoteChangeSaved(t *testing.T) {
 
 	// Invoke
 	changes := model.NewRemoteChanges()
-	changes.AddSaved(configState)
-	assert.NoError(t, mockedState.Mapper().OnRemoteChange(changes))
+	changes.AddCreated(configState)
+	assert.NoError(t, mockedState.Mapper().AfterRemoteOperation(changes))
 	assert.Equal(t, 1, httpTransport.GetCallCountInfo()["POST =~/storage/branch/123/components/keboola.ex-aws-s3/configs/456/metadata"])
 }

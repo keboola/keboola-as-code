@@ -4,7 +4,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func (m *schedulerMapper) OnRemoteChange(changes *model.RemoteChanges) error {
+func (m *schedulerMapper) AfterRemoteOperation(changes *model.RemoteChanges) error {
 	var saved []*model.ConfigState
 	var deleted []*model.ConfigState
 

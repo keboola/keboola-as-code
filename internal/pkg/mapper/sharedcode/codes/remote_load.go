@@ -8,7 +8,7 @@ import (
 )
 
 // OnRemoteChange converts legacy "code_content" string -> []interface{}.
-func (m *mapper) OnRemoteChange(changes *model.RemoteChanges) error {
+func (m *mapper) AfterRemoteOperation(changes *model.RemoteChanges) error {
 	errors := utils.NewMultiError()
 	for _, objectState := range changes.Loaded() {
 		if ok, err := m.IsSharedCodeKey(objectState.Key()); err != nil {

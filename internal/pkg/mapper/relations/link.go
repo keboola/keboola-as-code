@@ -9,7 +9,7 @@ import (
 )
 
 // OnLocalChange links relation sides on local load.
-func (m *relationsMapper) OnLocalChange(changes *model.LocalChanges) error {
+func (m *relationsMapper) AfterLocalOperation(changes *model.LocalChanges) error {
 	errors := utils.NewMultiError()
 	allObjects := m.state.LocalObjects()
 	for _, objectState := range changes.Loaded() {
@@ -27,7 +27,7 @@ func (m *relationsMapper) OnLocalChange(changes *model.LocalChanges) error {
 }
 
 // OnRemoteChange links relation sides on remote load.
-func (m *relationsMapper) OnRemoteChange(changes *model.RemoteChanges) error {
+func (m *relationsMapper) AfterRemoteOperation(changes *model.RemoteChanges) error {
 	errors := utils.NewMultiError()
 	allObjects := m.state.RemoteObjects()
 	for _, objectState := range changes.Loaded() {

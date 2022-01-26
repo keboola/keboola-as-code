@@ -11,7 +11,7 @@ import (
 )
 
 // OnLocalChange - replace placeholders with default buckets in IM.
-func (m *defaultBucketMapper) OnLocalChange(changes *model.LocalChanges) error {
+func (m *defaultBucketMapper) AfterLocalOperation(changes *model.LocalChanges) error {
 	warnings := utils.NewMultiError()
 	for _, objectState := range changes.Loaded() {
 		config, ok := objectState.LocalState().(configOrRow)
