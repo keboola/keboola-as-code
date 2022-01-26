@@ -43,24 +43,27 @@ func (*testMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
 	return nil
 }
 
-func (t *testMapper) OnLocalChange(changes *model.LocalChanges) error {
-	for _, objectState := range changes.Created() {
-		t.localChanges = append(t.localChanges, fmt.Sprintf(`created %s`, objectState.Desc()))
-	}
+func (t *testMapper) AfterLocalOperation(changes *model.LocalChanges) error {
 	for _, objectState := range changes.Loaded() {
 		t.localChanges = append(t.localChanges, fmt.Sprintf(`loaded %s`, objectState.Desc()))
-	}
-	for _, objectState := range changes.Saved() {
-		t.localChanges = append(t.localChanges, fmt.Sprintf(`saved %s`, objectState.Desc()))
-	}
-	for _, objectState := range changes.Deleted() {
-		t.localChanges = append(t.localChanges, fmt.Sprintf(`deleted %s`, objectState.Desc()))
 	}
 	for _, objectState := range changes.Persisted() {
 		t.localChanges = append(t.localChanges, fmt.Sprintf(`persisted %s`, objectState.Desc()))
 	}
+	for _, objectState := range changes.Created() {
+		t.localChanges = append(t.localChanges, fmt.Sprintf(`created %s`, objectState.Desc()))
+	}
+	for _, objectState := range changes.Updated() {
+		t.localChanges = append(t.localChanges, fmt.Sprintf(`updated %s`, objectState.Desc()))
+	}
+	for _, objectState := range changes.Saved() {
+		t.localChanges = append(t.localChanges, fmt.Sprintf(`saved %s`, objectState.Desc()))
+	}
 	for _, action := range changes.Renamed() {
 		t.localChanges = append(t.localChanges, fmt.Sprintf(`renamed %s`, action.String()))
+	}
+	for _, objectState := range changes.Deleted() {
+		t.localChanges = append(t.localChanges, fmt.Sprintf(`deleted %s`, objectState.Desc()))
 	}
 	return nil
 }
@@ -102,8 +105,9 @@ func TestLocalSaveMapper(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "{\n  \"key\": \"overwritten\",\n  \"new\": \"value\"\n}", strings.TrimSpace(configFile.Content))
 
-	// OnLocalChange event has been called
+	// AfterLocalOperation event has been called
 	assert.Equal(t, []string{
+		`created config "branch:123/component:foo.bar/config:456"`,
 		`saved config "branch:123/component:foo.bar/config:456"`,
 	}, testMapperInst.localChanges)
 }
@@ -142,7 +146,7 @@ func TestLocalLoadMapper(t *testing.T) {
 	configState := projectState.MustGet(model.ConfigKey{BranchId: 111, ComponentId: `ex-generic-v2`, Id: `456`}).(*model.ConfigState)
 	assert.Equal(t, `{"parameters":"overwritten","new":"value"}`, json.MustEncodeString(configState.Local.Content, false))
 
-	// OnLocalChange event has been called
+	// AfterLocalOperation event has been called
 	assert.Equal(t, []string{
 		`loaded branch "111"`,
 		`loaded config "branch:111/component:ex-generic-v2/config:456"`,

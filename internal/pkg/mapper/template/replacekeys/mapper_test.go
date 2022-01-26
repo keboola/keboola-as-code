@@ -66,7 +66,7 @@ func TestReplaceKeysMapper_OnRemoteChange(t *testing.T) {
 	// Run mapper
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(config, row)
-	assert.NoError(t, s.Mapper().OnRemoteChange(changes))
+	assert.NoError(t, s.Mapper().AfterRemoteOperation(changes))
 
 	// Check result state
 	assert.Equal(t, []model.ObjectState{

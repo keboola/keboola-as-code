@@ -60,8 +60,8 @@ func TestSchedulerMapperRemoteActivate(t *testing.T) {
 
 	// Invoke
 	changes := model.NewRemoteChanges()
-	changes.AddSaved(schedulerConfigState)
-	assert.NoError(t, state.Mapper().OnRemoteChange(changes))
+	changes.AddUpdated(schedulerConfigState)
+	assert.NoError(t, state.Mapper().AfterRemoteOperation(changes))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Check API request

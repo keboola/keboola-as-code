@@ -49,12 +49,15 @@ func (*testMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
 	return nil
 }
 
-func (t *testMapper) OnRemoteChange(changes *model.RemoteChanges) error {
+func (t *testMapper) AfterRemoteOperation(changes *model.RemoteChanges) error {
+	for _, objectState := range changes.Loaded() {
+		t.remoteChanges = append(t.remoteChanges, fmt.Sprintf(`loaded %s`, objectState.Desc()))
+	}
 	for _, objectState := range changes.Created() {
 		t.remoteChanges = append(t.remoteChanges, fmt.Sprintf(`created %s`, objectState.Desc()))
 	}
-	for _, objectState := range changes.Loaded() {
-		t.remoteChanges = append(t.remoteChanges, fmt.Sprintf(`loaded %s`, objectState.Desc()))
+	for _, objectState := range changes.Updated() {
+		t.remoteChanges = append(t.remoteChanges, fmt.Sprintf(`updated %s`, objectState.Desc()))
 	}
 	for _, objectState := range changes.Saved() {
 		t.remoteChanges = append(t.remoteChanges, fmt.Sprintf(`saved %s`, objectState.Desc()))
@@ -109,7 +112,7 @@ func TestRemoteSaveMapper(t *testing.T) {
 	assert.Equal(t, `internal name`, configState.Local.Name)
 	assert.Equal(t, `{"key":"internal value"}`, json.MustEncodeString(configState.Local.Content, false))
 
-	// OnRemoteChange event has been called
+	// AfterRemoteOperation event has been called
 	assert.Equal(t, []string{
 		`created config "branch:123/component:foo.bar/config:456"`,
 		`saved config "branch:123/component:foo.bar/config:456"`,
@@ -170,7 +173,7 @@ func TestRemoteLoadMapper(t *testing.T) {
 	assert.Equal(t, `internal name`, config.Name)
 	assert.Equal(t, `{"key":"internal value","new":"value"}`, json.MustEncodeString(config.Content, false))
 
-	// OnRemoteChange event has been called
+	// AfterRemoteOperation event has been called
 	assert.Equal(t, []string{
 		`loaded branch "123"`,
 		`loaded config "branch:123/component:foo.bar/config:456"`,
