@@ -19,6 +19,28 @@ func (m *configMetadataMapper) OnRemoteChange(changes *model.RemoteChanges) erro
 		m.onRemoteLoad(objectState, metadataMap)
 	}
 
+	// Process saved objects
+	if len(changes.Saved()) > 0 {
+		api, err := m.StorageApi()
+		if err != nil {
+			return err
+		}
+		pool := api.NewPool()
+		for _, objectState := range changes.Saved() {
+			config, ok := objectState.RemoteState().(*model.Config)
+			if !ok {
+				continue
+			}
+			if len(config.Metadata) > 0 {
+				pool.Request(api.UpdateConfigMetadataRequest(config)).Send()
+			}
+		}
+		err = pool.StartAndWait()
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

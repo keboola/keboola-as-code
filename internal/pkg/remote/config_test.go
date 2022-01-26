@@ -1,6 +1,8 @@
 package remote_test
 
 import (
+	"fmt"
+	"math/rand"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -8,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
@@ -101,6 +104,25 @@ func TestConfigApiCalls(t *testing.T) {
 	assert.NotNil(t, components)
 	assert.NoError(t, err)
 	testhelper.AssertWildcards(t, expectedComponentsConfigTest(), json.MustEncodeString(components, true), "Unexpected components")
+
+	// Update metadata
+	config.Metadata = map[string]string{"KBC.KaC.meta1": fmt.Sprintf("%d", rand.Intn(100))}
+	assert.NoError(t, api.UpdateConfigMetadataRequest(config.Config).Send().Err())
+
+	// List metadata
+	req := api.ListConfigMetadataRequest(branch.Id).Send()
+	assert.NoError(t, req.Err())
+	var configMetadata remote.ConfigMetadataResponseItem
+	for _, item := range *req.Result.(*remote.ConfigMetadataResponse) {
+		if item.ComponentId == config.ComponentId && item.ConfigId == config.Id {
+			configMetadata = item
+			break
+		}
+	}
+	assert.NotNil(t, configMetadata)
+	assert.Len(t, configMetadata.Metadata, 1)
+	assert.Equal(t, "KBC.KaC.meta1", configMetadata.Metadata[0].Key)
+	assert.Equal(t, config.Metadata["KBC.KaC.meta1"], configMetadata.Metadata[0].Value)
 
 	// Delete configuration
 	err = api.DeleteConfig(config.ConfigKey)
