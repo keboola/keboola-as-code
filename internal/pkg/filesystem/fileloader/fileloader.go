@@ -165,7 +165,7 @@ func (l *loader) defaultHandler(def *filesystem.FileDef, fileType filesystem.Fil
 	case filesystem.FileTypeJson:
 		return rawFile.ToJsonFile()
 	case filesystem.FileTypeJsonNet:
-		return rawFile.ToJsonNetFile()
+		return rawFile.ToJsonNetFile(nil)
 	default:
 		panic(fmt.Errorf(`unexpected filesystem.FileType = %v`, fileType))
 	}
