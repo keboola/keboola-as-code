@@ -113,7 +113,6 @@ func (u *UnitOfWork) CreateObject(key model.Key, name string) {
 		return
 	}
 	objectState.SetLocalState(object)
-	u.changes.AddCreated(objectState)
 
 	// Generate local path
 	if err := u.NewPathsGenerator(false).Add(objectState).Invoke(); err != nil {
@@ -189,6 +188,7 @@ func (u *UnitOfWork) LoadObject(manifest model.ObjectManifest, filter model.Obje
 }
 
 func (u *UnitOfWork) SaveObject(objectState model.ObjectState, object model.Object, changedFields model.ChangedFields) {
+	isNew := !objectState.Manifest().State().IsPersisted()
 	u.
 		workersFor(objectState.Level()).
 		AddWorker(func() error {
@@ -196,7 +196,11 @@ func (u *UnitOfWork) SaveObject(objectState model.ObjectState, object model.Obje
 				return err
 			}
 			objectState.SetLocalState(object)
-			u.changes.AddSaved(objectState)
+			if isNew {
+				u.changes.AddCreated(objectState)
+			} else {
+				u.changes.AddUpdated(objectState)
+			}
 			return nil
 		})
 }
@@ -243,9 +247,9 @@ func (u *UnitOfWork) Invoke() error {
 		}
 	}
 
-	// OnLocalChange event
+	// AfterLocalOperation event
 	if !u.changes.Empty() {
-		if err := u.mapper.OnLocalChange(u.changes); err != nil {
+		if err := u.mapper.AfterLocalOperation(u.changes); err != nil {
 			u.errors.Append(err)
 		}
 	}

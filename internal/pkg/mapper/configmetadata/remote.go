@@ -8,7 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 )
 
-func (m *configMetadataMapper) OnRemoteChange(changes *model.RemoteChanges) error {
+func (m *configMetadataMapper) AfterRemoteOperation(changes *model.RemoteChanges) error {
 	metadataMap, err := m.GetMetadataMap()
 	if err != nil {
 		return err

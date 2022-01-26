@@ -5,7 +5,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func (m *orchestratorMapper) OnLocalChange(changes *model.LocalChanges) error {
+func (m *orchestratorMapper) AfterLocalOperation(changes *model.LocalChanges) error {
 	errors := utils.NewMultiError()
 	allObjects := m.state.LocalObjects()
 

@@ -5,7 +5,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func (m *mapper) OnRemoteChange(changes *model.RemoteChanges) error {
+func (m *mapper) AfterRemoteOperation(changes *model.RemoteChanges) error {
 	// Process loaded objects
 	errors := utils.NewMultiError()
 	for _, objectState := range changes.Loaded() {

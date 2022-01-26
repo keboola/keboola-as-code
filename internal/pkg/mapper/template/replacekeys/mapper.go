@@ -17,7 +17,7 @@ func NewMapper(state *state.State, keys Keys) *replaceKeysMapper {
 	return &replaceKeysMapper{state: state, logger: state.Logger(), keys: keys}
 }
 
-func (m *replaceKeysMapper) OnRemoteChange(changes *model.RemoteChanges) error {
+func (m *replaceKeysMapper) AfterRemoteOperation(changes *model.RemoteChanges) error {
 	replacement, err := m.keys.values()
 	if err != nil {
 		return err

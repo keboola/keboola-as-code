@@ -212,9 +212,9 @@ func (u *UnitOfWork) Invoke() error {
 		}
 	}
 
-	// OnRemoteChange event
+	// AfterRemoteOperation event
 	if !u.changes.Empty() {
-		if err := u.mapper.OnRemoteChange(u.changes); err != nil {
+		if err := u.mapper.AfterRemoteOperation(u.changes); err != nil {
 			u.errors.Append(err)
 		}
 	}
@@ -265,10 +265,7 @@ func (u *UnitOfWork) create(objectState model.ObjectState, object model.Object, 
 		OnSuccess(func(response *client.Response) {
 			// Save new ID to manifest
 			objectState.SetRemoteState(object)
-		}).
-		OnSuccess(func(response *client.Response) {
 			u.changes.AddCreated(objectState)
-			u.changes.AddSaved(objectState)
 		}).
 		OnError(func(response *client.Response) {
 			if e, ok := response.Error().(*Error); ok {
@@ -288,9 +285,7 @@ func (u *UnitOfWork) update(objectState model.ObjectState, object model.Object, 
 			Request(request).
 			OnSuccess(func(response *client.Response) {
 				objectState.SetRemoteState(object)
-			}).
-			OnSuccess(func(response *client.Response) {
-				u.changes.AddSaved(objectState)
+				u.changes.AddUpdated(objectState)
 			}).
 			Send()
 	} else {

@@ -6,7 +6,7 @@ import (
 )
 
 // OnLocalChange - resolve shared codes paths, and replace them by IDs on local load.
-func (m *mapper) OnLocalChange(changes *model.LocalChanges) error {
+func (m *mapper) AfterLocalOperation(changes *model.LocalChanges) error {
 	// Process loaded objects
 	errors := utils.NewMultiError()
 	for _, objectState := range changes.Loaded() {
