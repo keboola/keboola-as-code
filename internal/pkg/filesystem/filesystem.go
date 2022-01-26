@@ -84,7 +84,6 @@ func Rel(base, path string) (string, error) {
 	if base == string(PathSeparator) {
 		base = ""
 	}
-
 	if !IsFrom(path, base) {
 		return "", fmt.Errorf(`cannot get relative path, base="%s", path="%s"`, base, path)
 	}
@@ -118,6 +117,9 @@ func Match(pattern, name string) (matched bool, err error) {
 
 // IsFrom returns true if path is from base dir or some sub-dir.
 func IsFrom(path, base string) bool {
+	if base == "" {
+		return true
+	}
 	baseWithSep := base + string(PathSeparator)
 	return strings.HasPrefix(path, baseWithSep)
 }
