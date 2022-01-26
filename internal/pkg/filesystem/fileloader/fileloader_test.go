@@ -9,8 +9,8 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/fileloader"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
@@ -73,23 +73,23 @@ func (tc *testCases) runTests(t *testing.T) {
 	}
 }
 
-func (*testCases) TestFileLoader_ReadFile(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
+func (*testCases) TestFileLoader_ReadRawFile(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
 	// Create file
 	filePath := "file.txt"
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filePath, "foo\n")))
 
 	// Read
 	logger.Truncate()
-	file, err := fileloader.New(fs).ReadFile(filesystem.NewFileDef(filePath))
+	file, err := fs.FileLoader().ReadRawFile(filesystem.NewFileDef(filePath))
 	assert.NoError(t, err)
 	assert.NotNil(t, file)
 	assert.Equal(t, "foo\n", file.Content)
 	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.AllMessages()))
 }
 
-func (*testCases) TestFileLoader_ReadFile_NotFound(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
+func (*testCases) TestFileLoader_ReadRawFile_NotFound(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
 	filePath := "file.txt"
-	file, err := fileloader.New(fs).ReadFile(filesystem.NewFileDef(filePath))
+	file, err := fs.FileLoader().ReadRawFile(filesystem.NewFileDef(filePath))
 	assert.Error(t, err)
 	assert.Nil(t, file)
 	assert.True(t, strings.HasPrefix(err.Error(), `missing file "file.txt"`))
@@ -103,7 +103,7 @@ func (*testCases) TestFileLoader_ReadJsonFile(t *testing.T, fs filesystem.Fs, lo
 
 	// Read
 	logger.Truncate()
-	file, err := fileloader.New(fs).ReadJsonFile(filesystem.NewFileDef(filePath))
+	file, err := fs.FileLoader().ReadJsonFile(filesystem.NewFileDef(filePath))
 	assert.NoError(t, err)
 	assert.NotNil(t, file)
 	assert.Equal(t, `{"foo":"bar"}`, json.MustEncodeString(file.Content, false))
@@ -118,7 +118,7 @@ func (*testCases) TestFileLoader_ReadJsonFileTo(t *testing.T, fs filesystem.Fs, 
 	// Read
 	logger.Truncate()
 	target := &myStruct{}
-	file, err := fileloader.New(fs).ReadJsonFileTo(filesystem.NewFileDef(filePath), target)
+	file, err := fs.FileLoader().ReadJsonFileTo(filesystem.NewFileDef(filePath), target)
 	assert.Equal(t, `{"foo": "bar"}`, file.Content)
 	assert.NoError(t, err)
 	assert.Equal(t, `bar`, target.FooField)
@@ -133,11 +133,59 @@ func (*testCases) TestFileLoader_ReadJsonFileTo_Invalid(t *testing.T, fs filesys
 	// Read
 	logger.Truncate()
 	target := &myStruct{}
-	_, err := fileloader.New(fs).ReadJsonFileTo(filesystem.NewFileDef(filePath), target)
+	_, err := fs.FileLoader().ReadJsonFileTo(filesystem.NewFileDef(filePath), target)
 	assert.Error(t, err)
 	expectedError := `
 file "file.txt" is invalid:
   - unexpected end of JSON input, offset: 7
+`
+	assert.Equal(t, strings.TrimSpace(expectedError), err.Error())
+}
+
+func (*testCases) TestFileLoader_ReadJsonNetFile(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
+	// Create file
+	filePath := "file.txt"
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filePath, `{foo: "bar"}`)))
+
+	// Read
+	logger.Truncate()
+	file, err := fs.FileLoader().ReadJsonNetFile(filesystem.NewFileDef(filePath))
+	assert.NoError(t, err)
+	assert.NotNil(t, file)
+	jsonNetCode, err := jsonnet.FormatAst(file.Content)
+	assert.NoError(t, err)
+	assert.Equal(t, "{ foo: \"bar\" }\n", jsonNetCode)
+	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.AllMessages()))
+}
+
+func (*testCases) TestFileLoader_ReadJsonNetFileTo(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
+	// Create file
+	filePath := "file.txt"
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filePath, `{foo: "bar"}`)))
+
+	// Read
+	logger.Truncate()
+	target := &myStruct{}
+	file, err := fs.FileLoader().ReadJsonNetFileTo(filesystem.NewFileDef(filePath), target)
+	assert.NotEmpty(t, file.Content)
+	assert.NoError(t, err)
+	assert.Equal(t, `bar`, target.FooField)
+	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.AllMessages()))
+}
+
+func (*testCases) TestFileLoader_ReadJsonNetFileTo_Invalid(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
+	// Create file
+	filePath := "file.txt"
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filePath, `{foo:`)))
+
+	// Read
+	logger.Truncate()
+	target := &myStruct{}
+	_, err := fs.FileLoader().ReadJsonNetFileTo(filesystem.NewFileDef(filePath), target)
+	assert.Error(t, err)
+	expectedError := `
+file "file.txt" is invalid:
+  - cannot parse jsonnet: 1:6 Unexpected end of file
 `
 	assert.Equal(t, strings.TrimSpace(expectedError), err.Error())
 }
@@ -148,7 +196,7 @@ func (*testCases) TestFileLoader_ReadJsonFile_Invalid(t *testing.T, fs filesyste
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filePath, `{"foo":`)))
 
 	// Read
-	file, err := fileloader.New(fs).ReadJsonFile(filesystem.NewFileDef(filePath))
+	file, err := fs.FileLoader().ReadJsonFile(filesystem.NewFileDef(filePath))
 	assert.Error(t, err)
 	assert.Nil(t, file)
 	expectedError := `
@@ -166,7 +214,7 @@ func (*testCases) TestFileLoader_ReadJsonFieldsTo(t *testing.T, fs filesystem.Fs
 	// Read
 	logger.Truncate()
 	target := &myStruct{}
-	file, tagFound, err := fileloader.New(fs).ReadJsonFieldsTo(filesystem.NewFileDef(filePath), target, `mytag:field`)
+	file, tagFound, err := fs.FileLoader().ReadJsonFieldsTo(filesystem.NewFileDef(filePath), target, `mytag:field`)
 	assert.NoError(t, err)
 	assert.True(t, tagFound)
 	assert.NotNil(t, file)
@@ -184,7 +232,7 @@ func (*testCases) TestFileLoader_ReadJsonMapTo(t *testing.T, fs filesystem.Fs, l
 	// Read
 	logger.Truncate()
 	target := &myStruct{}
-	file, tagFound, err := fileloader.New(fs).ReadJsonMapTo(filesystem.NewFileDef(filePath), target, `mytag:map`)
+	file, tagFound, err := fs.FileLoader().ReadJsonMapTo(filesystem.NewFileDef(filePath), target, `mytag:map`)
 	assert.NoError(t, err)
 	assert.True(t, tagFound)
 	assert.NotNil(t, file)
@@ -201,7 +249,7 @@ func (*testCases) TestFileLoader_ReadFileContentTo(t *testing.T, fs filesystem.F
 	// Read
 	logger.Truncate()
 	target := &myStruct{}
-	file, tagFound, err := fileloader.New(fs).ReadFileContentTo(filesystem.NewFileDef(filePath), target, `mytag:content`)
+	file, tagFound, err := fs.FileLoader().ReadFileContentTo(filesystem.NewFileDef(filePath), target, `mytag:content`)
 	assert.NoError(t, err)
 	assert.True(t, tagFound)
 	assert.NotNil(t, file)

@@ -1,33 +1,40 @@
 package mapper
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/fileloader"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-// LocalSaveMapper to modify how the object will be saved in the filesystem.
+// LocalSaveMapper is intended to modify how the object will be saved in the filesystem.
 type LocalSaveMapper interface {
 	MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error
 }
 
-// LocalLoadMapper to modify/normalize the object internal representation after loading from the filesystem.
+// LocalLoadMapper is intended to modify/normalize the object internal representation after loading from the filesystem.
 // Note: do not rely on other objects, they may not be loaded yet, see OnLocalChangeListener.
 type LocalLoadMapper interface {
 	MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error
 }
 
-// RemoteSaveMapper to modify how the object will be saved in the Storage API.
+// RemoteSaveMapper is intended to modify how the object will be saved in the Storage API.
 type RemoteSaveMapper interface {
 	MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error
 }
 
-// RemoteLoadMapper to modify/normalize the object internal representation after loading from the Storage API.
+// LocalFileLoadMapper is intended to modify file load process.
+type LocalFileLoadMapper interface {
+	LoadLocalFile(def *filesystem.FileDef, fileType filesystem.FileType, next filesystem.LoadHandler) (filesystem.File, error)
+}
+
+// RemoteLoadMapper is intended to modify/normalize the object internal representation after loading from the Storage API.
 // Note: do not rely on other objects, they may not be loaded yet, see OnRemoteChangeListener.
 type RemoteLoadMapper interface {
 	MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error
 }
 
-// BeforePersistMapper to modify manifest record before persist.
+// BeforePersistMapper is intended to modify manifest record before persist.
 type BeforePersistMapper interface {
 	MapBeforePersist(recipe *model.PersistRecipe) error
 }
@@ -87,6 +94,10 @@ func New() *Mapper {
 	return &Mapper{}
 }
 
+func (m *Mapper) NewFileLoader(fs filesystem.Fs) filesystem.FileLoader {
+	return fileloader.NewWithHandler(fs, m.LoadLocalFile)
+}
+
 func (m *Mapper) AddMapper(mapper ...interface{}) *Mapper {
 	m.mappers = append(m.mappers, mapper...)
 	return m
@@ -112,6 +123,27 @@ func (m *Mapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
 		}
 		return nil
 	})
+}
+
+func (m *Mapper) LoadLocalFile(def *filesystem.FileDef, fileType filesystem.FileType, defaultHandler filesystem.LoadHandler) (filesystem.File, error) {
+	handler := defaultHandler
+
+	// Generate handlers chain, eg.  mapper1(mapper2(mapper3(default())))
+	err := m.mappers.ForEachReverse(true, func(mapper interface{}) error {
+		if mapper, ok := mapper.(LocalFileLoadMapper); ok {
+			next := handler
+			handler = func(def *filesystem.FileDef, fileType filesystem.FileType) (filesystem.File, error) {
+				return mapper.LoadLocalFile(def, fileType, next)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Invoke handlers chain
+	return handler(def, fileType)
 }
 
 func (m *Mapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {

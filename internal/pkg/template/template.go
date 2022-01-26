@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/fileloader"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
@@ -56,7 +55,7 @@ func New(fs filesystem.Fs, manifest *Manifest, inputs *Inputs, replacements repl
 	return &Template{
 		dependencies: d,
 		fs:           fs,
-		fileLoader:   fileloader.New(fs),
+		fileLoader:   fs.FileLoader(),
 		manifest:     manifest,
 		inputs:       inputs,
 		replacements: replacements,
@@ -65,10 +64,6 @@ func New(fs filesystem.Fs, manifest *Manifest, inputs *Inputs, replacements repl
 
 func (t *Template) Fs() filesystem.Fs {
 	return t.fs
-}
-
-func (t *Template) FileLoader() filesystem.FileLoader {
-	return t.fileLoader
 }
 
 func (t *Template) Manifest() manifest.Manifest {

@@ -28,6 +28,7 @@ func NewRegistry(paths *knownpaths.Paths, namingRegistry *naming.Registry, compo
 type State struct {
 	*Registry
 	container       ObjectsContainer
+	fileLoader      filesystem.FileLoader
 	logger          log.Logger
 	manifest        manifest.Manifest
 	mapper          *mapper.Mapper
@@ -49,7 +50,6 @@ type LoadOptions struct {
 type ObjectsContainer interface {
 	Ctx() context.Context
 	Fs() filesystem.Fs
-	FileLoader() filesystem.FileLoader
 	Manifest() manifest.Manifest
 	MappersFor(state *State) mapper.Mappers
 }
@@ -86,12 +86,16 @@ func New(container ObjectsContainer, d dependencies) (*State, error) {
 		pathMatcher:     pathMatcher,
 	}
 
+	// Create mapper
 	s.mapper = mapper.New()
 
-	// Local manager for load,save,delete ... operations
-	s.localManager = local.NewManager(s.logger, container.Fs(), container.FileLoader(), m, s.namingGenerator, s.Registry, s.mapper)
+	// Create file loader
+	s.fileLoader = s.mapper.NewFileLoader(container.Fs())
 
-	// Local manager for API operations
+	// Local manager for load,save,delete ... operations
+	s.localManager = local.NewManager(s.logger, container.Fs(), s.fileLoader, m, s.namingGenerator, s.Registry, s.mapper)
+
+	// Remote manager for API operations
 	s.remoteManager = remote.NewManager(s.localManager, storageApi, s.Registry, s.mapper)
 
 	s.mapper.AddMapper(container.MappersFor(s)...)
@@ -143,7 +147,7 @@ func (s *State) Fs() filesystem.Fs {
 }
 
 func (s *State) FileLoader() filesystem.FileLoader {
-	return s.container.FileLoader()
+	return s.fileLoader
 }
 
 func (s *State) Manifest() manifest.Manifest {

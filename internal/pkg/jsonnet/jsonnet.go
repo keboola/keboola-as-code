@@ -21,6 +21,14 @@ func Evaluate(code string) (jsonOut string, err error) {
 	return EvaluateAst(node)
 }
 
+func MustEvaluate(code string) (jsonOut string) {
+	jsonOut, err := Evaluate(code)
+	if err != nil {
+		panic(err)
+	}
+	return jsonOut
+}
+
 func EvaluateAst(input ast.Node) (jsonOut string, err error) {
 	// Pre-process
 	node := ast.Clone(input)
@@ -42,12 +50,36 @@ func EvaluateAst(input ast.Node) (jsonOut string, err error) {
 	return out.String(), nil
 }
 
+func MustEvaluateAst(input ast.Node) (jsonOut string) {
+	jsonOut, err := EvaluateAst(input)
+	if err != nil {
+		panic(err)
+	}
+	return jsonOut
+}
+
 func Format(code string) (string, error) {
 	return formatter.Format(``, code, DefaultOptions())
 }
 
+func MustFormat(code string) string {
+	out, err := Format(code)
+	if err != nil {
+		panic(err)
+	}
+	return out
+}
+
 func FormatAst(node ast.Node) (string, error) {
 	return formatter.FormatAst(node, DefaultOptions())
+}
+
+func MustFormatAst(node ast.Node) string {
+	out, err := FormatAst(node)
+	if err != nil {
+		panic(err)
+	}
+	return out
 }
 
 func ToAst(code string) (ast.Node, error) {
