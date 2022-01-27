@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
@@ -93,10 +94,11 @@ func (v *TestContainer) EmptyState() *state.State {
 	testapi.AddMockedComponents(httpTransport)
 
 	// Create mocked state
-	mockedState, err := NewEmptyState(v, NewManifest())
+	mockedState, err := state.New(NewObjectsContainer(v.Fs(), fixtures.NewManifest()), v)
 	if err != nil {
 		panic(err)
 	}
+
 	return mockedState
 }
 

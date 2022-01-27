@@ -12,7 +12,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -61,7 +60,7 @@ func TestLoadCoreFiles_SkipChildrenLoadIfParentIsInvalid(t *testing.T) {
 	state, d := createStateWithMapper(t)
 	fs := d.Fs()
 	manager := state.LocalManager()
-	manifest := manager.Manifest().(*testdeps.Manifest)
+	manifest := manager.Manifest().(*fixtures.Manifest)
 	uow := manager.NewUnitOfWork(context.Background())
 
 	// Init dir

@@ -1,4 +1,4 @@
-package testdeps
+package fixtures
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
