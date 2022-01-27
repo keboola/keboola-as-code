@@ -226,7 +226,7 @@ func (p *Project) SetState(stateFilePath string) {
 	testDir := filesystem.Dir(testFile)
 	// nolint: forbidigo
 	if !filepath.IsAbs(stateFilePath) {
-		stateFilePath = filesystem.Join(testDir, "..", "fixtures", "remote", stateFilePath)
+		stateFilePath = filesystem.Join(testDir, "..", "..", "fixtures", "remote", stateFilePath)
 	}
 
 	// Load state file

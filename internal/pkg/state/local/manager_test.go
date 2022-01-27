@@ -125,7 +125,7 @@ func TestLocalLoadMapper(t *testing.T) {
 	// Init dir
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filesystem.Dir(testFile)
-	inputDir := filesystem.Join(testDir, `..`, `fixtures`, `local`, `minimal`)
+	inputDir := filesystem.Join(testDir, `..`, `..`, `fixtures`, `local`, `minimal`)
 	assert.NoError(t, aferofs.CopyFs2Fs(nil, inputDir, fs, ``))
 
 	// Replace placeholders in files
