@@ -14,7 +14,10 @@ import (
 )
 
 const (
-	FileName = "manifest.json"
+	FileName                      = "manifest.json"
+	DefaultTemplateRepositoryName = "keboola"
+	DefaultTemplateRepositoryUrl  = "git@github.com:keboola/keboola-as-code-templates.git"
+	DefaultTemplateRepositoryRef  = "main"
 )
 
 func Path() string {
@@ -46,8 +49,14 @@ func newFile(projectId int, apiHost string) *file {
 		Naming:            naming.TemplateWithIds(),
 		AllowedBranches:   model.DefaultAllowedBranches(),
 		IgnoredComponents: model.ComponentIds{},
-		Branches:          make([]*model.BranchManifest, 0),
-		Configs:           make([]*model.ConfigManifestWithRows, 0),
+		Templates: Templates{Repositories: []model.TemplateRepository{{
+			Type: "git",
+			Name: DefaultTemplateRepositoryName,
+			Url:  DefaultTemplateRepositoryUrl,
+			Ref:  DefaultTemplateRepositoryRef,
+		}}},
+		Branches: make([]*model.BranchManifest, 0),
+		Configs:  make([]*model.ConfigManifestWithRows, 0),
 	}
 }
 
