@@ -5,7 +5,7 @@ import (
 
 	"github.com/go-resty/resty/v2"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/http/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 

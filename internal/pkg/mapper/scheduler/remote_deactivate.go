@@ -2,7 +2,7 @@ package scheduler
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/api/schedulerapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/http/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 

@@ -5,7 +5,7 @@ import (
 
 	"github.com/go-resty/resty/v2"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/client"
+	client2 "github.com/keboola/keboola-as-code/internal/pkg/http/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
@@ -55,14 +55,14 @@ func (a *Api) DeleteConfig(key model.ConfigKey) error {
 	return a.DeleteConfigRequest(key).Send().Err()
 }
 
-func (a *Api) ListComponentsRequest(branchId model.BranchId) *client.Request {
+func (a *Api) ListComponentsRequest(branchId model.BranchId) *client2.Request {
 	components := make([]*model.ComponentWithConfigs, 0)
 	return a.
 		NewRequest(resty.MethodGet, "branch/{branchId}/components").
 		SetPathParam("branchId", branchId.String()).
 		SetQueryParam("include", "configuration,rows").
 		SetResult(&components).
-		OnSuccess(func(response *client.Response) {
+		OnSuccess(func(response *client2.Response) {
 			if response.Result() != nil {
 				// Add missing values
 				for _, component := range components {
@@ -90,7 +90,7 @@ func (a *Api) ListComponentsRequest(branchId model.BranchId) *client.Request {
 }
 
 // ListConfigMetadataRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/copy-configuration-rows/search-component-configurations
-func (a *Api) ListConfigMetadataRequest(branchId model.BranchId) *client.Request {
+func (a *Api) ListConfigMetadataRequest(branchId model.BranchId) *client2.Request {
 	metadata := ConfigMetadataResponse{}
 	return a.
 		NewRequest(resty.MethodGet, "branch/{branchId}/search/component-configurations").
@@ -124,7 +124,7 @@ func (c ConfigMetadataResponse) MetadataMap(branchId model.BranchId) map[model.C
 }
 
 // UpdateConfigMetadataRequest https://keboola.docs.apiary.io/#reference/metadata/components-configurations-metadata/create-or-update
-func (a *Api) UpdateConfigMetadataRequest(config *model.Config) *client.Request {
+func (a *Api) UpdateConfigMetadataRequest(config *model.Config) *client2.Request {
 	formBody := make(map[string]string)
 	i := 0
 	for k, v := range config.Metadata {
@@ -141,7 +141,7 @@ func (a *Api) UpdateConfigMetadataRequest(config *model.Config) *client.Request 
 }
 
 // GetConfigRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/manage-configurations/development-branch-configuration-detail
-func (a *Api) GetConfigRequest(branchId model.BranchId, componentId model.ComponentId, configId model.ConfigId) *client.Request {
+func (a *Api) GetConfigRequest(branchId model.BranchId, componentId model.ComponentId, configId model.ConfigId) *client2.Request {
 	config := &model.Config{}
 	config.BranchId = branchId
 	config.ComponentId = componentId
@@ -154,7 +154,7 @@ func (a *Api) GetConfigRequest(branchId model.BranchId, componentId model.Compon
 }
 
 // CreateConfigRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/component-configurations/create-development-branch-configuration
-func (a *Api) CreateConfigRequest(config *model.ConfigWithRows) (*client.Request, error) {
+func (a *Api) CreateConfigRequest(config *model.ConfigWithRows) (*client2.Request, error) {
 	// Data
 	values, err := config.ToApiValues()
 	if err != nil {
@@ -167,7 +167,7 @@ func (a *Api) CreateConfigRequest(config *model.ConfigWithRows) (*client.Request
 	}
 
 	// Create config
-	var configRequest *client.Request
+	var configRequest *client2.Request
 	configRequest = a.
 		NewRequest(resty.MethodPost, "branch/{branchId}/components/{componentId}/configs").
 		SetPathParam("branchId", config.BranchId.String()).
@@ -175,7 +175,7 @@ func (a *Api) CreateConfigRequest(config *model.ConfigWithRows) (*client.Request
 		SetFormBody(values).
 		SetResult(config).
 		// Create config rows
-		OnSuccess(func(response *client.Response) {
+		OnSuccess(func(response *client2.Response) {
 			for _, row := range config.Rows {
 				row.BranchId = config.BranchId
 				row.ComponentId = config.ComponentId
@@ -193,7 +193,7 @@ func (a *Api) CreateConfigRequest(config *model.ConfigWithRows) (*client.Request
 }
 
 // UpdateConfigRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/manage-configurations/update-development-branch-configuration
-func (a *Api) UpdateConfigRequest(config *model.Config, changed model.ChangedFields) (*client.Request, error) {
+func (a *Api) UpdateConfigRequest(config *model.Config, changed model.ChangedFields) (*client2.Request, error) {
 	// Id is required
 	if config.Id == "" {
 		panic("config id must be set")
@@ -218,16 +218,16 @@ func (a *Api) UpdateConfigRequest(config *model.Config, changed model.ChangedFie
 }
 
 // DeleteConfigRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/manage-configurations/delete-configuration
-func (a *Api) DeleteConfigRequest(key model.ConfigKey) *client.Request {
+func (a *Api) DeleteConfigRequest(key model.ConfigKey) *client2.Request {
 	return a.NewRequest(resty.MethodDelete, "branch/{branchId}/components/{componentId}/configs/{configId}").
 		SetPathParam("branchId", key.BranchId.String()).
 		SetPathParam("componentId", key.ComponentId.String()).
 		SetPathParam("configId", key.Id.String())
 }
 
-func (a *Api) DeleteConfigsInBranchRequest(key model.BranchKey) *client.Request {
+func (a *Api) DeleteConfigsInBranchRequest(key model.BranchKey) *client2.Request {
 	return a.ListComponentsRequest(key.Id).
-		OnSuccess(func(response *client.Response) {
+		OnSuccess(func(response *client2.Response) {
 			for _, component := range *response.Result().(*[]*model.ComponentWithConfigs) {
 				for _, config := range component.Configs {
 					response.
