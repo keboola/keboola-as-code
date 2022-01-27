@@ -12,7 +12,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/nop"
-	"github.com/keboola/keboola-as-code/internal/pkg/strhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 type Prompt struct {

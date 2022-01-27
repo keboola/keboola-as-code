@@ -3,7 +3,7 @@ package rename
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/strhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 // NewPlan creates a plan for renaming objects that do not match the naming.
