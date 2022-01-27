@@ -11,6 +11,7 @@ Plan for "pull" operation:
   + R extractor/keboola.ex-db-mysql/with-rows/rows/disabled
   + R extractor/keboola.ex-db-mysql/with-rows/rows/test-view
   + R extractor/keboola.ex-db-mysql/with-rows/rows/users
+  + C other/keboola.orchestrator/orchestrator
   + C other/keboola.shared-code/shared-codes
   + R other/keboola.shared-code/shared-codes/codes/code-with-variables
   + C other/keboola.shared-code/shared-codes/codes/code-with-variables/variables

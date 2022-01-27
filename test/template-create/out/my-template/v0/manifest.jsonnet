@@ -53,6 +53,12 @@
       ],
     },
     {
+      componentId: "keboola.orchestrator",
+      id: "orchestrator",
+      path: "other/keboola.orchestrator/orchestrator",
+      rows: [],
+    },
+    {
       componentId: "keboola.shared-code",
       id: "shared-codes",
       path: "other/keboola.shared-code/shared-codes",

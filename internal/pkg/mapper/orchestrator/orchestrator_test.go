@@ -110,7 +110,7 @@ func createLocalLoadFixtures(t *testing.T, state *state.State) *model.ConfigStat
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: configKey,
 			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(`branch/other`, `orchestrator`),
+				AbsPath: model.NewAbsPath(`branch`, `other/orchestrator`),
 			},
 		},
 		Local: &model.Config{ConfigKey: configKey, Content: orderedmap.New()},
@@ -268,7 +268,7 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: configKey,
 			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(`branch/other`, `orchestrator`),
+				AbsPath: model.NewAbsPath(`branch`, `other/orchestrator`),
 			},
 		},
 		Remote: &model.Config{

@@ -23,6 +23,7 @@ func (m *orchestratorMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) e
 		LocalSaveRecipe: recipe,
 		logger:          m.logger,
 		config:          recipe.Object.(*model.Config),
+		configPath:      recipe.ObjectManifest.GetPathInProject(),
 	}
 	writer.save()
 	return nil
@@ -31,8 +32,9 @@ func (m *orchestratorMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) e
 type localWriter struct {
 	*state.State
 	*model.LocalSaveRecipe
-	logger log.Logger
-	config *model.Config
+	logger     log.Logger
+	config     *model.Config
+	configPath model.AbsPath
 }
 
 func (w *localWriter) save() {
@@ -138,9 +140,6 @@ func (w *localWriter) saveTask(task *model.Task) error {
 		target = orderedmap.New()
 	}
 
-	// Get parent branch
-	branch := w.MustGet(task.ConfigKey().BranchKey())
-
 	// Target key
 	targetKey := &model.ConfigKey{
 		BranchId:    task.BranchId,
@@ -152,7 +151,7 @@ func (w *localWriter) saveTask(task *model.Task) error {
 	targetConfig, found := w.Get(targetKey)
 	if found {
 		// Get target path
-		targetPath, err := filesystem.Rel(branch.Path(), targetConfig.Path())
+		targetPath, err := filesystem.Rel(w.configPath.GetParentPath(), targetConfig.Path())
 		if err != nil {
 			errors.Append(err)
 		}
