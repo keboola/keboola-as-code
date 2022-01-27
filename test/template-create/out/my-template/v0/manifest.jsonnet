@@ -91,6 +91,19 @@
       rows: [],
     },
     {
+      componentId: "keboola.scheduler",
+      id: "scheduler",
+      path: "schedules/scheduler",
+      relations: [
+        {
+          componentId: "keboola.orchestrator",
+          configId: "orchestrator",
+          type: "schedulerFor",
+        },
+      ],
+      rows: [],
+    },
+    {
       componentId: "transformation",
       id: "old-transformation",
       path: "other/transformation/old-transformation",
