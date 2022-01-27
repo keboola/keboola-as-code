@@ -19,6 +19,7 @@
     "fo*"
   ],
   "ignoredComponents": [],
+  "templates": {},
   "branches": [
     {
       "id": %%TEST_BRANCH_FOO_ID%%,

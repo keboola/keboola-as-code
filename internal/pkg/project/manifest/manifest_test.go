@@ -206,6 +206,7 @@ func minimalJson() string {
     "*"
   ],
   "ignoredComponents": [],
+  "templates": {},
   "branches": [],
   "configurations": []
 }
@@ -241,6 +242,7 @@ func fullJson() string {
   "ignoredComponents": [
     "abc"
   ],
+  "templates": {},
   "branches": [
     {
       "id": 10,

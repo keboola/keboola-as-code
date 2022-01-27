@@ -29,13 +29,13 @@ type file struct {
 	Naming            naming.Template                 `json:"naming" validate:"required"`
 	AllowedBranches   model.AllowedBranches           `json:"allowedBranches" validate:"required,min=1"`
 	IgnoredComponents model.ComponentIds              `json:"ignoredComponents"`
+	Templates         Templates                       `json:"templates,omitempty"`
 	Branches          []*model.BranchManifest         `json:"branches" validate:"dive"`
 	Configs           []*model.ConfigManifestWithRows `json:"configurations" validate:"dive"`
-	Templates         Templates                       `json:"templates"`
 }
 
 type Templates struct {
-	Repositories []model.TemplateRepository `json:"repositories" validate:"dive"`
+	Repositories []model.TemplateRepository `json:"repositories,omitempty" validate:"dive"`
 }
 
 func newFile(projectId int, apiHost string) *file {
