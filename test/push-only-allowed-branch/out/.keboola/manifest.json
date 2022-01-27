@@ -19,6 +19,7 @@
     "main"
   ],
   "ignoredComponents": [],
+  "templates": {},
   "branches": [
     {
       "id": %%TEST_BRANCH_MAIN_ID%%,
