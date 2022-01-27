@@ -9,7 +9,7 @@ import (
 
 	"github.com/go-resty/resty/v2"
 
-	client2 "github.com/keboola/keboola-as-code/internal/pkg/http/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/http/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -18,7 +18,7 @@ import (
 type Api struct {
 	apiHost    string
 	apiHostUrl string
-	client     *client2.Client
+	client     *client.Client
 	logger     log.Logger
 	token      *model.Token
 	components *model.ComponentsMap
@@ -35,7 +35,7 @@ func NewWithToken(ctx context.Context, logger log.Logger, host, tokenStr string,
 	storageApi := New(host, ctx, logger, verbose)
 	token, err := storageApi.GetToken(tokenStr)
 	if err != nil {
-		var errWithResponse client2.ErrorWithResponse
+		var errWithResponse client.ErrorWithResponse
 		if errors.As(err, &errWithResponse) && errWithResponse.IsUnauthorized() {
 			return nil, fmt.Errorf("the specified storage API token is not valid")
 		} else {
@@ -53,7 +53,7 @@ func NewWithToken(ctx context.Context, logger log.Logger, host, tokenStr string,
 
 func New(apiHost string, ctx context.Context, logger log.Logger, verbose bool) *Api {
 	apiHostUrl := "https://" + apiHost + "/v2/storage"
-	c := client2.NewClient(ctx, logger, verbose).WithHostUrl(apiHostUrl)
+	c := client.NewClient(ctx, logger, verbose).WithHostUrl(apiHostUrl)
 	c.SetError(&Error{})
 	api := &Api{client: c, logger: logger, apiHost: apiHost, apiHostUrl: apiHostUrl}
 	api.components = model.NewComponentsMap(api)
@@ -78,15 +78,15 @@ func (a *Api) HostUrl() string {
 	return a.apiHostUrl
 }
 
-func (a *Api) NewPool() *client2.Pool {
+func (a *Api) NewPool() *client.Pool {
 	return a.client.NewPool(a.logger)
 }
 
-func (a *Api) NewRequest(method string, url string) *client2.Request {
+func (a *Api) NewRequest(method string, url string) *client.Request {
 	return a.client.NewRequest(method, url)
 }
 
-func (a *Api) Send(request *client2.Request) {
+func (a *Api) Send(request *client.Request) {
 	a.client.Send(request)
 }
 

@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
-	client2 "github.com/keboola/keboola-as-code/internal/pkg/http/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/http/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/local"
@@ -69,7 +69,7 @@ func (u *UnitOfWork) LoadAll(filter model.ObjectsFilter) {
 	// Branches
 	pool.
 		Request(u.api.ListBranchesRequest()).
-		OnSuccess(func(response *client2.Response) {
+		OnSuccess(func(response *client.Response) {
 			// Save branch + load branch components
 			for _, branch := range *response.Result().(*[]*model.Branch) {
 				// Store branch to state
@@ -88,10 +88,10 @@ func (u *UnitOfWork) LoadAll(filter model.ObjectsFilter) {
 		Send()
 }
 
-func (u *UnitOfWork) loadBranch(branch *model.Branch, filter model.ObjectsFilter, pool *client2.Pool) {
+func (u *UnitOfWork) loadBranch(branch *model.Branch, filter model.ObjectsFilter, pool *client.Pool) {
 	pool.
 		Request(u.api.ListComponentsRequest(branch.Id)).
-		OnSuccess(func(response *client2.Response) {
+		OnSuccess(func(response *client.Response) {
 			components := *response.Result().(*[]*model.ComponentWithConfigs)
 
 			// Save component, it contains all configs and rows
@@ -207,7 +207,7 @@ func (u *UnitOfWork) Invoke() error {
 	u.storageApiPools.SortKeys(sort.Strings)
 	for _, level := range u.storageApiPools.Keys() {
 		pool, _ := u.storageApiPools.Get(level)
-		if err := pool.(*client2.Pool).StartAndWait(); err != nil {
+		if err := pool.(*client.Pool).StartAndWait(); err != nil {
 			u.errors.Append(err)
 			break
 		}
@@ -263,12 +263,12 @@ func (u *UnitOfWork) create(objectState model.ObjectState, object model.Object, 
 	}
 	u.poolFor(object.Level()).
 		Request(request).
-		OnSuccess(func(response *client2.Response) {
+		OnSuccess(func(response *client.Response) {
 			// Save new ID to manifest
 			objectState.SetRemoteState(object)
 			u.changes.AddCreated(objectState)
 		}).
-		OnError(func(response *client2.Response) {
+		OnError(func(response *client.Response) {
 			if e, ok := response.Error().(*storageapi.Error); ok {
 				if e.ErrCode == "configurationAlreadyExists" || e.ErrCode == "configurationRowAlreadyExists" {
 					// Object exists -> update instead of create + clear error
@@ -284,7 +284,7 @@ func (u *UnitOfWork) update(objectState model.ObjectState, object model.Object, 
 	if request, err := u.api.UpdateRequest(recipe.Object, changedFields); err == nil {
 		u.poolFor(object.Level()).
 			Request(request).
-			OnSuccess(func(response *client2.Response) {
+			OnSuccess(func(response *client.Response) {
 				objectState.SetRemoteState(object)
 				u.changes.AddUpdated(objectState)
 			}).
@@ -298,25 +298,25 @@ func (u *UnitOfWork) update(objectState model.ObjectState, object model.Object, 
 func (u *UnitOfWork) delete(objectState model.ObjectState) {
 	u.poolFor(objectState.Level()).
 		Request(u.api.DeleteRequest(objectState.Key())).
-		OnSuccess(func(response *client2.Response) {
+		OnSuccess(func(response *client.Response) {
 			u.Manifest().Delete(objectState)
 			objectState.SetRemoteState(nil)
 		}).
-		OnSuccess(func(response *client2.Response) {
+		OnSuccess(func(response *client.Response) {
 			u.changes.AddDeleted(objectState)
 		}).
 		Send()
 }
 
 // poolFor each level (branches, configs, rows).
-func (u *UnitOfWork) poolFor(level int) *client2.Pool {
+func (u *UnitOfWork) poolFor(level int) *client.Pool {
 	if u.invoked {
 		panic(fmt.Errorf(`invoked UnitOfWork cannot be reused`))
 	}
 
 	key := cast.ToString(level)
 	if value, found := u.storageApiPools.Get(key); found {
-		return value.(*client2.Pool)
+		return value.(*client.Pool)
 	}
 
 	pool := u.api.NewPool()

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/encryptionapi"
-	client2 "github.com/keboola/keboola-as-code/internal/pkg/http/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/http/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
@@ -18,7 +18,7 @@ type executor struct {
 	*Plan
 	logger log.Logger
 	api    *encryptionapi.Api
-	pool   *client2.Pool
+	pool   *client.Pool
 	uow    *local.UnitOfWork
 	errors *utils.MultiError
 }
@@ -51,7 +51,7 @@ func (e *executor) invoke() error {
 	return e.errors.ErrorOrNil()
 }
 
-func (e *executor) encryptRequest(action *action) *client2.Request {
+func (e *executor) encryptRequest(action *action) *client.Request {
 	object := action.object
 
 	// Each key for encryption, in the API call, must start with #
@@ -66,7 +66,7 @@ func (e *executor) encryptRequest(action *action) *client2.Request {
 	// Prepare request
 	return e.api.
 		CreateEncryptRequest(object.GetComponentId(), data).
-		OnSuccess(func(response *client2.Response) {
+		OnSuccess(func(response *client.Response) {
 			if !response.HasResult() {
 				panic(fmt.Errorf(`missing result of the encrypt API call`))
 			}

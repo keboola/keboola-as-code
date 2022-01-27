@@ -8,14 +8,14 @@ import (
 
 	"github.com/go-resty/resty/v2"
 
-	client2 "github.com/keboola/keboola-as-code/internal/pkg/http/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/http/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 type Api struct {
 	hostUrl string
-	client  *client2.Client
+	client  *client.Client
 	logger  log.Logger
 }
 
@@ -35,7 +35,7 @@ func (e *Error) Error() string {
 }
 
 func New(ctx context.Context, logger log.Logger, hostUrl string, token string, verbose bool) *Api {
-	c := client2.NewClient(ctx, logger, verbose).WithHostUrl(hostUrl)
+	c := client.NewClient(ctx, logger, verbose).WithHostUrl(hostUrl)
 	c.SetHeader("X-StorageApi-Token", token)
 	c.SetError(&Error{})
 	return &Api{client: c, logger: logger, hostUrl: hostUrl}
@@ -49,12 +49,12 @@ func (a *Api) SetRetry(count int, waitTime time.Duration, maxWaitTime time.Durat
 	a.client.SetRetry(count, waitTime, maxWaitTime)
 }
 
-func (a *Api) NewPool() *client2.Pool {
+func (a *Api) NewPool() *client.Pool {
 	return a.client.NewPool(a.logger)
 }
 
 // ActivateScheduleRequest https://app.swaggerhub.com/apis/odinuv/scheduler/1.0.0#/schedules/activate
-func (a *Api) ActivateScheduleRequest(configId model.ConfigId, configurationVersionId string) *client2.Request {
+func (a *Api) ActivateScheduleRequest(configId model.ConfigId, configurationVersionId string) *client.Request {
 	schedule := &model.Schedule{}
 	body := map[string]string{
 		"configurationId": configId.String(),
@@ -77,7 +77,7 @@ func (a *Api) ActivateSchedule(configId model.ConfigId, configurationVersionId s
 }
 
 // DeleteScheduleRequest https://app.swaggerhub.com/apis/odinuv/scheduler/1.0.0#/schedules/deleteSchedule
-func (a *Api) DeleteScheduleRequest(scheduleId string) *client2.Request {
+func (a *Api) DeleteScheduleRequest(scheduleId string) *client.Request {
 	return a.client.
 		NewRequest(resty.MethodDelete, "schedules/{scheduleId}").
 		SetPathParam("scheduleId", scheduleId)
@@ -88,7 +88,7 @@ func (a *Api) DeleteSchedule(scheduleId string) error {
 }
 
 // DeleteSchedulesForConfigurationRequest https://app.swaggerhub.com/apis/odinuv/scheduler/1.0.0#/schedules/deleteSchedulesForConfiguration
-func (a *Api) DeleteSchedulesForConfigurationRequest(configId model.ConfigId) *client2.Request {
+func (a *Api) DeleteSchedulesForConfigurationRequest(configId model.ConfigId) *client.Request {
 	return a.client.
 		NewRequest(resty.MethodDelete, "configurations/{configurationId}").
 		SetPathParam("configurationId", configId.String())
@@ -99,7 +99,7 @@ func (a *Api) DeleteSchedulesForConfiguration(configId model.ConfigId) error {
 }
 
 // ListSchedulesRequest https://app.swaggerhub.com/apis/odinuv/scheduler/1.0.0#/schedules/get_schedules
-func (a *Api) ListSchedulesRequest() *client2.Request {
+func (a *Api) ListSchedulesRequest() *client.Request {
 	schedules := make([]*model.Schedule, 0)
 	return a.client.
 		NewRequest(resty.MethodGet, "schedules").

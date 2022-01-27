@@ -24,7 +24,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
-	client2 "github.com/keboola/keboola-as-code/internal/pkg/http/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/http/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -264,7 +264,7 @@ func (p *Project) createBranches(branches []*fixtures.BranchState) {
 		} else {
 			p.storageApi.
 				CreateBranchRequest(branch).
-				OnSuccess(func(response *client2.Response) {
+				OnSuccess(func(response *client.Response) {
 					p.logf(`crated branch "%s", id: "%d"`, branch.Name, branch.Id)
 					p.setEnv(fmt.Sprintf("TEST_BRANCH_%s_ID", branch.Name), branch.Id.String())
 					p.branchesById[branch.Id] = branch
@@ -330,7 +330,7 @@ func (p *Project) createConfigs(branches []*fixtures.BranchState, additionalEnvs
 	}
 }
 
-func (p *Project) createConfigsRequests(configs []*model.ConfigWithRows, pool *client2.Pool) {
+func (p *Project) createConfigsRequests(configs []*model.ConfigWithRows, pool *client.Pool) {
 	for _, config := range configs {
 		// Replace ENVs in config and rows content
 		json.MustDecodeString(testhelper.ReplaceEnvsString(json.MustEncodeString(config.Content, false), p.envs), &config.Content)

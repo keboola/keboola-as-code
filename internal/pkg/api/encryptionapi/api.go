@@ -7,7 +7,7 @@ import (
 	"github.com/go-resty/resty/v2"
 	"github.com/spf13/cast"
 
-	client2 "github.com/keboola/keboola-as-code/internal/pkg/http/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/http/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
@@ -15,7 +15,7 @@ import (
 type Api struct {
 	hostUrl   string
 	projectId int
-	client    *client2.Client
+	client    *client.Client
 	logger    log.Logger
 }
 
@@ -35,21 +35,21 @@ func (e *Error) Error() string {
 }
 
 func New(ctx context.Context, logger log.Logger, hostUrl string, projectId int, verbose bool) *Api {
-	c := client2.NewClient(ctx, logger, verbose).WithHostUrl(hostUrl)
+	c := client.NewClient(ctx, logger, verbose).WithHostUrl(hostUrl)
 	c.SetError(&Error{})
 	api := &Api{projectId: projectId, client: c, logger: logger, hostUrl: hostUrl}
 	return api
 }
 
-func (a *Api) NewPool() *client2.Pool {
+func (a *Api) NewPool() *client.Pool {
 	return a.client.NewPool(a.logger)
 }
 
-func (a *Api) NewRequest(method string, url string) *client2.Request {
+func (a *Api) NewRequest(method string, url string) *client.Request {
 	return a.client.NewRequest(method, url)
 }
 
-func (a *Api) CreateEncryptRequest(componentId model.ComponentId, data map[string]string) *client2.Request {
+func (a *Api) CreateEncryptRequest(componentId model.ComponentId, data map[string]string) *client.Request {
 	result := make(map[string]string)
 	return a.
 		client.NewRequest(resty.MethodPost, "encrypt").
