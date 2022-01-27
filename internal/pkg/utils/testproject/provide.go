@@ -3,12 +3,13 @@ package testproject
 
 import (
 	"fmt"
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"os"
 	"strings"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 
 	"github.com/spf13/cast"
 )

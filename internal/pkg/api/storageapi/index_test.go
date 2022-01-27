@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 )
 
 func TestListAllComponents(t *testing.T) {

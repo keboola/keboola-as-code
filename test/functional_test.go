@@ -22,9 +22,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
-	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
-	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
+	testhelper2 "github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
+	testproject2 "github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 )
 
 type envTicketProvider struct {
@@ -33,7 +33,7 @@ type envTicketProvider struct {
 }
 
 // EnvTicketProvider allows you to generate new unique IDs via an ENV variable in the test.
-func CreateEnvTicketProvider(api *storageapi.Api, envs *env.Map) testhelper.EnvProvider {
+func CreateEnvTicketProvider(api *storageapi.Api, envs *env.Map) testhelper2.EnvProvider {
 	return &envTicketProvider{api, envs}
 }
 
@@ -105,7 +105,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	assert.NoError(t, err)
 
 	// Get test project
-	project := testproject.GetTestProject(t, envs)
+	project := testproject2.GetTestProject(t, envs)
 	api := project.StorageApi()
 
 	// Setup project state
@@ -118,7 +118,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	envProvider := CreateEnvTicketProvider(api, envs)
 
 	// Replace all %%ENV_VAR%% in all files in the working directory
-	testhelper.ReplaceEnvsDir(workingDirFs, `/`, envProvider)
+	testhelper2.ReplaceEnvsDir(workingDirFs, `/`, envProvider)
 
 	// Load command arguments from file
 	argsFileName := `args`
@@ -129,7 +129,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 
 	// Load and parse command arguments
 	argsStr := strings.TrimSpace(argsFile.Content)
-	argsStr = testhelper.ReplaceEnvsString(argsStr, envProvider)
+	argsStr = testhelper2.ReplaceEnvsString(argsStr, envProvider)
 	args, err := shlex.Split(argsStr)
 	if err != nil {
 		t.Fatalf(`Cannot parse args "%s": %s`, argsStr, err)
@@ -147,8 +147,8 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	cmd := exec.Command(binary, args...)
 	cmd.Env = cmdEnvs.ToSlice()
 	cmd.Dir = workingDir
-	cmd.Stdout = io.MultiWriter(&stdout, testhelper.VerboseStdout())
-	cmd.Stderr = io.MultiWriter(&stderr, testhelper.VerboseStderr())
+	cmd.Stdout = io.MultiWriter(&stdout, testhelper2.VerboseStdout())
+	cmd.Stderr = io.MultiWriter(&stderr, testhelper2.VerboseStderr())
 
 	// Run command
 	exitCode := 0
@@ -204,10 +204,10 @@ func GetTestDirs(t *testing.T, root string) []string {
 		}
 
 		// Skip hidden
-		if testhelper.IsIgnoredFile(path, info) {
+		if testhelper2.IsIgnoredFile(path, info) {
 			return nil
 		}
-		if testhelper.IsIgnoredDir(path, info) {
+		if testhelper2.IsIgnoredDir(path, info) {
 			return filepath.SkipDir
 		}
 
@@ -229,25 +229,25 @@ func GetTestDirs(t *testing.T, root string) []string {
 // AssertExpectations compares expectations with the actual state.
 func AssertExpectations(
 	t *testing.T,
-	envProvider testhelper.EnvProvider,
+	envProvider testhelper2.EnvProvider,
 	testDirFs filesystem.Fs,
 	workingDirFs filesystem.Fs,
 	exitCode int,
 	stdout string,
 	stderr string,
-	project *testproject.Project,
+	project *testproject2.Project,
 ) {
 	t.Helper()
 
 	// Compare stdout
 	expectedStdoutFile, err := testDirFs.ReadFile(filesystem.NewFileDef("expected-stdout"))
 	assert.NoError(t, err)
-	expectedStdout := testhelper.ReplaceEnvsString(expectedStdoutFile.Content, envProvider)
+	expectedStdout := testhelper2.ReplaceEnvsString(expectedStdoutFile.Content, envProvider)
 
 	// Compare stderr
 	expectedStderrFile, err := testDirFs.ReadFile(filesystem.NewFileDef("expected-stderr"))
 	assert.NoError(t, err)
-	expectedStderr := testhelper.ReplaceEnvsString(expectedStderrFile.Content, envProvider)
+	expectedStderr := testhelper2.ReplaceEnvsString(expectedStderrFile.Content, envProvider)
 
 	// Compare exit code
 	expectedCodeFile, err := testDirFs.ReadFile(filesystem.NewFileDef("expected-code"))
@@ -263,8 +263,8 @@ func AssertExpectations(
 	)
 
 	// Assert STDOUT and STDERR
-	testhelper.AssertWildcards(t, expectedStdout, stdout, "Unexpected STDOUT.")
-	testhelper.AssertWildcards(t, expectedStderr, stderr, "Unexpected STDERR.")
+	testhelper2.AssertWildcards(t, expectedStdout, stdout, "Unexpected STDOUT.")
+	testhelper2.AssertWildcards(t, expectedStderr, stderr, "Unexpected STDERR.")
 
 	// Expected state dir
 	expectedDir := "out"
@@ -274,10 +274,10 @@ func AssertExpectations(
 
 	// Copy expected state and replace ENVs
 	expectedDirFs := testfs.NewMemoryFsFrom(filesystem.Join(testDirFs.BasePath(), expectedDir))
-	testhelper.ReplaceEnvsDir(expectedDirFs, `/`, envProvider)
+	testhelper2.ReplaceEnvsDir(expectedDirFs, `/`, envProvider)
 
 	// Compare actual and expected dirs
-	testhelper.AssertDirectoryContentsSame(t, expectedDirFs, `/`, workingDirFs, `/`)
+	testhelper2.AssertDirectoryContentsSame(t, expectedDirFs, `/`, workingDirFs, `/`)
 
 	// Check project state
 	expectedStatePath := "expected-state.json"
@@ -301,9 +301,9 @@ func AssertExpectations(
 		}
 
 		// Compare expected and actual state
-		testhelper.AssertWildcards(
+		testhelper2.AssertWildcards(
 			t,
-			testhelper.ReplaceEnvsString(expectedSnapshot.Content, envProvider),
+			testhelper2.ReplaceEnvsString(expectedSnapshot.Content, envProvider),
 			json.MustEncodeString(actualSnapshot, true),
 			`unexpected project state, compare "expected-state.json" from test and "actual-state.json" from ".out" dir.`,
 		)

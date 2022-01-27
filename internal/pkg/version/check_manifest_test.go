@@ -7,7 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 )
 
 func TestCheckManifestVersion_ValidVersion(t *testing.T) {

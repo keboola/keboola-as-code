@@ -15,9 +15,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
-	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 )
 
 type commonDeps = dependencies.TestContainer
