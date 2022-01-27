@@ -24,6 +24,8 @@ class KeboolaCli < Formula
     sha256 "${LINUX_ARM64_TARGET_SHA256}"
   end
 
+  depends_on "git" => :recommended
+
   def install
     bin.install "kbc"
     bin.install_symlink Dir["#{libexec}/bin/*"]
