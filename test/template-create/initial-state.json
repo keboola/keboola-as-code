@@ -28,7 +28,8 @@
         "im-default-bucket",
         "om-config",
         "im-transformation",
-        "orchestrator"
+        "orchestrator",
+        "scheduler"
       ]
     }
   ],
@@ -44,6 +45,8 @@
     "TEST_ORCHESTRATOR_TASK_1_COMPONENT_ID": "ex-generic-v2",
     "TEST_ORCHESTRATOR_TASK_1_CONFIG_ID": "%%TEST_BRANCH_ALL_CONFIG_EMPTY_ID%%",
     "TEST_ORCHESTRATOR_TASK_2_COMPONENT_ID": "ex-generic-v2",
-    "TEST_ORCHESTRATOR_TASK_2_CONFIG_ID": "%%TEST_BRANCH_FOO_CONFIG_WITHOUT_ROWS_ID%%"
+    "TEST_ORCHESTRATOR_TASK_2_CONFIG_ID": "%%TEST_BRANCH_FOO_CONFIG_WITHOUT_ROWS_ID%%",
+    "TEST_SCHEDULER_TARGET_COMPONENT_ID": "keboola.orchestrator",
+    "TEST_SCHEDULER_TARGET_CONFIG_ID": "%%TEST_BRANCH_FOO_CONFIG_ORCHESTRATOR_ID%%"
   }
 }

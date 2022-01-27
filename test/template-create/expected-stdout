@@ -17,6 +17,7 @@ Plan for "pull" operation:
   + R extractor/keboola.ex-db-mysql/with-rows/rows/test-view
   + R extractor/keboola.ex-db-mysql/with-rows/rows/users
   + C other/keboola.orchestrator/orchestrator
+  + C other/keboola.orchestrator/orchestrator/schedules/scheduler
   + C other/transformation/old-transformation
   + R other/transformation/old-transformation/rows/old-transformation-snfk
   + C transformation/keboola.python-transformation-v2/python-transformation
