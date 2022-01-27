@@ -55,6 +55,8 @@ nfpms:
       - apk
       - deb
       - rpm
+    recommends:
+      - git
     rpm:
       signature:
         key_file: '{{ if index .Env "DEB_KEY_PRIVATE_PATH"  }}{{ .Env.DEB_KEY_PRIVATE_PATH }}{{ end }}'
