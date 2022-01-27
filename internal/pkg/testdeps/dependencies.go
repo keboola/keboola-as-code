@@ -6,13 +6,13 @@ import (
 
 	"github.com/jarcoal/httpmock"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/api/schedulerapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
@@ -24,9 +24,9 @@ type commonDeps = dependencies.TestContainer
 type TestContainer struct {
 	*testDependencies
 	*commonDeps
-	mockedStorageApi            *remote.StorageApi
+	mockedStorageApi            *storageapi.Api
 	mockedStorageApiTransport   *httpmock.MockTransport
-	mockedSchedulerApi          *scheduler.Api
+	mockedSchedulerApi          *schedulerapi.Api
 	mockedSchedulerApiTransport *httpmock.MockTransport
 }
 
@@ -67,7 +67,7 @@ func (v *TestContainer) InitFromTestProject(project *testproject.Project) {
 	v.SetEncryptionApi(project.EncryptionApi())
 }
 
-func (v *TestContainer) UseMockedStorageApi() (*remote.StorageApi, *httpmock.MockTransport) {
+func (v *TestContainer) UseMockedStorageApi() (*storageapi.Api, *httpmock.MockTransport) {
 	if v.mockedStorageApi == nil {
 		v.mockedStorageApi, v.mockedStorageApiTransport = testapi.NewMockedStorageApi(v.DebugLogger())
 	}
@@ -76,7 +76,7 @@ func (v *TestContainer) UseMockedStorageApi() (*remote.StorageApi, *httpmock.Moc
 	return v.mockedStorageApi, v.mockedStorageApiTransport
 }
 
-func (v *TestContainer) UseMockedSchedulerApi() (*scheduler.Api, *httpmock.MockTransport) {
+func (v *TestContainer) UseMockedSchedulerApi() (*schedulerapi.Api, *httpmock.MockTransport) {
 	if v.mockedSchedulerApi == nil {
 		v.mockedSchedulerApi, v.mockedSchedulerApiTransport = testapi.NewMockedSchedulerApi(v.DebugLogger())
 	}

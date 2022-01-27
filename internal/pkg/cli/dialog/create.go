@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
-	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	createConfig "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/config"
 	createRow "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/row"
 	createBranch "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/branch"
@@ -17,7 +17,7 @@ import (
 
 type createDeps interface {
 	Options() *options.Options
-	StorageApi() (*remote.StorageApi, error)
+	StorageApi() (*storageapi.Api, error)
 	ProjectState(loadOptions loadState.Options) (*project.State, error)
 }
 

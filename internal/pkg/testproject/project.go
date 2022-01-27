@@ -18,16 +18,16 @@ import (
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/api/encryptionapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/schedulerapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/client"
-	"github.com/keboola/keboola-as-code/internal/pkg/encryption"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 )
@@ -40,9 +40,9 @@ type Project struct {
 	lock           *fslock.Lock
 	locked         bool
 	mutex          *sync.Mutex
-	storageApi     *remote.StorageApi
-	encryptionApi  *encryption.Api
-	schedulerApi   *scheduler.Api
+	storageApi     *storageapi.Api
+	encryptionApi  *encryptionapi.Api
+	schedulerApi   *schedulerapi.Api
 	defaultBranch  *model.Branch
 	branchesById   map[model.BranchId]*model.Branch
 	branchesByName map[string]*model.Branch
@@ -94,7 +94,7 @@ func newProject(host string, id int, token string) *Project {
 	if testhelper.TestIsVerbose() {
 		logger.ConnectTo(os.Stdout)
 	}
-	p.schedulerApi = scheduler.NewSchedulerApi(
+	p.schedulerApi = schedulerapi.New(
 		context.Background(),
 		logger,
 		string(schedulerHost),
@@ -141,17 +141,17 @@ func (p *Project) Token() string {
 	return p.storageApi.Token().Token
 }
 
-func (p *Project) StorageApi() *remote.StorageApi {
+func (p *Project) StorageApi() *storageapi.Api {
 	p.assertLocked()
 	return p.storageApi
 }
 
-func (p *Project) EncryptionApi() *encryption.Api {
+func (p *Project) EncryptionApi() *encryptionapi.Api {
 	p.assertLocked()
 	return p.encryptionApi
 }
 
-func (p *Project) SchedulerApi() *scheduler.Api {
+func (p *Project) SchedulerApi() *schedulerapi.Api {
 	p.assertLocked()
 	return p.schedulerApi
 }
@@ -349,7 +349,7 @@ func (p *Project) createConfigsRequests(configs []*model.ConfigWithRows, pool *c
 	}
 }
 
-func (p *Project) prepareConfigs(names []string, branch *model.Branch, tickets *remote.TicketProvider, envPrefix string) []*model.ConfigWithRows {
+func (p *Project) prepareConfigs(names []string, branch *model.Branch, tickets *storageapi.TicketProvider, envPrefix string) []*model.ConfigWithRows {
 	var configs []*model.ConfigWithRows
 	for _, name := range names {
 		config := fixtures.LoadConfig(p.t, name)

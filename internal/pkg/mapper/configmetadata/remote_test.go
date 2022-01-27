@@ -6,10 +6,10 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/configmetadata"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
@@ -22,11 +22,11 @@ func InitState(t *testing.T) (*state.State, *httpmock.MockTransport) {
 	_, httpTransport := d.UseMockedStorageApi()
 	httpTransport.RegisterResponder(
 		"GET", `=~/storage/branch/123/search/component-configurations`,
-		httpmock.NewJsonResponderOrPanic(200, remote.ConfigMetadataResponse{
-			remote.ConfigMetadataResponseItem{
+		httpmock.NewJsonResponderOrPanic(200, storageapi.ConfigMetadataResponse{
+			storageapi.ConfigMetadataResponseItem{
 				ComponentId: "keboola.ex-aws-s3",
 				ConfigId:    "456",
-				Metadata: []remote.ConfigMetadata{
+				Metadata: []storageapi.ConfigMetadata{
 					{
 						Id:        "1",
 						Key:       "KBC.KaC.Meta",
@@ -45,7 +45,7 @@ func InitState(t *testing.T) (*state.State, *httpmock.MockTransport) {
 	)
 	httpTransport.RegisterResponder(
 		"POST", `=~/storage/branch/123/components/keboola.ex-aws-s3/configs/456/metadata`,
-		httpmock.NewJsonResponderOrPanic(200, []remote.ConfigMetadata{
+		httpmock.NewJsonResponderOrPanic(200, []storageapi.ConfigMetadata{
 			{
 				Id:        "1",
 				Key:       "KBC-KaC-meta1",

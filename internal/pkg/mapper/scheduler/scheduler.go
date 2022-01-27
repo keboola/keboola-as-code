@@ -1,12 +1,12 @@
 package scheduler
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/schedulerapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 )
 
 type dependencies interface {
-	SchedulerApi() (*scheduler.Api, error)
+	SchedulerApi() (*schedulerapi.Api, error)
 }
 
 type schedulerMapper struct {

@@ -3,15 +3,15 @@ package dependencies
 import (
 	"context"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/encryption"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/encryptionapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/schedulerapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacekeys"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
-	"github.com/keboola/keboola-as-code/internal/pkg/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	createProjectManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/create"
@@ -49,9 +49,9 @@ type AbstractDeps interface {
 type CommonDeps interface {
 	Ctx() context.Context
 	EmptyDir() (filesystem.Fs, error)
-	StorageApi() (*remote.StorageApi, error)
-	EncryptionApi() (*encryption.Api, error)
-	SchedulerApi() (*scheduler.Api, error)
+	StorageApi() (*storageapi.Api, error)
+	EncryptionApi() (*encryptionapi.Api, error)
+	SchedulerApi() (*schedulerapi.Api, error)
 	EventSender() (*event.Sender, error)
 	Project() (*project.Project, error)
 	ProjectState(loadOptions loadState.Options) (*project.State, error)

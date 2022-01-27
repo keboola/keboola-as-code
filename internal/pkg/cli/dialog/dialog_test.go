@@ -8,17 +8,17 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dialog"
 	interactivePrompt "github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/interactive"
 	nopPrompt "github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/nop"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 )
 
-func mockedStorageApi(branches []*model.Branch) *remote.StorageApi {
+func mockedStorageApi(branches []*model.Branch) *storageapi.Api {
 	api, httpTransport := testapi.NewMockedStorageApi(log.NewDebugLogger())
 	httpTransport.RegisterResponder(
 		"GET", `=~/storage/dev-branches`,

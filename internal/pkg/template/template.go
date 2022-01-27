@@ -3,14 +3,14 @@ package template
 import (
 	"context"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/api/schedulerapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacekeys"
-	"github.com/keboola/keboola-as-code/internal/pkg/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	templateInput "github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
@@ -39,8 +39,8 @@ func LoadInputs(fs filesystem.Fs) (*Inputs, error) {
 type dependencies interface {
 	Ctx() context.Context
 	Logger() log.Logger
-	StorageApi() (*remote.StorageApi, error)
-	SchedulerApi() (*scheduler.Api, error)
+	StorageApi() (*storageapi.Api, error)
+	SchedulerApi() (*schedulerapi.Api, error)
 }
 
 type Template struct {

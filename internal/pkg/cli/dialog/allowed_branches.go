@@ -5,10 +5,10 @@ import (
 	"math"
 	"strings"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -27,7 +27,7 @@ type branchesDialog struct {
 
 type branchesDialogDeps interface {
 	Options() *options.Options
-	StorageApi() (*remote.StorageApi, error)
+	StorageApi() (*storageapi.Api, error)
 }
 
 func (p *Dialogs) AskAllowedBranches(deps branchesDialogDeps) (model.AllowedBranches, error) {

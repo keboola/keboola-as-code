@@ -3,15 +3,15 @@ package init
 import (
 	"fmt"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 )
 
 type dependencies interface {
 	Logger() log.Logger
 	ProjectDir() (filesystem.Fs, error)
-	StorageApi() (*remote.StorageApi, error)
+	StorageApi() (*storageapi.Api, error)
 }
 
 func Run(d dependencies) (err error) {

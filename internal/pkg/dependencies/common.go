@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/encryption"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/encryptionapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/schedulerapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
-	"github.com/keboola/keboola-as-code/internal/pkg/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -23,10 +23,10 @@ type common struct {
 	AbstractDeps
 	ctx           context.Context
 	emptyDir      filesystem.Fs
-	serviceUrls   map[remote.ServiceId]remote.ServiceUrl
-	storageApi    *remote.StorageApi
-	encryptionApi *encryption.Api
-	schedulerApi  *scheduler.Api
+	serviceUrls   map[storageapi.ServiceId]storageapi.ServiceUrl
+	storageApi    *storageapi.Api
+	encryptionApi *encryptionapi.Api
+	schedulerApi  *schedulerapi.Api
 	eventSender   *event.Sender
 	// Project
 	project         *project.Project
@@ -49,7 +49,7 @@ func (c *common) Ctx() context.Context {
 	return c.ctx
 }
 
-func (c *common) StorageApi() (*remote.StorageApi, error) {
+func (c *common) StorageApi() (*storageapi.Api, error) {
 	if c.storageApi == nil {
 		// Get host
 		errors := utils.NewMultiError()
@@ -70,7 +70,7 @@ func (c *common) StorageApi() (*remote.StorageApi, error) {
 		}
 
 		// Create API
-		if api, err := remote.NewStorageApiWithToken(c.Ctx(), c.Logger(), host, token, c.ApiVerboseLogs()); err == nil {
+		if api, err := storageapi.NewWithToken(c.Ctx(), c.Logger(), host, token, c.ApiVerboseLogs()); err == nil {
 			c.storageApi = api
 		} else {
 			return nil, err
@@ -84,7 +84,7 @@ func (c *common) StorageApi() (*remote.StorageApi, error) {
 	return c.storageApi, nil
 }
 
-func (c *common) EncryptionApi() (*encryption.Api, error) {
+func (c *common) EncryptionApi() (*encryptionapi.Api, error) {
 	if c.encryptionApi == nil {
 		// Get Storage API
 		storageApi, err := c.StorageApi()
@@ -98,12 +98,12 @@ func (c *common) EncryptionApi() (*encryption.Api, error) {
 			return nil, fmt.Errorf(`cannot get Encryption API host: %w`, err)
 		}
 
-		c.encryptionApi = encryption.NewEncryptionApi(c.Ctx(), c.Logger(), host, storageApi.ProjectId(), c.ApiVerboseLogs())
+		c.encryptionApi = encryptionapi.New(c.Ctx(), c.Logger(), host, storageApi.ProjectId(), c.ApiVerboseLogs())
 	}
 	return c.encryptionApi, nil
 }
 
-func (c *common) SchedulerApi() (*scheduler.Api, error) {
+func (c *common) SchedulerApi() (*schedulerapi.Api, error) {
 	if c.schedulerApi == nil {
 		// Get Storage API
 		storageApi, err := c.StorageApi()
@@ -117,7 +117,7 @@ func (c *common) SchedulerApi() (*scheduler.Api, error) {
 			return nil, fmt.Errorf(`cannot get Scheduler API host: %w`, err)
 		}
 
-		c.schedulerApi = scheduler.NewSchedulerApi(c.Ctx(), c.Logger(), host, storageApi.Token().Token, c.ApiVerboseLogs())
+		c.schedulerApi = schedulerapi.New(c.Ctx(), c.Logger(), host, storageApi.Token().Token, c.ApiVerboseLogs())
 	}
 	return c.schedulerApi, nil
 }
@@ -138,14 +138,14 @@ func (c *common) serviceUrl(id string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if url, found := serviceUrlById[remote.ServiceId(id)]; found {
+	if url, found := serviceUrlById[storageapi.ServiceId(id)]; found {
 		return string(url), nil
 	} else {
 		return "", fmt.Errorf(`service "%s" not found`, id)
 	}
 }
 
-func (c *common) serviceUrlById() (map[remote.ServiceId]remote.ServiceUrl, error) {
+func (c *common) serviceUrlById() (map[storageapi.ServiceId]storageapi.ServiceUrl, error) {
 	if c.serviceUrls == nil {
 		storageApi, err := c.StorageApi()
 		if err != nil {

@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/strhelper"
 )
 
 type Sender struct {
 	logger     log.Logger
-	storageApi *remote.StorageApi
+	storageApi *storageapi.Api
 }
 
-func NewSender(logger log.Logger, storageApi *remote.StorageApi) *Sender {
+func NewSender(logger log.Logger, storageApi *storageapi.Api) *Sender {
 	return &Sender{logger: logger, storageApi: storageApi}
 }
 

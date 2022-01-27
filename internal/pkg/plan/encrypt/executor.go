@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/api/encryptionapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/client"
-	"github.com/keboola/keboola-as-code/internal/pkg/encryption"
 	"github.com/keboola/keboola-as-code/internal/pkg/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -17,13 +17,13 @@ import (
 type executor struct {
 	*Plan
 	logger log.Logger
-	api    *encryption.Api
+	api    *encryptionapi.Api
 	pool   *client.Pool
 	uow    *local.UnitOfWork
 	errors *utils.MultiError
 }
 
-func newExecutor(logger log.Logger, api *encryption.Api, state *state.State, ctx context.Context, plan *Plan) *executor {
+func newExecutor(logger log.Logger, api *encryptionapi.Api, state *state.State, ctx context.Context, plan *Plan) *executor {
 	return &executor{
 		Plan:   plan,
 		logger: logger,

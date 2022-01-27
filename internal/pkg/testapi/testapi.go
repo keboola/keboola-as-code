@@ -7,15 +7,15 @@ import (
 
 	"github.com/jarcoal/httpmock"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/api/schedulerapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 )
 
-func NewMockedStorageApi(logger log.DebugLogger) (*remote.StorageApi, *httpmock.MockTransport) {
+func NewMockedStorageApi(logger log.DebugLogger) (*storageapi.Api, *httpmock.MockTransport) {
 	// Set short retry delay in tests
-	api := remote.NewStorageApi("connection.keboola.com", context.Background(), logger, false)
+	api := storageapi.New("connection.keboola.com", context.Background(), logger, false)
 	api.SetRetry(3, 1*time.Millisecond, 1*time.Millisecond)
 	api = api.WithToken(model.Token{Owner: model.TokenOwner{Id: 12345}})
 
@@ -25,9 +25,9 @@ func NewMockedStorageApi(logger log.DebugLogger) (*remote.StorageApi, *httpmock.
 	return api, transport
 }
 
-func NewMockedSchedulerApi(logger log.DebugLogger) (*scheduler.Api, *httpmock.MockTransport) {
+func NewMockedSchedulerApi(logger log.DebugLogger) (*schedulerapi.Api, *httpmock.MockTransport) {
 	// Set short retry delay in tests
-	api := scheduler.NewSchedulerApi(context.Background(), logger, "scheduler.keboola.com", "my-token", false)
+	api := schedulerapi.New(context.Background(), logger, "scheduler.keboola.com", "my-token", false)
 	api.SetRetry(3, 1*time.Millisecond, 1*time.Millisecond)
 
 	// Mocked resty transport
@@ -36,17 +36,17 @@ func NewMockedSchedulerApi(logger log.DebugLogger) (*scheduler.Api, *httpmock.Mo
 	return api, transport
 }
 
-func NewStorageApi(host string, verbose bool) (*remote.StorageApi, log.DebugLogger) {
+func NewStorageApi(host string, verbose bool) (*storageapi.Api, log.DebugLogger) {
 	logger := log.NewDebugLogger()
 	if verbose {
 		logger.ConnectTo(os.Stdout)
 	}
-	a := remote.NewStorageApi(host, context.Background(), logger, false)
+	a := storageapi.New(host, context.Background(), logger, false)
 	a.SetRetry(3, 100*time.Millisecond, 100*time.Millisecond)
 	return a, logger
 }
 
-func NewStorageApiWithToken(host, tokenStr string, verbose bool) (*remote.StorageApi, log.DebugLogger) {
+func NewStorageApiWithToken(host, tokenStr string, verbose bool) (*storageapi.Api, log.DebugLogger) {
 	a, logger := NewStorageApi(host, verbose)
 	token, err := a.GetToken(tokenStr)
 	if err != nil {

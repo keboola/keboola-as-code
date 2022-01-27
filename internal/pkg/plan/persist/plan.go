@@ -3,8 +3,8 @@ package persist
 import (
 	"fmt"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 )
 
@@ -34,6 +34,6 @@ func (p *Plan) Log(logger log.Logger) {
 	}
 }
 
-func (p *Plan) Invoke(logger log.Logger, api *remote.StorageApi, projectState *state.State) error {
+func (p *Plan) Invoke(logger log.Logger, api *storageapi.Api, projectState *state.State) error {
 	return newExecutor(logger, api, projectState, p).invoke()
 }

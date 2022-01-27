@@ -3,9 +3,9 @@ package configmetadata
 import (
 	"sync"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 )
 
 func (m *configMetadataMapper) AfterRemoteOperation(changes *model.RemoteChanges) error {
@@ -71,7 +71,7 @@ func (m *configMetadataMapper) GetMetadataMap() (map[string]map[string]string, e
 			OnSuccess(func(response *client.Response) {
 				lock.Lock()
 				defer lock.Unlock()
-				metadataResponse := *response.Result().(*remote.ConfigMetadataResponse)
+				metadataResponse := *response.Result().(*storageapi.ConfigMetadataResponse)
 				for key, metadata := range metadataResponse.MetadataMap(b.Id) {
 					metadataMap := make(map[string]string)
 					for _, m := range metadata {

@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cast"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
@@ -21,7 +22,7 @@ import (
 type Manager struct {
 	state        model.ObjectStates
 	localManager *local.Manager
-	api          *StorageApi
+	api          *storageapi.Api
 	mapper       *mapper.Mapper
 }
 
@@ -36,7 +37,7 @@ type UnitOfWork struct {
 	invoked           bool
 }
 
-func NewManager(localManager *local.Manager, api *StorageApi, objects model.ObjectStates, mapper *mapper.Mapper) *Manager {
+func NewManager(localManager *local.Manager, api *storageapi.Api, objects model.ObjectStates, mapper *mapper.Mapper) *Manager {
 	return &Manager{
 		state:        objects,
 		localManager: localManager,
@@ -268,7 +269,7 @@ func (u *UnitOfWork) create(objectState model.ObjectState, object model.Object, 
 			u.changes.AddCreated(objectState)
 		}).
 		OnError(func(response *client.Response) {
-			if e, ok := response.Error().(*Error); ok {
+			if e, ok := response.Error().(*storageapi.Error); ok {
 				if e.ErrCode == "configurationAlreadyExists" || e.ErrCode == "configurationRowAlreadyExists" {
 					// Object exists -> update instead of create + clear error
 					response.SetErr(u.update(objectState, object, recipe, nil))

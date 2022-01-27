@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
 	"github.com/keboola/keboola-as-code/internal/pkg/local"
@@ -56,7 +57,7 @@ type ObjectsContainer interface {
 
 type dependencies interface {
 	Logger() log.Logger
-	StorageApi() (*remote.StorageApi, error)
+	StorageApi() (*storageapi.Api, error)
 }
 
 func New(container ObjectsContainer, d dependencies) (*State, error) {
