@@ -5,10 +5,10 @@ import (
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
