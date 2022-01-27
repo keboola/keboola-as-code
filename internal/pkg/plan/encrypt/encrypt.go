@@ -1,7 +1,7 @@
 package encrypt
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/encryption"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/encryptionapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
@@ -38,7 +38,7 @@ func (b *encryptPlanBuilder) processObject(objectState model.ObjectState) {
 		var values []*UnencryptedValue
 		o.GetContent().VisitAllRecursive(func(path orderedmap.Key, value interface{}, parent interface{}) {
 			if v, ok := value.(string); ok {
-				if key, ok := path.Last().(orderedmap.MapStep); ok && encryption.IsKeyToEncrypt(key.String()) && !encryption.IsEncrypted(v) {
+				if key, ok := path.Last().(orderedmap.MapStep); ok && encryptionapi.IsKeyToEncrypt(key.String()) && !encryptionapi.IsEncrypted(v) {
 					values = append(values, &UnencryptedValue{path: path, value: v})
 				}
 			}

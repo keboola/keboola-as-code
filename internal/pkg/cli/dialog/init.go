@@ -1,10 +1,10 @@
 package dialog
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	createManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/create"
 	initOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/init"
@@ -12,7 +12,7 @@ import (
 
 type initDeps interface {
 	Options() *options.Options
-	StorageApi() (*remote.StorageApi, error)
+	StorageApi() (*storageapi.Api, error)
 }
 
 func (p *Dialogs) AskInitOptions(d initDeps) (initOp.Options, error) {

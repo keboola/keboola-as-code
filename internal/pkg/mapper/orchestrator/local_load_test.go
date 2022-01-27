@@ -8,8 +8,8 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
 func TestMapAfterLocalLoad(t *testing.T) {

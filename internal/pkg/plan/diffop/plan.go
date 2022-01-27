@@ -6,9 +6,9 @@ import (
 	"sort"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
-	"github.com/keboola/keboola-as-code/internal/pkg/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/remote"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 

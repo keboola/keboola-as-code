@@ -3,10 +3,10 @@ package load
 import (
 	"context"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/api/schedulerapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -43,8 +43,8 @@ type OptionsWithFilter struct {
 type dependencies interface {
 	Ctx() context.Context
 	Logger() log.Logger
-	StorageApi() (*remote.StorageApi, error)
-	SchedulerApi() (*scheduler.Api, error)
+	StorageApi() (*storageapi.Api, error)
+	SchedulerApi() (*schedulerapi.Api, error)
 }
 
 func Run(container state.ObjectsContainer, o OptionsWithFilter, d dependencies) (*state.State, error) {

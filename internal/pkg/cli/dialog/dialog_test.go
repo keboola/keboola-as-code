@@ -8,17 +8,17 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dialog"
 	interactivePrompt "github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/interactive"
 	nopPrompt "github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/nop"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/testapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
+	testhelper2 "github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
-func mockedStorageApi(branches []*model.Branch) *remote.StorageApi {
+func mockedStorageApi(branches []*model.Branch) *storageapi.Api {
 	api, httpTransport := testapi.NewMockedStorageApi(log.NewDebugLogger())
 	httpTransport.RegisterResponder(
 		"GET", `=~/storage/dev-branches`,
@@ -32,8 +32,8 @@ func createDialogs(t *testing.T, interactive bool) (*dialog.Dialogs, *expect.Con
 
 	if interactive {
 		// Create virtual console
-		stdout := testhelper.VerboseStdout()
-		console, _, err := testhelper.NewVirtualTerminal(t, expect.WithStdout(stdout), expect.WithCloser(stdout), expect.WithDefaultTimeout(5*time.Second))
+		stdout := testhelper2.VerboseStdout()
+		console, _, err := testhelper2.NewVirtualTerminal(t, expect.WithStdout(stdout), expect.WithCloser(stdout), expect.WithDefaultTimeout(5*time.Second))
 		assert.NoError(t, err)
 
 		// Create prompt

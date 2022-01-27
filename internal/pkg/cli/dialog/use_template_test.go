@@ -11,8 +11,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/interactive"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
-	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
-	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testdeps"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
 // If condition for restricted input is met by setting the age above the limit.

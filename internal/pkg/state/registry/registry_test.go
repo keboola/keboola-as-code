@@ -9,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 )
 
 func TestNewState(t *testing.T) {

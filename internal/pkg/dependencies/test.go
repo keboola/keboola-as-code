@@ -3,11 +3,11 @@ package dependencies
 import (
 	"context"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/encryption"
-	"github.com/keboola/keboola-as-code/internal/pkg/event"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/encryptionapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/schedulerapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi/eventsender"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
-	"github.com/keboola/keboola-as-code/internal/pkg/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 )
 
@@ -20,19 +20,19 @@ func (c *TestContainer) SetCtx(ctx context.Context) {
 	c.ctx = ctx
 }
 
-func (c *TestContainer) SetStorageApi(api *remote.StorageApi) {
+func (c *TestContainer) SetStorageApi(api *storageapi.Api) {
 	c.storageApi = api
 }
 
-func (c *TestContainer) SetEncryptionApi(api *encryption.Api) {
+func (c *TestContainer) SetEncryptionApi(api *encryptionapi.Api) {
 	c.encryptionApi = api
 }
 
-func (c *TestContainer) SetSchedulerApi(api *scheduler.Api) {
+func (c *TestContainer) SetSchedulerApi(api *schedulerapi.Api) {
 	c.schedulerApi = api
 }
 
-func (c *TestContainer) EventSender(sender *event.Sender) {
+func (c *TestContainer) EventSender(sender *eventsender.Sender) {
 	c.eventSender = sender
 }
 

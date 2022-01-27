@@ -3,15 +3,15 @@ package project
 import (
 	"context"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/api/schedulerapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
 )
 
 type Manifest = projectManifest.Manifest
@@ -23,8 +23,8 @@ func LoadManifest(fs filesystem.Fs) (*Manifest, error) {
 type dependencies interface {
 	Ctx() context.Context
 	Logger() log.Logger
-	StorageApi() (*remote.StorageApi, error)
-	SchedulerApi() (*scheduler.Api, error)
+	StorageApi() (*storageapi.Api, error)
+	SchedulerApi() (*schedulerapi.Api, error)
 }
 
 type Project struct {

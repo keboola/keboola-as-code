@@ -10,8 +10,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testdeps"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 

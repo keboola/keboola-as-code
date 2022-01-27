@@ -8,8 +8,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacekeys"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/testdeps"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testdeps"
 )
 
 func TestReplaceKeysMapper_OnRemoteChange(t *testing.T) {

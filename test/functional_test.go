@@ -17,23 +17,23 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/umisama/go-regexpcache"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
-	"github.com/keboola/keboola-as-code/internal/pkg/testhelper"
-	"github.com/keboola/keboola-as-code/internal/pkg/testproject"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 )
 
 type envTicketProvider struct {
-	api  *remote.StorageApi
+	api  *storageapi.Api
 	envs *env.Map
 }
 
 // EnvTicketProvider allows you to generate new unique IDs via an ENV variable in the test.
-func CreateEnvTicketProvider(api *remote.StorageApi, envs *env.Map) testhelper.EnvProvider {
+func CreateEnvTicketProvider(api *storageapi.Api, envs *env.Map) testhelper.EnvProvider {
 	return &envTicketProvider{api, envs}
 }
 
@@ -161,7 +161,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	}
 
 	// Assert
-	AssertExpectations(t, api, envProvider, testDirFs, workingDirFs, exitCode, strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()), project)
+	AssertExpectations(t, envProvider, testDirFs, workingDirFs, exitCode, strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()), project)
 }
 
 // CompileBinary compiles component to binary used in this test.
@@ -229,7 +229,6 @@ func GetTestDirs(t *testing.T, root string) []string {
 // AssertExpectations compares expectations with the actual state.
 func AssertExpectations(
 	t *testing.T,
-	api *remote.StorageApi,
 	envProvider testhelper.EnvProvider,
 	testDirFs filesystem.Fs,
 	workingDirFs filesystem.Fs,

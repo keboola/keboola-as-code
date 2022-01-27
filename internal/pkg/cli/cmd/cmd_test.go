@@ -13,8 +13,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/ioutil"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 )
 
 func TestCliSubCommands(t *testing.T) {

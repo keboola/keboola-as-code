@@ -1,8 +1,8 @@
 package configmetadata
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 )
 
@@ -14,7 +14,7 @@ type configMetadataMapper struct {
 }
 
 type dependencies interface {
-	StorageApi() (*remote.StorageApi, error)
+	StorageApi() (*storageapi.Api, error)
 }
 
 func NewMapper(s *state.State, d dependencies) *configMetadataMapper {

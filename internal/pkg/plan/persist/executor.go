@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -16,12 +16,12 @@ type executor struct {
 	*Plan
 	*state.State
 	logger  log.Logger
-	tickets *remote.TicketProvider
+	tickets *storageapi.TicketProvider
 	uow     *local.UnitOfWork
 	errors  *utils.MultiError
 }
 
-func newExecutor(logger log.Logger, api *remote.StorageApi, projectState *state.State, plan *Plan) *executor {
+func newExecutor(logger log.Logger, api *storageapi.Api, projectState *state.State, plan *Plan) *executor {
 	return &executor{
 		Plan:    plan,
 		State:   projectState,
