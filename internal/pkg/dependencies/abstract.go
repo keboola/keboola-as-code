@@ -6,8 +6,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/api/encryptionapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/schedulerapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi/eventsender"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacekeys"
@@ -52,7 +52,7 @@ type CommonDeps interface {
 	StorageApi() (*storageapi.Api, error)
 	EncryptionApi() (*encryptionapi.Api, error)
 	SchedulerApi() (*schedulerapi.Api, error)
-	EventSender() (*event.Sender, error)
+	EventSender() (*eventsender.Sender, error)
 	Project() (*project.Project, error)
 	ProjectState(loadOptions loadState.Options) (*project.State, error)
 	ProjectDir() (filesystem.Fs, error)

@@ -6,7 +6,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/api/encryptionapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/schedulerapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/event"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi/eventsender"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 )
@@ -32,7 +32,7 @@ func (c *TestContainer) SetSchedulerApi(api *schedulerapi.Api) {
 	c.schedulerApi = api
 }
 
-func (c *TestContainer) EventSender(sender *event.Sender) {
+func (c *TestContainer) EventSender(sender *eventsender.Sender) {
 	c.eventSender = sender
 }
 

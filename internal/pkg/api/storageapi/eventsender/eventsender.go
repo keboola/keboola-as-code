@@ -1,4 +1,4 @@
-package event
+package eventsender
 
 import (
 	"fmt"
@@ -14,7 +14,7 @@ type Sender struct {
 	storageApi *storageapi.Api
 }
 
-func NewSender(logger log.Logger, storageApi *storageapi.Api) *Sender {
+func New(logger log.Logger, storageApi *storageapi.Api) *Sender {
 	return &Sender{logger: logger, storageApi: storageApi}
 }
 

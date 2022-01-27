@@ -7,7 +7,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/api/encryptionapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/schedulerapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/event"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi/eventsender"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
@@ -27,7 +27,7 @@ type common struct {
 	storageApi    *storageapi.Api
 	encryptionApi *encryptionapi.Api
 	schedulerApi  *schedulerapi.Api
-	eventSender   *event.Sender
+	eventSender   *eventsender.Sender
 	// Project
 	project         *project.Project
 	projectDir      filesystem.Fs
@@ -122,13 +122,13 @@ func (c *common) SchedulerApi() (*schedulerapi.Api, error) {
 	return c.schedulerApi, nil
 }
 
-func (c *common) EventSender() (*event.Sender, error) {
+func (c *common) EventSender() (*eventsender.Sender, error) {
 	if c.eventSender == nil {
 		storageApi, err := c.StorageApi()
 		if err != nil {
 			return nil, err
 		}
-		c.eventSender = event.NewSender(c.Logger(), storageApi)
+		c.eventSender = eventsender.New(c.Logger(), storageApi)
 	}
 	return c.eventSender, nil
 }
