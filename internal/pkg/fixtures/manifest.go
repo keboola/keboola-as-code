@@ -1,9 +1,9 @@
 package fixtures
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
 )
 
 func NewManifest() *Manifest {
