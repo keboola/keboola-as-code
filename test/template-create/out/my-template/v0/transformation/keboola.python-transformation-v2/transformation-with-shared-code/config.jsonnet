@@ -1,4 +1,4 @@
 {
   parameters: {},
-  shared_code_path: "other/keboola.shared-code/shared-codes",
+  shared_code_path: "_shared/keboola.python-transformation-v2",
 }

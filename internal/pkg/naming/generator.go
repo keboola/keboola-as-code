@@ -78,7 +78,7 @@ func (g Generator) ConfigPath(parentPath string, component *Component, config *C
 	// Shared code is handled differently
 	var template, targetComponentId string
 	switch {
-	case parentKind.IsBranch() && component.IsSharedCode():
+	case (parentKind.IsEmpty() || parentKind.IsBranch()) && component.IsSharedCode():
 		if config.SharedCode == nil {
 			panic(fmt.Errorf(`invalid shared code %s, value is not set`, config.Desc()))
 		}
