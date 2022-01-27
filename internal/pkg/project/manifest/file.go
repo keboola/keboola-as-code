@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -46,6 +47,7 @@ func newFile(projectId int, apiHost string) *file {
 		Naming:            naming.TemplateWithIds(),
 		AllowedBranches:   model.DefaultAllowedBranches(),
 		IgnoredComponents: model.ComponentIds{},
+		Templates:         Templates{Repositories: []model.TemplateRepository{repository.DefaultRepository()}},
 		Branches:          make([]*model.BranchManifest, 0),
 		Configs:           make([]*model.ConfigManifestWithRows, 0),
 	}
