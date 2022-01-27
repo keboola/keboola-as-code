@@ -206,7 +206,16 @@ func minimalJson() string {
     "*"
   ],
   "ignoredComponents": [],
-  "templates": {},
+  "templates": {
+    "repositories": [
+      {
+        "type": "git",
+        "name": "keboola",
+        "url": "git@github.com:keboola/keboola-as-code-templates.git",
+        "ref": "main"
+      }
+    ]
+  },
   "branches": [],
   "configurations": []
 }
@@ -242,7 +251,16 @@ func fullJson() string {
   "ignoredComponents": [
     "abc"
   ],
-  "templates": {},
+  "templates": {
+    "repositories": [
+      {
+        "type": "git",
+        "name": "keboola",
+        "url": "git@github.com:keboola/keboola-as-code-templates.git",
+        "ref": "main"
+      }
+    ]
+  },
   "branches": [
     {
       "id": 10,

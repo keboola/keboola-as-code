@@ -19,7 +19,16 @@
     "fo*"
   ],
   "ignoredComponents": [],
-  "templates": {},
+  "templates": {
+    "repositories": [
+      {
+        "type": "git",
+        "name": "keboola",
+        "url": "git@github.com:keboola/keboola-as-code-templates.git",
+        "ref": "main"
+      }
+    ]
+  },
   "branches": [
     {
       "id": %%TEST_BRANCH_FOO_ID%%,
