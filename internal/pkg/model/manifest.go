@@ -78,6 +78,13 @@ type ConfigManifestWithRows struct {
 	Rows []*ConfigRowManifest `json:"rows"`
 }
 
+type TemplateRepository struct {
+	Type string `json:"type" validate:"oneof=dir git"`
+	Name string `json:"name" validate:"required"`
+	Url  string `json:"url,omitempty" validate:"required_if=Type git"`
+	Ref  string `json:"ref,omitempty" validate:"required_if=Type git"`
+}
+
 func (p AbsPath) DeepCopy(_ deepcopy.TranslateFunc, _ deepcopy.Steps, _ deepcopy.VisitedMap) AbsPath {
 	return p
 }

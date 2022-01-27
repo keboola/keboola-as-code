@@ -31,6 +31,11 @@ type file struct {
 	IgnoredComponents model.ComponentIds              `json:"ignoredComponents"`
 	Branches          []*model.BranchManifest         `json:"branches" validate:"dive"`
 	Configs           []*model.ConfigManifestWithRows `json:"configurations" validate:"dive"`
+	Templates         Templates                       `json:"templates"`
+}
+
+type Templates struct {
+	Repositories []model.TemplateRepository `json:"repositories" validate:"dive"`
 }
 
 func newFile(projectId int, apiHost string) *file {
