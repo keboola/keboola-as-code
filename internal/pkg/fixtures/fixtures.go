@@ -44,6 +44,7 @@ type Config struct {
 	ChangeDescription string                 `json:"changeDescription,omitempty"`
 	Content           *orderedmap.OrderedMap `json:"configuration"`
 	Rows              []*ConfigRow           `json:"rows"`
+	Metadata          map[string]string      `json:"metadata,omitempty"`
 }
 
 type ConfigRow struct {
