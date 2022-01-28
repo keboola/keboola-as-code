@@ -16,22 +16,26 @@ type RecordPaths interface {
 	GetPathInProject() AbsPath
 	Path() string          // parent path + object path -> path relative to the project dir
 	GetObjectPath() string // path relative to the parent object
+	SetObjectPath(string)  // set path relative to the parent object
 	GetParentPath() string // parent path relative to the project dir
+	IsParentPathSet() bool // is parent path resolved?
+	SetParentPath(string)  // set parent path
+}
+
+type RelatedPaths interface {
+	GetRelatedPaths() []string // files related to the record, relative to the project dir, e.g. main/meta.json
+	ClearRelatedPaths()
+	AddRelatedPath(path string)
+	RenameRelatedPaths(oldPath, newPath string)
 }
 
 // ObjectManifest - manifest record for a object.
 type ObjectManifest interface {
 	Key
 	RecordPaths
+	RelatedPaths
 	Key() Key                   // unique key for map -> for fast access
 	SortKey(sort string) string // unique key for sorting
-	SetObjectPath(string)       // set path relative to the parent object
-	IsParentPathSet() bool      // is parent path resolved?
-	SetParentPath(string)       // set parent path
-	GetRelatedPaths() []string  // files related to the record, relative to the project dir, e.g. main/meta.json
-	ClearRelatedPaths()
-	AddRelatedPath(path string)
-	RenameRelatedPaths(oldPath, newPath string)
 	State() *RecordState
 	NewEmptyObject() Object
 	NewObjectState() ObjectState
