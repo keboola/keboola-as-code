@@ -1,0 +1,17 @@
+{
+  "parameters": {},
+  "storage": {
+    "input": {
+      "tables": [
+        {
+          "columns": [],
+          "destination": "table",
+          "source": "{{:default-bucket:extractor/keboola.ex-aws-s3/808726384}}.table",
+          "where_column": "",
+          "where_operator": "eq",
+          "where_values": []
+        }
+      ]
+    }
+  }
+}

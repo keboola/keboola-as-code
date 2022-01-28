@@ -1,0 +1,1 @@
+template use --verbose --working-dir project --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%%
