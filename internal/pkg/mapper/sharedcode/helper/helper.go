@@ -77,34 +77,23 @@ func (h *SharedCodeHelper) CheckTargetComponent(sharedCodeConfig *model.Config, 
 	return nil
 }
 
-func (h *SharedCodeHelper) GetSharedCodeByPath(branchKey model.BranchKey, path string) (*model.ConfigState, error) {
-	// Get branch
-	branch, found := h.state.Get(branchKey)
-	if !found {
-		return nil, fmt.Errorf(`missing %s`, branchKey.Desc())
-	}
-
+func (h *SharedCodeHelper) GetSharedCodeByPath(parentPath, codePath string) (*model.ConfigState, error) {
 	// Get key by path
-	path = filesystem.Join(branch.Path(), path)
-	configStateRaw, found := h.state.GetByPath(path)
+	codePath = filesystem.Join(parentPath, codePath)
+	configStateRaw, found := h.state.GetByPath(codePath)
 	if !found {
-		return nil, fmt.Errorf(`missing shared code "%s"`, path)
+		return nil, fmt.Errorf(`missing shared code "%s"`, codePath)
 	}
 
 	// Is config?
 	configState, ok := configStateRaw.(*model.ConfigState)
 	if !ok {
-		return nil, fmt.Errorf(`path "%s" is not shared code config`, path)
-	}
-
-	// Is from right parent?
-	if branchKey != configState.BranchKey() {
-		return nil, fmt.Errorf(`config "%s" is not from branch "%s"`, path, branch.Path())
+		return nil, fmt.Errorf(`path "%s" is not shared code config`, codePath)
 	}
 
 	// Shared code?
 	if configState.ComponentId != model.SharedCodeComponentId {
-		return nil, fmt.Errorf(`config "%s" is not shared code`, path)
+		return nil, fmt.Errorf(`config "%s" is not shared code`, codePath)
 	}
 
 	// Ok

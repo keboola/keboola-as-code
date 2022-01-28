@@ -20,19 +20,19 @@ func TestGetSharedCodeByPath(t *testing.T) {
 	helper := New(mockedState)
 
 	// Found
-	result, err := helper.GetSharedCodeByPath(model.BranchKey{Id: 123}, `_shared/keboola.python-transformation-v2`)
+	result, err := helper.GetSharedCodeByPath(`branch`, `_shared/keboola.python-transformation-v2`)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, sharedCodeKey, result.Key())
 
 	// Different branch
-	result, err = helper.GetSharedCodeByPath(model.BranchKey{Id: 456}, `_shared/keboola.python-transformation-v2`)
+	result, err = helper.GetSharedCodeByPath(`branch`, `_shared/keboola.python-transformation-v2`)
 	assert.Nil(t, result)
 	assert.Error(t, err)
 	assert.Equal(t, `missing branch "456"`, err.Error())
 
 	// Not found
-	result, err = helper.GetSharedCodeByPath(model.BranchKey{Id: 123}, `foo/bar`)
+	result, err = helper.GetSharedCodeByPath(`branch`, `foo/bar`)
 	assert.Nil(t, result)
 	assert.Error(t, err)
 	assert.Equal(t, `missing shared code "branch/foo/bar"`, err.Error())
