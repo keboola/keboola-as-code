@@ -18,7 +18,12 @@ type VariablesFromRelation struct {
 }
 
 // VariablesValuesForRelation - variables default values for target configuration.
-type VariablesValuesForRelation struct{}
+type VariablesValuesForRelation struct {
+	// Prevent empty struct,
+	// because two distinct zero-size variables may have the same address in memory.
+	// And it fails with deepcopy, because pointers are same.
+	X bool `json:"-"`
+}
 
 // VariablesValuesFromRelation - variables default values from source config row.
 type VariablesValuesFromRelation struct {

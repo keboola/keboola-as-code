@@ -139,8 +139,7 @@ func (m *variablesMapper) ensureOneRowHasRelation(config *model.Config) error {
 	}
 
 	// Add relation to row local object and manifest
-	relation := &model.VariablesValuesForRelation{}
-	row.Local.AddRelation(relation)
-	row.ConfigRowManifest.AddRelation(relation)
+	row.Local.AddRelation(&model.VariablesValuesForRelation{})
+	row.ConfigRowManifest.AddRelation(&model.VariablesValuesForRelation{})
 	return nil
 }
