@@ -5,9 +5,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
 )
 
+type Path string
+
 type AbsPath struct {
-	RelativePath  string `json:"path" validate:"required"`
-	parentPath    string
+	RelativePath  Path `json:"path" validate:"required"`
+	parentPath    Path
 	parentPathSet bool
 }
 
@@ -17,7 +19,7 @@ type Paths struct {
 }
 
 func NewAbsPath(parentPath, objectPath string) AbsPath {
-	return AbsPath{parentPath: parentPath, parentPathSet: true, RelativePath: objectPath}
+	return AbsPath{parentPath: Path(parentPath), parentPathSet: true, RelativePath: Path(objectPath)}
 }
 
 func (p AbsPath) DeepCopy(_ deepcopy.TranslateFunc, _ deepcopy.Steps, _ deepcopy.VisitedMap) AbsPath {
@@ -29,15 +31,15 @@ func (p AbsPath) GetAbsPath() AbsPath {
 }
 
 func (p *AbsPath) GetRelativePath() string {
-	return p.RelativePath
+	return string(p.RelativePath)
 }
 
 func (p *AbsPath) SetRelativePath(path string) {
-	p.RelativePath = path
+	p.RelativePath = Path(path)
 }
 
 func (p *AbsPath) GetParentPath() string {
-	return p.parentPath
+	return string(p.parentPath)
 }
 
 func (p *AbsPath) IsParentPathSet() bool {
@@ -46,9 +48,9 @@ func (p *AbsPath) IsParentPathSet() bool {
 
 func (p *AbsPath) SetParentPath(parentPath string) {
 	p.parentPathSet = true
-	p.parentPath = parentPath
+	p.parentPath = Path(parentPath)
 }
 
 func (p AbsPath) Path() string {
-	return filesystem.Join(p.parentPath, p.RelativePath)
+	return filesystem.Join(string(p.parentPath), string(p.RelativePath))
 }

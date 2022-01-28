@@ -49,7 +49,7 @@ func (l *localLoader) load() error {
 		// Process phase
 		phase, dependsOn, err := l.addPhase(phaseIndex, phaseDir)
 		if err == nil {
-			key := phase.RelativePath
+			key := phase.GetRelativePath()
 			l.phasesKeys = append(l.phasesKeys, key)
 			l.phaseByKey[key] = phase
 			l.phaseDependsOnKeys[key] = dependsOn
