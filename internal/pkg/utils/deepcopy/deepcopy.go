@@ -117,12 +117,16 @@ func translateRecursive(clone, original reflect.Value, callback TranslateFunc, s
 	case kind == reflect.Interface:
 		// Get rid of the wrapping interface
 		originalValue := original.Elem()
-		// Create a new object. Now new gives us a pointer, but we want the value it
-		// points to, so we have to call Elem() to unwrap it
-		cloneValue := reflect.New(originalValue.Type()).Elem()
-		steps := steps.Add(kind.String(), ``)
-		translateRecursive(cloneValue, originalValue, callback, steps, visited)
-		clone.Set(cloneValue)
+		// Check if the pointer is nil
+		if originalValue.IsValid() {
+			// Create a new object. Now new gives us a pointer, but we want the value it
+			// points to, so we have to call Elem() to unwrap it
+			t := originalValue.Type()
+			cloneValue := reflect.New(t).Elem()
+			steps := steps.Add(kind.String(), t.String())
+			translateRecursive(cloneValue, originalValue, callback, steps, visited)
+			clone.Set(cloneValue)
+		}
 
 	// If it is a struct we translate each field
 	case kind == reflect.Struct:
@@ -131,7 +135,7 @@ func translateRecursive(clone, original reflect.Value, callback TranslateFunc, s
 			steps := steps.Add(t.String(), t.Field(i).Name)
 			cloneField := clone.Field(i)
 			if !cloneField.CanSet() {
-				panic(fmt.Errorf("deepcopy found unexported field\nsteps: %s\nvalue:%#v", steps.String(), original.Interface()))
+				panic(fmt.Errorf("deepcopy found unexported field\nsteps: %s\nvalue: %#v", steps.String(), original.Interface()))
 			}
 			translateRecursive(cloneField, original.Field(i), callback, steps, visited)
 		}

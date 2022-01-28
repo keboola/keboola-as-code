@@ -13,13 +13,16 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testassert"
 )
 
+type Values []*Bar
+
 type Foo struct {
-	Values []*Bar
+	Values Values
 }
 
 type Bar struct {
 	Key1 string
 	Key2 string
+	Key3 interface{} // nil interface
 }
 
 type UnExportedFields struct {
@@ -51,27 +54,32 @@ func TestCopyWithTranslate(t *testing.T) {
     "Values": [
       {
         "Key1": "value1_modified",
-        "Key2": "value2_modified"
+        "Key2": "value2_modified",
+        "Key3": null
       },
       {
         "Key1": "value3_modified",
-        "Key2": "value4_modified"
+        "Key2": "value4_modified",
+        "Key3": null
       }
     ]
   },
   "bar": {
     "Key1": "value1_modified",
-    "Key2": "value2_modified"
+    "Key2": "value2_modified",
+    "Key3": null
   },
   "[]empty": null,
   "[]bar": [
     {
       "Key1": "value1_modified",
-      "Key2": "value2_modified"
+      "Key2": "value2_modified",
+      "Key3": null
     },
     {
       "Key1": "value1_modified",
-      "Key2": "value2_modified"
+      "Key2": "value2_modified",
+      "Key3": null
     }
   ],
   "subMap": {
@@ -98,27 +106,32 @@ func TestCopyWithTranslateSteps(t *testing.T) {
     "Values": [
       {
         "Key1": "*orderedmap.OrderedMap[foo].*deepcopy_test.Foo[Values].slice[0].*deepcopy_test.Bar[Key1].string",
-        "Key2": "*orderedmap.OrderedMap[foo].*deepcopy_test.Foo[Values].slice[0].*deepcopy_test.Bar[Key2].string"
+        "Key2": "*orderedmap.OrderedMap[foo].*deepcopy_test.Foo[Values].slice[0].*deepcopy_test.Bar[Key2].string",
+        "Key3": null
       },
       {
         "Key1": "*orderedmap.OrderedMap[foo].*deepcopy_test.Foo[Values].slice[1].*deepcopy_test.Bar[Key1].string",
-        "Key2": "*orderedmap.OrderedMap[foo].*deepcopy_test.Foo[Values].slice[1].*deepcopy_test.Bar[Key2].string"
+        "Key2": "*orderedmap.OrderedMap[foo].*deepcopy_test.Foo[Values].slice[1].*deepcopy_test.Bar[Key2].string",
+        "Key3": null
       }
     ]
   },
   "bar": {
     "Key1": "*orderedmap.OrderedMap[bar].deepcopy_test.Bar[Key1].string",
-    "Key2": "*orderedmap.OrderedMap[bar].deepcopy_test.Bar[Key2].string"
+    "Key2": "*orderedmap.OrderedMap[bar].deepcopy_test.Bar[Key2].string",
+    "Key3": null
   },
   "[]empty": null,
   "[]bar": [
     {
-      "Key1": "*orderedmap.OrderedMap[[]bar].slice[0].interface.deepcopy_test.Bar[Key1].string",
-      "Key2": "*orderedmap.OrderedMap[[]bar].slice[0].interface.deepcopy_test.Bar[Key2].string"
+      "Key1": "*orderedmap.OrderedMap[[]bar].slice[0].interface[deepcopy_test.Bar].deepcopy_test.Bar[Key1].string",
+      "Key2": "*orderedmap.OrderedMap[[]bar].slice[0].interface[deepcopy_test.Bar].deepcopy_test.Bar[Key2].string",
+      "Key3": null
     },
     {
-      "Key1": "*orderedmap.OrderedMap[[]bar].slice[1].interface.deepcopy_test.Bar[Key1].string",
-      "Key2": "*orderedmap.OrderedMap[[]bar].slice[1].interface.deepcopy_test.Bar[Key2].string"
+      "Key1": "*orderedmap.OrderedMap[[]bar].slice[1].interface[deepcopy_test.Bar].deepcopy_test.Bar[Key1].string",
+      "Key2": "*orderedmap.OrderedMap[[]bar].slice[1].interface[deepcopy_test.Bar].deepcopy_test.Bar[Key2].string",
+      "Key3": null
     }
   ],
   "subMap": {
@@ -151,7 +164,7 @@ func TestCopyUnexportedFields(t *testing.T) {
 	expected := `
 deepcopy found unexported field
 steps: *orderedmap.OrderedMap[key].*deepcopy_test.UnExportedFields[key1]
-value:deepcopy_test.UnExportedFields{key1:"a", key2:"b"}
+value: deepcopy_test.UnExportedFields{key1:"a", key2:"b"}
 `
 	assert.PanicsWithError(t, strings.TrimSpace(expected), func() {
 		Copy(m)

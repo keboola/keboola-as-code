@@ -15,6 +15,13 @@ func DeepEqualNotSame(t *testing.T, a, b interface{}, path string) {
 	// Equal
 	assert.Equal(t, a, b, path)
 
+	// Both nil
+	if a == nil || b == nil {
+		assert.Nil(t, a)
+		assert.Nil(t, b)
+		return
+	}
+
 	// Same type
 	typeA := reflect.TypeOf(a)
 	typeB := reflect.TypeOf(b)
