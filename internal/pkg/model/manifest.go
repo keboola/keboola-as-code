@@ -13,17 +13,24 @@ const (
 )
 
 type RecordPaths interface {
-	GetPathInProject() AbsPath
-	Path() string          // parent path + object path -> path relative to the project dir
-	GetObjectPath() string // path relative to the parent object
-	SetObjectPath(string)  // set path relative to the parent object
-	GetParentPath() string // parent path relative to the project dir
-	IsParentPathSet() bool // is parent path resolved?
-	SetParentPath(string)  // set parent path
+	GetAbsPath() AbsPath
+	// Path gets path relative to the top dir, it is parent path + relative path.
+	Path() string
+	// GetRelativePath - for example path of the object inside parent object/path.
+	GetRelativePath() string
+	// SetRelativePath - for example path of the object inside parent object/path.
+	SetRelativePath(string)
+	// GetParentPath - for example path of the parent object.
+	GetParentPath() string
+	// SetParentPath - for example path of the parent object.
+	SetParentPath(string)
+	// IsParentPathSet returns true if the parent path is set/resolved.
+	IsParentPathSet() bool
 }
 
 type RelatedPaths interface {
-	GetRelatedPaths() []string // files related to the record, relative to the project dir, e.g. main/meta.json
+	// GetRelatedPaths returns files related to the record, relative to the project dir, e.g. main/meta.json
+	GetRelatedPaths() []string
 	ClearRelatedPaths()
 	AddRelatedPath(path string)
 	RenameRelatedPaths(oldPath, newPath string)

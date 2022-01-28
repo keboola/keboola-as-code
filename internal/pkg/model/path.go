@@ -6,7 +6,7 @@ import (
 )
 
 type AbsPath struct {
-	ObjectPath    string `json:"path" validate:"required"`
+	RelativePath  string `json:"path" validate:"required"`
 	parentPath    string
 	parentPathSet bool
 }
@@ -17,23 +17,23 @@ type Paths struct {
 }
 
 func NewAbsPath(parentPath, objectPath string) AbsPath {
-	return AbsPath{parentPath: parentPath, parentPathSet: true, ObjectPath: objectPath}
+	return AbsPath{parentPath: parentPath, parentPathSet: true, RelativePath: objectPath}
 }
 
 func (p AbsPath) DeepCopy(_ deepcopy.TranslateFunc, _ deepcopy.Steps, _ deepcopy.VisitedMap) AbsPath {
 	return p
 }
 
-func (p AbsPath) GetPathInProject() AbsPath {
+func (p AbsPath) GetAbsPath() AbsPath {
 	return p
 }
 
-func (p *AbsPath) GetObjectPath() string {
-	return p.ObjectPath
+func (p *AbsPath) GetRelativePath() string {
+	return p.RelativePath
 }
 
-func (p *AbsPath) SetObjectPath(path string) {
-	p.ObjectPath = path
+func (p *AbsPath) SetRelativePath(path string) {
+	p.RelativePath = path
 }
 
 func (p *AbsPath) GetParentPath() string {
@@ -50,5 +50,5 @@ func (p *AbsPath) SetParentPath(parentPath string) {
 }
 
 func (p AbsPath) Path() string {
-	return filesystem.Join(p.parentPath, p.ObjectPath)
+	return filesystem.Join(p.parentPath, p.RelativePath)
 }

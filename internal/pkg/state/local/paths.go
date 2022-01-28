@@ -112,7 +112,7 @@ func (g *PathsGenerator) doUpdate(objectState model.ObjectState, origin model.Ke
 	}
 
 	// Re-generate object path IF rename is enabled OR path is not set
-	if objectState.GetObjectPath() == "" || g.rename {
+	if objectState.GetRelativePath() == "" || g.rename {
 		switch v := objectState.(type) {
 		case *model.BranchState:
 			v.AbsPath = g.NamingGenerator().BranchPath(object.(*model.Branch))

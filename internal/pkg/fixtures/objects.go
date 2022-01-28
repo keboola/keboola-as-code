@@ -90,11 +90,11 @@ func (MockedManifest) SortKey(_ string) string {
 	return "key"
 }
 
-func (MockedManifest) GetObjectPath() string {
+func (MockedManifest) GetRelativePath() string {
 	return "foo"
 }
 
-func (MockedManifest) SetObjectPath(string) {
+func (MockedManifest) SetRelativePath(string) {
 }
 
 func (MockedManifest) GetParentPath() string {
@@ -108,7 +108,7 @@ func (MockedManifest) IsParentPathSet() bool {
 func (MockedManifest) SetParentPath(string) {
 }
 
-func (r MockedManifest) GetPathInProject() model.AbsPath {
+func (r MockedManifest) GetAbsPath() model.AbsPath {
 	if len(r.PathValue) > 0 {
 		return model.NewAbsPath("", r.PathValue)
 	}

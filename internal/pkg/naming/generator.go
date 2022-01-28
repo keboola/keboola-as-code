@@ -49,9 +49,9 @@ func (g Generator) BranchPath(branch *Branch) AbsPath {
 	p.SetParentPath("") // branch is top level object
 
 	if branch.IsDefault {
-		p.ObjectPath = `main`
+		p.RelativePath = `main`
 	} else {
-		p.ObjectPath = utils.ReplacePlaceholders(string(g.template.Branch), map[string]interface{}{
+		p.RelativePath = utils.ReplacePlaceholders(string(g.template.Branch), map[string]interface{}{
 			"branch_id":   branch.Id,
 			"branch_name": utils.NormalizeName(branch.Name),
 		})
@@ -102,7 +102,7 @@ func (g Generator) ConfigPath(parentPath string, component *Component, config *C
 
 	p := AbsPath{}
 	p.SetParentPath(parentPath)
-	p.ObjectPath = utils.ReplacePlaceholders(template, map[string]interface{}{
+	p.RelativePath = utils.ReplacePlaceholders(template, map[string]interface{}{
 		"target_component_id": targetComponentId, // for shared code
 		"component_type":      component.Type,
 		"component_id":        component.Id,
@@ -159,7 +159,7 @@ func (g Generator) ConfigRowPath(parentPath string, component *Component, row *C
 
 	p := AbsPath{}
 	p.SetParentPath(parentPath)
-	p.ObjectPath = utils.ReplacePlaceholders(template, map[string]interface{}{
+	p.RelativePath = utils.ReplacePlaceholders(template, map[string]interface{}{
 		"config_row_id":   row.Id,
 		"config_row_name": utils.NormalizeName(name),
 	})
@@ -173,7 +173,7 @@ func (g Generator) BlocksDir(configDir string) string {
 func (g Generator) BlockPath(parentPath string, block *Block) AbsPath {
 	p := AbsPath{}
 	p.SetParentPath(parentPath)
-	p.ObjectPath = utils.ReplacePlaceholders(string(blockNameTemplate), map[string]interface{}{
+	p.RelativePath = utils.ReplacePlaceholders(string(blockNameTemplate), map[string]interface{}{
 		"block_order": fmt.Sprintf(`%03d`, block.Index+1),
 		"block_name":  utils.NormalizeName(block.Name),
 	})
@@ -183,7 +183,7 @@ func (g Generator) BlockPath(parentPath string, block *Block) AbsPath {
 func (g Generator) CodePath(parentPath string, code *Code) AbsPath {
 	p := AbsPath{}
 	p.SetParentPath(parentPath)
-	p.ObjectPath = utils.ReplacePlaceholders(string(codeNameTemplate), map[string]interface{}{
+	p.RelativePath = utils.ReplacePlaceholders(string(codeNameTemplate), map[string]interface{}{
 		"code_order": fmt.Sprintf(`%03d`, code.Index+1),
 		"code_name":  utils.NormalizeName(code.Name),
 	})
@@ -209,7 +209,7 @@ func (g Generator) PhasesDir(configDir string) string {
 func (g Generator) PhasePath(parentPath string, phase *Phase) AbsPath {
 	p := AbsPath{}
 	p.SetParentPath(parentPath)
-	p.ObjectPath = utils.ReplacePlaceholders(string(phaseNameTemplate), map[string]interface{}{
+	p.RelativePath = utils.ReplacePlaceholders(string(phaseNameTemplate), map[string]interface{}{
 		"phase_order": fmt.Sprintf(`%03d`, phase.Index+1),
 		"phase_name":  utils.NormalizeName(phase.Name),
 	})
@@ -223,7 +223,7 @@ func (g Generator) PhaseFilePath(phase *Phase) string {
 func (g Generator) TaskPath(parentPath string, task *Task) AbsPath {
 	p := AbsPath{}
 	p.SetParentPath(parentPath)
-	p.ObjectPath = utils.ReplacePlaceholders(string(taskNameTemplate), map[string]interface{}{
+	p.RelativePath = utils.ReplacePlaceholders(string(taskNameTemplate), map[string]interface{}{
 		"task_order": fmt.Sprintf(`%03d`, task.Index+1),
 		"task_name":  utils.NormalizeName(task.Name),
 	})

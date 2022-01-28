@@ -36,7 +36,7 @@ func (m *defaultBucketMapper) replaceDefaultBucketWithPlaceholder(
 	}
 
 	tableName := strings.SplitN(sourceTableId, ".", 3)[2]
-	inputTable.Set(`source`, fmt.Sprintf(`{{:default-bucket:%s}}.%s`, sourceConfigState.GetObjectPath(), tableName))
+	inputTable.Set(`source`, fmt.Sprintf(`{{:default-bucket:%s}}.%s`, sourceConfigState.GetRelativePath(), tableName))
 
 	return nil
 }

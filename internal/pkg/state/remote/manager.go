@@ -223,7 +223,7 @@ func (u *UnitOfWork) Invoke() error {
 	// Generate local path if needed
 	pathsUpdater := u.localManager.NewPathsGenerator(false)
 	for _, objectState := range u.changes.Loaded() {
-		if objectState.GetObjectPath() == "" {
+		if objectState.GetRelativePath() == "" {
 			pathsUpdater.Add(objectState)
 		}
 	}

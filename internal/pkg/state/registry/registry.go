@@ -177,7 +177,7 @@ func (s *Registry) GetPath(key Key) (AbsPath, bool) {
 	if !found {
 		return AbsPath{}, false
 	}
-	return objectState.GetPathInProject(), true
+	return objectState.GetAbsPath(), true
 }
 
 func (s *Registry) GetByPath(path string) (ObjectState, bool) {
@@ -225,8 +225,8 @@ func (s *Registry) Set(objectState ObjectState) error {
 		return fmt.Errorf(`object "%s" already exists`, key.Desc())
 	}
 
-	if objectState.GetObjectPath() != "" {
-		if err := s.namingRegistry.Attach(key, objectState.GetPathInProject()); err != nil {
+	if objectState.GetRelativePath() != "" {
+		if err := s.namingRegistry.Attach(key, objectState.GetAbsPath()); err != nil {
 			return err
 		}
 	}
