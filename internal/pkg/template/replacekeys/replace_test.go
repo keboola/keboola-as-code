@@ -47,7 +47,7 @@ func TestReplaceValues(t *testing.T) {
 			},
 		},
 	}
-	replacements, err := keys.values()
+	replacements, err := keys.Values()
 	assert.NoError(t, err)
 	assert.Equal(t, values{
 		value{
@@ -115,7 +115,7 @@ func TestReplaceValues_DuplicateOld(t *testing.T) {
 			},
 		},
 	}
-	_, err := keys.values()
+	_, err := keys.Values()
 	assert.Error(t, err)
 	assert.Equal(t, `the old ID "12" is defined 2x`, err.Error())
 }
@@ -150,7 +150,7 @@ func TestReplaceValues_DuplicateNew(t *testing.T) {
 			},
 		},
 	}
-	_, err := keys.values()
+	_, err := keys.Values()
 	assert.Error(t, err)
 	assert.Equal(t, `the new ID "23" is defined 2x`, err.Error())
 }
@@ -260,9 +260,9 @@ func TestReplaceKeys(t *testing.T) {
 		},
 	}
 
-	values, err := keys.values()
+	values, err := keys.Values()
 	assert.NoError(t, err)
-	assert.Equal(t, expected, replaceValues(values, input))
+	assert.Equal(t, expected, ReplaceValues(values, input))
 }
 
 func TestReplaceSubString(t *testing.T) {

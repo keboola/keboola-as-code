@@ -2,8 +2,10 @@ package dependencies
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 	createRepositoryManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/repository/manifest/create"
@@ -32,17 +34,35 @@ func (c *common) TemplateRepository() (*repository.Repository, error) {
 
 func (c *common) TemplateRepositoryDir() (filesystem.Fs, error) {
 	if c.templateRepositoryDir == nil {
-		// Get FS
-		fs := c.Fs()
+		// if repositoryDir, found := os.LookupEnv(`KBC_TEMPLATE_REPOSITORY_DIR`); found {
+		//	workingDir := `/`
+		//	if v, found := os.LookupEnv(`KBC_TEMPLATE`); found {
+		//		workingDir = v
+		//	}
 
-		if !c.TemplateRepositoryManifestExists() {
-			if c.ProjectManifestExists() {
-				return nil, ErrExpectedRepositoryFoundProject
-			}
-			return nil, ErrRepositoryManifestNotFound
+		pwd, _ := os.Getwd()
+		repositoryDir := pwd + `/repository`
+		workingDir := `my-template/v0`
+		fs, err := aferofs.NewLocalFs(c.Logger(), repositoryDir, workingDir)
+		if err != nil {
+			panic(err)
 		}
 
 		c.templateRepositoryDir = fs
+		return c.templateRepositoryDir, nil
+		//}
+		//
+		//// Get FS
+		//fs := c.Fs()
+		//
+		//if !c.TemplateRepositoryManifestExists() {
+		//	if c.ProjectManifestExists() {
+		//		return nil, ErrExpectedRepositoryFoundProject
+		//	}
+		//	return nil, ErrRepositoryManifestNotFound
+		//}
+		//
+		//c.templateRepositoryDir = fs
 	}
 	return c.templateRepositoryDir, nil
 }
@@ -55,6 +75,27 @@ func (c *common) TemplateRepositoryManifestExists() bool {
 
 	// Get FS
 	fs := c.Fs()
+
+	// Get FS
+	//if repositoryDir, found := os.LookupEnv(`KBC_TEMPLATE_REPOSITORY_DIR`); found {
+	//	workingDir := `/`
+	//	if v, found := os.LookupEnv(`KBC_TEMPLATE`); found {
+	//		workingDir = v
+	//	}
+	//
+	//	fmt.Println(repositoryDir, workingDir)
+
+	pwd, _ := os.Getwd()
+	repositoryDir := pwd + `/repository`
+	workingDir := `my-template/v0`
+	fsX, err := aferofs.NewLocalFs(c.Logger(), repositoryDir, workingDir)
+	if err != nil {
+		panic(err)
+	}
+	fs = fsX
+	//} else {
+	//	fmt.Println(`NOT FOUND`)
+	//}
 
 	path := filesystem.Join(filesystem.MetadataDir, repositoryManifest.FileName)
 	return fs.IsFile(path)

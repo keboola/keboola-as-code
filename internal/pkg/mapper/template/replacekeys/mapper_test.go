@@ -5,9 +5,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacekeys"
+	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacekeys"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/replacekeys"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testdeps"
 )
@@ -121,6 +122,6 @@ func createStateWithMapper(t *testing.T, replacement replacekeys.Keys) *state.St
 	t.Helper()
 	d := testdeps.New()
 	mockedState := d.EmptyState()
-	mockedState.Mapper().AddMapper(replacekeys.NewMapper(mockedState, replacement))
+	mockedState.Mapper().AddMapper(NewMapper(mockedState, replacement))
 	return mockedState
 }

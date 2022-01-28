@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacekeys"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/replacekeys"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 	createTemplateDir "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/dir/create"
 	createTemplateInputs "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/inputs/create"
@@ -58,7 +58,10 @@ func (c *common) TemplateState(loadOptions loadState.OptionsWithFilter, replacem
 func (c *common) TemplateDir() (filesystem.Fs, error) {
 	if c.templateDir == nil {
 		// Get FS
-		fs := c.Fs()
+		fs, err := c.TemplateRepositoryDir()
+		if err != nil {
+			panic(err)
+		}
 
 		// Check if manifest exists
 		if !c.TemplateManifestExists() {
@@ -104,7 +107,10 @@ func (c *common) TemplateManifestExists() bool {
 	}
 
 	// Get FS
-	fs := c.Fs()
+	fs, err := c.TemplateRepositoryDir()
+	if err != nil {
+		panic(err)
+	}
 
 	// Template dir is [template]/[version], for example "my-template/v1".
 	// Working dir must be the template dir or a subdir.

@@ -32,7 +32,7 @@ type value struct {
 
 type subString string
 
-func (keys Keys) values() (values, error) {
+func (keys Keys) Values() (values, error) {
 	var out values
 	for _, item := range keys {
 		switch v := item.Old.(type) {
@@ -109,7 +109,7 @@ func (keys Keys) values() (values, error) {
 	return out, nil
 }
 
-func replaceValues(replacement values, input interface{}) interface{} {
+func ReplaceValues(replacement values, input interface{}) interface{} {
 	return deepcopy.CopyTranslate(input, func(original, clone reflect.Value, steps deepcopy.Steps) {
 		for _, item := range replacement {
 			switch v := item.Old.(type) {

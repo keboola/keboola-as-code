@@ -11,10 +11,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/jsonnetfiles"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacekeys"
+	replacekeysmapper "github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacekeys"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/variables"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/replacekeys"
 )
 
 func MappersFor(s *state.State, d dependencies, vars jsonnet.VariablesValues, replacements replacekeys.Keys) mapper.Mappers {
@@ -40,6 +41,6 @@ func MappersFor(s *state.State, d dependencies, vars jsonnet.VariablesValues, re
 		// Relations between objects
 		relations.NewMapper(s),
 		// Template
-		replacekeys.NewMapper(s, replacements),
+		replacekeysmapper.NewMapper(s, replacements),
 	}
 }

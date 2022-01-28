@@ -4,21 +4,22 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/replacekeys"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 type replaceKeysMapper struct {
 	state  *state.State
 	logger log.Logger
-	keys   Keys
+	keys   replacekeys.Keys
 }
 
-func NewMapper(state *state.State, keys Keys) *replaceKeysMapper {
+func NewMapper(state *state.State, keys replacekeys.Keys) *replaceKeysMapper {
 	return &replaceKeysMapper{state: state, logger: state.Logger(), keys: keys}
 }
 
 func (m *replaceKeysMapper) AfterRemoteOperation(changes *model.RemoteChanges) error {
-	replacement, err := m.keys.values()
+	replacement, err := m.keys.Values()
 	if err != nil {
 		return err
 	}
@@ -28,7 +29,7 @@ func (m *replaceKeysMapper) AfterRemoteOperation(changes *model.RemoteChanges) e
 	errors := utils.NewMultiError()
 	for _, original := range changes.Loaded() {
 		// Replace keys and delete original object state
-		modified := replaceValues(replacement, original).(model.ObjectState)
+		modified := replacekeys.ReplaceValues(replacement, original).(model.ObjectState)
 		m.state.Remove(original.Key())
 
 		// Branches are not part of the template
