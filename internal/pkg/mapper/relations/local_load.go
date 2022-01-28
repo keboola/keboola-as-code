@@ -2,6 +2,7 @@ package relations
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
 )
 
 // MapAfterLocalLoad - load relations from manifest to object.
@@ -16,6 +17,6 @@ func (m *relationsMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error
 		return nil
 	}
 
-	object.SetRelations(manifest.GetRelations())
+	object.SetRelations(deepcopy.Copy(manifest.GetRelations()).(model.Relations))
 	return nil
 }

@@ -2,6 +2,7 @@ package relations
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
 )
 
 // MapBeforeLocalSave - store config relations from object to manifest.
@@ -16,7 +17,7 @@ func (m *relationsMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) erro
 		return nil
 	}
 
-	manifest.SetRelations(object.GetRelations().OnlyStoredInManifest())
+	manifest.SetRelations(deepcopy.Copy(object.GetRelations().OnlyStoredInManifest()).(model.Relations))
 	recipe.ChangedFields.Remove(`relations`)
 	return nil
 }
