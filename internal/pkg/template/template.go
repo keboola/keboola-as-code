@@ -49,7 +49,7 @@ type Template struct {
 	fileLoader   filesystem.FileLoader
 	manifest     *Manifest
 	inputs       *Inputs
-	variables    jsonnet.VariablesValues
+	jsonNetCtx   *jsonnet.Context
 	replacements replacekeys.Keys
 }
 
@@ -81,5 +81,5 @@ func (t *Template) Ctx() context.Context {
 }
 
 func (t *Template) MappersFor(state *state.State) mapper.Mappers {
-	return MappersFor(state, t.dependencies, t.variables, t.replacements)
+	return MappersFor(state, t.dependencies, t.jsonNetCtx, t.replacements)
 }

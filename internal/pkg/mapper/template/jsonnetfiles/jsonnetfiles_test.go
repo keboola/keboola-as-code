@@ -9,10 +9,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testdeps"
 )
 
-func createStateWithMapper(t *testing.T, variables jsonnet.VariablesValues) *state.State {
+func createStateWithMapper(t *testing.T, jsonNetCtx *jsonnet.Context) *state.State {
 	t.Helper()
 	d := testdeps.New()
 	mockedState := d.EmptyState()
-	mockedState.Mapper().AddMapper(jsonnetfiles.NewMapper(variables))
+	mockedState.Mapper().AddMapper(jsonnetfiles.NewMapper(jsonNetCtx))
 	return mockedState
 }
