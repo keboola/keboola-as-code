@@ -15,39 +15,6 @@ func TestEvaluate(t *testing.T) {
 	assert.Equal(t, "{\n  \"foo\": \"bar\"\n}\n", json)
 }
 
-func TestEvaluate_Variables(t *testing.T) {
-	t.Parallel()
-
-	code := `{ 
-  "null": std.extVar("myNull"),
-  "bool": std.extVar("myBool"),
-  "string": std.extVar("myString"),
-  "float": std.extVar("myFloat"),
-  "int": std.extVar("myInt"),
-}`
-
-	expected := `{
-  "bool": true,
-  "float": 12.34,
-  "int": 789,
-  "null": null,
-  "string": "myString"
-}
-`
-
-	variables := VariablesValues{
-		"myNull":   nil,
-		"myBool":   true,
-		"myString": "myString",
-		"myFloat":  12.34,
-		"myInt":    789,
-	}
-
-	json, err := Evaluate(code, variables)
-	assert.NoError(t, err)
-	assert.Equal(t, expected, json)
-}
-
 func TestEvaluateAst(t *testing.T) {
 	t.Parallel()
 	astNode := &ast.Object{
