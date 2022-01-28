@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -83,39 +82,6 @@ type TemplateRepository struct {
 	Name string `json:"name" validate:"required"`
 	Url  string `json:"url,omitempty" validate:"required_if=Type git"`
 	Ref  string `json:"ref,omitempty" validate:"required_if=Type git"`
-}
-
-func (p AbsPath) DeepCopy(_ deepcopy.TranslateFunc, _ deepcopy.Steps, _ deepcopy.VisitedMap) AbsPath {
-	return p
-}
-
-func (p AbsPath) GetPathInProject() AbsPath {
-	return p
-}
-
-func (p *AbsPath) GetObjectPath() string {
-	return p.ObjectPath
-}
-
-func (p *AbsPath) SetObjectPath(path string) {
-	p.ObjectPath = path
-}
-
-func (p *AbsPath) GetParentPath() string {
-	return p.parentPath
-}
-
-func (p *AbsPath) IsParentPathSet() bool {
-	return p.parentPathSet
-}
-
-func (p *AbsPath) SetParentPath(parentPath string) {
-	p.parentPathSet = true
-	p.parentPath = parentPath
-}
-
-func (p AbsPath) Path() string {
-	return filesystem.Join(p.parentPath, p.ObjectPath)
 }
 
 func (p *Paths) ClearRelatedPaths() {
