@@ -34,7 +34,7 @@ func (m *mapper) onLocalLoad(objectState model.ObjectState) error {
 	}
 
 	// Get shared code
-	sharedCodeState, err := m.helper.GetSharedCodeByPath(transformation.BranchKey(), sharedCodePath)
+	sharedCodeState, err := m.helper.GetSharedCodeByPath(objectState.GetParentPath(), sharedCodePath)
 	if err != nil {
 		return utils.PrefixError(
 			err.Error(),

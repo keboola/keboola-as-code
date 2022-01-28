@@ -8,7 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-// OnLocalChange links relation sides on local load.
+// AfterLocalOperation links relation sides on local load.
 func (m *relationsMapper) AfterLocalOperation(changes *model.LocalChanges) error {
 	errors := utils.NewMultiError()
 	allObjects := m.state.LocalObjects()
@@ -26,7 +26,7 @@ func (m *relationsMapper) AfterLocalOperation(changes *model.LocalChanges) error
 	return nil
 }
 
-// OnRemoteChange links relation sides on remote load.
+// AfterRemoteOperation links relation sides on remote load.
 func (m *relationsMapper) AfterRemoteOperation(changes *model.RemoteChanges) error {
 	errors := utils.NewMultiError()
 	allObjects := m.state.RemoteObjects()
