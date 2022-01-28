@@ -17,10 +17,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 )
 
-func MappersFor(s *state.State, d dependencies, vars jsonnet.VariablesValues, replacements replacekeys.Keys) mapper.Mappers {
+func MappersFor(s *state.State, d dependencies, jsonNetCtx *jsonnet.Context, replacements replacekeys.Keys) mapper.Mappers {
 	return mapper.Mappers{
 		// Template
-		jsonnetfiles.NewMapper(vars),
+		jsonnetfiles.NewMapper(jsonNetCtx),
 		// Core files
 		corefiles.NewMapper(s),
 		description.NewMapper(),

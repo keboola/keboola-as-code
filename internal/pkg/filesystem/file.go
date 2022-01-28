@@ -118,13 +118,13 @@ func (f *RawFile) ToJsonFile() (*JsonFile, error) {
 	return file, nil
 }
 
-func (f *RawFile) ToJsonNetFile(vars jsonnet.VariablesValues) (*JsonNetFile, error) {
+func (f *RawFile) ToJsonNetFile(ctx *jsonnet.Context) (*JsonNetFile, error) {
 	ast, err := jsonnet.ToAst(f.Content)
 	if err != nil {
 		return nil, err
 	}
 
-	file := NewJsonNetFile(f.path, ast, vars)
+	file := NewJsonNetFile(f.path, ast, ctx)
 	file.SetDescription(f.desc)
 	file.AddTag(f.AllTags()...)
 	return file, nil
@@ -193,22 +193,22 @@ func (f *JsonFile) ToJsonNetFile() (*JsonNetFile, error) {
 		return nil, err
 	}
 	fileRaw.SetPath(strings.TrimSuffix(f.path, `.json`) + `.jsonnet`)
-	// vars = nil: JsonNet created from the Json cannot contain variables
+	// ctx = nil: JsonNet created from the Json cannot contain variables
 	return fileRaw.ToJsonNetFile(nil)
 }
 
 type JsonNetFile struct {
 	*FileDef
-	variables jsonnet.VariablesValues
-	Content   jsonnetast.Node
+	context *jsonnet.Context
+	Content jsonnetast.Node
 }
 
-func NewJsonNetFile(path string, content jsonnetast.Node, variables jsonnet.VariablesValues) *JsonNetFile {
-	return &JsonNetFile{FileDef: NewFileDef(path), variables: variables, Content: content}
+func NewJsonNetFile(path string, content jsonnetast.Node, ctx *jsonnet.Context) *JsonNetFile {
+	return &JsonNetFile{FileDef: NewFileDef(path), context: ctx, Content: content}
 }
 
-func (f *JsonNetFile) SetVariables(v jsonnet.VariablesValues) {
-	f.variables = v
+func (f *JsonNetFile) SetContext(ctx *jsonnet.Context) {
+	f.context = ctx
 }
 
 func (f *JsonNetFile) Description() string {
@@ -243,7 +243,7 @@ func (f *JsonNetFile) ToJsonFile() (*JsonFile, error) {
 }
 
 func (f *JsonNetFile) ToJsonRawFile() (*RawFile, error) {
-	jsonContent, err := jsonnet.EvaluateAst(f.Content, f.variables)
+	jsonContent, err := jsonnet.EvaluateAst(f.Content, f.context)
 	if err != nil {
 		return nil, err
 	}

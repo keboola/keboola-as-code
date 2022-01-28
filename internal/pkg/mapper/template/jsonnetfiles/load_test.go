@@ -15,12 +15,11 @@ func TestJsonNetMapper_LoadLocalFile(t *testing.T) {
 	t.Parallel()
 
 	// Variables
-	variables := jsonnet.VariablesValues{
-		"myKey": "bar",
-	}
+	jsonNetCtx := jsonnet.NewContext()
+	jsonNetCtx.ExtVar("myKey", "bar")
 
 	// Create state
-	state := createStateWithMapper(t, variables)
+	state := createStateWithMapper(t, jsonNetCtx)
 
 	// Write JsonNet file with a variable
 	fs := state.Fs()

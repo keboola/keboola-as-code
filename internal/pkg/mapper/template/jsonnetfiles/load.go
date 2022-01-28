@@ -24,7 +24,7 @@ func (m *jsonNetMapper) LoadLocalFile(def *filesystem.FileDef, fileType filesyst
 		jsonNetFile := f.(*filesystem.JsonNetFile)
 
 		// Set variables
-		jsonNetFile.SetVariables(m.variables)
+		jsonNetFile.SetContext(m.jsonNetCtx)
 
 		// Convert to Json/Raw
 		switch fileType {

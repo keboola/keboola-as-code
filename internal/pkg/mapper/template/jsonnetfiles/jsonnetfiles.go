@@ -5,9 +5,9 @@ import (
 )
 
 type jsonNetMapper struct {
-	variables jsonnet.VariablesValues
+	jsonNetCtx *jsonnet.Context
 }
 
-func NewMapper(variables jsonnet.VariablesValues) *jsonNetMapper {
-	return &jsonNetMapper{variables: variables}
+func NewMapper(jsonNetCtx *jsonnet.Context) *jsonNetMapper {
+	return &jsonNetMapper{jsonNetCtx: jsonNetCtx}
 }
