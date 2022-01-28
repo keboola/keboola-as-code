@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -14,25 +13,36 @@ const (
 )
 
 type RecordPaths interface {
-	GetPathInProject() AbsPath
-	Path() string          // parent path + object path -> path relative to the project dir
-	GetObjectPath() string // path relative to the parent object
-	GetParentPath() string // parent path relative to the project dir
+	GetAbsPath() AbsPath
+	// Path gets path relative to the top dir, it is parent path + relative path.
+	Path() string
+	// GetRelativePath - for example path of the object inside parent object/path.
+	GetRelativePath() string
+	// SetRelativePath - for example path of the object inside parent object/path.
+	SetRelativePath(string)
+	// GetParentPath - for example path of the parent object.
+	GetParentPath() string
+	// SetParentPath - for example path of the parent object.
+	SetParentPath(string)
+	// IsParentPathSet returns true if the parent path is set/resolved.
+	IsParentPathSet() bool
+}
+
+type RelatedPaths interface {
+	// GetRelatedPaths returns files related to the record, relative to the project dir, e.g. main/meta.json
+	GetRelatedPaths() []string
+	ClearRelatedPaths()
+	AddRelatedPath(path string)
+	RenameRelatedPaths(oldPath, newPath string)
 }
 
 // ObjectManifest - manifest record for a object.
 type ObjectManifest interface {
 	Key
 	RecordPaths
+	RelatedPaths
 	Key() Key                   // unique key for map -> for fast access
 	SortKey(sort string) string // unique key for sorting
-	SetObjectPath(string)       // set path relative to the parent object
-	IsParentPathSet() bool      // is parent path resolved?
-	SetParentPath(string)       // set parent path
-	GetRelatedPaths() []string  // files related to the record, relative to the project dir, e.g. main/meta.json
-	ClearRelatedPaths()
-	AddRelatedPath(path string)
-	RenameRelatedPaths(oldPath, newPath string)
 	State() *RecordState
 	NewEmptyObject() Object
 	NewObjectState() ObjectState
@@ -83,39 +93,6 @@ type TemplateRepository struct {
 	Name string `json:"name" validate:"required"`
 	Url  string `json:"url,omitempty" validate:"required_if=Type git"`
 	Ref  string `json:"ref,omitempty" validate:"required_if=Type git"`
-}
-
-func (p AbsPath) DeepCopy(_ deepcopy.TranslateFunc, _ deepcopy.Steps, _ deepcopy.VisitedMap) AbsPath {
-	return p
-}
-
-func (p AbsPath) GetPathInProject() AbsPath {
-	return p
-}
-
-func (p *AbsPath) GetObjectPath() string {
-	return p.ObjectPath
-}
-
-func (p *AbsPath) SetObjectPath(path string) {
-	p.ObjectPath = path
-}
-
-func (p *AbsPath) GetParentPath() string {
-	return p.parentPath
-}
-
-func (p *AbsPath) IsParentPathSet() bool {
-	return p.parentPathSet
-}
-
-func (p *AbsPath) SetParentPath(parentPath string) {
-	p.parentPathSet = true
-	p.parentPath = parentPath
-}
-
-func (p AbsPath) Path() string {
-	return filesystem.Join(p.parentPath, p.ObjectPath)
 }
 
 func (p *Paths) ClearRelatedPaths() {

@@ -34,7 +34,7 @@ func (v *TemplateRecord) AddVersion(version template.Version) VersionRecord {
 
 func (v *TemplateRecord) GetByPath(path string) (VersionRecord, bool) {
 	for _, record := range v.Versions {
-		if record.ObjectPath == path {
+		if record.GetRelativePath() == path {
 			return record, true
 		}
 	}

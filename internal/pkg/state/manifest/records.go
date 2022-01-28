@@ -185,7 +185,7 @@ func (r *Records) PersistRecord(record model.ObjectManifest) error {
 	}
 
 	// Attach record to the NamingRegistry
-	if err := r.naming.Attach(record.Key(), record.GetPathInProject()); err != nil {
+	if err := r.naming.Attach(record.Key(), record.GetAbsPath()); err != nil {
 		return err
 	}
 

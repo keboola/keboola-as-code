@@ -11,7 +11,7 @@ func TestPathsRelatedPaths(t *testing.T) {
 
 	p := Paths{}
 	p.SetParentPath(`parent`)
-	p.SetObjectPath(`object`)
+	p.SetRelativePath(`object`)
 
 	p.AddRelatedPath(`parent/object/foo1`)
 	p.AddRelatedPath(`parent/object/foo2`)
@@ -25,7 +25,7 @@ func TestPathsRelatedPaths(t *testing.T) {
 	}, p.GetRelatedPaths())
 
 	p.SetParentPath(`my-parent`)
-	p.SetObjectPath(`my-object`)
+	p.SetRelativePath(`my-object`)
 	assert.Equal(t, []string{
 		`my-parent/my-object/foo1`,
 		`my-parent/my-object/foo2`,

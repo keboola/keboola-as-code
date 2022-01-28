@@ -30,7 +30,7 @@ func (m *orchestratorMapper) updatePhasePath(g model.PathsGenerator, parent *mod
 	phase.SetParentPath(phasesDir)
 
 	// Re-generate object path IF rename is enabled OR path is not set
-	if phase.ObjectPath == "" || g.RenameEnabled() {
+	if phase.RelativePath == "" || g.RenameEnabled() {
 		renameFrom := phase.Path()
 		phase.AbsPath = m.state.NamingGenerator().PhasePath(phase.GetParentPath(), phase)
 
@@ -53,7 +53,7 @@ func (m *orchestratorMapper) updateTaskPath(g model.PathsGenerator, parent *mode
 	task.SetParentPath(phase.Path())
 
 	// Re-generate object path IF rename is enabled OR path is not set
-	if task.ObjectPath == "" || g.RenameEnabled() {
+	if task.RelativePath == "" || g.RenameEnabled() {
 		renameFrom := task.Path()
 		task.AbsPath = m.state.NamingGenerator().TaskPath(task.GetParentPath(), task)
 		// Has been task renamed?

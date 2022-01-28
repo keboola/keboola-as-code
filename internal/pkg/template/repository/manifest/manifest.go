@@ -68,7 +68,7 @@ func (m *Manifest) Persist(records ...TemplateRecord) {
 
 func (m *Manifest) GetByPath(path string) (TemplateRecord, bool) {
 	for _, record := range m.records {
-		if record.ObjectPath == path {
+		if record.GetRelativePath() == path {
 			return record, true
 		}
 	}

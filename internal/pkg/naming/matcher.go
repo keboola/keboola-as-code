@@ -18,12 +18,12 @@ func (m PathMatcher) MatchConfigPath(parentKey Key, path AbsPath) (componentId C
 	parent := parentKey.Kind()
 	if parent.IsBranch() {
 		// Shared code
-		if matched, _ := m.template.SharedCodeConfig.MatchPath(path.ObjectPath); matched {
+		if matched, _ := m.template.SharedCodeConfig.MatchPath(path.GetRelativePath()); matched {
 			return SharedCodeComponentId, nil
 		}
 
 		// Ordinary config
-		if matched, matches := m.template.Config.MatchPath(path.ObjectPath); matched {
+		if matched, matches := m.template.Config.MatchPath(path.GetRelativePath()); matched {
 			// Get component ID
 			componentId, ok := matches["component_id"]
 			if !ok || componentId == "" {
@@ -36,18 +36,18 @@ func (m PathMatcher) MatchConfigPath(parentKey Key, path AbsPath) (componentId C
 	// Config embedded in another config
 	if parent.IsConfig() {
 		// Variables
-		if matched, _ := m.template.VariablesConfig.MatchPath(path.ObjectPath); matched {
+		if matched, _ := m.template.VariablesConfig.MatchPath(path.GetRelativePath()); matched {
 			return VariablesComponentId, nil
 		}
 		// Scheduler
-		if matched, _ := m.template.SchedulerConfig.MatchPath(path.ObjectPath); matched {
+		if matched, _ := m.template.SchedulerConfig.MatchPath(path.GetRelativePath()); matched {
 			return SchedulerComponentId, nil
 		}
 	}
 
 	// Shared code variables, parent is config row
 	if parent.IsConfigRow() && parentKey.(ConfigRowKey).ComponentId == SharedCodeComponentId {
-		if matched, _ := m.template.VariablesConfig.MatchPath(path.ObjectPath); matched {
+		if matched, _ := m.template.VariablesConfig.MatchPath(path.GetRelativePath()); matched {
 			return VariablesComponentId, nil
 		}
 	}
@@ -58,17 +58,17 @@ func (m PathMatcher) MatchConfigPath(parentKey Key, path AbsPath) (componentId C
 func (m PathMatcher) MatchConfigRowPath(component *Component, path AbsPath) bool {
 	// Shared code
 	if component.IsSharedCode() {
-		matched, _ := m.template.SharedCodeConfigRow.MatchPath(path.ObjectPath)
+		matched, _ := m.template.SharedCodeConfigRow.MatchPath(path.GetRelativePath())
 		return matched
 	}
 
 	// Variables
 	if component.IsVariables() {
-		matched, _ := m.template.VariablesValuesRow.MatchPath(path.ObjectPath)
+		matched, _ := m.template.VariablesValuesRow.MatchPath(path.GetRelativePath())
 		return matched
 	}
 
 	// Ordinary config row
-	matched, _ := m.template.ConfigRow.MatchPath(path.ObjectPath)
+	matched, _ := m.template.ConfigRow.MatchPath(path.GetRelativePath())
 	return matched
 }

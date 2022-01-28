@@ -23,7 +23,7 @@ func (m *orchestratorMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) e
 		LocalSaveRecipe: recipe,
 		logger:          m.logger,
 		config:          recipe.Object.(*model.Config),
-		configPath:      recipe.ObjectManifest.GetPathInProject(),
+		configPath:      recipe.ObjectManifest.GetAbsPath(),
 	}
 	writer.save()
 	return nil
@@ -51,7 +51,7 @@ func (w *localWriter) save() {
 	allPhases := w.config.Orchestration.Phases
 	for _, phase := range allPhases {
 		if err := w.savePhase(phase, allPhases); err != nil {
-			errors.Append(utils.PrefixError(fmt.Sprintf(`cannot save phase "%s"`, phase.ObjectPath), err))
+			errors.Append(utils.PrefixError(fmt.Sprintf(`cannot save phase "%s"`, phase.RelativePath), err))
 		}
 	}
 
@@ -109,7 +109,7 @@ func (w *localWriter) savePhase(phase *model.Phase, allPhases []*model.Phase) er
 	// Write tasks
 	for _, task := range phase.Tasks {
 		if err := w.saveTask(task); err != nil {
-			errors.Append(utils.PrefixError(fmt.Sprintf(`cannot save task "%s"`, task.ObjectPath), err))
+			errors.Append(utils.PrefixError(fmt.Sprintf(`cannot save task "%s"`, task.RelativePath), err))
 		}
 	}
 
