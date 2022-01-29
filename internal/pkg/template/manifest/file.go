@@ -8,7 +8,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -23,13 +22,11 @@ func Path() string {
 
 // file is template manifest JSON file.
 type file struct {
-	Naming  naming.Template                 `json:"naming" validate:"required"`
 	Configs []*model.ConfigManifestWithRows `json:"configurations" validate:"dive"`
 }
 
 func newFile() *file {
 	return &file{
-		Naming:  naming.ForTemplate(),
 		Configs: make([]*model.ConfigManifestWithRows, 0),
 	}
 }
