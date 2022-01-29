@@ -20,7 +20,7 @@ var ErrTemplateManifestNotFound = fmt.Errorf("template manifest not found")
 
 func (c *common) Template(replacements replacekeys.Keys) (*template.Template, error) {
 	if c.template == nil {
-		templateDir, err := c.TemplateDir()
+		templateSrcDir, err := c.TemplateSrcDir()
 		if err != nil {
 			return nil, err
 		}
@@ -32,7 +32,7 @@ func (c *common) Template(replacements replacekeys.Keys) (*template.Template, er
 		if err != nil {
 			return nil, err
 		}
-		c.template = template.New(templateDir, manifest, inputs, replacements, c)
+		c.template = template.New(templateSrcDir, manifest, inputs, replacements, c)
 	}
 	return c.template, nil
 }
@@ -93,6 +93,48 @@ func (c *common) TemplateDir() (filesystem.Fs, error) {
 	return c.templateDir, nil
 }
 
+func (c *common) TemplateSrcDir() (filesystem.Fs, error) {
+	if c.templateSrcDir == nil {
+		templateDir, err := c.TemplateDir()
+		if err != nil {
+			return nil, err
+		}
+
+		// All objects are stored in the "src" directory.
+		if !templateDir.IsDir(template.SrcDirectory) {
+			return nil, fmt.Errorf(`directory "%s" not found`, template.SrcDirectory)
+		}
+
+		c.templateSrcDir, err = templateDir.SubDirFs(template.SrcDirectory)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return c.templateSrcDir, nil
+}
+
+func (c *common) TemplateTestsDir() (filesystem.Fs, error) {
+	if c.templateTestsDir == nil {
+		templateDir, err := c.TemplateDir()
+		if err != nil {
+			return nil, err
+		}
+
+		// All tests are stored in the "tests" directory.
+		if !templateDir.IsDir(template.TestsDirectory) {
+			return nil, fmt.Errorf(`directory "%s" not found`, template.TestsDirectory)
+		}
+
+		c.templateTestsDir, err = templateDir.SubDirFs(template.TestsDirectory)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return c.templateTestsDir, nil
+}
+
 func (c *common) TemplateManifestExists() bool {
 	// Is manifest loaded?
 	if c.templateManifest != nil {
@@ -114,7 +156,7 @@ func (c *common) TemplateManifestExists() bool {
 	}
 
 	templateDir := strings.Join(parts[0:2], string(filesystem.PathSeparator))
-	manifestPath := filesystem.Join(templateDir, templateManifest.Path())
+	manifestPath := filesystem.Join(templateDir, template.SrcDirectory, templateManifest.Path())
 	return fs.IsFile(manifestPath)
 }
 

@@ -62,6 +62,8 @@ type CommonDeps interface {
 	Template(replacements replacekeys.Keys) (*template.Template, error)
 	TemplateState(loadOptions loadState.OptionsWithFilter, replacements replacekeys.Keys) (*template.State, error)
 	TemplateDir() (filesystem.Fs, error)
+	TemplateSrcDir() (filesystem.Fs, error)
+	TemplateTestsDir() (filesystem.Fs, error)
 	TemplateManifestExists() bool
 	TemplateManifest() (*template.Manifest, error)
 	TemplateInputs() (*template.Inputs, error)

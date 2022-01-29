@@ -17,7 +17,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
-const IdRegexp = `^[a-zA-Z0-9\-]+$`
+const (
+	IdRegexp       = `^[a-zA-Z0-9\-]+$`
+	SrcDirectory   = `src`
+	TestsDirectory = `tests`
+)
 
 type (
 	Manifest = templateManifest.Manifest
