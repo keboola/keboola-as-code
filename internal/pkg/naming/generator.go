@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -106,7 +107,7 @@ func (g Generator) ConfigPath(parentPath string, component *Component, config *C
 		"target_component_id": targetComponentId, // for shared code
 		"component_type":      component.Type,
 		"component_id":        component.Id,
-		"config_id":           config.Id,
+		"config_id":           jsonnet.StripIdPlaceholder(config.Id.String()),
 		"config_name":         utils.NormalizeName(config.Name),
 	}))
 	return g.registry.ensureUniquePath(config.Key(), p)
@@ -160,7 +161,7 @@ func (g Generator) ConfigRowPath(parentPath string, component *Component, row *C
 	p := AbsPath{}
 	p.SetParentPath(parentPath)
 	p.SetRelativePath(utils.ReplacePlaceholders(template, map[string]interface{}{
-		"config_row_id":   row.Id,
+		"config_row_id":   jsonnet.StripIdPlaceholder(row.Id.String()),
 		"config_row_name": utils.NormalizeName(name),
 	}))
 	return g.registry.ensureUniquePath(row.Key(), p)
