@@ -4,7 +4,7 @@
       tables: [
         {
           source: "table",
-          destination: "in.c-my-super-bucket-om-config.table",
+          destination: "in.c-my-super-bucket-" + ConfigId("om-config") + ".table",
         },
       ],
     },
