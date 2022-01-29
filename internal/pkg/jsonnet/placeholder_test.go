@@ -30,7 +30,6 @@ func TestStripIdPlaceholder_ConfigRowId(t *testing.T) {
 
 func TestConfigRowIdPlaceholder(t *testing.T) {
 	t.Parallel()
-	t.Parallel()
 	assert.Equal(t, `<<~~func:ConfigRowId:["my-config-row-id"]~~>>`, ConfigRowIdPlaceholder("my-config-row-id"))
 }
 
