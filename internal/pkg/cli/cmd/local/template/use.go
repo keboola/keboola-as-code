@@ -12,8 +12,8 @@ import (
 func UseCommand(depsProvider dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "use",
-		Short: helpmsg.Read(`template/use/short`),
-		Long:  helpmsg.Read(`template/use/long`),
+		Short: helpmsg.Read(`local/template/use/short`),
+		Long:  helpmsg.Read(`local/template/use/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf(`not implemented`)
 		},

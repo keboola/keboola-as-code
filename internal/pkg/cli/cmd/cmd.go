@@ -158,7 +158,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 	root.AddCommand(
 		StatusCommand(root),
 		sync.Commands(root),
-		local.Commands(root),
+		local.Commands(root, envs),
 		ci.Commands(root),
 		remote.Commands(root),
 	)
@@ -194,8 +194,9 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 	root.addAlias(`create`, `local create`)
 	root.addAlias(`encrypt`, `local encrypt`)
 
-	// Templates are private beta, can be enabled by ENV
+	// Templates are in private beta, can be enabled by ENV
 	if envs.Get(`KBC_TEMPLATES_PRIVATE_BETA`) == `true` {
+		root.addAlias(`use`, `local template use`)
 		root.addAlias(`t`, `template`)
 		root.addAlias(`r`, `template repository`)
 		root.addAlias(`repo`, `template repository`)

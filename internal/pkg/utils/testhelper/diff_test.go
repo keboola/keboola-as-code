@@ -1,5 +1,5 @@
 //nolint:forbidigo
-package testhelper
+package testhelper_test
 
 import (
 	"bytes"
@@ -10,6 +10,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
+	. "github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
 type mockedT struct {

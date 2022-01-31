@@ -21,7 +21,7 @@ func Run(d dependencies) (*template.Inputs, error) {
 	}
 
 	// Create
-	inputs := template.NewInputs()
+	inputs := template.NewInputs(nil)
 
 	// Save
 	if err = inputs.Save(fs); err != nil {

@@ -1,4 +1,4 @@
-package testhelper
+package testhelper_test
 
 import (
 	"bytes"
@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	. "github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
 func TestAssertWildcardsSame1(t *testing.T) {

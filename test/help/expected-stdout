@@ -30,6 +30,8 @@ Available Commands:
       row        Create config row.
     encrypt      Encrypt all unencrypted secrets.
     fix-paths    Normalize all local paths.
+    template
+      use        Apply template.
 
   ci
     workflows    Generate Github Actions workflows.
@@ -39,7 +41,6 @@ Available Commands:
       branch     Create branch.
 
   template
-    use          Apply template to the project directory.
     describe     Describe template inputs.
     create       Create or update template in repository directory.
     repository
@@ -58,6 +59,7 @@ Aliases:
   local persist        pt, persist
   local create         c, create
   local encrypt        e, encrypt
+  local template use   use
   template             t
   template repository  r, repo
 

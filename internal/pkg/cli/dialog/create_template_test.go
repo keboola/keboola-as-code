@@ -18,11 +18,11 @@ import (
 func TestAskCreateTemplateInteractive(t *testing.T) {
 	t.Parallel()
 
-	// testDependencies
+	// Test dependencies
 	dialog, console := createDialogs(t, true)
 	d := testdeps.New()
 	_, httpTransport := d.UseMockedStorageApi()
-	setupCreateTemplateApiResponses(httpTransport)
+	addMockedObjectsResponses(httpTransport)
 
 	// Set fake file editor
 	dialog.Prompt.(*interactive.Prompt).SetEditor(`true`)
@@ -178,11 +178,11 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 func TestAskCreateTemplateNonInteractive(t *testing.T) {
 	t.Parallel()
 
-	// testDependencies
+	// Test dependencies
 	dialog, _ := createDialogs(t, false)
 	d := testdeps.New()
 	_, httpTransport := d.UseMockedStorageApi()
-	setupCreateTemplateApiResponses(httpTransport)
+	addMockedObjectsResponses(httpTransport)
 
 	// Flags
 	d.Options().Set(`storage-api-host`, `connection.keboola.com`)
@@ -237,11 +237,11 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 func TestAskCreateTemplateAllConfigs(t *testing.T) {
 	t.Parallel()
 
-	// testDependencies
+	// Test dependencies
 	dialog, _ := createDialogs(t, false)
 	d := testdeps.New()
 	_, httpTransport := d.UseMockedStorageApi()
-	setupCreateTemplateApiResponses(httpTransport)
+	addMockedObjectsResponses(httpTransport)
 
 	// Flags
 	d.Options().Set(`storage-api-host`, `connection.keboola.com`)
@@ -301,7 +301,7 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 	}, opts)
 }
 
-func setupCreateTemplateApiResponses(httpTransport *httpmock.MockTransport) {
+func addMockedObjectsResponses(httpTransport *httpmock.MockTransport) {
 	branches := []*model.Branch{{BranchKey: model.BranchKey{Id: 123}, Name: "Main", IsDefault: true}}
 	configs := []*model.ConfigWithRows{
 		{

@@ -9,21 +9,26 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/interactive"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testdeps"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
+	useTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
 )
 
 // If condition for restricted input is met by setting the age above the limit.
 func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 	t.Parallel()
 
-	// test dependencies
+	// Test dependencies
 	dialog, console := createDialogs(t, true)
 	d := testdeps.New()
+	d.SetFs(testfs.MinimalProjectFs(t))
 	_, httpTransport := d.UseMockedStorageApi()
-	setupCreateTemplateApiResponses(httpTransport)
+	testapi.AddMockedComponents(httpTransport)
 
 	// Set fake file editor
 	dialog.Prompt.(*interactive.Prompt).SetEditor(`true`)
@@ -34,7 +39,14 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("Enter your Facebook username")
+		_, err := console.ExpectString("Select the target branch:")
+		assert.NoError(t, err)
+
+		time.Sleep(20 * time.Millisecond)
+		_, err = console.Send(testhelper.Enter) // enter - Main
+		assert.NoError(t, err)
+
+		_, err = console.ExpectString("Enter your Facebook username")
 		assert.NoError(t, err)
 
 		_, err = console.ExpectString("Facebook username")
@@ -206,27 +218,36 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 		},
 	}
 
-	inputsInst := template.NewInputs()
-	inputsInst.Set(inputs)
-	opts, err := dialog.AskUseTemplateOptions(inputsInst)
+	output, err := dialog.AskUseTemplateOptions(template.NewInputs(inputs), d, useTemplate.LoadStateOptions())
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
 	assert.NoError(t, console.Close())
 
 	// Assert
-	assert.Equal(t, map[string]interface{}{"facebook.username": "username", "facebook.password": "password", "age": 25, "restricted": true, "drink": "wine", "drinks": []string{"rum", "whiskey"}}, opts)
+	assert.Equal(t, useTemplate.Options{
+		TargetBranch: model.BranchKey{Id: 123},
+		Inputs: useTemplate.Inputs{
+			{Key: "facebook.username", Value: "username"},
+			{Key: "facebook.password", Value: "password"},
+			{Key: "age", Value: 25},
+			{Key: "restricted", Value: true},
+			{Key: "drink", Value: "wine"},
+			{Key: "drinks", Value: []string{"rum", "whiskey"}},
+		},
+	}, output)
 }
 
 // If condition for restricted input is not met by setting the age below the limit and so that input is not shown to the user.
 func TestAskUseTemplateOptionsIfNotMet(t *testing.T) {
 	t.Parallel()
 
-	// test ependencies
+	// Test dependencies
 	dialog, console := createDialogs(t, true)
 	d := testdeps.New()
+	d.SetFs(testfs.MinimalProjectFs(t))
 	_, httpTransport := d.UseMockedStorageApi()
-	setupCreateTemplateApiResponses(httpTransport)
+	testapi.AddMockedComponents(httpTransport)
 
 	// Set fake file editor
 	dialog.Prompt.(*interactive.Prompt).SetEditor(`true`)
@@ -237,7 +258,14 @@ func TestAskUseTemplateOptionsIfNotMet(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("Enter your Facebook username")
+		_, err := console.ExpectString("Select the target branch:")
+		assert.NoError(t, err)
+
+		time.Sleep(20 * time.Millisecond)
+		_, err = console.Send(testhelper.Enter) // enter - Main
+		assert.NoError(t, err)
+
+		_, err = console.ExpectString("Enter your Facebook username")
 		assert.NoError(t, err)
 
 		time.Sleep(20 * time.Millisecond)
@@ -302,14 +330,19 @@ func TestAskUseTemplateOptionsIfNotMet(t *testing.T) {
 		},
 	}
 
-	inputsInst := template.NewInputs()
-	inputsInst.Set(inputs)
-	opts, err := dialog.AskUseTemplateOptions(inputsInst)
+	output, err := dialog.AskUseTemplateOptions(template.NewInputs(inputs), d, useTemplate.LoadStateOptions())
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
 	assert.NoError(t, console.Close())
 
 	// Assert
-	assert.Equal(t, map[string]interface{}{"facebook.username": "username", "facebook.password": "password", "age": 15}, opts)
+	assert.Equal(t, useTemplate.Options{
+		TargetBranch: model.BranchKey{Id: 123},
+		Inputs: useTemplate.Inputs{
+			{Key: "facebook.username", Value: "username"},
+			{Key: "facebook.password", Value: "password"},
+			{Key: "age", Value: 15},
+		},
+	}, output)
 }
