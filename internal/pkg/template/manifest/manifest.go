@@ -32,7 +32,6 @@ func Load(fs filesystem.Fs) (*Manifest, error) {
 
 	// Create manifest
 	m := New()
-	m.naming = content.Naming
 
 	// Set records
 	if err := m.records.SetRecords(content.records()); err != nil {
@@ -46,7 +45,6 @@ func Load(fs filesystem.Fs) (*Manifest, error) {
 func (m *Manifest) Save(fs filesystem.Fs) error {
 	// Create file content
 	content := newFile()
-	content.Naming = m.naming
 	content.setRecords(m.records.All())
 
 	// Save file
@@ -64,10 +62,6 @@ func (m *Manifest) Path() string {
 
 func (m *Manifest) NamingTemplate() naming.Template {
 	return m.naming
-}
-
-func (m *Manifest) SetNamingTemplate(v naming.Template) {
-	m.naming = v
 }
 
 func (m *Manifest) IsObjectIgnored(_ model.Object) bool {
