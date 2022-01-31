@@ -2,8 +2,10 @@ package dependencies
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
@@ -54,7 +56,12 @@ func (c *common) TemplateRepositoryDir(definition model.TemplateRepository, _ mo
 		}
 		return c.Fs(), nil
 	case model.RepositoryTypeDir:
-		panic("support for dir repository is not implemented")
+		path := definition.Path
+		if !filepath.IsAbs(path) {
+			// Relative to the project directory
+			path = filepath.Join(c.Fs().BasePath(), definition.Path)
+		}
+		return aferofs.NewLocalFs(c.Logger(), path, "")
 	case model.RepositoryTypeGit:
 		panic("support for Git repository is not implemented")
 	default:
