@@ -13,12 +13,25 @@ type replaceKeysMapper struct {
 	keys   Keys
 }
 
+type changes interface {
+	Loaded() []model.ObjectState
+	Replace(callback model.ChangesReplaceFunc)
+}
+
 func NewMapper(state *state.State, keys Keys) *replaceKeysMapper {
 	return &replaceKeysMapper{state: state, logger: state.Logger(), keys: keys}
 }
 
+func (m *replaceKeysMapper) AfterLocalOperation(changes *model.LocalChanges) error {
+	return m.afterOperation(changes)
+}
+
 func (m *replaceKeysMapper) AfterRemoteOperation(changes *model.RemoteChanges) error {
-	replacement, err := m.keys.values()
+	return m.afterOperation(changes)
+}
+
+func (m *replaceKeysMapper) afterOperation(changes changes) error {
+	replacements, err := m.keys.values()
 	if err != nil {
 		return err
 	}
@@ -28,7 +41,7 @@ func (m *replaceKeysMapper) AfterRemoteOperation(changes *model.RemoteChanges) e
 	errors := utils.NewMultiError()
 	for _, original := range changes.Loaded() {
 		// Replace keys and delete original object state
-		modified := replaceValues(replacement, original).(model.ObjectState)
+		modified := replaceValues(replacements, original).(model.ObjectState)
 		m.state.Remove(original.Key())
 
 		// Branches are not part of the template

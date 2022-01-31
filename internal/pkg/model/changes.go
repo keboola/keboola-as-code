@@ -2,7 +2,7 @@ package model
 
 import "sync"
 
-type replaceFunc func(ObjectState) ObjectState
+type ChangesReplaceFunc func(ObjectState) ObjectState
 
 // LocalChanges contains all processed objects in the local.UnitOfWork.
 type LocalChanges struct {
@@ -112,7 +112,7 @@ func (c *LocalChanges) AddRenamed(actions ...RenameAction) {
 	c.renamed = append(c.renamed, actions...)
 }
 
-func (c *LocalChanges) Replace(callback replaceFunc) {
+func (c *LocalChanges) Replace(callback ChangesReplaceFunc) {
 	for i, v := range c.loaded {
 		c.loaded[i] = callback(v)
 	}
@@ -186,7 +186,7 @@ func (c *RemoteChanges) AddDeleted(objectState ...ObjectState) {
 	c.deleted = append(c.deleted, objectState...)
 }
 
-func (c *RemoteChanges) Replace(callback replaceFunc) {
+func (c *RemoteChanges) Replace(callback ChangesReplaceFunc) {
 	for i, v := range c.loaded {
 		c.loaded[i] = callback(v)
 	}
