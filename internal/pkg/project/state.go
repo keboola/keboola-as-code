@@ -1,6 +1,7 @@
 package project
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 )
 
@@ -13,6 +14,14 @@ type State struct {
 
 func NewState(s *state.State, project *Project) *State {
 	return &State{_state: s, project: project}
+}
+
+func (s *State) Fs() filesystem.Fs {
+	return s.project.Fs()
+}
+
+func (s *State) ProjectManifest() *Manifest {
+	return s.project.ProjectManifest()
 }
 
 func (s *State) State() *state.State {

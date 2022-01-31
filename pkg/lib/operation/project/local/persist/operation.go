@@ -4,11 +4,9 @@ import (
 	"context"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/persist"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
-	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/save"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/rename"
@@ -24,8 +22,6 @@ type dependencies interface {
 	Ctx() context.Context
 	Logger() log.Logger
 	StorageApi() (*storageapi.Api, error)
-	ProjectDir() (filesystem.Fs, error)
-	ProjectManifest() (*manifest.Manifest, error)
 	ProjectState(loadOptions loadState.Options) (*project.State, error)
 }
 
@@ -75,7 +71,7 @@ func Run(o Options, d dependencies) error {
 		}
 
 		// Save manifest
-		if _, err := saveManifest.Run(d); err != nil {
+		if _, err := saveManifest.Run(projectState.ProjectManifest(), projectState.Fs(), d); err != nil {
 			return err
 		}
 	}

@@ -9,15 +9,9 @@ import (
 
 type dependencies interface {
 	Logger() log.Logger
-	EmptyDir() (filesystem.Fs, error)
 }
 
-func Run(d dependencies) error {
-	fs, err := d.EmptyDir()
-	if err != nil {
-		return err
-	}
-
+func Run(fs filesystem.Fs, d dependencies) error {
 	if err := fs.Mkdir(filesystem.MetadataDir); err != nil {
 		return fmt.Errorf("cannot create metadata directory \"%s\": %w", filesystem.MetadataDir, err)
 	}

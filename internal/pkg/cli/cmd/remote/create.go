@@ -18,8 +18,8 @@ func CreateCommand(depsProvider dependencies.Provider) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			d := depsProvider.Dependencies()
 
-			// Metadata directory is required
-			if _, err := d.ProjectDir(); err != nil {
+			// Project is required
+			if _, err := d.LocalProject(); err != nil {
 				return err
 			}
 
@@ -47,8 +47,8 @@ func CreateBranchCommand(depsProvider dependencies.Provider) *cobra.Command {
 			d := depsProvider.Dependencies()
 			start := time.Now()
 
-			// Metadata directory is required
-			if _, err := d.ProjectDir(); err != nil {
+			// Project is required
+			if _, err := d.LocalProject(); err != nil {
 				return err
 			}
 

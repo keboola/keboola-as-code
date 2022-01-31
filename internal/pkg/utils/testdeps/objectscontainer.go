@@ -26,7 +26,7 @@ func (c *ObjectsContainer) Ctx() context.Context {
 	return context.Background()
 }
 
-func (c *ObjectsContainer) Fs() filesystem.Fs {
+func (c *ObjectsContainer) ObjectsRoot() filesystem.Fs {
 	return c.FsValue
 }
 

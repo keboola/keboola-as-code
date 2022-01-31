@@ -8,23 +8,16 @@ import (
 
 type dependencies interface {
 	Logger() log.Logger
-	EmptyDir() (filesystem.Fs, error)
 }
 
-func Run(d dependencies) (*manifest.Manifest, error) {
+func Run(emptyDir filesystem.Fs, d dependencies) (*manifest.Manifest, error) {
 	logger := d.Logger()
-
-	// Target dir must be empty
-	fs, err := d.EmptyDir()
-	if err != nil {
-		return nil, err
-	}
 
 	// Create
 	repositoryManifest := manifest.New()
 
 	// Save
-	if err = repositoryManifest.Save(fs); err != nil {
+	if err := repositoryManifest.Save(emptyDir); err != nil {
 		return nil, err
 	}
 

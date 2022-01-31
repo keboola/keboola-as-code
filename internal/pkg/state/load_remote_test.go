@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
+	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	. "github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
@@ -446,12 +447,12 @@ func loadRemoteState(t *testing.T, m *manifest.Manifest, projectStateFile string
 	testProject.SetState(projectStateFile)
 
 	d := testdeps.New()
-	d.SetProjectManifest(m)
+	d.SetProject(project.New(d.Fs(), m, d))
 	d.InitFromTestProject(testProject)
-	project, err := d.Project()
+	prj, err := d.LocalProject()
 	assert.NoError(t, err)
 
-	state, err := New(project, d)
+	state, err := New(prj, d)
 	assert.NoError(t, err)
 	filter := m.Filter()
 	_, localErr, remoteErr := state.Load(LoadOptions{RemoteFilter: &filter, LoadRemoteState: true})

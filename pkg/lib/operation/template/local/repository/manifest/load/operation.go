@@ -8,22 +8,16 @@ import (
 
 type dependencies interface {
 	Logger() log.Logger
-	TemplateRepositoryDir() (filesystem.Fs, error)
 }
 
-func Run(d dependencies) (*repositoryManifest.Manifest, error) {
+func Run(fs filesystem.Fs, d dependencies) (*repositoryManifest.Manifest, error) {
 	logger := d.Logger()
-
-	fs, err := d.TemplateRepositoryDir()
-	if err != nil {
-		return nil, err
-	}
 
 	m, err := repositoryManifest.Load(fs)
 	if err != nil {
 		return nil, err
 	}
 
-	logger.Debugf(`ProjectManifest loaded.`)
+	logger.Debugf(`Project manifest loaded.`)
 	return m, nil
 }

@@ -66,6 +66,15 @@ func (m *Manifest) Persist(records ...TemplateRecord) {
 	}
 }
 
+func (m *Manifest) GetById(id string) (TemplateRecord, bool) {
+	for _, record := range m.records {
+		if record.Id == id {
+			return record, true
+		}
+	}
+	return TemplateRecord{}, false
+}
+
 func (m *Manifest) GetByPath(path string) (TemplateRecord, bool) {
 	for _, record := range m.records {
 		if record.GetRelativePath() == path {

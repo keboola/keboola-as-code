@@ -50,7 +50,7 @@ type LoadOptions struct {
 // ObjectsContainer is Project or Template.
 type ObjectsContainer interface {
 	Ctx() context.Context
-	Fs() filesystem.Fs
+	ObjectsRoot() filesystem.Fs
 	Manifest() manifest.Manifest
 	MappersFor(state *State) mapper.Mappers
 }
@@ -68,7 +68,7 @@ func New(container ObjectsContainer, d dependencies) (*State, error) {
 	if err != nil {
 		return nil, err
 	}
-	knownPaths, err := knownpaths.New(container.Fs())
+	knownPaths, err := knownpaths.New(container.ObjectsRoot())
 	if err != nil {
 		return nil, utils.PrefixError(`error loading directory structure`, err)
 	}
@@ -91,10 +91,10 @@ func New(container ObjectsContainer, d dependencies) (*State, error) {
 	s.mapper = mapper.New()
 
 	// Create file loader
-	s.fileLoader = s.mapper.NewFileLoader(container.Fs())
+	s.fileLoader = s.mapper.NewFileLoader(container.ObjectsRoot())
 
 	// Local manager for load,save,delete ... operations
-	s.localManager = local.NewManager(s.logger, container.Fs(), s.fileLoader, m, s.namingGenerator, s.Registry, s.mapper)
+	s.localManager = local.NewManager(s.logger, container.ObjectsRoot(), s.fileLoader, m, s.namingGenerator, s.Registry, s.mapper)
 
 	// Remote manager for API operations
 	s.remoteManager = remote.NewManager(s.localManager, storageApi, s.Registry, s.mapper)
@@ -143,8 +143,8 @@ func (s *State) Ctx() context.Context {
 	return s.container.Ctx()
 }
 
-func (s *State) Fs() filesystem.Fs {
-	return s.container.Fs()
+func (s *State) ObjectsRoot() filesystem.Fs {
+	return s.container.ObjectsRoot()
 }
 
 func (s *State) FileLoader() filesystem.FileLoader {

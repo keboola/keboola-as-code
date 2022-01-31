@@ -16,8 +16,8 @@ func FixPathsCommand(depsProvider dependencies.Provider) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			d := depsProvider.Dependencies()
 
-			// Metadata directory is required
-			if _, err := d.ProjectDir(); err != nil {
+			// Project is required
+			if _, err := d.LocalProject(); err != nil {
 				return err
 			}
 

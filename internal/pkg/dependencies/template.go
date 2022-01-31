@@ -5,148 +5,22 @@ import (
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacekeys"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 	createTemplateDir "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/dir/create"
-	createTemplateInputs "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/inputs/create"
-	loadTemplateInputs "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/inputs/load"
-	createTemplateManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/manifest/create"
-	loadTemplateManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/manifest/load"
+	loadInputsOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/inputs/load"
+	loadStateOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/state/load"
 )
 
 var ErrTemplateManifestNotFound = fmt.Errorf("template manifest not found")
 
-func (c *common) Template(replacements replacekeys.Keys) (*template.Template, error) {
-	if c.template == nil {
-		templateSrcDir, err := c.TemplateSrcDir()
-		if err != nil {
-			return nil, err
-		}
-		manifest, err := c.TemplateManifest()
-		if err != nil {
-			return nil, err
-		}
-		inputs, err := c.TemplateInputs()
-		if err != nil {
-			return nil, err
-		}
-		c.template = template.New(templateSrcDir, manifest, inputs, replacements, c)
-	}
-	return c.template, nil
-}
-
-func (c *common) TemplateState(loadOptions loadState.OptionsWithFilter, replacements replacekeys.Keys) (*template.State, error) {
-	if c.templateState == nil {
-		// Get template
-		tmpl, err := c.Template(replacements)
-		if err != nil {
-			return nil, err
-		}
-
-		// Run operation
-		if state, err := loadState.Run(tmpl, loadOptions, c); err == nil {
-			c.templateState = template.NewState(state, tmpl)
-		} else {
-			return nil, err
-		}
-	}
-	return c.templateState, nil
-}
-
-func (c *common) TemplateDir() (filesystem.Fs, error) {
-	if c.templateDir == nil {
-		// Get FS
-		fs := c.Fs()
-
-		// Check if manifest exists
-		if !c.TemplateManifestExists() {
-			return nil, ErrTemplateManifestNotFound
-		}
-
-		// Get repository manifest
-		repositoryManifest, err := c.TemplateRepositoryManifest()
-		if err != nil {
-			return nil, err
-		}
-
-		// Split path to parts
-		parts := strings.SplitN(fs.WorkingDir(), string(filesystem.PathSeparator), 3)
-		templatePart := parts[0]
-		versionPart := parts[1]
-		templateDir := filesystem.Join(templatePart, versionPart)
-
-		// Check if is template defined in the repository manifest.
-		if templateRecord, found := repositoryManifest.GetByPath(templatePart); !found {
-			return nil, fmt.Errorf(`template dir "%s" not found in the repository manifest`, parts[0])
-		} else if _, found := templateRecord.GetByPath(versionPart); !found {
-			return nil, fmt.Errorf(`template version dir "%s" not found in the repository manifest`, templateDir)
-		}
-
-		// Get FS for the template dir.
-		c.templateDir, err = fs.SubDirFs(templateDir)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return c.templateDir, nil
-}
-
-func (c *common) TemplateSrcDir() (filesystem.Fs, error) {
-	if c.templateSrcDir == nil {
-		templateDir, err := c.TemplateDir()
-		if err != nil {
-			return nil, err
-		}
-
-		// All objects are stored in the "src" directory.
-		if !templateDir.IsDir(template.SrcDirectory) {
-			return nil, fmt.Errorf(`directory "%s" not found`, template.SrcDirectory)
-		}
-
-		c.templateSrcDir, err = templateDir.SubDirFs(template.SrcDirectory)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return c.templateSrcDir, nil
-}
-
-func (c *common) TemplateTestsDir() (filesystem.Fs, error) {
-	if c.templateTestsDir == nil {
-		templateDir, err := c.TemplateDir()
-		if err != nil {
-			return nil, err
-		}
-
-		// All tests are stored in the "tests" directory.
-		if !templateDir.IsDir(template.TestsDirectory) {
-			return nil, fmt.Errorf(`directory "%s" not found`, template.TestsDirectory)
-		}
-
-		c.templateTestsDir, err = templateDir.SubDirFs(template.TestsDirectory)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return c.templateTestsDir, nil
-}
-
-func (c *common) TemplateManifestExists() bool {
-	// Is manifest loaded?
-	if c.templateManifest != nil {
-		return true
-	}
-
-	if !c.TemplateRepositoryManifestExists() {
+func (c *common) LocalTemplateExists() bool {
+	// Get repository dir
+	fs, err := c.LocalTemplateRepositoryDir()
+	if err != nil {
 		return false
 	}
-
-	// Get FS
-	fs := c.Fs()
 
 	// Template dir is [template]/[version], for example "my-template/v1".
 	// Working dir must be the template dir or a subdir.
@@ -156,55 +30,100 @@ func (c *common) TemplateManifestExists() bool {
 	}
 
 	templateDir := strings.Join(parts[0:2], string(filesystem.PathSeparator))
-	manifestPath := filesystem.Join(templateDir, template.SrcDirectory, templateManifest.Path())
+	manifestPath := filesystem.Join(templateDir, templateManifest.Path())
 	return fs.IsFile(manifestPath)
 }
 
-func (c *common) TemplateManifest() (*template.Manifest, error) {
-	if c.templateManifest == nil {
-		if m, err := loadTemplateManifest.Run(c); err == nil {
-			c.templateManifest = m
-		} else {
-			return nil, err
-		}
-	}
-	return c.templateManifest, nil
-}
-
-func (c *common) TemplateInputs() (*template.Inputs, error) {
-	if c.templateInputs == nil {
-		if inputs, err := loadTemplateInputs.Run(c); err == nil {
-			c.templateInputs = inputs
-		} else {
-			return nil, err
-		}
-	}
-	return c.templateInputs, nil
-}
-
-func (c *common) CreateTemplateDir(path string) (filesystem.Fs, error) {
-	if fs, err := createTemplateDir.Run(createTemplateDir.Options{Path: path}, c); err == nil {
-		c.templateDir = fs
-		return fs, nil
-	} else {
+func (c *common) LocalTemplate() (*template.Template, error) {
+	// Get repository dir
+	repository, err := c.LocalTemplateRepository()
+	if err != nil {
 		return nil, err
 	}
+
+	// Template dir is [template]/[version], for example "my-template/v1".
+	// Working dir must be the template dir or a subdir.
+	parts := strings.SplitN(repository.Fs().WorkingDir(), string(filesystem.PathSeparator), 3)
+	if len(parts) < 2 {
+		return nil, fmt.Errorf(`directory "%s" is not a template directory`, parts[0:2])
+	}
+	templatePath := parts[0]
+
+	// Get template
+	templateRecord, found := repository.GetByPath(templatePath)
+	if !found {
+		return nil, fmt.Errorf(`template "%s" not found`, templatePath)
+	}
+
+	// Parse version
+	version, err := template.NewVersion(parts[1])
+	if err != nil {
+		return nil, fmt.Errorf(`template version dir is invalid: %w`, err)
+	}
+
+	// Get version
+	versionRecord, found := templateRecord.GetByVersion(version)
+	if !found {
+		return nil, fmt.Errorf(`template "%s" found, but version "%s" is missing`, templatePath, version.Original())
+	}
+
+	return c.Template(model.TemplateReference{
+		Id:         templateRecord.Id,
+		Version:    versionRecord.Version.String(),
+		Repository: localTemplateRepository(),
+	})
 }
 
-func (c *common) CreateTemplateInputs() (*template.Inputs, error) {
-	if inputs, err := createTemplateInputs.Run(c); err == nil {
-		c.templateInputs = inputs
-		return inputs, nil
-	} else {
+func (c *common) Template(reference model.TemplateReference) (*template.Template, error) {
+	// Load repository
+	repository, err := c.TemplateRepository(reference.Repository, reference)
+	if err != nil {
 		return nil, err
 	}
+
+	// Get template
+	templateRecord, found := repository.GetById(reference.Id)
+	if !found {
+		return nil, fmt.Errorf(`template "%s" not found`, reference.Id)
+	}
+
+	// Parse version
+	version, err := template.NewVersion(reference.Version)
+	if err != nil {
+		return nil, fmt.Errorf(`template version dir is invalid: %w`, err)
+	}
+
+	// Get version
+	versionRecord, found := templateRecord.GetByVersion(version)
+	if !found {
+		return nil, fmt.Errorf(`template "%s" found, but version "%s" is missing`, reference.Id, version.Original())
+	}
+
+	// Check if template dir exists
+	templatePath := versionRecord.Path()
+	if !repository.Fs().IsDir(templatePath) {
+		return nil, fmt.Errorf(`template dir "%s" not found`, templatePath)
+	}
+
+	// Template dir
+	fs, err := repository.Fs().SubDirFs(templatePath)
+	if err != nil {
+		return nil, err
+	}
+
+	// Load inputs
+	inputs, err := loadInputsOp.Run(fs)
+	if err != nil {
+		return nil, err
+	}
+
+	return template.New(fs, inputs)
 }
 
-func (c *common) CreateTemplateManifest() (*template.Manifest, error) {
-	if m, err := createTemplateManifest.Run(c); err == nil {
-		c.templateManifest = m
-		return m, nil
-	} else {
-		return nil, fmt.Errorf(`cannot create manifest: %w`, err)
-	}
+func (c *common) TemplateState(options loadStateOp.Options) (*template.State, error) {
+	return loadStateOp.Run(options, c)
+}
+
+func (c *common) CreateTemplateDir(repositoryDir filesystem.Fs, path string) (filesystem.Fs, error) {
+	return createTemplateDir.Run(createTemplateDir.Options{RepositoryDir: repositoryDir, Path: path}, c)
 }

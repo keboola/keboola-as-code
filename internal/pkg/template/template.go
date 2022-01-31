@@ -2,6 +2,7 @@ package template
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/schedulerapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
@@ -28,8 +29,8 @@ type (
 	Inputs   = templateInput.Inputs
 )
 
-func LoadManifest(fs filesystem.Fs) (*Manifest, error) {
-	return templateManifest.Load(fs)
+func LoadManifest(fs filesystem.Fs, jsonNetCtx *jsonnet.Context) (*Manifest, error) {
+	return templateManifest.Load(fs, jsonNetCtx)
 }
 
 func NewInputs(inputs []templateInput.Input) *Inputs {
@@ -48,42 +49,97 @@ type dependencies interface {
 }
 
 type Template struct {
-	dependencies
-	fs           filesystem.Fs
-	fileLoader   filesystem.FileLoader
-	manifest     *Manifest
-	inputs       *Inputs
-	jsonNetCtx   *jsonnet.Context
-	replacements replacekeys.Keys
+	fs       filesystem.Fs
+	srcDir   filesystem.Fs
+	testsDir filesystem.Fs
+	readme   string
+	inputs   *Inputs
 }
 
-func New(fs filesystem.Fs, manifest *Manifest, inputs *Inputs, replacements replacekeys.Keys, d dependencies) *Template {
-	return &Template{
-		dependencies: d,
-		fs:           fs,
-		fileLoader:   fs.FileLoader(),
-		manifest:     manifest,
-		inputs:       inputs,
-		replacements: replacements,
+func New(fs filesystem.Fs, inputs *Inputs) (*Template, error) {
+	// Src dir
+	srcDir, err := fs.SubDirFs(SrcDirectory)
+	if err != nil {
+		return nil, err
 	}
+
+	return &Template{fs: fs, srcDir: srcDir, inputs: inputs}, nil
+}
+
+func (t *Template) ObjectsRoot() filesystem.Fs {
+	return t.srcDir
 }
 
 func (t *Template) Fs() filesystem.Fs {
 	return t.fs
 }
 
-func (t *Template) Manifest() manifest.Manifest {
-	return t.manifest
+func (t *Template) SrcDir() filesystem.Fs {
+	return t.srcDir
+}
+
+func (t *Template) TestsDir() (filesystem.Fs, error) {
+	if t.testsDir == nil {
+		if !t.fs.IsDir(TestsDirectory) {
+			return nil, fmt.Errorf(`directory "%s" not found`, TestsDirectory)
+		}
+		testDir, err := t.fs.SubDirFs(TestsDirectory)
+		if err == nil {
+			t.testsDir = testDir
+		} else {
+			return nil, err
+		}
+	}
+
+	return t.testsDir, nil
+}
+
+func (t *Template) Readme() string {
+	return t.readme
 }
 
 func (t *Template) Inputs() *Inputs {
 	return t.inputs
 }
 
-func (t *Template) Ctx() context.Context {
-	return context.WithValue(t.dependencies.Ctx(), validator.DisableRequiredInProjectKey, true)
+func (t *Template) ManifestPath() string {
+	return templateManifest.Path()
 }
 
-func (t *Template) MappersFor(state *state.State) mapper.Mappers {
-	return MappersFor(state, t.dependencies, t.jsonNetCtx, t.replacements)
+func (t *Template) ManifestExists() (bool, error) {
+	return t.srcDir.IsFile(t.ManifestPath()), nil
+}
+
+func (t *Template) ToObjectsContainer(m *Manifest, jsonNetCtx *jsonnet.Context, replacements replacekeys.Keys, d dependencies) *ObjectsContainer {
+	return &ObjectsContainer{
+		Template:     t,
+		dependencies: d,
+		manifest:     m,
+		jsonNetCtx:   jsonNetCtx,
+		replacements: replacements,
+	}
+}
+
+type ObjectsContainer struct {
+	*Template
+	dependencies
+	manifest     *Manifest
+	jsonNetCtx   *jsonnet.Context
+	replacements replacekeys.Keys
+}
+
+func (c *ObjectsContainer) Manifest() manifest.Manifest {
+	return c.manifest
+}
+
+func (c *ObjectsContainer) TemplateManifest() *Manifest {
+	return c.manifest
+}
+
+func (c *ObjectsContainer) Ctx() context.Context {
+	return context.WithValue(c.dependencies.Ctx(), validator.DisableRequiredInProjectKey, true)
+}
+
+func (c *ObjectsContainer) MappersFor(state *state.State) mapper.Mappers {
+	return MappersFor(state, c.dependencies, c.jsonNetCtx, c.replacements)
 }

@@ -4,11 +4,9 @@ import (
 	"context"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/encryptionapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/push"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
-	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/encrypt"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/validate"
 	createDiff "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/diff/create"
@@ -27,8 +25,6 @@ type dependencies interface {
 	Ctx() context.Context
 	Logger() log.Logger
 	EncryptionApi() (*encryptionapi.Api, error)
-	ProjectDir() (filesystem.Fs, error)
-	ProjectManifest() (*manifest.Manifest, error)
 	ProjectState(loadOptions loadState.Options) (*project.State, error)
 }
 

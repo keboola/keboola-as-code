@@ -18,8 +18,8 @@ func CreateCommand(depsProvider dependencies.Provider) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			d := depsProvider.Dependencies()
 
-			// Metadata directory is required
-			if _, err := d.ProjectDir(); err != nil {
+			// Project is required
+			if _, err := d.LocalProject(); err != nil {
 				return err
 			}
 
@@ -49,8 +49,8 @@ func CreateConfigCommand(depsProvider dependencies.Provider) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			d := depsProvider.Dependencies()
 
-			// Metadata directory is required
-			if _, err := d.ProjectDir(); err != nil {
+			// Project is required
+			if _, err := d.LocalProject(); err != nil {
 				return err
 			}
 
@@ -81,8 +81,8 @@ func CreateRowCommand(depsProvider dependencies.Provider) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			d := depsProvider.Dependencies()
 
-			// Metadata directory is required
-			if _, err := d.ProjectDir(); err != nil {
+			// Project is required
+			if _, err := d.LocalProject(); err != nil {
 				return err
 			}
 

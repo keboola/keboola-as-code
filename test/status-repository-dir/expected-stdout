@@ -1,2 +1,3 @@
 Repository directory:  %s%efoo
 Working directory:     bar/baz
+Manifest path:         .keboola/repository.json

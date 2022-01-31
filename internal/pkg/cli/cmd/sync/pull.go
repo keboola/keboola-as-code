@@ -22,8 +22,8 @@ func PullCommand(depsProvider dependencies.Provider) *cobra.Command {
 			start := time.Now()
 			logger := d.Logger()
 
-			// Metadata directory is required
-			if _, err := d.ProjectDir(); err != nil {
+			// Project is required
+			if _, err := d.LocalProject(); err != nil {
 				return err
 			}
 

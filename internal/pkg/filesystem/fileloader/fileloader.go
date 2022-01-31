@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
@@ -16,8 +17,9 @@ type loadHandlerWithNext func(def *filesystem.FileDef, fileType filesystem.FileT
 
 // loader implements filesystem.FileLoader.
 type loader struct {
-	fs      filesystem.Fs
-	handler loadHandlerWithNext
+	fs             filesystem.Fs
+	handler        loadHandlerWithNext
+	jsonNetContext *jsonnet.Context
 }
 
 // New creates FileLoader to load files from the filesystem.
@@ -29,6 +31,10 @@ func New(fs filesystem.Fs) filesystem.FileLoader {
 // File load process can be modified by the custom handler callback.
 func NewWithHandler(fs filesystem.Fs, handler loadHandlerWithNext) filesystem.FileLoader {
 	return &loader{fs: fs, handler: handler}
+}
+
+func (l *loader) SetJsonNetContext(ctx *jsonnet.Context) {
+	l.jsonNetContext = ctx
 }
 
 // ReadRawFile - file content is loaded as a string.
@@ -165,7 +171,7 @@ func (l *loader) defaultHandler(def *filesystem.FileDef, fileType filesystem.Fil
 	case filesystem.FileTypeJson:
 		return rawFile.ToJsonFile()
 	case filesystem.FileTypeJsonNet:
-		return rawFile.ToJsonNetFile(nil)
+		return rawFile.ToJsonNetFile(l.jsonNetContext)
 	default:
 		panic(fmt.Errorf(`unexpected filesystem.FileType = %v`, fileType))
 	}

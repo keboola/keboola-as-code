@@ -6,20 +6,16 @@ import (
 )
 
 type Options struct {
-	Path string
+	RepositoryDir filesystem.Fs
+	Path          string
 }
 
 type dependencies interface {
 	Logger() log.Logger
-	TemplateRepositoryDir() (filesystem.Fs, error)
 }
 
 func Run(o Options, d dependencies) (filesystem.Fs, error) {
-	// Get repository dir
-	repositoryDir, err := d.TemplateRepositoryDir()
-	if err != nil {
-		return nil, err
-	}
+	repositoryDir := o.RepositoryDir
 
 	// Create template dir
 	if err := repositoryDir.Mkdir(o.Path); err != nil {

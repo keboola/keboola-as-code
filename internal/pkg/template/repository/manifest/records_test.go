@@ -1,6 +1,7 @@
 package manifest
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -62,4 +63,62 @@ func TestTemplateRecord_GetByPath_Found(t *testing.T) {
 	value, found := r.GetByPath(`v1`)
 	assert.Equal(t, version1, value.Version)
 	assert.True(t, found)
+}
+
+func TestTemplateRecord_GetByVersion_Complex(t *testing.T) {
+	t.Parallel()
+
+	// Add some versions
+	r := &TemplateRecord{}
+	r.AddVersion(version(`v1.0.0`))
+	r.AddVersion(version(`v1.2.2`))
+	r.AddVersion(version(`v1.2.3`))
+	r.AddVersion(version(`v2.4.5`))
+	r.AddVersion(version(`v0.0.1`))
+	r.AddVersion(version(`v0.0.2`))
+	r.AddVersion(version(`v0.0.3`))
+	r.AddVersion(version(`v0.1.4`))
+
+	// Test cases
+	cases := []struct {
+		wanted string
+		found  string
+	}{
+		{"v0.0.1", "0.0.1"},
+		{"0.0.1", "0.0.1"},
+		{"0.0.2", "0.0.2"},
+		{"0.0.3", "0.0.3"},
+		{"0.0.4", ""},
+		{"v0.0", "0.0.3"},
+		{"0.0", "0.0.3"},
+		{"0.1.4", "0.1.4"},
+		{"0.1.5", ""},
+		{"v0", "0.1.4"},
+		{"0", "0.1.4"},
+		{"1.0", "1.0.0"},
+		{"1.0.0", "1.0.0"},
+		{"1", "1.2.3"},
+		{"1.2", "1.2.3"},
+		{"1.2.2", "1.2.2"},
+		{"1.2.3", "1.2.3"},
+		{"1.2.4", ""},
+		{"1.3", ""},
+		{"2", "2.4.5"},
+		{"2.4", "2.4.5"},
+		{"2.4.5", "2.4.5"},
+		{"2.4.5", "2.4.5"},
+		{"2.4.6", ""},
+		{"2.5", ""},
+	}
+
+	for i, c := range cases {
+		desc := fmt.Sprintf("case: %d, wanted: %s", i, c.wanted)
+		value, found := r.GetByVersion(version(c.wanted))
+		if c.found == "" {
+			assert.False(t, found, desc)
+		} else {
+			assert.True(t, found, desc)
+			assert.Equal(t, c.found, value.Version.String(), desc)
+		}
+	}
 }

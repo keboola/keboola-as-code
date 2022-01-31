@@ -17,8 +17,8 @@ func DiffCommand(depsProvider dependencies.Provider) *cobra.Command {
 			d := depsProvider.Dependencies()
 			logger := d.Logger()
 
-			// Metadata directory is required
-			if _, err := d.ProjectDir(); err != nil {
+			// Project is required
+			if _, err := d.LocalProject(); err != nil {
 				return err
 			}
 

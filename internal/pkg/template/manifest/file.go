@@ -17,7 +17,7 @@ const (
 )
 
 func Path() string {
-	return FileName
+	return filesystem.Join("src", FileName)
 }
 
 // file is template manifest JSON file.
@@ -31,7 +31,7 @@ func newFile() *file {
 	}
 }
 
-func loadFile(fs filesystem.Fs) (*file, error) {
+func loadFile(fs filesystem.Fs, jsonNetCtx *jsonnet.Context) (*file, error) {
 	// Check if file exists
 	path := Path()
 	if !fs.IsFile(path) {
@@ -41,6 +41,8 @@ func loadFile(fs filesystem.Fs) (*file, error) {
 	// Read file
 	fileDef := filesystem.NewFileDef(path).SetDescription("manifest")
 	content := newFile()
+	fileLoader := fs.FileLoader()
+	fileLoader.SetJsonNetContext(jsonNetCtx)
 	if _, err := fs.FileLoader().ReadJsonNetFileTo(fileDef, content); err != nil {
 		return nil, err
 	}

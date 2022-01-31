@@ -47,7 +47,15 @@ func (p *Project) Fs() filesystem.Fs {
 	return p.fs
 }
 
+func (p *Project) ObjectsRoot() filesystem.Fs {
+	return p.fs
+}
+
 func (p *Project) Manifest() manifest.Manifest {
+	return p.manifest
+}
+
+func (p *Project) ProjectManifest() *Manifest {
 	return p.manifest
 }
 

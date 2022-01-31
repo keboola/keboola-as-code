@@ -71,7 +71,7 @@ func (t *testMapper) AfterLocalOperation(changes *model.LocalChanges) error {
 func TestLocalSaveMapper(t *testing.T) {
 	t.Parallel()
 	projectState := newEmptyState(t)
-	fs := projectState.Fs()
+	fs := projectState.ObjectsRoot()
 	uow := projectState.LocalManager().NewUnitOfWork(context.Background())
 
 	// Add test mapper
@@ -115,7 +115,7 @@ func TestLocalSaveMapper(t *testing.T) {
 func TestLocalLoadMapper(t *testing.T) {
 	t.Parallel()
 	projectState := newEmptyState(t)
-	fs := projectState.Fs()
+	fs := projectState.ObjectsRoot()
 	uow := projectState.LocalManager().NewUnitOfWork(context.Background())
 
 	// Add test mapper

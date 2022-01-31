@@ -8,6 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
@@ -832,7 +833,7 @@ func TestResults_Format(t *testing.T) {
 func newProjectState(t *testing.T) *state.State {
 	t.Helper()
 	d := testdeps.New()
-	d.SetProjectManifest(projectManifest.New(12345, `foo.bar`))
+	d.SetProject(project.New(d.Fs(), projectManifest.New(12345, `foo.bar`), d))
 	d.UseMockedStorageApi()
 	d.UseMockedSchedulerApi()
 	projectState, err := d.ProjectState(loadState.Options{

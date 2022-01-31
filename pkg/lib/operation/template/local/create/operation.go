@@ -10,10 +10,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacekeys"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
-	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
+	createTemplateDir "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/dir/create"
+	createTemplateInputs "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/inputs/create"
+	createTemplateManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/manifest/create"
 	saveRepositoryManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/repository/manifest/save"
+	loadStateOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/state/load"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/template/sync/pull"
 )
 
@@ -83,22 +86,17 @@ func (o *Options) Replacements() replacekeys.Keys {
 type dependencies interface {
 	Ctx() context.Context
 	Logger() log.Logger
-	TemplateRepositoryDir() (filesystem.Fs, error)
-	TemplateRepositoryManifest() (*repositoryManifest.Manifest, error)
-	TemplateSrcDir() (filesystem.Fs, error)
-	TemplateManifest() (*template.Manifest, error)
-	TemplateState(loadOptions loadState.OptionsWithFilter, replacements replacekeys.Keys) (*template.State, error)
-	CreateTemplateDir(path string) (filesystem.Fs, error)
-	CreateTemplateManifest() (*templateManifest.Manifest, error)
-	CreateTemplateInputs() (*template.Inputs, error)
+	LocalTemplateRepository() (*repository.Repository, error)
+	TemplateState(options loadStateOp.Options) (*template.State, error)
 }
 
 func Run(o Options, d dependencies) (err error) {
-	// Get dependencies
-	manifest, err := d.TemplateRepositoryManifest()
+	// Get repository
+	repo, err := d.LocalTemplateRepository()
 	if err != nil {
 		return err
 	}
+	manifest := repo.Manifest()
 
 	// Get or create manifest record
 	templateRecord := manifest.GetOrCreate(o.Id)
@@ -117,20 +115,22 @@ func Run(o Options, d dependencies) (err error) {
 
 	// Init template directory
 	versionRecord := templateRecord.AddVersion(version)
-	if err := initTemplateDir(o, d, versionRecord); err != nil {
+	if err := initTemplateDir(o, d, repo.Fs(), versionRecord); err != nil {
 		return err
 	}
 
 	// Save manifest
 	manifest.Persist(templateRecord)
-	if _, err := saveRepositoryManifest.Run(d); err != nil {
+	if _, err := saveRepositoryManifest.Run(repo.Manifest(), repo.Fs(), d); err != nil {
 		return err
 	}
 
 	// Pull remote objects
 	pullOptions := pull.Options{
-		RemoteFilter: o.ObjectsFilter(),
-		Replacements: o.Replacements(),
+		TemplateId:      templateRecord.Id,
+		TemplateVersion: versionRecord.Version.String(),
+		RemoteFilter:    o.ObjectsFilter(),
+		Replacements:    o.Replacements(),
 	}
 	if err := pull.Run(pullOptions, d); err != nil {
 		return err
@@ -142,9 +142,9 @@ func Run(o Options, d dependencies) (err error) {
 	return nil
 }
 
-func initTemplateDir(o Options, d dependencies, record repositoryManifest.VersionRecord) (err error) {
+func initTemplateDir(o Options, d dependencies, repositoryDir filesystem.Fs, record repositoryManifest.VersionRecord) error {
 	// Create directory
-	fs, err := d.CreateTemplateDir(record.Path())
+	fs, err := createTemplateDir.Run(createTemplateDir.Options{RepositoryDir: repositoryDir, Path: record.Path()}, d)
 	if err != nil {
 		return err
 	}
@@ -164,10 +164,10 @@ func initTemplateDir(o Options, d dependencies, record repositoryManifest.Versio
 	}
 
 	// Create files
-	if _, err := d.CreateTemplateManifest(); err != nil {
+	if _, err := createTemplateManifest.Run(fs, d); err != nil {
 		return err
 	}
-	if _, err := d.CreateTemplateInputs(); err != nil {
+	if _, err := createTemplateInputs.Run(fs, d); err != nil {
 		return err
 	}
 	if err := createReadme(o, d, fs); err != nil {

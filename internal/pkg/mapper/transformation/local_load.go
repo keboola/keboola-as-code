@@ -166,7 +166,7 @@ func (l *localLoader) loadCodeMetaFile(code *model.Code) {
 
 func (l *localLoader) blockDirs() []string {
 	// Check if blocks dir exists
-	if !l.Fs().IsDir(l.blocksDir) {
+	if !l.ObjectsRoot().IsDir(l.blocksDir) {
 		l.errors.Append(fmt.Errorf(`missing blocks dir "%s"`, l.blocksDir))
 		return nil
 	}
@@ -175,7 +175,7 @@ func (l *localLoader) blockDirs() []string {
 	l.ObjectManifest.AddRelatedPath(l.blocksDir)
 
 	// Load all dir entries
-	dirs, err := filesystem.ReadSubDirs(l.Fs(), l.blocksDir)
+	dirs, err := filesystem.ReadSubDirs(l.ObjectsRoot(), l.blocksDir)
 	if err != nil {
 		l.errors.Append(fmt.Errorf(`cannot read transformation blocks from "%s": %w`, l.blocksDir, err))
 		return nil
@@ -184,7 +184,7 @@ func (l *localLoader) blockDirs() []string {
 }
 
 func (l *localLoader) codeDirs(block *model.Block) []string {
-	dirs, err := filesystem.ReadSubDirs(l.Fs(), block.Path())
+	dirs, err := filesystem.ReadSubDirs(l.ObjectsRoot(), block.Path())
 	if err != nil {
 		l.errors.Append(fmt.Errorf(`cannot read transformation codes from "%s": %w`, block.Path(), err))
 		return nil
@@ -195,7 +195,7 @@ func (l *localLoader) codeDirs(block *model.Block) []string {
 func (l *localLoader) codeFileName(code *model.Code) string {
 	// Search for code file, glob "code.*"
 	// File can use an old naming, so the file extension is not specified
-	matches, err := l.Fs().Glob(filesystem.Join(code.Path(), naming.CodeFileName+`.*`))
+	matches, err := l.ObjectsRoot().Glob(filesystem.Join(code.Path(), naming.CodeFileName+`.*`))
 	if err != nil {
 		l.errors.Append(fmt.Errorf(`cannot search for code file in %s": %w`, code.Path(), err))
 		return ""
@@ -208,7 +208,7 @@ func (l *localLoader) codeFileName(code *model.Code) string {
 			continue
 		}
 
-		if l.Fs().IsFile(match) {
+		if l.ObjectsRoot().IsFile(match) {
 			files = append(files, relPath)
 		}
 	}
