@@ -16,8 +16,8 @@ func CreateCommand(depsProvider dependencies.Provider) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			d := depsProvider.Dependencies()
 
-			// Require template repository dir
-			if _, err := d.TemplateRepositoryDir(); err != nil {
+			// Require template repository
+			if _, err := d.LocalTemplateRepository(); err != nil {
 				return err
 			}
 

@@ -11,6 +11,7 @@ import (
 
 	"github.com/spf13/afero"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
@@ -58,6 +59,7 @@ type Fs interface {
 type LoadHandler func(def *FileDef, fileType FileType) (File, error)
 
 type FileLoader interface {
+	SetJsonNetContext(ctx *jsonnet.Context)
 	ReadRawFile(file *FileDef) (*RawFile, error)
 	ReadFileContentTo(file *FileDef, target interface{}, structTag string) (*RawFile, bool, error)
 	ReadJsonFile(file *FileDef) (*JsonFile, error)

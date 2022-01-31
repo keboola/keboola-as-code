@@ -42,7 +42,7 @@ func TestLoadManifestFile(t *testing.T) {
 		assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(path, c.jsonNet)))
 
 		// Load
-		manifest, err := Load(fs)
+		manifest, err := Load(fs, nil)
 		assert.NotNil(t, manifest)
 		assert.NoError(t, err)
 

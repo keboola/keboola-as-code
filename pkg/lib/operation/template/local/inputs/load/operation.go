@@ -5,14 +5,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 )
 
-type dependencies interface {
-	TemplateSrcDir() (filesystem.Fs, error)
-}
-
-func Run(d dependencies) (*template.Inputs, error) {
-	fs, err := d.TemplateSrcDir()
-	if err != nil {
-		return nil, err
-	}
+func Run(fs filesystem.Fs) (*template.Inputs, error) {
 	return template.LoadInputs(fs)
 }

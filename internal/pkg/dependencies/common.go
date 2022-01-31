@@ -10,8 +10,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi/eventsender"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
-	"github.com/keboola/keboola-as-code/internal/pkg/template"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -29,22 +27,9 @@ type common struct {
 	schedulerApi  *schedulerapi.Api
 	eventSender   *eventsender.Sender
 	// Project
-	project         *project.Project
-	projectDir      filesystem.Fs
-	projectManifest *project.Manifest
-	projectState    *project.State
-	// Template
-	template         *template.Template
-	templateDir      filesystem.Fs
-	templateSrcDir   filesystem.Fs
-	templateTestsDir filesystem.Fs
-	templateManifest *template.Manifest
-	templateInputs   *template.Inputs
-	templateState    *template.State
-	// Template repository
-	templateRepository         *repository.Repository
-	templateRepositoryDir      filesystem.Fs
-	templateRepositoryManifest *repository.Manifest
+	project      *project.Project
+	projectDir   filesystem.Fs
+	projectState *project.State
 }
 
 func (c *common) Ctx() context.Context {
@@ -79,8 +64,15 @@ func (c *common) StorageApi() (*storageapi.Api, error) {
 		}
 
 		// Token and manifest project ID must be same
-		if c.projectManifest != nil && c.projectManifest.ProjectId() != c.storageApi.ProjectId() {
-			return nil, fmt.Errorf(`given token is from the project "%d", but in manifest is defined project "%d"`, c.storageApi.ProjectId(), c.projectManifest.ProjectId())
+		if c.LocalProjectExists() {
+			prj, err := c.LocalProject()
+			if err != nil {
+				return nil, err
+			}
+			projectManifest := prj.ProjectManifest()
+			if projectManifest != nil && projectManifest.ProjectId() != c.storageApi.ProjectId() {
+				return nil, fmt.Errorf(`given token is from the project "%d", but in manifest is defined project "%d"`, c.storageApi.ProjectId(), projectManifest.ProjectId())
+			}
 		}
 	}
 	return c.storageApi, nil

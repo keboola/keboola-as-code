@@ -10,7 +10,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 )
 
@@ -24,7 +26,7 @@ func (t *testAbstractDeps) Logger() log.Logger {
 }
 
 func (t *testAbstractDeps) Fs() filesystem.Fs {
-	panic("not implemented")
+	return testfs.NewMemoryFs()
 }
 
 func (t *testAbstractDeps) Envs() *env.Map {
@@ -48,7 +50,7 @@ func TestDifferentProjectIdInManifestAndToken(t *testing.T) {
 	testProject := testproject.GetTestProject(t, env.Empty())
 
 	d := newCommonDeps(&testAbstractDeps{storageApiHost: testProject.StorageApiHost(), storageApiToken: testProject.Token()}, context.Background())
-	d.projectManifest = manifest.New(12345, testProject.StorageApiHost())
+	d.project = project.New(testfs.NewMemoryFs(), manifest.New(12345, testProject.StorageApiHost()), d)
 
 	_, err := d.StorageApi()
 	expected := fmt.Sprintf(`given token is from the project "%d", but in manifest is defined project "12345"`, testProject.Id())

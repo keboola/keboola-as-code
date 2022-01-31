@@ -120,6 +120,5 @@ func TestTemplateRecord_GetByVersion_Complex(t *testing.T) {
 			assert.True(t, found, desc)
 			assert.Equal(t, c.found, value.Version.String(), desc)
 		}
-
 	}
 }

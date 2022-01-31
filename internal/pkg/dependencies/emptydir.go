@@ -19,17 +19,17 @@ func (c *common) EmptyDir() (filesystem.Fs, error) {
 		fs := c.Fs()
 
 		// Project dir is not expected
-		if c.ProjectManifestExists() {
+		if c.LocalProjectExists() {
 			return nil, ErrProjectDirFound
 		}
 
 		// Template dir is not expected
-		if c.TemplateManifestExists() {
+		if c.LocalTemplateExists() {
 			return nil, ErrTemplateDirFound
 		}
 
 		// Repository dir is not expected
-		if c.TemplateRepositoryManifestExists() {
+		if c.LocalTemplateRepositoryExists() {
 			return nil, ErrRepositoryDirFound
 		}
 

@@ -2,13 +2,13 @@ package init
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/schedulerapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
-	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	createEnvFiles "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/envfiles/create"
 	createManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/create"
@@ -30,27 +30,30 @@ type dependencies interface {
 	StorageApi() (*storageapi.Api, error)
 	SchedulerApi() (*schedulerapi.Api, error)
 	EmptyDir() (filesystem.Fs, error)
-	ProjectDir() (filesystem.Fs, error)
-	CreateProjectManifest(o createManifest.Options) (*manifest.Manifest, error)
-	ProjectManifest() (*manifest.Manifest, error)
+	LocalProject() (*project.Project, error)
 	ProjectState(loadOptions loadState.Options) (*project.State, error)
 }
 
 func Run(o Options, d dependencies) (err error) {
 	logger := d.Logger()
 
+	fs, err := d.EmptyDir()
+	if err != nil {
+		return err
+	}
+
 	// Create metadata dir
-	if err := createMetaDir.Run(d); err != nil {
+	if err := createMetaDir.Run(fs, d); err != nil {
 		return err
 	}
 
 	// Create manifest
-	if _, err := d.CreateProjectManifest(o.ManifestOptions); err != nil {
-		return err
+	if err := createManifest.Run(fs, o.ManifestOptions, d); err != nil {
+		return fmt.Errorf(`cannot create manifest: %w`, err)
 	}
 
 	// Create ENV files
-	if err := createEnvFiles.Run(d); err != nil {
+	if err := createEnvFiles.Run(fs, d); err != nil {
 		return err
 	}
 

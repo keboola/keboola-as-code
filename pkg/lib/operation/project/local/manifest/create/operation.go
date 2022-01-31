@@ -16,23 +16,16 @@ type Options struct {
 
 type dependencies interface {
 	Logger() log.Logger
-	EmptyDir() (filesystem.Fs, error)
 	StorageApi() (*storageapi.Api, error)
 }
 
-func Run(o Options, d dependencies) (*projectManifest.Manifest, error) {
+func Run(fs filesystem.Fs, o Options, d dependencies) error {
 	logger := d.Logger()
-
-	// Target dir must be empty
-	emptyDir, err := d.EmptyDir()
-	if err != nil {
-		return nil, err
-	}
 
 	// Get Storage API
 	storageApi, err := d.StorageApi()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Create
@@ -43,10 +36,10 @@ func Run(o Options, d dependencies) (*projectManifest.Manifest, error) {
 	manifest.SetAllowedBranches(o.AllowedBranches)
 
 	// Save
-	if err = manifest.Save(emptyDir); err != nil {
-		return nil, err
+	if err = manifest.Save(fs); err != nil {
+		return err
 	}
 
 	logger.Infof("Created manifest file \"%s\".", projectManifest.Path())
-	return manifest, nil
+	return nil
 }

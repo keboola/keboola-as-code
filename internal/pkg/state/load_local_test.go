@@ -11,6 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
+	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	. "github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -240,7 +241,7 @@ func loadLocalTestState(t *testing.T, m *manifest.Manifest, fs filesystem.Fs) (*
 	// Mocked API response
 	d := testdeps.New()
 	d.SetFs(fs)
-	d.SetProjectManifest(m)
+	d.SetProject(project.New(d.Fs(), m, d))
 	d.UseMockedSchedulerApi()
 	_, httpTransport := d.UseMockedStorageApi()
 	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
@@ -263,9 +264,9 @@ func loadLocalTestState(t *testing.T, m *manifest.Manifest, fs filesystem.Fs) (*
 	httpTransport.RegisterResponder("GET", `=~/storage/components/keboola.ex-db-mysql`, getMySqlExResponder)
 
 	// Load state
-	project, err := d.Project()
+	prj, err := d.LocalProject()
 	assert.NoError(t, err)
-	state, err := New(project, d)
+	state, err := New(prj, d)
 	assert.NoError(t, err)
 	filter := m.Filter()
 	_, localErr, remoteErr := state.Load(LoadOptions{LocalFilter: &filter, LoadLocalState: true})

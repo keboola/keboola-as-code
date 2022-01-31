@@ -8,20 +8,14 @@ import (
 
 type dependencies interface {
 	Logger() log.Logger
-	TemplateSrcDir() (filesystem.Fs, error)
 }
 
-func Run(d dependencies) (*manifest.Manifest, error) {
-	fs, err := d.TemplateSrcDir()
-	if err != nil {
-		return nil, err
-	}
-
+func Run(fs filesystem.Fs, d dependencies) (*manifest.Manifest, error) {
 	// Create
 	templateManifest := manifest.New()
 
 	// Save
-	if err = templateManifest.Save(fs); err != nil {
+	if err := templateManifest.Save(fs); err != nil {
 		return nil, err
 	}
 

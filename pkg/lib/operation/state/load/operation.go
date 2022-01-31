@@ -1,8 +1,6 @@
 package load
 
 import (
-	"context"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/api/schedulerapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -41,7 +39,6 @@ type OptionsWithFilter struct {
 }
 
 type dependencies interface {
-	Ctx() context.Context
 	Logger() log.Logger
 	StorageApi() (*storageapi.Api, error)
 	SchedulerApi() (*schedulerapi.Api, error)

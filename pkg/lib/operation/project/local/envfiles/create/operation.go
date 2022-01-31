@@ -10,17 +10,11 @@ import (
 
 type dependencies interface {
 	Logger() log.Logger
-	ProjectDir() (filesystem.Fs, error)
 	StorageApi() (*storageapi.Api, error)
 }
 
-func Run(d dependencies) (err error) {
+func Run(fs filesystem.Fs, d dependencies) (err error) {
 	logger := d.Logger()
-
-	fs, err := d.ProjectDir()
-	if err != nil {
-		return err
-	}
 
 	// Get Storage API
 	storageApi, err := d.StorageApi()

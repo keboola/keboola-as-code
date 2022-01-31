@@ -8,23 +8,16 @@ import (
 
 type dependencies interface {
 	Logger() log.Logger
-	TemplateSrcDir() (filesystem.Fs, error)
 }
 
-func Run(d dependencies) (*template.Inputs, error) {
+func Run(fs filesystem.Fs, d dependencies) (*template.Inputs, error) {
 	logger := d.Logger()
-
-	// Target dir must be empty
-	fs, err := d.TemplateSrcDir()
-	if err != nil {
-		return nil, err
-	}
 
 	// Create
 	inputs := template.NewInputs(nil)
 
 	// Save
-	if err = inputs.Save(fs); err != nil {
+	if err := inputs.Save(fs); err != nil {
 		return nil, err
 	}
 

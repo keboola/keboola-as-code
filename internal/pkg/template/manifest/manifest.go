@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
@@ -23,9 +24,9 @@ func New() *Manifest {
 	}
 }
 
-func Load(fs filesystem.Fs) (*Manifest, error) {
+func Load(fs filesystem.Fs, jsonNetCtx *jsonnet.Context) (*Manifest, error) {
 	// Load file content
-	content, err := loadFile(fs)
+	content, err := loadFile(fs, jsonNetCtx)
 	if err != nil {
 		return nil, err
 	}

@@ -11,6 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
+	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	. "github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -39,8 +40,8 @@ func TestLoadState(t *testing.T) {
 	d := testdeps.New()
 	d.InitFromTestProject(testProject)
 	d.SetFs(fs)
-	d.SetProjectManifest(m)
-	project, err := d.Project()
+	d.SetProject(project.New(d.Fs(), m, d))
+	prj, err := d.LocalProject()
 	assert.NoError(t, err)
 
 	// Load
@@ -48,7 +49,7 @@ func TestLoadState(t *testing.T) {
 		LoadLocalState:  true,
 		LoadRemoteState: true,
 	}
-	state, err := New(project, d)
+	state, err := New(prj, d)
 	assert.NoError(t, err)
 	ok, localErr, remoteErr := state.Load(options)
 

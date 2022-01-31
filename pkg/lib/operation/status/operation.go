@@ -1,70 +1,59 @@
 package status
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
-	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/template"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 )
 
 type dependencies interface {
 	Logger() log.Logger
 	BasePath() string
-	ProjectDir() (filesystem.Fs, error)
-	ProjectManifest() (*projectManifest.Manifest, error)
-	ProjectManifestExists() bool
-	TemplateDir() (filesystem.Fs, error)
-	TemplateManifest() (*templateManifest.Manifest, error)
-	TemplateManifestExists() bool
-	TemplateRepositoryDir() (filesystem.Fs, error)
-	TemplateRepositoryManifestExists() bool
+	LocalProject() (*project.Project, error)
+	LocalProjectExists() bool
+	LocalTemplate() (*template.Template, error)
+	LocalTemplateExists() bool
+	LocalTemplateRepository() (*repository.Repository, error)
+	LocalTemplateRepositoryExists() bool
 }
 
 func Run(d dependencies) (err error) {
 	logger := d.Logger()
 
-	if d.ProjectManifestExists() {
-		fs, err := d.ProjectDir()
+	if d.LocalProjectExists() {
+		prj, err := d.LocalProject()
 		if err != nil {
 			return err
 		}
 
-		manifest, err := d.ProjectManifest()
-		if err != nil {
-			return err
-		}
-
-		logger.Infof("Project directory:  %s", fs.BasePath())
-		logger.Infof("Working directory:  %s", fs.WorkingDir())
-		logger.Infof("Manifest path:      %s", manifest.Path())
+		logger.Infof("Project directory:  %s", prj.Fs().BasePath())
+		logger.Infof("Working directory:  %s", prj.Fs().WorkingDir())
+		logger.Infof("Manifest path:      %s", prj.Manifest().Path())
 		return nil
 	}
 
-	if d.TemplateManifestExists() {
-		fs, err := d.TemplateDir()
+	if d.LocalTemplateExists() {
+		tmpl, err := d.LocalTemplate()
 		if err != nil {
 			return err
 		}
 
-		manifest, err := d.TemplateManifest()
-		if err != nil {
-			return err
-		}
-
-		logger.Infof("Template directory:  %s", fs.BasePath())
-		logger.Infof("Working directory:   %s", fs.WorkingDir())
-		logger.Infof("Manifest path:       %s", manifest.Path())
+		logger.Infof("Template directory:  %s", tmpl.Fs().BasePath())
+		logger.Infof("Working directory:   %s", tmpl.Fs().WorkingDir())
+		logger.Infof("Manifest path:       %s", tmpl.ManifestPath())
 		return nil
 	}
 
-	if d.TemplateRepositoryManifestExists() {
-		fs, err := d.TemplateRepositoryDir()
+	if d.LocalTemplateRepositoryExists() {
+		repo, err := d.LocalTemplateRepository()
 		if err != nil {
 			return err
 		}
 
-		logger.Infof("Repository directory:  %s", fs.BasePath())
-		logger.Infof("Working directory:     %s", fs.WorkingDir())
+		logger.Infof("Repository directory:  %s", repo.Fs().BasePath())
+		logger.Infof("Working directory:     %s", repo.Fs().WorkingDir())
+		logger.Infof("Manifest path:         %s", repo.Manifest().Path())
 		return nil
 	}
 

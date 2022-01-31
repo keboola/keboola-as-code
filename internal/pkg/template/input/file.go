@@ -15,7 +15,7 @@ const (
 )
 
 func Path() string {
-	return FileName
+	return filesystem.Join("src", FileName)
 }
 
 type file struct {
@@ -32,7 +32,7 @@ func loadFile(fs filesystem.Fs) (*file, error) {
 	// Check if file exists
 	path := Path()
 	if !fs.IsFile(path) {
-		return nil, fmt.Errorf("manifest \"%s\" not found", path)
+		return nil, fmt.Errorf("file \"%s\" not found", path)
 	}
 
 	// Read file

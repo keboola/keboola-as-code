@@ -5,27 +5,32 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 	createMetaDir "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/metadir/create"
+	createRepositoryManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/repository/manifest/create"
 )
 
 type dependencies interface {
 	Ctx() context.Context
 	Logger() log.Logger
 	EmptyDir() (filesystem.Fs, error)
-	CreateTemplateRepositoryManifest() (*manifest.Manifest, error)
 }
 
 func Run(d dependencies) (err error) {
 	logger := d.Logger()
 
+	// Empty dir
+	emptyDir, err := d.EmptyDir()
+	if err != nil {
+		return err
+	}
+
 	// Create metadata dir
-	if err := createMetaDir.Run(d); err != nil {
+	if err := createMetaDir.Run(emptyDir, d); err != nil {
 		return err
 	}
 
 	// Create manifest
-	if _, err := d.CreateTemplateRepositoryManifest(); err != nil {
+	if _, err := createRepositoryManifest.Run(emptyDir, d); err != nil {
 		return err
 	}
 
