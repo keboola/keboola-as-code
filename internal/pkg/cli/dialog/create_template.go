@@ -11,17 +11,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 	createTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/create"
 )
 
 type createTmplDialogDeps interface {
 	Options() *options.Options
 	StorageApi() (*storageapi.Api, error)
-	ProjectState(loadOptions loadState.Options) (*project.State, error)
 }
 
 type createTmplDialog struct {
