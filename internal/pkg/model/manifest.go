@@ -88,11 +88,26 @@ type ConfigManifestWithRows struct {
 	Rows []*ConfigRowManifest `json:"rows"`
 }
 
+type TemplateReference struct {
+	Id         string // for example "my-template"
+	Version    string // for example "v1"
+	Repository TemplateRepository
+}
+
+type TemplateRepositoryType string
+
+const (
+	RepositoryTypeWorkingDir = `working_dir`
+	RepositoryTypeDir        = `dir`
+	RepositoryTypeGit        = `git`
+)
+
 type TemplateRepository struct {
-	Type string `json:"type" validate:"oneof=dir git"`
-	Name string `json:"name" validate:"required"`
-	Url  string `json:"url,omitempty" validate:"required_if=Type git"`
-	Ref  string `json:"ref,omitempty" validate:"required_if=Type git"`
+	Type TemplateRepositoryType `json:"type" validate:"oneof=dir git"`
+	Name string                 `json:"name" validate:"required"`
+	Path string                 `json:"path,omitempty" validate:"required_if=Type path"`
+	Url  string                 `json:"url,omitempty" validate:"required_if=Type git"`
+	Ref  string                 `json:"ref,omitempty" validate:"required_if=Type git"`
 }
 
 func (p *Paths) ClearRelatedPaths() {
