@@ -9,17 +9,17 @@ type _state = *state.State
 
 type State struct {
 	_state
-	template *EvaluatedTemplate
+	container *ObjectsContainer
 }
 
-func NewState(s *state.State, template *EvaluatedTemplate) *State {
-	return &State{_state: s, template: template}
+func NewState(s *state.State, container *ObjectsContainer) *State {
+	return &State{_state: s, container: container}
 }
 
 func (s *State) Fs() filesystem.Fs {
-	return s.template.Fs()
+	return s.container.Fs()
 }
 
 func (s *State) TemplateManifest() *Manifest {
-	return s.template.TemplateManifest()
+	return s.container.TemplateManifest()
 }

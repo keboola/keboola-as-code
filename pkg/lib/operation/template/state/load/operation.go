@@ -43,9 +43,9 @@ func Run(o Options, d dependencies) (*template.State, error) {
 	}
 
 	// Run operation
-	evaluated := tmpl.ToEvaluated(manifest, o.JsonNetCtx, o.Replacements, d)
-	if state, err := loadState.Run(evaluated, o.LoadOptions, d); err == nil {
-		return template.NewState(state, evaluated), nil
+	container := tmpl.ToObjectsContainer(manifest, o.JsonNetCtx, o.Replacements, d)
+	if state, err := loadState.Run(container, o.LoadOptions, d); err == nil {
+		return template.NewState(state, container), nil
 	} else {
 		return nil, err
 	}

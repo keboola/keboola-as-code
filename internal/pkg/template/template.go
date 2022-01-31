@@ -110,8 +110,8 @@ func (t *Template) ManifestExists() (bool, error) {
 	return t.srcDir.IsFile(t.ManifestPath()), nil
 }
 
-func (t *Template) ToEvaluated(m *Manifest, jsonNetCtx *jsonnet.Context, replacements replacekeys.Keys, d dependencies) *EvaluatedTemplate {
-	return &EvaluatedTemplate{
+func (t *Template) ToObjectsContainer(m *Manifest, jsonNetCtx *jsonnet.Context, replacements replacekeys.Keys, d dependencies) *ObjectsContainer {
+	return &ObjectsContainer{
 		Template:     t,
 		dependencies: d,
 		manifest:     m,
@@ -120,7 +120,7 @@ func (t *Template) ToEvaluated(m *Manifest, jsonNetCtx *jsonnet.Context, replace
 	}
 }
 
-type EvaluatedTemplate struct {
+type ObjectsContainer struct {
 	*Template
 	dependencies
 	manifest     *Manifest
@@ -128,18 +128,18 @@ type EvaluatedTemplate struct {
 	replacements replacekeys.Keys
 }
 
-func (t *EvaluatedTemplate) Manifest() manifest.Manifest {
-	return t.manifest
+func (c *ObjectsContainer) Manifest() manifest.Manifest {
+	return c.manifest
 }
 
-func (t *EvaluatedTemplate) TemplateManifest() *Manifest {
-	return t.manifest
+func (c *ObjectsContainer) TemplateManifest() *Manifest {
+	return c.manifest
 }
 
-func (t *EvaluatedTemplate) Ctx() context.Context {
-	return context.WithValue(t.dependencies.Ctx(), validator.DisableRequiredInProjectKey, true)
+func (c *ObjectsContainer) Ctx() context.Context {
+	return context.WithValue(c.dependencies.Ctx(), validator.DisableRequiredInProjectKey, true)
 }
 
-func (t *EvaluatedTemplate) MappersFor(state *state.State) mapper.Mappers {
-	return MappersFor(state, t.dependencies, t.jsonNetCtx, t.replacements)
+func (c *ObjectsContainer) MappersFor(state *state.State) mapper.Mappers {
+	return MappersFor(state, c.dependencies, c.jsonNetCtx, c.replacements)
 }
