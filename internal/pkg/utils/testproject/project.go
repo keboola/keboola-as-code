@@ -342,6 +342,12 @@ func (p *Project) createConfigsRequests(configs []*model.ConfigWithRows, pool *c
 		if request, err := p.storageApi.CreateConfigRequest(config); err == nil {
 			branch := p.branchesById[config.BranchId]
 			p.logf("creating config \"%s/%s/%s\"", branch.Name, config.ComponentId, config.Name)
+			request.OnSuccess(func(response *client.Response) {
+				if len(config.Config.Metadata) > 0 {
+					request := p.StorageApi().UpdateConfigMetadataRequest(config.Config)
+					pool.Request(request).Send()
+				}
+			})
 			pool.Request(request).Send()
 		} else {
 			assert.FailNow(p.t, fmt.Sprintf("cannot create create config request: %s", err))

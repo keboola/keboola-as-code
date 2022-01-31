@@ -1,0 +1,45 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true
+      },
+      "configs": []
+    },
+    {
+      "branch": {
+        "name": "foo",
+        "description": "",
+        "isDefault": false
+      },
+      "configs": [
+        {
+          "componentId": "ex-generic-v2",
+          "name": "empty",
+          "description": "test fixture",
+          "configuration": {},
+          "rows": []
+        },
+        {
+          "componentId": "ex-generic-v2",
+          "name": "without-rows",
+          "description": "test fixture",
+          "configuration": {
+            "parameters": {
+              "api": {
+                "baseUrl": "https://jsonplaceholder.typicode.com"
+              }
+            }
+          },
+          "rows": [],
+          "metadata": {
+            "KBC.KaC.meta1": "val1",
+            "KBC.KaC.meta2": "val2"
+          }
+        }
+      ]
+    }
+  ]
+}

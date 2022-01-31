@@ -1,0 +1,10 @@
+{
+  "componentId": "ex-generic-v2",
+  "name": "empty-with-metadata",
+  "configuration": {},
+  "rows": null,
+  "metadata": {
+    "KBC.KaC.meta1": "val1",
+    "KBC.KaC.meta2": "val2"
+  }
+}

@@ -44,6 +44,7 @@ type Config struct {
 	ChangeDescription string                 `json:"changeDescription,omitempty"`
 	Content           *orderedmap.OrderedMap `json:"configuration"`
 	Rows              []*ConfigRow           `json:"rows"`
+	Metadata          map[string]string      `json:"metadata,omitempty"`
 }
 
 type ConfigRow struct {
@@ -81,6 +82,7 @@ func (c *Config) ToModel() *model.ConfigWithRows {
 	config.Description = "test fixture"
 	config.ChangeDescription = "created by test"
 	config.Content = c.Content
+	config.Metadata = c.Metadata
 
 	for _, r := range c.Rows {
 		row := r.ToModel()
