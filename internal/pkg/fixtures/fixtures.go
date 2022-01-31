@@ -82,6 +82,7 @@ func (c *Config) ToModel() *model.ConfigWithRows {
 	config.Description = "test fixture"
 	config.ChangeDescription = "created by test"
 	config.Content = c.Content
+	config.Metadata = c.Metadata
 
 	for _, r := range c.Rows {
 		row := r.ToModel()
