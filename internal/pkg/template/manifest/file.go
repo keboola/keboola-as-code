@@ -43,7 +43,7 @@ func loadFile(fs filesystem.Fs, jsonNetCtx *jsonnet.Context) (*file, error) {
 	content := newFile()
 	fileLoader := fs.FileLoader()
 	fileLoader.SetJsonNetContext(jsonNetCtx)
-	if _, err := fs.FileLoader().ReadJsonNetFileTo(fileDef, content); err != nil {
+	if _, err := fileLoader.ReadJsonNetFileTo(fileDef, content); err != nil {
 		return nil, err
 	}
 
