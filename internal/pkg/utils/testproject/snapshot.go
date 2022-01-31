@@ -128,8 +128,7 @@ func (p *Project) snapshot(snapshot *fixtures.ProjectSnapshot, configs map[strin
 		Send()
 
 	// Wait for requests
-	err := pool.StartAndWait()
-	if err != nil {
+	if err := pool.StartAndWait(); err != nil {
 		return err
 	}
 
