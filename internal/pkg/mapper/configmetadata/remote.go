@@ -44,6 +44,19 @@ func (m *configMetadataMapper) AfterRemoteOperation(changes *model.RemoteChanges
 	return nil
 }
 
+func (m *configMetadataMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
+	_, ok := recipe.Object.(*model.Config)
+	if !ok {
+		return nil
+	}
+
+	if recipe.ChangedFields.Has(`metadata`) {
+		recipe.ChangedFields.Remove(`metadata`)
+	}
+
+	return nil
+}
+
 func (m *configMetadataMapper) onRemoteLoad(objectState model.ObjectState, metadataMap map[string]map[string]string) {
 	config, ok := objectState.RemoteState().(*model.Config)
 	if !ok {
