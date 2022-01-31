@@ -8,14 +8,14 @@ import (
 
 type dependencies interface {
 	Logger() log.Logger
-	TemplateDir() (filesystem.Fs, error)
+	TemplateSrcDir() (filesystem.Fs, error)
 }
 
 func Run(d dependencies) (*template.Inputs, error) {
 	logger := d.Logger()
 
 	// Target dir must be empty
-	fs, err := d.TemplateDir()
+	fs, err := d.TemplateSrcDir()
 	if err != nil {
 		return nil, err
 	}

@@ -6,11 +6,11 @@ import (
 )
 
 type dependencies interface {
-	TemplateDir() (filesystem.Fs, error)
+	TemplateSrcDir() (filesystem.Fs, error)
 }
 
 func Run(d dependencies) (*template.Inputs, error) {
-	fs, err := d.TemplateDir()
+	fs, err := d.TemplateSrcDir()
 	if err != nil {
 		return nil, err
 	}

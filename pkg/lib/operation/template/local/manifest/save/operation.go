@@ -8,13 +8,13 @@ import (
 
 type Dependencies interface {
 	Logger() log.Logger
-	TemplateDir() (filesystem.Fs, error)
+	TemplateSrcDir() (filesystem.Fs, error)
 	TemplateManifest() (*manifest.Manifest, error)
 }
 
 func Run(d Dependencies) (changed bool, err error) {
 	// Get dependencies
-	templateDir, err := d.TemplateDir()
+	fs, err := d.TemplateSrcDir()
 	if err != nil {
 		return false, err
 	}
@@ -25,7 +25,7 @@ func Run(d Dependencies) (changed bool, err error) {
 
 	// Save if manifest is changed
 	if templateManifest.IsChanged() {
-		if err := templateManifest.Save(templateDir); err != nil {
+		if err := templateManifest.Save(fs); err != nil {
 			return false, err
 		}
 		return true, nil

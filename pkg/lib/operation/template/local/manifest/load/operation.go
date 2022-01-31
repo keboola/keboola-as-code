@@ -8,18 +8,18 @@ import (
 
 type dependencies interface {
 	Logger() log.Logger
-	TemplateDir() (filesystem.Fs, error)
+	TemplateSrcDir() (filesystem.Fs, error)
 }
 
 func Run(d dependencies) (*manifest.Manifest, error) {
 	logger := d.Logger()
 
-	templateDir, err := d.TemplateDir()
+	fs, err := d.TemplateSrcDir()
 	if err != nil {
 		return nil, err
 	}
 
-	m, err := manifest.Load(templateDir)
+	m, err := manifest.Load(fs)
 	if err != nil {
 		return nil, err
 	}

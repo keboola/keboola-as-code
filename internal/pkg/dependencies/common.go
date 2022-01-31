@@ -36,6 +36,8 @@ type common struct {
 	// Template
 	template         *template.Template
 	templateDir      filesystem.Fs
+	templateSrcDir   filesystem.Fs
+	templateTestsDir filesystem.Fs
 	templateManifest *template.Manifest
 	templateInputs   *template.Inputs
 	templateState    *template.State

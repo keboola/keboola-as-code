@@ -19,7 +19,7 @@ type Options struct {
 
 type dependencies interface {
 	Logger() log.Logger
-	TemplateDir() (filesystem.Fs, error)
+	TemplateSrcDir() (filesystem.Fs, error)
 	TemplateManifest() (*template.Manifest, error)
 	TemplateState(loadOptions loadState.OptionsWithFilter, replacements replacekeys.Keys) (*template.State, error)
 }

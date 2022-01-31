@@ -6,7 +6,7 @@ import (
 )
 
 type dependencies interface {
-	TemplateDir() (filesystem.Fs, error)
+	TemplateSrcDir() (filesystem.Fs, error)
 	TemplateInputs() (inputs template.Inputs, err error)
 }
 
@@ -15,7 +15,7 @@ func Run(d dependencies) (err error) {
 	if err != nil {
 		return err
 	}
-	fs, err := d.TemplateDir()
+	fs, err := d.TemplateSrcDir()
 	if err != nil {
 		return err
 	}

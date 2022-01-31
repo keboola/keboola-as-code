@@ -1,1 +1,1 @@
-status --working-dir repository/my-template/v1/sub
+status --working-dir repository/my-template/v1/src/sub

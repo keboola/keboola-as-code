@@ -85,7 +85,7 @@ type dependencies interface {
 	Logger() log.Logger
 	TemplateRepositoryDir() (filesystem.Fs, error)
 	TemplateRepositoryManifest() (*repositoryManifest.Manifest, error)
-	TemplateDir() (filesystem.Fs, error)
+	TemplateSrcDir() (filesystem.Fs, error)
 	TemplateManifest() (*template.Manifest, error)
 	TemplateState(loadOptions loadState.OptionsWithFilter, replacements replacekeys.Keys) (*template.State, error)
 	CreateTemplateDir(path string) (filesystem.Fs, error)
@@ -146,6 +146,20 @@ func initTemplateDir(o Options, d dependencies, record repositoryManifest.Versio
 	// Create directory
 	fs, err := d.CreateTemplateDir(record.Path())
 	if err != nil {
+		return err
+	}
+
+	// Create src dir
+	if err := fs.Mkdir(template.SrcDirectory); err != nil {
+		return err
+	}
+
+	// Create tests dir + .gitkeep
+	gitKeepFile := filesystem.
+		NewRawFile(filesystem.Join(template.TestsDirectory, ".gitkeep"), "\n").
+		AddTag(model.FileKindGitKeep).
+		AddTag(model.FileTypeOther)
+	if err := fs.WriteFile(gitKeepFile); err != nil {
 		return err
 	}
 
