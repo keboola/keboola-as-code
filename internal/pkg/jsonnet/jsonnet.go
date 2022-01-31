@@ -63,7 +63,11 @@ func MustEvaluateAst(input ast.Node, ctx *Context) (jsonOut string) {
 }
 
 func Format(code string) (string, error) {
-	return formatter.Format(``, code, DefaultOptions())
+	node, err := ToAst(code)
+	if err != nil {
+		return "", err
+	}
+	return FormatAst(node)
 }
 
 func MustFormat(code string) string {
@@ -75,6 +79,8 @@ func MustFormat(code string) string {
 }
 
 func FormatAst(node ast.Node) (string, error) {
+	node = ast.Clone(node)
+	ReplacePlaceholdersRecursive(node)
 	return formatter.FormatAst(node, DefaultOptions())
 }
 

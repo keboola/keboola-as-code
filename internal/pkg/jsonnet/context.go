@@ -21,6 +21,30 @@ type (
 	localAliases    map[string]ast.Node
 )
 
+// ValueToLiteral converts Go value to jsonnet.Ast literal.
+func ValueToLiteral(v interface{}) ast.Node {
+	if v == nil {
+		return &ast.LiteralNull{}
+	}
+
+	switch v := v.(type) {
+	case bool:
+		return &ast.LiteralBoolean{Value: v}
+	case int:
+		return &ast.LiteralNumber{OriginalString: cast.ToString(v)}
+	case int32:
+		return &ast.LiteralNumber{OriginalString: cast.ToString(v)}
+	case int64:
+		return &ast.LiteralNumber{OriginalString: cast.ToString(v)}
+	case float32:
+		return &ast.LiteralNumber{OriginalString: cast.ToString(v)}
+	case float64:
+		return &ast.LiteralNumber{OriginalString: cast.ToString(v)}
+	default:
+		return &ast.LiteralString{Value: cast.ToString(v), Kind: ast.StringDouble}
+	}
+}
+
 func NewContext() *Context {
 	return &Context{
 		extVariables: make(variablesValues),
@@ -132,26 +156,6 @@ func (v variablesValues) add(name string, value interface{}) {
 
 func (v variablesValues) registerTo(vm *jsonnet.VM) {
 	for k, v := range v {
-		if v == nil {
-			vm.ExtNode(k, &ast.LiteralNull{})
-			continue
-		}
-
-		switch v := v.(type) {
-		case bool:
-			vm.ExtNode(k, &ast.LiteralBoolean{Value: v})
-		case int:
-			vm.ExtNode(k, &ast.LiteralNumber{OriginalString: cast.ToString(v)})
-		case int32:
-			vm.ExtNode(k, &ast.LiteralNumber{OriginalString: cast.ToString(v)})
-		case int64:
-			vm.ExtNode(k, &ast.LiteralNumber{OriginalString: cast.ToString(v)})
-		case float32:
-			vm.ExtNode(k, &ast.LiteralNumber{OriginalString: cast.ToString(v)})
-		case float64:
-			vm.ExtNode(k, &ast.LiteralNumber{OriginalString: cast.ToString(v)})
-		default:
-			vm.ExtVar(k, cast.ToString(v))
-		}
+		vm.ExtNode(k, ValueToLiteral(v))
 	}
 }

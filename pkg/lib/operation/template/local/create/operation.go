@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacekeys"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -62,16 +63,18 @@ func (o *Options) Replacements() replacekeys.Keys {
 
 	// Configs and rows
 	for _, config := range o.Configs {
-		newKey := config.Key
-		newKey.BranchId = 0
-		newKey.Id = model.ConfigId(config.TemplateId)
-		keys = append(keys, replacekeys.Key{Old: config.Key, New: newKey})
+		newConfigId := model.ConfigId(jsonnet.ConfigIdPlaceholder(config.TemplateId))
+		newConfigKey := config.Key
+		newConfigKey.BranchId = 0
+		newConfigKey.Id = newConfigId
+		keys = append(keys, replacekeys.Key{Old: config.Key, New: newConfigKey})
 		for _, row := range config.Rows {
-			newKey := row.Key
-			newKey.BranchId = 0
-			newKey.ConfigId = model.ConfigId(config.TemplateId)
-			newKey.Id = model.RowId(row.TemplateId)
-			keys = append(keys, replacekeys.Key{Old: row.Key, New: newKey})
+			newRowId := model.RowId(jsonnet.ConfigRowIdPlaceholder(row.TemplateId))
+			newRowKey := row.Key
+			newRowKey.BranchId = 0
+			newRowKey.ConfigId = newConfigId
+			newRowKey.Id = newRowId
+			keys = append(keys, replacekeys.Key{Old: row.Key, New: newRowKey})
 		}
 	}
 	return keys
