@@ -225,13 +225,13 @@ func (l *localLoader) getTargetConfig(configPath string) (*model.Config, error) 
 
 func (l *localLoader) phasesDirs() []string {
 	// Check if blocks dir exists
-	if !l.Fs().IsDir(l.phasesDir) {
+	if !l.ObjectsRoot().IsDir(l.phasesDir) {
 		l.errors.Append(fmt.Errorf(`missing phases dir "%s"`, l.phasesDir))
 		return nil
 	}
 
 	// Load all dir entries
-	dirs, err := filesystem.ReadSubDirs(l.Fs(), l.phasesDir)
+	dirs, err := filesystem.ReadSubDirs(l.ObjectsRoot(), l.phasesDir)
 	if err != nil {
 		l.errors.Append(fmt.Errorf(`cannot read orchestrator phases from "%s": %w`, l.phasesDir, err))
 		return nil
@@ -240,7 +240,7 @@ func (l *localLoader) phasesDirs() []string {
 }
 
 func (l *localLoader) tasksDirs(phase *model.Phase) []string {
-	dirs, err := filesystem.ReadSubDirs(l.Fs(), phase.Path())
+	dirs, err := filesystem.ReadSubDirs(l.ObjectsRoot(), phase.Path())
 	if err != nil {
 		l.errors.Append(fmt.Errorf(`cannot read orchestrator tasks from "%s": %w`, phase.Path(), err))
 		return nil

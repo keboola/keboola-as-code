@@ -43,7 +43,7 @@ func New(fs filesystem.Fs, manifest *Manifest, d dependencies) *Project {
 	}
 }
 
-func (p *Project) Fs() filesystem.Fs {
+func (p *Project) ObjectsRoot() filesystem.Fs {
 	return p.fs
 }
 

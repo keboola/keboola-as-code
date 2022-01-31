@@ -22,7 +22,7 @@ func TestJsonNetMapper_LoadLocalFile(t *testing.T) {
 	state := createStateWithMapper(t, jsonNetCtx)
 
 	// Write JsonNet file with a variable
-	fs := state.Fs()
+	fs := state.ObjectsRoot()
 	jsonNetContent := `{ foo: std.extVar("myKey")}`
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(`my/dir/file.jsonnet`, jsonNetContent)))
 
