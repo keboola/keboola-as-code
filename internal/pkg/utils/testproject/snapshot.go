@@ -6,6 +6,7 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/http/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -54,6 +55,10 @@ func (p *Project) snapshot(snapshot *fixtures.ProjectSnapshot, configs map[strin
 	lock := &sync.Mutex{}
 
 	// Load objects from Storage API
+	branchesMap := make(map[model.BranchId]*fixtures.Branch)
+	configsMap := make(map[model.BranchId]map[model.ConfigKey]*fixtures.Config)
+	metadataMap := make(map[model.BranchId]map[model.ConfigKey]*map[string]string)
+
 	// Branches
 	pool := p.StorageApi().NewPool()
 	pool.
@@ -61,12 +66,14 @@ func (p *Project) snapshot(snapshot *fixtures.ProjectSnapshot, configs map[strin
 		OnSuccess(func(response *client.Response) {
 			apiBranches := *response.Result().(*[]*model.Branch)
 			for _, branch := range apiBranches {
+				branch := branch
 				b := &fixtures.Branch{}
 				b.Name = branch.Name
 				b.Description = branch.Description
 				b.IsDefault = branch.IsDefault
-				branchWithConfigs := &fixtures.BranchWithConfigs{Branch: b, Configs: make([]*fixtures.Config, 0)}
-				snapshot.Branches = append(snapshot.Branches, branchWithConfigs)
+				branchesMap[branch.Id] = b
+				configsMap[branch.Id] = make(map[model.ConfigKey]*fixtures.Config)
+				metadataMap[branch.Id] = make(map[model.ConfigKey]*map[string]string)
 
 				// Configs
 				pool.
@@ -81,7 +88,7 @@ func (p *Project) snapshot(snapshot *fixtures.ProjectSnapshot, configs map[strin
 								c.Description = config.Description
 								c.ChangeDescription = normalizeChangeDesc(config.ChangeDescription)
 								c.Content = config.Content
-								branchWithConfigs.Configs = append(branchWithConfigs.Configs, c)
+								configsMap[branch.Id][config.ConfigKey] = c
 
 								lock.Lock()
 								configs[config.Key().String()] = c
@@ -101,12 +108,44 @@ func (p *Project) snapshot(snapshot *fixtures.ProjectSnapshot, configs map[strin
 						}
 					}).
 					Send()
+				pool.
+					Request(p.StorageApi().ListConfigMetadataRequest(branch.Id)).
+					OnSuccess(func(response *client.Response) {
+						metadataResponse := *response.Result().(*storageapi.ConfigMetadataResponse)
+						for key, metadata := range metadataResponse.MetadataMap(branch.Id) {
+							if len(metadata) > 0 {
+								configMetadataMap := make(map[string]string)
+								for _, m := range metadata {
+									configMetadataMap[m.Key] = m.Value
+								}
+								metadataMap[branch.Id][key] = &configMetadataMap
+							}
+						}
+					}).
+					Send()
 			}
 		}).
 		Send()
 
 	// Wait for requests
-	return pool.StartAndWait()
+	if err := pool.StartAndWait(); err != nil {
+		return err
+	}
+
+	// Merge configs with metadata
+	for branchId, b := range branchesMap {
+		branchWithConfigs := &fixtures.BranchWithConfigs{Branch: b, Configs: make([]*fixtures.Config, 0)}
+		for configKey, c := range configsMap[branchId] {
+			metadata, ok := metadataMap[branchId][configKey]
+			if ok {
+				c.Metadata = *metadata
+			}
+			branchWithConfigs.Configs = append(branchWithConfigs.Configs, c)
+		}
+		snapshot.Branches = append(snapshot.Branches, branchWithConfigs)
+	}
+
+	return nil
 }
 
 func normalizeChangeDesc(str string) string {
