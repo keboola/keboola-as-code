@@ -318,7 +318,7 @@ const inputsJsonNet = `{
 `
 
 func testInputs() *Inputs {
-	inputs := NewInputs()
+	inputs := NewInputs(nil)
 	inputs.Set([]Input{
 		{
 			Id:          "fb.extractor.username",

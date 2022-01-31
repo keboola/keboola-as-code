@@ -32,8 +32,8 @@ func LoadManifest(fs filesystem.Fs) (*Manifest, error) {
 	return templateManifest.Load(fs)
 }
 
-func NewInputs() *Inputs {
-	return templateInput.NewInputs()
+func NewInputs(inputs []templateInput.Input) *Inputs {
+	return templateInput.NewInputs(inputs)
 }
 
 func LoadInputs(fs filesystem.Fs) (*Inputs, error) {

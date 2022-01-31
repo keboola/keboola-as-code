@@ -21,9 +21,12 @@ const (
 	KindMultiSelect = "multiselect"
 )
 
-func NewInputs() *Inputs {
+func NewInputs(inputs []Input) *Inputs {
+	if inputs == nil {
+		inputs = make([]Input, 0)
+	}
 	return &Inputs{
-		inputs: make([]Input, 0),
+		inputs: inputs,
 	}
 }
 
