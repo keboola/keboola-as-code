@@ -1,0 +1,3 @@
+Command "local template"
+
+Use/list templates in the project.
