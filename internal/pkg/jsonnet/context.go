@@ -17,9 +17,11 @@ type Context struct {
 
 type (
 	variablesValues map[string]interface{}
-	nativeFunctions []*jsonnet.NativeFunction
+	nativeFunctions []*NativeFunction
 	localAliases    map[string]ast.Node
 )
+
+type NativeFunction = jsonnet.NativeFunction
 
 // ValueToLiteral converts Go value to jsonnet.Ast literal.
 func ValueToLiteral(v interface{}) ast.Node {
@@ -60,13 +62,13 @@ func (c *Context) ExtVar(name string, value interface{}) {
 
 // NativeFunction registers native function to the JsonNet context.
 // Function can be called in the JsonNet code by: std.native("<NAME>").
-func (c *Context) NativeFunction(f *jsonnet.NativeFunction) {
+func (c *Context) NativeFunction(f *NativeFunction) {
 	c.nativeFunctions.add(f)
 }
 
 // NativeFunctionWithAlias registers native function to the JsonNet context and creates alias.
 // Function can be called in the JsonNet code by: std.native("<NAME>")(...) or by <NAME>(...)
-func (c *Context) NativeFunctionWithAlias(f *jsonnet.NativeFunction) {
+func (c *Context) NativeFunctionWithAlias(f *NativeFunction) {
 	c.nativeFunctions.add(f)
 	code := fmt.Sprintf("std.native(\"%s\")", f.Name)
 	if err := c.localAliases.add(f.Name, code); err != nil {
@@ -137,7 +139,7 @@ func (v localAliases) binds() ast.LocalBinds {
 	return output
 }
 
-func (v *nativeFunctions) add(f *jsonnet.NativeFunction) {
+func (v *nativeFunctions) add(f *NativeFunction) {
 	*v = append(*v, f)
 }
 
