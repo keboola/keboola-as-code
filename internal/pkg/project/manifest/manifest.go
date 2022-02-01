@@ -7,6 +7,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 )
 
 type records = manifest.Records
@@ -15,9 +16,10 @@ type records = manifest.Records
 // file contains IDs and paths of the all objects: branches, configs, rows.
 type Manifest struct {
 	*records
-	project Project
-	naming  naming.Template
-	filter  model.ObjectsFilter
+	project      Project
+	naming       naming.Template
+	filter       model.ObjectsFilter
+	repositories []model.TemplateRepository
 }
 
 type Project struct {
@@ -27,10 +29,11 @@ type Project struct {
 
 func New(projectId int, apiHost string) *Manifest {
 	return &Manifest{
-		records: manifest.NewRecords(model.SortById),
-		project: Project{Id: projectId, ApiHost: apiHost},
-		naming:  naming.TemplateWithIds(),
-		filter:  model.NoFilter(),
+		records:      manifest.NewRecords(model.SortById),
+		project:      Project{Id: projectId, ApiHost: apiHost},
+		naming:       naming.TemplateWithIds(),
+		filter:       model.NoFilter(),
+		repositories: []model.TemplateRepository{repository.DefaultRepository()},
 	}
 }
 
@@ -47,6 +50,7 @@ func Load(fs filesystem.Fs) (*Manifest, error) {
 	m.naming = content.Naming
 	m.filter.SetAllowedBranches(content.AllowedBranches)
 	m.filter.SetIgnoredComponents(content.IgnoredComponents)
+	m.repositories = content.Templates.Repositories
 
 	// Set records
 	if err := m.records.SetRecords(content.records()); err != nil {
@@ -64,6 +68,7 @@ func (m *Manifest) Save(fs filesystem.Fs) error {
 	content.Naming = m.naming
 	content.AllowedBranches = m.filter.AllowedBranches()
 	content.IgnoredComponents = m.filter.IgnoredComponents()
+	content.Templates.Repositories = m.repositories
 	content.setRecords(m.records.All())
 
 	// Save file
@@ -121,4 +126,13 @@ func (m *Manifest) IsChanged() bool {
 
 func (m *Manifest) IsObjectIgnored(object model.Object) bool {
 	return m.filter.IsObjectIgnored(object)
+}
+
+func (m *Manifest) TemplateRepository(name string) (repo model.TemplateRepository, found bool) {
+	for _, r := range m.repositories {
+		if r.Name == name {
+			return r, true
+		}
+	}
+	return
 }
