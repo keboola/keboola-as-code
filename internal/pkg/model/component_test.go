@@ -91,6 +91,11 @@ func TestMatchDefaultBucketInTableId(t *testing.T) {
 	assert.Equal(t, ConfigId("123456"), configId)
 	assert.True(t, matchesDefaultBucket)
 
+	componentId, configId, matchesDefaultBucket = componentsMap.GetDefaultBucketByTableId("in.c-keboola-ex-aws-s3-123456.my-orders")
+	assert.Equal(t, ComponentId("keboola.ex-aws-s3"), componentId)
+	assert.Equal(t, ConfigId("123456"), configId)
+	assert.True(t, matchesDefaultBucket)
+
 	componentId, configId, matchesDefaultBucket = componentsMap.GetDefaultBucketByTableId("in.c-keboola-ex-aws-s3.orders")
 	assert.Equal(t, ComponentId(""), componentId)
 	assert.Equal(t, ConfigId(""), configId)
