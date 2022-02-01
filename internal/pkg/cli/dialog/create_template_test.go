@@ -10,6 +10,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/interactive"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testdeps"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	createTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/create"
@@ -139,11 +140,11 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, createTemplate.Options{
-		Id:          `my-super-template`,
-		Name:        `My Super Template`,
-		Description: `Full workflow to ...`,
-		Branch:      model.BranchKey{Id: 123},
-		Configs: []createTemplate.ConfigDef{
+		Id:           `my-super-template`,
+		Name:         `My Super Template`,
+		Description:  `Full workflow to ...`,
+		SourceBranch: model.BranchKey{Id: 123},
+		Configs: []template.ConfigDef{
 			{
 				Key: model.ConfigKey{
 					BranchId:    123,
@@ -151,7 +152,7 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 					Id:          `1`,
 				},
 				TemplateId: `config-1`,
-				Rows: []createTemplate.ConfigRowDef{
+				Rows: []template.ConfigRowDef{
 					{
 						Key: model.ConfigRowKey{
 							BranchId:    123,
@@ -198,11 +199,11 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, createTemplate.Options{
-		Id:          `my-super-template`,
-		Name:        `My Super Template`,
-		Description: `Full workflow to ...`,
-		Branch:      model.BranchKey{Id: 123},
-		Configs: []createTemplate.ConfigDef{
+		Id:           `my-super-template`,
+		Name:         `My Super Template`,
+		Description:  `Full workflow to ...`,
+		SourceBranch: model.BranchKey{Id: 123},
+		Configs: []template.ConfigDef{
 			{
 				Key: model.ConfigKey{
 					BranchId:    123,
@@ -210,7 +211,7 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 					Id:          `1`,
 				},
 				TemplateId: `config-1`,
-				Rows: []createTemplate.ConfigRowDef{
+				Rows: []template.ConfigRowDef{
 					{
 						Key: model.ConfigRowKey{
 							BranchId:    123,
@@ -257,11 +258,11 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, createTemplate.Options{
-		Id:          `my-super-template`,
-		Name:        `My Super Template`,
-		Description: `Full workflow to ...`,
-		Branch:      model.BranchKey{Id: 123},
-		Configs: []createTemplate.ConfigDef{
+		Id:           `my-super-template`,
+		Name:         `My Super Template`,
+		Description:  `Full workflow to ...`,
+		SourceBranch: model.BranchKey{Id: 123},
+		Configs: []template.ConfigDef{
 			{
 				Key: model.ConfigKey{
 					BranchId:    123,
@@ -269,7 +270,7 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 					Id:          `1`,
 				},
 				TemplateId: `config-1`,
-				Rows: []createTemplate.ConfigRowDef{
+				Rows: []template.ConfigRowDef{
 					{
 						Key: model.ConfigRowKey{
 							BranchId:    123,

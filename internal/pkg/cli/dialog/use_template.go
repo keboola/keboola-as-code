@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	useTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
@@ -29,14 +30,15 @@ type useTmplDialog struct {
 	inputsValues     map[string]interface{} // for input.Available
 }
 
-func (p *Dialogs) AskUseTemplateOptions(inputs *input.Inputs, d useTmplDialogDeps, loadStateOptions loadState.Options) (useTemplate.Options, error) {
-	return (&useTmplDialog{
+func (p *Dialogs) AskUseTemplateOptions(inputs *template.Inputs, d useTmplDialogDeps, loadStateOptions loadState.Options) (useTemplate.Options, error) {
+	dialog := &useTmplDialog{
 		Dialogs:          p,
 		deps:             d,
 		loadStateOptions: loadStateOptions,
 		context:          context.Background(),
 		inputsValues:     make(map[string]interface{}),
-	}).ask(inputs)
+	}
+	return dialog.ask(inputs)
 }
 
 func (d *useTmplDialog) ask(inputs *input.Inputs) (useTemplate.Options, error) {
@@ -67,7 +69,7 @@ func (d *useTmplDialog) addInputValue(inputDef input.Input, value interface{}) e
 	}
 	d.context = context.WithValue(d.context, contextKey(inputDef.Id), value)
 	d.inputsValues[inputDef.Id] = value
-	d.out.Inputs = append(d.out.Inputs, useTemplate.InputValue{Key: inputDef.Id, Value: value})
+	d.out.Inputs = append(d.out.Inputs, template.InputValue{Id: inputDef.Id, Value: value})
 	return nil
 }
 

@@ -103,7 +103,7 @@ func (d *createTmplDialog) ask() (createTemplate.Options, error) {
 	if err != nil {
 		return d.out, err
 	}
-	d.out.Branch = d.selectedBranch.BranchKey
+	d.out.SourceBranch = d.selectedBranch.BranchKey
 
 	// Load configs
 	components, err := storageApi.ListComponents(d.selectedBranch.Id)
@@ -167,7 +167,7 @@ func (d *createTmplDialog) askDescription() string {
 	return strings.TrimSpace(result)
 }
 
-func (d *createTmplDialog) askObjectsIds() ([]createTemplate.ConfigDef, error) {
+func (d *createTmplDialog) askObjectsIds() ([]template.ConfigDef, error) {
 	result, _ := d.prompt.Editor(&prompt.Question{
 		Description: `Please enter a human readable ID for each config and config row.`,
 		Default:     d.objectsIdsDefault(),
@@ -182,7 +182,7 @@ func (d *createTmplDialog) askObjectsIds() ([]createTemplate.ConfigDef, error) {
 	return d.parseObjectsIds(result)
 }
 
-func (d *createTmplDialog) parseObjectsIds(result string) ([]createTemplate.ConfigDef, error) {
+func (d *createTmplDialog) parseObjectsIds(result string) ([]template.ConfigDef, error) {
 	idByKey := make(map[string]string)
 	ids := make(map[string]bool)
 	errors := utils.NewMultiError()
@@ -251,7 +251,7 @@ func (d *createTmplDialog) parseObjectsIds(result string) ([]createTemplate.Conf
 		return nil, errors.ErrorOrNil()
 	}
 
-	var defs []createTemplate.ConfigDef
+	var defs []template.ConfigDef
 	for _, c := range d.selectedConfigs {
 		// Config definition
 		id := idByKey[c.Key().String()]
@@ -259,7 +259,7 @@ func (d *createTmplDialog) parseObjectsIds(result string) ([]createTemplate.Conf
 			errors.Append(fmt.Errorf(`missing ID for %s`, c.Desc()))
 			continue
 		}
-		configDef := createTemplate.ConfigDef{Key: c.ConfigKey, TemplateId: id}
+		configDef := template.ConfigDef{Key: c.ConfigKey, TemplateId: id}
 
 		for _, r := range d.rowsByConfigKey[c.Key().String()] {
 			// Row definition
@@ -268,7 +268,7 @@ func (d *createTmplDialog) parseObjectsIds(result string) ([]createTemplate.Conf
 				errors.Append(fmt.Errorf(`missing ID for %s`, r.Desc()))
 				continue
 			}
-			rowDef := createTemplate.ConfigRowDef{Key: r.ConfigRowKey, TemplateId: id}
+			rowDef := template.ConfigRowDef{Key: r.ConfigRowKey, TemplateId: id}
 			configDef.Rows = append(configDef.Rows, rowDef)
 		}
 
