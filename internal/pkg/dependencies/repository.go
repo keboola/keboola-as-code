@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/git"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
@@ -65,7 +66,10 @@ func (c *common) TemplateRepositoryDir(definition model.TemplateRepository, _ mo
 		}
 		return aferofs.NewLocalFs(c.Logger(), path, "")
 	case model.RepositoryTypeGit:
-		panic("support for Git repository is not implemented")
+		if !git.Available() {
+			return nil, fmt.Errorf("git command is not available")
+		}
+		return git.CheckoutTemplateRepository(definition.Url, definition.Ref, c.Logger())
 	default:
 		panic(fmt.Errorf(`unexpected repository type "%s"`, definition.Type))
 	}
