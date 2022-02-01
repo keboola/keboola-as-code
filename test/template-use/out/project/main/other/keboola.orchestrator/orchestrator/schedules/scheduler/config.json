@@ -1,0 +1,10 @@
+{
+  "schedule": {
+    "cronTab": "*/10 * * * *",
+    "state": "disabled",
+    "timezone": "UTC"
+  },
+  "target": {
+    "mode": "run"
+  }
+}

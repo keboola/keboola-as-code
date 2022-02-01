@@ -1,0 +1,220 @@
+{
+  "version": 2,
+  "project": {
+    "id": %%TEST_KBC_PROJECT_ID%%,
+    "apiHost": "%%TEST_KBC_STORAGE_API_HOST%%"
+  },
+  "sortBy": "path",
+  "naming": {
+    "branch": "{branch_name}",
+    "config": "{component_type}/{component_id}/{config_name}",
+    "configRow": "rows/{config_row_name}",
+    "schedulerConfig": "schedules/{config_name}",
+    "sharedCodeConfig": "_shared/{target_component_id}",
+    "sharedCodeConfigRow": "codes/{config_row_name}",
+    "variablesConfig": "variables",
+    "variablesValuesRow": "values/{config_row_name}"
+  },
+  "allowedBranches": [
+    "__all__"
+  ],
+  "ignoredComponents": [],
+  "templates": {
+    "repositories": [
+      {
+        "type": "dir",
+        "name": "keboola",
+        "path": "../repository",
+        "url": "git@github.com:keboola/keboola-as-code-templates.git",
+        "ref": "main"
+      }
+    ]
+  },
+  "branches": [
+    {
+      "id": 12345,
+      "path": "main"
+    }
+  ],
+  "configurations": [
+    {
+      "branchId": 12345,
+      "componentId": "keboola.shared-code",
+      "id": "%s",
+      "path": "_shared/keboola.python-transformation-v2",
+      "rows": [
+        {
+          "id": "%s",
+          "path": "codes/code-with-variables"
+        },
+        {
+          "id": "%s",
+          "path": "codes/my-code-1"
+        },
+        {
+          "id": "%s",
+          "path": "codes/my-code-2"
+        }
+      ]
+    },
+    {
+      "branchId": 12345,
+      "componentId": "keboola.variables",
+      "id": "%s",
+      "path": "variables",
+      "relations": [
+        {
+          "configId": "%s",
+          "rowId": "%s",
+          "type": "sharedCodeVariablesFor"
+        }
+      ],
+      "rows": []
+    },
+    {
+      "branchId": 12345,
+      "componentId": "ex-generic-v2",
+      "id": "%s",
+      "path": "extractor/ex-generic-v2/empty",
+      "rows": []
+    },
+    {
+      "branchId": 12345,
+      "componentId": "ex-generic-v2",
+      "id": "%s",
+      "path": "extractor/ex-generic-v2/om-config",
+      "rows": []
+    },
+    {
+      "branchId": 12345,
+      "componentId": "ex-generic-v2",
+      "id": "%s",
+      "path": "extractor/ex-generic-v2/without-rows",
+      "rows": []
+    },
+    {
+      "branchId": 12345,
+      "componentId": "keboola.ex-aws-s3",
+      "id": "%s",
+      "path": "extractor/keboola.ex-aws-s3/om-default-bucket",
+      "rows": []
+    },
+    {
+      "branchId": 12345,
+      "componentId": "keboola.ex-db-mysql",
+      "id": "%s",
+      "path": "extractor/keboola.ex-db-mysql/with-rows",
+      "rows": [
+        {
+          "id": "%s",
+          "path": "rows/disabled"
+        },
+        {
+          "id": "%s",
+          "path": "rows/test-view"
+        },
+        {
+          "id": "%s",
+          "path": "rows/users"
+        }
+      ]
+    },
+    {
+      "branchId": 12345,
+      "componentId": "keboola.orchestrator",
+      "id": "%s",
+      "path": "other/keboola.orchestrator/orchestrator",
+      "rows": []
+    },
+    {
+      "branchId": 12345,
+      "componentId": "keboola.scheduler",
+      "id": "%s",
+      "path": "schedules/scheduler",
+      "relations": [
+        {
+          "componentId": "keboola.orchestrator",
+          "configId": "%s",
+          "type": "schedulerFor"
+        }
+      ],
+      "rows": []
+    },
+    {
+      "branchId": 12345,
+      "componentId": "transformation",
+      "id": "%s",
+      "path": "other/transformation/old-transformation",
+      "rows": [
+        {
+          "id": "%s",
+          "path": "rows/old-transformation-snfk"
+        }
+      ]
+    },
+    {
+      "branchId": 12345,
+      "componentId": "keboola.python-transformation-v2",
+      "id": "%s",
+      "path": "transformation/keboola.python-transformation-v2/python-transformation",
+      "rows": []
+    },
+    {
+      "branchId": 12345,
+      "componentId": "keboola.python-transformation-v2",
+      "id": "%s",
+      "path": "transformation/keboola.python-transformation-v2/transformation-with-shared-code",
+      "rows": []
+    },
+    {
+      "branchId": 12345,
+      "componentId": "keboola.variables",
+      "id": "%s",
+      "path": "variables",
+      "relations": [
+        {
+          "componentId": "keboola.python-transformation-v2",
+          "configId": "%s",
+          "type": "variablesFor"
+        }
+      ],
+      "rows": [
+        {
+          "id": "%s",
+          "path": "values/default",
+          "relations": [
+            {
+              "type": "variablesValuesFor"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "branchId": 12345,
+      "componentId": "keboola.snowflake-transformation",
+      "id": "%s",
+      "path": "transformation/keboola.snowflake-transformation/im-transformation",
+      "rows": [
+        {
+          "id": "%s",
+          "path": "rows/test"
+        }
+      ]
+    },
+    {
+      "branchId": 12345,
+      "componentId": "keboola.snowflake-transformation",
+      "id": "%s",
+      "path": "transformation/keboola.snowflake-transformation/snowflake-transformation",
+      "rows": []
+    },
+    {
+      "branchId": 12345,
+      "componentId": "keboola.wr-db-mysql",
+      "id": "%s",
+      "path": "writer/keboola.wr-db-mysql/im-default-bucket",
+      "rows": []
+    }
+  ]
+}

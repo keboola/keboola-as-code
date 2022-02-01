@@ -1,0 +1,9 @@
+{
+  "name": "Task 2",
+  "continueOnFailure": false,
+  "enabled": true,
+  "task": {
+    "mode": "run",
+    "configPath": "extractor/ex-generic-v2/without-rows"
+  }
+}
