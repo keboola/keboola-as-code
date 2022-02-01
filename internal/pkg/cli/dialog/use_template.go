@@ -185,6 +185,8 @@ func convertStrValue(value string, targetType string) (interface{}, error) {
 		}
 	case `string`:
 		return value, nil
+	case ``:
+		return value, nil
 	default:
 		panic(fmt.Errorf("unexpected input type \"%s\"", targetType))
 	}
