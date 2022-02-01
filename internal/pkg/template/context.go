@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
+// baseContext disables validation of the "required_in_project" rule for templates.
 func baseContext(ctx context.Context) context.Context {
 	return context.WithValue(ctx, validator.DisableRequiredInProjectKey, true)
 }
