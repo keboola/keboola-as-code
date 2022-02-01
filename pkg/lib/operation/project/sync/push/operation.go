@@ -49,7 +49,7 @@ func Run(o Options, d dependencies) error {
 
 	// Encrypt before push?
 	if o.Encrypt {
-		if err := encrypt.Run(encrypt.Options{DryRun: o.DryRun}, d); err != nil {
+		if err := encrypt.Run(encrypt.Options{DryRun: o.DryRun, LogEmpty: true}, d); err != nil {
 			return err
 		}
 	}

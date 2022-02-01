@@ -67,14 +67,14 @@ func (c *common) LocalTemplate() (*template.Template, error) {
 		return nil, fmt.Errorf(`template "%s" found, but version "%s" is missing`, templatePath, version.Original())
 	}
 
-	return c.Template(model.TemplateReference{
+	return c.Template(model.TemplateRef{
 		Id:         templateRecord.Id,
 		Version:    versionRecord.Version.String(),
 		Repository: localTemplateRepository(),
 	})
 }
 
-func (c *common) Template(reference model.TemplateReference) (*template.Template, error) {
+func (c *common) Template(reference model.TemplateRef) (*template.Template, error) {
 	// Load repository
 	repository, err := c.TemplateRepository(reference.Repository, reference)
 	if err != nil {
@@ -117,7 +117,7 @@ func (c *common) Template(reference model.TemplateReference) (*template.Template
 		return nil, err
 	}
 
-	return template.New(fs, inputs)
+	return template.New(reference, fs, inputs)
 }
 
 func (c *common) TemplateState(options loadStateOp.Options) (*template.State, error) {

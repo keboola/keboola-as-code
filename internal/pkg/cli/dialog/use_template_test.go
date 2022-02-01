@@ -218,8 +218,9 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 		},
 	}
 
-	output, err := dialog.AskUseTemplateOptions(template.NewInputs(inputs), d, useTemplate.LoadStateOptions())
+	output, err := dialog.AskUseTemplateOptions(template.NewInputs(inputs), d, useTemplate.LoadProjectOptions())
 	assert.NoError(t, err)
+
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
 	assert.NoError(t, console.Close())
@@ -227,13 +228,13 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 	// Assert
 	assert.Equal(t, useTemplate.Options{
 		TargetBranch: model.BranchKey{Id: 123},
-		Inputs: useTemplate.Inputs{
-			{Key: "facebook.username", Value: "username"},
-			{Key: "facebook.password", Value: "password"},
-			{Key: "age", Value: 25},
-			{Key: "restricted", Value: true},
-			{Key: "drink", Value: "wine"},
-			{Key: "drinks", Value: []string{"rum", "whiskey"}},
+		Inputs: template.InputsValues{
+			{Id: "facebook.username", Value: "username"},
+			{Id: "facebook.password", Value: "password"},
+			{Id: "age", Value: 25},
+			{Id: "restricted", Value: true},
+			{Id: "drink", Value: "wine"},
+			{Id: "drinks", Value: []string{"rum", "whiskey"}},
 		},
 	}, output)
 }
@@ -330,8 +331,9 @@ func TestAskUseTemplateOptionsIfNotMet(t *testing.T) {
 		},
 	}
 
-	output, err := dialog.AskUseTemplateOptions(template.NewInputs(inputs), d, useTemplate.LoadStateOptions())
+	output, err := dialog.AskUseTemplateOptions(template.NewInputs(inputs), d, useTemplate.LoadProjectOptions())
 	assert.NoError(t, err)
+
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
 	assert.NoError(t, console.Close())
@@ -339,10 +341,10 @@ func TestAskUseTemplateOptionsIfNotMet(t *testing.T) {
 	// Assert
 	assert.Equal(t, useTemplate.Options{
 		TargetBranch: model.BranchKey{Id: 123},
-		Inputs: useTemplate.Inputs{
-			{Key: "facebook.username", Value: "username"},
-			{Key: "facebook.password", Value: "password"},
-			{Key: "age", Value: 15},
+		Inputs: template.InputsValues{
+			{Id: "facebook.username", Value: "username"},
+			{Id: "facebook.password", Value: "password"},
+			{Id: "age", Value: 15},
 		},
 	}, output)
 }

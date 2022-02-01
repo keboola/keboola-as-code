@@ -5,20 +5,16 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/schedulerapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacekeys"
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 	loadManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/manifest/load"
 )
 
 type Options struct {
-	Template     model.TemplateReference
-	LoadOptions  loadState.OptionsWithFilter
-	JsonNetCtx   *jsonnet.Context
-	Replacements replacekeys.Keys
+	Template    *template.Template
+	Context     template.Context
+	LoadOptions loadState.Options
 }
 
 type dependencies interface {
@@ -26,25 +22,25 @@ type dependencies interface {
 	Logger() log.Logger
 	StorageApi() (*storageapi.Api, error)
 	SchedulerApi() (*schedulerapi.Api, error)
-	Template(reference model.TemplateReference) (*template.Template, error)
 }
 
 func Run(o Options, d dependencies) (*template.State, error) {
-	// Get template
-	tmpl, err := d.Template(o.Template)
-	if err != nil {
-		return nil, err
-	}
-
 	// Load manifest
-	manifest, err := loadManifest.Run(tmpl.Fs(), o.JsonNetCtx, d)
+	manifest, err := loadManifest.Run(o.Template.Fs(), o.Context, d)
 	if err != nil {
 		return nil, err
 	}
 
 	// Run operation
-	container := tmpl.ToObjectsContainer(manifest, o.JsonNetCtx, o.Replacements, d)
-	if state, err := loadState.Run(container, o.LoadOptions, d); err == nil {
+	localFilter := o.Context.LocalObjectsFilter()
+	remoteFilter := o.Context.RemoteObjectsFilter()
+	loadOptions := loadState.OptionsWithFilter{
+		Options:      o.LoadOptions,
+		LocalFilter:  &localFilter,
+		RemoteFilter: &remoteFilter,
+	}
+	container := o.Template.ToObjectsContainer(o.Context, manifest, d)
+	if state, err := loadState.Run(container, loadOptions, d); err == nil {
 		return template.NewState(state, container), nil
 	} else {
 		return nil, err

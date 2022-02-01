@@ -1,8 +1,6 @@
 package rename
 
 import (
-	"context"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/rename"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
@@ -17,7 +15,6 @@ type Options struct {
 }
 
 type dependencies interface {
-	Ctx() context.Context
 	Logger() log.Logger
 	ProjectState(loadOptions loadState.Options) (*project.State, error)
 }
@@ -56,7 +53,7 @@ func Run(o Options, d dependencies) (changed bool, err error) {
 		}
 
 		// Invoke
-		if err := plan.Invoke(d.Ctx(), projectState.LocalManager()); err != nil {
+		if err := plan.Invoke(projectState.Ctx(), projectState.LocalManager()); err != nil {
 			return false, utils.PrefixError(`cannot rename objects`, err)
 		}
 

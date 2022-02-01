@@ -16,7 +16,6 @@ func (m *orchestratorMapper) onLocalLoad(config *model.Config, manifest *model.C
 		phasesSorter: newPhasesSorter(),
 		files:        model.NewFilesLoader(m.state.FileLoader()),
 		allObjects:   allObjects,
-		branch:       m.state.MustGet(config.BranchKey()).(*model.BranchState),
 		config:       config,
 		manifest:     manifest,
 		phasesDir:    m.state.NamingGenerator().PhasesDir(manifest.Path()),
@@ -34,7 +33,6 @@ type localLoader struct {
 	*phasesSorter
 	files      *model.FilesLoader
 	allObjects model.Objects
-	branch     *model.BranchState
 	config     *model.Config
 	manifest   *model.ConfigManifest
 	phasesDir  string
@@ -204,20 +202,20 @@ func (l *localLoader) parseTaskConfig(task *model.Task) error {
 	return errors.ErrorOrNil()
 }
 
-func (l *localLoader) getTargetConfig(configPath string) (*model.Config, error) {
-	if len(configPath) == 0 {
+func (l *localLoader) getTargetConfig(targetPath string) (*model.Config, error) {
+	if len(targetPath) == 0 {
 		return nil, nil
 	}
 
-	configPath = filesystem.Join(l.branch.Path(), configPath)
-	configStateRaw, found := l.GetByPath(configPath)
+	targetPath = filesystem.Join(l.manifest.GetParentPath(), targetPath)
+	configStateRaw, found := l.GetByPath(targetPath)
 	if !found || !configStateRaw.HasLocalState() {
-		return nil, fmt.Errorf(`target config "%s" not found`, configPath)
+		return nil, fmt.Errorf(`target config "%s" not found`, targetPath)
 	}
 
 	configState, ok := configStateRaw.(*model.ConfigState)
 	if !ok {
-		return nil, fmt.Errorf(`path "%s" must be config, found "%s"`, configPath, configStateRaw.Kind().String())
+		return nil, fmt.Errorf(`path "%s" must be config, found "%s"`, targetPath, configStateRaw.Kind().String())
 	}
 
 	return configState.Local, nil

@@ -53,9 +53,9 @@ type CommonDeps interface {
 	SchedulerApi() (*schedulerapi.Api, error)
 	EventSender() (*eventsender.Sender, error)
 	ProjectState(loadOptions loadState.Options) (*project.State, error)
-	Template(reference model.TemplateReference) (*template.Template, error)
+	Template(reference model.TemplateRef) (*template.Template, error)
 	TemplateState(options loadStateOp.Options) (*template.State, error)
-	TemplateRepository(definition model.TemplateRepository, forTemplate model.TemplateReference) (*repository.Repository, error)
+	TemplateRepository(definition model.TemplateRepository, forTemplate model.TemplateRef) (*repository.Repository, error)
 	EmptyDir() (filesystem.Fs, error)
 	LocalProject() (*project.Project, error)
 	LocalProjectExists() bool

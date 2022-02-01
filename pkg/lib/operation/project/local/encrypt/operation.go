@@ -1,8 +1,6 @@
 package encrypt
 
 import (
-	"context"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/api/encryptionapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/encrypt"
@@ -11,11 +9,11 @@ import (
 )
 
 type Options struct {
-	DryRun bool
+	DryRun   bool
+	LogEmpty bool
 }
 
 type dependencies interface {
-	Ctx() context.Context
 	Logger() log.Logger
 	EncryptionApi() (*encryptionapi.Api, error)
 	ProjectState(loadOptions loadState.Options) (*project.State, error)
@@ -47,7 +45,9 @@ func Run(o Options, d dependencies) (err error) {
 	plan := encrypt.NewPlan(projectState)
 
 	// Log plan
-	plan.Log(logger)
+	if !plan.Empty() || o.LogEmpty {
+		plan.Log(logger)
+	}
 
 	if !plan.Empty() {
 		// Dry run?
@@ -57,7 +57,7 @@ func Run(o Options, d dependencies) (err error) {
 		}
 
 		// Invoke
-		if err := plan.Invoke(logger, encryptionApi, projectState.State(), d.Ctx()); err != nil {
+		if err := plan.Invoke(logger, encryptionApi, projectState.State(), projectState.Ctx()); err != nil {
 			return err
 		}
 

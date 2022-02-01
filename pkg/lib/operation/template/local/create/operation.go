@@ -5,9 +5,7 @@ import (
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacekeys"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
@@ -20,73 +18,19 @@ import (
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/template/sync/pull"
 )
 
-type ConfigDef struct {
-	Key        model.ConfigKey
-	TemplateId string
-	Rows       []ConfigRowDef
-}
-
-type ConfigRowDef struct {
-	Key        model.ConfigRowKey
-	TemplateId string
-}
-
 type Options struct {
-	Id          string
-	Name        string
-	Description string
-	Branch      model.BranchKey
-	Configs     []ConfigDef
-}
-
-func (o *Options) ObjectsFilter() model.ObjectsFilter {
-	var keys []model.Key
-
-	// Branch
-	keys = append(keys, o.Branch)
-
-	// Configs and rows
-	for _, config := range o.Configs {
-		keys = append(keys, config.Key)
-		for _, row := range config.Rows {
-			keys = append(keys, row.Key)
-		}
-	}
-
-	filter := model.NoFilter()
-	filter.SetAllowedKeys(keys)
-	return filter
-}
-
-func (o *Options) Replacements() replacekeys.Keys {
-	var keys replacekeys.Keys
-
-	// Branch
-	keys = append(keys, replacekeys.Key{Old: o.Branch, New: model.BranchKey{Id: 0}})
-
-	// Configs and rows
-	for _, config := range o.Configs {
-		newConfigId := model.ConfigId(jsonnet.ConfigIdPlaceholder(config.TemplateId))
-		newConfigKey := config.Key
-		newConfigKey.BranchId = 0
-		newConfigKey.Id = newConfigId
-		keys = append(keys, replacekeys.Key{Old: config.Key, New: newConfigKey})
-		for _, row := range config.Rows {
-			newRowId := model.RowId(jsonnet.ConfigRowIdPlaceholder(row.TemplateId))
-			newRowKey := row.Key
-			newRowKey.BranchId = 0
-			newRowKey.ConfigId = newConfigId
-			newRowKey.Id = newRowId
-			keys = append(keys, replacekeys.Key{Old: row.Key, New: newRowKey})
-		}
-	}
-	return keys
+	Id           string
+	Name         string
+	Description  string
+	SourceBranch model.BranchKey
+	Configs      []template.ConfigDef
 }
 
 type dependencies interface {
 	Ctx() context.Context
 	Logger() log.Logger
 	LocalTemplateRepository() (*repository.Repository, error)
+	Template(reference model.TemplateRef) (*template.Template, error)
 	TemplateState(options loadStateOp.Options) (*template.State, error)
 }
 
@@ -125,14 +69,26 @@ func Run(o Options, d dependencies) (err error) {
 		return err
 	}
 
-	// Pull remote objects
-	pullOptions := pull.Options{
-		TemplateId:      templateRecord.Id,
-		TemplateVersion: versionRecord.Version.String(),
-		RemoteFilter:    o.ObjectsFilter(),
-		Replacements:    o.Replacements(),
+	// Template definition
+	templateDef := model.TemplateRef{
+		Id:      o.Id,
+		Version: versionRecord.Version.String(),
+		Repository: model.TemplateRepository{
+			Type: model.RepositoryTypeWorkingDir,
+		},
 	}
-	if err := pull.Run(pullOptions, d); err != nil {
+
+	// Template context
+	templateCtx := template.NewCreateContext(d.Ctx(), o.SourceBranch, o.Configs)
+
+	// Get template instance
+	tmpl, err := d.Template(templateDef)
+	if err != nil {
+		return err
+	}
+
+	// Pull remote objects
+	if err := pull.Run(pull.Options{Template: tmpl, Context: templateCtx}, d); err != nil {
 		return err
 	}
 
