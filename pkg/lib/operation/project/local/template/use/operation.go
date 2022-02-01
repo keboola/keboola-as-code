@@ -101,7 +101,11 @@ func Run(tmpl *template.Template, o Options, d dependencies) error {
 	renameOp := projectState.LocalManager().NewPathsGenerator(true)
 	saveOp := projectState.LocalManager().NewUnitOfWork(projectState.Ctx())
 	for _, objectState := range templateState.All() {
-		// Copy from template -> project
+		// Clear path
+		objectState.Manifest().SetParentPath("")
+		objectState.Manifest().SetRelativePath("")
+
+		// Copy objects from template to project
 		if err := projectState.Set(objectState); err != nil {
 			errors.Append(err)
 			continue
