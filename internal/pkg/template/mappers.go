@@ -1,7 +1,6 @@
 package template
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/corefiles"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/defaultbucket"
@@ -11,13 +10,19 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/jsonnetfiles"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacekeys"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacevalues"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/variables"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 )
 
-func MappersFor(s *state.State, d dependencies, jsonNetCtx *jsonnet.Context, replacements replacekeys.Keys) mapper.Mappers {
+func MappersFor(s *state.State, d dependencies, ctx Context) (mapper.Mappers, error) {
+	jsonNetCtx := ctx.JsonNetContext()
+	replacements, err := ctx.Replacements()
+	if err != nil {
+		return nil, err
+	}
+
 	return mapper.Mappers{
 		// Template
 		jsonnetfiles.NewMapper(jsonNetCtx),
@@ -40,6 +45,6 @@ func MappersFor(s *state.State, d dependencies, jsonNetCtx *jsonnet.Context, rep
 		// Relations between objects
 		relations.NewMapper(s),
 		// Template
-		replacekeys.NewMapper(s, replacements),
-	}
+		replacevalues.NewMapper(s, replacements),
+	}, nil
 }

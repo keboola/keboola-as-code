@@ -61,6 +61,13 @@ func (i Inputs) Path() string {
 	return Path()
 }
 
+type Values []Value
+
+type Value struct {
+	Id    string
+	Value interface{}
+}
+
 type Input struct {
 	Id          string      `json:"id" validate:"required,template-input-id"`
 	Name        string      `json:"name" validate:"required"`

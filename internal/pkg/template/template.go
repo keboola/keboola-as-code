@@ -10,12 +10,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacekeys"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
 	templateInput "github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 const (
@@ -25,8 +24,11 @@ const (
 )
 
 type (
-	Manifest = templateManifest.Manifest
-	Inputs   = templateInput.Inputs
+	Manifest     = templateManifest.Manifest
+	Input        = templateInput.Input
+	Inputs       = templateInput.Inputs
+	InputValue   = templateInput.Value
+	InputsValues = templateInput.Values
 )
 
 func LoadManifest(fs filesystem.Fs, jsonNetCtx *jsonnet.Context) (*Manifest, error) {
@@ -42,13 +44,15 @@ func LoadInputs(fs filesystem.Fs) (*Inputs, error) {
 }
 
 type dependencies interface {
-	Ctx() context.Context
 	Logger() log.Logger
 	StorageApi() (*storageapi.Api, error)
 	SchedulerApi() (*schedulerapi.Api, error)
 }
 
+type _reference = model.TemplateRef
+
 type Template struct {
+	_reference
 	fs       filesystem.Fs
 	srcDir   filesystem.Fs
 	testsDir filesystem.Fs
@@ -56,14 +60,14 @@ type Template struct {
 	inputs   *Inputs
 }
 
-func New(fs filesystem.Fs, inputs *Inputs) (*Template, error) {
+func New(reference model.TemplateRef, fs filesystem.Fs, inputs *Inputs) (*Template, error) {
 	// Src dir
 	srcDir, err := fs.SubDirFs(SrcDirectory)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Template{fs: fs, srcDir: srcDir, inputs: inputs}, nil
+	return &Template{_reference: reference, fs: fs, srcDir: srcDir, inputs: inputs}, nil
 }
 
 func (t *Template) ObjectsRoot() filesystem.Fs {
@@ -110,22 +114,20 @@ func (t *Template) ManifestExists() (bool, error) {
 	return t.srcDir.IsFile(t.ManifestPath()), nil
 }
 
-func (t *Template) ToObjectsContainer(m *Manifest, jsonNetCtx *jsonnet.Context, replacements replacekeys.Keys, d dependencies) *ObjectsContainer {
+func (t *Template) ToObjectsContainer(ctx Context, m *Manifest, d dependencies) *ObjectsContainer {
 	return &ObjectsContainer{
 		Template:     t,
 		dependencies: d,
+		context:      ctx,
 		manifest:     m,
-		jsonNetCtx:   jsonNetCtx,
-		replacements: replacements,
 	}
 }
 
 type ObjectsContainer struct {
 	*Template
 	dependencies
-	manifest     *Manifest
-	jsonNetCtx   *jsonnet.Context
-	replacements replacekeys.Keys
+	context  Context
+	manifest *Manifest
 }
 
 func (c *ObjectsContainer) Manifest() manifest.Manifest {
@@ -136,10 +138,14 @@ func (c *ObjectsContainer) TemplateManifest() *Manifest {
 	return c.manifest
 }
 
-func (c *ObjectsContainer) Ctx() context.Context {
-	return context.WithValue(c.dependencies.Ctx(), validator.DisableRequiredInProjectKey, true)
+func (c *ObjectsContainer) TemplateCtx() Context {
+	return c.context
 }
 
-func (c *ObjectsContainer) MappersFor(state *state.State) mapper.Mappers {
-	return MappersFor(state, c.dependencies, c.jsonNetCtx, c.replacements)
+func (c *ObjectsContainer) Ctx() context.Context {
+	return c.context
+}
+
+func (c *ObjectsContainer) MappersFor(state *state.State) (mapper.Mappers, error) {
+	return MappersFor(state, c.dependencies, c.context)
 }

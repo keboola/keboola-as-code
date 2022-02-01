@@ -1,9 +1,9 @@
 package pull
 
 import (
+	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacekeys"
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/pull"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	createDiff "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/diff/create"
@@ -13,25 +13,21 @@ import (
 )
 
 type Options struct {
-	TemplateId      string
-	TemplateVersion string
-	RemoteFilter    model.ObjectsFilter
-	Replacements    replacekeys.Keys
+	Template *template.Template
+	Context  template.Context
 }
 
 type dependencies interface {
+	Ctx() context.Context
 	Logger() log.Logger
 	TemplateState(options loadStateOp.Options) (*template.State, error)
 }
 
-func LoadStateOptions(remoteFilter model.ObjectsFilter) loadState.OptionsWithFilter {
-	return loadState.OptionsWithFilter{
-		Options: loadState.Options{
-			LoadLocalState:    true,
-			LoadRemoteState:   true,
-			IgnoreNotFoundErr: false,
-		},
-		RemoteFilter: &remoteFilter,
+func LoadStateOptions() loadState.Options {
+	return loadState.Options{
+		LoadLocalState:    true,
+		LoadRemoteState:   true,
+		IgnoreNotFoundErr: false,
 	}
 }
 
@@ -40,15 +36,9 @@ func Run(o Options, d dependencies) (err error) {
 
 	// Load state
 	templateState, err := d.TemplateState(loadStateOp.Options{
-		Template: model.TemplateReference{
-			Id:      o.TemplateId,
-			Version: o.TemplateVersion,
-			Repository: model.TemplateRepository{
-				Type: model.RepositoryTypeWorkingDir,
-			},
-		},
-		LoadOptions:  LoadStateOptions(o.RemoteFilter),
-		Replacements: o.Replacements,
+		Template:    o.Template,
+		Context:     o.Context,
+		LoadOptions: LoadStateOptions(),
 	})
 	if err != nil {
 		return err
