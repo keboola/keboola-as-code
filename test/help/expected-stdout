@@ -41,12 +41,12 @@ Available Commands:
       branch     Create branch.
 
   template
-    describe     Describe template inputs.
-    create       Create or update template in repository directory.
+    describe     Describe template inputs. NOT IMPLEMENTED
+    create       Create template in repository directory.
     repository
       init       Init repository directory.
-      validate   Validate all templates in the repository.
-      fix-paths  Normalize all paths in the repository.
+      validate   Validate all templates in the repository. NOT IMPLEMENTED
+      fix-paths  Normalize all paths in the repository. NOT IMPLEMENTED
 
   help           Help about any command
 

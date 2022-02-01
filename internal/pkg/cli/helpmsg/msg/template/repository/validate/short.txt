@@ -1,1 +1,1 @@
-Validate all templates in the repository.
+Validate all templates in the repository. NOT IMPLEMENTED

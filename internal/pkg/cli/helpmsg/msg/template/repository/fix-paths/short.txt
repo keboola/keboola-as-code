@@ -1,1 +1,1 @@
-Normalize all paths in the repository.
+Normalize all paths in the repository. NOT IMPLEMENTED
