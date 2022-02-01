@@ -11,8 +11,8 @@ import (
 func CreateCommand(depsProvider dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create",
-		Short: helpmsg.Read(`template/edit/short`),
-		Long:  helpmsg.Read(`template/edit/long`),
+		Short: helpmsg.Read(`template/create/short`),
+		Long:  helpmsg.Read(`template/create/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			d := depsProvider.Dependencies()
 
