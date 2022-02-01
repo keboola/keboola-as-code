@@ -177,7 +177,7 @@ func (c *ComponentsMap) addDefaultBucketPrefix(component *Component) {
 
 func (c *ComponentsMap) GetDefaultBucketByTableId(tableId string) (ComponentId, ConfigId, bool) {
 	dotIndex := strings.LastIndex(tableId, ".")
-	if dotIndex == 0 {
+	if dotIndex < 1 {
 		return "", "", false
 	}
 
@@ -186,8 +186,8 @@ func (c *ComponentsMap) GetDefaultBucketByTableId(tableId string) (ComponentId, 
 		return "", "", false
 	}
 
-	bucketPrefix := bucketId[0 : strings.LastIndex(tableId, "-")+1]
-	configId := ConfigId(bucketId[strings.LastIndex(tableId, "-")+1:])
+	bucketPrefix := bucketId[0 : strings.LastIndex(bucketId, "-")+1]
+	configId := ConfigId(bucketId[strings.LastIndex(bucketId, "-")+1:])
 
 	componentId, found := c.defaultBucketsByPrefix[bucketPrefix]
 	if !found {
