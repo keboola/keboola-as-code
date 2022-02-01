@@ -15,7 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 )
 
-func MappersFor(s *state.State, d dependencies) mapper.Mappers {
+func MappersFor(s *state.State, d dependencies) (mapper.Mappers, error) {
 	return mapper.Mappers{
 		// Core files
 		corefiles.NewMapper(s),
@@ -37,5 +37,5 @@ func MappersFor(s *state.State, d dependencies) mapper.Mappers {
 		relations.NewMapper(s),
 		// Configurations metadata
 		configmetadata.NewMapper(s, d),
-	}
+	}, nil
 }

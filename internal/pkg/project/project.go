@@ -67,6 +67,6 @@ func (p *Project) Ctx() context.Context {
 	return p.dependencies.Ctx()
 }
 
-func (p *Project) MappersFor(state *state.State) mapper.Mappers {
+func (p *Project) MappersFor(state *state.State) (mapper.Mappers, error) {
 	return MappersFor(state, p.dependencies)
 }

@@ -34,6 +34,6 @@ func (c *ObjectsContainer) Manifest() manifest.Manifest {
 	return c.ManifestValue
 }
 
-func (c *ObjectsContainer) MappersFor(_ *state.State) mapper.Mappers {
-	return mapper.Mappers{}
+func (c *ObjectsContainer) MappersFor(_ *state.State) (mapper.Mappers, error) {
+	return mapper.Mappers{}, nil
 }

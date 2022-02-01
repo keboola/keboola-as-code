@@ -52,7 +52,7 @@ type ObjectsContainer interface {
 	Ctx() context.Context
 	ObjectsRoot() filesystem.Fs
 	Manifest() manifest.Manifest
-	MappersFor(state *State) mapper.Mappers
+	MappersFor(state *State) (mapper.Mappers, error)
 }
 
 type dependencies interface {
@@ -99,7 +99,12 @@ func New(container ObjectsContainer, d dependencies) (*State, error) {
 	// Remote manager for API operations
 	s.remoteManager = remote.NewManager(s.localManager, storageApi, s.Registry, s.mapper)
 
-	s.mapper.AddMapper(container.MappersFor(s)...)
+	// Create mappers
+	mappers, err := container.MappersFor(s)
+	if err != nil {
+		return nil, err
+	}
+	s.mapper.AddMapper(mappers...)
 
 	return s, nil
 }
