@@ -23,7 +23,8 @@ func EncryptCommand(depsProvider dependencies.Provider) *cobra.Command {
 
 			// Options
 			options := encrypt.Options{
-				DryRun: d.Options().GetBool(`dry-run`),
+				DryRun:   d.Options().GetBool(`dry-run`),
+				LogEmpty: true,
 			}
 
 			// Encrypt
