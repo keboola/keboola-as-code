@@ -1,4 +1,4 @@
-package replacekeys
+package replacevalues
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -8,9 +8,9 @@ import (
 )
 
 type replaceKeysMapper struct {
-	state  *state.State
-	logger log.Logger
-	keys   Keys
+	state        *state.State
+	logger       log.Logger
+	replacements *Values
 }
 
 type changes interface {
@@ -18,8 +18,8 @@ type changes interface {
 	Replace(callback model.ChangesReplaceFunc)
 }
 
-func NewMapper(state *state.State, keys Keys) *replaceKeysMapper {
-	return &replaceKeysMapper{state: state, logger: state.Logger(), keys: keys}
+func NewMapper(state *state.State, replacements *Values) *replaceKeysMapper {
+	return &replaceKeysMapper{state: state, logger: state.Logger(), replacements: replacements}
 }
 
 func (m *replaceKeysMapper) AfterLocalOperation(changes *model.LocalChanges) error {
@@ -31,17 +31,18 @@ func (m *replaceKeysMapper) AfterRemoteOperation(changes *model.RemoteChanges) e
 }
 
 func (m *replaceKeysMapper) afterOperation(changes changes) error {
-	replacements, err := m.keys.values()
-	if err != nil {
-		return err
-	}
-
 	// Replace keys in the loaded remote objects
 	replaced := make(map[string]model.ObjectState)
 	errors := utils.NewMultiError()
 	for _, original := range changes.Loaded() {
-		// Replace keys and delete original object state
-		modified := replaceValues(replacements, original).(model.ObjectState)
+		// Replace values
+		modifiedRaw, err := m.replacements.Replace(original)
+		if err != nil {
+			errors.Append(err)
+			continue
+		}
+
+		// Remove original object state
 		m.state.Remove(original.Key())
 
 		// Branches are not part of the template
@@ -50,6 +51,7 @@ func (m *replaceKeysMapper) afterOperation(changes changes) error {
 		}
 
 		// Set modified object state
+		modified := modifiedRaw.(model.ObjectState)
 		if err := m.state.Set(modified); err != nil {
 			errors.Append(err)
 		}

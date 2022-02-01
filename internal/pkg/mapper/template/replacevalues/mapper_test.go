@@ -1,11 +1,11 @@
-package replacekeys_test
+package replacevalues_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacekeys"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacevalues"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
@@ -54,14 +54,13 @@ func TestReplaceKeysMapper_OnRemoteChange(t *testing.T) {
 	newBranchKey := model.BranchKey{Id: 0}
 	newConfigKey := model.ConfigKey{BranchId: 0, ComponentId: "foo.bar", Id: "my-config"}
 	newRowKey := model.ConfigRowKey{BranchId: 0, ComponentId: "foo.bar", ConfigId: "my-config", Id: "my-row"}
-	replacement := replacekeys.Keys{
-		{Old: oldBranchKey, New: newBranchKey},
-		{Old: oldConfigKey, New: newConfigKey},
-		{Old: oldRowKey, New: newRowKey},
-	}
+	replacements := replacevalues.NewValues()
+	replacements.AddKey(oldBranchKey, newBranchKey)
+	replacements.AddKey(oldConfigKey, newConfigKey)
+	replacements.AddKey(oldRowKey, newRowKey)
 
 	// Create state
-	s := createStateWithMapper(t, replacement)
+	s := createStateWithMapper(t, replacements)
 
 	// Run mapper
 	changes := model.NewRemoteChanges()
@@ -117,10 +116,10 @@ func TestReplaceKeysMapper_OnRemoteChange(t *testing.T) {
 	assert.True(t, found)
 }
 
-func createStateWithMapper(t *testing.T, replacement replacekeys.Keys) *state.State {
+func createStateWithMapper(t *testing.T, replacements *replacevalues.Values) *state.State {
 	t.Helper()
 	d := testdeps.New()
 	mockedState := d.EmptyState()
-	mockedState.Mapper().AddMapper(replacekeys.NewMapper(mockedState, replacement))
+	mockedState.Mapper().AddMapper(replacevalues.NewMapper(mockedState, replacements))
 	return mockedState
 }
