@@ -26,14 +26,14 @@ func (c *common) LocalTemplateRepositoryExists() bool {
 }
 
 func (c *common) LocalTemplateRepository() (*repository.Repository, error) {
-	return c.TemplateRepository(localTemplateRepository(), model.TemplateReference{})
+	return c.TemplateRepository(localTemplateRepository(), model.TemplateRef{})
 }
 
 func (c *common) LocalTemplateRepositoryDir() (filesystem.Fs, error) {
-	return c.TemplateRepositoryDir(localTemplateRepository(), model.TemplateReference{})
+	return c.TemplateRepositoryDir(localTemplateRepository(), model.TemplateRef{})
 }
 
-func (c *common) TemplateRepository(definition model.TemplateRepository, forTemplate model.TemplateReference) (*repository.Repository, error) {
+func (c *common) TemplateRepository(definition model.TemplateRepository, forTemplate model.TemplateRef) (*repository.Repository, error) {
 	fs, err := c.TemplateRepositoryDir(definition, forTemplate)
 	if err != nil {
 		return nil, err
@@ -45,7 +45,7 @@ func (c *common) TemplateRepository(definition model.TemplateRepository, forTemp
 	return repository.New(fs, manifest), nil
 }
 
-func (c *common) TemplateRepositoryDir(definition model.TemplateRepository, _ model.TemplateReference) (filesystem.Fs, error) {
+func (c *common) TemplateRepositoryDir(definition model.TemplateRepository, _ model.TemplateRef) (filesystem.Fs, error) {
 	switch definition.Type {
 	case model.RepositoryTypeWorkingDir:
 		if !c.LocalTemplateRepositoryExists() {
@@ -57,8 +57,10 @@ func (c *common) TemplateRepositoryDir(definition model.TemplateRepository, _ mo
 		return c.Fs(), nil
 	case model.RepositoryTypeDir:
 		path := definition.Path
+		// nolint: forbidigo
 		if !filepath.IsAbs(path) {
 			// Relative to the project directory
+			// nolint: forbidigo
 			path = filepath.Join(c.Fs().BasePath(), definition.Path)
 		}
 		return aferofs.NewLocalFs(c.Logger(), path, "")
