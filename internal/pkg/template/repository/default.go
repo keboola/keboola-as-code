@@ -6,7 +6,7 @@ import (
 
 const (
 	DefaultTemplateRepositoryName = "keboola"
-	DefaultTemplateRepositoryUrl  = "git@github.com:keboola/keboola-as-code-templates.git"
+	DefaultTemplateRepositoryUrl  = "https://github.com/keboola/keboola-as-code-templates.git"
 	DefaultTemplateRepositoryRef  = "main"
 )
 

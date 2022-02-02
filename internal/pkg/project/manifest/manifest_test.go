@@ -211,7 +211,7 @@ func minimalJson() string {
       {
         "type": "git",
         "name": "keboola",
-        "url": "git@github.com:keboola/keboola-as-code-templates.git",
+        "url": "https://github.com/keboola/keboola-as-code-templates.git",
         "ref": "main"
       }
     ]
@@ -256,7 +256,7 @@ func fullJson() string {
       {
         "type": "git",
         "name": "keboola",
-        "url": "git@github.com:keboola/keboola-as-code-templates.git",
+        "url": "https://github.com/keboola/keboola-as-code-templates.git",
         "ref": "main"
       }
     ]
