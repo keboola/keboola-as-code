@@ -43,8 +43,8 @@ func (m *transformationMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecip
 	apiObject.Transformation = nil
 
 	// Update changed fields
-	if recipe.ChangedFields.Has(`blocks`) {
-		recipe.ChangedFields.Remove(`blocks`)
+	if recipe.ChangedFields.Has(`transformation`) {
+		recipe.ChangedFields.Remove(`transformation`)
 		recipe.ChangedFields.Add(`configuration`)
 	}
 
