@@ -3,6 +3,7 @@ package test
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -66,12 +67,16 @@ func TestFunctional(t *testing.T) {
 	projectDir := filepath.Join(rootDir, "..")
 	binary := CompileBinary(t, projectDir, tempDir)
 
+	// Clear tests output directory
+	testOutputDir := filepath.Join(rootDir, ".out")
+	assert.NoError(t, os.RemoveAll(testOutputDir))
+	assert.NoError(t, os.MkdirAll(testOutputDir, 0o755))
+
 	// Run test for each directory
-	for _, d := range GetTestDirs(t, rootDir) {
-		testDir := d
-		workingDir := filepath.Join(rootDir, ".out", filepath.Base(testDir))
-		name := filepath.Base(testDir)
-		t.Run(name, func(t *testing.T) {
+	for _, testDirRel := range GetTestDirs(t, rootDir) {
+		testDir := filepath.Join(rootDir, testDirRel)
+		workingDir := filepath.Join(testOutputDir, testDirRel)
+		t.Run(testDirRel, func(t *testing.T) {
 			t.Parallel()
 			RunFunctionalTest(t, testDir, workingDir, binary)
 		})
@@ -186,7 +191,7 @@ func CompileBinary(t *testing.T, projectDir string, tempDir string) string {
 	return binaryPath
 }
 
-// GetTestDirs returns list of all dirs in the root directory.
+// GetTestDirs returns list of all [category]/[test] dirs.
 func GetTestDirs(t *testing.T, root string) []string {
 	t.Helper()
 	var dirs []string
@@ -203,17 +208,29 @@ func GetTestDirs(t *testing.T, root string) []string {
 			return nil
 		}
 
-		// Skip hidden
-		if testhelper.IsIgnoredFile(path, info) {
+		// Skip files
+		if !info.IsDir() {
 			return nil
 		}
+
+		// Skip hidden
 		if testhelper.IsIgnoredDir(path, info) {
 			return filepath.SkipDir
 		}
 
-		// Skip sub-directories
-		if info.IsDir() {
-			dirs = append(dirs, path)
+		// Get relative path
+		relPath, err := filepath.Rel(root, path)
+		if err != nil {
+			return err
+		}
+
+		// Found [category]/[test] directory
+		level := strings.Count(relPath, string(filepath.Separator)) + 1
+		if level == 2 {
+			fmt.Println(path, level)
+			dirs = append(dirs, relPath)
+
+			// Skip sub-directories
 			return fs.SkipDir
 		}
 
