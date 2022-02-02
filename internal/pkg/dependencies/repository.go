@@ -66,9 +66,6 @@ func (c *common) TemplateRepositoryDir(definition model.TemplateRepository, _ mo
 		}
 		return aferofs.NewLocalFs(c.Logger(), path, "")
 	case model.RepositoryTypeGit:
-		if !git.Available() {
-			return nil, fmt.Errorf("git command is not available")
-		}
 		return git.CheckoutTemplateRepository(definition.Url, definition.Ref, c.Logger())
 	default:
 		panic(fmt.Errorf(`unexpected repository type "%s"`, definition.Type))
