@@ -15,7 +15,7 @@ A monorepo written in Go, represents [Keboola Connection](https://www.keboola.co
 - Read more in the [Documentation](https://developers.keboola.com/cli/).
 - CLI entrypoint: [cmd/kbc/main.go](https://github.com/keboola/keboola-as-code/blob/main/cmd/kbc/main.go)
 
-### Date Templates
+### Templates
 
 - To create a template from an existing [Keboola Connection](https://www.keboola.com/product/overview) project.
 - To apply template to some other [Keboola Connection](https://www.keboola.com/product/overview) project.
