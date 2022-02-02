@@ -11,7 +11,7 @@ import (
 
 const userFriendlyPanicTmpl = `
 ---------------------------------------------------
-Keboola Connection client had a problem and crashed.
+Keboola CLI had a problem and crashed.
 
 To help us diagnose the problem you can send us a crash report.
 

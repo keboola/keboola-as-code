@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -124,7 +125,7 @@ func TestExecute(t *testing.T) {
 	assert.Contains(t, out.String(), "Available Commands:")
 }
 
-func TestTearDownRemoveLogFile(t *testing.T) {
+func TestTearDown_RemoveLogFile(t *testing.T) {
 	t.Parallel()
 	root, _ := newTestRootCommand(testfs.NewMemoryFs())
 
@@ -133,11 +134,11 @@ func TestTearDownRemoveLogFile(t *testing.T) {
 	assert.True(t, root.logFile.IsTemp())
 
 	assert.FileExists(t, root.logFile.Path())
-	root.tearDown(0)
+	root.tearDown(0, nil)
 	assert.NoFileExists(t, root.logFile.Path())
 }
 
-func TestTearDownKeepLogFile(t *testing.T) {
+func TestTearDown_KeepLogFile(t *testing.T) {
 	t.Parallel()
 	root, _ := newTestRootCommand(testfs.NewMemoryFs())
 	tempDir := t.TempDir()
@@ -148,8 +149,32 @@ func TestTearDownKeepLogFile(t *testing.T) {
 	assert.Equal(t, root.logFile.Path(), root.Options.LogFilePath)
 
 	assert.FileExists(t, root.Options.LogFilePath)
-	root.tearDown(0)
+	root.tearDown(0, nil)
 	assert.FileExists(t, root.Options.LogFilePath)
+}
+
+func TestTearDown_Panic(t *testing.T) {
+	t.Parallel()
+	logger := log.NewDebugLogger()
+	root, _ := newTestRootCommand(testfs.NewMemoryFs())
+	root.Logger = logger
+	exitCode := root.tearDown(0, fmt.Errorf("panic error"))
+	assert.Equal(t, 1, exitCode)
+	expected := `INFO  
+---------------------------------------------------
+Keboola CLI had a problem and crashed.
+
+To help us diagnose the problem you can send us a crash report.
+
+Please run the command again with the flag "--log-file <path>" to generate a log file.
+
+Then please submit email to "support@keboola.com" and include the log file as an attachment.
+
+We take privacy seriously, and do not perform any automated log file collection.
+
+Thank you kindly!
+`
+	assert.Equal(t, expected, logger.InfoMessages())
 }
 
 func TestGetLogFileTempFile(t *testing.T) {
