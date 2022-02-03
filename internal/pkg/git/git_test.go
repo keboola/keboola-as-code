@@ -31,7 +31,7 @@ func TestGit_CheckoutTemplateRepository(t *testing.T) {
 	// checkout fail from a non-existing branch
 	_, err = CheckoutTemplateRepository("https://github.com/keboola/keboola-as-code-templates.git", "non-existing-ref", log.NewDebugLogger())
 	assert.Error(t, err)
-	assert.Equal(t, `branch "non-existing-ref" not found in the repository`, err.Error())
+	assert.Equal(t, `reference "non-existing-ref" not found in the templates git repository "https://github.com/keboola/keboola-as-code-templates.git"`, err.Error())
 
 	// checkout success
 	fs, err := CheckoutTemplateRepository("https://github.com/keboola/keboola-as-code-templates.git", "main", log.NewDebugLogger())
