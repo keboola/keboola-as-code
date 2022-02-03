@@ -2,14 +2,12 @@ package git
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
-	"syscall"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
@@ -31,7 +29,7 @@ func CheckoutTemplateRepository(url string, ref string, logger log.Logger) (file
 		return nil, err
 	}
 
-	err, stdErr, exitCode := runGitCommand(logger, dir, []string{"clone", "--no-checkout", "-q", url, dir})
+	err, stdErr, exitCode := runGitCommand(logger, dir, []string{"clone", "--depth", "1", "--no-checkout", "-q", url, dir})
 	if err != nil {
 		if exitCode == 128 {
 			return nil, fmt.Errorf(`git repository not found on url "%s"`, url)
@@ -42,7 +40,7 @@ func CheckoutTemplateRepository(url string, ref string, logger log.Logger) (file
 	err, stdErr, exitCode = runGitCommand(logger, dir, []string{"checkout", ref})
 	if err != nil {
 		if exitCode == 1 {
-			return nil, fmt.Errorf(`branch "%s" not found in the repository`, ref)
+			return nil, fmt.Errorf(`reference "%s" not found in the templates git repository "%s"`, ref, url)
 		}
 		return nil, fmt.Errorf(stdErr)
 	}
@@ -56,7 +54,6 @@ func runGitCommand(logger log.Logger, dir string, args []string) (err error, std
 	cmd := exec.Command("git", args...)
 	cmd.Dir = dir
 	cmd.Stdout = logger.DebugWriter()
-	cmd.Stderr = logger.DebugWriter()
 	cmd.Stderr = io.MultiWriter(logger.DebugWriter(), &stdErrBuffer)
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, "GIT_TERMINAL_PROMPT=0")
@@ -64,10 +61,9 @@ func runGitCommand(logger log.Logger, dir string, args []string) (err error, std
 	stdErr = stdErrBuffer.String()
 	exitCode = 0
 	if err != nil {
-		var exitError *exec.ExitError
-		if errors.As(err, &exitError) {
-			ws := exitError.Sys().(syscall.WaitStatus)
-			exitCode = ws.ExitStatus()
+		// nolint: errorlint
+		if exitError, ok := err.(*exec.ExitError); ok {
+			exitCode = exitError.ExitCode()
 		}
 	}
 	return
