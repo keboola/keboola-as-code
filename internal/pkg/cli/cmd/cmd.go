@@ -215,7 +215,7 @@ func (root *RootCommand) Dependencies() *cliDependencies.Container {
 // Execute command or sub-command.
 func (root *RootCommand) Execute() (exitCode int) {
 	defer func() {
-		exitCode = root.tearDown(exitCode)
+		exitCode = root.tearDown(exitCode, recover())
 	}()
 
 	// Logger can be nil, if error occurred before initialization
@@ -373,10 +373,15 @@ func (root *RootCommand) setupLogger() {
 }
 
 // tearDown does clean-up after command execution.
-func (root *RootCommand) tearDown(exitCode int) int {
-	if err := recover(); err != nil {
+func (root *RootCommand) tearDown(exitCode int, panicErr interface{}) int {
+	if panicErr != nil {
+		logFilePath := ""
+		if root.logFile != nil {
+			logFilePath = root.logFile.Path()
+		}
+
 		// Process panic
-		exitCode = utils.ProcessPanic(err, root.Deps.Logger(), root.logFile.Path())
+		exitCode = utils.ProcessPanic(panicErr, root.Logger, logFilePath)
 	}
 
 	// Close log file

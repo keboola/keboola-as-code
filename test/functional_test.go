@@ -3,7 +3,6 @@ package test
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -227,7 +226,6 @@ func GetTestDirs(t *testing.T, root string) []string {
 		// Found [category]/[test] directory
 		level := strings.Count(relPath, string(filepath.Separator)) + 1
 		if level == 2 {
-			fmt.Println(path, level)
 			dirs = append(dirs, relPath)
 
 			// Skip sub-directories
