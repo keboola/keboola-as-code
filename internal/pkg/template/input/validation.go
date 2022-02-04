@@ -13,7 +13,7 @@ import (
 )
 
 func validateInputId(fl goValidator.FieldLevel) bool {
-	return regexpcache.MustCompile(`^[a-zA-Z0-9\.\_]+$`).MatchString(fl.Field().String())
+	return regexpcache.MustCompile(`^[a-zA-Z0-9\.\-\_]+$`).MatchString(fl.Field().String())
 }
 
 // Default value must be of the same type as the Type or Options.

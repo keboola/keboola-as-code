@@ -17,7 +17,7 @@ func TestTemplateInputsValidateDefinitions(t *testing.T) {
 	f := file{
 		Inputs: []Input{
 			{
-				Id:          "input-id",
+				Id:          "input#id",
 				Name:        "input",
 				Description: "input desc",
 				Type:        "string",
@@ -28,7 +28,7 @@ func TestTemplateInputsValidateDefinitions(t *testing.T) {
 	}
 	err := f.validate()
 	assert.Error(t, err)
-	assert.Equal(t, `inputs[0].id can only contain alphanumeric characters, dots and underscores`, err.Error())
+	assert.Equal(t, `inputs[0].id can only contain alphanumeric characters, dots, underscores and dashes`, err.Error())
 
 	// Fail - type for wrong kind
 	f = file{
