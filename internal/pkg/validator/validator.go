@@ -134,7 +134,7 @@ func (v *wrapper) registerCustomRules() {
 		Rule{
 			Tag: "alphanumdash",
 			FuncCtx: func(ctx context.Context, fl validator.FieldLevel) bool {
-				return regexpcache.MustCompile(`[a-zA-Z0-9\-]+$`).MatchString(fl.Field().String())
+				return regexpcache.MustCompile(`^[a-zA-Z0-9\-]+$`).MatchString(fl.Field().String())
 			},
 			ErrorMessage: "{0} can only contain alphanumeric characters and dash",
 		},
