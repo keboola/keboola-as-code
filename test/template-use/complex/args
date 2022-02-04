@@ -1,1 +1,1 @@
-local template use -d ./project/main --branch main --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%% keboola/my-template-id/v1
+local template use -d ./project/main --branch main --inputs-file ./inputs.json --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%% keboola/my-template-id/v1

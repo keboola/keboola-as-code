@@ -1,6 +1,7 @@
 {
   "parameters": {
     "db": {
+      "#password": "KBC::ProjectSecure::%s",
       "host": "mysql.example.com"
     }
   }
