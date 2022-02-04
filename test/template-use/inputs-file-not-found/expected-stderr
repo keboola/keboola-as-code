@@ -1,0 +1,2 @@
+Error:
+  - cannot read inputs file "./inputs.json": open ./inputs.json: no such file or directory
