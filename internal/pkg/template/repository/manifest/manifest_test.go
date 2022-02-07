@@ -153,7 +153,7 @@ func TestManifest_Records(t *testing.T) {
 	assert.Len(t, m.records, 0)
 
 	// Get - not found
-	v, found := m.Get("foo-bar")
+	v, found := m.GetById("foo-bar")
 	assert.Empty(t, v)
 	assert.False(t, found)
 
@@ -167,7 +167,7 @@ func TestManifest_Records(t *testing.T) {
 	m.Persist(v)
 
 	// Get - found
-	v2, found := m.Get("foo-bar")
+	v2, found := m.GetById("foo-bar")
 	assert.Equal(t, v, v2)
 	assert.True(t, found)
 
@@ -212,6 +212,29 @@ func TestManifest_GetByPath_Found(t *testing.T) {
 	record, found := m.GetByPath(`foo`)
 	assert.Equal(t, record1, record)
 	assert.True(t, found)
+}
+
+func TestManifest_GetVersion(t *testing.T) {
+	t.Parallel()
+	m := New()
+	record := TemplateRecord{Id: "foo", AbsPath: model.NewAbsPath("parent", "foo")}
+	record.AddVersion(version("1.2.3"))
+	m.Persist(record)
+
+	// Version found
+	v, err := m.GetVersion("foo", version("v1"))
+	assert.NoError(t, err)
+	assert.Equal(t, version("1.2.3"), v.Version)
+
+	// Version not found
+	_, err = m.GetVersion("foo", version("v2"))
+	assert.Error(t, err)
+	assert.Equal(t, `template "foo" found, but version "v2" is missing`, err.Error())
+
+	// Template not found
+	_, err = m.GetVersion("bar", version("v1"))
+	assert.Error(t, err)
+	assert.Equal(t, `template "bar" not found`, err.Error())
 }
 
 func minimalJson() string {

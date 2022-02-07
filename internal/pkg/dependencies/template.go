@@ -50,7 +50,7 @@ func (c *common) LocalTemplate() (*template.Template, error) {
 	templatePath := parts[0]
 
 	// Get template
-	templateRecord, found := repository.GetByPath(templatePath)
+	templateRecord, found := repository.GetTemplateByPath(templatePath)
 	if !found {
 		return nil, fmt.Errorf(`template "%s" not found`, templatePath)
 	}
@@ -77,16 +77,10 @@ func (c *common) Template(reference model.TemplateRef) (*template.Template, erro
 		return nil, err
 	}
 
-	// Get template
-	templateRecord, found := repository.GetById(reference.TemplateId())
-	if !found {
-		return nil, fmt.Errorf(`template "%s" not found`, reference.TemplateId())
-	}
-
-	// Get version
-	versionRecord, found := templateRecord.GetByVersion(reference.Version())
-	if !found {
-		return nil, fmt.Errorf(`template "%s" found, but version "%s" is missing`, reference.TemplateId(), reference.Version().Original())
+	// Get template version
+	versionRecord, err := repository.GetTemplateVersion(reference.TemplateId(), reference.Version())
+	if err != nil {
+		return nil, err
 	}
 
 	// Check if template dir exists
