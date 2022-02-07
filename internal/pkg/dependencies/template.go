@@ -50,13 +50,13 @@ func (c *common) LocalTemplate() (*template.Template, error) {
 	templatePath := parts[0]
 
 	// Get template
-	templateRecord, found := repository.GetByPath(templatePath)
+	templateRecord, found := repository.GetTemplateByPath(templatePath)
 	if !found {
 		return nil, fmt.Errorf(`template "%s" not found`, templatePath)
 	}
 
 	// Parse version
-	version, err := template.NewVersion(parts[1])
+	version, err := model.NewSemVersion(parts[1])
 	if err != nil {
 		return nil, fmt.Errorf(`template version dir is invalid: %w`, err)
 	}
@@ -67,36 +67,20 @@ func (c *common) LocalTemplate() (*template.Template, error) {
 		return nil, fmt.Errorf(`template "%s" found, but version "%s" is missing`, templatePath, version.Original())
 	}
 
-	return c.Template(model.TemplateRef{
-		Id:         templateRecord.Id,
-		Version:    versionRecord.Version.String(),
-		Repository: localTemplateRepository(),
-	})
+	return c.Template(model.NewTemplateRef(localTemplateRepository(), templateRecord.Id, versionRecord.Version))
 }
 
 func (c *common) Template(reference model.TemplateRef) (*template.Template, error) {
 	// Load repository
-	repository, err := c.TemplateRepository(reference.Repository, reference)
+	repository, err := c.TemplateRepository(reference.Repository(), reference)
 	if err != nil {
 		return nil, err
 	}
 
-	// Get template
-	templateRecord, found := repository.GetById(reference.Id)
-	if !found {
-		return nil, fmt.Errorf(`template "%s" not found`, reference.Id)
-	}
-
-	// Parse version
-	version, err := template.NewVersion(reference.Version)
+	// Get template version
+	versionRecord, err := repository.GetTemplateVersion(reference.TemplateId(), reference.Version())
 	if err != nil {
-		return nil, fmt.Errorf(`template version dir is invalid: %w`, err)
-	}
-
-	// Get version
-	versionRecord, found := templateRecord.GetByVersion(version)
-	if !found {
-		return nil, fmt.Errorf(`template "%s" found, but version "%s" is missing`, reference.Id, version.Original())
+		return nil, err
 	}
 
 	// Check if template dir exists

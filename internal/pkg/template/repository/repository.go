@@ -2,6 +2,7 @@ package repository
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 )
 
@@ -27,18 +28,22 @@ func New(fs filesystem.Fs, manifest *Manifest) *Repository {
 	}
 }
 
-func (p *Repository) Fs() filesystem.Fs {
-	return p.fs
+func (r *Repository) Fs() filesystem.Fs {
+	return r.fs
 }
 
-func (p *Repository) Manifest() *Manifest {
-	return p.manifest
+func (r *Repository) Manifest() *Manifest {
+	return r.manifest
 }
 
-func (p *Repository) GetById(templateId string) (TemplateRecord, bool) {
-	return p.manifest.GetById(templateId)
+func (r *Repository) GetTemplateById(templateId string) (TemplateRecord, bool) {
+	return r.manifest.GetById(templateId)
 }
 
-func (p *Repository) GetByPath(templatePath string) (TemplateRecord, bool) {
-	return p.manifest.GetByPath(templatePath)
+func (r *Repository) GetTemplateByPath(templatePath string) (TemplateRecord, bool) {
+	return r.manifest.GetByPath(templatePath)
+}
+
+func (r *Repository) GetTemplateVersion(templateId string, version model.SemVersion) (VersionRecord, error) {
+	return r.manifest.GetVersion(templateId, version)
 }

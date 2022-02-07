@@ -1,4 +1,4 @@
-package template
+package model
 
 import (
 	"testing"
@@ -8,7 +8,7 @@ import (
 
 func TestNewVersion(t *testing.T) {
 	t.Parallel()
-	v, err := NewVersion(`1.2.3`)
+	v, err := NewSemVersion(`1.2.3`)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), v.Major())
 	assert.Equal(t, int64(2), v.Minor())
@@ -17,7 +17,7 @@ func TestNewVersion(t *testing.T) {
 
 func TestVersion_IncMajor(t *testing.T) {
 	t.Parallel()
-	v := ZeroVersion()
+	v := ZeroSemVersion()
 	assert.Equal(t, `0.0.1`, v.String())
 	v = v.IncMajor()
 	assert.Equal(t, `1.0.0`, v.String())
@@ -27,7 +27,7 @@ func TestVersion_IncMajor(t *testing.T) {
 
 func TestVersion_UnmarshalJSON(t *testing.T) {
 	t.Parallel()
-	v := Version{}
+	v := SemVersion{}
 	err := v.UnmarshalJSON([]byte(`"foo-bar"`))
 	assert.Error(t, err)
 	assert.Equal(t, `invalid semantic version "foo-bar"`, err.Error())

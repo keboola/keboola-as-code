@@ -1,6 +1,7 @@
 package manifest
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -66,13 +67,25 @@ func (m *Manifest) Persist(records ...TemplateRecord) {
 	}
 }
 
-func (m *Manifest) GetById(id string) (TemplateRecord, bool) {
-	for _, record := range m.records {
-		if record.Id == id {
-			return record, true
-		}
+func (m *Manifest) GetVersion(templateId string, version model.SemVersion) (VersionRecord, error) {
+	// Get template
+	templateRecord, found := m.GetById(templateId)
+	if !found {
+		return VersionRecord{}, fmt.Errorf(`template "%s" not found`, templateId)
 	}
-	return TemplateRecord{}, false
+
+	// Get version
+	versionRecord, found := templateRecord.GetByVersion(version)
+	if !found {
+		return VersionRecord{}, fmt.Errorf(`template "%s" found, but version "%s" is missing`, templateId, version.Original())
+	}
+
+	return versionRecord, nil
+}
+
+func (m *Manifest) GetById(id string) (TemplateRecord, bool) {
+	v, ok := m.records[id]
+	return v, ok
 }
 
 func (m *Manifest) GetByPath(path string) (TemplateRecord, bool) {
@@ -84,13 +97,8 @@ func (m *Manifest) GetByPath(path string) (TemplateRecord, bool) {
 	return TemplateRecord{}, false
 }
 
-func (m *Manifest) Get(templateId string) (TemplateRecord, bool) {
-	v, ok := m.records[templateId]
-	return v, ok
-}
-
 func (m *Manifest) GetOrCreate(templateId string) TemplateRecord {
-	record, found := m.Get(templateId)
+	record, found := m.GetById(templateId)
 	if found {
 		return record
 	}

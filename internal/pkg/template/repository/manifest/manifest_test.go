@@ -7,7 +7,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
@@ -128,7 +127,7 @@ func TestManifestBadRecordSemanticVersion(t *testing.T) {
       "versions": [
         {
           "version": "foo-bar",
-          "description": "Version Bad",
+          "description": "SemVersion Bad",
           "stable": false,
           "path": "v0"
         }
@@ -154,7 +153,7 @@ func TestManifest_Records(t *testing.T) {
 	assert.Len(t, m.records, 0)
 
 	// Get - not found
-	v, found := m.Get("foo-bar")
+	v, found := m.GetById("foo-bar")
 	assert.Empty(t, v)
 	assert.False(t, found)
 
@@ -168,7 +167,7 @@ func TestManifest_Records(t *testing.T) {
 	m.Persist(v)
 
 	// Get - found
-	v2, found := m.Get("foo-bar")
+	v2, found := m.GetById("foo-bar")
 	assert.Equal(t, v, v2)
 	assert.True(t, found)
 
@@ -215,6 +214,29 @@ func TestManifest_GetByPath_Found(t *testing.T) {
 	assert.True(t, found)
 }
 
+func TestManifest_GetVersion(t *testing.T) {
+	t.Parallel()
+	m := New()
+	record := TemplateRecord{Id: "foo", AbsPath: model.NewAbsPath("parent", "foo")}
+	record.AddVersion(version("1.2.3"))
+	m.Persist(record)
+
+	// Version found
+	v, err := m.GetVersion("foo", version("v1"))
+	assert.NoError(t, err)
+	assert.Equal(t, version("1.2.3"), v.Version)
+
+	// Version not found
+	_, err = m.GetVersion("foo", version("v2"))
+	assert.Error(t, err)
+	assert.Equal(t, `template "foo" found, but version "v2" is missing`, err.Error())
+
+	// Template not found
+	_, err = m.GetVersion("bar", version("v1"))
+	assert.Error(t, err)
+	assert.Equal(t, `template "bar" not found`, err.Error())
+}
+
 func minimalJson() string {
 	return `{
   "version": 2,
@@ -242,13 +264,13 @@ func fullJson() string {
       "versions": [
         {
           "version": "0.0.1",
-          "description": "Version 0",
+          "description": "SemVersion 0",
           "stable": false,
           "path": "v0"
         },
         {
           "version": "1.2.3",
-          "description": "Version 1",
+          "description": "SemVersion 1",
           "stable": true,
           "path": "v1"
         }
@@ -273,13 +295,13 @@ func fullStruct() *file {
 						AbsPath:     model.NewAbsPath(`template-1`, `v0`),
 						Version:     version(`0.0.1`),
 						Stable:      false,
-						Description: `Version 0`,
+						Description: `SemVersion 0`,
 					},
 					{
 						AbsPath:     model.NewAbsPath(`template-1`, `v1`),
 						Version:     version(`1.2.3`),
 						Stable:      true,
-						Description: `Version 1`,
+						Description: `SemVersion 1`,
 					},
 				},
 			},
@@ -287,8 +309,8 @@ func fullStruct() *file {
 	}
 }
 
-func version(str string) template.Version {
-	v, err := template.NewVersion(str)
+func version(str string) model.SemVersion {
+	v, err := model.NewSemVersion(str)
 	if err != nil {
 		panic(err)
 	}

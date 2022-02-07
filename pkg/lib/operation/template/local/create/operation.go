@@ -50,11 +50,11 @@ func Run(o Options, d dependencies) (err error) {
 	templateRecord.Description = o.Description
 
 	// Get next major version
-	var version template.Version
+	var version model.SemVersion
 	if latest, found := templateRecord.LatestVersion(); found {
 		version = latest.Version.IncMajor()
 	} else {
-		version = template.ZeroVersion()
+		version = model.ZeroSemVersion()
 	}
 
 	// Init template directory
@@ -70,13 +70,7 @@ func Run(o Options, d dependencies) (err error) {
 	}
 
 	// Template definition
-	templateDef := model.TemplateRef{
-		Id:      o.Id,
-		Version: versionRecord.Version.String(),
-		Repository: model.TemplateRepository{
-			Type: model.RepositoryTypeWorkingDir,
-		},
-	}
+	templateDef := model.NewTemplateRef(model.TemplateRepositoryWorkingDir(), o.Id, versionRecord.Version)
 
 	// Template context
 	templateCtx := template.NewCreateContext(d.Ctx(), o.SourceBranch, o.Configs)

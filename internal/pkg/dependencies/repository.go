@@ -27,11 +27,11 @@ func (c *common) LocalTemplateRepositoryExists() bool {
 }
 
 func (c *common) LocalTemplateRepository() (*repository.Repository, error) {
-	return c.TemplateRepository(localTemplateRepository(), model.TemplateRef{})
+	return c.TemplateRepository(localTemplateRepository(), nil)
 }
 
 func (c *common) LocalTemplateRepositoryDir() (filesystem.Fs, error) {
-	return c.TemplateRepositoryDir(localTemplateRepository(), model.TemplateRef{})
+	return c.TemplateRepositoryDir(localTemplateRepository(), nil)
 }
 
 func (c *common) TemplateRepository(definition model.TemplateRepository, forTemplate model.TemplateRef) (*repository.Repository, error) {

@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/template"
 )
 
 type TemplateRecord struct {
@@ -18,13 +17,13 @@ type TemplateRecord struct {
 }
 
 type VersionRecord struct {
-	Version       template.Version `json:"version" validate:"required,semver"`
+	Version       model.SemVersion `json:"version" validate:"required,semver"`
 	Description   string           `json:"description" validate:"required"`
 	Stable        bool             `json:"stable" validate:"required"`
 	model.AbsPath `validate:"dive"`
 }
 
-func (v *TemplateRecord) AddVersion(version template.Version) VersionRecord {
+func (v *TemplateRecord) AddVersion(version model.SemVersion) VersionRecord {
 	record := VersionRecord{
 		Version: version,
 		Stable:  false,
@@ -40,7 +39,7 @@ func (v *TemplateRecord) AddVersion(version template.Version) VersionRecord {
 // "v1"     -> "1.2.3"
 // "v1.1"   -> "1.1.1"
 // "v1.1.0" -> "1.1.0".
-func (v *TemplateRecord) GetByVersion(wanted template.Version) (VersionRecord, bool) {
+func (v *TemplateRecord) GetByVersion(wanted model.SemVersion) (VersionRecord, bool) {
 	dotsCount := len(strings.Split(wanted.Original(), "."))
 	minorIsSet := dotsCount >= 2
 	patchIsSet := dotsCount >= 3
@@ -75,7 +74,7 @@ func (v *TemplateRecord) GetByPath(path string) (VersionRecord, bool) {
 }
 
 func (v *TemplateRecord) LatestVersion() (latest VersionRecord, found bool) {
-	latest = VersionRecord{Version: template.ZeroVersion()}
+	latest = VersionRecord{Version: model.ZeroSemVersion()}
 	for _, item := range v.Versions {
 		if item.Version.GreaterThan(latest.Version.Value()) {
 			latest = item
