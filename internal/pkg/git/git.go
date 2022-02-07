@@ -49,7 +49,7 @@ func CheckoutTemplateRepository(ref model.TemplateRef, logger log.Logger) (files
 		return nil, fmt.Errorf(stdErr)
 	}
 
-	err, stdErr, exitCode = runGitCommand(logger, dir, []string{"checkout"})
+	err, stdErr, _ = runGitCommand(logger, dir, []string{"checkout"})
 	if err != nil {
 		return nil, fmt.Errorf(stdErr)
 	}
