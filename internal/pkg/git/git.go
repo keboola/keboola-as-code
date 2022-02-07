@@ -30,6 +30,9 @@ func CheckoutTemplateRepository(ref model.TemplateRef, logger log.Logger) (files
 	if err != nil {
 		return nil, err
 	}
+	defer func(path string) {
+		_ = os.RemoveAll(path) // nolint: forbidigo
+	}(dir)
 
 	err, stdErr, exitCode := runGitCommand(logger, dir, []string{"clone", "--branch", ref.Repository().Ref, "--depth=1", "--no-checkout", "--sparse", "--filter=blob:none", "-q", ref.Repository().Url, dir})
 	if err != nil {
@@ -54,16 +57,26 @@ func CheckoutTemplateRepository(ref model.TemplateRef, logger log.Logger) (files
 		return nil, fmt.Errorf(stdErr)
 	}
 
-	fs, err := aferofs.NewLocalFs(logger, dir, "")
+	localFs, err := aferofs.NewLocalFs(logger, dir, "")
 	if err != nil {
 		return nil, err
 	}
 
-	if !fs.Exists(templateFolder) {
+	if !localFs.Exists(templateFolder) {
 		return nil, fmt.Errorf(`template "%s" in version "%s" not found in the templates git repository "%s"`, ref.TemplateId(), version.String(), ref.Repository().Url)
 	}
 
-	return fs, nil
+	memFs, err := aferofs.NewMemoryFs(logger, ".")
+	if err != nil {
+		return nil, err
+	}
+
+	err = aferofs.CopyFs2Fs(localFs, "", memFs, "")
+	if err != nil {
+		return nil, err
+	}
+
+	return memFs, nil
 }
 
 func runGitCommand(logger log.Logger, dir string, args []string) (err error, stdErr string, exitCode int) {
