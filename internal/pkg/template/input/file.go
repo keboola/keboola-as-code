@@ -98,7 +98,7 @@ func (i file) validate() error {
 				if options, ok := fe.Value().(Options); ok && len(options) == 0 {
 					return fmt.Sprintf("%s must contain at least one item", fe.Field())
 				}
-				return fmt.Sprintf("%s should be set only for select and multiselect kind", fe.Field())
+				return fmt.Sprintf("%s should only be set for select and multiselect kinds", fe.Field())
 			},
 		},
 		{
