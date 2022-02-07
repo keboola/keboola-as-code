@@ -78,12 +78,10 @@ func CheckoutTemplateRepository(ref model.TemplateRef, logger log.Logger) (files
 	versionRecord, err := m.GetVersion(ref.TemplateId(), version)
 	if err != nil {
 		// version or template not found
-		if err != nil {
-			e := utils.NewMultiError()
-			e.Append(fmt.Errorf(`searched in git repository "%s"`, ref.Repository().Url))
-			e.Append(fmt.Errorf(`reference "%s"`, ref.Repository().Ref))
-			return nil, utils.PrefixError(err.Error(), e)
-		}
+		e := utils.NewMultiError()
+		e.Append(fmt.Errorf(`searched in git repository "%s"`, ref.Repository().Url))
+		e.Append(fmt.Errorf(`reference "%s"`, ref.Repository().Ref))
+		return nil, utils.PrefixError(err.Error(), e)
 	}
 
 	// Checkout template src directory
