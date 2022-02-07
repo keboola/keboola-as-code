@@ -7,7 +7,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
@@ -128,7 +127,7 @@ func TestManifestBadRecordSemanticVersion(t *testing.T) {
       "versions": [
         {
           "version": "foo-bar",
-          "description": "Version Bad",
+          "description": "SemVersion Bad",
           "stable": false,
           "path": "v0"
         }
@@ -242,13 +241,13 @@ func fullJson() string {
       "versions": [
         {
           "version": "0.0.1",
-          "description": "Version 0",
+          "description": "SemVersion 0",
           "stable": false,
           "path": "v0"
         },
         {
           "version": "1.2.3",
-          "description": "Version 1",
+          "description": "SemVersion 1",
           "stable": true,
           "path": "v1"
         }
@@ -273,13 +272,13 @@ func fullStruct() *file {
 						AbsPath:     model.NewAbsPath(`template-1`, `v0`),
 						Version:     version(`0.0.1`),
 						Stable:      false,
-						Description: `Version 0`,
+						Description: `SemVersion 0`,
 					},
 					{
 						AbsPath:     model.NewAbsPath(`template-1`, `v1`),
 						Version:     version(`1.2.3`),
 						Stable:      true,
-						Description: `Version 1`,
+						Description: `SemVersion 1`,
 					},
 				},
 			},
@@ -287,8 +286,8 @@ func fullStruct() *file {
 	}
 }
 
-func version(str string) template.Version {
-	v, err := template.NewVersion(str)
+func version(str string) model.SemVersion {
+	v, err := model.NewSemVersion(str)
 	if err != nil {
 		panic(err)
 	}

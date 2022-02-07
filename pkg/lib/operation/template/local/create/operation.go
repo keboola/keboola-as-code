@@ -50,11 +50,11 @@ func Run(o Options, d dependencies) (err error) {
 	templateRecord.Description = o.Description
 
 	// Get next major version
-	var version template.Version
+	var version model.SemVersion
 	if latest, found := templateRecord.LatestVersion(); found {
 		version = latest.Version.IncMajor()
 	} else {
-		version = template.ZeroVersion()
+		version = model.ZeroSemVersion()
 	}
 
 	// Init template directory

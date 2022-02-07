@@ -56,7 +56,7 @@ func (c *common) LocalTemplate() (*template.Template, error) {
 	}
 
 	// Parse version
-	version, err := template.NewVersion(parts[1])
+	version, err := model.NewSemVersion(parts[1])
 	if err != nil {
 		return nil, fmt.Errorf(`template version dir is invalid: %w`, err)
 	}
@@ -88,7 +88,7 @@ func (c *common) Template(reference model.TemplateRef) (*template.Template, erro
 	}
 
 	// Parse version
-	version, err := template.NewVersion(reference.Version)
+	version, err := model.NewSemVersion(reference.Version)
 	if err != nil {
 		return nil, fmt.Errorf(`template version dir is invalid: %w`, err)
 	}
