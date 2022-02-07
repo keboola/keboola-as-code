@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	goValidator "github.com/go-playground/validator/v10"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
@@ -90,9 +92,14 @@ func (i file) validate() error {
 			ErrorMsg: "{0} must be the same type as type or options",
 		},
 		{
-			Tag:      "template-input-options",
-			Func:     validateInputOptions,
-			ErrorMsg: "{0} allowed only for select and multiselect",
+			Tag:  "template-input-options",
+			Func: validateInputOptions,
+			ErrorMsgFunc: func(fe goValidator.FieldError) string {
+				if options, ok := fe.Value().(Options); ok && len(options) == 0 {
+					return fmt.Sprintf("%s must contain at least one item", fe.Field())
+				}
+				return fmt.Sprintf("%s should be set only for select and multiselect kind", fe.Field())
+			},
 		},
 		{
 			Tag:      "template-input-type",

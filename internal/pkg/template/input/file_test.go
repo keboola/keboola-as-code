@@ -156,7 +156,7 @@ func TestTemplateInputsValidateDefinitionsSelect(t *testing.T) {
 	err := f.validate()
 	assert.Error(t, err)
 	assert.Equal(t, `- inputs[0].type is a required field
-- inputs[0].options allowed only for select and multiselect`, err.Error())
+- inputs[0].options should be set only for select and multiselect kind`, err.Error())
 
 	// Fail - empty Options
 	f = file{
@@ -172,7 +172,7 @@ func TestTemplateInputsValidateDefinitionsSelect(t *testing.T) {
 	}
 	err = f.validate()
 	assert.Error(t, err)
-	assert.Equal(t, `inputs[0].options allowed only for select and multiselect`, err.Error())
+	assert.Equal(t, `inputs[0].options must contain at least one item`, err.Error())
 
 	// Fail - Default value missing in Options
 	f = file{
