@@ -31,6 +31,10 @@ func ZeroSemVersion() SemVersion {
 	return v
 }
 
+func (v SemVersion) Original() string {
+	return v.value.Original()
+}
+
 func (v SemVersion) Value() *semver.Version {
 	value := v.value
 	return &value

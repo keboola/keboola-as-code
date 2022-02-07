@@ -40,13 +40,12 @@ func UseCommand(depsProvider dependencies.Provider) *cobra.Command {
 			}
 
 			// Template definition
-			templateDef := model.TemplateRef{
-				Id:         templateId,
-				Version:    versionStr,
-				Repository: repositoryDef,
+			templateDef, err := model.NewTemplateRefFromString(repositoryDef, templateId, versionStr)
+			if err != nil {
+				return err
 			}
 
-			// Template
+			// Load template
 			template, err := d.Template(templateDef)
 			if err != nil {
 				return err
