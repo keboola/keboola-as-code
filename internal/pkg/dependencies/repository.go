@@ -46,7 +46,7 @@ func (c *common) TemplateRepository(definition model.TemplateRepository, forTemp
 	return repository.New(fs, manifest), nil
 }
 
-func (c *common) TemplateRepositoryDir(definition model.TemplateRepository, _ model.TemplateRef) (filesystem.Fs, error) {
+func (c *common) TemplateRepositoryDir(definition model.TemplateRepository, template model.TemplateRef) (filesystem.Fs, error) {
 	switch definition.Type {
 	case model.RepositoryTypeWorkingDir:
 		if !c.LocalTemplateRepositoryExists() {
@@ -66,7 +66,7 @@ func (c *common) TemplateRepositoryDir(definition model.TemplateRepository, _ mo
 		}
 		return aferofs.NewLocalFs(c.Logger(), path, "")
 	case model.RepositoryTypeGit:
-		return git.CheckoutTemplateRepository(definition.Url, definition.Ref, c.Logger())
+		return git.CheckoutTemplateRepository(template, c.Logger())
 	default:
 		panic(fmt.Errorf(`unexpected repository type "%s"`, definition.Type))
 	}

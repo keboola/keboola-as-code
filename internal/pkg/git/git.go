@@ -12,6 +12,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/template"
 )
 
 func Available() bool {
@@ -19,7 +21,7 @@ func Available() bool {
 	return err == nil
 }
 
-func CheckoutTemplateRepository(url string, ref string, logger log.Logger) (filesystem.Fs, error) {
+func CheckoutTemplateRepository(ref model.TemplateRef, logger log.Logger) (filesystem.Fs, error) {
 	if !Available() {
 		return nil, fmt.Errorf("git command is not available, if you want to use templates from a git repository you have to install it first")
 	}
@@ -29,23 +31,39 @@ func CheckoutTemplateRepository(url string, ref string, logger log.Logger) (file
 		return nil, err
 	}
 
-	err, stdErr, exitCode := runGitCommand(logger, dir, []string{"clone", "--depth", "1", "--no-checkout", "-q", url, dir})
+	err, stdErr, exitCode := runGitCommand(logger, dir, []string{"clone", "--branch", ref.Repository().Ref, "--depth=1", "--no-checkout", "--sparse", "--filter=blob:none", "-q", ref.Repository().Url, dir})
 	if err != nil {
 		if exitCode == 128 {
-			return nil, fmt.Errorf(`git repository not found on url "%s"`, url)
+			if strings.Contains(stdErr, fmt.Sprintf("Remote branch %s not found", ref.Repository().Ref)) {
+				return nil, fmt.Errorf(`reference "%s" not found in the templates git repository "%s"`, ref.Repository().Ref, ref.Repository().Url)
+			}
+			return nil, fmt.Errorf(`templates git repository not found on url "%s"`, ref.Repository().Url)
 		}
 		return nil, fmt.Errorf(stdErr)
 	}
 
-	err, stdErr, exitCode = runGitCommand(logger, dir, []string{"checkout", ref})
+	version := ref.Version()
+	templateFolder := fmt.Sprintf("%s/%s/%s", ref.TemplateId(), version.String(), template.SrcDirectory)
+	err, stdErr, _ = runGitCommand(logger, dir, []string{"sparse-checkout", "set", fmt.Sprintf("/%s", templateFolder)})
 	if err != nil {
-		if exitCode == 1 {
-			return nil, fmt.Errorf(`reference "%s" not found in the templates git repository "%s"`, ref, url)
-		}
 		return nil, fmt.Errorf(stdErr)
 	}
 
-	return aferofs.NewLocalFs(logger, dir, "")
+	err, stdErr, exitCode = runGitCommand(logger, dir, []string{"checkout"})
+	if err != nil {
+		return nil, fmt.Errorf(stdErr)
+	}
+
+	fs, err := aferofs.NewLocalFs(logger, dir, "")
+	if err != nil {
+		return nil, err
+	}
+
+	if !fs.Exists(templateFolder) {
+		return nil, fmt.Errorf(`template "%s" in version "%s" not found in the templates git repository "%s"`, ref.TemplateId(), version.String(), ref.Repository().Url)
+	}
+
+	return fs, nil
 }
 
 func runGitCommand(logger log.Logger, dir string, args []string) (err error, stdErr string, exitCode int) {
