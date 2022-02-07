@@ -15,6 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func Available() bool {
@@ -32,9 +33,11 @@ func CheckoutTemplateRepository(ref model.TemplateRef, logger log.Logger) (files
 	if err != nil {
 		return nil, err
 	}
-	defer func(path string) {
-		_ = os.RemoveAll(path) // nolint: forbidigo
-	}(dir)
+	defer func() {
+		if err = os.RemoveAll(dir); err != nil { // nolint: forbidigo
+			logger.Warnf(`cannot remove temp dir "%s": %w`, dir, err)
+		}
+	}()
 
 	// Clone the repository
 	err, stdErr, exitCode := runGitCommand(logger, dir, []string{"clone", "--branch", ref.Repository().Ref, "--depth=1", "--no-checkout", "--sparse", "--filter=blob:none", "-q", ref.Repository().Url, dir})
@@ -45,7 +48,7 @@ func CheckoutTemplateRepository(ref model.TemplateRef, logger log.Logger) (files
 			}
 			return nil, fmt.Errorf(`templates git repository not found on url "%s"`, ref.Repository().Url)
 		}
-		return nil, fmt.Errorf(stdErr)
+		return nil, utils.PrefixError("cannot load template source directory", fmt.Errorf(stdErr))
 	}
 
 	// Checkout repository.json
@@ -55,7 +58,7 @@ func CheckoutTemplateRepository(ref model.TemplateRef, logger log.Logger) (files
 	}
 	err, stdErr, _ = runGitCommand(logger, dir, []string{"checkout"})
 	if err != nil {
-		return nil, fmt.Errorf(stdErr)
+		return nil, utils.PrefixError("cannot load template repository manifest", fmt.Errorf(stdErr))
 	}
 
 	// Create FS from the cloned repository
@@ -75,7 +78,12 @@ func CheckoutTemplateRepository(ref model.TemplateRef, logger log.Logger) (files
 	versionRecord, err := m.GetVersion(ref.TemplateId(), version)
 	if err != nil {
 		// version or template not found
-		return nil, fmt.Errorf(`template "%s" in version "%s" not found in the templates git repository "%s"`, ref.TemplateId(), version.String(), ref.Repository().Url)
+		if err != nil {
+			e := utils.NewMultiError()
+			e.Append(fmt.Errorf(`searched in git repository "%s"`, ref.Repository().Url))
+			e.Append(fmt.Errorf(`reference "%s"`, ref.Repository().Ref))
+			return nil, utils.PrefixError(err.Error(), e)
+		}
 	}
 
 	// Checkout template src directory
@@ -85,7 +93,10 @@ func CheckoutTemplateRepository(ref model.TemplateRef, logger log.Logger) (files
 		return nil, fmt.Errorf(stdErr)
 	}
 	if !localFs.Exists(srcDir) {
-		return nil, fmt.Errorf(`template "%s" in version "%s" not found in the templates git repository "%s"`, ref.TemplateId(), version.String(), ref.Repository().Url)
+		e := utils.NewMultiError()
+		e.Append(fmt.Errorf(`searched in git repository "%s"`, ref.Repository().Url))
+		e.Append(fmt.Errorf(`reference "%s"`, ref.Repository().Ref))
+		return nil, utils.PrefixError(fmt.Sprintf(`folder "%s" not found`, srcDir), e)
 	}
 
 	memFs, err := aferofs.NewMemoryFs(logger, ".")

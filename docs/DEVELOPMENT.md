@@ -40,7 +40,7 @@ To run the one or more tests via wildcard:
 
 To run tests in one specific package:
 ```
-go test internal/pkg/PACKAGE/...
+go test ./internal/pkg/PACKAGE/...
 ```
 
 To run tests with verbose output to see HTTP requests, ENVs, etc.:
