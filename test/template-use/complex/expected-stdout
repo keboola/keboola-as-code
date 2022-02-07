@@ -1,3 +1,7 @@
+Plan for "encrypt" operation:
+  C main/extractor/keboola.ex-db-mysql/with-rows
+    parameters.db.#password
+Encrypt done.
 New objects from "keboola/my-template-id/v1" template:
   + C main/_shared/keboola.python-transformation-v2
   + R main/_shared/keboola.python-transformation-v2/codes/code-with-variables
