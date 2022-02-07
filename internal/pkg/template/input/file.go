@@ -82,7 +82,7 @@ func (i file) validate() error {
 		{
 			Tag:          "template-input-id",
 			Func:         validateInputId,
-			ErrorMessage: "{0} can only contain alphanumeric characters, dots and underscores",
+			ErrorMessage: "{0} can only contain alphanumeric characters, dots, underscores and dashes",
 		},
 		{
 			Tag:          "template-input-default",

@@ -3,16 +3,20 @@ package dialog
 import (
 	"context"
 	"fmt"
+	"os"
 	"strconv"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
+	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	useTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
+
+const inputsFileFlag = "inputs-file"
 
 type contextKey string
 
@@ -25,6 +29,7 @@ type useTmplDialog struct {
 	*Dialogs
 	deps             useTmplDialogDeps
 	loadStateOptions loadState.Options
+	inputsFile       map[string]interface{} // inputs values loaded from a file specified by inputsFileFlag
 	out              useTemplate.Options
 	context          context.Context        // for input.ValidateUserInput
 	inputsValues     map[string]interface{} // for input.Available
@@ -42,6 +47,19 @@ func (p *Dialogs) AskUseTemplateOptions(inputs *template.Inputs, d useTmplDialog
 }
 
 func (d *useTmplDialog) ask(inputs *input.Inputs) (useTemplate.Options, error) {
+	// Load inputs file
+	opts := d.deps.Options()
+	if opts.IsSet(inputsFileFlag) {
+		path := opts.GetString(inputsFileFlag)
+		content, err := os.ReadFile(path) // nolint:forbidigo // file may be outside the project, so the OS package is used
+		if err != nil {
+			return d.out, fmt.Errorf(`cannot read inputs file "%s": %w`, path, err)
+		}
+		if err := json.Decode(content, &d.inputsFile); err != nil {
+			return d.out, fmt.Errorf(`cannot decode inputs file "%s": %w`, path, err)
+		}
+	}
+
 	// Load state
 	projectState, err := d.deps.ProjectState(d.loadStateOptions)
 	if err != nil {
@@ -49,7 +67,7 @@ func (d *useTmplDialog) ask(inputs *input.Inputs) (useTemplate.Options, error) {
 	}
 
 	// Target branch
-	targetBranch, err := d.SelectBranch(d.deps.Options(), projectState.LocalObjects().Branches(), `Select the target branch`)
+	targetBranch, err := d.SelectBranch(opts, projectState.LocalObjects().Branches(), `Select the target branch`)
 	if err != nil {
 		return d.out, err
 	}
@@ -86,6 +104,16 @@ func (d *useTmplDialog) askInputs(inputs *input.Inputs) error {
 }
 
 func (d *useTmplDialog) askInput(inputDef input.Input) error {
+	// Use value from the inputs file, if it is present
+	if v, found := d.inputsFile[inputDef.Id]; found {
+		// Validate and save
+		if err := d.addInputValue(inputDef, v); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Ask for input
 	switch inputDef.Kind {
 	case input.KindInput, input.KindPassword, input.KindTextarea:
 		question := &prompt.Question{
