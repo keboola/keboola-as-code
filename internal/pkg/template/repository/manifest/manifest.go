@@ -77,7 +77,7 @@ func (m *Manifest) GetVersion(templateId string, version model.SemVersion) (Vers
 	// Get version
 	versionRecord, found := templateRecord.GetByVersion(version)
 	if !found {
-		return VersionRecord{}, fmt.Errorf(`template "%s" found, but version "%s" is missing`, templateId, version.Original())
+		return VersionRecord{}, fmt.Errorf(`template "%s" found but version "%s" is missing`, templateId, version.Original())
 	}
 
 	return versionRecord, nil

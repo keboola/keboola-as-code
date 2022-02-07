@@ -38,6 +38,11 @@ To run the one or more tests via wildcard:
 ./scripts/tests.sh -run "Functional/pull*"
 ```
 
+To run tests in one specific package:
+```
+go test ./internal/pkg/PACKAGE/...
+```
+
 To run tests with verbose output to see HTTP requests, ENVs, etc.:
 ```
 docker-compose run --rm dev make tests-verbose

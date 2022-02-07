@@ -1,0 +1,17 @@
+0000000000000000000000000000000000000000 e539348305ec466e80a982b449f9d9f3109a091b Jakub Matějka <jakub@keboola.com> 1643898854 +0100	commit (initial): Init
+e539348305ec466e80a982b449f9d9f3109a091b 0000000000000000000000000000000000000000 Jakub Matějka <jakub@keboola.com> 1643898890 +0100	Branch: renamed refs/heads/master to refs/heads/b1
+0000000000000000000000000000000000000000 e539348305ec466e80a982b449f9d9f3109a091b Jakub Matějka <jakub@keboola.com> 1643898890 +0100	Branch: renamed refs/heads/master to refs/heads/b1
+e539348305ec466e80a982b449f9d9f3109a091b e539348305ec466e80a982b449f9d9f3109a091b Jakub Matějka <jakub@keboola.com> 1643898938 +0100	checkout: moving from b1 to main
+e539348305ec466e80a982b449f9d9f3109a091b 5650c66dd29e8d3cfd046dcac5544f514ccfb06c Jakub Matějka <jakub@keboola.com> 1643898964 +0100	commit: Remove template2
+5650c66dd29e8d3cfd046dcac5544f514ccfb06c e539348305ec466e80a982b449f9d9f3109a091b Jakub Matějka <jakub@keboola.com> 1644236617 +0100	checkout: moving from main to b1
+e539348305ec466e80a982b449f9d9f3109a091b 24ad544e0b8e24983487b0c2b0ea70e47faa7c79 Jakub Matějka <jakub@keboola.com> 1644236895 +0100	commit (amend): Init
+24ad544e0b8e24983487b0c2b0ea70e47faa7c79 5650c66dd29e8d3cfd046dcac5544f514ccfb06c Jakub Matějka <jakub@keboola.com> 1644236911 +0100	checkout: moving from b1 to main
+5650c66dd29e8d3cfd046dcac5544f514ccfb06c 24ad544e0b8e24983487b0c2b0ea70e47faa7c79 Jakub Matějka <jakub@keboola.com> 1644237275 +0100	checkout: moving from main to b1
+24ad544e0b8e24983487b0c2b0ea70e47faa7c79 62b368141547714f009d64ba475a0aeb72820522 Jakub Matějka <jakub@keboola.com> 1644237339 +0100	commit (amend): Init
+62b368141547714f009d64ba475a0aeb72820522 5650c66dd29e8d3cfd046dcac5544f514ccfb06c Jakub Matějka <jakub@keboola.com> 1644237344 +0100	checkout: moving from b1 to main
+5650c66dd29e8d3cfd046dcac5544f514ccfb06c 1054ce00e272e6570d0b619cc10b474c26172c94 Jakub Matějka <jakub@keboola.com> 1644237365 +0100	commit (amend): Remove template2
+1054ce00e272e6570d0b619cc10b474c26172c94 62b368141547714f009d64ba475a0aeb72820522 Jakub Matějka <jakub@keboola.com> 1644250832 +0100	checkout: moving from main to b1
+62b368141547714f009d64ba475a0aeb72820522 f4bf236227116803d28fa2f931f28059a5ab588f Jakub Matějka <jakub@keboola.com> 1644250886 +0100	commit: Remove src folder of template2/v1
+f4bf236227116803d28fa2f931f28059a5ab588f 1054ce00e272e6570d0b619cc10b474c26172c94 Jakub Matějka <jakub@keboola.com> 1644250892 +0100	checkout: moving from b1 to main
+1054ce00e272e6570d0b619cc10b474c26172c94 f4bf236227116803d28fa2f931f28059a5ab588f Jakub Matějka <jakub@keboola.com> 1644250931 +0100	checkout: moving from main to b1
+f4bf236227116803d28fa2f931f28059a5ab588f 1054ce00e272e6570d0b619cc10b474c26172c94 Jakub Matějka <jakub@keboola.com> 1644250953 +0100	checkout: moving from b1 to main
