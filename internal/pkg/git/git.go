@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 )
 
 func Available() bool {
@@ -26,6 +27,7 @@ func CheckoutTemplateRepository(ref model.TemplateRef, logger log.Logger) (files
 		return nil, fmt.Errorf("git command is not available, if you want to use templates from a git repository you have to install it first")
 	}
 
+	// Create a temp dir
 	dir, err := ioutil.TempDir("", "keboola-as-code-templates-")
 	if err != nil {
 		return nil, err
@@ -34,6 +36,7 @@ func CheckoutTemplateRepository(ref model.TemplateRef, logger log.Logger) (files
 		_ = os.RemoveAll(path) // nolint: forbidigo
 	}(dir)
 
+	// Clone the repository
 	err, stdErr, exitCode := runGitCommand(logger, dir, []string{"clone", "--branch", ref.Repository().Ref, "--depth=1", "--no-checkout", "--sparse", "--filter=blob:none", "-q", ref.Repository().Url, dir})
 	if err != nil {
 		if exitCode == 128 {
@@ -45,24 +48,43 @@ func CheckoutTemplateRepository(ref model.TemplateRef, logger log.Logger) (files
 		return nil, fmt.Errorf(stdErr)
 	}
 
-	version := ref.Version()
-	templateFolder := fmt.Sprintf("%s/%s/%s", ref.TemplateId(), version.String(), template.SrcDirectory)
-	err, stdErr, _ = runGitCommand(logger, dir, []string{"sparse-checkout", "set", fmt.Sprintf("/%s", templateFolder)})
+	// Checkout repository.json
+	err, stdErr, _ = runGitCommand(logger, dir, []string{"sparse-checkout", "add", "/.keboola/repository.json"})
 	if err != nil {
 		return nil, fmt.Errorf(stdErr)
 	}
-
 	err, stdErr, _ = runGitCommand(logger, dir, []string{"checkout"})
 	if err != nil {
 		return nil, fmt.Errorf(stdErr)
 	}
 
+	// Create FS from the cloned repository
 	localFs, err := aferofs.NewLocalFs(logger, dir, "")
 	if err != nil {
 		return nil, err
 	}
 
-	if !localFs.Exists(templateFolder) {
+	// Load the repository manifest
+	m, err := manifest.Load(localFs)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get version record
+	version := ref.Version()
+	versionRecord, err := m.GetVersion(ref.TemplateId(), version)
+	if err != nil {
+		// version or template not found
+		return nil, fmt.Errorf(`template "%s" in version "%s" not found in the templates git repository "%s"`, ref.TemplateId(), version.String(), ref.Repository().Url)
+	}
+
+	// Checkout template src directory
+	srcDir := filesystem.Join(versionRecord.Path(), template.SrcDirectory)
+	err, stdErr, _ = runGitCommand(logger, dir, []string{"sparse-checkout", "add", fmt.Sprintf("/%s", srcDir)})
+	if err != nil {
+		return nil, fmt.Errorf(stdErr)
+	}
+	if !localFs.Exists(srcDir) {
 		return nil, fmt.Errorf(`template "%s" in version "%s" not found in the templates git repository "%s"`, ref.TemplateId(), version.String(), ref.Repository().Url)
 	}
 

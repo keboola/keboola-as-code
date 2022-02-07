@@ -27,6 +27,7 @@ func TestGit_CheckoutTemplateRepository_Remote(t *testing.T) {
 	// checkout fail from a non-existing url
 	repository := model.TemplateRepository{Type: "git", Name: "keboola", Url: "https://non-existing-url", Ref: "main"}
 	template, err := model.NewTemplateRefFromString(repository, "tmpl1", "v1")
+	assert.NoError(t, err)
 	_, err = CheckoutTemplateRepository(template, log.NewDebugLogger())
 	assert.Error(t, err)
 	assert.Equal(t, `templates git repository not found on url "https://non-existing-url"`, err.Error())
@@ -34,6 +35,7 @@ func TestGit_CheckoutTemplateRepository_Remote(t *testing.T) {
 	// checkout fail from a non-existing github repository
 	repository = model.TemplateRepository{Type: "git", Name: "keboola", Url: "https://github.com/keboola/non-existing-repo.git", Ref: "main"}
 	template, err = model.NewTemplateRefFromString(repository, "tmpl1", "v1")
+	assert.NoError(t, err)
 	_, err = CheckoutTemplateRepository(template, log.NewDebugLogger())
 	assert.Error(t, err)
 	assert.Equal(t, `templates git repository not found on url "https://github.com/keboola/non-existing-repo.git"`, err.Error())
@@ -41,6 +43,7 @@ func TestGit_CheckoutTemplateRepository_Remote(t *testing.T) {
 	// checkout fail from a non-existing branch
 	repository = model.TemplateRepository{Type: "git", Name: "keboola", Url: "https://github.com/keboola/keboola-as-code-templates.git", Ref: "non-existing-ref"}
 	template, err = model.NewTemplateRefFromString(repository, "tmpl1", "v1")
+	assert.NoError(t, err)
 	_, err = CheckoutTemplateRepository(template, log.NewDebugLogger())
 	assert.Error(t, err)
 	assert.Equal(t, `reference "non-existing-ref" not found in the templates git repository "https://github.com/keboola/keboola-as-code-templates.git"`, err.Error())
@@ -48,9 +51,10 @@ func TestGit_CheckoutTemplateRepository_Remote(t *testing.T) {
 	// checkout fail due to non-existing template
 	repository = model.TemplateRepository{Type: "git", Name: "keboola", Url: "https://github.com/keboola/keboola-as-code-templates.git", Ref: "main"}
 	template, err = model.NewTemplateRefFromString(repository, "non-existing-template", "v1")
+	assert.NoError(t, err)
 	_, err = CheckoutTemplateRepository(template, log.NewDebugLogger())
 	assert.Error(t, err)
-	assert.Equal(t, `template "non-existing-template" in version "v1" not found in the templates git repository "https://github.com/keboola/keboola-as-code-templates.git"`, err.Error())
+	assert.Equal(t, `template "non-existing-template" in version "1.0.0" not found in the templates git repository "https://github.com/keboola/keboola-as-code-templates.git"`, err.Error())
 }
 
 func TestGit_CheckoutTemplateRepository_Local(t *testing.T) {
@@ -66,13 +70,15 @@ func TestGit_CheckoutTemplateRepository_Local(t *testing.T) {
 	// checkout fail due to non-existing template in the branch
 	repository := model.TemplateRepository{Type: "git", Name: "keboola", Url: fmt.Sprintf("file://%s", tmpDir), Ref: "main"}
 	template, err := model.NewTemplateRefFromString(repository, "template2", "1.0.0")
+	assert.NoError(t, err)
 	_, err = CheckoutTemplateRepository(template, log.NewDebugLogger())
 	assert.Error(t, err)
-	assert.Equal(t, fmt.Sprintf(`template "template2" in version "v1" not found in the templates git repository "file://%s"`, tmpDir), err.Error())
+	assert.Equal(t, fmt.Sprintf(`template "template2" in version "1.0.0" not found in the templates git repository "file://%s"`, tmpDir), err.Error())
 
 	// checkout success because template2 exists only in branch b1
 	repository = model.TemplateRepository{Type: "git", Name: "keboola", Url: fmt.Sprintf("file://%s", tmpDir), Ref: "b1"}
 	template, err = model.NewTemplateRefFromString(repository, "template2", "1.0.0")
+	assert.NoError(t, err)
 	fs, err := CheckoutTemplateRepository(template, log.NewDebugLogger())
 	assert.NoError(t, err)
 	assert.True(t, fs.Exists("template2/v1/src/manifest.jsonnet"))
