@@ -80,34 +80,34 @@ func saveFile(fs filesystem.Fs, content *file) error {
 func (i file) validate() error {
 	rules := []validator.Rule{
 		{
-			Tag:          "template-input-id",
-			Func:         validateInputId,
-			ErrorMessage: "{0} can only contain alphanumeric characters, dots, underscores and dashes",
+			Tag:      "template-input-id",
+			Func:     validateInputId,
+			ErrorMsg: "{0} can only contain alphanumeric characters, dots, underscores and dashes",
 		},
 		{
-			Tag:          "template-input-default",
-			Func:         validateInputDefault,
-			ErrorMessage: "{0} must be the same type as type or options",
+			Tag:      "template-input-default",
+			Func:     validateInputDefault,
+			ErrorMsg: "{0} must be the same type as type or options",
 		},
 		{
-			Tag:          "template-input-options",
-			Func:         validateInputOptions,
-			ErrorMessage: "{0} allowed only for select and multiselect",
+			Tag:      "template-input-options",
+			Func:     validateInputOptions,
+			ErrorMsg: "{0} allowed only for select and multiselect",
 		},
 		{
-			Tag:          "template-input-type",
-			Func:         validateInputType,
-			ErrorMessage: "{0} allowed only for input type",
+			Tag:      "template-input-type",
+			Func:     validateInputType,
+			ErrorMsg: "{0} allowed only for input type",
 		},
 		{
-			Tag:          "template-input-rules",
-			Func:         validateInputRules,
-			ErrorMessage: "{0} is not valid",
+			Tag:      "template-input-rules",
+			Func:     validateInputRules,
+			ErrorMsg: "{0} is not valid",
 		},
 		{
-			Tag:          "template-input-if",
-			Func:         validateInputIf,
-			ErrorMessage: "{0} is not valid",
+			Tag:      "template-input-if",
+			Func:     validateInputIf,
+			ErrorMsg: "{0} is not valid",
 		},
 	}
 	return validator.Validate(context.Background(), i, rules...)

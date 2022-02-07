@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -84,6 +85,30 @@ func TestValidateValueAddNamespace(t *testing.T) {
 	err := ValidateCtx(context.Background(), "", "required", "my.value")
 	assert.Error(t, err)
 	assert.Equal(t, `my.value is a required field`, err.Error())
+}
+
+func TestValidateErrorMsgFunc(t *testing.T) {
+	t.Parallel()
+	rule := Rule{
+		Tag: "my_rule",
+		Func: func(fl validator.FieldLevel) bool {
+			return false
+		},
+		ErrorMsgFunc: func(fe validator.FieldError) string {
+			if fe.Value() == "foo" {
+				return "error message for foo"
+			}
+			return "other error message"
+		},
+	}
+
+	err := ValidateCtx(context.Background(), "foo", "my_rule", "my.value", rule)
+	assert.Error(t, err)
+	assert.Equal(t, `my.value error message for foo`, err.Error())
+
+	err = ValidateCtx(context.Background(), "other", "my_rule", "my.value", rule)
+	assert.Error(t, err)
+	assert.Equal(t, `my.value other error message`, err.Error())
 }
 
 func TestValidatorRequiredInProject(t *testing.T) {

@@ -27,12 +27,15 @@ const (
 	anonymousField              = "__anonymous__"
 )
 
+type ErrorMsgFunc func(fe validator.FieldError) string
+
 // Rule is custom validation rule/tag.
 type Rule struct {
 	Tag          string
 	Func         validator.Func
 	FuncCtx      validator.FuncCtx
-	ErrorMessage string
+	ErrorMsg     string
+	ErrorMsgFunc ErrorMsgFunc
 }
 
 type contextKey string
@@ -108,8 +111,14 @@ func (v *wrapper) registerRule(rules ...Rule) {
 			panic(fmt.Errorf(`please specify validator.Rulw.FuncCtx or Func`))
 		}
 
-		// Register error message
-		v.registerErrorMessage(rule.Tag, rule.ErrorMessage)
+		switch {
+		case rule.ErrorMsgFunc != nil:
+			v.registerErrorMessageFunc(rule.Tag, rule.ErrorMsgFunc)
+		case rule.ErrorMsg != "":
+			v.registerErrorMessage(rule.Tag, rule.ErrorMsg)
+		default:
+			panic(fmt.Errorf(`please specify validator.Rule.ErrorMsg or ErrorMsgFunc`))
+		}
 	}
 }
 
@@ -128,7 +137,7 @@ func (v *wrapper) registerCustomRules() {
 				// Project mode, value must be set.
 				return !fl.Field().IsZero()
 			},
-			ErrorMessage: "{0} is a required field",
+			ErrorMsg: "{0} is a required field",
 		},
 		// Alphanumeric string with allowed dash character.
 		Rule{
@@ -136,7 +145,7 @@ func (v *wrapper) registerCustomRules() {
 			FuncCtx: func(ctx context.Context, fl validator.FieldLevel) bool {
 				return regexpcache.MustCompile(`^[a-zA-Z0-9\-]+$`).MatchString(fl.Field().String())
 			},
-			ErrorMessage: "{0} can only contain alphanumeric characters and dash",
+			ErrorMsg: "{0} can only contain alphanumeric characters and dash",
 		},
 	)
 }
@@ -159,6 +168,23 @@ func (v *wrapper) registerErrorMessage(tag, message string) {
 			panic(err)
 		}
 		return t
+	}
+	if err := v.validator.RegisterTranslation(tag, v.translator, registerFn, translationFn); err != nil {
+		panic(err)
+	}
+}
+
+// registerErrorMessage for a tag.
+func (v *wrapper) registerErrorMessageFunc(tag string, f ErrorMsgFunc) {
+	if tag == "" {
+		panic(fmt.Errorf(`tag cannot be empty`))
+	}
+
+	registerFn := func(ut ut.Translator) error {
+		return nil
+	}
+	translationFn := func(ut ut.Translator, fe validator.FieldError) string {
+		return f(fe)
 	}
 	if err := v.validator.RegisterTranslation(tag, v.translator, registerFn, translationFn); err != nil {
 		panic(err)
