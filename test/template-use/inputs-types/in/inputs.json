@@ -1,0 +1,11 @@
+{
+  "string": "value1",
+  "string-if-true": "value2",
+  "int": 456,
+  "double": 90.12,
+  "password": "mypassword",
+  "textarea": "Lorem Ipsum",
+  "confirm": false,
+  "select": "value3",
+  "multiselect": ["value1", "value3", "value1"]
+}
