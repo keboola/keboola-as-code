@@ -26,11 +26,11 @@ func validateInputDefault(fl goValidator.FieldLevel) bool {
 	}
 
 	// Check if Default is present in Options
-	if fl.Parent().FieldByName("Kind").String() == KindSelect {
+	if fl.Parent().FieldByName("Kind").String() == string(KindSelect) {
 		return findValueInOptions(fl.Field().String(), fl)
 	}
 
-	if fl.Parent().FieldByName("Kind").String() == KindMultiSelect {
+	if fl.Parent().FieldByName("Kind").String() == string(KindMultiSelect) {
 		defaultValues := fl.Field().Interface().([]string)
 		for _, defaultValue := range defaultValues {
 			found := findValueInOptions(defaultValue, fl)
@@ -41,7 +41,7 @@ func validateInputDefault(fl goValidator.FieldLevel) bool {
 		return true
 	}
 
-	if fl.Parent().FieldByName("Kind").String() == KindInput && fl.Parent().FieldByName("Type").String() != "" {
+	if fl.Parent().FieldByName("Kind").String() == string(KindInput) && fl.Parent().FieldByName("Type").String() != "" {
 		err := validateUserInputByType(fl.Field(), fl.Parent().FieldByName("Type").String(), "input")
 		if err != nil {
 			return false
@@ -64,7 +64,7 @@ func findValueInOptions(value string, fl goValidator.FieldLevel) bool {
 
 // Options must be filled only for select or multiselect Kind.
 func validateInputOptions(fl goValidator.FieldLevel) bool {
-	if fl.Parent().FieldByName("Kind").String() == KindSelect || fl.Parent().FieldByName("Kind").String() == KindMultiSelect {
+	if fl.Parent().FieldByName("Kind").String() == string(KindSelect) || fl.Parent().FieldByName("Kind").String() == string(KindMultiSelect) {
 		return fl.Field().Len() > 0
 	}
 	return fl.Field().Len() == 0
@@ -72,7 +72,7 @@ func validateInputOptions(fl goValidator.FieldLevel) bool {
 
 // Valid only for input Kind.
 func validateInputType(fl goValidator.FieldLevel) bool {
-	return fl.Parent().FieldByName("Kind").String() == KindInput
+	return fl.Parent().FieldByName("Kind").String() == string(KindInput)
 }
 
 // Try to validate Rules with any user input just to check that it does not contain a syntax error and so does not return panic.
@@ -100,11 +100,11 @@ func validateInputIf(fl goValidator.FieldLevel) bool {
 func validateUserInputTypeByKind(value interface{}, kind string, fieldName string) error {
 	inputType := reflect.TypeOf(value).String()
 	switch kind {
-	case KindPassword, KindTextarea:
+	case string(KindPassword), string(KindTextarea):
 		if inputType != reflect.String.String() {
 			return fmt.Errorf("%s should be a string, got %s", fieldName, inputType)
 		}
-	case KindConfirm:
+	case string(KindConfirm):
 		if inputType != reflect.Bool.String() {
 			return fmt.Errorf("%s should be a bool, got %s", fieldName, inputType)
 		}

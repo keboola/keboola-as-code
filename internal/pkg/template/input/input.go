@@ -12,15 +12,6 @@ type Inputs struct {
 	inputs []Input
 }
 
-const (
-	KindInput       = "input"
-	KindPassword    = "password"
-	KindTextarea    = "textarea"
-	KindConfirm     = "confirm"
-	KindSelect      = "select"
-	KindMultiSelect = "multiselect"
-)
-
 func NewInputs(inputs []Input) *Inputs {
 	if inputs == nil {
 		inputs = make([]Input, 0)
@@ -86,7 +77,7 @@ func (i Input) ValidateUserInput(userInput interface{}, ctx context.Context) err
 		return err
 	}
 
-	if i.Kind == KindInput && i.Type != "" {
+	if i.Kind == string(KindInput) && i.Type != "" {
 		err := validateUserInputByType(userInput, i.Type, i.Name)
 		if err != nil {
 			return err
