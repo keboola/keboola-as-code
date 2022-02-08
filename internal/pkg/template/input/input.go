@@ -106,27 +106,3 @@ func (i Input) Available(params map[string]interface{}) bool {
 	}
 	return result.(bool)
 }
-
-type Option struct {
-	Id   string `json:"id" validate:"required"`
-	Name string `json:"name" validate:"required"`
-}
-
-type Options []Option
-
-func (options Options) GetIndexByName(name string) int {
-	for i, o := range options {
-		if o.Name == name {
-			return i
-		}
-	}
-	return 0
-}
-
-func (options Options) Names() []string {
-	optionsNames := make([]string, 0)
-	for _, o := range options {
-		optionsNames = append(optionsNames, o.Name)
-	}
-	return optionsNames
-}

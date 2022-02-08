@@ -159,7 +159,7 @@ func (d *useTmplDialog) askInput(inputDef input.Input) error {
 			},
 		}
 		if inputDef.Default != nil {
-			selectPrompt.Default = inputDef.Options.GetIndexByName(inputDef.Default.(string))
+			selectPrompt.Default = inputDef.Options.GetById(inputDef.Default.(string))
 		}
 		selectedIndex, _ := d.SelectIndex(selectPrompt)
 		if err := d.addInputValue(inputDef, inputDef.Options[selectedIndex].Id); err != nil {
@@ -178,7 +178,7 @@ func (d *useTmplDialog) askInput(inputDef input.Input) error {
 		if inputDef.Default != nil {
 			defaultIndices := make([]int, 0)
 			for _, o := range inputDef.Default.([]string) {
-				defaultIndices = append(defaultIndices, inputDef.Options.GetIndexByName(o))
+				defaultIndices = append(defaultIndices, inputDef.Options.GetById(o))
 			}
 			multiSelect.Default = defaultIndices
 		}
