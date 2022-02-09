@@ -26,49 +26,49 @@ mkdir -p "$GITHUB_RELEASE_DIR"
 
 # TXT file
 if [[ "$ARTIFACT_NAME" =~ \.txt ]]; then
-  DST_S3="s3://${AWS_BUCKET_NAME}/zip/${ARTIFACT_NAME}";
+  DST_S3="s3://${AWS_BUCKET_NAME}/test/${ARTIFACT_NAME}";
   aws s3 cp "$ARTIFACT_PATH" "$DST_S3";
   cp "${ARTIFACT_PATH}" "${GITHUB_RELEASE_DIR}/${ARTIFACT_NAME}"
 fi
 
 # ZIP archive
 if [[ "$ARTIFACT_NAME" =~ \.zip$ ]]; then
-  DST_S3="s3://${AWS_BUCKET_NAME}/zip/${ARTIFACT_NAME}";
+  DST_S3="s3://${AWS_BUCKET_NAME}/test/${ARTIFACT_NAME}";
   aws s3 cp "$ARTIFACT_PATH" "$DST_S3";
   cp "${ARTIFACT_PATH}" "${GITHUB_RELEASE_DIR}/${ARTIFACT_NAME}"
 fi
-
-# DEB repository
-if [[ "$ARTIFACT_NAME" =~ \.deb$ ]]; then
-  DST_S3="s3://${AWS_BUCKET_NAME}/deb/pool/${PACKAGE_NAME}_${VERSION}_${ARCH}.deb";
-  aws s3 cp "$ARTIFACT_PATH" "$DST_S3";
-  cp "${ARTIFACT_PATH}" "${GITHUB_RELEASE_DIR}/${ARTIFACT_NAME}"
-fi
-
-# RPM repository
-if [[ "$ARTIFACT_NAME" =~ \.rpm$ ]]; then
-  DST_S3="s3://${AWS_BUCKET_NAME}/rpm/${PACKAGE_NAME}_${VERSION}_${ARCH}.rpm";
-  aws s3 cp "$ARTIFACT_PATH" "$DST_S3";
-  cp "${ARTIFACT_PATH}" "${GITHUB_RELEASE_DIR}/${ARTIFACT_NAME}"
-fi
-
-# APK Alpine repository
-if [[ "$ARTIFACT_NAME" =~ \.apk$ ]]; then
-  case $ARCH in
-    amd64)
-      ALPINE_ARCH="x86_64"
-      ;;
-    arm64)
-      ALPINE_ARCH="aarch64"
-      ;;
-    armv6)
-      ALPINE_ARCH="armhf"
-      ;;
-    *)
-      echo "Unexpected ARCH='$ARCH'"
-      exit 2
-      ;;
-  esac
+#
+## DEB repository
+#if [[ "$ARTIFACT_NAME" =~ \.deb$ ]]; then
+#  DST_S3="s3://${AWS_BUCKET_NAME}/deb/pool/${PACKAGE_NAME}_${VERSION}_${ARCH}.deb";
+#  aws s3 cp "$ARTIFACT_PATH" "$DST_S3";
+#  cp "${ARTIFACT_PATH}" "${GITHUB_RELEASE_DIR}/${ARTIFACT_NAME}"
+#fi
+#
+## RPM repository
+#if [[ "$ARTIFACT_NAME" =~ \.rpm$ ]]; then
+#  DST_S3="s3://${AWS_BUCKET_NAME}/rpm/${PACKAGE_NAME}_${VERSION}_${ARCH}.rpm";
+#  aws s3 cp "$ARTIFACT_PATH" "$DST_S3";
+#  cp "${ARTIFACT_PATH}" "${GITHUB_RELEASE_DIR}/${ARTIFACT_NAME}"
+#fi
+#
+## APK Alpine repository
+#if [[ "$ARTIFACT_NAME" =~ \.apk$ ]]; then
+#  case $ARCH in
+#    amd64)
+#      ALPINE_ARCH="x86_64"
+#      ;;
+#    arm64)
+#      ALPINE_ARCH="aarch64"
+#      ;;
+#    armv6)
+#      ALPINE_ARCH="armhf"
+#      ;;
+#    *)
+#      echo "Unexpected ARCH='$ARCH'"
+#      exit 2
+#      ;;
+#  esac
 
   export DST_S3="s3://${AWS_BUCKET_NAME}/apk/${ALPINE_ARCH}/${PACKAGE_NAME}-${VERSION}.apk";
   aws s3 cp "$ARTIFACT_PATH" "$DST_S3";

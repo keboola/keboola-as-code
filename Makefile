@@ -9,7 +9,7 @@ build-local:
 	goreleaser build --single-target --rm-dist --snapshot -f ./build/ci/goreleaser.yml
 
 release:
-	goreleaser release --rm-dist -f ./build/ci/goreleaser.yml
+	goreleaser release --snapshot --rm-dist -f ./build/ci/goreleaser.yml
 
 release-local:
 	goreleaser release --rm-dist --snapshot --skip-publish -f ./build/ci/goreleaser.yml

@@ -76,6 +76,7 @@ jobs:
           echo "::set-output name=version::$VERSION"
 
   test:
+    if: ${{ false }}  #TODO disabled
     needs:
       - set_version
     concurrency:
@@ -123,6 +124,7 @@ jobs:
           TEST_PARALLELISM: 16
 
   lint:
+    if: ${{ false }}  #TODO disabled
     needs:
       - set_version
     runs-on: ubuntu-latest
@@ -178,15 +180,15 @@ jobs:
   release:
     needs:
       - set_version
-      - test
-      - lint
+      #TODO - test
+      #TODO - lint
       - cross-compile
     # only one parallel job allowed - used shared S3
     concurrency:
       group: release
       cancel-in-progress: false
     runs-on: macos-latest
-    if: startsWith(github.ref, 'refs/tags/') && needs.set_version.outputs.is_semantic_tag == 'true'
+    #TODO if: startsWith(github.ref, 'refs/tags/') && needs.set_version.outputs.is_semantic_tag == 'true'
     steps:
       - name: Check out the repo
         uses: actions/checkout@v2
@@ -239,25 +241,49 @@ jobs:
           tag: ${{ github.ref }}
           overwrite: true
           file_glob: true
-      - name: Create Homebrew formulae
-        env:
-          TAG: ${{ needs.set_version.outputs.tag }}
-          VERSION: ${{ needs.set_version.outputs.version }}
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Download exe
+        id: download_exe
+        shell: bash
         run: |
-          mkdir target/homebrew
-          export DARWIN_ARM_TARGET_SHA256=$(openssl dgst -sha256  target/gh-release/*darwin_arm64.zip | cut -f 2 -d ' ' )
-          export DARWIN_AMD_TARGET_SHA256=$(openssl dgst -sha256  target/gh-release/*darwin_amd64.zip | cut -f 2 -d ' ' )
-          export LINUX_ARM_TARGET_SHA256=$(openssl dgst -sha256   target/gh-release/*linux_armv6.zip  | cut -f 2 -d ' ' )
-          export LINUX_ARM64_TARGET_SHA256=$(openssl dgst -sha256 target/gh-release/*linux_arm64.zip  | cut -f 2 -d ' ' )
-          export LINUX_AMD_TARGET_SHA256=$(openssl dgst -sha256   target/gh-release/*linux_amd64.zip  | cut -f 2 -d ' ' )
-          envsubst < build/package/homebrew/homebrew.template.rb > target/homebrew/keboola-cli.rb
-          cat target/homebrew/keboola-cli.rb
-      - name: Upload Homebrew formulae
-        uses: actions/upload-artifact@v2
-        with:
-          name: homebrew-formulae
-          path: target/homebrew/keboola-cli.rb
-          retention-days: 1
+          hub release download "${GITHUB_REF#refs/tags/}" -i '*windows_amd64*.zip'
+          printf "::set-output name=zip::%s\n" *.zip
+          unzip -o *.zip && rm -v *.zip
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      - name: Prepare PATH
+        id: setupmsbuild
+        uses: microsoft/setup-msbuild@v1.0.3
+      - name: Build MSI
+        id: buildmsi
+        shell: bash
+        env:
+          ZIP_FILE: ${{ steps.download_exe.outputs.zip }}
+          MSBUILD_PATH: ${{ steps.setupmsbuild.outputs.msbuildPath }}
+        run: |
+          name="$(basename "$ZIP_FILE" ".zip")"
+          version="$(echo -e ${GITHUB_REF#refs/tags/v} | sed s/-.*$//)"
+          "${MSBUILD_PATH}\MSBuild.exe" ./build/windows/gh.wixproj -p:SourceDir="$PWD" -p:OutputPath="$PWD" -p:OutputName="$name" -p:ProductVersion="$version"
+#      - name: Create Homebrew formulae
+#        env:
+#          TAG: ${{ needs.set_version.outputs.tag }}
+#          VERSION: ${{ needs.set_version.outputs.version }}
+#        run: |
+#          mkdir target/homebrew
+#          export DARWIN_ARM_TARGET_SHA256=$(openssl dgst -sha256  target/gh-release/*darwin_arm64.zip | cut -f 2 -d ' ' )
+#          export DARWIN_AMD_TARGET_SHA256=$(openssl dgst -sha256  target/gh-release/*darwin_amd64.zip | cut -f 2 -d ' ' )
+#          export LINUX_ARM_TARGET_SHA256=$(openssl dgst -sha256   target/gh-release/*linux_armv6.zip  | cut -f 2 -d ' ' )
+#          export LINUX_ARM64_TARGET_SHA256=$(openssl dgst -sha256 target/gh-release/*linux_arm64.zip  | cut -f 2 -d ' ' )
+#          export LINUX_AMD_TARGET_SHA256=$(openssl dgst -sha256   target/gh-release/*linux_amd64.zip  | cut -f 2 -d ' ' )
+#          envsubst < build/package/homebrew/homebrew.template.rb > target/homebrew/keboola-cli.rb
+#          cat target/homebrew/keboola-cli.rb
+#      - name: Upload Homebrew formulae
+#        uses: actions/upload-artifact@v2
+#        with:
+#          name: homebrew-formulae
+#          path: target/homebrew/keboola-cli.rb
+#          retention-days: 1
 
 
   update-pkg-index:
