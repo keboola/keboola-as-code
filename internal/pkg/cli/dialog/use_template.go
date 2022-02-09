@@ -128,7 +128,7 @@ func (d *useTmplDialog) askInput(inputDef input.Input) error {
 
 	// Ask for input
 	switch inputDef.Kind {
-	case input.KindInput, input.KindPassword, input.KindTextarea:
+	case input.KindInput, input.KindHidden, input.KindTextarea:
 		question := &prompt.Question{
 			Label:       inputDef.Name,
 			Description: inputDef.Description,
@@ -140,7 +140,7 @@ func (d *useTmplDialog) askInput(inputDef input.Input) error {
 				return inputDef.ValidateUserInput(value, d.context)
 			},
 			Default: cast.ToString(inputDef.Default),
-			Hidden:  inputDef.Kind == input.KindPassword,
+			Hidden:  inputDef.Kind == input.KindHidden,
 		}
 		value, _ := d.Ask(question)
 		// Save value

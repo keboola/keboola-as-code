@@ -7,7 +7,7 @@ import (
 
 const (
 	KindInput       = Kind("input")
-	KindPassword    = Kind("password")
+	KindHidden      = Kind("hidden")
 	KindTextarea    = Kind("textarea")
 	KindConfirm     = Kind("confirm")
 	KindSelect      = Kind("select")
@@ -21,7 +21,7 @@ type Kind string
 type Kinds []Kind
 
 func allKinds() Kinds {
-	return Kinds{KindInput, KindPassword, KindTextarea, KindConfirm, KindSelect, KindMultiSelect}
+	return Kinds{KindInput, KindHidden, KindTextarea, KindConfirm, KindSelect, KindMultiSelect}
 }
 
 func (v Kinds) String() string {
@@ -52,7 +52,7 @@ func (k Kind) ValidateType(t Type) error {
 		if t != TypeString && t != TypeInt && t != TypeDouble {
 			return fmt.Errorf("should be one of [string, int, double] for kind=%s, found %s", k, t)
 		}
-	case KindPassword:
+	case KindHidden:
 		if t != TypeString {
 			return fmt.Errorf("should be string for kind=%s, found %s", k, t)
 		}

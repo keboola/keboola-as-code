@@ -9,7 +9,7 @@ import (
 func TestKind_IsValid(t *testing.T) {
 	t.Parallel()
 	assert.True(t, KindInput.IsValid())
-	assert.True(t, KindPassword.IsValid())
+	assert.True(t, KindHidden.IsValid())
 	assert.True(t, KindTextarea.IsValid())
 	assert.True(t, KindConfirm.IsValid())
 	assert.True(t, KindSelect.IsValid())
@@ -30,11 +30,11 @@ func TestKind_ValidateType(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, "should be one of [string, int, double] for kind=input, found string[]", err.Error())
 
-	// Password
-	assert.NoError(t, KindPassword.ValidateType(TypeString))
-	err = KindPassword.ValidateType(TypeInt)
+	// Hidden
+	assert.NoError(t, KindHidden.ValidateType(TypeString))
+	err = KindHidden.ValidateType(TypeInt)
 	assert.Error(t, err)
-	assert.Equal(t, "should be string for kind=password, found int", err.Error())
+	assert.Equal(t, "should be string for kind=hidden, found int", err.Error())
 
 	// Confirm
 	assert.NoError(t, KindConfirm.ValidateType(TypeBool))

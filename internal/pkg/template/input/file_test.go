@@ -38,7 +38,7 @@ func TestTemplateInputsValidateDefinitions(t *testing.T) {
 				Name:        "input",
 				Description: "input desc",
 				Type:        "int",
-				Kind:        "password",
+				Kind:        "hidden",
 				Default:     "def",
 			},
 		},
@@ -301,7 +301,7 @@ const inputsJsonNet = `{
       name: "Facebook password",
       description: "Facebook password description",
       type: "string",
-      kind: "password",
+      kind: "hidden",
     },
     {
       id: "fb.extractor.options",
@@ -339,7 +339,7 @@ func testInputs() *Inputs {
 			Name:        "Facebook password",
 			Description: "Facebook password description",
 			Type:        "string",
-			Kind:        "password",
+			Kind:        "hidden",
 		},
 		{
 			Id:          "fb.extractor.options",

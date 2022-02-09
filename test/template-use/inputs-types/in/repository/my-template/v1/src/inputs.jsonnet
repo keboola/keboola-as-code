@@ -74,7 +74,7 @@
       name: 'password',
       description: 'password',
       type: 'string',
-      kind: 'password',
+      kind: 'hidden',
       rules: 'required',
     },
     {
@@ -82,7 +82,7 @@
       name: 'password default',
       description: 'password',
       type: 'string',
-      kind: 'password',
+      kind: 'hidden',
       rules: 'required',
       default: 'my secret',
     },

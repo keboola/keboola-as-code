@@ -184,7 +184,7 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 			Name:        "Facebook password",
 			Description: "Enter your Facebook password",
 			Type:        "string",
-			Kind:        "password",
+			Kind:        "hidden",
 		},
 		{
 			Id:          "age",
@@ -308,7 +308,7 @@ func TestAskUseTemplateOptionsIfNotMet(t *testing.T) {
 			Name:        "Facebook password",
 			Description: "Enter your Facebook password",
 			Type:        "string",
-			Kind:        "password",
+			Kind:        "hidden",
 		},
 		{
 			Id:          "age",
