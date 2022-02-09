@@ -2,6 +2,7 @@ package input
 
 import (
 	"fmt"
+	"math"
 	"reflect"
 	"strings"
 )
@@ -56,7 +57,8 @@ func (t Type) ValidateValue(value reflect.Value) error {
 			return fmt.Errorf("should be string, got %s", kindStr)
 		}
 	case TypeInt:
-		if valueKind != reflect.Int {
+
+		if valueKind != reflect.Int && !(valueKind == reflect.Float64 && math.Trunc(value.Float()) == value.Float()) {
 			return fmt.Errorf("should be int, got %s", kindStr)
 		}
 	case TypeDouble:

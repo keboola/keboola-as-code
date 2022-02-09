@@ -3,8 +3,12 @@ package dialog
 import (
 	"context"
 	"fmt"
+	"math"
 	"os"
 	"strconv"
+
+	"github.com/AlecAivazis/survey/v2"
+	"github.com/spf13/cast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
@@ -81,10 +85,20 @@ func (d *useTmplDialog) ask(inputs *input.Inputs) (useTemplate.Options, error) {
 	return d.out, nil
 }
 
-func (d *useTmplDialog) addInputValue(inputDef input.Input, value interface{}) error {
-	if err := inputDef.ValidateUserInput(value, d.context); err != nil {
-		return err
+// addInputValue from CLI dialog or inputs file.
+func (d *useTmplDialog) addInputValue(value interface{}, inputDef input.Input) error {
+	// Convert
+	value, err := convertValue(value, inputDef)
+	if err != nil {
+		return fmt.Errorf("invalid template input: %w", err)
 	}
+
+	// Validate
+	if err := inputDef.ValidateUserInput(value, d.context); err != nil {
+		return fmt.Errorf("invalid template input: %w", err)
+	}
+
+	// Add
 	d.context = context.WithValue(d.context, contextKey(inputDef.Id), value)
 	d.inputsValues[inputDef.Id] = value
 	d.out.Inputs = append(d.out.Inputs, template.InputValue{Id: inputDef.Id, Value: value})
@@ -93,7 +107,9 @@ func (d *useTmplDialog) addInputValue(inputDef input.Input, value interface{}) e
 
 func (d *useTmplDialog) askInputs(inputs *input.Inputs) error {
 	for _, inputDef := range inputs.All() {
-		if !inputDef.Available(d.inputsValues) {
+		if result, err := inputDef.Available(d.inputsValues); err != nil {
+			return err
+		} else if !result {
 			continue
 		}
 		if err := d.askInput(inputDef); err != nil {
@@ -107,10 +123,7 @@ func (d *useTmplDialog) askInput(inputDef input.Input) error {
 	// Use value from the inputs file, if it is present
 	if v, found := d.inputsFile[inputDef.Id]; found {
 		// Validate and save
-		if err := d.addInputValue(inputDef, v); err != nil {
-			return err
-		}
-		return nil
+		return d.addInputValue(v, inputDef)
 	}
 
 	// Ask for input
@@ -120,23 +133,18 @@ func (d *useTmplDialog) askInput(inputDef input.Input) error {
 			Label:       inputDef.Name,
 			Description: inputDef.Description,
 			Validator: func(raw interface{}) error {
-				value, err := convertStrValue(raw.(string), inputDef.Type)
+				value, err := convertValue(raw.(string), inputDef)
 				if err != nil {
 					return err
 				}
 				return inputDef.ValidateUserInput(value, d.context)
 			},
-			Hidden: inputDef.Kind == input.KindPassword,
+			Default: cast.ToString(inputDef.Default),
+			Hidden:  inputDef.Kind == input.KindPassword,
 		}
-		question.Default, _ = inputDef.Default.(string)
-		valueStr, _ := d.Ask(question)
-		// Convert string to input type
-		value, err := convertStrValue(valueStr, inputDef.Type)
-		if err != nil {
-			return err
-		}
+		value, _ := d.Ask(question)
 		// Save value
-		if err := d.addInputValue(inputDef, value); err != nil {
+		if err := d.addInputValue(value, inputDef); err != nil {
 			return err
 		}
 	case input.KindConfirm:
@@ -145,40 +153,46 @@ func (d *useTmplDialog) askInput(inputDef input.Input) error {
 			Description: inputDef.Description,
 		}
 		confirm.Default, _ = inputDef.Default.(bool)
-		if err := d.addInputValue(inputDef, d.Confirm(confirm)); err != nil {
-			return err
-		}
+		return d.addInputValue(d.Confirm(confirm), inputDef)
 	case input.KindSelect:
 		selectPrompt := &prompt.SelectIndex{
 			Label:       inputDef.Name,
 			Description: inputDef.Description,
 			Options:     inputDef.Options.Names(),
 			UseDefault:  true,
-			Validator: func(val interface{}) error {
-				return inputDef.ValidateUserInput(val, d.context)
+			Validator: func(answerRaw interface{}) error {
+				answer := answerRaw.(survey.OptionAnswer)
+				return inputDef.ValidateUserInput(answer.Value, d.context)
 			},
 		}
 		if inputDef.Default != nil {
-			selectPrompt.Default = inputDef.Options.GetById(inputDef.Default.(string))
+			if _, index, found := inputDef.Options.GetById(inputDef.Default.(string)); found {
+				selectPrompt.Default = index
+			}
 		}
 		selectedIndex, _ := d.SelectIndex(selectPrompt)
-		if err := d.addInputValue(inputDef, inputDef.Options[selectedIndex].Id); err != nil {
-			return err
-		}
+		return d.addInputValue(inputDef.Options[selectedIndex].Id, inputDef)
 	case input.KindMultiSelect:
 		multiSelect := &prompt.MultiSelectIndex{
 			Label:       inputDef.Name,
 			Description: inputDef.Description,
 			Options:     inputDef.Options.Names(),
-			Validator: func(val interface{}) error {
-				return inputDef.ValidateUserInput(val, d.context)
+			Validator: func(answersRaw interface{}) error {
+				answers := answersRaw.([]survey.OptionAnswer)
+				values := make([]string, len(answers))
+				for i, v := range answers {
+					values[i] = v.Value
+				}
+				return inputDef.ValidateUserInput(values, d.context)
 			},
 		}
 		// Default indices
 		if inputDef.Default != nil {
 			defaultIndices := make([]int, 0)
-			for _, o := range inputDef.Default.([]string) {
-				defaultIndices = append(defaultIndices, inputDef.Options.GetById(o))
+			for _, id := range inputDef.Default.([]interface{}) {
+				if _, index, found := inputDef.Options.GetById(id.(string)); found {
+					defaultIndices = append(defaultIndices, index)
+				}
 			}
 			multiSelect.Default = defaultIndices
 		}
@@ -189,33 +203,87 @@ func (d *useTmplDialog) askInput(inputDef input.Input) error {
 			selectedValues = append(selectedValues, inputDef.Options[selectedIndex].Id)
 		}
 		// Save value
-		if err := d.addInputValue(inputDef, selectedValues); err != nil {
-			return err
-		}
+		return d.addInputValue(selectedValues, inputDef)
 	}
 
 	return nil
 }
 
-func convertStrValue(value string, targetType string) (interface{}, error) {
-	switch targetType {
-	case `int`:
-		if v, err := strconv.Atoi(value); err == nil {
-			return v, nil
-		} else {
-			return nil, fmt.Errorf(`value "%s" is not integer`, value)
+func convertValue(value interface{}, inputDef input.Input) (interface{}, error) {
+	switch {
+	case inputDef.Kind == input.KindInput:
+		switch inputDef.Type {
+		case input.TypeInt:
+			// Empty string
+			if value == "" {
+				return 0, nil
+			}
+			// Int
+			if v, ok := value.(int); ok {
+				return v, nil
+			}
+			// Float whole number to int
+			if v, ok := value.(float64); ok && math.Trunc(value.(float64)) == value.(float64) {
+				return int(v), nil
+			}
+			// String to int
+			if v, ok := value.(string); ok {
+				if v, err := strconv.Atoi(v); err == nil {
+					return v, nil
+				}
+			}
+			return nil, fmt.Errorf(`value "%v" is not integer`, value)
+		case input.TypeDouble:
+			// Empty string
+			if value == "" {
+				return 0.0, nil
+			}
+			// Float
+			if v, ok := value.(float64); ok {
+				return v, nil
+			}
+			// Int -> float
+			if v, ok := value.(int); ok {
+				return float64(v), nil
+			}
+			// String to float
+			if v, ok := value.(string); ok {
+				if v, err := strconv.ParseFloat(v, 64); err == nil {
+					return v, nil
+				}
+			}
+			return nil, fmt.Errorf(`value "%v" is not float`, value)
+		case input.TypeString:
+			return value, nil
+		default:
+			panic(fmt.Errorf("unexpected input type \"%s\"", inputDef.Type))
 		}
-	case `float64`:
-		if v, err := strconv.ParseFloat(value, 64); err == nil {
-			return v, nil
+	case inputDef.Type == input.TypeStringArray:
+		slice := make([]interface{}, 0)
+		values := make(map[string]bool)
+		if strings, ok := value.([]string); ok {
+			// Convert []string (Go type) -> []interface{} (JSON type, used in JsonNet template)
+			// And return only unique values.
+			for _, item := range strings {
+				if !values[item] {
+					slice = append(slice, item)
+					values[item] = true
+				}
+			}
+			return slice, nil
+		} else if items, ok := value.([]interface{}); ok {
+			// Return only unique values.
+			for _, itemRaw := range items {
+				item := itemRaw.(string)
+				if !values[item] {
+					slice = append(slice, item)
+					values[item] = true
+				}
+			}
+			return slice, nil
 		} else {
-			return nil, fmt.Errorf(`value "%s" is not float`, value)
+			panic(fmt.Errorf("expected a slice, found \"%s\"", inputDef.Type))
 		}
-	case `string`:
-		return value, nil
-	case ``:
-		return value, nil
-	default:
-		panic(fmt.Errorf("unexpected input type \"%s\"", targetType))
 	}
+	return value, nil
 }

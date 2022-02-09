@@ -21,8 +21,8 @@ func TestTemplateInputsValidateDefinitions(t *testing.T) {
 				Name:        "input",
 				Description: "input desc",
 				Type:        "string",
-				Default:     "def",
 				Kind:        "input",
+				Default:     "def",
 			},
 		},
 	}
@@ -38,15 +38,15 @@ func TestTemplateInputsValidateDefinitions(t *testing.T) {
 				Name:        "input",
 				Description: "input desc",
 				Type:        "int",
-				Default:     "def",
 				Kind:        "password",
+				Default:     "def",
 			},
 		},
 	}
 	err = f.validate()
 	assert.Error(t, err)
-	assert.Equal(t, `- inputs[0].default must be the same type as type or options
-- inputs[0].type allowed only for input type`, err.Error())
+	assert.Equal(t, `- inputs[0].type int is not allowed for the specified kind
+- inputs[0].default must match the specified type`, err.Error())
 
 	// Fail - input Kind with missing Type
 	f = file{
@@ -72,15 +72,15 @@ func TestTemplateInputsValidateDefinitions(t *testing.T) {
 				Name:        "input",
 				Description: "input desc",
 				Type:        "int",
-				Default:     33,
 				Kind:        "input",
 				Rules:       "gtex=5",
+				Default:     33,
 			},
 		},
 	}
 	err = f.validate()
 	assert.Error(t, err)
-	assert.Equal(t, `inputs[0].rules is not valid`, err.Error())
+	assert.Equal(t, `inputs[0].rules is not valid: undefined validation function 'gtex'`, err.Error())
 
 	// Fail - wrong If
 	f = file{
@@ -97,7 +97,7 @@ func TestTemplateInputsValidateDefinitions(t *testing.T) {
 	}
 	err = f.validate()
 	assert.Error(t, err)
-	assert.Equal(t, `inputs[0].if is not valid`, err.Error())
+	assert.Equal(t, "inputs[0].if cannot compile condition:\n  - expression: 1+(2-1>1\n  - error: Unbalanced parenthesis", err.Error())
 
 	// Success - int Default and empty Options
 	f = file{
@@ -107,11 +107,11 @@ func TestTemplateInputsValidateDefinitions(t *testing.T) {
 				Name:        "input",
 				Description: "input desc",
 				Type:        "int",
-				Default:     33,
-				Options:     Options{},
 				Kind:        "input",
+				Default:     33,
 				Rules:       "gte=5",
 				If:          "1+(2-1)>1",
+				Options:     Options{},
 			},
 		},
 	}
@@ -144,19 +144,19 @@ func TestTemplateInputsValidateDefinitionsSelect(t *testing.T) {
 				Id:          "input.id",
 				Name:        "input",
 				Description: "input desc",
+				Type:        "string",
+				Kind:        "input",
 				Default:     "def",
 				Options: Options{
 					{Id: "a", Name: "A"},
 					{Id: "b", Name: "B"},
 				},
-				Kind: "input",
 			},
 		},
 	}
 	err := f.validate()
 	assert.Error(t, err)
-	assert.Equal(t, `- inputs[0].type is a required field
-- inputs[0].options should only be set for select and multiselect kinds`, err.Error())
+	assert.Equal(t, `inputs[0].options should only be set for select and multiselect kinds`, err.Error())
 
 	// Fail - empty Options
 	f = file{
@@ -165,8 +165,9 @@ func TestTemplateInputsValidateDefinitionsSelect(t *testing.T) {
 				Id:          "input.id",
 				Name:        "input",
 				Description: "input desc",
-				Options:     Options{},
+				Type:        "string",
 				Kind:        "select",
+				Options:     Options{},
 			},
 		},
 	}
@@ -181,18 +182,19 @@ func TestTemplateInputsValidateDefinitionsSelect(t *testing.T) {
 				Id:          "input.id",
 				Name:        "input",
 				Description: "input desc",
+				Type:        "string",
+				Kind:        "select",
 				Default:     "c",
 				Options: Options{
 					{Id: "a", Name: "A"},
 					{Id: "b", Name: "B"},
 				},
-				Kind: "select",
 			},
 		},
 	}
 	err = f.validate()
 	assert.Error(t, err)
-	assert.Equal(t, `inputs[0].default must be the same type as type or options`, err.Error())
+	assert.Equal(t, `inputs[0].default can only contain values from the specified options`, err.Error())
 
 	// Success - with Options
 	f = file{
@@ -201,12 +203,13 @@ func TestTemplateInputsValidateDefinitionsSelect(t *testing.T) {
 				Id:          "input.id",
 				Name:        "input",
 				Description: "input desc",
+				Type:        "string",
+				Kind:        "select",
 				Default:     "a",
 				Options: Options{
 					{Id: "a", Name: "A"},
 					{Id: "b", Name: "B"},
 				},
-				Kind: "select",
 			},
 		},
 	}
@@ -220,19 +223,20 @@ func TestTemplateInputsValidateDefinitionsSelect(t *testing.T) {
 				Id:          "input.id",
 				Name:        "input",
 				Description: "input desc",
-				Default:     []string{"a", "d"},
+				Type:        "string[]",
+				Kind:        "multiselect",
+				Default:     []interface{}{"a", "d"},
 				Options: Options{
 					{Id: "a", Name: "A"},
 					{Id: "b", Name: "B"},
 					{Id: "c", Name: "C"},
 				},
-				Kind: "multiselect",
 			},
 		},
 	}
 	err = f.validate()
 	assert.Error(t, err)
-	assert.Equal(t, `inputs[0].default must be the same type as type or options`, err.Error())
+	assert.Equal(t, `inputs[0].default can only contain values from the specified options`, err.Error())
 
 	// Success - Default for MultiOptions
 	f = file{
@@ -241,13 +245,14 @@ func TestTemplateInputsValidateDefinitionsSelect(t *testing.T) {
 				Id:          "input.id",
 				Name:        "input",
 				Description: "input desc",
-				Default:     []string{"a", "c"},
+				Type:        "string[]",
+				Kind:        "multiselect",
+				Default:     []interface{}{"a", "c"},
 				Options: Options{
 					{Id: "a", Name: "A"},
 					{Id: "b", Name: "B"},
 					{Id: "c", Name: "C"},
 				},
-				Kind: "multiselect",
 			},
 		},
 	}
@@ -288,19 +293,21 @@ const inputsJsonNet = `{
       id: "fb.extractor.username",
       name: "Facebook username",
       description: "Facebook username description",
-      kind: "input",
       type: "string",
+      kind: "input",
     },
     {
       id: "fb.extractor.password",
       name: "Facebook password",
       description: "Facebook password description",
+      type: "string",
       kind: "password",
     },
     {
       id: "fb.extractor.options",
       name: "Facebook options",
       description: "Facebook options description",
+      type: "string",
       kind: "select",
       options: [
         {
@@ -331,12 +338,14 @@ func testInputs() *Inputs {
 			Id:          "fb.extractor.password",
 			Name:        "Facebook password",
 			Description: "Facebook password description",
+			Type:        "string",
 			Kind:        "password",
 		},
 		{
 			Id:          "fb.extractor.options",
 			Name:        "Facebook options",
 			Description: "Facebook options description",
+			Type:        "string",
 			Kind:        "select",
 			Options: Options{
 				{Id: "a", Name: "A"},

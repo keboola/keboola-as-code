@@ -197,6 +197,7 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 			Id:          "restricted",
 			Name:        "Restricted content",
 			Description: "Do you want to see restricted content?",
+			Type:        "bool",
 			Kind:        "confirm",
 			If:          "age>18",
 		},
@@ -204,6 +205,7 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 			Id:          "drink",
 			Name:        "Favorite drink",
 			Description: "What do you like to drink?",
+			Type:        "string",
 			Kind:        "select",
 			If:          "age>18",
 			Options:     input.Options{{Id: "beer", Name: "Beer"}, {Id: "wine", Name: "Wine"}},
@@ -212,6 +214,7 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 			Id:          "drinks",
 			Name:        "Stronger drinks",
 			Description: "Anything stronger?",
+			Type:        "string[]",
 			Kind:        "multiselect",
 			If:          "age>18",
 			Options:     input.Options{{Id: "rum", Name: "Rum"}, {Id: "vodka", Name: "Vodka"}, {Id: "whiskey", Name: "Whiskey"}},
@@ -234,7 +237,7 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 			{Id: "age", Value: 25},
 			{Id: "restricted", Value: true},
 			{Id: "drink", Value: "wine"},
-			{Id: "drinks", Value: []string{"rum", "whiskey"}},
+			{Id: "drinks", Value: []interface{}{"rum", "whiskey"}},
 		},
 	}, output)
 }
