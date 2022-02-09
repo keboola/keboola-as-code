@@ -259,6 +259,43 @@ jobs:
           path: target/homebrew/keboola-cli.rb
           retention-days: 1
 
+  release-windows:
+    needs:
+      - release
+    # only one parallel job allowed - used shared S3
+    concurrency:
+      group: release
+      cancel-in-progress: false
+    runs-on: windows-latest
+    if: startsWith(github.ref, 'refs/tags/') && needs.set_version.outputs.is_semantic_tag == 'true'
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
+      - name: Download exe
+        id: download_exe
+        shell: bash
+        run: |
+          hub release download "${GITHUB_REF#refs/tags/}" -i '*windows_amd64*.zip'
+          printf "::set-output name=zip::%s\n" *.zip
+          unzip -o *.zip && rm -v *.zip
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      - name: Prepare PATH
+        id: setupmsbuild
+        uses: microsoft/setup-msbuild@v1.0.3
+      - name: Build and upload MSI
+        id: buildmsi
+        shell: bash
+        env:
+          ZIP_FILE: ${{ steps.download_exe.outputs.zip }}
+          MSBUILD_PATH: ${{ steps.setupmsbuild.outputs.msbuildPath }}
+        run: |
+          mkdir msi
+          name="$(basename "$ZIP_FILE" ".zip")"
+          version="$(echo -e ${GITHUB_REF#refs/tags/v} | sed s/-.*$//)"
+          "${MSBUILD_PATH}\MSBuild.exe" ./build/package/windows/msi.wixproj -p:SourceDir="$PWD" -p:OutputPath="./msi" -p:OutputName="$name" -p:ProductVersion="$version"
+          echo "NAME: $name"
+          aws s3 cp "./build/package/windows/msi/${name}.msi" s3://${AWS_BUCKET_NAME}/zip/
 
   update-pkg-index:
     needs:
