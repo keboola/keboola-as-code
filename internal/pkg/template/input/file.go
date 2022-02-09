@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	goValidator "github.com/go-playground/validator/v10"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
@@ -80,42 +78,5 @@ func saveFile(fs filesystem.Fs, content *file) error {
 }
 
 func (i file) validate() error {
-	rules := []validator.Rule{
-		{
-			Tag:      "template-input-id",
-			Func:     validateInputId,
-			ErrorMsg: "{0} can only contain alphanumeric characters, dots, underscores and dashes",
-		},
-		{
-			Tag:      "template-input-default",
-			Func:     validateInputDefault,
-			ErrorMsg: "{0} must be the same type as type or options",
-		},
-		{
-			Tag:  "template-input-options",
-			Func: validateInputOptions,
-			ErrorMsgFunc: func(fe goValidator.FieldError) string {
-				if options, ok := fe.Value().(Options); ok && len(options) == 0 {
-					return fmt.Sprintf("%s must contain at least one item", fe.Field())
-				}
-				return fmt.Sprintf("%s should only be set for select and multiselect kinds", fe.Field())
-			},
-		},
-		{
-			Tag:      "template-input-type",
-			Func:     validateInputType,
-			ErrorMsg: "{0} allowed only for input type",
-		},
-		{
-			Tag:      "template-input-rules",
-			Func:     validateInputRules,
-			ErrorMsg: "{0} is not valid",
-		},
-		{
-			Tag:      "template-input-if",
-			Func:     validateInputIf,
-			ErrorMsg: "{0} is not valid",
-		},
-	}
-	return validator.Validate(context.Background(), i, rules...)
+	return validator.Validate(context.Background(), i, validationRules()...)
 }

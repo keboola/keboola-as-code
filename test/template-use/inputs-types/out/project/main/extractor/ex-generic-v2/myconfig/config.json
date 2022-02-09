@@ -1,0 +1,28 @@
+{
+  "parameters": {
+    "inputsValues": {
+      "confirm": false,
+      "confirmDefault": true,
+      "double": 90.12,
+      "doubleDefault": 78.9,
+      "int": "value1",
+      "intDefault": 123,
+      "multiselect": [
+        "value1",
+        "value3"
+      ],
+      "multiselectDefault": [
+        "value2",
+        "value3"
+      ],
+      "password": "mypassword",
+      "passwordDefault": "my secret",
+      "select": "value3",
+      "selectDefault": "value2",
+      "string": "value1",
+      "stringDefault": "default value",
+      "textarea": "Lorem Ipsum",
+      "textareaDefault": "my long text"
+    }
+  }
+}

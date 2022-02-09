@@ -108,7 +108,7 @@ func (v *wrapper) registerRule(rules ...Rule) {
 				panic(err)
 			}
 		default:
-			panic(fmt.Errorf(`please specify validator.Rulw.FuncCtx or Func`))
+			panic(fmt.Errorf(`please specify validator.Rule.FuncCtx or Func`))
 		}
 
 		switch {

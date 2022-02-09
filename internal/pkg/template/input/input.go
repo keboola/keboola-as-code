@@ -2,24 +2,16 @@ package input
 
 import (
 	"context"
-
-	goValuate "gopkg.in/Knetic/govaluate.v3"
+	"fmt"
+	"reflect"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 type Inputs struct {
 	inputs []Input
 }
-
-const (
-	KindInput       = "input"
-	KindPassword    = "password"
-	KindTextarea    = "textarea"
-	KindConfirm     = "confirm"
-	KindSelect      = "select"
-	KindMultiSelect = "multiselect"
-)
 
 func NewInputs(inputs []Input) *Inputs {
 	if inputs == nil {
@@ -72,70 +64,27 @@ type Input struct {
 	Id          string      `json:"id" validate:"required,template-input-id"`
 	Name        string      `json:"name" validate:"required"`
 	Description string      `json:"description" validate:"required"`
-	Default     interface{} `json:"default,omitempty" validate:"omitempty,template-input-default"`
-	Kind        string      `json:"kind" validate:"required,oneof=input password textarea confirm select multiselect"`
-	Type        string      `json:"type,omitempty" validate:"required_if=Kind input,omitempty,oneof=string int float64,template-input-type"`
-	Options     Options     `json:"options,omitempty" validate:"required_if=Type select Type multiselect,template-input-options"`
-	Rules       string      `json:"rules,omitempty" validate:"template-input-rules"`
-	If          string      `json:"if,omitempty" validate:"template-input-if"`
+	Type        Type        `json:"type" validate:"required,template-input-type,template-input-type-for-kind"`
+	Kind        Kind        `json:"kind" validate:"required,template-input-kind"`
+	Default     interface{} `json:"default,omitempty" validate:"omitempty,template-input-default-value,template-input-default-options"`
+	Rules       Rules       `json:"rules,omitempty" validate:"omitempty,template-input-rules"`
+	If          If          `json:"if,omitempty" validate:"omitempty,template-input-if"`
+	Options     Options     `json:"options,omitempty" validate:"template-input-options"`
 }
 
 // ValidateUserInput validates input from the template user using Input.Rules.
 func (i Input) ValidateUserInput(userInput interface{}, ctx context.Context) error {
-	if err := validateUserInputTypeByKind(userInput, i.Kind, i.Name); err != nil {
-		return err
+	if err := i.Type.ValidateValue(reflect.ValueOf(userInput)); err != nil {
+		return fmt.Errorf("%s %w", i.Name, err)
 	}
-
-	if i.Kind == KindInput && i.Type != "" {
-		err := validateUserInputByType(userInput, i.Type, i.Name)
-		if err != nil {
-			return err
-		}
-	}
-
-	if i.Rules == "" {
-		return nil
-	}
-
-	return validateUserInputWithRules(ctx, userInput, i.Rules, i.Name)
+	return i.Rules.ValidateValue(userInput, i.Id)
 }
 
 // Available decides if the input should be visible to user according to Input.If.
-func (i Input) Available(params map[string]interface{}) bool {
-	if i.If == "" {
-		return true
-	}
-	expression, err := goValuate.NewEvaluableExpression(i.If)
+func (i Input) Available(params map[string]interface{}) (bool, error) {
+	result, err := i.If.Evaluate(params)
 	if err != nil {
-		panic(err)
+		return false, utils.PrefixError(fmt.Sprintf(`invalid input "%s"`, i.Id), err)
 	}
-	result, err := expression.Evaluate(params)
-	if err != nil {
-		panic(err)
-	}
-	return result.(bool)
-}
-
-type Option struct {
-	Id   string `json:"id" validate:"required"`
-	Name string `json:"name" validate:"required"`
-}
-
-type Options []Option
-
-func (options Options) GetIndexByName(name string) int {
-	for i, o := range options {
-		if o.Name == name {
-			return i
-		}
-	}
-	return 0
-}
-
-func (options Options) Names() []string {
-	optionsNames := make([]string, 0)
-	for _, o := range options {
-		optionsNames = append(optionsNames, o.Name)
-	}
-	return optionsNames
+	return result, nil
 }

@@ -13,17 +13,17 @@ func TestInput_ValidateUserInput(t *testing.T) {
 		Id:          "input.id",
 		Name:        "input",
 		Description: "input description",
-		Kind:        "input",
 		Type:        "int",
+		Kind:        "input",
 		Rules:       "gte=5,lte=10",
 	}
 	err := input.ValidateUserInput(1, nil)
 	assert.Error(t, err)
-	assert.Equal(t, "input must be 5 or greater", err.Error())
+	assert.Equal(t, "input.id must be 5 or greater", err.Error())
 
 	err = input.ValidateUserInput("1", nil)
 	assert.Error(t, err)
-	assert.Equal(t, "input should have type int, got string instead", err.Error())
+	assert.Equal(t, "input should be int, got string", err.Error())
 
 	assert.Error(t, err)
 	assert.NoError(t, input.ValidateUserInput(7, nil))
@@ -32,11 +32,12 @@ func TestInput_ValidateUserInput(t *testing.T) {
 		Id:          "input.id",
 		Name:        "input",
 		Description: "input description",
+		Type:        "bool",
 		Kind:        "confirm",
 	}
 	err = input.ValidateUserInput(1, nil)
 	assert.Error(t, err)
-	assert.Equal(t, "input should be a bool, got int", err.Error())
+	assert.Equal(t, "input should be bool, got int", err.Error())
 	assert.NoError(t, input.ValidateUserInput(true, nil))
 }
 
@@ -48,34 +49,40 @@ func TestInput_Available(t *testing.T) {
 		Id:          "input.id",
 		Name:        "input",
 		Description: "input description",
-		Kind:        "input",
 		Type:        "int",
+		Kind:        "input",
 		If:          "facebook_integration == true",
 	}
 	params := make(map[string]interface{}, 1)
 	params["facebook_integration"] = true
-	assert.True(t, input.Available(params))
+	v, err := input.Available(params)
+	assert.True(t, v)
+	assert.NoError(t, err)
 
 	// Check empty If evaluated as true
 	input = Input{
 		Id:          "input.id",
 		Name:        "input",
 		Description: "input description",
-		Kind:        "input",
 		Type:        "int",
+		Kind:        "input",
 	}
-	assert.True(t, input.Available(nil))
+	v, err = input.Available(nil)
+	assert.True(t, v)
+	assert.NoError(t, err)
 
 	// Check If evaluated as false
 	input = Input{
 		Id:          "input.id",
 		Name:        "input",
 		Description: "input description",
-		Kind:        "input",
 		Type:        "int",
+		Kind:        "input",
 		If:          "facebook_integration == true",
 	}
 	params = make(map[string]interface{}, 1)
 	params["facebook_integration"] = false
-	assert.False(t, input.Available(params))
+	v, err = input.Available(params)
+	assert.False(t, v)
+	assert.NoError(t, err)
 }
