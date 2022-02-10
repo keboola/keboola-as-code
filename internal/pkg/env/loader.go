@@ -1,19 +1,16 @@
 package env
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/joho/godotenv"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // LoadDotEnv loads envs from ".env" if exists. Existing envs take precedence.
-func LoadDotEnv(logger log.Logger, osEnvs *Map, fs filesystem.Fs, dirs []string) (*Map, error) {
-	errors := utils.NewMultiError()
+func LoadDotEnv(logger log.Logger, osEnvs *Map, fs filesystem.Fs, dirs []string) *Map {
 	envs := FromMap(osEnvs.ToMap()) // copy
 
 	for _, dir := range dirs {
@@ -29,21 +26,21 @@ func LoadDotEnv(logger log.Logger, osEnvs *Map, fs filesystem.Fs, dirs []string)
 				// File doesn't exist
 				continue
 			case err != nil && !os.IsNotExist(err):
-				errors.Append(fmt.Errorf("cannot check if path \"%s\" exists: %w", path, err))
+				logger.Warnf(`Cannot check if path "%s" exists: %s`, path, err)
 				continue
 			}
 
 			// Read file
 			file, err := fs.ReadFile(filesystem.NewFileDef(path).SetDescription("env file"))
 			if err != nil {
-				errors.Append(fmt.Errorf("cannot read env file \"%s\": %w", path, err))
+				logger.Warnf(`Cannot read env file "%s": %s`, path, err)
 				continue
 			}
 
 			// Load env
 			fileEnvs, err := godotenv.Unmarshal(file.Content)
 			if err != nil {
-				errors.Append(err)
+				logger.Warnf(`Cannot parse env file "%s": %s`, path, err)
 				continue
 			}
 
@@ -54,5 +51,5 @@ func LoadDotEnv(logger log.Logger, osEnvs *Map, fs filesystem.Fs, dirs []string)
 		}
 	}
 
-	return envs, errors.ErrorOrNil()
+	return envs
 }
