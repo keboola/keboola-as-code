@@ -1,6 +1,7 @@
 package env
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,8 +26,8 @@ func TestLoadDotEnv(t *testing.T) {
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(".env", "FOO1=BAZ\nFOO3=BAR3\n")))
 
 	// Load envs
-	envs, err := LoadDotEnv(logger, osEnvs, fs, []string{"."})
-	assert.NoError(t, err)
+	logger.Truncate()
+	envs := LoadDotEnv(logger, osEnvs, fs, []string{"."})
 
 	// Assert
 	assert.Equal(t, map[string]string{
@@ -36,12 +37,34 @@ func TestLoadDotEnv(t *testing.T) {
 		"FOO3":    "BAR3",
 	}, envs.ToMap())
 
-	assert.Equal(t, `DEBUG  Saved ".env.local"
-DEBUG  Saved ".env"
+	expected := `
 DEBUG  Loaded ".env.local"
 INFO  Loaded env file ".env.local"
 DEBUG  Loaded ".env"
 INFO  Loaded env file ".env"
-`, logger.AllMessages(),
-	)
+`
+	assert.Equal(t, strings.TrimLeft(expected, "\n"), logger.AllMessages())
+}
+
+func TestLoadDotEnv_Invalid(t *testing.T) {
+	t.Parallel()
+	// Memory fs
+	logger := log.NewDebugLogger()
+	fs, err := aferofs.NewMemoryFs(logger, ".")
+	assert.NoError(t, err)
+
+	// Write envs to file
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(".env.local", "invalid")))
+
+	// Load envs
+	logger.Truncate()
+	envs := LoadDotEnv(logger, Empty(), fs, []string{"."})
+
+	// Assert
+	assert.Equal(t, map[string]string{}, envs.ToMap())
+	expected := `
+DEBUG  Loaded ".env.local"
+WARN  Cannot parse env file ".env.local": Can't separate key from value
+`
+	assert.Equal(t, strings.TrimLeft(expected, "\n"), logger.AllMessages())
 }

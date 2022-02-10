@@ -11,7 +11,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 const (
@@ -41,12 +40,7 @@ func New() *Options {
 
 func (o *Options) Load(logger log.Logger, osEnvs *env.Map, fs filesystem.Fs, flags *pflag.FlagSet) error {
 	// Load ENVs from OS and files
-	envs, err := o.loadEnvFiles(logger, osEnvs, fs)
-	if err == nil {
-		o.envs = envs
-	} else {
-		logger.Debug(err.Error())
-	}
+	o.envs = o.loadEnvFiles(logger, osEnvs, fs)
 
 	// Bind all flags and corresponding ENVs
 	if err := o.bindFlagsAndEnvs(flags); err != nil {
@@ -83,7 +77,7 @@ func (o *Options) bindFlagsAndEnvs(flags *pflag.FlagSet) error {
 	return o.MergeConfigMap(envs)
 }
 
-func (o *Options) loadEnvFiles(logger log.Logger, osEnvs *env.Map, fs filesystem.Fs) (*env.Map, error) {
+func (o *Options) loadEnvFiles(logger log.Logger, osEnvs *env.Map, fs filesystem.Fs) *env.Map {
 	// File system basePath = projectDir, so here we are using current/top level dir
 	projectDir := `.` // nolint
 	workingDir := fs.WorkingDir()
@@ -96,11 +90,7 @@ func (o *Options) loadEnvFiles(logger log.Logger, osEnvs *env.Map, fs filesystem
 	}
 
 	// Load ENVs from files
-	if envs, err := env.LoadDotEnv(logger, osEnvs, fs, dirs); err == nil {
-		return envs, nil
-	} else {
-		return nil, utils.PrefixError(fmt.Sprintf(`error loading ENV files: %s`, err.Error()), err)
-	}
+	return env.LoadDotEnv(logger, osEnvs, fs, dirs)
 }
 
 // Dump Options for debugging, hide API token.
