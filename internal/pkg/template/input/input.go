@@ -68,7 +68,7 @@ type Input struct {
 	Kind        Kind        `json:"kind" validate:"required,template-input-kind"`
 	Default     interface{} `json:"default,omitempty" validate:"omitempty,template-input-default-value,template-input-default-options"`
 	Rules       Rules       `json:"rules,omitempty" validate:"omitempty,template-input-rules"`
-	If          If          `json:"if,omitempty" validate:"omitempty,template-input-if"`
+	If          If          `json:"showIf,omitempty" validate:"omitempty,template-input-if"`
 	Options     Options     `json:"options,omitempty" validate:"template-input-options"`
 }
 
