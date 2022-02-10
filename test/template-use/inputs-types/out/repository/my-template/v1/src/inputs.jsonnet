@@ -24,7 +24,7 @@
       type: 'string',
       kind: 'input',
       rules: 'required',
-      'if': "[string-default] == 'default value'",
+      showIf: "[string-default] == 'default value'",
     },
     {
       id: 'string-if-false',
@@ -33,7 +33,7 @@
       type: 'string',
       kind: 'input',
       rules: 'required',
-      'if': "[string-default] == 'foo bar'",
+      showIf: "[string-default] == 'foo bar'",
     },
     {
       id: 'int',

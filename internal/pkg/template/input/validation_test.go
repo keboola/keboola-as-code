@@ -74,7 +74,7 @@ func TestValidationRules(t *testing.T) {
 				Kind:        "input",
 				If:          "1+(2-1>1",
 			},
-			error: "inputs[0].if cannot compile condition:\n  - expression: 1+(2-1>1\n  - error: Unbalanced parenthesis",
+			error: "inputs[0].showIf cannot compile condition:\n  - expression: 1+(2-1>1\n  - error: Unbalanced parenthesis",
 		},
 		{
 			description: "int default, empty options",
