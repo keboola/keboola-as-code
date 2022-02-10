@@ -79,6 +79,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 	// Command definition
 	root := &RootCommand{
 		Options:   options.New(),
+		Logger:    log.NewMemoryLogger(), // temporary logger, we don't have a path to the log file yet
 		cmdByPath: make(map[string]*cobra.Command),
 		aliases:   orderedmap.New(),
 	}
@@ -119,18 +120,15 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 
 	// Init when flags are parsed
 	root.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
-		// Temporary logger, we don't have a path to the log file yet
-		memoryLogger := log.NewMemoryLogger()
-
 		// Create filesystem abstraction
 		workingDir, _ := cmd.Flags().GetString(`working-dir`)
-		fs, err := fsFactory(memoryLogger, workingDir)
+		fs, err := fsFactory(root.Logger, workingDir)
 		if err != nil {
 			return err
 		}
 
 		// Load values from flags and envs
-		if err = root.Options.Load(memoryLogger, envs, fs, cmd.Flags()); err != nil {
+		if err = root.Options.Load(root.Logger, envs, fs, cmd.Flags()); err != nil {
 			return err
 		}
 
@@ -138,9 +136,6 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 		root.setupLogger()
 		fs.SetLogger(root.Logger)
 		root.Logger.Debug(`Working dir: `, filesystem.Join(fs.BasePath(), fs.WorkingDir()))
-
-		// Copy logs from the temporary logger
-		memoryLogger.CopyLogsTo(root.Logger)
 
 		// Create dependencies container
 		root.Deps = cliDependencies.NewContainer(root.Context(), envs, fs, dialog.New(prompt), root.Logger, root.Options)
@@ -217,11 +212,6 @@ func (root *RootCommand) Execute() (exitCode int) {
 	defer func() {
 		exitCode = root.tearDown(exitCode, recover())
 	}()
-
-	// Logger can be nil, if error occurred before initialization
-	if root.Logger == nil {
-		root.setupLogger()
-	}
 
 	if err := root.Cmd.Execute(); err != nil {
 		root.printError(err)
@@ -350,6 +340,9 @@ func (root *RootCommand) setupLogger() {
 	var logFileErr error
 	root.logFile, logFileErr = log.NewLogFile(root.Options.LogFilePath)
 
+	// Get temporary logger
+	memoryLogger, _ := root.Logger.(*log.MemoryLogger)
+
 	// Create logger
 	root.Logger = log.NewCliLogger(root.OutOrStdout(), root.ErrOrStderr(), root.logFile, root.Options.Verbose)
 	root.SetOut(root.Logger.InfoWriter())
@@ -370,10 +363,20 @@ func (root *RootCommand) setupLogger() {
 	} else {
 		w.WriteString(`Log file: ` + root.logFile.Path())
 	}
+
+	// Copy logs from the temporary logger
+	if memoryLogger != nil {
+		memoryLogger.CopyLogsTo(root.Logger)
+	}
 }
 
 // tearDown does clean-up after command execution.
 func (root *RootCommand) tearDown(exitCode int, panicErr interface{}) int {
+	// Logger may be uninitialized, if error occurred before initialization
+	if _, ok := root.Logger.(*log.MemoryLogger); ok {
+		root.setupLogger()
+	}
+
 	if panicErr != nil {
 		logFilePath := ""
 		if root.logFile != nil {
