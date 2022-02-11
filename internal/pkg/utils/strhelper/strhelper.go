@@ -79,3 +79,10 @@ func StripHtmlComments(str string) string {
 			return strings.Repeat("\n", strings.Count(s, "\n"))
 		})
 }
+
+func Truncate(str string, max int, suffix string) string {
+	if len(str) <= max {
+		return str
+	}
+	return str[0:max] + suffix
+}
