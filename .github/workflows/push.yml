@@ -271,8 +271,8 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v2
-      - name: Download exe
-        id: download_exe
+      - name: Download zipped exe
+        id: download_zip
         shell: bash
         run: |
           hub release download "${GITHUB_REF#refs/tags/}" -i '*windows_amd64*.zip'
@@ -287,15 +287,14 @@ jobs:
         id: buildmsi
         shell: bash
         env:
-          ZIP_FILE: ${{ steps.download_exe.outputs.zip }}
+          ZIP_FILE: ${{ steps.download_zip.outputs.zip }}
           MSBUILD_PATH: ${{ steps.setupmsbuild.outputs.msbuildPath }}
         run: |
           mkdir msi
           name="$(basename "$ZIP_FILE" ".zip")"
           version="$(echo -e ${GITHUB_REF#refs/tags/v} | sed s/-.*$//)"
           "${MSBUILD_PATH}\MSBuild.exe" ./build/package/windows/msi.wixproj -p:SourceDir="$PWD" -p:OutputPath="./msi" -p:OutputName="$name" -p:ProductVersion="$version"
-          echo "NAME: $name"
-          aws s3 cp "./build/package/windows/msi/${name}.msi" s3://${AWS_BUCKET_NAME}/zip/
+          aws s3 cp "./build/package/windows/msi/${name}.msi" s3://${AWS_BUCKET_NAME}/msi/
 
   update-pkg-index:
     needs:
