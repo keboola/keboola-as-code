@@ -78,6 +78,7 @@ type Objects interface {
 	All() []Object
 	Branches() (branches []*Branch)
 	ConfigsFrom(branch BranchKey) (configs []*Config)
+	ConfigsWithRowsFrom(branch BranchKey) (configs []*ConfigWithRows)
 	ConfigRowsFrom(config ConfigKey) (rows []*ConfigRow)
 }
 

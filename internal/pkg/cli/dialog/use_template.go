@@ -39,6 +39,7 @@ type useTmplDialog struct {
 	inputsValues     map[string]interface{} // for input.Available
 }
 
+// AskUseTemplateOptions - dialog for using the template in the project.
 func (p *Dialogs) AskUseTemplateOptions(inputs *template.Inputs, d useTmplDialogDeps, loadStateOptions loadState.Options) (useTemplate.Options, error) {
 	dialog := &useTmplDialog{
 		Dialogs:          p,

@@ -143,13 +143,13 @@ func testBranches() []*model.Branch {
 	}
 }
 
-func testConfigs() []*model.Config {
-	return []*model.Config{
+func testConfigs() []*model.ConfigWithRows {
+	return []*model.ConfigWithRows{
 		{
-			Name: "Config 1",
+			Config: &model.Config{Name: "Config 1"},
 		},
 		{
-			Name: "Config 2",
+			Config: &model.Config{Name: "Config 2"},
 		},
 	}
 }

@@ -19,11 +19,11 @@ func TestSelectConfigInteractive(t *testing.T) {
 	dialog, console := createDialogs(t, true)
 	o := options.New()
 
-	// All branches
-	config1 := &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "1"}, Name: `Config 1`}
-	config2 := &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "2"}, Name: `Config 2`}
-	config3 := &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "3"}, Name: `Config 3`}
-	allConfigs := []*model.Config{config1, config2, config3}
+	// All configs
+	config1 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "1"}, Name: `Config 1`}}
+	config2 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "2"}, Name: `Config 2`}}
+	config3 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "3"}, Name: `Config 3`}}
+	allConfigs := []*model.ConfigWithRows{config1, config2, config3}
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -70,11 +70,11 @@ func TestSelectConfigByFlag(t *testing.T) {
 	o := options.New()
 	o.Set(`config`, `2`)
 
-	// All branches
-	config1 := &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "1"}, Name: `Config 1`}
-	config2 := &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "2"}, Name: `Config 2`}
-	config3 := &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "3"}, Name: `Config 3`}
-	allConfigs := []*model.Config{config1, config2, config3}
+	// All configs
+	config1 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "1"}, Name: `Config 1`}}
+	config2 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "2"}, Name: `Config 2`}}
+	config3 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "3"}, Name: `Config 3`}}
+	allConfigs := []*model.ConfigWithRows{config1, config2, config3}
 
 	// Run
 	out, err := dialog.SelectConfig(o, allConfigs, `LABEL`)
@@ -89,11 +89,11 @@ func TestSelectConfigMissing(t *testing.T) {
 	dialog, _ := createDialogs(t, false)
 	o := options.New()
 
-	// All branches
-	config1 := &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "1"}, Name: `Config 1`}
-	config2 := &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "2"}, Name: `Config 2`}
-	config3 := &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "3"}, Name: `Config 3`}
-	allConfigs := []*model.Config{config1, config2, config3}
+	// All configs
+	config1 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "1"}, Name: `Config 1`}}
+	config2 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "2"}, Name: `Config 2`}}
+	config3 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "3"}, Name: `Config 3`}}
+	allConfigs := []*model.ConfigWithRows{config1, config2, config3}
 
 	// Run
 	out, err := dialog.SelectConfig(o, allConfigs, `LABEL`)
@@ -109,13 +109,13 @@ func TestSelectConfigsInteractive(t *testing.T) {
 	dialog, console := createDialogs(t, true)
 	o := options.New()
 
-	// All branches
-	config1 := &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "1"}, Name: `Config 1`}
-	config2 := &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "2"}, Name: `Config 2`}
-	config3 := &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "3"}, Name: `Config 3`}
-	config4 := &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "4"}, Name: `Config 4`}
-	config5 := &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "5"}, Name: `Config 5`}
-	allConfigs := []*model.Config{config1, config2, config3, config4, config5}
+	// All configs
+	config1 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "1"}, Name: `Config 1`}}
+	config2 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "2"}, Name: `Config 2`}}
+	config3 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "3"}, Name: `Config 3`}}
+	config4 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "4"}, Name: `Config 4`}}
+	config5 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "5"}, Name: `Config 5`}}
+	allConfigs := []*model.ConfigWithRows{config1, config2, config3, config4, config5}
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -171,7 +171,7 @@ func TestSelectConfigsInteractive(t *testing.T) {
 
 	// Run
 	out, err := dialog.SelectConfigs(o, allConfigs, `LABEL`)
-	assert.Equal(t, []*model.Config{config2, config4}, out)
+	assert.Equal(t, []*model.ConfigWithRows{config2, config4}, out)
 	assert.NoError(t, err)
 
 	// Close terminal
@@ -188,17 +188,17 @@ func TestSelectConfigsByFlag(t *testing.T) {
 	o := options.New()
 	o.Set(`configs`, `foo.bar:2, foo.bar:4`)
 
-	// All branches
-	config1 := &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "1"}, Name: `Config 1`}
-	config2 := &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "2"}, Name: `Config 2`}
-	config3 := &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "3"}, Name: `Config 3`}
-	config4 := &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "4"}, Name: `Config 4`}
-	config5 := &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "5"}, Name: `Config 5`}
-	allConfigs := []*model.Config{config1, config2, config3, config4, config5}
+	// All configs
+	config1 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "1"}, Name: `Config 1`}}
+	config2 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "2"}, Name: `Config 2`}}
+	config3 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "3"}, Name: `Config 3`}}
+	config4 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "4"}, Name: `Config 4`}}
+	config5 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "5"}, Name: `Config 5`}}
+	allConfigs := []*model.ConfigWithRows{config1, config2, config3, config4, config5}
 
 	// Run
 	out, err := dialog.SelectConfigs(o, allConfigs, `LABEL`)
-	assert.Equal(t, []*model.Config{config2, config4}, out)
+	assert.Equal(t, []*model.ConfigWithRows{config2, config4}, out)
 	assert.NoError(t, err)
 }
 
@@ -209,13 +209,13 @@ func TestSelectConfigsMissing(t *testing.T) {
 	dialog, _ := createDialogs(t, false)
 	o := options.New()
 
-	// All branches
-	config1 := &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "1"}, Name: `Config 1`}
-	config2 := &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "2"}, Name: `Config 2`}
-	config3 := &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "3"}, Name: `Config 3`}
-	config4 := &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "4"}, Name: `Config 4`}
-	config5 := &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "5"}, Name: `Config 5`}
-	allConfigs := []*model.Config{config1, config2, config3, config4, config5}
+	// All configs
+	config1 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "1"}, Name: `Config 1`}}
+	config2 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "2"}, Name: `Config 2`}}
+	config3 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "3"}, Name: `Config 3`}}
+	config4 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "4"}, Name: `Config 4`}}
+	config5 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "5"}, Name: `Config 5`}}
+	allConfigs := []*model.ConfigWithRows{config1, config2, config3, config4, config5}
 
 	// Run
 	out, err := dialog.SelectConfigs(o, allConfigs, `LABEL`)
