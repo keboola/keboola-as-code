@@ -218,7 +218,7 @@ func (p *Prompt) Multiline(q *prompt.Question) (result string, ok bool) {
 	return result, p.handleError(err)
 }
 
-func (p *Prompt) Editor(q *prompt.Question) (result string, ok bool) {
+func (p *Prompt) Editor(fileExt string, q *prompt.Question) (result string, ok bool) {
 	// Print description
 	if len(q.Description) > 0 {
 		p.Printf("\n%s\n", q.Description)
@@ -232,7 +232,8 @@ func (p *Prompt) Editor(q *prompt.Question) (result string, ok bool) {
 		opts = append(opts, survey.WithValidator(q.Validator))
 	}
 
-	editor := &survey.Editor{Message: formatLabel(q.Label), Default: q.Default, Help: q.Help, HideDefault: true, AppendDefault: true, Editor: p.editor, FileName: `kbc-editor-*.txt`}
+	fileName := `kbc-editor-*.` + fileExt
+	editor := &survey.Editor{Message: formatLabel(q.Label), Default: q.Default, Help: q.Help, HideDefault: true, AppendDefault: true, Editor: p.editor, FileName: fileName}
 	err := survey.AskOne(editor, &result, opts...)
 	p.Printf("\n")
 	return result, p.handleError(err)

@@ -46,6 +46,6 @@ func (p *Prompt) Multiline(q *prompt.Question) (result string, ok bool) {
 	return q.Default, true
 }
 
-func (p *Prompt) Editor(q *prompt.Question) (result string, ok bool) {
+func (p *Prompt) Editor(_ string, q *prompt.Question) (result string, ok bool) {
 	return q.Default, true
 }

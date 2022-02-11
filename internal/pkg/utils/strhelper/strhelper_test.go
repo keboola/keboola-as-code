@@ -96,3 +96,25 @@ func TestFirstUpper(t *testing.T) {
 	assert.Equal(t, "FOO", FirstUpper("FOO"))
 	assert.Equal(t, "Foo", FirstUpper("Foo"))
 }
+
+func TestStripHtmlComments(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct{ in, expected string }{
+		{"", ""},
+		{"abc", "abc"},
+		{"<!---->", ""},
+		{"<!-- -->", ""},
+		{"<!-- abc -->", ""},
+		{"foo<!-- abc -->", "foo"},
+		{"<!-- abc -->bar", "bar"},
+		{"foo<!-- abc -->bar", "foobar"},
+		{"foo\n<!-- abc -->\nbar", "foo\n\nbar"},
+		{"foo\n<!-- abc\ndef -->\nbar", "foo\n\n\nbar"},
+		{"foo\n<!-- abc\ndef -->\nbar<!-- abc\ndef -->", "foo\n\n\nbar\n"},
+	}
+
+	for i, c := range cases {
+		assert.Equal(t, c.expected, StripHtmlComments(c.in), "case "+cast.ToString(i))
+	}
+}
