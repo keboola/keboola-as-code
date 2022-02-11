@@ -59,6 +59,16 @@ func (f *Proxy) ConfigsFrom(branch BranchKey) (configs []*Config) {
 	return configs
 }
 
+func (f *Proxy) ConfigsWithRowsFrom(branch BranchKey) (configs []*ConfigWithRows) {
+	for _, config := range f.registry.ConfigsFrom(branch) {
+		if config.HasState(f.stateType) {
+			config := config.GetState(f.stateType).(*Config)
+			configs = append(configs, &ConfigWithRows{Config: config, Rows: f.ConfigRowsFrom(config.ConfigKey)})
+		}
+	}
+	return configs
+}
+
 func (f *Proxy) ConfigRowsFrom(config ConfigKey) (rows []*ConfigRow) {
 	var out []*ConfigRow
 	for _, row := range f.registry.ConfigRowsFrom(config) {

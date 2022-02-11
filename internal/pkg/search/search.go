@@ -35,8 +35,8 @@ func Branch(all []*model.Branch, str string) (*model.Branch, error) {
 }
 
 // Configs searches for configs by ID and name.
-func Configs(all []*model.Config, str string) []*model.Config {
-	matches := make([]*model.Config, 0)
+func Configs(all []*model.ConfigWithRows, str string) []*model.ConfigWithRows {
+	matches := make([]*model.ConfigWithRows, 0)
 	for _, object := range all {
 		if matchObjectIdOrName(str, object) {
 			matches = append(matches, object)
@@ -46,7 +46,7 @@ func Configs(all []*model.Config, str string) []*model.Config {
 }
 
 // Config searches for config by ID and name.
-func Config(all []*model.Config, str string) (*model.Config, error) {
+func Config(all []*model.ConfigWithRows, str string) (*model.ConfigWithRows, error) {
 	configs := Configs(all, str)
 	switch len(configs) {
 	case 1:

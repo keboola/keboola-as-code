@@ -102,7 +102,7 @@ func (p *Dialogs) AskCreateRow(d createDeps, loadStateOptions loadState.Options)
 	out.BranchId = branch.Id
 
 	// Config
-	allConfigs := projectState.LocalObjects().ConfigsFrom(branch.BranchKey)
+	allConfigs := projectState.LocalObjects().ConfigsWithRowsFrom(branch.BranchKey)
 	config, err := p.SelectConfig(d.Options(), allConfigs, `Select the target config`)
 	if err != nil {
 		return out, err

@@ -11,7 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func (p *Dialogs) SelectConfig(options *options.Options, all []*model.Config, label string) (result *model.Config, err error) {
+func (p *Dialogs) SelectConfig(options *options.Options, all []*model.ConfigWithRows, label string) (result *model.ConfigWithRows, err error) {
 	if options.IsSet(`config`) {
 		if c, err := search.Config(all, options.GetString(`config`)); err == nil {
 			result = c
@@ -34,10 +34,10 @@ func (p *Dialogs) SelectConfig(options *options.Options, all []*model.Config, la
 	return result, nil
 }
 
-func (p *Dialogs) SelectConfigs(options *options.Options, all []*model.Config, label string) (results []*model.Config, err error) {
+func (p *Dialogs) SelectConfigs(options *options.Options, all []*model.ConfigWithRows, label string) (results []*model.ConfigWithRows, err error) {
 	if options.IsSet(`configs`) {
 		// Create configs map
-		configByKey := make(map[string]*model.Config)
+		configByKey := make(map[string]*model.ConfigWithRows)
 		for _, config := range all {
 			configByKey[fmt.Sprintf(`%s:%s`, config.ComponentId, config.Id)] = config
 		}
@@ -83,14 +83,14 @@ func (p *Dialogs) SelectConfigs(options *options.Options, all []*model.Config, l
 	return results, nil
 }
 
-func formatConfig(config *model.Config) string {
-	return fmt.Sprintf(`%s (%s:%s)`, config.ObjectName(), config.ComponentId, config.ObjectId())
-}
-
-func configsSelectOpts(all []*model.Config) []string {
+func configsSelectOpts(all []*model.ConfigWithRows) []string {
 	selectOpts := make([]string, 0)
 	for _, c := range all {
 		selectOpts = append(selectOpts, formatConfig(c))
 	}
 	return selectOpts
+}
+
+func formatConfig(config *model.ConfigWithRows) string {
+	return fmt.Sprintf(`%s (%s:%s)`, config.ObjectName(), config.ComponentId, config.ObjectId())
 }
