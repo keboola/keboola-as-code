@@ -71,7 +71,9 @@ type Prompt interface {
 	MultiSelect(s *MultiSelect) (result []string, ok bool)
 	MultiSelectIndex(s *MultiSelectIndex) (result []int, ok bool)
 	Multiline(q *Question) (result string, ok bool)
-	Editor(q *Question) (result string, ok bool)
+	// Editor allows you to edit text using the editor specified via env EDITOR.
+	// fileExt is the extension of the temporary file, for syntax highlighting.
+	Editor(fileExt string, q *Question) (result string, ok bool)
 }
 
 func ValueRequired(val interface{}) error {

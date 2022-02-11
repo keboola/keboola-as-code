@@ -13,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 	createTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/create"
 )
 
@@ -159,7 +160,7 @@ func (d *createTmplDialog) askId() string {
 }
 
 func (d *createTmplDialog) askDescription() string {
-	result, _ := d.prompt.Editor(&prompt.Question{
+	result, _ := d.prompt.Editor("txt", &prompt.Question{
 		Description: `Please enter a short template description.`,
 		Default:     `Full workflow to ...`,
 		Validator:   validateTemplateDescription,
@@ -168,7 +169,7 @@ func (d *createTmplDialog) askDescription() string {
 }
 
 func (d *createTmplDialog) askObjectsIds() ([]template.ConfigDef, error) {
-	result, _ := d.prompt.Editor(&prompt.Question{
+	result, _ := d.prompt.Editor("md", &prompt.Question{
 		Description: `Please enter a human readable ID for each config and config row.`,
 		Default:     d.objectsIdsDefault(),
 		Validator: func(val interface{}) error {
@@ -185,22 +186,23 @@ func (d *createTmplDialog) askObjectsIds() ([]template.ConfigDef, error) {
 func (d *createTmplDialog) parseObjectsIds(result string) ([]template.ConfigDef, error) {
 	idByKey := make(map[string]string)
 	ids := make(map[string]bool)
-	errors := utils.NewMultiError()
+	result = strhelper.StripHtmlComments(result)
 	scanner := bufio.NewScanner(strings.NewReader(result))
+	errors := utils.NewMultiError()
 	lineNum := 0
 	for scanner.Scan() {
 		lineNum++
 		line := strings.TrimSpace(scanner.Text())
 
-		// Skip comment and empty lines
-		if strings.HasPrefix(line, `# `) || len(line) == 0 {
+		// Skip empty lines
+		if len(line) == 0 {
 			continue
 		}
 
 		// Parse project ID
 		var key model.Key
 		switch {
-		case strings.HasPrefix(line, `### Config`):
+		case strings.HasPrefix(line, `## Config`):
 			// Config ID definition
 			m := regexpcache.MustCompile(` ([a-zA-Z0-9\.\-]+):([a-zA-Z0-9\.\-]+)$`).FindStringSubmatch(line)
 			if m == nil {
@@ -291,12 +293,14 @@ func (d *createTmplDialog) objectsIdsDefault() string {
 
 	// File header - info for user
 	fileHeader := `
-# Please enter a human readable ID for each configuration. For example "L0-raw-data-ex".
-# Allowed characters: a-z, A-Z, 0-9, "-". 
-# These IDs will be used in the template.
+<!--
+Please enter a human readable ID for each configuration. For example "L0-raw-data-ex".
+Allowed characters: a-z, A-Z, 0-9, "-". 
+These IDs will be used in the template.
 
-# Please edit each line below "###".
-# Do not edit lines starting with "###"!
+Please edit each line below "## Config ..." and "### Row ...".
+Do not edit lines starting with "#"!
+-->
 
 
 `
@@ -304,7 +308,7 @@ func (d *createTmplDialog) objectsIdsDefault() string {
 	var lines strings.Builder
 	lines.WriteString(fileHeader)
 	for _, c := range d.selectedConfigs {
-		lines.WriteString(fmt.Sprintf("### Config \"%s\" %s:%s\n%s\n\n", c.Name, c.ComponentId, c.Id, idByKey[c.Key().String()]))
+		lines.WriteString(fmt.Sprintf("## Config \"%s\" %s:%s\n%s\n\n", c.Name, c.ComponentId, c.Id, idByKey[c.Key().String()]))
 		for _, r := range d.rowsByConfigKey[c.Key().String()] {
 			lines.WriteString(fmt.Sprintf("### Row \"%s\" %s:%s:%s\n%s\n\n", r.Name, r.ComponentId, r.ConfigId, r.Id, idByKey[r.Key().String()]))
 		}

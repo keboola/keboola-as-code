@@ -69,3 +69,13 @@ func FirstLower(str string) string {
 func FirstUpper(str string) string {
 	return strings.ToUpper(string(str[0])) + str[1:]
 }
+
+// StripHtmlComments replaces HTML comments with empty lines.
+func StripHtmlComments(str string) string {
+	return regexpcache.
+		MustCompile("(?s)<!--(.*?)-->").
+		ReplaceAllStringFunc(str, func(s string) string {
+			// Replace comment with empty lines
+			return strings.Repeat("\n", strings.Count(s, "\n"))
+		})
+}
