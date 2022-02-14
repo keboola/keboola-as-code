@@ -6,6 +6,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacevalues"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 // CreateContext represents the process of replacing values when creating a template from a remote project.
@@ -37,15 +38,22 @@ type CreateContext struct {
 	replacements *replacevalues.Values
 }
 
+type InputDef struct {
+	Path    orderedmap.Key
+	InputId string
+}
+
 type ConfigDef struct {
 	Key        model.ConfigKey
 	TemplateId string
+	Inputs     []InputDef
 	Rows       []ConfigRowDef
 }
 
 type ConfigRowDef struct {
 	Key        model.ConfigRowKey
 	TemplateId string
+	Inputs     []InputDef
 }
 
 func NewCreateContext(ctx context.Context, sourceBranch model.BranchKey, configs []ConfigDef) *CreateContext {

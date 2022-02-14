@@ -31,6 +31,14 @@ func Load(fs filesystem.Fs) (*Inputs, error) {
 	return &Inputs{inputs: f.Inputs}, nil
 }
 
+func (i *Inputs) Validate() error {
+	return validate(i.inputs)
+}
+
+func (i *Inputs) Add(input Input) {
+	i.inputs = append(i.inputs, input)
+}
+
 // Save inputs to the FileName.
 func (i *Inputs) Save(fs filesystem.Fs) error {
 	if err := saveFile(fs, &file{Inputs: i.inputs}); err != nil {

@@ -294,10 +294,18 @@ func (k ComponentKey) Desc() string {
 }
 
 func (k ConfigKey) Desc() string {
+	if k.BranchId == 0 {
+		// Config in a template
+		return fmt.Sprintf(`%s "component:%s/config:%s"`, k.Kind().Name, k.ComponentId, k.Id)
+	}
 	return fmt.Sprintf(`%s "branch:%d/component:%s/config:%s"`, k.Kind().Name, k.BranchId, k.ComponentId, k.Id)
 }
 
 func (k ConfigRowKey) Desc() string {
+	if k.BranchId == 0 {
+		// Row in a template
+		return fmt.Sprintf(`%s "component:%s/config:%s"`, k.Kind().Name, k.ComponentId, k.Id)
+	}
 	return fmt.Sprintf(`%s "branch:%d/component:%s/config:%s/row:%s"`, k.Kind().Name, k.BranchId, k.ComponentId, k.ConfigId, k.Id)
 }
 
