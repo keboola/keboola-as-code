@@ -40,14 +40,14 @@ func (p *Dialogs) AskCreateTemplateOpts(deps createTmplDialogDeps) (createTempla
 }
 
 func (d *createTmplDialog) ask() (createTemplate.Options, error) {
-	o := d.deps.Options()
+	opts := d.deps.Options()
 
 	// Host and token
 	errors := utils.NewMultiError()
-	if _, err := d.AskStorageApiHost(o); err != nil {
+	if _, err := d.AskStorageApiHost(opts); err != nil {
 		errors.Append(err)
 	}
-	if _, err := d.AskStorageApiToken(o); err != nil {
+	if _, err := d.AskStorageApiToken(opts); err != nil {
 		errors.Append(err)
 	}
 	if errors.Len() > 0 {
@@ -130,6 +130,14 @@ func (d *createTmplDialog) ask() (createTemplate.Options, error) {
 	if err != nil {
 		return d.out, err
 	}
+
+	// Ask for user inputs
+	objectInputs, allInputs, err := d.askTemplateInputs(opts, d.selectedBranch, d.selectedConfigs)
+	if err != nil {
+		return d.out, err
+	}
+	objectInputs.setTo(d.out.Configs)
+	d.out.Inputs = allInputs
 
 	return d.out, nil
 }

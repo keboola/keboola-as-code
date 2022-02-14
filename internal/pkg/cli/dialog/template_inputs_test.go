@@ -17,7 +17,7 @@ import (
 
 func TestTemplateInputsDialog_DefaultValue(t *testing.T) {
 	t.Parallel()
-	configs := configsWithContent()
+	branch, configs := configsWithContent()
 
 	// Expected default value
 	expected := `
@@ -55,13 +55,13 @@ Allowed characters: a-z, A-Z, 0-9, "-".
 `
 
 	// Check default value
-	d := newTemplateInputsDialog(nopPrompt.New(), options.New(), configs)
+	d := newTemplateInputsDialog(nopPrompt.New(), options.New(), branch, configs)
 	assert.Equal(t, expected, d.defaultValue())
 }
 
 func TestTemplateInputsDialog_DefaultValue_AllInputs(t *testing.T) {
 	t.Parallel()
-	configs := configsWithContent()
+	branch, configs := configsWithContent()
 
 	// Expected default value
 	expected := `
@@ -101,13 +101,13 @@ Allowed characters: a-z, A-Z, 0-9, "-".
 	// Check default value
 	opts := options.New()
 	opts.Set("all-inputs", true)
-	d := newTemplateInputsDialog(nopPrompt.New(), opts, configs)
+	d := newTemplateInputsDialog(nopPrompt.New(), opts, branch, configs)
 	assert.Equal(t, expected, d.defaultValue())
 }
 
 func TestTemplateInputsDialog_Parse(t *testing.T) {
 	t.Parallel()
-	configs := configsWithContent()
+	branch, configs := configsWithContent()
 
 	result := `
 ## Config "My Config 1" keboola.foo.bar:my-config-1
@@ -127,17 +127,17 @@ func TestTemplateInputsDialog_Parse(t *testing.T) {
 `
 
 	// Parse
-	d := newTemplateInputsDialog(nopPrompt.New(), options.New(), configs)
+	d := newTemplateInputsDialog(nopPrompt.New(), options.New(), branch, configs)
 	err := d.parse(result)
 	assert.NoError(t, err)
 
 	// Assert inputs definitions
-	configKey := model.ConfigKey{ComponentId: "keboola.foo.bar", Id: "my-config-1"}
-	rowKey := model.ConfigRowKey{ComponentId: "keboola.foo.bar", ConfigId: "my-config-2", Id: "row-2"}
-	assert.Equal(t, []template.Input{
+	configKey := model.ConfigKey{BranchId: 123, ComponentId: "keboola.foo.bar", Id: "my-config-1"}
+	rowKey := model.ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo.bar", ConfigId: "my-config-2", Id: "row-2"}
+	assert.Equal(t, &template.Inputs{
 		{Id: "foo-bar-password", Type: input.TypeString, Kind: input.KindHidden},
 		{Id: "foo-bar-object-array-1-password", Type: input.TypeString, Kind: input.KindHidden},
-	}, d.allInputs.slice())
+	}, d.inputs.all())
 
 	// Assert object inputs
 	assert.Equal(t, objectInputsMap{
@@ -158,7 +158,7 @@ func TestTemplateInputsDialog_Parse(t *testing.T) {
 
 func TestTemplateInputsDialog_Parse_All(t *testing.T) {
 	t.Parallel()
-	configs := configsWithContent()
+	branch, configs := configsWithContent()
 
 	result := `
 ## Config "My Config 1" keboola.foo.bar:my-config-1
@@ -178,14 +178,14 @@ func TestTemplateInputsDialog_Parse_All(t *testing.T) {
 `
 
 	// Parse
-	d := newTemplateInputsDialog(nopPrompt.New(), options.New(), configs)
+	d := newTemplateInputsDialog(nopPrompt.New(), options.New(), branch, configs)
 	err := d.parse(result)
 	assert.NoError(t, err)
 
 	// Assert inputs definitions
-	configKey := model.ConfigKey{ComponentId: "keboola.foo.bar", Id: "my-config-1"}
-	rowKey := model.ConfigRowKey{ComponentId: "keboola.foo.bar", ConfigId: "my-config-2", Id: "row-2"}
-	assert.Equal(t, []template.Input{
+	configKey := model.ConfigKey{BranchId: 123, ComponentId: "keboola.foo.bar", Id: "my-config-1"}
+	rowKey := model.ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo.bar", ConfigId: "my-config-2", Id: "row-2"}
+	assert.Equal(t, &template.Inputs{
 		{Id: "foo-bar-password", Type: input.TypeString, Kind: input.KindHidden},
 		{Id: "foo-bar-bool", Type: input.TypeBool, Kind: input.KindConfirm, Default: false},
 		{Id: "foo-bar-double", Type: input.TypeDouble, Kind: input.KindInput, Default: 78.9},
@@ -210,7 +210,7 @@ func TestTemplateInputsDialog_Parse_All(t *testing.T) {
 		{Id: "foo-bar-object-array-1-double", Type: input.TypeDouble, Kind: input.KindInput, Default: 78.9},
 		{Id: "foo-bar-object-array-1-int", Type: input.TypeInt, Kind: input.KindInput, Default: 123},
 		{Id: "foo-bar-object-array-1-string", Type: input.TypeString, Kind: input.KindInput, Default: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore"},
-	}, d.allInputs.slice())
+	}, d.inputs.all())
 
 	// Assert object inputs
 	assert.Equal(t, objectInputsMap{
@@ -267,7 +267,7 @@ func TestTemplateInputsDialog_Parse_All(t *testing.T) {
 
 func TestTemplateInputsDialog_Parse_Errors(t *testing.T) {
 	t.Parallel()
-	configs := configsWithContent()
+	branch, configs := configsWithContent()
 
 	result := `
 [x] unexpected-input  parameters.input
@@ -295,7 +295,7 @@ invalid
 `
 
 	// Parse
-	d := newTemplateInputsDialog(nopPrompt.New(), options.New(), configs)
+	d := newTemplateInputsDialog(nopPrompt.New(), options.New(), branch, configs)
 	err := d.parse(result)
 
 	// Assert
@@ -305,7 +305,7 @@ invalid
 - line 6: cannot parse config "## Config "Invalid Config" abc"
 - line 8: config row "keboola.foo.bar:not-found:not-found" not found
 - line 10: cannot parse config row "### Row "Invalid Config" abc"
-- line 14: field "parameters.input" not found in the config "component:keboola.foo.bar/config:my-config-1"
+- line 14: field "parameters.input" not found in the config "branch:123/component:keboola.foo.bar/config:my-config-1"
 - line 15: expected "[x] …" or "[ ] …", found "[+] invali…"
 - line 16: expected "<mark> <input-id> <field.path>", found  "invalid"
 - line 17: expected "<mark> <input-id> <field.path>", found  "[x]"
@@ -317,7 +317,7 @@ invalid
 	assert.Equal(t, strings.Trim(expected, "\n"), err.Error())
 }
 
-func configsWithContent() []*model.ConfigWithRows {
+func configsWithContent() (*model.Branch, []*model.ConfigWithRows) {
 	configJson := `
 {
   "storage": {
@@ -359,37 +359,40 @@ func configsWithContent() []*model.ConfigWithRows {
 	json.MustDecodeString(configJson, configContent)
 	json.MustDecodeString(rowJson, rowContent)
 
-	return []*model.ConfigWithRows{
+	branch := &model.Branch{BranchKey: model.BranchKey{Id: 123}}
+	configs := []*model.ConfigWithRows{
 		{
 			Config: &model.Config{
-				ConfigKey: model.ConfigKey{ComponentId: "keboola.foo.bar", Id: "my-config-1"},
+				ConfigKey: model.ConfigKey{BranchId: branch.Id, ComponentId: "keboola.foo.bar", Id: "my-config-1"},
 				Name:      "My Config 1",
 				Content:   configContent,
 			},
 		},
 		{
 			Config: &model.Config{
-				ConfigKey: model.ConfigKey{ComponentId: "keboola.foo.bar", Id: "my-config-2"},
+				ConfigKey: model.ConfigKey{BranchId: branch.Id, ComponentId: "keboola.foo.bar", Id: "my-config-2"},
 				Name:      "My Config 2",
 				Content:   orderedmap.New(),
 			},
 			Rows: []*model.ConfigRow{
 				{
-					ConfigRowKey: model.ConfigRowKey{ComponentId: "keboola.foo.bar", ConfigId: "my-config-2", Id: "row-1"},
+					ConfigRowKey: model.ConfigRowKey{BranchId: branch.Id, ComponentId: "keboola.foo.bar", ConfigId: "my-config-2", Id: "row-1"},
 					Name:         "My Row",
 					Content:      orderedmap.New(),
 				},
 				{
-					ConfigRowKey: model.ConfigRowKey{ComponentId: "keboola.foo.bar", ConfigId: "my-config-2", Id: "row-2"},
+					ConfigRowKey: model.ConfigRowKey{BranchId: branch.Id, ComponentId: "keboola.foo.bar", ConfigId: "my-config-2", Id: "row-2"},
 					Name:         "My Row",
 					Content:      rowContent,
 				},
 				{
-					ConfigRowKey: model.ConfigRowKey{ComponentId: "keboola.foo.bar", ConfigId: "my-config-2", Id: "row-3"},
+					ConfigRowKey: model.ConfigRowKey{BranchId: branch.Id, ComponentId: "keboola.foo.bar", ConfigId: "my-config-2", Id: "row-3"},
 					Name:         "My Row",
 					Content:      orderedmap.New(),
 				},
 			},
 		},
 	}
+
+	return branch, configs
 }

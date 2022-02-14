@@ -1,4 +1,3 @@
-// nolint: unused
 package dialog
 
 import (
@@ -26,25 +25,26 @@ import (
 type templateInputsDialog struct {
 	prompt       prompt.Prompt
 	options      *options.Options
+	branch       *model.Branch
 	configs      []*model.ConfigWithRows
 	objectFields map[model.Key]inputFields
 	objectInputs objectInputsMap
-	allInputs    allInputsMap
+	inputs       inputsMap
 }
 
 // askTemplateInputs - dialog to define user inputs for a new template.
 // Used in AskCreateTemplateOpts.
-func (p *Dialogs) askTemplateInputs(opts *options.Options, configs []*model.ConfigWithRows) (objectInputsMap, []template.Input, error) {
-	return newTemplateInputsDialog(p.Prompt, opts, configs).ask()
+func (p *Dialogs) askTemplateInputs(opts *options.Options, branch *model.Branch, configs []*model.ConfigWithRows) (objectInputsMap, *template.Inputs, error) {
+	return newTemplateInputsDialog(p.Prompt, opts, branch, configs).ask()
 }
 
-func newTemplateInputsDialog(prompt prompt.Prompt, opts *options.Options, configs []*model.ConfigWithRows) *templateInputsDialog {
-	d := &templateInputsDialog{prompt: prompt, configs: configs, options: opts}
+func newTemplateInputsDialog(prompt prompt.Prompt, opts *options.Options, branch *model.Branch, configs []*model.ConfigWithRows) *templateInputsDialog {
+	d := &templateInputsDialog{prompt: prompt, options: opts, branch: branch, configs: configs}
 	d.detectInputs()
 	return d
 }
 
-func (d *templateInputsDialog) ask() (objectInputsMap, []template.Input, error) {
+func (d *templateInputsDialog) ask() (objectInputsMap, *template.Inputs, error) {
 	result, _ := d.prompt.Editor("md", &prompt.Question{
 		Description: `Please define user inputs.`,
 		Default:     d.defaultValue(),
@@ -59,12 +59,12 @@ func (d *templateInputsDialog) ask() (objectInputsMap, []template.Input, error) 
 	if err := d.parse(result); err != nil {
 		return nil, nil, err
 	}
-	return d.objectInputs, d.allInputs.slice(), nil
+	return d.objectInputs, d.inputs.all(), nil
 }
 
 func (d *templateInputsDialog) parse(result string) error {
 	d.objectInputs = make(objectInputsMap)
-	d.allInputs = newAllInputsMap()
+	d.inputs = newAllInputsMap()
 
 	result = strhelper.StripHtmlComments(result)
 	scanner := bufio.NewScanner(strings.NewReader(result))
@@ -93,7 +93,7 @@ func (d *templateInputsDialog) parse(result string) error {
 				invalidObject = true
 				continue
 			}
-			key := model.ConfigKey{BranchId: 0, ComponentId: model.ComponentId(m[1]), Id: model.ConfigId(m[2])}
+			key := model.ConfigKey{BranchId: d.branch.Id, ComponentId: model.ComponentId(m[1]), Id: model.ConfigId(m[2])}
 			if _, found := d.objectFields[key]; !found {
 				errors.Append(fmt.Errorf(`line %d: config "%s:%s" not found`, lineNum, m[1], m[2]))
 				invalidObject = true
@@ -109,7 +109,7 @@ func (d *templateInputsDialog) parse(result string) error {
 				invalidObject = true
 				continue
 			}
-			key := model.ConfigRowKey{BranchId: 0, ComponentId: model.ComponentId(m[1]), ConfigId: model.ConfigId(m[2]), Id: model.RowId(m[3])}
+			key := model.ConfigRowKey{BranchId: d.branch.Id, ComponentId: model.ComponentId(m[1]), ConfigId: model.ConfigId(m[2]), Id: model.RowId(m[3])}
 			if _, found := d.objectFields[key]; !found {
 				errors.Append(fmt.Errorf(`line %d: config row "%s:%s:%s" not found`, lineNum, m[1], m[2], m[2]))
 				invalidObject = true
@@ -169,14 +169,14 @@ func (d *templateInputsDialog) parseInputLine(objectKey model.Key, line string, 
 		field.input.Id = inputId
 
 		// One input can be used multiple times, but type must match.
-		if i, found := d.allInputs.get(field.input.Id); found {
+		if i, found := d.inputs.get(field.input.Id); found {
 			if i.Type != field.input.Type {
 				return fmt.Errorf(`line %d: input "%s" is already defined with "%s" type, but "%s" has type "%s"`, lineNum, i.Id, i.Type, fieldPath, field.input.Type)
 			}
 		}
 
 		// Save definitions
-		d.allInputs.add(field.input)
+		d.inputs.add(field.input)
 		d.objectInputs.add(objectKey, template.InputDef{Path: field.path, InputId: field.input.Id})
 		return nil
 	case mark == "[ ]" || mark == "[]":
@@ -212,11 +212,6 @@ Allowed characters: a-z, A-Z, 0-9, "-".
 	var lines strings.Builder
 	lines.WriteString(fileHeader)
 	for _, c := range d.configs {
-		// Config/row must be from a template
-		if c.BranchId != 0 {
-			panic(fmt.Errorf("expected branchId = 0, found %d", c.BranchId))
-		}
-
 		// Config
 		fields := d.objectFields[c.ConfigKey]
 		if len(fields) > 0 {
@@ -245,7 +240,7 @@ func (d *templateInputsDialog) detectInputs() {
 	for _, c := range d.configs {
 		d.detectInputsFor(c.ConfigKey, c.ComponentId, c.Content)
 		for _, r := range c.Rows {
-			d.detectInputsFor(r.ConfigRowKey, c.ComponentId, r.Content)
+			d.detectInputsFor(r.ConfigRowKey, r.ComponentId, r.Content)
 		}
 	}
 }
@@ -441,20 +436,31 @@ func (v objectInputsMap) add(objectKey model.Key, inputDef template.InputDef) {
 	v[objectKey] = append(v[objectKey], inputDef)
 }
 
-func newAllInputsMap() allInputsMap {
-	return allInputsMap{data: orderedmap.New()}
+func (v objectInputsMap) setTo(configs []template.ConfigDef) {
+	for i := range configs {
+		c := &configs[i]
+		c.Inputs = v[c.Key]
+		for j := range c.Rows {
+			r := &c.Rows[j]
+			r.Inputs = v[r.Key]
+		}
+	}
 }
 
-// allInputsMap - map of all inputs, one input can be used multiple times.
-type allInputsMap struct {
+func newAllInputsMap() inputsMap {
+	return inputsMap{data: orderedmap.New()}
+}
+
+// inputsMap - map of all Inputs by Input.Id.
+type inputsMap struct {
 	data *orderedmap.OrderedMap
 }
 
-func (v allInputsMap) add(input template.Input) {
+func (v inputsMap) add(input template.Input) {
 	v.data.Set(input.Id, input)
 }
 
-func (v allInputsMap) get(inputId string) (template.Input, bool) {
+func (v inputsMap) get(inputId string) (template.Input, bool) {
 	value, found := v.data.Get(inputId)
 	if !found {
 		return template.Input{}, false
@@ -462,7 +468,7 @@ func (v allInputsMap) get(inputId string) (template.Input, bool) {
 	return value.(template.Input), true
 }
 
-func (v allInputsMap) slice() []template.Input {
+func (v inputsMap) all() *template.Inputs {
 	out := make([]template.Input, v.data.Len())
 	i := 0
 	for _, key := range v.data.Keys() {
@@ -470,5 +476,5 @@ func (v allInputsMap) slice() []template.Input {
 		out[i] = item.(template.Input)
 		i++
 	}
-	return out
+	return template.NewInputs().Set(out)
 }

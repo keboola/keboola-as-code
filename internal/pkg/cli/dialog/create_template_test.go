@@ -9,8 +9,11 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/interactive"
+	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testdeps"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	createTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/create"
@@ -91,13 +94,13 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 		_, err = console.ExpectString("Select the configurations to include in the template:")
 		assert.NoError(t, err)
 
-		_, err = console.ExpectString("Config 1 (foo.bar:1)")
+		_, err = console.ExpectString("Config 1 (keboola.my-component:1)")
 		assert.NoError(t, err)
 
-		_, err = console.ExpectString("Config 2 (foo.bar:2)")
+		_, err = console.ExpectString("Config 2 (keboola.my-component:2)")
 		assert.NoError(t, err)
 
-		_, err = console.ExpectString("Config 3 (foo.bar:3)")
+		_, err = console.ExpectString("Config 3 (keboola.my-component:3)")
 		assert.NoError(t, err)
 
 		time.Sleep(20 * time.Millisecond)
@@ -127,6 +130,13 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 		_, err = console.Send(testhelper.Enter) // -> start editor
 		assert.NoError(t, err)
 
+		_, err = console.ExpectString("Please define user inputs.")
+		assert.NoError(t, err)
+
+		time.Sleep(20 * time.Millisecond)
+		_, err = console.Send(testhelper.Enter) // -> start editor
+		assert.NoError(t, err)
+
 		_, err = console.ExpectEOF()
 		assert.NoError(t, err)
 	}()
@@ -148,15 +158,21 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 			{
 				Key: model.ConfigKey{
 					BranchId:    123,
-					ComponentId: `foo.bar`,
+					ComponentId: `keboola.my-component`,
 					Id:          `1`,
 				},
 				TemplateId: `config-1`,
+				Inputs: []template.InputDef{
+					{
+						InputId: "my-component-password",
+						Path:    orderedmap.KeyFromStr("parameters.#password"),
+					},
+				},
 				Rows: []template.ConfigRowDef{
 					{
 						Key: model.ConfigRowKey{
 							BranchId:    123,
-							ComponentId: `foo.bar`,
+							ComponentId: `keboola.my-component`,
 							ConfigId:    `1`,
 							Id:          `456`,
 						},
@@ -167,10 +183,17 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 			{
 				Key: model.ConfigKey{
 					BranchId:    123,
-					ComponentId: `foo.bar`,
+					ComponentId: `keboola.my-component`,
 					Id:          `3`,
 				},
 				TemplateId: `config-3`,
+			},
+		},
+		Inputs: &template.Inputs{
+			{
+				Id:   "my-component-password",
+				Type: input.TypeString,
+				Kind: input.KindHidden,
 			},
 		},
 	}, opts)
@@ -191,7 +214,8 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 	d.Options().Set(`name`, `My Super Template`)
 	d.Options().Set(`id`, `my-super-template`)
 	d.Options().Set(`branch`, `123`)
-	d.Options().Set(`configs`, `foo.bar:1, foo.bar:3`)
+	d.Options().Set(`configs`, `keboola.my-component:1, keboola.my-component:3`)
+	d.Options().Set(`all-inputs`, true)
 
 	// Run
 	opts, err := dialog.AskCreateTemplateOpts(d)
@@ -207,15 +231,29 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 			{
 				Key: model.ConfigKey{
 					BranchId:    123,
-					ComponentId: `foo.bar`,
+					ComponentId: `keboola.my-component`,
 					Id:          `1`,
 				},
 				TemplateId: `config-1`,
+				Inputs: []template.InputDef{
+					{
+						InputId: "my-component-password",
+						Path:    orderedmap.KeyFromStr("parameters.#password"),
+					},
+					{
+						InputId: "my-component-int",
+						Path:    orderedmap.KeyFromStr("parameters.int"),
+					},
+					{
+						InputId: "my-component-string",
+						Path:    orderedmap.KeyFromStr("parameters.string"),
+					},
+				},
 				Rows: []template.ConfigRowDef{
 					{
 						Key: model.ConfigRowKey{
 							BranchId:    123,
-							ComponentId: `foo.bar`,
+							ComponentId: `keboola.my-component`,
 							ConfigId:    `1`,
 							Id:          `456`,
 						},
@@ -226,10 +264,29 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 			{
 				Key: model.ConfigKey{
 					BranchId:    123,
-					ComponentId: `foo.bar`,
+					ComponentId: `keboola.my-component`,
 					Id:          `3`,
 				},
 				TemplateId: `config-3`,
+			},
+		},
+		Inputs: &template.Inputs{
+			{
+				Id:   "my-component-password",
+				Type: input.TypeString,
+				Kind: input.KindHidden,
+			},
+			{
+				Id:      "my-component-int",
+				Type:    input.TypeInt,
+				Kind:    input.KindInput,
+				Default: 123,
+			},
+			{
+				Id:      "my-component-string",
+				Type:    input.TypeString,
+				Kind:    input.KindInput,
+				Default: "my string",
 			},
 		},
 	}, opts)
@@ -266,15 +323,21 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 			{
 				Key: model.ConfigKey{
 					BranchId:    123,
-					ComponentId: `foo.bar`,
+					ComponentId: `keboola.my-component`,
 					Id:          `1`,
 				},
 				TemplateId: `config-1`,
+				Inputs: []template.InputDef{
+					{
+						InputId: "my-component-password",
+						Path:    orderedmap.KeyFromStr("parameters.#password"),
+					},
+				},
 				Rows: []template.ConfigRowDef{
 					{
 						Key: model.ConfigRowKey{
 							BranchId:    123,
-							ComponentId: `foo.bar`,
+							ComponentId: `keboola.my-component`,
 							ConfigId:    `1`,
 							Id:          `456`,
 						},
@@ -285,7 +348,7 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 			{
 				Key: model.ConfigKey{
 					BranchId:    123,
-					ComponentId: `foo.bar`,
+					ComponentId: `keboola.my-component`,
 					Id:          `2`,
 				},
 				TemplateId: `config-2`,
@@ -293,36 +356,60 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 			{
 				Key: model.ConfigKey{
 					BranchId:    123,
-					ComponentId: `foo.bar`,
+					ComponentId: `keboola.my-component`,
 					Id:          `3`,
 				},
 				TemplateId: `config-3`,
+			},
+		},
+		Inputs: &template.Inputs{
+			{
+				Id:   "my-component-password",
+				Type: input.TypeString,
+				Kind: input.KindHidden,
 			},
 		},
 	}, opts)
 }
 
 func addMockedObjectsResponses(httpTransport *httpmock.MockTransport) {
+	configJson := `
+{
+  "storage": {
+    "foo": "bar"
+  },
+  "parameters": {
+    "string": "my string",
+    "#password": "my password",
+    "int": 123
+  }
+}
+`
+	configContent := orderedmap.New()
+	json.MustDecodeString(configJson, configContent)
+
 	branches := []*model.Branch{{BranchKey: model.BranchKey{Id: 123}, Name: "Main", IsDefault: true}}
 	configs := []*model.ConfigWithRows{
 		{
 			Config: &model.Config{
 				ConfigKey: model.ConfigKey{Id: "1"},
 				Name:      `Config 1`,
+				Content:   configContent,
 			},
 			Rows: []*model.ConfigRow{
 				{
 					ConfigRowKey: model.ConfigRowKey{Id: "456"},
 					Name:         `My Row`,
+					Content:      orderedmap.New(),
 				},
 			},
 		},
-		{Config: &model.Config{ConfigKey: model.ConfigKey{Id: "2"}, Name: `Config 2`}},
-		{Config: &model.Config{ConfigKey: model.ConfigKey{Id: "3"}, Name: `Config 3`}},
+		{Config: &model.Config{ConfigKey: model.ConfigKey{Id: "2"}, Name: `Config 2`, Content: orderedmap.New()}},
+		{Config: &model.Config{ConfigKey: model.ConfigKey{Id: "3"}, Name: `Config 3`, Content: orderedmap.New()}},
 	}
 	components := []*model.ComponentWithConfigs{
 		{
-			Component: &model.Component{ComponentKey: model.ComponentKey{Id: `foo.bar`}, Name: `Foo Bar`},
+			Component: &model.Component{ComponentKey: model.ComponentKey{Id: `keboola.my-component`}, Name: `Foo Bar`},
 			Configs:   configs,
 		},
 	}
