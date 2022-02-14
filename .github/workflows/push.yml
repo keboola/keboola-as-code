@@ -258,8 +258,14 @@ jobs:
           name: homebrew-formulae
           path: target/homebrew/keboola-cli.rb
           retention-days: 1
+      - name: Upload Scoop manifest
+        uses: actions/upload-artifact@v2
+        with:
+          name: scoop-manifest
+          path: target/keboola-cli.json
+          retention-days: 1
 
-  release-windows:
+  release-msi-windows:
     needs:
       - release
     # only one parallel job allowed - used shared S3
@@ -329,6 +335,20 @@ jobs:
           source-directory: "target/homebrew"
           destination-github-username: "keboola"
           destination-repository-name: "homebrew-keboola-cli"
+          target-branch: main
+      - name: Download Scoop manifest
+        uses: actions/download-artifact@v2
+        with:
+          name: scoop-manifest
+          path: target/scoop
+      - name: Push Scoop manifest
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.SCOOP_RELEASE_GITHUB_PERSONAL_ACCESS_TOKEN }}
+        with:
+          source-directory: "target/scoop"
+          destination-github-username: "keboola"
+          destination-repository-name: "scoop-keboola-cli"
           target-branch: main
       - name: Build DEB repo tools
         uses: ./.github/actions/build-repo-tools
