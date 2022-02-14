@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/encryptionapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
@@ -20,14 +21,16 @@ import (
 
 type templateInputsDialog struct {
 	prompt         prompt.Prompt
+	options        *options.Options
 	configs        []*model.ConfigWithRows
 	fieldsByObject map[model.Key]inputFields
 }
 
 // askTemplateInputs - dialog to define user inputs for a new template.
 // Used in AskCreateTemplateOpts.
-func (p *Dialogs) askTemplateInputs(configs []*model.ConfigWithRows) (input.Inputs, error) {
-	return (&templateInputsDialog{prompt: p.Prompt, configs: configs}).ask()
+// Used in AskCreateTemplateOpts.
+func (p *Dialogs) askTemplateInputs(opts *options.Options, configs []*model.ConfigWithRows) (input.Inputs, error) {
+	return (&templateInputsDialog{prompt: p.Prompt, configs: configs, options: opts}).ask()
 }
 
 func (d *templateInputsDialog) ask() (input.Inputs, error) {
@@ -209,7 +212,9 @@ func (d *templateInputsDialog) addInputForField(objectKey model.Key, path ordere
 	if d.fieldsByObject[objectKey] == nil {
 		d.fieldsByObject[objectKey] = make(map[string]inputField)
 	}
-	d.fieldsByObject[objectKey][path.String()] = inputField{path: path, example: example, input: i}
+
+	selected := i.Kind == input.KindHidden || d.options.GetBool("all-inputs")
+	d.fieldsByObject[objectKey][path.String()] = inputField{path: path, example: example, input: i, selected: selected}
 }
 
 type inputFields map[string]inputField
@@ -253,16 +258,15 @@ func (f inputFields) Write(out *strings.Builder) {
 }
 
 type inputField struct {
-	path    orderedmap.Key
-	example string
-	input   input.Input
+	path     orderedmap.Key
+	example  string
+	input    input.Input
+	selected bool
 }
 
 func (f inputField) Line() inputFieldLine {
 	mark := "[ ]"
-
-	// Pre-select secrets
-	if f.input.Kind == input.KindHidden {
+	if f.selected {
 		mark = "[x]"
 	}
 
