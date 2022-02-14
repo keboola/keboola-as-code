@@ -40,6 +40,7 @@ func CreateCommand(depsProvider dependencies.Provider) *cobra.Command {
 	cmd.Flags().StringP(`branch`, "b", ``, "branch ID or name")
 	cmd.Flags().StringP(`configs`, "c", ``, "comma separated list of {componentId}:{configId}")
 	cmd.Flags().BoolP(`all-configs`, "a", false, "use all configs from the branch")
+	cmd.Flags().Bool(`all-inputs`, false, "use all found config/row fields as user inputs")
 
 	return cmd
 }
