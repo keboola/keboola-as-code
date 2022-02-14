@@ -17,12 +17,12 @@ func Path() string {
 }
 
 type file struct {
-	Inputs []Input `json:"inputs" validate:"dive"`
+	Inputs Inputs `json:"inputs" validate:"dive"`
 }
 
 func newFile() *file {
 	return &file{
-		Inputs: make([]Input, 0),
+		Inputs: make(Inputs, 0),
 	}
 }
 

@@ -75,8 +75,7 @@ const inputsJsonNet = `{
 `
 
 func testInputs() *Inputs {
-	inputs := NewInputs(nil)
-	inputs.Set([]Input{
+	inputs := NewInputs().Set([]Input{
 		{
 			Id:          "fb.extractor.username",
 			Name:        "Facebook username",

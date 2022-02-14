@@ -9,17 +9,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-type Inputs struct {
-	inputs []Input
-}
+type Inputs []Input
 
-func NewInputs(inputs []Input) *Inputs {
-	if inputs == nil {
-		inputs = make([]Input, 0)
-	}
-	return &Inputs{
-		inputs: inputs,
-	}
+func NewInputs() *Inputs {
+	inputs := make(Inputs, 0)
+	return &inputs
 }
 
 // Load inputs from the FileName.
@@ -28,33 +22,34 @@ func Load(fs filesystem.Fs) (*Inputs, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Inputs{inputs: f.Inputs}, nil
+	return &f.Inputs, nil
 }
 
-func (i *Inputs) Validate() error {
-	return validate(i.inputs)
+func (i Inputs) Validate() error {
+	return validate(i)
 }
 
 func (i *Inputs) Add(input Input) {
-	i.inputs = append(i.inputs, input)
+	*i = append(*i, input)
 }
 
 // Save inputs to the FileName.
 func (i *Inputs) Save(fs filesystem.Fs) error {
-	if err := saveFile(fs, &file{Inputs: i.inputs}); err != nil {
+	if err := saveFile(fs, &file{Inputs: *i}); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (i *Inputs) All() []Input {
-	out := make([]Input, len(i.inputs))
-	copy(out, i.inputs)
+	out := make([]Input, len(*i))
+	copy(out, *i)
 	return out
 }
 
-func (i *Inputs) Set(inputs []Input) {
-	i.inputs = inputs
+func (i *Inputs) Set(inputs []Input) *Inputs {
+	*i = inputs
+	return i
 }
 
 func (i Inputs) Path() string {

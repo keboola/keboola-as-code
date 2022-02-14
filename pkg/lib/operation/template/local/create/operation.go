@@ -24,6 +24,7 @@ type Options struct {
 	Description  string
 	SourceBranch model.BranchKey
 	Configs      []template.ConfigDef
+	Inputs       *template.Inputs
 }
 
 type dependencies interface {
