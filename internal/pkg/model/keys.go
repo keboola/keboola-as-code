@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/spf13/cast"
 )
@@ -60,6 +61,15 @@ func (v ConfigId) String() string {
 
 func (v RowId) String() string {
 	return string(v)
+}
+
+func (v ComponentId) WithoutVendor() string {
+	parts := strings.SplitN(string(v), ".", 2)
+	if len(parts) == 1 {
+		// A component without vendor
+		return parts[0]
+	}
+	return parts[1]
 }
 
 type BranchKey struct {

@@ -58,6 +58,13 @@ func (v Key) WithoutLast() Key {
 	return v[0 : l-1]
 }
 
+func (v Key) First() Step {
+	if len(v) == 0 {
+		return nil
+	}
+	return v[0]
+}
+
 func (v Key) Last() Step {
 	l := len(v)
 	if l == 0 {

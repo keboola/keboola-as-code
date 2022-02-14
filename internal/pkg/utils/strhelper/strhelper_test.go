@@ -118,3 +118,26 @@ func TestStripHtmlComments(t *testing.T) {
 		assert.Equal(t, c.expected, StripHtmlComments(c.in), "case "+cast.ToString(i))
 	}
 }
+
+func TestTruncate(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		in       string
+		max      int
+		suffix   string
+		expected string
+	}{
+		{"", 5, "", ""},
+		{"abc", 5, "", "abc"},
+		{"abcde", 5, "", "abcde"},
+		{"abcdef", 5, "", "abcde"},
+		{"abc", 5, "…", "abc"},
+		{"abcde", 5, "…", "abcde"},
+		{"abcdef", 5, "…", "abcde…"},
+	}
+
+	for i, c := range cases {
+		assert.Equal(t, c.expected, Truncate(c.in, c.max, c.suffix), "case "+cast.ToString(i))
+	}
+}
