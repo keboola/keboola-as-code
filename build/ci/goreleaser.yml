@@ -68,6 +68,16 @@ nfpms:
         key_name: keboola
         key_file: '{{ if index .Env "APK_KEY_PRIVATE_PATH"  }}{{ .Env.APK_KEY_PRIVATE_PATH }}{{ end }}'
 
+scoop:
+  bucket:
+    owner: keboola
+    name: scoop-keboola-cli
+  homepage: https://www.keboola.com/product/cli
+  description: Operate your cloud data pipeline from the command line
+  license: MIT
+  url_template: "https://keboola-as-code-dist.s3.amazonaws.com/zip/{{ .ArtifactName }}"
+  skip_upload: true
+
 publishers:
   - name: Upload artifacts to S3
     signature: true
