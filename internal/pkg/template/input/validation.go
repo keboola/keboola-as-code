@@ -1,6 +1,7 @@
 package input
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 
@@ -9,6 +10,10 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
+
+func validate(value interface{}) error {
+	return validator.Validate(context.Background(), value, validationRules()...)
+}
 
 func validationRules() []validator.Rule {
 	return []validator.Rule{

@@ -1,13 +1,11 @@
 package input
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
-	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 const (
@@ -77,6 +75,6 @@ func saveFile(fs filesystem.Fs, content *file) error {
 	return nil
 }
 
-func (i file) validate() error {
-	return validator.Validate(context.Background(), i, validationRules()...)
+func (f file) validate() error {
+	return validate(f)
 }
