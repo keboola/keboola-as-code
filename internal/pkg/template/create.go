@@ -95,6 +95,11 @@ func replacementsForCreate(sourceBranch model.BranchKey, configs []ConfigDef) *r
 		newConfigKey.Id = newConfigId
 		replacements.AddKey(config.Key, newConfigKey)
 
+		// Config inputs
+		for _, input := range config.Inputs {
+			replacements.AddContentField(config.Key, input.Path, jsonnet.InputPlaceholder(input.InputId))
+		}
+
 		// Rows
 		for _, row := range config.Rows {
 			newRowId := model.RowId(jsonnet.ConfigRowIdPlaceholder(row.TemplateId))
@@ -103,6 +108,11 @@ func replacementsForCreate(sourceBranch model.BranchKey, configs []ConfigDef) *r
 			newRowKey.ConfigId = newConfigId
 			newRowKey.Id = newRowId
 			replacements.AddKey(row.Key, newRowKey)
+
+			// Row inputs
+			for _, input := range row.Inputs {
+				replacements.AddContentField(row.Key, input.Path, jsonnet.InputPlaceholder(input.InputId))
+			}
 		}
 	}
 

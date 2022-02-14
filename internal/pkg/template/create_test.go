@@ -71,61 +71,61 @@ func TestCreateContext(t *testing.T) {
 	// Check replacements
 	expectedReplacements := []replacevalues.Value{
 		{
-			Old: model.BranchKey{Id: 123},
-			New: model.BranchKey{Id: 0},
+			Search:  model.BranchKey{Id: 123},
+			Replace: model.BranchKey{Id: 0},
 		},
 		{
-			Old: model.BranchId(123),
-			New: model.BranchId(0),
+			Search:  model.BranchId(123),
+			Replace: model.BranchId(0),
 		},
 		{
-			Old: model.ConfigKey{
+			Search: model.ConfigKey{
 				BranchId:    sourceBranch.Id,
 				ComponentId: "foo.bar",
 				Id:          "123",
 			},
-			New: model.ConfigKey{
+			Replace: model.ConfigKey{
 				BranchId:    0,
 				ComponentId: "foo.bar",
 				Id:          `<<~~func:ConfigId:["my-first-config"]~~>>`,
 			},
 		},
 		{
-			Old: model.ConfigId("123"),
-			New: model.ConfigId(`<<~~func:ConfigId:["my-first-config"]~~>>`),
+			Search:  model.ConfigId("123"),
+			Replace: model.ConfigId(`<<~~func:ConfigId:["my-first-config"]~~>>`),
 		},
 		{
-			Old: replacevalues.SubString("123"),
-			New: `<<~~func:ConfigId:["my-first-config"]~~>>`,
+			Search:  replacevalues.SubString("123"),
+			Replace: `<<~~func:ConfigId:["my-first-config"]~~>>`,
 		},
 		{
-			Old: model.ConfigKey{
+			Search: model.ConfigKey{
 				BranchId:    sourceBranch.Id,
 				ComponentId: "foo.bar",
 				Id:          "345",
 			},
-			New: model.ConfigKey{
+			Replace: model.ConfigKey{
 				BranchId:    0,
 				ComponentId: "foo.bar",
 				Id:          `<<~~func:ConfigId:["my-second-config"]~~>>`,
 			},
 		},
 		{
-			Old: model.ConfigId("345"),
-			New: model.ConfigId(`<<~~func:ConfigId:["my-second-config"]~~>>`),
+			Search:  model.ConfigId("345"),
+			Replace: model.ConfigId(`<<~~func:ConfigId:["my-second-config"]~~>>`),
 		},
 		{
-			Old: replacevalues.SubString("345"),
-			New: `<<~~func:ConfigId:["my-second-config"]~~>>`,
+			Search:  replacevalues.SubString("345"),
+			Replace: `<<~~func:ConfigId:["my-second-config"]~~>>`,
 		},
 		{
-			Old: model.ConfigRowKey{
+			Search: model.ConfigRowKey{
 				BranchId:    sourceBranch.Id,
 				ComponentId: "foo.bar",
 				ConfigId:    "345",
 				Id:          "789",
 			},
-			New: model.ConfigRowKey{
+			Replace: model.ConfigRowKey{
 				BranchId:    0,
 				ComponentId: "foo.bar",
 				ConfigId:    `<<~~func:ConfigId:["my-second-config"]~~>>`,
@@ -133,12 +133,12 @@ func TestCreateContext(t *testing.T) {
 			},
 		},
 		{
-			Old: model.RowId("789"),
-			New: model.RowId(`<<~~func:ConfigRowId:["my-row"]~~>>`),
+			Search:  model.RowId("789"),
+			Replace: model.RowId(`<<~~func:ConfigRowId:["my-row"]~~>>`),
 		},
 		{
-			Old: replacevalues.SubString("789"),
-			New: `<<~~func:ConfigRowId:["my-row"]~~>>`,
+			Search:  replacevalues.SubString("789"),
+			Replace: `<<~~func:ConfigRowId:["my-row"]~~>>`,
 		},
 	}
 	replacements, err := ctx.Replacements()
