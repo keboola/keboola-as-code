@@ -35,8 +35,8 @@ func LoadManifest(fs filesystem.Fs, jsonNetCtx *jsonnet.Context) (*Manifest, err
 	return templateManifest.Load(fs, jsonNetCtx)
 }
 
-func NewInputs(inputs []templateInput.Input) *Inputs {
-	return templateInput.NewInputs(inputs)
+func NewInputs() *Inputs {
+	return templateInput.NewInputs()
 }
 
 func LoadInputs(fs filesystem.Fs) (*Inputs, error) {

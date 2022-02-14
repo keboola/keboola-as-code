@@ -221,7 +221,7 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 		},
 	}
 
-	output, err := dialog.AskUseTemplateOptions(template.NewInputs(inputs), d, useTemplate.LoadProjectOptions())
+	output, err := dialog.AskUseTemplateOptions(template.NewInputs().Set(inputs), d, useTemplate.LoadProjectOptions())
 	assert.NoError(t, err)
 
 	assert.NoError(t, console.Tty().Close())
@@ -334,7 +334,7 @@ func TestAskUseTemplateOptionsIfNotMet(t *testing.T) {
 		},
 	}
 
-	output, err := dialog.AskUseTemplateOptions(template.NewInputs(inputs), d, useTemplate.LoadProjectOptions())
+	output, err := dialog.AskUseTemplateOptions(template.NewInputs().Set(inputs), d, useTemplate.LoadProjectOptions())
 	assert.NoError(t, err)
 
 	assert.NoError(t, console.Tty().Close())
