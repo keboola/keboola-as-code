@@ -12,6 +12,7 @@ import (
 	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 	createTemplateDir "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/dir/create"
 	createTemplateInputs "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/inputs/create"
+	saveInputs "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/inputs/save"
 	createTemplateManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/manifest/create"
 	saveRepositoryManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/repository/manifest/save"
 	loadStateOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/state/load"
@@ -84,6 +85,11 @@ func Run(o Options, d dependencies) (err error) {
 
 	// Pull remote objects
 	if err := pull.Run(pull.Options{Template: tmpl, Context: templateCtx}, d); err != nil {
+		return err
+	}
+
+	// Save inputs
+	if err := saveInputs.Run(o.Inputs, tmpl.Fs(), d); err != nil {
 		return err
 	}
 
