@@ -3,9 +3,7 @@ package dialog
 import (
 	"context"
 	"fmt"
-	"math"
 	"os"
-	"strconv"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/spf13/cast"
@@ -89,7 +87,7 @@ func (d *useTmplDialog) ask(inputs *input.Inputs) (useTemplate.Options, error) {
 // addInputValue from CLI dialog or inputs file.
 func (d *useTmplDialog) addInputValue(value interface{}, inputDef input.Input) error {
 	// Convert
-	value, err := convertValue(value, inputDef)
+	value, err := inputDef.Type.ParseValue(value)
 	if err != nil {
 		return fmt.Errorf("invalid template input: %w", err)
 	}
@@ -134,7 +132,7 @@ func (d *useTmplDialog) askInput(inputDef input.Input) error {
 			Label:       inputDef.Name,
 			Description: inputDef.Description,
 			Validator: func(raw interface{}) error {
-				value, err := convertValue(raw.(string), inputDef)
+				value, err := inputDef.Type.ParseValue(raw)
 				if err != nil {
 					return err
 				}
@@ -208,83 +206,4 @@ func (d *useTmplDialog) askInput(inputDef input.Input) error {
 	}
 
 	return nil
-}
-
-func convertValue(value interface{}, inputDef input.Input) (interface{}, error) {
-	switch {
-	case inputDef.Kind == input.KindInput:
-		switch inputDef.Type {
-		case input.TypeInt:
-			// Empty string
-			if value == "" {
-				return 0, nil
-			}
-			// Int
-			if v, ok := value.(int); ok {
-				return v, nil
-			}
-			// Float whole number to int
-			if v, ok := value.(float64); ok && math.Trunc(value.(float64)) == value.(float64) {
-				return int(v), nil
-			}
-			// String to int
-			if v, ok := value.(string); ok {
-				if v, err := strconv.Atoi(v); err == nil {
-					return v, nil
-				}
-			}
-			return nil, fmt.Errorf(`value "%v" is not integer`, value)
-		case input.TypeDouble:
-			// Empty string
-			if value == "" {
-				return 0.0, nil
-			}
-			// Float
-			if v, ok := value.(float64); ok {
-				return v, nil
-			}
-			// Int -> float
-			if v, ok := value.(int); ok {
-				return float64(v), nil
-			}
-			// String to float
-			if v, ok := value.(string); ok {
-				if v, err := strconv.ParseFloat(v, 64); err == nil {
-					return v, nil
-				}
-			}
-			return nil, fmt.Errorf(`value "%v" is not float`, value)
-		case input.TypeString:
-			return value, nil
-		default:
-			panic(fmt.Errorf("unexpected input type \"%s\"", inputDef.Type))
-		}
-	case inputDef.Type == input.TypeStringArray:
-		slice := make([]interface{}, 0)
-		values := make(map[string]bool)
-		if strings, ok := value.([]string); ok {
-			// Convert []string (Go type) -> []interface{} (JSON type, used in JsonNet template)
-			// And return only unique values.
-			for _, item := range strings {
-				if !values[item] {
-					slice = append(slice, item)
-					values[item] = true
-				}
-			}
-			return slice, nil
-		} else if items, ok := value.([]interface{}); ok {
-			// Return only unique values.
-			for _, itemRaw := range items {
-				item := itemRaw.(string)
-				if !values[item] {
-					slice = append(slice, item)
-					values[item] = true
-				}
-			}
-			return slice, nil
-		} else {
-			panic(fmt.Errorf("expected a slice, found \"%s\"", inputDef.Type))
-		}
-	}
-	return value, nil
 }
