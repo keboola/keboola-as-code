@@ -15,7 +15,7 @@ func GenerateDocument(schemaDef []byte) (*orderedmap.OrderedMap, error) {
 		return orderedmap.New(), nil
 	}
 
-	// Generate schema
+	// Compile schema
 	schema, err := compileSchema(schemaDef, true)
 	if err != nil {
 		return nil, err

@@ -1,0 +1,91 @@
+package schema
+
+import (
+	"github.com/santhosh-tekuri/jsonschema/v5"
+	"github.com/spf13/cast"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
+)
+
+type FieldMetadata struct {
+	Title       string
+	Description string
+	Default     interface{}
+	Required    bool
+}
+
+func FieldMeta(schemaDef []byte, path orderedmap.Key) (out FieldMetadata, found bool, err error) {
+	// Is schema empty?
+	if len(schemaDef) == 0 {
+		return out, false, nil
+	}
+
+	// Compile schema
+	schema, err := compileSchema(schemaDef, true)
+	if err != nil {
+		return out, false, err
+	}
+
+	// Search for field
+	out, found = getFieldMeta(schema, path)
+	return
+}
+
+func getFieldMeta(schema *jsonschema.Schema, path orderedmap.Key) (out FieldMetadata, found bool) {
+	// Skip first step: component schema starts at "properties"
+	if path.First() != orderedmap.MapStep("properties") {
+		return
+	}
+	path = path.WithoutFirst()
+
+	// Get field
+	parent, field := getField(schema, path)
+	if field == nil {
+		return out, false
+	}
+
+	// Get title and description
+	out.Title = field.Title
+	out.Description = field.Description
+
+	// Default value, for example json.Number, convert it to string
+	defaultVal := cast.ToString(field.Default)
+	if defaultVal != "" {
+		out.Default = defaultVal
+	}
+
+	// Detect required field
+	lastStep, _ := path.Last().(orderedmap.MapStep)
+	if parent != nil {
+		for _, key := range parent.Required {
+			if key == lastStep.Key() {
+				out.Required = true
+				break
+			}
+		}
+	}
+	return out, true
+}
+
+func getField(current *jsonschema.Schema, path orderedmap.Key) (parent *jsonschema.Schema, field *jsonschema.Schema) {
+	lastIndex := len(path) - 1
+	for index, step := range path {
+		// Only object keys are supported
+		if step, ok := step.(orderedmap.MapStep); ok && getFirstType(current) == "object" {
+			for key, nested := range current.Properties {
+				if key == step.Key() {
+					parent, current = current, nested
+					if index == lastIndex {
+						// Found
+						return parent, current
+					} else {
+						// Next step
+						break
+					}
+				}
+			}
+		}
+	}
+
+	return nil, nil
+}
