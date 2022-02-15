@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 const (
@@ -132,7 +132,7 @@ func (v AllowedBranch) IsBranchAllowed(branch *Branch) bool {
 	}
 
 	// Defined by name blob - normalized name
-	if match, _ := filesystem.Match(string(v), utils.NormalizeName(branch.Name)); match {
+	if match, _ := filesystem.Match(string(v), strhelper.NormalizeName(branch.Name)); match {
 		return true
 	}
 

@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/iancoleman/strcase"
 	"github.com/jpillora/longestcommon"
 	"github.com/umisama/go-regexpcache"
 )
@@ -85,4 +86,11 @@ func Truncate(str string, max int, suffix string) string {
 		return str
 	}
 	return str[0:max] + suffix
+}
+
+func NormalizeName(name string) string {
+	str := regexp.
+		MustCompile(`[^a-zA-Z0-9]+`).
+		ReplaceAllString(strcase.ToDelimited(name, '-'), "-")
+	return strings.Trim(str, "-")
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 	createTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/create"
 )
 
@@ -155,7 +156,7 @@ func (d *createTmplDialog) askId() string {
 	name, _ := d.prompt.Ask(&prompt.Question{
 		Label:       `Template ID`,
 		Description: "Please enter a template internal ID.\nAllowed characters: a-z, A-Z, 0-9, \"-\".\nFor example \"lorem-ipsum-ecommerce\".",
-		Default:     utils.NormalizeName(d.out.Name),
+		Default:     strhelper.NormalizeName(d.out.Name),
 		Validator:   validateId,
 	})
 	return strings.TrimSpace(name)

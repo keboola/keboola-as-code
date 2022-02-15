@@ -175,13 +175,13 @@ Do not edit lines starting with "#"!
 
 func makeUniqueId(object model.Object, idByKey map[string]string, ids map[string]bool) {
 	name := object.ObjectName()
-	id := utils.NormalizeName(name)
+	id := strhelper.NormalizeName(name)
 
 	// Ensure ID is unique
 	suffix := 0
 	for ids[id] {
 		suffix++
-		id = utils.NormalizeName(name + "-" + fmt.Sprintf(`%03d`, suffix))
+		id = strhelper.NormalizeName(name + "-" + fmt.Sprintf(`%03d`, suffix))
 	}
 
 	ids[id] = true

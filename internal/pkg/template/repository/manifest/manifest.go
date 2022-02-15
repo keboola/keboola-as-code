@@ -6,7 +6,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 type Manifest struct {
@@ -119,6 +119,6 @@ func (m *Manifest) all() []TemplateRecord {
 
 func newRecord(templateId string) TemplateRecord {
 	record := TemplateRecord{Id: templateId}
-	record.AbsPath = model.NewAbsPath("", utils.NormalizeName(templateId))
+	record.AbsPath = model.NewAbsPath("", strhelper.NormalizeName(templateId))
 	return record
 }

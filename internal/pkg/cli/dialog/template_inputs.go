@@ -343,7 +343,7 @@ func (d *templateInputsDialog) detectInputsFor(objectKey model.Key, componentId 
 
 		// Add
 		d.addInputForField(objectKey, fieldPath, example, input.Input{
-			Id:      utils.NormalizeName(componentId.WithoutVendor() + "-" + fieldPath[1:].String()),
+			Id:      strhelper.NormalizeName(componentId.WithoutVendor() + "-" + fieldPath[1:].String()),
 			Type:    inputType,
 			Kind:    inputKind,
 			Default: defaultValue,

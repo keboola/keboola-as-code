@@ -6,7 +6,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 type Registry struct {
@@ -87,7 +87,7 @@ func (r Registry) makeUniquePath(key Key, p AbsPath) AbsPath {
 
 	// Object path cannot be empty
 	if len(p.GetRelativePath()) == 0 {
-		p.SetRelativePath(utils.NormalizeName(key.Kind().Name))
+		p.SetRelativePath(strhelper.NormalizeName(key.Kind().Name))
 	}
 
 	dir, file := filesystem.Split(p.GetRelativePath())
@@ -101,7 +101,7 @@ func (r Registry) makeUniquePath(key Key, p AbsPath) AbsPath {
 		}
 
 		suffix++
-		p.SetRelativePath(filesystem.Join(dir, utils.NormalizeName(file+"-"+fmt.Sprintf(`%03d`, suffix))))
+		p.SetRelativePath(filesystem.Join(dir, strhelper.NormalizeName(file+"-"+fmt.Sprintf(`%03d`, suffix))))
 	}
 	return p
 }
