@@ -3,47 +3,7 @@ package deepcopy
 import (
 	"fmt"
 	"reflect"
-	"strconv"
-	"strings"
-
-	"github.com/spf13/cast"
 )
-
-type Steps []Step
-
-func (s Steps) String() string {
-	var out []string
-	for _, item := range s {
-		out = append(out, item.String())
-	}
-	str := strings.Join(out, `.`)
-	str = strings.ReplaceAll(str, `*.`, `*`)
-	str = strings.ReplaceAll(str, `.[`, `[`)
-	return str
-}
-
-func (s Steps) Add(t, item string) Steps {
-	newIndex := len(s)
-	out := make(Steps, newIndex+1)
-	copy(out, s)
-	out[newIndex] = Step{Type: t, Item: item}
-	return out
-}
-
-type Step struct {
-	Type string
-	Item string
-}
-
-func (s Step) String() string {
-	if s.Item == `` {
-		return s.Type
-	}
-	if s.Type == `` {
-		return `[` + s.Item + `]`
-	}
-	return fmt.Sprintf(`%s[%s]`, s.Type, s.Item)
-}
 
 func Copy(value interface{}) interface{} {
 	return CopyTranslate(value, nil)
@@ -91,7 +51,7 @@ func translateRecursive(clone, original reflect.Value, callback TranslateFunc, s
 	case cloneMethodFound && cloneMethod.Type.Out(0).String() == originalType.String():
 		values := original.MethodByName(`DeepCopy`).Call([]reflect.Value{
 			reflect.ValueOf(callback),
-			reflect.ValueOf(steps.Add(originalType.String(), ``)),
+			reflect.ValueOf(steps.Add(TypeStep{currentType: originalType.String()})),
 			reflect.ValueOf(visited),
 		})
 		if len(values) != 1 {
@@ -106,7 +66,7 @@ func translateRecursive(clone, original reflect.Value, callback TranslateFunc, s
 			// Allocate a new object and set the pointer to it
 			clone.Set(reflect.New(originalValue.Type()))
 			// Unwrap the newly created pointer
-			steps := steps.Add(`*`, ``)
+			steps := steps.Add(PointerStep{})
 			translateRecursive(clone.Elem(), originalValue, callback, steps, visited)
 		}
 
@@ -123,7 +83,7 @@ func translateRecursive(clone, original reflect.Value, callback TranslateFunc, s
 			// points to, so we have to call Elem() to unwrap it
 			t := originalValue.Type()
 			cloneValue := reflect.New(t).Elem()
-			steps := steps.Add(kind.String(), t.String())
+			steps := steps.Add(InterfaceStep{targetType: t.String()})
 			translateRecursive(cloneValue, originalValue, callback, steps, visited)
 			clone.Set(cloneValue)
 		}
@@ -132,7 +92,7 @@ func translateRecursive(clone, original reflect.Value, callback TranslateFunc, s
 	case kind == reflect.Struct:
 		t := originalType
 		for i := 0; i < original.NumField(); i += 1 {
-			steps := steps.Add(t.String(), t.Field(i).Name)
+			steps := steps.Add(StructFieldStep{currentType: originalType.String(), field: t.Field(i).Name})
 			cloneField := clone.Field(i)
 			if !cloneField.CanSet() {
 				panic(fmt.Errorf("deepcopy found unexported field\nsteps: %s\nvalue: %#v", steps.String(), original.Interface()))
@@ -145,7 +105,7 @@ func translateRecursive(clone, original reflect.Value, callback TranslateFunc, s
 		if !original.IsNil() {
 			clone.Set(reflect.MakeSlice(originalType, original.Len(), original.Cap()))
 			for i := 0; i < original.Len(); i += 1 {
-				steps := steps.Add(kind.String(), strconv.Itoa(i))
+				steps := steps.Add(SliceIndexStep{index: i})
 				translateRecursive(clone.Index(i), original.Index(i), callback, steps, visited)
 			}
 		}
@@ -158,7 +118,7 @@ func translateRecursive(clone, original reflect.Value, callback TranslateFunc, s
 				originalValue := original.MapIndex(key)
 				// New gives us a pointer, but again we want the value
 				cloneValue := reflect.New(originalValue.Type()).Elem()
-				steps := steps.Add(kind.String(), cast.ToString(key))
+				steps := steps.Add(MapKeyStep{key: key.Interface()})
 				translateRecursive(cloneValue, originalValue, callback, steps, visited)
 				clone.SetMapIndex(key, cloneValue)
 			}
@@ -171,7 +131,6 @@ func translateRecursive(clone, original reflect.Value, callback TranslateFunc, s
 
 	// Custom modifications
 	if callback != nil {
-		steps := steps.Add(kind.String(), ``)
-		callback(original, clone, steps)
+		callback(original, clone, steps.Add(TypeStep{currentType: kind.String()}))
 	}
 }

@@ -58,8 +58,7 @@ func (o *OrderedMap) DeepCopy(callback deepcopy.TranslateFunc, steps deepcopy.St
 	out := New()
 	for _, k := range o.Keys() {
 		v, _ := o.Get(k)
-		steps := steps.Add(``, k)
-		out.Set(k, deepcopy.CopyTranslateSteps(v, callback, steps, visited))
+		out.Set(k, deepcopy.CopyTranslateSteps(v, callback, steps.Add(MapStep(k)), visited))
 	}
 	return out
 }

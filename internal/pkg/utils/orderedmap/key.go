@@ -45,7 +45,16 @@ func KeyFromStr(str string) Key {
 func (v Key) String() string {
 	parts := make([]string, 0)
 	for _, step := range v {
-		parts = append(parts, step.String())
+		var stepStr string
+		switch v := step.(type) {
+		case MapStep:
+			stepStr = v.Key()
+		case SliceStep:
+			stepStr = fmt.Sprintf("[%d]", v.Index())
+		default:
+			stepStr = step.String()
+		}
+		parts = append(parts, stepStr)
 	}
 	return strings.ReplaceAll(strings.Join(parts, "."), `.[`, `[`)
 }
@@ -73,10 +82,18 @@ func (v Key) Last() Step {
 	return v[l-1]
 }
 
-func (v MapStep) String() string {
+func (v MapStep) Key() string {
 	return string(v)
 }
 
+func (v MapStep) String() string {
+	return fmt.Sprintf("[%s]", string(v))
+}
+
+func (v SliceStep) Index() int {
+	return int(v)
+}
+
 func (v SliceStep) String() string {
-	return fmt.Sprintf("[%v]", int(v))
+	return fmt.Sprintf("[%d]", int(v))
 }
