@@ -151,4 +151,5 @@ func TestNamingNormalizeName(t *testing.T) {
 	assert.Equal(t, "abc-def-xyz", NormalizeName("__abc_def_xyz___"))
 	assert.Equal(t, "abc-dev-xyz", NormalizeName("--abc-dev-xyz---"))
 	assert.Equal(t, "a-b-cd-e-f-x-y-z", NormalizeName("a B cd-eF   x_y___z__"))
+	assert.Equal(t, "ex-generic-v2", NormalizeName("ex-generic-v2"))
 }
