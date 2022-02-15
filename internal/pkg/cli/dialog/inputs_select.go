@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math"
 	"reflect"
-	"sort"
 	"strings"
 
 	"github.com/spf13/cast"
@@ -22,29 +21,24 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
-type templateInputsDialog struct {
+// inputsSelectDialog to select which config/row fields will be replaced by user input.
+type inputsSelectDialog struct {
 	prompt       prompt.Prompt
 	options      *options.Options
 	branch       *model.Branch
 	configs      []*model.ConfigWithRows
+	inputs       inputsMap
 	objectFields map[model.Key]inputFields
 	objectInputs objectInputsMap
-	inputs       inputsMap
 }
 
-// askTemplateInputs - dialog to define user inputs for a new template.
-// Used in AskCreateTemplateOpts.
-func (p *Dialogs) askTemplateInputs(opts *options.Options, branch *model.Branch, configs []*model.ConfigWithRows) (objectInputsMap, *template.Inputs, error) {
-	return newTemplateInputsDialog(p.Prompt, opts, branch, configs).ask()
-}
-
-func newTemplateInputsDialog(prompt prompt.Prompt, opts *options.Options, branch *model.Branch, configs []*model.ConfigWithRows) *templateInputsDialog {
-	d := &templateInputsDialog{prompt: prompt, options: opts, branch: branch, configs: configs}
+func newInputsSelectDialog(prompt prompt.Prompt, opts *options.Options, branch *model.Branch, configs []*model.ConfigWithRows, inputs inputsMap) *inputsSelectDialog {
+	d := &inputsSelectDialog{prompt: prompt, options: opts, inputs: inputs, branch: branch, configs: configs}
 	d.detectInputs()
 	return d
 }
 
-func (d *templateInputsDialog) ask() (objectInputsMap, *template.Inputs, error) {
+func (d *inputsSelectDialog) ask() (objectInputsMap, error) {
 	result, _ := d.prompt.Editor("md", &prompt.Question{
 		Description: `Please define user inputs.`,
 		Default:     d.defaultValue(),
@@ -56,15 +50,11 @@ func (d *templateInputsDialog) ask() (objectInputsMap, *template.Inputs, error) 
 			return nil
 		},
 	})
-	if err := d.parse(result); err != nil {
-		return nil, nil, err
-	}
-	return d.objectInputs, d.inputs.all(), nil
+	return d.objectInputs, d.parse(result)
 }
 
-func (d *templateInputsDialog) parse(result string) error {
+func (d *inputsSelectDialog) parse(result string) error {
 	d.objectInputs = make(objectInputsMap)
-	d.inputs = newAllInputsMap()
 
 	result = strhelper.StripHtmlComments(result)
 	scanner := bufio.NewScanner(strings.NewReader(result))
@@ -135,7 +125,7 @@ func (d *templateInputsDialog) parse(result string) error {
 	return errors.ErrorOrNil()
 }
 
-func (d *templateInputsDialog) parseInputLine(objectKey model.Key, line string, lineNum int) error {
+func (d *inputsSelectDialog) parseInputLine(objectKey model.Key, line string, lineNum int) error {
 	// Get mark
 	if len(line) < 3 {
 		return fmt.Errorf(`line %d: expected "<mark> <input-id> <field.path>", found  "%s"`, lineNum, line)
@@ -187,7 +177,7 @@ func (d *templateInputsDialog) parseInputLine(objectKey model.Key, line string, 
 	}
 }
 
-func (d *templateInputsDialog) defaultValue() string {
+func (d *inputsSelectDialog) defaultValue() string {
 	// File header - info for user
 	fileHeader := `
 <!--
@@ -235,7 +225,7 @@ Allowed characters: a-z, A-Z, 0-9, "-".
 }
 
 // detectInputs - detects potential inputs in each config and config row.
-func (d *templateInputsDialog) detectInputs() {
+func (d *inputsSelectDialog) detectInputs() {
 	d.objectFields = make(map[model.Key]inputFields)
 	for _, c := range d.configs {
 		d.detectInputsFor(c.ConfigKey, c.ComponentId, c.Content)
@@ -246,7 +236,7 @@ func (d *templateInputsDialog) detectInputs() {
 }
 
 // detectInputsFor config or config row.
-func (d *templateInputsDialog) detectInputsFor(objectKey model.Key, componentId model.ComponentId, content *orderedmap.OrderedMap) {
+func (d *inputsSelectDialog) detectInputsFor(objectKey model.Key, componentId model.ComponentId, content *orderedmap.OrderedMap) {
 	content.VisitAllRecursive(func(fieldPath orderedmap.Key, value interface{}, parent interface{}) {
 		// Root key must be "parameters"
 		if len(fieldPath) < 2 || fieldPath.First() != orderedmap.MapStep("parameters") {
@@ -352,129 +342,11 @@ func (d *templateInputsDialog) detectInputsFor(objectKey model.Key, componentId 
 	})
 }
 
-func (d *templateInputsDialog) addInputForField(objectKey model.Key, path orderedmap.Key, example string, i input.Input) {
+func (d *inputsSelectDialog) addInputForField(objectKey model.Key, path orderedmap.Key, example string, i input.Input) {
 	if d.objectFields[objectKey] == nil {
 		d.objectFields[objectKey] = make(map[string]inputField)
 	}
 
 	selected := i.Kind == input.KindHidden || d.options.GetBool("all-inputs")
 	d.objectFields[objectKey][path.String()] = inputField{path: path, example: example, input: i, selected: selected}
-}
-
-type inputFields map[string]inputField
-
-func (f inputFields) Write(out *strings.Builder) {
-	var table []inputFieldLine
-	var inputIdMaxLength int
-	var fieldPathMaxLength int
-
-	// Convert and get max lengths for padding
-	for _, field := range f {
-		line := field.Line()
-		table = append(table, line)
-
-		if len(line.inputId) > inputIdMaxLength {
-			inputIdMaxLength = len(line.inputId)
-		}
-
-		if len(line.fieldPath) > fieldPathMaxLength {
-			fieldPathMaxLength = len(line.fieldPath)
-		}
-	}
-
-	// Sort by field path
-	sort.SliceStable(table, func(i, j int) bool {
-		return table[i].fieldPath < table[j].fieldPath
-	})
-
-	// Format with padding
-	format := fmt.Sprintf("%%s %%-%ds  %%-%ds %%s", inputIdMaxLength, fieldPathMaxLength)
-
-	// Write
-	for _, line := range table {
-		example := ""
-		if len(line.example) > 0 {
-			example = "<!-- " + line.example + " -->"
-		}
-		out.WriteString(strings.TrimSpace(fmt.Sprintf(format, line.mark, line.inputId, line.fieldPath, example)))
-		out.WriteString("\n")
-	}
-}
-
-type inputField struct {
-	path     orderedmap.Key
-	example  string
-	input    input.Input
-	selected bool
-}
-
-func (f inputField) Line() inputFieldLine {
-	mark := "[ ]"
-	if f.selected {
-		mark = "[x]"
-	}
-
-	return inputFieldLine{
-		mark:      mark,
-		inputId:   f.input.Id,
-		fieldPath: f.path.String(),
-		example:   f.example,
-	}
-}
-
-type inputFieldLine struct {
-	mark      string
-	inputId   string
-	fieldPath string
-	example   string
-}
-
-// objectInputsMap - map of inputs used in an object.
-type objectInputsMap map[model.Key][]template.InputDef
-
-func (v objectInputsMap) add(objectKey model.Key, inputDef template.InputDef) {
-	v[objectKey] = append(v[objectKey], inputDef)
-}
-
-func (v objectInputsMap) setTo(configs []template.ConfigDef) {
-	for i := range configs {
-		c := &configs[i]
-		c.Inputs = v[c.Key]
-		for j := range c.Rows {
-			r := &c.Rows[j]
-			r.Inputs = v[r.Key]
-		}
-	}
-}
-
-func newAllInputsMap() inputsMap {
-	return inputsMap{data: orderedmap.New()}
-}
-
-// inputsMap - map of all Inputs by Input.Id.
-type inputsMap struct {
-	data *orderedmap.OrderedMap
-}
-
-func (v inputsMap) add(input template.Input) {
-	v.data.Set(input.Id, input)
-}
-
-func (v inputsMap) get(inputId string) (template.Input, bool) {
-	value, found := v.data.Get(inputId)
-	if !found {
-		return template.Input{}, false
-	}
-	return value.(template.Input), true
-}
-
-func (v inputsMap) all() *template.Inputs {
-	out := make([]template.Input, v.data.Len())
-	i := 0
-	for _, key := range v.data.Keys() {
-		item, _ := v.data.Get(key)
-		out[i] = item.(template.Input)
-		i++
-	}
-	return template.NewInputs().Set(out)
 }

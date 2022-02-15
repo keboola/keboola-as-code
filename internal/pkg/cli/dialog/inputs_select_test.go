@@ -15,7 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-func TestTemplateInputsDialog_DefaultValue(t *testing.T) {
+func TestInputsSelectDialog_DefaultValue(t *testing.T) {
 	t.Parallel()
 	branch, configs := configsWithContent()
 
@@ -55,11 +55,11 @@ Allowed characters: a-z, A-Z, 0-9, "-".
 `
 
 	// Check default value
-	d := newTemplateInputsDialog(nopPrompt.New(), options.New(), branch, configs)
+	d := newInputsSelectDialog(nopPrompt.New(), options.New(), branch, configs, newInputsMap())
 	assert.Equal(t, expected, d.defaultValue())
 }
 
-func TestTemplateInputsDialog_DefaultValue_AllInputs(t *testing.T) {
+func TestInputsSelectDialog_DefaultValue_AllInputs(t *testing.T) {
 	t.Parallel()
 	branch, configs := configsWithContent()
 
@@ -101,11 +101,11 @@ Allowed characters: a-z, A-Z, 0-9, "-".
 	// Check default value
 	opts := options.New()
 	opts.Set("all-inputs", true)
-	d := newTemplateInputsDialog(nopPrompt.New(), opts, branch, configs)
+	d := newInputsSelectDialog(nopPrompt.New(), opts, branch, configs, newInputsMap())
 	assert.Equal(t, expected, d.defaultValue())
 }
 
-func TestTemplateInputsDialog_Parse(t *testing.T) {
+func TestInputsSelectDialog_Parse(t *testing.T) {
 	t.Parallel()
 	branch, configs := configsWithContent()
 
@@ -127,7 +127,7 @@ func TestTemplateInputsDialog_Parse(t *testing.T) {
 `
 
 	// Parse
-	d := newTemplateInputsDialog(nopPrompt.New(), options.New(), branch, configs)
+	d := newInputsSelectDialog(nopPrompt.New(), options.New(), branch, configs, newInputsMap())
 	err := d.parse(result)
 	assert.NoError(t, err)
 
@@ -156,7 +156,7 @@ func TestTemplateInputsDialog_Parse(t *testing.T) {
 	}, d.objectInputs)
 }
 
-func TestTemplateInputsDialog_Parse_All(t *testing.T) {
+func TestInputsSelectDialog_Parse_All(t *testing.T) {
 	t.Parallel()
 	branch, configs := configsWithContent()
 
@@ -178,7 +178,7 @@ func TestTemplateInputsDialog_Parse_All(t *testing.T) {
 `
 
 	// Parse
-	d := newTemplateInputsDialog(nopPrompt.New(), options.New(), branch, configs)
+	d := newInputsSelectDialog(nopPrompt.New(), options.New(), branch, configs, newInputsMap())
 	err := d.parse(result)
 	assert.NoError(t, err)
 
@@ -265,7 +265,7 @@ func TestTemplateInputsDialog_Parse_All(t *testing.T) {
 	}, d.objectInputs)
 }
 
-func TestTemplateInputsDialog_Parse_Errors(t *testing.T) {
+func TestInputsSelectDialog_Parse_Errors(t *testing.T) {
 	t.Parallel()
 	branch, configs := configsWithContent()
 
@@ -295,7 +295,7 @@ invalid
 `
 
 	// Parse
-	d := newTemplateInputsDialog(nopPrompt.New(), options.New(), branch, configs)
+	d := newInputsSelectDialog(nopPrompt.New(), options.New(), branch, configs, newInputsMap())
 	err := d.parse(result)
 
 	// Assert
