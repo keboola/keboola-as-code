@@ -1,6 +1,7 @@
 package input
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -72,4 +73,59 @@ func TestType_ValidateValue(t *testing.T) {
 	err = TypeStringArray.ValidateValue(reflect.ValueOf([]interface{}{"foo", 123}))
 	assert.Error(t, err)
 	assert.Equal(t, "all items should be string, got int, index 1", err.Error())
+}
+
+func TestType_ParseValue(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		t      Type
+		input  interface{}
+		output interface{}
+		err    string
+	}{
+		{TypeInt, "", 0, ""},
+		{TypeInt, 123, 123, ""},
+		{TypeInt, 123.0, 123, ""},
+		{TypeInt, 123.45, nil, `value "123.45" is not integer`},
+		{TypeInt, "123", 123, ""},
+		{TypeInt, "123.45", nil, `value "123.45" is not integer`},
+		{TypeDouble, "", 0.0, ""},
+		{TypeDouble, 123, 123.0, ""},
+		{TypeDouble, 123.0, 123.0, ""},
+		{TypeDouble, 123.45, 123.45, ""},
+		{TypeDouble, "123", 123.0, ""},
+		{TypeDouble, "123.45", 123.45, ""},
+		{TypeBool, "", false, ``},
+		{TypeBool, 123, nil, `value "123" is not bool`},
+		{TypeBool, 123.45, nil, `value "123.45" is not bool`},
+		{TypeBool, "123", nil, `value "123" is not bool`},
+		{TypeBool, "true", true, ""},
+		{TypeBool, "false", false, ""},
+		{TypeBool, true, true, ""},
+		{TypeBool, false, false, ""},
+		{TypeString, "", "", ""},
+		{TypeString, 123, "123", ""},
+		{TypeString, 123.45, "123.45", ""},
+		{TypeString, true, "true", ""},
+		{TypeString, "abc", "abc", ""},
+		{TypeStringArray, "", []interface{}{}, ""},
+		{TypeStringArray, "a,b", []interface{}{"a", "b"}, ""},
+		{TypeStringArray, []string{}, []interface{}{}, ""},
+		{TypeStringArray, []string{"a", "b"}, []interface{}{"a", "b"}, ""},
+		{TypeStringArray, []interface{}{}, []interface{}{}, ""},
+		{TypeStringArray, []interface{}{"a", "b"}, []interface{}{"a", "b"}, ""},
+	}
+
+	// Assert
+	for i, c := range cases {
+		desc := fmt.Sprintf("case %d", i)
+		actual, err := c.t.ParseValue(c.input)
+		assert.Equal(t, c.output, actual, desc)
+		if c.err == "" {
+			assert.NoError(t, err, desc)
+		} else {
+			assert.Error(t, err, desc)
+			assert.Equal(t, c.err, err.Error(), desc)
+		}
+	}
 }

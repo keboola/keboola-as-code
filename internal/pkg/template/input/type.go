@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"math"
 	"reflect"
+	"strconv"
 	"strings"
+
+	"github.com/spf13/cast"
 )
 
 const (
@@ -15,7 +18,7 @@ const (
 	TypeStringArray = Type("string[]")
 )
 
-// Type of the template user input.
+// Type of the template user
 // This corresponds to the data type that will be used in the JsonNet template.
 type Type string
 
@@ -92,6 +95,101 @@ func (t Type) ValidateValue(value reflect.Value) error {
 	}
 
 	return nil
+}
+
+func (t Type) ParseValue(value interface{}) (interface{}, error) {
+	switch t {
+	case TypeInt:
+		// Empty string
+		if value == "" {
+			return 0, nil
+		}
+		// Int
+		if v, ok := value.(int); ok {
+			return v, nil
+		}
+		// Float whole number to int
+		if v, ok := value.(float64); ok && math.Trunc(value.(float64)) == value.(float64) {
+			return int(v), nil
+		}
+		// String to int
+		if v, ok := value.(string); ok {
+			if v, err := strconv.Atoi(v); err == nil {
+				return v, nil
+			}
+		}
+		return nil, fmt.Errorf(`value "%v" is not integer`, value)
+	case TypeDouble:
+		// Empty string
+		if value == "" {
+			return 0.0, nil
+		}
+		// Float
+		if v, ok := value.(float64); ok {
+			return v, nil
+		}
+		// Int -> float
+		if v, ok := value.(int); ok {
+			return float64(v), nil
+		}
+		// String to float
+		if v, ok := value.(string); ok {
+			if v, err := strconv.ParseFloat(v, 64); err == nil {
+				return v, nil
+			}
+		}
+		return nil, fmt.Errorf(`value "%v" is not float`, value)
+	case TypeBool:
+		if value == "" {
+			return false, nil
+		}
+		if v, ok := value.(bool); ok {
+			return v, nil
+		}
+		if v, err := strconv.ParseBool(cast.ToString(value)); err == nil {
+			return v, nil
+		}
+		return nil, fmt.Errorf(`value "%v" is not bool`, value)
+	case TypeString:
+		return cast.ToString(value), nil
+	case TypeStringArray:
+		slice := make([]interface{}, 0)
+		values := make(map[string]bool)
+
+		if v, ok := value.(string); ok {
+			// Split items by comma, if needed
+			if v == "" {
+				value = []string{}
+			} else {
+				value = strings.Split(v, ",")
+			}
+		}
+
+		if items, ok := value.([]string); ok {
+			// Convert []string (Go type) -> []interface{} (JSON type, used in JsonNet template)
+			// And return only unique values.
+			for _, item := range items {
+				if !values[item] {
+					slice = append(slice, item)
+					values[item] = true
+				}
+			}
+			return slice, nil
+		} else if items, ok := value.([]interface{}); ok {
+			// Return only unique values.
+			for _, itemRaw := range items {
+				item := itemRaw.(string)
+				if !values[item] {
+					slice = append(slice, item)
+					values[item] = true
+				}
+			}
+			return slice, nil
+		} else {
+			panic(fmt.Errorf("expected a slice, found \"%s\"", t))
+		}
+	}
+	return value, nil
 }
 
 func reflectKindToStr(k reflect.Kind) string {
