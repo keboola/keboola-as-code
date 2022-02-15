@@ -17,6 +17,7 @@ const (
 	placeholderEnd   = "~~>>"
 	configIdFunc     = "ConfigId"
 	configRowIdFunc  = "ConfigRowId"
+	inputFunc        = "Input"
 )
 
 // nolint: gochecknoglobals
@@ -33,6 +34,11 @@ func ConfigIdPlaceholder(id string) string {
 // ConfigRowIdPlaceholder generates <<~~func:ConfigRowId:["<ID>"]~~>>.
 func ConfigRowIdPlaceholder(id string) string {
 	return functionCallPlaceholder(configRowIdFunc, id)
+}
+
+// InputPlaceholder generates <<~~func:Input:["<InputID>"]~~>>.
+func InputPlaceholder(inputId string) string {
+	return functionCallPlaceholder(inputFunc, inputId)
 }
 
 // functionCallPlaceholder generates <<~~func:<FUNC_NAME>>:["<ARG1>","<ARG2>"]~~>>.

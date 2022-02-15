@@ -86,3 +86,23 @@ func Truncate(str string, max int, suffix string) string {
 	}
 	return str[0:max] + suffix
 }
+
+func NormalizeName(str string) string {
+	// Prepend all uppercase letters with separator
+	// "--CamelCase" -> "---Camel-Case"
+	str = regexpcache.
+		MustCompile(`([A-Z]+)`).
+		ReplaceAllString(str, "-$1")
+	// Replace special characters with one separator
+	// "---Camel-Case" -> "-Camel-Case"
+	str = regexpcache.
+		MustCompile(`[^a-zA-Z0-9]+`).
+		ReplaceAllString(str, "-")
+	// Trim separators
+	// "-Camel-Case" -> "Camel-Case"
+	str = strings.Trim(str, "-")
+	// Convert to lower
+	// "Camel-Case" -> "camel-case"
+	str = strings.ToLower(str)
+	return str
+}

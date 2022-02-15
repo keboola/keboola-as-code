@@ -6,10 +6,12 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/spf13/cast"
 	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 type Values struct {
@@ -19,12 +21,18 @@ type Values struct {
 
 // Value to be replaced.
 type Value struct {
-	Old interface{}
-	New interface{}
+	Search  interface{}
+	Replace interface{}
 }
 
 // SubString represents partial match in a string.
 type SubString string
+
+// ContentField sets nested value in config/row.Content ordered map.
+type ContentField struct {
+	objectKey model.Key
+	fieldPath orderedmap.Key
+}
 
 func NewValues() *Values {
 	return &Values{}
@@ -36,10 +44,11 @@ func (v *Values) Values() []Value {
 	return out
 }
 
-func (v *Values) AddValue(oldValue, newValue interface{}) {
-	v.values = append(v.values, Value{Old: oldValue, New: newValue})
+func (v *Values) AddValue(search, replace interface{}) {
+	v.values = append(v.values, Value{Search: search, Replace: replace})
 }
 
+// AddKey replaces object Key with Key.
 func (v *Values) AddKey(oldKey, newKey model.Key) {
 	switch oldKey := oldKey.(type) {
 	case model.BranchKey:
@@ -56,6 +65,7 @@ func (v *Values) AddKey(oldKey, newKey model.Key) {
 	}
 }
 
+// AddId replaces id with id.
 func (v *Values) AddId(oldId, newId interface{}) {
 	switch old := oldId.(type) {
 	case model.BranchId:
@@ -73,6 +83,11 @@ func (v *Values) AddId(oldId, newId interface{}) {
 	}
 }
 
+// AddContentField sets nested value in config/row.Content ordered map.
+func (v *Values) AddContentField(objectKey model.Key, fieldPath orderedmap.Key, replace interface{}) {
+	v.AddValue(ContentField{objectKey: objectKey, fieldPath: fieldPath}, replace)
+}
+
 func (v *Values) Replace(input interface{}) (interface{}, error) {
 	if err := v.validate(); err != nil {
 		return nil, err
@@ -80,18 +95,30 @@ func (v *Values) Replace(input interface{}) (interface{}, error) {
 
 	return deepcopy.CopyTranslate(input, func(original, clone reflect.Value, steps deepcopy.Steps) {
 		for _, item := range v.values {
-			switch v := item.Old.(type) {
+			switch v := item.Search.(type) {
+			case ContentField:
+				// Set nested value in config/row.Content ordered map
+				if !original.IsValid() || original.IsZero() || !clone.IsValid() || clone.IsZero() {
+					continue
+				}
+				originalObj, ok1 := original.Interface().(model.ObjectWithContent)
+				cloneObj, ok2 := clone.Interface().(model.ObjectWithContent)
+				if ok1 && ok2 && originalObj.Key() == v.objectKey {
+					if err := cloneObj.GetContent().SetNestedPath(v.fieldPath, item.Replace); err != nil {
+						panic(err)
+					}
+				}
 			case SubString:
 				// Search and replace sub-string
 				if original.IsValid() && original.Type().String() == "string" {
-					if modified, found := v.replace(original.String(), item.New.(string)); found {
+					if modified, found := v.replace(original.String(), item.Replace.(string)); found {
 						clone.Set(reflect.ValueOf(modified))
 					}
 				}
 			default:
 				// Replace other types
-				if original.IsValid() && original.Interface() == item.Old {
-					clone.Set(reflect.ValueOf(item.New))
+				if original.IsValid() && original.Interface() == item.Search {
+					clone.Set(reflect.ValueOf(item.Replace))
 				}
 			}
 		}
@@ -106,24 +133,35 @@ func (v *Values) validate() error {
 	}
 
 	// Old IDs must be unique
-	valueByString := make(map[interface{}][]interface{})
+	valuesMap := make(map[string]int)
 	for _, item := range v.values {
-		valueByString[item.Old] = append(valueByString[item.Old], item.Old)
+		value := item.Search
+		_, ok1 := value.(model.ConfigId)
+		_, ok2 := value.(model.RowId)
+		if ok1 || ok2 {
+			valuesMap[cast.ToString(value)] += 1
+		}
 	}
-	for k, v := range valueByString {
-		if len(v) > 1 {
-			return fmt.Errorf(`the old ID "%s" is defined %dx`, k, len(v))
+	for k, count := range valuesMap {
+		if count > 1 {
+			return fmt.Errorf(`the old ID "%s" is defined %dx`, k, count)
 		}
 	}
 
 	// New IDs must be unique
-	valueByString = make(map[interface{}][]interface{})
+	valuesMap = make(map[string]int)
 	for _, item := range v.values {
-		valueByString[item.New] = append(valueByString[item.New], item.New)
+		value := item.Replace
+		_, ok1 := value.(model.ConfigId)
+		_, ok2 := value.(model.RowId)
+		if ok1 || ok2 {
+			valuesMap[cast.ToString(value)] += 1
+		}
 	}
-	for k, v := range valueByString {
-		if len(v) > 1 {
-			return fmt.Errorf(`the new ID "%s" is defined %dx`, k, len(v))
+
+	for k, count := range valuesMap {
+		if count > 1 {
+			return fmt.Errorf(`the new ID "%s" is defined %dx`, k, count)
 		}
 	}
 

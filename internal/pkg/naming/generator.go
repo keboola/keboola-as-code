@@ -7,6 +7,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 const (
@@ -54,7 +55,7 @@ func (g Generator) BranchPath(branch *Branch) AbsPath {
 	} else {
 		p.SetRelativePath(utils.ReplacePlaceholders(string(g.template.Branch), map[string]interface{}{
 			"branch_id":   branch.Id,
-			"branch_name": utils.NormalizeName(branch.Name),
+			"branch_name": strhelper.NormalizeName(branch.Name),
 		}))
 	}
 
@@ -108,7 +109,7 @@ func (g Generator) ConfigPath(parentPath string, component *Component, config *C
 		"component_type":      component.Type,
 		"component_id":        component.Id,
 		"config_id":           jsonnet.StripIdPlaceholder(config.Id.String()),
-		"config_name":         utils.NormalizeName(config.Name),
+		"config_name":         strhelper.NormalizeName(config.Name),
 	}))
 	return g.registry.ensureUniquePath(config.Key(), p)
 }
@@ -162,7 +163,7 @@ func (g Generator) ConfigRowPath(parentPath string, component *Component, row *C
 	p.SetParentPath(parentPath)
 	p.SetRelativePath(utils.ReplacePlaceholders(template, map[string]interface{}{
 		"config_row_id":   jsonnet.StripIdPlaceholder(row.Id.String()),
-		"config_row_name": utils.NormalizeName(name),
+		"config_row_name": strhelper.NormalizeName(name),
 	}))
 	return g.registry.ensureUniquePath(row.Key(), p)
 }
@@ -176,7 +177,7 @@ func (g Generator) BlockPath(parentPath string, block *Block) AbsPath {
 	p.SetParentPath(parentPath)
 	p.SetRelativePath(utils.ReplacePlaceholders(string(blockNameTemplate), map[string]interface{}{
 		"block_order": fmt.Sprintf(`%03d`, block.Index+1),
-		"block_name":  utils.NormalizeName(block.Name),
+		"block_name":  strhelper.NormalizeName(block.Name),
 	}))
 	return g.registry.ensureUniquePath(block.Key(), p)
 }
@@ -186,7 +187,7 @@ func (g Generator) CodePath(parentPath string, code *Code) AbsPath {
 	p.SetParentPath(parentPath)
 	p.SetRelativePath(utils.ReplacePlaceholders(string(codeNameTemplate), map[string]interface{}{
 		"code_order": fmt.Sprintf(`%03d`, code.Index+1),
-		"code_name":  utils.NormalizeName(code.Name),
+		"code_name":  strhelper.NormalizeName(code.Name),
 	}))
 	return g.registry.ensureUniquePath(code.Key(), p)
 }
@@ -212,7 +213,7 @@ func (g Generator) PhasePath(parentPath string, phase *Phase) AbsPath {
 	p.SetParentPath(parentPath)
 	p.SetRelativePath(utils.ReplacePlaceholders(string(phaseNameTemplate), map[string]interface{}{
 		"phase_order": fmt.Sprintf(`%03d`, phase.Index+1),
-		"phase_name":  utils.NormalizeName(phase.Name),
+		"phase_name":  strhelper.NormalizeName(phase.Name),
 	}))
 	return g.registry.ensureUniquePath(phase.Key(), p)
 }
@@ -226,7 +227,7 @@ func (g Generator) TaskPath(parentPath string, task *Task) AbsPath {
 	p.SetParentPath(parentPath)
 	p.SetRelativePath(utils.ReplacePlaceholders(string(taskNameTemplate), map[string]interface{}{
 		"task_order": fmt.Sprintf(`%03d`, task.Index+1),
-		"task_name":  utils.NormalizeName(task.Name),
+		"task_name":  strhelper.NormalizeName(task.Name),
 	}))
 	return g.registry.ensureUniquePath(task.Key(), p)
 }

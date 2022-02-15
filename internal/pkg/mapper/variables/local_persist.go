@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 func (m *variablesMapper) MapBeforePersist(recipe *model.PersistRecipe) error {
@@ -46,7 +47,7 @@ func (m *variablesMapper) MapBeforePersist(recipe *model.PersistRecipe) error {
 	return nil
 }
 
-// OnLocalChange ensures there is one config row with default variables values after persist.
+// AfterLocalOperation ensures there is one config row with default variables values after persist.
 func (m *variablesMapper) AfterLocalOperation(changes *model.LocalChanges) error {
 	// Find new persisted variables configs + include those that have a new persisted row
 	configs := make(map[model.ConfigKey]bool)
@@ -113,7 +114,7 @@ func (m *variablesMapper) ensureOneRowHasRelation(config *model.Config) error {
 		}
 
 		// Has row "default" in the name or path?
-		if strings.Contains(utils.NormalizeName(row.Local.Name), `default`) ||
+		if strings.Contains(strhelper.NormalizeName(row.Local.Name), `default`) ||
 			strings.Contains(row.GetRelativePath(), `default`) {
 			rowsWithDefaultInName = append(rowsWithDefaultInName, row)
 		}
