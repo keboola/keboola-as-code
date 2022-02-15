@@ -7,7 +7,6 @@ import (
 
 	"github.com/umisama/go-regexpcache"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
@@ -19,7 +18,8 @@ import (
 // inputsSelectDialog to select which config/row fields will be replaced by user input.
 type inputsSelectDialog struct {
 	prompt       prompt.Prompt
-	options      *options.Options
+	selectAll    bool
+	components   *model.ComponentsMap
 	branch       *model.Branch
 	configs      []*model.ConfigWithRows
 	inputs       inputsMap
@@ -27,15 +27,14 @@ type inputsSelectDialog struct {
 	objectInputs objectInputsMap
 }
 
-func newInputsSelectDialog(prompt prompt.Prompt, opts *options.Options, branch *model.Branch, configs []*model.ConfigWithRows, inputs inputsMap) *inputsSelectDialog {
-	d := &inputsSelectDialog{prompt: prompt, options: opts, inputs: inputs, branch: branch, configs: configs}
-	d.detectInputs()
-	return d
+func newInputsSelectDialog(prompt prompt.Prompt, selectAll bool, components *model.ComponentsMap, branch *model.Branch, configs []*model.ConfigWithRows, inputs inputsMap) (*inputsSelectDialog, error) {
+	d := &inputsSelectDialog{prompt: prompt, selectAll: selectAll, components: components, inputs: inputs, branch: branch, configs: configs}
+	return d, d.detectInputs()
 }
 
 func (d *inputsSelectDialog) ask() (objectInputsMap, error) {
 	result, _ := d.prompt.Editor("md", &prompt.Question{
-		Description: `Please define user inputs.`,
+		Description: `Please select which fields in the configurations should be user inputs.`,
 		Default:     d.defaultValue(),
 		Validator: func(val interface{}) error {
 			if err := d.parse(val.(string)); err != nil {
@@ -96,7 +95,7 @@ func (d *inputsSelectDialog) parse(result string) error {
 			}
 			key := model.ConfigRowKey{BranchId: d.branch.Id, ComponentId: model.ComponentId(m[1]), ConfigId: model.ConfigId(m[2]), Id: model.RowId(m[3])}
 			if _, found := d.objectFields[key]; !found {
-				errors.Append(fmt.Errorf(`line %d: config row "%s:%s:%s" not found`, lineNum, m[1], m[2], m[2]))
+				errors.Append(fmt.Errorf(`line %d: config row "%s:%s:%s" not found`, lineNum, m[1], m[2], m[3]))
 				invalidObject = true
 				continue
 			}
@@ -161,8 +160,11 @@ func (d *inputsSelectDialog) parseInputLine(objectKey model.Key, line string, li
 		}
 
 		// Save definitions
-		d.inputs.add(field.Input)
 		d.objectInputs.add(objectKey, template.InputDef{Path: field.Path, InputId: field.Input.Id})
+		if _, found := d.inputs.get(field.Input.Id); !found {
+			value := field.Input
+			d.inputs.add(&value)
+		}
 		return nil
 	case mark == "[ ]" || mark == "[]":
 		// scalar value, not user input
@@ -220,22 +222,27 @@ Allowed characters: a-z, A-Z, 0-9, "-".
 }
 
 // detectInputs - detects potential inputs in each config and config row.
-func (d *inputsSelectDialog) detectInputs() {
+func (d *inputsSelectDialog) detectInputs() error {
 	d.objectFields = make(map[model.Key]inputFields)
 	for _, c := range d.configs {
-		for _, item := range input.Find(c.ConfigKey, c.ComponentKey(), c.Content) {
+		component, err := d.components.Get(c.ComponentKey())
+		if err != nil {
+			return err
+		}
+		for _, item := range input.Find(c.ConfigKey, component, c.Content) {
 			d.addInputForField(item)
 		}
 		for _, r := range c.Rows {
-			for _, item := range input.Find(r.ConfigRowKey, r.ComponentKey(), r.Content) {
+			for _, item := range input.Find(r.ConfigRowKey, component, r.Content) {
 				d.addInputForField(item)
 			}
 		}
 	}
+	return nil
 }
 
 func (d *inputsSelectDialog) addInputForField(field input.ObjectField) {
-	if d.options.GetBool("all-inputs") {
+	if d.selectAll {
 		field.Selected = true
 	}
 	if d.objectFields[field.ObjectKey] == nil {

@@ -6,27 +6,45 @@ import (
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
+type inputsDialogDeps interface {
+	Logger() log.Logger
+	Options() *options.Options
+	Components() (*model.ComponentsMap, error)
+}
+
 // askTemplateInputs - dialog to define user inputs for a new template.
 // Used in AskCreateTemplateOpts.
-func (p *Dialogs) askTemplateInputs(opts *options.Options, branch *model.Branch, configs []*model.ConfigWithRows) (objectInputsMap, *template.Inputs, error) {
+func (p *Dialogs) askTemplateInputs(deps inputsDialogDeps, branch *model.Branch, configs []*model.ConfigWithRows) (objectInputsMap, *template.Inputs, error) {
 	// Create empty inputs map
 	inputs := newInputsMap()
 
-	// Select which config/row fields will be replaced by user input.
-	objectInputs, err := newInputsSelectDialog(p.Prompt, opts, branch, configs, inputs).ask()
+	// Get components
+	components, err := deps.Components()
 	if err != nil {
-		return objectInputs, inputs.all(), err
+		return nil, nil, err
+	}
+
+	// Select which config/row fields will be replaced by user input.
+	selectAllInputs := deps.Options().GetBool("all-inputs")
+	selectDialog, err := newInputsSelectDialog(p.Prompt, selectAllInputs, components, branch, configs, inputs)
+	if err != nil {
+		return nil, nil, err
+	}
+	objectInputs, err := selectDialog.ask()
+	if err != nil {
+		return nil, nil, err
 	}
 
 	// Define name/description for each user input.
 	if err := newInputsDetailsDialog(p.Prompt, inputs).ask(); err != nil {
-		return objectInputs, inputs.all(), err
+		return nil, nil, err
 	}
 
 	return objectInputs, inputs.all(), nil
@@ -119,16 +137,20 @@ type inputsMap struct {
 	data *orderedmap.OrderedMap
 }
 
-func (v inputsMap) add(input template.Input) {
+func (v inputsMap) add(input *template.Input) {
 	v.data.Set(input.Id, input)
 }
 
-func (v inputsMap) get(inputId string) (template.Input, bool) {
+func (v inputsMap) get(inputId string) (*template.Input, bool) {
 	value, found := v.data.Get(inputId)
 	if !found {
-		return template.Input{}, false
+		return nil, false
 	}
-	return value.(template.Input), true
+	return value.(*template.Input), true
+}
+
+func (v inputsMap) ids() []string {
+	return v.data.Keys()
 }
 
 func (v inputsMap) all() *template.Inputs {
@@ -136,7 +158,7 @@ func (v inputsMap) all() *template.Inputs {
 	i := 0
 	for _, key := range v.data.Keys() {
 		item, _ := v.data.Get(key)
-		out[i] = item.(template.Input)
+		out[i] = *(item.(*template.Input))
 		i++
 	}
 	return template.NewInputs().Set(out)

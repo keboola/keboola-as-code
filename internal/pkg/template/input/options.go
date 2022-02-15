@@ -1,5 +1,12 @@
 package input
 
+import (
+	"fmt"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
+)
+
 // Options for input KindSelect and KindMultiSelect.
 // - KindSelect: user can select one value.
 // - KindMultiSelect: user can select multiple values.
@@ -30,6 +37,36 @@ func (options Options) Names() []string {
 		out = append(out, o.Name)
 	}
 	return out
+}
+
+// Map returns id -> name ordered map.
+func (options Options) Map() *orderedmap.OrderedMap {
+	out := orderedmap.New()
+	for _, o := range options {
+		out.Set(o.Id, o.Name)
+	}
+	return out
+}
+
+func OptionsFromString(str string) (out Options, err error) {
+	if str == "" {
+		return nil, nil
+	}
+	pairs := orderedmap.New()
+	if err := json.DecodeString(str, pairs); err != nil {
+		return nil, fmt.Errorf(`value "%s" is not valid: %w`, str, err)
+	}
+
+	for _, key := range pairs.Keys() {
+		valueRaw, _ := pairs.Get(key)
+		if v, ok := valueRaw.(string); ok {
+			out = append(out, Option{Id: key, Name: v})
+		} else {
+			return nil, fmt.Errorf(`value "%s" is not valid: value of key "%s" must be string`, str, key)
+		}
+	}
+
+	return out, nil
 }
 
 // validateDefaultOptions - default options must be present in the input allowed Options.

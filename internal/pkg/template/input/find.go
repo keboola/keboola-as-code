@@ -3,10 +3,13 @@ package input
 import (
 	"math"
 	"reflect"
+	"strings"
 
 	"github.com/spf13/cast"
+	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/encryptionapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/json/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
@@ -22,7 +25,7 @@ type ObjectField struct {
 }
 
 // Find potential user inputs in config or config row.
-func Find(objectKey model.Key, componentKey model.ComponentKey, content *orderedmap.OrderedMap) []ObjectField {
+func Find(objectKey model.Key, component *model.Component, content *orderedmap.OrderedMap) []ObjectField {
 	var out []ObjectField
 	content.VisitAllRecursive(func(fieldPath orderedmap.Key, value interface{}, parent interface{}) {
 		// Root key must be "parameters"
@@ -36,13 +39,15 @@ func Find(objectKey model.Key, componentKey model.ComponentKey, content *ordered
 			return
 		}
 
-		isSecret := encryptionapi.IsKeyToEncrypt(string(fieldKey))
+		// Generate input ID
+		inputId := strhelper.NormalizeName(component.Id.WithoutVendor() + "-" + fieldPath.WithoutFirst().String())
 
 		// Detect type, kind and default value
 		var inputType Type
 		var inputKind Kind
 		var inputOptions Options
 		var defaultValue interface{}
+		isSecret := encryptionapi.IsKeyToEncrypt(string(fieldKey))
 		valRef := reflect.ValueOf(value)
 		switch valRef.Kind() {
 		case reflect.String:
@@ -118,15 +123,42 @@ func Find(objectKey model.Key, componentKey model.ComponentKey, content *ordered
 			example = strhelper.Truncate(cast.ToString(value), 20, "...")
 		}
 
+		// Create input definition
+		inputDef := Input{
+			Id:      inputId,
+			Type:    inputType,
+			Kind:    inputKind,
+			Default: defaultValue,
+			Options: inputOptions,
+		}
+
+		// Fill in metadata from component JSON schema
+		if meta, found, _ := schema.FieldMeta(component.Schema, fieldPath); found {
+			inputDef.Name = meta.Title
+			inputDef.Description = meta.Description
+			if v, _ := inputDef.Type.ParseValue(meta.Default); v != "" {
+				inputDef.Default = v
+			}
+		}
+
+		// Use generic name if needed
+		if inputDef.Name == "" {
+			var parts []string
+			for _, step := range fieldPath.WithoutFirst() {
+				if v, ok := step.(orderedmap.MapStep); ok {
+					part := v.Key()
+					part = regexpcache.MustCompile(`[^a-zA-Z0-9]+`).ReplaceAllString(part, " ") // remove special chars
+					part = strings.TrimSpace(part)
+					part = strhelper.FirstUpper(part)
+					parts = append(parts, part)
+				}
+			}
+			inputDef.Name = strings.TrimSpace(strings.Join(parts, " "))
+		}
+
 		// Add
 		out = append(out, ObjectField{
-			Input: Input{
-				Id:      strhelper.NormalizeName(componentKey.Id.WithoutVendor() + "-" + fieldPath[1:].String()),
-				Type:    inputType,
-				Kind:    inputKind,
-				Default: defaultValue,
-				Options: inputOptions,
-			},
+			Input:     inputDef,
 			ObjectKey: objectKey,
 			Path:      fieldPath,
 			Example:   example,

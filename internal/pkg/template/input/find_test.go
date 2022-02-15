@@ -13,7 +13,9 @@ import (
 func TestFind(t *testing.T) {
 	t.Parallel()
 	objectKey := model.ConfigKey{BranchId: 123, ComponentId: "keboola.foo-bar", Id: "456"}
-	componentKey := model.ComponentKey{Id: "keboola.foo-bar"}
+	component := &model.Component{
+		ComponentKey: model.ComponentKey{Id: "keboola.foo-bar"},
+	}
 	contentJson := `
 {
   "storage": {
@@ -38,13 +40,13 @@ func TestFind(t *testing.T) {
 	content := orderedmap.New()
 	json.MustDecodeString(contentJson, content)
 
-	// Run
-	results := Find(objectKey, componentKey, content)
+	// Check
+	results := Find(objectKey, component, content)
 	assert.Equal(t, []ObjectField{
 		{
 			Input: Input{
 				Id:      "foo-bar-object-array-1-string",
-				Name:    "",
+				Name:    "Object Array String",
 				Type:    TypeString,
 				Kind:    KindInput,
 				Default: "Lorem ipsum dolor",
@@ -57,7 +59,7 @@ func TestFind(t *testing.T) {
 		{
 			Input: Input{
 				Id:   "foo-bar-object-array-1-password",
-				Name: "",
+				Name: "Object Array Password",
 				Type: TypeString,
 				Kind: KindHidden,
 			},
@@ -69,7 +71,7 @@ func TestFind(t *testing.T) {
 		{
 			Input: Input{
 				Id:      "foo-bar-object-array-1-int",
-				Name:    "",
+				Name:    "Object Array Int",
 				Type:    TypeInt,
 				Kind:    KindInput,
 				Default: 123,
@@ -82,7 +84,7 @@ func TestFind(t *testing.T) {
 		{
 			Input: Input{
 				Id:      "foo-bar-object-array-1-double",
-				Name:    "",
+				Name:    "Object Array Double",
 				Type:    TypeDouble,
 				Kind:    KindInput,
 				Default: 78.9,
@@ -95,7 +97,7 @@ func TestFind(t *testing.T) {
 		{
 			Input: Input{
 				Id:      "foo-bar-object-array-1-bool",
-				Name:    "",
+				Name:    "Object Array Bool",
 				Type:    TypeBool,
 				Kind:    KindConfirm,
 				Default: false,
@@ -104,6 +106,72 @@ func TestFind(t *testing.T) {
 			Path:      orderedmap.KeyFromStr("parameters.object.array[1].bool"),
 			Example:   "false",
 			Selected:  false,
+		},
+	}, results)
+}
+
+func TestFind_ComponentSchema(t *testing.T) {
+	t.Parallel()
+
+	schema := `{
+  "type": "object",
+  "title": "Configuration Parameters",
+  "properties": {
+    "db": {
+      "type": "object",
+      "title": "Database",
+      "required": [
+        "#connectionString"
+      ],
+      "properties": {
+        "#connectionString": {
+          "type": "string",
+          "title": "Connection String",
+          "default": "",
+          "minLength": 1,
+          "description": "Eg. \"DefaultEndpointsProtocol=https;...\". The value will be encrypted when saved.",
+          "propertyOrder": 1
+        }
+      }
+    }
+  }
+}`
+
+	objectKey := model.ConfigKey{BranchId: 123, ComponentId: "keboola.foo-bar", Id: "456"}
+	component := &model.Component{
+		ComponentKey: model.ComponentKey{Id: "keboola.foo-bar"},
+		Schema:       json.RawMessage(schema),
+	}
+	contentJson := `
+{
+  "storage": {
+    "foo": "bar"
+  },
+ "parameters": {
+    "db": {
+      "#connectionString": "my-value"
+    }
+  }
+}
+`
+	content := orderedmap.New()
+	json.MustDecodeString(contentJson, content)
+
+	// Check
+	results := Find(objectKey, component, content)
+	assert.Equal(t, []ObjectField{
+		{
+			Input: Input{
+				Id:          "foo-bar-db-connection-string",
+				Name:        "Connection String",
+				Description: `Eg. "DefaultEndpointsProtocol=https;...". The value will be encrypted when saved.`,
+				Type:        TypeString,
+				Kind:        KindHidden,
+			},
+			ObjectKey: objectKey,
+			Path:      orderedmap.KeyFromStr("parameters.db.#connectionString"),
+			Example:   "",
+			Selected:  true,
 		},
 	}, results)
 }

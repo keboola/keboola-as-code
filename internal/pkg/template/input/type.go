@@ -158,11 +158,13 @@ func (t Type) ParseValue(value interface{}) (interface{}, error) {
 
 		if v, ok := value.(string); ok {
 			// Split items by comma, if needed
-			if v == "" {
-				value = []string{}
-			} else {
-				value = strings.Split(v, ",")
+			var items []string
+			if v != "" {
+				for _, item := range strings.Split(v, ",") {
+					items = append(items, strings.TrimSpace(item))
+				}
 			}
+			value = items
 		}
 
 		if items, ok := value.([]string); ok {

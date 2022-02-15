@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi/eventsender"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -34,6 +35,14 @@ type common struct {
 
 func (c *common) Ctx() context.Context {
 	return c.ctx
+}
+
+func (c *common) Components() (*model.ComponentsMap, error) {
+	storageApi, err := c.StorageApi()
+	if err != nil {
+		return nil, err
+	}
+	return storageApi.Components(), nil
 }
 
 func (c *common) StorageApi() (*storageapi.Api, error) {

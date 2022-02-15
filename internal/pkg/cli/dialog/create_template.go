@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -17,8 +18,10 @@ import (
 )
 
 type createTmplDialogDeps interface {
+	Logger() log.Logger
 	Options() *options.Options
 	StorageApi() (*storageapi.Api, error)
+	Components() (*model.ComponentsMap, error)
 }
 
 type createTmplDialog struct {
@@ -133,7 +136,7 @@ func (d *createTmplDialog) ask() (createTemplate.Options, error) {
 	}
 
 	// Ask for user inputs
-	objectInputs, allInputs, err := d.askTemplateInputs(opts, d.selectedBranch, d.selectedConfigs)
+	objectInputs, allInputs, err := d.askTemplateInputs(d.deps, d.selectedBranch, d.selectedConfigs)
 	if err != nil {
 		return d.out, err
 	}

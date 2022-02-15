@@ -63,7 +63,7 @@ func TestFieldMeta_Complex(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Found object
-	meta, found, err = schema.FieldMeta([]byte(componentSchema), orderedmap.KeyFromStr("properties.db"))
+	meta, found, err = schema.FieldMeta([]byte(componentSchema), orderedmap.KeyFromStr("parameters.db"))
 	assert.NotEmpty(t, meta)
 	assert.True(t, found)
 	assert.Nil(t, err)
@@ -73,7 +73,7 @@ func TestFieldMeta_Complex(t *testing.T) {
 	assert.False(t, meta.Required)
 
 	// Found string, required field
-	meta, found, err = schema.FieldMeta([]byte(componentSchema), orderedmap.KeyFromStr("properties.db.#connectionString"))
+	meta, found, err = schema.FieldMeta([]byte(componentSchema), orderedmap.KeyFromStr("parameters.db.#connectionString"))
 	assert.NotEmpty(t, meta)
 	assert.True(t, found)
 	assert.Nil(t, err)
@@ -83,7 +83,7 @@ func TestFieldMeta_Complex(t *testing.T) {
 	assert.True(t, meta.Required)
 
 	// Found int, default field
-	meta, found, err = schema.FieldMeta([]byte(componentSchema), orderedmap.KeyFromStr("properties.db.limit"))
+	meta, found, err = schema.FieldMeta([]byte(componentSchema), orderedmap.KeyFromStr("parameters.db.limit"))
 	assert.NotEmpty(t, meta)
 	assert.True(t, found)
 	assert.Nil(t, err)

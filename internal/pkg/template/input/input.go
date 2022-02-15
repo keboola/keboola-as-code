@@ -33,6 +33,10 @@ func (i *Inputs) Add(input Input) {
 	*i = append(*i, input)
 }
 
+func (i *Inputs) GetIndex(index int) Input {
+	return (*i)[index]
+}
+
 // Save inputs to the FileName.
 func (i *Inputs) Save(fs filesystem.Fs) error {
 	if err := saveFile(fs, &file{Inputs: *i}); err != nil {

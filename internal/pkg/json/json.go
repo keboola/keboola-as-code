@@ -7,6 +7,8 @@ import (
 	"fmt"
 )
 
+type RawMessage = json.RawMessage
+
 func Encode(v interface{}, pretty bool) ([]byte, error) {
 	var data []byte
 	var err error
