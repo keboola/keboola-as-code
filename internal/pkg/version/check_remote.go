@@ -122,6 +122,16 @@ func (c *checker) getLatestVersion() (string, error) {
 			continue
 		}
 
+		// Skip draft
+		if release["draft"] == true {
+			continue
+		}
+
+		// Skip pre-release
+		if release["prerelease"] == true {
+			continue
+		}
+
 		// Ok, name found
 		if name != "" {
 			return name, nil
