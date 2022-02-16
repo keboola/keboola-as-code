@@ -225,10 +225,18 @@ Allowed characters: a-z, A-Z, 0-9, "-".
 func (d *inputsSelectDialog) detectInputs() error {
 	d.objectFields = make(map[model.Key]inputFields)
 	for _, c := range d.configs {
+		// Get component
 		component, err := d.components.Get(c.ComponentKey())
 		if err != nil {
 			return err
 		}
+
+		// Skip special component
+		if component.IsTransformation() || component.IsOrchestrator() || component.IsScheduler() || component.IsSharedCode() {
+			continue
+		}
+
+		// Find user inputs in config and rows
 		for _, item := range input.Find(c.ConfigKey, component, c.Content) {
 			d.addInputForField(item)
 		}
