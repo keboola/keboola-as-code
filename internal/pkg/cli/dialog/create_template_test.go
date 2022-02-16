@@ -130,7 +130,14 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 		_, err = console.Send(testhelper.Enter) // -> start editor
 		assert.NoError(t, err)
 
-		_, err = console.ExpectString("Please define user inputs.")
+		_, err = console.ExpectString("Please select which fields in the configurations should be user inputs.")
+		assert.NoError(t, err)
+
+		time.Sleep(20 * time.Millisecond)
+		_, err = console.Send(testhelper.Enter) // -> start editor
+		assert.NoError(t, err)
+
+		_, err = console.ExpectString("Please complete the user inputs specification.")
 		assert.NoError(t, err)
 
 		time.Sleep(20 * time.Millisecond)
@@ -192,6 +199,7 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 		Inputs: &template.Inputs{
 			{
 				Id:   "my-component-password",
+				Name: "Password",
 				Type: input.TypeString,
 				Kind: input.KindHidden,
 			},
@@ -273,17 +281,20 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 		Inputs: &template.Inputs{
 			{
 				Id:   "my-component-password",
+				Name: "Password",
 				Type: input.TypeString,
 				Kind: input.KindHidden,
 			},
 			{
 				Id:      "my-component-int",
+				Name:    "Int",
 				Type:    input.TypeInt,
 				Kind:    input.KindInput,
 				Default: 123,
 			},
 			{
 				Id:      "my-component-string",
+				Name:    "String",
 				Type:    input.TypeString,
 				Kind:    input.KindInput,
 				Default: "my string",
@@ -365,6 +376,7 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 		Inputs: &template.Inputs{
 			{
 				Id:   "my-component-password",
+				Name: "Password",
 				Type: input.TypeString,
 				Kind: input.KindHidden,
 			},

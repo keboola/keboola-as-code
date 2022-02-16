@@ -48,6 +48,7 @@ type AbstractDeps interface {
 // It is implemented by dependencies.common struct.
 type CommonDeps interface {
 	Ctx() context.Context
+	Components() (*model.ComponentsMap, error)
 	StorageApi() (*storageapi.Api, error)
 	EncryptionApi() (*encryptionapi.Api, error)
 	SchedulerApi() (*schedulerapi.Api, error)

@@ -198,8 +198,8 @@ func (v *wrapper) registerDefaultErrorMessages() {
 }
 
 // formatError creates human-readable error message.
-func (v *wrapper) formatError(err validator.ValidationErrors, namespace string, value reflect.Value) error {
-	result := utils.NewMultiError()
+func (v *wrapper) formatError(err validator.ValidationErrors, namespace string, value reflect.Value) *utils.MultiError {
+	errors := utils.NewMultiError()
 	for _, e := range err {
 		// Translate error
 		errString := strings.TrimSpace(e.Translate(v.translator))
@@ -209,10 +209,10 @@ func (v *wrapper) formatError(err validator.ValidationErrors, namespace string, 
 		}
 
 		// Prefix error with namespace
-		result.Append(fmt.Errorf("%s", prefixErrorWithNamespace(e, errString, namespace, value)))
+		errors.Append(fmt.Errorf("%s", prefixErrorWithNamespace(e, errString, namespace, value)))
 	}
 
-	return result.ErrorOrNil()
+	return errors
 }
 
 // processNamespace removes struct name (first part), field name (last part) and anonymous fields.

@@ -2,22 +2,19 @@ package save
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 )
 
 type dependencies interface {
-	TemplateSrcDir() (filesystem.Fs, error)
-	TemplateInputs() (inputs template.Inputs, err error)
+	Logger() log.Logger
 }
 
-func Run(d dependencies) (err error) {
-	inputs, err := d.TemplateInputs()
-	if err != nil {
+func Run(inputs *template.Inputs, fs filesystem.Fs, d dependencies) (err error) {
+	if err := inputs.Save(fs); err != nil {
 		return err
 	}
-	fs, err := d.TemplateSrcDir()
-	if err != nil {
-		return err
-	}
-	return inputs.Save(fs)
+
+	d.Logger().Debugf(`Template inputs have been saved.`)
+	return nil
 }

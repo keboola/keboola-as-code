@@ -69,10 +69,6 @@ func Run(o Options, d dependencies) (err error) {
 		if _, err := saveManifest.Run(templateState.TemplateManifest(), templateState.Fs(), d); err != nil {
 			return err
 		}
-
-		// Normalize paths
-
-		// Validate schemas and encryption
 	}
 
 	if !plan.Empty() {

@@ -96,7 +96,7 @@ func (c *common) Template(reference model.TemplateRef) (*template.Template, erro
 	}
 
 	// Load inputs
-	inputs, err := loadInputsOp.Run(fs)
+	inputs, err := loadInputsOp.Run(fs, c)
 	if err != nil {
 		return nil, err
 	}

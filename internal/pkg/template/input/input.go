@@ -33,6 +33,10 @@ func (i *Inputs) Add(input Input) {
 	*i = append(*i, input)
 }
 
+func (i *Inputs) GetIndex(index int) Input {
+	return (*i)[index]
+}
+
 // Save inputs to the FileName.
 func (i *Inputs) Save(fs filesystem.Fs) error {
 	if err := saveFile(fs, &file{Inputs: *i}); err != nil {
@@ -66,7 +70,7 @@ type Value struct {
 type Input struct {
 	Id          string      `json:"id" validate:"required,template-input-id"`
 	Name        string      `json:"name" validate:"required"`
-	Description string      `json:"description" validate:"required"`
+	Description string      `json:"description"`
 	Type        Type        `json:"type" validate:"required,template-input-type,template-input-type-for-kind"`
 	Kind        Kind        `json:"kind" validate:"required,template-input-kind"`
 	Default     interface{} `json:"default,omitempty" validate:"omitempty,template-input-default-value,template-input-default-options"`

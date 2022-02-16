@@ -19,6 +19,6 @@ func Run(fs filesystem.Fs, context template.Context, d dependencies) (*manifest.
 		return nil, err
 	}
 
-	logger.Debugf(`Template manifest loaded.`)
+	logger.Debugf(`Template manifest has been loaded.`)
 	return m, nil
 }

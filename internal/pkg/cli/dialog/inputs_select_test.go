@@ -6,13 +6,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	nopPrompt "github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/nop"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 )
 
 func TestInputsSelectDialog_DefaultValue(t *testing.T) {
@@ -55,8 +55,12 @@ Allowed characters: a-z, A-Z, 0-9, "-".
 `
 
 	// Check default value
-	d := newInputsSelectDialog(nopPrompt.New(), options.New(), branch, configs, newInputsMap())
-	assert.Equal(t, expected, d.defaultValue())
+	components := model.NewComponentsMap(testapi.NewMockedComponentsProvider())
+	dialog, err := newInputsSelectDialog(nopPrompt.New(), false, components, branch, configs, newInputsMap())
+	assert.NoError(t, err)
+	actual := dialog.defaultValue()
+	actual = strings.ReplaceAll(actual, "`", "")
+	assert.Equal(t, expected, actual)
 }
 
 func TestInputsSelectDialog_DefaultValue_AllInputs(t *testing.T) {
@@ -99,10 +103,12 @@ Allowed characters: a-z, A-Z, 0-9, "-".
 `
 
 	// Check default value
-	opts := options.New()
-	opts.Set("all-inputs", true)
-	d := newInputsSelectDialog(nopPrompt.New(), opts, branch, configs, newInputsMap())
-	assert.Equal(t, expected, d.defaultValue())
+	components := model.NewComponentsMap(testapi.NewMockedComponentsProvider())
+	dialog, err := newInputsSelectDialog(nopPrompt.New(), true, components, branch, configs, newInputsMap())
+	assert.NoError(t, err)
+	actual := dialog.defaultValue()
+	actual = strings.ReplaceAll(actual, "`", "")
+	assert.Equal(t, expected, actual)
 }
 
 func TestInputsSelectDialog_Parse(t *testing.T) {
@@ -127,17 +133,18 @@ func TestInputsSelectDialog_Parse(t *testing.T) {
 `
 
 	// Parse
-	d := newInputsSelectDialog(nopPrompt.New(), options.New(), branch, configs, newInputsMap())
-	err := d.parse(result)
+	components := model.NewComponentsMap(testapi.NewMockedComponentsProvider())
+	dialog, err := newInputsSelectDialog(nopPrompt.New(), false, components, branch, configs, newInputsMap())
 	assert.NoError(t, err)
+	assert.NoError(t, dialog.parse(result))
 
 	// Assert inputs definitions
 	configKey := model.ConfigKey{BranchId: 123, ComponentId: "keboola.foo.bar", Id: "my-config-1"}
 	rowKey := model.ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo.bar", ConfigId: "my-config-2", Id: "row-2"}
 	assert.Equal(t, &template.Inputs{
-		{Id: "foo-bar-password", Type: input.TypeString, Kind: input.KindHidden},
-		{Id: "foo-bar-object-array-1-password", Type: input.TypeString, Kind: input.KindHidden},
-	}, d.inputs.all())
+		{Id: "foo-bar-password", Type: input.TypeString, Kind: input.KindHidden, Name: "Password"},
+		{Id: "foo-bar-object-array-1-password", Type: input.TypeString, Kind: input.KindHidden, Name: "Object Array Password"},
+	}, dialog.inputs.all())
 
 	// Assert object inputs
 	assert.Equal(t, objectInputsMap{
@@ -153,7 +160,7 @@ func TestInputsSelectDialog_Parse(t *testing.T) {
 				InputId: "foo-bar-object-array-1-password",
 			},
 		},
-	}, d.objectInputs)
+	}, dialog.objectInputs)
 }
 
 func TestInputsSelectDialog_Parse_All(t *testing.T) {
@@ -178,21 +185,23 @@ func TestInputsSelectDialog_Parse_All(t *testing.T) {
 `
 
 	// Parse
-	d := newInputsSelectDialog(nopPrompt.New(), options.New(), branch, configs, newInputsMap())
-	err := d.parse(result)
+	components := model.NewComponentsMap(testapi.NewMockedComponentsProvider())
+	dialog, err := newInputsSelectDialog(nopPrompt.New(), false, components, branch, configs, newInputsMap())
 	assert.NoError(t, err)
+	assert.NoError(t, dialog.parse(result))
 
 	// Assert inputs definitions
 	configKey := model.ConfigKey{BranchId: 123, ComponentId: "keboola.foo.bar", Id: "my-config-1"}
 	rowKey := model.ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo.bar", ConfigId: "my-config-2", Id: "row-2"}
 	assert.Equal(t, &template.Inputs{
-		{Id: "foo-bar-password", Type: input.TypeString, Kind: input.KindHidden},
-		{Id: "foo-bar-bool", Type: input.TypeBool, Kind: input.KindConfirm, Default: false},
-		{Id: "foo-bar-double", Type: input.TypeDouble, Kind: input.KindInput, Default: 78.9},
-		{Id: "foo-bar-int", Type: input.TypeInt, Kind: input.KindInput, Default: 123},
-		{Id: "foo-bar-string", Type: input.TypeString, Kind: input.KindInput, Default: "my string"},
+		{Id: "foo-bar-password", Type: input.TypeString, Kind: input.KindHidden, Name: "Password"},
+		{Id: "foo-bar-bool", Type: input.TypeBool, Kind: input.KindConfirm, Default: false, Name: "Bool"},
+		{Id: "foo-bar-double", Type: input.TypeDouble, Kind: input.KindInput, Default: 78.9, Name: "Double"},
+		{Id: "foo-bar-int", Type: input.TypeInt, Kind: input.KindInput, Default: 123, Name: "Int"},
+		{Id: "foo-bar-string", Type: input.TypeString, Kind: input.KindInput, Default: "my string", Name: "String"},
 		{
 			Id:      "foo-bar-strings",
+			Name:    "Strings",
 			Type:    input.TypeStringArray,
 			Kind:    input.KindMultiSelect,
 			Default: []interface{}{"foo", "bar"},
@@ -207,10 +216,10 @@ func TestInputsSelectDialog_Parse_All(t *testing.T) {
 				},
 			},
 		},
-		{Id: "foo-bar-object-array-1-double", Type: input.TypeDouble, Kind: input.KindInput, Default: 78.9},
-		{Id: "foo-bar-object-array-1-int", Type: input.TypeInt, Kind: input.KindInput, Default: 123},
-		{Id: "foo-bar-object-array-1-string", Type: input.TypeString, Kind: input.KindInput, Default: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore"},
-	}, d.inputs.all())
+		{Id: "foo-bar-object-array-1-double", Type: input.TypeDouble, Kind: input.KindInput, Default: 78.9, Name: "Object Array Double"},
+		{Id: "foo-bar-object-array-1-int", Type: input.TypeInt, Kind: input.KindInput, Default: 123, Name: "Object Array Int"},
+		{Id: "foo-bar-object-array-1-string", Type: input.TypeString, Kind: input.KindInput, Name: "Object Array String", Default: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore"},
+	}, dialog.inputs.all())
 
 	// Assert object inputs
 	assert.Equal(t, objectInputsMap{
@@ -262,7 +271,7 @@ func TestInputsSelectDialog_Parse_All(t *testing.T) {
 				InputId: "foo-bar-object-array-1-string",
 			},
 		},
-	}, d.objectInputs)
+	}, dialog.objectInputs)
 }
 
 func TestInputsSelectDialog_Parse_Errors(t *testing.T) {
@@ -295,8 +304,10 @@ invalid
 `
 
 	// Parse
-	d := newInputsSelectDialog(nopPrompt.New(), options.New(), branch, configs, newInputsMap())
-	err := d.parse(result)
+	components := model.NewComponentsMap(testapi.NewMockedComponentsProvider())
+	dialog, err := newInputsSelectDialog(nopPrompt.New(), false, components, branch, configs, newInputsMap())
+	assert.NoError(t, err)
+	err = dialog.parse(result)
 
 	// Assert
 	expected := `
