@@ -62,7 +62,9 @@ func (c *checker) CheckIfLatest(currentVersion string) error {
 	if latest.GreaterThan(current) {
 		c.logger.Warn(`*******************************************************`)
 		c.logger.Warnf(`WARNING: A new version "%s" is available.`, latestVersion)
+		c.logger.Warnf(`You are currently using the version "%s".`, current.String())
 		c.logger.Warn(`Please update to get the latest features and bug fixes.`)
+		c.logger.Warn(`Read more: https://github.com/keboola/keboola-as-code/releases`)
 		c.logger.Warn(`*******************************************************`)
 		c.logger.Warn()
 	}
