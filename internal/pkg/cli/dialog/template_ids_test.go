@@ -39,7 +39,7 @@ func TestTemplateIdsDialog_DefaultValue(t *testing.T) {
 				},
 				{
 					ConfigRowKey: model.ConfigRowKey{BranchId: 1, ComponentId: "foo.bar", ConfigId: "456", Id: "3"},
-					Name:         "My Row",
+					Name:         "#$%^_",
 				},
 			},
 		},
@@ -69,8 +69,8 @@ my-row
 ### Row "My Row" foo.bar:456:2
 my-row-001
 
-### Row "My Row" foo.bar:456:3
-my-row-002
+### Row "#$%^_" foo.bar:456:3
+config-row
 
 `
 

@@ -176,6 +176,10 @@ Do not edit lines starting with "#"!
 func makeUniqueId(object model.Object, idByKey map[string]string, ids map[string]bool) {
 	name := object.ObjectName()
 	id := strhelper.NormalizeName(name)
+	// The generated ID can be empty, e.g. if the name contains only special characters,
+	if id == "" {
+		id = strhelper.NormalizeName(object.Kind().Name)
+	}
 
 	// Ensure ID is unique
 	suffix := 0
