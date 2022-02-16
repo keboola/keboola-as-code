@@ -183,7 +183,7 @@ func testInputs() inputsMap {
 
 const inputsDetailDialogDefaultValue = `
 <!--
-Please complete the define of the user inputs.
+Please complete definition of the user inputs.
 Edit lines below "## Input ...".
 Do not edit lines starting with "#"!
 

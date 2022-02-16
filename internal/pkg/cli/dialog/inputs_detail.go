@@ -158,7 +158,7 @@ func (d *inputsDetailDialog) defaultValue() string {
 	// File header - info for user
 	fileHeader := `
 <!--
-Please complete the define of the user inputs.
+Please complete definition of the user inputs.
 Edit lines below "## Input ...".
 Do not edit lines starting with "#"!
 
