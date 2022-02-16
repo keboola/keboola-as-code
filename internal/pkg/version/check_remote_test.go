@@ -47,7 +47,7 @@ func TestCheckIfLatestVersionLess(t *testing.T) {
 	expected := `
 WARN  *******************************************************
 WARN  WARNING: A new version "v1.2.3" is available.
-WARN  You are currently using the version "1.2.2".
+WARN  You are currently using version "1.2.2".
 WARN  Please update to get the latest features and bug fixes.
 WARN  Read more: https://github.com/keboola/keboola-as-code/releases
 WARN  *******************************************************
