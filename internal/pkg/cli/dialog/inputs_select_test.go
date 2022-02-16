@@ -50,7 +50,7 @@ Allowed characters: a-z, A-Z, 0-9, "-".
 [ ] foo-bar-object-array-1-bool      parameters.object.array[1].bool      <!-- false -->
 [ ] foo-bar-object-array-1-double    parameters.object.array[1].double    <!-- 78.9 -->
 [ ] foo-bar-object-array-1-int       parameters.object.array[1].int       <!-- 123 -->
-[ ] foo-bar-object-array-1-string    parameters.object.array[1].string    <!-- Lorem ipsum dolor si… -->
+[ ] foo-bar-object-array-1-string    parameters.object.array[1].string    <!-- Lorem ipsum dolor si... -->
 
 `
 
@@ -94,7 +94,7 @@ Allowed characters: a-z, A-Z, 0-9, "-".
 [x] foo-bar-object-array-1-bool      parameters.object.array[1].bool      <!-- false -->
 [x] foo-bar-object-array-1-double    parameters.object.array[1].double    <!-- 78.9 -->
 [x] foo-bar-object-array-1-int       parameters.object.array[1].int       <!-- 123 -->
-[x] foo-bar-object-array-1-string    parameters.object.array[1].string    <!-- Lorem ipsum dolor si… -->
+[x] foo-bar-object-array-1-string    parameters.object.array[1].string    <!-- Lorem ipsum dolor si... -->
 
 `
 
@@ -123,7 +123,7 @@ func TestInputsSelectDialog_Parse(t *testing.T) {
 [ ] foo-bar-object-array-1-bool      parameters.object.array[1].bool      <!-- false -->
 [ ] foo-bar-object-array-1-double    parameters.object.array[1].double    <!-- 78.9 -->
 [ ] foo-bar-object-array-1-int       parameters.object.array[1].int       <!-- 123 -->
-[ ] foo-bar-object-array-1-string    parameters.object.array[1].string    <!-- Lorem ipsum dolor si… -->
+[ ] foo-bar-object-array-1-string    parameters.object.array[1].string    <!-- Lorem ipsum dolor si... -->
 `
 
 	// Parse
@@ -174,7 +174,7 @@ func TestInputsSelectDialog_Parse_All(t *testing.T) {
 [x] foo-bar-bool      parameters.object.array[1].bool      <!-- false -->
 [x] foo-bar-object-array-1-double    parameters.object.array[1].double    <!-- 78.9 -->
 [x] foo-bar-object-array-1-int       parameters.object.array[1].int       <!-- 123 -->
-[x] foo-bar-object-array-1-string    parameters.object.array[1].string    <!-- Lorem ipsum dolor si… -->
+[x] foo-bar-object-array-1-string    parameters.object.array[1].string    <!-- Lorem ipsum dolor si... -->
 `
 
 	// Parse
@@ -300,13 +300,13 @@ invalid
 
 	// Assert
 	expected := `
-- line 2: expected "## Config …" or "### Row …", found "[x] unexpe…"
+- line 2: expected "## Config ..." or "### Row ...", found "[x] unexpe..."
 - line 4: config "keboola.foo.bar:not-found" not found
 - line 6: cannot parse config "## Config "Invalid Config" abc"
 - line 8: config row "keboola.foo.bar:not-found:not-found" not found
 - line 10: cannot parse config row "### Row "Invalid Config" abc"
 - line 14: field "parameters.input" not found in the config "branch:123/component:keboola.foo.bar/config:my-config-1"
-- line 15: expected "[x] …" or "[ ] …", found "[+] invali…"
+- line 15: expected "[x] ..." or "[ ] ...", found "[+] invali..."
 - line 16: expected "<mark> <input-id> <field.path>", found  "invalid"
 - line 17: expected "<mark> <input-id> <field.path>", found  "[x]"
 - line 18: expected "<mark> <input-id> <field.path>", found  "[x] invalid"
