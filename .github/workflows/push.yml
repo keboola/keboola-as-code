@@ -51,15 +51,15 @@ env:
   APPLE_APP_IDENTITY: "Developer ID Application: Tomas Netrval"
 
 jobs:
-  set_version:
+  set-version:
     runs-on: ubuntu-latest
     outputs:
-      tag: ${{ steps.set_version.outputs.tag }}
-      is_semantic_tag: ${{ steps.set_version.outputs.is_semantic_tag }}
-      version: ${{ steps.set_version.outputs.version }}
+      tag: ${{ steps.set-version.outputs.tag }}
+      is_semantic_tag: ${{ steps.set-version.outputs.is_semantic_tag }}
+      version: ${{ steps.set-version.outputs.version }}
     steps:
       - name: Set version
-        id: set_version
+        id: set-version
         run: |
           TAG="${GITHUB_REF##*/}"
           IS_SEMANTIC_TAG=$(echo "$TAG" | grep -q '^v\?[0-9]\+\.[0-9]\+\.[0-9]\+$' && echo true || echo false)
@@ -77,7 +77,7 @@ jobs:
 
   test:
     needs:
-      - set_version
+      - set-version
     concurrency:
       group: tests-${{ matrix.name }}
       cancel-in-progress: false
@@ -118,13 +118,13 @@ jobs:
           make tests
         shell: bash
         env:
-          VERSION: ${{ needs.set_version.outputs.version }}
+          VERSION: ${{ needs.set-version.outputs.version }}
           TEST_KBC_PROJECTS: ${{ env[matrix.projects] }}
           TEST_PARALLELISM: 16
 
   lint:
     needs:
-      - set_version
+      - set-version
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -146,12 +146,12 @@ jobs:
           make lint
         shell: bash
         env:
-          VERSION: ${{ needs.set_version.outputs.version }}
+          VERSION: ${{ needs.set-version.outputs.version }}
           TEST_KBC_PROJECTS: ${{ env[matrix.projects] }}
 
   cross-compile:
     needs:
-      - set_version
+      - set-version
     runs-on: macos-latest # same as release, shared cache
     steps:
       - name: Checkout code
@@ -173,11 +173,11 @@ jobs:
           make build
         shell: bash
         env:
-          VERSION: ${{ needs.set_version.outputs.version }}
+          VERSION: ${{ needs.set-version.outputs.version }}
 
   release:
     needs:
-      - set_version
+      - set-version
       - test
       - lint
       - cross-compile
@@ -186,7 +186,7 @@ jobs:
       group: release
       cancel-in-progress: false
     runs-on: macos-latest
-    if: startsWith(github.ref, 'refs/tags/') && needs.set_version.outputs.is_semantic_tag == 'true'
+    if: startsWith(github.ref, 'refs/tags/') && needs.set-version.outputs.is_semantic_tag == 'true'
     steps:
       - name: Check out the repo
         uses: actions/checkout@v2
@@ -224,7 +224,7 @@ jobs:
       - name: Release
         run: make release
         env:
-          VERSION: ${{ needs.set_version.outputs.version }}
+          VERSION: ${{ needs.set-version.outputs.version }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEB_KEY_PRIVATE_PATH: /tmp/keys/deb.key
           RPM_KEY_PRIVATE_PATH: /tmp/keys/rpm.key
@@ -241,8 +241,8 @@ jobs:
           file_glob: true
       - name: Create Homebrew formulae
         env:
-          TAG: ${{ needs.set_version.outputs.tag }}
-          VERSION: ${{ needs.set_version.outputs.version }}
+          TAG: ${{ needs.set-version.outputs.tag }}
+          VERSION: ${{ needs.set-version.outputs.version }}
         run: |
           mkdir target/homebrew
           export DARWIN_ARM_TARGET_SHA256=$(openssl dgst -sha256  target/gh-release/*darwin_arm64.zip | cut -f 2 -d ' ' )
@@ -273,7 +273,7 @@ jobs:
       group: release
       cancel-in-progress: false
     runs-on: windows-latest
-    if: startsWith(github.ref, 'refs/tags/') && needs.set_version.outputs.is_semantic_tag == 'true'
+    if: startsWith(github.ref, 'refs/tags/') && needs.set-version.outputs.is_semantic_tag == 'true'
     steps:
       - name: Check out the repo
         uses: actions/checkout@v2
@@ -302,16 +302,16 @@ jobs:
           "${MSBUILD_PATH}\MSBuild.exe" ./build/package/windows/msi.wixproj -p:SourceDir="$PWD" -p:OutputPath="./msi" -p:OutputName="$name" -p:ProductVersion="$version"
           aws s3 cp "./build/package/windows/msi/${name}.msi" s3://${AWS_BUCKET_NAME}/msi/
 
-  update-pkg-index:
+  update-repositories:
     needs:
-      - set_version
+      - set-version
       - release
     # only one parallel job allowed - used shared S3
     concurrency:
       group: release
       cancel-in-progress: false
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/') && needs.set_version.outputs.is_semantic_tag == 'true'
+    if: startsWith(github.ref, 'refs/tags/') && needs.set-version.outputs.is_semantic_tag == 'true'
     steps:
       - name: Check out the repo
         uses: actions/checkout@v2
@@ -369,9 +369,9 @@ jobs:
 
   test-install-linux:
     needs:
-      - set_version
+      - set-version
       - release
-      - update-pkg-index
+      - update-repositories
     runs-on: ubuntu-latest
     steps:
       - name: Install on Ubuntu
@@ -387,7 +387,7 @@ jobs:
           kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
           '
         env:
-          VERSION: ${{ needs.set_version.outputs.version }}
+          VERSION: ${{ needs.set-version.outputs.version }}
       - name: Install on Debian
         if: always()
         run: |
@@ -401,7 +401,7 @@ jobs:
           kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
           '
         env:
-          VERSION: ${{ needs.set_version.outputs.version }}
+          VERSION: ${{ needs.set-version.outputs.version }}
       - name: Install on Fedora
         if: always()
         run: |
@@ -419,7 +419,7 @@ jobs:
           kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
           '
         env:
-          VERSION: ${{ needs.set_version.outputs.version }}
+          VERSION: ${{ needs.set-version.outputs.version }}
       - name: Install on Alpine
         if: always()
         run: |
@@ -432,7 +432,7 @@ jobs:
           kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
           '
         env:
-          VERSION: ${{ needs.set_version.outputs.version }}
+          VERSION: ${{ needs.set-version.outputs.version }}
       - name: Install on Linux by Homebrew
         if: always()
         run: |
@@ -442,13 +442,13 @@ jobs:
           kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
           '
         env:
-          VERSION: ${{ needs.set_version.outputs.version }}
+          VERSION: ${{ needs.set-version.outputs.version }}
 
   test-install-mac-os:
     needs:
-      - set_version
+      - set-version
       - release
-      - update-pkg-index
+      - update-repositories
     runs-on: macos-latest
     steps:
       - name: Install on MacOS by Homebrew
@@ -456,13 +456,13 @@ jobs:
           brew install keboola/keboola-cli/keboola-cli
           kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
         env:
-          VERSION: ${{ needs.set_version.outputs.version }}
+          VERSION: ${{ needs.set-version.outputs.version }}
 
   test-install-windows:
     needs:
-      - set_version
+      - set-version
       - release
-      - update-pkg-index
+      - update-repositories
     runs-on: windows-latest
     steps:
       - name: Install on Windows using Scoop
@@ -473,4 +473,4 @@ jobs:
           kbc --version
           If (-Not (kbc --version | Select-String -Quiet "Version:    $($env:VERSION)")) { throw "kbc command not installed properly" }
         env:
-          VERSION: ${{ needs.set_version.outputs.version }}
+          VERSION: ${{ needs.set-version.outputs.version }}
