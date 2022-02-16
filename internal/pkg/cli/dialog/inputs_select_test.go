@@ -58,7 +58,9 @@ Allowed characters: a-z, A-Z, 0-9, "-".
 	components := model.NewComponentsMap(testapi.NewMockedComponentsProvider())
 	dialog, err := newInputsSelectDialog(nopPrompt.New(), false, components, branch, configs, newInputsMap())
 	assert.NoError(t, err)
-	assert.Equal(t, expected, dialog.defaultValue())
+	actual := dialog.defaultValue()
+	actual = strings.ReplaceAll(actual, "`", "")
+	assert.Equal(t, expected, actual)
 }
 
 func TestInputsSelectDialog_DefaultValue_AllInputs(t *testing.T) {
@@ -104,7 +106,9 @@ Allowed characters: a-z, A-Z, 0-9, "-".
 	components := model.NewComponentsMap(testapi.NewMockedComponentsProvider())
 	dialog, err := newInputsSelectDialog(nopPrompt.New(), true, components, branch, configs, newInputsMap())
 	assert.NoError(t, err)
-	assert.Equal(t, expected, dialog.defaultValue())
+	actual := dialog.defaultValue()
+	actual = strings.ReplaceAll(actual, "`", "")
+	assert.Equal(t, expected, actual)
 }
 
 func TestInputsSelectDialog_Parse(t *testing.T) {

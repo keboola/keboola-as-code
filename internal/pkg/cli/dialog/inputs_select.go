@@ -132,7 +132,7 @@ func (d *inputsSelectDialog) parseInputLine(objectKey model.Key, line string, li
 		return fmt.Errorf(`line %d: expected "<mark> <input-id> <field.path>", found  "%s"`, lineNum, line)
 	}
 	inputId := strings.TrimSpace(parts[0])
-	fieldPath := strings.TrimSpace(parts[1])
+	fieldPath := strings.Trim(parts[1], " `")
 
 	// Process
 	switch {

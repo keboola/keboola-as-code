@@ -66,8 +66,9 @@ func (f inputFields) Write(out *strings.Builder) {
 			inputIdMaxLength = len(line.inputId)
 		}
 
-		if len(line.fieldPath) > fieldPathMaxLength {
-			fieldPathMaxLength = len(line.fieldPath)
+		fieldPathLength := len(line.fieldPath) + 2
+		if fieldPathLength > fieldPathMaxLength {
+			fieldPathMaxLength = fieldPathLength
 		}
 	}
 
@@ -85,7 +86,8 @@ func (f inputFields) Write(out *strings.Builder) {
 		if len(line.example) > 0 {
 			example = "<!-- " + line.example + " -->"
 		}
-		out.WriteString(strings.TrimSpace(fmt.Sprintf(format, line.mark, line.inputId, line.fieldPath, example)))
+		// Field path is escaped, it can contain MarkDown special chars, eg. _ []
+		out.WriteString(strings.TrimSpace(fmt.Sprintf(format, line.mark, line.inputId, "`"+line.fieldPath+"`", example)))
 		out.WriteString("\n")
 	}
 }
