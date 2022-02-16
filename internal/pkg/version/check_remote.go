@@ -62,7 +62,9 @@ func (c *checker) CheckIfLatest(currentVersion string) error {
 	if latest.GreaterThan(current) {
 		c.logger.Warn(`*******************************************************`)
 		c.logger.Warnf(`WARNING: A new version "%s" is available.`, latestVersion)
+		c.logger.Warnf(`You are currently using version "%s".`, current.String())
 		c.logger.Warn(`Please update to get the latest features and bug fixes.`)
+		c.logger.Warn(`Read more: https://github.com/keboola/keboola-as-code/releases`)
 		c.logger.Warn(`*******************************************************`)
 		c.logger.Warn()
 	}
@@ -117,6 +119,16 @@ func (c *checker) getLatestVersion() (string, error) {
 		// Tag name is string
 		name, ok := nameRaw.(string)
 		if !ok {
+			continue
+		}
+
+		// Skip draft
+		if release["draft"] == true {
+			continue
+		}
+
+		// Skip pre-release
+		if release["prerelease"] == true {
 			continue
 		}
 

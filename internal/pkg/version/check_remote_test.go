@@ -2,6 +2,7 @@ package version
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -43,7 +44,16 @@ func TestCheckIfLatestVersionLess(t *testing.T) {
 	c, logs := createMockedChecker(t)
 	err := c.CheckIfLatest(`v1.2.2`)
 	assert.Nil(t, err)
-	assert.Contains(t, logs.AllMessages(), `WARN  WARNING: A new version "v1.2.3" is available.`)
+	expected := `
+WARN  *******************************************************
+WARN  WARNING: A new version "v1.2.3" is available.
+WARN  You are currently using version "1.2.2".
+WARN  Please update to get the latest features and bug fixes.
+WARN  Read more: https://github.com/keboola/keboola-as-code/releases
+WARN  *******************************************************
+WARN
+`
+	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(logs.WarnMessages()))
 }
 
 func createMockedChecker(t *testing.T) (*checker, log.DebugLogger) {
