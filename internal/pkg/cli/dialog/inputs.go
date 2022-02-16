@@ -32,7 +32,7 @@ func (p *Dialogs) askTemplateInputs(opts *options.Options, branch *model.Branch,
 	return objectInputs, inputs.all(), nil
 }
 
-type inputFields map[string]inputField
+type inputFields map[string]input.ObjectField
 
 func (f inputFields) Write(out *strings.Builder) {
 	var table []inputFieldLine
@@ -41,7 +41,7 @@ func (f inputFields) Write(out *strings.Builder) {
 
 	// Convert and get max lengths for padding
 	for _, field := range f {
-		line := field.Line()
+		line := createInputFieldLine(field)
 		table = append(table, line)
 
 		if len(line.inputId) > inputIdMaxLength {
@@ -72,24 +72,16 @@ func (f inputFields) Write(out *strings.Builder) {
 	}
 }
 
-type inputField struct {
-	path     orderedmap.Key
-	example  string
-	input    input.Input
-	selected bool
-}
-
-func (f inputField) Line() inputFieldLine {
+func createInputFieldLine(field input.ObjectField) inputFieldLine {
 	mark := "[ ]"
-	if f.selected {
+	if field.Selected {
 		mark = "[x]"
 	}
-
 	return inputFieldLine{
 		mark:      mark,
-		inputId:   f.input.Id,
-		fieldPath: f.path.String(),
-		example:   f.example,
+		inputId:   field.Input.Id,
+		fieldPath: field.Path.String(),
+		example:   field.Example,
 	}
 }
 

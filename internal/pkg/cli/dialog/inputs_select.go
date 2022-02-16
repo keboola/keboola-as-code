@@ -3,21 +3,16 @@ package dialog
 import (
 	"bufio"
 	"fmt"
-	"math"
-	"reflect"
 	"strings"
 
-	"github.com/spf13/cast"
 	"github.com/umisama/go-regexpcache"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/encryptionapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
@@ -117,7 +112,7 @@ func (d *inputsSelectDialog) parse(result string) error {
 			}
 		default:
 			// Expected object definition
-			errors.Append(fmt.Errorf(`line %d: expected "## Config …" or "### Row …", found "%s"`, lineNum, strhelper.Truncate(line, 10, "…")))
+			errors.Append(fmt.Errorf(`line %d: expected "## Config ..." or "### Row ...", found "%s"`, lineNum, strhelper.Truncate(line, 10, "...")))
 			continue
 		}
 	}
@@ -156,24 +151,24 @@ func (d *inputsSelectDialog) parseInputLine(objectKey model.Key, line string, li
 		}
 
 		// Modify input ID, if it has been changed by use.
-		field.input.Id = inputId
+		field.Input.Id = inputId
 
 		// One input can be used multiple times, but type must match.
-		if i, found := d.inputs.get(field.input.Id); found {
-			if i.Type != field.input.Type {
-				return fmt.Errorf(`line %d: input "%s" is already defined with "%s" type, but "%s" has type "%s"`, lineNum, i.Id, i.Type, fieldPath, field.input.Type)
+		if i, found := d.inputs.get(field.Input.Id); found {
+			if i.Type != field.Input.Type {
+				return fmt.Errorf(`line %d: input "%s" is already defined with "%s" type, but "%s" has type "%s"`, lineNum, i.Id, i.Type, fieldPath, field.Input.Type)
 			}
 		}
 
 		// Save definitions
-		d.inputs.add(field.input)
-		d.objectInputs.add(objectKey, template.InputDef{Path: field.path, InputId: field.input.Id})
+		d.inputs.add(field.Input)
+		d.objectInputs.add(objectKey, template.InputDef{Path: field.Path, InputId: field.Input.Id})
 		return nil
 	case mark == "[ ]" || mark == "[]":
 		// scalar value, not user input
 		return nil
 	default:
-		return fmt.Errorf(`line %d: expected "[x] …" or "[ ] …", found "%s"`, lineNum, strhelper.Truncate(line, 10, "…"))
+		return fmt.Errorf(`line %d: expected "[x] ..." or "[ ] ...", found "%s"`, lineNum, strhelper.Truncate(line, 10, "..."))
 	}
 }
 
@@ -228,125 +223,23 @@ Allowed characters: a-z, A-Z, 0-9, "-".
 func (d *inputsSelectDialog) detectInputs() {
 	d.objectFields = make(map[model.Key]inputFields)
 	for _, c := range d.configs {
-		d.detectInputsFor(c.ConfigKey, c.ComponentId, c.Content)
+		for _, item := range input.Find(c.ConfigKey, c.ComponentKey(), c.Content) {
+			d.addInputForField(item)
+		}
 		for _, r := range c.Rows {
-			d.detectInputsFor(r.ConfigRowKey, r.ComponentId, r.Content)
+			for _, item := range input.Find(r.ConfigRowKey, r.ComponentKey(), r.Content) {
+				d.addInputForField(item)
+			}
 		}
 	}
 }
 
-// detectInputsFor config or config row.
-func (d *inputsSelectDialog) detectInputsFor(objectKey model.Key, componentId model.ComponentId, content *orderedmap.OrderedMap) {
-	content.VisitAllRecursive(func(fieldPath orderedmap.Key, value interface{}, parent interface{}) {
-		// Root key must be "parameters"
-		if len(fieldPath) < 2 || fieldPath.First() != orderedmap.MapStep("parameters") {
-			return
-		}
-
-		// Must be object field
-		fieldKey, isObjectField := fieldPath.Last().(orderedmap.MapStep)
-		if !isObjectField {
-			return
-		}
-
-		isSecret := encryptionapi.IsKeyToEncrypt(string(fieldKey))
-
-		// Detect type, kind and default value
-		var inputType input.Type
-		var inputKind input.Kind
-		var inputOptions input.Options
-		var defaultValue interface{}
-		valRef := reflect.ValueOf(value)
-		switch valRef.Kind() {
-		case reflect.String:
-			inputType = input.TypeString
-			if isSecret {
-				inputKind = input.KindHidden
-			} else {
-				inputKind = input.KindInput
-			}
-
-			// Use as default value, if it is not a secret
-			if !isSecret && len(value.(string)) > 0 {
-				defaultValue = value
-			}
-		case reflect.Int:
-			inputType = input.TypeInt
-			inputKind = input.KindInput
-			if !isSecret && value.(int) != 0 {
-				defaultValue = value
-			}
-		case reflect.Float64:
-			valueFloat := value.(float64)
-			isWholeNumber := math.Trunc(valueFloat) == valueFloat
-			if isWholeNumber {
-				// Whole number? Use TypeInt.
-				// All numeric values from a JSON are float64.
-				inputType = input.TypeInt
-				inputKind = input.KindInput
-				if !isSecret && valueFloat != 0.0 {
-					defaultValue = int(valueFloat)
-				}
-			} else {
-				inputType = input.TypeDouble
-				inputKind = input.KindInput
-				if !isSecret && valueFloat != 0.0 {
-					defaultValue = value
-				}
-			}
-		case reflect.Bool:
-			inputType = input.TypeBool
-			inputKind = input.KindConfirm
-			defaultValue = value
-		case reflect.Slice:
-			inputType = input.TypeStringArray
-			inputKind = input.KindMultiSelect
-			// Each element must be string
-			for i := 0; i < valRef.Len(); i++ {
-				item := valRef.Index(i)
-				// Unwrap interface
-				if item.Type().Kind() == reflect.Interface {
-					item = item.Elem()
-				}
-				// Check item type
-				if itemKind := item.Kind(); itemKind != reflect.String {
-					// Value is not array of strings
-					return
-				}
-				inputOptions = append(inputOptions, input.Option{
-					Id:   item.String(),
-					Name: item.String(),
-				})
-			}
-			if !isSecret && valRef.Len() > 0 {
-				defaultValue = value
-			}
-		default:
-			return
-		}
-
-		// Example
-		example := ""
-		if !isSecret {
-			example = strhelper.Truncate(cast.ToString(value), 20, "…")
-		}
-
-		// Add
-		d.addInputForField(objectKey, fieldPath, example, input.Input{
-			Id:      strhelper.NormalizeName(componentId.WithoutVendor() + "-" + fieldPath[1:].String()),
-			Type:    inputType,
-			Kind:    inputKind,
-			Default: defaultValue,
-			Options: inputOptions,
-		})
-	})
-}
-
-func (d *inputsSelectDialog) addInputForField(objectKey model.Key, path orderedmap.Key, example string, i input.Input) {
-	if d.objectFields[objectKey] == nil {
-		d.objectFields[objectKey] = make(map[string]inputField)
+func (d *inputsSelectDialog) addInputForField(field input.ObjectField) {
+	if d.options.GetBool("all-inputs") {
+		field.Selected = true
 	}
-
-	selected := i.Kind == input.KindHidden || d.options.GetBool("all-inputs")
-	d.objectFields[objectKey][path.String()] = inputField{path: path, example: example, input: i, selected: selected}
+	if d.objectFields[field.ObjectKey] == nil {
+		d.objectFields[field.ObjectKey] = make(inputFields)
+	}
+	d.objectFields[field.ObjectKey][field.Path.String()] = field
 }
