@@ -59,6 +59,13 @@ func (v Key) String() string {
 	return strings.ReplaceAll(strings.Join(parts, "."), `.[`, `[`)
 }
 
+func (v Key) WithoutFirst() Key {
+	if len(v) == 0 {
+		return nil
+	}
+	return v[1:]
+}
+
 func (v Key) WithoutLast() Key {
 	l := len(v)
 	if l == 0 {
