@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- Do not remove this test for UTF-8: if “Ω” doesn’t appear as greek uppercase omega letter enclosed in quotation marks, you should use an editor that supports UTF-8, not this one. -->
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>keboola-cli</id>
+    <version>2.2.0</version>
+    <packageSourceUrl>https://github.com/keboola/keboola-as-code/tree/main/build/package/chocolatey</packageSourceUrl>
+    <title>Keboola CLI</title>
+    <authors>Keboola</authors>
+    <licenseUrl>https://github.com/keboola/keboola-as-code/blob/main/LICENSE</licenseUrl>
+    <projectUrl>https://www.keboola.com/product/cli</projectUrl>
+    <projectSourceUrl>https://github.com/keboola/keboola-as-code</projectSourceUrl>
+    <docsUrl>https://developers.keboola.com/cli/</docsUrl>
+    <tags>keboola-cli</tags>
+    <summary>Operate your cloud data pipeline from the command line</summary>
+    <description>Keboola CLI (Command Line Interface), known also as “Keboola as Code”, is a set of commands for operating your cloud data pipeline.</description>
+    <releaseNotes>https://github.com/keboola/keboola-as-code/releases</releaseNotes>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>
