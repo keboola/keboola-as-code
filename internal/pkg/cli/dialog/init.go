@@ -18,8 +18,10 @@ type initDeps interface {
 func (p *Dialogs) AskInitOptions(d initDeps) (initOp.Options, error) {
 	// Default values + values for non-interactive terminal
 	out := initOp.Options{
-		Pull:            true,
-		ManifestOptions: createManifest.Options{},
+		Pull: true,
+		ManifestOptions: createManifest.Options{
+			Naming: naming.TemplateWithoutIds(),
+		},
 	}
 
 	o := d.Options()
@@ -41,19 +43,6 @@ func (p *Dialogs) AskInitOptions(d initDeps) (initOp.Options, error) {
 		out.ManifestOptions.AllowedBranches = allowedBranches
 	} else {
 		return out, err
-	}
-
-	// Naming
-	if p.Confirm(&prompt.Confirm{
-		Label: "Do you want to include object IDs in directory structure?",
-		Description: `The directory structure can optionally contain object IDs. Example:
-- path with IDs:    83065-dev-branch/writer/keboola.wr-db-snowflake/734333057-power-bi/rows/734333064-orders
-- path without IDs: dev-branch/writer/keboola.wr-db-snowflake/power-bi/rows/orders`,
-		Default: false,
-	}) {
-		out.ManifestOptions.Naming = naming.TemplateWithIds()
-	} else {
-		out.ManifestOptions.Naming = naming.TemplateWithoutIds()
 	}
 
 	// Ask for workflows options

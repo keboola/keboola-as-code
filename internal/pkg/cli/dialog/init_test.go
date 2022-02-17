@@ -72,13 +72,6 @@ func TestAskInitOptions(t *testing.T) {
 		_, err = console.Send(testhelper.Enter) // enter, first option "only main branch"
 		assert.NoError(t, err)
 
-		_, err = console.ExpectString(`Do you want to include object IDs in directory structure?`)
-		assert.NoError(t, err)
-
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.SendLine(`Y`) // yes
-		assert.NoError(t, err)
-
 		_, err = console.ExpectString(`Generate workflows files for GitHub Actions?`)
 		assert.NoError(t, err)
 
@@ -131,7 +124,7 @@ func TestAskInitOptions(t *testing.T) {
 	assert.Equal(t, initOp.Options{
 		Pull: true,
 		ManifestOptions: createManifest.Options{
-			Naming:          naming.TemplateWithIds(),
+			Naming:          naming.TemplateWithoutIds(),
 			AllowedBranches: model.AllowedBranches{model.MainBranchDef},
 		},
 		Workflows: genWorkflows.Options{
