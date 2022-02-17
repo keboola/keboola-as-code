@@ -400,18 +400,6 @@ jobs:
           choco apikey -k $env:CHOCOLATEY_KEY -s https://push.chocolatey.org/
           choco pack keboola-cli.nuspec
           choco push keboola-cli.$env:VERSION.nupkg -s https://push.chocolatey.org
-      - name: Upload 1
-        uses: actions/upload-artifact@v2
-        with:
-          name: choco.nuspec
-          path: build/package/chocolatey/push/keboola-cli.nuspec
-          retention-days: 1
-      - name: Upload 2
-        uses: actions/upload-artifact@v2
-        with:
-          name: choco.ps1
-          path: build/package/chocolatey/push/tools/chocolateyinstall.ps1
-          retention-days: 1
 
   test-install-linux:
     needs:
