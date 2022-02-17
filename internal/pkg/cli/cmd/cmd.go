@@ -41,6 +41,18 @@ func init() {
 	// Add custom template functions
 	cobra.AddTemplateFunc(`cmds`, func(root *cobra.Command) string {
 		var out strings.Builder
+
+		var maxCmdPathLength int
+		visitSubCommands(root, func(cmd *cobra.Command) bool {
+			cmdPath := strings.TrimPrefix(cmd.CommandPath(), cmd.Root().Use+` `)
+			if len(cmdPath) > maxCmdPathLength {
+				maxCmdPathLength = len(cmdPath)
+			}
+			return true
+		})
+
+		tmpl := fmt.Sprintf("  %%-%ds  %%s", maxCmdPathLength)
+
 		visitSubCommands(root, func(cmd *cobra.Command) bool {
 			if !cmd.IsAvailableCommand() && cmd.Name() != `help` {
 				return false
@@ -53,8 +65,8 @@ func init() {
 			}
 
 			// Indent and pad right
-			tmpl := fmt.Sprintf("%%s%%-%ds%%s", cmd.NamePadding()-level*2+6)
-			out.WriteString(strings.TrimRight(fmt.Sprintf(tmpl, strings.Repeat("  ", level), cmd.Name(), cmd.Short), " "))
+			cmdPath := strings.TrimPrefix(cmd.CommandPath(), cmd.Root().Use+` `)
+			out.WriteString(strings.TrimRight(fmt.Sprintf(tmpl, cmdPath, cmd.Short), " "))
 			out.WriteString("\n")
 			return true
 		})
@@ -102,7 +114,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 
 	// Setup templates
 	root.SetVersionTemplate("{{.Version}}")
-	root.SetUsageTemplate(helpmsg.Read(`usage`))
+	root.SetUsageTemplate(helpmsg.Read(`usage`) + "\n")
 
 	// Persistent flags for all sub-commands
 	flags := root.PersistentFlags()
@@ -153,8 +165,8 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 	root.AddCommand(
 		StatusCommand(root),
 		sync.Commands(root),
-		local.Commands(root, envs),
 		ci.Commands(root),
+		local.Commands(root, envs),
 		remote.Commands(root),
 	)
 

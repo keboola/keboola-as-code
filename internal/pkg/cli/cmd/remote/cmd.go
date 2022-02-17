@@ -9,8 +9,9 @@ import (
 
 func Commands(d dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:  `remote`,
-		Long: helpmsg.Read(`remote/long`),
+		Use:   `remote`,
+		Short: helpmsg.Read(`remote/short`),
+		Long:  helpmsg.Read(`remote/long`),
 	}
 	cmd.AddCommand(
 		CreateCommand(d),

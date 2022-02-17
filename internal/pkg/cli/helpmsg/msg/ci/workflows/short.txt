@@ -1,1 +1,1 @@
-Generate Github Actions workflows.
+Generate workflows for GitHub Actions.

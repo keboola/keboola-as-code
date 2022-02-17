@@ -1,1 +1,1 @@
-Normalize all paths in the repository. NOT IMPLEMENTED
+Ensure that all paths match configured naming. NOT IMPLEMENTED

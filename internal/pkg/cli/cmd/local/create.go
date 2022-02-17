@@ -13,8 +13,9 @@ func CreateCommand(depsProvider dependencies.Provider) *cobra.Command {
 	createConfigCmd := CreateConfigCommand(depsProvider)
 	createRowCmd := CreateRowCommand(depsProvider)
 	cmd := &cobra.Command{
-		Use:  `create`,
-		Long: helpmsg.Read(`local/create/long`),
+		Use:   `create`,
+		Short: helpmsg.Read(`local/create/short`),
+		Long:  helpmsg.Read(`local/create/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			d := depsProvider.Dependencies()
 

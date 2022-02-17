@@ -1,1 +1,1 @@
-Print differences between local and remote state.
+Show differences between local directory and project.

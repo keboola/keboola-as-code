@@ -9,7 +9,7 @@ Usage:
   %s remote create [command]
 
 Available Commands:
-  branch         Create branch.
+  remote create branch  Create a new branch from the main branch.
 
 Global Flags:
 %A

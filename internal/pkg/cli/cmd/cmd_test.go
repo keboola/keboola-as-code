@@ -34,8 +34,8 @@ func TestCliSubCommands(t *testing.T) {
 	assert.Equal(t, []string{
 		"status",
 		"sync",
-		"local",
 		"ci",
+		"local",
 		"remote",
 	}, names)
 }
@@ -54,8 +54,8 @@ func TestCliSubCommandsAndAliases(t *testing.T) {
 	assert.Equal(t, []string{
 		"status",
 		"sync",
-		"local",
 		"ci",
+		"local",
 		"remote",
 		"i",
 		"d",

@@ -13,8 +13,9 @@ import (
 func CreateCommand(depsProvider dependencies.Provider) *cobra.Command {
 	createBranchCmd := CreateBranchCommand(depsProvider)
 	cmd := &cobra.Command{
-		Use:  `create`,
-		Long: helpmsg.Read(`remote/create/long`),
+		Use:   `create`,
+		Short: helpmsg.Read(`remote/create/short`),
+		Long:  helpmsg.Read(`remote/create/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			d := depsProvider.Dependencies()
 
