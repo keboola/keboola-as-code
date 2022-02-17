@@ -1,1 +1,1 @@
-Init repository directory.
+Init a new repository directory.

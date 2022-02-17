@@ -1,1 +1,1 @@
-Detect created/deleted configs/rows.
+Detect new/deleted configurations and rows.

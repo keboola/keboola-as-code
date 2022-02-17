@@ -1,1 +1,1 @@
-Create config.
+Create an empty configuration.

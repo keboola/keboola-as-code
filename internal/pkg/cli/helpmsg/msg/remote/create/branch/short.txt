@@ -1,1 +1,1 @@
-Create branch.
+Create a new branch from the main branch.

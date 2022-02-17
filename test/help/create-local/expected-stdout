@@ -15,8 +15,8 @@ Usage:
   %s create [command]
 
 Available Commands:
-  config         Create config.
-  row            Create config row.
+  local create config  Create an empty configuration.
+  local create row     Create an empty configuration row.
 
 Global Flags:
 %A

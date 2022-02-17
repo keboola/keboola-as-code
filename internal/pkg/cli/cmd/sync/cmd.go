@@ -9,14 +9,15 @@ import (
 
 func Commands(d dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:  `sync`,
-		Long: helpmsg.Read(`sync/long`),
+		Use:   `sync`,
+		Short: helpmsg.Read(`sync/short`),
+		Long:  helpmsg.Read(`sync/long`),
 	}
 	cmd.AddCommand(
 		InitCommand(d),
-		DiffCommand(d),
 		PullCommand(d),
 		PushCommand(d),
+		DiffCommand(d),
 	)
 	return cmd
 }

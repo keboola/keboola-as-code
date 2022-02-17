@@ -1,1 +1,1 @@
-Normalize all local paths.
+Ensure that all paths match configured naming.

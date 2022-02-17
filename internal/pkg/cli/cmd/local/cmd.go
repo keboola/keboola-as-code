@@ -11,14 +11,15 @@ import (
 
 func Commands(d dependencies.Provider, envs *env.Map) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:  `local`,
-		Long: helpmsg.Read(`local/long`),
+		Use:   `local`,
+		Short: helpmsg.Read(`local/short`),
+		Long:  helpmsg.Read(`local/long`),
 	}
 	cmd.AddCommand(
-		ValidateCommand(d),
-		PersistCommand(d),
 		CreateCommand(d),
+		PersistCommand(d),
 		EncryptCommand(d),
+		ValidateCommand(d),
 		FixPathsCommand(d),
 	)
 

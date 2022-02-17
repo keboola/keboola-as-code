@@ -14,41 +14,41 @@ Usage:
   %s [command]
 
 Available Commands:
-  status         Print info about current directory.
+  status                         Show information about working directory.
 
-  sync
-    init         Init local project directory and perform the first pull.
-    diff         Print differences between local and remote state.
-    pull         Pull configurations to the project directory.
-    push         Push configurations to the Keboola project.
+  sync                           Synchronization between local directory and project.
+  sync init                      Initialize a new local directory and run "sync pull".
+  sync pull                      Sync project to the local directory.
+  sync push                      Sync local directory to the project.
+  sync diff                      Show differences between local directory and project.
 
-  local
-    validate     Validate the local project directory.
-    persist      Detect created/deleted configs/rows.
-    create
-      config     Create config.
-      row        Create config row.
-    encrypt      Encrypt all unencrypted secrets.
-    fix-paths    Normalize all local paths.
-    template
-      use        Apply template.
+  ci                             Manage CI/CD pipeline.
+  ci workflows                   Generate workflows for GitHub Actions.
 
-  ci
-    workflows    Generate Github Actions workflows.
+  local                          Operations performed in the local directory.
+  local create                   Create an object in the local directory.
+  local create config            Create an empty configuration.
+  local create row               Create an empty configuration row.
+  local persist                  Detect new/deleted configurations and rows.
+  local encrypt                  Encrypt all unencrypted secrets.
+  local validate                 Validate the local directory.
+  local fix-paths                Ensure that all paths match configured naming.
+  local template                 Manage templates in the local directory.
+  local template use             Apply template.
 
-  remote
-    create
-      branch     Create branch.
+  remote                         Operations performed directly in the project.
+  remote create                  Create an object in the project.
+  remote create branch           Create a new branch from the main branch.
 
-  template
-    describe     Describe template inputs. NOT IMPLEMENTED
-    create       Create template in repository directory.
-    repository
-      init       Init repository directory.
-      validate   Validate all templates in the repository. NOT IMPLEMENTED
-      fix-paths  Normalize all paths in the repository. NOT IMPLEMENTED
+  template                       Manage templates in the repository directory.
+  template describe              Describe template inputs. NOT IMPLEMENTED
+  template create                Create template in repository directory.
+  template repository            Manage the repository directory.
+  template repository init       Init a new repository directory.
+  template repository validate   Validate all templates. NOT IMPLEMENTED
+  template repository fix-paths  Ensure that all paths match configured naming. NOT IMPLEMENTED
 
-  help           Help about any command
+  help                           Help about any command
 
 Aliases:
   sync init            i, init

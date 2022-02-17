@@ -9,8 +9,9 @@ import (
 
 func Commands(d dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:  `ci`,
-		Long: helpmsg.Read(`ci/long`),
+		Use:   `ci`,
+		Short: helpmsg.Read(`ci/short`),
+		Long:  helpmsg.Read(`ci/long`),
 	}
 	cmd.AddCommand(
 		WorkflowsCommand(d),

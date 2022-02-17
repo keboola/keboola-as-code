@@ -1,1 +1,1 @@
-Print info about current directory.
+Show information about working directory.
