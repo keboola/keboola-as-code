@@ -75,7 +75,7 @@ scoop:
   homepage: https://www.keboola.com/product/cli
   description: Operate your cloud data pipeline from the command line
   license: MIT
-  url_template: "https://keboola-as-code-dist.s3.amazonaws.com/zip/{{ .ArtifactName }}"
+  url_template: "{{ .Env.DIST_BASE_URL }}/zip/{{ .ArtifactName }}"
   skip_upload: true
 
 publishers:
