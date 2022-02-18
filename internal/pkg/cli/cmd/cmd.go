@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -96,7 +95,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 		aliases:   orderedmap.New(),
 	}
 	root.Cmd = &Cmd{
-		Use:           path.Base(os.Args[0]), // name of the binary
+		Use:           "kbc", // name of the binary
 		Version:       version.Version(),
 		Short:         helpmsg.Read(`app`),
 		SilenceUsage:  true,
@@ -257,7 +256,7 @@ func (root *RootCommand) listAliases() string {
 
 func (root *RootCommand) addAlias(alias, cmdPath string) {
 	target, found := root.cmdByPath[cmdPath]
-	if found {
+	if !found {
 		panic(fmt.Errorf(`cannot create cmd alias "%s": command "%s" not found`, alias, cmdPath))
 	}
 
