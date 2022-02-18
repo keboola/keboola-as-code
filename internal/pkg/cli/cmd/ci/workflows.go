@@ -40,6 +40,6 @@ func WorkflowsCommand(depsProvider dependencies.Provider) *cobra.Command {
 func WorkflowsCmdFlags(flags *pflag.FlagSet) {
 	flags.Bool("ci-validate", true, "create workflow to validate all branches on change")
 	flags.Bool("ci-push", true, "create workflow to push change in main branch to the project")
-	flags.Bool("ci-pull", true, "create workflow to sync main branch every 5 minutes")
+	flags.Bool("ci-pull", true, "create workflow to sync main branch each hour")
 	flags.String("ci-main-branch", "main", "name of the main branch for push/pull workflows")
 }

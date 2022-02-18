@@ -31,7 +31,7 @@ func (p *Dialogs) AskWorkflowsOptions(options *options.Options) workflowsGen.Opt
 	}
 	if !options.IsSet("ci-pull") {
 		out.Pull = p.Confirm(&prompt.Confirm{
-			Label:   "Generate \"pull\" workflow?\nThe main GitHub branch will be synchronized every 5 minutes.\nIf a change found, then a new commit is created and pushed.",
+			Label:   "Generate \"pull\" workflow?\nThe main GitHub branch will be synchronized each hour.\nIf a change found, then a new commit is created and pushed.",
 			Default: out.Pull,
 		})
 	}

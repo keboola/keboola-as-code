@@ -3,7 +3,7 @@ Command "ci workflows"
 Generate workflows for Github Actions:
 - "validate" all branches on change.
 - "push" - each change in the main branch will be pushed to the project.
-- "pull" - main branch will be synchronized every 5 minutes.
+- "pull" - main branch will be synchronized each hour.
 
 You will be prompted which workflows you want to generate.
 
@@ -14,7 +14,7 @@ Usage:
 
 Flags:
       --ci-main-branch string   name of the main branch for push/pull workflows (default "main")
-      --ci-pull                 create workflow to sync main branch every 5 minutes (default true)
+      --ci-pull                 create workflow to sync main branch each hour (default true)
       --ci-push                 create workflow to push change in main branch to the project (default true)
       --ci-validate             create workflow to validate all branches on change (default true)
 
