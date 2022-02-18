@@ -3,10 +3,11 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>keboola-cli</id>
-    <version>2.2.0</version>
+    <version>{VERSION}</version>
     <packageSourceUrl>https://github.com/keboola/keboola-as-code/tree/main/build/package/chocolatey</packageSourceUrl>
     <title>Keboola CLI</title>
     <authors>Keboola</authors>
+    <iconUrl>https://assets.website-files.com/5e21dc6f4c5acf29c35bb32c/5e7263a8bf518b1d3be1760a_256.png</iconUrl>
     <licenseUrl>https://github.com/keboola/keboola-as-code/blob/main/LICENSE</licenseUrl>
     <projectUrl>https://www.keboola.com/product/cli</projectUrl>
     <projectSourceUrl>https://github.com/keboola/keboola-as-code</projectSourceUrl>

@@ -51,11 +51,18 @@ in the repository).
 - The MSI file is created in the `release-msi-windows` step of the [GitHub Workflow](#workflow-steps)
 - The MSI file is uploaded to S3 in the same step
 
+## Chocolatey
+
+- [Chocolatey](https://chocolatey.org/) is a package manager for Windows
+- The package is created and pushed to the community repository using `update-repositories-windows` step of the [GitHub Workflow](#workflow-steps)
+- The package is published to the community repository: https://community.chocolatey.org/packages/keboola-cli
+- Updates to the package are authenticated by API key stored in `CHOCOLATEY_KEY` secret 
+
 ## Scoop
 
 - [Scoop](https://scoop.sh/) is a package manager for Windows
 - The manifest is created using [build/ci/goreleaser.yml](../build/ci/goreleaser.yml) in the `release` step of the [GitHub Workflow](#workflow-steps)
-- The manifest is pushed to the repository in the `update-repositories` step of the [GitHub Workflow](#workflow-steps)
+- The manifest is pushed to the repository in the `update-repositories-windows` step of the [GitHub Workflow](#workflow-steps)
 - We use our own manifest repository (bucket) located on url https://github.com/keboola/scoop-keboola-cli
 
 ## Linux Repositories
