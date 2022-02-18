@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/ci"
@@ -97,7 +95,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 		aliases:   orderedmap.New(),
 	}
 	root.Cmd = &Cmd{
-		Use:           path.Base(os.Args[0]), // name of the binary
+		Use:           "kbc", // name of the binary
 		Version:       version.Version(),
 		Short:         helpmsg.Read(`app`),
 		SilenceUsage:  true,
@@ -259,13 +257,6 @@ func (root *RootCommand) listAliases() string {
 func (root *RootCommand) addAlias(alias, cmdPath string) {
 	target, found := root.cmdByPath[cmdPath]
 	if !found {
-		s := spew.NewDefaultConfig()
-		s.MaxDepth = 1
-		s.Dump(root.cmdByPath)
-		fmt.Printf("root.Use: %v\n", root.Use) // nolint: forbidigo
-		v, _ := os.Executable()
-		fmt.Printf("os.Executable(): %v\n", v)     // nolint: forbidigo
-		fmt.Printf("os.Args[0]: %v\n", os.Args[0]) // nolint: forbidigo
 		panic(fmt.Errorf(`cannot create cmd alias "%s": command "%s" not found`, alias, cmdPath))
 	}
 
