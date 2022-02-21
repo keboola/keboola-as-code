@@ -12,6 +12,10 @@ echo -e "$RPM_KEY_PRIVATE" | gpg --import --batch
 
 cd /packages/rpm
 
+# Clear (if previous build failed)
+rm -rf .repodata || true
+rm -rf repodata.old.* || true
+
 # Index
 createrepo --update  .
 
