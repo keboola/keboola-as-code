@@ -4,6 +4,8 @@ The release process is handled by [GitHub Actions workflow](https://github.com/k
 in [.github/workflows/push.yml](../.github/workflows/push.yml) on GitHub release (i.e. on creating a semantic tag 
 in the repository).
 
+![GitHub Push workflow](./release.png)
+
 ## Workflow Steps
 
 1. `cross-compile` cross-compiles the binaries
@@ -16,6 +18,7 @@ in the repository).
    1. downloads zipped `amd64` binary from GitHub release
    2. creates [MSI installer](#msi-installer)
    3. uploads the msi file to the [distribution S3](#s3-distribution)
+   4. pushes [WinGet manifest](#winget) to its repository index
 4. `update-repositories`
    1. pushes [Homebrew formula](#homebrew) to its repository index
    2. pushes [Scoop manifest](#scoop) to its repository index
@@ -64,6 +67,13 @@ in the repository).
 - The manifest is created using [build/ci/goreleaser.yml](../build/ci/goreleaser.yml) in the `release` step of the [GitHub Workflow](#workflow-steps)
 - The manifest is pushed to the repository in the `update-repositories-windows` step of the [GitHub Workflow](#workflow-steps)
 - We use our own manifest repository (bucket) located on url https://github.com/keboola/scoop-keboola-cli
+
+## WinGet
+
+- [WinGet](https://winget.run/) is a package manager for Windows by Microsoft
+- The manifest is created using [wingetcreate](https://github.com/microsoft/winget-create) tool and pushed to the repository using `update-repositories-windows` step of the [GitHub Workflow](#workflow-steps)
+- The manifest is published to the official repository
+- [Initial PR](https://github.com/microsoft/winget-pkgs/pull/47486)
 
 ## Linux Repositories
 

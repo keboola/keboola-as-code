@@ -401,6 +401,16 @@ jobs:
           choco apikey -k $env:CHOCOLATEY_KEY -s https://push.chocolatey.org/
           choco pack keboola-cli.nuspec
           choco push keboola-cli.$env:VERSION.nupkg -s https://push.chocolatey.org
+      - name: Submit package to Winget Repository
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.WINGET_RELEASE_GITHUB_PERSONAL_ACCESS_TOKEN }}
+          MSI_FILE: ${{ needs.release-msi-windows.outputs.msi_file }}
+          VERSION: ${{ needs.set-version.outputs.version }}
+        run: |
+          curl -kLSs https://aka.ms/wingetcreate/latest -o wingetcreate.exe
+          msiUrl="${DIST_BASE_URL}/msi/${MSI_FILE}"
+          ./wingetcreate.exe update -v $VERSION -u $msiUrl -t $GITHUB_TOKEN Keboola.KeboolaCLI
 
   test-install-linux:
     needs:
