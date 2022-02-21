@@ -12,6 +12,7 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
@@ -133,6 +134,13 @@ func TestRemoteLoadMapper(t *testing.T) {
 				"name": "My branch",
 			},
 		}).Once(),
+	)
+
+	// Mocked response: config metadata
+	httpTransport.RegisterResponder(
+		resty.MethodGet,
+		`=~storage/branch/123/search/component-configurations`,
+		httpmock.NewJsonResponderOrPanic(200, storageapi.ConfigMetadataResponse{}).Once(),
 	)
 
 	// Mocked response: components + configs

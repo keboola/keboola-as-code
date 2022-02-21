@@ -70,7 +70,7 @@ func (u *UnitOfWork) LoadAll(filter model.ObjectsFilter) {
 	pool.
 		Request(u.api.ListBranchesRequest()).
 		OnSuccess(func(response *client.Response) {
-			// Save branch + load branch components
+			// Process branch + load branch components
 			for _, branch := range *response.Result().(*[]*model.Branch) {
 				// Store branch to state
 				if objectState, err := u.loadObject(branch, filter); err != nil {
@@ -89,7 +89,11 @@ func (u *UnitOfWork) LoadAll(filter model.ObjectsFilter) {
 }
 
 func (u *UnitOfWork) loadBranch(branch *model.Branch, filter model.ObjectsFilter, pool *client.Pool) {
-	pool.
+	// Load metadata for configurations
+	metadataMap, metadataReq := u.configsMetadataRequest(branch, pool)
+
+	// Load components, configs and rows
+	componentsReq := pool.
 		Request(u.api.ListComponentsRequest(branch.Id)).
 		OnSuccess(func(response *client.Response) {
 			components := *response.Result().(*[]*model.ComponentWithConfigs)
@@ -98,6 +102,13 @@ func (u *UnitOfWork) loadBranch(branch *model.Branch, filter model.ObjectsFilter
 			for _, component := range components {
 				// Configs
 				for _, config := range component.Configs {
+					// Set config metadata
+					metadata, found := metadataMap[config.ConfigKey]
+					if !found {
+						metadata = make(map[string]string)
+					}
+					config.Metadata = metadata
+
 					// Store config to state
 					if objectState, err := u.loadObject(config.Config, filter); err != nil {
 						u.errors.Append(err)
@@ -117,8 +128,34 @@ func (u *UnitOfWork) loadBranch(branch *model.Branch, filter model.ObjectsFilter
 					}
 				}
 			}
-		}).
-		Send()
+		})
+
+	// Process response after the metadata is loaded
+	componentsReq.WaitFor(metadataReq)
+
+	// Send requests
+	metadataReq.Send()
+	componentsReq.Send()
+}
+
+func (u *UnitOfWork) configsMetadataRequest(branch *model.Branch, pool *client.Pool) (map[model.Key]map[string]string, *client.Request) {
+	lock := &sync.Mutex{}
+	out := make(map[model.Key]map[string]string)
+	request := pool.
+		Request(u.api.ListConfigMetadataRequest(branch.Id)).
+		OnSuccess(func(response *client.Response) {
+			lock.Lock()
+			defer lock.Unlock()
+			metadataResponse := *response.Result().(*storageapi.ConfigMetadataResponse)
+			for key, metadata := range metadataResponse.MetadataMap(branch.Id) {
+				metadataMap := make(map[string]string)
+				for _, m := range metadata {
+					metadataMap[m.Key] = m.Value
+				}
+				out[key] = metadataMap
+			}
+		})
+	return out, request
 }
 
 func (u *UnitOfWork) loadObject(object model.Object, filter model.ObjectsFilter) (model.ObjectState, error) {
