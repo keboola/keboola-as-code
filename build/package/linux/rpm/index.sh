@@ -10,9 +10,14 @@ set -o pipefail         # Use last non-zero exit code in a pipeline
 echo -e "$RPM_KEY_PUBLIC"  | gpg --import --batch
 echo -e "$RPM_KEY_PRIVATE" | gpg --import --batch
 
-# Index
 cd /packages/rpm
+
+# Index
 createrepo --update  .
 
 # Sign
 gpg --yes --detach-sign --armor repodata/repomd.xml
+
+# Clear
+rm -rf .repodata || true
+rm -rf repodata.old.* || true
