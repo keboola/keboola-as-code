@@ -63,55 +63,6 @@ func InitState(t *testing.T) (*state.State, *httpmock.MockTransport) {
 	return mockedState, httpTransport
 }
 
-func TestConfigMetadataOnRemoteChangeLoaded(t *testing.T) {
-	t.Parallel()
-	mockedState, _ := InitState(t)
-
-	content := orderedmap.New()
-	json.MustDecodeString("{}", content)
-
-	// Config with metadata
-	configKey := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: "keboola.ex-aws-s3",
-		Id:          "456",
-	}
-	configManifest := &model.ConfigManifest{
-		ConfigKey: configKey,
-	}
-	config := &model.Config{ConfigKey: configKey, Content: content}
-	configState := &model.ConfigState{
-		ConfigManifest: configManifest,
-		Remote:         config,
-	}
-	assert.NoError(t, mockedState.Set(configState))
-
-	// Config without metadata
-	configKey2 := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: "keboola.ex-aws-s3",
-		Id:          "789",
-	}
-	configManifest2 := &model.ConfigManifest{
-		ConfigKey: configKey2,
-	}
-	config2 := &model.Config{ConfigKey: configKey2, Content: content}
-	configState2 := &model.ConfigState{
-		ConfigManifest: configManifest2,
-		Remote:         config2,
-	}
-	assert.NoError(t, mockedState.Set(configState2))
-
-	// Invoke
-	changes := model.NewRemoteChanges()
-	changes.AddLoaded(configState)
-	changes.AddLoaded(configState2)
-
-	assert.NoError(t, mockedState.Mapper().AfterRemoteOperation(changes))
-	assert.Equal(t, map[string]string{"KBC.KaC.Meta": "value1", "KBC.KaC.Meta2": "value2"}, config.Metadata)
-	assert.Equal(t, make(map[string]string), config2.Metadata)
-}
-
 func TestConfigMetadataOnRemoteChangeSaved(t *testing.T) {
 	t.Parallel()
 	mockedState, httpTransport := InitState(t)
