@@ -123,8 +123,13 @@ func (c ConfigMetadataResponse) MetadataMap(branchId model.BranchId) map[model.C
 	return result
 }
 
-// UpdateConfigMetadataRequest https://keboola.docs.apiary.io/#reference/metadata/components-configurations-metadata/create-or-update
-func (a *Api) UpdateConfigMetadataRequest(config *model.Config) *client.Request {
+// AppendConfigMetadataRequest https://keboola.docs.apiary.io/#reference/metadata/components-configurations-metadata/create-or-update
+func (a *Api) AppendConfigMetadataRequest(config *model.Config) *client.Request {
+	// Empty, we have nothing to append
+	if len(config.Metadata) == 0 {
+		return nil
+	}
+
 	formBody := make(map[string]string)
 	i := 0
 	for k, v := range config.Metadata {

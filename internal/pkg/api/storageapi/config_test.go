@@ -107,7 +107,7 @@ func TestConfigApiCalls(t *testing.T) {
 
 	// Update metadata
 	config.Metadata = map[string]string{"KBC.KaC.meta1": fmt.Sprintf("%d", rand.Intn(100))}
-	assert.NoError(t, api.UpdateConfigMetadataRequest(config.Config).Send().Err())
+	assert.NoError(t, api.AppendConfigMetadataRequest(config.Config).Send().Err())
 
 	// List metadata
 	req := api.ListConfigMetadataRequest(branch.Id).Send()

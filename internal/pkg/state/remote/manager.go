@@ -283,22 +283,53 @@ func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, object model.
 		changedFields.Add("changeDescription")
 	}
 
-	// Create or update
-	if !objectState.HasRemoteState() {
-		// Create
-		return u.create(objectState, object, recipe)
+	// Should metadata be set?
+	exists := objectState.HasRemoteState()
+	setMetadata := !exists || changedFields.Has("metadata")
+	var setMetadataReq *client.Request
+	if setMetadata {
+		changedFields.Remove("metadata")
+		setMetadataReq = u.api.AppendMetadataRequest(object)
 	}
 
-	// Update
-	return u.update(objectState, object, recipe, changedFields)
+	// Create or update
+	var createOrUpdateReq *client.Request
+	if exists {
+		// Update
+		if r, err := u.updateRequest(objectState, object, recipe, changedFields); err != nil {
+			return err
+		} else {
+			createOrUpdateReq = r
+		}
+	} else {
+		// Create
+		if r, err := u.createRequest(objectState, object, recipe); err != nil {
+			return err
+		} else {
+			createOrUpdateReq = r
+		}
+	}
+
+	// Set metadata
+	if setMetadataReq != nil {
+		// Set metadata if save has been successful
+		createOrUpdateReq.OnSuccess(func(response *client.Response) {
+			response.Sender().Send(setMetadataReq) // use same pool
+		})
+	}
+
+	// Send
+	createOrUpdateReq.Send()
+	return nil
 }
 
-func (u *UnitOfWork) create(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe) error {
+func (u *UnitOfWork) createRequest(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe) (*client.Request, error) {
 	request, err := u.api.CreateRequest(recipe.Object)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	u.poolFor(object.Level()).
+
+	return u.poolFor(object.Level()).
 		Request(request).
 		OnSuccess(func(response *client.Response) {
 			// Save new ID to manifest
@@ -309,27 +340,29 @@ func (u *UnitOfWork) create(objectState model.ObjectState, object model.Object, 
 			if e, ok := response.Error().(*storageapi.Error); ok {
 				if e.ErrCode == "configurationAlreadyExists" || e.ErrCode == "configurationRowAlreadyExists" {
 					// Object exists -> update instead of create + clear error
-					response.SetErr(u.update(objectState, object, recipe, nil))
+					if r, err := u.updateRequest(objectState, object, recipe, nil); err != nil {
+						response.SetErr(err)
+					} else {
+						response.WaitFor(r)
+						r.Send()
+					}
 				}
 			}
-		}).
-		Send()
-	return nil
+		}), nil
 }
 
-func (u *UnitOfWork) update(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe, changedFields model.ChangedFields) error {
-	if request, err := u.api.UpdateRequest(recipe.Object, changedFields); err == nil {
-		u.poolFor(object.Level()).
-			Request(request).
-			OnSuccess(func(response *client.Response) {
-				objectState.SetRemoteState(object)
-				u.changes.AddUpdated(objectState)
-			}).
-			Send()
-	} else {
-		return err
+func (u *UnitOfWork) updateRequest(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe, changedFields model.ChangedFields) (*client.Request, error) {
+	request, err := u.api.UpdateRequest(recipe.Object, changedFields)
+	if err != nil {
+		return nil, err
 	}
-	return nil
+
+	return u.poolFor(object.Level()).
+		Request(request).
+		OnSuccess(func(response *client.Response) {
+			objectState.SetRemoteState(object)
+			u.changes.AddUpdated(objectState)
+		}), nil
 }
 
 func (u *UnitOfWork) delete(objectState model.ObjectState) {
