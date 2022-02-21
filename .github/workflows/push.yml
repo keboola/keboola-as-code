@@ -497,7 +497,7 @@ jobs:
     needs:
       - set-version
       - release
-      - update-repositories-windows
+      - update-repositories
     runs-on: windows-latest
     steps:
       - name: Install on Windows using Scoop
