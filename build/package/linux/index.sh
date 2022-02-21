@@ -6,6 +6,48 @@ set -o nounset          # Disallow expansion of unset variables
 set -o pipefail         # Use last non-zero exit code in a pipeline
 #set -o xtrace          # Trace the execution of the script (debug)
 
+# https://gist.github.com/sj26/88e1c6584397bb7c13bd11108a579746
+function retry {
+  local retries=$1
+  shift
+
+  local count=0
+  until "$@"; do
+    exit=$?
+    wait=$((2 ** $count))
+    count=$(($count + 1))
+    if [ $count -lt $retries ]; then
+      echo "Retry $count/$retries exited $exit, retrying in $wait seconds..."
+      sleep $wait
+    else
+      echo "Retry $count/$retries exited $exit, no more retries left."
+      return $exit
+    fi
+  done
+  return 0
+}
+
+function indexDeb {
+  docker-compose run --rm -u "$(id -u):$(id -g)" deb
+  echo "OK. DEB packages indexed."
+  echo
+  echo
+}
+
+function indexRpm {
+  docker-compose run --rm -u "$(id -u):$(id -g)" rpm
+  echo "OK. RPM packages indexed."
+  echo
+  echo
+}
+
+function indexApk {
+  docker-compose run --rm -u "$(id -u):$(id -g)" apk
+  echo "OK. APK packages indexed."
+  echo
+  echo
+}
+
 if [ $# -lt 1 ]; then
   echo 1>&2 "$0: not enough arguments"
   exit 2
@@ -25,22 +67,13 @@ echo "Pulling Docker images ..."
 docker-compose pull -q
 
 echo "Indexing DEB packages for Debian ..."
-docker-compose run --rm -u "$(id -u):$(id -g)" deb
-echo "OK. DEB packages indexed."
-echo
-echo
+retry 5 indexDeb
 
 echo "Indexing RPM packages for Fedora ..."
-docker-compose run --rm -u "$(id -u):$(id -g)" rpm
-echo "OK. RPM packages indexed."
-echo
-echo
+retry 5 indexRpm
 
 echo "Indexing APK packages for Alpine ..."
-docker-compose run --rm -u "$(id -u):$(id -g)" apk
-echo "OK. APK packages indexed."
-echo
-echo
+retry 5 indexApk
 
 echo "Write repository public keys ..."
 mkdir -p "${PACKAGES_DIR}/deb"
