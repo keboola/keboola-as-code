@@ -281,6 +281,152 @@ func TestLoadConfigMetadata(t *testing.T) {
 	assert.Equal(t, map[string]string{}, projectState.MustGet(config2Key).(*model.ConfigState).Remote.Metadata)
 }
 
+func TestSaveConfigMetadata_Create(t *testing.T) {
+	t.Parallel()
+	uow, httpTransport, _ := newTestRemoteUOW(t)
+
+	// Mocked response: create config
+	httpTransport.RegisterResponder(resty.MethodPost, `=~storage/branch/123/components/foo.bar/configs$`,
+		httpmock.NewStringResponder(201, `{"id": "456"}`),
+	)
+
+	// Mocked response: append metadata
+	var httpRequest *http.Request
+	httpTransport.RegisterResponder(resty.MethodPost, `=~/storage/branch/123/components/foo.bar/configs/456/metadata$`,
+		func(req *http.Request) (*http.Response, error) {
+			httpRequest = req
+			response := []storageapi.ConfigMetadata{
+				{Id: "1", Key: "KBC-KaC-meta1", Value: "val1", Timestamp: "xxx"},
+			}
+			return httpmock.NewStringResponse(200, json.MustEncodeString(response, true)), nil
+		},
+	)
+
+	// Fixtures
+	configKey := model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", Id: "456"}
+	config := &model.Config{
+		ConfigKey: configKey,
+		Metadata: map[string]string{
+			"KBC-KaC-meta1": "val1",
+		},
+	}
+	objectState := &model.ConfigState{
+		ConfigManifest: &model.ConfigManifest{ConfigKey: configKey},
+		Local:          config,
+	}
+
+	// Save
+	uow.SaveObject(objectState, objectState.Local, model.NewChangedFields())
+	assert.NoError(t, uow.Invoke())
+
+	// Check
+	reqBodyRaw, err := io.ReadAll(httpRequest.Body)
+	assert.NoError(t, err)
+	reqBody, err := url.QueryUnescape(string(reqBodyRaw))
+	assert.NoError(t, err)
+	assert.Equal(t, "metadata[0][key]=KBC-KaC-meta1&metadata[0][value]=val1", reqBody)
+}
+
+func TestSaveConfigMetadata_Create_Empty(t *testing.T) {
+	t.Parallel()
+	uow, httpTransport, _ := newTestRemoteUOW(t)
+
+	// Mocked response: create config
+	httpTransport.RegisterResponder(resty.MethodPost, `=~storage/branch/123/components/foo.bar/configs$`,
+		httpmock.NewStringResponder(201, `{"id": "456"}`),
+	)
+
+	// Fixtures
+	configKey := model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", Id: "456"}
+	config := &model.Config{
+		ConfigKey: configKey,
+		Metadata:  map[string]string{},
+	}
+	objectState := &model.ConfigState{
+		ConfigManifest: &model.ConfigManifest{ConfigKey: configKey},
+		Local:          config,
+	}
+
+	// Save
+	uow.SaveObject(objectState, objectState.Local, model.NewChangedFields())
+	assert.NoError(t, uow.Invoke())
+}
+
+func TestSaveConfigMetadata_Update(t *testing.T) {
+	t.Parallel()
+	uow, httpTransport, _ := newTestRemoteUOW(t)
+
+	// Mocked response: create config
+	httpTransport.RegisterResponder(resty.MethodPut, `=~storage/branch/123/components/foo.bar/configs/456$`,
+		httpmock.NewStringResponder(200, `{"id": "456"}`),
+	)
+
+	// Mocked response: append metadata
+	var httpRequest *http.Request
+	httpTransport.RegisterResponder(resty.MethodPost, `=~/storage/branch/123/components/foo.bar/configs/456/metadata$`,
+		func(req *http.Request) (*http.Response, error) {
+			httpRequest = req
+			response := []storageapi.ConfigMetadata{
+				{Id: "1", Key: "KBC-KaC-meta1", Value: "val1", Timestamp: "xxx"},
+			}
+			return httpmock.NewStringResponse(200, json.MustEncodeString(response, true)), nil
+		},
+	)
+
+	// Fixtures
+	configKey := model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", Id: "456"}
+	config := &model.Config{
+		ConfigKey: configKey,
+		Metadata: map[string]string{
+			"KBC-KaC-meta1": "val1",
+		},
+	}
+	objectState := &model.ConfigState{
+		ConfigManifest: &model.ConfigManifest{ConfigKey: configKey},
+		Local:          config,
+		Remote:         config,
+	}
+
+	// Save
+	uow.SaveObject(objectState, objectState.Local, model.NewChangedFields("metadata"))
+	assert.NoError(t, uow.Invoke())
+
+	// Check
+	reqBodyRaw, err := io.ReadAll(httpRequest.Body)
+	assert.NoError(t, err)
+	reqBody, err := url.QueryUnescape(string(reqBodyRaw))
+	assert.NoError(t, err)
+	assert.Equal(t, "metadata[0][key]=KBC-KaC-meta1&metadata[0][value]=val1", reqBody)
+}
+
+func TestSaveConfigMetadata_Update_NoChange(t *testing.T) {
+	t.Parallel()
+	uow, httpTransport, _ := newTestRemoteUOW(t)
+
+	// Mocked response: create config
+	httpTransport.RegisterResponder(resty.MethodPut, `=~storage/branch/123/components/foo.bar/configs/456$`,
+		httpmock.NewStringResponder(200, `{"id": "456"}`),
+	)
+
+	// Fixtures
+	configKey := model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", Id: "456"}
+	config := &model.Config{
+		ConfigKey: configKey,
+		Metadata: map[string]string{
+			"KBC-KaC-meta1": "val1",
+		},
+	}
+	objectState := &model.ConfigState{
+		ConfigManifest: &model.ConfigManifest{ConfigKey: configKey},
+		Local:          config,
+		Remote:         config,
+	}
+
+	// Save, metadata field is not changed
+	uow.SaveObject(objectState, objectState.Local, model.NewChangedFields())
+	assert.NoError(t, uow.Invoke())
+}
+
 func newTestRemoteUOW(t *testing.T, mappers ...interface{}) (*remote.UnitOfWork, *httpmock.MockTransport, *state.Registry) {
 	t.Helper()
 	storageApi, httpTransport := testapi.NewMockedStorageApi(log.NewDebugLogger())
