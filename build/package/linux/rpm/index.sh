@@ -12,12 +12,12 @@ echo -e "$RPM_KEY_PRIVATE" | gpg --import --batch
 
 cd /packages/rpm
 
-# Clear
-rm -rf .repodata || true
-rm -rf repodata.old.* || true
-
 # Index
 createrepo --update  .
 
 # Sign
 gpg --yes --detach-sign --armor repodata/repomd.xml
+
+# Clear
+rm -rf .repodata || true
+rm -rf repodata.old.* || true
