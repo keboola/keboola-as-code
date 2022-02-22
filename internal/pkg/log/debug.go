@@ -66,35 +66,41 @@ func (l *debugLogger) Truncate() {
 
 // AllMessages returns all messages and Truncate all messages.
 func (l *debugLogger) AllMessages() string {
+	_ = l.Sync()
 	return l.all.String()
 }
 
 // DebugMessages returns all debug messages and Truncate all messages.
 func (l *debugLogger) DebugMessages() string {
+	_ = l.Sync()
 	defer l.Truncate()
 	return l.debug.String()
 }
 
 // InfoMessages returns all info messages and Truncate all messages.
 func (l *debugLogger) InfoMessages() string {
+	_ = l.Sync()
 	defer l.Truncate()
 	return l.info.String()
 }
 
 // WarnMessages returns all warn messages and Truncate all messages.
 func (l *debugLogger) WarnMessages() string {
+	_ = l.Sync()
 	defer l.Truncate()
 	return l.warn.String()
 }
 
 // WarnAndErrorMessages returns all warn or error messages and Truncate all messages.
 func (l *debugLogger) WarnAndErrorMessages() string {
+	_ = l.Sync()
 	defer l.Truncate()
 	return l.warnOrError.String()
 }
 
 // ErrorMessages returns all error messages and Truncate all messages.
 func (l *debugLogger) ErrorMessages() string {
+	_ = l.Sync()
 	defer l.Truncate()
 	return l.error.String()
 }
@@ -113,7 +119,7 @@ func debugCore(writer *ioutil.Writer, level zapcore.LevelEnabler) zapcore.Core {
 	}
 	return zapcore.NewCore(
 		zapcore.NewConsoleEncoder(encoderConfig),
-		zapcore.AddSync(writer),
+		zapcore.Lock(zapcore.AddSync(writer)),
 		level,
 	)
 }

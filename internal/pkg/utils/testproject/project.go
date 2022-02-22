@@ -344,7 +344,7 @@ func (p *Project) createConfigsRequests(configs []*model.ConfigWithRows, pool *c
 			p.logf("creating config \"%s/%s/%s\"", branch.Name, config.ComponentId, config.Name)
 			request.OnSuccess(func(response *client.Response) {
 				if len(config.Config.Metadata) > 0 {
-					request := p.StorageApi().UpdateConfigMetadataRequest(config.Config)
+					request := p.StorageApi().AppendConfigMetadataRequest(config.Config)
 					pool.Request(request).Send()
 				}
 			})

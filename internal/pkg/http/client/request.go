@@ -168,6 +168,9 @@ func (r *Request) SetContext(ctx context.Context) *Request {
 // WaitFor ensures that all remaining listeners will be deferred until subRequest done
 // See TestWaitForSubRequest test.
 func (r *Request) WaitFor(subRequest *Request) {
+	// Error from the targetRequest will be set to the parent request, if it is already processed.
+	inheritError := r.IsDone()
+
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
@@ -180,7 +183,7 @@ func (r *Request) WaitFor(subRequest *Request) {
 		defer r.waitingForGrp.Done()
 
 		// Copy error from sub-request to parent request
-		if subRequest.HasError() && !r.HasError() {
+		if inheritError && subRequest.HasError() && !r.HasError() {
 			r.SetErr(subRequest.Err())
 		}
 	})

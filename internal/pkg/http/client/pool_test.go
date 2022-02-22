@@ -174,7 +174,7 @@ func TestNetworkError(t *testing.T) {
 	assert.GreaterOrEqual(t, httpTransport.GetCallCountInfo()["GET https://example.com"], 10)
 }
 
-func TestErrorInSubRequest(t *testing.T) {
+func TestErrorInSubRequest_DependentRequests(t *testing.T) {
 	t.Parallel()
 	client, httpTransport, logger := getMockedClientAndLogs(t, false)
 	httpTransport.RegisterResponder("GET", `https://example.com`, httpmock.NewStringResponder(200, `test`))
@@ -206,6 +206,48 @@ func TestErrorInSubRequest(t *testing.T) {
 
 	assert.GreaterOrEqual(t, c.Get(), 10)
 	assert.GreaterOrEqual(t, httpTransport.GetCallCountInfo()["GET https://example.com"], 10)
+}
+
+func TestErrorInSubRequest_ParallelRequests(t *testing.T) {
+	t.Parallel()
+	client, httpTransport, logger := getMockedClientAndLogs(t, false)
+	httpTransport.RegisterResponder("GET", `https://example.com`, httpmock.NewStringResponder(200, `test`))
+	httpTransport.RegisterResponder("GET", `https://example.com/error`, httpmock.NewErrorResponder(errors.New("network error")))
+
+	// Create pool and requests
+	pool := client.NewPool(logger)
+	request1 := pool.Request(client.NewRequest(resty.MethodGet, "https://example.com"))
+	request2 := pool.Request(client.NewRequest(resty.MethodGet, "https://example.com/error"))
+
+	// Request 1 wait for request 2
+	request1.WaitFor(request2)
+
+	// Register callbacks
+	request1.OnResponse(func(response *Response) {
+		logger.Info("Request1 processed.")
+	})
+	request2.OnResponse(func(response *Response) {
+		logger.Info("Request2 processed.")
+	})
+
+	// Send
+	request1.Send()
+	request2.Send()
+
+	// Error is returned by pool
+	err := pool.StartAndWait()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "network error")
+
+	// Request2 failed
+	assert.True(t, request2.HasError())
+	assert.Contains(t, request2.Err().Error(), "network error")
+
+	// Request 1 is processed after 2
+	assert.Equal(t, "INFO  Request2 processed.\nINFO  Request1 processed.\n", logger.InfoMessages())
+
+	// Error is NOT set to the request1
+	assert.False(t, request1.HasError())
 }
 
 func TestOnSuccess(t *testing.T) {
