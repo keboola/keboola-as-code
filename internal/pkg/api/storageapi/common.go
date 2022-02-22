@@ -49,3 +49,18 @@ func (a *Api) DeleteRequest(key model.Key) *client.Request {
 		panic(fmt.Errorf(`unexpected type "%T"`, key))
 	}
 }
+
+func (a *Api) AppendMetadataRequest(object interface{}) *client.Request {
+	switch v := object.(type) {
+	case *model.Branch:
+		return nil
+	case *model.ConfigWithRows:
+		return a.AppendConfigMetadataRequest(v.Config)
+	case *model.Config:
+		return a.AppendConfigMetadataRequest(v)
+	case *model.ConfigRow:
+		return nil
+	default:
+		panic(fmt.Errorf(`unexpected type "%T"`, object))
+	}
+}
