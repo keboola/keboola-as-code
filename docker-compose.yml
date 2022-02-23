@@ -13,5 +13,12 @@ services:
       - TEST_KBC_STORAGE_API_HOST
       - TEST_KBC_STORAGE_API_TOKEN
 
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile-api
+    ports:
+      - "8000:8000"
+
 volumes:
   cache:

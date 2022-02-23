@@ -1,0 +1,17 @@
+FROM golang:1.17 AS buildContainer
+WORKDIR /go/src/app
+
+COPY . .
+
+#flags: -s -w to remove symbol table and debug info
+RUN GOOS=linux GOARCH=amd64 go build -v -mod mod -ldflags "-s -w" -o ./templatesapi ./cmd/templates
+
+FROM scratch
+WORKDIR /app
+COPY --from=buildContainer /go/src/app/templatesapi .
+
+ENV HOST 0.0.0.0
+ENV PORT 8000
+EXPOSE 8000
+
+CMD ["./templatesapi", "--http-port=8000", "--domain=0.0.0.0:8000"]
