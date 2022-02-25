@@ -321,6 +321,7 @@ func TestAskUseTemplateOptionsIfNotMet(t *testing.T) {
 			Id:          "restricted",
 			Name:        "Restricted content",
 			Description: "Do you want to see restricted content?",
+			Type:        "bool",
 			Kind:        "confirm",
 			If:          "age>18",
 		},
@@ -328,6 +329,7 @@ func TestAskUseTemplateOptionsIfNotMet(t *testing.T) {
 			Id:          "drink",
 			Name:        "Favorite drink",
 			Description: "What do you like to drink?",
+			Type:        "string",
 			Kind:        "select",
 			If:          "age>18",
 			Options:     input.Options{{Id: "beer", Name: "Beer"}, {Id: "wine", Name: "Wine"}},
@@ -348,6 +350,8 @@ func TestAskUseTemplateOptionsIfNotMet(t *testing.T) {
 			{Id: "facebook.username", Value: "username"},
 			{Id: "facebook.password", Value: "password"},
 			{Id: "age", Value: 15},
+			{Id: "restricted", Value: false},
+			{Id: "drink", Value: ""},
 		},
 	}, output)
 }
