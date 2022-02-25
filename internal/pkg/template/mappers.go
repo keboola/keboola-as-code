@@ -5,6 +5,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/corefiles"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/defaultbucket"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/description"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/ignore"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/relations"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/scheduler"
@@ -44,6 +45,8 @@ func MappersFor(s *state.State, d dependencies, ctx Context) (mapper.Mappers, er
 		sharedcode.NewLinksMapper(s),
 		// Relations between objects
 		relations.NewMapper(s),
+		// Skip variables configurations that are not used in any configuration
+		ignore.NewMapper(s),
 		// Template
 		replacevalues.NewMapper(s, replacements),
 	}, nil
