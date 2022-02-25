@@ -1,0 +1,5 @@
+Ignoring invalid local state.
+Plan for "pull" operation:
+  + B main
+  + C main/extractor/ex-generic-v2/empty
+Pull done.
