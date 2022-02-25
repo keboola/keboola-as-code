@@ -31,7 +31,7 @@ func (r Registry) Attach(key Key, path AbsPath) error {
 	// Object path cannot be empty
 	pathStr := path.Path()
 	if len(pathStr) == 0 {
-		panic(fmt.Errorf(`naming error: path for %s cannot be empty`, key.Desc()))
+		return fmt.Errorf(`naming error: invalid %s: path cannot be empty`, key.Desc())
 	}
 
 	// Check if the path is unique

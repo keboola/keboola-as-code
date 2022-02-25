@@ -19,7 +19,7 @@ func (o Options) Enabled() bool {
 
 type dependencies interface {
 	Logger() log.Logger
-	LocalProject() (*project.Project, error)
+	LocalProject(ignoreErrors bool) (*project.Project, error)
 }
 
 func Run(o Options, d dependencies) (err error) {
@@ -27,7 +27,7 @@ func Run(o Options, d dependencies) (err error) {
 		return nil
 	}
 
-	prj, err := d.LocalProject()
+	prj, err := d.LocalProject(false)
 	if err != nil {
 		return err
 	}

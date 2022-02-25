@@ -1,0 +1,3 @@
+Error: project local state is invalid:
+  - branch "main" not found
+  - config "main/extractor/ex-generic-v2/empty" not found

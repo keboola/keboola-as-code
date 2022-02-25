@@ -23,7 +23,7 @@ type dependencies interface {
 	Ctx() context.Context
 	Logger() log.Logger
 	StorageApi() (*storageapi.Api, error)
-	LocalProject() (*project.Project, error)
+	LocalProject(ignoreErrors bool) (*project.Project, error)
 	ProjectState(loadOptions loadState.Options) (*project.State, error)
 }
 
@@ -37,7 +37,7 @@ func Run(o Options, d dependencies) (err error) {
 	}
 
 	// Get manifest
-	prj, err := d.LocalProject()
+	prj, err := d.LocalProject(false)
 	if err != nil {
 		return err
 	}

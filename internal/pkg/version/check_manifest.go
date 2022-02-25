@@ -46,7 +46,7 @@ Your project needs to be migrated to the new version of the Keboola CLI.
 		`
 		logger.Warn(`Warning: `, strings.TrimLeft(warning, "\n"))
 	} else {
-		logger.Debugf(`Version "%d" in "%s" is up to date.`, info.Version, manifestPath)
+		logger.Debugf(`Version "%d" in "%s" is up to date.`, version, manifestPath)
 	}
 
 	return nil

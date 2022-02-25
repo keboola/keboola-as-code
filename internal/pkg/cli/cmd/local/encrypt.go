@@ -17,7 +17,7 @@ func EncryptCommand(depsProvider dependencies.Provider) *cobra.Command {
 			d := depsProvider.Dependencies()
 
 			// Project is required
-			if _, err := d.LocalProject(); err != nil {
+			if _, err := d.LocalProject(false); err != nil {
 				return err
 			}
 

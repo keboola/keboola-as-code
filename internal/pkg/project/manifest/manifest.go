@@ -37,15 +37,17 @@ func New(projectId int, apiHost string) *Manifest {
 	}
 }
 
-func Load(fs filesystem.Fs) (*Manifest, error) {
+func Load(fs filesystem.Fs, ignoreErrors bool) (*Manifest, error) {
 	// Load file content
 	content, err := loadFile(fs)
-	if err != nil {
+	if err != nil && (!ignoreErrors || content == nil) {
 		return nil, err
 	}
 
 	// Create manifest
 	m := New(content.Project.Id, content.Project.ApiHost)
+
+	// Set configuration
 	m.SetSortBy(content.SortBy)
 	m.naming = content.Naming
 	m.filter.SetAllowedBranches(content.AllowedBranches)
@@ -53,7 +55,7 @@ func Load(fs filesystem.Fs) (*Manifest, error) {
 	m.repositories = content.Templates.Repositories
 
 	// Set records
-	if err := m.records.SetRecords(content.records()); err != nil {
+	if err := m.records.SetRecords(content.records()); err != nil && !ignoreErrors {
 		return nil, fmt.Errorf(`cannot load manifest: %w`, err)
 	}
 

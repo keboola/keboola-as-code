@@ -27,7 +27,7 @@ func UseCommand(depsProvider dependencies.Provider) *cobra.Command {
 			}
 
 			// Load project
-			project, err := d.LocalProject()
+			project, err := d.LocalProject(false)
 			if err != nil {
 				return err
 			}

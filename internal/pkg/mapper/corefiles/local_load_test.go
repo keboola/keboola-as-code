@@ -77,7 +77,7 @@ func TestLoadCoreFiles_SkipChildrenLoadIfParentIsInvalid(t *testing.T) {
 		},
 	}
 	configManifest := &model.ConfigManifestWithRows{
-		ConfigManifest: &model.ConfigManifest{
+		ConfigManifest: model.ConfigManifest{
 			ConfigKey: model.ConfigKey{BranchId: 123, ComponentId: `foo.bar`, Id: `456`},
 			Paths: model.Paths{
 				AbsPath: model.NewAbsPath(`main`, `config`),

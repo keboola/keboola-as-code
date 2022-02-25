@@ -30,7 +30,7 @@ type dependencies interface {
 	StorageApi() (*storageapi.Api, error)
 	SchedulerApi() (*schedulerapi.Api, error)
 	EmptyDir() (filesystem.Fs, error)
-	LocalProject() (*project.Project, error)
+	LocalProject(ignoreErrors bool) (*project.Project, error)
 	ProjectState(loadOptions loadState.Options) (*project.State, error)
 }
 

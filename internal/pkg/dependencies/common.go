@@ -74,7 +74,7 @@ func (c *common) StorageApi() (*storageapi.Api, error) {
 
 		// Token and manifest project ID must be same
 		if c.LocalProjectExists() {
-			prj, err := c.LocalProject()
+			prj, err := c.LocalProject(false)
 			if err != nil {
 				return nil, err
 			}

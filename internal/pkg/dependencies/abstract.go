@@ -58,7 +58,7 @@ type CommonDeps interface {
 	TemplateState(options loadStateOp.Options) (*template.State, error)
 	TemplateRepository(definition model.TemplateRepository, forTemplate model.TemplateRef) (*repository.Repository, error)
 	EmptyDir() (filesystem.Fs, error)
-	LocalProject() (*project.Project, error)
+	LocalProject(ignoreErrors bool) (*project.Project, error)
 	LocalProjectExists() bool
 	LocalTemplate() (*template.Template, error)
 	LocalTemplateExists() bool

@@ -84,7 +84,7 @@ type ConfigRowManifest struct {
 }
 
 type ConfigManifestWithRows struct {
-	*ConfigManifest
+	ConfigManifest
 	Rows []*ConfigRowManifest `json:"rows"`
 }
 
