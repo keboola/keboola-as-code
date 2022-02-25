@@ -141,7 +141,14 @@ func (d *useTmplDialog) askInput(inputDef input.Input) error {
 			Default: cast.ToString(inputDef.Default),
 			Hidden:  inputDef.Kind == input.KindHidden,
 		}
-		value, _ := d.Ask(question)
+
+		var value string
+		if inputDef.Kind == input.KindTextarea {
+			value, _ = d.Editor("txt", question)
+		} else {
+			value, _ = d.Ask(question)
+		}
+
 		// Save value
 		if err := d.addInputValue(value, inputDef); err != nil {
 			return err
