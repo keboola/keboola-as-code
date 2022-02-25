@@ -70,7 +70,7 @@ func (v *cliDeps) ApiVerboseLogs() bool {
 func (v *cliDeps) StorageApiHost() (string, error) {
 	var host string
 	if v._all.LocalProjectExists() {
-		if prj, err := v._all.LocalProject(); err == nil {
+		if prj, err := v._all.LocalProject(false); err == nil {
 			host = prj.ProjectManifest().ApiHost()
 		} else {
 			return "", err

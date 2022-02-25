@@ -41,7 +41,7 @@ func TestLoadState(t *testing.T) {
 	d.InitFromTestProject(testProject)
 	d.SetFs(fs)
 	d.SetProject(project.New(d.Fs(), m, d))
-	prj, err := d.LocalProject()
+	prj, err := d.LocalProject(false)
 	assert.NoError(t, err)
 
 	// Load
@@ -170,7 +170,7 @@ func loadTestManifest(t *testing.T, envs *env.Map, localState string) (*projectM
 	testhelper.ReplaceEnvsDir(fs, `/`, envs)
 
 	// Load manifest
-	m, err := projectManifest.Load(fs)
+	m, err := projectManifest.Load(fs, false)
 	assert.NoError(t, err)
 
 	return m, fs

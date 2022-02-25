@@ -22,16 +22,16 @@ func PullCommand(depsProvider dependencies.Provider) *cobra.Command {
 			start := time.Now()
 			logger := d.Logger()
 
-			// Project is required
-			if _, err := d.LocalProject(); err != nil {
-				return err
-			}
-
 			// Options
 			options := pull.Options{
 				DryRun:            d.Options().GetBool(`dry-run`),
 				Force:             d.Options().GetBool(`force`),
 				LogUntrackedPaths: true,
+			}
+
+			// Project is required
+			if _, err := d.LocalProject(options.Force); err != nil {
+				return err
 			}
 
 			// Send cmd successful/failed event

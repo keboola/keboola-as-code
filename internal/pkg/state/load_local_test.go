@@ -264,7 +264,7 @@ func loadLocalTestState(t *testing.T, m *manifest.Manifest, fs filesystem.Fs) (*
 	httpTransport.RegisterResponder("GET", `=~/storage/components/keboola.ex-db-mysql`, getMySqlExResponder)
 
 	// Load state
-	prj, err := d.LocalProject()
+	prj, err := d.LocalProject(false)
 	assert.NoError(t, err)
 	state, err := New(prj, d)
 	assert.NoError(t, err)
@@ -295,7 +295,7 @@ func loadManifest(t *testing.T, projectDirName string) (*manifest.Manifest, file
 	testhelper.ReplaceEnvsDir(fs, `/`, envs)
 
 	// Load manifest
-	m, err := manifest.Load(fs)
+	m, err := manifest.Load(fs, false)
 	if err != nil {
 		assert.FailNow(t, err.Error())
 	}

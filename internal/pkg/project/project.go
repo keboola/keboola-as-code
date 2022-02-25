@@ -16,8 +16,8 @@ import (
 
 type Manifest = projectManifest.Manifest
 
-func LoadManifest(fs filesystem.Fs) (*Manifest, error) {
-	return projectManifest.Load(fs)
+func LoadManifest(fs filesystem.Fs, ignoreErrors bool) (*Manifest, error) {
+	return projectManifest.Load(fs, ignoreErrors)
 }
 
 type dependencies interface {

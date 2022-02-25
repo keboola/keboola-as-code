@@ -17,7 +17,7 @@ var (
 	ErrExpectedProjectFoundTemplate   = fmt.Errorf("project manifest not found, found template manifest")
 )
 
-func (c *common) LocalProject() (*project.Project, error) {
+func (c *common) LocalProject(ignoreErrors bool) (*project.Project, error) {
 	if c.project == nil {
 		// Project dir
 		projectDir, err := c.ProjectDir()
@@ -26,7 +26,8 @@ func (c *common) LocalProject() (*project.Project, error) {
 		}
 
 		// Project manifest
-		manifest, err := loadProjectManifest.Run(c)
+		options := loadProjectManifest.Options{IgnoreErrors: ignoreErrors}
+		manifest, err := loadProjectManifest.Run(options, c)
 		if err != nil {
 			return nil, err
 		}
@@ -39,7 +40,7 @@ func (c *common) LocalProject() (*project.Project, error) {
 func (c *common) ProjectState(loadOptions loadState.Options) (*project.State, error) {
 	if c.projectState == nil {
 		// Get project
-		prj, err := c.LocalProject()
+		prj, err := c.LocalProject(false)
 		if err != nil {
 			return nil, err
 		}

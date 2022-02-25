@@ -20,7 +20,7 @@ func CreateCommand(depsProvider dependencies.Provider) *cobra.Command {
 			d := depsProvider.Dependencies()
 
 			// Project is required
-			if _, err := d.LocalProject(); err != nil {
+			if _, err := d.LocalProject(false); err != nil {
 				return err
 			}
 
@@ -51,7 +51,7 @@ func CreateConfigCommand(depsProvider dependencies.Provider) *cobra.Command {
 			d := depsProvider.Dependencies()
 
 			// Project is required
-			if _, err := d.LocalProject(); err != nil {
+			if _, err := d.LocalProject(false); err != nil {
 				return err
 			}
 
@@ -83,7 +83,7 @@ func CreateRowCommand(depsProvider dependencies.Provider) *cobra.Command {
 			d := depsProvider.Dependencies()
 
 			// Project is required
-			if _, err := d.LocalProject(); err != nil {
+			if _, err := d.LocalProject(false); err != nil {
 				return err
 			}
 

@@ -449,7 +449,7 @@ func loadRemoteState(t *testing.T, m *manifest.Manifest, projectStateFile string
 	d := testdeps.New()
 	d.SetProject(project.New(d.Fs(), m, d))
 	d.InitFromTestProject(testProject)
-	prj, err := d.LocalProject()
+	prj, err := d.LocalProject(false)
 	assert.NoError(t, err)
 
 	state, err := New(prj, d)

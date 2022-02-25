@@ -10,7 +10,7 @@ import (
 type dependencies interface {
 	Logger() log.Logger
 	BasePath() string
-	LocalProject() (*project.Project, error)
+	LocalProject(ignoreErrors bool) (*project.Project, error)
 	LocalProjectExists() bool
 	LocalTemplate() (*template.Template, error)
 	LocalTemplateExists() bool
@@ -22,7 +22,7 @@ func Run(d dependencies) (err error) {
 	logger := d.Logger()
 
 	if d.LocalProjectExists() {
-		prj, err := d.LocalProject()
+		prj, err := d.LocalProject(false)
 		if err != nil {
 			return err
 		}
