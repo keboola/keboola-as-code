@@ -49,18 +49,6 @@
       "id": "%%TEST_BRANCH_MAIN_CONFIG_WITH_VARIABLES_2_ID%%",
       "path": "extractor/ex-generic-v2/with-variables-2",
       "rows": []
-    },
-    {
-      "branchId": %%TEST_BRANCH_MAIN_ID%%,
-      "componentId": "keboola.variables",
-      "id": "%%TEST_BRANCH_MAIN_CONFIG_VARIABLES_ID%%",
-      "path": "other/keboola.variables/variables",
-      "rows": [
-        {
-          "id": "%%TEST_BRANCH_MAIN_CONFIG_VARIABLES_ROW_DEFAULT_VALUES_ID%%",
-          "path": "values/default-values"
-        }
-      ]
     }
   ]
 }
