@@ -69,7 +69,7 @@ func loadFile(fs filesystem.Fs) (*file, error) {
 
 	// Validate
 	if err := content.validate(); err != nil {
-		return nil, err
+		return content, err
 	}
 
 	return content, nil
