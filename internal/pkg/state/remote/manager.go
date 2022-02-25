@@ -343,6 +343,7 @@ func (u *UnitOfWork) createRequest(objectState model.ObjectState, object model.O
 					if r, err := u.updateRequest(objectState, object, recipe, nil); err != nil {
 						response.SetErr(err)
 					} else {
+						response.SetErr(nil)
 						response.WaitFor(r)
 						r.Send()
 					}
