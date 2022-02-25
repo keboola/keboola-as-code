@@ -1,7 +1,6 @@
 package local
 
 import (
-	"fmt"
 	"io/fs"
 	"sort"
 	"strings"
@@ -106,9 +105,13 @@ func (m *Manager) deleteObject(objectManifest model.ObjectManifest) error {
 	// Remove manifest from manifest content
 	m.manifest.Delete(objectManifest)
 
-	// Remove dir
-	if err := m.fs.Remove(objectManifest.Path()); err != nil {
-		errors.Append(utils.PrefixError(fmt.Sprintf(`cannot delete directory "%s"`, objectManifest.Path()), err))
+	// Remove all related files
+	for _, path := range objectManifest.GetRelatedPaths() {
+		if m.fs.IsFile(path) {
+			if err := m.fs.Remove(path); err != nil {
+				errors.Append(err)
+			}
+		}
 	}
 
 	return errors.ErrorOrNil()
