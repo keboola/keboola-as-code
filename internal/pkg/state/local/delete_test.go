@@ -38,6 +38,8 @@ func TestLocalDeleteModel(t *testing.T) {
 	assert.NoError(t, fs.Mkdir(dirPath))
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(metaFilePath, metaFile)))
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(configFilePath, configFile)))
+	record.AddRelatedPath(metaFilePath)
+	record.AddRelatedPath(configFilePath)
 
 	// Delete
 	assert.NoError(t, manager.deleteObject(record))
@@ -47,7 +49,7 @@ func TestLocalDeleteModel(t *testing.T) {
 	assert.False(t, found)
 	assert.False(t, fs.Exists(metaFilePath))
 	assert.False(t, fs.Exists(configFilePath))
-	assert.False(t, fs.Exists(dirPath))
+	assert.True(t, fs.Exists(dirPath)) // all empty directories are deleted at the end of delete operation
 }
 
 func TestDeleteEmptyDirectories(t *testing.T) {
