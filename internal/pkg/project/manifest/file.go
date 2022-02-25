@@ -106,7 +106,7 @@ func (c *file) records() []model.ObjectManifest {
 		out = append(out, branch)
 	}
 	for _, config := range c.Configs {
-		out = append(out, config.ConfigManifest)
+		out = append(out, &config.ConfigManifest)
 		for _, row := range config.Rows {
 			row.BranchId = config.BranchId
 			row.ComponentId = config.ComponentId
@@ -144,7 +144,7 @@ func (c *file) setRecords(records []model.ObjectManifest) {
 			_, found := branchesMap[v.BranchKey().String()]
 			if found {
 				config := &model.ConfigManifestWithRows{
-					ConfigManifest: v,
+					ConfigManifest: *v,
 					Rows:           make([]*model.ConfigRowManifest, 0),
 				}
 				configsMap[config.String()] = config

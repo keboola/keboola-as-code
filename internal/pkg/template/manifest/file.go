@@ -93,7 +93,7 @@ func (f *file) validate() error {
 func (f *file) records() []model.ObjectManifest {
 	var out []model.ObjectManifest
 	for _, config := range f.Configs {
-		out = append(out, config.ConfigManifest)
+		out = append(out, &config.ConfigManifest)
 		for _, row := range config.Rows {
 			row.ComponentId = config.ComponentId
 			row.ConfigId = config.Id
@@ -125,7 +125,7 @@ func (f *file) setRecords(records []model.ObjectManifest) {
 			panic(fmt.Errorf(`found unexpected BranchManifest in template manifest`))
 		case *model.ConfigManifest:
 			config := &model.ConfigManifestWithRows{
-				ConfigManifest: v,
+				ConfigManifest: *v,
 				Rows:           make([]*model.ConfigRowManifest, 0),
 			}
 			configsMap[config.String()] = config
