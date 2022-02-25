@@ -99,7 +99,15 @@ func (p *Pool) StartAndWait() error {
 func (p *Pool) wait() error {
 	defer close(p.responsesChan)
 	defer close(p.requestsChan)
-	return p.workers.Wait()
+	defer func() { p.finished = true }()
+	if err := p.workers.Wait(); err != nil {
+		p.log("stopped on error: %s | %s", err, time.Since(p.startTime))
+		return err
+	}
+	if p.requestsSentCount.Get() > 0 {
+		p.log("all done | %s", time.Since(p.startTime))
+	}
+	return nil
 }
 
 func (p *Pool) start() {
@@ -110,14 +118,10 @@ func (p *Pool) start() {
 	p.started = true
 	p.startTime = time.Now()
 
-	// Work is done -> all responses are processed
+	// Work is done -> all responses are processed -> close goroutines
 	go func() {
-		defer close(p.doneChan)
 		p.activeRequests.Wait()
-		if p.requestsSentCount.Get() > 0 {
-			p.log("all done | %s", time.Since(p.startTime))
-		}
-		p.finished = true
+		close(p.doneChan)
 	}()
 
 	// Start senders
