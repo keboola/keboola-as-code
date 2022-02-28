@@ -69,6 +69,20 @@
           "path": "rows/users"
         }
       ]
+    },
+    {
+      "branchId": %%TEST_BRANCH_MAIN_ID%%,
+      "componentId": "keboola.orchestrator",
+      "id": "567",
+      "path": "other/keboola.orchestrator/orchestrator",
+      "rows": []
+    },
+    {
+      "branchId": %%TEST_BRANCH_MAIN_ID%%,
+      "componentId": "keboola.snowflake-transformation",
+      "id": "678",
+      "path": "transformation/keboola.snowflake-transformation/snowflake-transformation",
+      "rows": []
     }
   ]
 }
