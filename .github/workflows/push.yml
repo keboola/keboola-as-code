@@ -52,6 +52,14 @@ env:
 
   DIST_BASE_URL: "https://keboola-as-code-dist.s3.amazonaws.com"
 
+  SERVICE_IMAGE_NAME: "keboola/keboola-as-code-service"
+  SERVICE_ECR_REPOSITORY: "keboola/templates-api"
+  SERVICE_ACR_REPOSITORY: "templates-api"
+  SERVICE_ACR_REGISTRY: "keboola.azurecr.io"
+  SERVICE_ACR_USERNAME: "templates-api-push"
+  SERVICE_ECR_PUSH_ROLE: "arn:aws:iam::968984773589:role/kbc-ecr-TemplatesApiPushRole-1HHHR3LGXWRZN"
+  SERVICE_ECR_REGION: "us-east-1"
+
 jobs:
   set-version:
     runs-on: ubuntu-latest
@@ -305,7 +313,7 @@ jobs:
           "${MSBUILD_PATH}\MSBuild.exe" ./build/package/windows/msi.wixproj -p:SourceDir="$PWD" -p:OutputPath="./msi" -p:OutputName="$filename" -p:ProductVersion="${VERSION}"
           echo "::set-output name=msi_file::${filename}.msi"
           aws s3 cp "./build/package/windows/msi/${filename}.msi" s3://${AWS_BUCKET_NAME}/msi/
-          
+
           choco install checksum
           checksum=$(checksum -t=sha256 -f="./build/package/windows/msi/${filename}.msi")
           echo "::set-output name=msi_checksum::${checksum}"
@@ -519,3 +527,55 @@ jobs:
           If (-Not (kbc --version | Select-String -Quiet "Version:    $($env:VERSION)")) { throw "kbc command not installed properly" }
         env:
           VERSION: ${{ needs.set-version.outputs.version }}
+
+  build-and-push-service:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    needs:
+      - set-version
+      - release
+    if: startsWith(github.ref, 'refs/tags/') && needs.set-version.outputs.is_semantic_tag == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      -
+        name: Build image
+        uses: docker/build-push-action@v2
+        env:
+          VERSION: ${{ needs.set-version.outputs.version }}
+        with:
+          load: true
+          tags: ${{ env.SERVICE_IMAGE_NAME }}:${{ env.VERSION }}
+          file: Dockerfile-service
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ env.SERVICE_ECR_PUSH_ROLE }}
+          aws-region: ${{ env.SERVICE_ECR_REGION }}
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+      - name: Push image to Amazon ECR
+        env:
+          SERVICE_ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          VERSION: ${{ needs.set-version.outputs.version }}
+        run: |
+          docker tag $SERVICE_IMAGE_NAME:$VERSION $SERVICE_ECR_REGISTRY/$SERVICE_ECR_REPOSITORY:$VERSION
+          docker push $SERVICE_ECR_REGISTRY/$SERVICE_ECR_REPOSITORY:$VERSION
+      - name: Login to ACR
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ env.SERVICE_ACR_REGISTRY }}
+          username: ${{ env.SERVICE_ACR_USERNAME }}
+          password: ${{ secrets.SERVICE_ACR_PASSWORD }}
+      - name: Push image to ACR
+        env:
+          VERSION: ${{ needs.set-version.outputs.version }}
+        run: |
+          docker tag $SERVICE_IMAGE_NAME:$VERSION $SERVICE_ACR_REGISTRY/$SERVICE_ACR_REPOSITORY:$VERSION
+          docker push $SERVICE_ACR_REGISTRY/$SERVICE_ACR_REPOSITORY:$VERSION
