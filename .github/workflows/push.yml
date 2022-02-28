@@ -410,7 +410,7 @@ jobs:
         run: |
           curl -kLSs https://aka.ms/wingetcreate/latest -o wingetcreate.exe
           msiUrl="${DIST_BASE_URL}/msi/${MSI_FILE}"
-          ./wingetcreate.exe update -v $VERSION -u $msiUrl -t $GITHUB_TOKEN Keboola.KeboolaCLI
+          ./wingetcreate.exe update -v $VERSION -u $msiUrl -t $GITHUB_TOKEN Keboola.KeboolaCLI -s
 
   test-install-linux:
     needs:
