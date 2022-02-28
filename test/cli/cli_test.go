@@ -1,5 +1,5 @@
 //nolint:forbidigo
-package test
+package cli
 
 import (
 	"bytes"
