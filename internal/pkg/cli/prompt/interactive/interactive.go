@@ -153,7 +153,7 @@ func (p *Prompt) SelectIndex(s *prompt.SelectIndex) (index int, ok bool) {
 
 	question := &survey.Select{Message: formatLabel(s.Label), Help: s.Help, Options: s.Options}
 	if s.UseDefault {
-		question.Default = s.Default
+		question.Default = s.Options[s.Default]
 	}
 
 	err := survey.AskOne(question, &index, opts...)
