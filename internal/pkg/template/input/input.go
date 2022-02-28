@@ -95,3 +95,10 @@ func (i Input) Available(params map[string]interface{}) (bool, error) {
 	}
 	return result, nil
 }
+
+func (i Input) DefaultOrEmpty() interface{} {
+	if i.Default != nil {
+		return i.Default
+	}
+	return i.Type.EmptyValue()
+}

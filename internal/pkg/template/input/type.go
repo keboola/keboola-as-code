@@ -49,6 +49,24 @@ func (t Type) IsValid() bool {
 	return false
 }
 
+// EmptyValue returns empty value for the type.
+func (t Type) EmptyValue() interface{} {
+	switch t {
+	case TypeString:
+		return ""
+	case TypeInt:
+		return 0
+	case TypeDouble:
+		return 0.0
+	case TypeBool:
+		return false
+	case TypeStringArray:
+		return []interface{}{}
+	default:
+		panic(fmt.Errorf(`unexpected input type "%s"`, t))
+	}
+}
+
 // ValidateValue user input or defined default value.
 func (t Type) ValidateValue(value reflect.Value) error {
 	valueKind := value.Kind()

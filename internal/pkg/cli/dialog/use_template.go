@@ -85,7 +85,7 @@ func (d *useTmplDialog) ask(inputs *input.Inputs) (useTemplate.Options, error) {
 }
 
 // addInputValue from CLI dialog or inputs file.
-func (d *useTmplDialog) addInputValue(value interface{}, inputDef input.Input) error {
+func (d *useTmplDialog) addInputValue(value interface{}, inputDef input.Input, validate bool) error {
 	// Convert
 	value, err := inputDef.Type.ParseValue(value)
 	if err != nil {
@@ -93,8 +93,10 @@ func (d *useTmplDialog) addInputValue(value interface{}, inputDef input.Input) e
 	}
 
 	// Validate
-	if err := inputDef.ValidateUserInput(value, d.context); err != nil {
-		return fmt.Errorf("invalid template input: %w", err)
+	if validate {
+		if err := inputDef.ValidateUserInput(value, d.context); err != nil {
+			return fmt.Errorf("invalid template input: %w", err)
+		}
 	}
 
 	// Add
@@ -109,6 +111,10 @@ func (d *useTmplDialog) askInputs(inputs *input.Inputs) error {
 		if result, err := inputDef.Available(d.inputsValues); err != nil {
 			return err
 		} else if !result {
+			// Input is hidden, add default/empty value
+			if err := d.addInputValue(inputDef.DefaultOrEmpty(), inputDef, false); err != nil {
+				return err
+			}
 			continue
 		}
 		if err := d.askInput(inputDef); err != nil {
@@ -122,7 +128,7 @@ func (d *useTmplDialog) askInput(inputDef input.Input) error {
 	// Use value from the inputs file, if it is present
 	if v, found := d.inputsFile[inputDef.Id]; found {
 		// Validate and save
-		return d.addInputValue(v, inputDef)
+		return d.addInputValue(v, inputDef, true)
 	}
 
 	// Ask for input
@@ -150,7 +156,7 @@ func (d *useTmplDialog) askInput(inputDef input.Input) error {
 		}
 
 		// Save value
-		if err := d.addInputValue(value, inputDef); err != nil {
+		if err := d.addInputValue(value, inputDef, true); err != nil {
 			return err
 		}
 	case input.KindConfirm:
@@ -159,7 +165,7 @@ func (d *useTmplDialog) askInput(inputDef input.Input) error {
 			Description: inputDef.Description,
 		}
 		confirm.Default, _ = inputDef.Default.(bool)
-		return d.addInputValue(d.Confirm(confirm), inputDef)
+		return d.addInputValue(d.Confirm(confirm), inputDef, true)
 	case input.KindSelect:
 		selectPrompt := &prompt.SelectIndex{
 			Label:       inputDef.Name,
@@ -177,7 +183,7 @@ func (d *useTmplDialog) askInput(inputDef input.Input) error {
 			}
 		}
 		selectedIndex, _ := d.SelectIndex(selectPrompt)
-		return d.addInputValue(inputDef.Options[selectedIndex].Id, inputDef)
+		return d.addInputValue(inputDef.Options[selectedIndex].Id, inputDef, true)
 	case input.KindMultiSelect:
 		multiSelect := &prompt.MultiSelectIndex{
 			Label:       inputDef.Name,
@@ -209,7 +215,7 @@ func (d *useTmplDialog) askInput(inputDef input.Input) error {
 			selectedValues = append(selectedValues, inputDef.Options[selectedIndex].Id)
 		}
 		// Save value
-		return d.addInputValue(selectedValues, inputDef)
+		return d.addInputValue(selectedValues, inputDef, true)
 	}
 
 	return nil

@@ -130,3 +130,24 @@ func TestType_ParseValue(t *testing.T) {
 		}
 	}
 }
+
+func TestType_EmptyValue(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		t      Type
+		output interface{}
+	}{
+		{TypeInt, 0},
+		{TypeDouble, 0.0},
+		{TypeBool, false},
+		{TypeString, ""},
+		{TypeStringArray, []interface{}{}},
+	}
+
+	// Assert
+	for i, c := range cases {
+		desc := fmt.Sprintf("case %d", i)
+		actual := c.t.EmptyValue()
+		assert.Equal(t, c.output, actual, desc)
+	}
+}
