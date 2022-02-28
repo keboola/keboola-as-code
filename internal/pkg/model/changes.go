@@ -113,21 +113,11 @@ func (c *LocalChanges) AddRenamed(actions ...RenameAction) {
 }
 
 func (c *LocalChanges) Replace(callback ChangesReplaceFunc) {
-	for i, v := range c.loaded {
-		c.loaded[i] = callback(v)
-	}
-	for i, v := range c.persisted {
-		c.persisted[i] = callback(v)
-	}
-	for i, v := range c.created {
-		c.created[i] = callback(v)
-	}
-	for i, v := range c.updated {
-		c.updated[i] = callback(v)
-	}
-	for i, v := range c.saved {
-		c.saved[i] = callback(v)
-	}
+	c.loaded = replaceObjects(c.loaded, callback)
+	c.persisted = replaceObjects(c.persisted, callback)
+	c.created = replaceObjects(c.created, callback)
+	c.updated = replaceObjects(c.updated, callback)
+	c.saved = replaceObjects(c.saved, callback)
 }
 
 // Empty returns true if there are no changes.
@@ -187,19 +177,21 @@ func (c *RemoteChanges) AddDeleted(objectState ...ObjectState) {
 }
 
 func (c *RemoteChanges) Replace(callback ChangesReplaceFunc) {
-	for i, v := range c.loaded {
-		c.loaded[i] = callback(v)
+	c.loaded = replaceObjects(c.loaded, callback)
+	c.created = replaceObjects(c.created, callback)
+	c.updated = replaceObjects(c.updated, callback)
+	c.saved = replaceObjects(c.saved, callback)
+	c.deleted = replaceObjects(c.deleted, callback)
+}
+
+// replaceObjects replaces value by callback, nil value is ignored.
+func replaceObjects(in []ObjectState, callback ChangesReplaceFunc) []ObjectState {
+	var out []ObjectState
+	for _, oldValue := range in {
+		// Skip nil
+		if newValue := callback(oldValue); newValue != nil {
+			out = append(out, newValue)
+		}
 	}
-	for i, v := range c.created {
-		c.created[i] = callback(v)
-	}
-	for i, v := range c.updated {
-		c.updated[i] = callback(v)
-	}
-	for i, v := range c.saved {
-		c.saved[i] = callback(v)
-	}
-	for i, v := range c.deleted {
-		c.deleted[i] = callback(v)
-	}
+	return out
 }

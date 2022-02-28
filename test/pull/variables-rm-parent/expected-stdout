@@ -1,10 +1,8 @@
 Plan for "pull" operation:
   × C my-branch/transformation/keboola.snowflake-transformation/snowflake-transformation
-  * C my-branch/transformation/keboola.snowflake-transformation/snowflake-transformation/variables | changed: relations
-  * R my-branch/transformation/keboola.snowflake-transformation/snowflake-transformation/variables/values/default | changed: relations
+  × C my-branch/transformation/keboola.snowflake-transformation/snowflake-transformation/variables
+  × R my-branch/transformation/keboola.snowflake-transformation/snowflake-transformation/variables/values/default
 Plan for "rename" operation:
   - my-branch -> main
-  - main/{transformation/keboola.snowflake-transformation/snowflake-transformation/variables -> other/keboola.variables/variables}
-  - main/other/keboola.variables/variables/values/{default -> default-values}
 Rename done.
 Pull done.

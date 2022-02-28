@@ -2,6 +2,4 @@ Plan for "pull" operation:
   + B main
   + C main/extractor/ex-generic-v2/with-variables-1
   + C main/extractor/ex-generic-v2/with-variables-2
-  + C main/other/keboola.variables/variables
-  + R main/other/keboola.variables/variables/values/default-values
 Pull done.

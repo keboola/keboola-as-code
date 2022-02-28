@@ -1,8 +1,0 @@
-{
-  "variables": [
-    {
-      "name": "foo",
-      "type": "string"
-    }
-  ]
-}

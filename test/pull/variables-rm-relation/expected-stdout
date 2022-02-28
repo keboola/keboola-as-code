@@ -1,9 +1,7 @@
 Plan for "pull" operation:
-  * C my-branch/extractor/ex-generic-v2/empty/variables | changed: relations
-  * R my-branch/extractor/ex-generic-v2/empty/variables/values/default | changed: relations
+  × C my-branch/extractor/ex-generic-v2/empty/variables
+  × R my-branch/extractor/ex-generic-v2/empty/variables/values/default
 Plan for "rename" operation:
   - my-branch -> main
-  - main/{extractor/ex-generic-v2/empty/variables -> other/keboola.variables/variables}
-  - main/other/keboola.variables/variables/values/{default -> default-values}
 Rename done.
 Pull done.
