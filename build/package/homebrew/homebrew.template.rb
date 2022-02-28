@@ -2,6 +2,7 @@ class KeboolaCli < Formula
   desc "Keboola CLI tool"
   homepage "https://cli.keboola.com"
   license "MIT"
+  version "${VERSION}"
 
   if OS.mac? && Hardware::CPU.arm?
     url "https://cli-dist.keboola.com/zip/keboola-cli_${VERSION}_darwin_arm64.zip"
