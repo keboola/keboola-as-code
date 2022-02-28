@@ -1,5 +1,5 @@
 //nolint:forbidigo
-package test
+package cli
 
 import (
 	"bytes"
@@ -53,8 +53,8 @@ func (p *envTicketProvider) MustGet(key string) string {
 	return p.envs.MustGet(key)
 }
 
-// TestFunctional runs one functional test per each sub-directory.
-func TestFunctional(t *testing.T) {
+// TestCliE2E runs one functional test per each sub-directory.
+func TestCliE2E(t *testing.T) {
 	t.Parallel()
 
 	// Create temp dir
@@ -63,7 +63,7 @@ func TestFunctional(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Compile binary, it will be run in the tests
-	projectDir := filepath.Join(rootDir, "..")
+	projectDir := filepath.Join(rootDir, "..", "..")
 	binary := CompileBinary(t, projectDir, tempDir)
 
 	// Clear tests output directory
