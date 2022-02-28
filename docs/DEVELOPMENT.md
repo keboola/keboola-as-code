@@ -35,7 +35,7 @@ docker-compose run --rm -u "$UID:$GID" dev bash
 
 To run the one or more tests via wildcard:
 ```
-./scripts/tests.sh -run "Functional/pull*"
+./scripts/tests.sh -run "CliE2E/pull/.*"
 ```
 
 To run tests in one specific package:

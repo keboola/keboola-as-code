@@ -133,4 +133,4 @@ issues:
     # False positive: https://github.com/kunwardeep/paralleltest/issues/8.
     - linters:
         - paralleltest
-      text: "Range statement for test TestFunctional does not use range value in test Run"
+      text: "Range statement for test TestCliE2E does not use range value in test Run"
