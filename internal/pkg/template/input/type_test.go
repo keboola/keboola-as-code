@@ -114,6 +114,7 @@ func TestType_ParseValue(t *testing.T) {
 		{TypeStringArray, []string{"a", "b"}, []interface{}{"a", "b"}, ""},
 		{TypeStringArray, []interface{}{}, []interface{}{}, ""},
 		{TypeStringArray, []interface{}{"a", "b"}, []interface{}{"a", "b"}, ""},
+		{TypeStringArray, 123, nil, "unexpected type \"int\""},
 	}
 
 	// Assert

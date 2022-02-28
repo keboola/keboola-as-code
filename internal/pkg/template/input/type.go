@@ -188,7 +188,7 @@ func (t Type) ParseValue(value interface{}) (interface{}, error) {
 			}
 			return slice, nil
 		} else {
-			panic(fmt.Errorf("expected a slice, found \"%s\"", t))
+			return nil, fmt.Errorf("unexpected type \"%T\"", value)
 		}
 	}
 	return value, nil
