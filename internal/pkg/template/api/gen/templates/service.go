@@ -3,7 +3,7 @@
 // templates service
 //
 // Command:
-// $ goa gen github.com/keboola/keboola-as-code/design --output
+// $ goa gen github.com/keboola/keboola-as-code/api/templates --output
 // ./internal/pkg/template/api
 
 package templates
@@ -16,6 +16,8 @@ import (
 
 // Service for applying templates to Keboola projects
 type Service interface {
+	// IndexRoot implements index-root.
+	IndexRoot(context.Context) (err error)
 	// Index implements index.
 	IndexEndpoint(context.Context) (res *Index, err error)
 	// HealthCheck implements health-check.
@@ -30,12 +32,14 @@ const ServiceName = "templates"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [2]string{"index", "health-check"}
+var MethodNames = [3]string{"index-root", "index", "health-check"}
 
 // Index is the result type of the templates service index method.
 type Index struct {
-	API           *string
-	Documentation *string
+	// Name of the API
+	API string
+	// Url of the API documentation
+	Documentation string
 }
 
 // NewIndex initializes result type Index from viewed result type Index.
@@ -52,9 +56,12 @@ func NewViewedIndex(res *Index, view string) *templatesviews.Index {
 
 // newIndex converts projected type Index to service type Index.
 func newIndex(vres *templatesviews.IndexView) *Index {
-	res := &Index{
-		API:           vres.API,
-		Documentation: vres.Documentation,
+	res := &Index{}
+	if vres.API != nil {
+		res.API = *vres.API
+	}
+	if vres.Documentation != nil {
+		res.Documentation = *vres.Documentation
 	}
 	return res
 }
@@ -63,8 +70,8 @@ func newIndex(vres *templatesviews.IndexView) *Index {
 // the "default" view.
 func newIndexView(res *Index) *templatesviews.IndexView {
 	vres := &templatesviews.IndexView{
-		API:           res.API,
-		Documentation: res.Documentation,
+		API:           &res.API,
+		Documentation: &res.Documentation,
 	}
 	return vres
 }

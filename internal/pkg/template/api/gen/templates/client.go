@@ -3,7 +3,7 @@
 // templates client
 //
 // Command:
-// $ goa gen github.com/keboola/keboola-as-code/design --output
+// $ goa gen github.com/keboola/keboola-as-code/api/templates --output
 // ./internal/pkg/template/api
 
 package templates
@@ -16,16 +16,24 @@ import (
 
 // Client is the "templates" service client.
 type Client struct {
+	IndexRootEndpoint     goa.Endpoint
 	IndexEndpointEndpoint goa.Endpoint
 	HealthCheckEndpoint   goa.Endpoint
 }
 
 // NewClient initializes a "templates" service client given the endpoints.
-func NewClient(indexEndpoint, healthCheck goa.Endpoint) *Client {
+func NewClient(indexRoot, indexEndpoint, healthCheck goa.Endpoint) *Client {
 	return &Client{
+		IndexRootEndpoint:     indexRoot,
 		IndexEndpointEndpoint: indexEndpoint,
 		HealthCheckEndpoint:   healthCheck,
 	}
+}
+
+// IndexRoot calls the "index-root" endpoint of the "templates" service.
+func (c *Client) IndexRoot(ctx context.Context) (err error) {
+	_, err = c.IndexRootEndpoint(ctx, nil)
+	return
 }
 
 // IndexEndpoint calls the "index" endpoint of the "templates" service.

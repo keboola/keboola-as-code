@@ -6,10 +6,12 @@ set -o nounset          # Disallow expansion of unset variables
 set -o pipefail         # Use last non-zero exit code in a pipeline
 #set -o xtrace          # Trace the execution of the script (debug)
 
+# Change directory to the project root
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-cd "$SCRIPT_DIR"
+cd "$SCRIPT_DIR/.."
+pwd
 
-./install-gotestsum.sh -b $(go env GOPATH)/bin
-./install-goreleaser.sh -b $(go env GOPATH)/bin v0.182.1
-curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.42.1
-go install goa.design/goa/v3/cmd/goa@v3
+goa gen github.com/keboola/keboola-as-code/api/templates --output ./internal/pkg/template/api
+	rm -rf ./internal/pkg/template/api/gen/http/cli
+	rm -rf ./internal/pkg/template/api/gen/http/templates/client
+	mv ./internal/pkg/template/api/gen/http/openapi* ./api/templates/gen

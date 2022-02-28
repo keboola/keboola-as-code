@@ -3,7 +3,7 @@
 // templates HTTP server types
 //
 // Command:
-// $ goa gen github.com/keboola/keboola-as-code/design --output
+// $ goa gen github.com/keboola/keboola-as-code/api/templates --output
 // ./internal/pkg/template/api
 
 package server
@@ -15,16 +15,18 @@ import (
 // IndexResponseBody is the type of the "templates" service "index" endpoint
 // HTTP response body.
 type IndexResponseBody struct {
-	API           *string `form:"api,omitempty" json:"api,omitempty" xml:"api,omitempty"`
-	Documentation *string `form:"documentation,omitempty" json:"documentation,omitempty" xml:"documentation,omitempty"`
+	// Name of the API
+	API string `form:"api" json:"api" xml:"api"`
+	// Url of the API documentation
+	Documentation string `form:"documentation" json:"documentation" xml:"documentation"`
 }
 
 // NewIndexResponseBody builds the HTTP response body from the result of the
 // "index" endpoint of the "templates" service.
 func NewIndexResponseBody(res *templatesviews.IndexView) *IndexResponseBody {
 	body := &IndexResponseBody{
-		API:           res.API,
-		Documentation: res.Documentation,
+		API:           *res.API,
+		Documentation: *res.Documentation,
 	}
 	return body
 }

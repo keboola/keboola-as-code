@@ -3,7 +3,7 @@
 // templates HTTP server encoders and decoders
 //
 // Command:
-// $ goa gen github.com/keboola/keboola-as-code/design --output
+// $ goa gen github.com/keboola/keboola-as-code/api/templates --output
 // ./internal/pkg/template/api
 
 package server

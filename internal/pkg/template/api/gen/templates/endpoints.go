@@ -3,7 +3,7 @@
 // templates endpoints
 //
 // Command:
-// $ goa gen github.com/keboola/keboola-as-code/design --output
+// $ goa gen github.com/keboola/keboola-as-code/api/templates --output
 // ./internal/pkg/template/api
 
 package templates
@@ -16,6 +16,7 @@ import (
 
 // Endpoints wraps the "templates" service endpoints.
 type Endpoints struct {
+	IndexRoot     goa.Endpoint
 	IndexEndpoint goa.Endpoint
 	HealthCheck   goa.Endpoint
 }
@@ -23,6 +24,7 @@ type Endpoints struct {
 // NewEndpoints wraps the methods of the "templates" service with endpoints.
 func NewEndpoints(s Service) *Endpoints {
 	return &Endpoints{
+		IndexRoot:     NewIndexRootEndpoint(s),
 		IndexEndpoint: NewIndexEndpointEndpoint(s),
 		HealthCheck:   NewHealthCheckEndpoint(s),
 	}
@@ -30,8 +32,17 @@ func NewEndpoints(s Service) *Endpoints {
 
 // Use applies the given middleware to all the "templates" service endpoints.
 func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
+	e.IndexRoot = m(e.IndexRoot)
 	e.IndexEndpoint = m(e.IndexEndpoint)
 	e.HealthCheck = m(e.HealthCheck)
+}
+
+// NewIndexRootEndpoint returns an endpoint function that calls the method
+// "index-root" of service "templates".
+func NewIndexRootEndpoint(s Service) goa.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		return nil, s.IndexRoot(ctx)
+	}
 }
 
 // NewIndexEndpointEndpoint returns an endpoint function that calls the method

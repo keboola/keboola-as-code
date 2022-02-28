@@ -3,7 +3,7 @@
 // templates HTTP server
 //
 // Command:
-// $ goa gen github.com/keboola/keboola-as-code/design --output
+// $ goa gen github.com/keboola/keboola-as-code/api/templates --output
 // ./internal/pkg/template/api
 
 package server
@@ -19,10 +19,10 @@ import (
 
 // Server lists the templates service endpoint HTTP handlers.
 type Server struct {
-	Mounts             []*MountPoint
-	IndexEndpoint      http.Handler
-	HealthCheck        http.Handler
-	GenHTTPOpenapiJSON http.Handler
+	Mounts        []*MountPoint
+	IndexRoot     http.Handler
+	IndexEndpoint http.Handler
+	HealthCheck   http.Handler
 }
 
 // ErrorNamer is an interface implemented by generated error structs that
@@ -55,20 +55,16 @@ func New(
 	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
 	errhandler func(context.Context, http.ResponseWriter, error),
 	formatter func(err error) goahttp.Statuser,
-	fileSystemGenHTTPOpenapiJSON http.FileSystem,
 ) *Server {
-	if fileSystemGenHTTPOpenapiJSON == nil {
-		fileSystemGenHTTPOpenapiJSON = http.Dir(".")
-	}
 	return &Server{
 		Mounts: []*MountPoint{
-			{"IndexEndpoint", "GET", "/"},
-			{"HealthCheck", "GET", "/health-check"},
-			{"./gen/http/openapi.json", "GET", "/openapi.json"},
+			{"IndexRoot", "GET", "/"},
+			{"IndexEndpoint", "GET", "/v1"},
+			{"HealthCheck", "GET", "/v1/health-check"},
 		},
-		IndexEndpoint:      NewIndexEndpointHandler(e.IndexEndpoint, mux, decoder, encoder, errhandler, formatter),
-		HealthCheck:        NewHealthCheckHandler(e.HealthCheck, mux, decoder, encoder, errhandler, formatter),
-		GenHTTPOpenapiJSON: http.FileServer(fileSystemGenHTTPOpenapiJSON),
+		IndexRoot:     NewIndexRootHandler(e.IndexRoot, mux, decoder, encoder, errhandler, formatter),
+		IndexEndpoint: NewIndexEndpointHandler(e.IndexEndpoint, mux, decoder, encoder, errhandler, formatter),
+		HealthCheck:   NewHealthCheckHandler(e.HealthCheck, mux, decoder, encoder, errhandler, formatter),
 	}
 }
 
@@ -77,20 +73,51 @@ func (s *Server) Service() string { return "templates" }
 
 // Use wraps the server handlers with the given middleware.
 func (s *Server) Use(m func(http.Handler) http.Handler) {
+	s.IndexRoot = m(s.IndexRoot)
 	s.IndexEndpoint = m(s.IndexEndpoint)
 	s.HealthCheck = m(s.HealthCheck)
 }
 
 // Mount configures the mux to serve the templates endpoints.
 func Mount(mux goahttp.Muxer, h *Server) {
+	MountIndexRootHandler(mux, h.IndexRoot)
 	MountIndexEndpointHandler(mux, h.IndexEndpoint)
 	MountHealthCheckHandler(mux, h.HealthCheck)
-	MountGenHTTPOpenapiJSON(mux, goahttp.Replace("", "/./gen/http/openapi.json", h.GenHTTPOpenapiJSON))
 }
 
 // Mount configures the mux to serve the templates endpoints.
 func (s *Server) Mount(mux goahttp.Muxer) {
 	Mount(mux, s)
+}
+
+// MountIndexRootHandler configures the mux to serve the "templates" service
+// "index-root" endpoint.
+func MountIndexRootHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/", f)
+}
+
+// NewIndexRootHandler creates a HTTP handler which loads the HTTP request and
+// calls the "templates" service "index-root" endpoint.
+func NewIndexRootHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(err error) goahttp.Statuser,
+) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "index-root")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "templates")
+		http.Redirect(w, r, "/v1", http.StatusMovedPermanently)
+	})
 }
 
 // MountIndexEndpointHandler configures the mux to serve the "templates"
@@ -102,7 +129,7 @@ func MountIndexEndpointHandler(mux goahttp.Muxer, h http.Handler) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("GET", "/", f)
+	mux.Handle("GET", "/v1", f)
 }
 
 // NewIndexEndpointHandler creates a HTTP handler which loads the HTTP request
@@ -146,7 +173,7 @@ func MountHealthCheckHandler(mux goahttp.Muxer, h http.Handler) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("GET", "/health-check", f)
+	mux.Handle("GET", "/v1/health-check", f)
 }
 
 // NewHealthCheckHandler creates a HTTP handler which loads the HTTP request
@@ -179,10 +206,4 @@ func NewHealthCheckHandler(
 			errhandler(ctx, w, err)
 		}
 	})
-}
-
-// MountGenHTTPOpenapiJSON configures the mux to serve GET request made to
-// "/openapi.json".
-func MountGenHTTPOpenapiJSON(mux goahttp.Muxer, h http.Handler) {
-	mux.Handle("GET", "/openapi.json", h.ServeHTTP)
 }

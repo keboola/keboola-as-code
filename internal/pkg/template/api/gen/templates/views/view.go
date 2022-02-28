@@ -3,7 +3,7 @@
 // templates views
 //
 // Command:
-// $ goa gen github.com/keboola/keboola-as-code/design --output
+// $ goa gen github.com/keboola/keboola-as-code/api/templates --output
 // ./internal/pkg/template/api
 
 package views
@@ -22,7 +22,9 @@ type Index struct {
 
 // IndexView is a type that runs validations on a projected type.
 type IndexView struct {
-	API           *string
+	// Name of the API
+	API *string
+	// Url of the API documentation
 	Documentation *string
 }
 
@@ -50,6 +52,11 @@ func ValidateIndex(result *Index) (err error) {
 // ValidateIndexView runs the validations defined on IndexView using the
 // "default" view.
 func ValidateIndexView(result *IndexView) (err error) {
-
+	if result.API == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("api", "result"))
+	}
+	if result.Documentation == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("documentation", "result"))
+	}
 	return
 }

@@ -8,10 +8,10 @@ RUN GOOS=linux GOARCH=amd64 go build -v -mod mod -ldflags "-s -w" -o ./templates
 
 FROM scratch
 WORKDIR /app
-COPY --from=buildContainer /go/src/app/templatesapi .
+COPY --from=buildContainer /go/src/app/templatesapi /app/templatesapi
 
 ENV HOST 0.0.0.0
 ENV PORT 8000
 EXPOSE 8000
 
-CMD ["./templatesapi", "--http-port=8000", "--domain=0.0.0.0:8000"]
+CMD ["/app/templatesapi", "--http-port=8000", "--domain=0.0.0.0:8000"]

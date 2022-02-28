@@ -4,9 +4,25 @@ info:
   description: A service for applying templates to Keboola projects
   version: "1.0"
 servers:
-- url: http://localhost:8000
+- url: https://templates.{stack}
+  variables:
+    stack:
+      enum:
+      - keboola.com
+      - eu-central-1.keboola.com
+      - north-europe.azure.keboola.com
+      default: keboola.com
 paths:
   /:
+    get:
+      tags:
+      - templates
+      summary: index-root templates
+      operationId: templates#index-root
+      responses:
+        "301":
+          description: Moved Permanently response.
+  /v1:
     get:
       tags:
       - templates
@@ -20,9 +36,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Index'
               example:
-                api: Corrupti nisi cumque.
-                documentation: Est aliquid nihil praesentium similique autem.
-  /health-check:
+                api: templates
+                documentation: https://templates.keboola.com/v1/documentation
+  /v1/health-check:
     get:
       tags:
       - templates
@@ -31,15 +47,6 @@ paths:
       responses:
         "200":
           description: OK response.
-  /openapi.json:
-    get:
-      tags:
-      - templates
-      summary: Download ./gen/http/openapi.json
-      operationId: templates#/openapi.json
-      responses:
-        "200":
-          description: File downloaded
 components:
   schemas:
     Index:
@@ -47,13 +54,18 @@ components:
       properties:
         api:
           type: string
-          example: Exercitationem assumenda quo quidem sapiente harum consequuntur.
+          description: Name of the API
+          example: templates
         documentation:
           type: string
-          example: Sed dolores sunt dolorem.
+          description: Url of the API documentation
+          example: https://templates.keboola.com/v1/documentation
       example:
-        api: Quas voluptatum.
-        documentation: Eius adipisci possimus dicta.
+        api: templates
+        documentation: https://templates.keboola.com/v1/documentation
+      required:
+      - api
+      - documentation
 tags:
 - name: templates
   description: Service for applying templates to Keboola projects

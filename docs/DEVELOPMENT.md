@@ -69,8 +69,8 @@ API development uses [Goa code generator](https://goa.design/).
 
 When you add REST endpoints or change their behavior:
 
-1. Change the API design first in the [design folder](../design)
-2. Generate the code by running `make api-generate`
+1. Change the API design first in the [api/templates/design.go](../api/templates/design.go)
+2. Generate the code by running `bash scripts/generate-api.sh`
 3. Implement the interfaces generated to [internal/pkg/template/api/gen/templates/service.go](../internal/pkg/template/api/gen/templates/service.go) (The service implementation is then referenced from the [cmd/templates/main.go](../cmd/templates/main.go))
 
 To run the API locally run `docker-compose run --service-ports api`. The API is exposed to http://localhost:8000/

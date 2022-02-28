@@ -53,7 +53,7 @@ func handleHTTPServer(ctx context.Context, u *url.URL, templatesEndpoints *templ
 	)
 	{
 		eh := errorHandler(logger)
-		templatesServer = templatesSvr.New(templatesEndpoints, mux, dec, enc, eh, nil, nil)
+		templatesServer = templatesSvr.New(templatesEndpoints, mux, dec, enc, eh, nil)
 		if debug {
 			servers := goaHTTP.Servers{
 				templatesServer,
