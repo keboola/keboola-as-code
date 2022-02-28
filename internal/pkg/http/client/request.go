@@ -165,14 +165,17 @@ func (r *Request) SetContext(ctx context.Context) *Request {
 	return r
 }
 
-// WaitFor ensures that all remaining listeners will be deferred until subRequest done
+// WaitFor ensures that all main-request listeners which have not yet been executed
+// will be deferred until sub-request will be done.
+// All sub-request listeners defined before calling WaitFor
+// will be executed before main-request listeners.
 // See TestWaitForSubRequest test.
 func (r *Request) WaitFor(subRequest *Request) {
-	// Error from the targetRequest will be set to the parent request, if it is already processed.
-	inheritError := r.IsDone()
-
 	r.lock.Lock()
 	defer r.lock.Unlock()
+
+	// Error from the targetRequest will be set to the parent request, if it is already processed.
+	inheritError := r.done
 
 	// Store sub-request
 	r.waitingFor = append(r.waitingFor, subRequest)

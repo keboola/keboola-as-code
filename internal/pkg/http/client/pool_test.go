@@ -219,9 +219,6 @@ func TestErrorInSubRequest_ParallelRequests(t *testing.T) {
 	request1 := pool.Request(client.NewRequest(resty.MethodGet, "https://example.com"))
 	request2 := pool.Request(client.NewRequest(resty.MethodGet, "https://example.com/error"))
 
-	// Request 1 wait for request 2
-	request1.WaitFor(request2)
-
 	// Register callbacks
 	request1.OnResponse(func(response *Response) {
 		logger.Info("Request1 processed.")
@@ -229,6 +226,9 @@ func TestErrorInSubRequest_ParallelRequests(t *testing.T) {
 	request2.OnResponse(func(response *Response) {
 		logger.Info("Request2 processed.")
 	})
+
+	// Request 1 wait for request 2
+	request1.WaitFor(request2)
 
 	// Send
 	request1.Send()
