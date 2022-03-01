@@ -5,4 +5,6 @@ Plan for "pull" operation:
   × R main/extractor/keboola.ex-db-mysql/with-rows/rows/disabled
   × R main/extractor/keboola.ex-db-mysql/with-rows/rows/test-view
   × R main/extractor/keboola.ex-db-mysql/with-rows/rows/users
+  × C main/other/keboola.orchestrator/orchestrator
+  × C main/transformation/keboola.snowflake-transformation/snowflake-transformation
 Pull done.

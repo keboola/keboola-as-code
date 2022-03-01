@@ -228,6 +228,17 @@ func (l *localLoader) phasesDirs() []string {
 		return nil
 	}
 
+	// Track phases dir
+	l.manifest.AddRelatedPath(l.phasesDir)
+
+	// Track .gitkeep, .gitignore
+	if path := filesystem.Join(l.phasesDir, `.gitkeep`); l.ObjectsRoot().IsFile(path) {
+		l.manifest.AddRelatedPath(path)
+	}
+	if path := filesystem.Join(l.phasesDir, `.gitignore`); l.ObjectsRoot().IsFile(path) {
+		l.manifest.AddRelatedPath(path)
+	}
+
 	// Load all dir entries
 	dirs, err := filesystem.ReadSubDirs(l.ObjectsRoot(), l.phasesDir)
 	if err != nil {

@@ -174,6 +174,14 @@ func (l *localLoader) blockDirs() []string {
 	// Track blocks dir
 	l.ObjectManifest.AddRelatedPath(l.blocksDir)
 
+	// Track .gitkeep, .gitignore
+	if path := filesystem.Join(l.blocksDir, `.gitkeep`); l.ObjectsRoot().IsFile(path) {
+		l.ObjectManifest.AddRelatedPath(path)
+	}
+	if path := filesystem.Join(l.blocksDir, `.gitignore`); l.ObjectsRoot().IsFile(path) {
+		l.ObjectManifest.AddRelatedPath(path)
+	}
+
 	// Load all dir entries
 	dirs, err := filesystem.ReadSubDirs(l.ObjectsRoot(), l.blocksDir)
 	if err != nil {
