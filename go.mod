@@ -33,14 +33,19 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/umisama/go-regexpcache v0.0.0-20150417035358-2444a542492f
 	go.uber.org/zap v1.17.0
-	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
+	goa.design/goa/v3 v3.5.5
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	v.io/x/lib v0.1.9
 )
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/dimfeld/httppath v0.0.0-20170720192232-ee938bf73598 // indirect
+	github.com/dimfeld/httptreemux/v5 v5.4.0 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
+	github.com/google/uuid v1.3.0 // indirect
+	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
@@ -48,21 +53,25 @@ require (
 	github.com/kr/pty v1.1.4 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/magiconair/properties v1.8.1 // indirect
+	github.com/manveru/faker v0.0.0-20171103152722-9fbc68a78c4d // indirect
 	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/mitchellh/mapstructure v1.1.2 // indirect
 	github.com/pelletier/go-toml v1.2.0 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
+	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/spf13/jwalterweatherman v1.0.0 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
+	github.com/zach-klippenstein/goregen v0.0.0-20160303162051-795b5e3961ea // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
-	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4 // indirect
-	golang.org/x/sys v0.0.0-20210806184541-e5e7981a1069 // indirect
-	golang.org/x/term v0.0.0-20210220032956-6a3ed077a48d // indirect
-	golang.org/x/text v0.3.6 // indirect
+	golang.org/x/mod v0.5.1 // indirect
+	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
+	golang.org/x/sys v0.0.0-20220204135822-1c1b9b1eba6a // indirect
+	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
+	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/tools v0.1.9 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	gopkg.in/ini.v1 v1.51.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

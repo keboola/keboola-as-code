@@ -1,0 +1,70 @@
+swagger: "2.0"
+info:
+  title: Templates Service
+  description: A service for applying templates to Keboola projects
+  version: "1.0"
+host: templates.keboola.com
+consumes:
+- application/json
+- application/xml
+- application/gob
+produces:
+- application/json
+- application/xml
+- application/gob
+paths:
+  /:
+    get:
+      tags:
+      - templates
+      summary: index-root templates
+      operationId: templates#index-root
+      responses:
+        "301":
+          description: Moved Permanently response.
+      schemes:
+      - https
+  /v1:
+    get:
+      tags:
+      - templates
+      summary: index templates
+      operationId: templates#index
+      responses:
+        "200":
+          description: OK response.
+          schema:
+            $ref: '#/definitions/TemplatesIndexResponseBody'
+      schemes:
+      - https
+  /v1/health-check:
+    get:
+      tags:
+      - templates
+      summary: health-check templates
+      operationId: templates#health-check
+      responses:
+        "200":
+          description: OK response.
+      schemes:
+      - https
+definitions:
+  TemplatesIndexResponseBody:
+    title: 'Mediatype identifier: application/vnd.templates.index; view=default'
+    type: object
+    properties:
+      api:
+        type: string
+        description: Name of the API
+        example: templates
+      documentation:
+        type: string
+        description: Url of the API documentation
+        example: https://templates.keboola.com/v1/documentation
+    description: IndexResponseBody result type (default view)
+    example:
+      api: templates
+      documentation: https://templates.keboola.com/v1/documentation
+    required:
+    - api
+    - documentation
