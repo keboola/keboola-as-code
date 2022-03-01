@@ -551,7 +551,7 @@ jobs:
         with:
           load: true
           tags: ${{ env.SERVICE_IMAGE_NAME }}:${{ env.VERSION }}
-          file: Dockerfile-service
+          file: Dockerfile-api
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
