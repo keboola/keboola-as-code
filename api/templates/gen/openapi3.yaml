@@ -42,7 +42,7 @@ paths:
     get:
       tags:
       - templates
-      summary: Download gen/openapi.json
+      summary: Swagger 2.0 JSON Specification
       operationId: templates#/v1/documentation/openapi.json
       responses:
         "200":
@@ -51,7 +51,7 @@ paths:
     get:
       tags:
       - templates
-      summary: Download gen/openapi.yaml
+      summary: Swagger 2.0 YAML Specification
       operationId: templates#/v1/documentation/openapi.yaml
       responses:
         "200":
@@ -60,7 +60,7 @@ paths:
     get:
       tags:
       - templates
-      summary: Download gen/openapi3.json
+      summary: OpenAPI 3.0 JSON Specification
       operationId: templates#/v1/documentation/openapi3.json
       responses:
         "200":
@@ -69,7 +69,7 @@ paths:
     get:
       tags:
       - templates
-      summary: Download gen/openapi3.yaml
+      summary: OpenAPI 3.0 YAML Specification
       operationId: templates#/v1/documentation/openapi3.yaml
       responses:
         "200":
