@@ -13,6 +13,7 @@ import (
 	httpMdlwr "goa.design/goa/v3/http/middleware"
 	"goa.design/goa/v3/middleware"
 
+	openapiapi "github.com/keboola/keboola-as-code/api/templates"
 	templatesSvr "github.com/keboola/keboola-as-code/internal/pkg/template/api/gen/http/templates/server"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/api/gen/templates"
 )
@@ -53,7 +54,8 @@ func handleHTTPServer(ctx context.Context, u *url.URL, templatesEndpoints *templ
 	)
 	{
 		eh := errorHandler(logger)
-		templatesServer = templatesSvr.New(templatesEndpoints, mux, dec, enc, eh, nil)
+		docsFS := http.FS(openapiapi.ApiDocsFS)
+		templatesServer = templatesSvr.New(templatesEndpoints, mux, dec, enc, eh, nil, docsFS, docsFS, docsFS, docsFS)
 		if debug {
 			servers := goaHTTP.Servers{
 				templatesServer,

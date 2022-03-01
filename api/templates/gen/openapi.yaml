@@ -37,6 +37,58 @@ paths:
             $ref: '#/definitions/TemplatesIndexResponseBody'
       schemes:
       - https
+  /v1/documentation/openapi.json:
+    get:
+      tags:
+      - templates
+      summary: Swagger 2.0 JSON Specification
+      operationId: templates#/v1/documentation/openapi.json
+      responses:
+        "200":
+          description: File downloaded
+          schema:
+            type: file
+      schemes:
+      - https
+  /v1/documentation/openapi.yaml:
+    get:
+      tags:
+      - templates
+      summary: Swagger 2.0 YAML Specification
+      operationId: templates#/v1/documentation/openapi.yaml
+      responses:
+        "200":
+          description: File downloaded
+          schema:
+            type: file
+      schemes:
+      - https
+  /v1/documentation/openapi3.json:
+    get:
+      tags:
+      - templates
+      summary: OpenAPI 3.0 JSON Specification
+      operationId: templates#/v1/documentation/openapi3.json
+      responses:
+        "200":
+          description: File downloaded
+          schema:
+            type: file
+      schemes:
+      - https
+  /v1/documentation/openapi3.yaml:
+    get:
+      tags:
+      - templates
+      summary: OpenAPI 3.0 YAML Specification
+      operationId: templates#/v1/documentation/openapi3.yaml
+      responses:
+        "200":
+          description: File downloaded
+          schema:
+            type: file
+      schemes:
+      - https
   /v1/health-check:
     get:
       tags:

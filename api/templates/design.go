@@ -64,4 +64,17 @@ var _ = Service("templates", func() {
 			Response(StatusOK)
 		})
 	})
+
+	Files("/documentation/openapi.json", "gen/openapi.json", func() {
+		Meta("swagger:summary", "Swagger 2.0 JSON Specification")
+	})
+	Files("/documentation/openapi.yaml", "gen/openapi.yaml", func() {
+		Meta("swagger:summary", "Swagger 2.0 YAML Specification")
+	})
+	Files("/documentation/openapi3.json", "gen/openapi3.json", func() {
+		Meta("swagger:summary", "OpenAPI 3.0 JSON Specification")
+	})
+	Files("/documentation/openapi3.yaml", "gen/openapi3.yaml", func() {
+		Meta("swagger:summary", "OpenAPI 3.0 YAML Specification")
+	})
 })
