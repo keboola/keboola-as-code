@@ -64,4 +64,9 @@ var _ = Service("templates", func() {
 			Response(StatusOK)
 		})
 	})
+
+	Files("/documentation/openapi.json", "gen/openapi.json")
+	Files("/documentation/openapi.yaml", "gen/openapi.yaml")
+	Files("/documentation/openapi3.json", "gen/openapi3.json")
+	Files("/documentation/openapi3.yaml", "gen/openapi3.yaml")
 })

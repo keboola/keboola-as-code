@@ -19,10 +19,14 @@ import (
 
 // Server lists the templates service endpoint HTTP handlers.
 type Server struct {
-	Mounts        []*MountPoint
-	IndexRoot     http.Handler
-	IndexEndpoint http.Handler
-	HealthCheck   http.Handler
+	Mounts          []*MountPoint
+	IndexRoot       http.Handler
+	IndexEndpoint   http.Handler
+	HealthCheck     http.Handler
+	GenOpenapiJSON  http.Handler
+	GenOpenapiYaml  http.Handler
+	GenOpenapi3JSON http.Handler
+	GenOpenapi3Yaml http.Handler
 }
 
 // ErrorNamer is an interface implemented by generated error structs that
@@ -55,16 +59,40 @@ func New(
 	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
 	errhandler func(context.Context, http.ResponseWriter, error),
 	formatter func(err error) goahttp.Statuser,
+	fileSystemGenOpenapiJSON http.FileSystem,
+	fileSystemGenOpenapiYaml http.FileSystem,
+	fileSystemGenOpenapi3JSON http.FileSystem,
+	fileSystemGenOpenapi3Yaml http.FileSystem,
 ) *Server {
+	if fileSystemGenOpenapiJSON == nil {
+		fileSystemGenOpenapiJSON = http.Dir(".")
+	}
+	if fileSystemGenOpenapiYaml == nil {
+		fileSystemGenOpenapiYaml = http.Dir(".")
+	}
+	if fileSystemGenOpenapi3JSON == nil {
+		fileSystemGenOpenapi3JSON = http.Dir(".")
+	}
+	if fileSystemGenOpenapi3Yaml == nil {
+		fileSystemGenOpenapi3Yaml = http.Dir(".")
+	}
 	return &Server{
 		Mounts: []*MountPoint{
 			{"IndexRoot", "GET", "/"},
 			{"IndexEndpoint", "GET", "/v1"},
 			{"HealthCheck", "GET", "/v1/health-check"},
+			{"gen/openapi.json", "GET", "/v1/documentation/openapi.json"},
+			{"gen/openapi.yaml", "GET", "/v1/documentation/openapi.yaml"},
+			{"gen/openapi3.json", "GET", "/v1/documentation/openapi3.json"},
+			{"gen/openapi3.yaml", "GET", "/v1/documentation/openapi3.yaml"},
 		},
-		IndexRoot:     NewIndexRootHandler(e.IndexRoot, mux, decoder, encoder, errhandler, formatter),
-		IndexEndpoint: NewIndexEndpointHandler(e.IndexEndpoint, mux, decoder, encoder, errhandler, formatter),
-		HealthCheck:   NewHealthCheckHandler(e.HealthCheck, mux, decoder, encoder, errhandler, formatter),
+		IndexRoot:       NewIndexRootHandler(e.IndexRoot, mux, decoder, encoder, errhandler, formatter),
+		IndexEndpoint:   NewIndexEndpointHandler(e.IndexEndpoint, mux, decoder, encoder, errhandler, formatter),
+		HealthCheck:     NewHealthCheckHandler(e.HealthCheck, mux, decoder, encoder, errhandler, formatter),
+		GenOpenapiJSON:  http.FileServer(fileSystemGenOpenapiJSON),
+		GenOpenapiYaml:  http.FileServer(fileSystemGenOpenapiYaml),
+		GenOpenapi3JSON: http.FileServer(fileSystemGenOpenapi3JSON),
+		GenOpenapi3Yaml: http.FileServer(fileSystemGenOpenapi3Yaml),
 	}
 }
 
@@ -83,6 +111,10 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountIndexRootHandler(mux, h.IndexRoot)
 	MountIndexEndpointHandler(mux, h.IndexEndpoint)
 	MountHealthCheckHandler(mux, h.HealthCheck)
+	MountGenOpenapiJSON(mux, goahttp.Replace("", "/gen/openapi.json", h.GenOpenapiJSON))
+	MountGenOpenapiYaml(mux, goahttp.Replace("", "/gen/openapi.yaml", h.GenOpenapiYaml))
+	MountGenOpenapi3JSON(mux, goahttp.Replace("", "/gen/openapi3.json", h.GenOpenapi3JSON))
+	MountGenOpenapi3Yaml(mux, goahttp.Replace("", "/gen/openapi3.yaml", h.GenOpenapi3Yaml))
 }
 
 // Mount configures the mux to serve the templates endpoints.
@@ -206,4 +238,28 @@ func NewHealthCheckHandler(
 			errhandler(ctx, w, err)
 		}
 	})
+}
+
+// MountGenOpenapiJSON configures the mux to serve GET request made to
+// "/v1/documentation/openapi.json".
+func MountGenOpenapiJSON(mux goahttp.Muxer, h http.Handler) {
+	mux.Handle("GET", "/v1/documentation/openapi.json", h.ServeHTTP)
+}
+
+// MountGenOpenapiYaml configures the mux to serve GET request made to
+// "/v1/documentation/openapi.yaml".
+func MountGenOpenapiYaml(mux goahttp.Muxer, h http.Handler) {
+	mux.Handle("GET", "/v1/documentation/openapi.yaml", h.ServeHTTP)
+}
+
+// MountGenOpenapi3JSON configures the mux to serve GET request made to
+// "/v1/documentation/openapi3.json".
+func MountGenOpenapi3JSON(mux goahttp.Muxer, h http.Handler) {
+	mux.Handle("GET", "/v1/documentation/openapi3.json", h.ServeHTTP)
+}
+
+// MountGenOpenapi3Yaml configures the mux to serve GET request made to
+// "/v1/documentation/openapi3.yaml".
+func MountGenOpenapi3Yaml(mux goahttp.Muxer, h http.Handler) {
+	mux.Handle("GET", "/v1/documentation/openapi3.yaml", h.ServeHTTP)
 }

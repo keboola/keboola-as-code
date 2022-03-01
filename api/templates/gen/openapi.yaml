@@ -37,6 +37,58 @@ paths:
             $ref: '#/definitions/TemplatesIndexResponseBody'
       schemes:
       - https
+  /v1/documentation/openapi.json:
+    get:
+      tags:
+      - templates
+      summary: Download gen/openapi.json
+      operationId: templates#/v1/documentation/openapi.json
+      responses:
+        "200":
+          description: File downloaded
+          schema:
+            type: file
+      schemes:
+      - https
+  /v1/documentation/openapi.yaml:
+    get:
+      tags:
+      - templates
+      summary: Download gen/openapi.yaml
+      operationId: templates#/v1/documentation/openapi.yaml
+      responses:
+        "200":
+          description: File downloaded
+          schema:
+            type: file
+      schemes:
+      - https
+  /v1/documentation/openapi3.json:
+    get:
+      tags:
+      - templates
+      summary: Download gen/openapi3.json
+      operationId: templates#/v1/documentation/openapi3.json
+      responses:
+        "200":
+          description: File downloaded
+          schema:
+            type: file
+      schemes:
+      - https
+  /v1/documentation/openapi3.yaml:
+    get:
+      tags:
+      - templates
+      summary: Download gen/openapi3.yaml
+      operationId: templates#/v1/documentation/openapi3.yaml
+      responses:
+        "200":
+          description: File downloaded
+          schema:
+            type: file
+      schemes:
+      - https
   /v1/health-check:
     get:
       tags:

@@ -36,9 +36,3 @@ fix:
 	bash ./scripts/fix.sh
 
 ci: mod lint tests
-
-api-generate:
-	goa gen github.com/keboola/keboola-as-code/design --output ./internal/pkg/template/api
-	rm -rf ./internal/pkg/template/api/gen/http/cli
-	rm -rf ./internal/pkg/template/api/gen/http/templates/client
-	mv ./internal/pkg/template/api/gen/http/openapi* ./api
