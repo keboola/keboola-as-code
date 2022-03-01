@@ -73,7 +73,7 @@ When you add REST endpoints or change their behavior:
 2. Generate the code by running `bash scripts/generate-api.sh`
 3. Implement the interfaces generated to [internal/pkg/template/api/gen/templates/service.go](../internal/pkg/template/api/gen/templates/service.go) (The service implementation is then referenced from the [cmd/templates/main.go](../cmd/templates/main.go))
 
-To run the API locally run `docker-compose run --service-ports api`. The API is exposed to http://localhost:8000/
+To run the API locally run `docker-compose run --service-ports api`. The API is exposed to `http://localhost:8000/`
 
 ### Functional Tests
 
