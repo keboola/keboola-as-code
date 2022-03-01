@@ -52,13 +52,13 @@ env:
 
   DIST_BASE_URL: "https://keboola-as-code-dist.s3.amazonaws.com"
 
-  SERVICE_IMAGE_NAME: "keboola/keboola-as-code-service"
+  SERVICE_IMAGE_NAME: "keboola/templates-api"
   SERVICE_ECR_REPOSITORY: "keboola/templates-api"
+  SERVICE_ECR_PUSH_ROLE: "arn:aws:iam::968984773589:role/kbc-ecr-TemplatesApiPushRole-1HHHR3LGXWRZN"
+  SERVICE_ECR_REGION: "us-east-1"
   SERVICE_ACR_REPOSITORY: "templates-api"
   SERVICE_ACR_REGISTRY: "keboola.azurecr.io"
   SERVICE_ACR_USERNAME: "templates-api-push"
-  SERVICE_ECR_PUSH_ROLE: "arn:aws:iam::968984773589:role/kbc-ecr-TemplatesApiPushRole-1HHHR3LGXWRZN"
-  SERVICE_ECR_REGION: "us-east-1"
 
 jobs:
   set-version:
