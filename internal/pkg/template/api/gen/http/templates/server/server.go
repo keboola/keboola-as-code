@@ -15,6 +15,7 @@ import (
 	templates "github.com/keboola/keboola-as-code/internal/pkg/template/api/gen/templates"
 	goahttp "goa.design/goa/v3/http"
 	goa "goa.design/goa/v3/pkg"
+	"goa.design/plugins/v3/cors"
 )
 
 // Server lists the templates service endpoint HTTP handlers.
@@ -23,6 +24,7 @@ type Server struct {
 	IndexRoot       http.Handler
 	IndexEndpoint   http.Handler
 	HealthCheck     http.Handler
+	CORS            http.Handler
 	GenOpenapiJSON  http.Handler
 	GenOpenapiYaml  http.Handler
 	GenOpenapi3JSON http.Handler
@@ -81,6 +83,13 @@ func New(
 			{"IndexRoot", "GET", "/"},
 			{"IndexEndpoint", "GET", "/v1"},
 			{"HealthCheck", "GET", "/v1/health-check"},
+			{"CORS", "OPTIONS", "/"},
+			{"CORS", "OPTIONS", "/v1"},
+			{"CORS", "OPTIONS", "/v1/health-check"},
+			{"CORS", "OPTIONS", "/v1/documentation/openapi.json"},
+			{"CORS", "OPTIONS", "/v1/documentation/openapi.yaml"},
+			{"CORS", "OPTIONS", "/v1/documentation/openapi3.json"},
+			{"CORS", "OPTIONS", "/v1/documentation/openapi3.yaml"},
 			{"gen/openapi.json", "GET", "/v1/documentation/openapi.json"},
 			{"gen/openapi.yaml", "GET", "/v1/documentation/openapi.yaml"},
 			{"gen/openapi3.json", "GET", "/v1/documentation/openapi3.json"},
@@ -89,6 +98,7 @@ func New(
 		IndexRoot:       NewIndexRootHandler(e.IndexRoot, mux, decoder, encoder, errhandler, formatter),
 		IndexEndpoint:   NewIndexEndpointHandler(e.IndexEndpoint, mux, decoder, encoder, errhandler, formatter),
 		HealthCheck:     NewHealthCheckHandler(e.HealthCheck, mux, decoder, encoder, errhandler, formatter),
+		CORS:            NewCORSHandler(),
 		GenOpenapiJSON:  http.FileServer(fileSystemGenOpenapiJSON),
 		GenOpenapiYaml:  http.FileServer(fileSystemGenOpenapiYaml),
 		GenOpenapi3JSON: http.FileServer(fileSystemGenOpenapi3JSON),
@@ -104,6 +114,7 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.IndexRoot = m(s.IndexRoot)
 	s.IndexEndpoint = m(s.IndexEndpoint)
 	s.HealthCheck = m(s.HealthCheck)
+	s.CORS = m(s.CORS)
 }
 
 // Mount configures the mux to serve the templates endpoints.
@@ -111,6 +122,7 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountIndexRootHandler(mux, h.IndexRoot)
 	MountIndexEndpointHandler(mux, h.IndexEndpoint)
 	MountHealthCheckHandler(mux, h.HealthCheck)
+	MountCORSHandler(mux, h.CORS)
 	MountGenOpenapiJSON(mux, goahttp.Replace("", "/gen/openapi.json", h.GenOpenapiJSON))
 	MountGenOpenapiYaml(mux, goahttp.Replace("", "/gen/openapi.yaml", h.GenOpenapiYaml))
 	MountGenOpenapi3JSON(mux, goahttp.Replace("", "/gen/openapi3.json", h.GenOpenapi3JSON))
@@ -125,7 +137,7 @@ func (s *Server) Mount(mux goahttp.Muxer) {
 // MountIndexRootHandler configures the mux to serve the "templates" service
 // "index-root" endpoint.
 func MountIndexRootHandler(mux goahttp.Muxer, h http.Handler) {
-	f, ok := h.(http.HandlerFunc)
+	f, ok := HandleTemplatesOrigin(h).(http.HandlerFunc)
 	if !ok {
 		f = func(w http.ResponseWriter, r *http.Request) {
 			h.ServeHTTP(w, r)
@@ -155,7 +167,7 @@ func NewIndexRootHandler(
 // MountIndexEndpointHandler configures the mux to serve the "templates"
 // service "index" endpoint.
 func MountIndexEndpointHandler(mux goahttp.Muxer, h http.Handler) {
-	f, ok := h.(http.HandlerFunc)
+	f, ok := HandleTemplatesOrigin(h).(http.HandlerFunc)
 	if !ok {
 		f = func(w http.ResponseWriter, r *http.Request) {
 			h.ServeHTTP(w, r)
@@ -199,7 +211,7 @@ func NewIndexEndpointHandler(
 // MountHealthCheckHandler configures the mux to serve the "templates" service
 // "health-check" endpoint.
 func MountHealthCheckHandler(mux goahttp.Muxer, h http.Handler) {
-	f, ok := h.(http.HandlerFunc)
+	f, ok := HandleTemplatesOrigin(h).(http.HandlerFunc)
 	if !ok {
 		f = func(w http.ResponseWriter, r *http.Request) {
 			h.ServeHTTP(w, r)
@@ -243,23 +255,68 @@ func NewHealthCheckHandler(
 // MountGenOpenapiJSON configures the mux to serve GET request made to
 // "/v1/documentation/openapi.json".
 func MountGenOpenapiJSON(mux goahttp.Muxer, h http.Handler) {
-	mux.Handle("GET", "/v1/documentation/openapi.json", h.ServeHTTP)
+	mux.Handle("GET", "/v1/documentation/openapi.json", HandleTemplatesOrigin(h).ServeHTTP)
 }
 
 // MountGenOpenapiYaml configures the mux to serve GET request made to
 // "/v1/documentation/openapi.yaml".
 func MountGenOpenapiYaml(mux goahttp.Muxer, h http.Handler) {
-	mux.Handle("GET", "/v1/documentation/openapi.yaml", h.ServeHTTP)
+	mux.Handle("GET", "/v1/documentation/openapi.yaml", HandleTemplatesOrigin(h).ServeHTTP)
 }
 
 // MountGenOpenapi3JSON configures the mux to serve GET request made to
 // "/v1/documentation/openapi3.json".
 func MountGenOpenapi3JSON(mux goahttp.Muxer, h http.Handler) {
-	mux.Handle("GET", "/v1/documentation/openapi3.json", h.ServeHTTP)
+	mux.Handle("GET", "/v1/documentation/openapi3.json", HandleTemplatesOrigin(h).ServeHTTP)
 }
 
 // MountGenOpenapi3Yaml configures the mux to serve GET request made to
 // "/v1/documentation/openapi3.yaml".
 func MountGenOpenapi3Yaml(mux goahttp.Muxer, h http.Handler) {
-	mux.Handle("GET", "/v1/documentation/openapi3.yaml", h.ServeHTTP)
+	mux.Handle("GET", "/v1/documentation/openapi3.yaml", HandleTemplatesOrigin(h).ServeHTTP)
+}
+
+// MountCORSHandler configures the mux to serve the CORS endpoints for the
+// service templates.
+func MountCORSHandler(mux goahttp.Muxer, h http.Handler) {
+	h = HandleTemplatesOrigin(h)
+	mux.Handle("OPTIONS", "/", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/v1", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/v1/health-check", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/v1/documentation/openapi.json", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/v1/documentation/openapi.yaml", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/v1/documentation/openapi3.json", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/v1/documentation/openapi3.yaml", h.ServeHTTP)
+}
+
+// NewCORSHandler creates a HTTP handler which returns a simple 200 response.
+func NewCORSHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+	})
+}
+
+// HandleTemplatesOrigin applies the CORS response headers corresponding to the
+// origin for the service templates.
+func HandleTemplatesOrigin(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
+		if origin == "" {
+			// Not a CORS request
+			h.ServeHTTP(w, r)
+			return
+		}
+		if cors.MatchOrigin(origin, "*") {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Vary", "Origin")
+			if acrm := r.Header.Get("Access-Control-Request-Method"); acrm != "" {
+				// We are handling a preflight request
+				w.Header().Set("Access-Control-Allow-Headers", "X-StorageApi-Token")
+			}
+			h.ServeHTTP(w, r)
+			return
+		}
+		h.ServeHTTP(w, r)
+		return
+	})
 }

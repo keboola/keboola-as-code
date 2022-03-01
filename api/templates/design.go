@@ -4,6 +4,7 @@ package templates
 import (
 	_ "goa.design/goa/v3/codegen/generator"
 	. "goa.design/goa/v3/dsl"
+	cors "goa.design/plugins/v3/cors/dsl"
 )
 
 var _ = API("templates", func() {
@@ -41,6 +42,9 @@ var index = ResultType("application/vnd.templates.index", func() {
 
 var _ = Service("templates", func() {
 	Description("Service for applying templates to Keboola projects")
+	cors.Origin("*", func() {
+		cors.Headers("X-StorageApi-Token")
+	})
 
 	Method("index-root", func() {
 		HTTP(func() {
