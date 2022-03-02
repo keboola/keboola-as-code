@@ -16,6 +16,15 @@ import (
 	goahttp "goa.design/goa/v3/http"
 )
 
+// EncodeHealthCheckResponse returns an encoder for responses returned by the
+// templates health-check endpoint.
+func EncodeHealthCheckResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, interface{}) error {
+	return func(ctx context.Context, w http.ResponseWriter, v interface{}) error {
+		w.WriteHeader(http.StatusOK)
+		return nil
+	}
+}
+
 // EncodeIndexEndpointResponse returns an encoder for responses returned by the
 // templates index endpoint.
 func EncodeIndexEndpointResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, interface{}) error {
@@ -25,14 +34,5 @@ func EncodeIndexEndpointResponse(encoder func(context.Context, http.ResponseWrit
 		body := NewIndexResponseBody(res.Projected)
 		w.WriteHeader(http.StatusOK)
 		return enc.Encode(body)
-	}
-}
-
-// EncodeHealthCheckResponse returns an encoder for responses returned by the
-// templates health-check endpoint.
-func EncodeHealthCheckResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, interface{}) error {
-	return func(ctx context.Context, w http.ResponseWriter, v interface{}) error {
-		w.WriteHeader(http.StatusOK)
-		return nil
 	}
 }

@@ -20,14 +20,14 @@ func (s *TemplatesService) IndexRoot(context.Context) (err error) {
 	return nil
 }
 
+func (s *TemplatesService) HealthCheck(_ context.Context) (err error) {
+	return
+}
+
 func (s *TemplatesService) IndexEndpoint(_ context.Context) (res *templates.Index, err error) {
 	res = &templates.Index{
 		API:           "templates",
 		Documentation: "https://templates.keboola.com/v1/documentation",
 	}
 	return res, nil
-}
-
-func (s *TemplatesService) HealthCheck(_ context.Context) (err error) {
-	return
 }

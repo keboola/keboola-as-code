@@ -17,22 +17,28 @@ import (
 // Client is the "templates" service client.
 type Client struct {
 	IndexRootEndpoint     goa.Endpoint
-	IndexEndpointEndpoint goa.Endpoint
 	HealthCheckEndpoint   goa.Endpoint
+	IndexEndpointEndpoint goa.Endpoint
 }
 
 // NewClient initializes a "templates" service client given the endpoints.
-func NewClient(indexRoot, indexEndpoint, healthCheck goa.Endpoint) *Client {
+func NewClient(indexRoot, healthCheck, indexEndpoint goa.Endpoint) *Client {
 	return &Client{
 		IndexRootEndpoint:     indexRoot,
-		IndexEndpointEndpoint: indexEndpoint,
 		HealthCheckEndpoint:   healthCheck,
+		IndexEndpointEndpoint: indexEndpoint,
 	}
 }
 
 // IndexRoot calls the "index-root" endpoint of the "templates" service.
 func (c *Client) IndexRoot(ctx context.Context) (err error) {
 	_, err = c.IndexRootEndpoint(ctx, nil)
+	return
+}
+
+// HealthCheck calls the "health-check" endpoint of the "templates" service.
+func (c *Client) HealthCheck(ctx context.Context) (err error) {
+	_, err = c.HealthCheckEndpoint(ctx, nil)
 	return
 }
 
@@ -44,10 +50,4 @@ func (c *Client) IndexEndpoint(ctx context.Context) (res *Index, err error) {
 		return
 	}
 	return ires.(*Index), nil
-}
-
-// HealthCheck calls the "health-check" endpoint of the "templates" service.
-func (c *Client) HealthCheck(ctx context.Context) (err error) {
-	_, err = c.HealthCheckEndpoint(ctx, nil)
-	return
 }
