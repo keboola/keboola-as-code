@@ -1,3 +1,4 @@
+// nolint: gocritic
 package main
 
 import (
@@ -12,11 +13,16 @@ import (
 	"sync"
 	"syscall"
 
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
+
 	templatesApi "github.com/keboola/keboola-as-code/internal/pkg/template/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/api/gen/templates"
 )
 
 func main() {
+	tracer.Start(tracer.WithServiceName("templates-api"))
+	defer tracer.Stop()
+
 	// Define command line flags, add any other flag required to configure the
 	// service.
 	var (
@@ -75,6 +81,7 @@ func main() {
 			addr := "http://localhost:8000"
 			u, err := url.Parse(addr)
 			if err != nil {
+				tracer.Stop()
 				fmt.Fprintf(os.Stderr, "invalid URL %#v: %s\n", addr, err)
 				os.Exit(1)
 			}
@@ -87,6 +94,7 @@ func main() {
 			if *httpPortF != "" {
 				h, _, err := net.SplitHostPort(u.Host)
 				if err != nil {
+					tracer.Stop()
 					fmt.Fprintf(os.Stderr, "invalid URL %#v: %s\n", u.Host, err)
 					os.Exit(1)
 				}
