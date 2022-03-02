@@ -17,24 +17,24 @@ import (
 // Endpoints wraps the "templates" service endpoints.
 type Endpoints struct {
 	IndexRoot     goa.Endpoint
-	IndexEndpoint goa.Endpoint
 	HealthCheck   goa.Endpoint
+	IndexEndpoint goa.Endpoint
 }
 
 // NewEndpoints wraps the methods of the "templates" service with endpoints.
 func NewEndpoints(s Service) *Endpoints {
 	return &Endpoints{
 		IndexRoot:     NewIndexRootEndpoint(s),
-		IndexEndpoint: NewIndexEndpointEndpoint(s),
 		HealthCheck:   NewHealthCheckEndpoint(s),
+		IndexEndpoint: NewIndexEndpointEndpoint(s),
 	}
 }
 
 // Use applies the given middleware to all the "templates" service endpoints.
 func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.IndexRoot = m(e.IndexRoot)
-	e.IndexEndpoint = m(e.IndexEndpoint)
 	e.HealthCheck = m(e.HealthCheck)
+	e.IndexEndpoint = m(e.IndexEndpoint)
 }
 
 // NewIndexRootEndpoint returns an endpoint function that calls the method
@@ -42,6 +42,14 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 func NewIndexRootEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		return nil, s.IndexRoot(ctx)
+	}
+}
+
+// NewHealthCheckEndpoint returns an endpoint function that calls the method
+// "health-check" of service "templates".
+func NewHealthCheckEndpoint(s Service) goa.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		return nil, s.HealthCheck(ctx)
 	}
 }
 
@@ -55,13 +63,5 @@ func NewIndexEndpointEndpoint(s Service) goa.Endpoint {
 		}
 		vres := NewViewedIndex(res, "default")
 		return vres, nil
-	}
-}
-
-// NewHealthCheckEndpoint returns an endpoint function that calls the method
-// "health-check" of service "templates".
-func NewHealthCheckEndpoint(s Service) goa.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		return nil, s.HealthCheck(ctx)
 	}
 }

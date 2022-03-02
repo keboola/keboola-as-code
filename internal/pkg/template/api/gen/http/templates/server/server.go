@@ -22,8 +22,8 @@ import (
 type Server struct {
 	Mounts          []*MountPoint
 	IndexRoot       http.Handler
-	IndexEndpoint   http.Handler
 	HealthCheck     http.Handler
+	IndexEndpoint   http.Handler
 	CORS            http.Handler
 	GenOpenapiJSON  http.Handler
 	GenOpenapiYaml  http.Handler
@@ -81,11 +81,11 @@ func New(
 	return &Server{
 		Mounts: []*MountPoint{
 			{"IndexRoot", "GET", "/"},
+			{"HealthCheck", "GET", "/health-check"},
 			{"IndexEndpoint", "GET", "/v1"},
-			{"HealthCheck", "GET", "/v1/health-check"},
 			{"CORS", "OPTIONS", "/"},
+			{"CORS", "OPTIONS", "/health-check"},
 			{"CORS", "OPTIONS", "/v1"},
-			{"CORS", "OPTIONS", "/v1/health-check"},
 			{"CORS", "OPTIONS", "/v1/documentation/openapi.json"},
 			{"CORS", "OPTIONS", "/v1/documentation/openapi.yaml"},
 			{"CORS", "OPTIONS", "/v1/documentation/openapi3.json"},
@@ -96,8 +96,8 @@ func New(
 			{"gen/openapi3.yaml", "GET", "/v1/documentation/openapi3.yaml"},
 		},
 		IndexRoot:       NewIndexRootHandler(e.IndexRoot, mux, decoder, encoder, errhandler, formatter),
-		IndexEndpoint:   NewIndexEndpointHandler(e.IndexEndpoint, mux, decoder, encoder, errhandler, formatter),
 		HealthCheck:     NewHealthCheckHandler(e.HealthCheck, mux, decoder, encoder, errhandler, formatter),
+		IndexEndpoint:   NewIndexEndpointHandler(e.IndexEndpoint, mux, decoder, encoder, errhandler, formatter),
 		CORS:            NewCORSHandler(),
 		GenOpenapiJSON:  http.FileServer(fileSystemGenOpenapiJSON),
 		GenOpenapiYaml:  http.FileServer(fileSystemGenOpenapiYaml),
@@ -112,16 +112,16 @@ func (s *Server) Service() string { return "templates" }
 // Use wraps the server handlers with the given middleware.
 func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.IndexRoot = m(s.IndexRoot)
-	s.IndexEndpoint = m(s.IndexEndpoint)
 	s.HealthCheck = m(s.HealthCheck)
+	s.IndexEndpoint = m(s.IndexEndpoint)
 	s.CORS = m(s.CORS)
 }
 
 // Mount configures the mux to serve the templates endpoints.
 func Mount(mux goahttp.Muxer, h *Server) {
 	MountIndexRootHandler(mux, h.IndexRoot)
-	MountIndexEndpointHandler(mux, h.IndexEndpoint)
 	MountHealthCheckHandler(mux, h.HealthCheck)
+	MountIndexEndpointHandler(mux, h.IndexEndpoint)
 	MountCORSHandler(mux, h.CORS)
 	MountGenOpenapiJSON(mux, goahttp.Replace("", "/gen/openapi.json", h.GenOpenapiJSON))
 	MountGenOpenapiYaml(mux, goahttp.Replace("", "/gen/openapi.yaml", h.GenOpenapiYaml))
@@ -161,6 +161,50 @@ func NewIndexRootHandler(
 		ctx = context.WithValue(ctx, goa.MethodKey, "index-root")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "templates")
 		http.Redirect(w, r, "/v1", http.StatusMovedPermanently)
+	})
+}
+
+// MountHealthCheckHandler configures the mux to serve the "templates" service
+// "health-check" endpoint.
+func MountHealthCheckHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := HandleTemplatesOrigin(h).(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/health-check", f)
+}
+
+// NewHealthCheckHandler creates a HTTP handler which loads the HTTP request
+// and calls the "templates" service "health-check" endpoint.
+func NewHealthCheckHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		encodeResponse = EncodeHealthCheckResponse(encoder)
+		encodeError    = goahttp.ErrorEncoder(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "health-check")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "templates")
+		var err error
+		res, err := endpoint(ctx, nil)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
 	})
 }
 
@@ -208,50 +252,6 @@ func NewIndexEndpointHandler(
 	})
 }
 
-// MountHealthCheckHandler configures the mux to serve the "templates" service
-// "health-check" endpoint.
-func MountHealthCheckHandler(mux goahttp.Muxer, h http.Handler) {
-	f, ok := HandleTemplatesOrigin(h).(http.HandlerFunc)
-	if !ok {
-		f = func(w http.ResponseWriter, r *http.Request) {
-			h.ServeHTTP(w, r)
-		}
-	}
-	mux.Handle("GET", "/v1/health-check", f)
-}
-
-// NewHealthCheckHandler creates a HTTP handler which loads the HTTP request
-// and calls the "templates" service "health-check" endpoint.
-func NewHealthCheckHandler(
-	endpoint goa.Endpoint,
-	mux goahttp.Muxer,
-	decoder func(*http.Request) goahttp.Decoder,
-	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
-	errhandler func(context.Context, http.ResponseWriter, error),
-	formatter func(err error) goahttp.Statuser,
-) http.Handler {
-	var (
-		encodeResponse = EncodeHealthCheckResponse(encoder)
-		encodeError    = goahttp.ErrorEncoder(encoder, formatter)
-	)
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
-		ctx = context.WithValue(ctx, goa.MethodKey, "health-check")
-		ctx = context.WithValue(ctx, goa.ServiceKey, "templates")
-		var err error
-		res, err := endpoint(ctx, nil)
-		if err != nil {
-			if err := encodeError(ctx, w, err); err != nil {
-				errhandler(ctx, w, err)
-			}
-			return
-		}
-		if err := encodeResponse(ctx, w, res); err != nil {
-			errhandler(ctx, w, err)
-		}
-	})
-}
-
 // MountGenOpenapiJSON configures the mux to serve GET request made to
 // "/v1/documentation/openapi.json".
 func MountGenOpenapiJSON(mux goahttp.Muxer, h http.Handler) {
@@ -281,8 +281,8 @@ func MountGenOpenapi3Yaml(mux goahttp.Muxer, h http.Handler) {
 func MountCORSHandler(mux goahttp.Muxer, h http.Handler) {
 	h = HandleTemplatesOrigin(h)
 	mux.Handle("OPTIONS", "/", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/health-check", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1", h.ServeHTTP)
-	mux.Handle("OPTIONS", "/v1/health-check", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/documentation/openapi.json", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/documentation/openapi.yaml", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/documentation/openapi3.json", h.ServeHTTP)
