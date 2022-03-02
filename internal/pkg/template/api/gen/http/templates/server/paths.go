@@ -13,12 +13,12 @@ func IndexRootTemplatesPath() string {
 	return "/"
 }
 
+// HealthCheckTemplatesPath returns the URL path to the templates service health-check HTTP endpoint.
+func HealthCheckTemplatesPath() string {
+	return "/health-check"
+}
+
 // IndexEndpointTemplatesPath returns the URL path to the templates service index HTTP endpoint.
 func IndexEndpointTemplatesPath() string {
 	return "/v1"
-}
-
-// HealthCheckTemplatesPath returns the URL path to the templates service health-check HTTP endpoint.
-func HealthCheckTemplatesPath() string {
-	return "/v1/health-check"
 }

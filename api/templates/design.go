@@ -54,17 +54,17 @@ var _ = Service("templates", func() {
 		})
 	})
 
-	Method("index", func() {
-		Result(index)
+	Method("health-check", func() {
 		HTTP(func() {
-			GET("")
+			GET("//health-check")
 			Response(StatusOK)
 		})
 	})
 
-	Method("health-check", func() {
+	Method("index", func() {
+		Result(index)
 		HTTP(func() {
-			GET("health-check")
+			GET("")
 			Response(StatusOK)
 		})
 	})

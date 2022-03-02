@@ -22,6 +22,15 @@ paths:
       responses:
         "301":
           description: Moved Permanently response.
+  /health-check:
+    get:
+      tags:
+      - templates
+      summary: health-check templates
+      operationId: templates#health-check
+      responses:
+        "200":
+          description: OK response.
   /v1:
     get:
       tags:
@@ -74,15 +83,6 @@ paths:
       responses:
         "200":
           description: File downloaded
-  /v1/health-check:
-    get:
-      tags:
-      - templates
-      summary: health-check templates
-      operationId: templates#health-check
-      responses:
-        "200":
-          description: OK response.
 components:
   schemas:
     Index:

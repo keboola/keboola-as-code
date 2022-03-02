@@ -18,10 +18,10 @@ import (
 type Service interface {
 	// IndexRoot implements index-root.
 	IndexRoot(context.Context) (err error)
-	// Index implements index.
-	IndexEndpoint(context.Context) (res *Index, err error)
 	// HealthCheck implements health-check.
 	HealthCheck(context.Context) (err error)
+	// Index implements index.
+	IndexEndpoint(context.Context) (res *Index, err error)
 }
 
 // ServiceName is the name of the service as defined in the design. This is the
@@ -32,7 +32,7 @@ const ServiceName = "templates"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [3]string{"index-root", "index", "health-check"}
+var MethodNames = [3]string{"index-root", "health-check", "index"}
 
 // Index is the result type of the templates service index method.
 type Index struct {
