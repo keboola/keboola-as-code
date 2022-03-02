@@ -12,6 +12,7 @@ import (
 	goaHTTP "goa.design/goa/v3/http"
 	httpMdlwr "goa.design/goa/v3/http/middleware"
 	"goa.design/goa/v3/middleware"
+	httptrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/net/http"
 
 	openapiapi "github.com/keboola/keboola-as-code/api/templates"
 	templatesSvr "github.com/keboola/keboola-as-code/internal/pkg/template/api/gen/http/templates/server"
@@ -72,6 +73,7 @@ func handleHTTPServer(ctx context.Context, u *url.URL, templatesEndpoints *templ
 	{
 		handler = httpMdlwr.Log(adapter)(handler)
 		handler = httpMdlwr.RequestID()(handler)
+		handler = httptrace.WrapHandler(handler, "templates-api", "")
 	}
 
 	// Start HTTP server using default configuration, change the code to
