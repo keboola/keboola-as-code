@@ -61,5 +61,10 @@
         <!-- Use customized WixUI_InstallDir that removes WixUI_LicenseAgreementDlg -->
         <Property Id="WIXUI_INSTALLDIR" Value="INSTALLDIR"/>
         <UIRef Id="KeboolaCLI_InstallDir"/>
+
+        <WixVariable Id="WixUIBannerBmp" Value=".\banner.png" />
+        <WixVariable Id="WixUIDialogBmp" Value=".\dialog.png" />
+        <WixVariable Id="WixUIInfoIco" Value=".\icon.png" />
+        <WixVariable Id="WixUIExclamationIco" Value=".\icon.png" />
     </Product>
 </Wix>

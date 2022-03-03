@@ -10,6 +10,8 @@
 *.so
 *.dylib
 
+!build/package/windows/signtool.exe
+
 # Test binary, build with `go test -c`
 *.test
 
