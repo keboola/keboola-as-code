@@ -35,6 +35,8 @@ import (
 // UseContext.Replacements() returns placeholders for new IDs.
 type UseContext struct {
 	_context
+	templateRef     model.TemplateRef
+	instanceId      string
 	jsonNetCtx      *jsonnet.Context
 	replacements    *replacevalues.Values
 	inputs          map[string]interface{}
@@ -49,9 +51,11 @@ const (
 	placeholderEnd   = "~~>>"
 )
 
-func NewUseContext(ctx context.Context, targetBranch model.BranchKey, inputs InputsValues, tickets *storageapi.TicketProvider) *UseContext {
+func NewUseContext(ctx context.Context, templateRef model.TemplateRef, instanceId string, targetBranch model.BranchKey, inputs InputsValues, tickets *storageapi.TicketProvider) *UseContext {
 	c := &UseContext{
 		_context:     baseContext(ctx),
+		templateRef:  templateRef,
+		instanceId:   instanceId,
 		jsonNetCtx:   jsonnet.NewContext(),
 		replacements: replacevalues.NewValues(),
 		inputs:       make(map[string]interface{}),
@@ -71,6 +75,14 @@ func NewUseContext(ctx context.Context, targetBranch model.BranchKey, inputs Inp
 	c.registerJsonNetFunctions()
 
 	return c
+}
+
+func (c *UseContext) TemplateRef() model.TemplateRef {
+	return c.templateRef
+}
+
+func (c *UseContext) InstanceId() string {
+	return c.instanceId
 }
 
 func (c *UseContext) JsonNetContext() *jsonnet.Context {

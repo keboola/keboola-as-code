@@ -2,6 +2,7 @@ package template
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/configmetadata"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/corefiles"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/defaultbucket"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/description"
@@ -11,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/jsonnetfiles"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/metadata"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacevalues"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/variables"
@@ -24,7 +26,7 @@ func MappersFor(s *state.State, d dependencies, ctx Context) (mapper.Mappers, er
 		return nil, err
 	}
 
-	return mapper.Mappers{
+	mappers := mapper.Mappers{
 		// Template
 		jsonnetfiles.NewMapper(jsonNetCtx),
 		// Core files
@@ -47,7 +49,16 @@ func MappersFor(s *state.State, d dependencies, ctx Context) (mapper.Mappers, er
 		relations.NewMapper(s),
 		// Skip variables configurations that are not used in any configuration
 		ignore.NewMapper(s),
+		// Configurations metadata
+		configmetadata.NewMapper(s, d),
 		// Template
 		replacevalues.NewMapper(s, replacements),
-	}, nil
+	}
+
+	// Add metadata on "template use" operation
+	if c, ok := ctx.(*UseContext); ok {
+		mappers = append(mappers, metadata.NewMapper(s, c.TemplateRef(), c.InstanceId()))
+	}
+
+	return mappers, nil
 }

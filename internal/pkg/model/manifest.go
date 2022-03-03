@@ -268,17 +268,17 @@ func (c *ConfigManifest) AddRelation(relation Relation) {
 	c.Relations.Add(relation)
 }
 
-func (r *ConfigRowManifest) AddRelation(relation Relation) {
-	r.Relations.Add(relation)
-}
-
-func (r *ConfigManifest) MetadataMap() map[string]string {
+func (c *ConfigManifest) MetadataMap() map[string]string {
 	metadata := make(map[string]string)
-	if r.Metadata != nil {
-		for _, key := range r.Metadata.Keys() {
-			val, _ := r.Metadata.Get(key)
+	if c.Metadata != nil {
+		for _, key := range c.Metadata.Keys() {
+			val, _ := c.Metadata.Get(key)
 			metadata[key] = val.(string)
 		}
 	}
 	return metadata
+}
+
+func (r *ConfigRowManifest) AddRelation(relation Relation) {
+	r.Relations.Add(relation)
 }
