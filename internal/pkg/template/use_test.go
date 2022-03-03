@@ -57,7 +57,9 @@ func TestUseContext(t *testing.T) {
 	}
 
 	// Create context
-	ctx := NewUseContext(context.Background(), targetBranch, inputsValues, tickets)
+	templateRef := model.NewTemplateRef(model.TemplateRepository{Name: "my-repository"}, "my-template", model.ZeroSemVersion())
+	instanceId := "my-instance"
+	ctx := NewUseContext(context.Background(), templateRef, instanceId, targetBranch, inputsValues, tickets)
 
 	// Check JsonNet functions
 	code := `

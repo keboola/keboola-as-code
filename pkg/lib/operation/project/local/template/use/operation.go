@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sort"
 
+	gonanoid "github.com/matoous/go-nanoid/v2"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/api/encryptionapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
@@ -79,10 +81,13 @@ func Run(tmpl *template.Template, o Options, d dependencies) error {
 	// Create tickets provider, to generate new IDS
 	tickets := storageApi.NewTicketProvider()
 
+	// Generate ID for the template instance
+	instanceId := gonanoid.Must()
+
 	// Load template
 	templateState, err := d.TemplateState(loadStateOp.Options{
 		Template:    tmpl,
-		Context:     template.NewUseContext(d.Ctx(), o.TargetBranch, o.Inputs, tickets),
+		Context:     template.NewUseContext(d.Ctx(), tmpl.Reference(), instanceId, o.TargetBranch, o.Inputs, tickets),
 		LoadOptions: LoadTemplateOptions(),
 	})
 	if err != nil {
@@ -154,6 +159,6 @@ func Run(tmpl *template.Template, o Options, d dependencies) error {
 		logger.Warnf(`Push operation is only possible when project is valid.`)
 	}
 
-	logger.Info(fmt.Sprintf(`Template "%s" has been applied.`, tmpl.FullName()))
+	logger.Info(fmt.Sprintf(`Template "%s" has been applied, instance ID: %s`, tmpl.FullName(), instanceId))
 	return nil
 }

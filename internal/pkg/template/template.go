@@ -70,6 +70,10 @@ func New(reference model.TemplateRef, fs filesystem.Fs, inputs *Inputs) (*Templa
 	return &Template{_reference: reference, fs: fs, srcDir: srcDir, inputs: inputs}, nil
 }
 
+func (t *Template) Reference() model.TemplateRef {
+	return t._reference
+}
+
 func (t *Template) ObjectsRoot() filesystem.Fs {
 	return t.srcDir
 }
