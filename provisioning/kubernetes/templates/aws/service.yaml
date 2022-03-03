@@ -1,0 +1,17 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    app: templates-api
+  name: templates-api
+  namespace: default
+spec:
+  type: ClusterIP
+  selector:
+    app: templates-api
+  ports:
+    - port: 80
+      targetPort: 8000
+      protocol: TCP
+      name: http
