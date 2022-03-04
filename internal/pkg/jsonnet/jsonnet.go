@@ -7,10 +7,8 @@ import (
 
 	"github.com/google/go-jsonnet"
 	"github.com/google/go-jsonnet/ast"
-
-	"github.com/keboola/keboola-as-code/third_party/jsonnet/lib/formatter"
-	"github.com/keboola/keboola-as-code/third_party/jsonnet/lib/parser"
-	"github.com/keboola/keboola-as-code/third_party/jsonnet/lib/program"
+	"github.com/google/go-jsonnet/formatter"
+	"github.com/google/go-jsonnet/parser"
 )
 
 func Evaluate(code string, ctx *Context) (jsonOut string, err error) {
@@ -32,7 +30,7 @@ func MustEvaluate(code string, ctx *Context) (jsonOut string) {
 func EvaluateAst(input ast.Node, ctx *Context) (jsonOut string, err error) {
 	// Pre-process
 	node := ast.Clone(ctx.wrapAst(input))
-	if err := program.PreprocessAst(&node); err != nil {
+	if err := parser.PreprocessAst(&node); err != nil {
 		return "", err
 	}
 
@@ -67,33 +65,17 @@ func Format(code string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return FormatAst(node)
+	return FormatAst(node), nil
 }
 
-func MustFormat(code string) string {
-	out, err := Format(code)
-	if err != nil {
-		panic(err)
-	}
-	return out
-}
-
-func FormatAst(node ast.Node) (string, error) {
+func FormatAst(node ast.Node) string {
 	node = ast.Clone(node)
 	ReplacePlaceholdersRecursive(node)
-	return formatter.FormatAst(node, DefaultOptions())
-}
-
-func MustFormatAst(node ast.Node) string {
-	out, err := FormatAst(node)
-	if err != nil {
-		panic(err)
-	}
-	return out
+	return formatter.FormatAst(node, nil, DefaultOptions())
 }
 
 func ToAst(code string) (ast.Node, error) {
-	node, _, err := parser.SnippetToRawAST(``, ``, code)
+	node, _, err := parser.SnippetToRawAST(code)
 	if err != nil {
 		return nil, fmt.Errorf(`cannot parse jsonnet: %w`, err)
 	}

@@ -2,8 +2,7 @@ run:
   concurrency: 8
   tests: true # check test files
   skip-files: []
-  skip-dirs:
-    - third_party
+  skip-dirs: []
   skip-dirs-use-default: true
   modules-download-mode: readonly
 
@@ -67,7 +66,6 @@ linters:
     - godox
     - gofumpt
     - goheader
-    - gomoddirectives
     - gomodguard
     - goprintffuncname
     - gosec
@@ -101,6 +99,7 @@ linters:
     - goimports # replaced with gci
     - gofmt # replaced with gofumpt
     - nolintlint # strange behavior
+    - gomoddirectives # allow replace directive in go.mod
     # TODO
     - funlen
     - gocyclo

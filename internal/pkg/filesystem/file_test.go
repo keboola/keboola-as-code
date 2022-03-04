@@ -63,7 +63,7 @@ func TestJsonFile_ToJsonNetFile(t *testing.T) {
 	f, err := NewJsonFile(`path.json`, m).ToJsonNetFile()
 	assert.NoError(t, err)
 	assert.Equal(t, `path.jsonnet`, f.Path())
-	assert.Equal(t, "{\n  foo: \"bar\",\n}\n", jsonnet.MustFormatAst(f.Content))
+	assert.Equal(t, "{\n  foo: \"bar\",\n}\n", jsonnet.FormatAst(f.Content))
 }
 
 func TestNewJsonNetFile(t *testing.T) {

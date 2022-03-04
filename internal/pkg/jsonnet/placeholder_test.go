@@ -72,8 +72,7 @@ func TestReplaceFuncCallPlaceholders(t *testing.T) {
 	}
 
 	for i, c := range cases {
-		replaced, err := FormatAst(ReplacePlaceholders(&ast.LiteralString{Value: c.input}))
-		assert.NoError(t, err, i)
+		replaced := FormatAst(ReplacePlaceholders(&ast.LiteralString{Value: c.input}))
 		assert.Equal(t, c.expected+"\n", replaced, i)
 	}
 }

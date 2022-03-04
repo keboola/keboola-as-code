@@ -52,8 +52,7 @@ func TestFormatAst(t *testing.T) {
 			},
 		},
 	}
-	jsonNet, err := FormatAst(astNode)
-	assert.NoError(t, err)
+	jsonNet := FormatAst(astNode)
 	assert.Equal(t, "{ foo: \"bar\" }\n", jsonNet)
 }
 
