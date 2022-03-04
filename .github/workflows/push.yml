@@ -571,7 +571,9 @@ jobs:
       id-token: write
     needs:
       - set-version
-      - release
+      - test
+      - lint
+      - cross-compile
     if: startsWith(github.ref, 'refs/tags/templates-api-v')
     steps:
       - name: Checkout
