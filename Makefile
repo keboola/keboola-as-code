@@ -4,9 +4,9 @@ tools:
 	bash ./scripts/tools.sh
 
 build:
-	goreleaser build --rm-dist --snapshot -f ./build/ci/goreleaser.yml
+	GORELEASER_CURRENT_TAG=0.0.1-dev goreleaser build --rm-dist --snapshot -f ./build/ci/goreleaser.yml
 build-local:
-	goreleaser build --single-target --rm-dist --snapshot -f ./build/ci/goreleaser.yml
+	GORELEASER_CURRENT_TAG=0.0.1-dev goreleaser build --single-target --rm-dist --snapshot -f ./build/ci/goreleaser.yml
 
 release:
 	goreleaser release --rm-dist -f ./build/ci/goreleaser.yml
