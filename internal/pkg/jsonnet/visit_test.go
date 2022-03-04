@@ -54,7 +54,5 @@ func TestVisitAst(t *testing.T) {
 		}
 	})
 
-	output, err := FormatAst(node)
-	assert.NoError(t, err)
-	assert.Equal(t, strings.TrimLeft(expected, "\n"), output)
+	assert.Equal(t, strings.TrimLeft(expected, "\n"), FormatAst(node))
 }

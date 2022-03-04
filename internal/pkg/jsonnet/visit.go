@@ -2,8 +2,7 @@ package jsonnet
 
 import (
 	"github.com/google/go-jsonnet/ast"
-
-	"github.com/keboola/keboola-as-code/third_party/jsonnet/lib/pass"
+	"github.com/google/go-jsonnet/pass"
 )
 
 type VisitFunc func(nodePtr *ast.Node)
