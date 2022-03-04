@@ -23,6 +23,14 @@ in the repository).
    1. pushes [Homebrew formula](#homebrew) to its repository index
    2. pushes [Scoop manifest](#scoop) to its repository index
    3. updates [linux repositories](#linux-repositories)
+5. `update-repositories-windows`
+   1. pushes [Chocolatey manifest](#chocolatey) to its repository index
+   2. pushes [WinGet manifest](#winget) to its repository index
+6. `build-and-push-templates-api` (triggered on a tag with `templates-api-v` prefix)
+   1. builds the image [Dockerfile-api](../Dockerfile-api)
+   2. pushes the image to Amazon ECR repository `keboola/templates-api` under the `ECR Distribution` account
+   3. pushes the image to Azure ACR `keboola.azurecr.io/templates-api`
+   4. push to the Azure ACR triggers a [release pipeline](#api-release)
 
 ## GoReleaser Automation
 
@@ -87,3 +95,9 @@ in the repository).
 
 - The S3 bucket is publicly available on url https://cli-dist.keboola.com
 - The bucket belongs to legacy multi-tenant account (147946154733)
+
+## API Release
+
+- `build-and-push-templates-api` step of the [GitHub Workflow](#workflow-steps) builds the API image and pushes it to a repository in AWS and Azure
+- push to Azure ACR triggers a release pipeline `TODO`
+- ![Release pipeline](./api-release-pipeline.jpg)
