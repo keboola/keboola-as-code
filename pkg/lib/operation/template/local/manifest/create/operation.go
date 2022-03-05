@@ -3,16 +3,16 @@ package create
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/template"
 )
 
 type dependencies interface {
 	Logger() log.Logger
 }
 
-func Run(fs filesystem.Fs, d dependencies) (*manifest.Manifest, error) {
+func Run(fs filesystem.Fs, d dependencies) (*template.Manifest, error) {
 	// Create
-	templateManifest := manifest.New()
+	templateManifest := template.NewManifest()
 
 	// Save
 	if err := templateManifest.Save(fs); err != nil {

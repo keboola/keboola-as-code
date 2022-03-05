@@ -7,7 +7,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/api/schedulerapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -25,14 +24,19 @@ const (
 
 type (
 	Manifest     = templateManifest.Manifest
+	ManifestFile = templateManifest.File
 	Input        = templateInput.Input
 	Inputs       = templateInput.Inputs
 	InputValue   = templateInput.Value
 	InputsValues = templateInput.Values
 )
 
-func LoadManifest(fs filesystem.Fs, jsonNetCtx *jsonnet.Context) (*Manifest, error) {
-	return templateManifest.Load(fs, jsonNetCtx)
+func NewManifest() *Manifest {
+	return templateManifest.New()
+}
+
+func LoadManifest(fs filesystem.Fs) (*ManifestFile, error) {
+	return templateManifest.Load(fs)
 }
 
 func NewInputs() *Inputs {
@@ -53,21 +57,22 @@ type _reference = model.TemplateRef
 
 type Template struct {
 	_reference
-	fs       filesystem.Fs
-	srcDir   filesystem.Fs
-	testsDir filesystem.Fs
-	readme   string
-	inputs   *Inputs
+	fs           filesystem.Fs
+	srcDir       filesystem.Fs
+	testsDir     filesystem.Fs
+	readme       string
+	manifestFile *ManifestFile
+	inputs       *Inputs
 }
 
-func New(reference model.TemplateRef, fs filesystem.Fs, inputs *Inputs) (*Template, error) {
+func New(reference model.TemplateRef, fs filesystem.Fs, manifestFile *ManifestFile, inputs *Inputs) (*Template, error) {
 	// Src dir
 	srcDir, err := fs.SubDirFs(SrcDirectory)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Template{_reference: reference, fs: fs, srcDir: srcDir, inputs: inputs}, nil
+	return &Template{_reference: reference, fs: fs, srcDir: srcDir, manifestFile: manifestFile, inputs: inputs}, nil
 }
 
 func (t *Template) Reference() model.TemplateRef {
@@ -118,13 +123,18 @@ func (t *Template) ManifestExists() (bool, error) {
 	return t.srcDir.IsFile(t.ManifestPath()), nil
 }
 
-func (t *Template) ToObjectsContainer(ctx Context, m *Manifest, d dependencies) *ObjectsContainer {
+func (t *Template) ToObjectsContainer(ctx Context, d dependencies) (*ObjectsContainer, error) {
+	m, err := t.manifestFile.Evaluate(ctx.JsonNetContext())
+	if err != nil {
+		return nil, err
+	}
+
 	return &ObjectsContainer{
 		Template:     t,
 		dependencies: d,
 		context:      ctx,
 		manifest:     m,
-	}
+	}, nil
 }
 
 type ObjectsContainer struct {

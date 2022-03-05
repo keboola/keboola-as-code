@@ -8,7 +8,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
-	loadManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/manifest/load"
 )
 
 type Options struct {
@@ -25,12 +24,6 @@ type dependencies interface {
 }
 
 func Run(o Options, d dependencies) (*template.State, error) {
-	// Load manifest
-	manifest, err := loadManifest.Run(o.Template.Fs(), o.Context, d)
-	if err != nil {
-		return nil, err
-	}
-
 	// Run operation
 	localFilter := o.Context.LocalObjectsFilter()
 	remoteFilter := o.Context.RemoteObjectsFilter()
@@ -39,7 +32,12 @@ func Run(o Options, d dependencies) (*template.State, error) {
 		LocalFilter:  &localFilter,
 		RemoteFilter: &remoteFilter,
 	}
-	container := o.Template.ToObjectsContainer(o.Context, manifest, d)
+
+	container, err := o.Template.ToObjectsContainer(o.Context, d)
+	if err != nil {
+		return nil, err
+	}
+
 	if state, err := loadState.Run(container, loadOptions, d); err == nil {
 		return template.NewState(state, container), nil
 	} else {

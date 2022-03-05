@@ -31,19 +31,15 @@ func newFile() *file {
 	}
 }
 
-func loadFile(fs filesystem.Fs, jsonNetCtx *jsonnet.Context) (*file, error) {
-	// Check if file exists
-	path := Path()
-	if !fs.IsFile(path) {
-		return nil, fmt.Errorf("manifest \"%s\" not found", path)
+func evaluateFile(file *filesystem.RawFile, jsonNetCtx *jsonnet.Context) (*file, error) {
+	// Evaluate Jsonnet code
+	jsonContent, err := jsonnet.Evaluate(file.Content, jsonNetCtx)
+	if err != nil {
+		return nil, err
 	}
 
-	// Read file
-	fileDef := filesystem.NewFileDef(path).SetDescription("manifest")
 	content := newFile()
-	fileLoader := fs.FileLoader()
-	fileLoader.SetJsonNetContext(jsonNetCtx)
-	if _, err := fileLoader.ReadJsonNetFileTo(fileDef, content); err != nil {
+	if err := json.DecodeString(jsonContent, content); err != nil {
 		return nil, err
 	}
 

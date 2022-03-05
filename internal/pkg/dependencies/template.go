@@ -9,8 +9,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
 	createTemplateDir "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/dir/create"
-	loadInputsOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/inputs/load"
-	loadStateOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/state/load"
+	loadInputs "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/inputs/load"
+	loadManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/manifest/load"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/template/state/load"
 )
 
 var ErrTemplateManifestNotFound = fmt.Errorf("template manifest not found")
@@ -95,17 +96,23 @@ func (c *common) Template(reference model.TemplateRef) (*template.Template, erro
 		return nil, err
 	}
 
-	// Load inputs
-	inputs, err := loadInputsOp.Run(fs, c)
+	// Load manifest file
+	manifestFile, err := loadManifest.Run(fs, c)
 	if err != nil {
 		return nil, err
 	}
 
-	return template.New(reference, fs, inputs)
+	// Load inputs
+	inputs, err := loadInputs.Run(fs, c)
+	if err != nil {
+		return nil, err
+	}
+
+	return template.New(reference, fs, manifestFile, inputs)
 }
 
-func (c *common) TemplateState(options loadStateOp.Options) (*template.State, error) {
-	return loadStateOp.Run(options, c)
+func (c *common) TemplateState(options loadState.Options) (*template.State, error) {
+	return loadState.Run(options, c)
 }
 
 func (c *common) CreateTemplateDir(repositoryDir filesystem.Fs, path string) (filesystem.Fs, error) {

@@ -14,7 +14,7 @@ func (m *Manager) rename(actions []model.RenameAction) error {
 		return nil
 	}
 
-	// Execute
+	// Evaluate
 	errors := utils.NewMultiError()
 	warnings := utils.NewMultiError()
 	var newPaths []string
