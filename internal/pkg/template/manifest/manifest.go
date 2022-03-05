@@ -12,6 +12,12 @@ import (
 
 type records = manifest.Records
 
+// File contains content of the manifest. Jsonnet has not been executed yet.
+type File struct {
+	file *filesystem.RawFile
+}
+
+// Manifest is evaluated File.
 type Manifest struct {
 	naming naming.Template
 	*records
@@ -24,9 +30,25 @@ func New() *Manifest {
 	}
 }
 
-func Load(fs filesystem.Fs, jsonNetCtx *jsonnet.Context) (*Manifest, error) {
-	// Load file content
-	content, err := loadFile(fs, jsonNetCtx)
+// Load manifest File.
+func Load(fs filesystem.Fs) (*File, error) {
+	path := Path()
+	if !fs.IsFile(path) {
+		return nil, fmt.Errorf("manifest \"%s\" not found", path)
+	}
+
+	f, err := fs.ReadFile(filesystem.NewFileDef(path).SetDescription("manifest"))
+	if err != nil {
+		return nil, err
+	}
+
+	return &File{file: f}, nil
+}
+
+// Evaluate Jsonnet content.
+func (f *File) Evaluate(jsonNetCtx *jsonnet.Context) (*Manifest, error) {
+	// Evaluate Jsonnet
+	content, err := evaluateFile(f.file, jsonNetCtx)
 	if err != nil {
 		return nil, err
 	}

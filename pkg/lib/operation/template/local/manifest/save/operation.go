@@ -3,14 +3,14 @@ package save
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/template"
 )
 
 type Dependencies interface {
 	Logger() log.Logger
 }
 
-func Run(m *manifest.Manifest, fs filesystem.Fs, d Dependencies) (changed bool, err error) {
+func Run(m *template.Manifest, fs filesystem.Fs, d Dependencies) (changed bool, err error) {
 	// Save if manifest is changed
 	if m.IsChanged() {
 		if err := m.Save(fs); err != nil {
