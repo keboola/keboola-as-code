@@ -9,7 +9,8 @@ Usage:
   %s create branch [flags]
 
 Flags:
-  -n, --name string   name of the new branch
+  -n, --name string               name of the new branch
+  -H, --storage-api-host string   if command is run outside the project directory
 
 Global Flags:
 %A
