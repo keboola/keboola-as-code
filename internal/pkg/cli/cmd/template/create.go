@@ -8,13 +8,13 @@ import (
 	createOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/create"
 )
 
-func CreateCommand(depsProvider dependencies.Provider) *cobra.Command {
+func CreateCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: helpmsg.Read(`template/create/short`),
 		Long:  helpmsg.Read(`template/create/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			d := depsProvider.Dependencies()
+			d := p.Dependencies()
 
 			// Require template repository
 			if _, err := d.LocalTemplateRepository(); err != nil {

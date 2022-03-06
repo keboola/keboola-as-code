@@ -7,17 +7,18 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 	createConfig "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/config"
 	createRow "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/row"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
-func CreateCommand(depsProvider dependencies.Provider) *cobra.Command {
-	createConfigCmd := CreateConfigCommand(depsProvider)
-	createRowCmd := CreateRowCommand(depsProvider)
+func CreateCommand(p dependencies.Provider) *cobra.Command {
+	createConfigCmd := CreateConfigCommand(p)
+	createRowCmd := CreateRowCommand(p)
 	cmd := &cobra.Command{
 		Use:   `create`,
 		Short: helpmsg.Read(`local/create/short`),
 		Long:  helpmsg.Read(`local/create/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			d := depsProvider.Dependencies()
+			d := p.Dependencies()
 
 			// Project is required
 			if _, err := d.LocalProject(false); err != nil {
@@ -42,27 +43,32 @@ func CreateCommand(depsProvider dependencies.Provider) *cobra.Command {
 }
 
 // nolint: dupl
-func CreateConfigCommand(depsProvider dependencies.Provider) *cobra.Command {
+func CreateConfigCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "config",
 		Short: helpmsg.Read(`local/create/config/short`),
 		Long:  helpmsg.Read(`local/create/config/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			d := depsProvider.Dependencies()
+			d := p.Dependencies()
 
-			// Project is required
-			if _, err := d.LocalProject(false); err != nil {
+			// Load project state
+			prj, err := d.LocalProject(false)
+			if err != nil {
+				return err
+			}
+			projectState, err := prj.LoadState(loadState.LocalOperationOptions())
+			if err != nil {
 				return err
 			}
 
 			// Options
-			options, err := d.Dialogs().AskCreateConfig(d, createConfig.LoadStateOptions())
+			options, err := d.Dialogs().AskCreateConfig(projectState, d)
 			if err != nil {
 				return err
 			}
 
 			// Create config
-			return createConfig.Run(options, d)
+			return createConfig.Run(projectState, options, d)
 		},
 	}
 
@@ -74,27 +80,32 @@ func CreateConfigCommand(depsProvider dependencies.Provider) *cobra.Command {
 }
 
 // nolint: dupl
-func CreateRowCommand(depsProvider dependencies.Provider) *cobra.Command {
+func CreateRowCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "row",
 		Short: helpmsg.Read(`local/create/row/short`),
 		Long:  helpmsg.Read(`local/create/row/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			d := depsProvider.Dependencies()
+			d := p.Dependencies()
 
-			// Project is required
-			if _, err := d.LocalProject(false); err != nil {
+			// Load project state
+			prj, err := d.LocalProject(false)
+			if err != nil {
+				return err
+			}
+			projectState, err := prj.LoadState(loadState.LocalOperationOptions())
+			if err != nil {
 				return err
 			}
 
 			// Options
-			options, err := d.Dialogs().AskCreateRow(d, createRow.LoadStateOptions())
+			options, err := d.Dialogs().AskCreateRow(projectState, d)
 			if err != nil {
 				return err
 			}
 
 			// Create row
-			return createRow.Run(options, d)
+			return createRow.Run(projectState, options, d)
 		},
 	}
 

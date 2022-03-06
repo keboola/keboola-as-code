@@ -8,50 +8,55 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/pull"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
-func PullCommand(depsProvider dependencies.Provider) *cobra.Command {
+func PullCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "pull",
 		Short: helpmsg.Read(`sync/pull/short`),
 		Long:  helpmsg.Read(`sync/pull/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			d := depsProvider.Dependencies()
+			d := p.Dependencies()
 			start := time.Now()
 			logger := d.Logger()
+
+			// Load project state
+			force := d.Options().GetBool(`force`)
+			prj, err := d.LocalProject(force)
+			if err != nil {
+				if !force && errors.As(err, &project.InvalidManifestError{}) {
+					logger.Info()
+					logger.Info("Use --force to override the invalid local state.")
+				}
+				return err
+			}
+			projectState, err := prj.LoadState(loadState.PullOptions(force))
+			if err != nil {
+				if !force && errors.As(err, &loadState.InvalidLocalStateError{}) {
+					logger.Info()
+					logger.Info("Use --force to override the invalid local state.")
+				}
+				return err
+			}
 
 			// Options
 			options := pull.Options{
 				DryRun:            d.Options().GetBool(`dry-run`),
-				Force:             d.Options().GetBool(`force`),
 				LogUntrackedPaths: true,
-			}
-
-			// Project is required
-			if _, err := d.LocalProject(options.Force); err != nil {
-				return err
 			}
 
 			// Send cmd successful/failed event
 			if eventSender, err := d.EventSender(); err == nil {
-				defer func() {
-					eventSender.SendCmdEvent(start, cmdErr, "pull")
-				}()
+				defer func() { eventSender.SendCmdEvent(start, cmdErr, "sync-pull") }()
 			} else {
 				return err
 			}
 
 			// Pull
-			if err := pull.Run(options, d); err != nil && errors.As(err, &loadState.InvalidLocalStateError{}) {
-				logger.Info()
-				logger.Info("Use --force to override the invalid local state.")
-				return err
-			} else if err != nil {
-				return err
-			}
-			return nil
+			return pull.Run(projectState, options, d)
 		},
 	}
 

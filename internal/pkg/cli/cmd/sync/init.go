@@ -11,13 +11,13 @@ import (
 	initOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/init"
 )
 
-func InitCommand(depsProvider dependencies.Provider) *cobra.Command {
+func InitCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init",
 		Short: helpmsg.Read(`sync/init/short`),
 		Long:  helpmsg.Read(`sync/init/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			d := depsProvider.Dependencies()
+			d := p.Dependencies()
 			start := time.Now()
 
 			// Require empty dir
@@ -33,9 +33,7 @@ func InitCommand(depsProvider dependencies.Provider) *cobra.Command {
 
 			// Send cmd successful/failed event
 			if eventSender, err := d.EventSender(); err == nil {
-				defer func() {
-					eventSender.SendCmdEvent(start, cmdErr, "init")
-				}()
+				defer func() { eventSender.SendCmdEvent(start, cmdErr, "sync-init") }()
 			} else {
 				return err
 			}

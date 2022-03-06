@@ -9,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 )
 
-func DescribeCommand(depsProvider dependencies.Provider) *cobra.Command {
+func DescribeCommand(_ dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "describe",
 		Short: helpmsg.Read(`template/describe/short`),

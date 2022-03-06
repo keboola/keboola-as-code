@@ -8,20 +8,25 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/push"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
-func PushCommand(depsProvider dependencies.Provider) *cobra.Command {
+func PushCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `push ["change description"]`,
 		Short: helpmsg.Read(`sync/push/short`),
 		Long:  helpmsg.Read(`sync/push/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			d := depsProvider.Dependencies()
+			d := p.Dependencies()
 			start := time.Now()
-			logger := d.Logger()
 
-			// Project is required
-			if _, err := d.LocalProject(false); err != nil {
+			// Load project state
+			prj, err := d.LocalProject(false)
+			if err != nil {
+				return err
+			}
+			projectState, err := prj.LoadState(loadState.PushOptions())
+			if err != nil {
 				return err
 			}
 
@@ -30,7 +35,6 @@ func PushCommand(depsProvider dependencies.Provider) *cobra.Command {
 			if len(args) > 0 {
 				changeDescription = args[0]
 			}
-			logger.Debugf(`Change description: "%s"`, changeDescription)
 
 			// Options
 			options := push.Options{
@@ -43,15 +47,13 @@ func PushCommand(depsProvider dependencies.Provider) *cobra.Command {
 
 			// Send cmd successful/failed event
 			if eventSender, err := d.EventSender(); err == nil {
-				defer func() {
-					eventSender.SendCmdEvent(start, cmdErr, "push")
-				}()
+				defer func() { eventSender.SendCmdEvent(start, cmdErr, "sync-push") }()
 			} else {
 				return err
 			}
 
 			// Push
-			return push.Run(options, d)
+			return push.Run(projectState, options, d)
 		},
 	}
 

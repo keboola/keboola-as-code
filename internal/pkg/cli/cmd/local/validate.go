@@ -6,19 +6,24 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/validate"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
-func ValidateCommand(depsProvider dependencies.Provider) *cobra.Command {
+func ValidateCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "validate",
 		Short: helpmsg.Read(`local/validate/short`),
 		Long:  helpmsg.Read(`local/validate/long`),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			d := depsProvider.Dependencies()
-			logger := d.Logger()
+			d := p.Dependencies()
 
-			// Project is required
-			if _, err := d.LocalProject(false); err != nil {
+			// Load project state
+			prj, err := d.LocalProject(false)
+			if err != nil {
+				return err
+			}
+			projectState, err := prj.LoadState(loadState.LocalOperationOptions())
+			if err != nil {
 				return err
 			}
 
@@ -29,11 +34,11 @@ func ValidateCommand(depsProvider dependencies.Provider) *cobra.Command {
 			}
 
 			// Validate
-			if err := validate.Run(options, d); err != nil {
+			if err := validate.Run(projectState, options, d); err != nil {
 				return err
 			}
 
-			logger.Info("Everything is good.")
+			d.Logger().Info("Everything is good.")
 			return nil
 		},
 	}

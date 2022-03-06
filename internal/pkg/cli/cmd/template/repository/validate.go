@@ -9,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 )
 
-func ValidateCommand(d dependencies.Provider) *cobra.Command {
+func ValidateCommand(_ dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `validate`,
 		Short: helpmsg.Read(`template/repository/validate/short`),

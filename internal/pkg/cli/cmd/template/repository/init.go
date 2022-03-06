@@ -8,19 +8,20 @@ import (
 	initOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/repository/init"
 )
 
-func InitCommand(depsProvider dependencies.Provider) *cobra.Command {
+func InitCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `init`,
 		Short: helpmsg.Read(`template/repository/init/short`),
 		Long:  helpmsg.Read(`template/repository/init/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			d := depsProvider.Dependencies()
+			d := p.Dependencies()
 
 			// Require empty dir
 			if _, err := d.EmptyDir(); err != nil {
 				return err
 			}
 
+			// Init repository
 			return initOp.Run(d)
 		},
 	}

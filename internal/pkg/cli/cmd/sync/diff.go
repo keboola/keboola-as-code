@@ -6,19 +6,25 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/diff/printDiff"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
-func DiffCommand(depsProvider dependencies.Provider) *cobra.Command {
+func DiffCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "diff",
 		Short: helpmsg.Read(`sync/diff/short`),
 		Long:  helpmsg.Read(`sync/diff/long`),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			d := depsProvider.Dependencies()
+			d := p.Dependencies()
 			logger := d.Logger()
 
-			// Project is required
-			if _, err := d.LocalProject(false); err != nil {
+			// Load project state
+			prj, err := d.LocalProject(false)
+			if err != nil {
+				return err
+			}
+			projectState, err := prj.LoadState(loadState.DiffOptions())
+			if err != nil {
 				return err
 			}
 
@@ -29,7 +35,7 @@ func DiffCommand(depsProvider dependencies.Provider) *cobra.Command {
 			}
 
 			// Print diff
-			results, err := printDiff.Run(options, d)
+			results, err := printDiff.Run(projectState, options, d)
 			if err != nil {
 				return err
 			}
