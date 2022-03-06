@@ -7,9 +7,9 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testdeps"
 )
 
 func TestValidateState(t *testing.T) {
@@ -21,8 +21,8 @@ func TestValidateState(t *testing.T) {
 	envs.Set("LOCAL_STATE_MAIN_BRANCH_ID", `123`)
 	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", `456`)
 
-	// Dependencies
-	d := testdeps.New()
+	// Container
+	d := dependencies.NewTestContainer()
 	state := d.EmptyState()
 	_, httpTransport := d.UseMockedStorageApi()
 

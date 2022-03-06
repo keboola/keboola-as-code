@@ -9,11 +9,11 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/interactive"
+	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testdeps"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	useTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
@@ -25,7 +25,7 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 
 	// Test dependencies
 	dialog, console := createDialogs(t, true)
-	d := testdeps.New()
+	d := dependencies.NewTestContainer()
 	d.SetFs(testfs.MinimalProjectFs(t))
 	_, httpTransport := d.UseMockedStorageApi()
 	testapi.AddMockedComponents(httpTransport)
@@ -248,7 +248,7 @@ func TestAskUseTemplateOptionsIfNotMet(t *testing.T) {
 
 	// Test dependencies
 	dialog, console := createDialogs(t, true)
-	d := testdeps.New()
+	d := dependencies.NewTestContainer()
 	d.SetFs(testfs.MinimalProjectFs(t))
 	_, httpTransport := d.UseMockedStorageApi()
 	testapi.AddMockedComponents(httpTransport)

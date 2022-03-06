@@ -9,12 +9,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/interactive"
+	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testdeps"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	createTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/create"
 )
@@ -24,7 +24,7 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 
 	// Test dependencies
 	dialog, console := createDialogs(t, true)
-	d := testdeps.New()
+	d := dependencies.NewTestContainer()
 	_, httpTransport := d.UseMockedStorageApi()
 	addMockedObjectsResponses(httpTransport)
 
@@ -212,7 +212,7 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 
 	// Test dependencies
 	dialog, _ := createDialogs(t, false)
-	d := testdeps.New()
+	d := dependencies.NewTestContainer()
 	_, httpTransport := d.UseMockedStorageApi()
 	addMockedObjectsResponses(httpTransport)
 
@@ -308,7 +308,7 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 
 	// Test dependencies
 	dialog, _ := createDialogs(t, false)
-	d := testdeps.New()
+	d := dependencies.NewTestContainer()
 	_, httpTransport := d.UseMockedStorageApi()
 	addMockedObjectsResponses(httpTransport)
 

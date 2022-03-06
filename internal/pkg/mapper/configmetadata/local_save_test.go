@@ -5,15 +5,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/configmetadata"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testdeps"
 )
 
 func TestConfigMetadataMapper_MapBeforeLocalSave(t *testing.T) {
 	t.Parallel()
-	d := testdeps.New()
+	d := dependencies.NewTestContainer()
 	logger := d.DebugLogger()
 	mockedState := d.EmptyState()
 	mockedState.Mapper().AddMapper(configmetadata.NewMapper(mockedState, d))

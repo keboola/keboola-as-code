@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
@@ -16,7 +17,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testdeps"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
@@ -920,8 +920,8 @@ func (tc *testCase) run(t *testing.T) {
 	envs.Set(`LOCAL_PROJECT_ID`, `12345`)
 	testhelper.ReplaceEnvsDir(fs, `/`, envs)
 
-	// Dependencies
-	d := testdeps.New()
+	// Container
+	d := dependencies.NewTestContainer()
 	d.SetFs(fs)
 	d.UseMockedSchedulerApi()
 	storageApi, httpTransport := d.UseMockedStorageApi()

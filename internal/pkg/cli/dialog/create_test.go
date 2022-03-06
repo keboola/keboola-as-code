@@ -8,11 +8,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testdeps"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	createConfig "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/config"
@@ -23,7 +23,7 @@ import (
 func TestAskCreateBranch(t *testing.T) {
 	t.Parallel()
 	dialog, console := createDialogs(t, true)
-	d := testdeps.New()
+	d := dependencies.NewTestContainer()
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -86,9 +86,9 @@ func TestAskCreateConfig(t *testing.T) {
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(`main`, naming.MetaFile), `{"name": "Main"}`)))
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(`main`, naming.DescriptionFile), ``)))
 
-	// testDependencies
+	// Test dependencies
 	dialog, console := createDialogs(t, true)
-	d := testdeps.New()
+	d := dependencies.NewTestContainer()
 	d.SetFs(fs)
 	d.UseMockedSchedulerApi()
 	_, httpTransport := d.UseMockedStorageApi()
@@ -185,9 +185,9 @@ func TestAskCreateRow(t *testing.T) {
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(configDir, naming.ConfigFile), `{}`)))
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(configDir, naming.DescriptionFile), ``)))
 
-	// testDependencies
+	// Test dependencies
 	dialog, console := createDialogs(t, true)
-	d := testdeps.New()
+	d := dependencies.NewTestContainer()
 	d.SetFs(fs)
 	d.UseMockedSchedulerApi()
 	_, httpTransport := d.UseMockedStorageApi()

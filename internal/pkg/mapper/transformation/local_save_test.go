@@ -5,18 +5,18 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/corefiles"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testdeps"
 )
 
 func TestLocalSaveTransformationEmpty(t *testing.T) {
 	t.Parallel()
-	d := testdeps.New()
+	d := dependencies.NewTestContainer()
 	state := d.EmptyState()
 	state.Mapper().AddMapper(corefiles.NewMapper(state))
 	state.Mapper().AddMapper(transformation.NewMapper(state))
@@ -38,7 +38,7 @@ func TestLocalSaveTransformationEmpty(t *testing.T) {
 
 func TestTransformationMapper_MapBeforeLocalSave(t *testing.T) {
 	t.Parallel()
-	d := testdeps.New()
+	d := dependencies.NewTestContainer()
 	state := d.EmptyState()
 	state.Mapper().AddMapper(corefiles.NewMapper(state))
 	state.Mapper().AddMapper(transformation.NewMapper(state))

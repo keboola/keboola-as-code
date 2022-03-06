@@ -11,9 +11,9 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/ci"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
+	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testdeps"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	createManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/create"
 	genWorkflows "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/workflows/generate"
@@ -25,7 +25,7 @@ func TestAskInitOptions(t *testing.T) {
 
 	// testDependencies
 	dialog, console := createDialogs(t, true)
-	d := testdeps.New()
+	d := dependencies.NewTestContainer()
 	_, httpTransport := d.UseMockedStorageApi()
 
 	branches := []*model.Branch{{BranchKey: model.BranchKey{Id: 123}, Name: "Main", IsDefault: true}}

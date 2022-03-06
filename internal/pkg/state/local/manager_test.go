@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
@@ -19,7 +20,6 @@ import (
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testdeps"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
@@ -155,7 +155,7 @@ func TestLocalLoadMapper(t *testing.T) {
 
 func newEmptyState(t *testing.T) *state.State {
 	t.Helper()
-	d := testdeps.New()
+	d := dependencies.NewTestContainer()
 	mockedState := d.EmptyState()
 	mockedState.Mapper().AddMapper(corefiles.NewMapper(mockedState))
 	return mockedState

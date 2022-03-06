@@ -24,7 +24,7 @@ const (
 func TestAskAllowedBranchesByFlag(t *testing.T) {
 	t.Parallel()
 	dialog, console := createDialogs(t, true)
-	d := testdeps.New()
+	d := dependencies.NewTestContainer()
 	d.SetStorageApi(mockedStorageApi([]*model.Branch{{BranchKey: model.BranchKey{Id: 123}, Name: "Main", IsDefault: true}}))
 	d.Options().SetDefault(`branches`, `*`)
 	d.Options().Set(`branches`, `foo, bar`)
@@ -41,7 +41,7 @@ func TestAskAllowedBranchesByFlag(t *testing.T) {
 func TestAskAllowedBranchesDefaultValue(t *testing.T) {
 	t.Parallel()
 	dialog, _ := createDialogs(t, false)
-	d := testdeps.New()
+	d := dependencies.NewTestContainer()
 	d.SetStorageApi(mockedStorageApi([]*model.Branch{{BranchKey: model.BranchKey{Id: 123}, Name: "Main", IsDefault: true}}))
 	d.Options().SetDefault(`branches`, `*`)
 
@@ -56,7 +56,7 @@ func TestAskAllowedBranchesDefaultValue(t *testing.T) {
 func TestAskAllowedBranchesOnlyMain(t *testing.T) {
 	t.Parallel()
 	dialog, console := createDialogs(t, true)
-	d := testdeps.New()
+	d := dependencies.NewTestContainer()
 	d.SetStorageApi(mockedStorageApi([]*model.Branch{{BranchKey: model.BranchKey{Id: 123}, Name: "Main", IsDefault: true}}))
 
 	// Interaction
@@ -85,7 +85,7 @@ func TestAskAllowedBranchesOnlyMain(t *testing.T) {
 func TestAskAllowedBranchesAllBranches(t *testing.T) {
 	t.Parallel()
 	dialog, console := createDialogs(t, true)
-	d := testdeps.New()
+	d := dependencies.NewTestContainer()
 	d.SetStorageApi(mockedStorageApi([]*model.Branch{{BranchKey: model.BranchKey{Id: 123}, Name: "Main", IsDefault: true}}))
 
 	// Interaction
@@ -114,7 +114,7 @@ func TestAskAllowedBranchesAllBranches(t *testing.T) {
 func TestAskAllowedBranchesSelectedBranches(t *testing.T) {
 	t.Parallel()
 	dialog, console := createDialogs(t, true)
-	d := testdeps.New()
+	d := dependencies.NewTestContainer()
 	d.SetStorageApi(mockedStorageApi([]*model.Branch{
 		{BranchKey: model.BranchKey{Id: 10}, Name: "Main", IsDefault: true},
 		{BranchKey: model.BranchKey{Id: 20}, Name: "foo", IsDefault: false},
@@ -174,7 +174,7 @@ func TestAskAllowedBranchesSelectedBranches(t *testing.T) {
 func TestAskAllowedBranchesTypeList(t *testing.T) {
 	t.Parallel()
 	dialog, console := createDialogs(t, true)
-	d := testdeps.New()
+	d := dependencies.NewTestContainer()
 	d.SetStorageApi(mockedStorageApi([]*model.Branch{
 		{BranchKey: model.BranchKey{Id: 10}, Name: "Main", IsDefault: true},
 		{BranchKey: model.BranchKey{Id: 20}, Name: "foo", IsDefault: false},

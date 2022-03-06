@@ -5,15 +5,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	. "github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode/helper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testdeps"
 )
 
 func TestGetSharedCodeByPath(t *testing.T) {
 	t.Parallel()
-	d := testdeps.New()
+	d := dependencies.NewTestContainer()
 	mockedState := d.EmptyState()
 
 	sharedCodeKey, _ := fixtures.CreateSharedCode(t, mockedState)
@@ -41,7 +41,7 @@ func TestGetSharedCodeByPath(t *testing.T) {
 func TestGetSharedCodeRowByPath(t *testing.T) {
 	t.Parallel()
 
-	d := testdeps.New()
+	d := dependencies.NewTestContainer()
 	mockedState := d.EmptyState()
 
 	sharedCodeKey, _ := fixtures.CreateSharedCode(t, mockedState)
@@ -69,7 +69,7 @@ func TestGetSharedCodeRowByPath(t *testing.T) {
 func TestGetSharedCodeVariablesId(t *testing.T) {
 	t.Parallel()
 
-	d := testdeps.New()
+	d := dependencies.NewTestContainer()
 	mockedState := d.EmptyState()
 
 	fixtures.CreateSharedCode(t, mockedState)

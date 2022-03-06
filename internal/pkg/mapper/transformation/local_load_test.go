@@ -7,11 +7,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/corefiles"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testdeps"
 )
 
 func TestLoadTransformationInvalidConfigAndMeta(t *testing.T) {
@@ -22,7 +22,7 @@ func TestLoadTransformationInvalidConfigAndMeta(t *testing.T) {
 		Type:         model.TransformationType,
 	}
 
-	d := testdeps.New()
+	d := dependencies.NewTestContainer()
 	state := d.EmptyState()
 	state.Mapper().AddMapper(corefiles.NewMapper(state))
 	state.Mapper().AddMapper(transformation.NewMapper(state))
