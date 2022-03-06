@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 var ErrMissingStorageApiHost = fmt.Errorf(`missing Storage API host`)
@@ -22,10 +22,7 @@ func (p *Dialogs) AskStorageApiHost(options *options.Options) (string, error) {
 		})
 	}
 
-	host = strings.TrimRight(host, "/")
-	host = strings.TrimPrefix(host, "https://")
-	host = strings.TrimPrefix(host, "http://")
-
+	host = strhelper.NormalizeHost(host)
 	if len(host) == 0 {
 		return "", ErrMissingStorageApiHost
 	}
