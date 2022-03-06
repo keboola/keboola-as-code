@@ -9,4 +9,4 @@ INFO	  + C new-branch/extractor/ex-generic-v2/empty
 %A
 INFO	Pull done.
 %A
-DEBUG	Sent "create-branch" successful event id: "%s"
+DEBUG	Sent "remote-create-branch" successful event id: "%s"

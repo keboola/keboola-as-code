@@ -8,4 +8,4 @@ DEBUG	Saved "main/transformation/keboola.python-transformation-v2/empty-transfor
 %A
 INFO	Pull done.
 %A
-DEBUG	Sent "pull" successful event id: "%s"
+DEBUG	Sent "sync-pull" successful event id: "%s"
