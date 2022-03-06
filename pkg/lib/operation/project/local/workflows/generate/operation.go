@@ -1,8 +1,8 @@
 package generate
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/workflows"
 )
 
@@ -19,20 +19,14 @@ func (o Options) Enabled() bool {
 
 type dependencies interface {
 	Logger() log.Logger
-	LocalProject(ignoreErrors bool) (*project.Project, error)
 }
 
-func Run(o Options, d dependencies) (err error) {
+func Run(fs filesystem.Fs, o Options, d dependencies) (err error) {
 	if !o.Enabled() {
 		return nil
 	}
 
-	prj, err := d.LocalProject(false)
-	if err != nil {
-		return err
-	}
-
-	return workflows.GenerateFiles(d.Logger(), prj.Fs(), &workflows.Options{
+	return workflows.GenerateFiles(d.Logger(), fs, &workflows.Options{
 		Validate:   o.Validate,
 		Push:       o.Push,
 		Pull:       o.Pull,

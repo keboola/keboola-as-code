@@ -15,7 +15,6 @@ import (
 	saveInputs "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/inputs/save"
 	createTemplateManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/manifest/create"
 	saveRepositoryManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/repository/manifest/save"
-	loadStateOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/state/load"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/template/sync/pull"
 )
 
@@ -33,7 +32,6 @@ type dependencies interface {
 	Logger() log.Logger
 	LocalTemplateRepository() (*repository.Repository, error)
 	Template(reference model.TemplateRef) (*template.Template, error)
-	TemplateState(options loadStateOp.Options) (*template.State, error)
 }
 
 func Run(o Options, d dependencies) (err error) {
@@ -52,16 +50,14 @@ func Run(o Options, d dependencies) (err error) {
 	templateRecord.Description = o.Description
 
 	// Get next major version
-	var version model.SemVersion
+	version := model.ZeroSemVersion()
 	if latest, found := templateRecord.LatestVersion(); found {
 		version = latest.Version.IncMajor()
-	} else {
-		version = model.ZeroSemVersion()
 	}
 
 	// Init template directory
 	versionRecord := templateRecord.AddVersion(version)
-	if err := initTemplateDir(o, d, repo.Fs(), versionRecord); err != nil {
+	if _, err := createDir(o, d, repo.Fs(), versionRecord); err != nil {
 		return err
 	}
 
@@ -84,7 +80,7 @@ func Run(o Options, d dependencies) (err error) {
 	}
 
 	// Pull remote objects
-	if err := pull.Run(pull.Options{Template: tmpl, Context: templateCtx}, d); err != nil {
+	if err := pull.Run(tmpl, pull.Options{Context: templateCtx}, d); err != nil {
 		return err
 	}
 
@@ -99,16 +95,16 @@ func Run(o Options, d dependencies) (err error) {
 	return nil
 }
 
-func initTemplateDir(o Options, d dependencies, repositoryDir filesystem.Fs, record repositoryManifest.VersionRecord) error {
+func createDir(o Options, d dependencies, repositoryDir filesystem.Fs, record repositoryManifest.VersionRecord) (filesystem.Fs, error) {
 	// Create directory
-	fs, err := createTemplateDir.Run(createTemplateDir.Options{RepositoryDir: repositoryDir, Path: record.Path()}, d)
+	fs, err := createTemplateDir.Run(repositoryDir, createTemplateDir.Options{Path: record.Path()}, d)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Create src dir
 	if err := fs.Mkdir(template.SrcDirectory); err != nil {
-		return err
+		return nil, err
 	}
 
 	// Create tests dir + .gitkeep
@@ -117,20 +113,20 @@ func initTemplateDir(o Options, d dependencies, repositoryDir filesystem.Fs, rec
 		AddTag(model.FileKindGitKeep).
 		AddTag(model.FileTypeOther)
 	if err := fs.WriteFile(gitKeepFile); err != nil {
-		return err
+		return nil, err
 	}
 
 	// Create files
 	if _, err := createTemplateManifest.Run(fs, d); err != nil {
-		return err
+		return nil, err
 	}
 	if _, err := createTemplateInputs.Run(fs, d); err != nil {
-		return err
+		return nil, err
 	}
 	if err := createReadme(o, d, fs); err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return fs, nil
 }
 
 func createReadme(o Options, d dependencies, fs filesystem.Fs) error {

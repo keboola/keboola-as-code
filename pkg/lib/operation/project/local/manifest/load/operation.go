@@ -3,7 +3,7 @@ package load
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/project"
 )
 
 type Options struct {
@@ -12,18 +12,12 @@ type Options struct {
 
 type dependencies interface {
 	Logger() log.Logger
-	ProjectDir() (filesystem.Fs, error)
 }
 
-func Run(o Options, d dependencies) (*manifest.Manifest, error) {
+func Run(fs filesystem.Fs, o Options, d dependencies) (*project.Manifest, error) {
 	logger := d.Logger()
 
-	projectDir, err := d.ProjectDir()
-	if err != nil {
-		return nil, err
-	}
-
-	m, err := manifest.Load(projectDir, o.IgnoreErrors)
+	m, err := project.LoadManifest(fs, o.IgnoreErrors)
 	if err != nil {
 		return nil, err
 	}

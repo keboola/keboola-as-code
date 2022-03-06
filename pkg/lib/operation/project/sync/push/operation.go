@@ -10,7 +10,6 @@ import (
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/encrypt"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/validate"
 	createDiff "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/diff/create"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 type Options struct {
@@ -25,31 +24,15 @@ type dependencies interface {
 	Ctx() context.Context
 	Logger() log.Logger
 	EncryptionApi() (*encryptionapi.Api, error)
-	ProjectState(loadOptions loadState.Options) (*project.State, error)
 }
 
-func LoadStateOptions() loadState.Options {
-	return loadState.Options{
-		LoadLocalState:          true,
-		LoadRemoteState:         true,
-		IgnoreNotFoundErr:       false,
-		IgnoreInvalidLocalState: false,
-	}
-}
-
-func Run(o Options, d dependencies) error {
+func Run(projectState *project.State, o Options, d dependencies) error {
 	ctx := d.Ctx()
 	logger := d.Logger()
 
-	// Load state
-	projectState, err := d.ProjectState(LoadStateOptions())
-	if err != nil {
-		return err
-	}
-
 	// Encrypt before push?
 	if o.Encrypt {
-		if err := encrypt.Run(encrypt.Options{DryRun: o.DryRun, LogEmpty: true}, d); err != nil {
+		if err := encrypt.Run(projectState, encrypt.Options{DryRun: o.DryRun, LogEmpty: true}, d); err != nil {
 			return err
 		}
 	}
@@ -67,7 +50,7 @@ func Run(o Options, d dependencies) error {
 		ValidateSecrets:    !o.Encrypt || !o.DryRun,
 		ValidateJsonSchema: true,
 	}
-	if err := validate.Run(validateOptions, d); err != nil {
+	if err := validate.Run(projectState, validateOptions, d); err != nil {
 		return err
 	}
 

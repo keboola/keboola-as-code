@@ -5,7 +5,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/encrypt"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 type Options struct {
@@ -16,27 +15,13 @@ type Options struct {
 type dependencies interface {
 	Logger() log.Logger
 	EncryptionApi() (*encryptionapi.Api, error)
-	ProjectState(loadOptions loadState.Options) (*project.State, error)
 }
 
-func Run(o Options, d dependencies) (err error) {
+func Run(projectState *project.State, o Options, d dependencies) (err error) {
 	logger := d.Logger()
 
 	// Get Encryption API
 	encryptionApi, err := d.EncryptionApi()
-	if err != nil {
-		return err
-	}
-
-	// Load state
-	loadOptions := loadState.Options{
-		LoadLocalState:          true,
-		LoadRemoteState:         false,
-		IgnoreNotFoundErr:       false,
-		IgnoreInvalidLocalState: false,
-	}
-	// Load state
-	projectState, err := d.ProjectState(loadOptions)
 	if err != nil {
 		return err
 	}

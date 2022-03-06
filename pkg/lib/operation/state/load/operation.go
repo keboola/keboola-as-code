@@ -1,7 +1,6 @@
 package load
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/api/schedulerapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -38,10 +37,63 @@ type OptionsWithFilter struct {
 	RemoteFilter *model.ObjectsFilter
 }
 
+func InitOptions(pull bool) Options {
+	return Options{
+		LoadLocalState:          true,
+		LoadRemoteState:         pull,
+		IgnoreNotFoundErr:       false,
+		IgnoreInvalidLocalState: false,
+	}
+}
+
+func DiffOptions() Options {
+	return Options{
+		LoadLocalState:          true,
+		LoadRemoteState:         true,
+		IgnoreNotFoundErr:       false,
+		IgnoreInvalidLocalState: false,
+	}
+}
+
+func PullOptions(force bool) Options {
+	return Options{
+		LoadLocalState:          true,
+		LoadRemoteState:         true,
+		IgnoreNotFoundErr:       false,
+		IgnoreInvalidLocalState: force,
+	}
+}
+
+func PushOptions() Options {
+	return Options{
+		LoadLocalState:          true,
+		LoadRemoteState:         true,
+		IgnoreNotFoundErr:       false,
+		IgnoreInvalidLocalState: false,
+	}
+}
+
+func PersistOptions() Options {
+	return Options{
+		LoadLocalState:          true,
+		LoadRemoteState:         false,
+		IgnoreNotFoundErr:       true,
+		IgnoreInvalidLocalState: false,
+	}
+}
+
+func LocalOperationOptions() Options {
+	return Options{
+		LoadLocalState:          true,
+		LoadRemoteState:         false,
+		IgnoreNotFoundErr:       false,
+		IgnoreInvalidLocalState: false,
+	}
+}
+
 type dependencies interface {
 	Logger() log.Logger
 	StorageApi() (*storageapi.Api, error)
-	SchedulerApi() (*schedulerapi.Api, error)
 }
 
 func Run(container state.ObjectsContainer, o OptionsWithFilter, d dependencies) (*state.State, error) {

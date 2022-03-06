@@ -5,7 +5,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	createDiff "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/diff/create"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 type Options struct {
@@ -15,26 +14,10 @@ type Options struct {
 
 type dependencies interface {
 	Logger() log.Logger
-	ProjectState(loadOptions loadState.Options) (*project.State, error)
 }
 
-func LoadStateOptions() loadState.Options {
-	return loadState.Options{
-		LoadLocalState:          true,
-		LoadRemoteState:         true,
-		IgnoreNotFoundErr:       false,
-		IgnoreInvalidLocalState: false,
-	}
-}
-
-func Run(o Options, d dependencies) (*diff.Results, error) {
+func Run(projectState *project.State, o Options, d dependencies) (*diff.Results, error) {
 	logger := d.Logger()
-
-	// Load state
-	projectState, err := d.ProjectState(LoadStateOptions())
-	if err != nil {
-		return nil, err
-	}
 
 	// Diff
 	results, err := createDiff.Run(createDiff.Options{Objects: projectState})

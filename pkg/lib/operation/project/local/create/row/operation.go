@@ -9,7 +9,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/save"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 type Options struct {
@@ -23,29 +22,13 @@ type dependencies interface {
 	Ctx() context.Context
 	Logger() log.Logger
 	StorageApi() (*storageapi.Api, error)
-	ProjectState(loadOptions loadState.Options) (*project.State, error)
 }
 
-func LoadStateOptions() loadState.Options {
-	return loadState.Options{
-		LoadLocalState:          true,
-		LoadRemoteState:         false,
-		IgnoreNotFoundErr:       false,
-		IgnoreInvalidLocalState: false,
-	}
-}
-
-func Run(o Options, d dependencies) (err error) {
+func Run(projectState *project.State, o Options, d dependencies) (err error) {
 	logger := d.Logger()
 
 	// Get Storage API
 	storageApi, err := d.StorageApi()
-	if err != nil {
-		return err
-	}
-
-	// Load state
-	projectState, err := d.ProjectState(LoadStateOptions())
 	if err != nil {
 		return err
 	}
