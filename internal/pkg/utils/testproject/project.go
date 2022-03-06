@@ -126,17 +126,17 @@ func (p *Project) DefaultBranch() *model.Branch {
 	return p.defaultBranch
 }
 
-func (p *Project) StorageApiHost() string {
-	p.assertLocked()
-	return p.host
-}
-
 func (p *Project) Name() string {
 	p.assertLocked()
 	return p.storageApi.ProjectName()
 }
 
-func (p *Project) Token() string {
+func (p *Project) StorageApiHost() string {
+	p.assertLocked()
+	return p.host
+}
+
+func (p *Project) StorageApiToken() string {
 	p.assertLocked()
 	return p.storageApi.Token().Token
 }
@@ -452,7 +452,7 @@ func (p *Project) tryLock(t *testing.T, envs *env.Map) bool {
 	p.setEnv(`TEST_KBC_PROJECT_ID`, cast.ToString(p.Id()))
 	p.setEnv(`TEST_KBC_PROJECT_NAME`, p.Name())
 	p.setEnv(`TEST_KBC_STORAGE_API_HOST`, p.StorageApiHost())
-	p.setEnv(`TEST_KBC_STORAGE_API_TOKEN`, p.Token())
+	p.setEnv(`TEST_KBC_STORAGE_API_TOKEN`, p.StorageApiToken())
 	p.logf(`Project locked`)
 
 	return true
