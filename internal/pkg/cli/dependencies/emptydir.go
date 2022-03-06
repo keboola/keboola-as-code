@@ -7,34 +7,25 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-var (
-	ErrProjectDirFound    = fmt.Errorf("project directory not expected, but found")
-	ErrTemplateDirFound   = fmt.Errorf("template directory not expected, but found")
-	ErrRepositoryDirFound = fmt.Errorf("repository directory not expected, but found")
-)
-
-func (c *common) EmptyDir() (filesystem.Fs, error) {
-	if c.emptyDir == nil {
-		// Get FS
-		fs := c.Fs()
-
+func (v *container) EmptyDir() (filesystem.Fs, error) {
+	if v.emptyDir == nil {
 		// Project dir is not expected
-		if c.LocalProjectExists() {
+		if v.LocalProjectExists() {
 			return nil, ErrProjectDirFound
 		}
 
 		// Template dir is not expected
-		if c.LocalTemplateExists() {
+		if v.LocalTemplateExists() {
 			return nil, ErrTemplateDirFound
 		}
 
 		// Repository dir is not expected
-		if c.LocalTemplateRepositoryExists() {
+		if v.LocalTemplateRepositoryExists() {
 			return nil, ErrRepositoryDirFound
 		}
 
 		// Read directory
-		items, err := fs.ReadDir(`.`)
+		items, err := v.fs.ReadDir(`.`)
 		if err != nil {
 			return nil, err
 		}
@@ -55,11 +46,11 @@ func (c *common) EmptyDir() (filesystem.Fs, error) {
 
 		// Directory must be empty
 		if found.Len() > 0 {
-			return nil, utils.PrefixError(fmt.Sprintf(`directory "%s" it not empty, found`, fs.BasePath()), found)
+			return nil, utils.PrefixError(fmt.Sprintf(`directory "%s" it not empty, found`, v.fs.BasePath()), found)
 		}
 
-		c.emptyDir = fs
+		v.emptyDir = v.fs
 	}
 
-	return c.emptyDir, nil
+	return v.emptyDir, nil
 }
