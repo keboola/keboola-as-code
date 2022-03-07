@@ -10,4 +10,4 @@ DEBUG	Execution plan is valid.
 %A
 INFO	Push done.
 %A
-DEBUG	Sent "push" successful event id: "%s"
+DEBUG	Sent "sync-push" successful event id: "%s"

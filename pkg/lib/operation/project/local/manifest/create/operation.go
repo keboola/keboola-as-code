@@ -6,6 +6,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
+	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 )
 
@@ -19,17 +20,17 @@ type dependencies interface {
 	StorageApi() (*storageapi.Api, error)
 }
 
-func Run(fs filesystem.Fs, o Options, d dependencies) error {
+func Run(fs filesystem.Fs, o Options, d dependencies) (*project.Manifest, error) {
 	logger := d.Logger()
 
 	// Get Storage API
 	storageApi, err := d.StorageApi()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Create
-	manifest := projectManifest.New(storageApi.ProjectId(), storageApi.Host())
+	manifest := project.NewManifest(storageApi.ProjectId(), storageApi.Host())
 
 	// Configure
 	manifest.SetNamingTemplate(o.Naming)
@@ -37,9 +38,9 @@ func Run(fs filesystem.Fs, o Options, d dependencies) error {
 
 	// Save
 	if err = manifest.Save(fs); err != nil {
-		return err
+		return nil, err
 	}
 
 	logger.Infof("Created manifest file \"%s\".", projectManifest.Path())
-	return nil
+	return manifest, nil
 }

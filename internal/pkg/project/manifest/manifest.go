@@ -1,14 +1,21 @@
 package manifest
 
 import (
-	"fmt"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
+
+type InvalidManifestError struct {
+	error
+}
+
+func (e *InvalidManifestError) Unwrap() error {
+	return e.error
+}
 
 type records = manifest.Records
 
@@ -41,7 +48,7 @@ func Load(fs filesystem.Fs, ignoreErrors bool) (*Manifest, error) {
 	// Load file content
 	content, err := loadFile(fs)
 	if err != nil && (!ignoreErrors || content == nil) {
-		return nil, err
+		return nil, InvalidManifestError{err}
 	}
 
 	// Create manifest
@@ -56,7 +63,7 @@ func Load(fs filesystem.Fs, ignoreErrors bool) (*Manifest, error) {
 
 	// Set records
 	if err := m.records.SetRecords(content.records()); err != nil && !ignoreErrors {
-		return nil, fmt.Errorf(`cannot load manifest: %w`, err)
+		return nil, InvalidManifestError{utils.PrefixError("invalid manifest", err)}
 	}
 
 	// Return

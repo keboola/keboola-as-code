@@ -6,7 +6,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/encrypt"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 type Options struct {
@@ -16,28 +15,13 @@ type Options struct {
 
 type dependencies interface {
 	Logger() log.Logger
-	ProjectState(loadOptions loadState.Options) (*project.State, error)
 }
 
-func LoadStateOptions() loadState.Options {
-	return loadState.Options{
-		LoadLocalState:          true,
-		LoadRemoteState:         false,
-		IgnoreNotFoundErr:       false,
-		IgnoreInvalidLocalState: false,
-	}
-}
-
-func Run(o Options, d dependencies) (err error) {
+func Run(projectState *project.State, o Options, d dependencies) (err error) {
 	logger := d.Logger()
-	projectState, err := d.ProjectState(LoadStateOptions())
-	if err != nil {
-		return err
-	}
-
-	errors := utils.NewMultiError()
 
 	// Validate schemas
+	errors := utils.NewMultiError()
 	if o.ValidateJsonSchema {
 		if err := schema.ValidateSchemas(projectState); err != nil {
 			errors.Append(err)

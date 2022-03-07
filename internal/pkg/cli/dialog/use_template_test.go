@@ -9,14 +9,15 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/interactive"
+	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testdeps"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	useTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 // If condition for restricted input is met by setting the age above the limit.
@@ -25,10 +26,12 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 
 	// Test dependencies
 	dialog, console := createDialogs(t, true)
-	d := testdeps.New()
+	d := dependencies.NewTestContainer()
 	d.SetFs(testfs.MinimalProjectFs(t))
 	_, httpTransport := d.UseMockedStorageApi()
 	testapi.AddMockedComponents(httpTransport)
+	projectState, err := d.LocalProjectState(loadState.Options{LoadLocalState: true})
+	assert.NoError(t, err)
 
 	// Set fake file editor
 	dialog.Prompt.(*interactive.Prompt).SetEditor(`true`)
@@ -221,7 +224,7 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 		},
 	}
 
-	output, err := dialog.AskUseTemplateOptions(template.NewInputs().Set(inputs), d, useTemplate.LoadProjectOptions())
+	output, err := dialog.AskUseTemplateOptions(projectState, template.NewInputs().Set(inputs), d.Options())
 	assert.NoError(t, err)
 
 	assert.NoError(t, console.Tty().Close())
@@ -248,10 +251,12 @@ func TestAskUseTemplateOptionsIfNotMet(t *testing.T) {
 
 	// Test dependencies
 	dialog, console := createDialogs(t, true)
-	d := testdeps.New()
+	d := dependencies.NewTestContainer()
 	d.SetFs(testfs.MinimalProjectFs(t))
 	_, httpTransport := d.UseMockedStorageApi()
 	testapi.AddMockedComponents(httpTransport)
+	projectState, err := d.LocalProjectState(loadState.Options{LoadLocalState: true})
+	assert.NoError(t, err)
 
 	// Set fake file editor
 	dialog.Prompt.(*interactive.Prompt).SetEditor(`true`)
@@ -336,7 +341,7 @@ func TestAskUseTemplateOptionsIfNotMet(t *testing.T) {
 		},
 	}
 
-	output, err := dialog.AskUseTemplateOptions(template.NewInputs().Set(inputs), d, useTemplate.LoadProjectOptions())
+	output, err := dialog.AskUseTemplateOptions(projectState, template.NewInputs().Set(inputs), d.Options())
 	assert.NoError(t, err)
 
 	assert.NoError(t, console.Tty().Close())

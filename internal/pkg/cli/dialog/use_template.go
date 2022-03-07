@@ -15,45 +15,38 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	useTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 const inputsFileFlag = "inputs-file"
 
 type contextKey string
 
-type useTmplDialogDeps interface {
-	Options() *options.Options
-	ProjectState(loadOptions loadState.Options) (*project.State, error)
-}
-
 type useTmplDialog struct {
 	*Dialogs
-	deps             useTmplDialogDeps
-	loadStateOptions loadState.Options
-	inputsFile       map[string]interface{} // inputs values loaded from a file specified by inputsFileFlag
-	out              useTemplate.Options
-	context          context.Context        // for input.ValidateUserInput
-	inputsValues     map[string]interface{} // for input.Available
+	projectState *project.State
+	options      *options.Options
+	inputsFile   map[string]interface{} // inputs values loaded from a file specified by inputsFileFlag
+	out          useTemplate.Options
+	context      context.Context        // for input.ValidateUserInput
+	inputsValues map[string]interface{} // for input.Available
 }
 
 // AskUseTemplateOptions - dialog for using the template in the project.
-func (p *Dialogs) AskUseTemplateOptions(inputs *template.Inputs, d useTmplDialogDeps, loadStateOptions loadState.Options) (useTemplate.Options, error) {
+func (p *Dialogs) AskUseTemplateOptions(projectState *project.State, inputs *template.Inputs, opts *options.Options) (useTemplate.Options, error) {
 	dialog := &useTmplDialog{
-		Dialogs:          p,
-		deps:             d,
-		loadStateOptions: loadStateOptions,
-		context:          context.Background(),
-		inputsValues:     make(map[string]interface{}),
+		Dialogs:      p,
+		projectState: projectState,
+		options:      opts,
+		context:      context.Background(),
+		inputsValues: make(map[string]interface{}),
 	}
 	return dialog.ask(inputs)
 }
 
 func (d *useTmplDialog) ask(inputs *input.Inputs) (useTemplate.Options, error) {
 	// Load inputs file
-	opts := d.deps.Options()
-	if opts.IsSet(inputsFileFlag) {
-		path := opts.GetString(inputsFileFlag)
+	if d.options.IsSet(inputsFileFlag) {
+		path := d.options.GetString(inputsFileFlag)
 		content, err := os.ReadFile(path) // nolint:forbidigo // file may be outside the project, so the OS package is used
 		if err != nil {
 			return d.out, fmt.Errorf(`cannot read inputs file "%s": %w`, path, err)
@@ -63,14 +56,8 @@ func (d *useTmplDialog) ask(inputs *input.Inputs) (useTemplate.Options, error) {
 		}
 	}
 
-	// Load state
-	projectState, err := d.deps.ProjectState(d.loadStateOptions)
-	if err != nil {
-		return d.out, err
-	}
-
 	// Target branch
-	targetBranch, err := d.SelectBranch(opts, projectState.LocalObjects().Branches(), `Select the target branch`)
+	targetBranch, err := d.SelectBranch(d.options, d.projectState.LocalObjects().Branches(), `Select the target branch`)
 	if err != nil {
 		return d.out, err
 	}

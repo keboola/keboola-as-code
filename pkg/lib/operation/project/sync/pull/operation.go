@@ -1,8 +1,6 @@
 package pull
 
 import (
-	"context"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/pull"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
@@ -15,14 +13,11 @@ import (
 
 type Options struct {
 	DryRun            bool
-	Force             bool // ignore invalid local state
 	LogUntrackedPaths bool
 }
 
 type dependencies interface {
-	Ctx() context.Context
 	Logger() log.Logger
-	ProjectState(loadOptions loadState.Options) (*project.State, error)
 }
 
 func LoadStateOptions(force bool) loadState.Options {
@@ -34,15 +29,8 @@ func LoadStateOptions(force bool) loadState.Options {
 	}
 }
 
-func Run(o Options, d dependencies) (err error) {
-	ctx := d.Ctx()
+func Run(projectState *project.State, o Options, d dependencies) (err error) {
 	logger := d.Logger()
-
-	// Load state
-	projectState, err := d.ProjectState(LoadStateOptions(o.Force))
-	if err != nil {
-		return err
-	}
 
 	// Diff
 	results, err := createDiff.Run(createDiff.Options{Objects: projectState})
@@ -67,7 +55,7 @@ func Run(o Options, d dependencies) (err error) {
 		}
 
 		// Invoke
-		if err := plan.Invoke(logger, ctx, projectState.LocalManager(), projectState.RemoteManager(), ``); err != nil {
+		if err := plan.Invoke(logger, projectState.Ctx(), projectState.LocalManager(), projectState.RemoteManager(), ``); err != nil {
 			return err
 		}
 
@@ -77,12 +65,12 @@ func Run(o Options, d dependencies) (err error) {
 		}
 
 		// Normalize paths
-		if _, err := rename.Run(rename.Options{DryRun: false, LogEmpty: false}, d); err != nil {
+		if _, err := rename.Run(projectState, rename.Options{DryRun: false, LogEmpty: false}, d); err != nil {
 			return err
 		}
 
 		// Validate schemas and encryption
-		if err := validate.Run(validate.Options{ValidateSecrets: true, ValidateJsonSchema: true}, d); err != nil {
+		if err := validate.Run(projectState, validate.Options{ValidateSecrets: true, ValidateJsonSchema: true}, d); err != nil {
 			logger.Warn(`Warning, ` + err.Error())
 			logger.Warn()
 			logger.Warnf(`The project has been pulled, but it is not in a valid state.`)

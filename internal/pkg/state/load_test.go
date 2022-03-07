@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -16,7 +17,6 @@ import (
 	. "github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testdeps"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
@@ -35,12 +35,12 @@ func TestLoadState(t *testing.T) {
 	envs.Set("LOCAL_STATE_MAIN_BRANCH_ID", envs.MustGet(`TEST_BRANCH_MAIN_ID`))
 	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`))
 
-	// Dependencies
+	// Container
 	m, fs := loadTestManifest(t, envs, "minimal")
-	d := testdeps.New()
+	d := dependencies.NewTestContainer()
 	d.InitFromTestProject(testProject)
 	d.SetFs(fs)
-	d.SetProject(project.New(d.Fs(), m, d))
+	d.SetLocalProject(project.New(d.Fs(), m, d))
 	prj, err := d.LocalProject(false)
 	assert.NoError(t, err)
 

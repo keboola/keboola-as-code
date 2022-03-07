@@ -30,8 +30,6 @@ type dependencies interface {
 	StorageApi() (*storageapi.Api, error)
 	SchedulerApi() (*schedulerapi.Api, error)
 	EmptyDir() (filesystem.Fs, error)
-	LocalProject(ignoreErrors bool) (*project.Project, error)
-	ProjectState(loadOptions loadState.Options) (*project.State, error)
 }
 
 func Run(o Options, d dependencies) (err error) {
@@ -48,7 +46,8 @@ func Run(o Options, d dependencies) (err error) {
 	}
 
 	// Create manifest
-	if err := createManifest.Run(fs, o.ManifestOptions, d); err != nil {
+	manifest, err := createManifest.Run(fs, o.ManifestOptions, d)
+	if err != nil {
 		return fmt.Errorf(`cannot create manifest: %w`, err)
 	}
 
@@ -61,7 +60,7 @@ func Run(o Options, d dependencies) (err error) {
 	errors := utils.NewMultiError()
 
 	// Generate CI workflows
-	if err := genWorkflows.Run(o.Workflows, d); err != nil {
+	if err := genWorkflows.Run(fs, o.Workflows, d); err != nil {
 		errors.Append(utils.PrefixError(`workflows generation failed`, err))
 	}
 
@@ -71,12 +70,17 @@ func Run(o Options, d dependencies) (err error) {
 	if o.Pull {
 		logger.Info()
 		logger.Info(`Running pull.`)
-		pullOptions := pull.Options{
-			DryRun:            false,
-			Force:             false,
-			LogUntrackedPaths: false,
+
+		// Load project state
+		prj := project.New(fs, manifest, d)
+		projectState, err := prj.LoadState(loadState.InitOptions(o.Pull))
+		if err != nil {
+			return err
 		}
-		if err := pull.Run(pullOptions, d); err != nil {
+
+		// Pull
+		pullOptions := pull.Options{DryRun: false, LogUntrackedPaths: false}
+		if err := pull.Run(projectState, pullOptions, d); err != nil {
 			errors.Append(utils.PrefixError(`pull failed`, err))
 		}
 	}

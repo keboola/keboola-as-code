@@ -7,10 +7,10 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testdeps"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
@@ -21,7 +21,7 @@ func TestRenameAllPlan(t *testing.T) {
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filesystem.Dir(testFile)
 	fs := testFs(t, filesystem.Join(testDir, "..", "..", "fixtures", "local", "to-rename"))
-	d := testdeps.New()
+	d := dependencies.NewTestContainer()
 	d.SetFs(fs)
 
 	// Mocked API response
@@ -43,7 +43,9 @@ func TestRenameAllPlan(t *testing.T) {
 	httpTransport.RegisterResponder("GET", `=~/storage/components/keboola.ex-db-mysql`, getMySqlExResponder.Once())
 
 	// Load state
-	projectState, err := d.ProjectState(loadState.Options{LoadLocalState: true})
+	prj, err := d.LocalProject(false)
+	assert.NoError(t, err)
+	projectState, err := prj.LoadState(loadState.Options{LoadLocalState: true})
 	assert.NoError(t, err)
 
 	// Get rename plan

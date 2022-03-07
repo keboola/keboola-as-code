@@ -8,22 +8,23 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testdeps"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	createConfig "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/config"
 	createRow "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/row"
 	createBranch "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/branch"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 func TestAskCreateBranch(t *testing.T) {
 	t.Parallel()
 	dialog, console := createDialogs(t, true)
-	d := testdeps.New()
+	d := dependencies.NewTestContainer()
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -86,14 +87,16 @@ func TestAskCreateConfig(t *testing.T) {
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(`main`, naming.MetaFile), `{"name": "Main"}`)))
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(`main`, naming.DescriptionFile), ``)))
 
-	// testDependencies
+	// Test dependencies
 	dialog, console := createDialogs(t, true)
-	d := testdeps.New()
+	d := dependencies.NewTestContainer()
 	d.SetFs(fs)
 	d.UseMockedSchedulerApi()
 	_, httpTransport := d.UseMockedStorageApi()
 	testapi.AddMockedComponents(httpTransport)
 	testapi.AddMockedApiIndex(httpTransport)
+	projectState, err := d.LocalProjectState(loadState.Options{LoadLocalState: true})
+	assert.NoError(t, err)
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -127,7 +130,7 @@ func TestAskCreateConfig(t *testing.T) {
 	}()
 
 	// Run
-	opts, err := dialog.AskCreateConfig(d, createConfig.LoadStateOptions())
+	opts, err := dialog.AskCreateConfig(projectState, d)
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -185,14 +188,16 @@ func TestAskCreateRow(t *testing.T) {
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(configDir, naming.ConfigFile), `{}`)))
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(configDir, naming.DescriptionFile), ``)))
 
-	// testDependencies
+	// Test dependencies
 	dialog, console := createDialogs(t, true)
-	d := testdeps.New()
+	d := dependencies.NewTestContainer()
 	d.SetFs(fs)
 	d.UseMockedSchedulerApi()
 	_, httpTransport := d.UseMockedStorageApi()
 	testapi.AddMockedComponents(httpTransport)
 	testapi.AddMockedApiIndex(httpTransport)
+	projectState, err := d.LocalProjectState(loadState.Options{LoadLocalState: true})
+	assert.NoError(t, err)
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -226,7 +231,7 @@ func TestAskCreateRow(t *testing.T) {
 	}()
 
 	// Run
-	opts, err := dialog.AskCreateRow(d, createRow.LoadStateOptions())
+	opts, err := dialog.AskCreateRow(projectState, d)
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()

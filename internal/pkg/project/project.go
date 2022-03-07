@@ -12,9 +12,16 @@ import (
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 type Manifest = projectManifest.Manifest
+
+type InvalidManifestError = projectManifest.InvalidManifestError
+
+func NewManifest(projectId int, apiHost string) *Manifest {
+	return projectManifest.New(projectId, apiHost)
+}
 
 func LoadManifest(fs filesystem.Fs, ignoreErrors bool) (*Manifest, error) {
 	return projectManifest.Load(fs, ignoreErrors)
@@ -28,7 +35,7 @@ type dependencies interface {
 }
 
 type Project struct {
-	dependencies
+	deps       dependencies
 	fs         filesystem.Fs
 	fileLoader filesystem.FileLoader
 	manifest   *Manifest
@@ -36,10 +43,10 @@ type Project struct {
 
 func New(fs filesystem.Fs, manifest *Manifest, d dependencies) *Project {
 	return &Project{
-		dependencies: d,
-		fs:           fs,
-		fileLoader:   fs.FileLoader(),
-		manifest:     manifest,
+		deps:       d,
+		fs:         fs,
+		fileLoader: fs.FileLoader(),
+		manifest:   manifest,
 	}
 }
 
@@ -64,9 +71,26 @@ func (p *Project) Filter() model.ObjectsFilter {
 }
 
 func (p *Project) Ctx() context.Context {
-	return p.dependencies.Ctx()
+	return p.deps.Ctx()
 }
 
 func (p *Project) MappersFor(state *state.State) (mapper.Mappers, error) {
-	return MappersFor(state, p.dependencies)
+	return MappersFor(state, p.deps)
+}
+
+func (p *Project) LoadState(options loadState.Options) (*State, error) {
+	// Use filter from the project manifest
+	filter := p.Filter()
+	loadOptionsWithFilter := loadState.OptionsWithFilter{
+		Options:      options,
+		LocalFilter:  &filter,
+		RemoteFilter: &filter,
+	}
+
+	// Load state
+	s, err := loadState.Run(p, loadOptionsWithFilter, p.deps)
+	if err != nil {
+		return nil, err
+	}
+	return NewState(s, p), nil
 }

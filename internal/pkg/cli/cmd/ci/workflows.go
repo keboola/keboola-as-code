@@ -9,16 +9,17 @@ import (
 	workflowsGen "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/workflows/generate"
 )
 
-func WorkflowsCommand(depsProvider dependencies.Provider) *cobra.Command {
+func WorkflowsCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "workflows",
 		Short: helpmsg.Read(`ci/workflows/short`),
 		Long:  helpmsg.Read(`ci/workflows/long`),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			d := depsProvider.Dependencies()
+			d := p.Dependencies()
 
-			// Project is required
-			if _, err := d.LocalProject(false); err != nil {
+			// Local project
+			prj, err := d.LocalProject(false)
+			if err != nil {
 				return err
 			}
 
@@ -26,7 +27,7 @@ func WorkflowsCommand(depsProvider dependencies.Provider) *cobra.Command {
 			options := d.Dialogs().AskWorkflowsOptions(d.Options())
 
 			// Generate workflows
-			return workflowsGen.Run(options, d)
+			return workflowsGen.Run(prj.Fs(), options, d)
 		},
 	}
 

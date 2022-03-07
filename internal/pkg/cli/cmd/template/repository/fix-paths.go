@@ -9,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 )
 
-func FixPathsCommand(d dependencies.Provider) *cobra.Command {
+func FixPathsCommand(_ dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `fix-paths`,
 		Short: helpmsg.Read(`template/repository/fix-paths/short`),

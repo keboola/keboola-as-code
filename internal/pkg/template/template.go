@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
 	templateInput "github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 const (
@@ -30,6 +31,10 @@ type (
 	InputValue   = templateInput.Value
 	InputsValues = templateInput.Values
 )
+
+func ManifestPath() string {
+	return templateManifest.Path()
+}
 
 func NewManifest() *Manifest {
 	return templateManifest.New()
@@ -57,6 +62,7 @@ type _reference = model.TemplateRef
 
 type Template struct {
 	_reference
+	deps         dependencies
 	fs           filesystem.Fs
 	srcDir       filesystem.Fs
 	testsDir     filesystem.Fs
@@ -65,14 +71,14 @@ type Template struct {
 	inputs       *Inputs
 }
 
-func New(reference model.TemplateRef, fs filesystem.Fs, manifestFile *ManifestFile, inputs *Inputs) (*Template, error) {
+func New(reference model.TemplateRef, fs filesystem.Fs, manifestFile *ManifestFile, inputs *Inputs, d dependencies) (*Template, error) {
 	// Src dir
 	srcDir, err := fs.SubDirFs(SrcDirectory)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Template{_reference: reference, fs: fs, srcDir: srcDir, manifestFile: manifestFile, inputs: inputs}, nil
+	return &Template{_reference: reference, deps: d, fs: fs, srcDir: srcDir, manifestFile: manifestFile, inputs: inputs}, nil
 }
 
 func (t *Template) Reference() model.TemplateRef {
@@ -123,43 +129,65 @@ func (t *Template) ManifestExists() (bool, error) {
 	return t.srcDir.IsFile(t.ManifestPath()), nil
 }
 
-func (t *Template) ToObjectsContainer(ctx Context, d dependencies) (*ObjectsContainer, error) {
+func (t *Template) LoadState(ctx Context, options loadState.Options) (*State, error) {
+	localFilter := ctx.LocalObjectsFilter()
+	remoteFilter := ctx.RemoteObjectsFilter()
+	loadOptions := loadState.OptionsWithFilter{
+		Options:      options,
+		LocalFilter:  &localFilter,
+		RemoteFilter: &remoteFilter,
+	}
+
+	// Evaluate manifest
+	container, err := t.evaluate(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Load state
+	if s, err := loadState.Run(container, loadOptions, t.deps); err == nil {
+		return NewState(s, container), nil
+	} else {
+		return nil, err
+	}
+}
+
+func (t *Template) evaluate(ctx Context) (*evaluatedTemplate, error) {
+	// Evaluate manifest
 	m, err := t.manifestFile.Evaluate(ctx.JsonNetContext())
 	if err != nil {
 		return nil, err
 	}
 
-	return &ObjectsContainer{
-		Template:     t,
-		dependencies: d,
-		context:      ctx,
-		manifest:     m,
+	return &evaluatedTemplate{
+		Template: t,
+		context:  ctx,
+		manifest: m,
 	}, nil
 }
 
-type ObjectsContainer struct {
+type evaluatedTemplate struct {
 	*Template
-	dependencies
 	context  Context
 	manifest *Manifest
 }
 
-func (c *ObjectsContainer) Manifest() manifest.Manifest {
+func (c *evaluatedTemplate) Manifest() manifest.Manifest {
 	return c.manifest
 }
 
-func (c *ObjectsContainer) TemplateManifest() *Manifest {
+func (c *evaluatedTemplate) TemplateManifest() *Manifest {
 	return c.manifest
 }
 
-func (c *ObjectsContainer) TemplateCtx() Context {
+func (c *evaluatedTemplate) TemplateCtx() Context {
 	return c.context
 }
 
-func (c *ObjectsContainer) Ctx() context.Context {
+func (c *evaluatedTemplate) Ctx() context.Context {
 	return c.context
 }
 
-func (c *ObjectsContainer) MappersFor(state *state.State) (mapper.Mappers, error) {
-	return MappersFor(state, c.dependencies, c.context)
+func (c *evaluatedTemplate) MappersFor(state *state.State) (mapper.Mappers, error) {
+	return MappersFor(state, c.deps, c.context)
 }

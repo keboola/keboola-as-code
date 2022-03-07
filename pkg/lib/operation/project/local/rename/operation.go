@@ -6,7 +6,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/save"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 type Options struct {
@@ -16,23 +15,10 @@ type Options struct {
 
 type dependencies interface {
 	Logger() log.Logger
-	ProjectState(loadOptions loadState.Options) (*project.State, error)
 }
 
-func Run(o Options, d dependencies) (changed bool, err error) {
+func Run(projectState *project.State, o Options, d dependencies) (changed bool, err error) {
 	logger := d.Logger()
-
-	// Load state
-	loadOptions := loadState.Options{
-		LoadLocalState:          true,
-		LoadRemoteState:         false,
-		IgnoreNotFoundErr:       false,
-		IgnoreInvalidLocalState: false,
-	}
-	projectState, err := d.ProjectState(loadOptions)
-	if err != nil {
-		return false, err
-	}
 
 	// Get plan
 	plan, err := rename.NewPlan(projectState.State())

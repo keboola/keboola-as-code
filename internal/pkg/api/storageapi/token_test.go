@@ -32,7 +32,7 @@ func TestGetToken(t *testing.T) {
 	logger := log.NewDebugLogger()
 	api := New(project.StorageApiHost(), context.Background(), logger, false)
 
-	tokenValue := project.Token()
+	tokenValue := project.StorageApiToken()
 	token, err := api.GetToken(tokenValue)
 	assert.NoError(t, err)
 	assert.Regexp(t, `DEBUG  HTTP      GET https://.*/v2/storage/tokens/verify | 200 | .*`, logger.AllMessages())

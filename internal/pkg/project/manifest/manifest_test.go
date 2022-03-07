@@ -181,7 +181,7 @@ func TestManifestCyclicDependency(t *testing.T) {
 	manifest, err := Load(fs, false)
 	assert.Nil(t, manifest)
 	assert.Error(t, err)
-	assert.Equal(t, `cannot load manifest: a cyclic relation was found when resolving path to config "branch:123/component:keboola.variables/config:111"`, err.Error())
+	assert.Equal(t, "invalid manifest:\n  - a cyclic relation was found when resolving path to config \"branch:123/component:keboola.variables/config:111\"", err.Error())
 }
 
 func minimalJson() string {

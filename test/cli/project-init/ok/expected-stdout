@@ -46,4 +46,4 @@ DEBUG	Saved ".keboola/manifest.json"
 %A
 INFO	Pull done.
 %A
-DEBUG	Sent "init" successful event id: "%s"
+DEBUG	Sent "sync-init" successful event id: "%s"

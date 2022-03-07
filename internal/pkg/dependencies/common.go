@@ -3,59 +3,86 @@ package dependencies
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/encryptionapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/schedulerapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi/eventsender"
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/git"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/template"
+	templateRepository "github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	loadInputs "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/inputs/load"
+	loadManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/manifest/load"
+	loadRepositoryManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/repository/manifest/load"
 )
 
-func newCommonDeps(d AbstractDeps, ctx context.Context) *common {
-	return &common{AbstractDeps: d, ctx: ctx}
+// Abstract provides dependencies which are obtained in different in CLI and templates API.
+type Abstract interface {
+	Logger() log.Logger
+	Envs() *env.Map
+	ApiVerboseLogs() bool
+	StorageApiHost() (string, error)
+	StorageApiToken() (string, error)
 }
 
-type common struct {
-	AbstractDeps
+// Common provides common dependencies for CLI and templates API.
+type Common interface {
+	Abstract
+	Ctx() context.Context
+	Components() (*model.ComponentsMap, error)
+	StorageApi() (*storageapi.Api, error)
+	EncryptionApi() (*encryptionapi.Api, error)
+	SchedulerApi() (*schedulerapi.Api, error)
+	EventSender() (*eventsender.Sender, error)
+	Template(reference model.TemplateRef) (*template.Template, error)
+	TemplateRepository(definition model.TemplateRepository, forTemplate model.TemplateRef) (*templateRepository.Repository, error)
+}
+
+// NewCommonContainer returns dependencies container for production.
+func NewCommonContainer(d Abstract, ctx context.Context) Common {
+	return &commonContainer{Abstract: d, ctx: ctx}
+}
+
+type commonContainer struct {
+	Abstract
 	ctx           context.Context
-	emptyDir      filesystem.Fs
 	serviceUrls   map[storageapi.ServiceId]storageapi.ServiceUrl
 	storageApi    *storageapi.Api
 	encryptionApi *encryptionapi.Api
 	schedulerApi  *schedulerapi.Api
 	eventSender   *eventsender.Sender
-	// Project
-	project      *project.Project
-	projectDir   filesystem.Fs
-	projectState *project.State
 }
 
-func (c *common) Ctx() context.Context {
-	return c.ctx
+func (v *commonContainer) Ctx() context.Context {
+	return v.ctx
 }
 
-func (c *common) Components() (*model.ComponentsMap, error) {
-	storageApi, err := c.StorageApi()
+func (v *commonContainer) Components() (*model.ComponentsMap, error) {
+	storageApi, err := v.StorageApi()
 	if err != nil {
 		return nil, err
 	}
 	return storageApi.Components(), nil
 }
 
-func (c *common) StorageApi() (*storageapi.Api, error) {
-	if c.storageApi == nil {
+func (v *commonContainer) StorageApi() (*storageapi.Api, error) {
+	if v.storageApi == nil {
 		// Get host
 		errors := utils.NewMultiError()
-		host, err := c.StorageApiHost()
+		host, err := v.StorageApiHost()
 		if err != nil {
 			errors.Append(err)
 		}
 
 		// Get token
-		token, err := c.StorageApiToken()
+		token, err := v.StorageApiToken()
 		if err != nil {
 			errors.Append(err)
 		}
@@ -66,78 +93,66 @@ func (c *common) StorageApi() (*storageapi.Api, error) {
 		}
 
 		// Create API
-		if api, err := storageapi.NewWithToken(c.Ctx(), c.Logger(), host, token, c.ApiVerboseLogs()); err == nil {
-			c.storageApi = api
+		if api, err := storageapi.NewWithToken(v.Ctx(), v.Logger(), host, token, v.ApiVerboseLogs()); err == nil {
+			v.storageApi = api
 		} else {
 			return nil, err
 		}
-
-		// Token and manifest project ID must be same
-		if c.LocalProjectExists() {
-			prj, err := c.LocalProject(false)
-			if err != nil {
-				return nil, err
-			}
-			projectManifest := prj.ProjectManifest()
-			if projectManifest != nil && projectManifest.ProjectId() != c.storageApi.ProjectId() {
-				return nil, fmt.Errorf(`given token is from the project "%d", but in manifest is defined project "%d"`, c.storageApi.ProjectId(), projectManifest.ProjectId())
-			}
-		}
 	}
-	return c.storageApi, nil
+	return v.storageApi, nil
 }
 
-func (c *common) EncryptionApi() (*encryptionapi.Api, error) {
-	if c.encryptionApi == nil {
+func (v *commonContainer) EncryptionApi() (*encryptionapi.Api, error) {
+	if v.encryptionApi == nil {
 		// Get Storage API
-		storageApi, err := c.StorageApi()
+		storageApi, err := v.StorageApi()
 		if err != nil {
 			return nil, err
 		}
 
 		// Get Host
-		host, err := c.serviceUrl(`encryption`)
+		host, err := v.serviceUrl(`encryption`)
 		if err != nil {
 			return nil, fmt.Errorf(`cannot get Encryption API host: %w`, err)
 		}
 
-		c.encryptionApi = encryptionapi.New(c.Ctx(), c.Logger(), host, storageApi.ProjectId(), c.ApiVerboseLogs())
+		v.encryptionApi = encryptionapi.New(v.Ctx(), v.Logger(), host, storageApi.ProjectId(), v.ApiVerboseLogs())
 	}
-	return c.encryptionApi, nil
+	return v.encryptionApi, nil
 }
 
-func (c *common) SchedulerApi() (*schedulerapi.Api, error) {
-	if c.schedulerApi == nil {
+func (v *commonContainer) SchedulerApi() (*schedulerapi.Api, error) {
+	if v.schedulerApi == nil {
 		// Get Storage API
-		storageApi, err := c.StorageApi()
+		storageApi, err := v.StorageApi()
 		if err != nil {
 			return nil, err
 		}
 
 		// Get Host
-		host, err := c.serviceUrl(`scheduler`)
+		host, err := v.serviceUrl(`scheduler`)
 		if err != nil {
 			return nil, fmt.Errorf(`cannot get Scheduler API host: %w`, err)
 		}
 
-		c.schedulerApi = schedulerapi.New(c.Ctx(), c.Logger(), host, storageApi.Token().Token, c.ApiVerboseLogs())
+		v.schedulerApi = schedulerapi.New(v.Ctx(), v.Logger(), host, storageApi.Token().Token, v.ApiVerboseLogs())
 	}
-	return c.schedulerApi, nil
+	return v.schedulerApi, nil
 }
 
-func (c *common) EventSender() (*eventsender.Sender, error) {
-	if c.eventSender == nil {
-		storageApi, err := c.StorageApi()
+func (v *commonContainer) EventSender() (*eventsender.Sender, error) {
+	if v.eventSender == nil {
+		storageApi, err := v.StorageApi()
 		if err != nil {
 			return nil, err
 		}
-		c.eventSender = eventsender.New(c.Logger(), storageApi)
+		v.eventSender = eventsender.New(v.Logger(), storageApi)
 	}
-	return c.eventSender, nil
+	return v.eventSender, nil
 }
 
-func (c *common) serviceUrl(id string) (string, error) {
-	serviceUrlById, err := c.serviceUrlById()
+func (v *commonContainer) serviceUrl(id string) (string, error) {
+	serviceUrlById, err := v.serviceUrlById()
 	if err != nil {
 		return "", err
 	}
@@ -148,18 +163,86 @@ func (c *common) serviceUrl(id string) (string, error) {
 	}
 }
 
-func (c *common) serviceUrlById() (map[storageapi.ServiceId]storageapi.ServiceUrl, error) {
-	if c.serviceUrls == nil {
-		storageApi, err := c.StorageApi()
+func (v *commonContainer) serviceUrlById() (map[storageapi.ServiceId]storageapi.ServiceUrl, error) {
+	if v.serviceUrls == nil {
+		storageApi, err := v.StorageApi()
 		if err != nil {
 			return nil, err
 		}
 		urlById, err := storageApi.ServicesUrlById()
 		if err == nil {
-			c.serviceUrls = urlById
+			v.serviceUrls = urlById
 		} else {
 			return nil, fmt.Errorf(`cannot load services: %w`, err)
 		}
 	}
-	return c.serviceUrls, nil
+	return v.serviceUrls, nil
+}
+
+func (v *commonContainer) TemplateRepository(definition model.TemplateRepository, forTemplate model.TemplateRef) (*templateRepository.Repository, error) {
+	fs, err := v.templateRepositoryFs(definition, forTemplate)
+	if err != nil {
+		return nil, err
+	}
+	manifest, err := loadRepositoryManifest.Run(fs, v)
+	if err != nil {
+		return nil, err
+	}
+	return templateRepository.New(fs, manifest), nil
+}
+
+func (v *commonContainer) templateRepositoryFs(definition model.TemplateRepository, template model.TemplateRef) (filesystem.Fs, error) {
+	switch definition.Type {
+	case model.RepositoryTypeDir:
+		path := definition.Path
+		// nolint: forbidigo
+		if !filepath.IsAbs(path) {
+			return nil, fmt.Errorf(`repository path must be absolute, given "%s"`, path)
+		}
+		return aferofs.NewLocalFs(v.Logger(), path, definition.WorkingDir)
+	case model.RepositoryTypeGit:
+		return git.CheckoutTemplateRepository(template, v.Logger())
+	default:
+		panic(fmt.Errorf(`unexpected repository type "%s"`, definition.Type))
+	}
+}
+
+func (v *commonContainer) Template(reference model.TemplateRef) (*template.Template, error) {
+	// Load repository
+	repository, err := v.TemplateRepository(reference.Repository(), reference)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get template version
+	versionRecord, err := repository.GetTemplateVersion(reference.TemplateId(), reference.Version())
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if template dir exists
+	templatePath := versionRecord.Path()
+	if !repository.Fs().IsDir(templatePath) {
+		return nil, fmt.Errorf(`template dir "%s" not found`, templatePath)
+	}
+
+	// Template dir
+	fs, err := repository.Fs().SubDirFs(templatePath)
+	if err != nil {
+		return nil, err
+	}
+
+	// Load manifest file
+	manifestFile, err := loadManifest.Run(fs, v)
+	if err != nil {
+		return nil, err
+	}
+
+	// Load inputs
+	inputs, err := loadInputs.Run(fs, v)
+	if err != nil {
+		return nil, err
+	}
+
+	return template.New(reference, fs, manifestFile, inputs, v)
 }

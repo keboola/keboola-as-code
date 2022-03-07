@@ -10,15 +10,28 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	useOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
-func UseCommand(depsProvider dependencies.Provider) *cobra.Command {
+func UseCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `use <repository>/<template>/<version>`,
 		Short: helpmsg.Read(`local/template/use/short`),
 		Long:  helpmsg.Read(`local/template/use/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			d := depsProvider.Dependencies()
+			d := p.Dependencies()
+
+			// Local project
+			prj, err := d.LocalProject(false)
+			if err != nil {
+				return err
+			}
+
+			// Load project state
+			projectState, err := prj.LoadState(loadState.LocalOperationOptions())
+			if err != nil {
+				return err
+			}
 
 			// Parse template argument
 			repositoryName, templateId, versionStr, err := parseTemplateArg(args)
@@ -26,14 +39,8 @@ func UseCommand(depsProvider dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			// Load project
-			project, err := d.LocalProject(false)
-			if err != nil {
-				return err
-			}
-
 			// Repository definition
-			manifest := project.ProjectManifest()
+			manifest := projectState.ProjectManifest()
 			repositoryDef, found := manifest.TemplateRepository(repositoryName)
 			if !found {
 				return fmt.Errorf(`template repository "%s" not found in the "%s"`, repositoryName, manifest.Path())
@@ -52,13 +59,13 @@ func UseCommand(depsProvider dependencies.Provider) *cobra.Command {
 			}
 
 			// Options
-			options, err := d.Dialogs().AskUseTemplateOptions(template.Inputs(), d, useOp.LoadProjectOptions())
+			options, err := d.Dialogs().AskUseTemplateOptions(projectState, template.Inputs(), d.Options())
 			if err != nil {
 				return err
 			}
 
-			// Create template
-			return useOp.Run(template, options, d)
+			// Use template
+			return useOp.Run(projectState, template, options, d)
 		},
 	}
 

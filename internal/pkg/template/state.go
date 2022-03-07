@@ -9,10 +9,10 @@ type _state = *state.State
 
 type State struct {
 	_state
-	container *ObjectsContainer
+	container *evaluatedTemplate
 }
 
-func NewState(s *state.State, container *ObjectsContainer) *State {
+func NewState(s *state.State, container *evaluatedTemplate) *State {
 	return &State{_state: s, container: container}
 }
 

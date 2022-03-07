@@ -1,3 +1,4 @@
+// nolint: dupl
 package local
 
 import (
@@ -6,18 +7,24 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/persist"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
-func PersistCommand(depsProvider dependencies.Provider) *cobra.Command {
+func PersistCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "persist",
 		Short: helpmsg.Read(`local/persist/short`),
 		Long:  helpmsg.Read(`local/persist/long`),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			d := depsProvider.Dependencies()
+			d := p.Dependencies()
 
-			// Project is required
-			if _, err := d.LocalProject(false); err != nil {
+			// Load project state
+			prj, err := d.LocalProject(false)
+			if err != nil {
+				return err
+			}
+			projectState, err := prj.LoadState(loadState.PersistOptions())
+			if err != nil {
 				return err
 			}
 
@@ -28,7 +35,7 @@ func PersistCommand(depsProvider dependencies.Provider) *cobra.Command {
 			}
 
 			// Persist
-			return persist.Run(options, d)
+			return persist.Run(projectState, options, d)
 		},
 	}
 

@@ -18,6 +18,6 @@ func Run(fs filesystem.Fs, d dependencies) (*repositoryManifest.Manifest, error)
 		return nil, err
 	}
 
-	logger.Debugf(`Project manifest loaded.`)
+	logger.Debugf(`Repository manifest loaded.`)
 	return m, nil
 }

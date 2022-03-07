@@ -20,7 +20,6 @@ import (
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/rename"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/validate"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
-	loadStateOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/state/load"
 )
 
 type Options struct {
@@ -47,8 +46,6 @@ type dependencies interface {
 	Logger() log.Logger
 	StorageApi() (*storageapi.Api, error)
 	EncryptionApi() (*encryptionapi.Api, error)
-	TemplateState(options loadStateOp.Options) (*template.State, error)
-	ProjectState(loadOptions loadState.Options) (*project.State, error)
 }
 
 func LoadTemplateOptions() loadState.Options {
@@ -60,16 +57,7 @@ func LoadTemplateOptions() loadState.Options {
 	}
 }
 
-func LoadProjectOptions() loadState.Options {
-	return loadState.Options{
-		LoadLocalState:          true,
-		LoadRemoteState:         false,
-		IgnoreNotFoundErr:       false,
-		IgnoreInvalidLocalState: false,
-	}
-}
-
-func Run(tmpl *template.Template, o Options, d dependencies) error {
+func Run(projectState *project.State, tmpl *template.Template, o Options, d dependencies) error {
 	logger := d.Logger()
 
 	// Get Storage API
@@ -85,17 +73,8 @@ func Run(tmpl *template.Template, o Options, d dependencies) error {
 	instanceId := gonanoid.Must()
 
 	// Load template
-	templateState, err := d.TemplateState(loadStateOp.Options{
-		Template:    tmpl,
-		Context:     template.NewUseContext(d.Ctx(), tmpl.Reference(), instanceId, o.TargetBranch, o.Inputs, tickets),
-		LoadOptions: LoadTemplateOptions(),
-	})
-	if err != nil {
-		return err
-	}
-
-	// Load project
-	projectState, err := d.ProjectState(LoadProjectOptions())
+	ctx := template.NewUseContext(d.Ctx(), tmpl.Reference(), instanceId, o.TargetBranch, o.Inputs, tickets)
+	templateState, err := tmpl.LoadState(ctx, LoadTemplateOptions())
 	if err != nil {
 		return err
 	}
@@ -134,7 +113,7 @@ func Run(tmpl *template.Template, o Options, d dependencies) error {
 	}
 
 	// Encrypt values
-	if err := encrypt.Run(encrypt.Options{DryRun: false, LogEmpty: false}, d); err != nil {
+	if err := encrypt.Run(projectState, encrypt.Options{DryRun: false, LogEmpty: false}, d); err != nil {
 		return err
 	}
 
@@ -147,12 +126,12 @@ func Run(tmpl *template.Template, o Options, d dependencies) error {
 	objects.Log(logger, tmpl)
 
 	// Normalize paths
-	if _, err := rename.Run(rename.Options{DryRun: false, LogEmpty: false}, d); err != nil {
+	if _, err := rename.Run(projectState, rename.Options{DryRun: false, LogEmpty: false}, d); err != nil {
 		return err
 	}
 
 	// Validate schemas and encryption
-	if err := validate.Run(validate.Options{ValidateSecrets: true, ValidateJsonSchema: true}, d); err != nil {
+	if err := validate.Run(projectState, validate.Options{ValidateSecrets: true, ValidateJsonSchema: true}, d); err != nil {
 		logger.Warn(`Warning, ` + err.Error())
 		logger.Warn()
 		logger.Warnf(`Please correct the problems listed above.`)

@@ -106,3 +106,10 @@ func NormalizeName(str string) string {
 	str = strings.ToLower(str)
 	return str
 }
+
+func NormalizeHost(host string) string {
+	host = strings.TrimRight(host, "/")
+	host = strings.TrimPrefix(host, "https://")
+	host = strings.TrimPrefix(host, "http://")
+	return host
+}

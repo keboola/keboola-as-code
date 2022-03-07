@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
@@ -14,7 +15,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	. "github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testdeps"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 )
 
@@ -446,8 +446,8 @@ func loadRemoteState(t *testing.T, m *manifest.Manifest, projectStateFile string
 	testProject := testproject.GetTestProject(t, envs)
 	testProject.SetState(projectStateFile)
 
-	d := testdeps.New()
-	d.SetProject(project.New(d.Fs(), m, d))
+	d := dependencies.NewTestContainer()
+	d.SetLocalProject(project.New(d.Fs(), m, d))
 	d.InitFromTestProject(testProject)
 	prj, err := d.LocalProject(false)
 	assert.NoError(t, err)

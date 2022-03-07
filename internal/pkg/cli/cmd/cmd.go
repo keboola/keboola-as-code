@@ -14,12 +14,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/sync"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/template"
-	cliDependencies "github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
-	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -79,7 +78,7 @@ type RootCommand struct {
 	*Cmd
 	Options   *options.Options
 	Logger    log.Logger
-	Deps      *cliDependencies.Container
+	Deps      dependencies.Container
 	logFile   *log.File
 	cmdByPath map[string]*cobra.Command
 	aliases   *orderedmap.OrderedMap
@@ -149,7 +148,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 		root.Logger.Debug(`Working dir: `, filesystem.Join(fs.BasePath(), fs.WorkingDir()))
 
 		// Create dependencies container
-		root.Deps = cliDependencies.NewContainer(root.Context(), envs, fs, dialog.New(prompt), root.Logger, root.Options)
+		root.Deps = dependencies.NewContainer(root.Context(), envs, fs, dialog.New(prompt), root.Logger, root.Options)
 
 		// Check version
 		if err := versionCheck.Run(root.Deps); err != nil {
@@ -214,7 +213,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 	return root
 }
 
-func (root *RootCommand) Dependencies() *cliDependencies.Container {
+func (root *RootCommand) Dependencies() dependencies.Container {
 	return root.Deps
 }
 
@@ -300,6 +299,10 @@ func (root *RootCommand) printError(errRaw error) {
 			root.Logger.Infof(`The path "%s" is an repository directory.`, root.Deps.BasePath())
 			root.Logger.Info(`Please use an empty directory.`)
 			modifiedErrs.Append(fmt.Errorf(`manifest "%s" exists`, repositoryManifest.Path()))
+		case errors.Is(err, dependencies.ErrTemplateDirFound):
+			root.Logger.Infof(`The path "%s" is an template directory.`, root.Deps.BasePath())
+			root.Logger.Info(`Please use an empty directory.`)
+			modifiedErrs.Append(fmt.Errorf(`manifest "%s" exists`, repositoryManifest.Path()))
 		case errors.Is(err, dependencies.ErrProjectManifestNotFound):
 			root.Logger.Infof(`Project directory must contain the "%s" file.`, projectManifest.Path())
 			root.Logger.Infof(`Please change working directory to a project directory.`)
@@ -334,9 +337,9 @@ func (root *RootCommand) printError(errRaw error) {
 			root.Logger.Infof(`Please change working directory to a template directory, for example "template/v1".`)
 			root.Logger.Infof(`Or use the "template create" command.`)
 			modifiedErrs.Append(fmt.Errorf(`none of this and parent directories is template dir`))
-		case errors.Is(err, cliDependencies.ErrMissingStorageApiHost):
+		case errors.Is(err, dependencies.ErrMissingStorageApiHost), errors.Is(err, dialog.ErrMissingStorageApiHost):
 			modifiedErrs.Append(fmt.Errorf(`- missing Storage Api host, please use "--%s" flag or ENV variable "%s"`, options.StorageApiHostOpt, root.Options.GetEnvName(options.StorageApiHostOpt)))
-		case errors.Is(err, cliDependencies.ErrMissingStorageApiToken):
+		case errors.Is(err, dependencies.ErrMissingStorageApiToken), errors.Is(err, dialog.ErrMissingStorageApiToken):
 			modifiedErrs.Append(fmt.Errorf(`- missing Storage Api token, please use "--%s" flag or ENV variable "%s"`, options.StorageApiTokenOpt, root.Options.GetEnvName(options.StorageApiTokenOpt)))
 		default:
 			modifiedErrs.Append(err)

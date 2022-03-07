@@ -1,4 +1,2 @@
 %A
 INFO	Use --force to override the invalid local state.
-%A
-DEBUG	Sent "pull" failed event id: "%s"

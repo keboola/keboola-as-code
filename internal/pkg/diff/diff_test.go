@@ -6,13 +6,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testdeps"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
@@ -832,11 +832,11 @@ func TestResults_Format(t *testing.T) {
 
 func newProjectState(t *testing.T) *state.State {
 	t.Helper()
-	d := testdeps.New()
-	d.SetProject(project.New(d.Fs(), projectManifest.New(12345, `foo.bar`), d))
+	d := dependencies.NewTestContainer()
+	d.SetLocalProject(project.New(d.Fs(), projectManifest.New(12345, `foo.bar`), d))
 	d.UseMockedStorageApi()
 	d.UseMockedSchedulerApi()
-	projectState, err := d.ProjectState(loadState.Options{
+	projectState, err := d.LocalProjectState(loadState.Options{
 		LoadLocalState:  false,
 		LoadRemoteState: false,
 	})

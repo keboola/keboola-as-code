@@ -6,17 +6,14 @@ import (
 )
 
 type Options struct {
-	RepositoryDir filesystem.Fs
-	Path          string
+	Path string
 }
 
 type dependencies interface {
 	Logger() log.Logger
 }
 
-func Run(o Options, d dependencies) (filesystem.Fs, error) {
-	repositoryDir := o.RepositoryDir
-
+func Run(repositoryDir filesystem.Fs, o Options, d dependencies) (filesystem.Fs, error) {
 	// Create template dir
 	if err := repositoryDir.Mkdir(o.Path); err != nil {
 		return nil, err

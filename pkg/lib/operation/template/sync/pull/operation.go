@@ -1,26 +1,20 @@
 package pull
 
 import (
-	"context"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/pull"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	createDiff "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/diff/create"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/manifest/save"
-	loadStateOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/state/load"
 )
 
 type Options struct {
-	Template *template.Template
-	Context  template.Context
+	Context template.Context
 }
 
 type dependencies interface {
-	Ctx() context.Context
 	Logger() log.Logger
-	TemplateState(options loadStateOp.Options) (*template.State, error)
 }
 
 func LoadStateOptions() loadState.Options {
@@ -31,15 +25,11 @@ func LoadStateOptions() loadState.Options {
 	}
 }
 
-func Run(o Options, d dependencies) (err error) {
+func Run(tmpl *template.Template, o Options, d dependencies) (err error) {
 	logger := d.Logger()
 
 	// Load state
-	templateState, err := d.TemplateState(loadStateOp.Options{
-		Template:    o.Template,
-		Context:     o.Context,
-		LoadOptions: LoadStateOptions(),
-	})
+	templateState, err := tmpl.LoadState(o.Context, LoadStateOptions())
 	if err != nil {
 		return err
 	}

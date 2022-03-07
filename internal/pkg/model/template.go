@@ -13,11 +13,12 @@ const (
 )
 
 type TemplateRepository struct {
-	Type TemplateRepositoryType `json:"type" validate:"oneof=dir git"`
-	Name string                 `json:"name" validate:"required"`
-	Path string                 `json:"path,omitempty" validate:"required_if=Type path"`
-	Url  string                 `json:"url,omitempty" validate:"required_if=Type git"`
-	Ref  string                 `json:"ref,omitempty" validate:"required_if=Type git"`
+	Type       TemplateRepositoryType `json:"type" validate:"oneof=dir git"`
+	Name       string                 `json:"name" validate:"required"`
+	Path       string                 `json:"path,omitempty" validate:"required_if=Type path"`
+	Url        string                 `json:"url,omitempty" validate:"required_if=Type git"`
+	Ref        string                 `json:"ref,omitempty" validate:"required_if=Type git"`
+	WorkingDir string                 `json:"-"` // only for RepositoryTypeWorkingDir
 }
 
 func TemplateRepositoryWorkingDir() TemplateRepository {

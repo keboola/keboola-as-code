@@ -5,11 +5,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacevalues"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testdeps"
 )
 
 func TestReplaceKeysMapper_OnRemoteChange(t *testing.T) {
@@ -118,7 +118,7 @@ func TestReplaceKeysMapper_OnRemoteChange(t *testing.T) {
 
 func createStateWithMapper(t *testing.T, replacements *replacevalues.Values) *state.State {
 	t.Helper()
-	d := testdeps.New()
+	d := dependencies.NewTestContainer()
 	mockedState := d.EmptyState()
 	mockedState.Mapper().AddMapper(replacevalues.NewMapper(mockedState, replacements))
 	return mockedState

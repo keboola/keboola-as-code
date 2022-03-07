@@ -6,18 +6,24 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/rename"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
-func FixPathsCommand(depsProvider dependencies.Provider) *cobra.Command {
+func FixPathsCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "fix-paths",
 		Short: helpmsg.Read(`local/fix-paths/short`),
 		Long:  helpmsg.Read(`local/fix-paths/long`),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			d := depsProvider.Dependencies()
+			d := p.Dependencies()
 
-			// Project is required
-			if _, err := d.LocalProject(false); err != nil {
+			// Load project state
+			prj, err := d.LocalProject(false)
+			if err != nil {
+				return err
+			}
+			projectState, err := prj.LoadState(loadState.LocalOperationOptions())
+			if err != nil {
 				return err
 			}
 
@@ -28,7 +34,7 @@ func FixPathsCommand(depsProvider dependencies.Provider) *cobra.Command {
 			}
 
 			// Rename
-			_, err = rename.Run(options, d)
+			_, err = rename.Run(projectState, options, d)
 			return err
 		},
 	}

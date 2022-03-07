@@ -10,7 +10,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/save"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/rename"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 type Options struct {
@@ -22,29 +21,13 @@ type dependencies interface {
 	Ctx() context.Context
 	Logger() log.Logger
 	StorageApi() (*storageapi.Api, error)
-	ProjectState(loadOptions loadState.Options) (*project.State, error)
 }
 
-func LoadStateOptions() loadState.Options {
-	return loadState.Options{
-		LoadLocalState:          true,
-		LoadRemoteState:         false,
-		IgnoreNotFoundErr:       true,
-		IgnoreInvalidLocalState: false,
-	}
-}
-
-func Run(o Options, d dependencies) error {
+func Run(projectState *project.State, o Options, d dependencies) error {
 	logger := d.Logger()
 
 	// Get Storage API
 	storageApi, err := d.StorageApi()
-	if err != nil {
-		return err
-	}
-
-	// Load state
-	projectState, err := d.ProjectState(LoadStateOptions())
 	if err != nil {
 		return err
 	}
@@ -82,7 +65,7 @@ func Run(o Options, d dependencies) error {
 	}
 
 	// Normalize paths
-	if _, err := rename.Run(rename.Options{DryRun: false, LogEmpty: false}, d); err != nil {
+	if _, err := rename.Run(projectState, rename.Options{DryRun: false, LogEmpty: false}, d); err != nil {
 		return err
 	}
 
