@@ -30,6 +30,7 @@ type Server struct {
 	GenOpenapiYaml  http.Handler
 	GenOpenapi3JSON http.Handler
 	GenOpenapi3Yaml http.Handler
+	SwaggerUI       http.Handler
 }
 
 // ErrorNamer is an interface implemented by generated error structs that
@@ -66,6 +67,7 @@ func New(
 	fileSystemGenOpenapiYaml http.FileSystem,
 	fileSystemGenOpenapi3JSON http.FileSystem,
 	fileSystemGenOpenapi3Yaml http.FileSystem,
+	fileSystemSwaggerUI http.FileSystem,
 ) *Server {
 	if fileSystemGenOpenapiJSON == nil {
 		fileSystemGenOpenapiJSON = http.Dir(".")
@@ -78,6 +80,9 @@ func New(
 	}
 	if fileSystemGenOpenapi3Yaml == nil {
 		fileSystemGenOpenapi3Yaml = http.Dir(".")
+	}
+	if fileSystemSwaggerUI == nil {
+		fileSystemSwaggerUI = http.Dir(".")
 	}
 	return &Server{
 		Mounts: []*MountPoint{
@@ -93,10 +98,12 @@ func New(
 			{"CORS", "OPTIONS", "/v1/documentation/openapi.yaml"},
 			{"CORS", "OPTIONS", "/v1/documentation/openapi3.json"},
 			{"CORS", "OPTIONS", "/v1/documentation/openapi3.yaml"},
+			{"CORS", "OPTIONS", "/v1/documentation/{*path}"},
 			{"gen/openapi.json", "GET", "/v1/documentation/openapi.json"},
 			{"gen/openapi.yaml", "GET", "/v1/documentation/openapi.yaml"},
 			{"gen/openapi3.json", "GET", "/v1/documentation/openapi3.json"},
 			{"gen/openapi3.yaml", "GET", "/v1/documentation/openapi3.yaml"},
+			{"swagger-ui", "GET", "/v1/documentation"},
 		},
 		IndexRoot:       NewIndexRootHandler(e.IndexRoot, mux, decoder, encoder, errhandler, formatter),
 		HealthCheck:     NewHealthCheckHandler(e.HealthCheck, mux, decoder, encoder, errhandler, formatter),
@@ -107,6 +114,7 @@ func New(
 		GenOpenapiYaml:  http.FileServer(fileSystemGenOpenapiYaml),
 		GenOpenapi3JSON: http.FileServer(fileSystemGenOpenapi3JSON),
 		GenOpenapi3Yaml: http.FileServer(fileSystemGenOpenapi3Yaml),
+		SwaggerUI:       http.FileServer(fileSystemSwaggerUI),
 	}
 }
 
@@ -133,6 +141,7 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountGenOpenapiYaml(mux, goahttp.Replace("", "/gen/openapi.yaml", h.GenOpenapiYaml))
 	MountGenOpenapi3JSON(mux, goahttp.Replace("", "/gen/openapi3.json", h.GenOpenapi3JSON))
 	MountGenOpenapi3Yaml(mux, goahttp.Replace("", "/gen/openapi3.yaml", h.GenOpenapi3Yaml))
+	MountSwaggerUI(mux, goahttp.Replace("/v1/documentation", "/swagger-ui", h.SwaggerUI))
 }
 
 // Mount configures the mux to serve the templates endpoints.
@@ -333,6 +342,13 @@ func MountGenOpenapi3Yaml(mux goahttp.Muxer, h http.Handler) {
 	mux.Handle("GET", "/v1/documentation/openapi3.yaml", HandleTemplatesOrigin(h).ServeHTTP)
 }
 
+// MountSwaggerUI configures the mux to serve GET request made to
+// "/v1/documentation".
+func MountSwaggerUI(mux goahttp.Muxer, h http.Handler) {
+	mux.Handle("GET", "/v1/documentation/", HandleTemplatesOrigin(h).ServeHTTP)
+	mux.Handle("GET", "/v1/documentation/*path", HandleTemplatesOrigin(h).ServeHTTP)
+}
+
 // MountCORSHandler configures the mux to serve the CORS endpoints for the
 // service templates.
 func MountCORSHandler(mux goahttp.Muxer, h http.Handler) {
@@ -345,6 +361,7 @@ func MountCORSHandler(mux goahttp.Muxer, h http.Handler) {
 	mux.Handle("OPTIONS", "/v1/documentation/openapi.yaml", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/documentation/openapi3.json", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/documentation/openapi3.yaml", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/v1/documentation/{*path}", h.ServeHTTP)
 }
 
 // NewCORSHandler creates a HTTP handler which returns a simple 200 response.

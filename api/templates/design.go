@@ -92,15 +92,23 @@ var _ = Service("templates", func() {
 
 	Files("/documentation/openapi.json", "gen/openapi.json", func() {
 		Meta("swagger:summary", "Swagger 2.0 JSON Specification")
+		Meta("swagger:tag:documentation")
 	})
 	Files("/documentation/openapi.yaml", "gen/openapi.yaml", func() {
 		Meta("swagger:summary", "Swagger 2.0 YAML Specification")
+		Meta("swagger:tag:documentation")
 	})
 	Files("/documentation/openapi3.json", "gen/openapi3.json", func() {
 		Meta("swagger:summary", "OpenAPI 3.0 JSON Specification")
+		Meta("swagger:tag:documentation")
 	})
 	Files("/documentation/openapi3.yaml", "gen/openapi3.yaml", func() {
 		Meta("swagger:summary", "OpenAPI 3.0 YAML Specification")
+		Meta("swagger:tag:documentation")
+	})
+	Files("/documentation/{*path}", "swagger-ui", func() {
+		Meta("swagger:summary", "Swagger UI")
+		Meta("swagger:tag:documentation")
 	})
 
 	Method("foo", func() {

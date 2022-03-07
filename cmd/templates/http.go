@@ -19,6 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template/api/dependencies"
 	templatesSvr "github.com/keboola/keboola-as-code/internal/pkg/template/api/gen/http/templates/server"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/api/gen/templates"
+	swaggerui "github.com/keboola/keboola-as-code/third_party"
 )
 
 // handleHTTPServer starts configures and starts a HTTP server on the given
@@ -39,9 +40,11 @@ func handleHTTPServer(ctx context.Context, wg *sync.WaitGroup, d dependencies.Co
 	// server packages contains code generated from the design which maps
 	// the service input and output data structures to HTTP requests and
 	// responses.
+
 	eh := errorHandler(logger)
 	docsFS := http.FS(api.DocsFS)
-	templatesServer := templatesSvr.New(endpoints, mux, dec, enc, eh, nil, docsFS, docsFS, docsFS, docsFS)
+	swaggerFS := http.FS(swaggerui.SwaggerFS)
+	templatesServer := templatesSvr.New(endpoints, mux, dec, enc, eh, nil, docsFS, docsFS, docsFS, docsFS, swaggerFS)
 	if debug {
 		servers := goaHTTP.Servers{templatesServer}
 		servers.Use(httpMiddleware.Debug(mux, os.Stdout))
