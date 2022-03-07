@@ -937,7 +937,9 @@ func (tc *testCase) run(t *testing.T) {
 	httpTransport.RegisterResponder("POST", `=~/storage/tickets`, httpmock.ResponderFromMultipleResponses(ticketResponses))
 
 	// Load state
-	projectState, err := d.ProjectState(loadState.Options{LoadLocalState: true, IgnoreNotFoundErr: true})
+	prj, err := d.LocalProject(false)
+	assert.NoError(t, err)
+	projectState, err := prj.LoadState(loadState.Options{LoadLocalState: true, IgnoreNotFoundErr: true})
 	assert.NoError(t, err)
 
 	// Assert state before

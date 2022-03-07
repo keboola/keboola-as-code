@@ -43,7 +43,9 @@ func TestRenameAllPlan(t *testing.T) {
 	httpTransport.RegisterResponder("GET", `=~/storage/components/keboola.ex-db-mysql`, getMySqlExResponder.Once())
 
 	// Load state
-	projectState, err := d.ProjectState(loadState.Options{LoadLocalState: true})
+	prj, err := d.LocalProject(false)
+	assert.NoError(t, err)
+	projectState, err := prj.LoadState(loadState.Options{LoadLocalState: true})
 	assert.NoError(t, err)
 
 	// Get rename plan

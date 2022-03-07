@@ -18,6 +18,7 @@ import (
 	createConfig "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/config"
 	createRow "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/row"
 	createBranch "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/branch"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 func TestAskCreateBranch(t *testing.T) {
@@ -94,6 +95,8 @@ func TestAskCreateConfig(t *testing.T) {
 	_, httpTransport := d.UseMockedStorageApi()
 	testapi.AddMockedComponents(httpTransport)
 	testapi.AddMockedApiIndex(httpTransport)
+	projectState, err := d.LocalProjectState(loadState.Options{LoadLocalState: true})
+	assert.NoError(t, err)
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -127,7 +130,7 @@ func TestAskCreateConfig(t *testing.T) {
 	}()
 
 	// Run
-	opts, err := dialog.AskCreateConfig(d, createConfig.LoadStateOptions())
+	opts, err := dialog.AskCreateConfig(projectState, d)
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -193,6 +196,8 @@ func TestAskCreateRow(t *testing.T) {
 	_, httpTransport := d.UseMockedStorageApi()
 	testapi.AddMockedComponents(httpTransport)
 	testapi.AddMockedApiIndex(httpTransport)
+	projectState, err := d.LocalProjectState(loadState.Options{LoadLocalState: true})
+	assert.NoError(t, err)
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -226,7 +231,7 @@ func TestAskCreateRow(t *testing.T) {
 	}()
 
 	// Run
-	opts, err := dialog.AskCreateRow(d, createRow.LoadStateOptions())
+	opts, err := dialog.AskCreateRow(projectState, d)
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
