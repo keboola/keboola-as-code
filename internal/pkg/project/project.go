@@ -16,6 +16,12 @@ import (
 
 type Manifest = projectManifest.Manifest
 
+type InvalidManifestError = projectManifest.InvalidManifestError
+
+func NewManifest(projectId int, apiHost string) *Manifest {
+	return projectManifest.New(projectId, apiHost)
+}
+
 func LoadManifest(fs filesystem.Fs, ignoreErrors bool) (*Manifest, error) {
 	return projectManifest.Load(fs, ignoreErrors)
 }
