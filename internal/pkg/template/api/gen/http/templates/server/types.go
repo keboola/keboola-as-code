@@ -9,6 +9,7 @@
 package server
 
 import (
+	templates "github.com/keboola/keboola-as-code/internal/pkg/template/api/gen/templates"
 	templatesviews "github.com/keboola/keboola-as-code/internal/pkg/template/api/gen/templates/views"
 )
 
@@ -29,4 +30,12 @@ func NewIndexResponseBody(res *templatesviews.IndexView) *IndexResponseBody {
 		Documentation: *res.Documentation,
 	}
 	return body
+}
+
+// NewFooPayload builds a templates service foo endpoint payload.
+func NewFooPayload(storageAPIToken string) *templates.FooPayload {
+	v := &templates.FooPayload{}
+	v.StorageAPIToken = storageAPIToken
+
+	return v
 }

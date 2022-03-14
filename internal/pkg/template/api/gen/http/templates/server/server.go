@@ -24,6 +24,7 @@ type Server struct {
 	IndexRoot       http.Handler
 	HealthCheck     http.Handler
 	IndexEndpoint   http.Handler
+	Foo             http.Handler
 	CORS            http.Handler
 	GenOpenapiJSON  http.Handler
 	GenOpenapiYaml  http.Handler
@@ -83,9 +84,11 @@ func New(
 			{"IndexRoot", "GET", "/"},
 			{"HealthCheck", "GET", "/health-check"},
 			{"IndexEndpoint", "GET", "/v1"},
+			{"Foo", "GET", "/v1/foo"},
 			{"CORS", "OPTIONS", "/"},
 			{"CORS", "OPTIONS", "/health-check"},
 			{"CORS", "OPTIONS", "/v1"},
+			{"CORS", "OPTIONS", "/v1/foo"},
 			{"CORS", "OPTIONS", "/v1/documentation/openapi.json"},
 			{"CORS", "OPTIONS", "/v1/documentation/openapi.yaml"},
 			{"CORS", "OPTIONS", "/v1/documentation/openapi3.json"},
@@ -98,6 +101,7 @@ func New(
 		IndexRoot:       NewIndexRootHandler(e.IndexRoot, mux, decoder, encoder, errhandler, formatter),
 		HealthCheck:     NewHealthCheckHandler(e.HealthCheck, mux, decoder, encoder, errhandler, formatter),
 		IndexEndpoint:   NewIndexEndpointHandler(e.IndexEndpoint, mux, decoder, encoder, errhandler, formatter),
+		Foo:             NewFooHandler(e.Foo, mux, decoder, encoder, errhandler, formatter),
 		CORS:            NewCORSHandler(),
 		GenOpenapiJSON:  http.FileServer(fileSystemGenOpenapiJSON),
 		GenOpenapiYaml:  http.FileServer(fileSystemGenOpenapiYaml),
@@ -114,6 +118,7 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.IndexRoot = m(s.IndexRoot)
 	s.HealthCheck = m(s.HealthCheck)
 	s.IndexEndpoint = m(s.IndexEndpoint)
+	s.Foo = m(s.Foo)
 	s.CORS = m(s.CORS)
 }
 
@@ -122,6 +127,7 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountIndexRootHandler(mux, h.IndexRoot)
 	MountHealthCheckHandler(mux, h.HealthCheck)
 	MountIndexEndpointHandler(mux, h.IndexEndpoint)
+	MountFooHandler(mux, h.Foo)
 	MountCORSHandler(mux, h.CORS)
 	MountGenOpenapiJSON(mux, goahttp.Replace("", "/gen/openapi.json", h.GenOpenapiJSON))
 	MountGenOpenapiYaml(mux, goahttp.Replace("", "/gen/openapi.yaml", h.GenOpenapiYaml))
@@ -252,6 +258,57 @@ func NewIndexEndpointHandler(
 	})
 }
 
+// MountFooHandler configures the mux to serve the "templates" service "foo"
+// endpoint.
+func MountFooHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := HandleTemplatesOrigin(h).(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/v1/foo", f)
+}
+
+// NewFooHandler creates a HTTP handler which loads the HTTP request and calls
+// the "templates" service "foo" endpoint.
+func NewFooHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeFooRequest(mux, decoder)
+		encodeResponse = EncodeFooResponse(encoder)
+		encodeError    = goahttp.ErrorEncoder(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "foo")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "templates")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
 // MountGenOpenapiJSON configures the mux to serve GET request made to
 // "/v1/documentation/openapi.json".
 func MountGenOpenapiJSON(mux goahttp.Muxer, h http.Handler) {
@@ -283,6 +340,7 @@ func MountCORSHandler(mux goahttp.Muxer, h http.Handler) {
 	mux.Handle("OPTIONS", "/", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/health-check", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/v1/foo", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/documentation/openapi.json", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/documentation/openapi.yaml", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/documentation/openapi3.json", h.ServeHTTP)

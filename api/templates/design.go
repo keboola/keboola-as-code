@@ -5,6 +5,8 @@ import (
 	_ "goa.design/goa/v3/codegen/generator"
 	. "goa.design/goa/v3/dsl"
 	cors "goa.design/plugins/v3/cors/dsl"
+
+	. "github.com/keboola/keboola-as-code/internal/pkg/template/api/extension/token"
 )
 
 var _ = API("templates", func() {
@@ -13,6 +15,8 @@ var _ = API("templates", func() {
 	Version("1.0")
 	HTTP(func() {
 		Path("v1")
+		Consumes("application/json")
+		Produces("application/json")
 	})
 	Server("templates", func() {
 		Host("production", func() {
@@ -40,13 +44,21 @@ var index = ResultType("application/vnd.templates.index", func() {
 	})
 })
 
+var tokenSecurity = APIKeySecurity("storage-api-token", func() {
+	Description("Storage Api Token Authentication")
+})
+
 var _ = Service("templates", func() {
 	Description("Service for applying templates to Keboola projects")
-	cors.Origin("*", func() {
-		cors.Headers("X-StorageApi-Token")
-	})
+	// CORS
+	cors.Origin("*", func() { cors.Headers("X-StorageApi-Token") })
+
+	// Set authentication by token to all endpoints without NoSecurity()
+	Security(tokenSecurity)
+	defer AddTokenHeaderToPayloads(tokenSecurity, "storageApiToken", "X-StorageApi-Token")
 
 	Method("index-root", func() {
+		NoSecurity()
 		HTTP(func() {
 			// Redirect / -> /v1
 			GET("//")
@@ -55,14 +67,21 @@ var _ = Service("templates", func() {
 	})
 
 	Method("health-check", func() {
+		NoSecurity()
+		Result(String, func() {
+			Example("OK")
+		})
 		HTTP(func() {
 			GET("//health-check")
-			Response(StatusOK)
+			Response(StatusOK, func() {
+				ContentType("text/plain")
+			})
 		})
 	})
 
 	Method("index", func() {
 		Result(index)
+		NoSecurity()
 		HTTP(func() {
 			GET("")
 			Response(StatusOK)
@@ -80,5 +99,17 @@ var _ = Service("templates", func() {
 	})
 	Files("/documentation/openapi3.yaml", "gen/openapi3.yaml", func() {
 		Meta("swagger:summary", "OpenAPI 3.0 YAML Specification")
+	})
+
+	Method("foo", func() {
+		Result(String, func() {
+			Example("OK")
+		})
+		HTTP(func() {
+			GET("foo")
+			Response(StatusOK, func() {
+				ContentType("text/plain")
+			})
+		})
 	})
 })
