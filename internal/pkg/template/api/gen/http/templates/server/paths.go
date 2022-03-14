@@ -22,3 +22,8 @@ func HealthCheckTemplatesPath() string {
 func IndexEndpointTemplatesPath() string {
 	return "/v1"
 }
+
+// FooTemplatesPath returns the URL path to the templates service foo HTTP endpoint.
+func FooTemplatesPath() string {
+	return "/v1/foo"
+}

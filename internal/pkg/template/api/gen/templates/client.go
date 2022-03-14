@@ -19,14 +19,16 @@ type Client struct {
 	IndexRootEndpoint     goa.Endpoint
 	HealthCheckEndpoint   goa.Endpoint
 	IndexEndpointEndpoint goa.Endpoint
+	FooEndpoint           goa.Endpoint
 }
 
 // NewClient initializes a "templates" service client given the endpoints.
-func NewClient(indexRoot, healthCheck, indexEndpoint goa.Endpoint) *Client {
+func NewClient(indexRoot, healthCheck, indexEndpoint, foo goa.Endpoint) *Client {
 	return &Client{
 		IndexRootEndpoint:     indexRoot,
 		HealthCheckEndpoint:   healthCheck,
 		IndexEndpointEndpoint: indexEndpoint,
+		FooEndpoint:           foo,
 	}
 }
 
@@ -37,9 +39,13 @@ func (c *Client) IndexRoot(ctx context.Context) (err error) {
 }
 
 // HealthCheck calls the "health-check" endpoint of the "templates" service.
-func (c *Client) HealthCheck(ctx context.Context) (err error) {
-	_, err = c.HealthCheckEndpoint(ctx, nil)
-	return
+func (c *Client) HealthCheck(ctx context.Context) (res string, err error) {
+	var ires interface{}
+	ires, err = c.HealthCheckEndpoint(ctx, nil)
+	if err != nil {
+		return
+	}
+	return ires.(string), nil
 }
 
 // IndexEndpoint calls the "index" endpoint of the "templates" service.
@@ -50,4 +56,14 @@ func (c *Client) IndexEndpoint(ctx context.Context) (res *Index, err error) {
 		return
 	}
 	return ires.(*Index), nil
+}
+
+// Foo calls the "foo" endpoint of the "templates" service.
+func (c *Client) Foo(ctx context.Context, p *FooPayload) (res string, err error) {
+	var ires interface{}
+	ires, err = c.FooEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(string), nil
 }

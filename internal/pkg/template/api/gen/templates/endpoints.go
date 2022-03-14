@@ -12,6 +12,7 @@ import (
 	"context"
 
 	goa "goa.design/goa/v3/pkg"
+	"goa.design/goa/v3/security"
 )
 
 // Endpoints wraps the "templates" service endpoints.
@@ -19,14 +20,18 @@ type Endpoints struct {
 	IndexRoot     goa.Endpoint
 	HealthCheck   goa.Endpoint
 	IndexEndpoint goa.Endpoint
+	Foo           goa.Endpoint
 }
 
 // NewEndpoints wraps the methods of the "templates" service with endpoints.
 func NewEndpoints(s Service) *Endpoints {
+	// Casting service to Auther interface
+	a := s.(Auther)
 	return &Endpoints{
 		IndexRoot:     NewIndexRootEndpoint(s),
 		HealthCheck:   NewHealthCheckEndpoint(s),
 		IndexEndpoint: NewIndexEndpointEndpoint(s),
+		Foo:           NewFooEndpoint(s, a.APIKeyAuth),
 	}
 }
 
@@ -35,6 +40,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.IndexRoot = m(e.IndexRoot)
 	e.HealthCheck = m(e.HealthCheck)
 	e.IndexEndpoint = m(e.IndexEndpoint)
+	e.Foo = m(e.Foo)
 }
 
 // NewIndexRootEndpoint returns an endpoint function that calls the method
@@ -49,7 +55,7 @@ func NewIndexRootEndpoint(s Service) goa.Endpoint {
 // "health-check" of service "templates".
 func NewHealthCheckEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		return nil, s.HealthCheck(ctx)
+		return s.HealthCheck(ctx)
 	}
 }
 
@@ -63,5 +69,24 @@ func NewIndexEndpointEndpoint(s Service) goa.Endpoint {
 		}
 		vres := NewViewedIndex(res, "default")
 		return vres, nil
+	}
+}
+
+// NewFooEndpoint returns an endpoint function that calls the method "foo" of
+// service "templates".
+func NewFooEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		p := req.(*FooPayload)
+		var err error
+		sc := security.APIKeyScheme{
+			Name:           "storage-api-token",
+			Scopes:         []string{},
+			RequiredScopes: []string{},
+		}
+		ctx, err = authAPIKeyFn(ctx, p.StorageAPIToken, &sc)
+		if err != nil {
+			return nil, err
+		}
+		return s.Foo(ctx, p)
 	}
 }

@@ -6,12 +6,8 @@ info:
 host: templates.keboola.com
 consumes:
 - application/json
-- application/xml
-- application/gob
 produces:
 - application/json
-- application/xml
-- application/gob
 paths:
   /:
     get:
@@ -30,9 +26,13 @@ paths:
       - templates
       summary: health-check templates
       operationId: templates#health-check
+      produces:
+      - text/plain
       responses:
         "200":
           description: OK response.
+          schema:
+            type: string
       schemes:
       - https
   /v1:
@@ -100,6 +100,23 @@ paths:
             type: file
       schemes:
       - https
+  /v1/foo:
+    get:
+      tags:
+      - templates
+      summary: foo templates
+      operationId: templates#foo
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK response.
+          schema:
+            type: string
+      schemes:
+      - https
+      security:
+      - storage-api-token: []
 definitions:
   TemplatesIndexResponseBody:
     title: 'Mediatype identifier: application/vnd.templates.index; view=default'
@@ -120,3 +137,9 @@ definitions:
     required:
     - api
     - documentation
+securityDefinitions:
+  storage-api-token:
+    type: apiKey
+    description: Storage Api Token Authentication
+    name: X-StorageApi-Token
+    in: header
