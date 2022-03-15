@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -15,13 +16,14 @@ import (
 	dataDog "gopkg.in/DataDog/dd-trace-go.v1/contrib/net/http"
 
 	api "github.com/keboola/keboola-as-code/api/templates"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/api/dependencies"
 	templatesSvr "github.com/keboola/keboola-as-code/internal/pkg/template/api/gen/http/templates/server"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/api/gen/templates"
 )
 
 // handleHTTPServer starts configures and starts a HTTP server on the given
 // URL. It shuts down the server if any error is received in the error channel.
-func handleHTTPServer(ctx context.Context, u *url.URL, templatesEndpoints *templates.Endpoints, wg *sync.WaitGroup, errCh chan error, logger *log.Logger, debug bool) {
+func handleHTTPServer(ctx context.Context, wg *sync.WaitGroup, d dependencies.Container, u *url.URL, endpoints *templates.Endpoints, errCh chan error, logger *log.Logger, debug bool) {
 	// Provide the transport specific request decoder and response encoder.
 	// The goa http package has built-in support for JSON, XML and gob.
 	// Other encodings can be used by providing the corresponding functions,
@@ -39,7 +41,7 @@ func handleHTTPServer(ctx context.Context, u *url.URL, templatesEndpoints *templ
 	// responses.
 	eh := errorHandler(logger)
 	docsFS := http.FS(api.DocsFS)
-	templatesServer := templatesSvr.New(templatesEndpoints, mux, dec, enc, eh, nil, docsFS, docsFS, docsFS, docsFS)
+	templatesServer := templatesSvr.New(endpoints, mux, dec, enc, eh, nil, docsFS, docsFS, docsFS, docsFS)
 	if debug {
 		servers := goaHTTP.Servers{templatesServer}
 		servers.Use(httpMiddleware.Debug(mux, os.Stdout))
@@ -51,15 +53,15 @@ func handleHTTPServer(ctx context.Context, u *url.URL, templatesEndpoints *templ
 	// Wrap the multiplexer with additional middlewares. Middlewares mounted
 	// here apply to all the service endpoints.
 	var handler http.Handler = mux
-	{
-		handler = httpMiddleware.Log(middleware.NewLogger(logger))(handler)
-		handler = httpMiddleware.RequestID()(handler)
-		handler = dataDog.WrapHandler(handler, "templates-api", "")
-	}
+	handler = httpMiddleware.Log(middleware.NewLogger(logger))(handler)
+	handler = httpMiddleware.RequestID()(handler)
+	handler = dataDog.WrapHandler(handler, "templates-api", "")
 
 	// Start HTTP server using default configuration, change the code to
 	// configure the server as required by your service.
-	srv := &http.Server{Addr: u.Host, Handler: handler}
+	requestCtx := context.WithValue(context.Background(), dependencies.CtxKey, d)
+	ctxProvider := func(_ net.Listener) context.Context { return requestCtx }
+	srv := &http.Server{Addr: u.Host, Handler: handler, BaseContext: ctxProvider}
 	for _, m := range templatesServer.Mounts {
 		logger.Printf("HTTP %q mounted on %s %s", m.Method, m.Verb, m.Pattern)
 	}

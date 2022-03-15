@@ -11,6 +11,7 @@ package templates
 import (
 	"context"
 
+	dependencies "github.com/keboola/keboola-as-code/internal/pkg/template/api/dependencies"
 	templatesviews "github.com/keboola/keboola-as-code/internal/pkg/template/api/gen/templates/views"
 	"goa.design/goa/v3/security"
 )
@@ -18,13 +19,13 @@ import (
 // Service for applying templates to Keboola projects
 type Service interface {
 	// IndexRoot implements index-root.
-	IndexRoot(context.Context) (err error)
+	IndexRoot(dependencies.Container) (err error)
 	// HealthCheck implements health-check.
-	HealthCheck(context.Context) (res string, err error)
+	HealthCheck(dependencies.Container) (res string, err error)
 	// Index implements index.
-	IndexEndpoint(context.Context) (res *Index, err error)
+	IndexEndpoint(dependencies.Container) (res *Index, err error)
 	// Foo implements foo.
-	Foo(context.Context, *FooPayload) (res string, err error)
+	Foo(dependencies.Container, *FooPayload) (res string, err error)
 }
 
 // Auther defines the authorization functions to be implemented by the service.

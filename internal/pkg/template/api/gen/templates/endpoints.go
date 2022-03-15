@@ -11,6 +11,7 @@ package templates
 import (
 	"context"
 
+	dependencies "github.com/keboola/keboola-as-code/internal/pkg/template/api/dependencies"
 	goa "goa.design/goa/v3/pkg"
 	"goa.design/goa/v3/security"
 )
@@ -47,7 +48,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 // "index-root" of service "templates".
 func NewIndexRootEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		return nil, s.IndexRoot(ctx)
+		return nil, s.IndexRoot(ctx.Value(dependencies.CtxKey).(dependencies.Container))
 	}
 }
 
@@ -55,7 +56,7 @@ func NewIndexRootEndpoint(s Service) goa.Endpoint {
 // "health-check" of service "templates".
 func NewHealthCheckEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		return s.HealthCheck(ctx)
+		return s.HealthCheck(ctx.Value(dependencies.CtxKey).(dependencies.Container))
 	}
 }
 
@@ -63,7 +64,7 @@ func NewHealthCheckEndpoint(s Service) goa.Endpoint {
 // "index" of service "templates".
 func NewIndexEndpointEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		res, err := s.IndexEndpoint(ctx)
+		res, err := s.IndexEndpoint(ctx.Value(dependencies.CtxKey).(dependencies.Container))
 		if err != nil {
 			return nil, err
 		}
@@ -87,6 +88,6 @@ func NewFooEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoin
 		if err != nil {
 			return nil, err
 		}
-		return s.Foo(ctx, p)
+		return s.Foo(ctx.Value(dependencies.CtxKey).(dependencies.Container), p)
 	}
 }

@@ -6,6 +6,7 @@ import (
 	. "goa.design/goa/v3/dsl"
 	cors "goa.design/plugins/v3/cors/dsl"
 
+	_ "github.com/keboola/keboola-as-code/internal/pkg/template/api/extension/dependencies"
 	. "github.com/keboola/keboola-as-code/internal/pkg/template/api/extension/token"
 )
 
@@ -34,10 +35,10 @@ var index = ResultType("application/vnd.templates.index", func() {
 	TypeName("Index")
 
 	Attributes(func() {
-		Field(1, "api", String, "Name of the API", func() {
+		Attribute("api", String, "Name of the API", func() {
 			Example("templates")
 		})
-		Field(2, "documentation", String, "Url of the API documentation", func() {
+		Attribute("documentation", String, "Url of the API documentation", func() {
 			Example("https://templates.keboola.com/v1/documentation")
 		})
 		Required("api", "documentation")
@@ -57,6 +58,7 @@ var _ = Service("templates", func() {
 	Security(tokenSecurity)
 	defer AddTokenHeaderToPayloads(tokenSecurity, "storageApiToken", "X-StorageApi-Token")
 
+	// Methods
 	Method("index-root", func() {
 		NoSecurity()
 		HTTP(func() {
