@@ -9,4 +9,4 @@ import (
 //go:embed gen/openapi.yaml
 //go:embed gen/openapi3.json
 //go:embed gen/openapi3.yaml
-var ApiDocsFS embed.FS
+var DocsFS embed.FS
