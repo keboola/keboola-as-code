@@ -1,14 +1,19 @@
+# Build container
 FROM golang:1.17 AS buildContainer
 WORKDIR /go/src/app
-
 COPY . .
-
 #flags: -s -w to remove symbol table and debug info
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -mod mod -ldflags "-s -w" -o ./templatesapi ./cmd/templates
 
+# SSL certificates container
+FROM alpine as sslCerts
+RUN apk add -U --no-cache ca-certificates
+
+# Production container
 FROM scratch
-WORKDIR /app
+COPY --from=sslCerts /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=buildContainer /go/src/app/templatesapi /app/templatesapi
+WORKDIR /app
 
 ENV HOST 0.0.0.0
 ENV PORT 8000
