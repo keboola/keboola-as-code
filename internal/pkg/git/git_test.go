@@ -1,3 +1,4 @@
+// nolint: forbidigo
 package git
 
 import (
@@ -11,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 )
 
 func TestGit_Available(t *testing.T) {
@@ -109,4 +111,15 @@ func TestGit_CheckoutTemplateRepository_Local(t *testing.T) {
 	assert.True(t, fs.Exists("template2/v2/src/manifest.jsonnet"))
 	// another template folder should not exist
 	assert.False(t, fs.Exists("template1"))
+}
+
+func TestGit_CheckoutWholeRepository(t *testing.T) {
+	t.Parallel()
+
+	fs, dir, err := CheckoutWholeRepository(repository.DefaultRepository(), log.NewDebugLogger())
+	assert.NoError(t, err)
+	_, err = os.Stat(dir)
+	assert.NoError(t, err)
+	assert.False(t, os.IsNotExist(err))
+	assert.True(t, fs.Exists("/.keboola/repository.json"))
 }

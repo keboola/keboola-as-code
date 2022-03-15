@@ -23,6 +23,45 @@ func Available() bool {
 	return err == nil
 }
 
+func CheckoutWholeRepository(repo model.TemplateRepository, logger log.Logger) (filesystem.Fs, string, error) {
+	if !Available() {
+		return nil, "", fmt.Errorf("git command is not available, if you want to use templates from a git repository you have to install it first")
+	}
+
+	// Create a temp dir
+	dir, err := ioutil.TempDir("", "keboola-as-code-templates-")
+	if err != nil {
+		return nil, "", err
+	}
+
+	err, stdErr, exitCode := runGitCommand(logger, dir, []string{"clone", "--branch", repo.Ref, "-q", repo.Url, dir})
+	if err != nil {
+		if exitCode == 128 {
+			if strings.Contains(stdErr, fmt.Sprintf("Remote branch %s not found", repo.Ref)) {
+				return nil, "", fmt.Errorf(`reference "%s" not found in the templates git repository "%s"`, repo.Ref, repo.Url)
+			}
+			return nil, "", fmt.Errorf(`templates git repository not found on url "%s"`, repo.Url)
+		}
+		return nil, "", utils.PrefixError("cannot load template source directory", fmt.Errorf(stdErr))
+	}
+
+	// Create FS from the cloned repository
+	localFs, err := aferofs.NewLocalFs(logger, dir, "")
+	if err != nil {
+		return nil, "", err
+	}
+
+	return localFs, dir, nil
+}
+
+func PullChangesToRepository(dir string, logger log.Logger) error {
+	err, stdErr, _ := runGitCommand(logger, dir, []string{"pull", "origin"})
+	if err != nil {
+		return utils.PrefixError("cannot pull template source repository", fmt.Errorf(stdErr))
+	}
+	return nil
+}
+
 func CheckoutTemplateRepository(ref model.TemplateRef, logger log.Logger) (filesystem.Fs, error) {
 	if !Available() {
 		return nil, fmt.Errorf("git command is not available, if you want to use templates from a git repository you have to install it first")
