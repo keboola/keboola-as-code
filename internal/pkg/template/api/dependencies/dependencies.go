@@ -2,9 +2,9 @@ package dependencies
 
 import (
 	"context"
-	"fmt"
 	stdLog "log"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -18,6 +18,9 @@ const CtxKey = ctxKey("dependencies")
 type Container interface {
 	dependencies.Common
 	CtxCancelFn() context.CancelFunc
+	LoggerPrefix() string
+	WithLoggerPrefix(prefix string) (*container, error)
+	WithStorageApi(api *storageapi.Api) (*container, error)
 }
 
 // NewContainer returns dependencies for API and add them to the context.
@@ -36,16 +39,28 @@ type container struct {
 	debug       bool
 	logger      log.PrefixLogger
 	envs        *env.Map
+	storageApi  *storageapi.Api
 }
 
 func (v *container) CtxCancelFn() context.CancelFunc {
 	return v.ctxCancelFn
 }
 
+func (v *container) LoggerPrefix() string {
+	return v.logger.Prefix()
+}
+
 // WithLoggerPrefix returns dependencies clone with modified logger.
 func (v *container) WithLoggerPrefix(prefix string) (*container, error) {
 	clone := *v
 	clone.logger = v.logger.WithPrefix(prefix)
+	return &clone, nil
+}
+
+// WithStorageApi returns dependencies clone with modified Storage API.
+func (v *container) WithStorageApi(api *storageapi.Api) (*container, error) {
+	clone := *v
+	clone.storageApi = api
 	return &clone, nil
 }
 
@@ -61,10 +76,24 @@ func (v *container) ApiVerboseLogs() bool {
 	return v.debug
 }
 
+func (v *container) StorageApi() (*storageapi.Api, error) {
+	// Store API instance, so it can be cloned, see WithStorageApi
+	if v.storageApi == nil {
+		api, err := v.commonDeps.StorageApi()
+		if err != nil {
+			return nil, err
+		}
+		v.storageApi = api
+	}
+
+	return v.storageApi, nil
+}
+
 func (v *container) StorageApiHost() (string, error) {
-	panic(fmt.Errorf("not implemented yet"))
+	return v.envs.MustGet("KBC_STORAGE_API_HOST"), nil
 }
 
 func (v *container) StorageApiToken() (string, error) {
-	panic(fmt.Errorf("not implemented yet"))
+	// The API is authorized separately in each request
+	return "", nil
 }

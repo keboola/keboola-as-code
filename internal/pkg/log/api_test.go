@@ -17,6 +17,7 @@ func TestApiLogger_VerboseFalse(t *testing.T) {
 	logger := NewApiLogger(stdLogger, "[old-prefix] ", false)
 
 	// Log messages
+	assert.Equal(t, "[old-prefix] ", logger.Prefix())
 	logger.Debug("Debug msg")
 	logger.Info("Info msg")
 	logger.Warn("Warn msg")
@@ -24,6 +25,7 @@ func TestApiLogger_VerboseFalse(t *testing.T) {
 
 	// Log messages with a different prefix
 	logger = logger.WithPrefix("[new-prefix] ")
+	assert.Equal(t, "[new-prefix] ", logger.Prefix())
 	logger.Debug("Debug msg")
 	logger.Info("Info msg")
 	logger.Warn("Warn msg")
@@ -49,6 +51,7 @@ func TestApiLogger_VerboseTrue(t *testing.T) {
 	logger := NewApiLogger(stdLogger, "[old-prefix] ", true)
 
 	// Log messages
+	assert.Equal(t, "[old-prefix] ", logger.Prefix())
 	logger.Debug("Debug msg")
 	logger.Info("Info msg")
 	logger.Warn("Warn msg")
@@ -56,6 +59,7 @@ func TestApiLogger_VerboseTrue(t *testing.T) {
 
 	// Log messages with a different prefix
 	logger = logger.WithPrefix("[new-prefix] ")
+	assert.Equal(t, "[new-prefix] ", logger.Prefix())
 	logger.Debug("Debug msg")
 	logger.Info("Info msg")
 	logger.Warn("Warn msg")

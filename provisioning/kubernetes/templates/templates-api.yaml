@@ -36,7 +36,7 @@ spec:
           ports:
             - containerPort: 8000
           env:
-            - name: storage_api_url
+            - name: KBC_STORAGE_API_HOST
               valueFrom:
                 configMapKeyRef:
                   name: templates-api

@@ -21,6 +21,7 @@ type Logger interface {
 
 type PrefixLogger interface {
 	Logger
+	Prefix() string
 	WithPrefix(prefix string) PrefixLogger
 }
 
