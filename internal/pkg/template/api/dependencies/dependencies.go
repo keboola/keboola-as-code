@@ -77,7 +77,7 @@ func (v *container) ApiVerboseLogs() bool {
 }
 
 func (v *container) StorageApi() (*storageapi.Api, error) {
-	// Store API instance, so it can be cloned, see WithStorageApiToken
+	// Store API instance, so it can be cloned, see WithStorageApi
 	if v.storageApi == nil {
 		api, err := v.commonDeps.StorageApi()
 		if err != nil {
