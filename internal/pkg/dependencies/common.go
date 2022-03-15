@@ -93,10 +93,14 @@ func (v *commonContainer) StorageApi() (*storageapi.Api, error) {
 		}
 
 		// Create API
-		if api, err := storageapi.NewWithToken(v.Ctx(), v.Logger(), host, token, v.ApiVerboseLogs()); err == nil {
-			v.storageApi = api
+		if token == "" {
+			v.storageApi = storageapi.New(v.Ctx(), v.Logger(), host, v.ApiVerboseLogs())
 		} else {
-			return nil, err
+			if api, err := storageapi.NewWithToken(v.Ctx(), v.Logger(), host, token, v.ApiVerboseLogs()); err == nil {
+				v.storageApi = api
+			} else {
+				return nil, err
+			}
 		}
 	}
 	return v.storageApi, nil

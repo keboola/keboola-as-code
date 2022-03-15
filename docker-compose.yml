@@ -20,8 +20,9 @@ services:
     ports:
       - "8000:8000"
     environment:
+      - KBC_STORAGE_API_HOST
       # Disable DataDog integration
-      DATADOG_ENABLED: "false"
+      - DATADOG_ENABLED=false
 
 volumes:
   cache:

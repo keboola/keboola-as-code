@@ -10,7 +10,12 @@ import (
 type apiLogger struct {
 	Logger
 	base    *stdLog.Logger
+	prefix  string
 	verbose bool
+}
+
+func (l *apiLogger) Prefix() string {
+	return l.prefix
 }
 
 // WithPrefix returns a new logger with different prefix.
@@ -29,6 +34,7 @@ func NewApiLogger(base *stdLog.Logger, prefix string, verbose bool) PrefixLogger
 	return &apiLogger{
 		Logger:  loggerFromZapCore(zapcore.NewTee(cores...)),
 		base:    base,
+		prefix:  prefix,
 		verbose: verbose,
 	}
 }
