@@ -3,19 +3,20 @@ package dependencies
 import (
 	"context"
 	"fmt"
+	stdLog "log"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
-// Container provides dependencies used only in the CLI + common dependencies.
+// Container provides dependencies used only in the API + common dependencies.
 type Container interface {
 	dependencies.Common
 }
 
-func NewContainer(ctx context.Context, envs *env.Map, logger log.Logger, debug bool) Container {
-	c := &container{debug: debug, logger: logger, envs: envs}
+func NewContainer(ctx context.Context, debug bool, logger *stdLog.Logger, envs *env.Map) Container {
+	c := &container{debug: debug, envs: envs, logger: log.NewApiLogger(logger, "", debug)}
 	c.commonDeps = dependencies.NewCommonContainer(c, ctx)
 	return c
 }
@@ -25,8 +26,15 @@ type commonDeps = dependencies.Common
 type container struct {
 	commonDeps
 	debug  bool
-	logger log.Logger
+	logger log.PrefixLogger
 	envs   *env.Map
+}
+
+// WithLoggerPrefix returns dependencies clone with modified logger.
+func (v *container) WithLoggerPrefix(prefix string) (*container, error) {
+	clone := *v
+	clone.logger = v.logger.WithPrefix(prefix)
+	return &clone, nil
 }
 
 func (v *container) Logger() log.Logger {

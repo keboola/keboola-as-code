@@ -19,6 +19,11 @@ type Logger interface {
 	toWriter
 }
 
+type PrefixLogger interface {
+	Logger
+	WithPrefix(prefix string) PrefixLogger
+}
+
 type loggerWithZapCore interface {
 	Logger
 	zapCore() zapcore.Core

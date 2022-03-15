@@ -6,6 +6,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+// fileCore writes to a logFile.
 func fileCore(logFile *File) zapcore.Core {
 	// Log all
 	fileLevels := zap.LevelEnablerFunc(func(l zapcore.Level) bool { return true })
