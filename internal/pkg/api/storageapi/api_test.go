@@ -13,7 +13,7 @@ import (
 func TestNewStorageApi(t *testing.T) {
 	t.Parallel()
 	logger := log.NewDebugLogger()
-	a := New("foo.bar.com", context.Background(), logger, false)
+	a := New(context.Background(), logger, "foo.bar.com", false)
 	assert.NotNil(t, a)
 	assert.Equal(t, "foo.bar.com", a.Host())
 	assert.Equal(t, "https://foo.bar.com/v2/storage", a.HostUrl())
@@ -23,7 +23,7 @@ func TestNewStorageApi(t *testing.T) {
 func TestHostnameNotFound(t *testing.T) {
 	t.Parallel()
 	logger := log.NewDebugLogger()
-	api := New("foo.bar.com", context.Background(), logger, false)
+	api := New(context.Background(), logger, "foo.bar.com", false)
 	token, err := api.GetToken("mytoken")
 	assert.Empty(t, token)
 	assert.Error(t, err)
@@ -34,7 +34,7 @@ func TestHostnameNotFound(t *testing.T) {
 func TestInvalidHost(t *testing.T) {
 	t.Parallel()
 	logger := log.NewDebugLogger()
-	api := New("google.com", context.Background(), logger, false)
+	api := New(context.Background(), logger, "google.com", false)
 	token, err := api.GetToken("mytoken")
 	assert.Empty(t, token)
 	assert.Error(t, err)
