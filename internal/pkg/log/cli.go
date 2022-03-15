@@ -7,7 +7,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// NewCliLogger new production zapLogger.
+// NewCliLogger new production zapLogger for CLI.
 func NewCliLogger(stdout io.Writer, stderr io.Writer, logFile *File, verbose bool) Logger {
 	var cores []zapcore.Core
 

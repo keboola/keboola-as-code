@@ -19,6 +19,9 @@ services:
       dockerfile: Dockerfile-api
     ports:
       - "8000:8000"
+    environment:
+      # Disable DataDog integration
+      DATADOG_ENABLED: "false"
 
 volumes:
   cache:

@@ -8,6 +8,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+// stdoutCore writes to STDOUT output.
 func stdoutCore(stdout io.Writer, verbose bool) zapcore.Core {
 	consoleLevels := zap.LevelEnablerFunc(func(l zapcore.Level) bool {
 		// Log debug, info -> if verbose output enabled

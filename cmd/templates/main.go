@@ -15,7 +15,9 @@ import (
 
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	templatesApi "github.com/keboola/keboola-as-code/internal/pkg/template/api"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/api/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/api/gen/templates"
 )
 
@@ -35,41 +37,61 @@ func main() {
 	flag.Parse()
 
 	// Setup logger.
-	logger := log.New(os.Stderr, "[templatesApi] ", log.Ltime)
+	logger := log.New(os.Stderr, "[templatesApi][server] ", log.Ltime)
+
+	// Envs.
+	envs, err := env.FromOs()
+	if err != nil {
+		logger.Println("cannot load envs: " + err.Error())
+		os.Exit(1)
+	}
 
 	// Start DataDog tracer.
-	tracer.Start(tracer.WithServiceName("templates-api"), tracer.WithLogger(ddLogger{logger}))
-	defer tracer.Stop()
+	if envs.Get("DATADOG_ENABLED") != "false" {
+		tracer.Start(tracer.WithServiceName("templates-api"), tracer.WithLogger(ddLogger{logger}))
+		defer tracer.Stop()
+	}
 
-	// Initialize the services.
-	templatesSvc := templatesApi.NewTemplates(logger)
+	// Start server
+	start(*httpHostF, *httpPortF, *debugF, logger, envs)
+}
+
+func start(host, port string, debug bool, logger *log.Logger, envs *env.Map) {
+	// Create dependencies.
+	ctx, cancel := context.WithCancel(context.Background())
+	d := dependencies.NewContainer(ctx, debug, logger, envs)
+
+	// Log options.
+	d.Logger().Infof("starting HTTP server, host=%s, port=%s, debug=%t", host, port, debug)
+
+	// Initialize the service.
+	svc := templatesApi.NewTemplates(logger)
 
 	// Wrap the services in endpoints that can be invoked from other services
 	// potentially running in different processes.
-	templatesEndpoints := templates.NewEndpoints(templatesSvc)
+	endpoints := templates.NewEndpoints(svc)
 
 	// Create channel used by both the signal handler and server goroutines
 	// to notify the main goroutine when to stop the server.
-	errc := make(chan error)
+	errCh := make(chan error)
 
 	// Setup interrupt handler. This optional step configures the process so
 	// that SIGINT and SIGTERM signals cause the services to stop gracefully.
 	go func() {
 		c := make(chan os.Signal, 1)
 		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
-		errc <- fmt.Errorf("%s", <-c)
+		errCh <- fmt.Errorf("%s", <-c)
 	}()
 
 	// Create server URL.
-	serverUrl := &url.URL{Scheme: "http", Host: net.JoinHostPort(*httpHostF, *httpPortF)}
+	serverUrl := &url.URL{Scheme: "http", Host: net.JoinHostPort(host, port)}
 
 	// Start HTTP server.
 	var wg sync.WaitGroup
-	ctx, cancel := context.WithCancel(context.Background())
-	handleHTTPServer(ctx, serverUrl, templatesEndpoints, &wg, errc, logger, *debugF)
+	handleHTTPServer(ctx, serverUrl, endpoints, &wg, errCh, logger, debug)
 
 	// Wait for signal.
-	logger.Printf("exiting (%v)", <-errc)
+	logger.Printf("exiting (%v)", <-errCh)
 
 	// Send cancellation signal to the goroutines.
 	cancel()

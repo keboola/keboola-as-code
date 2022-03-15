@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+// stderrCore writes to STDERR output.
 func stderrCore(stderr io.Writer, verbose bool) zapcore.Core {
 	// Prefix messages with level only when verbose enabled
 	levelKey := ""
