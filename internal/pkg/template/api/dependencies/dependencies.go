@@ -10,13 +10,20 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
+type ctxKey string
+
+const CtxKey = ctxKey("dependencies")
+
 // Container provides dependencies used only in the API + common dependencies.
 type Container interface {
 	dependencies.Common
+	CtxCancelFn() context.CancelFunc
 }
 
+// NewContainer returns dependencies for API and add them to the context.
 func NewContainer(ctx context.Context, debug bool, logger *stdLog.Logger, envs *env.Map) Container {
-	c := &container{debug: debug, envs: envs, logger: log.NewApiLogger(logger, "", debug)}
+	ctx, cancel := context.WithCancel(ctx)
+	c := &container{ctxCancelFn: cancel, debug: debug, envs: envs, logger: log.NewApiLogger(logger, "", debug)}
 	c.commonDeps = dependencies.NewCommonContainer(c, ctx)
 	return c
 }
@@ -25,9 +32,14 @@ type commonDeps = dependencies.Common
 
 type container struct {
 	commonDeps
-	debug  bool
-	logger log.PrefixLogger
-	envs   *env.Map
+	ctxCancelFn context.CancelFunc
+	debug       bool
+	logger      log.PrefixLogger
+	envs        *env.Map
+}
+
+func (v *container) CtxCancelFn() context.CancelFunc {
+	return v.ctxCancelFn
 }
 
 // WithLoggerPrefix returns dependencies clone with modified logger.

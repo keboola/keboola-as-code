@@ -16,9 +16,9 @@ import (
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	templatesApi "github.com/keboola/keboola-as-code/internal/pkg/template/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/api/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/api/gen/templates"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/api/service"
 )
 
 type ddLogger struct {
@@ -37,7 +37,7 @@ func main() {
 	flag.Parse()
 
 	// Setup logger.
-	logger := log.New(os.Stderr, "[templatesApi][server] ", log.Ltime)
+	logger := log.New(os.Stderr, "[templatesApi][server]", 0)
 
 	// Envs.
 	envs, err := env.FromOs()
@@ -58,14 +58,13 @@ func main() {
 
 func start(host, port string, debug bool, logger *log.Logger, envs *env.Map) {
 	// Create dependencies.
-	ctx, cancel := context.WithCancel(context.Background())
-	d := dependencies.NewContainer(ctx, debug, logger, envs)
+	d := dependencies.NewContainer(context.Background(), debug, logger, envs)
 
 	// Log options.
 	d.Logger().Infof("starting HTTP server, host=%s, port=%s, debug=%t", host, port, debug)
 
 	// Initialize the service.
-	svc := templatesApi.NewTemplates(logger)
+	svc := service.New(d)
 
 	// Wrap the services in endpoints that can be invoked from other services
 	// potentially running in different processes.
@@ -88,13 +87,13 @@ func start(host, port string, debug bool, logger *log.Logger, envs *env.Map) {
 
 	// Start HTTP server.
 	var wg sync.WaitGroup
-	handleHTTPServer(ctx, serverUrl, endpoints, &wg, errCh, logger, debug)
+	handleHTTPServer(d.Ctx(), &wg, d, serverUrl, endpoints, errCh, logger, debug)
 
 	// Wait for signal.
 	logger.Printf("exiting (%v)", <-errCh)
 
 	// Send cancellation signal to the goroutines.
-	cancel()
+	d.CtxCancelFn()()
 
 	// Wait for goroutines.
 	wg.Wait()
