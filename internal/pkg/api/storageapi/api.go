@@ -25,14 +25,14 @@ type Api struct {
 }
 
 func NewWithToken(ctx context.Context, logger log.Logger, host, tokenStr string, verbose bool) (*Api, error) {
-	if len(host) == 0 {
+	if host == "" {
 		panic(fmt.Errorf("api host is not set"))
 	}
-	if len(tokenStr) == 0 {
+	if tokenStr == "" {
 		panic(fmt.Errorf("api token is not set"))
 	}
 
-	storageApi := New(host, ctx, logger, verbose)
+	storageApi := New(ctx, logger, host, verbose)
 	token, err := storageApi.GetToken(tokenStr)
 	if err != nil {
 		var errWithResponse client.ErrorWithResponse
@@ -51,11 +51,14 @@ func NewWithToken(ctx context.Context, logger log.Logger, host, tokenStr string,
 	return storageApi.WithToken(token), nil
 }
 
-func New(apiHost string, ctx context.Context, logger log.Logger, verbose bool) *Api {
-	apiHostUrl := "https://" + apiHost + "/v2/storage"
+func New(ctx context.Context, logger log.Logger, host string, verbose bool) *Api {
+	if host == "" {
+		panic(fmt.Errorf("api host is not set"))
+	}
+	apiHostUrl := "https://" + host + "/v2/storage"
 	c := client.NewClient(ctx, logger, verbose).WithHostUrl(apiHostUrl)
 	c.SetError(&Error{})
-	api := &Api{client: c, logger: logger, apiHost: apiHost, apiHostUrl: apiHostUrl}
+	api := &Api{client: c, logger: logger, apiHost: host, apiHostUrl: apiHostUrl}
 	api.components = model.NewComponentsMap(api)
 	return api
 }

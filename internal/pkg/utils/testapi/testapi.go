@@ -15,7 +15,7 @@ import (
 
 func NewMockedStorageApi(logger log.DebugLogger) (*storageapi.Api, *httpmock.MockTransport) {
 	// Set short retry delay in tests
-	api := storageapi.New("connection.keboola.com", context.Background(), logger, false)
+	api := storageapi.New(context.Background(), logger, "connection.keboola.com", false)
 	api.SetRetry(3, 1*time.Millisecond, 1*time.Millisecond)
 	api = api.WithToken(model.Token{Owner: model.TokenOwner{Id: 12345}})
 
@@ -41,7 +41,7 @@ func NewStorageApi(host string, verbose bool) (*storageapi.Api, log.DebugLogger)
 	if verbose {
 		logger.ConnectTo(os.Stdout)
 	}
-	a := storageapi.New(host, context.Background(), logger, false)
+	a := storageapi.New(context.Background(), logger, host, false)
 	a.SetRetry(3, 100*time.Millisecond, 100*time.Millisecond)
 	return a, logger
 }
