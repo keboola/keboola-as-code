@@ -24,7 +24,7 @@ echo "Running go mod tidy/verify ..."
 go mod tidy
 git diff --exit-code -- go.mod go.sum
 go mod verify
-echo "Ok. Tidy: go.mod and go.sum are valid."
+echo "Ok. go.mod and go.sum are valid."
 echo
 
 

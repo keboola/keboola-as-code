@@ -90,19 +90,19 @@ var _ = Service("templates", func() {
 		})
 	})
 
-	Files("/documentation/openapi.json", "gen/openapi.json", func() {
+	Files("/documentation/openapi.json", "openapi.json", func() {
 		Meta("swagger:summary", "Swagger 2.0 JSON Specification")
 		Meta("swagger:tag:documentation")
 	})
-	Files("/documentation/openapi.yaml", "gen/openapi.yaml", func() {
+	Files("/documentation/openapi.yaml", "openapi.yaml", func() {
 		Meta("swagger:summary", "Swagger 2.0 YAML Specification")
 		Meta("swagger:tag:documentation")
 	})
-	Files("/documentation/openapi3.json", "gen/openapi3.json", func() {
+	Files("/documentation/openapi3.json", "openapi3.json", func() {
 		Meta("swagger:summary", "OpenAPI 3.0 JSON Specification")
 		Meta("swagger:tag:documentation")
 	})
-	Files("/documentation/openapi3.yaml", "gen/openapi3.yaml", func() {
+	Files("/documentation/openapi3.yaml", "openapi3.yaml", func() {
 		Meta("swagger:summary", "OpenAPI 3.0 YAML Specification")
 		Meta("swagger:tag:documentation")
 	})
