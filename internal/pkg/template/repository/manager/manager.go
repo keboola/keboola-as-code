@@ -2,6 +2,7 @@ package manager
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/git"
@@ -16,6 +17,7 @@ type Manager struct {
 }
 
 type GitRepository struct {
+	*model.TemplateRepository
 	Dir string
 	Fs  filesystem.Fs
 }
@@ -42,10 +44,23 @@ func (m *Manager) AddRepository(repo model.TemplateRepository) error {
 		return err
 	}
 	m.repositories[hash] = &GitRepository{
-		Dir: dir,
-		Fs:  fs,
+		TemplateRepository: &repo,
+		Dir:                dir,
+		Fs:                 fs,
 	}
 	return nil
+}
+
+type SortedRepositories []*GitRepository
+
+func (s SortedRepositories) Len() int {
+	return len(s)
+}
+func (s SortedRepositories) Less(i, j int) bool {
+	return s[i].Hash() < s[j].Hash()
+}
+func (s SortedRepositories) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
 }
 
 func (m *Manager) Repositories() []*GitRepository {
@@ -53,5 +68,6 @@ func (m *Manager) Repositories() []*GitRepository {
 	for _, repo := range m.repositories {
 		res = append(res, repo)
 	}
+	sort.Sort(SortedRepositories(res))
 	return res
 }
