@@ -32,7 +32,8 @@ target
 
 # Generated code
 /**/gen/*
-!/**/gen/fs.go
+/**/openapi/*
+!/**/openapi/fs.go
 
 # Integration tests output
 /src/tests/**/.out/*

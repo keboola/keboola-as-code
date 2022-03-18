@@ -15,10 +15,10 @@ import (
 	"goa.design/goa/v3/middleware"
 	dataDog "gopkg.in/DataDog/dd-trace-go.v1/contrib/net/http"
 
-	api "github.com/keboola/keboola-as-code/api/templates/gen"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/api/dependencies"
 	templatesSvr "github.com/keboola/keboola-as-code/internal/pkg/template/api/gen/http/templates/server"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/api/gen/templates"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/api/openapi"
 	swaggerui "github.com/keboola/keboola-as-code/third_party"
 )
 
@@ -42,7 +42,7 @@ func handleHTTPServer(ctx context.Context, wg *sync.WaitGroup, d dependencies.Co
 	// responses.
 
 	eh := errorHandler(logger)
-	docsFS := http.FS(api.Fs)
+	docsFS := http.FS(openapi.Fs)
 	swaggerFS := http.FS(swaggerui.SwaggerFS)
 	templatesServer := templatesSvr.New(endpoints, mux, dec, enc, eh, nil, docsFS, docsFS, docsFS, docsFS, swaggerFS)
 	if debug {
