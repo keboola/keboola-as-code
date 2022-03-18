@@ -30,16 +30,22 @@ type Repository struct {
 }
 
 func (r *Repository) Pull() error {
-	err, stdErr, _ := runGitCommand(r.logger, r.Fs.BasePath(), []string{"reset", "--hard", fmt.Sprintf("origin/%s", r.Ref)})
+	err, stdErr, _ := runGitCommand(r.logger, r.Fs.BasePath(), []string{"fetch", "origin"})
 	if err != nil {
-		return utils.PrefixError("cannot pull template source repository", fmt.Errorf(stdErr))
+		return utils.PrefixError("cannot fetch template repository", fmt.Errorf(stdErr))
+	}
+
+	err, stdErr, _ = runGitCommand(r.logger, r.Fs.BasePath(), []string{"reset", "--hard", fmt.Sprintf("origin/%s", r.Ref)})
+	if err != nil {
+		return utils.PrefixError("cannot reset template repository to the origin", fmt.Errorf(stdErr))
 	}
 	return nil
 }
 
 type CheckoutOptions struct {
-	Partial            bool
-	CopyToMemory       bool
+	CloneParams        []string // Params for git clone
+	Partial            bool     // Partially checkout just the selected template repository (and the repository manifest)
+	ToMemory           bool     // Move the FS with the repository to memory
 	TemplateRepository model.TemplateRepository
 	TemplateRef        model.TemplateRef
 }
@@ -54,7 +60,7 @@ func CheckoutTemplateRepository(opts CheckoutOptions, logger log.Logger) (filesy
 	if err != nil {
 		return nil, err
 	}
-	if opts.CopyToMemory {
+	if opts.ToMemory {
 		defer func() {
 			if err = os.RemoveAll(dir); err != nil { // nolint: forbidigo
 				logger.Warnf(`cannot remove temp dir "%s": %w`, dir, err)
@@ -63,11 +69,8 @@ func CheckoutTemplateRepository(opts CheckoutOptions, logger log.Logger) (filesy
 	}
 
 	// Clone the repository
-	cloneParams := []string{"clone", "--branch", opts.TemplateRepository.Ref}
-	if opts.Partial {
-		cloneParams = append(cloneParams, "--depth=1", "--no-checkout", "--sparse", "--filter=blob:none")
-	}
-	cloneParams = append(cloneParams, "-q", opts.TemplateRepository.Url, dir)
+	cloneParams := append([]string{"clone"}, opts.CloneParams...)
+	cloneParams = append(cloneParams, dir)
 	err, stdErr, exitCode := runGitCommand(logger, dir, cloneParams)
 	if err != nil {
 		if exitCode == 128 {
@@ -115,7 +118,7 @@ func CheckoutTemplateRepository(opts CheckoutOptions, logger log.Logger) (filesy
 		}
 	}
 
-	if opts.CopyToMemory {
+	if opts.ToMemory {
 		memFs, err := aferofs.NewMemoryFs(logger, ".")
 		if err != nil {
 			return nil, err
@@ -155,9 +158,10 @@ func getVersionFromRepositoryManifest(opts CheckoutOptions, localFs filesystem.F
 func CheckoutTemplateRepositoryFull(repo model.TemplateRepository, logger log.Logger) (*Repository, error) {
 	localFs, err := CheckoutTemplateRepository(CheckoutOptions{
 		Partial:            false,
-		CopyToMemory:       false,
+		ToMemory:           false,
 		TemplateRepository: repo,
 		TemplateRef:        nil,
+		CloneParams:        []string{"--branch", repo.Ref, "-q", repo.Url},
 	}, logger)
 	if err != nil {
 		return nil, err
@@ -172,9 +176,10 @@ func CheckoutTemplateRepositoryFull(repo model.TemplateRepository, logger log.Lo
 func CheckoutTemplateRepositoryPartial(ref model.TemplateRef, logger log.Logger) (filesystem.Fs, error) {
 	return CheckoutTemplateRepository(CheckoutOptions{
 		Partial:            true,
-		CopyToMemory:       true,
+		ToMemory:           true,
 		TemplateRepository: ref.Repository(),
 		TemplateRef:        ref,
+		CloneParams:        []string{"--branch", ref.Repository().Ref, "--depth=1", "--no-checkout", "--sparse", "--filter=blob:none", "-q", ref.Repository().Url},
 	}, logger)
 }
 

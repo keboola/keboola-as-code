@@ -40,25 +40,13 @@ func (m *Manager) AddRepository(templateRepo model.TemplateRepository) error {
 	return nil
 }
 
-type SortedRepositories []*git.Repository
-
-func (s SortedRepositories) Len() int {
-	return len(s)
-}
-
-func (s SortedRepositories) Less(i, j int) bool {
-	return s[i].Hash() < s[j].Hash()
-}
-
-func (s SortedRepositories) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-
 func (m *Manager) Repositories() []*git.Repository {
 	var res []*git.Repository
 	for _, repo := range m.repositories {
 		res = append(res, repo)
 	}
-	sort.Sort(SortedRepositories(res))
+	sort.SliceStable(res, func(i, j int) bool {
+		return res[i].Hash() < res[j].Hash()
+	})
 	return res
 }
