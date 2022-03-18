@@ -122,4 +122,7 @@ func TestGit_CheckoutTemplateRepositoryFull(t *testing.T) {
 	assert.NoError(t, err)
 	assert.False(t, os.IsNotExist(err))
 	assert.True(t, repo.Fs.Exists("/.keboola/repository.json"))
+
+	assert.NoError(t, repo.Pull())
+	assert.True(t, repo.Fs.Exists("/.keboola/repository.json"))
 }

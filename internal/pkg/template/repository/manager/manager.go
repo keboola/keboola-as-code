@@ -50,3 +50,15 @@ func (m *Manager) Repositories() []*git.Repository {
 	})
 	return res
 }
+
+func (m *Manager) Pull() {
+	for _, repo := range m.repositories {
+		m.logger.Infof(`repository "%s:%s" is being updated`, repo.Url, repo.Ref)
+		err := repo.Pull()
+		if err != nil {
+			m.logger.Error(err.Error())
+			continue
+		}
+		m.logger.Infof(`repository "%s:%s" update finished`, repo.Url, repo.Ref)
+	}
+}

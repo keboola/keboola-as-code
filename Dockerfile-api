@@ -10,8 +10,9 @@ FROM alpine as sslCerts
 RUN apk add -U --no-cache ca-certificates
 
 # Production container
-FROM scratch
-COPY --from=sslCerts /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+FROM alpine
+RUN apk add -U --no-cache ca-certificates git
+
 COPY --from=buildContainer /go/src/app/templatesapi /app/templatesapi
 WORKDIR /app
 

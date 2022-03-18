@@ -53,10 +53,13 @@ func main() {
 	}
 
 	// Start server
-	start(*httpHostF, *httpPortF, *debugF, logger, envs)
+	if err := start(*httpHostF, *httpPortF, *debugF, logger, envs); err != nil {
+		logger.Println(err.Error())
+		os.Exit(1)
+	}
 }
 
-func start(host, port string, debug bool, logger *log.Logger, envs *env.Map) {
+func start(host, port string, debug bool, logger *log.Logger, envs *env.Map) error {
 	// Create dependencies.
 	d := dependencies.NewContainer(context.Background(), debug, logger, envs)
 
@@ -64,7 +67,10 @@ func start(host, port string, debug bool, logger *log.Logger, envs *env.Map) {
 	d.Logger().Infof("starting HTTP server, host=%s, port=%s, debug=%t", host, port, debug)
 
 	// Initialize the service.
-	svc := service.New(d)
+	svc, err := service.New(d)
+	if err != nil {
+		return err
+	}
 
 	// Wrap the services in endpoints that can be invoked from other services
 	// potentially running in different processes.
@@ -98,4 +104,5 @@ func start(host, port string, debug bool, logger *log.Logger, envs *env.Map) {
 	// Wait for goroutines.
 	wg.Wait()
 	logger.Println("exited")
+	return nil
 }

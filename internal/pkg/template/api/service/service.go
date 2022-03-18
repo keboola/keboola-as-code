@@ -2,17 +2,55 @@ package service
 
 import (
 	"fmt"
+	"sync"
+	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/template/api/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/api/gen/templates"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/repository/manager"
 )
 
 type Service struct {
-	dependencies dependencies.Container
+	dependencies        dependencies.Container
+	lock                *sync.Mutex
+	repositoriesManager *manager.Manager
 }
 
-func New(d dependencies.Container) templates.Service {
-	return &Service{dependencies: d}
+const TemplateRepositoriesPullInterval = 5 * time.Minute
+
+func New(d dependencies.Container) (*Service, error) {
+	repoManager, err := manager.New(d.Logger())
+	if err != nil {
+		return nil, err
+	}
+	s := &Service{
+		dependencies:        d,
+		lock:                &sync.Mutex{},
+		repositoriesManager: repoManager,
+	}
+	s.StartCron()
+	return s, nil
+}
+
+func (s *Service) StartCron() {
+	go func() {
+		ticker := time.NewTicker(TemplateRepositoriesPullInterval)
+		for {
+			select {
+			case <-s.dependencies.Ctx().Done():
+				return
+			case <-ticker.C:
+				s.pullTemplateRepositories()
+			}
+		}
+	}()
+}
+
+func (s *Service) pullTemplateRepositories() {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	s.repositoriesManager.Pull()
 }
 
 func (s *Service) IndexRoot(_ dependencies.Container) (err error) {
