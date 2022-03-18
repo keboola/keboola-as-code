@@ -31,7 +31,7 @@ tests-cli: prepare
 tests-cli-verbose: prepare
 	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 bash ./scripts/tests.sh -run TestCliE2E
 
-mod:
+mod: prepare
 	bash ./scripts/mod.sh
 
 lint: generate-code

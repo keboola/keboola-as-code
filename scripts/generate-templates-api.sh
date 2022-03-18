@@ -16,7 +16,7 @@ generate() {
   out=`goa gen github.com/keboola/keboola-as-code/api/templates --output ./internal/pkg/template/api 2>&1`
   status="$?"
 
-  # Run finalize always
+  # Always run finalize
   finalize
 
   # Print stdout/stderr only if an error occurred
