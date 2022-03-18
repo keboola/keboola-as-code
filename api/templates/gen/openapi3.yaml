@@ -53,10 +53,26 @@ paths:
               example:
                 api: templates
                 documentation: https://templates.keboola.com/v1/documentation
+  /v1/documentation/{*path}:
+    get:
+      tags:
+      - documentation
+      summary: Swagger UI
+      operationId: templates#/v1/documentation/{*path}
+      parameters:
+      - name: path
+        in: path
+        description: Relative file path
+        required: true
+      responses:
+        "200":
+          description: File not found
+        "404":
+          description: File not found
   /v1/documentation/openapi.json:
     get:
       tags:
-      - templates
+      - documentation
       summary: Swagger 2.0 JSON Specification
       operationId: templates#/v1/documentation/openapi.json
       responses:
@@ -65,7 +81,7 @@ paths:
   /v1/documentation/openapi.yaml:
     get:
       tags:
-      - templates
+      - documentation
       summary: Swagger 2.0 YAML Specification
       operationId: templates#/v1/documentation/openapi.yaml
       responses:
@@ -74,7 +90,7 @@ paths:
   /v1/documentation/openapi3.json:
     get:
       tags:
-      - templates
+      - documentation
       summary: OpenAPI 3.0 JSON Specification
       operationId: templates#/v1/documentation/openapi3.json
       responses:
@@ -83,7 +99,7 @@ paths:
   /v1/documentation/openapi3.yaml:
     get:
       tags:
-      - templates
+      - documentation
       summary: OpenAPI 3.0 YAML Specification
       operationId: templates#/v1/documentation/openapi3.yaml
       responses:
