@@ -23,7 +23,34 @@ func Available() bool {
 	return err == nil
 }
 
-func CheckoutTemplateRepository(ref model.TemplateRef, logger log.Logger) (filesystem.Fs, error) {
+type Repository struct {
+	model.TemplateRepository
+	Fs     filesystem.Fs
+	logger log.Logger
+}
+
+func (r *Repository) Pull() error {
+	err, stdErr, _ := runGitCommand(r.logger, r.Fs.BasePath(), []string{"fetch", "origin"})
+	if err != nil {
+		return utils.PrefixError("cannot fetch template repository", fmt.Errorf(stdErr))
+	}
+
+	err, stdErr, _ = runGitCommand(r.logger, r.Fs.BasePath(), []string{"reset", "--hard", fmt.Sprintf("origin/%s", r.Ref)})
+	if err != nil {
+		return utils.PrefixError("cannot reset template repository to the origin", fmt.Errorf(stdErr))
+	}
+	return nil
+}
+
+type CheckoutOptions struct {
+	CloneParams        []string // Params for git clone
+	Partial            bool     // Partially checkout just the selected template repository (and the repository manifest)
+	ToMemory           bool     // Move the FS with the repository to memory
+	TemplateRepository model.TemplateRepository
+	TemplateRef        model.TemplateRef
+}
+
+func CheckoutTemplateRepository(opts CheckoutOptions, logger log.Logger) (filesystem.Fs, error) {
 	if !Available() {
 		return nil, fmt.Errorf("git command is not available, if you want to use templates from a git repository you have to install it first")
 	}
@@ -33,32 +60,26 @@ func CheckoutTemplateRepository(ref model.TemplateRef, logger log.Logger) (files
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if err = os.RemoveAll(dir); err != nil { // nolint: forbidigo
-			logger.Warnf(`cannot remove temp dir "%s": %w`, dir, err)
-		}
-	}()
+	if opts.ToMemory {
+		defer func() {
+			if err = os.RemoveAll(dir); err != nil { // nolint: forbidigo
+				logger.Warnf(`cannot remove temp dir "%s": %w`, dir, err)
+			}
+		}()
+	}
 
 	// Clone the repository
-	err, stdErr, exitCode := runGitCommand(logger, dir, []string{"clone", "--branch", ref.Repository().Ref, "--depth=1", "--no-checkout", "--sparse", "--filter=blob:none", "-q", ref.Repository().Url, dir})
+	cloneParams := append([]string{"clone"}, opts.CloneParams...)
+	cloneParams = append(cloneParams, dir)
+	err, stdErr, exitCode := runGitCommand(logger, dir, cloneParams)
 	if err != nil {
 		if exitCode == 128 {
-			if strings.Contains(stdErr, fmt.Sprintf("Remote branch %s not found", ref.Repository().Ref)) {
-				return nil, fmt.Errorf(`reference "%s" not found in the templates git repository "%s"`, ref.Repository().Ref, ref.Repository().Url)
+			if strings.Contains(stdErr, fmt.Sprintf("Remote branch %s not found", opts.TemplateRepository.Ref)) {
+				return nil, fmt.Errorf(`reference "%s" not found in the templates git repository "%s"`, opts.TemplateRepository.Ref, opts.TemplateRepository.Url)
 			}
-			return nil, fmt.Errorf(`templates git repository not found on url "%s"`, ref.Repository().Url)
+			return nil, fmt.Errorf(`templates git repository not found on url "%s"`, opts.TemplateRepository.Url)
 		}
 		return nil, utils.PrefixError("cannot load template source directory", fmt.Errorf(stdErr))
-	}
-
-	// Checkout repository.json
-	err, stdErr, _ = runGitCommand(logger, dir, []string{"sparse-checkout", "add", "/.keboola/repository.json"})
-	if err != nil {
-		return nil, fmt.Errorf(stdErr)
-	}
-	err, stdErr, _ = runGitCommand(logger, dir, []string{"checkout"})
-	if err != nil {
-		return nil, utils.PrefixError("cannot load template repository manifest", fmt.Errorf(stdErr))
 	}
 
 	// Create FS from the cloned repository
@@ -67,47 +88,99 @@ func CheckoutTemplateRepository(ref model.TemplateRef, logger log.Logger) (files
 		return nil, err
 	}
 
+	if opts.Partial {
+		// Checkout repository.json
+		err, stdErr, _ = runGitCommand(logger, dir, []string{"sparse-checkout", "add", "/.keboola/repository.json"})
+		if err != nil {
+			return nil, fmt.Errorf(stdErr)
+		}
+		err, stdErr, _ = runGitCommand(logger, dir, []string{"checkout"})
+		if err != nil {
+			return nil, utils.PrefixError("cannot load template repository manifest", fmt.Errorf(stdErr))
+		}
+
+		versionRecord, err := getVersionFromRepositoryManifest(opts, localFs)
+		if err != nil {
+			return nil, err
+		}
+
+		// Checkout template src directory
+		srcDir := filesystem.Join(versionRecord.Path(), template.SrcDirectory)
+		err, stdErr, _ = runGitCommand(logger, dir, []string{"sparse-checkout", "add", fmt.Sprintf("/%s", srcDir)})
+		if err != nil {
+			return nil, fmt.Errorf(stdErr)
+		}
+		if !localFs.Exists(srcDir) {
+			e := utils.NewMultiError()
+			e.Append(fmt.Errorf(`searched in git repository "%s"`, opts.TemplateRepository.Url))
+			e.Append(fmt.Errorf(`reference "%s"`, opts.TemplateRepository.Ref))
+			return nil, utils.PrefixError(fmt.Sprintf(`folder "%s" not found`, srcDir), e)
+		}
+	}
+
+	if opts.ToMemory {
+		memFs, err := aferofs.NewMemoryFs(logger, ".")
+		if err != nil {
+			return nil, err
+		}
+
+		err = aferofs.CopyFs2Fs(localFs, "", memFs, "")
+		if err != nil {
+			return nil, err
+		}
+
+		return memFs, nil
+	}
+
+	return localFs, nil
+}
+
+func getVersionFromRepositoryManifest(opts CheckoutOptions, localFs filesystem.Fs) (manifest.VersionRecord, error) {
 	// Load the repository manifest
 	m, err := manifest.Load(localFs)
 	if err != nil {
-		return nil, err
+		return manifest.VersionRecord{}, err
 	}
 
 	// Get version record
-	version := ref.Version()
-	versionRecord, err := m.GetVersion(ref.TemplateId(), version)
+	version := opts.TemplateRef.Version()
+	versionRecord, err := m.GetVersion(opts.TemplateRef.TemplateId(), version)
 	if err != nil {
 		// version or template not found
 		e := utils.NewMultiError()
-		e.Append(fmt.Errorf(`searched in git repository "%s"`, ref.Repository().Url))
-		e.Append(fmt.Errorf(`reference "%s"`, ref.Repository().Ref))
-		return nil, utils.PrefixError(err.Error(), e)
+		e.Append(fmt.Errorf(`searched in git repository "%s"`, opts.TemplateRepository.Url))
+		e.Append(fmt.Errorf(`reference "%s"`, opts.TemplateRepository.Ref))
+		return manifest.VersionRecord{}, utils.PrefixError(err.Error(), e)
 	}
+	return versionRecord, nil
+}
 
-	// Checkout template src directory
-	srcDir := filesystem.Join(versionRecord.Path(), template.SrcDirectory)
-	err, stdErr, _ = runGitCommand(logger, dir, []string{"sparse-checkout", "add", fmt.Sprintf("/%s", srcDir)})
-	if err != nil {
-		return nil, fmt.Errorf(stdErr)
-	}
-	if !localFs.Exists(srcDir) {
-		e := utils.NewMultiError()
-		e.Append(fmt.Errorf(`searched in git repository "%s"`, ref.Repository().Url))
-		e.Append(fmt.Errorf(`reference "%s"`, ref.Repository().Ref))
-		return nil, utils.PrefixError(fmt.Sprintf(`folder "%s" not found`, srcDir), e)
-	}
-
-	memFs, err := aferofs.NewMemoryFs(logger, ".")
+func CheckoutTemplateRepositoryFull(repo model.TemplateRepository, logger log.Logger) (*Repository, error) {
+	localFs, err := CheckoutTemplateRepository(CheckoutOptions{
+		Partial:            false,
+		ToMemory:           false,
+		TemplateRepository: repo,
+		TemplateRef:        nil,
+		CloneParams:        []string{"--branch", repo.Ref, "-q", repo.Url},
+	}, logger)
 	if err != nil {
 		return nil, err
 	}
 
-	err = aferofs.CopyFs2Fs(localFs, "", memFs, "")
-	if err != nil {
-		return nil, err
-	}
+	return &Repository{
+		TemplateRepository: repo,
+		Fs:                 localFs,
+	}, nil
+}
 
-	return memFs, nil
+func CheckoutTemplateRepositoryPartial(ref model.TemplateRef, logger log.Logger) (filesystem.Fs, error) {
+	return CheckoutTemplateRepository(CheckoutOptions{
+		Partial:            true,
+		ToMemory:           true,
+		TemplateRepository: ref.Repository(),
+		TemplateRef:        ref,
+		CloneParams:        []string{"--branch", ref.Repository().Ref, "--depth=1", "--no-checkout", "--sparse", "--filter=blob:none", "-q", ref.Repository().Url},
+	}, logger)
 }
 
 func runGitCommand(logger log.Logger, dir string, args []string) (err error, stdErr string, exitCode int) {

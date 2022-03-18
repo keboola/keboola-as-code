@@ -205,7 +205,7 @@ func (v *commonContainer) templateRepositoryFs(definition model.TemplateReposito
 		}
 		return aferofs.NewLocalFs(v.Logger(), path, definition.WorkingDir)
 	case model.RepositoryTypeGit:
-		return git.CheckoutTemplateRepository(template, v.Logger())
+		return git.CheckoutTemplateRepositoryPartial(template, v.Logger())
 	default:
 		panic(fmt.Errorf(`unexpected repository type "%s"`, definition.Type))
 	}

@@ -1,6 +1,7 @@
 package model
 
 import (
+	"crypto/sha256"
 	"fmt"
 )
 
@@ -19,6 +20,12 @@ type TemplateRepository struct {
 	Url        string                 `json:"url,omitempty" validate:"required_if=Type git"`
 	Ref        string                 `json:"ref,omitempty" validate:"required_if=Type git"`
 	WorkingDir string                 `json:"-"` // only for RepositoryTypeWorkingDir
+}
+
+func (r *TemplateRepository) Hash() string {
+	hash := fmt.Sprintf("%s:%s:%s:%s", r.Type, r.Path, r.Url, r.Ref)
+	sha := sha256.Sum256([]byte(hash))
+	return string(sha[:])
 }
 
 func TemplateRepositoryWorkingDir() TemplateRepository {
