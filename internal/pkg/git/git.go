@@ -23,7 +23,7 @@ func Available() bool {
 	return err == nil
 }
 
-func CheckoutWholeRepository(repo model.TemplateRepository, logger log.Logger) (filesystem.Fs, string, error) {
+func CheckoutTemplateRepositoryFull(repo model.TemplateRepository, logger log.Logger) (filesystem.Fs, string, error) {
 	if !Available() {
 		return nil, "", fmt.Errorf("git command is not available, if you want to use templates from a git repository you have to install it first")
 	}
@@ -62,7 +62,7 @@ func PullChangesToRepository(dir string, logger log.Logger) error {
 	return nil
 }
 
-func CheckoutTemplateRepository(ref model.TemplateRef, logger log.Logger) (filesystem.Fs, error) {
+func CheckoutTemplateRepositoryPartial(ref model.TemplateRef, logger log.Logger) (filesystem.Fs, error) {
 	if !Available() {
 		return nil, fmt.Errorf("git command is not available, if you want to use templates from a git repository you have to install it first")
 	}
