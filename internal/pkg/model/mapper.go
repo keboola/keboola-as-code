@@ -193,7 +193,7 @@ type PathsGenerator interface {
 // OnObjectPathUpdateEvent contains object with updated path.
 type OnObjectPathUpdateEvent struct {
 	PathsGenerator PathsGenerator
-	ObjectState    ObjectState
+	Object         Object
 	Renamed        bool
 	OldPath        string
 	NewPath        string

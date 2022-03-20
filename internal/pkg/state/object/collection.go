@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -26,30 +27,65 @@ func New(sorter ObjectsSorter) Objects {
 
 // Add object to the collection.
 // Error is returned if the object is already present.
-func (c *Collection) Add(object Object) error {
+func (c *Collection) Add(objects ...Object) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	key := object.Key()
-	if c.has(key) {
-		return fmt.Errorf(`object "%s" already exists`, key.Desc())
+	errors := utils.NewMultiError()
+	for _, object := range objects {
+		key := object.Key()
+		if c.has(key) {
+			errors.Append(fmt.Errorf(`%s already exists`, key.Desc()))
+		} else if err := c.add(object); err != nil {
+			errors.Append(err)
+		}
 	}
 
-	return c.add(object)
+	return errors.ErrorOrNil()
 }
 
 // AddOrReplace object in the collection.
-func (c *Collection) AddOrReplace(object Object) error {
+func (c *Collection) AddOrReplace(objects ...Object) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	return c.add(object)
+
+	errors := utils.NewMultiError()
+	for _, object := range objects {
+		if err := c.add(object); err != nil {
+			errors.Append(err)
+		}
+	}
+
+	return errors.ErrorOrNil()
 }
 
 // Remove object from the collection.
-func (c *Collection) Remove(key Key) {
+func (c *Collection) Remove(keys ...Key) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	c.objects.Delete(key.String())
+
+	// Convert keys to a map.
+	toRemove := make(map[Key]bool)
+	for _, key := range keys {
+		toRemove[key] = true
+	}
+
+	// Check all objects
+	for _, object := range c.all() {
+		key := object.Key()
+
+		// Also remove the children.
+		// If the parent is removed, this object will also be removed.
+		parentKey, _ := object.ParentKey()
+		if parentKey != nil && toRemove[parentKey] {
+			toRemove[key] = true
+		}
+
+		// Remove object
+		if toRemove[key] {
+			c.objects.Delete(key.String())
+		}
+	}
 }
 
 // Get object from the collection.
@@ -83,20 +119,7 @@ func (c *Collection) MustGet(key Key) Object {
 func (c *Collection) All() []Object {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-
-	c.objects.Sort(func(i *orderedmap.Pair, j *orderedmap.Pair) bool {
-		return c.Less(i.Value.(Object).Key(), j.Value.(Object).Key())
-	})
-
-	var out []Object
-	for _, key := range c.objects.Keys() {
-		// Get value
-		v, _ := c.objects.Get(key)
-		object := v.(Object)
-		out = append(out, object)
-	}
-
-	return out
+	return c.all()
 }
 
 // Branches gets all branches from the collection.
@@ -177,7 +200,7 @@ func (c *Collection) add(object Object) error {
 	}
 
 	if parentKey != nil && !c.has(parentKey) {
-		return fmt.Errorf("objects collection: cannot add %s: parent %s not found", object.Desc(), parentKey.Desc())
+		return fmt.Errorf("objects collection: cannot add %s: parent %s not found", object.Desc(), parentKey.Kind().Name)
 	}
 
 	c.objects.Set(object.Key().String(), object)
@@ -188,4 +211,20 @@ func (c *Collection) add(object Object) error {
 func (c *Collection) has(key Key) bool {
 	_, found := c.objects.Get(key.String())
 	return found
+}
+
+func (c *Collection) all() []Object {
+	c.objects.Sort(func(i *orderedmap.Pair, j *orderedmap.Pair) bool {
+		return c.Less(i.Value.(Object).Key(), j.Value.(Object).Key())
+	})
+
+	out := make([]Object, c.objects.Len())
+	for i, key := range c.objects.Keys() {
+		// Get value
+		v, _ := c.objects.Get(key)
+		object := v.(Object)
+		out[i] = object
+	}
+
+	return out
 }

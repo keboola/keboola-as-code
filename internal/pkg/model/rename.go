@@ -1,10 +1,10 @@
 package model
 
 type RenamedPath struct {
-	ObjectState ObjectState
-	OldPath     string
-	RenameFrom  string // old path with renamed parents dirs
-	NewPath     string
+	Object     Object
+	OldPath    string
+	RenameFrom string // old path with renamed parents dirs
+	NewPath    string
 }
 
 type RenameAction struct {

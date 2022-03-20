@@ -40,7 +40,6 @@ type ObjectManifest interface {
 	SortKey(sort string) string // unique key for sorting
 	State() *RecordState
 	NewEmptyObject() Object
-	NewObjectState() ObjectState
 }
 
 type ObjectManifestWithRelations interface {
@@ -193,42 +192,6 @@ func (c ConfigManifest) NewEmptyObject() Object {
 
 func (r ConfigRowManifest) NewEmptyObject() Object {
 	return &ConfigRow{ConfigRowKey: r.ConfigRowKey}
-}
-
-func (b *BranchManifest) NewObjectState() ObjectState {
-	return &BranchState{BranchManifest: b}
-}
-
-func (c *ConfigManifest) NewObjectState() ObjectState {
-	return &ConfigState{ConfigManifest: c}
-}
-
-func (r *ConfigRowManifest) NewObjectState() ObjectState {
-	return &ConfigRowState{ConfigRowManifest: r}
-}
-
-func (b BranchManifest) SortKey(sort string) string {
-	if sort == SortByPath {
-		return fmt.Sprintf("%02d_branch_%s", b.Level(), b.Path())
-	} else {
-		return b.BranchKey.String()
-	}
-}
-
-func (c ConfigManifest) SortKey(sort string) string {
-	if sort == SortByPath {
-		return fmt.Sprintf("%02d_config_%s", c.Level(), c.Path())
-	} else {
-		return c.ConfigKey.String()
-	}
-}
-
-func (r ConfigRowManifest) SortKey(sort string) string {
-	if sort == SortByPath {
-		return fmt.Sprintf("%02d_row_%s", r.Level(), r.Path())
-	} else {
-		return r.ConfigRowKey.String()
-	}
 }
 
 // ParentKey - config parent can be modified via Relations, for example variables config is embedded in another config.

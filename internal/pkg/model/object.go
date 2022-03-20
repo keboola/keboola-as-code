@@ -56,9 +56,9 @@ type ObjectsSorter interface {
 
 type Objects interface {
 	ObjectsSorter
-	Add(object Object) error
-	AddOrReplace(object Object) error
-	Remove(key Key)
+	Add(objects ...Object) error
+	AddOrReplace(objects ...Object) error
+	Remove(keys ...Key)
 	Get(key Key) (Object, bool)
 	GetOrNil(key Key) Object
 	MustGet(key Key) Object
