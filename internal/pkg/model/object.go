@@ -50,35 +50,24 @@ type ObjectWithRelations interface {
 	AddRelation(relation Relation)
 }
 
-type ObjectStates interface {
-	ObjectsInState(stateType StateType) Objects
-	RemoteObjects() Objects
-	LocalObjects() Objects
-	All() []ObjectState
-	Components() *ComponentsMap
-	Branches() (branches []*BranchState)
-	Configs() []*ConfigState
-	ConfigsFrom(branch BranchKey) (configs []*ConfigState)
-	ConfigRows() []*ConfigRowState
-	ConfigRowsFrom(config ConfigKey) (rows []*ConfigRowState)
-	Get(key Key) (ObjectState, bool)
-	GetOrNil(key Key) ObjectState
-	MustGet(key Key) ObjectState
-	CreateFrom(manifest ObjectManifest) (ObjectState, error)
-	GetOrCreateFrom(manifest ObjectManifest) (ObjectState, error)
-	Set(objectState ObjectState) error
-	TrackedPaths() []string
-	ReloadPathsState() error
-	IsFile(path string) bool
-	IsDir(path string) bool
+type ObjectsSorter interface {
+	Less(i, j Key) bool
 }
 
 type Objects interface {
+	ObjectsSorter
+	Add(object Object) error
+	AddOrReplace(object Object) error
+	Remove(key Key)
 	Get(key Key) (Object, bool)
+	GetOrNil(key Key) Object
+	MustGet(key Key) Object
 	All() []Object
 	Branches() (branches []*Branch)
+	Configs() []*Config
 	ConfigsFrom(branch BranchKey) (configs []*Config)
 	ConfigsWithRowsFrom(branch BranchKey) (configs []*ConfigWithRows)
+	ConfigRows() []*ConfigRow
 	ConfigRowsFrom(config ConfigKey) (rows []*ConfigRow)
 }
 

@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
@@ -18,22 +19,22 @@ import (
 
 func TestDiffOnlyInLocal(t *testing.T) {
 	t.Parallel()
-	projectState := newProjectState(t)
-	branchKey := model.BranchKey{Id: 123}
-	branchState := &model.BranchState{
-		BranchManifest: &model.BranchManifest{BranchKey: branchKey},
-		Local:          &model.Branch{BranchKey: branchKey},
-	}
-	assert.NoError(t, projectState.Set(branchState))
 
-	d := NewDiffer(projectState)
-	results, err := d.Diff()
+	branch := &model.Branch{BranchKey: model.BranchKey{Id: 123}}
+	A := state.New
+	B := ""
+
+	x := naming.NewRegistry()
+	results, err := Diff(A, B, x)
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 1)
+
 	result := results.Results[0]
-	assert.Equal(t, ResultOnlyInLocal, result.State)
+	assert.Equal(t, ResultOnlyInB, result.State)
 	assert.True(t, result.ChangedFields.IsEmpty())
-	assert.Same(t, branchState.Local, result.ObjectState.LocalState().(*model.Branch))
+
+	assert.Nil(t, result.A)
+	assert.Same(t, branch, result.B)
 }
 
 func TestDiffOnlyInRemote(t *testing.T) {
@@ -51,7 +52,7 @@ func TestDiffOnlyInRemote(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 1)
 	result := results.Results[0]
-	assert.Equal(t, ResultOnlyInRemote, result.State)
+	assert.Equal(t, ResultOnlyInA, result.State)
 	assert.True(t, result.ChangedFields.IsEmpty())
 	assert.Same(t, branchState.Remote, result.ObjectState.RemoteState().(*model.Branch))
 }

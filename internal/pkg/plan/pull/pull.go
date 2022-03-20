@@ -19,9 +19,9 @@ func NewPlan(diffResults *diff.Results) (*diffop.Plan, error) {
 				continue
 			}
 			plan.Add(result, diffop.ActionSaveLocal)
-		case diff.ResultOnlyInLocal:
+		case diff.ResultOnlyInB:
 			plan.Add(result, diffop.ActionDeleteLocal)
-		case diff.ResultOnlyInRemote:
+		case diff.ResultOnlyInA:
 			plan.Add(result, diffop.ActionSaveLocal)
 		case diff.ResultNotSet:
 			panic(fmt.Errorf("diff was not generated"))

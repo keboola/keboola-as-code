@@ -7,11 +7,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-const (
-	SortById   = "id"
-	SortByPath = "path"
-)
-
 type RecordPaths interface {
 	GetAbsPath() AbsPath
 	// Path gets path relative to the top dir, it is parent path + relative path.

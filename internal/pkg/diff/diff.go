@@ -1,156 +1,182 @@
+// Package diff compares an A and B model.Objects collections, see Diff function.
 package diff
 
 import (
 	"fmt"
 	"reflect"
 	"sort"
-	"strings"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
-type typeName string
+// Possible diff results.
+const (
+	ResultNotSet ResultState = iota
+	ResultNotEqual
+	ResultEqual
+	ResultOnlyInA
+	ResultOnlyInB
+)
 
-type Differ struct {
-	objects   model.ObjectStates
-	results   []*Result                         // diff results
-	typeCache map[typeName][]*utils.StructField // reflection cache
-	errors    *utils.MultiError                 // errors
+// Marks representing the result of the diff.
+const (
+	EqualMark   = "="
+	ChangeMark  = "*"
+	AddMark     = "+"
+	DeleteMark  = "×"
+	OnlyInAMark = "-"
+	OnlyInBMark = "+"
+)
+
+// Object from A or B model.Objects collection, contains reference to all objects.
+// Object field can be nil.
+type Object struct {
+	Key    model.Key
+	Object model.Object
+	All    model.Objects
 }
 
 type ResultState int
 
-const (
-	EqualMark                    = "="
-	ChangeMark                   = "*"
-	AddMark                      = "+"
-	DeleteMark                   = "×"
-	OnlyInRemoteMark             = "-"
-	OnlyInLocalMark              = "+"
-	ResultNotSet     ResultState = iota
-	ResultNotEqual
-	ResultEqual
-	ResultOnlyInRemote
-	ResultOnlyInLocal
-)
-
+// Result of diff of A and B model.Object.
 type Result struct {
-	model.ObjectState
+	model.Key
+	A             Object
+	B             Object
 	State         ResultState
 	ChangedFields model.ChangedFields
 }
 
+// Results of diff of A and B model.Objects collections.
 type Results struct {
-	Equal                 bool
-	HasNotEqualResult     bool
-	HasOnlyInRemoteResult bool
-	HasOnlyInLocalResult  bool
-	Results               []*Result
-	Objects               model.ObjectStates
+	A                 model.Objects
+	B                 model.Objects
+	Results           []*Result
+	Errors            *utils.MultiError
+	Equal             bool
+	HasNotEqualResult bool
+	HasOnlyInAResult  bool
+	HasOnlyInBResult  bool
 }
 
-func NewDiffer(objects model.ObjectStates) *Differ {
-	return &Differ{
-		objects:   objects,
-		typeCache: make(map[typeName][]*utils.StructField),
-	}
+// Global cache of types.
+type (
+	typeName string
+	typeMap  map[typeName][]*utils.StructField
+)
+
+var typeCache = make(typeMap) // reflection cache
+
+type differ struct {
+	naming *naming.Registry
 }
 
-func (d *Differ) Diff() (*Results, error) {
-	d.results = []*Result{}
-	d.errors = utils.NewMultiError()
+func Diff(A, B model.Objects, naming *naming.Registry) (*Results, error) {
+	d := differ{naming: naming}
+	return d.diff(A, B)
+}
 
-	// Diff all objects : branches, config, configRows
-	results := &Results{Equal: true, Results: d.results, Objects: d.objects}
-	for _, objectState := range d.objects.All() {
-		result, err := d.diffState(objectState)
-		if err != nil {
-			d.errors.Append(err)
-		} else {
-			if result.State != ResultEqual {
-				results.Equal = false
+// Diff compares A and B model.Objects collections.
+// Results are sorted according to the A collection, see model.Objects.Less function.
+func (d *differ) diff(A, B model.Objects) (*Results, error) {
+	out := &Results{A: A, B: B, Equal: true, Results: []*Result{}, Errors: utils.NewMultiError()}
+
+	// Find all objects present in A, B or both.
+	allMap := make(map[model.Key]bool)
+	all := make([]model.Key, 0)
+	for _, collection := range []model.Objects{A, B} {
+		for _, object := range collection.All() {
+			if key := object.Key(); !allMap[key] {
+				all = append(all, key)
 			}
-			if result.State == ResultNotEqual {
-				results.HasNotEqualResult = true
-			}
-			if result.State != ResultOnlyInRemote {
-				results.HasOnlyInRemoteResult = true
-			}
-			if result.State != ResultOnlyInLocal {
-				results.HasOnlyInLocalResult = true
-			}
-			d.results = append(d.results, result)
 		}
 	}
 
-	// Sort results
-	sort.SliceStable(d.results, func(i, j int) bool {
-		return d.results[i].Path() < d.results[j].Path()
+	// Diff each object
+	for _, key := range all {
+		result, err := d.diffObject(
+			Object{Key: key, Object: A.GetOrNil(key), All: A},
+			Object{Key: key, Object: B.GetOrNil(key), All: B},
+		)
+
+		// Handle error
+		if err != nil {
+			out.Errors.Append(err)
+			continue
+		}
+
+		// Update global state
+		switch result.State {
+		case ResultNotEqual:
+			out.Equal = false
+			out.HasNotEqualResult = true
+		case ResultOnlyInA:
+			out.Equal = false
+			out.HasOnlyInAResult = true
+		case ResultOnlyInB:
+			out.Equal = false
+			out.HasOnlyInBResult = true
+		}
+
+		out.Results = append(out.Results, result)
+	}
+
+	// Sort results according to the A collection
+	sort.SliceStable(out.Results, func(i, j int) bool {
+		return A.Less(out.Results[i].Key, out.Results[j].Key)
 	})
 
-	results.Results = d.results
-	return results, d.errors.ErrorOrNil()
+	return out, out.Errors.ErrorOrNil()
 }
 
-func (d *Differ) diffState(state model.ObjectState) (*Result, error) {
-	result := &Result{ObjectState: state}
+func (d *differ) diffObject(a, b Object) (*Result, error) {
+	result := &Result{A: a, B: b}
 	result.ChangedFields = model.NewChangedFields()
 
 	// Are both, Remote and Local state defined?
-	if !state.HasRemoteState() && !state.HasLocalState() {
-		panic(fmt.Errorf("both local and remote state are not set"))
+	if a.Object == nil && b.Object == nil {
+		panic(fmt.Errorf("both A and B are nil"))
 	}
 
 	// Not in remote state
-	if !state.HasRemoteState() {
-		result.State = ResultOnlyInLocal
+	if a.Object == nil {
+		result.State = ResultOnlyInB
 		return result, nil
 	}
 
 	// Not in local state
-	if !state.HasLocalState() {
-		result.State = ResultOnlyInRemote
+	if b.Object == nil {
+		result.State = ResultOnlyInA
 		return result, nil
 	}
 
-	remoteState := state.RemoteState()
-	localState := state.LocalState()
-	remoteType := reflect.TypeOf(remoteState).Elem()
-	localType := reflect.TypeOf(localState).Elem()
-	remoteValues := reflect.ValueOf(remoteState)
-	localValues := reflect.ValueOf(localState)
+	aValue, aType := coreType(reflect.ValueOf(a.Object))
+	bValue, bType := coreType(reflect.ValueOf(b.Object))
 
-	// Remote and Local types must be same
-	if remoteType.String() != localType.String() {
-		panic(fmt.Errorf("local(%s) and remote(%s) states must have same data type", remoteType, localType))
+	// A and B types must have same type
+	if aType.String() != bType.String() {
+		panic(fmt.Errorf("diff values A(%s) and B(%s) must have same data type", aType, bType))
 	}
 
 	// Get available fields for diff, defined in `diff:"true"` tag in struct
-	diffFields := d.getDiffFields(remoteType)
+	diffFields := getDiffFields(aType)
 	if len(diffFields) == 0 {
-		return nil, fmt.Errorf(`no field with tag "diff:true" in struct "%s"`, remoteType.String())
-	}
-
-	// Get pointer value
-	if remoteValues.Type().Kind() == reflect.Ptr {
-		remoteValues = remoteValues.Elem()
-	}
-	if localValues.Type().Kind() == reflect.Ptr {
-		localValues = localValues.Elem()
+		return nil, fmt.Errorf(`no field with tag "diff:true" in struct "%s"`, aType.String())
 	}
 
 	// Diff
 	for _, field := range diffFields {
 		reporter := d.diffValues(
-			state,
-			remoteValues.FieldByName(field.StructField.Name).Interface(),
-			localValues.FieldByName(field.StructField.Name).Interface(),
+			a, b,
+			aValue.FieldByName(field.StructField.Name).Interface(),
+			bValue.FieldByName(field.StructField.Name).Interface(),
 		)
 		diffStr := reporter.String()
 		if len(diffStr) > 0 {
@@ -170,13 +196,42 @@ func (d *Differ) diffState(state model.ObjectState) (*Result, error) {
 	return result, nil
 }
 
-func (d *Differ) diffValues(objectState model.ObjectState, remoteValue, localValue interface{}) *Reporter {
-	reporter := newReporter(objectState, d.objects)
-	cmp.Diff(remoteValue, localValue, d.newOptions(reporter))
+func (d *differ) diffValues(a, b Object, aValue, bValue interface{}) *Reporter {
+	reporter := newReporter(a, b, d.naming)
+	cmp.Diff(aValue, bValue, options(reporter))
 	return reporter
 }
 
-func (d *Differ) newOptions(reporter *Reporter) cmp.Options {
+func (v ResultState) Mark() string {
+	switch v {
+	case ResultNotSet:
+		return "?"
+	case ResultNotEqual:
+		return "*"
+	case ResultEqual:
+		return "="
+	case ResultOnlyInA:
+		return OnlyInAMark
+	case ResultOnlyInB:
+		return OnlyInBMark
+	default:
+		panic(fmt.Errorf("unexpected type %T", v))
+	}
+}
+
+func getDiffFields(t reflect.Type) []*utils.StructField {
+	if v, ok := typeCache[typeName(t.Name())]; ok {
+		return v
+	} else {
+		diffFields := utils.GetFieldsWithTag("diff:true", t)
+		name := typeName(t.Name())
+		typeCache[name] = diffFields
+		return diffFields
+	}
+}
+
+// options defines customization of the diff process.
+func options(reporter *Reporter) cmp.Options {
 	return cmp.Options{
 		cmp.Reporter(reporter),
 		// Compare Config/ConfigRow configuration content ("orderedmap" type) as map (keys order doesn't matter)
@@ -201,58 +256,5 @@ func (d *Differ) newOptions(reporter *Reporter) cmp.Options {
 		}),
 		// Do not compare local paths
 		cmpopts.IgnoreTypes(model.AbsPath{}),
-	}
-}
-
-func (d *Differ) getDiffFields(t reflect.Type) []*utils.StructField {
-	if v, ok := d.typeCache[typeName(t.Name())]; ok {
-		return v
-	} else {
-		diffFields := utils.GetFieldsWithTag("diff:true", t)
-		name := typeName(t.Name())
-		d.typeCache[name] = diffFields
-		return diffFields
-	}
-}
-
-func (r *Results) Format(details bool) []string {
-	var out []string
-	for _, result := range r.Results {
-		if result.State != ResultEqual {
-			// Message
-			msg := fmt.Sprintf("%s %s %s", result.Mark(), result.Kind().Abbr, result.Path())
-			if !details && !result.ChangedFields.IsEmpty() {
-				msg += " | changed: " + result.ChangedFields.String()
-			}
-			out = append(out, msg)
-
-			// Changed fields
-			if details {
-				for _, field := range result.ChangedFields.All() {
-					out = append(out, fmt.Sprintf("  %s:", field.Name()))
-					for _, line := range strings.Split(field.Diff(), "\n") {
-						out = append(out, fmt.Sprintf("  %s", line))
-					}
-				}
-			}
-		}
-	}
-	return out
-}
-
-func (r *Result) Mark() string {
-	switch r.State {
-	case ResultNotSet:
-		return "?"
-	case ResultNotEqual:
-		return "*"
-	case ResultEqual:
-		return "="
-	case ResultOnlyInRemote:
-		return OnlyInRemoteMark
-	case ResultOnlyInLocal:
-		return OnlyInLocalMark
-	default:
-		panic(fmt.Errorf("unexpected type %T", r.State))
 	}
 }

@@ -11,31 +11,25 @@ import (
 	diffstr "github.com/kylelemons/godebug/diff"
 	"github.com/spf13/cast"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 )
 
 const MaxEqualLinesInString = 5 // maximum of equal lines returned by strings diff
 
 // Reporter contains path to the compared values and generates human-readable difference report.
 type Reporter struct {
-	manifest     model.ObjectManifest
-	remoteObject model.Object
-	localObject  model.Object
-	objects      model.ObjectStates // objects of the other objects (to get objects path if needed)
-	path         cmp.Path           // current path to the compared value
-	paths        []string           // list of the non-equal paths
-	diffs        []string           // list of the found differences in human-readable format
+	a      Object
+	b      Object
+	naming *naming.Registry
+	path   cmp.Path // current path to the compared value
+	paths  []string // list of the non-equal paths
+	diffs  []string // list of the found differences in human-readable format
 }
 
-func newReporter(objectState model.ObjectState, objects model.ObjectStates) *Reporter {
-	return &Reporter{
-		manifest:     objectState.Manifest(),
-		remoteObject: objectState.RemoteState(),
-		localObject:  objectState.LocalState(),
-		objects:      objects,
-	}
+func newReporter(a, b Object, naming *naming.Registry) *Reporter {
+	return &Reporter{a: a, b: b, naming: naming}
 }
 
 func (r *Reporter) PushStep(ps cmp.PathStep) {
@@ -63,16 +57,15 @@ func (r *Reporter) Report(rs cmp.Result) {
 		var mark string
 		switch {
 		case remoteValue.IsValid() && !localValue.IsValid():
-			mark = OnlyInRemoteMark
+			mark = OnlyInAMark
 		case !remoteValue.IsValid() && localValue.IsValid():
-			mark = OnlyInLocalMark
+			mark = OnlyInBMark
 		default:
 			// Values are present in both: local and remote value
 			// Individual lines are already marked.
 			mark = " "
 		}
-		pathStr := r.pathToString(r.path)
-		if len(pathStr) > 0 {
+		if pathStr := r.pathToString(r.path); len(pathStr) > 0 {
 			r.paths = append(r.paths, pathStr)
 			if !r.isPathHidden() {
 				r.diffs = append(r.diffs, fmt.Sprintf(`%s %s:`, mark, pathStr))
@@ -104,10 +97,10 @@ func (r *Reporter) relationsDiff(remoteValue, localValue reflect.Value) ([]strin
 		onlyInRemote, onlyInLocal := remoteValue.Interface().(model.Relations).Diff(localValue.Interface().(model.Relations))
 		var out []string
 		for _, v := range onlyInRemote {
-			out = append(out, fmt.Sprintf("%s %s", OnlyInRemoteMark, r.relationToString(v, r.remoteObject, r.objects.RemoteObjects())))
+			out = append(out, fmt.Sprintf("%s %s", OnlyInAMark, r.relationToString(v, r.a)))
 		}
 		for _, v := range onlyInLocal {
-			out = append(out, fmt.Sprintf("%s %s", OnlyInLocalMark, r.relationToString(v, r.localObject, r.objects.LocalObjects())))
+			out = append(out, fmt.Sprintf("%s %s", OnlyInBMark, r.relationToString(v, r.b)))
 		}
 		return out, true
 	}
@@ -119,12 +112,14 @@ func (r *Reporter) isPathHidden() bool {
 	return r.path.Last().Type().String() == "model.Relations"
 }
 
-func (r *Reporter) relationToString(relation model.Relation, definedOn model.Object, allObjects model.Objects) string {
+func (r *Reporter) relationToString(relation model.Relation, definedOn Object) string {
 	otherSideDesc := ``
-	otherSideKey, _, err := relation.NewOtherSideRelation(definedOn, allObjects)
+	otherSideKey, _, err := relation.NewOtherSideRelation(definedOn.Object, definedOn.All)
 	if err == nil && otherSideKey != nil {
-		if otherSide, found := r.objects.Get(otherSideKey); found {
-			otherSideDesc = `"` + otherSide.Path() + `"`
+		if otherSide, found := definedOn.All.Get(otherSideKey); found {
+			if path, found := r.naming.PathByKey(otherSide.Key()); found {
+				otherSideDesc = `"` + path.Path() + `"`
+			}
 		}
 		if len(otherSideDesc) == 0 {
 			otherSideDesc = otherSideKey.Desc()
@@ -187,64 +182,43 @@ func (r *Reporter) pathToString(path cmp.Path) string {
 func (r *Reporter) objectPath(value reflect.Value) string {
 	if value.IsValid() {
 		if v, ok := value.Interface().(model.RecordPaths); ok {
-			objectPath := v.Path()
-			if objectPath != "" {
-				if v, err := filesystem.Rel(r.manifest.Path(), objectPath); err == nil {
-					return v
-				}
-			}
+			return v.GetRelativePath()
 		}
 	}
 	return ""
 }
 
-func valuesDiff(remote, local reflect.Value) []string {
+func valuesDiff(a, b reflect.Value) []string {
 	var out []string
 
 	// Resolve interfaces
-	var remoteType reflect.Type
-	var localType reflect.Type
-	if remote.IsValid() {
-		remoteType = remote.Type()
-		if remoteType.Kind() == reflect.Interface || remoteType.Kind() == reflect.Ptr {
-			if !remote.IsZero() {
-				remote = remote.Elem()
-			}
-			remoteType = remote.Type()
-		}
-	}
-	if local.IsValid() {
-		localType = local.Type()
-		if localType.Kind() == reflect.Interface || localType.Kind() == reflect.Ptr {
-			if !local.IsZero() {
-				local = local.Elem()
-			}
-			localType = local.Type()
-		}
-	}
+	var aType reflect.Type
+	var bType reflect.Type
+	coreType(&a, &aType)
+	coreType(&b, &bType)
 
 	// Print types if differs
-	includeType := remote.IsValid() && local.IsValid() && !remote.IsZero() && !local.IsZero() && remoteType.String() != localType.String()
+	includeType := a.IsValid() && b.IsValid() && !a.IsZero() && !b.IsZero() && aType.String() != bType.String()
 
 	// Format values
-	if remote.IsValid() {
-		formatted := formatValue(remote, remoteType, includeType)
+	if a.IsValid() {
+		formatted := formatValue(a, aType, includeType)
 		if len(formatted) != 0 {
 			valueMark := ``
-			if local.IsValid() {
-				valueMark = OnlyInRemoteMark + ` `
+			if b.IsValid() {
+				valueMark = OnlyInAMark + ` `
 			}
 			for _, line := range formatted {
 				out = append(out, fmt.Sprintf("%s%s", valueMark, line))
 			}
 		}
 	}
-	if local.IsValid() {
-		formatted := formatValue(local, localType, includeType)
+	if b.IsValid() {
+		formatted := formatValue(b, bType, includeType)
 		if len(formatted) != 0 {
 			valueMark := ``
-			if remote.IsValid() {
-				valueMark = OnlyInLocalMark + ` `
+			if a.IsValid() {
+				valueMark = OnlyInBMark + ` `
 			}
 			for _, line := range formatted {
 				out = append(out, fmt.Sprintf("%s%s", valueMark, line))
@@ -283,10 +257,10 @@ func stringsDiff(remote, local string) string {
 	out := new(bytes.Buffer)
 	for _, c := range chunks {
 		for _, line := range c.Added {
-			_, _ = fmt.Fprintf(out, "%s %s\n", OnlyInLocalMark, line)
+			_, _ = fmt.Fprintf(out, "%s %s\n", OnlyInBMark, line)
 		}
 		for _, line := range c.Deleted {
-			_, _ = fmt.Fprintf(out, "%s %s\n", OnlyInRemoteMark, line)
+			_, _ = fmt.Fprintf(out, "%s %s\n", OnlyInAMark, line)
 		}
 		for i, line := range c.Equal {
 			// Limit number of equal lines in row

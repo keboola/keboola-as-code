@@ -20,9 +20,9 @@ func NewPlan(diffResults *diff.Results) (*diffop.Plan, error) {
 				continue
 			}
 			plan.Add(result, diffop.ActionSaveRemote)
-		case diff.ResultOnlyInLocal:
+		case diff.ResultOnlyInB:
 			plan.Add(result, diffop.ActionSaveRemote)
-		case diff.ResultOnlyInRemote:
+		case diff.ResultOnlyInA:
 			if parentExists(result.ObjectState, diffResults.Objects) {
 				plan.Add(result, diffop.ActionDeleteRemote)
 			}
