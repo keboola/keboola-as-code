@@ -116,12 +116,9 @@ func (r *Reporter) relationToString(relation model.Relation, definedOn Object) s
 	otherSideDesc := ``
 	otherSideKey, _, err := relation.NewOtherSideRelation(definedOn.Object, definedOn.All)
 	if err == nil && otherSideKey != nil {
-		if otherSide, found := definedOn.All.Get(otherSideKey); found {
-			if path, found := r.naming.PathByKey(otherSide.Key()); found {
-				otherSideDesc = `"` + path.Path() + `"`
-			}
-		}
-		if len(otherSideDesc) == 0 {
+		if path, found := r.naming.PathByKey(otherSideKey); found {
+			otherSideDesc = `"` + path.Path() + `"`
+		} else {
 			otherSideDesc = otherSideKey.Desc()
 		}
 	}

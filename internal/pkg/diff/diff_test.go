@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
@@ -29,7 +30,7 @@ func TestDiff_OnlyInA(t *testing.T) {
 	assert.True(t, result.ChangedFields.IsEmpty())
 
 	assert.Same(t, branch, result.A.Object)
-	assert.Nil(t, result.B)
+	assert.Nil(t, result.B.Object)
 }
 
 func TestDiff_OnlyInB(t *testing.T) {
@@ -37,7 +38,7 @@ func TestDiff_OnlyInB(t *testing.T) {
 	A, B, d := newDiffer()
 
 	branch := &model.Branch{BranchKey: model.BranchKey{Id: 123}}
-	A.MustAdd(branch)
+	B.MustAdd(branch)
 
 	results, err := d.diff(A, B)
 	assert.NoError(t, err)
@@ -47,7 +48,7 @@ func TestDiff_OnlyInB(t *testing.T) {
 	assert.Equal(t, ResultOnlyInB, result.State)
 	assert.True(t, result.ChangedFields.IsEmpty())
 
-	assert.Nil(t, result.A)
+	assert.Nil(t, result.A.Object)
 	assert.Same(t, branch, result.B.Object)
 }
 
@@ -126,42 +127,29 @@ func TestDiff_EqualConfig(t *testing.T) {
 	branchKey := model.BranchKey{Id: 123}
 	configKey := model.ConfigKey{BranchId: 123, ComponentId: "foo-bar", Id: "456"}
 
-	A.MustAdd(&model.Branch{
-		BranchKey:   branchKey,
-		Name:        "branch name",
-		Description: "description",
-		IsDefault:   false,
-	})
+	A.MustAdd(&model.Branch{BranchKey: branchKey})
 	A.MustAdd(&model.Config{
 		ConfigKey:         configKey,
 		Name:              "config name",
 		Description:       "description",
-		ChangeDescription: "remote", // no diff:"true" tag
+		ChangeDescription: "A", // no diff:"true" tag
 	})
 
-	B.MustAdd(&model.Branch{
-		BranchKey:   branchKey,
-		Name:        "branch name",
-		Description: "description",
-		IsDefault:   false,
-	})
+	B.MustAdd(&model.Branch{BranchKey: branchKey})
 	B.MustAdd(&model.Config{
 		ConfigKey:         configKey,
 		Name:              "config name",
 		Description:       "description",
-		ChangeDescription: "local", // no diff:"true" tag
+		ChangeDescription: "B", // no diff:"true" tag
 	})
 
 	results, err := d.diff(A, B)
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 2)
-
-	result1 := results.Results[0]
-	assert.Equal(t, ResultEqual, result1.State)
-	assert.True(t, result1.ChangedFields.IsEmpty())
-	result2 := results.Results[1]
-	assert.Equal(t, ResultEqual, result2.State)
-	assert.True(t, result2.ChangedFields.IsEmpty())
+	for _, result := range results.Results {
+		assert.Equal(t, ResultEqual, result.State)
+		assert.True(t, result.ChangedFields.IsEmpty())
+	}
 }
 
 func TestDiff_NotEqualConfig(t *testing.T) {
@@ -171,30 +159,20 @@ func TestDiff_NotEqualConfig(t *testing.T) {
 	branchKey := model.BranchKey{Id: 123}
 	configKey := model.ConfigKey{BranchId: 123, ComponentId: "foo-bar", Id: "456"}
 
-	A.MustAdd(&model.Branch{
-		BranchKey:   branchKey,
-		Name:        "branch name",
-		Description: "description",
-		IsDefault:   false,
-	})
+	A.MustAdd(&model.Branch{BranchKey: branchKey})
 	A.MustAdd(&model.Config{
 		ConfigKey:         configKey,
 		Name:              "name",
 		Description:       "description",
-		ChangeDescription: "remote", // no diff:"true" tag
+		ChangeDescription: "A", // no diff:"true" tag
 	})
 
-	B.MustAdd(&model.Branch{
-		BranchKey:   branchKey,
-		Name:        "branch name",
-		Description: "description",
-		IsDefault:   false,
-	})
+	B.MustAdd(&model.Branch{BranchKey: branchKey})
 	B.MustAdd(&model.Config{
 		ConfigKey:         configKey,
 		Name:              "changed",
 		Description:       "changed",
-		ChangeDescription: "local", // no diff:"true" tag
+		ChangeDescription: "B", // no diff:"true" tag
 	})
 
 	results, err := d.diff(A, B)
@@ -217,12 +195,7 @@ func TestDiff_NotEqualConfigConfiguration(t *testing.T) {
 	branchKey := model.BranchKey{Id: 123}
 	configKey := model.ConfigKey{BranchId: 123, ComponentId: "foo-bar", Id: "456"}
 
-	A.MustAdd(&model.Branch{
-		BranchKey:   branchKey,
-		Name:        "branch name",
-		Description: "description",
-		IsDefault:   false,
-	})
+	A.MustAdd(&model.Branch{BranchKey: branchKey})
 	A.MustAdd(&model.Config{
 		ConfigKey:         configKey,
 		Name:              "name",
@@ -238,12 +211,7 @@ func TestDiff_NotEqualConfigConfiguration(t *testing.T) {
 		}),
 	})
 
-	B.MustAdd(&model.Branch{
-		BranchKey:   branchKey,
-		Name:        "branch name",
-		Description: "description",
-		IsDefault:   false,
-	})
+	B.MustAdd(&model.Branch{BranchKey: branchKey})
 	B.MustAdd(&model.Config{
 		ConfigKey:         configKey,
 		Name:              "name",
@@ -270,12 +238,16 @@ func TestDiff_NotEqualConfigConfiguration(t *testing.T) {
 	result2 := results.Results[1]
 	assert.Equal(t, ResultNotEqual, result2.State)
 	assert.Equal(t, `configuration`, result2.ChangedFields.String())
-	assert.Equal(t, `foo.bar`, result2.ChangedFields.Get(`configuration`).Paths())
+	assert.Equal(t, []string{`foo.bar`}, result2.ChangedFields.Get(`configuration`).Paths())
 }
 
 func TestDiff_Relations(t *testing.T) {
 	t.Parallel()
 	A, B, d := newDiffer()
+
+	targetKey := fixtures.MockedKey{Id: `123`}
+	assert.NoError(t, d.naming.Attach(targetKey, model.NewAbsPath("", "path/to/target")))
+	spew.Dump(d.naming.PathByKey(targetKey))
 
 	objectKey := fixtures.MockedKey{Id: `345`}
 	A.MustAdd(&fixtures.MockedObject{
@@ -296,7 +268,7 @@ func TestDiff_Relations(t *testing.T) {
 		MockedKey: objectKey,
 		Relations: model.Relations{
 			&fixtures.MockedApiSideRelation{
-				OtherSide: fixtures.MockedKey{Id: `123`},
+				OtherSide: targetKey,
 			},
 			&fixtures.MockedApiSideRelation{
 				OtherSide: fixtures.MockedKey{Id: `001`},
@@ -315,20 +287,24 @@ func TestDiff_Relations(t *testing.T) {
 	assert.Equal(t, ResultNotEqual, result.State)
 
 	expected := `
-  - manifest side relation mocked key "foo"
-  + manifest side relation mocked key "bar"
-  - api side relation "path/to/target"
-  + api side relation mocked key "002"
+relations:
+  - manifest side relation mocked key "bar"
+  + manifest side relation mocked key "foo"
+  - api side relation mocked key "002"
+  + api side relation "path/to/target"
 `
 	assert.Equal(t, strings.Trim(expected, "\n"), result.String())
-	assert.Equal(t, []string{"InManifest", "InApi"}, result.ChangedFields.Get("relations").Paths()) // see model.RelationsBySide
+	assert.Equal(t, []string{"InApi", "InManifest"}, result.ChangedFields.Get("relations").Paths()) // see model.RelationsBySide
 }
 
 func TestDiff_Transformation(t *testing.T) {
 	t.Parallel()
 	A, B, d := newDiffer()
 
+	branchKey := model.BranchKey{Id: 123}
 	configKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.python-transformation-v2`, Id: `456`}
+
+	A.MustAdd(&model.Branch{BranchKey: branchKey})
 	A.MustAdd(&model.Config{
 		ConfigKey: configKey,
 		SharedCode: &model.SharedCodeConfig{
@@ -354,6 +330,8 @@ func TestDiff_Transformation(t *testing.T) {
 			},
 		},
 	})
+
+	B.MustAdd(&model.Branch{BranchKey: branchKey})
 	B.MustAdd(&model.Config{
 		ConfigKey: configKey,
 		Transformation: &model.Transformation{
@@ -388,22 +366,46 @@ func TestDiff_Transformation(t *testing.T) {
 
 	results, err := d.diff(A, B)
 	assert.NoError(t, err)
-	assert.Len(t, results.Results, 1)
+	assert.Len(t, results.Results, 2)
 
-	result := results.Results[0]
-	assert.Equal(t, ResultNotEqual, result.State)
+	result1 := results.Results[0] // branch
+	assert.Equal(t, ResultEqual, result1.State)
+	assert.True(t, result1.ChangedFields.IsEmpty())
+
+	result2 := results.Results[1] // config
+	assert.Equal(t, ResultNotEqual, result2.State)
 
 	expected := `
-  x
+sharedCode:
+  - 12345
+  + (null)
+transformation:
+  001-block-1:
+    - #  My block
+    + #  Block 1
+      ## Code 1
+      SELECT 1;
+    - SELECT 2;
+    - SELECT 3;
++ 001-code-1:
++   #  Block 2
++   ## Code 2
++   SELECT 2;
++   
 `
-	assert.Equal(t, strings.Trim(expected, "\n"), result.String())
+	assert.Equal(t, strings.Trim(expected, "\n"), result2.String())
 }
 
 func TestDiff_SharedCode(t *testing.T) {
 	t.Parallel()
 	A, B, d := newDiffer()
 
-	configRowKey := model.ConfigRowKey{BranchId: 123, ComponentId: model.SharedCodeComponentId, Id: `456`}
+	branchKey := model.BranchKey{Id: 123}
+	configKey := model.ConfigKey{BranchId: 123, ComponentId: model.SharedCodeComponentId, Id: `456`}
+	configRowKey := model.ConfigRowKey{BranchId: 123, ComponentId: model.SharedCodeComponentId, ConfigId: `456`, Id: `789`}
+
+	A.MustAdd(&model.Branch{BranchKey: branchKey})
+	A.MustAdd(&model.Config{ConfigKey: configKey})
 	A.MustAdd(&model.ConfigRow{
 		ConfigRowKey: configRowKey,
 		SharedCode: &model.SharedCodeRow{
@@ -415,6 +417,9 @@ func TestDiff_SharedCode(t *testing.T) {
 			},
 		},
 	})
+
+	B.MustAdd(&model.Branch{BranchKey: branchKey})
+	B.MustAdd(&model.Config{ConfigKey: configKey})
 	B.MustAdd(&model.ConfigRow{
 		ConfigRowKey: configRowKey,
 		SharedCode: &model.SharedCodeRow{
@@ -428,22 +433,39 @@ func TestDiff_SharedCode(t *testing.T) {
 
 	results, err := d.diff(A, B)
 	assert.NoError(t, err)
-	assert.Len(t, results.Results, 1)
+	assert.Len(t, results.Results, 3)
 
-	result := results.Results[0]
-	assert.Equal(t, ResultNotEqual, result.State)
+	result1 := results.Results[0] // branch
+	assert.Equal(t, ResultEqual, result1.State)
+	assert.True(t, result1.ChangedFields.IsEmpty())
+
+	result2 := results.Results[1] // config
+	assert.Equal(t, ResultEqual, result2.State)
+	assert.True(t, result2.ChangedFields.IsEmpty())
+
+	result3 := results.Results[2]
+	assert.Equal(t, ResultNotEqual, result3.State)
 
 	expected := `
-  x
+sharedCode:
+  - SELECT 1;
+  + SELECT 4;
+  
+  - SELECT 2;
+  - 
+    SELECT 3;
 `
-	assert.Equal(t, strings.Trim(expected, "\n"), result.String())
+	assert.Equal(t, strings.Trim(expected, "\n"), result3.String())
 }
 
 func TestDiff_Orchestration(t *testing.T) {
 	t.Parallel()
 	A, B, d := newDiffer()
 
+	branchKey := model.BranchKey{Id: 123}
 	configKey := model.ConfigKey{BranchId: 123, ComponentId: model.OrchestratorComponentId, Id: `456`}
+
+	A.MustAdd(&model.Branch{BranchKey: branchKey})
 	A.MustAdd(&model.Config{
 		ConfigKey: configKey,
 		Orchestration: &model.Orchestration{
@@ -507,6 +529,8 @@ func TestDiff_Orchestration(t *testing.T) {
 			},
 		},
 	})
+
+	B.MustAdd(&model.Branch{BranchKey: branchKey})
 	B.MustAdd(&model.Config{
 		ConfigKey: configKey,
 		Orchestration: &model.Orchestration{
@@ -584,22 +608,59 @@ func TestDiff_Orchestration(t *testing.T) {
 
 	results, err := d.diff(A, B)
 	assert.NoError(t, err)
-	assert.Len(t, results.Results, 1)
+	assert.Len(t, results.Results, 2)
 
-	result := results.Results[0]
-	assert.Equal(t, ResultNotEqual, result.State)
+	result1 := results.Results[0] // branch
+	assert.Equal(t, ResultEqual, result1.State)
+	assert.True(t, result1.ChangedFields.IsEmpty())
+
+	result2 := results.Results[1] // config
+	assert.Equal(t, ResultNotEqual, result2.State)
 
 	expected := `
-  x
+orchestration:
+  001-phase:
+      #  001 Phase
+      depends on phases: []
+      {
+        "foo": "bar"
+      ...
+    - ## 001 Task 3
+    - >> branch/extractor/foo.bar3/123
+    + ## 001 Task 1
+    + >> branch/extractor/foo.bar1/config123
+      {
+        "task": {
+          "mode": "run"
+        },
+      ...
+    + ## 002 Task 2
+    + >> branch:123/componentId:foo.bar2/configId:789
+    + {
+    +   "task": {
+    +     "mode": "run"
+    +   },
+    +   "continueOnFailure": false,
+    +   "enabled": false
+    + }
+- 002-phase:
+-   #  002 New Phase
+-   depends on phases: []
+-   {
+-     "foo": "bar"
+-   }
 `
-	assert.Equal(t, strings.Trim(expected, "\n"), result.String())
+	assert.Equal(t, strings.Trim(expected, "\n"), result2.String())
 }
 
 func TestDiff_Map(t *testing.T) {
 	t.Parallel()
 	A, B, d := newDiffer()
 
+	branchKey := model.BranchKey{Id: 123}
 	configKey := model.ConfigKey{BranchId: 123, ComponentId: model.OrchestratorComponentId, Id: `456`}
+
+	A.MustAdd(&model.Branch{BranchKey: branchKey})
 	A.MustAdd(&model.Config{
 		ConfigKey: configKey,
 		Content: orderedmap.FromPairs([]orderedmap.Pair{
@@ -622,6 +683,7 @@ func TestDiff_Map(t *testing.T) {
 		}),
 	})
 
+	B.MustAdd(&model.Branch{BranchKey: branchKey})
 	B.MustAdd(&model.Config{
 		ConfigKey: configKey,
 		Content: orderedmap.FromPairs([]orderedmap.Pair{
@@ -637,15 +699,28 @@ func TestDiff_Map(t *testing.T) {
 
 	results, err := d.diff(A, B)
 	assert.NoError(t, err)
-	assert.Len(t, results.Results, 1)
+	assert.Len(t, results.Results, 2)
 
-	result := results.Results[0]
-	assert.Equal(t, ResultNotEqual, result.State)
+	result1 := results.Results[0] // branch
+	assert.Equal(t, ResultEqual, result1.State)
+	assert.True(t, result1.ChangedFields.IsEmpty())
+
+	result2 := results.Results[1] // config
+	assert.Equal(t, ResultNotEqual, result2.State)
 
 	expected := `
-  x
+configuration:
+  foo.bar:
+    - {
+    -   "baz": {
+    -     "key": "value"
+    -   }
+    - }
+    + "value"
++ key:
++   value
 `
-	assert.Equal(t, strings.Trim(expected, "\n"), result.String())
+	assert.Equal(t, strings.Trim(expected, "\n"), result2.String())
 }
 
 func TestResults_Format(t *testing.T) {
@@ -654,18 +729,20 @@ func TestResults_Format(t *testing.T) {
 	changedFields.Add("xyz").SetDiff(`diff 1`)
 	changedFields.Add("123").SetDiff(`diff 2`)
 	changedFields.Add("abc").SetDiff(`diff 3`)
-	result := &Result{ChangedFields: changedFields, State: ResultNotEqual}
+	result := &Result{Key: fixtures.MockedKey{Id: "id"}, ChangedFields: changedFields, State: ResultNotEqual}
 	results := &Results{Results: []*Result{result}}
 	output := strings.Join(results.Format(naming.NewRegistry(), true), "\n")
 
-	expected := `* K test
+	expected := `
+* K mocked key "id"
   123:
   diff 2
   abc:
   diff 3
   xyz:
-  diff 1`
-	assert.Equal(t, expected, output)
+  diff 1
+`
+	assert.Equal(t, strings.Trim(expected, "\n"), output)
 }
 
 func newDiffer() (A, B model.Objects, d *differ) {

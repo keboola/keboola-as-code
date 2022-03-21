@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -73,7 +74,10 @@ type (
 	typeMap  map[typeName][]*utils.StructField
 )
 
-var typeCache = make(typeMap) // reflection cache
+var (
+	typeLock  = &sync.Mutex{}
+	typeCache = make(typeMap) // reflection cache
+)
 
 type differ struct {
 	naming *naming.Registry
@@ -95,6 +99,7 @@ func (d *differ) diff(A, B model.Objects) (*Results, error) {
 	for _, collection := range []model.Objects{A, B} {
 		for _, object := range collection.All() {
 			if key := object.Key(); !allMap[key] {
+				allMap[key] = true
 				all = append(all, key)
 			}
 		}
@@ -103,6 +108,7 @@ func (d *differ) diff(A, B model.Objects) (*Results, error) {
 	// Diff each object
 	for _, key := range all {
 		result, err := d.diffObject(
+			key,
 			Object{Key: key, Object: A.GetOrNil(key), All: A},
 			Object{Key: key, Object: B.GetOrNil(key), All: B},
 		)
@@ -137,8 +143,8 @@ func (d *differ) diff(A, B model.Objects) (*Results, error) {
 	return out, out.Errors.ErrorOrNil()
 }
 
-func (d *differ) diffObject(a, b Object) (*Result, error) {
-	result := &Result{A: a, B: b}
+func (d *differ) diffObject(key model.Key, a, b Object) (*Result, error) {
+	result := &Result{Key: key, A: a, B: b}
 	result.ChangedFields = model.NewChangedFields()
 
 	// Are both, Remote and Local state defined?
@@ -220,6 +226,15 @@ func (v ResultState) Mark() string {
 	}
 }
 
+func (r *Result) String() string {
+	var out strings.Builder
+	for _, field := range r.ChangedFields.All() {
+		out.WriteString(fmt.Sprintf("%s:\n", field.Name()))
+		out.WriteString(field.Diff() + "\n")
+	}
+	return strings.TrimRight(out.String(), "\n")
+}
+
 func (r *Results) Format(naming *naming.Registry, details bool) []string {
 	var out []string
 	for _, result := range r.Results {
@@ -239,11 +254,8 @@ func (r *Results) Format(naming *naming.Registry, details bool) []string {
 
 			// Changed fields
 			if details {
-				for _, field := range result.ChangedFields.All() {
-					out = append(out, fmt.Sprintf("  %s:", field.Name()))
-					for _, line := range strings.Split(field.Diff(), "\n") {
-						out = append(out, fmt.Sprintf("  %s", line))
-					}
+				for _, line := range strings.Split(result.String(), "\n") {
+					out = append(out, fmt.Sprintf("  %s", line))
 				}
 			}
 		}
@@ -252,6 +264,9 @@ func (r *Results) Format(naming *naming.Registry, details bool) []string {
 }
 
 func getDiffFields(t reflect.Type) []*utils.StructField {
+	typeLock.Lock()
+	defer typeLock.Unlock()
+
 	if v, ok := typeCache[typeName(t.Name())]; ok {
 		return v
 	} else {

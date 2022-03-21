@@ -104,7 +104,7 @@ func (v *ChangedField) RemovePath(path string) {
 	delete(v.paths, path)
 }
 
-func (v *ChangedField) Paths() string {
+func (v *ChangedField) Paths() []string {
 	var out []string
 	for path, changed := range v.paths {
 		if changed {
@@ -112,5 +112,9 @@ func (v *ChangedField) Paths() string {
 		}
 	}
 	sort.Strings(out)
-	return strings.Join(out, `, `)
+	return out
+}
+
+func (v *ChangedField) String() string {
+	return strings.Join(v.Paths(), `, `)
 }

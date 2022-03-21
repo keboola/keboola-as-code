@@ -25,8 +25,8 @@ type MockedObject struct {
 	Foo2      string
 	Meta1     string                 `json:"myKey" metaFile:"true"`
 	Meta2     string                 `metaFile:"true"`
-	Config    *orderedmap.OrderedMap `configFile:"true"`
-	Relations model.Relations
+	Config    *orderedmap.OrderedMap `configFile:"true" diff:"true"`
+	Relations model.Relations        `diff:"true"`
 }
 
 type MockedManifestSideRelation struct {
