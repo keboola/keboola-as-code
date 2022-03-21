@@ -13,17 +13,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/registry"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
-
-type Registry = registry.Registry
-
-func NewRegistry(paths *knownpaths.Paths, namingRegistry *naming.Registry, components *model.ComponentsMap, sortBy string) *Registry {
-	return registry.New(paths, namingRegistry, components, sortBy)
-}
 
 // State - Local and Remote state of the project.
 type State struct {

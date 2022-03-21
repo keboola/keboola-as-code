@@ -15,7 +15,7 @@ type executor struct {
 	logger       log.Logger
 	localManager *local.Manager
 	localWork    *local.UnitOfWork
-	remoteWork   *remote.UnitOfWork
+	remoteWork   *remote.uow
 	errors       *utils.MultiError
 }
 
@@ -45,10 +45,10 @@ func (e *executor) invoke() error {
 		case ActionDeleteLocal:
 			e.localWork.DeleteObject(action.ObjectState, action.Manifest())
 		case ActionSaveRemote:
-			e.remoteWork.SaveObject(action.ObjectState, action.LocalState(), action.ChangedFields)
+			e.remoteWork.Save(action.ObjectState, action.LocalState(), action.ChangedFields)
 		case ActionDeleteRemote:
 			if e.allowedRemoteDelete {
-				e.remoteWork.DeleteObject(action.ObjectState)
+				e.remoteWork.Delete(action.ObjectState)
 			}
 		default:
 			panic(fmt.Errorf(`unexpected action type`))

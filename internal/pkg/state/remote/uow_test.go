@@ -13,80 +13,28 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/object"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 )
 
-type testMapper struct {
-	remoteChanges []string
-}
-
-func (*testMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
-	if config, ok := recipe.Object.(*model.Config); ok {
-		config.Name = "modified name"
-		config.Content.Set(`key`, `api value`)
-		config.Content.Set(`new`, `value`)
-	}
-	return nil
-}
-
-func (*testMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
-	if config, ok := recipe.Object.(*model.Config); ok {
-		config.Name = "internal name"
-		config.Content.Set(`key`, `internal value`)
-		config.Content.Set(`new`, `value`)
-	}
-	return nil
-}
-
-func (t *testMapper) AfterRemoteOperation(changes *model.RemoteChanges) error {
-	for _, objectState := range changes.Loaded() {
-		t.remoteChanges = append(t.remoteChanges, fmt.Sprintf(`loaded %s`, objectState.Desc()))
-	}
-	for _, objectState := range changes.Created() {
-		t.remoteChanges = append(t.remoteChanges, fmt.Sprintf(`created %s`, objectState.Desc()))
-	}
-	for _, objectState := range changes.Updated() {
-		t.remoteChanges = append(t.remoteChanges, fmt.Sprintf(`updated %s`, objectState.Desc()))
-	}
-	for _, objectState := range changes.Saved() {
-		t.remoteChanges = append(t.remoteChanges, fmt.Sprintf(`saved %s`, objectState.Desc()))
-	}
-	for _, objectState := range changes.Deleted() {
-		t.remoteChanges = append(t.remoteChanges, fmt.Sprintf(`deleted %s`, objectState.Desc()))
-	}
-	return nil
-}
-
-func TestRemoteSaveMapper(t *testing.T) {
+func TestRemoteUnitOfWork_SaveObject(t *testing.T) {
 	t.Parallel()
 	testMapperInst := &testMapper{}
-	uow, httpTransport, _ := newTestRemoteUOW(t, testMapperInst)
+	uow, httpTransport, state := newTestUow(t, testMapperInst)
 
 	// Test object
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: `foo.bar`, Id: `456`}
-	configState := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{
-			ConfigKey: configKey,
-		},
-		Local: &model.Config{
-			ConfigKey: configKey,
-			Name:      "internal name",
-			Content: orderedmap.FromPairs([]orderedmap.Pair{
-				{Key: "key", Value: "internal value"},
-			}),
-		},
+	config := &model.Config{
+		ConfigKey: model.ConfigKey{BranchId: 123, ComponentId: `foo.bar`, Id: `456`},
+		Name:      "internal name",
+		Content: orderedmap.FromPairs([]orderedmap.Pair{
+			{Key: "key", Value: "internal value"},
+		}),
 	}
 
 	// Mocked response: create config
@@ -98,8 +46,11 @@ func TestRemoteSaveMapper(t *testing.T) {
 		},
 	)
 
+	// Add parent branch
+	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{Id: config.BranchId}})
+
 	// Save object
-	uow.SaveObject(configState, configState.Local, model.ChangedFields{})
+	uow.Save(config, model.ChangedFields{})
 	assert.NoError(t, uow.Invoke())
 
 	// Modified version was sent to the API
@@ -111,8 +62,8 @@ func TestRemoteSaveMapper(t *testing.T) {
 	assert.Contains(t, reqBody, `name=modified name`)
 
 	// But the internal state is unchanged
-	assert.Equal(t, `internal name`, configState.Local.Name)
-	assert.Equal(t, `{"key":"internal value"}`, json.MustEncodeString(configState.Local.Content, false))
+	assert.Equal(t, `internal name`, config.Name)
+	assert.Equal(t, `{"key":"internal value"}`, json.MustEncodeString(config.Content, false))
 
 	// AfterRemoteOperation event has been called
 	assert.Equal(t, []string{
@@ -121,10 +72,10 @@ func TestRemoteSaveMapper(t *testing.T) {
 	}, testMapperInst.remoteChanges)
 }
 
-func TestRemoteLoadMapper(t *testing.T) {
+func TestRemoteUnitOfWork_LoadAll(t *testing.T) {
 	t.Parallel()
 	testMapperInst := &testMapper{}
-	uow, httpTransport, projectState := newTestRemoteUOW(t, testMapperInst)
+	uow, httpTransport, state := newTestUow(t, testMapperInst)
 
 	// Mocked response: branches
 	httpTransport.RegisterResponder(
@@ -166,18 +117,18 @@ func TestRemoteLoadMapper(t *testing.T) {
 	)
 
 	// Load all
-	uow.LoadAll(model.NoFilter())
+	uow.LoadAll()
 	assert.NoError(t, uow.Invoke())
 
 	// Config has been loaded
-	assert.Len(t, projectState.Configs(), 1)
-	configRaw, found := projectState.Get(model.ConfigKey{
+	assert.Len(t, state.Configs(), 1)
+	configRaw, found := state.Get(model.ConfigKey{
 		BranchId:    123,
 		ComponentId: `foo.bar`,
 		Id:          `456`,
 	})
 	assert.True(t, found)
-	config := configRaw.(*model.ConfigState).Remote
+	config := configRaw.(*model.Config)
 
 	// API response has been mapped
 	assert.Equal(t, `internal name`, config.Name)
@@ -190,9 +141,9 @@ func TestRemoteLoadMapper(t *testing.T) {
 	}, testMapperInst.remoteChanges)
 }
 
-func TestLoadConfigMetadata(t *testing.T) {
+func TestRemoteUnitOfWork_LoadConfigMetadata(t *testing.T) {
 	t.Parallel()
-	uow, httpTransport, projectState := newTestRemoteUOW(t)
+	uow, httpTransport, state := newTestUow(t)
 
 	// Mocked response: branches
 	httpTransport.RegisterResponder(
@@ -260,7 +211,7 @@ func TestLoadConfigMetadata(t *testing.T) {
 	)
 
 	// Load all
-	uow.LoadAll(model.NoFilter())
+	uow.LoadAll()
 	assert.NoError(t, uow.Invoke())
 
 	// Check
@@ -277,13 +228,13 @@ func TestLoadConfigMetadata(t *testing.T) {
 	assert.Equal(t, map[string]string{
 		"KBC.KaC.Meta":  "value1",
 		"KBC.KaC.Meta2": "value2",
-	}, projectState.MustGet(config1Key).(*model.ConfigState).Remote.Metadata)
-	assert.Equal(t, map[string]string{}, projectState.MustGet(config2Key).(*model.ConfigState).Remote.Metadata)
+	}, state.MustGet(config1Key).(*model.Config).Metadata)
+	assert.Equal(t, map[string]string{}, state.MustGet(config2Key).(*model.Config).Metadata)
 }
 
-func TestSaveConfigMetadata_Create(t *testing.T) {
+func TestRemoteUnitOfWork_SaveConfigMetadata_Create(t *testing.T) {
 	t.Parallel()
-	uow, httpTransport, _ := newTestRemoteUOW(t)
+	uow, httpTransport, state := newTestUow(t)
 
 	// Mocked response: create config
 	httpTransport.RegisterResponder(resty.MethodPost, `=~storage/branch/123/components/foo.bar/configs$`,
@@ -303,20 +254,16 @@ func TestSaveConfigMetadata_Create(t *testing.T) {
 	)
 
 	// Fixtures
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", Id: "456"}
 	config := &model.Config{
-		ConfigKey: configKey,
+		ConfigKey: model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", Id: "456"},
 		Metadata: map[string]string{
 			"KBC-KaC-meta1": "val1",
 		},
 	}
-	objectState := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{ConfigKey: configKey},
-		Local:          config,
-	}
+	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{Id: config.BranchId}})
 
 	// Save
-	uow.SaveObject(objectState, objectState.Local, model.NewChangedFields())
+	uow.Save(config, model.NewChangedFields())
 	assert.NoError(t, uow.Invoke())
 
 	// Check
@@ -327,9 +274,9 @@ func TestSaveConfigMetadata_Create(t *testing.T) {
 	assert.Equal(t, "metadata[0][key]=KBC-KaC-meta1&metadata[0][value]=val1", reqBody)
 }
 
-func TestSaveConfigMetadata_Create_Empty(t *testing.T) {
+func TestRemoteUnitOfWork_SaveConfigMetadata_Create_Empty(t *testing.T) {
 	t.Parallel()
-	uow, httpTransport, _ := newTestRemoteUOW(t)
+	uow, httpTransport, state := newTestUow(t)
 
 	// Mocked response: create config
 	httpTransport.RegisterResponder(resty.MethodPost, `=~storage/branch/123/components/foo.bar/configs$`,
@@ -337,24 +284,20 @@ func TestSaveConfigMetadata_Create_Empty(t *testing.T) {
 	)
 
 	// Fixtures
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", Id: "456"}
 	config := &model.Config{
-		ConfigKey: configKey,
+		ConfigKey: model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", Id: "456"},
 		Metadata:  map[string]string{},
 	}
-	objectState := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{ConfigKey: configKey},
-		Local:          config,
-	}
+	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{Id: config.BranchId}})
 
-	// Save
-	uow.SaveObject(objectState, objectState.Local, model.NewChangedFields())
+	// Save, no metadata request
+	uow.Save(config, model.NewChangedFields())
 	assert.NoError(t, uow.Invoke())
 }
 
-func TestSaveConfigMetadata_Update(t *testing.T) {
+func TestRemoteUnitOfWork_SaveConfigMetadata_Update(t *testing.T) {
 	t.Parallel()
-	uow, httpTransport, _ := newTestRemoteUOW(t)
+	uow, httpTransport, state := newTestUow(t)
 
 	// Mocked response: create config
 	httpTransport.RegisterResponder(resty.MethodPut, `=~storage/branch/123/components/foo.bar/configs/456$`,
@@ -374,21 +317,17 @@ func TestSaveConfigMetadata_Update(t *testing.T) {
 	)
 
 	// Fixtures
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", Id: "456"}
 	config := &model.Config{
-		ConfigKey: configKey,
+		ConfigKey: model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", Id: "456"},
 		Metadata: map[string]string{
 			"KBC-KaC-meta1": "val1",
 		},
 	}
-	objectState := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{ConfigKey: configKey},
-		Local:          config,
-		Remote:         config,
-	}
+	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{Id: config.BranchId}})
+	state.MustAdd(config)
 
 	// Save
-	uow.SaveObject(objectState, objectState.Local, model.NewChangedFields("metadata"))
+	uow.Save(config, model.NewChangedFields("metadata"))
 	assert.NoError(t, uow.Invoke())
 
 	// Check
@@ -399,9 +338,9 @@ func TestSaveConfigMetadata_Update(t *testing.T) {
 	assert.Equal(t, "metadata[0][key]=KBC-KaC-meta1&metadata[0][value]=val1", reqBody)
 }
 
-func TestSaveConfigMetadata_Update_NoChange(t *testing.T) {
+func TestRemoteUnitOfWork_SaveConfigMetadata_Update_NoChange(t *testing.T) {
 	t.Parallel()
-	uow, httpTransport, _ := newTestRemoteUOW(t)
+	uow, httpTransport, state := newTestUow(t)
 
 	// Mocked response: create config
 	httpTransport.RegisterResponder(resty.MethodPut, `=~storage/branch/123/components/foo.bar/configs/456$`,
@@ -409,47 +348,65 @@ func TestSaveConfigMetadata_Update_NoChange(t *testing.T) {
 	)
 
 	// Fixtures
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", Id: "456"}
 	config := &model.Config{
-		ConfigKey: configKey,
+		ConfigKey: model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", Id: "456"},
 		Metadata: map[string]string{
 			"KBC-KaC-meta1": "val1",
 		},
 	}
-	objectState := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{ConfigKey: configKey},
-		Local:          config,
-		Remote:         config,
-	}
+	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{Id: config.BranchId}})
+	state.MustAdd(config)
 
 	// Save, metadata field is not changed
-	uow.SaveObject(objectState, objectState.Local, model.NewChangedFields())
+	uow.Save(config, model.NewChangedFields())
 	assert.NoError(t, uow.Invoke())
 }
 
-func newTestRemoteUOW(t *testing.T, mappers ...interface{}) (*remote.UnitOfWork, *httpmock.MockTransport, *state.Registry) {
+func newTestUow(t *testing.T, mappers ...interface{}) (remote.UnitOfWork, *httpmock.MockTransport, *remote.State) {
 	t.Helper()
 	storageApi, httpTransport := testapi.NewMockedStorageApi(log.NewDebugLogger())
-	localManager, projectState := newTestLocalManager(t, mappers)
 	mapperInst := mapper.New().AddMapper(mappers...)
-
-	remoteManager := remote.NewManager(localManager, storageApi, projectState, mapperInst)
-	return remoteManager.NewUnitOfWork(context.Background(), `change desc`), httpTransport, projectState
+	s := remote.NewState(object.NewIdSorter(), mapperInst, storageApi)
+	return s.NewUnitOfWork(context.Background(), `change desc`, model.NoFilter()), httpTransport, s
 }
 
-func newTestLocalManager(t *testing.T, mappers []interface{}) (*local.Manager, *state.Registry) {
-	t.Helper()
+type testMapper struct {
+	remoteChanges []string
+}
 
-	logger := log.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger, "")
-	assert.NoError(t, err)
+func (*testMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
+	if config, ok := recipe.Object.(*model.Config); ok {
+		config.Name = "modified name"
+		config.Content.Set(`key`, `api value`)
+		config.Content.Set(`new`, `value`)
+	}
+	return nil
+}
 
-	m := manifest.New(1, "foo.bar")
-	components := model.NewComponentsMap(testapi.NewMockedComponentsProvider())
-	projectState := state.NewRegistry(knownpaths.NewNop(), naming.NewRegistry(), components, model.SortByPath)
+func (*testMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
+	if config, ok := recipe.Object.(*model.Config); ok {
+		config.Name = "internal name"
+		config.Content.Set(`key`, `internal value`)
+		config.Content.Set(`new`, `value`)
+	}
+	return nil
+}
 
-	namingTemplate := naming.TemplateWithIds()
-	namingRegistry := naming.NewRegistry()
-	namingGenerator := naming.NewGenerator(namingTemplate, namingRegistry)
-	return local.NewManager(logger, fs, fs.FileLoader(), m, namingGenerator, projectState, mapper.New().AddMapper(mappers...)), projectState
+func (t *testMapper) AfterRemoteOperation(changes *model.RemoteChanges) error {
+	for _, objectState := range changes.Loaded() {
+		t.remoteChanges = append(t.remoteChanges, fmt.Sprintf(`loaded %s`, objectState.Desc()))
+	}
+	for _, objectState := range changes.Created() {
+		t.remoteChanges = append(t.remoteChanges, fmt.Sprintf(`created %s`, objectState.Desc()))
+	}
+	for _, objectState := range changes.Updated() {
+		t.remoteChanges = append(t.remoteChanges, fmt.Sprintf(`updated %s`, objectState.Desc()))
+	}
+	for _, objectState := range changes.Saved() {
+		t.remoteChanges = append(t.remoteChanges, fmt.Sprintf(`saved %s`, objectState.Desc()))
+	}
+	for _, objectState := range changes.Deleted() {
+		t.remoteChanges = append(t.remoteChanges, fmt.Sprintf(`deleted %s`, objectState.Desc()))
+	}
+	return nil
 }

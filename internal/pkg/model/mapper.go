@@ -166,17 +166,15 @@ type LocalSaveRecipe struct {
 
 // RemoteLoadRecipe - all items related to the object, when loading from Storage API.
 type RemoteLoadRecipe struct {
-	ObjectManifest
 	Object      Object
 	Annotations map[string]interface{} // key/value pairs that can be used by to affect mappers behavior
 }
 
 // RemoteSaveRecipe - all items related to the object, when saving to Storage API.
 type RemoteSaveRecipe struct {
+	Object        Object
 	ChangedFields ChangedFields
-	ObjectManifest
-	Object      Object
-	Annotations map[string]interface{} // key/value pairs that can be used by to affect mappers behavior
+	Annotations   map[string]interface{} // key/value pairs that can be used by to affect mappers behavior
 }
 
 // PersistRecipe contains object to persist.
@@ -218,19 +216,17 @@ func NewLocalSaveRecipe(manifest ObjectManifest, object Object, changedFields Ch
 	}
 }
 
-func NewRemoteLoadRecipe(manifest ObjectManifest, object Object) *RemoteLoadRecipe {
+func NewRemoteLoadRecipe(object Object) *RemoteLoadRecipe {
 	return &RemoteLoadRecipe{
-		Object:         object,
-		ObjectManifest: manifest,
-		Annotations:    make(map[string]interface{}),
+		Object:      object,
+		Annotations: make(map[string]interface{}),
 	}
 }
 
-func NewRemoteSaveRecipe(manifest ObjectManifest, object Object, changedFields ChangedFields) *RemoteSaveRecipe {
+func NewRemoteSaveRecipe(object Object, changedFields ChangedFields) *RemoteSaveRecipe {
 	return &RemoteSaveRecipe{
-		ChangedFields:  changedFields,
-		Object:         object,
-		ObjectManifest: manifest,
-		Annotations:    make(map[string]interface{}),
+		ChangedFields: changedFields,
+		Object:        object,
+		Annotations:   make(map[string]interface{}),
 	}
 }
