@@ -1,4 +1,4 @@
-package manager
+package repository
 
 import (
 	"fmt"
@@ -7,7 +7,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/git"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 )
 
 type Manager struct {
@@ -15,12 +14,12 @@ type Manager struct {
 	repositories map[string]*git.Repository
 }
 
-func New(logger log.Logger) (*Manager, error) {
+func NewManager(logger log.Logger) (*Manager, error) {
 	m := &Manager{
 		logger:       logger,
 		repositories: make(map[string]*git.Repository),
 	}
-	if err := m.AddRepository(repository.DefaultRepository()); err != nil {
+	if err := m.AddRepository(DefaultRepository()); err != nil {
 		return nil, err
 	}
 	return m, nil
@@ -49,4 +48,16 @@ func (m *Manager) Repositories() []*git.Repository {
 		return res[i].Hash() < res[j].Hash()
 	})
 	return res
+}
+
+func (m *Manager) Pull() {
+	for _, repo := range m.repositories {
+		m.logger.Infof(`repository "%s:%s" is being updated`, repo.Url, repo.Ref)
+		err := repo.Pull()
+		if err != nil {
+			m.logger.Error(err.Error())
+			continue
+		}
+		m.logger.Infof(`repository "%s:%s" update finished`, repo.Url, repo.Ref)
+	}
 }

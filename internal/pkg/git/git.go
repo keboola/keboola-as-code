@@ -170,6 +170,7 @@ func CheckoutTemplateRepositoryFull(repo model.TemplateRepository, logger log.Lo
 	return &Repository{
 		TemplateRepository: repo,
 		Fs:                 localFs,
+		logger:             logger,
 	}, nil
 }
 
