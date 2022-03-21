@@ -54,7 +54,7 @@ func (m *Manager) Pull() {
 	for _, repo := range m.repositories {
 		m.logger.Infof(`repository "%s:%s" is being updated`, repo.Url, repo.Ref)
 
-		oldHash, err := repo.GetHash()
+		oldHash, err := repo.CommitHash()
 		if err != nil {
 			m.logger.Error(err.Error())
 			continue
@@ -66,7 +66,7 @@ func (m *Manager) Pull() {
 			continue
 		}
 
-		newHash, err := repo.GetHash()
+		newHash, err := repo.CommitHash()
 		if err != nil {
 			m.logger.Error(err.Error())
 			continue

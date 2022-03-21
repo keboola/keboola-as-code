@@ -129,7 +129,7 @@ func TestGit_CheckoutTemplateRepositoryFull(t *testing.T) {
 	assert.NoError(t, repo.Pull())
 	assert.True(t, repo.Fs.Exists("/.keboola/repository.json"))
 
-	hash, err := repo.GetHash()
+	hash, err := repo.CommitHash()
 	assert.NoError(t, err)
 	var stdOutBuffer bytes.Buffer
 	// check if the hash equals to a commit - the git command should return a "commit" message

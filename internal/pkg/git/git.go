@@ -29,7 +29,7 @@ type Repository struct {
 	logger log.Logger
 }
 
-func (r *Repository) GetHash() (string, error) {
+func (r *Repository) CommitHash() (string, error) {
 	err, stdErr, _, stdOut := runGitCommand(r.logger, r.Fs.BasePath(), []string{"rev-parse", "HEAD"})
 	if err != nil {
 		return "", utils.PrefixError("cannot get repository hash", fmt.Errorf(stdErr))
@@ -164,23 +164,31 @@ func getVersionFromRepositoryManifest(opts CheckoutOptions, localFs filesystem.F
 	return versionRecord, nil
 }
 
-func CheckoutTemplateRepositoryFull(repo model.TemplateRepository, logger log.Logger) (*Repository, error) {
+func CheckoutTemplateRepositoryFull(templateRepo model.TemplateRepository, logger log.Logger) (*Repository, error) {
 	localFs, err := CheckoutTemplateRepository(CheckoutOptions{
 		Partial:            false,
 		ToMemory:           false,
-		TemplateRepository: repo,
+		TemplateRepository: templateRepo,
 		TemplateRef:        nil,
-		CloneParams:        []string{"--branch", repo.Ref, "-q", repo.Url},
+		CloneParams:        []string{"--branch", templateRepo.Ref, "-q", templateRepo.Url},
 	}, logger)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Repository{
-		TemplateRepository: repo,
+	repo := &Repository{
+		TemplateRepository: templateRepo,
 		Fs:                 localFs,
 		logger:             logger,
-	}, nil
+	}
+	hash, err := repo.CommitHash()
+	if err != nil {
+		logger.Warnf(`repository "%s:%s" checked out but the commit hash was not retrieved due to: %w`, repo.Url, repo.Ref, err)
+		return repo, nil
+	}
+
+	logger.Infof(`repository "%s:%s" checked out to %s`, repo.Url, repo.Ref, hash)
+	return repo, nil
 }
 
 func CheckoutTemplateRepositoryPartial(ref model.TemplateRef, logger log.Logger) (filesystem.Fs, error) {
