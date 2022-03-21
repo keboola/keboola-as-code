@@ -58,6 +58,7 @@ type Objects interface {
 	ObjectsSorter
 	Add(objects ...Object) error
 	AddOrReplace(objects ...Object) error
+	MustAdd(objects ...Object)
 	Remove(keys ...Key)
 	Get(key Key) (Object, bool)
 	GetOrNil(key Key) Object

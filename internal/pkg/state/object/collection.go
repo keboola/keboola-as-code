@@ -17,7 +17,7 @@ type Collection struct {
 	objects *orderedmap.OrderedMap
 }
 
-func New(sorter ObjectsSorter) Objects {
+func NewCollection(sorter ObjectsSorter) Objects {
 	return &Collection{
 		sorter:  sorter,
 		lock:    &sync.Mutex{},
@@ -57,6 +57,12 @@ func (c *Collection) AddOrReplace(objects ...Object) error {
 	}
 
 	return errors.ErrorOrNil()
+}
+
+func (c *Collection) MustAdd(objects ...Object) {
+	if err := c.Add(objects...); err != nil {
+		panic(err)
+	}
 }
 
 // Remove object from the collection.

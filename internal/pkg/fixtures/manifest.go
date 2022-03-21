@@ -8,7 +8,7 @@ import (
 
 func NewManifest() *Manifest {
 	return &Manifest{
-		Records:             manifest.NewRecords(model.SortByPath),
+		Records:             manifest.NewRecords("foo"),
 		NamingTemplateValue: naming.TemplateWithoutIds(),
 	}
 }

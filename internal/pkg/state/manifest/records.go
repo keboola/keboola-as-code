@@ -99,9 +99,10 @@ func (r *Records) AllPersisted() []model.ObjectManifest {
 // SortRecords in manifest + ensure order of processing: branch, config, configRow.
 func (r *Records) SortRecords() {
 	r.all.Sort(func(a *orderedmap.Pair, b *orderedmap.Pair) bool {
-		aKey := a.Value.(model.ObjectManifest).SortKey(r.sortBy)
-		bKey := b.Value.(model.ObjectManifest).SortKey(r.sortBy)
-		return aKey < bKey
+		//aKey := a.Value.(model.ObjectManifest).SortKey(r.sortBy)
+		//bKey := b.Value.(model.ObjectManifest).SortKey(r.sortBy)
+		//return aKey < bKey
+		return false
 	})
 }
 

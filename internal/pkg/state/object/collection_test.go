@@ -11,7 +11,7 @@ import (
 
 func TestCollection_New(t *testing.T) {
 	t.Parallel()
-	c := New(NewIdSorter())
+	c := NewCollection(NewIdSorter())
 	assert.NotNil(t, c)
 }
 
@@ -215,7 +215,7 @@ func TestCollection_ConfigRowsFrom(t *testing.T) {
 
 func newTestCollection(t *testing.T) Objects {
 	t.Helper()
-	collection := New(NewPathSorter(naming.NewRegistry()))
+	collection := NewCollection(NewPathSorter(naming.NewRegistry()))
 
 	// Branch 1
 	assert.NoError(t, collection.Add(&Branch{

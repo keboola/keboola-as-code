@@ -192,10 +192,8 @@ func valuesDiff(a, b reflect.Value) []string {
 	var out []string
 
 	// Resolve interfaces
-	var aType reflect.Type
-	var bType reflect.Type
-	coreType(&a, &aType)
-	coreType(&b, &bType)
+	a, aType := coreType(a)
+	b, bType := coreType(b)
 
 	// Print types if differs
 	includeType := a.IsValid() && b.IsValid() && !a.IsZero() && !b.IsZero() && aType.String() != bType.String()

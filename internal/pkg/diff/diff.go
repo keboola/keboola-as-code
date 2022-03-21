@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
+	"strings"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -217,6 +218,37 @@ func (v ResultState) Mark() string {
 	default:
 		panic(fmt.Errorf("unexpected type %T", v))
 	}
+}
+
+func (r *Results) Format(naming *naming.Registry, details bool) []string {
+	var out []string
+	for _, result := range r.Results {
+		if result.State != ResultEqual {
+			// Get path by key
+			path := result.Key.Desc()
+			if pathAbs, found := naming.PathByKey(result.Key); found {
+				path = pathAbs.Path()
+			}
+
+			// Message
+			msg := fmt.Sprintf("%s %s %s", result.State.Mark(), result.Kind().Abbr, path)
+			if !details && !result.ChangedFields.IsEmpty() {
+				msg += " | changed: " + result.ChangedFields.String()
+			}
+			out = append(out, msg)
+
+			// Changed fields
+			if details {
+				for _, field := range result.ChangedFields.All() {
+					out = append(out, fmt.Sprintf("  %s:", field.Name()))
+					for _, line := range strings.Split(field.Diff(), "\n") {
+						out = append(out, fmt.Sprintf("  %s", line))
+					}
+				}
+			}
+		}
+	}
+	return out
 }
 
 func getDiffFields(t reflect.Type) []*utils.StructField {

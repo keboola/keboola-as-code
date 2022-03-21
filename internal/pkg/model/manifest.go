@@ -36,8 +36,7 @@ type ObjectManifest interface {
 	Key
 	RecordPaths
 	RelatedPaths
-	Key() Key                   // unique key for map -> for fast access
-	SortKey(sort string) string // unique key for sorting
+	Key() Key // unique key for map -> for fast access
 	State() *RecordState
 	NewEmptyObject() Object
 }

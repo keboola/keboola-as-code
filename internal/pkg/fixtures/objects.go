@@ -29,12 +29,6 @@ type MockedObject struct {
 	Relations model.Relations
 }
 
-type MockedObjectState struct {
-	*MockedManifest
-	Local  *MockedObject
-	Remote *MockedObject
-}
-
 type MockedManifestSideRelation struct {
 	OtherSide model.Key
 }
@@ -142,10 +136,6 @@ func (r MockedManifest) NewEmptyObject() model.Object {
 	return &MockedObject{}
 }
 
-func (r *MockedManifest) NewObjectState() model.ObjectState {
-	return &MockedObjectState{MockedManifest: r}
-}
-
 func (o MockedObject) Key() model.Key {
 	return o.MockedKey
 }
@@ -176,98 +166,6 @@ func (o *MockedObject) SetRelations(relations model.Relations) {
 
 func (o *MockedObject) AddRelation(relation model.Relation) {
 	o.Relations = append(o.Relations, relation)
-}
-
-func (o *MockedObjectState) ObjectName() string {
-	return "object"
-}
-
-func (o *MockedObjectState) HasManifest() bool {
-	return o.MockedManifest != nil
-}
-
-func (o *MockedObjectState) SetManifest(manifest model.ObjectManifest) {
-	o.MockedManifest = manifest.(*MockedManifest)
-}
-
-func (o *MockedObjectState) Manifest() model.ObjectManifest {
-	return o.MockedManifest
-}
-
-func (o *MockedObjectState) HasState(stateType model.StateType) bool {
-	switch stateType {
-	case model.StateTypeLocal:
-		return o.Local != nil
-	case model.StateTypeRemote:
-		return o.Remote != nil
-	default:
-		panic(fmt.Errorf(`unexpected state type "%T"`, stateType))
-	}
-}
-
-func (o *MockedObjectState) GetState(stateType model.StateType) model.Object {
-	switch stateType {
-	case model.StateTypeLocal:
-		return o.Local
-	case model.StateTypeRemote:
-		return o.Remote
-	default:
-		panic(fmt.Errorf(`unexpected state type "%T"`, stateType))
-	}
-}
-
-func (o *MockedObjectState) HasLocalState() bool {
-	return o.Local != nil
-}
-
-func (o *MockedObjectState) SetLocalState(object model.Object) {
-	if object == nil {
-		o.Local = nil
-	} else {
-		o.Local = object.(*MockedObject)
-	}
-}
-
-func (o *MockedObjectState) LocalState() model.Object {
-	return o.Local
-}
-
-func (o *MockedObjectState) HasRemoteState() bool {
-	return o.Remote != nil
-}
-
-func (o *MockedObjectState) SetRemoteState(object model.Object) {
-	if object == nil {
-		o.Remote = nil
-	} else {
-		o.Remote = object.(*MockedObject)
-	}
-}
-
-func (o *MockedObjectState) RemoteState() model.Object {
-	return o.Remote
-}
-
-func (o *MockedObjectState) LocalOrRemoteState() model.Object {
-	switch {
-	case o.HasLocalState():
-		return o.LocalState()
-	case o.HasRemoteState():
-		return o.RemoteState()
-	default:
-		panic(fmt.Errorf("object Local or Remote state must be set"))
-	}
-}
-
-func (o *MockedObjectState) RemoteOrLocalState() model.Object {
-	switch {
-	case o.HasRemoteState():
-		return o.RemoteState()
-	case o.HasLocalState():
-		return o.LocalState()
-	default:
-		panic(fmt.Errorf("object Remote or Local state must be set"))
-	}
 }
 
 func (r *MockedManifestSideRelation) Type() model.RelationType {
