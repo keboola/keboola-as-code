@@ -7,19 +7,19 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/template/api/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/api/gen/templates"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/repository/manager"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 )
 
 type Service struct {
 	dependencies        dependencies.Container
 	lock                *sync.Mutex
-	repositoriesManager *manager.Manager
+	repositoriesManager *repository.Manager
 }
 
 const TemplateRepositoriesPullInterval = 5 * time.Minute
 
 func New(d dependencies.Container) (*Service, error) {
-	repoManager, err := manager.New(d.Logger())
+	repoManager, err := repository.NewManager(d.Logger())
 	if err != nil {
 		return nil, err
 	}

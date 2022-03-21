@@ -1,4 +1,4 @@
-package manager_test
+package repository_test
 
 import (
 	"testing"
@@ -7,13 +7,12 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/repository/manager"
 )
 
 func TestNewManager(t *testing.T) {
 	t.Parallel()
 
-	m, err := manager.New(log.NewDebugLogger())
+	m, err := repository.NewManager(log.NewDebugLogger())
 	assert.NoError(t, err)
 
 	repositories := m.Repositories()
@@ -26,7 +25,7 @@ func TestNewManager(t *testing.T) {
 func TestAddRepository_AlreadyExists(t *testing.T) {
 	t.Parallel()
 
-	m, err := manager.New(log.NewDebugLogger())
+	m, err := repository.NewManager(log.NewDebugLogger())
 	assert.NoError(t, err)
 
 	err = m.AddRepository(repository.DefaultRepository())
