@@ -2,9 +2,11 @@
 package git_test
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -126,4 +128,15 @@ func TestGit_CheckoutTemplateRepositoryFull(t *testing.T) {
 
 	assert.NoError(t, repo.Pull())
 	assert.True(t, repo.Fs.Exists("/.keboola/repository.json"))
+
+	hash, err := repo.CommitHash()
+	assert.NoError(t, err)
+	var stdOutBuffer bytes.Buffer
+	// check if the hash equals to a commit - the git command should return a "commit" message
+	cmd := exec.Command("git", "cat-file", "-t", hash)
+	cmd.Dir = repo.Fs.BasePath()
+	cmd.Stdout = &stdOutBuffer
+	err = cmd.Run()
+	assert.NoError(t, err)
+	assert.Equal(t, "commit\n", stdOutBuffer.String())
 }

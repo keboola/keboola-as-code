@@ -53,11 +53,30 @@ func (m *Manager) Repositories() []*git.Repository {
 func (m *Manager) Pull() {
 	for _, repo := range m.repositories {
 		m.logger.Infof(`repository "%s:%s" is being updated`, repo.Url, repo.Ref)
-		err := repo.Pull()
+
+		oldHash, err := repo.CommitHash()
 		if err != nil {
 			m.logger.Error(err.Error())
 			continue
 		}
-		m.logger.Infof(`repository "%s:%s" update finished`, repo.Url, repo.Ref)
+
+		err = repo.Pull()
+		if err != nil {
+			m.logger.Error(err.Error())
+			continue
+		}
+
+		newHash, err := repo.CommitHash()
+		if err != nil {
+			m.logger.Error(err.Error())
+			continue
+		}
+
+		if oldHash == newHash {
+			m.logger.Infof(`repository "%s:%s" update finished, no change found`, repo.Url, repo.Ref)
+			return
+		}
+
+		m.logger.Infof(`repository "%s:%s" updated from %s to %s`, repo.Url, repo.Ref, oldHash, newHash)
 	}
 }

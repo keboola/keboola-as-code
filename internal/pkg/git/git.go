@@ -29,16 +29,25 @@ type Repository struct {
 	logger log.Logger
 }
 
+func (r *Repository) CommitHash() (string, error) {
+	err, stdErr, _, stdOut := runGitCommand(r.logger, r.Fs.BasePath(), []string{"rev-parse", "HEAD"})
+	if err != nil {
+		return "", utils.PrefixError("cannot get repository hash", fmt.Errorf(stdErr))
+	}
+	return strings.TrimSuffix(stdOut, "\n"), nil
+}
+
 func (r *Repository) Pull() error {
-	err, stdErr, _ := runGitCommand(r.logger, r.Fs.BasePath(), []string{"fetch", "origin"})
+	err, stdErr, _, _ := runGitCommand(r.logger, r.Fs.BasePath(), []string{"fetch", "origin"})
 	if err != nil {
 		return utils.PrefixError("cannot fetch template repository", fmt.Errorf(stdErr))
 	}
 
-	err, stdErr, _ = runGitCommand(r.logger, r.Fs.BasePath(), []string{"reset", "--hard", fmt.Sprintf("origin/%s", r.Ref)})
+	err, stdErr, _, _ = runGitCommand(r.logger, r.Fs.BasePath(), []string{"reset", "--hard", fmt.Sprintf("origin/%s", r.Ref)})
 	if err != nil {
 		return utils.PrefixError("cannot reset template repository to the origin", fmt.Errorf(stdErr))
 	}
+
 	return nil
 }
 
@@ -71,7 +80,7 @@ func CheckoutTemplateRepository(opts CheckoutOptions, logger log.Logger) (filesy
 	// Clone the repository
 	cloneParams := append([]string{"clone"}, opts.CloneParams...)
 	cloneParams = append(cloneParams, dir)
-	err, stdErr, exitCode := runGitCommand(logger, dir, cloneParams)
+	err, stdErr, exitCode, _ := runGitCommand(logger, dir, cloneParams)
 	if err != nil {
 		if exitCode == 128 {
 			if strings.Contains(stdErr, fmt.Sprintf("Remote branch %s not found", opts.TemplateRepository.Ref)) {
@@ -90,11 +99,11 @@ func CheckoutTemplateRepository(opts CheckoutOptions, logger log.Logger) (filesy
 
 	if opts.Partial {
 		// Checkout repository.json
-		err, stdErr, _ = runGitCommand(logger, dir, []string{"sparse-checkout", "add", "/.keboola/repository.json"})
+		err, stdErr, _, _ = runGitCommand(logger, dir, []string{"sparse-checkout", "add", "/.keboola/repository.json"})
 		if err != nil {
 			return nil, fmt.Errorf(stdErr)
 		}
-		err, stdErr, _ = runGitCommand(logger, dir, []string{"checkout"})
+		err, stdErr, _, _ = runGitCommand(logger, dir, []string{"checkout"})
 		if err != nil {
 			return nil, utils.PrefixError("cannot load template repository manifest", fmt.Errorf(stdErr))
 		}
@@ -106,7 +115,7 @@ func CheckoutTemplateRepository(opts CheckoutOptions, logger log.Logger) (filesy
 
 		// Checkout template src directory
 		srcDir := filesystem.Join(versionRecord.Path(), template.SrcDirectory)
-		err, stdErr, _ = runGitCommand(logger, dir, []string{"sparse-checkout", "add", fmt.Sprintf("/%s", srcDir)})
+		err, stdErr, _, _ = runGitCommand(logger, dir, []string{"sparse-checkout", "add", fmt.Sprintf("/%s", srcDir)})
 		if err != nil {
 			return nil, fmt.Errorf(stdErr)
 		}
@@ -155,23 +164,31 @@ func getVersionFromRepositoryManifest(opts CheckoutOptions, localFs filesystem.F
 	return versionRecord, nil
 }
 
-func CheckoutTemplateRepositoryFull(repo model.TemplateRepository, logger log.Logger) (*Repository, error) {
+func CheckoutTemplateRepositoryFull(templateRepo model.TemplateRepository, logger log.Logger) (*Repository, error) {
 	localFs, err := CheckoutTemplateRepository(CheckoutOptions{
 		Partial:            false,
 		ToMemory:           false,
-		TemplateRepository: repo,
+		TemplateRepository: templateRepo,
 		TemplateRef:        nil,
-		CloneParams:        []string{"--branch", repo.Ref, "-q", repo.Url},
+		CloneParams:        []string{"--branch", templateRepo.Ref, "-q", templateRepo.Url},
 	}, logger)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Repository{
-		TemplateRepository: repo,
+	repo := &Repository{
+		TemplateRepository: templateRepo,
 		Fs:                 localFs,
 		logger:             logger,
-	}, nil
+	}
+	hash, err := repo.CommitHash()
+	if err != nil {
+		logger.Warnf(`repository "%s:%s" checked out but the commit hash was not retrieved due to: %w`, repo.Url, repo.Ref, err)
+		return repo, nil
+	}
+
+	logger.Infof(`repository "%s:%s" checked out to %s`, repo.Url, repo.Ref, hash)
+	return repo, nil
 }
 
 func CheckoutTemplateRepositoryPartial(ref model.TemplateRef, logger log.Logger) (filesystem.Fs, error) {
@@ -184,16 +201,18 @@ func CheckoutTemplateRepositoryPartial(ref model.TemplateRef, logger log.Logger)
 	}, logger)
 }
 
-func runGitCommand(logger log.Logger, dir string, args []string) (err error, stdErr string, exitCode int) {
+func runGitCommand(logger log.Logger, dir string, args []string) (err error, stdErr string, exitCode int, stdOut string) {
 	logger.Debug(fmt.Sprintf(`Running git command: git %s`, strings.Join(args, " ")))
+	var stdOutBuffer bytes.Buffer
 	var stdErrBuffer bytes.Buffer
 	cmd := exec.Command("git", args...)
 	cmd.Dir = dir
-	cmd.Stdout = logger.DebugWriter()
+	cmd.Stdout = io.MultiWriter(logger.DebugWriter(), &stdOutBuffer)
 	cmd.Stderr = io.MultiWriter(logger.DebugWriter(), &stdErrBuffer)
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, "GIT_TERMINAL_PROMPT=0")
 	err = cmd.Run()
+	stdOut = stdOutBuffer.String()
 	stdErr = stdErrBuffer.String()
 	exitCode = 0
 	if err != nil {
