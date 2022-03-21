@@ -34,7 +34,15 @@ func New(d dependencies.Container) (*Service, error) {
 
 func (s *Service) StartCron() {
 	go func() {
-		ticker := time.NewTicker(TemplateRepositoriesPullInterval)
+		interval := TemplateRepositoriesPullInterval
+
+		// Delay start to a rounded time
+		startAt := time.Now().Truncate(interval).Add(interval)
+		timer := time.NewTimer(time.Until(startAt))
+		<-timer.C
+		s.dependencies.Logger().Info("pull ticker started")
+
+		ticker := time.NewTicker(interval)
 		for {
 			select {
 			case <-s.dependencies.Ctx().Done():
