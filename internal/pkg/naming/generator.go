@@ -75,7 +75,35 @@ func (g Generator) PhasesDir(configDir string) string {
 	return filesystem.Join(configDir, phasesDir)
 }
 
-func (g Generator) PathFor(object WithKey) (AbsPath, error) {
+func (g Generator) GetOrGenerate(object WithKey) (AbsPath, error) {
+	// Get path
+	key := object.Key()
+	if path, found := g.registry.PathByKey(key); found {
+		return path, nil
+	}
+
+	// Generate path
+	path, err := g.Generate(object)
+	if err != nil {
+		return AbsPath{}, err
+	}
+
+	return path, nil
+}
+
+func (g Generator) Generate(object WithKey) (AbsPath, error) {
+	// Generate
+	path, err := g.generate(object)
+	if err != nil {
+		return AbsPath{}, err
+	}
+
+	// Attach
+	key := object.Key()
+	return g.registry.ensureUniquePath(key, path), nil
+}
+
+func (g Generator) generate(object WithKey) (AbsPath, error) {
 	switch o := object.(type) {
 	case *Branch:
 		return g.branchPath(o)
@@ -109,7 +137,7 @@ func (g Generator) branchPath(branch *Branch) (AbsPath, error) {
 		}))
 	}
 
-	return g.registry.ensureUniquePath(branch.Key(), p), nil
+	return p, nil
 }
 
 func (g Generator) configPath(config *Config) (AbsPath, error) {
@@ -164,7 +192,7 @@ func (g Generator) configPath(config *Config) (AbsPath, error) {
 		"config_id":           jsonnet.StripIdPlaceholder(config.Id.String()),
 		"config_name":         strhelper.NormalizeName(config.Name),
 	}))
-	return g.registry.ensureUniquePath(config.Key(), p), nil
+	return p, nil
 }
 
 func (g Generator) configRowPath(row *ConfigRow) (AbsPath, error) {
@@ -222,7 +250,7 @@ func (g Generator) configRowPath(row *ConfigRow) (AbsPath, error) {
 		"config_row_id":   jsonnet.StripIdPlaceholder(row.Id.String()),
 		"config_row_name": strhelper.NormalizeName(name),
 	}))
-	return g.registry.ensureUniquePath(row.Key(), p), nil
+	return p, nil
 }
 
 func (g Generator) blockPath(block *Block) (AbsPath, error) {
@@ -238,7 +266,7 @@ func (g Generator) blockPath(block *Block) (AbsPath, error) {
 		"block_order": fmt.Sprintf(`%03d`, block.Index+1),
 		"block_name":  strhelper.NormalizeName(block.Name),
 	}))
-	return g.registry.ensureUniquePath(block.Key(), p), nil
+	return p, nil
 }
 
 func (g Generator) codePath(code *Code) (AbsPath, error) {
@@ -254,7 +282,7 @@ func (g Generator) codePath(code *Code) (AbsPath, error) {
 		"code_order": fmt.Sprintf(`%03d`, code.Index+1),
 		"code_name":  strhelper.NormalizeName(code.Name),
 	}))
-	return g.registry.ensureUniquePath(code.Key(), p), nil
+	return p, nil
 }
 
 func (g Generator) phasePath(phase *Phase) (AbsPath, error) {
@@ -269,7 +297,7 @@ func (g Generator) phasePath(phase *Phase) (AbsPath, error) {
 		"phase_order": fmt.Sprintf(`%03d`, phase.Index+1),
 		"phase_name":  strhelper.NormalizeName(phase.Name),
 	}))
-	return g.registry.ensureUniquePath(phase.Key(), p), nil
+	return p, nil
 }
 
 func (g Generator) taskPath(task *Task) (AbsPath, error) {
@@ -285,7 +313,7 @@ func (g Generator) taskPath(task *Task) (AbsPath, error) {
 		"task_order": fmt.Sprintf(`%03d`, task.Index+1),
 		"task_name":  strhelper.NormalizeName(task.Name),
 	}))
-	return g.registry.ensureUniquePath(task.Key(), p), nil
+	return p, nil
 }
 
 func (g Generator) getParent(object WithParentKey) (parentKey Key, parentKind Kind, parentPath string, err error) {

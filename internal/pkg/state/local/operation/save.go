@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/local/relatedpaths"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
@@ -20,7 +21,11 @@ type objectWriter struct {
 
 // SaveObject to manifest and filesystem.
 func (m *Manager) SaveObject(ctx context.Context, object model.Object, changedFields model.ChangedFields) error {
-	path := m.pathTo(object.Key())
+	path, err := m.namingGenerator.GetOrGenerate(object)
+	if err != nil {
+		return err
+	}
+
 	objectClone := deepcopy.Copy(object).(model.Object)
 	w := objectWriter{
 		Manager:         m,
@@ -69,7 +74,6 @@ func (w *objectWriter) write() {
 	}
 
 	// Delete
-	w.ObjectManifest.ClearRelatedPaths()
 	for _, path := range toDelete {
 		if err := w.softDelete(path); err != nil {
 			w.errors.Append(err)
@@ -78,7 +82,7 @@ func (w *objectWriter) write() {
 	}
 
 	// Write new files
-	relatedPaths := model.RelatedPaths()
+	relatedPaths := relatedpaths.New(w.Path)
 	for _, file := range w.Files.All() {
 		// Convert to File, eg. JsonFile -> File
 		fileRaw, err := file.ToRawFile()
@@ -88,7 +92,7 @@ func (w *objectWriter) write() {
 		}
 
 		// Write
-		w.ObjectManifest.AddRelatedPath(fileRaw.Path())
+		relatedPaths.Add(fileRaw.Path())
 		if err := w.fs.WriteFile(fileRaw); err != nil {
 			w.errors.Append(err)
 		}
@@ -103,6 +107,7 @@ func (w *objectWriter) write() {
 	w.removeBackups()
 
 	// Update related paths
+	w.setRelatedPaths(w.Object, relatedPaths)
 }
 
 func (w *objectWriter) softDelete(path string) error {

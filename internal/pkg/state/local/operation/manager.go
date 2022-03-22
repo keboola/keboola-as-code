@@ -38,25 +38,11 @@ func NewManager(logger log.Logger, fs filesystem.Fs, mapper *mapper.Mapper, mani
 	}, nil
 }
 
-func (m *Manager) pathTo(object model.Object) model.AbsPath {
-	// Get
-	key := object.Key()
-	if path, found := m.namingRegistry.PathByKey(key); found {
-		return path
-	}
-
-	// Generate
-	path := m.namingGenerator.PathFor(object)
-	if err := m.namingRegistry.Attach(key, path); err != nil {
-		panic(err)
-	}
-	return path
+func (m *Manager) getRelatedPaths(object model.Object) *relatedpaths.Paths {
+	v, _ := m.relatedPaths[object.Key()]
+	return v
 }
 
-func (m *Manager) relatedPathsFor(object model.Object) *relatedpaths.Paths {
-	key := object.Key()
-	if _, found := m.relatedPaths[key]; !found {
-		m.relatedPaths[key] = relatedpaths.New(m.pathTo(object).String())
-	}
-	return m.relatedPaths[key]
+func (m *Manager) setRelatedPaths(object model.Object, v *relatedpaths.Paths) {
+	m.relatedPaths[object.Key()] = v
 }

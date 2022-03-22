@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 type Paths struct {
@@ -11,8 +12,8 @@ type Paths struct {
 	relatedPaths []string
 }
 
-func New(baseDir string) *Paths {
-	return &Paths{baseDir: baseDir, relatedPaths: make([]string, 0)}
+func New(base model.AbsPath) *Paths {
+	return &Paths{baseDir: base.String(), relatedPaths: make([]string, 0)}
 }
 
 func (p *Paths) All() []string {

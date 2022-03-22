@@ -1,6 +1,7 @@
 package naming
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,6 +11,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 )
 
+type testCase struct {
+	expected string
+	object   Object
+}
+
 func TestUniquePathSameObjectType(t *testing.T) {
 	t.Parallel()
 	g := testGenerator(t)
@@ -17,21 +23,33 @@ func TestUniquePathSameObjectType(t *testing.T) {
 	g.template.Config = "{component_type}/{component_id}/{config_name}"
 	g.template.ConfigRow = "rows/{config_row_name}"
 
-	// Default branch
-	assert.Equal(t, "main", objectPath(t, g, &Branch{BranchKey: BranchKey{Id: 12}, Name: "a", IsDefault: true}))
-	assert.Equal(t, "main-001", objectPath(t, g, &Branch{BranchKey: BranchKey{Id: 23}, Name: "b", IsDefault: true}))
-
-	// Branch
-	assert.Equal(t, "branch-name", objectPath(t, g, &Branch{BranchKey: BranchKey{Id: 56}, Name: "branchName"}))
-	assert.Equal(t, "branch-name-001", objectPath(t, g, &Branch{BranchKey: BranchKey{Id: 78}, Name: "branch-name"}))
-
-	// Config
-	assert.Equal(t, "my-branch/writer/keboola.wr-foo-bar/my-config", objectPath(t, g, &Config{ConfigKey: ConfigKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", Id: "123"}, Name: "myConfig"}))
-	assert.Equal(t, "my-branch/writer/keboola.wr-foo-bar/my-config-001", objectPath(t, g, &Config{ConfigKey: ConfigKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", Id: "234"}, Name: "my-config"}))
-
-	// Config row
-	assert.Equal(t, "my-branch/my-writer/rows/my-row", objectPath(t, g, &ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", ConfigId: "1", Id: "456"}, Name: "myRow"}))
-	assert.Equal(t, "my-branch/my-writer/rows/my-row-001", objectPath(t, g, &ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", ConfigId: "1", Id: "678"}, Name: "myRow"}))
+	assertCases(t, g, []testCase{
+		// Default branch
+		{"main", &Branch{BranchKey: BranchKey{Id: 12}, Name: "a", IsDefault: true}},
+		{"main", &Branch{BranchKey: BranchKey{Id: 12}, Name: "a", IsDefault: true}},
+		{"main-001", &Branch{BranchKey: BranchKey{Id: 23}, Name: "b", IsDefault: true}},
+		// Branch
+		{"branch-name", &Branch{BranchKey: BranchKey{Id: 56}, Name: "branchName"}},
+		{"branch-name-001", &Branch{BranchKey: BranchKey{Id: 78}, Name: "branch-name"}},
+		// Config
+		{
+			"my-branch/writer/keboola.wr-foo-bar/my-config",
+			&Config{ConfigKey: ConfigKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", Id: "123"}, Name: "myConfig"},
+		},
+		{
+			"my-branch/writer/keboola.wr-foo-bar/my-config-001",
+			&Config{ConfigKey: ConfigKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", Id: "234"}, Name: "my-config"},
+		},
+		// Config row
+		{
+			"my-branch/my-writer/rows/my-row",
+			&ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", ConfigId: "1", Id: "456"}, Name: "myRow"},
+		},
+		{
+			"my-branch/my-writer/rows/my-row-001",
+			&ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", ConfigId: "1", Id: "678"}, Name: "myRow"},
+		},
+	})
 }
 
 func TestUniquePathDifferentObjects(t *testing.T) {
@@ -43,12 +61,14 @@ func TestUniquePathDifferentObjects(t *testing.T) {
 	rowWithName := orderedmap.FromPairs([]orderedmap.Pair{{Key: "name", Value: "my-name"}})
 	rowWithoutName := orderedmap.FromPairs([]orderedmap.Pair{{Key: "foo", Value: "bar"}})
 
-	assert.Equal(t, "my-branch/prefix", objectPath(t, g, &Config{ConfigKey: ConfigKey{BranchId: 1, ComponentId: "keboola.foo-bar", Id: "123"}, Name: "a"}))
-	assert.Equal(t, "my-branch/prefix-001", objectPath(t, g, &Config{ConfigKey: ConfigKey{BranchId: 1, ComponentId: "keboola.foo-bar", Id: "234"}, Name: "b"}))
-	assert.Equal(t, "my-branch/my-config/prefix", objectPath(t, g, &ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.foo-bar", ConfigId: "1", Id: "345"}, Name: "c"}))
-	assert.Equal(t, "my-branch/my-config/prefix-001", objectPath(t, g, &ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.foo-bar", ConfigId: "1", Id: "456"}, Name: "d"}))
-	assert.Equal(t, "my-branch/my-config/prefix-002", objectPath(t, g, &ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.foo-bar", ConfigId: "1", Id: "567"}, Name: "", Content: rowWithName}))
-	assert.Equal(t, "my-branch/my-config/prefix-003", objectPath(t, g, &ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.foo-bar", ConfigId: "1", Id: "678"}, Name: "", Content: rowWithoutName}))
+	assertCases(t, g, []testCase{
+		{"my-branch/prefix", &Config{ConfigKey: ConfigKey{BranchId: 1, ComponentId: "keboola.foo-bar", Id: "123"}, Name: "a"}},
+		{"my-branch/prefix-001", &Config{ConfigKey: ConfigKey{BranchId: 1, ComponentId: "keboola.foo-bar", Id: "234"}, Name: "b"}},
+		{"my-branch/my-config/prefix", &ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.foo-bar", ConfigId: "1", Id: "345"}, Name: "c"}},
+		{"my-branch/my-config/prefix-001", &ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.foo-bar", ConfigId: "1", Id: "456"}, Name: "d"}},
+		{"my-branch/my-config/prefix-002", &ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.foo-bar", ConfigId: "1", Id: "567"}, Name: "", Content: rowWithName}},
+		{"my-branch/my-config/prefix-003", &ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.foo-bar", ConfigId: "1", Id: "678"}, Name: "", Content: rowWithoutName}},
+	})
 }
 
 func TestNamingEmptyTemplate(t *testing.T) {
@@ -60,23 +80,24 @@ func TestNamingEmptyTemplate(t *testing.T) {
 	rowWithName := orderedmap.FromPairs([]orderedmap.Pair{{Key: "name", Value: "my-name"}})
 	rowWithoutName := orderedmap.FromPairs([]orderedmap.Pair{{Key: "foo", Value: "bar"}})
 
-	assert.Equal(t, "my-branch/config", objectPath(t, g, &Config{ConfigKey: ConfigKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", Id: "123"}, Name: "a"}))
-	assert.Equal(t, "my-branch/config-001", objectPath(t, g, &Config{ConfigKey: ConfigKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", Id: "234"}, Name: "b"}))
-	assert.Equal(t, "my-branch/my-writer/config-row", objectPath(t, g, &ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", ConfigId: "1", Id: "345"}, Name: "c"}))
-	assert.Equal(t, "my-branch/my-writer/config-row-001", objectPath(t, g, &ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", ConfigId: "1", Id: "456"}, Name: "d"}))
-	assert.Equal(t, "my-branch/my-writer/config-row-002", objectPath(t, g, &ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", ConfigId: "1", Id: "567"}, Name: "", Content: rowWithName}))
-	assert.Equal(t, "my-branch/my-writer/config-row-003", objectPath(t, g, &ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", ConfigId: "1", Id: "678"}, Name: "", Content: rowWithoutName}))
+	assertCases(t, g, []testCase{
+		{"my-branch/config", &Config{ConfigKey: ConfigKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", Id: "123"}, Name: "a"}},
+		{"my-branch/config-001", &Config{ConfigKey: ConfigKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", Id: "234"}, Name: "b"}},
+		{"my-branch/my-writer/config-row", &ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", ConfigId: "1", Id: "345"}, Name: "c"}},
+		{"my-branch/my-writer/config-row-001", &ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", ConfigId: "1", Id: "456"}, Name: "d"}},
+		{"my-branch/my-writer/config-row-002", &ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", ConfigId: "1", Id: "567"}, Name: "", Content: rowWithName}},
+		{"my-branch/my-writer/config-row-003", &ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", ConfigId: "1", Id: "678"}, Name: "", Content: rowWithoutName}},
+	})
 }
 
 func TestNamingDefaultTemplate(t *testing.T) {
 	t.Parallel()
 	g := testGenerator(t)
 
-	// Branch
-	assert.Equal(
-		t,
-		"1234-my-super-branch",
-		objectPath(t, g,
+	assertCases(t, g, []testCase{
+		// Branch
+		{
+			"1234-my-super-branch",
 			&Branch{
 				BranchKey: BranchKey{
 					Id: 1234,
@@ -84,13 +105,10 @@ func TestNamingDefaultTemplate(t *testing.T) {
 				Name:      "my Super-BRANCH",
 				IsDefault: false,
 			},
-		))
-
-	// Config
-	assert.Equal(
-		t,
-		"my-branch/extractor/keboola.ex-foo-bar/456-my-production-config",
-		objectPath(t, g,
+		},
+		// Config
+		{
+			"my-branch/extractor/keboola.ex-foo-bar/456-my-production-config",
 			&Config{
 				ConfigKey: ConfigKey{
 					BranchId:    1,
@@ -99,13 +117,10 @@ func TestNamingDefaultTemplate(t *testing.T) {
 				},
 				Name: "MyProductionConfig",
 			},
-		))
-
-	// Config Row
-	assert.Equal(
-		t,
-		"my-branch/my-extractor/rows/789-row-ab-c",
-		objectPath(t, g,
+		},
+		// Config Row
+		{
+			"my-branch/my-extractor/rows/789-row-ab-c",
 			&ConfigRow{
 				ConfigRowKey: ConfigRowKey{
 					BranchId:    1,
@@ -115,13 +130,10 @@ func TestNamingDefaultTemplate(t *testing.T) {
 				},
 				Name: "---  row AbC---",
 			},
-		))
-
-	// Shared code (config)
-	assert.Equal(
-		t,
-		"my-branch/_shared/keboola.python-transformation-v2",
-		objectPath(t, g,
+		},
+		// Shared code (config)
+		{
+			"my-branch/_shared/keboola.python-transformation-v2",
 			&Config{
 				ConfigKey: ConfigKey{
 					BranchId:    1,
@@ -134,13 +146,10 @@ func TestNamingDefaultTemplate(t *testing.T) {
 					Target: `keboola.python-transformation-v2`,
 				},
 			},
-		))
-
-	// Scheduler
-	assert.Equal(
-		t,
-		"my-branch/my-config/schedules/456-schedule-1",
-		objectPath(t, g,
+		},
+		// Scheduler
+		{
+			"my-branch/my-config/schedules/456-schedule-1",
 			&Config{
 				ConfigKey: ConfigKey{
 					BranchId:    1,
@@ -156,29 +165,26 @@ func TestNamingDefaultTemplate(t *testing.T) {
 				Name:    "schedule-1",
 				Content: orderedmap.New(),
 			},
-		))
-
-	// Shared code (config row)
-	assert.Equal(
-		t,
-		"my-branch/my-shared-code/codes/789-code-ab-c",
-		objectPath(t, g,
-			&ConfigRow{
-				ConfigRowKey: ConfigRowKey{
+		},
+		// Shared code (config row)
+		{
+			"my-branch/_shared/keboola.python-transformation-v2",
+			&Config{
+				ConfigKey: ConfigKey{
 					BranchId:    1,
 					ComponentId: SharedCodeComponentId,
-					ConfigId:    "1",
-					Id:          "789",
+					Id:          "456",
 				},
-				Name: "---  code AbC---",
+				Name:    "MySharedCode",
+				Content: orderedmap.New(),
+				SharedCode: &SharedCodeConfig{
+					Target: `keboola.python-transformation-v2`,
+				},
 			},
-		))
-
-	// VariablesConfig
-	assert.Equal(
-		t,
-		"my-branch/my-config/variables",
-		objectPath(t, g,
+		},
+		// VariablesConfig
+		{
+			"my-branch/my-config/variables",
 			&Config{
 				ConfigKey: ConfigKey{
 					BranchId:    1,
@@ -194,13 +200,10 @@ func TestNamingDefaultTemplate(t *testing.T) {
 				Name:    "Variables",
 				Content: orderedmap.New(),
 			},
-		))
-
-	// VariablesConfig values
-	assert.Equal(
-		t,
-		"my-branch/my-config/my-variables/values/789-default-values",
-		objectPath(t, g,
+		},
+		// Variables values
+		{
+			"my-branch/my-config/my-variables/values/789-default-values",
 			&ConfigRow{
 				ConfigRowKey: ConfigRowKey{
 					BranchId:    1,
@@ -210,7 +213,14 @@ func TestNamingDefaultTemplate(t *testing.T) {
 				},
 				Name: "Default Values",
 			},
-		))
+		},
+	})
+}
+
+func assertCases(t *testing.T, g *Generator, cases []testCase) {
+	for i, c := range cases {
+		assert.Equal(t, c.expected, generatePath(t, g, c.object), fmt.Sprintf(`case "%d"`, i))
+	}
 }
 
 func testGenerator(t *testing.T) *Generator {
@@ -225,9 +235,9 @@ func testGenerator(t *testing.T) *Generator {
 	return NewGenerator(TemplateWithIds(), registry, NewComponentsMap(testapi.NewMockedComponentsProvider()))
 }
 
-func objectPath(t *testing.T, g *Generator, object WithKey) string {
+func generatePath(t *testing.T, g *Generator, object WithKey) string {
 	t.Helper()
-	path, err := g.PathFor(object)
+	path, err := g.Generate(object)
 	if err != nil {
 		t.Fatal(err)
 	}
