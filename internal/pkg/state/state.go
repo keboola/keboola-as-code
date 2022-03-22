@@ -20,7 +20,6 @@ import (
 
 // State - Local and Remote state of the project.
 type State struct {
-	*Registry
 	container       ObjectsContainer
 	fileLoader      filesystem.FileLoader
 	logger          log.Logger
@@ -186,7 +185,7 @@ func (s *State) Validate() (error, error) {
 	for _, objectState := range s.All() {
 		if objectState.HasRemoteState() {
 			if err := s.validateValue(objectState.RemoteState()); err != nil {
-				remoteErrors.Append(utils.PrefixError(fmt.Sprintf(`remote %s is not valid`, objectState.Desc()), err))
+				remoteErrors.Append(utils.PrefixError(fmt.Sprintf(`remote %s is not valid`, objectState.String()), err))
 			}
 		}
 

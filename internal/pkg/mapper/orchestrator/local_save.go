@@ -84,7 +84,7 @@ func (w *localWriter) savePhase(phase *model.Phase, allPhases []*model.Phase) er
 	dependsOn := make([]string, 0)
 	for _, depOnKey := range phase.DependsOn {
 		depOnPhase := allPhases[depOnKey.Index]
-		depOnPath, err := filesystem.Rel(phase.GetParentPath(), depOnPhase.Path())
+		depOnPath, err := filesystem.Rel(phase.GetParentPath(), depOnPhase.String())
 		if err != nil {
 			errors.Append(err)
 			continue
@@ -160,7 +160,7 @@ func (w *localWriter) saveTask(task *model.Task) error {
 		target.Set(`configPath`, targetPath)
 		taskContent.Set(`task`, *target)
 	} else {
-		errors.Append(fmt.Errorf(`%s not found`, targetKey.Desc()))
+		errors.Append(fmt.Errorf(`%s not found`, targetKey.String()))
 	}
 
 	// Create file

@@ -49,7 +49,7 @@ func (t RelationType) Type() RelationType {
 // Relation between objects, eg. config <-> config.
 type Relation interface {
 	Type() RelationType
-	Desc() string                                 // human-readable description
+	String() string                               // human-readable description
 	Key() string                                  // unique key within the object on which the relation is defined, for sorting and comparing
 	ParentKey(relationDefinedOn Key) (Key, error) // if relation type is parent <-> child, then parent key is returned, otherwise nil
 	IsDefinedInManifest() bool                    // if true, relation will be present in the manifest
@@ -81,7 +81,7 @@ func (v Relations) ParentKey(source Key) (Key, error) {
 
 	// Multiple parents are forbidden
 	if len(parents) > 1 {
-		return nil, fmt.Errorf(`unexpected state: multiple parents defined by "relations" in %s`, source.Desc())
+		return nil, fmt.Errorf(`unexpected state: multiple parents defined by "relations" in %s`, source.String())
 	}
 
 	return nil, nil

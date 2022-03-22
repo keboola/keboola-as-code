@@ -30,7 +30,7 @@ func (m *mapper) onRemoteLoad(objectState model.ObjectState) error {
 		return nil
 	} else if !ok {
 		return utils.PrefixError(
-			fmt.Sprintf(`invalid transformation %s`, transformation.Desc()),
+			fmt.Sprintf(`invalid transformation %s`, transformation.String()),
 			fmt.Errorf(`key "%s" should be string, found %T`, model.SharedCodeIdContentKey, sharedCodeIdRaw),
 		)
 	}
@@ -46,8 +46,8 @@ func (m *mapper) onRemoteLoad(objectState model.ObjectState) error {
 	sharedCodeState, found := m.state.GetOrNil(linkToSharedCode.Config).(*model.ConfigState)
 	if !found || !sharedCodeState.HasRemoteState() {
 		return utils.PrefixError(
-			fmt.Sprintf(`missing shared code %s`, linkToSharedCode.Config.Desc()),
-			fmt.Errorf(`referenced from %s`, objectState.Desc()),
+			fmt.Sprintf(`missing shared code %s`, linkToSharedCode.Config.String()),
+			fmt.Errorf(`referenced from %s`, objectState.String()),
 		)
 	}
 
@@ -66,7 +66,7 @@ func (m *mapper) onRemoteLoad(objectState model.ObjectState) error {
 		return nil
 	} else if !ok {
 		return utils.PrefixError(
-			fmt.Sprintf(`invalid transformation %s`, transformation.Desc()),
+			fmt.Sprintf(`invalid transformation %s`, transformation.String()),
 			fmt.Errorf(`key "%s" should be array, found %T`, model.SharedCodeRowsIdContentKey, sharedCodeRowsIdsRaw),
 		)
 	}
@@ -94,8 +94,8 @@ func (m *mapper) onRemoteLoad(objectState model.ObjectState) error {
 			linkToSharedCode.Rows = append(linkToSharedCode.Rows, rowKey)
 		} else {
 			errors.Append(utils.PrefixError(
-				fmt.Sprintf(`missing shared code %s`, rowKey.Desc()),
-				fmt.Errorf(`referenced from %s`, transformation.Desc()),
+				fmt.Sprintf(`missing shared code %s`, rowKey.String()),
+				fmt.Errorf(`referenced from %s`, transformation.String()),
 			))
 		}
 	}

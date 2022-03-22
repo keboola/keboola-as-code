@@ -109,7 +109,7 @@ func (r MockedManifest) GetAbsPath() model.AbsPath {
 	return model.NewAbsPath("", "test")
 }
 
-func (r MockedManifest) Path() string {
+func (r MockedManifest) String() string {
 	if len(r.PathValue) > 0 {
 		return r.PathValue
 	}
@@ -172,7 +172,7 @@ func (r *MockedManifestSideRelation) Type() model.RelationType {
 	return "manifest_side_relation"
 }
 
-func (r *MockedManifestSideRelation) Desc() string {
+func (r *MockedManifestSideRelation) String() string {
 	return "manifest side relation"
 }
 
@@ -203,7 +203,7 @@ func (r *MockedApiSideRelation) Type() model.RelationType {
 	return "api_side_relation"
 }
 
-func (r *MockedApiSideRelation) Desc() string {
+func (r *MockedApiSideRelation) String() string {
 	return "api side relation"
 }
 

@@ -23,7 +23,7 @@ func (m *coreFilesMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error
 // loadMetaFile from meta.json.
 func (m *coreFilesMapper) loadMetaFile(recipe *model.LocalLoadRecipe) error {
 	_, _, err := recipe.Files.
-		Load(m.state.NamingGenerator().MetaFilePath(recipe.ObjectManifest.Path())).
+		Load(m.state.NamingGenerator().MetaFilePath(recipe.ObjectManifest.String())).
 		SetDescription(recipe.ObjectManifest.Kind().Name+" metadata").
 		AddTag(model.FileTypeJson).
 		AddTag(model.FileKindObjectMeta).
@@ -34,7 +34,7 @@ func (m *coreFilesMapper) loadMetaFile(recipe *model.LocalLoadRecipe) error {
 // loadConfigFile from config.json.
 func (m *coreFilesMapper) loadConfigFile(recipe *model.LocalLoadRecipe) error {
 	_, _, err := recipe.Files.
-		Load(m.state.NamingGenerator().ConfigFilePath(recipe.ObjectManifest.Path())).
+		Load(m.state.NamingGenerator().ConfigFilePath(recipe.ObjectManifest.String())).
 		SetDescription(recipe.ObjectManifest.Kind().Name).
 		AddTag(model.FileTypeJson).
 		AddTag(model.FileKindObjectConfig).
@@ -45,7 +45,7 @@ func (m *coreFilesMapper) loadConfigFile(recipe *model.LocalLoadRecipe) error {
 // loadDescriptionFile from description.md.
 func (m *coreFilesMapper) loadDescriptionFile(recipe *model.LocalLoadRecipe) error {
 	_, _, err := recipe.Files.
-		Load(m.state.NamingGenerator().DescriptionFilePath(recipe.ObjectManifest.Path())).
+		Load(m.state.NamingGenerator().DescriptionFilePath(recipe.ObjectManifest.String())).
 		SetDescription(recipe.ObjectManifest.Kind().Name+" description").
 		AddTag(model.FileTypeMarkdown).
 		AddTag(model.FileKindObjectDescription).

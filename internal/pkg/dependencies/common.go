@@ -225,7 +225,7 @@ func (v *commonContainer) Template(reference model.TemplateRef) (*template.Templ
 	}
 
 	// Check if template dir exists
-	templatePath := versionRecord.Path()
+	templatePath := versionRecord.String()
 	if !repository.Fs().IsDir(templatePath) {
 		return nil, fmt.Errorf(`template dir "%s" not found`, templatePath)
 	}

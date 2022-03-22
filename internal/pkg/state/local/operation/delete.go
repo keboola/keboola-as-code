@@ -1,4 +1,4 @@
-package local
+package operation
 
 import (
 	"io/fs"
@@ -11,12 +11,36 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
+// DeleteObject from manifest and filesystem.
+func (m *Manager) DeleteObject(key model.Key) error {
+	// Get record
+	objectManifest, found := m.manifest.GetRecord(key)
+	if !found {
+		return nil
+	}
+
+	// Remove manifest record
+	m.manifest.Remove(objectManifest)
+
+	// Remove all related files
+	errors := utils.NewMultiError()
+	for _, path := range objectManifest.GetRelatedPaths() {
+		if m.fs.IsFile(path) {
+			if err := m.fs.Remove(path); err != nil {
+				errors.Append(err)
+			}
+		}
+	}
+
+	return errors.ErrorOrNil()
+}
+
 // DeleteInvalidObjects from disk, eg. if pull --force used.
 func (m *Manager) DeleteInvalidObjects() error {
 	errors := utils.NewMultiError()
 	for _, objectManifest := range m.manifest.All() {
 		if objectManifest.State().IsInvalid() {
-			if err := m.deleteObject(objectManifest); err != nil {
+			if err := m.DeleteObject(objectManifest); err != nil {
 				errors.Append(err)
 			}
 		}
@@ -27,11 +51,11 @@ func (m *Manager) DeleteInvalidObjects() error {
 // DeleteEmptyDirectories from project directory (eg. dir with extractors, but no extractor left)
 // Deleted are only empty directories from know/tracked paths.
 // Hidden dirs are ignored.
-func DeleteEmptyDirectories(fs filesystem.Fs, trackedPaths []string) error {
+func (m *Manager) DeleteEmptyDirectories() error {
 	errors := utils.NewMultiError()
 	emptyDirs := orderedmap.New()
 	root := `.`
-	err := fs.Walk(root, func(path string, info filesystem.FileInfo, err error) error {
+	err := m.fs.Walk(root, func(path string, info filesystem.FileInfo, err error) error {
 		// Stop on error
 		if err != nil {
 			return err
@@ -69,14 +93,14 @@ func DeleteEmptyDirectories(fs filesystem.Fs, trackedPaths []string) error {
 		return err
 	}
 
-	// Sort by the longest path firs -> delete most nested directory first
+	// Sort by the longest path first -> delete most nested directory first
 	emptyDirs.SortKeys(func(keys []string) {
 		sort.SliceStable(keys, func(i, j int) bool {
 			return len(keys[i]) > len(keys[j])
 		})
 	})
 
-	// Remove only empty dirs, if parent dir is from tracked dirs
+	// Remove only empty dirs, if parent dir is from a tracked dirs
 	dirsToRemove := make([]string, 0)
 	for _, dir := range emptyDirs.Keys() {
 		for _, tracked := range trackedPaths {
@@ -90,27 +114,8 @@ func DeleteEmptyDirectories(fs filesystem.Fs, trackedPaths []string) error {
 
 	// Delete
 	for _, dir := range dirsToRemove {
-		if err := fs.Remove(dir); err != nil {
+		if err := m.fs.Remove(dir); err != nil {
 			errors.Append(err)
-		}
-	}
-
-	return errors.ErrorOrNil()
-}
-
-// deleteObject from manifest and filesystem.
-func (m *Manager) deleteObject(objectManifest model.ObjectManifest) error {
-	errors := utils.NewMultiError()
-
-	// Remove manifest from manifest content
-	m.manifest.Delete(objectManifest)
-
-	// Remove all related files
-	for _, path := range objectManifest.GetRelatedPaths() {
-		if m.fs.IsFile(path) {
-			if err := m.fs.Remove(path); err != nil {
-				errors.Append(err)
-			}
 		}
 	}
 

@@ -28,7 +28,7 @@ func (m *transformationMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) 
 		LocalLoadRecipe: recipe,
 		logger:          m.logger,
 		config:          recipe.Object.(*model.Config),
-		blocksDir:       m.state.NamingGenerator().BlocksDir(recipe.ObjectManifest.Path()),
+		blocksDir:       m.state.NamingGenerator().BlocksDir(recipe.ObjectManifest.String()),
 		errors:          utils.NewMultiError(),
 	}
 
@@ -66,7 +66,7 @@ func (l *localLoader) validate() {
 	if l.errors.Len() == 0 {
 		for _, block := range l.blocks {
 			if err := validator.Validate(l.State.Ctx(), block); err != nil {
-				l.errors.Append(utils.PrefixError(fmt.Sprintf(`block "%s" is not valid`, block.Path()), err))
+				l.errors.Append(utils.PrefixError(fmt.Sprintf(`block "%s" is not valid`, block.String()), err))
 			}
 		}
 	}
@@ -87,7 +87,7 @@ func (l *localLoader) addBlock(blockIndex int, path string) *model.Block {
 		Codes: make([]*model.Code, 0),
 	}
 
-	l.ObjectManifest.AddRelatedPath(block.Path())
+	l.ObjectManifest.AddRelatedPath(block.String())
 	l.loadBlockMetaFile(block)
 	l.blocks = append(l.blocks, block)
 
@@ -104,13 +104,13 @@ func (l *localLoader) addCode(block *model.Block, codeIndex int, path string) *m
 			Index:       codeIndex,
 		},
 		AbsPath: model.NewAbsPath(
-			block.Path(),
+			block.String(),
 			path,
 		),
 		Scripts: make(model.Scripts, 0),
 	}
 
-	l.ObjectManifest.AddRelatedPath(code.Path())
+	l.ObjectManifest.AddRelatedPath(code.String())
 	l.loadCodeMetaFile(code)
 	l.addScripts(code)
 	block.Codes = append(block.Codes, code)
@@ -142,7 +142,7 @@ func (l *localLoader) addScripts(code *model.Code) {
 
 func (l *localLoader) loadBlockMetaFile(block *model.Block) {
 	_, _, err := l.Files.
-		Load(l.NamingGenerator().MetaFilePath(block.Path())).
+		Load(l.NamingGenerator().MetaFilePath(block.String())).
 		SetDescription("block metadata").
 		AddTag(model.FileTypeJson).
 		AddTag(model.FileKindBlockMeta).
@@ -154,7 +154,7 @@ func (l *localLoader) loadBlockMetaFile(block *model.Block) {
 
 func (l *localLoader) loadCodeMetaFile(code *model.Code) {
 	_, _, err := l.Files.
-		Load(l.NamingGenerator().MetaFilePath(code.Path())).
+		Load(l.NamingGenerator().MetaFilePath(code.String())).
 		SetDescription("code metadata").
 		AddTag(model.FileTypeJson).
 		AddTag(model.FileKindCodeMeta).
@@ -192,9 +192,9 @@ func (l *localLoader) blockDirs() []string {
 }
 
 func (l *localLoader) codeDirs(block *model.Block) []string {
-	dirs, err := filesystem.ReadSubDirs(l.ObjectsRoot(), block.Path())
+	dirs, err := filesystem.ReadSubDirs(l.ObjectsRoot(), block.String())
 	if err != nil {
-		l.errors.Append(fmt.Errorf(`cannot read transformation codes from "%s": %w`, block.Path(), err))
+		l.errors.Append(fmt.Errorf(`cannot read transformation codes from "%s": %w`, block.String(), err))
 		return nil
 	}
 	return dirs
@@ -203,14 +203,14 @@ func (l *localLoader) codeDirs(block *model.Block) []string {
 func (l *localLoader) codeFileName(code *model.Code) string {
 	// Search for code file, glob "code.*"
 	// File can use an old naming, so the file extension is not specified
-	matches, err := l.ObjectsRoot().Glob(filesystem.Join(code.Path(), naming.CodeFileName+`.*`))
+	matches, err := l.ObjectsRoot().Glob(filesystem.Join(code.String(), naming.CodeFileName+`.*`))
 	if err != nil {
-		l.errors.Append(fmt.Errorf(`cannot search for code file in %s": %w`, code.Path(), err))
+		l.errors.Append(fmt.Errorf(`cannot search for code file in %s": %w`, code.String(), err))
 		return ""
 	}
 	files := make([]string, 0)
 	for _, match := range matches {
-		relPath, err := filesystem.Rel(code.Path(), match)
+		relPath, err := filesystem.Rel(code.String(), match)
 		if err != nil {
 			l.errors.Append(err)
 			continue
@@ -223,7 +223,7 @@ func (l *localLoader) codeFileName(code *model.Code) string {
 
 	// No file?
 	if len(files) == 0 {
-		l.errors.Append(fmt.Errorf(`missing code file in "%s"`, code.Path()))
+		l.errors.Append(fmt.Errorf(`missing code file in "%s"`, code.String()))
 		return ""
 	}
 
@@ -232,7 +232,7 @@ func (l *localLoader) codeFileName(code *model.Code) string {
 		l.errors.Append(fmt.Errorf(
 			`expected one, but found multiple code files "%s" in "%s"`,
 			strings.Join(files, `", "`),
-			code.Path(),
+			code.String(),
 		))
 		return ""
 	}

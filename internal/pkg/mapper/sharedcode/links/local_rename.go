@@ -36,7 +36,7 @@ func (m *mapper) onRename(renamedObjects []model.RenameAction) error {
 	if len(renamedSharedCodes) > 0 {
 		m.logger.Debug(`Found renamed shared codes:`)
 		for _, key := range renamedSharedCodes {
-			m.logger.Debugf(`  - %s`, key.Desc())
+			m.logger.Debugf(`  - %s`, key.String())
 		}
 	}
 

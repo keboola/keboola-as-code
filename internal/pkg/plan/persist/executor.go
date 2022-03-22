@@ -72,7 +72,7 @@ func (e *executor) persistNewObject(action *newObjectAction) {
 			k.Id = model.RowId(ticket.Id)
 			key = k
 		default:
-			panic(fmt.Errorf(`unexpected type "%s" of the persisted object "%s"`, key.Kind(), key.Desc()))
+			panic(fmt.Errorf(`unexpected type "%s" of the persisted object "%s"`, key.Kind(), key.String()))
 		}
 
 		// The parent was not persisted for some error -> skip

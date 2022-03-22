@@ -78,7 +78,7 @@ func (e *executor) encryptRequest(action *action) *client.Request {
 				if err := object.GetContent().SetNestedPath(path, encrypted); err != nil {
 					panic(err)
 				}
-				e.logger.Debugf(`Encrypted "%s:%s"`, object.Desc(), path.String())
+				e.logger.Debugf(`Encrypted "%s:%s"`, object.String(), path.String())
 			}
 
 			// Save changes

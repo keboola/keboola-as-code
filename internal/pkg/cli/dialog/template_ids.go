@@ -114,7 +114,7 @@ func (d *templateIdsDialog) parse(result string) ([]template.ConfigDef, error) {
 		// Config definition
 		id := idByKey[c.Key().String()]
 		if len(id) == 0 {
-			errors.Append(fmt.Errorf(`missing ID for %s`, c.Desc()))
+			errors.Append(fmt.Errorf(`missing ID for %s`, c.String()))
 			continue
 		}
 		configDef := template.ConfigDef{Key: c.ConfigKey, TemplateId: id}
@@ -123,7 +123,7 @@ func (d *templateIdsDialog) parse(result string) ([]template.ConfigDef, error) {
 			// Row definition
 			id := idByKey[r.Key().String()]
 			if len(id) == 0 {
-				errors.Append(fmt.Errorf(`missing ID for %s`, r.Desc()))
+				errors.Append(fmt.Errorf(`missing ID for %s`, r.String()))
 				continue
 			}
 			rowDef := template.ConfigRowDef{Key: r.ConfigRowKey, TemplateId: id}

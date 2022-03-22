@@ -1,4 +1,4 @@
-package local
+package operation
 
 import (
 	"testing"
@@ -7,12 +7,11 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 )
 
 func TestLocalDeleteModel(t *testing.T) {
 	t.Parallel()
-	manager := newTestLocalManager(t)
+	manager := newTestManager(t)
 	fs := manager.fs
 
 	record := &fixtures.MockedManifest{}
@@ -20,15 +19,15 @@ func TestLocalDeleteModel(t *testing.T) {
 	_, found := manager.manifest.GetRecord(record.Key())
 	assert.True(t, found)
 
-	dirPath := record.Path()
+	dirPath := record.String()
 
-	metaFilePath := manager.NamingGenerator().MetaFilePath(record.Path())
+	metaFilePath := `/foo/bar/meta.json`
 	metaFile := `{
   "myKey": "3",
   "Meta2": "4"
 }
 `
-	configFilePath := manager.NamingGenerator().ConfigFilePath(record.Path())
+	configFilePath := `/foo/bar/config.json`
 	configFile := `{
   "foo": "bar"
 }
@@ -42,7 +41,7 @@ func TestLocalDeleteModel(t *testing.T) {
 	record.AddRelatedPath(configFilePath)
 
 	// Delete
-	assert.NoError(t, manager.deleteObject(record))
+	assert.NoError(t, manager.DeleteObject(record))
 
 	// Assert
 	_, found = manager.manifest.GetRecord(record.Key())
@@ -54,7 +53,8 @@ func TestLocalDeleteModel(t *testing.T) {
 
 func TestDeleteEmptyDirectories(t *testing.T) {
 	t.Parallel()
-	fs := testfs.NewMemoryFs()
+	manager := newTestManager(t)
+	fs := manager.fs
 
 	// Structure:
 	// D .hidden
@@ -91,7 +91,7 @@ func TestDeleteEmptyDirectories(t *testing.T) {
 		`tracked`,
 		`tracked-with-hidden`,
 	}
-	assert.NoError(t, DeleteEmptyDirectories(fs, trackedPaths))
+	assert.NoError(t, manager.DeleteEmptyDirectories(fs, trackedPaths))
 
 	// Assert
 	assert.False(t, fs.Exists(`tracked-empty`))

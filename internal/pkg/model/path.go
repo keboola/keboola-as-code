@@ -13,11 +13,6 @@ type AbsPath struct {
 	parentPathSet bool
 }
 
-type Paths struct {
-	AbsPath
-	RelatedPaths []string `json:"-"` // not serialized, slice is generated when the object is loaded
-}
-
 func NewAbsPath(parentPath, objectPath string) AbsPath {
 	return AbsPath{parentPath: Path(parentPath), parentPathSet: true, RelativePath: Path(objectPath)}
 }
@@ -51,6 +46,6 @@ func (p *AbsPath) SetParentPath(parentPath string) {
 	p.parentPath = Path(parentPath)
 }
 
-func (p AbsPath) Path() string {
+func (p AbsPath) String() string {
 	return filesystem.Join(string(p.parentPath), string(p.RelativePath))
 }

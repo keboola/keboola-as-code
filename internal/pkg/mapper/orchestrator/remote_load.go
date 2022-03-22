@@ -37,7 +37,7 @@ func (m *orchestratorMapper) onRemoteLoad(config *model.Config, manifest *model.
 	}
 	if err := loader.load(); err != nil {
 		// Convert errors to warning
-		m.logger.Warn(`Warning: `, utils.PrefixError(fmt.Sprintf(`invalid orchestrator %s`, config.Desc()), err))
+		m.logger.Warn(`Warning: `, utils.PrefixError(fmt.Sprintf(`invalid orchestrator %s`, config.String()), err))
 	}
 }
 
@@ -94,8 +94,8 @@ func (l *remoteLoader) load() error {
 	}
 
 	// Set paths if parent path is set
-	if l.manifest.Path() != "" {
-		phasesDir := l.NamingGenerator().PhasesDir(l.manifest.Path())
+	if l.manifest.String() != "" {
+		phasesDir := l.NamingGenerator().PhasesDir(l.manifest.String())
 		for _, phase := range l.config.Orchestration.Phases {
 			if path, found := l.GetPath(phase.Key()); found {
 				phase.AbsPath = path
@@ -106,7 +106,7 @@ func (l *remoteLoader) load() error {
 				if path, found := l.GetPath(task.Key()); found {
 					task.AbsPath = path
 				} else {
-					task.AbsPath = l.NamingGenerator().TaskPath(phase.Path(), task)
+					task.AbsPath = l.NamingGenerator().TaskPath(phase.String(), task)
 				}
 			}
 		}
@@ -264,12 +264,12 @@ func (l *remoteLoader) getTargetConfig(componentId model.ComponentId, configId m
 
 	configRaw, found := l.allObjects.Get(configKey)
 	if !found {
-		return nil, fmt.Errorf(`%s not found`, configKey.Desc())
+		return nil, fmt.Errorf(`%s not found`, configKey.String())
 	}
 
 	config, ok := configRaw.(*model.Config)
 	if !ok {
-		return nil, fmt.Errorf(`expected %s, found %s`, configKey.Desc(), configRaw.Desc())
+		return nil, fmt.Errorf(`expected %s, found %s`, configKey.String(), configRaw.String())
 	}
 
 	return config, nil

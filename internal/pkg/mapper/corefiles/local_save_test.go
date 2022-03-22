@@ -41,7 +41,7 @@ func TestSaveCoreFiles(t *testing.T) {
 	expectedFiles := model.NewFilesToSave()
 	expectedFiles.
 		Add(
-			filesystem.NewJsonFile(state.NamingGenerator().MetaFilePath(manifest.Path()),
+			filesystem.NewJsonFile(state.NamingGenerator().MetaFilePath(manifest.String()),
 				orderedmap.FromPairs([]orderedmap.Pair{
 					{Key: "myKey", Value: "3"},
 					{Key: "Meta2", Value: "4"},
@@ -52,7 +52,7 @@ func TestSaveCoreFiles(t *testing.T) {
 		AddTag(model.FileKindObjectMeta)
 	expectedFiles.
 		Add(
-			filesystem.NewJsonFile(state.NamingGenerator().ConfigFilePath(manifest.Path()),
+			filesystem.NewJsonFile(state.NamingGenerator().ConfigFilePath(manifest.String()),
 				orderedmap.FromPairs([]orderedmap.Pair{
 					{Key: "foo", Value: "bar"},
 				}),

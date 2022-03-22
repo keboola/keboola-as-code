@@ -946,11 +946,11 @@ func (tc *testCase) run(t *testing.T) {
 	assert.Equal(t, tc.untrackedPaths, projectState.UntrackedPaths())
 	for _, objectState := range tc.expectedStates {
 		_, found := projectState.Get(objectState.Key())
-		assert.Falsef(t, found, `%s should not exists`, objectState.Desc())
+		assert.Falsef(t, found, `%s should not exists`, objectState.String())
 	}
 	for _, key := range tc.expectedMissing {
 		_, found := projectState.Manifest().GetRecord(key)
-		assert.Truef(t, found, `%s should exists`, key.Desc())
+		assert.Truef(t, found, `%s should exists`, key.String())
 	}
 
 	// Get plan
@@ -979,11 +979,11 @@ func (tc *testCase) run(t *testing.T) {
 	assert.Empty(t, projectState.UntrackedPaths())
 	for _, objectState := range tc.expectedStates {
 		realState, found := projectState.Get(objectState.Key())
-		assert.Truef(t, found, `%s should exists`, objectState.Desc())
-		assert.Equalf(t, objectState, realState, `object "%s" has unexpected content`, objectState.Desc())
+		assert.Truef(t, found, `%s should exists`, objectState.String())
+		assert.Equalf(t, objectState, realState, `object "%s" has unexpected content`, objectState.String())
 	}
 	for _, key := range tc.expectedMissing {
 		_, found := projectState.Manifest().GetRecord(key)
-		assert.Falsef(t, found, `%s should not exists`, key.Desc())
+		assert.Falsef(t, found, `%s should not exists`, key.String())
 	}
 }

@@ -28,7 +28,7 @@ func (m *mapper) onLocalLoad(objectState model.ObjectState) error {
 		return nil
 	} else if !ok {
 		return utils.PrefixError(
-			fmt.Sprintf(`invalid transformation %s`, transformation.Desc()),
+			fmt.Sprintf(`invalid transformation %s`, transformation.String()),
 			fmt.Errorf(`key "%s" must be string, found %T`, model.SharedCodePathContentKey, sharedCodePathRaw),
 		)
 	}
@@ -38,12 +38,12 @@ func (m *mapper) onLocalLoad(objectState model.ObjectState) error {
 	if err != nil {
 		return utils.PrefixError(
 			err.Error(),
-			fmt.Errorf(`referenced from %s`, objectState.Desc()),
+			fmt.Errorf(`referenced from %s`, objectState.String()),
 		)
 	} else if !sharedCodeState.HasLocalState() {
 		return utils.PrefixError(
-			fmt.Sprintf(`missing shared code %s`, sharedCodeState.Desc()),
-			fmt.Errorf(`referenced from %s`, objectState.Desc()),
+			fmt.Sprintf(`missing shared code %s`, sharedCodeState.String()),
+			fmt.Errorf(`referenced from %s`, objectState.String()),
 		)
 	}
 	sharedCodeConfig := sharedCodeState.LocalState().(*model.Config)

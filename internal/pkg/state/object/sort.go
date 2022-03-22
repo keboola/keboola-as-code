@@ -38,7 +38,7 @@ func (s pathSorter) Less(i, j Key) bool {
 		jPath, jFound := s.naming.PathByKey(j)
 		if iFound && jFound {
 			// Paths found  -> sort by path
-			return iPath.Path() < jPath.Path()
+			return iPath.String() < jPath.String()
 		} else {
 			// Fallback -> sort by IDs
 			return i.ObjectId() < j.ObjectId()

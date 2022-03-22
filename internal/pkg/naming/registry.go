@@ -29,22 +29,22 @@ func (r Registry) Attach(key Key, path AbsPath) error {
 	defer r.lock.Unlock()
 
 	// Object path cannot be empty
-	pathStr := path.Path()
+	pathStr := path.String()
 	if len(pathStr) == 0 {
-		return fmt.Errorf(`naming error: invalid %s: path cannot be empty`, key.Desc())
+		return fmt.Errorf(`naming error: invalid %s: path cannot be empty`, key.String())
 	}
 
 	// Check if the path is unique
 	if foundKey, found := r.byPath[pathStr]; found && foundKey != key {
 		return fmt.Errorf(
 			`naming error: path "%s" is attached to %s, but new %s has same path`,
-			pathStr, foundKey.Desc(), key.Desc(),
+			pathStr, foundKey.String(), key.String(),
 		)
 	}
 
 	// Remove the previous value attached to the key
 	if foundPath, found := r.byKey[key.String()]; found {
-		delete(r.byPath, foundPath.Path())
+		delete(r.byPath, foundPath.String())
 	}
 
 	r.byPath[pathStr] = key
@@ -58,7 +58,7 @@ func (r Registry) Detach(key Key) {
 	defer r.lock.Unlock()
 
 	if foundPath, found := r.byKey[key.String()]; found {
-		delete(r.byPath, foundPath.Path())
+		delete(r.byPath, foundPath.String())
 		delete(r.byKey, key.String())
 	}
 }
@@ -95,7 +95,7 @@ func (r Registry) makeUniquePath(key Key, p AbsPath) AbsPath {
 	// Add a suffix to the path if it is not unique
 	suffix := 0
 	for {
-		foundKey, found := r.byPath[p.Path()]
+		foundKey, found := r.byPath[p.String()]
 		if !found || foundKey == key {
 			break
 		}

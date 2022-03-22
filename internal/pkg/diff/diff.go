@@ -240,9 +240,9 @@ func (r *Results) Format(naming *naming.Registry, details bool) []string {
 	for _, result := range r.Results {
 		if result.State != ResultEqual {
 			// Get path by key
-			path := result.Key.Desc()
+			path := result.Key.String()
 			if pathAbs, found := naming.PathByKey(result.Key); found {
-				path = pathAbs.Path()
+				path = pathAbs.String()
 			}
 
 			// Message

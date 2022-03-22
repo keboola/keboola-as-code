@@ -69,7 +69,7 @@ func (h *SharedCodeHelper) CheckTargetComponent(sharedCodeConfig *model.Config, 
 	}
 	if sharedCodeConfig.SharedCode.Target != transformation.ComponentId {
 		errors := utils.NewMultiError()
-		errors.Append(fmt.Errorf(`unexpected shared code "%s" in %s`, model.ShareCodeTargetComponentKey, sharedCodeConfig.Desc()))
+		errors.Append(fmt.Errorf(`unexpected shared code "%s" in %s`, model.ShareCodeTargetComponentKey, sharedCodeConfig.String()))
 		errors.Append(fmt.Errorf(`  - expected "%s"`, transformation.ComponentId))
 		errors.Append(fmt.Errorf(`  - found "%s"`, sharedCodeConfig.SharedCode.Target))
 		return errors

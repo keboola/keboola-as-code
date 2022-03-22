@@ -49,21 +49,21 @@ func TestLoadTransformationInvalidConfigAndMeta(t *testing.T) {
 		ConfigKey: configKey,
 		Paths:     model.Paths{AbsPath: model.AbsPath{RelativePath: "config"}},
 	}
-	assert.NoError(t, fs.Mkdir(record.Path()))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.MetaFilePath(record.Path()), metaFile)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.DescriptionFilePath(record.Path()), descFile)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.ConfigFilePath(record.Path()), configFile)))
-	blocksDir := namingGenerator.BlocksDir(record.Path())
+	assert.NoError(t, fs.Mkdir(record.String()))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.MetaFilePath(record.String()), metaFile)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.DescriptionFilePath(record.String()), descFile)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.ConfigFilePath(record.String()), configFile)))
+	blocksDir := namingGenerator.BlocksDir(record.String())
 	assert.NoError(t, fs.Mkdir(blocksDir))
 	block := &model.Block{BlockKey: model.BlockKey{Index: 123}, Name: `block`}
 	block.AbsPath = namingGenerator.BlockPath(blocksDir, block)
-	assert.NoError(t, fs.Mkdir(block.Path()))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.MetaFilePath(block.Path()), blockMeta)))
+	assert.NoError(t, fs.Mkdir(block.String()))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.MetaFilePath(block.String()), blockMeta)))
 	code := &model.Code{CodeKey: model.CodeKey{Index: 123}, Name: `code`}
-	code.AbsPath = namingGenerator.CodePath(block.Path(), code)
+	code.AbsPath = namingGenerator.CodePath(block.String(), code)
 	code.CodeFileName = namingGenerator.CodeFileName(component.Id)
-	assert.NoError(t, fs.Mkdir(code.Path()))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.MetaFilePath(code.Path()), codeMeta)))
+	assert.NoError(t, fs.Mkdir(code.String()))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.MetaFilePath(code.String()), codeMeta)))
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.CodeFilePath(code), codeContent)))
 
 	// Set parent

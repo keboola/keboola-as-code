@@ -39,7 +39,7 @@ func (m *mapper) MapBeforePersist(recipe *model.PersistRecipe) error {
 
 	// Branch must be same
 	if sharedCodeRowKey.BranchKey() != configManifest.BranchKey() {
-		panic(fmt.Errorf(`child "%s" and parent "%s" must be from same branch`, configManifest.Desc(), sharedCodeRowKey.Desc()))
+		panic(fmt.Errorf(`child "%s" and parent "%s" must be from same branch`, configManifest.String(), sharedCodeRowKey.String()))
 	}
 
 	// Add relation

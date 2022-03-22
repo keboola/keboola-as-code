@@ -1,4 +1,4 @@
-package local
+package operation
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func (m *Manager) rename(actions []model.RenameAction) error {
+func (m *Manager) Rename(actions []model.RenameAction) error {
 	// Nothing to do
 	if len(actions) == 0 {
 		return nil
@@ -29,9 +29,9 @@ func (m *Manager) rename(actions []model.RenameAction) error {
 		} else {
 			// Update manifest
 			if err := m.manifest.PersistRecord(action.Manifest); err != nil {
-				errors.AppendWithPrefix(fmt.Sprintf(`cannot persist "%s"`, action.Manifest.Desc()), err)
+				errors.AppendWithPrefix(fmt.Sprintf(`cannot persist "%s"`, action.Manifest.String()), err)
 			}
-			if filesystem.IsFrom(action.NewPath, action.Manifest.Path()) {
+			if filesystem.IsFrom(action.NewPath, action.Manifest.String()) {
 				action.Manifest.RenameRelatedPaths(action.RenameFrom, action.NewPath)
 			}
 

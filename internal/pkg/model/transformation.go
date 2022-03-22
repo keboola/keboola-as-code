@@ -11,6 +11,28 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/sql"
 )
 
+const (
+	BlockKind = "block"
+	CodeKind  = "code"
+	BlockAbbr = "b"
+	CodeAbbr  = "c"
+)
+
+type BlockKey struct {
+	BranchId    BranchId    `json:"-" validate:"required_in_project" `
+	ComponentId ComponentId `json:"-" validate:"required" `
+	ConfigId    ConfigId    `json:"-" validate:"required" `
+	Index       int         `json:"-" validate:"min=0" `
+}
+
+type CodeKey struct {
+	BranchId    BranchId    `json:"-" validate:"required_in_project" `
+	ComponentId ComponentId `json:"-" validate:"required" `
+	ConfigId    ConfigId    `json:"-" validate:"required" `
+	BlockIndex  int         `json:"-" validate:"min=0" `
+	Index       int         `json:"-" validate:"min=0" `
+}
+
 type UsedSharedCodeRows []ConfigRowKey
 
 type LinkToSharedCode struct {
@@ -44,13 +66,94 @@ type Code struct {
 
 type Scripts []Script
 
-type Script interface {
-	Content() string
-}
-
 // StaticScript is script defined by user (it is not link to shared code).
 type StaticScript struct {
 	Value string
+}
+
+func (k BlockKey) Kind() Kind {
+	return Kind{Name: BlockKind, Abbr: BlockAbbr}
+}
+
+func (k CodeKey) Kind() Kind {
+	return Kind{Name: CodeKind, Abbr: CodeAbbr}
+}
+
+func (k BlockKey) ObjectId() string {
+	return cast.ToString(k.Index)
+}
+
+func (k CodeKey) ObjectId() string {
+	return cast.ToString(k.Index)
+}
+
+func (k BlockKey) Level() int {
+	return 5
+}
+
+func (k CodeKey) Level() int {
+	return 6
+}
+
+func (k BlockKey) Key() Key {
+	return k
+}
+
+func (k BlockKey) ConfigKey() Key {
+	return ConfigKey{
+		BranchId:    k.BranchId,
+		ComponentId: k.ComponentId,
+		Id:          k.ConfigId,
+	}
+}
+
+func (k BlockKey) ParentKey() (Key, error) {
+	return k.ConfigKey(), nil
+}
+
+func (k CodeKey) Key() Key {
+	return k
+}
+
+func (k CodeKey) ConfigKey() Key {
+	return ConfigKey{
+		BranchId:    k.BranchId,
+		ComponentId: k.ComponentId,
+		Id:          k.ConfigId,
+	}
+}
+
+func (k CodeKey) BlockKey() Key {
+	return BlockKey{
+		BranchId:    k.BranchId,
+		ComponentId: k.ComponentId,
+		ConfigId:    k.ConfigId,
+		Index:       k.BlockIndex,
+	}
+}
+
+func (k CodeKey) ParentKey() (Key, error) {
+	return k.BlockKey(), nil
+}
+
+func (k BlockKey) String() string {
+	return fmt.Sprintf(`%s "branch:%d/component:%s/config:%s/block:%d"`, k.Kind().Name, k.BranchId, k.ComponentId, k.ConfigId, k.Index)
+}
+
+func (k CodeKey) String() string {
+	return fmt.Sprintf(`%s "branch:%d/component:%s/config:%s/block:%d/code:%d"`, k.Kind().Name, k.BranchId, k.ComponentId, k.ConfigId, k.BlockIndex, k.Index)
+}
+
+func (b Block) ConfigKey() ConfigKey {
+	return ConfigKey{BranchId: b.BranchId, ComponentId: b.ComponentId, Id: b.ConfigId}
+}
+
+func (c Code) ConfigKey() ConfigKey {
+	return ConfigKey{BranchId: c.BranchId, ComponentId: c.ComponentId, Id: c.ConfigId}
+}
+
+type Script interface {
+	Content() string
 }
 
 func (v UsedSharedCodeRows) IdsSlice() []interface{} {

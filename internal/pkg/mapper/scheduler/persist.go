@@ -32,7 +32,7 @@ func (m *schedulerMapper) MapBeforePersist(recipe *model.PersistRecipe) error {
 
 	// Branch must be same
 	if configKey.BranchKey() != configManifest.BranchKey() {
-		panic(fmt.Errorf(`child "%s" and parent "%s" must be from same branch`, configManifest.Desc(), configKey.Desc()))
+		panic(fmt.Errorf(`child "%s" and parent "%s" must be from same branch`, configManifest.String(), configKey.String()))
 	}
 
 	// Add relation

@@ -51,7 +51,7 @@ func (m *mapper) onConfigLocalLoad(config *model.Config) error {
 	target, ok := targetRaw.(string)
 	if !ok {
 		return utils.PrefixError(
-			fmt.Sprintf(`invalid %s`, config.Desc()),
+			fmt.Sprintf(`invalid %s`, config.String()),
 			fmt.Errorf(`key "%s" should be string, found "%T"`, model.ShareCodeTargetComponentKey, targetRaw),
 		)
 	}
@@ -68,7 +68,7 @@ func (m *mapper) onRowLocalLoad(config *model.Config, row *model.ConfigRow, reci
 
 	// Load file
 	codeFile, err := recipe.Files.
-		Load(m.state.NamingGenerator().SharedCodeFilePath(recipe.Path(), config.SharedCode.Target)).
+		Load(m.state.NamingGenerator().SharedCodeFilePath(recipe.String(), config.SharedCode.Target)).
 		SetDescription("shared code").
 		AddTag(model.FileTypeOther).
 		AddTag(model.FileKindNativeSharedCode).

@@ -17,5 +17,5 @@ type Manifest interface {
 	GetRecord(key model.Key) (model.ObjectManifest, bool)
 	CreateOrGetRecord(key model.Key) (record model.ObjectManifest, found bool, err error)
 	PersistRecord(model.ObjectManifest) error
-	Delete(object model.WithKey)
+	Remove(object model.WithKey)
 }

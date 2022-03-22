@@ -1,4 +1,4 @@
-package local
+package object
 
 import (
 	"fmt"
@@ -8,10 +8,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-func (m *Manager) createObject(key model.Key, name string) (model.Object, error) {
+func Create(key model.Key, name string, components *model.ComponentsMap) (model.Object, error) {
 	switch k := key.(type) {
 	case model.ConfigKey:
-		component, err := m.state.Components().Get(k.ComponentKey())
+		component, err := components.Get(k.ComponentKey())
 		if err != nil {
 			return nil, err
 		}
@@ -25,7 +25,7 @@ func (m *Manager) createObject(key model.Key, name string) (model.Object, error)
 			Content:   content,
 		}, nil
 	case model.ConfigRowKey:
-		component, err := m.state.Components().Get(k.ComponentKey())
+		component, err := components.Get(k.ComponentKey())
 		if err != nil {
 			return nil, err
 		}

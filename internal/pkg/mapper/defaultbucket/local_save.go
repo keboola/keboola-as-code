@@ -55,8 +55,8 @@ func (m *defaultBucketMapper) getDefaultBucketSourceConfig(config configOrRow, t
 	sourceConfigState, found := m.state.Get(sourceConfigKey)
 	if !found {
 		errors := utils.NewMultiError()
-		errors.Append(fmt.Errorf(`%s not found`, sourceConfigKey.Desc()))
-		errors.Append(fmt.Errorf(`  - referenced from %s`, config.Desc()))
+		errors.Append(fmt.Errorf(`%s not found`, sourceConfigKey.String()))
+		errors.Append(fmt.Errorf(`  - referenced from %s`, config.String()))
 		errors.Append(fmt.Errorf(`  - input mapping "%s"`, tableId))
 		return nil, false, errors
 	}

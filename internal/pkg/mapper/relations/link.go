@@ -51,7 +51,7 @@ func (m *relationsMapper) linkAndValidateRelations(object model.Object, allObjec
 			errors.Append(err)
 		}
 		if err := m.validateRelations(o); err != nil {
-			errors.Append(utils.PrefixError(fmt.Sprintf(`invalid %s`, object.Desc()), err))
+			errors.Append(utils.PrefixError(fmt.Sprintf(`invalid %s`, object.String()), err))
 		}
 	}
 	return errors.ErrorOrNil()
@@ -79,8 +79,8 @@ func (m *relationsMapper) linkRelations(object model.ObjectWithRelations, allObj
 		if !found {
 			// Remove invalid relation
 			relations.Remove(relation)
-			errors.Append(fmt.Errorf(`%s not found`, otherSideKey.Desc()))
-			errors.Append(fmt.Errorf(`  - referenced from %s`, object.Desc()))
+			errors.Append(fmt.Errorf(`%s not found`, otherSideKey.String()))
+			errors.Append(fmt.Errorf(`  - referenced from %s`, object.String()))
 			errors.Append(fmt.Errorf(`  - by relation "%s"`, relation.Type()))
 			continue
 		}
@@ -91,8 +91,8 @@ func (m *relationsMapper) linkRelations(object model.ObjectWithRelations, allObj
 		} else {
 			// Remove invalid relation
 			relations.Remove(relation)
-			errors.Append(fmt.Errorf(`%s cannot have relation`, otherSideKey.Desc()))
-			errors.Append(fmt.Errorf(`  - referenced from %s`, object.Desc()))
+			errors.Append(fmt.Errorf(`%s cannot have relation`, otherSideKey.String()))
+			errors.Append(fmt.Errorf(`  - referenced from %s`, object.String()))
 			errors.Append(fmt.Errorf(`  - by relation "%s"`, relation.Type()))
 			continue
 		}

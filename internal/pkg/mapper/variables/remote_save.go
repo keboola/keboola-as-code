@@ -36,7 +36,7 @@ func (m *variablesMapper) saveVariables(config *model.Config, recipe *model.Remo
 	relType := model.VariablesFromRelType
 	relationRaw, err := config.Relations.GetOneByType(relType)
 	if err != nil {
-		return nil, fmt.Errorf(`unexpected state of %s: %w`, recipe.Desc(), err)
+		return nil, fmt.Errorf(`unexpected state of %s: %w`, recipe.String(), err)
 	} else if relationRaw == nil {
 		return nil, nil
 	}
@@ -55,7 +55,7 @@ func (m *variablesMapper) saveVariablesValues(config *model.Config, recipe *mode
 	relType := model.VariablesValuesFromRelType
 	relationRaw, err := config.Relations.GetOneByType(relType)
 	if err != nil {
-		return fmt.Errorf(`unexpected state of %s: %w`, recipe.Desc(), err)
+		return fmt.Errorf(`unexpected state of %s: %w`, recipe.String(), err)
 	} else if relationRaw == nil {
 		return nil
 	}

@@ -35,7 +35,7 @@ func (c *Collection) Add(objects ...Object) error {
 	for _, object := range objects {
 		key := object.Key()
 		if c.has(key) {
-			errors.Append(fmt.Errorf(`%s already exists`, key.Desc()))
+			errors.Append(fmt.Errorf(`%s already exists`, key.String()))
 		} else if err := c.add(object); err != nil {
 			errors.Append(err)
 		}
@@ -115,7 +115,7 @@ func (c *Collection) GetOrNil(key Key) Object {
 func (c *Collection) MustGet(key Key) Object {
 	state, found := c.Get(key)
 	if !found {
-		panic(fmt.Errorf(`%s not found`, key.Desc()))
+		panic(fmt.Errorf(`%s not found`, key.String()))
 	}
 	return state
 }
@@ -202,11 +202,11 @@ func (c *Collection) ConfigRowsFrom(config ConfigKey) (rows []*ConfigRow) {
 func (c *Collection) add(object Object) error {
 	parentKey, err := object.ParentKey()
 	if err != nil {
-		return fmt.Errorf("objects collection: cannot add %s: %w", object.Desc(), err)
+		return fmt.Errorf("objects collection: cannot add %s: %w", object.String(), err)
 	}
 
 	if parentKey != nil && !c.has(parentKey) {
-		return fmt.Errorf("objects collection: cannot add %s: parent %s not found", object.Desc(), parentKey.Kind().Name)
+		return fmt.Errorf("objects collection: cannot add %s: parent %s not found", object.String(), parentKey.Kind().Name)
 	}
 
 	c.objects.Set(object.Key().String(), object)

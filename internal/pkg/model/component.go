@@ -13,6 +13,8 @@ import (
 )
 
 const (
+	ComponentKind            = "component"
+	ComponentAbbr            = "COM"
 	VariablesComponentId     = ComponentId(`keboola.variables`)
 	SchedulerComponentId     = ComponentId("keboola.scheduler")
 	DeprecatedFlag           = `deprecated`
@@ -20,6 +22,53 @@ const (
 	ComponentTypeCodePattern = `code-pattern`
 	ComponentTypeProcessor   = `processor`
 )
+
+type ComponentId string
+
+type ComponentKey struct {
+	Id ComponentId `json:"id" validate:"required"`
+}
+
+func (k Kind) IsComponent() bool {
+	return k.Name == ComponentKind
+}
+
+func (v ComponentId) String() string {
+	return string(v)
+}
+
+func (v ComponentId) WithoutVendor() string {
+	parts := strings.SplitN(string(v), ".", 2)
+	if len(parts) == 1 {
+		// A component without vendor
+		return parts[0]
+	}
+	return parts[1]
+}
+
+func (k ComponentKey) Level() int {
+	return 2
+}
+
+func (k ComponentKey) Kind() Kind {
+	return Kind{Name: ComponentKind, Abbr: ComponentAbbr}
+}
+
+func (k ComponentKey) String() string {
+	return fmt.Sprintf(`%s "%s"`, k.Kind().Name, k.Id)
+}
+
+func (k ComponentKey) Key() Key {
+	return k
+}
+
+func (k ComponentKey) ParentKey() (Key, error) {
+	return nil, nil // Component is top level object
+}
+
+func (k ComponentKey) ObjectId() string {
+	return k.Id.String()
+}
 
 // Component https://keboola.docs.apiary.io/#reference/components-and-configurations/get-development-branch-components/get-development-branch-components
 type Component struct {

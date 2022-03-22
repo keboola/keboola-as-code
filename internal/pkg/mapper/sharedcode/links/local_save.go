@@ -49,8 +49,8 @@ func (m *mapper) replaceSharedCodeIdByPath(transformation *model.Config) error {
 	// Check if shared code is found
 	if !found {
 		return utils.PrefixError(
-			fmt.Sprintf(`missing shared code %s`, sharedCodeKey.Desc()),
-			fmt.Errorf(`referenced from %s`, transformation.Desc()),
+			fmt.Sprintf(`missing shared code %s`, sharedCodeKey.String()),
+			fmt.Errorf(`referenced from %s`, transformation.String()),
 		)
 	}
 

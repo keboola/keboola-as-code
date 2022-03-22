@@ -74,7 +74,7 @@ func (m *transformationMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe
 				if path, found := m.state.GetPath(code.Key()); found {
 					code.AbsPath = path
 				} else {
-					code.AbsPath = m.state.NamingGenerator().CodePath(block.Path(), code)
+					code.AbsPath = m.state.NamingGenerator().CodePath(block.String(), code)
 				}
 				code.CodeFileName = m.state.NamingGenerator().CodeFileName(config.ComponentId)
 			}

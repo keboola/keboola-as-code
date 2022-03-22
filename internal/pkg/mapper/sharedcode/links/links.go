@@ -36,8 +36,8 @@ func (m *mapper) linkToIdPlaceholder(code *model.Code, link model.Script) (model
 		script := model.StaticScript{Value: m.id.format(row.Id)}
 		if !ok {
 			return script, utils.PrefixError(
-				fmt.Sprintf(`missing shared code "%s"`, link.Target.Desc()),
-				fmt.Errorf(`referenced from %s`, code.Path()),
+				fmt.Sprintf(`missing shared code "%s"`, link.Target.String()),
+				fmt.Errorf(`referenced from %s`, code.String()),
 			)
 		}
 		return script, nil
@@ -51,8 +51,8 @@ func (m *mapper) linkToPathPlaceholder(code *model.Code, link model.Script, shar
 		if !ok || sharedCode == nil {
 			// Return ID placeholder, if row is not found
 			return model.StaticScript{Value: m.id.format(link.Target.Id)}, utils.PrefixError(
-				fmt.Sprintf(`missing shared code %s`, link.Target.Desc()),
-				fmt.Errorf(`referenced from %s`, code.Path()),
+				fmt.Sprintf(`missing shared code %s`, link.Target.String()),
+				fmt.Errorf(`referenced from %s`, code.String()),
 			)
 		}
 
@@ -83,8 +83,8 @@ func (m *mapper) parseIdPlaceholder(code *model.Code, script model.Script, share
 	row, found := m.state.GetOrNil(rowKey).(*model.ConfigRowState)
 	if !found {
 		return nil, nil, utils.PrefixError(
-			fmt.Sprintf(`missing shared code %s`, rowKey.Desc()),
-			fmt.Errorf(`referenced from %s`, code.Path()),
+			fmt.Sprintf(`missing shared code %s`, rowKey.String()),
+			fmt.Errorf(`referenced from %s`, code.String()),
 		)
 	}
 
@@ -105,7 +105,7 @@ func (m *mapper) parsePathPlaceholder(code *model.Code, script model.Script, sha
 	if err != nil {
 		return nil, nil, utils.PrefixError(
 			err.Error(),
-			fmt.Errorf(`referenced from "%s"`, code.Path()),
+			fmt.Errorf(`referenced from "%s"`, code.String()),
 		)
 	}
 

@@ -11,6 +11,25 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
+const (
+	PhaseKind = "phase"
+	TaskKind  = "task"
+	PhaseAbbr = "p"
+	TaskAbbr  = "t"
+)
+
+type PhaseKey struct {
+	BranchId    BranchId    `json:"-" validate:"required_in_project" `
+	ComponentId ComponentId `json:"-" validate:"required" `
+	ConfigId    ConfigId    `json:"-" validate:"required" `
+	Index       int         `json:"-" validate:"min=0" `
+}
+
+type TaskKey struct {
+	PhaseKey `json:"-" validate:"dive" `
+	Index    int `json:"-" validate:"min=0" `
+}
+
 type Orchestration struct {
 	Phases []*Phase
 }
@@ -32,6 +51,66 @@ type Task struct {
 	ConfigId    ConfigId               `validate:"required"`
 	ConfigPath  string                 // target config path if any
 	Content     *orderedmap.OrderedMap `validate:"dive"`
+}
+
+func (k PhaseKey) Kind() Kind {
+	return Kind{Name: PhaseKind, Abbr: PhaseAbbr}
+}
+
+func (k TaskKey) Kind() Kind {
+	return Kind{Name: TaskKind, Abbr: TaskAbbr}
+}
+
+func (k PhaseKey) ObjectId() string {
+	return cast.ToString(k.Index)
+}
+
+func (k TaskKey) ObjectId() string {
+	return cast.ToString(k.Index)
+}
+
+func (k PhaseKey) Level() int {
+	return 5
+}
+
+func (k TaskKey) Level() int {
+	return 6
+}
+
+func (k PhaseKey) Key() Key {
+	return k
+}
+
+func (k TaskKey) Key() Key {
+	return k
+}
+
+func (k TaskKey) String() string {
+	return fmt.Sprintf(`%s "branch:%d/component:%s/config:%s/phase:%d/task:%d"`, k.Kind().Name, k.BranchId, k.ComponentId, k.ConfigId, k.PhaseKey.Index, k.Index)
+}
+
+func (k PhaseKey) String() string {
+	return fmt.Sprintf(`%s "branch:%d/component:%s/config:%s/phase:%d"`, k.Kind().Name, k.BranchId, k.ComponentId, k.ConfigId, k.Index)
+}
+
+func (k PhaseKey) ConfigKey() ConfigKey {
+	return ConfigKey{
+		BranchId:    k.BranchId,
+		ComponentId: k.ComponentId,
+		Id:          k.ConfigId,
+	}
+}
+
+func (k PhaseKey) ParentKey() (Key, error) {
+	return k.ConfigKey(), nil
+}
+
+func (k TaskKey) ConfigKey() ConfigKey {
+	return k.PhaseKey.ConfigKey()
+}
+
+func (k TaskKey) ParentKey() (Key, error) {
+	return k.PhaseKey, nil
 }
 
 func (p Phase) String() string {
@@ -74,7 +153,7 @@ func (t *UsedInOrchestratorRelation) Type() RelationType {
 	return UsedInOrchestratorRelType
 }
 
-func (t *UsedInOrchestratorRelation) Desc() string {
+func (t *UsedInOrchestratorRelation) String() string {
 	return fmt.Sprintf(`used in orchestrator "%s"`, t.ConfigId)
 }
 

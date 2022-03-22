@@ -49,7 +49,7 @@ func loadFile(fs filesystem.Fs) (*file, error) {
 		template.AbsPath.SetParentPath(``)
 		for j := range template.Versions {
 			version := &template.Versions[j]
-			version.AbsPath.SetParentPath(template.Path())
+			version.AbsPath.SetParentPath(template.String())
 		}
 	}
 

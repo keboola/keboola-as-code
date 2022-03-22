@@ -63,9 +63,9 @@ func (b *persistPlanBuilder) build() {
 	})
 }
 
-func (b *persistPlanBuilder) tryAdd(fullPath string, parent model.RecordPaths) bool {
+func (b *persistPlanBuilder) tryAdd(fullPath string, parent model.RecordPath) bool {
 	// Is path from the parent?
-	parentPath := parent.Path()
+	parentPath := parent.String()
 	if !filesystem.IsFrom(fullPath, parentPath) {
 		return false
 	}
@@ -75,7 +75,7 @@ func (b *persistPlanBuilder) tryAdd(fullPath string, parent model.RecordPaths) b
 		return false
 	}
 
-	path := model.NewAbsPath(parent.Path(), objectPath)
+	path := model.NewAbsPath(parent.String(), objectPath)
 
 	// Add object according to the parent type
 	switch parent := parent.(type) {
@@ -172,9 +172,9 @@ func (b *persistPlanBuilder) addAction(action action) {
 	b.actions = append(b.actions, action)
 
 	// Process children of the new object
-	if parent, ok := action.(model.RecordPaths); ok {
+	if parent, ok := action.(model.RecordPath); ok {
 		paths := b.State.PathsState() // clone paths state
-		for _, path := range paths.UntrackedDirsFrom(parent.Path()) {
+		for _, path := range paths.UntrackedDirsFrom(parent.String()) {
 			if paths.IsTracked(path) {
 				// path is already tracked
 				// it is some new object's sub dir

@@ -394,19 +394,19 @@ func (*testMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
 
 func (t *testMapper) AfterRemoteOperation(changes *model.RemoteChanges) error {
 	for _, objectState := range changes.Loaded() {
-		t.remoteChanges = append(t.remoteChanges, fmt.Sprintf(`loaded %s`, objectState.Desc()))
+		t.remoteChanges = append(t.remoteChanges, fmt.Sprintf(`loaded %s`, objectState.String()))
 	}
 	for _, objectState := range changes.Created() {
-		t.remoteChanges = append(t.remoteChanges, fmt.Sprintf(`created %s`, objectState.Desc()))
+		t.remoteChanges = append(t.remoteChanges, fmt.Sprintf(`created %s`, objectState.String()))
 	}
 	for _, objectState := range changes.Updated() {
-		t.remoteChanges = append(t.remoteChanges, fmt.Sprintf(`updated %s`, objectState.Desc()))
+		t.remoteChanges = append(t.remoteChanges, fmt.Sprintf(`updated %s`, objectState.String()))
 	}
 	for _, objectState := range changes.Saved() {
-		t.remoteChanges = append(t.remoteChanges, fmt.Sprintf(`saved %s`, objectState.Desc()))
+		t.remoteChanges = append(t.remoteChanges, fmt.Sprintf(`saved %s`, objectState.String()))
 	}
 	for _, objectState := range changes.Deleted() {
-		t.remoteChanges = append(t.remoteChanges, fmt.Sprintf(`deleted %s`, objectState.Desc()))
+		t.remoteChanges = append(t.remoteChanges, fmt.Sprintf(`deleted %s`, objectState.String()))
 	}
 	return nil
 }

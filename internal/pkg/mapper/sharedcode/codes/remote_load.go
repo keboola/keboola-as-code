@@ -45,7 +45,7 @@ func (m *mapper) onConfigRemoteLoad(config *model.Config) error {
 	target, ok := targetRaw.(string)
 	if !ok {
 		return utils.PrefixError(
-			fmt.Sprintf(`invalid %s`, config.Desc()),
+			fmt.Sprintf(`invalid %s`, config.String()),
 			fmt.Errorf(`key "%s" should be string, found "%T"`, model.ShareCodeTargetComponentKey, targetRaw),
 		)
 	}
@@ -83,7 +83,7 @@ func (m *mapper) onRowRemoteLoad(config *model.Config, row *model.ConfigRow) err
 		scripts = model.ScriptsFromSlice(v)
 	default:
 		return utils.PrefixError(
-			fmt.Sprintf(`invalid %s`, row.Desc()),
+			fmt.Sprintf(`invalid %s`, row.String()),
 			fmt.Errorf(`key "%s" should be string or array, found "%T"`, model.SharedCodeContentKey, raw),
 		)
 	}

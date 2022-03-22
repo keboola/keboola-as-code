@@ -140,13 +140,13 @@ func (d *inputsSelectDialog) parseInputLine(objectKey model.Key, line string, li
 		// Get all object fields
 		objectFields, found := d.objectFields[objectKey]
 		if !found {
-			return fmt.Errorf(`line %d: %s not found`, lineNum, objectKey.Desc())
+			return fmt.Errorf(`line %d: %s not found`, lineNum, objectKey.String())
 		}
 
 		// Get field by path
 		field, found := objectFields[fieldPath]
 		if !found {
-			return fmt.Errorf(`line %d: field "%s" not found in the %s`, lineNum, fieldPath, objectKey.Desc())
+			return fmt.Errorf(`line %d: field "%s" not found in the %s`, lineNum, fieldPath, objectKey.String())
 		}
 
 		// Modify input ID, if it has been changed by use.

@@ -21,7 +21,7 @@ type UnitOfWork interface {
 	Invoke() error
 	LoadAll()
 	Save(object model.Object, changedFields model.ChangedFields)
-	Delete(object model.Object)
+	Delete(key model.Key)
 }
 
 type _state = State
@@ -130,7 +130,12 @@ func (u *uow) Save(object model.Object, changedFields model.ChangedFields) {
 }
 
 // Delete remote object.
-func (u *uow) Delete(object model.Object) {
+func (u *uow) Delete(key model.Key) {
+	object, found := u.Get(key)
+	if !found {
+		return
+	}
+
 	if branch, ok := object.(*model.Branch); ok && branch.IsDefault {
 		u.errors.Append(fmt.Errorf("default branch cannot be deleted"))
 		return

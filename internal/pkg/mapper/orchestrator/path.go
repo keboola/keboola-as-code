@@ -25,17 +25,17 @@ func (m *orchestratorMapper) OnObjectPathUpdate(event model.OnObjectPathUpdateEv
 
 func (m *orchestratorMapper) updatePhasePath(g model.PathsGenerator, parent *model.ConfigState, phase *model.Phase) {
 	// Update parent path
-	oldPath := phase.Path()
+	oldPath := phase.String()
 	phasesDir := m.state.NamingGenerator().PhasesDir(parent.Path())
 	phase.SetParentPath(phasesDir)
 
 	// Re-generate object path IF rename is enabled OR path is not set
 	if phase.RelativePath == "" || g.RenameEnabled() {
-		renameFrom := phase.Path()
+		renameFrom := phase.String()
 		phase.AbsPath = m.state.NamingGenerator().PhasePath(phase.GetParentPath(), phase)
 
 		// Has been phase renamed?
-		newPath := phase.Path()
+		newPath := phase.String()
 		if renameFrom != newPath {
 			g.AddRenamed(model.RenamedPath{ObjectState: parent, OldPath: oldPath, RenameFrom: renameFrom, NewPath: newPath})
 		}
@@ -49,15 +49,15 @@ func (m *orchestratorMapper) updatePhasePath(g model.PathsGenerator, parent *mod
 
 func (m *orchestratorMapper) updateTaskPath(g model.PathsGenerator, parent *model.ConfigState, phase *model.Phase, task *model.Task) {
 	// Update parent path
-	oldPath := task.Path()
-	task.SetParentPath(phase.Path())
+	oldPath := task.String()
+	task.SetParentPath(phase.String())
 
 	// Re-generate object path IF rename is enabled OR path is not set
 	if task.RelativePath == "" || g.RenameEnabled() {
-		renameFrom := task.Path()
+		renameFrom := task.String()
 		task.AbsPath = m.state.NamingGenerator().TaskPath(task.GetParentPath(), task)
 		// Has been task renamed?
-		newPath := task.Path()
+		newPath := task.String()
 		if renameFrom != newPath {
 			g.AddRenamed(model.RenamedPath{ObjectState: parent, OldPath: oldPath, RenameFrom: renameFrom, NewPath: newPath})
 		}

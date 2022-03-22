@@ -49,7 +49,7 @@ func (m *orchestratorMapper) onObjectsRename(renamed []model.RenameAction, allOb
 	if len(orchestratorsToUpdate) > 0 {
 		m.logger.Debug(`Need to update orchestrators:`)
 		for _, key := range orchestratorsToUpdate {
-			m.logger.Debugf(`  - %s`, key.Desc())
+			m.logger.Debugf(`  - %s`, key.String())
 			orchestrator := m.state.MustGet(key)
 			uow.SaveObject(orchestrator, orchestrator.LocalState(), model.NewChangedFields(`orchestrator`))
 		}

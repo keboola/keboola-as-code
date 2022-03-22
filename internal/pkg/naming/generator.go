@@ -82,7 +82,7 @@ func (g Generator) ConfigPath(parentPath string, component *Component, config *C
 	switch {
 	case (parentKind.IsEmpty() || parentKind.IsBranch()) && component.IsSharedCode():
 		if config.SharedCode == nil {
-			panic(fmt.Errorf(`invalid shared code %s, value is not set`, config.Desc()))
+			panic(fmt.Errorf(`invalid shared code %s, value is not set`, config.String()))
 		}
 		// Shared code
 		template = string(g.template.SharedCodeConfig)
@@ -193,7 +193,7 @@ func (g Generator) CodePath(parentPath string, code *Code) AbsPath {
 }
 
 func (g Generator) CodeFilePath(code *Code) string {
-	return filesystem.Join(code.Path(), code.CodeFileName)
+	return filesystem.Join(code.String(), code.CodeFileName)
 }
 
 func (g Generator) SharedCodeFilePath(parentPath string, targetComponentId ComponentId) string {
@@ -219,7 +219,7 @@ func (g Generator) PhasePath(parentPath string, phase *Phase) AbsPath {
 }
 
 func (g Generator) PhaseFilePath(phase *Phase) string {
-	return filesystem.Join(phase.Path(), PhaseFile)
+	return filesystem.Join(phase.String(), PhaseFile)
 }
 
 func (g Generator) TaskPath(parentPath string, task *Task) AbsPath {
@@ -233,5 +233,5 @@ func (g Generator) TaskPath(parentPath string, task *Task) AbsPath {
 }
 
 func (g Generator) TaskFilePath(task *Task) string {
-	return filesystem.Join(task.Path(), TaskFile)
+	return filesystem.Join(task.String(), TaskFile)
 }

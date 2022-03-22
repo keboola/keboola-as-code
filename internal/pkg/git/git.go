@@ -105,7 +105,7 @@ func CheckoutTemplateRepository(opts CheckoutOptions, logger log.Logger) (filesy
 		}
 
 		// Checkout template src directory
-		srcDir := filesystem.Join(versionRecord.Path(), template.SrcDirectory)
+		srcDir := filesystem.Join(versionRecord.String(), template.SrcDirectory)
 		err, stdErr, _ = runGitCommand(logger, dir, []string{"sparse-checkout", "add", fmt.Sprintf("/%s", srcDir)})
 		if err != nil {
 			return nil, fmt.Errorf(stdErr)

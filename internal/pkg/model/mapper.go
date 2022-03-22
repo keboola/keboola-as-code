@@ -156,12 +156,12 @@ type LocalLoadRecipe struct {
 
 // LocalSaveRecipe - all items related to the object, when saving to local fs.
 type LocalSaveRecipe struct {
-	ChangedFields  ChangedFields
-	ObjectManifest                        // manifest record, eg *ConfigManifest
-	Object         Object                 // object, eg. Config
-	Files          *FilesToSave           // eg. config.json, meta.json, description.md, ...
-	ToDelete       []string               // paths to delete, on save
-	Annotations    map[string]interface{} // key/value pairs that can be used by to affect mappers behavior
+	ChangedFields ChangedFields
+	Object        Object                 // object, eg. Config
+	Path          AbsPath                // path to the object directory
+	Files         *FilesToSave           // eg. config.json, meta.json, description.md, ...
+	ToDelete      []string               // paths to delete, on save
+	Annotations   map[string]interface{} // key/value pairs that can be used by to affect mappers behavior
 }
 
 // RemoteLoadRecipe - all items related to the object, when loading from Storage API.
@@ -206,13 +206,13 @@ func NewLocalLoadRecipe(fsLoader filesystem.FileLoader, manifest ObjectManifest,
 	}
 }
 
-func NewLocalSaveRecipe(manifest ObjectManifest, object Object, changedFields ChangedFields) *LocalSaveRecipe {
+func NewLocalSaveRecipe(path AbsPath, object Object, changedFields ChangedFields) *LocalSaveRecipe {
 	return &LocalSaveRecipe{
-		ChangedFields:  changedFields,
-		Object:         object,
-		ObjectManifest: manifest,
-		Files:          NewFilesToSave(),
-		Annotations:    make(map[string]interface{}),
+		ChangedFields: changedFields,
+		Object:        object,
+		Path:          path,
+		Files:         NewFilesToSave(),
+		Annotations:   make(map[string]interface{}),
 	}
 }
 

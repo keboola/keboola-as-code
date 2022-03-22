@@ -1,4 +1,4 @@
-package local
+package operation
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
-type modelWriter struct {
+type objectWriter struct {
 	*Manager
 	*model.LocalSaveRecipe
 	ctx     context.Context
@@ -18,16 +18,13 @@ type modelWriter struct {
 	errors  *utils.MultiError
 }
 
-// saveObject to manifest and filesystem.
-func (m *Manager) saveObject(ctx context.Context, manifest model.ObjectManifest, object model.Object, changedFields model.ChangedFields) error {
-	if manifest.Key() != object.Key() {
-		panic(fmt.Errorf(`manifest "%T" and object "%T" type mismatch`, manifest, object))
-	}
-
+// SaveObject to manifest and filesystem.
+func (m *Manager) SaveObject(ctx context.Context, object model.Object, changedFields model.ChangedFields) error {
+	path := m.pathTo(object.Key())
 	objectClone := deepcopy.Copy(object).(model.Object)
-	w := modelWriter{
+	w := objectWriter{
 		Manager:         m,
-		LocalSaveRecipe: model.NewLocalSaveRecipe(manifest, objectClone, changedFields),
+		LocalSaveRecipe: model.NewLocalSaveRecipe(path, objectClone, changedFields),
 		ctx:             ctx,
 		backups:         make(map[string]string),
 		errors:          utils.NewMultiError(),
@@ -35,10 +32,10 @@ func (m *Manager) saveObject(ctx context.Context, manifest model.ObjectManifest,
 	return w.save()
 }
 
-func (w *modelWriter) save() error {
+func (w *objectWriter) save() error {
 	// Validate
 	if err := validator.Validate(w.ctx, w.Object); err != nil {
-		w.errors.AppendWithPrefix(fmt.Sprintf(`%s "%s" is invalid`, w.Kind().Name, w.Path()), err)
+		w.errors.AppendWithPrefix(fmt.Sprintf(`%s "%s" is invalid`, w.Object.Kind().Name, w.Path.String()), err)
 		return w.errors
 	}
 
@@ -60,7 +57,7 @@ func (w *modelWriter) save() error {
 	return w.errors.ErrorOrNil()
 }
 
-func (w *modelWriter) write() {
+func (w *objectWriter) write() {
 	// Existing files are backed up, if the operation fails, they will be restored
 	defer w.restoreBackups()
 
@@ -81,6 +78,7 @@ func (w *modelWriter) write() {
 	}
 
 	// Write new files
+	relatedPaths := model.RelatedPaths()
 	for _, file := range w.Files.All() {
 		// Convert to File, eg. JsonFile -> File
 		fileRaw, err := file.ToRawFile()
@@ -103,9 +101,11 @@ func (w *modelWriter) write() {
 
 	// Cleanup - remove backups
 	w.removeBackups()
+
+	// Update related paths
 }
 
-func (w *modelWriter) softDelete(path string) error {
+func (w *objectWriter) softDelete(path string) error {
 	src := path
 	dst := src + `.old`
 	if !w.fs.IsFile(src) {
@@ -120,7 +120,7 @@ func (w *modelWriter) softDelete(path string) error {
 }
 
 // restoreBackups if operation fails.
-func (w *modelWriter) restoreBackups() {
+func (w *objectWriter) restoreBackups() {
 	if w.errors.Len() > 0 {
 		for dst, src := range w.backups {
 			if err := w.fs.Move(src, dst); err != nil {
@@ -131,7 +131,7 @@ func (w *modelWriter) restoreBackups() {
 }
 
 // removeBackups if all is ok.
-func (w *modelWriter) removeBackups() {
+func (w *objectWriter) removeBackups() {
 	for _, path := range w.backups {
 		if err := w.fs.Remove(path); err != nil {
 			w.logger.Debug(fmt.Errorf(`cannot remove backup "%s": %w`, path, err))

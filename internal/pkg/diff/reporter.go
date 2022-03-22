@@ -117,12 +117,12 @@ func (r *Reporter) relationToString(relation model.Relation, definedOn Object) s
 	otherSideKey, _, err := relation.NewOtherSideRelation(definedOn.Object, definedOn.All)
 	if err == nil && otherSideKey != nil {
 		if path, found := r.naming.PathByKey(otherSideKey); found {
-			otherSideDesc = `"` + path.Path() + `"`
+			otherSideDesc = `"` + path.String() + `"`
 		} else {
-			otherSideDesc = otherSideKey.Desc()
+			otherSideDesc = otherSideKey.String()
 		}
 	}
-	return relation.Desc() + ` ` + otherSideDesc
+	return relation.String() + ` ` + otherSideDesc
 }
 
 func (r *Reporter) stringsDiff(remoteValue, localValue reflect.Value) ([]string, bool) {
@@ -178,7 +178,7 @@ func (r *Reporter) pathToString(path cmp.Path) string {
 
 func (r *Reporter) objectPath(value reflect.Value) string {
 	if value.IsValid() {
-		if v, ok := value.Interface().(model.RecordPaths); ok {
+		if v, ok := value.Interface().(model.RecordPath); ok {
 			return v.GetRelativePath()
 		}
 	}

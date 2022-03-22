@@ -27,7 +27,7 @@ func (v *TemplateRecord) AddVersion(version model.SemVersion) VersionRecord {
 	record := VersionRecord{
 		Version: version,
 		Stable:  false,
-		AbsPath: model.NewAbsPath(v.Path(), fmt.Sprintf(`v%d`, version.Major())),
+		AbsPath: model.NewAbsPath(v.String(), fmt.Sprintf(`v%d`, version.Major())),
 	}
 	v.Versions = append(v.Versions, record)
 	return record

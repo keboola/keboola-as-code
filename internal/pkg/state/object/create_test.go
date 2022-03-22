@@ -1,4 +1,4 @@
-package local
+package object
 
 import (
 	jsonlib "encoding/json"
@@ -13,11 +13,9 @@ import (
 
 func TestLocalCreateConfigDefaultContent(t *testing.T) {
 	t.Parallel()
-	manager := newTestLocalManager(t)
-
-	// Mocked component
+	components := model.NewComponentsMap(nil)
 	component := getTestComponent()
-	manager.state.Components().Set(component)
+	components.Set(component)
 
 	// Empty config (used)
 	component.EmptyConfig = orderedmap.FromPairs([]orderedmap.Pair{
@@ -37,7 +35,7 @@ func TestLocalCreateConfigDefaultContent(t *testing.T) {
 		ComponentId: `keboola.foo`,
 		Id:          "456",
 	}
-	object, err := manager.createObject(key, "New Config")
+	object, err := Create(key, "New Config", components)
 	assert.NoError(t, err)
 
 	// Assert
@@ -50,11 +48,9 @@ func TestLocalCreateConfigDefaultContent(t *testing.T) {
 
 func TestLocalCreateConfigRowDefaultContent(t *testing.T) {
 	t.Parallel()
-	manager := newTestLocalManager(t)
-
-	// Mocked component
+	components := model.NewComponentsMap(nil)
 	component := getTestComponent()
-	manager.state.Components().Set(component)
+	components.Set(component)
 
 	// Empty config (used)
 	component.EmptyConfigRow = orderedmap.FromPairs([]orderedmap.Pair{
@@ -75,7 +71,7 @@ func TestLocalCreateConfigRowDefaultContent(t *testing.T) {
 		ConfigId:    "567",
 		Id:          "789",
 	}
-	object, err := manager.createObject(key, "New Row")
+	object, err := Create(key, "New Row", components)
 	assert.NoError(t, err)
 
 	// Assert
@@ -88,11 +84,9 @@ func TestLocalCreateConfigRowDefaultContent(t *testing.T) {
 
 func TestLocalCreateConfigContentFromSchema(t *testing.T) {
 	t.Parallel()
-	manager := newTestLocalManager(t)
-
-	// Mocked component
+	components := model.NewComponentsMap(nil)
 	component := getTestComponent()
-	manager.state.Components().Set(component)
+	components.Set(component)
 
 	// Schema (used)
 	component.Schema = getTestSchema()
@@ -103,7 +97,7 @@ func TestLocalCreateConfigContentFromSchema(t *testing.T) {
 		ComponentId: `keboola.foo`,
 		Id:          "456",
 	}
-	object, err := manager.createObject(key, "New Config")
+	object, err := Create(key, "New Config", components)
 	assert.NoError(t, err)
 
 	// Assert
@@ -116,11 +110,9 @@ func TestLocalCreateConfigContentFromSchema(t *testing.T) {
 
 func TestLocalCreateConfigRowContentFromSchema(t *testing.T) {
 	t.Parallel()
-	manager := newTestLocalManager(t)
-
-	// Mocked component
+	components := model.NewComponentsMap(nil)
 	component := getTestComponent()
-	manager.state.Components().Set(component)
+	components.Set(component)
 
 	// Schema (used)
 	component.SchemaRow = getTestSchema()
@@ -132,7 +124,7 @@ func TestLocalCreateConfigRowContentFromSchema(t *testing.T) {
 		ConfigId:    "567",
 		Id:          "789",
 	}
-	object, err := manager.createObject(key, "New Row")
+	object, err := Create(key, "New Row", components)
 	assert.NoError(t, err)
 
 	// Assert
@@ -145,11 +137,9 @@ func TestLocalCreateConfigRowContentFromSchema(t *testing.T) {
 
 func TestLocalCreateConfigEmptyContent(t *testing.T) {
 	t.Parallel()
-	manager := newTestLocalManager(t)
-
-	// Mocked component
+	components := model.NewComponentsMap(nil)
 	component := getTestComponent()
-	manager.state.Components().Set(component)
+	components.Set(component)
 
 	// Create
 	key := model.ConfigKey{
@@ -157,7 +147,7 @@ func TestLocalCreateConfigEmptyContent(t *testing.T) {
 		ComponentId: `keboola.foo`,
 		Id:          "456",
 	}
-	object, err := manager.createObject(key, "New Config")
+	object, err := Create(key, "New Config", components)
 	assert.NoError(t, err)
 
 	// Assert
@@ -170,11 +160,9 @@ func TestLocalCreateConfigEmptyContent(t *testing.T) {
 
 func TestLocalCreateConfigRowEmptyContent(t *testing.T) {
 	t.Parallel()
-	manager := newTestLocalManager(t)
-
-	// Mocked component
+	components := model.NewComponentsMap(nil)
 	component := getTestComponent()
-	manager.state.Components().Set(component)
+	components.Set(component)
 
 	// Create
 	key := model.ConfigRowKey{
@@ -183,7 +171,7 @@ func TestLocalCreateConfigRowEmptyContent(t *testing.T) {
 		ConfigId:    "567",
 		Id:          "789",
 	}
-	object, err := manager.createObject(key, "New Row")
+	object, err := Create(key, "New Row", components)
 	assert.NoError(t, err)
 
 	// Assert

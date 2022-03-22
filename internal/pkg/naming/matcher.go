@@ -27,7 +27,7 @@ func (m PathMatcher) MatchConfigPath(parentKey Key, path AbsPath) (componentId C
 			// Get component ID
 			componentId, ok := matches["component_id"]
 			if !ok || componentId == "" {
-				return "", fmt.Errorf(`config'm component id cannot be determined, path: "%s", path template: "%s"`, path.Path(), m.template.Config)
+				return "", fmt.Errorf(`config'm component id cannot be determined, path: "%s", path template: "%s"`, path.String(), m.template.Config)
 			}
 			return ComponentId(componentId), nil
 		}

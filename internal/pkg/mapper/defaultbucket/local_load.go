@@ -63,7 +63,7 @@ func (m *defaultBucketMapper) replacePlaceholderWithDefaultBucket(
 	if !found || !sourceConfigState.HasLocalState() {
 		return fmt.Errorf(
 			`%s contains table "%s" in input mapping referencing to a non-existing configuration`,
-			targetConfig.Desc(),
+			targetConfig.String(),
 			inputTableSource,
 		)
 	}

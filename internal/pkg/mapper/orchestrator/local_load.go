@@ -18,12 +18,12 @@ func (m *orchestratorMapper) onLocalLoad(config *model.Config, manifest *model.C
 		allObjects:   allObjects,
 		config:       config,
 		manifest:     manifest,
-		phasesDir:    m.state.NamingGenerator().PhasesDir(manifest.Path()),
+		phasesDir:    m.state.NamingGenerator().PhasesDir(manifest.String()),
 		errors:       utils.NewMultiError(),
 	}
 
 	if err := loader.load(); err != nil {
-		return utils.PrefixError(fmt.Sprintf(`invalid orchestrator config "%s"`, manifest.Path()), err)
+		return utils.PrefixError(fmt.Sprintf(`invalid orchestrator config "%s"`, manifest.String()), err)
 	}
 	return nil
 }
@@ -106,7 +106,7 @@ func (l *localLoader) addPhase(phaseIndex int, path string) (*model.Phase, []str
 	}
 
 	// Track phase path
-	l.manifest.AddRelatedPath(phase.Path())
+	l.manifest.AddRelatedPath(phase.String())
 
 	// Parse config file
 	dependsOn, err := l.parsePhaseConfig(phase)
@@ -117,11 +117,11 @@ func (l *localLoader) addTask(taskIndex int, phase *model.Phase, path string) (*
 	// Create struct
 	task := &model.Task{
 		TaskKey: model.TaskKey{Index: taskIndex},
-		AbsPath: model.NewAbsPath(phase.Path(), path),
+		AbsPath: model.NewAbsPath(phase.String(), path),
 	}
 
 	// Track task path
-	l.manifest.AddRelatedPath(task.Path())
+	l.manifest.AddRelatedPath(task.String())
 
 	// Parse config file
 	return task, l.parseTaskConfig(task)
@@ -249,9 +249,9 @@ func (l *localLoader) phasesDirs() []string {
 }
 
 func (l *localLoader) tasksDirs(phase *model.Phase) []string {
-	dirs, err := filesystem.ReadSubDirs(l.ObjectsRoot(), phase.Path())
+	dirs, err := filesystem.ReadSubDirs(l.ObjectsRoot(), phase.String())
 	if err != nil {
-		l.errors.Append(fmt.Errorf(`cannot read orchestrator tasks from "%s": %w`, phase.Path(), err))
+		l.errors.Append(fmt.Errorf(`cannot read orchestrator tasks from "%s": %w`, phase.String(), err))
 		return nil
 	}
 	return dirs
@@ -259,5 +259,5 @@ func (l *localLoader) tasksDirs(phase *model.Phase) []string {
 
 func (l *localLoader) formatError(err error) error {
 	// Remove absolute path from error
-	return fmt.Errorf(strings.ReplaceAll(err.Error(), l.manifest.Path()+string(filesystem.PathSeparator), ``))
+	return fmt.Errorf(strings.ReplaceAll(err.Error(), l.manifest.String()+string(filesystem.PathSeparator), ``))
 }

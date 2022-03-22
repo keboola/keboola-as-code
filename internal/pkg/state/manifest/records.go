@@ -171,7 +171,7 @@ func (r *Records) GetParent(manifest model.ObjectManifest) (model.ObjectManifest
 
 	parent, found := r.GetRecord(parentKey)
 	if !found {
-		return nil, fmt.Errorf(`manifest record for %s not found, referenced from %s`, parentKey.Desc(), manifest.Desc())
+		return nil, fmt.Errorf(`manifest record for %s not found, referenced from %s`, parentKey.String(), manifest.String())
 	}
 	return parent, nil
 }
@@ -216,14 +216,14 @@ func (r *Records) trackRecord(record model.ObjectManifest) error {
 
 	// Make sure the key is unique
 	if _, exists := r.all.Get(record.Key().String()); exists {
-		return fmt.Errorf(`duplicate %s in manifest`, record.Desc())
+		return fmt.Errorf(`duplicate %s in manifest`, record.String())
 	}
 
 	r.all.Set(record.Key().String(), record)
 	return nil
 }
 
-func (r *Records) Delete(object model.WithKey) {
+func (r *Records) Remove(object model.WithKey) {
 	r.DeleteByKey(object.Key())
 }
 
@@ -245,7 +245,7 @@ func (r *Records) ResolveParentPath(record model.ObjectManifest) error {
 // doResolveParentPath recursive + fail on cyclic relations.
 func (r *Records) doResolveParentPath(record, origin model.ObjectManifest) error {
 	if origin != nil && record.Key().String() == origin.Key().String() {
-		return fmt.Errorf(`a cyclic relation was found when resolving path to %s`, origin.Desc())
+		return fmt.Errorf(`a cyclic relation was found when resolving path to %s`, origin.String())
 	}
 
 	if origin == nil {
@@ -263,7 +263,7 @@ func (r *Records) doResolveParentPath(record, origin model.ObjectManifest) error
 				return err
 			}
 		}
-		record.SetParentPath(parent.Path())
+		record.SetParentPath(parent.String())
 	default:
 		// branch - no parent
 		record.SetParentPath("")

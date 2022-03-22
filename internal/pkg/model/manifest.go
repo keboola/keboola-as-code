@@ -1,16 +1,13 @@
 package model
 
 import (
-	"fmt"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-type RecordPaths interface {
+type RecordPath interface {
 	GetAbsPath() AbsPath
 	// Path gets path relative to the top dir, it is parent path + relative path.
-	Path() string
+	String() string
 	// GetRelativePath - for example path of the object inside parent object/path.
 	GetRelativePath() string
 	// SetRelativePath - for example path of the object inside parent object/path.
@@ -23,21 +20,11 @@ type RecordPaths interface {
 	IsParentPathSet() bool
 }
 
-type RelatedPaths interface {
-	// GetRelatedPaths returns files related to the record, relative to the project dir, e.g. main/meta.json
-	GetRelatedPaths() []string
-	ClearRelatedPaths()
-	AddRelatedPath(path string)
-	RenameRelatedPaths(oldPath, newPath string)
-}
-
 // ObjectManifest - manifest record for a object.
 type ObjectManifest interface {
 	Key
-	RecordPaths
-	RelatedPaths
+	RecordPath
 	Key() Key // unique key for map -> for fast access
-	State() *RecordState
 	NewEmptyObject() Object
 }
 
@@ -48,137 +35,27 @@ type ObjectManifestWithRelations interface {
 	AddRelation(relation Relation)
 }
 
-type RecordState struct {
-	Invalid   bool // object files are not valid, eg. missing file, invalid JSON, ...
-	NotFound  bool // object directory is not present in the filesystem
-	Persisted bool // record will be part of the manifest when saved
-	Deleted   bool // record has been deleted in this command run
-}
-
 type BranchManifest struct {
-	RecordState `json:"-"`
 	BranchKey
-	Paths
+	AbsPath `json:"path"`
 }
 
 type ConfigManifest struct {
-	RecordState `json:"-"`
 	ConfigKey
-	Paths
+	AbsPath   `json:"path"`
 	Relations Relations              `json:"relations,omitempty" validate:"dive"` // relations with other objects, for example variables definition
 	Metadata  *orderedmap.OrderedMap `json:"metadata,omitempty"`
 }
 
 type ConfigRowManifest struct {
-	RecordState `json:"-"`
 	ConfigRowKey
-	Paths
+	AbsPath   `json:"path"`
 	Relations Relations `json:"relations,omitempty" validate:"dive"` // relations with other objects, for example variables values definition
 }
 
 type ConfigManifestWithRows struct {
 	ConfigManifest
 	Rows []*ConfigRowManifest `json:"rows"`
-}
-
-func (p *Paths) ClearRelatedPaths() {
-	p.RelatedPaths = make([]string, 0)
-}
-
-func (p *Paths) GetRelatedPaths() []string {
-	dir := p.Path()
-	out := make([]string, 0)
-	for _, path := range p.RelatedPaths {
-		// Prefix by dir -> path will be relative to the project dir
-		out = append(out, filesystem.Join(dir, path))
-	}
-	return out
-}
-
-func (p *Paths) AddRelatedPath(path string) {
-	dir := p.Path()
-	if !filesystem.IsFrom(path, dir) {
-		panic(fmt.Errorf(`path "%s" is not from the dir "%s"`, path, dir))
-	}
-
-	relPath, err := filesystem.Rel(dir, path)
-	if err != nil {
-		panic(err)
-	}
-
-	p.RelatedPaths = append(p.RelatedPaths, relPath)
-}
-
-func (p *Paths) RenameRelatedPaths(oldPath, newPath string) {
-	dir := p.Path()
-	if !filesystem.IsFrom(oldPath, dir) {
-		panic(fmt.Errorf(`old "%s" is not from the dir "%s"`, oldPath, dir))
-	}
-	if !filesystem.IsFrom(newPath, dir) {
-		panic(fmt.Errorf(`new "%s" is not from the dir "%s"`, oldPath, dir))
-	}
-	oldRel, err := filesystem.Rel(dir, oldPath)
-	if err != nil {
-		panic(err)
-	}
-	newRel, err := filesystem.Rel(dir, newPath)
-	if err != nil {
-		panic(err)
-	}
-
-	// Rename all related paths that match old -> new
-	for i, path := range p.RelatedPaths {
-		if path == oldRel {
-			p.RelatedPaths[i] = newRel
-		} else if filesystem.IsFrom(path, oldRel) {
-			pathRel, err := filesystem.Rel(oldRel, path)
-			if err != nil {
-				panic(err)
-			}
-			p.RelatedPaths[i] = filesystem.Join(newRel, pathRel)
-		}
-	}
-}
-
-func (p *Paths) AbsolutePath(projectDir string) string {
-	return filesystem.Join(projectDir, p.Path())
-}
-
-func (s *RecordState) State() *RecordState {
-	return s
-}
-
-func (s *RecordState) IsNotFound() bool {
-	return s.NotFound
-}
-
-func (s *RecordState) SetNotFound() {
-	s.NotFound = true
-}
-
-func (s *RecordState) IsInvalid() bool {
-	return s.Invalid
-}
-
-func (s *RecordState) SetInvalid() {
-	s.Invalid = true
-}
-
-func (s *RecordState) IsPersisted() bool {
-	return s.Persisted
-}
-
-func (s *RecordState) SetPersisted() {
-	s.Invalid = false
-	s.Persisted = true
-}
-
-func (s *RecordState) IsDeleted() bool {
-	return s.Deleted
-}
-
-func (s *RecordState) SetDeleted() {
-	s.Deleted = true
 }
 
 func (b BranchManifest) NewEmptyObject() Object {

@@ -68,13 +68,13 @@ func (w *localWriter) save() error {
 func (w *localWriter) generateBlockFiles(block *model.Block) {
 	// Validate
 	if err := validator.Validate(w.State.Ctx(), block); err != nil {
-		w.errors.Append(utils.PrefixError(fmt.Sprintf(`invalid block \"%s\"`, block.Path()), err))
+		w.errors.Append(utils.PrefixError(fmt.Sprintf(`invalid block \"%s\"`, block.String()), err))
 		return
 	}
 
 	// Create metadata file
 	if metadata := utils.MapFromTaggedFields(model.MetaFileFieldsTag, block); metadata != nil {
-		metadataPath := w.NamingGenerator().MetaFilePath(block.Path())
+		metadataPath := w.NamingGenerator().MetaFilePath(block.String())
 		w.createMetadataFile(metadataPath, `block metadata`, model.FileKindBlockMeta, metadata)
 	}
 
@@ -87,7 +87,7 @@ func (w *localWriter) generateBlockFiles(block *model.Block) {
 func (w *localWriter) generateCodeFiles(code *model.Code) {
 	// Create metadata file
 	if metadata := utils.MapFromTaggedFields(model.MetaFileFieldsTag, code); metadata != nil {
-		metadataPath := w.NamingGenerator().MetaFilePath(code.Path())
+		metadataPath := w.NamingGenerator().MetaFilePath(code.String())
 		w.createMetadataFile(metadataPath, `code metadata`, model.FileKindCodeMeta, metadata)
 	}
 

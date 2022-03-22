@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -45,25 +47,25 @@ func (*testMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
 
 func (t *testMapper) AfterLocalOperation(changes *model.LocalChanges) error {
 	for _, objectState := range changes.Loaded() {
-		t.localChanges = append(t.localChanges, fmt.Sprintf(`loaded %s`, objectState.Desc()))
+		t.localChanges = append(t.localChanges, fmt.Sprintf(`loaded %s`, objectState.String()))
 	}
 	for _, objectState := range changes.Persisted() {
-		t.localChanges = append(t.localChanges, fmt.Sprintf(`persisted %s`, objectState.Desc()))
+		t.localChanges = append(t.localChanges, fmt.Sprintf(`persisted %s`, objectState.String()))
 	}
 	for _, objectState := range changes.Created() {
-		t.localChanges = append(t.localChanges, fmt.Sprintf(`created %s`, objectState.Desc()))
+		t.localChanges = append(t.localChanges, fmt.Sprintf(`created %s`, objectState.String()))
 	}
 	for _, objectState := range changes.Updated() {
-		t.localChanges = append(t.localChanges, fmt.Sprintf(`updated %s`, objectState.Desc()))
+		t.localChanges = append(t.localChanges, fmt.Sprintf(`updated %s`, objectState.String()))
 	}
 	for _, objectState := range changes.Saved() {
-		t.localChanges = append(t.localChanges, fmt.Sprintf(`saved %s`, objectState.Desc()))
+		t.localChanges = append(t.localChanges, fmt.Sprintf(`saved %s`, objectState.String()))
 	}
 	for _, action := range changes.Renamed() {
 		t.localChanges = append(t.localChanges, fmt.Sprintf(`renamed %s`, action.String()))
 	}
 	for _, objectState := range changes.Deleted() {
-		t.localChanges = append(t.localChanges, fmt.Sprintf(`deleted %s`, objectState.Desc()))
+		t.localChanges = append(t.localChanges, fmt.Sprintf(`deleted %s`, objectState.String()))
 	}
 	return nil
 }
@@ -151,6 +153,44 @@ func TestLocalLoadMapper(t *testing.T) {
 		`loaded branch "111"`,
 		`loaded config "branch:111/component:ex-generic-v2/config:456"`,
 	}, testMapperInst.localChanges)
+}
+
+func TestLocalUnitOfWork_workersFor(t *testing.T) {
+	t.Parallel()
+	manager := newTestLocalManager(t)
+	uow := manager.NewUnitOfWork(context.Background())
+
+	lock := &sync.Mutex{}
+	var order []int
+
+	for _, level := range []int{3, 2, 4, 1} {
+		level := level
+		uow.workersFor(level).AddWorker(func() error {
+			lock.Lock()
+			defer lock.Unlock()
+			order = append(order, level)
+			return nil
+		})
+		uow.workersFor(level).AddWorker(func() error {
+			lock.Lock()
+			defer lock.Unlock()
+			order = append(order, level)
+			return nil
+		})
+	}
+
+	// Not started
+	time.Sleep(10 * time.Millisecond)
+	assert.Empty(t, order)
+
+	// Invoke
+	assert.NoError(t, uow.Invoke())
+	assert.Equal(t, []int{1, 1, 2, 2, 3, 3, 4, 4}, order)
+
+	// Cannot be reused
+	assert.PanicsWithError(t, `invoked local.UnitOfWork cannot be reused`, func() {
+		uow.Invoke()
+	})
 }
 
 func newEmptyState(t *testing.T) *state.State {

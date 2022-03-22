@@ -63,7 +63,7 @@ func (m *ignoreMapper) isIgnoredConfig(config *model.Config) bool {
 
 	// Without target config
 	if !config.Relations.Has(model.VariablesForRelType) && !config.Relations.Has(model.SharedCodeVariablesForRelType) {
-		m.logger.Debugf("Ignored unattached variables %s", config.Desc())
+		m.logger.Debugf("Ignored unattached variables %s", config.String())
 		return true
 	}
 

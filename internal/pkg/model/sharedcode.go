@@ -45,7 +45,7 @@ func (t *SharedCodeVariablesForRelation) Type() RelationType {
 	return SharedCodeVariablesForRelType
 }
 
-func (t *SharedCodeVariablesForRelation) Desc() string {
+func (t *SharedCodeVariablesForRelation) String() string {
 	return `shared code variables for`
 }
 
@@ -94,10 +94,10 @@ func (t *SharedCodeVariablesForRelation) NewOtherSideRelation(relationDefinedOn 
 func (t *SharedCodeVariablesForRelation) checkDefinedOn(relationDefinedOn Key) (ConfigKey, error) {
 	variables, ok := relationDefinedOn.(ConfigKey)
 	if !ok {
-		return variables, fmt.Errorf(`relation "%s" must be defined on config, found %s`, t.Type(), relationDefinedOn.Desc())
+		return variables, fmt.Errorf(`relation "%s" must be defined on config, found %s`, t.Type(), relationDefinedOn.String())
 	}
 	if variables.ComponentId != VariablesComponentId {
-		return variables, fmt.Errorf(`relation "%s" must be defined on config from "%s" component, found %s`, t.Type(), VariablesComponentId, relationDefinedOn.Desc())
+		return variables, fmt.Errorf(`relation "%s" must be defined on config from "%s" component, found %s`, t.Type(), VariablesComponentId, relationDefinedOn.String())
 	}
 	return variables, nil
 }
@@ -106,7 +106,7 @@ func (t *SharedCodeVariablesFromRelation) Type() RelationType {
 	return SharedCodeVariablesFromRelType
 }
 
-func (t *SharedCodeVariablesFromRelation) Desc() string {
+func (t *SharedCodeVariablesFromRelation) String() string {
 	return `shared code variables from`
 }
 
@@ -146,10 +146,10 @@ func (t *SharedCodeVariablesFromRelation) NewOtherSideRelation(relationDefinedOn
 func (t *SharedCodeVariablesFromRelation) checkDefinedOn(relationDefinedOn Key) (ConfigRowKey, error) {
 	row, ok := relationDefinedOn.(ConfigRowKey)
 	if !ok {
-		return row, fmt.Errorf(`relation "%s" must be defined on config row, found %s`, t.Type(), relationDefinedOn.Desc())
+		return row, fmt.Errorf(`relation "%s" must be defined on config row, found %s`, t.Type(), relationDefinedOn.String())
 	}
 	if row.ComponentId != SharedCodeComponentId {
-		return row, fmt.Errorf(`relation "%s" must be defined on config row from "%s" component, found %s`, t.Type(), SharedCodeComponentId, relationDefinedOn.Desc())
+		return row, fmt.Errorf(`relation "%s" must be defined on config row from "%s" component, found %s`, t.Type(), SharedCodeComponentId, relationDefinedOn.String())
 	}
 	return row, nil
 }
