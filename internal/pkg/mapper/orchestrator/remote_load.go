@@ -100,13 +100,13 @@ func (l *remoteLoader) load() error {
 			if path, found := l.GetPath(phase.Key()); found {
 				phase.AbsPath = path
 			} else {
-				phase.AbsPath = l.NamingGenerator().PhasePath(phasesDir, phase)
+				phase.AbsPath = l.NamingGenerator().phasePath(phasesDir, phase)
 			}
 			for _, task := range phase.Tasks {
 				if path, found := l.GetPath(task.Key()); found {
 					task.AbsPath = path
 				} else {
-					task.AbsPath = l.NamingGenerator().TaskPath(phase.String(), task)
+					task.AbsPath = l.NamingGenerator().taskPath(phase.String(), task)
 				}
 			}
 		}

@@ -46,7 +46,7 @@ func (m *Manager) pathTo(object model.Object) model.AbsPath {
 	}
 
 	// Generate
-	path := m.namingGenerator.Path(object)
+	path := m.namingGenerator.PathFor(object)
 	if err := m.namingRegistry.Attach(key, path); err != nil {
 		panic(err)
 	}

@@ -26,12 +26,13 @@ const (
 )
 
 type Generator struct {
-	template Template
-	registry *Registry
+	template   Template
+	registry   *Registry
+	components *ComponentsMap
 }
 
-func NewGenerator(template Template, registry *Registry) *Generator {
-	return &Generator{template: template, registry: registry}
+func NewGenerator(template Template, registry *Registry, components *ComponentsMap) *Generator {
+	return &Generator{template: template, registry: registry, components: components}
 }
 
 func (g Generator) MetaFilePath(dir string) string {
@@ -46,12 +47,61 @@ func (g Generator) DescriptionFilePath(dir string) string {
 	return filesystem.Join(dir, DescriptionFile)
 }
 
-func (g Generator) BranchPath(branch *Branch) AbsPath {
+func (g Generator) CodeFilePath(code *Code) string {
+	return filesystem.Join(code.String(), code.CodeFileName)
+}
+
+func (g Generator) CodeFileName(componentId ComponentId) string {
+	return CodeFileName + "." + CodeFileExt(componentId)
+}
+
+func (g Generator) SharedCodeFilePath(parentPath string, targetComponentId ComponentId) string {
+	return filesystem.Join(parentPath, g.CodeFileName(targetComponentId))
+}
+
+func (g Generator) PhaseFilePath(phase *Phase) string {
+	return filesystem.Join(phase.String(), PhaseFile)
+}
+
+func (g Generator) TaskFilePath(task *Task) string {
+	return filesystem.Join(task.String(), TaskFile)
+}
+
+func (g Generator) BlocksDir(configDir string) string {
+	return filesystem.Join(configDir, blocksDir)
+}
+
+func (g Generator) PhasesDir(configDir string) string {
+	return filesystem.Join(configDir, phasesDir)
+}
+
+func (g Generator) PathFor(object WithKey) (AbsPath, error) {
+	switch o := object.(type) {
+	case *Branch:
+		return g.branchPath(o)
+	case *Config:
+		return g.configPath(o)
+	case *ConfigRow:
+		return g.configRowPath(o)
+	case *Block:
+		return g.blockPath(o)
+	case *Code:
+		return g.codePath(o)
+	case *Phase:
+		return g.phasePath(o)
+	case *Task:
+		return g.taskPath(o)
+	default:
+		panic(fmt.Errorf(`unexpected type "%T"`, object))
+	}
+}
+
+func (g Generator) branchPath(branch *Branch) (AbsPath, error) {
 	p := AbsPath{}
 	p.SetParentPath("") // branch is top level object
 
 	if branch.IsDefault {
-		p.RelativePath = `main`
+		p.SetRelativePath(`main`)
 	} else {
 		p.SetRelativePath(utils.ReplacePlaceholders(string(g.template.Branch), map[string]interface{}{
 			"branch_id":   branch.Id,
@@ -59,22 +109,25 @@ func (g Generator) BranchPath(branch *Branch) AbsPath {
 		}))
 	}
 
-	return g.registry.ensureUniquePath(branch.Key(), p)
+	return g.registry.ensureUniquePath(branch.Key(), p), nil
 }
 
-func (g Generator) ConfigPath(parentPath string, component *Component, config *Config) AbsPath {
-	// Get parent in the local filesystem
-	parentKey, err := config.ParentKey()
+func (g Generator) configPath(config *Config) (AbsPath, error) {
+	// Get parent
+	parentKey, parentKind, parentPath, err := g.getParent(config)
 	if err != nil {
-		panic(err)
-	}
-	var parentKind Kind
-	if parentKey != nil {
-		parentKind = parentKey.Kind()
+		return AbsPath{}, err
 	}
 
+	// Check parent
 	if !parentKind.IsEmpty() && len(parentPath) == 0 {
-		panic(fmt.Errorf(`config "%s" parent path cannot be empty"`, config))
+		return AbsPath{}, fmt.Errorf(`%s parent path cannot be empty"`, config)
+	}
+
+	// Get component
+	component, err := g.components.Get(config.ComponentKey())
+	if err != nil {
+		return AbsPath{}, err
 	}
 
 	// Shared code is handled differently
@@ -111,23 +164,27 @@ func (g Generator) ConfigPath(parentPath string, component *Component, config *C
 		"config_id":           jsonnet.StripIdPlaceholder(config.Id.String()),
 		"config_name":         strhelper.NormalizeName(config.Name),
 	}))
-	return g.registry.ensureUniquePath(config.Key(), p)
+	return g.registry.ensureUniquePath(config.Key(), p), nil
 }
 
-func (g Generator) ConfigRowPath(parentPath string, component *Component, row *ConfigRow) AbsPath {
-	if len(parentPath) == 0 {
-		panic(fmt.Errorf(`config row "%s" parent path cannot be empty"`, row))
-	}
-
-	// Get parent in the local filesystem
-	parentKey, err := row.ParentKey()
+func (g Generator) configRowPath(row *ConfigRow) (AbsPath, error) {
+	// Get parent
+	parentKey, _, parentPath, err := g.getParent(row)
 	if err != nil {
-		panic(err)
+		return AbsPath{}, err
 	}
 
-	// Check parent type
+	// Check parent
 	if !parentKey.Kind().IsConfig() {
-		panic(fmt.Errorf(`unexpected config row parent type "%s"`, parentKey.Kind()))
+		return AbsPath{}, fmt.Errorf(`unexpected config row parent type "%s"`, parentKey.Kind())
+	} else if len(parentPath) == 0 {
+		return AbsPath{}, fmt.Errorf(`%s parent path cannot be empty"`, row)
+	}
+
+	// Get component
+	component, err := g.components.Get(row.ComponentKey())
+	if err != nil {
+		return AbsPath{}, err
 	}
 
 	// Shared code is handled differently
@@ -165,73 +222,82 @@ func (g Generator) ConfigRowPath(parentPath string, component *Component, row *C
 		"config_row_id":   jsonnet.StripIdPlaceholder(row.Id.String()),
 		"config_row_name": strhelper.NormalizeName(name),
 	}))
-	return g.registry.ensureUniquePath(row.Key(), p)
+	return g.registry.ensureUniquePath(row.Key(), p), nil
 }
 
-func (g Generator) BlocksDir(configDir string) string {
-	return filesystem.Join(configDir, blocksDir)
-}
+func (g Generator) blockPath(block *Block) (AbsPath, error) {
+	// Get parent
+	_, _, parentPath, err := g.getParent(block)
+	if err != nil {
+		return AbsPath{}, err
+	}
 
-func (g Generator) BlockPath(parentPath string, block *Block) AbsPath {
 	p := AbsPath{}
 	p.SetParentPath(parentPath)
 	p.SetRelativePath(utils.ReplacePlaceholders(string(blockNameTemplate), map[string]interface{}{
 		"block_order": fmt.Sprintf(`%03d`, block.Index+1),
 		"block_name":  strhelper.NormalizeName(block.Name),
 	}))
-	return g.registry.ensureUniquePath(block.Key(), p)
+	return g.registry.ensureUniquePath(block.Key(), p), nil
 }
 
-func (g Generator) CodePath(parentPath string, code *Code) AbsPath {
+func (g Generator) codePath(code *Code) (AbsPath, error) {
+	// Get parent
+	_, _, parentPath, err := g.getParent(code)
+	if err != nil {
+		return AbsPath{}, err
+	}
+
 	p := AbsPath{}
 	p.SetParentPath(parentPath)
 	p.SetRelativePath(utils.ReplacePlaceholders(string(codeNameTemplate), map[string]interface{}{
 		"code_order": fmt.Sprintf(`%03d`, code.Index+1),
 		"code_name":  strhelper.NormalizeName(code.Name),
 	}))
-	return g.registry.ensureUniquePath(code.Key(), p)
+	return g.registry.ensureUniquePath(code.Key(), p), nil
 }
 
-func (g Generator) CodeFilePath(code *Code) string {
-	return filesystem.Join(code.String(), code.CodeFileName)
-}
+func (g Generator) phasePath(phase *Phase) (AbsPath, error) {
+	_, _, parentPath, err := g.getParent(phase)
+	if err != nil {
+		return AbsPath{}, err
+	}
 
-func (g Generator) SharedCodeFilePath(parentPath string, targetComponentId ComponentId) string {
-	return filesystem.Join(parentPath, g.CodeFileName(targetComponentId))
-}
-
-func (g Generator) CodeFileName(componentId ComponentId) string {
-	return CodeFileName + "." + CodeFileExt(componentId)
-}
-
-func (g Generator) PhasesDir(configDir string) string {
-	return filesystem.Join(configDir, phasesDir)
-}
-
-func (g Generator) PhasePath(parentPath string, phase *Phase) AbsPath {
 	p := AbsPath{}
 	p.SetParentPath(parentPath)
 	p.SetRelativePath(utils.ReplacePlaceholders(string(phaseNameTemplate), map[string]interface{}{
 		"phase_order": fmt.Sprintf(`%03d`, phase.Index+1),
 		"phase_name":  strhelper.NormalizeName(phase.Name),
 	}))
-	return g.registry.ensureUniquePath(phase.Key(), p)
+	return g.registry.ensureUniquePath(phase.Key(), p), nil
 }
 
-func (g Generator) PhaseFilePath(phase *Phase) string {
-	return filesystem.Join(phase.String(), PhaseFile)
-}
+func (g Generator) taskPath(task *Task) (AbsPath, error) {
+	// Get parent
+	_, _, parentPath, err := g.getParent(task)
+	if err != nil {
+		return AbsPath{}, err
+	}
 
-func (g Generator) TaskPath(parentPath string, task *Task) AbsPath {
 	p := AbsPath{}
 	p.SetParentPath(parentPath)
 	p.SetRelativePath(utils.ReplacePlaceholders(string(taskNameTemplate), map[string]interface{}{
 		"task_order": fmt.Sprintf(`%03d`, task.Index+1),
 		"task_name":  strhelper.NormalizeName(task.Name),
 	}))
-	return g.registry.ensureUniquePath(task.Key(), p)
+	return g.registry.ensureUniquePath(task.Key(), p), nil
 }
 
-func (g Generator) TaskFilePath(task *Task) string {
-	return filesystem.Join(task.String(), TaskFile)
+func (g Generator) getParent(object WithParentKey) (parentKey Key, parentKind Kind, parentPath string, err error) {
+	if parentKey, err = object.ParentKey(); err != nil {
+		// nop, return err
+	} else if parentKey == nil {
+		// nop, return empty
+	} else if path, found := g.registry.PathByKey(parentKey); found {
+		parentKind = parentKey.Kind()
+		parentPath = path.String()
+	} else {
+		err = fmt.Errorf("path generator: %s not found", parentKey.String())
+	}
+	return parentKey, parentKind, parentPath, err
 }

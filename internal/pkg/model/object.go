@@ -22,6 +22,10 @@ type WithKey interface {
 	Key() Key
 }
 
+type WithParentKey interface {
+	ParentKey() (Key, error)
+}
+
 type Object interface {
 	Key
 	Key() Key

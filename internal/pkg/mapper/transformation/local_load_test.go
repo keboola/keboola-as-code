@@ -56,11 +56,11 @@ func TestLoadTransformationInvalidConfigAndMeta(t *testing.T) {
 	blocksDir := namingGenerator.BlocksDir(record.String())
 	assert.NoError(t, fs.Mkdir(blocksDir))
 	block := &model.Block{BlockKey: model.BlockKey{Index: 123}, Name: `block`}
-	block.AbsPath = namingGenerator.BlockPath(blocksDir, block)
+	block.AbsPath = namingGenerator.blockPath(blocksDir, block)
 	assert.NoError(t, fs.Mkdir(block.String()))
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.MetaFilePath(block.String()), blockMeta)))
 	code := &model.Code{CodeKey: model.CodeKey{Index: 123}, Name: `code`}
-	code.AbsPath = namingGenerator.CodePath(block.String(), code)
+	code.AbsPath = namingGenerator.codePath(block.String(), code)
 	code.CodeFileName = namingGenerator.CodeFileName(component.Id)
 	assert.NoError(t, fs.Mkdir(code.String()))
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.MetaFilePath(code.String()), codeMeta)))
