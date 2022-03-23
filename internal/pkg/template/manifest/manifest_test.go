@@ -63,7 +63,7 @@ func TestSaveManifestFile(t *testing.T) {
 
 		// Save
 		manifest := New()
-		assert.NoError(t, manifest.records.SetRecords(c.records))
+		assert.NoError(t, manifest.records.Set(c.records))
 		assert.NoError(t, manifest.Save(fs))
 
 		// Load file

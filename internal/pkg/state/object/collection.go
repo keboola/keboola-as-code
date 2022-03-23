@@ -164,6 +164,13 @@ func (c *Collection) ConfigsFrom(branch BranchKey) (configs []*Config) {
 	return configs
 }
 
+func (c *Collection) ConfigsWithRows() (configs []*ConfigWithRows) {
+	for _, config := range c.Configs() {
+		configs = append(configs, &ConfigWithRows{Config: config, Rows: c.ConfigRowsFrom(config.ConfigKey)})
+	}
+	return configs
+}
+
 // ConfigsWithRowsFrom gets all configs and rows from the branch.
 // The result is sorted.
 func (c *Collection) ConfigsWithRowsFrom(branch BranchKey) (configs []*ConfigWithRows) {
@@ -202,11 +209,14 @@ func (c *Collection) ConfigRowsFrom(config ConfigKey) (rows []*ConfigRow) {
 func (c *Collection) add(object Object) error {
 	parentKey, err := object.ParentKey()
 	if err != nil {
-		return fmt.Errorf("objects collection: cannot add %s: %w", object.String(), err)
+		return utils.PrefixError(fmt.Sprintf(`cannot get parent of %s`, object.String()), err)
 	}
 
 	if parentKey != nil && !c.has(parentKey) {
-		return fmt.Errorf("objects collection: cannot add %s: parent %s not found", object.String(), parentKey.Kind().Name)
+		return utils.PrefixError(
+			fmt.Sprintf(`parent %s not found`, parentKey.String()),
+			fmt.Errorf(`referenced from %s`, object.String()),
+		)
 	}
 
 	c.objects.Set(object.Key().String(), object)

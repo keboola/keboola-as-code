@@ -23,6 +23,13 @@ func NewRegistry() *Registry {
 	}
 }
 
+func (r Registry) Clear() {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	r.byPath = make(map[string]Key)
+	r.byKey = make(map[string]AbsPath)
+}
+
 // Attach object's path to NamingTemplate, it guarantees the path will remain unique and will not be used again.
 func (r Registry) Attach(key Key, path AbsPath) error {
 	r.lock.Lock()

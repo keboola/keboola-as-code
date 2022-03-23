@@ -1,6 +1,8 @@
 package model
 
 import (
+	"fmt"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -58,61 +60,73 @@ type ConfigManifestWithRows struct {
 	Rows []*ConfigRowManifest `json:"rows"`
 }
 
-func (b BranchManifest) NewEmptyObject() Object {
-	return &Branch{BranchKey: b.BranchKey}
+func (m BranchManifest) String() string {
+	return fmt.Sprintf(`%s "%s"`, m.Kind().Name, m.AbsPath.String())
 }
 
-func (c ConfigManifest) NewEmptyObject() Object {
-	return &Config{ConfigKey: c.ConfigKey}
+func (m ConfigManifest) String() string {
+	return fmt.Sprintf(`%s "%s"`, m.Kind().Name, m.AbsPath.String())
 }
 
-func (r ConfigRowManifest) NewEmptyObject() Object {
-	return &ConfigRow{ConfigRowKey: r.ConfigRowKey}
+func (m ConfigRowManifest) String() string {
+	return fmt.Sprintf(`%s "%s"`, m.Kind().Name, m.AbsPath.String())
+}
+
+func (m BranchManifest) NewEmptyObject() Object {
+	return &Branch{BranchKey: m.BranchKey}
+}
+
+func (m ConfigManifest) NewEmptyObject() Object {
+	return &Config{ConfigKey: m.ConfigKey}
+}
+
+func (m ConfigRowManifest) NewEmptyObject() Object {
+	return &ConfigRow{ConfigRowKey: m.ConfigRowKey}
 }
 
 // ParentKey - config parent can be modified via Relations, for example variables config is embedded in another config.
-func (c ConfigManifest) ParentKey() (Key, error) {
-	if parentKey, err := c.Relations.ParentKey(c.Key()); err != nil {
+func (m ConfigManifest) ParentKey() (Key, error) {
+	if parentKey, err := m.Relations.ParentKey(m.Key()); err != nil {
 		return nil, err
 	} else if parentKey != nil {
 		return parentKey, nil
 	}
 
 	// No parent defined via "Relations" -> parent is branch
-	return c.ConfigKey.ParentKey()
+	return m.ConfigKey.ParentKey()
 }
 
-func (c *ConfigManifest) GetRelations() Relations {
-	return c.Relations
+func (m *ConfigManifest) GetRelations() Relations {
+	return m.Relations
 }
 
-func (r *ConfigRowManifest) GetRelations() Relations {
-	return r.Relations
+func (m *ConfigRowManifest) GetRelations() Relations {
+	return m.Relations
 }
 
-func (c *ConfigManifest) SetRelations(relations Relations) {
-	c.Relations = relations
+func (m *ConfigManifest) SetRelations(relations Relations) {
+	m.Relations = relations
 }
 
-func (r *ConfigRowManifest) SetRelations(relations Relations) {
-	r.Relations = relations
+func (m *ConfigRowManifest) SetRelations(relations Relations) {
+	m.Relations = relations
 }
 
-func (c *ConfigManifest) AddRelation(relation Relation) {
-	c.Relations.Add(relation)
+func (m *ConfigManifest) AddRelation(relation Relation) {
+	m.Relations.Add(relation)
 }
 
-func (c *ConfigManifest) MetadataMap() map[string]string {
+func (m *ConfigManifest) MetadataMap() map[string]string {
 	metadata := make(map[string]string)
-	if c.Metadata != nil {
-		for _, key := range c.Metadata.Keys() {
-			val, _ := c.Metadata.Get(key)
+	if m.Metadata != nil {
+		for _, key := range m.Metadata.Keys() {
+			val, _ := m.Metadata.Get(key)
 			metadata[key] = val.(string)
 		}
 	}
 	return metadata
 }
 
-func (r *ConfigRowManifest) AddRelation(relation Relation) {
-	r.Relations.Add(relation)
+func (m *ConfigRowManifest) AddRelation(relation Relation) {
+	m.Relations.Add(relation)
 }

@@ -10,7 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
 )
 
-type records = manifest.Records
+type records = manifest.Collection
 
 // File contains content of the manifest. Jsonnet has not been executed yet.
 type File struct {
@@ -26,7 +26,7 @@ type Manifest struct {
 func New() *Manifest {
 	return &Manifest{
 		naming:  naming.ForTemplate(),
-		records: manifest.NewRecords(model.SortByPath),
+		records: manifest.NewCollection(model.SortByPath),
 	}
 }
 
@@ -57,7 +57,7 @@ func (f *File) Evaluate(jsonNetCtx *jsonnet.Context) (*Manifest, error) {
 	m := New()
 
 	// Set records
-	if err := m.records.SetRecords(content.records()); err != nil {
+	if err := m.records.Set(content.records()); err != nil {
 		return nil, fmt.Errorf(`cannot load manifest: %w`, err)
 	}
 

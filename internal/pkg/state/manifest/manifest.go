@@ -8,14 +8,12 @@ import (
 // Manifest is common interface form Project and Template manifest.
 type Manifest interface {
 	Path() string
-	All() []model.ObjectManifest
-	AllPersisted() []model.ObjectManifest
-	SortBy() string
+	Sorter() model.ObjectsSorter
 	NamingTemplate() naming.Template
 	NamingRegistry() *naming.Registry
-	ResolveParentPath(record model.ObjectManifest) error
-	GetRecord(key model.Key) (model.ObjectManifest, bool)
-	CreateOrGetRecord(key model.Key) (record model.ObjectManifest, found bool, err error)
-	PersistRecord(model.ObjectManifest) error
-	Remove(object model.WithKey)
+	All() []model.ObjectManifest
+	Get(key model.Key) (model.ObjectManifest, bool)
+	Set(records ...model.ObjectManifest) error
+	Add(records ...model.ObjectManifest) error
+	Remove(keys ...model.Key)
 }

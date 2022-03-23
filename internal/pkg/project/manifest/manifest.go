@@ -17,7 +17,7 @@ func (e *InvalidManifestError) Unwrap() error {
 	return e.error
 }
 
-type records = manifest.Records
+type records = manifest.Collection
 
 // Manifest of the project directory
 // file contains IDs and paths of the all objects: branches, configs, rows.
@@ -36,7 +36,7 @@ type Project struct {
 
 func New(projectId int, apiHost string) *Manifest {
 	return &Manifest{
-		records:      manifest.NewRecords(model.SortById),
+		records:      manifest.NewCollection(model.SortById),
 		project:      Project{Id: projectId, ApiHost: apiHost},
 		naming:       naming.TemplateWithIds(),
 		filter:       model.NoFilter(),
@@ -62,7 +62,7 @@ func Load(fs filesystem.Fs, ignoreErrors bool) (*Manifest, error) {
 	m.repositories = content.Templates.Repositories
 
 	// Set records
-	if err := m.records.SetRecords(content.records()); err != nil && !ignoreErrors {
+	if err := m.records.Set(content.records()); err != nil && !ignoreErrors {
 		return nil, InvalidManifestError{utils.PrefixError("invalid manifest", err)}
 	}
 

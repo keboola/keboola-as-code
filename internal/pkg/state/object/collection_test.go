@@ -37,7 +37,7 @@ func TestCollection_Add_ParentNotFound(t *testing.T) {
 		Name:         "Config Row",
 	})
 	assert.Error(t, err)
-	assert.Equal(t, `objects collection: cannot add config row "branch:123/component:keboola.foo/config:999/row:1": parent config not found`, err.Error())
+	assert.Equal(t, "parent config \"branch:123/component:keboola.foo/config:999\" not found:\n  - referenced from config row \"branch:123/component:keboola.foo/config:999/row:1\"", err.Error())
 }
 
 func TestCollection_Add_AlreadyExists(t *testing.T) {
@@ -109,7 +109,7 @@ func TestCollection_AddOrReplace_ParentNotFound(t *testing.T) {
 		Name:         "Config Row",
 	})
 	assert.Error(t, err)
-	assert.Equal(t, `objects collection: cannot add config row "branch:123/component:keboola.foo/config:999/row:1": parent config not found`, err.Error())
+	assert.Equal(t, "parent config \"branch:123/component:keboola.foo/config:999\" not found:\n  - referenced from config row \"branch:123/component:keboola.foo/config:999/row:1\"", err.Error())
 }
 
 func TestCollection_Remove(t *testing.T) {

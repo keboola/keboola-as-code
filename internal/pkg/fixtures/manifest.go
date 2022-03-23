@@ -8,14 +8,14 @@ import (
 
 func NewManifest() *Manifest {
 	return &Manifest{
-		Records:             manifest.NewRecords("foo"),
+		Collection:          manifest.NewCollection("foo"),
 		NamingTemplateValue: naming.TemplateWithoutIds(),
 	}
 }
 
 // Manifest implementation for tests.
 type Manifest struct {
-	*manifest.Records
+	*manifest.Collection
 	NamingTemplateValue naming.Template
 }
 

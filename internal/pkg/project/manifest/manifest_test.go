@@ -93,7 +93,7 @@ func TestSaveManifestFile(t *testing.T) {
 		manifest.SetNamingTemplate(c.naming)
 		manifest.SetAllowedBranches(c.filter.AllowedBranches())
 		manifest.SetIgnoredComponents(c.filter.IgnoredComponents())
-		assert.NoError(t, manifest.records.SetRecords(c.records))
+		assert.NoError(t, manifest.records.Set(c.records))
 		assert.NoError(t, manifest.Save(fs))
 
 		// Load file
