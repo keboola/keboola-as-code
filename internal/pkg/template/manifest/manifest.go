@@ -1,6 +1,7 @@
 package manifest
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -8,6 +9,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/object"
+	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 type records = manifest.Collection
@@ -23,10 +26,14 @@ type Manifest struct {
 	*records
 }
 
-func New() *Manifest {
+func New(ctx context.Context) *Manifest {
+	// Disable "required_in_project" validation tag
+	ctx = context.WithValue(ctx, validator.DisableRequiredInProjectKey, true)
+
+	namingRegistry := naming.NewRegistry()
 	return &Manifest{
 		naming:  naming.ForTemplate(),
-		records: manifest.NewCollection(model.SortByPath),
+		records: manifest.NewCollection(ctx, namingRegistry, object.NewPathSorter(namingRegistry)),
 	}
 }
 
@@ -46,7 +53,7 @@ func Load(fs filesystem.Fs) (*File, error) {
 }
 
 // Evaluate Jsonnet content.
-func (f *File) Evaluate(jsonNetCtx *jsonnet.Context) (*Manifest, error) {
+func (f *File) Evaluate(ctx context.Context, jsonNetCtx *jsonnet.Context) (*Manifest, error) {
 	// Evaluate Jsonnet
 	content, err := evaluateFile(f.file, jsonNetCtx)
 	if err != nil {
@@ -54,7 +61,7 @@ func (f *File) Evaluate(jsonNetCtx *jsonnet.Context) (*Manifest, error) {
 	}
 
 	// Create manifest
-	m := New()
+	m := New(ctx)
 
 	// Set records
 	if err := m.records.Set(content.records()); err != nil {

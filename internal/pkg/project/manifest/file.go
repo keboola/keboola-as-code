@@ -120,17 +120,16 @@ func (c *file) records() []model.ObjectManifest {
 
 func (c *file) setRecords(records []model.ObjectManifest) {
 	// Convert records map to slices
-	branchesMap := make(map[model.Key]*model.BranchManifest)
-	configsMap := make(map[model.Key]*model.ConfigManifestWithRows)
+	branchesMap := make(map[model.BranchKey]*model.BranchManifest)
+	configsMap := make(map[model.ConfigKey]*model.ConfigManifestWithRows)
 	c.Branches = make([]*model.BranchManifest, 0)
 	c.Configs = make([]*model.ConfigManifestWithRows, 0)
 
 	for _, record := range records {
-		// Generate content, we have to check if parent exists (eg. branch could have been deleted)
 		switch v := record.(type) {
 		case *model.BranchManifest:
 			c.Branches = append(c.Branches, v)
-			branchesMap[v.Key()] = v
+			branchesMap[v.BranchKey] = v
 		case *model.ConfigManifest:
 			_, found := branchesMap[v.BranchKey()]
 			if found {
@@ -138,7 +137,7 @@ func (c *file) setRecords(records []model.ObjectManifest) {
 					ConfigManifest: *v,
 					Rows:           make([]*model.ConfigRowManifest, 0),
 				}
-				configsMap[config.Key()] = config
+				configsMap[config.ConfigKey] = config
 				c.Configs = append(c.Configs, config)
 			}
 		case *model.ConfigRowManifest:
