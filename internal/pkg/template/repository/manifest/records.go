@@ -66,7 +66,7 @@ func (v *TemplateRecord) GetByVersion(wanted model.SemVersion) (VersionRecord, b
 
 func (v *TemplateRecord) GetByPath(path string) (VersionRecord, bool) {
 	for _, record := range v.Versions {
-		if record.GetRelativePath() == path {
+		if record.RelativePath() == path {
 			return record, true
 		}
 	}

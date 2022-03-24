@@ -51,7 +51,7 @@ func (w *localWriter) save() {
 	allPhases := w.config.Orchestration.Phases
 	for _, phase := range allPhases {
 		if err := w.savePhase(phase, allPhases); err != nil {
-			errors.Append(utils.PrefixError(fmt.Sprintf(`cannot save phase "%s"`, phase.RelativePath), err))
+			errors.Append(utils.PrefixError(fmt.Sprintf(`cannot save phase "%s"`, phase.RelPath), err))
 		}
 	}
 
@@ -109,7 +109,7 @@ func (w *localWriter) savePhase(phase *model.Phase, allPhases []*model.Phase) er
 	// Write tasks
 	for _, task := range phase.Tasks {
 		if err := w.saveTask(task); err != nil {
-			errors.Append(utils.PrefixError(fmt.Sprintf(`cannot save task "%s"`, task.RelativePath), err))
+			errors.Append(utils.PrefixError(fmt.Sprintf(`cannot save task "%s"`, task.RelPath), err))
 		}
 	}
 

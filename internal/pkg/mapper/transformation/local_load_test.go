@@ -47,7 +47,7 @@ func TestLoadTransformationInvalidConfigAndMeta(t *testing.T) {
 	}
 	record := &model.ConfigManifest{
 		ConfigKey: configKey,
-		Paths:     model.Paths{AbsPath: model.AbsPath{RelativePath: "config"}},
+		Paths:     model.Paths{AbsPath: model.AbsPath{RelPath: "config"}},
 	}
 	assert.NoError(t, fs.Mkdir(record.String()))
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.MetaFilePath(record.String()), metaFile)))

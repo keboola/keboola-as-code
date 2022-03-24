@@ -7,19 +7,19 @@ import (
 )
 
 type RecordPath interface {
-	GetAbsPath() AbsPath
-	// Path gets path relative to the top dir, it is parent path + relative path.
+	Path() AbsPath
+	// String gets path relative to the top dir, it is parent path + relative path.
 	String() string
-	// GetRelativePath - for example path of the object inside parent object/path.
-	GetRelativePath() string
+	// RelativePath - for example path of the object inside parent object/path.
+	RelativePath() string
 	// SetRelativePath - for example path of the object inside parent object/path.
 	SetRelativePath(string)
-	// GetParentPath - for example path of the parent object.
-	GetParentPath() string
+	// ParentPath - for example path of the parent object.
+	ParentPath() string
 	// SetParentPath - for example path of the parent object.
 	SetParentPath(string)
-	// IsParentPathSet returns true if the parent path is set/resolved.
-	IsParentPathSet() bool
+	// IsSet returns true if the parent path is set/resolved, and relative path is not empty.
+	IsSet() bool
 }
 
 // ObjectManifest - manifest record for a object.
@@ -39,19 +39,19 @@ type ObjectManifestWithRelations interface {
 
 type BranchManifest struct {
 	BranchKey
-	AbsPath `json:"path"`
+	AbsPath
 }
 
 type ConfigManifest struct {
 	ConfigKey
-	AbsPath   `json:"path"`
+	AbsPath
 	Relations Relations              `json:"relations,omitempty" validate:"dive"` // relations with other objects, for example variables definition
 	Metadata  *orderedmap.OrderedMap `json:"metadata,omitempty"`
 }
 
 type ConfigRowManifest struct {
 	ConfigRowKey
-	AbsPath   `json:"path"`
+	AbsPath
 	Relations Relations `json:"relations,omitempty" validate:"dive"` // relations with other objects, for example variables values definition
 }
 
@@ -61,15 +61,24 @@ type ConfigManifestWithRows struct {
 }
 
 func (m BranchManifest) String() string {
-	return fmt.Sprintf(`%s "%s"`, m.Kind().Name, m.AbsPath.String())
+	if m.AbsPath.IsSet() {
+		return fmt.Sprintf(`%s "%s"`, m.Kind().Name, m.AbsPath.String())
+	}
+	return m.Key().String()
 }
 
 func (m ConfigManifest) String() string {
-	return fmt.Sprintf(`%s "%s"`, m.Kind().Name, m.AbsPath.String())
+	if m.AbsPath.IsSet() {
+		return fmt.Sprintf(`%s "%s"`, m.Kind().Name, m.AbsPath.String())
+	}
+	return m.Key().String()
 }
 
 func (m ConfigRowManifest) String() string {
-	return fmt.Sprintf(`%s "%s"`, m.Kind().Name, m.AbsPath.String())
+	if m.AbsPath.IsSet() {
+		return fmt.Sprintf(`%s "%s"`, m.Kind().Name, m.AbsPath.String())
+	}
+	return m.Key().String()
 }
 
 func (m BranchManifest) NewEmptyObject() Object {

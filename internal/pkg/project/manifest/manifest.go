@@ -1,10 +1,13 @@
 package manifest
 
 import (
+	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/object"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -34,9 +37,9 @@ type Project struct {
 	ApiHost string `json:"apiHost" validate:"required,hostname"`
 }
 
-func New(projectId int, apiHost string) *Manifest {
+func New(ctx context.Context, projectId int, apiHost string) *Manifest {
 	return &Manifest{
-		records:      manifest.NewCollection(model.SortById),
+		records:      manifest.NewCollection(ctx, naming.NewRegistry(), object.NewIdSorter()),
 		project:      Project{Id: projectId, ApiHost: apiHost},
 		naming:       naming.TemplateWithIds(),
 		filter:       model.NoFilter(),
@@ -44,7 +47,7 @@ func New(projectId int, apiHost string) *Manifest {
 	}
 }
 
-func Load(fs filesystem.Fs, ignoreErrors bool) (*Manifest, error) {
+func Load(ctx context.Context, fs filesystem.Fs, ignoreErrors bool) (*Manifest, error) {
 	// Load file content
 	content, err := loadFile(fs)
 	if err != nil && (!ignoreErrors || content == nil) {
@@ -52,10 +55,10 @@ func Load(fs filesystem.Fs, ignoreErrors bool) (*Manifest, error) {
 	}
 
 	// Create manifest
-	m := New(content.Project.Id, content.Project.ApiHost)
+	m := New(ctx, content.Project.Id, content.Project.ApiHost)
 
 	// Set configuration
-	m.SetSortBy(content.SortBy)
+	m.SetSorter(object.NewSorterFromName(content.SortBy, m.NamingRegistry()))
 	m.naming = content.Naming
 	m.filter.SetAllowedBranches(content.AllowedBranches)
 	m.filter.SetIgnoredComponents(content.IgnoredComponents)
@@ -73,7 +76,6 @@ func Load(fs filesystem.Fs, ignoreErrors bool) (*Manifest, error) {
 func (m *Manifest) Save(fs filesystem.Fs) error {
 	// Create file content
 	content := newFile(m.ProjectId(), m.ApiHost())
-	content.SortBy = m.SortBy()
 	content.Naming = m.naming
 	content.AllowedBranches = m.filter.AllowedBranches()
 	content.IgnoredComponents = m.filter.IgnoredComponents()

@@ -179,7 +179,7 @@ func (r *Reporter) pathToString(path cmp.Path) string {
 func (r *Reporter) objectPath(value reflect.Value) string {
 	if value.IsValid() {
 		if v, ok := value.Interface().(model.RecordPath); ok {
-			return v.GetRelativePath()
+			return v.RelativePath()
 		}
 	}
 	return ""

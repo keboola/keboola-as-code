@@ -106,7 +106,7 @@ func (e *executor) persistNewObject(action *newObjectAction) {
 		}
 
 		// Set local path
-		record.SetRelativePath(action.GetRelativePath())
+		record.SetRelativePath(action.RelativePath())
 
 		// Load model
 		e.uow.LoadObject(record, model.NoFilter())

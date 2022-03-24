@@ -30,7 +30,7 @@ func (m *transformationMapper) updateBlockPath(g model.PathsGenerator, parent *m
 	block.SetParentPath(blocksDir)
 
 	// Re-generate object path IF rename is enabled OR path is not set
-	if block.RelativePath == "" || g.RenameEnabled() {
+	if block.RelPath == "" || g.RenameEnabled() {
 		renameFrom := block.String()
 		block.AbsPath = m.state.NamingGenerator().blockPath(block.GetParentPath(), block)
 
@@ -54,7 +54,7 @@ func (m *transformationMapper) updateCodePath(g model.PathsGenerator, parent *mo
 	code.SetParentPath(block.String())
 
 	// Re-generate object path IF rename is enabled OR path is not set
-	if code.RelativePath == "" || g.RenameEnabled() {
+	if code.RelPath == "" || g.RenameEnabled() {
 		renameFrom := code.String()
 		code.AbsPath = m.state.NamingGenerator().codePath(code.GetParentPath(), code)
 		// Has been code renamed?

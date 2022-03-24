@@ -115,7 +115,7 @@ func (m *variablesMapper) ensureOneRowHasRelation(config *model.Config) error {
 
 		// Has row "default" in the name or path?
 		if strings.Contains(strhelper.NormalizeName(row.Local.Name), `default`) ||
-			strings.Contains(row.GetRelativePath(), `default`) {
+			strings.Contains(row.RelativePath(), `default`) {
 			rowsWithDefaultInName = append(rowsWithDefaultInName, row)
 		}
 	}

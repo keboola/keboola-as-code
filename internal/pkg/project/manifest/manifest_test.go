@@ -1,6 +1,7 @@
 package manifest
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -44,7 +45,7 @@ func cases() []test {
 
 func TestNewManifest(t *testing.T) {
 	t.Parallel()
-	m := New(123, `foo.bar`)
+	m := New(context.Background(), 123, `foo.bar`)
 	assert.NotNil(t, m)
 	assert.Equal(t, 123, m.project.Id)
 	assert.Equal(t, `foo.bar`, m.project.ApiHost)
@@ -55,7 +56,7 @@ func TestManifestLoadNotFound(t *testing.T) {
 	fs := testfs.NewMemoryFs()
 
 	// Load
-	manifest, err := Load(fs, false)
+	manifest, err := Load(context.Background(), fs, false)
 	assert.Nil(t, manifest)
 	assert.Error(t, err)
 	assert.Equal(t, `manifest ".keboola/manifest.json" not found`, err.Error())
@@ -71,7 +72,7 @@ func TestLoadManifestFile(t *testing.T) {
 		assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(path, c.json)))
 
 		// Load
-		manifest, err := Load(fs, false)
+		manifest, err := Load(context.Background(), fs, false)
 		assert.NotNil(t, manifest)
 		assert.NoError(t, err)
 
@@ -89,7 +90,7 @@ func TestSaveManifestFile(t *testing.T) {
 		fs := testfs.NewMemoryFs()
 
 		// Save
-		manifest := New(12345, "foo.bar")
+		manifest := New(context.Background(), 12345, "foo.bar")
 		manifest.SetNamingTemplate(c.naming)
 		manifest.SetAllowedBranches(c.filter.AllowedBranches())
 		manifest.SetIgnoredComponents(c.filter.IgnoredComponents())
@@ -156,12 +157,10 @@ func TestManifestValidateNestedField(t *testing.T) {
 	content.setRecords(minimalRecords())
 	content.Branches = append(content.Branches, &model.BranchManifest{
 		BranchKey: model.BranchKey{Id: 0},
-		Paths: model.Paths{
-			AbsPath: model.NewAbsPath(
-				"bar",
-				"foo",
-			),
-		},
+		AbsPath: model.NewAbsPath(
+			"bar",
+			"foo",
+		),
 	})
 	err := content.validate()
 	assert.Error(t, err)
@@ -178,7 +177,7 @@ func TestManifestCyclicDependency(t *testing.T) {
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(path, cyclicDependencyJson())))
 
 	// Load
-	manifest, err := Load(fs, false)
+	manifest, err := Load(context.Background(), fs, false)
 	assert.Nil(t, manifest)
 	assert.Error(t, err)
 	assert.Equal(t, "invalid manifest:\n  - a cyclic relation was found when resolving path to config \"branch:123/component:keboola.variables/config:111\"", err.Error())
@@ -335,65 +334,45 @@ func fullJson() string {
 func fullRecords() []model.ObjectManifest {
 	return []model.ObjectManifest{
 		&model.BranchManifest{
-			RecordState: model.RecordState{
-				Persisted: true,
-			},
 			BranchKey: model.BranchKey{
 				Id: 10,
 			},
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(
-					"",
-					"main",
-				),
-			},
+			AbsPath: model.NewAbsPath(
+				"",
+				"main",
+			),
 		},
 		&model.BranchManifest{
-			RecordState: model.RecordState{
-				Persisted: true,
-			},
 			BranchKey: model.BranchKey{
 				Id: 11,
 			},
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(
-					"",
-					"11-dev",
-				),
-			},
+			AbsPath: model.NewAbsPath(
+				"",
+				"11-dev",
+			),
 		},
 
 		&model.ConfigManifest{
-			RecordState: model.RecordState{
-				Persisted: true,
-			},
 			ConfigKey: model.ConfigKey{
 				BranchId:    10,
 				ComponentId: "keboola.ex-db-oracle",
 				Id:          "11",
 			},
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(
-					"main",
-					"11-raw-data",
-				),
-			},
+			AbsPath: model.NewAbsPath(
+				"main",
+				"11-raw-data",
+			),
 		},
 		&model.ConfigManifest{
-			RecordState: model.RecordState{
-				Persisted: true,
-			},
 			ConfigKey: model.ConfigKey{
 				BranchId:    11,
 				ComponentId: "keboola.variables",
 				Id:          "13",
 			},
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(
-					"11-dev/12-current-month",
-					"variables",
-				),
-			},
+			AbsPath: model.NewAbsPath(
+				"11-dev/12-current-month",
+				"variables",
+			),
 			Relations: model.Relations{
 				&model.VariablesForRelation{
 					ComponentId: "keboola.wr-db-mysql",
@@ -402,122 +381,87 @@ func fullRecords() []model.ObjectManifest {
 			},
 		},
 		&model.ConfigManifest{
-			RecordState: model.RecordState{
-				Persisted: true,
-			},
 			ConfigKey: model.ConfigKey{
 				BranchId:    11,
 				ComponentId: "keboola.wr-db-mysql",
 				Id:          "12",
 			},
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(
-					"11-dev",
-					"12-current-month",
-				),
-			},
+			AbsPath: model.NewAbsPath(
+				"11-dev",
+				"12-current-month",
+			),
 		},
 		&model.ConfigRowManifest{
-			RecordState: model.RecordState{
-				Persisted: true,
-			},
 			ConfigRowKey: model.ConfigRowKey{
 				Id:          "101",
 				BranchId:    10,
 				ComponentId: "keboola.ex-db-oracle",
 				ConfigId:    "11",
 			},
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(
-					"main/11-raw-data",
-					"rows/101-region-1",
-				),
-			},
+			AbsPath: model.NewAbsPath(
+				"main/11-raw-data",
+				"rows/101-region-1",
+			),
 		},
 		&model.ConfigRowManifest{
-			RecordState: model.RecordState{
-				Persisted: true,
-			},
 			ConfigRowKey: model.ConfigRowKey{
 				Id:          "102",
 				BranchId:    10,
 				ComponentId: "keboola.ex-db-oracle",
 				ConfigId:    "11",
 			},
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(
-					"main/11-raw-data",
-					"rows/102-region-2",
-				),
-			},
+			AbsPath: model.NewAbsPath(
+				"main/11-raw-data",
+				"rows/102-region-2",
+			),
 		},
 		&model.ConfigRowManifest{
-			RecordState: model.RecordState{
-				Persisted: true,
-			},
 			ConfigRowKey: model.ConfigRowKey{
 				Id:          "105",
 				BranchId:    11,
 				ComponentId: "keboola.variables",
 				ConfigId:    "13",
 			},
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(
-					"11-dev/12-current-month/variables",
-					"values/default",
-				),
-			},
+			AbsPath: model.NewAbsPath(
+				"11-dev/12-current-month/variables",
+				"values/default",
+			),
 		},
 		&model.ConfigRowManifest{
-			RecordState: model.RecordState{
-				Persisted: true,
-			},
 			ConfigRowKey: model.ConfigRowKey{
 				Id:          "106",
 				BranchId:    11,
 				ComponentId: "keboola.variables",
 				ConfigId:    "13",
 			},
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(
-					"11-dev/12-current-month/variables",
-					"values/other",
-				),
-			},
+			AbsPath: model.NewAbsPath(
+				"11-dev/12-current-month/variables",
+				"values/other",
+			),
 		},
 		&model.ConfigRowManifest{
-			RecordState: model.RecordState{
-				Persisted: true,
-			},
 			ConfigRowKey: model.ConfigRowKey{
 				Id:          "103",
 				BranchId:    11,
 				ComponentId: "keboola.wr-db-mysql",
 				ConfigId:    "12",
 			},
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(
-					"11-dev/12-current-month",
-					"rows/103-all",
-				),
-			},
+			AbsPath: model.NewAbsPath(
+				"11-dev/12-current-month",
+				"rows/103-all",
+			),
 		},
 		&model.ConfigRowManifest{
-			RecordState: model.RecordState{
-				Persisted: true,
-			},
 			ConfigRowKey: model.ConfigRowKey{
 				Id:          "104",
 				BranchId:    11,
 				ComponentId: "keboola.wr-db-mysql",
 				ConfigId:    "12",
 			},
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(
-					"11-dev/12-current-month",
-					"rows/104-sum",
-				),
-			},
+			AbsPath: model.NewAbsPath(
+				"11-dev/12-current-month",
+				"rows/104-sum",
+			),
 		},
 	}
 }

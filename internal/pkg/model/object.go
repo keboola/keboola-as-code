@@ -47,6 +47,7 @@ type ObjectWithRelations interface {
 
 type ObjectsSorter interface {
 	Less(i, j Key) bool
+	String() string
 }
 
 type Objects interface {

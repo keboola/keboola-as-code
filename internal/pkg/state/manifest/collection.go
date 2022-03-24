@@ -1,17 +1,21 @@
 package manifest
 
 import (
+	"context"
 	"fmt"
+	"sort"
 	"sync"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
+	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 // Collection of model.ObjectManifest for each object: branch, config, row.
 type Collection struct {
+	ctx    context.Context
 	sorter model.ObjectsSorter
 	naming *naming.Registry
 
@@ -20,8 +24,18 @@ type Collection struct {
 	changed bool
 }
 
-func NewCollection(naming *naming.Registry, sorter model.ObjectsSorter) *Collection {
+// parentPathResolver is a helper struct to resolve record parent path.
+type parentPathResolver struct {
+	collection    *Collection
+	newRecords    []model.ObjectManifest
+	newRecordsMap map[model.Key]model.ObjectManifest
+	processing    map[model.Key]bool
+	processed     map[model.Key]error
+}
+
+func NewCollection(ctx context.Context, naming *naming.Registry, sorter model.ObjectsSorter) *Collection {
 	return &Collection{
+		ctx:     ctx,
 		naming:  naming,
 		sorter:  sorter,
 		lock:    &sync.Mutex{},
@@ -30,68 +44,68 @@ func NewCollection(naming *naming.Registry, sorter model.ObjectsSorter) *Collect
 	}
 }
 
-func (r *Collection) IsChanged() bool {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-	return r.changed
+func (c *Collection) IsChanged() bool {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	return c.changed
 }
 
-func (r *Collection) ResetChanged() {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-	r.resetChanged()
+func (c *Collection) ResetChanged() {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	c.resetChanged()
 }
 
-func (r *Collection) Sorter() model.ObjectsSorter {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-	return r.sorter
+func (c *Collection) Sorter() model.ObjectsSorter {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	return c.sorter
 }
 
-func (r *Collection) SetSorter(sorter model.ObjectsSorter) {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-	r.sorter = sorter
+func (c *Collection) SetSorter(sorter model.ObjectsSorter) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	c.sorter = sorter
 }
 
-func (r *Collection) NamingRegistry() *naming.Registry {
-	return r.naming
+func (c *Collection) NamingRegistry() *naming.Registry {
+	return c.naming
 }
 
-func (r *Collection) All() []model.ObjectManifest {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-	return r.all()
+func (c *Collection) All() []model.ObjectManifest {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	return c.all()
 }
 
-func (r *Collection) Get(key model.Key) (model.ObjectManifest, bool) {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-	return r.get(key)
+func (c *Collection) Get(key model.Key) (model.ObjectManifest, bool) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	return c.get(key)
 }
 
-func (r *Collection) Set(records ...model.ObjectManifest) error {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-	defer r.resetChanged()
+func (c *Collection) Set(records []model.ObjectManifest) error {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	defer c.resetChanged()
 
 	// Clear
-	r.records = orderedmap.New()
-	r.naming.Clear()
+	c.records = orderedmap.New()
+	c.naming.Clear()
 
 	// Add records
-	return r.add(records...)
+	return c.add(records...)
 }
 
-func (r *Collection) Add(records ...model.ObjectManifest) error {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-	return r.add(records...)
+func (c *Collection) Add(records ...model.ObjectManifest) error {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	return c.add(records...)
 }
 
-func (r *Collection) Remove(keys ...model.Key) {
-	r.lock.Lock()
-	defer r.lock.Unlock()
+func (c *Collection) Remove(keys ...model.Key) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 
 	// Convert keys to a map.
 	toRemove := make(map[model.Key]bool)
@@ -100,7 +114,7 @@ func (r *Collection) Remove(keys ...model.Key) {
 	}
 
 	// Check all objects
-	for _, objectManifest := range r.all() {
+	for _, objectManifest := range c.all() {
 		// Also remove the children.
 		// If the parent is removed, this object will also be removed.
 		key := objectManifest.Key()
@@ -111,72 +125,170 @@ func (r *Collection) Remove(keys ...model.Key) {
 
 		// Remove record
 		if toRemove[key] {
-			r.changed = true
-			r.naming.Detach(key)
-			r.records.Delete(key.String())
+			c.changed = true
+			c.naming.Detach(key)
+			c.records.Delete(key.String())
 		}
 	}
 }
 
-func (r *Collection) all() []model.ObjectManifest {
+func (c *Collection) all() []model.ObjectManifest {
 	// Sort
-	r.records.Sort(func(i *orderedmap.Pair, j *orderedmap.Pair) bool {
+	c.records.Sort(func(i *orderedmap.Pair, j *orderedmap.Pair) bool {
 		iKey := i.Value.(model.ObjectManifest).Key()
 		jKey := j.Value.(model.ObjectManifest).Key()
-		return r.sorter.Less(iKey, jKey)
+		return c.sorter.Less(iKey, jKey)
 	})
 
 	// Convert to slice
-	out := make([]model.ObjectManifest, len(r.records.Keys()))
-	for i, k := range r.records.Keys() {
-		v, _ := r.records.Get(k)
+	out := make([]model.ObjectManifest, len(c.records.Keys()))
+	for i, k := range c.records.Keys() {
+		v, _ := c.records.Get(k)
 		out[i] = v.(model.ObjectManifest)
 	}
 	return out
 }
 
-func (r *Collection) get(key model.Key) (model.ObjectManifest, bool) {
-	if v, found := r.records.Get(key.String()); found {
+func (c *Collection) get(key model.Key) (model.ObjectManifest, bool) {
+	if v, found := c.records.Get(key.String()); found {
 		return v.(model.ObjectManifest), found
 	}
 	return nil, false
 }
 
-func (r *Collection) add(records ...model.ObjectManifest) error {
+func (c *Collection) add(records ...model.ObjectManifest) error {
 	errors := utils.NewMultiError()
-	for _, objectManifest := range records {
-		// Get parent
-		parentKey, err := objectManifest.ParentKey()
-		if err != nil {
-			errors.Append(utils.PrefixError(fmt.Sprintf(`cannot get parent of %s`, objectManifest.String()), err))
-			continue
-		}
+	records, err := c.resolveParentPaths(records)
+	if err != nil {
+		errors.Append(utils.PrefixError("invalid relations", err))
+	}
 
-		// Check if parent exists
-		if parentKey != nil {
-			if _, found := r.get(parentKey); !found {
-				errors.Append(utils.PrefixError(
-					fmt.Sprintf(`parent %s not found`, parentKey.String()),
-					fmt.Errorf(`referenced from %s`, objectManifest.String()),
-				))
-				continue
-			}
+	// Add valid records
+	for _, record := range records {
+		if err := c.addOne(record); err != nil {
+			errors.Append(utils.PrefixError(fmt.Sprintf(`invalid %s`, record.String()), err))
 		}
-
-		// Attach path to the naming
-		if err := r.naming.Attach(objectManifest.Key(), objectManifest.GetAbsPath()); err != nil {
-			errors.Append(err)
-			continue
-		}
-
-		// Add record
-		r.records.Set(objectManifest.Key().String(), objectManifest)
-		r.changed = true
 	}
 
 	return errors.ErrorOrNil()
 }
 
-func (r *Collection) resetChanged() {
-	r.changed = false
+func (c *Collection) addOne(record model.ObjectManifest) error {
+	// Check path
+	if record.RelativePath() == "" {
+		return fmt.Errorf("path is not set")
+	}
+
+	// Attach path to the naming
+	if err := c.naming.Attach(record.Key(), record.Path()); err != nil {
+		return err
+	}
+
+	// Validate record
+	if err := validator.Validate(c.ctx, record); err != nil {
+		return err
+	}
+
+	// Add record
+	c.records.Set(record.Key().String(), record)
+	c.changed = true
+	return nil
+}
+
+func (c *Collection) resetChanged() {
+	c.changed = false
+}
+
+// resolveParentPaths by parent key and detect cyclic relation.y
+func (c *Collection) resolveParentPaths(newRecords []model.ObjectManifest) (validRecords []model.ObjectManifest, err error) {
+	// Sort records
+	sort.SliceStable(newRecords, func(i, j int) bool {
+		return c.sorter.Less(newRecords[i].Key(), newRecords[j].Key())
+	})
+
+	// Create resolver
+	r := &parentPathResolver{
+		collection:    c,
+		newRecords:    newRecords,
+		newRecordsMap: make(map[model.Key]model.ObjectManifest),
+		processing:    make(map[model.Key]bool),
+		processed:     make(map[model.Key]error),
+	}
+
+	// Add new records to the map, for quick access
+	for _, record := range newRecords {
+		r.newRecordsMap[record.Key()] = record
+	}
+
+	// Process all
+	errors := utils.NewMultiError()
+	for _, record := range r.newRecords {
+		if valid, err := r.process(record, nil); valid {
+			validRecords = append(validRecords, record)
+		} else if err != nil {
+			errors.Append(err)
+		}
+	}
+	return validRecords, errors.ErrorOrNil()
+}
+
+func (r *parentPathResolver) process(record model.ObjectManifest, path []model.Key) (valid bool, err error) {
+	key := record.Key()
+
+	// Is already processed?
+	if err, found := r.processed[key]; found {
+		// The error is already logged, so we're not returning it
+		return err == nil, nil
+	}
+
+	// Cyclic relation?
+	if r.processing[key] {
+		details := utils.NewMultiError()
+		for _, key := range path {
+			details.Append(fmt.Errorf(`%s is child of`, key.String()))
+		}
+		details.Append(fmt.Errorf(key.String()))
+		return false, utils.PrefixError("a cyclic relation found", details)
+	}
+
+	// Mark as processing
+	r.processing[key] = true
+	defer func() {
+		// Reset processing state and store error if any
+		r.processing[key] = false
+		r.processed[key] = err
+	}()
+
+	// Get parent
+	parentKey, err := record.ParentKey()
+	if err != nil {
+		return false, utils.PrefixError(fmt.Sprintf(`cannot get parent of %s`, record.String()), err)
+	}
+
+	// Top level object
+	if parentKey == nil {
+		return true, nil
+	}
+	// Get parent
+	var parent model.ObjectManifest
+	var found bool
+	if parent, found = r.newRecordsMap[parentKey]; found {
+		// Parent has been found in the new records
+	} else if parent, found = r.collection.get(parentKey); found {
+		// Parent has been found in the old records
+	} else {
+		return false, utils.PrefixError(
+			fmt.Sprintf(`%s not found`, parentKey.String()),
+			fmt.Errorf(`referenced as a parent of %s`, record.String()),
+		)
+	}
+
+	// Process parent
+	if valid, err = r.process(parent, append(path, key)); !valid {
+		return false, err
+	}
+
+	// Set parent path
+	record.SetParentPath(parent.Path().String())
+	return true, nil
 }

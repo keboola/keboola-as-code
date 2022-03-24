@@ -1,14 +1,32 @@
 package object
 
 import (
+	"fmt"
+
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
+)
+
+const (
+	idSorterName   = "id"
+	pathSorterName = "path"
 )
 
 type idSorter struct{}
 
 type pathSorter struct {
 	naming *naming.Registry
+}
+
+func NewSorterFromName(name string, naming *naming.Registry) ObjectsSorter {
+	switch name {
+	case idSorterName:
+		return NewIdSorter()
+	case pathSorterName:
+		return NewPathSorter(naming)
+	default:
+		panic(fmt.Errorf(`unexpeted objects sorter "%s"`, name))
+	}
 }
 
 // NewIdSorter - sort objects by level and IDs.
@@ -31,6 +49,10 @@ func (idSorter) Less(i, j Key) bool {
 	}
 }
 
+func (idSorter) String() string {
+	return idSorterName
+}
+
 func (s pathSorter) Less(i, j Key) bool {
 	if levelDiff := i.Level() - j.Level(); levelDiff == 0 {
 		// Same level -> sort by path
@@ -48,4 +70,8 @@ func (s pathSorter) Less(i, j Key) bool {
 		// Different level -> sort by level
 		return levelDiff < 0
 	}
+}
+
+func (s pathSorter) String() string {
+	return pathSorterName
 }

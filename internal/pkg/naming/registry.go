@@ -93,11 +93,11 @@ func (r Registry) makeUniquePath(key Key, p AbsPath) AbsPath {
 	defer r.lock.Unlock()
 
 	// Object path cannot be empty
-	if len(p.GetRelativePath()) == 0 {
+	if len(p.RelativePath()) == 0 {
 		p.SetRelativePath(strhelper.NormalizeName(key.Kind().Name))
 	}
 
-	dir, file := filesystem.Split(p.GetRelativePath())
+	dir, file := filesystem.Split(p.RelativePath())
 
 	// Add a suffix to the path if it is not unique
 	suffix := 0

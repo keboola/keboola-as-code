@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/object"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
@@ -43,7 +44,7 @@ func newFile(projectId int, apiHost string) *file {
 	return &file{
 		Version:           build.MajorVersion,
 		Project:           Project{Id: projectId, ApiHost: apiHost},
-		SortBy:            model.SortById,
+		SortBy:            object.NewIdSorter().String(),
 		Naming:            naming.TemplateWithIds(),
 		AllowedBranches:   model.DefaultAllowedBranches(),
 		IgnoredComponents: model.ComponentIds{},
@@ -125,16 +126,6 @@ func (c *file) setRecords(records []model.ObjectManifest) {
 	c.Configs = make([]*model.ConfigManifestWithRows, 0)
 
 	for _, manifest := range records {
-		// Skip invalid (eg. missing config file)
-		if manifest.State().IsInvalid() {
-			continue
-		}
-
-		// Skip not persisted
-		if !manifest.State().IsPersisted() {
-			continue
-		}
-
 		// Generate content, we have to check if parent exists (eg. branch could have been deleted)
 		switch v := manifest.(type) {
 		case *model.BranchManifest:
