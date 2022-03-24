@@ -18,8 +18,6 @@ type RecordPath interface {
 	ParentPath() string
 	// SetParentPath - for example path of the parent object.
 	SetParentPath(string)
-	// IsSet returns true if the parent path is set/resolved, and relative path is not empty.
-	IsSet() bool
 }
 
 // ObjectManifest - manifest record for a object.

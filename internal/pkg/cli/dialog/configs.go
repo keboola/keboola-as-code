@@ -92,5 +92,5 @@ func configsSelectOpts(all []*model.ConfigWithRows) []string {
 }
 
 func formatConfig(config *model.ConfigWithRows) string {
-	return fmt.Sprintf(`%s (%s:%s)`, config.ObjectName(), config.ComponentId, config.ObjectId())
+	return fmt.Sprintf(`%s (%s)`, config.ObjectName(), config.ObjectId())
 }

@@ -44,7 +44,7 @@ func (v RowId) String() string {
 }
 
 func (k ConfigRowKey) Level() int {
-	return 4
+	return 3
 }
 
 func (k ConfigRowKey) Kind() Kind {

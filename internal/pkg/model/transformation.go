@@ -88,11 +88,11 @@ func (k CodeKey) ObjectId() string {
 }
 
 func (k BlockKey) Level() int {
-	return 5
+	return 4
 }
 
 func (k CodeKey) Level() int {
-	return 6
+	return 5
 }
 
 func (k BlockKey) Key() Key {

@@ -40,12 +40,12 @@ func NewPathSorter(naming *naming.Registry) ObjectsSorter {
 }
 
 func (idSorter) Less(i, j Key) bool {
-	if levelDiff := i.Level() - j.Level(); levelDiff == 0 {
-		// Same level -> sort by ID
-		return i.ObjectId() < j.ObjectId()
-	} else {
-		// Different level -> sort by level
+	if levelDiff := i.Level() - j.Level(); levelDiff != 0 {
+		// Different levels -> sort by level
 		return levelDiff < 0
+	} else {
+		// Same level -> sort by ID
+		return fullObjectId(i) < fullObjectId(j)
 	}
 }
 
@@ -54,7 +54,10 @@ func (idSorter) String() string {
 }
 
 func (s pathSorter) Less(i, j Key) bool {
-	if levelDiff := i.Level() - j.Level(); levelDiff == 0 {
+	if levelDiff := i.Level() - j.Level(); levelDiff != 0 {
+		// Different level -> sort by level
+		return levelDiff < 0
+	} else {
 		// Same level -> sort by path
 		iPath, iFound := s.naming.PathByKey(i)
 		jPath, jFound := s.naming.PathByKey(j)
@@ -63,15 +66,22 @@ func (s pathSorter) Less(i, j Key) bool {
 			return iPath.String() < jPath.String()
 		} else {
 			// Fallback -> sort by IDs
-			return i.ObjectId() < j.ObjectId()
+			return fullObjectId(i) < fullObjectId(j)
 		}
-
-	} else {
-		// Different level -> sort by level
-		return levelDiff < 0
 	}
 }
 
 func (s pathSorter) String() string {
 	return pathSorterName
+}
+
+func fullObjectId(key Key) (fullId string) {
+	for {
+		fullId = key.ObjectId() + "/" + fullId
+		key, _ = key.ParentKey()
+		if key == nil {
+			break
+		}
+	}
+	return fullId
 }

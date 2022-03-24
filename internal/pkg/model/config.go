@@ -50,7 +50,7 @@ func (v ConfigId) String() string {
 }
 
 func (k ConfigKey) Level() int {
-	return 3
+	return 2
 }
 
 func (k ConfigKey) Kind() Kind {
@@ -78,7 +78,7 @@ func (k ConfigKey) ParentKey() (Key, error) {
 }
 
 func (k ConfigKey) ObjectId() string {
-	return k.Id.String()
+	return k.ComponentId.String() + ":" + k.Id.String()
 }
 
 func (k ConfigKey) ComponentKey() ComponentKey {

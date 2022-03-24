@@ -11,10 +11,10 @@ type Kind struct {
 }
 
 type Key interface {
-	Level() int     // hierarchical level, "1" for branch, "2" for config, ...
-	Kind() Kind     // kind of the object: branch, config, ...
-	String() string // human-readable description of the object
-	ObjectId() string
+	Level() int              // hierarchical level, "1" for branch, "2" for config, ...
+	Kind() Kind              // kind of the object: branch, config, ...
+	String() string          // human-readable description of the object
+	ObjectId() string        // ID of the object
 	ParentKey() (Key, error) // unique key of the parent object
 }
 

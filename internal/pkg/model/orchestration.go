@@ -70,11 +70,11 @@ func (k TaskKey) ObjectId() string {
 }
 
 func (k PhaseKey) Level() int {
-	return 5
+	return 4
 }
 
 func (k TaskKey) Level() int {
-	return 6
+	return 5
 }
 
 func (k PhaseKey) Key() Key {

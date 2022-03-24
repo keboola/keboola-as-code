@@ -2,6 +2,7 @@ package manifest
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -43,7 +44,7 @@ func cases() []test {
 	}
 }
 
-func TestNewManifest(t *testing.T) {
+func TestManifest_New(t *testing.T) {
 	t.Parallel()
 	m := New(context.Background(), 123, `foo.bar`)
 	assert.NotNil(t, m)
@@ -51,7 +52,7 @@ func TestNewManifest(t *testing.T) {
 	assert.Equal(t, `foo.bar`, m.project.ApiHost)
 }
 
-func TestManifestLoadNotFound(t *testing.T) {
+func TestManifest_Load_NotFound(t *testing.T) {
 	t.Parallel()
 	fs := testfs.NewMemoryFs()
 
@@ -62,7 +63,7 @@ func TestManifestLoadNotFound(t *testing.T) {
 	assert.Equal(t, `manifest ".keboola/manifest.json" not found`, err.Error())
 }
 
-func TestLoadManifestFile(t *testing.T) {
+func TestManifest_Load(t *testing.T) {
 	t.Parallel()
 	for _, c := range cases() {
 		fs := testfs.NewMemoryFs()
@@ -84,7 +85,7 @@ func TestLoadManifestFile(t *testing.T) {
 	}
 }
 
-func TestSaveManifestFile(t *testing.T) {
+func TestManifest_Save(t *testing.T) {
 	t.Parallel()
 	for _, c := range cases() {
 		fs := testfs.NewMemoryFs()
@@ -104,7 +105,7 @@ func TestSaveManifestFile(t *testing.T) {
 	}
 }
 
-func TestManifestValidateEmpty(t *testing.T) {
+func TestManifest_Validate_Empty(t *testing.T) {
 	t.Parallel()
 	content := &file{}
 	err := content.validate()
@@ -126,21 +127,21 @@ func TestManifestValidateEmpty(t *testing.T) {
 	assert.Equal(t, expected, err.Error())
 }
 
-func TestManifestValidateMinimal(t *testing.T) {
+func TestManifest_Validate_Minimal(t *testing.T) {
 	t.Parallel()
 	content := newFile(12345, "foo.bar")
 	content.setRecords(minimalRecords())
 	assert.NoError(t, content.validate())
 }
 
-func TestManifestValidateFull(t *testing.T) {
+func TestManifest_Validate_Full(t *testing.T) {
 	t.Parallel()
 	content := newFile(12345, "foo.bar")
 	content.setRecords(fullRecords())
 	assert.NoError(t, content.validate())
 }
 
-func TestManifestValidateBadVersion(t *testing.T) {
+func TestManifest_Validate_BadVersion(t *testing.T) {
 	t.Parallel()
 	content := newFile(12345, "foo.bar")
 	content.setRecords(minimalRecords())
@@ -151,7 +152,7 @@ func TestManifestValidateBadVersion(t *testing.T) {
 	assert.Equal(t, expected, err.Error())
 }
 
-func TestManifestValidateNestedField(t *testing.T) {
+func TestManifest_Validate_NestedFields(t *testing.T) {
 	t.Parallel()
 	content := newFile(12345, "foo.bar")
 	content.setRecords(minimalRecords())
@@ -168,7 +169,7 @@ func TestManifestValidateNestedField(t *testing.T) {
 	assert.Equal(t, expected, err.Error())
 }
 
-func TestManifestCyclicDependency(t *testing.T) {
+func TestManifest_CyclicDependency(t *testing.T) {
 	t.Parallel()
 	fs := testfs.NewMemoryFs()
 
@@ -180,7 +181,14 @@ func TestManifestCyclicDependency(t *testing.T) {
 	manifest, err := Load(context.Background(), fs, false)
 	assert.Nil(t, manifest)
 	assert.Error(t, err)
-	assert.Equal(t, "invalid manifest:\n  - a cyclic relation was found when resolving path to config \"branch:123/component:keboola.variables/config:111\"", err.Error())
+
+	expected := `
+invalid manifest: a cyclic relation found:
+  - config "branch:123/component:keboola.variables/config:111" is child of
+  - config "branch:123/component:keboola.variables/config:222" is child of
+  - config "branch:123/component:keboola.variables/config:111"
+`
+	assert.Equal(t, strings.Trim(expected, "\n"), err.Error())
 }
 
 func minimalJson() string {

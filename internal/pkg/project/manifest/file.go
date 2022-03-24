@@ -120,34 +120,34 @@ func (c *file) records() []model.ObjectManifest {
 
 func (c *file) setRecords(records []model.ObjectManifest) {
 	// Convert records map to slices
-	branchesMap := make(map[string]*model.BranchManifest)
-	configsMap := make(map[string]*model.ConfigManifestWithRows)
+	branchesMap := make(map[model.Key]*model.BranchManifest)
+	configsMap := make(map[model.Key]*model.ConfigManifestWithRows)
 	c.Branches = make([]*model.BranchManifest, 0)
 	c.Configs = make([]*model.ConfigManifestWithRows, 0)
 
-	for _, manifest := range records {
+	for _, record := range records {
 		// Generate content, we have to check if parent exists (eg. branch could have been deleted)
-		switch v := manifest.(type) {
+		switch v := record.(type) {
 		case *model.BranchManifest:
 			c.Branches = append(c.Branches, v)
-			branchesMap[v.String()] = v
+			branchesMap[v.Key()] = v
 		case *model.ConfigManifest:
-			_, found := branchesMap[v.BranchKey().String()]
+			_, found := branchesMap[v.BranchKey()]
 			if found {
 				config := &model.ConfigManifestWithRows{
 					ConfigManifest: *v,
 					Rows:           make([]*model.ConfigRowManifest, 0),
 				}
-				configsMap[config.String()] = config
+				configsMap[config.Key()] = config
 				c.Configs = append(c.Configs, config)
 			}
 		case *model.ConfigRowManifest:
-			config, found := configsMap[v.ConfigKey().String()]
+			config, found := configsMap[v.ConfigKey()]
 			if found {
 				config.Rows = append(config.Rows, v)
 			}
 		default:
-			panic(fmt.Errorf(`unexpected type "%T"`, manifest))
+			panic(fmt.Errorf(`unexpected type "%T"`, record))
 		}
 	}
 }

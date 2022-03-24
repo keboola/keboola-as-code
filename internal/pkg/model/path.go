@@ -25,7 +25,7 @@ func (p AbsPath) Path() AbsPath {
 	return p
 }
 
-func (p *AbsPath) RelativePath() string {
+func (p AbsPath) RelativePath() string {
 	return string(p.RelPath)
 }
 
@@ -33,7 +33,7 @@ func (p *AbsPath) SetRelativePath(path string) {
 	p.RelPath = Path(path)
 }
 
-func (p *AbsPath) ParentPath() string {
+func (p AbsPath) ParentPath() string {
 	return string(p.parentPath)
 }
 
@@ -42,7 +42,7 @@ func (p *AbsPath) SetParentPath(parentPath string) {
 	p.parentPath = Path(parentPath)
 }
 
-func (p *AbsPath) IsSet() bool {
+func (p AbsPath) IsSet() bool {
 	return p.parentPathSet && p.RelPath != ""
 }
 

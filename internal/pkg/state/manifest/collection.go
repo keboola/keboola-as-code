@@ -160,7 +160,7 @@ func (c *Collection) add(records ...model.ObjectManifest) error {
 	errors := utils.NewMultiError()
 	records, err := c.resolveParentPaths(records)
 	if err != nil {
-		errors.Append(utils.PrefixError("invalid relations", err))
+		errors.Append(err)
 	}
 
 	// Add valid records
@@ -267,6 +267,7 @@ func (r *parentPathResolver) process(record model.ObjectManifest, path []model.K
 
 	// Top level object
 	if parentKey == nil {
+		record.SetParentPath("")
 		return true, nil
 	}
 	// Get parent

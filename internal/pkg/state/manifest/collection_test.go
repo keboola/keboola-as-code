@@ -52,6 +52,48 @@ func TestCollection_Add(t *testing.T) {
 	assert.True(t, c.IsChanged())
 }
 
+func TestCollection_Add_ResolveParentPath_1(t *testing.T) {
+	t.Parallel()
+	c := newTestCollection(t)
+	assert.Len(t, c.All(), 6)
+
+	key := BranchKey{Id: 789}
+	assert.NoError(t, c.Add(&BranchManifest{
+		BranchKey: key,
+		AbsPath:   AbsPath{RelPath: "my-branch"},
+	}))
+
+	assert.Len(t, c.All(), 7)
+	assert.True(t, c.IsChanged())
+
+	v, found := c.Get(key)
+	assert.True(t, found)
+	assert.True(t, v.Path().IsSet())
+	assert.Equal(t, "", v.ParentPath())
+	assert.Equal(t, "my-branch", v.RelativePath())
+}
+
+func TestCollection_Add_ResolveParentPath_2(t *testing.T) {
+	t.Parallel()
+	c := newTestCollection(t)
+	assert.Len(t, c.All(), 6)
+
+	key := ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: "678", Id: "1000"}
+	assert.NoError(t, c.Add(&ConfigRowManifest{
+		ConfigRowKey: key,
+		AbsPath:      AbsPath{RelPath: "row-1000"},
+	}))
+
+	assert.Len(t, c.All(), 7)
+	assert.True(t, c.IsChanged())
+
+	v, found := c.Get(key)
+	assert.True(t, found)
+	assert.True(t, v.Path().IsSet())
+	assert.Equal(t, "main/config-2", v.ParentPath())
+	assert.Equal(t, "row-1000", v.RelativePath())
+}
+
 func TestCollection_Add_AlreadyExists(t *testing.T) {
 	t.Parallel()
 	c := newTestCollection(t)
@@ -74,9 +116,8 @@ func TestCollection_Add_ParentNotFound(t *testing.T) {
 	})
 
 	expected := `
-invalid relations:
-  - config "branch:123/component:keboola.foo/config:999" not found:
-    - referenced as a parent of config row "branch:123/component:keboola.foo/config:999/row:1"
+config "branch:123/component:keboola.foo/config:999" not found:
+  - referenced as a parent of config row "branch:123/component:keboola.foo/config:999/row:1"
 `
 
 	assert.Error(t, err)
@@ -110,7 +151,7 @@ func TestCollection_Add_CyclicRelations_1(t *testing.T) {
 	)
 
 	expected := `
-invalid relations: a cyclic relation found:
+a cyclic relation found:
   - config "branch:123/component:keboola.variables/config:1" is child of
   - config "branch:123/component:keboola.variables/config:2" is child of
   - config "branch:123/component:keboola.variables/config:1"
@@ -155,7 +196,7 @@ func TestCollection_Add_CyclicRelations_2(t *testing.T) {
 	)
 
 	expected := `
-invalid relations: a cyclic relation found:
+a cyclic relation found:
   - config "branch:123/component:keboola.variables/config:1" is child of
   - config "branch:123/component:keboola.variables/config:2" is child of
   - config "branch:123/component:keboola.variables/config:3" is child of

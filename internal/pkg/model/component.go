@@ -14,7 +14,6 @@ import (
 
 const (
 	ComponentKind            = "component"
-	ComponentAbbr            = "COM"
 	VariablesComponentId     = ComponentId(`keboola.variables`)
 	SchedulerComponentId     = ComponentId("keboola.scheduler")
 	DeprecatedFlag           = `deprecated`
@@ -44,30 +43,6 @@ func (v ComponentId) WithoutVendor() string {
 		return parts[0]
 	}
 	return parts[1]
-}
-
-func (k ComponentKey) Level() int {
-	return 2
-}
-
-func (k ComponentKey) Kind() Kind {
-	return Kind{Name: ComponentKind, Abbr: ComponentAbbr}
-}
-
-func (k ComponentKey) String() string {
-	return fmt.Sprintf(`%s "%s"`, k.Kind().Name, k.Id)
-}
-
-func (k ComponentKey) Key() Key {
-	return k
-}
-
-func (k ComponentKey) ParentKey() (Key, error) {
-	return nil, nil // Component is top level object
-}
-
-func (k ComponentKey) ObjectId() string {
-	return k.Id.String()
 }
 
 // Component https://keboola.docs.apiary.io/#reference/components-and-configurations/get-development-branch-components/get-development-branch-components
@@ -148,7 +123,7 @@ type RemoteComponentsProvider interface {
 type ComponentsMap struct {
 	mutex                       *sync.Mutex
 	remoteProvider              RemoteComponentsProvider
-	components                  map[string]*Component
+	components                  map[ComponentId]*Component
 	defaultBucketsByComponentId map[ComponentId]string
 	defaultBucketsByPrefix      map[string]ComponentId
 }
@@ -157,7 +132,7 @@ func NewComponentsMap(remoteProvider RemoteComponentsProvider) *ComponentsMap {
 	return &ComponentsMap{
 		mutex:                       &sync.Mutex{},
 		remoteProvider:              remoteProvider,
-		components:                  make(map[string]*Component),
+		components:                  make(map[ComponentId]*Component),
 		defaultBucketsByComponentId: make(map[ComponentId]string),
 		defaultBucketsByPrefix:      make(map[string]ComponentId),
 	}
@@ -204,14 +179,14 @@ func (c *ComponentsMap) Set(component *Component) {
 func (c *ComponentsMap) doGet(key ComponentKey) (*Component, bool) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	component, found := c.components[key.String()]
+	component, found := c.components[key.Id]
 	return component, found
 }
 
 func (c *ComponentsMap) doSet(component *Component) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	c.components[component.String()] = component
+	c.components[component.Id] = component
 	if component.Data.DefaultBucket && component.Data.DefaultBucketStage != "" {
 		c.addDefaultBucketPrefix(component)
 	}
