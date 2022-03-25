@@ -11,7 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-func (m *orchestratorMapper) AfterRemoteOperation(changes *model.RemoteChanges) error {
+func (m *orchestratorMapper) AfterRemoteOperation(changes *model.Changes) error {
 	errors := utils.NewMultiError()
 	allObjects := m.state.RemoteObjects()
 	for _, objectState := range changes.Loaded() {

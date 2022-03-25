@@ -3,20 +3,26 @@ package local
 import (
 	"context"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/local/operation"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/object"
 )
 
-type objects = model.Objects
+type objectsReadOnly = model.ObjectsReadOnly
 
 type State struct {
-	objects
-	manager *operation.Manager
+	objectsReadOnly // objects can be read directly, bud modified only by UnitOfWOrk
+	objects         model.Objects
+	manager         *operation.Manager
+	namingGenerator *naming.Generator
+	mapper          *mapper.Mapper
 }
 
 func NewState(sorter model.ObjectsSorter, manager *operation.Manager) *State {
-	return &State{objects: object.NewCollection(sorter), manager: manager}
+	objects := object.NewCollection(sorter)
+	return &State{objectsReadOnly: objects, objects: objects, manager: manager}
 }
 
 func (s *State) ReloadPathsState() error {

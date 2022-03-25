@@ -87,6 +87,14 @@ func (k ConfigRowKey) ObjectId() string {
 	return k.Id.String()
 }
 
+func (k ConfigRowKey) NewObject() Object {
+	return &ConfigRow{ConfigRowKey: k}
+}
+
+func (k ConfigRowKey) NewObjectManifest() ObjectManifest {
+	return &ConfigRowManifest{ConfigRowKey: k}
+}
+
 func (r ConfigRow) ObjectName() string {
 	return r.Name
 }

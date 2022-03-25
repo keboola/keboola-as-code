@@ -26,6 +26,14 @@ type WithParentKey interface {
 	ParentKey() (Key, error)
 }
 
+type ObjectFactory interface {
+	NewObject() Object
+}
+
+type ObjectManifestFactory interface {
+	NewObjectManifest() ObjectManifest
+}
+
 type Object interface {
 	Key
 	Key() Key
@@ -50,12 +58,8 @@ type ObjectsSorter interface {
 	String() string
 }
 
-type Objects interface {
+type ObjectsReadOnly interface {
 	ObjectsSorter
-	Add(objects ...Object) error
-	AddOrReplace(objects ...Object) error
-	MustAdd(objects ...Object)
-	Remove(keys ...Key)
 	Get(key Key) (Object, bool)
 	GetOrNil(key Key) Object
 	MustGet(key Key) Object
@@ -67,6 +71,14 @@ type Objects interface {
 	ConfigsWithRowsFrom(branch BranchKey) (configs []*ConfigWithRows)
 	ConfigRows() []*ConfigRow
 	ConfigRowsFrom(config ConfigKey) (rows []*ConfigRow)
+}
+
+type Objects interface {
+	ObjectsReadOnly
+	Add(objects ...Object) error
+	AddOrReplace(objects ...Object) error
+	MustAdd(objects ...Object)
+	Remove(keys ...Key)
 }
 
 func (k Kind) IsEmpty() bool {

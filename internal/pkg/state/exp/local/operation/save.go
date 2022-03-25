@@ -1,26 +1,23 @@
 package operation
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/local/relatedpaths"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
-	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 type objectWriter struct {
-	*Manager
 	*model.LocalSaveRecipe
-	ctx     context.Context
+	*Manager
 	backups map[string]string
 	errors  *utils.MultiError
 }
 
 // SaveObject to manifest and filesystem.
-func (m *Manager) SaveObject(ctx context.Context, object model.Object, changedFields model.ChangedFields) error {
+func (m *Manager) SaveObject(object model.Object, recipe *model.LocalSaveRecipe, changedFields model.ChangedFields) error {
 	path, err := m.namingGenerator.GetOrGenerate(object)
 	if err != nil {
 		return err
@@ -28,41 +25,30 @@ func (m *Manager) SaveObject(ctx context.Context, object model.Object, changedFi
 
 	objectClone := deepcopy.Copy(object).(model.Object)
 	w := objectWriter{
-		Manager:         m,
 		LocalSaveRecipe: model.NewLocalSaveRecipe(path, objectClone, changedFields),
-		ctx:             ctx,
+		Manager:         m,
 		backups:         make(map[string]string),
 		errors:          utils.NewMultiError(),
 	}
-	return w.save()
+	return w.write()
 }
 
-func (w *objectWriter) save() error {
-	// Validate
-	if err := validator.Validate(w.ctx, w.Object); err != nil {
-		w.errors.AppendWithPrefix(fmt.Sprintf(`%s "%s" is invalid`, w.Object.Kind().Name, w.Path.String()), err)
-		return w.errors
-	}
+func (w *objectWriter) write() error {
 
-	// Add record to manifest content + mark it for saving
-	if err := w.manifest.PersistRecord(w.ObjectManifest); err != nil {
-		return err
-	}
-
-	// Call mappers
-	if err := w.mapper.MapBeforeLocalSave(w.LocalSaveRecipe); err != nil {
-		w.errors.Append(err)
-	}
-
-	// Save
+	// Write to filesystem
 	if w.errors.Len() == 0 {
-		w.write()
+		w.writeToFs()
+	}
+
+	// Add to manifest
+	if w.errors.Len() == 0 {
+		w.addToManifest()
 	}
 
 	return w.errors.ErrorOrNil()
 }
 
-func (w *objectWriter) write() {
+func (w *objectWriter) writeToFs() {
 	// Existing files are backed up, if the operation fails, they will be restored
 	defer w.restoreBackups()
 
@@ -143,4 +129,24 @@ func (w *objectWriter) removeBackups() {
 		}
 	}
 	w.backups = make(map[string]string)
+}
+
+func (w *objectWriter) addToManifest() {
+	// Create manifest
+	objectManifest := w.Object.(model.ObjectManifestFactory).NewObjectManifest()
+
+	// Set path
+	objectManifest.SetPath(w.Path)
+
+	// Set relations if they are supported
+	o, ok1 := w.Object.(model.ObjectWithRelations)
+	m, ok2 := objectManifest.(model.ObjectManifestWithRelations)
+	if ok1 && ok2 {
+		m.SetRelations(o.GetRelations().OnlyStoredInManifest())
+	}
+
+	// Add record to manifest
+	if err := w.manifest.Add(objectManifest); err != nil {
+		w.errors.Append(err)
+	}
 }

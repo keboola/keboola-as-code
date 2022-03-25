@@ -89,6 +89,14 @@ func (k ConfigKey) BranchKey() BranchKey {
 	return BranchKey{Id: k.BranchId}
 }
 
+func (k ConfigKey) NewObject() Object {
+	return &Config{ConfigKey: k}
+}
+
+func (k ConfigKey) NewObjectManifest() ObjectManifest {
+	return &ConfigManifest{ConfigKey: k}
+}
+
 func (c *Config) ObjectName() string {
 	return c.Name
 }

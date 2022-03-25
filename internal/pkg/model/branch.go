@@ -58,6 +58,14 @@ func (k BranchKey) ObjectId() string {
 	return cast.ToString(k.Id)
 }
 
-func (b *Branch) ObjectName() string {
+func (k BranchKey) NewObject() Object {
+	return &Branch{BranchKey: k}
+}
+
+func (k BranchKey) NewObjectManifest() ObjectManifest {
+	return &BranchManifest{BranchKey: k}
+}
+
+func (b Branch) ObjectName() string {
 	return b.Name
 }

@@ -9,7 +9,7 @@ import (
 
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
-	. "github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
+	. "github.com/keboola/keboola-as-code/internal/pkg/state/local/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/object"
 )
 
@@ -69,8 +69,8 @@ func TestCollection_Add_ResolveParentPath_1(t *testing.T) {
 	v, found := c.Get(key)
 	assert.True(t, found)
 	assert.True(t, v.Path().IsSet())
-	assert.Equal(t, "", v.ParentPath())
-	assert.Equal(t, "my-branch", v.RelativePath())
+	assert.Equal(t, "", v.Path().ParentPath())
+	assert.Equal(t, "my-branch", v.Path().RelativePath())
 }
 
 func TestCollection_Add_ResolveParentPath_2(t *testing.T) {
@@ -90,8 +90,8 @@ func TestCollection_Add_ResolveParentPath_2(t *testing.T) {
 	v, found := c.Get(key)
 	assert.True(t, found)
 	assert.True(t, v.Path().IsSet())
-	assert.Equal(t, "main/config-2", v.ParentPath())
-	assert.Equal(t, "row-1000", v.RelativePath())
+	assert.Equal(t, "main/config-2", v.Path().ParentPath())
+	assert.Equal(t, "row-1000", v.Path().RelativePath())
 }
 
 func TestCollection_Add_AlreadyExists(t *testing.T) {

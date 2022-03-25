@@ -6,7 +6,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func (m *ignoreMapper) AfterRemoteOperation(changes *model.RemoteChanges) error {
+func (m *ignoreMapper) AfterRemoteOperation(changes *model.Changes) error {
 	// Ignore objects
 	ignored := make(map[string]bool)
 	for _, object := range changes.Loaded() {

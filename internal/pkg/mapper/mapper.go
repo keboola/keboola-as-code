@@ -65,7 +65,7 @@ type AfterLocalOperationListener interface {
 // AfterRemoteOperationListener is called when the remote.UnitOfWork finished all the work.
 // The "changes" parameter contains all: loaded, created, update, (saved), deleted objects.
 type AfterRemoteOperationListener interface {
-	AfterRemoteOperation(changes *model.RemoteChanges) error
+	AfterRemoteOperation(changes *model.Changes) error
 }
 
 type Mappers []interface{}
@@ -234,7 +234,7 @@ func (m *Mapper) AfterLocalOperation(changes *model.LocalChanges) error {
 }
 
 // AfterRemoteOperation calls mappers with AfterRemoteOperationListener interface implemented.
-func (m *Mapper) AfterRemoteOperation(changes *model.RemoteChanges) error {
+func (m *Mapper) AfterRemoteOperation(changes *model.Changes) error {
 	return m.mappers.ForEach(false, func(mapper interface{}) error {
 		if mapper, ok := mapper.(AfterRemoteOperationListener); ok {
 			if err := mapper.AfterRemoteOperation(changes); err != nil {

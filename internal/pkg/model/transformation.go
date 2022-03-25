@@ -48,9 +48,8 @@ type Transformation struct {
 // Block - transformation block.
 type Block struct {
 	BlockKey
-	AbsPath `json:"-"`
-	Name    string `json:"name" validate:"required" metaFile:"true"`
-	Codes   Codes  `json:"codes" validate:"omitempty,dive"`
+	Name  string `json:"name" validate:"required" metaFile:"true"`
+	Codes Codes  `json:"codes" validate:"omitempty,dive"`
 }
 
 type Codes []*Code
@@ -58,7 +57,6 @@ type Codes []*Code
 // Code - transformation code.
 type Code struct {
 	CodeKey
-	AbsPath      `json:"-"`
 	CodeFileName string  `json:"-"` // eg. "code.sql", "code.py", ...
 	Name         string  `json:"name" validate:"required" metaFile:"true"`
 	Scripts      Scripts `json:"script"` // scripts, eg. SQL statements

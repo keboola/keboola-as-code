@@ -175,7 +175,7 @@ func (c *Collection) add(records ...model.ObjectManifest) error {
 
 func (c *Collection) addOne(record model.ObjectManifest) error {
 	// Check path
-	if record.RelativePath() == "" {
+	if record.Path().RelativePath() == "" {
 		return fmt.Errorf("path is not set")
 	}
 
@@ -267,7 +267,8 @@ func (r *parentPathResolver) process(record model.ObjectManifest, path []model.K
 
 	// Top level object
 	if parentKey == nil {
-		record.SetParentPath("")
+		p := record.Path().WithParentPath("")
+		record.SetPath(p)
 		return true, nil
 	}
 	// Get parent
@@ -290,6 +291,7 @@ func (r *parentPathResolver) process(record model.ObjectManifest, path []model.K
 	}
 
 	// Set parent path
-	record.SetParentPath(parent.Path().String())
+	p := record.Path().WithParentPath(parent.Path().String())
+	record.SetPath(p)
 	return true, nil
 }

@@ -36,7 +36,6 @@ type Orchestration struct {
 
 type Phase struct {
 	PhaseKey
-	AbsPath
 	DependsOn []PhaseKey
 	Tasks     []*Task                `validate:"dive"`
 	Name      string                 `validate:"required"`
@@ -45,7 +44,6 @@ type Phase struct {
 
 type Task struct {
 	TaskKey
-	AbsPath     `validate:"dive"`
 	Name        string                 `validate:"required"`
 	ComponentId ComponentId            `validate:"required"`
 	ConfigId    ConfigId               `validate:"required"`

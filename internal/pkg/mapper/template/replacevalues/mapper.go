@@ -26,7 +26,7 @@ func (m *replaceKeysMapper) AfterLocalOperation(changes *model.LocalChanges) err
 	return m.afterOperation(changes)
 }
 
-func (m *replaceKeysMapper) AfterRemoteOperation(changes *model.RemoteChanges) error {
+func (m *replaceKeysMapper) AfterRemoteOperation(changes *model.Changes) error {
 	return m.afterOperation(changes)
 }
 

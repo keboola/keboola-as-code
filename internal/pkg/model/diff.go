@@ -40,8 +40,12 @@ func (v ChangedFields) All() []*ChangedField {
 	return out
 }
 
+func (v ChangedFields) IsNotDefined() bool {
+	return v == nil
+}
+
 func (v ChangedFields) IsEmpty() bool {
-	return len(v) == 0
+	return v != nil && len(v) == 0
 }
 
 func (v ChangedFields) Add(field string) *ChangedField {

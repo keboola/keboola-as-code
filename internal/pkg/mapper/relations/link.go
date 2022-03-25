@@ -27,7 +27,7 @@ func (m *relationsMapper) AfterLocalOperation(changes *model.LocalChanges) error
 }
 
 // AfterRemoteOperation links relation sides on remote load.
-func (m *relationsMapper) AfterRemoteOperation(changes *model.RemoteChanges) error {
+func (m *relationsMapper) AfterRemoteOperation(changes *model.Changes) error {
 	errors := utils.NewMultiError()
 	allObjects := m.state.RemoteObjects()
 	for _, objectState := range changes.Loaded() {

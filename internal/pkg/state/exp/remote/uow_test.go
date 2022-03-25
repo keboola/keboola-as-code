@@ -392,7 +392,7 @@ func (*testMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
 	return nil
 }
 
-func (t *testMapper) AfterRemoteOperation(changes *model.RemoteChanges) error {
+func (t *testMapper) AfterRemoteOperation(changes *model.Changes) error {
 	for _, objectState := range changes.Loaded() {
 		t.remoteChanges = append(t.remoteChanges, fmt.Sprintf(`loaded %s`, objectState.String()))
 	}

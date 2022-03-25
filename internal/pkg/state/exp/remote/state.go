@@ -6,7 +6,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/object"
 )
 
@@ -22,7 +21,6 @@ func NewState(sorter model.ObjectsSorter, mapper *mapper.Mapper, api *storageapi
 	return &State{objects: object.NewCollection(sorter), api: api, mapper: mapper}
 }
 
-func (s *State) NewUnitOfWork(ctx context.Context, changeDescription string, filter model.ObjectsFilter) state.UnitOfWork {
-	backend := newUnitOfWork(ctx, changeDescription, s.api, s.mapper)
-	return state.NewUnitOfWork(ctx, s.objects, filter, backend)
+func (s *State) NewUnitOfWork(ctx context.Context, changeDescription string, loadFilter model.ObjectsFilter) UnitOfWork {
+	return newUnitOfWork(s, ctx, changeDescription, loadFilter)
 }

@@ -8,16 +8,7 @@ import (
 
 type RecordPath interface {
 	Path() AbsPath
-	// String gets path relative to the top dir, it is parent path + relative path.
-	String() string
-	// RelativePath - for example path of the object inside parent object/path.
-	RelativePath() string
-	// SetRelativePath - for example path of the object inside parent object/path.
-	SetRelativePath(string)
-	// ParentPath - for example path of the parent object.
-	ParentPath() string
-	// SetParentPath - for example path of the parent object.
-	SetParentPath(string)
+	SetPath(path AbsPath)
 }
 
 // ObjectManifest - manifest record for a object.
