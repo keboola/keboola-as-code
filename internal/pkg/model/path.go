@@ -13,6 +13,10 @@ type AbsPath struct {
 	parentPathSet bool
 }
 
+func NewEmptyAbsPath() AbsPath {
+	return AbsPath{}
+}
+
 func NewAbsPath(parentPath, objectPath string) AbsPath {
 	return AbsPath{parentPath: Path(parentPath), parentPathSet: true, RelPath: Path(objectPath)}
 }

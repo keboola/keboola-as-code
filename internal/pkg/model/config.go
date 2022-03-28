@@ -49,7 +49,7 @@ func (v ConfigId) String() string {
 	return string(v)
 }
 
-func (k ConfigKey) Level() int {
+func (k ConfigKey) Level() ObjectLevel {
 	return 2
 }
 

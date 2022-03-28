@@ -85,11 +85,11 @@ func (k CodeKey) ObjectId() string {
 	return cast.ToString(k.Index)
 }
 
-func (k BlockKey) Level() int {
+func (k BlockKey) Level() ObjectLevel {
 	return 4
 }
 
-func (k CodeKey) Level() int {
+func (k CodeKey) Level() ObjectLevel {
 	return 5
 }
 

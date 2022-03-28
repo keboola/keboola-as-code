@@ -34,7 +34,7 @@ func (v BranchId) String() string {
 	return strconv.Itoa(int(v))
 }
 
-func (k BranchKey) Level() int {
+func (k BranchKey) Level() ObjectLevel {
 	return 1
 }
 

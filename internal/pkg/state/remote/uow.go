@@ -20,16 +20,18 @@ type uow struct {
 	invoked           bool
 	ctx               context.Context
 	changeDescription string
+	filter            model.ObjectsFilter
 	storageApi        *storageapi.Api
 	storageApiPools   *orderedmap.OrderedMap // separated pool for changes in branches, configs and rows
 	mapper            *mapper.Mapper
 	errors            *utils.MultiError
 }
 
-func newUnitOfWork(ctx context.Context, changeDescription string, storageApi *storageapi.Api, mapper *mapper.Mapper) state.UnitOfWorkBackend {
+func newUnitOfWorkBackend(ctx context.Context, filter model.ObjectsFilter, changeDescription string, storageApi *storageapi.Api, mapper *mapper.Mapper) state.UnitOfWorkBackend {
 	return &uow{
 		ctx:               ctx,
 		changeDescription: changeDescription,
+		filter:            filter,
 		storageApi:        storageApi,
 		storageApiPools:   orderedmap.New(),
 		mapper:            mapper,
@@ -37,7 +39,7 @@ func newUnitOfWork(ctx context.Context, changeDescription string, storageApi *st
 	}
 }
 
-func (u *uow) Invoke(changes *model.Changes) error {
+func (u *uow) Invoke() (state.FinalizationFn, error) {
 	// Check conditions
 	if u.invoked {
 		panic(fmt.Errorf(`UnitOfWork: invoke can only be called once`))
@@ -54,14 +56,16 @@ func (u *uow) Invoke(changes *model.Changes) error {
 		}
 	}
 
-	// AfterRemoteOperation event
-	if !changes.Empty() {
-		if err := u.mapper.AfterRemoteOperation(changes); err != nil {
-			u.errors.Append(err)
+	// Finalization callback with changes
+	finalizeFn := func(changes *model.Changes) error {
+		// AfterRemoteOperation event
+		if !changes.Empty() {
+			return u.mapper.AfterRemoteOperation(changes)
 		}
+		return nil
 	}
 
-	return u.errors.ErrorOrNil()
+	return finalizeFn, u.errors.ErrorOrNil()
 }
 
 func (u *uow) LoadAll(onLoad func(object model.Object) bool) {
@@ -81,7 +85,7 @@ func (u *uow) Delete(key model.Key, onSuccess func()) {
 }
 
 // poolFor each level (branches, configs, rows).
-func (u *uow) poolFor(level int) *client.Pool {
+func (u *uow) poolFor(level model.ObjectLevel) *client.Pool {
 	if u.invoked {
 		panic(fmt.Errorf(`invoked UnitOfWork cannot be modified`))
 	}

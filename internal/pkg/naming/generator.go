@@ -125,13 +125,13 @@ func (g Generator) generate(object WithKey) (AbsPath, error) {
 }
 
 func (g Generator) branchPath(branch *Branch) (AbsPath, error) {
-	p := AbsPath{}
-	p.SetParentPath("") // branch is top level object
+	p := NewEmptyAbsPath()
+	p = p.WithParentPath("")
 
 	if branch.IsDefault {
-		p.SetRelativePath(`main`)
+		p = p.WithRelativePath(`main`)
 	} else {
-		p.SetRelativePath(utils.ReplacePlaceholders(string(g.template.Branch), map[string]interface{}{
+		p = p.WithRelativePath(utils.ReplacePlaceholders(string(g.template.Branch), map[string]interface{}{
 			"branch_id":   branch.Id,
 			"branch_name": strhelper.NormalizeName(branch.Name),
 		}))
@@ -183,9 +183,9 @@ func (g Generator) configPath(config *Config) (AbsPath, error) {
 		panic(fmt.Errorf(`unexpected config parent type "%s"`, parentKey.Kind()))
 	}
 
-	p := AbsPath{}
-	p.SetParentPath(parentPath)
-	p.SetRelativePath(utils.ReplacePlaceholders(template, map[string]interface{}{
+	p := NewEmptyAbsPath()
+	p = p.WithParentPath(parentPath)
+	p = p.WithRelativePath(utils.ReplacePlaceholders(template, map[string]interface{}{
 		"target_component_id": targetComponentId, // for shared code
 		"component_type":      component.Type,
 		"component_id":        component.Id,
@@ -244,9 +244,9 @@ func (g Generator) configRowPath(row *ConfigRow) (AbsPath, error) {
 		}
 	}
 
-	p := AbsPath{}
-	p.SetParentPath(parentPath)
-	p.SetRelativePath(utils.ReplacePlaceholders(template, map[string]interface{}{
+	p := NewEmptyAbsPath()
+	p = p.WithParentPath(parentPath)
+	p = p.WithRelativePath(utils.ReplacePlaceholders(template, map[string]interface{}{
 		"config_row_id":   jsonnet.StripIdPlaceholder(row.Id.String()),
 		"config_row_name": strhelper.NormalizeName(name),
 	}))
@@ -260,9 +260,9 @@ func (g Generator) blockPath(block *Block) (AbsPath, error) {
 		return AbsPath{}, err
 	}
 
-	p := AbsPath{}
-	p.SetParentPath(parentPath)
-	p.SetRelativePath(utils.ReplacePlaceholders(string(blockNameTemplate), map[string]interface{}{
+	p := NewEmptyAbsPath()
+	p = p.WithParentPath(parentPath)
+	p = p.WithRelativePath(utils.ReplacePlaceholders(string(blockNameTemplate), map[string]interface{}{
 		"block_order": fmt.Sprintf(`%03d`, block.Index+1),
 		"block_name":  strhelper.NormalizeName(block.Name),
 	}))
@@ -276,9 +276,9 @@ func (g Generator) codePath(code *Code) (AbsPath, error) {
 		return AbsPath{}, err
 	}
 
-	p := AbsPath{}
-	p.SetParentPath(parentPath)
-	p.SetRelativePath(utils.ReplacePlaceholders(string(codeNameTemplate), map[string]interface{}{
+	p := NewEmptyAbsPath()
+	p = p.WithParentPath(parentPath)
+	p = p.WithRelativePath(utils.ReplacePlaceholders(string(codeNameTemplate), map[string]interface{}{
 		"code_order": fmt.Sprintf(`%03d`, code.Index+1),
 		"code_name":  strhelper.NormalizeName(code.Name),
 	}))
@@ -291,9 +291,9 @@ func (g Generator) phasePath(phase *Phase) (AbsPath, error) {
 		return AbsPath{}, err
 	}
 
-	p := AbsPath{}
-	p.SetParentPath(parentPath)
-	p.SetRelativePath(utils.ReplacePlaceholders(string(phaseNameTemplate), map[string]interface{}{
+	p := NewEmptyAbsPath()
+	p = p.WithParentPath(parentPath)
+	p = p.WithRelativePath(utils.ReplacePlaceholders(string(phaseNameTemplate), map[string]interface{}{
 		"phase_order": fmt.Sprintf(`%03d`, phase.Index+1),
 		"phase_name":  strhelper.NormalizeName(phase.Name),
 	}))
@@ -307,9 +307,9 @@ func (g Generator) taskPath(task *Task) (AbsPath, error) {
 		return AbsPath{}, err
 	}
 
-	p := AbsPath{}
-	p.SetParentPath(parentPath)
-	p.SetRelativePath(utils.ReplacePlaceholders(string(taskNameTemplate), map[string]interface{}{
+	p := NewEmptyAbsPath()
+	p = p.WithParentPath(parentPath)
+	p = p.WithRelativePath(utils.ReplacePlaceholders(string(taskNameTemplate), map[string]interface{}{
 		"task_order": fmt.Sprintf(`%03d`, task.Index+1),
 		"task_name":  strhelper.NormalizeName(task.Name),
 	}))

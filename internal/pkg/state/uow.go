@@ -23,55 +23,61 @@ type UnitOfWork interface {
 
 // UnitOfWorkBackend for backend-specific code, the callback onSuccess is called after the successful operation.
 type UnitOfWorkBackend interface {
-	Invoke(changes *model.Changes) error
-	LoadAll(onLoad func(object model.Object) bool)
+	Invoke() (FinalizationFn, error)
+	LoadAll(onLoad func(object model.Object) (accepted bool))
 	Save(object model.Object, changedFields model.ChangedFields, objectExists bool, onSuccess func())
 	Delete(key model.Key, onSuccess func())
 }
+
+// FinalizationFn performs finalization when the UnitOfWork is finished.
+type FinalizationFn func(changes *model.Changes) error
 
 // uow implements UnitOfWork interface.
 type uow struct {
 	invoked bool
 	ctx     context.Context
 	objects model.Objects
-	filter  model.ObjectsFilter
 	backend UnitOfWorkBackend
 	changes *model.Changes
 	errors  *utils.MultiError
 }
 
-func NewUnitOfWork(ctx context.Context, objects model.Objects, filter model.ObjectsFilter, backend UnitOfWorkBackend) UnitOfWork {
-	return &uow{ctx: ctx, objects: objects, filter: filter, backend: backend, changes: model.NewChanges(), errors: utils.NewMultiError()}
+func NewUnitOfWork(ctx context.Context, objects model.Objects, backend UnitOfWorkBackend) UnitOfWork {
+	return &uow{ctx: ctx, objects: objects, backend: backend, changes: model.NewChanges(), errors: utils.NewMultiError()}
 }
 
 // Invoke planned work in parallel.
 func (u *uow) Invoke() error {
 	// UoW can be invoked only once
 	if u.invoked {
-		panic(fmt.Errorf(`invoked UnitOfWork cannot be reused`))
+		panic(fmt.Errorf(`UnitOfWork: invoke can only be called once`))
 	}
 	u.invoked = true
 
-	// Invoke and merge backend level and common level errors
+	// Invoke
 	errors := utils.NewMultiError()
-	if err := u.backend.Invoke(u.changes); err != nil {
+	finalizationFn, err := u.backend.Invoke()
+	if err != nil {
 		errors.Append(err)
 	}
+
+	// Finalize
+	if err := finalizationFn(u.changes); err != nil {
+		errors.Append(err)
+	}
+
+	// Add common errors
 	if err := u.errors.ErrorOrNil(); err != nil {
 		errors.Append(err)
 	}
+
 	return errors.ErrorOrNil()
 }
 
 // LoadAll objects from the backend.
 func (u *uow) LoadAll() {
 	// Use backend
-	u.backend.LoadAll(func(object model.Object) bool {
-		// Is object ignored?
-		if u.filter.IsObjectIgnored(object) {
-			return false
-		}
-
+	u.backend.LoadAll(func(object model.Object) (accepted bool) {
 		// Validate
 		if err := validator.Validate(u.ctx, object); err != nil {
 			u.errors.AppendWithPrefix(fmt.Sprintf(`%s is invalid`, object.String()), err)

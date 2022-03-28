@@ -1,4 +1,4 @@
-package local
+package workers
 
 import (
 	"context"
@@ -24,7 +24,7 @@ type Workers struct {
 	invoked   bool
 }
 
-func NewWorkers(parentCtx context.Context) *Workers {
+func New(parentCtx context.Context) *Workers {
 	group, ctx := errgroup.WithContext(parentCtx)
 	w := &Workers{
 		ctx:       ctx,

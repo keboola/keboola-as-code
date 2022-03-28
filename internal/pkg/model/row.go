@@ -43,7 +43,7 @@ func (v RowId) String() string {
 	return string(v)
 }
 
-func (k ConfigRowKey) Level() int {
+func (k ConfigRowKey) Level() ObjectLevel {
 	return 3
 }
 

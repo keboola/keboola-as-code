@@ -24,6 +24,8 @@ const (
 
 type ComponentId string
 
+type ComponentIds []ComponentId
+
 type ComponentKey struct {
 	Id ComponentId `json:"id" validate:"required"`
 }
@@ -43,6 +45,27 @@ func (v ComponentId) WithoutVendor() string {
 		return parts[0]
 	}
 	return parts[1]
+}
+
+func (v ComponentIds) String() string {
+	if len(v) == 0 {
+		return `[]`
+	}
+
+	items := make([]string, 0)
+	for _, item := range v {
+		items = append(items, string(item))
+	}
+	return `"` + strings.Join(items, `", "`) + `"`
+}
+
+func (v ComponentIds) Contains(componentId ComponentId) bool {
+	for _, id := range v {
+		if id == componentId {
+			return true
+		}
+	}
+	return false
 }
 
 // Component https://keboola.docs.apiary.io/#reference/components-and-configurations/get-development-branch-components/get-development-branch-components

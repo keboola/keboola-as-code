@@ -22,7 +22,7 @@ func NewState(sorter model.ObjectsSorter, mapper *mapper.Mapper, api *storageapi
 	return &State{objects: object.NewCollection(sorter), api: api, mapper: mapper}
 }
 
-func (s *State) NewUnitOfWork(ctx context.Context, changeDescription string, filter model.ObjectsFilter) state.UnitOfWork {
-	backend := newUnitOfWork(ctx, changeDescription, s.api, s.mapper)
-	return state.NewUnitOfWork(ctx, s.objects, filter, backend)
+func (s *State) NewUnitOfWork(ctx context.Context, filter model.ObjectsFilter, changeDescription string) state.UnitOfWork {
+	backend := newUnitOfWorkBackend(ctx, filter, changeDescription, s.api, s.mapper)
+	return state.NewUnitOfWork(ctx, s.objects, backend)
 }

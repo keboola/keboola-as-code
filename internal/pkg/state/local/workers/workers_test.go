@@ -1,4 +1,4 @@
-package local
+package workers
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 
 func TestWorkers(t *testing.T) {
 	t.Parallel()
-	w := NewWorkers(context.Background())
+	w := New(context.Background())
 
 	counter := utils.SafeCounter{}
 	w.AddWorker(func() error {
@@ -41,7 +41,7 @@ func TestWorkers(t *testing.T) {
 
 func TestWorkersErrors(t *testing.T) {
 	t.Parallel()
-	w := NewWorkers(context.Background())
+	w := New(context.Background())
 
 	w.AddWorker(func() error {
 		return fmt.Errorf(`first`)

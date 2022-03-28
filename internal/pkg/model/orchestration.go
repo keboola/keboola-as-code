@@ -67,11 +67,11 @@ func (k TaskKey) ObjectId() string {
 	return cast.ToString(k.Index)
 }
 
-func (k PhaseKey) Level() int {
+func (k PhaseKey) Level() ObjectLevel {
 	return 4
 }
 
-func (k TaskKey) Level() int {
+func (k TaskKey) Level() ObjectLevel {
 	return 5
 }
 

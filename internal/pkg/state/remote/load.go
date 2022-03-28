@@ -101,7 +101,11 @@ func (c loadCtx) loadConfigsMetadataRequest(branch *model.Branch, pool *client.P
 	return out, request
 }
 
-func (c loadCtx) process(apiObject model.Object) bool {
+func (c loadCtx) process(apiObject model.Object) (accepted bool) {
+	if c.filter.IsObjectIgnored(apiObject) {
+		return false
+	}
+
 	// Clone object and create recipe
 	// During mapping is the API object modified, so it is needed to clone it first.
 	object := deepcopy.Copy(apiObject).(model.Object)
@@ -112,5 +116,6 @@ func (c loadCtx) process(apiObject model.Object) bool {
 		c.errors.Append(err)
 	}
 
+	// Notify UnitOfWork
 	return c.onLoad(apiObject)
 }

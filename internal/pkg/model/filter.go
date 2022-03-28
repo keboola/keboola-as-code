@@ -18,8 +18,6 @@ type AllowedBranch string
 
 type AllowedBranches []AllowedBranch
 
-type ComponentIds []ComponentId
-
 // ObjectsFilter filters objects by allowed keys, allowed branches and ignored components.
 type ObjectsFilter struct {
 	allowedKeys       map[string]bool
@@ -136,26 +134,5 @@ func (v AllowedBranch) IsBranchAllowed(branch *Branch) bool {
 		return true
 	}
 
-	return false
-}
-
-func (v ComponentIds) String() string {
-	if len(v) == 0 {
-		return `[]`
-	}
-
-	items := make([]string, 0)
-	for _, item := range v {
-		items = append(items, string(item))
-	}
-	return `"` + strings.Join(items, `", "`) + `"`
-}
-
-func (v ComponentIds) Contains(componentId ComponentId) bool {
-	for _, id := range v {
-		if id == componentId {
-			return true
-		}
-	}
 	return false
 }
