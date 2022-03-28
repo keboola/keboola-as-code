@@ -379,6 +379,7 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 				Name: "Password",
 				Type: input.TypeString,
 				Kind: input.KindHidden,
+				Step: "Step 1",
 			},
 		},
 	}, opts)

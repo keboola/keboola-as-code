@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -44,7 +45,7 @@ func (p *Dialogs) askTemplateInputs(deps inputsDialogDeps, branch *model.Branch,
 
 	// Define steps and steps groups for user inputs.
 	stepsDialog := newStepsDialog(p.Prompt)
-	_, err = stepsDialog.ask()
+	stepsGroups, err := stepsDialog.ask()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -54,9 +55,29 @@ func (p *Dialogs) askTemplateInputs(deps inputsDialogDeps, branch *model.Branch,
 		return nil, nil, err
 	}
 
-	// stepsGroups.AddInputs(inputs.all()))
+	if err := addInputsToStepsGroups(&stepsGroups, inputs); err != nil {
+		return nil, nil, err
+	}
 
 	return objectInputs, inputs.all(), nil
+}
+
+func addInputsToStepsGroups(stepsGroups *input.StepsGroups, inputs inputsMap) error {
+	indices := stepsGroups.Indices()
+	errors := utils.NewMultiError()
+	for _, i := range *inputs.all() {
+		if i.Step == "" {
+			errors.Append(fmt.Errorf(`input "%s": step is missing`, i.Id))
+			continue
+		}
+		index, found := indices[i.Step]
+		if !found {
+			errors.Append(fmt.Errorf(`input "%s": step "%s" not found`, i.Id, i.Step))
+			continue
+		}
+		_ = stepsGroups.AddInput(i, index)
+	}
+	return errors.ErrorOrNil()
 }
 
 type inputFields map[string]input.ObjectField
