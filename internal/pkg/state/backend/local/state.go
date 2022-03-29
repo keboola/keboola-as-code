@@ -1,0 +1,126 @@
+package local
+
+import (
+	"context"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/relatedpaths"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/object"
+)
+
+type dependencies interface {
+	Logger() log.Logger
+	Components() (*model.ComponentsMap, error)
+}
+
+type objects = model.Objects
+
+type State struct {
+	objects
+	deps            dependencies
+	logger          log.Logger
+	objectsRoot     filesystem.Fs
+	manifest        manifest.Manifest
+	namingGenerator *naming.Generator
+	mapper          *mapper.Mapper
+	knownPaths      *knownpaths.Paths
+	relatedPaths    map[model.Key]*relatedpaths.Paths
+	notFoundObjects map[model.Key]model.ObjectManifest
+	invalidObjects  map[model.Key]model.Object
+}
+
+type MappersFactory func(*State) (mapper.Mappers, error)
+
+func NewState(d dependencies, objectsRoot filesystem.Fs, manifest manifest.Manifest, mappersFn MappersFactory) (*State, error) {
+	components, err := d.Components()
+	if err != nil {
+		return nil, err
+	}
+
+	knownPaths, err := knownpaths.New(objectsRoot)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create state
+	s := &State{
+		objects:         object.NewCollection(manifest.Sorter()),
+		deps:            d,
+		logger:          d.Logger(),
+		objectsRoot:     objectsRoot,
+		namingGenerator: naming.NewGenerator(manifest.NamingTemplate(), manifest.NamingRegistry(), components),
+		manifest:        manifest,
+		mapper:          mapper.New(),
+		knownPaths:      knownPaths,
+		relatedPaths:    make(map[model.Key]*relatedpaths.Paths),
+		notFoundObjects: make(map[model.Key]model.ObjectManifest),
+		invalidObjects:  make(map[model.Key]model.Object),
+	}
+
+	// Create mappers
+	mappers, err := mappersFn(s)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set mappers
+	s.mapper.AddMapper(mappers...)
+	return s, nil
+}
+
+func (s *State) NewUnitOfWork(ctx context.Context, filter model.ObjectsFilter) state.UnitOfWork {
+	backend := newUnitOfWorkBackend(s, ctx, filter, s.mapper)
+	return state.NewUnitOfWork(ctx, s.objects, backend)
+}
+
+func (s *State) GetByPath(path string) (model.Object, bool) {
+	key, found := s.manifest.NamingRegistry().KeyByPath(path)
+	if !found {
+		return nil, false
+	}
+	return s.Get(key)
+}
+
+func (s *State) GetPath(object model.WithKey) (model.AbsPath, error) {
+	return s.namingGenerator.GetOrGenerate(object)
+}
+
+func (s *State) GetRelatedPaths(key model.Key) *relatedpaths.Paths {
+	v, _ := s.relatedPaths[key]
+	return v
+}
+
+func (s *State) SetRelatedPaths(key model.Key, v *relatedpaths.Paths) {
+	s.relatedPaths[key] = v
+}
+
+func (s *State) fileLoader() filesystem.FileLoader {
+	return s.mapper.NewFileLoader(s.objectsRoot)
+}
+
+func (s *State) TrackedPaths() []string {
+	return s.knownPaths.TrackedPaths()
+}
+
+func (s *State) UntrackedPaths() []string {
+	return s.knownPaths.UntrackedPaths()
+}
+
+func (s *State) reloadKnownPaths() error {
+	return nil
+}
+
+func (s *State) addNotFoundObject(objectManifest model.ObjectManifest) {
+	s.notFoundObjects[objectManifest.Key()] = objectManifest
+}
+
+func (s *State) addInvalidObject(object model.Object) {
+	s.invalidObjects[object.Key()] = object
+}

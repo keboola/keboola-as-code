@@ -19,12 +19,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 	loadProjectManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/load"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/state/load"
 )
 
 type TestContainer struct {
@@ -38,7 +38,7 @@ type TestContainer struct {
 	storageApiHost              string
 	storageApiToken             string
 	templateRepositoryFs        filesystem.Fs
-	project                     *project.Project
+	project                     *project.LocalProject
 	mockedStorageApi            *storageapi.Api
 	mockedStorageApiTransport   *httpmock.MockTransport
 	mockedSchedulerApi          *schedulerapi.Api
@@ -195,7 +195,7 @@ func (v *TestContainer) EmptyState() *state.State {
 	return mockedState
 }
 
-func (v *TestContainer) LocalProject(ignoreErrors bool) (*project.Project, error) {
+func (v *TestContainer) LocalProject(ignoreErrors bool) (*project.LocalProject, error) {
 	if v.project == nil {
 		m, err := loadProjectManifest.Run(v.fs, loadProjectManifest.Options{IgnoreErrors: ignoreErrors}, v)
 		if err != nil {
@@ -206,7 +206,7 @@ func (v *TestContainer) LocalProject(ignoreErrors bool) (*project.Project, error
 	return v.project, nil
 }
 
-func (v *TestContainer) SetLocalProject(project *project.Project) {
+func (v *TestContainer) SetLocalProject(project *project.LocalProject) {
 	v.project = project
 }
 

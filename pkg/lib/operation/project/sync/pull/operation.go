@@ -1,6 +1,8 @@
 package pull
 
 import (
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/state/load"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/pull"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
@@ -8,7 +10,6 @@ import (
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/rename"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/validate"
 	createDiff "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/diff/create"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 type Options struct {

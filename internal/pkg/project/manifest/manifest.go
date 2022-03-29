@@ -5,8 +5,8 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/object"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -26,6 +26,7 @@ type records = manifest.Collection
 // file contains IDs and paths of the all objects: branches, configs, rows.
 type Manifest struct {
 	*records
+	fs           filesystem.Fs
 	project      Project
 	naming       naming.Template
 	filter       model.ObjectsFilter
@@ -37,9 +38,10 @@ type Project struct {
 	ApiHost string `json:"apiHost" validate:"required,hostname"`
 }
 
-func New(ctx context.Context, projectId int, apiHost string) *Manifest {
+func New(ctx context.Context, fs filesystem.Fs, projectId int, apiHost string) *Manifest {
 	return &Manifest{
 		records:      manifest.NewCollection(ctx, naming.NewRegistry(), object.NewIdSorter()),
+		fs:           fs,
 		project:      Project{Id: projectId, ApiHost: apiHost},
 		naming:       naming.TemplateWithIds(),
 		filter:       model.NoFilter(),
@@ -55,7 +57,7 @@ func Load(ctx context.Context, fs filesystem.Fs, ignoreErrors bool) (*Manifest, 
 	}
 
 	// Create manifest
-	m := New(ctx, content.Project.Id, content.Project.ApiHost)
+	m := New(ctx, fs, content.Project.Id, content.Project.ApiHost)
 
 	// Set configuration
 	m.SetSorter(object.NewSorterFromName(content.SortBy, m.NamingRegistry()))
@@ -73,7 +75,7 @@ func Load(ctx context.Context, fs filesystem.Fs, ignoreErrors bool) (*Manifest, 
 	return m, nil
 }
 
-func (m *Manifest) Save(fs filesystem.Fs) error {
+func (m *Manifest) Save() error {
 	// Create file content
 	content := newFile(m.ProjectId(), m.ApiHost())
 	content.Naming = m.naming
@@ -83,7 +85,7 @@ func (m *Manifest) Save(fs filesystem.Fs) error {
 	content.setRecords(m.records.All())
 
 	// Save file
-	if err := saveFile(fs, content); err != nil {
+	if err := saveFile(m.fs, content); err != nil {
 		return err
 	}
 

@@ -9,7 +9,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/naming"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
@@ -46,7 +46,7 @@ func cases() []test {
 
 func TestManifest_New(t *testing.T) {
 	t.Parallel()
-	m := New(context.Background(), 123, `foo.bar`)
+	m := New(context.Background(), testfs.NewMemoryFs(), 123, `foo.bar`)
 	assert.NotNil(t, m)
 	assert.Equal(t, 123, m.project.Id)
 	assert.Equal(t, `foo.bar`, m.project.ApiHost)
@@ -91,12 +91,12 @@ func TestManifest_Save(t *testing.T) {
 		fs := testfs.NewMemoryFs()
 
 		// Save
-		manifest := New(context.Background(), 12345, "foo.bar")
+		manifest := New(context.Background(), fs, 12345, "foo.bar")
 		manifest.SetNamingTemplate(c.naming)
 		manifest.SetAllowedBranches(c.filter.AllowedBranches())
 		manifest.SetIgnoredComponents(c.filter.IgnoredComponents())
 		assert.NoError(t, manifest.records.Set(c.records))
-		assert.NoError(t, manifest.Save(fs))
+		assert.NoError(t, manifest.Save())
 
 		// Load file
 		file, err := fs.ReadFile(filesystem.NewFileDef(Path()))

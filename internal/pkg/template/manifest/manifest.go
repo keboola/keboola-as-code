@@ -7,8 +7,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/object"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -17,21 +17,24 @@ type records = manifest.Collection
 
 // File contains content of the manifest. Jsonnet has not been executed yet.
 type File struct {
+	fs   filesystem.Fs
 	file *filesystem.RawFile
 }
 
 // Manifest is evaluated File.
 type Manifest struct {
-	naming naming.Template
 	*records
+	fs     filesystem.Fs
+	naming naming.Template
 }
 
-func New(ctx context.Context) *Manifest {
+func New(ctx context.Context, fs filesystem.Fs) *Manifest {
 	// Disable "required_in_project" validation tag
 	ctx = context.WithValue(ctx, validator.DisableRequiredInProjectKey, true)
 
 	namingRegistry := naming.NewRegistry()
 	return &Manifest{
+		fs:      fs,
 		naming:  naming.ForTemplate(),
 		records: manifest.NewCollection(ctx, namingRegistry, object.NewPathSorter(namingRegistry)),
 	}
@@ -49,7 +52,7 @@ func Load(fs filesystem.Fs) (*File, error) {
 		return nil, err
 	}
 
-	return &File{file: f}, nil
+	return &File{fs: fs, file: f}, nil
 }
 
 // Evaluate Jsonnet content.
@@ -61,7 +64,7 @@ func (f *File) Evaluate(ctx context.Context, jsonNetCtx *jsonnet.Context) (*Mani
 	}
 
 	// Create manifest
-	m := New(ctx)
+	m := New(ctx, f.fs)
 
 	// Set records
 	if err := m.records.Set(content.records()); err != nil {
@@ -72,13 +75,13 @@ func (f *File) Evaluate(ctx context.Context, jsonNetCtx *jsonnet.Context) (*Mani
 	return m, nil
 }
 
-func (m *Manifest) Save(fs filesystem.Fs) error {
+func (m *Manifest) Save() error {
 	// Create file content
 	content := newFile()
 	content.setRecords(m.records.All())
 
 	// Save file
-	if err := saveFile(fs, content); err != nil {
+	if err := saveFile(m.fs, content); err != nil {
 		return err
 	}
 
@@ -88,6 +91,10 @@ func (m *Manifest) Save(fs filesystem.Fs) error {
 
 func (m *Manifest) Path() string {
 	return Path()
+}
+
+func (m *Manifest) Filter() model.ObjectsFilter {
+	return model.NoFilter()
 }
 
 func (m *Manifest) NamingTemplate() naming.Template {

@@ -3,7 +3,7 @@ package rename
 import (
 	"context"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/state/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local"
 )
 
 type executor struct {

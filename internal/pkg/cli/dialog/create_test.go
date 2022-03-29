@@ -10,15 +10,15 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	createConfig "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/config"
 	createRow "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/row"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/state/load"
 	createBranch "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/branch"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 func TestAskCreateBranch(t *testing.T) {

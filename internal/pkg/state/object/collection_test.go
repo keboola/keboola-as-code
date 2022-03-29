@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/naming"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
 )
 
 func TestCollection_New(t *testing.T) {

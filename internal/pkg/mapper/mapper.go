@@ -59,7 +59,7 @@ type OnObjectPathUpdateListener interface {
 // AfterLocalOperationListener is called when the local.UnitOfWork finished all the work.
 // The "changes" parameter contains all: loaded, persisted, created, update, (saved), renamed, deleted objects.
 type AfterLocalOperationListener interface {
-	AfterLocalOperation(changes *model.LocalChanges) error
+	AfterLocalOperation(changes *model.Changes) error
 }
 
 // AfterRemoteOperationListener is called when the remote.UnitOfWork finished all the work.
@@ -222,7 +222,7 @@ func (m *Mapper) OnObjectPathUpdate(event model.OnObjectPathUpdateEvent) error {
 }
 
 // AfterLocalOperation calls mappers with AfterLocalOperationListener interface implemented.
-func (m *Mapper) AfterLocalOperation(changes *model.LocalChanges) error {
+func (m *Mapper) AfterLocalOperation(changes *model.Changes) error {
 	return m.mappers.ForEach(false, func(mapper interface{}) error {
 		if mapper, ok := mapper.(AfterLocalOperationListener); ok {
 			if err := mapper.AfterLocalOperation(changes); err != nil {

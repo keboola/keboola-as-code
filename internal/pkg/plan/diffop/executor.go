@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )

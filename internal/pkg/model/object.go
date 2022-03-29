@@ -60,7 +60,7 @@ type ObjectsSorter interface {
 	String() string
 }
 
-type ObjectsReadOnly interface {
+type Objects interface {
 	ObjectsSorter
 	Get(key Key) (Object, bool)
 	GetOrNil(key Key) Object
@@ -73,10 +73,6 @@ type ObjectsReadOnly interface {
 	ConfigsWithRowsFrom(branch BranchKey) (configs []*ConfigWithRows)
 	ConfigRows() []*ConfigRow
 	ConfigRowsFrom(config ConfigKey) (rows []*ConfigRow)
-}
-
-type Objects interface {
-	ObjectsReadOnly
 	Add(objects ...Object) error
 	AddOrReplace(objects ...Object) error
 	MustAdd(objects ...Object)

@@ -16,8 +16,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/state/load"
 	useTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 // If condition for restricted input is met by setting the age above the limit.

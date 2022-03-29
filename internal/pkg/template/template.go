@@ -11,10 +11,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/manifest"
 	templateInput "github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/state/load"
 )
 
 const (

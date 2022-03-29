@@ -7,6 +7,8 @@ import (
 
 	gonanoid "github.com/matoous/go-nanoid/v2"
 
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/state/load"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/api/encryptionapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
@@ -19,7 +21,6 @@ import (
 	saveProjectManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/save"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/rename"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/validate"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 type Options struct {

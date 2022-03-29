@@ -13,8 +13,7 @@ type MockedKey struct {
 
 type MockedManifest struct {
 	MockedKey
-	*model.RecordState
-	PathValue    string
+	PathValue    model.AbsPath
 	Relations    model.Relations
 	RelatedPaths []string
 }
@@ -37,7 +36,7 @@ type MockedApiSideRelation struct {
 	OtherSide model.Key
 }
 
-func (MockedKey) Level() int {
+func (MockedKey) Level() model.ObjectLevel {
 	return 1
 }
 
@@ -50,7 +49,7 @@ func (m MockedKey) Desc() string {
 }
 
 func (m MockedKey) String() string {
-	return "mocked_key_" + m.Id
+	return fmt.Sprintf(`mocked key "%s"`, m.Id)
 }
 
 func (m MockedKey) ObjectId() string {
@@ -73,63 +72,19 @@ func (r MockedManifest) Kind() model.Kind {
 	return r.Key().Kind()
 }
 
-func (r *MockedManifest) State() *model.RecordState {
-	if r.RecordState == nil {
-		return &model.RecordState{}
-	}
-	return r.RecordState
-}
-
-func (MockedManifest) SortKey(_ string) string {
-	return "key"
-}
-
-func (MockedManifest) RelativePath() string {
-	return "foo"
-}
-
-func (MockedManifest) SetRelativePath(string) {
-}
-
-func (MockedManifest) ParentPath() string {
-	return "bar"
-}
-
-func (MockedManifest) IsParentPathSet() bool {
-	return true
-}
-
-func (MockedManifest) SetParentPath(string) {
-}
-
 func (r MockedManifest) Path() model.AbsPath {
-	if len(r.PathValue) > 0 {
-		return model.NewAbsPath("", r.PathValue)
+	if r.PathValue.IsSet() {
+		return r.PathValue
 	}
 	return model.NewAbsPath("", "test")
 }
 
+func (r MockedManifest) SetPath(v model.AbsPath) {
+	r.PathValue = v
+}
+
 func (r MockedManifest) String() string {
-	if len(r.PathValue) > 0 {
-		return r.PathValue
-	}
-	return `test`
-}
-
-func (r *MockedManifest) ClearRelatedPaths() {
-	r.RelatedPaths = make([]string, 0)
-}
-
-func (r *MockedManifest) GetRelatedPaths() []string {
-	return r.RelatedPaths
-}
-
-func (r *MockedManifest) AddRelatedPath(path string) {
-	r.RelatedPaths = append(r.RelatedPaths, path)
-}
-
-func (MockedManifest) RenameRelatedPaths(_, _ string) {
-	// nop
+	return r.Key().String()
 }
 
 func (r MockedManifest) NewEmptyObject() model.Object {

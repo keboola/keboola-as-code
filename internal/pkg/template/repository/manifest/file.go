@@ -46,10 +46,10 @@ func loadFile(fs filesystem.Fs) (*file, error) {
 	// Fill in parent paths
 	for i := range content.Templates {
 		template := &content.Templates[i]
-		template.AbsPath.SetParentPath(``)
+		template.AbsPath = template.AbsPath.WithParentPath(``)
 		for j := range template.Versions {
 			version := &template.Versions[j]
-			version.AbsPath.SetParentPath(template.String())
+			version.AbsPath = version.AbsPath.WithParentPath(template.String())
 		}
 	}
 

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/state/load"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/api/schedulerapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -15,7 +17,6 @@ import (
 	createMetaDir "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/metadir/create"
 	genWorkflows "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/workflows/generate"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/pull"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 type Options struct {

@@ -9,9 +9,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/state/load"
 	createBranch "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/branch"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/pull"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 func CreateCommand(p dependencies.Provider) *cobra.Command {

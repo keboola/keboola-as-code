@@ -7,7 +7,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 	createConfig "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/config"
 	createRow "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/row"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/state/load"
 )
 
 func CreateCommand(p dependencies.Provider) *cobra.Command {
