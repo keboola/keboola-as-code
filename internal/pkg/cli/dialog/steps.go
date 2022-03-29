@@ -187,13 +187,13 @@ There is one group and one step predefined. Feel free to extend them.
 -->
 
 ## Group "Group 1"
-description: 
+description: Default Group
 required: all
 
 ### Step "Step 1"
 icon: common
-name: Step One
-description:
+name: Default Step
+description: Default Step
 dialogName:
 dialogDescription:
 

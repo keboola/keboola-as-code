@@ -22,7 +22,7 @@ type inputsDialogDeps interface {
 
 // askTemplateInputs - dialog to define user inputs for a new template.
 // Used in AskCreateTemplateOpts.
-func (p *Dialogs) askTemplateInputs(deps inputsDialogDeps, branch *model.Branch, configs []*model.ConfigWithRows) (objectInputsMap, *template.Inputs, error) {
+func (p *Dialogs) askTemplateInputs(deps inputsDialogDeps, branch *model.Branch, configs []*model.ConfigWithRows) (objectInputsMap, *template.StepsGroups, error) {
 	// Create empty inputs map
 	inputs := newInputsMap()
 
@@ -59,7 +59,7 @@ func (p *Dialogs) askTemplateInputs(deps inputsDialogDeps, branch *model.Branch,
 		return nil, nil, err
 	}
 
-	return objectInputs, inputs.all(), nil
+	return objectInputs, &stepsGroups, nil
 }
 
 func addInputsToStepsGroups(stepsGroups *input.StepsGroups, inputs inputsMap) error {

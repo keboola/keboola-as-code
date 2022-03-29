@@ -24,7 +24,7 @@ type Options struct {
 	Description  string
 	SourceBranch model.BranchKey
 	Configs      []template.ConfigDef
-	Inputs       *template.Inputs
+	StepsGroups  *template.StepsGroups
 }
 
 type dependencies interface {
@@ -85,7 +85,7 @@ func Run(o Options, d dependencies) (err error) {
 	}
 
 	// Save inputs
-	if err := saveInputs.Run(o.Inputs, tmpl.Fs(), d); err != nil {
+	if err := saveInputs.Run(o.StepsGroups, tmpl.Fs(), d); err != nil {
 		return err
 	}
 

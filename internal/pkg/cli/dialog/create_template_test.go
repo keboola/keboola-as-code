@@ -196,12 +196,27 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 				TemplateId: `config-3`,
 			},
 		},
-		Inputs: &template.Inputs{
+		StepsGroups: &input.StepsGroups{
 			{
-				Id:   "my-component-password",
-				Name: "Password",
-				Type: input.TypeString,
-				Kind: input.KindHidden,
+				Id:          "group1",
+				Description: "Group One",
+				Required:    "all",
+				Steps: []*input.Step{
+					{
+						Id:          "step1",
+						Icon:        "common",
+						Name:        "Step 1",
+						Description: "Step One",
+						Inputs: input.Inputs{
+							{
+								Id:   "my-component-password",
+								Name: "Password",
+								Type: input.TypeString,
+								Kind: input.KindHidden,
+							},
+						},
+					},
+				},
 			},
 		},
 	}, opts)
@@ -278,26 +293,41 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 				TemplateId: `config-3`,
 			},
 		},
-		Inputs: &template.Inputs{
+		StepsGroups: &input.StepsGroups{
 			{
-				Id:   "my-component-password",
-				Name: "Password",
-				Type: input.TypeString,
-				Kind: input.KindHidden,
-			},
-			{
-				Id:      "my-component-int",
-				Name:    "Int",
-				Type:    input.TypeInt,
-				Kind:    input.KindInput,
-				Default: 123,
-			},
-			{
-				Id:      "my-component-string",
-				Name:    "String",
-				Type:    input.TypeString,
-				Kind:    input.KindInput,
-				Default: "my string",
+				Id:          "Group 1",
+				Description: "Default Group",
+				Required:    "all",
+				Steps: []*input.Step{
+					{
+						Id:          "Step 1",
+						Icon:        "common",
+						Name:        "Default Step",
+						Description: "Default Step",
+						Inputs: input.Inputs{
+							{
+								Id:   "my-component-password",
+								Name: "Password",
+								Type: input.TypeString,
+								Kind: input.KindHidden,
+							},
+							{
+								Id:      "my-component-int",
+								Name:    "Int",
+								Type:    input.TypeInt,
+								Kind:    input.KindInput,
+								Default: 123,
+							},
+							{
+								Id:      "my-component-string",
+								Name:    "String",
+								Type:    input.TypeString,
+								Kind:    input.KindInput,
+								Default: "my string",
+							},
+						},
+					},
+				},
 			},
 		},
 	}, opts)
@@ -373,13 +403,27 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 				TemplateId: `config-3`,
 			},
 		},
-		Inputs: &template.Inputs{
+		StepsGroups: &input.StepsGroups{
 			{
-				Id:   "my-component-password",
-				Name: "Password",
-				Type: input.TypeString,
-				Kind: input.KindHidden,
-				Step: "Step 1",
+				Id:          "Group 1",
+				Description: "Default Group",
+				Required:    "all",
+				Steps: []*input.Step{
+					{
+						Id:          "Step 1",
+						Icon:        "common",
+						Name:        "Default Step",
+						Description: "Default Step",
+						Inputs: input.Inputs{
+							{
+								Id:   "my-component-password",
+								Name: "Password",
+								Type: input.TypeString,
+								Kind: input.KindHidden,
+							},
+						},
+					},
+				},
 			},
 		},
 	}, opts)

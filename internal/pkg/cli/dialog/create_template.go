@@ -136,12 +136,12 @@ func (d *createTmplDialog) ask() (createTemplate.Options, error) {
 	}
 
 	// Ask for user inputs
-	objectInputs, allInputs, err := d.askTemplateInputs(d.deps, d.selectedBranch, d.selectedConfigs)
+	objectInputs, stepsGroups, err := d.askTemplateInputs(d.deps, d.selectedBranch, d.selectedConfigs)
 	if err != nil {
 		return d.out, err
 	}
 	objectInputs.setTo(d.out.Configs)
-	d.out.Inputs = allInputs
+	d.out.StepsGroups = stepsGroups
 
 	return d.out, nil
 }

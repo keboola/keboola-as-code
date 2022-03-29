@@ -2,9 +2,19 @@ package input
 
 import (
 	"fmt"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 )
 
 type StepsGroups []*StepsGroup
+
+func Load(fs filesystem.Fs) (*StepsGroups, error) {
+	f, err := loadFile(fs)
+	if err != nil {
+		return nil, err
+	}
+	return &f.StepsGroups, nil
+}
 
 type StepIndex struct {
 	Step  int
@@ -43,6 +53,18 @@ func (g StepsGroups) InputsForStep(index StepIndex) (Inputs, bool) {
 		return nil, false
 	}
 	return g[index.Group].Steps[index.Step].Inputs, true
+}
+
+// Save inputs to the FileName.
+func (g StepsGroups) Save(fs filesystem.Fs) error {
+	if err := saveFile(fs, &file{StepsGroups: g}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (g StepsGroups) Path() string {
+	return Path()
 }
 
 func (g *StepsGroups) Validate() error {

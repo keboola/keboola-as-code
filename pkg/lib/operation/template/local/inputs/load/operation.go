@@ -10,7 +10,7 @@ type dependencies interface {
 	Logger() log.Logger
 }
 
-func Run(fs filesystem.Fs, d dependencies) (*template.Inputs, error) {
+func Run(fs filesystem.Fs, d dependencies) (*template.StepsGroups, error) {
 	inputs, err := template.LoadInputs(fs)
 	if err != nil {
 		return nil, err

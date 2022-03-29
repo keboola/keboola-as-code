@@ -224,7 +224,24 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 		},
 	}
 
-	output, err := dialog.AskUseTemplateOptions(projectState, template.NewInputs().Set(inputs), d.Options())
+	stepsGroups := &input.StepsGroups{
+		{
+			Id:          "group1",
+			Description: "Group One",
+			Required:    "all",
+			Steps: []*input.Step{
+				{
+					Id:          "step1",
+					Icon:        "common",
+					Name:        "Step 1",
+					Description: "Step One",
+					Inputs:      inputs,
+				},
+			},
+		},
+	}
+
+	output, err := dialog.AskUseTemplateOptions(projectState, stepsGroups, d.Options())
 	assert.NoError(t, err)
 
 	assert.NoError(t, console.Tty().Close())
@@ -341,7 +358,24 @@ func TestAskUseTemplateOptionsIfNotMet(t *testing.T) {
 		},
 	}
 
-	output, err := dialog.AskUseTemplateOptions(projectState, template.NewInputs().Set(inputs), d.Options())
+	stepsGroups := &input.StepsGroups{
+		{
+			Id:          "group1",
+			Description: "Group One",
+			Required:    "all",
+			Steps: []*input.Step{
+				{
+					Id:          "step1",
+					Icon:        "common",
+					Name:        "Step 1",
+					Description: "Step One",
+					Inputs:      inputs,
+				},
+			},
+		},
+	}
+
+	output, err := dialog.AskUseTemplateOptions(projectState, stepsGroups, d.Options())
 	assert.NoError(t, err)
 
 	assert.NoError(t, console.Tty().Close())

@@ -4,17 +4,18 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 )
 
 type dependencies interface {
 	Logger() log.Logger
 }
 
-func Run(fs filesystem.Fs, d dependencies) (*template.Inputs, error) {
+func Run(fs filesystem.Fs, d dependencies) (*template.StepsGroups, error) {
 	logger := d.Logger()
 
 	// Create
-	inputs := template.NewInputs()
+	inputs := input.StepsGroups{}
 
 	// Save
 	if err := inputs.Save(fs); err != nil {
@@ -22,5 +23,5 @@ func Run(fs filesystem.Fs, d dependencies) (*template.Inputs, error) {
 	}
 
 	logger.Infof("Created template inputs file \"%s\".", inputs.Path())
-	return inputs, nil
+	return &inputs, nil
 }

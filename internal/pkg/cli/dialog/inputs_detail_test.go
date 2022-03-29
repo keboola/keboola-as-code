@@ -235,6 +235,7 @@ kind: input
 rules:
 showIf:
 default: default
+step: Default Step
 
 ## Input "string-hidden" (string)
 name: String Hidden
@@ -243,6 +244,7 @@ kind: hidden
 rules:
 showIf:
 default:
+step: Default Step
 
 ## Input "string-textarea" (string)
 name: String Textarea
@@ -251,6 +253,7 @@ kind: textarea
 rules:
 showIf:
 default:
+step: Default Step
 
 ## Input "string-select" (string)
 name: String Select
@@ -260,6 +263,7 @@ rules:
 showIf:
 default: id1
 options: {"id1":"Option 1","id2":"Option 2"}
+step: Default Step
 
 ## Input "string-int" (int)
 name: String Double
@@ -268,6 +272,7 @@ kind: input
 rules:
 showIf:
 default: 123
+step: Default Step
 
 ## Input "string-double" (double)
 name: String Double
@@ -276,6 +281,7 @@ kind: input
 rules:
 showIf:
 default: 12.34
+step: Default Step
 
 ## Input "bool-confirm" (bool)
 name: Bool Confirm
@@ -284,6 +290,7 @@ kind: confirm
 rules:
 showIf:
 default: true
+step: Default Step
 
 ## Input "string-array-multiselect" (string[])
 name: String Array
@@ -293,5 +300,6 @@ rules:
 showIf:
 default: id1, id3
 options: {"id1":"Option 1","id2":"Option 2","id3":"Option 3"}
+step: Default Step
 
 `
