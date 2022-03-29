@@ -137,6 +137,13 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 		_, err = console.Send(testhelper.Enter) // -> start editor
 		assert.NoError(t, err)
 
+		_, err = console.ExpectString("Please define steps and groups for user inputs specification.")
+		assert.NoError(t, err)
+
+		time.Sleep(20 * time.Millisecond)
+		_, err = console.Send(testhelper.Enter) // -> start editor
+		assert.NoError(t, err)
+
 		_, err = console.ExpectString("Please complete the user inputs specification.")
 		assert.NoError(t, err)
 
@@ -198,14 +205,14 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 		},
 		StepsGroups: &input.StepsGroups{
 			{
-				Description: "Group One",
+				Description: "Default Group",
 				Required:    "all",
 				Steps: []*input.Step{
 					{
 						Id:          "step-1",
 						Icon:        "common",
-						Name:        "Step 1",
-						Description: "Step One",
+						Name:        "Default Step",
+						Description: "Default Step",
 						Inputs: input.Inputs{
 							{
 								Id:   "my-component-password",
