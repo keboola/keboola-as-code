@@ -27,10 +27,10 @@ func newInputsDetailsDialog(prompt prompt.Prompt, inputs inputsMap) *inputsDetai
 	return &inputsDetailDialog{prompt: prompt, inputs: inputs}
 }
 
-func (d *inputsDetailDialog) ask(defaultStep string) (map[string]string, error) {
+func (d *inputsDetailDialog) ask(stepsGroups *input.StepsGroups) (map[string]string, error) {
 	result, _ := d.prompt.Editor("md", &prompt.Question{
 		Description: `Please complete the user inputs specification.`,
-		Default:     d.defaultValue(defaultStep),
+		Default:     d.defaultValue(stepsGroups),
 		Validator: func(val interface{}) error {
 			_, err := d.parse(val.(string))
 			if err != nil {
@@ -159,7 +159,7 @@ func (d *inputsDetailDialog) parse(result string) (map[string]string, error) {
 	return inputsToStepsMap, errors.ErrorOrNil()
 }
 
-func (d *inputsDetailDialog) defaultValue(defaultStep string) string {
+func (d *inputsDetailDialog) defaultValue(stepsGroups *input.StepsGroups) string {
 	// File header - info for user
 	fileHeader := `
 <!--
@@ -205,6 +205,18 @@ Options format:
      kind: multiselect
      default: id1, id3
      options: {"id1":"Option 1","id2":"Option 2","id3":"Option 3"}
+
+Preview of steps and groups you created:
+`
+	for gIdx, group := range *stepsGroups {
+		fileHeader += fmt.Sprintf(`- Group %d
+`, gIdx+1)
+		for _, step := range group.Steps {
+			fileHeader += fmt.Sprintf(`  - Step "%s"
+`, step.Id)
+		}
+	}
+	fileHeader += `
 -->
 
 
@@ -238,7 +250,7 @@ Options format:
 			lines.WriteString(fmt.Sprintf("options: %s\n", json.MustEncode(i.Options.Map(), false)))
 		}
 
-		lines.WriteString(fmt.Sprintf("step: %s\n", defaultStep))
+		lines.WriteString(fmt.Sprintf("step: %s\n", stepsGroups.DefaultStepId()))
 
 		lines.WriteString("\n")
 	}

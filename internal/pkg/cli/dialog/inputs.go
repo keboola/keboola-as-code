@@ -51,7 +51,7 @@ func (p *Dialogs) askTemplateInputs(deps inputsDialogDeps, branch *model.Branch,
 	}
 
 	// Define name/description for each user input.
-	inputsToStepsMap, err := newInputsDetailsDialog(p.Prompt, inputs).ask(stepsGroups.DefaultStepId())
+	inputsToStepsMap, err := newInputsDetailsDialog(p.Prompt, inputs).ask(&stepsGroups)
 	if err != nil {
 		return nil, nil, err
 	}

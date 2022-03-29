@@ -15,9 +15,19 @@ import (
 func TestInputsDetailDialog_DefaultValue(t *testing.T) {
 	t.Parallel()
 
+	stepsGroups := &input.StepsGroups{
+		&input.StepsGroup{Description: "desc", Required: "all", Steps: []*input.Step{
+			{Id: "default-step", Icon: "common", Name: "Step One", Description: "Description"},
+		}},
+		&input.StepsGroup{Required: "all", Steps: []*input.Step{
+			{Id: "s2", Icon: "common", Name: "Step Two", Description: "Description"},
+			{Id: "s3", Icon: "common", Name: "Step Three", Description: "Description"},
+		}},
+	}
+
 	// Check default value
 	d := newInputsDetailsDialog(nopPrompt.New(), testInputs())
-	actual := d.defaultValue("default-step")
+	actual := d.defaultValue(stepsGroups)
 	actual = regexpcache.MustCompile(` +\n`).ReplaceAllString(actual, "\n") // trim trailing spaces
 	assert.Equal(t, inputsDetailDialogDefaultValue, actual)
 }
@@ -225,6 +235,14 @@ Options format:
      kind: multiselect
      default: id1, id3
      options: {"id1":"Option 1","id2":"Option 2","id3":"Option 3"}
+
+Preview of steps and groups you created:
+- Group 1
+  - Step "default-step"
+- Group 2
+  - Step "s2"
+  - Step "s3"
+
 -->
 
 
