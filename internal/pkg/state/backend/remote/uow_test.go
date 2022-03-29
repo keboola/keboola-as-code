@@ -6,21 +6,31 @@ import (
 	"testing"
 
 	"github.com/jarcoal/httpmock"
+	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/object"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 )
 
 func newTestUow(t *testing.T, mappers ...interface{}) (state.UnitOfWork, *httpmock.MockTransport, *remote.State) {
 	t.Helper()
-	storageApi, httpTransport := testapi.NewMockedStorageApi(log.NewDebugLogger())
-	mapperInst := mapper.New().AddMapper(mappers...)
-	s := remote.NewState(log.NewNopLogger(), object.NewIdSorter(), mapperInst, storageApi)
+
+	// Dependencies
+	d := dependencies.NewTestContainer()
+	_, httpTransport := d.UseMockedStorageApi()
+	d.UseMockedSchedulerApi()
+
+	// Create state
+	s, err := remote.NewState(d, object.NewIdSorter(), func(s *remote.State) (mapper.Mappers, error) {
+		return mappers, nil
+	})
+	assert.NoError(t, err)
+
+	// Create UnitOfWork
 	return s.NewUnitOfWork(context.Background(), model.NoFilter(), `change desc`), httpTransport, s
 }
 
