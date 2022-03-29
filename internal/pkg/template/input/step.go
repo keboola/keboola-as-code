@@ -76,7 +76,6 @@ func (g StepsGroups) DefaultStepId() string {
 }
 
 type StepsGroup struct {
-	Id          string  `json:"id"`
 	Description string  `json:"description" validate:"max=80"`
 	Required    string  `json:"required" validate:"oneof=all atLeastOne exactOne zeroOrOne optional"`
 	Steps       []*Step `json:"steps" validate:"min=1,dive"`

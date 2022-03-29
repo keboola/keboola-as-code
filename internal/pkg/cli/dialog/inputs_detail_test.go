@@ -17,7 +17,7 @@ func TestInputsDetailDialog_DefaultValue(t *testing.T) {
 
 	// Check default value
 	d := newInputsDetailsDialog(nopPrompt.New(), testInputs())
-	actual := d.defaultValue("Default Step")
+	actual := d.defaultValue("default-step")
 	actual = regexpcache.MustCompile(` +\n`).ReplaceAllString(actual, "\n") // trim trailing spaces
 	assert.Equal(t, inputsDetailDialogDefaultValue, actual)
 }
@@ -235,7 +235,7 @@ kind: input
 rules:
 showIf:
 default: default
-step: Default Step
+step: default-step
 
 ## Input "string-hidden" (string)
 name: String Hidden
@@ -244,7 +244,7 @@ kind: hidden
 rules:
 showIf:
 default:
-step: Default Step
+step: default-step
 
 ## Input "string-textarea" (string)
 name: String Textarea
@@ -253,7 +253,7 @@ kind: textarea
 rules:
 showIf:
 default:
-step: Default Step
+step: default-step
 
 ## Input "string-select" (string)
 name: String Select
@@ -263,7 +263,7 @@ rules:
 showIf:
 default: id1
 options: {"id1":"Option 1","id2":"Option 2"}
-step: Default Step
+step: default-step
 
 ## Input "string-int" (int)
 name: String Double
@@ -272,7 +272,7 @@ kind: input
 rules:
 showIf:
 default: 123
-step: Default Step
+step: default-step
 
 ## Input "string-double" (double)
 name: String Double
@@ -281,7 +281,7 @@ kind: input
 rules:
 showIf:
 default: 12.34
-step: Default Step
+step: default-step
 
 ## Input "bool-confirm" (bool)
 name: Bool Confirm
@@ -290,7 +290,7 @@ kind: confirm
 rules:
 showIf:
 default: true
-step: Default Step
+step: default-step
 
 ## Input "string-array-multiselect" (string[])
 name: String Array
@@ -300,6 +300,6 @@ rules:
 showIf:
 default: id1, id3
 options: {"id1":"Option 1","id2":"Option 2","id3":"Option 3"}
-step: Default Step
+step: default-step
 
 `

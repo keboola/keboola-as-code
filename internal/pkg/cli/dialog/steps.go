@@ -61,20 +61,14 @@ func (d *stepsDialog) parse(result string) error {
 
 		// Parse line
 		switch {
-		case strings.HasPrefix(line, `## `):
+		case strings.HasPrefix(line, `## Group`):
 			// Group definition
-			m := regexpcache.MustCompile(`"([^"]+)"`).FindStringSubmatch(line)
-			if m == nil {
-				errors.Append(fmt.Errorf(`line %d: cannot parse group "%s"`, lineNum, line))
-				invalidDefinition = true
-				continue
-			}
-			currentGroup = &input.StepsGroup{Id: m[1], Steps: make([]*input.Step, 0)}
+			currentGroup = &input.StepsGroup{Steps: make([]*input.Step, 0)}
 			currentStep = nil
 			d.stepsGroups = append(d.stepsGroups, currentGroup)
 
 			invalidDefinition = false
-		case strings.HasPrefix(line, `### `):
+		case strings.HasPrefix(line, `### Step`):
 			// Step definition
 			m := regexpcache.MustCompile(`"([^"]+)"`).FindStringSubmatch(line)
 			if m == nil {
@@ -147,26 +141,28 @@ func (d *stepsDialog) parse(result string) error {
 			msg := err.Error()
 
 			// Replace step and group by index. Example:
-			//   before: [123].steps[0].default
-			//   after:  group "my-group", step "my-step": default
+			//   before: [0].steps[0].default
+			//   after:  group 1, step "my-step": default
 			regex := regexpcache.MustCompile(`^\[(\d+)\].steps\[(\d+)\].`)
 			submatch := regex.FindStringSubmatch(item.Error())
 			if submatch != nil {
 				msg = regex.ReplaceAllStringFunc(item.Error(), func(s string) string {
 					groupIndex, _ := strconv.Atoi(submatch[1])
 					stepIndex, _ := strconv.Atoi(submatch[2])
-					return fmt.Sprintf(`group "%s", step "%s": `, d.stepsGroups[groupIndex].Id, d.stepsGroups[groupIndex].Steps[stepIndex].Id)
+					groupOrder := groupIndex + 1
+					return fmt.Sprintf(`group %d, step "%s": `, groupOrder, d.stepsGroups[groupIndex].Steps[stepIndex].Id)
 				})
 			} else {
 				// Replace group by index. Example:
-				//   before: [123].default
-				//   after:  group "my-group": default
+				//   before: [0].default
+				//   after:  group 1: default
 				regex = regexpcache.MustCompile(`^\[(\d+)\].`)
 				submatch = regex.FindStringSubmatch(item.Error())
 				if submatch != nil {
 					msg = regex.ReplaceAllStringFunc(item.Error(), func(s string) string {
 						groupIndex, _ := strconv.Atoi(submatch[1])
-						return fmt.Sprintf(`group "%s": `, d.stepsGroups[groupIndex].Id)
+						groupOrder := groupIndex + 1
+						return fmt.Sprintf(`group %d: `, groupOrder)
 					})
 				}
 			}
@@ -186,11 +182,11 @@ Please create steps and groups for the user inputs.
 There is one group and one step predefined. Feel free to extend them.
 -->
 
-## Group "Group 1"
+## Group
 description: Default Group
 required: all
 
-### Step "Step 1"
+### Step "step-1"
 icon: common
 name: Default Step
 description: Default Step

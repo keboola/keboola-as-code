@@ -77,7 +77,6 @@ const inputsJsonNet = `{
 func testInputs() *StepsGroups {
 	return &StepsGroups{
 		{
-			Id:          "group1",
 			Description: "Group One",
 			Required:    "all",
 			Steps: []*Step{
