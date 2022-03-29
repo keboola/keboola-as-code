@@ -35,16 +35,16 @@ func NewGenerator(template Template, registry *Registry, components *ComponentsM
 	return &Generator{template: template, registry: registry, components: components}
 }
 
-func (g Generator) MetaFilePath(dir string) string {
-	return filesystem.Join(dir, MetaFile)
+func (g Generator) MetaFilePath(parentPath AbsPath) string {
+	return filesystem.Join(parentPath.String(), MetaFile)
 }
 
-func (g Generator) ConfigFilePath(dir string) string {
-	return filesystem.Join(dir, ConfigFile)
+func (g Generator) ConfigFilePath(parentPath AbsPath) string {
+	return filesystem.Join(parentPath.String(), ConfigFile)
 }
 
-func (g Generator) DescriptionFilePath(dir string) string {
-	return filesystem.Join(dir, DescriptionFile)
+func (g Generator) DescriptionFilePath(parentPath AbsPath) string {
+	return filesystem.Join(parentPath.String(), DescriptionFile)
 }
 
 func (g Generator) CodeFilePath(code *Code) string {

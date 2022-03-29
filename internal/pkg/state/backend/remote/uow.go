@@ -54,16 +54,7 @@ func (u *uow) Invoke() (state.FinalizationFn, error) {
 		}
 	}
 
-	// Finalization callback with changes
-	finalizeFn := func(changes *model.Changes) error {
-		// AfterRemoteOperation event
-		if !changes.Empty() {
-			return u.mapper.AfterRemoteOperation(changes)
-		}
-		return nil
-	}
-
-	return finalizeFn, u.errors.ErrorOrNil()
+	return u.finalizeFn(), u.errors.ErrorOrNil()
 }
 
 func (u *uow) LoadAll(loadCtx state.LoadContext) {
@@ -76,6 +67,17 @@ func (u *uow) Save(saveCtx state.SaveContext) {
 
 func (u *uow) Delete(deleteCtx state.DeleteContext) {
 	(&deleteContext{uow: u, DeleteContext: deleteCtx}).delete()
+}
+
+// finalizeFn callback - responds to the changes that have been made.
+func (u *uow) finalizeFn() state.FinalizationFn {
+	return func(changes *model.Changes) error {
+		// AfterRemoteOperation event
+		if !changes.Empty() {
+			return u.mapper.AfterRemoteOperation(changes)
+		}
+		return nil
+	}
 }
 
 // poolFor each level (branches, configs, rows).

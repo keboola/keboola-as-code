@@ -5,9 +5,9 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/object"
 )
 
@@ -44,17 +44,22 @@ func NewState(d dependencies, sorter model.ObjectsSorter, mappersFn MappersFacto
 	}
 
 	// Create mappers
-	mappers, err := mappersFn(s)
-	if err != nil {
-		return nil, err
+	if mappersFn != nil {
+		mappers, err := mappersFn(s)
+		if err != nil {
+			return nil, err
+		}
+		s.mapper.AddMapper(mappers...)
 	}
 
-	// Set mappers
-	s.mapper.AddMapper(mappers...)
 	return s, nil
 }
 
 func (s *State) NewUnitOfWork(ctx context.Context, filter model.ObjectsFilter, changeDescription string) state.UnitOfWork {
 	backend := newUnitOfWorkBackend(s, ctx, filter, changeDescription)
 	return state.NewUnitOfWork(ctx, s.objects, backend)
+}
+
+func (s *State) Mapper() *mapper.Mapper {
+	return s.mapper
 }

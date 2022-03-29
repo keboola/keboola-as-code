@@ -8,13 +8,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper"
 	templateInput "github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/state/load"
 )
 
 const (
@@ -36,8 +35,8 @@ func ManifestPath() string {
 	return templateManifest.Path()
 }
 
-func NewManifest() *Manifest {
-	return templateManifest.New()
+func NewManifest(ctx context.Context, fs filesystem.Fs) *Manifest {
+	return templateManifest.New(ctx, fs)
 }
 
 func LoadManifest(fs filesystem.Fs) (*ManifestFile, error) {
@@ -129,32 +128,9 @@ func (t *Template) ManifestExists() (bool, error) {
 	return t.srcDir.IsFile(t.ManifestPath()), nil
 }
 
-func (t *Template) LoadState(ctx Context, options loadState.Options) (*State, error) {
-	localFilter := ctx.LocalObjectsFilter()
-	remoteFilter := ctx.RemoteObjectsFilter()
-	loadOptions := loadState.OptionsWithFilter{
-		Options:      options,
-		LocalFilter:  &localFilter,
-		RemoteFilter: &remoteFilter,
-	}
-
-	// Evaluate manifest
-	container, err := t.evaluate(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// Load state
-	if s, err := loadState.Run(container, loadOptions, t.deps); err == nil {
-		return NewState(s, container), nil
-	} else {
-		return nil, err
-	}
-}
-
 func (t *Template) evaluate(ctx Context) (*evaluatedTemplate, error) {
 	// Evaluate manifest
-	m, err := t.manifestFile.Evaluate(ctx.JsonNetContext())
+	m, err := t.manifestFile.Evaluate(ctx, ctx.JsonNetContext())
 	if err != nil {
 		return nil, err
 	}
@@ -188,6 +164,6 @@ func (c *evaluatedTemplate) Ctx() context.Context {
 	return c.context
 }
 
-func (c *evaluatedTemplate) MappersFor(state *state.State) (mapper.Mappers, error) {
+func (c *evaluatedTemplate) MappersFor(state *local.State) (mapper.Mappers, error) {
 	return MappersFor(state, c.deps, c.context)
 }

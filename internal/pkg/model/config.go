@@ -101,6 +101,10 @@ func (c *Config) ObjectName() string {
 	return c.Name
 }
 
+func (c *Config) GetComponentId() ComponentId {
+	return c.ComponentId
+}
+
 func (c *Config) GetContent() *orderedmap.OrderedMap {
 	return c.Content
 }

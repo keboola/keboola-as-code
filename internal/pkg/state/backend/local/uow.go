@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/spf13/cast"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/workers"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/common/local/manifest/save"
@@ -54,11 +55,30 @@ func (u *uow) Invoke() (state.FinalizationFn, error) {
 		}
 	}
 
-	// Finalization callback - responds to the changes that have been made.
-	finalizeFn := func(changes *model.Changes) error {
+	return u.finalizeFn(), errors.ErrorOrNil()
+}
+
+func (u *uow) LoadAll(loadCtx state.LoadContext) {
+	(&loadContext{uow: u, LoadContext: loadCtx}).loadAll()
+}
+
+func (u *uow) Save(saveCtx state.SaveContext) {
+	(&saveContext{uow: u, SaveContext: saveCtx}).save()
+}
+
+func (u *uow) Delete(deleteCtx state.DeleteContext) {
+	(&deleteContext{uow: u, DeleteContext: deleteCtx}).delete()
+}
+
+// finalizeFn callback - responds to the changes that have been made.
+func (u *uow) finalizeFn() state.FinalizationFn {
+	return func(changes *model.Changes) error {
+		errors := utils.NewMultiError()
+
 		// AfterLocalOperation event
 		if !changes.Empty() {
 			if err := u.mapper.AfterLocalOperation(changes); err != nil {
+				spew.Dump(err)
 				errors.Append(err)
 			}
 		}
@@ -80,20 +100,6 @@ func (u *uow) Invoke() (state.FinalizationFn, error) {
 
 		return errors.ErrorOrNil()
 	}
-
-	return finalizeFn, errors.ErrorOrNil()
-}
-
-func (u *uow) LoadAll(loadCtx state.LoadContext) {
-	(&loadContext{uow: u, LoadContext: loadCtx}).loadAll()
-}
-
-func (u *uow) Save(saveCtx state.SaveContext) {
-	(&saveContext{uow: u, SaveContext: saveCtx}).save()
-}
-
-func (u *uow) Delete(deleteCtx state.DeleteContext) {
-	(&deleteContext{uow: u, DeleteContext: deleteCtx}).delete()
 }
 
 // workersFor each level (branches, configs, rows).

@@ -12,11 +12,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
@@ -56,6 +56,43 @@ func TestUnitOfWork_Load_Mapper(t *testing.T) {
 		`loaded branch "111"`,
 		`loaded config "branch:111/component:ex-generic-v2/config:456"`,
 	}, testMapperInst.localChanges)
+}
+
+func TestUnitOfWork_Load_Relations(t *testing.T) {
+	t.Parallel()
+	//d := dependencies.NewTestContainer()
+	//logger := d.DebugLogger()
+	//mockedState := d.EmptyState()
+	//mockedState.Mapper().AddMapper(configmetadata.NewMapper(mockedState, d))
+	//
+	//configKey := model.ConfigKey{
+	//	BranchId:    123,
+	//	ComponentId: model.ComponentId("keboola.snowflake-transformation"),
+	//	Id:          `456`,
+	//}
+	//configState := &model.ConfigState{
+	//	ConfigManifest: &model.ConfigManifest{
+	//		ConfigKey: configKey,
+	//		Metadata: orderedmap.FromPairs([]orderedmap.Pair{
+	//			{Key: "KBC.KaC.Meta1", Value: "val1"},
+	//			{Key: "KBC.KaC.Meta2", Value: "val2"},
+	//		}),
+	//	},
+	//	Local: &model.Config{
+	//		ConfigKey: configKey,
+	//		Name:      "My Config",
+	//		Content:   orderedmap.New(),
+	//	},
+	//}
+	//
+	//recipe := model.NewLocalLoadRecipe(d.FileLoader(), configState.Manifest(), configState.Local)
+	//assert.NoError(t, mockedState.Mapper().MapAfterLocalLoad(recipe))
+	//assert.Empty(t, logger.WarnAndErrorMessages())
+	//
+	//config := recipe.Object.(*model.Config)
+	//assert.NotEmpty(t, config.Metadata)
+	//assert.Equal(t, "val1", config.Metadata["KBC.KaC.Meta1"])
+	//assert.Equal(t, "val2", config.Metadata["KBC.KaC.Meta2"])
 }
 
 func TestUnitOfWork_Load_Minimal(t *testing.T) {

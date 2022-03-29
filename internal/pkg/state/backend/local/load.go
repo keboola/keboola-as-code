@@ -24,6 +24,7 @@ func (c *loadContext) loadAll() {
 	c.ignoreNotFoundError, _ = c.ctx.Value(IgnoreNotFoundError).(bool)
 
 	for _, objectManifest := range c.manifest.All() {
+		objectManifest := objectManifest
 		c.
 			workersFor(objectManifest.Level()).
 			AddWorker(func() error {
@@ -60,11 +61,17 @@ func (c *loadContext) loadObject(objectManifest model.ObjectManifest) error {
 	// Create empty object
 	object := objectManifest.NewEmptyObject()
 
+	// Set relations if they are supported
+	o, ok1 := object.(model.ObjectWithRelations)
+	m, ok2 := objectManifest.(model.ObjectManifestWithRelations)
+	if ok1 && ok2 {
+		o.SetRelations(m.GetRelations())
+	}
+
 	// Call mappers
-	errors := utils.NewMultiError()
-	recipe := model.NewLocalLoadRecipe(c.fileLoader(), objectManifest, object)
+	recipe := model.NewLocalLoadRecipe(c.fileLoader(), objectManifest.Path(), object)
 	if err := c.mapper.MapAfterLocalLoad(recipe); err != nil {
-		errors.Append(err)
+		return c.invalidObjectError(object, err)
 	}
 
 	// Collect related paths
@@ -75,15 +82,9 @@ func (c *loadContext) loadObject(objectManifest model.ObjectManifest) error {
 	c.SetRelatedPaths(object.Key(), relatedPaths)
 
 	// Validate, only if all files has been loaded without error, it prevents duplicate errors
-	if errors.Len() == 0 {
-		if err := validator.Validate(c.ctx, object); err != nil {
-			errors.AppendWithPrefix(fmt.Sprintf(`%s is invalid`, objectManifest.String()), err)
-		}
-	}
-
-	// Is object valid?
-	if errors.Len() > 0 {
-		return c.invalidObjectError(object, errors)
+	if err := validator.Validate(c.ctx, object); err != nil {
+		err = utils.PrefixError(fmt.Sprintf(`%s is invalid`, objectManifest.String()), err)
+		return c.invalidObjectError(object, err)
 	}
 
 	// Work done, notify UnitOfWork

@@ -148,10 +148,10 @@ func (f *fileToLoad) ReadJsonFileTo(target interface{}) (*filesystem.RawFile, er
 
 // LocalLoadRecipe - all items related to the object, when loading from local fs.
 type LocalLoadRecipe struct {
-	ObjectManifest                        // manifest record, eg *ConfigManifest
-	Object         Object                 // object, eg. Config
-	Files          *FilesLoader           // eg. config.json, meta.json, description.md, ...
-	Annotations    map[string]interface{} // key/value pairs that can be used by to affect mappers behavior
+	Object      Object                 // object, eg. Config
+	Path        AbsPath                // path to the object directory
+	Files       *FilesLoader           // eg. config.json, meta.json, description.md, ...
+	Annotations map[string]interface{} // key/value pairs that can be used by to affect mappers behavior
 }
 
 // LocalSaveRecipe - all items related to the object, when saving to local fs.
@@ -197,12 +197,12 @@ type OnObjectPathUpdateEvent struct {
 	NewPath        string
 }
 
-func NewLocalLoadRecipe(fsLoader filesystem.FileLoader, manifest ObjectManifest, object Object) *LocalLoadRecipe {
+func NewLocalLoadRecipe(fsLoader filesystem.FileLoader, path AbsPath, object Object) *LocalLoadRecipe {
 	return &LocalLoadRecipe{
-		Object:         object,
-		ObjectManifest: manifest,
-		Files:          NewFilesLoader(fsLoader),
-		Annotations:    make(map[string]interface{}),
+		Object:      object,
+		Path:        path,
+		Files:       NewFilesLoader(fsLoader),
+		Annotations: make(map[string]interface{}),
 	}
 }
 

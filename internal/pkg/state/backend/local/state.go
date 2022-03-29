@@ -2,16 +2,17 @@ package local
 
 import (
 	"context"
+	"sort"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/relatedpaths"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/object"
 )
 
@@ -65,19 +66,32 @@ func NewState(d dependencies, objectsRoot filesystem.Fs, manifest manifest.Manif
 	}
 
 	// Create mappers
-	mappers, err := mappersFn(s)
-	if err != nil {
-		return nil, err
+	if mappersFn != nil {
+		mappers, err := mappersFn(s)
+		if err != nil {
+			return nil, err
+		}
+		s.mapper.AddMapper(mappers...)
 	}
 
-	// Set mappers
-	s.mapper.AddMapper(mappers...)
 	return s, nil
 }
 
 func (s *State) NewUnitOfWork(ctx context.Context, filter model.ObjectsFilter) state.UnitOfWork {
 	backend := newUnitOfWorkBackend(s, ctx, filter, s.mapper)
 	return state.NewUnitOfWork(ctx, s.objects, backend)
+}
+
+func (s *State) Manifest() manifest.Manifest {
+	return s.manifest
+}
+
+func (s *State) Mapper() *mapper.Mapper {
+	return s.mapper
+}
+
+func (s *State) NamingGenerator() *naming.Generator {
+	return s.namingGenerator
 }
 
 func (s *State) GetByPath(path string) (model.Object, bool) {
@@ -111,6 +125,32 @@ func (s *State) TrackedPaths() []string {
 
 func (s *State) UntrackedPaths() []string {
 	return s.knownPaths.UntrackedPaths()
+}
+
+func (s *State) InvalidObjects() []model.Key {
+	i := 0
+	out := make([]model.Key, len(s.invalidObjects))
+	for _, v := range s.invalidObjects {
+		out[i] = v.Key()
+		i++
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		return s.Less(out[i], out[j])
+	})
+	return out
+}
+
+func (s *State) NotFoundObjects() []model.Key {
+	i := 0
+	out := make([]model.Key, len(s.notFoundObjects))
+	for _, v := range s.notFoundObjects {
+		out[i] = v.Key()
+		i++
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		return s.Less(out[i], out[j])
+	})
+	return out
 }
 
 func (s *State) reloadKnownPaths() error {
