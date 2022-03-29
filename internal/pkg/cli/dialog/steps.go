@@ -134,6 +134,9 @@ func (d *stepsDialog) parse(result string) error {
 	}
 
 	// Validate
+	if len(d.stepsGroups) == 0 {
+		return fmt.Errorf("input must contain at least 1 group")
+	}
 	if e := d.stepsGroups.Validate(); e != nil {
 		// nolint: errorlint
 		err := e.(*utils.MultiError)
@@ -166,6 +169,9 @@ func (d *stepsDialog) parse(result string) error {
 					})
 				}
 			}
+
+			msg = strings.Replace(msg, "steps must contain at least 1 item", "steps must contain at least 1 step", 1)
+
 			err.Errors[index] = fmt.Errorf(msg)
 		}
 		errors.Append(err)

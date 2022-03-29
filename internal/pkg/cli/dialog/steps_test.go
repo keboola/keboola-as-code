@@ -59,7 +59,6 @@ icon: common
 func TestStepsDialog_Parse_Errors(t *testing.T) {
 	t.Parallel()
 
-	// Validace neřeší json tagy (oneOf u required a max length u descriptions)
 	in := `
 ### Step "s0"
 name: Step 0
@@ -97,10 +96,27 @@ description: Description
 - group 1, step "s1": icon is a required field
 - group 1, step "s1": name must be a maximum of 20 characters in length
 - group 2: required must be one of [all atLeastOne exactOne zeroOrOne optional]
-- group 2: steps must contain at least 1 item
+- group 2: steps must contain at least 1 step
 - group 3: required must be one of [all atLeastOne exactOne zeroOrOne optional]
 - group 3, step "s2": icon is a required field
 - group 3, step "s3": icon is a required field
+`
+
+	// Parse
+	d := newStepsDialog(nopPrompt.New())
+	err := d.parse(in)
+	assert.Error(t, err)
+	assert.Equal(t, strings.Trim(expected, "\n"), err.Error())
+}
+
+func TestStepsDialog_Parse_NoGroups(t *testing.T) {
+	t.Parallel()
+
+	in := `
+`
+
+	expected := `
+input must contain at least 1 group
 `
 
 	// Parse
