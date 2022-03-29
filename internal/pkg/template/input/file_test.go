@@ -38,35 +38,49 @@ func TestSaveInputsFile(t *testing.T) {
 }
 
 const inputsJsonNet = `{
-  inputs: [
+  stepsGroups: [
     {
-      id: "fb.extractor.username",
-      name: "Facebook username",
-      description: "Facebook username description",
-      type: "string",
-      kind: "input",
-    },
-    {
-      id: "fb.extractor.password",
-      name: "Facebook password",
-      description: "Facebook password description",
-      type: "string",
-      kind: "hidden",
-    },
-    {
-      id: "fb.extractor.options",
-      name: "Facebook options",
-      description: "Facebook options description",
-      type: "string",
-      kind: "select",
-      options: [
+      description: "Group One",
+      required: "all",
+      steps: [
         {
-          id: "a",
-          name: "A",
-        },
-        {
-          id: "b",
-          name: "B",
+          id: "step1",
+          icon: "common",
+          name: "Step 1",
+          description: "Step One",
+          inputs: [
+            {
+              id: "fb.extractor.username",
+              name: "Facebook username",
+              description: "Facebook username description",
+              type: "string",
+              kind: "input",
+            },
+            {
+              id: "fb.extractor.password",
+              name: "Facebook password",
+              description: "Facebook password description",
+              type: "string",
+              kind: "hidden",
+            },
+            {
+              id: "fb.extractor.options",
+              name: "Facebook options",
+              description: "Facebook options description",
+              type: "string",
+              kind: "select",
+              options: [
+                {
+                  id: "a",
+                  name: "A",
+                },
+                {
+                  id: "b",
+                  name: "B",
+                },
+              ],
+            },
+          ],
         },
       ],
     },
