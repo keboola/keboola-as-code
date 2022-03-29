@@ -4,51 +4,41 @@ import (
 	"context"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-// onObjectsRename - find renamed configurations that are used in default buckets placeholders.
-func (m *defaultBucketMapper) onObjectsRename(renamed []model.RenameAction, allObjects model.Objects) error {
+// AfterLocalRename find renamed configurations that are used in default buckets placeholders.
+func (m *defaultBucketMapper) AfterLocalRename(changes []model.RenameAction) error {
 	// Find renamed configurations used in IM.
-	objectsToUpdate := make(map[string]model.Key)
-	for _, object := range renamed {
-		manifest, ok := object.Manifest.(*model.ConfigManifest)
+	objectsToUpdate := make(map[model.Key]bool)
+	for _, item := range changes {
+		key, ok := item.Key.(model.ConfigKey)
 		if !ok {
 			continue
 		}
 
-		localConfigRaw, found := allObjects.Get(manifest.Key())
-		if !found {
-			continue
-		}
-		localConfig := localConfigRaw.(*model.Config)
-
-		for _, relationRaw := range localConfig.Relations.GetByType(model.UsedInConfigInputMappingRelType) {
+		config := m.state.MustGet(key).(*model.Config)
+		for _, relationRaw := range config.Relations.GetByType(model.UsedInConfigInputMappingRelType) {
 			relation := relationRaw.(*model.UsedInConfigInputMappingRelation)
-			objectsToUpdate[relation.UsedIn.String()] = relation.UsedIn
+			objectsToUpdate[relation.UsedIn] = true
 		}
-		for _, relationRaw := range localConfig.Relations.GetByType(model.UsedInRowInputMappingRelType) {
+		for _, relationRaw := range config.Relations.GetByType(model.UsedInRowInputMappingRelType) {
 			relation := relationRaw.(*model.UsedInRowInputMappingRelation)
-			objectsToUpdate[relation.UsedIn.String()] = relation.UsedIn
+			objectsToUpdate[relation.UsedIn] = true
 		}
 	}
 
 	// Log and save
-	uow := m.state.LocalManager().NewUnitOfWork(context.Background())
-	errors := utils.NewMultiError()
 	if len(objectsToUpdate) > 0 {
 		m.logger.Debug(`Need to update configurations:`)
-		for _, key := range objectsToUpdate {
+		uow := m.state.NewUnitOfWork(context.Background(), model.NoFilter())
+		for key := range objectsToUpdate {
 			m.logger.Debugf(`  - %s`, key.String())
-			objectState := m.state.MustGet(key)
-			uow.SaveObject(objectState, objectState.LocalState(), model.NewChangedFields(`configuration`))
+			uow.Save(m.state.MustGet(key), model.NewChangedFields(`configuration`))
 		}
+
+		// Invoke
+		return uow.Invoke()
 	}
 
-	// Invoke
-	if err := uow.Invoke(); err != nil {
-		errors.Append(err)
-	}
-
-	return errors.ErrorOrNil()
+	return nil
 }

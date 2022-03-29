@@ -48,30 +48,34 @@ func (c *Changes) Deleted() []Key {
 	return c.deleted
 }
 
-func (c *Changes) AddCreated(objectState ...Object) {
+func (c *Changes) AddCreated(object ...Object) *Changes {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	c.created = append(c.created, objectState...)
-	c.saved = append(c.saved, objectState...)
+	c.created = append(c.created, object...)
+	c.saved = append(c.saved, object...)
+	return c
 }
 
-func (c *Changes) AddUpdated(objectState ...Object) {
+func (c *Changes) AddUpdated(object ...Object) *Changes {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	c.updated = append(c.updated, objectState...)
-	c.saved = append(c.saved, objectState...)
+	c.updated = append(c.updated, object...)
+	c.saved = append(c.saved, object...)
+	return c
 }
 
-func (c *Changes) AddLoaded(objectState ...Object) {
+func (c *Changes) AddLoaded(object ...Object) *Changes {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	c.loaded = append(c.loaded, objectState...)
+	c.loaded = append(c.loaded, object...)
+	return c
 }
 
-func (c *Changes) AddDeleted(keys ...Key) {
+func (c *Changes) AddDeleted(keys ...Key) *Changes {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	c.deleted = append(c.deleted, keys...)
+	return c
 }
 
 func (c *Changes) Replace(callback ChangesReplaceFunc) {

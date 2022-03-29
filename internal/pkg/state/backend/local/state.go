@@ -2,6 +2,7 @@ package local
 
 import (
 	"context"
+	"fmt"
 	"sort"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -90,6 +91,10 @@ func (s *State) Mapper() *mapper.Mapper {
 	return s.mapper
 }
 
+func (s *State) NamingRegistry() *naming.Registry {
+	return s.manifest.NamingRegistry()
+}
+
 func (s *State) NamingGenerator() *naming.Generator {
 	return s.namingGenerator
 }
@@ -102,7 +107,11 @@ func (s *State) GetByPath(path string) (model.Object, bool) {
 	return s.Get(key)
 }
 
-func (s *State) GetPath(object model.WithKey) (model.AbsPath, error) {
+func (s *State) GetPath(key model.Key) (model.AbsPath, error) {
+	object, found := s.Get(key)
+	if !found {
+		return model.AbsPath{}, fmt.Errorf("%s not found", key.String())
+	}
 	return s.namingGenerator.GetOrGenerate(object)
 }
 

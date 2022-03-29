@@ -59,6 +59,12 @@ func (r Registry) Attach(key Key, path AbsPath) error {
 	return nil
 }
 
+func (r Registry) MustAttach(key Key, path AbsPath) {
+	if err := r.Attach(key, path); err != nil {
+		panic(err)
+	}
+}
+
 // Detach object's path from NamingTemplate, so it can be used by other object.
 func (r Registry) Detach(key Key) {
 	r.lock.Lock()

@@ -51,21 +51,32 @@ type LocalFileLoadMapper interface {
 // The renamed object is not saved yet in this step.
 // You can use this listener if you need to rename some related objects.
 // If you want to respond to the object rename
-// after the change is saved to the filesystem, use the AfterLocalOperationListener instead.
+// after the change is saved to the filesystem, use the AfterLocalRenameListener instead.
 type OnObjectPathUpdateListener interface {
 	OnObjectPathUpdate(event model.OnObjectPathUpdateEvent) error
 }
 
+// AfterLocalRenameListener is called when the local.UnitOfWork finished all the work.
+type AfterLocalRenameListener interface {
+	AfterLocalRename(changes []model.RenameAction) error
+}
+
 // AfterLocalOperationListener is called when the local.UnitOfWork finished all the work.
-// The "changes" parameter contains all: loaded, persisted, created, update, (saved), renamed, deleted objects.
+// The "changes" parameter contains all: loaded, created, update, saved, deleted objects.
 type AfterLocalOperationListener interface {
 	AfterLocalOperation(changes *model.Changes) error
 }
 
 // AfterRemoteOperationListener is called when the remote.UnitOfWork finished all the work.
-// The "changes" parameter contains all: loaded, created, update, (saved), deleted objects.
+// The "changes" parameter contains all: loaded, created, update, saved, deleted objects.
 type AfterRemoteOperationListener interface {
 	AfterRemoteOperation(changes *model.Changes) error
+}
+
+// AfterOperationListener is called when the UnitOfWork finished all the work.
+// The "changes" parameter contains all: loaded, persisted, created, update, (saved), renamed, deleted objects.
+type AfterOperationListener interface {
+	AfterOperation(changes *model.Changes) error
 }
 
 type Mappers []interface{}
@@ -221,11 +232,23 @@ func (m *Mapper) OnObjectPathUpdate(event model.OnObjectPathUpdateEvent) error {
 	})
 }
 
-// AfterLocalOperation calls mappers with AfterLocalOperationListener interface implemented.
+// AfterLocalOperation calls mappers with AfterLocalRenameListener interface implemented.
 func (m *Mapper) AfterLocalOperation(changes *model.Changes) error {
 	return m.mappers.ForEach(false, func(mapper interface{}) error {
 		if mapper, ok := mapper.(AfterLocalOperationListener); ok {
 			if err := mapper.AfterLocalOperation(changes); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+// AfterLocalRename calls mappers with AfterLocalOperationListener interface implemented.
+func (m *Mapper) AfterLocalRename(changes []model.RenameAction) error {
+	return m.mappers.ForEach(false, func(mapper interface{}) error {
+		if mapper, ok := mapper.(AfterLocalRenameListener); ok {
+			if err := mapper.AfterLocalRename(changes); err != nil {
 				return err
 			}
 		}

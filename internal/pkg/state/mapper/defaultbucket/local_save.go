@@ -27,32 +27,48 @@ func (m *defaultBucketMapper) replaceDefaultBucketWithPlaceholder(
 	sourceTableId string,
 	inputTable *orderedmap.OrderedMap,
 ) error {
-	sourceConfigState, found, err := m.getDefaultBucketSourceConfig(config, sourceTableId)
+	// Get source config
+	sourceConfig, found, err := m.getDefaultBucketSourceConfig(config, sourceTableId)
 	if err != nil {
 		return err
-	}
-	if !found {
+	} else if !found {
 		return nil
 	}
 
-	tableName := strings.SplitN(sourceTableId, ".", 3)[2]
-	inputTable.Set(`source`, fmt.Sprintf(`{{:default-bucket:%s}}.%s`, sourceConfigState.RelativePath(), tableName))
+	// Get path to the source config
+	path, err := m.state.GetPath(sourceConfig)
+	if err != nil {
+		return err
+	}
 
+	// Parse table ID
+	tableName := strings.SplitN(sourceTableId, ".", 3)[2]
+
+	// Replace bucket with the placeholder
+	inputTable.Set(`source`, fmt.Sprintf(`{{:default-bucket:%s}}.%s`, path.RelativePath(), tableName))
 	return nil
 }
 
-func (m *defaultBucketMapper) getDefaultBucketSourceConfig(config configOrRow, tableId string) (model.ObjectState, bool, error) {
-	componentId, configId, match := m.state.Components().GetDefaultBucketByTableId(tableId)
+func (m *defaultBucketMapper) getDefaultBucketSourceConfig(config configOrRow, tableId string) (model.Object, bool, error) {
+	// Get components
+	components, err := m.Components()
+	if err != nil {
+		return nil, false, err
+	}
+
+	// Parse table ID
+	componentId, configId, match := components.GetDefaultBucketByTableId(tableId)
 	if !match {
 		return nil, false, nil
 	}
 
+	// Get source config
 	sourceConfigKey := model.ConfigKey{
 		BranchId:    config.BranchKey().Id,
 		ComponentId: componentId,
 		Id:          configId,
 	}
-	sourceConfigState, found := m.state.Get(sourceConfigKey)
+	sourceConfig, found := m.state.Get(sourceConfigKey)
 	if !found {
 		errors := utils.NewMultiError()
 		errors.Append(fmt.Errorf(`%s not found`, sourceConfigKey.String()))
@@ -60,5 +76,5 @@ func (m *defaultBucketMapper) getDefaultBucketSourceConfig(config configOrRow, t
 		errors.Append(fmt.Errorf(`  - input mapping "%s"`, tableId))
 		return nil, false, errors
 	}
-	return sourceConfigState, true, nil
+	return sourceConfig, true, nil
 }

@@ -19,191 +19,154 @@ const localSaveConfigContentSample = `
     "input": {
       "tables": [
         {
-          "columns": [],
           "source": "in.c-keboola-ex-aws-s3-123.accounts",
-          "destination": "accounts",
-          "where_column": "",
-          "where_operator": "eq",
-          "where_values": []
-        },
-        {
-          "columns": [],
-          "source": "in.c-keboola-ex-aws-s3-456.contacts",
-          "destination": "contacts",
-          "where_column": "",
-          "where_operator": "eq",
-          "where_values": []
+          "destination": "accounts"
         }
-      ],
-      "files": []
-    },
-    "output": {
-      "tables": [],
-      "files": []
+      ]
     }
   }
 }`
 
-func TestDefaultBucketMapper_MapBeforeLocalSaveConfig(t *testing.T) {
+func TestDefaultBucketMapper_MapBeforeLocalSave_Config(t *testing.T) {
 	t.Parallel()
 	state, d := createStateWithMapper(t)
 	logger := d.DebugLogger()
 
+	// Branch
+	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{Id: 123}})
+
 	// Config referenced by the default bucket
-	configKey1 := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: `keboola.ex-aws-s3`,
-		Id:          `123`,
-	}
-	configState1 := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{
-			ConfigKey: configKey1,
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath("branch", "extractor/keboola.ex-aws-s3/test"),
-			},
-		},
-		Remote: &model.Config{
-			ConfigKey: configKey1,
-			Content: orderedmap.FromPairs([]orderedmap.Pair{
-				{
-					Key: "foo",
-					Value: orderedmap.FromPairs([]orderedmap.Pair{
-						{Key: "bar", Value: "baz"},
-					}),
-				},
-			}),
-		},
-	}
-	assert.NoError(t, state.Set(configState1))
+	sourceConfigKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.ex-aws-s3`, Id: `123`}
+	state.MustAdd(&model.Config{ConfigKey: sourceConfigKey})
+	state.NamingRegistry().MustAttach(
+		sourceConfigKey,
+		model.NewAbsPath("branch", "extractor/keboola.ex-aws-s3/test"),
+	)
 
 	// Config with the input mapping
-	configKey2 := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: `keboola.snowflake-transformation`,
-		Id:          `789`,
-	}
-
-	content := orderedmap.New()
-	json.MustDecodeString(localSaveConfigContentSample, content)
-	configState2 := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{
-			ConfigKey: configKey2,
-		},
-		Local: &model.Config{
-			ConfigKey: configKey2,
-			Content:   content,
-		},
-	}
-	assert.NoError(t, state.Set(configState2))
+	configKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.snowflake-transformation`, Id: `789`}
+	configPath := model.NewAbsPath("branch", "transformation/keboola.snowflake-transformation/test")
+	config := &model.Config{ConfigKey: configKey, Content: orderedmap.New()}
+	json.MustDecodeString(localSaveConfigContentSample, config.Content)
+	state.MustAdd(config)
 
 	// Invoke
-	object := deepcopy.Copy(configState2.Local).(*model.Config)
-	recipe := model.NewLocalSaveRecipe(configState2.ConfigManifest, object, model.NewChangedFields())
+	object := deepcopy.Copy(config).(*model.Config)
+	recipe := model.NewLocalSaveRecipe(configPath, object, model.NewChangedFields())
 	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
+	assert.Empty(t, logger.WarnAndErrorMessages())
 
-	// Check warning of missing default bucket config
-	expectedWarnings := `
-WARN  Warning: - config "branch:123/component:keboola.ex-aws-s3/config:456" not found
-  - referenced from config "branch:123/component:keboola.snowflake-transformation/config:789"
-  - input mapping "in.c-keboola-ex-aws-s3-456.contacts"
-`
-	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.WarnAndErrorMessages())
-
-	// Check default bucket replacement
+	// Default bucket is replaced with the placeholder
 	configContent := json.MustEncodeString(object.Content, false)
-	assert.Equal(t, `{"parameters":{},"storage":{"input":{"tables":[{"columns":[],"source":"{{:default-bucket:extractor/keboola.ex-aws-s3/test}}.accounts","destination":"accounts","where_column":"","where_operator":"eq","where_values":[]},{"columns":[],"source":"in.c-keboola-ex-aws-s3-456.contacts","destination":"contacts","where_column":"","where_operator":"eq","where_values":[]}],"files":[]},"output":{"tables":[],"files":[]}}}`, configContent)
+	assert.Equal(t, `{"parameters":{},"storage":{"input":{"tables":[{"source":"{{:default-bucket:extractor/keboola.ex-aws-s3/test}}.accounts","destination":"accounts"}]}}}`, configContent)
 }
 
-func TestDefaultBucketMapper_MapBeforeLocalSaveRow(t *testing.T) {
+func TestDefaultBucketMapper_MapBeforeLocalSave_Config_Missing(t *testing.T) {
 	t.Parallel()
 	state, d := createStateWithMapper(t)
 	logger := d.DebugLogger()
 
-	// Config referenced by the default bucket
-	configKey1 := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: `keboola.ex-aws-s3`,
-		Id:          `123`,
-	}
-	configState1 := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{
-			ConfigKey: configKey1,
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath("branch", "extractor/keboola.ex-aws-s3/test"),
-			},
-		},
-		Remote: &model.Config{
-			ConfigKey: configKey1,
-			Content: orderedmap.FromPairs([]orderedmap.Pair{
-				{
-					Key: "foo",
-					Value: orderedmap.FromPairs([]orderedmap.Pair{
-						{Key: "bar", Value: "baz"},
-					}),
-				},
-			}),
-		},
-	}
-	assert.NoError(t, state.Set(configState1))
+	// Branch
+	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{Id: 123}})
 
 	// Config with the input mapping
-	configKey2 := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: `keboola.snowflake-transformation`,
-		Id:          `789`,
-	}
-
-	configState2 := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{
-			ConfigKey: configKey2,
-		},
-		Local: &model.Config{
-			ConfigKey: configKey2,
-			Content:   orderedmap.New(),
-		},
-	}
-	assert.NoError(t, state.Set(configState2))
-
-	rowKey := model.ConfigRowKey{
-		BranchId:    123,
-		ConfigId:    configKey2.Id,
-		Id:          `456`,
-		ComponentId: configKey2.ComponentId,
-	}
-	content := orderedmap.New()
-	json.MustDecodeString(localSaveConfigContentSample, content)
-	rowState := &model.ConfigRowState{
-		ConfigRowManifest: &model.ConfigRowManifest{
-			ConfigRowKey: rowKey,
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(
-					"branch/config",
-					"row",
-				),
-			},
-		},
-		Local: &model.ConfigRow{
-			ConfigRowKey: rowKey,
-			Content:      content,
-		},
-	}
-	assert.NoError(t, state.Set(rowState))
+	configKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.snowflake-transformation`, Id: `789`}
+	configPath := model.NewAbsPath("branch", "transformation/keboola.snowflake-transformation/test")
+	config := &model.Config{ConfigKey: configKey, Content: orderedmap.New()}
+	json.MustDecodeString(localSaveConfigContentSample, config.Content)
+	state.MustAdd(config)
 
 	// Invoke
-	object := deepcopy.Copy(rowState.Local).(*model.ConfigRow)
-	recipe := model.NewLocalSaveRecipe(rowState.ConfigRowManifest, object, model.NewChangedFields())
-	object.Content = content
+	object := deepcopy.Copy(config).(*model.Config)
+	recipe := model.NewLocalSaveRecipe(configPath, object, model.NewChangedFields())
 	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
 
 	// Check warning of missing default bucket config
 	expectedWarnings := `
-WARN  Warning: - config "branch:123/component:keboola.ex-aws-s3/config:456" not found
-  - referenced from config row "branch:123/component:keboola.snowflake-transformation/config:789/row:456"
-  - input mapping "in.c-keboola-ex-aws-s3-456.contacts"
+WARN  Warning: - config "branch:123/component:keboola.ex-aws-s3/config:123" not found
+  - referenced from config "branch:123/component:keboola.snowflake-transformation/config:789"
+  - input mapping "in.c-keboola-ex-aws-s3-123.accounts"
 `
 	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.WarnAndErrorMessages())
 
-	// Check default bucket replacement
+	// No change in the content
 	configContent := json.MustEncodeString(object.Content, false)
-	assert.Equal(t, `{"parameters":{},"storage":{"input":{"tables":[{"columns":[],"source":"{{:default-bucket:extractor/keboola.ex-aws-s3/test}}.accounts","destination":"accounts","where_column":"","where_operator":"eq","where_values":[]},{"columns":[],"source":"in.c-keboola-ex-aws-s3-456.contacts","destination":"contacts","where_column":"","where_operator":"eq","where_values":[]}],"files":[]},"output":{"tables":[],"files":[]}}}`, configContent)
+	assert.Equal(t, `{"parameters":{},"storage":{"input":{"tables":[{"source":"in.c-keboola-ex-aws-s3-123.accounts","destination":"accounts"}]}}}`, configContent)
+}
+
+func TestDefaultBucketMapper_MapBeforeLocalSave_Row(t *testing.T) {
+	t.Parallel()
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
+
+	// Branch
+	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{Id: 123}})
+
+	// Config referenced by the default bucket
+	sourceConfigKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.ex-aws-s3`, Id: `123`}
+	state.MustAdd(&model.Config{ConfigKey: sourceConfigKey})
+	state.NamingRegistry().MustAttach(
+		sourceConfigKey,
+		model.NewAbsPath("branch", "extractor/keboola.ex-aws-s3/test"),
+	)
+
+	// Parent config
+	configKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.snowflake-transformation`, Id: `789`}
+	config := &model.Config{ConfigKey: configKey}
+	state.MustAdd(config)
+
+	// Row with the input mapping
+	rowKey := model.ConfigRowKey{BranchId: 123, ConfigId: config.Id, Id: `456`, ComponentId: config.ComponentId}
+	rowPath := model.NewAbsPath("branch/transformation/keboola.snowflake-transformation/test", "rows/row")
+	row := &model.ConfigRow{ConfigRowKey: rowKey, Content: orderedmap.New()}
+	json.MustDecodeString(localSaveConfigContentSample, row.Content)
+	state.MustAdd(row)
+
+	// Invoke
+	object := deepcopy.Copy(row).(*model.ConfigRow)
+	recipe := model.NewLocalSaveRecipe(rowPath, object, model.NewChangedFields())
+	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
+	assert.Empty(t, logger.WarnAndErrorMessages())
+
+	// Default bucket is replaced with the placeholder
+	configContent := json.MustEncodeString(object.Content, false)
+	assert.Equal(t, `{"parameters":{},"storage":{"input":{"tables":[{"source":"{{:default-bucket:extractor/keboola.ex-aws-s3/test}}.accounts","destination":"accounts"}]}}}`, configContent)
+}
+
+func TestDefaultBucketMapper_MapBeforeLocalSave_Row_Missing(t *testing.T) {
+	t.Parallel()
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
+
+	// Branch
+	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{Id: 123}})
+
+	// Parent config
+	configKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.snowflake-transformation`, Id: `789`}
+	config := &model.Config{ConfigKey: configKey}
+	state.MustAdd(config)
+
+	// Row with the input mapping
+	rowKey := model.ConfigRowKey{BranchId: 123, ConfigId: config.Id, Id: `456`, ComponentId: config.ComponentId}
+	rowPath := model.NewAbsPath("branch/transformation/keboola.snowflake-transformation/test", "rows/row")
+	row := &model.ConfigRow{ConfigRowKey: rowKey, Content: orderedmap.New()}
+	json.MustDecodeString(localSaveConfigContentSample, row.Content)
+	state.MustAdd(row)
+
+	// Invoke
+	object := deepcopy.Copy(row).(*model.ConfigRow)
+	recipe := model.NewLocalSaveRecipe(rowPath, object, model.NewChangedFields())
+	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
+
+	// Check warning of missing default bucket config
+	expectedWarnings := `
+WARN  Warning: - config "branch:123/component:keboola.ex-aws-s3/config:123" not found
+  - referenced from config row "branch:123/component:keboola.snowflake-transformation/config:789/row:456"
+  - input mapping "in.c-keboola-ex-aws-s3-123.accounts"
+`
+	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.WarnAndErrorMessages())
+
+	// No change in the content
+	configContent := json.MustEncodeString(object.Content, false)
+	assert.Equal(t, `{"parameters":{},"storage":{"input":{"tables":[{"source":"in.c-keboola-ex-aws-s3-123.accounts","destination":"accounts"}]}}}`, configContent)
 }

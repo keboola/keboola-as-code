@@ -1,14 +1,14 @@
 package model
 
 type RenamedPath struct {
-	Object     Object
+	Key        Key
 	OldPath    string
 	RenameFrom string // old path with renamed parents dirs
 	NewPath    string
 }
 
 type RenameAction struct {
-	Manifest    ObjectManifest
+	Key         Key
 	OldPath     string
 	RenameFrom  string // old path with renamed parents dirs
 	NewPath     string

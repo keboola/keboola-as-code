@@ -28,15 +28,7 @@ func (m *defaultBucketMapper) AfterLocalOperation(changes *model.Changes) error 
 		m.logger.Warn(utils.PrefixError(`Warning`, warnings))
 	}
 
-	// Process renamed objects
-	errors := utils.NewMultiError()
-	if len(changes.Renamed()) > 0 {
-		if err := m.onObjectsRename(changes.Renamed(), m.state.LocalObjects()); err != nil {
-			errors.Append(err)
-		}
-	}
-
-	return errors.ErrorOrNil()
+	return nil
 }
 
 func (m *defaultBucketMapper) replacePlaceholderWithDefaultBucket(
@@ -54,15 +46,15 @@ func (m *defaultBucketMapper) replacePlaceholderWithDefaultBucket(
 		return nil
 	}
 
-	// Get branch
+	// Get branch path
 	branchPath, err := m.state.GetPath(targetConfig.BranchKey())
 	if err != nil {
 		return fmt.Errorf(`cannot get branch path: %w`, err)
 	}
 
 	// Get key by path
-	path := filesystem.Join(branchPath.String(), splitSource[0])
-	sourceConfigRaw, found := m.state.GetByPath(path)
+	sourcePath := filesystem.Join(branchPath.String(), splitSource[0])
+	sourceConfigRaw, found := m.state.GetByPath(sourcePath)
 	if !found {
 		return fmt.Errorf(
 			`%s contains table "%s" in input mapping referencing to a non-existing configuration`,
@@ -72,11 +64,19 @@ func (m *defaultBucketMapper) replacePlaceholderWithDefaultBucket(
 	}
 	sourceConfig := sourceConfigRaw.(*model.Config)
 
-	defaultBucket, found := m.Components().GetDefaultBucketByComponentId(sourceConfig.ComponentId, sourceConfig.Id)
+	// Get components
+	components, err := m.Components()
+	if err != nil {
+		return err
+	}
+
+	// Get default bucket
+	defaultBucket, found := components.GetDefaultBucketByComponentId(sourceConfig.ComponentId, sourceConfig.Id)
 	if !found {
 		return nil
 	}
 
+	// Replace placeholder with the bucket
 	inputTable.Set(`source`, fmt.Sprintf("%s.%s", defaultBucket, splitSource[1]))
 	markUsedInInputMapping(sourceConfig, targetConfig)
 	return nil

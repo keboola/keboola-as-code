@@ -25,15 +25,13 @@ type dependencies interface {
 	Components() (*model.ComponentsMap, error)
 }
 
-func NewMapper(s *local.State, d dependencies) *defaultBucketMapper {
+func NewLocalMapper(s *local.State, d dependencies) *defaultBucketMapper {
 	return &defaultBucketMapper{dependencies: d, state: s, logger: d.Logger()}
 }
 
-func (m *defaultBucketMapper) visitStorageInputTables(config configOrRow, content *orderedmap.OrderedMap, callback func(
-	config configOrRow,
-	sourceTableId string,
-	storageInputTable *orderedmap.OrderedMap,
-) error) error {
+type callbackFn func(config configOrRow, sourceTableId string, storageInputTable *orderedmap.OrderedMap) error
+
+func (m *defaultBucketMapper) visitStorageInputTables(config configOrRow, content *orderedmap.OrderedMap, callback callbackFn) error {
 	inputTablesRaw, _, _ := content.GetNested("storage.input.tables")
 	inputTables, ok := inputTablesRaw.([]interface{})
 	if !ok {
