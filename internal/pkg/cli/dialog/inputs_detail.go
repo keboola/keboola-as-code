@@ -27,22 +27,24 @@ func newInputsDetailsDialog(prompt prompt.Prompt, inputs inputsMap) *inputsDetai
 	return &inputsDetailDialog{prompt: prompt, inputs: inputs}
 }
 
-func (d *inputsDetailDialog) ask() error {
+func (d *inputsDetailDialog) ask(defaultStep string) (map[string]string, error) {
 	result, _ := d.prompt.Editor("md", &prompt.Question{
 		Description: `Please complete the user inputs specification.`,
-		Default:     d.defaultValue(),
+		Default:     d.defaultValue(defaultStep),
 		Validator: func(val interface{}) error {
-			if err := d.parse(val.(string)); err != nil {
+			_, err := d.parse(val.(string))
+			if err != nil {
 				// Print errors to new line
 				return utils.PrefixError("\n", err)
 			}
+
 			return nil
 		},
 	})
 	return d.parse(result)
 }
 
-func (d *inputsDetailDialog) parse(result string) error {
+func (d *inputsDetailDialog) parse(result string) (map[string]string, error) {
 	result = strhelper.StripHtmlComments(result)
 	scanner := bufio.NewScanner(strings.NewReader(result))
 	errors := utils.NewMultiError()
@@ -53,6 +55,7 @@ func (d *inputsDetailDialog) parse(result string) error {
 
 	var currentInput *template.Input
 	var invalidDefinition bool
+	inputsToStepsMap := make(map[string]string)
 
 	for scanner.Scan() {
 		lineNum++
@@ -118,6 +121,8 @@ func (d *inputsDetailDialog) parse(result string) error {
 				errors.Append(fmt.Errorf(`line %d: options are not expected for kind "%s"`, lineNum, currentInput.Kind))
 				continue
 			}
+		case strings.HasPrefix(line, `step:`):
+			inputsToStepsMap[currentInput.Id] = strings.TrimSpace(strings.TrimPrefix(line, `step:`))
 		default:
 			// Expected object definition
 			errors.Append(fmt.Errorf(`line %d: cannot parse "%s"`, lineNum, strhelper.Truncate(line, 10, "...")))
@@ -151,10 +156,10 @@ func (d *inputsDetailDialog) parse(result string) error {
 		})
 	})
 
-	return errors.ErrorOrNil()
+	return inputsToStepsMap, errors.ErrorOrNil()
 }
 
-func (d *inputsDetailDialog) defaultValue() string {
+func (d *inputsDetailDialog) defaultValue(defaultStep string) string {
 	// File header - info for user
 	fileHeader := `
 <!--
@@ -232,6 +237,8 @@ Options format:
 		if i.Options != nil {
 			lines.WriteString(fmt.Sprintf("options: %s\n", json.MustEncode(i.Options.Map(), false)))
 		}
+
+		lines.WriteString(fmt.Sprintf("step: %s\n", defaultStep))
 
 		lines.WriteString("\n")
 	}

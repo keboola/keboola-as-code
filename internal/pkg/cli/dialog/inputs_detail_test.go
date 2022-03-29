@@ -17,7 +17,7 @@ func TestInputsDetailDialog_DefaultValue(t *testing.T) {
 
 	// Check default value
 	d := newInputsDetailsDialog(nopPrompt.New(), testInputs())
-	actual := d.defaultValue()
+	actual := d.defaultValue("Default Step")
 	actual = regexpcache.MustCompile(` +\n`).ReplaceAllString(actual, "\n") // trim trailing spaces
 	assert.Equal(t, inputsDetailDialogDefaultValue, actual)
 }
@@ -27,7 +27,7 @@ func TestInputsDetailDialog_Parse_NoChange(t *testing.T) {
 
 	// Parse
 	d := newInputsDetailsDialog(nopPrompt.New(), testInputs())
-	err := d.parse(inputsDetailDialogDefaultValue)
+	_, err := d.parse(inputsDetailDialogDefaultValue)
 	assert.NoError(t, err)
 	assert.Equal(t, testInputs().all(), d.inputs.all())
 }
@@ -85,7 +85,7 @@ options: {"id1":"Option 1","id2":"Option 2","id3":123}  <!-- invalid options -->
 
 	// Parse
 	d := newInputsDetailsDialog(nopPrompt.New(), testInputs())
-	err := d.parse(result)
+	_, err := d.parse(result)
 	assert.Error(t, err)
 	assert.Equal(t, strings.Trim(expected, "\n"), err.Error())
 }

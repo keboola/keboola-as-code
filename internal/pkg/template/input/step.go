@@ -71,6 +71,10 @@ func (g *StepsGroups) Validate() error {
 	return validate(g)
 }
 
+func (g StepsGroups) DefaultStepId() string {
+	return g[0].Steps[0].Id
+}
+
 type StepsGroup struct {
 	Id          string  `json:"id"`
 	Description string  `json:"description" validate:"max=80"`

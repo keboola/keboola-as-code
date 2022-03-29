@@ -51,31 +51,29 @@ func (p *Dialogs) askTemplateInputs(deps inputsDialogDeps, branch *model.Branch,
 	}
 
 	// Define name/description for each user input.
-	if err := newInputsDetailsDialog(p.Prompt, inputs).ask(); err != nil {
+	inputsToStepsMap, err := newInputsDetailsDialog(p.Prompt, inputs).ask(stepsGroups.DefaultStepId())
+	if err != nil {
 		return nil, nil, err
 	}
 
-	if err := addInputsToStepsGroups(&stepsGroups, inputs); err != nil {
+	if err := addInputsToStepsGroups(&stepsGroups, inputs, inputsToStepsMap); err != nil {
 		return nil, nil, err
 	}
 
 	return objectInputs, &stepsGroups, nil
 }
 
-func addInputsToStepsGroups(stepsGroups *input.StepsGroups, inputs inputsMap) error {
+func addInputsToStepsGroups(stepsGroups *input.StepsGroups, inputs inputsMap, inputsToStepsMap map[string]string) error {
 	indices := stepsGroups.Indices()
 	errors := utils.NewMultiError()
-	for _, i := range *inputs.all() {
-		if i.Step == "" {
-			errors.Append(fmt.Errorf(`input "%s": step is missing`, i.Id))
-			continue
-		}
-		index, found := indices[i.Step]
+	for inputId, step := range inputsToStepsMap {
+		index, found := indices[step]
 		if !found {
-			errors.Append(fmt.Errorf(`input "%s": step "%s" not found`, i.Id, i.Step))
+			errors.Append(fmt.Errorf(`input "%s": step "%s" not found`, inputId, step))
 			continue
 		}
-		_ = stepsGroups.AddInput(i, index)
+		in, _ := inputs.get(inputId)
+		_ = stepsGroups.AddInput(*in, index)
 	}
 	return errors.ErrorOrNil()
 }

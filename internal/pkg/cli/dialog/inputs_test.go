@@ -23,16 +23,17 @@ func TestInputsAddInputsToStepsGroups(t *testing.T) {
 	}
 	inputs := newInputsMap()
 	input1 := &template.Input{
-		Id:   "i1",
-		Step: "Step 2",
+		Id: "i1",
 	}
 	inputs.add(input1)
 	input2 := &template.Input{
-		Id:   "i2",
-		Step: "Step 4",
+		Id: "i2",
 	}
 	inputs.add(input2)
-	err := addInputsToStepsGroups(stepsGroups, inputs)
+	i2sMap := make(map[string]string)
+	i2sMap["i1"] = "Step 2"
+	i2sMap["i2"] = "Step 4"
+	err := addInputsToStepsGroups(stepsGroups, inputs, i2sMap)
 	assert.Error(t, err)
 	assert.Equal(t, err.Error(), "input \"i2\": step \"Step 4\" not found")
 	i, f := stepsGroups.InputsForStep(input.StepIndex{Step: 0, Group: 1})
