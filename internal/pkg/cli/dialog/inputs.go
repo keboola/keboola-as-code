@@ -63,11 +63,12 @@ func (p *Dialogs) askTemplateInputs(deps inputsDialogDeps, branch *model.Branch,
 	return objectInputs, &stepsGroups, nil
 }
 
-func addInputsToStepsGroups(stepsGroups *input.StepsGroups, inputs inputsMap, inputsToStepsMap map[string]string) error {
+func addInputsToStepsGroups(stepsGroups *input.StepsGroups, inputs inputsMap, inputsToStepsMap *orderedmap.OrderedMap) error {
 	indices := stepsGroups.Indices()
 	errors := utils.NewMultiError()
-	for inputId, step := range inputsToStepsMap {
-		index, found := indices[step]
+	for _, inputId := range inputsToStepsMap.Keys() {
+		step, _ := inputsToStepsMap.Get(inputId)
+		index, found := indices[fmt.Sprintf("%v", step)]
 		if !found {
 			errors.Append(fmt.Errorf(`input "%s": step "%s" not found`, inputId, step))
 			continue

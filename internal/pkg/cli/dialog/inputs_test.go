@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestInputsAddInputsToStepsGroups(t *testing.T) {
@@ -30,9 +31,9 @@ func TestInputsAddInputsToStepsGroups(t *testing.T) {
 		Id: "i2",
 	}
 	inputs.add(input2)
-	i2sMap := make(map[string]string)
-	i2sMap["i1"] = "2"
-	i2sMap["i2"] = "4"
+	i2sMap := orderedmap.New()
+	i2sMap.Set("i1", "2")
+	i2sMap.Set("i2", "4")
 	err := addInputsToStepsGroups(stepsGroups, inputs, i2sMap)
 	assert.Error(t, err)
 	assert.Equal(t, err.Error(), "input \"i2\": step \"4\" not found")

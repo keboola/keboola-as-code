@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
@@ -27,7 +28,7 @@ func newInputsDetailsDialog(prompt prompt.Prompt, inputs inputsMap) *inputsDetai
 	return &inputsDetailDialog{prompt: prompt, inputs: inputs}
 }
 
-func (d *inputsDetailDialog) ask(stepsGroups *input.StepsGroups) (map[string]string, error) {
+func (d *inputsDetailDialog) ask(stepsGroups *input.StepsGroups) (*orderedmap.OrderedMap, error) {
 	result, _ := d.prompt.Editor("md", &prompt.Question{
 		Description: `Please complete the user inputs specification.`,
 		Default:     d.defaultValue(stepsGroups),
@@ -44,7 +45,7 @@ func (d *inputsDetailDialog) ask(stepsGroups *input.StepsGroups) (map[string]str
 	return d.parse(result)
 }
 
-func (d *inputsDetailDialog) parse(result string) (map[string]string, error) {
+func (d *inputsDetailDialog) parse(result string) (*orderedmap.OrderedMap, error) {
 	result = strhelper.StripHtmlComments(result)
 	scanner := bufio.NewScanner(strings.NewReader(result))
 	errors := utils.NewMultiError()
@@ -55,7 +56,7 @@ func (d *inputsDetailDialog) parse(result string) (map[string]string, error) {
 
 	var currentInput *template.Input
 	var invalidDefinition bool
-	inputsToStepsMap := make(map[string]string)
+	inputsToStepsMap := orderedmap.New()
 
 	for scanner.Scan() {
 		lineNum++
@@ -122,7 +123,7 @@ func (d *inputsDetailDialog) parse(result string) (map[string]string, error) {
 				continue
 			}
 		case strings.HasPrefix(line, `step:`):
-			inputsToStepsMap[currentInput.Id] = strings.TrimSpace(strings.TrimPrefix(line, `step:`))
+			inputsToStepsMap.Set(currentInput.Id, strings.TrimSpace(strings.TrimPrefix(line, `step:`)))
 		default:
 			// Expected object definition
 			errors.Append(fmt.Errorf(`line %d: cannot parse "%s"`, lineNum, strhelper.Truncate(line, 10, "...")))
