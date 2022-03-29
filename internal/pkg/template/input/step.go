@@ -2,6 +2,10 @@ package input
 
 type StepsGroups []StepsGroup
 
+func (g *StepsGroups) Validate() error {
+	return validate(g)
+}
+
 type StepsGroup struct {
 	Description string `json:"description" validate:"max=80"`
 	Required    string `json:"required" validate:"oneof=all atLeastOne exactOne zeroOrOne optional"`

@@ -200,8 +200,8 @@ func TestValidationRules(t *testing.T) {
 
 	// Test all cases
 	for _, c := range cases {
-		f := file{Inputs: []Input{c.input}}
-		err := f.validate()
+		i := Inputs{c.input}
+		err := i.Validate()
 		if c.error == "" {
 			assert.NoError(t, err, c.description)
 		} else {

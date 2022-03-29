@@ -42,10 +42,19 @@ func (p *Dialogs) askTemplateInputs(deps inputsDialogDeps, branch *model.Branch,
 		return nil, nil, err
 	}
 
+	// Define steps and steps groups for user inputs.
+	stepsDialog := newStepsDialog(p.Prompt)
+	_, err = stepsDialog.ask()
+	if err != nil {
+		return nil, nil, err
+	}
+
 	// Define name/description for each user input.
 	if err := newInputsDetailsDialog(p.Prompt, inputs).ask(); err != nil {
 		return nil, nil, err
 	}
+
+	// stepsGroups.AddInputs(inputs.all()))
 
 	return objectInputs, inputs.all(), nil
 }
