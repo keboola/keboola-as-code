@@ -179,7 +179,10 @@ func (d *stepsDialog) defaultValue() string {
 	return `
 <!--
 Please create steps and groups for the user inputs.
-There is one group and one step predefined. Feel free to extend them.
+There is one group and one step predefined. Feel free to change them and/or create others.
+
+required option for group specifies how many steps need to be filled by user of the template
+	allowed values: all, atLeastOne, exactOne, zeroOrOne, optional
 -->
 
 ## Group
@@ -190,8 +193,6 @@ required: all
 icon: common
 name: Default Step
 description: Default Step
-dialogName:
-dialogDescription:
 
 `
 }
