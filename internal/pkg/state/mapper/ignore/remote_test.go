@@ -5,7 +5,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/remote"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper/ignore"
 )
 
 func TestIgnoreMapper_AfterRemoteOperation(t *testing.T) {
@@ -13,49 +16,47 @@ func TestIgnoreMapper_AfterRemoteOperation(t *testing.T) {
 	state, d := createStateWithMapper(t)
 	logger := d.DebugLogger()
 
+	// Branch
+	branch := &model.Branch{BranchKey: model.BranchKey{Id: 1}}
+	state.MustAdd(branch)
+
 	// Target1
-	targetKey := model.ConfigKey{BranchId: 1, ComponentId: "keboola.foo-bar", Id: "1"}
-	targetConfig := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{ConfigKey: targetKey},
-		Remote:         &model.Config{ConfigKey: targetKey},
-	}
-	assert.NoError(t, state.Set(targetConfig))
+	configKey := model.ConfigKey{BranchId: 1, ComponentId: "keboola.foo-bar", Id: "1"}
+	config := &model.Config{ConfigKey: configKey}
+	state.MustAdd(config)
 
 	// Variables for target
-	targetVarsKey := model.ConfigKey{BranchId: 1, ComponentId: model.VariablesComponentId, Id: "2"}
-	targetVars := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{ConfigKey: targetVarsKey},
-		Remote: &model.Config{
-			ConfigKey: targetVarsKey,
-			Relations: model.Relations{
-				&model.VariablesForRelation{
-					ComponentId: targetKey.ComponentId,
-					ConfigId:    targetKey.Id,
-				},
+	attachedVariables := &model.Config{
+		ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: model.VariablesComponentId, Id: "2"},
+		Relations: model.Relations{
+			&model.VariablesForRelation{
+				ComponentId: configKey.ComponentId,
+				ConfigId:    configKey.Id,
 			},
 		},
 	}
-	assert.NoError(t, state.Set(targetVars))
+	state.MustAdd(attachedVariables)
 
 	// Unattached variables
-	unattachedVarsKey := model.ConfigKey{BranchId: 1, ComponentId: model.VariablesComponentId, Id: "3"}
-	unattachedVars := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{ConfigKey: unattachedVarsKey},
-		Remote:         &model.Config{ConfigKey: unattachedVarsKey},
-	}
-	assert.NoError(t, state.Set(unattachedVars))
+	unattachedVariables := &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: model.VariablesComponentId, Id: "3"}}
+	state.MustAdd(unattachedVariables)
 
 	// Invoke
-	changes := model.NewRemoteChanges()
-	changes.AddLoaded(targetConfig)
-	changes.AddLoaded(targetVars)
-	changes.AddLoaded(unattachedVars)
-	assert.NoError(t, state.Mapper().AfterRemoteOperation(changes))
+	assert.NoError(t, state.Mapper().AfterRemoteOperation(model.NewChanges().AddLoaded(config, attachedVariables, unattachedVariables)))
 	assert.Equal(t, "DEBUG  Ignored unattached variables config \"branch:1/component:keboola.variables/config:3\"\n", logger.AllMessages())
 
 	// Unattached variables are removed
-	assert.Equal(t, []model.ObjectState{
-		targetConfig,
-		targetVars,
+	assert.Equal(t, []model.Object{
+		branch,
+		config,
+		attachedVariables,
 	}, state.All())
+}
+
+func createStateWithMapper(t *testing.T) (*remote.State, *dependencies.TestContainer) {
+	t.Helper()
+	d := dependencies.NewTestContainer()
+	mockedState := d.EmptyRemoteState()
+	mockedState.Mapper().AddMapper(ignore.NewRemoteMapper(mockedState, d))
+	return mockedState, d
 }

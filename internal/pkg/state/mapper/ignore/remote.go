@@ -3,27 +3,36 @@ package ignore
 import (
 	"fmt"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/remote"
 )
+
+type ignoreMapper struct {
+	state  *remote.State
+	logger log.Logger
+}
+
+type dependencies interface {
+	Logger() log.Logger
+}
+
+func NewRemoteMapper(s *remote.State, d dependencies) *ignoreMapper {
+	return &ignoreMapper{state: s, logger: d.Logger()}
+}
 
 func (m *ignoreMapper) AfterRemoteOperation(changes *model.Changes) error {
 	// Ignore objects
 	ignored := make(map[string]bool)
 	for _, object := range changes.Loaded() {
-		if m.isIgnored(object.RemoteState()) {
+		if m.isIgnored(object) {
 			ignored[object.Key().String()] = true
-			if object.HasLocalState() {
-				// Clear remote state
-				object.SetRemoteState(nil)
-			} else {
-				// Remove state
-				m.state.Remove(object.Key())
-			}
+			m.state.Remove(object.Key())
 		}
 	}
 
 	// Fix list of the changed objects
-	changes.Replace(func(v model.ObjectState) model.ObjectState {
+	changes.Replace(func(v model.Object) model.Object {
 		if ignored[v.Key().String()] {
 			// Remove
 			return nil
@@ -43,12 +52,11 @@ func (m *ignoreMapper) isIgnored(object model.Object) bool {
 		return m.isIgnoredConfig(o)
 	case *model.ConfigRow:
 		// Check parent config
-		if configState, found := m.state.Get(o.ConfigKey()); !found {
+		if config, found := m.state.Get(o.ConfigKey()); !found {
 			return true
-		} else if configState.HasRemoteState() {
-			return m.isIgnoredConfig(configState.RemoteState().(*model.Config))
+		} else {
+			return m.isIgnoredConfig(config.(*model.Config))
 		}
-		return false
 	default:
 		panic(fmt.Errorf(`unexpected object type: %T`, object))
 	}
