@@ -224,7 +224,7 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 		},
 	}
 
-	stepsGroups := &input.StepsGroups{
+	stepsGroups := input.StepsGroups{
 		{
 			Description: "Group One",
 			Required:    "all",
@@ -357,7 +357,7 @@ func TestAskUseTemplateOptionsIfNotMet(t *testing.T) {
 		},
 	}
 
-	stepsGroups := &input.StepsGroups{
+	stepsGroups := input.StepsGroups{
 		{
 			Description: "Group One",
 			Required:    "all",

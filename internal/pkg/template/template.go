@@ -49,7 +49,7 @@ func NewInputs() *Inputs {
 	return templateInput.NewInputs()
 }
 
-func LoadInputs(fs filesystem.Fs) (*StepsGroups, error) {
+func LoadInputs(fs filesystem.Fs) (StepsGroups, error) {
 	return templateInput.Load(fs)
 }
 
@@ -69,10 +69,10 @@ type Template struct {
 	testsDir     filesystem.Fs
 	readme       string
 	manifestFile *ManifestFile
-	inputs       *StepsGroups
+	inputs       StepsGroups
 }
 
-func New(reference model.TemplateRef, fs filesystem.Fs, manifestFile *ManifestFile, inputs *StepsGroups, d dependencies) (*Template, error) {
+func New(reference model.TemplateRef, fs filesystem.Fs, manifestFile *ManifestFile, inputs StepsGroups, d dependencies) (*Template, error) {
 	// Src dir
 	srcDir, err := fs.SubDirFs(SrcDirectory)
 	if err != nil {
@@ -118,7 +118,7 @@ func (t *Template) Readme() string {
 	return t.readme
 }
 
-func (t *Template) Inputs() *StepsGroups {
+func (t *Template) Inputs() StepsGroups {
 	return t.inputs
 }
 

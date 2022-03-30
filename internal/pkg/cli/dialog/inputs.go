@@ -22,7 +22,7 @@ type inputsDialogDeps interface {
 
 // askTemplateInputs - dialog to define user inputs for a new template.
 // Used in AskCreateTemplateOpts.
-func (p *Dialogs) askTemplateInputs(deps inputsDialogDeps, branch *model.Branch, configs []*model.ConfigWithRows) (objectInputsMap, *template.StepsGroups, error) {
+func (p *Dialogs) askTemplateInputs(deps inputsDialogDeps, branch *model.Branch, configs []*model.ConfigWithRows) (objectInputsMap, template.StepsGroups, error) {
 	// Create empty inputs map
 	inputs := newInputsMap()
 
@@ -51,19 +51,19 @@ func (p *Dialogs) askTemplateInputs(deps inputsDialogDeps, branch *model.Branch,
 	}
 
 	// Define name/description for each user input.
-	inputsToStepsMap, err := newInputsDetailsDialog(p.Prompt, inputs).ask(&stepsGroups)
+	inputsToStepsMap, err := newInputsDetailsDialog(p.Prompt, inputs).ask(stepsGroups)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	if err := addInputsToStepsGroups(&stepsGroups, inputs, inputsToStepsMap); err != nil {
+	if err := addInputsToStepsGroups(stepsGroups, inputs, inputsToStepsMap); err != nil {
 		return nil, nil, err
 	}
 
-	return objectInputs, &stepsGroups, nil
+	return objectInputs, stepsGroups, nil
 }
 
-func addInputsToStepsGroups(stepsGroups *input.StepsGroups, inputs inputsMap, inputsToStepsMap *orderedmap.OrderedMap) error {
+func addInputsToStepsGroups(stepsGroups input.StepsGroups, inputs inputsMap, inputsToStepsMap *orderedmap.OrderedMap) error {
 	indices := stepsGroups.Indices()
 	errors := utils.NewMultiError()
 	for _, inputId := range inputsToStepsMap.Keys() {

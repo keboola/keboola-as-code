@@ -203,7 +203,7 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 				TemplateId: `config-3`,
 			},
 		},
-		StepsGroups: &input.StepsGroups{
+		StepsGroups: input.StepsGroups{
 			{
 				Description: "Default Group",
 				Required:    "all",
@@ -299,7 +299,7 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 				TemplateId: `config-3`,
 			},
 		},
-		StepsGroups: &input.StepsGroups{
+		StepsGroups: input.StepsGroups{
 			{
 				Description: "Default Group",
 				Required:    "all",
@@ -408,7 +408,7 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 				TemplateId: `config-3`,
 			},
 		},
-		StepsGroups: &input.StepsGroups{
+		StepsGroups: input.StepsGroups{
 			{
 				Description: "Default Group",
 				Required:    "all",

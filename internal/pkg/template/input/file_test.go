@@ -88,8 +88,8 @@ const inputsJsonNet = `{
 }
 `
 
-func testInputs() *StepsGroups {
-	return &StepsGroups{
+func testInputs() StepsGroups {
+	return StepsGroups{
 		{
 			Description: "Group One",
 			Required:    "all",

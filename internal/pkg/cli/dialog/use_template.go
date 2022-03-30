@@ -32,7 +32,7 @@ type useTmplDialog struct {
 }
 
 // AskUseTemplateOptions - dialog for using the template in the project.
-func (p *Dialogs) AskUseTemplateOptions(projectState *project.State, inputs *template.StepsGroups, opts *options.Options) (useTemplate.Options, error) {
+func (p *Dialogs) AskUseTemplateOptions(projectState *project.State, inputs template.StepsGroups, opts *options.Options) (useTemplate.Options, error) {
 	dialog := &useTmplDialog{
 		Dialogs:      p,
 		projectState: projectState,
@@ -43,7 +43,7 @@ func (p *Dialogs) AskUseTemplateOptions(projectState *project.State, inputs *tem
 	return dialog.ask(inputs)
 }
 
-func (d *useTmplDialog) ask(inputs *input.StepsGroups) (useTemplate.Options, error) {
+func (d *useTmplDialog) ask(inputs input.StepsGroups) (useTemplate.Options, error) {
 	// Load inputs file
 	if d.options.IsSet(inputsFileFlag) {
 		path := d.options.GetString(inputsFileFlag)
@@ -93,8 +93,8 @@ func (d *useTmplDialog) addInputValue(value interface{}, inputDef input.Input, v
 	return nil
 }
 
-func (d *useTmplDialog) askInputs(inputs *input.StepsGroups) error {
-	for _, group := range *inputs {
+func (d *useTmplDialog) askInputs(inputs input.StepsGroups) error {
+	for _, group := range inputs {
 		for _, step := range group.Steps {
 			for _, inputDef := range step.Inputs {
 				if result, err := inputDef.Available(d.inputsValues); err != nil {

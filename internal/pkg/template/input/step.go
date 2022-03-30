@@ -8,12 +8,12 @@ import (
 
 type StepsGroups []*StepsGroup
 
-func Load(fs filesystem.Fs) (*StepsGroups, error) {
+func Load(fs filesystem.Fs) (StepsGroups, error) {
 	f, err := loadFile(fs)
 	if err != nil {
 		return nil, err
 	}
-	return &f.StepsGroups, nil
+	return f.StepsGroups, nil
 }
 
 type StepIndex struct {
@@ -67,7 +67,7 @@ func (g StepsGroups) Path() string {
 	return Path()
 }
 
-func (g *StepsGroups) Validate() error {
+func (g StepsGroups) Validate() error {
 	return validate(g)
 }
 

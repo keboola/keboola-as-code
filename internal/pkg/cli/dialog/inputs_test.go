@@ -13,7 +13,7 @@ import (
 func TestInputsAddInputsToStepsGroups(t *testing.T) {
 	t.Parallel()
 
-	stepsGroups := &input.StepsGroups{
+	stepsGroups := input.StepsGroups{
 		&input.StepsGroup{Description: "desc", Required: "all", Steps: []*input.Step{
 			{Id: "1", Icon: "common", Name: "Step One", Description: "Description"},
 		}},

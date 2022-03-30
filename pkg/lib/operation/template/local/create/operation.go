@@ -24,7 +24,7 @@ type Options struct {
 	Description  string
 	SourceBranch model.BranchKey
 	Configs      []template.ConfigDef
-	StepsGroups  *template.StepsGroups
+	StepsGroups  template.StepsGroups
 }
 
 type dependencies interface {

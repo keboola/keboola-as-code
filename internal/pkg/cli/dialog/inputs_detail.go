@@ -28,7 +28,7 @@ func newInputsDetailsDialog(prompt prompt.Prompt, inputs inputsMap) *inputsDetai
 	return &inputsDetailDialog{prompt: prompt, inputs: inputs}
 }
 
-func (d *inputsDetailDialog) ask(stepsGroups *input.StepsGroups) (*orderedmap.OrderedMap, error) {
+func (d *inputsDetailDialog) ask(stepsGroups input.StepsGroups) (*orderedmap.OrderedMap, error) {
 	result, _ := d.prompt.Editor("md", &prompt.Question{
 		Description: `Please complete the user inputs specification.`,
 		Default:     d.defaultValue(stepsGroups),
@@ -160,7 +160,7 @@ func (d *inputsDetailDialog) parse(result string) (*orderedmap.OrderedMap, error
 	return inputsToStepsMap, errors.ErrorOrNil()
 }
 
-func (d *inputsDetailDialog) defaultValue(stepsGroups *input.StepsGroups) string {
+func (d *inputsDetailDialog) defaultValue(stepsGroups input.StepsGroups) string {
 	// File header - info for user
 	fileHeader := `
 <!--
@@ -209,7 +209,7 @@ Options format:
 
 Preview of steps and groups you created:
 `
-	for gIdx, group := range *stepsGroups {
+	for gIdx, group := range stepsGroups {
 		fileHeader += fmt.Sprintf(`- Group %d
 `, gIdx+1)
 		for _, step := range group.Steps {
