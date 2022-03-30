@@ -209,7 +209,6 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 				Required:    "all",
 				Steps: []*input.Step{
 					{
-						Id:          "step-1",
 						Icon:        "common",
 						Name:        "Default Step",
 						Description: "Default Step",
@@ -305,7 +304,6 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 				Required:    "all",
 				Steps: []*input.Step{
 					{
-						Id:          "step-1",
 						Icon:        "common",
 						Name:        "Default Step",
 						Description: "Default Step",
@@ -414,7 +412,6 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 				Required:    "all",
 				Steps: []*input.Step{
 					{
-						Id:          "step-1",
 						Icon:        "common",
 						Name:        "Default Step",
 						Description: "Default Step",

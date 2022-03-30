@@ -230,7 +230,6 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 			Required:    "all",
 			Steps: []*input.Step{
 				{
-					Id:          "step-1",
 					Icon:        "common",
 					Name:        "Step 1",
 					Description: "Step One",
@@ -363,7 +362,6 @@ func TestAskUseTemplateOptionsIfNotMet(t *testing.T) {
 			Required:    "all",
 			Steps: []*input.Step{
 				{
-					Id:          "step-1",
 					Icon:        "common",
 					Name:        "Step 1",
 					Description: "Step One",

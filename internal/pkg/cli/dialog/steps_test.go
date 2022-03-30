@@ -39,21 +39,28 @@ icon: common
 
 `
 
-	expected := input.StepsGroups{
+	expectedGroups := input.StepsGroups{
 		&input.StepsGroup{Description: "desc", Required: "all", Steps: []*input.Step{
-			{Id: "s1", Icon: "common", Name: "Step One", Description: "Description"},
+			{Icon: "common", Name: "Step One", Description: "Description"},
 		}},
 		&input.StepsGroup{Required: "all", Steps: []*input.Step{
-			{Id: "s2", Icon: "common", Name: "Step Two", Description: "Description"},
-			{Id: "s3", Icon: "common", Name: "Step Three", Description: "Description"},
+			{Icon: "common", Name: "Step Two", Description: "Description"},
+			{Icon: "common", Name: "Step Three", Description: "Description"},
 		}},
+	}
+
+	expectedMap := map[input.StepIndex]string{
+		{Step: 0, Group: 0}: "s1",
+		{Step: 0, Group: 1}: "s2",
+		{Step: 1, Group: 1}: "s3",
 	}
 
 	// Parse
 	d := newStepsDialog(nopPrompt.New())
-	stepsGroups, err := d.parse(in)
+	stepsGroups, stepsToIds, err := d.parse(in)
 	assert.NoError(t, err)
-	assert.Equal(t, expected, stepsGroups)
+	assert.Equal(t, expectedGroups, stepsGroups)
+	assert.Equal(t, expectedMap, stepsToIds)
 }
 
 func TestStepsDialog_Parse_Errors(t *testing.T) {
@@ -93,18 +100,18 @@ description: Description
 - line 2: there needs to be a group definition before step "s0"
 - line 12: required is not valid option for a step
 - group 1: required must be one of [all atLeastOne exactOne zeroOrOne optional]
-- group 1, step "s1": icon is a required field
-- group 1, step "s1": name must be a maximum of 20 characters in length
+- group 1, step 1: icon is a required field
+- group 1, step 1: name must be a maximum of 20 characters in length
 - group 2: required must be one of [all atLeastOne exactOne zeroOrOne optional]
 - group 2: steps must contain at least 1 step
 - group 3: required must be one of [all atLeastOne exactOne zeroOrOne optional]
-- group 3, step "s2": icon is a required field
-- group 3, step "s3": icon is a required field
+- group 3, step 1: icon is a required field
+- group 3, step 2: icon is a required field
 `
 
 	// Parse
 	d := newStepsDialog(nopPrompt.New())
-	_, err := d.parse(in)
+	_, _, err := d.parse(in)
 	assert.Error(t, err)
 	assert.Equal(t, strings.Trim(expected, "\n"), err.Error())
 }
@@ -116,12 +123,12 @@ func TestStepsDialog_Parse_NoGroups(t *testing.T) {
 `
 
 	expected := `
-input must contain at least 1 group
+at least 1 group must be defined
 `
 
 	// Parse
 	d := newStepsDialog(nopPrompt.New())
-	_, err := d.parse(in)
+	_, _, err := d.parse(in)
 	assert.Error(t, err)
 	assert.Equal(t, strings.Trim(expected, "\n"), err.Error())
 }

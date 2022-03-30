@@ -28,10 +28,10 @@ func newInputsDetailsDialog(prompt prompt.Prompt, inputs inputsMap) *inputsDetai
 	return &inputsDetailDialog{prompt: prompt, inputs: inputs}
 }
 
-func (d *inputsDetailDialog) ask(stepsGroups input.StepsGroups) (*orderedmap.OrderedMap, error) {
+func (d *inputsDetailDialog) ask(stepsGroups input.StepsGroups, stepsToIds map[input.StepIndex]string) (*orderedmap.OrderedMap, error) {
 	result, _ := d.prompt.Editor("md", &prompt.Question{
 		Description: `Please complete the user inputs specification.`,
-		Default:     d.defaultValue(stepsGroups),
+		Default:     d.defaultValue(stepsGroups, stepsToIds),
 		Validator: func(val interface{}) error {
 			_, err := d.parse(val.(string))
 			if err != nil {
@@ -160,7 +160,7 @@ func (d *inputsDetailDialog) parse(result string) (*orderedmap.OrderedMap, error
 	return inputsToStepsMap, errors.ErrorOrNil()
 }
 
-func (d *inputsDetailDialog) defaultValue(stepsGroups input.StepsGroups) string {
+func (d *inputsDetailDialog) defaultValue(stepsGroups input.StepsGroups, stepsToIds map[input.StepIndex]string) string {
 	// File header - info for user
 	fileHeader := `
 <!--
@@ -209,12 +209,17 @@ Options format:
 
 Preview of steps and groups you created:
 `
+	var defaultStepId string
 	for gIdx, group := range stepsGroups {
 		fileHeader += fmt.Sprintf(`- Group %d
 `, gIdx+1)
-		for _, step := range group.Steps {
+		for sIdx := range group.Steps {
+			index := input.StepIndex{Step: sIdx, Group: gIdx}
 			fileHeader += fmt.Sprintf(`  - Step "%s"
-`, step.Id)
+`, stepsToIds[index])
+			if gIdx == 0 && sIdx == 0 {
+				defaultStepId = stepsToIds[index]
+			}
 		}
 	}
 	fileHeader += `
@@ -251,7 +256,7 @@ Preview of steps and groups you created:
 			lines.WriteString(fmt.Sprintf("options: %s\n", json.MustEncode(i.Options.Map(), false)))
 		}
 
-		lines.WriteString(fmt.Sprintf("step: %s\n", stepsGroups.DefaultStepId()))
+		lines.WriteString(fmt.Sprintf("step: %s\n", defaultStepId))
 
 		lines.WriteString("\n")
 	}

@@ -23,12 +23,12 @@ func newStepsDialog(prompt prompt.Prompt) *stepsDialog {
 	return &stepsDialog{prompt: prompt}
 }
 
-func (d *stepsDialog) ask() (input.StepsGroups, error) {
+func (d *stepsDialog) ask() (input.StepsGroups, map[input.StepIndex]string, error) {
 	result, _ := d.prompt.Editor("md", &prompt.Question{
 		Description: `Please define steps and groups for user inputs specification.`,
 		Default:     d.defaultValue(),
 		Validator: func(val interface{}) error {
-			_, err := d.parse(val.(string))
+			_, _, err := d.parse(val.(string))
 			if err != nil {
 				// Print errors to new line
 				return utils.PrefixError("\n", err)
@@ -39,7 +39,7 @@ func (d *stepsDialog) ask() (input.StepsGroups, error) {
 	return d.parse(result)
 }
 
-func (d *stepsDialog) parse(result string) (input.StepsGroups, error) {
+func (d *stepsDialog) parse(result string) (input.StepsGroups, map[input.StepIndex]string, error) {
 	result = strhelper.StripHtmlComments(result)
 	scanner := bufio.NewScanner(strings.NewReader(result))
 	errors := utils.NewMultiError()
@@ -48,6 +48,7 @@ func (d *stepsDialog) parse(result string) (input.StepsGroups, error) {
 
 	var currentGroup *input.StepsGroup
 	var currentStep *input.Step
+	stepsToIds := make(map[input.StepIndex]string)
 
 	var invalidDefinition bool
 
@@ -82,8 +83,13 @@ func (d *stepsDialog) parse(result string) (input.StepsGroups, error) {
 				invalidDefinition = true
 				continue
 			}
-			currentStep = &input.Step{Id: m[1]}
+			currentStep = &input.Step{}
 			currentGroup.Steps = append(currentGroup.Steps, currentStep)
+			index := input.StepIndex{
+				Step:  len(currentGroup.Steps) - 1,
+				Group: len(stepsGroups) - 1,
+			}
+			stepsToIds[index] = m[1]
 
 			invalidDefinition = false
 		case invalidDefinition:
@@ -136,7 +142,7 @@ func (d *stepsDialog) parse(result string) (input.StepsGroups, error) {
 
 	// Validate
 	if len(stepsGroups) == 0 {
-		return nil, fmt.Errorf("input must contain at least 1 group")
+		return nil, nil, fmt.Errorf("at least 1 group must be defined")
 	}
 	if e := stepsGroups.Validate(); e != nil {
 		// nolint: errorlint
@@ -146,15 +152,14 @@ func (d *stepsDialog) parse(result string) (input.StepsGroups, error) {
 
 			// Replace step and group by index. Example:
 			//   before: [0].steps[0].default
-			//   after:  group 1, step "my-step": default
+			//   after:  group 1, step 1: default
 			regex := regexpcache.MustCompile(`^\[(\d+)\].steps\[(\d+)\].`)
 			submatch := regex.FindStringSubmatch(item.Error())
 			if submatch != nil {
 				msg = regex.ReplaceAllStringFunc(item.Error(), func(s string) string {
 					groupIndex, _ := strconv.Atoi(submatch[1])
 					stepIndex, _ := strconv.Atoi(submatch[2])
-					groupOrder := groupIndex + 1
-					return fmt.Sprintf(`group %d, step "%s": `, groupOrder, stepsGroups[groupIndex].Steps[stepIndex].Id)
+					return fmt.Sprintf(`group %d, step %d: `, groupIndex+1, stepIndex+1)
 				})
 			} else {
 				// Replace group by index. Example:
@@ -165,8 +170,7 @@ func (d *stepsDialog) parse(result string) (input.StepsGroups, error) {
 				if submatch != nil {
 					msg = regex.ReplaceAllStringFunc(item.Error(), func(s string) string {
 						groupIndex, _ := strconv.Atoi(submatch[1])
-						groupOrder := groupIndex + 1
-						return fmt.Sprintf(`group %d: `, groupOrder)
+						return fmt.Sprintf(`group %d: `, groupIndex+1)
 					})
 				}
 			}
@@ -178,7 +182,7 @@ func (d *stepsDialog) parse(result string) (input.StepsGroups, error) {
 		errors.Append(err)
 	}
 
-	return stepsGroups, errors.ErrorOrNil()
+	return stepsGroups, stepsToIds, errors.ErrorOrNil()
 }
 
 func (d *stepsDialog) defaultValue() string {

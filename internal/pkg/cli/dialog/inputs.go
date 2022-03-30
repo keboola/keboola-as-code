@@ -45,29 +45,29 @@ func (p *Dialogs) askTemplateInputs(deps inputsDialogDeps, branch *model.Branch,
 
 	// Define steps and steps groups for user inputs.
 	stepsDialog := newStepsDialog(p.Prompt)
-	stepsGroups, err := stepsDialog.ask()
+	stepsGroups, stepsToIds, err := stepsDialog.ask()
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// Define name/description for each user input.
-	inputsToStepsMap, err := newInputsDetailsDialog(p.Prompt, inputs).ask(stepsGroups)
+	inputsToSteps, err := newInputsDetailsDialog(p.Prompt, inputs).ask(stepsGroups, stepsToIds)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	if err := addInputsToStepsGroups(stepsGroups, inputs, inputsToStepsMap); err != nil {
+	if err := addInputsToStepsGroups(stepsGroups, inputs, inputsToSteps, stepsToIds); err != nil {
 		return nil, nil, err
 	}
 
 	return objectInputs, stepsGroups, nil
 }
 
-func addInputsToStepsGroups(stepsGroups input.StepsGroups, inputs inputsMap, inputsToStepsMap *orderedmap.OrderedMap) error {
-	indices := stepsGroups.Indices()
+func addInputsToStepsGroups(stepsGroups input.StepsGroups, inputs inputsMap, inputsToSteps *orderedmap.OrderedMap, stepsToIds map[input.StepIndex]string) error {
+	indices := stepsGroups.Indices(stepsToIds)
 	errors := utils.NewMultiError()
-	for _, inputId := range inputsToStepsMap.Keys() {
-		step, _ := inputsToStepsMap.Get(inputId)
+	for _, inputId := range inputsToSteps.Keys() {
+		step, _ := inputsToSteps.Get(inputId)
 		index, found := indices[fmt.Sprintf("%v", step)]
 		if !found {
 			errors.Append(fmt.Errorf(`input "%s": step "%s" not found`, inputId, step))

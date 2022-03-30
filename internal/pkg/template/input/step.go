@@ -21,14 +21,15 @@ type StepIndex struct {
 	Group int
 }
 
-func (g StepsGroups) Indices() map[string]StepIndex {
+func (g StepsGroups) Indices(stepsToIds map[StepIndex]string) map[string]StepIndex {
 	res := make(map[string]StepIndex)
 	for gIdx, group := range g {
-		for sIdx, step := range group.Steps {
-			res[step.Id] = StepIndex{
+		for sIdx := range group.Steps {
+			index := StepIndex{
 				Step:  sIdx,
 				Group: gIdx,
 			}
+			res[stepsToIds[index]] = index
 		}
 	}
 	return res
@@ -71,10 +72,6 @@ func (g StepsGroups) Validate() error {
 	return validate(g)
 }
 
-func (g StepsGroups) DefaultStepId() string {
-	return g[0].Steps[0].Id
-}
-
 type StepsGroup struct {
 	Description string  `json:"description" validate:"max=80"`
 	Required    string  `json:"required" validate:"oneof=all atLeastOne exactOne zeroOrOne optional"`
@@ -82,7 +79,6 @@ type StepsGroup struct {
 }
 
 type Step struct {
-	Id                string `json:"id"`
 	Icon              string `json:"icon" validate:"required"`
 	Name              string `json:"name" validate:"required,max=20"`
 	Description       string `json:"description" validate:"max=40"`

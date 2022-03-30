@@ -44,7 +44,6 @@ const inputsJsonNet = `{
       required: "all",
       steps: [
         {
-          id: "step1",
           icon: "common",
           name: "Step 1",
           description: "Step One",
@@ -95,7 +94,6 @@ func testInputs() StepsGroups {
 			Required:    "all",
 			Steps: []*Step{
 				{
-					Id:          "step1",
 					Icon:        "common",
 					Name:        "Step 1",
 					Description: "Step One",

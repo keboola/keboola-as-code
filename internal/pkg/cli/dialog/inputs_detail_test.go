@@ -17,17 +17,23 @@ func TestInputsDetailDialog_DefaultValue(t *testing.T) {
 
 	stepsGroups := input.StepsGroups{
 		&input.StepsGroup{Description: "desc", Required: "all", Steps: []*input.Step{
-			{Id: "default-step", Icon: "common", Name: "Step One", Description: "Description"},
+			{Icon: "common", Name: "Step One", Description: "Description"},
 		}},
 		&input.StepsGroup{Required: "all", Steps: []*input.Step{
-			{Id: "s2", Icon: "common", Name: "Step Two", Description: "Description"},
-			{Id: "s3", Icon: "common", Name: "Step Three", Description: "Description"},
+			{Icon: "common", Name: "Step Two", Description: "Description"},
+			{Icon: "common", Name: "Step Three", Description: "Description"},
 		}},
+	}
+
+	stepsToIds := map[input.StepIndex]string{
+		input.StepIndex{Step: 0, Group: 0}: "s1",
+		input.StepIndex{Step: 0, Group: 1}: "s2",
+		input.StepIndex{Step: 1, Group: 1}: "s3",
 	}
 
 	// Check default value
 	d := newInputsDetailsDialog(nopPrompt.New(), testInputs())
-	actual := d.defaultValue(stepsGroups)
+	actual := d.defaultValue(stepsGroups, stepsToIds)
 	actual = regexpcache.MustCompile(` +\n`).ReplaceAllString(actual, "\n") // trim trailing spaces
 	assert.Equal(t, inputsDetailDialogDefaultValue, actual)
 }
@@ -238,7 +244,7 @@ Options format:
 
 Preview of steps and groups you created:
 - Group 1
-  - Step "default-step"
+  - Step "s1"
 - Group 2
   - Step "s2"
   - Step "s3"
@@ -253,7 +259,7 @@ kind: input
 rules:
 showIf:
 default: default
-step: default-step
+step: s1
 
 ## Input "string-hidden" (string)
 name: String Hidden
@@ -262,7 +268,7 @@ kind: hidden
 rules:
 showIf:
 default:
-step: default-step
+step: s1
 
 ## Input "string-textarea" (string)
 name: String Textarea
@@ -271,7 +277,7 @@ kind: textarea
 rules:
 showIf:
 default:
-step: default-step
+step: s1
 
 ## Input "string-select" (string)
 name: String Select
@@ -281,7 +287,7 @@ rules:
 showIf:
 default: id1
 options: {"id1":"Option 1","id2":"Option 2"}
-step: default-step
+step: s1
 
 ## Input "string-int" (int)
 name: String Double
@@ -290,7 +296,7 @@ kind: input
 rules:
 showIf:
 default: 123
-step: default-step
+step: s1
 
 ## Input "string-double" (double)
 name: String Double
@@ -299,7 +305,7 @@ kind: input
 rules:
 showIf:
 default: 12.34
-step: default-step
+step: s1
 
 ## Input "bool-confirm" (bool)
 name: Bool Confirm
@@ -308,7 +314,7 @@ kind: confirm
 rules:
 showIf:
 default: true
-step: default-step
+step: s1
 
 ## Input "string-array-multiselect" (string[])
 name: String Array
@@ -318,6 +324,6 @@ rules:
 showIf:
 default: id1, id3
 options: {"id1":"Option 1","id2":"Option 2","id3":"Option 3"}
-step: default-step
+step: s1
 
 `
