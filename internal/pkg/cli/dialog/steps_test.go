@@ -41,11 +41,11 @@ icon: common
 
 	expectedGroups := input.StepsGroups{
 		&input.StepsGroup{Description: "desc", Required: "all", Steps: []*input.Step{
-			{Icon: "common", Name: "Step One", Description: "Description"},
+			{Icon: "common", Name: "Step One", Description: "Description", Inputs: make(input.Inputs, 0)},
 		}},
 		&input.StepsGroup{Required: "all", Steps: []*input.Step{
-			{Icon: "common", Name: "Step Two", Description: "Description"},
-			{Icon: "common", Name: "Step Three", Description: "Description"},
+			{Icon: "common", Name: "Step Two", Description: "Description", Inputs: make(input.Inputs, 0)},
+			{Icon: "common", Name: "Step Three", Description: "Description", Inputs: make(input.Inputs, 0)},
 		}},
 	}
 

@@ -83,7 +83,7 @@ func (d *stepsDialog) parse(result string) (input.StepsGroups, map[input.StepInd
 				invalidDefinition = true
 				continue
 			}
-			currentStep = &input.Step{}
+			currentStep = &input.Step{Inputs: make(input.Inputs, 0)}
 			currentGroup.Steps = append(currentGroup.Steps, currentStep)
 			index := input.StepIndex{
 				Step:  len(currentGroup.Steps) - 1,

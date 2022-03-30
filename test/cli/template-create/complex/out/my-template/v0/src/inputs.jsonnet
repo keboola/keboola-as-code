@@ -8,7 +8,7 @@
           icon: "common",
           name: "Default Step",
           description: "Default Step",
-          inputs: null,
+          inputs: [],
         },
       ],
     },
