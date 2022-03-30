@@ -12,26 +12,19 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func TestSchedulerMapperRemoteActivate(t *testing.T) {
+func TestSchedulerRemoteMapper_Activate(t *testing.T) {
 	t.Parallel()
-	state, d := createStateWithMapper(t)
+	state, d := createRemoteStateWithMapper(t)
 	_, httpTransport := d.UseMockedSchedulerApi()
 	logger := d.DebugLogger()
 
 	// Branch
-	branchKey := model.BranchKey{
-		Id: 123,
+	branchKey := model.BranchKey{Id: 123}
+	branch := &model.Branch{
+		BranchKey: branchKey,
+		IsDefault: true,
 	}
-	branchState := &model.BranchState{
-		BranchManifest: &model.BranchManifest{
-			BranchKey: branchKey,
-		},
-		Remote: &model.Branch{
-			BranchKey: branchKey,
-			IsDefault: true,
-		},
-	}
-	assert.NoError(t, state.Set(branchState))
+	state.MustAdd(branch)
 
 	// Scheduler config
 	schedulerKey := model.ConfigKey{
@@ -39,15 +32,10 @@ func TestSchedulerMapperRemoteActivate(t *testing.T) {
 		ComponentId: model.SchedulerComponentId,
 		Id:          `456`,
 	}
-	schedulerConfigState := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{
-			ConfigKey: schedulerKey,
-		},
-		Remote: &model.Config{
-			ConfigKey: schedulerKey,
-		},
+	schedulerConfig := &model.Config{
+		ConfigKey: schedulerKey,
 	}
-	assert.NoError(t, state.Set(schedulerConfigState))
+	state.MustAdd(schedulerConfig)
 
 	// Expected HTTP call
 	var httpRequest *http.Request
@@ -59,12 +47,11 @@ func TestSchedulerMapperRemoteActivate(t *testing.T) {
 	)
 
 	// Invoke
-	changes := model.NewRemoteChanges()
-	changes.AddUpdated(schedulerConfigState)
-	assert.NoError(t, state.Mapper().AfterRemoteOperation(changes))
+	assert.NoError(t, state.Mapper().AfterRemoteOperation(model.NewChanges().AddUpdated(schedulerConfig)))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Check API request
+	assert.NotNil(t, httpRequest)
 	reqBody, err := io.ReadAll(httpRequest.Body)
 	assert.NoError(t, err)
 	assert.NoError(t, err)

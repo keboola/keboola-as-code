@@ -10,9 +10,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-func TestSchedulerMapAfterRemoteLoad(t *testing.T) {
+func TestSchedulerRemoteMapper_Load(t *testing.T) {
 	t.Parallel()
-	state, d := createStateWithMapper(t)
+	state, d := createRemoteStateWithMapper(t)
 	logger := d.DebugLogger()
 
 	// Create api and internal object
@@ -27,7 +27,7 @@ func TestSchedulerMapAfterRemoteLoad(t *testing.T) {
 }
 `
 	json.MustDecodeString(contentStr, object.Content)
-	recipe := model.NewRemoteLoadRecipe(&model.ConfigManifest{}, object)
+	recipe := model.NewRemoteLoadRecipe(object)
 
 	// Invoke
 	assert.Empty(t, object.Relations)

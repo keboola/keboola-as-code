@@ -5,15 +5,21 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-func (m *schedulerMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
+func (m *schedulerRemoteMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
 	// Scheduler is a config
 	object, ok := recipe.Object.(*model.Config)
 	if !ok {
 		return nil
 	}
 
+	// Get components
+	components, err := m.Components()
+	if err != nil {
+		return err
+	}
+
 	// Check component type
-	component, err := m.state.Components().Get(object.ComponentKey())
+	component, err := components.Get(object.ComponentKey())
 	if err != nil {
 		return err
 	}

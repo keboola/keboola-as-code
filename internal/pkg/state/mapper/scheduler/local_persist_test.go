@@ -8,9 +8,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func TestVariablesMapBeforePersist(t *testing.T) {
+func TestSchedulerLocalMapper_MapBeforePersist(t *testing.T) {
 	t.Parallel()
-	state, d := createStateWithMapper(t)
+	state, d := createLocalStateWithMapper(t)
 	logger := d.DebugLogger()
 
 	parentKey := model.ConfigKey{

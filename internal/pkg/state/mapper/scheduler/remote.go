@@ -1,24 +1,40 @@
 package scheduler
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/api/schedulerapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/remote"
 )
 
-func (m *schedulerMapper) AfterRemoteOperation(changes *model.Changes) error {
-	var saved []*model.ConfigState
-	var deleted []*model.ConfigState
+type remoteDependencies interface {
+	Components() (*model.ComponentsMap, error)
+	SchedulerApi() (*schedulerapi.Api, error)
+}
+
+type schedulerRemoteMapper struct {
+	remoteDependencies
+	state *remote.State
+}
+
+func NewRemoteMapper(s *remote.State, d remoteDependencies) *schedulerRemoteMapper {
+	return &schedulerRemoteMapper{state: s, remoteDependencies: d}
+}
+
+func (m *schedulerRemoteMapper) AfterRemoteOperation(changes *model.Changes) error {
+	var saved []*model.Config
+	var deleted []model.ConfigKey
 
 	// Activate scheduler on remote save
-	for _, objectState := range changes.Saved() {
-		if m.isSchedulerConfigFromMainBranch(objectState) {
-			saved = append(saved, objectState.(*model.ConfigState))
+	for _, object := range changes.Saved() {
+		if m.isSchedulerFromMainBranch(object.Key()) {
+			saved = append(saved, object.(*model.Config))
 		}
 	}
 
 	// Deactivate scheduler on remote delete
-	for _, objectState := range changes.Deleted() {
-		if m.isSchedulerConfigFromMainBranch(objectState) {
-			deleted = append(deleted, objectState.(*model.ConfigState))
+	for _, key := range changes.Deleted() {
+		if m.isSchedulerFromMainBranch(key) {
+			deleted = append(deleted, key.(model.ConfigKey))
 		}
 	}
 
@@ -33,13 +49,13 @@ func (m *schedulerMapper) AfterRemoteOperation(changes *model.Changes) error {
 		pool := api.NewPool()
 
 		// Activate saved configs
-		for _, o := range saved {
-			m.onRemoteSave(api, pool, o)
+		for _, object := range saved {
+			m.onRemoteSave(api, pool, object)
 		}
 
 		// Deactivate deleted configs
-		for _, o := range deleted {
-			m.onRemoteDelete(api, pool, o)
+		for _, key := range deleted {
+			m.onRemoteDelete(api, pool, key)
 		}
 
 		// Run requests
@@ -49,16 +65,16 @@ func (m *schedulerMapper) AfterRemoteOperation(changes *model.Changes) error {
 	return nil
 }
 
-func (m *schedulerMapper) isSchedulerConfigFromMainBranch(objectState model.ObjectState) bool {
-	configState, ok := objectState.(*model.ConfigState)
+func (m *schedulerRemoteMapper) isSchedulerFromMainBranch(key model.Key) bool {
+	configKey, ok := key.(model.ConfigKey)
 	if !ok {
 		return false
 	}
 
-	if configState.ComponentId != model.SchedulerComponentId {
+	if configKey.ComponentId != model.SchedulerComponentId {
 		return false
 	}
 
-	branch := m.state.MustGet(configState.BranchKey()).(*model.BranchState)
-	return branch.LocalOrRemoteState().(*model.Branch).IsDefault
+	branch := m.state.MustGet(configKey.BranchKey()).(*model.Branch)
+	return branch.IsDefault
 }

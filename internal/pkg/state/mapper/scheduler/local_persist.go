@@ -4,9 +4,23 @@ import (
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local"
 )
 
-func (m *schedulerMapper) MapBeforePersist(recipe *model.PersistRecipe) error {
+type localDependencies interface {
+	Components() (*model.ComponentsMap, error)
+}
+
+type schedulerLocalMapper struct {
+	localDependencies
+	state *local.State
+}
+
+func NewLocalMapper(s *local.State, d localDependencies) *schedulerLocalMapper {
+	return &schedulerLocalMapper{state: s, localDependencies: d}
+}
+
+func (m *schedulerLocalMapper) MapBeforePersist(recipe *model.PersistRecipe) error {
 	// Scheduler is represented by config
 	configManifest, ok := recipe.Manifest.(*model.ConfigManifest)
 	if !ok {
@@ -19,8 +33,14 @@ func (m *schedulerMapper) MapBeforePersist(recipe *model.PersistRecipe) error {
 		return nil
 	}
 
+	// Get components
+	components, err := m.Components()
+	if err != nil {
+		return err
+	}
+
 	// Get component
-	component, err := m.state.Components().Get(configManifest.ComponentKey())
+	component, err := components.Get(configManifest.ComponentKey())
 	if err != nil {
 		return err
 	}

@@ -10,9 +10,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-func TestSchedulerMapBeforeRemoteSave(t *testing.T) {
+func TestSchedulerRemoteMapper_Save(t *testing.T) {
 	t.Parallel()
-	state, d := createStateWithMapper(t)
+	state, d := createRemoteStateWithMapper(t)
 	logger := d.DebugLogger()
 
 	// Scheduler config
@@ -23,7 +23,7 @@ func TestSchedulerMapBeforeRemoteSave(t *testing.T) {
 		ComponentId: `foo.bar`,
 		ConfigId:    `12345`,
 	})
-	recipe := model.NewRemoteSaveRecipe(&model.ConfigManifest{}, object, model.NewChangedFields())
+	recipe := model.NewRemoteSaveRecipe(object, model.NewChangedFields())
 
 	// Invoke
 	assert.NotEmpty(t, object.Relations)
