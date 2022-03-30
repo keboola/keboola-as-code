@@ -42,7 +42,7 @@ func TestOrchestratorMapper_MapBeforeLocalSave(t *testing.T) {
 	}
 
 	// Check generated files
-	phasesDir := state.NamingGenerator().PhasesDir(orchestratorPath)
+	phasesDir := state.NamingGenerator().PhasesDir(orchestratorPath).String()
 	assert.Equal(t, []filesystem.File{
 		filesystem.
 			NewRawFile(phasesDir+`/.gitkeep`, ``).

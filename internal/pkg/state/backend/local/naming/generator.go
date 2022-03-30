@@ -71,8 +71,8 @@ func (g Generator) BlocksDir(configDir AbsPath) string {
 	return filesystem.Join(configDir.String(), blocksDir)
 }
 
-func (g Generator) PhasesDir(configDir AbsPath) string {
-	return filesystem.Join(configDir.String(), phasesDir)
+func (g Generator) PhasesDir(configDir AbsPath) AbsPath {
+	return NewAbsPath(configDir.String(), phasesDir)
 }
 
 func (g Generator) GetOrGenerate(object WithKey) (AbsPath, error) {
@@ -291,12 +291,14 @@ func (g Generator) phasePath(phase *Phase) (AbsPath, error) {
 		return AbsPath{}, err
 	}
 
-	p := NewEmptyAbsPath()
-	p = p.WithParentPath(parentPath)
-	p = p.WithRelativePath(utils.ReplacePlaceholders(string(phaseNameTemplate), map[string]interface{}{
+	relativePath := utils.ReplacePlaceholders(string(phaseNameTemplate), map[string]interface{}{
 		"phase_order": fmt.Sprintf(`%03d`, phase.Index+1),
 		"phase_name":  strhelper.NormalizeName(phase.Name),
-	}))
+	})
+
+	p := NewEmptyAbsPath()
+	p = p.WithParentPath(parentPath)
+	p = p.WithRelativePath(filesystem.Join(phasesDir, relativePath))
 	return p, nil
 }
 

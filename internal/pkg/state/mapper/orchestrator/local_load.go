@@ -73,7 +73,7 @@ func (c *localLoadContext) load() error {
 	// Load phases from filesystem
 	for _, phaseDir := range c.phasesDirs() {
 		if err := c.loadPhase(phaseDir); err != nil {
-			c.errors.Append(utils.PrefixError(fmt.Sprintf(`invalid phase "%s"`, phaseDir.RelativePath()), err))
+			c.errors.Append(utils.PrefixError(fmt.Sprintf(`invalid phase "%s"`, phaseDir.Base()), err))
 		}
 	}
 
@@ -138,12 +138,12 @@ func (c *localLoadContext) loadPhase(phaseDir model.AbsPath) error {
 		if task, err := c.loadTask(taskIndex, taskDir); err == nil {
 			phase.Tasks = append(phase.Tasks, task)
 		} else {
-			errors.Append(utils.PrefixError(fmt.Sprintf(`invalid task "%s"`, taskDir.RelativePath()), err))
+			errors.Append(utils.PrefixError(fmt.Sprintf(`invalid task "%s"`, taskDir.Base()), err))
 		}
 	}
 
 	// Add to sorter
-	c.phasesSorter.addPhase(phaseDir.RelativePath(), phase, dependsOn)
+	c.phasesSorter.addPhase(phaseDir.Base(), phase, dependsOn)
 
 	return errors.ErrorOrNil()
 }
@@ -266,24 +266,24 @@ func (c *localLoadContext) phasesDirs() []model.AbsPath {
 	phasesDir := c.state.NamingGenerator().PhasesDir(c.basePath)
 
 	// Check if blocks dir exists
-	if !fs.IsDir(phasesDir) {
+	if !fs.IsDir(phasesDir.String()) {
 		c.errors.Append(fmt.Errorf(`missing phases dir "%s"`, phasesDir))
 		return nil
 	}
 
 	// Add phases dir to the related paths
-	c.relatedPaths.Add(phasesDir)
+	c.relatedPaths.Add(phasesDir.String())
 
 	// Add .gitkeep, .gitignore to the related paths
-	if path := filesystem.Join(phasesDir, `.gitkeep`); fs.IsFile(path) {
+	if path := filesystem.Join(phasesDir.String(), `.gitkeep`); fs.IsFile(path) {
 		c.relatedPaths.Add(path)
 	}
-	if path := filesystem.Join(phasesDir, `.gitignore`); fs.IsFile(path) {
+	if path := filesystem.Join(phasesDir.String(), `.gitignore`); fs.IsFile(path) {
 		c.relatedPaths.Add(path)
 	}
 
 	// Read all sub-dirs
-	phasesDirs, err := filesystem.ReadSubDirs(fs, phasesDir)
+	phasesDirs, err := filesystem.ReadSubDirs(fs, phasesDir.String())
 	if err != nil {
 		c.errors.Append(fmt.Errorf(`cannot read orchestrator phases from "%s": %w`, phasesDir, err))
 		return nil
@@ -292,7 +292,7 @@ func (c *localLoadContext) phasesDirs() []model.AbsPath {
 	// Convert to []AbsPath
 	out := make([]model.AbsPath, len(phasesDirs))
 	for i, dir := range phasesDirs {
-		out[i] = model.NewAbsPath(phasesDir, dir)
+		out[i] = model.NewAbsPath(phasesDir.ParentPath(), filesystem.Join(phasesDir.RelativePath(), dir))
 
 	}
 	return out

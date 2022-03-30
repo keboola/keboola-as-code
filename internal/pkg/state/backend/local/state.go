@@ -133,10 +133,14 @@ func (s *State) GetByPath(path string) (model.Object, bool) {
 }
 
 func (s *State) GetPath(key model.Key) (model.AbsPath, error) {
-	object, found := s.Get(key)
+	path, found := s.NamingRegistry().PathByKey(key)
 	if !found {
-		return model.AbsPath{}, fmt.Errorf("%s not found", key.String())
+		return model.AbsPath{}, fmt.Errorf("%s not found", key)
 	}
+	return path, nil
+}
+
+func (s *State) GetOrGeneratePath(object model.WithKey) (model.AbsPath, error) {
 	return s.namingGenerator.GetOrGenerate(object)
 }
 

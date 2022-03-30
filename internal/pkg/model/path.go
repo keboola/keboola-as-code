@@ -59,3 +59,13 @@ func (p AbsPath) IsSet() bool {
 func (p AbsPath) String() string {
 	return filesystem.Join(string(p.parentPath), string(p.RelPath))
 }
+
+// Dir returns all but the last element of path, typically the path's directory.
+func (p AbsPath) Dir() string {
+	return filesystem.Dir(p.String())
+}
+
+// Base returns the last element of path.
+func (p AbsPath) Base() string {
+	return filesystem.Base(p.String())
+}

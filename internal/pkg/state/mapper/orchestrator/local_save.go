@@ -19,7 +19,7 @@ type localSaveContext struct {
 	orchestrator *model.Config
 	phases       []*model.Phase
 	basePath     model.AbsPath
-	phasesDir    string
+	phasesDir    model.AbsPath
 }
 
 func (m *orchestratorLocalMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
@@ -50,7 +50,7 @@ func (m *orchestratorLocalMapper) MapBeforeLocalSave(recipe *model.LocalSaveReci
 func (c *localSaveContext) save() {
 	// Generate ".gitkeep" to preserve the "phases" directory, even if there are no phases.
 	c.Files.
-		Add(filesystem.NewRawFile(filesystem.Join(c.phasesDir, `.gitkeep`), ``)).
+		Add(filesystem.NewRawFile(filesystem.Join(c.phasesDir.String(), `.gitkeep`), ``)).
 		AddTag(model.FileTypeOther).
 		AddTag(model.FileKindGitKeep)
 
@@ -58,7 +58,7 @@ func (c *localSaveContext) save() {
 	errors := utils.NewMultiError()
 	for _, phase := range c.phases {
 		// Get phase path
-		phaseDir, err := c.state.GetPath(phase.PhaseKey)
+		phaseDir, err := c.state.GetOrGeneratePath(phase)
 		if err != nil {
 			errors.Append(utils.PrefixError(fmt.Sprintf(`cannot save %s`, phase.String()), err))
 			continue
@@ -66,14 +66,14 @@ func (c *localSaveContext) save() {
 
 		// Save phase
 		if err := c.savePhase(phase, phaseDir); err != nil {
-			errors.Append(utils.PrefixError(fmt.Sprintf(`cannot save phase "%s"`, phaseDir), err))
+			errors.Append(utils.PrefixError(fmt.Sprintf(`cannot save phase "%s"`, phaseDir.Base()), err))
 		}
 	}
 
 	// Delete all old files from phases dir
 	// We always do full generation of phases dir.
 	for _, path := range c.state.TrackedPaths() {
-		if filesystem.IsFrom(path, c.phasesDir) && c.state.ObjectsRoot().IsFile(path) {
+		if filesystem.IsFrom(path, c.phasesDir.String()) && c.state.ObjectsRoot().IsFile(path) {
 			c.ToDelete = append(c.ToDelete, path)
 		}
 	}
@@ -99,12 +99,12 @@ func (c *localSaveContext) savePhase(phase *model.Phase, phaseDir model.AbsPath)
 	dependsOn := make([]string, 0)
 	for _, depOnKey := range phase.DependsOn {
 		depOnPhase := c.phases[depOnKey.Index]
-		depOnPath, err := filesystem.Rel(c.phasesDir, depOnPhase.String())
+		depOnPath, err := c.state.GetPath(depOnPhase.Key())
 		if err != nil {
 			errors.Append(err)
 			continue
 		}
-		dependsOn = append(dependsOn, depOnPath)
+		dependsOn = append(dependsOn, depOnPath.Base())
 	}
 	phaseContent.Set(`dependsOn`, dependsOn)
 
@@ -124,14 +124,14 @@ func (c *localSaveContext) savePhase(phase *model.Phase, phaseDir model.AbsPath)
 	// Write tasks
 	for _, task := range phase.Tasks {
 		// Get task path
-		taskDir, err := c.state.GetPath(task.TaskKey)
+		taskDir, err := c.state.GetOrGeneratePath(task)
 		if err != nil {
 			errors.Append(err)
 			continue
 		}
 
 		if err := c.saveTask(task, taskDir); err != nil {
-			errors.Append(utils.PrefixError(fmt.Sprintf(`cannot save task "%s"`, taskDir), err))
+			errors.Append(utils.PrefixError(fmt.Sprintf(`cannot save task "%s"`, taskDir.Base()), err))
 		}
 	}
 

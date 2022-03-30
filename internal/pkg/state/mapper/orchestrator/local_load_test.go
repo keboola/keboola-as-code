@@ -22,7 +22,7 @@ func TestOrchestratorLocalMapper_AfterLocalOperation(t *testing.T) {
 	target1, target2, target3 := createTargetConfigs(t, state, state.NamingRegistry())
 
 	// Local files
-	phasesDir := state.NamingGenerator().PhasesDir(orchestratorPath)
+	phasesDir := state.NamingGenerator().PhasesDir(orchestratorPath).String()
 	files := []filesystem.File{
 		filesystem.
 			NewRawFile(
@@ -207,7 +207,7 @@ func TestOrchestratorLocalMapper_AfterLocalOperation_Error(t *testing.T) {
 	orchestratorConfig, orchestratorPath := createLocalLoadFixtures(t, state)
 
 	// Local files
-	phasesDir := state.NamingGenerator().PhasesDir(orchestratorPath)
+	phasesDir := state.NamingGenerator().PhasesDir(orchestratorPath).String()
 	files := []filesystem.File{
 		filesystem.
 			NewRawFile(
@@ -262,7 +262,7 @@ func TestOrchestratorLocalMapper_AfterLocalOperation_CyclicDependsOn(t *testing.
 	createTargetConfigs(t, state, state.NamingRegistry())
 
 	// Local files
-	phasesDir := state.NamingGenerator().PhasesDir(orchestratorPath)
+	phasesDir := state.NamingGenerator().PhasesDir(orchestratorPath).String()
 	files := []filesystem.File{
 		filesystem.
 			NewRawFile(
