@@ -73,8 +73,8 @@ func (m *relationsMapper) linkRelations(object model.ObjectWithRelations) error 
 		}
 
 		// Create and set relation to the other side
-		if otherSideObject, ok := otherSideObject.(model.ObjectWithRelations); ok {
-			otherSideObject.AddRelation(otherSideRelation)
+		if o, ok := otherSideObject.(model.ObjectWithRelations); ok {
+			o.AddRelation(otherSideRelation)
 		} else {
 			// Remove invalid relation
 			relations.Remove(relation)

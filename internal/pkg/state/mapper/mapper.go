@@ -235,12 +235,12 @@ func (m *Mapper) OnObjectPathUpdate(event model.OnObjectPathUpdateEvent) error {
 // AfterLocalOperation calls mappers with AfterLocalRenameListener interface implemented.
 func (m *Mapper) AfterLocalOperation(changes *model.Changes) error {
 	return m.mappers.ForEach(false, func(mapper interface{}) error {
-		if mapper, ok := mapper.(AfterLocalOperationListener); ok {
-			if err := mapper.AfterLocalOperation(changes); err != nil {
+		if m, ok := mapper.(AfterLocalOperationListener); ok {
+			if err := m.AfterLocalOperation(changes); err != nil {
 				return err
 			}
-		} else if mapper, ok := mapper.(AfterOperationListener); ok {
-			if err := mapper.AfterOperation(changes); err != nil {
+		} else if m, ok := mapper.(AfterOperationListener); ok {
+			if err := m.AfterOperation(changes); err != nil {
 				return err
 			}
 		}
@@ -263,12 +263,12 @@ func (m *Mapper) AfterLocalRename(changes []model.RenameAction) error {
 // AfterRemoteOperation calls mappers with AfterRemoteOperationListener interface implemented.
 func (m *Mapper) AfterRemoteOperation(changes *model.Changes) error {
 	return m.mappers.ForEach(false, func(mapper interface{}) error {
-		if mapper, ok := mapper.(AfterRemoteOperationListener); ok {
-			if err := mapper.AfterRemoteOperation(changes); err != nil {
+		if m, ok := mapper.(AfterRemoteOperationListener); ok {
+			if err := m.AfterRemoteOperation(changes); err != nil {
 				return err
 			}
-		} else if mapper, ok := mapper.(AfterOperationListener); ok {
-			if err := mapper.AfterOperation(changes); err != nil {
+		} else if m, ok := mapper.(AfterOperationListener); ok {
+			if err := m.AfterOperation(changes); err != nil {
 				return err
 			}
 		}
