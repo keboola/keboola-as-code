@@ -51,9 +51,9 @@ icon: common
 
 	// Parse
 	d := newStepsDialog(nopPrompt.New())
-	err := d.parse(in)
+	stepsGroups, err := d.parse(in)
 	assert.NoError(t, err)
-	assert.Equal(t, expected, d.stepsGroups)
+	assert.Equal(t, expected, stepsGroups)
 }
 
 func TestStepsDialog_Parse_Errors(t *testing.T) {
@@ -104,7 +104,7 @@ description: Description
 
 	// Parse
 	d := newStepsDialog(nopPrompt.New())
-	err := d.parse(in)
+	_, err := d.parse(in)
 	assert.Error(t, err)
 	assert.Equal(t, strings.Trim(expected, "\n"), err.Error())
 }
@@ -121,7 +121,7 @@ input must contain at least 1 group
 
 	// Parse
 	d := newStepsDialog(nopPrompt.New())
-	err := d.parse(in)
+	_, err := d.parse(in)
 	assert.Error(t, err)
 	assert.Equal(t, strings.Trim(expected, "\n"), err.Error())
 }
