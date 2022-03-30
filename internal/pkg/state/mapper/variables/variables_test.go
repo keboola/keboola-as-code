@@ -3,100 +3,101 @@ package variables_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper/variables"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/remote"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper/variables"
 )
 
-func createStateWithMapper(t *testing.T) (*state.State, *dependencies.TestContainer) {
+func createLocalStateWithMapper(t *testing.T) (*local.State, *dependencies.TestContainer) {
 	t.Helper()
 	d := dependencies.NewTestContainer()
-	mockedState := d.EmptyState()
-	mockedState.Mapper().AddMapper(variables.NewMapper(mockedState))
+	mockedState := d.EmptyLocalState()
+	mockedState.Mapper().AddMapper(variables.NewLocalMapper(mockedState, d))
 	return mockedState, d
 }
 
-func createTestObjectForPersist(t *testing.T, state model.ObjectStates) {
+func createRemoteStateWithMapper(t *testing.T) (*remote.State, *dependencies.TestContainer) {
+	t.Helper()
+	d := dependencies.NewTestContainer()
+	mockedState := d.EmptyRemoteState()
+	mockedState.Mapper().AddMapper(variables.NewRemoteMapper(mockedState))
+	return mockedState, d
+}
+
+func createTestObjectForPersist(t *testing.T, state *local.State) (row1, row2, row3 *model.ConfigRow) {
 	t.Helper()
 
-	// Config
-	configKey := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: model.VariablesComponentId,
-		Id:          `456`,
-	}
-	configRelations := model.Relations{
-		&model.VariablesForRelation{
+	// Branch
+	state.MustAdd(&model.Branch{
+		BranchKey: model.BranchKey{Id: 123},
+	})
+
+	// Config using variables
+	state.MustAdd(&model.Config{
+		ConfigKey: model.ConfigKey{
+			BranchId:    123,
 			ComponentId: `foo.bar`,
-			ConfigId:    `789`,
+			Id:          `789`,
 		},
-	}
-	configState := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{
-			ConfigKey: configKey,
-			Relations: configRelations,
+		Relations: model.Relations{
+			&model.VariablesFromRelation{
+				VariablesId: `456`,
+			},
 		},
-		Local: &model.Config{
-			ConfigKey: configKey,
-			Relations: configRelations,
+	})
+
+	// Variables config
+	state.MustAdd(&model.Config{
+		ConfigKey: model.ConfigKey{
+			BranchId:    123,
+			ComponentId: model.VariablesComponentId,
+			Id:          `456`,
 		},
-	}
-	assert.NoError(t, state.Set(configState))
+		Relations: model.Relations{
+			&model.VariablesForRelation{
+				ComponentId: `foo.bar`,
+				ConfigId:    `789`,
+			},
+		},
+	})
 
 	// Row 1
-	row1Key := model.ConfigRowKey{
-		BranchId:    123,
-		ComponentId: model.VariablesComponentId,
-		ConfigId:    `456`,
-		Id:          `1`,
-	}
-	row1State := &model.ConfigRowState{
-		ConfigRowManifest: &model.ConfigRowManifest{
-			ConfigRowKey: row1Key,
+	row1 = &model.ConfigRow{
+		ConfigRowKey: model.ConfigRowKey{
+			BranchId:    123,
+			ComponentId: model.VariablesComponentId,
+			ConfigId:    `456`,
+			Id:          `1`,
 		},
-		Local: &model.ConfigRow{
-			ConfigRowKey: row1Key,
-			Name:         `first`,
-		},
+		Name: `first`,
 	}
-	assert.NoError(t, state.Set(row1State))
+	state.MustAdd(row1)
 
 	// Row 2
-	row2Key := model.ConfigRowKey{
-		BranchId:    123,
-		ComponentId: model.VariablesComponentId,
-		ConfigId:    `456`,
-		Id:          `2`,
-	}
-	row2State := &model.ConfigRowState{
-		ConfigRowManifest: &model.ConfigRowManifest{
-			ConfigRowKey: row2Key,
+	row2 = &model.ConfigRow{
+		ConfigRowKey: model.ConfigRowKey{
+			BranchId:    123,
+			ComponentId: model.VariablesComponentId,
+			ConfigId:    `456`,
+			Id:          `2`,
 		},
-		Local: &model.ConfigRow{
-			ConfigRowKey: row2Key,
-			Name:         `second`,
-		},
+		Name: `second`,
 	}
-	assert.NoError(t, state.Set(row2State))
+	state.MustAdd(row2)
 
 	// Row 3
-	row3Key := model.ConfigRowKey{
-		BranchId:    123,
-		ComponentId: model.VariablesComponentId,
-		ConfigId:    `456`,
-		Id:          `3`,
-	}
-	row3State := &model.ConfigRowState{
-		ConfigRowManifest: &model.ConfigRowManifest{
-			ConfigRowKey: row3Key,
+	row3 = &model.ConfigRow{
+		ConfigRowKey: model.ConfigRowKey{
+			BranchId:    123,
+			ComponentId: model.VariablesComponentId,
+			ConfigId:    `456`,
+			Id:          `3`,
 		},
-		Local: &model.ConfigRow{
-			ConfigRowKey: row3Key,
-			Name:         `third`,
-		},
+		Name: `third`,
 	}
-	assert.NoError(t, state.Set(row3State))
+	state.MustAdd(row3)
+
+	return row1, row2, row3
 }

@@ -4,7 +4,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func (m *variablesMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
+func (m *variablesRemoteMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
 	// Variables are used by config
 	object, ok := recipe.Object.(*model.Config)
 	if !ok {
@@ -16,7 +16,7 @@ func (m *variablesMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) err
 	return nil
 }
 
-func (m *variablesMapper) loadVariables(object *model.Config) {
+func (m *variablesRemoteMapper) loadVariables(object *model.Config) {
 	// Variables ID is stored in configuration
 	variablesIdRaw, found := object.Content.Get(model.VariablesIdContentKey)
 	if !found {
@@ -38,7 +38,7 @@ func (m *variablesMapper) loadVariables(object *model.Config) {
 	object.Content.Delete(model.VariablesIdContentKey)
 }
 
-func (m *variablesMapper) loadVariablesValues(object *model.Config) {
+func (m *variablesRemoteMapper) loadVariablesValues(object *model.Config) {
 	// Values ID is stored in configuration
 	valuesIdRaw, found := object.Content.Get(model.VariablesValuesIdContentKey)
 	if !found {

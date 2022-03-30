@@ -61,6 +61,11 @@ type AfterLocalRenameListener interface {
 	AfterLocalRename(changes []model.RenameAction) error
 }
 
+// AfterLocalPersistListener is called when the persist operation is finished.
+type AfterLocalPersistListener interface {
+	AfterLocalPersist(persisted []model.Object) error
+}
+
 // AfterLocalOperationListener is called when the local.UnitOfWork finished all the work.
 // The "changes" parameter contains all: loaded, created, update, saved, deleted objects.
 type AfterLocalOperationListener interface {
@@ -253,6 +258,18 @@ func (m *Mapper) AfterLocalRename(changes []model.RenameAction) error {
 	return m.mappers.ForEach(false, func(mapper interface{}) error {
 		if mapper, ok := mapper.(AfterLocalRenameListener); ok {
 			if err := mapper.AfterLocalRename(changes); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+// AfterLocalPersist calls mappers with AfterLocalPersistListener interface implemented.
+func (m *Mapper) AfterLocalPersist(persisted []model.Object) error {
+	return m.mappers.ForEach(false, func(mapper interface{}) error {
+		if mapper, ok := mapper.(AfterLocalPersistListener); ok {
+			if err := mapper.AfterLocalPersist(persisted); err != nil {
 				return err
 			}
 		}

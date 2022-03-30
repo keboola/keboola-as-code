@@ -179,8 +179,9 @@ type RemoteSaveRecipe struct {
 
 // PersistRecipe contains object to persist.
 type PersistRecipe struct {
+	Key       Key
 	ParentKey Key
-	Manifest  ObjectManifest
+	Relations Relations
 }
 
 type PathsGenerator interface {

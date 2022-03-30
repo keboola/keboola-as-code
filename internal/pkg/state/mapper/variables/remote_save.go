@@ -7,7 +7,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func (m *variablesMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
+func (m *variablesRemoteMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
 	// Variables are used by config
 	config, ok := recipe.Object.(*model.Config)
 	if !ok {
@@ -31,12 +31,12 @@ func (m *variablesMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) er
 	return nil
 }
 
-func (m *variablesMapper) saveVariables(config *model.Config, recipe *model.RemoteSaveRecipe) (*model.VariablesFromRelation, error) {
+func (m *variablesRemoteMapper) saveVariables(config *model.Config, recipe *model.RemoteSaveRecipe) (*model.VariablesFromRelation, error) {
 	// Get relation
 	relType := model.VariablesFromRelType
 	relationRaw, err := config.Relations.GetOneByType(relType)
 	if err != nil {
-		return nil, fmt.Errorf(`unexpected state of %s: %w`, recipe.String(), err)
+		return nil, fmt.Errorf(`unexpected state of %s: %w`, recipe.Object.String(), err)
 	} else if relationRaw == nil {
 		return nil, nil
 	}
@@ -50,12 +50,12 @@ func (m *variablesMapper) saveVariables(config *model.Config, recipe *model.Remo
 	return relation, nil
 }
 
-func (m *variablesMapper) saveVariablesValues(config *model.Config, recipe *model.RemoteSaveRecipe) error {
+func (m *variablesRemoteMapper) saveVariablesValues(config *model.Config, recipe *model.RemoteSaveRecipe) error {
 	// Get relation
 	relType := model.VariablesValuesFromRelType
 	relationRaw, err := config.Relations.GetOneByType(relType)
 	if err != nil {
-		return fmt.Errorf(`unexpected state of %s: %w`, recipe.String(), err)
+		return fmt.Errorf(`unexpected state of %s: %w`, recipe.Object.String(), err)
 	} else if relationRaw == nil {
 		return nil
 	}

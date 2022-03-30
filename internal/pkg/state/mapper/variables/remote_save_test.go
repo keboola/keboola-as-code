@@ -11,7 +11,7 @@ import (
 
 func TestVariablesMapBeforeRemoteSave(t *testing.T) {
 	t.Parallel()
-	state, d := createStateWithMapper(t)
+	state, d := createRemoteStateWithMapper(t)
 	logger := d.DebugLogger()
 
 	variablesConfigId := `123456`
@@ -23,7 +23,7 @@ func TestVariablesMapBeforeRemoteSave(t *testing.T) {
 	object.AddRelation(&model.VariablesValuesFromRelation{
 		VariablesValuesId: model.RowId(valuesConfigRowId),
 	})
-	recipe := model.NewRemoteSaveRecipe(&model.ConfigManifest{}, object, model.NewChangedFields())
+	recipe := model.NewRemoteSaveRecipe(object, model.NewChangedFields())
 
 	// Invoke
 	assert.NotEmpty(t, object.Relations)

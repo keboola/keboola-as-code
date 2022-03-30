@@ -11,7 +11,7 @@ import (
 
 func TestVariablesMapAfterRemoteLoad(t *testing.T) {
 	t.Parallel()
-	state, d := createStateWithMapper(t)
+	state, d := createRemoteStateWithMapper(t)
 	logger := d.DebugLogger()
 
 	variablesConfigId := `123456`
@@ -20,7 +20,7 @@ func TestVariablesMapAfterRemoteLoad(t *testing.T) {
 	content.Set(model.VariablesIdContentKey, variablesConfigId)
 	content.Set(model.VariablesValuesIdContentKey, valuesConfigRowId)
 	object := &model.Config{Content: content}
-	recipe := model.NewRemoteLoadRecipe(&model.ConfigManifest{}, object)
+	recipe := model.NewRemoteLoadRecipe(object)
 
 	// Invoke
 	assert.Empty(t, object.Relations)

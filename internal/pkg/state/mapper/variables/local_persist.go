@@ -9,9 +9,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
-func (m *variablesMapper) MapBeforePersist(recipe *model.PersistRecipe) error {
+func (m *variablesLocalMapper) MapBeforePersist(recipe *model.PersistRecipe) error {
 	// Variables are represented by config
-	configManifest, ok := recipe.Manifest.(*model.ConfigManifest)
+	variablesKey, ok := recipe.Key.(model.ConfigKey)
 	if !ok {
 		return nil
 	}
@@ -22,8 +22,14 @@ func (m *variablesMapper) MapBeforePersist(recipe *model.PersistRecipe) error {
 		return nil
 	}
 
+	// Get components
+	components, err := m.Components()
+	if err != nil {
+		return err
+	}
+
 	// Get component
-	component, err := m.state.Components().Get(configManifest.ComponentKey())
+	component, err := components.Get(variablesKey.ComponentKey())
 	if err != nil {
 		return err
 	}
@@ -34,12 +40,12 @@ func (m *variablesMapper) MapBeforePersist(recipe *model.PersistRecipe) error {
 	}
 
 	// Branch must be same
-	if configKey.BranchKey() != configManifest.BranchKey() {
-		panic(fmt.Errorf(`child "%s" and parent "%s" must be from same branch`, configManifest.String(), configKey.String()))
+	if variablesKey.BranchKey() != configKey.BranchKey() {
+		panic(fmt.Errorf(`child "%s" and parent "%s" must be from same branch`, variablesKey.String(), configKey.String()))
 	}
 
 	// Add relation
-	configManifest.Relations.Add(&model.VariablesForRelation{
+	recipe.Relations.Add(&model.VariablesForRelation{
 		ComponentId: configKey.ComponentId,
 		ConfigId:    configKey.Id,
 	})
@@ -47,39 +53,17 @@ func (m *variablesMapper) MapBeforePersist(recipe *model.PersistRecipe) error {
 	return nil
 }
 
-// AfterLocalOperation ensures there is one config row with default variables values after persist.
-func (m *variablesMapper) AfterLocalOperation(changes *model.LocalChanges) error {
-	// Find new persisted variables configs + include those that have a new persisted row
-	configs := make(map[model.ConfigKey]bool)
+// AfterLocalPersist ensures there is one config row with default variables values after persist.
+func (m *variablesLocalMapper) AfterLocalPersist(persisted []model.Object) error {
+	// Find persisted configs
 	errors := utils.NewMultiError()
-	for _, objectState := range changes.Persisted() {
-		object := objectState.LocalState()
-		if config, ok := object.(*model.Config); ok {
-			// Variables config?
-			component, err := m.state.Components().Get(config.ComponentKey())
-			if err != nil {
-				errors.Append(err)
-				continue
-			}
-			if component.IsVariables() {
-				configs[config.ConfigKey] = true
-			}
-		} else if row, ok := object.(*model.ConfigRow); ok {
-			// Variables values row?
-			component, err := m.state.Components().Get(row.ComponentKey())
-			if err != nil {
-				errors.Append(err)
-				continue
-			}
-			if component.IsVariables() {
-				configs[row.ConfigKey()] = true
-			}
-		}
+	configs, err := m.findPersistedConfigs(persisted)
+	if err != nil {
+		errors.Append(err)
 	}
 
-	// Ensure that each variables config has one row with default values
-	for configKey := range configs {
-		config := m.state.MustGet(configKey).LocalState().(*model.Config)
+	// Ensure that each "variables" config has one row with default values
+	for _, config := range configs {
 		if err := m.ensureOneRowHasRelation(config); err != nil {
 			errors.Append(err)
 		}
@@ -89,7 +73,7 @@ func (m *variablesMapper) AfterLocalOperation(changes *model.LocalChanges) error
 }
 
 // ensureOneRowHasRelation VariablesValuesForRelation, it marks variables default values.
-func (m *variablesMapper) ensureOneRowHasRelation(config *model.Config) error {
+func (m *variablesLocalMapper) ensureOneRowHasRelation(config *model.Config) error {
 	configRelation, err := config.GetRelations().GetOneByType(model.VariablesForRelType)
 	if err != nil || configRelation == nil {
 		return err
@@ -97,13 +81,9 @@ func (m *variablesMapper) ensureOneRowHasRelation(config *model.Config) error {
 
 	// Process rows
 	rows := m.state.ConfigRowsFrom(config.ConfigKey)
-	var rowsWithRelation []*model.ConfigRowState
-	var rowsWithDefaultInName []*model.ConfigRowState
+	var rowsWithRelation []*model.ConfigRow
+	var rowsWithDefaultInName []*model.ConfigRow
 	for _, row := range rows {
-		if !row.HasLocalState() {
-			continue
-		}
-
 		// Has row relation?
 		rowRelation, err := row.GetRelations().GetOneByType(model.VariablesValuesForRelType)
 		if err != nil {
@@ -114,8 +94,7 @@ func (m *variablesMapper) ensureOneRowHasRelation(config *model.Config) error {
 		}
 
 		// Has row "default" in the name or path?
-		if strings.Contains(strhelper.NormalizeName(row.Local.Name), `default`) ||
-			strings.Contains(row.RelativePath(), `default`) {
+		if strings.Contains(strhelper.NormalizeName(row.Name), `default`) {
 			rowsWithDefaultInName = append(rowsWithDefaultInName, row)
 		}
 	}
@@ -126,7 +105,7 @@ func (m *variablesMapper) ensureOneRowHasRelation(config *model.Config) error {
 	}
 
 	// Determine row with default values
-	var row *model.ConfigRowState
+	var row *model.ConfigRow
 	switch {
 	case len(rowsWithDefaultInName) > 0:
 		// Add relation to row with "default" in the name
@@ -140,7 +119,48 @@ func (m *variablesMapper) ensureOneRowHasRelation(config *model.Config) error {
 	}
 
 	// Add relation to row local object and manifest
-	row.Local.AddRelation(&model.VariablesValuesForRelation{})
-	row.ConfigRowManifest.AddRelation(&model.VariablesValuesForRelation{})
+	row.AddRelation(&model.VariablesValuesForRelation{})
 	return nil
+}
+
+// findPersistedConfigs returns all persisted configs + configs with a persisted row.
+func (m *variablesLocalMapper) findPersistedConfigs(persisted []model.Object) ([]*model.Config, error) {
+	components, err := m.Components()
+	if err != nil {
+		return nil, err
+	}
+
+	// Find new persisted variables configs + include those that have a new persisted row
+	configsMap := make(map[model.ConfigKey]bool)
+	errors := utils.NewMultiError()
+	for _, object := range persisted {
+		if config, ok := object.(*model.Config); ok {
+			// Variables config?
+			component, err := components.Get(config.ComponentKey())
+			if err != nil {
+				errors.Append(err)
+				continue
+			}
+			if component.IsVariables() {
+				configsMap[config.ConfigKey] = true
+			}
+		} else if row, ok := object.(*model.ConfigRow); ok {
+			// Variables values row?
+			component, err := components.Get(row.ComponentKey())
+			if err != nil {
+				errors.Append(err)
+				continue
+			}
+			if component.IsVariables() {
+				configsMap[row.ConfigKey()] = true
+			}
+		}
+	}
+
+	// Convert map to slice
+	var out []*model.Config
+	for configKey := range configsMap {
+		out = append(out, m.state.MustGet(configKey).(*model.Config))
+	}
+	return out, errors.ErrorOrNil()
 }
