@@ -59,20 +59,20 @@ func (g Generator) SharedCodeFilePath(parentPath string, targetComponentId Compo
 	return filesystem.Join(parentPath, g.CodeFileName(targetComponentId))
 }
 
-func (g Generator) PhaseFilePath(phase *Phase) string {
-	return filesystem.Join(phase.String(), PhaseFile)
+func (g Generator) PhaseFilePath(phaseDir AbsPath) string {
+	return filesystem.Join(phaseDir.String(), PhaseFile)
 }
 
-func (g Generator) TaskFilePath(task *Task) string {
-	return filesystem.Join(task.String(), TaskFile)
+func (g Generator) TaskFilePath(taskDir AbsPath) string {
+	return filesystem.Join(taskDir.String(), TaskFile)
 }
 
-func (g Generator) BlocksDir(configDir string) string {
-	return filesystem.Join(configDir, blocksDir)
+func (g Generator) BlocksDir(configDir AbsPath) string {
+	return filesystem.Join(configDir.String(), blocksDir)
 }
 
-func (g Generator) PhasesDir(configDir string) string {
-	return filesystem.Join(configDir, phasesDir)
+func (g Generator) PhasesDir(configDir AbsPath) string {
+	return filesystem.Join(configDir.String(), phasesDir)
 }
 
 func (g Generator) GetOrGenerate(object WithKey) (AbsPath, error) {

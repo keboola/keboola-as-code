@@ -50,7 +50,7 @@ func (r *Reporter) Report(rs cmp.Result) {
 			lines = append(lines, v...)
 		} else {
 			// Other types
-			lines = append(lines, valuesDiff(remoteValue, localValue)...)
+			lines = append(lines, r.valuesDiff(remoteValue, localValue)...)
 		}
 
 		// Format lines
@@ -187,7 +187,7 @@ func (r *Reporter) objectPath(value reflect.Value) string {
 	return ""
 }
 
-func valuesDiff(a, b reflect.Value) []string {
+func (r *Reporter) valuesDiff(a, b reflect.Value) []string {
 	var out []string
 
 	// Resolve interfaces
@@ -199,7 +199,7 @@ func valuesDiff(a, b reflect.Value) []string {
 
 	// Format values
 	if a.IsValid() {
-		formatted := formatValue(a, aType, includeType)
+		formatted := r.formatValue(a, aType, includeType)
 		if len(formatted) != 0 {
 			valueMark := ``
 			if b.IsValid() {
@@ -211,7 +211,7 @@ func valuesDiff(a, b reflect.Value) []string {
 		}
 	}
 	if b.IsValid() {
-		formatted := formatValue(b, bType, includeType)
+		formatted := r.formatValue(b, bType, includeType)
 		if len(formatted) != 0 {
 			valueMark := ``
 			if a.IsValid() {
@@ -225,14 +225,21 @@ func valuesDiff(a, b reflect.Value) []string {
 	return out
 }
 
-func formatValue(value reflect.Value, t reflect.Type, includeType bool) []string {
+func (r *Reporter) formatValue(value reflect.Value, t reflect.Type, includeType bool) []string {
 	var formatted string
+	phase, isPhase := value.Interface().(model.Phase)
+	task, isTask := value.Interface().(model.Task)
+
 	switch {
 	case t.Kind() == reflect.Ptr && value.IsNil():
 		formatted = `(null)`
 	case t.Kind() == reflect.Map:
 		// Format map to JSON
 		formatted = strings.TrimRight(json.MustEncodeString(value.Interface(), true), "\n")
+	case isPhase:
+		return strings.Split(phaseToString(phase, r.naming), "\n")
+	case isTask:
+		return strings.Split(taskToString(task, r.naming), "\n")
 	case includeType:
 		formatted = fmt.Sprintf(`%#v`, value)
 	default:

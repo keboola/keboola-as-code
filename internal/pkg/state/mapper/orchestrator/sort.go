@@ -24,6 +24,12 @@ func newPhasesSorter() *phasesSorter {
 	}
 }
 
+func (s *phasesSorter) addPhase(key string, phase *model.Phase, dependsOn []string) {
+	s.phasesKeys = append(s.phasesKeys, key)
+	s.phaseByKey[key] = phase
+	s.phaseDependsOnKeys[key] = dependsOn
+}
+
 func (s *phasesSorter) sortPhases() ([]*model.Phase, error) {
 	errors := utils.NewMultiError()
 	graph := &toposort.Sorter{}

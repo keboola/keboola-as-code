@@ -7,51 +7,50 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-// onObjectsRename - find renamed orchestrators and renamed configs used in an orchestrator.
-func (m *orchestratorMapper) onObjectsRename(renamed []model.RenameAction, allObjects model.Objects) error {
+// AfterLocalRename - find renamed orchestrators and renamed configs used in an orchestrator.
+func (m *orchestratorLocalMapper) AfterLocalRename(changes []model.RenameAction) error {
 	errors := utils.NewMultiError()
 
 	// Find renamed orchestrators and renamed configs used in an orchestrator
-	orchestratorsToUpdate := make(map[string]model.Key)
-	for _, object := range renamed {
-		key := object.Manifest.Key()
+	orchestratorsToUpdate := make(map[model.Key]bool)
+	for _, item := range changes {
+		key := item.Key
 
-		// Is orchestrator?
-		if ok, err := m.isOrchestratorConfigKey(key); err != nil {
+		// Is object an orchestrator?
+		if ok, err := m.isOrchestrator(key); err != nil {
 			errors.Append(err)
 			continue
 		} else if ok {
-			orchestratorsToUpdate[key.String()] = key
+			orchestratorsToUpdate[key] = true
 			continue
 		}
 
-		// Is config used in orchestrator?
-		if manifest, ok := object.Manifest.(*model.ConfigManifest); ok {
-			localConfigRaw, found := allObjects.Get(manifest.Key())
-			if found {
-				localConfig := localConfigRaw.(*model.Config)
-				relations := localConfig.Relations.GetByType(model.UsedInOrchestratorRelType)
-				for _, relationRaw := range relations {
-					relation := relationRaw.(*model.UsedInOrchestratorRelation)
-					orchestratorKey := model.ConfigKey{
-						BranchId:    localConfig.BranchId,
-						ComponentId: model.OrchestratorComponentId,
-						Id:          relation.ConfigId,
-					}
-					orchestratorsToUpdate[orchestratorKey.String()] = orchestratorKey
+		// Is object a config used in orchestrator?
+		if _, ok := key.(model.ConfigKey); !ok {
+			continue
+		} else if configRaw, found := m.state.Get(key); found {
+			config := configRaw.(*model.Config)
+			relations := config.Relations.GetByType(model.UsedInOrchestratorRelType)
+			for _, relationRaw := range relations {
+				relation := relationRaw.(*model.UsedInOrchestratorRelation)
+				orchestratorKey := model.ConfigKey{
+					BranchId:    config.BranchId,
+					ComponentId: model.OrchestratorComponentId,
+					Id:          relation.ConfigId,
 				}
+				orchestratorsToUpdate[orchestratorKey] = true
 			}
 		}
 	}
 
 	// Log and save
-	uow := m.state.LocalManager().NewUnitOfWork(context.Background())
+	uow := m.state.NewUnitOfWork(context.Background(), model.NoFilter())
 	if len(orchestratorsToUpdate) > 0 {
 		m.logger.Debug(`Need to update orchestrators:`)
-		for _, key := range orchestratorsToUpdate {
+		for key := range orchestratorsToUpdate {
 			m.logger.Debugf(`  - %s`, key.String())
 			orchestrator := m.state.MustGet(key)
-			uow.SaveObject(orchestrator, orchestrator.LocalState(), model.NewChangedFields(`orchestrator`))
+			uow.Save(orchestrator, model.NewChangedFields(`orchestration`))
 		}
 	}
 

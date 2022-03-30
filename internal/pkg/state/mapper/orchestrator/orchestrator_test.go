@@ -3,26 +3,34 @@ package orchestrator_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper/corefiles"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-func createStateWithMapper(t *testing.T) (*state.State, *dependencies.TestContainer) {
+func createLocalStateWithMapper(t *testing.T) (*local.State, *dependencies.TestContainer) {
 	t.Helper()
 	d := dependencies.NewTestContainer()
-	mockedState := d.EmptyState()
+	mockedState := d.EmptyLocalState()
 	mockedState.Mapper().AddMapper(corefiles.NewLocalMapper(mockedState))
-	mockedState.Mapper().AddMapper(orchestrator.NewMapper(mockedState))
+	mockedState.Mapper().AddMapper(orchestrator.NewLocalMapper(mockedState, d))
 	return mockedState, d
 }
 
-func createTargetConfigs(t *testing.T, state *state.State) (*model.ConfigState, *model.ConfigState, *model.ConfigState) {
+func createRemoteStateWithMapper(t *testing.T) (*remote.State, *dependencies.TestContainer) {
+	t.Helper()
+	d := dependencies.NewTestContainer()
+	mockedState := d.EmptyRemoteState()
+	mockedState.Mapper().AddMapper(orchestrator.NewRemoteMapper(mockedState, d))
+	return mockedState, d
+}
+
+func createTargetConfigs(t *testing.T, objects model.Objects, naming *naming.Registry) (*model.Config, *model.Config, *model.Config) {
 	t.Helper()
 
 	// Target config 1
@@ -31,17 +39,11 @@ func createTargetConfigs(t *testing.T, state *state.State) (*model.ConfigState, 
 		ComponentId: `foo.bar1`,
 		Id:          `123`,
 	}
-	targetConfigState1 := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{
-			ConfigKey: targetConfigKey1,
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(`branch/extractor`, `target-config-1`),
-			},
-		},
-		Local:  &model.Config{ConfigKey: targetConfigKey1},
-		Remote: &model.Config{ConfigKey: targetConfigKey1},
+	targetConfig1 := &model.Config{ConfigKey: targetConfigKey1}
+	objects.MustAdd(targetConfig1)
+	if naming != nil {
+		naming.MustAttach(targetConfigKey1, model.NewAbsPath(`branch/extractor`, `target-config-1`))
 	}
-	assert.NoError(t, state.Set(targetConfigState1))
 
 	// Target config 2
 	targetConfigKey2 := model.ConfigKey{
@@ -49,17 +51,11 @@ func createTargetConfigs(t *testing.T, state *state.State) (*model.ConfigState, 
 		ComponentId: `foo.bar2`,
 		Id:          `789`,
 	}
-	targetConfigState2 := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{
-			ConfigKey: targetConfigKey2,
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(`branch/extractor`, `target-config-2`),
-			},
-		},
-		Local:  &model.Config{ConfigKey: targetConfigKey2},
-		Remote: &model.Config{ConfigKey: targetConfigKey2},
+	targetConfig2 := &model.Config{ConfigKey: targetConfigKey2}
+	objects.MustAdd(targetConfig2)
+	if naming != nil {
+		naming.MustAttach(targetConfigKey2, model.NewAbsPath(`branch/extractor`, `target-config-2`))
 	}
-	assert.NoError(t, state.Set(targetConfigState2))
 
 	// Target config 3
 	targetConfigKey3 := model.ConfigKey{
@@ -67,38 +63,23 @@ func createTargetConfigs(t *testing.T, state *state.State) (*model.ConfigState, 
 		ComponentId: `foo.bar2`,
 		Id:          `456`,
 	}
-	targetConfigState3 := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{
-			ConfigKey: targetConfigKey3,
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(`branch/extractor`, `target-config-3`),
-			},
-		},
-		Local:  &model.Config{ConfigKey: targetConfigKey3},
-		Remote: &model.Config{ConfigKey: targetConfigKey3},
+	targetConfig3 := &model.Config{ConfigKey: targetConfigKey3}
+	objects.MustAdd(targetConfig3)
+	if naming != nil {
+		naming.MustAttach(targetConfigKey3, model.NewAbsPath(`branch/extractor`, `target-config-3`))
 	}
-	assert.NoError(t, state.Set(targetConfigState3))
 
-	return targetConfigState1, targetConfigState2, targetConfigState3
+	return targetConfig1, targetConfig2, targetConfig3
 }
 
-func createLocalLoadFixtures(t *testing.T, state *state.State) *model.ConfigState {
+func createLocalLoadFixtures(t *testing.T, state *local.State) (*model.Config, model.AbsPath) {
 	t.Helper()
 
 	// Branch
-	branchKey := model.BranchKey{
-		Id: 123,
-	}
-	branchState := &model.BranchState{
-		BranchManifest: &model.BranchManifest{
-			BranchKey: branchKey,
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(``, `branch`),
-			},
-		},
-		Local: &model.Branch{BranchKey: branchKey},
-	}
-	assert.NoError(t, state.Set(branchState))
+	branchKey := model.BranchKey{Id: 123}
+	branch := &model.Branch{BranchKey: branchKey}
+	state.MustAdd(branch)
+	state.NamingRegistry().MustAttach(branchKey, model.NewAbsPath(``, `branch`))
 
 	// Orchestrator config
 	configKey := model.ConfigKey{
@@ -106,23 +87,151 @@ func createLocalLoadFixtures(t *testing.T, state *state.State) *model.ConfigStat
 		ComponentId: model.OrchestratorComponentId,
 		Id:          `456`,
 	}
-	configState := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{
-			ConfigKey: configKey,
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(`branch`, `other/orchestrator`),
-			},
-		},
-		Local: &model.Config{ConfigKey: configKey, Content: orderedmap.New()},
-	}
+	config := &model.Config{ConfigKey: configKey, Content: orderedmap.New()}
+	configPath := model.NewAbsPath(`branch`, `other/orchestrator`)
+	state.MustAdd(config)
+	state.NamingRegistry().MustAttach(configKey, configPath)
 
-	assert.NoError(t, state.Set(configState))
-	return configState
+	return config, configPath
 }
 
-func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets bool) *model.ConfigState {
+func createLocalSaveFixtures(t *testing.T, state *local.State, createTargets bool) (*model.Config, model.AbsPath) {
 	t.Helper()
 
+	phase1Key := model.PhaseKey{
+		BranchId:    123,
+		ComponentId: model.OrchestratorComponentId,
+		ConfigId:    `456`,
+		Index:       0,
+	}
+	model.NewAbsPath(`branch/other/orchestrator/phases`, `001-phase`)
+
+	phase2Key := model.PhaseKey{
+		BranchId:    123,
+		ComponentId: model.OrchestratorComponentId,
+		ConfigId:    `456`,
+		Index:       1,
+	}
+	model.NewAbsPath(`branch/other/orchestrator/phases`, `002-phase-with-deps`)
+
+	task1Key := model.TaskKey{PhaseKey: phase1Key, Index: 0}
+	model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `001-task-1`)
+
+	task2Key := model.TaskKey{PhaseKey: phase1Key, Index: 1}
+	model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `002-task-2`)
+
+	task3Key := model.TaskKey{PhaseKey: phase2Key, Index: 0}
+	model.NewAbsPath(`branch/other/orchestrator/phases/002-phase-with-deps`, `001-task-3`)
+
+	orchestration := &model.Orchestration{
+		Phases: []*model.Phase{
+			{
+				PhaseKey:  phase1Key,
+				DependsOn: []model.PhaseKey{},
+				Name:      `Phase`,
+				Content: orderedmap.FromPairs([]orderedmap.Pair{
+					{Key: `foo`, Value: `bar`},
+				}),
+				Tasks: []*model.Task{
+					{
+						TaskKey:     task1Key,
+						Name:        `Task 1`,
+						ComponentId: `foo.bar1`,
+						ConfigId:    `123`,
+						Content: orderedmap.FromPairs([]orderedmap.Pair{
+							{
+								Key: `task`,
+								Value: orderedmap.FromPairs([]orderedmap.Pair{
+									{Key: `mode`, Value: `run`},
+								}),
+							},
+							{Key: `continueOnFailure`, Value: false},
+							{Key: `enabled`, Value: true},
+						}),
+					},
+					{
+						TaskKey:     task2Key,
+						Name:        `Task 2`,
+						ComponentId: `foo.bar2`,
+						ConfigId:    `789`,
+						Content: orderedmap.FromPairs([]orderedmap.Pair{
+							{
+								Key: `task`,
+								Value: orderedmap.FromPairs([]orderedmap.Pair{
+									{Key: `mode`, Value: `run`},
+								}),
+							},
+							{Key: `continueOnFailure`, Value: false},
+							{Key: `enabled`, Value: false},
+						}),
+					},
+				},
+			},
+			{
+				PhaseKey: phase2Key,
+				DependsOn: []model.PhaseKey{
+					{
+						BranchId:    123,
+						ComponentId: model.OrchestratorComponentId,
+						ConfigId:    `456`,
+						Index:       0,
+					},
+				},
+				Name:    `Phase With Deps`,
+				Content: orderedmap.New(),
+				Tasks: []*model.Task{
+					{
+						TaskKey:     task3Key,
+						Name:        `Task 3`,
+						ComponentId: `foo.bar2`,
+						ConfigId:    `456`,
+						Content: orderedmap.FromPairs([]orderedmap.Pair{
+							{
+								Key: `task`,
+								Value: orderedmap.FromPairs([]orderedmap.Pair{
+									{Key: `mode`, Value: `run`},
+								}),
+							},
+							{Key: `continueOnFailure`, Value: false},
+							{Key: `enabled`, Value: true},
+						}),
+					},
+				},
+			},
+		},
+	}
+
+	// Branch
+	branchKey := model.BranchKey{Id: 123}
+	branch := &model.Branch{BranchKey: branchKey}
+	state.MustAdd(branch)
+	state.NamingRegistry().MustAttach(branchKey, model.NewAbsPath(``, `branch`))
+
+	// Orchestrator config
+	configKey := model.ConfigKey{
+		BranchId:    123,
+		ComponentId: model.OrchestratorComponentId,
+		Id:          `456`,
+	}
+	config := &model.Config{
+		ConfigKey:     configKey,
+		Name:          "My Orchestration",
+		Content:       orderedmap.New(),
+		Orchestration: orchestration,
+	}
+	configPath := model.NewAbsPath(`branch`, `other/orchestrator`)
+	state.MustAdd(config)
+	state.NamingRegistry().MustAttach(configKey, configPath)
+
+	// Create targets
+	if createTargets {
+		createTargetConfigs(t, state, state.NamingRegistry())
+	}
+
+	return config, configPath
+}
+
+func createRemoteSaveFixtures(state *remote.State) *model.Config {
 	orchestration := &model.Orchestration{
 		Phases: []*model.Phase{
 			{
@@ -132,7 +241,6 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 					ConfigId:    `456`,
 					Index:       0,
 				},
-				AbsPath:   model.NewAbsPath(`branch/other/orchestrator/phases`, `001-phase`),
 				DependsOn: []model.PhaseKey{},
 				Name:      `Phase`,
 				Content: orderedmap.FromPairs([]orderedmap.Pair{
@@ -149,11 +257,9 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 							},
 							Index: 0,
 						},
-						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `001-task-1`),
 						Name:        `Task 1`,
 						ComponentId: `foo.bar1`,
 						ConfigId:    `123`,
-						ConfigPath:  `branch/extractor/target-config-1`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,
@@ -175,11 +281,9 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 							},
 							Index: 1,
 						},
-						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `002-task-2`),
-						Name:        `Task 2`,
+						Name:        `Task 3`,
 						ComponentId: `foo.bar2`,
 						ConfigId:    `789`,
-						ConfigPath:  `branch/extractor/target-config-2`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,
@@ -200,19 +304,12 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 					ConfigId:    `456`,
 					Index:       1,
 				},
-				AbsPath: model.NewAbsPath(`branch/other/orchestrator/phases`, `002-phase-with-deps`),
-				DependsOn: []model.PhaseKey{
-					{
-						BranchId:    123,
-						ComponentId: model.OrchestratorComponentId,
-						ConfigId:    `456`,
-						Index:       0,
-					},
-				},
-				Name:    `Phase With Deps`,
-				Content: orderedmap.New(),
+				DependsOn: []model.PhaseKey{{Index: 0}},
+				Name:      `Phase With Deps`,
+				Content:   orderedmap.New(),
 				Tasks: []*model.Task{
 					{
+
 						TaskKey: model.TaskKey{
 							PhaseKey: model.PhaseKey{
 								BranchId:    123,
@@ -222,11 +319,9 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 							},
 							Index: 0,
 						},
-						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/002-phase-with-deps`, `001-task-3`),
-						Name:        `Task 3`,
+						Name:        `Task 2`,
 						ComponentId: `foo.bar2`,
 						ConfigId:    `456`,
-						ConfigPath:  `branch/extractor/target-config-3`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,
@@ -244,19 +339,9 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 	}
 
 	// Branch
-	branchKey := model.BranchKey{
-		Id: 123,
-	}
-	branchState := &model.BranchState{
-		BranchManifest: &model.BranchManifest{
-			BranchKey: branchKey,
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(``, `branch`),
-			},
-		},
-		Local: &model.Branch{BranchKey: branchKey},
-	}
-	assert.NoError(t, state.Set(branchState))
+	branchKey := model.BranchKey{Id: 123}
+	branch := &model.Branch{BranchKey: branchKey}
+	state.MustAdd(branch)
 
 	// Orchestrator config
 	configKey := model.ConfigKey{
@@ -264,77 +349,7 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 		ComponentId: model.OrchestratorComponentId,
 		Id:          `456`,
 	}
-	configState := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{
-			ConfigKey: configKey,
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(`branch`, `other/orchestrator`),
-			},
-		},
-		Remote: &model.Config{
-			ConfigKey:     configKey,
-			Name:          "My Orchestration",
-			Content:       orderedmap.New(),
-			Orchestration: orchestration,
-		},
-	}
-	assert.NoError(t, state.Set(configState))
-
-	// Create targets
-	if !createTargets {
-		return configState
-	}
-
-	// Target config 1
-	targetConfigKey1 := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: `foo.bar1`,
-		Id:          `123`,
-	}
-	targetConfigState1 := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{
-			ConfigKey: targetConfigKey1,
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(`branch/extractor`, `target-config-1`),
-			},
-		},
-		Remote: &model.Config{ConfigKey: targetConfigKey1},
-	}
-	assert.NoError(t, state.Set(targetConfigState1))
-
-	// Target config 2
-	targetConfigKey2 := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: `foo.bar2`,
-		Id:          `789`,
-	}
-	targetConfigState2 := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{
-			ConfigKey: targetConfigKey2,
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(`branch/extractor`, `target-config-2`),
-			},
-		},
-		Remote: &model.Config{ConfigKey: targetConfigKey2},
-	}
-	assert.NoError(t, state.Set(targetConfigState2))
-
-	// Target config 3
-	targetConfigKey3 := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: `foo.bar2`,
-		Id:          `456`,
-	}
-	targetConfigState3 := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{
-			ConfigKey: targetConfigKey3,
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(`branch/extractor`, `target-config-3`),
-			},
-		},
-		Remote: &model.Config{ConfigKey: targetConfigKey3},
-	}
-	assert.NoError(t, state.Set(targetConfigState3))
-
-	return configState
+	config := &model.Config{ConfigKey: configKey, Content: orderedmap.New()}
+	config.Orchestration = orchestration
+	return config
 }

@@ -537,11 +537,24 @@ func TestDiff_Orchestration(t *testing.T) {
 		Index: 0,
 	}
 
-	assert.NoError(t, d.naming.Attach(phase1Key, model.NewAbsPath(`branch/other/orchestrator/phases`, `001-phase`)))
-	assert.NoError(t, d.naming.Attach(phase2Key, model.NewAbsPath(`branch/other/orchestrator/phases`, `002-phase`)))
-	assert.NoError(t, d.naming.Attach(task1Key, model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `001-task-1`)))
-	assert.NoError(t, d.naming.Attach(task2Key, model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `002-task-2`)))
-	assert.NoError(t, d.naming.Attach(task3Key, model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `001-task-3`)))
+	target1Key := model.ConfigKey{
+		BranchId:    123,
+		ComponentId: `foo.bar1`,
+		Id:          `123`,
+	}
+	target3Key := model.ConfigKey{
+		BranchId:    123,
+		ComponentId: `foo.bar3`,
+		Id:          `123`,
+	}
+
+	d.naming.MustAttach(phase1Key, model.NewAbsPath(`branch/other/orchestrator/phases`, `001-phase`))
+	d.naming.MustAttach(phase2Key, model.NewAbsPath(`branch/other/orchestrator/phases`, `002-phase`))
+	d.naming.MustAttach(task1Key, model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `001-task-1`))
+	d.naming.MustAttach(task2Key, model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `002-task-2`))
+	d.naming.MustAttach(task3Key, model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `001-task-3`))
+	d.naming.MustAttach(target1Key, model.NewAbsPath("branch", "extractor/foo.bar1/123"))
+	d.naming.MustAttach(target3Key, model.NewAbsPath("branch", "extractor/foo.bar3/123"))
 
 	A.MustAdd(&model.Branch{BranchKey: branchKey})
 	A.MustAdd(&model.Config{
@@ -561,7 +574,6 @@ func TestDiff_Orchestration(t *testing.T) {
 							Name:        `Task 3`,
 							ComponentId: `foo.bar3`,
 							ConfigId:    `123`,
-							ConfigPath:  `branch/extractor/foo.bar3/123`,
 							Content: orderedmap.FromPairs([]orderedmap.Pair{
 								{
 									Key: `task`,
@@ -605,7 +617,6 @@ func TestDiff_Orchestration(t *testing.T) {
 							Name:        `Task 1`,
 							ComponentId: `foo.bar1`,
 							ConfigId:    `123`,
-							ConfigPath:  `branch/extractor/foo.bar1/config123`,
 							Content: orderedmap.FromPairs([]orderedmap.Pair{
 								{
 									Key: `task`,
@@ -621,7 +632,7 @@ func TestDiff_Orchestration(t *testing.T) {
 							TaskKey:     task2Key,
 							Name:        `Task 2`,
 							ComponentId: `foo.bar2`,
-							ConfigId:    `789`,
+							ConfigId:    `123`,
 							Content: orderedmap.FromPairs([]orderedmap.Pair{
 								{
 									Key: `task`,
@@ -657,18 +668,18 @@ orchestration:
       depends on phases: []
       {
         "foo": "bar"
-      ...
+      }
     - ## 001 Task 3
-    - >> branch/extractor/foo.bar3/123
+    - >> extractor/foo.bar3/123
     + ## 001 Task 1
-    + >> branch/extractor/foo.bar1/config123
+    + >> extractor/foo.bar1/123
       {
         "task": {
           "mode": "run"
         },
       ...
     + ## 002 Task 2
-    + >> branch:123/componentId:foo.bar2/configId:789
+    + >> config "branch:123/component:foo.bar2/config:123"
     + {
     +   "task": {
     +     "mode": "run"

@@ -6,72 +6,87 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
-func (m *orchestratorMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
+type localSaveContext struct {
+	*model.LocalSaveRecipe
+	state        *local.State
+	logger       log.Logger
+	orchestrator *model.Config
+	phases       []*model.Phase
+	basePath     model.AbsPath
+	phasesDir    string
+}
+
+func (m *orchestratorLocalMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
 	// Object must be orchestrator config
-	if ok, err := m.isOrchestratorConfigKey(recipe.Object.Key()); err != nil || !ok {
+	if ok, err := m.isOrchestrator(recipe.Object.Key()); err != nil || !ok {
+		return err
+	}
+	orchestrator := recipe.Object.(*model.Config)
+
+	basePath, err := m.state.GetPath(orchestrator.Key())
+	if err != nil {
 		return err
 	}
 
-	writer := &localWriter{
-		State:           m.state,
+	saveCtx := &localSaveContext{
 		LocalSaveRecipe: recipe,
+		state:           m.state,
 		logger:          m.logger,
-		config:          recipe.Object.(*model.Config),
-		configPath:      recipe.ObjectManifest.GetAbsPath(),
+		orchestrator:    orchestrator,
+		phases:          orchestrator.Orchestration.Phases,
+		basePath:        basePath,
+		phasesDir:       m.state.NamingGenerator().PhasesDir(basePath),
 	}
-	writer.save()
+	saveCtx.save()
 	return nil
 }
 
-type localWriter struct {
-	*state.State
-	*model.LocalSaveRecipe
-	logger     log.Logger
-	config     *model.Config
-	configPath model.AbsPath
-}
-
-func (w *localWriter) save() {
-	phasesDir := w.NamingGenerator().PhasesDir(w.ObjectManifest.Path())
-
+func (c *localSaveContext) save() {
 	// Generate ".gitkeep" to preserve the "phases" directory, even if there are no phases.
-	w.Files.
-		Add(filesystem.NewRawFile(filesystem.Join(phasesDir, `.gitkeep`), ``)).
+	c.Files.
+		Add(filesystem.NewRawFile(filesystem.Join(c.phasesDir, `.gitkeep`), ``)).
 		AddTag(model.FileTypeOther).
 		AddTag(model.FileKindGitKeep)
 
 	// Generate files for phases
 	errors := utils.NewMultiError()
-	allPhases := w.config.Orchestration.Phases
-	for _, phase := range allPhases {
-		if err := w.savePhase(phase, allPhases); err != nil {
-			errors.Append(utils.PrefixError(fmt.Sprintf(`cannot save phase "%s"`, phase.RelPath), err))
+	for _, phase := range c.phases {
+		// Get phase path
+		phaseDir, err := c.state.GetPath(phase.PhaseKey)
+		if err != nil {
+			errors.Append(utils.PrefixError(fmt.Sprintf(`cannot save %s`, phase.String()), err))
+			continue
+		}
+
+		// Save phase
+		if err := c.savePhase(phase, phaseDir); err != nil {
+			errors.Append(utils.PrefixError(fmt.Sprintf(`cannot save phase "%s"`, phaseDir), err))
 		}
 	}
 
-	// Delete all old files from blocks dir
+	// Delete all old files from phases dir
 	// We always do full generation of phases dir.
-	for _, path := range w.TrackedPaths() {
-		if filesystem.IsFrom(path, phasesDir) && w.IsFile(path) {
-			w.ToDelete = append(w.ToDelete, path)
+	for _, path := range c.state.TrackedPaths() {
+		if filesystem.IsFrom(path, c.phasesDir) && c.state.ObjectsRoot().IsFile(path) {
+			c.ToDelete = append(c.ToDelete, path)
 		}
 	}
 
 	// Convert errors to warning
 	if errors.Len() > 0 {
-		w.logger.Warn(utils.PrefixError(fmt.Sprintf(`Warning: cannot save orchestrator config "%s"`, w.ObjectManifest.Path()), errors))
+		c.logger.Warn(utils.PrefixError(fmt.Sprintf(`Warning: cannot save orchestrator config "%s"`, c.basePath), errors))
 	}
 }
 
-func (w *localWriter) savePhase(phase *model.Phase, allPhases []*model.Phase) error {
+func (c *localSaveContext) savePhase(phase *model.Phase, phaseDir model.AbsPath) error {
 	// Validate
-	if err := validator.Validate(w.State.Ctx(), phase); err != nil {
+	if err := validator.Validate(c.state.Ctx(), phase); err != nil {
 		return err
 	}
 
@@ -83,8 +98,8 @@ func (w *localWriter) savePhase(phase *model.Phase, allPhases []*model.Phase) er
 	// Map dependsOn key -> path
 	dependsOn := make([]string, 0)
 	for _, depOnKey := range phase.DependsOn {
-		depOnPhase := allPhases[depOnKey.Index]
-		depOnPath, err := filesystem.Rel(phase.GetParentPath(), depOnPhase.String())
+		depOnPhase := c.phases[depOnKey.Index]
+		depOnPath, err := filesystem.Rel(c.phasesDir, depOnPhase.String())
 		if err != nil {
 			errors.Append(err)
 			continue
@@ -100,25 +115,31 @@ func (w *localWriter) savePhase(phase *model.Phase, allPhases []*model.Phase) er
 	}
 
 	// Create file
-	w.Files.
-		Add(filesystem.NewJsonFile(filesystem.Join(w.NamingGenerator().PhaseFilePath(phase)), phaseContent)).
+	c.Files.
+		Add(filesystem.NewJsonFile(filesystem.Join(c.state.NamingGenerator().PhaseFilePath(phaseDir)), phaseContent)).
 		SetDescription(`phase config file`).
 		AddTag(model.FileTypeJson).
 		AddTag(model.FileKindPhaseConfig)
 
 	// Write tasks
 	for _, task := range phase.Tasks {
-		if err := w.saveTask(task); err != nil {
-			errors.Append(utils.PrefixError(fmt.Sprintf(`cannot save task "%s"`, task.RelPath), err))
+		// Get task path
+		taskDir, err := c.state.GetPath(task.TaskKey)
+		if err != nil {
+			errors.Append(err)
+			continue
+		}
+
+		if err := c.saveTask(task, taskDir); err != nil {
+			errors.Append(utils.PrefixError(fmt.Sprintf(`cannot save task "%s"`, taskDir), err))
 		}
 	}
 
 	return errors.ErrorOrNil()
 }
 
-func (w *localWriter) saveTask(task *model.Task) error {
+func (c *localSaveContext) saveTask(task *model.Task, taskDir model.AbsPath) error {
 	// Create content
-	errors := utils.NewMultiError()
 	taskContent := orderedmap.New()
 	taskContent.Set(`name`, task.Name)
 
@@ -140,37 +161,50 @@ func (w *localWriter) saveTask(task *model.Task) error {
 		target = orderedmap.New()
 	}
 
-	// Target key
-	targetKey := &model.ConfigKey{
+	// Target config
+	targetConfigKey := model.ConfigKey{
 		BranchId:    task.BranchId,
 		ComponentId: task.ComponentId,
 		Id:          task.ConfigId,
 	}
 
-	// Get target config
-	targetConfig, found := w.Get(targetKey)
-	if found {
-		// Get target path
-		targetPath, err := filesystem.Rel(w.configPath.GetParentPath(), targetConfig.Path())
-		if err != nil {
-			errors.Append(err)
-		}
-
-		// Set config path
-		target.Set(`configPath`, targetPath)
-		taskContent.Set(`task`, *target)
-	} else {
-		errors.Append(fmt.Errorf(`%s not found`, targetKey.String()))
+	// Target path
+	targetPath, err := c.getTargetPath(targetConfigKey)
+	if err != nil {
+		return err
 	}
+
+	// Set values
+	target.Set(`configPath`, targetPath)
+	taskContent.Set(`task`, *target)
 
 	// Create file
 	file := filesystem.
-		NewJsonFile(filesystem.Join(w.NamingGenerator().TaskFilePath(task)), taskContent).
+		NewJsonFile(filesystem.Join(c.state.NamingGenerator().TaskFilePath(taskDir)), taskContent).
 		SetDescription(`task config file`)
-	w.Files.
+	c.Files.
 		Add(file).
 		AddTag(model.FileTypeJson).
 		AddTag(model.FileKindTaskConfig)
 
-	return errors.ErrorOrNil()
+	return nil
+}
+
+func (c *localSaveContext) getTargetPath(targetConfigKey model.ConfigKey) (string, error) {
+	targetConfig, found := c.state.Get(targetConfigKey)
+	if !found {
+		return "", fmt.Errorf(`%s not found`, targetConfigKey.String())
+	}
+
+	absPath, err := c.state.GetPath(targetConfig.Key())
+	if err != nil {
+		return "", err
+	}
+
+	relativePath, err := filesystem.Rel(c.basePath.ParentPath(), absPath.String())
+	if err != nil {
+		return "", err
+	}
+
+	return relativePath, nil
 }

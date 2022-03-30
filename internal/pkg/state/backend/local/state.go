@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"sync"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
@@ -18,6 +19,7 @@ import (
 )
 
 type dependencies interface {
+	Ctx() context.Context
 	Logger() log.Logger
 	Components() (*model.ComponentsMap, error)
 }
@@ -33,6 +35,8 @@ type State struct {
 	namingGenerator *naming.Generator
 	mapper          *mapper.Mapper
 	knownPaths      *knownpaths.Paths
+
+	lock            *sync.Mutex
 	relatedPaths    map[model.Key]*relatedpaths.Paths
 	notFoundObjects map[model.Key]model.ObjectManifest
 	invalidObjects  map[model.Key]model.Object
@@ -61,6 +65,7 @@ func NewState(d dependencies, objectsRoot filesystem.Fs, manifest manifest.Manif
 		manifest:        manifest,
 		mapper:          mapper.New(),
 		knownPaths:      knownPaths,
+		lock:            &sync.Mutex{},
 		relatedPaths:    make(map[model.Key]*relatedpaths.Paths),
 		notFoundObjects: make(map[model.Key]model.ObjectManifest),
 		invalidObjects:  make(map[model.Key]model.Object),
@@ -83,8 +88,16 @@ func (s *State) NewUnitOfWork(ctx context.Context, filter model.ObjectsFilter) s
 	return state.NewUnitOfWork(ctx, s.objects, backend)
 }
 
+func (s *State) Ctx() context.Context {
+	return s.deps.Ctx()
+}
+
 func (s *State) Manifest() manifest.Manifest {
 	return s.manifest
+}
+
+func (s *State) ObjectsRoot() filesystem.Fs {
+	return s.objectsRoot
 }
 
 func (s *State) Mapper() *mapper.Mapper {
@@ -97,6 +110,18 @@ func (s *State) NamingRegistry() *naming.Registry {
 
 func (s *State) NamingGenerator() *naming.Generator {
 	return s.namingGenerator
+}
+
+func (s *State) FileLoader() filesystem.FileLoader {
+	return s.mapper.NewFileLoader(s.objectsRoot)
+}
+
+func (s *State) TrackedPaths() []string {
+	return s.knownPaths.TrackedPaths()
+}
+
+func (s *State) UntrackedPaths() []string {
+	return s.knownPaths.UntrackedPaths()
 }
 
 func (s *State) GetByPath(path string) (model.Object, bool) {
@@ -115,28 +140,29 @@ func (s *State) GetPath(key model.Key) (model.AbsPath, error) {
 	return s.namingGenerator.GetOrGenerate(object)
 }
 
-func (s *State) GetRelatedPaths(key model.Key) *relatedpaths.Paths {
-	v, _ := s.relatedPaths[key]
-	return v
+func (s *State) GetRelatedPaths(key model.Key) (*relatedpaths.Paths, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	if _, found := s.relatedPaths[key]; !found {
+		if path, err := s.GetPath(key); err == nil {
+			s.relatedPaths[key] = relatedpaths.New(path)
+		} else {
+			return nil, err
+		}
+	}
+	return s.relatedPaths[key], nil
 }
 
 func (s *State) SetRelatedPaths(key model.Key, v *relatedpaths.Paths) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	s.relatedPaths[key] = v
 }
 
-func (s *State) fileLoader() filesystem.FileLoader {
-	return s.mapper.NewFileLoader(s.objectsRoot)
-}
-
-func (s *State) TrackedPaths() []string {
-	return s.knownPaths.TrackedPaths()
-}
-
-func (s *State) UntrackedPaths() []string {
-	return s.knownPaths.UntrackedPaths()
-}
-
 func (s *State) InvalidObjects() []model.Key {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
 	i := 0
 	out := make([]model.Key, len(s.invalidObjects))
 	for _, v := range s.invalidObjects {
@@ -150,6 +176,9 @@ func (s *State) InvalidObjects() []model.Key {
 }
 
 func (s *State) NotFoundObjects() []model.Key {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
 	i := 0
 	out := make([]model.Key, len(s.notFoundObjects))
 	for _, v := range s.notFoundObjects {
@@ -167,9 +196,13 @@ func (s *State) reloadKnownPaths() error {
 }
 
 func (s *State) addNotFoundObject(objectManifest model.ObjectManifest) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	s.notFoundObjects[objectManifest.Key()] = objectManifest
 }
 
 func (s *State) addInvalidObject(object model.Object) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	s.invalidObjects[object.Key()] = object
 }

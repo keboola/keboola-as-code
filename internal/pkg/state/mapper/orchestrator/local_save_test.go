@@ -13,12 +13,12 @@ import (
 
 func TestOrchestratorMapper_MapBeforeLocalSave(t *testing.T) {
 	t.Parallel()
-	state, d := createStateWithMapper(t)
+	state, d := createLocalStateWithMapper(t)
 	logger := d.DebugLogger()
 
 	// Recipe
-	orchestratorConfigState := createLocalSaveFixtures(t, state, true)
-	recipe := model.NewLocalSaveRecipe(orchestratorConfigState.Manifest(), orchestratorConfigState.Remote, model.NewChangedFields())
+	orchestratorConfig, orchestratorPath := createLocalSaveFixtures(t, state, true)
+	recipe := model.NewLocalSaveRecipe(orchestratorPath, orchestratorConfig, model.NewChangedFields())
 
 	// Save
 	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
@@ -42,8 +42,7 @@ func TestOrchestratorMapper_MapBeforeLocalSave(t *testing.T) {
 	}
 
 	// Check generated files
-	configDir := orchestratorConfigState.Path()
-	phasesDir := state.NamingGenerator().PhasesDir(configDir)
+	phasesDir := state.NamingGenerator().PhasesDir(orchestratorPath)
 	assert.Equal(t, []filesystem.File{
 		filesystem.
 			NewRawFile(phasesDir+`/.gitkeep`, ``).
@@ -84,13 +83,13 @@ func TestOrchestratorMapper_MapBeforeLocalSave(t *testing.T) {
 			).
 			AddTag(model.FileKindTaskConfig).
 			AddTag(model.FileTypeJson),
-		filesystem.NewRawFile(configDir+`/meta.json`, `{"name":"My Orchestration"}`).
+		filesystem.NewRawFile(orchestratorPath.String()+`/meta.json`, `{"name":"My Orchestration"}`).
 			AddTag(model.FileKindObjectMeta).
 			AddTag(model.FileTypeJson),
-		filesystem.NewRawFile(configDir+`/config.json`, `{}`).
+		filesystem.NewRawFile(orchestratorPath.String()+`/config.json`, `{}`).
 			AddTag(model.FileKindObjectConfig).
 			AddTag(model.FileTypeJson),
-		filesystem.NewRawFile(configDir+`/description.md`, "\n").
+		filesystem.NewRawFile(orchestratorPath.String()+`/description.md`, "\n").
 			AddTag(model.FileKindObjectDescription).
 			AddTag(model.FileTypeMarkdown),
 	}, files)
@@ -98,12 +97,12 @@ func TestOrchestratorMapper_MapBeforeLocalSave(t *testing.T) {
 
 func TestMapBeforeLocalSaveWarnings(t *testing.T) {
 	t.Parallel()
-	state, d := createStateWithMapper(t)
+	state, d := createLocalStateWithMapper(t)
 	logger := d.DebugLogger()
 
 	// Recipe
-	orchestratorConfigState := createLocalSaveFixtures(t, state, false)
-	recipe := model.NewLocalSaveRecipe(orchestratorConfigState.Manifest(), orchestratorConfigState.Remote, model.NewChangedFields())
+	orchestratorConfig, orchestratorPath := createLocalSaveFixtures(t, state, false)
+	recipe := model.NewLocalSaveRecipe(orchestratorPath, orchestratorConfig, model.NewChangedFields())
 
 	// Save
 	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))

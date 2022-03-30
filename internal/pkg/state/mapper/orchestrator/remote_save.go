@@ -5,9 +5,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-func (m *orchestratorMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
+func (m *orchestratorRemoteMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
 	// Object must be orchestrator config
-	if ok, err := m.isOrchestratorConfigKey(recipe.Object.Key()); err != nil || !ok {
+	if ok, err := m.isOrchestrator(recipe.Object.Key()); err != nil || !ok {
 		return err
 	}
 
@@ -23,7 +23,7 @@ func (m *orchestratorMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe)
 	return nil
 }
 
-func (m *orchestratorMapper) serializeOrchestrationTo(config *model.Config, orchestration *model.Orchestration) {
+func (m *orchestratorRemoteMapper) serializeOrchestrationTo(config *model.Config, orchestration *model.Orchestration) {
 	phases := make([]interface{}, 0)
 	tasks := make([]interface{}, 0)
 

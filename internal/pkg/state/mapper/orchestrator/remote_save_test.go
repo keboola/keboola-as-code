@@ -8,129 +8,15 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-func TestMapBeforeRemoteSave(t *testing.T) {
+func TestOrchestratorRemoteMapper_MapBeforeRemoteSave(t *testing.T) {
 	t.Parallel()
-	state, d := createStateWithMapper(t)
+	state, d := createRemoteStateWithMapper(t)
 	logger := d.DebugLogger()
 
-	orchestration := &model.Orchestration{
-		Phases: []*model.Phase{
-			{
-				PhaseKey: model.PhaseKey{
-					BranchId:    123,
-					ComponentId: model.OrchestratorComponentId,
-					ConfigId:    `456`,
-					Index:       0,
-				},
-				DependsOn: []model.PhaseKey{},
-				Name:      `Phase`,
-				Content: orderedmap.FromPairs([]orderedmap.Pair{
-					{Key: `foo`, Value: `bar`},
-				}),
-				Tasks: []*model.Task{
-					{
-						TaskKey: model.TaskKey{
-							PhaseKey: model.PhaseKey{
-								BranchId:    123,
-								ComponentId: model.OrchestratorComponentId,
-								ConfigId:    `456`,
-								Index:       0,
-							},
-							Index: 0,
-						},
-						Name:        `Task 1`,
-						ComponentId: `foo.bar1`,
-						ConfigId:    `123`,
-						Content: orderedmap.FromPairs([]orderedmap.Pair{
-							{
-								Key: `task`,
-								Value: orderedmap.FromPairs([]orderedmap.Pair{
-									{Key: `mode`, Value: `run`},
-								}),
-							},
-							{Key: `continueOnFailure`, Value: false},
-							{Key: `enabled`, Value: true},
-						}),
-					},
-					{
-						TaskKey: model.TaskKey{
-							PhaseKey: model.PhaseKey{
-								BranchId:    123,
-								ComponentId: model.OrchestratorComponentId,
-								ConfigId:    `456`,
-								Index:       0,
-							},
-							Index: 1,
-						},
-						Name:        `Task 3`,
-						ComponentId: `foo.bar2`,
-						ConfigId:    `789`,
-						Content: orderedmap.FromPairs([]orderedmap.Pair{
-							{
-								Key: `task`,
-								Value: orderedmap.FromPairs([]orderedmap.Pair{
-									{Key: `mode`, Value: `run`},
-								}),
-							},
-							{Key: `continueOnFailure`, Value: false},
-							{Key: `enabled`, Value: false},
-						}),
-					},
-				},
-			},
-			{
-				PhaseKey: model.PhaseKey{
-					BranchId:    123,
-					ComponentId: model.OrchestratorComponentId,
-					ConfigId:    `456`,
-					Index:       1,
-				},
-				DependsOn: []model.PhaseKey{{Index: 0}},
-				Name:      `Phase With Deps`,
-				Content:   orderedmap.New(),
-				Tasks: []*model.Task{
-					{
-
-						TaskKey: model.TaskKey{
-							PhaseKey: model.PhaseKey{
-								BranchId:    123,
-								ComponentId: model.OrchestratorComponentId,
-								ConfigId:    `456`,
-								Index:       1,
-							},
-							Index: 0,
-						},
-						Name:        `Task 2`,
-						ComponentId: `foo.bar2`,
-						ConfigId:    `456`,
-						Content: orderedmap.FromPairs([]orderedmap.Pair{
-							{
-								Key: `task`,
-								Value: orderedmap.FromPairs([]orderedmap.Pair{
-									{Key: `mode`, Value: `run`},
-								}),
-							},
-							{Key: `continueOnFailure`, Value: false},
-							{Key: `enabled`, Value: true},
-						}),
-					},
-				},
-			},
-		},
-	}
-
-	key := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: model.OrchestratorComponentId,
-		Id:          `456`,
-	}
-	manifest := &model.ConfigManifest{ConfigKey: key}
-	object := &model.Config{ConfigKey: key, Content: orderedmap.New()}
-	object.Orchestration = orchestration
-	recipe := model.NewRemoteSaveRecipe(manifest, object, model.NewChangedFields("orchestration"))
+	config := createRemoteSaveFixtures(state)
+	recipe := model.NewRemoteSaveRecipe(config, model.NewChangedFields("orchestration"))
 
 	// Save
 	assert.NoError(t, state.Mapper().MapBeforeRemoteSave(recipe))
@@ -194,6 +80,6 @@ func TestMapBeforeRemoteSave(t *testing.T) {
   ]
 }
 `
-	assert.Nil(t, object.Orchestration)
-	assert.Equal(t, strings.TrimLeft(expectedContent, "\n"), json.MustEncodeString(object.Content, true))
+	assert.Nil(t, config.Orchestration)
+	assert.Equal(t, strings.TrimLeft(expectedContent, "\n"), json.MustEncodeString(config.Content, true))
 }

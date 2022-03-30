@@ -1,13 +1,10 @@
 package model
 
 import (
-	"bytes"
 	"fmt"
-	"strings"
 
 	"github.com/spf13/cast"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -47,7 +44,6 @@ type Task struct {
 	Name        string                 `validate:"required"`
 	ComponentId ComponentId            `validate:"required"`
 	ConfigId    ConfigId               `validate:"required"`
-	ConfigPath  string                 // target config path if any
 	Content     *orderedmap.OrderedMap `validate:"dive"`
 }
 
@@ -111,35 +107,12 @@ func (k TaskKey) ParentKey() (Key, error) {
 	return k.PhaseKey, nil
 }
 
-func (p Phase) String() string {
-	buf := new(bytes.Buffer)
-	_, _ = fmt.Fprintf(buf, "#  %03d %s\n", p.Index+1, p.Name)
-
-	var dependsOn []string
-	for _, dependsOnKey := range p.DependsOn {
-		dependsOn = append(dependsOn, cast.ToString(dependsOnKey.Index+1))
+func (t *Task) TargetConfigKey() ConfigKey {
+	return ConfigKey{
+		BranchId:    t.BranchId,
+		ComponentId: t.ComponentId,
+		Id:          t.ConfigId,
 	}
-
-	_, _ = fmt.Fprintf(buf, "depends on phases: [%s]\n", strings.Join(dependsOn, `, `))
-	_, _ = fmt.Fprintln(buf, json.MustEncodeString(p.Content, true))
-	for _, task := range p.Tasks {
-		_, _ = fmt.Fprint(buf, task.String())
-	}
-	return strings.TrimRight(buf.String(), "\n")
-}
-
-func (t Task) String() string {
-	targetConfigDesc := t.ConfigPath
-	if len(targetConfigDesc) == 0 {
-		targetConfigDesc = fmt.Sprintf(`branch:%d/componentId:%s/configId:%s`, t.BranchId, t.ComponentId, t.ConfigId)
-	}
-	return fmt.Sprintf(
-		"## %03d %s\n>> %s\n%s",
-		t.Index+1,
-		t.Name,
-		targetConfigDesc,
-		json.MustEncodeString(t.Content, true),
-	)
 }
 
 // UsedInOrchestratorRelation indicates that the owner config is used in an orchestration.

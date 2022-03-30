@@ -69,7 +69,7 @@ func (c *loadContext) loadObject(objectManifest model.ObjectManifest) error {
 	}
 
 	// Call mappers
-	recipe := model.NewLocalLoadRecipe(c.fileLoader(), objectManifest.Path(), object)
+	recipe := model.NewLocalLoadRecipe(c.FileLoader(), objectManifest.Path(), object)
 	if err := c.mapper.MapAfterLocalLoad(recipe); err != nil {
 		return c.invalidObjectError(object, err)
 	}

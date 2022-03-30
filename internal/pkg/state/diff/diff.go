@@ -29,12 +29,12 @@ const (
 
 // Marks representing the result of the diff.
 const (
-	EqualMark   = "="
-	ChangeMark  = "*"
-	AddMark     = "+"
-	DeleteMark  = "×"
-	OnlyInAMark = "-"
-	OnlyInBMark = "+"
+	EqualMark    = "="
+	NotEqualMark = "*"
+	AddMark      = "+"
+	DeleteMark   = "×"
+	OnlyInAMark  = "-"
+	OnlyInBMark  = "+"
 )
 
 // Object from A or B model.Objects collection, contains reference to all objects.
@@ -214,9 +214,9 @@ func (v ResultState) Mark() string {
 	case ResultNotSet:
 		return "?"
 	case ResultNotEqual:
-		return "*"
+		return NotEqualMark
 	case ResultEqual:
-		return "="
+		return EqualMark
 	case ResultOnlyInA:
 		return OnlyInAMark
 	case ResultOnlyInB:
@@ -293,9 +293,15 @@ func options(reporter *Reporter) cmp.Options {
 		cmp.Transformer("block", func(block model.Block) string {
 			return block.String()
 		}),
+		cmp.Transformer("code", func(code model.Code) string {
+			return code.String()
+		}),
 		// Diff orchestrator phases as string
 		cmp.Transformer("phase", func(phase model.Phase) string {
-			return phase.String()
+			return phaseToString(phase, reporter.naming)
+		}),
+		cmp.Transformer("task", func(task model.Task) string {
+			return taskToString(task, reporter.naming)
 		}),
 		// Diff SharedCode row as string
 		cmp.Transformer("sharedCodeRow", func(code model.SharedCodeRow) string {

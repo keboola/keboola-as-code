@@ -11,9 +11,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
+func TestOrchestratorRemoteMapper_AfterRemoteOperation(t *testing.T) {
 	t.Parallel()
-	state, d := createStateWithMapper(t)
+	state, d := createRemoteStateWithMapper(t)
 	logger := d.DebugLogger()
 
 	contentStr := `
@@ -73,6 +73,11 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
   ]
 }
 `
+	// Branch
+	branchKey := model.BranchKey{Id: 123}
+	branch := &model.Branch{BranchKey: branchKey}
+	state.MustAdd(branch)
+
 	// Orchestrator config
 	content := orderedmap.New()
 	json.MustDecodeString(contentStr, content)
@@ -81,36 +86,24 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 		ComponentId: model.OrchestratorComponentId,
 		Id:          `456`,
 	}
-	configManifest := &model.ConfigManifest{
-		ConfigKey: configKey,
-		Paths: model.Paths{
-			AbsPath: model.NewAbsPath(`branch`, `config`),
-		},
-	}
 	config := &model.Config{ConfigKey: configKey, Content: content}
-	configState := &model.ConfigState{
-		ConfigManifest: configManifest,
-		Remote:         config,
-	}
-	assert.NoError(t, state.Set(configState))
+	state.MustAdd(config)
 
 	// Target configs
-	target1, target2, target3 := createTargetConfigs(t, state)
+	target1, target2, target3 := createTargetConfigs(t, state, nil)
 
 	// Invoke
-	changes := model.NewRemoteChanges()
-	changes.AddLoaded(configState)
-	assert.NoError(t, state.Mapper().AfterRemoteOperation(changes))
+	assert.NoError(t, state.Mapper().AfterRemoteOperation(model.NewChanges().AddLoaded(config)))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Check target configs relation
-	rel1, err := target1.Remote.Relations.GetOneByType(model.UsedInOrchestratorRelType)
+	rel1, err := target1.Relations.GetOneByType(model.UsedInOrchestratorRelType)
 	assert.NoError(t, err)
 	assert.Equal(t, config.Id, rel1.(*model.UsedInOrchestratorRelation).ConfigId)
-	rel2, err := target2.Remote.Relations.GetOneByType(model.UsedInOrchestratorRelType)
+	rel2, err := target2.Relations.GetOneByType(model.UsedInOrchestratorRelType)
 	assert.NoError(t, err)
 	assert.Equal(t, config.Id, rel2.(*model.UsedInOrchestratorRelation).ConfigId)
-	rel3, err := target3.Remote.Relations.GetOneByType(model.UsedInOrchestratorRelType)
+	rel3, err := target3.Relations.GetOneByType(model.UsedInOrchestratorRelType)
 	assert.NoError(t, err)
 	assert.Equal(t, config.Id, rel3.(*model.UsedInOrchestratorRelation).ConfigId)
 
@@ -125,7 +118,6 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 					ConfigId:    `456`,
 					Index:       0,
 				},
-				AbsPath:   model.NewAbsPath(`branch/config/phases`, `001-phase`),
 				DependsOn: []model.PhaseKey{},
 				Name:      `Phase`,
 				Content:   orderedmap.New(),
@@ -140,11 +132,9 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 							},
 							Index: 0,
 						},
-						AbsPath:     model.NewAbsPath(`branch/config/phases/001-phase`, `001-task-1`),
 						Name:        `Task 1`,
 						ComponentId: `foo.bar1`,
 						ConfigId:    `123`,
-						ConfigPath:  `branch/extractor/target-config-1`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,
@@ -166,11 +156,9 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 							},
 							Index: 1,
 						},
-						AbsPath:     model.NewAbsPath(`branch/config/phases/001-phase`, `002-task-3`),
 						Name:        `Task 3`,
 						ComponentId: `foo.bar2`,
 						ConfigId:    `789`,
-						ConfigPath:  `branch/extractor/target-config-2`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,
@@ -191,7 +179,6 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 					ConfigId:    `456`,
 					Index:       1,
 				},
-				AbsPath: model.NewAbsPath(`branch/config/phases`, `002-phase-with-deps`),
 				DependsOn: []model.PhaseKey{
 					{
 						BranchId:    123,
@@ -215,11 +202,9 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 							},
 							Index: 0,
 						},
-						AbsPath:     model.NewAbsPath(`branch/config/phases/002-phase-with-deps`, `001-task-2`),
 						Name:        `Task 2`,
 						ComponentId: `foo.bar2`,
 						ConfigId:    `456`,
-						ConfigPath:  `branch/extractor/target-config-3`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,
@@ -237,9 +222,9 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 	}, config.Orchestration)
 }
 
-func TestMapAfterRemoteLoadWarnings(t *testing.T) {
+func TestOrchestratorRemoteMapper_AfterRemoteOperation_Warnings(t *testing.T) {
 	t.Parallel()
-	state, d := createStateWithMapper(t)
+	state, d := createRemoteStateWithMapper(t)
 	logger := d.DebugLogger()
 
 	contentStr := `
@@ -281,7 +266,12 @@ func TestMapAfterRemoteLoadWarnings(t *testing.T) {
 }
 `
 
-	// Orchestrator
+	// Branch
+	branchKey := model.BranchKey{Id: 123}
+	branch := &model.Branch{BranchKey: branchKey}
+	state.MustAdd(branch)
+
+	// Orchestrator config
 	content := orderedmap.New()
 	json.MustDecodeString(contentStr, content)
 	configKey := model.ConfigKey{
@@ -289,23 +279,14 @@ func TestMapAfterRemoteLoadWarnings(t *testing.T) {
 		ComponentId: model.OrchestratorComponentId,
 		Id:          `456`,
 	}
-	configManifest := &model.ConfigManifest{
-		ConfigKey: configKey,
-	}
 	config := &model.Config{ConfigKey: configKey, Content: content}
-	configState := &model.ConfigState{
-		ConfigManifest: configManifest,
-		Remote:         config,
-	}
-	assert.NoError(t, state.Set(configState))
+	state.MustAdd(config)
 
 	// Target configs
-	createTargetConfigs(t, state)
+	createTargetConfigs(t, state, nil)
 
 	// Invoke
-	changes := model.NewRemoteChanges()
-	changes.AddLoaded(configState)
-	assert.NoError(t, state.Mapper().AfterRemoteOperation(changes))
+	assert.NoError(t, state.Mapper().AfterRemoteOperation(model.NewChanges().AddLoaded(config)))
 
 	// Warnings
 	expectedWarnings := `
@@ -351,7 +332,6 @@ WARN  Warning: invalid orchestrator config "branch:123/component:keboola.orchest
 						Name:        `Task 1`,
 						ComponentId: `foo.bar1`,
 						ConfigId:    `123`,
-						ConfigPath:  `branch/extractor/target-config-1`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,
@@ -367,9 +347,9 @@ WARN  Warning: invalid orchestrator config "branch:123/component:keboola.orchest
 	}, config.Orchestration)
 }
 
-func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
+func TestOrchestratorRemoteMapper_AfterRemoteOperation_Sort(t *testing.T) {
 	t.Parallel()
-	state, d := createStateWithMapper(t)
+	state, d := createRemoteStateWithMapper(t)
 	logger := d.DebugLogger()
 
 	contentStr := `
@@ -405,6 +385,12 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 }
 `
 
+	// Branch
+	branchKey := model.BranchKey{Id: 123}
+	branch := &model.Branch{BranchKey: branchKey}
+	state.MustAdd(branch)
+
+	// Orchestrator config
 	content := orderedmap.New()
 	json.MustDecodeString(contentStr, content)
 	configKey := model.ConfigKey{
@@ -412,20 +398,11 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 		ComponentId: model.OrchestratorComponentId,
 		Id:          `456`,
 	}
-	configManifest := &model.ConfigManifest{
-		ConfigKey: configKey,
-	}
 	config := &model.Config{ConfigKey: configKey, Content: content}
-	configState := &model.ConfigState{
-		ConfigManifest: configManifest,
-		Remote:         config,
-	}
-	assert.NoError(t, state.Set(configState))
+	state.MustAdd(config)
 
 	// Invoke
-	changes := model.NewRemoteChanges()
-	changes.AddLoaded(configState)
-	assert.NoError(t, state.Mapper().AfterRemoteOperation(changes))
+	assert.NoError(t, state.Mapper().AfterRemoteOperation(model.NewChanges().AddLoaded(config)))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Internal object
@@ -530,9 +507,9 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 	}, config.Orchestration)
 }
 
-func TestMapAfterRemoteLoadDepsCycles(t *testing.T) {
+func TestOrchestratorRemoteMapper_AfterRemoteOperation_DependsOnCycles(t *testing.T) {
 	t.Parallel()
-	state, d := createStateWithMapper(t)
+	state, d := createRemoteStateWithMapper(t)
 	logger := d.DebugLogger()
 
 	contentStr := `
@@ -583,6 +560,12 @@ func TestMapAfterRemoteLoadDepsCycles(t *testing.T) {
 }
 `
 
+	// Branch
+	branchKey := model.BranchKey{Id: 123}
+	branch := &model.Branch{BranchKey: branchKey}
+	state.MustAdd(branch)
+
+	// Orchestrator config
 	content := orderedmap.New()
 	json.MustDecodeString(contentStr, content)
 	configKey := model.ConfigKey{
@@ -590,23 +573,11 @@ func TestMapAfterRemoteLoadDepsCycles(t *testing.T) {
 		ComponentId: model.OrchestratorComponentId,
 		Id:          `456`,
 	}
-	configManifest := &model.ConfigManifest{
-		ConfigKey: configKey,
-		Paths: model.Paths{
-			AbsPath: model.NewAbsPath(`branch`, `config`),
-		},
-	}
 	config := &model.Config{ConfigKey: configKey, Content: content}
-	configState := &model.ConfigState{
-		ConfigManifest: configManifest,
-		Remote:         config,
-	}
-	assert.NoError(t, state.Set(configState))
+	state.MustAdd(config)
 
 	// Invoke
-	changes := model.NewRemoteChanges()
-	changes.AddLoaded(configState)
-	assert.NoError(t, state.Mapper().AfterRemoteOperation(changes))
+	assert.NoError(t, state.Mapper().AfterRemoteOperation(model.NewChanges().AddLoaded(config)))
 
 	// Warnings
 	expectedWarnings := `

@@ -12,17 +12,17 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
-func TestMapAfterLocalLoad(t *testing.T) {
+func TestOrchestratorLocalMapper_AfterLocalOperation(t *testing.T) {
 	t.Parallel()
-	state, d := createStateWithMapper(t)
+	state, d := createLocalStateWithMapper(t)
 	fs := d.Fs()
 	logger := d.DebugLogger()
 
-	orchestratorConfigState := createLocalLoadFixtures(t, state)
-	target1, target2, target3 := createTargetConfigs(t, state)
+	orchestratorConfig, orchestratorPath := createLocalLoadFixtures(t, state)
+	target1, target2, target3 := createTargetConfigs(t, state, state.NamingRegistry())
 
 	// Local files
-	phasesDir := state.NamingGenerator().PhasesDir(orchestratorConfigState.Path())
+	phasesDir := state.NamingGenerator().PhasesDir(orchestratorPath)
 	files := []filesystem.File{
 		filesystem.
 			NewRawFile(
@@ -61,13 +61,10 @@ func TestMapAfterLocalLoad(t *testing.T) {
 	logger.Truncate()
 
 	// Load
-	changes := model.NewLocalChanges()
-	changes.AddLoaded(orchestratorConfigState)
-	assert.NoError(t, state.Mapper().AfterLocalOperation(changes))
+	assert.NoError(t, state.Mapper().AfterLocalOperation(model.NewChanges().AddLoaded(orchestratorConfig)))
 
 	// Logs
 	expectedLogs := `
-DEBUG  %aGET https://connection.keboola.com/v2/storage/components/keboola.orchestrator %a
 DEBUG  Loaded "branch/other/orchestrator/phases/001-phase/phase.json"
 DEBUG  Loaded "branch/other/orchestrator/phases/001-phase/001-task-1/task.json"
 DEBUG  Loaded "branch/other/orchestrator/phases/001-phase/002-task-2/task.json"
@@ -77,15 +74,15 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 	testhelper.AssertWildcards(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessages(), ``)
 
 	// Check target configs relation
-	rel1, err := target1.Local.Relations.GetOneByType(model.UsedInOrchestratorRelType)
+	rel1, err := target1.Relations.GetOneByType(model.UsedInOrchestratorRelType)
 	assert.NoError(t, err)
-	assert.Equal(t, orchestratorConfigState.Id, rel1.(*model.UsedInOrchestratorRelation).ConfigId)
-	rel2, err := target2.Local.Relations.GetOneByType(model.UsedInOrchestratorRelType)
+	assert.Equal(t, orchestratorConfig.Id, rel1.(*model.UsedInOrchestratorRelation).ConfigId)
+	rel2, err := target2.Relations.GetOneByType(model.UsedInOrchestratorRelType)
 	assert.NoError(t, err)
-	assert.Equal(t, orchestratorConfigState.Id, rel2.(*model.UsedInOrchestratorRelation).ConfigId)
-	rel3, err := target3.Local.Relations.GetOneByType(model.UsedInOrchestratorRelType)
+	assert.Equal(t, orchestratorConfig.Id, rel2.(*model.UsedInOrchestratorRelation).ConfigId)
+	rel3, err := target3.Relations.GetOneByType(model.UsedInOrchestratorRelType)
 	assert.NoError(t, err)
-	assert.Equal(t, orchestratorConfigState.Id, rel3.(*model.UsedInOrchestratorRelation).ConfigId)
+	assert.Equal(t, orchestratorConfig.Id, rel3.(*model.UsedInOrchestratorRelation).ConfigId)
 
 	// Orchestration
 	expectedOrchestration := &model.Orchestration{
@@ -97,7 +94,6 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 					ConfigId:    `456`,
 					Index:       0,
 				},
-				AbsPath:   model.NewAbsPath(`branch/other/orchestrator/phases`, `001-phase`),
 				DependsOn: []model.PhaseKey{},
 				Name:      `Phase`,
 				Content: orderedmap.FromPairs([]orderedmap.Pair{
@@ -114,11 +110,9 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 							},
 							Index: 0,
 						},
-						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `001-task-1`),
 						Name:        `Task 1`,
 						ComponentId: `foo.bar1`,
 						ConfigId:    `123`,
-						ConfigPath:  `branch/extractor/target-config-1`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,
@@ -140,11 +134,9 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 							},
 							Index: 1,
 						},
-						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `002-task-2`),
 						Name:        `Task 2`,
 						ComponentId: `foo.bar2`,
 						ConfigId:    `789`,
-						ConfigPath:  `branch/extractor/target-config-2`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,
@@ -165,7 +157,6 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 					ConfigId:    `456`,
 					Index:       1,
 				},
-				AbsPath: model.NewAbsPath(`branch/other/orchestrator/phases`, `002-phase-with-deps`),
 				DependsOn: []model.PhaseKey{
 					{
 						BranchId:    123,
@@ -187,11 +178,9 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 							},
 							Index: 0,
 						},
-						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/002-phase-with-deps`, `001-task-3`),
 						Name:        `Task 3`,
 						ComponentId: `foo.bar2`,
 						ConfigId:    `456`,
-						ConfigPath:  `branch/extractor/target-config-3`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,
@@ -207,18 +196,18 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 			},
 		},
 	}
-	assert.Equal(t, expectedOrchestration, orchestratorConfigState.Local.Orchestration)
+	assert.Equal(t, expectedOrchestration, orchestratorConfig.Orchestration)
 }
 
-func TestMapAfterLocalLoadError(t *testing.T) {
+func TestOrchestratorLocalMapper_AfterLocalOperation_Error(t *testing.T) {
 	t.Parallel()
-	state, d := createStateWithMapper(t)
+	state, d := createLocalStateWithMapper(t)
 	logger := d.DebugLogger()
 	fs := d.Fs()
-	orchestratorConfigState := createLocalLoadFixtures(t, state)
+	orchestratorConfig, orchestratorPath := createLocalLoadFixtures(t, state)
 
 	// Local files
-	phasesDir := state.NamingGenerator().PhasesDir(orchestratorConfigState.Path())
+	phasesDir := state.NamingGenerator().PhasesDir(orchestratorPath)
 	files := []filesystem.File{
 		filesystem.
 			NewRawFile(
@@ -246,9 +235,7 @@ func TestMapAfterLocalLoadError(t *testing.T) {
 	logger.Truncate()
 
 	// Load
-	changes := model.NewLocalChanges()
-	changes.AddLoaded(orchestratorConfigState)
-	err := state.Mapper().AfterLocalOperation(changes)
+	err := state.Mapper().AfterLocalOperation(model.NewChanges().AddLoaded(orchestratorConfig))
 	assert.Error(t, err)
 
 	// Assert error
@@ -266,16 +253,16 @@ invalid orchestrator config "branch/other/orchestrator":
 	assert.Equal(t, strings.Trim(expectedError, "\n"), err.Error())
 }
 
-func TestMapAfterLocalLoadDepsCycle(t *testing.T) {
+func TestOrchestratorLocalMapper_AfterLocalOperation_CyclicDependsOn(t *testing.T) {
 	t.Parallel()
-	state, d := createStateWithMapper(t)
+	state, d := createLocalStateWithMapper(t)
 	logger := d.DebugLogger()
 	fs := d.Fs()
-	orchestratorConfigState := createLocalLoadFixtures(t, state)
-	createTargetConfigs(t, state)
+	orchestratorConfig, orchestratorPath := createLocalLoadFixtures(t, state)
+	createTargetConfigs(t, state, state.NamingRegistry())
 
 	// Local files
-	phasesDir := state.NamingGenerator().PhasesDir(orchestratorConfigState.Path())
+	phasesDir := state.NamingGenerator().PhasesDir(orchestratorPath)
 	files := []filesystem.File{
 		filesystem.
 			NewRawFile(
@@ -308,9 +295,7 @@ func TestMapAfterLocalLoadDepsCycle(t *testing.T) {
 	logger.Truncate()
 
 	// Load
-	changes := model.NewLocalChanges()
-	changes.AddLoaded(orchestratorConfigState)
-	err := state.Mapper().AfterLocalOperation(changes)
+	err := state.Mapper().AfterLocalOperation(model.NewChanges().AddLoaded(orchestratorConfig))
 	assert.Error(t, err)
 
 	// Assert error
