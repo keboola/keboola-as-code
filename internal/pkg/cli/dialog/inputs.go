@@ -74,7 +74,10 @@ func addInputsToStepsGroups(stepsGroups input.StepsGroups, inputs inputsMap, inp
 			continue
 		}
 		in, _ := inputs.get(inputId)
-		_ = stepsGroups.AddInput(*in, index)
+		err := stepsGroups.AddInput(*in, index)
+		if err != nil {
+			errors.Append(err)
+		}
 	}
 	return errors.ErrorOrNil()
 }

@@ -90,7 +90,7 @@ description: Description
 `
 
 	expected := `
-- line 2: there is no group for step "s0"
+- line 2: there needs to be a group definition before step "s0"
 - line 12: required is not valid option for a step
 - group 1: required must be one of [all atLeastOne exactOne zeroOrOne optional]
 - group 1, step "s1": icon is a required field

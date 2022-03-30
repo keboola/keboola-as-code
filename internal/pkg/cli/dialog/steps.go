@@ -78,7 +78,7 @@ func (d *stepsDialog) parse(result string) (input.StepsGroups, error) {
 				continue
 			}
 			if currentGroup == nil {
-				errors.Append(fmt.Errorf(`line %d: there is no group for step "%s"`, lineNum, m[1]))
+				errors.Append(fmt.Errorf(`line %d: there needs to be a group definition before step "%s"`, lineNum, m[1]))
 				invalidDefinition = true
 				continue
 			}
@@ -188,7 +188,7 @@ func (d *stepsDialog) defaultValue() string {
 Please create steps and groups for the user inputs.
 There is one group and one step predefined. Feel free to change them and/or create others.
 
-required option for group specifies how many steps need to be filled by user of the template
+"required" option for group specifies how many steps need to be filled by user of the template
 	allowed values: all, atLeastOne, exactOne, zeroOrOne, optional
 -->
 
