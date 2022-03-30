@@ -13,7 +13,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/object"
 )
 
 func newTestUow(t *testing.T, mappers ...interface{}) (state.UnitOfWork, *httpmock.MockTransport, *remote.State) {
@@ -25,7 +24,7 @@ func newTestUow(t *testing.T, mappers ...interface{}) (state.UnitOfWork, *httpmo
 	d.UseMockedSchedulerApi()
 
 	// Create state
-	s, err := remote.NewState(d, object.NewIdSorter(), func(s *remote.State) (mapper.Mappers, error) {
+	s, err := remote.NewState(d, state.NewIdSorter(), func(s *remote.State) (mapper.Mappers, error) {
 		return mappers, nil
 	})
 	assert.NoError(t, err)

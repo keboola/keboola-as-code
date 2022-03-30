@@ -2,7 +2,6 @@ package local
 
 import (
 	"context"
-	"fmt"
 	"sort"
 	"sync"
 
@@ -15,7 +14,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/relatedpaths"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/object"
 )
 
 type dependencies interface {
@@ -57,7 +55,7 @@ func NewState(d dependencies, objectsRoot filesystem.Fs, manifest manifest.Manif
 
 	// Create state
 	s := &State{
-		objects:         object.NewCollection(manifest.Sorter()),
+		objects:         state.NewCollection(manifest.Sorter()),
 		deps:            d,
 		logger:          d.Logger(),
 		objectsRoot:     objectsRoot,
@@ -132,29 +130,27 @@ func (s *State) GetByPath(path string) (model.Object, bool) {
 	return s.Get(key)
 }
 
-func (s *State) GetPath(key model.Key) (model.AbsPath, error) {
-	path, found := s.NamingRegistry().PathByKey(key)
-	if !found {
-		return model.AbsPath{}, fmt.Errorf("%s not found", key)
-	}
-	return path, nil
-}
-
-func (s *State) GetOrGeneratePath(object model.WithKey) (model.AbsPath, error) {
+func (s *State) GetPath(object model.WithKey) (model.AbsPath, error) {
 	return s.namingGenerator.GetOrGenerate(object)
 }
 
-func (s *State) GetRelatedPaths(key model.Key) (*relatedpaths.Paths, error) {
+func (s *State) GetRelatedPaths(object model.WithKey) (*relatedpaths.Paths, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
+	key := object.Key()
 	if _, found := s.relatedPaths[key]; !found {
-		if path, err := s.GetPath(key); err == nil {
+		if path, err := s.GetPath(object); err == nil {
 			s.relatedPaths[key] = relatedpaths.New(path)
 		} else {
 			return nil, err
 		}
 	}
 	return s.relatedPaths[key], nil
+}
+
+func (s *State) GetRelatedPathsByKey(key model.Key) (*relatedpaths.Paths, bool) {
+	v, found := s.relatedPaths[key]
+	return v, found
 }
 
 func (s *State) SetRelatedPaths(key model.Key, v *relatedpaths.Paths) {

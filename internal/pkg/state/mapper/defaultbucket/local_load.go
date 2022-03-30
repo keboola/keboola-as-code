@@ -47,7 +47,12 @@ func (m *defaultBucketMapper) replacePlaceholderWithDefaultBucket(
 	}
 
 	// Get branch path
-	branchPath, err := m.state.GetPath(targetConfig.BranchKey())
+	branchKey := targetConfig.BranchKey()
+	branch, found := m.state.Get(branchKey)
+	if !found {
+		return fmt.Errorf(`%s not found`, branchKey)
+	}
+	branchPath, err := m.state.GetPath(branch)
 	if err != nil {
 		return fmt.Errorf(`cannot get branch path: %w`, err)
 	}

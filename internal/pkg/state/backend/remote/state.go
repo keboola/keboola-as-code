@@ -8,7 +8,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/object"
 )
 
 type dependencies interface {
@@ -36,7 +35,7 @@ func NewState(d dependencies, sorter model.ObjectsSorter, mappersFn MappersFacto
 
 	// Create state
 	s := &State{
-		objects:    object.NewCollection(sorter),
+		objects:    state.NewCollection(sorter),
 		deps:       d,
 		logger:     d.Logger(),
 		storageApi: storageApi,

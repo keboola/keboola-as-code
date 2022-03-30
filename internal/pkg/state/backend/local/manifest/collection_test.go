@@ -8,14 +8,14 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	. "github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/object"
 )
 
 func TestCollection_New(t *testing.T) {
 	t.Parallel()
-	c := NewCollection(context.Background(), naming.NewRegistry(), object.NewIdSorter())
+	c := NewCollection(context.Background(), naming.NewRegistry(), state.NewIdSorter())
 	assert.NotNil(t, c)
 	assert.False(t, c.IsChanged())
 }
@@ -255,7 +255,7 @@ func TestCollection_All(t *testing.T) {
 func newTestCollection(t *testing.T) *Collection {
 	t.Helper()
 	namingRegistry := naming.NewRegistry()
-	collection := NewCollection(context.Background(), namingRegistry, object.NewPathSorter(namingRegistry))
+	collection := NewCollection(context.Background(), namingRegistry, state.NewPathSorter(namingRegistry))
 
 	// Branch 1
 	assert.NoError(t, collection.Add(&BranchManifest{

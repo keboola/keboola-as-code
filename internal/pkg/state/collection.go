@@ -1,4 +1,4 @@
-package object
+package state
 
 import (
 	"fmt"
@@ -11,6 +11,7 @@ import (
 
 type sorter = ObjectsSorter
 
+// Collection implements model.Objects interface.
 type Collection struct {
 	sorter
 	lock    *sync.Mutex

@@ -1,4 +1,4 @@
-package ignore_test
+package ignoreobject_test
 
 import (
 	"testing"
@@ -8,7 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper/ignore"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper/ignoreobject"
 )
 
 func TestIgnoreMapper_AfterRemoteOperation(t *testing.T) {
@@ -57,6 +57,6 @@ func createStateWithMapper(t *testing.T) (*remote.State, *dependencies.TestConta
 	t.Helper()
 	d := dependencies.NewTestContainer()
 	mockedState := d.EmptyRemoteState()
-	mockedState.Mapper().AddMapper(ignore.NewRemoteMapper(mockedState, d))
+	mockedState.Mapper().AddMapper(ignoreobject.NewRemoteMapper(mockedState, d))
 	return mockedState, d
 }

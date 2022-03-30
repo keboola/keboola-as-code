@@ -41,12 +41,12 @@ func (m *orchestratorLocalMapper) AfterLocalOperation(changes *model.Changes) er
 }
 
 func (m *orchestratorLocalMapper) onLocalLoad(orchestrator *model.Config) error {
-	basePath, err := m.state.GetPath(orchestrator.Key())
+	basePath, err := m.state.GetPath(orchestrator)
 	if err != nil {
 		return err
 	}
 
-	relatedPaths, err := m.state.GetRelatedPaths(orchestrator.Key())
+	relatedPaths, err := m.state.GetRelatedPaths(orchestrator)
 	if err != nil {
 		return err
 	}

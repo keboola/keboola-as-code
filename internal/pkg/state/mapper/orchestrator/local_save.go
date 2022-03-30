@@ -29,7 +29,7 @@ func (m *orchestratorLocalMapper) MapBeforeLocalSave(recipe *model.LocalSaveReci
 	}
 	orchestrator := recipe.Object.(*model.Config)
 
-	basePath, err := m.state.GetPath(orchestrator.Key())
+	basePath, err := m.state.GetPath(orchestrator)
 	if err != nil {
 		return err
 	}
@@ -58,7 +58,7 @@ func (c *localSaveContext) save() {
 	errors := utils.NewMultiError()
 	for _, phase := range c.phases {
 		// Get phase path
-		phaseDir, err := c.state.GetOrGeneratePath(phase)
+		phaseDir, err := c.state.GetPath(phase)
 		if err != nil {
 			errors.Append(utils.PrefixError(fmt.Sprintf(`cannot save %s`, phase.String()), err))
 			continue
@@ -99,7 +99,7 @@ func (c *localSaveContext) savePhase(phase *model.Phase, phaseDir model.AbsPath)
 	dependsOn := make([]string, 0)
 	for _, depOnKey := range phase.DependsOn {
 		depOnPhase := c.phases[depOnKey.Index]
-		depOnPath, err := c.state.GetPath(depOnPhase.Key())
+		depOnPath, err := c.state.GetPath(depOnPhase)
 		if err != nil {
 			errors.Append(err)
 			continue
@@ -124,7 +124,7 @@ func (c *localSaveContext) savePhase(phase *model.Phase, phaseDir model.AbsPath)
 	// Write tasks
 	for _, task := range phase.Tasks {
 		// Get task path
-		taskDir, err := c.state.GetOrGeneratePath(task)
+		taskDir, err := c.state.GetPath(task)
 		if err != nil {
 			errors.Append(err)
 			continue
@@ -196,7 +196,7 @@ func (c *localSaveContext) getTargetPath(targetConfigKey model.ConfigKey) (strin
 		return "", fmt.Errorf(`%s not found`, targetConfigKey.String())
 	}
 
-	absPath, err := c.state.GetPath(targetConfig.Key())
+	absPath, err := c.state.GetPath(targetConfig)
 	if err != nil {
 		return "", err
 	}

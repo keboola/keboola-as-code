@@ -8,8 +8,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/object"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
@@ -44,7 +44,7 @@ func newFile(projectId int, apiHost string) *file {
 	return &file{
 		Version:           build.MajorVersion,
 		Project:           Project{Id: projectId, ApiHost: apiHost},
-		SortBy:            object.NewIdSorter().String(),
+		SortBy:            state.NewIdSorter().String(),
 		Naming:            naming.TemplateWithIds(),
 		AllowedBranches:   model.DefaultAllowedBranches(),
 		IgnoredComponents: model.ComponentIds{},

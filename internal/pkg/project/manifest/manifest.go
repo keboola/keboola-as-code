@@ -5,9 +5,9 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/object"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -40,7 +40,7 @@ type Project struct {
 
 func New(ctx context.Context, fs filesystem.Fs, projectId int, apiHost string) *Manifest {
 	return &Manifest{
-		records:      manifest.NewCollection(ctx, naming.NewRegistry(), object.NewIdSorter()),
+		records:      manifest.NewCollection(ctx, naming.NewRegistry(), state.NewIdSorter()),
 		fs:           fs,
 		project:      Project{Id: projectId, ApiHost: apiHost},
 		naming:       naming.TemplateWithIds(),
@@ -60,7 +60,7 @@ func Load(ctx context.Context, fs filesystem.Fs, ignoreErrors bool) (*Manifest, 
 	m := New(ctx, fs, content.Project.Id, content.Project.ApiHost)
 
 	// Set configuration
-	m.SetSorter(object.NewSorterFromName(content.SortBy, m.NamingRegistry()))
+	m.SetSorter(state.NewSorterFromName(content.SortBy, m.NamingRegistry()))
 	m.naming = content.Naming
 	m.filter.SetAllowedBranches(content.AllowedBranches)
 	m.filter.SetIgnoredComponents(content.IgnoredComponents)

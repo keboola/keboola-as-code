@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/object"
 )
 
 // InMemory Manifest implementation for tests.
@@ -18,7 +18,7 @@ type InMemory struct {
 func NewInMemory() Manifest {
 	namingRegistry := naming.NewRegistry()
 	return &InMemory{
-		Collection: NewCollection(context.Background(), namingRegistry, object.NewPathSorter(namingRegistry)),
+		Collection: NewCollection(context.Background(), namingRegistry, state.NewPathSorter(namingRegistry)),
 	}
 }
 

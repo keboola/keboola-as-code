@@ -15,10 +15,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/object"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
@@ -216,7 +216,7 @@ func (v *TestContainer) EmptyRemoteState() *remote.State {
 	v.UseMockedStorageApi()
 
 	// Create mocked state
-	mockedState, err := remote.NewState(v, object.NewIdSorter(), nil)
+	mockedState, err := remote.NewState(v, state.NewIdSorter(), nil)
 	if err != nil {
 		panic(err)
 	}

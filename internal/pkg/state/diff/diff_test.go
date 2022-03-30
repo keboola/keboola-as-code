@@ -9,8 +9,8 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/object"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -791,8 +791,8 @@ func TestResults_Format(t *testing.T) {
 
 func newDiffer() (A, B model.Objects, d *differ) {
 	namingReg := naming.NewRegistry()
-	sorter := object.NewPathSorter(namingReg)
-	A = object.NewCollection(sorter)
-	B = object.NewCollection(sorter)
+	sorter := state.NewPathSorter(namingReg)
+	A = state.NewCollection(sorter)
+	B = state.NewCollection(sorter)
 	return A, B, &differ{naming: namingReg}
 }

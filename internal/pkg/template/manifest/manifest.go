@@ -7,9 +7,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/object"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
@@ -36,7 +36,7 @@ func New(ctx context.Context, fs filesystem.Fs) *Manifest {
 	return &Manifest{
 		fs:      fs,
 		naming:  naming.ForTemplate(),
-		records: manifest.NewCollection(ctx, namingRegistry, object.NewPathSorter(namingRegistry)),
+		records: manifest.NewCollection(ctx, namingRegistry, state.NewPathSorter(namingRegistry)),
 	}
 }
 

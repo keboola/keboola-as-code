@@ -8,8 +8,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/object"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -43,7 +43,7 @@ func Run(o Options, d dependencies) (*remote.State, error) {
 	}
 
 	// Create state
-	s, err := remote.NewState(d, object.NewIdSorter(), project.RemoteMappers(d))
+	s, err := remote.NewState(d, state.NewIdSorter(), project.RemoteMappers(d))
 	if err != nil {
 		return nil, err
 	}

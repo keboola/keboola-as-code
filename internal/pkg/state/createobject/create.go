@@ -1,4 +1,4 @@
-package object
+package createobject
 
 import (
 	"fmt"
