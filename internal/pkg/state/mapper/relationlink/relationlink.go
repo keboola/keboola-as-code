@@ -1,20 +1,38 @@
-package relations
+package relationlink
 
 import (
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-// AfterLocalOperation links relation sides on local load.
-func (m *relationsMapper) AfterLocalOperation(changes *model.LocalChanges) error {
+type relationsMapper struct {
+	objects model.Objects
+	logger  log.Logger
+}
+
+type dependencies interface {
+	Logger() log.Logger
+}
+
+func NewMapper(objects model.Objects, d dependencies) *relationsMapper {
+	return &relationsMapper{objects: objects, logger: d.Logger()}
+}
+
+// AfterOperation links relation sides on load.
+func (m *relationsMapper) AfterOperation(changes *model.Changes) error {
 	errors := utils.NewMultiError()
-	allObjects := m.state.LocalObjects()
-	for _, objectState := range changes.Loaded() {
-		if err := m.linkAndValidateRelations(objectState.LocalState(), allObjects); err != nil {
-			errors.Append(err)
+	for _, object := range changes.Loaded() {
+		if o, ok := object.(model.ObjectWithRelations); ok {
+			if err := m.linkRelations(o); err != nil {
+				errors.Append(err)
+			}
+			if err := m.validateRelations(o); err != nil {
+				errors.Append(utils.PrefixError(fmt.Sprintf(`invalid %s`, object.String()), err))
+			}
 		}
 	}
 
@@ -24,47 +42,16 @@ func (m *relationsMapper) AfterLocalOperation(changes *model.LocalChanges) error
 	}
 
 	return nil
-}
-
-// AfterRemoteOperation links relation sides on remote load.
-func (m *relationsMapper) AfterRemoteOperation(changes *model.Changes) error {
-	errors := utils.NewMultiError()
-	allObjects := m.state.RemoteObjects()
-	for _, objectState := range changes.Loaded() {
-		if err := m.linkAndValidateRelations(objectState.RemoteState(), allObjects); err != nil {
-			errors.Append(err)
-		}
-	}
-
-	// Log errors as warning
-	if errors.Len() > 0 {
-		m.logger.Warn(utils.PrefixError(`Warning`, errors))
-	}
-
-	return nil
-}
-
-func (m *relationsMapper) linkAndValidateRelations(object model.Object, allObjects model.Objects) error {
-	errors := utils.NewMultiError()
-	if o, ok := object.(model.ObjectWithRelations); ok {
-		if err := m.linkRelations(o, allObjects); err != nil {
-			errors.Append(err)
-		}
-		if err := m.validateRelations(o); err != nil {
-			errors.Append(utils.PrefixError(fmt.Sprintf(`invalid %s`, object.String()), err))
-		}
-	}
-	return errors.ErrorOrNil()
 }
 
 // lintRelations finds the other side of the relation and create a corresponding relation on the other side.
-func (m *relationsMapper) linkRelations(object model.ObjectWithRelations, allObjects model.Objects) error {
+func (m *relationsMapper) linkRelations(object model.ObjectWithRelations) error {
 	errors := utils.NewMultiError()
 	relations := object.GetRelations()
 
 	for _, relation := range relations {
 		// Get other side relation
-		otherSideKey, otherSideRelation, err := relation.NewOtherSideRelation(object, allObjects)
+		otherSideKey, otherSideRelation, err := relation.NewOtherSideRelation(object, m.objects)
 		if err != nil {
 			// Remove invalid relation
 			relations.Remove(relation)
@@ -75,7 +62,7 @@ func (m *relationsMapper) linkRelations(object model.ObjectWithRelations, allObj
 		}
 
 		// Get other side object
-		otherSideObject, found := allObjects.Get(otherSideKey)
+		otherSideObject, found := m.objects.Get(otherSideKey)
 		if !found {
 			// Remove invalid relation
 			relations.Remove(relation)

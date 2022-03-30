@@ -22,6 +22,13 @@ func (c *saveContext) save() {
 		return
 	}
 
+	// Relations are stored on the API side in config/row configuration.
+	// This is ensured by the mapper layer.
+	if recipe.ChangedFields.Has(`relations`) {
+		recipe.ChangedFields.Add(`configuration`)
+		recipe.ChangedFields.Remove(`relations`)
+	}
+
 	// Branch cannot be created, it must be cloned
 	if v, ok := c.Object.(*model.Branch); ok && !c.ObjectExists {
 		c.errors.Append(fmt.Errorf(`branch "%d" (%s) cannot be created, it must be created as clone of the main branch directly in the project`, v.Id, v.Name))

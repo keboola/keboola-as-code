@@ -239,6 +239,10 @@ func (m *Mapper) AfterLocalOperation(changes *model.Changes) error {
 			if err := mapper.AfterLocalOperation(changes); err != nil {
 				return err
 			}
+		} else if mapper, ok := mapper.(AfterOperationListener); ok {
+			if err := mapper.AfterOperation(changes); err != nil {
+				return err
+			}
 		}
 		return nil
 	})
@@ -261,6 +265,10 @@ func (m *Mapper) AfterRemoteOperation(changes *model.Changes) error {
 	return m.mappers.ForEach(false, func(mapper interface{}) error {
 		if mapper, ok := mapper.(AfterRemoteOperationListener); ok {
 			if err := mapper.AfterRemoteOperation(changes); err != nil {
+				return err
+			}
+		} else if mapper, ok := mapper.(AfterOperationListener); ok {
+			if err := mapper.AfterOperation(changes); err != nil {
 				return err
 			}
 		}

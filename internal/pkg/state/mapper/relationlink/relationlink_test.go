@@ -1,4 +1,4 @@
-package relations_test
+package relationlink_test
 
 import (
 	"strings"
@@ -6,8 +6,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper/relationlink"
 )
 
 func TestRelationsMapperLinkRelations(t *testing.T) {
@@ -100,4 +102,12 @@ WARN  Warning:
     - by relation "manifest_side_relation"
 `
 	assert.Equal(t, strings.TrimLeft(expected, "\n"), logger.AllMessages())
+}
+
+func createStateWithMapper(t *testing.T) (*state.State, *dependencies.TestContainer) {
+	t.Helper()
+	d := dependencies.NewTestContainer()
+	mockedState := d.EmptyState()
+	mockedState.Mapper().AddMapper(relationlink.NewMapper(mockedState))
+	return mockedState, d
 }
