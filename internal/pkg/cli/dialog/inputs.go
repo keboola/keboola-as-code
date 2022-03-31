@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -21,7 +22,7 @@ type inputsDialogDeps interface {
 
 // askTemplateInputs - dialog to define user inputs for a new template.
 // Used in AskCreateTemplateOpts.
-func (p *Dialogs) askTemplateInputs(deps inputsDialogDeps, branch *model.Branch, configs []*model.ConfigWithRows) (objectInputsMap, *template.Inputs, error) {
+func (p *Dialogs) askTemplateInputs(deps inputsDialogDeps, branch *model.Branch, configs []*model.ConfigWithRows) (objectInputsMap, template.StepsGroups, error) {
 	// Create empty inputs map
 	inputs := newInputsMap()
 
@@ -42,12 +43,43 @@ func (p *Dialogs) askTemplateInputs(deps inputsDialogDeps, branch *model.Branch,
 		return nil, nil, err
 	}
 
-	// Define name/description for each user input.
-	if err := newInputsDetailsDialog(p.Prompt, inputs).ask(); err != nil {
+	// Define steps and steps groups for user inputs.
+	stepsDialog := newStepsDialog(p.Prompt)
+	stepsGroups, stepsToIds, err := stepsDialog.ask()
+	if err != nil {
 		return nil, nil, err
 	}
 
-	return objectInputs, inputs.all(), nil
+	// Define name/description for each user input.
+	inputsToSteps, err := newInputsDetailsDialog(p.Prompt, inputs).ask(stepsGroups, stepsToIds)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if err := addInputsToStepsGroups(stepsGroups, inputs, inputsToSteps, stepsToIds); err != nil {
+		return nil, nil, err
+	}
+
+	return objectInputs, stepsGroups, nil
+}
+
+func addInputsToStepsGroups(stepsGroups input.StepsGroups, inputs inputsMap, inputsToSteps *orderedmap.OrderedMap, stepsToIds map[input.StepIndex]string) error {
+	indices := stepsGroups.Indices(stepsToIds)
+	errors := utils.NewMultiError()
+	for _, inputId := range inputsToSteps.Keys() {
+		step, _ := inputsToSteps.Get(inputId)
+		index, found := indices[fmt.Sprintf("%v", step)]
+		if !found {
+			errors.Append(fmt.Errorf(`input "%s": step "%s" not found`, inputId, step))
+			continue
+		}
+		in, _ := inputs.get(inputId)
+		err := stepsGroups.AddInput(*in, index)
+		if err != nil {
+			errors.Append(err)
+		}
+	}
+	return errors.ErrorOrNil()
 }
 
 type inputFields map[string]input.ObjectField

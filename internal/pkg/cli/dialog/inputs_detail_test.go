@@ -15,9 +15,25 @@ import (
 func TestInputsDetailDialog_DefaultValue(t *testing.T) {
 	t.Parallel()
 
+	stepsGroups := input.StepsGroups{
+		&input.StepsGroup{Description: "desc", Required: "all", Steps: []*input.Step{
+			{Icon: "common", Name: "Step One", Description: "Description"},
+		}},
+		&input.StepsGroup{Required: "all", Steps: []*input.Step{
+			{Icon: "common", Name: "Step Two", Description: "Description"},
+			{Icon: "common", Name: "Step Three", Description: "Description"},
+		}},
+	}
+
+	stepsToIds := map[input.StepIndex]string{
+		input.StepIndex{Step: 0, Group: 0}: "s1",
+		input.StepIndex{Step: 0, Group: 1}: "s2",
+		input.StepIndex{Step: 1, Group: 1}: "s3",
+	}
+
 	// Check default value
 	d := newInputsDetailsDialog(nopPrompt.New(), testInputs())
-	actual := d.defaultValue()
+	actual := d.defaultValue(stepsGroups, stepsToIds)
 	actual = regexpcache.MustCompile(` +\n`).ReplaceAllString(actual, "\n") // trim trailing spaces
 	assert.Equal(t, inputsDetailDialogDefaultValue, actual)
 }
@@ -27,7 +43,7 @@ func TestInputsDetailDialog_Parse_NoChange(t *testing.T) {
 
 	// Parse
 	d := newInputsDetailsDialog(nopPrompt.New(), testInputs())
-	err := d.parse(inputsDetailDialogDefaultValue)
+	_, err := d.parse(inputsDetailDialogDefaultValue)
 	assert.NoError(t, err)
 	assert.Equal(t, testInputs().all(), d.inputs.all())
 }
@@ -85,7 +101,7 @@ options: {"id1":"Option 1","id2":"Option 2","id3":123}  <!-- invalid options -->
 
 	// Parse
 	d := newInputsDetailsDialog(nopPrompt.New(), testInputs())
-	err := d.parse(result)
+	_, err := d.parse(result)
 	assert.Error(t, err)
 	assert.Equal(t, strings.Trim(expected, "\n"), err.Error())
 }
@@ -225,6 +241,14 @@ Options format:
      kind: multiselect
      default: id1, id3
      options: {"id1":"Option 1","id2":"Option 2","id3":"Option 3"}
+
+Preview of steps and groups you created:
+- Group 1
+  - Step "s1"
+- Group 2
+  - Step "s2"
+  - Step "s3"
+
 -->
 
 
@@ -235,6 +259,7 @@ kind: input
 rules:
 showIf:
 default: default
+step: s1
 
 ## Input "string-hidden" (string)
 name: String Hidden
@@ -243,6 +268,7 @@ kind: hidden
 rules:
 showIf:
 default:
+step: s1
 
 ## Input "string-textarea" (string)
 name: String Textarea
@@ -251,6 +277,7 @@ kind: textarea
 rules:
 showIf:
 default:
+step: s1
 
 ## Input "string-select" (string)
 name: String Select
@@ -260,6 +287,7 @@ rules:
 showIf:
 default: id1
 options: {"id1":"Option 1","id2":"Option 2"}
+step: s1
 
 ## Input "string-int" (int)
 name: String Double
@@ -268,6 +296,7 @@ kind: input
 rules:
 showIf:
 default: 123
+step: s1
 
 ## Input "string-double" (double)
 name: String Double
@@ -276,6 +305,7 @@ kind: input
 rules:
 showIf:
 default: 12.34
+step: s1
 
 ## Input "bool-confirm" (bool)
 name: Bool Confirm
@@ -284,6 +314,7 @@ kind: confirm
 rules:
 showIf:
 default: true
+step: s1
 
 ## Input "string-array-multiselect" (string[])
 name: String Array
@@ -293,5 +324,6 @@ rules:
 showIf:
 default: id1, id3
 options: {"id1":"Option 1","id2":"Option 2","id3":"Option 3"}
+step: s1
 
 `

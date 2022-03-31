@@ -38,35 +38,48 @@ func TestSaveInputsFile(t *testing.T) {
 }
 
 const inputsJsonNet = `{
-  inputs: [
+  stepsGroups: [
     {
-      id: "fb.extractor.username",
-      name: "Facebook username",
-      description: "Facebook username description",
-      type: "string",
-      kind: "input",
-    },
-    {
-      id: "fb.extractor.password",
-      name: "Facebook password",
-      description: "Facebook password description",
-      type: "string",
-      kind: "hidden",
-    },
-    {
-      id: "fb.extractor.options",
-      name: "Facebook options",
-      description: "Facebook options description",
-      type: "string",
-      kind: "select",
-      options: [
+      description: "Group One",
+      required: "all",
+      steps: [
         {
-          id: "a",
-          name: "A",
-        },
-        {
-          id: "b",
-          name: "B",
+          icon: "common",
+          name: "Step 1",
+          description: "Step One",
+          inputs: [
+            {
+              id: "fb.extractor.username",
+              name: "Facebook username",
+              description: "Facebook username description",
+              type: "string",
+              kind: "input",
+            },
+            {
+              id: "fb.extractor.password",
+              name: "Facebook password",
+              description: "Facebook password description",
+              type: "string",
+              kind: "hidden",
+            },
+            {
+              id: "fb.extractor.options",
+              name: "Facebook options",
+              description: "Facebook options description",
+              type: "string",
+              kind: "select",
+              options: [
+                {
+                  id: "a",
+                  name: "A",
+                },
+                {
+                  id: "b",
+                  name: "B",
+                },
+              ],
+            },
+          ],
         },
       ],
     },
@@ -74,33 +87,45 @@ const inputsJsonNet = `{
 }
 `
 
-func testInputs() *Inputs {
-	inputs := NewInputs().Set([]Input{
+func testInputs() StepsGroups {
+	return StepsGroups{
 		{
-			Id:          "fb.extractor.username",
-			Name:        "Facebook username",
-			Description: "Facebook username description",
-			Type:        "string",
-			Kind:        "input",
-		},
-		{
-			Id:          "fb.extractor.password",
-			Name:        "Facebook password",
-			Description: "Facebook password description",
-			Type:        "string",
-			Kind:        "hidden",
-		},
-		{
-			Id:          "fb.extractor.options",
-			Name:        "Facebook options",
-			Description: "Facebook options description",
-			Type:        "string",
-			Kind:        "select",
-			Options: Options{
-				{Id: "a", Name: "A"},
-				{Id: "b", Name: "B"},
+			Description: "Group One",
+			Required:    "all",
+			Steps: []*Step{
+				{
+					Icon:        "common",
+					Name:        "Step 1",
+					Description: "Step One",
+					Inputs: Inputs{
+						{
+							Id:          "fb.extractor.username",
+							Name:        "Facebook username",
+							Description: "Facebook username description",
+							Type:        "string",
+							Kind:        "input",
+						},
+						{
+							Id:          "fb.extractor.password",
+							Name:        "Facebook password",
+							Description: "Facebook password description",
+							Type:        "string",
+							Kind:        "hidden",
+						},
+						{
+							Id:          "fb.extractor.options",
+							Name:        "Facebook options",
+							Description: "Facebook options description",
+							Type:        "string",
+							Kind:        "select",
+							Options: Options{
+								{Id: "a", Name: "A"},
+								{Id: "b", Name: "B"},
+							},
+						},
+					},
+				},
 			},
 		},
-	})
-	return inputs
+	}
 }

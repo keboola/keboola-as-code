@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -14,15 +13,6 @@ type Inputs []Input
 func NewInputs() *Inputs {
 	inputs := make(Inputs, 0)
 	return &inputs
-}
-
-// Load inputs from the FileName.
-func Load(fs filesystem.Fs) (*Inputs, error) {
-	f, err := loadFile(fs)
-	if err != nil {
-		return nil, err
-	}
-	return &f.Inputs, nil
 }
 
 func (i Inputs) Validate() error {
@@ -37,14 +27,6 @@ func (i *Inputs) GetIndex(index int) Input {
 	return (*i)[index]
 }
 
-// Save inputs to the FileName.
-func (i *Inputs) Save(fs filesystem.Fs) error {
-	if err := saveFile(fs, &file{Inputs: *i}); err != nil {
-		return err
-	}
-	return nil
-}
-
 func (i *Inputs) All() []Input {
 	out := make([]Input, len(*i))
 	copy(out, *i)
@@ -54,10 +36,6 @@ func (i *Inputs) All() []Input {
 func (i *Inputs) Set(inputs []Input) *Inputs {
 	*i = inputs
 	return i
-}
-
-func (i Inputs) Path() string {
-	return Path()
 }
 
 type Values []Value

@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
@@ -27,22 +28,24 @@ func newInputsDetailsDialog(prompt prompt.Prompt, inputs inputsMap) *inputsDetai
 	return &inputsDetailDialog{prompt: prompt, inputs: inputs}
 }
 
-func (d *inputsDetailDialog) ask() error {
+func (d *inputsDetailDialog) ask(stepsGroups input.StepsGroups, stepsToIds map[input.StepIndex]string) (*orderedmap.OrderedMap, error) {
 	result, _ := d.prompt.Editor("md", &prompt.Question{
 		Description: `Please complete the user inputs specification.`,
-		Default:     d.defaultValue(),
+		Default:     d.defaultValue(stepsGroups, stepsToIds),
 		Validator: func(val interface{}) error {
-			if err := d.parse(val.(string)); err != nil {
+			_, err := d.parse(val.(string))
+			if err != nil {
 				// Print errors to new line
 				return utils.PrefixError("\n", err)
 			}
+
 			return nil
 		},
 	})
 	return d.parse(result)
 }
 
-func (d *inputsDetailDialog) parse(result string) error {
+func (d *inputsDetailDialog) parse(result string) (*orderedmap.OrderedMap, error) {
 	result = strhelper.StripHtmlComments(result)
 	scanner := bufio.NewScanner(strings.NewReader(result))
 	errors := utils.NewMultiError()
@@ -53,6 +56,7 @@ func (d *inputsDetailDialog) parse(result string) error {
 
 	var currentInput *template.Input
 	var invalidDefinition bool
+	inputsToStepsMap := orderedmap.New()
 
 	for scanner.Scan() {
 		lineNum++
@@ -118,6 +122,8 @@ func (d *inputsDetailDialog) parse(result string) error {
 				errors.Append(fmt.Errorf(`line %d: options are not expected for kind "%s"`, lineNum, currentInput.Kind))
 				continue
 			}
+		case strings.HasPrefix(line, `step:`):
+			inputsToStepsMap.Set(currentInput.Id, strings.TrimSpace(strings.TrimPrefix(line, `step:`)))
 		default:
 			// Expected object definition
 			errors.Append(fmt.Errorf(`line %d: cannot parse "%s"`, lineNum, strhelper.Truncate(line, 10, "...")))
@@ -151,10 +157,10 @@ func (d *inputsDetailDialog) parse(result string) error {
 		})
 	})
 
-	return errors.ErrorOrNil()
+	return inputsToStepsMap, errors.ErrorOrNil()
 }
 
-func (d *inputsDetailDialog) defaultValue() string {
+func (d *inputsDetailDialog) defaultValue(stepsGroups input.StepsGroups, stepsToIds map[input.StepIndex]string) string {
 	// File header - info for user
 	fileHeader := `
 <!--
@@ -200,6 +206,23 @@ Options format:
      kind: multiselect
      default: id1, id3
      options: {"id1":"Option 1","id2":"Option 2","id3":"Option 3"}
+
+Preview of steps and groups you created:
+`
+	var defaultStepId string
+	for gIdx, group := range stepsGroups {
+		fileHeader += fmt.Sprintf(`- Group %d
+`, gIdx+1)
+		for sIdx := range group.Steps {
+			index := input.StepIndex{Step: sIdx, Group: gIdx}
+			fileHeader += fmt.Sprintf(`  - Step "%s"
+`, stepsToIds[index])
+			if gIdx == 0 && sIdx == 0 {
+				defaultStepId = stepsToIds[index]
+			}
+		}
+	}
+	fileHeader += `
 -->
 
 
@@ -232,6 +255,8 @@ Options format:
 		if i.Options != nil {
 			lines.WriteString(fmt.Sprintf("options: %s\n", json.MustEncode(i.Options.Map(), false)))
 		}
+
+		lines.WriteString(fmt.Sprintf("step: %s\n", defaultStepId))
 
 		lines.WriteString("\n")
 	}

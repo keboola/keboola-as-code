@@ -137,6 +137,13 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 		_, err = console.Send(testhelper.Enter) // -> start editor
 		assert.NoError(t, err)
 
+		_, err = console.ExpectString("Please define steps and groups for user inputs specification.")
+		assert.NoError(t, err)
+
+		time.Sleep(20 * time.Millisecond)
+		_, err = console.Send(testhelper.Enter) // -> start editor
+		assert.NoError(t, err)
+
 		_, err = console.ExpectString("Please complete the user inputs specification.")
 		assert.NoError(t, err)
 
@@ -196,12 +203,25 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 				TemplateId: `config-3`,
 			},
 		},
-		Inputs: &template.Inputs{
+		StepsGroups: input.StepsGroups{
 			{
-				Id:   "my-component-password",
-				Name: "Password",
-				Type: input.TypeString,
-				Kind: input.KindHidden,
+				Description: "Default Group",
+				Required:    "all",
+				Steps: []*input.Step{
+					{
+						Icon:        "common",
+						Name:        "Default Step",
+						Description: "Default Step",
+						Inputs: input.Inputs{
+							{
+								Id:   "my-component-password",
+								Name: "Password",
+								Type: input.TypeString,
+								Kind: input.KindHidden,
+							},
+						},
+					},
+				},
 			},
 		},
 	}, opts)
@@ -278,26 +298,39 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 				TemplateId: `config-3`,
 			},
 		},
-		Inputs: &template.Inputs{
+		StepsGroups: input.StepsGroups{
 			{
-				Id:   "my-component-password",
-				Name: "Password",
-				Type: input.TypeString,
-				Kind: input.KindHidden,
-			},
-			{
-				Id:      "my-component-int",
-				Name:    "Int",
-				Type:    input.TypeInt,
-				Kind:    input.KindInput,
-				Default: 123,
-			},
-			{
-				Id:      "my-component-string",
-				Name:    "String",
-				Type:    input.TypeString,
-				Kind:    input.KindInput,
-				Default: "my string",
+				Description: "Default Group",
+				Required:    "all",
+				Steps: []*input.Step{
+					{
+						Icon:        "common",
+						Name:        "Default Step",
+						Description: "Default Step",
+						Inputs: input.Inputs{
+							{
+								Id:   "my-component-password",
+								Name: "Password",
+								Type: input.TypeString,
+								Kind: input.KindHidden,
+							},
+							{
+								Id:      "my-component-int",
+								Name:    "Int",
+								Type:    input.TypeInt,
+								Kind:    input.KindInput,
+								Default: 123,
+							},
+							{
+								Id:      "my-component-string",
+								Name:    "String",
+								Type:    input.TypeString,
+								Kind:    input.KindInput,
+								Default: "my string",
+							},
+						},
+					},
+				},
 			},
 		},
 	}, opts)
@@ -373,12 +406,25 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 				TemplateId: `config-3`,
 			},
 		},
-		Inputs: &template.Inputs{
+		StepsGroups: input.StepsGroups{
 			{
-				Id:   "my-component-password",
-				Name: "Password",
-				Type: input.TypeString,
-				Kind: input.KindHidden,
+				Description: "Default Group",
+				Required:    "all",
+				Steps: []*input.Step{
+					{
+						Icon:        "common",
+						Name:        "Default Step",
+						Description: "Default Step",
+						Inputs: input.Inputs{
+							{
+								Id:   "my-component-password",
+								Name: "Password",
+								Type: input.TypeString,
+								Kind: input.KindHidden,
+							},
+						},
+					},
+				},
 			},
 		},
 	}, opts)
