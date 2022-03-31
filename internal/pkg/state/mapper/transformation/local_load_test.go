@@ -9,7 +9,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
 )
 
 func TestTransformationLocalMapper_MapAfterLocalLoad_Invalid(t *testing.T) {
@@ -17,63 +17,45 @@ func TestTransformationLocalMapper_MapAfterLocalLoad_Invalid(t *testing.T) {
 
 	state, d := createLocalStateWithMapper(t)
 	fs := d.Fs()
-	namingGenerator := state.NamingGenerator()
 
 	// Fixtures
-	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{Id: 123}})
-	componentId := model.ComponentId("keboola.tr-foo-bar")
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: componentId, Id: "456"}
-	configPath := model.NewAbsPath("", "config")
-	config := &model.Config{ConfigKey: configKey, Content: orderedmap.New()}
+	config, configPath := createTestFixtures(t, "keboola.snowflake-transformation", state)
+	state.NamingRegistry().MustAttach(config.Key(), configPath)
 
 	// Files content
-	metaFile := `{foo`
-	descFile := `abc`
-	configFile := ``
-	blockMeta := `{"name": "foo1"}`
-	codeMeta := `{"name": "foo2"}`
+	blockMeta := `{foo`
+	codeMeta := `{bar`
 	codeContent := `SELECT 1`
 
-	// Save files
-	state.NamingRegistry().MustAttach(configKey, configPath)
-	assert.NoError(t, fs.Mkdir(configPath.String()))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.MetaFilePath(configPath), metaFile)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.DescriptionFilePath(configPath), descFile)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.ConfigFilePath(configPath), configFile)))
+	// Save block
+	blockPath := filesystem.Join(configPath.String(), naming.BlocksDir, "my-block-1")
+	blockMetaFilePath := filesystem.Join(blockPath, naming.MetaFile)
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(blockMetaFilePath, blockMeta)))
 
-	blocksDir := namingGenerator.BlocksDir(configPath)
-	assert.NoError(t, fs.Mkdir(blocksDir.String()))
-	block := &model.Block{BlockKey: model.BlockKey{Index: 123}, Name: `block`}
-	blockPath, err := state.GetPath(block)
-	assert.NoError(t, err)
-	assert.NoError(t, fs.Mkdir(blockPath.String()))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.MetaFilePath(blockPath), blockMeta)))
+	// Save code
+	codePath := filesystem.Join(blockPath, "my-code-1")
+	codeFilePath := filesystem.Join(codePath, naming.CodeFileName+".sql")
+	codeMetaFilePath := filesystem.Join(codePath, naming.MetaFile)
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(codeFilePath, codeContent)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(codeMetaFilePath, codeMeta)))
 
-	code := &model.Code{CodeKey: model.CodeKey{Index: 123}, Name: `code`}
-	codePath, err := state.GetPath(code)
-	assert.NoError(t, err)
-	code.CodeFileName = namingGenerator.CodeFileName(componentId)
-	assert.NoError(t, fs.Mkdir(code.String()))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.MetaFilePath(codePath), codeMeta)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.CodeFilePath(code), codeContent)))
+	fmt.Printf(d.DebugLogger().AllMessages())
 
 	// Load
 	recipe := model.NewLocalLoadRecipe(d.FileLoader(), configPath, config)
-	err = state.Mapper().MapAfterLocalLoad(recipe)
+	err := state.Mapper().MapAfterLocalLoad(recipe)
 
 	// Error is reported
 	assert.Error(t, err)
 	expectedErr := `
-- config metadata file "config/meta.json" is invalid:
-  - invalid character 'f' looking for beginning of object key string, offset: 2
-- config file "config/config.json" is invalid:
-  - empty, please use "{}" for an empty JSON
+invalid block "my-block-1":
+  - block metadata file "branch/config/blocks/my-block-1/meta.json" is invalid:
+    - invalid character 'f' looking for beginning of object key string, offset: 2
+  - invalid code "my-code-1":
+    - code metadata file "branch/config/blocks/my-block-1/my-code-1/meta.json" is invalid:
+      - invalid character 'b' looking for beginning of object key string, offset: 2
 `
 	assert.Equal(t, strings.TrimSpace(expectedErr), err.Error())
-
-	// Invalid config is not set to the state
-	_, found := state.Get(configKey)
-	assert.False(t, found)
 }
 
 func TestTransformationLocalMapper_MapAfterLocalLoad_MissingBlockMetaFile(t *testing.T) {
@@ -83,19 +65,22 @@ func TestTransformationLocalMapper_MapAfterLocalLoad_MissingBlockMetaFile(t *tes
 	logger := d.DebugLogger()
 
 	// Fixtures
-	config, configPath := createTestFixtures(t, "keboola.snowflake-transformation")
+	config, configPath := createTestFixtures(t, "keboola.snowflake-transformation", state)
 
-	// Create files/dirs
-	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
+	// Create empty dirs
+	blocksDir := filesystem.Join(configPath.String(), naming.BlocksDir)
 	assert.NoError(t, fs.Mkdir(blocksDir))
-	block1 := filesystem.Join(blocksDir, `001-block-1`)
-	assert.NoError(t, fs.Mkdir(block1))
+	assert.NoError(t, fs.Mkdir(filesystem.Join(blocksDir, `001-block-1`)))
 
 	// Load, assert
 	recipe := model.NewLocalLoadRecipe(d.FileLoader(), configPath, config)
 	err := state.Mapper().MapAfterLocalLoad(recipe)
 	assert.Error(t, err)
-	assert.Equal(t, `missing block metadata file "branch/config/blocks/001-block-1/meta.json"`, err.Error())
+	expectedErr := `
+invalid block "001-block-1":
+  - missing block metadata file "branch/config/blocks/001-block-1/meta.json"
+`
+	assert.Equal(t, strings.TrimSpace(expectedErr), err.Error())
 	assert.Empty(t, logger.WarnAndErrorMessages())
 }
 
@@ -106,7 +91,7 @@ func TestTransformationLocalMapper_MapAfterLocalLoad_MissingCodeMetaFile(t *test
 	logger := d.DebugLogger()
 
 	// Fixtures
-	config, configPath := createTestFixtures(t, "keboola.snowflake-transformation")
+	config, configPath := createTestFixtures(t, "keboola.snowflake-transformation", state)
 
 	// Create files/dirs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
@@ -121,10 +106,12 @@ func TestTransformationLocalMapper_MapAfterLocalLoad_MissingCodeMetaFile(t *test
 	recipe := model.NewLocalLoadRecipe(d.FileLoader(), configPath, config)
 	err := state.Mapper().MapAfterLocalLoad(recipe)
 	assert.Error(t, err)
-	assert.Equal(t, strings.Join([]string{
-		`- missing code metadata file "branch/config/blocks/001-block-1/001-code-1/meta.json"`,
-		`- missing code file in "branch/config/blocks/001-block-1/001-code-1"`,
-	}, "\n"), err.Error())
+	expectedErr := `
+invalid block "001-block-1": invalid code "001-code-1":
+  - missing code metadata file "branch/config/blocks/001-block-1/001-code-1/meta.json"
+  - missing code file in "branch/config/blocks/001-block-1/001-code-1"
+`
+	assert.Equal(t, strings.TrimSpace(expectedErr), err.Error())
 	assert.Empty(t, logger.WarnAndErrorMessages())
 }
 
@@ -135,7 +122,7 @@ func TestTransformationLocalMapper_MapAfterLocalLoad_Sql(t *testing.T) {
 	logger := d.DebugLogger()
 
 	// Fixtures
-	config, configPath := createTestFixtures(t, "keboola.snowflake-transformation")
+	config, configPath := createTestFixtures(t, "keboola.snowflake-transformation", state)
 
 	// Create files/dirs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
@@ -170,38 +157,19 @@ func TestTransformationLocalMapper_MapAfterLocalLoad_Sql(t *testing.T) {
 	// Assert
 	expected := []*model.Block{
 		{
-			BlockKey: model.BlockKey{
-				BranchId:    123,
-				ComponentId: "keboola.snowflake-transformation",
-				ConfigId:    `456`,
-				Index:       0,
-			},
-			Name: "001",
+			BlockKey: model.BlockKey{Parent: config.ConfigKey, Index: 0},
+			Name:     "001",
 			Codes: model.Codes{
 				{
-					CodeKey: model.CodeKey{
-						BranchId:    123,
-						ComponentId: "keboola.snowflake-transformation",
-						ConfigId:    `456`,
-						BlockIndex:  0,
-						Index:       0,
-					},
-					Name:         "001-001",
-					CodeFileName: `code.sql`,
+					CodeKey: model.CodeKey{Parent: model.BlockKey{Parent: config.ConfigKey, Index: 0}, Index: 0},
+					Name:    "001-001",
 					Scripts: model.Scripts{
 						model.StaticScript{Value: "SELECT 1"},
 					},
 				},
 				{
-					CodeKey: model.CodeKey{
-						BranchId:    123,
-						ComponentId: "keboola.snowflake-transformation",
-						ConfigId:    `456`,
-						BlockIndex:  0,
-						Index:       1,
-					},
-					Name:         "001-002",
-					CodeFileName: `code.sql`,
+					CodeKey: model.CodeKey{Parent: model.BlockKey{Parent: config.ConfigKey, Index: 0}, Index: 1},
+					Name:    "001-002",
 					Scripts: model.Scripts{
 						model.StaticScript{Value: "SELECT 1;"},
 						model.StaticScript{Value: "SELECT 2;"},
@@ -210,24 +178,12 @@ func TestTransformationLocalMapper_MapAfterLocalLoad_Sql(t *testing.T) {
 			},
 		},
 		{
-			BlockKey: model.BlockKey{
-				BranchId:    123,
-				ComponentId: "keboola.snowflake-transformation",
-				ConfigId:    `456`,
-				Index:       1,
-			},
-			Name: "002",
+			BlockKey: model.BlockKey{Parent: config.ConfigKey, Index: 1},
+			Name:     "002",
 			Codes: model.Codes{
 				{
-					CodeKey: model.CodeKey{
-						BranchId:    123,
-						ComponentId: "keboola.snowflake-transformation",
-						ConfigId:    `456`,
-						BlockIndex:  1,
-						Index:       0,
-					},
-					Name:         "002-001",
-					CodeFileName: `code.sql`,
+					CodeKey: model.CodeKey{Parent: model.BlockKey{Parent: config.ConfigKey, Index: 1}, Index: 0},
+					Name:    "002-001",
 					Scripts: model.Scripts{
 						model.StaticScript{Value: "SELECT 3"},
 					},
@@ -235,21 +191,25 @@ func TestTransformationLocalMapper_MapAfterLocalLoad_Sql(t *testing.T) {
 			},
 		},
 		{
-			BlockKey: model.BlockKey{
-				BranchId:    123,
-				ComponentId: "keboola.snowflake-transformation",
-				ConfigId:    `456`,
-				Index:       2,
-			},
-			Name:  "003",
-			Codes: model.Codes{},
+			BlockKey: model.BlockKey{Parent: config.ConfigKey, Index: 2},
+			Name:     "003",
+			Codes:    model.Codes{},
 		},
 	}
 	assert.Equal(t, expected, config.Transformation.Blocks)
 
 	// Check naming registry
 	fmt.Printf("%#v", state.NamingRegistry().AllStrings())
-	assert.Equal(t, map[string]string{}, state.NamingRegistry().AllStrings())
+	assert.Equal(t, map[string]string{
+		`branch "123"`: `branch`,
+		`config "branch:123/component:keboola.snowflake-transformation/config:456"`:              `branch/config`,
+		`block "branch:123/component:keboola.snowflake-transformation/config:456/block:0"`:       `branch/config/blocks/001-block-1`,
+		`code "branch:123/component:keboola.snowflake-transformation/config:456/block:0/code:0"`: `branch/config/blocks/001-block-1/001-code-1`,
+		`code "branch:123/component:keboola.snowflake-transformation/config:456/block:0/code:1"`: `branch/config/blocks/001-block-1/002-code-2`,
+		`block "branch:123/component:keboola.snowflake-transformation/config:456/block:1"`:       `branch/config/blocks/002-block-2`,
+		`code "branch:123/component:keboola.snowflake-transformation/config:456/block:1/code:0"`: `branch/config/blocks/002-block-2/002-code-1`,
+		`block "branch:123/component:keboola.snowflake-transformation/config:456/block:2"`:       `branch/config/blocks/003-block-3`,
+	}, state.NamingRegistry().AllStrings())
 }
 
 func TestTransformationLocalMapper_MapAfterLocalLoad_Python(t *testing.T) {
@@ -259,7 +219,7 @@ func TestTransformationLocalMapper_MapAfterLocalLoad_Python(t *testing.T) {
 	logger := d.DebugLogger()
 
 	// Fixtures
-	config, configPath := createTestFixtures(t, "keboola.python-transformation-v2")
+	config, configPath := createTestFixtures(t, "keboola.python-transformation-v2", state)
 
 	// Create files/dirs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
@@ -294,38 +254,19 @@ func TestTransformationLocalMapper_MapAfterLocalLoad_Python(t *testing.T) {
 	// Assert
 	expected := []*model.Block{
 		{
-			BlockKey: model.BlockKey{
-				BranchId:    123,
-				ComponentId: "keboola.python-transformation-v2",
-				ConfigId:    `456`,
-				Index:       0,
-			},
-			Name: "001",
+			BlockKey: model.BlockKey{Parent: config.ConfigKey, Index: 0},
+			Name:     "001",
 			Codes: model.Codes{
 				{
-					CodeKey: model.CodeKey{
-						BranchId:    123,
-						ComponentId: "keboola.python-transformation-v2",
-						ConfigId:    `456`,
-						BlockIndex:  0,
-						Index:       0,
-					},
-					Name:         "001-001",
-					CodeFileName: `code.py`,
+					CodeKey: model.CodeKey{Parent: model.BlockKey{Parent: config.ConfigKey, Index: 0}, Index: 0},
+					Name:    "001-001",
 					Scripts: model.Scripts{
 						model.StaticScript{Value: "print('1')"},
 					},
 				},
 				{
-					CodeKey: model.CodeKey{
-						BranchId:    123,
-						ComponentId: "keboola.python-transformation-v2",
-						ConfigId:    `456`,
-						BlockIndex:  0,
-						Index:       1,
-					},
-					Name:         "001-002",
-					CodeFileName: `code.py`,
+					CodeKey: model.CodeKey{Parent: model.BlockKey{Parent: config.ConfigKey, Index: 0}, Index: 1},
+					Name:    "001-002",
 					Scripts: model.Scripts{
 						model.StaticScript{Value: "print('1')\nprint('2')"},
 					},
@@ -333,24 +274,12 @@ func TestTransformationLocalMapper_MapAfterLocalLoad_Python(t *testing.T) {
 			},
 		},
 		{
-			BlockKey: model.BlockKey{
-				BranchId:    123,
-				ComponentId: "keboola.python-transformation-v2",
-				ConfigId:    `456`,
-				Index:       1,
-			},
-			Name: "002",
+			BlockKey: model.BlockKey{Parent: config.ConfigKey, Index: 1},
+			Name:     "002",
 			Codes: model.Codes{
 				{
-					CodeKey: model.CodeKey{
-						BranchId:    123,
-						ComponentId: "keboola.python-transformation-v2",
-						ConfigId:    `456`,
-						BlockIndex:  1,
-						Index:       0,
-					},
-					Name:         "002-001",
-					CodeFileName: `code.py`,
+					CodeKey: model.CodeKey{Parent: model.BlockKey{Parent: config.ConfigKey, Index: 1}, Index: 0},
+					Name:    "002-001",
 					Scripts: model.Scripts{
 						model.StaticScript{Value: "print('3')"},
 					},
@@ -358,20 +287,23 @@ func TestTransformationLocalMapper_MapAfterLocalLoad_Python(t *testing.T) {
 			},
 		},
 		{
-			BlockKey: model.BlockKey{
-				BranchId:    123,
-				ComponentId: "keboola.python-transformation-v2",
-				ConfigId:    `456`,
-				Index:       2,
-			},
-
-			Name:  "003",
-			Codes: model.Codes{},
+			BlockKey: model.BlockKey{Parent: config.ConfigKey, Index: 2},
+			Name:     "003",
+			Codes:    model.Codes{},
 		},
 	}
 	assert.Equal(t, expected, config.Transformation.Blocks)
 
 	// Check naming registry
 	fmt.Printf("%#v", state.NamingRegistry().AllStrings())
-	assert.Equal(t, map[string]string{}, state.NamingRegistry().AllStrings())
+	assert.Equal(t, map[string]string{
+		`branch "123"`: `branch`,
+		`config "branch:123/component:keboola.python-transformation-v2/config:456"`:              `branch/config`,
+		`block "branch:123/component:keboola.python-transformation-v2/config:456/block:0"`:       `branch/config/blocks/001-block-1`,
+		`code "branch:123/component:keboola.python-transformation-v2/config:456/block:0/code:0"`: `branch/config/blocks/001-block-1/001-code-1`,
+		`code "branch:123/component:keboola.python-transformation-v2/config:456/block:0/code:1"`: `branch/config/blocks/001-block-1/002-code-2`,
+		`block "branch:123/component:keboola.python-transformation-v2/config:456/block:1"`:       `branch/config/blocks/002-block-2`,
+		`code "branch:123/component:keboola.python-transformation-v2/config:456/block:1/code:0"`: `branch/config/blocks/002-block-2/002-code-1`,
+		`block "branch:123/component:keboola.python-transformation-v2/config:456/block:2"`:       `branch/config/blocks/003-block-3`,
+	}, state.NamingRegistry().AllStrings())
 }

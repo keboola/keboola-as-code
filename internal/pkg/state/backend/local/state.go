@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/relatedpaths"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 type dependencies interface {
@@ -122,6 +123,27 @@ func (s *State) UntrackedPaths() []string {
 	return s.knownPaths.UntrackedPaths()
 }
 
+func (s *State) MustAdd(objects ...model.Object) {
+	if err := s.Add(objects...); err != nil {
+		panic(err)
+	}
+}
+
+func (s *State) Add(objects ...model.Object) error {
+	if err := s.objects.Add(objects...); err != nil {
+		return err
+	}
+
+	// Make sure all objects have a path
+	errors := utils.NewMultiError()
+	for _, object := range objects {
+		if _, err := s.GetPath(object); err != nil {
+			errors.Append(err)
+		}
+	}
+	return errors.ErrorOrNil()
+}
+
 func (s *State) GetByPath(path string) (model.Object, bool) {
 	key, found := s.manifest.NamingRegistry().KeyByPath(path)
 	if !found {
@@ -130,11 +152,11 @@ func (s *State) GetByPath(path string) (model.Object, bool) {
 	return s.Get(key)
 }
 
-func (s *State) GetPath(object model.WithKey) (model.AbsPath, error) {
+func (s *State) GetPath(object model.Object) (model.AbsPath, error) {
 	return s.namingGenerator.GetOrGenerate(object)
 }
 
-func (s *State) GetRelatedPaths(object model.WithKey) (*relatedpaths.Paths, error) {
+func (s *State) GetRelatedPaths(object model.Object) (*relatedpaths.Paths, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	key := object.Key()

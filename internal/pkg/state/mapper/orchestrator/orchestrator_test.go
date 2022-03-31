@@ -42,7 +42,7 @@ func createTargetConfigs(t *testing.T, objects model.Objects, naming *naming.Reg
 	targetConfig1 := &model.Config{ConfigKey: targetConfigKey1}
 	objects.MustAdd(targetConfig1)
 	if naming != nil {
-		naming.MustAttach(targetConfigKey1, model.NewAbsPath(`branch/extractor`, `target-config-1`))
+		naming.MustAttach(targetConfigKey1, model.NewAbsPath(`branch`, `extractor/target-config-1`))
 	}
 
 	// Target config 2
@@ -54,7 +54,7 @@ func createTargetConfigs(t *testing.T, objects model.Objects, naming *naming.Reg
 	targetConfig2 := &model.Config{ConfigKey: targetConfigKey2}
 	objects.MustAdd(targetConfig2)
 	if naming != nil {
-		naming.MustAttach(targetConfigKey2, model.NewAbsPath(`branch/extractor`, `target-config-2`))
+		naming.MustAttach(targetConfigKey2, model.NewAbsPath(`branch`, `extractor/target-config-2`))
 	}
 
 	// Target config 3
@@ -66,7 +66,7 @@ func createTargetConfigs(t *testing.T, objects model.Objects, naming *naming.Reg
 	targetConfig3 := &model.Config{ConfigKey: targetConfigKey3}
 	objects.MustAdd(targetConfig3)
 	if naming != nil {
-		naming.MustAttach(targetConfigKey3, model.NewAbsPath(`branch/extractor`, `target-config-3`))
+		naming.MustAttach(targetConfigKey3, model.NewAbsPath(`branch`, `extractor/target-config-3`))
 	}
 
 	return targetConfig1, targetConfig2, targetConfig3

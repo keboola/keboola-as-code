@@ -31,16 +31,16 @@ func TestRelationsMapper_Local_AfterOperation(t *testing.T) {
 			},
 		},
 	}
-	state.MustAdd(object1)
 	state.NamingRegistry().MustAttach(key1, model.NewAbsPath("", "object1"))
+	state.MustAdd(object1)
 
 	// API side
 	object2 := &fixtures.MockedObject{
 		MockedKey: key2,
 		Relations: model.Relations{},
 	}
-	state.MustAdd(object2)
 	state.NamingRegistry().MustAttach(key2, model.NewAbsPath("", "object2"))
+	state.MustAdd(object2)
 
 	// No other side relation
 	assert.Empty(t, object2.Relations)
@@ -74,8 +74,8 @@ func TestRelationsMapper_AfterOperation_Local_MissingOtherSide(t *testing.T) {
 			},
 		},
 	}
-	state.MustAdd(object1)
 	state.NamingRegistry().MustAttach(key1, model.NewAbsPath("", "object1"))
+	state.MustAdd(object1)
 
 	// Call AfterLocalOperation
 	assert.NoError(t, state.Mapper().AfterLocalOperation(model.NewChanges().AddLoaded(object1)))

@@ -51,15 +51,7 @@ func (k PhaseKey) Kind() Kind {
 	return Kind{Name: PhaseKind, Abbr: PhaseAbbr}
 }
 
-func (k TaskKey) Kind() Kind {
-	return Kind{Name: TaskKind, Abbr: TaskAbbr}
-}
-
 func (k PhaseKey) ObjectId() string {
-	return cast.ToString(k.Index)
-}
-
-func (k TaskKey) ObjectId() string {
 	return cast.ToString(k.Index)
 }
 
@@ -67,20 +59,8 @@ func (k PhaseKey) Level() ObjectLevel {
 	return 4
 }
 
-func (k TaskKey) Level() ObjectLevel {
-	return 5
-}
-
 func (k PhaseKey) Key() Key {
 	return k
-}
-
-func (k TaskKey) Key() Key {
-	return k
-}
-
-func (k TaskKey) String() string {
-	return fmt.Sprintf(`%s "branch:%d/component:%s/config:%s/phase:%d/task:%d"`, k.Kind().Name, k.BranchId, k.ComponentId, k.ConfigId, k.PhaseKey.Index, k.Index)
 }
 
 func (k PhaseKey) String() string {
@@ -99,12 +79,40 @@ func (k PhaseKey) ParentKey() (Key, error) {
 	return k.ConfigKey(), nil
 }
 
+func (p *Phase) ObjectName() string {
+	return p.Name
+}
+
+func (k TaskKey) Kind() Kind {
+	return Kind{Name: TaskKind, Abbr: TaskAbbr}
+}
+
+func (k TaskKey) ObjectId() string {
+	return cast.ToString(k.Index)
+}
+
+func (k TaskKey) Level() ObjectLevel {
+	return 5
+}
+
+func (k TaskKey) Key() Key {
+	return k
+}
+
+func (k TaskKey) String() string {
+	return fmt.Sprintf(`%s "branch:%d/component:%s/config:%s/phase:%d/task:%d"`, k.Kind().Name, k.BranchId, k.ComponentId, k.ConfigId, k.PhaseKey.Index, k.Index)
+}
+
 func (k TaskKey) ConfigKey() ConfigKey {
 	return k.PhaseKey.ConfigKey()
 }
 
 func (k TaskKey) ParentKey() (Key, error) {
 	return k.PhaseKey, nil
+}
+
+func (t *Task) ObjectName() string {
+	return t.Name
 }
 
 func (t *Task) TargetConfigKey() ConfigKey {

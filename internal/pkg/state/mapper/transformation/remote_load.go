@@ -43,15 +43,10 @@ func (m *transformationRemoteMapper) MapAfterRemoteLoad(recipe *model.RemoteLoad
 
 	// Fill in keys
 	for blockIndex, block := range config.Transformation.Blocks {
-		block.BranchId = config.BranchId
-		block.ComponentId = config.ComponentId
-		block.ConfigId = config.Id
+		block.Parent = config.ConfigKey
 		block.Index = blockIndex
 		for codeIndex, code := range block.Codes {
-			code.BranchId = config.BranchId
-			code.ComponentId = config.ComponentId
-			code.ConfigId = config.Id
-			code.BlockIndex = block.Index
+			code.Parent = block.BlockKey
 			code.Index = codeIndex
 			for _, script := range code.Scripts {
 				if v, ok := script.(model.StaticScript); ok {

@@ -8,15 +8,14 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestRemoteSaveTransformation(t *testing.T) {
 	t.Parallel()
-	state, d := createStateWithMapper(t)
+	state, d := createRemoteStateWithMapper(t)
 	logger := d.DebugLogger()
 
-	configState := createTestFixtures(t, "keboola.snowflake-transformation")
+	config, _ := createTestFixtures(t, "keboola.snowflake-transformation", state)
 
 	blocks := []*model.Block{
 		{
@@ -54,12 +53,8 @@ func TestRemoteSaveTransformation(t *testing.T) {
 		},
 	}
 
-	object := &model.Config{
-		ConfigKey: configState.ConfigKey,
-		Content:   orderedmap.New(),
-	}
-	object.Transformation = &model.Transformation{Blocks: blocks}
-	recipe := model.NewRemoteSaveRecipe(configState.Manifest(), object, model.NewChangedFields("transformation"))
+	config.Transformation = &model.Transformation{Blocks: blocks}
+	recipe := model.NewRemoteSaveRecipe(config, model.NewChangedFields("transformation"))
 
 	// Save
 	assert.NoError(t, state.Mapper().MapBeforeRemoteSave(recipe))
@@ -103,8 +98,8 @@ func TestRemoteSaveTransformation(t *testing.T) {
   }
 ]
 `
-	assert.Empty(t, object.Transformation)
-	apiBlocks := object.Content.GetNestedOrNil(`parameters.blocks`)
+	assert.Empty(t, config.Transformation)
+	apiBlocks := config.Content.GetNestedOrNil(`parameters.blocks`)
 	assert.NotNil(t, blocks)
 	assert.Equal(t, strings.TrimLeft(expectedBlocks, "\n"), json.MustEncodeString(apiBlocks, true))
 

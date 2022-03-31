@@ -80,10 +80,8 @@ func (c *localLoadContext) loadBlock(blockIndex int, blockDir model.AbsPath) err
 	// Create struct
 	block := &model.Block{
 		BlockKey: model.BlockKey{
-			BranchId:    c.transformation.BranchId,
-			ComponentId: c.transformation.ComponentId,
-			ConfigId:    c.transformation.Id,
-			Index:       blockIndex,
+			Parent: c.transformation.ConfigKey,
+			Index:  blockIndex,
 		},
 		Codes: make([]*model.Code, 0),
 	}
@@ -97,41 +95,43 @@ func (c *localLoadContext) loadBlock(blockIndex int, blockDir model.AbsPath) err
 	}
 
 	// Load meta file
+	errors := utils.NewMultiError()
 	if err := c.loadBlockMetaFile(block, blockDir); err != nil {
-		return err
+		errors.Append(err)
 	}
 
 	// Search for dirs with codes
 	codesDirs, err := c.codeDirs(block, blockDir.String())
 	if err != nil {
-		return err
+		errors.Append(err)
 	}
 
 	// Load codes
-	errors := utils.NewMultiError()
 	for codeIndex, codeDir := range codesDirs {
 		if err := c.loadCode(block, codeIndex, codeDir); err != nil {
-			errors.AppendWithPrefix(fmt.Sprintf(`invalid block "%s"`, blockDir.Base()), err)
+			errors.AppendWithPrefix(fmt.Sprintf(`invalid code "%s"`, codeDir.Base()), err)
 		}
 	}
 
 	// Validate block with codes
-	if err := validator.Validate(c.state.Ctx(), block); err != nil {
-		return err
+	if errors.Len() == 0 {
+		if err := validator.Validate(c.state.Ctx(), block); err != nil {
+			errors.Append(err)
+		}
 	}
 
-	c.blocks = append(c.blocks, block)
+	if errors.Len() == 0 {
+		c.blocks = append(c.blocks, block)
+	}
+
 	return errors.ErrorOrNil()
 }
 
 func (c *localLoadContext) loadCode(block *model.Block, codeIndex int, codeDir model.AbsPath) error {
 	code := &model.Code{
 		CodeKey: model.CodeKey{
-			BranchId:    c.transformation.BranchId,
-			ComponentId: c.transformation.ComponentId,
-			ConfigId:    c.transformation.Id,
-			BlockIndex:  block.Index,
-			Index:       codeIndex,
+			Parent: block.BlockKey,
+			Index:  codeIndex,
 		},
 		Scripts: make(model.Scripts, 0),
 	}
@@ -145,32 +145,35 @@ func (c *localLoadContext) loadCode(block *model.Block, codeIndex int, codeDir m
 	}
 
 	// Load meta file
+	errors := utils.NewMultiError()
 	if err := c.loadCodeMetaFile(code, codeDir); err != nil {
-		return err
+		errors.Append(err)
 	}
 
 	// Load code file
-	if err := c.addScripts(code); err != nil {
-		return err
+	if err := c.addScripts(code, codeDir); err != nil {
+		errors.Append(err)
 	}
 
-	block.Codes = append(block.Codes, code)
-	return nil
+	if errors.Len() == 0 {
+		block.Codes = append(block.Codes, code)
+	}
+
+	return errors.ErrorOrNil()
 }
 
-func (c *localLoadContext) addScripts(code *model.Code) error {
+func (c *localLoadContext) addScripts(code *model.Code, codeDir model.AbsPath) error {
 	// Find code file
-	if name, err := c.codeFileName(code); err != nil {
+	fileName, err := c.codeFileName(codeDir)
+	if err != nil {
 		return err
-	} else if name == "" {
+	} else if fileName == "" {
 		return nil
-	} else {
-		code.CodeFileName = name
 	}
 
 	// Load file content
 	file, err := c.Files.
-		Load(c.state.NamingGenerator().CodeFilePath(code)).
+		Load(filesystem.Join(codeDir.String(), fileName)).
 		SetDescription("code file").
 		AddTag(model.FileKindNativeCode).
 		ReadFile()
@@ -204,20 +207,20 @@ func (c *localLoadContext) loadCodeMetaFile(code *model.Code, codeDir model.AbsP
 	return err
 }
 
-func (c *localLoadContext) codeFileName(code *model.Code) (string, error) {
+func (c *localLoadContext) codeFileName(codeDir model.AbsPath) (string, error) {
 	fs := c.state.ObjectsRoot()
 
 	// Search for code file, glob "code.*"
 	// File can use an old naming, so the file extension is not specified
-	matches, err := fs.Glob(filesystem.Join(code.String(), naming.CodeFileName+`.*`))
+	matches, err := fs.Glob(filesystem.Join(codeDir.String(), naming.CodeFileName+`.*`))
 	if err != nil {
-		return "", fmt.Errorf(`cannot search for code file in %s": %w`, code.String(), err)
+		return "", fmt.Errorf(`cannot search for code file in %s": %w`, codeDir.String(), err)
 	}
 
 	errors := utils.NewMultiError()
 	files := make([]string, 0)
 	for _, match := range matches {
-		relPath, err := filesystem.Rel(code.String(), match)
+		relPath, err := filesystem.Rel(codeDir.String(), match)
 		if err != nil {
 			errors.Append(err)
 			continue
@@ -234,7 +237,7 @@ func (c *localLoadContext) codeFileName(code *model.Code) (string, error) {
 
 	// No file?
 	if len(files) == 0 {
-		return "", fmt.Errorf(`missing code file in "%s"`, code.String())
+		return "", fmt.Errorf(`missing code file in "%s"`, codeDir.String())
 	}
 
 	// Multiple files?
@@ -242,7 +245,7 @@ func (c *localLoadContext) codeFileName(code *model.Code) (string, error) {
 		return "", fmt.Errorf(
 			`expected one, but found multiple code files "%s" in "%s"`,
 			strings.Join(files, `", "`),
-			code.String(),
+			codeDir.String(),
 		)
 	}
 

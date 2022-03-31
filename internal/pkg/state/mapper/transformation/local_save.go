@@ -54,11 +54,16 @@ func (c *localSaveContext) save() error {
 		AddTag(model.FileTypeOther).
 		AddTag(model.FileKindGitKeep)
 
+	// Init value if needed
+	if c.transformation.Transformation == nil {
+		c.transformation.Transformation = &model.Transformation{}
+	}
+
 	// Generate files for blocks
 	errors := utils.NewMultiError()
 	for _, block := range c.transformation.Transformation.Blocks {
 		// Generate block files
-		if err := c.generateBlock(block); err != nil {
+		if err := c.saveBlock(block); err != nil {
 			errors.Append(err)
 		}
 	}
@@ -75,7 +80,7 @@ func (c *localSaveContext) save() error {
 	return errors.ErrorOrNil()
 }
 
-func (c *localSaveContext) generateBlock(block *model.Block) error {
+func (c *localSaveContext) saveBlock(block *model.Block) error {
 	// Validate
 	if err := validator.Validate(c.state.Ctx(), block); err != nil {
 		return utils.PrefixError(fmt.Sprintf(`invalid block \"%s\"`, block.String()), err)
@@ -96,14 +101,14 @@ func (c *localSaveContext) generateBlock(block *model.Block) error {
 	// Generate codes
 	errors := utils.NewMultiError()
 	for _, code := range block.Codes {
-		if err := c.generateCode(code); err != nil {
+		if err := c.saveCode(code); err != nil {
 			errors.Append(err)
 		}
 	}
 	return errors.ErrorOrNil()
 }
 
-func (c *localSaveContext) generateCode(code *model.Code) error {
+func (c *localSaveContext) saveCode(code *model.Code) error {
 	// Get path
 	codeDir, err := c.state.GetPath(code)
 	if err != nil {
@@ -116,9 +121,12 @@ func (c *localSaveContext) generateCode(code *model.Code) error {
 		c.createMetadataFile(metadataPath, `code metadata`, model.FileKindCodeMeta, metadata)
 	}
 
+	codeFileName := c.state.NamingGenerator().CodeFileName(code.ComponentId())
+	codeFilePath := filesystem.Join(codeDir.String(), codeFileName)
+
 	// Create code file
 	c.Files.
-		Add(filesystem.NewRawFile(c.state.NamingGenerator().CodeFilePath(code), code.Scripts.String(code.ComponentId))).
+		Add(filesystem.NewRawFile(codeFilePath, code.Scripts.String(code.ComponentId()))).
 		SetDescription(`code`).
 		AddTag(model.FileTypeOther).
 		AddTag(model.FileKindNativeCode)

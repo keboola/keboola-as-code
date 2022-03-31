@@ -17,7 +17,7 @@ const (
 	PhaseFile         = "phase.json"
 	TaskFile          = "task.json"
 	CodeFileName      = `code` // transformation code block name without ext
-	blocksDir         = `blocks`
+	BlocksDir         = `blocks`
 	blockNameTemplate = PathTemplate(`{block_order}-{block_name}`)
 	codeNameTemplate  = PathTemplate(`{code_order}-{code_name}`)
 	phasesDir         = `phases`
@@ -47,10 +47,6 @@ func (g Generator) DescriptionFilePath(parentPath AbsPath) string {
 	return filesystem.Join(parentPath.String(), DescriptionFile)
 }
 
-func (g Generator) CodeFilePath(code *Code) string {
-	return filesystem.Join(code.String(), code.CodeFileName)
-}
-
 func (g Generator) CodeFileName(componentId ComponentId) string {
 	return CodeFileName + "." + CodeFileExt(componentId)
 }
@@ -68,14 +64,14 @@ func (g Generator) TaskFilePath(taskDir AbsPath) string {
 }
 
 func (g Generator) BlocksDir(configDir AbsPath) AbsPath {
-	return NewAbsPath(configDir.String(), blocksDir)
+	return NewAbsPath(configDir.String(), BlocksDir)
 }
 
 func (g Generator) PhasesDir(configDir AbsPath) AbsPath {
 	return NewAbsPath(configDir.String(), phasesDir)
 }
 
-func (g Generator) GetOrGenerate(object WithKey) (AbsPath, error) {
+func (g Generator) GetOrGenerate(object Object) (AbsPath, error) {
 	// Get path
 	key := object.Key()
 	if path, found := g.registry.PathByKey(key); found {
@@ -91,7 +87,7 @@ func (g Generator) GetOrGenerate(object WithKey) (AbsPath, error) {
 	return path, nil
 }
 
-func (g Generator) Generate(object WithKey) (AbsPath, error) {
+func (g Generator) Generate(object Object) (AbsPath, error) {
 	// Generate
 	path, err := g.generate(object)
 	if err != nil {
@@ -103,7 +99,7 @@ func (g Generator) Generate(object WithKey) (AbsPath, error) {
 	return g.registry.ensureUniquePath(key, path), nil
 }
 
-func (g Generator) generate(object WithKey) (AbsPath, error) {
+func (g Generator) generate(object Object) (AbsPath, error) {
 	switch o := object.(type) {
 	case *Branch:
 		return g.branchPath(o)
@@ -260,12 +256,15 @@ func (g Generator) blockPath(block *Block) (AbsPath, error) {
 		return AbsPath{}, err
 	}
 
-	p := NewEmptyAbsPath()
-	p = p.WithParentPath(parentPath)
-	p = p.WithRelativePath(utils.ReplacePlaceholders(string(blockNameTemplate), map[string]interface{}{
+	relativePath := utils.ReplacePlaceholders(string(blockNameTemplate), map[string]interface{}{
 		"block_order": fmt.Sprintf(`%03d`, block.Index+1),
 		"block_name":  strhelper.NormalizeName(block.Name),
-	}))
+	})
+
+	p := NewEmptyAbsPath()
+	p = p.WithParentPath(parentPath)
+	p = p.WithRelativePath(relativePath)
+	p = p.WithRelativePath(filesystem.Join(BlocksDir, relativePath))
 	return p, nil
 }
 
@@ -318,7 +317,7 @@ func (g Generator) taskPath(task *Task) (AbsPath, error) {
 	return p, nil
 }
 
-func (g Generator) getParent(object WithParentKey) (parentKey Key, parentKind Kind, parentPath string, err error) {
+func (g Generator) getParent(object Object) (parentKey Key, parentKind Kind, parentPath string, err error) {
 	if parentKey, err = object.ParentKey(); err != nil {
 		// nop, return err
 	} else if parentKey == nil {

@@ -7,15 +7,14 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-func TestLoadRemoteTransformation(t *testing.T) {
+func TestTransformationRemoteMapper_MapAfterRemoteLoad(t *testing.T) {
 	t.Parallel()
-	state, d := createStateWithMapper(t)
+	state, d := createRemoteStateWithMapper(t)
 	logger := d.DebugLogger()
 
-	configState := createTestFixtures(t, "keboola.snowflake-transformation")
+	config, _ := createTestFixtures(t, "keboola.snowflake-transformation", state)
 
 	// Api representation
 	configInApi := `
@@ -57,62 +56,28 @@ func TestLoadRemoteTransformation(t *testing.T) {
 `
 
 	// Load
-	object := &model.Config{
-		ConfigKey: configState.ConfigKey,
-		Content:   orderedmap.New(),
-	}
-	json.MustDecodeString(configInApi, object.Content)
-	recipe := model.NewRemoteLoadRecipe(configState.ConfigManifest, object)
+
+	json.MustDecodeString(configInApi, config.Content)
+	recipe := model.NewRemoteLoadRecipe(config)
 	assert.NoError(t, state.Mapper().MapAfterRemoteLoad(recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Internal representation
 	expected := []*model.Block{
 		{
-			BlockKey: model.BlockKey{
-				BranchId:    123,
-				ComponentId: "keboola.snowflake-transformation",
-				ConfigId:    `456`,
-				Index:       0,
-			},
-			AbsPath: model.NewAbsPath(
-				`branch/config/blocks`,
-				`001-block-1`,
-			),
-			Name: "block-1",
+			BlockKey: model.BlockKey{Parent: config.ConfigKey, Index: 0},
+			Name:     "block-1",
 			Codes: model.Codes{
 				{
-					CodeKey: model.CodeKey{
-						BranchId:    123,
-						ComponentId: "keboola.snowflake-transformation",
-						ConfigId:    `456`,
-						BlockIndex:  0,
-						Index:       0,
-					},
-					AbsPath: model.NewAbsPath(
-						`branch/config/blocks/001-block-1`,
-						`001-code-1`,
-					),
-					Name:         "code-1",
-					CodeFileName: `code.sql`,
+					CodeKey: model.CodeKey{Parent: model.BlockKey{Parent: config.ConfigKey, Index: 0}, Index: 0},
+					Name:    "code-1",
 					Scripts: model.Scripts{
 						model.StaticScript{Value: "SELECT 1"},
 					},
 				},
 				{
-					CodeKey: model.CodeKey{
-						BranchId:    123,
-						ComponentId: "keboola.snowflake-transformation",
-						ConfigId:    `456`,
-						BlockIndex:  0,
-						Index:       1,
-					},
-					AbsPath: model.NewAbsPath(
-						`branch/config/blocks/001-block-1`,
-						`002-code-2`,
-					),
-					Name:         "code-2",
-					CodeFileName: `code.sql`,
+					CodeKey: model.CodeKey{Parent: model.BlockKey{Parent: config.ConfigKey, Index: 0}, Index: 1},
+					Name:    "code-2",
 					Scripts: model.Scripts{
 						model.StaticScript{Value: "SELECT 1;"},
 						model.StaticScript{Value: "SELECT 2;"},
@@ -121,32 +86,12 @@ func TestLoadRemoteTransformation(t *testing.T) {
 			},
 		},
 		{
-			BlockKey: model.BlockKey{
-				BranchId:    123,
-				ComponentId: "keboola.snowflake-transformation",
-				ConfigId:    `456`,
-				Index:       1,
-			},
-			AbsPath: model.NewAbsPath(
-				`branch/config/blocks`,
-				`002-block-2`,
-			),
-			Name: "block-2",
+			BlockKey: model.BlockKey{Parent: config.ConfigKey, Index: 1},
+			Name:     "block-2",
 			Codes: model.Codes{
 				{
-					CodeKey: model.CodeKey{
-						BranchId:    123,
-						ComponentId: "keboola.snowflake-transformation",
-						ConfigId:    `456`,
-						BlockIndex:  1,
-						Index:       0,
-					},
-					AbsPath: model.NewAbsPath(
-						`branch/config/blocks/002-block-2`,
-						`001-code-3`,
-					),
-					Name:         "code-3",
-					CodeFileName: `code.sql`,
+					CodeKey: model.CodeKey{Parent: model.BlockKey{Parent: config.ConfigKey, Index: 1}, Index: 0},
+					Name:    "code-3",
 					Scripts: model.Scripts{
 						model.StaticScript{Value: "SELECT 3"},
 					},
@@ -155,7 +100,7 @@ func TestLoadRemoteTransformation(t *testing.T) {
 		},
 	}
 
-	// In internal object are blocks in Blocks field, not in Content
-	assert.Equal(t, `{"parameters":{}}`, json.MustEncodeString(object.Content, false))
-	assert.Equal(t, expected, object.Transformation.Blocks)
+	// Blocks have been moved from Content to config.Transformation.Blocks
+	assert.Equal(t, `{"parameters":{}}`, json.MustEncodeString(config.Content, false))
+	assert.Equal(t, expected, config.Transformation.Blocks)
 }
