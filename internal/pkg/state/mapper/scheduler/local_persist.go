@@ -22,13 +22,13 @@ func NewLocalMapper(s *local.State, d localDependencies) *schedulerLocalMapper {
 
 func (m *schedulerLocalMapper) MapBeforePersist(recipe *model.PersistRecipe) error {
 	// Scheduler is represented by config
-	configManifest, ok := recipe.Manifest.(*model.ConfigManifest)
+	schedulerConfigKey, ok := recipe.Key.(model.ConfigKey)
 	if !ok {
 		return nil
 	}
 
 	// Parent of the scheduler must be target config
-	configKey, ok := recipe.ParentKey.(model.ConfigKey)
+	parentConfigKey, ok := recipe.ParentKey.(model.ConfigKey)
 	if !ok {
 		return nil
 	}
@@ -40,7 +40,7 @@ func (m *schedulerLocalMapper) MapBeforePersist(recipe *model.PersistRecipe) err
 	}
 
 	// Get component
-	component, err := components.Get(configManifest.ComponentKey())
+	component, err := components.Get(schedulerConfigKey.ComponentKey())
 	if err != nil {
 		return err
 	}
@@ -51,14 +51,14 @@ func (m *schedulerLocalMapper) MapBeforePersist(recipe *model.PersistRecipe) err
 	}
 
 	// Branch must be same
-	if configKey.BranchKey() != configManifest.BranchKey() {
-		panic(fmt.Errorf(`child "%s" and parent "%s" must be from same branch`, configManifest.String(), configKey.String()))
+	if parentConfigKey.BranchKey() != schedulerConfigKey.BranchKey() {
+		panic(fmt.Errorf(`child "%s" and parent "%s" must be from same branch`, schedulerConfigKey.String(), parentConfigKey.String()))
 	}
 
 	// Add relation
-	configManifest.Relations.Add(&model.SchedulerForRelation{
-		ComponentId: configKey.ComponentId,
-		ConfigId:    configKey.Id,
+	recipe.Relations.Add(&model.SchedulerForRelation{
+		ComponentId: parentConfigKey.ComponentId,
+		ConfigId:    parentConfigKey.Id,
 	})
 
 	return nil

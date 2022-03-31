@@ -13,25 +13,23 @@ func TestSchedulerLocalMapper_MapBeforePersist(t *testing.T) {
 	state, d := createLocalStateWithMapper(t)
 	logger := d.DebugLogger()
 
+	configKey := model.ConfigKey{
+		BranchId:    123,
+		ComponentId: model.SchedulerComponentId,
+		Id:          `678`,
+	}
 	parentKey := model.ConfigKey{
 		BranchId:    123,
 		ComponentId: `foo.bar`,
 		Id:          `345`,
 	}
-	configManifest := &model.ConfigManifest{
-		ConfigKey: model.ConfigKey{
-			BranchId:    123,
-			ComponentId: model.SchedulerComponentId,
-			Id:          `678`,
-		},
-	}
 	recipe := &model.PersistRecipe{
+		Key:       configKey,
 		ParentKey: parentKey,
-		Manifest:  configManifest,
 	}
 
 	// Invoke
-	assert.Empty(t, configManifest.Relations)
+	assert.Empty(t, recipe.Relations)
 	assert.NoError(t, state.Mapper().MapBeforePersist(recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
@@ -41,5 +39,5 @@ func TestSchedulerLocalMapper_MapBeforePersist(t *testing.T) {
 			ComponentId: `foo.bar`,
 			ConfigId:    `345`,
 		},
-	}, configManifest.Relations)
+	}, recipe.Relations)
 }
