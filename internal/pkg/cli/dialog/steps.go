@@ -49,6 +49,7 @@ func (d *stepsDialog) parse(result string) (input.StepsGroups, map[input.StepInd
 	var currentGroup *input.StepsGroup
 	var currentStep *input.Step
 	stepsToIds := make(map[input.StepIndex]string)
+	usedIds := make(map[string]bool)
 
 	var invalidDefinition bool
 
@@ -89,6 +90,11 @@ func (d *stepsDialog) parse(result string) (input.StepsGroups, map[input.StepInd
 				Step:  len(currentGroup.Steps) - 1,
 				Group: len(stepsGroups) - 1,
 			}
+			if usedIds[m[1]] {
+				errors.Append(fmt.Errorf(`line %d: step with id "%s" is already defined`, lineNum, m[1]))
+				continue
+			}
+			usedIds[m[1]] = true
 			stepsToIds[index] = m[1]
 
 			invalidDefinition = false
