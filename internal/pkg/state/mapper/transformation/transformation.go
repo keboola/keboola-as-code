@@ -3,39 +3,58 @@ package transformation
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/remote"
 )
 
-type transformationMapper struct {
-	state  *state.State
+type dependencies interface {
+	Logger() log.Logger
+	Components() (*model.ComponentsMap, error)
+}
+
+type transformationLocalMapper struct {
+	*helper
+	state  *local.State
 	logger log.Logger
 }
 
-func NewMapper(s *state.State) *transformationMapper {
-	return &transformationMapper{state: s, logger: s.Logger()}
+type transformationRemoteMapper struct {
+	*helper
+	state  *remote.State
+	logger log.Logger
 }
 
-func (m *transformationMapper) isTransformationConfig(object interface{}) (bool, error) {
-	v, ok := object.(*model.Config)
+type helper struct {
+	dependencies
+}
+
+func NewLocalMapper(s *local.State, d dependencies) *transformationLocalMapper {
+	return &transformationLocalMapper{helper: newHelper(d), state: s, logger: d.Logger()}
+}
+
+func NewRemoteMapper(s *remote.State, d dependencies) *transformationRemoteMapper {
+	return &transformationRemoteMapper{helper: newHelper(d), state: s, logger: d.Logger()}
+}
+
+func newHelper(d dependencies) *helper {
+	return &helper{dependencies: d}
+}
+
+func (h *helper) isTransformation(key model.Key) (bool, error) {
+	// Must be config
+	configKey, ok := key.(model.ConfigKey)
 	if !ok {
 		return false, nil
 	}
-
-	component, err := m.state.Components().Get(v.ComponentKey())
+	
+	// Get components
+	components, err := h.Components()
 	if err != nil {
 		return false, err
 	}
 
-	return component.IsTransformation(), nil
-}
-
-func (m *transformationMapper) isTransformationConfigState(objectState model.ObjectState) (bool, error) {
-	v, ok := objectState.(*model.ConfigState)
-	if !ok {
-		return false, nil
-	}
-
-	component, err := m.state.Components().Get(v.ComponentKey())
+	// Get component
+	component, err := components.Get(configKey.ComponentKey())
 	if err != nil {
 		return false, err
 	}

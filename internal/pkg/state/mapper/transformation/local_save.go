@@ -12,9 +12,9 @@ import (
 )
 
 // MapBeforeLocalSave - save code blocks to the disk.
-func (m *transformationMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
+func (m *transformationLocalMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
 	// Only for transformation config
-	if ok, err := m.isTransformationConfig(recipe.Object); err != nil {
+	if ok, err := m.isTransformation(recipe.Object.Key()); err != nil {
 		return err
 	} else if !ok {
 		return nil

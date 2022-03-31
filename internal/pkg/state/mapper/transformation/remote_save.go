@@ -9,9 +9,9 @@ import (
 )
 
 // MapBeforeRemoteSave - save code blocks to the API.
-func (m *transformationMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
+func (m *transformationRemoteMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
 	// Only for transformation config
-	if ok, err := m.isTransformationConfig(recipe.Object); err != nil {
+	if ok, err := m.isTransformation(recipe.Object.Key()); err != nil {
 		return err
 	} else if !ok {
 		return nil

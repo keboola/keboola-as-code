@@ -7,9 +7,9 @@ import (
 )
 
 // MapAfterRemoteLoad - load code blocks from API to blocks field.
-func (m *transformationMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
+func (m *transformationRemoteMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
 	// Only for transformation config
-	if ok, err := m.isTransformationConfig(recipe.Object); err != nil {
+	if ok, err := m.isTransformation(recipe.Object.Key()); err != nil {
 		return err
 	} else if !ok {
 		return nil

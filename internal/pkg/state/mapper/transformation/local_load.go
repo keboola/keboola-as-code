@@ -13,17 +13,27 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
+type localLoadContext struct {
+	*state.State
+	*model.LocalLoadRecipe
+	logger    log.Logger
+	config    *model.Config
+	blocksDir string
+	blocks    []*model.Block
+	errors    *utils.MultiError
+}
+
 // MapAfterLocalLoad - load code blocks from filesystem to Blocks field.
-func (m *transformationMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
+func (m *transformationLocalMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
 	// Only for transformation config
-	if ok, err := m.isTransformationConfig(recipe.Object); err != nil {
+	if ok, err := m.isTransformation(recipe.Object.Key()); err != nil {
 		return err
 	} else if !ok {
 		return nil
 	}
 
 	// Create local loader
-	l := &localLoader{
+	l := &localLoadContext{
 		State:           m.state,
 		LocalLoadRecipe: recipe,
 		logger:          m.logger,
@@ -36,70 +46,60 @@ func (m *transformationMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) 
 	return l.loadBlocks()
 }
 
-type localLoader struct {
-	*state.State
-	*model.LocalLoadRecipe
-	logger    log.Logger
-	config    *model.Config
-	blocksDir string
-	blocks    []*model.Block
-	errors    *utils.MultiError
-}
-
-func (l *localLoader) loadBlocks() error {
+func (c *localLoadContext) loadBlocks() error {
 	// Load blocks and codes from filesystem
-	for blockIndex, blockDir := range l.blockDirs() {
-		block := l.addBlock(blockIndex, blockDir)
-		for codeIndex, codeDir := range l.codeDirs(block) {
-			l.addCode(block, codeIndex, codeDir)
+	for blockIndex, blockDir := range c.blockDirs() {
+		block := c.addBlock(blockIndex, blockDir)
+		for codeIndex, codeDir := range c.codeDirs(block) {
+			c.addCode(block, codeIndex, codeDir)
 		}
 	}
 
 	// Validate, if all loaded without error
-	l.validate()
+	c.validate()
 
-	l.config.Transformation = &model.Transformation{Blocks: l.blocks}
-	return l.errors.ErrorOrNil()
+	c.config.Transformation = &model.Transformation{Blocks: c.blocks}
+	return c.errors.ErrorOrNil()
 }
 
-func (l *localLoader) validate() {
-	if l.errors.Len() == 0 {
-		for _, block := range l.blocks {
-			if err := validator.Validate(l.State.Ctx(), block); err != nil {
-				l.errors.Append(utils.PrefixError(fmt.Sprintf(`block "%s" is not valid`, block.String()), err))
+func (c *localLoadContext) validate() {
+	if c.errors.Len() == 0 {
+		for _, block := range c.blocks {
+			if err := validator.Validate(c.State.Ctx(), block); err != nil {
+				c.errors.Append(utils.PrefixError(fmt.Sprintf(`block "%s" is not valid`, block.String()), err))
 			}
 		}
 	}
 }
 
-func (l *localLoader) addBlock(blockIndex int, path string) *model.Block {
+func (c *localLoadContext) addBlock(blockIndex int, path string) *model.Block {
 	block := &model.Block{
 		BlockKey: model.BlockKey{
-			BranchId:    l.config.BranchId,
-			ComponentId: l.config.ComponentId,
-			ConfigId:    l.config.Id,
+			BranchId:    c.config.BranchId,
+			ComponentId: c.config.ComponentId,
+			ConfigId:    c.config.Id,
 			Index:       blockIndex,
 		},
 		AbsPath: model.NewAbsPath(
-			l.blocksDir,
+			c.blocksDir,
 			path,
 		),
 		Codes: make([]*model.Code, 0),
 	}
 
-	l.ObjectManifest.AddRelatedPath(block.String())
-	l.loadBlockMetaFile(block)
-	l.blocks = append(l.blocks, block)
+	c.ObjectManifest.AddRelatedPath(block.String())
+	c.loadBlockMetaFile(block)
+	c.blocks = append(c.blocks, block)
 
 	return block
 }
 
-func (l *localLoader) addCode(block *model.Block, codeIndex int, path string) *model.Code {
+func (c *localLoadContext) addCode(block *model.Block, codeIndex int, path string) *model.Code {
 	code := &model.Code{
 		CodeKey: model.CodeKey{
-			BranchId:    l.config.BranchId,
-			ComponentId: l.config.ComponentId,
-			ConfigId:    l.config.Id,
+			BranchId:    c.config.BranchId,
+			ComponentId: c.config.ComponentId,
+			ConfigId:    c.config.Id,
 			BlockIndex:  block.Index,
 			Index:       codeIndex,
 		},
@@ -110,126 +110,126 @@ func (l *localLoader) addCode(block *model.Block, codeIndex int, path string) *m
 		Scripts: make(model.Scripts, 0),
 	}
 
-	l.ObjectManifest.AddRelatedPath(code.String())
-	l.loadCodeMetaFile(code)
-	l.addScripts(code)
+	c.ObjectManifest.AddRelatedPath(code.String())
+	c.loadCodeMetaFile(code)
+	c.addScripts(code)
 	block.Codes = append(block.Codes, code)
 
 	return code
 }
 
-func (l *localLoader) addScripts(code *model.Code) {
-	code.CodeFileName = l.codeFileName(code)
+func (c *localLoadContext) addScripts(code *model.Code) {
+	code.CodeFileName = c.codeFileName(code)
 	if code.CodeFileName == "" {
 		return
 	}
 
 	// Load file content
-	file, err := l.Files.
-		Load(l.NamingGenerator().CodeFilePath(code)).
+	file, err := c.Files.
+		Load(c.NamingGenerator().CodeFilePath(code)).
 		SetDescription("code file").
 		AddTag(model.FileKindNativeCode).
 		ReadFile()
 	if err != nil {
-		l.errors.Append(err)
+		c.errors.Append(err)
 		return
 	}
 
 	// Split to scripts
-	code.Scripts = model.ScriptsFromStr(file.Content, l.config.ComponentId)
-	l.logger.Debugf(`Parsed "%d" scripts from "%s"`, len(code.Scripts), file.Path())
+	code.Scripts = model.ScriptsFromStr(file.Content, c.config.ComponentId)
+	c.logger.Debugf(`Parsed "%d" scripts from "%s"`, len(code.Scripts), file.Path())
 }
 
-func (l *localLoader) loadBlockMetaFile(block *model.Block) {
-	_, _, err := l.Files.
-		Load(l.NamingGenerator().MetaFilePath(block.String())).
+func (c *localLoadContext) loadBlockMetaFile(block *model.Block) {
+	_, _, err := c.Files.
+		Load(c.NamingGenerator().MetaFilePath(block.String())).
 		SetDescription("block metadata").
 		AddTag(model.FileTypeJson).
 		AddTag(model.FileKindBlockMeta).
 		ReadJsonFieldsTo(block, model.MetaFileFieldsTag)
 	if err != nil {
-		l.errors.Append(err)
+		c.errors.Append(err)
 	}
 }
 
-func (l *localLoader) loadCodeMetaFile(code *model.Code) {
-	_, _, err := l.Files.
-		Load(l.NamingGenerator().MetaFilePath(code.String())).
+func (c *localLoadContext) loadCodeMetaFile(code *model.Code) {
+	_, _, err := c.Files.
+		Load(c.NamingGenerator().MetaFilePath(code.String())).
 		SetDescription("code metadata").
 		AddTag(model.FileTypeJson).
 		AddTag(model.FileKindCodeMeta).
 		ReadJsonFieldsTo(code, model.MetaFileFieldsTag)
 	if err != nil {
-		l.errors.Append(err)
+		c.errors.Append(err)
 	}
 }
 
-func (l *localLoader) blockDirs() []string {
+func (c *localLoadContext) blockDirs() []string {
 	// Check if blocks dir exists
-	if !l.ObjectsRoot().IsDir(l.blocksDir) {
-		l.errors.Append(fmt.Errorf(`missing blocks dir "%s"`, l.blocksDir))
+	if !c.ObjectsRoot().IsDir(c.blocksDir) {
+		c.errors.Append(fmt.Errorf(`missing blocks dir "%s"`, c.blocksDir))
 		return nil
 	}
 
 	// Track blocks dir
-	l.ObjectManifest.AddRelatedPath(l.blocksDir)
+	c.ObjectManifest.AddRelatedPath(c.blocksDir)
 
 	// Track .gitkeep, .gitignore
-	if path := filesystem.Join(l.blocksDir, `.gitkeep`); l.ObjectsRoot().IsFile(path) {
-		l.ObjectManifest.AddRelatedPath(path)
+	if path := filesystem.Join(c.blocksDir, `.gitkeep`); c.ObjectsRoot().IsFile(path) {
+		c.ObjectManifest.AddRelatedPath(path)
 	}
-	if path := filesystem.Join(l.blocksDir, `.gitignore`); l.ObjectsRoot().IsFile(path) {
-		l.ObjectManifest.AddRelatedPath(path)
+	if path := filesystem.Join(c.blocksDir, `.gitignore`); c.ObjectsRoot().IsFile(path) {
+		c.ObjectManifest.AddRelatedPath(path)
 	}
 
 	// Load all dir entries
-	dirs, err := filesystem.ReadSubDirs(l.ObjectsRoot(), l.blocksDir)
+	dirs, err := filesystem.ReadSubDirs(c.ObjectsRoot(), c.blocksDir)
 	if err != nil {
-		l.errors.Append(fmt.Errorf(`cannot read transformation blocks from "%s": %w`, l.blocksDir, err))
+		c.errors.Append(fmt.Errorf(`cannot read transformation blocks from "%s": %w`, c.blocksDir, err))
 		return nil
 	}
 	return dirs
 }
 
-func (l *localLoader) codeDirs(block *model.Block) []string {
-	dirs, err := filesystem.ReadSubDirs(l.ObjectsRoot(), block.String())
+func (c *localLoadContext) codeDirs(block *model.Block) []string {
+	dirs, err := filesystem.ReadSubDirs(c.ObjectsRoot(), block.String())
 	if err != nil {
-		l.errors.Append(fmt.Errorf(`cannot read transformation codes from "%s": %w`, block.String(), err))
+		c.errors.Append(fmt.Errorf(`cannot read transformation codes from "%s": %w`, block.String(), err))
 		return nil
 	}
 	return dirs
 }
 
-func (l *localLoader) codeFileName(code *model.Code) string {
+func (c *localLoadContext) codeFileName(code *model.Code) string {
 	// Search for code file, glob "code.*"
 	// File can use an old naming, so the file extension is not specified
-	matches, err := l.ObjectsRoot().Glob(filesystem.Join(code.String(), naming.CodeFileName+`.*`))
+	matches, err := c.ObjectsRoot().Glob(filesystem.Join(code.String(), naming.CodeFileName+`.*`))
 	if err != nil {
-		l.errors.Append(fmt.Errorf(`cannot search for code file in %s": %w`, code.String(), err))
+		c.errors.Append(fmt.Errorf(`cannot search for code file in %s": %w`, code.String(), err))
 		return ""
 	}
 	files := make([]string, 0)
 	for _, match := range matches {
 		relPath, err := filesystem.Rel(code.String(), match)
 		if err != nil {
-			l.errors.Append(err)
+			c.errors.Append(err)
 			continue
 		}
 
-		if l.ObjectsRoot().IsFile(match) {
+		if c.ObjectsRoot().IsFile(match) {
 			files = append(files, relPath)
 		}
 	}
 
 	// No file?
 	if len(files) == 0 {
-		l.errors.Append(fmt.Errorf(`missing code file in "%s"`, code.String()))
+		c.errors.Append(fmt.Errorf(`missing code file in "%s"`, code.String()))
 		return ""
 	}
 
 	// Multiple files?
 	if len(files) > 1 {
-		l.errors.Append(fmt.Errorf(
+		c.errors.Append(fmt.Errorf(
 			`expected one, but found multiple code files "%s" in "%s"`,
 			strings.Join(files, `", "`),
 			code.String(),
