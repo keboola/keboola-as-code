@@ -104,7 +104,6 @@ func createLocalSaveFixtures(t *testing.T, state *local.State, createTargets boo
 		ConfigId:    `456`,
 		Index:       0,
 	}
-	model.NewAbsPath(`branch/other/orchestrator/phases`, `001-phase`)
 
 	phase2Key := model.PhaseKey{
 		BranchId:    123,
@@ -112,16 +111,10 @@ func createLocalSaveFixtures(t *testing.T, state *local.State, createTargets boo
 		ConfigId:    `456`,
 		Index:       1,
 	}
-	model.NewAbsPath(`branch/other/orchestrator/phases`, `002-phase-with-deps`)
 
 	task1Key := model.TaskKey{PhaseKey: phase1Key, Index: 0}
-	model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `001-task-1`)
-
 	task2Key := model.TaskKey{PhaseKey: phase1Key, Index: 1}
-	model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `002-task-2`)
-
 	task3Key := model.TaskKey{PhaseKey: phase2Key, Index: 0}
-	model.NewAbsPath(`branch/other/orchestrator/phases/002-phase-with-deps`, `001-task-3`)
 
 	orchestration := &model.Orchestration{
 		Phases: []*model.Phase{

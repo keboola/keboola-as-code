@@ -1,35 +1,30 @@
 package transformation_test
 
 import (
-	"context"
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper/corefiles"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper/transformation"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-func TestLoadTransformationInvalidConfigAndMeta(t *testing.T) {
+func TestTransformationLocalMapper_MapAfterLocalLoad_Invalid(t *testing.T) {
 	t.Parallel()
 
-	component := &model.Component{
-		ComponentKey: model.ComponentKey{Id: "keboola.foo-bar"},
-		Type:         model.TransformationType,
-	}
-
-	d := dependencies.NewTestContainer()
-	state := d.EmptyState()
-	state.Mapper().AddMapper(corefiles.NewLocalMapper(state))
-	state.Mapper().AddMapper(transformation.NewMapper(state))
-
-	state.Components().Set(component)
+	state, d := createLocalStateWithMapper(t)
 	fs := d.Fs()
 	namingGenerator := state.NamingGenerator()
+
+	// Fixtures
+	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{Id: 123}})
+	componentId := model.ComponentId("keboola.tr-foo-bar")
+	configKey := model.ConfigKey{BranchId: 123, ComponentId: componentId, Id: "456"}
+	configPath := model.NewAbsPath("", "config")
+	config := &model.Config{ConfigKey: configKey, Content: orderedmap.New()}
 
 	// Files content
 	metaFile := `{foo`
@@ -40,42 +35,31 @@ func TestLoadTransformationInvalidConfigAndMeta(t *testing.T) {
 	codeContent := `SELECT 1`
 
 	// Save files
-	configKey := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: component.Id,
-		Id:          "456",
-	}
-	record := &model.ConfigManifest{
-		ConfigKey: configKey,
-		Paths:     model.Paths{AbsPath: model.AbsPath{RelPath: "config"}},
-	}
-	assert.NoError(t, fs.Mkdir(record.String()))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.MetaFilePath(record.String()), metaFile)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.DescriptionFilePath(record.String()), descFile)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.ConfigFilePath(record.String()), configFile)))
-	blocksDir := namingGenerator.BlocksDir(record.String())
-	assert.NoError(t, fs.Mkdir(blocksDir))
+	state.NamingRegistry().MustAttach(configKey, configPath)
+	assert.NoError(t, fs.Mkdir(configPath.String()))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.MetaFilePath(configPath), metaFile)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.DescriptionFilePath(configPath), descFile)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.ConfigFilePath(configPath), configFile)))
+
+	blocksDir := namingGenerator.BlocksDir(configPath)
+	assert.NoError(t, fs.Mkdir(blocksDir.String()))
 	block := &model.Block{BlockKey: model.BlockKey{Index: 123}, Name: `block`}
-	block.AbsPath = namingGenerator.blockPath(blocksDir, block)
-	assert.NoError(t, fs.Mkdir(block.String()))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.MetaFilePath(block.String()), blockMeta)))
+	blockPath, err := state.GetPath(block)
+	assert.NoError(t, err)
+	assert.NoError(t, fs.Mkdir(blockPath.String()))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.MetaFilePath(blockPath), blockMeta)))
+
 	code := &model.Code{CodeKey: model.CodeKey{Index: 123}, Name: `code`}
-	code.AbsPath = namingGenerator.codePath(block.String(), code)
-	code.CodeFileName = namingGenerator.CodeFileName(component.Id)
+	codePath, err := state.GetPath(code)
+	assert.NoError(t, err)
+	code.CodeFileName = namingGenerator.CodeFileName(componentId)
 	assert.NoError(t, fs.Mkdir(code.String()))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.MetaFilePath(code.String()), codeMeta)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.MetaFilePath(codePath), codeMeta)))
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.CodeFilePath(code), codeContent)))
 
-	// Set parent
-	assert.NoError(t, state.Set(&model.BranchState{
-		BranchManifest: &model.BranchManifest{BranchKey: configKey.BranchKey()},
-		Local:          &model.Branch{BranchKey: configKey.BranchKey()},
-	}))
-
 	// Load
-	uow := state.LocalManager().NewUnitOfWork(context.Background())
-	uow.LoadObject(record, model.NoFilter())
-	err := uow.Invoke()
+	recipe := model.NewLocalLoadRecipe(d.FileLoader(), configPath, config)
+	err = state.Mapper().MapAfterLocalLoad(recipe)
 
 	// Error is reported
 	assert.Error(t, err)
@@ -92,14 +76,14 @@ func TestLoadTransformationInvalidConfigAndMeta(t *testing.T) {
 	assert.False(t, found)
 }
 
-func TestLoadTransformationMissingBlockMetaSql(t *testing.T) {
+func TestTransformationLocalMapper_MapAfterLocalLoad_MissingBlockMetaFile(t *testing.T) {
 	t.Parallel()
-	state, d := createStateWithMapper(t)
+	state, d := createLocalStateWithMapper(t)
 	fs := d.Fs()
 	logger := d.DebugLogger()
 
-	configState := createTestFixtures(t, "keboola.snowflake-transformation")
-	recipe := model.NewLocalLoadRecipe(d.FileLoader(), configState.Manifest(), configState.Local)
+	// Fixtures
+	config, configPath := createTestFixtures(t, "keboola.snowflake-transformation")
 
 	// Create files/dirs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
@@ -108,20 +92,21 @@ func TestLoadTransformationMissingBlockMetaSql(t *testing.T) {
 	assert.NoError(t, fs.Mkdir(block1))
 
 	// Load, assert
+	recipe := model.NewLocalLoadRecipe(d.FileLoader(), configPath, config)
 	err := state.Mapper().MapAfterLocalLoad(recipe)
 	assert.Error(t, err)
 	assert.Equal(t, `missing block metadata file "branch/config/blocks/001-block-1/meta.json"`, err.Error())
 	assert.Empty(t, logger.WarnAndErrorMessages())
 }
 
-func TestLoadTransformationMissingCodeMeta(t *testing.T) {
+func TestTransformationLocalMapper_MapAfterLocalLoad_MissingCodeMetaFile(t *testing.T) {
 	t.Parallel()
-	state, d := createStateWithMapper(t)
+	state, d := createLocalStateWithMapper(t)
 	fs := d.Fs()
 	logger := d.DebugLogger()
 
-	configState := createTestFixtures(t, "keboola.snowflake-transformation")
-	recipe := model.NewLocalLoadRecipe(d.FileLoader(), configState.Manifest(), configState.Local)
+	// Fixtures
+	config, configPath := createTestFixtures(t, "keboola.snowflake-transformation")
 
 	// Create files/dirs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
@@ -133,6 +118,7 @@ func TestLoadTransformationMissingCodeMeta(t *testing.T) {
 	assert.NoError(t, fs.Mkdir(block1Code1))
 
 	// Load, assert
+	recipe := model.NewLocalLoadRecipe(d.FileLoader(), configPath, config)
 	err := state.Mapper().MapAfterLocalLoad(recipe)
 	assert.Error(t, err)
 	assert.Equal(t, strings.Join([]string{
@@ -142,14 +128,14 @@ func TestLoadTransformationMissingCodeMeta(t *testing.T) {
 	assert.Empty(t, logger.WarnAndErrorMessages())
 }
 
-func TestLoadLocalTransformationSql(t *testing.T) {
+func TestTransformationLocalMapper_MapAfterLocalLoad_Sql(t *testing.T) {
 	t.Parallel()
-	state, d := createStateWithMapper(t)
+	state, d := createLocalStateWithMapper(t)
 	fs := d.Fs()
 	logger := d.DebugLogger()
 
-	configState := createTestFixtures(t, "keboola.snowflake-transformation")
-	recipe := model.NewLocalLoadRecipe(d.FileLoader(), configState.Manifest(), configState.Local)
+	// Fixtures
+	config, configPath := createTestFixtures(t, "keboola.snowflake-transformation")
 
 	// Create files/dirs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
@@ -177,6 +163,7 @@ func TestLoadLocalTransformationSql(t *testing.T) {
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(block3, `meta.json`), `{"name": "003"}`)))
 
 	// Load
+	recipe := model.NewLocalLoadRecipe(d.FileLoader(), configPath, config)
 	assert.NoError(t, state.Mapper().MapAfterLocalLoad(recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
@@ -189,10 +176,6 @@ func TestLoadLocalTransformationSql(t *testing.T) {
 				ConfigId:    `456`,
 				Index:       0,
 			},
-			AbsPath: model.NewAbsPath(
-				`branch/config/blocks`,
-				`001-block-1`,
-			),
 			Name: "001",
 			Codes: model.Codes{
 				{
@@ -203,10 +186,6 @@ func TestLoadLocalTransformationSql(t *testing.T) {
 						BlockIndex:  0,
 						Index:       0,
 					},
-					AbsPath: model.NewAbsPath(
-						`branch/config/blocks/001-block-1`,
-						`001-code-1`,
-					),
 					Name:         "001-001",
 					CodeFileName: `code.sql`,
 					Scripts: model.Scripts{
@@ -221,10 +200,6 @@ func TestLoadLocalTransformationSql(t *testing.T) {
 						BlockIndex:  0,
 						Index:       1,
 					},
-					AbsPath: model.NewAbsPath(
-						`branch/config/blocks/001-block-1`,
-						`002-code-2`,
-					),
 					Name:         "001-002",
 					CodeFileName: `code.sql`,
 					Scripts: model.Scripts{
@@ -241,10 +216,6 @@ func TestLoadLocalTransformationSql(t *testing.T) {
 				ConfigId:    `456`,
 				Index:       1,
 			},
-			AbsPath: model.NewAbsPath(
-				`branch/config/blocks`,
-				`002-block-2`,
-			),
 			Name: "002",
 			Codes: model.Codes{
 				{
@@ -255,10 +226,6 @@ func TestLoadLocalTransformationSql(t *testing.T) {
 						BlockIndex:  1,
 						Index:       0,
 					},
-					AbsPath: model.NewAbsPath(
-						`branch/config/blocks/002-block-2`,
-						`002-code-1`,
-					),
 					Name:         "002-001",
 					CodeFileName: `code.sql`,
 					Scripts: model.Scripts{
@@ -274,25 +241,25 @@ func TestLoadLocalTransformationSql(t *testing.T) {
 				ConfigId:    `456`,
 				Index:       2,
 			},
-			AbsPath: model.NewAbsPath(
-				`branch/config/blocks`,
-				`003-block-3`,
-			),
 			Name:  "003",
 			Codes: model.Codes{},
 		},
 	}
-	assert.Equal(t, expected, configState.Local.Transformation.Blocks)
+	assert.Equal(t, expected, config.Transformation.Blocks)
+
+	// Check naming registry
+	fmt.Printf("%#v", state.NamingRegistry().AllStrings())
+	assert.Equal(t, map[string]string{}, state.NamingRegistry().AllStrings())
 }
 
-func TestLoadLocalTransformationPy(t *testing.T) {
+func TestTransformationLocalMapper_MapAfterLocalLoad_Python(t *testing.T) {
 	t.Parallel()
-	state, d := createStateWithMapper(t)
+	state, d := createLocalStateWithMapper(t)
 	fs := d.Fs()
 	logger := d.DebugLogger()
 
-	configState := createTestFixtures(t, `keboola.python-transformation-v2`)
-	recipe := model.NewLocalLoadRecipe(d.FileLoader(), configState.Manifest(), configState.Local)
+	// Fixtures
+	config, configPath := createTestFixtures(t, "keboola.python-transformation-v2")
 
 	// Create files/dirs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
@@ -320,6 +287,7 @@ func TestLoadLocalTransformationPy(t *testing.T) {
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(block3, `meta.json`), `{"name": "003"}`)))
 
 	// Load
+	recipe := model.NewLocalLoadRecipe(d.FileLoader(), configPath, config)
 	assert.NoError(t, state.Mapper().MapAfterLocalLoad(recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
@@ -332,10 +300,6 @@ func TestLoadLocalTransformationPy(t *testing.T) {
 				ConfigId:    `456`,
 				Index:       0,
 			},
-			AbsPath: model.NewAbsPath(
-				`branch/config/blocks`,
-				`001-block-1`,
-			),
 			Name: "001",
 			Codes: model.Codes{
 				{
@@ -346,10 +310,6 @@ func TestLoadLocalTransformationPy(t *testing.T) {
 						BlockIndex:  0,
 						Index:       0,
 					},
-					AbsPath: model.NewAbsPath(
-						`branch/config/blocks/001-block-1`,
-						`001-code-1`,
-					),
 					Name:         "001-001",
 					CodeFileName: `code.py`,
 					Scripts: model.Scripts{
@@ -364,10 +324,6 @@ func TestLoadLocalTransformationPy(t *testing.T) {
 						BlockIndex:  0,
 						Index:       1,
 					},
-					AbsPath: model.NewAbsPath(
-						`branch/config/blocks/001-block-1`,
-						`002-code-2`,
-					),
 					Name:         "001-002",
 					CodeFileName: `code.py`,
 					Scripts: model.Scripts{
@@ -383,10 +339,6 @@ func TestLoadLocalTransformationPy(t *testing.T) {
 				ConfigId:    `456`,
 				Index:       1,
 			},
-			AbsPath: model.NewAbsPath(
-				`branch/config/blocks`,
-				`002-block-2`,
-			),
 			Name: "002",
 			Codes: model.Codes{
 				{
@@ -397,10 +349,6 @@ func TestLoadLocalTransformationPy(t *testing.T) {
 						BlockIndex:  1,
 						Index:       0,
 					},
-					AbsPath: model.NewAbsPath(
-						`branch/config/blocks/002-block-2`,
-						`002-code-1`,
-					),
 					Name:         "002-001",
 					CodeFileName: `code.py`,
 					Scripts: model.Scripts{
@@ -416,13 +364,14 @@ func TestLoadLocalTransformationPy(t *testing.T) {
 				ConfigId:    `456`,
 				Index:       2,
 			},
-			AbsPath: model.NewAbsPath(
-				`branch/config/blocks`,
-				`003-block-3`,
-			),
+
 			Name:  "003",
 			Codes: model.Codes{},
 		},
 	}
-	assert.Equal(t, expected, configState.Local.Transformation.Blocks)
+	assert.Equal(t, expected, config.Transformation.Blocks)
+
+	// Check naming registry
+	fmt.Printf("%#v", state.NamingRegistry().AllStrings())
+	assert.Equal(t, map[string]string{}, state.NamingRegistry().AllStrings())
 }

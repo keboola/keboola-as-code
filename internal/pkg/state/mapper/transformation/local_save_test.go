@@ -5,57 +5,48 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper/corefiles"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper/transformation"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
 )
 
-func TestLocalSaveTransformationEmpty(t *testing.T) {
+func TestTransformationLocalMapper_MapBeforeLocalSave_Empty(t *testing.T) {
 	t.Parallel()
-	d := dependencies.NewTestContainer()
-	state := d.EmptyState()
-	state.Mapper().AddMapper(corefiles.NewLocalMapper(state))
-	state.Mapper().AddMapper(transformation.NewMapper(state))
-	fs := d.Fs()
+	state, _ := createLocalStateWithMapper(t)
 
-	configState := createTestFixtures(t, "keboola.snowflake-transformation")
-	object := deepcopy.Copy(configState.Local).(*model.Config)
-	recipe := model.NewLocalSaveRecipe(configState.Manifest(), object, model.NewChangedFields())
-
-	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
-	assert.NoError(t, fs.Mkdir(blocksDir))
+	// Fixtures
+	branchKey := model.BranchKey{Id: 123}
+	state.MustAdd(&model.Branch{BranchKey: branchKey})
+	state.NamingRegistry().MustAttach(branchKey, model.NewAbsPath("", "branch"))
+	config, configPath := createTestFixtures(t, "keboola.snowflake-transformation")
+	state.MustAdd(config)
+	state.NamingRegistry().MustAttach(config.ConfigKey, configPath)
 
 	// Save
+	recipe := model.NewLocalSaveRecipe(configPath, config, model.NewChangedFields())
 	err := state.Mapper().MapBeforeLocalSave(recipe)
 	assert.NoError(t, err)
 	assert.NoError(t, err)
-	assert.Equal(t, `{"foo":"bar"}`, json.MustEncodeString(object.Content, false))
+	assert.Equal(t, `{"foo":"bar"}`, json.MustEncodeString(config.Content, false))
 }
 
 func TestTransformationMapper_MapBeforeLocalSave(t *testing.T) {
 	t.Parallel()
-	d := dependencies.NewTestContainer()
-	state := d.EmptyState()
-	state.Mapper().AddMapper(corefiles.NewLocalMapper(state))
-	state.Mapper().AddMapper(transformation.NewMapper(state))
-	fs := d.Fs()
+	state, d := createLocalStateWithMapper(t)
 	logger := d.DebugLogger()
 
-	configState := createTestFixtures(t, "keboola.snowflake-transformation")
-	object := deepcopy.Copy(configState.Local).(*model.Config)
-	recipe := model.NewLocalSaveRecipe(configState.Manifest(), configState.Local, model.NewChangedFields())
-
-	configDir := filesystem.Join(`branch`, `config`)
-	blocksDir := filesystem.Join(configDir, `blocks`)
-	assert.NoError(t, fs.Mkdir(blocksDir))
+	// Fixtures
+	branchKey := model.BranchKey{Id: 123}
+	state.MustAdd(&model.Branch{BranchKey: branchKey})
+	state.NamingRegistry().MustAttach(branchKey, model.NewAbsPath("", "branch"))
+	config, configPath := createTestFixtures(t, "keboola.snowflake-transformation")
+	state.MustAdd(config)
+	state.NamingRegistry().MustAttach(config.ConfigKey, configPath)
+	blocksDir := filesystem.Join(configPath.String(), `blocks`)
 
 	// Prepare
-	object.Content.Set(`foo`, `bar`)
-	configState.Local.Transformation = &model.Transformation{
+	config.Content.Set(`foo`, `bar`)
+	config.Transformation = &model.Transformation{
 		Blocks: []*model.Block{
 			{
 				BlockKey: model.BlockKey{
@@ -64,10 +55,6 @@ func TestTransformationMapper_MapBeforeLocalSave(t *testing.T) {
 					ConfigId:    `456`,
 					Index:       0,
 				},
-				AbsPath: model.NewAbsPath(
-					`branch/config/blocks`,
-					`001-block-1`,
-				),
 				Name: "block1",
 				Codes: model.Codes{
 					{
@@ -79,11 +66,7 @@ func TestTransformationMapper_MapBeforeLocalSave(t *testing.T) {
 							Index:       0,
 						},
 						CodeFileName: `code.sql`,
-						AbsPath: model.NewAbsPath(
-							`branch/config/blocks/001-block-1`,
-							`001-code-1`,
-						),
-						Name: "code1",
+						Name:         "code1",
 						Scripts: model.Scripts{
 							model.StaticScript{Value: "SELECT 1"},
 						},
@@ -97,11 +80,7 @@ func TestTransformationMapper_MapBeforeLocalSave(t *testing.T) {
 							Index:       1,
 						},
 						CodeFileName: `code.sql`,
-						AbsPath: model.NewAbsPath(
-							`branch/config/blocks/001-block-1`,
-							`002-code-2`,
-						),
-						Name: "code2",
+						Name:         "code2",
 						Scripts: model.Scripts{
 							model.StaticScript{Value: "SELECT 2;"},
 							model.StaticScript{Value: "SELECT 3;"},
@@ -116,10 +95,6 @@ func TestTransformationMapper_MapBeforeLocalSave(t *testing.T) {
 					ConfigId:    `456`,
 					Index:       1,
 				},
-				AbsPath: model.NewAbsPath(
-					`branch/config/blocks`,
-					`002-block-2`,
-				),
 				Name: "block2",
 				Codes: model.Codes{
 					{
@@ -132,10 +107,6 @@ func TestTransformationMapper_MapBeforeLocalSave(t *testing.T) {
 						},
 						Name:         "code3",
 						CodeFileName: `code.sql`,
-						AbsPath: model.NewAbsPath(
-							`branch/config/blocks/002-block-2`,
-							`001-code-3`,
-						),
 					},
 				},
 			},
@@ -143,6 +114,7 @@ func TestTransformationMapper_MapBeforeLocalSave(t *testing.T) {
 	}
 
 	// Save
+	recipe := model.NewLocalSaveRecipe(configPath, config, model.NewChangedFields())
 	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
@@ -193,13 +165,13 @@ func TestTransformationMapper_MapBeforeLocalSave(t *testing.T) {
 		filesystem.NewRawFile(blocksDir+`/002-block-2/001-code-3/code.sql`, "\n").
 			AddTag(model.FileKindNativeCode).
 			AddTag(model.FileTypeOther),
-		filesystem.NewRawFile(configDir+`/meta.json`, `{"name":"My Config"}`).
+		filesystem.NewRawFile(configPath.String()+`/meta.json`, `{"name":"My Config"}`).
 			AddTag(model.FileKindObjectMeta).
 			AddTag(model.FileTypeJson),
-		filesystem.NewRawFile(configDir+`/config.json`, `{"foo":"bar"}`).
+		filesystem.NewRawFile(configPath.String()+`/config.json`, `{"foo":"bar"}`).
 			AddTag(model.FileKindObjectConfig).
 			AddTag(model.FileTypeJson),
-		filesystem.NewRawFile(configDir+`/description.md`, "\n").
+		filesystem.NewRawFile(configPath.String()+`/description.md`, "\n").
 			AddTag(model.FileKindObjectDescription).
 			AddTag(model.FileTypeMarkdown),
 	}, files)

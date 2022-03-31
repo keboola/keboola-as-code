@@ -5,11 +5,18 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
+
+type localSaveContext struct {
+	*model.LocalSaveRecipe
+	state          *local.State
+	transformation *model.Config
+	basePath       model.AbsPath
+}
 
 // MapBeforeLocalSave - save code blocks to the disk.
 func (m *transformationLocalMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
@@ -19,88 +26,108 @@ func (m *transformationLocalMapper) MapBeforeLocalSave(recipe *model.LocalSaveRe
 	} else if !ok {
 		return nil
 	}
+	transformation := recipe.Object.(*model.Config)
+
+	basePath, err := m.state.GetPath(transformation)
+	if err != nil {
+		return err
+	}
 
 	// Create local writer
-	w := &localWriter{
-		State:           m.state,
+	w := &localSaveContext{
+		state:           m.state,
 		LocalSaveRecipe: recipe,
-		config:          recipe.Object.(*model.Config),
-		errors:          utils.NewMultiError(),
+		transformation:  transformation,
+		basePath:        basePath,
 	}
 
 	// Save
 	return w.save()
 }
 
-type localWriter struct {
-	*state.State
-	*model.LocalSaveRecipe
-	config *model.Config
-	errors *utils.MultiError
-}
-
-func (w *localWriter) save() error {
-	blocksDir := w.NamingGenerator().BlocksDir(w.ObjectManifest.Path())
+func (c *localSaveContext) save() error {
+	blocksDir := c.state.NamingGenerator().BlocksDir(c.basePath)
 
 	// Generate ".gitkeep" to preserve the "blocks" directory, even if there are no blocks.
-	w.Files.
-		Add(filesystem.NewRawFile(filesystem.Join(blocksDir, `.gitkeep`), ``)).
+	c.Files.
+		Add(filesystem.NewRawFile(filesystem.Join(blocksDir.String(), `.gitkeep`), ``)).
 		AddTag(model.FileTypeOther).
 		AddTag(model.FileKindGitKeep)
 
 	// Generate files for blocks
-	for _, block := range w.config.Transformation.Blocks {
+	errors := utils.NewMultiError()
+	for _, block := range c.transformation.Transformation.Blocks {
 		// Generate block files
-		w.generateBlockFiles(block)
+		if err := c.generateBlock(block); err != nil {
+			errors.Append(err)
+		}
 	}
 
 	// Delete all old files from blocks dir
 	// We always do full generation of blocks dir.
-	for _, path := range w.TrackedPaths() {
-		if filesystem.IsFrom(path, blocksDir) && w.IsFile(path) {
-			w.ToDelete = append(w.ToDelete, path)
+	fs := c.state.ObjectsRoot()
+	for _, path := range c.state.TrackedPaths() {
+		if filesystem.IsFrom(path, blocksDir.String()) && fs.IsFile(path) {
+			c.ToDelete = append(c.ToDelete, path)
 		}
 	}
 
-	return w.errors.ErrorOrNil()
+	return errors.ErrorOrNil()
 }
 
-func (w *localWriter) generateBlockFiles(block *model.Block) {
+func (c *localSaveContext) generateBlock(block *model.Block) error {
 	// Validate
-	if err := validator.Validate(w.State.Ctx(), block); err != nil {
-		w.errors.Append(utils.PrefixError(fmt.Sprintf(`invalid block \"%s\"`, block.String()), err))
-		return
+	if err := validator.Validate(c.state.Ctx(), block); err != nil {
+		return utils.PrefixError(fmt.Sprintf(`invalid block \"%s\"`, block.String()), err)
+	}
+
+	// Get path
+	blockDir, err := c.state.GetPath(block)
+	if err != nil {
+		return err
 	}
 
 	// Create metadata file
 	if metadata := utils.MapFromTaggedFields(model.MetaFileFieldsTag, block); metadata != nil {
-		metadataPath := w.NamingGenerator().MetaFilePath(block.String())
-		w.createMetadataFile(metadataPath, `block metadata`, model.FileKindBlockMeta, metadata)
+		metadataPath := c.state.NamingGenerator().MetaFilePath(blockDir)
+		c.createMetadataFile(metadataPath, `block metadata`, model.FileKindBlockMeta, metadata)
 	}
 
-	// Create codes
+	// Generate codes
+	errors := utils.NewMultiError()
 	for _, code := range block.Codes {
-		w.generateCodeFiles(code)
+		if err := c.generateCode(code); err != nil {
+			errors.Append(err)
+		}
 	}
+	return errors.ErrorOrNil()
 }
 
-func (w *localWriter) generateCodeFiles(code *model.Code) {
+func (c *localSaveContext) generateCode(code *model.Code) error {
+	// Get path
+	codeDir, err := c.state.GetPath(code)
+	if err != nil {
+		return err
+	}
+
 	// Create metadata file
 	if metadata := utils.MapFromTaggedFields(model.MetaFileFieldsTag, code); metadata != nil {
-		metadataPath := w.NamingGenerator().MetaFilePath(code.String())
-		w.createMetadataFile(metadataPath, `code metadata`, model.FileKindCodeMeta, metadata)
+		metadataPath := c.state.NamingGenerator().MetaFilePath(codeDir)
+		c.createMetadataFile(metadataPath, `code metadata`, model.FileKindCodeMeta, metadata)
 	}
 
 	// Create code file
-	w.Files.
-		Add(filesystem.NewRawFile(w.NamingGenerator().CodeFilePath(code), code.Scripts.String(code.ComponentId))).
+	c.Files.
+		Add(filesystem.NewRawFile(c.state.NamingGenerator().CodeFilePath(code), code.Scripts.String(code.ComponentId))).
 		SetDescription(`code`).
 		AddTag(model.FileTypeOther).
 		AddTag(model.FileKindNativeCode)
+
+	return nil
 }
 
-func (w *localWriter) createMetadataFile(path, desc, tag string, content *orderedmap.OrderedMap) {
-	w.Files.
+func (c *localSaveContext) createMetadataFile(path, desc, tag string, content *orderedmap.OrderedMap) {
+	c.Files.
 		Add(filesystem.NewJsonFile(path, content)).
 		SetDescription(desc).
 		AddTag(model.FileTypeJson).

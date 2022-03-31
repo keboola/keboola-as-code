@@ -197,6 +197,21 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 		},
 	}
 	assert.Equal(t, expectedOrchestration, orchestratorConfig.Orchestration)
+
+	// Check naming registry
+	assert.Equal(t, map[string]string{
+		`branch "123"`: `branch`,
+		`config "branch:123/component:foo.bar1/config:123"`:                          `branch/extractor/target-config-1`,
+		`config "branch:123/component:foo.bar2/config:456"`:                          `branch/extractor/target-config-3`,
+		`config "branch:123/component:foo.bar2/config:789"`:                          `branch/extractor/target-config-2`,
+		`config "branch:123/component:keboola.orchestrator/config:456"`:              `branch/other/orchestrator`,
+		`phase "branch:123/component:keboola.orchestrator/config:456/phase:0"`:       `branch/other/orchestrator/phases/001-phase`,
+		`task "branch:123/component:keboola.orchestrator/config:456/phase:0/task:0"`: `branch/other/orchestrator/phases/001-phase/001-task-1`,
+		`task "branch:123/component:keboola.orchestrator/config:456/phase:0/task:1"`: `branch/other/orchestrator/phases/001-phase/002-task-2`,
+		`phase "branch:123/component:keboola.orchestrator/config:456/phase:1"`:       `branch/other/orchestrator/phases/002-phase-with-deps`,
+		`task "branch:123/component:keboola.orchestrator/config:456/phase:1/task:0"`: `branch/other/orchestrator/phases/002-phase-with-deps/001-task-3`,
+	}, state.NamingRegistry().AllStrings())
+
 }
 
 func TestOrchestratorLocalMapper_AfterLocalOperation_Error(t *testing.T) {

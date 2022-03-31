@@ -20,7 +20,6 @@ type localLoadContext struct {
 	phasesDirsMap map[*model.Phase]model.AbsPath
 	tasksDirsMap  map[*model.Task]model.AbsPath
 	relatedPaths  *relatedpaths.Paths
-	errors        *utils.MultiError
 }
 
 func (m *orchestratorLocalMapper) AfterLocalOperation(changes *model.Changes) error {
@@ -60,7 +59,6 @@ func (m *orchestratorLocalMapper) onLocalLoad(orchestrator *model.Config) error 
 		phasesDirsMap: make(map[*model.Phase]model.AbsPath),
 		tasksDirsMap:  make(map[*model.Task]model.AbsPath),
 		relatedPaths:  relatedPaths,
-		errors:        utils.NewMultiError(),
 	}
 
 	if err := loadCtx.load(); err != nil {
@@ -70,28 +68,35 @@ func (m *orchestratorLocalMapper) onLocalLoad(orchestrator *model.Config) error 
 }
 
 func (c *localLoadContext) load() error {
+	// Search for dirs with phases
+	phasesDirs, err := c.phasesDirs()
+	if err != nil {
+		return err
+	}
+
 	// Load phases from filesystem
-	for _, phaseDir := range c.phasesDirs() {
+	errors := utils.NewMultiError()
+	for _, phaseDir := range phasesDirs {
 		if err := c.loadPhase(phaseDir); err != nil {
-			c.errors.Append(utils.PrefixError(fmt.Sprintf(`invalid phase "%s"`, phaseDir.Base()), err))
+			errors.AppendWithPrefix(fmt.Sprintf(`invalid phase "%s"`, phaseDir.Base()), err)
 		}
 	}
 
 	// Sort phases by dependencies
 	sortedPhases, err := c.phasesSorter.sortPhases()
 	if err != nil {
-		c.errors.Append(err)
+		errors.Append(err)
 	}
 
 	// Phase and task keys are now completed, after the sorting.
 	// Attach paths to the naming registry.
 	for _, phase := range sortedPhases {
 		if err := c.state.NamingRegistry().Attach(phase.PhaseKey, c.phasesDirsMap[phase]); err != nil {
-			c.errors.Append(err)
+			errors.Append(err)
 		}
 		for _, task := range phase.Tasks {
 			if err := c.state.NamingRegistry().Attach(task.TaskKey, c.tasksDirsMap[task]); err != nil {
-				c.errors.Append(err)
+				errors.Append(err)
 			}
 		}
 	}
@@ -106,7 +111,7 @@ func (c *localLoadContext) load() error {
 		Phases: sortedPhases,
 	}
 
-	return c.errors.ErrorOrNil()
+	return errors.ErrorOrNil()
 }
 
 func (c *localLoadContext) loadPhase(phaseDir model.AbsPath) error {
@@ -132,13 +137,19 @@ func (c *localLoadContext) loadPhase(phaseDir model.AbsPath) error {
 		return err
 	}
 
+	// Search for dirs with tasks
+	tasksDirs, err := c.tasksDirs(phaseDir.String())
+	if err != nil {
+		return err
+	}
+
 	// Process tasks
 	errors := utils.NewMultiError()
-	for taskIndex, taskDir := range c.tasksDirs(phaseDir.String()) {
+	for taskIndex, taskDir := range tasksDirs {
 		if task, err := c.loadTask(taskIndex, taskDir); err == nil {
 			phase.Tasks = append(phase.Tasks, task)
 		} else {
-			errors.Append(utils.PrefixError(fmt.Sprintf(`invalid task "%s"`, taskDir.Base()), err))
+			errors.AppendWithPrefix(fmt.Sprintf(`invalid task "%s"`, taskDir.Base()), err)
 		}
 	}
 
@@ -261,14 +272,13 @@ func (c *localLoadContext) loadTaskConfig(task *model.Task, taskDir model.AbsPat
 	return errors.ErrorOrNil()
 }
 
-func (c *localLoadContext) phasesDirs() []model.AbsPath {
+func (c *localLoadContext) phasesDirs() ([]model.AbsPath, error) {
 	fs := c.state.ObjectsRoot()
 	phasesDir := c.state.NamingGenerator().PhasesDir(c.basePath)
 
-	// Check if blocks dir exists
+	// Check if phases dir exists
 	if !fs.IsDir(phasesDir.String()) {
-		c.errors.Append(fmt.Errorf(`missing phases dir "%s"`, phasesDir))
-		return nil
+		return nil, fmt.Errorf(`missing phases dir "%s"`, phasesDir)
 	}
 
 	// Add phases dir to the related paths
@@ -285,8 +295,7 @@ func (c *localLoadContext) phasesDirs() []model.AbsPath {
 	// Read all sub-dirs
 	phasesDirs, err := filesystem.ReadSubDirs(fs, phasesDir.String())
 	if err != nil {
-		c.errors.Append(fmt.Errorf(`cannot read orchestrator phases from "%s": %w`, phasesDir, err))
-		return nil
+		return nil, fmt.Errorf(`cannot read orchestrator phases from "%s": %w`, phasesDir, err)
 	}
 
 	// Convert to []AbsPath
@@ -295,17 +304,16 @@ func (c *localLoadContext) phasesDirs() []model.AbsPath {
 		out[i] = model.NewAbsPath(phasesDir.ParentPath(), filesystem.Join(phasesDir.RelativePath(), dir))
 
 	}
-	return out
+	return out, nil
 }
 
-func (c *localLoadContext) tasksDirs(phaseDir string) []model.AbsPath {
+func (c *localLoadContext) tasksDirs(phaseDir string) ([]model.AbsPath, error) {
 	fs := c.state.ObjectsRoot()
 
 	// Read all sub-dirs
 	tasksDirs, err := filesystem.ReadSubDirs(fs, phaseDir)
 	if err != nil {
-		c.errors.Append(fmt.Errorf(`cannot read orchestrator tasks from "%s": %w`, phaseDir, err))
-		return nil
+		return nil, fmt.Errorf(`cannot read orchestrator tasks from "%s": %w`, phaseDir, err)
 	}
 
 	// Convert to []AbsPath
@@ -313,7 +321,7 @@ func (c *localLoadContext) tasksDirs(phaseDir string) []model.AbsPath {
 	for i, dir := range tasksDirs {
 		out[i] = model.NewAbsPath(phaseDir, dir)
 	}
-	return out
+	return out, nil
 }
 
 func (c *localLoadContext) formatError(err error) error {

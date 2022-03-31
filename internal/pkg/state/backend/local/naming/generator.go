@@ -67,8 +67,8 @@ func (g Generator) TaskFilePath(taskDir AbsPath) string {
 	return filesystem.Join(taskDir.String(), TaskFile)
 }
 
-func (g Generator) BlocksDir(configDir AbsPath) string {
-	return filesystem.Join(configDir.String(), blocksDir)
+func (g Generator) BlocksDir(configDir AbsPath) AbsPath {
+	return NewAbsPath(configDir.String(), blocksDir)
 }
 
 func (g Generator) PhasesDir(configDir AbsPath) AbsPath {

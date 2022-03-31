@@ -11,23 +11,39 @@ import (
 
 type Registry struct {
 	lock   *sync.Mutex
-	byPath map[string]Key     // path -> object key
-	byKey  map[string]AbsPath // object key -> path
+	byPath map[string]Key  // path -> object key
+	byKey  map[Key]AbsPath // object key -> path
 }
 
 func NewRegistry() *Registry {
 	return &Registry{
 		lock:   &sync.Mutex{},
 		byPath: make(map[string]Key),
-		byKey:  make(map[string]AbsPath),
+		byKey:  make(map[Key]AbsPath),
 	}
+}
+
+func (r Registry) All() map[Key]AbsPath {
+	out := make(map[Key]AbsPath)
+	for key, path := range r.byKey {
+		out[key] = path
+	}
+	return out
+}
+
+func (r Registry) AllStrings() map[string]string {
+	out := make(map[string]string)
+	for key, path := range r.byKey {
+		out[key.String()] = path.String()
+	}
+	return out
 }
 
 func (r Registry) Clear() {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	r.byPath = make(map[string]Key)
-	r.byKey = make(map[string]AbsPath)
+	r.byKey = make(map[Key]AbsPath)
 }
 
 // Attach object's path to NamingTemplate, it guarantees the path will remain unique and will not be used again.
@@ -50,12 +66,12 @@ func (r Registry) Attach(key Key, path AbsPath) error {
 	}
 
 	// Remove the previous value attached to the key
-	if foundPath, found := r.byKey[key.String()]; found {
+	if foundPath, found := r.byKey[key]; found {
 		delete(r.byPath, foundPath.String())
 	}
 
 	r.byPath[pathStr] = key
-	r.byKey[key.String()] = path
+	r.byKey[key] = path
 	return nil
 }
 
@@ -70,14 +86,14 @@ func (r Registry) Detach(key Key) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	if foundPath, found := r.byKey[key.String()]; found {
+	if foundPath, found := r.byKey[key]; found {
 		delete(r.byPath, foundPath.String())
-		delete(r.byKey, key.String())
+		delete(r.byKey, key)
 	}
 }
 
 func (r Registry) PathByKey(key Key) (AbsPath, bool) {
-	path, found := r.byKey[key.String()]
+	path, found := r.byKey[key]
 	return path, found
 }
 
