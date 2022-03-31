@@ -6,8 +6,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 )
 
-type StepsGroups []*StepsGroup
-
 func Load(fs filesystem.Fs) (StepsGroups, error) {
 	f, err := loadFile(fs)
 	if err != nil {
@@ -20,6 +18,9 @@ type StepIndex struct {
 	Step  int
 	Group int
 }
+
+// StepsGroups.
+type StepsGroups []*StepsGroup
 
 func (g StepsGroups) Indices(stepsToIds map[StepIndex]string) map[string]StepIndex {
 	res := make(map[string]StepIndex)
@@ -72,12 +73,69 @@ func (g StepsGroups) Validate() error {
 	return validate(g)
 }
 
+// StepsGroup.
 type StepsGroup struct {
-	Description string  `json:"description" validate:"max=80"`
-	Required    string  `json:"required" validate:"oneof=all atLeastOne exactOne zeroOrOne optional"`
-	Steps       []*Step `json:"steps" validate:"min=1,dive"`
+	Description string `json:"description" validate:"max=80"`
+	Required    string `json:"required" validate:"oneof=all atLeastOne exactlyOne zeroOrOne optional"`
+	Steps       Steps  `json:"steps" validate:"min=1,dive"`
 }
 
+const (
+	requiredAll                   = "all"
+	requiredAtLeastOne            = "atLeastOne"
+	requiredExactlyOne            = "exactlyOne"
+	requiredZeroOrOne             = "zeroOrOne"
+	requiredOptional              = "optional"
+	requiredOptionalDescription   = "any number of steps can be selected"
+	requiredAtLeastOneDescription = "at least one step must be selected"
+	requiredExactlyOneDescription = "exactly one step must be selected"
+	requiredZeroOrOneDescription  = "zero or one step must be selected"
+)
+
+func (g StepsGroup) ShowStepsSelect() bool {
+	return g.Required != requiredAll &&
+		(len(g.Steps) > 1 || (g.Required != requiredAtLeastOne && g.Required != requiredExactlyOne))
+}
+
+func (g StepsGroup) ValidateSelectedSteps(selected int) error {
+	if g.Required == requiredAtLeastOne && selected < 1 {
+		return fmt.Errorf(requiredAtLeastOneDescription)
+	}
+	if g.Required == requiredExactlyOne && selected != 1 {
+		return fmt.Errorf(requiredExactlyOneDescription)
+	}
+	if g.Required == requiredZeroOrOne && selected > 1 {
+		return fmt.Errorf(requiredZeroOrOneDescription)
+	}
+	return nil
+}
+
+func (g StepsGroup) RequiredDescription() string {
+	switch g.Required {
+	case requiredOptional:
+		return requiredOptionalDescription
+	case requiredAtLeastOne:
+		return requiredAtLeastOneDescription
+	case requiredExactlyOne:
+		return requiredExactlyOneDescription
+	case requiredZeroOrOne:
+		return requiredZeroOrOneDescription
+	}
+	return ""
+}
+
+// Steps.
+type Steps []*Step
+
+func (s Steps) Names() []string {
+	res := make([]string, 0)
+	for _, step := range s {
+		res = append(res, step.Name)
+	}
+	return res
+}
+
+// Step.
 type Step struct {
 	Icon              string `json:"icon" validate:"required"`
 	Name              string `json:"name" validate:"required,max=20"`

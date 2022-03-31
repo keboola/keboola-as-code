@@ -199,7 +199,7 @@ Please create steps and groups for the user inputs.
 There is one group and one step predefined. Feel free to change them and/or create others.
 
 "required" option for group specifies how many steps need to be filled by user of the template
-	allowed values: all, atLeastOne, exactOne, zeroOrOne, optional
+	allowed values: all, atLeastOne, exactlyOne, zeroOrOne, optional
 -->
 
 ## Group

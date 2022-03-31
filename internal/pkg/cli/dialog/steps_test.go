@@ -105,12 +105,12 @@ description: Description
 - line 2: there needs to be a group definition before step "s0"
 - line 12: required is not valid option for a step
 - line 21: step with id "s1" is already defined
-- group 1: required must be one of [all atLeastOne exactOne zeroOrOne optional]
+- group 1: required must be one of [all atLeastOne exactlyOne zeroOrOne optional]
 - group 1, step 1: icon is a required field
 - group 1, step 1: name must be a maximum of 20 characters in length
-- group 2: required must be one of [all atLeastOne exactOne zeroOrOne optional]
+- group 2: required must be one of [all atLeastOne exactlyOne zeroOrOne optional]
 - group 2: steps must contain at least 1 step
-- group 3: required must be one of [all atLeastOne exactOne zeroOrOne optional]
+- group 3: required must be one of [all atLeastOne exactlyOne zeroOrOne optional]
 - group 3, step 2: icon is a required field
 - group 3, step 3: icon is a required field
 `
