@@ -1,0 +1,3 @@
+{
+  name: "im-default-bucket",
+}
