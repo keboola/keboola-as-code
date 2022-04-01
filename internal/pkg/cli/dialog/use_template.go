@@ -96,9 +96,7 @@ func (d *useTmplDialog) addInputValue(value interface{}, inputDef input.Input, v
 func (d *useTmplDialog) askInputs(inputs input.StepsGroups) error {
 	for _, group := range inputs {
 		stepsToShow, announceGroup := d.selectStepsToShow(group)
-		for _, index := range stepsToShow {
-			step := group.Steps[index]
-
+		for index, step := range group.Steps {
 			announceStep := true
 			for _, inputDef := range step.Inputs {
 				if result, err := inputDef.Available(d.inputsValues); err != nil {
@@ -110,27 +108,29 @@ func (d *useTmplDialog) askInputs(inputs input.StepsGroups) error {
 					}
 					continue
 				}
-				var groupToAnnounce *input.StepsGroup
-				if announceGroup {
-					groupToAnnounce = group
+				if stepsToShow[index] {
+					var groupToAnnounce *input.StepsGroup
+					if announceGroup {
+						groupToAnnounce = group
+					}
+					var stepToAnnounce *input.Step
+					if announceStep {
+						stepToAnnounce = step
+					}
+					if err := d.askInput(inputDef, groupToAnnounce, stepToAnnounce); err != nil {
+						return err
+					}
+					announceGroup = false
+					announceStep = false
 				}
-				var stepToAnnounce *input.Step
-				if announceStep {
-					stepToAnnounce = step
-				}
-				if err := d.askInput(inputDef, groupToAnnounce, stepToAnnounce); err != nil {
-					return err
-				}
-				announceGroup = false
-				announceStep = false
 			}
 		}
 	}
 	return nil
 }
 
-func (d *useTmplDialog) selectStepsToShow(group *input.StepsGroup) ([]int, bool) {
-	var stepsToShow []int
+func (d *useTmplDialog) selectStepsToShow(group *input.StepsGroup) (map[int]bool, bool) {
+	stepsToShow := make(map[int]bool)
 	announceGroup := true
 	if group.ShowStepsSelect() {
 		d.Printf("%s\n", group.Description)
@@ -148,12 +148,14 @@ func (d *useTmplDialog) selectStepsToShow(group *input.StepsGroup) ([]int, bool)
 			},
 		}
 		// Selected steps
-		stepsToShow, _ = d.MultiSelectIndex(multiSelect)
+		selectedSteps, _ := d.MultiSelectIndex(multiSelect)
+		for _, i := range selectedSteps {
+			stepsToShow[i] = true
+		}
 	} else {
 		// All steps
-		stepsToShow = make([]int, len(group.Steps))
-		for i := range stepsToShow {
-			stepsToShow[i] = i
+		for i := 0; i < len(group.Steps); i++ {
+			stepsToShow[i] = true
 		}
 	}
 	return stepsToShow, announceGroup

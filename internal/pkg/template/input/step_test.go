@@ -69,7 +69,9 @@ func TestStepsGroup_ValidateSelectedSteps(t *testing.T) {
 		Required:    "atLeastOne",
 	}
 	assert.NoError(t, g.ValidateSelectedSteps(2))
-	assert.Error(t, g.ValidateSelectedSteps(0))
+	err := g.ValidateSelectedSteps(0)
+	assert.Error(t, err)
+	assert.Equal(t, "at least one step must be selected", err.Error())
 
 	g = StepsGroup{
 		Description: "description",
@@ -77,13 +79,19 @@ func TestStepsGroup_ValidateSelectedSteps(t *testing.T) {
 	}
 	assert.NoError(t, g.ValidateSelectedSteps(0))
 	assert.NoError(t, g.ValidateSelectedSteps(1))
-	assert.Error(t, g.ValidateSelectedSteps(2))
+	err = g.ValidateSelectedSteps(2)
+	assert.Error(t, err)
+	assert.Equal(t, "zero or one step must be selected", err.Error())
 
 	g = StepsGroup{
 		Description: "description",
 		Required:    "exactlyOne",
 	}
 	assert.NoError(t, g.ValidateSelectedSteps(1))
-	assert.Error(t, g.ValidateSelectedSteps(0))
-	assert.Error(t, g.ValidateSelectedSteps(2))
+	err = g.ValidateSelectedSteps(0)
+	assert.Error(t, err)
+	assert.Equal(t, "exactly one step must be selected", err.Error())
+	err = g.ValidateSelectedSteps(2)
+	assert.Error(t, err)
+	assert.Equal(t, "exactly one step must be selected", err.Error())
 }
