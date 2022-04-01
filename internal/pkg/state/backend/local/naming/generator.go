@@ -51,8 +51,8 @@ func (g Generator) CodeFileName(componentId ComponentId) string {
 	return CodeFileName + "." + CodeFileExt(componentId)
 }
 
-func (g Generator) SharedCodeFilePath(parentPath string, targetComponentId ComponentId) string {
-	return filesystem.Join(parentPath, g.CodeFileName(targetComponentId))
+func (g Generator) SharedCodeFilePath(parentPath AbsPath, targetComponentId ComponentId) string {
+	return filesystem.Join(parentPath.String(), g.CodeFileName(targetComponentId))
 }
 
 func (g Generator) PhaseFilePath(phaseDir AbsPath) string {

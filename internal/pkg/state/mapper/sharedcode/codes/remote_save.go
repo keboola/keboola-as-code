@@ -5,7 +5,7 @@ import (
 )
 
 // MapBeforeRemoteSave saves shared code target component and code to Content.
-func (m *mapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
+func (m *remoteMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
 	// Save config
 	if config, ok := recipe.Object.(*model.Config); ok {
 		m.onConfigRemoteSave(config, recipe)
@@ -19,7 +19,7 @@ func (m *mapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
 	return nil
 }
 
-func (m *mapper) onConfigRemoteSave(config *model.Config, recipe *model.RemoteSaveRecipe) {
+func (m *remoteMapper) onConfigRemoteSave(config *model.Config, recipe *model.RemoteSaveRecipe) {
 	// Is shared code?
 	if config.SharedCode == nil {
 		return
@@ -35,7 +35,7 @@ func (m *mapper) onConfigRemoteSave(config *model.Config, recipe *model.RemoteSa
 	}
 }
 
-func (m *mapper) onRowRemoteSave(row *model.ConfigRow, recipe *model.RemoteSaveRecipe) {
+func (m *remoteMapper) onRowRemoteSave(row *model.ConfigRow, recipe *model.RemoteSaveRecipe) {
 	// Is shared code?
 	if row.SharedCode == nil {
 		return

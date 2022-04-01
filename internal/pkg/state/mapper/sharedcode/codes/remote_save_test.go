@@ -12,18 +12,18 @@ func TestSharedCodeRemoteSave(t *testing.T) {
 	t.Parallel()
 	targetComponentId := model.ComponentId(`keboola.python-transformation-v2`)
 
-	state, d := createStateWithMapper(t)
+	state, d := createStateWithRemoteMapper(t)
 	logger := d.DebugLogger()
-	configState, rowState := createInternalSharedCode(t, targetComponentId, state)
+	config, row := createInternalSharedCode(t, targetComponentId, state)
 
 	// Map config
-	configRecipe := model.NewRemoteSaveRecipe(configState.Manifest(), configState.Remote, model.NewChangedFields(`configuration`))
+	configRecipe := model.NewRemoteSaveRecipe(config, model.NewChangedFields(`configuration`))
 	err := state.Mapper().MapBeforeRemoteSave(configRecipe)
 	assert.NoError(t, err)
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Map row
-	rowRecipe := model.NewRemoteSaveRecipe(rowState.Manifest(), rowState.Remote, model.NewChangedFields(`configuration`))
+	rowRecipe := model.NewRemoteSaveRecipe(row, model.NewChangedFields(`configuration`))
 	err = state.Mapper().MapBeforeRemoteSave(rowRecipe)
 	assert.NoError(t, err)
 	assert.Empty(t, logger.WarnAndErrorMessages())

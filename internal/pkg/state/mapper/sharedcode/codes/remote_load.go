@@ -7,17 +7,42 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-// OnRemoteChange converts legacy "code_content" string -> []interface{}.
-func (m *mapper) AfterRemoteOperation(changes *model.Changes) error {
+// AfterRemoteOperation converts legacy "code_content" string -> []interface{}.
+func (m *remoteMapper) AfterRemoteOperation(changes *model.Changes) error {
 	errors := utils.NewMultiError()
-	for _, objectState := range changes.Loaded() {
-		if ok, err := m.IsSharedCodeKey(objectState.Key()); err != nil {
-			errors.Append(err)
-			continue
-		} else if ok {
-			if err := m.onConfigRemoteLoad(objectState.(*model.ConfigState).Remote); err != nil {
+	var configs []*model.Config
+	var rows []*model.ConfigRow
+
+	// Get all new loaded shared code configs and rows
+	for _, object := range changes.Loaded() {
+		if config, ok := object.(*model.Config); ok {
+			if ok, err := m.IsSharedCodeKey(config.Key()); err != nil {
 				errors.Append(err)
+				continue
+			} else if ok {
+				configs = append(configs, config)
 			}
+		} else if row, ok := object.(*model.ConfigRow); ok {
+			if ok, err := m.IsSharedCodeKey(row.ConfigKey()); err != nil {
+				errors.Append(err)
+				continue
+			} else if ok {
+				rows = append(rows, row)
+			}
+		}
+	}
+
+	// Process configs first
+	for _, config := range configs {
+		if err := m.onConfigRemoteLoad(config); err != nil {
+			errors.Append(err)
+		}
+	}
+
+	// Process rows
+	for _, row := range rows {
+		if err := m.onRowRemoteLoad(row); err != nil {
+			errors.Append(err)
 		}
 	}
 
@@ -29,7 +54,7 @@ func (m *mapper) AfterRemoteOperation(changes *model.Changes) error {
 	return nil
 }
 
-func (m *mapper) onConfigRemoteLoad(config *model.Config) error {
+func (m *remoteMapper) onConfigRemoteLoad(config *model.Config) error {
 	// Get "code_content" value
 	targetRaw, found := config.Content.Get(model.ShareCodeTargetComponentKey)
 	if !found {
@@ -52,17 +77,10 @@ func (m *mapper) onConfigRemoteLoad(config *model.Config) error {
 
 	// Store target component ID to struct
 	config.SharedCode = &model.SharedCodeConfig{Target: model.ComponentId(target)}
-
-	errors := utils.NewMultiError()
-	for _, row := range m.state.RemoteObjects().ConfigRowsFrom(config.ConfigKey) {
-		if err := m.onRowRemoteLoad(config, row); err != nil {
-			errors.Append(err)
-		}
-	}
-	return errors.ErrorOrNil()
+	return nil
 }
 
-func (m *mapper) onRowRemoteLoad(config *model.Config, row *model.ConfigRow) error {
+func (m *remoteMapper) onRowRemoteLoad(row *model.ConfigRow) error {
 	// Get "code_content" value
 	raw, found := row.Content.Get(model.SharedCodeContentKey)
 	if !found {
@@ -73,6 +91,9 @@ func (m *mapper) onRowRemoteLoad(config *model.Config, row *model.ConfigRow) err
 	defer func() {
 		row.Content.Delete(model.SharedCodeContentKey)
 	}()
+
+	// Get config
+	config := m.state.MustGet(row.ConfigKey()).(*model.Config)
 
 	// Parse value
 	var scripts model.Scripts

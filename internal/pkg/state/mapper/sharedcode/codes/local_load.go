@@ -8,7 +8,7 @@ import (
 )
 
 // MapAfterLocalLoad loads shared code from filesystem to target config.
-func (m *mapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
+func (m *localMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
 	errors := utils.NewMultiError()
 
 	// Shared code config
@@ -26,7 +26,7 @@ func (m *mapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
 		return err
 	} else if ok {
 		row := recipe.Object.(*model.ConfigRow)
-		config := m.state.MustGet(row.ConfigKey()).LocalState().(*model.Config)
+		config := m.state.MustGet(row.ConfigKey()).(*model.Config)
 		if err := m.onRowLocalLoad(config, row, recipe); err != nil {
 			errors.Append(err)
 		}
@@ -35,7 +35,7 @@ func (m *mapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
 	return errors.ErrorOrNil()
 }
 
-func (m *mapper) onConfigLocalLoad(config *model.Config) error {
+func (m *localMapper) onConfigLocalLoad(config *model.Config) error {
 	// Get "code_content" value
 	targetRaw, found := config.Content.Get(model.ShareCodeTargetComponentKey)
 	if !found {
@@ -61,14 +61,14 @@ func (m *mapper) onConfigLocalLoad(config *model.Config) error {
 	return nil
 }
 
-func (m *mapper) onRowLocalLoad(config *model.Config, row *model.ConfigRow, recipe *model.LocalLoadRecipe) error {
+func (m *localMapper) onRowLocalLoad(config *model.Config, row *model.ConfigRow, recipe *model.LocalLoadRecipe) error {
 	if config.SharedCode == nil {
 		return nil
 	}
 
 	// Load file
 	codeFile, err := recipe.Files.
-		Load(m.state.NamingGenerator().SharedCodeFilePath(recipe.String(), config.SharedCode.Target)).
+		Load(m.state.NamingGenerator().SharedCodeFilePath(recipe.Path, config.SharedCode.Target)).
 		SetDescription("shared code").
 		AddTag(model.FileTypeOther).
 		AddTag(model.FileKindNativeSharedCode).

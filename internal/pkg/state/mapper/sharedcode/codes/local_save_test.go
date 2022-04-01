@@ -13,13 +13,14 @@ func TestSharedCodeLocalSave(t *testing.T) {
 	t.Parallel()
 	targetComponentId := model.ComponentId(`keboola.python-transformation-v2`)
 
-	state, d := createStateWithMapper(t)
+	state, d := createStateWithLocalMapper(t)
 	logger := d.DebugLogger()
 	fs := d.Fs()
-	_, rowState := createInternalSharedCode(t, targetComponentId, state)
+	rowPath := model.NewAbsPath("branch/config", "row")
+	_, row := createInternalSharedCode(t, targetComponentId, state)
 
-	recipe := model.NewLocalSaveRecipe(rowState.Manifest(), rowState.Remote, model.NewChangedFields())
-	codeFilePath := filesystem.Join(state.NamingGenerator().SharedCodeFilePath(recipe.ObjectManifest.Path(), targetComponentId))
+	recipe := model.NewLocalSaveRecipe(rowPath, row, model.NewChangedFields())
+	codeFilePath := filesystem.Join(state.NamingGenerator().SharedCodeFilePath(rowPath, targetComponentId))
 
 	// Create dir
 	assert.NoError(t, fs.Mkdir(filesystem.Dir(codeFilePath)))

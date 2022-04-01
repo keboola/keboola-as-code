@@ -3,266 +3,115 @@ package codes_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper/sharedcode/codes"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/remote"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper/sharedcode/codes"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-func createStateWithMapper(t *testing.T) (*state.State, *dependencies.TestContainer) {
+func createStateWithLocalMapper(t *testing.T) (*local.State, *dependencies.TestContainer) {
 	t.Helper()
 	d := dependencies.NewTestContainer()
-	mockedState := d.EmptyState()
-	mockedState.Mapper().AddMapper(codes.NewMapper(mockedState))
+	mockedState := d.EmptyLocalState()
+	mockedState.Mapper().AddMapper(codes.NewLocalMapper(mockedState, d))
 	return mockedState, d
 }
 
-func createRemoteSharedCode(t *testing.T, state *state.State) (*model.ConfigState, *model.ConfigRowState) {
+func createStateWithRemoteMapper(t *testing.T) (*remote.State, *dependencies.TestContainer) {
 	t.Helper()
-	targetComponentId := model.ComponentId(`keboola.snowflake-transformation`)
-
-	// Component
-	state.Components().Set(&model.Component{
-		ComponentKey: model.ComponentKey{
-			Id: model.SharedCodeComponentId,
-		},
-		Type: `other`,
-		Name: `Shared Code`,
-	})
-
-	// Target component
-	state.Components().Set(&model.Component{
-		ComponentKey: model.ComponentKey{
-			Id: targetComponentId,
-		},
-		Type: `transformation`,
-		Name: `Foo`,
-	})
-
-	// Config
-	configKey := model.ConfigKey{
-		BranchId:    789,
-		Id:          `123`,
-		ComponentId: model.SharedCodeComponentId,
-	}
-	configContent := orderedmap.New()
-	configContent.Set(model.ShareCodeTargetComponentKey, targetComponentId.String())
-	configState := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{
-			ConfigKey: configKey,
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(
-					"branch",
-					"config",
-				),
-			},
-		},
-		Remote: &model.Config{
-			ConfigKey: configKey,
-			Content:   configContent,
-		},
-	}
-	assert.NoError(t, state.Set(configState))
-
-	// Row
-	rowKey := model.ConfigRowKey{
-		BranchId:    789,
-		ConfigId:    `123`,
-		Id:          `456`,
-		ComponentId: model.SharedCodeComponentId,
-	}
-	rowState := &model.ConfigRowState{
-		ConfigRowManifest: &model.ConfigRowManifest{
-			ConfigRowKey: rowKey,
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(
-					"branch/config",
-					"row",
-				),
-			},
-		},
-		Remote: &model.ConfigRow{
-			ConfigRowKey: rowKey,
-			Content:      orderedmap.New(),
-		},
-	}
-	assert.NoError(t, state.Set(rowState))
-
-	return configState, rowState
+	d := dependencies.NewTestContainer()
+	mockedState := d.EmptyRemoteState()
+	mockedState.Mapper().AddMapper(codes.NewRemoteMapper(mockedState, d))
+	return mockedState, d
 }
 
-func createLocalSharedCode(t *testing.T, targetComponentId model.ComponentId, state *state.State) (*model.ConfigState, *model.ConfigRowState) {
+func createSharedCode(t *testing.T, targetComponentId model.ComponentId, state model.Objects, addToState bool) (*model.Config, *model.ConfigRow) {
 	t.Helper()
 
-	// Component
-	state.Components().Set(&model.Component{
-		ComponentKey: model.ComponentKey{
-			Id: model.SharedCodeComponentId,
-		},
-		Type: `other`,
-		Name: `Shared Code`,
-	})
-
-	// Target component
-	state.Components().Set(&model.Component{
-		ComponentKey: model.ComponentKey{
-			Id: targetComponentId,
-		},
-		Type: `transformation`,
-		Name: `Foo`,
+	// Branch
+	state.MustAdd(&model.Branch{
+		BranchKey: model.BranchKey{Id: 123},
 	})
 
 	// Config
 	configKey := model.ConfigKey{
-		BranchId:    789,
+		BranchId:    123,
 		Id:          `123`,
 		ComponentId: model.SharedCodeComponentId,
 	}
 	configContent := orderedmap.New()
 	configContent.Set(model.ShareCodeTargetComponentKey, targetComponentId.String())
-	configState := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{
-			ConfigKey: configKey,
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(
-					"branch",
-					"config",
-				),
-			},
-		},
-		Local: &model.Config{
-			ConfigKey: configKey,
-			Content:   configContent,
-		},
+	config := &model.Config{
+		ConfigKey: configKey,
+		Content:   configContent,
 	}
-	assert.NoError(t, state.Set(configState))
 
 	// Row
 	rowKey := model.ConfigRowKey{
-		BranchId:    789,
+		BranchId:    123,
 		ConfigId:    `123`,
 		Id:          `456`,
 		ComponentId: model.SharedCodeComponentId,
 	}
-	rowState := &model.ConfigRowState{
-		ConfigRowManifest: &model.ConfigRowManifest{
-			ConfigRowKey: rowKey,
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(
-					"branch/config",
-					"row",
-				),
-			},
-		},
-		Local: &model.ConfigRow{
-			ConfigRowKey: rowKey,
-			Content:      orderedmap.New(),
-		},
+	row := &model.ConfigRow{
+		ConfigRowKey: rowKey,
+		Content:      orderedmap.New(),
 	}
-	assert.NoError(t, state.Set(rowState))
 
-	return configState, rowState
+	// False for testing MapAfterLocalLoad - objects have not yet been added to the state
+	// True for testing AfterRemoteOperation -the objects are in the state
+	if addToState {
+		state.MustAdd(config, row)
+	}
+
+	return config, row
 }
 
 // nolint: unparam
-func createInternalSharedCode(t *testing.T, targetComponentId model.ComponentId, state *state.State) (*model.ConfigState, *model.ConfigRowState) {
+func createInternalSharedCode(t *testing.T, targetComponentId model.ComponentId, state model.Objects) (*model.Config, *model.ConfigRow) {
 	t.Helper()
 
-	// Component
-	state.Components().Set(&model.Component{
-		ComponentKey: model.ComponentKey{
-			Id: model.SharedCodeComponentId,
-		},
-		Type: `other`,
-		Name: `Shared Code`,
-	})
-
-	// Target component
-	state.Components().Set(&model.Component{
-		ComponentKey: model.ComponentKey{
-			Id: targetComponentId,
-		},
-		Type: `transformation`,
-		Name: `Foo`,
+	// Branch
+	state.MustAdd(&model.Branch{
+		BranchKey: model.BranchKey{Id: 123},
 	})
 
 	// Config
 	configKey := model.ConfigKey{
-		BranchId:    789,
+		BranchId:    123,
 		Id:          `123`,
 		ComponentId: model.SharedCodeComponentId,
 	}
-	configState := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{
-			ConfigKey: configKey,
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(
-					"branch",
-					"config",
-				),
-			},
-		},
-		Local: &model.Config{
-			ConfigKey: configKey,
-			Content:   orderedmap.New(),
-			SharedCode: &model.SharedCodeConfig{
-				Target: targetComponentId,
-			},
-		},
-		Remote: &model.Config{
-			ConfigKey: configKey,
-			Content:   orderedmap.New(),
-			SharedCode: &model.SharedCodeConfig{
-				Target: targetComponentId,
-			},
+	config := &model.Config{
+		ConfigKey: configKey,
+		Content:   orderedmap.New(),
+		SharedCode: &model.SharedCodeConfig{
+			Target: targetComponentId,
 		},
 	}
-	assert.NoError(t, state.Set(configState))
+	state.MustAdd(config)
 
 	// Row
 	rowKey := model.ConfigRowKey{
-		BranchId:    789,
+		BranchId:    123,
 		ConfigId:    `123`,
 		Id:          `456`,
 		ComponentId: model.SharedCodeComponentId,
 	}
-	rowState := &model.ConfigRowState{
-		ConfigRowManifest: &model.ConfigRowManifest{
-			ConfigRowKey: rowKey,
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(
-					"branch/config",
-					"row",
-				),
-			},
-		},
-		Local: &model.ConfigRow{
-			ConfigRowKey: rowKey,
-			Content:      orderedmap.New(),
-			SharedCode: &model.SharedCodeRow{
-				Target: targetComponentId,
-				Scripts: model.Scripts{
-					model.StaticScript{Value: `foo`},
-					model.StaticScript{Value: `bar`},
-				},
-			},
-		},
-		Remote: &model.ConfigRow{
-			ConfigRowKey: rowKey,
-			Content:      orderedmap.New(),
-			SharedCode: &model.SharedCodeRow{
-				Target: targetComponentId,
-				Scripts: model.Scripts{
-					model.StaticScript{Value: `foo`},
-					model.StaticScript{Value: `bar`},
-				},
+	row := &model.ConfigRow{
+		ConfigRowKey: rowKey,
+		Content:      orderedmap.New(),
+		SharedCode: &model.SharedCodeRow{
+			Target: targetComponentId,
+			Scripts: model.Scripts{
+				model.StaticScript{Value: `foo`},
+				model.StaticScript{Value: `bar`},
 			},
 		},
 	}
-	assert.NoError(t, state.Set(rowState))
+	state.MustAdd(row)
 
-	return configState, rowState
+	return config, row
 }
