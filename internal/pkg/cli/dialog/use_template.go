@@ -133,12 +133,11 @@ func (d *useTmplDialog) selectStepsToShow(group *input.StepsGroup) ([]int, bool)
 	var stepsToShow []int
 	announceGroup := true
 	if group.ShowStepsSelect() {
-		d.Printf("Group \"%s\"\n", group.Description)
+		d.Printf("%s\n", group.Description)
 		announceGroup = false
 		multiSelect := &prompt.MultiSelectIndex{
-			Label:       "Select steps",
-			Description: fmt.Sprintf("Select steps, %s\n", group.RequiredDescription()),
-			Options:     group.Steps.Names(),
+			Label:   "Select steps",
+			Options: group.Steps.SelectOptions(),
 			Validator: func(answersRaw interface{}) error {
 				answers := answersRaw.([]survey.OptionAnswer)
 				values := make([]string, len(answers))
@@ -168,11 +167,11 @@ func (d *useTmplDialog) askInput(inputDef input.Input, groupToAnnounce *input.St
 	}
 
 	if groupToAnnounce != nil {
-		d.Printf("Group \"%s\"\n", groupToAnnounce.Description)
+		d.Printf("%s\n", groupToAnnounce.Description)
 	}
 
 	if stepToAnnounce != nil {
-		d.Printf("Enter inputs for step \"%s\"\n%s", stepToAnnounce.Name, stepToAnnounce.Description)
+		d.Printf("%s\n%s", stepToAnnounce.NameFoDialog(), stepToAnnounce.DescriptionForDialog())
 	}
 
 	// Ask for input

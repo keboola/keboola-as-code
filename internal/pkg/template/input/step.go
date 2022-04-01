@@ -85,8 +85,6 @@ const (
 	requiredAtLeastOne            = "atLeastOne"
 	requiredExactlyOne            = "exactlyOne"
 	requiredZeroOrOne             = "zeroOrOne"
-	requiredOptional              = "optional"
-	requiredOptionalDescription   = "any number of steps can be selected"
 	requiredAtLeastOneDescription = "at least one step must be selected"
 	requiredExactlyOneDescription = "exactly one step must be selected"
 	requiredZeroOrOneDescription  = "zero or one step must be selected"
@@ -110,27 +108,13 @@ func (g StepsGroup) ValidateSelectedSteps(selected int) error {
 	return nil
 }
 
-func (g StepsGroup) RequiredDescription() string {
-	switch g.Required {
-	case requiredOptional:
-		return requiredOptionalDescription
-	case requiredAtLeastOne:
-		return requiredAtLeastOneDescription
-	case requiredExactlyOne:
-		return requiredExactlyOneDescription
-	case requiredZeroOrOne:
-		return requiredZeroOrOneDescription
-	}
-	return ""
-}
-
 // Steps.
 type Steps []*Step
 
-func (s Steps) Names() []string {
+func (s Steps) SelectOptions() []string {
 	res := make([]string, 0)
 	for _, step := range s {
-		res = append(res, step.Name)
+		res = append(res, fmt.Sprintf("%s - %s", step.Name, step.Description))
 	}
 	return res
 }
@@ -143,4 +127,18 @@ type Step struct {
 	DialogName        string `json:"dialogName,omitempty" validate:"omitempty,max=20"`
 	DialogDescription string `json:"dialogDescription,omitempty" validate:"omitempty,max=200"`
 	Inputs            Inputs `json:"inputs" validate:"omitempty,dive"`
+}
+
+func (s Step) NameFoDialog() string {
+	if s.DialogName != "" {
+		return s.DialogName
+	}
+	return s.Name
+}
+
+func (s Step) DescriptionForDialog() string {
+	if s.DialogDescription != "" {
+		return s.DialogDescription
+	}
+	return s.Description
 }
