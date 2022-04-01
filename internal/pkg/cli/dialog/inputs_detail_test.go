@@ -19,7 +19,7 @@ func TestInputsDetailDialog_DefaultValue(t *testing.T) {
 		&input.StepsGroup{Description: "desc", Required: "all", Steps: []*input.Step{
 			{Icon: "common", Name: "Step One", Description: "Description"},
 		}},
-		&input.StepsGroup{Required: "all", Steps: []*input.Step{
+		&input.StepsGroup{Description: "desc2", Required: "all", Steps: []*input.Step{
 			{Icon: "common", Name: "Step Two", Description: "Description"},
 			{Icon: "common", Name: "Step Three", Description: "Description"},
 		}},
@@ -243,11 +243,11 @@ Options format:
      options: {"id1":"Option 1","id2":"Option 2","id3":"Option 3"}
 
 Preview of steps and groups you created:
-- Group 1
-  - Step "s1"
-- Group 2
-  - Step "s2"
-  - Step "s3"
+- Group 1: desc
+  - Step "s1": Step One - Description
+- Group 2: desc2
+  - Step "s2": Step Two - Description
+  - Step "s3": Step Three - Description
 
 -->
 

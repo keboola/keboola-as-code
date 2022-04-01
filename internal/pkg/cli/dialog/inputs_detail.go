@@ -211,12 +211,12 @@ Preview of steps and groups you created:
 `
 	var defaultStepId string
 	for gIdx, group := range stepsGroups {
-		fileHeader += fmt.Sprintf(`- Group %d
-`, gIdx+1)
-		for sIdx := range group.Steps {
+		fileHeader += fmt.Sprintf(`- Group %d: %s
+`, gIdx+1, group.Description)
+		for sIdx, step := range group.Steps {
 			index := input.StepIndex{Step: sIdx, Group: gIdx}
-			fileHeader += fmt.Sprintf(`  - Step "%s"
-`, stepsToIds[index])
+			fileHeader += fmt.Sprintf(`  - Step "%s": %s - %s
+`, stepsToIds[index], step.Name, step.Description)
 			if gIdx == 0 && sIdx == 0 {
 				defaultStepId = stepsToIds[index]
 			}

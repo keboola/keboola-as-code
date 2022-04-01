@@ -95,7 +95,9 @@ func (d *useTmplDialog) addInputValue(value interface{}, inputDef input.Input, v
 
 func (d *useTmplDialog) askInputs(inputs input.StepsGroups) error {
 	for _, group := range inputs {
-		for _, step := range group.Steps {
+		stepsToShow, announceGroup := d.selectStepsToShow(group)
+		for index, step := range group.Steps {
+			announceStep := true
 			for _, inputDef := range step.Inputs {
 				if result, err := inputDef.Available(d.inputsValues); err != nil {
 					return err
@@ -106,8 +108,20 @@ func (d *useTmplDialog) askInputs(inputs input.StepsGroups) error {
 					}
 					continue
 				}
-				if err := d.askInput(inputDef); err != nil {
-					return err
+				if stepsToShow[index] {
+					var groupToAnnounce *input.StepsGroup
+					if announceGroup {
+						groupToAnnounce = group
+					}
+					var stepToAnnounce *input.Step
+					if announceStep {
+						stepToAnnounce = step
+					}
+					if err := d.askInput(inputDef, groupToAnnounce, stepToAnnounce); err != nil {
+						return err
+					}
+					announceGroup = false
+					announceStep = false
 				}
 			}
 		}
@@ -115,11 +129,51 @@ func (d *useTmplDialog) askInputs(inputs input.StepsGroups) error {
 	return nil
 }
 
-func (d *useTmplDialog) askInput(inputDef input.Input) error {
+func (d *useTmplDialog) selectStepsToShow(group *input.StepsGroup) (map[int]bool, bool) {
+	stepsToShow := make(map[int]bool)
+	announceGroup := true
+	if group.ShowStepsSelect() {
+		d.Printf("%s\n", group.Description)
+		announceGroup = false
+		multiSelect := &prompt.MultiSelectIndex{
+			Label:   "Select steps",
+			Options: group.Steps.SelectOptions(),
+			Validator: func(answersRaw interface{}) error {
+				answers := answersRaw.([]survey.OptionAnswer)
+				values := make([]string, len(answers))
+				for i, v := range answers {
+					values[i] = v.Value
+				}
+				return group.ValidateSelectedSteps(len(values))
+			},
+		}
+		// Selected steps
+		selectedSteps, _ := d.MultiSelectIndex(multiSelect)
+		for _, i := range selectedSteps {
+			stepsToShow[i] = true
+		}
+	} else {
+		// All steps
+		for i := 0; i < len(group.Steps); i++ {
+			stepsToShow[i] = true
+		}
+	}
+	return stepsToShow, announceGroup
+}
+
+func (d *useTmplDialog) askInput(inputDef input.Input, groupToAnnounce *input.StepsGroup, stepToAnnounce *input.Step) error {
 	// Use value from the inputs file, if it is present
 	if v, found := d.inputsFile[inputDef.Id]; found {
 		// Validate and save
 		return d.addInputValue(v, inputDef, true)
+	}
+
+	if groupToAnnounce != nil {
+		d.Printf("%s\n", groupToAnnounce.Description)
+	}
+
+	if stepToAnnounce != nil {
+		d.Printf("%s\n%s", stepToAnnounce.NameFoDialog(), stepToAnnounce.DescriptionForDialog())
 	}
 
 	// Ask for input
