@@ -11,11 +11,17 @@ import (
 )
 
 const (
-	BlockKind = "block"
-	CodeKind  = "code"
-	BlockAbbr = "b"
-	CodeAbbr  = "c"
+	TransformationKind = "transformation"
+	BlockKind          = "block"
+	CodeKind           = "code"
+	TransformationAbbr = "t"
+	BlockAbbr          = "b"
+	CodeAbbr           = "c"
 )
+
+type TransformationKey struct {
+	ConfigKey
+}
 
 type BlockKey struct {
 	Parent ConfigKey `json:"-" validate:"dive" `
@@ -35,6 +41,7 @@ type LinkToSharedCode struct {
 }
 
 type Transformation struct {
+	TransformationKey
 	Blocks           []*Block
 	LinkToSharedCode *LinkToSharedCode
 }
@@ -60,6 +67,22 @@ type Scripts []Script
 // StaticScript is script defined by user (it is not link to shared code).
 type StaticScript struct {
 	Value string
+}
+
+func (k TransformationKey) Kind() Kind {
+	return Kind{Name: TransformationKind, Abbr: TransformationAbbr}
+}
+
+func (k TransformationKey) Level() ObjectLevel {
+	return 3
+}
+
+func (k TransformationKey) Key() Key {
+	return k
+}
+
+func (k TransformationKey) ParentKey() (Key, error) {
+	return k.ConfigKey, nil
 }
 
 func (k BlockKey) Kind() Kind {

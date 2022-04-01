@@ -4,6 +4,21 @@ import (
 	"fmt"
 )
 
+const (
+	SharedCodeConfigKind    = "sharedCodeConfig"
+	SharedCodeConfigRowKind = "sharedCodeConfigRow"
+	SharedCodeConfigAbbr    = "sc"
+	SharedCodeConfigRowAbbr = "sr"
+)
+
+type SharedCodeConfigKey struct {
+	ConfigKey
+}
+
+type SharedCodeConfigRowKey struct {
+	ConfigRowKey
+}
+
 type SharedCodeConfig struct {
 	Target ComponentId `validate:"required"`
 }
@@ -16,6 +31,38 @@ type SharedCodeRow struct {
 // LinkScript is reference to shared code used in transformation.
 type LinkScript struct {
 	Target ConfigRowKey
+}
+
+func (k SharedCodeConfigKey) Kind() Kind {
+	return Kind{Name: SharedCodeConfigKind, Abbr: SharedCodeConfigAbbr}
+}
+
+func (k SharedCodeConfigKey) Level() ObjectLevel {
+	return 3
+}
+
+func (k SharedCodeConfigKey) Key() Key {
+	return k
+}
+
+func (k SharedCodeConfigKey) ParentKey() (Key, error) {
+	return k.ConfigKey, nil
+}
+
+func (k SharedCodeConfigRowKey) Kind() Kind {
+	return Kind{Name: SharedCodeConfigRowKind, Abbr: SharedCodeConfigRowAbbr}
+}
+
+func (k SharedCodeConfigRowKey) Level() ObjectLevel {
+	return 4
+}
+
+func (k SharedCodeConfigRowKey) Key() Key {
+	return k
+}
+
+func (k SharedCodeConfigRowKey) ParentKey() (Key, error) {
+	return k.ConfigRowKey, nil
 }
 
 func (v LinkScript) Content() string {

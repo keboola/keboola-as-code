@@ -9,11 +9,17 @@ import (
 )
 
 const (
-	PhaseKind = "phase"
-	TaskKind  = "task"
-	PhaseAbbr = "p"
-	TaskAbbr  = "t"
+	OrchestrationKind = "orchestration"
+	PhaseKind         = "phase"
+	TaskKind          = "task"
+	OrchestrationAbbr = "o"
+	PhaseAbbr         = "p"
+	TaskAbbr          = "t"
 )
+
+type OrchestrationKey struct {
+	ConfigKey
+}
 
 type PhaseKey struct {
 	BranchId    BranchId    `json:"-" validate:"required_in_project" `
@@ -28,6 +34,7 @@ type TaskKey struct {
 }
 
 type Orchestration struct {
+	OrchestrationKey
 	Phases []*Phase
 }
 
@@ -45,6 +52,22 @@ type Task struct {
 	ComponentId ComponentId            `validate:"required"`
 	ConfigId    ConfigId               `validate:"required"`
 	Content     *orderedmap.OrderedMap `validate:"dive"`
+}
+
+func (k OrchestrationKey) Kind() Kind {
+	return Kind{Name: OrchestrationKind, Abbr: OrchestrationAbbr}
+}
+
+func (k OrchestrationKey) Level() ObjectLevel {
+	return 3
+}
+
+func (k OrchestrationKey) Key() Key {
+	return k
+}
+
+func (k OrchestrationKey) ParentKey() (Key, error) {
+	return k.ConfigKey, nil
 }
 
 func (k PhaseKey) Kind() Kind {

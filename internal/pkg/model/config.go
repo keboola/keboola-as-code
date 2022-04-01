@@ -29,9 +29,6 @@ type Config struct {
 	Description       string                 `json:"description" diff:"true" descriptionFile:"true"`
 	ChangeDescription string                 `json:"changeDescription"`
 	Content           *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
-	Transformation    *Transformation        `json:"-" validate:"omitempty,dive" diff:"true"`
-	SharedCode        *SharedCodeConfig      `json:"-" validate:"omitempty,dive" diff:"true"`
-	Orchestration     *Orchestration         `json:"-" validate:"omitempty,dive" diff:"true"`
 	Relations         Relations              `json:"-" validate:"dive" diff:"true"`
 	Metadata          map[string]string      `json:"-" validate:"dive" diff:"true"`
 }
