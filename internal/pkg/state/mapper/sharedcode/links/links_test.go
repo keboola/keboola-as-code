@@ -30,11 +30,6 @@ func createStateWithRemoteMapper(t *testing.T) (*remote.State, *dependencies.Tes
 func createLocalTransformationWithSharedCode(t *testing.T, state *local.State) *model.Config {
 	t.Helper()
 
-	// Branch
-	state.MustAdd(&model.Branch{
-		BranchKey: model.BranchKey{Id: 123},
-	})
-
 	// Transformation
 	transformationKey := model.ConfigKey{
 		BranchId:    123,
@@ -67,7 +62,7 @@ func createLocalTransformationWithSharedCode(t *testing.T, state *local.State) *
 							Name: `Code 1`,
 							Scripts: model.Scripts{
 								model.StaticScript{Value: `print(100)`},
-								model.StaticScript{Value: "# {{:codes/code1}}\n"},
+								model.StaticScript{Value: "# {{:codes/code-1}}\n"},
 							},
 						},
 						{
@@ -78,7 +73,7 @@ func createLocalTransformationWithSharedCode(t *testing.T, state *local.State) *
 							Name: `Code 2`,
 							Scripts: model.Scripts{
 								model.StaticScript{Value: " {{:codes/code2}}\n"},
-								model.StaticScript{Value: "#     {{:codes/code1}}"},
+								model.StaticScript{Value: "#     {{:codes/code-1}}"},
 							},
 						},
 					},
@@ -98,11 +93,6 @@ func createRemoteTransformationWithSharedCode(t *testing.T, sharedCodeKey model.
 	for _, row := range sharedCodeRowsKeys {
 		rows = append(rows, row.Id.String())
 	}
-
-	// Branch
-	state.MustAdd(&model.Branch{
-		BranchKey: model.BranchKey{Id: 123},
-	})
 
 	// Transformation
 	transformationKey := model.ConfigKey{
@@ -124,11 +114,6 @@ func createRemoteTransformationWithSharedCode(t *testing.T, sharedCodeKey model.
 
 func createInternalTransformationWithSharedCode(t *testing.T, sharedCodeKey model.ConfigKey, sharedCodeRowsKeys []model.ConfigRowKey, state model.Objects) *model.Config {
 	t.Helper()
-
-	// Branch
-	state.MustAdd(&model.Branch{
-		BranchKey: model.BranchKey{Id: 123},
-	})
 
 	// Transformation
 	transformationKey := model.ConfigKey{

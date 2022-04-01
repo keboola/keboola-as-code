@@ -9,14 +9,30 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-// onRemoteLoad move shared code config/rows IDs from Content to Transformation struct.
-func (m *remoteMapper) onRemoteLoad(objectState model.ObjectState) error {
-	// Shared code can be used only by transformation - struct must be set
-	transformation, ok := objectState.RemoteState().(*model.Config)
-	if !ok || transformation.Transformation == nil {
-		return nil
+func (m *remoteMapper) AfterRemoteOperation(changes *model.Changes) error {
+	errors := utils.NewMultiError()
+
+	// Find loaded transformations
+	for _, object := range changes.Loaded() {
+		// Shared code can be used only by transformation - struct must be set
+		if transformation, ok := object.(*model.Config); !ok || transformation.Transformation == nil {
+			return nil
+		} else {
+			if err := m.onRemoteLoad(transformation); err != nil {
+				errors.Append(err)
+			}
+		}
 	}
 
+	if errors.Len() > 0 {
+		// Convert errors to warning
+		m.logger.Warn(utils.PrefixError(`Warning`, errors))
+	}
+	return nil
+}
+
+// onRemoteLoad move shared code config/rows IDs from Content to Transformation struct.
+func (m *remoteMapper) onRemoteLoad(transformation *model.Config) error {
 	// Always remove shared code config/rows IDs from Content
 	defer func() {
 		transformation.Content.Delete(model.SharedCodeIdContentKey)
@@ -43,16 +59,16 @@ func (m *remoteMapper) onRemoteLoad(objectState model.ObjectState) error {
 			Id:          model.ConfigId(sharedCodeId),
 		},
 	}
-	sharedCodeState, found := m.state.GetOrNil(linkToSharedCode.Config).(*model.ConfigState)
-	if !found || !sharedCodeState.HasRemoteState() {
+	sharedCode, found := m.state.GetOrNil(linkToSharedCode.Config).(*model.Config)
+	if !found {
 		return utils.PrefixError(
 			fmt.Sprintf(`missing shared code %s`, linkToSharedCode.Config.String()),
-			fmt.Errorf(`referenced from %s`, objectState.String()),
+			fmt.Errorf(`referenced from %s`, transformation.String()),
 		)
 	}
 
 	// Check: target component of the shared code = transformation component
-	if err := m.helper.CheckTargetComponent(sharedCodeState.LocalOrRemoteState().(*model.Config), transformation.ConfigKey); err != nil {
+	if err := m.helper.CheckTargetComponent(sharedCode, transformation.ConfigKey); err != nil {
 		return err
 	}
 
@@ -73,8 +89,8 @@ func (m *remoteMapper) onRemoteLoad(objectState model.ObjectState) error {
 
 	// Replace ID placeholder with LinkScript struct
 	errors := utils.NewMultiError()
-	transformation.Transformation.MapScripts(func(code *model.Code, script model.Script) model.Script {
-		if _, v, err := m.parseIdPlaceholder(code, script, sharedCodeState); err != nil {
+	transformation.Transformation.MapScripts(func(_ *model.Block, code *model.Code, script model.Script) model.Script {
+		if _, v, err := m.parseIdPlaceholder(code, script, sharedCode); err != nil {
 			errors.Append(err)
 		} else if v != nil {
 			return v
@@ -101,4 +117,31 @@ func (m *remoteMapper) onRemoteLoad(objectState model.ObjectState) error {
 	}
 
 	return errors.ErrorOrNil()
+}
+
+// parseIdPlaceholder in transformation script.
+func (m *remoteMapper) parseIdPlaceholder(code *model.Code, script model.Script, sharedCode *model.Config) (*model.ConfigRow, model.Script, error) {
+	id := m.id.match(script.Content())
+	if id == "" {
+		// Not found
+		return nil, nil, nil
+	}
+
+	// Get shared code config row
+	rowKey := model.ConfigRowKey{
+		BranchId:    sharedCode.BranchId,
+		ComponentId: sharedCode.ComponentId,
+		ConfigId:    sharedCode.Id,
+		Id:          id,
+	}
+	row, found := m.state.GetOrNil(rowKey).(*model.ConfigRow)
+	if !found {
+		return nil, nil, utils.PrefixError(
+			fmt.Sprintf(`missing shared code %s`, rowKey.String()),
+			fmt.Errorf(`referenced from %s`, code.String()),
+		)
+	}
+
+	// Return LinkScript instead of ID
+	return row, model.LinkScript{Target: row.ConfigRowKey}, nil
 }

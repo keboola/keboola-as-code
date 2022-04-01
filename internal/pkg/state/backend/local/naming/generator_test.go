@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 )
@@ -232,10 +233,11 @@ func testGenerator(t *testing.T) *Generator {
 	assert.NoError(t, registry.Attach(ConfigKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", Id: "1"}, NewAbsPath("my-branch", "my-writer")))
 	assert.NoError(t, registry.Attach(ConfigKey{BranchId: 1, ComponentId: SharedCodeComponentId, Id: "1"}, NewAbsPath("my-branch", "my-shared-code")))
 	assert.NoError(t, registry.Attach(ConfigKey{BranchId: 1, ComponentId: VariablesComponentId, Id: "1"}, NewAbsPath("my-branch/my-config", "my-variables")))
-	return NewGenerator(TemplateWithIds(), registry, NewComponentsMap(testapi.NewMockedComponentsProvider()))
+	objects := state.NewCollection(state.NewIdSorter())
+	return NewGenerator(TemplateWithIds(), registry, NewComponentsMap(testapi.NewMockedComponentsProvider()), objects)
 }
 
-func generatePath(t *testing.T, g *Generator, object WithKey) string {
+func generatePath(t *testing.T, g *Generator, object Object) string {
 	t.Helper()
 	path, err := g.Generate(object)
 	if err != nil {

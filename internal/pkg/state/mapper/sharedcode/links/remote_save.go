@@ -1,6 +1,8 @@
 package links
 
 import (
+	"fmt"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -26,7 +28,7 @@ func (m *remoteMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error
 
 	// Convert LinkScript to ID placeholder
 	errors := utils.NewMultiError()
-	transformation.Transformation.MapScripts(func(code *model.Code, script model.Script) model.Script {
+	transformation.Transformation.MapScripts(func(_ *model.Block, code *model.Code, script model.Script) model.Script {
 		v, err := m.linkToIdPlaceholder(code, script)
 		if err != nil {
 			errors.Append(err)
@@ -43,4 +45,19 @@ func (m *remoteMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error
 	transformation.Content.Set(model.SharedCodeRowsIdContentKey, sharedCodeLink.Rows.IdsSlice())
 
 	return errors.ErrorOrNil()
+}
+
+func (m *remoteMapper) linkToIdPlaceholder(code *model.Code, script model.Script) (model.Script, error) {
+	if link, ok := script.(model.LinkScript); ok {
+		row, ok := m.state.GetOrNil(link.Target).(*model.ConfigRow)
+		script := model.StaticScript{Value: m.id.format(row.Id)}
+		if !ok {
+			return script, utils.PrefixError(
+				fmt.Sprintf(`missing shared code "%s"`, link.Target.String()),
+				fmt.Errorf(`referenced from %s`, code.String()),
+			)
+		}
+		return script, nil
+	}
+	return nil, nil
 }

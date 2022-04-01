@@ -153,11 +153,11 @@ func (v *Transformation) VisitScripts(callback func(code *Code, script Script)) 
 	}
 }
 
-func (v *Transformation) MapScripts(callback func(code *Code, script Script) Script) {
+func (v *Transformation) MapScripts(callback func(block *Block, code *Code, script Script) Script) {
 	for _, block := range v.Blocks {
 		for _, code := range block.Codes {
 			for index, script := range code.Scripts {
-				code.Scripts[index] = callback(code, script)
+				code.Scripts[index] = callback(block, code, script)
 			}
 		}
 	}

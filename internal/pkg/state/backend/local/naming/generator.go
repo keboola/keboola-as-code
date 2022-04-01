@@ -29,10 +29,17 @@ type Generator struct {
 	template   Template
 	registry   *Registry
 	components *ComponentsMap
+	objects    ObjectsReadOnly
 }
 
-func NewGenerator(template Template, registry *Registry, components *ComponentsMap) *Generator {
-	return &Generator{template: template, registry: registry, components: components}
+type parentDetails struct {
+	key  Key
+	kind Kind
+	path AbsPath
+}
+
+func NewGenerator(template Template, registry *Registry, components *ComponentsMap, objects ObjectsReadOnly) *Generator {
+	return &Generator{template: template, registry: registry, components: components, objects: objects}
 }
 
 func (g Generator) MetaFilePath(parentPath AbsPath) string {
@@ -138,14 +145,9 @@ func (g Generator) branchPath(branch *Branch) (AbsPath, error) {
 
 func (g Generator) configPath(config *Config) (AbsPath, error) {
 	// Get parent
-	parentKey, parentKind, parentPath, err := g.getParent(config)
+	parent, err := g.getParent(config)
 	if err != nil {
 		return AbsPath{}, err
-	}
-
-	// Check parent
-	if !parentKind.IsEmpty() && len(parentPath) == 0 {
-		return AbsPath{}, fmt.Errorf(`%s parent path cannot be empty"`, config)
 	}
 
 	// Get component
@@ -157,30 +159,30 @@ func (g Generator) configPath(config *Config) (AbsPath, error) {
 	// Shared code is handled differently
 	var template, targetComponentId string
 	switch {
-	case (parentKind.IsEmpty() || parentKind.IsBranch()) && component.IsSharedCode():
+	case (parent.kind.IsEmpty() || parent.kind.IsBranch()) && component.IsSharedCode():
 		if config.SharedCode == nil {
 			panic(fmt.Errorf(`invalid shared code %s, value is not set`, config.String()))
 		}
 		// Shared code
 		template = string(g.template.SharedCodeConfig)
 		targetComponentId = config.SharedCode.Target.String()
-	case parentKind.IsConfig() && component.IsScheduler():
+	case parent.kind.IsConfig() && component.IsScheduler():
 		template = string(g.template.SchedulerConfig)
-	case parentKind.IsConfig() && component.IsVariables():
+	case parent.kind.IsConfig() && component.IsVariables():
 		// Regular component with variables
 		template = string(g.template.VariablesConfig)
-	case parentKind.IsConfigRow() && component.IsVariables() && parentKey.(ConfigRowKey).ComponentId == SharedCodeComponentId:
+	case parent.kind.IsConfigRow() && component.IsVariables() && parent.key.(ConfigRowKey).ComponentId == SharedCodeComponentId:
 		// Shared code is config row and can have variables
 		template = string(g.template.VariablesConfig)
-	case parentKind.IsEmpty() || parentKind.IsBranch():
+	case parent.kind.IsEmpty() || parent.kind.IsBranch():
 		// Ordinary config
 		template = string(g.template.Config)
 	default:
-		panic(fmt.Errorf(`unexpected config parent type "%s"`, parentKey.Kind()))
+		panic(fmt.Errorf(`unexpected config parent type "%s"`, parent.kind))
 	}
 
 	p := NewEmptyAbsPath()
-	p = p.WithParentPath(parentPath)
+	p = p.WithParentPath(parent.path.String())
 	p = p.WithRelativePath(utils.ReplacePlaceholders(template, map[string]interface{}{
 		"target_component_id": targetComponentId, // for shared code
 		"component_type":      component.Type,
@@ -188,20 +190,21 @@ func (g Generator) configPath(config *Config) (AbsPath, error) {
 		"config_id":           jsonnet.StripIdPlaceholder(config.Id.String()),
 		"config_name":         strhelper.NormalizeName(config.Name),
 	}))
+
 	return p, nil
 }
 
 func (g Generator) configRowPath(row *ConfigRow) (AbsPath, error) {
 	// Get parent
-	parentKey, _, parentPath, err := g.getParent(row)
+	parent, err := g.getParent(row)
 	if err != nil {
 		return AbsPath{}, err
 	}
 
 	// Check parent
-	if !parentKey.Kind().IsConfig() {
-		return AbsPath{}, fmt.Errorf(`unexpected config row parent type "%s"`, parentKey.Kind())
-	} else if len(parentPath) == 0 {
+	if !parent.kind.IsConfig() {
+		return AbsPath{}, fmt.Errorf(`unexpected config row parent type "%s"`, parent.kind)
+	} else if len(parent.path.String()) == 0 {
 		return AbsPath{}, fmt.Errorf(`%s parent path cannot be empty"`, row)
 	}
 
@@ -241,7 +244,7 @@ func (g Generator) configRowPath(row *ConfigRow) (AbsPath, error) {
 	}
 
 	p := NewEmptyAbsPath()
-	p = p.WithParentPath(parentPath)
+	p = p.WithParentPath(parent.path.String())
 	p = p.WithRelativePath(utils.ReplacePlaceholders(template, map[string]interface{}{
 		"config_row_id":   jsonnet.StripIdPlaceholder(row.Id.String()),
 		"config_row_name": strhelper.NormalizeName(name),
@@ -251,7 +254,7 @@ func (g Generator) configRowPath(row *ConfigRow) (AbsPath, error) {
 
 func (g Generator) blockPath(block *Block) (AbsPath, error) {
 	// Get parent
-	_, _, parentPath, err := g.getParent(block)
+	parent, err := g.getParent(block)
 	if err != nil {
 		return AbsPath{}, err
 	}
@@ -262,7 +265,7 @@ func (g Generator) blockPath(block *Block) (AbsPath, error) {
 	})
 
 	p := NewEmptyAbsPath()
-	p = p.WithParentPath(parentPath)
+	p = p.WithParentPath(parent.path.String())
 	p = p.WithRelativePath(relativePath)
 	p = p.WithRelativePath(filesystem.Join(BlocksDir, relativePath))
 	return p, nil
@@ -270,13 +273,13 @@ func (g Generator) blockPath(block *Block) (AbsPath, error) {
 
 func (g Generator) codePath(code *Code) (AbsPath, error) {
 	// Get parent
-	_, _, parentPath, err := g.getParent(code)
+	parent, err := g.getParent(code)
 	if err != nil {
 		return AbsPath{}, err
 	}
 
 	p := NewEmptyAbsPath()
-	p = p.WithParentPath(parentPath)
+	p = p.WithParentPath(parent.path.String())
 	p = p.WithRelativePath(utils.ReplacePlaceholders(string(codeNameTemplate), map[string]interface{}{
 		"code_order": fmt.Sprintf(`%03d`, code.Index+1),
 		"code_name":  strhelper.NormalizeName(code.Name),
@@ -285,7 +288,8 @@ func (g Generator) codePath(code *Code) (AbsPath, error) {
 }
 
 func (g Generator) phasePath(phase *Phase) (AbsPath, error) {
-	_, _, parentPath, err := g.getParent(phase)
+	// Get parent
+	parent, err := g.getParent(phase)
 	if err != nil {
 		return AbsPath{}, err
 	}
@@ -296,20 +300,20 @@ func (g Generator) phasePath(phase *Phase) (AbsPath, error) {
 	})
 
 	p := NewEmptyAbsPath()
-	p = p.WithParentPath(parentPath)
+	p = p.WithParentPath(parent.path.String())
 	p = p.WithRelativePath(filesystem.Join(phasesDir, relativePath))
 	return p, nil
 }
 
 func (g Generator) taskPath(task *Task) (AbsPath, error) {
 	// Get parent
-	_, _, parentPath, err := g.getParent(task)
+	parent, err := g.getParent(task)
 	if err != nil {
 		return AbsPath{}, err
 	}
 
 	p := NewEmptyAbsPath()
-	p = p.WithParentPath(parentPath)
+	p = p.WithParentPath(parent.path.String())
 	p = p.WithRelativePath(utils.ReplacePlaceholders(string(taskNameTemplate), map[string]interface{}{
 		"task_order": fmt.Sprintf(`%03d`, task.Index+1),
 		"task_name":  strhelper.NormalizeName(task.Name),
@@ -317,16 +321,34 @@ func (g Generator) taskPath(task *Task) (AbsPath, error) {
 	return p, nil
 }
 
-func (g Generator) getParent(object Object) (parentKey Key, parentKind Kind, parentPath string, err error) {
-	if parentKey, err = object.ParentKey(); err != nil {
-		// nop, return err
-	} else if parentKey == nil {
-		// nop, return empty
-	} else if path, found := g.registry.PathByKey(parentKey); found {
-		parentKind = parentKey.Kind()
-		parentPath = path.String()
-	} else {
-		err = fmt.Errorf("path generator: %s not found", parentKey.String())
+func (g Generator) getParent(object Object) (*parentDetails, error) {
+	// Get parent key
+	parentKey, err := object.ParentKey()
+	if err != nil {
+		return nil, err
 	}
-	return parentKey, parentKind, parentPath, err
+
+	// Has parent?
+	if parentKey == nil {
+		return nil, nil
+	}
+
+	// Get parent path
+	parentPath, found := g.registry.PathByKey(parentKey)
+	if !found {
+		// Get parent object
+		parent, found := g.objects.Get(parentKey)
+		if !found {
+			return nil, fmt.Errorf("naming generator: %s not found", parentKey)
+		}
+
+		// Generate parent path
+		if path, err := g.Generate(parent); err != nil {
+			return nil, err
+		} else {
+			parentPath = path
+		}
+	}
+
+	return &parentDetails{key: parentKey, kind: parentKey.Kind(), path: parentPath}, nil
 }

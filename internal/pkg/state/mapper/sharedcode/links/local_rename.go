@@ -7,13 +7,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func (m *mapper) onRename(renamedObjects []model.RenameAction) error {
+func (m *localMapper) AfterLocalRename(changes []model.RenameAction) error {
 	errors := utils.NewMultiError()
 
 	// Find renamed shared codes
 	renamedSharedCodes := make(map[string]model.Key)
-	for _, object := range renamedObjects {
-		key := object.Manifest.Key()
+	for _, item := range changes {
+		key := item.Key
 
 		// Is shared code?
 		if ok, err := m.helper.IsSharedCodeKey(key); err != nil {
@@ -41,16 +41,16 @@ func (m *mapper) onRename(renamedObjects []model.RenameAction) error {
 	}
 
 	// Find transformations using these shared codes
-	uow := m.state.LocalManager().NewUnitOfWork(context.Background())
-	for _, objectState := range m.state.All() {
-		configState := m.getDependentConfig(objectState, renamedSharedCodes)
-		if configState == nil {
+	uow := m.state.NewUnitOfWork(context.Background(), model.NoFilter())
+	for _, object := range m.state.All() {
+		config := m.getDependentConfig(object, renamedSharedCodes)
+		if config == nil {
 			continue
 		}
 
 		// Re-save config -> new "shared_code_path" will be saved.
-		m.logger.Debugf(`Need to update shared codes in "%s"`, configState.Path())
-		uow.SaveObject(configState, configState.Local, model.NewChangedFields("configuration"))
+		m.logger.Debugf(`Need to update shared codes in "%s"`, config)
+		uow.Save(config, model.NewChangedFields("configuration"))
 	}
 
 	// Save
@@ -61,20 +61,19 @@ func (m *mapper) onRename(renamedObjects []model.RenameAction) error {
 	return errors.ErrorOrNil()
 }
 
-func (m *mapper) getDependentConfig(objectState model.ObjectState, renamedSharedCodes map[string]model.Key) *model.ConfigState {
+func (m *localMapper) getDependentConfig(object model.Object, renamedSharedCodes map[string]model.Key) *model.Config {
 	// Must be transformation + have "shared_code_id" key
-	configState, ok := objectState.(*model.ConfigState)
-	if !ok || !configState.HasLocalState() {
+	config, ok := object.(*model.Config)
+	if !ok {
 		return nil
 	}
-	config := configState.Local
 	if config.Transformation == nil || config.Transformation.LinkToSharedCode == nil {
 		return nil
 	}
 
 	// Check if shared code has been renamed.
 	if _, found := renamedSharedCodes[config.Transformation.LinkToSharedCode.Config.String()]; found {
-		return configState
+		return config
 	}
 	return nil
 }

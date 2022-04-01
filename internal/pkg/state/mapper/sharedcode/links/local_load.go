@@ -4,17 +4,24 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // AfterLocalOperation - resolve shared codes paths, and replace them by IDs on local load.
 func (m *localMapper) AfterLocalOperation(changes *model.Changes) error {
-	// Process loaded objects
 	errors := utils.NewMultiError()
+
+	// Find loaded transformations
 	for _, object := range changes.Loaded() {
-		if err := m.onLocalLoad(object); err != nil {
-			errors.Append(err)
+		// Shared code can be used only by transformation - struct must be set
+		if transformation, ok := object.(*model.Config); !ok || transformation.Transformation == nil {
+			return nil
+		} else {
+			if err := m.onLocalLoad(transformation); err != nil {
+				errors.Append(err)
+			}
 		}
 	}
 
@@ -22,13 +29,7 @@ func (m *localMapper) AfterLocalOperation(changes *model.Changes) error {
 }
 
 // onLocalLoad replaces shared code path by id in transformation config and blocks.
-func (m *localMapper) onLocalLoad(object model.Object) error {
-	// Shared code can be used only by transformation - struct must be set
-	transformation, ok := object.(*model.Config)
-	if !ok || transformation.Transformation == nil {
-		return nil
-	}
-
+func (m *localMapper) onLocalLoad(transformation *model.Config) error {
 	// Always remove shared code path from Content
 	defer func() {
 		transformation.Content.Delete(model.SharedCodePathContentKey)
@@ -47,20 +48,21 @@ func (m *localMapper) onLocalLoad(object model.Object) error {
 	}
 
 	// Get shared code
-	sharedCode, err := m.getSharedCodeByPath(recipe.PAth, sharedCodePath)
+	sharedCode, err := m.getSharedCodeByPath(transformation.BranchKey(), sharedCodePath)
 	if err != nil {
 		return utils.PrefixError(
 			err.Error(),
-			fmt.Errorf(`referenced from %s`, object.String()),
+			fmt.Errorf(`referenced from %s`, transformation.String()),
 		)
 	} else if sharedCode == nil {
 		return utils.PrefixError(
 			fmt.Sprintf(`missing shared code %s`, sharedCode.String()),
-			fmt.Errorf(`referenced from %s`, object.String()),
+			fmt.Errorf(`referenced from %s`, transformation.String()),
 		)
 	}
+
+	// Skip invalid shared code
 	if sharedCode.SharedCode == nil {
-		// Value is not set, shared code is not valid -> skip
 		return nil
 	}
 
@@ -76,9 +78,13 @@ func (m *localMapper) onLocalLoad(object model.Object) error {
 	// Replace paths -> IDs in code scripts
 	errors := utils.NewMultiError()
 	foundSharedCodeRows := make(map[model.RowId]model.ConfigRowKey)
-	transformation.Transformation.MapScripts(func(code *model.Code, script model.Script) model.Script {
+	transformation.Transformation.MapScripts(func(block *model.Block, code *model.Code, script model.Script) model.Script {
 		if sharedCodeRow, v, err := m.parsePathPlaceholder(code, script, sharedCode); err != nil {
-			errors.Append(err)
+			codePath, err := m.state.GetPath(code)
+			if err != nil {
+				panic(err)
+			}
+			errors.AppendWithPrefix(err.Error(), fmt.Errorf(`referenced from "%s"`, codePath))
 		} else if v != nil {
 			foundSharedCodeRows[sharedCodeRow.Id] = sharedCodeRow.ConfigRowKey
 			return v
@@ -94,4 +100,50 @@ func (m *localMapper) onLocalLoad(object model.Object) error {
 		return linkToSharedCode.Rows[i].String() < linkToSharedCode.Rows[j].String()
 	})
 	return errors.ErrorOrNil()
+}
+
+// parsePathPlaceholder in transformation script.
+func (m *localMapper) parsePathPlaceholder(code *model.Code, script model.Script, sharedCode *model.Config) (*model.ConfigRow, model.Script, error) {
+	path := m.path.match(script.Content(), code.ComponentId())
+	if path == "" {
+		// Not found
+		return nil, nil, nil
+	}
+
+	// Get shared code row
+	row, err := m.getSharedCodeRowByPath(sharedCode, path)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Return LinkScript instead of path
+	return row, model.LinkScript{Target: row.ConfigRowKey}, nil
+}
+
+func (m *localMapper) getSharedCodeRowByPath(sharedCode *model.Config, path string) (*model.ConfigRow, error) {
+	sharedCodePath, err := m.state.GetPath(sharedCode)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get key by path
+	path = filesystem.Join(sharedCodePath.String(), path)
+	configRowRaw, found := m.state.GetByPath(path)
+	if !found {
+		return nil, fmt.Errorf(`missing shared code "%s"`, path)
+	}
+
+	// Is config row?
+	configRow, ok := configRowRaw.(*model.ConfigRow)
+	if !ok {
+		return nil, fmt.Errorf(`path "%s" is not config row`, path)
+	}
+
+	// Is from parent?
+	if sharedCode.Key() != configRow.ConfigKey() {
+		return nil, fmt.Errorf(`row "%s" is not from shared code "%s"`, path, sharedCodePath.String())
+	}
+
+	// Ok
+	return configRow, nil
 }

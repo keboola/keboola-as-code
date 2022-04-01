@@ -31,16 +31,14 @@ func (m *localMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
 func (m *localMapper) replaceSharedCodeIdByPath(transformation *model.Config) error {
 	// Get shared code
 	sharedCodeKey := transformation.Transformation.LinkToSharedCode.Config
-	sharedCodeState, found := m.state.GetOrNil(sharedCodeKey).(*model.ConfigState)
+	sharedCode, found := m.state.GetOrNil(sharedCodeKey).(*model.Config)
 
 	// Convert LinkScript to path placeholder
 	errors := utils.NewMultiError()
-	transformation.Transformation.MapScripts(func(code *model.Code, script model.Script) model.Script {
-		v, err := m.linkToPathPlaceholder(code, script, sharedCodeState)
-		if err != nil {
+	transformation.Transformation.MapScripts(func(_ *model.Block, code *model.Code, script model.Script) model.Script {
+		if v, err := m.linkToPathPlaceholder(code, script, sharedCode); err != nil {
 			errors.Append(err)
-		}
-		if v != nil {
+		} else if v != nil {
 			return v
 		}
 		return script
@@ -55,12 +53,18 @@ func (m *localMapper) replaceSharedCodeIdByPath(transformation *model.Config) er
 	}
 
 	// Check: target component of the shared code = transformation component
-	if err := m.helper.CheckTargetComponent(sharedCodeState.LocalOrRemoteState().(*model.Config), transformation.ConfigKey); err != nil {
+	if err := m.helper.CheckTargetComponent(sharedCode, transformation.ConfigKey); err != nil {
+		return err
+	}
+
+	// Shared code path
+	sharedCodePath, err := m.state.GetPath(sharedCode)
+	if err != nil {
 		return err
 	}
 
 	// Replace Shared Code ID -> Shared Code path
-	transformation.Content.Set(model.SharedCodePathContentKey, sharedCodeState.RelativePath())
+	transformation.Content.Set(model.SharedCodePathContentKey, sharedCodePath.RelativePath())
 
 	return errors.ErrorOrNil()
 }

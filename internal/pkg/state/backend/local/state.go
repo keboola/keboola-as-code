@@ -55,12 +55,14 @@ func NewState(d dependencies, objectsRoot filesystem.Fs, manifest manifest.Manif
 	}
 
 	// Create state
+	objectCollection := state.NewCollection(manifest.Sorter())
+	namingGenerator := naming.NewGenerator(manifest.NamingTemplate(), manifest.NamingRegistry(), components, objectCollection)
 	s := &State{
-		objects:         state.NewCollection(manifest.Sorter()),
+		objects:         objectCollection,
 		deps:            d,
 		logger:          d.Logger(),
 		objectsRoot:     objectsRoot,
-		namingGenerator: naming.NewGenerator(manifest.NamingTemplate(), manifest.NamingRegistry(), components),
+		namingGenerator: namingGenerator,
 		manifest:        manifest,
 		mapper:          mapper.New(),
 		knownPaths:      knownPaths,

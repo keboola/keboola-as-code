@@ -18,6 +18,7 @@ type InMemory struct {
 func NewInMemory() Manifest {
 	namingRegistry := naming.NewRegistry()
 	return &InMemory{
+		NamingTmpl: naming.TemplateWithoutIds(),
 		Collection: NewCollection(context.Background(), namingRegistry, state.NewPathSorter(namingRegistry)),
 	}
 }

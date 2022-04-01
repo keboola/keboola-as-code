@@ -8,9 +8,16 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func (m *localMapper) getSharedCodeByPath(parentPath, codePath string) (*model.Config, error) {
+func (m *localMapper) getSharedCodeByPath(branchKey model.BranchKey, codePath string) (*model.Config, error) {
+	// Get branch path - shared code path is relative to the branch path
+	branch := m.state.MustGet(branchKey)
+	branchPath, err := m.state.GetPath(branch)
+	if err != nil {
+		return nil, err
+	}
+
 	// Get key by path
-	codePath = filesystem.Join(parentPath, codePath)
+	codePath = filesystem.Join(branchPath.String(), codePath)
 	configStateRaw, found := m.state.GetByPath(codePath)
 	if !found {
 		return nil, fmt.Errorf(`missing shared code "%s"`, codePath)
@@ -31,73 +38,25 @@ func (m *localMapper) getSharedCodeByPath(parentPath, codePath string) (*model.C
 	return configState, nil
 }
 
-func (h *localMapper) getSharedCodeRowByPath(sharedCode *model.Config, path string) (*model.ConfigRow, error) {
-	// Get key by path
-	path = filesystem.Join(sharedCode.Path(), path)
-	configRowRaw, found := h.state.GetByPath(path)
-	if !found {
-		return nil, fmt.Errorf(`missing shared code "%s"`, path)
+func (m *localMapper) linkToPathPlaceholder(code *model.Code, script model.Script, sharedCode *model.Config) (model.Script, error) {
+	if link, ok := script.(model.LinkScript); ok {
+		row, ok := m.state.GetOrNil(link.Target).(*model.Config)
+		if !ok || sharedCode == nil {
+			// Return ID placeholder, if row is not found
+			return model.StaticScript{Value: m.id.format(link.Target.Id)}, utils.PrefixError(
+				fmt.Sprintf(`missing shared code %s`, link.Target.String()),
+				fmt.Errorf(`referenced from %s`, code.String()),
+			)
+		}
+
+		// Shared code row path
+		rowPath, err := m.state.GetPath(row)
+		if err != nil {
+			return nil, err
+		}
+
+		// Return placeholder with relative path to the shared code
+		return model.StaticScript{Value: m.path.format(rowPath.RelativePath(), code.ComponentId())}, nil
 	}
-
-	// Is config row?
-	configRow, ok := configRowRaw.(*model.ConfigRow)
-	if !ok {
-		return nil, fmt.Errorf(`path "%s" is not config row`, path)
-	}
-
-	// Is from parent?
-	if sharedCode.Key() != configRow.ConfigKey() {
-		return nil, fmt.Errorf(`row "%s" is not from shared code "%s"`, path, sharedCode.Path())
-	}
-
-	// Ok
-	return configRow, nil
-}
-
-// parsePathPlaceholder in transformation script.
-func (m *localMapper) parsePathPlaceholder(code *model.Code, script model.Script, sharedCode *model.Config) (*model.ConfigRow, model.Script, error) {
-	path := m.path.match(script.Content(), code.ComponentId)
-	if path == "" {
-		// Not found
-		return nil, nil, nil
-	}
-
-	// Get shared code row
-	row, err := m.helper.getSharedCodeRowByPath(sharedCode, path)
-	if err != nil {
-		return nil, nil, utils.PrefixError(
-			err.Error(),
-			fmt.Errorf(`referenced from "%s"`, code.String()),
-		)
-	}
-
-	// Return LinkScript instead of path
-	return row, model.LinkScript{Target: row.ConfigRowKey}, nil
-}
-
-// parseIdPlaceholder in transformation script.
-func (m *localMapper) parseIdPlaceholder(code *model.Code, script model.Script, sharedCode *model.Config) (*model.ConfigRow, model.Script, error) {
-	id := m.id.match(script.Content())
-	if id == "" {
-		// Not found
-		return nil, nil, nil
-	}
-
-	// Get shared code config row
-	rowKey := model.ConfigRowKey{
-		BranchId:    sharedCode.BranchId,
-		ComponentId: sharedCode.ComponentId,
-		ConfigId:    sharedCode.Id,
-		Id:          id,
-	}
-	row, found := m.state.GetOrNil(rowKey).(*model.ConfigRowState)
-	if !found {
-		return nil, nil, utils.PrefixError(
-			fmt.Sprintf(`missing shared code %s`, rowKey.String()),
-			fmt.Errorf(`referenced from %s`, code.String()),
-		)
-	}
-
-	// Return LinkScript instead of ID
-	return row, model.LinkScript{Target: row.ConfigRowKey}, nil
+	return nil, nil
 }

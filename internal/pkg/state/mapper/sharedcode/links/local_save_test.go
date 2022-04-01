@@ -13,7 +13,7 @@ import (
 
 func TestLocalSaveTranWithSharedCode(t *testing.T) {
 	t.Parallel()
-	state, d := createStateWithMapper(t)
+	state, d := createStateWithLocalMapper(t)
 	logger := d.DebugLogger()
 
 	// Shared code config with rows
@@ -21,53 +21,50 @@ func TestLocalSaveTranWithSharedCode(t *testing.T) {
 
 	// Create transformation with shared code
 	transformation := createInternalTransformationWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, state)
+	transformationPath, err := state.GetPath(transformation)
+	assert.NoError(t, err)
 
 	// Invoke
-	recipe := model.NewLocalSaveRecipe(transformation.ConfigManifest, transformation.Local, model.NewChangedFields())
+	recipe := model.NewLocalSaveRecipe(transformationPath, transformation, model.NewChangedFields())
 	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// path to shared code is part of the Content
-	sharedCodePath, found := transformation.Local.Content.Get(model.SharedCodePathContentKey)
+	sharedCodePath, found := transformation.Content.Get(model.SharedCodePathContentKey)
 	assert.True(t, found)
 	assert.Equal(t, sharedCodePath, `_shared/keboola.python-transformation-v2`)
 
 	// IDs in transformation blocks are replaced by paths
+	blockKey := model.BlockKey{Parent: transformation.ConfigKey, Index: 0}
 	assert.Equal(t, []*model.Block{
 		{
-			Name: `Block 1`,
+			BlockKey: blockKey,
+			Name:     `Block 1`,
 			Codes: model.Codes{
 				{
-					CodeKey: model.CodeKey{
-						ComponentId: `keboola.python-transformation-v2`,
-					},
-					Name: `Code 1`,
+					CodeKey: model.CodeKey{Parent: blockKey, Index: 0},
+					Name:    `Code 1`,
 					Scripts: model.Scripts{
 						model.StaticScript{Value: `print(100)`},
 						model.StaticScript{Value: "# {{:codes/code1}}"},
 					},
-					AbsPath: model.NewAbsPath(`branch/transformation/blocks/block-1`, `code-1`),
 				},
 				{
-					CodeKey: model.CodeKey{
-						ComponentId: `keboola.python-transformation-v2`,
-					},
-					Name: `Code 2`,
+					CodeKey: model.CodeKey{Parent: blockKey, Index: 1},
+					Name:    `Code 2`,
 					Scripts: model.Scripts{
 						model.StaticScript{Value: "# {{:codes/code2}}"},
 						model.StaticScript{Value: "# {{:codes/code1}}"},
 					},
-					AbsPath: model.NewAbsPath(`branch/transformation/blocks/block-1`, `code-2`),
 				},
 			},
-			AbsPath: model.NewAbsPath(`branch/transformation/blocks`, `block-1`),
 		},
-	}, transformation.Local.Transformation.Blocks)
+	}, transformation.Transformation.Blocks)
 }
 
 func TestLocalSaveTranWithSharedCode_SharedCodeConfigNotFound(t *testing.T) {
 	t.Parallel()
-	state, d := createStateWithMapper(t)
+	state, d := createStateWithLocalMapper(t)
 	logger := d.DebugLogger()
 
 	// Shared code config with rows
@@ -75,10 +72,12 @@ func TestLocalSaveTranWithSharedCode_SharedCodeConfigNotFound(t *testing.T) {
 
 	// Create transformation with shared code
 	transformation := createInternalTransformationWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, state)
-	transformation.Local.Transformation.LinkToSharedCode.Config.Id = `missing` // <<<<<<<<<<<
+	transformation.Transformation.LinkToSharedCode.Config.Id = `missing` // <<<<<<<<<<<
+	transformationPath, err := state.GetPath(transformation)
+	assert.NoError(t, err)
 
 	// Invoke
-	recipe := model.NewLocalSaveRecipe(transformation.ConfigManifest, transformation.Local, model.NewChangedFields())
+	recipe := model.NewLocalSaveRecipe(transformationPath, transformation, model.NewChangedFields())
 	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
 	expectedLogs := `
 WARN  Warning:
@@ -88,46 +87,40 @@ WARN  Warning:
 	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessages())
 
 	// Config file doesn't contain shared code path
-	_, found := transformation.Local.Content.Get(model.SharedCodePathContentKey)
+	_, found := transformation.Content.Get(model.SharedCodePathContentKey)
 	assert.False(t, found)
 
 	// IDs in transformation blocks are NOT replaced by paths
+	blockKey := model.BlockKey{Parent: transformation.ConfigKey, Index: 0}
 	assert.Equal(t, []*model.Block{
 		{
 			Name: `Block 1`,
 			Codes: model.Codes{
 				{
-					CodeKey: model.CodeKey{
-						ComponentId: `keboola.python-transformation-v2`,
-					},
-					Name: `Code 1`,
+					CodeKey: model.CodeKey{Parent: blockKey, Index: 0},
+					Name:    `Code 1`,
 					Scripts: model.Scripts{
 						model.StaticScript{Value: `print(100)`},
 						model.StaticScript{Value: fmt.Sprintf("{{%s}}", sharedCodeRowsKeys[0].ObjectId())},
 					},
-					AbsPath: model.NewAbsPath(`branch/transformation/blocks/block-1`, `code-1`),
 				},
 				{
-					CodeKey: model.CodeKey{
-						ComponentId: `keboola.python-transformation-v2`,
-					},
-					Name: `Code 2`,
+					CodeKey: model.CodeKey{Parent: blockKey, Index: 1},
+					Name:    `Code 2`,
 
 					Scripts: model.Scripts{
 						model.StaticScript{Value: fmt.Sprintf("{{%s}}", sharedCodeRowsKeys[1].ObjectId())},
 						model.StaticScript{Value: fmt.Sprintf("{{%s}}", sharedCodeRowsKeys[0].ObjectId())},
 					},
-					AbsPath: model.NewAbsPath(`branch/transformation/blocks/block-1`, `code-2`),
 				},
 			},
-			AbsPath: model.NewAbsPath(`branch/transformation/blocks`, `block-1`),
 		},
-	}, transformation.Local.Transformation.Blocks)
+	}, transformation.Transformation.Blocks)
 }
 
 func TestLocalSaveTranWithSharedCode_SharedCodeRowNotFound(t *testing.T) {
 	t.Parallel()
-	state, d := createStateWithMapper(t)
+	state, d := createStateWithLocalMapper(t)
 	logger := d.DebugLogger()
 
 	// Shared code config with rows
@@ -135,15 +128,17 @@ func TestLocalSaveTranWithSharedCode_SharedCodeRowNotFound(t *testing.T) {
 
 	// Create transformation with shared code
 	transformation := createInternalTransformationWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, state)
-	transformation.Local.Transformation.Blocks[0].Codes[1].Scripts[0] = model.LinkScript{Target: model.ConfigRowKey{
+	transformation.Transformation.Blocks[0].Codes[1].Scripts[0] = model.LinkScript{Target: model.ConfigRowKey{
 		BranchId:    sharedCodeKey.BranchId,
 		ComponentId: sharedCodeKey.ComponentId,
 		ConfigId:    sharedCodeKey.Id,
 		Id:          `missing`, // <<<<<<<<<<<<
 	}}
+	transformationPath, err := state.GetPath(transformation)
+	assert.NoError(t, err)
 
 	// Invoke
-	recipe := model.NewLocalSaveRecipe(transformation.ConfigManifest, transformation.Local, model.NewChangedFields())
+	recipe := model.NewLocalSaveRecipe(transformationPath, transformation, model.NewChangedFields())
 	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
 	expectedLogs := `
 WARN  Warning:
@@ -153,39 +148,34 @@ WARN  Warning:
 	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessages())
 
 	// Link to shared code is set, but without missing row
-	sharedCodeId, found := transformation.Local.Content.Get(model.SharedCodePathContentKey)
+	sharedCodeId, found := transformation.Content.Get(model.SharedCodePathContentKey)
 	assert.True(t, found)
 	assert.Equal(t, sharedCodeId, `_shared/keboola.python-transformation-v2`)
 
 	// IDs in transformation blocks are replaced by paths, except missing row
+	blockKey := model.BlockKey{Parent: transformation.ConfigKey, Index: 0}
 	assert.Equal(t, []*model.Block{
 		{
-			Name: `Block 1`,
+			BlockKey: blockKey,
+			Name:     `Block 1`,
 			Codes: model.Codes{
 				{
-					CodeKey: model.CodeKey{
-						ComponentId: `keboola.python-transformation-v2`,
-					},
-					Name: `Code 1`,
+					CodeKey: model.CodeKey{Parent: blockKey, Index: 0},
+					Name:    `Code 1`,
 					Scripts: model.Scripts{
 						model.StaticScript{Value: `print(100)`},
 						model.StaticScript{Value: "# {{:codes/code1}}"},
 					},
-					AbsPath: model.NewAbsPath(`branch/transformation/blocks/block-1`, `code-1`),
 				},
 				{
-					CodeKey: model.CodeKey{
-						ComponentId: `keboola.python-transformation-v2`,
-					},
-					Name: `Code 2`,
+					CodeKey: model.CodeKey{Parent: blockKey, Index: 1},
+					Name:    `Code 2`,
 					Scripts: model.Scripts{
 						model.StaticScript{Value: "{{missing}}"}, // <<<<<<<<<<<<<<
 						model.StaticScript{Value: "# {{:codes/code1}}"},
 					},
-					AbsPath: model.NewAbsPath(`branch/transformation/blocks/block-1`, `code-2`),
 				},
 			},
-			AbsPath: model.NewAbsPath(`branch/transformation/blocks`, `block-1`),
 		},
-	}, transformation.Local.Transformation.Blocks)
+	}, transformation.Transformation.Blocks)
 }

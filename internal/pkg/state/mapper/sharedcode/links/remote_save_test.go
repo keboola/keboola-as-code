@@ -11,7 +11,7 @@ import (
 
 func TestRemoteSaveTranWithSharedCode(t *testing.T) {
 	t.Parallel()
-	state, d := createStateWithMapper(t)
+	state, d := createStateWithRemoteMapper(t)
 	logger := d.DebugLogger()
 
 	// Shared code config with rows
@@ -21,16 +21,15 @@ func TestRemoteSaveTranWithSharedCode(t *testing.T) {
 	transformation := createInternalTransformationWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, state)
 
 	// Invoke
-	object := transformation.Local
-	recipe := model.NewRemoteSaveRecipe(transformation.Manifest(), object, model.NewChangedFields())
+	recipe := model.NewRemoteSaveRecipe(transformation, model.NewChangedFields())
 	assert.NoError(t, state.Mapper().MapBeforeRemoteSave(recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Config ID and rows ID are set in Content
-	id, found := object.Content.Get(model.SharedCodeIdContentKey)
+	id, found := transformation.Content.Get(model.SharedCodeIdContentKey)
 	assert.True(t, found)
 	assert.Equal(t, sharedCodeKey.Id.String(), id)
-	rows, found := object.Content.Get(model.SharedCodeRowsIdContentKey)
+	rows, found := transformation.Content.Get(model.SharedCodeRowsIdContentKey)
 	assert.True(t, found)
 	assert.Equal(t, []interface{}{sharedCodeRowsKeys[0].ObjectId(), sharedCodeRowsKeys[1].ObjectId()}, rows)
 }
