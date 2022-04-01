@@ -1,3 +1,4 @@
+// Package links replaces "shared_code_id" with "shared_code_path" in local fs and vice versa.
 package links
 
 import (
@@ -5,26 +6,49 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper/sharedcode/helper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/remote"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper/sharedcode/helper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-// mapper replaces "shared_code_id" with "shared_code_path" in local fs.
-type mapper struct {
-	state  *state.State
+type dependencies interface {
+	Logger() log.Logger
+	Components() (*model.ComponentsMap, error)
+}
+
+type localMapper struct {
+	state  *local.State
 	logger log.Logger
 	helper *helper.SharedCodeHelper
 	id     *idUtils
 	path   *pathUtils
 }
 
-func NewMapper(s *state.State) *mapper {
-	return &mapper{
+type remoteMapper struct {
+	state  *remote.State
+	logger log.Logger
+	helper *helper.SharedCodeHelper
+	id     *idUtils
+	path   *pathUtils
+}
+
+func NewLocalMapper(s *local.State, d dependencies) *localMapper {
+	return &localMapper{
 		state:  s,
-		logger: s.Logger(),
-		helper: helper.New(s),
+		logger: d.Logger(),
+		helper: helper.New(s, d),
+		id:     newIdUtils(),
+		path:   newPathUtils(),
+	}
+}
+
+func NewRemoteMapper(s *remote.State, d dependencies) *remoteMapper {
+	return &remoteMapper{
+		state:  s,
+		logger: d.Logger(),
+		helper: helper.New(s, d),
 		id:     newIdUtils(),
 		path:   newPathUtils(),
 	}
@@ -63,52 +87,4 @@ func (m *mapper) linkToPathPlaceholder(code *model.Code, link model.Script, shar
 		return model.StaticScript{Value: m.path.format(path, code.ComponentId)}, nil
 	}
 	return nil, nil
-}
-
-// parseIdPlaceholder in transformation script.
-func (m *mapper) parseIdPlaceholder(code *model.Code, script model.Script, sharedCode *model.ConfigState) (*model.ConfigRowState, model.Script, error) {
-	id := m.id.match(script.Content())
-	if id == "" {
-		// Not found
-		return nil, nil, nil
-	}
-
-	// Get shared code config row
-	rowKey := model.ConfigRowKey{
-		BranchId:    sharedCode.BranchId,
-		ComponentId: sharedCode.ComponentId,
-		ConfigId:    sharedCode.Id,
-		Id:          id,
-	}
-	row, found := m.state.GetOrNil(rowKey).(*model.ConfigRowState)
-	if !found {
-		return nil, nil, utils.PrefixError(
-			fmt.Sprintf(`missing shared code %s`, rowKey.String()),
-			fmt.Errorf(`referenced from %s`, code.String()),
-		)
-	}
-
-	// Return LinkScript instead of ID
-	return row, model.LinkScript{Target: row.ConfigRowKey}, nil
-}
-
-// parsePathPlaceholder in transformation script.
-func (m *mapper) parsePathPlaceholder(code *model.Code, script model.Script, sharedCode *model.ConfigState) (*model.ConfigRowState, model.Script, error) {
-	path := m.path.match(script.Content(), code.ComponentId)
-	if path == "" {
-		// Not found
-		return nil, nil, nil
-	}
-
-	// Get shared code row
-	row, err := m.helper.GetSharedCodeRowByPath(sharedCode, path)
-	if err != nil {
-		return nil, nil, utils.PrefixError(
-			err.Error(),
-			fmt.Errorf(`referenced from "%s"`, code.String()),
-		)
-	}
-
-	// Return LinkScript instead of path
-	return row, model.LinkScript{Target: row.ConfigRowKey}, nil
-}
+}y

@@ -1,3 +1,4 @@
+// Package codes saves shared codes (config rows) to "codes" local dir.
 package codes
 
 import (

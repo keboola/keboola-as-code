@@ -18,7 +18,7 @@ func TestRemoteSaveTranWithSharedCode(t *testing.T) {
 	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, state)
 
 	// Create transformation with shared code
-	transformation := createInternalTranWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, state)
+	transformation := createInternalTransformationWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, state)
 
 	// Invoke
 	object := transformation.Local

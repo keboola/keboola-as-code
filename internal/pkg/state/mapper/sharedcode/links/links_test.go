@@ -3,74 +3,82 @@ package links_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper/sharedcode/links"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/remote"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper/sharedcode/links"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-func createStateWithMapper(t *testing.T) (*state.State, *dependencies.TestContainer) {
+func createStateWithLocalMapper(t *testing.T) (*local.State, *dependencies.TestContainer) {
 	t.Helper()
 	d := dependencies.NewTestContainer()
-	mockedState := d.EmptyState()
-	mockedState.Mapper().AddMapper(links.NewMapper(mockedState))
+	mockedState := d.EmptyLocalState()
+	mockedState.Mapper().AddMapper(links.NewLocalMapper(mockedState, d))
 	return mockedState, d
 }
 
-func createLocalTranWithSharedCode(t *testing.T, state *state.State) *model.ConfigState {
+func createStateWithRemoteMapper(t *testing.T) (*remote.State, *dependencies.TestContainer) {
+	t.Helper()
+	d := dependencies.NewTestContainer()
+	mockedState := d.EmptyRemoteState()
+	mockedState.Mapper().AddMapper(links.NewRemoteMapper(mockedState, d))
+	return mockedState, d
+}
+
+func createLocalTransformationWithSharedCode(t *testing.T, state *local.State) *model.Config {
 	t.Helper()
 
-	key := model.ConfigKey{
+	// Branch
+	state.MustAdd(&model.Branch{
+		BranchKey: model.BranchKey{Id: 123},
+	})
+
+	// Transformation
+	transformationKey := model.ConfigKey{
 		BranchId:    123,
 		ComponentId: `keboola.python-transformation-v2`,
 		Id:          `789`,
 	}
-
-	transformation := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{
-			ConfigKey: key,
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(`branch`, `transformation`),
+	blockKey := model.BlockKey{
+		Parent: transformationKey,
+		Index:  0,
+	}
+	transformation := &model.Config{
+		ConfigKey: transformationKey,
+		Content: orderedmap.FromPairs([]orderedmap.Pair{
+			{
+				Key:   model.SharedCodePathContentKey,
+				Value: `_shared/keboola.python-transformation-v2`,
 			},
-		},
-		Local: &model.Config{
-			ConfigKey: key,
-			Content: orderedmap.FromPairs([]orderedmap.Pair{
+		}),
+		Transformation: &model.Transformation{
+			Blocks: []*model.Block{
 				{
-					Key:   model.SharedCodePathContentKey,
-					Value: `_shared/keboola.python-transformation-v2`,
-				},
-			}),
-			Transformation: &model.Transformation{
-				Blocks: []*model.Block{
-					{
-						Name:    `Block 1`,
-						AbsPath: model.NewAbsPath(`branch/transformation/blocks`, `block-1`),
-						Codes: model.Codes{
-							{
-								CodeKey: model.CodeKey{
-									ComponentId: `keboola.python-transformation-v2`,
-								},
-								Name:    `Code 1`,
-								AbsPath: model.NewAbsPath(`branch/transformation/blocks/block-1`, `code-1`),
-								Scripts: model.Scripts{
-									model.StaticScript{Value: `print(100)`},
-									model.StaticScript{Value: "# {{:codes/code1}}\n"},
-								},
+					BlockKey: blockKey,
+					Name:     `Block 1`,
+					Codes: model.Codes{
+						{
+							CodeKey: model.CodeKey{
+								Parent: blockKey,
+								Index:  0,
 							},
-							{
-								CodeKey: model.CodeKey{
-									ComponentId: `keboola.python-transformation-v2`,
-								},
-								Name:    `Code 2`,
-								AbsPath: model.NewAbsPath(`branch/transformation/blocks/block-1`, `code-2`),
-								Scripts: model.Scripts{
-									model.StaticScript{Value: " {{:codes/code2}}\n"},
-									model.StaticScript{Value: "#     {{:codes/code1}}"},
-								},
+							Name: `Code 1`,
+							Scripts: model.Scripts{
+								model.StaticScript{Value: `print(100)`},
+								model.StaticScript{Value: "# {{:codes/code1}}\n"},
+							},
+						},
+						{
+							CodeKey: model.CodeKey{
+								Parent: blockKey,
+								Index:  1,
+							},
+							Name: `Code 2`,
+							Scripts: model.Scripts{
+								model.StaticScript{Value: " {{:codes/code2}}\n"},
+								model.StaticScript{Value: "#     {{:codes/code1}}"},
 							},
 						},
 					},
@@ -78,73 +86,11 @@ func createLocalTranWithSharedCode(t *testing.T, state *state.State) *model.Conf
 			},
 		},
 	}
-	assert.NoError(t, state.Set(transformation))
+	state.MustAdd(transformation)
 	return transformation
 }
 
-func createInternalTranWithSharedCode(t *testing.T, sharedCodeKey model.ConfigKey, sharedCodeRowsKeys []model.ConfigRowKey, state *state.State) *model.ConfigState {
-	t.Helper()
-
-	key := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: `keboola.python-transformation-v2`,
-		Id:          `789`,
-	}
-
-	transformation := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{
-			ConfigKey: key,
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(`branch`, `transformation`),
-			},
-		},
-		Local: &model.Config{
-			ConfigKey: key,
-			Content:   orderedmap.New(),
-			Transformation: &model.Transformation{
-				LinkToSharedCode: &model.LinkToSharedCode{
-					Config: sharedCodeKey,
-					Rows:   sharedCodeRowsKeys,
-				},
-				Blocks: []*model.Block{
-					{
-						Name: `Block 1`,
-						Codes: model.Codes{
-							{
-								CodeKey: model.CodeKey{
-									ComponentId: `keboola.python-transformation-v2`,
-								},
-								Name: `Code 1`,
-								Scripts: model.Scripts{
-									model.StaticScript{Value: `print(100)`},
-									model.LinkScript{Target: sharedCodeRowsKeys[0]},
-								},
-								AbsPath: model.NewAbsPath(`branch/transformation/blocks/block-1`, `code-1`),
-							},
-							{
-								CodeKey: model.CodeKey{
-									ComponentId: `keboola.python-transformation-v2`,
-								},
-								Name: `Code 2`,
-								Scripts: model.Scripts{
-									model.LinkScript{Target: sharedCodeRowsKeys[1]},
-									model.LinkScript{Target: sharedCodeRowsKeys[0]},
-								},
-								AbsPath: model.NewAbsPath(`branch/transformation/blocks/block-1`, `code-2`),
-							},
-						},
-						AbsPath: model.NewAbsPath(`branch/transformation/blocks`, `block-1`),
-					},
-				},
-			},
-		},
-	}
-
-	assert.NoError(t, state.Set(transformation))
-	return transformation
-}
-
-func createRemoteTranWithSharedCode(t *testing.T, sharedCodeKey model.ConfigKey, sharedCodeRowsKeys []model.ConfigRowKey, state *state.State) *model.ConfigState {
+func createRemoteTransformationWithSharedCode(t *testing.T, sharedCodeKey model.ConfigKey, sharedCodeRowsKeys []model.ConfigRowKey, state *remote.State) *model.Config {
 	t.Helper()
 
 	// Rows -> rows IDs
@@ -153,26 +99,87 @@ func createRemoteTranWithSharedCode(t *testing.T, sharedCodeKey model.ConfigKey,
 		rows = append(rows, row.Id.String())
 	}
 
-	key := model.ConfigKey{
+	// Branch
+	state.MustAdd(&model.Branch{
+		BranchKey: model.BranchKey{Id: 123},
+	})
+
+	// Transformation
+	transformationKey := model.ConfigKey{
 		BranchId:    sharedCodeKey.BranchId,
 		ComponentId: model.ComponentId("keboola.python-transformation-v2"),
 		Id:          model.ConfigId("001"),
 	}
+	transformation := &model.Config{
+		ConfigKey: transformationKey,
+		Content: orderedmap.FromPairs([]orderedmap.Pair{
+			{Key: model.SharedCodeIdContentKey, Value: sharedCodeKey.Id.String()},
+			{Key: model.SharedCodeRowsIdContentKey, Value: rows},
+		}),
+		Transformation: &model.Transformation{},
+	}
+	state.MustAdd(transformation)
+	return transformation
+}
 
-	transformation := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{
-			ConfigKey: key,
-		},
-		Remote: &model.Config{
-			ConfigKey: key,
-			Content: orderedmap.FromPairs([]orderedmap.Pair{
-				{Key: model.SharedCodeIdContentKey, Value: sharedCodeKey.Id.String()},
-				{Key: model.SharedCodeRowsIdContentKey, Value: rows},
-			}),
-			Transformation: &model.Transformation{},
+func createInternalTransformationWithSharedCode(t *testing.T, sharedCodeKey model.ConfigKey, sharedCodeRowsKeys []model.ConfigRowKey, state model.Objects) *model.Config {
+	t.Helper()
+
+	// Branch
+	state.MustAdd(&model.Branch{
+		BranchKey: model.BranchKey{Id: 123},
+	})
+
+	// Transformation
+	transformationKey := model.ConfigKey{
+		BranchId:    123,
+		ComponentId: `keboola.python-transformation-v2`,
+		Id:          `789`,
+	}
+	blockKey := model.BlockKey{
+		Parent: transformationKey,
+		Index:  0,
+	}
+	transformation := &model.Config{
+		ConfigKey: transformationKey,
+		Content:   orderedmap.New(),
+		Transformation: &model.Transformation{
+			LinkToSharedCode: &model.LinkToSharedCode{
+				Config: sharedCodeKey,
+				Rows:   sharedCodeRowsKeys,
+			},
+			Blocks: []*model.Block{
+				{
+					BlockKey: blockKey,
+					Name:     `Block 1`,
+					Codes: model.Codes{
+						{
+							CodeKey: model.CodeKey{
+								Parent: blockKey,
+								Index:  0,
+							},
+							Name: `Code 1`,
+							Scripts: model.Scripts{
+								model.StaticScript{Value: `print(100)`},
+								model.LinkScript{Target: sharedCodeRowsKeys[0]},
+							},
+						},
+						{
+							CodeKey: model.CodeKey{
+								Parent: blockKey,
+								Index:  1,
+							},
+							Name: `Code 2`,
+							Scripts: model.Scripts{
+								model.LinkScript{Target: sharedCodeRowsKeys[1]},
+								model.LinkScript{Target: sharedCodeRowsKeys[0]},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
-
-	assert.NoError(t, state.Set(transformation))
+	state.MustAdd(transformation)
 	return transformation
 }

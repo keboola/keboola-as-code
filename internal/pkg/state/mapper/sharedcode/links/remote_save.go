@@ -6,7 +6,7 @@ import (
 )
 
 // MapBeforeRemoteSave move shared code from Transformation struct to Content.
-func (m *mapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
+func (m *remoteMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
 	// Shared code can be used only by transformation - struct must be set
 	transformation, ok := recipe.Object.(*model.Config)
 	if !ok || transformation.Transformation == nil {

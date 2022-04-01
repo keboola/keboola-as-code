@@ -20,7 +20,7 @@ func TestLocalSaveTranWithSharedCode(t *testing.T) {
 	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, state)
 
 	// Create transformation with shared code
-	transformation := createInternalTranWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, state)
+	transformation := createInternalTransformationWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, state)
 
 	// Invoke
 	recipe := model.NewLocalSaveRecipe(transformation.ConfigManifest, transformation.Local, model.NewChangedFields())
@@ -74,7 +74,7 @@ func TestLocalSaveTranWithSharedCode_SharedCodeConfigNotFound(t *testing.T) {
 	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, state)
 
 	// Create transformation with shared code
-	transformation := createInternalTranWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, state)
+	transformation := createInternalTransformationWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, state)
 	transformation.Local.Transformation.LinkToSharedCode.Config.Id = `missing` // <<<<<<<<<<<
 
 	// Invoke
@@ -134,7 +134,7 @@ func TestLocalSaveTranWithSharedCode_SharedCodeRowNotFound(t *testing.T) {
 	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, state)
 
 	// Create transformation with shared code
-	transformation := createInternalTranWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, state)
+	transformation := createInternalTransformationWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, state)
 	transformation.Local.Transformation.Blocks[0].Codes[1].Scripts[0] = model.LinkScript{Target: model.ConfigRowKey{
 		BranchId:    sharedCodeKey.BranchId,
 		ComponentId: sharedCodeKey.ComponentId,

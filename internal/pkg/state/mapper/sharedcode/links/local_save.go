@@ -8,7 +8,7 @@ import (
 )
 
 // MapBeforeLocalSave - replace shared codes IDs by paths on local save.
-func (m *mapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
+func (m *localMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
 	// Shared code can be used only by transformation - transformation struct must be set
 	transformation, ok := recipe.Object.(*model.Config)
 	if !ok || transformation.Transformation == nil {
@@ -28,7 +28,7 @@ func (m *mapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
 	return nil
 }
 
-func (m *mapper) replaceSharedCodeIdByPath(transformation *model.Config) error {
+func (m *localMapper) replaceSharedCodeIdByPath(transformation *model.Config) error {
 	// Get shared code
 	sharedCodeKey := transformation.Transformation.LinkToSharedCode.Config
 	sharedCodeState, found := m.state.GetOrNil(sharedCodeKey).(*model.ConfigState)

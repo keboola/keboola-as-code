@@ -17,7 +17,7 @@ func TestLocalLoadTranWithSharedCode(t *testing.T) {
 
 	// Create transformation with shared code
 	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, state)
-	transformation := createLocalTranWithSharedCode(t, state)
+	transformation := createLocalTransformationWithSharedCode(t, state)
 
 	// Invoke
 	changes := model.NewLocalChanges()
@@ -93,7 +93,7 @@ func TestLocalLoadTranWithSharedCode_InvalidSharedCodePath(t *testing.T) {
 
 	// Create transformation with shared code
 	fixtures.CreateSharedCode(t, state)
-	transformation := createLocalTranWithSharedCode(t, state)
+	transformation := createLocalTransformationWithSharedCode(t, state)
 	transformation.Local.Content.Set(model.SharedCodePathContentKey, `missing`) // <<<<<<<<<<<
 
 	// Invoke
@@ -123,7 +123,7 @@ func TestLocalLoadTranWithSharedCode_InvalidSharedCodeRowPath(t *testing.T) {
 
 	// Create transformation with shared code
 	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, state)
-	transformation := createLocalTranWithSharedCode(t, state)
+	transformation := createLocalTransformationWithSharedCode(t, state)
 	transformation.Local.Transformation.Blocks[0].Codes[1].Scripts[0] = model.StaticScript{Value: "# {{:codes/missing}}\n"} // <<<<<<<<<<<<
 
 	// Invoke

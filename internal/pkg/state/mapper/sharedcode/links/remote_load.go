@@ -10,7 +10,7 @@ import (
 )
 
 // onRemoteLoad move shared code config/rows IDs from Content to Transformation struct.
-func (m *mapper) onRemoteLoad(objectState model.ObjectState) error {
+func (m *remoteMapper) onRemoteLoad(objectState model.ObjectState) error {
 	// Shared code can be used only by transformation - struct must be set
 	transformation, ok := objectState.RemoteState().(*model.Config)
 	if !ok || transformation.Transformation == nil {

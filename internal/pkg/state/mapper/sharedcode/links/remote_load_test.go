@@ -19,7 +19,7 @@ func TestRemoteLoadTranWithSharedCode(t *testing.T) {
 	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, state)
 
 	// Create transformation with shared code
-	transformation := createRemoteTranWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, state)
+	transformation := createRemoteTransformationWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, state)
 
 	// Invoke
 	changes := model.NewRemoteChanges()
@@ -46,7 +46,7 @@ func TestRemoteLoadTranWithSharedCode_InvalidSharedCodeId(t *testing.T) {
 	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, state)
 
 	// Create transformation with shared code
-	transformation := createRemoteTranWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, state)
+	transformation := createRemoteTransformationWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, state)
 	transformation.Remote.Content.Set(model.SharedCodeIdContentKey, `missing`) // <<<<<<<<<<<
 
 	// Invoke
@@ -79,7 +79,7 @@ func TestRemoteLoadTranWithSharedCode_InvalidSharedCodeRowId(t *testing.T) {
 	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, state)
 
 	// Create transformation with shared code
-	transformation := createRemoteTranWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, state)
+	transformation := createRemoteTransformationWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, state)
 	transformation.Remote.Content.Set(model.SharedCodeRowsIdContentKey, []interface{}{`missing`}) // <<<<<<<<<<<
 
 	// Invoke
