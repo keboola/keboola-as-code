@@ -227,8 +227,6 @@ func (r *Reporter) valuesDiff(a, b reflect.Value) []string {
 
 func (r *Reporter) formatValue(value reflect.Value, t reflect.Type, includeType bool) []string {
 	var formatted string
-	phase, isPhase := value.Interface().(model.Phase)
-	task, isTask := value.Interface().(model.Task)
 
 	switch {
 	case t.Kind() == reflect.Ptr && value.IsNil():
@@ -236,10 +234,6 @@ func (r *Reporter) formatValue(value reflect.Value, t reflect.Type, includeType 
 	case t.Kind() == reflect.Map:
 		// Format map to JSON
 		formatted = strings.TrimRight(json.MustEncodeString(value.Interface(), true), "\n")
-	case isPhase:
-		return strings.Split(phaseToString(phase, r.naming), "\n")
-	case isTask:
-		return strings.Split(taskToString(task, r.naming), "\n")
 	case includeType:
 		formatted = fmt.Sprintf(`%#v`, value)
 	default:

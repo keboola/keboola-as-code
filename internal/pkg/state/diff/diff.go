@@ -290,24 +290,22 @@ func options(reporter *Reporter) cmp.Options {
 			return relations.RelationsBySide()
 		}),
 		// Diff transformation blocks as string
-		cmp.Transformer("block", func(block model.Block) string {
-			return block.String()
+		cmp.Transformer("block", func(block *model.Block) *string {
+			return blockToString(block, reporter.naming)
 		}),
-		cmp.Transformer("code", func(code model.Code) string {
-			return code.String()
+		cmp.Transformer("code", func(code *model.Code) *string {
+			return codeToString(code, reporter.naming)
 		}),
 		// Diff orchestrator phases as string
-		cmp.Transformer("phase", func(phase model.Phase) string {
+		cmp.Transformer("phase", func(phase *model.Phase) *string {
 			return phaseToString(phase, reporter.naming)
 		}),
-		cmp.Transformer("task", func(task model.Task) string {
+		cmp.Transformer("task", func(task *model.Task) *string {
 			return taskToString(task, reporter.naming)
 		}),
 		// Diff SharedCode row as string
-		cmp.Transformer("sharedCodeRow", func(code model.SharedCodeRow) string {
-			return code.String()
+		cmp.Transformer("sharedCodeRow", func(code *model.SharedCodeRow) *string {
+			return sharedCodeRowTostring(code, reporter.naming)
 		}),
-		// Do not compare local paths
-		cmpopts.IgnoreTypes(model.AbsPath{}),
 	}
 }

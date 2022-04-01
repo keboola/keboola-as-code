@@ -35,7 +35,7 @@ func (v BranchId) String() string {
 }
 
 func (k BranchKey) Level() ObjectLevel {
-	return 1
+	return 10
 }
 
 func (k BranchKey) Kind() Kind {
@@ -43,7 +43,11 @@ func (k BranchKey) Kind() Kind {
 }
 
 func (k BranchKey) String() string {
-	return fmt.Sprintf(`%s "%d"`, k.Kind().Name, k.Id)
+	return fmt.Sprintf(`%s "%s"`, k.Kind().Name, k.LogicPath())
+}
+
+func (k BranchKey) LogicPath() string {
+	return fmt.Sprintf(`branch:%d`, k.Id)
 }
 
 func (k BranchKey) Key() Key {

@@ -49,7 +49,11 @@ func (m MockedKey) Desc() string {
 }
 
 func (m MockedKey) String() string {
-	return fmt.Sprintf(`mocked key "%s"`, m.Id)
+	return fmt.Sprintf(`mocked key "%s"`, m.LogicPath())
+}
+
+func (m MockedKey) LogicPath() string {
+	return m.Id
 }
 
 func (m MockedKey) ObjectId() string {

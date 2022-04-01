@@ -18,36 +18,32 @@ const (
 )
 
 type OrchestrationKey struct {
-	ConfigKey
+	Parent ConfigKey `json:"-" validate:"dive" `
 }
 
 type PhaseKey struct {
-	BranchId    BranchId    `json:"-" validate:"required_in_project" `
-	ComponentId ComponentId `json:"-" validate:"required" `
-	ConfigId    ConfigId    `json:"-" validate:"required" `
-	Index       int         `json:"-" validate:"min=0" `
+	Parent OrchestrationKey `json:"-" validate:"dive" `
+	Index  int              `json:"-" validate:"min=0" `
 }
 
 type TaskKey struct {
-	PhaseKey `json:"-" validate:"dive" `
-	Index    int `json:"-" validate:"min=0" `
+	Parent PhaseKey `json:"-" validate:"dive" `
+	Index  int      `json:"-" validate:"min=0" `
 }
 
 type Orchestration struct {
-	OrchestrationKey
-	Phases []*Phase
+	OrchestrationKey `validate:"dive"`
 }
 
 type Phase struct {
-	PhaseKey
+	PhaseKey  `validate:"dive"`
 	DependsOn []PhaseKey
-	Tasks     []*Task                `validate:"dive"`
-	Name      string                 `validate:"required"`
-	Content   *orderedmap.OrderedMap `validate:"required"`
+	Name      string                 `validate:"required" diff:"true"`
+	Content   *orderedmap.OrderedMap `validate:"required" diff:"true"`
 }
 
 type Task struct {
-	TaskKey
+	TaskKey     `validate:"dive" `
 	Name        string                 `validate:"required"`
 	ComponentId ComponentId            `validate:"required"`
 	ConfigId    ConfigId               `validate:"required"`
@@ -59,7 +55,7 @@ func (k OrchestrationKey) Kind() Kind {
 }
 
 func (k OrchestrationKey) Level() ObjectLevel {
-	return 3
+	return 21
 }
 
 func (k OrchestrationKey) Key() Key {
@@ -67,7 +63,19 @@ func (k OrchestrationKey) Key() Key {
 }
 
 func (k OrchestrationKey) ParentKey() (Key, error) {
-	return k.ConfigKey, nil
+	return k.Parent, nil
+}
+
+func (k OrchestrationKey) String() string {
+	return fmt.Sprintf(`%s "%s"`, k.Kind().Name, k.LogicPath())
+}
+
+func (k OrchestrationKey) LogicPath() string {
+	return k.Parent.LogicPath() + "orchestration"
+}
+
+func (k OrchestrationKey) ObjectId() string {
+	return "orchestration"
 }
 
 func (k PhaseKey) Kind() Kind {
@@ -79,7 +87,7 @@ func (k PhaseKey) ObjectId() string {
 }
 
 func (k PhaseKey) Level() ObjectLevel {
-	return 4
+	return 22
 }
 
 func (k PhaseKey) Key() Key {
@@ -87,19 +95,15 @@ func (k PhaseKey) Key() Key {
 }
 
 func (k PhaseKey) String() string {
-	return fmt.Sprintf(`%s "branch:%d/component:%s/config:%s/phase:%d"`, k.Kind().Name, k.BranchId, k.ComponentId, k.ConfigId, k.Index)
+	return fmt.Sprintf(`%s "%s"`, k.Kind().Name, k.LogicPath())
 }
 
-func (k PhaseKey) ConfigKey() ConfigKey {
-	return ConfigKey{
-		BranchId:    k.BranchId,
-		ComponentId: k.ComponentId,
-		Id:          k.ConfigId,
-	}
+func (k PhaseKey) LogicPath() string {
+	return k.Parent.LogicPath() + fmt.Sprintf("/phase:%d", k.Index)
 }
 
 func (k PhaseKey) ParentKey() (Key, error) {
-	return k.ConfigKey(), nil
+	return k.Parent, nil
 }
 
 func (p *Phase) ObjectName() string {
@@ -115,7 +119,7 @@ func (k TaskKey) ObjectId() string {
 }
 
 func (k TaskKey) Level() ObjectLevel {
-	return 5
+	return 23
 }
 
 func (k TaskKey) Key() Key {
@@ -123,15 +127,15 @@ func (k TaskKey) Key() Key {
 }
 
 func (k TaskKey) String() string {
-	return fmt.Sprintf(`%s "branch:%d/component:%s/config:%s/phase:%d/task:%d"`, k.Kind().Name, k.BranchId, k.ComponentId, k.ConfigId, k.PhaseKey.Index, k.Index)
+	return fmt.Sprintf(`%s "%s"`, k.Kind().Name, k.LogicPath())
 }
 
-func (k TaskKey) ConfigKey() ConfigKey {
-	return k.PhaseKey.ConfigKey()
+func (k TaskKey) LogicPath() string {
+	return k.Parent.LogicPath() + fmt.Sprintf("/task:%d", k.Index)
 }
 
 func (k TaskKey) ParentKey() (Key, error) {
-	return k.PhaseKey, nil
+	return k.Parent, nil
 }
 
 func (t *Task) ObjectName() string {
@@ -140,7 +144,7 @@ func (t *Task) ObjectName() string {
 
 func (t *Task) TargetConfigKey() ConfigKey {
 	return ConfigKey{
-		BranchId:    t.BranchId,
+		BranchId:    t.TaskKey.Parent.Parent.Parent.BranchId,
 		ComponentId: t.ComponentId,
 		Id:          t.ConfigId,
 	}

@@ -15,6 +15,7 @@ type ObjectLevel int
 type Key interface {
 	Level() ObjectLevel      // hierarchical level, "1" for branch, "2" for config, ...
 	Kind() Kind              // kind of the object: branch, config, ...
+	LogicPath() string       // unique identification of the object
 	String() string          // human-readable description of the object
 	ObjectId() string        // ID of the object
 	ParentKey() (Key, error) // unique key of the parent object
@@ -39,7 +40,6 @@ type ObjectManifestFactory interface {
 type Object interface {
 	Key
 	Key() Key
-	ObjectName() string
 }
 
 type ObjectWithContent interface {

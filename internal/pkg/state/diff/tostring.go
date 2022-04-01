@@ -11,7 +11,20 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
 )
 
-func phaseToString(p model.Phase, naming *naming.Registry) string {
+func codeToString(c *model.Code, _ *naming.Registry) *string {
+	if c == nil {
+		return nil
+	}
+
+	str := fmt.Sprintf("## %s\n%s", c.Name, c.Scripts.String(c.ComponentId()))
+	return &str
+}
+
+func phaseToString(p *model.Phase, naming *naming.Registry) *string {
+	if p == nil {
+		return nil
+	}
+
 	var builder strings.Builder
 	builder.WriteString(fmt.Sprintf("#  %03d %s\n", p.Index+1, p.Name))
 
@@ -23,23 +36,42 @@ func phaseToString(p model.Phase, naming *naming.Registry) string {
 	builder.WriteString(fmt.Sprintf("depends on phases: [%s]\n", strings.Join(dependsOn, `, `)))
 	builder.WriteString(fmt.Sprintf(json.MustEncodeString(p.Content, true)))
 	for _, task := range p.Tasks {
-		builder.WriteString(taskToString(*task, naming))
+		taskStr := taskToString(task, naming)
+		if taskStr != nil {
+			builder.WriteString(*taskStr)
+		}
 	}
-	return strings.TrimRight(builder.String(), "\n")
+
+	str := strings.TrimRight(builder.String(), "\n")
+	return &str
 }
 
-func taskToString(t model.Task, naming *naming.Registry) string {
+func taskToString(t *model.Task, naming *naming.Registry) *string {
+	if t == nil {
+		return nil
+	}
+
 	targetConfigKey := t.TargetConfigKey()
 	targetConfigDesc := targetConfigKey.String()
 	if targetConfigPath, found := naming.PathByKey(targetConfigKey); found {
 		targetConfigDesc = targetConfigPath.RelativePath()
 	}
 
-	return fmt.Sprintf(
+	str := fmt.Sprintf(
 		"## %03d %s\n>> %s\n%s",
 		t.Index+1,
 		t.Name,
 		targetConfigDesc,
 		json.MustEncodeString(t.Content, true),
 	)
+	return &str
+}
+
+func sharedCodeRowTostring(c *model.SharedCodeRow, _ *naming.Registry) *string {
+	if c == nil {
+		return nil
+	}
+
+	str := c.Scripts.String(c.Target)
+	return &str
 }

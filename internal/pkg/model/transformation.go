@@ -20,12 +20,12 @@ const (
 )
 
 type TransformationKey struct {
-	ConfigKey
+	Parent ConfigKey `json:"-" validate:"dive" `
 }
 
 type BlockKey struct {
-	Parent ConfigKey `json:"-" validate:"dive" `
-	Index  int       `json:"-" validate:"min=0" `
+	Parent TransformationKey `json:"-" validate:"dive" `
+	Index  int               `json:"-" validate:"min=0" `
 }
 
 type CodeKey struct {
@@ -36,30 +36,27 @@ type CodeKey struct {
 type UsedSharedCodeRows []ConfigRowKey
 
 type LinkToSharedCode struct {
-	Config ConfigKey
-	Rows   UsedSharedCodeRows
+	Config ConfigKey `validate:"dive" `
 }
 
 type Transformation struct {
-	TransformationKey
-	Blocks           []*Block
-	LinkToSharedCode *LinkToSharedCode
+	TransformationKey `validate:"dive" `
+	LinkToSharedCode  *LinkToSharedCode `validate:"dive" diff:"true"`
 }
 
 // Block - transformation block.
 type Block struct {
-	BlockKey
-	Name  string `json:"name" validate:"required" metaFile:"true"`
-	Codes Codes  `json:"codes" validate:"omitempty,dive"`
+	BlockKey `validate:"dive" `
+	Name     string `json:"name" validate:"required" metaFile:"true"  diff:"true"`
 }
 
 type Codes []*Code
 
 // Code - transformation code.
 type Code struct {
-	CodeKey
-	Name    string  `json:"name" validate:"required" metaFile:"true"`
-	Scripts Scripts `json:"script"` // scripts, eg. SQL statements
+	CodeKey `validate:"dive" `
+	Name    string  `json:"name" validate:"required" metaFile:"true"  diff:"true"`
+	Scripts Scripts `json:"script" validate:"dive"  diff:"true"` // scripts, eg. SQL statements
 }
 
 type Scripts []Script
@@ -74,7 +71,7 @@ func (k TransformationKey) Kind() Kind {
 }
 
 func (k TransformationKey) Level() ObjectLevel {
-	return 3
+	return 21
 }
 
 func (k TransformationKey) Key() Key {
@@ -82,19 +79,27 @@ func (k TransformationKey) Key() Key {
 }
 
 func (k TransformationKey) ParentKey() (Key, error) {
-	return k.ConfigKey, nil
+	return k.Parent, nil
+}
+
+func (k TransformationKey) String() string {
+	return fmt.Sprintf(`%s "%s"`, k.Kind().Name, k.LogicPath())
+}
+
+func (k TransformationKey) LogicPath() string {
+	return k.Parent.LogicPath() + "/transformation"
+}
+
+func (k TransformationKey) ObjectId() string {
+	return "transformation"
 }
 
 func (k BlockKey) Kind() Kind {
 	return Kind{Name: BlockKind, Abbr: BlockAbbr}
 }
 
-func (k BlockKey) ObjectId() string {
-	return cast.ToString(k.Index)
-}
-
 func (k BlockKey) Level() ObjectLevel {
-	return 4
+	return 22
 }
 
 func (k BlockKey) Key() Key {
@@ -106,23 +111,23 @@ func (k BlockKey) ParentKey() (Key, error) {
 }
 
 func (k BlockKey) String() string {
-	return fmt.Sprintf(`%s "branch:%d/component:%s/config:%s/block:%d"`, k.Kind().Name, k.Parent.BranchId, k.Parent.ComponentId, k.Parent.Id, k.Index)
+	return fmt.Sprintf(`%s "%s"`, k.Kind().Name, k.LogicPath())
 }
 
-func (b Block) ObjectName() string {
-	return b.ObjectId()
+func (k BlockKey) LogicPath() string {
+	return k.Parent.LogicPath() + fmt.Sprintf("/block:%d", k.Index)
+}
+
+func (k BlockKey) ObjectId() string {
+	return cast.ToString(k.Index)
 }
 
 func (k CodeKey) Kind() Kind {
 	return Kind{Name: CodeKind, Abbr: CodeAbbr}
 }
 
-func (k CodeKey) ObjectId() string {
-	return cast.ToString(k.Index)
-}
-
 func (k CodeKey) Level() ObjectLevel {
-	return 5
+	return 23
 }
 
 func (k CodeKey) Key() Key {
@@ -134,16 +139,19 @@ func (k CodeKey) ParentKey() (Key, error) {
 }
 
 func (k CodeKey) ComponentId() ComponentId {
-	return k.Parent.Parent.ComponentId
+	return k.Parent.Parent.Parent.ComponentId
 }
 
 func (k CodeKey) String() string {
-	ck := k.Parent.Parent
-	return fmt.Sprintf(`%s "branch:%d/component:%s/config:%s/block:%d/code:%d"`, k.Kind().Name, ck.BranchId, ck.ComponentId, ck.Id, k.Parent.Index, k.Index)
+	return fmt.Sprintf(`%s "%s"`, k.Kind().Name, k.LogicPath())
 }
 
-func (c Code) ObjectName() string {
-	return c.ObjectId()
+func (k CodeKey) LogicPath() string {
+	return k.Parent.LogicPath() + fmt.Sprintf("/code:%d", k.Index)
+}
+
+func (k CodeKey) ObjectId() string {
+	return cast.ToString(k.Index)
 }
 
 type Script interface {
@@ -158,33 +166,33 @@ func (v UsedSharedCodeRows) IdsSlice() []interface{} {
 	return ids
 }
 
-func (v *Transformation) VisitCodes(callback func(code *Code)) {
-	for _, block := range v.Blocks {
-		for _, code := range block.Codes {
-			callback(code)
-		}
-	}
-}
-
-func (v *Transformation) VisitScripts(callback func(code *Code, script Script)) {
-	for _, block := range v.Blocks {
-		for _, code := range block.Codes {
-			for _, script := range code.Scripts {
-				callback(code, script)
-			}
-		}
-	}
-}
-
-func (v *Transformation) MapScripts(callback func(block *Block, code *Code, script Script) Script) {
-	for _, block := range v.Blocks {
-		for _, code := range block.Codes {
-			for index, script := range code.Scripts {
-				code.Scripts[index] = callback(block, code, script)
-			}
-		}
-	}
-}
+//func (v *Transformation) VisitCodes(callback func(code *Code)) {
+//	for _, block := range v.Blocks {
+//		for _, code := range block.Codes {
+//			callback(code)
+//		}
+//	}
+//}
+//
+//func (v *Transformation) VisitScripts(callback func(code *Code, script Script)) {
+//	for _, block := range v.Blocks {
+//		for _, code := range block.Codes {
+//			for _, script := range code.Scripts {
+//				callback(code, script)
+//			}
+//		}
+//	}
+//}
+//
+//func (v *Transformation) MapScripts(callback func(block *Block, code *Code, script Script) Script) {
+//	for _, block := range v.Blocks {
+//		for _, code := range block.Codes {
+//			for index, script := range code.Scripts {
+//				code.Scripts[index] = callback(block, code, script)
+//			}
+//		}
+//	}
+//}
 
 func (k Kind) IsBlock() bool {
 	return k.Name == BlockKind

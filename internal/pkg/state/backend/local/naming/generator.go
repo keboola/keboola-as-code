@@ -160,12 +160,12 @@ func (g Generator) configPath(config *Config) (AbsPath, error) {
 	var template, targetComponentId string
 	switch {
 	case (parent.kind.IsEmpty() || parent.kind.IsBranch()) && component.IsSharedCode():
-		if config.SharedCode == nil {
-			panic(fmt.Errorf(`invalid shared code %s, value is not set`, config.String()))
-		}
-		// Shared code
-		template = string(g.template.SharedCodeConfig)
-		targetComponentId = config.SharedCode.Target.String()
+		//if config.SharedCode == nil {
+		//	panic(fmt.Errorf(`invalid shared code %s, value is not set`, config.String()))
+		//}
+		//// Shared code
+		//template = string(g.template.SharedCodeConfig)
+		//targetComponentId = config.SharedCode.Target.String()
 	case parent.kind.IsConfig() && component.IsScheduler():
 		template = string(g.template.SchedulerConfig)
 	case parent.kind.IsConfig() && component.IsVariables():

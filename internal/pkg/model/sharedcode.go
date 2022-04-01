@@ -11,19 +11,12 @@ const (
 	SharedCodeConfigRowAbbr = "sr"
 )
 
-type SharedCodeConfigKey struct {
-	ConfigKey
-}
-
 type SharedCodeConfigRowKey struct {
-	ConfigRowKey
-}
-
-type SharedCodeConfig struct {
-	Target ComponentId `validate:"required"`
+	Parent ConfigRowKey
 }
 
 type SharedCodeRow struct {
+	SharedCodeConfigRowKey
 	Target  ComponentId `validate:"required"`
 	Scripts Scripts     `validate:"required"`
 }
@@ -33,28 +26,12 @@ type LinkScript struct {
 	Target ConfigRowKey
 }
 
-func (k SharedCodeConfigKey) Kind() Kind {
-	return Kind{Name: SharedCodeConfigKind, Abbr: SharedCodeConfigAbbr}
-}
-
-func (k SharedCodeConfigKey) Level() ObjectLevel {
-	return 3
-}
-
-func (k SharedCodeConfigKey) Key() Key {
-	return k
-}
-
-func (k SharedCodeConfigKey) ParentKey() (Key, error) {
-	return k.ConfigKey, nil
-}
-
 func (k SharedCodeConfigRowKey) Kind() Kind {
 	return Kind{Name: SharedCodeConfigRowKind, Abbr: SharedCodeConfigRowAbbr}
 }
 
 func (k SharedCodeConfigRowKey) Level() ObjectLevel {
-	return 4
+	return 31
 }
 
 func (k SharedCodeConfigRowKey) Key() Key {
@@ -62,19 +39,23 @@ func (k SharedCodeConfigRowKey) Key() Key {
 }
 
 func (k SharedCodeConfigRowKey) ParentKey() (Key, error) {
-	return k.ConfigRowKey, nil
+	return k.Parent, nil
+}
+
+func (k SharedCodeConfigRowKey) String() string {
+	return fmt.Sprintf(`%s "%s"`, k.Kind().Name, k.LogicPath())
+}
+
+func (k SharedCodeConfigRowKey) LogicPath() string {
+	return k.Parent.LogicPath() + "/sharedCode"
+}
+
+func (k SharedCodeConfigRowKey) ObjectId() string {
+	return "sharedCode"
 }
 
 func (v LinkScript) Content() string {
 	return fmt.Sprintf(`shared code "%s"`, v.Target.Id.String())
-}
-
-func (v SharedCodeConfig) String() string {
-	return v.Target.String()
-}
-
-func (v SharedCodeRow) String() string {
-	return v.Scripts.String(v.Target)
 }
 
 // SharedCodeVariablesForRelation - variables for shared code.

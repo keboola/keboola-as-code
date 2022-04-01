@@ -47,7 +47,7 @@ func (v ConfigId) String() string {
 }
 
 func (k ConfigKey) Level() ObjectLevel {
-	return 2
+	return 20
 }
 
 func (k ConfigKey) Kind() Kind {
@@ -55,11 +55,15 @@ func (k ConfigKey) Kind() Kind {
 }
 
 func (k ConfigKey) String() string {
+	return fmt.Sprintf(`%s "%s"`, k.Kind().Name, k.LogicPath())
+}
+
+func (k ConfigKey) LogicPath() string {
 	if k.BranchId == 0 {
 		// Config in a template
-		return fmt.Sprintf(`%s "component:%s/config:%s"`, k.Kind().Name, k.ComponentId, k.Id)
+		return fmt.Sprintf(`component:%s/config:%s`, k.ComponentId, k.Id)
 	}
-	return fmt.Sprintf(`%s "branch:%d/component:%s/config:%s"`, k.Kind().Name, k.BranchId, k.ComponentId, k.Id)
+	return fmt.Sprintf(`branch:%d/component:%s/config:%s`, k.BranchId, k.ComponentId, k.Id)
 }
 
 func (k ConfigKey) Key() Key {
