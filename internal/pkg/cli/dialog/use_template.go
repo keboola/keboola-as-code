@@ -95,7 +95,10 @@ func (d *useTmplDialog) addInputValue(value interface{}, inputDef input.Input, v
 
 func (d *useTmplDialog) askInputs(inputs input.StepsGroups) error {
 	for _, group := range inputs {
-		stepsToShow, announceGroup := d.selectStepsToShow(group)
+		stepsToShow, announceGroup, err := d.selectStepsToShow(group)
+		if err != nil {
+			return err
+		}
 		for index, step := range group.Steps {
 			announceStep := true
 			for _, inputDef := range step.Inputs {
@@ -129,7 +132,7 @@ func (d *useTmplDialog) askInputs(inputs input.StepsGroups) error {
 	return nil
 }
 
-func (d *useTmplDialog) selectStepsToShow(group *input.StepsGroup) (map[int]bool, bool) {
+func (d *useTmplDialog) selectStepsToShow(group *input.StepsGroup) (map[int]bool, bool, error) {
 	stepsToShow := make(map[int]bool)
 	announceGroup := true
 	if group.ShowStepsSelect() {
@@ -149,6 +152,10 @@ func (d *useTmplDialog) selectStepsToShow(group *input.StepsGroup) (map[int]bool
 		}
 		// Selected steps
 		selectedSteps, _ := d.MultiSelectIndex(multiSelect)
+		err := group.ValidateSelectedSteps(len(selectedSteps))
+		if err != nil {
+			return nil, false, err
+		}
 		for _, i := range selectedSteps {
 			stepsToShow[i] = true
 		}
@@ -158,7 +165,7 @@ func (d *useTmplDialog) selectStepsToShow(group *input.StepsGroup) (map[int]bool
 			stepsToShow[i] = true
 		}
 	}
-	return stepsToShow, announceGroup
+	return stepsToShow, announceGroup, nil
 }
 
 func (d *useTmplDialog) askInput(inputDef input.Input, groupToAnnounce *input.StepsGroup, stepToAnnounce *input.Step) error {
