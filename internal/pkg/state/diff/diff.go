@@ -7,9 +7,11 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/spf13/cast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
@@ -95,12 +97,21 @@ func (d *differ) diff(A, B model.Objects) (*Results, error) {
 
 	// Find all objects present in A, B or both.
 	allMap := make(map[model.Key]bool)
+	aMap := make(map[model.Key]model.ObjectWithChildren)
+	bMap := make(map[model.Key]model.ObjectWithChildren)
 	all := make([]model.Key, 0)
 	for _, collection := range []model.Objects{A, B} {
-		for _, object := range collection.All() {
+		for _, object := range collection.AllGrouped() {
 			if key := object.Key(); !allMap[key] {
 				allMap[key] = true
 				all = append(all, key)
+			}
+
+			if collection == A {
+				aMap[object.Key()] = object
+			}
+			if collection == B {
+				bMap[object.Key()] = object
 			}
 		}
 	}
@@ -109,8 +120,8 @@ func (d *differ) diff(A, B model.Objects) (*Results, error) {
 	for _, key := range all {
 		result, err := d.diffObject(
 			key,
-			Object{Key: key, Object: A.GetOrNil(key), All: A},
-			Object{Key: key, Object: B.GetOrNil(key), All: B},
+			Object{Key: key, Object: aMap[key], All: A},
+			Object{Key: key, Object: bMap[key], All: B},
 		)
 
 		// Handle error
@@ -290,22 +301,22 @@ func options(reporter *Reporter) cmp.Options {
 			return relations.RelationsBySide()
 		}),
 		// Diff transformation blocks as string
-		cmp.Transformer("block", func(block *model.Block) *string {
-			return blockToString(block, reporter.naming)
+		cmp.Transformer("block", func(x model.ObjectWithChildren) interface{} {
+			return "ok!!!" + cast.ToString(time.Now().Nanosecond())
 		}),
-		cmp.Transformer("code", func(code *model.Code) *string {
-			return codeToString(code, reporter.naming)
-		}),
+		//cmp.Transformer("code", func(code *model.Code) *string {
+		//	return codeToString(code, reporter.naming)
+		//}),
 		// Diff orchestrator phases as string
-		cmp.Transformer("phase", func(phase *model.Phase) *string {
-			return phaseToString(phase, reporter.naming)
-		}),
-		cmp.Transformer("task", func(task *model.Task) *string {
-			return taskToString(task, reporter.naming)
-		}),
-		// Diff SharedCode row as string
-		cmp.Transformer("sharedCodeRow", func(code *model.SharedCodeRow) *string {
-			return sharedCodeRowTostring(code, reporter.naming)
-		}),
+		//cmp.Transformer("phase", func(phase *model.Phase) *string {
+		//	return phaseToString(phase, reporter.naming)
+		//}),
+		//cmp.Transformer("task", func(task *model.Task) *string {
+		//	return taskToString(task, reporter.naming)
+		//}),
+		//// Diff SharedCode row as string
+		//cmp.Transformer("sharedCodeRow", func(code *model.SharedCodeRow) *string {
+		//	return sharedCodeRowTostring(code, reporter.naming)
+		//}),
 	}
 }

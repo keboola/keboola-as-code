@@ -60,12 +60,18 @@ type ObjectsSorter interface {
 	String() string
 }
 
+type ObjectWithChildren struct {
+	Object   `diff:"true"`
+	Children map[string][]Object `diff:"true"`
+}
+
 type ObjectsReadOnly interface {
 	ObjectsSorter
 	Get(key Key) (Object, bool)
 	GetOrNil(key Key) Object
 	MustGet(key Key) Object
 	All() []Object
+	AllGrouped() []ObjectWithChildren
 	Branches() (branches []*Branch)
 	Configs() []*Config
 	ConfigsFrom(branch BranchKey) (configs []*Config)

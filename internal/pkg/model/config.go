@@ -9,10 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-const (
-	ConfigKind = "config"
-	ConfigAbbr = "C"
-)
+var ConfigKind = Kind{Name: "config", Abbr: "C"}
 
 type ConfigId string
 
@@ -39,7 +36,7 @@ type ConfigWithRows struct {
 }
 
 func (k Kind) IsConfig() bool {
-	return k.Name == ConfigKind
+	return k == ConfigKind
 }
 
 func (v ConfigId) String() string {
@@ -51,7 +48,7 @@ func (k ConfigKey) Level() ObjectLevel {
 }
 
 func (k ConfigKey) Kind() Kind {
-	return Kind{Name: ConfigKind, Abbr: ConfigAbbr}
+	return ConfigKind
 }
 
 func (k ConfigKey) String() string {

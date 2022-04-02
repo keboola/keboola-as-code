@@ -7,10 +7,7 @@ import (
 	"github.com/spf13/cast"
 )
 
-const (
-	BranchKind = "branch"
-	BranchAbbr = "B"
-)
+var BranchKind = Kind{Name: "branch", Abbr: "B"}
 
 type BranchId int
 
@@ -27,7 +24,7 @@ type Branch struct {
 }
 
 func (k Kind) IsBranch() bool {
-	return k.Name == BranchKind
+	return k == BranchKind
 }
 
 func (v BranchId) String() string {
@@ -39,7 +36,7 @@ func (k BranchKey) Level() ObjectLevel {
 }
 
 func (k BranchKey) Kind() Kind {
-	return Kind{Name: BranchKind, Abbr: BranchAbbr}
+	return BranchKind
 }
 
 func (k BranchKey) String() string {

@@ -10,13 +10,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/sql"
 )
 
-const (
-	TransformationKind = "transformation"
-	BlockKind          = "block"
-	CodeKind           = "code"
-	TransformationAbbr = "t"
-	BlockAbbr          = "b"
-	CodeAbbr           = "c"
+var (
+	TransformationKind = Kind{Name: "transformation", Abbr: "t"}
+	BlockKind          = Kind{Name: "block", Abbr: "b"}
+	CodeKind           = Kind{Name: "code", Abbr: "c"}
 )
 
 type TransformationKey struct {
@@ -66,8 +63,20 @@ type StaticScript struct {
 	Value string
 }
 
+func (k Kind) IsTransformation() bool {
+	return k == TransformationKind
+}
+
+func (k Kind) IsBlock() bool {
+	return k == BlockKind
+}
+
+func (k Kind) IsCode() bool {
+	return k == CodeKind
+}
+
 func (k TransformationKey) Kind() Kind {
-	return Kind{Name: TransformationKind, Abbr: TransformationAbbr}
+	return TransformationKind
 }
 
 func (k TransformationKey) Level() ObjectLevel {
@@ -95,7 +104,7 @@ func (k TransformationKey) ObjectId() string {
 }
 
 func (k BlockKey) Kind() Kind {
-	return Kind{Name: BlockKind, Abbr: BlockAbbr}
+	return BlockKind
 }
 
 func (k BlockKey) Level() ObjectLevel {
@@ -123,7 +132,7 @@ func (k BlockKey) ObjectId() string {
 }
 
 func (k CodeKey) Kind() Kind {
-	return Kind{Name: CodeKind, Abbr: CodeAbbr}
+	return CodeKind
 }
 
 func (k CodeKey) Level() ObjectLevel {
@@ -193,14 +202,6 @@ func (v UsedSharedCodeRows) IdsSlice() []interface{} {
 //		}
 //	}
 //}
-
-func (k Kind) IsBlock() bool {
-	return k.Name == BlockKind
-}
-
-func (k Kind) IsCode() bool {
-	return k.Name == CodeKind
-}
 
 func (v Scripts) Slice() []interface{} {
 	var out []interface{}

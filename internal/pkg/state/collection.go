@@ -129,6 +129,33 @@ func (c *Collection) All() []Object {
 	return c.all()
 }
 
+func (c *Collection) AllGrouped() []ObjectWithChildren {
+	objects := make(map[Key]ObjectWithChildren)
+	for _, o := range c.All() {
+		objects[o.Key()] = ObjectWithChildren{Object: o, Children: make(map[string][]Object)}
+	}
+	for _, o := range c.All() {
+		if o.Kind().IsBranch() || o.Kind().IsConfig() || o.Kind().IsConfigRow() {
+			continue
+		}
+
+		parentKey, _ := o.ParentKey()
+		if parentKey != nil {
+			objects[parentKey].Children[o.Kind().String()] = append(objects[parentKey].Children[o.Kind().String()], objects[o.Key()])
+		}
+
+	}
+
+	out := make([]ObjectWithChildren, 0)
+	for _, o := range c.All() {
+		if o.Kind().IsBranch() || o.Kind().IsConfig() || o.Kind().IsConfigRow() {
+			out = append(out, objects[o.Key()])
+		}
+	}
+
+	return out
+}
+
 // Branches gets all branches from the collection.
 // The result is sorted.
 func (c *Collection) Branches() (branches []*Branch) {

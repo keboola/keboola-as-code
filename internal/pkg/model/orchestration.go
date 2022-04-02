@@ -8,13 +8,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-const (
-	OrchestrationKind = "orchestration"
-	PhaseKind         = "phase"
-	TaskKind          = "task"
-	OrchestrationAbbr = "o"
-	PhaseAbbr         = "p"
-	TaskAbbr          = "t"
+var (
+	OrchestrationKind = Kind{Name: "orchestration", Abbr: "o"}
+	PhaseKind         = Kind{Name: "phase", Abbr: "p"}
+	TaskKind          = Kind{Name: "task", Abbr: "t"}
 )
 
 type OrchestrationKey struct {
@@ -50,8 +47,20 @@ type Task struct {
 	Content     *orderedmap.OrderedMap `validate:"dive"`
 }
 
+func (k Kind) IsOrchestration() bool {
+	return k == OrchestrationKind
+}
+
+func (k Kind) IsPhase() bool {
+	return k == PhaseKind
+}
+
+func (k Kind) IsTask() bool {
+	return k == TaskKind
+}
+
 func (k OrchestrationKey) Kind() Kind {
-	return Kind{Name: OrchestrationKind, Abbr: OrchestrationAbbr}
+	return OrchestrationKind
 }
 
 func (k OrchestrationKey) Level() ObjectLevel {
@@ -79,7 +88,7 @@ func (k OrchestrationKey) ObjectId() string {
 }
 
 func (k PhaseKey) Kind() Kind {
-	return Kind{Name: PhaseKind, Abbr: PhaseAbbr}
+	return PhaseKind
 }
 
 func (k PhaseKey) ObjectId() string {
@@ -111,7 +120,7 @@ func (p *Phase) ObjectName() string {
 }
 
 func (k TaskKey) Kind() Kind {
-	return Kind{Name: TaskKind, Abbr: TaskAbbr}
+	return TaskKind
 }
 
 func (k TaskKey) ObjectId() string {

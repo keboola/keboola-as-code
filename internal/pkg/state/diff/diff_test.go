@@ -306,8 +306,8 @@ func TestDiff_Transformation(t *testing.T) {
 	transformationKey := model.TransformationKey{Parent: configKey}
 	block1Key := model.BlockKey{Parent: transformationKey, Index: 0}
 	block2Key := model.BlockKey{Parent: transformationKey, Index: 1}
-	code1Key := model.CodeKey{Parent: block2Key, Index: 0}
-	code2Key := model.CodeKey{Parent: block2Key, Index: 1}
+	code1Key := model.CodeKey{Parent: block1Key, Index: 0}
+	code2Key := model.CodeKey{Parent: block2Key, Index: 0}
 
 	assert.NoError(t, d.naming.Attach(block1Key, model.NewAbsPath(`branch/config/blocks`, `001-my-block-1`)))
 	assert.NoError(t, d.naming.Attach(block2Key, model.NewAbsPath(`branch/config/blocks`, `002-my-block-2`)))
@@ -315,69 +315,60 @@ func TestDiff_Transformation(t *testing.T) {
 	assert.NoError(t, d.naming.Attach(code2Key, model.NewAbsPath(`branch/config/blocks/001-block-1`, `001-code-2`)))
 
 	A.MustAdd(&model.Branch{BranchKey: branchKey})
-	A.MustAdd(&model.Config{
-		ConfigKey: configKey,
-	})
-	A.MustAdd(&model.Transformation{
-		TransformationKey: transformationKey,
-		Blocks: []*model.Block{
-			{
-				BlockKey: block1Key,
-				Name:     "My block",
-				Codes: model.Codes{
-					{
-						CodeKey: code1Key,
-						Name:    "Code 1",
-						Scripts: model.Scripts{
-							model.StaticScript{Value: "SELECT 1;"},
-							model.StaticScript{Value: "SELECT 2;"},
-							model.StaticScript{Value: "SELECT 3;"},
-						},
-					},
-				},
-			},
+	A.MustAdd(&model.Config{ConfigKey: configKey})
+	A.MustAdd(&model.Transformation{TransformationKey: transformationKey})
+	A.MustAdd(&model.Block{BlockKey: block1Key, Name: "My block"})
+	A.MustAdd(&model.Code{
+		CodeKey: code1Key,
+		Name:    "Code 1",
+		Scripts: model.Scripts{
+			model.StaticScript{Value: "SELECT 1;"},
+			model.StaticScript{Value: "SELECT 2;"},
+			model.StaticScript{Value: "SELECT 3;"},
 		},
 	})
 
 	B.MustAdd(&model.Branch{BranchKey: branchKey})
-	B.MustAdd(&model.Config{
-		ConfigKey: configKey,
+	B.MustAdd(&model.Config{ConfigKey: configKey})
+	B.MustAdd(&model.Transformation{TransformationKey: transformationKey})
+	B.MustAdd(&model.Block{
+		BlockKey: block1Key,
+		Name:     "Block 1",
 	})
-	B.MustAdd(&model.Transformation{
-		TransformationKey: transformationKey,
-		Blocks: []*model.Block{
-			{
-				BlockKey: block1Key,
-				Name:     "Block 1",
-				Codes: model.Codes{
-					{
-						CodeKey: code1Key,
-						Name:    "Code 1",
-						Scripts: model.Scripts{
-							model.StaticScript{Value: "SELECT 1;"},
-						},
-					},
-				},
-			},
-			{
-				BlockKey: block2Key,
-				Name:     "Block 2",
-				Codes: model.Codes{
-					{
-						CodeKey: code2Key,
-						Name:    "Code 2",
-						Scripts: model.Scripts{
-							model.StaticScript{Value: "SELECT 2;"},
-						},
-					},
-				},
-			},
+	B.MustAdd(&model.Block{
+		BlockKey: block2Key,
+		Name:     "Block 2",
+	})
+	B.MustAdd(&model.Code{
+		CodeKey: code1Key,
+		Name:    "Code 1",
+		Scripts: model.Scripts{
+			model.StaticScript{Value: "SELECT 1;"},
+		},
+	})
+	B.MustAdd(&model.Code{
+		CodeKey: code2Key,
+		Name:    "Code 2",
+		Scripts: model.Scripts{
+			model.StaticScript{Value: "SELECT 2;"},
 		},
 	})
 
 	results, err := d.diff(A, B)
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 2)
+
+	//s := spew.NewDefaultConfig()
+	//s.DisableMethods = true
+
+	//for _, r := range results.Results {
+	//	if r.State != ResultEqual {
+	//		s.Dump(r.Key.String())
+	//		for _, ch := range r.ChangedFields.All() {
+	//			fmt.Println(ch.Diff())
+	//		}
+	//	}
+	//}
 
 	result1 := results.Results[0] // branch
 	assert.Equal(t, ResultEqual, result1.State)
@@ -387,22 +378,7 @@ func TestDiff_Transformation(t *testing.T) {
 	assert.Equal(t, ResultNotEqual, result2.State)
 
 	expected := `
-sharedCode:
-  - 12345
-  + (null)
-transformation:
-  001-my-block-1:
-    - #  My block
-    + #  Block 1
-      ## Code 1
-      SELECT 1;
-    - SELECT 2;
-    - SELECT 3;
-+ 002-my-block-2:
-+   #  Block 2
-+   ## Code 2
-+   SELECT 2;
-+   
+
 `
 	assert.Equal(t, strings.Trim(expected, "\n"), result2.String())
 }
