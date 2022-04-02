@@ -55,23 +55,23 @@ func TestChangedPaths(t *testing.T) {
 	assert.Equal(t, `abc`, f.Diff())
 
 	assert.False(t, f.HasPath("key1.key2"))
-	assert.Equal(t, "", f.Paths())
+	assert.Equal(t, "", f.String())
 
 	f.AddPath("key1")
 	assert.True(t, f.HasPath("key1"))
-	assert.Equal(t, "key1", f.Paths())
+	assert.Equal(t, "key1", f.String())
 
 	f.AddPath("key1")
 	assert.True(t, f.HasPath("key1"))
-	assert.Equal(t, "key1", f.Paths())
+	assert.Equal(t, "key1", f.String())
 
 	f.AddPath("key2")
 	assert.True(t, f.HasPath("key1"))
 	assert.True(t, f.HasPath("key2"))
-	assert.Equal(t, "key1, key2", f.Paths())
+	assert.Equal(t, "key1, key2", f.String())
 
 	f.RemovePath("key1")
 	assert.False(t, f.HasPath("key1"))
 	assert.True(t, f.HasPath("key2"))
-	assert.Equal(t, "key2", f.Paths())
+	assert.Equal(t, "key2", f.String())
 }

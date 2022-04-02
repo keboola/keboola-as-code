@@ -62,22 +62,39 @@ type ObjectsSorter interface {
 
 type ObjectWithChildren struct {
 	Object   `diff:"true"`
-	Children map[string][]Object `diff:"true"`
+	Children map[Kind][]*ObjectWithChildren `diff:"true"`
 }
 
 type ObjectsReadOnly interface {
 	ObjectsSorter
+	// Get object from the collection.
 	Get(key Key) (Object, bool)
+	// GetOrNil object from the collection or returns nil if it is not present.
 	GetOrNil(key Key) Object
+	// GetWithChildren gets object with all its children in the tree structure.
+	GetWithChildren(rootKey Key) (*ObjectWithChildren, bool)
+	// MustGet object from the collection otherwise panic occurs.
 	MustGet(key Key) Object
+	// All gets all objects from the collection.
 	All() []Object
-	AllGrouped() []ObjectWithChildren
+	// AllWithChildren gets all core objects with children in the tree structure.
+	// If Kind.IsCore() is true (so the object type is: branch, config or config row),
+	// then the object is present in the result at the root level.
+	// Otherwise, the object (transformation, orchestration, code, phase, ...)  is included under its parent.
+	AllWithChildren() []*ObjectWithChildren
+	// Branches gets all branches from the collection.
 	Branches() (branches []*Branch)
+	// Configs gets all configs from the collection.
 	Configs() []*Config
+	// ConfigsFrom gets all configs from the branch.
 	ConfigsFrom(branch BranchKey) (configs []*Config)
+	// ConfigsWithRows gets all configs with rows.
 	ConfigsWithRows() (configs []*ConfigWithRows)
+	// ConfigsWithRowsFrom gets all configs with rows from the branch.
 	ConfigsWithRowsFrom(branch BranchKey) (configs []*ConfigWithRows)
+	// ConfigRows gets all config rows.
 	ConfigRows() []*ConfigRow
+	// ConfigRowsFrom gets all config rows from the branch.
 	ConfigRowsFrom(config ConfigKey) (rows []*ConfigRow)
 }
 
@@ -90,7 +107,7 @@ type Objects interface {
 }
 
 func (k Kind) IsCore() bool {
-	return k.IsBranch() && k.IsConfig() && k.IsConfigRow()
+	return k.IsBranch() || k.IsConfig() || k.IsConfigRow()
 }
 
 func (k Kind) String() string {

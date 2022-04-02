@@ -106,10 +106,45 @@ func (c *Collection) Get(key Key) (Object, bool) {
 	return nil, false
 }
 
-// GetOrNil object from the collection or nil if it is not present.
+// GetOrNil object from the collection or returns nil if it is not present.
 func (c *Collection) GetOrNil(key Key) Object {
 	v, _ := c.Get(key)
 	return v
+}
+
+// GetWithChildren gets object with all its children in the tree structure.
+func (c *Collection) GetWithChildren(rootKey Key) (*ObjectWithChildren, bool) {
+	rootObject, found := c.Get(rootKey)
+	if !found {
+		return nil, false
+	}
+
+	// Temporary map: parent -> children
+	recordByKey := map[Key]*ObjectWithChildren{
+		rootKey: {Object: rootObject, Children: make(map[Kind][]*ObjectWithChildren)},
+	}
+
+	// Generate children tree structure in one iteration
+	for _, object := range c.All() {
+		// Get parent key
+		parentKey, err := object.ParentKey()
+		if err != nil {
+			// error is not expected, it is checked on Add operation
+			panic(err)
+		} else if parentKey == nil {
+			// no parent
+			continue
+		}
+
+		// Add object to the tree
+		if parent, ok := recordByKey[parentKey]; ok {
+			record := &ObjectWithChildren{Object: object, Children: make(map[Kind][]*ObjectWithChildren)}
+			recordByKey[object.Key()] = record
+			parent.Children[object.Kind()] = append(parent.Children[object.Kind()], record)
+		}
+	}
+
+	return recordByKey[rootKey], true
 }
 
 // MustGet object from the collection otherwise panic occurs.
@@ -129,31 +164,45 @@ func (c *Collection) All() []Object {
 	return c.all()
 }
 
-func (c *Collection) AllGrouped() []ObjectWithChildren {
-	objects := make(map[Key]ObjectWithChildren)
-	for _, o := range c.All() {
-		objects[o.Key()] = ObjectWithChildren{Object: o, Children: make(map[string][]Object)}
-	}
-	for _, o := range c.All() {
-		if o.Kind().IsBranch() || o.Kind().IsConfig() || o.Kind().IsConfigRow() {
+// AllWithChildren gets all core objects from the collection with children.
+// If Kind.IsCore() is true (so the object type is: branch, config or config row),
+// then the object is present in the result at the root level.
+// Otherwise, the object (transformation, orchestration, code, phase, ...)  is included under its parent.
+func (c *Collection) AllWithChildren() []*ObjectWithChildren {
+	// Temporary map: parent -> children
+	var rootObjects []*ObjectWithChildren
+	recordByKey := map[Key]*ObjectWithChildren{}
+
+	// Generate children tree structure in one iteration
+	for _, object := range c.All() {
+		record := &ObjectWithChildren{Object: object, Children: make(map[Kind][]*ObjectWithChildren)}
+
+		// Is core object?
+		if object.Kind().IsCore() {
+			// Add to the root objects
+			recordByKey[object.Key()] = record
+			rootObjects = append(rootObjects, record)
 			continue
 		}
 
-		parentKey, _ := o.ParentKey()
-		if parentKey != nil {
-			objects[parentKey].Children[o.Kind().String()] = append(objects[parentKey].Children[o.Kind().String()], objects[o.Key()])
+		// Get parent key
+		parentKey, err := object.ParentKey()
+		if err != nil {
+			// error is not expected, it is checked on Add operation
+			panic(err)
+		} else if parentKey == nil {
+			// no parent
+			continue
 		}
 
-	}
-
-	out := make([]ObjectWithChildren, 0)
-	for _, o := range c.All() {
-		if o.Kind().IsBranch() || o.Kind().IsConfig() || o.Kind().IsConfigRow() {
-			out = append(out, objects[o.Key()])
+		// Add object to the tree
+		if parent, ok := recordByKey[parentKey]; ok {
+			recordByKey[object.Key()] = record
+			parent.Children[object.Kind()] = append(parent.Children[object.Kind()], record)
 		}
 	}
 
-	return out
+	return rootObjects
 }
 
 // Branches gets all branches from the collection.
@@ -192,6 +241,8 @@ func (c *Collection) ConfigsFrom(branch BranchKey) (configs []*Config) {
 	return configs
 }
 
+// ConfigsWithRows gets all configs with rows.
+// The result is sorted.
 func (c *Collection) ConfigsWithRows() (configs []*ConfigWithRows) {
 	for _, config := range c.Configs() {
 		configs = append(configs, &ConfigWithRows{Config: config, Rows: c.ConfigRowsFrom(config.ConfigKey)})
@@ -208,7 +259,7 @@ func (c *Collection) ConfigsWithRowsFrom(branch BranchKey) (configs []*ConfigWit
 	return configs
 }
 
-// ConfigRows gets all config rows from the connection.
+// ConfigRows gets all config rows.
 // The result is sorted.
 func (c *Collection) ConfigRows() (rows []*ConfigRow) {
 	for _, object := range c.All() {

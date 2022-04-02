@@ -87,7 +87,7 @@ func TestAllObjectTypes(t *testing.T) {
 	})
 	assert.Equal(t, keysSorted, keys)
 
-	// Check key logic path
+	// Check logic paths
 	var logicPaths []string
 	for _, key := range keys {
 		logicPaths = append(logicPaths, key.LogicPath())
@@ -123,7 +123,7 @@ func TestAllObjectTypes(t *testing.T) {
 		"branch:3/component:foo.bar/config:6/orchestration/phase:002/task:001",
 	}, logicPaths)
 
-	// Check key to string
+	// Check keys to strings
 	var strings []string
 	for _, key := range keys {
 		strings = append(strings, key.String())
