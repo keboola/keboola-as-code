@@ -22,7 +22,7 @@ func TestUnitOfWork_Save_Mapper(t *testing.T) {
 	projectState.Mapper().AddMapper(testMapperInst)
 
 	// Test object
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: `foo.bar`, Id: `456`}
+	configKey := model.ConfigKey{BranchId: 123, ComponentId: `foo.bar`, ConfigId: `456`}
 	configState := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: configKey,

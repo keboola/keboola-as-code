@@ -6,13 +6,12 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 // AfterLocalOperation - replace placeholders with default buckets in IM.
 func (m *defaultBucketMapper) AfterLocalOperation(changes *model.Changes) error {
-	warnings := utils.NewMultiError()
+	warnings := errors.NewMultiError()
 	for _, object := range changes.Loaded() {
 		config, ok := object.(configOrRow)
 		if !ok {
@@ -25,7 +24,7 @@ func (m *defaultBucketMapper) AfterLocalOperation(changes *model.Changes) error 
 
 	// Log errors as warning
 	if warnings.Len() > 0 {
-		m.logger.Warn(utils.PrefixError(`Warning`, warnings))
+		m.logger.Warn(errors.PrefixError(`Warning`, warnings))
 	}
 
 	return nil
@@ -76,7 +75,7 @@ func (m *defaultBucketMapper) replacePlaceholderWithDefaultBucket(
 	}
 
 	// Get default bucket
-	defaultBucket, found := components.GetDefaultBucketByComponentId(sourceConfig.ComponentId, sourceConfig.Id)
+	defaultBucket, found := components.GetDefaultBucketByComponentId(sourceConfig.ComponentId, sourceConfig.ConfigId)
 	if !found {
 		return nil
 	}

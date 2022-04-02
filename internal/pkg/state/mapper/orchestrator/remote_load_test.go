@@ -74,7 +74,7 @@ func TestOrchestratorRemoteMapper_AfterRemoteOperation(t *testing.T) {
 }
 `
 	// Branch
-	branchKey := model.BranchKey{Id: 123}
+	branchKey := model.BranchKey{BranchId: 123}
 	branch := &model.Branch{BranchKey: branchKey}
 	state.MustAdd(branch)
 
@@ -84,7 +84,7 @@ func TestOrchestratorRemoteMapper_AfterRemoteOperation(t *testing.T) {
 	configKey := model.ConfigKey{
 		BranchId:    123,
 		ComponentId: model.OrchestratorComponentId,
-		Id:          `456`,
+		ConfigId:    `456`,
 	}
 	config := &model.Config{ConfigKey: configKey, Content: content}
 	state.MustAdd(config)
@@ -99,13 +99,13 @@ func TestOrchestratorRemoteMapper_AfterRemoteOperation(t *testing.T) {
 	// Check target configs relation
 	rel1, err := target1.Relations.GetOneByType(model.UsedInOrchestratorRelType)
 	assert.NoError(t, err)
-	assert.Equal(t, config.Id, rel1.(*model.UsedInOrchestratorRelation).ConfigId)
+	assert.Equal(t, config.ConfigId, rel1.(*model.UsedInOrchestratorRelation).ConfigId)
 	rel2, err := target2.Relations.GetOneByType(model.UsedInOrchestratorRelType)
 	assert.NoError(t, err)
-	assert.Equal(t, config.Id, rel2.(*model.UsedInOrchestratorRelation).ConfigId)
+	assert.Equal(t, config.ConfigId, rel2.(*model.UsedInOrchestratorRelation).ConfigId)
 	rel3, err := target3.Relations.GetOneByType(model.UsedInOrchestratorRelType)
 	assert.NoError(t, err)
-	assert.Equal(t, config.Id, rel3.(*model.UsedInOrchestratorRelation).ConfigId)
+	assert.Equal(t, config.ConfigId, rel3.(*model.UsedInOrchestratorRelation).ConfigId)
 
 	// Assert orchestration
 	assert.Equal(t, `{}`, json.MustEncodeString(config.Content, false))
@@ -267,7 +267,7 @@ func TestOrchestratorRemoteMapper_AfterRemoteOperation_Warnings(t *testing.T) {
 `
 
 	// Branch
-	branchKey := model.BranchKey{Id: 123}
+	branchKey := model.BranchKey{BranchId: 123}
 	branch := &model.Branch{BranchKey: branchKey}
 	state.MustAdd(branch)
 
@@ -277,7 +277,7 @@ func TestOrchestratorRemoteMapper_AfterRemoteOperation_Warnings(t *testing.T) {
 	configKey := model.ConfigKey{
 		BranchId:    123,
 		ComponentId: model.OrchestratorComponentId,
-		Id:          `456`,
+		ConfigId:    `456`,
 	}
 	config := &model.Config{ConfigKey: configKey, Content: content}
 	state.MustAdd(config)
@@ -386,7 +386,7 @@ func TestOrchestratorRemoteMapper_AfterRemoteOperation_Sort(t *testing.T) {
 `
 
 	// Branch
-	branchKey := model.BranchKey{Id: 123}
+	branchKey := model.BranchKey{BranchId: 123}
 	branch := &model.Branch{BranchKey: branchKey}
 	state.MustAdd(branch)
 
@@ -396,7 +396,7 @@ func TestOrchestratorRemoteMapper_AfterRemoteOperation_Sort(t *testing.T) {
 	configKey := model.ConfigKey{
 		BranchId:    123,
 		ComponentId: model.OrchestratorComponentId,
-		Id:          `456`,
+		ConfigId:    `456`,
 	}
 	config := &model.Config{ConfigKey: configKey, Content: content}
 	state.MustAdd(config)
@@ -561,7 +561,7 @@ func TestOrchestratorRemoteMapper_AfterRemoteOperation_DependsOnCycles(t *testin
 `
 
 	// Branch
-	branchKey := model.BranchKey{Id: 123}
+	branchKey := model.BranchKey{BranchId: 123}
 	branch := &model.Branch{BranchKey: branchKey}
 	state.MustAdd(branch)
 
@@ -571,7 +571,7 @@ func TestOrchestratorRemoteMapper_AfterRemoteOperation_DependsOnCycles(t *testin
 	configKey := model.ConfigKey{
 		BranchId:    123,
 		ComponentId: model.OrchestratorComponentId,
-		Id:          `456`,
+		ConfigId:    `456`,
 	}
 	config := &model.Config{ConfigKey: configKey, Content: content}
 	state.MustAdd(config)

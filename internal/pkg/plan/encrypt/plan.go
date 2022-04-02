@@ -44,14 +44,14 @@ func (p *Plan) Log(logger log.Logger) {
 }
 
 func (p *Plan) ValidateAllEncrypted() error {
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	for _, action := range p.actions {
-		objectErrors := utils.NewMultiError()
+		objectErrors := errors.NewMultiError()
 		for _, value := range action.values {
 			objectErrors.Append(fmt.Errorf(value.path.String()))
 		}
 
-		errors.AppendWithPrefix(
+		errs.AppendWithPrefix(
 			fmt.Sprintf(
 				`%s "%s" contains unencrypted values`,
 				action.Kind(),
@@ -61,5 +61,5 @@ func (p *Plan) ValidateAllEncrypted() error {
 		)
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }

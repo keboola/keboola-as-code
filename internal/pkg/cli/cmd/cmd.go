@@ -279,13 +279,13 @@ func (root *RootCommand) addAlias(alias, cmdPath string) {
 
 func (root *RootCommand) printError(errRaw error) {
 	// Convert to MultiError
-	originalErrs := utils.NewMultiError()
+	originalErrs := errors.NewMultiError()
 	if !errors.As(errRaw, &originalErrs) {
 		originalErrs.Append(errRaw)
 	}
 
 	// Iterate over errors and replace message if needed
-	modifiedErrs := utils.NewMultiError()
+	modifiedErrs := errors.NewMultiError()
 	for _, err := range originalErrs.Errors {
 		switch {
 		case errors.Is(err, dependencies.ErrProjectDirFound):
@@ -346,7 +346,7 @@ func (root *RootCommand) printError(errRaw error) {
 		}
 	}
 
-	root.PrintErrln(utils.PrefixError(`Error`, modifiedErrs))
+	root.PrintErrln(errors.PrefixError(`Error`, modifiedErrs))
 }
 
 func (root *RootCommand) setupLogger() {

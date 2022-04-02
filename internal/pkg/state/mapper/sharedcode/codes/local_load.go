@@ -9,7 +9,7 @@ import (
 
 // MapAfterLocalLoad loads shared code from filesystem to target config.
 func (m *localMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 
 	// Shared code config
 	if ok, err := m.IsSharedCodeKey(recipe.Object.Key()); err != nil {
@@ -17,7 +17,7 @@ func (m *localMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
 	} else if ok {
 		config := recipe.Object.(*model.Config)
 		if err := m.onConfigLocalLoad(config); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
 
@@ -28,11 +28,11 @@ func (m *localMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
 		row := recipe.Object.(*model.ConfigRow)
 		config := m.state.MustGet(row.ConfigKey()).(*model.Config)
 		if err := m.onRowLocalLoad(config, row, recipe); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func (m *localMapper) onConfigLocalLoad(config *model.Config) error {
@@ -50,7 +50,7 @@ func (m *localMapper) onConfigLocalLoad(config *model.Config) error {
 	// Value should be string
 	target, ok := targetRaw.(string)
 	if !ok {
-		return utils.PrefixError(
+		return errors.PrefixError(
 			fmt.Sprintf(`invalid %s`, config.String()),
 			fmt.Errorf(`key "%s" should be string, found "%T"`, model.ShareCodeTargetComponentKey, targetRaw),
 		)

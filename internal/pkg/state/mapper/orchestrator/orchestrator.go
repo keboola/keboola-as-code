@@ -70,6 +70,6 @@ func (h *helper) isOrchestrator(key model.Key) (bool, error) {
 
 func markConfigUsedInOrchestrator(targetConfig, orchestratorConfig *model.Config) {
 	targetConfig.Relations.Add(&model.UsedInOrchestratorRelation{
-		ConfigId: orchestratorConfig.Id,
+		ConfigId: orchestratorConfig.ConfigId,
 	})
 }

@@ -81,7 +81,7 @@ func (a *Api) ListComponentsRequest(branchId model.BranchId) *client.Request {
 						for _, row := range config.Rows {
 							row.BranchId = branchId
 							row.ComponentId = component.Id
-							row.ConfigId = config.Id
+							row.ConfigId = config.ConfigId
 						}
 					}
 				}
@@ -117,7 +117,7 @@ type (
 func (c ConfigMetadataResponse) MetadataMap(branchId model.BranchId) map[model.ConfigKey][]ConfigMetadata {
 	result := make(map[model.ConfigKey][]ConfigMetadata)
 	for _, metadataWrapper := range c {
-		configKey := model.ConfigKey{BranchId: branchId, ComponentId: metadataWrapper.ComponentId, Id: metadataWrapper.ConfigId}
+		configKey := model.ConfigKey{BranchId: branchId, ComponentId: metadataWrapper.ComponentId, ConfigId: metadataWrapper.ConfigId}
 		result[configKey] = metadataWrapper.Metadata
 	}
 	return result
@@ -141,7 +141,7 @@ func (a *Api) AppendConfigMetadataRequest(config *model.Config) *client.Request 
 		NewRequest(resty.MethodPost, "branch/{branchId}/components/{componentId}/configs/{configId}/metadata").
 		SetPathParam("branchId", config.BranchId.String()).
 		SetPathParam("componentId", config.ComponentId.String()).
-		SetPathParam("configId", config.Id.String()).
+		SetPathParam("configId", config.ConfigId.String()).
 		SetFormBody(formBody)
 }
 
@@ -167,8 +167,8 @@ func (a *Api) CreateConfigRequest(config *model.ConfigWithRows) (*client.Request
 	}
 
 	// Create config with the defined ID
-	if config.Id != "" {
-		values["configurationId"] = config.Id.String()
+	if config.ConfigId != "" {
+		values["configurationId"] = config.ConfigId.String()
 	}
 
 	// Create config
@@ -184,7 +184,7 @@ func (a *Api) CreateConfigRequest(config *model.ConfigWithRows) (*client.Request
 			for _, row := range config.Rows {
 				row.BranchId = config.BranchId
 				row.ComponentId = config.ComponentId
-				row.ConfigId = config.Id
+				row.ConfigId = config.ConfigId
 				rowRequest, err := a.CreateConfigRowRequest(row)
 				if err != nil {
 					response.SetErr(err)
@@ -200,7 +200,7 @@ func (a *Api) CreateConfigRequest(config *model.ConfigWithRows) (*client.Request
 // UpdateConfigRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/manage-configurations/update-development-branch-configuration
 func (a *Api) UpdateConfigRequest(config *model.Config, changed model.ChangedFields) (*client.Request, error) {
 	// Id is required
-	if config.Id == "" {
+	if config.ConfigId == "" {
 		panic("config id must be set")
 	}
 
@@ -215,7 +215,7 @@ func (a *Api) UpdateConfigRequest(config *model.Config, changed model.ChangedFie
 		NewRequest(resty.MethodPut, "branch/{branchId}/components/{componentId}/configs/{configId}").
 		SetPathParam("branchId", config.BranchId.String()).
 		SetPathParam("componentId", config.ComponentId.String()).
-		SetPathParam("configId", config.Id.String()).
+		SetPathParam("configId", config.ConfigId.String()).
 		SetFormBody(getChangedValues(values, changed)).
 		SetResult(config)
 
@@ -227,11 +227,11 @@ func (a *Api) DeleteConfigRequest(key model.ConfigKey) *client.Request {
 	return a.NewRequest(resty.MethodDelete, "branch/{branchId}/components/{componentId}/configs/{configId}").
 		SetPathParam("branchId", key.BranchId.String()).
 		SetPathParam("componentId", key.ComponentId.String()).
-		SetPathParam("configId", key.Id.String())
+		SetPathParam("configId", key.ConfigId.String())
 }
 
 func (a *Api) DeleteConfigsInBranchRequest(key model.BranchKey) *client.Request {
-	return a.ListComponentsRequest(key.Id).
+	return a.ListComponentsRequest(key.BranchId).
 		OnSuccess(func(response *client.Response) {
 			for _, component := range *response.Result().(*[]*model.ComponentWithConfigs) {
 				for _, config := range component.Configs {

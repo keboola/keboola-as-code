@@ -11,12 +11,11 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/encryptionapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/encrypt"
 	saveProjectManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/save"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/rename"
@@ -82,7 +81,7 @@ func Run(projectState *project.State, tmpl *template.Template, o Options, d depe
 
 	// Rename and save
 	objects := make(newObjects, 0)
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	renameOp := projectState.LocalManager().NewPathsGenerator(true)
 	saveOp := projectState.LocalManager().NewUnitOfWork(projectState.Ctx())
 	for _, objectState := range templateState.All() {
@@ -92,7 +91,7 @@ func Run(projectState *project.State, tmpl *template.Template, o Options, d depe
 
 		// Copy objects from template to project
 		if err := projectState.Set(objectState); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 			continue
 		}
 		objects = append(objects, objectState)
@@ -104,7 +103,7 @@ func Run(projectState *project.State, tmpl *template.Template, o Options, d depe
 		saveOp.SaveObject(objectState, objectState.LocalState(), model.NewChangedFields())
 	}
 	if errors.Len() > 0 {
-		return errors
+		return errs
 	}
 	if err := renameOp.Invoke(); err != nil {
 		return err

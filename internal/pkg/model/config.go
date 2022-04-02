@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -14,9 +14,9 @@ var ConfigKind = Kind{Name: "config", Abbr: "C"}
 type ConfigId string
 
 type ConfigKey struct {
-	BranchId    BranchId    `json:"branchId,omitempty" validate:"required_in_project"`
+	BranchKey   `validate:"dive"`
 	ComponentId ComponentId `json:"componentId" validate:"required"`
-	Id          ConfigId    `json:"id" validate:"required"`
+	ConfigId    ConfigId    `json:"id" validate:"required"`
 }
 
 // Config https://keboola.docs.apiary.io/#reference/components-and-configurations/component-configurations/list-configurations
@@ -58,9 +58,9 @@ func (k ConfigKey) String() string {
 func (k ConfigKey) LogicPath() string {
 	if k.BranchId == 0 {
 		// Config in a template
-		return fmt.Sprintf(`component:%s/config:%s`, k.ComponentId, k.Id)
+		return fmt.Sprintf(`component:%s/config:%s`, k.ComponentId, k.ConfigId)
 	}
-	return fmt.Sprintf(`branch:%d/component:%s/config:%s`, k.BranchId, k.ComponentId, k.Id)
+	return fmt.Sprintf(`branch:%d/component:%s/config:%s`, k.BranchId, k.ComponentId, k.ConfigId)
 }
 
 func (k ConfigKey) Key() Key {
@@ -72,19 +72,15 @@ func (k ConfigKey) ParentKey() (Key, error) {
 		// Configs in template are not related to any branch
 		return nil, nil
 	}
-	return k.BranchKey(), nil
+	return k.BranchKey, nil
 }
 
 func (k ConfigKey) ObjectId() string {
-	return k.ComponentId.String() + ":" + k.Id.String()
+	return k.ComponentId.String() + ":" + k.ConfigId.String()
 }
 
 func (k ConfigKey) ComponentKey() ComponentKey {
 	return ComponentKey{Id: k.ComponentId}
-}
-
-func (k ConfigKey) BranchKey() BranchKey {
-	return BranchKey{Id: k.BranchId}
 }
 
 func (k ConfigKey) NewObject() Object {
@@ -131,7 +127,7 @@ func (c *Config) MetadataOrderedMap() *orderedmap.OrderedMap {
 func (c *Config) ToApiValues() (map[string]string, error) {
 	configJson, err := json.EncodeString(c.Content, false)
 	if err != nil {
-		return nil, utils.PrefixError(`cannot JSON encode config configuration`, err)
+		return nil, errors.PrefixError(`cannot JSON encode config configuration`, err)
 	}
 
 	return map[string]string{

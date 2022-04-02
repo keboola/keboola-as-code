@@ -65,15 +65,15 @@ func (c *localLoadContext) load() error {
 	}
 
 	// Load blocks and codes from filesystem
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	for blockIndex, blockDir := range blocksDirs {
 		if err := c.loadBlock(blockIndex, blockDir); err != nil {
-			errors.AppendWithPrefix(fmt.Sprintf(`invalid block "%s"`, blockDir.Base()), err)
+			errs.AppendWithPrefix(fmt.Sprintf(`invalid block "%s"`, blockDir.Base()), err)
 		}
 	}
 
 	c.transformation.Transformation = &model.Transformation{Blocks: c.blocks}
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func (c *localLoadContext) loadBlock(blockIndex int, blockDir model.AbsPath) error {
@@ -95,28 +95,28 @@ func (c *localLoadContext) loadBlock(blockIndex int, blockDir model.AbsPath) err
 	}
 
 	// Load meta file
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	if err := c.loadBlockMetaFile(block, blockDir); err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
 	// Search for dirs with codes
 	codesDirs, err := c.codeDirs(block, blockDir.String())
 	if err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
 	// Load codes
 	for codeIndex, codeDir := range codesDirs {
 		if err := c.loadCode(block, codeIndex, codeDir); err != nil {
-			errors.AppendWithPrefix(fmt.Sprintf(`invalid code "%s"`, codeDir.Base()), err)
+			errs.AppendWithPrefix(fmt.Sprintf(`invalid code "%s"`, codeDir.Base()), err)
 		}
 	}
 
 	// Validate block with codes
 	if errors.Len() == 0 {
 		if err := validator.Validate(c.state.Ctx(), block); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
 
@@ -124,7 +124,7 @@ func (c *localLoadContext) loadBlock(blockIndex int, blockDir model.AbsPath) err
 		c.blocks = append(c.blocks, block)
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func (c *localLoadContext) loadCode(block *model.Block, codeIndex int, codeDir model.AbsPath) error {
@@ -145,21 +145,21 @@ func (c *localLoadContext) loadCode(block *model.Block, codeIndex int, codeDir m
 	}
 
 	// Load meta file
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	if err := c.loadCodeMetaFile(code, codeDir); err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
 	// Load code file
 	if err := c.addScripts(code, codeDir); err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
 	if errors.Len() == 0 {
 		block.Codes = append(block.Codes, code)
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func (c *localLoadContext) addScripts(code *model.Code, codeDir model.AbsPath) error {
@@ -217,12 +217,12 @@ func (c *localLoadContext) codeFileName(codeDir model.AbsPath) (string, error) {
 		return "", fmt.Errorf(`cannot search for code file in %s": %w`, codeDir.String(), err)
 	}
 
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	files := make([]string, 0)
 	for _, match := range matches {
 		relPath, err := filesystem.Rel(codeDir.String(), match)
 		if err != nil {
-			errors.Append(err)
+			errs.Append(err)
 			continue
 		}
 

@@ -4,12 +4,11 @@ import (
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // AfterRemoteOperation converts legacy "code_content" string -> []interface{}.
 func (m *remoteMapper) AfterRemoteOperation(changes *model.Changes) error {
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	var configs []*model.Config
 	var rows []*model.ConfigRow
 
@@ -17,14 +16,14 @@ func (m *remoteMapper) AfterRemoteOperation(changes *model.Changes) error {
 	for _, object := range changes.Loaded() {
 		if config, ok := object.(*model.Config); ok {
 			if ok, err := m.IsSharedCodeKey(config.Key()); err != nil {
-				errors.Append(err)
+				errs.Append(err)
 				continue
 			} else if ok {
 				configs = append(configs, config)
 			}
 		} else if row, ok := object.(*model.ConfigRow); ok {
 			if ok, err := m.IsSharedCodeKey(row.ConfigKey()); err != nil {
-				errors.Append(err)
+				errs.Append(err)
 				continue
 			} else if ok {
 				rows = append(rows, row)
@@ -35,20 +34,20 @@ func (m *remoteMapper) AfterRemoteOperation(changes *model.Changes) error {
 	// Process configs first
 	for _, config := range configs {
 		if err := m.onConfigRemoteLoad(config); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
 
 	// Process rows
 	for _, row := range rows {
 		if err := m.onRowRemoteLoad(row); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
 
 	if errors.Len() > 0 {
 		// Convert errors to warning
-		m.logger.Warn(utils.PrefixError(`Warning`, errors))
+		m.logger.Warn(errors.PrefixError(`Warning`, errors))
 	}
 
 	return nil
@@ -69,7 +68,7 @@ func (m *remoteMapper) onConfigRemoteLoad(config *model.Config) error {
 	// Value should be string
 	target, ok := targetRaw.(string)
 	if !ok {
-		return utils.PrefixError(
+		return errors.PrefixError(
 			fmt.Sprintf(`invalid %s`, config.String()),
 			fmt.Errorf(`key "%s" should be string, found "%T"`, model.ShareCodeTargetComponentKey, targetRaw),
 		)
@@ -103,7 +102,7 @@ func (m *remoteMapper) onRowRemoteLoad(row *model.ConfigRow) error {
 	case []interface{}:
 		scripts = model.ScriptsFromSlice(v)
 	default:
-		return utils.PrefixError(
+		return errors.PrefixError(
 			fmt.Sprintf(`invalid %s`, row.String()),
 			fmt.Errorf(`key "%s" should be string or array, found "%T"`, model.SharedCodeContentKey, raw),
 		)

@@ -33,7 +33,7 @@ func TestVariablesMapAfterRemoteLoad(t *testing.T) {
 			VariablesId: model.ConfigId(variablesConfigId),
 		},
 		&model.VariablesValuesFromRelation{
-			VariablesValuesId: model.RowId(valuesConfigRowId),
+			VariablesValuesId: model.ConfigRowId(valuesConfigRowId),
 		},
 	}, object.Relations)
 	_, found := object.Content.Get(model.VariablesIdContentKey)

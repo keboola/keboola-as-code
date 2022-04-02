@@ -6,7 +6,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 type relationsMapper struct {
@@ -24,21 +23,21 @@ func NewMapper(objects model.Objects, d dependencies) *relationsMapper {
 
 // AfterOperation links relation sides on load.
 func (m *relationsMapper) AfterOperation(changes *model.Changes) error {
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	for _, object := range changes.Loaded() {
 		if o, ok := object.(model.ObjectWithRelations); ok {
 			if err := m.linkRelations(o); err != nil {
-				errors.Append(err)
+				errs.Append(err)
 			}
 			if err := m.validateRelations(o); err != nil {
-				errors.Append(utils.PrefixError(fmt.Sprintf(`invalid %s`, object.String()), err))
+				errs.Append(errors.PrefixError(fmt.Sprintf(`invalid %s`, object.String()), err))
 			}
 		}
 	}
 
 	// Log errors as warning
 	if errors.Len() > 0 {
-		m.logger.Warn(utils.PrefixError(`Warning`, errors))
+		m.logger.Warn(errors.PrefixError(`Warning`, errors))
 	}
 
 	return nil
@@ -46,7 +45,7 @@ func (m *relationsMapper) AfterOperation(changes *model.Changes) error {
 
 // lintRelations finds the other side of the relation and create a corresponding relation on the other side.
 func (m *relationsMapper) linkRelations(object model.ObjectWithRelations) error {
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	relations := object.GetRelations()
 
 	for _, relation := range relations {
@@ -55,7 +54,7 @@ func (m *relationsMapper) linkRelations(object model.ObjectWithRelations) error 
 		if err != nil {
 			// Remove invalid relation
 			relations.Remove(relation)
-			errors.Append(err)
+			errs.Append(err)
 			continue
 		} else if otherSideRelation == nil {
 			continue
@@ -66,9 +65,9 @@ func (m *relationsMapper) linkRelations(object model.ObjectWithRelations) error 
 		if !found {
 			// Remove invalid relation
 			relations.Remove(relation)
-			errors.Append(fmt.Errorf(`%s not found`, otherSideKey.String()))
-			errors.Append(fmt.Errorf(`  - referenced from %s`, object.String()))
-			errors.Append(fmt.Errorf(`  - by relation "%s"`, relation.Type()))
+			errs.Append(fmt.Errorf(`%s not found`, otherSideKey.String()))
+			errs.Append(fmt.Errorf(`  - referenced from %s`, object.String()))
+			errs.Append(fmt.Errorf(`  - by relation "%s"`, relation.Type()))
 			continue
 		}
 
@@ -78,29 +77,29 @@ func (m *relationsMapper) linkRelations(object model.ObjectWithRelations) error 
 		} else {
 			// Remove invalid relation
 			relations.Remove(relation)
-			errors.Append(fmt.Errorf(`%s cannot have relation`, otherSideKey.String()))
-			errors.Append(fmt.Errorf(`  - referenced from %s`, object.String()))
-			errors.Append(fmt.Errorf(`  - by relation "%s"`, relation.Type()))
+			errs.Append(fmt.Errorf(`%s cannot have relation`, otherSideKey.String()))
+			errs.Append(fmt.Errorf(`  - referenced from %s`, object.String()))
+			errs.Append(fmt.Errorf(`  - by relation "%s"`, relation.Type()))
 			continue
 		}
 	}
 
 	object.SetRelations(relations)
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 // validateRelations check relations constraints.
 func (m *relationsMapper) validateRelations(object model.ObjectWithRelations) error {
 	relations := object.GetRelations()
 	relationsMap := relations.GetAllByType()
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 
 	// Validate relations that can be defined on an object only once
 	for _, t := range model.OneToXRelations() {
 		if len(relationsMap[t]) > 1 {
-			errors.Append(fmt.Errorf(`only one relation "%s" expected, but found %d`, t, len(relationsMap[t])))
+			errs.Append(fmt.Errorf(`only one relation "%s" expected, but found %d`, t, len(relationsMap[t])))
 			for _, relation := range relationsMap[t] {
-				errors.Append(fmt.Errorf(`  - %s`, json.MustEncodeString(relation, false)))
+				errs.Append(fmt.Errorf(`  - %s`, json.MustEncodeString(relation, false)))
 			}
 
 			// Remove invalid relations
@@ -110,5 +109,5 @@ func (m *relationsMapper) validateRelations(object model.ObjectWithRelations) er
 
 	// Set modified relations
 	object.SetRelations(relations)
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }

@@ -30,12 +30,12 @@ func createRemoteStateWithMapper(t *testing.T) (*remote.State, *dependencies.Tes
 func createTestFixtures(t *testing.T, componentId string, objects model.Objects) (*model.Config, model.AbsPath) {
 	t.Helper()
 
-	objects.MustAdd(&model.Branch{BranchKey: model.BranchKey{Id: 123}})
+	objects.MustAdd(&model.Branch{BranchKey: model.BranchKey{BranchId: 123}})
 
 	configKey := model.ConfigKey{
 		BranchId:    123,
 		ComponentId: model.ComponentId(componentId),
-		Id:          `456`,
+		ConfigId:    `456`,
 	}
 	config := &model.Config{
 		ConfigKey: configKey,

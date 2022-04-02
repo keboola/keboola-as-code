@@ -29,12 +29,12 @@ func (m *schedulerRemoteMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveReci
 	targetRaw, found := object.Content.Get(model.SchedulerTargetKey)
 	target, ok := targetRaw.(*orderedmap.OrderedMap)
 	if !found {
-		return utils.PrefixError(
+		return errors.PrefixError(
 			fmt.Sprintf(`scheduler %s is invalid`, recipe.Object.String()),
 			fmt.Errorf(`key "%s" not found`, model.SchedulerTargetKey),
 		)
 	} else if !ok {
-		return utils.PrefixError(
+		return errors.PrefixError(
 			fmt.Sprintf(`scheduler %s is invalid`, recipe.Object.String()),
 			fmt.Errorf(`key "%s" must be object, found "%T"`, model.SchedulerTargetKey, targetRaw),
 		)

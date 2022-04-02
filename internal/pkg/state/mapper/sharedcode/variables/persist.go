@@ -45,7 +45,7 @@ func (m *mapper) MapBeforePersist(recipe *model.PersistRecipe) error {
 	// Add relation
 	configManifest.Relations.Add(&model.SharedCodeVariablesForRelation{
 		ConfigId: sharedCodeRowKey.ConfigId,
-		RowId:    sharedCodeRowKey.Id,
+		RowId:    sharedCodeRowKey.ConfigRowId,
 	})
 
 	return nil

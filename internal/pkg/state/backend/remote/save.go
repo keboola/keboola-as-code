@@ -18,7 +18,7 @@ func (c *saveContext) save() {
 	// Invoke mapper
 	recipe := model.NewRemoteSaveRecipe(c.Object, c.ChangedFields)
 	if err := c.mapper.MapBeforeRemoteSave(recipe); err != nil {
-		c.errors.Append(err)
+		c.errs.Append(err)
 		return
 	}
 
@@ -31,7 +31,7 @@ func (c *saveContext) save() {
 
 	// Branch cannot be created, it must be cloned
 	if v, ok := c.Object.(*model.Branch); ok && !c.ObjectExists {
-		c.errors.Append(fmt.Errorf(`branch "%d" (%s) cannot be created, it must be created as clone of the main branch directly in the project`, v.Id, v.Name))
+		c.errs.Append(fmt.Errorf(`branch "%d" (%s) cannot be created, it must be created as clone of the main branch directly in the project`, v.BranchId, v.Name))
 		return
 	}
 
@@ -56,7 +56,7 @@ func (c *saveContext) save() {
 	// Create request
 	saveRequest, err := c.saveRequest()
 	if err != nil {
-		c.errors.Append(err)
+		c.errs.Append(err)
 		return
 	}
 

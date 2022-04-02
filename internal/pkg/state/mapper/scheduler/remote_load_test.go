@@ -16,7 +16,7 @@ func TestSchedulerRemoteMapper_Load(t *testing.T) {
 	logger := d.DebugLogger()
 
 	// Create api and internal object
-	key := model.ConfigKey{BranchId: 1, ComponentId: model.SchedulerComponentId, Id: `123`}
+	key := model.ConfigKey{BranchId: 1, ComponentId: model.SchedulerComponentId, ConfigId: `123`}
 	object := &model.Config{ConfigKey: key, Content: orderedmap.New()}
 	contentStr := `{
   "target": {

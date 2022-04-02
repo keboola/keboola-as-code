@@ -8,7 +8,7 @@ import (
 )
 
 func (m *localMapper) AfterLocalRename(changes []model.RenameAction) error {
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 
 	// Find renamed shared codes
 	renamedSharedCodes := make(map[string]model.Key)
@@ -17,7 +17,7 @@ func (m *localMapper) AfterLocalRename(changes []model.RenameAction) error {
 
 		// Is shared code?
 		if ok, err := m.helper.IsSharedCodeKey(key); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		} else if ok {
 			renamedSharedCodes[key.String()] = key
 			continue
@@ -25,7 +25,7 @@ func (m *localMapper) AfterLocalRename(changes []model.RenameAction) error {
 
 		// Is shared code row?
 		if ok, err := m.helper.IsSharedCodeRowKey(key); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		} else if ok {
 			configKey := key.(model.ConfigRowKey).ConfigKey()
 			renamedSharedCodes[configKey.String()] = configKey
@@ -55,10 +55,10 @@ func (m *localMapper) AfterLocalRename(changes []model.RenameAction) error {
 
 	// Save
 	if err := uow.Invoke(); err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func (m *localMapper) getDependentConfig(object model.Object, renamedSharedCodes map[string]model.Key) *model.Config {

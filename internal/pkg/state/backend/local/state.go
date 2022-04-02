@@ -137,13 +137,13 @@ func (s *State) Add(objects ...model.Object) error {
 	}
 
 	// Make sure all objects have a path
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	for _, object := range objects {
 		if _, err := s.GetPath(object); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func (s *State) GetByPath(path string) (model.Object, bool) {

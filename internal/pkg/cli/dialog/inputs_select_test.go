@@ -139,8 +139,8 @@ func TestInputsSelectDialog_Parse(t *testing.T) {
 	assert.NoError(t, dialog.parse(result))
 
 	// Assert inputs definitions
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: "keboola.foo.bar", Id: "my-config-1"}
-	rowKey := model.ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo.bar", ConfigId: "my-config-2", Id: "row-2"}
+	configKey := model.ConfigKey{BranchId: 123, ComponentId: "keboola.foo.bar", ConfigId: "my-config-1"}
+	rowKey := model.ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo.bar", ConfigId: "my-config-2", ConfigRowId: "row-2"}
 	assert.Equal(t, &template.Inputs{
 		{Id: "foo-bar-password", Type: input.TypeString, Kind: input.KindHidden, Name: "Password"},
 		{Id: "foo-bar-object-array-1-password", Type: input.TypeString, Kind: input.KindHidden, Name: "Object Array Password"},
@@ -191,8 +191,8 @@ func TestInputsSelectDialog_Parse_All(t *testing.T) {
 	assert.NoError(t, dialog.parse(result))
 
 	// Assert inputs definitions
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: "keboola.foo.bar", Id: "my-config-1"}
-	rowKey := model.ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo.bar", ConfigId: "my-config-2", Id: "row-2"}
+	configKey := model.ConfigKey{BranchId: 123, ComponentId: "keboola.foo.bar", ConfigId: "my-config-1"}
+	rowKey := model.ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo.bar", ConfigId: "my-config-2", ConfigRowId: "row-2"}
 	assert.Equal(t, &template.Inputs{
 		{Id: "foo-bar-password", Type: input.TypeString, Kind: input.KindHidden, Name: "Password"},
 		{Id: "foo-bar-bool", Type: input.TypeBool, Kind: input.KindConfirm, Default: false, Name: "Bool"},
@@ -370,34 +370,34 @@ func configsWithContent() (*model.Branch, []*model.ConfigWithRows) {
 	json.MustDecodeString(configJson, configContent)
 	json.MustDecodeString(rowJson, rowContent)
 
-	branch := &model.Branch{BranchKey: model.BranchKey{Id: 123}}
+	branch := &model.Branch{BranchKey: model.BranchKey{BranchId: 123}}
 	configs := []*model.ConfigWithRows{
 		{
 			Config: &model.Config{
-				ConfigKey: model.ConfigKey{BranchId: branch.Id, ComponentId: "keboola.foo.bar", Id: "my-config-1"},
+				ConfigKey: model.ConfigKey{BranchId: branch.BranchId, ComponentId: "keboola.foo.bar", ConfigId: "my-config-1"},
 				Name:      "My Config 1",
 				Content:   configContent,
 			},
 		},
 		{
 			Config: &model.Config{
-				ConfigKey: model.ConfigKey{BranchId: branch.Id, ComponentId: "keboola.foo.bar", Id: "my-config-2"},
+				ConfigKey: model.ConfigKey{BranchId: branch.BranchId, ComponentId: "keboola.foo.bar", ConfigId: "my-config-2"},
 				Name:      "My Config 2",
 				Content:   orderedmap.New(),
 			},
 			Rows: []*model.ConfigRow{
 				{
-					ConfigRowKey: model.ConfigRowKey{BranchId: branch.Id, ComponentId: "keboola.foo.bar", ConfigId: "my-config-2", Id: "row-1"},
+					ConfigRowKey: model.ConfigRowKey{BranchId: branch.BranchId, ComponentId: "keboola.foo.bar", ConfigId: "my-config-2", ConfigRowId: "row-1"},
 					Name:         "My Row",
 					Content:      orderedmap.New(),
 				},
 				{
-					ConfigRowKey: model.ConfigRowKey{BranchId: branch.Id, ComponentId: "keboola.foo.bar", ConfigId: "my-config-2", Id: "row-2"},
+					ConfigRowKey: model.ConfigRowKey{BranchId: branch.BranchId, ComponentId: "keboola.foo.bar", ConfigId: "my-config-2", ConfigRowId: "row-2"},
 					Name:         "My Row",
 					Content:      rowContent,
 				},
 				{
-					ConfigRowKey: model.ConfigRowKey{BranchId: branch.Id, ComponentId: "keboola.foo.bar", ConfigId: "my-config-2", Id: "row-3"},
+					ConfigRowKey: model.ConfigRowKey{BranchId: branch.BranchId, ComponentId: "keboola.foo.bar", ConfigId: "my-config-2", ConfigRowId: "row-3"},
 					Name:         "My Row",
 					Content:      orderedmap.New(),
 				},

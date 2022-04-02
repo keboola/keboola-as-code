@@ -6,7 +6,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/relatedpaths"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 type saveContext struct {
@@ -14,7 +13,7 @@ type saveContext struct {
 	state.SaveContext
 	basePath model.AbsPath
 	backups  map[string]string
-	errors   *utils.MultiError
+	errors   *errors.MultiError
 }
 
 func (c *saveContext) save() {
@@ -44,7 +43,7 @@ func (c *saveContext) resolvePath() error {
 }
 
 func (c *saveContext) writeToFs() error {
-	c.errors = utils.NewMultiError()
+	c.errors = errors.NewMultiError()
 
 	// Invoke mapper
 	recipe := model.NewLocalSaveRecipe(c.basePath, c.Object, c.ChangedFields)
@@ -66,7 +65,7 @@ func (c *saveContext) writeToFs() error {
 	// Delete
 	for _, path := range toDelete {
 		if err := c.softDelete(path); err != nil {
-			c.errors.Append(err)
+			c.errs.Append(err)
 		}
 	}
 
@@ -81,14 +80,14 @@ func (c *saveContext) writeToFs() error {
 		// Convert to File, eg. JsonFile -> File
 		fileRaw, err := file.ToRawFile()
 		if err != nil {
-			c.errors.Append(err)
+			c.errs.Append(err)
 			continue
 		}
 
 		// Write
 		relatedPaths.Add(fileRaw.Path())
 		if err := c.objectsRoot.WriteFile(fileRaw); err != nil {
-			c.errors.Append(err)
+			c.errs.Append(err)
 		}
 	}
 
@@ -102,7 +101,7 @@ func (c *saveContext) writeToFs() error {
 
 	// Update related paths
 	c.SetRelatedPaths(c.Object, relatedPaths)
-	return c.errors.ErrorOrNil()
+	return c.errs.ErrorOrNil()
 }
 
 func (c *saveContext) softDelete(path string) error {
@@ -155,6 +154,6 @@ func (c *saveContext) addToManifest() {
 
 	// Add record to manifest
 	if err := c.manifest.Add(objectManifest); err != nil {
-		c.errors.Append(err)
+		c.errs.Append(err)
 	}
 }

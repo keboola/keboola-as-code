@@ -28,7 +28,7 @@ func TestAskInitOptions(t *testing.T) {
 	d := dependencies.NewTestContainer()
 	_, httpTransport := d.UseMockedStorageApi()
 
-	branches := []*model.Branch{{BranchKey: model.BranchKey{Id: 123}, Name: "Main", IsDefault: true}}
+	branches := []*model.Branch{{BranchKey: model.BranchKey{BranchId: 123}, Name: "Main", IsDefault: true}}
 	httpTransport.RegisterResponder(
 		"GET", `=~/storage/dev-branches`,
 		httpmock.NewJsonResponderOrPanic(200, branches),

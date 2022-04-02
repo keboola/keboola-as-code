@@ -37,7 +37,7 @@ func createTargetConfigs(t *testing.T, objects model.Objects, naming *naming.Reg
 	targetConfigKey1 := model.ConfigKey{
 		BranchId:    123,
 		ComponentId: `foo.bar1`,
-		Id:          `123`,
+		ConfigId:    `123`,
 	}
 	targetConfig1 := &model.Config{ConfigKey: targetConfigKey1}
 	objects.MustAdd(targetConfig1)
@@ -49,7 +49,7 @@ func createTargetConfigs(t *testing.T, objects model.Objects, naming *naming.Reg
 	targetConfigKey2 := model.ConfigKey{
 		BranchId:    123,
 		ComponentId: `foo.bar2`,
-		Id:          `789`,
+		ConfigId:    `789`,
 	}
 	targetConfig2 := &model.Config{ConfigKey: targetConfigKey2}
 	objects.MustAdd(targetConfig2)
@@ -61,7 +61,7 @@ func createTargetConfigs(t *testing.T, objects model.Objects, naming *naming.Reg
 	targetConfigKey3 := model.ConfigKey{
 		BranchId:    123,
 		ComponentId: `foo.bar2`,
-		Id:          `456`,
+		ConfigId:    `456`,
 	}
 	targetConfig3 := &model.Config{ConfigKey: targetConfigKey3}
 	objects.MustAdd(targetConfig3)
@@ -76,7 +76,7 @@ func createLocalLoadFixtures(t *testing.T, state *local.State) (*model.Config, m
 	t.Helper()
 
 	// Branch
-	branchKey := model.BranchKey{Id: 123}
+	branchKey := model.BranchKey{BranchId: 123}
 	branch := &model.Branch{BranchKey: branchKey}
 	state.MustAdd(branch)
 	state.NamingRegistry().MustAttach(branchKey, model.NewAbsPath(``, `branch`))
@@ -85,7 +85,7 @@ func createLocalLoadFixtures(t *testing.T, state *local.State) (*model.Config, m
 	configKey := model.ConfigKey{
 		BranchId:    123,
 		ComponentId: model.OrchestratorComponentId,
-		Id:          `456`,
+		ConfigId:    `456`,
 	}
 	config := &model.Config{ConfigKey: configKey, Content: orderedmap.New()}
 	configPath := model.NewAbsPath(`branch`, `other/orchestrator`)
@@ -195,7 +195,7 @@ func createLocalSaveFixtures(t *testing.T, state *local.State, createTargets boo
 	}
 
 	// Branch
-	branchKey := model.BranchKey{Id: 123}
+	branchKey := model.BranchKey{BranchId: 123}
 	branch := &model.Branch{BranchKey: branchKey}
 	state.MustAdd(branch)
 	state.NamingRegistry().MustAttach(branchKey, model.NewAbsPath(``, `branch`))
@@ -204,7 +204,7 @@ func createLocalSaveFixtures(t *testing.T, state *local.State, createTargets boo
 	configKey := model.ConfigKey{
 		BranchId:    123,
 		ComponentId: model.OrchestratorComponentId,
-		Id:          `456`,
+		ConfigId:    `456`,
 	}
 	config := &model.Config{
 		ConfigKey:     configKey,
@@ -332,7 +332,7 @@ func createRemoteSaveFixtures(state *remote.State) *model.Config {
 	}
 
 	// Branch
-	branchKey := model.BranchKey{Id: 123}
+	branchKey := model.BranchKey{BranchId: 123}
 	branch := &model.Branch{BranchKey: branchKey}
 	state.MustAdd(branch)
 
@@ -340,7 +340,7 @@ func createRemoteSaveFixtures(state *remote.State) *model.Config {
 	configKey := model.ConfigKey{
 		BranchId:    123,
 		ComponentId: model.OrchestratorComponentId,
-		Id:          `456`,
+		ConfigId:    `456`,
 	}
 	config := &model.Config{ConfigKey: configKey, Content: orderedmap.New()}
 	config.Orchestration = orchestration

@@ -32,13 +32,13 @@ func createSharedCode(t *testing.T, targetComponentId model.ComponentId, state m
 
 	// Branch
 	state.MustAdd(&model.Branch{
-		BranchKey: model.BranchKey{Id: 123},
+		BranchKey: model.BranchKey{BranchId: 123},
 	})
 
 	// Config
 	configKey := model.ConfigKey{
 		BranchId:    123,
-		Id:          `123`,
+		ConfigId:    `123`,
 		ComponentId: model.SharedCodeComponentId,
 	}
 	configContent := orderedmap.New()
@@ -52,7 +52,7 @@ func createSharedCode(t *testing.T, targetComponentId model.ComponentId, state m
 	rowKey := model.ConfigRowKey{
 		BranchId:    123,
 		ConfigId:    `123`,
-		Id:          `456`,
+		ConfigRowId: `456`,
 		ComponentId: model.SharedCodeComponentId,
 	}
 	row := &model.ConfigRow{
@@ -75,13 +75,13 @@ func createInternalSharedCode(t *testing.T, targetComponentId model.ComponentId,
 
 	// Branch
 	state.MustAdd(&model.Branch{
-		BranchKey: model.BranchKey{Id: 123},
+		BranchKey: model.BranchKey{BranchId: 123},
 	})
 
 	// Config
 	configKey := model.ConfigKey{
 		BranchId:    123,
-		Id:          `123`,
+		ConfigId:    `123`,
 		ComponentId: model.SharedCodeComponentId,
 	}
 	config := &model.Config{
@@ -97,7 +97,7 @@ func createInternalSharedCode(t *testing.T, targetComponentId model.ComponentId,
 	rowKey := model.ConfigRowKey{
 		BranchId:    123,
 		ConfigId:    `123`,
-		Id:          `456`,
+		ConfigRowId: `456`,
 		ComponentId: model.SharedCodeComponentId,
 	}
 	row := &model.ConfigRow{

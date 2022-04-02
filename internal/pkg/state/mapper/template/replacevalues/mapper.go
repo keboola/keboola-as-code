@@ -33,12 +33,12 @@ func (m *replaceKeysMapper) AfterRemoteOperation(changes *model.Changes) error {
 func (m *replaceKeysMapper) afterOperation(changes changes) error {
 	// Replace keys in the loaded remote objects
 	replaced := make(map[string]model.ObjectState)
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	for _, original := range changes.Loaded() {
 		// Replace values
 		modifiedRaw, err := m.replacements.Replace(original)
 		if err != nil {
-			errors.Append(err)
+			errs.Append(err)
 			continue
 		}
 
@@ -53,7 +53,7 @@ func (m *replaceKeysMapper) afterOperation(changes changes) error {
 		// Set modified object state
 		modified := modifiedRaw.(model.ObjectState)
 		if err := m.state.Set(modified); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 
 		replaced[original.Key().String()] = modified
@@ -67,5 +67,5 @@ func (m *replaceKeysMapper) afterOperation(changes changes) error {
 		return v
 	})
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }

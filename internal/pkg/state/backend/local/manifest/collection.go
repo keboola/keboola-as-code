@@ -8,7 +8,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -163,20 +162,20 @@ func (c *Collection) get(key model.Key) (model.ObjectManifest, bool) {
 }
 
 func (c *Collection) add(records ...model.ObjectManifest) error {
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	records, err := c.resolveParentPaths(records)
 	if err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
 	// Add valid records
 	for _, record := range records {
 		if err := c.addOne(record); err != nil {
-			errors.Append(utils.PrefixError(fmt.Sprintf(`invalid %s`, record.String()), err))
+			errs.Append(errors.PrefixError(fmt.Sprintf(`invalid %s`, record.String()), err))
 		}
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func (c *Collection) addOne(record model.ObjectManifest) error {
@@ -227,15 +226,15 @@ func (c *Collection) resolveParentPaths(newRecords []model.ObjectManifest) (vali
 	}
 
 	// Process all
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	for _, record := range r.newRecords {
 		if valid, err := r.process(record, nil); valid {
 			validRecords = append(validRecords, record)
 		} else if err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
-	return validRecords, errors.ErrorOrNil()
+	return validRecords, errs.ErrorOrNil()
 }
 
 func (r *parentPathResolver) process(record model.ObjectManifest, path []model.Key) (valid bool, err error) {
@@ -249,12 +248,12 @@ func (r *parentPathResolver) process(record model.ObjectManifest, path []model.K
 
 	// Cyclic relation?
 	if r.processing[key] {
-		details := utils.NewMultiError()
+		details := errors.NewMultiError()
 		for _, key := range path {
 			details.Append(fmt.Errorf(`%s is child of`, key.String()))
 		}
 		details.Append(fmt.Errorf(key.String()))
-		return false, utils.PrefixError("a cyclic relation found", details)
+		return false, errors.PrefixError("a cyclic relation found", details)
 	}
 
 	// Mark as processing
@@ -268,7 +267,7 @@ func (r *parentPathResolver) process(record model.ObjectManifest, path []model.K
 	// Get parent
 	parentKey, err := record.ParentKey()
 	if err != nil {
-		return false, utils.PrefixError(fmt.Sprintf(`cannot get parent of %s`, record.String()), err)
+		return false, errors.PrefixError(fmt.Sprintf(`cannot get parent of %s`, record.String()), err)
 	}
 
 	// Top level object
@@ -285,7 +284,7 @@ func (r *parentPathResolver) process(record model.ObjectManifest, path []model.K
 	} else if parent, found = r.collection.get(parentKey); found {
 		// Parent has been found in the old records
 	} else {
-		return false, utils.PrefixError(
+		return false, errors.PrefixError(
 			fmt.Sprintf(`%s not found`, parentKey.String()),
 			fmt.Errorf(`referenced as a parent of %s`, record.String()),
 		)

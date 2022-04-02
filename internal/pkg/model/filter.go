@@ -120,7 +120,7 @@ func (v AllowedBranch) IsBranchAllowed(branch *Branch) bool {
 	}
 
 	// Defined by ID
-	if cast.ToInt(pattern) == int(branch.Id) {
+	if cast.ToInt(pattern) == int(branch.BranchId) {
 		return true
 	}
 

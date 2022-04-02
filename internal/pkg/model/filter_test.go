@@ -12,35 +12,35 @@ import (
 func TestIsBranchAllowed(t *testing.T) {
 	t.Parallel()
 	assert.True(t, (AllowedBranches{"*", "xyz"}).IsBranchAllowed(
-		&Branch{BranchKey: BranchKey{Id: 123}, Name: "abc", IsDefault: false}),
+		&Branch{BranchKey: BranchKey{BranchId: 123}, Name: "abc", IsDefault: false}),
 	)
 	assert.True(t, (AllowedBranches{"123", "xyz"}).IsBranchAllowed(
-		&Branch{BranchKey: BranchKey{Id: 123}, Name: "abc", IsDefault: false}),
+		&Branch{BranchKey: BranchKey{BranchId: 123}, Name: "abc", IsDefault: false}),
 	)
 	assert.True(t, (AllowedBranches{"abc", "xyz"}).IsBranchAllowed(
-		&Branch{BranchKey: BranchKey{Id: 123}, Name: "abc", IsDefault: false}),
+		&Branch{BranchKey: BranchKey{BranchId: 123}, Name: "abc", IsDefault: false}),
 	)
 	assert.True(t, (AllowedBranches{"a*", "xyz"}).IsBranchAllowed(
-		&Branch{BranchKey: BranchKey{Id: 123}, Name: "abc", IsDefault: false}),
+		&Branch{BranchKey: BranchKey{BranchId: 123}, Name: "abc", IsDefault: false}),
 	)
 	assert.True(t, (AllowedBranches{"a?c", "xyz"}).IsBranchAllowed(
-		&Branch{BranchKey: BranchKey{Id: 123}, Name: "abc", IsDefault: false}),
+		&Branch{BranchKey: BranchKey{BranchId: 123}, Name: "abc", IsDefault: false}),
 	)
 	assert.True(t, (AllowedBranches{"*c", "xyz"}).IsBranchAllowed(
-		&Branch{BranchKey: BranchKey{Id: 123}, Name: "abc", IsDefault: false}),
+		&Branch{BranchKey: BranchKey{BranchId: 123}, Name: "abc", IsDefault: false}),
 	)
 	assert.True(t, (AllowedBranches{MainBranchDef, "xyz"}).IsBranchAllowed(
-		&Branch{BranchKey: BranchKey{Id: 123}, Name: "abc", IsDefault: true}),
+		&Branch{BranchKey: BranchKey{BranchId: 123}, Name: "abc", IsDefault: true}),
 	)
 
 	assert.False(t, (AllowedBranches{"12*", "xyz"}).IsBranchAllowed(
-		&Branch{BranchKey: BranchKey{Id: 123}, Name: "abc", IsDefault: false}),
+		&Branch{BranchKey: BranchKey{BranchId: 123}, Name: "abc", IsDefault: false}),
 	)
 	assert.False(t, (AllowedBranches{"abcdef", "xyz"}).IsBranchAllowed(
-		&Branch{BranchKey: BranchKey{Id: 123}, Name: "abc", IsDefault: false}),
+		&Branch{BranchKey: BranchKey{BranchId: 123}, Name: "abc", IsDefault: false}),
 	)
 	assert.False(t, (AllowedBranches{MainBranchDef, "xyz"}).IsBranchAllowed(
-		&Branch{BranchKey: BranchKey{Id: 123}, Name: "abc", IsDefault: false}),
+		&Branch{BranchKey: BranchKey{BranchId: 123}, Name: "abc", IsDefault: false}),
 	)
 }
 
@@ -59,16 +59,16 @@ func TestFilterIsObjectIgnored(t *testing.T) {
 		ComponentIds{"aaa", "bbb"},
 	)
 	assert.False(t, m.IsObjectIgnored(
-		&Branch{BranchKey: BranchKey{Id: 789}, Name: "dev-1"}),
+		&Branch{BranchKey: BranchKey{BranchId: 789}, Name: "dev-1"}),
 	)
 	assert.False(t, m.IsObjectIgnored(
-		&Branch{BranchKey: BranchKey{Id: 123}, Name: "xyz"}),
+		&Branch{BranchKey: BranchKey{BranchId: 123}, Name: "xyz"}),
 	)
 	assert.False(t, m.IsObjectIgnored(
-		&Branch{BranchKey: BranchKey{Id: 789}, Name: "abc"}),
+		&Branch{BranchKey: BranchKey{BranchId: 789}, Name: "abc"}),
 	)
 	assert.True(t, m.IsObjectIgnored(
-		&Branch{BranchKey: BranchKey{Id: 789}, Name: "xyz"}),
+		&Branch{BranchKey: BranchKey{BranchId: 789}, Name: "xyz"}),
 	)
 	assert.True(t, m.IsObjectIgnored(
 		&Config{ConfigKey: ConfigKey{ComponentId: "aaa"}}),
@@ -80,13 +80,13 @@ func TestFilterIsObjectIgnored(t *testing.T) {
 		&Config{ConfigKey: ConfigKey{ComponentId: "ccc"}}),
 	)
 	assert.True(t, m.IsObjectIgnored(
-		&ConfigRow{ConfigRowKey: ConfigRowKey{ComponentId: "aaa"}}),
+		&ConfigRow{ConfigRowKey: ConfigRowKey{ConfigKey: ConfigKey{ComponentId: "aaa"}}}),
 	)
 	assert.True(t, m.IsObjectIgnored(
-		&ConfigRow{ConfigRowKey: ConfigRowKey{ComponentId: "bbb"}}),
+		&ConfigRow{ConfigRowKey: ConfigRowKey{ConfigKey: ConfigKey{ComponentId: "bbb"}}}),
 	)
 	assert.False(t, m.IsObjectIgnored(
-		&ConfigRow{ConfigRowKey: ConfigRowKey{ComponentId: "ccc"}}),
+		&ConfigRow{ConfigRowKey: ConfigRowKey{ConfigKey: ConfigKey{ComponentId: "ccc"}}}),
 	)
 }
 

@@ -63,7 +63,7 @@ type Results struct {
 	A                 model.Objects
 	B                 model.Objects
 	Results           []*Result
-	Errors            *utils.MultiError
+	Errors            *errors.MultiError
 	Equal             bool
 	HasNotEqualResult bool
 	HasOnlyInAResult  bool
@@ -93,7 +93,7 @@ func Diff(A, B model.Objects, naming *naming.Registry) (*Results, error) {
 // Diff compares A and B model.Objects collections.
 // Results are sorted according to the A collection, see model.Objects.Less function.
 func (d *differ) diff(A, B model.Objects) (*Results, error) {
-	out := &Results{A: A, B: B, Equal: true, Results: []*Result{}, Errors: utils.NewMultiError()}
+	out := &Results{A: A, B: B, Equal: true, Results: []*Result{}, Errors: errors.NewMultiError()}
 
 	// Find all objects present in A, B or both.
 	allMap := make(map[model.Key]bool)

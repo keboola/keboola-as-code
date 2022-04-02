@@ -28,7 +28,7 @@ func TestConfigApiCalls(t *testing.T) {
 	assert.NotNil(t, branch)
 
 	// List components - no component
-	components, err := api.ListComponents(branch.Id)
+	components, err := api.ListComponents(branch.BranchId)
 	assert.NotNil(t, components)
 	assert.NoError(t, err)
 	assert.Len(t, components, 0)
@@ -55,7 +55,7 @@ func TestConfigApiCalls(t *testing.T) {
 	config := &model.ConfigWithRows{
 		Config: &model.Config{
 			ConfigKey: model.ConfigKey{
-				BranchId:    branch.Id,
+				BranchId:    branch.BranchId,
 				ComponentId: "ex-generic-v2",
 			},
 			Name:              "Test",
@@ -75,13 +75,13 @@ func TestConfigApiCalls(t *testing.T) {
 	resConfig, err := api.CreateConfig(config)
 	assert.NoError(t, err)
 	assert.Same(t, config, resConfig)
-	assert.NotEmpty(t, config.Id)
-	assert.Equal(t, config.Id, row1.ConfigId)
+	assert.NotEmpty(t, config.ConfigId)
+	assert.Equal(t, config.ConfigId, row1.ConfigId)
 	assert.Equal(t, model.ComponentId("ex-generic-v2"), row1.ComponentId)
-	assert.Equal(t, branch.Id, row1.BranchId)
-	assert.Equal(t, config.Id, row2.ConfigId)
+	assert.Equal(t, branch.BranchId, row1.BranchId)
+	assert.Equal(t, config.ConfigId, row2.ConfigId)
 	assert.Equal(t, model.ComponentId("ex-generic-v2"), row2.ComponentId)
-	assert.Equal(t, branch.Id, row2.BranchId)
+	assert.Equal(t, branch.BranchId, row2.BranchId)
 
 	// Update config
 	config.Name = "Test modified +++úěš!@#"
@@ -100,7 +100,7 @@ func TestConfigApiCalls(t *testing.T) {
 	assert.Same(t, config.Config, resConfigUpdate)
 
 	// List components
-	components, err = api.ListComponents(branch.Id)
+	components, err = api.ListComponents(branch.BranchId)
 	assert.NotNil(t, components)
 	assert.NoError(t, err)
 	testhelper.AssertWildcards(t, expectedComponentsConfigTest(), json.MustEncodeString(components, true), "Unexpected components")
@@ -110,11 +110,11 @@ func TestConfigApiCalls(t *testing.T) {
 	assert.NoError(t, api.AppendConfigMetadataRequest(config.Config).Send().Err())
 
 	// List metadata
-	req := api.ListConfigMetadataRequest(branch.Id).Send()
+	req := api.ListConfigMetadataRequest(branch.BranchId).Send()
 	assert.NoError(t, req.Err())
 	var configMetadata storageapi.ConfigMetadataResponseItem
 	for _, item := range *req.Result.(*storageapi.ConfigMetadataResponse) {
-		if item.ComponentId == config.ComponentId && item.ConfigId == config.Id {
+		if item.ComponentId == config.ComponentId && item.ConfigId == config.ConfigId {
 			configMetadata = item
 			break
 		}
@@ -129,7 +129,7 @@ func TestConfigApiCalls(t *testing.T) {
 	assert.NoError(t, err)
 
 	// List components - no component
-	components, err = api.ListComponents(branch.Id)
+	components, err = api.ListComponents(branch.BranchId)
 	assert.NotNil(t, components)
 	assert.NoError(t, err)
 	assert.Len(t, components, 0)

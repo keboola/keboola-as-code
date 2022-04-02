@@ -13,30 +13,30 @@ import (
 func TestCreateContext(t *testing.T) {
 	t.Parallel()
 
-	sourceBranch := model.BranchKey{Id: 123}
+	sourceBranch := model.BranchKey{BranchId: 123}
 	configs := []ConfigDef{
 		{
 			Key: model.ConfigKey{
-				BranchId:    sourceBranch.Id,
+				BranchId:    sourceBranch.BranchId,
 				ComponentId: "foo.bar",
-				Id:          "123",
+				ConfigId:    "123",
 			},
 			TemplateId: "my-first-config",
 		},
 		{
 			Key: model.ConfigKey{
-				BranchId:    sourceBranch.Id,
+				BranchId:    sourceBranch.BranchId,
 				ComponentId: "foo.bar",
-				Id:          "345",
+				ConfigId:    "345",
 			},
 			TemplateId: "my-second-config",
 			Rows: []ConfigRowDef{
 				{
 					Key: model.ConfigRowKey{
-						BranchId:    sourceBranch.Id,
+						BranchId:    sourceBranch.BranchId,
 						ComponentId: "foo.bar",
 						ConfigId:    "345",
-						Id:          "789",
+						ConfigRowId: "789",
 					},
 					TemplateId: "my-row",
 				},
@@ -48,22 +48,22 @@ func TestCreateContext(t *testing.T) {
 	// Check remote filter
 	expectedFilter := model.NoFilter()
 	expectedFilter.SetAllowedKeys([]model.Key{
-		model.BranchKey{Id: 123},
+		model.BranchKey{BranchId: 123},
 		model.ConfigKey{
-			BranchId:    sourceBranch.Id,
+			BranchId:    sourceBranch.BranchId,
 			ComponentId: "foo.bar",
-			Id:          "123",
+			ConfigId:    "123",
 		},
 		model.ConfigKey{
-			BranchId:    sourceBranch.Id,
-			ComponentId: "foo.bar",
-			Id:          "345",
-		},
-		model.ConfigRowKey{
-			BranchId:    sourceBranch.Id,
+			BranchId:    sourceBranch.BranchId,
 			ComponentId: "foo.bar",
 			ConfigId:    "345",
-			Id:          "789",
+		},
+		model.ConfigRowKey{
+			BranchId:    sourceBranch.BranchId,
+			ComponentId: "foo.bar",
+			ConfigId:    "345",
+			ConfigRowId: "789",
 		},
 	})
 	assert.Equal(t, expectedFilter, ctx.RemoteObjectsFilter())
@@ -71,8 +71,8 @@ func TestCreateContext(t *testing.T) {
 	// Check replacements
 	expectedReplacements := []replacevalues.Value{
 		{
-			Search:  model.BranchKey{Id: 123},
-			Replace: model.BranchKey{Id: 0},
+			Search:  model.BranchKey{BranchId: 123},
+			Replace: model.BranchKey{BranchId: 0},
 		},
 		{
 			Search:  model.BranchId(123),
@@ -80,14 +80,14 @@ func TestCreateContext(t *testing.T) {
 		},
 		{
 			Search: model.ConfigKey{
-				BranchId:    sourceBranch.Id,
+				BranchId:    sourceBranch.BranchId,
 				ComponentId: "foo.bar",
-				Id:          "123",
+				ConfigId:    "123",
 			},
 			Replace: model.ConfigKey{
 				BranchId:    0,
 				ComponentId: "foo.bar",
-				Id:          `<<~~func:ConfigId:["my-first-config"]~~>>`,
+				ConfigId:    `<<~~func:ConfigId:["my-first-config"]~~>>`,
 			},
 		},
 		{
@@ -100,14 +100,14 @@ func TestCreateContext(t *testing.T) {
 		},
 		{
 			Search: model.ConfigKey{
-				BranchId:    sourceBranch.Id,
+				BranchId:    sourceBranch.BranchId,
 				ComponentId: "foo.bar",
-				Id:          "345",
+				ConfigId:    "345",
 			},
 			Replace: model.ConfigKey{
 				BranchId:    0,
 				ComponentId: "foo.bar",
-				Id:          `<<~~func:ConfigId:["my-second-config"]~~>>`,
+				ConfigId:    `<<~~func:ConfigId:["my-second-config"]~~>>`,
 			},
 		},
 		{
@@ -120,21 +120,21 @@ func TestCreateContext(t *testing.T) {
 		},
 		{
 			Search: model.ConfigRowKey{
-				BranchId:    sourceBranch.Id,
+				BranchId:    sourceBranch.BranchId,
 				ComponentId: "foo.bar",
 				ConfigId:    "345",
-				Id:          "789",
+				ConfigRowId: "789",
 			},
 			Replace: model.ConfigRowKey{
 				BranchId:    0,
 				ComponentId: "foo.bar",
 				ConfigId:    `<<~~func:ConfigId:["my-second-config"]~~>>`,
-				Id:          `<<~~func:ConfigRowId:["my-row"]~~>>`,
+				ConfigRowId: `<<~~func:ConfigRowId:["my-row"]~~>>`,
 			},
 		},
 		{
-			Search:  model.RowId("789"),
-			Replace: model.RowId(`<<~~func:ConfigRowId:["my-row"]~~>>`),
+			Search:  model.ConfigRowId("789"),
+			Replace: model.ConfigRowId(`<<~~func:ConfigRowId:["my-row"]~~>>`),
 		},
 		{
 			Search:  replacevalues.SubString("789"),

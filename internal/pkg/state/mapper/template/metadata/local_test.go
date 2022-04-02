@@ -19,7 +19,7 @@ func TestMetadataMapper_AfterLocalOperation(t *testing.T) {
 	configKey := model.ConfigKey{
 		BranchId:    123,
 		ComponentId: model.ComponentId("keboola.foo-bar"),
-		Id:          `456`,
+		ConfigId:    `456`,
 	}
 	configState := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{

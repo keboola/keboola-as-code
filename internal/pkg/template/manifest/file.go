@@ -81,7 +81,7 @@ func saveFile(fs filesystem.Fs, content *file) error {
 func (f *file) validate() error {
 	ctx := context.WithValue(context.Background(), validator.DisableRequiredInProjectKey, true)
 	if err := validator.ValidateCtx(ctx, f, "dive", ""); err != nil {
-		return utils.PrefixError("manifest is not valid", err)
+		return errors.PrefixError("manifest is not valid", err)
 	}
 	return nil
 }
@@ -92,7 +92,7 @@ func (f *file) records() []model.ObjectManifest {
 		out = append(out, &config.ConfigManifest)
 		for _, row := range config.Rows {
 			row.ComponentId = config.ComponentId
-			row.ConfigId = config.Id
+			row.ConfigId = config.ConfigId
 			out = append(out, row)
 		}
 	}

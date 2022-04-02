@@ -33,7 +33,7 @@ func TestLocalCreateConfigDefaultContent(t *testing.T) {
 	key := model.ConfigKey{
 		BranchId:    123,
 		ComponentId: `keboola.foo`,
-		Id:          "456",
+		ConfigId:    "456",
 	}
 	object, err := Create(key, "New Config", components)
 	assert.NoError(t, err)
@@ -69,7 +69,7 @@ func TestLocalCreateConfigRowDefaultContent(t *testing.T) {
 		BranchId:    123,
 		ComponentId: `keboola.foo`,
 		ConfigId:    "567",
-		Id:          "789",
+		ConfigRowId: "789",
 	}
 	object, err := Create(key, "New Row", components)
 	assert.NoError(t, err)
@@ -95,7 +95,7 @@ func TestLocalCreateConfigContentFromSchema(t *testing.T) {
 	key := model.ConfigKey{
 		BranchId:    123,
 		ComponentId: `keboola.foo`,
-		Id:          "456",
+		ConfigId:    "456",
 	}
 	object, err := Create(key, "New Config", components)
 	assert.NoError(t, err)
@@ -122,7 +122,7 @@ func TestLocalCreateConfigRowContentFromSchema(t *testing.T) {
 		BranchId:    123,
 		ComponentId: `keboola.foo`,
 		ConfigId:    "567",
-		Id:          "789",
+		ConfigRowId: "789",
 	}
 	object, err := Create(key, "New Row", components)
 	assert.NoError(t, err)
@@ -145,7 +145,7 @@ func TestLocalCreateConfigEmptyContent(t *testing.T) {
 	key := model.ConfigKey{
 		BranchId:    123,
 		ComponentId: `keboola.foo`,
-		Id:          "456",
+		ConfigId:    "456",
 	}
 	object, err := Create(key, "New Config", components)
 	assert.NoError(t, err)
@@ -169,7 +169,7 @@ func TestLocalCreateConfigRowEmptyContent(t *testing.T) {
 		BranchId:    123,
 		ComponentId: `keboola.foo`,
 		ConfigId:    "567",
-		Id:          "789",
+		ConfigRowId: "789",
 	}
 	object, err := Create(key, "New Row", components)
 	assert.NoError(t, err)

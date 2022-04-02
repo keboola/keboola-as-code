@@ -20,9 +20,9 @@ func TestSelectBranchInteractive(t *testing.T) {
 	o := options.New()
 
 	// All branches
-	branch1 := &model.Branch{BranchKey: model.BranchKey{Id: 1}, Name: `Branch 1`}
-	branch2 := &model.Branch{BranchKey: model.BranchKey{Id: 2}, Name: `Branch 2`}
-	branch3 := &model.Branch{BranchKey: model.BranchKey{Id: 3}, Name: `Branch 3`}
+	branch1 := &model.Branch{BranchKey: model.BranchKey{BranchId: 1}, Name: `Branch 1`}
+	branch2 := &model.Branch{BranchKey: model.BranchKey{BranchId: 2}, Name: `Branch 2`}
+	branch3 := &model.Branch{BranchKey: model.BranchKey{BranchId: 3}, Name: `Branch 3`}
 	allBranches := []*model.Branch{branch1, branch2, branch3}
 
 	// Interaction
@@ -71,9 +71,9 @@ func TestSelectBranchByFlag(t *testing.T) {
 	o.Set(`branch`, 2)
 
 	// All branches
-	branch1 := &model.Branch{BranchKey: model.BranchKey{Id: 1}, Name: `Branch 1`}
-	branch2 := &model.Branch{BranchKey: model.BranchKey{Id: 2}, Name: `Branch 2`}
-	branch3 := &model.Branch{BranchKey: model.BranchKey{Id: 3}, Name: `Branch 3`}
+	branch1 := &model.Branch{BranchKey: model.BranchKey{BranchId: 1}, Name: `Branch 1`}
+	branch2 := &model.Branch{BranchKey: model.BranchKey{BranchId: 2}, Name: `Branch 2`}
+	branch3 := &model.Branch{BranchKey: model.BranchKey{BranchId: 3}, Name: `Branch 3`}
 	allBranches := []*model.Branch{branch1, branch2, branch3}
 
 	// Run
@@ -90,9 +90,9 @@ func TestSelectBranchMissing(t *testing.T) {
 	o := options.New()
 
 	// All branches
-	branch1 := &model.Branch{BranchKey: model.BranchKey{Id: 1}, Name: `Branch 1`}
-	branch2 := &model.Branch{BranchKey: model.BranchKey{Id: 2}, Name: `Branch 2`}
-	branch3 := &model.Branch{BranchKey: model.BranchKey{Id: 3}, Name: `Branch 3`}
+	branch1 := &model.Branch{BranchKey: model.BranchKey{BranchId: 1}, Name: `Branch 1`}
+	branch2 := &model.Branch{BranchKey: model.BranchKey{BranchId: 2}, Name: `Branch 2`}
+	branch3 := &model.Branch{BranchKey: model.BranchKey{BranchId: 3}, Name: `Branch 3`}
 	allBranches := []*model.Branch{branch1, branch2, branch3}
 
 	// Run
@@ -110,11 +110,11 @@ func TestSelectBranchesInteractive(t *testing.T) {
 	o := options.New()
 
 	// All branches
-	branch1 := &model.Branch{BranchKey: model.BranchKey{Id: 1}, Name: `Branch 1`}
-	branch2 := &model.Branch{BranchKey: model.BranchKey{Id: 2}, Name: `Branch 2`}
-	branch3 := &model.Branch{BranchKey: model.BranchKey{Id: 3}, Name: `Branch 3`}
-	branch4 := &model.Branch{BranchKey: model.BranchKey{Id: 4}, Name: `Branch 4`}
-	branch5 := &model.Branch{BranchKey: model.BranchKey{Id: 5}, Name: `Branch 5`}
+	branch1 := &model.Branch{BranchKey: model.BranchKey{BranchId: 1}, Name: `Branch 1`}
+	branch2 := &model.Branch{BranchKey: model.BranchKey{BranchId: 2}, Name: `Branch 2`}
+	branch3 := &model.Branch{BranchKey: model.BranchKey{BranchId: 3}, Name: `Branch 3`}
+	branch4 := &model.Branch{BranchKey: model.BranchKey{BranchId: 4}, Name: `Branch 4`}
+	branch5 := &model.Branch{BranchKey: model.BranchKey{BranchId: 5}, Name: `Branch 5`}
 	allBranches := []*model.Branch{branch1, branch2, branch3, branch4, branch5}
 
 	// Interaction
@@ -189,11 +189,11 @@ func TestSelectBranchesByFlag(t *testing.T) {
 	o.Set(`branches`, `2,4`)
 
 	// All branches
-	branch1 := &model.Branch{BranchKey: model.BranchKey{Id: 1}, Name: `Branch 1`}
-	branch2 := &model.Branch{BranchKey: model.BranchKey{Id: 2}, Name: `Branch 2`}
-	branch3 := &model.Branch{BranchKey: model.BranchKey{Id: 3}, Name: `Branch 3`}
-	branch4 := &model.Branch{BranchKey: model.BranchKey{Id: 4}, Name: `Branch 4`}
-	branch5 := &model.Branch{BranchKey: model.BranchKey{Id: 5}, Name: `Branch 5`}
+	branch1 := &model.Branch{BranchKey: model.BranchKey{BranchId: 1}, Name: `Branch 1`}
+	branch2 := &model.Branch{BranchKey: model.BranchKey{BranchId: 2}, Name: `Branch 2`}
+	branch3 := &model.Branch{BranchKey: model.BranchKey{BranchId: 3}, Name: `Branch 3`}
+	branch4 := &model.Branch{BranchKey: model.BranchKey{BranchId: 4}, Name: `Branch 4`}
+	branch5 := &model.Branch{BranchKey: model.BranchKey{BranchId: 5}, Name: `Branch 5`}
 	allBranches := []*model.Branch{branch1, branch2, branch3, branch4, branch5}
 
 	// Run
@@ -210,11 +210,11 @@ func TestSelectBranchesMissing(t *testing.T) {
 	o := options.New()
 
 	// All branches
-	branch1 := &model.Branch{BranchKey: model.BranchKey{Id: 1}, Name: `Branch 1`}
-	branch2 := &model.Branch{BranchKey: model.BranchKey{Id: 2}, Name: `Branch 2`}
-	branch3 := &model.Branch{BranchKey: model.BranchKey{Id: 3}, Name: `Branch 3`}
-	branch4 := &model.Branch{BranchKey: model.BranchKey{Id: 4}, Name: `Branch 4`}
-	branch5 := &model.Branch{BranchKey: model.BranchKey{Id: 5}, Name: `Branch 5`}
+	branch1 := &model.Branch{BranchKey: model.BranchKey{BranchId: 1}, Name: `Branch 1`}
+	branch2 := &model.Branch{BranchKey: model.BranchKey{BranchId: 2}, Name: `Branch 2`}
+	branch3 := &model.Branch{BranchKey: model.BranchKey{BranchId: 3}, Name: `Branch 3`}
+	branch4 := &model.Branch{BranchKey: model.BranchKey{BranchId: 4}, Name: `Branch 4`}
+	branch5 := &model.Branch{BranchKey: model.BranchKey{BranchId: 5}, Name: `Branch 5`}
 	allBranches := []*model.Branch{branch1, branch2, branch3, branch4, branch5}
 
 	// Run

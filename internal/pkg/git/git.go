@@ -32,12 +32,12 @@ type Repository struct {
 func (r *Repository) Pull() error {
 	err, stdErr, _ := runGitCommand(r.logger, r.Fs.BasePath(), []string{"fetch", "origin"})
 	if err != nil {
-		return utils.PrefixError("cannot fetch template repository", fmt.Errorf(stdErr))
+		return errors.PrefixError("cannot fetch template repository", fmt.Errorf(stdErr))
 	}
 
 	err, stdErr, _ = runGitCommand(r.logger, r.Fs.BasePath(), []string{"reset", "--hard", fmt.Sprintf("origin/%s", r.Ref)})
 	if err != nil {
-		return utils.PrefixError("cannot reset template repository to the origin", fmt.Errorf(stdErr))
+		return errors.PrefixError("cannot reset template repository to the origin", fmt.Errorf(stdErr))
 	}
 	return nil
 }
@@ -79,7 +79,7 @@ func CheckoutTemplateRepository(opts CheckoutOptions, logger log.Logger) (filesy
 			}
 			return nil, fmt.Errorf(`templates git repository not found on url "%s"`, opts.TemplateRepository.Url)
 		}
-		return nil, utils.PrefixError("cannot load template source directory", fmt.Errorf(stdErr))
+		return nil, errors.PrefixError("cannot load template source directory", fmt.Errorf(stdErr))
 	}
 
 	// Create FS from the cloned repository
@@ -96,7 +96,7 @@ func CheckoutTemplateRepository(opts CheckoutOptions, logger log.Logger) (filesy
 		}
 		err, stdErr, _ = runGitCommand(logger, dir, []string{"checkout"})
 		if err != nil {
-			return nil, utils.PrefixError("cannot load template repository manifest", fmt.Errorf(stdErr))
+			return nil, errors.PrefixError("cannot load template repository manifest", fmt.Errorf(stdErr))
 		}
 
 		versionRecord, err := getVersionFromRepositoryManifest(opts, localFs)
@@ -111,10 +111,10 @@ func CheckoutTemplateRepository(opts CheckoutOptions, logger log.Logger) (filesy
 			return nil, fmt.Errorf(stdErr)
 		}
 		if !localFs.Exists(srcDir) {
-			e := utils.NewMultiError()
+			e := errors.NewMultiError()
 			e.Append(fmt.Errorf(`searched in git repository "%s"`, opts.TemplateRepository.Url))
 			e.Append(fmt.Errorf(`reference "%s"`, opts.TemplateRepository.Ref))
-			return nil, utils.PrefixError(fmt.Sprintf(`folder "%s" not found`, srcDir), e)
+			return nil, errors.PrefixError(fmt.Sprintf(`folder "%s" not found`, srcDir), e)
 		}
 	}
 
@@ -147,10 +147,10 @@ func getVersionFromRepositoryManifest(opts CheckoutOptions, localFs filesystem.F
 	versionRecord, err := m.GetVersion(opts.TemplateRef.TemplateId(), version)
 	if err != nil {
 		// version or template not found
-		e := utils.NewMultiError()
+		e := errors.NewMultiError()
 		e.Append(fmt.Errorf(`searched in git repository "%s"`, opts.TemplateRepository.Url))
 		e.Append(fmt.Errorf(`reference "%s"`, opts.TemplateRepository.Ref))
-		return manifest.VersionRecord{}, utils.PrefixError(err.Error(), e)
+		return manifest.VersionRecord{}, errors.PrefixError(err.Error(), e)
 	}
 	return versionRecord, nil
 }

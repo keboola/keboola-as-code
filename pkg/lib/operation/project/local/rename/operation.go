@@ -40,7 +40,7 @@ func Run(projectState *project.State, o Options, d dependencies) (changed bool, 
 
 		// Invoke
 		if err := plan.Invoke(projectState.Ctx(), projectState.LocalManager()); err != nil {
-			return false, utils.PrefixError(`cannot rename objects`, err)
+			return false, errors.PrefixError(`cannot rename objects`, err)
 		}
 
 		// Save manifest

@@ -27,11 +27,11 @@ func (m *remoteMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error
 	}()
 
 	// Convert LinkScript to ID placeholder
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	transformation.Transformation.MapScripts(func(_ *model.Block, code *model.Code, script model.Script) model.Script {
 		v, err := m.linkToIdPlaceholder(code, script)
 		if err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 		if v != nil {
 			return v
@@ -44,15 +44,15 @@ func (m *remoteMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error
 	transformation.Content.Set(model.SharedCodeIdContentKey, sharedCodeLink.Config.Id.String())
 	transformation.Content.Set(model.SharedCodeRowsIdContentKey, sharedCodeLink.Rows.IdsSlice())
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func (m *remoteMapper) linkToIdPlaceholder(code *model.Code, script model.Script) (model.Script, error) {
 	if link, ok := script.(model.LinkScript); ok {
 		row, ok := m.state.GetOrNil(link.Target).(*model.ConfigRow)
-		script := model.StaticScript{Value: m.id.format(row.Id)}
+		script := model.StaticScript{Value: m.id.format(row.ConfigRowId)}
 		if !ok {
-			return script, utils.PrefixError(
+			return script, errors.PrefixError(
 				fmt.Sprintf(`missing shared code "%s"`, link.Target.String()),
 				fmt.Errorf(`referenced from %s`, code.String()),
 			)

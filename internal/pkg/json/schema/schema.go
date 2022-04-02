@@ -12,12 +12,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func ValidateSchemas(objects model.Objects, components *model.ComponentsMap, namingRegistry *naming.Registry) error {
-	errs := utils.NewMultiError()
+	errs := errors.NewMultiError()
 
 	for _, config := range objects.ConfigsWithRows() {
 		component, err := components.Get(config.ComponentKey())
@@ -88,7 +87,7 @@ func validateContent(schema []byte, content *orderedmap.OrderedMap) error {
 
 	// Process schema errors
 	validationErrors := &jsonschema.ValidationError{}
-	errs := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	if errors.As(err, &validationErrors) {
 		processErrors(validationErrors.Causes, errs)
 	} else if err != nil {
@@ -106,7 +105,7 @@ func validateDocument(schemaStr []byte, document *orderedmap.OrderedMap) error {
 	return schema.Validate(document.ToMap())
 }
 
-func processErrors(errs []*jsonschema.ValidationError, output *utils.MultiError) {
+func processErrors(errs []*jsonschema.ValidationError, output *errors.MultiError) {
 	// Sort errors
 	sort.Slice(errs, func(i, j int) bool {
 		return errs[i].InstanceLocation < errs[j].InstanceLocation

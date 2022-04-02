@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
@@ -147,7 +148,7 @@ func (l *loader) ReadJsonNetFileTo(def *filesystem.FileDef, target interface{}) 
 
 func formatFileError(def *filesystem.FileDef, err error) error {
 	fileDesc := strings.TrimSpace(def.Description() + " file")
-	return utils.PrefixError(fmt.Sprintf("%s \"%s\" is invalid", fileDesc, def.Path()), err)
+	return errors.PrefixError(fmt.Sprintf("%s \"%s\" is invalid", fileDesc, def.Path()), err)
 }
 
 func (l *loader) loadFile(def *filesystem.FileDef, fileType filesystem.FileType) (filesystem.File, error) {

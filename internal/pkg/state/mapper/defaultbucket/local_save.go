@@ -64,16 +64,16 @@ func (m *defaultBucketMapper) getDefaultBucketSourceConfig(config configOrRow, t
 
 	// Get source config
 	sourceConfigKey := model.ConfigKey{
-		BranchId:    config.BranchKey().Id,
+		BranchId:    config.BranchKey().BranchId,
 		ComponentId: componentId,
-		Id:          configId,
+		ConfigId:    configId,
 	}
 	sourceConfig, found := m.state.Get(sourceConfigKey)
 	if !found {
-		errors := utils.NewMultiError()
-		errors.Append(fmt.Errorf(`%s not found`, sourceConfigKey.String()))
-		errors.Append(fmt.Errorf(`  - referenced from %s`, config.String()))
-		errors.Append(fmt.Errorf(`  - input mapping "%s"`, tableId))
+		errs := errors.NewMultiError()
+		errs.Append(fmt.Errorf(`%s not found`, sourceConfigKey.String()))
+		errs.Append(fmt.Errorf(`  - referenced from %s`, config.String()))
+		errs.Append(fmt.Errorf(`  - input mapping "%s"`, tableId))
 		return nil, false, errors
 	}
 	return sourceConfig, true, nil

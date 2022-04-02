@@ -19,7 +19,7 @@ import (
 	enTranslation "github.com/go-playground/validator/v10/translations/en"
 	"github.com/umisama/go-regexpcache"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/errors"
 )
 
 const (
@@ -198,8 +198,8 @@ func (v *wrapper) registerDefaultErrorMessages() {
 }
 
 // formatError creates human-readable error message.
-func (v *wrapper) formatError(err validator.ValidationErrors, namespace string, value reflect.Value) *utils.MultiError {
-	errors := utils.NewMultiError()
+func (v *wrapper) formatError(err validator.ValidationErrors, namespace string, value reflect.Value) *errors.MultiError {
+	errs := errors.NewMultiError()
 	for _, e := range err {
 		// Translate error
 		errString := strings.TrimSpace(e.Translate(v.translator))
@@ -209,10 +209,10 @@ func (v *wrapper) formatError(err validator.ValidationErrors, namespace string, 
 		}
 
 		// Prefix error with namespace
-		errors.Append(fmt.Errorf("%s", prefixErrorWithNamespace(e, errString, namespace, value)))
+		errs.Append(fmt.Errorf("%s", prefixErrorWithNamespace(e, errString, namespace, value)))
 	}
 
-	return errors
+	return errs
 }
 
 // processNamespace removes struct name (first part), field name (last part) and anonymous fields.

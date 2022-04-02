@@ -46,16 +46,16 @@ func (u *uow) Invoke() (state.FinalizationFn, error) {
 	u.invoked = true
 
 	// Start and wait for all workers
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	u.workers.SortKeys(sort.Strings)
 	for _, level := range u.workers.Keys() {
 		worker, _ := u.workers.Get(level)
 		if err := worker.(*workers.Workers).StartAndWait(); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
 
-	return u.finalizeFn(), errors.ErrorOrNil()
+	return u.finalizeFn(), errs.ErrorOrNil()
 }
 
 func (u *uow) LoadAll(loadCtx state.LoadContext) {
@@ -73,32 +73,32 @@ func (u *uow) Delete(deleteCtx state.DeleteContext) {
 // finalizeFn callback - responds to the changes that have been made.
 func (u *uow) finalizeFn() state.FinalizationFn {
 	return func(changes *model.Changes) error {
-		errors := utils.NewMultiError()
+		errs := errors.NewMultiError()
 
 		// AfterLocalOperation event
 		if !changes.Empty() {
 			if err := u.mapper.AfterLocalOperation(changes); err != nil {
 				spew.Dump(err)
-				errors.Append(err)
+				errs.Append(err)
 			}
 		}
 
 		// Delete empty directories, e.g., no extractor of a type left -> dir is empty
 		if err := deleteEmptyDirectories(u.objectsRoot, u.knownPaths.TrackedPaths()); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 
 		// Update tracked paths
 		if err := u.reloadKnownPaths(); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 
 		// Save manifest if has been changed
 		if _, err := saveManifest.Run(u.manifest, u.deps); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 
-		return errors.ErrorOrNil()
+		return errs.ErrorOrNil()
 	}
 }
 

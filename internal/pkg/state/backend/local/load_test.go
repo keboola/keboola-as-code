@@ -48,7 +48,7 @@ func TestUnitOfWork_Load_Mapper(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Internal state has been mapped
-	config := s.MustGet(model.ConfigKey{BranchId: 111, ComponentId: `ex-generic-v2`, Id: `456`}).(*model.Config)
+	config := s.MustGet(model.ConfigKey{BranchId: 111, ComponentId: `ex-generic-v2`, ConfigId: `456`}).(*model.Config)
 	assert.Equal(t, `{"parameters":"overwritten","new":"value"}`, json.MustEncodeString(config.Content, false))
 
 	// AfterLocalOperation event has been called
@@ -369,13 +369,13 @@ func loadState(t *testing.T, manifestInst *manifest.Manifest, fs filesystem.Fs, 
 func complexExpectedBranches() []*model.Branch {
 	return []*model.Branch{
 		{
-			BranchKey:   model.BranchKey{Id: 123},
+			BranchKey:   model.BranchKey{BranchId: 123},
 			Name:        "Branch",
 			Description: "My branch",
 			IsDefault:   false,
 		},
 		{
-			BranchKey:   model.BranchKey{Id: 111},
+			BranchKey:   model.BranchKey{BranchId: 111},
 			Name:        "Main",
 			Description: "Main branch",
 			IsDefault:   true,
@@ -389,7 +389,7 @@ func complexExpectedConfigs() []*model.Config {
 			ConfigKey: model.ConfigKey{
 				BranchId:    123,
 				ComponentId: "keboola.ex-db-mysql",
-				Id:          "896",
+				ConfigId:    "896",
 			},
 			Name:              "tables",
 			Description:       "tables config",
@@ -416,7 +416,7 @@ func complexExpectedConfigs() []*model.Config {
 			ConfigKey: model.ConfigKey{
 				BranchId:    111,
 				ComponentId: "ex-generic-v2",
-				Id:          "456",
+				ConfigId:    "456",
 			},
 			Name:              "todos",
 			Description:       "todos config",
@@ -443,7 +443,7 @@ func complexExpectedConfigs() []*model.Config {
 			ConfigKey: model.ConfigKey{
 				BranchId:    123,
 				ComponentId: "ex-generic-v2",
-				Id:          "456",
+				ConfigId:    "456",
 			},
 			Name:              "todos",
 			Description:       "todos config",
@@ -476,7 +476,7 @@ func complexExpectedConfigRows() []*model.ConfigRow {
 				BranchId:    123,
 				ComponentId: "keboola.ex-db-mysql",
 				ConfigId:    "896",
-				Id:          "56",
+				ConfigRowId: "56",
 			},
 			Name:              "disabled",
 			Description:       "",
@@ -496,7 +496,7 @@ func complexExpectedConfigRows() []*model.ConfigRow {
 				BranchId:    123,
 				ComponentId: "keboola.ex-db-mysql",
 				ConfigId:    "896",
-				Id:          "34",
+				ConfigRowId: "34",
 			},
 			Name:              "test_view",
 			Description:       "row description",
@@ -516,7 +516,7 @@ func complexExpectedConfigRows() []*model.ConfigRow {
 				BranchId:    123,
 				ComponentId: "keboola.ex-db-mysql",
 				ConfigId:    "896",
-				Id:          "12",
+				ConfigRowId: "12",
 			},
 			Name:              "users",
 			Description:       "",

@@ -6,9 +6,9 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper/template/replacevalues"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper/template/replacevalues"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -16,8 +16,8 @@ func TestReplaceKeysMapper_OnRemoteChange(t *testing.T) {
 	t.Parallel()
 
 	// Remote objects
-	oldBranchKey := model.BranchKey{Id: 123}
-	oldConfigKey := model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", Id: "456"}
+	oldBranchKey := model.BranchKey{BranchId: 123}
+	oldConfigKey := model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", ConfigId: "456"}
 	config := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: oldConfigKey,
@@ -28,7 +28,7 @@ func TestReplaceKeysMapper_OnRemoteChange(t *testing.T) {
 			Content:   orderedmap.FromPairs([]orderedmap.Pair{{Key: "foo", Value: "bar"}}),
 		},
 	}
-	oldRowKey := model.ConfigRowKey{BranchId: 123, ComponentId: "foo.bar", ConfigId: "456", Id: "789"}
+	oldRowKey := model.ConfigRowKey{BranchId: 123, ComponentId: "foo.bar", ConfigId: "456", ConfigRowId: "789"}
 	row := &model.ConfigRowState{
 		ConfigRowManifest: &model.ConfigRowManifest{
 			ConfigRowKey: oldRowKey,
@@ -44,16 +44,16 @@ func TestReplaceKeysMapper_OnRemoteChange(t *testing.T) {
 					Key: "link to config", Value: model.ConfigId("456"),
 				},
 				{
-					Key: "link to row", Value: model.RowId("789"),
+					Key: "link to row", Value: model.ConfigRowId("789"),
 				},
 			}),
 		},
 	}
 
 	// Keys to replace
-	newBranchKey := model.BranchKey{Id: 0}
-	newConfigKey := model.ConfigKey{BranchId: 0, ComponentId: "foo.bar", Id: "my-config"}
-	newRowKey := model.ConfigRowKey{BranchId: 0, ComponentId: "foo.bar", ConfigId: "my-config", Id: "my-row"}
+	newBranchKey := model.BranchKey{BranchId: 0}
+	newConfigKey := model.ConfigKey{BranchId: 0, ComponentId: "foo.bar", ConfigId: "my-config"}
+	newRowKey := model.ConfigRowKey{BranchId: 0, ComponentId: "foo.bar", ConfigId: "my-config", ConfigRowId: "my-row"}
 	replacements := replacevalues.NewValues()
 	replacements.AddKey(oldBranchKey, newBranchKey)
 	replacements.AddKey(oldConfigKey, newConfigKey)
@@ -94,7 +94,7 @@ func TestReplaceKeysMapper_OnRemoteChange(t *testing.T) {
 						Key: "link to config", Value: model.ConfigId("my-config"),
 					},
 					{
-						Key: "link to row", Value: model.RowId("my-row"),
+						Key: "link to row", Value: model.ConfigRowId("my-row"),
 					},
 				}),
 			},

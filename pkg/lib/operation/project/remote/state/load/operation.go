@@ -10,7 +10,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 type InvalidRemoteStateError struct {
@@ -53,7 +52,7 @@ func Run(o Options, d dependencies) (*remote.State, error) {
 	uow := s.NewUnitOfWork(d.Ctx(), filter, "")
 	uow.LoadAll()
 	if err := uow.Invoke(); err != nil {
-		return nil, InvalidRemoteStateError{utils.PrefixError("project remote state is invalid", err)}
+		return nil, InvalidRemoteStateError{errors.PrefixError("project remote state is invalid", err)}
 	}
 
 	logger.Debugf("Project remote state has been successfully loaded.")

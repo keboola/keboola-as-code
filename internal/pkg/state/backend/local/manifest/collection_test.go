@@ -27,11 +27,11 @@ func TestCollection_Set(t *testing.T) {
 
 	assert.NoError(t, c.Set([]ObjectManifest{
 		&BranchManifest{
-			BranchKey: BranchKey{Id: 1},
+			BranchKey: BranchKey{BranchId: 1},
 			AbsPath:   NewAbsPath("", "branch-1"),
 		},
 		&BranchManifest{
-			BranchKey: BranchKey{Id: 2},
+			BranchKey: BranchKey{BranchId: 2},
 			AbsPath:   NewAbsPath("", "branch-2"),
 		},
 	}))
@@ -45,7 +45,7 @@ func TestCollection_Add(t *testing.T) {
 	assert.Len(t, c.All(), 6)
 
 	assert.NoError(t, c.Add(&ConfigRowManifest{
-		ConfigRowKey: ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: "678", Id: "1000"},
+		ConfigRowKey: ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: "678", ConfigRowId: "1000"},
 		AbsPath:      NewAbsPath("main/config-1", "row-1000"),
 	}))
 	assert.Len(t, c.All(), 7)
@@ -57,7 +57,7 @@ func TestCollection_Add_ResolveParentPath_1(t *testing.T) {
 	c := newTestCollection(t)
 	assert.Len(t, c.All(), 6)
 
-	key := BranchKey{Id: 789}
+	key := BranchKey{BranchId: 789}
 	assert.NoError(t, c.Add(&BranchManifest{
 		BranchKey: key,
 		AbsPath:   AbsPath{RelPath: "my-branch"},
@@ -78,7 +78,7 @@ func TestCollection_Add_ResolveParentPath_2(t *testing.T) {
 	c := newTestCollection(t)
 	assert.Len(t, c.All(), 6)
 
-	key := ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: "678", Id: "1000"}
+	key := ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: "678", ConfigRowId: "1000"}
 	assert.NoError(t, c.Add(&ConfigRowManifest{
 		ConfigRowKey: key,
 		AbsPath:      AbsPath{RelPath: "row-1000"},
@@ -100,7 +100,7 @@ func TestCollection_Add_AlreadyExists(t *testing.T) {
 	assert.Len(t, c.All(), 6)
 
 	assert.NoError(t, c.Add(&ConfigRowManifest{
-		ConfigRowKey: ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: "678", Id: "12"},
+		ConfigRowKey: ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: "678", ConfigRowId: "12"},
 		AbsPath:      NewAbsPath("main/config-1", "row-1"),
 	}))
 	assert.True(t, c.IsChanged())
@@ -112,7 +112,7 @@ func TestCollection_Add_ParentNotFound(t *testing.T) {
 	assert.Len(t, c.All(), 6)
 
 	err := c.Add(&ConfigRowManifest{
-		ConfigRowKey: ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: "999", Id: "1"},
+		ConfigRowKey: ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: "999", ConfigRowId: "1"},
 	})
 
 	expected := `
@@ -133,7 +133,7 @@ func TestCollection_Add_CyclicRelations_1(t *testing.T) {
 	err := c.Add(
 		// Cyclic relation 1 -> 2 -> 1
 		&ConfigManifest{
-			ConfigKey: ConfigKey{BranchId: 123, ComponentId: VariablesComponentId, Id: "1"},
+			ConfigKey: ConfigKey{BranchId: 123, ComponentId: VariablesComponentId, ConfigId: "1"},
 			Relations: Relations{&VariablesForRelation{
 				ComponentId: VariablesComponentId,
 				ConfigId:    "2",
@@ -141,7 +141,7 @@ func TestCollection_Add_CyclicRelations_1(t *testing.T) {
 			AbsPath: NewAbsPath("", "variables-1"),
 		},
 		&ConfigManifest{
-			ConfigKey: ConfigKey{BranchId: 123, ComponentId: VariablesComponentId, Id: "2"},
+			ConfigKey: ConfigKey{BranchId: 123, ComponentId: VariablesComponentId, ConfigId: "2"},
 			Relations: Relations{&VariablesForRelation{
 				ComponentId: VariablesComponentId,
 				ConfigId:    "1",
@@ -170,7 +170,7 @@ func TestCollection_Add_CyclicRelations_2(t *testing.T) {
 	err := c.Add(
 		// Cyclic relation 1 -> 2 -> 3 -> 1
 		&ConfigManifest{
-			ConfigKey: ConfigKey{BranchId: 123, ComponentId: VariablesComponentId, Id: "1"},
+			ConfigKey: ConfigKey{BranchId: 123, ComponentId: VariablesComponentId, ConfigId: "1"},
 			Relations: Relations{&VariablesForRelation{
 				ComponentId: VariablesComponentId,
 				ConfigId:    "2",
@@ -178,7 +178,7 @@ func TestCollection_Add_CyclicRelations_2(t *testing.T) {
 			AbsPath: NewAbsPath("", "variables-1"),
 		},
 		&ConfigManifest{
-			ConfigKey: ConfigKey{BranchId: 123, ComponentId: VariablesComponentId, Id: "2"},
+			ConfigKey: ConfigKey{BranchId: 123, ComponentId: VariablesComponentId, ConfigId: "2"},
 			Relations: Relations{&VariablesForRelation{
 				ComponentId: VariablesComponentId,
 				ConfigId:    "3",
@@ -186,7 +186,7 @@ func TestCollection_Add_CyclicRelations_2(t *testing.T) {
 			AbsPath: NewAbsPath("", "variables-2"),
 		},
 		&ConfigManifest{
-			ConfigKey: ConfigKey{BranchId: 123, ComponentId: VariablesComponentId, Id: "3"},
+			ConfigKey: ConfigKey{BranchId: 123, ComponentId: VariablesComponentId, ConfigId: "3"},
 			Relations: Relations{&VariablesForRelation{
 				ComponentId: VariablesComponentId,
 				ConfigId:    "1",
@@ -213,7 +213,7 @@ func TestCollection_Remove(t *testing.T) {
 	c := newTestCollection(t)
 	assert.Len(t, c.All(), 6)
 
-	c.Remove(ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: "678", Id: "34"})
+	c.Remove(ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: "678", ConfigRowId: "34"})
 	assert.Len(t, c.All(), 5)
 	assert.True(t, c.IsChanged())
 }
@@ -223,7 +223,7 @@ func TestCollection_Remove_Cascade(t *testing.T) {
 	c := newTestCollection(t)
 	assert.Len(t, c.All(), 6)
 
-	c.Remove(BranchKey{Id: 123})
+	c.Remove(BranchKey{BranchId: 123})
 	assert.Len(t, c.All(), 1)
 	assert.True(t, c.IsChanged())
 }
@@ -231,7 +231,7 @@ func TestCollection_Remove_Cascade(t *testing.T) {
 func TestCollection_Get(t *testing.T) {
 	t.Parallel()
 	c := newTestCollection(t)
-	state, found := c.Get(BranchKey{Id: 567})
+	state, found := c.Get(BranchKey{BranchId: 567})
 	assert.NotNil(t, state)
 	assert.True(t, found)
 }
@@ -239,7 +239,7 @@ func TestCollection_Get(t *testing.T) {
 func TestCollection_Get_NotFound(t *testing.T) {
 	t.Parallel()
 	c := newTestCollection(t)
-	state, found := c.Get(BranchKey{Id: 111})
+	state, found := c.Get(BranchKey{BranchId: 111})
 	assert.Nil(t, state)
 	assert.False(t, found)
 	assert.False(t, c.IsChanged())
@@ -259,37 +259,37 @@ func newTestCollection(t *testing.T) *Collection {
 
 	// Branch 1
 	assert.NoError(t, collection.Add(&BranchManifest{
-		BranchKey: BranchKey{Id: 123},
+		BranchKey: BranchKey{BranchId: 123},
 		AbsPath:   NewAbsPath("", "main"),
 	}))
 
 	// Branch 2
 	assert.NoError(t, collection.Add(&BranchManifest{
-		BranchKey: BranchKey{Id: 567},
+		BranchKey: BranchKey{BranchId: 567},
 		AbsPath:   NewAbsPath("", "foo-bar"),
 	}))
 
 	// Config 1
 	assert.NoError(t, collection.Add(&ConfigManifest{
-		ConfigKey: ConfigKey{BranchId: 123, ComponentId: "keboola.foo", Id: "345"},
+		ConfigKey: ConfigKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: "345"},
 		AbsPath:   NewAbsPath("main", "config-1"),
 	}))
 
 	// Config 2
 	assert.NoError(t, collection.Add(&ConfigManifest{
-		ConfigKey: ConfigKey{BranchId: 123, ComponentId: "keboola.foo", Id: "678"},
+		ConfigKey: ConfigKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: "678"},
 		AbsPath:   NewAbsPath("main", "config-2"),
 	}))
 
 	// Config Row 1
 	assert.NoError(t, collection.Add(&ConfigRowManifest{
-		ConfigRowKey: ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: "678", Id: "12"},
+		ConfigRowKey: ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: "678", ConfigRowId: "12"},
 		AbsPath:      NewAbsPath("main/config-1", "row-1"),
 	}))
 
 	// Config Row 2
 	assert.NoError(t, collection.Add(&ConfigRowManifest{
-		ConfigRowKey: ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: "678", Id: "34"},
+		ConfigRowKey: ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: "678", ConfigRowId: "34"},
 		AbsPath:      NewAbsPath("main/config-1", "row-2"),
 	}))
 

@@ -3,7 +3,7 @@ package model
 import (
 	"fmt"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/errors"
 )
 
 // VariablesForRelation - variables for target configuration.
@@ -27,7 +27,7 @@ type VariablesValuesForRelation struct {
 
 // VariablesValuesFromRelation - variables default values from source config row.
 type VariablesValuesFromRelation struct {
-	VariablesValuesId RowId `json:"variablesValuesId" validate:"required" `
+	VariablesValuesId ConfigRowId `json:"variablesValuesId" validate:"required" `
 }
 
 func (t *VariablesForRelation) Type() RelationType {
@@ -48,9 +48,9 @@ func (t *VariablesForRelation) ParentKey(relationDefinedOn Key) (Key, error) {
 		return nil, err
 	}
 	return ConfigKey{
-		BranchId:    variables.BranchId,
+		BranchKey:   BranchKey{BranchId: variables.BranchId},
 		ComponentId: t.ComponentId,
-		Id:          t.ConfigId,
+		ConfigId:    t.ConfigId,
 	}, nil
 }
 
@@ -68,12 +68,12 @@ func (t *VariablesForRelation) NewOtherSideRelation(relationDefinedOn Object, _ 
 		return nil, nil, err
 	}
 	otherSide := ConfigKey{
-		BranchId:    variables.BranchId,
+		BranchKey:   BranchKey{BranchId: variables.BranchId},
 		ComponentId: t.ComponentId,
-		Id:          t.ConfigId,
+		ConfigId:    t.ConfigId,
 	}
 	otherSideRelation := &VariablesFromRelation{
-		VariablesId: variables.Id,
+		VariablesId: variables.ConfigId,
 	}
 	return otherSide, otherSideRelation, nil
 }
@@ -119,13 +119,13 @@ func (t *VariablesFromRelation) NewOtherSideRelation(relationDefinedOn Object, _
 		return nil, nil, err
 	}
 	otherSide := ConfigKey{
-		BranchId:    config.BranchId,
+		BranchKey:   BranchKey{BranchId: config.BranchId},
 		ComponentId: VariablesComponentId,
-		Id:          t.VariablesId,
+		ConfigId:    t.VariablesId,
 	}
 	otherSideRelation := &VariablesForRelation{
 		ComponentId: config.ComponentId,
-		ConfigId:    config.Id,
+		ConfigId:    config.ConfigId,
 	}
 	return otherSide, otherSideRelation, nil
 }
@@ -178,23 +178,23 @@ func (t *VariablesValuesForRelation) NewOtherSideRelation(relationDefinedOn Obje
 	variablesConfig := variablesConfigRaw.(*Config)
 	variablesForRaw, err := variablesConfig.Relations.GetOneByType(VariablesForRelType)
 	if err != nil {
-		return nil, nil, utils.PrefixError(fmt.Sprintf(`invalid %s`, variablesConfig.String()), err)
+		return nil, nil, errors.PrefixError(fmt.Sprintf(`invalid %s`, variablesConfig.String()), err)
 	}
 	if variablesForRaw == nil {
-		errors := utils.NewMultiError()
-		errors.Append(fmt.Errorf(`missing relation "%s" in %s`, VariablesForRelType, variablesConfig.String()))
-		errors.Append(fmt.Errorf(`  - referenced from %s`, relationDefinedOn.String()))
-		errors.Append(fmt.Errorf(`  - by relation "%s"`, t.Type()))
-		return nil, nil, errors
+		errs := errors.NewMultiError()
+		errs.Append(fmt.Errorf(`missing relation "%s" in %s`, VariablesForRelType, variablesConfig.String()))
+		errs.Append(fmt.Errorf(`  - referenced from %s`, relationDefinedOn.String()))
+		errs.Append(fmt.Errorf(`  - by relation "%s"`, t.Type()))
+		return nil, nil, errs
 	}
 	variablesForRelation := variablesForRaw.(*VariablesForRelation)
 	otherSide := ConfigKey{
-		BranchId:    variablesConfig.BranchId,
+		BranchKey:   BranchKey{BranchId: variablesConfig.BranchId},
 		ComponentId: variablesForRelation.ComponentId,
-		Id:          variablesForRelation.ConfigId,
+		ConfigId:    variablesForRelation.ConfigId,
 	}
 	otherSideRelation := &VariablesValuesFromRelation{
-		VariablesValuesId: valuesRowKey.Id,
+		VariablesValuesId: valuesRowKey.ConfigRowId,
 	}
 	return otherSide, otherSideRelation, nil
 }
@@ -242,20 +242,22 @@ func (t *VariablesValuesFromRelation) NewOtherSideRelation(relationDefinedOn Obj
 	config := relationDefinedOn.(*Config)
 	variablesFromRel, err := config.Relations.GetOneByType(VariablesFromRelType)
 	if err != nil {
-		return nil, nil, utils.PrefixError(fmt.Sprintf(`invalid %s`, config.String()), err)
+		return nil, nil, errors.PrefixError(fmt.Sprintf(`invalid %s`, config.String()), err)
 	} else if variablesFromRel == nil {
-		errors := utils.NewMultiError()
-		errors.Append(fmt.Errorf(`missing relation "%s" in %s`, VariablesFromRelType, config.String()))
-		errors.Append(fmt.Errorf(`  - referenced from %s`, relationDefinedOn.String()))
-		errors.Append(fmt.Errorf(`  - by relation "%s"`, t.Type()))
-		return nil, nil, errors
+		errs := errors.NewMultiError()
+		errs.Append(fmt.Errorf(`missing relation "%s" in %s`, VariablesFromRelType, config.String()))
+		errs.Append(fmt.Errorf(`  - referenced from %s`, relationDefinedOn.String()))
+		errs.Append(fmt.Errorf(`  - by relation "%s"`, t.Type()))
+		return nil, nil, errs
 	}
 
 	otherSideKey := ConfigRowKey{
-		BranchId:    config.BranchId,
-		ComponentId: VariablesComponentId,
-		ConfigId:    variablesFromRel.(*VariablesFromRelation).VariablesId,
-		Id:          t.VariablesValuesId,
+		ConfigKey: ConfigKey{
+			BranchKey:   BranchKey{BranchId: config.BranchId},
+			ComponentId: VariablesComponentId,
+			ConfigId:    variablesFromRel.(*VariablesFromRelation).VariablesId,
+		},
+		ConfigRowId: t.VariablesValuesId,
 	}
 	otherSideRelation := &VariablesValuesForRelation{}
 	return otherSideKey, otherSideRelation, nil

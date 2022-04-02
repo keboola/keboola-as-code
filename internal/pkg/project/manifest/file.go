@@ -85,7 +85,7 @@ func saveFile(fs filesystem.Fs, f *file) error {
 	// Write JSON file
 	content, err := json.EncodeString(f, true)
 	if err != nil {
-		return utils.PrefixError(`cannot encode manifest`, err)
+		return errors.PrefixError(`cannot encode manifest`, err)
 	}
 	file := filesystem.NewRawFile(Path(), content)
 	if err := fs.WriteFile(file); err != nil {
@@ -96,7 +96,7 @@ func saveFile(fs filesystem.Fs, f *file) error {
 
 func (c *file) validate() error {
 	if err := validator.Validate(context.Background(), c); err != nil {
-		return utils.PrefixError("manifest is not valid", err)
+		return errors.PrefixError("manifest is not valid", err)
 	}
 	return nil
 }
@@ -111,7 +111,7 @@ func (c *file) records() []model.ObjectManifest {
 		for _, row := range config.Rows {
 			row.BranchId = config.BranchId
 			row.ComponentId = config.ComponentId
-			row.ConfigId = config.Id
+			row.ConfigId = config.ConfigId
 			out = append(out, row)
 		}
 	}

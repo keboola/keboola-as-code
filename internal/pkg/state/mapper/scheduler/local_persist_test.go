@@ -16,12 +16,12 @@ func TestSchedulerLocalMapper_MapBeforePersist(t *testing.T) {
 	configKey := model.ConfigKey{
 		BranchId:    123,
 		ComponentId: model.SchedulerComponentId,
-		Id:          `678`,
+		ConfigId:    `678`,
 	}
 	parentKey := model.ConfigKey{
 		BranchId:    123,
 		ComponentId: `foo.bar`,
-		Id:          `345`,
+		ConfigId:    `345`,
 	}
 	recipe := &model.PersistRecipe{
 		Key:       configKey,

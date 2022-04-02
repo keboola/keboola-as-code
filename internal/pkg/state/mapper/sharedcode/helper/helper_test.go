@@ -7,8 +7,8 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
-	. "github.com/keboola/keboola-as-code/internal/pkg/state/mapper/sharedcode/helper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	. "github.com/keboola/keboola-as-code/internal/pkg/state/mapper/sharedcode/helper"
 )
 
 func TestGetSharedCodeByPath(t *testing.T) {
@@ -56,7 +56,7 @@ func TestGetSharedCodeRowByPath(t *testing.T) {
 		BranchId:    123,
 		ComponentId: model.SharedCodeComponentId,
 		ConfigId:    `456`,
-		Id:          `1234`,
+		ConfigRowId: `1234`,
 	}, result.Key())
 
 	// Not found
@@ -79,13 +79,13 @@ func TestGetSharedCodeVariablesId(t *testing.T) {
 		BranchId:    123,
 		ComponentId: model.SharedCodeComponentId,
 		ConfigId:    `456`,
-		Id:          `1234`,
+		ConfigRowId: `1234`,
 	}).(*model.ConfigRowState)
 	sharedCodeRow2 := mockedState.MustGet(model.ConfigRowKey{
 		BranchId:    123,
 		ComponentId: model.SharedCodeComponentId,
 		ConfigId:    `456`,
-		Id:          `5678`,
+		ConfigRowId: `5678`,
 	}).(*model.ConfigRowState)
 
 	sharedCodeRow1.Local.Content.Set(model.SharedCodeVariablesIdContentKey, `789`)

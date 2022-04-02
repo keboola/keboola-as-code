@@ -1,9 +1,9 @@
 package printDiff
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/diff"
 	createDiff "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/diff/create"
 )
 

@@ -83,7 +83,7 @@ func (c *loadContext) loadObject(objectManifest model.ObjectManifest) error {
 
 	// Validate, only if all files has been loaded without error, it prevents duplicate errors
 	if err := validator.Validate(c.ctx, object); err != nil {
-		err = utils.PrefixError(fmt.Sprintf(`%s is invalid`, objectManifest.String()), err)
+		err = errors.PrefixError(fmt.Sprintf(`%s is invalid`, objectManifest.String()), err)
 		return c.invalidObjectError(object, err)
 	}
 

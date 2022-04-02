@@ -11,7 +11,7 @@ import (
 
 // AfterLocalOperation - resolve shared codes paths, and replace them by IDs on local load.
 func (m *localMapper) AfterLocalOperation(changes *model.Changes) error {
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 
 	// Find loaded transformations
 	for _, object := range changes.Loaded() {
@@ -20,12 +20,12 @@ func (m *localMapper) AfterLocalOperation(changes *model.Changes) error {
 			return nil
 		} else {
 			if err := m.onLocalLoad(transformation); err != nil {
-				errors.Append(err)
+				errs.Append(err)
 			}
 		}
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 // onLocalLoad replaces shared code path by id in transformation config and blocks.
@@ -41,7 +41,7 @@ func (m *localMapper) onLocalLoad(transformation *model.Config) error {
 	if !found {
 		return nil
 	} else if !ok {
-		return utils.PrefixError(
+		return errors.PrefixError(
 			fmt.Sprintf(`invalid transformation %s`, transformation.String()),
 			fmt.Errorf(`key "%s" must be string, found %T`, model.SharedCodePathContentKey, sharedCodePathRaw),
 		)
@@ -50,12 +50,12 @@ func (m *localMapper) onLocalLoad(transformation *model.Config) error {
 	// Get shared code
 	sharedCode, err := m.getSharedCodeByPath(transformation.BranchKey(), sharedCodePath)
 	if err != nil {
-		return utils.PrefixError(
+		return errors.PrefixError(
 			err.Error(),
 			fmt.Errorf(`referenced from %s`, transformation.String()),
 		)
 	} else if sharedCode == nil {
-		return utils.PrefixError(
+		return errors.PrefixError(
 			fmt.Sprintf(`missing shared code %s`, sharedCode.String()),
 			fmt.Errorf(`referenced from %s`, transformation.String()),
 		)
@@ -76,17 +76,17 @@ func (m *localMapper) onLocalLoad(transformation *model.Config) error {
 	transformation.Transformation.LinkToSharedCode = linkToSharedCode
 
 	// Replace paths -> IDs in code scripts
-	errors := utils.NewMultiError()
-	foundSharedCodeRows := make(map[model.RowId]model.ConfigRowKey)
+	errs := errors.NewMultiError()
+	foundSharedCodeRows := make(map[model.ConfigRowId]model.ConfigRowKey)
 	transformation.Transformation.MapScripts(func(block *model.Block, code *model.Code, script model.Script) model.Script {
 		if sharedCodeRow, v, err := m.parsePathPlaceholder(code, script, sharedCode); err != nil {
 			codePath, err := m.state.GetPath(code)
 			if err != nil {
 				panic(err)
 			}
-			errors.AppendWithPrefix(err.Error(), fmt.Errorf(`referenced from "%s"`, codePath))
+			errs.AppendWithPrefix(err.Error(), fmt.Errorf(`referenced from "%s"`, codePath))
 		} else if v != nil {
-			foundSharedCodeRows[sharedCodeRow.Id] = sharedCodeRow.ConfigRowKey
+			foundSharedCodeRows[sharedCodeRow.ConfigRowId] = sharedCodeRow.ConfigRowKey
 			return v
 		}
 		return script
@@ -99,7 +99,7 @@ func (m *localMapper) onLocalLoad(transformation *model.Config) error {
 	sort.SliceStable(linkToSharedCode.Rows, func(i, j int) bool {
 		return linkToSharedCode.Rows[i].String() < linkToSharedCode.Rows[j].String()
 	})
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 // parsePathPlaceholder in transformation script.

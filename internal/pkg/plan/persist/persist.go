@@ -7,24 +7,23 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // NewPlan creates a plan to persist new/deleted objects from local filesystem.
 func NewPlan(projectState *state.State) (*Plan, error) {
 	builder := &persistPlanBuilder{
-		Plan:   &Plan{},
-		State:  projectState,
-		errors: utils.NewMultiError(),
+		Plan:  &Plan{},
+		State: projectState,
+		errs:  errors.NewMultiError(),
 	}
 	builder.build()
-	return builder.Plan, builder.errors.ErrorOrNil()
+	return builder.Plan, builder.errs.ErrorOrNil()
 }
 
 type persistPlanBuilder struct {
 	*Plan
 	*state.State
-	errors *utils.MultiError
+	errors *errors.MultiError
 }
 
 func (b *persistPlanBuilder) build() {
@@ -71,7 +70,7 @@ func (b *persistPlanBuilder) tryAdd(fullPath string, parent model.RecordPath) bo
 	}
 	objectPath, err := filesystem.Rel(parentPath, fullPath)
 	if err != nil {
-		b.errors.Append(err)
+		b.errs.Append(err)
 		return false
 	}
 
@@ -101,7 +100,7 @@ func (b *persistPlanBuilder) tryAdd(fullPath string, parent model.RecordPath) bo
 				parent.OnPersist = append(parent.OnPersist, func(parentKey model.Key) {
 					parentConfigKey := parentKey.(model.ConfigKey)
 					key := action.Key.(model.ConfigRowKey)
-					key.ConfigId = parentConfigKey.Id
+					key.ConfigId = parentConfigKey.ConfigId
 					action.ParentKey = parentConfigKey
 					action.Key = key
 				})
@@ -124,7 +123,7 @@ func (b *persistPlanBuilder) tryAddConfig(path model.AbsPath, parentKey model.Ke
 	// Is config path matching naming template?
 	componentId, err := b.PathMatcher().MatchConfigPath(parentKey, path)
 	if err != nil {
-		b.errors.Append(err)
+		b.errs.Append(err)
 		return nil
 	} else if componentId == "" {
 		return nil
@@ -134,7 +133,7 @@ func (b *persistPlanBuilder) tryAddConfig(path model.AbsPath, parentKey model.Ke
 	var configKey model.ConfigKey
 	switch k := parentKey.(type) {
 	case model.BranchKey:
-		configKey = model.ConfigKey{BranchId: k.Id, ComponentId: componentId}
+		configKey = model.ConfigKey{BranchId: k.BranchId, ComponentId: componentId}
 	case model.ConfigKey:
 		configKey = model.ConfigKey{BranchId: k.BranchId, ComponentId: componentId}
 	case model.ConfigRowKey:
@@ -153,7 +152,7 @@ func (b *persistPlanBuilder) tryAddConfig(path model.AbsPath, parentKey model.Ke
 func (b *persistPlanBuilder) tryAddConfigRow(path model.AbsPath, parentKey model.ConfigKey) *newObjectAction {
 	component, err := b.State.Components().Get(parentKey.ComponentKey())
 	if err != nil {
-		b.errors.Append(err)
+		b.errs.Append(err)
 		return nil
 	}
 
@@ -162,7 +161,7 @@ func (b *persistPlanBuilder) tryAddConfigRow(path model.AbsPath, parentKey model
 	}
 
 	// Create action
-	rowKey := model.ConfigRowKey{BranchId: parentKey.BranchId, ComponentId: parentKey.ComponentId, ConfigId: parentKey.Id}
+	rowKey := model.ConfigRowKey{BranchId: parentKey.BranchId, ComponentId: parentKey.ComponentId, ConfigId: parentKey.ConfigId}
 	action := &newObjectAction{AbsPath: path, Key: rowKey, ParentKey: parentKey}
 	b.addAction(action)
 	return action

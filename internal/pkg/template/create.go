@@ -85,14 +85,14 @@ func replacementsForCreate(sourceBranch model.BranchKey, configs []ConfigDef) *r
 	replacements := replacevalues.NewValues()
 
 	// Replace BranchId, in template all objects have BranchId = 0
-	replacements.AddKey(sourceBranch, model.BranchKey{Id: 0})
+	replacements.AddKey(sourceBranch, model.BranchKey{BranchId: 0})
 
 	// Configs
 	for _, config := range configs {
 		newConfigId := model.ConfigId(jsonnet.ConfigIdPlaceholder(config.TemplateId))
 		newConfigKey := config.Key
 		newConfigKey.BranchId = 0
-		newConfigKey.Id = newConfigId
+		newConfigKey.ConfigId = newConfigId
 		replacements.AddKey(config.Key, newConfigKey)
 
 		// Config inputs
@@ -102,11 +102,11 @@ func replacementsForCreate(sourceBranch model.BranchKey, configs []ConfigDef) *r
 
 		// Rows
 		for _, row := range config.Rows {
-			newRowId := model.RowId(jsonnet.ConfigRowIdPlaceholder(row.TemplateId))
+			newRowId := model.ConfigRowId(jsonnet.ConfigRowIdPlaceholder(row.TemplateId))
 			newRowKey := row.Key
 			newRowKey.BranchId = 0
 			newRowKey.ConfigId = newConfigId
-			newRowKey.Id = newRowId
+			newRowKey.ConfigRowId = newRowId
 			replacements.AddKey(row.Key, newRowKey)
 
 			// Row inputs

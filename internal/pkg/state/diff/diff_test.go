@@ -18,7 +18,7 @@ func TestDiff_OnlyInA(t *testing.T) {
 	t.Parallel()
 	A, B, d := newDiffer()
 
-	branch := &model.Branch{BranchKey: model.BranchKey{Id: 123}}
+	branch := &model.Branch{BranchKey: model.BranchKey{BranchId: 123}}
 	A.MustAdd(branch)
 
 	results, err := d.diff(A, B)
@@ -37,7 +37,7 @@ func TestDiff_OnlyInB(t *testing.T) {
 	t.Parallel()
 	A, B, d := newDiffer()
 
-	branch := &model.Branch{BranchKey: model.BranchKey{Id: 123}}
+	branch := &model.Branch{BranchKey: model.BranchKey{BranchId: 123}}
 	B.MustAdd(branch)
 
 	results, err := d.diff(A, B)
@@ -56,7 +56,7 @@ func TestDiff_Equal(t *testing.T) {
 	t.Parallel()
 	A, B, d := newDiffer()
 
-	branchKey := model.BranchKey{Id: 123}
+	branchKey := model.BranchKey{BranchId: 123}
 
 	aBranch := &model.Branch{
 		BranchKey:   branchKey,
@@ -89,7 +89,7 @@ func TestDiff_NotEqual(t *testing.T) {
 	t.Parallel()
 	A, B, d := newDiffer()
 
-	branchKey := model.BranchKey{Id: 123}
+	branchKey := model.BranchKey{BranchId: 123}
 
 	aBranch := &model.Branch{
 		BranchKey:   branchKey,
@@ -124,8 +124,8 @@ func TestDiff_EqualConfig(t *testing.T) {
 	t.Parallel()
 	A, B, d := newDiffer()
 
-	branchKey := model.BranchKey{Id: 123}
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: "foo-bar", Id: "456"}
+	branchKey := model.BranchKey{BranchId: 123}
+	configKey := model.ConfigKey{BranchId: 123, ComponentId: "foo-bar", ConfigId: "456"}
 
 	A.MustAdd(&model.Branch{BranchKey: branchKey})
 	A.MustAdd(&model.Config{
@@ -156,8 +156,8 @@ func TestDiff_NotEqualConfig(t *testing.T) {
 	t.Parallel()
 	A, B, d := newDiffer()
 
-	branchKey := model.BranchKey{Id: 123}
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: "foo-bar", Id: "456"}
+	branchKey := model.BranchKey{BranchId: 123}
+	configKey := model.ConfigKey{BranchId: 123, ComponentId: "foo-bar", ConfigId: "456"}
 
 	A.MustAdd(&model.Branch{BranchKey: branchKey})
 	A.MustAdd(&model.Config{
@@ -192,8 +192,8 @@ func TestDiff_NotEqualConfigConfiguration(t *testing.T) {
 	t.Parallel()
 	A, B, d := newDiffer()
 
-	branchKey := model.BranchKey{Id: 123}
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: "foo-bar", Id: "456"}
+	branchKey := model.BranchKey{BranchId: 123}
+	configKey := model.ConfigKey{BranchId: 123, ComponentId: "foo-bar", ConfigId: "456"}
 
 	A.MustAdd(&model.Branch{BranchKey: branchKey})
 	A.MustAdd(&model.Config{
@@ -301,8 +301,8 @@ func TestDiff_Transformation(t *testing.T) {
 	t.Parallel()
 	A, B, d := newDiffer()
 
-	branchKey := model.BranchKey{Id: 123}
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.python-transformation-v2`, Id: `456`}
+	branchKey := model.BranchKey{BranchId: 123}
+	configKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.python-transformation-v2`, ConfigId: `456`}
 	transformationKey := model.TransformationKey{Parent: configKey}
 	block1Key := model.BlockKey{Parent: transformationKey, Index: 0}
 	block2Key := model.BlockKey{Parent: transformationKey, Index: 1}
@@ -388,14 +388,14 @@ func TestDiff_SharedCode(t *testing.T) {
 	A, B, d := newDiffer()
 
 	targetComponentId := model.ComponentId("keboola.snowflake-transformation")
-	branchKey := model.BranchKey{Id: 123}
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: model.SharedCodeComponentId, Id: `456`}
-	configRowKey := model.ConfigRowKey{BranchId: 123, ComponentId: model.SharedCodeComponentId, ConfigId: `456`, Id: `789`}
+	branchKey := model.BranchKey{BranchId: 123}
+	configKey := model.ConfigKey{BranchId: 123, ComponentId: model.SharedCodeComponentId, ConfigId: `456`}
+	configRowKey := model.ConfigRowKey{BranchId: 123, ComponentId: model.SharedCodeComponentId, ConfigId: `456`, ConfigRowId: `789`}
 
 	A.MustAdd(&model.Branch{BranchKey: branchKey})
 	A.MustAdd(&model.SharedCodeRow{
-		SharedCodeConfigRowKey: model.SharedCodeConfigRowKey{Parent: configRowKey},
-		Target:                 targetComponentId,
+		SharedCodeKey: model.SharedCodeKey{Parent: configRowKey},
+		Target:        targetComponentId,
 		Scripts: model.Scripts{
 			model.StaticScript{Value: "SELECT 1;"},
 			model.StaticScript{Value: "SELECT 2;"},
@@ -406,7 +406,7 @@ func TestDiff_SharedCode(t *testing.T) {
 	B.MustAdd(&model.Branch{BranchKey: branchKey})
 	B.MustAdd(&model.Config{ConfigKey: configKey})
 	B.MustAdd(&model.SharedCodeRow{
-		SharedCodeConfigRowKey: model.SharedCodeConfigRowKey{Parent: configRowKey},
+		SharedCodeKey: model.SharedCodeKey{Parent: configRowKey},
 		Scripts: model.Scripts{
 			model.StaticScript{Value: "SELECT 4;"},
 			model.StaticScript{Value: "SELECT 3;"},
@@ -608,8 +608,8 @@ func TestDiff_Map(t *testing.T) {
 	t.Parallel()
 	A, B, d := newDiffer()
 
-	branchKey := model.BranchKey{Id: 123}
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: model.OrchestratorComponentId, Id: `456`}
+	branchKey := model.BranchKey{BranchId: 123}
+	configKey := model.ConfigKey{BranchId: 123, ComponentId: model.OrchestratorComponentId, ConfigId: `456`}
 
 	A.MustAdd(&model.Branch{BranchKey: branchKey})
 	A.MustAdd(&model.Config{

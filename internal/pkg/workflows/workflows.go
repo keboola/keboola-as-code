@@ -8,7 +8,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // nolint:gochecknoglobals
@@ -30,11 +29,11 @@ type generator struct {
 	fs      filesystem.Fs
 	options *Options
 	logger  log.Logger
-	errors  *utils.MultiError
+	errs    *errors.MultiError
 }
 
 func GenerateFiles(logger log.Logger, fs filesystem.Fs, options *Options) error {
-	g := &generator{fs: fs, options: options, logger: logger, errors: utils.NewMultiError()}
+	g := &generator{fs: fs, options: options, logger: logger, errs: errors.NewMultiError()}
 	return g.generateFiles()
 }
 
@@ -85,7 +84,7 @@ func (g *generator) generateFiles() error {
 
 func (g *generator) handleError(err error) {
 	if err != nil {
-		g.errors.Append(err)
+		g.errs.Append(err)
 	}
 }
 
@@ -118,6 +117,6 @@ func (g *generator) renderTemplate(templatePath, targetPath string) {
 	if err := g.fs.WriteFile(filesystem.NewRawFile(targetPath, buffer.String())); err == nil {
 		g.logger.Infof(`Created file "%s".`, targetPath)
 	} else {
-		g.errors.Append(err)
+		g.errs.Append(err)
 	}
 }

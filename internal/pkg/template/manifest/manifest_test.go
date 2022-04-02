@@ -113,13 +113,13 @@ func fullRecords() []model.ObjectManifest {
 		&model.ConfigManifest{
 			ConfigKey: model.ConfigKey{
 				ComponentId: "keboola.ex-db-oracle",
-				Id:          "config",
+				ConfigId:    "config",
 			},
 			AbsPath: model.NewAbsPath("", "config"),
 		},
 		&model.ConfigRowManifest{
 			ConfigRowKey: model.ConfigRowKey{
-				Id:          "row1",
+				ConfigRowId: "row1",
 				ComponentId: "keboola.ex-db-oracle",
 				ConfigId:    "config",
 			},
@@ -127,7 +127,7 @@ func fullRecords() []model.ObjectManifest {
 		},
 		&model.ConfigRowManifest{
 			ConfigRowKey: model.ConfigRowKey{
-				Id:          "row2",
+				ConfigRowId: "row2",
 				ComponentId: "keboola.ex-db-oracle",
 				ConfigId:    "config",
 			},

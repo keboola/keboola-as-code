@@ -63,7 +63,7 @@ func TestPersistNewConfig(t *testing.T) {
 					ComponentId: "ex-generic-v2",
 				},
 				ParentKey: model.BranchKey{
-					Id: 111,
+					BranchId: 111,
 				},
 			},
 		},
@@ -73,7 +73,7 @@ func TestPersistNewConfig(t *testing.T) {
 					ConfigKey: model.ConfigKey{
 						BranchId:    111,
 						ComponentId: "ex-generic-v2",
-						Id:          "1001",
+						ConfigId:    "1001",
 					},
 					RecordState: model.RecordState{
 						Invalid:   false,
@@ -92,7 +92,7 @@ func TestPersistNewConfig(t *testing.T) {
 					ConfigKey: model.ConfigKey{
 						BranchId:    111,
 						ComponentId: "ex-generic-v2",
-						Id:          "1001",
+						ConfigId:    "1001",
 					},
 					Name:        "foo",
 					Description: "bar",
@@ -138,7 +138,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 					ComponentId: "keboola.ex-db-mysql",
 				},
 				ParentKey: model.BranchKey{
-					Id: 111,
+					BranchId: 111,
 				},
 			},
 			&newObjectAction{
@@ -162,7 +162,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 					ConfigKey: model.ConfigKey{
 						BranchId:    111,
 						ComponentId: "keboola.ex-db-mysql",
-						Id:          "1001",
+						ConfigId:    "1001",
 					},
 					RecordState: model.RecordState{
 						Invalid:   false,
@@ -181,7 +181,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 					ConfigKey: model.ConfigKey{
 						BranchId:    111,
 						ComponentId: "keboola.ex-db-mysql",
-						Id:          "1001",
+						ConfigId:    "1001",
 					},
 					Name:        "foo1",
 					Description: "bar1",
@@ -200,7 +200,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 						BranchId:    111,
 						ComponentId: "keboola.ex-db-mysql",
 						ConfigId:    "1001",
-						Id:          "1002",
+						ConfigRowId: "1002",
 					},
 					RecordState: model.RecordState{
 						Invalid:   false,
@@ -220,7 +220,7 @@ func TestPersistNewConfigRow(t *testing.T) {
 						BranchId:    111,
 						ComponentId: "keboola.ex-db-mysql",
 						ConfigId:    "1001",
-						Id:          "1002",
+						ConfigRowId: "1002",
 					},
 					Name:        "foo2",
 					Description: "bar2",
@@ -248,7 +248,7 @@ func TestPersistDeleted(t *testing.T) {
 					ConfigKey: model.ConfigKey{
 						BranchId:    111,
 						ComponentId: "keboola.ex-db-mysql",
-						Id:          "101",
+						ConfigId:    "101",
 					},
 					RecordState: model.RecordState{
 						Invalid:   true,
@@ -269,7 +269,7 @@ func TestPersistDeleted(t *testing.T) {
 						BranchId:    111,
 						ComponentId: "keboola.ex-db-mysql",
 						ConfigId:    "101",
-						Id:          "202",
+						ConfigRowId: "202",
 					},
 					RecordState: model.RecordState{
 						Invalid:   true,
@@ -289,13 +289,13 @@ func TestPersistDeleted(t *testing.T) {
 			model.ConfigKey{
 				BranchId:    111,
 				ComponentId: "keboola.ex-db-mysql",
-				Id:          "101",
+				ConfigId:    "101",
 			},
 			model.ConfigRowKey{
 				BranchId:    111,
 				ComponentId: "keboola.ex-db-mysql",
 				ConfigId:    "101",
-				Id:          "202",
+				ConfigRowId: "202",
 			},
 		},
 	}
@@ -331,7 +331,7 @@ func TestPersistSharedCode(t *testing.T) {
 					ComponentId: model.SharedCodeComponentId,
 				},
 				ParentKey: model.BranchKey{
-					Id: 111,
+					BranchId: 111,
 				},
 			},
 			&newObjectAction{
@@ -355,7 +355,7 @@ func TestPersistSharedCode(t *testing.T) {
 					ConfigKey: model.ConfigKey{
 						BranchId:    111,
 						ComponentId: model.SharedCodeComponentId,
-						Id:          "1001",
+						ConfigId:    "1001",
 					},
 					RecordState: model.RecordState{
 						Invalid:   false,
@@ -374,7 +374,7 @@ func TestPersistSharedCode(t *testing.T) {
 					ConfigKey: model.ConfigKey{
 						BranchId:    111,
 						ComponentId: model.SharedCodeComponentId,
-						Id:          "1001",
+						ConfigId:    "1001",
 					},
 					Name:        "Shared Codes",
 					Description: "foo bar",
@@ -391,7 +391,7 @@ func TestPersistSharedCode(t *testing.T) {
 						BranchId:    111,
 						ComponentId: model.SharedCodeComponentId,
 						ConfigId:    "1001",
-						Id:          "1002",
+						ConfigRowId: "1002",
 					},
 					RecordState: model.RecordState{
 						Invalid:   false,
@@ -411,7 +411,7 @@ func TestPersistSharedCode(t *testing.T) {
 						BranchId:    111,
 						ComponentId: model.SharedCodeComponentId,
 						ConfigId:    "1001",
-						Id:          "1002",
+						ConfigRowId: "1002",
 					},
 					Name:        "My code",
 					Description: "test code",
@@ -474,7 +474,7 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 					ComponentId: model.SharedCodeComponentId,
 				},
 				ParentKey: model.BranchKey{
-					Id: 111,
+					BranchId: 111,
 				},
 			},
 			&newObjectAction{
@@ -512,7 +512,7 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 					ConfigKey: model.ConfigKey{
 						BranchId:    111,
 						ComponentId: model.SharedCodeComponentId,
-						Id:          "1001",
+						ConfigId:    "1001",
 					},
 					RecordState: model.RecordState{
 						Invalid:   false,
@@ -531,7 +531,7 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 					ConfigKey: model.ConfigKey{
 						BranchId:    111,
 						ComponentId: model.SharedCodeComponentId,
-						Id:          "1001",
+						ConfigId:    "1001",
 					},
 					Name:        "Shared Codes",
 					Description: "foo bar",
@@ -548,7 +548,7 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 						BranchId:    111,
 						ComponentId: model.SharedCodeComponentId,
 						ConfigId:    "1001",
-						Id:          "1002",
+						ConfigRowId: "1002",
 					},
 					RecordState: model.RecordState{
 						Invalid:   false,
@@ -568,7 +568,7 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 						BranchId:    111,
 						ComponentId: model.SharedCodeComponentId,
 						ConfigId:    "1001",
-						Id:          "1002",
+						ConfigRowId: "1002",
 					},
 					Name:        "My code",
 					Description: "test code",
@@ -589,7 +589,7 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 					ConfigKey: model.ConfigKey{
 						BranchId:    111,
 						ComponentId: model.VariablesComponentId,
-						Id:          "1003",
+						ConfigId:    "1003",
 					},
 					RecordState: model.RecordState{
 						Invalid:   false,
@@ -609,7 +609,7 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 					ConfigKey: model.ConfigKey{
 						BranchId:    111,
 						ComponentId: model.VariablesComponentId,
-						Id:          "1003",
+						ConfigId:    "1003",
 					},
 					Name:        "Shared Code Variables",
 					Description: "test fixture",
@@ -689,7 +689,7 @@ func TestPersistVariables(t *testing.T) {
 				ParentKey: model.ConfigKey{
 					BranchId:    111,
 					ComponentId: `ex-generic-v2`,
-					Id:          `456`,
+					ConfigId:    `456`,
 				},
 			},
 			&newObjectAction{
@@ -713,7 +713,7 @@ func TestPersistVariables(t *testing.T) {
 					ConfigKey: model.ConfigKey{
 						BranchId:    111,
 						ComponentId: model.VariablesComponentId,
-						Id:          "1001",
+						ConfigId:    "1001",
 					},
 					RecordState: model.RecordState{
 						Invalid:   false,
@@ -733,7 +733,7 @@ func TestPersistVariables(t *testing.T) {
 					ConfigKey: model.ConfigKey{
 						BranchId:    111,
 						ComponentId: model.VariablesComponentId,
-						Id:          "1001",
+						ConfigId:    "1001",
 					},
 					Name:        "Variables",
 					Description: "test1",
@@ -764,7 +764,7 @@ func TestPersistVariables(t *testing.T) {
 						BranchId:    111,
 						ComponentId: model.VariablesComponentId,
 						ConfigId:    "1001",
-						Id:          "1002",
+						ConfigRowId: "1002",
 					},
 					RecordState: model.RecordState{
 						Invalid:   false,
@@ -785,7 +785,7 @@ func TestPersistVariables(t *testing.T) {
 						BranchId:    111,
 						ComponentId: model.VariablesComponentId,
 						ConfigId:    "1001",
-						Id:          "1002",
+						ConfigRowId: "1002",
 					},
 					Name:        "Default values",
 					Description: "test2",
@@ -862,7 +862,7 @@ func TestPersistScheduler(t *testing.T) {
 				ParentKey: model.ConfigKey{
 					BranchId:    111,
 					ComponentId: `ex-generic-v2`,
-					Id:          `456`,
+					ConfigId:    `456`,
 				},
 			},
 		},
@@ -872,7 +872,7 @@ func TestPersistScheduler(t *testing.T) {
 					ConfigKey: model.ConfigKey{
 						BranchId:    111,
 						ComponentId: model.SchedulerComponentId,
-						Id:          "1001",
+						ConfigId:    "1001",
 					},
 					RecordState: model.RecordState{
 						Invalid:   false,
@@ -892,7 +892,7 @@ func TestPersistScheduler(t *testing.T) {
 					ConfigKey: model.ConfigKey{
 						BranchId:    111,
 						ComponentId: model.SchedulerComponentId,
-						Id:          "1001",
+						ConfigId:    "1001",
 					},
 					Name:        "My Scheduler",
 					Description: "",

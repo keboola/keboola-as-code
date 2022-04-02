@@ -76,13 +76,13 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 	// Check target configs relation
 	rel1, err := target1.Relations.GetOneByType(model.UsedInOrchestratorRelType)
 	assert.NoError(t, err)
-	assert.Equal(t, orchestratorConfig.Id, rel1.(*model.UsedInOrchestratorRelation).ConfigId)
+	assert.Equal(t, orchestratorConfig.ConfigId, rel1.(*model.UsedInOrchestratorRelation).ConfigId)
 	rel2, err := target2.Relations.GetOneByType(model.UsedInOrchestratorRelType)
 	assert.NoError(t, err)
-	assert.Equal(t, orchestratorConfig.Id, rel2.(*model.UsedInOrchestratorRelation).ConfigId)
+	assert.Equal(t, orchestratorConfig.ConfigId, rel2.(*model.UsedInOrchestratorRelation).ConfigId)
 	rel3, err := target3.Relations.GetOneByType(model.UsedInOrchestratorRelType)
 	assert.NoError(t, err)
-	assert.Equal(t, orchestratorConfig.Id, rel3.(*model.UsedInOrchestratorRelation).ConfigId)
+	assert.Equal(t, orchestratorConfig.ConfigId, rel3.(*model.UsedInOrchestratorRelation).ConfigId)
 
 	// Orchestration
 	expectedOrchestration := &model.Orchestration{

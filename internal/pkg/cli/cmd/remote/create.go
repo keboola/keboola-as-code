@@ -83,7 +83,7 @@ func CreateBranchCommand(p dependencies.Provider) *cobra.Command {
 				// Add new branch to the allowed branches if needed
 				if projectManifest.IsObjectIgnored(branch) {
 					allowedBranches := projectManifest.AllowedBranches()
-					allowedBranches = append(allowedBranches, model.AllowedBranch(branch.Id.String()))
+					allowedBranches = append(allowedBranches, model.AllowedBranch(branch.BranchId.String()))
 					projectManifest.SetAllowedBranches(allowedBranches)
 				}
 
@@ -96,7 +96,7 @@ func CreateBranchCommand(p dependencies.Provider) *cobra.Command {
 				// Pull
 				pullOptions := pull.Options{DryRun: false, LogUntrackedPaths: false}
 				if err := pull.Run(projectState, pullOptions, d); err != nil {
-					return utils.PrefixError(`pull failed`, err)
+					return errors.PrefixError(`pull failed`, err)
 				}
 			}
 			return nil

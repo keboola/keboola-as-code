@@ -44,7 +44,7 @@ func (c *loadContext) loadBranch(branch *model.Branch, pool *client.Pool) {
 
 	// Load components, configs and rows
 	componentsRequest := pool.
-		Request(c.storageApi.ListComponentsRequest(branch.Id)).
+		Request(c.storageApi.ListComponentsRequest(branch.BranchId)).
 		OnSuccess(func(response *client.Response) {
 			components := *response.Result().(*[]*model.ComponentWithConfigs)
 
@@ -86,12 +86,12 @@ func (c *loadContext) loadConfigsMetadataRequest(branch *model.Branch, pool *cli
 	out := make(map[model.Key]map[string]string)
 
 	request := pool.
-		Request(c.storageApi.ListConfigMetadataRequest(branch.Id)).
+		Request(c.storageApi.ListConfigMetadataRequest(branch.BranchId)).
 		OnSuccess(func(response *client.Response) {
 			lock.Lock()
 			defer lock.Unlock()
 			metadataResponse := *response.Result().(*storageapi.ConfigMetadataResponse)
-			for key, metadata := range metadataResponse.MetadataMap(branch.Id) {
+			for key, metadata := range metadataResponse.MetadataMap(branch.BranchId) {
 				metadataMap := make(map[string]string)
 				for _, m := range metadata {
 					metadataMap[m.Key] = m.Value
@@ -114,7 +114,7 @@ func (c *loadContext) process(apiObject model.Object) (accepted bool) {
 
 	// Invoke mapper
 	if err := c.mapper.MapAfterRemoteLoad(recipe); err != nil {
-		c.errors.Append(err)
+		c.errs.Append(err)
 	}
 
 	// Notify UnitOfWork

@@ -233,7 +233,7 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, useTemplate.Options{
-		TargetBranch: model.BranchKey{Id: 123},
+		TargetBranch: model.BranchKey{BranchId: 123},
 		Inputs: template.InputsValues{
 			{Id: "facebook.username", Value: "username"},
 			{Id: "facebook.password", Value: "password"},
@@ -350,7 +350,7 @@ func TestAskUseTemplateOptionsIfNotMet(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, useTemplate.Options{
-		TargetBranch: model.BranchKey{Id: 123},
+		TargetBranch: model.BranchKey{BranchId: 123},
 		Inputs: template.InputsValues{
 			{Id: "facebook.username", Value: "username"},
 			{Id: "facebook.password", Value: "password"},

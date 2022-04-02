@@ -11,7 +11,7 @@ import (
 )
 
 func deleteEmptyDirectories(fs filesystem.Fs, knowPaths []string) error {
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	emptyDirs := orderedmap.New()
 	root := `.`
 	err := fs.Walk(root, func(path string, info filesystem.FileInfo, err error) error {
@@ -74,11 +74,11 @@ func deleteEmptyDirectories(fs filesystem.Fs, knowPaths []string) error {
 	// Delete
 	for _, dir := range dirsToRemove {
 		if err := fs.Remove(dir); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func isIgnoredDir(path string, info fs.FileInfo) bool {

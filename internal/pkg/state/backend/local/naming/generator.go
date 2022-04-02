@@ -135,7 +135,7 @@ func (g Generator) branchPath(branch *Branch) (AbsPath, error) {
 		p = p.WithRelativePath(`main`)
 	} else {
 		p = p.WithRelativePath(utils.ReplacePlaceholders(string(g.template.Branch), map[string]interface{}{
-			"branch_id":   branch.Id,
+			"branch_id":   branch.BranchId,
 			"branch_name": strhelper.NormalizeName(branch.Name),
 		}))
 	}
@@ -159,7 +159,7 @@ func (g Generator) configPath(config *Config) (AbsPath, error) {
 	// Shared code is handled differently
 	var template, targetComponentId string
 	switch {
-	case (parent.kind.IsEmpty() || parent.kind.IsBranch()) && component.IsSharedCode():
+	case (parent == nil || parent.kind.IsBranch()) && component.IsSharedCode():
 		//if config.SharedCode == nil {
 		//	panic(fmt.Errorf(`invalid shared code %s, value is not set`, config.String()))
 		//}
@@ -174,7 +174,7 @@ func (g Generator) configPath(config *Config) (AbsPath, error) {
 	case parent.kind.IsConfigRow() && component.IsVariables() && parent.key.(ConfigRowKey).ComponentId == SharedCodeComponentId:
 		// Shared code is config row and can have variables
 		template = string(g.template.VariablesConfig)
-	case parent.kind.IsEmpty() || parent.kind.IsBranch():
+	case parent == nil || parent.kind.IsBranch():
 		// Ordinary config
 		template = string(g.template.Config)
 	default:
@@ -187,7 +187,7 @@ func (g Generator) configPath(config *Config) (AbsPath, error) {
 		"target_component_id": targetComponentId, // for shared code
 		"component_type":      component.Type,
 		"component_id":        component.Id,
-		"config_id":           jsonnet.StripIdPlaceholder(config.Id.String()),
+		"config_id":           jsonnet.StripIdPlaceholder(config.ConfigId.String()),
 		"config_name":         strhelper.NormalizeName(config.Name),
 	}))
 
@@ -246,7 +246,7 @@ func (g Generator) configRowPath(row *ConfigRow) (AbsPath, error) {
 	p := NewEmptyAbsPath()
 	p = p.WithParentPath(parent.path.String())
 	p = p.WithRelativePath(utils.ReplacePlaceholders(template, map[string]interface{}{
-		"config_row_id":   jsonnet.StripIdPlaceholder(row.Id.String()),
+		"config_row_id":   jsonnet.StripIdPlaceholder(row.ConfigRowId.String()),
 		"config_row_name": strhelper.NormalizeName(name),
 	}))
 	return p, nil
@@ -260,7 +260,7 @@ func (g Generator) blockPath(block *Block) (AbsPath, error) {
 	}
 
 	relativePath := utils.ReplacePlaceholders(string(blockNameTemplate), map[string]interface{}{
-		"block_order": fmt.Sprintf(`%03d`, block.Index+1),
+		"block_order": fmt.Sprintf(`%03d`, block.BlockIndex+1),
 		"block_name":  strhelper.NormalizeName(block.Name),
 	})
 
@@ -281,7 +281,7 @@ func (g Generator) codePath(code *Code) (AbsPath, error) {
 	p := NewEmptyAbsPath()
 	p = p.WithParentPath(parent.path.String())
 	p = p.WithRelativePath(utils.ReplacePlaceholders(string(codeNameTemplate), map[string]interface{}{
-		"code_order": fmt.Sprintf(`%03d`, code.Index+1),
+		"code_order": fmt.Sprintf(`%03d`, code.CodeIndex+1),
 		"code_name":  strhelper.NormalizeName(code.Name),
 	}))
 	return p, nil
@@ -295,7 +295,7 @@ func (g Generator) phasePath(phase *Phase) (AbsPath, error) {
 	}
 
 	relativePath := utils.ReplacePlaceholders(string(phaseNameTemplate), map[string]interface{}{
-		"phase_order": fmt.Sprintf(`%03d`, phase.Index+1),
+		"phase_order": fmt.Sprintf(`%03d`, phase.PhaseIndex+1),
 		"phase_name":  strhelper.NormalizeName(phase.Name),
 	})
 
@@ -315,7 +315,7 @@ func (g Generator) taskPath(task *Task) (AbsPath, error) {
 	p := NewEmptyAbsPath()
 	p = p.WithParentPath(parent.path.String())
 	p = p.WithRelativePath(utils.ReplacePlaceholders(string(taskNameTemplate), map[string]interface{}{
-		"task_order": fmt.Sprintf(`%03d`, task.Index+1),
+		"task_order": fmt.Sprintf(`%03d`, task.TaskIndex+1),
 		"task_name":  strhelper.NormalizeName(task.Name),
 	}))
 	return p, nil

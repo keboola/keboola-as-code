@@ -16,12 +16,12 @@ func TestVariablesMapBeforePersist(t *testing.T) {
 	key := model.ConfigKey{
 		BranchId:    123,
 		ComponentId: model.VariablesComponentId,
-		Id:          `678`,
+		ConfigId:    `678`,
 	}
 	parentKey := model.ConfigKey{
 		BranchId:    123,
 		ComponentId: `foo.bar`,
-		Id:          `345`,
+		ConfigId:    `345`,
 	}
 
 	recipe := &model.PersistRecipe{

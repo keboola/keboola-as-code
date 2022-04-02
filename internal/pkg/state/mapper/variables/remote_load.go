@@ -59,7 +59,7 @@ func (m *variablesRemoteMapper) loadVariablesValues(object *model.Config) {
 
 	// Create relation
 	object.AddRelation(&model.VariablesValuesFromRelation{
-		VariablesValuesId: model.RowId(valuesId),
+		VariablesValuesId: model.ConfigRowId(valuesId),
 	})
 
 	// Remove variables ID from configuration content

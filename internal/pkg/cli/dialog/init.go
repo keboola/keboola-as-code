@@ -27,12 +27,12 @@ func (p *Dialogs) AskInitOptions(d initDeps) (initOp.Options, error) {
 	o := d.Options()
 
 	// Host and token
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	if _, err := p.AskStorageApiHost(o); err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 	if _, err := p.AskStorageApiToken(o); err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 	if errors.Len() > 0 {
 		return out, errors

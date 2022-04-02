@@ -53,13 +53,13 @@ func (v *Values) AddKey(oldKey, newKey model.Key) {
 	switch oldKey := oldKey.(type) {
 	case model.BranchKey:
 		v.AddValue(oldKey, newKey.(model.BranchKey))
-		v.AddId(oldKey.Id, newKey.(model.BranchKey).Id)
+		v.AddId(oldKey.BranchId, newKey.(model.BranchKey).BranchId)
 	case model.ConfigKey:
 		v.AddValue(oldKey, newKey.(model.ConfigKey))
-		v.AddId(oldKey.Id, newKey.(model.ConfigKey).Id)
+		v.AddId(oldKey.ConfigId, newKey.(model.ConfigKey).ConfigId)
 	case model.ConfigRowKey:
 		v.AddValue(oldKey, newKey.(model.ConfigRowKey))
-		v.AddId(oldKey.Id, newKey.(model.ConfigRowKey).Id)
+		v.AddId(oldKey.ConfigRowId, newKey.(model.ConfigRowKey).ConfigRowId)
 	default:
 		panic(fmt.Errorf(`unexpected key type "%T"`, oldKey))
 	}
@@ -74,10 +74,10 @@ func (v *Values) AddId(oldId, newId interface{}) {
 		v.AddValue(old, newId.(model.ConfigId))
 		// ConfigId in strings
 		v.AddValue(SubString(old), string(newId.(model.ConfigId)))
-	case model.RowId:
-		v.AddValue(old, newId.(model.RowId))
+	case model.ConfigRowId:
+		v.AddValue(old, newId.(model.ConfigRowId))
 		// ConfigRowId in strings
-		v.AddValue(SubString(old), string(newId.(model.RowId)))
+		v.AddValue(SubString(old), string(newId.(model.ConfigRowId)))
 	default:
 		panic(fmt.Errorf(`unexpected ID type "%T"`, old))
 	}
@@ -137,7 +137,7 @@ func (v *Values) validate() error {
 	for _, item := range v.values {
 		value := item.Search
 		_, ok1 := value.(model.ConfigId)
-		_, ok2 := value.(model.RowId)
+		_, ok2 := value.(model.ConfigRowId)
 		if ok1 || ok2 {
 			valuesMap[cast.ToString(value)] += 1
 		}
@@ -153,7 +153,7 @@ func (v *Values) validate() error {
 	for _, item := range v.values {
 		value := item.Replace
 		_, ok1 := value.(model.ConfigId)
-		_, ok2 := value.(model.RowId)
+		_, ok2 := value.(model.ConfigRowId)
 		if ok1 || ok2 {
 			valuesMap[cast.ToString(value)] += 1
 		}

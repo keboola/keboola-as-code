@@ -9,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func (a *Api) GetConfigRow(branchId model.BranchId, componentId model.ComponentId, configId model.ConfigId, rowId model.RowId) (*model.ConfigRow, error) {
+func (a *Api) GetConfigRow(branchId model.BranchId, componentId model.ComponentId, configId model.ConfigId, rowId model.ConfigRowId) (*model.ConfigRow, error) {
 	response := a.GetConfigRowRequest(branchId, componentId, configId, rowId).Send().Response
 	if response.HasResult() {
 		return response.Result().(*model.ConfigRow), nil
@@ -48,7 +48,7 @@ func (a *Api) DeleteConfigRow(row model.ConfigRowKey) error {
 }
 
 // GetConfigRowRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/manage-configuration-rows/row-detail
-func (a *Api) GetConfigRowRequest(branchId model.BranchId, componentId model.ComponentId, configId model.ConfigId, rowId model.RowId) *client.Request {
+func (a *Api) GetConfigRowRequest(branchId model.BranchId, componentId model.ComponentId, configId model.ConfigId, rowId model.ConfigRowId) *client.Request {
 	row := &model.ConfigRow{}
 	row.BranchId = branchId
 	row.ComponentId = componentId
@@ -67,8 +67,8 @@ func (a *Api) CreateConfigRowRequest(row *model.ConfigRow) (*client.Request, err
 	}
 
 	// Create row with the defined ID
-	if row.Id != "" {
-		values["rowId"] = row.Id.String()
+	if row.ConfigRowId != "" {
+		values["rowId"] = row.ConfigRowId.String()
 	}
 
 	// Create request
@@ -86,7 +86,7 @@ func (a *Api) CreateConfigRowRequest(row *model.ConfigRow) (*client.Request, err
 // UpdateConfigRowRequest https://keboola.docs.apiary.io/#reference/components-and-configurations/manage-configuration-rows/update-row-for-development-branch
 func (a *Api) UpdateConfigRowRequest(row *model.ConfigRow, changed model.ChangedFields) (*client.Request, error) {
 	// Id is required
-	if row.Id == "" {
+	if row.ConfigRowId == "" {
 		panic("config row id must be set")
 	}
 
@@ -102,7 +102,7 @@ func (a *Api) UpdateConfigRowRequest(row *model.ConfigRow, changed model.Changed
 		SetPathParam("branchId", row.BranchId.String()).
 		SetPathParam("componentId", row.ComponentId.String()).
 		SetPathParam("configId", row.ConfigId.String()).
-		SetPathParam("rowId", row.Id.String()).
+		SetPathParam("rowId", row.ConfigRowId.String()).
 		SetFormBody(getChangedValues(values, changed)).
 		SetResult(row)
 
@@ -115,5 +115,5 @@ func (a *Api) DeleteConfigRowRequest(key model.ConfigRowKey) *client.Request {
 		SetPathParam("branchId", key.BranchId.String()).
 		SetPathParam("componentId", key.ComponentId.String()).
 		SetPathParam("configId", key.ConfigId.String()).
-		SetPathParam("rowId", key.Id.String())
+		SetPathParam("rowId", key.ConfigRowId.String())
 }

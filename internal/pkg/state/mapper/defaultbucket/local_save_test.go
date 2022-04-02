@@ -33,10 +33,10 @@ func TestDefaultBucketMapper_MapBeforeLocalSave_Config(t *testing.T) {
 	logger := d.DebugLogger()
 
 	// Branch
-	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{Id: 123}})
+	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{BranchId: 123}})
 
 	// Config referenced by the default bucket
-	sourceConfigKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.ex-aws-s3`, Id: `123`}
+	sourceConfigKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.ex-aws-s3`, ConfigId: `123`}
 	state.MustAdd(&model.Config{ConfigKey: sourceConfigKey})
 	state.NamingRegistry().MustAttach(
 		sourceConfigKey,
@@ -44,7 +44,7 @@ func TestDefaultBucketMapper_MapBeforeLocalSave_Config(t *testing.T) {
 	)
 
 	// Config with the input mapping
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.snowflake-transformation`, Id: `789`}
+	configKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.snowflake-transformation`, ConfigId: `789`}
 	configPath := model.NewAbsPath("branch", "transformation/keboola.snowflake-transformation/test")
 	config := &model.Config{ConfigKey: configKey, Content: orderedmap.New()}
 	json.MustDecodeString(localSaveConfigContentSample, config.Content)
@@ -67,10 +67,10 @@ func TestDefaultBucketMapper_MapBeforeLocalSave_Config_Missing(t *testing.T) {
 	logger := d.DebugLogger()
 
 	// Branch
-	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{Id: 123}})
+	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{BranchId: 123}})
 
 	// Config with the input mapping
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.snowflake-transformation`, Id: `789`}
+	configKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.snowflake-transformation`, ConfigId: `789`}
 	configPath := model.NewAbsPath("branch", "transformation/keboola.snowflake-transformation/test")
 	config := &model.Config{ConfigKey: configKey, Content: orderedmap.New()}
 	json.MustDecodeString(localSaveConfigContentSample, config.Content)
@@ -100,10 +100,10 @@ func TestDefaultBucketMapper_MapBeforeLocalSave_Row(t *testing.T) {
 	logger := d.DebugLogger()
 
 	// Branch
-	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{Id: 123}})
+	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{BranchId: 123}})
 
 	// Config referenced by the default bucket
-	sourceConfigKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.ex-aws-s3`, Id: `123`}
+	sourceConfigKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.ex-aws-s3`, ConfigId: `123`}
 	state.MustAdd(&model.Config{ConfigKey: sourceConfigKey})
 	state.NamingRegistry().MustAttach(
 		sourceConfigKey,
@@ -111,12 +111,12 @@ func TestDefaultBucketMapper_MapBeforeLocalSave_Row(t *testing.T) {
 	)
 
 	// Parent config
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.snowflake-transformation`, Id: `789`}
+	configKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.snowflake-transformation`, ConfigId: `789`}
 	config := &model.Config{ConfigKey: configKey}
 	state.MustAdd(config)
 
 	// Row with the input mapping
-	rowKey := model.ConfigRowKey{BranchId: 123, ConfigId: config.Id, Id: `456`, ComponentId: config.ComponentId}
+	rowKey := model.ConfigRowKey{BranchId: 123, ConfigId: config.ConfigId, ConfigRowId: `456`, ComponentId: config.ComponentId}
 	rowPath := model.NewAbsPath("branch/transformation/keboola.snowflake-transformation/test", "rows/row")
 	row := &model.ConfigRow{ConfigRowKey: rowKey, Content: orderedmap.New()}
 	json.MustDecodeString(localSaveConfigContentSample, row.Content)
@@ -139,15 +139,15 @@ func TestDefaultBucketMapper_MapBeforeLocalSave_Row_Missing(t *testing.T) {
 	logger := d.DebugLogger()
 
 	// Branch
-	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{Id: 123}})
+	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{BranchId: 123}})
 
 	// Parent config
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.snowflake-transformation`, Id: `789`}
+	configKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.snowflake-transformation`, ConfigId: `789`}
 	config := &model.Config{ConfigKey: configKey}
 	state.MustAdd(config)
 
 	// Row with the input mapping
-	rowKey := model.ConfigRowKey{BranchId: 123, ConfigId: config.Id, Id: `456`, ComponentId: config.ComponentId}
+	rowKey := model.ConfigRowKey{BranchId: 123, ConfigId: config.ConfigId, ConfigRowId: `456`, ComponentId: config.ComponentId}
 	rowPath := model.NewAbsPath("branch/transformation/keboola.snowflake-transformation/test", "rows/row")
 	row := &model.ConfigRow{ConfigRowKey: rowKey, Content: orderedmap.New()}
 	json.MustDecodeString(localSaveConfigContentSample, row.Content)

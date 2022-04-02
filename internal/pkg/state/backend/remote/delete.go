@@ -15,7 +15,7 @@ func (c *deleteContext) delete() {
 	// Branch must be deleted in blocking operation
 	if branchKey, ok := c.Key.(model.BranchKey); ok {
 		if _, err := c.storageApi.DeleteBranch(branchKey); err != nil {
-			c.errors.Append(err)
+			c.errs.Append(err)
 		}
 
 		// Notify UnitOfWork

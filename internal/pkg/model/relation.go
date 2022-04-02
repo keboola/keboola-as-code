@@ -7,8 +7,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/errors"
 	jsonutils "github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -171,12 +171,12 @@ func (v Relations) GetOneByType(t RelationType) (Relation, error) {
 	if len(relations) == 0 {
 		return nil, nil
 	} else if len(relations) > 1 {
-		errors := utils.NewMultiError()
-		errors.Append(fmt.Errorf(`only one relation "%s" expected, but found %d`, t, len(relations)))
+		errs := errors.NewMultiError()
+		errs.Append(fmt.Errorf(`only one relation "%s" expected, but found %d`, t, len(relations)))
 		for _, relation := range relations {
-			errors.Append(fmt.Errorf(`  - %s`, jsonutils.MustEncodeString(relation, false)))
+			errs.Append(fmt.Errorf(`  - %s`, jsonutils.MustEncodeString(relation, false)))
 		}
-		return nil, errors
+		return nil, errs
 	}
 	return relations[0], nil
 }

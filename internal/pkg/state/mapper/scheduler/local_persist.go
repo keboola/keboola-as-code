@@ -58,7 +58,7 @@ func (m *schedulerLocalMapper) MapBeforePersist(recipe *model.PersistRecipe) err
 	// Add relation
 	recipe.Relations.Add(&model.SchedulerForRelation{
 		ComponentId: parentConfigKey.ComponentId,
-		ConfigId:    parentConfigKey.Id,
+		ConfigId:    parentConfigKey.ConfigId,
 	})
 
 	return nil

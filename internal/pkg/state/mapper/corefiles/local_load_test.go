@@ -61,12 +61,12 @@ func TestCoreFilesMapper_MapAfterLocalLoad_SkipChildIfParentIsInvalid(t *testing
 	// Setup manifest
 	state.Manifest().MustAdd(
 		&model.BranchManifest{
-			BranchKey: model.BranchKey{Id: 123},
+			BranchKey: model.BranchKey{BranchId: 123},
 			AbsPath:   model.NewAbsPath(``, `main`),
 		},
 		&model.ConfigManifestWithRows{
 			ConfigManifest: model.ConfigManifest{
-				ConfigKey: model.ConfigKey{BranchId: 123, ComponentId: `foo.bar`, Id: `456`},
+				ConfigKey: model.ConfigKey{BranchId: 123, ComponentId: `foo.bar`, ConfigId: `456`},
 				AbsPath:   model.NewAbsPath(`main`, `config`),
 			},
 		},
@@ -87,6 +87,6 @@ branch metadata file "main/meta.json" is invalid:
 	assert.Equal(t, strings.Trim(expectedErr, "\n"), err.Error())
 
 	// Check invalid and not found objects
-	assert.Equal(t, []model.Key{model.BranchKey{Id: 123}}, state.InvalidObjects())
+	assert.Equal(t, []model.Key{model.BranchKey{BranchId: 123}}, state.InvalidObjects())
 	assert.Equal(t, []model.Key{}, state.NotFoundObjects())
 }

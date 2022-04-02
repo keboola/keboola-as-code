@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 type dependencies interface {
@@ -89,11 +88,11 @@ func (h *SharedCodeHelper) CheckTargetComponent(sharedCodeConfig *model.Config, 
 		panic(fmt.Errorf(`shared code value is not set`))
 	}
 	if sharedCodeConfig.SharedCode.Target != transformation.ComponentId {
-		errors := utils.NewMultiError()
-		errors.Append(fmt.Errorf(`unexpected shared code "%s" in %s`, model.ShareCodeTargetComponentKey, sharedCodeConfig.String()))
-		errors.Append(fmt.Errorf(`  - expected "%s"`, transformation.ComponentId))
-		errors.Append(fmt.Errorf(`  - found "%s"`, sharedCodeConfig.SharedCode.Target))
-		return errors
+		errs := errors.NewMultiError()
+		errs.Append(fmt.Errorf(`unexpected shared code "%s" in %s`, model.ShareCodeTargetComponentKey, sharedCodeConfig.String()))
+		errs.Append(fmt.Errorf(`  - expected "%s"`, transformation.ComponentId))
+		errs.Append(fmt.Errorf(`  - found "%s"`, sharedCodeConfig.SharedCode.Target))
+		return errs
 	}
 	return nil
 }

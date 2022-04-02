@@ -103,7 +103,7 @@ func (d *branchesDialog) askBranchesList() model.AllowedBranches {
 	end := math.Min(10, float64(len(d.allBranches)))
 	d.Printf("\nExisting project's branches, for inspiration:\n")
 	for _, branch := range d.allBranches[:int(end)] {
-		d.Printf("%s (%d)\n", branch.Name, branch.Id)
+		d.Printf("%s (%d)\n", branch.Name, branch.BranchId)
 	}
 	if len(d.allBranches) > 10 {
 		d.Printf(`...`)
@@ -170,7 +170,7 @@ func (d *branchesDialog) unique(items model.AllowedBranches) model.AllowedBranch
 
 func branchesToAllowedBranches(branches []*model.Branch) (out model.AllowedBranches) {
 	for _, b := range branches {
-		out = append(out, model.AllowedBranch(b.Id.String()))
+		out = append(out, model.AllowedBranch(b.BranchId.String()))
 	}
 	return out
 }

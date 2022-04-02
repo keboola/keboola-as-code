@@ -73,9 +73,9 @@ func (w *Workers) StartAndWait() error {
 	w.started.Done()
 
 	// Wait for group
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	if err := w.group.Wait(); err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 	w.invoked = true
 
@@ -83,8 +83,8 @@ func (w *Workers) StartAndWait() error {
 	workersCount := w.workerNum.Get()
 	for i := 0; i < workersCount; i++ {
 		if err, ok := w.errors[i]; ok {
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }

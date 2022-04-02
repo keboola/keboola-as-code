@@ -23,20 +23,20 @@ type localLoadContext struct {
 }
 
 func (m *orchestratorLocalMapper) AfterLocalOperation(changes *model.Changes) error {
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 
 	// Process all loaded orchestrators
 	for _, object := range changes.Loaded() {
 		if ok, err := m.isOrchestrator(object.Key()); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		} else if ok {
 			if err := m.onLocalLoad(object.(*model.Config)); err != nil {
-				errors.Append(err)
+				errs.Append(err)
 			}
 		}
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func (m *orchestratorLocalMapper) onLocalLoad(orchestrator *model.Config) error {
@@ -62,7 +62,7 @@ func (m *orchestratorLocalMapper) onLocalLoad(orchestrator *model.Config) error 
 	}
 
 	if err := loadCtx.load(); err != nil {
-		return utils.PrefixError(fmt.Sprintf(`invalid orchestrator config "%s"`, basePath), err)
+		return errors.PrefixError(fmt.Sprintf(`invalid orchestrator config "%s"`, basePath), err)
 	}
 	return nil
 }
@@ -75,28 +75,28 @@ func (c *localLoadContext) load() error {
 	}
 
 	// Load phases from filesystem
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	for _, phaseDir := range phasesDirs {
 		if err := c.loadPhase(phaseDir); err != nil {
-			errors.AppendWithPrefix(fmt.Sprintf(`invalid phase "%s"`, phaseDir.Base()), err)
+			errs.AppendWithPrefix(fmt.Sprintf(`invalid phase "%s"`, phaseDir.Base()), err)
 		}
 	}
 
 	// Sort phases by dependencies
 	sortedPhases, err := c.phasesSorter.sortPhases()
 	if err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
 	// Phase and task keys are now completed, after the sorting.
 	// Attach paths to the naming registry.
 	for _, phase := range sortedPhases {
 		if err := c.state.NamingRegistry().Attach(phase.PhaseKey, c.phasesDirsMap[phase]); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 		for _, task := range phase.Tasks {
 			if err := c.state.NamingRegistry().Attach(task.TaskKey, c.tasksDirsMap[task]); err != nil {
-				errors.Append(err)
+				errs.Append(err)
 			}
 		}
 	}
@@ -111,7 +111,7 @@ func (c *localLoadContext) load() error {
 		Phases: sortedPhases,
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func (c *localLoadContext) loadPhase(phaseDir model.AbsPath) error {
@@ -120,7 +120,7 @@ func (c *localLoadContext) loadPhase(phaseDir model.AbsPath) error {
 		PhaseKey: model.PhaseKey{
 			BranchId:    c.orchestrator.BranchId,
 			ComponentId: c.orchestrator.ComponentId,
-			ConfigId:    c.orchestrator.Id,
+			ConfigId:    c.orchestrator.ConfigId,
 		},
 	}
 
@@ -144,19 +144,19 @@ func (c *localLoadContext) loadPhase(phaseDir model.AbsPath) error {
 	}
 
 	// Process tasks
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	for taskIndex, taskDir := range tasksDirs {
 		if task, err := c.loadTask(taskIndex, taskDir); err == nil {
 			phase.Tasks = append(phase.Tasks, task)
 		} else {
-			errors.AppendWithPrefix(fmt.Sprintf(`invalid task "%s"`, taskDir.Base()), err)
+			errs.AppendWithPrefix(fmt.Sprintf(`invalid task "%s"`, taskDir.Base()), err)
 		}
 	}
 
 	// Add to sorter
 	c.phasesSorter.addPhase(phaseDir.Base(), phase, dependsOn)
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func (c *localLoadContext) loadTask(taskIndex int, taskDir model.AbsPath) (*model.Task, error) {
@@ -211,23 +211,23 @@ func (c *localLoadContext) loadPhaseConfig(phase *model.Phase, phaseDir model.Ab
 	}
 
 	parser := &phaseParser{content: file.Content}
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 
 	// Get name
 	phase.Name, err = parser.name()
 	if err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
 	// Get dependsOn
 	dependsOn, err = parser.dependsOnPaths()
 	if err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
 	// Set additional content
 	phase.Content = parser.additionalContent()
-	return dependsOn, errors.ErrorOrNil()
+	return dependsOn, errs.ErrorOrNil()
 }
 
 func (c *localLoadContext) loadTaskConfig(task *model.Task, taskDir model.AbsPath) error {
@@ -243,33 +243,33 @@ func (c *localLoadContext) loadTaskConfig(task *model.Task, taskDir model.AbsPat
 	}
 
 	parser := &taskParser{content: file.Content}
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 
 	// Get name
 	task.Name, err = parser.name()
 	if err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
 	// Get target config path
 	targetConfigPath, err := parser.configPath()
 	if err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
 	// Get target config
 	targetConfig, err := c.getTargetConfig(targetConfigPath)
 	if err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	} else if targetConfig != nil {
 		task.ComponentId = targetConfig.ComponentId
-		task.ConfigId = targetConfig.Id
+		task.ConfigId = targetConfig.ConfigId
 		markConfigUsedInOrchestrator(targetConfig, c.orchestrator)
 	}
 
 	// Add task to phase
 	task.Content = parser.additionalContent()
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func (c *localLoadContext) phasesDirs() ([]model.AbsPath, error) {

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/errors"
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -32,17 +32,17 @@ func (c *Collection) Add(objects ...Object) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	for _, object := range objects {
 		key := object.Key()
 		if c.has(key) {
-			errors.Append(fmt.Errorf(`%s already exists`, key.String()))
+			errs.Append(fmt.Errorf(`%s already exists`, key.String()))
 		} else if err := c.add(object); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 // AddOrReplace object in the collection.
@@ -50,14 +50,14 @@ func (c *Collection) AddOrReplace(objects ...Object) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	for _, object := range objects {
 		if err := c.add(object); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func (c *Collection) MustAdd(objects ...Object) {
@@ -183,7 +183,7 @@ func (c *Collection) Configs() (configs []*Config) {
 func (c *Collection) ConfigsFrom(branch BranchKey) (configs []*Config) {
 	for _, object := range c.All() {
 		if v, ok := object.(*Config); ok {
-			if v.BranchId != branch.Id {
+			if v.BranchId != branch.BranchId {
 				continue
 			}
 			configs = append(configs, v)
@@ -224,7 +224,7 @@ func (c *Collection) ConfigRows() (rows []*ConfigRow) {
 func (c *Collection) ConfigRowsFrom(config ConfigKey) (rows []*ConfigRow) {
 	for _, object := range c.All() {
 		if v, ok := object.(*ConfigRow); ok {
-			if v.BranchId != config.BranchId || v.ComponentId != config.ComponentId || v.ConfigId != config.Id {
+			if v.BranchId != config.BranchId || v.ComponentId != config.ComponentId || v.ConfigId != config.ConfigId {
 				continue
 			}
 			rows = append(rows, v)
@@ -237,11 +237,11 @@ func (c *Collection) ConfigRowsFrom(config ConfigKey) (rows []*ConfigRow) {
 func (c *Collection) add(object Object) error {
 	parentKey, err := object.ParentKey()
 	if err != nil {
-		return utils.PrefixError(fmt.Sprintf(`cannot get parent of %s`, object.String()), err)
+		return errors.PrefixError(fmt.Sprintf(`cannot get parent of %s`, object.String()), err)
 	}
 
 	if parentKey != nil && !c.has(parentKey) {
-		return utils.PrefixError(
+		return errors.PrefixError(
 			fmt.Sprintf(`parent %s not found`, parentKey.String()),
 			fmt.Errorf(`referenced from %s`, object.String()),
 		)

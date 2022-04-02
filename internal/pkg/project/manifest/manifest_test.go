@@ -157,7 +157,7 @@ func TestManifest_Validate_NestedFields(t *testing.T) {
 	content := newFile(12345, "foo.bar")
 	content.setRecords(minimalRecords())
 	content.Branches = append(content.Branches, &model.BranchManifest{
-		BranchKey: model.BranchKey{Id: 0},
+		BranchKey: model.BranchKey{BranchId: 0},
 		AbsPath: model.NewAbsPath(
 			"bar",
 			"foo",
@@ -343,7 +343,7 @@ func fullRecords() []model.ObjectManifest {
 	return []model.ObjectManifest{
 		&model.BranchManifest{
 			BranchKey: model.BranchKey{
-				Id: 10,
+				BranchId: 10,
 			},
 			AbsPath: model.NewAbsPath(
 				"",
@@ -352,7 +352,7 @@ func fullRecords() []model.ObjectManifest {
 		},
 		&model.BranchManifest{
 			BranchKey: model.BranchKey{
-				Id: 11,
+				BranchId: 11,
 			},
 			AbsPath: model.NewAbsPath(
 				"",
@@ -364,7 +364,7 @@ func fullRecords() []model.ObjectManifest {
 			ConfigKey: model.ConfigKey{
 				BranchId:    10,
 				ComponentId: "keboola.ex-db-oracle",
-				Id:          "11",
+				ConfigId:    "11",
 			},
 			AbsPath: model.NewAbsPath(
 				"main",
@@ -375,7 +375,7 @@ func fullRecords() []model.ObjectManifest {
 			ConfigKey: model.ConfigKey{
 				BranchId:    11,
 				ComponentId: "keboola.variables",
-				Id:          "13",
+				ConfigId:    "13",
 			},
 			AbsPath: model.NewAbsPath(
 				"11-dev/12-current-month",
@@ -392,7 +392,7 @@ func fullRecords() []model.ObjectManifest {
 			ConfigKey: model.ConfigKey{
 				BranchId:    11,
 				ComponentId: "keboola.wr-db-mysql",
-				Id:          "12",
+				ConfigId:    "12",
 			},
 			AbsPath: model.NewAbsPath(
 				"11-dev",
@@ -401,7 +401,7 @@ func fullRecords() []model.ObjectManifest {
 		},
 		&model.ConfigRowManifest{
 			ConfigRowKey: model.ConfigRowKey{
-				Id:          "101",
+				ConfigRowId: "101",
 				BranchId:    10,
 				ComponentId: "keboola.ex-db-oracle",
 				ConfigId:    "11",
@@ -413,7 +413,7 @@ func fullRecords() []model.ObjectManifest {
 		},
 		&model.ConfigRowManifest{
 			ConfigRowKey: model.ConfigRowKey{
-				Id:          "102",
+				ConfigRowId: "102",
 				BranchId:    10,
 				ComponentId: "keboola.ex-db-oracle",
 				ConfigId:    "11",
@@ -425,7 +425,7 @@ func fullRecords() []model.ObjectManifest {
 		},
 		&model.ConfigRowManifest{
 			ConfigRowKey: model.ConfigRowKey{
-				Id:          "105",
+				ConfigRowId: "105",
 				BranchId:    11,
 				ComponentId: "keboola.variables",
 				ConfigId:    "13",
@@ -437,7 +437,7 @@ func fullRecords() []model.ObjectManifest {
 		},
 		&model.ConfigRowManifest{
 			ConfigRowKey: model.ConfigRowKey{
-				Id:          "106",
+				ConfigRowId: "106",
 				BranchId:    11,
 				ComponentId: "keboola.variables",
 				ConfigId:    "13",
@@ -449,7 +449,7 @@ func fullRecords() []model.ObjectManifest {
 		},
 		&model.ConfigRowManifest{
 			ConfigRowKey: model.ConfigRowKey{
-				Id:          "103",
+				ConfigRowId: "103",
 				BranchId:    11,
 				ComponentId: "keboola.wr-db-mysql",
 				ConfigId:    "12",
@@ -461,7 +461,7 @@ func fullRecords() []model.ObjectManifest {
 		},
 		&model.ConfigRowManifest{
 			ConfigRowKey: model.ConfigRowKey{
-				Id:          "104",
+				ConfigRowId: "104",
 				BranchId:    11,
 				ComponentId: "keboola.wr-db-mysql",
 				ConfigId:    "12",

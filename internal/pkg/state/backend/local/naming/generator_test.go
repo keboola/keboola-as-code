@@ -26,29 +26,29 @@ func TestUniquePathSameObjectType(t *testing.T) {
 
 	assertCases(t, g, []testCase{
 		// Default branch
-		{"main", &Branch{BranchKey: BranchKey{Id: 12}, Name: "a", IsDefault: true}},
-		{"main", &Branch{BranchKey: BranchKey{Id: 12}, Name: "a", IsDefault: true}},
-		{"main-001", &Branch{BranchKey: BranchKey{Id: 23}, Name: "b", IsDefault: true}},
+		{"main", &Branch{BranchKey: BranchKey{BranchId: 12}, Name: "a", IsDefault: true}},
+		{"main", &Branch{BranchKey: BranchKey{BranchId: 12}, Name: "a", IsDefault: true}},
+		{"main-001", &Branch{BranchKey: BranchKey{BranchId: 23}, Name: "b", IsDefault: true}},
 		// Branch
-		{"branch-name", &Branch{BranchKey: BranchKey{Id: 56}, Name: "branchName"}},
-		{"branch-name-001", &Branch{BranchKey: BranchKey{Id: 78}, Name: "branch-name"}},
+		{"branch-name", &Branch{BranchKey: BranchKey{BranchId: 56}, Name: "branchName"}},
+		{"branch-name-001", &Branch{BranchKey: BranchKey{BranchId: 78}, Name: "branch-name"}},
 		// Config
 		{
 			"my-branch/writer/keboola.wr-foo-bar/my-config",
-			&Config{ConfigKey: ConfigKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", Id: "123"}, Name: "myConfig"},
+			&Config{ConfigKey: ConfigKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", ConfigId: "123"}, Name: "myConfig"},
 		},
 		{
 			"my-branch/writer/keboola.wr-foo-bar/my-config-001",
-			&Config{ConfigKey: ConfigKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", Id: "234"}, Name: "my-config"},
+			&Config{ConfigKey: ConfigKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", ConfigId: "234"}, Name: "my-config"},
 		},
 		// Config row
 		{
 			"my-branch/my-writer/rows/my-row",
-			&ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", ConfigId: "1", Id: "456"}, Name: "myRow"},
+			&ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", ConfigId: "1", ConfigRowId: "456"}, Name: "myRow"},
 		},
 		{
 			"my-branch/my-writer/rows/my-row-001",
-			&ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", ConfigId: "1", Id: "678"}, Name: "myRow"},
+			&ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", ConfigId: "1", ConfigRowId: "678"}, Name: "myRow"},
 		},
 	})
 }
@@ -63,12 +63,12 @@ func TestUniquePathDifferentObjects(t *testing.T) {
 	rowWithoutName := orderedmap.FromPairs([]orderedmap.Pair{{Key: "foo", Value: "bar"}})
 
 	assertCases(t, g, []testCase{
-		{"my-branch/prefix", &Config{ConfigKey: ConfigKey{BranchId: 1, ComponentId: "keboola.foo-bar", Id: "123"}, Name: "a"}},
-		{"my-branch/prefix-001", &Config{ConfigKey: ConfigKey{BranchId: 1, ComponentId: "keboola.foo-bar", Id: "234"}, Name: "b"}},
-		{"my-branch/my-config/prefix", &ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.foo-bar", ConfigId: "1", Id: "345"}, Name: "c"}},
-		{"my-branch/my-config/prefix-001", &ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.foo-bar", ConfigId: "1", Id: "456"}, Name: "d"}},
-		{"my-branch/my-config/prefix-002", &ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.foo-bar", ConfigId: "1", Id: "567"}, Name: "", Content: rowWithName}},
-		{"my-branch/my-config/prefix-003", &ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.foo-bar", ConfigId: "1", Id: "678"}, Name: "", Content: rowWithoutName}},
+		{"my-branch/prefix", &Config{ConfigKey: ConfigKey{BranchId: 1, ComponentId: "keboola.foo-bar", ConfigId: "123"}, Name: "a"}},
+		{"my-branch/prefix-001", &Config{ConfigKey: ConfigKey{BranchId: 1, ComponentId: "keboola.foo-bar", ConfigId: "234"}, Name: "b"}},
+		{"my-branch/my-config/prefix", &ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.foo-bar", ConfigId: "1", ConfigRowId: "345"}, Name: "c"}},
+		{"my-branch/my-config/prefix-001", &ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.foo-bar", ConfigId: "1", ConfigRowId: "456"}, Name: "d"}},
+		{"my-branch/my-config/prefix-002", &ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.foo-bar", ConfigId: "1", ConfigRowId: "567"}, Name: "", Content: rowWithName}},
+		{"my-branch/my-config/prefix-003", &ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.foo-bar", ConfigId: "1", ConfigRowId: "678"}, Name: "", Content: rowWithoutName}},
 	})
 }
 
@@ -82,12 +82,12 @@ func TestNamingEmptyTemplate(t *testing.T) {
 	rowWithoutName := orderedmap.FromPairs([]orderedmap.Pair{{Key: "foo", Value: "bar"}})
 
 	assertCases(t, g, []testCase{
-		{"my-branch/config", &Config{ConfigKey: ConfigKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", Id: "123"}, Name: "a"}},
-		{"my-branch/config-001", &Config{ConfigKey: ConfigKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", Id: "234"}, Name: "b"}},
-		{"my-branch/my-writer/config-row", &ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", ConfigId: "1", Id: "345"}, Name: "c"}},
-		{"my-branch/my-writer/config-row-001", &ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", ConfigId: "1", Id: "456"}, Name: "d"}},
-		{"my-branch/my-writer/config-row-002", &ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", ConfigId: "1", Id: "567"}, Name: "", Content: rowWithName}},
-		{"my-branch/my-writer/config-row-003", &ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", ConfigId: "1", Id: "678"}, Name: "", Content: rowWithoutName}},
+		{"my-branch/config", &Config{ConfigKey: ConfigKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", ConfigId: "123"}, Name: "a"}},
+		{"my-branch/config-001", &Config{ConfigKey: ConfigKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", ConfigId: "234"}, Name: "b"}},
+		{"my-branch/my-writer/config-row", &ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", ConfigId: "1", ConfigRowId: "345"}, Name: "c"}},
+		{"my-branch/my-writer/config-row-001", &ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", ConfigId: "1", ConfigRowId: "456"}, Name: "d"}},
+		{"my-branch/my-writer/config-row-002", &ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", ConfigId: "1", ConfigRowId: "567"}, Name: "", Content: rowWithName}},
+		{"my-branch/my-writer/config-row-003", &ConfigRow{ConfigRowKey: ConfigRowKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", ConfigId: "1", ConfigRowId: "678"}, Name: "", Content: rowWithoutName}},
 	})
 }
 
@@ -101,7 +101,7 @@ func TestNamingDefaultTemplate(t *testing.T) {
 			"1234-my-super-branch",
 			&Branch{
 				BranchKey: BranchKey{
-					Id: 1234,
+					BranchId: 1234,
 				},
 				Name:      "my Super-BRANCH",
 				IsDefault: false,
@@ -114,7 +114,7 @@ func TestNamingDefaultTemplate(t *testing.T) {
 				ConfigKey: ConfigKey{
 					BranchId:    1,
 					ComponentId: "keboola.ex-foo-bar",
-					Id:          "456",
+					ConfigId:    "456",
 				},
 				Name: "MyProductionConfig",
 			},
@@ -127,7 +127,7 @@ func TestNamingDefaultTemplate(t *testing.T) {
 					BranchId:    1,
 					ComponentId: "keboola.ex-foo-bar",
 					ConfigId:    "1",
-					Id:          "789",
+					ConfigRowId: "789",
 				},
 				Name: "---  row AbC---",
 			},
@@ -139,7 +139,7 @@ func TestNamingDefaultTemplate(t *testing.T) {
 				ConfigKey: ConfigKey{
 					BranchId:    1,
 					ComponentId: SharedCodeComponentId,
-					Id:          "456",
+					ConfigId:    "456",
 				},
 				Name:    "MySharedCode",
 				Content: orderedmap.New(),
@@ -155,7 +155,7 @@ func TestNamingDefaultTemplate(t *testing.T) {
 				ConfigKey: ConfigKey{
 					BranchId:    1,
 					ComponentId: SchedulerComponentId,
-					Id:          "456",
+					ConfigId:    "456",
 				},
 				Relations: Relations{
 					&SchedulerForRelation{
@@ -174,7 +174,7 @@ func TestNamingDefaultTemplate(t *testing.T) {
 				ConfigKey: ConfigKey{
 					BranchId:    1,
 					ComponentId: SharedCodeComponentId,
-					Id:          "456",
+					ConfigId:    "456",
 				},
 				Name:    "MySharedCode",
 				Content: orderedmap.New(),
@@ -190,7 +190,7 @@ func TestNamingDefaultTemplate(t *testing.T) {
 				ConfigKey: ConfigKey{
 					BranchId:    1,
 					ComponentId: VariablesComponentId,
-					Id:          "456",
+					ConfigId:    "456",
 				},
 				Relations: Relations{
 					&VariablesForRelation{
@@ -210,7 +210,7 @@ func TestNamingDefaultTemplate(t *testing.T) {
 					BranchId:    1,
 					ComponentId: VariablesComponentId,
 					ConfigId:    "1",
-					Id:          "789",
+					ConfigRowId: "789",
 				},
 				Name: "Default Values",
 			},
@@ -227,12 +227,12 @@ func assertCases(t *testing.T, g *Generator, cases []testCase) {
 func testGenerator(t *testing.T) *Generator {
 	t.Helper()
 	registry := NewRegistry()
-	assert.NoError(t, registry.Attach(BranchKey{Id: 1}, NewAbsPath("", "my-branch")))
-	assert.NoError(t, registry.Attach(ConfigKey{BranchId: 1, ComponentId: "keboola.foo-bar", Id: "1"}, NewAbsPath("my-branch", "my-config")))
-	assert.NoError(t, registry.Attach(ConfigKey{BranchId: 1, ComponentId: "keboola.ex-foo-bar", Id: "1"}, NewAbsPath("my-branch", "my-extractor")))
-	assert.NoError(t, registry.Attach(ConfigKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", Id: "1"}, NewAbsPath("my-branch", "my-writer")))
-	assert.NoError(t, registry.Attach(ConfigKey{BranchId: 1, ComponentId: SharedCodeComponentId, Id: "1"}, NewAbsPath("my-branch", "my-shared-code")))
-	assert.NoError(t, registry.Attach(ConfigKey{BranchId: 1, ComponentId: VariablesComponentId, Id: "1"}, NewAbsPath("my-branch/my-config", "my-variables")))
+	assert.NoError(t, registry.Attach(BranchKey{BranchId: 1}, NewAbsPath("", "my-branch")))
+	assert.NoError(t, registry.Attach(ConfigKey{BranchId: 1, ComponentId: "keboola.foo-bar", ConfigId: "1"}, NewAbsPath("my-branch", "my-config")))
+	assert.NoError(t, registry.Attach(ConfigKey{BranchId: 1, ComponentId: "keboola.ex-foo-bar", ConfigId: "1"}, NewAbsPath("my-branch", "my-extractor")))
+	assert.NoError(t, registry.Attach(ConfigKey{BranchId: 1, ComponentId: "keboola.wr-foo-bar", ConfigId: "1"}, NewAbsPath("my-branch", "my-writer")))
+	assert.NoError(t, registry.Attach(ConfigKey{BranchId: 1, ComponentId: SharedCodeComponentId, ConfigId: "1"}, NewAbsPath("my-branch", "my-shared-code")))
+	assert.NoError(t, registry.Attach(ConfigKey{BranchId: 1, ComponentId: VariablesComponentId, ConfigId: "1"}, NewAbsPath("my-branch/my-config", "my-variables")))
 	objects := state.NewCollection(state.NewIdSorter())
 	return NewGenerator(TemplateWithIds(), registry, NewComponentsMap(testapi.NewMockedComponentsProvider()), objects)
 }

@@ -43,7 +43,7 @@ func (m *localMapper) linkToPathPlaceholder(code *model.Code, script model.Scrip
 		row, ok := m.state.GetOrNil(link.Target).(*model.Config)
 		if !ok || sharedCode == nil {
 			// Return ID placeholder, if row is not found
-			return model.StaticScript{Value: m.id.format(link.Target.Id)}, utils.PrefixError(
+			return model.StaticScript{Value: m.id.format(link.Target.ConfigRowId)}, errors.PrefixError(
 				fmt.Sprintf(`missing shared code %s`, link.Target.String()),
 				fmt.Errorf(`referenced from %s`, code.String()),
 			)

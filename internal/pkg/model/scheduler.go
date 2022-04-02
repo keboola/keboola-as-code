@@ -34,9 +34,9 @@ func (t *SchedulerForRelation) ParentKey(relationDefinedOn Key) (Key, error) {
 		return nil, err
 	}
 	return ConfigKey{
-		BranchId:    config.BranchId,
+		BranchKey:   BranchKey{BranchId: config.BranchId},
 		ComponentId: t.ComponentId,
-		Id:          t.ConfigId,
+		ConfigId:    t.ConfigId,
 	}, nil
 }
 

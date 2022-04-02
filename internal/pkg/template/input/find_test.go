@@ -12,7 +12,7 @@ import (
 
 func TestFind(t *testing.T) {
 	t.Parallel()
-	objectKey := model.ConfigKey{BranchId: 123, ComponentId: "keboola.foo-bar", Id: "456"}
+	objectKey := model.ConfigKey{BranchId: 123, ComponentId: "keboola.foo-bar", ConfigId: "456"}
 	component := &model.Component{
 		ComponentKey: model.ComponentKey{Id: "keboola.foo-bar"},
 	}
@@ -137,7 +137,7 @@ func TestFind_ComponentSchema(t *testing.T) {
   }
 }`
 
-	objectKey := model.ConfigKey{BranchId: 123, ComponentId: "keboola.foo-bar", Id: "456"}
+	objectKey := model.ConfigKey{BranchId: 123, ComponentId: "keboola.foo-bar", ConfigId: "456"}
 	component := &model.Component{
 		ComponentKey: model.ComponentKey{Id: "keboola.foo-bar"},
 		Schema:       json.RawMessage(schema),

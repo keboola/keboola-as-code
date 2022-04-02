@@ -17,17 +17,17 @@ var (
 )
 
 type TransformationKey struct {
-	Parent ConfigKey `json:"-" validate:"dive" `
+	ConfigKey `validate:"dive" `
 }
 
 type BlockKey struct {
-	Parent TransformationKey `json:"-" validate:"dive" `
-	Index  int               `json:"-" validate:"min=0" `
+	TransformationKey `validate:"dive" `
+	BlockIndex        int `validate:"min=0" `
 }
 
 type CodeKey struct {
-	Parent BlockKey `json:"-" validate:"dive" `
-	Index  int      `json:"-" validate:"min=0" `
+	BlockKey  `json:"-" validate:"dive" `
+	CodeIndex int `json:"-" validate:"min=0" `
 }
 
 type UsedSharedCodeRows []ConfigRowKey
@@ -80,7 +80,7 @@ func (k TransformationKey) Kind() Kind {
 }
 
 func (k TransformationKey) Level() ObjectLevel {
-	return 21
+	return 45
 }
 
 func (k TransformationKey) Key() Key {
@@ -88,7 +88,7 @@ func (k TransformationKey) Key() Key {
 }
 
 func (k TransformationKey) ParentKey() (Key, error) {
-	return k.Parent, nil
+	return k.ConfigKey, nil
 }
 
 func (k TransformationKey) String() string {
@@ -96,7 +96,7 @@ func (k TransformationKey) String() string {
 }
 
 func (k TransformationKey) LogicPath() string {
-	return k.Parent.LogicPath() + "/transformation"
+	return k.ConfigKey.LogicPath() + "/transformation"
 }
 
 func (k TransformationKey) ObjectId() string {
@@ -108,7 +108,7 @@ func (k BlockKey) Kind() Kind {
 }
 
 func (k BlockKey) Level() ObjectLevel {
-	return 22
+	return 46
 }
 
 func (k BlockKey) Key() Key {
@@ -116,7 +116,7 @@ func (k BlockKey) Key() Key {
 }
 
 func (k BlockKey) ParentKey() (Key, error) {
-	return k.Parent, nil
+	return k.TransformationKey, nil
 }
 
 func (k BlockKey) String() string {
@@ -124,11 +124,11 @@ func (k BlockKey) String() string {
 }
 
 func (k BlockKey) LogicPath() string {
-	return k.Parent.LogicPath() + fmt.Sprintf("/block:%d", k.Index)
+	return k.TransformationKey.LogicPath() + fmt.Sprintf("/block:%03d", k.BlockIndex+1)
 }
 
 func (k BlockKey) ObjectId() string {
-	return cast.ToString(k.Index)
+	return cast.ToString(k.BlockIndex)
 }
 
 func (k CodeKey) Kind() Kind {
@@ -136,7 +136,7 @@ func (k CodeKey) Kind() Kind {
 }
 
 func (k CodeKey) Level() ObjectLevel {
-	return 23
+	return 47
 }
 
 func (k CodeKey) Key() Key {
@@ -144,11 +144,7 @@ func (k CodeKey) Key() Key {
 }
 
 func (k CodeKey) ParentKey() (Key, error) {
-	return k.Parent, nil
-}
-
-func (k CodeKey) ComponentId() ComponentId {
-	return k.Parent.Parent.Parent.ComponentId
+	return k.BlockKey, nil
 }
 
 func (k CodeKey) String() string {
@@ -156,11 +152,11 @@ func (k CodeKey) String() string {
 }
 
 func (k CodeKey) LogicPath() string {
-	return k.Parent.LogicPath() + fmt.Sprintf("/code:%d", k.Index)
+	return k.BlockKey.LogicPath() + fmt.Sprintf("/code:%03d", k.CodeIndex+1)
 }
 
 func (k CodeKey) ObjectId() string {
-	return cast.ToString(k.Index)
+	return cast.ToString(k.CodeIndex)
 }
 
 type Script interface {
@@ -170,7 +166,7 @@ type Script interface {
 func (v UsedSharedCodeRows) IdsSlice() []interface{} {
 	var ids []interface{}
 	for _, rowKey := range v {
-		ids = append(ids, rowKey.Id.String())
+		ids = append(ids, rowKey.ConfigRowId.String())
 	}
 	return ids
 }

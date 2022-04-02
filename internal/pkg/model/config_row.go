@@ -4,20 +4,18 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 var ConfigRowKind = Kind{Name: "config row", Abbr: "R"}
 
-type RowId string
+type ConfigRowId string
 
 type ConfigRowKey struct {
-	BranchId    BranchId    `json:"-" validate:"required_in_project"`
-	ComponentId ComponentId `json:"-" validate:"required"`
-	ConfigId    ConfigId    `json:"-" validate:"required"`
-	Id          RowId       `json:"id" validate:"required" `
+	ConfigKey   `json:"-" validate:"dive"`
+	ConfigRowId ConfigRowId `json:"id" validate:"required" `
 }
 
 // ConfigRow https://keboola.docs.apiary.io/#reference/components-and-configurations/component-configurations/list-configurations
@@ -35,7 +33,7 @@ func (k Kind) IsConfigRow() bool {
 	return k == ConfigRowKind
 }
 
-func (v RowId) String() string {
+func (v ConfigRowId) String() string {
 	return string(v)
 }
 
@@ -54,9 +52,9 @@ func (k ConfigRowKey) String() string {
 func (k ConfigRowKey) LogicPath() string {
 	if k.BranchId == 0 {
 		// Row in a template
-		return fmt.Sprintf(`component:%s/config:%s`, k.ComponentId, k.Id)
+		return fmt.Sprintf(`component:%s/config:%s`, k.ComponentId, k.ConfigRowId)
 	}
-	return fmt.Sprintf(`branch:%d/component:%s/config:%s/row:%s`, k.BranchId, k.ComponentId, k.ConfigId, k.Id)
+	return fmt.Sprintf(`branch:%d/component:%s/config:%s/row:%s`, k.BranchId, k.ComponentId, k.ConfigId, k.ConfigRowId)
 }
 
 func (k ConfigRowKey) Key() Key {
@@ -64,7 +62,7 @@ func (k ConfigRowKey) Key() Key {
 }
 
 func (k ConfigRowKey) ParentKey() (Key, error) {
-	return k.ConfigKey(), nil
+	return k.ConfigKey, nil
 }
 
 func (k ConfigRowKey) ComponentKey() ComponentKey {
@@ -75,16 +73,8 @@ func (k *ConfigRowKey) GetComponentId() ComponentId {
 	return k.ComponentId
 }
 
-func (k ConfigRowKey) BranchKey() BranchKey {
-	return k.ConfigKey().BranchKey()
-}
-
-func (k ConfigRowKey) ConfigKey() ConfigKey {
-	return ConfigKey{BranchId: k.BranchId, ComponentId: k.ComponentId, Id: k.ConfigId}
-}
-
 func (k ConfigRowKey) ObjectId() string {
-	return k.Id.String()
+	return k.ConfigRowId.String()
 }
 
 func (k ConfigRowKey) NewObject() Object {
@@ -118,7 +108,7 @@ func (r *ConfigRow) AddRelation(relation Relation) {
 func (r *ConfigRow) ToApiValues() (map[string]string, error) {
 	configJson, err := json.EncodeString(r.Content, false)
 	if err != nil {
-		return nil, utils.PrefixError(`cannot JSON encode config configuration`, err)
+		return nil, errors.PrefixError(`cannot JSON encode config configuration`, err)
 	}
 
 	return map[string]string{

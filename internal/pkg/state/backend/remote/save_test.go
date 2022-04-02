@@ -23,7 +23,7 @@ func TestUnitOfWork_SaveObject_Create(t *testing.T) {
 
 	// Test object
 	config := &model.Config{
-		ConfigKey: model.ConfigKey{BranchId: 123, ComponentId: `foo.bar`, Id: `456`},
+		ConfigKey: model.ConfigKey{BranchId: 123, ComponentId: `foo.bar`, ConfigId: `456`},
 		Name:      "internal name",
 		Content: orderedmap.FromPairs([]orderedmap.Pair{
 			{Key: "key", Value: "internal value"},
@@ -31,7 +31,7 @@ func TestUnitOfWork_SaveObject_Create(t *testing.T) {
 	}
 
 	// Add parent branch
-	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{Id: config.BranchId}})
+	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{BranchId: config.BranchId}})
 
 	// Mocked response: create config
 	var httpRequest *http.Request
@@ -71,7 +71,7 @@ func TestUnitOfWork_SaveObject_Update(t *testing.T) {
 	uow, httpTransport, state := newTestUow(t, testMapperInst)
 
 	// Test object
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: `foo.bar`, Id: `456`}
+	configKey := model.ConfigKey{BranchId: 123, ComponentId: `foo.bar`, ConfigId: `456`}
 	config := &model.Config{
 		ConfigKey: configKey,
 		Name:      "internal name",
@@ -81,7 +81,7 @@ func TestUnitOfWork_SaveObject_Update(t *testing.T) {
 	}
 
 	// Config already exists
-	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{Id: config.BranchId}})
+	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{BranchId: config.BranchId}})
 	state.MustAdd(&model.Config{
 		ConfigKey: configKey,
 		Name:      "old name",
@@ -142,14 +142,14 @@ func TestUnitOfWork_SaveConfigMetadata_Create(t *testing.T) {
 
 	// Fixtures
 	config := &model.Config{
-		ConfigKey: model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", Id: "456"},
+		ConfigKey: model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", ConfigId: "456"},
 		Metadata: map[string]string{
 			"KBC-KaC-meta1": "val1",
 		},
 	}
 
 	// Add parent branch
-	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{Id: config.BranchId}})
+	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{BranchId: config.BranchId}})
 
 	// Save
 	uow.Save(config, model.NewChangedFields())
@@ -174,10 +174,10 @@ func TestUnitOfWork_SaveConfigMetadata_Create_Empty(t *testing.T) {
 
 	// Fixtures
 	config := &model.Config{
-		ConfigKey: model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", Id: "456"},
+		ConfigKey: model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", ConfigId: "456"},
 		Metadata:  map[string]string{},
 	}
-	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{Id: config.BranchId}})
+	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{BranchId: config.BranchId}})
 
 	// Save, no metadata request
 	uow.Save(config, model.NewChangedFields())
@@ -207,12 +207,12 @@ func TestUnitOfWork_SaveConfigMetadata_Update(t *testing.T) {
 
 	// Fixtures
 	config := &model.Config{
-		ConfigKey: model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", Id: "456"},
+		ConfigKey: model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", ConfigId: "456"},
 		Metadata: map[string]string{
 			"KBC-KaC-meta1": "val1",
 		},
 	}
-	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{Id: config.BranchId}})
+	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{BranchId: config.BranchId}})
 	state.MustAdd(config)
 
 	// Save
@@ -238,12 +238,12 @@ func TestUnitOfWork_SaveConfigMetadata_Update_NoChange(t *testing.T) {
 
 	// Fixtures
 	config := &model.Config{
-		ConfigKey: model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", Id: "456"},
+		ConfigKey: model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", ConfigId: "456"},
 		Metadata: map[string]string{
 			"KBC-KaC-meta1": "val1",
 		},
 	}
-	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{Id: config.BranchId}})
+	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{BranchId: config.BranchId}})
 	state.MustAdd(config)
 
 	// Save, metadata field is not changed

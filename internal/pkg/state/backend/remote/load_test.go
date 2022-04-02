@@ -65,7 +65,7 @@ func TestUnitOfWork_LoadAll(t *testing.T) {
 	configRaw, found := state.Get(model.ConfigKey{
 		BranchId:    123,
 		ComponentId: `foo.bar`,
-		Id:          `456`,
+		ConfigId:    `456`,
 	})
 	assert.True(t, found)
 	config := configRaw.(*model.Config)
@@ -158,12 +158,12 @@ func TestUnitOfWork_LoadAll_ConfigMetadata(t *testing.T) {
 	config1Key := model.ConfigKey{
 		BranchId:    123,
 		ComponentId: "foo.bar",
-		Id:          "456",
+		ConfigId:    "456",
 	}
 	config2Key := model.ConfigKey{
 		BranchId:    123,
 		ComponentId: "foo.bar",
-		Id:          "789",
+		ConfigId:    "789",
 	}
 	assert.Equal(t, map[string]string{
 		"KBC.KaC.Meta":  "value1",

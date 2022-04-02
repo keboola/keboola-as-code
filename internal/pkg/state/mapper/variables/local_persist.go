@@ -47,7 +47,7 @@ func (m *variablesLocalMapper) MapBeforePersist(recipe *model.PersistRecipe) err
 	// Add relation
 	recipe.Relations.Add(&model.VariablesForRelation{
 		ComponentId: configKey.ComponentId,
-		ConfigId:    configKey.Id,
+		ConfigId:    configKey.ConfigId,
 	})
 
 	return nil
@@ -56,20 +56,20 @@ func (m *variablesLocalMapper) MapBeforePersist(recipe *model.PersistRecipe) err
 // AfterLocalPersist ensures there is one config row with default variables values after persist.
 func (m *variablesLocalMapper) AfterLocalPersist(persisted []model.Object) error {
 	// Find persisted configs
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	configs, err := m.findPersistedConfigs(persisted)
 	if err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
 	// Ensure that each "variables" config has one row with default values
 	for _, config := range configs {
 		if err := m.ensureOneRowHasRelation(config); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 // ensureOneRowHasRelation VariablesValuesForRelation, it marks variables default values.
@@ -132,13 +132,13 @@ func (m *variablesLocalMapper) findPersistedConfigs(persisted []model.Object) ([
 
 	// Find new persisted variables configs + include those that have a new persisted row
 	configsMap := make(map[model.ConfigKey]bool)
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	for _, object := range persisted {
 		if config, ok := object.(*model.Config); ok {
 			// Variables config?
 			component, err := components.Get(config.ComponentKey())
 			if err != nil {
-				errors.Append(err)
+				errs.Append(err)
 				continue
 			}
 			if component.IsVariables() {
@@ -148,7 +148,7 @@ func (m *variablesLocalMapper) findPersistedConfigs(persisted []model.Object) ([
 			// Variables values row?
 			component, err := components.Get(row.ComponentKey())
 			if err != nil {
-				errors.Append(err)
+				errs.Append(err)
 				continue
 			}
 			if component.IsVariables() {
@@ -162,5 +162,5 @@ func (m *variablesLocalMapper) findPersistedConfigs(persisted []model.Object) ([
 	for configKey := range configsMap {
 		out = append(out, m.state.MustGet(configKey).(*model.Config))
 	}
-	return out, errors.ErrorOrNil()
+	return out, errs.ErrorOrNil()
 }

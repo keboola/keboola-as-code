@@ -1,4 +1,4 @@
-package utils
+package errors
 
 import (
 	"errors"
@@ -20,6 +20,10 @@ type MultiError struct {
 type NestedError struct {
 	*MultiError
 	msg string
+}
+
+func New(text string) error {
+	return errors.New(text)
 }
 
 func (e *NestedError) Error() (out string) {

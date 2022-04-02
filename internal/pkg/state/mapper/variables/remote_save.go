@@ -15,16 +15,16 @@ func (m *variablesRemoteMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveReci
 	}
 
 	// Save variables_id
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	variablesRelation, err := m.saveVariables(config, recipe)
 	if err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
 	// Save variables_values_id if variables are present
 	if variablesRelation != nil {
 		if err := m.saveVariablesValues(config, recipe); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
 

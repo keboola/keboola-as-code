@@ -3,8 +3,8 @@ package pull
 import (
 	"fmt"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/diffop"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/diff"
 )
 
 func NewPlan(diffResults *diff.Results) (*diffop.Plan, error) {

@@ -12,7 +12,7 @@ var BranchKind = Kind{Name: "branch", Abbr: "B"}
 type BranchId int
 
 type BranchKey struct {
-	Id BranchId `json:"id" validate:"required"`
+	BranchId BranchId `json:"id" validate:"required"`
 }
 
 // Branch https://keboola.docs.apiary.io/#reference/development-branches/branches/list-branches
@@ -44,7 +44,7 @@ func (k BranchKey) String() string {
 }
 
 func (k BranchKey) LogicPath() string {
-	return fmt.Sprintf(`branch:%d`, k.Id)
+	return fmt.Sprintf(`branch:%d`, k.BranchId)
 }
 
 func (k BranchKey) Key() Key {
@@ -56,7 +56,7 @@ func (k BranchKey) ParentKey() (Key, error) {
 }
 
 func (k BranchKey) ObjectId() string {
-	return cast.ToString(k.Id)
+	return cast.ToString(k.BranchId)
 }
 
 func (k BranchKey) NewObject() Object {

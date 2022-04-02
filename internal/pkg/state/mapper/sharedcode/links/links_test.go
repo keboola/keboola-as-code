@@ -34,7 +34,7 @@ func createLocalTransformationWithSharedCode(t *testing.T, state *local.State) *
 	transformationKey := model.ConfigKey{
 		BranchId:    123,
 		ComponentId: `keboola.python-transformation-v2`,
-		Id:          `789`,
+		ConfigId:    `789`,
 	}
 	blockKey := model.BlockKey{
 		Parent: transformationKey,
@@ -91,19 +91,19 @@ func createRemoteTransformationWithSharedCode(t *testing.T, sharedCodeKey model.
 	// Rows -> rows IDs
 	var rows []interface{}
 	for _, row := range sharedCodeRowsKeys {
-		rows = append(rows, row.Id.String())
+		rows = append(rows, row.ConfigRowId.String())
 	}
 
 	// Transformation
 	transformationKey := model.ConfigKey{
 		BranchId:    sharedCodeKey.BranchId,
 		ComponentId: model.ComponentId("keboola.python-transformation-v2"),
-		Id:          model.ConfigId("001"),
+		ConfigId:    model.ConfigId("001"),
 	}
 	transformation := &model.Config{
 		ConfigKey: transformationKey,
 		Content: orderedmap.FromPairs([]orderedmap.Pair{
-			{Key: model.SharedCodeIdContentKey, Value: sharedCodeKey.Id.String()},
+			{Key: model.SharedCodeIdContentKey, Value: sharedCodeKey.ConfigId.String()},
 			{Key: model.SharedCodeRowsIdContentKey, Value: rows},
 		}),
 		Transformation: &model.Transformation{},
@@ -119,7 +119,7 @@ func createInternalTransformationWithSharedCode(t *testing.T, sharedCodeKey mode
 	transformationKey := model.ConfigKey{
 		BranchId:    123,
 		ComponentId: `keboola.python-transformation-v2`,
-		Id:          `789`,
+		ConfigId:    `789`,
 	}
 	blockKey := model.BlockKey{
 		Parent: transformationKey,

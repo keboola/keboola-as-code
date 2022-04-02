@@ -91,7 +91,7 @@ func (i Input) ValidateUserInput(userInput interface{}, ctx context.Context) err
 func (i Input) Available(params map[string]interface{}) (bool, error) {
 	result, err := i.If.Evaluate(params)
 	if err != nil {
-		return false, utils.PrefixError(fmt.Sprintf(`invalid input "%s"`, i.Id), err)
+		return false, errors.PrefixError(fmt.Sprintf(`invalid input "%s"`, i.Id), err)
 	}
 	return result, nil
 }

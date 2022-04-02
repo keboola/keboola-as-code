@@ -33,7 +33,7 @@ func (p *Dialogs) SelectBranch(options *options.Options, all []*model.Branch, la
 
 func (p *Dialogs) SelectBranches(options *options.Options, all []*model.Branch, label string) (results []*model.Branch, err error) {
 	if options.IsSet(`branches`) {
-		errors := utils.NewMultiError()
+		errs := errors.NewMultiError()
 		for _, item := range strings.Split(options.GetString(`branches`), `,`) {
 			item = strings.TrimSpace(item)
 			if len(item) == 0 {
@@ -43,20 +43,20 @@ func (p *Dialogs) SelectBranches(options *options.Options, all []*model.Branch, 
 			if b, err := search.Branch(all, item); err == nil {
 				results = append(results, b)
 			} else {
-				errors.Append(err)
+				errs.Append(err)
 				continue
 			}
 		}
 		if len(results) > 0 {
-			return results, errors.ErrorOrNil()
+			return results, errs.ErrorOrNil()
 		}
 		return nil, fmt.Errorf(`please specify at least one branch`)
 	}
 
 	selectOpts := orderedmap.New()
 	for _, branch := range all {
-		msg := fmt.Sprintf(`%s (%d)`, branch.Name, branch.Id)
-		selectOpts.Set(msg, branch.Id)
+		msg := fmt.Sprintf(`%s (%d)`, branch.Name, branch.BranchId)
+		selectOpts.Set(msg, branch.BranchId)
 	}
 	indexes, _ := p.MultiSelectIndex(&prompt.MultiSelectIndex{
 		Label:       label,

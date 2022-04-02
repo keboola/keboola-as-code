@@ -17,13 +17,13 @@ func TestSharedCodeMapBeforePersist(t *testing.T) {
 		BranchId:    123,
 		ComponentId: model.SharedCodeComponentId,
 		ConfigId:    `345`,
-		Id:          `567`,
+		ConfigRowId: `567`,
 	}
 	configManifest := &model.ConfigManifest{
 		ConfigKey: model.ConfigKey{
 			BranchId:    123,
 			ComponentId: model.VariablesComponentId,
-			Id:          `789`,
+			ConfigId:    `789`,
 		},
 	}
 	recipe := &model.PersistRecipe{

@@ -132,7 +132,7 @@ func TestLocalSaveTranWithSharedCode_SharedCodeRowNotFound(t *testing.T) {
 		BranchId:    sharedCodeKey.BranchId,
 		ComponentId: sharedCodeKey.ComponentId,
 		ConfigId:    sharedCodeKey.Id,
-		Id:          `missing`, // <<<<<<<<<<<<
+		ConfigRowId: `missing`, // <<<<<<<<<<<<
 	}}
 	transformationPath, err := state.GetPath(transformation)
 	assert.NoError(t, err)

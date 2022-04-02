@@ -31,7 +31,7 @@ func createTestObjectForPersist(t *testing.T, state *local.State) (row1, row2, r
 
 	// Branch
 	state.MustAdd(&model.Branch{
-		BranchKey: model.BranchKey{Id: 123},
+		BranchKey: model.BranchKey{BranchId: 123},
 	})
 
 	// Config using variables
@@ -39,7 +39,7 @@ func createTestObjectForPersist(t *testing.T, state *local.State) (row1, row2, r
 		ConfigKey: model.ConfigKey{
 			BranchId:    123,
 			ComponentId: `foo.bar`,
-			Id:          `789`,
+			ConfigId:    `789`,
 		},
 		Relations: model.Relations{
 			&model.VariablesFromRelation{
@@ -53,7 +53,7 @@ func createTestObjectForPersist(t *testing.T, state *local.State) (row1, row2, r
 		ConfigKey: model.ConfigKey{
 			BranchId:    123,
 			ComponentId: model.VariablesComponentId,
-			Id:          `456`,
+			ConfigId:    `456`,
 		},
 		Relations: model.Relations{
 			&model.VariablesForRelation{
@@ -69,7 +69,7 @@ func createTestObjectForPersist(t *testing.T, state *local.State) (row1, row2, r
 			BranchId:    123,
 			ComponentId: model.VariablesComponentId,
 			ConfigId:    `456`,
-			Id:          `1`,
+			ConfigRowId: `1`,
 		},
 		Name: `first`,
 	}
@@ -81,7 +81,7 @@ func createTestObjectForPersist(t *testing.T, state *local.State) (row1, row2, r
 			BranchId:    123,
 			ComponentId: model.VariablesComponentId,
 			ConfigId:    `456`,
-			Id:          `2`,
+			ConfigRowId: `2`,
 		},
 		Name: `second`,
 	}
@@ -93,7 +93,7 @@ func createTestObjectForPersist(t *testing.T, state *local.State) (row1, row2, r
 			BranchId:    123,
 			ComponentId: model.VariablesComponentId,
 			ConfigId:    `456`,
-			Id:          `3`,
+			ConfigRowId: `3`,
 		},
 		Name: `third`,
 	}

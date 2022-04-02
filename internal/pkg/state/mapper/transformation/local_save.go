@@ -60,11 +60,11 @@ func (c *localSaveContext) save() error {
 	}
 
 	// Generate files for blocks
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	for _, block := range c.transformation.Transformation.Blocks {
 		// Generate block files
 		if err := c.saveBlock(block); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
 
@@ -77,13 +77,13 @@ func (c *localSaveContext) save() error {
 		}
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func (c *localSaveContext) saveBlock(block *model.Block) error {
 	// Validate
 	if err := validator.Validate(c.state.Ctx(), block); err != nil {
-		return utils.PrefixError(fmt.Sprintf(`invalid block \"%s\"`, block.String()), err)
+		return errors.PrefixError(fmt.Sprintf(`invalid block \"%s\"`, block.String()), err)
 	}
 
 	// Get path
@@ -99,13 +99,13 @@ func (c *localSaveContext) saveBlock(block *model.Block) error {
 	}
 
 	// Generate codes
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	for _, code := range block.Codes {
 		if err := c.saveCode(code); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func (c *localSaveContext) saveCode(code *model.Code) error {

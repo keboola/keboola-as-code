@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -59,11 +59,11 @@ type uow struct {
 	objects model.Objects
 	backend UnitOfWorkBackend
 	changes *model.Changes
-	errors  *utils.MultiError
+	errs    *errors.MultiError
 }
 
 func NewUnitOfWork(ctx context.Context, objects model.Objects, backend UnitOfWorkBackend) UnitOfWork {
-	return &uow{ctx: ctx, objects: objects, backend: backend, changes: model.NewChanges(), errors: utils.NewMultiError()}
+	return &uow{ctx: ctx, objects: objects, backend: backend, changes: model.NewChanges(), errs: errors.NewMultiError()}
 }
 
 // Invoke planned work in parallel.
@@ -75,23 +75,23 @@ func (u *uow) Invoke() error {
 	u.invoked = true
 
 	// Invoke
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	finalizationFn, err := u.backend.Invoke()
 	if err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
 	// Finalize
 	if err := finalizationFn(u.changes); err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
 	// Add common errors
-	if err := u.errors.ErrorOrNil(); err != nil {
-		errors.Append(err)
+	if err := u.errs.ErrorOrNil(); err != nil {
+		errs.Append(err)
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 // LoadAll objects from the backend.
@@ -101,13 +101,13 @@ func (u *uow) LoadAll() {
 		OnLoad: func(object model.Object) (accepted bool) {
 			// Validate
 			if err := validator.Validate(u.ctx, object); err != nil {
-				u.errors.AppendWithPrefix(fmt.Sprintf(`%s is invalid`, object.String()), err)
+				u.errs.AppendWithPrefix(fmt.Sprintf(`%s is invalid`, object.String()), err)
 				return false
 			}
 
 			// Add object to the collection
 			if err := u.objects.AddOrReplace(object); err != nil {
-				u.errors.Append(err)
+				u.errs.Append(err)
 				return false
 			}
 
@@ -128,7 +128,7 @@ func (u *uow) Save(object model.Object, changedFields model.ChangedFields) {
 
 	// Validate
 	if err := validator.Validate(u.ctx, object); err != nil {
-		u.errors.AppendWithPrefix(fmt.Sprintf(`%s is invalid`, object.String()), err)
+		u.errs.AppendWithPrefix(fmt.Sprintf(`%s is invalid`, object.String()), err)
 		return
 	}
 
@@ -145,7 +145,7 @@ func (u *uow) Save(object model.Object, changedFields model.ChangedFields) {
 		OnSuccess: func() {
 			// Add object to the collection
 			if err := u.objects.AddOrReplace(object); err != nil {
-				u.errors.Append(err)
+				u.errs.Append(err)
 				return
 			}
 

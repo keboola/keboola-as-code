@@ -8,7 +8,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	loadProjectManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/load"
 )
 
@@ -64,7 +63,7 @@ func Run(o Options, d dependencies) (*local.State, error) {
 	uow.LoadAll()
 	if err := uow.Invoke(); err != nil {
 		if !o.IgnoreAllErrors {
-			return nil, InvalidLocalStateError{utils.PrefixError("project local state is invalid", err)}
+			return nil, InvalidLocalStateError{errors.PrefixError("project local state is invalid", err)}
 		}
 	}
 

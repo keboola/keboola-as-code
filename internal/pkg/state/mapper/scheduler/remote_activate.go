@@ -8,5 +8,5 @@ import (
 
 // onRemoteSave activates scheduler by Scheduler API when scheduler configuration is created/updated.
 func (m *schedulerRemoteMapper) onRemoteSave(api *schedulerapi.Api, pool *client.Pool, config *model.Config) {
-	pool.Request(api.ActivateScheduleRequest(config.Id, "")).Send()
+	pool.Request(api.ActivateScheduleRequest(config.ConfigId, "")).Send()
 }

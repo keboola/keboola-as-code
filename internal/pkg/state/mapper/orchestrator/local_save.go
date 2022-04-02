@@ -7,7 +7,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -55,18 +54,18 @@ func (c *localSaveContext) save() {
 		AddTag(model.FileKindGitKeep)
 
 	// Generate files for phases
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	for _, phase := range c.phases {
 		// Get phase path
 		phaseDir, err := c.state.GetPath(phase)
 		if err != nil {
-			errors.Append(utils.PrefixError(fmt.Sprintf(`cannot save %s`, phase.String()), err))
+			errs.Append(errors.PrefixError(fmt.Sprintf(`cannot save %s`, phase.String()), err))
 			continue
 		}
 
 		// Save phase
 		if err := c.savePhase(phase, phaseDir); err != nil {
-			errors.Append(utils.PrefixError(fmt.Sprintf(`cannot save phase "%s"`, phaseDir.Base()), err))
+			errs.Append(errors.PrefixError(fmt.Sprintf(`cannot save phase "%s"`, phaseDir.Base()), err))
 		}
 	}
 
@@ -80,7 +79,7 @@ func (c *localSaveContext) save() {
 
 	// Convert errors to warning
 	if errors.Len() > 0 {
-		c.logger.Warn(utils.PrefixError(fmt.Sprintf(`Warning: cannot save orchestrator config "%s"`, c.basePath), errors))
+		c.logger.Warn(errors.PrefixError(fmt.Sprintf(`Warning: cannot save orchestrator config "%s"`, c.basePath), errors))
 	}
 }
 
@@ -91,7 +90,7 @@ func (c *localSaveContext) savePhase(phase *model.Phase, phaseDir model.AbsPath)
 	}
 
 	// Create content
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	phaseContent := orderedmap.New()
 	phaseContent.Set(`name`, phase.Name)
 
@@ -101,7 +100,7 @@ func (c *localSaveContext) savePhase(phase *model.Phase, phaseDir model.AbsPath)
 		depOnPhase := c.phases[depOnKey.Index]
 		depOnPath, err := c.state.GetPath(depOnPhase)
 		if err != nil {
-			errors.Append(err)
+			errs.Append(err)
 			continue
 		}
 		dependsOn = append(dependsOn, depOnPath.Base())
@@ -126,16 +125,16 @@ func (c *localSaveContext) savePhase(phase *model.Phase, phaseDir model.AbsPath)
 		// Get task path
 		taskDir, err := c.state.GetPath(task)
 		if err != nil {
-			errors.Append(err)
+			errs.Append(err)
 			continue
 		}
 
 		if err := c.saveTask(task, taskDir); err != nil {
-			errors.Append(utils.PrefixError(fmt.Sprintf(`cannot save task "%s"`, taskDir.Base()), err))
+			errs.Append(errors.PrefixError(fmt.Sprintf(`cannot save task "%s"`, taskDir.Base()), err))
 		}
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func (c *localSaveContext) saveTask(task *model.Task, taskDir model.AbsPath) error {
@@ -165,7 +164,7 @@ func (c *localSaveContext) saveTask(task *model.Task, taskDir model.AbsPath) err
 	targetConfigKey := model.ConfigKey{
 		BranchId:    task.BranchId,
 		ComponentId: task.ComponentId,
-		Id:          task.ConfigId,
+		ConfigId:    task.ConfigId,
 	}
 
 	// Target path

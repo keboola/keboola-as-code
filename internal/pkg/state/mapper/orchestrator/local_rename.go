@@ -9,7 +9,7 @@ import (
 
 // AfterLocalRename - find renamed orchestrators and renamed configs used in an orchestrator.
 func (m *orchestratorLocalMapper) AfterLocalRename(changes []model.RenameAction) error {
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 
 	// Find renamed orchestrators and renamed configs used in an orchestrator
 	orchestratorsToUpdate := make(map[model.Key]bool)
@@ -18,7 +18,7 @@ func (m *orchestratorLocalMapper) AfterLocalRename(changes []model.RenameAction)
 
 		// Is object an orchestrator?
 		if ok, err := m.isOrchestrator(key); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 			continue
 		} else if ok {
 			orchestratorsToUpdate[key] = true
@@ -36,7 +36,7 @@ func (m *orchestratorLocalMapper) AfterLocalRename(changes []model.RenameAction)
 				orchestratorKey := model.ConfigKey{
 					BranchId:    config.BranchId,
 					ComponentId: model.OrchestratorComponentId,
-					Id:          relation.ConfigId,
+					ConfigId:    relation.ConfigId,
 				}
 				orchestratorsToUpdate[orchestratorKey] = true
 			}
@@ -56,8 +56,8 @@ func (m *orchestratorLocalMapper) AfterLocalRename(changes []model.RenameAction)
 
 	// Invoke
 	if err := uow.Invoke(); err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }

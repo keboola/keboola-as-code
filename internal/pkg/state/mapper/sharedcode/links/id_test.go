@@ -28,7 +28,7 @@ func TestSharedCodeLinksMatchId(t *testing.T) {
 	}
 	idUtils := newIdUtils()
 	for i, c := range cases {
-		assert.Equal(t, model.RowId(c.expected), idUtils.match(c.input), fmt.Sprintf(`Case "%d"`, i))
+		assert.Equal(t, model.ConfigRowId(c.expected), idUtils.match(c.input), fmt.Sprintf(`Case "%d"`, i))
 	}
 }
 

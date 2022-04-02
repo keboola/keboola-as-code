@@ -21,7 +21,7 @@ func TestCollection_Add(t *testing.T) {
 	assert.Len(t, c.All(), 6)
 
 	assert.NoError(t, c.Add(&ConfigRow{
-		ConfigRowKey: ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: `678`, Id: `1000`},
+		ConfigRowKey: ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: `678`, ConfigRowId: `1000`},
 		Name:         "Config Row 1000",
 	}))
 	assert.Len(t, c.All(), 7)
@@ -33,7 +33,7 @@ func TestCollection_Add_ParentNotFound(t *testing.T) {
 	assert.Len(t, c.All(), 6)
 
 	err := c.Add(&ConfigRow{
-		ConfigRowKey: ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: `999`, Id: `1`},
+		ConfigRowKey: ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: `999`, ConfigRowId: `1`},
 		Name:         "Config Row",
 	})
 	assert.Error(t, err)
@@ -46,7 +46,7 @@ func TestCollection_Add_AlreadyExists(t *testing.T) {
 	assert.Len(t, c.All(), 6)
 
 	err := c.Add(&ConfigRow{
-		ConfigRowKey: ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: `678`, Id: `12`},
+		ConfigRowKey: ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: `678`, ConfigRowId: `12`},
 		Name:         "Config Row",
 	})
 	assert.Error(t, err)
@@ -59,7 +59,7 @@ func TestCollection_AddOrReplace_Add(t *testing.T) {
 	assert.Len(t, c.All(), 6)
 
 	// Row is NOT present
-	rowKey := ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: `678`, Id: `1000`}
+	rowKey := ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: `678`, ConfigRowId: `1000`}
 	_, found := c.Get(rowKey)
 	assert.False(t, found)
 
@@ -82,7 +82,7 @@ func TestCollection_AddOrReplace_Replace(t *testing.T) {
 	assert.Len(t, c.All(), 6)
 
 	// Row is already present
-	rowKey := ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: `678`, Id: `12`}
+	rowKey := ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: `678`, ConfigRowId: `12`}
 	_, found := c.Get(rowKey)
 	assert.True(t, found)
 
@@ -105,7 +105,7 @@ func TestCollection_AddOrReplace_ParentNotFound(t *testing.T) {
 	assert.Len(t, c.All(), 6)
 
 	err := c.AddOrReplace(&ConfigRow{
-		ConfigRowKey: ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: `999`, Id: `1`},
+		ConfigRowKey: ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: `999`, ConfigRowId: `1`},
 		Name:         "Config Row",
 	})
 	assert.Error(t, err)
@@ -117,7 +117,7 @@ func TestCollection_Remove(t *testing.T) {
 	c := newTestCollection(t)
 	assert.Len(t, c.All(), 6)
 
-	c.Remove(ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: `678`, Id: `34`})
+	c.Remove(ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: `678`, ConfigRowId: `34`})
 	assert.Len(t, c.All(), 5)
 }
 
@@ -126,14 +126,14 @@ func TestCollection_Remove_Cascade(t *testing.T) {
 	c := newTestCollection(t)
 	assert.Len(t, c.All(), 6)
 
-	c.Remove(BranchKey{Id: 123})
+	c.Remove(BranchKey{BranchId: 123})
 	assert.Len(t, c.All(), 1)
 }
 
 func TestCollection_Get(t *testing.T) {
 	t.Parallel()
 	c := newTestCollection(t)
-	state, found := c.Get(BranchKey{Id: 567})
+	state, found := c.Get(BranchKey{BranchId: 567})
 	assert.NotNil(t, state)
 	assert.True(t, found)
 }
@@ -141,7 +141,7 @@ func TestCollection_Get(t *testing.T) {
 func TestCollection_Get_NotFound(t *testing.T) {
 	t.Parallel()
 	c := newTestCollection(t)
-	state, found := c.Get(BranchKey{Id: 111})
+	state, found := c.Get(BranchKey{BranchId: 111})
 	assert.Nil(t, state)
 	assert.False(t, found)
 }
@@ -149,14 +149,14 @@ func TestCollection_Get_NotFound(t *testing.T) {
 func TestCollection_MustGet(t *testing.T) {
 	t.Parallel()
 	c := newTestCollection(t)
-	assert.Equal(t, "Foo Bar Branch", c.MustGet(BranchKey{Id: 567}).ObjectName())
+	assert.Equal(t, "Foo Bar Branch", c.MustGet(BranchKey{BranchId: 567}).ObjectName())
 }
 
 func TestCollection_MustGet_NotFound(t *testing.T) {
 	t.Parallel()
 	c := newTestCollection(t)
 	assert.PanicsWithError(t, `branch "111" not found`, func() {
-		c.MustGet(BranchKey{Id: 111})
+		c.MustGet(BranchKey{BranchId: 111})
 	})
 }
 
@@ -181,22 +181,22 @@ func TestCollection_Configs(t *testing.T) {
 func TestCollection_ConfigsFrom(t *testing.T) {
 	t.Parallel()
 	c := newTestCollection(t)
-	assert.Len(t, c.ConfigsFrom(BranchKey{Id: 123}), 2)
-	assert.Len(t, c.ConfigsFrom(BranchKey{Id: 567}), 0)
-	assert.Len(t, c.ConfigsFrom(BranchKey{Id: 111}), 0)
+	assert.Len(t, c.ConfigsFrom(BranchKey{BranchId: 123}), 2)
+	assert.Len(t, c.ConfigsFrom(BranchKey{BranchId: 567}), 0)
+	assert.Len(t, c.ConfigsFrom(BranchKey{BranchId: 111}), 0)
 }
 
 func TestCollection_ConfigsWithRowsFrom(t *testing.T) {
 	t.Parallel()
 	c := newTestCollection(t)
 
-	configs := c.ConfigsWithRowsFrom(BranchKey{Id: 123})
+	configs := c.ConfigsWithRowsFrom(BranchKey{BranchId: 123})
 	assert.Len(t, configs, 2)
 	assert.Len(t, configs[0].Rows, 0)
 	assert.Len(t, configs[1].Rows, 2)
 
-	assert.Len(t, c.ConfigsFrom(BranchKey{Id: 567}), 0)
-	assert.Len(t, c.ConfigsFrom(BranchKey{Id: 111}), 0)
+	assert.Len(t, c.ConfigsFrom(BranchKey{BranchId: 567}), 0)
+	assert.Len(t, c.ConfigsFrom(BranchKey{BranchId: 111}), 0)
 }
 
 func TestCollection_ConfigRows(t *testing.T) {
@@ -208,9 +208,9 @@ func TestCollection_ConfigRows(t *testing.T) {
 func TestCollection_ConfigRowsFrom(t *testing.T) {
 	t.Parallel()
 	c := newTestCollection(t)
-	assert.Len(t, c.ConfigRowsFrom(ConfigKey{BranchId: 123, ComponentId: "keboola.foo", Id: `678`}), 2)
-	assert.Len(t, c.ConfigRowsFrom(ConfigKey{BranchId: 123, ComponentId: "keboola.foo", Id: `345`}), 0)
-	assert.Len(t, c.ConfigRowsFrom(ConfigKey{BranchId: 123, ComponentId: "keboola.foo", Id: `111`}), 0)
+	assert.Len(t, c.ConfigRowsFrom(ConfigKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: `678`}), 2)
+	assert.Len(t, c.ConfigRowsFrom(ConfigKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: `345`}), 0)
+	assert.Len(t, c.ConfigRowsFrom(ConfigKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: `111`}), 0)
 }
 
 func newTestCollection(t *testing.T) Objects {
@@ -219,39 +219,39 @@ func newTestCollection(t *testing.T) Objects {
 
 	// Branch 1
 	assert.NoError(t, collection.Add(&Branch{
-		BranchKey: BranchKey{Id: 123},
+		BranchKey: BranchKey{BranchId: 123},
 		Name:      "Main",
 		IsDefault: true,
 	}))
 
 	// Branch 2
 	assert.NoError(t, collection.Add(&Branch{
-		BranchKey: BranchKey{Id: 567},
+		BranchKey: BranchKey{BranchId: 567},
 		Name:      "Foo Bar Branch",
 		IsDefault: false,
 	}))
 
 	// Config 1
 	assert.NoError(t, collection.Add(&Config{
-		ConfigKey: ConfigKey{BranchId: 123, ComponentId: "keboola.foo", Id: `345`},
+		ConfigKey: ConfigKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: `345`},
 		Name:      "Config 1",
 	}))
 
 	// Config 2
 	assert.NoError(t, collection.Add(&Config{
-		ConfigKey: ConfigKey{BranchId: 123, ComponentId: "keboola.foo", Id: `678`},
+		ConfigKey: ConfigKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: `678`},
 		Name:      "Config 2",
 	}))
 
 	// Config Row 1
 	assert.NoError(t, collection.Add(&ConfigRow{
-		ConfigRowKey: ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: `678`, Id: `12`},
+		ConfigRowKey: ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: `678`, ConfigRowId: `12`},
 		Name:         "Config Row 1",
 	}))
 
 	// Config Row 2
 	assert.NoError(t, collection.Add(&ConfigRow{
-		ConfigRowKey: ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: `678`, Id: `34`},
+		ConfigRowKey: ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo", ConfigId: `678`, ConfigRowId: `34`},
 		Name:         "Config Row 2",
 	}))
 

@@ -18,12 +18,12 @@ func (c *deleteContext) delete() {
 			c.manifest.Remove(c.Key)
 
 			// Remove all related files
-			errors := utils.NewMultiError()
+			errs := errors.NewMultiError()
 			if relatedPaths, found := c.GetRelatedPathsByKey(c.Key); found {
 				for _, path := range relatedPaths.All() {
 					if c.objectsRoot.IsFile(path) {
 						if err := c.objectsRoot.Remove(path); err != nil {
-							errors.Append(err)
+							errs.Append(err)
 						}
 					}
 				}
@@ -38,6 +38,6 @@ func (c *deleteContext) delete() {
 				c.OnSuccess()
 			}
 
-			return errors.ErrorOrNil()
+			return errs.ErrorOrNil()
 		})
 }

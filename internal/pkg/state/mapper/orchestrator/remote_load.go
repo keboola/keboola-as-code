@@ -7,7 +7,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -15,20 +14,20 @@ type remoteLoadContext struct {
 	state        *remote.State
 	phasesSorter *phasesSorter
 	orchestrator *model.Config
-	errors       *utils.MultiError
+	errors       *errors.MultiError
 }
 
 func (m *orchestratorRemoteMapper) AfterRemoteOperation(changes *model.Changes) error {
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	for _, object := range changes.Loaded() {
 		if ok, err := m.isOrchestrator(object.Key()); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 			continue
 		} else if ok {
 			m.onRemoteLoad(object.(*model.Config))
 		}
 	}
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func (m *orchestratorRemoteMapper) onRemoteLoad(orchestrator *model.Config) {
@@ -36,11 +35,11 @@ func (m *orchestratorRemoteMapper) onRemoteLoad(orchestrator *model.Config) {
 		state:        m.state,
 		phasesSorter: newPhasesSorter(),
 		orchestrator: orchestrator,
-		errors:       utils.NewMultiError(),
+		errors:       errors.NewMultiError(),
 	}
 	if err := loader.load(); err != nil {
 		// Convert errors to warning
-		m.logger.Warn(`Warning: `, utils.PrefixError(fmt.Sprintf(`invalid orchestrator %s`, orchestrator.String()), err))
+		m.logger.Warn(`Warning: `, errors.PrefixError(fmt.Sprintf(`invalid orchestrator %s`, orchestrator.String()), err))
 	}
 }
 
@@ -48,13 +47,13 @@ func (l *remoteLoadContext) load() error {
 	// Get phases
 	phases, err := l.getPhases()
 	if err != nil {
-		l.errors.Append(err)
+		l.errs.Append(err)
 	}
 
 	// Get tasks
 	tasks, err := l.getTasks()
 	if err != nil {
-		l.errors.Append(err)
+		l.errs.Append(err)
 	}
 
 	// Parse phases
@@ -62,21 +61,21 @@ func (l *remoteLoadContext) load() error {
 		if phase, id, dependsOn, err := l.parsePhase(phaseRaw); err == nil {
 			l.phasesSorter.addPhase(id, phase, dependsOn)
 		} else {
-			l.errors.Append(utils.PrefixError(fmt.Sprintf(`invalid phase[%d]`, apiIndex), err))
+			l.errs.Append(errors.PrefixError(fmt.Sprintf(`invalid phase[%d]`, apiIndex), err))
 		}
 	}
 
 	// Parse tasks
 	for apiIndex, taskRaw := range tasks {
 		if err := l.parseTask(taskRaw); err != nil {
-			l.errors.Append(utils.PrefixError(fmt.Sprintf(`invalid task[%d]`, apiIndex), err))
+			l.errs.Append(errors.PrefixError(fmt.Sprintf(`invalid task[%d]`, apiIndex), err))
 		}
 	}
 
 	// Sort phases by dependencies
 	sortedPhases, err := l.phasesSorter.sortPhases()
 	if err != nil {
-		l.errors.Append(err)
+		l.errs.Append(err)
 	}
 
 	// Set value
@@ -84,7 +83,7 @@ func (l *remoteLoadContext) load() error {
 		Phases: sortedPhases,
 	}
 
-	return l.errors.ErrorOrNil()
+	return l.errs.ErrorOrNil()
 }
 
 func (l *remoteLoadContext) getPhases() ([]interface{}, error) {
@@ -114,7 +113,7 @@ func (l *remoteLoadContext) getTasks() ([]interface{}, error) {
 }
 
 func (l *remoteLoadContext) parsePhase(phaseRaw interface{}) (*model.Phase, string, []string, error) {
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	content, ok := phaseRaw.(*orderedmap.OrderedMap)
 	if !ok {
 		return nil, "", nil, fmt.Errorf(`phase must be JSON object`)
@@ -124,7 +123,7 @@ func (l *remoteLoadContext) parsePhase(phaseRaw interface{}) (*model.Phase, stri
 		PhaseKey: model.PhaseKey{
 			BranchId:    l.orchestrator.BranchId,
 			ComponentId: l.orchestrator.ComponentId,
-			ConfigId:    l.orchestrator.Id,
+			ConfigId:    l.orchestrator.ConfigId,
 		},
 	}
 	parser := &phaseParser{content: content}
@@ -132,13 +131,13 @@ func (l *remoteLoadContext) parsePhase(phaseRaw interface{}) (*model.Phase, stri
 	// Get ID
 	id, err := parser.id()
 	if err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
 	// Get name
 	phase.Name, err = parser.name()
 	if err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
 	// Get dependsOn
@@ -149,16 +148,16 @@ func (l *remoteLoadContext) parsePhase(phaseRaw interface{}) (*model.Phase, stri
 			dependsOn = append(dependsOn, cast.ToString(dependsOnId))
 		}
 	} else {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
 	// Additional content
 	phase.Content = parser.additionalContent()
-	return phase, cast.ToString(id), dependsOn, errors.ErrorOrNil()
+	return phase, cast.ToString(id), dependsOn, errs.ErrorOrNil()
 }
 
 func (l *remoteLoadContext) parseTask(taskRaw interface{}) error {
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	content, ok := taskRaw.(*orderedmap.OrderedMap)
 	if !ok {
 		return fmt.Errorf(`task must be JSON object`)
@@ -170,39 +169,39 @@ func (l *remoteLoadContext) parseTask(taskRaw interface{}) error {
 	// Get ID
 	_, err := parser.id()
 	if err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
 	// Get name
 	task.Name, err = parser.name()
 	if err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
 	// Get phase
 	phaseId, err := parser.phaseId()
 	if err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
 	// Component ID
 	task.ComponentId, err = parser.componentId()
 	if err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
 	// Config ID
 	if len(task.ComponentId) > 0 {
 		task.ConfigId, err = parser.configId()
 		if err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
 
 	// Get target config
 	targetConfig, err := l.getTargetConfig(task.ComponentId, task.ConfigId)
 	if err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	} else if targetConfig != nil {
 		markConfigUsedInOrchestrator(targetConfig, l.orchestrator)
 	}
@@ -215,11 +214,11 @@ func (l *remoteLoadContext) parseTask(taskRaw interface{}) error {
 		if phase, found := l.phasesSorter.phaseByKey[cast.ToString(phaseId)]; found {
 			phase.Tasks = append(phase.Tasks, task)
 		} else {
-			errors.Append(fmt.Errorf(`phase "%d" not found`, phaseId))
+			errs.Append(fmt.Errorf(`phase "%d" not found`, phaseId))
 		}
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func (l *remoteLoadContext) getTargetConfig(componentId model.ComponentId, configId model.ConfigId) (*model.Config, error) {
@@ -230,7 +229,7 @@ func (l *remoteLoadContext) getTargetConfig(componentId model.ComponentId, confi
 	configKey := model.ConfigKey{
 		BranchId:    l.orchestrator.BranchId,
 		ComponentId: componentId,
-		Id:          configId,
+		ConfigId:    configId,
 	}
 
 	configRaw, found := l.state.Get(configKey)

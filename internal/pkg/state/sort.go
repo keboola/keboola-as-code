@@ -3,6 +3,9 @@ package state
 import (
 	"fmt"
 
+	"golang.org/x/text/collate"
+	"golang.org/x/text/language"
+
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
 )
@@ -12,10 +15,13 @@ const (
 	pathSorterName = "path"
 )
 
-type idSorter struct{}
+type idSorter struct {
+	comparator *collate.Collator
+}
 
 type pathSorter struct {
-	naming *naming.Registry
+	naming     *naming.Registry
+	comparator *collate.Collator
 }
 
 func NewSorterFromName(name string, naming *naming.Registry) ObjectsSorter {
@@ -31,21 +37,26 @@ func NewSorterFromName(name string, naming *naming.Registry) ObjectsSorter {
 
 // NewIdSorter - sort objects by level and IDs.
 func NewIdSorter() ObjectsSorter {
-	return idSorter{}
+	return idSorter{
+		comparator: collate.New(language.Make("en-US"), collate.Numeric),
+	}
 }
 
 // NewPathSorter - sort objects by level and filesystem paths.
 func NewPathSorter(naming *naming.Registry) ObjectsSorter {
-	return pathSorter{naming: naming}
+	return pathSorter{
+		naming:     naming,
+		comparator: collate.New(language.Make("en-US"), collate.Numeric, collate.Loose),
+	}
 }
 
-func (idSorter) Less(i, j Key) bool {
+func (s idSorter) Less(i, j Key) bool {
 	if levelDiff := i.Level() - j.Level(); levelDiff != 0 {
 		// Different levels -> sort by level
 		return levelDiff < 0
 	} else {
-		// Same level -> sort by ID
-		return fullObjectId(i) < fullObjectId(j)
+		// Same level -> sort by IDs
+		return s.comparator.CompareString(i.LogicPath(), j.LogicPath()) < 0
 	}
 }
 
@@ -63,25 +74,15 @@ func (s pathSorter) Less(i, j Key) bool {
 		jPath, jFound := s.naming.PathByKey(j)
 		if iFound && jFound {
 			// Paths found  -> sort by path
-			return iPath.String() < jPath.String()
+			return s.comparator.CompareString(iPath.String(), jPath.String()) < 0
 		} else {
 			// Fallback -> sort by IDs
-			return fullObjectId(i) < fullObjectId(j)
+			// Same level -> sort by ID
+			return s.comparator.CompareString(i.LogicPath(), j.LogicPath()) < 0
 		}
 	}
 }
 
 func (s pathSorter) String() string {
 	return pathSorterName
-}
-
-func fullObjectId(key Key) (fullId string) {
-	for {
-		fullId = key.ObjectId() + "/" + fullId
-		key, _ = key.ParentKey()
-		if key == nil {
-			break
-		}
-	}
-	return fullId
 }

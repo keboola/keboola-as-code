@@ -89,8 +89,8 @@ type Objects interface {
 	Remove(keys ...Key)
 }
 
-func (k Kind) IsEmpty() bool {
-	return k.Name == "" && k.Abbr == ""
+func (k Kind) IsCore() bool {
+	return k.IsBranch() && k.IsConfig() && k.IsConfigRow()
 }
 
 func (k Kind) String() string {

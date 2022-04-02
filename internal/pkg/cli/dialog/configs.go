@@ -39,11 +39,11 @@ func (p *Dialogs) SelectConfigs(options *options.Options, all []*model.ConfigWit
 		// Create configs map
 		configByKey := make(map[string]*model.ConfigWithRows)
 		for _, config := range all {
-			configByKey[fmt.Sprintf(`%s:%s`, config.ComponentId, config.Id)] = config
+			configByKey[fmt.Sprintf(`%s:%s`, config.ComponentId, config.ConfigId)] = config
 		}
 
 		// Parse user input
-		errors := utils.NewMultiError()
+		errs := errors.NewMultiError()
 		for _, item := range strings.Split(options.GetString(`configs`), `,`) {
 			item = strings.TrimSpace(item)
 			if len(item) == 0 {
@@ -52,7 +52,7 @@ func (p *Dialogs) SelectConfigs(options *options.Options, all []*model.ConfigWit
 
 			// Check [componentId]:[configId] format
 			if len(strings.Split(item, `:`)) != 2 {
-				errors.Append(fmt.Errorf(`cannot parse "%s", must be in "[componentId]:[configId]" format`, item))
+				errs.Append(fmt.Errorf(`cannot parse "%s", must be in "[componentId]:[configId]" format`, item))
 				continue
 			}
 
@@ -60,7 +60,7 @@ func (p *Dialogs) SelectConfigs(options *options.Options, all []*model.ConfigWit
 			if config, ok := configByKey[item]; ok {
 				results = append(results, config)
 			} else {
-				errors.Append(fmt.Errorf(`config "%s" not found`, item))
+				errs.Append(fmt.Errorf(`config "%s" not found`, item))
 			}
 		}
 	} else {

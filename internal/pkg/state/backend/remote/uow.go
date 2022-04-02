@@ -10,7 +10,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/http/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -23,7 +22,7 @@ type uow struct {
 	changeDescription string
 	filter            model.ObjectsFilter
 	storageApiPools   *orderedmap.OrderedMap // separated pool for changes in branches, configs and rows
-	errors            *utils.MultiError
+	errors            *errors.MultiError
 }
 
 func newUnitOfWorkBackend(state *State, ctx context.Context, filter model.ObjectsFilter, changeDescription string) state.UnitOfWorkBackend {
@@ -33,7 +32,7 @@ func newUnitOfWorkBackend(state *State, ctx context.Context, filter model.Object
 		changeDescription: changeDescription,
 		filter:            filter,
 		storageApiPools:   orderedmap.New(),
-		errors:            utils.NewMultiError(),
+		errors:            errors.NewMultiError(),
 	}
 }
 
@@ -49,12 +48,12 @@ func (u *uow) Invoke() (state.FinalizationFn, error) {
 	for _, level := range u.storageApiPools.Keys() {
 		pool, _ := u.storageApiPools.Get(level)
 		if err := pool.(*client.Pool).StartAndWait(); err != nil {
-			u.errors.Append(err)
+			u.errs.Append(err)
 			break
 		}
 	}
 
-	return u.finalizeFn(), u.errors.ErrorOrNil()
+	return u.finalizeFn(), u.errs.ErrorOrNil()
 }
 
 func (u *uow) LoadAll(loadCtx state.LoadContext) {

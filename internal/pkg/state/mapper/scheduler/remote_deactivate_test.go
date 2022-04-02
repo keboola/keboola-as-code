@@ -18,7 +18,7 @@ func TestSchedulerRemoteMapper_Deactivate(t *testing.T) {
 	logger := d.DebugLogger()
 
 	// Branch
-	branchKey := model.BranchKey{Id: 123}
+	branchKey := model.BranchKey{BranchId: 123}
 	branch := &model.Branch{
 		BranchKey: branchKey,
 		IsDefault: true,
@@ -29,7 +29,7 @@ func TestSchedulerRemoteMapper_Deactivate(t *testing.T) {
 	schedulerKey := model.ConfigKey{
 		BranchId:    123,
 		ComponentId: model.SchedulerComponentId,
-		Id:          `456`,
+		ConfigId:    `456`,
 	}
 	schedulerConfig := &model.Config{
 		ConfigKey: schedulerKey,

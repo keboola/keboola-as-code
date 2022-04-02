@@ -50,7 +50,7 @@ func Run(projectState *project.State, o Options, d dependencies) error {
 
 		// Invoke
 		if err := plan.Invoke(logger, storageApi, projectState.State()); err != nil {
-			return utils.PrefixError(`cannot persist objects`, err)
+			return errors.PrefixError(`cannot persist objects`, err)
 		}
 
 		// Save manifest

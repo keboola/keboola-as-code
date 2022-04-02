@@ -20,9 +20,9 @@ func TestSelectConfigInteractive(t *testing.T) {
 	o := options.New()
 
 	// All configs
-	config1 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "1"}, Name: `Config 1`}}
-	config2 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "2"}, Name: `Config 2`}}
-	config3 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "3"}, Name: `Config 3`}}
+	config1 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, ConfigId: "1"}, Name: `Config 1`}}
+	config2 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, ConfigId: "2"}, Name: `Config 2`}}
+	config3 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, ConfigId: "3"}, Name: `Config 3`}}
 	allConfigs := []*model.ConfigWithRows{config1, config2, config3}
 
 	// Interaction
@@ -71,9 +71,9 @@ func TestSelectConfigByFlag(t *testing.T) {
 	o.Set(`config`, `2`)
 
 	// All configs
-	config1 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "1"}, Name: `Config 1`}}
-	config2 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "2"}, Name: `Config 2`}}
-	config3 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "3"}, Name: `Config 3`}}
+	config1 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, ConfigId: "1"}, Name: `Config 1`}}
+	config2 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, ConfigId: "2"}, Name: `Config 2`}}
+	config3 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, ConfigId: "3"}, Name: `Config 3`}}
 	allConfigs := []*model.ConfigWithRows{config1, config2, config3}
 
 	// Run
@@ -90,9 +90,9 @@ func TestSelectConfigMissing(t *testing.T) {
 	o := options.New()
 
 	// All configs
-	config1 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "1"}, Name: `Config 1`}}
-	config2 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "2"}, Name: `Config 2`}}
-	config3 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "3"}, Name: `Config 3`}}
+	config1 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, ConfigId: "1"}, Name: `Config 1`}}
+	config2 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, ConfigId: "2"}, Name: `Config 2`}}
+	config3 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, ConfigId: "3"}, Name: `Config 3`}}
 	allConfigs := []*model.ConfigWithRows{config1, config2, config3}
 
 	// Run
@@ -110,11 +110,11 @@ func TestSelectConfigsInteractive(t *testing.T) {
 	o := options.New()
 
 	// All configs
-	config1 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "1"}, Name: `Config 1`}}
-	config2 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "2"}, Name: `Config 2`}}
-	config3 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "3"}, Name: `Config 3`}}
-	config4 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "4"}, Name: `Config 4`}}
-	config5 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "5"}, Name: `Config 5`}}
+	config1 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, ConfigId: "1"}, Name: `Config 1`}}
+	config2 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, ConfigId: "2"}, Name: `Config 2`}}
+	config3 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, ConfigId: "3"}, Name: `Config 3`}}
+	config4 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, ConfigId: "4"}, Name: `Config 4`}}
+	config5 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, ConfigId: "5"}, Name: `Config 5`}}
 	allConfigs := []*model.ConfigWithRows{config1, config2, config3, config4, config5}
 
 	// Interaction
@@ -189,11 +189,11 @@ func TestSelectConfigsByFlag(t *testing.T) {
 	o.Set(`configs`, `foo.bar:2, foo.bar:4`)
 
 	// All configs
-	config1 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "1"}, Name: `Config 1`}}
-	config2 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "2"}, Name: `Config 2`}}
-	config3 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "3"}, Name: `Config 3`}}
-	config4 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "4"}, Name: `Config 4`}}
-	config5 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "5"}, Name: `Config 5`}}
+	config1 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, ConfigId: "1"}, Name: `Config 1`}}
+	config2 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, ConfigId: "2"}, Name: `Config 2`}}
+	config3 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, ConfigId: "3"}, Name: `Config 3`}}
+	config4 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, ConfigId: "4"}, Name: `Config 4`}}
+	config5 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, ConfigId: "5"}, Name: `Config 5`}}
 	allConfigs := []*model.ConfigWithRows{config1, config2, config3, config4, config5}
 
 	// Run
@@ -210,11 +210,11 @@ func TestSelectConfigsMissing(t *testing.T) {
 	o := options.New()
 
 	// All configs
-	config1 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "1"}, Name: `Config 1`}}
-	config2 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "2"}, Name: `Config 2`}}
-	config3 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "3"}, Name: `Config 3`}}
-	config4 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "4"}, Name: `Config 4`}}
-	config5 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: "5"}, Name: `Config 5`}}
+	config1 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, ConfigId: "1"}, Name: `Config 1`}}
+	config2 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, ConfigId: "2"}, Name: `Config 2`}}
+	config3 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, ConfigId: "3"}, Name: `Config 3`}}
+	config4 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, ConfigId: "4"}, Name: `Config 4`}}
+	config5 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, ConfigId: "5"}, Name: `Config 5`}}
 	allConfigs := []*model.ConfigWithRows{config1, config2, config3, config4, config5}
 
 	// Run
