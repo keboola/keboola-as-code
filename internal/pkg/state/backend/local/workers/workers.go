@@ -8,6 +8,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -20,7 +21,7 @@ type Workers struct {
 	group     *errgroup.Group
 	workerNum *utils.SafeCounter
 	lock      *sync.Mutex
-	errors    map[int]error
+	errs      map[int]error
 	invoked   bool
 }
 
@@ -33,7 +34,7 @@ func New(parentCtx context.Context) *Workers {
 		workerNum: utils.NewSafeCounter(0),
 		group:     group,
 		lock:      &sync.Mutex{},
-		errors:    make(map[int]error),
+		errs:      make(map[int]error),
 	}
 	w.started.Add(1) // block all until Invoke called
 	return w
@@ -58,7 +59,7 @@ func (w *Workers) AddWorker(worker func() error) {
 		if err := worker(); err != nil {
 			w.lock.Lock()
 			defer w.lock.Unlock()
-			w.errors[workerNumber] = err
+			w.errs[workerNumber] = err
 		}
 		return nil
 	})
@@ -82,7 +83,7 @@ func (w *Workers) StartAndWait() error {
 	// Collect errors in the same order as workers were defined
 	workersCount := w.workerNum.Get()
 	for i := 0; i < workersCount; i++ {
-		if err, ok := w.errors[i]; ok {
+		if err, ok := w.errs[i]; ok {
 			errs.Append(err)
 		}
 	}

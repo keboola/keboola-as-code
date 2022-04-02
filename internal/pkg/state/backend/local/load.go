@@ -3,11 +3,10 @@ package local
 import (
 	"fmt"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/relatedpaths"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
-	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 const IgnoreNotFoundError = ctxKey("IgnoreNotFoundError")
@@ -74,6 +73,17 @@ func (c *loadContext) loadObject(objectManifest model.ObjectManifest) error {
 		return c.invalidObjectError(object, err)
 	}
 
+	// Is object ignored?
+	if c.Filter.IsObjectIgnored(object) {
+		return nil
+	}
+
+	// Work done, notify UnitOfWork
+	if err := c.OnLoad(object); err != nil {
+		err = errors.PrefixError(fmt.Sprintf(`%s is invalid`, objectManifest.String()), err)
+		return c.invalidObjectError(object, err)
+	}
+
 	// Collect related paths
 	relatedPaths := relatedpaths.New(objectManifest.Path())
 	for _, file := range recipe.Files.Loaded() {
@@ -81,14 +91,6 @@ func (c *loadContext) loadObject(objectManifest model.ObjectManifest) error {
 	}
 	c.SetRelatedPaths(object.Key(), relatedPaths)
 
-	// Validate, only if all files has been loaded without error, it prevents duplicate errors
-	if err := validator.Validate(c.ctx, object); err != nil {
-		err = errors.PrefixError(fmt.Sprintf(`%s is invalid`, objectManifest.String()), err)
-		return c.invalidObjectError(object, err)
-	}
-
-	// Work done, notify UnitOfWork
-	c.OnLoad(object)
 	return nil
 }
 

@@ -1,4 +1,4 @@
-package model_test
+package state_test
 
 import (
 	"testing"
@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
+	. "github.com/keboola/keboola-as-code/internal/pkg/state"
 )
 
 func TestIsBranchAllowed(t *testing.T) {
@@ -44,20 +45,12 @@ func TestIsBranchAllowed(t *testing.T) {
 	)
 }
 
-func TestComponentsIds(t *testing.T) {
+func TestBaseFilter_IsObjectIgnored(t *testing.T) {
 	t.Parallel()
-	ids := ComponentIds{"foo", "bar"}
-	assert.True(t, ids.Contains("foo"))
-	assert.True(t, ids.Contains("bar"))
-	assert.False(t, ids.Contains("baz"))
-}
+	m := NewBaseFilter()
+	m.SetAllowedBranches(AllowedBranches{"dev-*", "123", "abc"})
+	m.SetIgnoredComponents(ComponentIds{"aaa", "bbb"})
 
-func TestFilterIsObjectIgnored(t *testing.T) {
-	t.Parallel()
-	m := NewFilter(
-		AllowedBranches{"dev-*", "123", "abc"},
-		ComponentIds{"aaa", "bbb"},
-	)
 	assert.False(t, m.IsObjectIgnored(
 		&Branch{BranchKey: BranchKey{BranchId: 789}, Name: "dev-1"}),
 	)
@@ -90,9 +83,8 @@ func TestFilterIsObjectIgnored(t *testing.T) {
 	)
 }
 
-func TestObjectsFilter_SetAllowedKeys(t *testing.T) {
+func TestAllowedKeysFilter(t *testing.T) {
 	t.Parallel()
-
 	object1 := fixtures.MockedObject{
 		MockedKey: fixtures.MockedKey{
 			Id: "123",
@@ -104,15 +96,27 @@ func TestObjectsFilter_SetAllowedKeys(t *testing.T) {
 		},
 	}
 
-	f := NoFilter()
-	assert.False(t, f.IsObjectIgnored(object1))
-	assert.False(t, f.IsObjectIgnored(object2))
+	f := NewAllowedKeysFilter()
+	assert.True(t, f.IsObjectIgnored(object1))
+	assert.True(t, f.IsObjectIgnored(object2))
 
-	f.SetAllowedKeys([]Key{object1.Key()})
+	f.SetAllowedKeys(object1.Key())
 	assert.False(t, f.IsObjectIgnored(object1))
 	assert.True(t, f.IsObjectIgnored(object2))
 
-	f.SetAllowedKeys([]Key{object1.Key(), object2.Key()})
+	f.SetAllowedKeys(object1.Key(), object2.Key())
 	assert.False(t, f.IsObjectIgnored(object1))
 	assert.False(t, f.IsObjectIgnored(object2))
+}
+
+func TestComposedFilter_IsObjectIgnored(t *testing.T) {
+	f1 := NewBaseFilter()
+	f1.SetIgnoredComponents(ComponentIds{"foo.bar1"})
+	f2 := NewBaseFilter()
+	f2.SetIgnoredComponents(ComponentIds{"foo.bar2"})
+	f := NewComposedFilter(f1, f2)
+
+	assert.True(t, f.IsObjectIgnored(&Config{ConfigKey: ConfigKey{ComponentId: "foo.bar1"}}))
+	assert.True(t, f.IsObjectIgnored(&Config{ConfigKey: ConfigKey{ComponentId: "foo.bar2"}}))
+	assert.False(t, f.IsObjectIgnored(&Config{ConfigKey: ConfigKey{ComponentId: "foo.bar3"}}))
 }

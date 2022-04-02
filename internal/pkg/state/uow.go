@@ -17,7 +17,7 @@ import (
 //   - Generates set of changes.
 type UnitOfWork interface {
 	Invoke() error
-	LoadAll()
+	LoadAll(filters ...Filter)
 	Save(object model.Object, changedFields model.ChangedFields)
 	Delete(key model.Key)
 }
@@ -35,7 +35,8 @@ type FinalizationFn func(changes *model.Changes) error
 
 // LoadContext is used for data exchange between the UnitOfWork and the UnitOfWorkBackend on load.
 type LoadContext struct {
-	OnLoad func(object model.Object) (accepted bool)
+	Filter Filter
+	OnLoad func(object model.Object) error
 }
 
 // SaveContext is used for data exchange between the UnitOfWork and the UnitOfWorkBackend on save.
@@ -74,6 +75,11 @@ func (u *uow) Invoke() error {
 	}
 	u.invoked = true
 
+	// Check errors during planing
+	if u.errs.Len() > 0 {
+		return u.errs
+	}
+
 	// Invoke
 	errs := errors.NewMultiError()
 	finalizationFn, err := u.backend.Invoke()
@@ -86,34 +92,28 @@ func (u *uow) Invoke() error {
 		errs.Append(err)
 	}
 
-	// Add common errors
-	if err := u.errs.ErrorOrNil(); err != nil {
-		errs.Append(err)
-	}
-
 	return errs.ErrorOrNil()
 }
 
 // LoadAll objects from the backend.
-func (u *uow) LoadAll() {
+func (u *uow) LoadAll(filters ...Filter) {
 	// Use backend
 	u.backend.LoadAll(LoadContext{
-		OnLoad: func(object model.Object) (accepted bool) {
+		Filter: NewComposedFilter(filters...),
+		OnLoad: func(object model.Object) error {
 			// Validate
 			if err := validator.Validate(u.ctx, object); err != nil {
-				u.errs.AppendWithPrefix(fmt.Sprintf(`%s is invalid`, object.String()), err)
-				return false
+				return err
 			}
 
 			// Add object to the collection
 			if err := u.objects.AddOrReplace(object); err != nil {
-				u.errs.Append(err)
-				return false
+				return err
 			}
 
 			// Add entry to changed list
 			u.changes.AddLoaded(object)
-			return true
+			return nil
 		},
 	})
 }

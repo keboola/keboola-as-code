@@ -63,7 +63,7 @@ func TestUnitOfWork_LoadAll(t *testing.T) {
 	// Config has been loaded
 	assert.Len(t, state.Configs(), 1)
 	configRaw, found := state.Get(model.ConfigKey{
-		BranchId:    123,
+		BranchKey:   model.BranchKey{BranchId: 123},
 		ComponentId: `foo.bar`,
 		ConfigId:    `456`,
 	})
@@ -156,12 +156,12 @@ func TestUnitOfWork_LoadAll_ConfigMetadata(t *testing.T) {
 
 	// Check
 	config1Key := model.ConfigKey{
-		BranchId:    123,
+		BranchKey:   model.BranchKey{BranchId: 123},
 		ComponentId: "foo.bar",
 		ConfigId:    "456",
 	}
 	config2Key := model.ConfigKey{
-		BranchId:    123,
+		BranchKey:   model.BranchKey{BranchId: 123},
 		ComponentId: "foo.bar",
 		ConfigId:    "789",
 	}

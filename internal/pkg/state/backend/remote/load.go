@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/http/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
@@ -13,6 +14,7 @@ import (
 type loadContext struct {
 	*uow
 	state.LoadContext
+	errs *errors.MultiError
 }
 
 func (c *loadContext) loadAll() {
@@ -103,10 +105,6 @@ func (c *loadContext) loadConfigsMetadataRequest(branch *model.Branch, pool *cli
 }
 
 func (c *loadContext) process(apiObject model.Object) (accepted bool) {
-	if c.filter.IsObjectIgnored(apiObject) {
-		return false
-	}
-
 	// Clone object and create recipe
 	// During mapping is the API object modified, so it is needed to clone it first.
 	object := deepcopy.Copy(apiObject).(model.Object)
@@ -115,8 +113,19 @@ func (c *loadContext) process(apiObject model.Object) (accepted bool) {
 	// Invoke mapper
 	if err := c.mapper.MapAfterRemoteLoad(recipe); err != nil {
 		c.errs.Append(err)
+		return false
+	}
+
+	// Is object ignored
+	if c.Filter.IsObjectIgnored(object) {
+		return false
 	}
 
 	// Notify UnitOfWork
-	return c.OnLoad(apiObject)
+	if err := c.OnLoad(apiObject); err != nil {
+		c.errs.Append(err)
+		return false
+	}
+
+	return true
 }

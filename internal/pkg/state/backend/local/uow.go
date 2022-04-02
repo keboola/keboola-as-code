@@ -8,11 +8,11 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/spf13/cast"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/workers"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/common/local/manifest/save"
 )
@@ -23,16 +23,14 @@ type uow struct {
 	*_state
 	invoked bool
 	ctx     context.Context
-	filter  model.ObjectsFilter
 	mapper  *mapper.Mapper
 	workers *orderedmap.OrderedMap // separated workers for changes in branches, configs and rows
 }
 
-func newUnitOfWorkBackend(state *State, ctx context.Context, filter model.ObjectsFilter, mapper *mapper.Mapper) state.UnitOfWorkBackend {
+func newUnitOfWorkBackend(state *State, ctx context.Context, mapper *mapper.Mapper) state.UnitOfWorkBackend {
 	return &uow{
 		_state:  state,
 		ctx:     ctx,
-		filter:  filter,
 		mapper:  mapper,
 		workers: orderedmap.New(),
 	}
@@ -59,6 +57,8 @@ func (u *uow) Invoke() (state.FinalizationFn, error) {
 }
 
 func (u *uow) LoadAll(loadCtx state.LoadContext) {
+	// Add filter from the manifest
+	loadCtx.Filter = state.NewComposedFilter(loadCtx.Filter, u.manifest.Filter())
 	(&loadContext{uow: u, LoadContext: loadCtx}).loadAll()
 }
 

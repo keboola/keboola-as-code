@@ -5,6 +5,7 @@ import (
 	"sort"
 	"sync"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -14,7 +15,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/relatedpaths"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 type dependencies interface {
@@ -84,8 +84,8 @@ func NewState(d dependencies, objectsRoot filesystem.Fs, manifest manifest.Manif
 	return s, nil
 }
 
-func (s *State) NewUnitOfWork(ctx context.Context, filter model.ObjectsFilter) state.UnitOfWork {
-	backend := newUnitOfWorkBackend(s, ctx, filter, s.mapper)
+func (s *State) NewUnitOfWork(ctx context.Context) state.UnitOfWork {
+	backend := newUnitOfWorkBackend(s, ctx, s.manifest.Filter(), s.mapper)
 	return state.NewUnitOfWork(ctx, s.objects, backend)
 }
 

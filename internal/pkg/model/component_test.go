@@ -7,6 +7,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestComponentsIds(t *testing.T) {
+	t.Parallel()
+	ids := ComponentIds{"foo", "bar"}
+	assert.True(t, ids.Contains("foo"))
+	assert.True(t, ids.Contains("bar"))
+	assert.False(t, ids.Contains("baz"))
+}
+
 func TestComponentDefaultBucket(t *testing.T) {
 	t.Parallel()
 

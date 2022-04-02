@@ -1,4 +1,4 @@
-package model
+package state
 
 import (
 	"strings"
@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	. "github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
@@ -14,43 +15,55 @@ const (
 	MainBranchDef  = "__main__"
 )
 
+type Filter interface {
+	IsObjectIgnored(object Object) bool
+}
+
 type AllowedBranch string
 
 type AllowedBranches []AllowedBranch
 
-// ObjectsFilter filters objects by allowed keys, allowed branches and ignored components.
-type ObjectsFilter struct {
-	allowedKeys       map[string]bool
+// BaseFilter filters objects by allowed branches and ignored components.
+type BaseFilter struct {
 	allowedBranches   AllowedBranches
 	ignoredComponents ComponentIds
+}
+
+// AllowedKeysFilter filters objects by allowed keys.
+type AllowedKeysFilter struct {
+	allowedKeys map[Key]bool
+}
+
+// composedFilter supports the composition of multiple filters.
+type composedFilter struct {
+	filters []Filter
 }
 
 func DefaultAllowedBranches() AllowedBranches {
 	return AllowedBranches{"*"}
 }
 
-func NewFilter(branches AllowedBranches, ignoredComponents ComponentIds) ObjectsFilter {
-	return ObjectsFilter{
-		allowedBranches:   branches,
-		ignoredComponents: ignoredComponents,
+func NewBaseFilter() BaseFilter {
+	return BaseFilter{
+		allowedBranches: DefaultAllowedBranches(),
 	}
 }
 
-func NoFilter() ObjectsFilter {
-	return ObjectsFilter{
-		allowedBranches:   DefaultAllowedBranches(),
-		ignoredComponents: ComponentIds{},
-	}
+func NewAllowedKeysFilter(keys ...Key) AllowedKeysFilter {
+	f := AllowedKeysFilter{allowedKeys: make(map[Key]bool)}
+	f.SetAllowedKeys(keys...)
+	return f
 }
 
-func (f ObjectsFilter) IsObjectIgnored(object Object) bool {
-	if len(f.allowedKeys) > 0 {
-		if !f.allowedKeys[object.Key().String()] {
-			// Object key is not allowed -> object is ignored
-			return true
-		}
-	}
+func NewComposedFilter(filters ...Filter) Filter {
+	return composedFilter{filters: filters}
+}
 
+func NewNoFilter() Filter {
+	return NewComposedFilter()
+}
+
+func (f BaseFilter) IsObjectIgnored(object Object) bool {
 	switch o := object.(type) {
 	case *Branch:
 		return !f.allowedBranches.IsBranchAllowed(o)
@@ -62,26 +75,28 @@ func (f ObjectsFilter) IsObjectIgnored(object Object) bool {
 	return false
 }
 
-func (f *ObjectsFilter) SetAllowedKeys(keys []Key) {
-	f.allowedKeys = make(map[string]bool)
-	for _, key := range keys {
-		f.allowedKeys[key.String()] = true
+func (f composedFilter) IsObjectIgnored(object Object) bool {
+	for _, f := range f.filters {
+		if f.IsObjectIgnored(object) {
+			return true
+		}
 	}
+	return false
 }
 
-func (f *ObjectsFilter) AllowedBranches() AllowedBranches {
+func (f *BaseFilter) AllowedBranches() AllowedBranches {
 	return f.allowedBranches
 }
 
-func (f *ObjectsFilter) SetAllowedBranches(branches AllowedBranches) {
+func (f *BaseFilter) SetAllowedBranches(branches AllowedBranches) {
 	f.allowedBranches = branches
 }
 
-func (f *ObjectsFilter) IgnoredComponents() ComponentIds {
+func (f *BaseFilter) IgnoredComponents() ComponentIds {
 	return f.ignoredComponents
 }
 
-func (f *ObjectsFilter) SetIgnoredComponents(ids ComponentIds) {
+func (f *BaseFilter) SetIgnoredComponents(ids ComponentIds) {
 	f.ignoredComponents = ids
 }
 
@@ -135,4 +150,17 @@ func (v AllowedBranch) IsBranchAllowed(branch *Branch) bool {
 	}
 
 	return false
+}
+
+func (f AllowedKeysFilter) IsObjectIgnored(object Object) bool {
+	return !f.allowedKeys[object.Key()]
+}
+
+func (f *AllowedKeysFilter) SetAllowedKeys(keys ...Key) {
+	f.allowedKeys = make(map[Key]bool)
+
+	// Convert to a map for quick access
+	for _, key := range keys {
+		f.allowedKeys[key] = true
+	}
 }
