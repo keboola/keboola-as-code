@@ -7,16 +7,13 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/spf13/cast"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
@@ -96,32 +93,31 @@ func (d *differ) diff(A, B model.Objects) (*Results, error) {
 	out := &Results{A: A, B: B, Equal: true, Results: []*Result{}, Errors: errors.NewMultiError()}
 
 	// Find all objects present in A, B or both.
-	allMap := make(map[model.Key]bool)
-	aMap := make(map[model.Key]model.ObjectWithChildren)
-	bMap := make(map[model.Key]model.ObjectWithChildren)
-	all := make([]model.Key, 0)
+	keys := make([]model.Key, 0)
+	keysMap := make(map[model.Key]bool)
+	aObjects := make(map[model.Key]*model.ObjectWithChildren)
+	bObjects := make(map[model.Key]*model.ObjectWithChildren)
 	for _, collection := range []model.Objects{A, B} {
-		for _, object := range collection.AllGrouped() {
-			if key := object.Key(); !allMap[key] {
-				allMap[key] = true
-				all = append(all, key)
+		for _, object := range collection.AllWithChildren() {
+			if key := object.Key(); !keysMap[key] {
+				keysMap[key] = true
+				keys = append(keys, key)
 			}
-
 			if collection == A {
-				aMap[object.Key()] = object
+				aObjects[object.Key()] = object
 			}
 			if collection == B {
-				bMap[object.Key()] = object
+				bObjects[object.Key()] = object
 			}
 		}
 	}
 
 	// Diff each object
-	for _, key := range all {
+	for _, key := range keys {
 		result, err := d.diffObject(
 			key,
-			Object{Key: key, Object: aMap[key], All: A},
-			Object{Key: key, Object: bMap[key], All: B},
+			Object{Key: key, Object: aObjects[key], All: A},
+			Object{Key: key, Object: bObjects[key], All: B},
 		)
 
 		// Handle error
@@ -290,33 +286,5 @@ func getDiffFields(t reflect.Type) []*utils.StructField {
 
 // options defines customization of the diff process.
 func options(reporter *Reporter) cmp.Options {
-	return cmp.Options{
-		cmp.Reporter(reporter),
-		// Compare Config/ConfigRow configuration content ("orderedmap" type) as map (keys order doesn't matter)
-		cmp.Transformer("orderedmap", func(m *orderedmap.OrderedMap) map[string]interface{} {
-			return m.ToMap()
-		}),
-		// Separately compares the relations for the manifest and API side
-		cmpopts.AcyclicTransformer("relations", func(relations model.Relations) model.RelationsBySide {
-			return relations.RelationsBySide()
-		}),
-		// Diff transformation blocks as string
-		cmp.Transformer("block", func(x model.ObjectWithChildren) interface{} {
-			return "ok!!!" + cast.ToString(time.Now().Nanosecond())
-		}),
-		//cmp.Transformer("code", func(code *model.Code) *string {
-		//	return codeToString(code, reporter.naming)
-		//}),
-		// Diff orchestrator phases as string
-		//cmp.Transformer("phase", func(phase *model.Phase) *string {
-		//	return phaseToString(phase, reporter.naming)
-		//}),
-		//cmp.Transformer("task", func(task *model.Task) *string {
-		//	return taskToString(task, reporter.naming)
-		//}),
-		//// Diff SharedCode row as string
-		//cmp.Transformer("sharedCodeRow", func(code *model.SharedCodeRow) *string {
-		//	return sharedCodeRowTostring(code, reporter.naming)
-		//}),
-	}
+	return append(cmp.Options{cmp.Reporter(reporter)}, reporter.transformer.Options())
 }

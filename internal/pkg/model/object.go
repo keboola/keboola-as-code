@@ -113,3 +113,7 @@ func (k Kind) IsCore() bool {
 func (k Kind) String() string {
 	return k.Name
 }
+
+func (o *ObjectWithChildren) Get(kind Kind) []*ObjectWithChildren {
+	return o.Children[kind]
+}

@@ -14,22 +14,24 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/diff/transformer"
 )
 
 const MaxEqualLinesInString = 5 // maximum of equal lines returned by strings diff
 
 // Reporter contains path to the compared values and generates human-readable difference report.
 type Reporter struct {
-	a      Object
-	b      Object
-	naming *naming.Registry
-	path   cmp.Path // current path to the compared value
-	paths  []string // list of the non-equal paths
-	diffs  []string // list of the found differences in human-readable format
+	a           Object
+	b           Object
+	naming      *naming.Registry
+	transformer *transformer.Transformer
+	path        cmp.Path // current path to the compared value
+	paths       []string // list of the non-equal paths
+	diffs       []string // list of the found differences in human-readable format
 }
 
 func newReporter(a, b Object, naming *naming.Registry) *Reporter {
-	return &Reporter{a: a, b: b, naming: naming}
+	return &Reporter{a: a, b: b, naming: naming, transformer: transformer.NewTransformer(naming)}
 }
 
 func (r *Reporter) PushStep(ps cmp.PathStep) {
