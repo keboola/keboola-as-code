@@ -9,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-var ConfigKind = Kind{Name: "config", Abbr: "C"}
+var ConfigKind = Kind{Name: "config", Abbr: "C", ToMany: true}
 
 type ConfigId string
 

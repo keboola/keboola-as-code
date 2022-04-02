@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cast"
 )
 
-var BranchKind = Kind{Name: "branch", Abbr: "B"}
+var BranchKind = Kind{Name: "branch", Abbr: "B", ToMany: true}
 
 type BranchId int
 

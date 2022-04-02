@@ -34,7 +34,13 @@ func newReporter(a, b Object, naming *naming.Registry) *Reporter {
 	return &Reporter{a: a, b: b, naming: naming, transformer: transformer.NewTransformer(naming)}
 }
 
+// Options defines customization of the diff process.
+func (r *Reporter) Options() cmp.Options {
+	return append(cmp.Options{cmp.Reporter(r)}, r.transformer.Options())
+}
+
 func (r *Reporter) PushStep(ps cmp.PathStep) {
+	fmt.Printf("%#v\n", ps.String())
 	r.path = append(r.path, ps)
 }
 
@@ -144,6 +150,8 @@ func (r *Reporter) pathToString(path cmp.Path) string {
 			continue
 		}
 
+		// Skip ObjectWithChildren.Children step
+
 		// Use object path if present
 		remote, local := s.Values()
 		if v := r.objectPath(local); v != "" {
@@ -171,6 +179,7 @@ func (r *Reporter) pathToString(path cmp.Path) string {
 			index1, index2 := v.SplitKeys()
 			parts = append(parts, cast.ToString(math.Max(float64(index1), float64(index2))))
 		case cmp.StructField:
+			fmt.Println()
 			parts = append(parts, v.Name())
 		}
 	}
@@ -244,13 +253,13 @@ func (r *Reporter) formatValue(value reflect.Value, t reflect.Type, includeType 
 	return strings.Split(formatted, "\n")
 }
 
-func stringsDiff(remote, local string) string {
-	remoteLines := strings.Split(remote, "\n")
-	if len(remote) == 0 {
+func stringsDiff(a, b string) string {
+	remoteLines := strings.Split(a, "\n")
+	if len(a) == 0 {
 		remoteLines = []string{}
 	}
-	localLines := strings.Split(local, "\n")
-	if len(local) == 0 {
+	localLines := strings.Split(b, "\n")
+	if len(b) == 0 {
 		localLines = []string{}
 	}
 	chunks := diffstr.DiffChunks(remoteLines, localLines)

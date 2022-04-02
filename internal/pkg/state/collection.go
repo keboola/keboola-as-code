@@ -113,15 +113,15 @@ func (c *Collection) GetOrNil(key Key) Object {
 }
 
 // GetWithChildren gets object with all its children in the tree structure.
-func (c *Collection) GetWithChildren(rootKey Key) (*ObjectWithChildren, bool) {
+func (c *Collection) GetWithChildren(rootKey Key) (*ObjectLeaf, bool) {
 	rootObject, found := c.Get(rootKey)
 	if !found {
 		return nil, false
 	}
 
 	// Temporary map: parent -> children
-	recordByKey := map[Key]*ObjectWithChildren{
-		rootKey: {Object: rootObject, Children: make(map[Kind][]*ObjectWithChildren)},
+	recordByKey := map[Key]*ObjectLeaf{
+		rootKey: {Object: rootObject, Children: make(map[Kind][]*ObjectLeaf)},
 	}
 
 	// Generate children tree structure in one iteration
@@ -138,7 +138,7 @@ func (c *Collection) GetWithChildren(rootKey Key) (*ObjectWithChildren, bool) {
 
 		// Add object to the tree
 		if parent, ok := recordByKey[parentKey]; ok {
-			record := &ObjectWithChildren{Object: object, Children: make(map[Kind][]*ObjectWithChildren)}
+			record := &ObjectLeaf{Object: object, Children: make(map[Kind][]*ObjectLeaf)}
 			recordByKey[object.Key()] = record
 			parent.Children[object.Kind()] = append(parent.Children[object.Kind()], record)
 		}
@@ -164,45 +164,24 @@ func (c *Collection) All() []Object {
 	return c.all()
 }
 
-// AllWithChildren gets all core objects from the collection with children.
+// AllAsTree gets all objects with children in tree structure.
 // If Kind.IsCore() is true (so the object type is: branch, config or config row),
-// then the object is present in the result at the root level.
+// then the object is present in the result at the Root() level.
 // Otherwise, the object (transformation, orchestration, code, phase, ...)  is included under its parent.
-func (c *Collection) AllWithChildren() []*ObjectWithChildren {
-	// Temporary map: parent -> children
-	var rootObjects []*ObjectWithChildren
-	recordByKey := map[Key]*ObjectWithChildren{}
+func (c *Collection) AllAsTree() ObjectsTree {
+	tree := newObjectsTree()
 
 	// Generate children tree structure in one iteration
 	for _, object := range c.All() {
-		record := &ObjectWithChildren{Object: object, Children: make(map[Kind][]*ObjectWithChildren)}
-
-		// Is core object?
-		if object.Kind().IsCore() {
-			// Add to the root objects
-			recordByKey[object.Key()] = record
-			rootObjects = append(rootObjects, record)
-			continue
-		}
-
-		// Get parent key
-		parentKey, err := object.ParentKey()
-		if err != nil {
-			// error is not expected, it is checked on Add operation
+		if err := tree.add(object); err != nil {
+			// error is not expected, all conditions has been checked
+			// when object has been added to the Collection
 			panic(err)
-		} else if parentKey == nil {
-			// no parent
-			continue
 		}
 
-		// Add object to the tree
-		if parent, ok := recordByKey[parentKey]; ok {
-			recordByKey[object.Key()] = record
-			parent.Children[object.Kind()] = append(parent.Children[object.Kind()], record)
-		}
 	}
 
-	return rootObjects
+	return tree
 }
 
 // Branches gets all branches from the collection.
@@ -322,4 +301,57 @@ func (c *Collection) all() []Object {
 	}
 
 	return out
+}
+
+type objectsTree struct {
+	root []*ObjectLeaf
+	all  map[Key]*ObjectLeaf
+}
+
+func newObjectsTree() *objectsTree {
+	return &objectsTree{
+		all: make(map[Key]*ObjectLeaf),
+	}
+}
+
+func (t *objectsTree) Root() []*ObjectLeaf {
+	return t.root
+}
+
+func (t *objectsTree) Get(key Key) (*ObjectLeaf, bool) {
+	v, found := t.all[key]
+	return v, found
+}
+
+func (t *objectsTree) GetOrNil(key Key) *ObjectLeaf {
+	v, _ := t.all[key]
+	return v
+}
+
+func (t *objectsTree) add(object Object) error {
+	leaf := &ObjectLeaf{Object: object, Children: make(map[Kind][]*ObjectLeaf)}
+
+	// Is core object?
+	if object.Kind().IsCore() {
+		// Add to the root objects
+		t.all[object.Key()] = leaf
+		t.root = append(t.root, leaf)
+		return nil
+	}
+
+	// Get parent key
+	parentKey, err := object.ParentKey()
+	if err != nil {
+		return err
+	} else if parentKey == nil {
+		// no parent
+		return nil
+	}
+
+	// Add object to the tree
+	if parent, ok := t.all[parentKey]; ok {
+		t.all[object.Key()] = leaf
+		parent.Children[object.Kind()] = append(parent.Children[object.Kind()], leaf)
+	}
+	return nil
 }

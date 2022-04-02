@@ -6,8 +6,9 @@ import (
 
 // Kind - type of the object, branch, config ...
 type Kind struct {
-	Name string
-	Abbr string
+	Name   string
+	Abbr   string
+	ToMany bool
 }
 
 type ObjectLevel int
@@ -60,28 +61,23 @@ type ObjectsSorter interface {
 	String() string
 }
 
-type ObjectWithChildren struct {
-	Object   `diff:"true"`
-	Children map[Kind][]*ObjectWithChildren `diff:"true"`
-}
-
 type ObjectsReadOnly interface {
 	ObjectsSorter
 	// Get object from the collection.
 	Get(key Key) (Object, bool)
 	// GetOrNil object from the collection or returns nil if it is not present.
 	GetOrNil(key Key) Object
-	// GetWithChildren gets object with all its children in the tree structure.
-	GetWithChildren(rootKey Key) (*ObjectWithChildren, bool)
+	// GetWithChildren gets object with its children in tree structure.
+	GetWithChildren(rootKey Key) (*ObjectLeaf, bool)
 	// MustGet object from the collection otherwise panic occurs.
 	MustGet(key Key) Object
 	// All gets all objects from the collection.
 	All() []Object
-	// AllWithChildren gets all core objects with children in the tree structure.
+	// AllAsTree gets all core objects with children in the tree structure.
 	// If Kind.IsCore() is true (so the object type is: branch, config or config row),
 	// then the object is present in the result at the root level.
 	// Otherwise, the object (transformation, orchestration, code, phase, ...)  is included under its parent.
-	AllWithChildren() []*ObjectWithChildren
+	AllAsTree() ObjectsTree
 	// Branches gets all branches from the collection.
 	Branches() (branches []*Branch)
 	// Configs gets all configs from the collection.
@@ -106,6 +102,17 @@ type Objects interface {
 	Remove(keys ...Key)
 }
 
+type ObjectLeaf struct {
+	Object   `diff:"true"`
+	Children map[Kind][]*ObjectLeaf `diff:"true"`
+}
+
+type ObjectsTree interface {
+	Root() []*ObjectLeaf
+	Get(key Key) (*ObjectLeaf, bool)
+	GetOrNil(key Key) *ObjectLeaf
+}
+
 func (k Kind) IsCore() bool {
 	return k.IsBranch() || k.IsConfig() || k.IsConfigRow()
 }
@@ -114,6 +121,6 @@ func (k Kind) String() string {
 	return k.Name
 }
 
-func (o *ObjectWithChildren) Get(kind Kind) []*ObjectWithChildren {
+func (o *ObjectLeaf) Get(kind Kind) []*ObjectLeaf {
 	return o.Children[kind]
 }

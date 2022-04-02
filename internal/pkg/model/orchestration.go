@@ -9,9 +9,9 @@ import (
 )
 
 var (
-	OrchestrationKind = Kind{Name: "orchestration", Abbr: "o"}
-	PhaseKind         = Kind{Name: "phase", Abbr: "p"}
-	TaskKind          = Kind{Name: "task", Abbr: "t"}
+	OrchestrationKind = Kind{Name: "orchestration", Abbr: "o", ToMany: false}
+	PhaseKind         = Kind{Name: "phase", Abbr: "p", ToMany: true}
+	TaskKind          = Kind{Name: "task", Abbr: "t", ToMany: true}
 )
 
 type OrchestrationKey struct {

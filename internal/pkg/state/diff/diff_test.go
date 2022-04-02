@@ -22,7 +22,7 @@ func TestDiff_OnlyInA(t *testing.T) {
 	branch := &model.Branch{BranchKey: model.BranchKey{BranchId: 123}}
 	A.MustAdd(branch)
 
-	results, err := d.diff(A, B)
+	results, err := d.Diff(A, B)
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 1)
 
@@ -41,7 +41,7 @@ func TestDiff_OnlyInB(t *testing.T) {
 	branch := &model.Branch{BranchKey: model.BranchKey{BranchId: 123}}
 	B.MustAdd(branch)
 
-	results, err := d.diff(A, B)
+	results, err := d.Diff(A, B)
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 1)
 
@@ -75,7 +75,7 @@ func TestDiff_Equal(t *testing.T) {
 	}
 	B.MustAdd(bBranch)
 
-	results, err := d.diff(A, B)
+	results, err := d.Diff(A, B)
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 1)
 
@@ -108,7 +108,7 @@ func TestDiff_NotEqual(t *testing.T) {
 	}
 	B.MustAdd(bBranch)
 
-	results, err := d.diff(A, B)
+	results, err := d.Diff(A, B)
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 1)
 
@@ -144,7 +144,7 @@ func TestDiff_EqualConfig(t *testing.T) {
 		ChangeDescription: "B", // no diff:"true" tag
 	})
 
-	results, err := d.diff(A, B)
+	results, err := d.Diff(A, B)
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 2)
 	for _, result := range results.Results {
@@ -176,7 +176,7 @@ func TestDiff_NotEqualConfig(t *testing.T) {
 		ChangeDescription: "B", // no diff:"true" tag
 	})
 
-	results, err := d.diff(A, B)
+	results, err := d.Diff(A, B)
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 2)
 
@@ -228,7 +228,7 @@ func TestDiff_NotEqualConfigConfiguration(t *testing.T) {
 		}),
 	})
 
-	results, err := d.diff(A, B)
+	results, err := d.Diff(A, B)
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 2)
 
@@ -280,7 +280,7 @@ func TestDiff_Relations(t *testing.T) {
 		},
 	})
 
-	results, err := d.diff(A, B)
+	results, err := d.Diff(A, B)
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 1)
 
@@ -355,7 +355,7 @@ func TestDiff_Transformation(t *testing.T) {
 		},
 	})
 
-	results, err := d.diff(A, B)
+	results, err := d.Diff(A, B)
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 2)
 
@@ -649,7 +649,7 @@ func TestDiff_Map(t *testing.T) {
 		}),
 	})
 
-	results, err := d.diff(A, B)
+	results, err := d.Diff(A, B)
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 2)
 
@@ -697,10 +697,10 @@ func TestResults_Format(t *testing.T) {
 	assert.Equal(t, strings.Trim(expected, "\n"), output)
 }
 
-func newDiffer() (A, B model.Objects, d *differ) {
+func newDiffer() (A, B model.Objects, d *Differ) {
 	namingReg := naming.NewRegistry()
 	sorter := sort.NewPathSorter(namingReg)
 	A = state.NewCollection(sorter)
 	B = state.NewCollection(sorter)
-	return A, B, &differ{naming: namingReg}
+	return A, B, &Differ{naming: namingReg}
 }

@@ -180,14 +180,7 @@ func TestCollection_GetWithChildren(t *testing.T) {
 	config2 := c.MustGet(config2Key)
 	configRow1 := c.MustGet(configRow1Key)
 	configRow2 := c.MustGet(configRow2Key)
-
-	// Add transformation config
-	config3Key := ConfigKey{BranchKey: branch1Key, ComponentId: "keboola.foo", ConfigId: `999`}
-	config3 := &Config{ConfigKey: config3Key}
-	transformationKey := TransformationKey{ConfigKey: config3Key}
-	transformation := &Transformation{TransformationKey: transformationKey}
-	block := &Block{BlockKey: BlockKey{TransformationKey: transformationKey}}
-	c.MustAdd(config3, transformation, block)
+	transformationConfig, transformation, block := addTestTransformation(c)
 
 	// Missing
 	_, found := c.GetWithChildren(BranchKey{BranchId: 999})
@@ -196,62 +189,62 @@ func TestCollection_GetWithChildren(t *testing.T) {
 	// Object without children - branch
 	result, found := c.GetWithChildren(branch2Key)
 	assert.True(t, found)
-	assert.Equal(t, &ObjectWithChildren{
+	assert.Equal(t, &ObjectLeaf{
 		Object:   branch2,
-		Children: map[Kind][]*ObjectWithChildren{},
+		Children: map[Kind][]*ObjectLeaf{},
 	}, result)
 
 	// Object without children - config
 	result, found = c.GetWithChildren(config1Key)
 	assert.True(t, found)
-	assert.Equal(t, &ObjectWithChildren{
+	assert.Equal(t, &ObjectLeaf{
 		Object:   config1,
-		Children: map[Kind][]*ObjectWithChildren{},
+		Children: map[Kind][]*ObjectLeaf{},
 	}, result)
 
 	// Object with children - branch
 	result, found = c.GetWithChildren(branch1Key)
 	assert.True(t, found)
-	assert.Equal(t, &ObjectWithChildren{
+	assert.Equal(t, &ObjectLeaf{
 		// Branch
 		Object: branch1,
-		Children: map[Kind][]*ObjectWithChildren{
+		Children: map[Kind][]*ObjectLeaf{
 			ConfigKind: {
 				// Config 1
 				{
 					Object:   config1,
-					Children: map[Kind][]*ObjectWithChildren{},
+					Children: map[Kind][]*ObjectLeaf{},
 				},
 				// Config 2 - with rows
 				{
 					Object: config2,
-					Children: map[Kind][]*ObjectWithChildren{
+					Children: map[Kind][]*ObjectLeaf{
 						ConfigRowKind: {
 							{
 								Object:   configRow1,
-								Children: map[Kind][]*ObjectWithChildren{},
+								Children: map[Kind][]*ObjectLeaf{},
 							},
 							{
 								Object:   configRow2,
-								Children: map[Kind][]*ObjectWithChildren{},
+								Children: map[Kind][]*ObjectLeaf{},
 							},
 						},
 					},
 				},
 				// Config 3 - with transformation
 				{
-					Object: config3,
-					Children: map[Kind][]*ObjectWithChildren{
+					Object: transformationConfig,
+					Children: map[Kind][]*ObjectLeaf{
 						TransformationKind: {
 							// Transformation
 							{
 								Object: transformation,
-								Children: map[Kind][]*ObjectWithChildren{
+								Children: map[Kind][]*ObjectLeaf{
 									// Transformation block
 									BlockKind: {
 										{
 											Object:   block,
-											Children: map[Kind][]*ObjectWithChildren{},
+											Children: map[Kind][]*ObjectLeaf{},
 										},
 									},
 								},
@@ -266,17 +259,17 @@ func TestCollection_GetWithChildren(t *testing.T) {
 	// Object with children - config
 	result, found = c.GetWithChildren(config2Key)
 	assert.True(t, found)
-	assert.Equal(t, &ObjectWithChildren{
+	assert.Equal(t, &ObjectLeaf{
 		Object: config2,
-		Children: map[Kind][]*ObjectWithChildren{
+		Children: map[Kind][]*ObjectLeaf{
 			ConfigRowKind: {
 				{
 					Object:   configRow1,
-					Children: map[Kind][]*ObjectWithChildren{},
+					Children: map[Kind][]*ObjectLeaf{},
 				},
 				{
 					Object:   configRow2,
-					Children: map[Kind][]*ObjectWithChildren{},
+					Children: map[Kind][]*ObjectLeaf{},
 				},
 			},
 		},
@@ -312,7 +305,7 @@ func TestCollection_All(t *testing.T) {
 	assert.Len(t, c.All(), 6)
 }
 
-func TestCollection_AllWithChildren(t *testing.T) {
+func TestCollection_AllAsTree(t *testing.T) {
 	t.Parallel()
 	c := newTestCollection(t)
 
@@ -329,40 +322,83 @@ func TestCollection_AllWithChildren(t *testing.T) {
 	config2 := c.MustGet(config2Key)
 	configRow1 := c.MustGet(configRow1Key)
 	configRow2 := c.MustGet(configRow2Key)
+	transformationConfig, transformation, block := addTestTransformation(c)
 
-	objects := c.AllWithChildren()
-	assert.Equal(t, []*ObjectWithChildren{
+	// Get tree
+	tree := c.AllAsTree()
+
+	// Get root objects
+	assert.Equal(t, []*ObjectLeaf{
 		// Branch 1
 		{
 			Object:   branch1,
-			Children: map[Kind][]*ObjectWithChildren{},
+			Children: map[Kind][]*ObjectLeaf{},
 		},
 		// Branch 2
 		{
 			Object:   branch2,
-			Children: map[Kind][]*ObjectWithChildren{},
+			Children: map[Kind][]*ObjectLeaf{},
 		},
 		// Config 1
 		{
 			Object:   config1,
-			Children: map[Kind][]*ObjectWithChildren{},
+			Children: map[Kind][]*ObjectLeaf{},
 		},
 		// Config 2 - with rows
 		{
 			Object:   config2,
-			Children: map[Kind][]*ObjectWithChildren{},
+			Children: map[Kind][]*ObjectLeaf{},
+		},
+		// Config 3 - transformation
+		{
+			Object: transformationConfig,
+			Children: map[Kind][]*ObjectLeaf{
+				TransformationKind: {
+					{
+						Object: transformation,
+						Children: map[Kind][]*ObjectLeaf{
+							BlockKind: {
+								{
+									Object:   block,
+									Children: map[Kind][]*ObjectLeaf{},
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 		// Config row 1
 		{
 			Object:   configRow1,
-			Children: map[Kind][]*ObjectWithChildren{},
+			Children: map[Kind][]*ObjectLeaf{},
 		},
 		// Config row 2
 		{
 			Object:   configRow2,
-			Children: map[Kind][]*ObjectWithChildren{},
+			Children: map[Kind][]*ObjectLeaf{},
 		},
-	}, objects)
+	}, tree.Root())
+
+	// Get one
+	assert.Equal(t, &ObjectLeaf{
+		Object: transformationConfig,
+		Children: map[Kind][]*ObjectLeaf{
+			TransformationKind: {
+				{
+					Object: transformation,
+					Children: map[Kind][]*ObjectLeaf{
+						BlockKind: {
+							{
+								Object:   block,
+								Children: map[Kind][]*ObjectLeaf{},
+							},
+						},
+					},
+				},
+			},
+		},
+	}, tree.GetOrNil(transformationConfig.Key()))
 }
 
 func TestCollection_Branches(t *testing.T) {
@@ -418,45 +454,58 @@ func newTestCollection(t *testing.T) Objects {
 
 	// Branch 1
 	branch1Key := BranchKey{BranchId: 123}
-	assert.NoError(t, collection.Add(&Branch{
+	collection.MustAdd(&Branch{
 		BranchKey: branch1Key,
 		Name:      "Main",
 		IsDefault: true,
-	}))
+	})
 
 	// Branch 2
 	branch2Key := BranchKey{BranchId: 567}
-	assert.NoError(t, collection.Add(&Branch{
+	collection.MustAdd(&Branch{
 		BranchKey: branch2Key,
 		Name:      "Foo Bar Branch",
 		IsDefault: false,
-	}))
+	})
 
 	// Config 1
 	config1Key := ConfigKey{BranchKey: branch1Key, ComponentId: "keboola.foo", ConfigId: `345`}
-	assert.NoError(t, collection.Add(&Config{
+	collection.MustAdd(&Config{
 		ConfigKey: config1Key,
 		Name:      "Config 1",
-	}))
+	})
 
 	// Config 2
 	config2Key := ConfigKey{BranchKey: branch1Key, ComponentId: "keboola.foo", ConfigId: `678`}
-	assert.NoError(t, collection.Add(&Config{
+	collection.MustAdd(&Config{
 		ConfigKey: config2Key,
 		Name:      "Config 2",
-	}))
+	})
 
 	// Config Row 1
-	assert.NoError(t, collection.Add(&ConfigRow{
+	collection.MustAdd(&ConfigRow{
 		ConfigRowKey: ConfigRowKey{ConfigKey: config2Key, ConfigRowId: `12`},
 		Name:         "Config Row 1",
-	}))
+	})
 
 	// Config Row 2
-	assert.NoError(t, collection.Add(&ConfigRow{
+	collection.MustAdd(&ConfigRow{
 		ConfigRowKey: ConfigRowKey{ConfigKey: config2Key, ConfigRowId: `34`},
 		Name:         "Config Row 2",
-	}))
+	})
 
 	return collection
+}
+
+func addTestTransformation(collection Objects) (*Config, *Transformation, *Block) {
+	branch1Key := BranchKey{BranchId: 123}
+	configKey := ConfigKey{BranchKey: branch1Key, ComponentId: "keboola.foo", ConfigId: `789`}
+
+	config := &Config{ConfigKey: configKey}
+	transformationKey := TransformationKey{ConfigKey: configKey}
+	transformation := &Transformation{TransformationKey: transformationKey}
+	block := &Block{BlockKey: BlockKey{TransformationKey: transformationKey}}
+
+	collection.MustAdd(config, transformation, block)
+	return config, transformation, block
 }

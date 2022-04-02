@@ -9,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-var ConfigRowKind = Kind{Name: "config row", Abbr: "R"}
+var ConfigRowKind = Kind{Name: "config row", Abbr: "R", ToMany: true}
 
 type ConfigRowId string
 

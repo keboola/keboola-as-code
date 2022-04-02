@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-var SharedCodeKind = Kind{Name: "shared code", Abbr: "sc"}
+var SharedCodeKind = Kind{Name: "shared code", Abbr: "sc", ToMany: false}
 
 type SharedCodeKey struct {
 	ConfigRowKey

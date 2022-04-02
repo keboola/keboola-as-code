@@ -11,9 +11,9 @@ import (
 )
 
 var (
-	TransformationKind = Kind{Name: "transformation", Abbr: "t"}
-	BlockKind          = Kind{Name: "block", Abbr: "b"}
-	CodeKind           = Kind{Name: "code", Abbr: "c"}
+	TransformationKind = Kind{Name: "transformation", Abbr: "t", ToMany: false}
+	BlockKind          = Kind{Name: "block", Abbr: "b", ToMany: true}
+	CodeKind           = Kind{Name: "code", Abbr: "c", ToMany: true}
 )
 
 type TransformationKey struct {

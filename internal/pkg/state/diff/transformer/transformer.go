@@ -29,16 +29,24 @@ func (t *Transformer) Options() cmp.Options {
 			return relations.RelationsBySide()
 		}),
 		// Separately compares the relations for the manifest and API side
-		cmpopts.AcyclicTransformer("x", func(v *model.ObjectWithChildren) interface{} {
-			if v == nil {
-				return nil
+		cmpopts.AcyclicTransformer("object", t.transformObject),
+		cmpopts.AcyclicTransformer("aaa", func(objects []*model.ObjectLeaf) interface{} {
+			if len(objects) == 1 && !objects[0].Kind().ToMany {
+				return objects[0]
 			}
-
-			if _, ok := v.Object.(*model.Transformation); ok {
-				return t.transformationToString(v)
-			}
-
-			return v
+			return objects
 		}),
 	}
+}
+
+func (t *Transformer) transformObject(v *model.ObjectLeaf) string {
+	if _, ok := v.Object.(*model.Transformation); ok {
+		return t.transformationToString(v)
+	}
+
+	if _, ok := v.Object.(*model.Orchestration); ok {
+		return t.orchestrationToString(v)
+	}
+
+	return v.Object.String()
 }
