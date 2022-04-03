@@ -124,11 +124,11 @@ func (k BlockKey) String() string {
 }
 
 func (k BlockKey) LogicPath() string {
-	return k.TransformationKey.LogicPath() + fmt.Sprintf("/block:%03d", k.BlockIndex+1)
+	return k.TransformationKey.LogicPath() + fmt.Sprintf("/block:%s", k.ObjectId())
 }
 
 func (k BlockKey) ObjectId() string {
-	return cast.ToString(k.BlockIndex)
+	return fmt.Sprintf("%03d", k.BlockIndex+1)
 }
 
 func (k CodeKey) Kind() Kind {
@@ -152,11 +152,11 @@ func (k CodeKey) String() string {
 }
 
 func (k CodeKey) LogicPath() string {
-	return k.BlockKey.LogicPath() + fmt.Sprintf("/code:%03d", k.CodeIndex+1)
+	return k.BlockKey.LogicPath() + fmt.Sprintf("/code:%s", k.ObjectId())
 }
 
 func (k CodeKey) ObjectId() string {
-	return cast.ToString(k.CodeIndex)
+	return fmt.Sprintf("%03d", k.CodeIndex+1)
 }
 
 type Script interface {

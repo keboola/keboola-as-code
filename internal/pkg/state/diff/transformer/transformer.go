@@ -24,16 +24,15 @@ func (t *Transformer) Options() cmp.Options {
 		// Compare ordered map as native map (keys order doesn't matter)
 		orderedMapToMapTransformer(),
 		// Convert []Object -> Object, if parent Object can have only one child Object of a Kind.
-		oneChildTransformer(),
-		// Convert []Object -> map[Key]Object, so objects with the same key are compared.
-		compareObjectsByKeysTransformer(),
+		// Convert []Object -> map[Key]Object, so objects with the same key are compared with each other.
+		objectsSliceTransformer(),
 		// Transform object before comparison
-		t.objectsTransformer(),
+		//t.objectsTransformer(),
 	}
 }
 
 // transformObject before comparison if needed.
-func (t *Transformer) transformObject(v *model.ObjectLeaf) interface{} {
+func (t *Transformer) transformObject(v *model.ObjectNode) interface{} {
 	if _, ok := v.Object.(*model.Transformation); ok {
 		return t.transformationToString(v)
 	}
@@ -75,20 +74,18 @@ func orderedMapToMapTransformer() cmp.Option {
 	})
 }
 
-// oneChildTransformer converts []Object -> Object, if parent Object can have only one child Object of a Kind.
-func oneChildTransformer() cmp.Option {
-	return onlyOnceTransformer("oneChild", func(children []*model.ObjectLeaf) interface{} {
+// objectsSliceTransformer has 2 functions
+// 1: Converts []Object -> Object, if parent Object can have only one child Object of a Kind.
+// 2: Converts []Object -> map[Key]Object, so objects with the same key are compared.
+func objectsSliceTransformer() cmp.Option {
+	return cmp.Transformer("objectsSliceToMap", func(children []*model.ObjectNode) interface{} {
+		// Convert []Object -> Object, if parent Object can have only one child Object of a Kind.
 		if len(children) == 1 && !children[0].Kind().ToMany {
 			return children[0]
 		}
-		return children
-	})
-}
 
-// compareObjectsByKeysTransformer converts []Object -> map[Key]Object, so objects with the same key are compared.
-func compareObjectsByKeysTransformer() cmp.Option {
-	return cmp.Transformer("objectsSliceToMap", func(children []*model.ObjectLeaf) interface{} {
-		out := make(map[model.Key]*model.ObjectLeaf)
+		// Convert []Object -> Object, if parent Object can have only one child Object of a Kind.
+		out := make(map[model.Key]*model.ObjectNode)
 		for _, o := range children {
 			out[o.Key()] = o
 		}
@@ -96,7 +93,7 @@ func compareObjectsByKeysTransformer() cmp.Option {
 	})
 }
 
-// onlyOnceTransformer option prevents run of the transformer twice in row.
+// onlyOnceTransformer prevents run of the transformer twice in row (and so infinite loop).
 // This could happen if the value type has not changed.
 func onlyOnceTransformer(name string, f interface{}) cmp.Option {
 	return cmp.FilterPath(

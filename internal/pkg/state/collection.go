@@ -113,15 +113,15 @@ func (c *Collection) GetOrNil(key Key) Object {
 }
 
 // GetWithChildren gets object with all its children in the tree structure.
-func (c *Collection) GetWithChildren(rootKey Key) (*ObjectLeaf, bool) {
+func (c *Collection) GetWithChildren(rootKey Key) (*ObjectNode, bool) {
 	rootObject, found := c.Get(rootKey)
 	if !found {
 		return nil, false
 	}
 
 	// Temporary map: parent -> children
-	recordByKey := map[Key]*ObjectLeaf{
-		rootKey: {Object: rootObject, Children: make(map[Kind][]*ObjectLeaf)},
+	recordByKey := map[Key]*ObjectNode{
+		rootKey: {Object: rootObject, Children: make(map[Kind][]*ObjectNode)},
 	}
 
 	// Generate children tree structure in one iteration
@@ -138,7 +138,7 @@ func (c *Collection) GetWithChildren(rootKey Key) (*ObjectLeaf, bool) {
 
 		// Add object to the tree
 		if parent, ok := recordByKey[parentKey]; ok {
-			record := &ObjectLeaf{Object: object, Children: make(map[Kind][]*ObjectLeaf)}
+			record := &ObjectNode{Object: object, Children: make(map[Kind][]*ObjectNode)}
 			recordByKey[object.Key()] = record
 			parent.Children[object.Kind()] = append(parent.Children[object.Kind()], record)
 		}
@@ -304,32 +304,32 @@ func (c *Collection) all() []Object {
 }
 
 type objectsTree struct {
-	root []*ObjectLeaf
-	all  map[Key]*ObjectLeaf
+	root []*ObjectNode
+	all  map[Key]*ObjectNode
 }
 
 func newObjectsTree() *objectsTree {
 	return &objectsTree{
-		all: make(map[Key]*ObjectLeaf),
+		all: make(map[Key]*ObjectNode),
 	}
 }
 
-func (t *objectsTree) Root() []*ObjectLeaf {
+func (t *objectsTree) Root() []*ObjectNode {
 	return t.root
 }
 
-func (t *objectsTree) Get(key Key) (*ObjectLeaf, bool) {
+func (t *objectsTree) Get(key Key) (*ObjectNode, bool) {
 	v, found := t.all[key]
 	return v, found
 }
 
-func (t *objectsTree) GetOrNil(key Key) *ObjectLeaf {
+func (t *objectsTree) GetOrNil(key Key) *ObjectNode {
 	v, _ := t.all[key]
 	return v
 }
 
 func (t *objectsTree) add(object Object) error {
-	leaf := &ObjectLeaf{Object: object, Children: make(map[Kind][]*ObjectLeaf)}
+	leaf := &ObjectNode{Object: object, Children: make(map[Kind][]*ObjectNode)}
 
 	// Is core object?
 	if object.Kind().IsCore() {

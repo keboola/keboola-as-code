@@ -3,6 +3,7 @@ package transformer_test
 import (
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -29,7 +30,7 @@ func TestTransformer_Transformation(t *testing.T) {
 	assert.NoError(t, naming.Attach(code2Key, model.NewAbsPath(`branch/config/blocks/001-block-1`, `001-code-2`)))
 
 	A.MustAdd(&model.Branch{BranchKey: branchKey})
-	A.MustAdd(&model.Config{ConfigKey: configKey})
+	A.MustAdd(&model.Config{ConfigKey: configKey, Name: "name"})
 	A.MustAdd(&model.Transformation{TransformationKey: transformationKey})
 	A.MustAdd(&model.Block{BlockKey: block1Key, Name: "My block"})
 	A.MustAdd(&model.Code{
@@ -68,8 +69,9 @@ func TestTransformer_Transformation(t *testing.T) {
 		},
 	})
 
-	_, err := d.Diff(A, B)
+	result, err := d.Diff(A, B)
 	assert.NoError(t, err)
+	spew.Dump(result.Results)
 	assert.Fail(t, "aaa")
 
 	//	expectedShort := `* C branch/config | changed: transformation`

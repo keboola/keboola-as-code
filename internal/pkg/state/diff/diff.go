@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"sort"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/errors"
@@ -113,7 +112,12 @@ func (d *Differ) diffObject(key model.Key, a, b Object) (*ResultObject, error) {
 	// Diff
 	reporter := newReporter(a, b, d.naming)
 	cmp.Diff(a.Object, b.Object, reporter.Options())
-	spew.Dump(reporter.Results())
+
+	// Set results
+	result.Values = reporter.Results()
+	if len(result.Values) != 0 {
+		result.State = ResultNotEqual
+	}
 
 	return result, nil
 }

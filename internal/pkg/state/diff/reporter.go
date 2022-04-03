@@ -61,4 +61,12 @@ func (r *Reporter) Report(rs cmp.Result) {
 		result.State = ResultNotEqual
 	}
 
+	// Set path
+	result.Path = PathFromCmpPath(r.path, r.naming)
+
+	// Copy object path to the result if possible
+	if s, ok := result.Path.Last().(StepObject); ok {
+		result.FsPath = s.Path
+	}
+
 }

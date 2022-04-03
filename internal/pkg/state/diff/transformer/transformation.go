@@ -7,7 +7,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func (t *Transformer) transformationToString(transformation *model.ObjectLeaf) string {
+func (t *Transformer) transformationToString(transformation *model.ObjectNode) string {
 	var builder strings.Builder
 
 	// Blocks

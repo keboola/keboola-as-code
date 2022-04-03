@@ -189,44 +189,44 @@ func TestCollection_GetWithChildren(t *testing.T) {
 	// Object without children - branch
 	result, found := c.GetWithChildren(branch2Key)
 	assert.True(t, found)
-	assert.Equal(t, &ObjectLeaf{
+	assert.Equal(t, &ObjectNode{
 		Object:   branch2,
-		Children: map[Kind][]*ObjectLeaf{},
+		Children: map[Kind][]*ObjectNode{},
 	}, result)
 
 	// Object without children - config
 	result, found = c.GetWithChildren(config1Key)
 	assert.True(t, found)
-	assert.Equal(t, &ObjectLeaf{
+	assert.Equal(t, &ObjectNode{
 		Object:   config1,
-		Children: map[Kind][]*ObjectLeaf{},
+		Children: map[Kind][]*ObjectNode{},
 	}, result)
 
 	// Object with children - branch
 	result, found = c.GetWithChildren(branch1Key)
 	assert.True(t, found)
-	assert.Equal(t, &ObjectLeaf{
+	assert.Equal(t, &ObjectNode{
 		// Branch
 		Object: branch1,
-		Children: map[Kind][]*ObjectLeaf{
+		Children: map[Kind][]*ObjectNode{
 			ConfigKind: {
 				// Config 1
 				{
 					Object:   config1,
-					Children: map[Kind][]*ObjectLeaf{},
+					Children: map[Kind][]*ObjectNode{},
 				},
 				// Config 2 - with rows
 				{
 					Object: config2,
-					Children: map[Kind][]*ObjectLeaf{
+					Children: map[Kind][]*ObjectNode{
 						ConfigRowKind: {
 							{
 								Object:   configRow1,
-								Children: map[Kind][]*ObjectLeaf{},
+								Children: map[Kind][]*ObjectNode{},
 							},
 							{
 								Object:   configRow2,
-								Children: map[Kind][]*ObjectLeaf{},
+								Children: map[Kind][]*ObjectNode{},
 							},
 						},
 					},
@@ -234,17 +234,17 @@ func TestCollection_GetWithChildren(t *testing.T) {
 				// Config 3 - with transformation
 				{
 					Object: transformationConfig,
-					Children: map[Kind][]*ObjectLeaf{
+					Children: map[Kind][]*ObjectNode{
 						TransformationKind: {
 							// Transformation
 							{
 								Object: transformation,
-								Children: map[Kind][]*ObjectLeaf{
+								Children: map[Kind][]*ObjectNode{
 									// Transformation block
 									BlockKind: {
 										{
 											Object:   block,
-											Children: map[Kind][]*ObjectLeaf{},
+											Children: map[Kind][]*ObjectNode{},
 										},
 									},
 								},
@@ -259,17 +259,17 @@ func TestCollection_GetWithChildren(t *testing.T) {
 	// Object with children - config
 	result, found = c.GetWithChildren(config2Key)
 	assert.True(t, found)
-	assert.Equal(t, &ObjectLeaf{
+	assert.Equal(t, &ObjectNode{
 		Object: config2,
-		Children: map[Kind][]*ObjectLeaf{
+		Children: map[Kind][]*ObjectNode{
 			ConfigRowKind: {
 				{
 					Object:   configRow1,
-					Children: map[Kind][]*ObjectLeaf{},
+					Children: map[Kind][]*ObjectNode{},
 				},
 				{
 					Object:   configRow2,
-					Children: map[Kind][]*ObjectLeaf{},
+					Children: map[Kind][]*ObjectNode{},
 				},
 			},
 		},
@@ -328,39 +328,39 @@ func TestCollection_AllAsTree(t *testing.T) {
 	tree := c.AllAsTree()
 
 	// Get root objects
-	assert.Equal(t, []*ObjectLeaf{
+	assert.Equal(t, []*ObjectNode{
 		// Branch 1
 		{
 			Object:   branch1,
-			Children: map[Kind][]*ObjectLeaf{},
+			Children: map[Kind][]*ObjectNode{},
 		},
 		// Branch 2
 		{
 			Object:   branch2,
-			Children: map[Kind][]*ObjectLeaf{},
+			Children: map[Kind][]*ObjectNode{},
 		},
 		// Config 1
 		{
 			Object:   config1,
-			Children: map[Kind][]*ObjectLeaf{},
+			Children: map[Kind][]*ObjectNode{},
 		},
 		// Config 2 - with rows
 		{
 			Object:   config2,
-			Children: map[Kind][]*ObjectLeaf{},
+			Children: map[Kind][]*ObjectNode{},
 		},
 		// Config 3 - transformation
 		{
 			Object: transformationConfig,
-			Children: map[Kind][]*ObjectLeaf{
+			Children: map[Kind][]*ObjectNode{
 				TransformationKind: {
 					{
 						Object: transformation,
-						Children: map[Kind][]*ObjectLeaf{
+						Children: map[Kind][]*ObjectNode{
 							BlockKind: {
 								{
 									Object:   block,
-									Children: map[Kind][]*ObjectLeaf{},
+									Children: map[Kind][]*ObjectNode{},
 								},
 							},
 						},
@@ -371,27 +371,27 @@ func TestCollection_AllAsTree(t *testing.T) {
 		// Config row 1
 		{
 			Object:   configRow1,
-			Children: map[Kind][]*ObjectLeaf{},
+			Children: map[Kind][]*ObjectNode{},
 		},
 		// Config row 2
 		{
 			Object:   configRow2,
-			Children: map[Kind][]*ObjectLeaf{},
+			Children: map[Kind][]*ObjectNode{},
 		},
 	}, tree.Root())
 
 	// Get one
-	assert.Equal(t, &ObjectLeaf{
+	assert.Equal(t, &ObjectNode{
 		Object: transformationConfig,
-		Children: map[Kind][]*ObjectLeaf{
+		Children: map[Kind][]*ObjectNode{
 			TransformationKind: {
 				{
 					Object: transformation,
-					Children: map[Kind][]*ObjectLeaf{
+					Children: map[Kind][]*ObjectNode{
 						BlockKind: {
 							{
 								Object:   block,
-								Children: map[Kind][]*ObjectLeaf{},
+								Children: map[Kind][]*ObjectNode{},
 							},
 						},
 					},

@@ -1,7 +1,6 @@
 package diff
 
 import (
-	"fmt"
 	"reflect"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/errors"
@@ -18,21 +17,11 @@ const (
 	ResultOnlyInB
 )
 
-// Marks representing the result of the diff.
-const (
-	EqualMark    = "="
-	NotEqualMark = "*"
-	AddMark      = "+"
-	DeleteMark   = "×"
-	OnlyInAMark  = "-"
-	OnlyInBMark  = "+"
-)
-
 // Object from A or B model.Objects collection, contains reference to all objects.
 // Object field can be nil.
 type Object struct {
 	Key    model.Key
-	Object *model.ObjectLeaf
+	Object *model.ObjectNode
 	All    model.Objects
 }
 
@@ -53,7 +42,7 @@ type Result struct {
 
 // ResultObject of diff of A and B model.Object.
 type ResultObject struct {
-	model.Key
+	Key    model.Key
 	A      Object
 	B      Object
 	State  ResultState
@@ -61,23 +50,9 @@ type ResultObject struct {
 }
 
 type ResultValue struct {
-	A     reflect.Value
-	B     reflect.Value
-	State ResultState
-	path  []string
-}
-
-func (v ResultState) Mark() string {
-	switch v {
-	case ResultNotEqual:
-		return NotEqualMark
-	case ResultEqual:
-		return EqualMark
-	case ResultOnlyInA:
-		return OnlyInAMark
-	case ResultOnlyInB:
-		return OnlyInBMark
-	default:
-		panic(fmt.Errorf("unexpected value %#v", v))
-	}
+	A      reflect.Value
+	B      reflect.Value
+	State  ResultState
+	Path   Path
+	FsPath *model.AbsPath // filled in if the record is related to a file in the filesystem
 }

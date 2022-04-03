@@ -10,7 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func (t *Transformer) orchestrationToString(orchestration *model.ObjectLeaf) string {
+func (t *Transformer) orchestrationToString(orchestration *model.ObjectNode) string {
 	var builder strings.Builder
 
 	// Phases

@@ -68,7 +68,7 @@ type ObjectsReadOnly interface {
 	// GetOrNil object from the collection or returns nil if it is not present.
 	GetOrNil(key Key) Object
 	// GetWithChildren gets object with its children in tree structure.
-	GetWithChildren(rootKey Key) (*ObjectLeaf, bool)
+	GetWithChildren(rootKey Key) (*ObjectNode, bool)
 	// MustGet object from the collection otherwise panic occurs.
 	MustGet(key Key) Object
 	// All gets all objects from the collection.
@@ -102,15 +102,17 @@ type Objects interface {
 	Remove(keys ...Key)
 }
 
-type ObjectLeaf struct {
+type ObjectNode struct {
 	Object   `diff:"true"`
-	Children map[Kind][]*ObjectLeaf `diff:"true"`
+	Children ObjectChildren `diff:"true"`
 }
 
+type ObjectChildren map[Kind][]*ObjectNode
+
 type ObjectsTree interface {
-	Root() []*ObjectLeaf
-	Get(key Key) (*ObjectLeaf, bool)
-	GetOrNil(key Key) *ObjectLeaf
+	Root() []*ObjectNode
+	Get(key Key) (*ObjectNode, bool)
+	GetOrNil(key Key) *ObjectNode
 }
 
 func (k Kind) IsCore() bool {
@@ -121,6 +123,6 @@ func (k Kind) String() string {
 	return k.Name
 }
 
-func (o *ObjectLeaf) Get(kind Kind) []*ObjectLeaf {
+func (o *ObjectNode) Get(kind Kind) []*ObjectNode {
 	return o.Children[kind]
 }
