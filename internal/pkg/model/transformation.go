@@ -171,34 +171,6 @@ func (v UsedSharedCodeRows) IdsSlice() []interface{} {
 	return ids
 }
 
-//func (v *Transformation) VisitCodes(callback func(code *Code)) {
-//	for _, block := range v.Blocks {
-//		for _, code := range block.Codes {
-//			callback(code)
-//		}
-//	}
-//}
-//
-//func (v *Transformation) VisitScripts(callback func(code *Code, script Script)) {
-//	for _, block := range v.Blocks {
-//		for _, code := range block.Codes {
-//			for _, script := range code.Scripts {
-//				callback(code, script)
-//			}
-//		}
-//	}
-//}
-//
-//func (v *Transformation) MapScripts(callback func(block *Block, code *Code, script Script) Script) {
-//	for _, block := range v.Blocks {
-//		for _, code := range block.Codes {
-//			for index, script := range code.Scripts {
-//				code.Scripts[index] = callback(block, code, script)
-//			}
-//		}
-//	}
-//}
-
 func (v Scripts) Slice() []interface{} {
 	var out []interface{}
 	for _, script := range v {
