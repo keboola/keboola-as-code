@@ -30,6 +30,13 @@ func PathFromCmpPath(input cmp.Path, naming *naming.Registry) Path {
 	return p.output
 }
 
+func (p Path) First() Step {
+	if len(p) == 0 {
+		return nil
+	}
+	return p[0]
+}
+
 func (p Path) Last() Step {
 	if len(p) == 0 {
 		return nil

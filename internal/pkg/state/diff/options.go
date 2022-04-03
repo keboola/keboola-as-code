@@ -1,24 +1,16 @@
-// Package transformer modifies how the diff will be displayed. It converts objects into a more readable form.
-package transformer
+package diff
 
 import (
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-type Transformer struct {
-	naming *naming.Registry
-}
-
-func NewTransformer(naming *naming.Registry) *Transformer {
-	return &Transformer{naming: naming}
-}
-
-func (t *Transformer) Options() cmp.Options {
+// options to modify diff process.
+func options(r *Reporter) cmp.Options {
 	return cmp.Options{
+		cmp.Reporter(r),
 		// Diff only struct fields with diff:"true" tag
 		onlyFiledWithDiffTag(),
 		// Compare ordered map as native map (keys order doesn't matter)
@@ -26,26 +18,7 @@ func (t *Transformer) Options() cmp.Options {
 		// Convert []Object -> Object, if parent Object can have only one child Object of a Kind.
 		// Convert []Object -> map[Key]Object, so objects with the same key are compared with each other.
 		objectsSliceTransformer(),
-		// Transform object before comparison
-		//t.objectsTransformer(),
 	}
-}
-
-// transformObject before comparison if needed.
-func (t *Transformer) transformObject(v *model.ObjectNode) interface{} {
-	if _, ok := v.Object.(*model.Transformation); ok {
-		return t.transformationToString(v)
-	}
-
-	if _, ok := v.Object.(*model.Orchestration); ok {
-		return t.orchestrationToString(v)
-	}
-
-	return v
-}
-
-func (t *Transformer) objectsTransformer() cmp.Option {
-	return onlyOnceTransformer("transformObject", t.transformObject)
 }
 
 // onlyFiledWithDiffTag ignores struct field without diff:"true" tag
@@ -91,21 +64,4 @@ func objectsSliceTransformer() cmp.Option {
 		}
 		return out
 	})
-}
-
-// onlyOnceTransformer prevents run of the transformer twice in row (and so infinite loop).
-// This could happen if the value type has not changed.
-func onlyOnceTransformer(name string, f interface{}) cmp.Option {
-	return cmp.FilterPath(
-		func(path cmp.Path) bool {
-			previousIndex := len(path) - 2
-			if previousIndex > 0 {
-				if step, ok := path[previousIndex].(cmp.Transform); ok {
-					return step.Name() != name
-				}
-			}
-			return true
-		},
-		cmp.Transformer(name, f),
-	)
 }

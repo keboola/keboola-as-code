@@ -29,7 +29,7 @@ func NewDiffer(naming *naming.Registry) *Differ {
 // Diff compares A and B model.Objects collections.
 // Result are sorted according to the A collection, see model.Objects.Less function.
 func (d *Differ) Diff(A, B model.Objects) (*Result, error) {
-	out := &Result{A: A, B: B, Equal: true, Results: []*ResultObject{}, Errors: errors.NewMultiError(), naming: d.naming}
+	out := &Result{A: A, B: B, Equal: true, Results: []*ResultObject{}, Errors: errors.NewMultiError()}
 
 	// Find all keys present in A, B or both.
 	keys := make(map[model.Key]bool)
@@ -109,13 +109,22 @@ func (d *Differ) diffObject(key model.Key, a, b Object) (*ResultObject, error) {
 		panic(fmt.Errorf("diff values A(%s) and B(%s) must have same data type", aType, bType))
 	}
 
+	// Get object path if possible
+	if d.naming != nil {
+		if path, found := d.naming.PathByKey(key); found {
+			result.FsPath = &path
+		}
+	}
+
 	// Diff
 	reporter := newReporter(a, b, d.naming)
-	cmp.Diff(a.Object, b.Object, reporter.Options())
+	cmp.Diff(a.Object, b.Object, options(reporter))
 
 	// Set results
-	result.Values = reporter.Results()
-	if len(result.Values) != 0 {
+	result.Differences = reporter.Differences()
+	if len(result.Differences) == 0 {
+		result.State = ResultEqual
+	} else {
 		result.State = ResultNotEqual
 	}
 

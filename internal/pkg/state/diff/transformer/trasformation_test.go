@@ -1,12 +1,13 @@
 package transformer_test
 
 import (
+	"fmt"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/diff"
 )
 
 func TestTransformer_Transformation(t *testing.T) {
@@ -71,7 +72,7 @@ func TestTransformer_Transformation(t *testing.T) {
 
 	result, err := d.Diff(A, B)
 	assert.NoError(t, err)
-	spew.Dump(result.Results)
+	fmt.Println(result.String(diff.FormatOptions{Details: true}))
 	assert.Fail(t, "aaa")
 
 	//	expectedShort := `* C branch/config | changed: transformation`

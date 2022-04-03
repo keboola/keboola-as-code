@@ -1,11 +1,13 @@
 package diff
 
 import (
+	"fmt"
 	"reflect"
+	"sort"
+	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
 )
 
 // Possible diff results.
@@ -37,17 +39,19 @@ type Result struct {
 	HasNotEqualResult bool
 	HasOnlyInAResult  bool
 	HasOnlyInBResult  bool
-	naming            *naming.Registry
 }
 
 // ResultObject of diff of A and B model.Object.
 type ResultObject struct {
-	Key    model.Key
-	A      Object
-	B      Object
-	State  ResultState
-	Values []*ResultValue
+	Key         model.Key
+	A           Object
+	B           Object
+	State       ResultState
+	FsPath      *model.AbsPath
+	Differences ResultValues
 }
+
+type ResultValues []*ResultValue
 
 type ResultValue struct {
 	A      reflect.Value
@@ -55,4 +59,54 @@ type ResultValue struct {
 	State  ResultState
 	Path   Path
 	FsPath *model.AbsPath // filled in if the record is related to a file in the filesystem
+}
+
+func (v ResultState) Mark() string {
+	switch v {
+	case ResultNotEqual:
+		return NotEqualMark
+	case ResultEqual:
+		return EqualMark
+	case ResultOnlyInA:
+		return OnlyInAMark
+	case ResultOnlyInB:
+		return OnlyInBMark
+	default:
+		panic(fmt.Errorf("unexpected value %#v", v))
+	}
+}
+
+func (v *Result) String(o FormatOptions) string {
+	return format(v, o)
+}
+
+func (v ResultValues) IsEmpty() bool {
+	return len(v) == 0
+}
+
+// String returns all paths separated by comma.
+func (v ResultValues) String() string {
+	var paths []string
+	for _, item := range v {
+		paths = append(paths, item.Path.String())
+	}
+
+	sort.Strings(paths)
+	return strings.Join(paths, ", ")
+}
+
+// ShortString returns first part of all paths separated by comma.
+func (v ResultValues) ShortString() string {
+	uniquePaths := make(map[string]bool)
+	for _, item := range v {
+		uniquePaths[item.Path.First().String()] = true
+	}
+
+	var paths []string
+	for path := range uniquePaths {
+		paths = append(paths, path)
+	}
+
+	sort.Strings(paths)
+	return strings.Join(paths, ", ")
 }
