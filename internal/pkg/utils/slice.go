@@ -19,7 +19,7 @@ func SortByName(slice interface{}) interface{} {
 		panic(fmt.Errorf("expected slice, given \"%T\"", slice))
 	}
 
-	// Sort by Name, and by String key if names are same
+	// Sort by Label, and by String key if names are same
 	value := reflect.ValueOf(slice)
 	sort.SliceStable(slice, func(i, j int) bool {
 		objI := value.Index(i).Interface().(objectWithName)

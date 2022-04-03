@@ -139,12 +139,12 @@ func testInputs() inputsMap {
 		Default:     "id1",
 		Options: input.Options{
 			{
-				Id:   "id1",
-				Name: "Option 1",
+				Value: "id1",
+				Label: "Option 1",
 			},
 			{
-				Id:   "id2",
-				Name: "Option 2",
+				Value: "id2",
+				Label: "Option 2",
 			},
 		},
 	})
@@ -181,16 +181,16 @@ func testInputs() inputsMap {
 		Default:     []interface{}{"id1", "id3"},
 		Options: input.Options{
 			{
-				Id:   "id1",
-				Name: "Option 1",
+				Value: "id1",
+				Label: "Option 1",
 			},
 			{
-				Id:   "id2",
-				Name: "Option 2",
+				Value: "id2",
+				Label: "Option 2",
 			},
 			{
-				Id:   "id3",
-				Name: "Option 3",
+				Value: "id3",
+				Label: "Option 3",
 			},
 		},
 	})

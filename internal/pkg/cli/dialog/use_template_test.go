@@ -211,7 +211,7 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 			Type:        "string",
 			Kind:        "select",
 			If:          "age>18",
-			Options:     input.Options{{Id: "beer", Name: "Beer"}, {Id: "wine", Name: "Wine"}},
+			Options:     input.Options{{Value: "beer", Label: "Beer"}, {Value: "wine", Label: "Wine"}},
 		},
 		{
 			Id:          "drinks",
@@ -220,7 +220,7 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 			Type:        "string[]",
 			Kind:        "multiselect",
 			If:          "age>18",
-			Options:     input.Options{{Id: "rum", Name: "Rum"}, {Id: "vodka", Name: "Vodka"}, {Id: "whiskey", Name: "Whiskey"}},
+			Options:     input.Options{{Value: "rum", Label: "Rum"}, {Value: "vodka", Label: "Vodka"}, {Value: "whiskey", Label: "Whiskey"}},
 		},
 	}
 
@@ -352,7 +352,7 @@ func TestAskUseTemplateOptionsIfNotMet(t *testing.T) {
 			Type:        "string",
 			Kind:        "select",
 			If:          "age>18",
-			Options:     input.Options{{Id: "beer", Name: "Beer"}, {Id: "wine", Name: "Wine"}},
+			Options:     input.Options{{Value: "beer", Label: "Beer"}, {Value: "wine", Label: "Wine"}},
 		},
 	}
 

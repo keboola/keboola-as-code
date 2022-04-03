@@ -235,7 +235,7 @@ func (d *useTmplDialog) askInput(inputDef input.Input, groupToAnnounce *input.St
 			}
 		}
 		selectedIndex, _ := d.SelectIndex(selectPrompt)
-		return d.addInputValue(inputDef.Options[selectedIndex].Id, inputDef, true)
+		return d.addInputValue(inputDef.Options[selectedIndex].Value, inputDef, true)
 	case input.KindMultiSelect:
 		multiSelect := &prompt.MultiSelectIndex{
 			Label:       inputDef.Name,
@@ -264,7 +264,7 @@ func (d *useTmplDialog) askInput(inputDef input.Input, groupToAnnounce *input.St
 		selectedIndices, _ := d.MultiSelectIndex(multiSelect)
 		selectedValues := make([]string, 0)
 		for _, selectedIndex := range selectedIndices {
-			selectedValues = append(selectedValues, inputDef.Options[selectedIndex].Id)
+			selectedValues = append(selectedValues, inputDef.Options[selectedIndex].Value)
 		}
 		// Save value
 		return d.addInputValue(selectedValues, inputDef, true)

@@ -13,13 +13,13 @@ import (
 type Options []Option
 
 type Option struct {
-	Id   string `json:"id" validate:"required"`
-	Name string `json:"name" validate:"required"`
+	Value string `json:"id" validate:"required"`
+	Label string `json:"name" validate:"required"`
 }
 
 func (options Options) GetById(id string) (Option, int, bool) {
 	for i, o := range options {
-		if o.Id == id {
+		if o.Value == id {
 			return o, i, true
 		}
 	}
@@ -34,7 +34,7 @@ func (options Options) ContainsId(id string) bool {
 func (options Options) Names() []string {
 	out := make([]string, 0)
 	for _, o := range options {
-		out = append(out, o.Name)
+		out = append(out, o.Label)
 	}
 	return out
 }
@@ -43,7 +43,7 @@ func (options Options) Names() []string {
 func (options Options) Map() *orderedmap.OrderedMap {
 	out := orderedmap.New()
 	for _, o := range options {
-		out.Set(o.Id, o.Name)
+		out.Set(o.Value, o.Label)
 	}
 	return out
 }
@@ -60,7 +60,7 @@ func OptionsFromString(str string) (out Options, err error) {
 	for _, key := range pairs.Keys() {
 		valueRaw, _ := pairs.Get(key)
 		if v, ok := valueRaw.(string); ok {
-			out = append(out, Option{Id: key, Name: v})
+			out = append(out, Option{Value: key, Label: v})
 		} else {
 			return nil, fmt.Errorf(`value "%s" is not valid: value of key "%s" must be string`, str, key)
 		}

@@ -119,8 +119,8 @@ func testInputs() StepsGroups {
 							Type:        "string",
 							Kind:        "select",
 							Options: Options{
-								{Id: "a", Name: "A"},
-								{Id: "b", Name: "B"},
+								{Value: "a", Label: "A"},
+								{Value: "b", Label: "B"},
 							},
 						},
 					},

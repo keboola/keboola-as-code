@@ -106,8 +106,8 @@ func Find(objectKey model.Key, component *model.Component, content *orderedmap.O
 					return
 				}
 				inputOptions = append(inputOptions, Option{
-					Id:   item.String(),
-					Name: item.String(),
+					Value: item.String(),
+					Label: item.String(),
 				})
 			}
 			if !isSecret && valRef.Len() > 0 {
