@@ -18,7 +18,7 @@ type ActionType int
 
 // action on the diff result.
 type action struct {
-	*diff.Result
+	*diff.ResultObject
 	action ActionType
 }
 

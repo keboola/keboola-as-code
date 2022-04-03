@@ -1,7 +1,6 @@
 package transformation_test
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
@@ -38,8 +37,6 @@ func TestTransformationLocalMapper_MapAfterLocalLoad_Invalid(t *testing.T) {
 	codeMetaFilePath := filesystem.Join(codePath, naming.MetaFile)
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(codeFilePath, codeContent)))
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(codeMetaFilePath, codeMeta)))
-
-	fmt.Printf(d.DebugLogger().AllMessages())
 
 	// Load
 	recipe := model.NewLocalLoadRecipe(d.FileLoader(), configPath, config)
@@ -199,7 +196,6 @@ func TestTransformationLocalMapper_MapAfterLocalLoad_Sql(t *testing.T) {
 	assert.Equal(t, expected, config.Transformation.Blocks)
 
 	// Check naming registry
-	fmt.Printf("%#v", state.NamingRegistry().AllStrings())
 	assert.Equal(t, map[string]string{
 		`branch "123"`: `branch`,
 		`config "branch:123/component:keboola.snowflake-transformation/config:456"`:              `branch/config`,
@@ -295,7 +291,6 @@ func TestTransformationLocalMapper_MapAfterLocalLoad_Python(t *testing.T) {
 	assert.Equal(t, expected, config.Transformation.Blocks)
 
 	// Check naming registry
-	fmt.Printf("%#v", state.NamingRegistry().AllStrings())
 	assert.Equal(t, map[string]string{
 		`branch "123"`: `branch`,
 		`config "branch:123/component:keboola.python-transformation-v2/config:456"`:              `branch/config`,

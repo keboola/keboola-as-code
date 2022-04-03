@@ -4,7 +4,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
@@ -117,8 +116,6 @@ func TestLocalLoadTranWithSharedCode_InvalidSharedCodeRowPath(t *testing.T) {
 	sharedCodeKey, sharedCodeRowsKeys := fixtures.CreateSharedCode(t, state)
 	transformation := createLocalTransformationWithSharedCode(t, state)
 	transformation.Transformation.Blocks[0].Codes[1].Scripts[0] = model.StaticScript{Value: "# {{:codes/missing}}\n"} // <<<<<<<<<<<<
-
-	spew.Dump(state.NamingRegistry().AllStrings())
 
 	// Invoke
 	err := state.Mapper().AfterLocalOperation(model.NewChanges().AddLoaded(transformation))

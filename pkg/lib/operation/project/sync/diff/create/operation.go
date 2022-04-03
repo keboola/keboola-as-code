@@ -9,7 +9,7 @@ type Options struct {
 	Objects model.ObjectStates
 }
 
-func Run(o Options) (*diff.Results, error) {
+func Run(o Options) (*diff.Result, error) {
 	differ := diff.NewDiffer(o.Objects)
 	results, err := differ.Diff()
 	if err != nil {

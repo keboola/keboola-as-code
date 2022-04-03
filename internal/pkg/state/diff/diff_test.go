@@ -4,7 +4,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
@@ -248,7 +247,6 @@ func TestDiff_Relations(t *testing.T) {
 
 	targetKey := fixtures.MockedKey{Id: `123`}
 	assert.NoError(t, d.naming.Attach(targetKey, model.NewAbsPath("", "path/to/target")))
-	spew.Dump(d.naming.PathByKey(targetKey))
 
 	objectKey := fixtures.MockedKey{Id: `345`}
 	A.MustAdd(&fixtures.MockedObject{
@@ -362,7 +360,7 @@ func TestDiff_Transformation(t *testing.T) {
 	//s := spew.NewDefaultConfig()
 	//s.DisableMethods = true
 
-	//for _, r := range results.Results {
+	//for _, r := range results.Result {
 	//	if r.State != ResultEqual {
 	//		s.Dump(r.Key.String())
 	//		for _, ch := range r.ChangedFields.All() {
@@ -416,17 +414,17 @@ func TestDiff_Transformation(t *testing.T) {
 //
 //	results, err := d.diff(A, B)
 //	assert.NoError(t, err)
-//	assert.Len(t, results.Results, 3)
+//	assert.Len(t, results.Result, 3)
 //
-//	result1 := results.Results[0] // branch
+//	result1 := results.Result[0] // branch
 //	assert.Equal(t, ResultEqual, result1.State)
 //	assert.True(t, result1.ChangedFields.IsEmpty())
 //
-//	result2 := results.Results[1] // config
+//	result2 := results.Result[1] // config
 //	assert.Equal(t, ResultEqual, result2.State)
 //	assert.True(t, result2.ChangedFields.IsEmpty())
 //
-//	result3 := results.Results[2]
+//	result3 := results.Result[2]
 //	assert.Equal(t, ResultNotEqual, result3.State)
 //
 //	expected := `
@@ -560,13 +558,13 @@ func TestDiff_Transformation(t *testing.T) {
 //
 //	results, err := d.diff(A, B)
 //	assert.NoError(t, err)
-//	assert.Len(t, results.Results, 2)
+//	assert.Len(t, results.Result, 2)
 //
-//	result1 := results.Results[0] // branch
+//	result1 := results.Result[0] // branch
 //	assert.Equal(t, ResultEqual, result1.State)
 //	assert.True(t, result1.ChangedFields.IsEmpty())
 //
-//	result2 := results.Results[1] // config
+//	result2 := results.Result[1] // config
 //	assert.Equal(t, ResultNotEqual, result2.State)
 //
 //	expected := `
@@ -681,9 +679,9 @@ func TestResults_Format(t *testing.T) {
 	changedFields.Add("xyz").SetDiff(`diff 1`)
 	changedFields.Add("123").SetDiff(`diff 2`)
 	changedFields.Add("abc").SetDiff(`diff 3`)
-	result := &Result{Key: fixtures.MockedKey{Id: "id"}, ChangedFields: changedFields, State: ResultNotEqual}
-	results := &Results{Results: []*Result{result}}
-	output := strings.Join(results.Format(naming.NewRegistry(), true), "\n")
+	result := &ResultObject{Key: fixtures.MockedKey{Id: "id"}, ChangedFields: changedFields, State: ResultNotEqual}
+	results := &Result{Results: []*ResultObject{result}}
+	output := strings.Join(results.Format(true), "\n")
 
 	expected := `
 * K mocked key "id"

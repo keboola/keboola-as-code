@@ -81,6 +81,6 @@ func (p *Plan) Validate() error {
 	return nil
 }
 
-func (p *Plan) Add(result *diff.Result, actionType ActionType) {
-	p.actions = append(p.actions, &action{Result: result, action: actionType})
+func (p *Plan) Add(result *diff.ResultObject, actionType ActionType) {
+	p.actions = append(p.actions, &action{ResultObject: result, action: actionType})
 }

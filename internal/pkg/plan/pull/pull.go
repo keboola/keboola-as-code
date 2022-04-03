@@ -7,7 +7,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state/diff"
 )
 
-func NewPlan(diffResults *diff.Results) (*diffop.Plan, error) {
+func NewPlan(diffResults *diff.Result) (*diffop.Plan, error) {
 	plan := diffop.NewPlan(`pull`)
 	for _, result := range diffResults.Results {
 		switch result.State {

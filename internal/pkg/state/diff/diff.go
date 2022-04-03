@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"sort"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/errors"
@@ -17,7 +18,7 @@ type Differ struct {
 	naming *naming.Registry
 }
 
-func Diff(A, B model.Objects, naming *naming.Registry) (*Results, error) {
+func Diff(A, B model.Objects, naming *naming.Registry) (*Result, error) {
 	d := Differ{naming: naming}
 	return d.Diff(A, B)
 }
@@ -27,9 +28,9 @@ func NewDiffer(naming *naming.Registry) *Differ {
 }
 
 // Diff compares A and B model.Objects collections.
-// Results are sorted according to the A collection, see model.Objects.Less function.
-func (d *Differ) Diff(A, B model.Objects) (*Results, error) {
-	out := &Results{A: A, B: B, Equal: true, Results: []*Result{}, Errors: errors.NewMultiError(), naming: d.naming}
+// Result are sorted according to the A collection, see model.Objects.Less function.
+func (d *Differ) Diff(A, B model.Objects) (*Result, error) {
+	out := &Result{A: A, B: B, Equal: true, Results: []*ResultObject{}, Errors: errors.NewMultiError(), naming: d.naming}
 
 	// Find all keys present in A, B or both.
 	keys := make(map[model.Key]bool)
@@ -80,9 +81,8 @@ func (d *Differ) Diff(A, B model.Objects) (*Results, error) {
 	return out, out.Errors.ErrorOrNil()
 }
 
-func (d *Differ) diffObject(key model.Key, a, b Object) (*Result, error) {
-	result := &Result{Key: key, A: a, B: b}
-	result.ChangedFields = model.NewChangedFields()
+func (d *Differ) diffObject(key model.Key, a, b Object) (*ResultObject, error) {
+	result := &ResultObject{Key: key, A: a, B: b}
 
 	// Are both, Remote and Local state defined?
 	if a.Object == nil && b.Object == nil {
@@ -113,12 +113,7 @@ func (d *Differ) diffObject(key model.Key, a, b Object) (*Result, error) {
 	// Diff
 	reporter := newReporter(a, b, d.naming)
 	cmp.Diff(a.Object, b.Object, reporter.Options())
-
-	if len(result.ChangedFields) > 0 {
-		result.State = ResultNotEqual
-	} else {
-		result.State = ResultEqual
-	}
+	spew.Dump(reporter.Results())
 
 	return result, nil
 }

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/spf13/cast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/errors"
@@ -78,7 +77,6 @@ func (u *uow) finalizeFn() state.FinalizationFn {
 		// AfterLocalOperation event
 		if !changes.Empty() {
 			if err := u.mapper.AfterLocalOperation(changes); err != nil {
-				spew.Dump(err)
 				errs.Append(err)
 			}
 		}

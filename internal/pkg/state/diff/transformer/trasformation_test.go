@@ -1,7 +1,6 @@
 package transformer_test
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -69,14 +68,15 @@ func TestTransformer_Transformation(t *testing.T) {
 		},
 	})
 
-	results, err := d.Diff(A, B)
+	_, err := d.Diff(A, B)
 	assert.NoError(t, err)
+	assert.Fail(t, "aaa")
 
-	expectedShort := `* C branch/config | changed: transformation`
-	expectedLong := `
-
-`
-	assert.Equal(t, "", strings.Join(results.Format(false), "\n"))
-	assert.Equal(t, strings.Trim(expectedShort, "\n"), strings.Join(results.Format(false), "\n"))
-	assert.Equal(t, strings.Trim(expectedLong, "\n"), strings.Join(results.Format(true), "\n"))
+	//	expectedShort := `* C branch/config | changed: transformation`
+	//	expectedLong := `
+	//
+	//`
+	//assert.Equal(t, "", strings.Join(results.Format(false), "\n"))
+	//assert.Equal(t, strings.Trim(expectedShort, "\n"), strings.Join(results.Format(false), "\n"))
+	//assert.Equal(t, strings.Trim(expectedLong, "\n"), strings.Join(results.Format(true), "\n"))
 }

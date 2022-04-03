@@ -16,7 +16,7 @@ type dependencies interface {
 	Logger() log.Logger
 }
 
-func Run(projectState *project.State, o Options, d dependencies) (*diff.Results, error) {
+func Run(projectState *project.State, o Options, d dependencies) (*diff.Result, error) {
 	logger := d.Logger()
 
 	// Diff
