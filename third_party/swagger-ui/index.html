@@ -1,82 +1,120 @@
 <!-- HTML for static distribution bundle build -->
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="UTF-8">
     <title>Keboola Templates API</title>
-    <link rel="stylesheet" type="text/css" href="./swagger-ui.css" />
-    <link rel="icon" type="image/png" href="./favicon-32x32.png" sizes="32x32" />
-    <link rel="icon" type="image/png" href="./favicon-16x16.png" sizes="16x16" />
+    <link rel="stylesheet" type="text/css" href="./swagger-ui.css"/>
+    <link rel="icon" type="image/png" href="./favicon-32x32.png" sizes="32x32"/>
+    <link rel="icon" type="image/png" href="./favicon-16x16.png" sizes="16x16"/>
     <style>
-      html {
-        box-sizing: border-box;
-        overflow: -moz-scrollbars-vertical;
-        overflow-y: scroll;
-      }
+        html {
+            box-sizing: border-box;
+            overflow: -moz-scrollbars-vertical;
+            overflow-y: scroll;
+        }
 
-      *, *:before, *:after {
-        box-sizing: inherit;
-      }
+        *, *:before, *:after {
+            box-sizing: inherit;
+        }
 
-      body {
-        margin:0;
-        background-color: #fafafa;
-      }
+        body {
+            margin: 0;
+            background-color: #fafafa;
+        }
 
-      .swagger-ui .topbar {
-        background-color: #228dff;
-      }
-      .swagger-ui .topbar .download-url-wrapper {
-        display: none;
-      }
-      .swagger-ui .info .title small.version-stamp,
-      .swagger-ui .topbar .download-url-wrapper .download-url-button {
-        background-color: #49cc90;
-      }
-      .swagger-ui .topbar .download-url-wrapper input[type=text] {
-        border-color: #49cc90;
-      }
+        .swagger-ui .topbar {
+            background-color: #228dff;
+        }
+
+        .swagger-ui .topbar .download-url-wrapper {
+            display: none;
+        }
+
+        .swagger-ui .info .title small.version-stamp,
+        .swagger-ui .topbar .download-url-wrapper .download-url-button {
+            background-color: #49cc90;
+        }
+
+        .swagger-ui .topbar .download-url-wrapper input[type=text] {
+            border-color: #49cc90;
+        }
+
+        /* For better readability of schemes */
+        .swagger-ui .model-example table.model tr.description td:first-child {
+            visibility: hidden;
+        }
+
+        .swagger-ui .model-example .model .model-title {
+            padding-right: 1em;
+            color: #55a;
+        }
+
+        .swagger-ui .model-example .model .model-toggle {
+            margin-left: -0.5em;
+        }
+
+        .swagger-ui .model-example .model button.model-box-control {
+          margin-top: -1em;
+          padding-bottom: 1em
+        }
+
+        .swagger-ui .model-example .model .property:not(.primitive) {
+          display: none
+        }
+
+        .swagger-ui .prop {
+            line-height: 1.25em
+        }
+
+        .swagger-ui .prop-enum > br {
+            display: none
+        }
+
+        .swagger-ui .model-title {
+            font-size: 1.1em;
+        }
     </style>
     <script type="text/javascript">
-      (function () {
-        window.addEventListener("load", function () {
-          setTimeout(function () {
-            var logo = document.getElementsByClassName('link'); //For Changing The Link On The Logo Image
-            logo[0].href = "https://keboola.com/";
-            logo[0].target = "_blank";
-            logo[0].children[0].alt = "Keboola";
-            logo[0].children[0].src = "https://assets.website-files.com/5e21dc6f4c5acf29c35bb32c/5e7263a8bf518b1d3be1760a_256.png";
-          });
-        });
-      })();
+        (function () {
+            window.addEventListener("load", function () {
+                setTimeout(function () {
+                    var logo = document.getElementsByClassName('link'); //For Changing The Link On The Logo Image
+                    logo[0].href = "https://keboola.com/";
+                    logo[0].target = "_blank";
+                    logo[0].children[0].alt = "Keboola";
+                    logo[0].children[0].src = "https://assets.website-files.com/5e21dc6f4c5acf29c35bb32c/5e7263a8bf518b1d3be1760a_256.png";
+                });
+            });
+        })();
     </script>
-  </head>
+</head>
 
-  <body>
-    <div id="swagger-ui"></div>
+<body>
+<div id="swagger-ui"></div>
 
-    <script src="./swagger-ui-bundle.js" charset="UTF-8"> </script>
-    <script src="./swagger-ui-standalone-preset.js" charset="UTF-8"> </script>
-    <script>
-    window.onload = function() {
-      // Begin Swagger UI call region
-      const ui = SwaggerUIBundle({
-        url: "/v1/documentation/openapi3.json",
-        dom_id: '#swagger-ui',
-        deepLinking: true,
-        presets: [
-          SwaggerUIBundle.presets.apis,
-          SwaggerUIStandalonePreset
-        ],
-        plugins: [
-          SwaggerUIBundle.plugins.DownloadUrl
-        ],
-        layout: "StandaloneLayout"
-      });
-      // End Swagger UI call region
+<script src="./swagger-ui-bundle.js" charset="UTF-8"></script>
+<script src="./swagger-ui-standalone-preset.js" charset="UTF-8"></script>
+<script>
+    window.onload = function () {
+        // Begin Swagger UI call region
+        const ui = SwaggerUIBundle({
+            url: "/v1/documentation/openapi3.json",
+            dom_id: '#swagger-ui',
+            deepLinking: true,
+            presets: [
+                SwaggerUIBundle.presets.apis,
+                SwaggerUIStandalonePreset
+            ],
+            plugins: [
+                SwaggerUIBundle.plugins.DownloadUrl
+            ],
+            layout: "StandaloneLayout"
+        });
+        // End Swagger UI call region
 
-      window.ui = ui;
+        window.ui = ui;
     };
-  </script>
-  </body>
+</script>
+</body>
 </html>
