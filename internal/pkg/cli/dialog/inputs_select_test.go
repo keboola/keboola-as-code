@@ -207,12 +207,12 @@ func TestInputsSelectDialog_Parse_All(t *testing.T) {
 			Default: []interface{}{"foo", "bar"},
 			Options: input.Options{
 				{
-					Id:   "foo",
-					Name: "foo",
+					Value: "foo",
+					Label: "foo",
 				},
 				{
-					Id:   "bar",
-					Name: "bar",
+					Value: "bar",
+					Label: "bar",
 				},
 			},
 		},

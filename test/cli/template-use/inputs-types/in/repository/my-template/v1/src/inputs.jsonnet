@@ -137,16 +137,16 @@
               rules: 'required',
               options: [
                 {
-                  id: 'value1',
-                  name: 'Name 1',
+                  value: 'value1',
+                  label: 'Name 1',
                 },
                 {
-                  id: 'value2',
-                  name: 'Name 2',
+                  value: 'value2',
+                  label: 'Name 2',
                 },
                 {
-                  id: 'value3',
-                  name: 'Name 3',
+                  value: 'value3',
+                  label: 'Name 3',
                 },
               ],
             },
@@ -160,16 +160,16 @@
               rules: 'required',
               options: [
                 {
-                  id: 'value1',
-                  name: 'Name 1',
+                  value: 'value1',
+                  label: 'Name 1',
                 },
                 {
-                  id: 'value2',
-                  name: 'Name 2',
+                  value: 'value2',
+                  label: 'Name 2',
                 },
                 {
-                  id: 'value3',
-                  name: 'Name 3',
+                  value: 'value3',
+                  label: 'Name 3',
                 },
               ],
             },
@@ -182,16 +182,16 @@
               rules: 'required',
               options: [
                 {
-                  id: 'value1',
-                  name: 'Name 1',
+                  value: 'value1',
+                  label: 'Name 1',
                 },
                 {
-                  id: 'value2',
-                  name: 'Name 2',
+                  value: 'value2',
+                  label: 'Name 2',
                 },
                 {
-                  id: 'value3',
-                  name: 'Name 3',
+                  value: 'value3',
+                  label: 'Name 3',
                 },
               ],
             },
@@ -205,16 +205,16 @@
               default: ['value2', 'value3'],
               options: [
                 {
-                  id: 'value1',
-                  name: 'Name 1',
+                  value: 'value1',
+                  label: 'Name 1',
                 },
                 {
-                  id: 'value2',
-                  name: 'Name 2',
+                  value: 'value2',
+                  label: 'Name 2',
                 },
                 {
-                  id: 'value3',
-                  name: 'Name 3',
+                  value: 'value3',
+                  label: 'Name 3',
                 },
               ],
             },

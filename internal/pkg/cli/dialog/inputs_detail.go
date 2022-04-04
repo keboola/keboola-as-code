@@ -200,12 +200,12 @@ ShowIf example, see: https://github.com/Knetic/govaluate/blob/master/MANUAL.md
 
 Options format:
      kind: select
-     default: id1
-     options: {"id1":"Option 1","id2":"Option 2","id3":"Option 3"}
+     default: value1
+     options: {"value1":"Label 1","value2":"Label 2","value3":"Label 3"}
 
      kind: multiselect
-     default: id1, id3
-     options: {"id1":"Option 1","id2":"Option 2","id3":"Option 3"}
+     default: value1, value3
+     options: {"value1":"Label 1","value2":"Label 2","value3":"Label 3"}
 
 Preview of steps and groups you created:
 `

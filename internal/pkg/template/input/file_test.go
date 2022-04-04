@@ -70,12 +70,12 @@ const inputsJsonNet = `{
               kind: "select",
               options: [
                 {
-                  id: "a",
-                  name: "A",
+                  value: "a",
+                  label: "A",
                 },
                 {
-                  id: "b",
-                  name: "B",
+                  value: "b",
+                  label: "B",
                 },
               ],
             },
@@ -119,8 +119,8 @@ func testInputs() StepsGroups {
 							Type:        "string",
 							Kind:        "select",
 							Options: Options{
-								{Id: "a", Name: "A"},
-								{Id: "b", Name: "B"},
+								{Value: "a", Label: "A"},
+								{Value: "b", Label: "B"},
 							},
 						},
 					},

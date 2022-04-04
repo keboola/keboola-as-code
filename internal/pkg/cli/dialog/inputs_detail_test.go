@@ -75,8 +75,8 @@ description:
 kind: select
 rules:
 showIf:
-default: id1
-options: {"id1":"Op... <!-- invalid options -->
+default: value1
+options: {"value1":"La... <!-- invalid options -->
 
 ## Input "string-array-multiselect" (string[])
 name: String Array
@@ -84,13 +84,13 @@ description: Description
 kind: multiselect
 rules:
 showIf:
-default: id5, id6 <!-- invalid values -->
-options: {"id1":"Option 1","id2":"Option 2","id3":123}  <!-- invalid options -->
+default: value5, value6 <!-- invalid values -->
+options: {"value1":"Label 1","value2":"Label 2","value3":123}  <!-- invalid options -->
 `
 
 	expected := `
-- line 26: value "{"id1":"Op..." is not valid: unexpected end of JSON input, offset: 13
-- line 35: value "{"id1":"Option 1","id2":"Option 2","id3":123}" is not valid: value of key "id3" must be string
+- line 26: value "{"value1":"La..." is not valid: unexpected end of JSON input, offset: 16
+- line 35: value "{"value1":"Label 1","value2":"Label 2","value3":123}" is not valid: value of key "value3" must be string
 - input "string-input": type string is not allowed for the specified kind
 - input "string-input": rules is not valid: undefined validation function 'foobar'
 - input "string-input": showIf cannot compile condition:
@@ -136,15 +136,15 @@ func testInputs() inputsMap {
 		Description: "Description",
 		Type:        input.TypeString,
 		Kind:        input.KindSelect,
-		Default:     "id1",
+		Default:     "value1",
 		Options: input.Options{
 			{
-				Id:   "id1",
-				Name: "Option 1",
+				Value: "value1",
+				Label: "Label 1",
 			},
 			{
-				Id:   "id2",
-				Name: "Option 2",
+				Value: "value2",
+				Label: "Label 2",
 			},
 		},
 	})
@@ -178,19 +178,19 @@ func testInputs() inputsMap {
 		Description: "Description",
 		Type:        input.TypeStringArray,
 		Kind:        input.KindMultiSelect,
-		Default:     []interface{}{"id1", "id3"},
+		Default:     []interface{}{"value1", "value3"},
 		Options: input.Options{
 			{
-				Id:   "id1",
-				Name: "Option 1",
+				Value: "value1",
+				Label: "Label 1",
 			},
 			{
-				Id:   "id2",
-				Name: "Option 2",
+				Value: "value2",
+				Label: "Label 2",
 			},
 			{
-				Id:   "id3",
-				Name: "Option 3",
+				Value: "value3",
+				Label: "Label 3",
 			},
 		},
 	})
@@ -235,12 +235,12 @@ ShowIf example, see: https://github.com/Knetic/govaluate/blob/master/MANUAL.md
 
 Options format:
      kind: select
-     default: id1
-     options: {"id1":"Option 1","id2":"Option 2","id3":"Option 3"}
+     default: value1
+     options: {"value1":"Label 1","value2":"Label 2","value3":"Label 3"}
 
      kind: multiselect
-     default: id1, id3
-     options: {"id1":"Option 1","id2":"Option 2","id3":"Option 3"}
+     default: value1, value3
+     options: {"value1":"Label 1","value2":"Label 2","value3":"Label 3"}
 
 Preview of steps and groups you created:
 - Group 1: desc
@@ -285,8 +285,8 @@ description: Description
 kind: select
 rules:
 showIf:
-default: id1
-options: {"id1":"Option 1","id2":"Option 2"}
+default: value1
+options: {"value1":"Label 1","value2":"Label 2"}
 step: s1
 
 ## Input "string-int" (int)
@@ -322,8 +322,8 @@ description: Description
 kind: multiselect
 rules:
 showIf:
-default: id1, id3
-options: {"id1":"Option 1","id2":"Option 2","id3":"Option 3"}
+default: value1, value3
+options: {"value1":"Label 1","value2":"Label 2","value3":"Label 3"}
 step: s1
 
 `
