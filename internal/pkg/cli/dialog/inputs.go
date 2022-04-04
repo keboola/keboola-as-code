@@ -166,7 +166,7 @@ func newInputsMap() inputsMap {
 	return inputsMap{data: orderedmap.New()}
 }
 
-// inputsMap - map of all Inputs by Input.Value.
+// inputsMap - map of all Inputs by Input.Id.
 type inputsMap struct {
 	data *orderedmap.OrderedMap
 }

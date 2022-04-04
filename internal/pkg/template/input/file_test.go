@@ -70,12 +70,12 @@ const inputsJsonNet = `{
               kind: "select",
               options: [
                 {
-                  id: "a",
-                  name: "A",
+                  value: "a",
+                  label: "A",
                 },
                 {
-                  id: "b",
-                  name: "B",
+                  value: "b",
+                  label: "B",
                 },
               ],
             },

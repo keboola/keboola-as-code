@@ -13,8 +13,8 @@ import (
 type Options []Option
 
 type Option struct {
-	Value string `json:"id" validate:"required"`
-	Label string `json:"name" validate:"required"`
+	Value string `json:"value" validate:"required"`
+	Label string `json:"label" validate:"required"`
 }
 
 func (options Options) GetById(id string) (Option, int, bool) {
