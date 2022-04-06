@@ -20,7 +20,7 @@ release-local: prepare
 	goreleaser release --rm-dist --snapshot --skip-publish -f ./build/ci/goreleaser.yml
 
 build-templates-api: prepare
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -mod mod -ldflags "-s -w" -o ./target/templates-api/server ./cmd/templates-api
+	CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o ./target/templates-api/server ./cmd/templates-api
 
 run-templates-api: prepare
 	air -c ./.air-templates-api.toml
