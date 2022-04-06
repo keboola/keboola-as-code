@@ -3,6 +3,7 @@ package token
 
 import (
 	"fmt"
+	"strings"
 
 	"goa.design/goa/v3/codegen"
 	. "goa.design/goa/v3/dsl"
@@ -141,23 +142,29 @@ func modifyOpenApiV2(roots []eval.Root, data *openapiv2.V2) {
 	for _, path := range data.Paths {
 		// Iterate all endpoints
 		if path, ok := path.(*openapiv2.Path); ok {
-			if path.Get != nil {
-				headerName, originalSecurityName, modifiedSecurityName, found := resolveNaming(roots, path.Get.Tags)
+			operations := []*openapiv2.Operation{path.Get, path.Put, path.Post, path.Delete, path.Options, path.Head, path.Patch}
+			for _, operation := range operations {
+				if operation == nil {
+					continue
+				}
+
+				service := strings.Split(operation.OperationID, "#")[0]
+				headerName, originalSecurityName, modifiedSecurityName, found := resolveNaming(roots, service)
 				if !found {
 					continue
 				}
 
 				// Skip token header definition that is unnecessary
-				for _, param := range path.Get.Parameters {
-					filtered := make([]*openapiv2.Parameter, 0)
+				filtered := make([]*openapiv2.Parameter, 0)
+				for _, param := range operation.Parameters {
 					if param.Name != headerName {
 						filtered = append(filtered, param)
 					}
-					path.Get.Parameters = filtered
 				}
+				operation.Parameters = filtered
 
 				// Normalize security name in reference
-				for _, item := range path.Get.Security {
+				for _, item := range operation.Security {
 					for key, value := range item {
 						if key == originalSecurityName {
 							delete(item, key)
@@ -188,23 +195,29 @@ func modifyOpenApiV3(roots []eval.Root, data *openapiv3.OpenAPI) {
 
 	for _, path := range data.Paths {
 		// Iterate all endpoints
-		if path.Get != nil {
-			headerName, originalSecurityName, modifiedSecurityName, found := resolveNaming(roots, path.Get.Tags)
+		operations := []*openapiv3.Operation{path.Get, path.Put, path.Post, path.Delete, path.Options, path.Head, path.Patch}
+		for _, operation := range operations {
+			if operation == nil {
+				continue
+			}
+
+			service := strings.Split(operation.OperationID, "#")[0]
+			headerName, originalSecurityName, modifiedSecurityName, found := resolveNaming(roots, service)
 			if !found {
 				continue
 			}
 
 			// Skip token header definition that is unnecessary
-			for _, param := range path.Get.Parameters {
-				filtered := make([]*openapiv3.ParameterRef, 0)
+			filtered := make([]*openapiv3.ParameterRef, 0)
+			for _, param := range operation.Parameters {
 				if param.Value.Name != headerName {
 					filtered = append(filtered, param)
 				}
-				path.Get.Parameters = filtered
 			}
+			operation.Parameters = filtered
 
 			// Normalize security name in reference
-			for _, item := range path.Get.Security {
+			for _, item := range operation.Security {
 				for key, value := range item {
 					if key == originalSecurityName {
 						delete(item, key)
@@ -229,7 +242,7 @@ func modifyOpenApiV3(roots []eval.Root, data *openapiv3.OpenAPI) {
 	}
 }
 
-func resolveNaming(roots []eval.Root, tags []string) (string, string, string, bool) {
+func resolveNaming(roots []eval.Root, serviceName string) (string, string, string, bool) {
 	var schemaName, headerName, originalSecurityName, modifiedSecurityName string
 
 	// Get naming from the service, by OpenApi tags (tag = service name)
@@ -237,14 +250,12 @@ func resolveNaming(roots []eval.Root, tags []string) (string, string, string, bo
 		root.WalkSets(func(set eval.ExpressionSet) error {
 			for _, item := range set {
 				if service, ok := item.(*expr.ServiceExpr); ok {
-					for _, tag := range tags {
-						if service.Name == tag {
-							v1, f1 := service.Meta.Last(MetaKeySchemeName)
-							v2, f2 := service.Meta.Last(MetaKeyTokenHeader)
-							if f1 && f2 {
-								schemaName = v1
-								headerName = v2
-							}
+					if service.Name == serviceName {
+						v1, f1 := service.Meta.Last(MetaKeySchemeName)
+						v2, f2 := service.Meta.Last(MetaKeyTokenHeader)
+						if f1 && f2 {
+							schemaName = v1
+							headerName = v2
 						}
 					}
 				}

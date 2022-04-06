@@ -9,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template/api/dependencies"
 )
 
-func (s *Service) APIKeyAuth(ctx context.Context, tokenStr string, scheme *security.APIKeyScheme) (context.Context, error) {
+func (s *service) APIKeyAuth(ctx context.Context, tokenStr string, scheme *security.APIKeyScheme) (context.Context, error) {
 	if scheme.Name == "storage-api-token" {
 		// Get API
 		api, err := s.dependencies.StorageApi()

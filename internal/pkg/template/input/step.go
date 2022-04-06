@@ -19,7 +19,6 @@ type StepIndex struct {
 	Group int
 }
 
-// StepsGroups.
 type StepsGroups []*StepsGroup
 
 func (g StepsGroups) Indices(stepsToIds map[StepIndex]string) map[string]StepIndex {
@@ -73,9 +72,9 @@ func (g StepsGroups) Validate() error {
 	return validate(g)
 }
 
-// StepsGroup.
+// StepsGroup is a container for Steps.
 type StepsGroup struct {
-	Description string `json:"description" validate:"max=80"`
+	Description string `json:"description" validate:"min=1,max=80"`
 	Required    string `json:"required" validate:"oneof=all atLeastOne exactlyOne zeroOrOne optional"`
 	Steps       Steps  `json:"steps" validate:"min=1,dive"`
 }
@@ -108,7 +107,6 @@ func (g StepsGroup) ValidateSelectedSteps(selected int) error {
 	return nil
 }
 
-// Steps.
 type Steps []*Step
 
 func (s Steps) SelectOptions() []string {
@@ -119,12 +117,12 @@ func (s Steps) SelectOptions() []string {
 	return res
 }
 
-// Step.
+// Step is a container for Inputs.
 type Step struct {
-	Icon              string `json:"icon" validate:"required"`
-	Name              string `json:"name" validate:"required,max=20"`
-	Description       string `json:"description" validate:"max=40"`
-	DialogName        string `json:"dialogName,omitempty" validate:"omitempty,max=20"`
+	Icon              string `json:"icon" validate:"required,min=1"`
+	Name              string `json:"name" validate:"required,min=1,max=25"`
+	Description       string `json:"description" validate:"min=1,max=60"`
+	DialogName        string `json:"dialogName,omitempty" validate:"omitempty,max=25"`
 	DialogDescription string `json:"dialogDescription,omitempty" validate:"omitempty,max=200"`
 	Inputs            Inputs `json:"inputs" validate:"omitempty,dive"`
 }
