@@ -90,11 +90,11 @@ func (s *service) TemplatesIndex(dependencies.Container, *TemplatesIndexPayload)
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (s *service) TemplateIndex(dependencies.Container, *TemplateIndexPayload) (res *Template, err error) {
+func (s *service) TemplateIndex(dependencies.Container, *TemplateIndexPayload) (res *TemplateDetail, err error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (s *service) VersionIndex(dependencies.Container, *VersionIndexPayload) (res *TemplateVersion, err error) {
+func (s *service) VersionIndex(dependencies.Container, *VersionIndexPayload) (res *TemplateVersionDetail, err error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
@@ -102,11 +102,11 @@ func (s *service) Inputs(dependencies.Container, *InputsPayload) (res *InputsInd
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (s *service) InputsValidate(dependencies.Container, *InputsValidatePayload) (res *ValidationResult, err error) {
+func (s *service) InputsValidate(dependencies.Container, *InputsValidatePayload) (res *ValidationDetail, err error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (s *service) VersionUse(dependencies.Container, *VersionUsePayload) (res *UseTemplateResult, err error) {
+func (s *service) VersionUse(dependencies.Container, *VersionUsePayload) (res *UseTemplateDetail, err error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
