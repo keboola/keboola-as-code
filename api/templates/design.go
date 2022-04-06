@@ -31,6 +31,9 @@ var _ = API("templates", func() {
 				Enum("keboola.com", "eu-central-1.keboola.com", "north-europe.azure.keboola.com")
 			})
 		})
+		Host("localhost", func() {
+			URI("http://localhost:8000")
+		})
 	})
 })
 

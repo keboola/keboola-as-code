@@ -37,3 +37,6 @@ target
 
 # Integration tests output
 /src/tests/**/.out/*
+
+# Air code watcher temp dir
+/target/.watcher
