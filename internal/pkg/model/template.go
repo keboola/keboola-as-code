@@ -15,7 +15,7 @@ const (
 
 type TemplateRepository struct {
 	Type       TemplateRepositoryType `json:"type" validate:"oneof=dir git"`
-	Name       string                 `json:"name" validate:"required"`
+	Name       string                 `json:"name" validate:"required,max=40"`
 	Path       string                 `json:"path,omitempty" validate:"required_if=Type path"`
 	Url        string                 `json:"url,omitempty" validate:"required_if=Type git"`
 	Ref        string                 `json:"ref,omitempty" validate:"required_if=Type git"`

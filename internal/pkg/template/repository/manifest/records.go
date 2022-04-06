@@ -9,16 +9,16 @@ import (
 )
 
 type TemplateRecord struct {
-	Id            string `json:"id" validate:"required,alphanumdash"`
-	Name          string `json:"name" validate:"required"`
-	Description   string `json:"description" validate:"required"`
+	Id            string `json:"id" validate:"required,alphanumdash,min=1,max=40"`
+	Name          string `json:"name" validate:"required,min=1,max=40"`
+	Description   string `json:"description" validate:"required,min=1,max=200"`
 	model.AbsPath `validate:"dive"`
 	Versions      []VersionRecord `json:"versions" validate:"required,dive"`
 }
 
 type VersionRecord struct {
-	Version       model.SemVersion `json:"version" validate:"required,semver"`
-	Description   string           `json:"description" validate:"required"`
+	Version       model.SemVersion `json:"version" validate:"required,semver,min=1,max=20"`
+	Description   string           `json:"description" validate:"required,min=1,max=40"`
 	Stable        bool             `json:"stable" validate:"required"`
 	model.AbsPath `validate:"dive"`
 }

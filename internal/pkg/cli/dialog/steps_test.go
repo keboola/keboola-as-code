@@ -15,7 +15,7 @@ func TestStepsDialog_Parse_Ok(t *testing.T) {
 
 	in := `
 ## Group
-description: desc
+description: Group Description
 required: all
 
 ### Step "s1"
@@ -24,7 +24,7 @@ description: Description
 icon: common
 
 ## Group
-description:
+description: Group Description
 required: all
 
 ### Step "s2"
@@ -40,10 +40,10 @@ icon: common
 `
 
 	expectedGroups := input.StepsGroups{
-		&input.StepsGroup{Description: "desc", Required: "all", Steps: []*input.Step{
+		&input.StepsGroup{Description: "Group Description", Required: "all", Steps: []*input.Step{
 			{Icon: "common", Name: "Step One", Description: "Description", Inputs: make(input.Inputs, 0)},
 		}},
-		&input.StepsGroup{Required: "all", Steps: []*input.Step{
+		&input.StepsGroup{Description: "Group Description", Required: "all", Steps: []*input.Step{
 			{Icon: "common", Name: "Step Two", Description: "Description", Inputs: make(input.Inputs, 0)},
 			{Icon: "common", Name: "Step Three", Description: "Description", Inputs: make(input.Inputs, 0)},
 		}},
@@ -72,7 +72,7 @@ name: Step 0
 description: Description
 
 ## Group
-description:
+description: Group description.
 required: invalid
 
 ### Step "s1"
@@ -81,10 +81,10 @@ required: all
 description: Description
 
 ## Group
-description:
+description: Group Description
 
 ## Group
-description:
+description: Group Description
 
 ### Step "s1"
 name: Step One again
@@ -107,7 +107,7 @@ description: Description
 - line 21: step with id "s1" is already defined
 - group 1: required must be one of [all atLeastOne exactlyOne zeroOrOne optional]
 - group 1, step 1: icon is a required field
-- group 1, step 1: name must be a maximum of 20 characters in length
+- group 1, step 1: name must be a maximum of 25 characters in length
 - group 2: required must be one of [all atLeastOne exactlyOne zeroOrOne optional]
 - group 2: steps must contain at least 1 step
 - group 3: required must be one of [all atLeastOne exactlyOne zeroOrOne optional]

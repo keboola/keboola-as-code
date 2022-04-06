@@ -47,8 +47,8 @@ type Value struct {
 
 type Input struct {
 	Id          string      `json:"id" validate:"required,template-input-id"`
-	Name        string      `json:"name" validate:"required"`
-	Description string      `json:"description"`
+	Name        string      `json:"name" validate:"required,min=1,max=25"`
+	Description string      `json:"description" validate:"max=60"`
 	Type        Type        `json:"type" validate:"required,template-input-type,template-input-type-for-kind"`
 	Kind        Kind        `json:"kind" validate:"required,template-input-kind"`
 	Default     interface{} `json:"default,omitempty" validate:"omitempty,template-input-default-value,template-input-default-options"`
