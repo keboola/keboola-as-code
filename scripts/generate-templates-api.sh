@@ -28,6 +28,8 @@ generate() {
 }
 
 finalize() {
+    rm -rf ./gen
+    rm -rf ./goa*
     rm -rf ./internal/pkg/template/api/gen/http/cli
     rm -rf ./internal/pkg/template/api/gen/http/templates/client
     mv ./internal/pkg/template/api/gen/http/openapi* ./internal/pkg/template/api/openapi 2>/dev/null || true
