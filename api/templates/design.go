@@ -156,7 +156,7 @@ var _ = Service("templates", func() {
 	Method("template-index", func() {
 		Meta("openapi:summary", "Get template detail and versions")
 		Description("Get detail and versions of specified template.")
-		Result(Template)
+		Result(TemplateDetail)
 		Payload(func() {
 			repositoryAttr()
 			templateAttr()
@@ -173,7 +173,7 @@ var _ = Service("templates", func() {
 	Method("version-index", func() {
 		Meta("openapi:summary", "Get version detail")
 		Description("Get details of specified template version.")
-		Result(TemplateVersion)
+		Result(TemplateVersionDetail)
 		Payload(func() {
 			repositoryAttr()
 			templateAttr()
@@ -211,7 +211,7 @@ var _ = Service("templates", func() {
 	Method("inputs-validate", func() {
 		Meta("openapi:summary", "Validate inputs")
 		Description("Validate inputs for the \"use\" API call.\nOnly configured steps should be send.")
-		Result(ValidationResult)
+		Result(ValidationDetail)
 		Payload(func() {
 			repositoryAttr()
 			templateAttr()
@@ -231,7 +231,7 @@ var _ = Service("templates", func() {
 	Method("version-use", func() {
 		Meta("openapi:summary", "Use template")
 		Description("Validate inputs and use template in the branch.\nOnly configured steps should be send.")
-		Result(UseTemplateResult)
+		Result(UseTemplateDetail)
 		Error("InvalidInputs", ValidationError, "Inputs are not valid.")
 		Payload(func() {
 			repositoryAttr()
@@ -487,6 +487,27 @@ var ServiceIndex = Type("ServiceIndex", func() {
 	Required("api", "documentation")
 })
 
+var Author = Type("Author", func() {
+	Description("Author of template or repository.")
+	Attribute("name", String, "Name of the author.", func() {
+		MinLength(1)
+		Example("Keboola")
+	})
+	Attribute("url", String, "Link to the author website.", func() {
+		MinLength(1)
+		Example("https://www.keboola.com")
+	})
+	Required("name", "url")
+})
+
+var Repositories = Type("Repositories", func() {
+	Description("List of the repositories.")
+	Attribute("repositories", ArrayOf(Repository), "All template repositories defined in the project.", func() {
+		Example([]ExampleRepositoryData{ExampleRepository()})
+	})
+	Required("repositories")
+})
+
 var Repository = Type("Repository", func() {
 	Description("Template repository.")
 	Attribute("name", String, func() {
@@ -503,23 +524,36 @@ var Repository = Type("Repository", func() {
 		MinLength(1)
 		Example("main")
 	})
-	Required("name", "url", "ref")
-})
-
-var Repositories = Type("Repositories", func() {
-	Description("List of the repositories.")
-	Attribute("repositories", ArrayOf(Repository), "All template repositories defined in the project.", func() {
-		Example([]ExampleRepositoryData{ExampleRepository()})
+	Attribute("author", Author, func() {
+		Example(ExampleAuthor())
 	})
-	Required("repositories")
+	Required("name", "url", "ref", "author")
+	Example(ExampleRepository())
 })
 
 var Templates = Type("Templates", func() {
 	Description("List of the templates.")
-	Attribute("templates", ArrayOf(Template), "All template defined in the repository.", func() {
-		Example([]ExampleTemplateData{ExampleTemplate1(), ExampleTemplate2()})
+	Attribute("repository", Repository, "Information about the repository.")
+	Attribute("templates", ArrayOf(Template), "All template defined in the repository.")
+	Required("repository", "templates")
+	Example(ExampleTemplatesData{
+		Repository: ExampleRepository(),
+		Templates:  []ExampleTemplateData{ExampleTemplate1(), ExampleTemplate2()},
 	})
-	Required("templates")
+})
+
+var TemplateDetail = Type("TemplateDetail", func() {
+	Extend(Template)
+	Attribute("repository", Repository, "Information about the repository.")
+	Attribute("versions", ArrayOf(TemplateVersion), "All available versions of the template.", func() {
+		Example(ExampleVersions1())
+	})
+	Required("repository", "versions")
+	Example(ExampleTemplateDetailData{
+		ExampleTemplateData: ExampleTemplate1(),
+		Repository:          ExampleRepository(),
+		Versions:            ExampleVersions1(),
+	})
 })
 
 var Template = Type("Template", func() {
@@ -538,6 +572,9 @@ var Template = Type("Template", func() {
 		MaxLength(40)
 		Example("My Template")
 	})
+	Attribute("author", Author, func() {
+		Example(ExampleAuthor())
+	})
 	Attribute("description", String, "Short description of the template.", func() {
 		MinLength(1)
 		MaxLength(200)
@@ -548,11 +585,28 @@ var Template = Type("Template", func() {
 		MaxLength(20)
 		Example("v1.2.3")
 	})
-	Attribute("versions", ArrayOf(TemplateVersion), "All available versions of the template.", func() {
-		Example(ExampleVersions2())
+	Required("id", "icon", "name", "author", "description", "defaultVersion")
+})
+
+var TemplateVersionDetail = Type("TemplateVersionDetail", func() {
+	Extend(TemplateVersion)
+	Attribute("components", ArrayOf(String), "List of components used in the template.", func() {
+		Example([]string{"ex-generic-v2", "keboola.snowflake-transformation"})
 	})
-	Required("id", "icon", "name", "description", "defaultVersion", "versions")
-	Example(ExampleTemplate1())
+	Attribute("readme", String, "Readme of the template version in Markdown format.", func() {
+		MinLength(1)
+		Example("Lorem markdownum quod discenda [aegide lapidem](http://www.nequeuntoffensa.io/)")
+	})
+	Attribute("repository", Repository, "Information about the repository.")
+	Attribute("template", Template, "Information about the template.")
+	Required("components", "readme", "repository", "template")
+	Example(ExampleVersionDetailData{
+		Components:         []string{"ex-generic-v2", "keboola.snowflake-transformation"},
+		Readme:             "Lorem markdownum quod discenda [aegide lapidem](http://www.nequeuntoffensa.io/)",
+		Repository:         ExampleRepository(),
+		Template:           ExampleTemplate1(),
+		ExampleVersionData: ExampleVersion1(),
+	})
 })
 
 var TemplateVersion = Type("TemplateVersion", func() {
@@ -571,10 +625,10 @@ var TemplateVersion = Type("TemplateVersion", func() {
 		Example("Experimental support for new API.")
 	})
 	Required("version", "stable", "description")
-	Example(ExampleVersions1())
+	Example(ExampleVersion1())
 })
 
-var UseTemplateResult = Type("UseTemplateResult", func() {
+var UseTemplateDetail = Type("UseTemplateDetail", func() {
 	Description("Information about new template instance.")
 	Attribute("instanceId", String, "Template instance ID.", func() {
 		Example("V1StGXR8IZ5jdHi6BAmyT")
@@ -589,20 +643,20 @@ var ValidationError = Type("ValidationError", func() {
 	Attribute("message", String, "Error message.", func() {
 		Example("Payload is not valid.")
 	})
-	Attribute("validationResult", ValidationResult)
-	Required("error", "message", "validationResult")
+	Attribute("validationDetail", ValidationDetail)
+	Required("error", "message", "validationDetail")
 })
 
-var ValidationResult = Type("ValidationResult", func() {
-	Description("Result of the inputs validation.")
+var ValidationDetail = Type("ValidationDetail", func() {
+	Description("Detail of the inputs validation.")
 	Attribute("valid", Boolean, "True if all groups and inputs are valid.")
-	Attribute("stepGroups", ArrayOf(StepGroupValidationResult), "List of results for the step groups.")
+	Attribute("stepGroups", ArrayOf(StepGroupValidationDetail), "List of Details for the step groups.")
 	Required("valid", "stepGroups")
 	Example(ExampleValidationResult())
 })
 
-var StepGroupValidationResult = Type("StepGroupValidationResult", func() {
-	Description("Validation result of the step group.")
+var StepGroupValidationDetail = Type("StepGroupValidationDetail", func() {
+	Description("Validation Detail of the step group.")
 	Attribute("id", String, "Step group ID.", func() {
 		Example("g1")
 	})
@@ -612,23 +666,23 @@ var StepGroupValidationResult = Type("StepGroupValidationResult", func() {
 	Attribute("error", String, "Are all inputs valid?", func() {
 		Example("All steps must be configured.")
 	})
-	Attribute("steps", ArrayOf(StepValidationResult), "List of results for the steps.")
+	Attribute("steps", ArrayOf(StepValidationDetail), "List of Details for the steps.")
 	Required("id", "valid", "steps")
 })
 
-var StepValidationResult = Type("StepValidationResult", func() {
-	Description("Validation result of the step.")
+var StepValidationDetail = Type("StepValidationDetail", func() {
+	Description("Validation Detail of the step.")
 	Attribute("id", String, "Step ID.", func() {
 		Example("g1-s1")
 	})
 	Attribute("configured", Boolean, "True if the step was part of the sent payload.")
 	Attribute("valid", Boolean, "True if all inputs in the step are valid.")
-	Attribute("inputs", ArrayOf(InputValidationResult), "List of results for the inputs.")
+	Attribute("inputs", ArrayOf(InputValidationDetail), "List of Details for the inputs.")
 	Required("id", "configured", "valid", "inputs")
 })
 
-var InputValidationResult = Type("InputValidationResult", func() {
-	Description("Validation result of the input.")
+var InputValidationDetail = Type("InputValidationDetail", func() {
+	Description("Validation Detail of the input.")
 	Attribute("id", String, "Input ID.", func() {
 		Example("api-token")
 	})
@@ -765,24 +819,49 @@ type ExampleErrorData struct {
 }
 
 type ExampleRepositoryData struct {
+	Name   string            `json:"name" yaml:"name"`
+	Url    string            `json:"url" yaml:"url"`
+	Ref    string            `json:"ref" yaml:"ref"`
+	Author ExampleAuthorData `json:"author" yaml:"author"`
+}
+
+type ExampleAuthorData struct {
 	Name string `json:"name" yaml:"name"`
 	Url  string `json:"url" yaml:"url"`
-	Ref  string `json:"ref" yaml:"ref"`
 }
 
 type ExampleTemplateData struct {
-	Icon           string               `json:"icon" yaml:"icon"`
-	Id             string               `json:"id" yaml:"id"`
-	Name           string               `json:"name" yaml:"name"`
-	Description    string               `json:"description" yaml:"description"`
-	DefaultVersion string               `json:"defaultVersion" yaml:"defaultVersion"`
-	Versions       []ExampleVersionData `json:"versions" yaml:"versions"`
+	Icon           string            `json:"icon" yaml:"icon"`
+	Id             string            `json:"id" yaml:"id"`
+	Name           string            `json:"name" yaml:"name"`
+	Author         ExampleAuthorData `json:"author" yaml:"author"`
+	Description    string            `json:"description" yaml:"description"`
+	DefaultVersion string            `json:"defaultVersion" yaml:"defaultVersion"`
+}
+
+type ExampleTemplatesData struct {
+	Repository ExampleRepositoryData `json:"repository" yaml:"repository"`
+	Templates  []ExampleTemplateData `json:"templates" yaml:"templates"`
+}
+
+type ExampleTemplateDetailData struct {
+	ExampleTemplateData
+	Repository ExampleRepositoryData `json:"repository" yaml:"repository"`
+	Versions   []ExampleVersionData  `json:"versions" yaml:"versions"`
 }
 
 type ExampleVersionData struct {
 	Version     string `json:"version" yaml:"version"`
 	Stable      bool   `json:"stable" yaml:"stable"`
 	Description string `json:"description" yaml:"description"`
+}
+
+type ExampleVersionDetailData struct {
+	ExampleVersionData
+	Components []string              `json:"components" yaml:"components"`
+	Readme     string                `json:"readme" yaml:"readme"`
+	Repository ExampleRepositoryData `json:"repository" yaml:"repository"`
+	Template   ExampleTemplateData   `json:"template" yaml:"template"`
 }
 
 type ExampleStepGroupData struct {
@@ -827,26 +906,26 @@ type ExampleInputPayloadData struct {
 	Value interface{} `json:"value" yaml:"value"`
 }
 
-type ExampleValidationResultData struct {
+type ExampleValidationDetailData struct {
 	Valid      bool                               `json:"valid" yaml:"valid"`
-	StepGroups []ExampleGroupValidationResultData `json:"stepGroups" yaml:"stepGroups"`
+	StepGroups []ExampleGroupValidationDetailData `json:"stepGroups" yaml:"stepGroups"`
 }
 
-type ExampleGroupValidationResultData struct {
+type ExampleGroupValidationDetailData struct {
 	Id    string                            `json:"id" yaml:"id"`
 	Valid bool                              `json:"valid" yaml:"valid"`
 	Error interface{}                       `json:"error" yaml:"error"`
-	Steps []ExampleStepValidationResultData `json:"steps" yaml:"steps"`
+	Steps []ExampleStepValidationDetailData `json:"steps" yaml:"steps"`
 }
 
-type ExampleStepValidationResultData struct {
+type ExampleStepValidationDetailData struct {
 	Id         string                             `json:"id" yaml:"id"`
 	Configured bool                               `json:"configured" yaml:"configured"`
 	Valid      bool                               `json:"valid" yaml:"valid"`
-	Inputs     []ExampleInputValidationResultData `json:"inputs" yaml:"inputs"`
+	Inputs     []ExampleInputValidationDetailData `json:"inputs" yaml:"inputs"`
 }
 
-type ExampleInputValidationResultData struct {
+type ExampleInputValidationDetailData struct {
 	Id      string      `json:"id" yaml:"id"`
 	Visible bool        `json:"visible" yaml:"visible"`
 	Error   interface{} `json:"error" yaml:"error"`
@@ -862,9 +941,17 @@ func ExampleError(statusCode int, name, message string) ExampleErrorData {
 
 func ExampleRepository() ExampleRepositoryData {
 	return ExampleRepositoryData{
-		Name: "default",
-		Url:  "https://github.com/keboola/keboola-as-code-templates",
-		Ref:  "main",
+		Name:   "default",
+		Url:    "https://github.com/keboola/keboola-as-code-templates",
+		Ref:    "main",
+		Author: ExampleAuthor(),
+	}
+}
+
+func ExampleAuthor() ExampleAuthorData {
+	return ExampleAuthorData{
+		Name: "Keboola",
+		Url:  "https://www.keboola.com",
 	}
 }
 
@@ -873,9 +960,9 @@ func ExampleTemplate1() ExampleTemplateData {
 		Icon:           "common:download",
 		Id:             "my-template",
 		Name:           "My Template",
+		Author:         ExampleAuthor(),
 		Description:    "Full workflow to load all user accounts from the Service.",
 		DefaultVersion: "v1.2.3",
-		Versions:       ExampleVersions2(),
 	}
 }
 
@@ -884,26 +971,46 @@ func ExampleTemplate2() ExampleTemplateData {
 		Icon:           "component:keboola.ex-db-mysql",
 		Id:             "maximum-length-template-id-dolor-sit-an",
 		Name:           "Maximum length template name ipsum dolo",
+		Author:         ExampleAuthor(),
 		Description:    "Maximum length template description dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascet.",
 		DefaultVersion: "v4.5.6",
-		Versions:       ExampleVersions3(),
 	}
 }
 
-func ExampleVersions1() ExampleVersionData {
-	return ExampleVersionData{Version: "v1.2.3", Stable: true, Description: "Stable version."}
+func ExampleVersion1() ExampleVersionData {
+	return ExampleVersionData{
+		Version:     "v1.2.3",
+		Stable:      true,
+		Description: "Stable version.",
+	}
+}
+
+func ExampleVersions1() []ExampleVersionData {
+	return []ExampleVersionData{
+		{
+			Version:     "v0.1.1",
+			Stable:      false,
+			Description: "Initial version.",
+		},
+		{
+			Version:     "v1.1.1",
+			Stable:      true,
+			Description: "",
+		},
+		{
+			Version:     "v1.2.3",
+			Stable:      true,
+			Description: "",
+		},
+		{
+			Version:     "v2.0.0",
+			Stable:      false,
+			Description: "Experimental support for new API.",
+		},
+	}
 }
 
 func ExampleVersions2() []ExampleVersionData {
-	return []ExampleVersionData{
-		{Version: "v0.1.1", Stable: false, Description: "Initial version."},
-		{Version: "v1.1.1", Stable: true, Description: ""},
-		{Version: "v1.2.3", Stable: true, Description: ""},
-		{Version: "v2.0.0", Stable: false, Description: "Experimental support for new API."},
-	}
-}
-
-func ExampleVersions3() []ExampleVersionData {
 	return []ExampleVersionData{
 		{Version: "v4.5.6", Stable: true, Description: "Maximum length version description abc."},
 	}
@@ -1185,20 +1292,20 @@ func ExampleInputPayload2() ExampleInputPayloadData {
 	}
 }
 
-func ExampleValidationResult() ExampleValidationResultData {
-	return ExampleValidationResultData{
+func ExampleValidationResult() interface{} {
+	return ExampleValidationDetailData{
 		Valid: false,
-		StepGroups: []ExampleGroupValidationResultData{
+		StepGroups: []ExampleGroupValidationDetailData{
 			{
 				Id:    "g1",
 				Valid: false,
 				Error: "All steps must be configured.",
-				Steps: []ExampleStepValidationResultData{
+				Steps: []ExampleStepValidationDetailData{
 					{
 						Id:         "g1-s1",
 						Configured: true,
 						Valid:      false,
-						Inputs: []ExampleInputValidationResultData{
+						Inputs: []ExampleInputValidationDetailData{
 							{
 								Id:      "api-token",
 								Visible: true,
@@ -1216,18 +1323,18 @@ func ExampleValidationResult() ExampleValidationResultData {
 				Id:    "g2",
 				Valid: true,
 				Error: nil,
-				Steps: []ExampleStepValidationResultData{
+				Steps: []ExampleStepValidationDetailData{
 					{
 						Id:         "g2-s1",
 						Configured: false,
 						Valid:      true,
-						Inputs:     []ExampleInputValidationResultData{},
+						Inputs:     []ExampleInputValidationDetailData{},
 					},
 					{
 						Id:         "g2-s2",
 						Configured: true,
 						Valid:      true,
-						Inputs: []ExampleInputValidationResultData{
+						Inputs: []ExampleInputValidationDetailData{
 							{
 								Id:      "username",
 								Visible: true,

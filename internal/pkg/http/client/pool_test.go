@@ -248,6 +248,7 @@ func TestErrorInSubRequest_ParallelRequests(t *testing.T) {
 
 	// Error is NOT set to the request1
 	assert.False(t, request1.HasError())
+	assert.NoError(t, request1.Err())
 }
 
 func TestOnSuccess(t *testing.T) {
