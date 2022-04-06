@@ -1,19 +1,20 @@
 # Build container
 FROM golang:1.17 AS buildContainer
-WORKDIR /go/src/app
+WORKDIR /app
 COPY . .
 #flags: -s -w to remove symbol table and debug info
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -mod mod -ldflags "-s -w" -o ./templatesapi ./cmd/templates
+RUN make tools
+RUN make build-templates-api
 
 # Production container
 FROM alpine
 RUN apk add -U --no-cache ca-certificates git
 
-COPY --from=buildContainer /go/src/app/templatesapi /app/templatesapi
+COPY --from=buildContainer /app/target/templates-api/server /app/server
 WORKDIR /app
 
 ENV HOST 0.0.0.0
 ENV PORT 8000
 EXPOSE 8000
 
-CMD ["/app/templatesapi", "--http-host=0.0.0.0", "--http-port=8000"]
+CMD ["/app/server", "--http-host=0.0.0.0", "--http-port=8000"]
