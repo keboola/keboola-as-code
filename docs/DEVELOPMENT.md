@@ -71,7 +71,7 @@ To run the API locally:
 1. Start `bash` in the dev container, run `docker-compose run --rm -u "$UID:$GID" --service-ports dev bash`.
 2. In the container run `make run-templates-api`
  - The API is exposed to `http://localhost:8000/`.
- - When the code changes, it recompiles and restarts.
+ - When the code changes, the API recompiles and restarts.
 
 ### Functional Tests
 
