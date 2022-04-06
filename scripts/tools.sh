@@ -12,4 +12,5 @@ cd "$SCRIPT_DIR"
 ./install-gotestsum.sh -b $(go env GOPATH)/bin
 ./install-goreleaser.sh -b $(go env GOPATH)/bin v0.182.1
 curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.42.1
+curl -sSfL https://raw.githubusercontent.com/cosmtrek/air/master/install.sh | sh -s -- -b $(go env GOPATH)/bin
 go install goa.design/goa/v3/cmd/goa@v3

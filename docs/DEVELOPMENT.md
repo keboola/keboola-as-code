@@ -30,7 +30,7 @@ docker-compose run --rm -u "$UID:$GID" dev make ci
 
 To start the interactive console in the container, you can use:
 ```
-docker-compose run --rm -u "$UID:$GID" dev bash
+docker-compose run --rm -u "$UID:$GID" --service-ports dev bash
 ```
 
 To run the one or more tests via wildcard:
@@ -67,13 +67,11 @@ make build
 
 API development uses [Goa code generator](https://goa.design/).
 
-When you add REST endpoints or change their behavior:
-
-1. Change the API design first in the [api/templates/design.go](../api/templates/design.go)
-2. Generate the code by running `bash scripts/generate-api.sh`
-3. Implement the interfaces generated to [internal/pkg/template/api/gen/templates/service.go](../internal/pkg/template/api/gen/templates/service.go) (The service implementation is then referenced from the [cmd/templates/main.go](../cmd/templates/main.go))
-
-To run the API locally run `docker-compose run --service-ports api`. The API is exposed to `http://localhost:8000/`
+To run the API locally:
+1. Start `bash` in the dev container, run `docker-compose run --rm -u "$UID:$GID" --service-ports dev bash`.
+2. In the container run `make run-templates-api`
+ - The API is exposed to `http://localhost:8000/`.
+ - When the code changes, the API recompiles and restarts.
 
 ### Functional Tests
 

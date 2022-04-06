@@ -7,22 +7,18 @@ services:
       - ./:/code:z
       - cache:/tmp/cache
     environment:
+      # For CLI
       - TEST_KBC_PROJECTS
-      # OR
+      ## OR
       - TEST_KBC_PROJECT_ID
       - TEST_KBC_STORAGE_API_HOST
       - TEST_KBC_STORAGE_API_TOKEN
-
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile-api
+      # For Templates API
+      - KBC_STORAGE_API_HOST
+      ## Disable DataDog integration
+      - DATADOG_ENABLED=false
     ports:
       - "8000:8000"
-    environment:
-      - KBC_STORAGE_API_HOST
-      # Disable DataDog integration
-      - DATADOG_ENABLED=false
 
 volumes:
   cache:
