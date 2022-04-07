@@ -37,7 +37,7 @@ func main() {
 	flag.Parse()
 
 	// Setup logger.
-	logger := log.New(os.Stderr, "[templatesApi][server]", 0)
+	logger := log.New(os.Stderr, "[templatesApi]", 0)
 
 	// Envs.
 	envs, err := env.FromOs()
