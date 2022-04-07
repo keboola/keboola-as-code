@@ -113,19 +113,9 @@ func handleError(_ context.Context, w http.ResponseWriter, err error) {
 
 // formatError sets HTTP status code to error.
 func formatError(err error) goaHTTP.Statuser {
-	// Http status.
-	httpCode := 500
-	var httpCodeProvider goaHTTP.Statuser
-	var serviceError *goa.ServiceError
-	if errors.As(err, &httpCodeProvider) {
-		httpCode = httpCodeProvider.StatusCode()
-	} else if errors.As(err, &serviceError) {
-		httpCode = http.StatusBadRequest
-	}
-
 	return errorWithStatusCode{
 		error:    err,
-		httpCode: httpCode,
+		httpCode: errorHttpCode(err),
 	}
 }
 
@@ -217,4 +207,16 @@ func errorLogMessage(err error, response *templates.GenericError) string {
 		"%s | %serrorName=%s errorType=%T response=%s",
 		err.Error(), exceptionIdValue, response.Name, err, json.MustEncodeString(response, false),
 	)
+}
+
+func errorHttpCode(err error) int {
+	httpCode := 500
+	var httpCodeProvider goaHTTP.Statuser
+	var serviceError *goa.ServiceError
+	if errors.As(err, &httpCodeProvider) {
+		httpCode = httpCodeProvider.StatusCode()
+	} else if errors.As(err, &serviceError) {
+		httpCode = http.StatusBadRequest
+	}
+	return httpCode
 }
