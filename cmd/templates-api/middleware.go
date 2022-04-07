@@ -9,10 +9,37 @@ import (
 
 	httpMiddleware "goa.design/goa/v3/http/middleware"
 	"goa.design/goa/v3/middleware"
+	goa "goa.design/goa/v3/pkg"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/api/dependencies"
 )
+
+func TraceEndpointsMiddleware() func(endpoint goa.Endpoint) goa.Endpoint {
+	return func(endpoint goa.Endpoint) goa.Endpoint {
+		return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+			// Start operation
+			span := tracer.StartSpan("endpoint.request", tracer.ResourceName(fmt.Sprintf(".%s%s", ctx.Value(goa.ServiceKey), ctx.Value(goa.MethodKey))))
+
+			// Finis operation and log internal error
+			defer func() {
+				// Is internal error?
+				if err != nil && errorHttpCode(err) > 499 {
+					span.Finish(tracer.WithError(err))
+					return
+				}
+
+				// No internal error
+				span.Finish()
+			}()
+
+			// Handle
+			response, err = endpoint(ctx, request)
+			return response, err
+		}
+	}
+}
 
 func ContextMiddleware(d dependencies.Container, h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
