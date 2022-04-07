@@ -29,6 +29,7 @@ import (
 
 type TestContainer struct {
 	*commonContainer
+	ctx                         context.Context
 	logger                      log.DebugLogger
 	envs                        *env.Map
 	fs                          filesystem.Fs
@@ -46,8 +47,8 @@ type TestContainer struct {
 }
 
 func NewTestContainer() *TestContainer {
-	c := &TestContainer{}
-	c.commonContainer = NewCommonContainer(c, context.Background()).(*commonContainer)
+	c := &TestContainer{ctx: context.Background()}
+	c.commonContainer = NewCommonContainer(c).(*commonContainer)
 	c.logger = log.NewDebugLogger()
 	c.envs = env.Empty()
 	c.fs = testfs.NewMemoryFsWithLogger(c.logger)
@@ -66,6 +67,10 @@ func (v *TestContainer) InitFromTestProject(project *testproject.Project) {
 	v.SetStorageApi(storageApi)
 	v.SetSchedulerApi(project.SchedulerApi())
 	v.SetEncryptionApi(project.EncryptionApi())
+}
+
+func (v *TestContainer) Ctx() context.Context {
+	return v.ctx
 }
 
 func (v *TestContainer) Logger() log.Logger {

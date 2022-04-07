@@ -17,7 +17,9 @@ const CtxKey = ctxKey("dependencies")
 // Container provides dependencies used only in the API + common dependencies.
 type Container interface {
 	dependencies.Common
+	Ctx() context.Context
 	CtxCancelFn() context.CancelFunc
+	WithCtx(ctx context.Context) Container
 	PrefixLogger() log.PrefixLogger
 	LoggerPrefix() string
 	WithLoggerPrefix(prefix string) *container
@@ -27,8 +29,8 @@ type Container interface {
 // NewContainer returns dependencies for API and add them to the context.
 func NewContainer(ctx context.Context, debug bool, logger *stdLog.Logger, envs *env.Map) Container {
 	ctx, cancel := context.WithCancel(ctx)
-	c := &container{ctxCancelFn: cancel, debug: debug, envs: envs, logger: log.NewApiLogger(logger, "", debug)}
-	c.commonDeps = dependencies.NewCommonContainer(c, ctx)
+	c := &container{ctx: ctx, ctxCancelFn: cancel, debug: debug, envs: envs, logger: log.NewApiLogger(logger, "", debug)}
+	c.commonDeps = dependencies.NewCommonContainer(c)
 	return c
 }
 
@@ -36,6 +38,7 @@ type commonDeps = dependencies.Common
 
 type container struct {
 	commonDeps
+	ctx         context.Context
 	ctxCancelFn context.CancelFunc
 	debug       bool
 	logger      log.PrefixLogger
@@ -43,8 +46,18 @@ type container struct {
 	storageApi  *storageapi.Api
 }
 
+func (v *container) Ctx() context.Context {
+	return v.ctx
+}
+
 func (v *container) CtxCancelFn() context.CancelFunc {
 	return v.ctxCancelFn
+}
+
+func (v *container) WithCtx(ctx context.Context) Container {
+	clone := *v
+	clone.ctx = ctx
+	return &clone
 }
 
 func (v *container) LoggerPrefix() string {
