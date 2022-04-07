@@ -18,8 +18,9 @@ const CtxKey = ctxKey("dependencies")
 type Container interface {
 	dependencies.Common
 	CtxCancelFn() context.CancelFunc
+	PrefixLogger() log.PrefixLogger
 	LoggerPrefix() string
-	WithLoggerPrefix(prefix string) (*container, error)
+	WithLoggerPrefix(prefix string) *container
 	WithStorageApi(api *storageapi.Api) (*container, error)
 }
 
@@ -51,10 +52,10 @@ func (v *container) LoggerPrefix() string {
 }
 
 // WithLoggerPrefix returns dependencies clone with modified logger.
-func (v *container) WithLoggerPrefix(prefix string) (*container, error) {
+func (v *container) WithLoggerPrefix(prefix string) *container {
 	clone := *v
 	clone.logger = v.logger.WithPrefix(prefix)
-	return &clone, nil
+	return &clone
 }
 
 // WithStorageApi returns dependencies clone with modified Storage API.
@@ -65,6 +66,10 @@ func (v *container) WithStorageApi(api *storageapi.Api) (*container, error) {
 }
 
 func (v *container) Logger() log.Logger {
+	return v.logger
+}
+
+func (v *container) PrefixLogger() log.PrefixLogger {
 	return v.logger
 }
 

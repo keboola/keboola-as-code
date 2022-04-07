@@ -30,10 +30,7 @@ func (s *service) APIKeyAuth(ctx context.Context, tokenStr string, scheme *secur
 		}
 
 		// Modify logger
-		d, err = d.WithLoggerPrefix(fmt.Sprintf("[project=%d][token=%s]", token.ProjectId(), token.Id))
-		if err != nil {
-			return nil, err
-		}
+		d = d.WithLoggerPrefix(fmt.Sprintf("[project=%d][token=%s]", token.ProjectId(), token.Id))
 
 		// Update context
 		return context.WithValue(ctx, dependencies.CtxKey, d), nil
