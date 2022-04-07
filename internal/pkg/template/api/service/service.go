@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -79,61 +78,61 @@ func (s *service) HealthCheck(dependencies.Container) (res string, err error) {
 }
 
 func (s *service) RepositoriesIndex(dependencies.Container, *RepositoriesIndexPayload) (res *Repositories, err error) {
-	return nil, fmt.Errorf("not implemented")
+	return nil, NotImplementedError{}
 }
 
 func (s *service) RepositoryIndex(dependencies.Container, *RepositoryIndexPayload) (res *Repository, err error) {
-	return nil, fmt.Errorf("not implemented")
+	return nil, NotImplementedError{}
 }
 
 func (s *service) TemplatesIndex(dependencies.Container, *TemplatesIndexPayload) (res *Templates, err error) {
-	return nil, fmt.Errorf("not implemented")
+	return nil, NotImplementedError{}
 }
 
 func (s *service) TemplateIndex(dependencies.Container, *TemplateIndexPayload) (res *TemplateDetail, err error) {
-	return nil, fmt.Errorf("not implemented")
+	return nil, NotImplementedError{}
 }
 
 func (s *service) VersionIndex(dependencies.Container, *VersionIndexPayload) (res *TemplateVersionDetail, err error) {
-	return nil, fmt.Errorf("not implemented")
+	return nil, NotImplementedError{}
 }
 
 func (s *service) Inputs(dependencies.Container, *InputsPayload) (res *InputsIndex, err error) {
-	return nil, fmt.Errorf("not implemented")
+	return nil, NotImplementedError{}
 }
 
 func (s *service) InputsValidate(dependencies.Container, *InputsValidatePayload) (res *ValidationDetail, err error) {
-	return nil, fmt.Errorf("not implemented")
+	return nil, NotImplementedError{}
 }
 
 func (s *service) VersionUse(dependencies.Container, *VersionUsePayload) (res *UseTemplateDetail, err error) {
-	return nil, fmt.Errorf("not implemented")
+	return nil, NotImplementedError{}
 }
 
 func (s *service) InstancesIndex(dependencies.Container, *InstancesIndexPayload) (err error) {
-	return fmt.Errorf("not implemented")
+	return NotImplementedError{}
 }
 
 func (s *service) InstanceIndex(dependencies.Container, *InstanceIndexPayload) (err error) {
-	return fmt.Errorf("not implemented")
+	return NotImplementedError{}
 }
 
 func (s *service) InstanceUpdate(dependencies.Container, *InstanceUpdatePayload) (err error) {
-	return fmt.Errorf("not implemented")
+	return NotImplementedError{}
 }
 
 func (s *service) InstanceDelete(dependencies.Container, *InstanceDeletePayload) (err error) {
-	return fmt.Errorf("not implemented")
+	return NotImplementedError{}
 }
 
 func (s *service) Upgrade(dependencies.Container, *UpgradePayload) (err error) {
-	return fmt.Errorf("not implemented")
+	return NotImplementedError{}
 }
 
 func (s *service) UpgradeInputs(dependencies.Container, *UpgradeInputsPayload) (err error) {
-	return fmt.Errorf("not implemented")
+	return NotImplementedError{}
 }
 
 func (s *service) UpgradeInputsValidate(dependencies.Container, *UpgradeInputsValidatePayload) (err error) {
-	return fmt.Errorf("not implemented")
+	return NotImplementedError{}
 }
