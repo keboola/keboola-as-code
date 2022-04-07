@@ -5,6 +5,6 @@ metadata:
   name: templates-api
   namespace: default
 data:
-  storageApiUrl: "https://connection.$HOSTNAME_SUFFIX"
+  storageApiHost: "connection.$HOSTNAME_SUFFIX"
   keboolaStack: "$KEBOOLA_STACK"
   keboolaRevision: "$RELEASE_ID"

@@ -25,6 +25,7 @@ import (
 
 // Abstract provides dependencies which are obtained in different in CLI and templates API.
 type Abstract interface {
+	Ctx() context.Context
 	Logger() log.Logger
 	Envs() *env.Map
 	ApiVerboseLogs() bool
@@ -35,7 +36,6 @@ type Abstract interface {
 // Common provides common dependencies for CLI and templates API.
 type Common interface {
 	Abstract
-	Ctx() context.Context
 	Components() (*model.ComponentsMap, error)
 	StorageApi() (*storageapi.Api, error)
 	EncryptionApi() (*encryptionapi.Api, error)
@@ -46,22 +46,17 @@ type Common interface {
 }
 
 // NewCommonContainer returns dependencies container for production.
-func NewCommonContainer(d Abstract, ctx context.Context) Common {
-	return &commonContainer{Abstract: d, ctx: ctx}
+func NewCommonContainer(d Abstract) Common {
+	return &commonContainer{Abstract: d}
 }
 
 type commonContainer struct {
 	Abstract
-	ctx           context.Context
 	serviceUrls   map[storageapi.ServiceId]storageapi.ServiceUrl
 	storageApi    *storageapi.Api
 	encryptionApi *encryptionapi.Api
 	schedulerApi  *schedulerapi.Api
 	eventSender   *eventsender.Sender
-}
-
-func (v *commonContainer) Ctx() context.Context {
-	return v.ctx
 }
 
 func (v *commonContainer) Components() (*model.ComponentsMap, error) {

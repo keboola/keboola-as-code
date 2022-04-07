@@ -9,22 +9,59 @@ import (
 
 	httpMiddleware "goa.design/goa/v3/http/middleware"
 	"goa.design/goa/v3/middleware"
+	goa "goa.design/goa/v3/pkg"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/api/dependencies"
 )
 
+func TraceEndpointsMiddleware() func(endpoint goa.Endpoint) goa.Endpoint {
+	return func(endpoint goa.Endpoint) goa.Endpoint {
+		return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+			// Start operation
+			resourceName := tracer.ResourceName(fmt.Sprintf("%s.%s", ctx.Value(goa.ServiceKey), ctx.Value(goa.MethodKey)))
+			span, ctx := tracer.StartSpanFromContext(ctx, "endpoint.request", resourceName)
+
+			// Finis operation and log internal error
+			defer func() {
+				// Is internal error?
+				if err != nil && errorHttpCode(err) > 499 {
+					span.Finish(tracer.WithError(err))
+					return
+				}
+
+				// No internal error
+				span.Finish()
+			}()
+
+			// Handle
+			response, err = endpoint(ctx, request)
+			return response, err
+		}
+	}
+}
+
 func ContextMiddleware(d dependencies.Container, h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Generate unique request ID
 		requestId := idgenerator.RequestId()
-		ctx := context.WithValue(d.Ctx(), middleware.RequestIDKey, requestId)
+		ctx := context.WithValue(r.Context(), middleware.RequestIDKey, requestId)
 		// Include request ID in all log messages
 		loggerPrefix := fmt.Sprintf("[requestId=%s]", requestId)
-		// Add dependencies to the context
-		ctx = context.WithValue(ctx, dependencies.CtxKey, d.WithLoggerPrefix(loggerPrefix))
 		// Add request ID to headers
 		w.Header().Add("X-Request-Id", requestId)
+		// Add request ID to DD span
+		if span, ok := tracer.SpanFromContext(ctx); ok {
+			span.SetTag(ext.ResourceName, r.URL.Path)
+			span.SetTag("http.request.id", requestId)
+			if host, err := d.StorageApiHost(); err != nil {
+				span.SetTag("storage.host", host)
+			}
+		}
+		// Add dependencies to the context
+		ctx = context.WithValue(ctx, dependencies.CtxKey, d.WithCtx(ctx).WithLoggerPrefix(loggerPrefix))
 		// Handle
 		h.ServeHTTP(w, r.WithContext(ctx))
 	})
