@@ -34,6 +34,8 @@ var (
 // Container provides dependencies used only in the CLI + common dependencies.
 type Container interface {
 	dependencies.Common
+	Ctx() context.Context
+	WithCtx(ctx context.Context) Container
 	BasePath() string
 	EmptyDir() (filesystem.Fs, error)
 	Dialogs() *dialog.Dialogs
@@ -51,8 +53,8 @@ type Provider interface {
 }
 
 func NewContainer(ctx context.Context, envs *env.Map, fs filesystem.Fs, dialogs *dialog.Dialogs, logger log.Logger, options *options.Options) Container {
-	c := &container{logger: logger, envs: envs, fs: fs, dialogs: dialogs, options: options}
-	c.commonDeps = dependencies.NewCommonContainer(c, ctx)
+	c := &container{ctx: ctx, logger: logger, envs: envs, fs: fs, dialogs: dialogs, options: options}
+	c.commonDeps = dependencies.NewCommonContainer(c)
 	return c
 }
 
@@ -60,6 +62,7 @@ type commonDeps = dependencies.Common
 
 type container struct {
 	commonDeps
+	ctx        context.Context
 	logger     log.Logger
 	dialogs    *dialog.Dialogs
 	options    *options.Options
@@ -71,6 +74,16 @@ type container struct {
 	// Project
 	project    *project.Project
 	projectDir filesystem.Fs
+}
+
+func (v *container) Ctx() context.Context {
+	return v.ctx
+}
+
+func (v *container) WithCtx(ctx context.Context) Container {
+	clone := *v
+	clone.ctx = ctx
+	return &clone
 }
 
 func (v *container) Logger() log.Logger {
