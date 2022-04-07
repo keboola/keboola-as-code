@@ -349,17 +349,22 @@ var _ = Service("templates", func() {
 // Error -------------------------------------------------------------------------------------------------------
 
 var GenericErrorType = Type("GenericError", func() {
+	Description("Generic error")
 	Attribute("statusCode", Int, "HTTP status code.", func() {
+		Meta("struct:tag:json", "statusCode")
 		Example(500)
 	})
 	ErrorName("error", String, "Name of error.", func() {
 		Meta("struct:field:name", "name")
+		Meta("struct:tag:json", "error")
 		Example("Internal Error")
 	})
 	Attribute("message", String, "Error message.", func() {
+		Meta("struct:tag:json", "message")
 		Example("Internal Error")
 	})
 	Attribute("exceptionId", String, "ID of the error if an internal error occurred.", func() {
+		Meta("struct:tag:json", "exceptionId,omitempty")
 		Example("templates-9db938dd6a8054189a9bd969248aeb48")
 	})
 	Required("statusCode", "error", "message")
