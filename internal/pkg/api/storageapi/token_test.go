@@ -53,7 +53,7 @@ func TestGetTokenEmpty(t *testing.T) {
 	apiErr := err.(*Error)
 	assert.Equal(t, "Access token must be set", apiErr.Message)
 	assert.Equal(t, "", apiErr.ErrCode)
-	assert.Equal(t, 401, apiErr.HttpStatus())
+	assert.Equal(t, 401, apiErr.StatusCode())
 	assert.Empty(t, token)
 }
 
@@ -69,6 +69,6 @@ func TestGetTokenInvalid(t *testing.T) {
 	apiErr := err.(*Error)
 	assert.Equal(t, "Invalid access token", apiErr.Message)
 	assert.Equal(t, "storage.tokenInvalid", apiErr.ErrCode)
-	assert.Equal(t, 401, apiErr.HttpStatus())
+	assert.Equal(t, 401, apiErr.StatusCode())
 	assert.Empty(t, token)
 }

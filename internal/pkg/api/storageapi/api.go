@@ -36,7 +36,7 @@ func NewWithToken(ctx context.Context, logger log.Logger, host, tokenStr string,
 	token, err := storageApi.GetToken(tokenStr)
 	if err != nil {
 		var errWithResponse client.ErrorWithResponse
-		if errors.As(err, &errWithResponse) && errWithResponse.IsUnauthorized() {
+		if errors.As(err, &errWithResponse) && errWithResponse.StatusCode() == http.StatusUnauthorized {
 			return nil, fmt.Errorf("the specified storage API token is not valid")
 		} else {
 			return nil, utils.PrefixError("token verification failed", err)

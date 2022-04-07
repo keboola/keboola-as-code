@@ -8,11 +8,7 @@ import (
 
 type ErrorWithResponse interface {
 	SetResponse(response *resty.Response)
-	HttpStatus() int
-	IsBadRequest() bool
-	IsUnauthorized() bool
-	IsForbidden() bool
-	IsNotFound() bool
+	StatusCode() int
 }
 
 // Error represents Storage API error structure.
@@ -25,7 +21,7 @@ type Error struct {
 
 func (e *Error) Error() string {
 	req := e.response.Request
-	msg := fmt.Sprintf(`%s, method: "%s", url: "%s", httpCode: "%d"`, e.Message, req.Method, req.URL, e.HttpStatus())
+	msg := fmt.Sprintf(`%s, method: "%s", url: "%s", httpCode: "%d"`, e.Message, req.Method, req.URL, e.StatusCode())
 	if len(e.ErrCode) > 0 {
 		msg += fmt.Sprintf(`, errCode: "%s"`, e.ErrCode)
 	}
@@ -35,26 +31,25 @@ func (e *Error) Error() string {
 	return msg
 }
 
+func (e *Error) ErrorName() string {
+	return e.ErrCode
+}
+
+func (e *Error) ErrorUserMessage() string {
+	return e.Message
+}
+
+func (e *Error) ErrorExceptionId() string {
+	return e.ExceptionId
+}
+
 func (e *Error) SetResponse(response *resty.Response) {
 	e.response = response
 }
 
-func (e *Error) HttpStatus() int {
+func (e *Error) StatusCode() int {
+	if e.response == nil {
+		return 500
+	}
 	return e.response.StatusCode()
-}
-
-func (e *Error) IsBadRequest() bool {
-	return e.HttpStatus() == 400
-}
-
-func (e *Error) IsUnauthorized() bool {
-	return e.HttpStatus() == 401
-}
-
-func (e *Error) IsForbidden() bool {
-	return e.HttpStatus() == 403
-}
-
-func (e *Error) IsNotFound() bool {
-	return e.HttpStatus() == 404
 }
