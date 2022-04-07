@@ -221,9 +221,11 @@ func TestErrorInSubRequest_ParallelRequests(t *testing.T) {
 
 	// Register callbacks
 	request1.OnResponse(func(response *Response) {
+		time.Sleep(1 * time.Millisecond)
 		logger.Info("Request1 processed.")
 	})
 	request2.OnResponse(func(response *Response) {
+		time.Sleep(1 * time.Millisecond)
 		logger.Info("Request2 processed.")
 	})
 
