@@ -40,7 +40,7 @@ spec:
               valueFrom:
                 configMapKeyRef:
                   name: templates-api
-                  key: storageApiUrl
+                  key: storageApiHost
             - name: DD_AGENT_HOST
               valueFrom:
                 fieldRef:

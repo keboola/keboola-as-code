@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"goa.design/goa/v3/security"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/template/api/dependencies"
 )
@@ -31,6 +32,12 @@ func (s *service) APIKeyAuth(ctx context.Context, tokenStr string, scheme *secur
 
 		// Modify logger
 		d = d.WithLoggerPrefix(fmt.Sprintf("[project=%d][token=%s]", token.ProjectId(), token.Id))
+
+		// Add tags to DD span
+		if span, ok := tracer.SpanFromContext(ctx); ok {
+			span.SetTag("storage.project.id", token.ProjectId())
+			span.SetTag("storage.token.id", token.Id)
+		}
 
 		// Update context
 		return context.WithValue(ctx, dependencies.CtxKey, d), nil
