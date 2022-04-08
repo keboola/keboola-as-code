@@ -23,6 +23,7 @@ type PrefixLogger interface {
 	Logger
 	Prefix() string
 	WithPrefix(prefix string) PrefixLogger
+	WithAdditionalPrefix(prefix string) PrefixLogger
 }
 
 type loggerWithZapCore interface {

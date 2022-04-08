@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"sort"
 
-	gonanoid "github.com/matoous/go-nanoid/v2"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/api/encryptionapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
+	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
@@ -70,7 +69,7 @@ func Run(projectState *project.State, tmpl *template.Template, o Options, d depe
 	tickets := storageApi.NewTicketProvider()
 
 	// Generate ID for the template instance
-	instanceId := gonanoid.Must()
+	instanceId := idgenerator.TemplateInstanceId()
 
 	// Load template
 	ctx := template.NewUseContext(d.Ctx(), tmpl.Reference(), instanceId, o.TargetBranch, o.Inputs, tickets)

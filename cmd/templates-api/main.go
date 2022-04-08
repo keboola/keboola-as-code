@@ -37,7 +37,7 @@ func main() {
 	flag.Parse()
 
 	// Setup logger.
-	logger := log.New(os.Stderr, "[templatesApi][server]", 0)
+	logger := log.New(os.Stderr, "[templatesApi]", 0)
 
 	// Envs.
 	envs, err := env.FromOs()
@@ -48,7 +48,12 @@ func main() {
 
 	// Start DataDog tracer.
 	if envs.Get("DATADOG_ENABLED") != "false" {
-		tracer.Start(tracer.WithServiceName("templates-api"), tracer.WithLogger(ddLogger{logger}))
+		tracer.Start(
+			tracer.WithServiceName("templates-api"),
+			tracer.WithLogger(ddLogger{logger}),
+			tracer.WithRuntimeMetrics(),
+			tracer.WithAnalytics(true),
+		)
 		defer tracer.Stop()
 	}
 

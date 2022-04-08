@@ -2,7 +2,6 @@ package schedulerapi
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -17,21 +16,6 @@ type Api struct {
 	hostUrl string
 	client  *client.Client
 	logger  log.Logger
-}
-
-// Error represents Scheduler API error structure.
-type Error struct {
-	Message     string `json:"error"`
-	ErrCode     int    `json:"code"`
-	ExceptionId string `json:"exceptionId"`
-}
-
-func (e *Error) Error() string {
-	msg := fmt.Sprintf(`"%v", errCode: "%v"`, e.Message, e.ErrCode)
-	if len(e.ExceptionId) > 0 {
-		msg += fmt.Sprintf(`, exceptionId: "%s"`, e.ExceptionId)
-	}
-	return msg
 }
 
 func New(ctx context.Context, logger log.Logger, hostUrl string, token string, verbose bool) *Api {

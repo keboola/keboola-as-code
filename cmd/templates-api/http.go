@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log"
-	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -12,7 +11,6 @@ import (
 
 	goaHTTP "goa.design/goa/v3/http"
 	httpMiddleware "goa.design/goa/v3/http/middleware"
-	"goa.design/goa/v3/middleware"
 	dataDog "gopkg.in/DataDog/dd-trace-go.v1/contrib/net/http"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/template/api/dependencies"
@@ -25,26 +23,20 @@ import (
 // handleHTTPServer starts configures and starts a HTTP server on the given
 // URL. It shuts down the server if any error is received in the error channel.
 func handleHTTPServer(ctx context.Context, wg *sync.WaitGroup, d dependencies.Container, u *url.URL, endpoints *templates.Endpoints, errCh chan error, logger *log.Logger, debug bool) {
-	// Provide the transport specific request decoder and response encoder.
-	// The goa http package has built-in support for JSON, XML and gob.
-	// Other encodings can be used by providing the corresponding functions,
-	// see goa.design/implement/encoding.
-	dec := goaHTTP.RequestDecoder
-	enc := goaHTTP.ResponseEncoder
+	// Trace endpoint start, finish and error
+	endpoints.Use(TraceEndpointsMiddleware())
 
 	// Build the service HTTP request multiplexer and configure it to serve
 	// HTTP requests to the service endpoints.
-	mux := goaHTTP.NewMuxer()
+	mux := newMuxer()
 
 	// Wrap the endpoints with the transport specific layers. The generated
 	// server packages contains code generated from the design which maps
 	// the service input and output data structures to HTTP requests and
 	// responses.
-
-	eh := errorHandler(logger)
-	docsFS := http.FS(openapi.Fs)
-	swaggerFS := http.FS(swaggerui.SwaggerFS)
-	templatesServer := templatesSvr.New(endpoints, mux, dec, enc, eh, nil, docsFS, docsFS, docsFS, docsFS, swaggerFS)
+	docsFs := http.FS(openapi.Fs)
+	swaggerUiFs := http.FS(swaggerui.SwaggerFS)
+	templatesServer := templatesSvr.New(endpoints, mux, decoder, encoder, errorHandler(), errorFormatter(), docsFs, docsFs, docsFs, docsFs, swaggerUiFs)
 	if debug {
 		servers := goaHTTP.Servers{templatesServer}
 		servers.Use(httpMiddleware.Debug(mux, os.Stdout))
@@ -56,15 +48,13 @@ func handleHTTPServer(ctx context.Context, wg *sync.WaitGroup, d dependencies.Co
 	// Wrap the multiplexer with additional middlewares. Middlewares mounted
 	// here apply to all the service endpoints.
 	var handler http.Handler = mux
-	handler = httpMiddleware.Log(middleware.NewLogger(logger))(handler)
-	handler = httpMiddleware.RequestID()(handler)
+	handler = LogMiddleware(handler)
+	handler = ContextMiddleware(d, handler)
 	handler = dataDog.WrapHandler(handler, "templates-api", "")
 
 	// Start HTTP server using default configuration, change the code to
 	// configure the server as required by your service.
-	requestCtx := context.WithValue(context.Background(), dependencies.CtxKey, d)
-	ctxProvider := func(_ net.Listener) context.Context { return requestCtx }
-	srv := &http.Server{Addr: u.Host, Handler: handler, BaseContext: ctxProvider}
+	srv := &http.Server{Addr: u.Host, Handler: handler}
 	for _, m := range templatesServer.Mounts {
 		logger.Printf("HTTP %q mounted on %s %s", m.Method, m.Verb, m.Pattern)
 	}
@@ -88,15 +78,4 @@ func handleHTTPServer(ctx context.Context, wg *sync.WaitGroup, d dependencies.Co
 
 		_ = srv.Shutdown(ctx)
 	}()
-}
-
-// errorHandler returns a function that writes and logs the given error.
-// The function also writes and logs the error unique ID so that it's possible
-// to correlate.
-func errorHandler(logger *log.Logger) func(context.Context, http.ResponseWriter, error) {
-	return func(ctx context.Context, w http.ResponseWriter, err error) {
-		id := ctx.Value(middleware.RequestIDKey).(string)
-		_, _ = w.Write([]byte("[" + id + "] encoding: " + err.Error()))
-		logger.Printf("[%s] ERROR: %s", id, err.Error())
-	}
 }

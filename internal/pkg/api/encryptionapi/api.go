@@ -2,7 +2,6 @@ package encryptionapi
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-resty/resty/v2"
 	"github.com/spf13/cast"
@@ -17,21 +16,6 @@ type Api struct {
 	projectId int
 	client    *client.Client
 	logger    log.Logger
-}
-
-// Error represents Encryption API error structure.
-type Error struct {
-	Message     string `json:"error"`
-	ErrCode     int    `json:"code"`
-	ExceptionId string `json:"exceptionId"`
-}
-
-func (e *Error) Error() string {
-	msg := fmt.Sprintf(`"%v", errCode: "%v"`, e.Message, e.ErrCode)
-	if len(e.ExceptionId) > 0 {
-		msg += fmt.Sprintf(`, exceptionId: "%s"`, e.ExceptionId)
-	}
-	return msg
 }
 
 func New(ctx context.Context, logger log.Logger, hostUrl string, projectId int, verbose bool) *Api {
