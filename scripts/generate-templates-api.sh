@@ -11,9 +11,11 @@ SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 cd "$SCRIPT_DIR/.."
 pwd
 
+API_PKG=internal/pkg/api/server/templates
+
 generate() {
   # Generate code by goa.design lib
-  out=`goa gen github.com/keboola/keboola-as-code/api/templates --output ./internal/pkg/template/api 2>&1`
+  out=`goa gen github.com/keboola/keboola-as-code/api/templates --output ./$API_PKG 2>&1`
   status="$?"
 
   # Always run finalize
@@ -30,9 +32,9 @@ generate() {
 finalize() {
     rm -rf ./gen
     rm -rf ./goa*
-    rm -rf ./internal/pkg/template/api/gen/http/cli
-    rm -rf ./internal/pkg/template/api/gen/http/templates/client
-    mv ./internal/pkg/template/api/gen/http/openapi* ./internal/pkg/template/api/openapi 2>/dev/null || true
+    rm -rf ./$API_PKG/gen/http/cli
+    rm -rf ./$API_PKG/gen/http/templates/client
+    mv ./$API_PKG/gen/http/openapi* ./$API_PKG/openapi 2>/dev/null || true
 }
 
 echo "Generating templates API ..."

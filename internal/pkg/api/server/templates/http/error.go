@@ -1,5 +1,5 @@
 // nolint: errorlint
-package main
+package http
 
 import (
 	"context"
@@ -14,9 +14,9 @@ import (
 	"goa.design/goa/v3/middleware"
 	goa "goa.design/goa/v3/pkg"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/gen/templates"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/api/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/api/gen/templates"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 

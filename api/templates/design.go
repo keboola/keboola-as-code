@@ -8,8 +8,8 @@ import (
 	"goa.design/goa/v3/expr"
 	cors "goa.design/plugins/v3/cors/dsl"
 
-	_ "github.com/keboola/keboola-as-code/internal/pkg/template/api/extension/dependencies"
-	. "github.com/keboola/keboola-as-code/internal/pkg/template/api/extension/token"
+	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/extension/dependencies"
+	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/extension/token"
 )
 
 // API definition ------------------------------------------------------------------------------------------------------

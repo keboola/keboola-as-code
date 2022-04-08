@@ -1,4 +1,4 @@
-package main
+package http
 
 import (
 	"context"
@@ -13,8 +13,8 @@ import (
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/api/dependencies"
 )
 
 func TraceEndpointsMiddleware() func(endpoint goa.Endpoint) goa.Endpoint {

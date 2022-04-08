@@ -4,7 +4,7 @@ import (
 	"context"
 	stdLog "log"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
