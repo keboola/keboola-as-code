@@ -211,7 +211,7 @@ var _ = Service("templates", func() {
 	Method("inputs-validate", func() {
 		Meta("openapi:summary", "Validate inputs")
 		Description("Validate inputs for the \"use\" API call.\nOnly configured steps should be send.")
-		Result(ValidationDetail)
+		Result(ValidationResult)
 		Payload(func() {
 			repositoryAttr()
 			templateAttr()
@@ -648,19 +648,19 @@ var ValidationError = Type("ValidationError", func() {
 	Attribute("message", String, "Error message.", func() {
 		Example("Payload is not valid.")
 	})
-	Attribute("validationDetail", ValidationDetail)
-	Required("error", "message", "validationDetail")
+	Attribute("ValidationResult", ValidationResult)
+	Required("error", "message", "ValidationResult")
 })
 
-var ValidationDetail = Type("ValidationDetail", func() {
+var ValidationResult = Type("ValidationResult", func() {
 	Description("Detail of the inputs validation.")
 	Attribute("valid", Boolean, "True if all groups and inputs are valid.")
-	Attribute("stepGroups", ArrayOf(StepGroupValidationDetail), "List of Details for the step groups.")
+	Attribute("stepGroups", ArrayOf(StepGroupValidationResult), "List of Details for the step groups.")
 	Required("valid", "stepGroups")
 	Example(ExampleValidationResult())
 })
 
-var StepGroupValidationDetail = Type("StepGroupValidationDetail", func() {
+var StepGroupValidationResult = Type("StepGroupValidationResult", func() {
 	Description("Validation Detail of the step group.")
 	Attribute("id", String, "Step group ID.", func() {
 		Example("g1")
@@ -671,22 +671,22 @@ var StepGroupValidationDetail = Type("StepGroupValidationDetail", func() {
 	Attribute("error", String, "Are all inputs valid?", func() {
 		Example("All steps must be configured.")
 	})
-	Attribute("steps", ArrayOf(StepValidationDetail), "List of Details for the steps.")
+	Attribute("steps", ArrayOf(StepValidationResult), "List of Details for the steps.")
 	Required("id", "valid", "steps")
 })
 
-var StepValidationDetail = Type("StepValidationDetail", func() {
+var StepValidationResult = Type("StepValidationResult", func() {
 	Description("Validation Detail of the step.")
 	Attribute("id", String, "Step ID.", func() {
 		Example("g1-s1")
 	})
 	Attribute("configured", Boolean, "True if the step was part of the sent payload.")
 	Attribute("valid", Boolean, "True if all inputs in the step are valid.")
-	Attribute("inputs", ArrayOf(InputValidationDetail), "List of Details for the inputs.")
+	Attribute("inputs", ArrayOf(InputValidationResult), "List of Details for the inputs.")
 	Required("id", "configured", "valid", "inputs")
 })
 
-var InputValidationDetail = Type("InputValidationDetail", func() {
+var InputValidationResult = Type("InputValidationResult", func() {
 	Description("Validation Detail of the input.")
 	Attribute("id", String, "Input ID.", func() {
 		Example("api-token")
@@ -911,26 +911,26 @@ type ExampleInputPayloadData struct {
 	Value interface{} `json:"value" yaml:"value"`
 }
 
-type ExampleValidationDetailData struct {
+type ExampleValidationResultData struct {
 	Valid      bool                               `json:"valid" yaml:"valid"`
-	StepGroups []ExampleGroupValidationDetailData `json:"stepGroups" yaml:"stepGroups"`
+	StepGroups []ExampleGroupValidationResultData `json:"stepGroups" yaml:"stepGroups"`
 }
 
-type ExampleGroupValidationDetailData struct {
+type ExampleGroupValidationResultData struct {
 	Id    string                            `json:"id" yaml:"id"`
 	Valid bool                              `json:"valid" yaml:"valid"`
 	Error interface{}                       `json:"error" yaml:"error"`
-	Steps []ExampleStepValidationDetailData `json:"steps" yaml:"steps"`
+	Steps []ExampleStepValidationResultData `json:"steps" yaml:"steps"`
 }
 
-type ExampleStepValidationDetailData struct {
+type ExampleStepValidationResultData struct {
 	Id         string                             `json:"id" yaml:"id"`
 	Configured bool                               `json:"configured" yaml:"configured"`
 	Valid      bool                               `json:"valid" yaml:"valid"`
-	Inputs     []ExampleInputValidationDetailData `json:"inputs" yaml:"inputs"`
+	Inputs     []ExampleInputValidationResultData `json:"inputs" yaml:"inputs"`
 }
 
-type ExampleInputValidationDetailData struct {
+type ExampleInputValidationResultData struct {
 	Id      string      `json:"id" yaml:"id"`
 	Visible bool        `json:"visible" yaml:"visible"`
 	Error   interface{} `json:"error" yaml:"error"`
@@ -1298,19 +1298,19 @@ func ExampleInputPayload2() ExampleInputPayloadData {
 }
 
 func ExampleValidationResult() interface{} {
-	return ExampleValidationDetailData{
+	return ExampleValidationResultData{
 		Valid: false,
-		StepGroups: []ExampleGroupValidationDetailData{
+		StepGroups: []ExampleGroupValidationResultData{
 			{
 				Id:    "g1",
 				Valid: false,
 				Error: "All steps must be configured.",
-				Steps: []ExampleStepValidationDetailData{
+				Steps: []ExampleStepValidationResultData{
 					{
 						Id:         "g1-s1",
 						Configured: true,
 						Valid:      false,
-						Inputs: []ExampleInputValidationDetailData{
+						Inputs: []ExampleInputValidationResultData{
 							{
 								Id:      "api-token",
 								Visible: true,
@@ -1328,18 +1328,18 @@ func ExampleValidationResult() interface{} {
 				Id:    "g2",
 				Valid: true,
 				Error: nil,
-				Steps: []ExampleStepValidationDetailData{
+				Steps: []ExampleStepValidationResultData{
 					{
 						Id:         "g2-s1",
 						Configured: false,
 						Valid:      true,
-						Inputs:     []ExampleInputValidationDetailData{},
+						Inputs:     []ExampleInputValidationResultData{},
 					},
 					{
 						Id:         "g2-s2",
 						Configured: true,
 						Valid:      true,
-						Inputs: []ExampleInputValidationDetailData{
+						Inputs: []ExampleInputValidationResultData{
 							{
 								Id:      "username",
 								Visible: true,
