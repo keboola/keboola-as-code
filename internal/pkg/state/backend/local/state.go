@@ -85,7 +85,7 @@ func NewState(d dependencies, objectsRoot filesystem.Fs, manifest manifest.Manif
 }
 
 func (s *State) NewUnitOfWork(ctx context.Context) state.UnitOfWork {
-	backend := newUnitOfWorkBackend(s, ctx, s.manifest.Filter(), s.mapper)
+	backend := newUnitOfWorkBackend(s, ctx, s.mapper)
 	return state.NewUnitOfWork(ctx, s.objects, backend)
 }
 
