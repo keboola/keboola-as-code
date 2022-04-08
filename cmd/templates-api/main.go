@@ -15,10 +15,11 @@ import (
 
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies"
+	templatesGen "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/gen/templates"
+	templatesHttp "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/http"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/service"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/api/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/api/gen/templates"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/api/service"
 )
 
 type ddLogger struct {
@@ -79,7 +80,7 @@ func start(host, port string, debug bool, logger *log.Logger, envs *env.Map) err
 
 	// Wrap the services in endpoints that can be invoked from other services
 	// potentially running in different processes.
-	endpoints := templates.NewEndpoints(svc)
+	endpoints := templatesGen.NewEndpoints(svc)
 
 	// Create channel used by both the signal handler and server goroutines
 	// to notify the main goroutine when to stop the server.
@@ -98,7 +99,7 @@ func start(host, port string, debug bool, logger *log.Logger, envs *env.Map) err
 
 	// Start HTTP server.
 	var wg sync.WaitGroup
-	handleHTTPServer(d.Ctx(), &wg, d, serverUrl, endpoints, errCh, logger, debug)
+	templatesHttp.HandleHTTPServer(d.Ctx(), &wg, d, serverUrl, endpoints, errCh, logger, debug)
 
 	// Wait for signal.
 	logger.Printf("exiting (%v)", <-errCh)

@@ -6,10 +6,10 @@ import (
 
 	"github.com/jarcoal/httpmock"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/encryptionapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/schedulerapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi/eventsender"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/client/encryptionapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/client/schedulerapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi/eventsender"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"

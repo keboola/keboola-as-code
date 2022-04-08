@@ -7,8 +7,8 @@ import (
 
 	"github.com/jarcoal/httpmock"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/schedulerapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/storageapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/client/schedulerapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
