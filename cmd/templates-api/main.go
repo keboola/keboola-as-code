@@ -14,6 +14,7 @@ import (
 	"syscall"
 
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
+	"gopkg.in/DataDog/dd-trace-go.v1/profiler"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies"
 	templatesGen "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/gen/templates"
@@ -56,6 +57,21 @@ func main() {
 			tracer.WithAnalytics(true),
 		)
 		defer tracer.Stop()
+
+		err := profiler.Start(
+			profiler.WithService("templates-api"),
+			profiler.WithProfileTypes(
+				profiler.CPUProfile,
+				profiler.HeapProfile,
+				profiler.BlockProfile,
+				// profiler.MutexProfile,
+				profiler.GoroutineProfile,
+			),
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer profiler.Stop()
 	}
 
 	// Start server

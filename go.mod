@@ -100,4 +100,8 @@ require (
 	sigs.k8s.io/yaml v1.2.0 // indirect
 )
 
-require github.com/davecgh/go-spew v1.1.1 // indirect
+require (
+	github.com/DataDog/gostackparse v0.5.0 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/google/pprof v0.0.0-20210423192551-a2663126120b // indirect
+)
