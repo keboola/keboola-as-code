@@ -101,7 +101,7 @@ func (s *service) Inputs(dependencies.Container, *InputsPayload) (res *InputsInd
 	return nil, NotImplementedError{}
 }
 
-func (s *service) InputsValidate(dependencies.Container, *InputsValidatePayload) (res *ValidationDetail, err error) {
+func (s *service) InputsValidate(dependencies.Container, *InputsValidatePayload) (res *ValidationResult, err error) {
 	return nil, NotImplementedError{}
 }
 
