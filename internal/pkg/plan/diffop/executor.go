@@ -5,9 +5,7 @@ import (
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local"
 )
 
 type executor struct {
@@ -15,8 +13,8 @@ type executor struct {
 	logger       log.Logger
 	localManager *local.Manager
 	localWork    *local.UnitOfWork
-	remoteWork   *remote.UnitOfWork
-	errors       *utils.MultiError
+	remoteWork   *remote.uow
+	errors       *errors.MultiError
 }
 
 func newExecutor(plan *Plan, logger log.Logger, ctx context.Context, localManager *local.Manager, remoteManager *remote.Manager, changeDescription string) *executor {
@@ -26,7 +24,7 @@ func newExecutor(plan *Plan, logger log.Logger, ctx context.Context, localManage
 		localManager: localManager,
 		localWork:    localManager.NewUnitOfWork(ctx),
 		remoteWork:   remoteManager.NewUnitOfWork(ctx, changeDescription),
-		errors:       utils.NewMultiError(),
+		errors:       errors.NewMultiError(),
 	}
 }
 
@@ -45,10 +43,10 @@ func (e *executor) invoke() error {
 		case ActionDeleteLocal:
 			e.localWork.DeleteObject(action.ObjectState, action.Manifest())
 		case ActionSaveRemote:
-			e.remoteWork.SaveObject(action.ObjectState, action.LocalState(), action.ChangedFields)
+			e.remoteWork.Save(action.ObjectState, action.LocalState(), action.ChangedFields)
 		case ActionDeleteRemote:
 			if e.allowedRemoteDelete {
-				e.remoteWork.DeleteObject(action.ObjectState)
+				e.remoteWork.Delete(action.ObjectState)
 			}
 		default:
 			panic(fmt.Errorf(`unexpected action type`))
@@ -57,18 +55,18 @@ func (e *executor) invoke() error {
 
 	// Invoke pools for each level (branches, configs, rows) separately
 	if err := e.remoteWork.Invoke(); err != nil {
-		e.errors.Append(err)
+		e.errs.Append(err)
 	}
 
 	// Invoke local workers
 	if err := e.localWork.Invoke(); err != nil {
-		e.errors.Append(err)
+		e.errs.Append(err)
 	}
 
 	// Delete invalid objects (eg. if pull --force used, and work continued even an invalid state found)
 	if err := e.localManager.DeleteInvalidObjects(); err != nil {
-		e.errors.Append(err)
+		e.errs.Append(err)
 	}
 
-	return e.errors.ErrorOrNil()
+	return e.errs.ErrorOrNil()
 }

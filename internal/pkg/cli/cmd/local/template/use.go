@@ -9,8 +9,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/state/load"
 	useOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 func UseCommand(p dependencies.Provider) *cobra.Command {

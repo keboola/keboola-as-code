@@ -7,8 +7,8 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/state/load"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/push"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 func PushCommand(p dependencies.Provider) *cobra.Command {

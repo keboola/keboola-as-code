@@ -90,7 +90,7 @@ func (m *Manifest) GetById(id string) (TemplateRecord, bool) {
 
 func (m *Manifest) GetByPath(path string) (TemplateRecord, bool) {
 	for _, record := range m.records {
-		if record.GetRelativePath() == path {
+		if record.RelativePath() == path {
 			return record, true
 		}
 	}

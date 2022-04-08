@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacevalues"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/replacevalues"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 

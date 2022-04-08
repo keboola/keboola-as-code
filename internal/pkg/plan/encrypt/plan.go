@@ -7,8 +7,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/api/client/encryptionapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -44,14 +44,14 @@ func (p *Plan) Log(logger log.Logger) {
 }
 
 func (p *Plan) ValidateAllEncrypted() error {
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	for _, action := range p.actions {
-		objectErrors := utils.NewMultiError()
+		objectErrors := errors.NewMultiError()
 		for _, value := range action.values {
 			objectErrors.Append(fmt.Errorf(value.path.String()))
 		}
 
-		errors.AppendWithPrefix(
+		errs.AppendWithPrefix(
 			fmt.Sprintf(
 				`%s "%s" contains unencrypted values`,
 				action.Kind(),
@@ -61,5 +61,5 @@ func (p *Plan) ValidateAllEncrypted() error {
 		)
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }

@@ -1,6 +1,7 @@
 package manifest
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -32,7 +33,7 @@ func cases() []test {
 	}
 }
 
-func TestLoadManifestFile(t *testing.T) {
+func TestManifest_Load(t *testing.T) {
 	t.Parallel()
 	for _, c := range cases() {
 		fs := testfs.NewMemoryFs()
@@ -47,7 +48,7 @@ func TestLoadManifestFile(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Evaluate
-		manifest, err := manifestFile.Evaluate(nil)
+		manifest, err := manifestFile.Evaluate(context.Background(), nil)
 		assert.NotNil(t, manifest)
 		assert.NoError(t, err)
 
@@ -56,14 +57,14 @@ func TestLoadManifestFile(t *testing.T) {
 	}
 }
 
-func TestSaveManifestFile(t *testing.T) {
+func TestManifest_Save(t *testing.T) {
 	t.Parallel()
 	for _, c := range cases() {
 		fs := testfs.NewMemoryFs()
 
 		// Save
-		manifest := New()
-		assert.NoError(t, manifest.records.SetRecords(c.records))
+		manifest := New(context.Background())
+		assert.NoError(t, manifest.records.Set(c.records))
 		assert.NoError(t, manifest.Save(fs))
 
 		// Load file
@@ -110,51 +111,27 @@ func fullJsonNet() string {
 func fullRecords() []model.ObjectManifest {
 	return []model.ObjectManifest{
 		&model.ConfigManifest{
-			RecordState: model.RecordState{
-				Persisted: true,
-			},
 			ConfigKey: model.ConfigKey{
 				ComponentId: "keboola.ex-db-oracle",
-				Id:          "config",
+				ConfigId:    "config",
 			},
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(
-					"",
-					"config",
-				),
-			},
+			AbsPath: model.NewAbsPath("", "config"),
 		},
 		&model.ConfigRowManifest{
-			RecordState: model.RecordState{
-				Persisted: true,
-			},
 			ConfigRowKey: model.ConfigRowKey{
-				Id:          "row1",
+				ConfigRowId: "row1",
 				ComponentId: "keboola.ex-db-oracle",
 				ConfigId:    "config",
 			},
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(
-					"config",
-					"rows/row1",
-				),
-			},
+			AbsPath: model.NewAbsPath("config", "rows/row1"),
 		},
 		&model.ConfigRowManifest{
-			RecordState: model.RecordState{
-				Persisted: true,
-			},
 			ConfigRowKey: model.ConfigRowKey{
-				Id:          "row2",
+				ConfigRowId: "row2",
 				ComponentId: "keboola.ex-db-oracle",
 				ConfigId:    "config",
 			},
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(
-					"config",
-					"rows/row2",
-				),
-			},
+			AbsPath: model.NewAbsPath("config", "rows/row2"),
 		},
 	}
 }

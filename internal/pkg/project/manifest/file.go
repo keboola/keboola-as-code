@@ -8,7 +8,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/naming"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
@@ -43,7 +44,7 @@ func newFile(projectId int, apiHost string) *file {
 	return &file{
 		Version:           build.MajorVersion,
 		Project:           Project{Id: projectId, ApiHost: apiHost},
-		SortBy:            model.SortById,
+		SortBy:            state.NewIdSorter().String(),
 		Naming:            naming.TemplateWithIds(),
 		AllowedBranches:   model.DefaultAllowedBranches(),
 		IgnoredComponents: model.ComponentIds{},
@@ -84,7 +85,7 @@ func saveFile(fs filesystem.Fs, f *file) error {
 	// Write JSON file
 	content, err := json.EncodeString(f, true)
 	if err != nil {
-		return utils.PrefixError(`cannot encode manifest`, err)
+		return errors.PrefixError(`cannot encode manifest`, err)
 	}
 	file := filesystem.NewRawFile(Path(), content)
 	if err := fs.WriteFile(file); err != nil {
@@ -95,7 +96,7 @@ func saveFile(fs filesystem.Fs, f *file) error {
 
 func (c *file) validate() error {
 	if err := validator.Validate(context.Background(), c); err != nil {
-		return utils.PrefixError("manifest is not valid", err)
+		return errors.PrefixError("manifest is not valid", err)
 	}
 	return nil
 }
@@ -110,7 +111,7 @@ func (c *file) records() []model.ObjectManifest {
 		for _, row := range config.Rows {
 			row.BranchId = config.BranchId
 			row.ComponentId = config.ComponentId
-			row.ConfigId = config.Id
+			row.ConfigId = config.ConfigId
 			out = append(out, row)
 		}
 	}
@@ -119,44 +120,33 @@ func (c *file) records() []model.ObjectManifest {
 
 func (c *file) setRecords(records []model.ObjectManifest) {
 	// Convert records map to slices
-	branchesMap := make(map[string]*model.BranchManifest)
-	configsMap := make(map[string]*model.ConfigManifestWithRows)
+	branchesMap := make(map[model.BranchKey]*model.BranchManifest)
+	configsMap := make(map[model.ConfigKey]*model.ConfigManifestWithRows)
 	c.Branches = make([]*model.BranchManifest, 0)
 	c.Configs = make([]*model.ConfigManifestWithRows, 0)
 
-	for _, manifest := range records {
-		// Skip invalid (eg. missing config file)
-		if manifest.State().IsInvalid() {
-			continue
-		}
-
-		// Skip not persisted
-		if !manifest.State().IsPersisted() {
-			continue
-		}
-
-		// Generate content, we have to check if parent exists (eg. branch could have been deleted)
-		switch v := manifest.(type) {
+	for _, record := range records {
+		switch v := record.(type) {
 		case *model.BranchManifest:
 			c.Branches = append(c.Branches, v)
-			branchesMap[v.String()] = v
+			branchesMap[v.BranchKey] = v
 		case *model.ConfigManifest:
-			_, found := branchesMap[v.BranchKey().String()]
+			_, found := branchesMap[v.BranchKey()]
 			if found {
 				config := &model.ConfigManifestWithRows{
 					ConfigManifest: *v,
 					Rows:           make([]*model.ConfigRowManifest, 0),
 				}
-				configsMap[config.String()] = config
+				configsMap[config.ConfigKey] = config
 				c.Configs = append(c.Configs, config)
 			}
 		case *model.ConfigRowManifest:
-			config, found := configsMap[v.ConfigKey().String()]
+			config, found := configsMap[v.ConfigKey()]
 			if found {
 				config.Rows = append(config.Rows, v)
 			}
 		default:
-			panic(fmt.Errorf(`unexpected type "%T"`, manifest))
+			panic(fmt.Errorf(`unexpected type "%T"`, record))
 		}
 	}
 }

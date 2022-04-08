@@ -161,7 +161,7 @@ func TestManifest_Records(t *testing.T) {
 	v = m.GetOrCreate("foo-bar")
 	assert.NotEmpty(t, v)
 	assert.Equal(t, "foo-bar", v.Id)
-	assert.Equal(t, "foo-bar", v.Path())
+	assert.Equal(t, "foo-bar", v.String())
 
 	// Persist
 	m.Persist(v)

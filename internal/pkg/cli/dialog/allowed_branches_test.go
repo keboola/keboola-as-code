@@ -25,7 +25,7 @@ func TestAskAllowedBranchesByFlag(t *testing.T) {
 	t.Parallel()
 	dialog, console := createDialogs(t, true)
 	d := dependencies.NewTestContainer()
-	d.SetStorageApi(mockedStorageApi([]*model.Branch{{BranchKey: model.BranchKey{Id: 123}, Name: "Main", IsDefault: true}}))
+	d.SetStorageApi(mockedStorageApi([]*model.Branch{{BranchKey: model.BranchKey{BranchId: 123}, Name: "Main", IsDefault: true}}))
 	d.Options().SetDefault(`branches`, `*`)
 	d.Options().Set(`branches`, `foo, bar`)
 
@@ -42,7 +42,7 @@ func TestAskAllowedBranchesDefaultValue(t *testing.T) {
 	t.Parallel()
 	dialog, _ := createDialogs(t, false)
 	d := dependencies.NewTestContainer()
-	d.SetStorageApi(mockedStorageApi([]*model.Branch{{BranchKey: model.BranchKey{Id: 123}, Name: "Main", IsDefault: true}}))
+	d.SetStorageApi(mockedStorageApi([]*model.Branch{{BranchKey: model.BranchKey{BranchId: 123}, Name: "Main", IsDefault: true}}))
 	d.Options().SetDefault(`branches`, `*`)
 
 	// No interaction expected
@@ -57,7 +57,7 @@ func TestAskAllowedBranchesOnlyMain(t *testing.T) {
 	t.Parallel()
 	dialog, console := createDialogs(t, true)
 	d := dependencies.NewTestContainer()
-	d.SetStorageApi(mockedStorageApi([]*model.Branch{{BranchKey: model.BranchKey{Id: 123}, Name: "Main", IsDefault: true}}))
+	d.SetStorageApi(mockedStorageApi([]*model.Branch{{BranchKey: model.BranchKey{BranchId: 123}, Name: "Main", IsDefault: true}}))
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -86,7 +86,7 @@ func TestAskAllowedBranchesAllBranches(t *testing.T) {
 	t.Parallel()
 	dialog, console := createDialogs(t, true)
 	d := dependencies.NewTestContainer()
-	d.SetStorageApi(mockedStorageApi([]*model.Branch{{BranchKey: model.BranchKey{Id: 123}, Name: "Main", IsDefault: true}}))
+	d.SetStorageApi(mockedStorageApi([]*model.Branch{{BranchKey: model.BranchKey{BranchId: 123}, Name: "Main", IsDefault: true}}))
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -116,10 +116,10 @@ func TestAskAllowedBranchesSelectedBranches(t *testing.T) {
 	dialog, console := createDialogs(t, true)
 	d := dependencies.NewTestContainer()
 	d.SetStorageApi(mockedStorageApi([]*model.Branch{
-		{BranchKey: model.BranchKey{Id: 10}, Name: "Main", IsDefault: true},
-		{BranchKey: model.BranchKey{Id: 20}, Name: "foo", IsDefault: false},
-		{BranchKey: model.BranchKey{Id: 30}, Name: "bar", IsDefault: false},
-		{BranchKey: model.BranchKey{Id: 40}, Name: "baz", IsDefault: false},
+		{BranchKey: model.BranchKey{BranchId: 10}, Name: "Main", IsDefault: true},
+		{BranchKey: model.BranchKey{BranchId: 20}, Name: "foo", IsDefault: false},
+		{BranchKey: model.BranchKey{BranchId: 30}, Name: "bar", IsDefault: false},
+		{BranchKey: model.BranchKey{BranchId: 40}, Name: "baz", IsDefault: false},
 	}))
 
 	// Interaction
@@ -176,10 +176,10 @@ func TestAskAllowedBranchesTypeList(t *testing.T) {
 	dialog, console := createDialogs(t, true)
 	d := dependencies.NewTestContainer()
 	d.SetStorageApi(mockedStorageApi([]*model.Branch{
-		{BranchKey: model.BranchKey{Id: 10}, Name: "Main", IsDefault: true},
-		{BranchKey: model.BranchKey{Id: 20}, Name: "foo", IsDefault: false},
-		{BranchKey: model.BranchKey{Id: 30}, Name: "bar", IsDefault: false},
-		{BranchKey: model.BranchKey{Id: 40}, Name: "baz", IsDefault: false},
+		{BranchKey: model.BranchKey{BranchId: 10}, Name: "Main", IsDefault: true},
+		{BranchKey: model.BranchKey{BranchId: 20}, Name: "foo", IsDefault: false},
+		{BranchKey: model.BranchKey{BranchId: 30}, Name: "bar", IsDefault: false},
+		{BranchKey: model.BranchKey{BranchId: 40}, Name: "baz", IsDefault: false},
 	}))
 
 	// Interaction

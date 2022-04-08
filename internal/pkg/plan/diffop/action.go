@@ -3,8 +3,8 @@ package diffop
 import (
 	"fmt"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/diff"
 )
 
 const (
@@ -18,7 +18,7 @@ type ActionType int
 
 // action on the diff result.
 type action struct {
-	*diff.Result
+	*diff.ResultObject
 	action ActionType
 }
 

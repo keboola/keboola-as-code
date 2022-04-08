@@ -1,12 +1,14 @@
 package manifest
 
 import (
+	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 type InvalidManifestError struct {
@@ -17,12 +19,13 @@ func (e *InvalidManifestError) Unwrap() error {
 	return e.error
 }
 
-type records = manifest.Records
+type records = manifest.Collection
 
 // Manifest of the project directory
 // file contains IDs and paths of the all objects: branches, configs, rows.
 type Manifest struct {
 	*records
+	fs           filesystem.Fs
 	project      Project
 	naming       naming.Template
 	filter       model.ObjectsFilter
@@ -34,9 +37,10 @@ type Project struct {
 	ApiHost string `json:"apiHost" validate:"required,hostname"`
 }
 
-func New(projectId int, apiHost string) *Manifest {
+func New(ctx context.Context, fs filesystem.Fs, projectId int, apiHost string) *Manifest {
 	return &Manifest{
-		records:      manifest.NewRecords(model.SortById),
+		records:      manifest.NewCollection(ctx, naming.NewRegistry(), state.NewIdSorter()),
+		fs:           fs,
 		project:      Project{Id: projectId, ApiHost: apiHost},
 		naming:       naming.TemplateWithIds(),
 		filter:       model.NoFilter(),
@@ -44,7 +48,7 @@ func New(projectId int, apiHost string) *Manifest {
 	}
 }
 
-func Load(fs filesystem.Fs, ignoreErrors bool) (*Manifest, error) {
+func Load(ctx context.Context, fs filesystem.Fs, ignoreErrors bool) (*Manifest, error) {
 	// Load file content
 	content, err := loadFile(fs)
 	if err != nil && (!ignoreErrors || content == nil) {
@@ -52,28 +56,27 @@ func Load(fs filesystem.Fs, ignoreErrors bool) (*Manifest, error) {
 	}
 
 	// Create manifest
-	m := New(content.Project.Id, content.Project.ApiHost)
+	m := New(ctx, fs, content.Project.Id, content.Project.ApiHost)
 
 	// Set configuration
-	m.SetSortBy(content.SortBy)
+	m.SetSorter(state.NewSorterFromName(content.SortBy, m.NamingRegistry()))
 	m.naming = content.Naming
 	m.filter.SetAllowedBranches(content.AllowedBranches)
 	m.filter.SetIgnoredComponents(content.IgnoredComponents)
 	m.repositories = content.Templates.Repositories
 
 	// Set records
-	if err := m.records.SetRecords(content.records()); err != nil && !ignoreErrors {
-		return nil, InvalidManifestError{utils.PrefixError("invalid manifest", err)}
+	if err := m.records.Set(content.records()); err != nil && !ignoreErrors {
+		return nil, InvalidManifestError{errors.PrefixError("invalid manifest", err)}
 	}
 
 	// Return
 	return m, nil
 }
 
-func (m *Manifest) Save(fs filesystem.Fs) error {
+func (m *Manifest) Save() error {
 	// Create file content
 	content := newFile(m.ProjectId(), m.ApiHost())
-	content.SortBy = m.SortBy()
 	content.Naming = m.naming
 	content.AllowedBranches = m.filter.AllowedBranches()
 	content.IgnoredComponents = m.filter.IgnoredComponents()
@@ -81,7 +84,7 @@ func (m *Manifest) Save(fs filesystem.Fs) error {
 	content.setRecords(m.records.All())
 
 	// Save file
-	if err := saveFile(fs, content); err != nil {
+	if err := saveFile(m.fs, content); err != nil {
 		return err
 	}
 

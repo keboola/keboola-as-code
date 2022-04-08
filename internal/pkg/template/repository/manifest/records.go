@@ -27,7 +27,7 @@ func (v *TemplateRecord) AddVersion(version model.SemVersion) VersionRecord {
 	record := VersionRecord{
 		Version: version,
 		Stable:  false,
-		AbsPath: model.NewAbsPath(v.Path(), fmt.Sprintf(`v%d`, version.Major())),
+		AbsPath: model.NewAbsPath(v.String(), fmt.Sprintf(`v%d`, version.Major())),
 	}
 	v.Versions = append(v.Versions, record)
 	return record
@@ -66,7 +66,7 @@ func (v *TemplateRecord) GetByVersion(wanted model.SemVersion) (VersionRecord, b
 
 func (v *TemplateRecord) GetByPath(path string) (VersionRecord, bool) {
 	for _, record := range v.Versions {
-		if record.GetRelativePath() == path {
+		if record.RelativePath() == path {
 			return record, true
 		}
 	}

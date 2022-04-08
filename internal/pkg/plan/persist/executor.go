@@ -8,8 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local"
 )
 
 type executor struct {
@@ -18,7 +17,7 @@ type executor struct {
 	logger  log.Logger
 	tickets *storageapi.TicketProvider
 	uow     *local.UnitOfWork
-	errors  *utils.MultiError
+	errs    *errors.MultiError
 }
 
 func newExecutor(logger log.Logger, api *storageapi.Api, projectState *state.State, plan *Plan) *executor {
@@ -28,7 +27,7 @@ func newExecutor(logger log.Logger, api *storageapi.Api, projectState *state.Sta
 		logger:  logger,
 		tickets: api.NewTicketProvider(),
 		uow:     projectState.LocalManager().NewUnitOfWork(context.Background()),
-		errors:  utils.NewMultiError(),
+		errors:  errors.NewMultiError(),
 	}
 }
 
@@ -47,15 +46,15 @@ func (e *executor) invoke() error {
 
 	// Let's wait until all new IDs are generated
 	if err := e.tickets.Resolve(); err != nil {
-		e.errors.Append(err)
+		e.errs.Append(err)
 	}
 
 	// Wait for all local operations
 	if err := e.uow.Invoke(); err != nil {
-		e.errors.Append(err)
+		e.errs.Append(err)
 	}
 
-	return e.errors.ErrorOrNil()
+	return e.errs.ErrorOrNil()
 }
 
 func (e *executor) persistNewObject(action *newObjectAction) {
@@ -66,13 +65,13 @@ func (e *executor) persistNewObject(action *newObjectAction) {
 		// Set new id to the key
 		switch k := key.(type) {
 		case model.ConfigKey:
-			k.Id = model.ConfigId(ticket.Id)
+			k.ConfigId = model.ConfigId(ticket.Id)
 			key = k
 		case model.ConfigRowKey:
-			k.Id = model.RowId(ticket.Id)
+			k.ConfigRowId = model.ConfigRowId(ticket.Id)
 			key = k
 		default:
-			panic(fmt.Errorf(`unexpected type "%s" of the persisted object "%s"`, key.Kind(), key.Desc()))
+			panic(fmt.Errorf(`unexpected type "%s" of the persisted object "%s"`, key.Kind(), key.String()))
 		}
 
 		// The parent was not persisted for some error -> skip
@@ -83,7 +82,7 @@ func (e *executor) persistNewObject(action *newObjectAction) {
 		// Create manifest record
 		record, found, err := e.Manifest().CreateOrGetRecord(key)
 		if err != nil {
-			e.errors.Append(err)
+			e.errs.Append(err)
 			return
 		} else if found {
 			panic(fmt.Errorf(`unexpected state: manifest record "%s" exists, but it should not`, record))
@@ -95,25 +94,25 @@ func (e *executor) persistNewObject(action *newObjectAction) {
 			Manifest:  record,
 		})
 		if err != nil {
-			e.errors.Append(err)
+			e.errs.Append(err)
 			return
 		}
 
 		// Update parent path - may be affected by relations
 		if err := e.Manifest().ResolveParentPath(record); err != nil {
-			e.errors.Append(fmt.Errorf(`cannot resolve path: %w`, err))
+			e.errs.Append(fmt.Errorf(`cannot resolve path: %w`, err))
 			return
 		}
 
 		// Set local path
-		record.SetRelativePath(action.GetRelativePath())
+		record.SetRelativePath(action.RelativePath())
 
 		// Load model
 		e.uow.LoadObject(record, model.NoFilter())
 
 		// Save to manifest.json
 		if err := e.Manifest().PersistRecord(record); err != nil {
-			e.errors.Append(err)
+			e.errs.Append(err)
 			return
 		}
 

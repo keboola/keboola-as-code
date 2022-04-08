@@ -28,7 +28,7 @@ func TestConfigRowApiCalls(t *testing.T) {
 	config := &model.ConfigWithRows{
 		Config: &model.Config{
 			ConfigKey: model.ConfigKey{
-				BranchId:    branch.Id,
+				BranchId:    branch.BranchId,
 				ComponentId: "ex-generic-v2",
 			},
 			Name:              "Test",
@@ -51,9 +51,9 @@ func TestConfigRowApiCalls(t *testing.T) {
 	// Create row1
 	row1 := &model.ConfigRow{
 		ConfigRowKey: model.ConfigRowKey{
-			BranchId:    branch.Id,
+			BranchId:    branch.BranchId,
 			ComponentId: "ex-generic-v2",
-			ConfigId:    config.Id,
+			ConfigId:    config.ConfigId,
 		},
 		Name:              "Row1",
 		Description:       "Row1 description",
@@ -70,9 +70,9 @@ func TestConfigRowApiCalls(t *testing.T) {
 	// Create row2
 	row2 := &model.ConfigRow{
 		ConfigRowKey: model.ConfigRowKey{
-			BranchId:    branch.Id,
+			BranchId:    branch.BranchId,
 			ComponentId: "ex-generic-v2",
-			ConfigId:    config.Id,
+			ConfigId:    config.ConfigId,
 		},
 		Name:              "Row2",
 		Description:       "Row2 description",
@@ -102,7 +102,7 @@ func TestConfigRowApiCalls(t *testing.T) {
 	assert.NoError(t, err)
 
 	// List components
-	components, err := api.ListComponents(branch.Id)
+	components, err := api.ListComponents(branch.BranchId)
 	assert.NotNil(t, components)
 	assert.NoError(t, err)
 	testhelper.AssertWildcards(t, expectedComponentsConfigRowTest(), json.MustEncodeString(components, true), "Unexpected components")

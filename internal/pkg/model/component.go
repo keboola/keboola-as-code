@@ -13,6 +13,7 @@ import (
 )
 
 const (
+	ComponentKind            = "component"
 	VariablesComponentId     = ComponentId(`keboola.variables`)
 	SchedulerComponentId     = ComponentId("keboola.scheduler")
 	DeprecatedFlag           = `deprecated`
@@ -20,6 +21,52 @@ const (
 	ComponentTypeCodePattern = `code-pattern`
 	ComponentTypeProcessor   = `processor`
 )
+
+type ComponentId string
+
+type ComponentIds []ComponentId
+
+type ComponentKey struct {
+	Id ComponentId `json:"id" validate:"required"`
+}
+
+func (k Kind) IsComponent() bool {
+	return k.Name == ComponentKind
+}
+
+func (v ComponentId) String() string {
+	return string(v)
+}
+
+func (v ComponentId) WithoutVendor() string {
+	parts := strings.SplitN(string(v), ".", 2)
+	if len(parts) == 1 {
+		// A component without vendor
+		return parts[0]
+	}
+	return parts[1]
+}
+
+func (v ComponentIds) String() string {
+	if len(v) == 0 {
+		return `[]`
+	}
+
+	items := make([]string, 0)
+	for _, item := range v {
+		items = append(items, string(item))
+	}
+	return `"` + strings.Join(items, `", "`) + `"`
+}
+
+func (v ComponentIds) Contains(componentId ComponentId) bool {
+	for _, id := range v {
+		if id == componentId {
+			return true
+		}
+	}
+	return false
+}
 
 // Component https://keboola.docs.apiary.io/#reference/components-and-configurations/get-development-branch-components/get-development-branch-components
 type Component struct {
@@ -99,7 +146,7 @@ type RemoteComponentsProvider interface {
 type ComponentsMap struct {
 	mutex                       *sync.Mutex
 	remoteProvider              RemoteComponentsProvider
-	components                  map[string]*Component
+	components                  map[ComponentId]*Component
 	defaultBucketsByComponentId map[ComponentId]string
 	defaultBucketsByPrefix      map[string]ComponentId
 }
@@ -108,7 +155,7 @@ func NewComponentsMap(remoteProvider RemoteComponentsProvider) *ComponentsMap {
 	return &ComponentsMap{
 		mutex:                       &sync.Mutex{},
 		remoteProvider:              remoteProvider,
-		components:                  make(map[string]*Component),
+		components:                  make(map[ComponentId]*Component),
 		defaultBucketsByComponentId: make(map[ComponentId]string),
 		defaultBucketsByPrefix:      make(map[string]ComponentId),
 	}
@@ -155,14 +202,14 @@ func (c *ComponentsMap) Set(component *Component) {
 func (c *ComponentsMap) doGet(key ComponentKey) (*Component, bool) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	component, found := c.components[key.String()]
+	component, found := c.components[key.Id]
 	return component, found
 }
 
 func (c *ComponentsMap) doSet(component *Component) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	c.components[component.String()] = component
+	c.components[component.Id] = component
 	if component.Data.DefaultBucket && component.Data.DefaultBucketStage != "" {
 		c.addDefaultBucketPrefix(component)
 	}

@@ -57,7 +57,7 @@ func (p *Dialogs) AskCreateConfig(projectState *project.State, d createDeps) (cr
 	if err != nil {
 		return out, err
 	}
-	out.BranchId = branch.Id
+	out.BranchId = branch.BranchId
 
 	// Component Id
 	componentId, err := p.askComponentId(d)
@@ -85,7 +85,7 @@ func (p *Dialogs) AskCreateRow(projectState *project.State, d createDeps) (creat
 	if err != nil {
 		return out, err
 	}
-	out.BranchId = branch.Id
+	out.BranchId = branch.BranchId
 
 	// Config
 	allConfigs := projectState.LocalObjects().ConfigsWithRowsFrom(branch.BranchKey)
@@ -94,7 +94,7 @@ func (p *Dialogs) AskCreateRow(projectState *project.State, d createDeps) (creat
 		return out, err
 	}
 	out.ComponentId = config.ComponentId
-	out.ConfigId = config.Id
+	out.ConfigId = config.ConfigId
 
 	// Name
 	name, err := p.askObjectName(d, `config row`)

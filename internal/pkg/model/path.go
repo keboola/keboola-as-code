@@ -8,49 +8,64 @@ import (
 type Path string
 
 type AbsPath struct {
-	RelativePath  Path `json:"path" validate:"required"`
+	RelPath       Path `json:"path" validate:"required"`
 	parentPath    Path
 	parentPathSet bool
 }
 
-type Paths struct {
-	AbsPath
-	RelatedPaths []string `json:"-"` // not serialized, slice is generated when the object is loaded
+func NewEmptyAbsPath() AbsPath {
+	return AbsPath{}
 }
 
 func NewAbsPath(parentPath, objectPath string) AbsPath {
-	return AbsPath{parentPath: Path(parentPath), parentPathSet: true, RelativePath: Path(objectPath)}
+	return AbsPath{parentPath: Path(parentPath), parentPathSet: true, RelPath: Path(objectPath)}
 }
 
 func (p AbsPath) DeepCopy(_ deepcopy.TranslateFunc, _ deepcopy.Steps, _ deepcopy.VisitedMap) AbsPath {
 	return p
 }
 
-func (p AbsPath) GetAbsPath() AbsPath {
+func (p AbsPath) Path() AbsPath {
 	return p
 }
 
-func (p *AbsPath) GetRelativePath() string {
-	return string(p.RelativePath)
+func (p *AbsPath) SetPath(path AbsPath) {
+	*p = path
 }
 
-func (p *AbsPath) SetRelativePath(path string) {
-	p.RelativePath = Path(path)
+func (p AbsPath) RelativePath() string {
+	return string(p.RelPath)
 }
 
-func (p *AbsPath) GetParentPath() string {
+func (p AbsPath) WithRelativePath(path string) AbsPath {
+	p.RelPath = Path(path)
+	return p
+}
+
+func (p AbsPath) ParentPath() string {
 	return string(p.parentPath)
 }
 
-func (p *AbsPath) IsParentPathSet() bool {
-	return p.parentPathSet
-}
-
-func (p *AbsPath) SetParentPath(parentPath string) {
+func (p AbsPath) WithParentPath(parentPath string) AbsPath {
 	p.parentPathSet = true
 	p.parentPath = Path(parentPath)
+	return p
 }
 
-func (p AbsPath) Path() string {
-	return filesystem.Join(string(p.parentPath), string(p.RelativePath))
+func (p AbsPath) IsSet() bool {
+	return p.parentPathSet && p.RelPath != ""
+}
+
+func (p AbsPath) String() string {
+	return filesystem.Join(string(p.parentPath), string(p.RelPath))
+}
+
+// Dir returns all but the last element of path, typically the path's directory.
+func (p AbsPath) Dir() string {
+	return filesystem.Dir(p.String())
+}
+
+// Base returns the last element of path.
+func (p AbsPath) Base() string {
+	return filesystem.Base(p.String())
 }

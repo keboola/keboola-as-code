@@ -36,7 +36,7 @@ func (d *inputsDetailDialog) ask(stepsGroups input.StepsGroups, stepsToIds map[i
 			_, err := d.parse(val.(string))
 			if err != nil {
 				// Print errors to new line
-				return utils.PrefixError("\n", err)
+				return errors.PrefixError("\n", err)
 			}
 
 			return nil
@@ -48,7 +48,7 @@ func (d *inputsDetailDialog) ask(stepsGroups input.StepsGroups, stepsToIds map[i
 func (d *inputsDetailDialog) parse(result string) (*orderedmap.OrderedMap, error) {
 	result = strhelper.StripHtmlComments(result)
 	scanner := bufio.NewScanner(strings.NewReader(result))
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	lineNum := 0
 
 	order := make(map[string]int)
@@ -73,13 +73,13 @@ func (d *inputsDetailDialog) parse(result string) (*orderedmap.OrderedMap, error
 			// Input definition
 			m := regexpcache.MustCompile(`"([^"]+)"`).FindStringSubmatch(line)
 			if m == nil {
-				errors.Append(fmt.Errorf(`line %d: cannot parse config "%s"`, lineNum, line))
+				errs.Append(fmt.Errorf(`line %d: cannot parse config "%s"`, lineNum, line))
 				invalidDefinition = true
 				continue
 			}
 			i, found := d.inputs.get(m[1])
 			if !found {
-				errors.Append(fmt.Errorf(`line %d: input "%s" not found`, lineNum, m[1]))
+				errs.Append(fmt.Errorf(`line %d: input "%s" not found`, lineNum, m[1]))
 				invalidDefinition = true
 				continue
 			}
@@ -106,7 +106,7 @@ func (d *inputsDetailDialog) parse(result string) (*orderedmap.OrderedMap, error
 			} else if v, err := currentInput.Type.ParseValue(defaultStr); err == nil {
 				currentInput.Default = v
 			} else {
-				errors.Append(fmt.Errorf(`line %d: %w`, lineNum, err))
+				errs.Append(fmt.Errorf(`line %d: %w`, lineNum, err))
 				continue
 			}
 		case strings.HasPrefix(line, `options:`):
@@ -115,18 +115,18 @@ func (d *inputsDetailDialog) parse(result string) (*orderedmap.OrderedMap, error
 				if v, err := input.OptionsFromString(optionsStr); err == nil {
 					currentInput.Options = v
 				} else {
-					errors.Append(fmt.Errorf(`line %d: %w`, lineNum, err))
+					errs.Append(fmt.Errorf(`line %d: %w`, lineNum, err))
 					continue
 				}
 			} else {
-				errors.Append(fmt.Errorf(`line %d: options are not expected for kind "%s"`, lineNum, currentInput.Kind))
+				errs.Append(fmt.Errorf(`line %d: options are not expected for kind "%s"`, lineNum, currentInput.Kind))
 				continue
 			}
 		case strings.HasPrefix(line, `step:`):
 			inputsToStepsMap.Set(currentInput.Id, strings.TrimSpace(strings.TrimPrefix(line, `step:`)))
 		default:
 			// Expected object definition
-			errors.Append(fmt.Errorf(`line %d: cannot parse "%s"`, lineNum, strhelper.Truncate(line, 10, "...")))
+			errs.Append(fmt.Errorf(`line %d: cannot parse "%s"`, lineNum, strhelper.Truncate(line, 10, "...")))
 			continue
 		}
 	}
@@ -135,7 +135,7 @@ func (d *inputsDetailDialog) parse(result string) (*orderedmap.OrderedMap, error
 	allInputs := d.inputs.all()
 	if e := allInputs.Validate(); e != nil {
 		// nolint: errorlint
-		err := e.(*utils.MultiError)
+		err := e.(*errors.MultiError)
 		for index, item := range err.Errors {
 			// Replace input index by input ID. Example:
 			//   before: [123].default
@@ -147,7 +147,7 @@ func (d *inputsDetailDialog) parse(result string) (*orderedmap.OrderedMap, error
 				})
 			err.Errors[index] = fmt.Errorf(msg)
 		}
-		errors.Append(err)
+		errs.Append(err)
 	}
 
 	// Sort

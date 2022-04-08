@@ -3,12 +3,12 @@ package push
 import (
 	"fmt"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/diffop"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/diff"
 )
 
-func NewPlan(diffResults *diff.Results) (*diffop.Plan, error) {
+func NewPlan(diffResults *diff.Result) (*diffop.Plan, error) {
 	plan := diffop.NewPlan(`push`)
 	for _, result := range diffResults.Results {
 		switch result.State {
@@ -20,9 +20,9 @@ func NewPlan(diffResults *diff.Results) (*diffop.Plan, error) {
 				continue
 			}
 			plan.Add(result, diffop.ActionSaveRemote)
-		case diff.ResultOnlyInLocal:
+		case diff.ResultOnlyInB:
 			plan.Add(result, diffop.ActionSaveRemote)
-		case diff.ResultOnlyInRemote:
+		case diff.ResultOnlyInA:
 			if parentExists(result.ObjectState, diffResults.Objects) {
 				plan.Add(result, diffop.ActionDeleteRemote)
 			}

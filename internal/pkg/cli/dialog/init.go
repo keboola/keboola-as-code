@@ -4,7 +4,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
-	"github.com/keboola/keboola-as-code/internal/pkg/naming"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	createManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/create"
 	initOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/init"
@@ -27,12 +27,12 @@ func (p *Dialogs) AskInitOptions(d initDeps) (initOp.Options, error) {
 	o := d.Options()
 
 	// Host and token
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	if _, err := p.AskStorageApiHost(o); err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 	if _, err := p.AskStorageApiToken(o); err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 	if errors.Len() > 0 {
 		return out, errors

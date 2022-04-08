@@ -10,7 +10,7 @@ import (
 type dependencies interface {
 	Logger() log.Logger
 	BasePath() string
-	LocalProject(ignoreErrors bool) (*project.Project, error)
+	LocalProject(ignoreErrors bool) (*project.LocalProject, error)
 	LocalProjectExists() bool
 	LocalTemplate() (*template.Template, error)
 	LocalTemplateExists() bool

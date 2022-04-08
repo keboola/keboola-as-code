@@ -28,10 +28,10 @@ func (i If) Evaluate(params map[string]interface{}) (bool, error) {
 	// Evaluate
 	result, err := expression.Evaluate(params)
 	if err != nil {
-		e := utils.NewMultiError()
+		e := errors.NewMultiError()
 		e.Append(fmt.Errorf(`expression: %s`, i))
 		e.Append(fmt.Errorf(`error: %w`, err))
-		return false, utils.PrefixError(`cannot evaluate condition`, e)
+		return false, errors.PrefixError(`cannot evaluate condition`, e)
 	}
 
 	return result.(bool), nil
@@ -40,10 +40,10 @@ func (i If) Evaluate(params map[string]interface{}) (bool, error) {
 func (i If) compile() (*goValuate.EvaluableExpression, error) {
 	expression, err := goValuate.NewEvaluableExpression(string(i))
 	if err != nil {
-		e := utils.NewMultiError()
+		e := errors.NewMultiError()
 		e.Append(fmt.Errorf(`expression: %s`, i))
 		e.Append(fmt.Errorf(`error: %w`, err))
-		return nil, utils.PrefixError(`cannot compile condition`, e)
+		return nil, errors.PrefixError(`cannot compile condition`, e)
 	}
 	return expression, nil
 }

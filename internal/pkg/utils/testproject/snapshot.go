@@ -34,7 +34,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 
 	// Map schedules
 	for _, schedule := range schedules {
-		configKey := model.ConfigKey{BranchId: p.DefaultBranch().Id, ComponentId: model.SchedulerComponentId, Id: schedule.ConfigId}
+		configKey := model.ConfigKey{BranchId: p.DefaultBranch().BranchId, ComponentId: model.SchedulerComponentId, ConfigId: schedule.ConfigId}
 		scheduleConfig := configs[configKey.String()]
 		snapshot.Schedules = append(snapshot.Schedules, &fixtures.Schedule{Name: scheduleConfig.Name})
 	}
@@ -71,13 +71,13 @@ func (p *Project) snapshot(snapshot *fixtures.ProjectSnapshot, configs map[strin
 				b.Name = branch.Name
 				b.Description = branch.Description
 				b.IsDefault = branch.IsDefault
-				branchesMap[branch.Id] = b
-				configsMap[branch.Id] = make(map[model.ConfigKey]*fixtures.Config)
-				metadataMap[branch.Id] = make(map[model.ConfigKey]*map[string]string)
+				branchesMap[branch.BranchId] = b
+				configsMap[branch.BranchId] = make(map[model.ConfigKey]*fixtures.Config)
+				metadataMap[branch.BranchId] = make(map[model.ConfigKey]*map[string]string)
 
 				// Configs
 				pool.
-					Request(p.StorageApi().ListComponentsRequest(branch.Id)).
+					Request(p.StorageApi().ListComponentsRequest(branch.BranchId)).
 					OnSuccess(func(response *client.Response) {
 						apiComponents := *response.Result().(*[]*model.ComponentWithConfigs)
 						for _, component := range apiComponents {
@@ -88,7 +88,7 @@ func (p *Project) snapshot(snapshot *fixtures.ProjectSnapshot, configs map[strin
 								c.Description = config.Description
 								c.ChangeDescription = normalizeChangeDesc(config.ChangeDescription)
 								c.Content = config.Content
-								configsMap[branch.Id][config.ConfigKey] = c
+								configsMap[branch.BranchId][config.ConfigKey] = c
 
 								lock.Lock()
 								configs[config.Key().String()] = c
@@ -109,16 +109,16 @@ func (p *Project) snapshot(snapshot *fixtures.ProjectSnapshot, configs map[strin
 					}).
 					Send()
 				pool.
-					Request(p.StorageApi().ListConfigMetadataRequest(branch.Id)).
+					Request(p.StorageApi().ListConfigMetadataRequest(branch.BranchId)).
 					OnSuccess(func(response *client.Response) {
 						metadataResponse := *response.Result().(*storageapi.ConfigMetadataResponse)
-						for key, metadata := range metadataResponse.MetadataMap(branch.Id) {
+						for key, metadata := range metadataResponse.MetadataMap(branch.BranchId) {
 							if len(metadata) > 0 {
 								configMetadataMap := make(map[string]string)
 								for _, m := range metadata {
 									configMetadataMap[m.Key] = m.Value
 								}
-								metadataMap[branch.Id][key] = &configMetadataMap
+								metadataMap[branch.BranchId][key] = &configMetadataMap
 							}
 						}
 					}).

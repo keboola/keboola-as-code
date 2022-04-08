@@ -167,13 +167,13 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 		Id:           `my-super-template`,
 		Name:         `My Super Template`,
 		Description:  `Full workflow to ...`,
-		SourceBranch: model.BranchKey{Id: 123},
+		SourceBranch: model.BranchKey{BranchId: 123},
 		Configs: []template.ConfigDef{
 			{
 				Key: model.ConfigKey{
 					BranchId:    123,
 					ComponentId: `keboola.my-component`,
-					Id:          `1`,
+					ConfigId:    `1`,
 				},
 				TemplateId: `config-1`,
 				Inputs: []template.InputDef{
@@ -188,7 +188,7 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 							BranchId:    123,
 							ComponentId: `keboola.my-component`,
 							ConfigId:    `1`,
-							Id:          `456`,
+							ConfigRowId: `456`,
 						},
 						TemplateId: `my-row`,
 					},
@@ -198,7 +198,7 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 				Key: model.ConfigKey{
 					BranchId:    123,
 					ComponentId: `keboola.my-component`,
-					Id:          `3`,
+					ConfigId:    `3`,
 				},
 				TemplateId: `config-3`,
 			},
@@ -254,13 +254,13 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 		Id:           `my-super-template`,
 		Name:         `My Super Template`,
 		Description:  `Full workflow to ...`,
-		SourceBranch: model.BranchKey{Id: 123},
+		SourceBranch: model.BranchKey{BranchId: 123},
 		Configs: []template.ConfigDef{
 			{
 				Key: model.ConfigKey{
 					BranchId:    123,
 					ComponentId: `keboola.my-component`,
-					Id:          `1`,
+					ConfigId:    `1`,
 				},
 				TemplateId: `config-1`,
 				Inputs: []template.InputDef{
@@ -283,7 +283,7 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 							BranchId:    123,
 							ComponentId: `keboola.my-component`,
 							ConfigId:    `1`,
-							Id:          `456`,
+							ConfigRowId: `456`,
 						},
 						TemplateId: `my-row`,
 					},
@@ -293,7 +293,7 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 				Key: model.ConfigKey{
 					BranchId:    123,
 					ComponentId: `keboola.my-component`,
-					Id:          `3`,
+					ConfigId:    `3`,
 				},
 				TemplateId: `config-3`,
 			},
@@ -362,13 +362,13 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 		Id:           `my-super-template`,
 		Name:         `My Super Template`,
 		Description:  `Full workflow to ...`,
-		SourceBranch: model.BranchKey{Id: 123},
+		SourceBranch: model.BranchKey{BranchId: 123},
 		Configs: []template.ConfigDef{
 			{
 				Key: model.ConfigKey{
 					BranchId:    123,
 					ComponentId: `keboola.my-component`,
-					Id:          `1`,
+					ConfigId:    `1`,
 				},
 				TemplateId: `config-1`,
 				Inputs: []template.InputDef{
@@ -383,7 +383,7 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 							BranchId:    123,
 							ComponentId: `keboola.my-component`,
 							ConfigId:    `1`,
-							Id:          `456`,
+							ConfigRowId: `456`,
 						},
 						TemplateId: `my-row`,
 					},
@@ -393,7 +393,7 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 				Key: model.ConfigKey{
 					BranchId:    123,
 					ComponentId: `keboola.my-component`,
-					Id:          `2`,
+					ConfigId:    `2`,
 				},
 				TemplateId: `config-2`,
 			},
@@ -401,7 +401,7 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 				Key: model.ConfigKey{
 					BranchId:    123,
 					ComponentId: `keboola.my-component`,
-					Id:          `3`,
+					ConfigId:    `3`,
 				},
 				TemplateId: `config-3`,
 			},
@@ -446,24 +446,24 @@ func addMockedObjectsResponses(httpTransport *httpmock.MockTransport) {
 	configContent := orderedmap.New()
 	json.MustDecodeString(configJson, configContent)
 
-	branches := []*model.Branch{{BranchKey: model.BranchKey{Id: 123}, Name: "Main", IsDefault: true}}
+	branches := []*model.Branch{{BranchKey: model.BranchKey{BranchId: 123}, Name: "Main", IsDefault: true}}
 	configs := []*model.ConfigWithRows{
 		{
 			Config: &model.Config{
-				ConfigKey: model.ConfigKey{Id: "1"},
+				ConfigKey: model.ConfigKey{ConfigId: "1"},
 				Name:      `Config 1`,
 				Content:   configContent,
 			},
 			Rows: []*model.ConfigRow{
 				{
-					ConfigRowKey: model.ConfigRowKey{Id: "456"},
+					ConfigRowKey: model.ConfigRowKey{ConfigRowId: "456"},
 					Name:         `My Row`,
 					Content:      orderedmap.New(),
 				},
 			},
 		},
-		{Config: &model.Config{ConfigKey: model.ConfigKey{Id: "2"}, Name: `Config 2`, Content: orderedmap.New()}},
-		{Config: &model.Config{ConfigKey: model.ConfigKey{Id: "3"}, Name: `Config 3`, Content: orderedmap.New()}},
+		{Config: &model.Config{ConfigKey: model.ConfigKey{ConfigId: "2"}, Name: `Config 2`, Content: orderedmap.New()}},
+		{Config: &model.Config{ConfigKey: model.ConfigKey{ConfigId: "3"}, Name: `Config 3`, Content: orderedmap.New()}},
 	}
 	components := []*model.ComponentWithConfigs{
 		{

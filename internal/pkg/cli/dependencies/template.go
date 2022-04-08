@@ -69,7 +69,7 @@ func (v *container) LocalTemplate() (*template.Template, error) {
 	}
 
 	// Check if template manifest exists
-	manifestPath := filesystem.Join(versionRecord.Path(), template.ManifestPath())
+	manifestPath := filesystem.Join(versionRecord.String(), template.ManifestPath())
 	if !repository.Fs().IsFile(manifestPath) {
 		return nil, ErrTemplateManifestNotFound
 	}

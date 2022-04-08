@@ -13,8 +13,7 @@ type MockedKey struct {
 
 type MockedManifest struct {
 	MockedKey
-	*model.RecordState
-	PathValue    string
+	PathValue    model.AbsPath
 	Relations    model.Relations
 	RelatedPaths []string
 }
@@ -25,14 +24,8 @@ type MockedObject struct {
 	Foo2      string
 	Meta1     string                 `json:"myKey" metaFile:"true"`
 	Meta2     string                 `metaFile:"true"`
-	Config    *orderedmap.OrderedMap `configFile:"true"`
-	Relations model.Relations
-}
-
-type MockedObjectState struct {
-	*MockedManifest
-	Local  *MockedObject
-	Remote *MockedObject
+	Config    *orderedmap.OrderedMap `configFile:"true" diff:"true"`
+	Relations model.Relations        `diff:"true"`
 }
 
 type MockedManifestSideRelation struct {
@@ -43,7 +36,7 @@ type MockedApiSideRelation struct {
 	OtherSide model.Key
 }
 
-func (MockedKey) Level() int {
+func (MockedKey) Level() model.ObjectLevel {
 	return 1
 }
 
@@ -56,7 +49,11 @@ func (m MockedKey) Desc() string {
 }
 
 func (m MockedKey) String() string {
-	return "mocked_key_" + m.Id
+	return fmt.Sprintf(`mocked key "%s"`, m.LogicPath())
+}
+
+func (m MockedKey) LogicPath() string {
+	return m.Id
 }
 
 func (m MockedKey) ObjectId() string {
@@ -79,71 +76,23 @@ func (r MockedManifest) Kind() model.Kind {
 	return r.Key().Kind()
 }
 
-func (r *MockedManifest) State() *model.RecordState {
-	if r.RecordState == nil {
-		return &model.RecordState{}
-	}
-	return r.RecordState
-}
-
-func (MockedManifest) SortKey(_ string) string {
-	return "key"
-}
-
-func (MockedManifest) GetRelativePath() string {
-	return "foo"
-}
-
-func (MockedManifest) SetRelativePath(string) {
-}
-
-func (MockedManifest) GetParentPath() string {
-	return "bar"
-}
-
-func (MockedManifest) IsParentPathSet() bool {
-	return true
-}
-
-func (MockedManifest) SetParentPath(string) {
-}
-
-func (r MockedManifest) GetAbsPath() model.AbsPath {
-	if len(r.PathValue) > 0 {
-		return model.NewAbsPath("", r.PathValue)
+func (r MockedManifest) Path() model.AbsPath {
+	if r.PathValue.IsSet() {
+		return r.PathValue
 	}
 	return model.NewAbsPath("", "test")
 }
 
-func (r MockedManifest) Path() string {
-	if len(r.PathValue) > 0 {
-		return r.PathValue
-	}
-	return `test`
+func (r MockedManifest) SetPath(v model.AbsPath) {
+	r.PathValue = v
 }
 
-func (r *MockedManifest) ClearRelatedPaths() {
-	r.RelatedPaths = make([]string, 0)
-}
-
-func (r *MockedManifest) GetRelatedPaths() []string {
-	return r.RelatedPaths
-}
-
-func (r *MockedManifest) AddRelatedPath(path string) {
-	r.RelatedPaths = append(r.RelatedPaths, path)
-}
-
-func (MockedManifest) RenameRelatedPaths(_, _ string) {
-	// nop
+func (r MockedManifest) String() string {
+	return r.Key().String()
 }
 
 func (r MockedManifest) NewEmptyObject() model.Object {
 	return &MockedObject{}
-}
-
-func (r *MockedManifest) NewObjectState() model.ObjectState {
-	return &MockedObjectState{MockedManifest: r}
 }
 
 func (o MockedObject) Key() model.Key {
@@ -178,103 +127,11 @@ func (o *MockedObject) AddRelation(relation model.Relation) {
 	o.Relations = append(o.Relations, relation)
 }
 
-func (o *MockedObjectState) ObjectName() string {
-	return "object"
-}
-
-func (o *MockedObjectState) HasManifest() bool {
-	return o.MockedManifest != nil
-}
-
-func (o *MockedObjectState) SetManifest(manifest model.ObjectManifest) {
-	o.MockedManifest = manifest.(*MockedManifest)
-}
-
-func (o *MockedObjectState) Manifest() model.ObjectManifest {
-	return o.MockedManifest
-}
-
-func (o *MockedObjectState) HasState(stateType model.StateType) bool {
-	switch stateType {
-	case model.StateTypeLocal:
-		return o.Local != nil
-	case model.StateTypeRemote:
-		return o.Remote != nil
-	default:
-		panic(fmt.Errorf(`unexpected state type "%T"`, stateType))
-	}
-}
-
-func (o *MockedObjectState) GetState(stateType model.StateType) model.Object {
-	switch stateType {
-	case model.StateTypeLocal:
-		return o.Local
-	case model.StateTypeRemote:
-		return o.Remote
-	default:
-		panic(fmt.Errorf(`unexpected state type "%T"`, stateType))
-	}
-}
-
-func (o *MockedObjectState) HasLocalState() bool {
-	return o.Local != nil
-}
-
-func (o *MockedObjectState) SetLocalState(object model.Object) {
-	if object == nil {
-		o.Local = nil
-	} else {
-		o.Local = object.(*MockedObject)
-	}
-}
-
-func (o *MockedObjectState) LocalState() model.Object {
-	return o.Local
-}
-
-func (o *MockedObjectState) HasRemoteState() bool {
-	return o.Remote != nil
-}
-
-func (o *MockedObjectState) SetRemoteState(object model.Object) {
-	if object == nil {
-		o.Remote = nil
-	} else {
-		o.Remote = object.(*MockedObject)
-	}
-}
-
-func (o *MockedObjectState) RemoteState() model.Object {
-	return o.Remote
-}
-
-func (o *MockedObjectState) LocalOrRemoteState() model.Object {
-	switch {
-	case o.HasLocalState():
-		return o.LocalState()
-	case o.HasRemoteState():
-		return o.RemoteState()
-	default:
-		panic(fmt.Errorf("object Local or Remote state must be set"))
-	}
-}
-
-func (o *MockedObjectState) RemoteOrLocalState() model.Object {
-	switch {
-	case o.HasRemoteState():
-		return o.RemoteState()
-	case o.HasLocalState():
-		return o.LocalState()
-	default:
-		panic(fmt.Errorf("object Remote or Local state must be set"))
-	}
-}
-
 func (r *MockedManifestSideRelation) Type() model.RelationType {
 	return "manifest_side_relation"
 }
 
-func (r *MockedManifestSideRelation) Desc() string {
+func (r *MockedManifestSideRelation) String() string {
 	return "manifest side relation"
 }
 
@@ -305,7 +162,7 @@ func (r *MockedApiSideRelation) Type() model.RelationType {
 	return "api_side_relation"
 }
 
-func (r *MockedApiSideRelation) Desc() string {
+func (r *MockedApiSideRelation) String() string {
 	return "api side relation"
 }
 

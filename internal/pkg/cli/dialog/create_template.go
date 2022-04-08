@@ -47,12 +47,12 @@ func (d *createTmplDialog) ask() (createTemplate.Options, error) {
 	opts := d.deps.Options()
 
 	// Host and token
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	if _, err := d.AskStorageApiHost(opts); err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 	if _, err := d.AskStorageApiToken(opts); err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 	if errors.Len() > 0 {
 		return d.out, errors
@@ -108,7 +108,7 @@ func (d *createTmplDialog) ask() (createTemplate.Options, error) {
 	d.out.SourceBranch = d.selectedBranch.BranchKey
 
 	// Load configs
-	components, err := storageApi.ListComponents(d.selectedBranch.Id)
+	components, err := storageApi.ListComponents(d.selectedBranch.BranchId)
 	if err != nil {
 		return d.out, err
 	}

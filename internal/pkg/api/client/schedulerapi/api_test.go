@@ -36,7 +36,7 @@ func TestSchedulerApiCalls(t *testing.T) {
 	configTarget := &model.ConfigWithRows{
 		Config: &model.Config{
 			ConfigKey: model.ConfigKey{
-				BranchId:    branch.Id,
+				BranchId:    branch.BranchId,
 				ComponentId: "ex-generic-v2",
 			},
 			Name:              "Test",
@@ -55,12 +55,12 @@ func TestSchedulerApiCalls(t *testing.T) {
 	resConfigTarget, err := storageApi.CreateConfig(configTarget)
 	assert.NoError(t, err)
 	assert.Same(t, configTarget, resConfigTarget)
-	assert.NotEmpty(t, configTarget.Id)
+	assert.NotEmpty(t, configTarget.ConfigId)
 
 	configScheduler := &model.ConfigWithRows{
 		Config: &model.Config{
 			ConfigKey: model.ConfigKey{
-				BranchId:    branch.Id,
+				BranchId:    branch.BranchId,
 				ComponentId: "keboola.scheduler",
 			},
 			Name:              "Test",
@@ -79,7 +79,7 @@ func TestSchedulerApiCalls(t *testing.T) {
 					Key: "target",
 					Value: orderedmap.FromPairs([]orderedmap.Pair{
 						{Key: "componentId", Value: "ex-generic-v2"},
-						{Key: "configurationId", Value: configTarget.Id},
+						{Key: "configurationId", Value: configTarget.ConfigId},
 						{Key: "mode", Value: "run"},
 					}),
 				},
@@ -95,7 +95,7 @@ func TestSchedulerApiCalls(t *testing.T) {
 	assert.Len(t, schedules, 0)
 
 	// Activate
-	schedule, err := api.ActivateSchedule(resConfigScheduler.Id, "")
+	schedule, err := api.ActivateSchedule(resConfigScheduler.ConfigId, "")
 	assert.NoError(t, err)
 	assert.NotNil(t, schedule)
 	assert.NotEmpty(t, schedule.Id)
@@ -115,7 +115,7 @@ func TestSchedulerApiCalls(t *testing.T) {
 	assert.Len(t, schedules, 0)
 
 	// Activate again
-	schedule, err = api.ActivateSchedule(resConfigScheduler.Id, "")
+	schedule, err = api.ActivateSchedule(resConfigScheduler.ConfigId, "")
 	assert.NoError(t, err)
 	assert.NotNil(t, schedule)
 	assert.NotEmpty(t, schedule.Id)
@@ -126,7 +126,7 @@ func TestSchedulerApiCalls(t *testing.T) {
 	assert.Len(t, schedules, 1)
 
 	// Delete for configuration
-	deleteResponseErr = api.DeleteSchedulesForConfiguration(resConfigScheduler.Id)
+	deleteResponseErr = api.DeleteSchedulesForConfiguration(resConfigScheduler.ConfigId)
 	assert.NoError(t, deleteResponseErr)
 
 	// List should return no schedule

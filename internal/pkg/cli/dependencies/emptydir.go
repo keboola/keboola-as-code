@@ -31,7 +31,7 @@ func (v *container) EmptyDir() (filesystem.Fs, error) {
 		}
 
 		// Filter out ignored files
-		found := utils.NewMultiError()
+		found := errors.NewMultiError()
 		for _, item := range items {
 			if !filesystem.IsIgnoredPath(item.Name(), item) {
 				path := item.Name()
@@ -46,7 +46,7 @@ func (v *container) EmptyDir() (filesystem.Fs, error) {
 
 		// Directory must be empty
 		if found.Len() > 0 {
-			return nil, utils.PrefixError(fmt.Sprintf(`directory "%s" it not empty, found`, v.fs.BasePath()), found)
+			return nil, errors.PrefixError(fmt.Sprintf(`directory "%s" it not empty, found`, v.fs.BasePath()), found)
 		}
 
 		v.emptyDir = v.fs

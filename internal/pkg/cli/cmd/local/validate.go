@@ -5,8 +5,8 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/state/load"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/validate"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 func ValidateCommand(p dependencies.Provider) *cobra.Command {

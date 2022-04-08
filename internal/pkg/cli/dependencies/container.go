@@ -12,9 +12,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
+	loadProjectLocalState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/state/load"
 )
 
 var (
@@ -40,7 +42,7 @@ type Container interface {
 	EmptyDir() (filesystem.Fs, error)
 	Dialogs() *dialog.Dialogs
 	Options() *options.Options
-	LocalProject(ignoreErrors bool) (*project.Project, error)
+	LocalProjectState(o loadProjectLocalState.Options) (*local.State, error)
 	LocalProjectExists() bool
 	LocalTemplate() (*template.Template, error)
 	LocalTemplateExists() bool
@@ -71,9 +73,9 @@ type container struct {
 	// Fs
 	fs       filesystem.Fs
 	emptyDir filesystem.Fs
-	// Project
-	project    *project.Project
-	projectDir filesystem.Fs
+	// Local project
+	projectManifestInfo *project.Project
+	projectDir          filesystem.Fs
 }
 
 func (v *container) Ctx() context.Context {
@@ -113,10 +115,9 @@ func (v *container) ApiVerboseLogs() bool {
 func (v *container) StorageApiHost() (string, error) {
 	var host string
 	if v.LocalProjectExists() {
-		if prj, err := v.LocalProject(false); err == nil {
-			host = prj.ProjectManifest().ApiHost()
-		} else {
-			return "", err
+		prj, _ := v.ProjectManifestInfo()
+		if prj.ApiHost != "" {
+			return prj.ApiHost, nil
 		}
 	} else {
 		host = v.options.GetString(options.StorageApiHostOpt)
@@ -154,13 +155,13 @@ func (v *container) StorageApi() (*storageapi.Api, error) {
 
 		// Storage Api token project ID and manifest project ID must be same
 		if v.LocalProjectExists() {
-			prj, err := v.LocalProject(false)
-			if err != nil {
-				return nil, err
-			}
-			projectManifest := prj.ProjectManifest()
-			if projectManifest != nil && projectManifest.ProjectId() != storageApi.ProjectId() {
-				return nil, fmt.Errorf(`given token is from the project "%d", but in manifest is defined project "%d"`, storageApi.ProjectId(), projectManifest.ProjectId())
+			prj, _ := v.ProjectManifestInfo()
+			if prj.Id != 0 && prj.Id != storageApi.ProjectId() {
+				return nil, fmt.Errorf(
+					`given token is from the project "%d", but in manifest is defined project "%d"`,
+					storageApi.ProjectId(),
+					prj.Id,
+				)
 			}
 		}
 

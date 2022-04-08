@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/diff"
 )
 
 // Plan is based on the diff results.
@@ -69,20 +67,20 @@ func (p *Plan) Log(logger log.Logger) {
 }
 
 func (p *Plan) Validate() error {
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	for _, action := range p.actions {
 		if err := action.validate(); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
 
 	if errors.Len() > 0 {
-		return utils.PrefixError(fmt.Sprintf(`cannot perform the "%s" operation`, p.Name()), errors)
+		return errors.PrefixError(fmt.Sprintf(`cannot perform the "%s" operation`, p.Name()), errors)
 	}
 
 	return nil
 }
 
-func (p *Plan) Add(result *diff.Result, actionType ActionType) {
-	p.actions = append(p.actions, &action{Result: result, action: actionType})
+func (p *Plan) Add(result *diff.ResultObject, actionType ActionType) {
+	p.actions = append(p.actions, &action{ResultObject: result, action: actionType})
 }

@@ -9,13 +9,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	createEnvFiles "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/envfiles/create"
 	createManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/create"
 	createMetaDir "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/metadir/create"
 	genWorkflows "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/workflows/generate"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/pull"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 type Options struct {
@@ -57,11 +55,11 @@ func Run(o Options, d dependencies) (err error) {
 	}
 
 	// Related operations
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 
 	// Generate CI workflows
 	if err := genWorkflows.Run(fs, o.Workflows, d); err != nil {
-		errors.Append(utils.PrefixError(`workflows generation failed`, err))
+		errs.Append(errors.PrefixError(`workflows generation failed`, err))
 	}
 
 	logger.Info("Init done.")
@@ -81,9 +79,9 @@ func Run(o Options, d dependencies) (err error) {
 		// Pull
 		pullOptions := pull.Options{DryRun: false, LogUntrackedPaths: false}
 		if err := pull.Run(projectState, pullOptions, d); err != nil {
-			errors.Append(utils.PrefixError(`pull failed`, err))
+			errs.Append(errors.PrefixError(`pull failed`, err))
 		}
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }

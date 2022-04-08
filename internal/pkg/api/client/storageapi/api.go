@@ -39,7 +39,7 @@ func NewWithToken(ctx context.Context, logger log.Logger, host, tokenStr string,
 		if errors.As(err, &errWithResponse) && errWithResponse.StatusCode() == http.StatusUnauthorized {
 			return nil, fmt.Errorf("the specified storage API token is not valid")
 		} else {
-			return nil, utils.PrefixError("token verification failed", err)
+			return nil, errors.PrefixError("token verification failed", err)
 		}
 	}
 	if !token.IsMaster {
@@ -106,6 +106,10 @@ func (a *Api) HttpClient() *http.Client {
 }
 
 func getChangedValues(all map[string]string, changedFields model.ChangedFields) map[string]string {
+	if changedFields.IsNotDefined() {
+		return all
+	}
+
 	// Filter
 	data := map[string]string{}
 	for key := range changedFields {

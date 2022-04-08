@@ -1,0 +1,60 @@
+package transformation
+
+import (
+	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
+)
+
+// MapAfterRemoteLoad - load code blocks from API to blocks field.
+func (m *transformationRemoteMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
+	// Only for transformation config
+	if ok, err := m.isTransformation(recipe.Object.Key()); err != nil {
+		return err
+	} else if !ok {
+		return nil
+	}
+	config := recipe.Object.(*model.Config)
+
+	// Get parameters
+	parameters, _, _ := config.Content.GetNestedMap(`parameters`)
+	if parameters == nil {
+		// Create if not found or has invalid type
+		parameters = orderedmap.New()
+		config.Content.Set(`parameters`, parameters)
+	}
+
+	// Get blocks
+	var blocks []interface{}
+	blocksRaw, _ := parameters.Get(`blocks`)
+	if v, ok := blocksRaw.([]interface{}); ok {
+		blocks = v
+	}
+
+	// Remove blocks from config.json
+	parameters.Delete(`blocks`)
+	config.Content.Set(`parameters`, parameters)
+
+	// Convert map to Block structs
+	config.Transformation = &model.Transformation{}
+	if err := json.ConvertByJson(blocks, &config.Transformation.Blocks); err != nil {
+		return err
+	}
+
+	// Fill in keys
+	for blockIndex, block := range config.Transformation.Blocks {
+		block.Parent = config.ConfigKey
+		block.Index = blockIndex
+		for codeIndex, code := range block.Codes {
+			code.Parent = block.BlockKey
+			code.Index = codeIndex
+			for _, script := range code.Scripts {
+				if v, ok := script.(model.StaticScript); ok {
+					v.Value = model.NormalizeScript(v.Value)
+				}
+			}
+		}
+	}
+
+	return nil
+}

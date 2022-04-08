@@ -36,7 +36,7 @@ func TestUseContext(t *testing.T) {
 	httpTransport.RegisterResponder("POST", `=~/storage/tickets`, httpmock.ResponderFromMultipleResponses(ticketResponses))
 
 	// Inputs
-	targetBranch := model.BranchKey{Id: 123}
+	targetBranch := model.BranchKey{BranchId: 123}
 	inputsValues := InputsValues{
 		{
 			Id:    "input-1",

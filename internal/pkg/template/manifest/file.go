@@ -81,7 +81,7 @@ func saveFile(fs filesystem.Fs, content *file) error {
 func (f *file) validate() error {
 	ctx := context.WithValue(context.Background(), validator.DisableRequiredInProjectKey, true)
 	if err := validator.ValidateCtx(ctx, f, "dive", ""); err != nil {
-		return utils.PrefixError("manifest is not valid", err)
+		return errors.PrefixError("manifest is not valid", err)
 	}
 	return nil
 }
@@ -92,7 +92,7 @@ func (f *file) records() []model.ObjectManifest {
 		out = append(out, &config.ConfigManifest)
 		for _, row := range config.Rows {
 			row.ComponentId = config.ComponentId
-			row.ConfigId = config.Id
+			row.ConfigId = config.ConfigId
 			out = append(out, row)
 		}
 	}
@@ -101,21 +101,10 @@ func (f *file) records() []model.ObjectManifest {
 
 func (f *file) setRecords(records []model.ObjectManifest) {
 	// Convert records map to slices
-	configsMap := make(map[string]*model.ConfigManifestWithRows)
+	configsMap := make(map[model.ConfigKey]*model.ConfigManifestWithRows)
 	f.Configs = make([]*model.ConfigManifestWithRows, 0)
 
 	for _, manifest := range records {
-		// Skip invalid (eg. missing config file)
-		if manifest.State().IsInvalid() {
-			continue
-		}
-
-		// Skip not persisted
-		if !manifest.State().IsPersisted() {
-			continue
-		}
-
-		// Generate content, we have to check if parent exists (eg. branch could have been deleted)
 		switch v := manifest.(type) {
 		case *model.BranchManifest:
 			panic(fmt.Errorf(`found unexpected BranchManifest in template manifest`))
@@ -124,10 +113,10 @@ func (f *file) setRecords(records []model.ObjectManifest) {
 				ConfigManifest: *v,
 				Rows:           make([]*model.ConfigRowManifest, 0),
 			}
-			configsMap[config.String()] = config
+			configsMap[config.ConfigKey] = config
 			f.Configs = append(f.Configs, config)
 		case *model.ConfigRowManifest:
-			config, found := configsMap[v.ConfigKey().String()]
+			config, found := configsMap[v.ConfigKey()]
 			if found {
 				config.Rows = append(config.Rows, v)
 			}

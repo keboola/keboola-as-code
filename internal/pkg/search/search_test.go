@@ -99,33 +99,33 @@ func TestMatchObjectIdOrName(t *testing.T) {
 
 	// Match by ID
 	assert.True(t, matchObjectIdOrName(`123`, &model.Branch{
-		BranchKey: model.BranchKey{Id: 123},
+		BranchKey: model.BranchKey{BranchId: 123},
 		Name:      "Abc",
 	}))
 	assert.False(t, matchObjectIdOrName(`1234`, &model.Branch{
-		BranchKey: model.BranchKey{Id: 123},
+		BranchKey: model.BranchKey{BranchId: 123},
 		Name:      "Abc",
 	}))
 	assert.False(t, matchObjectIdOrName(`12`, &model.Branch{
-		BranchKey: model.BranchKey{Id: 123},
+		BranchKey: model.BranchKey{BranchId: 123},
 		Name:      "Abc",
 	}))
 
 	// Match by name
 	assert.True(t, matchObjectIdOrName(`abc`, &model.Branch{
-		BranchKey: model.BranchKey{Id: 123},
+		BranchKey: model.BranchKey{BranchId: 123},
 		Name:      "Abc Def",
 	}))
 	assert.True(t, matchObjectIdOrName(`def`, &model.Branch{
-		BranchKey: model.BranchKey{Id: 123},
+		BranchKey: model.BranchKey{BranchId: 123},
 		Name:      "Abc Def",
 	}))
 	assert.True(t, matchObjectIdOrName(`abc def`, &model.Branch{
-		BranchKey: model.BranchKey{Id: 123},
+		BranchKey: model.BranchKey{BranchId: 123},
 		Name:      "Abc Def",
 	}))
 	assert.False(t, matchObjectIdOrName(`foo`, &model.Branch{
-		BranchKey: model.BranchKey{Id: 123},
+		BranchKey: model.BranchKey{BranchId: 123},
 		Name:      "Abc Def",
 	}))
 }

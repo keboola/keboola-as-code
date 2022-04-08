@@ -1,0 +1,108 @@
+package transformation_test
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
+)
+
+func TestRemoteSaveTransformation(t *testing.T) {
+	t.Parallel()
+	state, d := createRemoteStateWithMapper(t)
+	logger := d.DebugLogger()
+
+	config, _ := createTestFixtures(t, "keboola.snowflake-transformation", state)
+
+	blocks := []*model.Block{
+		{
+			Name: "001",
+			Codes: model.Codes{
+				{
+					Name: "001-001",
+					Scripts: model.Scripts{
+						model.StaticScript{Value: "SELECT 1"},
+					},
+				},
+				{
+					Name: "001-002",
+					Scripts: model.Scripts{
+						model.StaticScript{Value: "SELECT 1;"},
+						model.StaticScript{Value: "SELECT 2;"},
+					},
+				},
+			},
+		},
+		{
+			Name: "002",
+			Codes: model.Codes{
+				{
+					Name: "002-001",
+					Scripts: model.Scripts{
+						model.StaticScript{Value: "SELECT 3"},
+					},
+				},
+			},
+		},
+		{
+			Name:  "003",
+			Codes: model.Codes{},
+		},
+	}
+
+	config.Transformation = &model.Transformation{Blocks: blocks}
+	recipe := model.NewRemoteSaveRecipe(config, model.NewChangedFields("transformation"))
+
+	// Save
+	assert.NoError(t, state.Mapper().MapBeforeRemoteSave(recipe))
+	assert.Empty(t, logger.WarnAndErrorMessages())
+
+	// Blocks are stored in API object content
+	expectedBlocks := `
+[
+  {
+    "name": "001",
+    "codes": [
+      {
+        "name": "001-001",
+        "script": [
+          "SELECT 1"
+        ]
+      },
+      {
+        "name": "001-002",
+        "script": [
+          "SELECT 1;",
+          "SELECT 2;"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "002",
+    "codes": [
+      {
+        "name": "002-001",
+        "script": [
+          "SELECT 3"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "003",
+    "codes": []
+  }
+]
+`
+	assert.Empty(t, config.Transformation)
+	apiBlocks := config.Content.GetNestedOrNil(`parameters.blocks`)
+	assert.NotNil(t, blocks)
+	assert.Equal(t, strings.TrimLeft(expectedBlocks, "\n"), json.MustEncodeString(apiBlocks, true))
+
+	// Check changed fields
+	assert.Equal(t, `configuration`, recipe.ChangedFields.String())
+}

@@ -46,10 +46,10 @@ func loadFile(fs filesystem.Fs) (*file, error) {
 	// Fill in parent paths
 	for i := range content.Templates {
 		template := &content.Templates[i]
-		template.AbsPath.SetParentPath(``)
+		template.AbsPath = template.AbsPath.WithParentPath(``)
 		for j := range template.Versions {
 			version := &template.Versions[j]
-			version.AbsPath.SetParentPath(template.Path())
+			version.AbsPath = version.AbsPath.WithParentPath(template.String())
 		}
 	}
 
@@ -74,7 +74,7 @@ func saveFile(fs filesystem.Fs, manifestContent *file) error {
 	// Write JSON file
 	content, err := json.EncodeString(manifestContent, true)
 	if err != nil {
-		return utils.PrefixError(`cannot encode manifest`, err)
+		return errors.PrefixError(`cannot encode manifest`, err)
 	}
 	file := filesystem.NewRawFile(Path(), content)
 	if err := fs.WriteFile(file); err != nil {
@@ -86,7 +86,7 @@ func saveFile(fs filesystem.Fs, manifestContent *file) error {
 
 func (f *file) validate() error {
 	if err := validator.Validate(context.Background(), f); err != nil {
-		return utils.PrefixError("repository manifest is not valid", err)
+		return errors.PrefixError("repository manifest is not valid", err)
 	}
 	return nil
 }

@@ -32,7 +32,7 @@ func (a *deleteManifestRecordAction) Order() int {
 }
 
 func (a *newObjectAction) String() string {
-	return fmt.Sprintf(`+ %s %s`, a.Key.Kind().Abbr, a.Path())
+	return fmt.Sprintf(`+ %s %s`, a.Key.Kind().Abbr, a.String())
 }
 
 func (a *newObjectAction) InvokeOnPersist(key model.Key) {
@@ -42,5 +42,5 @@ func (a *newObjectAction) InvokeOnPersist(key model.Key) {
 }
 
 func (a *deleteManifestRecordAction) String() string {
-	return fmt.Sprintf(`- %s %s`, a.Kind().Abbr, a.Path())
+	return fmt.Sprintf(`- %s %s`, a.Kind().Abbr, a.String())
 }

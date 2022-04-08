@@ -222,12 +222,12 @@ func (p *Paths) init() error {
 	p.tracked = make(map[string]bool)
 	p.isFile = make(map[string]bool)
 
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	root := "."
 	err := p.fs.Walk(root, func(path string, info fs.FileInfo, err error) error {
 		// Log error
 		if err != nil {
-			errors.Append(err)
+			errs.Append(err)
 			return nil
 		}
 
@@ -250,10 +250,10 @@ func (p *Paths) init() error {
 	})
 	// Errors are not critical, they can be e.g. problem with permissions
 	if err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func (p *Paths) isIgnored(path string) bool {

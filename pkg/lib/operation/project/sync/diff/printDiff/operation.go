@@ -1,9 +1,9 @@
 package printDiff
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/diff"
 	createDiff "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/diff/create"
 )
 
@@ -16,7 +16,7 @@ type dependencies interface {
 	Logger() log.Logger
 }
 
-func Run(projectState *project.State, o Options, d dependencies) (*diff.Results, error) {
+func Run(projectState *project.State, o Options, d dependencies) (*diff.Result, error) {
 	logger := d.Logger()
 
 	// Diff
@@ -35,8 +35,8 @@ func Run(projectState *project.State, o Options, d dependencies) (*diff.Results,
 	} else {
 		// Explain
 		logger.Info(diff.ChangeMark + " changed")
-		logger.Info(diff.OnlyInRemoteMark + " remote state")
-		logger.Info(diff.OnlyInLocalMark + " local state")
+		logger.Info(diff.OnlyInAMark + " remote state")
+		logger.Info(diff.OnlyInBMark + " local state")
 		logger.Info("")
 
 		// Print diff

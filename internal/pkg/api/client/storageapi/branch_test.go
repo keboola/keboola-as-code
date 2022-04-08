@@ -50,7 +50,7 @@ func TestBranchApiCalls(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, job2)
 	assert.Equal(t, "success", job2.Status)
-	assert.NotEmpty(t, branchFoo.Id)
+	assert.NotEmpty(t, branchFoo.BranchId)
 
 	// Create branch with callback
 	branchBar := &model.Branch{
@@ -66,7 +66,7 @@ func TestBranchApiCalls(t *testing.T) {
 			assert.NoError(t, response.Err())
 			assert.NotNil(t, job)
 			assert.Equal(t, "success", job.Status)
-			assert.NotEmpty(t, branchBar.Id)
+			assert.NotEmpty(t, branchBar.BranchId)
 			onSuccessCalled = true
 		}).
 		Send()

@@ -3,37 +3,41 @@ package dependencies
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
-	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/version"
-	loadProjectManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/load"
+	loadProjectLocalState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/state/load"
+	loadProjectRemoteState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/state/load"
 )
 
-func (v *container) LocalProject(ignoreErrors bool) (*project.Project, error) {
-	if v.project == nil {
-		// Project dir
-		projectDir, err := v.ProjectDir()
-		if err != nil {
-			return nil, err
-		}
+func (v *container) RemoteProjectState(o loadProjectRemoteState.Options) (*remote.State, error) {
+	return loadProjectRemoteState.Run(o, v)
+}
 
-		// Project manifest
-		options := loadProjectManifest.Options{IgnoreErrors: ignoreErrors}
-		manifest, err := loadProjectManifest.Run(projectDir, options, v)
-		if err != nil {
-			return nil, err
-		}
-
-		v.project = project.New(projectDir, manifest, v)
-	}
-	return v.project, nil
+func (v *container) LocalProjectState(o loadProjectLocalState.Options) (*local.State, error) {
+	return loadProjectLocalState.Run(o, v)
 }
 
 func (v *container) LocalProjectExists() bool {
-	if v.project != nil {
-		return true
+	return v.fs.IsFile(project.ManifestPath())
+}
+
+func (v *container) ProjectManifestInfo() (project.Project, error) {
+	if v.projectManifestInfo == nil {
+
+		fs, err := v.ProjectDir()
+		if err != nil {
+			return project.Project{}, err
+		}
+
+		prj, err := project.LoadProjectFromManifest(fs, project.ManifestPath())
+		if err != nil {
+			return project.Project{}, err
+		}
+		v.projectManifestInfo = &prj
 	}
 
-	return v.fs.IsFile(projectManifest.Path())
+	return *v.projectManifestInfo, nil
 }
 
 func (v *container) ProjectDir() (filesystem.Fs, error) {
@@ -49,7 +53,7 @@ func (v *container) ProjectDir() (filesystem.Fs, error) {
 		}
 
 		// Check version field
-		if err := version.CheckManifestVersion(v.Logger(), v.fs, projectManifest.Path()); err != nil {
+		if err := version.CheckManifestVersion(v.Logger(), v.fs, project.ManifestPath()); err != nil {
 			return nil, err
 		}
 

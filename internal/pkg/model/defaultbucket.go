@@ -13,8 +13,8 @@ func (t *UsedInConfigInputMappingRelation) Type() RelationType {
 	return UsedInConfigInputMappingRelType
 }
 
-func (t *UsedInConfigInputMappingRelation) Desc() string {
-	return fmt.Sprintf(`used in input mapping "%s"`, t.UsedIn.Desc())
+func (t *UsedInConfigInputMappingRelation) String() string {
+	return fmt.Sprintf(`used in input mapping "%s"`, t.UsedIn.String())
 }
 
 func (t *UsedInConfigInputMappingRelation) Key() string {
@@ -50,8 +50,8 @@ func (t *UsedInRowInputMappingRelation) Type() RelationType {
 	return UsedInRowInputMappingRelType
 }
 
-func (t *UsedInRowInputMappingRelation) Desc() string {
-	return fmt.Sprintf(`used in input mapping "%s"`, t.UsedIn.Desc())
+func (t *UsedInRowInputMappingRelation) String() string {
+	return fmt.Sprintf(`used in input mapping "%s"`, t.UsedIn.String())
 }
 
 func (t *UsedInRowInputMappingRelation) Key() string {

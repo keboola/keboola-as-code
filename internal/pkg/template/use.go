@@ -8,8 +8,8 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacevalues"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/replacevalues"
 )
 
 // UseContext represents the process of replacing values when applying a template to a remote project.
@@ -69,7 +69,7 @@ func NewUseContext(ctx context.Context, templateRef model.TemplateRef, instanceI
 	}
 
 	// Replace BranchId, in template all objects have BranchId = 0
-	c.replacements.AddKey(model.BranchKey{Id: 0}, targetBranch)
+	c.replacements.AddKey(model.BranchKey{BranchId: 0}, targetBranch)
 
 	// Register JsonNet functions: ConfigId, ConfigRowId, Input
 	c.registerJsonNetFunctions()
@@ -134,7 +134,7 @@ func (c *UseContext) registerJsonNetFunctions() {
 			} else if id, ok := params[0].(string); !ok {
 				return nil, fmt.Errorf("parameter must be a string")
 			} else {
-				return c.idPlaceholder(model.RowId(id)), nil
+				return c.idPlaceholder(model.ConfigRowId(id)), nil
 			}
 		},
 	})
@@ -176,8 +176,8 @@ func (c *UseContext) idPlaceholder(old interface{}) string {
 		switch old.(type) {
 		case model.ConfigId:
 			placeholder = model.ConfigId(placeholderStr)
-		case model.RowId:
-			placeholder = model.RowId(placeholderStr)
+		case model.ConfigRowId:
+			placeholder = model.ConfigRowId(placeholderStr)
 		default:
 			panic(fmt.Errorf("unexpected ID type"))
 		}
@@ -187,8 +187,8 @@ func (c *UseContext) idPlaceholder(old interface{}) string {
 			switch placeholder.(type) {
 			case model.ConfigId:
 				c.replacements.AddId(placeholder, model.ConfigId(ticket.Id))
-			case model.RowId:
-				c.replacements.AddId(placeholder, model.RowId(ticket.Id))
+			case model.ConfigRowId:
+				c.replacements.AddId(placeholder, model.ConfigRowId(ticket.Id))
 			default:
 				panic(fmt.Errorf("unexpected ID type"))
 			}

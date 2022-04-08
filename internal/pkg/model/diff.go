@@ -40,8 +40,12 @@ func (v ChangedFields) All() []*ChangedField {
 	return out
 }
 
+func (v ChangedFields) IsNotDefined() bool {
+	return v == nil
+}
+
 func (v ChangedFields) IsEmpty() bool {
-	return len(v) == 0
+	return v != nil && len(v) == 0
 }
 
 func (v ChangedFields) Add(field string) *ChangedField {
@@ -104,7 +108,7 @@ func (v *ChangedField) RemovePath(path string) {
 	delete(v.paths, path)
 }
 
-func (v *ChangedField) Paths() string {
+func (v *ChangedField) Paths() []string {
 	var out []string
 	for path, changed := range v.paths {
 		if changed {
@@ -112,5 +116,9 @@ func (v *ChangedField) Paths() string {
 		}
 	}
 	sort.Strings(out)
-	return strings.Join(out, `, `)
+	return out
+}
+
+func (v *ChangedField) String() string {
+	return strings.Join(v.Paths(), `, `)
 }

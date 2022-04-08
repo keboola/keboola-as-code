@@ -11,42 +11,35 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
-func ValidateSchemas(objects model.ObjectStates) error {
-	errs := utils.NewMultiError()
-	for _, config := range objects.Configs() {
-		// Validate only local files
-		if config.Local == nil {
-			continue
-		}
+func ValidateSchemas(objects model.Objects, components *model.ComponentsMap, namingRegistry *naming.Registry) error {
+	errs := errors.NewMultiError()
 
-		component, err := objects.Components().Get(config.ComponentKey())
+	for _, config := range objects.ConfigsWithRows() {
+		component, err := components.Get(config.ComponentKey())
 		if err != nil {
 			return err
 		}
 
-		if err := ValidateConfig(component, config.Local); err != nil {
-			errs.AppendWithPrefix(fmt.Sprintf("config \"%s\" doesn't match schema", filesystem.Join(config.Path(), naming.ConfigFile)), err)
-		}
-	}
-
-	for _, row := range objects.ConfigRows() {
-		// Validate only local files
-		if row.Local == nil {
-			continue
+		if err := ValidateConfig(component, config.Config); err != nil {
+			desc := config.String()
+			if path, found := namingRegistry.PathByKey(config.Key()); found {
+				desc = fmt.Sprintf(`%s "%s"`, config.Kind().Name, filesystem.Join(path.String(), naming.ConfigFile))
+			}
+			errs.AppendWithPrefix(fmt.Sprintf("%s doesn't match schema", desc), err)
 		}
 
-		component, err := objects.Components().Get(row.ComponentKey())
-		if err != nil {
-			return err
-		}
-
-		if err := ValidateConfigRow(component, row.Local); err != nil {
-			errs.AppendWithPrefix(fmt.Sprintf("config row \"%s\" doesn't match schema", filesystem.Join(row.Path(), naming.ConfigFile)), err)
+		for _, row := range config.Rows {
+			if err := ValidateConfigRow(component, row); err != nil {
+				desc := row.String()
+				if path, found := namingRegistry.PathByKey(row.Key()); found {
+					desc = fmt.Sprintf(`%s "%s"`, row.Kind().Name, filesystem.Join(path.String(), naming.ConfigFile))
+				}
+				errs.AppendWithPrefix(fmt.Sprintf("%s doesn't match schema", desc), err)
+			}
 		}
 	}
 
@@ -94,7 +87,7 @@ func validateContent(schema []byte, content *orderedmap.OrderedMap) error {
 
 	// Process schema errors
 	validationErrors := &jsonschema.ValidationError{}
-	errs := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	if errors.As(err, &validationErrors) {
 		processErrors(validationErrors.Causes, errs)
 	} else if err != nil {
@@ -112,7 +105,7 @@ func validateDocument(schemaStr []byte, document *orderedmap.OrderedMap) error {
 	return schema.Validate(document.ToMap())
 }
 
-func processErrors(errs []*jsonschema.ValidationError, output *utils.MultiError) {
+func processErrors(errs []*jsonschema.ValidationError, output *errors.MultiError) {
 	// Sort errors
 	sort.Slice(errs, func(i, j int) bool {
 		return errs[i].InstanceLocation < errs[j].InstanceLocation

@@ -84,9 +84,9 @@ func TestVariablesForRelation(t *testing.T) {
 	// The relation is defined on this source side (variables config)
 	definedOn := &Config{
 		ConfigKey: ConfigKey{
-			BranchId:    123,
+			BranchKey:   BranchKey{BranchId: 123},
 			ComponentId: VariablesComponentId,
-			Id:          `45678`,
+			ConfigId:    `45678`,
 		},
 	}
 
@@ -94,9 +94,9 @@ func TestVariablesForRelation(t *testing.T) {
 	otherSideKey, otherSideRel, err := r.NewOtherSideRelation(definedOn, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, ConfigKey{
-		BranchId:    123, // from source key
+		BranchKey:   BranchKey{BranchId: 123}, // from source key
 		ComponentId: `foo.bar`,
-		Id:          `12345`,
+		ConfigId:    `12345`,
 	}, otherSideKey)
 	assert.Equal(t, &VariablesFromRelation{
 		VariablesId: `45678`,
@@ -106,8 +106,8 @@ func TestVariablesForRelation(t *testing.T) {
 	parentKey, err := r.ParentKey(definedOn.Key())
 	assert.NoError(t, err)
 	assert.Equal(t, ConfigKey{
-		BranchId:    123, // from source key
+		BranchKey:   BranchKey{BranchId: 123}, // from source key
 		ComponentId: `foo.bar`,
-		Id:          `12345`,
+		ConfigId:    `12345`,
 	}, parentKey)
 }

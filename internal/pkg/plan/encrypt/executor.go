@@ -9,8 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -20,7 +19,7 @@ type executor struct {
 	api    *encryptionapi.Api
 	pool   *client.Pool
 	uow    *local.UnitOfWork
-	errors *utils.MultiError
+	errors *errors.MultiError
 }
 
 func newExecutor(logger log.Logger, api *encryptionapi.Api, state *state.State, ctx context.Context, plan *Plan) *executor {
@@ -30,7 +29,7 @@ func newExecutor(logger log.Logger, api *encryptionapi.Api, state *state.State, 
 		api:    api,
 		pool:   api.NewPool(),
 		uow:    state.LocalManager().NewUnitOfWork(ctx),
-		errors: utils.NewMultiError(),
+		errs:   errors.NewMultiError(),
 	}
 }
 
@@ -40,15 +39,15 @@ func (e *executor) invoke() error {
 		e.pool.Request(e.encryptRequest(action)).Send()
 	}
 	if err := e.pool.StartAndWait(); err != nil {
-		e.errors.Append(err)
+		e.errs.Append(err)
 	}
 
 	// Save changed files
 	if err := e.uow.Invoke(); err != nil {
-		e.errors.Append(err)
+		e.errs.Append(err)
 	}
 
-	return e.errors.ErrorOrNil()
+	return e.errs.ErrorOrNil()
 }
 
 func (e *executor) encryptRequest(action *action) *client.Request {
@@ -78,7 +77,7 @@ func (e *executor) encryptRequest(action *action) *client.Request {
 				if err := object.GetContent().SetNestedPath(path, encrypted); err != nil {
 					panic(err)
 				}
-				e.logger.Debugf(`Encrypted "%s:%s"`, object.Desc(), path.String())
+				e.logger.Debugf(`Encrypted "%s:%s"`, object.String(), path.String())
 			}
 
 			// Save changes

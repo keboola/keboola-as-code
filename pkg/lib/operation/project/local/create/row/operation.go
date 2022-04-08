@@ -43,7 +43,7 @@ func Run(projectState *project.State, o Options, d dependencies) (err error) {
 	// Generate unique ID
 	ticketProvider := storageApi.NewTicketProvider()
 	ticketProvider.Request(func(ticket *model.Ticket) {
-		key.Id = model.RowId(ticket.Id)
+		key.ConfigRowId = model.ConfigRowId(ticket.Id)
 	})
 	if err := ticketProvider.Resolve(); err != nil {
 		return fmt.Errorf(`cannot generate new ID: %w`, err)

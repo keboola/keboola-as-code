@@ -9,9 +9,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/state/load"
 	createBranch "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/branch"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/pull"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 func CreateCommand(p dependencies.Provider) *cobra.Command {
@@ -83,7 +83,7 @@ func CreateBranchCommand(p dependencies.Provider) *cobra.Command {
 				// Add new branch to the allowed branches if needed
 				if projectManifest.IsObjectIgnored(branch) {
 					allowedBranches := projectManifest.AllowedBranches()
-					allowedBranches = append(allowedBranches, model.AllowedBranch(branch.Id.String()))
+					allowedBranches = append(allowedBranches, model.AllowedBranch(branch.BranchId.String()))
 					projectManifest.SetAllowedBranches(allowedBranches)
 				}
 
@@ -96,7 +96,7 @@ func CreateBranchCommand(p dependencies.Provider) *cobra.Command {
 				// Pull
 				pullOptions := pull.Options{DryRun: false, LogUntrackedPaths: false}
 				if err := pull.Run(projectState, pullOptions, d); err != nil {
-					return utils.PrefixError(`pull failed`, err)
+					return errors.PrefixError(`pull failed`, err)
 				}
 			}
 			return nil

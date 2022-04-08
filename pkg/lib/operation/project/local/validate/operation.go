@@ -21,10 +21,10 @@ func Run(projectState *project.State, o Options, d dependencies) (err error) {
 	logger := d.Logger()
 
 	// Validate schemas
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	if o.ValidateJsonSchema {
 		if err := schema.ValidateSchemas(projectState); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
 
@@ -32,13 +32,13 @@ func Run(projectState *project.State, o Options, d dependencies) (err error) {
 	if o.ValidateSecrets {
 		plan := encrypt.NewPlan(projectState)
 		if err := plan.ValidateAllEncrypted(); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
 
 	// Process errors
-	if err := errors.ErrorOrNil(); err != nil {
-		return utils.PrefixError("validation failed", err)
+	if err := errs.ErrorOrNil(); err != nil {
+		return errors.PrefixError("validation failed", err)
 	}
 
 	logger.Debug("Validation done.")

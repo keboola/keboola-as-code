@@ -90,14 +90,14 @@ func Run(o Options, d dependencies) (err error) {
 	}
 
 	// Done
-	d.Logger().Infof(`Template "%s" has been created.`, versionRecord.Path())
+	d.Logger().Infof(`Template "%s" has been created.`, versionRecord.String())
 
 	return nil
 }
 
 func createDir(o Options, d dependencies, repositoryDir filesystem.Fs, record repositoryManifest.VersionRecord) (filesystem.Fs, error) {
 	// Create directory
-	fs, err := createTemplateDir.Run(repositoryDir, createTemplateDir.Options{Path: record.Path()}, d)
+	fs, err := createTemplateDir.Run(repositoryDir, createTemplateDir.Options{Path: record.String()}, d)
 	if err != nil {
 		return nil, err
 	}

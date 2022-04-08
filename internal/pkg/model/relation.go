@@ -7,8 +7,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/errors"
 	jsonutils "github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -49,7 +49,7 @@ func (t RelationType) Type() RelationType {
 // Relation between objects, eg. config <-> config.
 type Relation interface {
 	Type() RelationType
-	Desc() string                                 // human-readable description
+	String() string                               // human-readable description
 	Key() string                                  // unique key within the object on which the relation is defined, for sorting and comparing
 	ParentKey(relationDefinedOn Key) (Key, error) // if relation type is parent <-> child, then parent key is returned, otherwise nil
 	IsDefinedInManifest() bool                    // if true, relation will be present in the manifest
@@ -81,7 +81,7 @@ func (v Relations) ParentKey(source Key) (Key, error) {
 
 	// Multiple parents are forbidden
 	if len(parents) > 1 {
-		return nil, fmt.Errorf(`unexpected state: multiple parents defined by "relations" in %s`, source.Desc())
+		return nil, fmt.Errorf(`unexpected state: multiple parents defined by "relations" in %s`, source.String())
 	}
 
 	return nil, nil
@@ -171,12 +171,12 @@ func (v Relations) GetOneByType(t RelationType) (Relation, error) {
 	if len(relations) == 0 {
 		return nil, nil
 	} else if len(relations) > 1 {
-		errors := utils.NewMultiError()
-		errors.Append(fmt.Errorf(`only one relation "%s" expected, but found %d`, t, len(relations)))
+		errs := errors.NewMultiError()
+		errs.Append(fmt.Errorf(`only one relation "%s" expected, but found %d`, t, len(relations)))
 		for _, relation := range relations {
-			errors.Append(fmt.Errorf(`  - %s`, jsonutils.MustEncodeString(relation, false)))
+			errs.Append(fmt.Errorf(`  - %s`, jsonutils.MustEncodeString(relation, false)))
 		}
-		return nil, errors
+		return nil, errs
 	}
 	return relations[0], nil
 }

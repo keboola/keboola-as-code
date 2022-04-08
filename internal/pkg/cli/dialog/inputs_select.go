@@ -39,7 +39,7 @@ func (d *inputsSelectDialog) ask() (objectInputsMap, error) {
 		Validator: func(val interface{}) error {
 			if err := d.parse(val.(string)); err != nil {
 				// Print errors to new line
-				return utils.PrefixError("\n", err)
+				return errors.PrefixError("\n", err)
 			}
 			return nil
 		},
@@ -52,7 +52,7 @@ func (d *inputsSelectDialog) parse(result string) error {
 
 	result = strhelper.StripHtmlComments(result)
 	scanner := bufio.NewScanner(strings.NewReader(result))
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	lineNum := 0
 
 	var currentObject model.Key
@@ -73,13 +73,13 @@ func (d *inputsSelectDialog) parse(result string) error {
 			// Config ID definition
 			m := regexpcache.MustCompile(` ([a-zA-Z0-9\.\-]+):([a-zA-Z0-9\.\-]+)$`).FindStringSubmatch(line)
 			if m == nil {
-				errors.Append(fmt.Errorf(`line %d: cannot parse config "%s"`, lineNum, line))
+				errs.Append(fmt.Errorf(`line %d: cannot parse config "%s"`, lineNum, line))
 				invalidObject = true
 				continue
 			}
-			key := model.ConfigKey{BranchId: d.branch.Id, ComponentId: model.ComponentId(m[1]), Id: model.ConfigId(m[2])}
+			key := model.ConfigKey{BranchId: d.branch.BranchId, ComponentId: model.ComponentId(m[1]), ConfigId: model.ConfigId(m[2])}
 			if _, found := d.objectFields[key]; !found {
-				errors.Append(fmt.Errorf(`line %d: config "%s:%s" not found`, lineNum, m[1], m[2]))
+				errs.Append(fmt.Errorf(`line %d: config "%s:%s" not found`, lineNum, m[1], m[2]))
 				invalidObject = true
 				continue
 			}
@@ -89,13 +89,13 @@ func (d *inputsSelectDialog) parse(result string) error {
 			// Row ID definition
 			m := regexpcache.MustCompile(` ([a-zA-Z0-9\.\-]+):([a-zA-Z0-9\.\-]+):([a-zA-Z0-9\.\-]+)$`).FindStringSubmatch(line)
 			if m == nil {
-				errors.Append(fmt.Errorf(`line %d: cannot parse config row "%s"`, lineNum, line))
+				errs.Append(fmt.Errorf(`line %d: cannot parse config row "%s"`, lineNum, line))
 				invalidObject = true
 				continue
 			}
-			key := model.ConfigRowKey{BranchId: d.branch.Id, ComponentId: model.ComponentId(m[1]), ConfigId: model.ConfigId(m[2]), Id: model.RowId(m[3])}
+			key := model.ConfigRowKey{BranchId: d.branch.BranchId, ComponentId: model.ComponentId(m[1]), ConfigId: model.ConfigId(m[2]), ConfigRowId: model.ConfigRowId(m[3])}
 			if _, found := d.objectFields[key]; !found {
-				errors.Append(fmt.Errorf(`line %d: config row "%s:%s:%s" not found`, lineNum, m[1], m[2], m[3]))
+				errs.Append(fmt.Errorf(`line %d: config row "%s:%s:%s" not found`, lineNum, m[1], m[2], m[3]))
 				invalidObject = true
 				continue
 			}
@@ -106,17 +106,17 @@ func (d *inputsSelectDialog) parse(result string) error {
 		case currentObject != nil:
 			// Input definition must be after some Config/Row definition (currentObject is set).
 			if err := d.parseInputLine(currentObject, line, lineNum); err != nil {
-				errors.Append(err)
+				errs.Append(err)
 				continue
 			}
 		default:
 			// Expected object definition
-			errors.Append(fmt.Errorf(`line %d: expected "## Config ..." or "### Row ...", found "%s"`, lineNum, strhelper.Truncate(line, 10, "...")))
+			errs.Append(fmt.Errorf(`line %d: expected "## Config ..." or "### Row ...", found "%s"`, lineNum, strhelper.Truncate(line, 10, "...")))
 			continue
 		}
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func (d *inputsSelectDialog) parseInputLine(objectKey model.Key, line string, lineNum int) error {
@@ -140,13 +140,13 @@ func (d *inputsSelectDialog) parseInputLine(objectKey model.Key, line string, li
 		// Get all object fields
 		objectFields, found := d.objectFields[objectKey]
 		if !found {
-			return fmt.Errorf(`line %d: %s not found`, lineNum, objectKey.Desc())
+			return fmt.Errorf(`line %d: %s not found`, lineNum, objectKey.String())
 		}
 
 		// Get field by path
 		field, found := objectFields[fieldPath]
 		if !found {
-			return fmt.Errorf(`line %d: field "%s" not found in the %s`, lineNum, fieldPath, objectKey.Desc())
+			return fmt.Errorf(`line %d: field "%s" not found in the %s`, lineNum, fieldPath, objectKey.String())
 		}
 
 		// Modify input ID, if it has been changed by use.
@@ -202,7 +202,7 @@ Allowed characters: a-z, A-Z, 0-9, "-".
 		// Config
 		fields := d.objectFields[c.ConfigKey]
 		if len(fields) > 0 {
-			lines.WriteString(fmt.Sprintf("## Config \"%s\" %s:%s\n", c.Name, c.ComponentId, c.Id))
+			lines.WriteString(fmt.Sprintf("## Config \"%s\" %s:%s\n", c.Name, c.ComponentId, c.ConfigId))
 			fields.Write(&lines)
 			lines.WriteString("\n")
 		}
@@ -211,7 +211,7 @@ Allowed characters: a-z, A-Z, 0-9, "-".
 		for _, r := range c.Rows {
 			fields := d.objectFields[r.ConfigRowKey]
 			if len(fields) > 0 {
-				lines.WriteString(fmt.Sprintf("### Row \"%s\" %s:%s:%s\n", r.Name, r.ComponentId, r.ConfigId, r.Id))
+				lines.WriteString(fmt.Sprintf("### Row \"%s\" %s:%s:%s\n", r.Name, r.ComponentId, r.ConfigId, r.ConfigRowId))
 				fields.Write(&lines)
 				lines.WriteString("\n")
 			}

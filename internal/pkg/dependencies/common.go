@@ -70,16 +70,16 @@ func (v *commonContainer) Components() (*model.ComponentsMap, error) {
 func (v *commonContainer) StorageApi() (*storageapi.Api, error) {
 	if v.storageApi == nil {
 		// Get host
-		errors := utils.NewMultiError()
+		errs := errors.NewMultiError()
 		host, err := v.StorageApiHost()
 		if err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 
 		// Get token
 		token, err := v.StorageApiToken()
 		if err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 
 		// Validate
@@ -220,7 +220,7 @@ func (v *commonContainer) Template(reference model.TemplateRef) (*template.Templ
 	}
 
 	// Check if template dir exists
-	templatePath := versionRecord.Path()
+	templatePath := versionRecord.String()
 	if !repository.Fs().IsDir(templatePath) {
 		return nil, fmt.Errorf(`template dir "%s" not found`, templatePath)
 	}

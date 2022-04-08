@@ -1,7 +1,6 @@
 package model
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -11,103 +10,165 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/sql"
 )
 
+var (
+	TransformationKind = Kind{Name: "transformation", Abbr: "t", ToMany: false}
+	BlockKind          = Kind{Name: "block", Abbr: "b", ToMany: true}
+	CodeKind           = Kind{Name: "code", Abbr: "c", ToMany: true}
+)
+
+type TransformationKey struct {
+	ConfigKey `validate:"dive" `
+}
+
+type BlockKey struct {
+	TransformationKey `validate:"dive" `
+	BlockIndex        int `validate:"min=0" `
+}
+
+type CodeKey struct {
+	BlockKey  `json:"-" validate:"dive" `
+	CodeIndex int `json:"-" validate:"min=0" `
+}
+
 type UsedSharedCodeRows []ConfigRowKey
 
 type LinkToSharedCode struct {
-	Config ConfigKey
-	Rows   UsedSharedCodeRows
+	Config ConfigKey `validate:"dive" `
 }
 
 type Transformation struct {
-	Blocks           []*Block
-	LinkToSharedCode *LinkToSharedCode
+	TransformationKey `validate:"dive" `
+	LinkToSharedCode  *LinkToSharedCode `validate:"dive" diff:"true"`
 }
 
 // Block - transformation block.
 type Block struct {
-	BlockKey
-	AbsPath `json:"-"`
-	Name    string `json:"name" validate:"required" metaFile:"true"`
-	Codes   Codes  `json:"codes" validate:"omitempty,dive"`
+	BlockKey `validate:"dive" `
+	Name     string `json:"name" validate:"required" metaFile:"true"  diff:"true"`
 }
 
 type Codes []*Code
 
 // Code - transformation code.
 type Code struct {
-	CodeKey
-	AbsPath      `json:"-"`
-	CodeFileName string  `json:"-"` // eg. "code.sql", "code.py", ...
-	Name         string  `json:"name" validate:"required" metaFile:"true"`
-	Scripts      Scripts `json:"script"` // scripts, eg. SQL statements
+	CodeKey `validate:"dive" `
+	Name    string  `json:"name" validate:"required" metaFile:"true"  diff:"true"`
+	Scripts Scripts `json:"script" validate:"dive"  diff:"true"` // scripts, eg. SQL statements
 }
 
 type Scripts []Script
-
-type Script interface {
-	Content() string
-}
 
 // StaticScript is script defined by user (it is not link to shared code).
 type StaticScript struct {
 	Value string
 }
 
-func (v UsedSharedCodeRows) IdsSlice() []interface{} {
-	var ids []interface{}
-	for _, rowKey := range v {
-		ids = append(ids, rowKey.Id.String())
-	}
-	return ids
-}
-
-func (v *Transformation) VisitCodes(callback func(code *Code)) {
-	for _, block := range v.Blocks {
-		for _, code := range block.Codes {
-			callback(code)
-		}
-	}
-}
-
-func (v *Transformation) VisitScripts(callback func(code *Code, script Script)) {
-	for _, block := range v.Blocks {
-		for _, code := range block.Codes {
-			for _, script := range code.Scripts {
-				callback(code, script)
-			}
-		}
-	}
-}
-
-func (v *Transformation) MapScripts(callback func(code *Code, script Script) Script) {
-	for _, block := range v.Blocks {
-		for _, code := range block.Codes {
-			for index, script := range code.Scripts {
-				code.Scripts[index] = callback(code, script)
-			}
-		}
-	}
+func (k Kind) IsTransformation() bool {
+	return k == TransformationKind
 }
 
 func (k Kind) IsBlock() bool {
-	return k.Name == BlockKind
+	return k == BlockKind
 }
 
 func (k Kind) IsCode() bool {
-	return k.Name == CodeKind
+	return k == CodeKind
 }
 
-func (b Block) String() string {
-	buf := new(bytes.Buffer)
-	_, _ = fmt.Fprintln(buf, `# `, b.Name)
-	for _, code := range b.Codes {
-		_, _ = fmt.Fprint(buf, code.String())
+func (k TransformationKey) Kind() Kind {
+	return TransformationKind
+}
+
+func (k TransformationKey) Level() ObjectLevel {
+	return 45
+}
+
+func (k TransformationKey) Key() Key {
+	return k
+}
+
+func (k TransformationKey) ParentKey() (Key, error) {
+	return k.ConfigKey, nil
+}
+
+func (k TransformationKey) String() string {
+	return fmt.Sprintf(`%s "%s"`, k.Kind().Name, k.LogicPath())
+}
+
+func (k TransformationKey) LogicPath() string {
+	return k.ConfigKey.LogicPath() + "/transformation"
+}
+
+func (k TransformationKey) ObjectId() string {
+	return "transformation"
+}
+
+func (k BlockKey) Kind() Kind {
+	return BlockKind
+}
+
+func (k BlockKey) Level() ObjectLevel {
+	return 46
+}
+
+func (k BlockKey) Key() Key {
+	return k
+}
+
+func (k BlockKey) ParentKey() (Key, error) {
+	return k.TransformationKey, nil
+}
+
+func (k BlockKey) String() string {
+	return fmt.Sprintf(`%s "%s"`, k.Kind().Name, k.LogicPath())
+}
+
+func (k BlockKey) LogicPath() string {
+	return k.TransformationKey.LogicPath() + fmt.Sprintf("/block:%s", k.ObjectId())
+}
+
+func (k BlockKey) ObjectId() string {
+	return fmt.Sprintf("%03d", k.BlockIndex+1)
+}
+
+func (k CodeKey) Kind() Kind {
+	return CodeKind
+}
+
+func (k CodeKey) Level() ObjectLevel {
+	return 47
+}
+
+func (k CodeKey) Key() Key {
+	return k
+}
+
+func (k CodeKey) ParentKey() (Key, error) {
+	return k.BlockKey, nil
+}
+
+func (k CodeKey) String() string {
+	return fmt.Sprintf(`%s "%s"`, k.Kind().Name, k.LogicPath())
+}
+
+func (k CodeKey) LogicPath() string {
+	return k.BlockKey.LogicPath() + fmt.Sprintf("/code:%s", k.ObjectId())
+}
+
+func (k CodeKey) ObjectId() string {
+	return fmt.Sprintf("%03d", k.CodeIndex+1)
+}
+
+type Script interface {
+	Content() string
+}
+
+func (v UsedSharedCodeRows) IdsSlice() []interface{} {
+	var ids []interface{}
+	for _, rowKey := range v {
+		ids = append(ids, rowKey.ConfigRowId.String())
 	}
-	return buf.String()
-}
-
-func (c Code) String() string {
-	return fmt.Sprintf("## %s\n%s", c.Name, c.Scripts.String(c.ComponentId))
+	return ids
 }
 
 func (v Scripts) Slice() []interface{} {

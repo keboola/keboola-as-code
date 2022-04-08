@@ -13,18 +13,15 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
-	loadProjectManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/load"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 type TestContainer struct {
@@ -36,10 +33,10 @@ type TestContainer struct {
 	options                     *options.Options
 	projectId                   int
 	apiVerboseLogs              bool
+	components                  *model.ComponentsMap
 	storageApiHost              string
 	storageApiToken             string
 	templateRepositoryFs        filesystem.Fs
-	project                     *project.Project
 	mockedStorageApi            *storageapi.Api
 	mockedStorageApiTransport   *httpmock.MockTransport
 	mockedSchedulerApi          *schedulerapi.Api
@@ -113,6 +110,17 @@ func (v *TestContainer) SetApiVerboseLogs(value bool) {
 	v.apiVerboseLogs = value
 }
 
+func (v *TestContainer) Components() (*model.ComponentsMap, error) {
+	if v.components == nil {
+		storageApi, err := v.StorageApi()
+		if err != nil {
+			return nil, err
+		}
+		v.components = storageApi.Components()
+	}
+	return v.components, nil
+}
+
 func (v *TestContainer) StorageApiHost() (string, error) {
 	if v.storageApiHost == `` {
 		return ``, fmt.Errorf(`dependencies: Storage API host is not set in test dependencies`)
@@ -166,12 +174,17 @@ func (v *TestContainer) EventSender(sender *eventsender.Sender) {
 	v.eventSender = sender
 }
 
+func (v *TestContainer) UseMockedComponents() {
+	v.components = model.NewComponentsMap(testapi.NewMockedComponentsProvider())
+}
+
 func (v *TestContainer) UseMockedStorageApi() (*storageapi.Api, *httpmock.MockTransport) {
 	if v.mockedStorageApi == nil {
 		v.mockedStorageApi, v.mockedStorageApiTransport = testapi.NewMockedStorageApi(v.DebugLogger())
 	}
 
 	v.SetStorageApi(v.mockedStorageApi)
+	testapi.AddMockedComponents(v.mockedStorageApiTransport)
 	return v.mockedStorageApi, v.mockedStorageApiTransport
 }
 
@@ -184,15 +197,15 @@ func (v *TestContainer) UseMockedSchedulerApi() (*schedulerapi.Api, *httpmock.Mo
 	return v.mockedSchedulerApi, v.mockedSchedulerApiTransport
 }
 
-// EmptyState without mappers. Useful for mappers unit tests.
-func (v *TestContainer) EmptyState() *state.State {
+// EmptyLocalState without mappers. Useful for mappers unit tests.
+func (v *TestContainer) EmptyLocalState() *local.State {
 	// Enable mocked APIs
+	v.UseMockedComponents()
 	v.UseMockedSchedulerApi()
-	_, httpTransport := v.UseMockedStorageApi()
-	testapi.AddMockedComponents(httpTransport)
+	v.UseMockedStorageApi()
 
 	// Create mocked state
-	mockedState, err := state.New(NewObjectsContainer(v.Fs(), fixtures.NewManifest()), v)
+	mockedState, err := local.NewState(v, v.Fs(), manifest.NewInMemory(), nil)
 	if err != nil {
 		panic(err)
 	}
@@ -200,54 +213,18 @@ func (v *TestContainer) EmptyState() *state.State {
 	return mockedState
 }
 
-func (v *TestContainer) LocalProject(ignoreErrors bool) (*project.Project, error) {
-	if v.project == nil {
-		m, err := loadProjectManifest.Run(v.fs, loadProjectManifest.Options{IgnoreErrors: ignoreErrors}, v)
-		if err != nil {
-			return nil, err
-		}
-		v.project = project.New(v.fs, m, v)
-	}
-	return v.project, nil
-}
+// EmptyRemoteState without mappers. Useful for mappers unit tests.
+func (v *TestContainer) EmptyRemoteState() *remote.State {
+	// Enable mocked APIs
+	v.UseMockedComponents()
+	v.UseMockedSchedulerApi()
+	v.UseMockedStorageApi()
 
-func (v *TestContainer) SetLocalProject(project *project.Project) {
-	v.project = project
-}
-
-func (v *TestContainer) LocalProjectState(o loadState.Options) (*project.State, error) {
-	prj, err := v.LocalProject(o.IgnoreInvalidLocalState)
+	// Create mocked state
+	mockedState, err := remote.NewState(v, state.NewIdSorter(), nil)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
-	return prj.LoadState(o)
-}
 
-// ObjectsContainer implementation for tests.
-type ObjectsContainer struct {
-	FsValue       filesystem.Fs
-	ManifestValue manifest.Manifest
-}
-
-func NewObjectsContainer(fs filesystem.Fs, m manifest.Manifest) *ObjectsContainer {
-	return &ObjectsContainer{
-		FsValue:       fs,
-		ManifestValue: m,
-	}
-}
-
-func (c *ObjectsContainer) Ctx() context.Context {
-	return context.Background()
-}
-
-func (c *ObjectsContainer) ObjectsRoot() filesystem.Fs {
-	return c.FsValue
-}
-
-func (c *ObjectsContainer) Manifest() manifest.Manifest {
-	return c.ManifestValue
-}
-
-func (c *ObjectsContainer) MappersFor(_ *state.State) (mapper.Mappers, error) {
-	return mapper.Mappers{}, nil
+	return mockedState
 }

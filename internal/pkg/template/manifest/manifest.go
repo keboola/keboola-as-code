@@ -1,32 +1,42 @@
 package manifest
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
+	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
-type records = manifest.Records
+type records = manifest.Collection
 
 // File contains content of the manifest. Jsonnet has not been executed yet.
 type File struct {
+	fs   filesystem.Fs
 	file *filesystem.RawFile
 }
 
 // Manifest is evaluated File.
 type Manifest struct {
-	naming naming.Template
 	*records
+	fs     filesystem.Fs
+	naming naming.Template
 }
 
-func New() *Manifest {
+func New(ctx context.Context, fs filesystem.Fs) *Manifest {
+	// Disable "required_in_project" validation tag
+	ctx = context.WithValue(ctx, validator.DisableRequiredInProjectKey, true)
+
+	namingRegistry := naming.NewRegistry()
 	return &Manifest{
+		fs:      fs,
 		naming:  naming.ForTemplate(),
-		records: manifest.NewRecords(model.SortByPath),
+		records: manifest.NewCollection(ctx, namingRegistry, state.NewPathSorter(namingRegistry)),
 	}
 }
 
@@ -42,11 +52,11 @@ func Load(fs filesystem.Fs) (*File, error) {
 		return nil, err
 	}
 
-	return &File{file: f}, nil
+	return &File{fs: fs, file: f}, nil
 }
 
 // Evaluate Jsonnet content.
-func (f *File) Evaluate(jsonNetCtx *jsonnet.Context) (*Manifest, error) {
+func (f *File) Evaluate(ctx context.Context, jsonNetCtx *jsonnet.Context) (*Manifest, error) {
 	// Evaluate Jsonnet
 	content, err := evaluateFile(f.file, jsonNetCtx)
 	if err != nil {
@@ -54,10 +64,10 @@ func (f *File) Evaluate(jsonNetCtx *jsonnet.Context) (*Manifest, error) {
 	}
 
 	// Create manifest
-	m := New()
+	m := New(ctx, f.fs)
 
 	// Set records
-	if err := m.records.SetRecords(content.records()); err != nil {
+	if err := m.records.Set(content.records()); err != nil {
 		return nil, fmt.Errorf(`cannot load manifest: %w`, err)
 	}
 
@@ -65,13 +75,13 @@ func (f *File) Evaluate(jsonNetCtx *jsonnet.Context) (*Manifest, error) {
 	return m, nil
 }
 
-func (m *Manifest) Save(fs filesystem.Fs) error {
+func (m *Manifest) Save() error {
 	// Create file content
 	content := newFile()
 	content.setRecords(m.records.All())
 
 	// Save file
-	if err := saveFile(fs, content); err != nil {
+	if err := saveFile(m.fs, content); err != nil {
 		return err
 	}
 
@@ -81,6 +91,10 @@ func (m *Manifest) Save(fs filesystem.Fs) error {
 
 func (m *Manifest) Path() string {
 	return Path()
+}
+
+func (m *Manifest) Filter() model.ObjectsFilter {
+	return model.NoFilter()
 }
 
 func (m *Manifest) NamingTemplate() naming.Template {
