@@ -1,4 +1,4 @@
-// Package extension contains extension for Goa API generator.
+// Package token contains extension to simplify setup of the Storage API Token security.
 package token
 
 import (
@@ -15,7 +15,7 @@ import (
 
 // nolint: gochecknoinits
 func init() {
-	codegen.RegisterPluginFirst("storage-api-token", "gen", nil, Generate)
+	codegen.RegisterPluginFirst("storage-api-token", "gen", nil, generate)
 }
 
 const (
@@ -117,7 +117,7 @@ func AddTokenHeaderToPayloads(tokenScheme *expr.SchemeExpr, field, header string
 	}
 }
 
-func Generate(_ string, roots []eval.Root, files []*codegen.File) ([]*codegen.File, error) {
+func generate(_ string, roots []eval.Root, files []*codegen.File) ([]*codegen.File, error) {
 	for _, f := range files {
 		// Modify OpenApi2 files
 		for _, s := range f.Section("openapi") {
