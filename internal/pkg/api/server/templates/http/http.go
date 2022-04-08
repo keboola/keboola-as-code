@@ -1,4 +1,4 @@
-package main
+package http
 
 import (
 	"context"
@@ -13,16 +13,16 @@ import (
 	httpMiddleware "goa.design/goa/v3/http/middleware"
 	dataDog "gopkg.in/DataDog/dd-trace-go.v1/contrib/net/http"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/template/api/dependencies"
-	templatesSvr "github.com/keboola/keboola-as-code/internal/pkg/template/api/gen/http/templates/server"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/api/gen/templates"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/api/openapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies"
+	templatesSvr "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/gen/http/templates/server"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/gen/templates"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/openapi"
 	swaggerui "github.com/keboola/keboola-as-code/third_party"
 )
 
-// handleHTTPServer starts configures and starts a HTTP server on the given
+// HandleHTTPServer starts configures and starts a HTTP server on the given
 // URL. It shuts down the server if any error is received in the error channel.
-func handleHTTPServer(ctx context.Context, wg *sync.WaitGroup, d dependencies.Container, u *url.URL, endpoints *templates.Endpoints, errCh chan error, logger *log.Logger, debug bool) {
+func HandleHTTPServer(ctx context.Context, wg *sync.WaitGroup, d dependencies.Container, u *url.URL, endpoints *templates.Endpoints, errCh chan error, logger *log.Logger, debug bool) {
 	// Trace endpoint start, finish and error
 	endpoints.Use(TraceEndpointsMiddleware())
 

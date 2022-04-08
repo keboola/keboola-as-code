@@ -7,7 +7,7 @@ import (
 	"goa.design/goa/v3/security"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/template/api/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies"
 )
 
 func (s *service) APIKeyAuth(ctx context.Context, tokenStr string, scheme *security.APIKeyScheme) (context.Context, error) {

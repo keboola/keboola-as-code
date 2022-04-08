@@ -8,7 +8,7 @@ import (
 	"goa.design/goa/v3/eval"
 )
 
-const PkgPath = "github.com/keboola/keboola-as-code/internal/pkg/template/api/dependencies"
+const PkgPath = "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies"
 
 // nolint: gochecknoinits
 func init() {

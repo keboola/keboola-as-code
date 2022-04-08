@@ -4,8 +4,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/template/api/dependencies"
-	. "github.com/keboola/keboola-as-code/internal/pkg/template/api/gen/templates"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies"
+	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/gen/templates"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 )
 
