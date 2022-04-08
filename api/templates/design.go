@@ -9,6 +9,7 @@ import (
 	cors "goa.design/plugins/v3/cors/dsl"
 
 	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/extension/dependencies"
+	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/extension/operationid"
 	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/extension/token"
 )
 

@@ -1,3 +1,4 @@
+// Package dependencies contains extension to inject dependencies to the service endpoint handlers.
 package dependencies
 
 import (
@@ -12,10 +13,10 @@ const PkgPath = "github.com/keboola/keboola-as-code/internal/pkg/api/server/temp
 
 // nolint: gochecknoinits
 func init() {
-	codegen.RegisterPluginFirst("api-dependencies", "gen", nil, Generate)
+	codegen.RegisterPluginFirst("api-dependencies", "gen", nil, generate)
 }
 
-func Generate(_ string, roots []eval.Root, files []*codegen.File) ([]*codegen.File, error) {
+func generate(_ string, roots []eval.Root, files []*codegen.File) ([]*codegen.File, error) {
 	for _, f := range files {
 		// nolint: forbidigo
 		switch filepath.Base(f.Path) {
