@@ -56,7 +56,7 @@ func ContextMiddleware(d dependencies.Container, h http.Handler) http.Handler {
 		if span, ok := tracer.SpanFromContext(ctx); ok {
 			span.SetTag(ext.ResourceName, r.URL.Path)
 			span.SetTag("http.request.id", requestId)
-			if host, err := d.StorageApiHost(); err != nil {
+			if host, err := d.StorageApiHost(); err == nil {
 				span.SetTag("storage.host", host)
 			}
 		}
