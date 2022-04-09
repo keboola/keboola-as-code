@@ -1,4 +1,4 @@
-package transformer
+package diff
 
 //func (t *Transformer) transformationToString(transformation *model.ObjectNode) string {
 //	var builder strings.Builder

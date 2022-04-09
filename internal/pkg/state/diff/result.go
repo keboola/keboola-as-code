@@ -19,12 +19,13 @@ const (
 	ResultOnlyInB
 )
 
+type node = model.ObjectNode
+
 // Object from A or B model.Objects collection, contains reference to all objects.
 // Object field can be nil.
 type Object struct {
-	Key    model.Key
-	Object *model.ObjectNode
-	All    model.Objects
+	*node
+	All model.Objects
 }
 
 type ResultState int
@@ -47,18 +48,16 @@ type ResultObject struct {
 	A           Object
 	B           Object
 	State       ResultState
-	FsPath      *model.AbsPath
-	Differences ResultValues
+	Differences ResultItems
 }
 
-type ResultValues []*ResultValue
+type ResultItems []*ResultItem
 
-type ResultValue struct {
-	A      reflect.Value
-	B      reflect.Value
-	State  ResultState
-	Path   Path
-	FsPath *model.AbsPath // filled in if the record is related to a file in the filesystem
+type ResultItem struct {
+	A     reflect.Value
+	B     reflect.Value
+	State ResultState
+	Path  Path
 }
 
 func (v ResultState) Mark() string {
@@ -76,16 +75,32 @@ func (v ResultState) Mark() string {
 	}
 }
 
-func (v *Result) String(o FormatOptions) string {
-	return format(v, o)
+func (v *Result) Format(opts ...FormatOption) string {
+	return format(v, opts...)
 }
 
-func (v ResultValues) IsEmpty() bool {
+func (v *Result) Get(key model.Key) (*ResultObject, bool) {
+	for _, object := range v.Results {
+		if object.Key == key {
+			return object, true
+		}
+	}
+	return nil, false
+}
+
+func (v *ResultObject) AOrBObject() model.Object {
+	if object := v.A.Object(); object != nil {
+		return object
+	}
+	return v.B.Object()
+}
+
+func (v ResultItems) IsEmpty() bool {
 	return len(v) == 0
 }
 
 // String returns all paths separated by comma.
-func (v ResultValues) String() string {
+func (v ResultItems) String() string {
 	var paths []string
 	for _, item := range v {
 		paths = append(paths, item.Path.String())
@@ -96,7 +111,7 @@ func (v ResultValues) String() string {
 }
 
 // ShortString returns first part of all paths separated by comma.
-func (v ResultValues) ShortString() string {
+func (v ResultItems) ShortString() string {
 	uniquePaths := make(map[string]bool)
 	for _, item := range v {
 		uniquePaths[item.Path.First().String()] = true
@@ -109,4 +124,26 @@ func (v ResultValues) ShortString() string {
 
 	sort.Strings(paths)
 	return strings.Join(paths, ", ")
+}
+
+func (v *Object) Object() model.Object {
+	if v.node == nil {
+		return nil
+	}
+	return v.node.Object
+}
+
+func (v *Object) Children() model.ObjectChildren {
+	if v.node == nil {
+		return nil
+	}
+	return v.node.Children
+}
+
+func (v *Object) ObjectNode() *model.ObjectNode {
+	return v.node
+}
+
+func (v *Object) IsNil() bool {
+	return v.node == nil
 }

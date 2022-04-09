@@ -32,8 +32,7 @@ type StepKind struct {
 // StepObject represents a child Object.
 type StepObject struct {
 	step
-	Key  model.Key
-	Path *model.AbsPath // can be nil
+	Key model.Key
 }
 
 // StepStructField is a struct field.
@@ -61,10 +60,9 @@ func newStepKind(kind model.Kind, cmpPath cmp.PathStep) StepKind {
 	return s
 }
 
-func newStepObject(key model.Key, path *model.AbsPath, cmpPath cmp.PathStep) StepObject {
+func newStepObject(key model.Key, cmpPath cmp.PathStep) StepObject {
 	s := StepObject{}
 	s.Key = key
-	s.Path = path
 	s.setValues(cmpPath)
 	return s
 }
@@ -113,6 +111,13 @@ func (s StepKind) String() string {
 
 func (s StepObject) String() string {
 	return fmt.Sprintf("[%s]", s.Key.ObjectId())
+}
+
+func (s StepObject) AOrBObject() Object {
+	if s.a.IsValid() && !s.a.IsNil() {
+		return s.a.Interface().(Object)
+	}
+	return s.b.Interface().(Object)
 }
 
 func (s StepStructField) String() string {

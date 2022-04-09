@@ -9,7 +9,6 @@ import (
 	"github.com/spf13/cast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
 )
 
 type Path []Step
@@ -21,11 +20,10 @@ type pathBuilder struct {
 	currentIndex int
 	lastIndex    int
 	skipIndex    map[int]bool
-	naming       *naming.Registry
 }
 
-func PathFromCmpPath(input cmp.Path, naming *naming.Registry) Path {
-	p := pathBuilder{steps: input, lastIndex: len(input) - 1, skipIndex: make(map[int]bool), naming: naming}
+func PathFromCmpPath(input cmp.Path) Path {
+	p := pathBuilder{steps: input, lastIndex: len(input) - 1, skipIndex: make(map[int]bool)}
 	p.build()
 	return p.output
 }
@@ -130,15 +128,7 @@ func (b *pathBuilder) stepObjectOrNil(step cmp.MapIndex) Step {
 		return nil
 	}
 
-	// Get object path if possible
-	var path *model.AbsPath
-	if b.naming != nil {
-		if p, found := b.naming.PathByKey(key); found {
-			path = &p
-		}
-	}
-
-	return newStepObject(key, path, step)
+	return newStepObject(key, step)
 }
 
 // stepKindOrNil groups steps *model.ObjectNode[Children][model.Kind] together.

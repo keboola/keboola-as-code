@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/errors"
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/sort"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -13,17 +14,41 @@ type sorter = ObjectsSorter
 
 // Collection implements model.Objects interface.
 type Collection struct {
-	sorter
+	sorter  sorter
 	lock    *sync.Mutex
 	objects *orderedmap.OrderedMap
 }
 
-func NewCollection(sorter ObjectsSorter) Objects {
-	return &Collection{
-		sorter:  sorter,
+type Option func(c *Collection)
+
+func WithSorter(sorter ObjectsSorter) Option {
+	return func(c *Collection) {
+		c.sorter = sorter
+	}
+}
+
+func NewCollection(opts ...Option) Objects {
+	c := &Collection{
 		lock:    &sync.Mutex{},
 		objects: orderedmap.New(),
 	}
+
+	// Apply options
+	for _, option := range opts {
+		option(c)
+	}
+
+	// Create default sorter if needed
+	if c.sorter == nil {
+		c.sorter = sort.NewIdSorter()
+	}
+
+	return c
+}
+
+// Less sorts objects.
+func (c *Collection) Less(i, j Key) bool {
+	return c.sorter.Less(i, j)
 }
 
 // Add object to the collection.

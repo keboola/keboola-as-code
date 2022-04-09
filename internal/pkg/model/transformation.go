@@ -58,6 +58,10 @@ type Code struct {
 
 type Scripts []Script
 
+type Script interface {
+	Content() string
+}
+
 // StaticScript is script defined by user (it is not link to shared code).
 type StaticScript struct {
 	Value string
@@ -157,10 +161,6 @@ func (k CodeKey) LogicPath() string {
 
 func (k CodeKey) ObjectId() string {
 	return fmt.Sprintf("%03d", k.CodeIndex+1)
-}
-
-type Script interface {
-	Content() string
 }
 
 func (v UsedSharedCodeRows) IdsSlice() []interface{} {

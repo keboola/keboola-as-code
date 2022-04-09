@@ -62,7 +62,8 @@ type ObjectsSorter interface {
 }
 
 type ObjectsReadOnly interface {
-	ObjectsSorter
+	// Less sorts objects.
+	Less(i, j Key) bool
 	// Get object from the collection.
 	Get(key Key) (Object, bool)
 	// GetOrNil object from the collection or returns nil if it is not present.

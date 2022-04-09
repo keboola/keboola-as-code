@@ -1,4 +1,4 @@
-package transformer
+package diff
 
 //
 //func (t *Transformer) orchestrationToString(orchestration *model.ObjectNode) string {
