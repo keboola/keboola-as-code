@@ -1,38 +1,26 @@
-package mapper
+package local
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/fileloader"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-// LocalSaveMapper is intended to modify how the object will be saved in the filesystem.
+// SaveMapper is intended to modify how the object will be saved in the filesystem.
 // If you need a list of all saved objects, when they are already saved, use the AfterLocalOperationListener instead.
-type LocalSaveMapper interface {
+type SaveMapper interface {
 	MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error
 }
 
-// LocalLoadMapper is intended to modify/normalize the object internal representation after loading from the filesystem.
+// LoadMapper is intended to modify/normalize the object internal representation after loading from filesystem.
 // If you need a list of all loaded objects use AfterLocalOperationListener instead.
 // Important: do not rely on other objects in the LocalLoadMapper, they may not be loaded yet.
+// It is only guaranteed that the higher level object is loaded.
+// For example on configuration load, the branch is already loaded, but other configurations may not be loaded yet.
 // If you need to work with multiple objects (and relationships between them), use the AfterLocalOperationListener instead.
-type LocalLoadMapper interface {
+type LoadMapper interface {
 	MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error
-}
-
-// RemoteSaveMapper is intended to modify how the object will be saved in the Storage API.
-// If you need a list of all saved objects, when they are already saved, use the AfterRemoteOperationListener instead.
-type RemoteSaveMapper interface {
-	MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error
-}
-
-// RemoteLoadMapper is intended to modify/normalize the object internal representation after loading from the Storage API.
-// If you need a list of all loaded objects use the AfterRemoteOperationListener instead.
-// Important: do not rely on other objects in the RemoteLoadMapper, they may not be loaded yet.
-// If you need to work with multiple objects (and relationships between them), use the AfterRemoteOperationListener instead.
-type RemoteLoadMapper interface {
-	MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error
 }
 
 // BeforePersistMapper is intended to modify manifest record before persist.
@@ -42,8 +30,8 @@ type BeforePersistMapper interface {
 	MapBeforePersist(recipe *model.PersistRecipe) error
 }
 
-// LocalFileLoadMapper is intended to modify file load process.
-type LocalFileLoadMapper interface {
+// FileLoadMapper is intended to modify file load process.
+type FileLoadMapper interface {
 	LoadLocalFile(def *filesystem.FileDef, fileType filesystem.FileType, next filesystem.LoadHandler) (filesystem.File, error)
 }
 
@@ -70,12 +58,6 @@ type AfterLocalPersistListener interface {
 // The "changes" parameter contains all: loaded, created, update, saved, deleted objects.
 type AfterLocalOperationListener interface {
 	AfterLocalOperation(changes *model.Changes) error
-}
-
-// AfterRemoteOperationListener is called when the remote.UnitOfWork finished all the work.
-// The "changes" parameter contains all: loaded, created, update, saved, deleted objects.
-type AfterRemoteOperationListener interface {
-	AfterRemoteOperation(changes *model.Changes) error
 }
 
 // AfterOperationListener is called when the UnitOfWork finished all the work.
@@ -115,21 +97,22 @@ func (m Mappers) ForEachReverse(stopOnFailure bool, callback func(mapper interfa
 	return errs.ErrorOrNil()
 }
 
-// Mapper maps model.Object between internal/filesystem/API representations.
+// Mapper maps model.Object between internal and filesystem representations.
 // Mapper is inspired by the middleware design pattern.
 //
-// For save methods: MapBeforeLocalSave, MapBeforeRemoteSave, mappers are called in reverse order (Mappers.ForEachReverse).
+// For save method MapBeforeLocalSave mappers are called in reverse order (Mappers.ForEachReverse).
 // For load and other methods, mappers are called in the order in which they were defined (Mappers.ForEach).
 //
 // Example:
-// - LOAD: loading an object from the filesystem is the FIRST step, then other mapping follows.
-// - SAVE: saving an object from the filesystem is the LAST step, after all mapping has been done.
+// - LOAD: loading an object from filesystem is the FIRST step, then other mapping follows.
+// - SAVE: saving an object to filesystem is the LAST step, after all mapping has been done.
 type Mapper struct {
+	state   *State
 	mappers Mappers // implement part of the interfaces above
 }
 
-func New() *Mapper {
-	return &Mapper{}
+func NewMapper(state *State) *Mapper {
+	return &Mapper{state: state}
 }
 
 // NewFileLoader create filesystem.FileLoader.
@@ -146,7 +129,7 @@ func (m *Mapper) AddMapper(mapper ...interface{}) *Mapper {
 // MapBeforeLocalSave calls mappers with LocalSaveMapper interface implemented.
 func (m *Mapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
 	return m.mappers.ForEachReverse(true, func(mapper interface{}) error {
-		if mapper, ok := mapper.(LocalSaveMapper); ok {
+		if mapper, ok := mapper.(SaveMapper); ok {
 			if err := mapper.MapBeforeLocalSave(recipe); err != nil {
 				return err
 			}
@@ -158,32 +141,8 @@ func (m *Mapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
 // MapAfterLocalLoad calls mappers with LocalLoadMapper interface implemented.
 func (m *Mapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
 	return m.mappers.ForEach(true, func(mapper interface{}) error {
-		if mapper, ok := mapper.(LocalLoadMapper); ok {
+		if mapper, ok := mapper.(LoadMapper); ok {
 			if err := mapper.MapAfterLocalLoad(recipe); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-}
-
-// MapBeforeRemoteSave calls mappers with RemoteSaveMapper interface implemented.
-func (m *Mapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
-	return m.mappers.ForEachReverse(true, func(mapper interface{}) error {
-		if mapper, ok := mapper.(RemoteSaveMapper); ok {
-			if err := mapper.MapBeforeRemoteSave(recipe); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-}
-
-// MapAfterRemoteLoad calls mappers with RemoteLoadMapper interface implemented.
-func (m *Mapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
-	return m.mappers.ForEach(true, func(mapper interface{}) error {
-		if mapper, ok := mapper.(RemoteLoadMapper); ok {
-			if err := mapper.MapAfterRemoteLoad(recipe); err != nil {
 				return err
 			}
 		}
@@ -209,7 +168,7 @@ func (m *Mapper) LoadLocalFile(def *filesystem.FileDef, fileType filesystem.File
 
 	// Generate handlers chain, eg.  mapper1(mapper2(mapper3(default())))
 	err := m.mappers.ForEachReverse(true, func(mapper interface{}) error {
-		if mapper, ok := mapper.(LocalFileLoadMapper); ok {
+		if mapper, ok := mapper.(FileLoadMapper); ok {
 			next := handler
 			handler = func(def *filesystem.FileDef, fileType filesystem.FileType) (filesystem.File, error) {
 				return mapper.LoadLocalFile(def, fileType, next)
@@ -270,22 +229,6 @@ func (m *Mapper) AfterLocalPersist(persisted []model.Object) error {
 	return m.mappers.ForEach(false, func(mapper interface{}) error {
 		if mapper, ok := mapper.(AfterLocalPersistListener); ok {
 			if err := mapper.AfterLocalPersist(persisted); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-}
-
-// AfterRemoteOperation calls mappers with AfterRemoteOperationListener interface implemented.
-func (m *Mapper) AfterRemoteOperation(changes *model.Changes) error {
-	return m.mappers.ForEach(false, func(mapper interface{}) error {
-		if m, ok := mapper.(AfterRemoteOperationListener); ok {
-			if err := m.AfterRemoteOperation(changes); err != nil {
-				return err
-			}
-		} else if m, ok := mapper.(AfterOperationListener); ok {
-			if err := m.AfterOperation(changes); err != nil {
 				return err
 			}
 		}

@@ -11,7 +11,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/workers"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/common/local/manifest/save"
 )
@@ -22,15 +21,13 @@ type uow struct {
 	*_state
 	invoked bool
 	ctx     context.Context
-	mapper  *mapper.Mapper
 	workers *orderedmap.OrderedMap // separated workers for changes in branches, configs and rows
 }
 
-func newUnitOfWorkBackend(state *State, ctx context.Context, mapper *mapper.Mapper) state.UnitOfWorkBackend {
+func newUnitOfWorkBackend(state *State, ctx context.Context) state.UnitOfWorkBackend {
 	return &uow{
 		_state:  state,
 		ctx:     ctx,
-		mapper:  mapper,
 		workers: orderedmap.New(),
 	}
 }

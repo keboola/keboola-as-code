@@ -7,7 +7,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper"
 )
 
 type dependencies interface {
@@ -22,10 +21,10 @@ type State struct {
 	deps       dependencies
 	logger     log.Logger
 	storageApi *storageapi.Api
-	mapper     *mapper.Mapper
+	mapper     *Mapper
 }
 
-type MappersFactory func(*State) (mapper.Mappers, error)
+type MappersFactory func(*State) (Mappers, error)
 
 func NewState(d dependencies, sorter model.ObjectsSorter, mappersFn MappersFactory) (*State, error) {
 	storageApi, err := d.StorageApi()
@@ -35,14 +34,14 @@ func NewState(d dependencies, sorter model.ObjectsSorter, mappersFn MappersFacto
 
 	// Create state
 	s := &State{
-		objects:    state.NewCollection(sorter),
+		objects:    state.NewCollection(state.WithSorter(sorter)),
 		deps:       d,
 		logger:     d.Logger(),
 		storageApi: storageApi,
-		mapper:     mapper.New(),
 	}
 
 	// Create mappers
+	s.mapper = NewMapper(s)
 	if mappersFn != nil {
 		mappers, err := mappersFn(s)
 		if err != nil {
@@ -54,11 +53,11 @@ func NewState(d dependencies, sorter model.ObjectsSorter, mappersFn MappersFacto
 	return s, nil
 }
 
-func (s *State) NewUnitOfWork(ctx context.Context, filter model.ObjectsFilter, changeDescription string) state.UnitOfWork {
+func (s *State) NewUnitOfWork(ctx context.Context, filter state.Filter, changeDescription string) state.UnitOfWork {
 	backend := newUnitOfWorkBackend(s, ctx, filter, changeDescription)
 	return state.NewUnitOfWork(ctx, s.objects, backend)
 }
 
-func (s *State) Mapper() *mapper.Mapper {
+func (s *State) Mapper() *Mapper {
 	return s.mapper
 }

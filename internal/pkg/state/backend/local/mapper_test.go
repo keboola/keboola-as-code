@@ -1,4 +1,4 @@
-package mapper
+package local
 
 import (
 	"fmt"
@@ -139,7 +139,7 @@ func invokeLoadLocalFile(t *testing.T, input *filesystem.FileDef, expected files
 	logger.Truncate()
 
 	// Create mapper
-	mapper := New()
+	mapper := NewMapper(nil)
 	mapper.AddMapper(
 		&testFileLoadMapper{callback: handler1},
 		&testFileLoadMapper{callback: handler2},

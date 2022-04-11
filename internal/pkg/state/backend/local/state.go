@@ -14,7 +14,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/relatedpaths"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper"
 )
 
 type dependencies interface {
@@ -32,7 +31,7 @@ type State struct {
 	objectsRoot     filesystem.Fs
 	manifest        manifest.Manifest
 	namingGenerator *naming.Generator
-	mapper          *mapper.Mapper
+	mapper          *Mapper
 	knownPaths      *knownpaths.Paths
 
 	lock            *sync.Mutex
@@ -41,7 +40,7 @@ type State struct {
 	invalidObjects  map[model.Key]model.Object
 }
 
-type MappersFactory func(*State) (mapper.Mappers, error)
+type MappersFactory func(*State) (Mappers, error)
 
 func NewState(d dependencies, objectsRoot filesystem.Fs, manifest manifest.Manifest, mappersFn MappersFactory) (*State, error) {
 	components, err := d.Components()
@@ -55,7 +54,7 @@ func NewState(d dependencies, objectsRoot filesystem.Fs, manifest manifest.Manif
 	}
 
 	// Create state
-	objectCollection := state.NewCollection(manifest.Sorter())
+	objectCollection := state.NewCollection(state.WithSorter(manifest.Sorter()))
 	namingGenerator := naming.NewGenerator(manifest.NamingTemplate(), manifest.NamingRegistry(), components, objectCollection)
 	s := &State{
 		objects:         objectCollection,
@@ -64,7 +63,6 @@ func NewState(d dependencies, objectsRoot filesystem.Fs, manifest manifest.Manif
 		objectsRoot:     objectsRoot,
 		namingGenerator: namingGenerator,
 		manifest:        manifest,
-		mapper:          mapper.New(),
 		knownPaths:      knownPaths,
 		lock:            &sync.Mutex{},
 		relatedPaths:    make(map[model.Key]*relatedpaths.Paths),
@@ -73,6 +71,7 @@ func NewState(d dependencies, objectsRoot filesystem.Fs, manifest manifest.Manif
 	}
 
 	// Create mappers
+	s.mapper = NewMapper(s)
 	if mappersFn != nil {
 		mappers, err := mappersFn(s)
 		if err != nil {
@@ -101,7 +100,7 @@ func (s *State) ObjectsRoot() filesystem.Fs {
 	return s.objectsRoot
 }
 
-func (s *State) Mapper() *mapper.Mapper {
+func (s *State) Mapper() *Mapper {
 	return s.mapper
 }
 
