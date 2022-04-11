@@ -11,6 +11,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
+// Path is a list of Step describing the sequence of operations to get
+// from Object to the current position in the diff tree.
+// It is generated from cmp.Path by PathFromCmpPath function.
 type Path []Step
 
 type pathBuilder struct {
@@ -61,6 +64,7 @@ func (p Path) String() string {
 	return out
 }
 
+// build maps (cmp.Path) steps to our (Path) output .
 func (b *pathBuilder) build() {
 	for b.currentIndex, b.currentStep = range b.steps {
 		// Skip?
@@ -124,6 +128,7 @@ func (b *pathBuilder) skip(stepIndex int) {
 	b.skipIndex[stepIndex] = true
 }
 
+// stepObjectOrNil creates reference to a child Object.
 func (b *pathBuilder) stepObjectOrNil(step cmp.MapIndex) Step {
 	// Previous and next steps must be defined
 	prevIndex := b.currentIndex - 1

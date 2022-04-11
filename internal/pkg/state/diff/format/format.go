@@ -1,3 +1,4 @@
+// Package format converts diff results to string, see Format function.
 package format
 
 import (
@@ -15,10 +16,12 @@ import (
 
 const MaxEqualLinesInString = 5 // maximum of equal lines returned by strings diff
 
-type Formatter interface {
+type PathFormatter interface {
 	KeyFsPath(key model.Key) (string, bool)
 	ObjectFsPath(object model.Object) (string, bool)
 }
+
+type Option func(cfg *formatConfig)
 
 type formatter struct {
 	formatConfig
@@ -26,13 +29,16 @@ type formatter struct {
 	builder strings.Builder
 }
 
-type Option func(cfg *formatConfig)
-
 type formatConfig struct {
 	registry     *naming.Registry
 	generator    *naming.Generator
 	details      bool
 	includeEqual bool
+}
+
+// Format diff result to string. Process can be modified by options.
+func Format(result *diff.Result, options ...Option) string {
+	return newFormatter(result, options...).format()
 }
 
 func WithNamingRegistry(v *naming.Registry) Option {
@@ -57,10 +63,6 @@ func WithEqualResults() Option {
 	return func(cfg *formatConfig) {
 		cfg.includeEqual = true
 	}
-}
-
-func Format(result *diff.Result, options ...Option) string {
-	return newFormatter(result, options...).format()
 }
 
 func newFormatter(result *diff.Result, options ...Option) *formatter {

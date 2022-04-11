@@ -36,11 +36,11 @@ func (r *Reporter) Report(rs cmp.Result) {
 	}
 
 	// Set A and B value
+	path := PathFromCmpPath(r.path)
+	lastStep := path.Last()
 	result := &ResultItem{}
-	result.Path = PathFromCmpPath(r.path)
-	lastStep := result.Path.Last()
+	result.Path = path
 	result.A, result.B = lastStep.A(), lastStep.B()
-	r.differences = append(r.differences, result)
 
 	// Set state
 	switch {
@@ -51,4 +51,6 @@ func (r *Reporter) Report(rs cmp.Result) {
 	default:
 		result.State = ResultNotEqual
 	}
+
+	r.differences = append(r.differences, result)
 }

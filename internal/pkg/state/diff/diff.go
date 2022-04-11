@@ -33,6 +33,12 @@ type Transformable interface {
 	Transform() interface{}
 }
 
+// Diff compares A and B model.Objects collections.
+// Result is sorted according to the sorter, see WithSorter function, by default are results sorted by ID.
+func Diff(A, B model.Objects, opts ...Option) (*Result, error) {
+	return NewDiffer(opts...).Diff(A, B)
+}
+
 func WithSorter(v model.ObjectsSorter) Option {
 	return func(d *differ) {
 		d.sorter = v
@@ -45,12 +51,6 @@ func WithCmpOption(v ...cmp.Option) Option {
 	}
 }
 
-// Diff compares A and B model.Objects collections.
-// Result is sorted according to the A collection, see model.Objects.Less function.
-func Diff(A, B model.Objects, opts ...Option) (*Result, error) {
-	return NewDiffer(opts...).Diff(A, B)
-}
-
 func NewDiffer(opts ...Option) Differ {
 	d := &differ{}
 
@@ -58,9 +58,6 @@ func NewDiffer(opts ...Option) Differ {
 	for _, o := range opts {
 		o(d)
 	}
-
-	// Add default diff options
-	d.options = append(d.options)
 
 	// Create default sorter if needed
 	if d.sorter == nil {
@@ -70,7 +67,7 @@ func NewDiffer(opts ...Option) Differ {
 }
 
 // Diff compares A and B model.Objects collections.
-// Result is sorted according to the A collection, see model.Objects.Less function.
+// Result is sorted according to the sorter.
 func (d *differ) Diff(A, B model.Objects) (*Result, error) {
 	out := &Result{A: A, B: B, Equal: true, Results: []*ResultObject{}, Errors: errors.NewMultiError()}
 
@@ -115,7 +112,7 @@ func (d *differ) Diff(A, B model.Objects) (*Result, error) {
 		out.Results = append(out.Results, result)
 	}
 
-	// Sort results according to the A collection
+	// Sort results by the sorter
 	sort.SliceStable(out.Results, func(i, j int) bool {
 		return d.sorter.Less(out.Results[i].Key, out.Results[j].Key)
 	})
@@ -126,7 +123,7 @@ func (d *differ) Diff(A, B model.Objects) (*Result, error) {
 func (d *differ) diffObject(key model.Key, a, b Object) (*ResultObject, error) {
 	result := &ResultObject{Key: key, A: a, B: b}
 
-	// Are both, Remote and Local state defined?
+	// Are both, A and B defined?
 	if a.IsNil() && b.IsNil() {
 		panic(fmt.Errorf("both A and B are nil"))
 	}
@@ -143,11 +140,9 @@ func (d *differ) diffObject(key model.Key, a, b Object) (*ResultObject, error) {
 		return result, nil
 	}
 
-	// Get core type
-	_, aType := CoreType(reflect.ValueOf(a.ObjectNode()))
-	_, bType := CoreType(reflect.ValueOf(b.ObjectNode()))
-
 	// A and B types must have same type
+	_, aType := CoreType(reflect.ValueOf(a.Object()))
+	_, bType := CoreType(reflect.ValueOf(b.Object()))
 	if aType.String() != bType.String() {
 		panic(fmt.Errorf("diff values A(%s) and B(%s) must have same data type", aType, bType))
 	}
@@ -173,11 +168,11 @@ func options(r *Reporter) cmp.Options {
 		cmp.Reporter(r),
 		// Diff only struct fields with diff:"true" tag
 		onlyMarkedWithDiffTag(),
-		// Compare ordered map as native map (keys order doesn't matter)
+		// Transform ordered map as native map (keys order doesn't matter)
 		orderedMapToMapTransformer(),
-		// Convert []Object -> Object, if parent Object can have only one child Object of a Kind.
-		// Convert []Object -> map[Key]Object, so objects with the same key are compared with each other regardless of the order in the slice.
+		// Transform []Object -> map[Key]Object, so objects with the same key are compared with each other regardless of the order in the slice.
 		objectsSliceTransformer(),
+		// Transform values that implement Transformable interface.
 		transformableTransformer(),
 	}
 	out = append(out, r.differ.options)
@@ -203,14 +198,14 @@ func onlyMarkedWithDiffTag() cmp.Option {
 	)
 }
 
-// orderedMapToMapTransformer converts "orderedmap" type to native map, so keys order doesn't matter.
+// orderedMapToMapTransformer transforms "orderedmap" type to native map, so keys order doesn't matter.
 func orderedMapToMapTransformer() cmp.Option {
 	return cmp.Transformer("orderedMap", func(m *orderedmap.OrderedMap) map[string]interface{} {
 		return m.ToMap()
 	})
 }
 
-// objectsSliceTransformer converts []Object -> map[Key]Object, so objects with the same key are compared with each other regardless of the order in the slice.
+// objectsSliceTransformer transforms []Object -> map[Key]Object, so objects with the same key are compared with each other regardless of the order in the slice.
 func objectsSliceTransformer() cmp.Option {
 	return cmp.Transformer("objectsSliceToMap", func(children []*model.ObjectNode) interface{} {
 		out := make(map[model.Key]*model.ObjectNode)
@@ -221,6 +216,7 @@ func objectsSliceTransformer() cmp.Option {
 	})
 }
 
+// transformableTransformer transforms values that implement Transformable interface.
 func transformableTransformer() cmp.Option {
 	return OnlyOnceTransformer("transformable", func(v Transformable) interface{} {
 		return v.Transform()

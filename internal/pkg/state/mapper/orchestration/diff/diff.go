@@ -21,23 +21,24 @@ func Option() diff.Option {
 }
 
 type formatter struct {
-	builder      strings.Builder
-	placeholders format.Placeholders
+	builder *format.Builder
 }
 
 func newFormatter() *formatter {
-	return &formatter{placeholders: format.NewPlaceholders()}
+	return &formatter{builder: format.NewBuilder()}
 }
 
-func (f *formatter) format(_ *model.Orchestration, children model.ObjectChildren) format.ValueWithPlaceholders {
+func (f *formatter) format(_ *model.Orchestration, children model.ObjectChildren) *format.Builder {
 	f.builder.Reset()
 	for _, phaseRaw := range children.Get(model.PhaseKind) {
 		f.formatPhase(phaseRaw.Object.(*model.Phase), phaseRaw.Children)
 	}
-	return format.ValueWithPlaceholders{
-		Value:        strings.TrimRight(f.builder.String(), "\n"),
-		Placeholders: f.placeholders,
-	}
+
+	f.builder.FinalizeFn(func(str string) string {
+		return strings.TrimRight(str, "\n")
+	})
+
+	return f.builder
 }
 
 func (f *formatter) formatPhase(phase *model.Phase, children model.ObjectChildren) {
@@ -60,8 +61,18 @@ func (f *formatter) formatTask(task *model.Task) {
 	// Name
 	f.builder.WriteString(fmt.Sprintf("## %s %s\n", task.ObjectId(), task.Name))
 
-	// The target path is represented by a unique placeholder, which is replaced during formatting.
-	f.builder.WriteString(fmt.Sprintf(">> %s\n", f.pathPlaceholder(task.TargetConfigKey())))
+	// The target config path is compared as logic path.
+	// During formatting, it is replaced by FS path, if possible.
+	targetKey := task.TargetConfigKey()
+	f.builder.WriteString(">> ")
+	f.builder.WritePlaceholder(targetKey.LogicPath(), func(f format.PathFormatter) string {
+		if path, found := f.KeyFsPath(targetKey); found {
+			return path
+		} else {
+			return targetKey.LogicPath()
+		}
+	})
+	f.builder.WriteString("\n")
 
 	// Content
 	f.formatContent(task.Content)
@@ -77,16 +88,4 @@ func (f *formatter) formatDependsOn(dependsOnKeys []model.PhaseKey) {
 
 func (f *formatter) formatContent(content *orderedmap.OrderedMap) {
 	f.builder.WriteString(json.MustEncodeString(content, true))
-}
-
-func (f *formatter) pathPlaceholder(key model.Key) format.InternalValue {
-	placeholder := format.NewPlaceholder("path:" + key.LogicPath())
-	f.placeholders.Add(placeholder, func(f format.Formatter) string {
-		if path, found := f.KeyFsPath(key); found {
-			return path
-		} else {
-			return key.LogicPath()
-		}
-	})
-	return placeholder
 }

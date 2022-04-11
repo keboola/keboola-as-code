@@ -11,15 +11,16 @@ import (
 
 // Step is one item from the Path.
 type Step interface {
-	A() ResultValue
-	B() ResultValue
-	Type() reflect.Type
-	IsHidden() bool
-	Transforms() []ValuesPair
+	A() ResultValue           // value from the A collection
+	B() ResultValue           // value from the B collection
+	Type() reflect.Type       // type of the values
+	IsHidden() bool           // step is not part of the output string
+	Transforms() []ValuesPair // intermediate values from all applied cmp.Transform
 	AddTransform(transform cmp.Transform)
 	String() string
 }
 
+// step is common part of the Step interface.
 type step struct {
 	a          ResultValue
 	b          ResultValue
@@ -122,7 +123,7 @@ func (s *step) Transforms() (out []ValuesPair) {
 	}
 	out = append(out, ValuesPair{A: a, B: b})
 
-	// Add all intermediate from transforms
+	// Add all intermediate values from transforms
 	for _, t := range s.transforms {
 		aRef, bRef := t.Values()
 		if aRef.IsValid() {

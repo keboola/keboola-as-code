@@ -9,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-// Possible diff results.
+// All possible diff results.
 const (
 	ResultNotSet ResultState = iota
 	ResultNotEqual
@@ -21,7 +21,7 @@ const (
 type node = model.ObjectNode
 
 // Object from A or B model.Objects collection, contains reference to all objects.
-// Object field can be nil.
+// Node field can be nil, if Object is not present in the collection.
 type Object struct {
 	*node
 	All model.Objects
@@ -31,14 +31,14 @@ type ResultState int
 
 // Result of diff of A and B model.Objects collections.
 type Result struct {
-	A                 model.Objects
-	B                 model.Objects
-	Results           []*ResultObject
-	Errors            *errors.MultiError
-	Equal             bool
-	HasNotEqualResult bool
-	HasOnlyInAResult  bool
-	HasOnlyInBResult  bool
+	A                 model.Objects      // all A objects
+	B                 model.Objects      // all B objects
+	Results           []*ResultObject    // diff results
+	Errors            *errors.MultiError // diff errors
+	Equal             bool               // all objects are equal
+	HasNotEqualResult bool               // there is at least one ResultNotEqual result
+	HasOnlyInAResult  bool               // there is at least one ResultOnlyInA
+	HasOnlyInBResult  bool               // there is at least one ResultOnlyInB
 }
 
 // ResultObject of diff of A and B model.Object.
@@ -60,16 +60,18 @@ type ResultItem struct {
 }
 
 type ResultValue struct {
-	Original    reflect.Value
-	Transformed reflect.Value
+	Original    reflect.Value // value before applying all cmp.Transform
+	Transformed reflect.Value // value after applying all cmp.Transform
 }
 
 type ValuesPair struct {
-	A interface{}
-	B interface{}
+	A interface{} // value from the A collection
+	B interface{} // value from the B collection
 }
 
 func NewResultValue(v reflect.Value) ResultValue {
+	// At the beginning, Original and Transformed are the same.
+	// Transformed is later changed using step.AddTransform method.
 	return ResultValue{
 		Original:    v,
 		Transformed: v,
@@ -97,17 +99,18 @@ func (v ResultItems) IsEmpty() bool {
 }
 
 // String returns all paths separated by comma.
+// For example: "name, configuration.key1, configuration.key2".
 func (v ResultItems) String() string {
 	var paths []string
 	for _, item := range v {
 		paths = append(paths, item.Path.String())
 	}
-
 	sort.Strings(paths)
 	return strings.Join(paths, ", ")
 }
 
 // ShortString returns first part of all paths separated by comma.
+// For example: "name, configuration".
 func (v ResultItems) ShortString() string {
 	uniquePaths := make(map[string]bool)
 	for _, item := range v {

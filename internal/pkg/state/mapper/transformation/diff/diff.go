@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/diff"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/diff/format"
 )
 
 func Option() diff.Option {
@@ -18,19 +19,24 @@ func Option() diff.Option {
 }
 
 type formatter struct {
-	builder strings.Builder
+	builder *format.Builder
 }
 
 func newFormatter() *formatter {
-	return &formatter{}
+	return &formatter{builder: format.NewBuilder()}
 }
 
-func (f *formatter) format(_ *model.Transformation, children model.ObjectChildren) string {
+func (f *formatter) format(_ *model.Transformation, children model.ObjectChildren) *format.Builder {
 	f.builder.Reset()
 	for _, blockRaw := range children.Get(model.BlockKind) {
 		f.formatBlock(blockRaw.Object.(*model.Block), blockRaw.Children)
 	}
-	return strings.TrimRight(f.builder.String(), "\n")
+
+	f.builder.FinalizeFn(func(str string) string {
+		return strings.TrimRight(str, "\n")
+	})
+
+	return f.builder
 }
 
 func (f *formatter) formatBlock(block *model.Block, children model.ObjectChildren) {
