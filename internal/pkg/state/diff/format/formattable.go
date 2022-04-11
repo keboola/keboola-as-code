@@ -29,12 +29,15 @@ func NewPlaceholder(value string) InternalValue {
 }
 
 func (p Placeholders) Add(internalValue InternalValue, fn ReplaceFn) {
+	if len(internalValue) == 0 {
+		panic(fmt.Errorf("value cannot be empty"))
+	}
 	p[internalValue] = fn
 }
 
 func (p Placeholders) Replace(str string, f Formatter) string {
 	for k, v := range p {
-		strings.ReplaceAll(str, string(k), v(f))
+		str = strings.ReplaceAll(str, string(k), v(f))
 	}
 	return str
 }

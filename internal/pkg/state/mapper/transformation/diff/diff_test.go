@@ -92,7 +92,7 @@ func TestDiff_Transformation(t *testing.T) {
 	// Formatted result with details
 	assert.Equal(t, strings.TrimLeft(`
 * C branch:123/component:keboola.snowflake-transformation/config:456
-    transformation
+    transformation:
     - # My block
     + # Block 1
       ## Code 1
@@ -109,7 +109,7 @@ func TestDiff_Transformation(t *testing.T) {
 	// Formatted result with details + path is known
 	assert.Equal(t, strings.TrimLeft(`
 * C my-branch/my-config
-    transformation
+    transformation:
     - # My block
     + # Block 1
       ## Code 1

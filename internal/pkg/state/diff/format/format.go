@@ -137,11 +137,11 @@ func (f *formatter) formatDetails(result *diff.ResultObject) {
 
 	// Format each found difference
 	for _, item := range result.Differences {
-		f.formatItem(item, prefix)
+		f.formatItem(result.Key, item, prefix)
 	}
 }
 
-func (f *formatter) formatItem(item *diff.ResultItem, prefix string) {
+func (f *formatter) formatItem(parentKey model.Key, item *diff.ResultItem, prefix string) {
 	// Set prefix for all item lines
 	subPrefix := prefix + mark(item.State) + " "
 	if item.State == diff.ResultNotEqual {
@@ -152,7 +152,7 @@ func (f *formatter) formatItem(item *diff.ResultItem, prefix string) {
 
 	// Write path
 	f.write(subPrefix)
-	f.write(f.itemPath(item))
+	f.write(item.Path.String() + ":")
 	f.write("\n")
 
 	// Format value
@@ -161,9 +161,26 @@ func (f *formatter) formatItem(item *diff.ResultItem, prefix string) {
 
 func (f *formatter) formatValue(item *diff.ResultItem, prefix string) {
 	// Type is included in the result if it differs
-	valueA, typeA := diff.CoreType(item.A)
-	valueB, typeB := diff.CoreType(item.B)
+	valueA, typeA := diff.CoreType(item.A.Transformed)
+	valueB, typeB := diff.CoreType(item.B.Transformed)
 	includeType := valueA.IsValid() && valueB.IsValid() && typeA.String() != typeB.String()
+
+	// Process types with defined Format method.
+	// Scan all intermediate transforms to find a Formattable value.
+	if lastStep := item.Path.Last(); lastStep != nil {
+		for _, v := range item.Path.Last().Transforms() {
+			fmtA, _ := v.A.(Formattable)
+			fmtB, _ := v.B.(Formattable)
+			if fmtA != nil || fmtB != nil {
+				if valueA.IsValid() {
+					valueA, typeA = diff.CoreType(reflect.ValueOf(fmtA.Format(f)))
+				}
+				if valueB.IsValid() {
+					valueB, typeB = diff.CoreType(reflect.ValueOf(fmtB.Format(f)))
+				}
+			}
+		}
+	}
 
 	// Format strings
 	if valueA.IsValid() && valueB.IsValid() && typeA.String() == "string" && typeB.String() == "string" {
@@ -272,17 +289,4 @@ func (f *formatter) fsOrLogicPath(result *diff.ResultObject) string {
 
 	// Fallback
 	return result.Key.LogicPath()
-}
-
-func (f *formatter) itemPath(item *diff.ResultItem) string {
-	// Is last step an object?
-	if objectStep, ok := item.Path.Last().(diff.StepObject); ok {
-		// Get object path
-		if path, found := f.ObjectFsPath(objectStep.AOrBObject()); found {
-			return path
-		}
-	}
-
-	// Fallback
-	return item.Path.String()
 }

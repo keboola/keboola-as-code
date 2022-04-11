@@ -81,7 +81,7 @@ func (f *formatter) formatContent(content *orderedmap.OrderedMap) {
 
 func (f *formatter) pathPlaceholder(key model.Key) format.InternalValue {
 	placeholder := format.NewPlaceholder("path:" + key.LogicPath())
-	f.placeholders.Add("", func(f format.Formatter) string {
+	f.placeholders.Add(placeholder, func(f format.Formatter) string {
 		if path, found := f.KeyFsPath(key); found {
 			return path
 		} else {

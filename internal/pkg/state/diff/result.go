@@ -53,10 +53,27 @@ type ResultObject struct {
 type ResultItems []*ResultItem
 
 type ResultItem struct {
-	A     reflect.Value
-	B     reflect.Value
+	A     ResultValue
+	B     ResultValue
 	State ResultState
 	Path  Path
+}
+
+type ResultValue struct {
+	Original    reflect.Value
+	Transformed reflect.Value
+}
+
+type ValuesPair struct {
+	A interface{}
+	B interface{}
+}
+
+func NewResultValue(v reflect.Value) ResultValue {
+	return ResultValue{
+		Original:    v,
+		Transformed: v,
+	}
 }
 
 func (v *Result) Get(key model.Key) (*ResultObject, bool) {
@@ -104,6 +121,10 @@ func (v ResultItems) ShortString() string {
 
 	sort.Strings(paths)
 	return strings.Join(paths, ", ")
+}
+
+func (v ResultValue) IsValid() bool {
+	return v.Original.IsValid()
 }
 
 func (v *Object) Object() model.Object {

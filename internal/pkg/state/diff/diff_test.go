@@ -322,10 +322,10 @@ func TestDiff_NotEqual_Branch(t *testing.T) {
 	// Formatted result with details
 	assert.Equal(t, strings.TrimLeft(`
 * B branch:123
-    name
+    name:
     - name
     + changed
-    isDefault
+    isDefault:
     - false
     + true
 `, "\n"), format.Format(results, format.WithDetails()))
@@ -336,10 +336,10 @@ func TestDiff_NotEqual_Branch(t *testing.T) {
 	// Formatted result with details + path is known
 	assert.Equal(t, strings.TrimLeft(`
 * B my-branch
-    name
+    name:
     - name
     + changed
-    isDefault
+    isDefault:
     - false
     + true
 `, "\n"), format.Format(results, format.WithNamingRegistry(namingReg), format.WithDetails()))
@@ -389,10 +389,10 @@ func TestDiff_NotEqual_Config(t *testing.T) {
 	// Formatted result with details
 	assert.Equal(t, strings.TrimLeft(`
 * C branch:123/component:foo-bar/config:456
-    name
+    name:
     - name
     + changed
-    description
+    description:
     - description
     + changed
 `, "\n"), format.Format(results, format.WithDetails()))
@@ -403,10 +403,10 @@ func TestDiff_NotEqual_Config(t *testing.T) {
 	// Formatted result with details + path is known
 	assert.Equal(t, strings.TrimLeft(`
 * C my-branch/my-config
-    name
+    name:
     - name
     + changed
-    description
+    description:
     - description
     + changed
 `, "\n"), format.Format(results, format.WithNamingRegistry(namingReg), format.WithDetails()))
@@ -471,7 +471,7 @@ func TestDiff_NotEqual_Config_Configuration(t *testing.T) {
 	// Formatted result with details
 	assert.Equal(t, strings.TrimLeft(`
 * C branch:123/component:foo-bar/config:456
-    configuration.foo.bar
+    configuration.foo.bar:
     - 456
     + 123
 `, "\n"), format.Format(results, format.WithDetails()))
@@ -482,7 +482,7 @@ func TestDiff_NotEqual_Config_Configuration(t *testing.T) {
 	// Formatted result with details + path is known
 	assert.Equal(t, strings.TrimLeft(`
 * C my-branch/my-config
-    configuration.foo.bar
+    configuration.foo.bar:
     - 456
     + 123
 `, "\n"), format.Format(results, format.WithNamingRegistry(namingReg), format.WithDetails()))
@@ -551,14 +551,14 @@ func TestDiff_NotEqual_Config_Configuration_Map(t *testing.T) {
 	// Formatted result with details
 	assert.Equal(t, strings.TrimLeft(`
 * C branch:123/component:foo-bar/config:456
-    configuration.foo.bar
+    configuration.foo.bar:
     - {
     -   "baz": {
     -     "key": "value"
     -   }
     - }
     + "value"
-  + configuration.key
+  + configuration.key:
   +   value
 `, "\n"), format.Format(results, format.WithDetails()))
 
@@ -568,14 +568,14 @@ func TestDiff_NotEqual_Config_Configuration_Map(t *testing.T) {
 	// Formatted result with details + path is known
 	assert.Equal(t, strings.TrimLeft(`
 * C my-branch/my-config
-    configuration.foo.bar
+    configuration.foo.bar:
     - {
     -   "baz": {
     -     "key": "value"
     -   }
     - }
     + "value"
-  + configuration.key
+  + configuration.key:
   +   value
 `, "\n"), format.Format(results, format.WithNamingRegistry(namingReg), format.WithDetails()))
 }

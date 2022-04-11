@@ -28,9 +28,11 @@ func TestDiff_Orchestration(t *testing.T) {
 	task2Key := model.TaskKey{PhaseKey: phase1Key, TaskIndex: 1}
 	task3Key := model.TaskKey{PhaseKey: phase1Key, TaskIndex: 0}
 	target1Key := model.ConfigKey{BranchKey: branchKey, ComponentId: `foo.bar1`, ConfigId: `123`}
+	target2Key := model.ConfigKey{BranchKey: branchKey, ComponentId: `foo.bar2`, ConfigId: `123`}
 	target3Key := model.ConfigKey{BranchKey: branchKey, ComponentId: `foo.bar3`, ConfigId: `123`}
 
 	A.MustAdd(&model.Branch{BranchKey: branchKey})
+	A.MustAdd(&model.Config{ConfigKey: target3Key})
 	A.MustAdd(&model.Config{ConfigKey: configKey})
 	A.MustAdd(&model.Orchestration{OrchestrationKey: orchestrationKey})
 	A.MustAdd(&model.Phase{
@@ -51,7 +53,7 @@ func TestDiff_Orchestration(t *testing.T) {
 	})
 	A.MustAdd(&model.Task{
 		TaskKey:     task3Key,
-		Name:        `Task 3`,
+		Name:        `Removed Task`,
 		ComponentId: `foo.bar3`,
 		ConfigId:    `123`,
 		Content: orderedmap.FromPairs([]orderedmap.Pair{
@@ -67,6 +69,8 @@ func TestDiff_Orchestration(t *testing.T) {
 	})
 
 	B.MustAdd(&model.Branch{BranchKey: branchKey})
+	B.MustAdd(&model.Config{ConfigKey: target1Key})
+	B.MustAdd(&model.Config{ConfigKey: target2Key})
 	B.MustAdd(&model.Config{
 		ConfigKey: configKey,
 	})
@@ -124,63 +128,101 @@ func TestDiff_Orchestration(t *testing.T) {
 
 	// Setup naming
 	namingReg := naming.NewRegistry()
+	namingReg.MustAttach(branchKey, model.NewAbsPath(``, `branch`))
+	namingReg.MustAttach(configKey, model.NewAbsPath(`branch`, `other/orchestrator`))
+	namingReg.MustAttach(orchestrationKey, model.NewAbsPath(`branch/other/orchestrator`, `phases`))
 	namingReg.MustAttach(phase1Key, model.NewAbsPath(`branch/other/orchestrator/phases`, `001-phase`))
 	namingReg.MustAttach(phase2Key, model.NewAbsPath(`branch/other/orchestrator/phases`, `002-phase`))
 	namingReg.MustAttach(task1Key, model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `001-task-1`))
 	namingReg.MustAttach(task2Key, model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `002-task-2`))
 	namingReg.MustAttach(task3Key, model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `001-task-3`))
 	namingReg.MustAttach(target1Key, model.NewAbsPath("branch", "extractor/foo.bar1/123"))
+	namingReg.MustAttach(target2Key, model.NewAbsPath("branch", "extractor/foo.bar2/123"))
 	namingReg.MustAttach(target3Key, model.NewAbsPath("branch", "extractor/foo.bar3/123"))
 
 	// Formatted result without details
-	assert.Equal(t, "* C branch:123/component:keboola.snowflake-transformation/config:456 | changes: transformation\n", format.Format(results))
+	assert.Equal(t, strings.TrimLeft(`
++ C branch:123/component:foo.bar1/config:123
++ C branch:123/component:foo.bar2/config:123
+- C branch:123/component:foo.bar3/config:123
+* C branch:123/component:keboola.orchestrator/config:456 | changes: orchestration
+`, "\n"), format.Format(results))
 
 	// Formatted result with details
 	assert.Equal(t, strings.TrimLeft(`
-* C branch:123/component:keboola.snowflake-transformation/config:456
-    transformation
++ C branch:123/component:foo.bar1/config:123
++ C branch:123/component:foo.bar2/config:123
+- C branch:123/component:foo.bar3/config:123
+* C branch:123/component:keboola.orchestrator/config:456
+    orchestration:
+      # 001 Phase
+      depends on phases: []
+      {
+        "foo": "bar"
+      }
+    - ## 001 Removed Task
+    - >> branch:123/component:foo.bar3/config:123
+    + ## 001 Task 1
+    + >> branch:123/component:foo.bar1/config:123
+      {
+        "task": {
+          "mode": "run"
+        },
+      ...
+    - # 002 New Phase
+    - depends on phases: []
+    + ## 002 Task 2
+    + >> branch:123/component:foo.bar2/config:123
+      {
+    -   "foo": "bar"
+    +   "task": {
+    +     "mode": "run"
+    +   },
+    +   "continueOnFailure": false,
+    +   "enabled": false
+      }
 `, "\n"), format.Format(results, format.WithDetails()))
 
 	// Formatted result without details + path is known
-	assert.Equal(t, "* C my-branch/my-config | changes: transformation\n", format.Format(results, format.WithNamingRegistry(namingReg)))
+	assert.Equal(t, strings.TrimLeft(`
++ C branch/extractor/foo.bar1/123
++ C branch/extractor/foo.bar2/123
+- C branch/extractor/foo.bar3/123
+* C branch/other/orchestrator | changes: orchestration
+`, "\n"), format.Format(results, format.WithNamingRegistry(namingReg)))
 
 	// Formatted result with details + path is known
 	assert.Equal(t, strings.TrimLeft(`
-* C my-branch/my-config
++ C branch/extractor/foo.bar1/123
++ C branch/extractor/foo.bar2/123
+- C branch/extractor/foo.bar3/123
+* C branch/other/orchestrator
+    orchestration:
+      # 001 Phase
+      depends on phases: []
+      {
+        "foo": "bar"
+      }
+    - ## 001 Removed Task
+    - >> branch/extractor/foo.bar3/123
+    + ## 001 Task 1
+    + >> branch/extractor/foo.bar1/123
+      {
+        "task": {
+          "mode": "run"
+        },
+      ...
+    - # 002 New Phase
+    - depends on phases: []
+    + ## 002 Task 2
+    + >> branch/extractor/foo.bar2/123
+      {
+    -   "foo": "bar"
+    +   "task": {
+    +     "mode": "run"
+    +   },
+    +   "continueOnFailure": false,
+    +   "enabled": false
+      }
 `, "\n"), format.Format(results, format.WithNamingRegistry(namingReg), format.WithDetails()))
-
-	//	expected := `
-	//orchestration:
-	// 001-phase:
-	//     #  001 Phase
-	//     depends on phases: []
-	//     {
-	//       "foo": "bar"
-	//     }
-	//   - ## 001 Task 3
-	//   - >> extractor/foo.bar3/123
-	//   + ## 001 Task 1
-	//   + >> extractor/foo.bar1/123
-	//     {
-	//       "task": {
-	//         "mode": "run"
-	//       },
-	//     ...
-	//   + ## 002 Task 2
-	//   + >> config "branch:123/component:foo.bar2/config:123"
-	//   + {
-	//   +   "task": {
-	//   +     "mode": "run"
-	//   +   },
-	//   +   "continueOnFailure": false,
-	//   +   "enabled": false
-	//   + }
-	//- 002-phase:
-	//-   #  002 New Phase
-	//-   depends on phases: []
-	//-   {
-	//-     "foo": "bar"
-	//-   }
-	//`
-	//	assert.Equal(t, strings.Trim(expected, "\n"), result2.String())
 }

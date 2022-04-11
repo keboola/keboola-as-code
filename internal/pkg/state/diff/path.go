@@ -101,14 +101,23 @@ func (b *pathBuilder) build() {
 				b.add(newStepMapIndex(index, v))
 			}
 		case cmp.Transform:
-			x := b.output[len(b.output)-1]
-			x.AddTransformation()
+			if last := b.last(); last != nil {
+				last.AddTransform(v)
+			}
 		}
 	}
 }
 
 func (b *pathBuilder) add(step Step) {
 	b.output = append(b.output, step)
+}
+
+func (b *pathBuilder) last() Step {
+	lastIndex := len(b.output) - 1
+	if lastIndex < 0 {
+		return nil
+	}
+	return b.output[lastIndex]
 }
 
 func (b *pathBuilder) skip(stepIndex int) {

@@ -1,9 +1,6 @@
 package diff
 
 import (
-	"fmt"
-
-	"github.com/davecgh/go-spew/spew"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -41,12 +38,8 @@ func (r *Reporter) Report(rs cmp.Result) {
 	// Set A and B value
 	result := &ResultItem{}
 	result.Path = PathFromCmpPath(r.path)
-	fmt.Println(r.path.GoString())
-	fmt.Println(result.Path.String())
-	s := spew.NewDefaultConfig()
-	s.DisableMethods = true
-	s.Dump(result.Path.Last())
-	result.A, result.B = result.Path.Last().A(), result.Path.Last().B()
+	lastStep := result.Path.Last()
+	result.A, result.B = lastStep.A(), lastStep.B()
 	r.differences = append(r.differences, result)
 
 	// Set state

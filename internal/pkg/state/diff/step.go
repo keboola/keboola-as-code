@@ -11,18 +11,21 @@ import (
 
 // Step is one item from the Path.
 type Step interface {
-	A() reflect.Value
-	B() reflect.Value
+	A() ResultValue
+	B() ResultValue
 	Type() reflect.Type
 	IsHidden() bool
+	Transforms() []ValuesPair
+	AddTransform(transform cmp.Transform)
 	String() string
 }
 
 type step struct {
-	a      reflect.Value
-	b      reflect.Value
-	t      reflect.Type
-	hidden bool
+	a          ResultValue
+	b          ResultValue
+	t          reflect.Type
+	hidden     bool
+	transforms []cmp.Transform
 }
 
 // StepKind groups Object children of the same Kind.
@@ -55,47 +58,47 @@ type StepMapIndex struct {
 	Index interface{}
 }
 
-func newStepKind(kind model.Kind, cmpPath cmp.PathStep) StepKind {
-	s := StepKind{}
+func newStepKind(kind model.Kind, cmpPath cmp.PathStep) *StepKind {
+	s := &StepKind{}
 	s.Kind = kind
 	s.setValues(cmpPath)
 	return s
 }
 
-func newStepObject(key model.Key, cmpPath cmp.PathStep, hidden bool) StepObject {
-	s := StepObject{}
+func newStepObject(key model.Key, cmpPath cmp.PathStep, hidden bool) *StepObject {
+	s := &StepObject{}
 	s.Key = key
 	s.setValues(cmpPath)
 	s.setHidden(hidden)
 	return s
 }
 
-func newStepStructField(field string, cmpPath cmp.PathStep) StepStructField {
-	s := StepStructField{}
+func newStepStructField(field string, cmpPath cmp.PathStep) *StepStructField {
+	s := &StepStructField{}
 	s.Field = field
 	s.setValues(cmpPath)
 	return s
 }
 
-func newStepSliceIndex(index uint, cmpPath cmp.PathStep) StepSliceIndex {
-	s := StepSliceIndex{}
+func newStepSliceIndex(index uint, cmpPath cmp.PathStep) *StepSliceIndex {
+	s := &StepSliceIndex{}
 	s.Index = index
 	s.setValues(cmpPath)
 	return s
 }
 
-func newStepMapIndex(index interface{}, cmpPath cmp.PathStep) StepMapIndex {
-	s := StepMapIndex{}
+func newStepMapIndex(index interface{}, cmpPath cmp.PathStep) *StepMapIndex {
+	s := &StepMapIndex{}
 	s.Index = index
 	s.setValues(cmpPath)
 	return s
 }
 
-func (s step) A() reflect.Value {
+func (s step) A() ResultValue {
 	return s.a
 }
 
-func (s step) B() reflect.Value {
+func (s step) B() ResultValue {
 	return s.b
 }
 
@@ -107,8 +110,41 @@ func (s step) IsHidden() bool {
 	return s.hidden
 }
 
+func (s *step) Transforms() (out []ValuesPair) {
+	var a, b interface{}
+
+	// Add original values
+	if s.a.Original.IsValid() {
+		a = s.a.Original.Interface()
+	}
+	if s.b.Original.IsValid() {
+		b = s.b.Original.Interface()
+	}
+	out = append(out, ValuesPair{A: a, B: b})
+
+	// Add all intermediate from transforms
+	for _, t := range s.transforms {
+		aRef, bRef := t.Values()
+		if aRef.IsValid() {
+			a = aRef.Interface()
+		}
+		if bRef.IsValid() {
+			b = bRef.Interface()
+		}
+		out = append(out, ValuesPair{A: a, B: b})
+	}
+	return out
+}
+
+func (s *step) AddTransform(v cmp.Transform) {
+	s.transforms = append(s.transforms, v)
+	s.a.Transformed, s.b.Transformed = v.Values()
+}
+
 func (s *step) setValues(step cmp.PathStep) {
-	s.a, s.b = step.Values()
+	a, b := step.Values()
+	s.a = NewResultValue(a)
+	s.b = NewResultValue(b)
 	s.t = step.Type()
 }
 
@@ -125,10 +161,10 @@ func (s StepObject) String() string {
 }
 
 func (s StepObject) AOrBObject() model.Object {
-	if s.a.IsValid() && !s.a.IsNil() {
-		return s.a.Interface().(*model.ObjectNode).Object
+	if s.a.Original.IsValid() && !s.a.Original.IsNil() {
+		return s.a.Original.Interface().(*model.ObjectNode).Object
 	}
-	return s.b.Interface().(*model.ObjectNode).Object
+	return s.b.Original.Interface().(*model.ObjectNode).Object
 }
 
 func (s StepStructField) String() string {

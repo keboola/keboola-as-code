@@ -77,7 +77,11 @@ func TestFormatter_FormatValue(t *testing.T) {
 	for i, c := range cases {
 		prefix := ">>>"
 		f := newFormatter(&diff.Result{})
-		f.formatValue(&diff.ResultItem{A: c.a, B: c.b, State: diff.ResultNotEqual}, prefix)
+		f.formatValue(&diff.ResultItem{
+			A:     diff.NewResultValue(c.a),
+			B:     diff.NewResultValue(c.b),
+			State: diff.ResultNotEqual,
+		}, prefix)
 
 		var expected strings.Builder
 		for _, l := range c.lines {
