@@ -1,18 +1,21 @@
 //nolint:forbidigo
-package cli
+package api
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/fs"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
-	"github.com/google/shlex"
+	"github.com/go-resty/resty/v2"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 	"github.com/umisama/go-regexpcache"
@@ -20,7 +23,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
@@ -53,9 +55,13 @@ func (p *envTicketProvider) MustGet(key string) string {
 	return p.envs.MustGet(key)
 }
 
-// TestCliE2E runs one functional test per each sub-directory.
-func TestCliE2E(t *testing.T) {
+// TestApiE2E runs one functional test per each sub-directory.
+func TestApiE2E(t *testing.T) {
 	t.Parallel()
+
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping API E2E tests on Windows")
+	}
 
 	// Create temp dir
 	_, testFile, _, _ := runtime.Caller(0)
@@ -72,6 +78,7 @@ func TestCliE2E(t *testing.T) {
 	assert.NoError(t, os.MkdirAll(testOutputDir, 0o755))
 
 	// Run test for each directory
+	//nolint:paralleltest
 	for _, testDirRel := range GetTestDirs(t, rootDir) {
 		testDir := filepath.Join(rootDir, testDirRel)
 		workingDir := filepath.Join(testOutputDir, testDirRel)
@@ -95,15 +102,6 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	testDirFs := testfs.NewBasePathLocalFs(testDir)
 	workingDirFs := testfs.NewBasePathLocalFs(workingDir)
 
-	// Copy all from "in" dir to "runtime" dir
-	inDir := `in`
-	if !testDirFs.IsDir(inDir) {
-		t.Fatalf(`Missing directory "%s" in "%s".`, inDir, testDir)
-	}
-
-	// Init working dir from "in" dir
-	assert.NoError(t, aferofs.CopyFs2Fs(testDirFs, inDir, workingDirFs, `/`))
-
 	// Get ENVs
 	envs, err := env.FromOs()
 	assert.NoError(t, err)
@@ -124,63 +122,32 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	// Replace all %%ENV_VAR%% in all files in the working directory
 	testhelper.ReplaceEnvsDir(workingDirFs, `/`, envProvider)
 
-	// Load command arguments from file
-	argsFileName := `args`
-	argsFile, err := testDirFs.ReadFile(filesystem.NewFileDef(argsFileName))
-	if err != nil {
-		t.Fatalf(`cannot open "%s" test file %s`, argsFileName, err)
-	}
+	// Run API server
+	apiUrl := RunApiServer(t, binary, project.StorageApiHost())
 
-	// Load and parse command arguments
-	argsStr := strings.TrimSpace(argsFile.Content)
-	argsStr = testhelper.ReplaceEnvsString(argsStr, envProvider)
-	args, err := shlex.Split(argsStr)
-	if err != nil {
-		t.Fatalf(`Cannot parse args "%s": %s`, argsStr, err)
-	}
-
-	// Enable templates private beta in tests
-	cmdEnvs, err := env.FromOs()
-	assert.NoError(t, err)
-	cmdEnvs.Unset(`KBC_STORAGE_API_HOST`)
-	cmdEnvs.Unset(`KBC_STORAGE_API_TOKEN`)
-	cmdEnvs.Set(`KBC_TEMPLATES_PRIVATE_BETA`, `true`)
-
-	// Prepare command
-	var stdout, stderr bytes.Buffer
-	cmd := exec.Command(binary, args...)
-	cmd.Env = cmdEnvs.ToSlice()
-	cmd.Dir = workingDir
-	cmd.Stdout = io.MultiWriter(&stdout, testhelper.VerboseStdout())
-	cmd.Stderr = io.MultiWriter(&stderr, testhelper.VerboseStderr())
-
-	// Run command
-	exitCode := 0
-	if err := cmd.Run(); err != nil {
-		if exitError, ok := err.(*exec.ExitError); ok {
-			exitCode = exitError.ExitCode()
-		} else {
-			t.Fatalf("Command failed: %s", err)
-		}
-	}
+	// Query the API
+	client := resty.New()
+	// Just a static GET / request - will be run according to the tests config
+	resp, err := client.R().Get(apiUrl)
 
 	// Assert
-	AssertExpectations(t, envProvider, testDirFs, workingDirFs, exitCode, strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()), project)
+	assert.NoError(t, err)
+	AssertExpectations(t, envProvider, testDirFs, workingDirFs, resp.StatusCode(), resp.String(), project)
 }
 
-// CompileBinary compiles component to binary used in this test.
+// CompileBinary compiles api binary used in this test.
 func CompileBinary(t *testing.T, projectDir string, tempDir string) string {
 	t.Helper()
 
-	var stdout, stderr bytes.Buffer
-	binaryPath := filepath.Join(tempDir, "/bin_func_tests")
+	binaryPath := filepath.Join(tempDir, "/server")
 	if runtime.GOOS == "windows" {
 		binaryPath += `.exe`
 	}
 
-	cmd := exec.Command("make", "build-local")
+	var stdout, stderr bytes.Buffer
+	cmd := exec.Command("make", "build-templates-api")
 	cmd.Dir = projectDir
-	cmd.Env = append(os.Environ(), "TARGET_PATH="+binaryPath, "SKIP_API_CODE_REGENERATION=1")
+	cmd.Env = append(os.Environ(), "TEMPLATES_API_BUILD_TARGET_PATH="+binaryPath, "SKIP_API_CODE_REGENERATION=1")
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
@@ -188,6 +155,66 @@ func CompileBinary(t *testing.T, projectDir string, tempDir string) string {
 	}
 
 	return binaryPath
+}
+
+func getFreePort() (int, error) {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		return 0, err
+	}
+
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return 0, err
+	}
+	defer l.Close()
+	return l.Addr().(*net.TCPAddr).Port, nil
+}
+
+func waitForAPI(apiUrl string) error {
+	client := resty.New()
+
+	startTime := time.Now()
+	for {
+		resp, err := client.R().Get(fmt.Sprintf("%s/health-check", apiUrl))
+		if err != nil && !strings.Contains(err.Error(), "connection refused") {
+			return err
+		}
+		if resp.StatusCode() == 200 {
+			return nil
+		}
+
+		if time.Since(startTime).Seconds() > 30 {
+			return fmt.Errorf("server didn't start within 30 seconds")
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+}
+
+// RunApiServer runs the compiled api binary on the background.
+func RunApiServer(t *testing.T, binary string, storageApiHost string) string {
+	t.Helper()
+
+	port, err := getFreePort()
+	if err != nil {
+		t.Fatalf("Could not receive a free port: %s", err)
+	}
+
+	var stdout, stderr bytes.Buffer
+	apiUrl := fmt.Sprintf("http://localhost:%d", port)
+	cmd := exec.Command(binary, fmt.Sprintf("--http-port=%d", port))
+	cmd.Env = append(os.Environ(), "KBC_STORAGE_API_HOST="+storageApiHost)
+	cmd.Stdout = io.MultiWriter(&stdout, testhelper.VerboseStdout())
+	cmd.Stderr = io.MultiWriter(&stderr, testhelper.VerboseStderr())
+	if err := cmd.Start(); err != nil {
+		t.Fatalf("Server failed to start: %s", err)
+	}
+
+	if err = waitForAPI(apiUrl); err != nil {
+		t.Fatalf("Unexpected error while waiting for API: %s", err)
+	}
+
+	return apiUrl
 }
 
 // GetTestDirs returns list of all [category]/[test] dirs.
@@ -247,39 +274,31 @@ func AssertExpectations(
 	envProvider testhelper.EnvProvider,
 	testDirFs filesystem.Fs,
 	workingDirFs filesystem.Fs,
-	exitCode int,
-	stdout string,
-	stderr string,
+	respCode int,
+	respBody string,
 	project *testproject.Project,
 ) {
 	t.Helper()
 
 	// Compare stdout
-	expectedStdoutFile, err := testDirFs.ReadFile(filesystem.NewFileDef("expected-stdout"))
+	expectedResponseFile, err := testDirFs.ReadFile(filesystem.NewFileDef("expected-response"))
 	assert.NoError(t, err)
-	expectedStdout := testhelper.ReplaceEnvsString(expectedStdoutFile.Content, envProvider)
+	expectedRespBody := testhelper.ReplaceEnvsString(expectedResponseFile.Content, envProvider)
 
-	// Compare stderr
-	expectedStderrFile, err := testDirFs.ReadFile(filesystem.NewFileDef("expected-stderr"))
-	assert.NoError(t, err)
-	expectedStderr := testhelper.ReplaceEnvsString(expectedStderrFile.Content, envProvider)
-
-	// Compare exit code
+	// Compare response status code
 	expectedCodeFile, err := testDirFs.ReadFile(filesystem.NewFileDef("expected-code"))
 	assert.NoError(t, err)
 	expectedCode := cast.ToInt(strings.TrimSpace(expectedCodeFile.Content))
 	assert.Equal(
 		t,
 		expectedCode,
-		exitCode,
-		"Unexpected exit code.\nSTDOUT:\n%s\n\nSTDERR:\n%s\n\n",
-		stdout,
-		stderr,
+		respCode,
+		"Unexpected status code.\nRESPONSE:\n%s\n\n",
+		respBody,
 	)
 
-	// Assert STDOUT and STDERR
-	testhelper.AssertWildcards(t, expectedStdout, stdout, "Unexpected STDOUT.")
-	testhelper.AssertWildcards(t, expectedStderr, stderr, "Unexpected STDERR.")
+	// Assert response body
+	testhelper.AssertWildcards(t, expectedRespBody, respBody, "Unexpected response.")
 
 	// Expected state dir
 	expectedDir := "out"

@@ -6,7 +6,7 @@ tools:
 prepare: generate-code
 
 generate-code:
-	bash ./scripts/generate-templates-api.sh
+	if [ ! -d "internal/pkg/api/server/templates/http" ] || [ -z $(SKIP_API_CODE_REGENERATION) ]; then bash ./scripts/generate-templates-api.sh; fi
 
 build: prepare
 	GORELEASER_CURRENT_TAG=0.0.1-dev goreleaser build --rm-dist --snapshot -f ./build/ci/goreleaser.yml
@@ -19,8 +19,9 @@ release: prepare
 release-local: prepare
 	goreleaser release --rm-dist --snapshot --skip-publish -f ./build/ci/goreleaser.yml
 
+TEMPLATES_API_BUILD_TARGET_PATH ?= "./target/templates-api/server"
 build-templates-api: prepare
-	CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o ./target/templates-api/server ./cmd/templates-api
+	CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o $(TEMPLATES_API_BUILD_TARGET_PATH) ./cmd/templates-api
 
 run-templates-api: prepare
 	air -c ./.air-templates-api.toml
