@@ -51,7 +51,7 @@ var _ = Service("templates", func() {
 
 	// Auxiliary endpoints ---------------------------------------------------------------------------------------------
 
-	Method("index-root", func() {
+	Method("ApiRootIndex", func() {
 		Meta("openapi:summary", "Redirect to /v1")
 		Description("Redirect to /v1.")
 		NoSecurity()
@@ -63,11 +63,11 @@ var _ = Service("templates", func() {
 		})
 	})
 
-	Method("index", func() {
+	Method("ApiVersionIndex", func() {
 		Meta("openapi:summary", "List API name and link to documentation.")
 		Description("List API name and link to documentation.")
 		NoSecurity()
-		Result(ServiceIndex)
+		Result(ServiceDetail)
 		HTTP(func() {
 			GET("")
 			Meta("openapi:tag:documentation")
@@ -75,7 +75,7 @@ var _ = Service("templates", func() {
 		})
 	})
 
-	Method("health-check", func() {
+	Method("HealthCheck", func() {
 		NoSecurity()
 		Result(String, func() {
 			Example("OK")
@@ -113,7 +113,7 @@ var _ = Service("templates", func() {
 
 	// Template endpoints ----------------------------------------------------------------------------------------------
 
-	Method("repositories-index", func() {
+	Method("RepositoriesIndex", func() {
 		Meta("openapi:summary", "List template repositories")
 		Description("List all template repositories defined in the project.")
 		Result(Repositories)
@@ -124,7 +124,7 @@ var _ = Service("templates", func() {
 		})
 	})
 
-	Method("repository-index", func() {
+	Method("RepositoryIndex", func() {
 		Meta("openapi:summary", "Get template repository detail")
 		Description("Get details of specified repository. Use \"default\" for default Keboola repository.")
 		Result(Repository)
@@ -139,7 +139,7 @@ var _ = Service("templates", func() {
 		})
 	})
 
-	Method("templates-index", func() {
+	Method("TemplatesIndex", func() {
 		Meta("openapi:summary", "List templates in the repository")
 		Description("List all templates  defined in the repository.")
 		Result(Templates)
@@ -154,7 +154,7 @@ var _ = Service("templates", func() {
 		})
 	})
 
-	Method("template-index", func() {
+	Method("TemplateIndex", func() {
 		Meta("openapi:summary", "Get template detail and versions")
 		Description("Get detail and versions of specified template.")
 		Result(TemplateDetail)
@@ -171,7 +171,7 @@ var _ = Service("templates", func() {
 		})
 	})
 
-	Method("version-index", func() {
+	Method("VersionIndex", func() {
 		Meta("openapi:summary", "Get version detail")
 		Description("Get details of specified template version.")
 		Result(TemplateVersionDetail)
@@ -190,10 +190,10 @@ var _ = Service("templates", func() {
 		})
 	})
 
-	Method("inputs", func() {
+	Method("InputsIndex", func() {
 		Meta("openapi:summary", "Get inputs")
 		Description("Get inputs for the \"use\" API call.")
-		Result(InputsIndex)
+		Result(Inputs)
 		Payload(func() {
 			repositoryAttr()
 			templateAttr()
@@ -209,7 +209,7 @@ var _ = Service("templates", func() {
 		})
 	})
 
-	Method("inputs-validate", func() {
+	Method("ValidateInputs", func() {
 		Meta("openapi:summary", "Validate inputs")
 		Description("Validate inputs for the \"use\" API call.\nOnly configured steps should be send.")
 		Result(ValidationResult)
@@ -229,7 +229,7 @@ var _ = Service("templates", func() {
 		})
 	})
 
-	Method("version-use", func() {
+	Method("UseTemplateVersion", func() {
 		Meta("openapi:summary", "Use template")
 		Description("Validate inputs and use template in the branch.\nOnly configured steps should be send.")
 		Result(UseTemplateDetail)
@@ -254,7 +254,7 @@ var _ = Service("templates", func() {
 
 	// Instance endpoints ----------------------------------------------------------------------------------------------
 
-	Method("instances-index", func() {
+	Method("InstancesIndex", func() {
 		Meta("openapi:summary", "TODO")
 		Payload(func() {
 			branchAttr()
@@ -265,7 +265,7 @@ var _ = Service("templates", func() {
 		})
 	})
 
-	Method("instance-index", func() {
+	Method("InstanceIndex", func() {
 		Meta("openapi:summary", "TODO")
 		Payload(func() {
 			branchAttr()
@@ -278,7 +278,7 @@ var _ = Service("templates", func() {
 		})
 	})
 
-	Method("instance-update", func() {
+	Method("UpdateInstance", func() {
 		Meta("openapi:summary", "TODO")
 		Payload(func() {
 			branchAttr()
@@ -291,7 +291,7 @@ var _ = Service("templates", func() {
 		})
 	})
 
-	Method("instance-delete", func() {
+	Method("DeleteInstance", func() {
 		Meta("openapi:summary", "TODO")
 		Payload(func() {
 			branchAttr()
@@ -304,7 +304,7 @@ var _ = Service("templates", func() {
 		})
 	})
 
-	Method("upgrade", func() {
+	Method("UpgradeInstance", func() {
 		Meta("openapi:summary", "TODO")
 		Payload(func() {
 			branchAttr()
@@ -318,7 +318,7 @@ var _ = Service("templates", func() {
 		})
 	})
 
-	Method("upgrade-inputs", func() {
+	Method("UpgradeInstanceInputsIndex", func() {
 		Meta("openapi:summary", "TODO")
 		Payload(func() {
 			branchAttr()
@@ -332,7 +332,7 @@ var _ = Service("templates", func() {
 		})
 	})
 
-	Method("upgrade-inputs-validate", func() {
+	Method("UpgradeInstanceValidateInputs", func() {
 		Meta("openapi:summary", "TODO")
 		Payload(func() {
 			branchAttr()
@@ -482,7 +482,7 @@ var InputValue = Type("InputValue", func() {
 
 // Types --------------------------------------------------------------------------------------------------------------
 
-var ServiceIndex = Type("ServiceIndex", func() {
+var ServiceDetail = Type("ServiceDetail", func() {
 	Description("Information about the service")
 	Attribute("api", String, "Name of the API", func() {
 		Example("templates")
@@ -701,7 +701,7 @@ var InputValidationResult = Type("InputValidationResult", func() {
 	Required("id", "visible")
 })
 
-var InputsIndex = Type("inputsIndex", func() {
+var Inputs = Type("Inputs", func() {
 	Description("List of the inputs divided to step groups and steps.")
 	Attribute("stepGroups", ArrayOf(StepGroup), "List of the step groups.", func() {
 		MinLength(1)

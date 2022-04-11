@@ -60,13 +60,13 @@ func (s *service) pullTemplateRepositories() {
 	s.repositoriesManager.Pull()
 }
 
-func (s *service) IndexRoot(dependencies.Container) (err error) {
+func (s *service) APIRootIndex(dependencies.Container) (err error) {
 	// Redirect / -> /v1
 	return nil
 }
 
-func (s *service) Index(dependencies.Container) (res *ServiceIndex, err error) {
-	res = &ServiceIndex{
+func (s *service) APIVersionIndex(dependencies.Container) (res *ServiceDetail, err error) {
+	res = &ServiceDetail{
 		API:           "templates",
 		Documentation: "https://templates.keboola.com/v1/documentation",
 	}
@@ -97,15 +97,15 @@ func (s *service) VersionIndex(dependencies.Container, *VersionIndexPayload) (re
 	return nil, NotImplementedError{}
 }
 
-func (s *service) Inputs(dependencies.Container, *InputsPayload) (res *InputsIndex, err error) {
+func (s *service) InputsIndex(dependencies.Container, *InputsIndexPayload) (res *Inputs, err error) {
 	return nil, NotImplementedError{}
 }
 
-func (s *service) InputsValidate(dependencies.Container, *InputsValidatePayload) (res *ValidationResult, err error) {
+func (s *service) ValidateInputs(dependencies.Container, *ValidateInputsPayload) (res *ValidationResult, err error) {
 	return nil, NotImplementedError{}
 }
 
-func (s *service) VersionUse(dependencies.Container, *VersionUsePayload) (res *UseTemplateDetail, err error) {
+func (s *service) UseTemplateVersion(dependencies.Container, *UseTemplateVersionPayload) (res *UseTemplateDetail, err error) {
 	return nil, NotImplementedError{}
 }
 
@@ -117,22 +117,22 @@ func (s *service) InstanceIndex(dependencies.Container, *InstanceIndexPayload) (
 	return NotImplementedError{}
 }
 
-func (s *service) InstanceUpdate(dependencies.Container, *InstanceUpdatePayload) (err error) {
+func (s *service) UpdateInstance(dependencies.Container, *UpdateInstancePayload) (err error) {
 	return NotImplementedError{}
 }
 
-func (s *service) InstanceDelete(dependencies.Container, *InstanceDeletePayload) (err error) {
+func (s *service) DeleteInstance(dependencies.Container, *DeleteInstancePayload) (err error) {
 	return NotImplementedError{}
 }
 
-func (s *service) Upgrade(dependencies.Container, *UpgradePayload) (err error) {
+func (s *service) UpgradeInstance(dependencies.Container, *UpgradeInstancePayload) (err error) {
 	return NotImplementedError{}
 }
 
-func (s *service) UpgradeInputs(dependencies.Container, *UpgradeInputsPayload) (err error) {
+func (s *service) UpgradeInstanceInputsIndex(dependencies.Container, *UpgradeInstanceInputsIndexPayload) (err error) {
 	return NotImplementedError{}
 }
 
-func (s *service) UpgradeInputsValidate(dependencies.Container, *UpgradeInputsValidatePayload) (err error) {
+func (s *service) UpgradeInstanceValidateInputs(dependencies.Container, *UpgradeInstanceValidateInputsPayload) (err error) {
 	return NotImplementedError{}
 }
