@@ -92,6 +92,19 @@ type ComponentWithConfigs struct {
 	Configs []*ConfigWithRows `json:"configurations" validate:"required"`
 }
 
+func (v ComponentId) IsSqlTransformation() bool {
+	switch v {
+	case `keboola.snowflake-transformation`:
+		return true
+	case `keboola.synapse-transformation`:
+		return true
+	case `keboola.oracle-transformation`:
+		return true
+	default:
+		return false
+	}
+}
+
 func (c *Component) IsTransformation() bool {
 	return c.Type == TransformationType
 }

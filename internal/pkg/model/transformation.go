@@ -179,24 +179,6 @@ func (v Scripts) Slice() []interface{} {
 	return out
 }
 
-func (v Scripts) String(componentId ComponentId) string {
-	var items []string
-	for _, script := range v {
-		items = append(items, script.Content())
-	}
-
-	switch componentId.String() {
-	case `keboola.snowflake-transformation`:
-		fallthrough
-	case `keboola.synapse-transformation`:
-		fallthrough
-	case `keboola.oracle-transformation`:
-		return sql.Join(items) + "\n"
-	default:
-		return strings.Join(items, "\n") + "\n"
-	}
-}
-
 // MarshalJSON converts Scripts to JSON []string.
 func (v Scripts) MarshalJSON() ([]byte, error) {
 	var scripts []string
@@ -234,14 +216,9 @@ func NormalizeScript(script string) string {
 func ScriptsFromStr(content string, componentId ComponentId) Scripts {
 	content = NormalizeScript(content)
 	var items []string
-	switch componentId.String() {
-	case `keboola.snowflake-transformation`:
-		fallthrough
-	case `keboola.synapse-transformation`:
-		fallthrough
-	case `keboola.oracle-transformation`:
+	if componentId.IsSqlTransformation() {
 		items = sql.Split(content)
-	default:
+	} else {
 		items = []string{content}
 	}
 

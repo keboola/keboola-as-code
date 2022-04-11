@@ -1,4 +1,4 @@
-package diff
+package format
 
 import (
 	"fmt"
@@ -8,83 +8,106 @@ import (
 	diffstr "github.com/kylelemons/godebug/diff"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/diff"
 )
 
 const MaxEqualLinesInString = 5 // maximum of equal lines returned by strings diff
 
-const (
-	EqualMark    = "="
-	NotEqualMark = "*"
-	AddMark      = "+"
-	DeleteMark   = "×"
-	OnlyInAMark  = "-"
-	OnlyInBMark  = "+"
-)
-
-type FormatOption func(cfg *formatConfig)
+type Formatter interface {
+	KeyFsPath(key model.Key) (string, bool)
+	ObjectFsPath(object model.Object) (string, bool)
+}
 
 type formatter struct {
 	formatConfig
+	result  *diff.Result
 	builder strings.Builder
 }
 
+type Option func(cfg *formatConfig)
+
 type formatConfig struct {
-	pathFormatter pathFormatter
-	details       bool
-	includeEqual  bool
+	registry     *naming.Registry
+	generator    *naming.Generator
+	details      bool
+	includeEqual bool
 }
 
-func WithNamingRegistry(v *naming.Registry) FormatOption {
+func WithNamingRegistry(v *naming.Registry) Option {
 	return func(cfg *formatConfig) {
-		cfg.pathFormatter.registry = v
+		cfg.registry = v
 	}
 }
 
-func WithNamingGenerator(v *naming.Generator) FormatOption {
+func WithNamingGenerator(v *naming.Generator) Option {
 	return func(cfg *formatConfig) {
-		cfg.pathFormatter.generator = v
+		cfg.generator = v
 	}
 }
 
-func WithDetails() FormatOption {
+func WithDetails() Option {
 	return func(cfg *formatConfig) {
 		cfg.details = true
 	}
 }
 
-func WithEqualResults() FormatOption {
+func WithEqualResults() Option {
 	return func(cfg *formatConfig) {
 		cfg.includeEqual = true
 	}
 }
 
-func format(r *Result, options ...FormatOption) string {
-	return newFormatter(options...).format(r)
+func Format(result *diff.Result, options ...Option) string {
+	return newFormatter(result, options...).format()
 }
 
-func newFormatter(options ...FormatOption) *formatter {
+func newFormatter(result *diff.Result, options ...Option) *formatter {
 	cfg := &formatConfig{}
 	for _, option := range options {
 		option(cfg)
 	}
-	return &formatter{formatConfig: *cfg}
+	return &formatter{result: result, formatConfig: *cfg}
 }
 
-func (f *formatter) format(r *Result) string {
+func (f *formatter) KeyFsPath(key model.Key) (string, bool) {
+	if object, found := f.result.A.Get(key); found {
+		return f.ObjectFsPath(object)
+	}
+	if object, found := f.result.B.Get(key); found {
+		return f.ObjectFsPath(object)
+	}
+	return "", false
+}
+
+func (f *formatter) ObjectFsPath(object model.Object) (string, bool) {
+	if f.generator != nil {
+		if objectPath, err := f.generator.GetOrGenerate(object); err == nil {
+			return objectPath.String(), true
+		}
+	} else if f.registry != nil {
+		if objectPath, found := f.registry.PathByKey(object.Key()); found {
+			return objectPath.String(), true
+		}
+	}
+	return "", false
+}
+
+func (f *formatter) format() string {
 	f.builder.Reset()
-	for _, result := range r.Results {
+	for _, result := range f.result.Results {
 		// Skip equal
-		if !f.includeEqual && result.State == ResultEqual {
+		if !f.includeEqual && result.State == diff.ResultEqual {
 			continue
 		}
 
 		// First line: <mark> <kind> <path>, eg. "+ C branch/config"
-		f.write(result.State.Mark())
+		f.write(mark(result.State))
 		f.write(" ")
 		f.write(result.Key.Kind().Abbr)
 		f.write(" ")
-		f.write(f.pathFormatter.FormatObjectPath(result))
+		f.write(f.fsOrLogicPath(result))
 		if !f.details && !result.Differences.IsEmpty() {
 			f.write(" | changes: ")
 			f.write(result.Differences.ShortString())
@@ -103,10 +126,10 @@ func (f *formatter) write(s string) {
 	_, _ = f.builder.WriteString(s)
 }
 
-func (f *formatter) formatDetails(result *ResultObject) {
+func (f *formatter) formatDetails(result *diff.ResultObject) {
 	// Set prefix for all object lines
-	prefix := result.State.Mark() + " "
-	if result.State == ResultNotEqual {
+	prefix := mark(result.State) + " "
+	if result.State == diff.ResultNotEqual {
 		// Object is present in both, A and B.
 		// Line prefix is empty because individual lines are marked with OnlyInAMark/OnlyInBMark
 		prefix = "  "
@@ -118,10 +141,10 @@ func (f *formatter) formatDetails(result *ResultObject) {
 	}
 }
 
-func (f *formatter) formatItem(item *ResultItem, prefix string) {
+func (f *formatter) formatItem(item *diff.ResultItem, prefix string) {
 	// Set prefix for all item lines
-	subPrefix := prefix + item.State.Mark() + " "
-	if item.State == ResultNotEqual {
+	subPrefix := prefix + mark(item.State) + " "
+	if item.State == diff.ResultNotEqual {
 		// Item is present in both, A and B.
 		// Line prefix is empty because individual lines are marked with OnlyInAMark/OnlyInBMark
 		subPrefix = prefix + "  "
@@ -129,17 +152,17 @@ func (f *formatter) formatItem(item *ResultItem, prefix string) {
 
 	// Write path
 	f.write(subPrefix)
-	f.write(f.pathFormatter.FormatValuePath(item))
+	f.write(f.itemPath(item))
 	f.write("\n")
 
 	// Format value
 	f.formatValue(item, subPrefix)
 }
 
-func (f *formatter) formatValue(item *ResultItem, prefix string) {
+func (f *formatter) formatValue(item *diff.ResultItem, prefix string) {
 	// Type is included in the result if it differs
-	valueA, typeA := coreType(item.A)
-	valueB, typeB := coreType(item.B)
+	valueA, typeA := diff.CoreType(item.A)
+	valueB, typeB := diff.CoreType(item.B)
 	includeType := valueA.IsValid() && valueB.IsValid() && typeA.String() != typeB.String()
 
 	// Format strings
@@ -171,16 +194,21 @@ func (f *formatter) formatValue(item *ResultItem, prefix string) {
 
 func (f *formatter) formatValueSide(value reflect.Value, t reflect.Type, includeType bool, prefix string) {
 	var formatted string
-	switch {
-	case t.Kind() == reflect.Ptr && value.IsNil():
-		formatted = `(null)`
-	case t.Kind() == reflect.Map:
-		// Format map to JSON
-		formatted = strings.TrimRight(json.MustEncodeString(value.Interface(), true), "\n")
-	case includeType:
-		formatted = fmt.Sprintf(`%#v`, value)
-	default:
-		formatted = fmt.Sprintf(`%+v`, value)
+
+	if v, ok := value.Interface().(Formattable); ok {
+		formatted = v.Format(f)
+	} else {
+		switch {
+		case t.Kind() == reflect.Ptr && value.IsNil():
+			formatted = `(null)`
+		case t.Kind() == reflect.Map:
+			// Format map to JSON
+			formatted = strings.TrimRight(json.MustEncodeString(value.Interface(), true), "\n")
+		case includeType:
+			formatted = fmt.Sprintf(`%#v`, value)
+		default:
+			formatted = fmt.Sprintf(`%+v`, value)
+		}
 	}
 
 	// Write lines with prefix
@@ -221,11 +249,13 @@ func (f *formatter) formatStrings(a, b string, prefix string) {
 		for i, line := range c.Equal {
 			// Limit number of equal lines in row
 			if i+1 >= MaxEqualLinesInString && len(c.Equal) > MaxEqualLinesInString {
+				f.write(prefix)
 				f.write("  ...\n")
 				break
 			}
 
 			if len(line) > 0 {
+				f.write(prefix)
 				f.write("  ")
 				f.write(line)
 			}
@@ -234,35 +264,25 @@ func (f *formatter) formatStrings(a, b string, prefix string) {
 	}
 }
 
-type pathFormatter struct {
-	registry  *naming.Registry
-	generator *naming.Generator
+func (f *formatter) fsOrLogicPath(result *diff.ResultObject) string {
+	// Get object path
+	if path, found := f.ObjectFsPath(result.AOrBObject()); found {
+		return path
+	}
+
+	// Fallback
+	return result.Key.LogicPath()
 }
 
-func (f pathFormatter) FormatObjectPath(v *ResultObject) string {
-	if f.generator != nil {
-		if objectPath, err := f.generator.GetOrGenerate(v.AOrBObject()); err == nil {
-			return objectPath.String()
-		}
-	} else if f.registry != nil {
-		if objectPath, found := f.registry.PathByKey(v.Key); found {
-			return objectPath.String()
+func (f *formatter) itemPath(item *diff.ResultItem) string {
+	// Is last step an object?
+	if objectStep, ok := item.Path.Last().(diff.StepObject); ok {
+		// Get object path
+		if path, found := f.ObjectFsPath(objectStep.AOrBObject()); found {
+			return path
 		}
 	}
-	return v.Key.LogicPath()
-}
 
-func (f pathFormatter) FormatValuePath(v *ResultItem) string {
-	if objectStep, ok := v.Path.Last().(StepObject); ok {
-		if f.generator != nil {
-			if objectPath, err := f.generator.GetOrGenerate(objectStep.AOrBObject()); err == nil {
-				return objectPath.String()
-			}
-		} else if f.registry != nil {
-			if objectPath, found := f.registry.PathByKey(objectStep.Key); found {
-				return objectPath.String()
-			}
-		}
-	}
-	return v.Path.String()
+	// Fallback
+	return item.Path.String()
 }

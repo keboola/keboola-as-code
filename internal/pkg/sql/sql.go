@@ -16,9 +16,8 @@ func Split(sql string) []string {
 
 	// Trim spaces
 	results := make([]string, 0)
-	for _, result := range rawResults {
-		result := strings.TrimSpace(result)
-		if len(result) > 0 {
+	for _, rawResult := range rawResults {
+		if result := strings.TrimSpace(rawResult); len(result) > 0 {
 			results = append(results, result)
 		}
 	}

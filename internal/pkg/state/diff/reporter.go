@@ -1,19 +1,23 @@
 package diff
 
 import (
+	"fmt"
+
+	"github.com/davecgh/go-spew/spew"
 	"github.com/google/go-cmp/cmp"
 )
 
 // Reporter collects the differences during diff process.
 type Reporter struct {
+	differ      *differ
 	a           Object      // A object
 	b           Object      // B object
 	path        cmp.Path    // current path to the compared value
 	differences ResultItems // reported differences
 }
 
-func newReporter(a, b Object) *Reporter {
-	return &Reporter{a: a, b: b}
+func newReporter(d *differ, a, b Object) *Reporter {
+	return &Reporter{differ: d, a: a, b: b}
 }
 
 func (r *Reporter) PushStep(ps cmp.PathStep) {
@@ -36,8 +40,13 @@ func (r *Reporter) Report(rs cmp.Result) {
 
 	// Set A and B value
 	result := &ResultItem{}
-	result.A, result.B = r.path.Last().Values()
-
+	result.Path = PathFromCmpPath(r.path)
+	fmt.Println(r.path.GoString())
+	fmt.Println(result.Path.String())
+	s := spew.NewDefaultConfig()
+	s.DisableMethods = true
+	s.Dump(result.Path.Last())
+	result.A, result.B = result.Path.Last().A(), result.Path.Last().B()
 	r.differences = append(r.differences, result)
 
 	// Set state
@@ -49,7 +58,4 @@ func (r *Reporter) Report(rs cmp.Result) {
 	default:
 		result.State = ResultNotEqual
 	}
-
-	// Set path
-	result.Path = PathFromCmpPath(r.path)
 }

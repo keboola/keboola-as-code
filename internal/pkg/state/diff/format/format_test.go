@@ -1,4 +1,4 @@
-package diff
+package format
 
 import (
 	"fmt"
@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/state/diff"
 )
 
 func TestFormatter_FormatValue(t *testing.T) {
@@ -73,9 +75,18 @@ func TestFormatter_FormatValue(t *testing.T) {
 	}
 
 	for i, c := range cases {
-		f := newFormatter()
-		f.formatValue(&ResultItem{A: c.a, B: c.b, State: ResultNotEqual}, "")
-		assert.Equal(t, strings.Join(c.lines, "\n")+"\n", f.builder.String(), fmt.Sprintf(`case "%d"`, i))
+		prefix := ">>>"
+		f := newFormatter(&diff.Result{})
+		f.formatValue(&diff.ResultItem{A: c.a, B: c.b, State: diff.ResultNotEqual}, prefix)
+
+		var expected strings.Builder
+		for _, l := range c.lines {
+			expected.WriteString(prefix)
+			expected.WriteString(l)
+			expected.WriteString("\n")
+		}
+
+		assert.Equal(t, expected.String(), f.builder.String(), fmt.Sprintf(`case "%d"`, i))
 	}
 }
 
@@ -91,7 +102,7 @@ func TestFormatter_FormatStrings(t *testing.T) {
 		{"abc\nfoo\nabc", "abc\nbar\nabc", "  abc\n- foo\n+ bar\n  abc\n"},
 	}
 	for i, c := range cases {
-		f := newFormatter()
+		f := newFormatter(&diff.Result{})
 		f.formatStrings(c.a, c.b, "")
 		assert.Equal(t, c.result, f.builder.String(), fmt.Sprintf(`case "%d"`, i))
 	}
@@ -170,7 +181,7 @@ baz6
   ...
 `
 
-	f := newFormatter()
+	f := newFormatter(&diff.Result{})
 	f.formatStrings(strings.Trim(A, "\n"), strings.Trim(B, "\n"), "")
 	assert.Equal(t, strings.TrimLeft(expected, "\n"), f.builder.String())
 }

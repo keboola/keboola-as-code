@@ -1,4 +1,4 @@
-package orchestrator
+package orchestration
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"

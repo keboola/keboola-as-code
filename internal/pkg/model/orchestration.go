@@ -3,8 +3,6 @@ package model
 import (
 	"fmt"
 
-	"github.com/spf13/cast"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -92,7 +90,7 @@ func (k PhaseKey) Kind() Kind {
 }
 
 func (k PhaseKey) ObjectId() string {
-	return cast.ToString(k.PhaseIndex)
+	return fmt.Sprintf("%03d", k.PhaseIndex+1)
 }
 
 func (k PhaseKey) Level() ObjectLevel {
@@ -108,7 +106,7 @@ func (k PhaseKey) String() string {
 }
 
 func (k PhaseKey) LogicPath() string {
-	return k.OrchestrationKey.LogicPath() + fmt.Sprintf("/phase:%03d", k.PhaseIndex+1)
+	return k.OrchestrationKey.LogicPath() + "/" + k.ObjectId()
 }
 
 func (k PhaseKey) ParentKey() (Key, error) {
@@ -124,7 +122,7 @@ func (k TaskKey) Kind() Kind {
 }
 
 func (k TaskKey) ObjectId() string {
-	return cast.ToString(k.PhaseIndex)
+	return fmt.Sprintf("%03d", k.TaskIndex+1)
 }
 
 func (k TaskKey) Level() ObjectLevel {
@@ -140,7 +138,7 @@ func (k TaskKey) String() string {
 }
 
 func (k TaskKey) LogicPath() string {
-	return k.PhaseKey.LogicPath() + fmt.Sprintf("/task:%03d", k.TaskIndex+1)
+	return k.PhaseKey.LogicPath() + "/" + k.ObjectId()
 }
 
 func (k TaskKey) ParentKey() (Key, error) {

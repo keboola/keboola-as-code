@@ -19,14 +19,29 @@ type Differ interface {
 }
 
 type differ struct {
-	sorter model.ObjectsSorter
+	sorter  model.ObjectsSorter
+	options cmp.Options
 }
 
 type Option func(cfg *differ)
 
+type Mapper interface {
+	Options() cmp.Options
+}
+
+type Transformable interface {
+	Transform() interface{}
+}
+
 func WithSorter(v model.ObjectsSorter) Option {
 	return func(d *differ) {
 		d.sorter = v
+	}
+}
+
+func WithCmpOption(v ...cmp.Option) Option {
+	return func(d *differ) {
+		d.options = append(d.options, v...)
 	}
 }
 
@@ -43,6 +58,9 @@ func NewDiffer(opts ...Option) Differ {
 	for _, o := range opts {
 		o(d)
 	}
+
+	// Add default diff options
+	d.options = append(d.options)
 
 	// Create default sorter if needed
 	if d.sorter == nil {
@@ -126,8 +144,8 @@ func (d *differ) diffObject(key model.Key, a, b Object) (*ResultObject, error) {
 	}
 
 	// Get core type
-	_, aType := coreType(reflect.ValueOf(a.ObjectNode()))
-	_, bType := coreType(reflect.ValueOf(b.ObjectNode()))
+	_, aType := CoreType(reflect.ValueOf(a.ObjectNode()))
+	_, bType := CoreType(reflect.ValueOf(b.ObjectNode()))
 
 	// A and B types must have same type
 	if aType.String() != bType.String() {
@@ -135,7 +153,7 @@ func (d *differ) diffObject(key model.Key, a, b Object) (*ResultObject, error) {
 	}
 
 	// Diff
-	reporter := newReporter(a, b)
+	reporter := newReporter(d, a, b)
 	cmp.Diff(a.ObjectNode(), b.ObjectNode(), options(reporter))
 
 	// Set results
@@ -151,7 +169,7 @@ func (d *differ) diffObject(key model.Key, a, b Object) (*ResultObject, error) {
 
 // options to modify diff process.
 func options(r *Reporter) cmp.Options {
-	return cmp.Options{
+	out := cmp.Options{
 		cmp.Reporter(r),
 		// Diff only struct fields with diff:"true" tag
 		onlyMarkedWithDiffTag(),
@@ -160,7 +178,10 @@ func options(r *Reporter) cmp.Options {
 		// Convert []Object -> Object, if parent Object can have only one child Object of a Kind.
 		// Convert []Object -> map[Key]Object, so objects with the same key are compared with each other regardless of the order in the slice.
 		objectsSliceTransformer(),
+		transformableTransformer(),
 	}
+	out = append(out, r.differ.options)
+	return out
 }
 
 // onlyMarkedWithDiffTag ignores struct field without diff:"true" tag
@@ -189,21 +210,19 @@ func orderedMapToMapTransformer() cmp.Option {
 	})
 }
 
-// objectsSliceTransformer has 2 functions
-// 1: Converts []Object -> Object, if parent Object can have only one child Object of a Kind.
-// 2: Converts []Object -> map[Key]Object, so objects with the same key are compared with each other regardless of the order in the slice.
+// objectsSliceTransformer converts []Object -> map[Key]Object, so objects with the same key are compared with each other regardless of the order in the slice.
 func objectsSliceTransformer() cmp.Option {
 	return cmp.Transformer("objectsSliceToMap", func(children []*model.ObjectNode) interface{} {
-		// Convert []Object -> Object, if parent Object can have only one child Object of a Kind.
-		if len(children) == 1 && !children[0].Kind().ToMany {
-			return children[0]
-		}
-
-		// Convert []Object -> Object, if parent Object can have only one child Object of a Kind.
 		out := make(map[model.Key]*model.ObjectNode)
 		for _, o := range children {
 			out[o.Key()] = o
 		}
 		return out
+	})
+}
+
+func transformableTransformer() cmp.Option {
+	return OnlyOnceTransformer("transformable", func(v Transformable) interface{} {
+		return v.Transform()
 	})
 }

@@ -1,10 +1,9 @@
-package orchestrator
+package orchestration
 
 import (
 	"context"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // AfterLocalRename - find renamed orchestrators and renamed configs used in an orchestrator.

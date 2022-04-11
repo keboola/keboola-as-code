@@ -18,24 +18,20 @@ const (
 )
 
 func CodeFileExt(componentId ComponentId) string {
-	switch componentId {
-	case `keboola.snowflake-transformation`:
+	switch {
+	case componentId.IsSqlTransformation():
 		return SqlExt
-	case `keboola.synapse-transformation`:
-		return SqlExt
-	case `keboola.oracle-transformation`:
-		return SqlExt
-	case `keboola.r-transformation`:
+	case componentId == `keboola.r-transformation`:
 		return RExt
-	case `keboola.julia-transformation`:
+	case componentId == `keboola.julia-transformation`:
 		return JuliaExt
-	case `keboola.python-spark-transformation`:
+	case componentId == `keboola.python-spark-transformation`:
 		return PyExt
-	case `keboola.python-transformation`:
+	case componentId == `keboola.python-transformation`:
 		return PyExt
-	case `keboola.python-transformation-v2`:
+	case componentId == `keboola.python-transformation-v2`:
 		return PyExt
-	case `keboola.csas-python-transformation-v2`:
+	case componentId == `keboola.csas-python-transformation-v2`:
 		return PyExt
 	default:
 		return TxtExt

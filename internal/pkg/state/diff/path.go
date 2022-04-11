@@ -46,6 +46,9 @@ func (p Path) String() string {
 	// Convert to string
 	var parts []string
 	for _, s := range p {
+		if s.IsHidden() {
+			continue
+		}
 		parts = append(parts, s.String())
 	}
 
@@ -97,6 +100,9 @@ func (b *pathBuilder) build() {
 				index := cast.ToString(v.Key().Interface())
 				b.add(newStepMapIndex(index, v))
 			}
+		case cmp.Transform:
+			x := b.output[len(b.output)-1]
+			x.AddTransformation()
 		}
 	}
 }
@@ -123,12 +129,13 @@ func (b *pathBuilder) stepObjectOrNil(step cmp.MapIndex) Step {
 	}
 
 	// Value must be *model.ObjectNode
-	mapType := b.steps[prevIndex].Type()
-	if mapType.Elem() != reflect.TypeOf(&model.ObjectNode{}) {
+	parentType := b.steps[prevIndex].Type()
+	if parentType.Elem() != reflect.TypeOf(&model.ObjectNode{}) {
 		return nil
 	}
 
-	return newStepObject(key, step)
+	hidden := !key.Kind().ToMany
+	return newStepObject(key, step, hidden)
 }
 
 // stepKindOrNil groups steps *model.ObjectNode[Children][model.Kind] together.

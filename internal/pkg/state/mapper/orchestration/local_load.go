@@ -1,4 +1,4 @@
-package orchestrator
+package orchestration
 
 import (
 	"fmt"
@@ -8,7 +8,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/relatedpaths"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 type localLoadContext struct {

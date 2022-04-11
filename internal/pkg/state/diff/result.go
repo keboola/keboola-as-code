@@ -1,7 +1,6 @@
 package diff
 
 import (
-	"fmt"
 	"reflect"
 	"sort"
 	"strings"
@@ -58,25 +57,6 @@ type ResultItem struct {
 	B     reflect.Value
 	State ResultState
 	Path  Path
-}
-
-func (v ResultState) Mark() string {
-	switch v {
-	case ResultNotEqual:
-		return NotEqualMark
-	case ResultEqual:
-		return EqualMark
-	case ResultOnlyInA:
-		return OnlyInAMark
-	case ResultOnlyInB:
-		return OnlyInBMark
-	default:
-		panic(fmt.Errorf("unexpected value %#v", v))
-	}
-}
-
-func (v *Result) Format(opts ...FormatOption) string {
-	return format(v, opts...)
 }
 
 func (v *Result) Get(key model.Key) (*ResultObject, bool) {

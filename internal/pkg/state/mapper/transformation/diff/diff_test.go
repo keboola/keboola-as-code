@@ -10,16 +10,18 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
 	. "github.com/keboola/keboola-as-code/internal/pkg/state/diff"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/diff/format"
+	transformationDiff "github.com/keboola/keboola-as-code/internal/pkg/state/mapper/transformation/diff"
 )
 
-func TestTransformer_Transformation(t *testing.T) {
+func TestDiff_Transformation(t *testing.T) {
 	t.Parallel()
 
-	A, B, d := state.NewCollection(), state.NewCollection(), NewDiffer()
+	A, B, d := state.NewCollection(), state.NewCollection(), NewDiffer(transformationDiff.Option())
 
 	// A and B contains a transformation with differences
 	branchKey := model.BranchKey{BranchId: 123}
-	configKey := model.ConfigKey{BranchKey: branchKey, ComponentId: `keboola.python-transformation-v2`, ConfigId: `456`}
+	configKey := model.ConfigKey{BranchKey: branchKey, ComponentId: `keboola.snowflake-transformation`, ConfigId: `456`}
 	transformationKey := model.TransformationKey{ConfigKey: configKey}
 	block1Key := model.BlockKey{TransformationKey: transformationKey, BlockIndex: 0}
 	block2Key := model.BlockKey{TransformationKey: transformationKey, BlockIndex: 1}
@@ -77,38 +79,44 @@ func TestTransformer_Transformation(t *testing.T) {
 
 	// Setup naming
 	namingReg := naming.NewRegistry()
-	namingReg.MustAttach(configKey, model.NewAbsPath(`branch`, `config`))
-	namingReg.MustAttach(transformationKey, model.NewAbsPath(`branch/config`, `blocks`))
-	namingReg.MustAttach(block1Key, model.NewAbsPath(`branch/config/blocks`, `001-my-block-1`))
-	namingReg.MustAttach(block2Key, model.NewAbsPath(`branch/config/blocks`, `002-my-block-2`))
-	namingReg.MustAttach(code1Key, model.NewAbsPath(`branch/config/blocks/001-block-1`, `001-code-1`))
-	namingReg.MustAttach(code2Key, model.NewAbsPath(`branch/config/blocks/001-block-1`, `001-code-2`))
+	namingReg.MustAttach(configKey, model.NewAbsPath(`my-branch`, `my-config`))
+	namingReg.MustAttach(transformationKey, model.NewAbsPath(`my-branch/my-config`, `blocks`))
+	namingReg.MustAttach(block1Key, model.NewAbsPath(`my-branch/my-config/blocks`, `001-my-block-1`))
+	namingReg.MustAttach(block2Key, model.NewAbsPath(`my-branch/my-config/blocks`, `002-my-block-2`))
+	namingReg.MustAttach(code1Key, model.NewAbsPath(`my-branch/my-config/blocks/001-block-1`, `001-code-1`))
+	namingReg.MustAttach(code2Key, model.NewAbsPath(`my-branch/my-config/blocks/001-block-1`, `001-code-2`))
 
 	// Formatted result without details
-	assert.Equal(t, "* C branch:123/component:foo-bar/config:456 | changes: description, name\n", results.Format())
+	assert.Equal(t, "* C branch:123/component:keboola.snowflake-transformation/config:456 | changes: transformation\n", format.Format(results))
 
 	// Formatted result with details
 	assert.Equal(t, strings.TrimLeft(`
-* C branch:123/component:foo-bar/config:456
-    name
-    - name
-    + changed
-    description
-    - description
-    + changed
-`, "\n"), results.Format(WithDetails()))
+* C branch:123/component:keboola.snowflake-transformation/config:456
+    transformation
+    - # My block
+    + # Block 1
+      ## Code 1
+      SELECT 1;
+    + # Block 2
+    + ## Code 2
+      SELECT 2;
+    - SELECT 3;
+`, "\n"), format.Format(results, format.WithDetails()))
 
 	// Formatted result without details + path is known
-	assert.Equal(t, "* C my-branch/my-config | changes: description, name\n", results.Format(WithNamingRegistry(namingReg)))
+	assert.Equal(t, "* C my-branch/my-config | changes: transformation\n", format.Format(results, format.WithNamingRegistry(namingReg)))
 
 	// Formatted result with details + path is known
 	assert.Equal(t, strings.TrimLeft(`
 * C my-branch/my-config
-    name
-    - name
-    + changed
-    description
-    - description
-    + changed
-`, "\n"), results.Format(WithNamingRegistry(namingReg), WithDetails()))
+    transformation
+    - # My block
+    + # Block 1
+      ## Code 1
+      SELECT 1;
+    + # Block 2
+    + ## Code 2
+      SELECT 2;
+    - SELECT 3;
+`, "\n"), format.Format(results, format.WithNamingRegistry(namingReg), format.WithDetails()))
 }

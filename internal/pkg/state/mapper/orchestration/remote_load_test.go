@@ -1,4 +1,4 @@
-package orchestrator_test
+package orchestration_test
 
 import (
 	"strings"

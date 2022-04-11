@@ -14,13 +14,15 @@ type Step interface {
 	A() reflect.Value
 	B() reflect.Value
 	Type() reflect.Type
+	IsHidden() bool
 	String() string
 }
 
 type step struct {
-	a reflect.Value
-	b reflect.Value
-	t reflect.Type
+	a      reflect.Value
+	b      reflect.Value
+	t      reflect.Type
+	hidden bool
 }
 
 // StepKind groups Object children of the same Kind.
@@ -60,10 +62,11 @@ func newStepKind(kind model.Kind, cmpPath cmp.PathStep) StepKind {
 	return s
 }
 
-func newStepObject(key model.Key, cmpPath cmp.PathStep) StepObject {
+func newStepObject(key model.Key, cmpPath cmp.PathStep, hidden bool) StepObject {
 	s := StepObject{}
 	s.Key = key
 	s.setValues(cmpPath)
+	s.setHidden(hidden)
 	return s
 }
 
@@ -100,9 +103,17 @@ func (s step) Type() reflect.Type {
 	return s.t
 }
 
-func (s step) setValues(step cmp.PathStep) {
+func (s step) IsHidden() bool {
+	return s.hidden
+}
+
+func (s *step) setValues(step cmp.PathStep) {
 	s.a, s.b = step.Values()
 	s.t = step.Type()
+}
+
+func (s *step) setHidden(v bool) {
+	s.hidden = v
 }
 
 func (s StepKind) String() string {
@@ -113,11 +124,11 @@ func (s StepObject) String() string {
 	return fmt.Sprintf("[%s]", s.Key.ObjectId())
 }
 
-func (s StepObject) AOrBObject() Object {
+func (s StepObject) AOrBObject() model.Object {
 	if s.a.IsValid() && !s.a.IsNil() {
-		return s.a.Interface().(Object)
+		return s.a.Interface().(*model.ObjectNode).Object
 	}
-	return s.b.Interface().(Object)
+	return s.b.Interface().(*model.ObjectNode).Object
 }
 
 func (s StepStructField) String() string {

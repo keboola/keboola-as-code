@@ -124,6 +124,10 @@ func (k Kind) String() string {
 	return k.Name
 }
 
-func (o *ObjectNode) Get(kind Kind) []*ObjectNode {
-	return o.Children[kind]
+func (o *ObjectNode) GetChildren(kind Kind) []*ObjectNode {
+	return o.Children.Get(kind)
+}
+
+func (v ObjectChildren) Get(kind Kind) []*ObjectNode {
+	return v[kind]
 }

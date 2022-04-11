@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
 	. "github.com/keboola/keboola-as-code/internal/pkg/state/diff"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/diff/format"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/sort"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
@@ -44,7 +45,7 @@ func TestDiff_WithSorter(t *testing.T) {
 - B 002
 - B 003
 - B 004
-`, "\n"), results.Format(WithNamingRegistry(namingReg), WithDetails()))
+`, "\n"), format.Format(results, format.WithNamingRegistry(namingReg), format.WithDetails()))
 }
 
 // Equal ---------------------------------------------------------------------------------------------------------------
@@ -91,25 +92,25 @@ func TestDiff_Equal_Branch(t *testing.T) {
 	namingReg.MustAttach(branchKey, model.NewAbsPath("", "my-branch"))
 
 	// No result by default
-	assert.Equal(t, "", results.Format(WithDetails()))
+	assert.Equal(t, "", format.Format(results, format.WithDetails()))
 
 	// Formatted result without details
-	assert.Equal(t, "", results.Format())
+	assert.Equal(t, "", format.Format(results))
 
 	// Formatted result with details
-	assert.Equal(t, "", results.Format(WithDetails()))
+	assert.Equal(t, "", format.Format(results, format.WithDetails()))
 
 	// Formatted result without details + include equal results
-	assert.Equal(t, "= B branch:123\n", results.Format(WithEqualResults()))
+	assert.Equal(t, "= B branch:123\n", format.Format(results, format.WithEqualResults()))
 
 	// Formatted result with details + include equal results
-	assert.Equal(t, "= B branch:123\n", results.Format(WithEqualResults()), WithDetails())
+	assert.Equal(t, "= B branch:123\n", format.Format(results, format.WithEqualResults(), format.WithDetails()))
 
 	// Formatted result without details + path is known  + include equal results
-	assert.Equal(t, "= B my-branch\n", results.Format(WithEqualResults(), WithNamingRegistry(namingReg)))
+	assert.Equal(t, "= B my-branch\n", format.Format(results, format.WithEqualResults(), format.WithNamingRegistry(namingReg)))
 
 	// Formatted result with details + path is known  + include equal results
-	assert.Equal(t, "= B my-branch\n", results.Format(WithEqualResults(), WithNamingRegistry(namingReg), WithDetails()))
+	assert.Equal(t, "= B my-branch\n", format.Format(results, format.WithEqualResults(), format.WithNamingRegistry(namingReg), format.WithDetails()))
 }
 
 func TestDiff_EqualConfig(t *testing.T) {
@@ -153,37 +154,37 @@ func TestDiff_EqualConfig(t *testing.T) {
 	namingReg.MustAttach(configKey, model.NewAbsPath("my-branch", "my-config"))
 
 	// No result by default
-	assert.Equal(t, "", results.Format(WithDetails()))
+	assert.Equal(t, "", format.Format(results, format.WithDetails()))
 
 	// Formatted result without details
-	assert.Equal(t, "", results.Format())
+	assert.Equal(t, "", format.Format(results))
 
 	// Formatted result with details
-	assert.Equal(t, "", results.Format(WithDetails()))
+	assert.Equal(t, "", format.Format(results, format.WithDetails()))
 
 	// Formatted result without details + include equal results
 	assert.Equal(t, strings.TrimLeft(`
 = B branch:123
 = C branch:123/component:foo-bar/config:456
-`, "\n"), results.Format(WithEqualResults()))
+`, "\n"), format.Format(results, format.WithEqualResults()))
 
 	// Formatted result with details + include equal results
 	assert.Equal(t, strings.TrimLeft(`
 = B branch:123
 = C branch:123/component:foo-bar/config:456
-`, "\n"), results.Format(WithEqualResults()), WithDetails())
+`, "\n"), format.Format(results, format.WithEqualResults(), format.WithDetails()))
 
 	// Formatted result without details + path is known  + include equal results
 	assert.Equal(t, strings.TrimLeft(`
 = B my-branch
 = C my-branch/my-config
-`, "\n"), results.Format(WithEqualResults(), WithNamingRegistry(namingReg)))
+`, "\n"), format.Format(results, format.WithEqualResults(), format.WithNamingRegistry(namingReg)))
 
 	// Formatted result with details + path is known  + include equal results
 	assert.Equal(t, strings.TrimLeft(`
 = B my-branch
 = C my-branch/my-config
-`, "\n"), results.Format(WithEqualResults(), WithNamingRegistry(namingReg), WithDetails()))
+`, "\n"), format.Format(results, format.WithEqualResults(), format.WithNamingRegistry(namingReg), format.WithDetails()))
 }
 
 // Only in A/B ---------------------------------------------------------------------------------------------------------
@@ -217,16 +218,16 @@ func TestDiff_OnlyInA(t *testing.T) {
 	assert.Nil(t, result.B.Object())
 
 	// Formatted result without details
-	assert.Equal(t, "- B branch:123\n", results.Format())
+	assert.Equal(t, "- B branch:123\n", format.Format(results))
 
 	// Formatted result with details
-	assert.Equal(t, "- B branch:123\n", results.Format(WithDetails()))
+	assert.Equal(t, "- B branch:123\n", format.Format(results, format.WithDetails()))
 
 	// Formatted result without details + path is known
-	assert.Equal(t, "- B my-branch\n", results.Format(WithNamingRegistry(namingReg)))
+	assert.Equal(t, "- B my-branch\n", format.Format(results, format.WithNamingRegistry(namingReg)))
 
 	// Formatted result with details + path is known
-	assert.Equal(t, "- B my-branch\n", results.Format(WithNamingRegistry(namingReg), WithDetails()))
+	assert.Equal(t, "- B my-branch\n", format.Format(results, format.WithNamingRegistry(namingReg), format.WithDetails()))
 }
 
 func TestDiff_OnlyInB(t *testing.T) {
@@ -258,16 +259,16 @@ func TestDiff_OnlyInB(t *testing.T) {
 	assert.Same(t, branch, result.B.Object())
 
 	// Formatted result without details
-	assert.Equal(t, "+ B branch:123\n", results.Format())
+	assert.Equal(t, "+ B branch:123\n", format.Format(results))
 
 	// Formatted result with details
-	assert.Equal(t, "+ B branch:123\n", results.Format(WithDetails()))
+	assert.Equal(t, "+ B branch:123\n", format.Format(results, format.WithDetails()))
 
 	// Formatted result without details + path is known
-	assert.Equal(t, "+ B my-branch\n", results.Format(WithNamingRegistry(namingReg)))
+	assert.Equal(t, "+ B my-branch\n", format.Format(results, format.WithNamingRegistry(namingReg)))
 
 	// Formatted result with details + path is known
-	assert.Equal(t, "+ B my-branch\n", results.Format(WithNamingRegistry(namingReg), WithDetails()))
+	assert.Equal(t, "+ B my-branch\n", format.Format(results, format.WithNamingRegistry(namingReg), format.WithDetails()))
 }
 
 // Not Equal -----------------------------------------------------------------------------------------------------------
@@ -316,7 +317,7 @@ func TestDiff_NotEqual_Branch(t *testing.T) {
 	assert.Same(t, bBranch, result.B.Object().(*model.Branch))
 
 	// Formatted result without details
-	assert.Equal(t, "* B branch:123 | changes: isDefault, name\n", results.Format())
+	assert.Equal(t, "* B branch:123 | changes: isDefault, name\n", format.Format(results))
 
 	// Formatted result with details
 	assert.Equal(t, strings.TrimLeft(`
@@ -327,10 +328,10 @@ func TestDiff_NotEqual_Branch(t *testing.T) {
     isDefault
     - false
     + true
-`, "\n"), results.Format(WithDetails()))
+`, "\n"), format.Format(results, format.WithDetails()))
 
 	// Formatted result without details + path is known
-	assert.Equal(t, "* B my-branch | changes: isDefault, name\n", results.Format(WithNamingRegistry(namingReg)))
+	assert.Equal(t, "* B my-branch | changes: isDefault, name\n", format.Format(results, format.WithNamingRegistry(namingReg)))
 
 	// Formatted result with details + path is known
 	assert.Equal(t, strings.TrimLeft(`
@@ -341,7 +342,7 @@ func TestDiff_NotEqual_Branch(t *testing.T) {
     isDefault
     - false
     + true
-`, "\n"), results.Format(WithNamingRegistry(namingReg), WithDetails()))
+`, "\n"), format.Format(results, format.WithNamingRegistry(namingReg), format.WithDetails()))
 }
 
 func TestDiff_NotEqual_Config(t *testing.T) {
@@ -383,7 +384,7 @@ func TestDiff_NotEqual_Config(t *testing.T) {
 	namingReg.MustAttach(configKey, model.NewAbsPath("my-branch", "my-config"))
 
 	// Formatted result without details
-	assert.Equal(t, "* C branch:123/component:foo-bar/config:456 | changes: description, name\n", results.Format())
+	assert.Equal(t, "* C branch:123/component:foo-bar/config:456 | changes: description, name\n", format.Format(results))
 
 	// Formatted result with details
 	assert.Equal(t, strings.TrimLeft(`
@@ -394,10 +395,10 @@ func TestDiff_NotEqual_Config(t *testing.T) {
     description
     - description
     + changed
-`, "\n"), results.Format(WithDetails()))
+`, "\n"), format.Format(results, format.WithDetails()))
 
 	// Formatted result without details + path is known
-	assert.Equal(t, "* C my-branch/my-config | changes: description, name\n", results.Format(WithNamingRegistry(namingReg)))
+	assert.Equal(t, "* C my-branch/my-config | changes: description, name\n", format.Format(results, format.WithNamingRegistry(namingReg)))
 
 	// Formatted result with details + path is known
 	assert.Equal(t, strings.TrimLeft(`
@@ -408,7 +409,7 @@ func TestDiff_NotEqual_Config(t *testing.T) {
     description
     - description
     + changed
-`, "\n"), results.Format(WithNamingRegistry(namingReg), WithDetails()))
+`, "\n"), format.Format(results, format.WithNamingRegistry(namingReg), format.WithDetails()))
 }
 
 func TestDiff_NotEqual_Config_Configuration(t *testing.T) {
@@ -465,7 +466,7 @@ func TestDiff_NotEqual_Config_Configuration(t *testing.T) {
 	namingReg.MustAttach(configKey, model.NewAbsPath("my-branch", "my-config"))
 
 	// Formatted result without details
-	assert.Equal(t, "* C branch:123/component:foo-bar/config:456 | changes: configuration\n", results.Format())
+	assert.Equal(t, "* C branch:123/component:foo-bar/config:456 | changes: configuration\n", format.Format(results))
 
 	// Formatted result with details
 	assert.Equal(t, strings.TrimLeft(`
@@ -473,10 +474,10 @@ func TestDiff_NotEqual_Config_Configuration(t *testing.T) {
     configuration.foo.bar
     - 456
     + 123
-`, "\n"), results.Format(WithDetails()))
+`, "\n"), format.Format(results, format.WithDetails()))
 
 	// Formatted result without details + path is known
-	assert.Equal(t, "* C my-branch/my-config | changes: configuration\n", results.Format(WithNamingRegistry(namingReg)))
+	assert.Equal(t, "* C my-branch/my-config | changes: configuration\n", format.Format(results, format.WithNamingRegistry(namingReg)))
 
 	// Formatted result with details + path is known
 	assert.Equal(t, strings.TrimLeft(`
@@ -484,7 +485,7 @@ func TestDiff_NotEqual_Config_Configuration(t *testing.T) {
     configuration.foo.bar
     - 456
     + 123
-`, "\n"), results.Format(WithNamingRegistry(namingReg), WithDetails()))
+`, "\n"), format.Format(results, format.WithNamingRegistry(namingReg), format.WithDetails()))
 }
 
 func TestDiff_NotEqual_Config_Configuration_Map(t *testing.T) {
@@ -545,7 +546,7 @@ func TestDiff_NotEqual_Config_Configuration_Map(t *testing.T) {
 	namingReg.MustAttach(configKey, model.NewAbsPath("my-branch", "my-config"))
 
 	// Formatted result without details
-	assert.Equal(t, "* C branch:123/component:foo-bar/config:456 | changes: configuration\n", results.Format())
+	assert.Equal(t, "* C branch:123/component:foo-bar/config:456 | changes: configuration\n", format.Format(results))
 
 	// Formatted result with details
 	assert.Equal(t, strings.TrimLeft(`
@@ -559,10 +560,10 @@ func TestDiff_NotEqual_Config_Configuration_Map(t *testing.T) {
     + "value"
   + configuration.key
   +   value
-`, "\n"), results.Format(WithDetails()))
+`, "\n"), format.Format(results, format.WithDetails()))
 
 	// Formatted result without details + path is known
-	assert.Equal(t, "* C my-branch/my-config | changes: configuration\n", results.Format(WithNamingRegistry(namingReg)))
+	assert.Equal(t, "* C my-branch/my-config | changes: configuration\n", format.Format(results, format.WithNamingRegistry(namingReg)))
 
 	// Formatted result with details + path is known
 	assert.Equal(t, strings.TrimLeft(`
@@ -576,5 +577,5 @@ func TestDiff_NotEqual_Config_Configuration_Map(t *testing.T) {
     + "value"
   + configuration.key
   +   value
-`, "\n"), results.Format(WithNamingRegistry(namingReg), WithDetails()))
+`, "\n"), format.Format(results, format.WithNamingRegistry(namingReg), format.WithDetails()))
 }
