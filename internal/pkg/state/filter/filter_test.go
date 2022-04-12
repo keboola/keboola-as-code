@@ -1,4 +1,4 @@
-package state_test
+package filter_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
-	. "github.com/keboola/keboola-as-code/internal/pkg/state"
+	. "github.com/keboola/keboola-as-code/internal/pkg/state/filter"
 )
 
 func TestIsBranchAllowed(t *testing.T) {

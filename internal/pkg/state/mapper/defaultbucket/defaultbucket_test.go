@@ -15,7 +15,7 @@ func createStateWithMapper(t *testing.T) (*local.State, *dependencies.TestContai
 	t.Helper()
 	d := dependencies.NewTestContainer()
 	mockedState := d.EmptyLocalState()
-	mockedState.Mapper().AddMapper(defaultbucket.NewLocalMapper(mockedState, d))
+	mockedState.Mapper().AddMapper(defaultbucket.NewLocalMapper(d))
 
 	// Preload the keboola.ex-aws-s3 component to use as the default bucket source
 	components, err := d.Components()

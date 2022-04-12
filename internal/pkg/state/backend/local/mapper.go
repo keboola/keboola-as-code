@@ -1,17 +1,13 @@
 package local
 
 import (
+	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/fileloader"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
-
-// SaveMapper is intended to modify how the object will be saved in the filesystem.
-// If you need a list of all saved objects, when they are already saved, use the AfterLocalOperationListener instead.
-type SaveMapper interface {
-	MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error
-}
 
 // LoadMapper is intended to modify/normalize the object internal representation after loading from filesystem.
 // If you need a list of all loaded objects use AfterLocalOperationListener instead.
@@ -20,14 +16,20 @@ type SaveMapper interface {
 // For example on configuration load, the branch is already loaded, but other configurations may not be loaded yet.
 // If you need to work with multiple objects (and relationships between them), use the AfterLocalOperationListener instead.
 type LoadMapper interface {
-	MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error
+	MapAfterLocalLoad(ctx *LoadContext) error
+}
+
+// SaveMapper is intended to modify how the object will be saved in the filesystem.
+// If you need a list of all saved objects, when they are already saved, use the AfterLocalOperationListener instead.
+type SaveMapper interface {
+	MapBeforeLocalSave(ctx *SaveContext) error
 }
 
 // BeforePersistMapper is intended to modify manifest record before persist.
 // The Persist operation finds a new object in the filesystem and stores it in the manifest.
 // Remote state does not change.
 type BeforePersistMapper interface {
-	MapBeforePersist(recipe *model.PersistRecipe) error
+	MapBeforePersist(ctx *PersistContext) error
 }
 
 // FileLoadMapper is intended to modify file load process.
@@ -46,24 +48,24 @@ type OnObjectPathUpdateListener interface {
 
 // AfterLocalRenameListener is called when the local.UnitOfWork finished all the work.
 type AfterLocalRenameListener interface {
-	AfterLocalRename(changes []model.RenameAction) error
+	AfterLocalRename(state *State, changes []model.RenameAction) error
 }
 
 // AfterLocalPersistListener is called when the persist operation is finished.
 type AfterLocalPersistListener interface {
-	AfterLocalPersist(persisted []model.Object) error
+	AfterLocalPersist(state *State, persisted []model.Object) error
 }
 
 // AfterLocalOperationListener is called when the local.UnitOfWork finished all the work.
 // The "changes" parameter contains all: loaded, created, update, saved, deleted objects.
 type AfterLocalOperationListener interface {
-	AfterLocalOperation(changes *model.Changes) error
+	AfterLocalOperation(state *State, changes *model.Changes) error
 }
 
 // AfterOperationListener is called when the UnitOfWork finished all the work.
 // The "changes" parameter contains all: loaded, persisted, created, update, (saved), renamed, deleted objects.
 type AfterOperationListener interface {
-	AfterOperation(changes *model.Changes) error
+	AfterOperation(objects model.Objects, changes *model.Changes) error
 }
 
 type Mappers []interface{}
@@ -127,34 +129,52 @@ func (m *Mapper) AddMapper(mapper ...interface{}) *Mapper {
 }
 
 // MapBeforeLocalSave calls mappers with LocalSaveMapper interface implemented.
-func (m *Mapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
-	return m.mappers.ForEachReverse(true, func(mapper interface{}) error {
+func (m *Mapper) MapBeforeLocalSave(parentCtx context.Context, object model.Object, changedFields model.ChangedFields) (*SaveContext, error) {
+	// Create context
+	ctx, err := NewSaveContext(parentCtx, m.state, object, changedFields)
+	if err != nil {
+		return nil, err
+	}
+
+	// Apply mappers
+	err = m.mappers.ForEachReverse(true, func(mapper interface{}) error {
 		if mapper, ok := mapper.(SaveMapper); ok {
-			if err := mapper.MapBeforeLocalSave(recipe); err != nil {
+			if err := mapper.MapBeforeLocalSave(ctx); err != nil {
 				return err
 			}
 		}
 		return nil
 	})
+	return ctx, err
 }
 
 // MapAfterLocalLoad calls mappers with LocalLoadMapper interface implemented.
-func (m *Mapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
-	return m.mappers.ForEach(true, func(mapper interface{}) error {
+func (m *Mapper) MapAfterLocalLoad(parentCtx context.Context, object model.Object) (*LoadContext, error) {
+	// Create context
+	ctx, err := NewLoadContext(parentCtx, m.state.FileLoader(), m.state, object)
+	if err != nil {
+		return nil, err
+	}
+
+	// Apply mappers
+	err = m.mappers.ForEach(true, func(mapper interface{}) error {
 		if mapper, ok := mapper.(LoadMapper); ok {
-			if err := mapper.MapAfterLocalLoad(recipe); err != nil {
+			if err := mapper.MapAfterLocalLoad(ctx); err != nil {
 				return err
 			}
 		}
 		return nil
 	})
+
+	return ctx, err
 }
 
 // MapBeforePersist calls mappers with BeforePersistMapper interface implemented.
-func (m *Mapper) MapBeforePersist(recipe *model.PersistRecipe) error {
+func (m *Mapper) MapBeforePersist(parentCtx context.Context, key, parentKey model.Key, relations *model.Relations) error {
+	ctx := NewPersistContext(parentCtx, m.state, key, parentKey, relations)
 	return m.mappers.ForEach(false, func(mapper interface{}) error {
 		if mapper, ok := mapper.(BeforePersistMapper); ok {
-			if err := mapper.MapBeforePersist(recipe); err != nil {
+			if err := mapper.MapBeforePersist(ctx); err != nil {
 				return err
 			}
 		}
@@ -198,13 +218,13 @@ func (m *Mapper) OnObjectPathUpdate(event model.OnObjectPathUpdateEvent) error {
 
 // AfterLocalOperation calls mappers with AfterLocalRenameListener interface implemented.
 func (m *Mapper) AfterLocalOperation(changes *model.Changes) error {
-	return m.mappers.ForEach(false, func(mapper interface{}) error {
-		if m, ok := mapper.(AfterLocalOperationListener); ok {
-			if err := m.AfterLocalOperation(changes); err != nil {
+	return m.mappers.ForEach(false, func(mapperRaw interface{}) error {
+		if mapper, ok := mapperRaw.(AfterLocalOperationListener); ok {
+			if err := mapper.AfterLocalOperation(m.state, changes); err != nil {
 				return err
 			}
-		} else if m, ok := mapper.(AfterOperationListener); ok {
-			if err := m.AfterOperation(changes); err != nil {
+		} else if mapper, ok := mapperRaw.(AfterOperationListener); ok {
+			if err := mapper.AfterOperation(m.state, changes); err != nil {
 				return err
 			}
 		}
@@ -216,7 +236,7 @@ func (m *Mapper) AfterLocalOperation(changes *model.Changes) error {
 func (m *Mapper) AfterLocalRename(changes []model.RenameAction) error {
 	return m.mappers.ForEach(false, func(mapper interface{}) error {
 		if mapper, ok := mapper.(AfterLocalRenameListener); ok {
-			if err := mapper.AfterLocalRename(changes); err != nil {
+			if err := mapper.AfterLocalRename(m.state, changes); err != nil {
 				return err
 			}
 		}
@@ -228,7 +248,7 @@ func (m *Mapper) AfterLocalRename(changes []model.RenameAction) error {
 func (m *Mapper) AfterLocalPersist(persisted []model.Object) error {
 	return m.mappers.ForEach(false, func(mapper interface{}) error {
 		if mapper, ok := mapper.(AfterLocalPersistListener); ok {
-			if err := mapper.AfterLocalPersist(persisted); err != nil {
+			if err := mapper.AfterLocalPersist(m.state, persisted); err != nil {
 				return err
 			}
 		}

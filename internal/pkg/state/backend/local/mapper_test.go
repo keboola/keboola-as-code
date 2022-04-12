@@ -139,6 +139,7 @@ func invokeLoadLocalFile(t *testing.T, input *filesystem.FileDef, expected files
 	logger.Truncate()
 
 	// Create mapper
+	// State = nil, it is not needed for this unit test.
 	mapper := NewMapper(nil)
 	mapper.AddMapper(
 		&testFileLoadMapper{callback: handler1},

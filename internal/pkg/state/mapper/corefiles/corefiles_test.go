@@ -12,6 +12,6 @@ func createStateWithMapper(t *testing.T) (*local.State, *dependencies.TestContai
 	t.Helper()
 	d := dependencies.NewTestContainer()
 	mockedState := d.EmptyLocalState()
-	mockedState.Mapper().AddMapper(corefiles.NewLocalMapper(mockedState))
+	mockedState.Mapper().AddMapper(corefiles.NewLocalMapper())
 	return mockedState, d
 }

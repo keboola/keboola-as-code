@@ -2,17 +2,16 @@ package template
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper"
 )
 
-func MappersFor(s *local.State, d dependencies, ctx Context) (mapper.Mappers, error) {
+func MappersFor(s *local.State, d dependencies, ctx Context) (local.Mappers, error) {
 	//jsonNetCtx := ctx.JsonNetContext()
 	//replacements, err := ctx.Replacements()
 	//if err != nil {
 	//	return nil, err
 	//}
 
-	mappers := mapper.Mappers{}
+	mappers := local.Mappers{}
 
 	// Add metadata on "template use" operation
 	//if c, ok := ctx.(*UseContext); ok {

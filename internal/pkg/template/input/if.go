@@ -5,7 +5,7 @@ import (
 
 	goValuate "gopkg.in/Knetic/govaluate.v3"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/errors"
 )
 
 // If condition, defined by an expression, compiled by https://github.com/Knetic/govaluate/tree/v3.0.0.

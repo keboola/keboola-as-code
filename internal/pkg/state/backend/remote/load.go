@@ -13,8 +13,8 @@ import (
 
 type loadContext struct {
 	*uow
-	state.LoadContext
-	errs *errors.MultiError
+	parentCtx state.LoadContext
+	errs      *errors.MultiError
 }
 
 func (c *loadContext) loadAll() {
@@ -108,21 +108,21 @@ func (c *loadContext) process(apiObject model.Object) (accepted bool) {
 	// Clone object and create recipe
 	// During mapping is the API object modified, so it is needed to clone it first.
 	object := deepcopy.Copy(apiObject).(model.Object)
-	recipe := model.NewRemoteLoadRecipe(object)
 
 	// Invoke mapper
-	if err := c.mapper.MapAfterRemoteLoad(recipe); err != nil {
+	_, err := c.mapper.MapAfterRemoteLoad(object)
+	if err != nil {
 		c.errs.Append(err)
 		return false
 	}
 
 	// Is object ignored
-	if c.Filter.IsObjectIgnored(object) {
+	if c.parentCtx.Filter.IsObjectIgnored(object) {
 		return false
 	}
 
 	// Notify UnitOfWork
-	if err := c.OnLoad(apiObject); err != nil {
+	if err := c.parentCtx.OnLoad(apiObject); err != nil {
 		c.errs.Append(err)
 		return false
 	}

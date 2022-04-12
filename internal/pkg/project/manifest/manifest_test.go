@@ -18,7 +18,7 @@ type test struct {
 	name    string
 	json    string
 	naming  naming.Template
-	filter  model.ObjectsFilter
+	filter  filter.Filter
 	records []model.ObjectManifest
 }
 

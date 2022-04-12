@@ -7,9 +7,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/filter"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/sort"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
@@ -36,7 +37,7 @@ func New(ctx context.Context, fs filesystem.Fs) *Manifest {
 	return &Manifest{
 		fs:      fs,
 		naming:  naming.ForTemplate(),
-		records: manifest.NewCollection(ctx, namingRegistry, state.NewPathSorter(namingRegistry)),
+		records: manifest.NewCollection(ctx, namingRegistry, sort.NewPathSorter(namingRegistry)),
 	}
 }
 
@@ -93,8 +94,8 @@ func (m *Manifest) Path() string {
 	return Path()
 }
 
-func (m *Manifest) Filter() model.ObjectsFilter {
-	return model.NoFilter()
+func (m *Manifest) Filter() filter.Filter {
+	return filter.NewNoFilter()
 }
 
 func (m *Manifest) NamingTemplate() naming.Template {

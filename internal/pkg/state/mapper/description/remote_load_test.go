@@ -17,9 +17,9 @@ func TestDescriptionMapAfterRemoteLoad(t *testing.T) {
 	state, _ := createStateWithMapper(t)
 
 	object := &model.Config{Description: "foo\nbar\n\r\t ", Content: orderedmap.New()}
-	recipe := model.NewRemoteLoadRecipe(object)
 
-	assert.NoError(t, state.Mapper().MapAfterRemoteLoad(recipe))
+	_, err := state.Mapper().MapAfterRemoteLoad(object)
+	assert.NoError(t, err)
 	assert.Equal(t, "foo\nbar", object.Description)
 }
 

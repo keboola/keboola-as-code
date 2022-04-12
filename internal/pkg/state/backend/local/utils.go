@@ -5,9 +5,26 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
+)
+
+const (
+	FileTypeJson              = `json`
+	FileTypeJsonNet           = `jsonnet`
+	FileTypeMarkdown          = `markdown`
+	FileTypeOther             = `other`
+	FileKindObjectConfig      = `objectConfig`
+	FileKindObjectMeta        = `objectMeta`
+	FileKindObjectDescription = `objectDescription`
+	FileKindBlockMeta         = `blockMeta`
+	FileKindCodeMeta          = `codeMeta`
+	FileKindPhaseConfig       = `phaseConfig`
+	FileKindTaskConfig        = `taskConfig`
+	FileKindNativeCode        = `nativeCode`
+	FileKindNativeSharedCode  = `nativeSharedCode`
+	FileKindGitKeep           = `gitkeep`
 )
 
 func deleteEmptyDirectories(fs filesystem.Fs, knowPaths []string) error {

@@ -7,14 +7,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 )
 
@@ -28,30 +26,33 @@ func newTestUow(t *testing.T, mappers ...interface{}) (*local.State, state.UnitO
 
 func newTestUowFor(t *testing.T, fs filesystem.Fs, manifestInst manifest.Manifest, mappers ...interface{}) (*local.State, state.UnitOfWork) {
 	t.Helper()
-	components := model.NewComponentsMap(testapi.NewMockedComponentsProvider())
-	mapperInst := mapper.New().AddMapper(mappers...)
-	s, err := local.NewState(log.NewNopLogger(), fs, manifestInst, components, mapperInst)
+	d := dependencies.NewTestContainer()
+	d.UseMockedComponents()
+	mappersFactory := func(s *local.State) (local.Mappers, error) {
+		return mappers, nil
+	}
+	s, err := local.NewState(d, fs, manifestInst, mappersFactory)
 	assert.NoError(t, err)
-	return s, s.NewUnitOfWork(context.Background(), manifestInst.Filter())
+	return s, s.NewUnitOfWork(context.Background())
 }
 
 type testMapper struct {
 	localChanges []string
 }
 
-func (*testMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
-	if config, ok := recipe.Object.(*model.Config); ok {
-		config.Name = "modified name"
-		config.Content.Set(`key`, `local value`)
+func (*testMapper) MapAfterLocalLoad(ctx *local.LoadContext) error {
+	if config, ok := ctx.object.(*model.Config); ok {
+		config.Name = "internal name"
+		config.Content.Set(`key`, `internal value`)
 		config.Content.Set(`new`, `value`)
 	}
 	return nil
 }
 
-func (*testMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
-	if config, ok := recipe.Object.(*model.Config); ok {
-		config.Name = "internal name"
-		config.Content.Set(`key`, `internal value`)
+func (*testMapper) MapBeforeLocalSave(ctx *local.SaveContext) error {
+	if config, ok := ctx.object.(*model.Config); ok {
+		config.Name = "modified name"
+		config.Content.Set(`key`, `local value`)
 		config.Content.Set(`new`, `value`)
 	}
 	return nil

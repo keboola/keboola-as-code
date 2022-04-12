@@ -2,6 +2,7 @@ package local
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"sync"
 
@@ -84,7 +85,7 @@ func NewState(d dependencies, objectsRoot filesystem.Fs, manifest manifest.Manif
 }
 
 func (s *State) NewUnitOfWork(ctx context.Context) state.UnitOfWork {
-	backend := newUnitOfWorkBackend(s, ctx, s.mapper)
+	backend := newUnitOfWorkBackend(s, ctx)
 	return state.NewUnitOfWork(ctx, s.objects, backend)
 }
 
@@ -153,7 +154,11 @@ func (s *State) GetByPath(path string) (model.Object, bool) {
 	return s.Get(key)
 }
 
-func (s *State) GetPath(object model.Object) (model.AbsPath, error) {
+func (s *State) GetPath(key model.Key) (model.AbsPath, error) {
+	object, found := s.Get(key)
+	if !found {
+		return model.AbsPath{}, fmt.Errorf("%s not found", key.String())
+	}
 	return s.namingGenerator.GetOrGenerate(object)
 }
 

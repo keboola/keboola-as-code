@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi/eventsender"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/git"
@@ -17,7 +18,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	templateRepository "github.com/keboola/keboola-as-code/internal/pkg/template/repository"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	loadInputs "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/inputs/load"
 	loadManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/manifest/load"
 	loadRepositoryManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/repository/manifest/load"
@@ -83,8 +83,8 @@ func (v *commonContainer) StorageApi() (*storageapi.Api, error) {
 		}
 
 		// Validate
-		if errors.Len() > 0 {
-			return nil, errors
+		if errs.Len() > 0 {
+			return nil, errs
 		}
 
 		// Create API

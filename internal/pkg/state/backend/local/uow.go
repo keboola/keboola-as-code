@@ -11,8 +11,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/workers"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/filter"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
-	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/common/local/manifest/save"
 )
 
 type _state = State
@@ -52,18 +52,18 @@ func (u *uow) Invoke() (state.FinalizationFn, error) {
 	return u.finalizeFn(), errs.ErrorOrNil()
 }
 
-func (u *uow) LoadAll(loadCtx state.LoadContext) {
+func (u *uow) LoadAll(ctx state.LoadContext) {
 	// Add filter from the manifest
-	loadCtx.Filter = state.NewComposedFilter(loadCtx.Filter, u.manifest.Filter())
-	(&loadContext{uow: u, LoadContext: loadCtx}).loadAll()
+	ctx.Filter = filter.NewComposedFilter(ctx.Filter, u.manifest.Filter())
+	(&loadContext{uow: u, parentCtx: ctx}).loadAll()
 }
 
-func (u *uow) Save(saveCtx state.SaveContext) {
-	(&saveContext{uow: u, SaveContext: saveCtx}).save()
+func (u *uow) Save(ctx state.SaveContext) {
+	(&saveContext{uow: u, parentCtx: ctx}).save()
 }
 
-func (u *uow) Delete(deleteCtx state.DeleteContext) {
-	(&deleteContext{uow: u, DeleteContext: deleteCtx}).delete()
+func (u *uow) Delete(ctx state.DeleteContext) {
+	(&deleteContext{uow: u, parentCtx: ctx}).delete()
 }
 
 // finalizeFn callback - responds to the changes that have been made.
@@ -89,7 +89,7 @@ func (u *uow) finalizeFn() state.FinalizationFn {
 		}
 
 		// Save manifest if has been changed
-		if _, err := saveManifest.Run(u.manifest, u.deps); err != nil {
+		if err := u.manifest.Save(); err != nil {
 			errs.Append(err)
 		}
 

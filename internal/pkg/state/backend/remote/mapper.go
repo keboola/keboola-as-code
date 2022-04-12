@@ -5,12 +5,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-// SaveMapper is intended to modify how the object will be saved in the Storage API.
-// If you need a list of all saved objects, when they are already saved, use the AfterRemoteOperationListener instead.
-type SaveMapper interface {
-	MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error
-}
-
 // LoadMapper is intended to modify/normalize the object internal representation after loading from the Storage API.
 // If you need a list of all loaded objects use the AfterRemoteOperationListener instead.
 // Important: do not rely on other objects in the RemoteLoadMapper, they may not be loaded yet.
@@ -18,19 +12,25 @@ type SaveMapper interface {
 // For example on configuration load, the branch is already loaded, but other configurations may not be loaded yet.
 // If you need to work with multiple objects (and relationships between them), use the AfterRemoteOperationListener instead.
 type LoadMapper interface {
-	MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error
+	MapAfterRemoteLoad(ctx *LoadContext) error
+}
+
+// SaveMapper is intended to modify how the object will be saved in the Storage API.
+// If you need a list of all saved objects, when they are already saved, use the AfterRemoteOperationListener instead.
+type SaveMapper interface {
+	MapBeforeRemoteSave(ctx *SaveContext) error
 }
 
 // AfterRemoteOperationListener is called when the remote.UnitOfWork finished all the work.
 // The "changes" parameter contains all: loaded, created, update, saved, deleted objects.
 type AfterRemoteOperationListener interface {
-	AfterRemoteOperation(changes *model.Changes) error
+	AfterRemoteOperation(state *State, changes *model.Changes) error
 }
 
 // AfterOperationListener is called when the UnitOfWork finished all the work.
 // The "changes" parameter contains all: loaded, persisted, created, update, (saved), renamed, deleted objects.
 type AfterOperationListener interface {
-	AfterOperation(changes *model.Changes) error
+	AfterOperation(state *State, changes *model.Changes) error
 }
 
 type Mappers []interface{}
@@ -87,39 +87,43 @@ func (m *Mapper) AddMapper(mapper ...interface{}) *Mapper {
 	return m
 }
 
-// MapBeforeRemoteSave calls mappers with RemoteSaveMapper interface implemented.
-func (m *Mapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
-	return m.mappers.ForEachReverse(true, func(mapper interface{}) error {
-		if mapper, ok := mapper.(SaveMapper); ok {
-			if err := mapper.MapBeforeRemoteSave(recipe); err != nil {
+// MapAfterRemoteLoad calls mappers with RemoteLoadMapper interface implemented.
+func (m *Mapper) MapAfterRemoteLoad(object model.Object) (*LoadContext, error) {
+	ctx := NewLoadContext(object)
+	err := m.mappers.ForEach(true, func(mapper interface{}) error {
+		if mapper, ok := mapper.(LoadMapper); ok {
+			if err := mapper.MapAfterRemoteLoad(ctx); err != nil {
 				return err
 			}
 		}
 		return nil
 	})
+	return ctx, err
 }
 
-// MapAfterRemoteLoad calls mappers with RemoteLoadMapper interface implemented.
-func (m *Mapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
-	return m.mappers.ForEach(true, func(mapper interface{}) error {
-		if mapper, ok := mapper.(LoadMapper); ok {
-			if err := mapper.MapAfterRemoteLoad(recipe); err != nil {
+// MapBeforeRemoteSave calls mappers with RemoteSaveMapper interface implemented.
+func (m *Mapper) MapBeforeRemoteSave(object model.Object, changedFields model.ChangedFields) (*SaveContext, error) {
+	ctx := NewSaveContext(m.state, object, changedFields)
+	err := m.mappers.ForEachReverse(true, func(mapper interface{}) error {
+		if mapper, ok := mapper.(SaveMapper); ok {
+			if err := mapper.MapBeforeRemoteSave(ctx); err != nil {
 				return err
 			}
 		}
 		return nil
 	})
+	return ctx, err
 }
 
 // AfterRemoteOperation calls mappers with AfterRemoteOperationListener interface implemented.
 func (m *Mapper) AfterRemoteOperation(changes *model.Changes) error {
-	return m.mappers.ForEach(false, func(mapper interface{}) error {
-		if m, ok := mapper.(AfterRemoteOperationListener); ok {
-			if err := m.AfterRemoteOperation(changes); err != nil {
+	return m.mappers.ForEach(false, func(mapperRaw interface{}) error {
+		if mapper, ok := mapperRaw.(AfterRemoteOperationListener); ok {
+			if err := mapper.AfterRemoteOperation(m.state, changes); err != nil {
 				return err
 			}
-		} else if m, ok := mapper.(AfterOperationListener); ok {
-			if err := m.AfterOperation(changes); err != nil {
+		} else if mapper, ok := mapperRaw.(AfterOperationListener); ok {
+			if err := mapper.AfterOperation(m.state, changes); err != nil {
 				return err
 			}
 		}

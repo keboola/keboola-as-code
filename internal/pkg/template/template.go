@@ -11,7 +11,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper"
 	templateInput "github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
 )
@@ -165,6 +164,6 @@ func (c *evaluatedTemplate) Ctx() context.Context {
 	return c.context
 }
 
-func (c *evaluatedTemplate) MappersFor(state *local.State) (mapper.Mappers, error) {
+func (c *evaluatedTemplate) MappersFor(state *local.State) (local.Mappers, error) {
 	return MappersFor(state, c.deps, c.context)
 }

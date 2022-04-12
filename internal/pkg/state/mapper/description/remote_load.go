@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/remote"
 )
 
 // descriptionMapper normalize object description loaded from API.
@@ -15,8 +16,8 @@ func NewMapper() *descriptionMapper {
 	return &descriptionMapper{}
 }
 
-func (m *descriptionMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
-	switch o := recipe.Object.(type) {
+func (m *descriptionMapper) MapAfterRemoteLoad(ctx *remote.LoadContext) error {
+	switch o := ctx.Object().(type) {
 	case *model.Branch:
 		o.Description = m.normalize(o.Description)
 	case *model.Config:

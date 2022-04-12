@@ -117,7 +117,7 @@ type (
 func (c ConfigMetadataResponse) MetadataMap(branchId model.BranchId) map[model.ConfigKey][]ConfigMetadata {
 	result := make(map[model.ConfigKey][]ConfigMetadata)
 	for _, metadataWrapper := range c {
-		configKey := model.ConfigKey{BranchId: branchId, ComponentId: metadataWrapper.ComponentId, ConfigId: metadataWrapper.ConfigId}
+		configKey := model.ConfigKey{BranchKey: model.BranchKey{BranchId: branchId}, ComponentId: metadataWrapper.ComponentId, ConfigId: metadataWrapper.ConfigId}
 		result[configKey] = metadataWrapper.Metadata
 	}
 	return result

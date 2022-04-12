@@ -34,7 +34,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 
 	// Map schedules
 	for _, schedule := range schedules {
-		configKey := model.ConfigKey{BranchId: p.DefaultBranch().BranchId, ComponentId: model.SchedulerComponentId, ConfigId: schedule.ConfigId}
+		configKey := model.ConfigKey{BranchKey: model.BranchKey{BranchId: p.DefaultBranch().BranchId}, ComponentId: model.SchedulerComponentId, ConfigId: schedule.ConfigId}
 		scheduleConfig := configs[configKey.String()]
 		snapshot.Schedules = append(snapshot.Schedules, &fixtures.Schedule{Name: scheduleConfig.Name})
 	}

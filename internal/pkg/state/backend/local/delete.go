@@ -1,25 +1,25 @@
 package local
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 type deleteContext struct {
 	*uow
-	state.DeleteContext
+	parentCtx state.DeleteContext
 }
 
 func (c *deleteContext) delete() {
 	c.
-		workersFor(c.Key.Level()).
+		workersFor(c.parentCtx.Key.Level()).
 		AddWorker(func() error {
 			// Remove manifest record
-			c.manifest.Remove(c.Key)
+			c.manifest.Remove(c.parentCtx.Key)
 
 			// Remove all related files
 			errs := errors.NewMultiError()
-			if relatedPaths, found := c.GetRelatedPathsByKey(c.Key); found {
+			if relatedPaths, found := c.GetRelatedPathsByKey(c.parentCtx.Key); found {
 				for _, path := range relatedPaths.All() {
 					if c.objectsRoot.IsFile(path) {
 						if err := c.objectsRoot.Remove(path); err != nil {
@@ -29,13 +29,13 @@ func (c *deleteContext) delete() {
 				}
 			}
 
-			if errors.Len() == 0 {
+			if errs.Len() == 0 {
 				// Remove the key from the auxiliary maps
-				delete(c.notFoundObjects, c.Key)
-				delete(c.invalidObjects, c.Key)
+				delete(c.notFoundObjects, c.parentCtx.Key)
+				delete(c.invalidObjects, c.parentCtx.Key)
 
 				// Notify UnitOfWork
-				c.OnSuccess()
+				c.parentCtx.OnSuccess()
 			}
 
 			return errs.ErrorOrNil()

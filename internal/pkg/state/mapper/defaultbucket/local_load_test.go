@@ -32,10 +32,11 @@ func TestDefaultBucketMapper_AfterLocalOperation_Load_Config(t *testing.T) {
 	logger := d.DebugLogger()
 
 	// Branch
-	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{BranchId: 123}})
+	branchKey := model.BranchKey{BranchId: 123}
+	state.MustAdd(&model.Branch{BranchKey: branchKey})
 
 	// Config referenced by the default bucket
-	sourceConfigKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.ex-aws-s3`, ConfigId: `123`}
+	sourceConfigKey := model.ConfigKey{BranchKey: branchKey, ComponentId: `keboola.ex-aws-s3`, ConfigId: `123`}
 	state.MustAdd(&model.Config{ConfigKey: sourceConfigKey})
 	state.NamingRegistry().MustAttach(
 		sourceConfigKey,
@@ -43,7 +44,7 @@ func TestDefaultBucketMapper_AfterLocalOperation_Load_Config(t *testing.T) {
 	)
 
 	// Config with the input mapping
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.snowflake-transformation`, ConfigId: `789`}
+	configKey := model.ConfigKey{BranchKey: branchKey, ComponentId: `keboola.snowflake-transformation`, ConfigId: `789`}
 	config := &model.Config{ConfigKey: configKey, Content: orderedmap.New()}
 	json.MustDecodeString(localLoadConfigContentSample, config.Content)
 
@@ -62,10 +63,11 @@ func TestDefaultBucketMapper_AfterLocalOperation_Load_Config_Missing(t *testing.
 	logger := d.DebugLogger()
 
 	// Branch
-	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{BranchId: 123}})
+	branchKey := model.BranchKey{BranchId: 123}
+	state.MustAdd(&model.Branch{BranchKey: branchKey})
 
 	// Config with the input mapping
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.snowflake-transformation`, ConfigId: `789`}
+	configKey := model.ConfigKey{BranchKey: branchKey, ComponentId: `keboola.snowflake-transformation`, ConfigId: `789`}
 	config := &model.Config{ConfigKey: configKey, Content: orderedmap.New()}
 	json.MustDecodeString(localLoadConfigContentSample, config.Content)
 
@@ -93,7 +95,8 @@ func TestDefaultBucketMapper_AfterLocalOperation_Load_Row(t *testing.T) {
 	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{BranchId: 123}})
 
 	// Config referenced by the default bucket
-	sourceConfigKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.ex-aws-s3`, ConfigId: `123`}
+	branchKey := model.BranchKey{BranchId: 123}
+	sourceConfigKey := model.ConfigKey{BranchKey: branchKey, ComponentId: `keboola.ex-aws-s3`, ConfigId: `123`}
 	state.MustAdd(&model.Config{ConfigKey: sourceConfigKey})
 	state.NamingRegistry().MustAttach(
 		sourceConfigKey,
@@ -101,12 +104,12 @@ func TestDefaultBucketMapper_AfterLocalOperation_Load_Row(t *testing.T) {
 	)
 
 	// Parent config
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.snowflake-transformation`, ConfigId: `789`}
+	configKey := model.ConfigKey{BranchKey: branchKey, ComponentId: `keboola.snowflake-transformation`, ConfigId: `789`}
 	config := &model.Config{ConfigKey: configKey}
 	state.MustAdd(config)
 
 	// Row with the input mapping
-	rowKey := model.ConfigRowKey{BranchId: 123, ConfigId: config.ConfigId, ConfigRowId: `456`, ComponentId: config.ComponentId}
+	rowKey := model.ConfigRowKey{ConfigKey: configKey, ConfigRowId: `456`}
 	row := &model.ConfigRow{ConfigRowKey: rowKey, Content: orderedmap.New()}
 	json.MustDecodeString(localLoadConfigContentSample, row.Content)
 
@@ -125,15 +128,16 @@ func TestDefaultBucketMapper_AfterLocalOperation_Load_Row_Missing(t *testing.T) 
 	logger := d.DebugLogger()
 
 	// Branch
+	branchKey := model.BranchKey{BranchId: 123}
 	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{BranchId: 123}})
 
 	// Parent config
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.snowflake-transformation`, ConfigId: `789`}
+	configKey := model.ConfigKey{BranchKey: branchKey, ComponentId: `keboola.snowflake-transformation`, ConfigId: `789`}
 	config := &model.Config{ConfigKey: configKey}
 	state.MustAdd(config)
 
 	// Row with the input mapping
-	rowKey := model.ConfigRowKey{BranchId: 123, ConfigId: config.ConfigId, ConfigRowId: `456`, ComponentId: config.ComponentId}
+	rowKey := model.ConfigRowKey{ConfigKey: configKey, ConfigRowId: `456`}
 	row := &model.ConfigRow{ConfigRowKey: rowKey, Content: orderedmap.New()}
 	json.MustDecodeString(localLoadConfigContentSample, row.Content)
 

@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/filter"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/replacevalues"
 )
 
@@ -100,12 +101,12 @@ func (c *UseContext) Replacements() (*replacevalues.Values, error) {
 	return c.replacements, nil
 }
 
-func (c *UseContext) RemoteObjectsFilter() model.ObjectsFilter {
-	return model.NoFilter()
+func (c *UseContext) RemoteObjectsFilter() filter.Filter {
+	return filter.NewNoFilter()
 }
 
-func (c *UseContext) LocalObjectsFilter() model.ObjectsFilter {
-	return model.NoFilter()
+func (c *UseContext) LocalObjectsFilter() filter.Filter {
+	return filter.NewNoFilter()
 }
 
 func (c *UseContext) registerJsonNetFunctions() {

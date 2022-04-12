@@ -15,8 +15,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
@@ -47,8 +47,9 @@ func TestUnitOfWork_Load_Mapper(t *testing.T) {
 	s, err := loadState(t, m, fs, testMapperInst)
 	assert.NoError(t, err)
 
-	// Internal state has been mapped
-	config := s.MustGet(model.ConfigKey{BranchId: 111, ComponentId: `ex-generic-v2`, ConfigId: `456`}).(*model.Config)
+	// Internal s has been mapped
+	branchKey := model.BranchKey{BranchId: 111}
+	config := s.MustGet(model.ConfigKey{BranchKey: branchKey, ComponentId: `ex-generic-v2`, ConfigId: `456`}).(*model.Config)
 	assert.Equal(t, `{"parameters":"overwritten","new":"value"}`, json.MustEncodeString(config.Content, false))
 
 	// AfterLocalOperation event has been called
@@ -99,12 +100,12 @@ func TestUnitOfWork_Load_Minimal(t *testing.T) {
 	t.Parallel()
 
 	m, fs := loadManifest(t, "minimal")
-	state, localErr := loadState(t, m, fs)
-	assert.NotNil(t, state)
+	s, localErr := loadState(t, m, fs)
+	assert.NotNil(t, s)
 	assert.Empty(t, localErr)
-	assert.Len(t, state.Branches(), 1)
-	assert.Len(t, state.Configs(), 1)
-	assert.Empty(t, state.UntrackedPaths())
+	assert.Len(t, s.Branches(), 1)
+	assert.Len(t, s.Configs(), 1)
+	assert.Empty(t, s.UntrackedPaths())
 	assert.Equal(t, []string{
 		"main",
 		"main/description.md",
@@ -115,24 +116,24 @@ func TestUnitOfWork_Load_Minimal(t *testing.T) {
 		"main/extractor/ex-generic-v2/456-todos/description.md",
 		"main/extractor/ex-generic-v2/456-todos/meta.json",
 		"main/meta.json",
-	}, state.TrackedPaths())
+	}, s.TrackedPaths())
 }
 
 func TestUnitOfWork_Load_Complex(t *testing.T) {
 	t.Parallel()
 
 	m, fs := loadManifest(t, "complex")
-	state, localErr := loadState(t, m, fs)
-	assert.NotNil(t, state)
+	s, localErr := loadState(t, m, fs)
+	assert.NotNil(t, s)
 	assert.Empty(t, localErr)
-	assert.Equal(t, complexExpectedBranches(), utils.SortByName(state.Branches()))
-	assert.Equal(t, complexExpectedConfigs(), utils.SortByName(state.Configs()))
-	assert.Equal(t, complexExpectedConfigRows(), utils.SortByName(state.ConfigRows()))
+	assert.Equal(t, complexExpectedBranches(), utils.SortByName(s.Branches()))
+	assert.Equal(t, complexExpectedConfigs(), utils.SortByName(s.Configs()))
+	assert.Equal(t, complexExpectedConfigRows(), utils.SortByName(s.ConfigRows()))
 	assert.Equal(t, []string{
 		"123-branch/extractor/ex-generic-v2/456-todos/untracked1",
 		"123-branch/extractor/keboola.ex-db-mysql/untrackedDir",
 		"123-branch/extractor/keboola.ex-db-mysql/untrackedDir/untracked2",
-	}, state.UntrackedPaths())
+	}, s.UntrackedPaths())
 	assert.Equal(t, []string{
 		"123-branch",
 		"123-branch/description.md",
@@ -170,33 +171,33 @@ func TestUnitOfWork_Load_Complex(t *testing.T) {
 		"main/extractor/ex-generic-v2/456-todos/description.md",
 		"main/extractor/ex-generic-v2/456-todos/meta.json",
 		"main/meta.json",
-	}, state.TrackedPaths())
+	}, s.TrackedPaths())
 }
 
 func TestUnitOfWork_Load_AllowedBranches(t *testing.T) {
 	t.Parallel()
 
 	m, fs := loadManifest(t, "minimal")
-	m.SetAllowedBranches(model.AllowedBranches{"main"})
-	state, localErr := loadState(t, m, fs)
-	assert.NotNil(t, state)
+	m.SetAllowedBranches(state.AllowedBranches{"main"})
+	s, localErr := loadState(t, m, fs)
+	assert.NotNil(t, s)
 	assert.Empty(t, localErr)
 }
 
 func TestUnitOfWork_Load_AllowedBranchesError(t *testing.T) {
 	t.Parallel()
 	m, fs := loadManifest(t, "complex")
-	m.SetAllowedBranches(model.AllowedBranches{"main"})
-	state, localErr := loadState(t, m, fs)
-	assert.NotNil(t, state)
+	m.SetAllowedBranches(state.AllowedBranches{"main"})
+	s, localErr := loadState(t, m, fs)
+	assert.NotNil(t, s)
 	assert.Equal(t, `found manifest record for branch "123", but it is not allowed by the manifest definition`, localErr.Error())
 }
 
 func TestUnitOfWork_Load_BranchMissingMetaJson(t *testing.T) {
 	t.Parallel()
 	m, fs := loadManifest(t, "branch-missing-meta-json")
-	state, localErr := loadState(t, m, fs)
-	assert.NotNil(t, state)
+	s, localErr := loadState(t, m, fs)
+	assert.NotNil(t, s)
 	assert.Error(t, localErr)
 	assert.Equal(t, `missing branch metadata file "main/meta.json"`, localErr.Error())
 }
@@ -204,8 +205,8 @@ func TestUnitOfWork_Load_BranchMissingMetaJson(t *testing.T) {
 func TestUnitOfWork_Load_BranchMissingDescription(t *testing.T) {
 	t.Parallel()
 	m, fs := loadManifest(t, "branch-missing-description")
-	state, localErr := loadState(t, m, fs)
-	assert.NotNil(t, state)
+	s, localErr := loadState(t, m, fs)
+	assert.NotNil(t, s)
 	assert.Error(t, localErr)
 	assert.Equal(t, `missing branch description file "main/description.md"`, localErr.Error())
 }
@@ -213,8 +214,8 @@ func TestUnitOfWork_Load_BranchMissingDescription(t *testing.T) {
 func TestUnitOfWork_Load_ConfigMissingConfigJson(t *testing.T) {
 	t.Parallel()
 	m, fs := loadManifest(t, "config-missing-config-json")
-	state, localErr := loadState(t, m, fs)
-	assert.NotNil(t, state)
+	s, localErr := loadState(t, m, fs)
+	assert.NotNil(t, s)
 	assert.Error(t, localErr)
 	assert.Equal(t, `missing config file "123-branch/extractor/ex-generic-v2/456-todos/config.json"`, localErr.Error())
 }
@@ -222,8 +223,8 @@ func TestUnitOfWork_Load_ConfigMissingConfigJson(t *testing.T) {
 func TestUnitOfWork_Load_ConfigMissingMetaJson(t *testing.T) {
 	t.Parallel()
 	m, fs := loadManifest(t, "config-missing-meta-json")
-	state, localErr := loadState(t, m, fs)
-	assert.NotNil(t, state)
+	s, localErr := loadState(t, m, fs)
+	assert.NotNil(t, s)
 	assert.Error(t, localErr)
 	assert.Equal(t, `missing config metadata file "123-branch/extractor/ex-generic-v2/456-todos/meta.json"`, localErr.Error())
 }
@@ -231,8 +232,8 @@ func TestUnitOfWork_Load_ConfigMissingMetaJson(t *testing.T) {
 func TestUnitOfWork_Load_ConfigMissingDescription(t *testing.T) {
 	t.Parallel()
 	m, fs := loadManifest(t, "config-missing-description")
-	state, localErr := loadState(t, m, fs)
-	assert.NotNil(t, state)
+	s, localErr := loadState(t, m, fs)
+	assert.NotNil(t, s)
 	assert.Error(t, localErr)
 	assert.Equal(t, `missing config description file "123-branch/extractor/ex-generic-v2/456-todos/description.md"`, localErr.Error())
 }
@@ -240,8 +241,8 @@ func TestUnitOfWork_Load_ConfigMissingDescription(t *testing.T) {
 func TestUnitOfWork_Load_ConfigRowMissingConfigJson(t *testing.T) {
 	t.Parallel()
 	m, fs := loadManifest(t, "config-row-missing-config-json")
-	state, localErr := loadState(t, m, fs)
-	assert.NotNil(t, state)
+	s, localErr := loadState(t, m, fs)
+	assert.NotNil(t, s)
 	assert.Error(t, localErr)
 	assert.Equal(t, `missing config row file "123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users/config.json"`, localErr.Error())
 }
@@ -249,8 +250,8 @@ func TestUnitOfWork_Load_ConfigRowMissingConfigJson(t *testing.T) {
 func TestUnitOfWork_Load_ConfigRowMissingMetaJson(t *testing.T) {
 	t.Parallel()
 	m, fs := loadManifest(t, "config-row-missing-meta-json")
-	state, localErr := loadState(t, m, fs)
-	assert.NotNil(t, state)
+	s, localErr := loadState(t, m, fs)
+	assert.NotNil(t, s)
 	assert.Error(t, localErr)
 	assert.Equal(t, `missing config row metadata file "123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json"`, localErr.Error())
 }
@@ -258,8 +259,8 @@ func TestUnitOfWork_Load_ConfigRowMissingMetaJson(t *testing.T) {
 func TestUnitOfWork_Load_BranchInvalidMetaJson(t *testing.T) {
 	t.Parallel()
 	m, fs := loadManifest(t, "branch-invalid-meta-json")
-	state, localErr := loadState(t, m, fs)
-	assert.NotNil(t, state)
+	s, localErr := loadState(t, m, fs)
+	assert.NotNil(t, s)
 	assert.Error(t, localErr)
 	assert.Equal(t, "branch metadata file \"main/meta.json\" is invalid:\n  - invalid character 'f' looking for beginning of object key string, offset: 3", localErr.Error())
 }
@@ -267,8 +268,8 @@ func TestUnitOfWork_Load_BranchInvalidMetaJson(t *testing.T) {
 func TestUnitOfWork_Load_ConfigRowMissingDescription(t *testing.T) {
 	t.Parallel()
 	m, fs := loadManifest(t, "config-row-missing-description")
-	state, localErr := loadState(t, m, fs)
-	assert.NotNil(t, state)
+	s, localErr := loadState(t, m, fs)
+	assert.NotNil(t, s)
 	assert.Error(t, localErr)
 	assert.Equal(t, `missing config row description file "123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users/description.md"`, localErr.Error())
 }
@@ -276,8 +277,8 @@ func TestUnitOfWork_Load_ConfigRowMissingDescription(t *testing.T) {
 func TestUnitOfWork_Load_ConfigInvalidConfigJson(t *testing.T) {
 	t.Parallel()
 	m, fs := loadManifest(t, "config-invalid-config-json")
-	state, localErr := loadState(t, m, fs)
-	assert.NotNil(t, state)
+	s, localErr := loadState(t, m, fs)
+	assert.NotNil(t, s)
 	assert.Error(t, localErr)
 	assert.Equal(t, "config file \"123-branch/extractor/ex-generic-v2/456-todos/config.json\" is invalid:\n  - invalid character 'f' looking for beginning of object key string, offset: 3", localErr.Error())
 }
@@ -285,8 +286,8 @@ func TestUnitOfWork_Load_ConfigInvalidConfigJson(t *testing.T) {
 func TestUnitOfWork_Load_ConfigInvalidMetaJson(t *testing.T) {
 	t.Parallel()
 	m, fs := loadManifest(t, "config-invalid-meta-json")
-	state, localErr := loadState(t, m, fs)
-	assert.NotNil(t, state)
+	s, localErr := loadState(t, m, fs)
+	assert.NotNil(t, s)
 	assert.Error(t, localErr)
 	assert.Equal(t, "config metadata file \"123-branch/extractor/ex-generic-v2/456-todos/meta.json\" is invalid:\n  - invalid character 'f' looking for beginning of object key string, offset: 3", localErr.Error())
 }
@@ -294,8 +295,8 @@ func TestUnitOfWork_Load_ConfigInvalidMetaJson(t *testing.T) {
 func TestUnitOfWork_Load_ConfigRowInvalidConfigJson(t *testing.T) {
 	t.Parallel()
 	m, fs := loadManifest(t, "config-row-invalid-config-json")
-	state, localErr := loadState(t, m, fs)
-	assert.NotNil(t, state)
+	s, localErr := loadState(t, m, fs)
+	assert.NotNil(t, s)
 	assert.Error(t, localErr)
 	assert.Equal(t, "config row file \"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/56-disabled/config.json\" is invalid:\n  - invalid character 'f' looking for beginning of object key string, offset: 3", localErr.Error())
 }
@@ -303,8 +304,8 @@ func TestUnitOfWork_Load_ConfigRowInvalidConfigJson(t *testing.T) {
 func TestUnitOfWork_Load_ConfigRowInvalidMetaJson(t *testing.T) {
 	t.Parallel()
 	m, fs := loadManifest(t, "config-row-invalid-meta-json")
-	state, localErr := loadState(t, m, fs)
-	assert.NotNil(t, state)
+	s, localErr := loadState(t, m, fs)
+	assert.NotNil(t, s)
 	assert.Error(t, localErr)
 	assert.Equal(t, "config row metadata file \"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json\" is invalid:\n  - invalid character 'f' looking for beginning of object key string, offset: 3", localErr.Error())
 }
@@ -323,10 +324,10 @@ func loadManifest(t *testing.T, projectDirName string) (*manifest.Manifest, file
 	// Objects dir
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filesystem.Dir(testFile)
-	stateDir := filesystem.Join(testDir, "..", "fixtures", "local", projectDirName)
+	sDir := filesystem.Join(testDir, "..", "fixtures", "local", projectDirName)
 
 	// Create Fs
-	fs := testfs.NewMemoryFsFrom(stateDir)
+	fs := testfs.NewMemoryFsFrom(sDir)
 	testhelper.ReplaceEnvsDir(fs, `/`, envs)
 
 	// Load manifest
@@ -349,20 +350,20 @@ func loadState(t *testing.T, manifestInst *manifest.Manifest, fs filesystem.Fs, 
 	mappersFactory := project.LocalMappers(d)
 	if len(mappers) > 0 {
 		// Replace default mappers
-		mappersFactory = func(state *local.State) (mapper.Mappers, error) {
+		mappersFactory = func(s *local.State) (local.Mappers, error) {
 			return mappers, nil
 		}
 	}
 
-	// Create state
+	// Create s
 	s, err := local.NewState(d, fs, manifestInst, mappersFactory)
 	if err != nil {
 		return nil, err
 	}
 
-	// Load state
-	uow := s.NewUnitOfWork(context.Background(), manifestInst.Filter())
-	uow.LoadAll()
+	// Load s
+	uow := s.NewUnitOfWork(context.Background())
+	uow.LoadAll(manifestInst.Filter())
 	return s, uow.Invoke()
 }
 
@@ -384,10 +385,11 @@ func complexExpectedBranches() []*model.Branch {
 }
 
 func complexExpectedConfigs() []*model.Config {
+	branchKey := model.BranchKey{BranchId: 123}
 	return []*model.Config{
 		{
 			ConfigKey: model.ConfigKey{
-				BranchId:    123,
+				BranchKey:   branchKey,
 				ComponentId: "keboola.ex-db-mysql",
 				ConfigId:    "896",
 			},
@@ -414,7 +416,7 @@ func complexExpectedConfigs() []*model.Config {
 		},
 		{
 			ConfigKey: model.ConfigKey{
-				BranchId:    111,
+				BranchKey:   branchKey,
 				ComponentId: "ex-generic-v2",
 				ConfigId:    "456",
 			},
@@ -441,7 +443,7 @@ func complexExpectedConfigs() []*model.Config {
 		},
 		{
 			ConfigKey: model.ConfigKey{
-				BranchId:    123,
+				BranchKey:   branchKey,
 				ComponentId: "ex-generic-v2",
 				ConfigId:    "456",
 			},
@@ -470,14 +472,15 @@ func complexExpectedConfigs() []*model.Config {
 }
 
 func complexExpectedConfigRows() []*model.ConfigRow {
+	branchKey := model.BranchKey{BranchId: 123}
+	configKey := model.ConfigKey{
+		BranchKey:   branchKey,
+		ComponentId: "keboola.ex-db-mysql",
+		ConfigId:    "896",
+	}
 	return []*model.ConfigRow{
 		{
-			ConfigRowKey: model.ConfigRowKey{
-				BranchId:    123,
-				ComponentId: "keboola.ex-db-mysql",
-				ConfigId:    "896",
-				ConfigRowId: "56",
-			},
+			ConfigRowKey:      model.ConfigRowKey{ConfigKey: configKey, ConfigRowId: "56"},
 			Name:              "disabled",
 			Description:       "",
 			ChangeDescription: "",
@@ -492,12 +495,7 @@ func complexExpectedConfigRows() []*model.ConfigRow {
 			}),
 		},
 		{
-			ConfigRowKey: model.ConfigRowKey{
-				BranchId:    123,
-				ComponentId: "keboola.ex-db-mysql",
-				ConfigId:    "896",
-				ConfigRowId: "34",
-			},
+			ConfigRowKey:      model.ConfigRowKey{ConfigKey: configKey, ConfigRowId: "34"},
 			Name:              "test_view",
 			Description:       "row description",
 			ChangeDescription: "",
@@ -512,12 +510,7 @@ func complexExpectedConfigRows() []*model.ConfigRow {
 			}),
 		},
 		{
-			ConfigRowKey: model.ConfigRowKey{
-				BranchId:    123,
-				ComponentId: "keboola.ex-db-mysql",
-				ConfigId:    "896",
-				ConfigRowId: "12",
-			},
+			ConfigRowKey:      model.ConfigRowKey{ConfigKey: configKey, ConfigRowId: "12"},
 			Name:              "users",
 			Description:       "",
 			ChangeDescription: "",

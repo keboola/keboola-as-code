@@ -10,6 +10,8 @@ import (
 	"github.com/hashicorp/go-multierror"
 )
 
+var As = errors.As
+
 type multiError = multierror.Error
 
 type MultiError struct {

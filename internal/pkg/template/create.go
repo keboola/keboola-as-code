@@ -5,6 +5,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/filter"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/replacevalues"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
@@ -34,7 +35,7 @@ import (
 // CreateContext.Replacements() returns placeholders for ConfigId / ConfigRowId JsonNet functions.
 type CreateContext struct {
 	_context
-	remoteFilter model.ObjectsFilter
+	remoteFilter filter.Filter
 	replacements *replacevalues.Values
 }
 
@@ -64,12 +65,12 @@ func NewCreateContext(ctx context.Context, sourceBranch model.BranchKey, configs
 	}
 }
 
-func (c *CreateContext) RemoteObjectsFilter() model.ObjectsFilter {
+func (c *CreateContext) RemoteObjectsFilter() filter.Filter {
 	return c.remoteFilter
 }
 
-func (c *CreateContext) LocalObjectsFilter() model.ObjectsFilter {
-	return model.NoFilter()
+func (c *CreateContext) LocalObjectsFilter() filter.Filter {
+	return filter.NewNoFilter()
 }
 
 func (c *CreateContext) JsonNetContext() *jsonnet.Context {
@@ -119,7 +120,7 @@ func replacementsForCreate(sourceBranch model.BranchKey, configs []ConfigDef) *r
 	return replacements
 }
 
-func remoteFilterForCreate(sourceBranch model.BranchKey, configs []ConfigDef) model.ObjectsFilter {
+func remoteFilterForCreate(sourceBranch model.BranchKey, configs []ConfigDef) filter.Filter {
 	var keys []model.Key
 
 	// Branch
@@ -133,7 +134,5 @@ func remoteFilterForCreate(sourceBranch model.BranchKey, configs []ConfigDef) mo
 		}
 	}
 
-	filter := model.NoFilter()
-	filter.SetAllowedKeys(keys)
-	return filter
+	return filter.NewAllowedKeysFilter(keys...)
 }

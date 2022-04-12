@@ -3,25 +3,20 @@ package orchestration
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/remote"
 )
 
 type orchestratorLocalMapper struct {
 	*helper
-	state  *local.State
 	logger log.Logger
 }
 
 type orchestratorRemoteMapper struct {
 	*helper
-	state  *remote.State
 	logger log.Logger
 }
 
 type helper struct {
 	dependencies
-	objects model.Objects
 }
 
 type dependencies interface {
@@ -29,16 +24,16 @@ type dependencies interface {
 	Components() (*model.ComponentsMap, error)
 }
 
-func NewLocalMapper(s *local.State, d dependencies) *orchestratorLocalMapper {
-	return &orchestratorLocalMapper{helper: newHelper(s, d), state: s, logger: d.Logger()}
+func NewLocalMapper(d dependencies) *orchestratorLocalMapper {
+	return &orchestratorLocalMapper{helper: newHelper(d), logger: d.Logger()}
 }
 
-func NewRemoteMapper(s *remote.State, d dependencies) *orchestratorRemoteMapper {
-	return &orchestratorRemoteMapper{helper: newHelper(s, d), state: s, logger: d.Logger()}
+func NewRemoteMapper(d dependencies) *orchestratorRemoteMapper {
+	return &orchestratorRemoteMapper{helper: newHelper(d), logger: d.Logger()}
 }
 
-func newHelper(objects model.Objects, d dependencies) *helper {
-	return &helper{dependencies: d, objects: objects}
+func newHelper(d dependencies) *helper {
+	return &helper{dependencies: d}
 }
 
 func (h *helper) isOrchestrator(key model.Key) (bool, error) {

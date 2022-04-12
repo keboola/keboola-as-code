@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
@@ -116,7 +116,7 @@ func (f *file) setRecords(records []model.ObjectManifest) {
 			configsMap[config.ConfigKey] = config
 			f.Configs = append(f.Configs, config)
 		case *model.ConfigRowManifest:
-			config, found := configsMap[v.ConfigKey()]
+			config, found := configsMap[v.ConfigKey]
 			if found {
 				config.Rows = append(config.Rows, v)
 			}

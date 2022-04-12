@@ -12,7 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/mapper"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/sort"
 )
 
 func newTestUow(t *testing.T, mappers ...interface{}) (state.UnitOfWork, *httpmock.MockTransport, *remote.State) {
@@ -24,13 +24,13 @@ func newTestUow(t *testing.T, mappers ...interface{}) (state.UnitOfWork, *httpmo
 	d.UseMockedSchedulerApi()
 
 	// Create state
-	s, err := remote.NewState(d, state.NewIdSorter(), func(s *remote.State) (mapper.Mappers, error) {
+	s, err := remote.NewState(d, sort.NewIdSorter(), func(s *remote.State) (remote.Mappers, error) {
 		return mappers, nil
 	})
 	assert.NoError(t, err)
 
 	// Create UnitOfWork
-	return s.NewUnitOfWork(context.Background(), model.NoFilter(), `change desc`), httpTransport, s
+	return s.NewUnitOfWork(context.Background(), `change desc`), httpTransport, s
 }
 
 type testMapper struct {

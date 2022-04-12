@@ -95,6 +95,10 @@ func (c *Config) ObjectName() string {
 	return c.Name
 }
 
+func (c *Config) GetBranchKey() BranchKey {
+	return c.BranchKey
+}
+
 func (c *Config) GetComponentId() ComponentId {
 	return c.ComponentId
 }

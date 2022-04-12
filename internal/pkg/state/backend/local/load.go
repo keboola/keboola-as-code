@@ -15,7 +15,7 @@ type ctxKey string
 
 type loadContext struct {
 	*uow
-	state.LoadContext
+	parentCtx           state.LoadContext
 	ignoreNotFoundError bool
 }
 
@@ -68,25 +68,25 @@ func (c *loadContext) loadObject(objectManifest model.ObjectManifest) error {
 	}
 
 	// Call mappers
-	recipe := model.NewLocalLoadRecipe(c.FileLoader(), objectManifest.Path(), object)
-	if err := c.mapper.MapAfterLocalLoad(recipe); err != nil {
+	ctx, err := c.mapper.MapAfterLocalLoad(c.ctx, object)
+	if err != nil {
 		return c.invalidObjectError(object, err)
 	}
 
 	// Is object ignored?
-	if c.Filter.IsObjectIgnored(object) {
+	if c.parentCtx.Filter.IsObjectIgnored(object) {
 		return nil
 	}
 
 	// Work done, notify UnitOfWork
-	if err := c.OnLoad(object); err != nil {
+	if err := c.parentCtx.OnLoad(object); err != nil {
 		err = errors.PrefixError(fmt.Sprintf(`%s is invalid`, objectManifest.String()), err)
 		return c.invalidObjectError(object, err)
 	}
 
 	// Collect related paths
 	relatedPaths := relatedpaths.New(objectManifest.Path())
-	for _, file := range recipe.Files.Loaded() {
+	for _, file := range ctx.Loaded() {
 		relatedPaths.Add(file.Path())
 	}
 	c.SetRelatedPaths(object.Key(), relatedPaths)

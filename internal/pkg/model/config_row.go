@@ -65,6 +65,10 @@ func (k ConfigRowKey) ParentKey() (Key, error) {
 	return k.ConfigKey, nil
 }
 
+func (c *ConfigRowKey) GetBranchKey() BranchKey {
+	return c.BranchKey
+}
+
 func (k ConfigRowKey) ComponentKey() ComponentKey {
 	return ComponentKey{Id: k.ComponentId}
 }

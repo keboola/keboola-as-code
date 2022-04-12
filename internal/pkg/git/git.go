@@ -9,13 +9,13 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 func Available() bool {
@@ -32,7 +32,7 @@ type Repository struct {
 func (r *Repository) CommitHash() (string, error) {
 	err, stdErr, _, stdOut := runGitCommand(r.logger, r.Fs.BasePath(), []string{"rev-parse", "HEAD"})
 	if err != nil {
-		return "", utils.PrefixError("cannot get repository hash", fmt.Errorf(stdErr))
+		return "", errors.PrefixError("cannot get repository hash", fmt.Errorf(stdErr))
 	}
 	return strings.TrimSuffix(stdOut, "\n"), nil
 }
@@ -114,7 +114,7 @@ func CheckoutTemplateRepository(opts CheckoutOptions, logger log.Logger) (filesy
 		}
 
 		// Checkout template src directory
-		srcDir := filesystem.Join(versionRecord.Path(), template.SrcDirectory)
+		srcDir := filesystem.Join(versionRecord.Path().String(), template.SrcDirectory)
 		err, stdErr, _, _ = runGitCommand(logger, dir, []string{"sparse-checkout", "add", fmt.Sprintf("/%s", srcDir)})
 		if err != nil {
 			return nil, fmt.Errorf(stdErr)

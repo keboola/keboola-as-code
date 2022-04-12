@@ -81,7 +81,7 @@ func TestUnitOfWork_Save_Relations(t *testing.T) {
 	//	},
 	//}
 	//
-	//recipe := model.NewLocalSaveRecipe(configState.Manifest(), configState.Local, model.NewChangedFields())
+	//recipe := model.NewSaveContext(configState.Manifest(), configState.Local, model.NewChangedFields())
 	//assert.NoError(t, mockedState.Mapper().MapBeforeLocalSave(recipe))
 	//assert.Empty(t, logger.WarnAndErrorMessages())
 	//

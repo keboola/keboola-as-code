@@ -21,16 +21,17 @@ func TestCoreFilesMapper_MapAfterLocalLoad(t *testing.T) {
 	fs := d.Fs()
 
 	// Save files
-	baseDir := model.NewAbsPath("foo", "bar")
 	metaFile := `{"myKey": "3", "Meta2": "4"}`
 	configFile := `{"foo": "bar"}`
 	object := &fixtures.MockedObject{}
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(state.NamingGenerator().MetaFilePath(baseDir), metaFile)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(state.NamingGenerator().ConfigFilePath(baseDir), configFile)))
+	basePath := model.NewAbsPath("foo", "bar")
+	state.NamingRegistry().MustAttach(object.Key(), basePath)
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(state.NamingGenerator().MetaFilePath(basePath), metaFile)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(state.NamingGenerator().ConfigFilePath(basePath), configFile)))
 
 	// Call mapper
-	recipe := model.NewLocalLoadRecipe(d.FileLoader(), baseDir, object)
-	assert.NoError(t, state.Mapper().MapAfterLocalLoad(recipe))
+	_, err := state.Mapper().MapAfterLocalLoad(context.Background(), object)
+	assert.NoError(t, err)
 
 	// Values are loaded and set
 	assert.Equal(t, &fixtures.MockedObject{
@@ -59,21 +60,22 @@ func TestCoreFilesMapper_MapAfterLocalLoad_SkipChildIfParentIsInvalid(t *testing
 	assert.NoError(t, aferofs.CopyFs2Fs(nil, inputDir, fs, ``))
 
 	// Setup manifest
+	branchKey := model.BranchKey{BranchId: 123}
 	state.Manifest().MustAdd(
 		&model.BranchManifest{
-			BranchKey: model.BranchKey{BranchId: 123},
+			BranchKey: branchKey,
 			AbsPath:   model.NewAbsPath(``, `main`),
 		},
 		&model.ConfigManifestWithRows{
 			ConfigManifest: model.ConfigManifest{
-				ConfigKey: model.ConfigKey{BranchId: 123, ComponentId: `foo.bar`, ConfigId: `456`},
+				ConfigKey: model.ConfigKey{BranchKey: branchKey, ComponentId: `foo.bar`, ConfigId: `456`},
 				AbsPath:   model.NewAbsPath(`main`, `config`),
 			},
 		},
 	)
 
 	// Load all
-	uow := state.NewUnitOfWork(context.Background(), model.NoFilter())
+	uow := state.NewUnitOfWork(context.Background())
 	uow.LoadAll()
 
 	// Invoke and check error

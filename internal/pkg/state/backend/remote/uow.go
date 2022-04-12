@@ -21,19 +21,17 @@ type uow struct {
 	invoked           bool
 	ctx               context.Context
 	changeDescription string
-	filter            state.Filter
 	storageApiPools   *orderedmap.OrderedMap // separated pool for changes in branches, configs and rows
-	errors            *errors.MultiError
+	errs              *errors.MultiError
 }
 
-func newUnitOfWorkBackend(state *State, ctx context.Context, filter state.Filter, changeDescription string) state.UnitOfWorkBackend {
+func newUnitOfWorkBackend(state *State, ctx context.Context, changeDescription string) state.UnitOfWorkBackend {
 	return &uow{
 		_state:            state,
 		ctx:               ctx,
 		changeDescription: changeDescription,
-		filter:            filter,
 		storageApiPools:   orderedmap.New(),
-		errors:            errors.NewMultiError(),
+		errs:              errors.NewMultiError(),
 	}
 }
 
@@ -49,24 +47,24 @@ func (u *uow) Invoke() (state.FinalizationFn, error) {
 	for _, level := range u.storageApiPools.Keys() {
 		pool, _ := u.storageApiPools.Get(level)
 		if err := pool.(*client.Pool).StartAndWait(); err != nil {
-			u.errors.Append(err)
+			u.errs.Append(err)
 			break
 		}
 	}
 
-	return u.finalizeFn(), u.errors.ErrorOrNil()
+	return u.finalizeFn(), u.errs.ErrorOrNil()
 }
 
-func (u *uow) LoadAll(loadCtx state.LoadContext) {
-	(&loadContext{uow: u, LoadContext: loadCtx}).loadAll()
+func (u *uow) LoadAll(ctx state.LoadContext) {
+	(&loadContext{uow: u, parentCtx: ctx}).loadAll()
 }
 
-func (u *uow) Save(saveCtx state.SaveContext) {
-	(&saveContext{uow: u, SaveContext: saveCtx}).save()
+func (u *uow) Save(ctx state.SaveContext) {
+	(&saveContext{uow: u, parentCtx: ctx}).save()
 }
 
-func (u *uow) Delete(deleteCtx state.DeleteContext) {
-	(&deleteContext{uow: u, DeleteContext: deleteCtx}).delete()
+func (u *uow) Delete(ctx state.DeleteContext) {
+	(&deleteContext{uow: u, parentCtx: ctx}).delete()
 }
 
 // finalizeFn callback - responds to the changes that have been made.

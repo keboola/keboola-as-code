@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/filter"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/replacevalues"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -18,8 +18,8 @@ type _context context.Context
 
 type Context interface {
 	context.Context
-	RemoteObjectsFilter() model.ObjectsFilter
-	LocalObjectsFilter() model.ObjectsFilter
+	RemoteObjectsFilter() filter.Filter
+	LocalObjectsFilter() filter.Filter
 	JsonNetContext() *jsonnet.Context
 	Replacements() (*replacevalues.Values, error)
 }

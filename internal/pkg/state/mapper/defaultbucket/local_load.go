@@ -4,20 +4,22 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 // AfterLocalOperation - replace placeholders with default buckets in IM.
-func (m *defaultBucketMapper) AfterLocalOperation(changes *model.Changes) error {
+func (m *defaultBucketMapper) AfterLocalOperation(state *local.State, changes *model.Changes) error {
 	warnings := errors.NewMultiError()
 	for _, object := range changes.Loaded() {
 		config, ok := object.(configOrRow)
 		if !ok {
 			continue
 		}
-		if err := m.visitStorageInputTables(config, config.GetContent(), m.replacePlaceholderWithDefaultBucket); err != nil {
+		if err := m.visitStorageInputTables(state, config, config.GetContent(), m.replacePlaceholder); err != nil {
 			warnings.Append(err)
 		}
 	}
@@ -30,7 +32,8 @@ func (m *defaultBucketMapper) AfterLocalOperation(changes *model.Changes) error 
 	return nil
 }
 
-func (m *defaultBucketMapper) replacePlaceholderWithDefaultBucket(
+func (m *defaultBucketMapper) replacePlaceholder(
+	state *local.State,
 	targetConfig configOrRow,
 	inputTableSource string,
 	inputTable *orderedmap.OrderedMap,
@@ -46,19 +49,14 @@ func (m *defaultBucketMapper) replacePlaceholderWithDefaultBucket(
 	}
 
 	// Get branch path
-	branchKey := targetConfig.BranchKey()
-	branch, found := m.state.Get(branchKey)
-	if !found {
-		return fmt.Errorf(`%s not found`, branchKey)
-	}
-	branchPath, err := m.state.GetPath(branch)
+	branchPath, err := state.GetPath(targetConfig.GetBranchKey())
 	if err != nil {
-		return fmt.Errorf(`cannot get branch path: %w`, err)
+		return err
 	}
 
 	// Get key by path
 	sourcePath := filesystem.Join(branchPath.String(), splitSource[0])
-	sourceConfigRaw, found := m.state.GetByPath(sourcePath)
+	sourceConfigRaw, found := state.GetByPath(sourcePath)
 	if !found {
 		return fmt.Errorf(
 			`%s contains table "%s" in input mapping referencing to a non-existing configuration`,

@@ -21,7 +21,7 @@ func NewRemoteMapper(s *remote.State, d dependencies) *ignoreMapper {
 	return &ignoreMapper{state: s, logger: d.Logger()}
 }
 
-func (m *ignoreMapper) AfterRemoteOperation(changes *model.Changes) error {
+func (m *ignoreMapper) AfterRemoteOperation(_ *remote.State, changes *model.Changes) error {
 	// Ignore objects
 	ignored := make(map[string]bool)
 	for _, object := range changes.Loaded() {
@@ -52,7 +52,7 @@ func (m *ignoreMapper) isIgnored(object model.Object) bool {
 		return m.isIgnoredConfig(o)
 	case *model.ConfigRow:
 		// Check parent config
-		if config, found := m.state.Get(o.ConfigKey()); !found {
+		if config, found := m.state.Get(o.ConfigKey); !found {
 			return true
 		} else {
 			return m.isIgnoredConfig(config.(*model.Config))

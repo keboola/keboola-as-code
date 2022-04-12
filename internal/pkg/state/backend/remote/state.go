@@ -53,8 +53,8 @@ func NewState(d dependencies, sorter model.ObjectsSorter, mappersFn MappersFacto
 	return s, nil
 }
 
-func (s *State) NewUnitOfWork(ctx context.Context, filter state.Filter, changeDescription string) state.UnitOfWork {
-	backend := newUnitOfWorkBackend(s, ctx, filter, changeDescription)
+func (s *State) NewUnitOfWork(ctx context.Context, changeDescription string) state.UnitOfWork {
+	backend := newUnitOfWorkBackend(s, ctx, changeDescription)
 	return state.NewUnitOfWork(ctx, s.objects, backend)
 }
 

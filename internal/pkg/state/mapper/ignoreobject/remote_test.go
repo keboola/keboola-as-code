@@ -17,17 +17,18 @@ func TestIgnoreMapper_AfterRemoteOperation(t *testing.T) {
 	logger := d.DebugLogger()
 
 	// Branch
-	branch := &model.Branch{BranchKey: model.BranchKey{BranchId: 1}}
+	branchKey := model.BranchKey{BranchId: 1}
+	branch := &model.Branch{BranchKey: branchKey}
 	state.MustAdd(branch)
 
 	// Target1
-	configKey := model.ConfigKey{BranchId: 1, ComponentId: "keboola.foo-bar", ConfigId: "1"}
+	configKey := model.ConfigKey{BranchKey: branchKey, ComponentId: "keboola.foo-bar", ConfigId: "1"}
 	config := &model.Config{ConfigKey: configKey}
 	state.MustAdd(config)
 
 	// Variables for target
 	attachedVariables := &model.Config{
-		ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: model.VariablesComponentId, ConfigId: "2"},
+		ConfigKey: model.ConfigKey{BranchKey: branchKey, ComponentId: model.VariablesComponentId, ConfigId: "2"},
 		Relations: model.Relations{
 			&model.VariablesForRelation{
 				ComponentId: configKey.ComponentId,
@@ -38,7 +39,7 @@ func TestIgnoreMapper_AfterRemoteOperation(t *testing.T) {
 	state.MustAdd(attachedVariables)
 
 	// Unattached variables
-	unattachedVariables := &model.Config{ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: model.VariablesComponentId, ConfigId: "3"}}
+	unattachedVariables := &model.Config{ConfigKey: model.ConfigKey{BranchKey: branchKey, ComponentId: model.VariablesComponentId, ConfigId: "3"}}
 	state.MustAdd(unattachedVariables)
 
 	// Invoke

@@ -3,11 +3,13 @@ package manifest
 import (
 	"context"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/filter"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/sort"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 )
 
@@ -28,7 +30,7 @@ type Manifest struct {
 	fs           filesystem.Fs
 	project      Project
 	naming       naming.Template
-	filter       model.ObjectsFilter
+	filter       filter.BaseFilter
 	repositories []model.TemplateRepository
 }
 
@@ -39,11 +41,11 @@ type Project struct {
 
 func New(ctx context.Context, fs filesystem.Fs, projectId int, apiHost string) *Manifest {
 	return &Manifest{
-		records:      manifest.NewCollection(ctx, naming.NewRegistry(), state.NewIdSorter()),
+		records:      manifest.NewCollection(ctx, naming.NewRegistry(), sort.NewIdSorter()),
 		fs:           fs,
 		project:      Project{Id: projectId, ApiHost: apiHost},
 		naming:       naming.TemplateWithIds(),
-		filter:       model.NoFilter(),
+		filter:       filter.NewBaseFilter(),
 		repositories: []model.TemplateRepository{repository.DefaultRepository()},
 	}
 }
@@ -59,7 +61,7 @@ func Load(ctx context.Context, fs filesystem.Fs, ignoreErrors bool) (*Manifest, 
 	m := New(ctx, fs, content.Project.Id, content.Project.ApiHost)
 
 	// Set configuration
-	m.SetSorter(state.NewSorterFromName(content.SortBy, m.NamingRegistry()))
+	m.SetSorter(sort.NewSorterFromName(content.SortBy, m.NamingRegistry()))
 	m.naming = content.Naming
 	m.filter.SetAllowedBranches(content.AllowedBranches)
 	m.filter.SetIgnoredComponents(content.IgnoredComponents)
@@ -96,7 +98,7 @@ func (m *Manifest) Path() string {
 	return Path()
 }
 
-func (m *Manifest) Filter() model.ObjectsFilter {
+func (m *Manifest) Filter() filter.Filter {
 	return m.filter
 }
 
@@ -116,11 +118,11 @@ func (m *Manifest) SetNamingTemplate(v naming.Template) {
 	m.naming = v
 }
 
-func (m *Manifest) AllowedBranches() model.AllowedBranches {
+func (m *Manifest) AllowedBranches() filter.AllowedBranches {
 	return m.filter.AllowedBranches()
 }
 
-func (m *Manifest) SetAllowedBranches(branches model.AllowedBranches) {
+func (m *Manifest) SetAllowedBranches(branches filter.AllowedBranches) {
 	m.filter.SetAllowedBranches(branches)
 }
 

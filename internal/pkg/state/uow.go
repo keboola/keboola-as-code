@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/filter"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -17,7 +18,7 @@ import (
 //   - Generates set of changes.
 type UnitOfWork interface {
 	Invoke() error
-	LoadAll(filters ...Filter)
+	LoadAll(filters ...filter.Filter)
 	Save(object model.Object, changedFields model.ChangedFields)
 	Delete(key model.Key)
 }
@@ -35,7 +36,7 @@ type FinalizationFn func(changes *model.Changes) error
 
 // LoadContext is used for data exchange between the UnitOfWork and the UnitOfWorkBackend on load.
 type LoadContext struct {
-	Filter Filter
+	Filter filter.Filter
 	OnLoad func(object model.Object) error
 }
 
@@ -96,10 +97,10 @@ func (u *uow) Invoke() error {
 }
 
 // LoadAll objects from the backend.
-func (u *uow) LoadAll(filters ...Filter) {
+func (u *uow) LoadAll(filters ...filter.Filter) {
 	// Use backend
 	u.backend.LoadAll(LoadContext{
-		Filter: NewComposedFilter(filters...),
+		Filter: filter.NewComposedFilter(filters...),
 		OnLoad: func(object model.Object) error {
 			// Validate
 			if err := validator.Validate(u.ctx, object); err != nil {

@@ -11,13 +11,12 @@ import (
 
 type defaultBucketMapper struct {
 	dependencies
-	state  *local.State
 	logger log.Logger
 }
 
 type configOrRow interface {
 	model.ObjectWithContent
-	BranchKey() model.BranchKey
+	GetBranchKey() model.BranchKey
 }
 
 type dependencies interface {
@@ -25,13 +24,13 @@ type dependencies interface {
 	Components() (*model.ComponentsMap, error)
 }
 
-func NewLocalMapper(s *local.State, d dependencies) *defaultBucketMapper {
-	return &defaultBucketMapper{dependencies: d, state: s, logger: d.Logger()}
+func NewLocalMapper(d dependencies) *defaultBucketMapper {
+	return &defaultBucketMapper{dependencies: d, logger: d.Logger()}
 }
 
-type callbackFn func(config configOrRow, sourceTableId string, storageInputTable *orderedmap.OrderedMap) error
+type callbackFn func(state *local.State, config configOrRow, sourceTableId string, storageInputTable *orderedmap.OrderedMap) error
 
-func (m *defaultBucketMapper) visitStorageInputTables(config configOrRow, content *orderedmap.OrderedMap, callback callbackFn) error {
+func (m *defaultBucketMapper) visitStorageInputTables(state *local.State, config configOrRow, content *orderedmap.OrderedMap, callback callbackFn) error {
 	inputTablesRaw, _, _ := content.GetNested("storage.input.tables")
 	inputTables, ok := inputTablesRaw.([]interface{})
 	if !ok {
@@ -52,7 +51,7 @@ func (m *defaultBucketMapper) visitStorageInputTables(config configOrRow, conten
 			continue
 		}
 
-		err := callback(config, inputTableSource, inputTable)
+		err := callback(state, config, inputTableSource, inputTable)
 		if err != nil {
 			return err
 		}

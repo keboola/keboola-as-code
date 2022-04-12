@@ -1,6 +1,7 @@
 package defaultbucket_test
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -33,10 +34,11 @@ func TestDefaultBucketMapper_MapBeforeLocalSave_Config(t *testing.T) {
 	logger := d.DebugLogger()
 
 	// Branch
-	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{BranchId: 123}})
+	branchKey := model.BranchKey{BranchId: 123}
+	state.MustAdd(&model.Branch{BranchKey: branchKey})
 
 	// Config referenced by the default bucket
-	sourceConfigKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.ex-aws-s3`, ConfigId: `123`}
+	sourceConfigKey := model.ConfigKey{BranchKey: branchKey, ComponentId: `keboola.ex-aws-s3`, ConfigId: `123`}
 	state.MustAdd(&model.Config{ConfigKey: sourceConfigKey})
 	state.NamingRegistry().MustAttach(
 		sourceConfigKey,
@@ -44,16 +46,17 @@ func TestDefaultBucketMapper_MapBeforeLocalSave_Config(t *testing.T) {
 	)
 
 	// Config with the input mapping
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.snowflake-transformation`, ConfigId: `789`}
+	configKey := model.ConfigKey{BranchKey: branchKey, ComponentId: `keboola.snowflake-transformation`, ConfigId: `789`}
 	configPath := model.NewAbsPath("branch", "transformation/keboola.snowflake-transformation/test")
+	state.NamingRegistry().MustAttach(configKey, configPath)
 	config := &model.Config{ConfigKey: configKey, Content: orderedmap.New()}
 	json.MustDecodeString(localSaveConfigContentSample, config.Content)
 	state.MustAdd(config)
 
 	// Invoke
 	object := deepcopy.Copy(config).(*model.Config)
-	recipe := model.NewLocalSaveRecipe(configPath, object, model.NewChangedFields())
-	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
+	_, err := state.Mapper().MapBeforeLocalSave(context.Background(), object, nil)
+	assert.NoError(t, err)
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Default bucket is replaced with the placeholder
@@ -67,19 +70,21 @@ func TestDefaultBucketMapper_MapBeforeLocalSave_Config_Missing(t *testing.T) {
 	logger := d.DebugLogger()
 
 	// Branch
-	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{BranchId: 123}})
+	branchKey := model.BranchKey{BranchId: 123}
+	state.MustAdd(&model.Branch{BranchKey: branchKey})
 
 	// Config with the input mapping
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.snowflake-transformation`, ConfigId: `789`}
+	configKey := model.ConfigKey{BranchKey: branchKey, ComponentId: `keboola.snowflake-transformation`, ConfigId: `789`}
 	configPath := model.NewAbsPath("branch", "transformation/keboola.snowflake-transformation/test")
+	state.NamingRegistry().MustAttach(configKey, configPath)
 	config := &model.Config{ConfigKey: configKey, Content: orderedmap.New()}
 	json.MustDecodeString(localSaveConfigContentSample, config.Content)
 	state.MustAdd(config)
 
 	// Invoke
 	object := deepcopy.Copy(config).(*model.Config)
-	recipe := model.NewLocalSaveRecipe(configPath, object, model.NewChangedFields())
-	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
+	_, err := state.Mapper().MapBeforeLocalSave(context.Background(), object, nil)
+	assert.NoError(t, err)
 
 	// Check warning of missing default bucket config
 	expectedWarnings := `
@@ -100,10 +105,11 @@ func TestDefaultBucketMapper_MapBeforeLocalSave_Row(t *testing.T) {
 	logger := d.DebugLogger()
 
 	// Branch
-	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{BranchId: 123}})
+	branchKey := model.BranchKey{BranchId: 123}
+	state.MustAdd(&model.Branch{BranchKey: branchKey})
 
 	// Config referenced by the default bucket
-	sourceConfigKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.ex-aws-s3`, ConfigId: `123`}
+	sourceConfigKey := model.ConfigKey{BranchKey: branchKey, ComponentId: `keboola.ex-aws-s3`, ConfigId: `123`}
 	state.MustAdd(&model.Config{ConfigKey: sourceConfigKey})
 	state.NamingRegistry().MustAttach(
 		sourceConfigKey,
@@ -111,21 +117,22 @@ func TestDefaultBucketMapper_MapBeforeLocalSave_Row(t *testing.T) {
 	)
 
 	// Parent config
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.snowflake-transformation`, ConfigId: `789`}
+	configKey := model.ConfigKey{BranchKey: branchKey, ComponentId: `keboola.snowflake-transformation`, ConfigId: `789`}
 	config := &model.Config{ConfigKey: configKey}
 	state.MustAdd(config)
 
 	// Row with the input mapping
-	rowKey := model.ConfigRowKey{BranchId: 123, ConfigId: config.ConfigId, ConfigRowId: `456`, ComponentId: config.ComponentId}
+	rowKey := model.ConfigRowKey{ConfigKey: configKey, ConfigRowId: `456`}
 	rowPath := model.NewAbsPath("branch/transformation/keboola.snowflake-transformation/test", "rows/row")
+	state.NamingRegistry().MustAttach(rowKey, rowPath)
 	row := &model.ConfigRow{ConfigRowKey: rowKey, Content: orderedmap.New()}
 	json.MustDecodeString(localSaveConfigContentSample, row.Content)
 	state.MustAdd(row)
 
 	// Invoke
 	object := deepcopy.Copy(row).(*model.ConfigRow)
-	recipe := model.NewLocalSaveRecipe(rowPath, object, model.NewChangedFields())
-	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
+	_, err := state.Mapper().MapBeforeLocalSave(context.Background(), object, nil)
+	assert.NoError(t, err)
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Default bucket is replaced with the placeholder
@@ -139,24 +146,26 @@ func TestDefaultBucketMapper_MapBeforeLocalSave_Row_Missing(t *testing.T) {
 	logger := d.DebugLogger()
 
 	// Branch
-	state.MustAdd(&model.Branch{BranchKey: model.BranchKey{BranchId: 123}})
+	branchKey := model.BranchKey{BranchId: 123}
+	state.MustAdd(&model.Branch{BranchKey: branchKey})
 
 	// Parent config
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.snowflake-transformation`, ConfigId: `789`}
+	configKey := model.ConfigKey{BranchKey: branchKey, ComponentId: `keboola.snowflake-transformation`, ConfigId: `789`}
 	config := &model.Config{ConfigKey: configKey}
 	state.MustAdd(config)
 
 	// Row with the input mapping
-	rowKey := model.ConfigRowKey{BranchId: 123, ConfigId: config.ConfigId, ConfigRowId: `456`, ComponentId: config.ComponentId}
+	rowKey := model.ConfigRowKey{ConfigKey: configKey, ConfigRowId: `456`}
 	rowPath := model.NewAbsPath("branch/transformation/keboola.snowflake-transformation/test", "rows/row")
+	state.NamingRegistry().MustAttach(rowKey, rowPath)
 	row := &model.ConfigRow{ConfigRowKey: rowKey, Content: orderedmap.New()}
 	json.MustDecodeString(localSaveConfigContentSample, row.Content)
 	state.MustAdd(row)
 
 	// Invoke
 	object := deepcopy.Copy(row).(*model.ConfigRow)
-	recipe := model.NewLocalSaveRecipe(rowPath, object, model.NewChangedFields())
-	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
+	_, err := state.Mapper().MapBeforeLocalSave(context.Background(), object, nil)
+	assert.NoError(t, err)
 
 	// Check warning of missing default bucket config
 	expectedWarnings := `

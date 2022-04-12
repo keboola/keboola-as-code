@@ -8,28 +8,28 @@ import (
 
 type deleteContext struct {
 	*uow
-	state.DeleteContext
+	parentCtx state.DeleteContext
 }
 
 func (c *deleteContext) delete() {
 	// Branch must be deleted in blocking operation
-	if branchKey, ok := c.Key.(model.BranchKey); ok {
+	if branchKey, ok := c.parentCtx.Key.(model.BranchKey); ok {
 		if _, err := c.storageApi.DeleteBranch(branchKey); err != nil {
 			c.errs.Append(err)
 		}
 
 		// Notify UnitOfWork
-		c.OnSuccess()
+		c.parentCtx.OnSuccess()
 		return
 	}
 
 	// Other types can be deleted in parallel
 	c.
-		poolFor(c.Key.Level()).
-		Request(c.storageApi.DeleteRequest(c.Key)).
+		poolFor(c.parentCtx.Key.Level()).
+		Request(c.storageApi.DeleteRequest(c.parentCtx.Key)).
 		OnSuccess(func(response *client.Response) {
 			// Notify UnitOfWork
-			c.OnSuccess()
+			c.parentCtx.OnSuccess()
 		}).
 		Send()
 }

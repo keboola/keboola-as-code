@@ -21,7 +21,7 @@ func (e *InvalidRemoteStateError) Unwrap() error {
 }
 
 type Options struct {
-	Filter *model.ObjectsFilter
+	Filter *filter.Filter
 }
 
 type dependencies interface {

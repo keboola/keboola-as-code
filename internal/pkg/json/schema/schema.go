@@ -2,13 +2,13 @@ package schema
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"sort"
 	"strings"
 
 	"github.com/santhosh-tekuri/jsonschema/v5"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/naming"
