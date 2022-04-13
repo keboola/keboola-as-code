@@ -12,8 +12,10 @@ import (
 
 func (s *service) APIKeyAuth(ctx context.Context, tokenStr string, scheme *security.APIKeyScheme) (context.Context, error) {
 	if scheme.Name == "storage-api-token" {
+		d := ctx.Value(dependencies.CtxKey).(dependencies.Container)
+
 		// Get API
-		api, err := s.dependencies.StorageApi()
+		api, err := d.StorageApi()
 		if err != nil {
 			return ctx, err
 		}
@@ -25,7 +27,7 @@ func (s *service) APIKeyAuth(ctx context.Context, tokenStr string, scheme *secur
 		}
 
 		// Modify dependencies
-		d, err := s.dependencies.WithStorageApi(api.WithToken(token))
+		d, err = d.WithStorageApi(api.WithToken(token))
 		if err != nil {
 			return nil, err
 		}
