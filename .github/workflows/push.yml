@@ -115,13 +115,13 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: ${{ env.GO_VERSION }}
-      - name: Install tools
-        run: . ./scripts/tools.sh
-        shell: bash
       - name: Load Go cache
         uses: ./.github/actions/go-cache
         with:
           key: test
+      - name: Install tools
+        run: . ./scripts/tools.sh
+        shell: bash
       - name: Run tests
         run: |
           make mod
@@ -143,13 +143,13 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: ${{ env.GO_VERSION }}
-      - name: Install tools
-        run: . ./scripts/tools.sh
-        shell: bash
       - name: Load Go cache
         uses: ./.github/actions/go-cache
         with:
           key: lint
+      - name: Install tools
+        run: . ./scripts/tools.sh
+        shell: bash
       - name: Run code linters
         run: |
           make mod
@@ -170,13 +170,13 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: ${{ env.GO_VERSION }}
-      - name: Install tools
-        run: . ./scripts/tools.sh
-        shell: bash
       - name: Load Go cache
         uses: ./.github/actions/go-cache
         with:
           key: compile
+      - name: Install tools
+        run: . ./scripts/tools.sh
+        shell: bash
       - name: Cross-compile
         run: |
           make mod
@@ -200,6 +200,10 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v2
+      - name: Load Go cache
+        uses: ./.github/actions/go-cache
+        with:
+          key: compile
       - name: Install Go
         uses: actions/setup-go@v2
         with:
@@ -207,10 +211,6 @@ jobs:
       - name: Install tools
         run: . ./scripts/tools.sh
         shell: bash
-      - name: Load Go cache
-        uses: ./.github/actions/go-cache
-        with:
-          key: compile
       - name: Import Code-Signing Certificates
         uses: Apple-Actions/import-codesign-certs@v1
         with:
