@@ -207,7 +207,7 @@ func AssertExpectations(
 	expectedRespBody := testhelper.ReplaceEnvsString(expectedResponseFile.Content, envProvider)
 
 	// Compare response status code
-	expectedCodeFile, err := testDirFs.ReadFile(filesystem.NewFileDef("expected-code"))
+	expectedCodeFile, err := testDirFs.ReadFile(filesystem.NewFileDef("expected-http-code"))
 	assert.NoError(t, err)
 	expectedCode := cast.ToInt(strings.TrimSpace(expectedCodeFile.Content))
 	assert.Equal(
