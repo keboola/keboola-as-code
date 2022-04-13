@@ -3,16 +3,12 @@ package dependencies
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/client/encryptionapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/client/schedulerapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi/eventsender"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
-	"github.com/keboola/keboola-as-code/internal/pkg/git"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
@@ -20,7 +16,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	loadInputs "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/inputs/load"
 	loadManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/manifest/load"
-	loadRepositoryManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/repository/manifest/load"
 )
 
 // Abstract provides dependencies which are obtained in different in CLI and templates API.
@@ -31,6 +26,7 @@ type Abstract interface {
 	ApiVerboseLogs() bool
 	StorageApiHost() (string, error)
 	StorageApiToken() (string, error)
+	TemplateRepository(definition model.TemplateRepository, forTemplate model.TemplateRef) (*templateRepository.Repository, error)
 }
 
 // Common provides common dependencies for CLI and templates API.
@@ -42,7 +38,6 @@ type Common interface {
 	SchedulerApi() (*schedulerapi.Api, error)
 	EventSender() (*eventsender.Sender, error)
 	Template(reference model.TemplateRef) (*template.Template, error)
-	TemplateRepository(definition model.TemplateRepository, forTemplate model.TemplateRef) (*templateRepository.Repository, error)
 }
 
 // NewCommonContainer returns dependencies container for production.
@@ -176,34 +171,6 @@ func (v *commonContainer) serviceUrlById() (map[storageapi.ServiceId]storageapi.
 		}
 	}
 	return v.serviceUrls, nil
-}
-
-func (v *commonContainer) TemplateRepository(definition model.TemplateRepository, forTemplate model.TemplateRef) (*templateRepository.Repository, error) {
-	fs, err := v.templateRepositoryFs(definition, forTemplate)
-	if err != nil {
-		return nil, err
-	}
-	manifest, err := loadRepositoryManifest.Run(fs, v)
-	if err != nil {
-		return nil, err
-	}
-	return templateRepository.New(fs, manifest), nil
-}
-
-func (v *commonContainer) templateRepositoryFs(definition model.TemplateRepository, template model.TemplateRef) (filesystem.Fs, error) {
-	switch definition.Type {
-	case model.RepositoryTypeDir:
-		path := definition.Path
-		// nolint: forbidigo
-		if !filepath.IsAbs(path) {
-			return nil, fmt.Errorf(`repository path must be absolute, given "%s"`, path)
-		}
-		return aferofs.NewLocalFs(v.Logger(), path, definition.WorkingDir)
-	case model.RepositoryTypeGit:
-		return git.CheckoutTemplateRepositoryPartial(template, v.Logger())
-	default:
-		panic(fmt.Errorf(`unexpected repository type "%s"`, definition.Type))
-	}
 }
 
 func (v *commonContainer) Template(reference model.TemplateRef) (*template.Template, error) {

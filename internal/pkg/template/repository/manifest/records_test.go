@@ -10,7 +10,7 @@ import (
 func TestTemplateRecord_LatestVersion_NotFound(t *testing.T) {
 	t.Parallel()
 	template := TemplateRecord{}
-	_, found := template.LatestVersion()
+	_, found := template.DefaultVersion()
 	assert.False(t, found)
 }
 
@@ -36,7 +36,7 @@ func TestTemplateRecord_LatestVersion_Found(t *testing.T) {
 		},
 	}
 
-	v, found := template.LatestVersion()
+	v, found := template.DefaultVersion()
 	assert.True(t, found)
 	assert.Equal(t, VersionRecord{
 		Version:     version(`1.2.3`),

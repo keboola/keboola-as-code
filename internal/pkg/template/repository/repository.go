@@ -36,6 +36,10 @@ func (r *Repository) Manifest() *Manifest {
 	return r.manifest
 }
 
+func (r *Repository) Templates() []TemplateRecord {
+	return r.manifest.AllTemplates()
+}
+
 func (r *Repository) GetTemplateById(templateId string) (TemplateRecord, bool) {
 	return r.manifest.GetById(templateId)
 }

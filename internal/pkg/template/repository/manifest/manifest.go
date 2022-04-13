@@ -45,7 +45,7 @@ func Load(fs filesystem.Fs) (*Manifest, error) {
 func (m *Manifest) Save(fs filesystem.Fs) error {
 	// Create file content
 	content := newFile()
-	content.Templates = m.all()
+	content.Templates = m.AllTemplates()
 
 	// Save file
 	if err := saveFile(fs, content); err != nil {
@@ -65,6 +65,19 @@ func (m *Manifest) Persist(records ...TemplateRecord) {
 		m.records[record.Id] = record
 		m.changed = true
 	}
+}
+
+func (m *Manifest) AllTemplates() []TemplateRecord {
+	out := make([]TemplateRecord, 0)
+	for _, template := range m.records {
+		// Sort versions
+		template.Versions = template.AllVersions()
+		out = append(out, template)
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		return out[i].Id < out[j].Id
+	})
+	return out
 }
 
 func (m *Manifest) GetVersion(templateId string, version model.SemVersion) (VersionRecord, error) {
@@ -103,18 +116,6 @@ func (m *Manifest) GetOrCreate(templateId string) TemplateRecord {
 		return record
 	}
 	return newRecord(templateId)
-}
-
-// all template records sorted by ID.
-func (m *Manifest) all() []TemplateRecord {
-	out := make([]TemplateRecord, 0)
-	for _, template := range m.records {
-		out = append(out, template)
-	}
-	sort.SliceStable(out, func(i, j int) bool {
-		return out[i].Id < out[j].Id
-	})
-	return out
 }
 
 func newRecord(templateId string) TemplateRecord {

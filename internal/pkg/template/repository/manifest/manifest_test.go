@@ -191,7 +191,7 @@ func TestManifest_Records(t *testing.T) {
 			Id:      "xyz",
 			AbsPath: model.NewAbsPath("", "xyz"),
 		},
-	}, m.all())
+	}, m.AllTemplates())
 }
 
 func TestManifest_GetByPath_NotFound(t *testing.T) {
