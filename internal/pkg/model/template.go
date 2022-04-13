@@ -20,6 +20,12 @@ type TemplateRepository struct {
 	Url        string                 `json:"url,omitempty" validate:"required_if=Type git"`
 	Ref        string                 `json:"ref,omitempty" validate:"required_if=Type git"`
 	WorkingDir string                 `json:"-"` // only for RepositoryTypeWorkingDir
+	Author     TemplateAuthor         `json:"-"`
+}
+
+type TemplateAuthor struct {
+	Name string `json:"name,omitempty"`
+	Url  string `json:"url,omitempty"`
 }
 
 func (r *TemplateRepository) Hash() string {

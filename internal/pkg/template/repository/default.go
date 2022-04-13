@@ -16,5 +16,9 @@ func DefaultRepository() model.TemplateRepository {
 		Name: DefaultTemplateRepositoryName,
 		Url:  DefaultTemplateRepositoryUrl,
 		Ref:  DefaultTemplateRepositoryRef,
+		Author: model.TemplateAuthor{
+			Name: "Keboola",
+			Url:  "https://www.keboola.com",
+		},
 	}
 }

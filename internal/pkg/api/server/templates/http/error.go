@@ -15,7 +15,6 @@ import (
 	goa "goa.design/goa/v3/pkg"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/gen/templates"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
@@ -28,6 +27,17 @@ const (
 )
 
 type NotFoundError struct{}
+
+type UnexpectedError struct {
+	// HTTP status code.
+	StatusCode int `json:"statusCode"`
+	// Name of error.
+	Name string `json:"error"`
+	// Error message.
+	Message string `json:"message"`
+	// ID of the error
+	ExceptionID *string `json:"exceptionId,omitempty"`
+}
 
 type PanicError struct {
 	Value interface{}
@@ -47,6 +57,14 @@ func (NotFoundError) ErrorName() string {
 
 func (NotFoundError) ErrorUserMessage() string {
 	return "Endpoint not found."
+}
+
+func (e UnexpectedError) Error() string {
+	return e.Message
+}
+
+func (e UnexpectedError) ErrorName() string {
+	return e.Name
 }
 
 func (PanicError) StatusCode() int {
@@ -122,7 +140,7 @@ func formatError(err error) goaHTTP.Statuser {
 // writeError to HTTP response.
 func writeError(ctx context.Context, w http.ResponseWriter, err error) error {
 	// Default values
-	response := &templates.GenericError{
+	response := &UnexpectedError{
 		StatusCode:  http.StatusInternalServerError,
 		Name:        DefaultErrorName,
 		Message:     err.Error(),
@@ -190,7 +208,7 @@ func writeError(ctx context.Context, w http.ResponseWriter, err error) error {
 	return wErr
 }
 
-func errorLogMessage(err error, response *templates.GenericError) string {
+func errorLogMessage(err error, response *UnexpectedError) string {
 	// Log exception ID if it is present
 	exceptionIdValue := ""
 	if response.ExceptionID != nil {

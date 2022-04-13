@@ -9,6 +9,7 @@ import (
 	cors "goa.design/plugins/v3/cors/dsl"
 
 	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/extension/dependencies"
+	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/extension/genericerror"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/extension/operationid"
 	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/extension/token"
 )
@@ -126,7 +127,7 @@ var _ = Service("templates", func() {
 
 	Method("RepositoryIndex", func() {
 		Meta("openapi:summary", "Get template repository detail")
-		Description("Get details of specified repository. Use \"default\" for default Keboola repository.")
+		Description("Get details of specified repository. Use \"keboola\" for default Keboola repository.")
 		Result(Repository)
 		Payload(func() {
 			repositoryAttr()
@@ -352,21 +353,14 @@ var _ = Service("templates", func() {
 var GenericErrorType = Type("GenericError", func() {
 	Description("Generic error")
 	Attribute("statusCode", Int, "HTTP status code.", func() {
-		Meta("struct:tag:json", "statusCode")
 		Example(500)
 	})
 	ErrorName("error", String, "Name of error.", func() {
 		Meta("struct:field:name", "name")
-		Meta("struct:tag:json", "error")
 		Example("Internal Error")
 	})
 	Attribute("message", String, "Error message.", func() {
-		Meta("struct:tag:json", "message")
 		Example("Internal Error")
-	})
-	Attribute("exceptionId", String, "ID of the error if an internal error occurred.", func() {
-		Meta("struct:tag:json", "exceptionId,omitempty")
-		Example("templates-9db938dd6a8054189a9bd969248aeb48")
 	})
 	Required("statusCode", "error", "message")
 })
@@ -410,8 +404,8 @@ var tokenSecurity = APIKeySecurity("storage-api-token", func() {
 
 func repositoryAttr() {
 	Attribute("repository", String, func() {
-		Example("default")
-		Description("Name of the template repository. Use \"default\" for default Keboola repository.")
+		Example("keboola")
+		Description("Name of the template repository. Use \"keboola\" for default Keboola repository.")
 	})
 	Required("repository")
 }
@@ -519,8 +513,8 @@ var Repository = Type("Repository", func() {
 	Attribute("name", String, func() {
 		MinLength(1)
 		MaxLength(40)
-		Example("default")
-		Description("Template repository name. Use \"default\" for default Keboola repository.")
+		Example("keboola")
+		Description("Template repository name. Use \"keboola\" for default Keboola repository.")
 	})
 	Attribute("url", String, "Git URL to the repository.", func() {
 		MinLength(1)
@@ -947,7 +941,7 @@ func ExampleError(statusCode int, name, message string) ExampleErrorData {
 
 func ExampleRepository() ExampleRepositoryData {
 	return ExampleRepositoryData{
-		Name:   "default",
+		Name:   "keboola",
 		Url:    "https://github.com/keboola/keboola-as-code-templates",
 		Ref:    "main",
 		Author: ExampleAuthor(),
