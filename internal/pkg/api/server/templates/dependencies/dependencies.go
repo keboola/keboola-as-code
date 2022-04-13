@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
@@ -22,7 +23,7 @@ type Container interface {
 	CtxCancelFn() context.CancelFunc
 	WithCtx(ctx context.Context) Container
 	PrefixLogger() log.PrefixLogger
-	LoggerPrefix() string
+	RepositoryManager() (*repository.Manager, error)
 	WithLoggerPrefix(prefix string) *container
 	WithStorageApi(api *storageapi.Api) (*container, error)
 }
@@ -39,12 +40,13 @@ type commonDeps = dependencies.Common
 
 type container struct {
 	commonDeps
-	ctx         context.Context
-	ctxCancelFn context.CancelFunc
-	debug       bool
-	logger      log.PrefixLogger
-	envs        *env.Map
-	storageApi  *storageapi.Api
+	ctx               context.Context
+	ctxCancelFn       context.CancelFunc
+	debug             bool
+	logger            log.PrefixLogger
+	envs              *env.Map
+	repositoryManager *repository.Manager
+	storageApi        *storageapi.Api
 }
 
 func (v *container) Ctx() context.Context {
@@ -59,10 +61,6 @@ func (v *container) WithCtx(ctx context.Context) Container {
 	clone := *v
 	clone.ctx = ctx
 	return &clone
-}
-
-func (v *container) LoggerPrefix() string {
-	return v.logger.Prefix()
 }
 
 // WithLoggerPrefix returns dependencies clone with modified logger.
@@ -85,6 +83,17 @@ func (v *container) Logger() log.Logger {
 
 func (v *container) PrefixLogger() log.PrefixLogger {
 	return v.logger
+}
+
+func (v *container) RepositoryManager() (*repository.Manager, error) {
+	if v.repositoryManager == nil {
+		if manager, err := repository.NewManager(v.Logger()); err != nil {
+			return nil, err
+		} else {
+			v.repositoryManager = manager
+		}
+	}
+	return v.repositoryManager, nil
 }
 
 func (v *container) Envs() *env.Map {
