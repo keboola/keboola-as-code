@@ -4,7 +4,6 @@ package cli
 import (
 	"bytes"
 	"io"
-	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -15,43 +14,16 @@ import (
 	"github.com/google/shlex"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
-	"github.com/umisama/go-regexpcache"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/storageenv"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 )
-
-type envTicketProvider struct {
-	api  *storageapi.Api
-	envs *env.Map
-}
-
-// EnvTicketProvider allows you to generate new unique IDs via an ENV variable in the test.
-func CreateEnvTicketProvider(api *storageapi.Api, envs *env.Map) testhelper.EnvProvider {
-	return &envTicketProvider{api, envs}
-}
-
-func (p *envTicketProvider) MustGet(key string) string {
-	key = strings.Trim(key, "%")
-	nameRegexp := regexpcache.MustCompile(`^TEST_NEW_TICKET_\d+$`)
-	if _, found := p.envs.Lookup(key); !found && nameRegexp.MatchString(key) {
-		ticket, err := p.api.GenerateNewId()
-		if err != nil {
-			panic(err)
-		}
-
-		p.envs.Set(key, ticket.Id)
-		return ticket.Id
-	}
-
-	return p.envs.MustGet(key)
-}
 
 // TestCliE2E runs one functional test per each sub-directory.
 func TestCliE2E(t *testing.T) {
@@ -72,7 +44,7 @@ func TestCliE2E(t *testing.T) {
 	assert.NoError(t, os.MkdirAll(testOutputDir, 0o755))
 
 	// Run test for each directory
-	for _, testDirRel := range GetTestDirs(t, rootDir) {
+	for _, testDirRel := range testhelper.GetTestDirs(t, rootDir) {
 		testDir := filepath.Join(rootDir, testDirRel)
 		workingDir := filepath.Join(testOutputDir, testDirRel)
 		t.Run(testDirRel, func(t *testing.T) {
@@ -119,7 +91,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	}
 
 	// Create ENV provider
-	envProvider := CreateEnvTicketProvider(api, envs)
+	envProvider := storageenv.CreateStorageEnvTicketProvider(api, envs)
 
 	// Replace all %%ENV_VAR%% in all files in the working directory
 	testhelper.ReplaceEnvsDir(workingDirFs, `/`, envProvider)
@@ -188,57 +160,6 @@ func CompileBinary(t *testing.T, projectDir string, tempDir string) string {
 	}
 
 	return binaryPath
-}
-
-// GetTestDirs returns list of all [category]/[test] dirs.
-func GetTestDirs(t *testing.T, root string) []string {
-	t.Helper()
-	var dirs []string
-
-	// Iterate over directory structure
-	err := filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
-		// Stop on error
-		if err != nil {
-			return err
-		}
-
-		// Ignore root
-		if path == root {
-			return nil
-		}
-
-		// Skip files
-		if !info.IsDir() {
-			return nil
-		}
-
-		// Skip hidden
-		if testhelper.IsIgnoredDir(path, info) {
-			return filepath.SkipDir
-		}
-
-		// Get relative path
-		relPath, err := filepath.Rel(root, path)
-		if err != nil {
-			return err
-		}
-
-		// Found [category]/[test] directory
-		level := strings.Count(relPath, string(filepath.Separator)) + 1
-		if level == 2 {
-			dirs = append(dirs, relPath)
-
-			// Skip sub-directories
-			return fs.SkipDir
-		}
-
-		return nil
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return dirs
 }
 
 // AssertExpectations compares expectations with the actual state.
