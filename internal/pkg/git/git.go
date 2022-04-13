@@ -44,10 +44,16 @@ func (r *Repository) CommitHash() (string, error) {
 	return strings.TrimSuffix(stdOut, "\n"), nil
 }
 
-func (r *Repository) CallWithFs(fn func(fs filesystem.Fs) error) error {
+func (r *Repository) RLock() {
 	r.lock.RLock()
-	defer r.lock.RUnlock()
-	return fn(r.fs)
+}
+
+func (r *Repository) RUnlock() {
+	r.lock.RUnlock()
+}
+
+func (r *Repository) Fs() filesystem.Fs {
+	return r.fs
 }
 
 func (r *Repository) Pull() error {

@@ -1,13 +1,17 @@
 package dependencies
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/git"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
+	loadRepositoryManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/repository/manifest/load"
 )
 
 func localTemplateRepository() model.TemplateRepository {
@@ -23,32 +27,27 @@ func (v *container) LocalTemplateRepository() (*repository.Repository, error) {
 }
 
 func (v *container) Template(reference model.TemplateRef) (*template.Template, error) {
-	if v, err := v.mapRepositoryDefinition(reference.Repository()); err != nil {
-		return nil, err
-	} else {
-		reference = model.NewTemplateRef(v, reference.TemplateId(), reference.Version())
-	}
 	return v.commonDeps.Template(reference)
 }
 
 func (v *container) TemplateRepository(definition model.TemplateRepository, forTemplate model.TemplateRef) (*repository.Repository, error) {
-	if v, err := v.mapRepositoryDefinition(definition); err != nil {
+	fs, err := v.repositoryFs(definition, forTemplate)
+	if err != nil {
 		return nil, err
-	} else {
-		definition = v
 	}
-	return v.commonDeps.TemplateRepository(definition, forTemplate)
+	manifest, err := loadRepositoryManifest.Run(fs, v)
+	if err != nil {
+		return nil, err
+	}
+	return repository.New(fs, manifest), nil
 }
 
-// mapRepositoryDefinition adds support for:
-// - RepositoryTypeWorkingDir
-// - define RepositoryTypeDir in manifest.json relative to the project directory.
-func (v *container) mapRepositoryDefinition(definition model.TemplateRepository) (model.TemplateRepository, error) {
+func (v *container) repositoryFs(definition model.TemplateRepository, template model.TemplateRef) (filesystem.Fs, error) {
 	switch definition.Type {
 	case model.RepositoryTypeWorkingDir:
 		fs, err := v.localTemplateRepositoryDir()
 		if err != nil {
-			return definition, err
+			return nil, err
 		}
 
 		// Convert RepositoryTypeWorkingDir -> RepositoryTypeDir.
@@ -59,16 +58,20 @@ func (v *container) mapRepositoryDefinition(definition model.TemplateRepository)
 			Path:       fs.BasePath(),
 			WorkingDir: fs.WorkingDir(),
 		}
+		fallthrough // continue with RepositoryTypeDir
 	case model.RepositoryTypeDir:
+		path := definition.Path
 		// Convert relative path to absolute
-		// nolint: forbidigo
-		if !filepath.IsAbs(definition.Path) && v.LocalProjectExists() {
+		if !filepath.IsAbs(path) && v.LocalProjectExists() { // nolint: forbidigo
 			// Relative to the project directory
-			// nolint: forbidigo
-			definition.Path = filepath.Join(v.fs.BasePath(), definition.Path)
+			path = filepath.Join(v.fs.BasePath(), path) // nolint: forbidigo
 		}
+		return aferofs.NewLocalFs(v.Logger(), path, definition.WorkingDir)
+	case model.RepositoryTypeGit:
+		return git.CheckoutTemplateRepositoryPartial(template, v.Logger())
+	default:
+		panic(fmt.Errorf(`unexpected repository type "%s"`, definition.Type))
 	}
-	return definition, nil
 }
 
 func (v *container) localTemplateRepositoryDir() (filesystem.Fs, error) {

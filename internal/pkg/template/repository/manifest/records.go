@@ -23,6 +23,21 @@ type VersionRecord struct {
 	model.AbsPath `validate:"dive"`
 }
 
+func (v *TemplateRecord) AllVersions() (out []VersionRecord) {
+	// No version?
+	if v.Versions == nil {
+		return nil
+	}
+
+	// Sort the latest version first
+	out = make([]VersionRecord, len(v.Versions))
+	copy(out, v.Versions)
+	sort.SliceStable(out, func(i, j int) bool {
+		return out[j].Version.Value().LessThan(out[i].Version.Value())
+	})
+	return out
+}
+
 func (v *TemplateRecord) AddVersion(version model.SemVersion) VersionRecord {
 	record := VersionRecord{
 		Version: version,
@@ -44,15 +59,8 @@ func (v *TemplateRecord) GetByVersion(wanted model.SemVersion) (VersionRecord, b
 	minorIsSet := dotsCount >= 2
 	patchIsSet := dotsCount >= 3
 
-	// Latest version first
-	reversedVersions := make([]VersionRecord, len(v.Versions))
-	copy(reversedVersions, v.Versions)
-	sort.SliceStable(reversedVersions, func(i, j int) bool {
-		return reversedVersions[j].Version.Value().LessThan(reversedVersions[i].Version.Value())
-	})
-
 	// Iterate from the latest version.
-	for _, version := range reversedVersions {
+	for _, version := range v.AllVersions() {
 		value := version.Version
 		found := value.Major() == wanted.Major() &&
 			(value.Minor() == wanted.Minor() || !minorIsSet) &&
@@ -73,13 +81,25 @@ func (v *TemplateRecord) GetByPath(path string) (VersionRecord, bool) {
 	return VersionRecord{}, false
 }
 
-func (v *TemplateRecord) LatestVersion() (latest VersionRecord, found bool) {
-	latest = VersionRecord{Version: model.ZeroSemVersion()}
+func (v *TemplateRecord) DefaultVersion() (VersionRecord, bool) {
+	found := false
+	latest := VersionRecord{Version: model.ZeroSemVersion()}
+	latestStable := VersionRecord{Version: model.ZeroSemVersion()}
 	for _, item := range v.Versions {
 		if item.Version.GreaterThan(latest.Version.Value()) {
-			latest = item
 			found = true
+			latest = item
+			if item.Stable {
+				latestStable = item
+			}
 		}
 	}
-	return
+
+	// Stable version found
+	if latestStable.Version.GreaterThan(model.ZeroSemVersion().Value()) {
+		return latestStable, found
+	}
+
+	// No stable version found
+	return latest, found
 }

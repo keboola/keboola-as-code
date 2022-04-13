@@ -51,7 +51,7 @@ func Run(o Options, d dependencies) (err error) {
 
 	// Get next major version
 	version := model.ZeroSemVersion()
-	if latest, found := templateRecord.LatestVersion(); found {
+	if latest, found := templateRecord.DefaultVersion(); found {
 		version = latest.Version.IncMajor()
 	}
 

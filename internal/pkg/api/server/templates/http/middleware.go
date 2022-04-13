@@ -60,8 +60,14 @@ func ContextMiddleware(d dependencies.Container, h http.Handler) http.Handler {
 				span.SetTag("storage.host", host)
 			}
 		}
+
+		// Cancel context after request
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+
 		// Add dependencies to the context
 		ctx = context.WithValue(ctx, dependencies.CtxKey, d.WithCtx(ctx).WithLoggerPrefix(loggerPrefix))
+
 		// Handle
 		h.ServeHTTP(w, r.WithContext(ctx))
 	})
