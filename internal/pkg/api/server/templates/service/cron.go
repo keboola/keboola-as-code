@@ -25,7 +25,7 @@ func StartPullCron(d dependencies.Container) error {
 		<-timer.C
 
 		// Start ticker
-		d.Logger().Info("pull ticker started")
+		d.Logger().Infof("repository pull ticker started at %s, interval=%s", time.Now().Format("15:04:05"), interval)
 		ticker := time.NewTicker(interval)
 		for {
 			select {

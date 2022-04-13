@@ -5,7 +5,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 )
@@ -18,10 +17,7 @@ func TestNewManager(t *testing.T) {
 
 	defaultRepo, err := m.Repository(repository.DefaultRepository())
 	assert.NoError(t, err)
-	_ = defaultRepo.CallWithFs(func(fs filesystem.Fs) error {
-		assert.True(t, fs.Exists("/.keboola/repository.json"))
-		return nil
-	})
+	assert.True(t, defaultRepo.Fs().Exists("/.keboola/repository.json"))
 }
 
 func TestAddRepository_AlreadyExists(t *testing.T) {

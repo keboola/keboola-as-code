@@ -37,25 +37,37 @@ func (s *service) HealthCheck(dependencies.Container) (res string, err error) {
 
 func (s *service) RepositoriesIndex(dependencies.Container, *RepositoriesIndexPayload) (res *Repositories, err error) {
 	out := &Repositories{}
-	for _, repo := range projectRepositories() {
-		out.Repositories = append(out.Repositories, MapRepository(repo))
+	for _, repoRef := range projectRepositories() {
+		out.Repositories = append(out.Repositories, MapRepositoryRef(repoRef))
 	}
 	return out, nil
 }
 
 func (s *service) RepositoryIndex(_ dependencies.Container, payload *RepositoryIndexPayload) (res *Repository, err error) {
-	repo, found := projectRepository(payload.Repository)
-	if !found {
-		return nil, &GenericError{
-			Name:    "RepositoryNotFound",
-			Message: fmt.Sprintf(`Repository "%s" not found.`, payload.Repository),
-		}
+	repoRef, err := projectRepository(payload.Repository)
+	if err != nil {
+		return nil, err
 	}
-	return MapRepository(repo), nil
+	return MapRepositoryRef(repoRef), nil
 }
 
-func (s *service) TemplatesIndex(dependencies.Container, *TemplatesIndexPayload) (res *Templates, err error) {
-	return nil, NotImplementedError{}
+func (s *service) TemplatesIndex(d dependencies.Container, payload *TemplatesIndexPayload) (res *Templates, err error) {
+	// Get repository
+	repoRef, err := projectRepository(payload.Repository)
+	if err != nil {
+		return nil, err
+	}
+	repo, err := d.TemplateRepository(repoRef, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Generate response
+	out := &Templates{Repository: MapRepositoryRef(repoRef), Templates: make([]*Template, 0)}
+	for _, template := range repo.Templates() {
+		out.Templates = append(out.Templates, MapTemplate(template, out.Repository.Author))
+	}
+	return out, nil
 }
 
 func (s *service) TemplateIndex(dependencies.Container, *TemplateIndexPayload) (res *TemplateDetail, err error) {
@@ -106,13 +118,16 @@ func (s *service) UpgradeInstanceValidateInputs(dependencies.Container, *Upgrade
 	return NotImplementedError{}
 }
 
-func projectRepository(name string) (model.TemplateRepository, bool) {
+func projectRepository(name string) (model.TemplateRepository, error) {
 	for _, repo := range projectRepositories() {
 		if repo.Name == name {
-			return repo, true
+			return repo, nil
 		}
 	}
-	return model.TemplateRepository{}, false
+	return model.TemplateRepository{}, &GenericError{
+		Name:    "RepositoryNotFound",
+		Message: fmt.Sprintf(`Repository "%s" not found.`, name),
+	}
 }
 
 func projectRepositories() []model.TemplateRepository {

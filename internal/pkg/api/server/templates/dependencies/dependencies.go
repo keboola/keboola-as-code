@@ -8,8 +8,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
+	loadRepositoryManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/repository/manifest/load"
 )
 
 type ctxKey string
@@ -24,6 +26,7 @@ type Container interface {
 	WithCtx(ctx context.Context) Container
 	PrefixLogger() log.PrefixLogger
 	RepositoryManager() (*repository.Manager, error)
+	TemplateRepository(definition model.TemplateRepository, forTemplate model.TemplateRef) (*repository.Repository, error)
 	WithLoggerPrefix(prefix string) *container
 	WithStorageApi(api *storageapi.Api) (*container, error)
 }
@@ -94,6 +97,38 @@ func (v *container) RepositoryManager() (*repository.Manager, error) {
 		}
 	}
 	return v.repositoryManager, nil
+}
+
+func (v *container) TemplateRepository(definition model.TemplateRepository, _ model.TemplateRef) (*repository.Repository, error) {
+	// Get manager
+	manager, err := v.RepositoryManager()
+	if err != nil {
+		return nil, err
+	}
+
+	// Get git repository
+	gitRepository, err := manager.Repository(definition)
+	if err != nil {
+		return nil, err
+	}
+
+	// Acquire read lock and release it after request,
+	// so pull cannot occur in the middle of the request.
+	gitRepository.RLock()
+	go func() {
+		<-v.ctx.Done()
+		gitRepository.RUnlock()
+	}()
+
+	// Load manifest from FS
+	fs := gitRepository.Fs()
+	manifest, err := loadRepositoryManifest.Run(fs, v)
+	if err != nil {
+		return nil, err
+	}
+
+	// Return repository
+	return repository.New(fs, manifest), nil
 }
 
 func (v *container) Envs() *env.Map {

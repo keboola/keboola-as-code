@@ -11,7 +11,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/git"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -125,39 +124,28 @@ func TestGit_CheckoutTemplateRepositoryFull(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Check initial pull
-	_ = repo.CallWithFs(func(fs filesystem.Fs) error {
-		assert.True(t, fs.Exists("/.keboola/repository.json"))
-		return nil
-	})
+	assert.True(t, repo.Fs().Exists("/.keboola/repository.json"))
 
 	// Manual pull
 	assert.NoError(t, repo.Pull())
-	_ = repo.CallWithFs(func(fs filesystem.Fs) error {
-		assert.True(t, fs.Exists("/.keboola/repository.json"))
-		return nil
-	})
+	repo.Fs().Exists("/.keboola/repository.json")
 
 	hash, err := repo.CommitHash()
 	assert.NoError(t, err)
 
 	// Check if the hash equals to a commit - the git command should return a "commit" message
-	_ = repo.CallWithFs(func(fs filesystem.Fs) error {
-		var stdOutBuffer bytes.Buffer
-		cmd := exec.Command("git", "cat-file", "-t", hash)
-		cmd.Dir = fs.BasePath()
-		cmd.Stdout = &stdOutBuffer
-		err = cmd.Run()
-		assert.NoError(t, err)
-		assert.Equal(t, "commit\n", stdOutBuffer.String())
-		return nil
-	})
+	var stdOutBuffer bytes.Buffer
+	cmd := exec.Command("git", "cat-file", "-t", hash)
+	cmd.Dir = repo.Fs().BasePath()
+	cmd.Stdout = &stdOutBuffer
+	err = cmd.Run()
+	assert.NoError(t, err)
+	assert.Equal(t, "commit\n", stdOutBuffer.String())
 
 	// Check parallel FS read
-	_ = repo.CallWithFs(func(fs filesystem.Fs) error {
-		_ = repo.CallWithFs(func(fs filesystem.Fs) error {
-			assert.True(t, fs.Exists("/.keboola/repository.json"))
-			return nil
-		})
-		return nil
-	})
+	repo.RLock()
+	repo.RLock()
+	defer repo.RUnlock()
+	defer repo.RUnlock()
+	assert.True(t, repo.Fs().Exists("/.keboola/repository.json"))
 }
