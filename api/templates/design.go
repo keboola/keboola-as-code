@@ -443,7 +443,7 @@ func instanceAttr() {
 }
 
 func iconAttr() {
-	Attribute("icon", String, "Icon of the step. Component icon if it starts with \"component:...\", or a generic icon if it starts with \"common:...\".", func() {
+	Attribute("icon", String, "Icon for UI. Component icon if it starts with \"component:...\", or a common icon if it starts with \"common:...\".", func() {
 		MinLength(1)
 		MaxLength(40)
 		Example("common:download")
@@ -625,7 +625,7 @@ var TemplateVersion = Type("TemplateVersion", func() {
 		Example(true)
 	})
 	Attribute("description", String, "Optional short description of the version. Can be empty.", func() {
-		MinLength(1)
+		MinLength(0)
 		MaxLength(40)
 		Example("Experimental support for new API.")
 	})
