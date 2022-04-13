@@ -147,6 +147,23 @@ func (v *wrapper) registerCustomRules() {
 			},
 			ErrorMsg: "{0} can only contain alphanumeric characters and dash",
 		},
+		// Template icon
+		Rule{
+			Tag: "templateicon",
+			FuncCtx: func(ctx context.Context, fl validator.FieldLevel) bool {
+				value := fl.Field().String()
+				if strings.HasPrefix(value, "component:") {
+					value = strings.TrimPrefix(value, "component:")
+					return len(value) > 0
+				}
+				if strings.HasPrefix(value, "common:") {
+					value = strings.TrimPrefix(value, "common:")
+					return allowedTemplateIcons[value]
+				}
+				return false
+			},
+			ErrorMsg: "{0} does not contain an allowed icon",
+		},
 	)
 }
 

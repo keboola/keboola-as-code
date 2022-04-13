@@ -2,6 +2,7 @@ package validator
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -132,18 +133,46 @@ func TestValidatorRequiredInProject(t *testing.T) {
 
 func TestValidatorAlphaNumDash(t *testing.T) {
 	t.Parallel()
-	err := ValidateCtx(context.Background(), `123`, `alphanumdash`, `some_field`)
-	assert.NoError(t, err)
-	err = ValidateCtx(context.Background(), `abc`, `alphanumdash`, `some_field`)
-	assert.NoError(t, err)
-	err = ValidateCtx(context.Background(), `123abc`, `alphanumdash`, `some_field`)
-	assert.NoError(t, err)
-	err = ValidateCtx(context.Background(), `123-abc-456-def`, `alphanumdash`, `some_field`)
-	assert.NoError(t, err)
-	err = ValidateCtx(context.Background(), `#-123-abc`, `alphanumdash`, `some_field`)
-	assert.Error(t, err)
-	assert.Equal(t, "some_field can only contain alphanumeric characters and dash", err.Error())
-	err = ValidateCtx(context.Background(), `123-abc-#`, `alphanumdash`, `some_field`)
-	assert.Error(t, err)
-	assert.Equal(t, "some_field can only contain alphanumeric characters and dash", err.Error())
+	cases := []struct{ value, error string }{
+		{"123", ""},
+		{"abc", ""},
+		{"123abc", ""},
+		{"123-abc-456-def", ""},
+		{"#-123-abc", "some_field can only contain alphanumeric characters and dash"},
+		{"#-123-abc", "some_field can only contain alphanumeric characters and dash"},
+		{"123-abc-#", "some_field can only contain alphanumeric characters and dash"},
+	}
+
+	for i, c := range cases {
+		err := ValidateCtx(context.Background(), c.value, `alphanumdash`, `some_field`)
+		if c.error == "" {
+			assert.NoError(t, err, fmt.Sprintf("case: %d", i+1))
+		} else {
+			assert.Error(t, err, c.error, fmt.Sprintf("case: %d", i+1))
+		}
+	}
+}
+
+func TestValidatorTemplateIcon(t *testing.T) {
+	t.Parallel()
+	cases := []struct{ value, error string }{
+		{"component:foo-bar", ""},
+		{"common:upload", ""},
+		{"common:download", ""},
+		{"common:settings", ""},
+		{"common:import", ""},
+		{"common:foo", "some_field does not contain an allowed icon"},
+		{"common:", "some_field does not contain an allowed icon"},
+		{"component:", "some_field does not contain an allowed icon"},
+		{"", "some_field does not contain an allowed icon"},
+	}
+
+	for i, c := range cases {
+		err := ValidateCtx(context.Background(), c.value, `templateicon`, `some_field`)
+		if c.error == "" {
+			assert.NoError(t, err, fmt.Sprintf("case: %d", i+1))
+		} else {
+			assert.Error(t, err, c.error, fmt.Sprintf("case: %d", i+1))
+		}
+	}
 }

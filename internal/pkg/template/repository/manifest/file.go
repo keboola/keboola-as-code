@@ -20,7 +20,7 @@ func Path() string {
 // file is repository manifest JSON file.
 type file struct {
 	Version   int              `json:"version" validate:"required,min=1,max=2"`
-	Templates []TemplateRecord `json:"templates"`
+	Templates []TemplateRecord `json:"templates" validate:"dive"`
 }
 
 func newFile() *file {

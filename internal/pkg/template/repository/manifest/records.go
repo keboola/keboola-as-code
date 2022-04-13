@@ -8,18 +8,21 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
+const DefaultTemplateIcon = "common:settings"
+
 type TemplateRecord struct {
 	Id            string `json:"id" validate:"required,alphanumdash,min=1,max=40"`
+	Icon          string `json:"icon" validate:"required,templateicon,min=1,max=40"`
 	Name          string `json:"name" validate:"required,min=1,max=40"`
 	Description   string `json:"description" validate:"required,min=1,max=200"`
 	model.AbsPath `validate:"dive"`
-	Versions      []VersionRecord `json:"versions" validate:"required,dive"`
+	Versions      []VersionRecord `json:"versions" validate:"required,min=1,dive"`
 }
 
 type VersionRecord struct {
 	Version       model.SemVersion `json:"version" validate:"required,semver,min=1,max=20"`
-	Description   string           `json:"description" validate:"required,min=1,max=40"`
-	Stable        bool             `json:"stable" validate:"required"`
+	Description   string           `json:"description" validate:"min=0,max=40"`
+	Stable        bool             `json:"stable" validate:""`
 	model.AbsPath `validate:"dive"`
 }
 

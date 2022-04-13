@@ -442,6 +442,14 @@ func instanceAttr() {
 	Required("instanceId")
 }
 
+func iconAttr() {
+	Attribute("icon", String, "Icon for UI. Component icon if it starts with \"component:...\", or a common icon if it starts with \"common:...\".", func() {
+		MinLength(1)
+		MaxLength(40)
+		Example("common:download")
+	})
+}
+
 func inputsPayload() {
 	Attribute("steps", ArrayOf(StepPayload), "Steps with input values filled in by user.", func() {
 		Example([]ExampleStepPayloadData{ExampleStepPayload()})
@@ -563,10 +571,7 @@ var Template = Type("Template", func() {
 		MaxLength(40)
 		Example("my-template")
 	})
-	Attribute("icon", String, "Icon of the step. Component icon if it starts with \"component:...\", or a generic icon if it starts with \"common:...\".", func() {
-		MinLength(1)
-		Example("common:download")
-	})
+	iconAttr()
 	Attribute("name", String, "Template name.", func() {
 		MinLength(1)
 		MaxLength(40)
@@ -620,7 +625,7 @@ var TemplateVersion = Type("TemplateVersion", func() {
 		Example(true)
 	})
 	Attribute("description", String, "Optional short description of the version. Can be empty.", func() {
-		MinLength(1)
+		MinLength(0)
 		MaxLength(40)
 		Example("Experimental support for new API.")
 	})
@@ -731,9 +736,7 @@ var Step = Type("step", func() {
 		MinLength(1)
 		Example("g1-s1")
 	})
-	Attribute("icon", String, "Icon of the step. Component icon if it starts with \"component:...\", or a generic icon if it starts with \"common:...\".", func() {
-		Example("common:download")
-	})
+	iconAttr()
 	Attribute("name", String, "Name of the step.", func() {
 		MinLength(1)
 		MaxLength(25)
