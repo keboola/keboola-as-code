@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
@@ -23,27 +24,42 @@ func Available() bool {
 	return err == nil
 }
 
+type repoRef = model.TemplateRepository
+
 type Repository struct {
-	model.TemplateRepository
-	Fs     filesystem.Fs
+	repoRef
+	fs     filesystem.Fs
 	logger log.Logger
+	lock   *sync.RWMutex
 }
 
 func (r *Repository) CommitHash() (string, error) {
-	err, stdErr, _, stdOut := runGitCommand(r.logger, r.Fs.BasePath(), []string{"rev-parse", "HEAD"})
+	r.lock.RLock()
+	defer r.lock.RUnlock()
+
+	err, stdErr, _, stdOut := runGitCommand(r.logger, r.fs.BasePath(), []string{"rev-parse", "HEAD"})
 	if err != nil {
 		return "", utils.PrefixError("cannot get repository hash", fmt.Errorf(stdErr))
 	}
 	return strings.TrimSuffix(stdOut, "\n"), nil
 }
 
+func (r *Repository) CallWithFs(fn func(fs filesystem.Fs) error) error {
+	r.lock.RLock()
+	defer r.lock.RUnlock()
+	return fn(r.fs)
+}
+
 func (r *Repository) Pull() error {
-	err, stdErr, _, _ := runGitCommand(r.logger, r.Fs.BasePath(), []string{"fetch", "origin"})
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	err, stdErr, _, _ := runGitCommand(r.logger, r.fs.BasePath(), []string{"fetch", "origin"})
 	if err != nil {
 		return utils.PrefixError("cannot fetch template repository", fmt.Errorf(stdErr))
 	}
 
-	err, stdErr, _, _ = runGitCommand(r.logger, r.Fs.BasePath(), []string{"reset", "--hard", fmt.Sprintf("origin/%s", r.Ref)})
+	err, stdErr, _, _ = runGitCommand(r.logger, r.fs.BasePath(), []string{"reset", "--hard", fmt.Sprintf("origin/%s", r.Ref)})
 	if err != nil {
 		return utils.PrefixError("cannot reset template repository to the origin", fmt.Errorf(stdErr))
 	}
@@ -176,11 +192,7 @@ func CheckoutTemplateRepositoryFull(templateRepo model.TemplateRepository, logge
 		return nil, err
 	}
 
-	repo := &Repository{
-		TemplateRepository: templateRepo,
-		Fs:                 localFs,
-		logger:             logger,
-	}
+	repo := &Repository{repoRef: templateRepo, fs: localFs, logger: logger, lock: &sync.RWMutex{}}
 	hash, err := repo.CommitHash()
 	if err != nil {
 		logger.Warnf(`repository "%s:%s" checked out but the commit hash was not retrieved due to: %w`, repo.Url, repo.Ref, err)

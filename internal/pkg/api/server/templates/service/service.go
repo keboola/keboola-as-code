@@ -1,63 +1,19 @@
 package service
 
 import (
-	"sync"
-	"time"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies"
 	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/gen/templates"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 )
 
 type service struct {
-	dependencies        dependencies.Container
-	lock                *sync.Mutex
-	repositoriesManager *repository.Manager
+	dependencies dependencies.Container
 }
-
-const TemplateRepositoriesPullInterval = 5 * time.Minute
 
 func New(d dependencies.Container) (Service, error) {
-	repoManager, err := repository.NewManager(d.Logger())
-	if err != nil {
+	if err := StartPullCron(d); err != nil {
 		return nil, err
 	}
-	s := &service{
-		dependencies:        d,
-		lock:                &sync.Mutex{},
-		repositoriesManager: repoManager,
-	}
-	s.StartCron()
-	return s, nil
-}
-
-func (s *service) StartCron() {
-	go func() {
-		interval := TemplateRepositoriesPullInterval
-
-		// Delay start to a rounded time
-		startAt := time.Now().Truncate(interval).Add(interval)
-		timer := time.NewTimer(time.Until(startAt))
-		<-timer.C
-		s.dependencies.Logger().Info("pull ticker started")
-
-		ticker := time.NewTicker(interval)
-		for {
-			select {
-			case <-s.dependencies.Ctx().Done():
-				return
-			case <-ticker.C:
-				s.pullTemplateRepositories()
-			}
-		}
-	}()
-}
-
-func (s *service) pullTemplateRepositories() {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	s.repositoriesManager.Pull()
+	return &service{dependencies: d}, nil
 }
 
 func (s *service) APIRootIndex(dependencies.Container) (err error) {
@@ -78,7 +34,8 @@ func (s *service) HealthCheck(dependencies.Container) (res string, err error) {
 }
 
 func (s *service) RepositoriesIndex(dependencies.Container, *RepositoriesIndexPayload) (res *Repositories, err error) {
-	return nil, NotImplementedError{}
+	out := &Repositories{}
+	return out, nil
 }
 
 func (s *service) RepositoryIndex(dependencies.Container, *RepositoryIndexPayload) (res *Repository, err error) {

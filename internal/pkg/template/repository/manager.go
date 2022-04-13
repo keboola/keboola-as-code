@@ -2,7 +2,7 @@ package repository
 
 import (
 	"fmt"
-	"sort"
+	"sync"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/git"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -11,27 +11,29 @@ import (
 
 type Manager struct {
 	logger       log.Logger
+	lock         *sync.Mutex
 	repositories map[string]*git.Repository
 }
 
 func NewManager(logger log.Logger) (*Manager, error) {
 	m := &Manager{
 		logger:       logger,
+		lock:         &sync.Mutex{},
 		repositories: make(map[string]*git.Repository),
 	}
-	if err := m.AddRepository(DefaultRepository()); err != nil {
-		return nil, err
-	}
-	return m, nil
+	return m, m.AddRepository(DefaultRepository())
 }
 
-func (m *Manager) AddRepository(templateRepo model.TemplateRepository) error {
-	hash := templateRepo.Hash()
+func (m *Manager) AddRepository(ref model.TemplateRepository) error {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
+	hash := ref.Hash()
 	if _, ok := m.repositories[hash]; ok {
 		return fmt.Errorf("repository already exists")
 	}
 
-	repo, err := git.CheckoutTemplateRepositoryFull(templateRepo, m.logger)
+	repo, err := git.CheckoutTemplateRepositoryFull(ref, m.logger)
 	if err != nil {
 		return err
 	}
@@ -39,15 +41,14 @@ func (m *Manager) AddRepository(templateRepo model.TemplateRepository) error {
 	return nil
 }
 
-func (m *Manager) Repositories() []*git.Repository {
-	var res []*git.Repository
-	for _, repo := range m.repositories {
-		res = append(res, repo)
+func (m *Manager) Repository(ref model.TemplateRepository) (*git.Repository, error) {
+	// Get or init repository
+	if _, found := m.repositories[ref.Hash()]; !found {
+		if err := m.AddRepository(ref); err != nil {
+			return nil, err
+		}
 	}
-	sort.SliceStable(res, func(i, j int) bool {
-		return res[i].Hash() < res[j].Hash()
-	})
-	return res
+	return m.repositories[ref.Hash()], nil
 }
 
 func (m *Manager) Pull() {

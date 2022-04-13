@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/git"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -119,24 +120,44 @@ func TestGit_CheckoutTemplateRepositoryPartial_Local(t *testing.T) {
 func TestGit_CheckoutTemplateRepositoryFull(t *testing.T) {
 	t.Parallel()
 
+	// Setup repo
 	repo, err := git.CheckoutTemplateRepositoryFull(repository.DefaultRepository(), log.NewDebugLogger())
 	assert.NoError(t, err)
-	_, err = os.Stat(repo.Fs.BasePath())
-	assert.NoError(t, err)
-	assert.False(t, os.IsNotExist(err))
-	assert.True(t, repo.Fs.Exists("/.keboola/repository.json"))
 
+	// Check initial pull
+	_ = repo.CallWithFs(func(fs filesystem.Fs) error {
+		assert.True(t, fs.Exists("/.keboola/repository.json"))
+		return nil
+	})
+
+	// Manual pull
 	assert.NoError(t, repo.Pull())
-	assert.True(t, repo.Fs.Exists("/.keboola/repository.json"))
+	_ = repo.CallWithFs(func(fs filesystem.Fs) error {
+		assert.True(t, fs.Exists("/.keboola/repository.json"))
+		return nil
+	})
 
 	hash, err := repo.CommitHash()
 	assert.NoError(t, err)
-	var stdOutBuffer bytes.Buffer
-	// check if the hash equals to a commit - the git command should return a "commit" message
-	cmd := exec.Command("git", "cat-file", "-t", hash)
-	cmd.Dir = repo.Fs.BasePath()
-	cmd.Stdout = &stdOutBuffer
-	err = cmd.Run()
-	assert.NoError(t, err)
-	assert.Equal(t, "commit\n", stdOutBuffer.String())
+
+	// Check if the hash equals to a commit - the git command should return a "commit" message
+	_ = repo.CallWithFs(func(fs filesystem.Fs) error {
+		var stdOutBuffer bytes.Buffer
+		cmd := exec.Command("git", "cat-file", "-t", hash)
+		cmd.Dir = fs.BasePath()
+		cmd.Stdout = &stdOutBuffer
+		err = cmd.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, "commit\n", stdOutBuffer.String())
+		return nil
+	})
+
+	// Check parallel FS read
+	_ = repo.CallWithFs(func(fs filesystem.Fs) error {
+		_ = repo.CallWithFs(func(fs filesystem.Fs) error {
+			assert.True(t, fs.Exists("/.keboola/repository.json"))
+			return nil
+		})
+		return nil
+	})
 }
