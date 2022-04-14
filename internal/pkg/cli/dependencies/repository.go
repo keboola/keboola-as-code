@@ -41,7 +41,7 @@ func (v *container) TemplateRepository(definition model.TemplateRepository, forT
 	if err != nil {
 		return nil, err
 	}
-	return repository.New(fs, manifest), nil
+	return repository.New(definition, fs, manifest), nil
 }
 
 func (v *container) repositoryFs(definition model.TemplateRepository, template model.TemplateRef) (filesystem.Fs, error) {
@@ -99,7 +99,7 @@ func gitRepositoryFs(definition model.TemplateRepository, tmplRef model.Template
 	}
 
 	// Get version record
-	version, err := repoManifest.GetVersion(tmplRef.TemplateId(), tmplRef.Version())
+	_, version, err := repoManifest.GetVersion(tmplRef.TemplateId(), tmplRef.Version())
 	if err != nil {
 		// version or template not found
 		e := utils.NewMultiError()

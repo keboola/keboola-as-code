@@ -385,15 +385,15 @@ func GenericError(statusCode int, name, description, example string) {
 }
 
 func RepositoryNotFoundError() {
-	GenericError(StatusNotFound, "RepositoryNotFound", "Repository not found error.", `Repository "name" not found.`)
+	GenericError(StatusNotFound, "templates.repositoryNotFound", "Repository not found error.", `Repository "name" not found.`)
 }
 
 func TemplateNotFoundError() {
-	GenericError(StatusNotFound, "TemplateNotFound", "Template not found error.", `Template "id" not found.`)
+	GenericError(StatusNotFound, "templates.templateNotFound", "Template not found error.", `Template "id" not found.`)
 }
 
 func VersionNotFoundError() {
-	GenericError(StatusNotFound, "VersionNotFound", "Version not found error.", `Version "v1.2.3" not found.`)
+	GenericError(StatusNotFound, "templates.versionNotFound", "Version not found error.", `Version "v1.2.3" not found.`)
 }
 
 // Common attributes----------------------------------------------------------------------------------------------------

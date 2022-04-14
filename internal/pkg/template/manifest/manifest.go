@@ -65,6 +65,10 @@ func (f *File) Evaluate(jsonNetCtx *jsonnet.Context) (*Manifest, error) {
 	return m, nil
 }
 
+func (f *File) RawContent() string {
+	return f.file.Content
+}
+
 func (m *Manifest) Save(fs filesystem.Fs) error {
 	// Create file content
 	content := newFile()

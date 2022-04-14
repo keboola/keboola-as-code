@@ -200,7 +200,7 @@ func TestValidationRules(t *testing.T) {
 
 	stepsGroups := StepsGroups{
 		&StepsGroup{Description: "group", Required: "all", Steps: []*Step{
-			{Icon: "common", Name: "Step One", Description: "Description"},
+			{Icon: "common:settings", Name: "Step One", Description: "Description"},
 		}},
 	}
 

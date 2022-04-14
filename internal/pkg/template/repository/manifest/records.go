@@ -51,13 +51,13 @@ func (v *TemplateRecord) AddVersion(version model.SemVersion) VersionRecord {
 	return record
 }
 
-// GetByVersion returns template version record for wanted version.
+// GetVersion returns template version record for wanted version.
 // Wanted version doesn't have to contain the minor/path part.
 // Example:
 // "v1"     -> "1.2.3"
 // "v1.1"   -> "1.1.1"
 // "v1.1.0" -> "1.1.0".
-func (v *TemplateRecord) GetByVersion(wanted model.SemVersion) (VersionRecord, bool) {
+func (v *TemplateRecord) GetVersion(wanted model.SemVersion) (VersionRecord, bool) {
 	dotsCount := len(strings.Split(wanted.Original(), "."))
 	minorIsSet := dotsCount >= 2
 	patchIsSet := dotsCount >= 3

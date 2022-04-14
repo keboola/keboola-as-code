@@ -113,7 +113,7 @@ func TestTemplateRecord_GetByVersion_Complex(t *testing.T) {
 
 	for i, c := range cases {
 		desc := fmt.Sprintf("case: %d, wanted: %s", i, c.wanted)
-		value, found := r.GetByVersion(version(c.wanted))
+		value, found := r.GetVersion(version(c.wanted))
 		if c.found == "" {
 			assert.False(t, found, desc)
 		} else {
