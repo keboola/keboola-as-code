@@ -19,3 +19,4 @@ f4bf236227116803d28fa2f931f28059a5ab588f 1054ce00e272e6570d0b619cc10b474c26172c9
 5b127a4f79184fd0b504c70c02da511cec737d72 f4bf236227116803d28fa2f931f28059a5ab588f Michal Jurečko <michal.jurecko@gmail.com> 1649872623 +0200	checkout: moving from main to b1
 f4bf236227116803d28fa2f931f28059a5ab588f 6a406dfaaa48848fcd0c8962914b1c465e49e5b6 Michal Jurečko <michal.jurecko@gmail.com> 1649872645 +0200	commit: Add template icon
 6a406dfaaa48848fcd0c8962914b1c465e49e5b6 5b127a4f79184fd0b504c70c02da511cec737d72 Michal Jurečko <michal.jurecko@gmail.com> 1649872654 +0200	checkout: moving from b1 to main
+5b127a4f79184fd0b504c70c02da511cec737d72 6755031f6c52e9151965fd1ac7f40ef1c18db6ce Michal Jurečko <michal.jurecko@gmail.com> 1649936805 +0200	commit: Add _common directory
