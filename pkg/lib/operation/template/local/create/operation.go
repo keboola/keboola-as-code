@@ -131,7 +131,8 @@ func createDir(o Options, d dependencies, repositoryDir filesystem.Fs, record re
 
 func createReadme(o Options, d dependencies, fs filesystem.Fs) error {
 	content := "### %s\n\n%s\n\n"
-	file := filesystem.NewRawFile(`README.md`, fmt.Sprintf(content, o.Name, o.Description)).SetDescription(`readme`)
+	path := filesystem.Join("src", template.ReadmeFile)
+	file := filesystem.NewRawFile(path, fmt.Sprintf(content, o.Name, o.Description)).SetDescription(`readme`)
 	if err := fs.WriteFile(file); err != nil {
 		return err
 	}

@@ -1,7 +1,7 @@
 Created template dir "my-template/v0".
 Created template manifest file "src/manifest.jsonnet".
 Created template inputs file "src/inputs.jsonnet".
-Created readme file "README.md".
+Created readme file "src/README.md".
 Plan for "pull" operation:
   + C extractor/ex-generic-v2/empty
   + C extractor/ex-generic-v2/without-rows

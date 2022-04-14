@@ -14,8 +14,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	templateRepository "github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
-	loadInputs "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/inputs/load"
-	loadManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/manifest/load"
 )
 
 // Abstract provides dependencies which are obtained in different in CLI and templates API.
@@ -181,7 +179,7 @@ func (v *commonContainer) Template(reference model.TemplateRef) (*template.Templ
 	}
 
 	// Get template version
-	versionRecord, err := repository.GetTemplateVersion(reference.TemplateId(), reference.Version())
+	templateRecord, versionRecord, err := repository.GetTemplateVersion(reference.TemplateId(), reference.Version())
 	if err != nil {
 		return nil, err
 	}
@@ -198,17 +196,5 @@ func (v *commonContainer) Template(reference model.TemplateRef) (*template.Templ
 		return nil, err
 	}
 
-	// Load manifest file
-	manifestFile, err := loadManifest.Run(fs, v)
-	if err != nil {
-		return nil, err
-	}
-
-	// Load inputs
-	inputs, err := loadInputs.Run(fs, v)
-	if err != nil {
-		return nil, err
-	}
-
-	return template.New(reference, fs, manifestFile, inputs, v)
+	return template.New(reference, templateRecord, versionRecord, fs, v)
 }

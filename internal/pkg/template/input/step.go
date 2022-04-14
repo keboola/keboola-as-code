@@ -119,7 +119,7 @@ func (s Steps) SelectOptions() []string {
 
 // Step is a container for Inputs.
 type Step struct {
-	Icon              string `json:"icon" validate:"required,min=1"`
+	Icon              string `json:"icon" validate:"required,templateicon,min=1"`
 	Name              string `json:"name" validate:"required,min=1,max=25"`
 	Description       string `json:"description" validate:"min=1,max=60"`
 	DialogName        string `json:"dialogName,omitempty" validate:"omitempty,max=25"`

@@ -1,7 +1,7 @@
 Created template dir "my-template/v0".
 Created template manifest file "src/manifest.jsonnet".
 Created template inputs file "src/inputs.jsonnet".
-Created readme file "README.md".
+Created readme file "src/README.md".
 Plan for "pull" operation:
   + C _shared/keboola.python-transformation-v2
   + R _shared/keboola.python-transformation-v2/codes/code-with-variables
