@@ -1,12 +1,15 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies"
 	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/gen/templates"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 )
 
 type service struct{}
@@ -36,50 +39,47 @@ func (s *service) HealthCheck(dependencies.Container) (res string, err error) {
 }
 
 func (s *service) RepositoriesIndex(dependencies.Container, *RepositoriesIndexPayload) (res *Repositories, err error) {
-	out := &Repositories{}
-	for _, repoRef := range projectRepositories() {
-		out.Repositories = append(out.Repositories, MapRepositoryRef(repoRef))
-	}
-	return out, nil
+	return RepositoriesResponse(getRepositories()), nil
 }
 
 func (s *service) RepositoryIndex(_ dependencies.Container, payload *RepositoryIndexPayload) (res *Repository, err error) {
-	repoRef, err := projectRepository(payload.Repository)
+	repoRef, err := getRepositoryRef(payload.Repository)
 	if err != nil {
 		return nil, err
 	}
-	return MapRepositoryRef(repoRef), nil
+	return RepositoryResponse(repoRef), nil
 }
 
 func (s *service) TemplatesIndex(d dependencies.Container, payload *TemplatesIndexPayload) (res *Templates, err error) {
-	// Get repository
-	repoRef, err := projectRepository(payload.Repository)
+	repo, err := getRepository(d, payload.Repository)
 	if err != nil {
 		return nil, err
 	}
-	repo, err := d.TemplateRepository(repoRef, nil)
+	return TemplatesResponse(repo, repo.Templates()), nil
+}
+
+func (s *service) TemplateIndex(d dependencies.Container, payload *TemplateIndexPayload) (res *TemplateDetail, err error) {
+	repo, tmplRecord, err := getTemplateRecord(d, payload.Repository, payload.Template)
 	if err != nil {
 		return nil, err
 	}
+	return TemplateDetailResponse(repo, tmplRecord), nil
+}
 
-	// Generate response
-	out := &Templates{Repository: MapRepositoryRef(repoRef), Templates: make([]*Template, 0)}
-	for _, template := range repo.Templates() {
-		out.Templates = append(out.Templates, MapTemplate(template, out.Repository.Author))
+func (s *service) VersionIndex(d dependencies.Container, payload *VersionIndexPayload) (res *TemplateVersionDetail, err error) {
+	tmpl, err := getTemplateVersion(d, payload.Repository, payload.Template, payload.Version)
+	if err != nil {
+		return nil, err
 	}
-	return out, nil
+	return VersionDetailResponse(tmpl), nil
 }
 
-func (s *service) TemplateIndex(dependencies.Container, *TemplateIndexPayload) (res *TemplateDetail, err error) {
-	return nil, NotImplementedError{}
-}
-
-func (s *service) VersionIndex(dependencies.Container, *VersionIndexPayload) (res *TemplateVersionDetail, err error) {
-	return nil, NotImplementedError{}
-}
-
-func (s *service) InputsIndex(dependencies.Container, *InputsIndexPayload) (res *Inputs, err error) {
-	return nil, NotImplementedError{}
+func (s *service) InputsIndex(d dependencies.Container, payload *InputsIndexPayload) (res *Inputs, err error) {
+	tmpl, err := getTemplateVersion(d, payload.Repository, payload.Template, payload.Version)
+	if err != nil {
+		return nil, err
+	}
+	return InputsResponse(tmpl), nil
 }
 
 func (s *service) ValidateInputs(dependencies.Container, *ValidateInputsPayload) (res *ValidationResult, err error) {
@@ -118,18 +118,90 @@ func (s *service) UpgradeInstanceValidateInputs(dependencies.Container, *Upgrade
 	return NotImplementedError{}
 }
 
-func projectRepository(name string) (model.TemplateRepository, error) {
-	for _, repo := range projectRepositories() {
+func getRepositories() []model.TemplateRepository {
+	return []model.TemplateRepository{
+		{
+			Type: "git",
+			Name: repository.DefaultTemplateRepositoryName,
+			Url:  repository.DefaultTemplateRepositoryUrl,
+			Ref:  "api-demo",
+			Author: model.TemplateAuthor{
+				Name: "Keboola",
+				Url:  "https://www.keboola.com",
+			},
+		},
+	}
+}
+
+func getRepositoryRef(name string) (model.TemplateRepository, error) {
+	for _, repo := range getRepositories() {
 		if repo.Name == name {
 			return repo, nil
 		}
 	}
 	return model.TemplateRepository{}, &GenericError{
-		Name:    "RepositoryNotFound",
+		Name:    "templates.RepositoryNotFound",
 		Message: fmt.Sprintf(`Repository "%s" not found.`, name),
 	}
 }
 
-func projectRepositories() []model.TemplateRepository {
-	return []model.TemplateRepository{repository.DefaultRepository()}
+func getRepository(d dependencies.Container, repoName string) (*repository.Repository, error) {
+	repoRef, err := getRepositoryRef(repoName)
+	if err != nil {
+		return nil, err
+	}
+	repo, err := d.TemplateRepository(repoRef, nil)
+	if err != nil {
+		return nil, err
+	}
+	return repo, nil
+}
+
+func getTemplateRecord(d dependencies.Container, repoName, templateId string) (*repository.Repository, *repository.TemplateRecord, error) {
+	repo, err := getRepository(d, repoName)
+	if err != nil {
+		return nil, nil, err
+	}
+	tmpl, found := repo.GetTemplateById(templateId)
+	if !found {
+		return nil, nil, &GenericError{
+			Name:    "templates.TemplateNotFound",
+			Message: fmt.Sprintf(`Template "%s" not found.`, templateId),
+		}
+	}
+	return repo, &tmpl, nil
+}
+
+func getTemplateVersion(d dependencies.Container, repoName, templateId, versionStr string) (*template.Template, error) {
+	// Get repository ref
+	repoRef, err := getRepositoryRef(repoName)
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse version
+	semVersion, err := model.NewSemVersion(versionStr)
+	if err != nil {
+		return nil, &BadRequestError{
+			Message: fmt.Sprintf(`Version "%s" is not valid: %s`, versionStr, err),
+		}
+	}
+
+	tmpl, err := d.Template(model.NewTemplateRef(repoRef, templateId, semVersion))
+	if err != nil {
+		if errors.As(err, &manifest.TemplateNotFoundError{}) {
+			return nil, &GenericError{
+				Name:    "templates.TemplateNotFound",
+				Message: fmt.Sprintf(`Template "%s" not found.`, templateId),
+			}
+		}
+		if errors.As(err, &manifest.VersionNotFoundError{}) {
+			return nil, &GenericError{
+				Name:    "templates.VersionNotFound",
+				Message: fmt.Sprintf(`Version "%s" not found.`, versionStr),
+			}
+		}
+	}
+
+	return tmpl, nil
 }

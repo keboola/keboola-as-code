@@ -15,11 +15,11 @@ func TestInputsAddInputsToStepsGroups(t *testing.T) {
 
 	stepsGroups := input.StepsGroups{
 		&input.StepsGroup{Description: "desc", Required: "all", Steps: []*input.Step{
-			{Icon: "common", Name: "Step One", Description: "Description"},
+			{Icon: "common:settings", Name: "Step One", Description: "Description"},
 		}},
 		&input.StepsGroup{Required: "all", Steps: []*input.Step{
-			{Icon: "common", Name: "Step Two", Description: "Description"},
-			{Icon: "common", Name: "Step Three", Description: "Description"},
+			{Icon: "common:settings", Name: "Step Two", Description: "Description"},
+			{Icon: "common:settings", Name: "Step Three", Description: "Description"},
 		}},
 	}
 	stepsToIds := map[input.StepIndex]string{

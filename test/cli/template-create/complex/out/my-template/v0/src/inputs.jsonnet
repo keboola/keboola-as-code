@@ -5,7 +5,7 @@
       required: "all",
       steps: [
         {
-          icon: "common",
+          icon: "common:settings",
           name: "Default Step",
           description: "Default Step",
           inputs: [],

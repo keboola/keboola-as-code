@@ -13,6 +13,7 @@ func LoadManifest(fs filesystem.Fs) (*Manifest, error) {
 }
 
 type Repository struct {
+	ref      model.TemplateRepository
 	fs       filesystem.Fs
 	manifest *Manifest
 }
@@ -21,11 +22,16 @@ type TemplateRecord = repositoryManifest.TemplateRecord
 
 type VersionRecord = repositoryManifest.VersionRecord
 
-func New(fs filesystem.Fs, manifest *Manifest) *Repository {
+func New(ref model.TemplateRepository, fs filesystem.Fs, manifest *Manifest) *Repository {
 	return &Repository{
+		ref:      ref,
 		fs:       fs,
 		manifest: manifest,
 	}
+}
+
+func (r *Repository) Ref() model.TemplateRepository {
+	return r.ref
 }
 
 func (r *Repository) Fs() filesystem.Fs {
@@ -48,6 +54,6 @@ func (r *Repository) GetTemplateByPath(templatePath string) (TemplateRecord, boo
 	return r.manifest.GetByPath(templatePath)
 }
 
-func (r *Repository) GetTemplateVersion(templateId string, version model.SemVersion) (VersionRecord, error) {
+func (r *Repository) GetTemplateVersion(templateId string, version model.SemVersion) (TemplateRecord, VersionRecord, error) {
 	return r.manifest.GetVersion(templateId, version)
 }
