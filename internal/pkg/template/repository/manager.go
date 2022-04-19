@@ -24,23 +24,6 @@ func NewManager(logger log.Logger) (*Manager, error) {
 	return m, m.AddRepository(DefaultRepository())
 }
 
-func (m *Manager) AddRepository(ref model.TemplateRepository) error {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-
-	hash := ref.Hash()
-	if _, ok := m.repositories[hash]; ok {
-		return fmt.Errorf("repository already exists")
-	}
-
-	repo, err := git.CheckoutTemplateRepositoryFull(ref, m.logger)
-	if err != nil {
-		return err
-	}
-	m.repositories[hash] = repo
-	return nil
-}
-
 func (m *Manager) Repository(ref model.TemplateRepository) (*git.Repository, error) {
 	// Get or init repository
 	if _, found := m.repositories[ref.Hash()]; !found {
@@ -51,9 +34,27 @@ func (m *Manager) Repository(ref model.TemplateRepository) (*git.Repository, err
 	return m.repositories[ref.Hash()], nil
 }
 
+func (m *Manager) AddRepository(repositoryDef model.TemplateRepository) error {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
+	hash := repositoryDef.Hash()
+	if _, ok := m.repositories[hash]; ok {
+		return fmt.Errorf("repository already exists")
+	}
+
+	repo, err := git.Checkout(repositoryDef.Url, repositoryDef.Ref, false, m.logger)
+	if err != nil {
+		return err
+	}
+
+	m.repositories[hash] = repo
+	return nil
+}
+
 func (m *Manager) Pull() {
 	for _, repo := range m.repositories {
-		m.logger.Infof(`repository "%s:%s" is being updated`, repo.Url, repo.Ref)
+		m.logger.Infof(`repository "%s" is being updated`, repo)
 
 		oldHash, err := repo.CommitHash()
 		if err != nil {
@@ -74,10 +75,10 @@ func (m *Manager) Pull() {
 		}
 
 		if oldHash == newHash {
-			m.logger.Infof(`repository "%s:%s" update finished, no change found`, repo.Url, repo.Ref)
+			m.logger.Infof(`repository "%s" update finished, no change found`, repo)
 			return
 		}
 
-		m.logger.Infof(`repository "%s:%s" updated from %s to %s`, repo.Url, repo.Ref, oldHash, newHash)
+		m.logger.Infof(`repository "%s" updated from %s to %s`, repo, oldHash, newHash)
 	}
 }

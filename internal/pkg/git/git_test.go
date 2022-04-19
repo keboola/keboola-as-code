@@ -3,149 +3,149 @@ package git_test
 
 import (
 	"bytes"
-	"fmt"
-	"io/ioutil"
-	"os"
 	"os/exec"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
-	"github.com/keboola/keboola-as-code/internal/pkg/git"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	. "github.com/keboola/keboola-as-code/internal/pkg/git"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 )
 
 func TestGit_Available(t *testing.T) {
 	t.Parallel()
 
 	// should be always true as git is available in the container running the tests
-	assert.True(t, git.Available())
+	assert.True(t, Available())
 }
 
-func TestGit_CheckoutTemplateRepositoryPartial_Remote(t *testing.T) {
+func TestGit_Checkout(t *testing.T) {
 	t.Parallel()
+	logger := log.NewDebugLogger()
 
-	// checkout fail from a non-existing url
-	repo := model.TemplateRepository{Type: "git", Name: "keboola", Url: "https://non-existing-url", Ref: "main"}
-	template, err := model.NewTemplateRefFromString(repo, "tmpl1", "v1")
-	assert.NoError(t, err)
-	_, err = git.CheckoutTemplateRepositoryPartial(template, log.NewDebugLogger())
+	// Checkout fail from a non-existing url
+	url := "https://non-existing-url"
+	ref := "main"
+	_, err := Checkout(url, ref, false, logger)
 	assert.Error(t, err)
-	assert.Equal(t, `templates git repository not found on url "https://non-existing-url"`, err.Error())
+	assert.Equal(t, `git repository not found on url "https://non-existing-url"`, err.Error())
 
-	// checkout fail from a non-existing github repository
-	repo = model.TemplateRepository{Type: "git", Name: "keboola", Url: "https://github.com/keboola/non-existing-repo.git", Ref: "main"}
-	template, err = model.NewTemplateRefFromString(repo, "tmpl1", "v1")
-	assert.NoError(t, err)
-	_, err = git.CheckoutTemplateRepositoryPartial(template, log.NewDebugLogger())
+	// Checkout fail from a non-existing GitHub repository
+	url = "https://github.com/keboola/non-existing-repo.git"
+	ref = "main"
+	_, err = Checkout(url, ref, false, logger)
 	assert.Error(t, err)
-	assert.Equal(t, `templates git repository not found on url "https://github.com/keboola/non-existing-repo.git"`, err.Error())
+	assert.Equal(t, `git repository not found on url "https://github.com/keboola/non-existing-repo.git"`, err.Error())
 
-	// checkout fail from a non-existing branch
-	repo = model.TemplateRepository{Type: "git", Name: "keboola", Url: "https://github.com/keboola/keboola-as-code-templates.git", Ref: "non-existing-ref"}
-	template, err = model.NewTemplateRefFromString(repo, "tmpl1", "v1")
-	assert.NoError(t, err)
-	_, err = git.CheckoutTemplateRepositoryPartial(template, log.NewDebugLogger())
+	// Checkout fail from a non-existing branch
+	url = "https://github.com/keboola/keboola-as-code-templates.git"
+	ref = "non-existing-ref"
+	_, err = Checkout(url, ref, false, logger)
 	assert.Error(t, err)
-	assert.Equal(t, `reference "non-existing-ref" not found in the templates git repository "https://github.com/keboola/keboola-as-code-templates.git"`, err.Error())
+	assert.Equal(t, `reference "non-existing-ref" not found in the git repository "https://github.com/keboola/keboola-as-code-templates.git"`, err.Error())
 
-	// checkout fail due to non-existing template
-	repo = model.TemplateRepository{Type: "git", Name: "keboola", Url: "https://github.com/keboola/keboola-as-code-templates.git", Ref: "main"}
-	template, err = model.NewTemplateRefFromString(repo, "non-existing-template", "v1")
-	assert.NoError(t, err)
-	_, err = git.CheckoutTemplateRepositoryPartial(template, log.NewDebugLogger())
-	assert.Error(t, err)
-	assert.Equal(t, `template "non-existing-template" not found:
-  - searched in git repository "https://github.com/keboola/keboola-as-code-templates.git"
-  - reference "main"`, err.Error())
-}
-
-func TestGit_CheckoutTemplateRepositoryPartial_Local(t *testing.T) {
-	t.Parallel()
-
-	// Copy the git repository to temp
-	tmpDir, err := ioutil.TempDir("", "keboola-as-code-templates-tests-")
-	assert.NoError(t, err)
-	assert.NoError(t, aferofs.CopyFs2Fs(nil, "test-repository", nil, tmpDir))
-	assert.NoError(t, os.Rename(fmt.Sprintf("%s/.gittest", tmpDir), fmt.Sprintf("%s/.git", tmpDir))) // nolint: forbidigo
-	defer func() {
-		_ = os.RemoveAll(tmpDir) // nolint: forbidigo
-	}()
-
-	// checkout fail due to non-existing template in the branch
-	repo := model.TemplateRepository{Type: "git", Name: "keboola", Url: fmt.Sprintf("file://%s", tmpDir), Ref: "main"}
-	template, err := model.NewTemplateRefFromString(repo, "template2", "1.0.0")
-	assert.NoError(t, err)
-	_, err = git.CheckoutTemplateRepositoryPartial(template, log.NewDebugLogger())
-	assert.Error(t, err)
-	assert.Equal(t, fmt.Sprintf(`template "template2" not found:
-  - searched in git repository "file://%s"
-  - reference "main"`, tmpDir), err.Error())
-
-	// checkout fail due to non-existing version of existing template
-	repo = model.TemplateRepository{Type: "git", Name: "keboola", Url: fmt.Sprintf("file://%s", tmpDir), Ref: "b1"}
-	template, err = model.NewTemplateRefFromString(repo, "template2", "1.0.8")
-	assert.NoError(t, err)
-	_, err = git.CheckoutTemplateRepositoryPartial(template, log.NewDebugLogger())
-	assert.Error(t, err)
-	assert.Equal(t, fmt.Sprintf(`template "template2" found but version "1.0.8" is missing:
-  - searched in git repository "file://%s"
-  - reference "b1"`, tmpDir), err.Error())
-
-	// checkout fail due to non-existing src folder of existing template
-	repo = model.TemplateRepository{Type: "git", Name: "keboola", Url: fmt.Sprintf("file://%s", tmpDir), Ref: "b1"}
-	template, err = model.NewTemplateRefFromString(repo, "template2", "1.0.0")
-	assert.NoError(t, err)
-	_, err = git.CheckoutTemplateRepositoryPartial(template, log.NewDebugLogger())
-	assert.Error(t, err)
-	assert.Equal(t, fmt.Sprintf(`folder "template2/v1/src" not found:
-  - searched in git repository "file://%s"
-  - reference "b1"`, tmpDir), err.Error())
-
-	// checkout success because template2 exists only in branch b1
-	repo = model.TemplateRepository{Type: "git", Name: "keboola", Url: fmt.Sprintf("file://%s", tmpDir), Ref: "b1"}
-	template, err = model.NewTemplateRefFromString(repo, "template2", "2.1.0")
-	assert.NoError(t, err)
-	fs, err := git.CheckoutTemplateRepositoryPartial(template, log.NewDebugLogger())
-	assert.NoError(t, err)
-	assert.True(t, fs.Exists("template2/v2/src/manifest.jsonnet"))
-	// another template folder should not exist
-	assert.False(t, fs.Exists("template1"))
-}
-
-func TestGit_CheckoutTemplateRepositoryFull(t *testing.T) {
-	t.Parallel()
-
-	// Setup repo
-	repo, err := git.CheckoutTemplateRepositoryFull(repository.DefaultRepository(), log.NewDebugLogger())
+	// Success
+	url = "https://github.com/keboola/keboola-as-code-templates.git"
+	ref = "main"
+	r, err := Checkout(url, ref, false, logger)
 	assert.NoError(t, err)
 
-	// Check initial pull
-	assert.True(t, repo.Fs().Exists("/.keboola/repository.json"))
-
-	// Manual pull
-	assert.NoError(t, repo.Pull())
-	assert.True(t, repo.Fs().Exists("/.keboola/repository.json"))
-
-	hash, err := repo.CommitHash()
+	// Full checkout -> directory is not empty
+	subDirs, err := filesystem.ReadSubDirs(r.Fs(), "/")
 	assert.NoError(t, err)
+	assert.Greater(t, len(subDirs), 1)
 
 	// Check if the hash equals to a commit - the git command should return a "commit" message
-	var stdOutBuffer bytes.Buffer
+	hash, err := r.CommitHash()
+	assert.NoError(t, err)
+	var stdOut bytes.Buffer
 	cmd := exec.Command("git", "cat-file", "-t", hash)
-	cmd.Dir = repo.Fs().BasePath()
-	cmd.Stdout = &stdOutBuffer
+	cmd.Dir = r.Fs().BasePath()
+	cmd.Stdout = &stdOut
 	err = cmd.Run()
 	assert.NoError(t, err)
-	assert.Equal(t, "commit\n", stdOutBuffer.String())
+	assert.Equal(t, "commit\n", stdOut.String())
 
-	// Check parallel FS read
-	repo.RLock()
-	repo.RLock()
-	defer repo.RUnlock()
-	defer repo.RUnlock()
-	assert.True(t, repo.Fs().Exists("/.keboola/repository.json"))
+	// Test parallel FS read
+	r.RLock()
+	r.RLock()
+	assert.True(t, r.Fs().Exists(".keboola/repository.json"))
+	r.RUnlock()
+	r.RUnlock()
+
+	// Test pull
+	assert.NoError(t, r.Pull())
+	assert.True(t, r.Fs().Exists(".keboola/repository.json"))
+
+	// Test clear
+	basePath := r.Fs().BasePath()
+	r.Clear()
+	assert.Nil(t, r.Fs())
+	assert.NoDirExists(t, basePath)
+}
+
+func TestGit_Checkout_Sparse(t *testing.T) {
+	t.Parallel()
+	logger := log.NewDebugLogger()
+
+	// Checkout fail from a non-existing url
+	url := "https://non-existing-url"
+	ref := "main"
+	_, err := Checkout(url, ref, true, logger)
+	assert.Error(t, err)
+	assert.Equal(t, `git repository not found on url "https://non-existing-url"`, err.Error())
+
+	// Checkout fail from a non-existing GitHub repository
+	url = "https://github.com/keboola/non-existing-repo.git"
+	ref = "main"
+	_, err = Checkout(url, ref, true, logger)
+	assert.Error(t, err)
+	assert.Equal(t, `git repository not found on url "https://github.com/keboola/non-existing-repo.git"`, err.Error())
+
+	// Checkout fail from a non-existing branch
+	url = "https://github.com/keboola/keboola-as-code-templates.git"
+	ref = "non-existing-ref"
+	_, err = Checkout(url, ref, true, logger)
+	assert.Error(t, err)
+	assert.Equal(t, `reference "non-existing-ref" not found in the git repository "https://github.com/keboola/keboola-as-code-templates.git"`, err.Error())
+
+	// Success
+	url = "https://github.com/keboola/keboola-as-code-templates.git"
+	ref = "main"
+	r, err := Checkout(url, ref, true, logger)
+	assert.NoError(t, err)
+
+	// Sparse checkout -> directory is empty
+	subDirs, err := filesystem.ReadSubDirs(r.Fs(), "/")
+	assert.NoError(t, err)
+	assert.Equal(t, []string{".git"}, subDirs)
+
+	// Check if the hash equals to a commit - the git command should return a "commit" message
+	hash, err := r.CommitHash()
+	assert.NoError(t, err)
+	var stdOut bytes.Buffer
+	cmd := exec.Command("git", "cat-file", "-t", hash)
+	cmd.Dir = r.Fs().BasePath()
+	cmd.Stdout = &stdOut
+	err = cmd.Run()
+	assert.NoError(t, err)
+	assert.Equal(t, "commit\n", stdOut.String())
+
+	// Test parallel FS read
+	r.RLock()
+	r.RLock()
+	assert.True(t, r.Fs().Exists(".git"))
+	r.RUnlock()
+	r.RUnlock()
+
+	// Test pull
+	assert.NoError(t, r.Pull())
+	assert.True(t, r.Fs().Exists(".git"))
+
+	// Test clear
+	basePath := r.Fs().BasePath()
+	r.Clear()
+	assert.Nil(t, r.Fs())
+	assert.NoDirExists(t, basePath)
 }
