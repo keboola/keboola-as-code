@@ -130,7 +130,7 @@ func InputsResponse(template *template.Template) (out *Inputs) {
 					Description: in.Description,
 					Type:        string(in.Type),
 					Kind:        string(in.Kind),
-					Default:     in.Default,
+					Default:     in.DefaultOrEmpty(),
 					Options:     OptionsResponse(in.Options),
 				}
 				stepResponse.Inputs = append(stepResponse.Inputs, inputResponse)
