@@ -14,14 +14,16 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
 	templateInput "github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 const (
 	IdRegexp        = `^[a-zA-Z0-9\-]+$`
-	CommonDirectory = `_common`
-	SrcDirectory    = `src`
-	TestsDirectory  = `tests`
+	CommonDirectory = "_common"
+	SrcDirectory    = "src"
+	TestsDirectory  = "tests"
+	ReadmeFile      = "README.md"
 )
 
 type (
@@ -54,6 +56,15 @@ func LoadInputs(fs filesystem.Fs) (StepsGroups, error) {
 	return templateInput.Load(fs)
 }
 
+func LoadReadme(fs filesystem.Fs) (string, error) {
+	path := filesystem.Join(SrcDirectory, ReadmeFile)
+	file, err := fs.ReadFile(filesystem.NewFileDef(path).SetDescription("template readme"))
+	if err != nil {
+		return "", err
+	}
+	return file.Content, nil
+}
+
 type dependencies interface {
 	Logger() log.Logger
 	StorageApi() (*storageapi.Api, error)
@@ -64,6 +75,8 @@ type _reference = model.TemplateRef
 
 type Template struct {
 	_reference
+	template     repository.TemplateRecord
+	version      repository.VersionRecord
 	deps         dependencies
 	fs           filesystem.Fs
 	srcDir       filesystem.Fs
@@ -73,18 +86,47 @@ type Template struct {
 	inputs       StepsGroups
 }
 
-func New(reference model.TemplateRef, fs filesystem.Fs, manifestFile *ManifestFile, inputs StepsGroups, d dependencies) (*Template, error) {
+func New(reference model.TemplateRef, template repository.TemplateRecord, version repository.VersionRecord, fs filesystem.Fs, d dependencies) (*Template, error) {
 	// Src dir
 	srcDir, err := fs.SubDirFs(SrcDirectory)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Template{_reference: reference, deps: d, fs: fs, srcDir: srcDir, manifestFile: manifestFile, inputs: inputs}, nil
+	// Create struct
+	out := &Template{_reference: reference, template: template, version: version, deps: d, fs: fs, srcDir: srcDir}
+
+	// Load manifest
+	out.manifestFile, err = LoadManifest(fs)
+	if err != nil {
+		return nil, err
+	}
+
+	// Load inputs
+	out.inputs, err = LoadInputs(fs)
+	if err != nil {
+		return nil, err
+	}
+
+	// Load readme
+	out.readme, err = LoadReadme(fs)
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
 }
 
 func (t *Template) Reference() model.TemplateRef {
 	return t._reference
+}
+
+func (t *Template) TemplateRecord() repository.TemplateRecord {
+	return t.template
+}
+
+func (t *Template) VersionRecord() repository.VersionRecord {
+	return t.version
 }
 
 func (t *Template) ObjectsRoot() filesystem.Fs {
@@ -121,6 +163,11 @@ func (t *Template) Readme() string {
 
 func (t *Template) Inputs() StepsGroups {
 	return t.inputs
+}
+
+func (t *Template) Components() []string {
+	// not implemented yet, scan t.manifestFile.RawContent()
+	return []string{}
 }
 
 func (t *Template) ManifestPath() string {

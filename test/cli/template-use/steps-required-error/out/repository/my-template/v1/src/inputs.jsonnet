@@ -5,7 +5,7 @@
       required: "exactlyOne",
       steps: [
         {
-          icon: "common",
+          icon: "common:settings",
           name: "Shopify",
           description: "Sell online with an ecommerce website",
           inputs: [
@@ -28,7 +28,7 @@
           ],
         },
         {
-          icon: "common",
+          icon: "common:settings",
           name: "Shoptet",
           description: "Sell online with Shoptet",
           inputs: [
@@ -57,7 +57,7 @@
       required: "all",
       steps: [
         {
-          icon: "common",
+          icon: "common:settings",
           name: "Python",
           description: "Description for Python parameters",
           inputs: [
@@ -72,7 +72,7 @@
           ],
         },
         {
-          icon: "common",
+          icon: "common:settings",
           name: "Snowflake",
           description: "Description for Snowflake parameters",
           inputs: [

@@ -63,7 +63,7 @@ func (v *container) LocalTemplate() (*template.Template, error) {
 	}
 
 	// Get version
-	versionRecord, found := templateRecord.GetByVersion(version)
+	versionRecord, found := templateRecord.GetVersion(version)
 	if !found {
 		return nil, fmt.Errorf(`template "%s" found, but version "%s" is missing`, templatePath, version.Original())
 	}

@@ -21,7 +21,7 @@ required: all
 ### Step "s1"
 name: Step One
 description: Description
-icon: common
+icon: common:settings
 
 ## Group
 description: Group Description
@@ -30,22 +30,22 @@ required: all
 ### Step "s2"
 name: Step Two
 description: Description
-icon: common
+icon: common:settings
 
 ### Step "s3"
 name: Step Three
 description: Description
-icon: common
+icon: common:settings
 
 `
 
 	expectedGroups := input.StepsGroups{
 		&input.StepsGroup{Description: "Group Description", Required: "all", Steps: []*input.Step{
-			{Icon: "common", Name: "Step One", Description: "Description", Inputs: make(input.Inputs, 0)},
+			{Icon: "common:settings", Name: "Step One", Description: "Description", Inputs: make(input.Inputs, 0)},
 		}},
 		&input.StepsGroup{Description: "Group Description", Required: "all", Steps: []*input.Step{
-			{Icon: "common", Name: "Step Two", Description: "Description", Inputs: make(input.Inputs, 0)},
-			{Icon: "common", Name: "Step Three", Description: "Description", Inputs: make(input.Inputs, 0)},
+			{Icon: "common:settings", Name: "Step Two", Description: "Description", Inputs: make(input.Inputs, 0)},
+			{Icon: "common:settings", Name: "Step Three", Description: "Description", Inputs: make(input.Inputs, 0)},
 		}},
 	}
 
@@ -89,7 +89,7 @@ description: Group Description
 ### Step "s1"
 name: Step One again
 description: Description
-icon: common
+icon: common:settings
 
 ### Step "s2"
 name: Step Two

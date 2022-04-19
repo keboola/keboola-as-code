@@ -207,7 +207,7 @@ description: Default Group
 required: all
 
 ### Step "step-1"
-icon: common
+icon: common:settings
 name: Default Step
 description: Default Step
 

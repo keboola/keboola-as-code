@@ -9,6 +9,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
+type TemplateNotFoundError struct {
+	error
+}
+
+type VersionNotFoundError struct {
+	error
+}
+
 type Manifest struct {
 	changed bool
 	records map[string]TemplateRecord // template record by template ID
@@ -80,20 +88,20 @@ func (m *Manifest) AllTemplates() []TemplateRecord {
 	return out
 }
 
-func (m *Manifest) GetVersion(templateId string, version model.SemVersion) (VersionRecord, error) {
+func (m *Manifest) GetVersion(templateId string, version model.SemVersion) (TemplateRecord, VersionRecord, error) {
 	// Get template
 	templateRecord, found := m.GetById(templateId)
 	if !found {
-		return VersionRecord{}, fmt.Errorf(`template "%s" not found`, templateId)
+		return templateRecord, VersionRecord{}, TemplateNotFoundError{fmt.Errorf(`template "%s" not found`, templateId)}
 	}
 
 	// Get version
-	versionRecord, found := templateRecord.GetByVersion(version)
+	versionRecord, found := templateRecord.GetVersion(version)
 	if !found {
-		return VersionRecord{}, fmt.Errorf(`template "%s" found but version "%s" is missing`, templateId, version.Original())
+		return templateRecord, VersionRecord{}, VersionNotFoundError{fmt.Errorf(`template "%s" found but version "%s" is missing`, templateId, version.Original())}
 	}
 
-	return versionRecord, nil
+	return templateRecord, versionRecord, nil
 }
 
 func (m *Manifest) GetById(id string) (TemplateRecord, bool) {
