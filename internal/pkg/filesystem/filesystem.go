@@ -26,14 +26,17 @@ type Factory func(logger log.Logger, workingDir string) (fs Fs, err error)
 
 type FileInfo = fs.FileInfo
 
+type WalkFunc = filepath.WalkFunc
+
 // Fs - filesystem interface.
 type Fs interface {
 	ApiName() string // name of the used implementation, for example local, memory, ...
 	BasePath() string
 	WorkingDir() string
 	SubDirFs(path string) (Fs, error)
+	Logger() log.Logger
 	SetLogger(logger log.Logger)
-	Walk(root string, walkFn filepath.WalkFunc) error
+	Walk(root string, walkFn WalkFunc) error
 	Glob(pattern string) (matches []string, err error)
 	Stat(path string) (os.FileInfo, error)
 	ReadDir(path string) ([]os.FileInfo, error)
@@ -80,7 +83,9 @@ func ToSlash(path string) string {
 
 // Rel returns relative path.
 func Rel(base, path string) (string, error) {
-	if path == base {
+	base = filepath.Clean(string(PathSeparator) + strings.TrimPrefix(base, string(PathSeparator)))
+	path = filepath.Clean(string(PathSeparator) + strings.TrimPrefix(path, string(PathSeparator)))
+	if base == path {
 		return "", nil
 	}
 	if base == string(PathSeparator) {

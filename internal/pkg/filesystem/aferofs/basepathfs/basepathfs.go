@@ -72,10 +72,10 @@ func (fs *BasePathFs) ToSlash(path string) string {
 	return strings.ReplaceAll(path, string(os.PathSeparator), string(filesystem.PathSeparator))
 }
 
-func (fs *BasePathFs) Walk(root string, walkFn filepath.WalkFunc) error {
+func (fs *BasePathFs) Walk(root string, walkFn filesystem.WalkFunc) error {
 	return fs.utils.Walk(root, walkFn)
 }
 
-func (fs *BasePathFs) ReadDir(path string) ([]os.FileInfo, error) {
+func (fs *BasePathFs) ReadDir(path string) ([]filesystem.FileInfo, error) {
 	return fs.utils.ReadDir(path)
 }

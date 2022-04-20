@@ -13,6 +13,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	. "github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs/mountfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
@@ -34,6 +35,58 @@ func TestMemoryFilesystem(t *testing.T) {
 	createFs := func() (filesystem.Fs, log.DebugLogger) {
 		logger := log.NewDebugLogger()
 		fs, err := NewMemoryFs(logger, filesystem.Join("my", "dir"))
+		assert.NoError(t, err)
+		return fs, logger
+	}
+	cases := &testCases{createFs}
+	cases.runTests(t)
+}
+
+func TestMountFilesystem_WithoutMountPoint(t *testing.T) {
+	t.Parallel()
+	createFs := func() (filesystem.Fs, log.DebugLogger) {
+		logger := log.NewDebugLogger()
+		rootFs, err := NewMemoryFs(logger, filesystem.Join("my", "dir"))
+		assert.NoError(t, err)
+		fs, err := NewMountFs(rootFs)
+		assert.NoError(t, err)
+		return fs, logger
+	}
+	cases := &testCases{createFs}
+	cases.runTests(t)
+}
+
+func TestMountFilesystem_WithMountPoint(t *testing.T) {
+	t.Parallel()
+	createFs := func() (filesystem.Fs, log.DebugLogger) {
+		logger := log.NewDebugLogger()
+		rootFs, err := NewMemoryFs(logger, filesystem.Join("my", "dir"))
+		assert.NoError(t, err)
+		mountPointFs, err := NewMemoryFs(logger, "")
+		assert.NoError(t, err)
+		fs, err := NewMountFs(rootFs, mountfs.NewMountPoint(filesystem.Join("sub", "dir1"), mountPointFs))
+		assert.NoError(t, err)
+		return fs, logger
+	}
+	cases := &testCases{createFs}
+	cases.runTests(t)
+}
+
+func TestMountFilesystem_WithNestedMountPoint(t *testing.T) {
+	t.Parallel()
+	createFs := func() (filesystem.Fs, log.DebugLogger) {
+		logger := log.NewDebugLogger()
+		rootFs, err := NewMemoryFs(logger, filesystem.Join("my", "dir"))
+		assert.NoError(t, err)
+		mountPoint1Fs, err := NewMemoryFs(logger, "")
+		assert.NoError(t, err)
+		mountPoint2Fs, err := NewMemoryFs(logger, "")
+		assert.NoError(t, err)
+		fs, err := NewMountFs(
+			rootFs,
+			mountfs.NewMountPoint("sub/dir1", mountPoint1Fs),
+			mountfs.NewMountPoint("sub/dir1/dir2", mountPoint2Fs),
+		)
 		assert.NoError(t, err)
 		return fs, logger
 	}
@@ -108,7 +161,7 @@ func (*testCases) TestSubDirFs(t *testing.T, fs filesystem.Fs, _ log.DebugLogger
 	// file
 	subDirFs3, err := subDirFs2.SubDirFs(`/file.txt`)
 	assert.Error(t, err)
-	assert.Equal(t, `path "/file.txt" is not directory`, err.Error())
+	assert.Equal(t, `path "file.txt" is not directory`, err.Error())
 	assert.Nil(t, subDirFs3)
 
 	// not found
@@ -143,8 +196,8 @@ func (*testCases) TestSetLogger(t *testing.T, fs filesystem.Fs, _ log.DebugLogge
 }
 
 func (*testCases) TestWalk(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
-	assert.NoError(t, fs.Mkdir("my/dir1"))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile("my/dir2/file.txt", "foo\n")))
+	assert.NoError(t, fs.Mkdir("sub/dir1/dir2/dir3"))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile("sub/dir2/file.txt", "foo\n")))
 
 	paths := make([]string, 0)
 	root := "."
@@ -160,10 +213,12 @@ func (*testCases) TestWalk(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, []string{
-		`my`,
-		`my/dir1`,
-		`my/dir2`,
-		`my/dir2/file.txt`,
+		`sub`,
+		`sub/dir1`,
+		`sub/dir1/dir2`,
+		`sub/dir1/dir2/dir3`,
+		`sub/dir2`,
+		`sub/dir2/file.txt`,
 	}, paths)
 }
 

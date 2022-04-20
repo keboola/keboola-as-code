@@ -23,6 +23,15 @@ func TestRel(t *testing.T) {
 	out, err := Rel(`foo/bar`, `foo/bar/abc/file.txt`)
 	assert.NoError(t, err)
 	assert.Equal(t, "abc/file.txt", out)
+	out, err = Rel(`/foo/bar/../abc`, `/foo/bar/../abc/file.txt`)
+	assert.NoError(t, err)
+	assert.Equal(t, "file.txt", out)
+	out, err = Rel(`foo/bar/../abc`, `/foo/bar/../abc/file.txt`)
+	assert.NoError(t, err)
+	assert.Equal(t, "file.txt", out)
+	out, err = Rel(`/foo/bar/../abc`, `foo/bar/../abc/file.txt`)
+	assert.NoError(t, err)
+	assert.Equal(t, "file.txt", out)
 }
 
 func TestRelFromRootDir(t *testing.T) {

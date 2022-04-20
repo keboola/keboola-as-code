@@ -20,7 +20,6 @@ func New(basePath string) (*basepathfs.BasePathFs, error) {
 	if !filepath.IsAbs(basePath) {
 		panic(fmt.Errorf(`base path "%s" must be absolute`, basePath))
 	}
-
 	return basepathfs.New(afero.NewOsFs(), basePath)
 }
 
