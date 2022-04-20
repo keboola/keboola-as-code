@@ -44,8 +44,12 @@ func TestVmContext_Complex(t *testing.T) {
 			return fmt.Sprintf("***%s***%s***", params[0], params[1]), nil
 		},
 	})
-	ctx.LocalAlias(`alias1`, `"aliasValue"`)
-	ctx.LocalAlias(`alias2`, `1+2`)
+
+	// String
+	ctx.GlobalBinding(`alias1`, &ast.LiteralString{Value: "aliasValue", Kind: ast.StringDouble})
+
+	// 1+2
+	ctx.GlobalBinding(`alias2`, &ast.Binary{Left: &ast.LiteralNumber{OriginalString: "1"}, Right: &ast.LiteralNumber{OriginalString: "2"}, Op: ast.BopPlus})
 
 	code := `
 {
