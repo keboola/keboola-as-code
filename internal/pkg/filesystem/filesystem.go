@@ -82,19 +82,19 @@ func ToSlash(path string) string {
 }
 
 // Rel returns relative path.
-func Rel(base, path string) (string, error) {
-	base = filepath.Clean(string(PathSeparator) + strings.TrimPrefix(base, string(PathSeparator)))
-	path = filepath.Clean(string(PathSeparator) + strings.TrimPrefix(path, string(PathSeparator)))
-	if base == path {
+func Rel(base, pathStr string) (string, error) {
+	base = path.Clean(strings.TrimPrefix(base, string(PathSeparator)))
+	pathStr = path.Clean(strings.TrimPrefix(pathStr, string(PathSeparator)))
+	if base == pathStr {
 		return "", nil
 	}
-	if base == string(PathSeparator) {
+	if base == "." {
 		base = ""
 	}
-	if !IsFrom(path, base) {
-		return "", fmt.Errorf(`cannot get relative path, base="%s", path="%s"`, base, path)
+	if !IsFrom(pathStr, base) {
+		return "", fmt.Errorf(`cannot get relative path, base="%s", path="%s"`, base, pathStr)
 	}
-	return strings.TrimPrefix(path, base+string(PathSeparator)), nil
+	return strings.TrimPrefix(pathStr, base+string(PathSeparator)), nil
 }
 
 // Join joins any number of path elements into a single path.
@@ -124,7 +124,7 @@ func Match(pattern, name string) (matched bool, err error) {
 
 // IsFrom returns true if path is from base dir or some sub-dir.
 func IsFrom(path, base string) bool {
-	if base == "" {
+	if base == "" || base == "." {
 		return true
 	}
 	baseWithSep := base + string(PathSeparator)

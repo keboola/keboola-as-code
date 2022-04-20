@@ -3,6 +3,7 @@ package mountfs
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -74,13 +75,13 @@ func (v *MountFs) SubDirFs(path string) (interface{}, error) {
 	// Copy mount points
 	var mounts []MountPoint
 	for _, m := range v.mounts {
-		if mountPath, err := filesystem.Rel(path, m.Path); err == nil {
+		if mountPath, err := filesystem.Rel(v.ToSlash(path), m.Path); err == nil && mountPath != "" {
 			mounts = append(mounts, MountPoint{mountPath, m.Fs})
 		}
 	}
 
 	// Create filesystem
-	basePath := filesystem.Join(v.BasePath(), path)
+	basePath := filepath.Join(v.BasePath(), path) // nolint: forbidigo
 	return New(subFsBackend, basePath, mounts...), nil
 }
 
@@ -124,15 +125,20 @@ func (v *MountFs) Stat(name string) (os.FileInfo, error) {
 
 func (v *MountFs) Rename(oldName, newName string) error {
 	targetFs, mountDir, _ := v.fsFor(oldName)
+
+	oldName = v.ToSlash(oldName)
 	oldRel, err := filesystem.Rel(mountDir, oldName)
 	if err != nil {
 		return err
 	}
+
+	newName = v.ToSlash(newName)
 	newRel, err := filesystem.Rel(mountDir, newName)
 	if err != nil {
 		return fmt.Errorf(`path "%s" cannot be moved outside mount dir "%s" to "%s"`, oldName, mountDir, newName)
 	}
-	return targetFs.Rename(oldRel, newRel)
+
+	return targetFs.Rename(v.FromSlash(oldRel), v.FromSlash(newRel))
 }
 
 func (v *MountFs) RemoveAll(p string) error {
@@ -151,7 +157,7 @@ func (v *MountFs) OpenFile(path string, flag int, perm os.FileMode) (File, error
 	if err != nil {
 		return nil, err
 	}
-	return file{File: f, fs: v, path: filesystem.Join(mountDir, f.Name())}, nil
+	return file{File: f, fs: v, path: filesystem.Join(mountDir, v.ToSlash(f.Name()))}, nil
 }
 
 func (v *MountFs) Open(path string) (File, error) {
@@ -160,7 +166,7 @@ func (v *MountFs) Open(path string) (File, error) {
 	if err != nil {
 		return nil, err
 	}
-	return file{File: f, fs: v, path: filesystem.Join(mountDir, f.Name())}, nil
+	return file{File: f, fs: v, path: filesystem.Join(mountDir, v.ToSlash(f.Name()))}, nil
 }
 
 func (v *MountFs) Mkdir(path string, p os.FileMode) error {
@@ -189,7 +195,7 @@ func (v *MountFs) sortMounts() {
 // fsFor finds the nearest mount point or returns the root filesystem.
 func (v *MountFs) fsFor(path string) (targetFs abstract.Backend, mountDir, relPath string) {
 	for _, m := range v.mounts {
-		if rel, err := filesystem.Rel(m.Path, path); err == nil {
+		if rel, err := filesystem.Rel(m.Path, v.ToSlash(path)); err == nil {
 			return m.Fs, m.Path, rel
 		}
 	}
@@ -221,7 +227,7 @@ func (f file) Readdir(count int) ([]os.FileInfo, error) {
 			if !paths[subDir] {
 				// Add item if it not already present
 				paths[subDir] = true
-				if stat, err := f.fs.Stat(filesystem.Join(f.path, subDir)); err != nil {
+				if stat, err := f.fs.Stat(f.fs.FromSlash(filesystem.Join(f.path, subDir))); err != nil {
 					files = append(files, stat)
 				}
 			}
@@ -255,7 +261,7 @@ func (f file) Readdirnames(count int) ([]string, error) {
 			if !paths[subDir] {
 				// Add item if it not already present
 				paths[subDir] = true
-				files = append(files, subDir)
+				files = append(files, f.fs.FromSlash(subDir))
 			}
 		}
 	}
