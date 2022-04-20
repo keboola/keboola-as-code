@@ -39,7 +39,7 @@ func TestVisitAst(t *testing.T) {
 `
 
 	// Visit & modify
-	node, err := ToAst(code)
+	node, err := ToAst(code, "")
 	assert.NoError(t, err)
 	VisitAst(&node, func(nodePtr *ast.Node) {
 		switch v := (*nodePtr).(type) {

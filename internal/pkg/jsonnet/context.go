@@ -10,6 +10,8 @@ import (
 )
 
 type Context struct {
+	filePath        string
+	importer        jsonnet.Importer
 	extVariables    variablesValues
 	nativeFunctions nativeFunctions
 	localAliases    localAliases
@@ -54,6 +56,33 @@ func NewContext() *Context {
 	}
 }
 
+// WithFilePath returns clone of the context with the file name set.
+func (c *Context) WithFilePath(filePath string) *Context {
+	var clone Context
+	if c != nil {
+		clone = *c
+	}
+	clone.filePath = filePath
+	return &clone
+}
+
+// WithImporter returns clone of the context with the importer set.
+func (c *Context) WithImporter(importer jsonnet.Importer) *Context {
+	var clone Context
+	if c != nil {
+		clone = *c
+	}
+	clone.importer = importer
+	return &clone
+}
+
+func (c *Context) FilePath() string {
+	if c == nil {
+		return ""
+	}
+	return c.filePath
+}
+
 // ExtVar registers variable to the JsonNet context.
 // Variable can be used in the JsonNet code by: std.extVar("<NAME>").
 func (c *Context) ExtVar(name string, value interface{}) {
@@ -96,6 +125,11 @@ func (c *Context) registerTo(vm *jsonnet.VM) {
 	if c == nil {
 		return
 	}
+
+	if c.importer != nil {
+		vm.Importer(c.importer)
+	}
+
 	c.extVariables.registerTo(vm)
 	c.nativeFunctions.registerTo(vm)
 }
@@ -112,7 +146,7 @@ func (v localAliases) add(name string, code string) error {
 		panic(fmt.Errorf(`alias "%s" is already defined`, name))
 	}
 
-	node, err := ToAst(code)
+	node, err := ToAst(code, "")
 	if err != nil {
 		return err
 	}

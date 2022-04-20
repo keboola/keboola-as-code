@@ -32,7 +32,7 @@ func TestJsonNetMapper_MapBeforeLocalSave(t *testing.T) {
 	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
 
 	// Json file is converted to JsonNet
-	expectedAst, err := jsonnet.ToAst("{\n  \"key\": \"value\"\n}\n")
+	expectedAst, err := jsonnet.ToAst("{\n  \"key\": \"value\"\n}\n", "foo.jsonnet")
 	assert.NoError(t, err)
 	expected := model.NewFilesToSave()
 	expected.
