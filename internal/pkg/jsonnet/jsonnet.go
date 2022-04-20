@@ -12,7 +12,7 @@ import (
 )
 
 func Evaluate(code string, ctx *Context) (jsonOut string, err error) {
-	node, err := ToAst(code)
+	node, err := ToAst(code, ctx.FilePath())
 	if err != nil {
 		return "", err
 	}
@@ -36,6 +36,7 @@ func EvaluateAst(input ast.Node, ctx *Context) (jsonOut string, err error) {
 
 	// Create VM
 	vm := jsonnet.MakeVM()
+	vm.Importer(NewNopImporter()) // default
 	ctx.registerTo(vm)
 
 	// Evaluate
@@ -61,7 +62,7 @@ func MustEvaluateAst(input ast.Node, ctx *Context) (jsonOut string) {
 }
 
 func Format(code string) (string, error) {
-	node, err := ToAst(code)
+	node, err := ToAst(code, "")
 	if err != nil {
 		return "", err
 	}
@@ -74,16 +75,16 @@ func FormatAst(node ast.Node) string {
 	return formatter.FormatAst(node, nil, DefaultOptions())
 }
 
-func ToAst(code string) (ast.Node, error) {
-	node, _, err := parser.SnippetToRawAST(code)
+func ToAst(code, fileName string) (ast.Node, error) {
+	node, _, err := parser.SnippetToRawAST(code, fileName)
 	if err != nil {
 		return nil, fmt.Errorf(`cannot parse jsonnet: %w`, err)
 	}
 	return node, nil
 }
 
-func MustToAst(code string) ast.Node {
-	node, err := ToAst(code)
+func MustToAst(code string, fileName string) ast.Node {
+	node, err := ToAst(code, fileName)
 	if err != nil {
 		panic(err)
 	}

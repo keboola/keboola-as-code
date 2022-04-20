@@ -119,7 +119,7 @@ func (f *RawFile) ToJsonFile() (*JsonFile, error) {
 }
 
 func (f *RawFile) ToJsonNetFile(ctx *jsonnet.Context) (*JsonNetFile, error) {
-	ast, err := jsonnet.ToAst(f.Content)
+	ast, err := jsonnet.ToAst(f.Content, f.path)
 	if err != nil {
 		return nil, err
 	}

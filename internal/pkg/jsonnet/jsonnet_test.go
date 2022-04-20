@@ -59,7 +59,7 @@ func TestFormatAst(t *testing.T) {
 func TestToAst(t *testing.T) {
 	t.Parallel()
 	code := `{ foo: "bar" }`
-	astNode, err := ToAst(code)
+	astNode, err := ToAst(code, "")
 	assert.NoError(t, err)
 	assert.NotEmpty(t, astNode)
 }

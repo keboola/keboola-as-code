@@ -121,7 +121,7 @@ func TestJsonNetFile_ToJsonFile_Variables(t *testing.T) {
 	t.Parallel()
 	ctx := jsonnet.NewContext()
 	ctx.ExtVar("myKey", "bar")
-	jsonNetFile := NewJsonNetFile(`path`, jsonnet.MustToAst(`{foo: std.extVar("myKey")}`), ctx)
+	jsonNetFile := NewJsonNetFile(`path`, jsonnet.MustToAst(`{foo: std.extVar("myKey")}`, ""), ctx)
 	jsonFile, err := jsonNetFile.ToJsonFile()
 	assert.NoError(t, err)
 	assert.Equal(t, orderedmap.FromPairs([]orderedmap.Pair{{Key: "foo", Value: "bar"}}), jsonFile.Content)

@@ -122,6 +122,11 @@ func Match(pattern, name string) (matched bool, err error) {
 	return path.Match(pattern, name)
 }
 
+// IsAbs reports whether the path is absolute.
+func IsAbs(v string) bool {
+	return path.IsAbs(v)
+}
+
 // IsFrom returns true if path is from base dir or some sub-dir.
 func IsFrom(path, base string) bool {
 	if base == "" || base == "." {

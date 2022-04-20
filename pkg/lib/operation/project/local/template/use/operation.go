@@ -72,7 +72,7 @@ func Run(projectState *project.State, tmpl *template.Template, o Options, d depe
 	instanceId := idgenerator.TemplateInstanceId()
 
 	// Load template
-	ctx := template.NewUseContext(d.Ctx(), tmpl.Reference(), instanceId, o.TargetBranch, o.Inputs, tickets)
+	ctx := template.NewUseContext(d.Ctx(), tmpl.Reference(), tmpl.ObjectsRoot(), instanceId, o.TargetBranch, o.Inputs, tickets)
 	templateState, err := tmpl.LoadState(ctx, LoadTemplateOptions())
 	if err != nil {
 		return err
