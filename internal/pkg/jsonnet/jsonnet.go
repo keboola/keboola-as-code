@@ -36,6 +36,7 @@ func EvaluateAst(input ast.Node, ctx *Context) (jsonOut string, err error) {
 
 	// Create VM
 	vm := jsonnet.MakeVM()
+	vm.Importer(NewNopImporter()) // default
 	ctx.registerTo(vm)
 
 	// Evaluate
