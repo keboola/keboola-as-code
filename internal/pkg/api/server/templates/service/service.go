@@ -201,6 +201,7 @@ func getTemplateVersion(d dependencies.Container, repoName, templateId, versionS
 				Message: fmt.Sprintf(`Version "%s" not found.`, versionStr),
 			}
 		}
+		return nil, err
 	}
 
 	return tmpl, nil
