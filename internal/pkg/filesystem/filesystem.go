@@ -26,14 +26,17 @@ type Factory func(logger log.Logger, workingDir string) (fs Fs, err error)
 
 type FileInfo = fs.FileInfo
 
+type WalkFunc = filepath.WalkFunc
+
 // Fs - filesystem interface.
 type Fs interface {
 	ApiName() string // name of the used implementation, for example local, memory, ...
 	BasePath() string
 	WorkingDir() string
 	SubDirFs(path string) (Fs, error)
+	Logger() log.Logger
 	SetLogger(logger log.Logger)
-	Walk(root string, walkFn filepath.WalkFunc) error
+	Walk(root string, walkFn WalkFunc) error
 	Glob(pattern string) (matches []string, err error)
 	Stat(path string) (os.FileInfo, error)
 	ReadDir(path string) ([]os.FileInfo, error)
@@ -79,17 +82,19 @@ func ToSlash(path string) string {
 }
 
 // Rel returns relative path.
-func Rel(base, path string) (string, error) {
-	if path == base {
+func Rel(base, pathStr string) (string, error) {
+	base = path.Clean(strings.TrimPrefix(base, string(PathSeparator)))
+	pathStr = path.Clean(strings.TrimPrefix(pathStr, string(PathSeparator)))
+	if base == pathStr {
 		return "", nil
 	}
-	if base == string(PathSeparator) {
+	if base == "." {
 		base = ""
 	}
-	if !IsFrom(path, base) {
-		return "", fmt.Errorf(`cannot get relative path, base="%s", path="%s"`, base, path)
+	if !IsFrom(pathStr, base) {
+		return "", fmt.Errorf(`cannot get relative path, base="%s", path="%s"`, base, pathStr)
 	}
-	return strings.TrimPrefix(path, base+string(PathSeparator)), nil
+	return strings.TrimPrefix(pathStr, base+string(PathSeparator)), nil
 }
 
 // Join joins any number of path elements into a single path.
@@ -119,7 +124,7 @@ func Match(pattern, name string) (matched bool, err error) {
 
 // IsFrom returns true if path is from base dir or some sub-dir.
 func IsFrom(path, base string) bool {
-	if base == "" {
+	if base == "" || base == "." {
 		return true
 	}
 	baseWithSep := base + string(PathSeparator)

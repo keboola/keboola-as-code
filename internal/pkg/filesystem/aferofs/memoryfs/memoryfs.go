@@ -3,7 +3,6 @@ package memoryfs
 
 import (
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/spf13/afero"
@@ -52,10 +51,10 @@ func (fs *MemoryFs) ToSlash(path string) string {
 	return strings.ReplaceAll(path, string(os.PathSeparator), string(filesystem.PathSeparator))
 }
 
-func (fs *MemoryFs) Walk(root string, walkFn filepath.WalkFunc) error {
+func (fs *MemoryFs) Walk(root string, walkFn filesystem.WalkFunc) error {
 	return fs.utils.Walk(root, walkFn)
 }
 
-func (fs *MemoryFs) ReadDir(path string) ([]os.FileInfo, error) {
+func (fs *MemoryFs) ReadDir(path string) ([]filesystem.FileInfo, error) {
 	return fs.utils.ReadDir(path)
 }

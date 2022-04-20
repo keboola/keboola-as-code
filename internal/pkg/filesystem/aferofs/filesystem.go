@@ -14,30 +14,23 @@ import (
 	"github.com/spf13/afero"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs/abstract"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/fileloader"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
-type backend interface {
-	afero.Fs
-	Name() string
-	BasePath() string
-	SubDirFs(path string) (interface{}, error)
-	FromSlash(path string) string // returns OS representation of the path
-	ToSlash(path string) string   // returns internal representation of the path
-	Walk(root string, walkFn filepath.WalkFunc) error
-	ReadDir(path string) ([]os.FileInfo, error)
-}
-
 // Fs - filesystem abstraction.
 type Fs struct {
-	fs         backend
+	fs         abstract.Backend
 	logger     log.Logger
 	workingDir string
 }
 
-func New(logger log.Logger, fs backend, workingDir string) filesystem.Fs {
+func New(logger log.Logger, fs abstract.Backend, workingDir string) filesystem.Fs {
+	if logger == nil {
+		logger = log.NewNopLogger()
+	}
 	return &Fs{fs: fs, logger: logger, workingDir: fs.ToSlash(workingDir)}
 }
 
@@ -51,11 +44,12 @@ func (f *Fs) BasePath() string {
 	return f.fs.BasePath()
 }
 
-func (f *Fs) AferoFs() afero.Fs {
+func (f *Fs) Backend() abstract.Backend {
 	return f.fs
 }
 
 func (f *Fs) SubDirFs(path string) (filesystem.Fs, error) {
+	path = strings.Trim(path, string(filesystem.PathSeparator))
 	workingDir, err := filesystem.Rel(path, f.workingDir)
 	if err != nil {
 		workingDir = `/`
@@ -66,12 +60,16 @@ func (f *Fs) SubDirFs(path string) (filesystem.Fs, error) {
 		return nil, err
 	}
 
-	return New(f.logger, subDirFs.(backend), f.fs.FromSlash(workingDir)), nil
+	return New(f.logger, subDirFs.(abstract.Backend), f.fs.FromSlash(workingDir)), nil
 }
 
 // WorkingDir - user current working directory.
 func (f *Fs) WorkingDir() string {
 	return f.workingDir
+}
+
+func (f *Fs) Logger() log.Logger {
+	return f.logger
 }
 
 func (f *Fs) SetLogger(logger log.Logger) {

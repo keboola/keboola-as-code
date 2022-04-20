@@ -20,7 +20,7 @@ func CopyFs2Fs(srcFs filesystem.Fs, srcPath string, dstFs filesystem.Fs, dstPath
 		aferoSrc = &afero.Afero{Fs: afero.NewOsFs()}
 	} else if fs, ok := srcFs.(*Fs); ok {
 		// If filesystem implemented by Afero lib -> get lib backend
-		aferoSrc = fs.AferoFs()
+		aferoSrc = fs.Backend()
 	} else {
 		return fmt.Errorf(`unexpected type of src filesyste "%T"`, srcFs)
 	}
@@ -32,7 +32,7 @@ func CopyFs2Fs(srcFs filesystem.Fs, srcPath string, dstFs filesystem.Fs, dstPath
 		aferoDst = &afero.Afero{Fs: afero.NewOsFs()}
 	} else if fs, ok := dstFs.(*Fs); ok {
 		// If filesystem implemented by Afero lib -> get lib backend
-		aferoDst = fs.AferoFs()
+		aferoDst = fs.Backend()
 	} else {
 		return fmt.Errorf(`unexpected type of dst filesyste "%T"`, dstFs)
 	}

@@ -128,7 +128,7 @@ func (v *container) TemplateRepository(definition model.TemplateRepository, _ mo
 	}
 
 	// Return repository
-	return repository.New(definition, fs, manifest), nil
+	return repository.New(definition, fs, manifest)
 }
 
 func (v *container) Envs() *env.Map {
