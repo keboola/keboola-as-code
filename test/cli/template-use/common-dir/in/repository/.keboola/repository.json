@@ -1,0 +1,20 @@
+{
+  "version": 2,
+  "templates": [
+    {
+      "id": "my-template-id",
+      "icon": "common:settings",
+      "name": "My Template",
+      "description": "Full workflow to ...",
+      "path": "my-template",
+      "versions": [
+        {
+          "version": "1.2.3",
+          "description": "",
+          "stable": false,
+          "path": "v1"
+        }
+      ]
+    }
+  ]
+}
