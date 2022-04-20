@@ -9,10 +9,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi/eventsender"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs/mountfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
-	templateRepository "github.com/keboola/keboola-as-code/internal/pkg/template/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -24,7 +27,7 @@ type Abstract interface {
 	ApiVerboseLogs() bool
 	StorageApiHost() (string, error)
 	StorageApiToken() (string, error)
-	TemplateRepository(definition model.TemplateRepository, forTemplate model.TemplateRef) (*templateRepository.Repository, error)
+	TemplateRepository(definition model.TemplateRepository, forTemplate model.TemplateRef) (*repository.Repository, error)
 }
 
 // Common provides common dependencies for CLI and templates API.
@@ -173,25 +176,33 @@ func (v *commonContainer) serviceUrlById() (map[storageapi.ServiceId]storageapi.
 
 func (v *commonContainer) Template(reference model.TemplateRef) (*template.Template, error) {
 	// Load repository
-	repository, err := v.TemplateRepository(reference.Repository(), reference)
+	repo, err := v.TemplateRepository(reference.Repository(), reference)
 	if err != nil {
 		return nil, err
 	}
 
 	// Get template version
-	templateRecord, versionRecord, err := repository.GetTemplateVersion(reference.TemplateId(), reference.Version())
+	templateRecord, versionRecord, err := repo.GetTemplateVersion(reference.TemplateId(), reference.Version())
 	if err != nil {
 		return nil, err
 	}
 
 	// Check if template dir exists
 	templatePath := versionRecord.Path()
-	if !repository.Fs().IsDir(templatePath) {
+	if !repo.Fs().IsDir(templatePath) {
 		return nil, fmt.Errorf(`template dir "%s" not found`, templatePath)
 	}
 
 	// Template dir
-	fs, err := repository.Fs().SubDirFs(templatePath)
+	rootFs, err := repo.Fs().SubDirFs(templatePath)
+	if err != nil {
+		return nil, err
+	}
+
+	// Mount "_common" dir from the repository to "<common>"
+	mountPath := filesystem.Join(template.SrcDirectory, repository.CommonDirectoryMountPoint)
+	mountPoint := mountfs.NewMountPoint(mountPath, repo.CommonDir())
+	fs, err := aferofs.NewMountFs(rootFs, mountPoint)
 	if err != nil {
 		return nil, err
 	}

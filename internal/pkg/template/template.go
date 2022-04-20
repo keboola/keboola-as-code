@@ -19,11 +19,10 @@ import (
 )
 
 const (
-	IdRegexp        = `^[a-zA-Z0-9\-]+$`
-	CommonDirectory = "_common"
-	SrcDirectory    = "src"
-	TestsDirectory  = "tests"
-	ReadmeFile      = "README.md"
+	IdRegexp       = `^[a-zA-Z0-9\-]+$`
+	SrcDirectory   = "src"
+	TestsDirectory = "tests"
+	ReadmeFile     = "README.md"
 )
 
 type (

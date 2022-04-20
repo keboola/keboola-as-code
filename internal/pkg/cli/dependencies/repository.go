@@ -41,7 +41,7 @@ func (v *container) TemplateRepository(definition model.TemplateRepository, forT
 	if err != nil {
 		return nil, err
 	}
-	return repository.New(definition, fs, manifest), nil
+	return repository.New(definition, fs, manifest)
 }
 
 func (v *container) repositoryFs(definition model.TemplateRepository, template model.TemplateRef) (filesystem.Fs, error) {
@@ -121,7 +121,7 @@ func gitRepositoryFs(definition model.TemplateRepository, tmplRef model.Template
 	}
 
 	// Load common directory, shared between all templates in repository, if it exists
-	if err := gitRepository.Load(template.CommonDirectory); err != nil {
+	if err := gitRepository.Load(repository.CommonDirectory); err != nil {
 		return nil, err
 	}
 
