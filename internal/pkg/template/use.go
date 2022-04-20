@@ -7,7 +7,9 @@ import (
 	"github.com/google/go-jsonnet/ast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
+	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet/fsimporter"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacevalues"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
@@ -51,12 +53,12 @@ const (
 	placeholderEnd   = "~~>>"
 )
 
-func NewUseContext(ctx context.Context, templateRef model.TemplateRef, instanceId string, targetBranch model.BranchKey, inputs InputsValues, tickets *storageapi.TicketProvider) *UseContext {
+func NewUseContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot filesystem.Fs, instanceId string, targetBranch model.BranchKey, inputs InputsValues, tickets *storageapi.TicketProvider) *UseContext {
 	c := &UseContext{
 		_context:     baseContext(ctx),
 		templateRef:  templateRef,
 		instanceId:   instanceId,
-		jsonNetCtx:   jsonnet.NewContext(),
+		jsonNetCtx:   jsonnet.NewContext().WithImporter(fsimporter.New(objectsRoot)),
 		replacements: replacevalues.NewValues(),
 		inputs:       make(map[string]interface{}),
 		tickets:      tickets,

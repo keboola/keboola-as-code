@@ -17,6 +17,7 @@ import (
 	. "github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 )
 
 func TestUseContext(t *testing.T) {
@@ -59,7 +60,8 @@ func TestUseContext(t *testing.T) {
 	// Create context
 	templateRef := model.NewTemplateRef(model.TemplateRepository{Name: "my-repository"}, "my-template", model.ZeroSemVersion())
 	instanceId := "my-instance"
-	ctx := NewUseContext(context.Background(), templateRef, instanceId, targetBranch, inputsValues, tickets)
+	fs := testfs.NewMemoryFs()
+	ctx := NewUseContext(context.Background(), templateRef, fs, instanceId, targetBranch, inputsValues, tickets)
 
 	// Check JsonNet functions
 	code := `
