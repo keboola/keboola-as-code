@@ -7,6 +7,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
+	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet/fsimporter"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
@@ -24,13 +25,13 @@ type loader struct {
 
 // New creates FileLoader to load files from the filesystem.
 func New(fs filesystem.Fs) filesystem.FileLoader {
-	return &loader{fs: fs}
+	return &loader{fs: fs, jsonNetContext: jsonnet.NewContext().WithImporter(fsimporter.New(fs))}
 }
 
 // NewWithHandler creates FileLoader to load files from the filesystem.
 // File load process can be modified by the custom handler callback.
 func NewWithHandler(fs filesystem.Fs, handler loadHandlerWithNext) filesystem.FileLoader {
-	return &loader{fs: fs, handler: handler}
+	return &loader{fs: fs, handler: handler, jsonNetContext: jsonnet.NewContext().WithImporter(fsimporter.New(fs))}
 }
 
 func (l *loader) SetJsonNetContext(ctx *jsonnet.Context) {
