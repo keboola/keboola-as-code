@@ -213,7 +213,7 @@ func TestLoadConfigMetadata(t *testing.T) {
 			storageapi.ConfigMetadataResponseItem{
 				ComponentId: "foo.bar",
 				ConfigId:    "456",
-				Metadata: []storageapi.ConfigMetadata{
+				Metadata: []storageapi.Metadata{
 					{
 						Id:        "1",
 						Key:       "KBC.KaC.Meta",
@@ -295,7 +295,7 @@ func TestSaveConfigMetadata_Create(t *testing.T) {
 	httpTransport.RegisterResponder(resty.MethodPost, `=~/storage/branch/123/components/foo.bar/configs/456/metadata$`,
 		func(req *http.Request) (*http.Response, error) {
 			httpRequest = req
-			response := []storageapi.ConfigMetadata{
+			response := []storageapi.Metadata{
 				{Id: "1", Key: "KBC-KaC-meta1", Value: "val1", Timestamp: "xxx"},
 			}
 			return httpmock.NewStringResponse(200, json.MustEncodeString(response, true)), nil
@@ -366,7 +366,7 @@ func TestSaveConfigMetadata_Update(t *testing.T) {
 	httpTransport.RegisterResponder(resty.MethodPost, `=~/storage/branch/123/components/foo.bar/configs/456/metadata$`,
 		func(req *http.Request) (*http.Response, error) {
 			httpRequest = req
-			response := []storageapi.ConfigMetadata{
+			response := []storageapi.Metadata{
 				{Id: "1", Key: "KBC-KaC-meta1", Value: "val1", Timestamp: "xxx"},
 			}
 			return httpmock.NewStringResponse(200, json.MustEncodeString(response, true)), nil

@@ -7,6 +7,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
+type Metadata struct {
+	Id        string `json:"id"`
+	Key       string `json:"key"`
+	Value     string `json:"value"`
+	Timestamp string `json:"timestamp"`
+}
+
 func (a *Api) CreateRequest(object interface{}) (*client.Request, error) {
 	switch v := object.(type) {
 	case *model.Branch:
