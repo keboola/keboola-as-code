@@ -209,7 +209,8 @@ func TestValidationRules(t *testing.T) {
 		stepsGroups[0].Steps[0].Inputs = Inputs{c.input}
 		err := stepsGroups.Validate()
 		if c.error == "" {
-			assert.NoError(t, err, c.description)
+			// Expected nil *utils.MultiError
+			assert.Nil(t, err, c.description)
 		} else {
 			assert.Error(t, err, c.description)
 			assert.Equal(t, c.error, err.Error(), c.description)

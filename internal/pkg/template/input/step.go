@@ -2,8 +2,11 @@ package input
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func Load(fs filesystem.Fs) (StepsGroups, error) {
@@ -68,8 +71,53 @@ func (g StepsGroups) Path() string {
 	return Path()
 }
 
-func (g StepsGroups) Validate() error {
-	return validate(g)
+func (g StepsGroups) Validate() *utils.MultiError {
+	errors := utils.NewMultiError()
+
+	// Check duplicate inputs
+	inputsOccurrences := orderedmap.New()
+	g.VisitInputs(func(gIndex, sIndex int, group *StepsGroup, step *Step, input Input) {
+		vRaw, _ := inputsOccurrences.Get(input.Id)
+		v, _ := vRaw.([]string)
+		v = append(v, fmt.Sprintf(`step "%s" (g%02d-s%02d)`, step.Name, gIndex+1, sIndex+1))
+		inputsOccurrences.Set(input.Id, v)
+	})
+	inputsOccurrences.SortKeys(func(keys []string) {
+		sort.Strings(keys)
+	})
+	for _, inputId := range inputsOccurrences.Keys() {
+		occurrencesRaw, _ := inputsOccurrences.Get(inputId)
+		occurrences := occurrencesRaw.([]string)
+		if len(occurrences) > 1 {
+			inputsErr := utils.NewMultiError()
+			for _, occurrence := range occurrences {
+				inputsErr.Append(fmt.Errorf(occurrence))
+			}
+			errors.AppendWithPrefix(fmt.Sprintf(`input "%s" is defined %d times in`, inputId, len(occurrences)), inputsErr)
+		}
+	}
+
+	// Validate other rules
+	if err := validate(g); err != nil {
+		errors.Append(err)
+	}
+
+	if errors.Len() > 0 {
+		return errors
+	}
+	return nil
+}
+
+type VisitInputsCallback func(gIndex, sIndex int, group *StepsGroup, step *Step, input Input)
+
+func (g StepsGroups) VisitInputs(fn VisitInputsCallback) {
+	for gIndex, group := range g {
+		for sIndex, step := range group.Steps {
+			for _, input := range step.Inputs {
+				fn(gIndex, sIndex, group, step, input)
+			}
+		}
+	}
 }
 
 // StepsGroup is a container for Steps.

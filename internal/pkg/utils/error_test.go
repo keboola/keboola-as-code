@@ -61,3 +61,35 @@ func TestMultiError(t *testing.T) {
 `
 	assert.Equal(t, strings.TrimSpace(expected), e.Error())
 }
+
+func TestMultiError_Flatten(t *testing.T) {
+	t.Parallel()
+	a := NewMultiError()
+	a.Append(fmt.Errorf("A 1"))
+	a.Append(fmt.Errorf("A 2"))
+
+	b := NewMultiError()
+	b.Append(fmt.Errorf("B 1"))
+	b.Append(fmt.Errorf("B 2"))
+
+	c := NewMultiError()
+	c.Append(fmt.Errorf("C 1"))
+	c.Append(fmt.Errorf("C 2"))
+
+	merged := NewMultiError()
+	merged.Append(a)
+	merged.Append(b)
+	merged.AppendWithPrefix("Prefix", c)
+	assert.Len(t, merged.Errors, 5)
+
+	expected := `
+- A 1
+- A 2
+- B 1
+- B 2
+- Prefix:
+  - C 1
+  - C 2
+`
+	assert.Equal(t, strings.TrimSpace(expected), merged.Error())
+}

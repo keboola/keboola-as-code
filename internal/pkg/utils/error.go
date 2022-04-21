@@ -52,14 +52,17 @@ func NewMultiError() *MultiError {
 func (e *MultiError) Append(err error) {
 	e.lock.Lock()
 	defer e.lock.Unlock()
+
+	// Unwrap multi error, so it can be flattened
+	if v, ok := err.(*MultiError); ok { // nolint: errorlint
+		err = v.multiError
+	}
 	e.multiError = multierror.Append(e.multiError, err)
 }
 
 // AppendWithPrefix - add an error with custom prefix.
 func (e *MultiError) AppendWithPrefix(prefix string, err error) {
-	e.lock.Lock()
-	defer e.lock.Unlock()
-	e.multiError = multierror.Append(e.multiError, PrefixError(prefix, err))
+	e.Append(PrefixError(prefix, err))
 }
 
 func PrefixError(msg string, err error) *NestedError {

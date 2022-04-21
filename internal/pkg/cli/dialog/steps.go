@@ -150,11 +150,10 @@ func (d *stepsDialog) parse(result string) (input.StepsGroups, map[input.StepInd
 	if len(stepsGroups) == 0 {
 		return nil, nil, fmt.Errorf("at least 1 group must be defined")
 	}
-	if e := stepsGroups.Validate(); e != nil {
+	if err := stepsGroups.Validate(); err != nil {
 		// nolint: errorlint
-		err := e.(*utils.MultiError)
 		for index, item := range err.Errors {
-			msg := err.Error()
+			msg := item.Error()
 
 			// Replace step and group by index. Example:
 			//   before: [0].steps[0].default

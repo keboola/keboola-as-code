@@ -1,6 +1,7 @@
 package input
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -94,4 +95,85 @@ func TestStepsGroup_ValidateSelectedSteps(t *testing.T) {
 	err = g.ValidateSelectedSteps(2)
 	assert.Error(t, err)
 	assert.Equal(t, "exactly one step must be selected", err.Error())
+}
+
+func TestStepsGroups_Validate_DuplicateInputs(t *testing.T) {
+	t.Parallel()
+
+	groups := StepsGroups{
+		{
+			Description: "Group One",
+			Required:    "all",
+			Steps: []*Step{
+				{
+					Icon:        "common:settings",
+					Name:        "Step 1",
+					Description: "Step One",
+					Inputs: Inputs{
+						{
+							Id:          "fb.extractor.username",
+							Name:        "Input",
+							Description: "Description",
+							Type:        "string",
+							Kind:        "input",
+						},
+						{
+							Id:          "fb.extractor.username",
+							Name:        "Input",
+							Description: "Description",
+							Type:        "string",
+							Kind:        "input",
+						},
+					},
+				},
+			},
+		},
+		{
+			Description: "Group Two",
+			Required:    "all",
+			Steps: []*Step{
+				{
+					Icon:        "common:settings",
+					Name:        "Step 2",
+					Description: "Step Two",
+					Inputs: Inputs{
+						{
+							Id:          "fb.extractor.username",
+							Name:        "Input",
+							Description: "Description",
+							Type:        "string",
+							Kind:        "input",
+						},
+					},
+				},
+				{
+					Icon:        "common:settings",
+					Name:        "Step 3",
+					Description: "Step Three",
+					Inputs: Inputs{
+						{
+							Id:          "fb.extractor.username",
+							Name:        "Input",
+							Description: "Description",
+							Type:        "string",
+							Kind:        "input",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Assert
+	expectedErr := `
+input "fb.extractor.username" is defined 4 times in:
+  - step "Step 1" (g01-s01)
+  - step "Step 1" (g01-s01)
+  - step "Step 2" (g02-s01)
+  - step "Step 3" (g02-s02)
+`
+
+	err := groups.Validate()
+	assert.Error(t, err)
+	assert.Equal(t, strings.Trim(expectedErr, "\n"), err.Error())
 }
