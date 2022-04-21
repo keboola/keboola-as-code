@@ -41,8 +41,9 @@ func (i *Inputs) Set(inputs []Input) *Inputs {
 type Values []Value
 
 type Value struct {
-	Id    string
-	Value interface{}
+	Id      string
+	Value   interface{}
+	Skipped bool // the input was skipped and the default value was used
 }
 
 type Input struct {
