@@ -2,7 +2,6 @@ package jsonnet
 
 import (
 	"fmt"
-	"sort"
 
 	"github.com/google/go-jsonnet"
 	"github.com/google/go-jsonnet/ast"
@@ -14,13 +13,13 @@ type Context struct {
 	importer        jsonnet.Importer
 	extVariables    variablesValues
 	nativeFunctions nativeFunctions
-	localAliases    localAliases
+	globalBinding   globalBinding
 }
 
 type (
 	variablesValues map[string]interface{}
 	nativeFunctions []*NativeFunction
-	localAliases    map[string]ast.Node
+	globalBinding   map[ast.Identifier]ast.Node
 )
 
 type NativeFunction = jsonnet.NativeFunction
@@ -51,8 +50,8 @@ func ValueToLiteral(v interface{}) ast.Node {
 
 func NewContext() *Context {
 	return &Context{
-		extVariables: make(variablesValues),
-		localAliases: make(localAliases),
+		extVariables:  make(variablesValues),
+		globalBinding: make(globalBinding),
 	}
 }
 
@@ -96,29 +95,23 @@ func (c *Context) NativeFunction(f *NativeFunction) {
 }
 
 // NativeFunctionWithAlias registers native function to the JsonNet context and creates alias.
-// Function can be called in the JsonNet code by: std.native("<NAME>")(...) or by <NAME>(...)
+// Function can be called in the JsonNet code by: std.native("<FN_NAME>")(...) or by <FN_NAME>(...)
 func (c *Context) NativeFunctionWithAlias(f *NativeFunction) {
 	c.nativeFunctions.add(f)
-	code := fmt.Sprintf("std.native(\"%s\")", f.Name)
-	if err := c.localAliases.add(f.Name, code); err != nil {
-		panic(err)
-	}
+
+	// Register a shortcut: FN_NAME(...)
+	// as an alternative to the standard: std.native("FN_NAME")(...)
+	c.GlobalBinding(f.Name, &ast.Apply{
+		Target: &ast.Index{
+			Target: &ast.Var{Id: "std"},
+			Index:  &ast.LiteralString{Value: "native"},
+		},
+		Arguments: ast.Arguments{Positional: []ast.CommaSeparatedExpr{{Expr: &ast.LiteralString{Value: f.Name}}}},
+	})
 }
 
-// LocalAlias registers alias to the JsonNet context.
-// Alias is added to the beginning of the code as: local <NAME> = <CODE>
-// Alias can be used in the JsonNet code by: <NAME>.
-func (c *Context) LocalAlias(name, code string) {
-	if err := c.localAliases.add(name, code); err != nil {
-		panic(err)
-	}
-}
-
-func (c *Context) wrapAst(input ast.Node) ast.Node {
-	if c == nil {
-		return input
-	}
-	return c.localAliases.wrapAst(input)
+func (c *Context) GlobalBinding(identifier string, body ast.Node) {
+	c.globalBinding[ast.Identifier(identifier)] = body
 }
 
 func (c *Context) registerTo(vm *jsonnet.VM) {
@@ -132,45 +125,7 @@ func (c *Context) registerTo(vm *jsonnet.VM) {
 
 	c.extVariables.registerTo(vm)
 	c.nativeFunctions.registerTo(vm)
-}
-
-func (v localAliases) wrapAst(input ast.Node) ast.Node {
-	return &ast.Local{
-		Binds: v.binds(),
-		Body:  input,
-	}
-}
-
-func (v localAliases) add(name string, code string) error {
-	if _, found := v[name]; found {
-		panic(fmt.Errorf(`alias "%s" is already defined`, name))
-	}
-
-	node, err := ToAst(code, "")
-	if err != nil {
-		return err
-	}
-	v[name] = node
-	return nil
-}
-
-func (v localAliases) binds() ast.LocalBinds {
-	output := make(ast.LocalBinds, 0)
-
-	for name, node := range v {
-		binding := ast.LocalBind{
-			Variable: ast.Identifier(name),
-			Body:     node,
-		}
-		output = append(output, binding)
-	}
-
-	// Sort by name
-	sort.SliceStable(output, func(i, j int) bool {
-		return output[i].Variable < output[j].Variable
-	})
-
-	return output
+	c.globalBinding.registerTo(vm)
 }
 
 func (v *nativeFunctions) add(f *NativeFunction) {
@@ -180,6 +135,12 @@ func (v *nativeFunctions) add(f *NativeFunction) {
 func (v nativeFunctions) registerTo(vm *jsonnet.VM) {
 	for _, f := range v {
 		vm.NativeFunction(f)
+	}
+}
+
+func (v globalBinding) registerTo(vm *jsonnet.VM) {
+	for identifier, body := range v {
+		vm.Bind(identifier, body)
 	}
 }
 

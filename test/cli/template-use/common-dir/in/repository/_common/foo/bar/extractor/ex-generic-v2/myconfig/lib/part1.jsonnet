@@ -1,3 +1,3 @@
 {
-    key1: "value1",
+    key1: Input("base-url"),
 }

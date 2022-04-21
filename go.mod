@@ -2,7 +2,7 @@ module github.com/keboola/keboola-as-code
 
 go 1.17
 
-replace github.com/google/go-jsonnet v0.18.0 => github.com/keboola/go-jsonnet v0.18.1-0.20220419142634-2c65675b771a
+replace github.com/google/go-jsonnet v0.18.0 => github.com/keboola/go-jsonnet v0.18.1-0.20220420175454-51da7cfc3f07
 
 require (
 	github.com/ActiveState/vt10x v1.3.1

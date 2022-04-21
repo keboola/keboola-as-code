@@ -28,16 +28,16 @@ func MustEvaluate(code string, ctx *Context) (jsonOut string) {
 }
 
 func EvaluateAst(input ast.Node, ctx *Context) (jsonOut string, err error) {
-	// Pre-process
-	node := ast.Clone(ctx.wrapAst(input))
-	if err := parser.PreprocessAst(&node); err != nil {
-		return "", err
-	}
-
 	// Create VM
 	vm := jsonnet.MakeVM()
 	vm.Importer(NewNopImporter()) // default
 	ctx.registerTo(vm)
+
+	// Pre-process
+	node := ast.Clone(input)
+	if err := parser.PreprocessAst(&node, vm.GlobalVars()...); err != nil {
+		return "", err
+	}
 
 	// Evaluate
 	jsonContent, err := vm.Evaluate(node)
