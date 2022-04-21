@@ -6,6 +6,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 const (
@@ -75,6 +76,6 @@ func saveFile(fs filesystem.Fs, content *file) error {
 	return nil
 }
 
-func (f file) validate() error {
-	return validate(f)
+func (f file) validate() *utils.MultiError {
+	return f.StepsGroups.Validate()
 }
