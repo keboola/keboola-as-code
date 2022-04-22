@@ -70,6 +70,13 @@ func (u *UnitOfWork) LoadAll(filter model.ObjectsFilter) {
 	pool.
 		Request(u.api.ListBranchesRequest()).
 		OnSuccess(func(response *client.Response) {
+			for _, branch := range *response.Result().(*[]*model.Branch) {
+				metadataRequest := u.branchMetadataRequest(branch, pool)
+				response.WaitFor(metadataRequest)
+				metadataRequest.Send()
+			}
+		}).
+		OnSuccess(func(response *client.Response) {
 			// Process branch + load branch components
 			for _, branch := range *response.Result().(*[]*model.Branch) {
 				// Store branch to state
@@ -136,6 +143,19 @@ func (u *UnitOfWork) loadBranch(branch *model.Branch, filter model.ObjectsFilter
 	// Send requests
 	metadataReq.Send()
 	componentsReq.Send()
+}
+
+func (u *UnitOfWork) branchMetadataRequest(branch *model.Branch, pool *client.Pool) *client.Request {
+	request := pool.
+		Request(u.api.ListBranchMetadataRequest(branch.Id)).
+		OnSuccess(func(response *client.Response) {
+			metadataResponse := *response.Result().(*[]storageapi.Metadata)
+			branch.Metadata = make(map[string]string)
+			for _, m := range metadataResponse {
+				branch.Metadata[m.Key] = m.Value
+			}
+		})
+	return request
 }
 
 func (u *UnitOfWork) configsMetadataRequest(branch *model.Branch, pool *client.Pool) (map[model.Key]map[string]string, *client.Request) {

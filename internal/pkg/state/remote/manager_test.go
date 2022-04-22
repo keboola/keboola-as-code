@@ -138,6 +138,20 @@ func TestRemoteLoadMapper(t *testing.T) {
 		}).Once(),
 	)
 
+	// Mocked response: branch metadata
+	httpTransport.RegisterResponder(
+		resty.MethodGet,
+		`=~storage/branch/123/metadata`,
+		httpmock.NewJsonResponderOrPanic(200, []storageapi.Metadata{
+			{
+				Id:        "1",
+				Key:       "KBC.KaC.branch-meta",
+				Value:     "val1",
+				Timestamp: "xxx",
+			},
+		}).Once(),
+	)
+
 	// Mocked response: config metadata
 	httpTransport.RegisterResponder(
 		resty.MethodGet,
@@ -202,6 +216,20 @@ func TestLoadConfigMetadata(t *testing.T) {
 			map[string]interface{}{
 				"id":   123,
 				"name": "My branch",
+			},
+		}).Once(),
+	)
+
+	// Mocked response: branch metadata
+	httpTransport.RegisterResponder(
+		resty.MethodGet,
+		`=~storage/branch/123/metadata`,
+		httpmock.NewJsonResponderOrPanic(200, []storageapi.Metadata{
+			{
+				Id:        "1",
+				Key:       "KBC.KaC.branch-meta",
+				Value:     "val1",
+				Timestamp: "xxx",
 			},
 		}).Once(),
 	)
@@ -279,6 +307,10 @@ func TestLoadConfigMetadata(t *testing.T) {
 		"KBC.KaC.Meta2": "value2",
 	}, projectState.MustGet(config1Key).(*model.ConfigState).Remote.Metadata)
 	assert.Equal(t, map[string]string{}, projectState.MustGet(config2Key).(*model.ConfigState).Remote.Metadata)
+	branchKey := model.BranchKey{Id: 123}
+	assert.Equal(t, map[string]string{
+		"KBC.KaC.branch-meta": "val1",
+	}, projectState.MustGet(branchKey).(*model.BranchState).Remote.Metadata)
 }
 
 func TestSaveConfigMetadata_Create(t *testing.T) {

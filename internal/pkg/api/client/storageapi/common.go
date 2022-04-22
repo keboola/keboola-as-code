@@ -60,7 +60,7 @@ func (a *Api) DeleteRequest(key model.Key) *client.Request {
 func (a *Api) AppendMetadataRequest(object interface{}) *client.Request {
 	switch v := object.(type) {
 	case *model.Branch:
-		return nil
+		return a.AppendBranchMetadataRequest(v)
 	case *model.ConfigWithRows:
 		return a.AppendConfigMetadataRequest(v.Config)
 	case *model.Config:
