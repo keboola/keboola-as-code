@@ -76,11 +76,12 @@ func (g StepsGroups) Validate() *utils.MultiError {
 
 	// Check duplicate inputs
 	inputsOccurrences := orderedmap.New()
-	g.VisitInputs(func(gIndex, sIndex int, group *StepsGroup, step *Step, input Input) {
+	_ = g.ToExtended().VisitInputs(func(group *StepsGroupExt, step *StepExt, input Input) error {
 		vRaw, _ := inputsOccurrences.Get(input.Id)
 		v, _ := vRaw.([]string)
-		v = append(v, fmt.Sprintf(`step "%s" (g%02d-s%02d)`, step.Name, gIndex+1, sIndex+1))
+		v = append(v, fmt.Sprintf(`step "%s" (%s)`, step.Name, step.Id))
 		inputsOccurrences.Set(input.Id, v)
+		return nil
 	})
 	inputsOccurrences.SortKeys(func(keys []string) {
 		sort.Strings(keys)
@@ -108,18 +109,6 @@ func (g StepsGroups) Validate() *utils.MultiError {
 	return nil
 }
 
-type VisitInputsCallback func(gIndex, sIndex int, group *StepsGroup, step *Step, input Input)
-
-func (g StepsGroups) VisitInputs(fn VisitInputsCallback) {
-	for gIndex, group := range g {
-		for sIndex, step := range group.Steps {
-			for _, input := range step.Inputs {
-				fn(gIndex, sIndex, group, step, input)
-			}
-		}
-	}
-}
-
 // StepsGroup is a container for Steps.
 type StepsGroup struct {
 	Description string `json:"description" validate:"min=1,max=80"`
@@ -137,12 +126,12 @@ const (
 	requiredZeroOrOneDescription  = "zero or one step must be selected"
 )
 
-func (g StepsGroup) ShowStepsSelect() bool {
+func (g StepsGroup) AreStepsSelectable() bool {
 	return g.Required != requiredAll &&
 		(len(g.Steps) > 1 || (g.Required != requiredAtLeastOne && g.Required != requiredExactlyOne))
 }
 
-func (g StepsGroup) ValidateSelectedSteps(selected int) error {
+func (g StepsGroup) ValidateStepsCount(selected int) error {
 	if g.Required == requiredAtLeastOne && selected < 1 {
 		return fmt.Errorf(requiredAtLeastOneDescription)
 	}
@@ -156,14 +145,6 @@ func (g StepsGroup) ValidateSelectedSteps(selected int) error {
 }
 
 type Steps []*Step
-
-func (s Steps) SelectOptions() []string {
-	res := make([]string, 0)
-	for _, step := range s {
-		res = append(res, fmt.Sprintf("%s - %s", step.Name, step.Description))
-	}
-	return res
-}
 
 // Step is a container for Inputs.
 type Step struct {

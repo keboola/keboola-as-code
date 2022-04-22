@@ -21,7 +21,7 @@ import (
 )
 
 // If condition for restricted input is met by setting the age above the limit.
-func TestAskUseTemplateOptionsIfMet(t *testing.T) {
+func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
@@ -261,7 +261,7 @@ func TestAskUseTemplateOptionsIfMet(t *testing.T) {
 }
 
 // If condition for restricted input is not met by setting the age below the limit and so that input is not shown to the user.
-func TestAskUseTemplateOptionsIfNotMet(t *testing.T) {
+func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
@@ -385,8 +385,177 @@ func TestAskUseTemplateOptionsIfNotMet(t *testing.T) {
 			{Id: "facebook.username", Value: "username"},
 			{Id: "facebook.password", Value: "password"},
 			{Id: "age", Value: 15},
-			{Id: "restricted", Value: false},
-			{Id: "drink", Value: ""},
+			{Id: "restricted", Value: false, Skipped: true},
+			{Id: "drink", Value: "", Skipped: true},
+		},
+	}, output)
+}
+
+// Some optional steps have not been selected - the output contains a default or blank value for these steps.
+func TestAskUseTemplate_OptionalSteps(t *testing.T) {
+	t.Parallel()
+
+	// Test dependencies
+	dialog, console := createDialogs(t, true)
+	d := dependencies.NewTestContainer()
+	d.SetFs(testfs.MinimalProjectFs(t))
+	_, httpTransport := d.UseMockedStorageApi()
+	testapi.AddMockedComponents(httpTransport)
+	projectState, err := d.LocalProjectState(loadState.Options{LoadLocalState: true})
+	assert.NoError(t, err)
+
+	// Run
+	stepsGroups := input.StepsGroups{
+		{
+			Description: "Please select which steps you want to fill.",
+			Required:    "optional",
+			Steps: []*input.Step{
+				{
+					Icon:        "common:settings",
+					Name:        "Step 1",
+					Description: "Step Description",
+					Inputs: []input.Input{
+						{
+							Id:          "input1",
+							Name:        "input1",
+							Description: "skipped + without default value",
+							Type:        "string",
+							Kind:        "input",
+						},
+					},
+				},
+				{
+					Icon:        "common:settings",
+					Name:        "Step 2",
+					Description: "Step Description",
+					Inputs: []input.Input{
+						{
+							Id:          "input2",
+							Name:        "input2",
+							Description: "skipped + with default value",
+							Type:        "string",
+							Kind:        "input",
+							Default:     "default value",
+						},
+					},
+				},
+				{
+					Icon:        "common:settings",
+					Name:        "Step 3",
+					Description: "Step Description",
+					Inputs: []input.Input{
+						{
+							Id:          "input3",
+							Name:        "input3",
+							Description: "filled in + without default value",
+							Type:        "string",
+							Kind:        "input",
+						},
+					},
+				},
+				{
+					Icon:        "common:settings",
+					Name:        "Step 4",
+					Description: "Step Description",
+					Inputs: []input.Input{
+						{
+							Id:          "input4",
+							Name:        "input4",
+							Description: "filled in + with default value",
+							Type:        "string",
+							Kind:        "input",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Set fake file editor
+	dialog.Prompt.(*interactive.Prompt).SetEditor(`true`)
+
+	// Interaction
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		_, err := console.ExpectString("Select the target branch:")
+		assert.NoError(t, err)
+
+		time.Sleep(20 * time.Millisecond)
+		_, err = console.Send(testhelper.Enter) // enter - Main
+		assert.NoError(t, err)
+
+		_, err = console.ExpectString("Please select which steps you want to fill.")
+		assert.NoError(t, err)
+
+		_, err = console.ExpectString("Select steps:")
+		assert.NoError(t, err)
+
+		time.Sleep(20 * time.Millisecond)
+		_, err = console.Send(DownArrow) // skip step 1
+		assert.NoError(t, err)
+
+		time.Sleep(20 * time.Millisecond)
+		_, err = console.Send(DownArrow) // skip step 2
+		assert.NoError(t, err)
+
+		time.Sleep(20 * time.Millisecond)
+		_, err = console.Send(Space) // select step 3
+		assert.NoError(t, err)
+
+		time.Sleep(20 * time.Millisecond)
+		_, err = console.Send(DownArrow) // move to step 4
+		assert.NoError(t, err)
+
+		time.Sleep(20 * time.Millisecond)
+		_, err = console.Send(Space) // select step 4
+		assert.NoError(t, err)
+
+		time.Sleep(20 * time.Millisecond)
+		_, err = console.Send(Enter) // confirm the selection
+		assert.NoError(t, err)
+
+		_, err = console.ExpectString("Step 3")
+		assert.NoError(t, err)
+
+		_, err = console.ExpectString("input3:")
+		assert.NoError(t, err)
+
+		time.Sleep(20 * time.Millisecond)
+		_, err = console.SendLine("value for input 3")
+		assert.NoError(t, err)
+
+		_, err = console.ExpectString("Step 4")
+		assert.NoError(t, err)
+
+		_, err = console.ExpectString("input4:")
+		assert.NoError(t, err)
+
+		time.Sleep(20 * time.Millisecond)
+		_, err = console.SendLine("value for input 4")
+		assert.NoError(t, err)
+
+		_, err = console.ExpectEOF()
+		assert.NoError(t, err)
+	}()
+
+	output, err := dialog.AskUseTemplateOptions(projectState, stepsGroups, d.Options())
+	assert.NoError(t, err)
+
+	assert.NoError(t, console.Tty().Close())
+	wg.Wait()
+	assert.NoError(t, console.Close())
+
+	// Assert
+	assert.Equal(t, useTemplate.Options{
+		TargetBranch: model.BranchKey{Id: 123},
+		Inputs: template.InputsValues{
+			{Id: "input1", Value: "", Skipped: true},
+			{Id: "input2", Value: "default value", Skipped: true},
+			{Id: "input3", Value: "value for input 3"},
+			{Id: "input4", Value: "value for input 4"},
 		},
 	}, output)
 }

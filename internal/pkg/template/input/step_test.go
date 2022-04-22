@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestStepsGroup_ShowStepsSelect(t *testing.T) {
+func TestStepsGroup_AreStepsSelectable(t *testing.T) {
 	t.Parallel()
 
 	// Do not show select for required == "all"
@@ -19,7 +19,7 @@ func TestStepsGroup_ShowStepsSelect(t *testing.T) {
 			{Name: "Step 2"},
 		},
 	}
-	assert.False(t, g.ShowStepsSelect())
+	assert.False(t, g.AreStepsSelectable())
 
 	// Do not show select for required == "exactlyOne" and one step
 	g = StepsGroup{
@@ -29,7 +29,7 @@ func TestStepsGroup_ShowStepsSelect(t *testing.T) {
 			{Name: "Step 1"},
 		},
 	}
-	assert.False(t, g.ShowStepsSelect())
+	assert.False(t, g.AreStepsSelectable())
 
 	// Do not show select for required == "atLeastOne" and one step
 	g = StepsGroup{
@@ -39,7 +39,7 @@ func TestStepsGroup_ShowStepsSelect(t *testing.T) {
 			{Name: "Step 1"},
 		},
 	}
-	assert.False(t, g.ShowStepsSelect())
+	assert.False(t, g.AreStepsSelectable())
 
 	// Show select for required == "optional"
 	g = StepsGroup{
@@ -49,7 +49,7 @@ func TestStepsGroup_ShowStepsSelect(t *testing.T) {
 			{Name: "Step 1"},
 		},
 	}
-	assert.True(t, g.ShowStepsSelect())
+	assert.True(t, g.AreStepsSelectable())
 
 	// Show select for required == "zeroOrOne"
 	g = StepsGroup{
@@ -59,7 +59,7 @@ func TestStepsGroup_ShowStepsSelect(t *testing.T) {
 			{Name: "Step 1"},
 		},
 	}
-	assert.True(t, g.ShowStepsSelect())
+	assert.True(t, g.AreStepsSelectable())
 }
 
 func TestStepsGroup_ValidateSelectedSteps(t *testing.T) {
@@ -69,8 +69,8 @@ func TestStepsGroup_ValidateSelectedSteps(t *testing.T) {
 		Description: "description",
 		Required:    "atLeastOne",
 	}
-	assert.NoError(t, g.ValidateSelectedSteps(2))
-	err := g.ValidateSelectedSteps(0)
+	assert.NoError(t, g.ValidateStepsCount(2))
+	err := g.ValidateStepsCount(0)
 	assert.Error(t, err)
 	assert.Equal(t, "at least one step must be selected", err.Error())
 
@@ -78,9 +78,9 @@ func TestStepsGroup_ValidateSelectedSteps(t *testing.T) {
 		Description: "description",
 		Required:    "zeroOrOne",
 	}
-	assert.NoError(t, g.ValidateSelectedSteps(0))
-	assert.NoError(t, g.ValidateSelectedSteps(1))
-	err = g.ValidateSelectedSteps(2)
+	assert.NoError(t, g.ValidateStepsCount(0))
+	assert.NoError(t, g.ValidateStepsCount(1))
+	err = g.ValidateStepsCount(2)
 	assert.Error(t, err)
 	assert.Equal(t, "zero or one step must be selected", err.Error())
 
@@ -88,11 +88,11 @@ func TestStepsGroup_ValidateSelectedSteps(t *testing.T) {
 		Description: "description",
 		Required:    "exactlyOne",
 	}
-	assert.NoError(t, g.ValidateSelectedSteps(1))
-	err = g.ValidateSelectedSteps(0)
+	assert.NoError(t, g.ValidateStepsCount(1))
+	err = g.ValidateStepsCount(0)
 	assert.Error(t, err)
 	assert.Equal(t, "exactly one step must be selected", err.Error())
-	err = g.ValidateSelectedSteps(2)
+	err = g.ValidateStepsCount(2)
 	assert.Error(t, err)
 	assert.Equal(t, "exactly one step must be selected", err.Error())
 }
