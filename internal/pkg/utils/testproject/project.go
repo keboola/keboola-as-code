@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/juju/fslock"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
@@ -112,6 +113,15 @@ func newProject(host string, id int, token string) *Project {
 	if err != nil {
 		assert.FailNow(p.t, "cannot get default branch: ", err)
 	}
+	branchMetadataResponse := p.storageApi.ListBranchMetadataRequest(p.defaultBranch.Id).Send().Response
+	branchMetadataMap := make(map[string]string)
+	if branchMetadataResponse.HasResult() {
+		metadata := *branchMetadataResponse.Result().(*[]storageapi.Metadata)
+		for _, m := range metadata {
+			branchMetadataMap[m.Key] = m.Value
+		}
+	}
+	p.defaultBranch.Metadata = branchMetadataMap
 
 	return p
 }
@@ -171,6 +181,23 @@ func (p *Project) Clear() {
 	pool.Request(p.storageApi.DeleteConfigsInBranchRequest(p.defaultBranch.BranchKey)).Send()
 	if err := pool.StartAndWait(); err != nil {
 		assert.FailNow(p.t, fmt.Sprintf("cannot delete branches: %s", err))
+	}
+
+	// Delete metadata of default branch
+	pool = p.storageApi.NewPool()
+	pool.Request(p.storageApi.ListBranchMetadataRequest(p.defaultBranch.Id)).
+		OnSuccess(func(response *client.Response) {
+			branchMetadataResponse := *response.Result().(*[]storageapi.Metadata)
+			for _, m := range branchMetadataResponse {
+				pool.Request(p.storageApi.NewRequest(resty.MethodDelete, "branch/{branchId}/metadata/{metadataId}").
+					SetPathParam("branchId", p.defaultBranch.Id.String()).
+					SetPathParam("metadataId", m.Id).
+					Send())
+			}
+		}).
+		Send()
+	if err := pool.StartAndWait(); err != nil {
+		assert.FailNow(p.t, fmt.Sprintf("cannot delete metadata: %s", err))
 	}
 
 	// Load branches
@@ -255,6 +282,10 @@ func (p *Project) createBranches(branches []*fixtures.BranchState) {
 	// Create branches sequentially, parallel requests don't work with this endpoint
 	for _, fixture := range branches {
 		branch := fixture.Branch.ToModel(p.defaultBranch)
+		if len(fixture.Metadata) > 0 {
+			branch.Metadata = fixture.Metadata
+			p.StorageApi().AppendBranchMetadataRequest(branch).Send()
+		}
 		if branch.IsDefault {
 			p.defaultBranch.Description = fixture.Branch.Description
 			if _, err := p.storageApi.UpdateBranch(p.defaultBranch, model.NewChangedFields("description")); err != nil {

@@ -109,6 +109,17 @@ func (p *Project) snapshot(snapshot *fixtures.ProjectSnapshot, configs map[strin
 					}).
 					Send()
 				pool.
+					Request(p.StorageApi().ListBranchMetadataRequest(branch.Id)).
+					OnSuccess(func(response *client.Response) {
+						branchMetadataResponse := *response.Result().(*[]storageapi.Metadata)
+						branchMetadataMap := make(map[string]string)
+						for _, m := range branchMetadataResponse {
+							branchMetadataMap[m.Key] = m.Value
+						}
+						branch.Metadata = branchMetadataMap
+					}).
+					Send()
+				pool.
 					Request(p.StorageApi().ListConfigMetadataRequest(branch.Id)).
 					OnSuccess(func(response *client.Response) {
 						metadataResponse := *response.Result().(*storageapi.ConfigMetadataResponse)
