@@ -138,7 +138,8 @@ func (d *useTmplDialog) announceGroup(group *input.StepsGroupExt) error {
 
 	// Determine selected steps
 	var selectedSteps []int
-	if d.useInputsFile {
+	switch {
+	case d.useInputsFile:
 		// Detect steps from the inputs file, if present.
 		// If at least one input value is found, then the step is marked as selected.
 		for stepIndex, step := range group.Steps {
@@ -149,12 +150,12 @@ func (d *useTmplDialog) announceGroup(group *input.StepsGroupExt) error {
 				}
 			}
 		}
-	} else if !group.AreStepsSelectable() {
+	case !group.AreStepsSelectable():
 		// Are all steps required? -> skip select box
 		for stepIndex := range group.Steps {
 			selectedSteps = append(selectedSteps, stepIndex)
 		}
-	} else {
+	default:
 		// Prepare select box
 		multiSelect := &prompt.MultiSelectIndex{
 			Label:   "Select steps",

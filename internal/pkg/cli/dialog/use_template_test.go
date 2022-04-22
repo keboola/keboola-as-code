@@ -568,8 +568,8 @@ func TestAskUseTemplate_InputsFromFile(t *testing.T) {
 	// Create file with inputs
 	tempDir := t.TempDir()
 	inputsFile := `{"input1": "A", "input2": "B", "input4": "C"}` // input 3 is missing
-	inputsFilePath := filepath.Join(tempDir, "my-inputs.json")
-	assert.NoError(t, os.WriteFile(inputsFilePath, []byte(inputsFile), 0600))
+	inputsFilePath := filepath.Join(tempDir, "my-inputs.json")    // nolint: forbidigo
+	assert.NoError(t, os.WriteFile(inputsFilePath, []byte(inputsFile), 0o600))
 
 	// Test dependencies
 	dialog, _ := createDialogs(t, false)
@@ -663,8 +663,8 @@ func TestAskUseTemplate_InputsFromFile_InvalidStepsCount(t *testing.T) {
 	// Create file with inputs
 	tempDir := t.TempDir()
 	inputsFile := `{"input1": "A", "input3": "B", "input4": "C"}` // input 2 is missing
-	inputsFilePath := filepath.Join(tempDir, "my-inputs.json")
-	assert.NoError(t, os.WriteFile(inputsFilePath, []byte(inputsFile), 0600))
+	inputsFilePath := filepath.Join(tempDir, "my-inputs.json")    // nolint: forbidigo
+	assert.NoError(t, os.WriteFile(inputsFilePath, []byte(inputsFile), 0o600))
 
 	// Test dependencies
 	dialog, _ := createDialogs(t, false)
