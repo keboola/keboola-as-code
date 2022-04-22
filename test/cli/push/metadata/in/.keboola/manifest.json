@@ -32,7 +32,10 @@
   "branches": [
     {
       "id": %%TEST_BRANCH_FOO_ID%%,
-      "path": "foo"
+      "path": "foo",
+      "metadata": {
+        "KBC.KaC.branch-meta": "val1"
+      }
     },
     {
       "id": %%TEST_BRANCH_MAIN_ID%%,
