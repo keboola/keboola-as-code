@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/spf13/cast"
@@ -14,6 +15,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	useTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
 )
 
@@ -23,12 +26,13 @@ type contextKey string
 
 type useTmplDialog struct {
 	*Dialogs
-	projectState *project.State
-	options      *options.Options
-	inputsFile   map[string]interface{} // inputs values loaded from a file specified by inputsFileFlag
-	out          useTemplate.Options
-	context      context.Context        // for input.ValidateUserInput
-	inputsValues map[string]interface{} // for input.Available
+	projectState  *project.State
+	options       *options.Options
+	inputsFile    map[string]interface{} // inputs values loaded from a file specified by inputsFileFlag
+	useInputsFile bool
+	out           useTemplate.Options
+	context       context.Context        // for input.ValidateUserInput
+	inputsValues  map[string]interface{} // for input.Available
 }
 
 // AskUseTemplateOptions - dialog for using the template in the project.
@@ -46,6 +50,7 @@ func (p *Dialogs) AskUseTemplateOptions(projectState *project.State, inputs temp
 func (d *useTmplDialog) ask(stepsGroups input.StepsGroups) (useTemplate.Options, error) {
 	// Load inputs file
 	if d.options.IsSet(inputsFileFlag) {
+		d.useInputsFile = true
 		path := d.options.GetString(inputsFileFlag)
 		content, err := os.ReadFile(path) // nolint:forbidigo // file may be outside the project, so the OS package is used
 		if err != nil {
@@ -102,6 +107,20 @@ func (d *useTmplDialog) askInputs(stepsGroups input.StepsGroupsExt) error {
 			}
 		}
 
+		// Use value from the inputs file, if it is present
+		if d.useInputsFile {
+			if v, found := d.inputsFile[inputDef.Id]; found {
+				if err := d.addInputValue(v, inputDef, true); err != nil {
+					return utils.PrefixError(err.Error(), fmt.Errorf("please fix the value in the inputs JSON file"))
+				}
+			} else {
+				if err := d.addInputValue(inputDef.DefaultOrEmpty(), inputDef, true); err != nil {
+					return utils.PrefixError(err.Error(), fmt.Errorf("please define value in the inputs JSON file"))
+				}
+			}
+			return nil
+		}
+
 		// Ask for the input
 		return d.askInput(inputDef)
 	})
@@ -117,32 +136,76 @@ func (d *useTmplDialog) announceGroup(group *input.StepsGroupExt) error {
 	// Print description
 	d.Printf("%s\n", group.Description)
 
-	// Are all steps required?
-	if !group.AreStepsSelectable() {
-		for _, step := range group.Steps {
-			step.Show = true
-		}
-		return nil
-	}
-
-	// Prepare select box
-	multiSelect := &prompt.MultiSelectIndex{
-		Label:   "Select steps",
-		Options: group.Steps.OptionsForSelectBox(),
-		Validator: func(answersRaw interface{}) error {
-			answers := answersRaw.([]survey.OptionAnswer)
-			values := make([]string, len(answers))
-			for i, v := range answers {
-				values[i] = v.Value
+	// Determine selected steps
+	var selectedSteps []int
+	if d.useInputsFile {
+		// Detect steps from the inputs file, if present.
+		// If at least one input value is found, then the step is marked as selected.
+		for stepIndex, step := range group.Steps {
+			for _, inputDef := range step.Inputs {
+				if _, found := d.inputsFile[inputDef.Id]; found {
+					selectedSteps = append(selectedSteps, stepIndex)
+					break // check next step
+				}
 			}
-			return group.ValidateStepsCount(len(values))
-		},
+		}
+	} else if !group.AreStepsSelectable() {
+		// Are all steps required? -> skip select box
+		for stepIndex := range group.Steps {
+			selectedSteps = append(selectedSteps, stepIndex)
+		}
+	} else {
+		// Prepare select box
+		multiSelect := &prompt.MultiSelectIndex{
+			Label:   "Select steps",
+			Options: group.Steps.OptionsForSelectBox(),
+			Validator: func(answersRaw interface{}) error {
+				answers := answersRaw.([]survey.OptionAnswer)
+				values := make([]string, len(answers))
+				for i, v := range answers {
+					values[i] = v.Value
+				}
+				return group.ValidateStepsCount(len(group.Steps), len(values))
+			},
+		}
+
+		// Show select box
+		selectedSteps, _ = d.MultiSelectIndex(multiSelect)
 	}
 
-	// Select steps
-	selectedSteps, _ := d.MultiSelectIndex(multiSelect)
-	if err := group.ValidateStepsCount(len(selectedSteps)); err != nil {
-		return err
+	// Validate steps count
+	if err := group.ValidateStepsCount(len(group.Steps), len(selectedSteps)); err != nil {
+		details := utils.NewMultiError()
+		details.Append(err)
+		details.Append(fmt.Errorf("number of selected steps (%d) is incorrect", len(selectedSteps)))
+		if d.useInputsFile {
+			// List found inputs
+			foundInputs := orderedmap.New()
+			for _, step := range group.Steps {
+				for _, inputDef := range step.Inputs {
+					if _, found := d.inputsFile[inputDef.Id]; found {
+						v, _ := foundInputs.GetOrNil(step.Name).([]string)
+						foundInputs.Set(step.Name, append(v, inputDef.Id))
+					}
+				}
+			}
+
+			// Convert list to error message
+			if foundInputs.Len() > 0 {
+				foundInputsErr := utils.NewMultiError()
+				for _, step := range foundInputs.Keys() {
+					inputs := foundInputs.GetOrNil(step).([]string)
+					foundInputsErr.Append(fmt.Errorf(`%s, inputs: %s`, step, strings.Join(inputs, ", ")))
+				}
+				details.AppendWithPrefix("in the inputs JSON file, these steps are defined", foundInputsErr)
+			} else {
+				details.Append(fmt.Errorf("there are no inputs for this group in the inputs JSON file"))
+			}
+		}
+		return utils.PrefixError(
+			fmt.Sprintf(`steps group %d "%s" is invalid`, group.GroupIndex+1, group.Description),
+			details,
+		)
 	}
 
 	// Mark selected steps
@@ -165,12 +228,6 @@ func (d *useTmplDialog) announceStep(step *input.StepExt) error {
 }
 
 func (d *useTmplDialog) askInput(inputDef *input.Input) error {
-	// Use value from the inputs file, if it is present
-	if v, found := d.inputsFile[inputDef.Id]; found {
-		// Validate and save
-		return d.addInputValue(v, inputDef, true)
-	}
-
 	// Ask for input
 	switch inputDef.Kind {
 	case input.KindInput, input.KindHidden, input.KindTextarea:
