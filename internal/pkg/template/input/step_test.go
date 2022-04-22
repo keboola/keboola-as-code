@@ -104,7 +104,7 @@ func TestStepsGroups_Validate_DuplicateInputs(t *testing.T) {
 		{
 			Description: "Group One",
 			Required:    "all",
-			Steps: []*Step{
+			Steps: []Step{
 				{
 					Icon:        "common:settings",
 					Name:        "Step 1",
@@ -131,7 +131,7 @@ func TestStepsGroups_Validate_DuplicateInputs(t *testing.T) {
 		{
 			Description: "Group Two",
 			Required:    "all",
-			Steps: []*Step{
+			Steps: []Step{
 				{
 					Icon:        "common:settings",
 					Name:        "Step 2",
@@ -167,10 +167,10 @@ func TestStepsGroups_Validate_DuplicateInputs(t *testing.T) {
 	// Assert
 	expectedErr := `
 input "fb.extractor.username" is defined 4 times in:
-  - step "Step 1" (g01-s01)
-  - step "Step 1" (g01-s01)
-  - step "Step 2" (g02-s01)
-  - step "Step 3" (g02-s02)
+  - group 1, step 1 "Step 1"
+  - group 1, step 1 "Step 1"
+  - group 2, step 1 "Step 2"
+  - group 2, step 2 "Step 3"
 `
 
 	err := groups.Validate()

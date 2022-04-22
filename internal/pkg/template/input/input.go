@@ -4,6 +4,10 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strings"
+
+	"github.com/spf13/cast"
+	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -16,7 +20,27 @@ func NewInputs() *Inputs {
 }
 
 func (i Inputs) Validate() error {
-	return validate(i)
+	errors := utils.NewMultiError()
+
+	// Validate rules
+	if err := validate(i); err != nil {
+		errors.Append(err)
+	}
+
+	// Enhance error messages
+	for index, item := range errors.Errors {
+		// Replace input index by input ID. Example:
+		//   before: [123].default
+		//   after:  input "my-input": default
+		msg := regexpcache.
+			MustCompile(`^\[(\d+)\]\.`).
+			ReplaceAllStringFunc(item.Error(), func(s string) string {
+				return fmt.Sprintf(`input "%s": `, i.GetIndex(cast.ToInt(strings.Trim(s, "[]."))).Id)
+			})
+		errors.Errors[index] = fmt.Errorf(msg)
+	}
+
+	return errors.ErrorOrNil()
 }
 
 func (i *Inputs) Add(input Input) {
@@ -31,11 +55,6 @@ func (i *Inputs) All() []Input {
 	out := make([]Input, len(*i))
 	copy(out, *i)
 	return out
-}
-
-func (i *Inputs) Set(inputs []Input) *Inputs {
-	*i = inputs
-	return i
 }
 
 type Values []Value

@@ -22,12 +22,12 @@ type inputsSelectDialog struct {
 	components   *model.ComponentsMap
 	branch       *model.Branch
 	configs      []*model.ConfigWithRows
-	inputs       inputsMap
+	inputs       input.InputsMap
 	objectFields map[model.Key]inputFields
 	objectInputs objectInputsMap
 }
 
-func newInputsSelectDialog(prompt prompt.Prompt, selectAll bool, components *model.ComponentsMap, branch *model.Branch, configs []*model.ConfigWithRows, inputs inputsMap) (*inputsSelectDialog, error) {
+func newInputsSelectDialog(prompt prompt.Prompt, selectAll bool, components *model.ComponentsMap, branch *model.Branch, configs []*model.ConfigWithRows, inputs input.InputsMap) (*inputsSelectDialog, error) {
 	d := &inputsSelectDialog{prompt: prompt, selectAll: selectAll, components: components, inputs: inputs, branch: branch, configs: configs}
 	return d, d.detectInputs()
 }
@@ -153,7 +153,7 @@ func (d *inputsSelectDialog) parseInputLine(objectKey model.Key, line string, li
 		field.Input.Id = inputId
 
 		// One input can be used multiple times, but type must match.
-		if i, found := d.inputs.get(field.Input.Id); found {
+		if i, found := d.inputs.Get(field.Input.Id); found {
 			if i.Type != field.Input.Type {
 				return fmt.Errorf(`line %d: input "%s" is already defined with "%s" type, but "%s" has type "%s"`, lineNum, i.Id, i.Type, fieldPath, field.Input.Type)
 			}
@@ -161,9 +161,9 @@ func (d *inputsSelectDialog) parseInputLine(objectKey model.Key, line string, li
 
 		// Save definitions
 		d.objectInputs.add(objectKey, template.InputDef{Path: field.Path, InputId: field.Input.Id})
-		if _, found := d.inputs.get(field.Input.Id); !found {
+		if _, found := d.inputs.Get(field.Input.Id); !found {
 			value := field.Input
-			d.inputs.add(&value)
+			d.inputs.Add(&value)
 		}
 		return nil
 	case mark == "[ ]" || mark == "[]":

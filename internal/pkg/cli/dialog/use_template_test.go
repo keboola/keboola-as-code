@@ -228,7 +228,7 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 		{
 			Description: "Group One",
 			Required:    "all",
-			Steps: []*input.Step{
+			Steps: []input.Step{
 				{
 					Icon:        "common:settings",
 					Name:        "Step 1",
@@ -360,7 +360,7 @@ func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 		{
 			Description: "Group One",
 			Required:    "all",
-			Steps: []*input.Step{
+			Steps: []input.Step{
 				{
 					Icon:        "common:settings",
 					Name:        "Step 1",
@@ -409,7 +409,7 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 		{
 			Description: "Please select which steps you want to fill.",
 			Required:    "optional",
-			Steps: []*input.Step{
+			Steps: []input.Step{
 				{
 					Icon:        "common:settings",
 					Name:        "Step 1",

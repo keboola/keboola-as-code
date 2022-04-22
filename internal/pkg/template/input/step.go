@@ -3,6 +3,10 @@ package input
 import (
 	"fmt"
 	"sort"
+	"strings"
+
+	"github.com/spf13/cast"
+	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -17,47 +21,7 @@ func Load(fs filesystem.Fs) (StepsGroups, error) {
 	return f.StepsGroups, nil
 }
 
-type StepIndex struct {
-	Step  int
-	Group int
-}
-
-type StepsGroups []*StepsGroup
-
-func (g StepsGroups) Indices(stepsToIds map[StepIndex]string) map[string]StepIndex {
-	res := make(map[string]StepIndex)
-	for gIdx, group := range g {
-		for sIdx := range group.Steps {
-			index := StepIndex{
-				Step:  sIdx,
-				Group: gIdx,
-			}
-			res[stepsToIds[index]] = index
-		}
-	}
-	return res
-}
-
-func (g StepsGroups) AddInput(input Input, index StepIndex) error {
-	if len(g) < index.Group {
-		return fmt.Errorf("group at index %d not found", index.Group)
-	}
-	if len(g[index.Group].Steps) < index.Step {
-		return fmt.Errorf("step at index %d for group at index %d not found", index.Step, index.Group)
-	}
-	g[index.Group].Steps[index.Step].Inputs = append(g[index.Group].Steps[index.Step].Inputs, input)
-	return nil
-}
-
-func (g StepsGroups) InputsForStep(index StepIndex) (Inputs, bool) {
-	if len(g) < index.Group {
-		return nil, false
-	}
-	if len(g[index.Group].Steps) < index.Step {
-		return nil, false
-	}
-	return g[index.Group].Steps[index.Step].Inputs, true
-}
+type StepsGroups []StepsGroup
 
 // Save inputs to the FileName.
 func (g StepsGroups) Save(fs filesystem.Fs) error {
@@ -71,15 +35,19 @@ func (g StepsGroups) Path() string {
 	return Path()
 }
 
-func (g StepsGroups) Validate() *utils.MultiError {
+func (g StepsGroups) Validate() error {
 	errors := utils.NewMultiError()
+
+	if len(g) == 0 {
+		errors.Append(fmt.Errorf("at least one steps group must be defined"))
+	}
 
 	// Check duplicate inputs
 	inputsOccurrences := orderedmap.New()
-	_ = g.ToExtended().VisitInputs(func(group *StepsGroupExt, step *StepExt, input Input) error {
+	_ = g.ToExtended().VisitInputs(func(group *StepsGroupExt, step *StepExt, input *Input) error {
 		vRaw, _ := inputsOccurrences.Get(input.Id)
 		v, _ := vRaw.([]string)
-		v = append(v, fmt.Sprintf(`step "%s" (%s)`, step.Name, step.Id))
+		v = append(v, fmt.Sprintf(`group %d, step %d "%s"`, step.GroupIndex+1, step.StepIndex+1, step.Name))
 		inputsOccurrences.Set(input.Id, v)
 		return nil
 	})
@@ -103,10 +71,52 @@ func (g StepsGroups) Validate() *utils.MultiError {
 		errors.Append(err)
 	}
 
-	if errors.Len() > 0 {
-		return errors
+	// Enhance error messages
+	for index, item := range errors.Errors {
+		msg := item.Error()
+
+		// Replace step and group by index. Example:
+		//   before: [0].steps[0].inputs[0].default
+		//   after:  group 1, step 1, input "foo.bar": default
+		regex := regexpcache.MustCompile(`^\[(\d+)\](?:\.steps\[(\d+)\])?(?:\.inputs\[(\d+)\])?\.`)
+		submatch := regex.FindStringSubmatch(msg)
+		if submatch == nil {
+			continue
+		}
+
+		msg = regex.ReplaceAllStringFunc(msg, func(s string) string {
+			var out strings.Builder
+
+			// Group index
+			groupIndex := cast.ToInt(submatch[1])
+			out.WriteString("group ")
+			out.WriteString(cast.ToString(groupIndex + 1))
+
+			// Step index
+			var stepIndex int
+			if submatch[2] != "" {
+				stepIndex = cast.ToInt(submatch[2])
+				out.WriteString(", step ")
+				out.WriteString(cast.ToString(stepIndex + 1))
+			}
+
+			// Input ID
+			if submatch[3] != "" {
+				inputIndex := cast.ToInt(strings.Trim(s, "[]."))
+				out.WriteString(`, input "`)
+				out.WriteString(g[groupIndex].Steps[stepIndex].Inputs.GetIndex(inputIndex).Id)
+				out.WriteString(`"`)
+			}
+
+			out.WriteString(": ")
+			return out.String()
+		})
+
+		msg = strings.Replace(msg, "steps must contain at least 1 item", "steps must contain at least 1 step", 1)
+		errors.Errors[index] = fmt.Errorf(msg)
 	}
-	return nil
+
+	return errors.ErrorOrNil()
 }
 
 // StepsGroup is a container for Steps.
@@ -144,7 +154,7 @@ func (g StepsGroup) ValidateStepsCount(selected int) error {
 	return nil
 }
 
-type Steps []*Step
+type Steps []Step
 
 // Step is a container for Inputs.
 type Step struct {

@@ -26,7 +26,7 @@ func TestValidationRules(t *testing.T) {
 				Kind:        "input",
 				Default:     "def",
 			},
-			error: `[0].steps[0].inputs[0].id can only contain alphanumeric characters, dots, underscores and dashes`,
+			error: `group 1, step 1, input "input#id": id can only contain alphanumeric characters, dots, underscores and dashes`,
 		},
 		{
 			description: "invalid type for kind",
@@ -38,7 +38,7 @@ func TestValidationRules(t *testing.T) {
 				Kind:        "hidden",
 				Default:     "def",
 			},
-			error: "- [0].steps[0].inputs[0].type int is not allowed for the specified kind\n- [0].steps[0].inputs[0].default must match the specified type",
+			error: "- group 1, step 1, input \"input.id\": type int is not allowed for the specified kind\n- group 1, step 1, input \"input.id\": default must match the specified type",
 		},
 		{
 			description: "missing type",
@@ -49,7 +49,7 @@ func TestValidationRules(t *testing.T) {
 				Default:     "def",
 				Kind:        "input",
 			},
-			error: "[0].steps[0].inputs[0].type is a required field",
+			error: "group 1, step 1, input \"input.id\": type is a required field",
 		},
 		{
 			description: "invalid rules",
@@ -62,7 +62,7 @@ func TestValidationRules(t *testing.T) {
 				Rules:       "gtex=5",
 				Default:     33,
 			},
-			error: "[0].steps[0].inputs[0].rules is not valid: undefined validation function 'gtex'",
+			error: "group 1, step 1, input \"input.id\": rules is not valid: undefined validation function 'gtex'",
 		},
 		{
 			description: "invalid if",
@@ -74,7 +74,7 @@ func TestValidationRules(t *testing.T) {
 				Kind:        "input",
 				If:          "1+(2-1>1",
 			},
-			error: "[0].steps[0].inputs[0].showIf cannot compile condition:\n  - expression: 1+(2-1>1\n  - error: Unbalanced parenthesis",
+			error: "group 1, step 1, input \"input.id2\": showIf cannot compile condition:\n  - expression: 1+(2-1>1\n  - error: Unbalanced parenthesis",
 		},
 		{
 			description: "int default, empty options",
@@ -116,7 +116,7 @@ func TestValidationRules(t *testing.T) {
 					{Value: "b", Label: "B"},
 				},
 			},
-			error: "[0].steps[0].inputs[0].options should only be set for select and multiselect kinds",
+			error: "group 1, step 1, input \"input.id\": options should only be set for select and multiselect kinds",
 		},
 		{
 			description: "empty options",
@@ -128,7 +128,7 @@ func TestValidationRules(t *testing.T) {
 				Kind:        "select",
 				Options:     Options{},
 			},
-			error: "[0].steps[0].inputs[0].options must contain at least one item",
+			error: "group 1, step 1, input \"input.id\": options must contain at least one item",
 		},
 		{
 			description: "invalid default value for Select",
@@ -144,7 +144,7 @@ func TestValidationRules(t *testing.T) {
 					{Value: "b", Label: "B"},
 				},
 			},
-			error: "[0].steps[0].inputs[0].default can only contain values from the specified options",
+			error: "group 1, step 1, input \"input.id\": default can only contain values from the specified options",
 		},
 		{
 			description: "valid options for Select",
@@ -177,7 +177,7 @@ func TestValidationRules(t *testing.T) {
 					{Value: "c", Label: "C"},
 				},
 			},
-			error: "[0].steps[0].inputs[0].default can only contain values from the specified options",
+			error: "group 1, step 1, input \"input.id\": default can only contain values from the specified options",
 		},
 		{
 			description: "valid options for MultiSelect",
@@ -199,7 +199,7 @@ func TestValidationRules(t *testing.T) {
 	}
 
 	stepsGroups := StepsGroups{
-		&StepsGroup{Description: "group", Required: "all", Steps: []*Step{
+		StepsGroup{Description: "group", Required: "all", Steps: []Step{
 			{Icon: "common:settings", Name: "Step One", Description: "Description"},
 		}},
 	}
