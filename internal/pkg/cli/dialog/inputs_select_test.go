@@ -56,7 +56,7 @@ Allowed characters: a-z, A-Z, 0-9, "-".
 
 	// Check default value
 	components := model.NewComponentsMap(testapi.NewMockedComponentsProvider())
-	dialog, err := newInputsSelectDialog(nopPrompt.New(), false, components, branch, configs, newInputsMap())
+	dialog, err := newInputsSelectDialog(nopPrompt.New(), false, components, branch, configs, input.NewInputsMap())
 	assert.NoError(t, err)
 	actual := dialog.defaultValue()
 	actual = strings.ReplaceAll(actual, "`", "")
@@ -104,7 +104,7 @@ Allowed characters: a-z, A-Z, 0-9, "-".
 
 	// Check default value
 	components := model.NewComponentsMap(testapi.NewMockedComponentsProvider())
-	dialog, err := newInputsSelectDialog(nopPrompt.New(), true, components, branch, configs, newInputsMap())
+	dialog, err := newInputsSelectDialog(nopPrompt.New(), true, components, branch, configs, input.NewInputsMap())
 	assert.NoError(t, err)
 	actual := dialog.defaultValue()
 	actual = strings.ReplaceAll(actual, "`", "")
@@ -134,17 +134,17 @@ func TestInputsSelectDialog_Parse(t *testing.T) {
 
 	// Parse
 	components := model.NewComponentsMap(testapi.NewMockedComponentsProvider())
-	dialog, err := newInputsSelectDialog(nopPrompt.New(), false, components, branch, configs, newInputsMap())
+	dialog, err := newInputsSelectDialog(nopPrompt.New(), false, components, branch, configs, input.NewInputsMap())
 	assert.NoError(t, err)
 	assert.NoError(t, dialog.parse(result))
 
 	// Assert inputs definitions
 	configKey := model.ConfigKey{BranchId: 123, ComponentId: "keboola.foo.bar", Id: "my-config-1"}
 	rowKey := model.ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo.bar", ConfigId: "my-config-2", Id: "row-2"}
-	assert.Equal(t, &template.Inputs{
+	assert.Equal(t, template.Inputs{
 		{Id: "foo-bar-password", Type: input.TypeString, Kind: input.KindHidden, Name: "Password"},
 		{Id: "foo-bar-object-array-1-password", Type: input.TypeString, Kind: input.KindHidden, Name: "Object Array Password"},
-	}, dialog.inputs.all())
+	}, dialog.inputs.All())
 
 	// Assert object inputs
 	assert.Equal(t, objectInputsMap{
@@ -186,14 +186,14 @@ func TestInputsSelectDialog_Parse_All(t *testing.T) {
 
 	// Parse
 	components := model.NewComponentsMap(testapi.NewMockedComponentsProvider())
-	dialog, err := newInputsSelectDialog(nopPrompt.New(), false, components, branch, configs, newInputsMap())
+	dialog, err := newInputsSelectDialog(nopPrompt.New(), false, components, branch, configs, input.NewInputsMap())
 	assert.NoError(t, err)
 	assert.NoError(t, dialog.parse(result))
 
 	// Assert inputs definitions
 	configKey := model.ConfigKey{BranchId: 123, ComponentId: "keboola.foo.bar", Id: "my-config-1"}
 	rowKey := model.ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo.bar", ConfigId: "my-config-2", Id: "row-2"}
-	assert.Equal(t, &template.Inputs{
+	assert.Equal(t, template.Inputs{
 		{Id: "foo-bar-password", Type: input.TypeString, Kind: input.KindHidden, Name: "Password"},
 		{Id: "foo-bar-bool", Type: input.TypeBool, Kind: input.KindConfirm, Default: false, Name: "Bool"},
 		{Id: "foo-bar-double", Type: input.TypeDouble, Kind: input.KindInput, Default: 78.9, Name: "Double"},
@@ -219,7 +219,7 @@ func TestInputsSelectDialog_Parse_All(t *testing.T) {
 		{Id: "foo-bar-object-array-1-double", Type: input.TypeDouble, Kind: input.KindInput, Default: 78.9, Name: "Object Array Double"},
 		{Id: "foo-bar-object-array-1-int", Type: input.TypeInt, Kind: input.KindInput, Default: 123, Name: "Object Array Int"},
 		{Id: "foo-bar-object-array-1-string", Type: input.TypeString, Kind: input.KindInput, Name: "Object Array String", Default: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore"},
-	}, dialog.inputs.all())
+	}, dialog.inputs.All())
 
 	// Assert object inputs
 	assert.Equal(t, objectInputsMap{
@@ -305,7 +305,7 @@ invalid
 
 	// Parse
 	components := model.NewComponentsMap(testapi.NewMockedComponentsProvider())
-	dialog, err := newInputsSelectDialog(nopPrompt.New(), false, components, branch, configs, newInputsMap())
+	dialog, err := newInputsSelectDialog(nopPrompt.New(), false, components, branch, configs, input.NewInputsMap())
 	assert.NoError(t, err)
 	err = dialog.parse(result)
 

@@ -15,7 +15,19 @@ func Run(fs filesystem.Fs, d dependencies) (*template.StepsGroups, error) {
 	logger := d.Logger()
 
 	// Create
-	inputs := input.StepsGroups{}
+	inputs := input.StepsGroups{
+		{
+			Description: "Default Group",
+			Required:    "all",
+			Steps: []input.Step{
+				{
+					Icon:        "common:settings",
+					Name:        "Default",
+					Description: "Default Step",
+				},
+			},
+		},
+	}
 
 	// Save
 	if err := inputs.Save(fs); err != nil {

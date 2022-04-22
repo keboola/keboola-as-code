@@ -15,37 +15,69 @@ import (
 func TestInputsDetailDialog_DefaultValue(t *testing.T) {
 	t.Parallel()
 
-	stepsGroups := input.StepsGroups{
-		&input.StepsGroup{Description: "desc", Required: "all", Steps: []*input.Step{
-			{Icon: "common:settings", Name: "Step One", Description: "Description"},
-		}},
-		&input.StepsGroup{Description: "desc2", Required: "all", Steps: []*input.Step{
-			{Icon: "common:settings", Name: "Step Two", Description: "Description"},
-			{Icon: "common:settings", Name: "Step Three", Description: "Description"},
-		}},
-	}
-
-	stepsToIds := map[input.StepIndex]string{
-		input.StepIndex{Step: 0, Group: 0}: "s1",
-		input.StepIndex{Step: 0, Group: 1}: "s2",
-		input.StepIndex{Step: 1, Group: 1}: "s3",
-	}
-
 	// Check default value
-	d := newInputsDetailsDialog(nopPrompt.New(), testInputs())
-	actual := d.defaultValue(stepsGroups, stepsToIds)
+	d := newInputsDetailsDialog(nopPrompt.New(), testInputs(), testStepsGroups())
+	actual := d.defaultValue()
 	actual = regexpcache.MustCompile(` +\n`).ReplaceAllString(actual, "\n") // trim trailing spaces
 	assert.Equal(t, inputsDetailDialogDefaultValue, actual)
 }
 
-func TestInputsDetailDialog_Parse_NoChange(t *testing.T) {
+func TestInputsDetailDialog_Parse_DefaultValue(t *testing.T) {
 	t.Parallel()
 
 	// Parse
-	d := newInputsDetailsDialog(nopPrompt.New(), testInputs())
-	_, err := d.parse(inputsDetailDialogDefaultValue)
+	d := newInputsDetailsDialog(nopPrompt.New(), testInputs(), testStepsGroups())
+	stepGroups, err := d.parse(inputsDetailDialogDefaultValue)
 	assert.NoError(t, err)
-	assert.Equal(t, testInputs().all(), d.inputs.all())
+	assert.Equal(t, testInputs().All(), d.inputs.All())
+
+	// Inputs are connected to default step group
+	expectedStepGroups := input.StepsGroupsExt{
+		&input.StepsGroupExt{
+			GroupIndex: 0,
+			StepsGroup: input.StepsGroup{Description: "desc", Required: "all"},
+			Steps: input.StepsExt{
+				{
+					GroupIndex: 0,
+					StepIndex:  0,
+					Id:         "s1",
+					Step: input.Step{
+						Icon:        "common:settings",
+						Name:        "Step One",
+						Description: "Description",
+						Inputs:      testInputs().All(), // <<<<<<<<<<<<<<<<
+					},
+				},
+			},
+		},
+		&input.StepsGroupExt{
+			GroupIndex: 1,
+			StepsGroup: input.StepsGroup{Description: "desc2", Required: "all"},
+			Steps: input.StepsExt{
+				{
+					GroupIndex: 1,
+					StepIndex:  0,
+					Id:         "s2",
+					Step: input.Step{
+						Icon:        "common:settings",
+						Name:        "Step Two",
+						Description: "Description",
+					},
+				},
+				{
+					GroupIndex: 1,
+					StepIndex:  1,
+					Id:         "s3",
+					Step: input.Step{
+						Icon:        "common:settings",
+						Name:        "Step Three",
+						Description: "Description",
+					},
+				},
+			},
+		},
+	}
+	assert.Equal(t, expectedStepGroups, stepGroups)
 }
 
 func TestInputsDetailDialog_Parse_Errors(t *testing.T) {
@@ -59,6 +91,7 @@ kind: confirm <!-- invalid kind -->
 rules: foobar <!-- invalid rule -->
 showIf: [invalid <!-- invalid condition -->
 default:
+step: s1
 
 ## Input "bool-confirm" (bool)
 name: Bool Confirm
@@ -67,7 +100,7 @@ kind: confirm
 rules:
 showIf:
 default: true
-
+step: s1
 
 ## Input "string-select" (string)
 name: String Select
@@ -77,6 +110,7 @@ rules:
 showIf:
 default: value1
 options: {"value1":"La... <!-- invalid options -->
+step: sABC <!-- invalid step -->
 
 ## Input "string-array-multiselect" (string[])
 name: String Array
@@ -86,11 +120,14 @@ rules:
 showIf:
 default: value5, value6 <!-- invalid values -->
 options: {"value1":"Label 1","value2":"Label 2","value3":123}  <!-- invalid options -->
+<!-- missing step -->
 `
 
 	expected := `
-- line 26: value "{"value1":"La..." is not valid: unexpected end of JSON input, offset: 16
-- line 35: value "{"value1":"Label 1","value2":"Label 2","value3":123}" is not valid: value of key "value3" must be string
+- line 27: value "{"value1":"La..." is not valid: unexpected end of JSON input, offset: 16
+- line 28: step "sABC" not found
+- line 37: value "{"value1":"Label 1","value2":"Label 2","value3":123}" is not valid: value of key "value3" must be string
+- input "string-array-multiselect": "step" is not defined
 - input "string-input": type string is not allowed for the specified kind
 - input "string-input": rules is not valid: undefined validation function 'foobar'
 - input "string-input": showIf cannot compile condition:
@@ -100,15 +137,35 @@ options: {"value1":"Label 1","value2":"Label 2","value3":123}  <!-- invalid opti
 `
 
 	// Parse
-	d := newInputsDetailsDialog(nopPrompt.New(), testInputs())
+	d := newInputsDetailsDialog(nopPrompt.New(), testInputs(), testStepsGroups())
 	_, err := d.parse(result)
 	assert.Error(t, err)
 	assert.Equal(t, strings.Trim(expected, "\n"), err.Error())
 }
 
-func testInputs() inputsMap {
-	inputs := newInputsMap()
-	inputs.add(&template.Input{
+func testStepsGroups() input.StepsGroupsExt {
+	return input.StepsGroupsExt{
+		&input.StepsGroupExt{
+			GroupIndex: 0,
+			StepsGroup: input.StepsGroup{Description: "desc", Required: "all"},
+			Steps: input.StepsExt{
+				{GroupIndex: 0, StepIndex: 0, Id: "s1", Step: input.Step{Icon: "common:settings", Name: "Step One", Description: "Description"}},
+			},
+		},
+		&input.StepsGroupExt{
+			GroupIndex: 1,
+			StepsGroup: input.StepsGroup{Description: "desc2", Required: "all"},
+			Steps: input.StepsExt{
+				{GroupIndex: 1, StepIndex: 0, Id: "s2", Step: input.Step{Icon: "common:settings", Name: "Step Two", Description: "Description"}},
+				{GroupIndex: 1, StepIndex: 1, Id: "s3", Step: input.Step{Icon: "common:settings", Name: "Step Three", Description: "Description"}},
+			},
+		},
+	}
+}
+
+func testInputs() input.InputsMap {
+	inputs := input.NewInputsMap()
+	inputs.Add(&template.Input{
 		Id:          "string-input",
 		Name:        "String Input",
 		Description: "Description",
@@ -116,21 +173,21 @@ func testInputs() inputsMap {
 		Kind:        input.KindInput,
 		Default:     "default",
 	})
-	inputs.add(&template.Input{
+	inputs.Add(&template.Input{
 		Id:          "string-hidden",
 		Name:        "String Hidden",
 		Description: "Description",
 		Type:        input.TypeString,
 		Kind:        input.KindHidden,
 	})
-	inputs.add(&template.Input{
+	inputs.Add(&template.Input{
 		Id:          "string-textarea",
 		Name:        "String Textarea",
 		Description: "Description",
 		Type:        input.TypeString,
 		Kind:        input.KindTextarea,
 	})
-	inputs.add(&template.Input{
+	inputs.Add(&template.Input{
 		Id:          "string-select",
 		Name:        "String Select",
 		Description: "Description",
@@ -148,7 +205,7 @@ func testInputs() inputsMap {
 			},
 		},
 	})
-	inputs.add(&template.Input{
+	inputs.Add(&template.Input{
 		Id:          "string-int",
 		Name:        "String Double",
 		Description: "Description",
@@ -156,7 +213,7 @@ func testInputs() inputsMap {
 		Kind:        input.KindInput,
 		Default:     123,
 	})
-	inputs.add(&template.Input{
+	inputs.Add(&template.Input{
 		Id:          "string-double",
 		Name:        "String Double",
 		Description: "Description",
@@ -164,7 +221,7 @@ func testInputs() inputsMap {
 		Kind:        input.KindInput,
 		Default:     12.34,
 	})
-	inputs.add(&template.Input{
+	inputs.Add(&template.Input{
 		Id:          "bool-confirm",
 		Name:        "Bool Confirm",
 		Description: "Description",
@@ -172,7 +229,7 @@ func testInputs() inputsMap {
 		Kind:        input.KindConfirm,
 		Default:     true,
 	})
-	inputs.add(&template.Input{
+	inputs.Add(&template.Input{
 		Id:          "string-array-multiselect",
 		Name:        "String Array",
 		Description: "Description",

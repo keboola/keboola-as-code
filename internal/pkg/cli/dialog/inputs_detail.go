@@ -14,24 +14,25 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 // inputsDetailDialog to define name/description for each user input.
 type inputsDetailDialog struct {
-	prompt prompt.Prompt
-	inputs inputsMap
+	prompt      prompt.Prompt
+	inputs      input.InputsMap
+	stepsGroups input.StepsGroupsExt
 }
 
-func newInputsDetailsDialog(prompt prompt.Prompt, inputs inputsMap) *inputsDetailDialog {
-	return &inputsDetailDialog{prompt: prompt, inputs: inputs}
+func newInputsDetailsDialog(prompt prompt.Prompt, inputs input.InputsMap, stepsGroups input.StepsGroupsExt) *inputsDetailDialog {
+	return &inputsDetailDialog{prompt: prompt, inputs: inputs, stepsGroups: stepsGroups}
 }
 
-func (d *inputsDetailDialog) ask(stepsGroups input.StepsGroups, stepsToIds map[input.StepIndex]string) (*orderedmap.OrderedMap, error) {
+func (d *inputsDetailDialog) ask() (input.StepsGroupsExt, error) {
 	result, _ := d.prompt.Editor("md", &prompt.Question{
 		Description: `Please complete the user inputs specification.`,
-		Default:     d.defaultValue(stepsGroups, stepsToIds),
+		Default:     d.defaultValue(),
 		Validator: func(val interface{}) error {
 			_, err := d.parse(val.(string))
 			if err != nil {
@@ -45,19 +46,36 @@ func (d *inputsDetailDialog) ask(stepsGroups input.StepsGroups, stepsToIds map[i
 	return d.parse(result)
 }
 
-func (d *inputsDetailDialog) parse(result string) (*orderedmap.OrderedMap, error) {
+func (d *inputsDetailDialog) parse(result string) (input.StepsGroupsExt, error) {
 	result = strhelper.StripHtmlComments(result)
 	scanner := bufio.NewScanner(strings.NewReader(result))
 	errors := utils.NewMultiError()
 	lineNum := 0
 
-	order := make(map[string]int)
-	orderVal := 0
-
 	var currentInput *template.Input
+	var inputStep *input.StepExt
 	var invalidDefinition bool
-	inputsToStepsMap := orderedmap.New()
+	stepGroups := deepcopy.Copy(d.stepsGroups).(input.StepsGroupsExt) // clone, so original value is not modified
+	stepsMap := stepGroups.StepsMap()
+	inputsOrder := make(map[string]int)
 
+	// Input finalization function
+	finalizeInput := func() {
+		if currentInput == nil || invalidDefinition {
+			return
+		}
+
+		// Check that step is defined
+		if inputStep == nil {
+			errors.Append(fmt.Errorf(`input "%s": "step" is not defined`, currentInput.Id))
+			return
+		}
+
+		// Add input to the step
+		inputStep.AddInput(*currentInput)
+	}
+
+	// Parse all lines
 	for scanner.Scan() {
 		lineNum++
 		line := strings.TrimSpace(scanner.Text())
@@ -70,6 +88,9 @@ func (d *inputsDetailDialog) parse(result string) (*orderedmap.OrderedMap, error
 		// Parse line
 		switch {
 		case strings.HasPrefix(line, `## Input`):
+			// Finalize previous input
+			finalizeInput()
+
 			// Input definition
 			m := regexpcache.MustCompile(`"([^"]+)"`).FindStringSubmatch(line)
 			if m == nil {
@@ -77,16 +98,17 @@ func (d *inputsDetailDialog) parse(result string) (*orderedmap.OrderedMap, error
 				invalidDefinition = true
 				continue
 			}
-			i, found := d.inputs.get(m[1])
+			inputId := m[1]
+			i, found := d.inputs.Get(inputId)
 			if !found {
-				errors.Append(fmt.Errorf(`line %d: input "%s" not found`, lineNum, m[1]))
+				errors.Append(fmt.Errorf(`line %d: input "%s" not found`, lineNum, inputId))
 				invalidDefinition = true
 				continue
 			}
 			currentInput = i
+			inputStep = nil
 			invalidDefinition = false
-			orderVal++
-			order[currentInput.Id] = orderVal
+			inputsOrder[currentInput.Id] = len(inputsOrder)
 		case invalidDefinition:
 			// Skip lines after invalid definition
 		case strings.HasPrefix(line, `name:`):
@@ -123,7 +145,14 @@ func (d *inputsDetailDialog) parse(result string) (*orderedmap.OrderedMap, error
 				continue
 			}
 		case strings.HasPrefix(line, `step:`):
-			inputsToStepsMap.Set(currentInput.Id, strings.TrimSpace(strings.TrimPrefix(line, `step:`)))
+			stepId := strings.TrimSpace(strings.TrimPrefix(line, `step:`))
+			step, ok := stepsMap[stepId]
+			if !ok {
+				errors.Append(fmt.Errorf(`line %d: step "%s" not found`, lineNum, stepId))
+				invalidDefinition = true
+				continue
+			}
+			inputStep = step
 		default:
 			// Expected object definition
 			errors.Append(fmt.Errorf(`line %d: cannot parse "%s"`, lineNum, strhelper.Truncate(line, 10, "...")))
@@ -131,36 +160,25 @@ func (d *inputsDetailDialog) parse(result string) (*orderedmap.OrderedMap, error
 		}
 	}
 
+	// Finalize last input
+	finalizeInput()
+
 	// Validate
-	allInputs := d.inputs.all()
-	if e := allInputs.Validate(); e != nil {
-		// nolint: errorlint
-		err := e.(*utils.MultiError)
-		for index, item := range err.Errors {
-			// Replace input index by input ID. Example:
-			//   before: [123].default
-			//   after:  input "my-input": default
-			msg := regexpcache.
-				MustCompile(`^\[(\d+)\].`).
-				ReplaceAllStringFunc(item.Error(), func(s string) string {
-					return fmt.Sprintf(`input "%s": `, allInputs.GetIndex(cast.ToInt(strings.Trim(s, "[]."))).Id)
-				})
-			err.Errors[index] = fmt.Errorf(msg)
-		}
+	if err := d.inputs.All().Validate(); err != nil {
 		errors.Append(err)
 	}
 
 	// Sort
-	d.inputs.data.SortKeys(func(keys []string) {
-		sort.SliceStable(keys, func(i, j int) bool {
-			return order[keys[i]] < order[keys[j]]
+	d.inputs.Sort(func(inputsIds []string) {
+		sort.SliceStable(inputsIds, func(i, j int) bool {
+			return inputsOrder[inputsIds[i]] < inputsOrder[inputsIds[j]]
 		})
 	})
 
-	return inputsToStepsMap, errors.ErrorOrNil()
+	return stepGroups, errors.ErrorOrNil()
 }
 
-func (d *inputsDetailDialog) defaultValue(stepsGroups input.StepsGroups, stepsToIds map[input.StepIndex]string) string {
+func (d *inputsDetailDialog) defaultValue() string {
 	// File header - info for user
 	fileHeader := `
 <!--
@@ -210,15 +228,12 @@ Options format:
 Preview of steps and groups you created:
 `
 	var defaultStepId string
-	for gIdx, group := range stepsGroups {
-		fileHeader += fmt.Sprintf(`- Group %d: %s
-`, gIdx+1, group.Description)
-		for sIdx, step := range group.Steps {
-			index := input.StepIndex{Step: sIdx, Group: gIdx}
-			fileHeader += fmt.Sprintf(`  - Step "%s": %s - %s
-`, stepsToIds[index], step.Name, step.Description)
-			if gIdx == 0 && sIdx == 0 {
-				defaultStepId = stepsToIds[index]
+	for _, group := range d.stepsGroups {
+		fileHeader += fmt.Sprintf("- Group %d: %s\n", group.GroupIndex+1, group.Description)
+		for _, step := range group.Steps {
+			fileHeader += fmt.Sprintf("  - Step \"%s\": %s - %s\n", step.Id, step.Name, step.Description)
+			if step.GroupIndex == 0 && step.StepIndex == 0 {
+				defaultStepId = step.Id
 			}
 		}
 	}
@@ -231,8 +246,8 @@ Preview of steps and groups you created:
 	// Add definitions
 	var lines strings.Builder
 	lines.WriteString(fileHeader)
-	for _, inputId := range d.inputs.ids() {
-		i, _ := d.inputs.get(inputId)
+	for _, inputId := range d.inputs.Ids() {
+		i, _ := d.inputs.Get(inputId)
 		lines.WriteString(fmt.Sprintf("## Input \"%s\" (%s)\n", i.Id, i.Type))
 		lines.WriteString(fmt.Sprintf("name: %s\n", i.Name))
 		lines.WriteString(fmt.Sprintf("description: %s\n", i.Description))

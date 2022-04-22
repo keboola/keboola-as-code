@@ -72,7 +72,7 @@ func (d *useTmplDialog) ask(stepsGroups input.StepsGroups) (useTemplate.Options,
 }
 
 func (d *useTmplDialog) askInputs(stepsGroups input.StepsGroupsExt) error {
-	return stepsGroups.VisitInputs(func(group *input.StepsGroupExt, step *input.StepExt, inputDef input.Input) error {
+	return stepsGroups.VisitInputs(func(group *input.StepsGroupExt, step *input.StepExt, inputDef *input.Input) error {
 		// Print info about group and select steps
 		if !group.Announced {
 			if err := d.announceGroup(group); err != nil {
@@ -164,7 +164,7 @@ func (d *useTmplDialog) announceStep(step *input.StepExt) error {
 	return nil
 }
 
-func (d *useTmplDialog) askInput(inputDef input.Input) error {
+func (d *useTmplDialog) askInput(inputDef *input.Input) error {
 	// Use value from the inputs file, if it is present
 	if v, found := d.inputsFile[inputDef.Id]; found {
 		// Validate and save
@@ -262,7 +262,7 @@ func (d *useTmplDialog) askInput(inputDef input.Input) error {
 }
 
 // addInputValue from CLI dialog or inputs file.
-func (d *useTmplDialog) addInputValue(value interface{}, inputDef input.Input, isFiled bool) error {
+func (d *useTmplDialog) addInputValue(value interface{}, inputDef *input.Input, isFiled bool) error {
 	// Convert
 	value, err := inputDef.Type.ParseValue(value)
 	if err != nil {

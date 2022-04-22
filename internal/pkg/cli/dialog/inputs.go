@@ -10,8 +10,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 type inputsDialogDeps interface {
@@ -24,7 +22,7 @@ type inputsDialogDeps interface {
 // Used in AskCreateTemplateOpts.
 func (p *Dialogs) askTemplateInputs(deps inputsDialogDeps, branch *model.Branch, configs []*model.ConfigWithRows) (objectInputsMap, template.StepsGroups, error) {
 	// Create empty inputs map
-	inputs := newInputsMap()
+	inputs := input.NewInputsMap()
 
 	// Get components
 	components, err := deps.Components()
@@ -44,42 +42,18 @@ func (p *Dialogs) askTemplateInputs(deps inputsDialogDeps, branch *model.Branch,
 	}
 
 	// Define steps and steps groups for user inputs.
-	stepsDialog := newStepsDialog(p.Prompt)
-	stepsGroups, stepsToIds, err := stepsDialog.ask()
+	stepsGroups, err := newStepsDialog(p.Prompt).ask()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	// Define name/description for each user input.
-	inputsToSteps, err := newInputsDetailsDialog(p.Prompt, inputs).ask(stepsGroups, stepsToIds)
+	// Define name/description for each user input and add inputs to steps groups.
+	stepsGroups, err = newInputsDetailsDialog(p.Prompt, inputs, stepsGroups).ask()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	if err := addInputsToStepsGroups(stepsGroups, inputs, inputsToSteps, stepsToIds); err != nil {
-		return nil, nil, err
-	}
-
-	return objectInputs, stepsGroups, nil
-}
-
-func addInputsToStepsGroups(stepsGroups input.StepsGroups, inputs inputsMap, inputsToSteps *orderedmap.OrderedMap, stepsToIds map[input.StepIndex]string) error {
-	indices := stepsGroups.Indices(stepsToIds)
-	errors := utils.NewMultiError()
-	for _, inputId := range inputsToSteps.Keys() {
-		step, _ := inputsToSteps.Get(inputId)
-		index, found := indices[fmt.Sprintf("%v", step)]
-		if !found {
-			errors.Append(fmt.Errorf(`input "%s": step "%s" not found`, inputId, step))
-			continue
-		}
-		in, _ := inputs.get(inputId)
-		err := stepsGroups.AddInput(*in, index)
-		if err != nil {
-			errors.Append(err)
-		}
-	}
-	return errors.ErrorOrNil()
+	return objectInputs, stepsGroups.ToValue(), nil
 }
 
 type inputFields map[string]input.ObjectField
@@ -160,40 +134,4 @@ func (v objectInputsMap) setTo(configs []template.ConfigDef) {
 			r.Inputs = v[r.Key]
 		}
 	}
-}
-
-func newInputsMap() inputsMap {
-	return inputsMap{data: orderedmap.New()}
-}
-
-// inputsMap - map of all Inputs by Input.Id.
-type inputsMap struct {
-	data *orderedmap.OrderedMap
-}
-
-func (v inputsMap) add(input *template.Input) {
-	v.data.Set(input.Id, input)
-}
-
-func (v inputsMap) get(inputId string) (*template.Input, bool) {
-	value, found := v.data.Get(inputId)
-	if !found {
-		return nil, false
-	}
-	return value.(*template.Input), true
-}
-
-func (v inputsMap) ids() []string {
-	return v.data.Keys()
-}
-
-func (v inputsMap) all() *template.Inputs {
-	out := make([]template.Input, v.data.Len())
-	i := 0
-	for _, key := range v.data.Keys() {
-		item, _ := v.data.Get(key)
-		out[i] = *(item.(*template.Input))
-		i++
-	}
-	return template.NewInputs().Set(out)
 }

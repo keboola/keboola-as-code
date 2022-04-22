@@ -92,7 +92,7 @@ func testInputs() StepsGroups {
 		{
 			Description: "Group One",
 			Required:    "all",
-			Steps: []*Step{
+			Steps: []Step{
 				{
 					Icon:        "common:settings",
 					Name:        "Step 1",

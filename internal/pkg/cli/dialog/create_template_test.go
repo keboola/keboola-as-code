@@ -207,7 +207,7 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 			{
 				Description: "Default Group",
 				Required:    "all",
-				Steps: []*input.Step{
+				Steps: []input.Step{
 					{
 						Icon:        "common:settings",
 						Name:        "Default Step",
@@ -302,7 +302,7 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 			{
 				Description: "Default Group",
 				Required:    "all",
-				Steps: []*input.Step{
+				Steps: []input.Step{
 					{
 						Icon:        "common:settings",
 						Name:        "Default Step",
@@ -410,7 +410,7 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 			{
 				Description: "Default Group",
 				Required:    "all",
-				Steps: []*input.Step{
+				Steps: []input.Step{
 					{
 						Icon:        "common:settings",
 						Name:        "Default Step",

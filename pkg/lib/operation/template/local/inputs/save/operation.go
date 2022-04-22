@@ -10,8 +10,8 @@ type dependencies interface {
 	Logger() log.Logger
 }
 
-func Run(inputs template.StepsGroups, fs filesystem.Fs, d dependencies) (err error) {
-	if err := inputs.Save(fs); err != nil {
+func Run(stepGroups template.StepsGroups, fs filesystem.Fs, d dependencies) (err error) {
+	if err := stepGroups.Save(fs); err != nil {
 		return err
 	}
 

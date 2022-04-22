@@ -3,7 +3,6 @@ package dialog
 import (
 	"bufio"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/umisama/go-regexpcache"
@@ -23,13 +22,12 @@ func newStepsDialog(prompt prompt.Prompt) *stepsDialog {
 	return &stepsDialog{prompt: prompt}
 }
 
-func (d *stepsDialog) ask() (input.StepsGroups, map[input.StepIndex]string, error) {
+func (d *stepsDialog) ask() (input.StepsGroupsExt, error) {
 	result, _ := d.prompt.Editor("md", &prompt.Question{
 		Description: `Please define steps and groups for user inputs specification.`,
 		Default:     d.defaultValue(),
 		Validator: func(val interface{}) error {
-			_, _, err := d.parse(val.(string))
-			if err != nil {
+			if _, err := d.parse(val.(string)); err != nil {
 				// Print errors to new line
 				return utils.PrefixError("\n", err)
 			}
@@ -39,19 +37,17 @@ func (d *stepsDialog) ask() (input.StepsGroups, map[input.StepIndex]string, erro
 	return d.parse(result)
 }
 
-func (d *stepsDialog) parse(result string) (input.StepsGroups, map[input.StepIndex]string, error) {
+func (d *stepsDialog) parse(result string) (input.StepsGroupsExt, error) {
 	result = strhelper.StripHtmlComments(result)
 	scanner := bufio.NewScanner(strings.NewReader(result))
 	errors := utils.NewMultiError()
 	lineNum := 0
-	stepsGroups := make(input.StepsGroups, 0)
 
-	var currentGroup *input.StepsGroup
-	var currentStep *input.Step
-	stepsToIds := make(map[input.StepIndex]string)
-	usedIds := make(map[string]bool)
-
+	var currentGroup *input.StepsGroupExt
+	var currentStep *input.StepExt
 	var invalidDefinition bool
+	stepsGroups := make(input.StepsGroupsExt, 0)
+	stepIds := make(map[string]bool)
 
 	for scanner.Scan() {
 		lineNum++
@@ -65,11 +61,10 @@ func (d *stepsDialog) parse(result string) (input.StepsGroups, map[input.StepInd
 		// Parse line
 		switch {
 		case strings.HasPrefix(line, `## Group`):
-			// Group definition
-			currentGroup = &input.StepsGroup{Steps: make([]*input.Step, 0)}
-			currentStep = nil
+			// Create group
+			currentGroup = &input.StepsGroupExt{GroupIndex: len(stepsGroups)}
 			stepsGroups = append(stepsGroups, currentGroup)
-
+			currentStep = nil
 			invalidDefinition = false
 		case strings.HasPrefix(line, `### Step`):
 			// Step definition
@@ -79,24 +74,29 @@ func (d *stepsDialog) parse(result string) (input.StepsGroups, map[input.StepInd
 				invalidDefinition = true
 				continue
 			}
+
 			if currentGroup == nil {
 				errors.Append(fmt.Errorf(`line %d: there needs to be a group definition before step "%s"`, lineNum, m[1]))
 				invalidDefinition = true
 				continue
 			}
-			currentStep = &input.Step{Inputs: make(input.Inputs, 0)}
-			currentGroup.Steps = append(currentGroup.Steps, currentStep)
-			index := input.StepIndex{
-				Step:  len(currentGroup.Steps) - 1,
-				Group: len(stepsGroups) - 1,
-			}
-			if usedIds[m[1]] {
+
+			// Step ID must be unique
+			stepId := m[1]
+			if stepIds[stepId] {
 				errors.Append(fmt.Errorf(`line %d: step with id "%s" is already defined`, lineNum, m[1]))
+				invalidDefinition = true
 				continue
 			}
-			usedIds[m[1]] = true
-			stepsToIds[index] = m[1]
+			stepIds[stepId] = true
 
+			// Create step
+			currentStep = &input.StepExt{
+				GroupIndex: currentGroup.GroupIndex,
+				StepIndex:  len(currentGroup.Steps),
+				Id:         stepId,
+			}
+			currentGroup.AddStep(currentStep)
 			invalidDefinition = false
 		case invalidDefinition:
 			// Skip lines after invalid definition
@@ -147,47 +147,11 @@ func (d *stepsDialog) parse(result string) (input.StepsGroups, map[input.StepInd
 	}
 
 	// Validate
-	if len(stepsGroups) == 0 {
-		return nil, nil, fmt.Errorf("at least 1 group must be defined")
-	}
 	if err := stepsGroups.Validate(); err != nil {
-		// nolint: errorlint
-		for index, item := range err.Errors {
-			msg := item.Error()
-
-			// Replace step and group by index. Example:
-			//   before: [0].steps[0].default
-			//   after:  group 1, step 1: default
-			regex := regexpcache.MustCompile(`^\[(\d+)\].steps\[(\d+)\].`)
-			submatch := regex.FindStringSubmatch(item.Error())
-			if submatch != nil {
-				msg = regex.ReplaceAllStringFunc(item.Error(), func(s string) string {
-					groupIndex, _ := strconv.Atoi(submatch[1])
-					stepIndex, _ := strconv.Atoi(submatch[2])
-					return fmt.Sprintf(`group %d, step %d: `, groupIndex+1, stepIndex+1)
-				})
-			} else {
-				// Replace group by index. Example:
-				//   before: [0].default
-				//   after:  group 1: default
-				regex = regexpcache.MustCompile(`^\[(\d+)\].`)
-				submatch = regex.FindStringSubmatch(item.Error())
-				if submatch != nil {
-					msg = regex.ReplaceAllStringFunc(item.Error(), func(s string) string {
-						groupIndex, _ := strconv.Atoi(submatch[1])
-						return fmt.Sprintf(`group %d: `, groupIndex+1)
-					})
-				}
-			}
-
-			msg = strings.Replace(msg, "steps must contain at least 1 item", "steps must contain at least 1 step", 1)
-
-			err.Errors[index] = fmt.Errorf(msg)
-		}
 		errors.Append(err)
 	}
 
-	return stepsGroups, stepsToIds, errors.ErrorOrNil()
+	return stepsGroups, errors.ErrorOrNil()
 }
 
 func (d *stepsDialog) defaultValue() string {
