@@ -474,6 +474,7 @@ jobs:
         run: |
           docker run --rm ubuntu bash -c '
           set -e
+          set -o pipefail
           apt-get update -y && apt-get install -y wget ca-certificates gnupg
           wget -P /etc/apt/trusted.gpg.d https://cli-dist.keboola.com/deb/keboola.gpg
           echo "deb https://cli-dist.keboola.com/deb /" | tee /etc/apt/sources.list.d/keboola.list
@@ -488,6 +489,7 @@ jobs:
         run: |
           docker run --rm debian bash -c '
           set -e
+          set -o pipefail
           apt-get update -y && apt-get install -y wget ca-certificates gnupg
           wget -P /etc/apt/trusted.gpg.d https://cli-dist.keboola.com/deb/keboola.gpg
           echo "deb https://cli-dist.keboola.com/deb /" | tee /etc/apt/sources.list.d/keboola.list
@@ -502,6 +504,7 @@ jobs:
         run: |
           docker run --rm fedora bash -c '
           set -e
+          set -o pipefail
           rpm --import https://cli-dist.keboola.com/rpm/keboola.gpg
           echo "[keboola]
           name=keboola
@@ -520,6 +523,7 @@ jobs:
         run: |
           docker run --rm  alpine sh -c '
           set -e
+          set -o pipefail
           echo "https://cli-dist.keboola.com/apk" | tee -a /etc/apk/repositories
           wget -P /etc/apk/keys/ https://cli-dist.keboola.com/apk/keboola.rsa.pub
           apk update
@@ -533,6 +537,7 @@ jobs:
         run: |
           docker run --rm homebrew/brew sh -c '
           set -e
+          set -o pipefail
           brew install keboola/keboola-cli/keboola-cli
           kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
           '
