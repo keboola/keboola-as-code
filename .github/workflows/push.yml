@@ -46,7 +46,11 @@ env:
   APK_KEY_PRIVATE: ${{ secrets.APK_KEY_PRIVATE }}
   APK_KEY_PUBLIC: ${{ secrets.APK_KEY_PUBLIC }}
 
+  # WinGet packages
+  WINGET_PACKAGES_REPO_FORK: "JakubMatejka/winget-pkgs"
+
   # Mac Os notarization
+  APPLE_USERNAME: "apple@keboola.com"
   APPLE_BUNDLE_ID: "com.keboola.kbc"
   APPLE_APP_IDENTITY: "Developer ID Application: Tomas Netrval"
 
@@ -340,7 +344,7 @@ jobs:
           MSI_FILE: ${{ steps.build_msi.outputs.msi_file }}
         shell: bash
         run: |
-          aws s3 cp "./build/package/windows/msi/${MSI_FILE}.msi" s3://${AWS_BUCKET_NAME}/msi/
+          aws s3 cp "./build/package/windows/msi/${MSI_FILE}" s3://${AWS_BUCKET_NAME}/msi/
           
           choco install checksum
           checksum=$(checksum -t=sha256 -f="./build/package/windows/msi/${MSI_FILE}")
@@ -438,7 +442,16 @@ jobs:
           choco apikey -k $env:CHOCOLATEY_KEY -s https://push.chocolatey.org/
           choco pack keboola-cli.nuspec
           choco push keboola-cli.$env:VERSION.nupkg -s https://push.chocolatey.org
-      - name: Submit package to Winget Repository
+      - name: Update Winget Repository fork
+        uses: TobKed/github-forks-sync-action@master
+        with:
+          github_token: ${{ secrets.WINGET_RELEASE_GITHUB_PERSONAL_ACCESS_TOKEN }}
+          upstream_repository: microsoft/winget-pkgs
+          target_repository: ${{ env.WINGET_PACKAGES_REPO_FORK }}
+          upstream_branch: master
+          target_branch: master
+          force: true
+      - name: Submit package to Winget Repository (create PR)
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.WINGET_RELEASE_GITHUB_PERSONAL_ACCESS_TOKEN }}
@@ -461,6 +474,7 @@ jobs:
         run: |
           docker run --rm ubuntu bash -c '
           set -e
+          set -o pipefail
           apt-get update -y && apt-get install -y wget ca-certificates gnupg
           wget -P /etc/apt/trusted.gpg.d https://cli-dist.keboola.com/deb/keboola.gpg
           echo "deb https://cli-dist.keboola.com/deb /" | tee /etc/apt/sources.list.d/keboola.list
@@ -475,6 +489,7 @@ jobs:
         run: |
           docker run --rm debian bash -c '
           set -e
+          set -o pipefail
           apt-get update -y && apt-get install -y wget ca-certificates gnupg
           wget -P /etc/apt/trusted.gpg.d https://cli-dist.keboola.com/deb/keboola.gpg
           echo "deb https://cli-dist.keboola.com/deb /" | tee /etc/apt/sources.list.d/keboola.list
@@ -489,6 +504,7 @@ jobs:
         run: |
           docker run --rm fedora bash -c '
           set -e
+          set -o pipefail
           rpm --import https://cli-dist.keboola.com/rpm/keboola.gpg
           echo "[keboola]
           name=keboola
@@ -507,6 +523,7 @@ jobs:
         run: |
           docker run --rm  alpine sh -c '
           set -e
+          set -o pipefail
           echo "https://cli-dist.keboola.com/apk" | tee -a /etc/apk/repositories
           wget -P /etc/apk/keys/ https://cli-dist.keboola.com/apk/keboola.rsa.pub
           apk update
@@ -520,6 +537,7 @@ jobs:
         run: |
           docker run --rm homebrew/brew sh -c '
           set -e
+          set -o pipefail
           brew install keboola/keboola-cli/keboola-cli
           kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
           '
