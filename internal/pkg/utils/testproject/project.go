@@ -14,7 +14,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-resty/resty/v2"
 	"github.com/juju/fslock"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
@@ -189,10 +188,7 @@ func (p *Project) Clear() {
 		OnSuccess(func(response *client.Response) {
 			branchMetadataResponse := *response.Result().(*[]storageapi.Metadata)
 			for _, m := range branchMetadataResponse {
-				pool.Request(p.storageApi.NewRequest(resty.MethodDelete, "branch/{branchId}/metadata/{metadataId}").
-					SetPathParam("branchId", p.defaultBranch.Id.String()).
-					SetPathParam("metadataId", m.Id).
-					Send())
+				pool.Request(p.storageApi.DeleteBranchMetadataRequest(p.defaultBranch.Id, m.Id).Send())
 			}
 		}).
 		Send()

@@ -178,3 +178,11 @@ func (a *Api) AppendBranchMetadataRequest(branch *model.Branch) *client.Request 
 		SetPathParam("branchId", branch.Id.String()).
 		SetFormBody(formBody)
 }
+
+func (a *Api) DeleteBranchMetadataRequest(branchId model.BranchId, metaId string) *client.Request {
+	return a.
+		NewRequest(resty.MethodDelete, "branch/{branchId}/metadata/{metadataId}").
+		SetPathParam("branchId", branchId.String()).
+		SetPathParam("metadataId", metaId).
+		Send()
+}

@@ -127,6 +127,16 @@ func TestBranchApiCalls(t *testing.T) {
 	assert.Equal(t, "KBC.KaC.meta1", branchMetadata[0].Key)
 	assert.Equal(t, branchFoo.Metadata["KBC.KaC.meta1"], branchMetadata[0].Value)
 
+	// Delete metadata
+	assert.NoError(t, api.DeleteBranchMetadataRequest(branchFoo.Id, branchMetadata[0].Id).Send().Err())
+
+	// Check that metadata is deleted
+	req = api.ListBranchMetadataRequest(branchFoo.Id).Send()
+	assert.NoError(t, req.Err())
+	assert.NotNil(t, req.Result)
+	branchMetadata = *req.Result.(*[]storageapi.Metadata)
+	assert.Len(t, branchMetadata, 0)
+
 	// Delete branch
 	job3, err = api.DeleteBranch(branchFoo.BranchKey)
 	assert.NoError(t, err)
