@@ -47,6 +47,7 @@ env:
   APK_KEY_PUBLIC: ${{ secrets.APK_KEY_PUBLIC }}
 
   # Mac Os notarization
+  APPLE_USERNAME: "apple@keboola.com"
   APPLE_BUNDLE_ID: "com.keboola.kbc"
   APPLE_APP_IDENTITY: "Developer ID Application: Tomas Netrval"
 
