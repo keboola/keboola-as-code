@@ -341,7 +341,7 @@ jobs:
           MSI_FILE: ${{ steps.build_msi.outputs.msi_file }}
         shell: bash
         run: |
-          aws s3 cp "./build/package/windows/msi/${MSI_FILE}.msi" s3://${AWS_BUCKET_NAME}/msi/
+          aws s3 cp "./build/package/windows/msi/${MSI_FILE}" s3://${AWS_BUCKET_NAME}/msi/
           
           choco install checksum
           checksum=$(checksum -t=sha256 -f="./build/package/windows/msi/${MSI_FILE}")
