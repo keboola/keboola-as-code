@@ -67,34 +67,43 @@ func TestStepsGroup_ValidateSelectedSteps(t *testing.T) {
 
 	g := StepsGroup{
 		Description: "description",
-		Required:    "atLeastOne",
+		Required:    requiredAtLeastOne,
 	}
-	assert.NoError(t, g.ValidateStepsCount(2))
-	err := g.ValidateStepsCount(0)
+	assert.NoError(t, g.ValidateStepsCount(10, 2))
+	err := g.ValidateStepsCount(10, 0)
 	assert.Error(t, err)
 	assert.Equal(t, "at least one step must be selected", err.Error())
 
 	g = StepsGroup{
 		Description: "description",
-		Required:    "zeroOrOne",
+		Required:    requiredZeroOrOne,
 	}
-	assert.NoError(t, g.ValidateStepsCount(0))
-	assert.NoError(t, g.ValidateStepsCount(1))
-	err = g.ValidateStepsCount(2)
+	assert.NoError(t, g.ValidateStepsCount(10, 0))
+	assert.NoError(t, g.ValidateStepsCount(10, 1))
+	err = g.ValidateStepsCount(10, 2)
 	assert.Error(t, err)
 	assert.Equal(t, "zero or one step must be selected", err.Error())
 
 	g = StepsGroup{
 		Description: "description",
-		Required:    "exactlyOne",
+		Required:    requiredExactlyOne,
 	}
-	assert.NoError(t, g.ValidateStepsCount(1))
-	err = g.ValidateStepsCount(0)
+	assert.NoError(t, g.ValidateStepsCount(10, 1))
+	err = g.ValidateStepsCount(10, 0)
 	assert.Error(t, err)
 	assert.Equal(t, "exactly one step must be selected", err.Error())
-	err = g.ValidateStepsCount(2)
+	err = g.ValidateStepsCount(10, 2)
 	assert.Error(t, err)
 	assert.Equal(t, "exactly one step must be selected", err.Error())
+
+	g = StepsGroup{
+		Description: "description",
+		Required:    requiredAll,
+	}
+	assert.NoError(t, g.ValidateStepsCount(10, 10))
+	err = g.ValidateStepsCount(10, 9)
+	assert.Error(t, err)
+	assert.Equal(t, "all steps (10) must be selected", err.Error())
 }
 
 func TestStepsGroups_Validate_DuplicateInputs(t *testing.T) {

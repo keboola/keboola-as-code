@@ -62,7 +62,7 @@ type Values []Value
 type Value struct {
 	Id      string
 	Value   interface{}
-	Skipped bool // the input was skipped and the default value was used
+	Skipped bool // the input was skipped, [showIf=false OR step has been skipped], the default value was used
 }
 
 type Input struct {

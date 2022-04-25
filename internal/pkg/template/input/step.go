@@ -131,6 +131,7 @@ const (
 	requiredAtLeastOne            = "atLeastOne"
 	requiredExactlyOne            = "exactlyOne"
 	requiredZeroOrOne             = "zeroOrOne"
+	requiredAllDescription        = "all steps (%d) must be selected"
 	requiredAtLeastOneDescription = "at least one step must be selected"
 	requiredExactlyOneDescription = "exactly one step must be selected"
 	requiredZeroOrOneDescription  = "zero or one step must be selected"
@@ -141,7 +142,10 @@ func (g StepsGroup) AreStepsSelectable() bool {
 		(len(g.Steps) > 1 || (g.Required != requiredAtLeastOne && g.Required != requiredExactlyOne))
 }
 
-func (g StepsGroup) ValidateStepsCount(selected int) error {
+func (g StepsGroup) ValidateStepsCount(all, selected int) error {
+	if g.Required == requiredAll && selected < all {
+		return fmt.Errorf(requiredAllDescription, all)
+	}
 	if g.Required == requiredAtLeastOne && selected < 1 {
 		return fmt.Errorf(requiredAtLeastOneDescription)
 	}

@@ -1,0 +1,7 @@
+Error:
+  - steps group 1 "Choose one of the eshop platforms" is invalid:
+    - exactly one step must be selected
+    - number of selected steps (2) is incorrect
+    - in the inputs JSON file, these steps are defined:
+      - Shopify, inputs: shopify-shop-name
+      - Shoptet, inputs: shoptet-username, shoptet-password

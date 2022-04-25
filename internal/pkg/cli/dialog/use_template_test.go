@@ -1,6 +1,8 @@
 package dialog_test
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -558,4 +560,192 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 			{Id: "input4", Value: "value for input 4"},
 		},
 	}, output)
+}
+
+func TestAskUseTemplate_InputsFromFile(t *testing.T) {
+	t.Parallel()
+
+	// Create file with inputs
+	tempDir := t.TempDir()
+	inputsFile := `{"input1": "A", "input2": "B", "input4": "C"}` // input 3 is missing
+	inputsFilePath := filepath.Join(tempDir, "my-inputs.json")    // nolint: forbidigo
+	assert.NoError(t, os.WriteFile(inputsFilePath, []byte(inputsFile), 0o600))
+
+	// Test dependencies
+	dialog, _ := createDialogs(t, false)
+	d := dependencies.NewTestContainer()
+	d.SetFs(testfs.MinimalProjectFs(t))
+	d.Options().Set("branch", "123") // see MinimalProjectFs
+	d.Options().Set("inputs-file", inputsFilePath)
+	_, httpTransport := d.UseMockedStorageApi()
+	testapi.AddMockedComponents(httpTransport)
+	projectState, err := d.LocalProjectState(loadState.Options{LoadLocalState: true})
+	assert.NoError(t, err)
+
+	// Run
+	stepsGroups := input.StepsGroups{
+		{
+			Description: "Please select which steps you want to fill.",
+			Required:    "all", // <<<<<<<<<<<
+			Steps: []input.Step{
+				{
+					Icon:        "common:settings",
+					Name:        "Step 1",
+					Description: "Step Description",
+					Inputs: []input.Input{
+						{
+							Id:          "input1",
+							Name:        "input1",
+							Description: "...",
+							Type:        "string",
+							Kind:        "input",
+						},
+					},
+				},
+				{
+					Icon:        "common:settings",
+					Name:        "Step 2",
+					Description: "Step Description",
+					Inputs: []input.Input{
+						{
+							Id:          "input2",
+							Name:        "input2",
+							Description: "...",
+							Type:        "string",
+							Kind:        "input",
+						},
+					},
+				},
+				{
+					Icon:        "common:settings",
+					Name:        "Step 3",
+					Description: "Step Description",
+					Inputs: []input.Input{
+						{
+							Id:          "input3",
+							Name:        "input3",
+							Description: "...",
+							Type:        "string",
+							Kind:        "input",
+							Default:     "default value",
+						},
+						{
+							Id:          "input4",
+							Name:        "input4",
+							Description: "...",
+							Type:        "string",
+							Kind:        "input",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	output, err := dialog.AskUseTemplateOptions(projectState, stepsGroups, d.Options())
+	assert.NoError(t, err)
+
+	// Assert
+	assert.Equal(t, useTemplate.Options{
+		TargetBranch: model.BranchKey{Id: 123},
+		Inputs: template.InputsValues{
+			{Id: "input1", Value: "A"},
+			{Id: "input2", Value: "B"},
+			{Id: "input3", Value: "default value"},
+			{Id: "input4", Value: "C"},
+		},
+	}, output)
+}
+
+func TestAskUseTemplate_InputsFromFile_InvalidStepsCount(t *testing.T) {
+	t.Parallel()
+
+	// Create file with inputs
+	tempDir := t.TempDir()
+	inputsFile := `{"input1": "A", "input3": "B", "input4": "C"}` // input 2 is missing
+	inputsFilePath := filepath.Join(tempDir, "my-inputs.json")    // nolint: forbidigo
+	assert.NoError(t, os.WriteFile(inputsFilePath, []byte(inputsFile), 0o600))
+
+	// Test dependencies
+	dialog, _ := createDialogs(t, false)
+	d := dependencies.NewTestContainer()
+	d.SetFs(testfs.MinimalProjectFs(t))
+	d.Options().Set("branch", "123") // see MinimalProjectFs
+	d.Options().Set("inputs-file", inputsFilePath)
+	_, httpTransport := d.UseMockedStorageApi()
+	testapi.AddMockedComponents(httpTransport)
+	projectState, err := d.LocalProjectState(loadState.Options{LoadLocalState: true})
+	assert.NoError(t, err)
+
+	// Run
+	stepsGroups := input.StepsGroups{
+		{
+			Description: "Please select which steps you want to fill.",
+			Required:    "all", // <<<<<<<<<<<
+			Steps: []input.Step{
+				{
+					Icon:        "common:settings",
+					Name:        "Step 1",
+					Description: "Step Description",
+					Inputs: []input.Input{
+						{
+							Id:          "input1",
+							Name:        "input1",
+							Description: "...",
+							Type:        "string",
+							Kind:        "input",
+						},
+					},
+				},
+				{
+					Icon:        "common:settings",
+					Name:        "Step 2",
+					Description: "Step Description",
+					Inputs: []input.Input{
+						{
+							Id:          "input2",
+							Name:        "input2",
+							Description: "...",
+							Type:        "string",
+							Kind:        "input",
+						},
+					},
+				},
+				{
+					Icon:        "common:settings",
+					Name:        "Step 3",
+					Description: "Step Description",
+					Inputs: []input.Input{
+						{
+							Id:          "input3",
+							Name:        "input3",
+							Description: "...",
+							Type:        "string",
+							Kind:        "input",
+							Default:     "default value",
+						},
+						{
+							Id:          "input4",
+							Name:        "input4",
+							Description: "...",
+							Type:        "string",
+							Kind:        "input",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	_, err = dialog.AskUseTemplateOptions(projectState, stepsGroups, d.Options())
+	expectedErr := `
+steps group 1 "Please select which steps you want to fill." is invalid:
+  - all steps (3) must be selected
+  - number of selected steps (2) is incorrect
+  - in the inputs JSON file, these steps are defined:
+    - Step 1, inputs: input1
+    - Step 3, inputs: input3, input4
+`
+	assert.Error(t, err)
+	assert.Equal(t, strings.Trim(expectedErr, "\n"), err.Error())
 }
