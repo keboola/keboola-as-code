@@ -71,6 +71,7 @@ func (p *Project) snapshot(snapshot *fixtures.ProjectSnapshot, configs map[strin
 				b.Name = branch.Name
 				b.Description = branch.Description
 				b.IsDefault = branch.IsDefault
+				b.Metadata = make(map[string]string)
 				branchesMap[branch.Id] = b
 				configsMap[branch.Id] = make(map[model.ConfigKey]*fixtures.Config)
 				metadataMap[branch.Id] = make(map[model.ConfigKey]*map[string]string)
@@ -116,7 +117,7 @@ func (p *Project) snapshot(snapshot *fixtures.ProjectSnapshot, configs map[strin
 						for _, m := range branchMetadataResponse {
 							branchMetadataMap[m.Key] = m.Value
 						}
-						branch.Metadata = branchMetadataMap
+						b.Metadata = branchMetadataMap
 					}).
 					Send()
 				pool.

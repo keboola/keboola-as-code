@@ -56,6 +56,7 @@ func TestLoadRemoteStateAllowedBranches(t *testing.T) {
 				Name:        "Foo",
 				Description: "Foo branch",
 				IsDefault:   false,
+				Metadata:    make(map[string]string),
 			},
 			BranchManifest: &model.BranchManifest{
 				BranchKey: model.BranchKey{
@@ -82,6 +83,7 @@ func complexRemoteExpectedBranches(envs *env.Map) []*model.BranchState {
 				Name:        "Bar",
 				Description: "Bar branch",
 				IsDefault:   false,
+				Metadata:    make(map[string]string),
 			},
 			// Generated manifest
 			BranchManifest: &model.BranchManifest{
@@ -104,6 +106,7 @@ func complexRemoteExpectedBranches(envs *env.Map) []*model.BranchState {
 				Name:        "Foo",
 				Description: "Foo branch",
 				IsDefault:   false,
+				Metadata:    make(map[string]string),
 			},
 			// Generated manifest
 			BranchManifest: &model.BranchManifest{
@@ -126,6 +129,7 @@ func complexRemoteExpectedBranches(envs *env.Map) []*model.BranchState {
 				Name:        "Main",
 				Description: "Main branch",
 				IsDefault:   true,
+				Metadata:    make(map[string]string),
 			},
 			// Generated manifest
 			BranchManifest: &model.BranchManifest{

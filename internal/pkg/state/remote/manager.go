@@ -308,8 +308,13 @@ func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, object model.
 	setMetadata := !exists || changedFields.Has("metadata")
 	var setMetadataReq *client.Request
 	if setMetadata {
-		changedFields.Remove("metadata")
 		setMetadataReq = u.api.AppendMetadataRequest(object)
+		changedFields.Remove("metadata")
+		// If there is no other change, send the request and return
+		if len(changedFields) == 0 {
+			setMetadataReq.Send()
+			return nil
+		}
 	}
 
 	// Create or update

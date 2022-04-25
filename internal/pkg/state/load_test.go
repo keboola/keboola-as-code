@@ -68,6 +68,7 @@ func TestLoadState(t *testing.T) {
 				Name:        "Main",
 				Description: "Main branch",
 				IsDefault:   true,
+				Metadata:    make(map[string]string),
 			},
 			Local: &model.Branch{
 				BranchKey: model.BranchKey{
@@ -76,6 +77,7 @@ func TestLoadState(t *testing.T) {
 				Name:        "Main",
 				Description: "Main branch",
 				IsDefault:   true,
+				Metadata:    make(map[string]string),
 			},
 			BranchManifest: &model.BranchManifest{
 				RecordState: model.RecordState{
