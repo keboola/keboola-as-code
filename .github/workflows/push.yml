@@ -46,6 +46,9 @@ env:
   APK_KEY_PRIVATE: ${{ secrets.APK_KEY_PRIVATE }}
   APK_KEY_PUBLIC: ${{ secrets.APK_KEY_PUBLIC }}
 
+  # WinGet packages
+  WINGET_PACKAGES_REPO_FORK: "JakubMatejka/winget-pkgs"
+
   # Mac Os notarization
   APPLE_USERNAME: "apple@keboola.com"
   APPLE_BUNDLE_ID: "com.keboola.kbc"
@@ -439,7 +442,16 @@ jobs:
           choco apikey -k $env:CHOCOLATEY_KEY -s https://push.chocolatey.org/
           choco pack keboola-cli.nuspec
           choco push keboola-cli.$env:VERSION.nupkg -s https://push.chocolatey.org
-      - name: Submit package to Winget Repository
+      - name: Update Winget Repository fork
+        uses: TobKed/github-forks-sync-action@master
+        with:
+          github_token: ${{ secrets.WINGET_RELEASE_GITHUB_PERSONAL_ACCESS_TOKEN }}
+          upstream_repository: microsoft/winget-pkgs
+          target_repository: ${{ env.WINGET_PACKAGES_REPO_FORK }}
+          upstream_branch: master
+          target_branch: master
+          force: true
+      - name: Submit package to Winget Repository (create PR)
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.WINGET_RELEASE_GITHUB_PERSONAL_ACCESS_TOKEN }}
