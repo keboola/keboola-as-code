@@ -100,4 +100,4 @@ require (
 	sigs.k8s.io/yaml v1.2.0 // indirect
 )
 
-require github.com/davecgh/go-spew v1.1.1 // indirect
+require github.com/davecgh/go-spew v1.1.1

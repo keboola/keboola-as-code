@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"sort"
 	"strconv"
 
@@ -29,6 +30,7 @@ const (
 	SchedulerTargetConfigurationIdKey = `configurationId`
 	OrchestratorPhasesContentKey      = `phases`
 	OrchestratorTasksContentKey       = `tasks`
+	TemplatesInstancesMetaKey         = `KBC.KAC.templates.instances`
 )
 
 type Object interface {
@@ -114,13 +116,62 @@ type TokenOwner struct {
 	Name string `json:"name"`
 }
 
+type BranchMetadata map[string]string
+
+type TemplateUsageRecord struct {
+	InstanceId string `json:"instanceId"`
+	TemplateId string `json:"templateId"`
+	Version    string `json:"version"`
+}
+type TemplateUsageRecords []TemplateUsageRecord
+
+func (m BranchMetadata) AddTemplateUsage(instanceId string, templateId string, version string) error {
+	r := TemplateUsageRecord{
+		InstanceId: instanceId,
+		TemplateId: templateId,
+		Version:    version,
+	}
+	instances, err := m.TemplatesUsages()
+	if err != nil {
+		return err
+	}
+	instances = append(instances, r)
+	encoded, err := json.EncodeString(instances, false)
+	if err != nil {
+		return fmt.Errorf(`metadata "%s" are not in valid format: %w`, TemplatesInstancesMetaKey, err)
+	}
+	m[TemplatesInstancesMetaKey] = encoded
+	return nil
+}
+
+func (m BranchMetadata) TemplatesUsages() (TemplateUsageRecords, error) {
+	instances := &TemplateUsageRecords{}
+	instancesEncoded, found := m[TemplatesInstancesMetaKey]
+	if !found {
+		return *instances, nil
+	}
+	err := json.DecodeString(instancesEncoded, instances)
+	if err != nil {
+		return nil, fmt.Errorf(`metadata "%s" are not in valid format: %w`, TemplatesInstancesMetaKey, err)
+	}
+	return *instances, nil
+}
+
+func (m BranchMetadata) ToOrderedMap() *orderedmap.OrderedMap {
+	res := orderedmap.New()
+	for k, v := range m {
+		res.Set(k, v)
+	}
+	return res
+}
+
 // Branch https://keboola.docs.apiary.io/#reference/development-branches/branches/list-branches
 type Branch struct {
 	BranchKey
-	Name        string            `json:"name" validate:"required" diff:"true" metaFile:"true"`
-	Description string            `json:"description" diff:"true" descriptionFile:"true"`
-	IsDefault   bool              `json:"isDefault" diff:"true" metaFile:"true"`
-	Metadata    map[string]string `json:"-" validate:"dive" diff:"true"`
+	Name        string         `json:"name" validate:"required" diff:"true" metaFile:"true"`
+	Description string         `json:"description" diff:"true" descriptionFile:"true"`
+	IsDefault   bool           `json:"isDefault" diff:"true" metaFile:"true"`
+	Metadata    BranchMetadata `json:"-" validate:"dive" diff:"true"`
 }
 
 // Config https://keboola.docs.apiary.io/#reference/components-and-configurations/component-configurations/list-configurations

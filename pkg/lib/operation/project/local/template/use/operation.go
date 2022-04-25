@@ -111,6 +111,15 @@ func Run(projectState *project.State, tmpl *template.Template, o Options, d depe
 		return err
 	}
 
+	// Store template information in branch metadata
+	branchState, _ := projectState.Get(o.TargetBranch)
+	targetBranch := branchState.LocalState().(*model.Branch)
+	version := tmpl.Version()
+	if err := targetBranch.Metadata.AddTemplateUsage(instanceId, tmpl.TemplateId(), version.String()); err != nil {
+		return err
+	}
+	branchState.Manifest().(*model.BranchManifest).Metadata = targetBranch.Metadata.ToOrderedMap()
+
 	// Encrypt values
 	if err := encrypt.Run(projectState, encrypt.Options{DryRun: false, LogEmpty: false}, d); err != nil {
 		return err
