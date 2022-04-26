@@ -108,6 +108,9 @@ func (r *Request) SetJsonBody(body map[string]string) *Request {
 }
 
 func (r *Request) Send() *Request {
+	if r.sent {
+		panic(fmt.Errorf("the request has already been sent"))
+	}
 	r.sender.Send(r)
 	return r
 }

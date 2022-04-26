@@ -315,6 +315,29 @@ func TestOnError(t *testing.T) {
 	assert.Equal(t, 1+RetryCount, httpTransport.GetCallCountInfo()["GET https://example.com/error"])
 }
 
+func TestAlreadySent(t *testing.T) {
+	t.Parallel()
+	client, httpTransport, logger := getMockedClientAndLogs(t, false)
+	httpTransport.RegisterResponder("GET", `https://example.com`, httpmock.NewStringResponder(200, `test`))
+
+	// The request is sent first time - OK
+	request := client.NewRequest(resty.MethodGet, "https://example.com")
+	pool1 := client.NewPool(logger)
+	pool1.Request(request).Send()
+	assert.NoError(t, pool1.StartAndWait())
+
+	// Register request second time - ERROR
+	pool2 := client.NewPool(logger)
+	assert.PanicsWithError(t, "the request has already been sent", func() {
+		pool2.Request(request)
+	})
+
+	// Send request second time - ERROR
+	assert.PanicsWithError(t, "the request has already been sent", func() {
+		request.Send()
+	})
+}
+
 func TestSendWasNotCalled(t *testing.T) {
 	t.Parallel()
 	client, _, logger := getMockedClientAndLogs(t, false)
