@@ -12,7 +12,10 @@
       "branch": {
         "name": "foo",
         "description": "",
-        "isDefault": false
+        "isDefault": false,
+        "metadata": {
+          "KBC.KaC.branch-meta": "val1"
+        }
       },
       "configs": [
         {

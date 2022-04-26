@@ -104,18 +104,12 @@ type (
 	ConfigMetadataResponseItem struct {
 		ComponentId model.ComponentId `json:"idComponent"`
 		ConfigId    model.ConfigId    `json:"configurationId"`
-		Metadata    []ConfigMetadata  `json:"metadata"`
-	}
-	ConfigMetadata struct {
-		Id        string `json:"id"`
-		Key       string `json:"key"`
-		Value     string `json:"value"`
-		Timestamp string `json:"timestamp"`
+		Metadata    []Metadata        `json:"metadata"`
 	}
 )
 
-func (c ConfigMetadataResponse) MetadataMap(branchId model.BranchId) map[model.ConfigKey][]ConfigMetadata {
-	result := make(map[model.ConfigKey][]ConfigMetadata)
+func (c ConfigMetadataResponse) MetadataMap(branchId model.BranchId) map[model.ConfigKey][]Metadata {
+	result := make(map[model.ConfigKey][]Metadata)
 	for _, metadataWrapper := range c {
 		configKey := model.ConfigKey{BranchId: branchId, ComponentId: metadataWrapper.ComponentId, Id: metadataWrapper.ConfigId}
 		result[configKey] = metadataWrapper.Metadata

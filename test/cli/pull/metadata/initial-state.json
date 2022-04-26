@@ -6,7 +6,10 @@
     {
       "branch": {
         "name": "Main",
-        "isDefault": true
+        "isDefault": true,
+        "metadata": {
+          "KBC.KaC.branch-meta": "val1"
+        }
       }
     }
   ],

@@ -1,4 +1,5 @@
 Plan for "push" operation:
+  * B foo | changed: metadata
   * C foo/extractor/ex-generic-v2/without-rows | changed: metadata
   × C main/extractor/ex-generic-v2/empty
 Push done.

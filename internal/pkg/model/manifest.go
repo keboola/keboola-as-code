@@ -66,6 +66,7 @@ type BranchManifest struct {
 	RecordState `json:"-"`
 	BranchKey
 	Paths
+	Metadata *orderedmap.OrderedMap `json:"metadata,omitempty"`
 }
 
 type ConfigManifest struct {
@@ -273,6 +274,17 @@ func (c *ConfigManifest) MetadataMap() map[string]string {
 	if c.Metadata != nil {
 		for _, key := range c.Metadata.Keys() {
 			val, _ := c.Metadata.Get(key)
+			metadata[key] = val.(string)
+		}
+	}
+	return metadata
+}
+
+func (b *BranchManifest) MetadataMap() map[string]string {
+	metadata := make(map[string]string)
+	if b.Metadata != nil {
+		for _, key := range b.Metadata.Keys() {
+			val, _ := b.Metadata.Get(key)
 			metadata[key] = val.(string)
 		}
 	}
