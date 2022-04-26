@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/hashicorp/go-multierror"
+	"github.com/umisama/go-regexpcache"
 )
 
 type multiError = multierror.Error
@@ -19,33 +20,25 @@ type MultiError struct {
 
 type NestedError struct {
 	*MultiError
-	msg string
-}
-
-func (e *NestedError) Error() (out string) {
-	l := e.MultiError.Len()
-
-	switch {
-	case l == 0:
-		out = e.msg
-	case l == 1:
-		out = e.msg + `: ` + e.MultiError.Error()
-	}
-
-	// If there is > 1 error or the msg is long,
-	// then break line and create bullet list
-	firstLine := strings.SplitN(out, "\n", 2)[0]
-	if l > 1 || len(firstLine) > 60 {
-		out = e.msg + ":\n" + prefixEachLine("  - ", e.MultiError.Error())
-	}
-
-	return out
+	Msg string
 }
 
 func NewMultiError() *MultiError {
 	e := &MultiError{multiError: &multierror.Error{}, lock: &sync.Mutex{}}
-	e.ErrorFormat = formatError
+	e.ErrorFormat = NewErrorFormatter().multiErrFormatter
 	return e
+}
+
+func PrefixError(msg string, err error) *NestedError {
+	nested := NewMultiError()
+	if !errors.As(err, &nested) {
+		nested.Append(err)
+	}
+
+	return &NestedError{
+		MultiError: nested,
+		Msg:        msg,
+	}
 }
 
 // Append error.
@@ -65,51 +58,84 @@ func (e *MultiError) AppendWithPrefix(prefix string, err error) {
 	e.Append(PrefixError(prefix, err))
 }
 
-func PrefixError(msg string, err error) *NestedError {
-	nested := NewMultiError()
-	if !errors.As(err, &nested) {
-		nested.Append(err)
-	}
+func (e *NestedError) Error() (out string) {
+	return e.ErrorFormat([]error{e})
+}
 
-	return &NestedError{
-		MultiError: nested,
-		msg:        msg,
+type MsgFormatFunc func(string) string
+
+type ErrorFormatter struct {
+	multiErrFormatter multierror.ErrorFormatFunc
+	errorMsgFormatter MsgFormatFunc
+}
+
+func NewErrorFormatter() *ErrorFormatter {
+	f := &ErrorFormatter{}
+	f.multiErrFormatter = multiErrFormatter(f)               // default
+	f.errorMsgFormatter = func(s string) string { return s } // default nop
+	return f
+}
+
+func (f *ErrorFormatter) MultiErrorFormatter(fn multierror.ErrorFormatFunc) {
+	f.multiErrFormatter = fn
+}
+
+func (f *ErrorFormatter) ErrorMessageFormatter(fn MsgFormatFunc) {
+	f.errorMsgFormatter = fn
+}
+
+// Format formats nested errors.
+func (f ErrorFormatter) Format(err error) string {
+	// nolint: errorlint
+	switch v := err.(type) {
+	case *MultiError:
+		return f.multiErrFormatter(v.Errors)
+	case *multierror.Error:
+		return f.multiErrFormatter(v.Errors)
+	case *NestedError:
+		l := v.MultiError.Len()
+		if l == 0 {
+			return f.errorMsgFormatter(v.Msg)
+		}
+
+		// If there is > 1 error or the msg is long,
+		// then break line and create bullet list
+		errStr := f.errorMsgFormatter(v.Msg+":") + " " + f.multiErrFormatter(v.Errors)
+		firstLine := strings.SplitN(errStr, "\n", 2)[0]
+		if l > 1 || len(firstLine) > 60 {
+			// Break line and force bullet list
+			errStr = f.errorMsgFormatter(v.Msg+":") + "\n" + prefixEachLine("  - ", f.multiErrFormatter(v.Errors))
+		}
+		return errStr
+	default:
+		return f.errorMsgFormatter(v.Error())
+	}
+}
+
+func multiErrFormatter(f *ErrorFormatter) multierror.ErrorFormatFunc {
+	return func(errors []error) string {
+		// Create bullet list if there are more than 1 error
+		var prefix string
+		if len(errors) <= 1 {
+			prefix = ``
+		} else {
+			prefix = `- `
+		}
+
+		// Format nested errors
+		var out strings.Builder
+		for _, err := range errors {
+			msg := strings.TrimRight(f.Format(err), "\n")
+			out.WriteString(prefixEachLine(prefix, msg))
+			out.WriteString("\n")
+		}
+		return strings.TrimRight(out.String(), "\n")
 	}
 }
 
 // prefixEachLine 1. use prefix only once, 2. keep indentation, see tests.
 func prefixEachLine(prefix, str string) string {
-	return regexp.
+	return regexpcache.
 		MustCompile(fmt.Sprintf(`((^|\n)(\s*)(%s)?\s*)`, regexp.QuoteMeta(strings.TrimSpace(prefix)))).
 		ReplaceAllString(str, fmt.Sprintf("${2}${3}%s", regexp.QuoteMeta(prefix)))
-}
-
-// formatError formats the nested errors.
-func formatError(errors []error) string {
-	// Prefix if there are more than 1 error
-	var prefix string
-	if len(errors) <= 1 {
-		prefix = ``
-	} else {
-		prefix = `- `
-	}
-
-	// Prefix each error, format nested errors
-	lines := make([]string, 0)
-	for _, err := range errors {
-		var errStr string
-		// nolint: errorlint
-		switch v := err.(type) {
-		case *MultiError:
-			errStr = prefixEachLine(prefix, formatError(v.Errors))
-		case *multierror.Error:
-			errStr = prefixEachLine(prefix, formatError(v.Errors))
-		default:
-			errStr = prefixEachLine(prefix, v.Error())
-		}
-
-		lines = append(lines, errStr)
-	}
-
-	return strings.Join(lines, "\n")
 }
