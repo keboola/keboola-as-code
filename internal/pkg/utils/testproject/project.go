@@ -188,7 +188,7 @@ func (p *Project) Clear() {
 		OnSuccess(func(response *client.Response) {
 			branchMetadataResponse := *response.Result().(*[]storageapi.Metadata)
 			for _, m := range branchMetadataResponse {
-				pool.Request(p.storageApi.DeleteBranchMetadataRequest(p.defaultBranch.Id, m.Id).Send())
+				pool.Request(p.storageApi.DeleteBranchMetadataRequest(p.defaultBranch.Id, m.Id)).Send()
 			}
 		}).
 		Send()

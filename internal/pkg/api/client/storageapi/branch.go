@@ -183,6 +183,5 @@ func (a *Api) DeleteBranchMetadataRequest(branchId model.BranchId, metaId string
 	return a.
 		NewRequest(resty.MethodDelete, "branch/{branchId}/metadata/{metadataId}").
 		SetPathParam("branchId", branchId.String()).
-		SetPathParam("metadataId", metaId).
-		Send()
+		SetPathParam("metadataId", metaId)
 }
