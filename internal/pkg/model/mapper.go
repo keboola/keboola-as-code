@@ -64,6 +64,10 @@ func (l *FilesLoader) GetByTag(tag string) []filesystem.File {
 	return l.loaded.GetByTag(tag)
 }
 
+func (l *FilesLoader) ReadSubDirs(fs filesystem.Fs, root string) ([]string, error) {
+	return l.fsLoader.ReadSubDirs(fs, root)
+}
+
 func (l *FilesLoader) addLoaded(file filesystem.File) {
 	if file == nil {
 		panic(fmt.Errorf(`file cannot be nil`))

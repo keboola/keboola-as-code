@@ -240,7 +240,7 @@ func (l *localLoader) phasesDirs() []string {
 	}
 
 	// Load all dir entries
-	dirs, err := filesystem.ReadSubDirs(l.ObjectsRoot(), l.phasesDir)
+	dirs, err := l.FileLoader().ReadSubDirs(l.ObjectsRoot(), l.phasesDir)
 	if err != nil {
 		l.errors.Append(fmt.Errorf(`cannot read orchestrator phases from "%s": %w`, l.phasesDir, err))
 		return nil
@@ -249,7 +249,7 @@ func (l *localLoader) phasesDirs() []string {
 }
 
 func (l *localLoader) tasksDirs(phase *model.Phase) []string {
-	dirs, err := filesystem.ReadSubDirs(l.ObjectsRoot(), phase.Path())
+	dirs, err := l.FileLoader().ReadSubDirs(l.ObjectsRoot(), phase.Path())
 	if err != nil {
 		l.errors.Append(fmt.Errorf(`cannot read orchestrator tasks from "%s": %w`, phase.Path(), err))
 		return nil

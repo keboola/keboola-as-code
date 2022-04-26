@@ -71,6 +71,7 @@ type FileLoader interface {
 	ReadJsonMapTo(file *FileDef, target interface{}, structTag string) (*JsonFile, bool, error)
 	ReadJsonNetFile(file *FileDef) (*JsonNetFile, error)
 	ReadJsonNetFileTo(file *FileDef, target interface{}) (*JsonNetFile, error)
+	ReadSubDirs(fs Fs, root string) ([]string, error)
 }
 
 func FromSlash(path string) string {

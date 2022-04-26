@@ -183,7 +183,7 @@ func (l *localLoader) blockDirs() []string {
 	}
 
 	// Load all dir entries
-	dirs, err := filesystem.ReadSubDirs(l.ObjectsRoot(), l.blocksDir)
+	dirs, err := l.FileLoader().ReadSubDirs(l.ObjectsRoot(), l.blocksDir)
 	if err != nil {
 		l.errors.Append(fmt.Errorf(`cannot read transformation blocks from "%s": %w`, l.blocksDir, err))
 		return nil
@@ -192,7 +192,7 @@ func (l *localLoader) blockDirs() []string {
 }
 
 func (l *localLoader) codeDirs(block *model.Block) []string {
-	dirs, err := filesystem.ReadSubDirs(l.ObjectsRoot(), block.Path())
+	dirs, err := l.FileLoader().ReadSubDirs(l.ObjectsRoot(), block.Path())
 	if err != nil {
 		l.errors.Append(fmt.Errorf(`cannot read transformation codes from "%s": %w`, block.Path(), err))
 		return nil

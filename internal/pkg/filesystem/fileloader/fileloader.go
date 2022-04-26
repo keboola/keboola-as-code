@@ -12,6 +12,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
+const (
+	KbcDirFileName  = "kbcdir.json"
+	KbcDirIsIgnored = "isIgnored"
+)
+
 // loadHandlerWithNext callback modifies file loading process.
 // In addition to filesystem.LoadHandler, it contains reference to the "next" handler.
 type loadHandlerWithNext func(def *filesystem.FileDef, fileType filesystem.FileType, next filesystem.LoadHandler) (filesystem.File, error)
@@ -144,6 +149,34 @@ func (l *loader) ReadJsonNetFileTo(def *filesystem.FileDef, target interface{}) 
 	}
 
 	return jsonNetFile, nil
+}
+
+// ReadSubDirs filter out ignored directories.
+func (l *loader) ReadSubDirs(fs filesystem.Fs, root string) ([]string, error) {
+	subDirs, err := filesystem.ReadSubDirs(fs, root)
+	if err != nil {
+		return nil, err
+	}
+	res := make([]string, 0)
+	for _, subDir := range subDirs {
+		// Ignore dirs marked with isIgnored flag
+		fileDef := filesystem.NewFileDef(filesystem.Join(root, subDir, KbcDirFileName))
+		// fileDef.AddTag(model.FileTypeJson)
+		if l.fs.Exists(fileDef.Path()) {
+			file, err := l.ReadJsonFile(fileDef)
+			if err != nil {
+				return nil, err
+			}
+			isIgnored, found := file.Content.Get(KbcDirIsIgnored)
+			if found {
+				if isIgnored.(bool) {
+					continue
+				}
+			}
+		}
+		res = append(res, subDir)
+	}
+	return res, nil
 }
 
 func formatFileError(def *filesystem.FileDef, err error) error {
