@@ -149,3 +149,39 @@ func (a *Api) DeleteBranchRequest(key model.BranchKey) *client.Request {
 	request.OnSuccess(waitForJob(a, request, job, nil))
 	return request
 }
+
+// ListBranchMetadataRequest https://keboola.docs.apiary.io/#reference/metadata/development-branch-metadata/list
+func (a *Api) ListBranchMetadataRequest(branchId model.BranchId) *client.Request {
+	var metadata []Metadata
+	return a.
+		NewRequest(resty.MethodGet, "branch/{branchId}/metadata").
+		SetPathParam("branchId", branchId.String()).
+		SetResult(metadata)
+}
+
+// AppendBranchMetadataRequest https://keboola.docs.apiary.io/#reference/metadata/development-branch-metadata/create-or-update
+func (a *Api) AppendBranchMetadataRequest(branch *model.Branch) *client.Request {
+	// Empty, we have nothing to append
+	if len(branch.Metadata) == 0 {
+		return nil
+	}
+
+	formBody := make(map[string]string)
+	i := 0
+	for k, v := range branch.Metadata {
+		formBody[fmt.Sprintf("metadata[%d][key]", i)] = k
+		formBody[fmt.Sprintf("metadata[%d][value]", i)] = v
+		i++
+	}
+	return a.
+		NewRequest(resty.MethodPost, "branch/{branchId}/metadata").
+		SetPathParam("branchId", branch.Id.String()).
+		SetFormBody(formBody)
+}
+
+func (a *Api) DeleteBranchMetadataRequest(branchId model.BranchId, metaId string) *client.Request {
+	return a.
+		NewRequest(resty.MethodDelete, "branch/{branchId}/metadata/{metadataId}").
+		SetPathParam("branchId", branchId.String()).
+		SetPathParam("metadataId", metaId)
+}

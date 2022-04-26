@@ -2,6 +2,7 @@ package project
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/branchmetadata"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/configmetadata"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/corefiles"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/defaultbucket"
@@ -38,6 +39,8 @@ func MappersFor(s *state.State, d dependencies) (mapper.Mappers, error) {
 		relations.NewMapper(s),
 		// Skip variables configurations that are not used in any configuration
 		ignore.NewMapper(s),
+		// Branch metadata
+		branchmetadata.NewMapper(s, d),
 		// Configurations metadata
 		configmetadata.NewMapper(s, d),
 	}, nil

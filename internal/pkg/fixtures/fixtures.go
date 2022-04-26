@@ -18,9 +18,10 @@ type ProjectSnapshot struct {
 }
 
 type Branch struct {
-	Name        string `json:"name" validate:"required"`
-	Description string `json:"description"`
-	IsDefault   bool   `json:"isDefault"`
+	Name        string            `json:"name" validate:"required"`
+	Description string            `json:"description"`
+	IsDefault   bool              `json:"isDefault"`
+	Metadata    map[string]string `json:"metadata,omitempty"`
 }
 
 type BranchState struct {
@@ -71,6 +72,7 @@ func (b *Branch) ToModel(defaultBranch *model.Branch) *model.Branch {
 	branch.Name = b.Name
 	branch.Description = b.Description
 	branch.IsDefault = b.IsDefault
+	branch.Metadata = b.Metadata
 	return branch
 }
 

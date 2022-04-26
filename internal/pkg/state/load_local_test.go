@@ -312,6 +312,7 @@ func complexLocalExpectedBranches() []*model.BranchState {
 				Name:        "Branch",
 				Description: "My branch",
 				IsDefault:   false,
+				Metadata:    make(map[string]string),
 			},
 			BranchManifest: &model.BranchManifest{
 				RecordState: model.RecordState{
@@ -338,6 +339,7 @@ func complexLocalExpectedBranches() []*model.BranchState {
 				Name:        "Main",
 				Description: "Main branch",
 				IsDefault:   true,
+				Metadata:    make(map[string]string),
 			},
 			BranchManifest: &model.BranchManifest{
 				RecordState: model.RecordState{

@@ -7,6 +7,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
+type Metadata struct {
+	Id        string `json:"id"`
+	Key       string `json:"key"`
+	Value     string `json:"value"`
+	Timestamp string `json:"timestamp"`
+}
+
 func (a *Api) CreateRequest(object interface{}) (*client.Request, error) {
 	switch v := object.(type) {
 	case *model.Branch:
@@ -53,7 +60,7 @@ func (a *Api) DeleteRequest(key model.Key) *client.Request {
 func (a *Api) AppendMetadataRequest(object interface{}) *client.Request {
 	switch v := object.(type) {
 	case *model.Branch:
-		return nil
+		return a.AppendBranchMetadataRequest(v)
 	case *model.ConfigWithRows:
 		return a.AppendConfigMetadataRequest(v.Config)
 	case *model.Config:

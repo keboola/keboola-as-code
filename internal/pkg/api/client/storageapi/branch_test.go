@@ -1,10 +1,13 @@
 package storageapi_test
 
 import (
+	"fmt"
+	"math/rand"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/http/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
@@ -110,6 +113,29 @@ func TestBranchApiCalls(t *testing.T) {
 	assert.NoError(t, err)
 	var encoded string
 	testhelper.AssertWildcards(t, expectedBranchesAll(), json.MustEncodeString(branches, true), "Unexpected branches state")
+
+	// Update metadata
+	branchFoo.Metadata = map[string]string{"KBC.KaC.meta1": fmt.Sprintf("%d", rand.Intn(100))}
+	assert.NoError(t, api.AppendBranchMetadataRequest(branchFoo).Send().Err())
+
+	// List metadata
+	req := api.ListBranchMetadataRequest(branchFoo.Id).Send()
+	assert.NoError(t, req.Err())
+	assert.NotNil(t, req.Result)
+	branchMetadata := *req.Result.(*[]storageapi.Metadata)
+	assert.Len(t, branchMetadata, 1)
+	assert.Equal(t, "KBC.KaC.meta1", branchMetadata[0].Key)
+	assert.Equal(t, branchFoo.Metadata["KBC.KaC.meta1"], branchMetadata[0].Value)
+
+	// Delete metadata
+	assert.NoError(t, api.DeleteBranchMetadataRequest(branchFoo.Id, branchMetadata[0].Id).Send().Err())
+
+	// Check that metadata is deleted
+	req = api.ListBranchMetadataRequest(branchFoo.Id).Send()
+	assert.NoError(t, req.Err())
+	assert.NotNil(t, req.Result)
+	branchMetadata = *req.Result.(*[]storageapi.Metadata)
+	assert.Len(t, branchMetadata, 0)
 
 	// Delete branch
 	job3, err = api.DeleteBranch(branchFoo.BranchKey)

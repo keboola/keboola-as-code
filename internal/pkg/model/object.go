@@ -117,9 +117,10 @@ type TokenOwner struct {
 // Branch https://keboola.docs.apiary.io/#reference/development-branches/branches/list-branches
 type Branch struct {
 	BranchKey
-	Name        string `json:"name" validate:"required" diff:"true" metaFile:"true"`
-	Description string `json:"description" diff:"true" descriptionFile:"true"`
-	IsDefault   bool   `json:"isDefault" diff:"true" metaFile:"true"`
+	Name        string            `json:"name" validate:"required" diff:"true" metaFile:"true"`
+	Description string            `json:"description" diff:"true" descriptionFile:"true"`
+	IsDefault   bool              `json:"isDefault" diff:"true" metaFile:"true"`
+	Metadata    map[string]string `json:"-" validate:"dive" diff:"true"`
 }
 
 // Config https://keboola.docs.apiary.io/#reference/components-and-configurations/component-configurations/list-configurations
@@ -298,6 +299,15 @@ func (r *ConfigRow) AddRelation(relation Relation) {
 func (c *Config) MetadataOrderedMap() *orderedmap.OrderedMap {
 	ordered := orderedmap.New()
 	for key, val := range c.Metadata {
+		ordered.Set(key, val)
+	}
+	ordered.SortKeys(sort.Strings)
+	return ordered
+}
+
+func (b *Branch) MetadataOrderedMap() *orderedmap.OrderedMap {
+	ordered := orderedmap.New()
+	for key, val := range b.Metadata {
 		ordered.Set(key, val)
 	}
 	ordered.SortKeys(sort.Strings)
