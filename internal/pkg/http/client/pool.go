@@ -63,6 +63,10 @@ func (p *Pool) SetContext(ctx context.Context) {
 
 // Request set request sender to pool.
 func (p *Pool) Request(request *Request) *Request {
+	if request.sent {
+		panic(fmt.Errorf("the request has already been sent"))
+	}
+
 	request.sender = p
 	p.requestsLock.Lock()
 	p.requests = append(p.requests, request)
