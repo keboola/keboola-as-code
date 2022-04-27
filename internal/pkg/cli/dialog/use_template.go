@@ -93,9 +93,9 @@ func (d *useTmplDialog) askInputs(stepsGroups input.StepsGroupsExt) error {
 			}
 		}
 
-		// Use default or empty value if we don't ask for the input
+		// Use empty value if we don't ask for the input
 		if !available {
-			return d.addInputValue(inputDef.DefaultOrEmpty(), inputDef, false)
+			return d.addInputValue(inputDef.Empty(), inputDef, false)
 		}
 
 		// Print info about step
