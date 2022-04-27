@@ -22,8 +22,6 @@ import (
 
 const inputsFileFlag = "inputs-file"
 
-type contextKey string
-
 type useTmplDialog struct {
 	*Dialogs
 	projectState  *project.State
@@ -240,7 +238,7 @@ func (d *useTmplDialog) askInput(inputDef *input.Input) error {
 				if err != nil {
 					return err
 				}
-				return inputDef.ValidateUserInput(value, d.context)
+				return inputDef.ValidateUserInput(value)
 			},
 			Default: cast.ToString(inputDef.Default),
 			Hidden:  inputDef.Kind == input.KindHidden,
@@ -272,7 +270,7 @@ func (d *useTmplDialog) askInput(inputDef *input.Input) error {
 			UseDefault:  true,
 			Validator: func(answerRaw interface{}) error {
 				answer := answerRaw.(survey.OptionAnswer)
-				return inputDef.ValidateUserInput(answer.Value, d.context)
+				return inputDef.ValidateUserInput(answer.Value)
 			},
 		}
 		if inputDef.Default != nil {
@@ -293,7 +291,7 @@ func (d *useTmplDialog) askInput(inputDef *input.Input) error {
 				for i, v := range answers {
 					values[i] = v.Value
 				}
-				return inputDef.ValidateUserInput(values, d.context)
+				return inputDef.ValidateUserInput(values)
 			},
 		}
 		// Default indices
@@ -329,14 +327,13 @@ func (d *useTmplDialog) addInputValue(value interface{}, inputDef *input.Input, 
 
 	// Validate
 	if isFiled {
-		if err := inputDef.ValidateUserInput(value, d.context); err != nil {
+		if err := inputDef.ValidateUserInput(value); err != nil {
 			return fmt.Errorf("invalid template input: %w", err)
 		}
 	}
 
 	// Add
 	inputValue := template.InputValue{Id: inputDef.Id, Value: value, Skipped: !isFiled}
-	d.context = context.WithValue(d.context, contextKey(inputDef.Id), value)
 	d.inputsValues[inputDef.Id] = value
 	d.out.Inputs = append(d.out.Inputs, inputValue)
 	return nil

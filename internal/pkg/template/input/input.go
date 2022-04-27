@@ -1,7 +1,6 @@
 package input
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 	"strings"
@@ -78,7 +77,7 @@ type Input struct {
 }
 
 // ValidateUserInput validates input from the template user using Input.Rules.
-func (i Input) ValidateUserInput(userInput interface{}, ctx context.Context) error {
+func (i Input) ValidateUserInput(userInput interface{}) error {
 	if err := i.Type.ValidateValue(reflect.ValueOf(userInput)); err != nil {
 		return fmt.Errorf("%s %w", i.Name, err)
 	}
@@ -98,5 +97,9 @@ func (i Input) DefaultOrEmpty() interface{} {
 	if i.Default != nil {
 		return i.Default
 	}
+	return i.Type.EmptyValue()
+}
+
+func (i Input) Empty() interface{} {
 	return i.Type.EmptyValue()
 }

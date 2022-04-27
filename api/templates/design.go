@@ -461,21 +461,21 @@ var StepPayload = Type("StepPayload", func() {
 	Description("Step with input values filled in by user.")
 	Attribute("id", String, "Unique ID of the step.", func() {
 		MinLength(1)
-		Example("g1-s1")
+		Example("g01-s01")
 	})
-	Attribute("values", ArrayOf(InputValue), "Input values.", func() {
+	Attribute("inputs", ArrayOf(InputValue), "Input values.", func() {
 		Example([]ExampleInputPayloadData{ExampleInputPayload1(), ExampleInputPayload2()})
 	})
-	Required("id", "values")
+	Required("id", "inputs")
 })
 
 var InputValue = Type("InputValue", func() {
 	Description("Input value filled in by user.")
 	Attribute("id", String, "Unique ID of the input.", func() {
 		MinLength(1)
-		Example("g1-s1")
+		Example("g01-s01")
 	})
-	Attribute("value", Any, "Input value filled in by user.", func() {
+	Attribute("value", Any, "Input value filled in by user in the required type.", func() {
 		Example("foo bar")
 	})
 	Required("id", "value")
@@ -646,7 +646,7 @@ var ValidationError = Type("ValidationError", func() {
 		Example("InvalidPayload")
 	})
 	Attribute("message", String, "Error message.", func() {
-		Example("Payload is not valid.")
+		Example("Inputs are not valid.")
 	})
 	Attribute("ValidationResult", ValidationResult)
 	Required("error", "message", "ValidationResult")
@@ -663,7 +663,7 @@ var ValidationResult = Type("ValidationResult", func() {
 var StepGroupValidationResult = Type("StepGroupValidationResult", func() {
 	Description("Validation Detail of the step group.")
 	Attribute("id", String, "Step group ID.", func() {
-		Example("g1")
+		Example("g01")
 	})
 	Attribute("valid", Boolean, "True if the required number of steps is configured and all inputs are valid.", func() {
 		Example(false)
@@ -678,7 +678,7 @@ var StepGroupValidationResult = Type("StepGroupValidationResult", func() {
 var StepValidationResult = Type("StepValidationResult", func() {
 	Description("Validation Detail of the step.")
 	Attribute("id", String, "Step ID.", func() {
-		Example("g1-s1")
+		Example("g01-s01")
 	})
 	Attribute("configured", Boolean, "True if the step was part of the sent payload.")
 	Attribute("valid", Boolean, "True if all inputs in the step are valid.")
@@ -712,7 +712,7 @@ var Inputs = Type("Inputs", func() {
 var StepGroup = Type("stepGroup", func() {
 	Description("Step group is a container for steps.")
 	Attribute("id", String, "Unique ID of the step group.", func() {
-		Example("g1")
+		Example("g01")
 	})
 	Attribute("description", String, "Description of the step group, a tooltip explaining what needs to be configured.", func() {
 		MinLength(1)
@@ -734,7 +734,7 @@ var Step = Type("step", func() {
 	Description("Step is a container for inputs.")
 	Attribute("id", String, "Unique ID of the step.", func() {
 		MinLength(1)
-		Example("g1-s1")
+		Example("g01-s01")
 	})
 	iconAttr()
 	Attribute("name", String, "Name of the step.", func() {
@@ -1022,18 +1022,18 @@ func ExampleVersions2() []ExampleVersionData {
 func ExampleStepGroups() []ExampleStepGroupData {
 	return []ExampleStepGroupData{
 		{
-			Id:          "g1",
+			Id:          "g01",
 			Description: "Choose one of the eshop platforms.",
 			Required:    "atLeastOne",
 			Step:        []ExampleStepData{ExampleStep1(), ExampleStep2()},
 		},
 		{
-			Id:          "g2",
+			Id:          "g02",
 			Description: "",
 			Required:    "all",
 			Step: []ExampleStepData{
 				{
-					Id:                "g2-s1",
+					Id:                "g02-s01",
 					Icon:              "common:download",
 					Name:              "Snowflake",
 					Description:       "Transformation.",
@@ -1044,12 +1044,12 @@ func ExampleStepGroups() []ExampleStepGroupData {
 			},
 		},
 		{
-			Id:          "g3",
+			Id:          "g03",
 			Description: "Select some destinations if you want.",
 			Required:    "optional",
 			Step: []ExampleStepData{
 				{
-					Id:                "g3-s1",
+					Id:                "g03-s01",
 					Icon:              "common:upload",
 					Name:              "Service 1",
 					Description:       "Some external service.",
@@ -1067,7 +1067,7 @@ func ExampleStepGroups() []ExampleStepGroupData {
 					},
 				},
 				{
-					Id:                "g3-s2",
+					Id:                "g03-s02",
 					Icon:              "common:upload",
 					Name:              "Maximum length step name",
 					Description:       "Maximum length desc lorem ipsum dolor sit amet consectetur.",
@@ -1085,7 +1085,7 @@ func ExampleStepGroups() []ExampleStepGroupData {
 					},
 				},
 				{
-					Id:                "g3-s3",
+					Id:                "g03-s03",
 					Icon:              "common:upload",
 					Name:              "Service 3",
 					Description:       "Some external service.",
@@ -1094,7 +1094,7 @@ func ExampleStepGroups() []ExampleStepGroupData {
 					Inputs:            []ExampleInputData{},
 				},
 				{
-					Id:                "g3-s4",
+					Id:                "g03-s04",
 					Icon:              "common:upload",
 					Name:              "Service 4",
 					Description:       "Some external service.",
@@ -1112,7 +1112,7 @@ func ExampleStepGroups() []ExampleStepGroupData {
 					},
 				},
 				{
-					Id:                "g3-s5",
+					Id:                "g03-s05",
 					Icon:              "common:upload",
 					Name:              "Service 5",
 					Description:       "Some external service.",
@@ -1136,7 +1136,7 @@ func ExampleStepGroups() []ExampleStepGroupData {
 
 func ExampleStep1() ExampleStepData {
 	return ExampleStepData{
-		Id:                "g1-s1",
+		Id:                "g01-s01",
 		Icon:              "common:download",
 		Name:              "Super Ecommerce",
 		Description:       "Sell online with the Super E-commerce website.",
@@ -1148,7 +1148,7 @@ func ExampleStep1() ExampleStepData {
 
 func ExampleStep2() ExampleStepData {
 	return ExampleStepData{
-		Id:                "g1-s2",
+		Id:                "g01-s02",
 		Icon:              "common:download",
 		Name:              "Other Ecommerce",
 		Description:       "Alternative ecommerce solution.",
@@ -1276,7 +1276,7 @@ func ExampleInputOptions() []ExampleInputOptionData {
 
 func ExampleStepPayload() ExampleStepPayloadData {
 	return ExampleStepPayloadData{
-		Id:     "g1-s1",
+		Id:     "g01-s01",
 		Inputs: []ExampleInputPayloadData{ExampleInputPayload1(), ExampleInputPayload2()},
 	}
 }
@@ -1300,12 +1300,12 @@ func ExampleValidationResult() interface{} {
 		Valid: false,
 		StepGroups: []ExampleGroupValidationResultData{
 			{
-				Id:    "g1",
+				Id:    "g01",
 				Valid: false,
 				Error: "All steps must be configured.",
 				Steps: []ExampleStepValidationResultData{
 					{
-						Id:         "g1-s1",
+						Id:         "g01-s01",
 						Configured: true,
 						Valid:      false,
 						Inputs: []ExampleInputValidationResultData{
@@ -1323,18 +1323,18 @@ func ExampleValidationResult() interface{} {
 				},
 			},
 			{
-				Id:    "g2",
+				Id:    "g02",
 				Valid: true,
 				Error: nil,
 				Steps: []ExampleStepValidationResultData{
 					{
-						Id:         "g2-s1",
+						Id:         "g02-s01",
 						Configured: false,
 						Valid:      true,
 						Inputs:     []ExampleInputValidationResultData{},
 					},
 					{
-						Id:         "g2-s2",
+						Id:         "g02-s02",
 						Configured: true,
 						Valid:      true,
 						Inputs: []ExampleInputValidationResultData{

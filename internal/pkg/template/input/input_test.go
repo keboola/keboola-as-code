@@ -17,16 +17,16 @@ func TestInput_ValidateUserInput(t *testing.T) {
 		Kind:        "input",
 		Rules:       "gte=5,lte=10",
 	}
-	err := input.ValidateUserInput(1, nil)
+	err := input.ValidateUserInput(1)
 	assert.Error(t, err)
 	assert.Equal(t, "input.id must be 5 or greater", err.Error())
 
-	err = input.ValidateUserInput("1", nil)
+	err = input.ValidateUserInput("1")
 	assert.Error(t, err)
 	assert.Equal(t, "input should be int, got string", err.Error())
 
 	assert.Error(t, err)
-	assert.NoError(t, input.ValidateUserInput(7, nil))
+	assert.NoError(t, input.ValidateUserInput(7))
 
 	input = Input{
 		Id:          "input.id",
@@ -35,10 +35,10 @@ func TestInput_ValidateUserInput(t *testing.T) {
 		Type:        "bool",
 		Kind:        "confirm",
 	}
-	err = input.ValidateUserInput(1, nil)
+	err = input.ValidateUserInput(1)
 	assert.Error(t, err)
 	assert.Equal(t, "input should be bool, got int", err.Error())
-	assert.NoError(t, input.ValidateUserInput(true, nil))
+	assert.NoError(t, input.ValidateUserInput(true))
 }
 
 func TestInput_Available(t *testing.T) {
