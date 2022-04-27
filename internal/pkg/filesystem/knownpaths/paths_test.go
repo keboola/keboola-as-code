@@ -2,6 +2,7 @@ package knownpaths_test
 
 import (
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -38,6 +39,24 @@ func TestKnownPathsIgnoredFile(t *testing.T) {
 	paths.MarkTracked("dir/.gitkeep")
 	assert.Equal(t, []string{`dir`}, paths.TrackedPaths())
 	assert.Empty(t, paths.UntrackedPaths())
+}
+
+func TestKnownPathsFilter(t *testing.T) {
+	t.Parallel()
+
+	paths, err := loadKnownPaths(t, "complex", WithFilter(func(path string) (bool, error) {
+		isIgnored := strings.Contains(path, "123-branch") || strings.Contains(path, "extractor")
+		return isIgnored, nil
+	}))
+
+	// All paths that contain "123-branch" or "extractor" are ignored.
+	// Compare result with result of the TestKnownPathsComplex.
+	assert.NoError(t, err)
+	assert.Equal(t, []string{
+		"main",
+		"main/description.md",
+		"main/meta.json",
+	}, paths.UntrackedPaths())
 }
 
 func TestKnownPathsComplex(t *testing.T) {
@@ -310,12 +329,12 @@ func TestKnownPathsUntrackedDirsFrom(t *testing.T) {
 	}, paths.UntrackedDirsFrom(`main/extractor`))
 }
 
-func loadKnownPaths(t *testing.T, fixture string) (*Paths, error) {
+func loadKnownPaths(t *testing.T, fixture string, options ...Option) (*Paths, error) {
 	t.Helper()
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filesystem.Dir(testFile)
 	projectDir := filesystem.Join(testDir, "..", "..", "fixtures", "local", fixture)
 	fs, err := aferofs.NewLocalFs(log.NewNopLogger(), projectDir, ".")
 	assert.NoError(t, err)
-	return New(fs)
+	return New(fs, options...)
 }
