@@ -173,7 +173,7 @@ func (l *loader) ReadSubDirs(fs filesystem.Fs, root string) ([]string, error) {
 // IsIgnored checks if the dir is ignored.
 func (l *loader) IsIgnored(path string) (bool, error) {
 	if !l.fs.IsDir(path) {
-		return false, fmt.Errorf("the path is not a directory")
+		return false, nil
 	}
 	fileDef := filesystem.NewFileDef(filesystem.Join(path, KbcDirFileName))
 	// fileDef.AddTag(model.FileTypeJson)
