@@ -7,6 +7,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/api/client/schedulerapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs/mountfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -85,30 +87,41 @@ type Template struct {
 	inputs       StepsGroups
 }
 
-func New(reference model.TemplateRef, template repository.TemplateRecord, version repository.VersionRecord, fs filesystem.Fs, d dependencies) (*Template, error) {
-	// Src dir
-	srcDir, err := fs.SubDirFs(SrcDirectory)
+func New(reference model.TemplateRef, template repository.TemplateRecord, version repository.VersionRecord, templateDir, commonDir filesystem.Fs, d dependencies) (*Template, error) {
+	// Mount <common> directory to:
+	//   template dir FS - used to load manifest, inputs, readme
+	//   src dir FS - objects root
+	mountPoint := mountfs.NewMountPoint(repository.CommonDirectoryMountPoint, commonDir)
+	templateDir, err := aferofs.NewMountFs(templateDir, mountPoint)
+	if err != nil {
+		return nil, err
+	}
+	srcDir, err := templateDir.SubDirFs(SrcDirectory)
+	if err != nil {
+		return nil, err
+	}
+	srcDir, err = aferofs.NewMountFs(srcDir, mountPoint)
 	if err != nil {
 		return nil, err
 	}
 
 	// Create struct
-	out := &Template{_reference: reference, template: template, version: version, deps: d, fs: fs, srcDir: srcDir}
+	out := &Template{_reference: reference, template: template, version: version, deps: d, fs: templateDir, srcDir: srcDir}
 
 	// Load manifest
-	out.manifestFile, err = LoadManifest(fs)
+	out.manifestFile, err = LoadManifest(templateDir)
 	if err != nil {
 		return nil, err
 	}
 
 	// Load inputs
-	out.inputs, err = LoadInputs(fs)
+	out.inputs, err = LoadInputs(templateDir)
 	if err != nil {
 		return nil, err
 	}
 
 	// Load readme
-	out.readme, err = LoadReadme(fs)
+	out.readme, err = LoadReadme(templateDir)
 	if err != nil {
 		return nil, err
 	}
