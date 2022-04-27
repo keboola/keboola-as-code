@@ -153,3 +153,18 @@ func TestNamingNormalizeName(t *testing.T) {
 	assert.Equal(t, "a-b-cd-e-f-x-y-z", NormalizeName("a B cd-eF   x_y___z__"))
 	assert.Equal(t, "ex-generic-v2", NormalizeName("ex-generic-v2"))
 }
+
+func TestFirstN(t *testing.T) {
+	t.Parallel()
+	assert.Equal(t, "", FirstN("", 0))
+	assert.Equal(t, "", FirstN("", 100))
+	assert.Equal(t, "", FirstN("a", 0))
+	assert.Equal(t, "a", FirstN("a", 100))
+	assert.Equal(t, "", FirstN("abcde", 0))
+	assert.Equal(t, "a", FirstN("abcde", 1))
+	assert.Equal(t, "ab", FirstN("abcde", 2))
+	assert.Equal(t, "abc", FirstN("abcde", 3))
+	assert.Equal(t, "abcd", FirstN("abcde", 4))
+	assert.Equal(t, "abcde", FirstN("abcde", 5))
+	assert.Equal(t, "abcde", FirstN("abcde", 6))
+}

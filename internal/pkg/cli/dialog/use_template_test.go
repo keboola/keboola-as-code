@@ -555,7 +555,7 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 		TargetBranch: model.BranchKey{Id: 123},
 		Inputs: template.InputsValues{
 			{Id: "input1", Value: "", Skipped: true},
-			{Id: "input2", Value: "default value", Skipped: true},
+			{Id: "input2", Value: "", Skipped: true},
 			{Id: "input3", Value: "value for input 3"},
 			{Id: "input4", Value: "value for input 4"},
 		},

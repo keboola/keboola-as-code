@@ -113,3 +113,10 @@ func NormalizeHost(host string) string {
 	host = strings.TrimPrefix(host, "http://")
 	return host
 }
+
+func FirstN(str string, n int) string {
+	if n > len(str) {
+		n = len(str)
+	}
+	return str[0:n]
+}
