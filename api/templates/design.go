@@ -44,7 +44,9 @@ var _ = API("templates", func() {
 var _ = Service("templates", func() {
 	Description("Service for applying templates to Keboola projects.")
 	// CORS
-	cors.Origin("*", func() { cors.Headers("X-StorageApi-Token") })
+	cors.Origin("*", func() {
+		cors.Headers("Content-Type", "X-StorageApi-Token")
+	})
 
 	// Set authentication by token to all endpoints without NoSecurity()
 	Security(tokenSecurity)
