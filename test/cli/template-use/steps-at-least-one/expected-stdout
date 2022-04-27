@@ -1,8 +1,3 @@
 New objects from "keboola/my-template-id/v1" template:
-  + C main/extractor/ex-generic-v2/shopify
   + C main/extractor/ex-generic-v2/shoptet
-  + C main/extractor/keboola.ex-aws-s3/om-default-bucket
-  + C main/transformation/keboola.python-transformation-v2/python-transformation
-  + C main/transformation/keboola.snowflake-transformation/snowflake-transformation
-  + C main/writer/keboola.wr-db-mysql/im-default-bucket
 Template "keboola/my-template-id/v1" has been applied, instance ID: %s

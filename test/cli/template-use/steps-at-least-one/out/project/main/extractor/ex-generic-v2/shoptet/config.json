@@ -1,5 +1,7 @@
 {
   "parameters": {
+    "instanceIdLength": 25,
+    "instanceIdShortLength": 8,
     "password": "pass",
     "username": "user"
   }
