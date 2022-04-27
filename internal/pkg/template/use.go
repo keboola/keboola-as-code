@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet/fsimporter"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacevalues"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 // UseContext represents the process of replacing values when applying a template to a remote project.
@@ -39,9 +40,10 @@ type UseContext struct {
 	_context
 	templateRef     model.TemplateRef
 	instanceId      string
+	instanceIdShort string
 	jsonNetCtx      *jsonnet.Context
 	replacements    *replacevalues.Values
-	inputs          map[string]interface{}
+	inputs          map[string]InputValue
 	tickets         *storageapi.TicketProvider
 	ticketId        int
 	ticketsResolved bool
@@ -49,25 +51,27 @@ type UseContext struct {
 }
 
 const (
-	placeholderStart = "<<~~"
-	placeholderEnd   = "~~>>"
+	placeholderStart      = "<<~~"
+	placeholderEnd        = "~~>>"
+	instanceIdShortLength = 8
 )
 
 func NewUseContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot filesystem.Fs, instanceId string, targetBranch model.BranchKey, inputs InputsValues, tickets *storageapi.TicketProvider) *UseContext {
 	c := &UseContext{
-		_context:     baseContext(ctx),
-		templateRef:  templateRef,
-		instanceId:   instanceId,
-		jsonNetCtx:   jsonnet.NewContext().WithImporter(fsimporter.New(objectsRoot)),
-		replacements: replacevalues.NewValues(),
-		inputs:       make(map[string]interface{}),
-		tickets:      tickets,
-		placeholders: make(map[interface{}]string),
+		_context:        baseContext(ctx),
+		templateRef:     templateRef,
+		instanceId:      instanceId,
+		instanceIdShort: strhelper.FirstN(instanceId, instanceIdShortLength),
+		jsonNetCtx:      jsonnet.NewContext().WithImporter(fsimporter.New(objectsRoot)),
+		replacements:    replacevalues.NewValues(),
+		inputs:          make(map[string]InputValue),
+		tickets:         tickets,
+		placeholders:    make(map[interface{}]string),
 	}
 
 	// Convert inputs to map
 	for _, input := range inputs {
-		c.inputs[input.Id] = input.Value
+		c.inputs[input.Id] = input
 	}
 
 	// Replace BranchId, in template all objects have BranchId = 0
@@ -153,13 +157,44 @@ func (c *UseContext) registerJsonNetFunctions() {
 			} else if v, found := c.inputs[id]; !found {
 				return nil, fmt.Errorf(`input "%s" not found`, id)
 			} else {
-				switch v := v.(type) {
+				switch v := v.Value.(type) {
 				case int:
 					return float64(v), nil
 				default:
 					return v, nil
 				}
 			}
+		},
+	})
+	c.jsonNetCtx.NativeFunctionWithAlias(&jsonnet.NativeFunction{
+		Name:   `InputIsAvailable`,
+		Params: ast.Identifiers{"id"},
+		Func: func(params []interface{}) (interface{}, error) {
+			if len(params) != 1 {
+				return nil, fmt.Errorf("one parameter expected, found %d", len(params))
+			} else if id, ok := params[0].(string); !ok {
+				return nil, fmt.Errorf("parameter must be a string")
+			} else if v, found := c.inputs[id]; !found {
+				return nil, fmt.Errorf(`input "%s" not found`, id)
+			} else {
+				return !v.Skipped, nil
+			}
+		},
+	})
+
+	// InstanceId
+	c.jsonNetCtx.NativeFunctionWithAlias(&jsonnet.NativeFunction{
+		Name:   `InstanceId`,
+		Params: ast.Identifiers{},
+		Func: func(params []interface{}) (interface{}, error) {
+			return c.instanceId, nil
+		},
+	})
+	c.jsonNetCtx.NativeFunctionWithAlias(&jsonnet.NativeFunction{
+		Name:   `InstanceIdShort`,
+		Params: ast.Identifiers{},
+		Func: func(params []interface{}) (interface{}, error) {
+			return c.instanceIdShort, nil
 		},
 	})
 }
