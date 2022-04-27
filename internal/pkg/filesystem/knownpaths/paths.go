@@ -17,9 +17,20 @@ import (
 type Paths struct {
 	lock    *sync.Mutex
 	fs      filesystem.Fs
+	filter  IsIgnoredFn
 	all     map[string]bool
 	tracked map[string]bool
 	isFile  map[string]bool
+}
+
+type Option func(p *Paths)
+
+type IsIgnoredFn func(path string) (bool, error)
+
+func WithFilter(fn IsIgnoredFn) Option {
+	return func(p *Paths) {
+		p.filter = fn
+	}
 }
 
 type PathState int
@@ -30,13 +41,19 @@ const (
 	Ignored
 )
 
-func New(fs filesystem.Fs) (*Paths, error) {
-	f := &Paths{
+func New(fs filesystem.Fs, options ...Option) (*Paths, error) {
+	v := &Paths{
 		lock: &sync.Mutex{},
 		fs:   fs,
 	}
-	err := f.init()
-	return f, err
+
+	// Apply options
+	for _, o := range options {
+		o(v)
+	}
+
+	err := v.init()
+	return v, err
 }
 
 func NewNop() *Paths {
@@ -237,7 +254,9 @@ func (p *Paths) init() error {
 		}
 
 		// Is ignored?
-		if p.isIgnored(path) {
+		if ignored, err := p.isIgnored(path); err != nil {
+			return err
+		} else if ignored {
 			if info.IsDir() {
 				return fs.SkipDir
 			}
@@ -256,9 +275,18 @@ func (p *Paths) init() error {
 	return errors.ErrorOrNil()
 }
 
-func (p *Paths) isIgnored(path string) bool {
+func (p *Paths) isIgnored(path string) (bool, error) {
 	// Ignore empty and hidden paths
-	return path == "" || path == "." || strings.HasPrefix(filesystem.Base(path), ".")
+	if path == "" || path == "." || strings.HasPrefix(filesystem.Base(path), ".") {
+		return true, nil
+	}
+
+	// Use filter, if it is set
+	if p.filter != nil {
+		return p.filter(path)
+	}
+
+	return false, nil
 }
 
 type PathsReadOnly struct {
