@@ -3,3 +3,11 @@
 + local state
 
 Diff:
+* C bar/transformation/keboola.python-transformation-v2/python-transformation
+  transformation:
+    blocks/001-block:
+        #  Block 1
+      - ## Code X
+      - print(100)
+        ## Code Y
+        print(200)

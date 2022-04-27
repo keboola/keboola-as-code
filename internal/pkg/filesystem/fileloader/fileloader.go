@@ -176,8 +176,7 @@ func (l *loader) IsIgnored(path string) (bool, error) {
 		return false, nil
 	}
 	fileDef := filesystem.NewFileDef(filesystem.Join(path, KbcDirFileName))
-	// fileDef.AddTag(model.FileTypeJson)
-	fileDef.AddTag(`json`)
+	fileDef.AddTag(`json`) // `json` is a constant model.FileTypeJson but cannot be imported due to cyclic imports, it will be refactored
 	if l.fs.Exists(fileDef.Path()) {
 		file, err := l.ReadJsonFile(fileDef)
 		if err != nil {
