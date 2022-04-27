@@ -72,6 +72,7 @@ type FileLoader interface {
 	ReadJsonNetFile(file *FileDef) (*JsonNetFile, error)
 	ReadJsonNetFileTo(file *FileDef, target interface{}) (*JsonNetFile, error)
 	ReadSubDirs(fs Fs, root string) ([]string, error)
+	IsIgnored(path string) (bool, error)
 }
 
 func FromSlash(path string) string {

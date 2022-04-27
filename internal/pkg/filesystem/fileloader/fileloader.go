@@ -159,24 +159,38 @@ func (l *loader) ReadSubDirs(fs filesystem.Fs, root string) ([]string, error) {
 	}
 	res := make([]string, 0)
 	for _, subDir := range subDirs {
-		// Ignore dirs marked with isIgnored flag
-		fileDef := filesystem.NewFileDef(filesystem.Join(root, subDir, KbcDirFileName))
-		// fileDef.AddTag(model.FileTypeJson)
-		if l.fs.Exists(fileDef.Path()) {
-			file, err := l.ReadJsonFile(fileDef)
-			if err != nil {
-				return nil, err
-			}
-			isIgnored, found := file.Content.Get(KbcDirIsIgnored)
-			if found {
-				if isIgnored.(bool) {
-					continue
-				}
-			}
+		isIgnored, err := l.IsIgnored(filesystem.Join(root, subDir))
+		if err != nil {
+			return nil, err
 		}
-		res = append(res, subDir)
+		if !isIgnored {
+			res = append(res, subDir)
+		}
 	}
 	return res, nil
+}
+
+// IsIgnored checks if the dir is ignored.
+func (l *loader) IsIgnored(path string) (bool, error) {
+	if !l.fs.IsDir(path) {
+		return false, fmt.Errorf("the path is not a directory")
+	}
+	fileDef := filesystem.NewFileDef(filesystem.Join(path, KbcDirFileName))
+	// fileDef.AddTag(model.FileTypeJson)
+	fileDef.AddTag(`json`)
+	if l.fs.Exists(fileDef.Path()) {
+		file, err := l.ReadJsonFile(fileDef)
+		if err != nil {
+			return false, err
+		}
+		isIgnored, found := file.Content.Get(KbcDirIsIgnored)
+		if found {
+			if isIgnored.(bool) {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
 }
 
 func formatFileError(def *filesystem.FileDef, err error) error {

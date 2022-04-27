@@ -274,3 +274,30 @@ func (*testCases) TestFileLoader_ReadSubDirs(t *testing.T, fs filesystem.Fs, log
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"dir1", "dir2", "dir3"}, dirs)
 }
+
+func (*testCases) TestFileLoader_IsIgnored(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
+	// Create dirs and kbcdir files
+	assert.NoError(t, fs.Mkdir("dir1"))
+	assert.NoError(t, fs.Mkdir("dir2"))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filepath.Join("dir2", fileloader.KbcDirFileName), `{"foo": "bar"}`)))
+	assert.NoError(t, fs.Mkdir("dir3"))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filepath.Join("dir3", fileloader.KbcDirFileName), `{"isIgnored": false}`)))
+	assert.NoError(t, fs.Mkdir("dir4"))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filepath.Join("dir4", fileloader.KbcDirFileName), `{"isIgnored": true}`)))
+
+	isIgnored, err := fs.FileLoader().IsIgnored("dir1")
+	assert.NoError(t, err)
+	assert.False(t, isIgnored)
+
+	isIgnored, err = fs.FileLoader().IsIgnored("dir2")
+	assert.NoError(t, err)
+	assert.False(t, isIgnored)
+
+	isIgnored, err = fs.FileLoader().IsIgnored("dir3")
+	assert.NoError(t, err)
+	assert.False(t, isIgnored)
+
+	isIgnored, err = fs.FileLoader().IsIgnored("dir4")
+	assert.NoError(t, err)
+	assert.True(t, isIgnored)
+}
