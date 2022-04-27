@@ -9,9 +9,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi/eventsender"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs/mountfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
@@ -194,18 +191,10 @@ func (v *commonContainer) Template(reference model.TemplateRef) (*template.Templ
 	}
 
 	// Template dir
-	rootFs, err := repo.Fs().SubDirFs(templatePath)
+	templateDir, err := repo.Fs().SubDirFs(templatePath)
 	if err != nil {
 		return nil, err
 	}
 
-	// Mount "_common" dir from the repository to "<common>"
-	mountPath := filesystem.Join(template.SrcDirectory, repository.CommonDirectoryMountPoint)
-	mountPoint := mountfs.NewMountPoint(mountPath, repo.CommonDir())
-	fs, err := aferofs.NewMountFs(rootFs, mountPoint)
-	if err != nil {
-		return nil, err
-	}
-
-	return template.New(reference, templateRecord, versionRecord, fs, v)
+	return template.New(reference, templateRecord, versionRecord, templateDir, repo.CommonDir(), v)
 }
