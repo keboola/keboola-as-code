@@ -1,8 +1,6 @@
 package service
 
 import (
-	"fmt"
-
 	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/gen/templates"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
@@ -98,10 +96,10 @@ func InputsResponse(template *template.Template) (out *Inputs) {
 	out = &Inputs{StepGroups: make([]*StepGroup, 0)}
 
 	// Groups
-	for groupIndex, group := range template.Inputs() {
+	for _, group := range template.Inputs().ToExtended() {
 		// Group
 		groupResponse := &StepGroup{
-			ID:          fmt.Sprintf("g%02d", groupIndex+1),
+			ID:          group.Id,
 			Description: group.Description,
 			Required:    group.Required,
 			Steps:       make([]*Step, 0),
@@ -109,10 +107,10 @@ func InputsResponse(template *template.Template) (out *Inputs) {
 		out.StepGroups = append(out.StepGroups, groupResponse)
 
 		// Steps
-		for stepIndex, step := range group.Steps {
+		for _, step := range group.Steps {
 			// Step
 			stepResponse := &Step{
-				ID:                fmt.Sprintf("%s-s%02d", groupResponse.ID, stepIndex+1),
+				ID:                step.Id,
 				Icon:              step.Icon,
 				Name:              step.Name,
 				Description:       step.Description,

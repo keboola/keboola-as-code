@@ -82,11 +82,31 @@ func (s *service) InputsIndex(d dependencies.Container, payload *InputsIndexPayl
 	return InputsResponse(tmpl), nil
 }
 
-func (s *service) ValidateInputs(dependencies.Container, *ValidateInputsPayload) (res *ValidationResult, err error) {
-	return nil, NotImplementedError{}
+func (s *service) ValidateInputs(d dependencies.Container, payload *ValidateInputsPayload) (res *ValidationResult, err error) {
+	tmpl, err := getTemplateVersion(d, payload.Repository, payload.Template, payload.Version)
+	if err != nil {
+		return nil, err
+	}
+	return validateInputs(tmpl.Inputs(), payload.Steps)
 }
 
-func (s *service) UseTemplateVersion(dependencies.Container, *UseTemplateVersionPayload) (res *UseTemplateDetail, err error) {
+func (s *service) UseTemplateVersion(d dependencies.Container, payload *UseTemplateVersionPayload) (res *UseTemplateDetail, err error) {
+	tmpl, err := getTemplateVersion(d, payload.Repository, payload.Template, payload.Version)
+	if err != nil {
+		return nil, err
+	}
+	result, err := validateInputs(tmpl.Inputs(), payload.Steps)
+	if err != nil {
+		return nil, err
+	}
+	if !result.Valid {
+		return nil, &ValidationError{
+			Name:             "InvalidInputs",
+			Message:          "Inputs are not valid.",
+			ValidationResult: result,
+		}
+	}
+
 	return nil, NotImplementedError{}
 }
 
