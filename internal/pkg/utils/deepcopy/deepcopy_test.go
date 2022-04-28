@@ -147,14 +147,12 @@ func TestCopyCycle(t *testing.T) {
 	t.Parallel()
 	m := orderedmap.New()
 	m.Set(`key`, m)
-	expected := `
-deepcopy cycle detected
-each pointer can be used only once
-steps: *orderedmap.OrderedMap[key]
-`
-	assert.PanicsWithError(t, strings.TrimSpace(expected), func() {
-		Copy(m)
-	})
+	c := Copy(m).(*orderedmap.OrderedMap)
+	ck, _ := c.Get("key")
+	assert.NotSame(t, m, c)
+	assert.NotSame(t, m, ck)
+	assert.Equal(t, m, c)
+	assert.Equal(t, m, ck)
 }
 
 func TestCopyUnexportedFields(t *testing.T) {

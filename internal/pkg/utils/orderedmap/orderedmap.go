@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"sort"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
@@ -50,17 +51,17 @@ func (o *OrderedMap) Clone() *OrderedMap {
 	return deepcopy.Copy(o).(*OrderedMap)
 }
 
-func (o *OrderedMap) DeepCopy(callback deepcopy.TranslateFunc, steps deepcopy.Steps, visited deepcopy.VisitedMap) *OrderedMap {
+func (o *OrderedMap) DeepCopy(callback deepcopy.TranslateFunc, steps deepcopy.Steps, visited deepcopy.VisitedPtrMap) (*OrderedMap, deepcopy.CloneNestedFn) {
 	if o == nil {
-		return nil
+		return nil, nil
 	}
-
-	out := New()
-	for _, k := range o.Keys() {
-		v, _ := o.Get(k)
-		out.Set(k, deepcopy.CopyTranslateSteps(v, callback, steps.Add(MapStep(k)), visited))
+	return New(), func(clone reflect.Value) {
+		m := clone.Interface().(*OrderedMap)
+		for _, k := range o.Keys() {
+			v, _ := o.Get(k)
+			m.Set(k, deepcopy.CopyTranslateSteps(v, callback, steps.Add(MapStep(k)), visited))
+		}
 	}
-	return out
 }
 
 func (o *OrderedMap) ToMap() map[string]interface{} {

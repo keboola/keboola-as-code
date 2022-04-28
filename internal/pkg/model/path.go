@@ -22,8 +22,8 @@ func NewAbsPath(parentPath, objectPath string) AbsPath {
 	return AbsPath{parentPath: Path(parentPath), parentPathSet: true, RelativePath: Path(objectPath)}
 }
 
-func (p AbsPath) DeepCopy(_ deepcopy.TranslateFunc, _ deepcopy.Steps, _ deepcopy.VisitedMap) AbsPath {
-	return p
+func (p AbsPath) DeepCopy(_ deepcopy.TranslateFunc, _ deepcopy.Steps, _ deepcopy.VisitedPtrMap) (AbsPath, deepcopy.CloneNestedFn) {
+	return p, nil
 }
 
 func (p AbsPath) GetAbsPath() AbsPath {
