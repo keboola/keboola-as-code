@@ -23,7 +23,7 @@ type Container interface {
 	dependencies.Common
 	Ctx() context.Context
 	CtxCancelFn() context.CancelFunc
-	WithCtx(ctx context.Context) Container
+	WithCtx(ctx context.Context, cancelFn context.CancelFunc) Container
 	PrefixLogger() log.PrefixLogger
 	RepositoryManager() (*repository.Manager, error)
 	TemplateRepository(definition model.TemplateRepository, forTemplate model.TemplateRef) (*repository.Repository, error)
@@ -39,10 +39,10 @@ func NewContainer(ctx context.Context, debug bool, logger *stdLog.Logger, envs *
 	return c
 }
 
-type commonDeps = dependencies.Common
+type commonDeps = dependencies.CommonContainer
 
 type container struct {
-	commonDeps
+	*commonDeps
 	ctx               context.Context
 	ctxCancelFn       context.CancelFunc
 	debug             bool
@@ -60,24 +60,27 @@ func (v *container) CtxCancelFn() context.CancelFunc {
 	return v.ctxCancelFn
 }
 
-func (v *container) WithCtx(ctx context.Context) Container {
-	clone := *v
+func (v *container) WithCtx(ctx context.Context, cancelFn context.CancelFunc) Container {
+	clone := v.Clone()
 	clone.ctx = ctx
-	return &clone
+	if cancelFn != nil {
+		clone.ctxCancelFn = cancelFn
+	}
+	return clone
 }
 
 // WithLoggerPrefix returns dependencies clone with modified logger.
 func (v *container) WithLoggerPrefix(prefix string) *container {
-	clone := *v
+	clone := v.Clone()
 	clone.logger = v.logger.WithPrefix(prefix)
-	return &clone
+	return clone
 }
 
 // WithStorageApi returns dependencies clone with modified Storage API.
 func (v *container) WithStorageApi(api *storageapi.Api) (*container, error) {
-	clone := *v
+	clone := v.Clone()
 	clone.storageApi = api
-	return &clone, nil
+	return clone, nil
 }
 
 func (v *container) Logger() log.Logger {
@@ -159,4 +162,11 @@ func (v *container) StorageApiHost() (string, error) {
 func (v *container) StorageApiToken() (string, error) {
 	// The API is authorized separately in each request
 	return "", nil
+}
+
+func (v *container) Clone() *container {
+	clone := *v
+	clone.commonDeps = clone.commonDeps.Clone()
+	clone.commonDeps.Abstract = &clone
+	return &clone
 }

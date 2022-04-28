@@ -62,11 +62,11 @@ func ContextMiddleware(d dependencies.Container, h http.Handler) http.Handler {
 		}
 
 		// Cancel context after request
-		ctx, cancel := context.WithCancel(ctx)
-		defer cancel()
+		ctx, cancelFn := context.WithCancel(ctx)
+		defer cancelFn()
 
 		// Add dependencies to the context
-		ctx = context.WithValue(ctx, dependencies.CtxKey, d.WithCtx(ctx).WithLoggerPrefix(loggerPrefix))
+		ctx = context.WithValue(ctx, dependencies.CtxKey, d.WithCtx(ctx, cancelFn).WithLoggerPrefix(loggerPrefix))
 
 		// Handle
 		h.ServeHTTP(w, r.WithContext(ctx))
