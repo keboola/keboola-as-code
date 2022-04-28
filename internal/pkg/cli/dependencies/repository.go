@@ -1,8 +1,10 @@
 package dependencies
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
+	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
@@ -70,7 +72,7 @@ func (v *container) repositoryFs(definition model.TemplateRepository, template m
 		}
 		return aferofs.NewLocalFs(v.Logger(), path, definition.WorkingDir)
 	case model.RepositoryTypeGit:
-		return gitRepositoryFs(definition, template, v.Logger())
+		return gitRepositoryFs(v.Ctx(), definition, template, v.Logger())
 	default:
 		panic(fmt.Errorf(`unexpected repository type "%s"`, definition.Type))
 	}
@@ -78,9 +80,12 @@ func (v *container) repositoryFs(definition model.TemplateRepository, template m
 
 // gitRepositoryFs returns template repository FS, which has been loaded from a git repository.
 // Sparse checkout is used to load only the needed files.
-func gitRepositoryFs(definition model.TemplateRepository, tmplRef model.TemplateRef, logger log.Logger) (filesystem.Fs, error) {
+func gitRepositoryFs(ctx context.Context, definition model.TemplateRepository, tmplRef model.TemplateRef, logger log.Logger) (filesystem.Fs, error) {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
 	// Checkout Git repository in sparse mode
-	gitRepository, err := git.Checkout(definition.Url, definition.Ref, true, logger)
+	gitRepository, err := git.Checkout(ctx, definition.Url, definition.Ref, true, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +95,7 @@ func gitRepositoryFs(definition model.TemplateRepository, tmplRef model.Template
 	defer gitRepository.Clear()
 
 	// Load repository manifest
-	if err := gitRepository.Load(".keboola/repository.json"); err != nil {
+	if err := gitRepository.Load(ctx, ".keboola/repository.json"); err != nil {
 		return nil, err
 	}
 	repoManifest, err := repository.LoadManifest(gitRepository.Fs())
@@ -110,7 +115,7 @@ func gitRepositoryFs(definition model.TemplateRepository, tmplRef model.Template
 
 	// Load template src directory
 	srcDir := filesystem.Join(version.Path(), template.SrcDirectory)
-	if err := gitRepository.Load(srcDir); err != nil {
+	if err := gitRepository.Load(ctx, srcDir); err != nil {
 		return nil, err
 	}
 	if !gitRepository.Fs().Exists(srcDir) {
@@ -121,7 +126,7 @@ func gitRepositoryFs(definition model.TemplateRepository, tmplRef model.Template
 	}
 
 	// Load common directory, shared between all templates in repository, if it exists
-	if err := gitRepository.Load(repository.CommonDirectory); err != nil {
+	if err := gitRepository.Load(ctx, repository.CommonDirectory); err != nil {
 		return nil, err
 	}
 

@@ -28,7 +28,7 @@ import (
 )
 
 type TestContainer struct {
-	*commonContainer
+	*CommonContainer
 	ctx                         context.Context
 	logger                      log.DebugLogger
 	envs                        *env.Map
@@ -48,7 +48,7 @@ type TestContainer struct {
 
 func NewTestContainer() *TestContainer {
 	c := &TestContainer{ctx: context.Background()}
-	c.commonContainer = NewCommonContainer(c).(*commonContainer)
+	c.CommonContainer = NewCommonContainer(c)
 	c.logger = log.NewDebugLogger()
 	c.envs = env.Empty()
 	c.fs = testfs.NewMemoryFsWithLogger(c.logger)

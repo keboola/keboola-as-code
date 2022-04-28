@@ -39,11 +39,11 @@ type Common interface {
 }
 
 // NewCommonContainer returns dependencies container for production.
-func NewCommonContainer(d Abstract) Common {
-	return &commonContainer{Abstract: d}
+func NewCommonContainer(d Abstract) *CommonContainer {
+	return &CommonContainer{Abstract: d}
 }
 
-type commonContainer struct {
+type CommonContainer struct {
 	Abstract
 	serviceUrls   map[storageapi.ServiceId]storageapi.ServiceUrl
 	storageApi    *storageapi.Api
@@ -52,7 +52,7 @@ type commonContainer struct {
 	eventSender   *eventsender.Sender
 }
 
-func (v *commonContainer) Components() (*model.ComponentsMap, error) {
+func (v *CommonContainer) Components() (*model.ComponentsMap, error) {
 	storageApi, err := v.StorageApi()
 	if err != nil {
 		return nil, err
@@ -60,7 +60,7 @@ func (v *commonContainer) Components() (*model.ComponentsMap, error) {
 	return storageApi.Components(), nil
 }
 
-func (v *commonContainer) StorageApi() (*storageapi.Api, error) {
+func (v *CommonContainer) StorageApi() (*storageapi.Api, error) {
 	if v.storageApi == nil {
 		// Get host
 		errors := utils.NewMultiError()
@@ -94,7 +94,7 @@ func (v *commonContainer) StorageApi() (*storageapi.Api, error) {
 	return v.storageApi, nil
 }
 
-func (v *commonContainer) EncryptionApi() (*encryptionapi.Api, error) {
+func (v *CommonContainer) EncryptionApi() (*encryptionapi.Api, error) {
 	if v.encryptionApi == nil {
 		// Get Storage API
 		storageApi, err := v.StorageApi()
@@ -113,7 +113,7 @@ func (v *commonContainer) EncryptionApi() (*encryptionapi.Api, error) {
 	return v.encryptionApi, nil
 }
 
-func (v *commonContainer) SchedulerApi() (*schedulerapi.Api, error) {
+func (v *CommonContainer) SchedulerApi() (*schedulerapi.Api, error) {
 	if v.schedulerApi == nil {
 		// Get Storage API
 		storageApi, err := v.StorageApi()
@@ -132,7 +132,7 @@ func (v *commonContainer) SchedulerApi() (*schedulerapi.Api, error) {
 	return v.schedulerApi, nil
 }
 
-func (v *commonContainer) EventSender() (*eventsender.Sender, error) {
+func (v *CommonContainer) EventSender() (*eventsender.Sender, error) {
 	if v.eventSender == nil {
 		storageApi, err := v.StorageApi()
 		if err != nil {
@@ -143,7 +143,7 @@ func (v *commonContainer) EventSender() (*eventsender.Sender, error) {
 	return v.eventSender, nil
 }
 
-func (v *commonContainer) serviceUrl(id string) (string, error) {
+func (v *CommonContainer) serviceUrl(id string) (string, error) {
 	serviceUrlById, err := v.serviceUrlById()
 	if err != nil {
 		return "", err
@@ -155,7 +155,7 @@ func (v *commonContainer) serviceUrl(id string) (string, error) {
 	}
 }
 
-func (v *commonContainer) serviceUrlById() (map[storageapi.ServiceId]storageapi.ServiceUrl, error) {
+func (v *CommonContainer) serviceUrlById() (map[storageapi.ServiceId]storageapi.ServiceUrl, error) {
 	if v.serviceUrls == nil {
 		storageApi, err := v.StorageApi()
 		if err != nil {
@@ -171,7 +171,7 @@ func (v *commonContainer) serviceUrlById() (map[storageapi.ServiceId]storageapi.
 	return v.serviceUrls, nil
 }
 
-func (v *commonContainer) Template(reference model.TemplateRef) (*template.Template, error) {
+func (v *CommonContainer) Template(reference model.TemplateRef) (*template.Template, error) {
 	// Load repository
 	repo, err := v.TemplateRepository(reference.Repository(), reference)
 	if err != nil {
@@ -197,4 +197,9 @@ func (v *commonContainer) Template(reference model.TemplateRef) (*template.Templ
 	}
 
 	return template.New(reference, templateRecord, versionRecord, templateDir, repo.CommonDir(), v)
+}
+
+func (v *CommonContainer) Clone() *CommonContainer {
+	clone := *v
+	return &clone
 }

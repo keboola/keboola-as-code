@@ -1,22 +1,28 @@
 package repository
 
 import (
+	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/git"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
+const OperationTimeout = 20 * time.Second
+
 type Manager struct {
+	ctx          context.Context
 	logger       log.Logger
 	lock         *sync.Mutex
 	repositories map[string]*git.Repository
 }
 
-func NewManager(logger log.Logger) (*Manager, error) {
+func NewManager(ctx context.Context, logger log.Logger) (*Manager, error) {
 	m := &Manager{
+		ctx:          ctx,
 		logger:       logger,
 		lock:         &sync.Mutex{},
 		repositories: make(map[string]*git.Repository),
@@ -38,47 +44,61 @@ func (m *Manager) AddRepository(repositoryDef model.TemplateRepository) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
+	// Check if already exists
 	hash := repositoryDef.Hash()
 	if _, ok := m.repositories[hash]; ok {
-		return fmt.Errorf("repository already exists")
+		// repository already exists
+		return nil
 	}
 
-	repo, err := git.Checkout(repositoryDef.Url, repositoryDef.Ref, false, m.logger)
+	// Check out
+	m.logger.Infof(`checking out repository "%s:%s"`, repositoryDef.Url, repositoryDef.Ref)
+	ctx, cancel := context.WithTimeout(m.ctx, 30*time.Second)
+	defer cancel()
+	repo, err := git.Checkout(ctx, repositoryDef.Url, repositoryDef.Ref, false, m.logger)
 	if err != nil {
-		return err
+		return fmt.Errorf(`cannot checkout out repository "%s": %w`, repo, err)
 	}
-
+	m.logger.Infof(`repository checked out "%s"`, repo)
 	m.repositories[hash] = repo
 	return nil
 }
 
 func (m *Manager) Pull() {
 	for _, repo := range m.repositories {
-		m.logger.Infof(`repository "%s" is being updated`, repo)
-
-		oldHash, err := repo.CommitHash()
-		if err != nil {
-			m.logger.Error(err.Error())
-			continue
-		}
-
-		err = repo.Pull()
-		if err != nil {
-			m.logger.Error(err.Error())
-			continue
-		}
-
-		newHash, err := repo.CommitHash()
-		if err != nil {
-			m.logger.Error(err.Error())
-			continue
-		}
-
-		if oldHash == newHash {
-			m.logger.Infof(`repository "%s" update finished, no change found`, repo)
-			return
-		}
-
-		m.logger.Infof(`repository "%s" updated from %s to %s`, repo, oldHash, newHash)
+		repo := repo
+		go func() {
+			ctx, cancel := context.WithTimeout(m.ctx, 30*time.Second)
+			defer cancel()
+			if err := pullRepo(ctx, m.logger, repo); err != nil {
+				m.logger.Errorf(`error while updating the repository "%s": %w`, repo, err)
+			}
+		}()
 	}
+}
+
+func pullRepo(ctx context.Context, logger log.Logger, repo *git.Repository) error {
+	logger.Infof(`repository "%s" is being updated`, repo)
+	oldHash, err := repo.CommitHash(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = repo.Pull(ctx)
+	if err != nil {
+		return err
+	}
+
+	newHash, err := repo.CommitHash(ctx)
+	if err != nil {
+		return err
+	}
+
+	if oldHash == newHash {
+		logger.Infof(`repository "%s" update finished, no change found`, repo)
+	} else {
+		logger.Infof(`repository "%s" updated from %s to %s`, repo, oldHash, newHash)
+	}
+
+	return nil
 }
