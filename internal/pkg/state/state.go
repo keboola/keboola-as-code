@@ -71,6 +71,7 @@ func New(container ObjectsContainer, d dependencies) (*State, error) {
 
 	// Create mapper
 	mapperInst := mapper.New()
+
 	// Create file loader
 	fileLoader := mapperInst.NewFileLoader(container.ObjectsRoot())
 

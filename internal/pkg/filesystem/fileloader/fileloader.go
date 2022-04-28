@@ -1,6 +1,7 @@
 package fileloader
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -177,18 +178,21 @@ func (l *loader) IsIgnored(path string) (bool, error) {
 	}
 	fileDef := filesystem.NewFileDef(filesystem.Join(path, KbcDirFileName))
 	fileDef.AddTag(`json`) // `json` is a constant model.FileTypeJson but cannot be imported due to cyclic imports, it will be refactored
-	if l.fs.Exists(fileDef.Path()) {
-		file, err := l.ReadJsonFile(fileDef)
-		if err != nil {
+
+	file, err := l.ReadJsonFile(fileDef)
+	if err != nil {
+		if errors.Is(err, filesystem.ErrNotExist) {
 			return false, err
 		}
-		isIgnored, found := file.Content.Get(KbcDirIsIgnored)
-		if found {
-			if isIgnored.(bool) {
-				return true, nil
-			}
+		return false, nil
+	}
+	isIgnored, found := file.Content.Get(KbcDirIsIgnored)
+	if found {
+		if isIgnored.(bool) {
+			return true, nil
 		}
 	}
+
 	return false, nil
 }
 

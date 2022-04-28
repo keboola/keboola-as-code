@@ -20,7 +20,11 @@ const (
 	PathSeparator = '/'
 )
 
-var SkipDir = fs.SkipDir // nolint: gochecknoglobals
+// nolint: gochecknoglobals
+var (
+	SkipDir     = fs.SkipDir
+	ErrNotExist = os.ErrNotExist
+)
 
 type Factory func(logger log.Logger, workingDir string) (fs Fs, err error)
 
