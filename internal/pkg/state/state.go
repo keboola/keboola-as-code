@@ -68,7 +68,14 @@ func New(container ObjectsContainer, d dependencies) (*State, error) {
 	if err != nil {
 		return nil, err
 	}
-	knownPaths, err := knownpaths.New(container.ObjectsRoot())
+
+	// Create mapper
+	mapperInst := mapper.New()
+
+	// Create file loader
+	fileLoader := mapperInst.NewFileLoader(container.ObjectsRoot())
+
+	knownPaths, err := knownpaths.New(container.ObjectsRoot(), knownpaths.WithFilter(fileLoader.IsIgnored))
 	if err != nil {
 		return nil, utils.PrefixError(`error loading directory structure`, err)
 	}
@@ -81,17 +88,13 @@ func New(container ObjectsContainer, d dependencies) (*State, error) {
 	s := &State{
 		Registry:        NewRegistry(knownPaths, namingRegistry, storageApi.Components(), m.SortBy()),
 		container:       container,
+		fileLoader:      fileLoader,
 		logger:          logger,
 		manifest:        m,
+		mapper:          mapperInst,
 		namingGenerator: namingGenerator,
 		pathMatcher:     pathMatcher,
 	}
-
-	// Create mapper
-	s.mapper = mapper.New()
-
-	// Create file loader
-	s.fileLoader = s.mapper.NewFileLoader(container.ObjectsRoot())
 
 	// Local manager for load,save,delete ... operations
 	s.localManager = local.NewManager(s.logger, container.ObjectsRoot(), s.fileLoader, m, s.namingGenerator, s.Registry, s.mapper)

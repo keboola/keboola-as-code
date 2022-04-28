@@ -1,6 +1,7 @@
 package fileloader
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -10,6 +11,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet/fsimporter"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
+)
+
+const (
+	KbcDirFileName  = "kbcdir.json"
+	KbcDirIsIgnored = "isIgnored"
 )
 
 // loadHandlerWithNext callback modifies file loading process.
@@ -144,6 +150,50 @@ func (l *loader) ReadJsonNetFileTo(def *filesystem.FileDef, target interface{}) 
 	}
 
 	return jsonNetFile, nil
+}
+
+// ReadSubDirs filter out ignored directories.
+func (l *loader) ReadSubDirs(fs filesystem.Fs, root string) ([]string, error) {
+	subDirs, err := filesystem.ReadSubDirs(fs, root)
+	if err != nil {
+		return nil, err
+	}
+	res := make([]string, 0)
+	for _, subDir := range subDirs {
+		isIgnored, err := l.IsIgnored(filesystem.Join(root, subDir))
+		if err != nil {
+			return nil, err
+		}
+		if !isIgnored {
+			res = append(res, subDir)
+		}
+	}
+	return res, nil
+}
+
+// IsIgnored checks if the dir is ignored.
+func (l *loader) IsIgnored(path string) (bool, error) {
+	if !l.fs.IsDir(path) {
+		return false, nil
+	}
+	fileDef := filesystem.NewFileDef(filesystem.Join(path, KbcDirFileName))
+	fileDef.AddTag(`json`) // `json` is a constant model.FileTypeJson but cannot be imported due to cyclic imports, it will be refactored
+
+	file, err := l.ReadJsonFile(fileDef)
+	if err != nil {
+		if errors.Is(err, filesystem.ErrNotExist) {
+			return false, err
+		}
+		return false, nil
+	}
+	isIgnored, found := file.Content.Get(KbcDirIsIgnored)
+	if found {
+		if isIgnored.(bool) {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 func formatFileError(def *filesystem.FileDef, err error) error {

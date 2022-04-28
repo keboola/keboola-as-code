@@ -1,6 +1,8 @@
+// nolint forbidigo
 package fileloader_test
 
 import (
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -9,6 +11,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/fileloader"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -255,4 +258,46 @@ func (*testCases) TestFileLoader_ReadFileContentTo(t *testing.T, fs filesystem.F
 	assert.Equal(t, `{"field1": "foo", "field2": "bar"}`, file.Content)
 	assert.Equal(t, `{"field1": "foo", "field2": "bar"}`, target.Content)
 	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.AllMessages()))
+}
+
+func (*testCases) TestFileLoader_ReadSubDirs(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
+	// Create dirs and kbcdir files
+	assert.NoError(t, fs.Mkdir("dir1"))
+	assert.NoError(t, fs.Mkdir("dir2"))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filepath.Join("dir2", fileloader.KbcDirFileName), `{"foo": "bar"}`)))
+	assert.NoError(t, fs.Mkdir("dir3"))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filepath.Join("dir3", fileloader.KbcDirFileName), `{"isIgnored": false}`)))
+	assert.NoError(t, fs.Mkdir("dir4"))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filepath.Join("dir4", fileloader.KbcDirFileName), `{"isIgnored": true}`)))
+
+	dirs, err := fs.FileLoader().ReadSubDirs(fs, ".")
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"dir1", "dir2", "dir3"}, dirs)
+}
+
+func (*testCases) TestFileLoader_IsIgnored(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
+	// Create dirs and kbcdir files
+	assert.NoError(t, fs.Mkdir("dir1"))
+	assert.NoError(t, fs.Mkdir("dir2"))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filepath.Join("dir2", fileloader.KbcDirFileName), `{"foo": "bar"}`)))
+	assert.NoError(t, fs.Mkdir("dir3"))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filepath.Join("dir3", fileloader.KbcDirFileName), `{"isIgnored": false}`)))
+	assert.NoError(t, fs.Mkdir("dir4"))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filepath.Join("dir4", fileloader.KbcDirFileName), `{"isIgnored": true}`)))
+
+	isIgnored, err := fs.FileLoader().IsIgnored("dir1")
+	assert.NoError(t, err)
+	assert.False(t, isIgnored)
+
+	isIgnored, err = fs.FileLoader().IsIgnored("dir2")
+	assert.NoError(t, err)
+	assert.False(t, isIgnored)
+
+	isIgnored, err = fs.FileLoader().IsIgnored("dir3")
+	assert.NoError(t, err)
+	assert.False(t, isIgnored)
+
+	isIgnored, err = fs.FileLoader().IsIgnored("dir4")
+	assert.NoError(t, err)
+	assert.True(t, isIgnored)
 }
