@@ -20,7 +20,11 @@ const (
 	PathSeparator = '/'
 )
 
-var SkipDir = fs.SkipDir // nolint: gochecknoglobals
+// nolint: gochecknoglobals
+var (
+	SkipDir     = fs.SkipDir
+	ErrNotExist = os.ErrNotExist
+)
 
 type Factory func(logger log.Logger, workingDir string) (fs Fs, err error)
 
@@ -71,6 +75,8 @@ type FileLoader interface {
 	ReadJsonMapTo(file *FileDef, target interface{}, structTag string) (*JsonFile, bool, error)
 	ReadJsonNetFile(file *FileDef) (*JsonNetFile, error)
 	ReadJsonNetFileTo(file *FileDef, target interface{}) (*JsonNetFile, error)
+	ReadSubDirs(fs Fs, root string) ([]string, error)
+	IsIgnored(path string) (bool, error)
 }
 
 func FromSlash(path string) string {
