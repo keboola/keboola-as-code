@@ -565,14 +565,10 @@ var Templates = Type("Templates", func() {
 var TemplateDetail = Type("TemplateDetail", func() {
 	Extend(Template)
 	Attribute("repository", Repository, "Information about the repository.")
-	Attribute("versions", ArrayOf(TemplateVersion), "All available versions of the template.", func() {
-		Example(ExampleVersions1())
-	})
-	Required("repository", "versions")
+	Required("repository")
 	Example(ExampleTemplateDetailData{
 		ExampleTemplateData: ExampleTemplate1(),
 		Repository:          ExampleRepository(),
-		Versions:            ExampleVersions1(),
 	})
 })
 
@@ -602,7 +598,10 @@ var Template = Type("Template", func() {
 		MaxLength(20)
 		Example("v1.2.3")
 	})
-	Required("id", "icon", "name", "author", "description", "defaultVersion")
+	Attribute("versions", ArrayOf(TemplateVersion), "All available versions of the template.", func() {
+		Example(ExampleVersions1())
+	})
+	Required("id", "icon", "name", "author", "description", "defaultVersion", "versions")
 })
 
 var TemplateVersionDetail = Type("TemplateVersionDetail", func() {
@@ -846,12 +845,13 @@ type ExampleAuthorData struct {
 }
 
 type ExampleTemplateData struct {
-	Icon           string            `json:"icon" yaml:"icon"`
-	Id             string            `json:"id" yaml:"id"`
-	Name           string            `json:"name" yaml:"name"`
-	Author         ExampleAuthorData `json:"author" yaml:"author"`
-	Description    string            `json:"description" yaml:"description"`
-	DefaultVersion string            `json:"defaultVersion" yaml:"defaultVersion"`
+	Icon           string               `json:"icon" yaml:"icon"`
+	Id             string               `json:"id" yaml:"id"`
+	Name           string               `json:"name" yaml:"name"`
+	Author         ExampleAuthorData    `json:"author" yaml:"author"`
+	Description    string               `json:"description" yaml:"description"`
+	DefaultVersion string               `json:"defaultVersion" yaml:"defaultVersion"`
+	Versions       []ExampleVersionData `json:"versions" yaml:"versions"`
 }
 
 type ExampleTemplatesData struct {
@@ -862,7 +862,6 @@ type ExampleTemplatesData struct {
 type ExampleTemplateDetailData struct {
 	ExampleTemplateData
 	Repository ExampleRepositoryData `json:"repository" yaml:"repository"`
-	Versions   []ExampleVersionData  `json:"versions" yaml:"versions"`
 }
 
 type ExampleVersionData struct {
@@ -978,6 +977,7 @@ func ExampleTemplate1() ExampleTemplateData {
 		Author:         ExampleAuthor(),
 		Description:    "Full workflow to load all user accounts from the Service.",
 		DefaultVersion: "v1.2.3",
+		Versions:       ExampleVersions1(),
 	}
 }
 
@@ -989,6 +989,7 @@ func ExampleTemplate2() ExampleTemplateData {
 		Author:         ExampleAuthor(),
 		Description:    "Maximum length template description dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascet.",
 		DefaultVersion: "v4.5.6",
+		Versions:       ExampleVersions2(),
 	}
 }
 
