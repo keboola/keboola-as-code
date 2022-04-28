@@ -242,6 +242,7 @@ var _ = Service("templates", func() {
 			templateAttr()
 			versionAttr()
 			branchAttr()
+			instanceNameAttr()
 			inputsPayload()
 		})
 		HTTP(func() {
@@ -426,6 +427,14 @@ func branchAttr() {
 		Description("ID of the branch. Use \"default\" for default branch.")
 	})
 	Required("branch")
+}
+
+func instanceNameAttr() {
+	Attribute("name", String, func() {
+		Example("My Instance")
+		Description("Name of the new template instance.")
+	})
+	Required("name")
 }
 
 func versionAttr() {
