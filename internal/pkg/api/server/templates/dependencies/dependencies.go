@@ -112,14 +112,6 @@ func (v *container) TemplateRepository(definition model.TemplateRepository, _ mo
 		return nil, err
 	}
 
-	// Acquire read lock and release it after request,
-	// so pull cannot occur in the middle of the request.
-	gitRepository.RLock()
-	go func() {
-		<-v.ctx.Done()
-		gitRepository.RUnlock()
-	}()
-
 	// Load manifest from FS
 	fs := gitRepository.Fs()
 	manifest, err := loadRepositoryManifest.Run(fs, v)
