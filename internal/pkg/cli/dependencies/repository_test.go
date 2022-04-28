@@ -2,11 +2,13 @@
 package dependencies
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -30,11 +32,14 @@ func TestGitRepositoryFs_SparseCheckout(t *testing.T) {
 	assert.NoError(t, aferofs.CopyFs2Fs(nil, filepath.Join("test", "repository"), nil, tmpDir))
 	assert.NoError(t, os.Rename(fmt.Sprintf("%s/.gittest", tmpDir), fmt.Sprintf("%s/.git", tmpDir)))
 
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
 	// Checkout fail due to non-existing template in the branch
 	repo := model.TemplateRepository{Type: "git", Name: "keboola", Url: fmt.Sprintf("file://%s", tmpDir), Ref: "main"}
 	template, err := model.NewTemplateRefFromString(repo, "template2", "1.0.0")
 	assert.NoError(t, err)
-	_, err = gitRepositoryFs(repo, template, log.NewDebugLogger())
+	_, err = gitRepositoryFs(ctx, repo, template, log.NewDebugLogger())
 	assert.Error(t, err)
 	assert.Equal(t, fmt.Sprintf(`template "template2" not found:
   - searched in git repository "file://%s"
@@ -44,7 +49,7 @@ func TestGitRepositoryFs_SparseCheckout(t *testing.T) {
 	repo = model.TemplateRepository{Type: "git", Name: "keboola", Url: fmt.Sprintf("file://%s", tmpDir), Ref: "b1"}
 	template, err = model.NewTemplateRefFromString(repo, "template2", "1.0.8")
 	assert.NoError(t, err)
-	_, err = gitRepositoryFs(repo, template, log.NewDebugLogger())
+	_, err = gitRepositoryFs(ctx, repo, template, log.NewDebugLogger())
 	assert.Error(t, err)
 	assert.Equal(t, fmt.Sprintf(`template "template2" found but version "1.0.8" is missing:
   - searched in git repository "file://%s"
@@ -54,7 +59,7 @@ func TestGitRepositoryFs_SparseCheckout(t *testing.T) {
 	repo = model.TemplateRepository{Type: "git", Name: "keboola", Url: fmt.Sprintf("file://%s", tmpDir), Ref: "b1"}
 	template, err = model.NewTemplateRefFromString(repo, "template2", "1.0.0")
 	assert.NoError(t, err)
-	_, err = gitRepositoryFs(repo, template, log.NewDebugLogger())
+	_, err = gitRepositoryFs(ctx, repo, template, log.NewDebugLogger())
 	assert.Error(t, err)
 	assert.Equal(t, fmt.Sprintf(`folder "template2/v1/src" not found:
   - searched in git repository "file://%s"
@@ -64,7 +69,7 @@ func TestGitRepositoryFs_SparseCheckout(t *testing.T) {
 	repo = model.TemplateRepository{Type: "git", Name: "keboola", Url: fmt.Sprintf("file://%s", tmpDir), Ref: "main"}
 	template, err = model.NewTemplateRefFromString(repo, "template1", "1.0")
 	assert.NoError(t, err)
-	fs, err := gitRepositoryFs(repo, template, log.NewDebugLogger())
+	fs, err := gitRepositoryFs(ctx, repo, template, log.NewDebugLogger())
 	assert.NoError(t, err)
 	assert.True(t, fs.Exists("template1/v1/src/manifest.jsonnet"))
 	// Common dir exist, in this "main" branch
@@ -74,7 +79,7 @@ func TestGitRepositoryFs_SparseCheckout(t *testing.T) {
 	repo = model.TemplateRepository{Type: "git", Name: "keboola", Url: fmt.Sprintf("file://%s", tmpDir), Ref: "b1"}
 	template, err = model.NewTemplateRefFromString(repo, "template2", "2.1.0")
 	assert.NoError(t, err)
-	fs, err = gitRepositoryFs(repo, template, log.NewDebugLogger())
+	fs, err = gitRepositoryFs(ctx, repo, template, log.NewDebugLogger())
 	assert.NoError(t, err)
 	assert.True(t, fs.Exists("template2/v2/src/manifest.jsonnet"))
 	// Another template folder should not exist

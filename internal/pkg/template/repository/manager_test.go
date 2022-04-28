@@ -1,6 +1,7 @@
 package repository_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,7 +13,7 @@ import (
 func TestNewManager(t *testing.T) {
 	t.Parallel()
 
-	m, err := repository.NewManager(log.NewDebugLogger())
+	m, err := repository.NewManager(context.Background(), log.NewDebugLogger())
 	assert.NoError(t, err)
 
 	defaultRepo, err := m.Repository(repository.DefaultRepository())
@@ -23,9 +24,9 @@ func TestNewManager(t *testing.T) {
 func TestAddRepository_AlreadyExists(t *testing.T) {
 	t.Parallel()
 
-	m, err := repository.NewManager(log.NewDebugLogger())
+	m, err := repository.NewManager(context.Background(), log.NewDebugLogger())
 	assert.NoError(t, err)
 
 	err = m.AddRepository(repository.DefaultRepository())
-	assert.Errorf(t, err, "repository already exists")
+	assert.NoError(t, err)
 }

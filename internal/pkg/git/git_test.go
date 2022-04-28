@@ -3,8 +3,10 @@ package git_test
 
 import (
 	"bytes"
+	"context"
 	"os/exec"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -24,31 +26,34 @@ func TestGit_Checkout(t *testing.T) {
 	t.Parallel()
 	logger := log.NewDebugLogger()
 
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
 	// Checkout fail from a non-existing url
 	url := "https://non-existing-url"
 	ref := "main"
-	_, err := Checkout(url, ref, false, logger)
+	_, err := Checkout(ctx, url, ref, false, logger)
 	assert.Error(t, err)
 	assert.Equal(t, `git repository not found on url "https://non-existing-url"`, err.Error())
 
 	// Checkout fail from a non-existing GitHub repository
 	url = "https://github.com/keboola/non-existing-repo.git"
 	ref = "main"
-	_, err = Checkout(url, ref, false, logger)
+	_, err = Checkout(ctx, url, ref, false, logger)
 	assert.Error(t, err)
 	assert.Equal(t, `git repository not found on url "https://github.com/keboola/non-existing-repo.git"`, err.Error())
 
 	// Checkout fail from a non-existing branch
 	url = "https://github.com/keboola/keboola-as-code-templates.git"
 	ref = "non-existing-ref"
-	_, err = Checkout(url, ref, false, logger)
+	_, err = Checkout(ctx, url, ref, false, logger)
 	assert.Error(t, err)
 	assert.Equal(t, `reference "non-existing-ref" not found in the git repository "https://github.com/keboola/keboola-as-code-templates.git"`, err.Error())
 
 	// Success
 	url = "https://github.com/keboola/keboola-as-code-templates.git"
 	ref = "main"
-	r, err := Checkout(url, ref, false, logger)
+	r, err := Checkout(ctx, url, ref, false, logger)
 	assert.NoError(t, err)
 
 	// Full checkout -> directory is not empty
@@ -57,7 +62,7 @@ func TestGit_Checkout(t *testing.T) {
 	assert.Greater(t, len(subDirs), 1)
 
 	// Check if the hash equals to a commit - the git command should return a "commit" message
-	hash, err := r.CommitHash()
+	hash, err := r.CommitHash(ctx)
 	assert.NoError(t, err)
 	var stdOut bytes.Buffer
 	cmd := exec.Command("git", "cat-file", "-t", hash)
@@ -75,7 +80,7 @@ func TestGit_Checkout(t *testing.T) {
 	r.RUnlock()
 
 	// Test pull
-	assert.NoError(t, r.Pull())
+	assert.NoError(t, r.Pull(ctx))
 	assert.True(t, r.Fs().Exists(".keboola/repository.json"))
 
 	// Test clear
@@ -89,31 +94,34 @@ func TestGit_Checkout_Sparse(t *testing.T) {
 	t.Parallel()
 	logger := log.NewDebugLogger()
 
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
 	// Checkout fail from a non-existing url
 	url := "https://non-existing-url"
 	ref := "main"
-	_, err := Checkout(url, ref, true, logger)
+	_, err := Checkout(ctx, url, ref, true, logger)
 	assert.Error(t, err)
 	assert.Equal(t, `git repository not found on url "https://non-existing-url"`, err.Error())
 
 	// Checkout fail from a non-existing GitHub repository
 	url = "https://github.com/keboola/non-existing-repo.git"
 	ref = "main"
-	_, err = Checkout(url, ref, true, logger)
+	_, err = Checkout(ctx, url, ref, true, logger)
 	assert.Error(t, err)
 	assert.Equal(t, `git repository not found on url "https://github.com/keboola/non-existing-repo.git"`, err.Error())
 
 	// Checkout fail from a non-existing branch
 	url = "https://github.com/keboola/keboola-as-code-templates.git"
 	ref = "non-existing-ref"
-	_, err = Checkout(url, ref, true, logger)
+	_, err = Checkout(ctx, url, ref, true, logger)
 	assert.Error(t, err)
 	assert.Equal(t, `reference "non-existing-ref" not found in the git repository "https://github.com/keboola/keboola-as-code-templates.git"`, err.Error())
 
 	// Success
 	url = "https://github.com/keboola/keboola-as-code-templates.git"
 	ref = "main"
-	r, err := Checkout(url, ref, true, logger)
+	r, err := Checkout(ctx, url, ref, true, logger)
 	assert.NoError(t, err)
 
 	// Sparse checkout -> directory is empty
@@ -122,7 +130,7 @@ func TestGit_Checkout_Sparse(t *testing.T) {
 	assert.Equal(t, []string{".git"}, subDirs)
 
 	// Check if the hash equals to a commit - the git command should return a "commit" message
-	hash, err := r.CommitHash()
+	hash, err := r.CommitHash(ctx)
 	assert.NoError(t, err)
 	var stdOut bytes.Buffer
 	cmd := exec.Command("git", "cat-file", "-t", hash)
@@ -140,7 +148,7 @@ func TestGit_Checkout_Sparse(t *testing.T) {
 	r.RUnlock()
 
 	// Test pull
-	assert.NoError(t, r.Pull())
+	assert.NoError(t, r.Pull(ctx))
 	assert.True(t, r.Fs().Exists(".git"))
 
 	// Test clear

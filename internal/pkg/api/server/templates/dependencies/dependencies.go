@@ -90,7 +90,7 @@ func (v *container) PrefixLogger() log.PrefixLogger {
 
 func (v *container) RepositoryManager() (*repository.Manager, error) {
 	if v.repositoryManager == nil {
-		if manager, err := repository.NewManager(v.Logger()); err != nil {
+		if manager, err := repository.NewManager(v.Ctx(), v.Logger()); err != nil {
 			return nil, err
 		} else {
 			v.repositoryManager = manager

@@ -2,6 +2,7 @@ package git
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -17,12 +18,13 @@ import (
 )
 
 type Repository struct {
-	url    string
-	ref    string
-	sparse bool
-	logger log.Logger
-	lock   *sync.RWMutex
-	fs     filesystem.Fs
+	url       string
+	ref       string
+	sparse    bool
+	logger    log.Logger
+	lock      *sync.RWMutex
+	fetchLock *sync.Mutex
+	fs        filesystem.Fs
 }
 
 type cmdResult struct {
@@ -36,7 +38,7 @@ func Available() bool {
 	return err == nil
 }
 
-func Checkout(url, ref string, sparse bool, logger log.Logger) (*Repository, error) {
+func Checkout(ctx context.Context, url, ref string, sparse bool, logger log.Logger) (*Repository, error) {
 	if !Available() {
 		return nil, fmt.Errorf("git command is not available, you have to install it first")
 	}
@@ -52,7 +54,7 @@ func Checkout(url, ref string, sparse bool, logger log.Logger) (*Repository, err
 	}
 
 	// Create repository
-	r := &Repository{url: url, ref: ref, sparse: sparse, logger: logger, lock: &sync.RWMutex{}, fs: fs}
+	r := &Repository{url: url, ref: ref, sparse: sparse, logger: logger, lock: &sync.RWMutex{}, fetchLock: &sync.Mutex{}, fs: fs}
 
 	// Clone parameters
 	params := []string{"clone", "-q", "--branch", r.ref}
@@ -62,7 +64,7 @@ func Checkout(url, ref string, sparse bool, logger log.Logger) (*Repository, err
 	params = append(params, "--", r.url, dir)
 
 	// Clone repository
-	result, err := r.runGitCmd(params...)
+	result, err := r.runGitCmd(ctx, params...)
 	if err != nil {
 		if result.exitCode == 128 {
 			if strings.Contains(result.stdErr, fmt.Sprintf("Remote branch %s not found", r.ref)) {
@@ -116,10 +118,10 @@ func (r *Repository) Clear() {
 	r.fs = nil
 }
 
-func (r *Repository) CommitHash() (string, error) {
+func (r *Repository) CommitHash(ctx context.Context) (string, error) {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
-	result, err := r.runGitCmd("rev-parse", "HEAD")
+	result, err := r.runGitCmd(ctx, "rev-parse", "HEAD")
 	if err != nil {
 		return "", utils.PrefixError("cannot get repository hash", fmt.Errorf(result.stdErr))
 	}
@@ -127,31 +129,31 @@ func (r *Repository) CommitHash() (string, error) {
 }
 
 // Load a path from the remote git repository, if sparse mode is used.
-func (r *Repository) Load(path string) error {
+func (r *Repository) Load(ctx context.Context, path string) error {
 	if !r.sparse {
 		return fmt.Errorf("sparse checkout is not allowed")
 	}
-	if _, err := r.runGitCmd("sparse-checkout", "add", fmt.Sprintf("/%s", path)); err != nil {
+	if _, err := r.runGitCmd(ctx, "sparse-checkout", "add", fmt.Sprintf("/%s", path)); err != nil {
 		return err
 	}
-	if _, err := r.runGitCmd("checkout"); err != nil {
+	if _, err := r.runGitCmd(ctx, "checkout"); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *Repository) Pull() error {
+func (r *Repository) Pull(ctx context.Context) error {
+	// Check remote changes
+	if err := r.fetch(ctx); err != nil {
+		return err
+	}
+
+	// Acquire write lock, from the repository must not be read during this time
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	// Check remote changes
-	result, err := r.runGitCmd("fetch", "origin")
-	if err != nil {
-		return utils.PrefixError("cannot fetch repository", fmt.Errorf(result.stdErr))
-	}
-
 	// Reset is used, because it works also with force push (edge-case)
-	result, err = r.runGitCmd("reset", "--hard", fmt.Sprintf("origin/%s", r.ref))
+	result, err := r.runGitCmd(ctx, "reset", "--hard", fmt.Sprintf("origin/%s", r.ref))
 	if err != nil {
 		return utils.PrefixError("cannot reset repository to the origin", fmt.Errorf(result.stdErr))
 	}
@@ -159,13 +161,26 @@ func (r *Repository) Pull() error {
 	return nil
 }
 
-func (r *Repository) runGitCmd(args ...string) (cmdResult, error) {
+func (r *Repository) fetch(ctx context.Context) error {
+	r.fetchLock.Lock()
+	defer r.fetchLock.Unlock()
+
+	// Check remote changes
+	result, err := r.runGitCmd(ctx, "fetch", "origin")
+	if err != nil {
+		return utils.PrefixError("cannot fetch repository", fmt.Errorf(result.stdErr))
+	}
+
+	return nil
+}
+
+func (r *Repository) runGitCmd(ctx context.Context, args ...string) (cmdResult, error) {
 	r.logger.Debug(fmt.Sprintf(`Running git command: git %s`, strings.Join(args, " ")))
 
 	var stdOutBuffer bytes.Buffer
 	var stdErrBuffer bytes.Buffer
 
-	cmd := exec.Command("git", args...)
+	cmd := exec.CommandContext(ctx, "git", args...)
 	cmd.Dir = r.fs.BasePath()
 	cmd.Stdout = io.MultiWriter(r.logger.DebugWriter(), &stdOutBuffer)
 	cmd.Stderr = io.MultiWriter(r.logger.DebugWriter(), &stdErrBuffer)
