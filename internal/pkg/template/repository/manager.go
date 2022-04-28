@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -43,19 +44,22 @@ func (m *Manager) AddRepository(repositoryDef model.TemplateRepository) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
+	// Check if already exists
 	hash := repositoryDef.Hash()
 	if _, ok := m.repositories[hash]; ok {
 		// repository already exists
 		return nil
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	// Check out
+	m.logger.Infof(`checking out repository "%s:%s"`, repositoryDef.Url, repositoryDef.Ref)
+	ctx, cancel := context.WithTimeout(m.ctx, 30*time.Second)
 	defer cancel()
 	repo, err := git.Checkout(ctx, repositoryDef.Url, repositoryDef.Ref, false, m.logger)
 	if err != nil {
-		return err
+		return fmt.Errorf(`cannot checkout out repository "%s": %w`, repo, err)
 	}
-
+	m.logger.Infof(`repository checked out "%s"`, repo)
 	m.repositories[hash] = repo
 	return nil
 }
@@ -67,7 +71,7 @@ func (m *Manager) Pull() {
 			ctx, cancel := context.WithTimeout(m.ctx, 30*time.Second)
 			defer cancel()
 			if err := pullRepo(ctx, m.logger, repo); err != nil {
-				m.logger.Errorf(`error while updating the repository "%s": %w`, err)
+				m.logger.Errorf(`error while updating the repository "%s": %w`, repo, err)
 			}
 		}()
 	}
