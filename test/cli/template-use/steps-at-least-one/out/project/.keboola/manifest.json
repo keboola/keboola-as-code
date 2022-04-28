@@ -33,7 +33,10 @@
   "branches": [
     {
       "id": 12345,
-      "path": "main"
+      "path": "main",
+      "metadata": {
+        "KBC.KAC.templates.instances": "[{\"instanceId\":\"%s\",\"templateId\":\"my-template-id\",\"version\":\"1.0.0\"}]"
+      }
     }
   ],
   "configurations": [

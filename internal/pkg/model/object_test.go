@@ -15,14 +15,7 @@ func TestBranchMetadata_AddTemplateUsage(t *testing.T) {
 	assert.Len(t, b, 1)
 	meta, found := b["KBC.KAC.templates.instances"]
 	assert.True(t, found)
-	assert.Equal(t, `[
-  {
-    "instanceId": "inst1",
-    "templateId": "tmpl1",
-    "version": "1.0.0"
-  }
-]
-`, meta)
+	assert.Equal(t, `[{"instanceId":"inst1","templateId":"tmpl1","version":"1.0.0"}]`, meta)
 
 	usages, err := b.TemplatesUsages()
 	assert.NoError(t, err)
