@@ -178,7 +178,7 @@ var _ = Service("templates", func() {
 	Method("VersionIndex", func() {
 		Meta("openapi:summary", "Get version detail")
 		Description("Get details of specified template version.")
-		Result(TemplateVersionDetail)
+		Result(VersionDetailExtended)
 		Payload(func() {
 			repositoryAttr()
 			templateAttr()
@@ -236,7 +236,7 @@ var _ = Service("templates", func() {
 	Method("UseTemplateVersion", func() {
 		Meta("openapi:summary", "Use template")
 		Description("Validate inputs and use template in the branch.\nOnly configured steps should be send.")
-		Result(UseTemplateDetail)
+		Result(UseTemplateResult)
 		Error("InvalidInputs", ValidationError, "Inputs are not valid.")
 		Payload(func() {
 			repositoryAttr()
@@ -260,7 +260,8 @@ var _ = Service("templates", func() {
 	// Instance endpoints ----------------------------------------------------------------------------------------------
 
 	Method("InstancesIndex", func() {
-		Meta("openapi:summary", "TODO")
+		Meta("openapi:summary", "List instances")
+		Result(Instances)
 		Payload(func() {
 			branchAttr()
 		})
@@ -271,7 +272,8 @@ var _ = Service("templates", func() {
 	})
 
 	Method("InstanceIndex", func() {
-		Meta("openapi:summary", "TODO")
+		Meta("openapi:summary", "Get instance detail")
+		Result(InstanceDetail)
 		Payload(func() {
 			branchAttr()
 			instanceAttr()
@@ -280,24 +282,28 @@ var _ = Service("templates", func() {
 			GET("/project/{branch}/instances/{instanceId}")
 			Meta("openapi:tag:instance")
 			Response(StatusOK)
+			InstanceNotFoundError()
 		})
 	})
 
 	Method("UpdateInstance", func() {
-		Meta("openapi:summary", "TODO")
+		Meta("openapi:summary", "Update instance name")
+		Result(InstanceDetail)
 		Payload(func() {
 			branchAttr()
 			instanceAttr()
+			updateInstancePayload()
 		})
 		HTTP(func() {
 			PUT("/project/{branch}/instances/{instanceId}")
 			Meta("openapi:tag:instance")
 			Response(StatusOK)
+			InstanceNotFoundError()
 		})
 	})
 
 	Method("DeleteInstance", func() {
-		Meta("openapi:summary", "TODO")
+		Meta("openapi:summary", "Delete instance")
 		Payload(func() {
 			branchAttr()
 			instanceAttr()
@@ -305,26 +311,31 @@ var _ = Service("templates", func() {
 		HTTP(func() {
 			DELETE("/project/{branch}/instances/{instanceId}")
 			Meta("openapi:tag:instance")
-			Response(StatusOK)
+			Response(StatusNoContent)
+			InstanceNotFoundError()
 		})
 	})
 
 	Method("UpgradeInstance", func() {
-		Meta("openapi:summary", "TODO")
+		Meta("openapi:summary", "Re-generate the instance in the same or different version")
+		Result(UpgradeInstanceResult)
 		Payload(func() {
 			branchAttr()
 			instanceAttr()
 			versionAttr()
+			inputsPayload()
 		})
 		HTTP(func() {
 			POST("/project/{branch}/instances/{instanceId}/upgrade/{version}")
 			Meta("openapi:tag:instance")
 			Response(StatusOK)
+			InstanceNotFoundError()
 		})
 	})
 
 	Method("UpgradeInstanceInputsIndex", func() {
-		Meta("openapi:summary", "TODO")
+		Meta("openapi:summary", "Get inputs for upgrade operation")
+		Result(Inputs)
 		Payload(func() {
 			branchAttr()
 			instanceAttr()
@@ -334,20 +345,24 @@ var _ = Service("templates", func() {
 			GET("/project/{branch}/instances/{instanceId}/upgrade/{version}/inputs")
 			Meta("openapi:tag:instance")
 			Response(StatusOK)
+			InstanceNotFoundError()
 		})
 	})
 
 	Method("UpgradeInstanceValidateInputs", func() {
-		Meta("openapi:summary", "TODO")
+		Meta("openapi:summary", "Validate inputs for upgrade operation")
+		Result(ValidationResult)
 		Payload(func() {
 			branchAttr()
 			instanceAttr()
 			versionAttr()
+			inputsPayload()
 		})
 		HTTP(func() {
 			POST("/project/{branch}/instances/{instanceId}/upgrade/{version}/inputs")
 			Meta("openapi:tag:instance")
 			Response(StatusOK)
+			InstanceNotFoundError()
 		})
 	})
 })
@@ -398,6 +413,10 @@ func TemplateNotFoundError() {
 
 func VersionNotFoundError() {
 	GenericError(StatusNotFound, "templates.versionNotFound", "Version not found error.", `Version "v1.2.3" not found.`)
+}
+
+func InstanceNotFoundError() {
+	GenericError(StatusNotFound, "templates.instanceNotFound", "Instance not found error.", `Instance "V1StGXR8IZ5jdHi6BAmyT" not found.`)
 }
 
 // Common attributes----------------------------------------------------------------------------------------------------
@@ -467,6 +486,13 @@ func inputsPayload() {
 		Example([]ExampleStepPayloadData{ExampleStepPayload()})
 	})
 	Required("steps")
+}
+
+func updateInstancePayload() {
+	Attribute("name", String, "New name of the instance.", func() {
+		Example("My Great Instance")
+	})
+	Required("name")
 }
 
 var StepPayload = Type("StepPayload", func() {
@@ -604,7 +630,7 @@ var Template = Type("Template", func() {
 	Required("id", "icon", "name", "author", "description", "defaultVersion", "versions")
 })
 
-var TemplateVersionDetail = Type("TemplateVersionDetail", func() {
+var VersionDetail = Type("VersionDetail", func() {
 	Extend(TemplateVersion)
 	Attribute("components", ArrayOf(String), "List of components used in the template.", func() {
 		Example([]string{"ex-generic-v2", "keboola.snowflake-transformation"})
@@ -613,19 +639,23 @@ var TemplateVersionDetail = Type("TemplateVersionDetail", func() {
 		MinLength(1)
 		Example("Lorem markdownum quod discenda [aegide lapidem](http://www.nequeuntoffensa.io/)")
 	})
+	Required("components", "readme")
+	Example(ExampleVersionDetail())
+})
+
+var VersionDetailExtended = Type("VersionDetailExtended", func() {
+	Extend(VersionDetail)
 	Attribute("repository", Repository, "Information about the repository.")
 	Attribute("template", Template, "Information about the template.")
-	Required("components", "readme", "repository", "template")
-	Example(ExampleVersionDetailData{
-		Components:         []string{"ex-generic-v2", "keboola.snowflake-transformation"},
-		Readme:             "Lorem markdownum quod discenda [aegide lapidem](http://www.nequeuntoffensa.io/)",
-		Repository:         ExampleRepository(),
-		Template:           ExampleTemplate1(),
-		ExampleVersionData: ExampleVersion1(),
+	Required("repository", "template")
+	Example(ExampleVersionDetailExtendedData{
+		ExampleVersionDetailData: ExampleVersionDetail(),
+		Repository:               ExampleRepository(),
+		Template:                 ExampleTemplate1(),
 	})
 })
 
-var TemplateVersion = Type("TemplateVersion", func() {
+var TemplateVersion = Type("Version", func() {
 	Description("Template version.")
 	Attribute("version", String, "Semantic version.", func() {
 		MinLength(1)
@@ -644,11 +674,15 @@ var TemplateVersion = Type("TemplateVersion", func() {
 	Example(ExampleVersion1())
 })
 
-var UseTemplateDetail = Type("UseTemplateDetail", func() {
+var UseTemplateResult = Type("UseTemplateResult", func() {
 	Description("Information about new template instance.")
 	Attribute("instanceId", String, "Template instance ID.", func() {
 		Example("V1StGXR8IZ5jdHi6BAmyT")
 	})
+})
+
+var UpgradeInstanceResult = Type("UpgradeInstanceResult", func() {
+	Extend(UseTemplateResult)
 })
 
 var ValidationError = Type("ValidationError", func() {
@@ -824,6 +858,71 @@ var InputOption = Type("inputOption", func() {
 	Required("label", "value")
 })
 
+var Instances = Type("Instances", func() {
+	Description("List of the instances.")
+	Attribute("instances", ArrayOf(Instance), "All instances found in branch.")
+	Required("instances")
+})
+
+var Instance = Type("instance", func() {
+	Description("ID of the template.")
+	Attribute("templateId", String, func() {
+		Example("my-template")
+		Description("ID of the template.")
+	})
+	Attribute("instanceId", String, func() {
+		Example("V1StGXR8IZ5jdHi6BAmyT")
+		Description("ID of the template instance.")
+	})
+	Attribute("branch", String, func() {
+		Example("5876")
+		Description("ID of the branch.")
+	})
+	Attribute("repositoryName", String, func() {
+		Example("keboola")
+		Description("Name of the template repository.")
+	})
+	Attribute("templateId", String, func() {
+		Example("my-template")
+		Description("ID of the template.")
+	})
+	Attribute("version", String, func() {
+		Example("v1.1.0")
+		Description("Semantic version of the template.")
+	})
+	Attribute("name", String, func() {
+		Example("My Instance")
+		Description("Name of the instance.")
+	})
+	Attribute("created", ChangeInfo, func() {
+		Description("Instance creation date and token.")
+	})
+	Attribute("updated", ChangeInfo, func() {
+		Description("Instance update date and token.")
+	})
+	Required("templateId", "instanceId", "branch", "repositoryName", "templateId", "version", "name", "created", "updated")
+})
+
+var InstanceDetail = Type("instanceDetail", func() {
+	Extend(Instance)
+	Attribute("versionDetail", VersionDetail, "Information about the template version. Can be null if the repository or template no longer exists. If the exact version is not found, the nearest one is used.")
+	Required("versionDetail")
+})
+
+var ChangeInfo = Type("changeInfo", func() {
+	Description("Date of change and who made it.")
+	Attribute("date", String, func() {
+		Description("Date and time of the change.")
+		Format(FormatDateTime)
+		Example("2022-04-28T14:20:04+00:00")
+	})
+	Attribute("tokenId", String, func() {
+		Example("245941")
+		Description("The token by which the change was made.")
+	})
+	Required("date", "tokenId")
+})
+
 // Examples ------------------------------------------------------------------------------------------------------------
 
 type ExampleErrorData struct {
@@ -872,8 +971,12 @@ type ExampleVersionData struct {
 
 type ExampleVersionDetailData struct {
 	ExampleVersionData
-	Components []string              `json:"components" yaml:"components"`
-	Readme     string                `json:"readme" yaml:"readme"`
+	Components []string `json:"components" yaml:"components"`
+	Readme     string   `json:"readme" yaml:"readme"`
+}
+
+type ExampleVersionDetailExtendedData struct {
+	ExampleVersionDetailData
 	Repository ExampleRepositoryData `json:"repository" yaml:"repository"`
 	Template   ExampleTemplateData   `json:"template" yaml:"template"`
 }
@@ -998,6 +1101,14 @@ func ExampleVersion1() ExampleVersionData {
 		Version:     "v1.2.3",
 		Stable:      true,
 		Description: "Stable version.",
+	}
+}
+
+func ExampleVersionDetail() ExampleVersionDetailData {
+	return ExampleVersionDetailData{
+		Components:         []string{"ex-generic-v2", "keboola.snowflake-transformation"},
+		Readme:             "Lorem markdownum quod discenda [aegide lapidem](http://www.nequeuntoffensa.io/)",
+		ExampleVersionData: ExampleVersion1(),
 	}
 }
 

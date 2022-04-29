@@ -46,7 +46,7 @@ func TemplateResponse(tmpl *repository.TemplateRecord, author *Author) *Template
 		Description:    tmpl.Description,
 		DefaultVersion: defaultVersion.Version.String(),
 		Author:         author,
-		Versions:       make([]*TemplateVersion, 0),
+		Versions:       make([]*Version, 0),
 	}
 
 	for _, version := range tmpl.Versions {
@@ -67,7 +67,7 @@ func TemplateDetailResponse(repo *repository.Repository, tmpl *repository.Templa
 		Description:    tmpl.Description,
 		DefaultVersion: defaultVersion.Version.String(),
 		Author:         repoResponse.Author,
-		Versions:       make([]*TemplateVersion, 0),
+		Versions:       make([]*Version, 0),
 	}
 	for _, version := range tmpl.Versions {
 		version := version
@@ -76,19 +76,19 @@ func TemplateDetailResponse(repo *repository.Repository, tmpl *repository.Templa
 	return out
 }
 
-func VersionResponse(v *repository.VersionRecord) *TemplateVersion {
-	return &TemplateVersion{
+func VersionResponse(v *repository.VersionRecord) *Version {
+	return &Version{
 		Version:     v.Version.String(),
 		Stable:      v.Stable,
 		Description: v.Description,
 	}
 }
 
-func VersionDetailResponse(template *template.Template) *TemplateVersionDetail {
+func VersionDetailResponse(template *template.Template) *VersionDetailExtended {
 	repoResponse := RepositoryResponse(template.Repository())
 	tmplRec := template.TemplateRecord()
 	versionRec := template.VersionRecord()
-	return &TemplateVersionDetail{
+	return &VersionDetailExtended{
 		Repository:  repoResponse,
 		Template:    TemplateResponse(&tmplRec, repoResponse.Author),
 		Version:     versionRec.Version.String(),
