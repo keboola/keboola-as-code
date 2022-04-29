@@ -537,7 +537,6 @@ jobs:
         run: |
           docker run --rm homebrew/brew sh -c '
           set -e
-          set -o pipefail
           brew install keboola/keboola-cli/keboola-cli
           kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
           '
@@ -565,12 +564,15 @@ jobs:
       - update-repositories
     runs-on: windows-latest
     steps:
-      - name: Install on Windows from MSI
+      - name: Download MSI
         shell: bash
         env:
           MSI_FILE: ${{ needs.release-msi-windows.outputs.msi_file }}
         run: |
           curl "${DIST_BASE_URL}/msi/${MSI_FILE}" --output install.msi
+      - name: Install on Windows from MSI
+        shell: bash
+        run: |
           msiexec /i install.msi /quiet /qn /l*vx install_log.txt
           [ ! -d "C:\Program Files\Keboola CLI" ] && exit 1
       - name: Install on Windows using Scoop
