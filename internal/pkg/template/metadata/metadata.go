@@ -7,48 +7,29 @@ const (
 	instanceIdKey = "KBC.KAC.templates.instanceId" // attach config to a template instance
 )
 
-// configMetadata stores config template metadata to config metadata.
-type configMetadata struct {
-	data map[string]string
+// ConfigMetadata stores config template metadata to config metadata.
+type ConfigMetadata map[string]string
+
+func (m ConfigMetadata) Repository() string {
+	return m[repositoryKey]
 }
 
-// rowMetadata stores row template metadata to config metadata.
-type rowMetadata struct {
-	rowTemplateId string
-	data          map[string]string
+func (m ConfigMetadata) SetRepository(repository string) {
+	m[repositoryKey] = repository
 }
 
-func ConfigMetadata(data map[string]string) *configMetadata {
-	return &configMetadata{data: data}
+func (m ConfigMetadata) TemplateId() string {
+	return m[templateIdKey]
 }
 
-func (m *configMetadata) Repository() string {
-	return m.data[repositoryKey]
+func (m ConfigMetadata) SetTemplateId(templateId string) {
+	m[templateIdKey] = templateId
 }
 
-func (m *configMetadata) SetRepository(repository string) *configMetadata {
-	m.data[repositoryKey] = repository
-	return m
+func (m ConfigMetadata) InstanceId() string {
+	return m[instanceIdKey]
 }
 
-func (m *configMetadata) TemplateId() string {
-	return m.data[templateIdKey]
-}
-
-func (m *configMetadata) SetTemplateId(templateId string) *configMetadata {
-	m.data[templateIdKey] = templateId
-	return m
-}
-
-func (m *configMetadata) InstanceId() string {
-	return m.data[instanceIdKey]
-}
-
-func (m *configMetadata) SetInstanceId(instanceId string) *configMetadata {
-	m.data[instanceIdKey] = instanceId
-	return m
-}
-
-func (m *configMetadata) RowMetadata(rowTemplateId string) *rowMetadata {
-	return &rowMetadata{rowTemplateId: rowTemplateId, data: m.data}
+func (m ConfigMetadata) SetInstanceId(instanceId string) {
+	m[instanceIdKey] = instanceId
 }

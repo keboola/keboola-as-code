@@ -8,10 +8,9 @@ import (
 
 type deleteTmplDialog struct {
 	*Dialogs
-	projectState  *project.State
-	options       *options.Options
-	useInputsFile bool
-	out           deleteTemplate.Options
+	projectState *project.State
+	options      *options.Options
+	out          deleteTemplate.Options
 }
 
 // AskDeleteTemplateOptions - dialog for deleting a template from the project.
