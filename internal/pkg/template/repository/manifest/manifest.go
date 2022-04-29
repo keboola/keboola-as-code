@@ -19,17 +19,18 @@ type VersionNotFoundError struct {
 
 type Manifest struct {
 	changed bool
+	author  Author
 	records map[string]TemplateRecord // template record by template ID
 }
 
 func New() *Manifest {
 	return &Manifest{
+		author: Author{
+			Name: "Example Author",
+			Url:  "https://example.com",
+		},
 		records: make(map[string]TemplateRecord),
 	}
-}
-
-func (m *Manifest) Path() string {
-	return Path()
 }
 
 func Load(fs filesystem.Fs) (*Manifest, error) {
@@ -41,6 +42,7 @@ func Load(fs filesystem.Fs) (*Manifest, error) {
 
 	// Create manifest
 	m := New()
+	m.author = manifestContent.Author
 	m.Persist(manifestContent.records()...)
 
 	// Track if manifest was changed after load
@@ -50,9 +52,14 @@ func Load(fs filesystem.Fs) (*Manifest, error) {
 	return m, nil
 }
 
+func (m *Manifest) Path() string {
+	return Path()
+}
+
 func (m *Manifest) Save(fs filesystem.Fs) error {
 	// Create file content
 	content := newFile()
+	content.Author = m.author
 	content.Templates = m.AllTemplates()
 
 	// Save file
@@ -62,6 +69,10 @@ func (m *Manifest) Save(fs filesystem.Fs) error {
 
 	m.changed = false
 	return nil
+}
+
+func (m *Manifest) Author() Author {
+	return m.author
 }
 
 func (m *Manifest) IsChanged() bool {

@@ -20,3 +20,7 @@ f4bf236227116803d28fa2f931f28059a5ab588f 1054ce00e272e6570d0b619cc10b474c26172c9
 f4bf236227116803d28fa2f931f28059a5ab588f 6a406dfaaa48848fcd0c8962914b1c465e49e5b6 Michal Jurečko <michal.jurecko@gmail.com> 1649872645 +0200	commit: Add template icon
 6a406dfaaa48848fcd0c8962914b1c465e49e5b6 5b127a4f79184fd0b504c70c02da511cec737d72 Michal Jurečko <michal.jurecko@gmail.com> 1649872654 +0200	checkout: moving from b1 to main
 5b127a4f79184fd0b504c70c02da511cec737d72 6755031f6c52e9151965fd1ac7f40ef1c18db6ce Michal Jurečko <michal.jurecko@gmail.com> 1649936805 +0200	commit: Add _common directory
+6755031f6c52e9151965fd1ac7f40ef1c18db6ce c6c1f0be98fa8fd49be15022a47dcdca22f0dc41 Michal Jurečko <michal.jurecko@gmail.com> 1651218382 +0200	commit: Add repository author
+c6c1f0be98fa8fd49be15022a47dcdca22f0dc41 6a406dfaaa48848fcd0c8962914b1c465e49e5b6 Michal Jurečko <michal.jurecko@gmail.com> 1651218385 +0200	checkout: moving from main to b1
+6a406dfaaa48848fcd0c8962914b1c465e49e5b6 db2c26cc2f75b730f034378031d43df445dd6bec Michal Jurečko <michal.jurecko@gmail.com> 1651218393 +0200	commit: Add repository author
+db2c26cc2f75b730f034378031d43df445dd6bec c6c1f0be98fa8fd49be15022a47dcdca22f0dc41 Michal Jurečko <michal.jurecko@gmail.com> 1651218397 +0200	checkout: moving from b1 to main
