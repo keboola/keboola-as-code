@@ -19,13 +19,13 @@ func validateInputs(groups template.StepsGroups, payload []*StepPayload) (out *V
 
 	// Check each group
 	for _, group := range groups.ToExtended() {
-		outGroup := &StepGroupValidationResult{ID: group.Id, Valid: true}
+		outGroup := &StepGroupValidationResult{ID: group.Id, Valid: true, Steps: make([]*StepValidationResult, 0)}
 		out.StepGroups = append(out.StepGroups, outGroup)
 		configuredSteps := 0
 
 		// Check each step
 		for _, step := range group.Steps {
-			outStep := &StepValidationResult{ID: step.Id, Valid: true}
+			outStep := &StepValidationResult{ID: step.Id, Valid: true, Inputs: make([]*InputValidationResult, 0)}
 			outGroup.Steps = append(outGroup.Steps, outStep)
 			allStepsIds[step.Id] = true
 			stepInputsIds := make(map[string]bool)
