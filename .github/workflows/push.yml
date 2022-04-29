@@ -550,6 +550,8 @@ jobs:
       - update-repositories
     runs-on: macos-latest
     steps:
+      - name: Remove old git package
+        run: brew list --full-name | grep '^git@' | xargs -r brew uninstall --ignore-dependencies
       - name: Install on MacOS by Homebrew
         run: |
           brew install keboola/keboola-cli/keboola-cli

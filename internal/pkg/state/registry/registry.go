@@ -121,6 +121,15 @@ func (s *Registry) RemoteObjects() Objects {
 	return NewProxy(s, StateTypeRemote)
 }
 
+func (s *Registry) MainBranch() *BranchState {
+	for _, b := range s.Branches() {
+		if b.LocalOrRemoteState().(*Branch).IsDefault {
+			return b
+		}
+	}
+	panic(fmt.Errorf("no default branch found"))
+}
+
 func (s *Registry) Branches() (branches []*BranchState) {
 	for _, object := range s.All() {
 		if v, ok := object.(*BranchState); ok {

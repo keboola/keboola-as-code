@@ -60,6 +60,12 @@ func (v *CommonContainer) Components() (*model.ComponentsMap, error) {
 	return storageApi.Components(), nil
 }
 
+func (v *CommonContainer) WithStorageApi(api *storageapi.Api) *CommonContainer {
+	clone := *v
+	clone.storageApi = api
+	return &clone
+}
+
 func (v *CommonContainer) StorageApi() (*storageapi.Api, error) {
 	if v.storageApi == nil {
 		// Get host

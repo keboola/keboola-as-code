@@ -5,7 +5,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/version"
-	loadProjectManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/load"
 )
 
 func (v *container) LocalProject(ignoreErrors bool) (*project.Project, error) {
@@ -16,14 +15,11 @@ func (v *container) LocalProject(ignoreErrors bool) (*project.Project, error) {
 			return nil, err
 		}
 
-		// Project manifest
-		options := loadProjectManifest.Options{IgnoreErrors: ignoreErrors}
-		manifest, err := loadProjectManifest.Run(projectDir, options, v)
-		if err != nil {
+		if p, err := project.New(projectDir, ignoreErrors, v); err != nil {
 			return nil, err
+		} else {
+			v.project = p
 		}
-
-		v.project = project.New(projectDir, manifest, v)
 	}
 	return v.project, nil
 }

@@ -72,7 +72,7 @@ func Run(o Options, d dependencies) (err error) {
 		logger.Info(`Running pull.`)
 
 		// Load project state
-		prj := project.New(fs, manifest, d)
+		prj := project.NewWithManifest(fs, manifest, d)
 		projectState, err := prj.LoadState(loadState.InitOptions(o.Pull))
 		if err != nil {
 			return err

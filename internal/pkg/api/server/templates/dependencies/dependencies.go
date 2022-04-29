@@ -72,7 +72,7 @@ func (v *container) WithCtx(ctx context.Context, cancelFn context.CancelFunc) Co
 // WithLoggerPrefix returns dependencies clone with modified logger.
 func (v *container) WithLoggerPrefix(prefix string) *container {
 	clone := v.Clone()
-	clone.logger = v.logger.WithPrefix(prefix)
+	clone.logger = v.logger.WithAdditionalPrefix(prefix)
 	return clone
 }
 
@@ -80,6 +80,7 @@ func (v *container) WithLoggerPrefix(prefix string) *container {
 func (v *container) WithStorageApi(api *storageapi.Api) (*container, error) {
 	clone := v.Clone()
 	clone.storageApi = api
+	clone.commonDeps = clone.commonDeps.WithStorageApi(api)
 	return clone, nil
 }
 

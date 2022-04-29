@@ -833,7 +833,7 @@ func TestResults_Format(t *testing.T) {
 func newProjectState(t *testing.T) *state.State {
 	t.Helper()
 	d := dependencies.NewTestContainer()
-	d.SetLocalProject(project.New(d.Fs(), projectManifest.New(12345, `foo.bar`), d))
+	d.SetLocalProject(project.NewWithManifest(d.Fs(), projectManifest.New(12345, `foo.bar`), d))
 	d.UseMockedStorageApi()
 	d.UseMockedSchedulerApi()
 	projectState, err := d.LocalProjectState(loadState.Options{

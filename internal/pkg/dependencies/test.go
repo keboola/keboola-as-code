@@ -23,7 +23,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
-	loadProjectManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/load"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
@@ -202,11 +201,11 @@ func (v *TestContainer) EmptyState() *state.State {
 
 func (v *TestContainer) LocalProject(ignoreErrors bool) (*project.Project, error) {
 	if v.project == nil {
-		m, err := loadProjectManifest.Run(v.fs, loadProjectManifest.Options{IgnoreErrors: ignoreErrors}, v)
-		if err != nil {
+		if p, err := project.New(v.fs, ignoreErrors, v); err != nil {
 			return nil, err
+		} else {
+			v.project = p
 		}
-		v.project = project.New(v.fs, m, v)
 	}
 	return v.project, nil
 }

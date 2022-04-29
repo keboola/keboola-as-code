@@ -56,13 +56,13 @@ func LoadTemplateOptions() loadState.Options {
 	}
 }
 
-func Run(projectState *project.State, tmpl *template.Template, o Options, d dependencies) error {
+func Run(projectState *project.State, tmpl *template.Template, o Options, d dependencies) (string, error) {
 	logger := d.Logger()
 
 	// Get Storage API
 	storageApi, err := d.StorageApi()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// Create tickets provider, to generate new IDS
@@ -75,7 +75,7 @@ func Run(projectState *project.State, tmpl *template.Template, o Options, d depe
 	ctx := template.NewUseContext(d.Ctx(), tmpl.Reference(), tmpl.ObjectsRoot(), instanceId, o.TargetBranch, o.Inputs, tickets)
 	templateState, err := tmpl.LoadState(ctx, LoadTemplateOptions())
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// Prepare operations
@@ -116,24 +116,25 @@ func Run(projectState *project.State, tmpl *template.Template, o Options, d depe
 		// Save to filesystem
 		saveOp.SaveObject(objectState, objectState.LocalState(), model.NewChangedFields())
 	}
+
 	if errors.Len() > 0 {
-		return errors
+		return "", errors
 	}
 	if err := renameOp.Invoke(); err != nil {
-		return err
+		return "", err
 	}
 	if err := saveOp.Invoke(); err != nil {
-		return err
+		return "", err
 	}
 
 	// Encrypt values
 	if err := encrypt.Run(projectState, encrypt.Options{DryRun: false, LogEmpty: false}, d); err != nil {
-		return err
+		return "", err
 	}
 
 	// Save manifest
 	if _, err := saveProjectManifest.Run(projectState.ProjectManifest(), projectState.Fs(), d); err != nil {
-		return err
+		return "", err
 	}
 
 	// Log new objects
@@ -141,7 +142,7 @@ func Run(projectState *project.State, tmpl *template.Template, o Options, d depe
 
 	// Normalize paths
 	if _, err := rename.Run(projectState, rename.Options{DryRun: false, LogEmpty: false}, d); err != nil {
-		return err
+		return "", err
 	}
 
 	// Validate schemas and encryption
@@ -153,5 +154,5 @@ func Run(projectState *project.State, tmpl *template.Template, o Options, d depe
 	}
 
 	logger.Info(fmt.Sprintf(`Template "%s" has been applied, instance ID: %s`, tmpl.FullName(), instanceId))
-	return nil
+	return instanceId, nil
 }

@@ -139,7 +139,7 @@ func TestLocalLoadMapper(t *testing.T) {
 	// Load objects
 	m, err := projectManifest.Load(fs, false)
 	assert.NoError(t, err)
-	uow.LoadAll(m, m.Filter())
+	uow.LoadAll(m, *m.Filter())
 	assert.NoError(t, uow.Invoke())
 
 	// Internal state has been mapped

@@ -8,12 +8,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func validateInputs(groups template.StepsGroups, payload []*StepPayload) (out *ValidationResult, err error) {
+func validateInputs(groups template.StepsGroups, payload []*StepPayload) (out *ValidationResult, allValues template.InputsValues, err error) {
 	out = &ValidationResult{Valid: true}
 	errFormatter := NewValidationErrorFormatter()
 	stepInputs := inputsPayloadToMap(payload)
 
 	errs := utils.NewMultiError()
+	allValues = make(template.InputsValues, 0)
 	allValuesMap := make(map[string]interface{})
 	allStepsIds := make(map[string]bool)
 
@@ -66,6 +67,11 @@ func validateInputs(groups template.StepsGroups, payload []*StepPayload) (out *V
 
 				// Add value to context
 				allValuesMap[input.Id] = value
+				allValues = append(allValues, template.InputValue{
+					Id:      input.Id,
+					Value:   value,
+					Skipped: !outInput.Visible,
+				})
 
 				// Propagate invalid state from input to step
 				if outInput.Error != nil {
@@ -109,12 +115,12 @@ func validateInputs(groups template.StepsGroups, payload []*StepPayload) (out *V
 
 	// Format payload errors
 	if errs.Len() > 0 {
-		return nil, BadRequestError{
+		return nil, nil, BadRequestError{
 			Message: errFormatter.Format(utils.PrefixError("Invalid payload", errs)),
 		}
 	}
 
-	return out, nil
+	return out, allValues, nil
 }
 
 // inputsPayloadToMap returns map[StepId][InputId] -> value.
