@@ -66,7 +66,7 @@ func (s *service) TemplateIndex(d dependencies.Container, payload *TemplateIndex
 	return TemplateDetailResponse(repo, tmplRecord), nil
 }
 
-func (s *service) VersionIndex(d dependencies.Container, payload *VersionIndexPayload) (res *TemplateVersionDetail, err error) {
+func (s *service) VersionIndex(d dependencies.Container, payload *VersionIndexPayload) (res *VersionDetailExtended, err error) {
 	tmpl, err := getTemplateVersion(d, payload.Repository, payload.Template, payload.Version)
 	if err != nil {
 		return nil, err
@@ -90,7 +90,7 @@ func (s *service) ValidateInputs(d dependencies.Container, payload *ValidateInpu
 	return validateInputs(tmpl.Inputs(), payload.Steps)
 }
 
-func (s *service) UseTemplateVersion(d dependencies.Container, payload *UseTemplateVersionPayload) (res *UseTemplateDetail, err error) {
+func (s *service) UseTemplateVersion(d dependencies.Container, payload *UseTemplateVersionPayload) (res *UseTemplateResult, err error) {
 	tmpl, err := getTemplateVersion(d, payload.Repository, payload.Template, payload.Version)
 	if err != nil {
 		return nil, err
@@ -110,32 +110,32 @@ func (s *service) UseTemplateVersion(d dependencies.Container, payload *UseTempl
 	return nil, NotImplementedError{}
 }
 
-func (s *service) InstancesIndex(dependencies.Container, *InstancesIndexPayload) (err error) {
-	return NotImplementedError{}
+func (s *service) InstancesIndex(dependencies.Container, *InstancesIndexPayload) (res *Instances, err error) {
+	return nil, NotImplementedError{}
 }
 
-func (s *service) InstanceIndex(dependencies.Container, *InstanceIndexPayload) (err error) {
-	return NotImplementedError{}
+func (s *service) InstanceIndex(dependencies.Container, *InstanceIndexPayload) (res *InstanceDetail, err error) {
+	return nil, NotImplementedError{}
 }
 
-func (s *service) UpdateInstance(dependencies.Container, *UpdateInstancePayload) (err error) {
-	return NotImplementedError{}
+func (s *service) UpdateInstance(dependencies.Container, *UpdateInstancePayload) (res *InstanceDetail, err error) {
+	return nil, NotImplementedError{}
 }
 
 func (s *service) DeleteInstance(dependencies.Container, *DeleteInstancePayload) (err error) {
 	return NotImplementedError{}
 }
 
-func (s *service) UpgradeInstance(dependencies.Container, *UpgradeInstancePayload) (err error) {
-	return NotImplementedError{}
+func (s *service) UpgradeInstance(dependencies.Container, *UpgradeInstancePayload) (res *UpgradeInstanceResult, err error) {
+	return nil, NotImplementedError{}
 }
 
-func (s *service) UpgradeInstanceInputsIndex(dependencies.Container, *UpgradeInstanceInputsIndexPayload) (err error) {
-	return NotImplementedError{}
+func (s *service) UpgradeInstanceInputsIndex(dependencies.Container, *UpgradeInstanceInputsIndexPayload) (res *Inputs, err error) {
+	return nil, NotImplementedError{}
 }
 
-func (s *service) UpgradeInstanceValidateInputs(dependencies.Container, *UpgradeInstanceValidateInputsPayload) (err error) {
-	return NotImplementedError{}
+func (s *service) UpgradeInstanceValidateInputs(dependencies.Container, *UpgradeInstanceValidateInputsPayload) (res *ValidationResult, err error) {
+	return nil, NotImplementedError{}
 }
 
 func getRepositories() []model.TemplateRepository {
