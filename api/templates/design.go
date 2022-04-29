@@ -904,6 +904,13 @@ var Instance = Type("instance", func() {
 	Required("templateId", "instanceId", "branch", "repositoryName", "templateId", "version", "name", "created", "updated")
 })
 
+var InstanceDetail = Type("instanceDetail", func() {
+	Extend(Instance)
+	Attribute("versionDetail", VersionDetail, "Information about the template version. Can be null if the repository or template no longer exists. If the exact version is not found, the nearest one is used.")
+	Attribute("configurations", ArrayOf(Config), "All configurations from the instance.")
+	Required("versionDetail", "configurations")
+})
+
 var MainConfig = Type("mainConfig", func() {
 	Description("Main config of the instance, usually an orchestration. Optional.")
 	Attribute("componentId", String, "Component ID.", func() {
@@ -915,10 +922,18 @@ var MainConfig = Type("mainConfig", func() {
 	Required("componentId", "configId")
 })
 
-var InstanceDetail = Type("instanceDetail", func() {
-	Extend(Instance)
-	Attribute("versionDetail", VersionDetail, "Information about the template version. Can be null if the repository or template no longer exists. If the exact version is not found, the nearest one is used.")
-	Required("versionDetail")
+var Config = Type("config", func() {
+	Description("The configuration that is part of the template instance.")
+	Attribute("componentId", String, "Component ID.", func() {
+		Example("keboola.ex-db-mysql")
+	})
+	Attribute("configId", String, "Configuration ID.", func() {
+		Example("7954825835")
+	})
+	Attribute("name", String, "Name of the configuration.", func() {
+		Example("My Extractor")
+	})
+	Required("componentId", "configId", "name")
 })
 
 var ChangeInfo = Type("changeInfo", func() {
