@@ -241,7 +241,7 @@ func loadLocalTestState(t *testing.T, m *manifest.Manifest, fs filesystem.Fs) (*
 	// Mocked API response
 	d := dependencies.NewTestContainer()
 	d.SetFs(fs)
-	d.SetLocalProject(project.New(d.Fs(), m, d))
+	d.SetLocalProject(project.NewWithManifest(d.Fs(), m, d))
 	d.UseMockedSchedulerApi()
 	_, httpTransport := d.UseMockedStorageApi()
 	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
@@ -269,7 +269,7 @@ func loadLocalTestState(t *testing.T, m *manifest.Manifest, fs filesystem.Fs) (*
 	state, err := New(prj, d)
 	assert.NoError(t, err)
 	filter := m.Filter()
-	_, localErr, remoteErr := state.Load(LoadOptions{LocalFilter: &filter, LoadLocalState: true})
+	_, localErr, remoteErr := state.Load(LoadOptions{LocalFilter: filter, LoadLocalState: true})
 	assert.NoError(t, remoteErr)
 	return state, localErr
 }

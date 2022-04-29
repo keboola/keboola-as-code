@@ -40,7 +40,7 @@ func TestLoadState(t *testing.T) {
 	d := dependencies.NewTestContainer()
 	d.InitFromTestProject(testProject)
 	d.SetFs(fs)
-	d.SetLocalProject(project.New(d.Fs(), m, d))
+	d.SetLocalProject(project.NewWithManifest(d.Fs(), m, d))
 	prj, err := d.LocalProject(false)
 	assert.NoError(t, err)
 

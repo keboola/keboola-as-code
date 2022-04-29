@@ -12,7 +12,7 @@ import (
 func RepositoriesResponse(d dependencies.Container, v []model.TemplateRepository) (*Repositories, error) {
 	out := &Repositories{}
 	for _, repoRef := range v {
-		repo, err := getRepository(d, repoRef.Name)
+		repo, err := repositoryInst(d, repoRef.Name)
 		if err != nil {
 			return nil, err
 		}

@@ -76,7 +76,6 @@ require (
 	github.com/mitchellh/mapstructure v1.4.2 // indirect
 	github.com/pelletier/go-toml v1.2.0 // indirect
 	github.com/philhofer/fwd v1.1.1 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/spf13/jwalterweatherman v1.0.0 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
@@ -100,4 +99,7 @@ require (
 	sigs.k8s.io/yaml v1.2.0 // indirect
 )
 
-require github.com/davecgh/go-spew v1.1.1 // indirect
+require (
+	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
+)

@@ -93,8 +93,8 @@ func (m *Manifest) Path() string {
 	return Path()
 }
 
-func (m *Manifest) Filter() model.ObjectsFilter {
-	return m.filter
+func (m *Manifest) Filter() *model.ObjectsFilter {
+	return &m.filter
 }
 
 func (m *Manifest) ApiHost() string {

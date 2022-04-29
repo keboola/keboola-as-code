@@ -679,6 +679,7 @@ var UseTemplateResult = Type("UseTemplateResult", func() {
 	Attribute("instanceId", String, "Template instance ID.", func() {
 		Example("V1StGXR8IZ5jdHi6BAmyT")
 	})
+	Required("instanceId")
 })
 
 var UpgradeInstanceResult = Type("UpgradeInstanceResult", func() {

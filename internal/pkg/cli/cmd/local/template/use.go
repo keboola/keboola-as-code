@@ -65,7 +65,8 @@ func UseCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Use template
-			return useOp.Run(projectState, template, options, d)
+			_, err = useOp.Run(projectState, template, options, d)
+			return err
 		},
 	}
 

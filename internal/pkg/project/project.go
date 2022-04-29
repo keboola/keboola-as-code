@@ -41,12 +41,20 @@ type Project struct {
 	manifest   *Manifest
 }
 
-func New(fs filesystem.Fs, manifest *Manifest, d dependencies) *Project {
+func New(fs filesystem.Fs, ignoreErrors bool, d dependencies) (*Project, error) {
+	m, err := projectManifest.Load(fs, ignoreErrors)
+	if err != nil {
+		return nil, err
+	}
+	return NewWithManifest(fs, m, d), nil
+}
+
+func NewWithManifest(fs filesystem.Fs, m *Manifest, d dependencies) *Project {
 	return &Project{
 		deps:       d,
 		fs:         fs,
 		fileLoader: fs.FileLoader(),
-		manifest:   manifest,
+		manifest:   m,
 	}
 }
 
@@ -67,7 +75,7 @@ func (p *Project) ProjectManifest() *Manifest {
 }
 
 func (p *Project) Filter() model.ObjectsFilter {
-	return p.manifest.Filter()
+	return *p.manifest.Filter()
 }
 
 func (p *Project) Ctx() context.Context {
