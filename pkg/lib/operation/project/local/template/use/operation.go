@@ -78,12 +78,27 @@ func Run(projectState *project.State, tmpl *template.Template, o Options, d depe
 		return err
 	}
 
-	// Rename and save
+	// Prepare operations
 	objects := make(newObjects, 0)
 	errors := utils.NewMultiError()
 	renameOp := projectState.LocalManager().NewPathsGenerator(true)
 	saveOp := projectState.LocalManager().NewUnitOfWork(projectState.Ctx())
+
+	// Store template information in branch metadata
+	branchState := projectState.GetOrNil(o.TargetBranch).(*model.BranchState)
+	version := tmpl.Version()
+	if err := branchState.Local.Metadata.AddTemplateUsage(instanceId, tmpl.TemplateId(), version.String()); err != nil {
+		errors.Append(err)
+	}
+	saveOp.SaveObject(branchState, branchState.LocalState(), model.NewChangedFields())
+
+	// Rename and save all objects
 	for _, objectState := range templateState.All() {
+		// Skip branch - it is already processed
+		if objectState.Kind().IsBranch() {
+			continue
+		}
+
 		// Clear path
 		objectState.Manifest().SetParentPath("")
 		objectState.Manifest().SetRelativePath("")

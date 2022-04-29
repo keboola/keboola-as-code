@@ -308,7 +308,7 @@ func TestLoadConfigMetadata(t *testing.T) {
 	}, projectState.MustGet(config1Key).(*model.ConfigState).Remote.Metadata)
 	assert.Equal(t, map[string]string{}, projectState.MustGet(config2Key).(*model.ConfigState).Remote.Metadata)
 	branchKey := model.BranchKey{Id: 123}
-	assert.Equal(t, map[string]string{
+	assert.Equal(t, model.BranchMetadata{
 		"KBC.KaC.branch-meta": "val1",
 	}, projectState.MustGet(branchKey).(*model.BranchState).Remote.Metadata)
 }
