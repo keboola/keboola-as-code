@@ -1,4 +1,8 @@
 {
+  mainConfig: {
+    componentId: "keboola.orchestrator",
+    id: ConfigId("orchestrator"),
+  },
   configurations: [
     {
       componentId: "keboola.shared-code",

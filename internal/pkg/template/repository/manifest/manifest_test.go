@@ -87,7 +87,7 @@ func TestManifestContentValidateEmpty(t *testing.T) {
 	c := &file{}
 	err := c.validate()
 	assert.NotNil(t, err)
-	expected := "repository manifest is not valid:\n  - version is a required field"
+	expected := "repository manifest is not valid:\n  - version is a required field\n  - author.name is a required field\n  - author.url is a required field"
 	assert.Equal(t, expected, err.Error())
 }
 
@@ -244,6 +244,10 @@ func TestManifest_GetVersion(t *testing.T) {
 func minimalJson() string {
 	return `{
   "version": 2,
+  "author": {
+    "name": "Author",
+    "url": "https://example.com"
+  },
   "templates": []
 }
 `
@@ -251,7 +255,11 @@ func minimalJson() string {
 
 func minimalStruct() *file {
 	return &file{
-		Version:   2,
+		Version: 2,
+		Author: Author{
+			Name: "Author",
+			Url:  "https://example.com",
+		},
 		Templates: []TemplateRecord{},
 	}
 }
@@ -259,6 +267,10 @@ func minimalStruct() *file {
 func fullJson() string {
 	return `{
   "version": 2,
+  "author": {
+    "name": "Author",
+    "url": "https://example.com"
+  },
   "templates": [
     {
       "id": "template-1",
@@ -289,6 +301,10 @@ func fullJson() string {
 func fullStruct() *file {
 	return &file{
 		Version: 2,
+		Author: Author{
+			Name: "Author",
+			Url:  "https://example.com",
+		},
 		Templates: []TemplateRecord{
 			{
 				AbsPath:     model.NewAbsPath(``, `template-1`),

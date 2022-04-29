@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies"
 	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/gen/templates"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
@@ -8,28 +9,34 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 )
 
-func RepositoriesResponse(v []model.TemplateRepository) *Repositories {
+func RepositoriesResponse(d dependencies.Container, v []model.TemplateRepository) (*Repositories, error) {
 	out := &Repositories{}
-	for _, repoRef := range getRepositories() {
-		out.Repositories = append(out.Repositories, RepositoryResponse(repoRef))
+	for _, repoRef := range v {
+		repo, err := getRepository(d, repoRef.Name)
+		if err != nil {
+			return nil, err
+		}
+		out.Repositories = append(out.Repositories, RepositoryResponse(repo))
 	}
-	return out
+	return out, nil
 }
 
-func RepositoryResponse(v model.TemplateRepository) *Repository {
+func RepositoryResponse(v *repository.Repository) *Repository {
+	ref := v.Ref()
+	author := v.Manifest().Author()
 	return &Repository{
-		Name: v.Name,
-		URL:  v.Url,
-		Ref:  v.Ref,
+		Name: ref.Name,
+		URL:  ref.Url,
+		Ref:  ref.Ref,
 		Author: &Author{
-			Name: v.Author.Name,
-			URL:  v.Author.Url,
+			Name: author.Name,
+			URL:  author.Url,
 		},
 	}
 }
 
 func TemplatesResponse(repo *repository.Repository, templates []repository.TemplateRecord) *Templates {
-	out := &Templates{Repository: RepositoryResponse(repo.Ref()), Templates: make([]*Template, 0)}
+	out := &Templates{Repository: RepositoryResponse(repo), Templates: make([]*Template, 0)}
 	for _, tmpl := range templates {
 		tmpl := tmpl
 		out.Templates = append(out.Templates, TemplateResponse(&tmpl, out.Repository.Author))
@@ -58,7 +65,7 @@ func TemplateResponse(tmpl *repository.TemplateRecord, author *Author) *Template
 
 func TemplateDetailResponse(repo *repository.Repository, tmpl *repository.TemplateRecord) *TemplateDetail {
 	defaultVersion, _ := tmpl.DefaultVersion()
-	repoResponse := RepositoryResponse(repo.Ref())
+	repoResponse := RepositoryResponse(repo)
 	out := &TemplateDetail{
 		Repository:     repoResponse,
 		ID:             tmpl.Id,
@@ -84,8 +91,8 @@ func VersionResponse(v *repository.VersionRecord) *Version {
 	}
 }
 
-func VersionDetailResponse(template *template.Template) *VersionDetailExtended {
-	repoResponse := RepositoryResponse(template.Repository())
+func VersionDetailResponse(repo *repository.Repository, template *template.Template) *VersionDetailExtended {
+	repoResponse := RepositoryResponse(repo)
 	tmplRec := template.TemplateRecord()
 	versionRec := template.VersionRecord()
 	return &VersionDetailExtended{

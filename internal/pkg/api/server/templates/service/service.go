@@ -38,16 +38,16 @@ func (s *service) HealthCheck(dependencies.Container) (res string, err error) {
 	return "OK", nil
 }
 
-func (s *service) RepositoriesIndex(dependencies.Container, *RepositoriesIndexPayload) (res *Repositories, err error) {
-	return RepositoriesResponse(getRepositories()), nil
+func (s *service) RepositoriesIndex(d dependencies.Container, _ *RepositoriesIndexPayload) (res *Repositories, err error) {
+	return RepositoriesResponse(d, getRepositories())
 }
 
-func (s *service) RepositoryIndex(_ dependencies.Container, payload *RepositoryIndexPayload) (res *Repository, err error) {
-	repoRef, err := getRepositoryRef(payload.Repository)
+func (s *service) RepositoryIndex(d dependencies.Container, payload *RepositoryIndexPayload) (res *Repository, err error) {
+	repo, err := getRepository(d, payload.Repository)
 	if err != nil {
 		return nil, err
 	}
-	return RepositoryResponse(repoRef), nil
+	return RepositoryResponse(repo), nil
 }
 
 func (s *service) TemplatesIndex(d dependencies.Container, payload *TemplatesIndexPayload) (res *Templates, err error) {
@@ -67,15 +67,15 @@ func (s *service) TemplateIndex(d dependencies.Container, payload *TemplateIndex
 }
 
 func (s *service) VersionIndex(d dependencies.Container, payload *VersionIndexPayload) (res *VersionDetailExtended, err error) {
-	tmpl, err := getTemplateVersion(d, payload.Repository, payload.Template, payload.Version)
+	repo, tmpl, err := getTemplateVersion(d, payload.Repository, payload.Template, payload.Version)
 	if err != nil {
 		return nil, err
 	}
-	return VersionDetailResponse(tmpl), nil
+	return VersionDetailResponse(repo, tmpl), nil
 }
 
 func (s *service) InputsIndex(d dependencies.Container, payload *InputsIndexPayload) (res *Inputs, err error) {
-	tmpl, err := getTemplateVersion(d, payload.Repository, payload.Template, payload.Version)
+	_, tmpl, err := getTemplateVersion(d, payload.Repository, payload.Template, payload.Version)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func (s *service) InputsIndex(d dependencies.Container, payload *InputsIndexPayl
 }
 
 func (s *service) ValidateInputs(d dependencies.Container, payload *ValidateInputsPayload) (res *ValidationResult, err error) {
-	tmpl, err := getTemplateVersion(d, payload.Repository, payload.Template, payload.Version)
+	_, tmpl, err := getTemplateVersion(d, payload.Repository, payload.Template, payload.Version)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func (s *service) ValidateInputs(d dependencies.Container, payload *ValidateInpu
 }
 
 func (s *service) UseTemplateVersion(d dependencies.Container, payload *UseTemplateVersionPayload) (res *UseTemplateResult, err error) {
-	tmpl, err := getTemplateVersion(d, payload.Repository, payload.Template, payload.Version)
+	_, tmpl, err := getTemplateVersion(d, payload.Repository, payload.Template, payload.Version)
 	if err != nil {
 		return nil, err
 	}
@@ -145,10 +145,6 @@ func getRepositories() []model.TemplateRepository {
 			Name: repository.DefaultTemplateRepositoryName,
 			Url:  repository.DefaultTemplateRepositoryUrl,
 			Ref:  "api-demo",
-			Author: model.TemplateAuthor{
-				Name: "Keboola",
-				Url:  "https://www.keboola.com",
-			},
 		},
 	}
 }
@@ -166,10 +162,13 @@ func getRepositoryRef(name string) (model.TemplateRepository, error) {
 }
 
 func getRepository(d dependencies.Container, repoName string) (*repository.Repository, error) {
+	// Get repository ref
 	repoRef, err := getRepositoryRef(repoName)
 	if err != nil {
 		return nil, err
 	}
+
+	// Get repository
 	repo, err := d.TemplateRepository(repoRef, nil)
 	if err != nil {
 		return nil, err
@@ -178,10 +177,13 @@ func getRepository(d dependencies.Container, repoName string) (*repository.Repos
 }
 
 func getTemplateRecord(d dependencies.Container, repoName, templateId string) (*repository.Repository, *repository.TemplateRecord, error) {
+	// Get repository
 	repo, err := getRepository(d, repoName)
 	if err != nil {
 		return nil, nil, err
 	}
+
+	// Get template record
 	tmpl, found := repo.GetTemplateById(templateId)
 	if !found {
 		return nil, nil, &GenericError{
@@ -192,37 +194,36 @@ func getTemplateRecord(d dependencies.Container, repoName, templateId string) (*
 	return repo, &tmpl, nil
 }
 
-func getTemplateVersion(d dependencies.Container, repoName, templateId, versionStr string) (*template.Template, error) {
-	// Get repository ref
-	repoRef, err := getRepositoryRef(repoName)
-	if err != nil {
-		return nil, err
-	}
-
+func getTemplateVersion(d dependencies.Container, repoName, templateId, versionStr string) (*repository.Repository, *template.Template, error) {
 	// Parse version
 	semVersion, err := model.NewSemVersion(versionStr)
 	if err != nil {
-		return nil, &BadRequestError{
+		return nil, nil, &BadRequestError{
 			Message: fmt.Sprintf(`Version "%s" is not valid: %s`, versionStr, err),
 		}
 	}
 
-	tmpl, err := d.Template(model.NewTemplateRef(repoRef, templateId, semVersion))
+	repo, err := getRepository(d, repoName)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	tmpl, err := d.Template(model.NewTemplateRef(repo.Ref(), templateId, semVersion))
 	if err != nil {
 		if errors.As(err, &manifest.TemplateNotFoundError{}) {
-			return nil, &GenericError{
+			return nil, nil, &GenericError{
 				Name:    "templates.templateNotFound",
 				Message: fmt.Sprintf(`Template "%s" not found.`, templateId),
 			}
 		}
 		if errors.As(err, &manifest.VersionNotFoundError{}) {
-			return nil, &GenericError{
+			return nil, nil, &GenericError{
 				Name:    "templates.versionNotFound",
 				Message: fmt.Sprintf(`Version "%s" not found.`, versionStr),
 			}
 		}
-		return nil, err
+		return nil, nil, err
 	}
 
-	return tmpl, nil
+	return repo, tmpl, nil
 }

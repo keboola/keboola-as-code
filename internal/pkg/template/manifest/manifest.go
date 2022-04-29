@@ -19,7 +19,8 @@ type File struct {
 
 // Manifest is evaluated File.
 type Manifest struct {
-	naming naming.Template
+	naming     naming.Template
+	mainConfig *model.ConfigKey
 	*records
 }
 
@@ -61,6 +62,9 @@ func (f *File) Evaluate(jsonNetCtx *jsonnet.Context) (*Manifest, error) {
 		return nil, fmt.Errorf(`cannot load manifest: %w`, err)
 	}
 
+	// Set main config
+	m.mainConfig = content.MainConfig
+
 	// Return
 	return m, nil
 }
@@ -73,6 +77,7 @@ func (m *Manifest) Save(fs filesystem.Fs) error {
 	// Create file content
 	content := newFile()
 	content.setRecords(m.records.All())
+	content.MainConfig = m.mainConfig
 
 	// Save file
 	if err := saveFile(fs, content); err != nil {
@@ -93,4 +98,8 @@ func (m *Manifest) NamingTemplate() naming.Template {
 
 func (m *Manifest) IsObjectIgnored(_ model.Object) bool {
 	return false
+}
+
+func (m *Manifest) MainConfig() *model.ConfigKey {
+	return m.mainConfig
 }

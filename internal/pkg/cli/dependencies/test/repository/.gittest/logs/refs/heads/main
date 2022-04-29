@@ -3,3 +3,4 @@ e539348305ec466e80a982b449f9d9f3109a091b 5650c66dd29e8d3cfd046dcac5544f514ccfb06
 5650c66dd29e8d3cfd046dcac5544f514ccfb06c 1054ce00e272e6570d0b619cc10b474c26172c94 Jakub Matějka <jakub@keboola.com> 1644237365 +0100	commit (amend): Remove template2
 1054ce00e272e6570d0b619cc10b474c26172c94 5b127a4f79184fd0b504c70c02da511cec737d72 Michal Jurečko <michal.jurecko@gmail.com> 1649872111 +0200	commit: Add template icon
 5b127a4f79184fd0b504c70c02da511cec737d72 6755031f6c52e9151965fd1ac7f40ef1c18db6ce Michal Jurečko <michal.jurecko@gmail.com> 1649936805 +0200	commit: Add _common directory
+6755031f6c52e9151965fd1ac7f40ef1c18db6ce c6c1f0be98fa8fd49be15022a47dcdca22f0dc41 Michal Jurečko <michal.jurecko@gmail.com> 1651218382 +0200	commit: Add repository author
