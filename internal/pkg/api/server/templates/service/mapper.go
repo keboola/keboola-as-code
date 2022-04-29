@@ -39,14 +39,21 @@ func TemplatesResponse(repo *repository.Repository, templates []repository.Templ
 
 func TemplateResponse(tmpl *repository.TemplateRecord, author *Author) *Template {
 	defaultVersion, _ := tmpl.DefaultVersion()
-	return &Template{
+	out := &Template{
 		ID:             tmpl.Id,
 		Icon:           tmpl.Icon,
 		Name:           tmpl.Name,
 		Description:    tmpl.Description,
 		DefaultVersion: defaultVersion.Version.String(),
 		Author:         author,
+		Versions:       make([]*TemplateVersion, 0),
 	}
+
+	for _, version := range tmpl.Versions {
+		version := version
+		out.Versions = append(out.Versions, VersionResponse(&version))
+	}
+	return out
 }
 
 func TemplateDetailResponse(repo *repository.Repository, tmpl *repository.TemplateRecord) *TemplateDetail {
