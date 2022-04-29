@@ -157,6 +157,19 @@ func (m BranchMetadata) TemplatesUsages() (TemplateUsageRecords, error) {
 	return *instances, nil
 }
 
+func (m BranchMetadata) TemplateUsage(instance string) (*TemplateUsageRecord, bool, error) {
+	usages, err := m.TemplatesUsages()
+	if err != nil {
+		return &TemplateUsageRecord{}, false, err
+	}
+	for _, usage := range usages {
+		if usage.InstanceId == instance {
+			return &usage, true, nil
+		}
+	}
+	return &TemplateUsageRecord{}, false, nil
+}
+
 func (m BranchMetadata) ToOrderedMap() *orderedmap.OrderedMap {
 	res := orderedmap.New()
 	for k, v := range m {
