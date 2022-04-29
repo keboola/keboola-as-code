@@ -20,7 +20,10 @@ import (
 	useTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
 )
 
-const inputsFileFlag = "inputs-file"
+const (
+	nameFlag       = "instance-name"
+	inputsFileFlag = "inputs-file"
+)
 
 type useTmplDialog struct {
 	*Dialogs
@@ -66,12 +69,40 @@ func (d *useTmplDialog) ask(stepsGroups input.StepsGroups) (useTemplate.Options,
 	}
 	d.out.TargetBranch = targetBranch.BranchKey
 
+	// Instance name
+	if v, err := d.askInstanceName(); err != nil {
+		return d.out, err
+	} else {
+		d.out.InstanceName = v
+	}
+
 	// User inputs
 	if err := d.askInputs(stepsGroups.ToExtended()); err != nil {
 		return d.out, err
 	}
 
 	return d.out, nil
+}
+
+func (d *useTmplDialog) askInstanceName() (string, error) {
+	// Is flag set?
+	if d.options.IsSet(nameFlag) {
+		v := d.options.GetString(nameFlag)
+		if len(v) > 0 {
+			return v, nil
+		}
+	}
+
+	// Ask for instance name
+	v, _ := d.Prompt.Ask(&prompt.Question{
+		Label:       "Instance Name",
+		Description: "Please enter an instance name to differentiate between multiple uses of the template.",
+		Validator:   prompt.ValueRequired,
+	})
+	if len(v) == 0 {
+		return "", fmt.Errorf(`please specify the instance name`)
+	}
+	return v, nil
 }
 
 func (d *useTmplDialog) askInputs(stepsGroups input.StepsGroupsExt) error {

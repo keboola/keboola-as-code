@@ -22,6 +22,7 @@ import (
 )
 
 type Options struct {
+	InstanceName string
 	TargetBranch model.BranchKey
 	Inputs       template.InputsValues
 }
@@ -87,7 +88,7 @@ func Run(projectState *project.State, tmpl *template.Template, o Options, d depe
 	// Store template information in branch metadata
 	branchState := projectState.GetOrNil(o.TargetBranch).(*model.BranchState)
 	version := tmpl.Version()
-	if err := branchState.Local.Metadata.AddTemplateUsage(instanceId, tmpl.TemplateId(), version.String()); err != nil {
+	if err := branchState.Local.Metadata.AddTemplateUsage(instanceId, o.InstanceName, tmpl.TemplateId(), tmpl.Repository().Name, version.String(), storageApi.Token().Id); err != nil {
 		errors.Append(err)
 	}
 	saveOp.SaveObject(branchState, branchState.LocalState(), model.NewChangedFields())

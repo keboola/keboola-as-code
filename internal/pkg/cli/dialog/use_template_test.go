@@ -51,6 +51,13 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 		_, err = console.Send(testhelper.Enter) // enter - Main
 		assert.NoError(t, err)
 
+		_, err = console.ExpectString("Instance Name:")
+		assert.NoError(t, err)
+
+		time.Sleep(20 * time.Millisecond)
+		_, err = console.SendLine("My Instance")
+		assert.NoError(t, err)
+
 		_, err = console.ExpectString("Enter your Facebook username")
 		assert.NoError(t, err)
 
@@ -250,6 +257,7 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, useTemplate.Options{
+		InstanceName: "My Instance",
 		TargetBranch: model.BranchKey{Id: 123},
 		Inputs: template.InputsValues{
 			{Id: "facebook.username", Value: "username"},
@@ -289,6 +297,13 @@ func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 
 		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.Enter) // enter - Main
+		assert.NoError(t, err)
+
+		_, err = console.ExpectString("Instance Name:")
+		assert.NoError(t, err)
+
+		time.Sleep(20 * time.Millisecond)
+		_, err = console.SendLine("My Instance")
 		assert.NoError(t, err)
 
 		_, err = console.ExpectString("Enter your Facebook username")
@@ -382,6 +397,7 @@ func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, useTemplate.Options{
+		InstanceName: "My Instance",
 		TargetBranch: model.BranchKey{Id: 123},
 		Inputs: template.InputsValues{
 			{Id: "facebook.username", Value: "username"},
@@ -489,6 +505,13 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 		_, err = console.Send(testhelper.Enter) // enter - Main
 		assert.NoError(t, err)
 
+		_, err = console.ExpectString("Instance Name:")
+		assert.NoError(t, err)
+
+		time.Sleep(20 * time.Millisecond)
+		_, err = console.SendLine("My Instance")
+		assert.NoError(t, err)
+
 		_, err = console.ExpectString("Please select which steps you want to fill.")
 		assert.NoError(t, err)
 
@@ -552,6 +575,7 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, useTemplate.Options{
+		InstanceName: "My Instance",
 		TargetBranch: model.BranchKey{Id: 123},
 		Inputs: template.InputsValues{
 			{Id: "input1", Value: "", Skipped: true},
@@ -576,6 +600,7 @@ func TestAskUseTemplate_InputsFromFile(t *testing.T) {
 	d := dependencies.NewTestContainer()
 	d.SetFs(testfs.MinimalProjectFs(t))
 	d.Options().Set("branch", "123") // see MinimalProjectFs
+	d.Options().Set("instance-name", "My Instance")
 	d.Options().Set("inputs-file", inputsFilePath)
 	_, httpTransport := d.UseMockedStorageApi()
 	testapi.AddMockedComponents(httpTransport)
@@ -647,6 +672,7 @@ func TestAskUseTemplate_InputsFromFile(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, useTemplate.Options{
+		InstanceName: "My Instance",
 		TargetBranch: model.BranchKey{Id: 123},
 		Inputs: template.InputsValues{
 			{Id: "input1", Value: "A"},
@@ -671,6 +697,7 @@ func TestAskUseTemplate_InputsFromFile_InvalidStepsCount(t *testing.T) {
 	d := dependencies.NewTestContainer()
 	d.SetFs(testfs.MinimalProjectFs(t))
 	d.Options().Set("branch", "123") // see MinimalProjectFs
+	d.Options().Set("instance-name", "My Instance")
 	d.Options().Set("inputs-file", inputsFilePath)
 	_, httpTransport := d.UseMockedStorageApi()
 	testapi.AddMockedComponents(httpTransport)

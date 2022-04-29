@@ -105,6 +105,37 @@ func (s *service) UseTemplateVersion(d dependencies.Container, payload *UseTempl
 	//   Since I did not manage to complete the refactoring - separation of remote and local state.
 	//   A virtual FS and fake manifest is created to make it work.
 
+	// Get Storage API
+	storageApi, err := d.StorageApi()
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse branch ID
+	var targetBranch model.BranchKey
+	if payload.Branch == "default" {
+		// Use main branch
+		if v, err := storageApi.GetDefaultBranch(); err != nil {
+			return nil, err
+		} else {
+			targetBranch = v.BranchKey
+		}
+	} else if branchId, err := strconv.Atoi(payload.Branch); err != nil {
+		// Branch ID must be numeric
+		return nil, BadRequestError{
+			Message: fmt.Sprintf(`branch ID "%s" is not numeric`, payload.Branch),
+		}
+	} else if _, err := storageApi.GetBranch(model.BranchId(branchId)); err != nil {
+		// Branch not found
+		return nil, &GenericError{
+			Name:    "templates.branchNotFound",
+			Message: fmt.Sprintf(`Branch "%d" not found.`, branchId),
+		}
+	} else {
+		// Branch found
+		targetBranch.Id = model.BranchId(branchId)
+	}
+
 	// Get template
 	_, tmpl, err := getTemplateVersion(d, payload.Repository, payload.Template, payload.Version)
 	if err != nil {
@@ -130,36 +161,6 @@ func (s *service) UseTemplateVersion(d dependencies.Container, payload *UseTempl
 		return nil, err
 	}
 
-	// Get Storage API
-	storageApi, err := d.StorageApi()
-	if err != nil {
-		return nil, err
-	}
-
-	// Parse branch ID
-	var targetBranch model.BranchKey
-	if payload.Branch == "default" {
-		// Use main branch
-		if v, err := storageApi.GetDefaultBranch(); err != nil {
-			return nil, err
-		} else {
-			targetBranch = v.BranchKey
-		}
-	} else if branchId, err := strconv.Atoi(payload.Branch); err != nil {
-		// Branch ID must be numeric
-		return nil, BadRequestError{
-			Message: fmt.Sprintf(`branch ID "%s" is not numeric`, payload.Branch),
-		}
-	} else if _, err := storageApi.GetBranch(model.BranchId(branchId)); err != nil {
-		// Branch not found
-		return nil, &GenericError{
-			Message: err.Error(),
-		}
-	} else {
-		// Branch found
-		targetBranch.Id = model.BranchId(branchId)
-	}
-
 	// Create fake manifest
 	m := project.NewManifest(123, "foo")
 
@@ -180,6 +181,7 @@ func (s *service) UseTemplateVersion(d dependencies.Container, payload *UseTempl
 
 	// Options
 	options := useTemplate.Options{
+		InstanceName: payload.Name,
 		TargetBranch: targetBranch,
 		Inputs:       values,
 	}
