@@ -12,9 +12,10 @@ import (
 )
 
 type test struct {
-	name    string
-	jsonNet string
-	records []model.ObjectManifest
+	name       string
+	jsonNet    string
+	records    []model.ObjectManifest
+	mainConfig *model.ConfigKey
 }
 
 func cases() []test {
@@ -28,6 +29,10 @@ func cases() []test {
 			name:    `full`,
 			jsonNet: fullJsonNet(),
 			records: fullRecords(),
+			mainConfig: &model.ConfigKey{
+				ComponentId: "keboola.ex-db-oracle",
+				Id:          "config",
+			},
 		},
 	}
 }
@@ -53,6 +58,7 @@ func TestLoadManifestFile(t *testing.T) {
 
 		// Assert
 		assert.Equal(t, c.records, manifest.records.All(), c.name)
+		assert.Equal(t, c.mainConfig, manifest.MainConfig())
 	}
 }
 
@@ -63,6 +69,7 @@ func TestSaveManifestFile(t *testing.T) {
 
 		// Save
 		manifest := New()
+		manifest.mainConfig = c.mainConfig
 		assert.NoError(t, manifest.records.SetRecords(c.records))
 		assert.NoError(t, manifest.Save(fs))
 
@@ -86,6 +93,10 @@ func minimalRecords() []model.ObjectManifest {
 
 func fullJsonNet() string {
 	return `{
+  mainConfig: {
+    componentId: "keboola.ex-db-oracle",
+    id: "config",
+  },
   configurations: [
     {
       componentId: "keboola.ex-db-oracle",
