@@ -900,7 +900,19 @@ var Instance = Type("instance", func() {
 	Attribute("updated", ChangeInfo, func() {
 		Description("Instance update date and token.")
 	})
+	Attribute("mainConfig", MainConfig)
 	Required("templateId", "instanceId", "branch", "repositoryName", "templateId", "version", "name", "created", "updated")
+})
+
+var MainConfig = Type("mainConfig", func() {
+	Description("Main config of the instance, usually an orchestration. Optional.")
+	Attribute("componentId", String, "Component ID.", func() {
+		Example("keboola.orchestrator")
+	})
+	Attribute("configId", String, "Configuration ID.", func() {
+		Example("7954825835")
+	})
+	Required("componentId", "configId")
 })
 
 var InstanceDetail = Type("instanceDetail", func() {
