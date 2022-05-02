@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/metadata"
@@ -120,17 +121,31 @@ type TokenOwner struct {
 type BranchMetadata map[string]string
 
 type TemplateUsageRecord struct {
-	InstanceId string `json:"instanceId"`
-	TemplateId string `json:"templateId"`
-	Version    string `json:"version"`
+	InstanceId     string          `json:"instanceId"`
+	InstanceName   string          `json:"instanceName"`
+	TemplateId     string          `json:"templateId"`
+	RepositoryName string          `json:"repositoryName"`
+	Version        string          `json:"version"`
+	Created        ChangedByRecord `json:"created"`
+	Updated        ChangedByRecord `json:"updated"`
 }
 type TemplateUsageRecords []TemplateUsageRecord
 
-func (m BranchMetadata) AddTemplateUsage(instanceId string, templateId string, version string) error {
+type ChangedByRecord struct {
+	Date    time.Time `json:"date"`
+	TokenId string    `json:"tokenId"`
+}
+
+func (m BranchMetadata) AddTemplateUsage(instanceId, instanceName, templateId, repositoryName, version, tokenId string) error {
+	now := time.Now().Truncate(time.Second).UTC()
 	r := TemplateUsageRecord{
-		InstanceId: instanceId,
-		TemplateId: templateId,
-		Version:    version,
+		InstanceId:     instanceId,
+		InstanceName:   instanceName,
+		TemplateId:     templateId,
+		RepositoryName: repositoryName,
+		Version:        version,
+		Created:        ChangedByRecord{Date: now, TokenId: tokenId},
+		Updated:        ChangedByRecord{Date: now, TokenId: tokenId},
 	}
 	instances, err := m.TemplatesUsages()
 	if err != nil {

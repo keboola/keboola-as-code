@@ -35,7 +35,7 @@
       "id": 12345,
       "path": "main",
       "metadata": {
-        "KBC.KAC.templates.instances": "[{\"instanceId\":\"%s\",\"templateId\":\"my-template-id\",\"version\":\"1.0.0\"}]"
+        "KBC.KAC.templates.instances": "[{\"instanceId\":\"%s\",\"instanceName\":\"My Instance\",\"templateId\":\"my-template-id\",\"repositoryName\":\"keboola\",\"version\":\"1.0.0\",\"created\":{\"date\":\"%s\",\"tokenId\":\"%s\"},\"updated\":{\"date\":\"%s\",\"tokenId\":\"%s\"}}]"
       }
     }
   ],

@@ -254,6 +254,7 @@ var _ = Service("templates", func() {
 			RepositoryNotFoundError()
 			TemplateNotFoundError()
 			VersionNotFoundError()
+			BranchNotFoundError()
 		})
 	})
 
@@ -413,6 +414,10 @@ func TemplateNotFoundError() {
 
 func VersionNotFoundError() {
 	GenericError(StatusNotFound, "templates.versionNotFound", "Version not found error.", `Version "v1.2.3" not found.`)
+}
+
+func BranchNotFoundError() {
+	GenericError(StatusNotFound, "templates.branchNotFound", "Branch not found error.", `Branch "123" not found.`)
 }
 
 func InstanceNotFoundError() {

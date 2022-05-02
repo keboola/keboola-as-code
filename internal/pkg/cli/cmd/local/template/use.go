@@ -72,6 +72,7 @@ func UseCommand(p dependencies.Provider) *cobra.Command {
 
 	cmd.Flags().SortFlags = true
 	cmd.Flags().StringP(`branch`, "b", ``, "target branch ID or name")
+	cmd.Flags().StringP(`instance-name`, "n", ``, "name of new template instance")
 	cmd.Flags().StringP(`inputs-file`, "f", ``, "JSON file with inputs values")
 	return cmd
 }
