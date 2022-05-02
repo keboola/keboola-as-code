@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/metadata"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
@@ -172,6 +173,19 @@ func (m BranchMetadata) TemplatesUsages() (TemplateUsageRecords, error) {
 	return *instances, nil
 }
 
+func (m BranchMetadata) TemplateUsage(instance string) (*TemplateUsageRecord, bool, error) {
+	usages, err := m.TemplatesUsages()
+	if err != nil {
+		return &TemplateUsageRecord{}, false, err
+	}
+	for _, usage := range usages {
+		if usage.InstanceId == instance {
+			return &usage, true, nil
+		}
+	}
+	return &TemplateUsageRecord{}, false, nil
+}
+
 func (m BranchMetadata) ToOrderedMap() *orderedmap.OrderedMap {
 	res := orderedmap.New()
 	for k, v := range m {
@@ -192,15 +206,15 @@ type Branch struct {
 // Config https://keboola.docs.apiary.io/#reference/components-and-configurations/component-configurations/list-configurations
 type Config struct {
 	ConfigKey
-	Name              string                 `json:"name" validate:"required" diff:"true" metaFile:"true"`
-	Description       string                 `json:"description" diff:"true" descriptionFile:"true"`
-	ChangeDescription string                 `json:"changeDescription"`
-	Content           *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
-	Transformation    *Transformation        `json:"-" validate:"omitempty,dive" diff:"true"`
-	SharedCode        *SharedCodeConfig      `json:"-" validate:"omitempty,dive" diff:"true"`
-	Orchestration     *Orchestration         `json:"-" validate:"omitempty,dive" diff:"true"`
-	Relations         Relations              `json:"-" validate:"dive" diff:"true"`
-	Metadata          map[string]string      `json:"-" validate:"dive" diff:"true"`
+	Name              string                  `json:"name" validate:"required" diff:"true" metaFile:"true"`
+	Description       string                  `json:"description" diff:"true" descriptionFile:"true"`
+	ChangeDescription string                  `json:"changeDescription"`
+	Content           *orderedmap.OrderedMap  `json:"configuration" validate:"required" diff:"true" configFile:"true"`
+	Transformation    *Transformation         `json:"-" validate:"omitempty,dive" diff:"true"`
+	SharedCode        *SharedCodeConfig       `json:"-" validate:"omitempty,dive" diff:"true"`
+	Orchestration     *Orchestration          `json:"-" validate:"omitempty,dive" diff:"true"`
+	Relations         Relations               `json:"-" validate:"dive" diff:"true"`
+	Metadata          metadata.ConfigMetadata `json:"-" validate:"dive" diff:"true"`
 }
 
 type ConfigWithRows struct {

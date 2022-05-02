@@ -24,6 +24,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/remote"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/metadata"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 )
@@ -302,11 +303,11 @@ func TestLoadConfigMetadata(t *testing.T) {
 		ComponentId: "foo.bar",
 		Id:          "789",
 	}
-	assert.Equal(t, map[string]string{
+	assert.Equal(t, metadata.ConfigMetadata{
 		"KBC.KaC.Meta":  "value1",
 		"KBC.KaC.Meta2": "value2",
 	}, projectState.MustGet(config1Key).(*model.ConfigState).Remote.Metadata)
-	assert.Equal(t, map[string]string{}, projectState.MustGet(config2Key).(*model.ConfigState).Remote.Metadata)
+	assert.Equal(t, metadata.ConfigMetadata{}, projectState.MustGet(config2Key).(*model.ConfigState).Remote.Metadata)
 	branchKey := model.BranchKey{Id: 123}
 	assert.Equal(t, model.BranchMetadata{
 		"KBC.KaC.branch-meta": "val1",
