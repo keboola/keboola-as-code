@@ -75,6 +75,20 @@ func (v *TemplateRecord) GetVersion(wanted model.SemVersion) (VersionRecord, boo
 	return VersionRecord{}, false
 }
 
+func (v *TemplateRecord) GetClosestVersion(wanted model.SemVersion) (VersionRecord, bool) {
+	if version, found := v.GetVersion(wanted); found {
+		return version, true
+	}
+	if version, found := v.GetVersion(wanted.ToMinor()); found {
+		return version, true
+	}
+
+	if version, found := v.GetVersion(wanted.ToMajor()); found {
+		return version, true
+	}
+	return v.DefaultVersion()
+}
+
 func (v *TemplateRecord) GetByPath(path string) (VersionRecord, bool) {
 	for _, record := range v.Versions {
 		if record.GetRelativePath() == path {

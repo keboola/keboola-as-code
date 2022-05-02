@@ -215,7 +215,7 @@ func (t *Template) LoadState(ctx Context, options loadState.Options) (*State, er
 
 func (t *Template) evaluate(ctx Context) (*evaluatedTemplate, error) {
 	// Evaluate manifest
-	m, err := t.manifestFile.Evaluate(ctx.JsonNetContext())
+	evaluatedManifest, err := t.manifestFile.Evaluate(ctx.JsonNetContext())
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +223,7 @@ func (t *Template) evaluate(ctx Context) (*evaluatedTemplate, error) {
 	return &evaluatedTemplate{
 		Template: t,
 		context:  ctx,
-		manifest: m,
+		manifest: evaluatedManifest,
 	}, nil
 }
 
@@ -251,4 +251,18 @@ func (c *evaluatedTemplate) Ctx() context.Context {
 
 func (c *evaluatedTemplate) MappersFor(state *state.State) (mapper.Mappers, error) {
 	return MappersFor(state, c.deps, c.context)
+}
+
+func (c *evaluatedTemplate) MainConfig() (*model.ConfigKey, error) {
+	r, err := c.context.Replacements()
+	if err != nil {
+		return nil, err
+	}
+
+	// Replace ticket placeholder
+	mainConfig, err := r.Replace(c.manifest.MainConfig())
+	if err != nil {
+		return nil, err
+	}
+	return mainConfig.(*model.ConfigKey), nil
 }

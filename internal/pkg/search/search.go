@@ -46,10 +46,10 @@ func Configs(all []*model.ConfigWithRows, str string) []*model.ConfigWithRows {
 }
 
 // ConfigsForTemplateInstance searches for configs created by template instance.
-func ConfigsForTemplateInstance(all []*model.ConfigWithRows, instance string) []*model.ConfigWithRows {
+func ConfigsForTemplateInstance(all []*model.ConfigWithRows, instanceId string) []*model.ConfigWithRows {
 	matches := make([]*model.ConfigWithRows, 0)
 	for _, object := range all {
-		if object.Metadata.InstanceId() == instance {
+		if object.Metadata.InstanceId() == instanceId {
 			matches = append(matches, object)
 		}
 	}

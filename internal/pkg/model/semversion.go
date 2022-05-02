@@ -45,6 +45,22 @@ func (v SemVersion) IncMajor() SemVersion {
 	return SemVersion{value: v.Value().IncMajor()}
 }
 
+func (v SemVersion) ToMinor() SemVersion {
+	out, err := NewSemVersion(fmt.Sprintf(`v%d.%d`, v.Major(), v.Minor()))
+	if err != nil {
+		panic(err)
+	}
+	return out
+}
+
+func (v SemVersion) ToMajor() SemVersion {
+	out, err := NewSemVersion(fmt.Sprintf(`v%d`, v.Major()))
+	if err != nil {
+		panic(err)
+	}
+	return out
+}
+
 // UnmarshalJSON returns human-readable error message, if semantic version is invalid.
 func (v *SemVersion) UnmarshalJSON(b []byte) (err error) {
 	var versionStr string
