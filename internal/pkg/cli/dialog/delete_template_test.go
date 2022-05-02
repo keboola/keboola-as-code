@@ -87,8 +87,8 @@ func TestAskDeleteTemplate_Noninteractive_InvalidInstance(t *testing.T) {
 	assert.NoError(t, branch.(*model.Branch).Metadata.AddTemplateUsage(instanceId, templateId, version))
 
 	options := d.Options()
-	options.Set("Branch", 123)
-	options.Set("Instance", "inst2")
+	options.Set("branch", 123)
+	options.Set("instance", "inst2")
 	_, err = dialog.AskDeleteTemplateOptions(projectState, options)
 	assert.Error(t, err)
 	assert.Equal(t, `template instance "inst2" was not found in branch "Main"`, err.Error())
@@ -113,8 +113,8 @@ func TestAskDeleteTemplate_Noninteractive(t *testing.T) {
 	assert.NoError(t, branch.(*model.Branch).Metadata.AddTemplateUsage(instanceId, templateId, version))
 
 	options := d.Options()
-	options.Set("Branch", 123)
-	options.Set("Instance", "inst1")
+	options.Set("branch", 123)
+	options.Set("instance", "inst1")
 	_, err = dialog.AskDeleteTemplateOptions(projectState, options)
 	assert.NoError(t, err)
 }
