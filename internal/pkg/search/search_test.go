@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/metadata"
 )
 
 func TestStateSearchForBranches(t *testing.T) {
@@ -92,6 +93,25 @@ func TestStateSearchForConfigRow(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, r)
 	assert.Equal(t, `multiple rows match the specified "row"`, err.Error())
+}
+
+func TestStateSearchForConfigsInTemplate(t *testing.T) {
+	t.Parallel()
+	all := []*model.ConfigWithRows{
+		{
+			Config: &model.Config{Name: "Config 1", Metadata: metadata.ConfigMetadata{"KBC.KAC.templates.instanceId": "inst1"}},
+		},
+		{
+			Config: &model.Config{Name: "Config 2"},
+		},
+		{
+			Config: &model.Config{Name: "Config 3", Metadata: metadata.ConfigMetadata{"KBC.KAC.templates.instanceId": "inst2"}},
+		},
+	}
+
+	res := ConfigsForTemplateInstance(all, `inst1`)
+	assert.Len(t, res, 1)
+	assert.Equal(t, "Config 1", res[0].Name)
 }
 
 func TestMatchObjectIdOrName(t *testing.T) {
