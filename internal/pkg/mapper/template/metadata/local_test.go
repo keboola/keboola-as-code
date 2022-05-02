@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	templateMetadata "github.com/keboola/keboola-as-code/internal/pkg/template/metadata"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
@@ -38,8 +37,7 @@ func TestMetadataMapper_AfterLocalOperation(t *testing.T) {
 
 	config := recipe.Object.(*model.Config)
 	assert.NotEmpty(t, config.Metadata)
-	configMetadata := templateMetadata.ConfigMetadata(config.Metadata)
-	assert.Equal(t, "my-repository", configMetadata.Repository())
-	assert.Equal(t, "my-template", configMetadata.TemplateId())
-	assert.Equal(t, "my-instance", configMetadata.InstanceId())
+	assert.Equal(t, "my-repository", config.Metadata.Repository())
+	assert.Equal(t, "my-template", config.Metadata.TemplateId())
+	assert.Equal(t, "my-instance", config.Metadata.InstanceId())
 }
