@@ -269,6 +269,7 @@ var _ = Service("templates", func() {
 		HTTP(func() {
 			GET("/project/{branch}/instances")
 			Meta("openapi:tag:instance")
+			BranchNotFoundError()
 		})
 	})
 
@@ -283,6 +284,7 @@ var _ = Service("templates", func() {
 			GET("/project/{branch}/instances/{instanceId}")
 			Meta("openapi:tag:instance")
 			Response(StatusOK)
+			BranchNotFoundError()
 			InstanceNotFoundError()
 		})
 	})

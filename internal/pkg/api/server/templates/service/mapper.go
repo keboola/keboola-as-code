@@ -1,9 +1,16 @@
 package service
 
 import (
+	"fmt"
+	"time"
+
+	"github.com/spf13/cast"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies"
 	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/gen/templates"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/search"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
@@ -91,7 +98,18 @@ func VersionResponse(v *repository.VersionRecord) *Version {
 	}
 }
 
-func VersionDetailResponse(repo *repository.Repository, template *template.Template) *VersionDetailExtended {
+func VersionDetailResponse(template *template.Template) *VersionDetail {
+	versionRec := template.VersionRecord()
+	return &VersionDetail{
+		Version:     versionRec.Version.String(),
+		Stable:      versionRec.Stable,
+		Description: versionRec.Description,
+		Components:  template.Components(),
+		Readme:      template.Readme(),
+	}
+}
+
+func VersionDetailExtendedResponse(repo *repository.Repository, template *template.Template) *VersionDetailExtended {
 	repoResponse := RepositoryResponse(repo)
 	tmplRec := template.TemplateRecord()
 	versionRec := template.VersionRecord()
@@ -161,4 +179,139 @@ func OptionsResponse(options input.Options) (out []*InputOption) {
 		})
 	}
 	return out
+}
+
+func InstancesResponse(prjState *project.State, branchKey model.BranchKey) (out *Instances, err error) {
+	// Get branch state
+	branch, found := prjState.GetOrNil(branchKey).(*model.BranchState)
+	if !found {
+		return nil, &GenericError{
+			Name:    "templates.branchNotFound",
+			Message: fmt.Sprintf(`Branch "%d" not found.`, branchKey.Id),
+		}
+	}
+
+	// Get instances
+	instances, err := branch.Remote.Metadata.TemplatesUsages()
+	if err != nil {
+		return nil, err
+	}
+
+	// Map response
+	out = &Instances{Instances: make([]*Instance, 0)}
+	for _, instance := range instances {
+		outInstance := &Instance{
+			TemplateID:     instance.TemplateId,
+			InstanceID:     instance.InstanceId,
+			Branch:         cast.ToString(branch.Id),
+			RepositoryName: instance.RepositoryName,
+			Version:        instance.Version,
+			Name:           instance.InstanceName,
+			Created: &ChangeInfo{
+				Date:    instance.Created.Date.Format(time.RFC3339),
+				TokenID: instance.Created.TokenId,
+			},
+			Updated: &ChangeInfo{
+				Date:    instance.Updated.Date.Format(time.RFC3339),
+				TokenID: instance.Updated.TokenId,
+			},
+		}
+
+		if instance.MainConfig != nil {
+			outInstance.MainConfig = &MainConfig{
+				ComponentID: string(instance.MainConfig.ComponentId),
+				ConfigID:    string(instance.MainConfig.ConfigId),
+			}
+		}
+
+		out.Instances = append(out.Instances, outInstance)
+	}
+
+	return out, nil
+}
+
+func InstanceResponse(d dependencies.Container, prjState *project.State, branchKey model.BranchKey, instanceId string) (out *InstanceDetail, err error) {
+	// Get branch state
+	branch, found := prjState.GetOrNil(branchKey).(*model.BranchState)
+	if !found {
+		return nil, &GenericError{
+			Name:    "templates.branchNotFound",
+			Message: fmt.Sprintf(`Branch "%d" not found.`, branchKey.Id),
+		}
+	}
+
+	// Get instances
+	instance, found, err := branch.Remote.Metadata.TemplateUsage(instanceId)
+	if err != nil {
+		return nil, err
+	} else if !found {
+		return nil, &GenericError{
+			Name:    "templates.instanceNotFound",
+			Message: fmt.Sprintf(`Instance "%s" not found in branch "%d".`, instanceId, branchKey.Id),
+		}
+	}
+
+	// Map configurations
+	outConfigs := make([]*Config, 0)
+	configs := search.ConfigsForTemplateInstance(prjState.RemoteObjects().ConfigsWithRowsFrom(branchKey), instanceId)
+	for _, config := range configs {
+		outConfigs = append(outConfigs, &Config{
+			Name:        config.Name,
+			ConfigID:    string(config.Id),
+			ComponentID: string(config.ComponentId),
+		})
+	}
+
+	// Map response
+	out = &InstanceDetail{
+		VersionDetail:  instanceVersionDetail(d, instance),
+		TemplateID:     instance.TemplateId,
+		InstanceID:     instance.InstanceId,
+		Branch:         cast.ToString(branch.Id),
+		RepositoryName: instance.RepositoryName,
+		Version:        instance.Version,
+		Name:           instance.InstanceName,
+		Created: &ChangeInfo{
+			Date:    instance.Created.Date.Format(time.RFC3339),
+			TokenID: instance.Created.TokenId,
+		},
+		Updated: &ChangeInfo{
+			Date:    instance.Updated.Date.Format(time.RFC3339),
+			TokenID: instance.Updated.TokenId,
+		},
+		Configurations: outConfigs,
+	}
+
+	// Main config
+	if instance.MainConfig != nil {
+		configKey := model.ConfigKey{BranchId: branchKey.Id, ComponentId: instance.MainConfig.ComponentId, Id: instance.MainConfig.ConfigId}
+		if _, found := prjState.Get(configKey); found {
+			out.MainConfig = &MainConfig{
+				ComponentID: string(instance.MainConfig.ComponentId),
+				ConfigID:    string(instance.MainConfig.ConfigId),
+			}
+		}
+	}
+
+	return out, nil
+}
+
+func instanceVersionDetail(d dependencies.Container, instance *model.TemplateUsageRecord) *VersionDetail {
+	repo, tmplRecord, err := templateRecord(d, instance.RepositoryName, instance.TemplateId)
+	if err != nil {
+		return nil
+	}
+	semVer, err := model.NewSemVersion(instance.Version)
+	if err != nil {
+		return nil
+	}
+	versionRecord, found := tmplRecord.GetClosestVersion(semVer)
+	if !found {
+		return nil
+	}
+	tmpl, err := d.Template(model.NewTemplateRef(repo.Ref(), instance.TemplateId, versionRecord.Version))
+	if err != nil {
+		return nil
+	}
+	return VersionDetailResponse(tmpl)
 }

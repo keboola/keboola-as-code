@@ -2,6 +2,7 @@ package template
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 )
 
@@ -22,4 +23,8 @@ func (s *State) Fs() filesystem.Fs {
 
 func (s *State) TemplateManifest() *Manifest {
 	return s.container.TemplateManifest()
+}
+
+func (s *State) MainConfig() (*model.ConfigKey, error) {
+	return s.container.MainConfig()
 }

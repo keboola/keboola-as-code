@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/spf13/cast"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies"
 	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/gen/templates"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
@@ -13,6 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
 	useTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/push"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
@@ -77,7 +80,7 @@ func (s *service) VersionIndex(d dependencies.Container, payload *VersionIndexPa
 	if err != nil {
 		return nil, err
 	}
-	return VersionDetailResponse(repo, tmpl), nil
+	return VersionDetailExtendedResponse(repo, tmpl), nil
 }
 
 func (s *service) InputsIndex(d dependencies.Container, payload *InputsIndexPayload) (res *Inputs, err error) {
@@ -105,35 +108,9 @@ func (s *service) UseTemplateVersion(d dependencies.Container, payload *UseTempl
 	//   Since I did not manage to complete the refactoring - separation of remote and local state.
 	//   A virtual FS and fake manifest is created to make it work.
 
-	// Get Storage API
-	storageApi, err := d.StorageApi()
+	branchKey, err := getBranch(d, payload.Branch)
 	if err != nil {
 		return nil, err
-	}
-
-	// Parse branch ID
-	var targetBranch model.BranchKey
-	if payload.Branch == "default" {
-		// Use main branch
-		if v, err := storageApi.GetDefaultBranch(); err != nil {
-			return nil, err
-		} else {
-			targetBranch = v.BranchKey
-		}
-	} else if branchId, err := strconv.Atoi(payload.Branch); err != nil {
-		// Branch ID must be numeric
-		return nil, BadRequestError{
-			Message: fmt.Sprintf(`branch ID "%s" is not numeric`, payload.Branch),
-		}
-	} else if _, err := storageApi.GetBranch(model.BranchId(branchId)); err != nil {
-		// Branch not found
-		return nil, &GenericError{
-			Name:    "templates.branchNotFound",
-			Message: fmt.Sprintf(`Branch "%d" not found.`, branchId),
-		}
-	} else {
-		// Branch found
-		targetBranch.Id = model.BranchId(branchId)
 	}
 
 	// Get template
@@ -165,7 +142,7 @@ func (s *service) UseTemplateVersion(d dependencies.Container, payload *UseTempl
 	m := project.NewManifest(123, "foo")
 
 	// Load only target branch
-	m.Filter().SetAllowedKeys([]model.Key{targetBranch})
+	m.Filter().SetAllowedKeys([]model.Key{branchKey})
 	prj := project.NewWithManifest(fs, m, d)
 
 	// Load project state
@@ -176,13 +153,13 @@ func (s *service) UseTemplateVersion(d dependencies.Container, payload *UseTempl
 
 	// Copy remote state to the local
 	for _, objectState := range prjState.All() {
-		objectState.SetLocalState(objectState.RemoteState())
+		objectState.SetLocalState(deepcopy.Copy(objectState.RemoteState()).(model.Object))
 	}
 
 	// Options
 	options := useTemplate.Options{
 		InstanceName: payload.Name,
-		TargetBranch: targetBranch,
+		TargetBranch: branchKey,
 		Inputs:       values,
 	}
 
@@ -201,12 +178,59 @@ func (s *service) UseTemplateVersion(d dependencies.Container, payload *UseTempl
 	return &UseTemplateResult{InstanceID: instanceId}, nil
 }
 
-func (s *service) InstancesIndex(dependencies.Container, *InstancesIndexPayload) (res *Instances, err error) {
-	return nil, NotImplementedError{}
+func (s *service) InstancesIndex(d dependencies.Container, payload *InstancesIndexPayload) (res *Instances, err error) {
+	branchKey, err := getBranch(d, payload.Branch)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create virtual fs, after refactoring it will be removed
+	fs, err := aferofs.NewMemoryFs(d.Logger(), "")
+	if err != nil {
+		return nil, err
+	}
+
+	// Create fake manifest
+	m := project.NewManifest(123, "foo")
+
+	// Only one branch
+	m.Filter().SetAllowedBranches(model.AllowedBranches{model.AllowedBranch(cast.ToString(branchKey.Id))})
+	prj := project.NewWithManifest(fs, m, d)
+
+	// Load project state
+	prjState, err := prj.LoadState(loadState.Options{LoadRemoteState: true})
+	if err != nil {
+		return nil, err
+	}
+
+	return InstancesResponse(prjState, branchKey)
 }
 
-func (s *service) InstanceIndex(dependencies.Container, *InstanceIndexPayload) (res *InstanceDetail, err error) {
-	return nil, NotImplementedError{}
+func (s *service) InstanceIndex(d dependencies.Container, payload *InstanceIndexPayload) (res *InstanceDetail, err error) {
+	branchKey, err := getBranch(d, payload.Branch)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create virtual fs, after refactoring it will be removed
+	fs, err := aferofs.NewMemoryFs(d.Logger(), "")
+	if err != nil {
+		return nil, err
+	}
+
+	// Create fake manifest
+	m := project.NewManifest(123, "foo")
+
+	// Only one branch
+	m.Filter().SetAllowedBranches(model.AllowedBranches{model.AllowedBranch(cast.ToString(branchKey.Id))})
+	prj := project.NewWithManifest(fs, m, d)
+
+	// Load project state
+	prjState, err := prj.LoadState(loadState.Options{LoadRemoteState: true})
+	if err != nil {
+		return nil, err
+	}
+	return InstanceResponse(d, prjState, branchKey, payload.InstanceID)
 }
 
 func (s *service) UpdateInstance(dependencies.Container, *UpdateInstancePayload) (res *InstanceDetail, err error) {
@@ -317,4 +341,39 @@ func getTemplateVersion(d dependencies.Container, repoName, templateId, versionS
 	}
 
 	return repo, tmpl, nil
+}
+
+func getBranch(d dependencies.Container, branchDef string) (model.BranchKey, error) {
+	// Get Storage API
+	storageApi, err := d.StorageApi()
+	if err != nil {
+		return model.BranchKey{}, err
+	}
+
+	// Parse branch ID
+	var targetBranch model.BranchKey
+	if branchDef == "default" {
+		// Use main branch
+		if v, err := storageApi.GetDefaultBranch(); err != nil {
+			return targetBranch, err
+		} else {
+			targetBranch = v.BranchKey
+		}
+	} else if branchId, err := strconv.Atoi(branchDef); err != nil {
+		// Branch ID must be numeric
+		return targetBranch, BadRequestError{
+			Message: fmt.Sprintf(`branch ID "%s" is not numeric`, branchDef),
+		}
+	} else if _, err := storageApi.GetBranch(model.BranchId(branchId)); err != nil {
+		// Branch not found
+		return targetBranch, &GenericError{
+			Name:    "templates.branchNotFound",
+			Message: fmt.Sprintf(`Branch "%d" not found.`, branchId),
+		}
+	} else {
+		// Branch found
+		targetBranch.Id = model.BranchId(branchId)
+	}
+
+	return targetBranch, nil
 }

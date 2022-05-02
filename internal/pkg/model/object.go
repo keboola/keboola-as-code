@@ -121,13 +121,14 @@ type TokenOwner struct {
 type BranchMetadata map[string]string
 
 type TemplateUsageRecord struct {
-	InstanceId     string          `json:"instanceId"`
-	InstanceName   string          `json:"instanceName"`
-	TemplateId     string          `json:"templateId"`
-	RepositoryName string          `json:"repositoryName"`
-	Version        string          `json:"version"`
-	Created        ChangedByRecord `json:"created"`
-	Updated        ChangedByRecord `json:"updated"`
+	InstanceId     string              `json:"instanceId"`
+	InstanceName   string              `json:"instanceName"`
+	TemplateId     string              `json:"templateId"`
+	RepositoryName string              `json:"repositoryName"`
+	Version        string              `json:"version"`
+	Created        ChangedByRecord     `json:"created"`
+	Updated        ChangedByRecord     `json:"updated"`
+	MainConfig     *TemplateMainConfig `json:"mainConfig,omitempty"`
 }
 type TemplateUsageRecords []TemplateUsageRecord
 
@@ -136,7 +137,12 @@ type ChangedByRecord struct {
 	TokenId string    `json:"tokenId"`
 }
 
-func (m BranchMetadata) AddTemplateUsage(instanceId, instanceName, templateId, repositoryName, version, tokenId string) error {
+type TemplateMainConfig struct {
+	ConfigId    ConfigId    `json:"configId"`
+	ComponentId ComponentId `json:"componentId"`
+}
+
+func (m BranchMetadata) AddTemplateUsage(instanceId, instanceName, templateId, repositoryName, version, tokenId string, mainConfig *ConfigKey) error {
 	now := time.Now().Truncate(time.Second).UTC()
 	r := TemplateUsageRecord{
 		InstanceId:     instanceId,
@@ -147,10 +153,19 @@ func (m BranchMetadata) AddTemplateUsage(instanceId, instanceName, templateId, r
 		Created:        ChangedByRecord{Date: now, TokenId: tokenId},
 		Updated:        ChangedByRecord{Date: now, TokenId: tokenId},
 	}
+
+	if mainConfig != nil {
+		r.MainConfig = &TemplateMainConfig{
+			ConfigId:    mainConfig.Id,
+			ComponentId: mainConfig.ComponentId,
+		}
+	}
+
 	instances, err := m.TemplatesUsages()
 	if err != nil {
 		return err
 	}
+
 	instances = append(instances, r)
 	encoded, err := json.EncodeString(instances, false)
 	if err != nil {
