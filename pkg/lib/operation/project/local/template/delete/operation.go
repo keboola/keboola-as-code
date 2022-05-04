@@ -50,6 +50,14 @@ func Run(projectState *project.State, branch model.BranchKey, instance string, o
 			return utils.PrefixError(`cannot delete template configs`, err)
 		}
 
+		// Remove template instance from metadata
+		branchState := projectState.GetOrNil(branch).(*model.BranchState)
+		if err := branchState.Local.Metadata.DeleteTemplateUsage(instance); err != nil {
+			return utils.PrefixError(`cannot remove template instance metadata`, err)
+		}
+		saveOp := projectState.LocalManager().NewUnitOfWork(projectState.Ctx())
+		saveOp.SaveObject(branchState, branchState.LocalState(), model.NewChangedFields())
+
 		// Save manifest
 		if _, err := saveManifest.Run(projectState.ProjectManifest(), projectState.Fs(), d); err != nil {
 			return err
