@@ -467,7 +467,7 @@ func instanceNameAttr() {
 func versionAttr() {
 	Attribute("version", String, func() {
 		Example("v1.2.3")
-		Description("Semantic version of the template.")
+		Description(`Semantic version of the template. Use "default" for default version.`)
 	})
 	Required("version")
 }
