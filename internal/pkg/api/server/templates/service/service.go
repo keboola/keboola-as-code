@@ -310,19 +310,42 @@ func templateRecord(d dependencies.Container, repoName, templateId string) (*rep
 }
 
 func getTemplateVersion(d dependencies.Container, repoName, templateId, versionStr string) (*repository.Repository, *template.Template, error) {
-	// Parse version
-	semVersion, err := model.NewSemVersion(versionStr)
-	if err != nil {
-		return nil, nil, &BadRequestError{
-			Message: fmt.Sprintf(`Version "%s" is not valid: %s`, versionStr, err),
-		}
-	}
-
+	// Get repo
 	repo, err := repositoryInst(d, repoName)
 	if err != nil {
 		return nil, nil, err
 	}
 
+	// Parse version
+	var semVersion model.SemVersion
+	if versionStr == "default" {
+		// Default version
+		tmplRecord, found := repo.GetTemplateById(templateId)
+		if !found {
+			return nil, nil, &GenericError{
+				Name:    "templates.templateNotFound",
+				Message: fmt.Sprintf(`Template "%s" not found.`, templateId),
+			}
+		}
+		if versionRecord, found := tmplRecord.DefaultVersion(); !found {
+			return nil, nil, &GenericError{
+				Name:    "templates.templateNotFound",
+				Message: `No version found.`,
+			}
+		} else {
+			semVersion = versionRecord.Version
+		}
+	} else if v, err := model.NewSemVersion(versionStr); err != nil {
+		// Invalid semantic version
+		return nil, nil, &BadRequestError{
+			Message: fmt.Sprintf(`Version "%s" is not valid: %s`, versionStr, err),
+		}
+	} else {
+		// Parsed version
+		semVersion = v
+	}
+
+	// Get template version
 	tmpl, err := d.Template(model.NewTemplateRef(repo.Ref(), templateId, semVersion))
 	if err != nil {
 		if errors.As(err, &manifest.TemplateNotFoundError{}) {
