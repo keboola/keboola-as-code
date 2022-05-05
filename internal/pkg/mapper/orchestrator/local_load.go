@@ -10,6 +10,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
+const PreviousPhaseLink = "<previous>"
+
 func (m *orchestratorMapper) onLocalLoad(config *model.Config, manifest *model.ConfigManifest, allObjects model.Objects) error {
 	loader := &localLoader{
 		State:        m.state,
@@ -149,9 +151,22 @@ func (l *localLoader) parsePhaseConfig(phase *model.Phase) ([]string, error) {
 	}
 
 	// Get dependsOn
-	dependsOn, err := parser.dependsOnPaths()
+	dependsOnRaw, err := parser.dependsOnPaths()
 	if err != nil {
 		errors.Append(err)
+	}
+
+	// Process links to previous phase
+	var dependsOn []string
+	for _, item := range dependsOnRaw {
+		if strings.TrimSpace(item) == PreviousPhaseLink {
+			// Add previous phase if any exists
+			if len(l.phasesKeys) > 0 {
+				dependsOn = append(dependsOn, l.phasesKeys[len(l.phasesKeys)-1])
+			}
+		} else {
+			dependsOn = append(dependsOn, item)
+		}
 	}
 
 	// Set additional content

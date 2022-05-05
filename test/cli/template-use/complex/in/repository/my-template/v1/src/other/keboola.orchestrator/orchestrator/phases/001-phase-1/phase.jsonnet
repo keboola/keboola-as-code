@@ -1,4 +1,6 @@
 {
   name: "Phase 1",
-  dependsOn: [],
+  dependsOn: [
+    "<previous>",
+  ],
 }
