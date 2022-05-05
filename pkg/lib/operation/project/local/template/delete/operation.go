@@ -24,11 +24,11 @@ type dependencies interface {
 	StorageApi() (*storageapi.Api, error)
 }
 
-func Run(projectState *project.State, branch model.BranchKey, instance string, o Options, d dependencies) error {
+func Run(projectState *project.State, branchKey model.BranchKey, instance string, o Options, d dependencies) error {
 	logger := d.Logger()
 
 	// Get plan
-	plan, err := deleteTemplate.NewPlan(projectState.State(), branch, instance)
+	plan, err := deleteTemplate.NewPlan(projectState.State(), branchKey, instance)
 	if err != nil {
 		return err
 	}
@@ -49,14 +49,6 @@ func Run(projectState *project.State, branch model.BranchKey, instance string, o
 		if err := plan.Invoke(projectState.Ctx(), projectState.LocalManager()); err != nil {
 			return utils.PrefixError(`cannot delete template configs`, err)
 		}
-
-		// Remove template instance from metadata
-		branchState := projectState.GetOrNil(branch).(*model.BranchState)
-		if err := branchState.Local.Metadata.DeleteTemplateUsage(instance); err != nil {
-			return utils.PrefixError(`cannot remove template instance metadata`, err)
-		}
-		saveOp := projectState.LocalManager().NewUnitOfWork(projectState.Ctx())
-		saveOp.SaveObject(branchState, branchState.LocalState(), model.NewChangedFields())
 
 		// Save manifest
 		if _, err := saveManifest.Run(projectState.ProjectManifest(), projectState.Fs(), d); err != nil {

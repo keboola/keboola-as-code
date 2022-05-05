@@ -7,10 +7,10 @@ import (
 )
 
 // NewPlan creates a plan for renaming objects that do not match the naming.
-func NewPlan(projectState *state.State, branch model.BranchKey, instance string) (*Plan, error) {
+func NewPlan(projectState *state.State, branchKey model.BranchKey, instanceId string) (*Plan, error) {
 	builder := &planBuilder{State: projectState}
-	actions := builder.build(branch, instance)
-	return &Plan{actions: actions}, nil
+	actions := builder.build(branchKey, instanceId)
+	return &Plan{actions: actions, projectState: projectState, branchKey: branchKey, instanceId: instanceId}, nil
 }
 
 type planBuilder struct {
@@ -18,8 +18,8 @@ type planBuilder struct {
 	actions []DeleteAction
 }
 
-func (b *planBuilder) build(branch model.BranchKey, instance string) []DeleteAction {
-	for _, config := range search.ConfigsForTemplateInstance(b.State.LocalObjects().ConfigsWithRowsFrom(branch), instance) {
+func (b *planBuilder) build(branchKey model.BranchKey, instanceId string) []DeleteAction {
+	for _, config := range search.ConfigsForTemplateInstance(b.State.LocalObjects().ConfigsWithRowsFrom(branchKey), instanceId) {
 		configState, _ := b.Get(config.Key())
 		action := DeleteAction{
 			State:    configState,
