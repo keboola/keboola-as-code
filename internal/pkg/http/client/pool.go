@@ -82,6 +82,12 @@ func (p *Pool) Send(request *Request) {
 		panic(fmt.Errorf(`Too many (%d) queued reuests in HTTP pool.`, p.requestsQueuedCount.Get()))
 	}
 
+	// Check if is pool active
+	if p.finished {
+		request.SetErr(fmt.Errorf("pool is finished"))
+		return
+	}
+
 	request.SetContext(p.ctx)
 	request.sender = p
 	request.sent = true

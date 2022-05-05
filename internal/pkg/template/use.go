@@ -3,6 +3,7 @@ package template
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/google/go-jsonnet/ast"
 
@@ -47,7 +48,9 @@ type UseContext struct {
 	tickets         *storageapi.TicketProvider
 	ticketId        int
 	ticketsResolved bool
-	placeholders    map[interface{}]string
+
+	lock         *sync.Mutex
+	placeholders map[interface{}]string
 }
 
 const (
@@ -66,6 +69,7 @@ func NewUseContext(ctx context.Context, templateRef model.TemplateRef, objectsRo
 		replacements:    replacevalues.NewValues(),
 		inputs:          make(map[string]InputValue),
 		tickets:         tickets,
+		lock:            &sync.Mutex{},
 		placeholders:    make(map[interface{}]string),
 	}
 
@@ -202,6 +206,9 @@ func (c *UseContext) registerJsonNetFunctions() {
 // ConfigId/ConfigRowId in JsonNet files is replaced by a <<~~ticket:123~~>> placeholder.
 // When all JsonNet files are processed, new IDs are generated in parallel.
 func (c *UseContext) idPlaceholder(old interface{}) string {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
 	if _, found := c.placeholders[old]; !found {
 		// Generate placeholder, it will be later replaced by a new ID
 		c.ticketId++
