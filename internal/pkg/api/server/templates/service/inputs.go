@@ -33,7 +33,9 @@ func validateInputs(groups template.StepsGroups, payload []*StepPayload) (out *V
 
 			// Get values in step
 			values, stepFound := stepInputs[step.Id]
-			if stepFound {
+			if stepFound || len(step.Inputs) == 0 {
+				// Step is configured, if it is part of the payload,
+				// or there are no inputs in the step.
 				outStep.Configured = true
 				configuredSteps++
 			}
@@ -70,7 +72,7 @@ func validateInputs(groups template.StepsGroups, payload []*StepPayload) (out *V
 				allValues = append(allValues, template.InputValue{
 					Id:      input.Id,
 					Value:   value,
-					Skipped: !outInput.Visible,
+					Skipped: !outInput.Visible || !outStep.Configured,
 				})
 
 				// Propagate invalid state from input to step

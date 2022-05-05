@@ -35,6 +35,7 @@ type (
 	InputValue   = templateInput.Value
 	InputsValues = templateInput.Values
 	StepsGroups  = templateInput.StepsGroups
+	Steps        = templateInput.Steps
 )
 
 func ManifestPath() string {

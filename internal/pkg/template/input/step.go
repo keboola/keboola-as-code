@@ -121,16 +121,19 @@ func (g StepsGroups) Validate() error {
 
 // StepsGroup is a container for Steps.
 type StepsGroup struct {
-	Description string `json:"description" validate:"min=1,max=80"`
-	Required    string `json:"required" validate:"oneof=all atLeastOne exactlyOne zeroOrOne optional"`
-	Steps       Steps  `json:"steps" validate:"min=1,dive"`
+	Description string         `json:"description" validate:"min=1,max=80"`
+	Required    StepsCountRule `json:"required" validate:"oneof=all atLeastOne exactlyOne zeroOrOne optional"`
+	Steps       Steps          `json:"steps" validate:"min=1,dive"`
 }
 
+type StepsCountRule string
+
 const (
-	requiredAll                   = "all"
-	requiredAtLeastOne            = "atLeastOne"
-	requiredExactlyOne            = "exactlyOne"
-	requiredZeroOrOne             = "zeroOrOne"
+	RequiredAll                   = StepsCountRule("all")
+	RequiredOptional              = StepsCountRule("optional")
+	RequiredAtLeastOne            = StepsCountRule("atLeastOne")
+	RequiredExactlyOne            = StepsCountRule("exactlyOne")
+	RequiredZeroOrOne             = StepsCountRule("zeroOrOne")
 	requiredAllDescription        = "all steps (%d) must be selected"
 	requiredAtLeastOneDescription = "at least one step must be selected"
 	requiredExactlyOneDescription = "exactly one step must be selected"
@@ -138,21 +141,21 @@ const (
 )
 
 func (g StepsGroup) AreStepsSelectable() bool {
-	return g.Required != requiredAll &&
-		(len(g.Steps) > 1 || (g.Required != requiredAtLeastOne && g.Required != requiredExactlyOne))
+	return g.Required != RequiredAll &&
+		(len(g.Steps) > 1 || (g.Required != RequiredAtLeastOne && g.Required != RequiredExactlyOne))
 }
 
 func (g StepsGroup) ValidateStepsCount(all, selected int) error {
-	if g.Required == requiredAll && selected < all {
+	if g.Required == RequiredAll && selected < all {
 		return fmt.Errorf(requiredAllDescription, all)
 	}
-	if g.Required == requiredAtLeastOne && selected < 1 {
+	if g.Required == RequiredAtLeastOne && selected < 1 {
 		return fmt.Errorf(requiredAtLeastOneDescription)
 	}
-	if g.Required == requiredExactlyOne && selected != 1 {
+	if g.Required == RequiredExactlyOne && selected != 1 {
 		return fmt.Errorf(requiredExactlyOneDescription)
 	}
-	if g.Required == requiredZeroOrOne && selected > 1 {
+	if g.Required == RequiredZeroOrOne && selected > 1 {
 		return fmt.Errorf(requiredZeroOrOneDescription)
 	}
 	return nil
