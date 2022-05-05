@@ -16,7 +16,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
+	deleteTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/delete"
 	useTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
+	createDiff "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/diff/create"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/push"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
@@ -237,8 +239,73 @@ func (s *service) UpdateInstance(dependencies.Container, *UpdateInstancePayload)
 	return nil, NotImplementedError{}
 }
 
-func (s *service) DeleteInstance(dependencies.Container, *DeleteInstancePayload) (err error) {
-	return NotImplementedError{}
+func (s *service) DeleteInstance(d dependencies.Container, payload *DeleteInstancePayload) (err error) {
+	// Note:
+	//   Waits for separation of remote and local state.
+	//   A virtual FS and fake manifest are created to make it work.
+
+	branchKey, err := getBranch(d, payload.Branch)
+	if err != nil {
+		return err
+	}
+
+	// Create virtual fs, after refactoring it will be removed
+	fs, err := aferofs.NewMemoryFs(d.Logger(), "")
+	if err != nil {
+		return err
+	}
+
+	// Create fake manifest
+	m := project.NewManifest(123, "foo")
+
+	// Load only target branch
+	m.Filter().SetAllowedBranches(model.AllowedBranches{model.AllowedBranch(cast.ToString(branchKey.Id))})
+	prj := project.NewWithManifest(fs, m, d)
+
+	// Load project state
+	prjState, err := prj.LoadState(loadState.Options{LoadRemoteState: true})
+	if err != nil {
+		return err
+	}
+
+	// Copy remote state to the local
+	for _, objectState := range prjState.All() {
+		objectState.SetLocalState(deepcopy.Copy(objectState.RemoteState()).(model.Object))
+	}
+
+	// Check instance existence in metadata
+	branch, _ := prjState.GetOrNil(branchKey).(*model.BranchState)
+	_, found, err := branch.Local.Metadata.TemplateUsage(payload.InstanceID)
+	if !found {
+		return &GenericError{
+			Name:    "templates.instanceNotFound",
+			Message: fmt.Sprintf(`Instance "%s" not found in branch "%d".`, payload.InstanceID, branchKey.Id),
+		}
+	}
+
+	// Delete template instance
+	deleteOpts := deleteTemplate.Options{
+		Branch:   branchKey,
+		DryRun:   false,
+		Instance: payload.InstanceID,
+	}
+	err = deleteTemplate.Run(prjState, deleteOpts, d)
+	if err != nil {
+		return err
+	}
+
+	results, err := createDiff.Run(createDiff.Options{Objects: prjState})
+	for _, r := range results.Results {
+		fmt.Printf("DIFF %#v\n", r)
+	}
+
+	// Push changes
+	changeDesc := fmt.Sprintf("Delete template instance %s", payload.InstanceID)
+	if err := push.Run(prjState, push.Options{ChangeDescription: changeDesc, AllowRemoteDelete: true, DryRun: false}, d); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *service) UpgradeInstance(dependencies.Container, *UpgradeInstancePayload) (res *UpgradeInstanceResult, err error) {
