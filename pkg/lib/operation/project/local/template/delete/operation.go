@@ -24,11 +24,11 @@ type dependencies interface {
 	StorageApi() (*storageapi.Api, error)
 }
 
-func Run(projectState *project.State, branchKey model.BranchKey, instance string, o Options, d dependencies) error {
+func Run(projectState *project.State, o Options, d dependencies) error {
 	logger := d.Logger()
 
 	// Get plan
-	plan, err := deleteTemplate.NewPlan(projectState.State(), branchKey, instance)
+	plan, err := deleteTemplate.NewPlan(projectState.State(), o.Branch, o.Instance)
 	if err != nil {
 		return err
 	}

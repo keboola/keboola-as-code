@@ -36,7 +36,7 @@ func DeleteCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Delete template
-			return deleteOp.Run(projectState, options.Branch, options.Instance, options, d)
+			return deleteOp.Run(projectState, options, d)
 		},
 	}
 
