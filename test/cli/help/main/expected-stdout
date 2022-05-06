@@ -42,7 +42,7 @@ Available Commands:
   remote create branch           Create a new branch from the main branch.
 
   template                       Manage templates in the repository directory.
-  template describe              Describe template inputs. NOT IMPLEMENTED
+  template describe              Describe template and its inputs.
   template create                Create template in repository directory.
   template repository            Manage the repository directory.
   template repository init       Init a new repository directory.
