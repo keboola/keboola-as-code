@@ -9,7 +9,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 type DeleteAction struct {
@@ -29,7 +28,7 @@ func (p *Plan) Empty() bool {
 }
 
 func (p *Plan) Name() string {
-	return "delete-template"
+	return "delete template instance"
 }
 
 func (p *Plan) Log(log log.Logger) {
@@ -47,19 +46,5 @@ func (p *Plan) Log(log log.Logger) {
 }
 
 func (p *Plan) Invoke(ctx context.Context, localManager *local.Manager) error {
-	if err := newExecutor(ctx, localManager, p).invoke(); err != nil {
-		return err
-	}
-
-	branchState := p.projectState.GetOrNil(p.branchKey).(*model.BranchState)
-	if err := branchState.Local.Metadata.DeleteTemplateUsage(p.instanceId); err != nil {
-		return utils.PrefixError(`cannot remove template instance metadata`, err)
-	}
-	saveOp := p.projectState.LocalManager().NewUnitOfWork(p.projectState.Ctx())
-	saveOp.SaveObject(branchState, branchState.LocalState(), model.NewChangedFields())
-	if err := saveOp.Invoke(); err != nil {
-		return err
-	}
-
-	return nil
+	return newExecutor(ctx, localManager, p).invoke()
 }

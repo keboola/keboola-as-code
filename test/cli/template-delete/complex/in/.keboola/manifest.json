@@ -34,7 +34,7 @@
       "id": 12345,
       "path": "main",
       "metadata": {
-        "KBC.KAC.templates.instances": "[{\"instanceId\":\"inst123\",\"instanceName\":\"My Instance\",\"templateId\":\"my-template-id\",\"repositoryName\":\"keboola\",\"version\":\"1.0.0\",\"created\":{\"date\":\"2022-01-01T01:00:00Z\",\"tokenId\":\"123\"},\"updated\":{\"date\":\"2022-01-01T01:00:00Z\",\"tokenId\":\"123\"},\"mainConfig\":{\"configId\":\"%s\",\"componentId\":\"keboola.orchestrator\"}},{\"instanceId\":\"inst456\",\"instanceName\":\"My Instance\",\"templateId\":\"my-template-id\",\"repositoryName\":\"keboola\",\"version\":\"1.0.0\",\"created\":{\"date\":\"2022-01-01T01:00:00Z\",\"tokenId\":\"123\"},\"updated\":{\"date\":\"2022-01-01T01:00:00Z\",\"tokenId\":\"123\"},\"mainConfig\":{\"configId\":\"%s\",\"componentId\":\"keboola.orchestrator\"}}]"
+        "KBC.KAC.templates.instances": "[{\"instanceId\":\"inst123\",\"instanceName\":\"My Instance\",\"templateId\":\"my-template-id\",\"repositoryName\":\"keboola\",\"version\":\"1.0.0\",\"created\":{\"date\":\"2022-01-01T01:00:00Z\",\"tokenId\":\"123\"},\"updated\":{\"date\":\"2022-01-01T01:00:00Z\",\"tokenId\":\"123\"},\"mainConfig\":{\"configId\":\"1234\",\"componentId\":\"keboola.orchestrator\"}},{\"instanceId\":\"inst456\",\"instanceName\":\"My Instance\",\"templateId\":\"my-template-id\",\"repositoryName\":\"keboola\",\"version\":\"1.0.0\",\"created\":{\"date\":\"2022-01-01T01:00:00Z\",\"tokenId\":\"123\"},\"updated\":{\"date\":\"2022-01-01T01:00:00Z\",\"tokenId\":\"123\"},\"mainConfig\":{\"configId\":\"5678\",\"componentId\":\"keboola.orchestrator\"}}]"
       }
     }
   ],
