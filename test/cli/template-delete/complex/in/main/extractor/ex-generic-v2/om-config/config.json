@@ -1,0 +1,17 @@
+{
+  "parameters": {
+    "api": {
+      "baseUrl": "https://jsonplaceholder.typicode.com"
+    }
+  },
+  "storage": {
+    "output": {
+      "tables": [
+        {
+          "destination": "in.c-my-super-bucket-%s.table",
+          "source": "table"
+        }
+      ]
+    }
+  }
+}
