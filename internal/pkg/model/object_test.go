@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
@@ -63,4 +64,51 @@ func TestBranchMetadata_AddTemplateUsage(t *testing.T) {
 			Updated:        ChangedByRecord{Date: now, TokenId: "789"},
 		},
 	}, usages)
+}
+
+func TestBranchMetadata_DeleteTemplateUsage(t *testing.T) {
+	t.Parallel()
+
+	now := time.Now().Truncate(time.Second).UTC()
+	usage1 := TemplateUsageRecord{
+		InstanceId:     "inst1",
+		InstanceName:   "Instance 1",
+		TemplateId:     "tmpl1",
+		RepositoryName: "repo",
+		Version:        "1.0.0",
+		Created:        ChangedByRecord{Date: now, TokenId: "12345"},
+		Updated:        ChangedByRecord{Date: now, TokenId: "12345"},
+		MainConfig:     &TemplateMainConfig{ConfigId: "1234", ComponentId: "foo.bar"},
+	}
+	usage2 := TemplateUsageRecord{
+		InstanceId:     "inst2",
+		InstanceName:   "Instance 2",
+		TemplateId:     "tmpl1",
+		RepositoryName: "repo",
+		Version:        "1.0.0",
+		Created:        ChangedByRecord{Date: now, TokenId: "12345"},
+		Updated:        ChangedByRecord{Date: now, TokenId: "12345"},
+		MainConfig:     &TemplateMainConfig{ConfigId: "1234", ComponentId: "foo.bar"},
+	}
+	encUsages, err := json.EncodeString(TemplateUsageRecords{usage1, usage2}, false)
+	assert.NoError(t, err)
+
+	b := BranchMetadata{}
+	b["KBC.KAC.templates.instances"] = encUsages
+
+	usage, found, err := b.TemplateUsage("inst1")
+	assert.NoError(t, err)
+	assert.True(t, found)
+	assert.Equal(t, &usage1, usage)
+
+	err = b.DeleteTemplateUsage("inst1")
+	assert.NoError(t, err)
+
+	usages, err := b.TemplatesUsages()
+	assert.NoError(t, err)
+	assert.Len(t, usages, 1)
+
+	_, found, err = b.TemplateUsage("inst1")
+	assert.NoError(t, err)
+	assert.False(t, found)
 }

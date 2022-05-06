@@ -142,6 +142,15 @@ type TemplateMainConfig struct {
 	ComponentId ComponentId `json:"componentId"`
 }
 
+func (m BranchMetadata) saveTemplateUsages(instances TemplateUsageRecords) error {
+	encoded, err := json.EncodeString(instances, false)
+	if err != nil {
+		return fmt.Errorf(`metadata "%s" are not in valid format: %w`, TemplatesInstancesMetaKey, err)
+	}
+	m[TemplatesInstancesMetaKey] = encoded
+	return nil
+}
+
 func (m BranchMetadata) AddTemplateUsage(instanceId, instanceName, templateId, repositoryName, version, tokenId string, mainConfig *ConfigKey) error {
 	now := time.Now().Truncate(time.Second).UTC()
 	r := TemplateUsageRecord{
@@ -167,12 +176,23 @@ func (m BranchMetadata) AddTemplateUsage(instanceId, instanceName, templateId, r
 	}
 
 	instances = append(instances, r)
-	encoded, err := json.EncodeString(instances, false)
+	return m.saveTemplateUsages(instances)
+}
+
+func (m BranchMetadata) DeleteTemplateUsage(instanceId string) error {
+	instances, err := m.TemplatesUsages()
 	if err != nil {
-		return fmt.Errorf(`metadata "%s" are not in valid format: %w`, TemplatesInstancesMetaKey, err)
+		return err
 	}
-	m[TemplatesInstancesMetaKey] = encoded
-	return nil
+
+	for i, u := range instances {
+		if u.InstanceId == instanceId {
+			instances = append(instances[:i], instances[i+1:]...)
+			return m.saveTemplateUsages(instances)
+		}
+	}
+
+	return fmt.Errorf(`instance "%s" not found`, instanceId)
 }
 
 func (m BranchMetadata) TemplatesUsages() (TemplateUsageRecords, error) {
