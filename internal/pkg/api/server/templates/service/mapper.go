@@ -133,7 +133,7 @@ func InputsResponse(template *template.Template) (out *Inputs) {
 		groupResponse := &StepGroup{
 			ID:          group.Id,
 			Description: group.Description,
-			Required:    group.Required,
+			Required:    string(group.Required),
 			Steps:       make([]*Step, 0),
 		}
 		out.StepGroups = append(out.StepGroups, groupResponse)

@@ -114,7 +114,7 @@ func (d *stepsDialog) parse(result string) (input.StepsGroupsExt, error) {
 				continue
 			}
 
-			currentGroup.Required = in
+			currentGroup.Required = input.StepsCountRule(in)
 		case strings.HasPrefix(line, `icon:`):
 			if currentStep == nil {
 				errors.Append(fmt.Errorf(`line %d: icon is not valid option`, lineNum))

@@ -67,7 +67,7 @@ func TestStepsGroup_ValidateSelectedSteps(t *testing.T) {
 
 	g := StepsGroup{
 		Description: "description",
-		Required:    requiredAtLeastOne,
+		Required:    RequiredAtLeastOne,
 	}
 	assert.NoError(t, g.ValidateStepsCount(10, 2))
 	err := g.ValidateStepsCount(10, 0)
@@ -76,7 +76,7 @@ func TestStepsGroup_ValidateSelectedSteps(t *testing.T) {
 
 	g = StepsGroup{
 		Description: "description",
-		Required:    requiredZeroOrOne,
+		Required:    RequiredZeroOrOne,
 	}
 	assert.NoError(t, g.ValidateStepsCount(10, 0))
 	assert.NoError(t, g.ValidateStepsCount(10, 1))
@@ -86,7 +86,7 @@ func TestStepsGroup_ValidateSelectedSteps(t *testing.T) {
 
 	g = StepsGroup{
 		Description: "description",
-		Required:    requiredExactlyOne,
+		Required:    RequiredExactlyOne,
 	}
 	assert.NoError(t, g.ValidateStepsCount(10, 1))
 	err = g.ValidateStepsCount(10, 0)
@@ -98,7 +98,7 @@ func TestStepsGroup_ValidateSelectedSteps(t *testing.T) {
 
 	g = StepsGroup{
 		Description: "description",
-		Required:    requiredAll,
+		Required:    RequiredAll,
 	}
 	assert.NoError(t, g.ValidateStepsCount(10, 10))
 	err = g.ValidateStepsCount(10, 9)
