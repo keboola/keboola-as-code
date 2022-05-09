@@ -3,13 +3,7 @@ package describe
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 )
-
-type Options struct {
-	Template *repository.TemplateRecord
-	Version  *repository.VersionRecord
-}
 
 type dependencies interface {
 	Logger() log.Logger
