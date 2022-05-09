@@ -8,7 +8,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/local"
 )
 
 type DeleteAction struct {
@@ -45,6 +44,6 @@ func (p *Plan) Log(log log.Logger) {
 	}
 }
 
-func (p *Plan) Invoke(ctx context.Context, localManager *local.Manager) error {
-	return newExecutor(ctx, localManager, p).invoke()
+func (p *Plan) Invoke(ctx context.Context) error {
+	return newExecutor(ctx, p).invoke()
 }

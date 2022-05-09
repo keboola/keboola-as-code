@@ -18,7 +18,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
 	deleteTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/delete"
 	useTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
-	createDiff "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/diff/create"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/push"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
@@ -173,7 +172,7 @@ func (s *service) UseTemplateVersion(d dependencies.Container, payload *UseTempl
 
 	// Push changes
 	changeDesc := fmt.Sprintf("From template %s", tmpl.FullName())
-	if err := push.Run(prjState, push.Options{ChangeDescription: changeDesc}, d); err != nil {
+	if err := push.Run(prjState, push.Options{ChangeDescription: changeDesc, SkipValidation: true}, d); err != nil {
 		return nil, err
 	}
 
@@ -275,7 +274,7 @@ func (s *service) DeleteInstance(d dependencies.Container, payload *DeleteInstan
 
 	// Check instance existence in metadata
 	branch, _ := prjState.GetOrNil(branchKey).(*model.BranchState)
-	_, found, err := branch.Local.Metadata.TemplateUsage(payload.InstanceID)
+	_, found, _ := branch.Local.Metadata.TemplateUsage(payload.InstanceID)
 	if !found {
 		return &GenericError{
 			Name:    "templates.instanceNotFound",
@@ -294,14 +293,9 @@ func (s *service) DeleteInstance(d dependencies.Container, payload *DeleteInstan
 		return err
 	}
 
-	results, err := createDiff.Run(createDiff.Options{Objects: prjState})
-	for _, r := range results.Results {
-		fmt.Printf("DIFF %#v\n", r)
-	}
-
 	// Push changes
 	changeDesc := fmt.Sprintf("Delete template instance %s", payload.InstanceID)
-	if err := push.Run(prjState, push.Options{ChangeDescription: changeDesc, AllowRemoteDelete: true, DryRun: false}, d); err != nil {
+	if err := push.Run(prjState, push.Options{ChangeDescription: changeDesc, AllowRemoteDelete: true, DryRun: false, SkipValidation: true}, d); err != nil {
 		return err
 	}
 

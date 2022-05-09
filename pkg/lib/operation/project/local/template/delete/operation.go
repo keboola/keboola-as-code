@@ -46,7 +46,7 @@ func Run(projectState *project.State, o Options, d dependencies) error {
 		}
 
 		// Invoke
-		if err := plan.Invoke(projectState.Ctx(), projectState.LocalManager()); err != nil {
+		if err := plan.Invoke(projectState.Ctx()); err != nil {
 			return utils.PrefixError(`cannot delete template configs`, err)
 		}
 

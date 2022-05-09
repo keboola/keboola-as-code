@@ -92,7 +92,7 @@ func (s *Registry) All() []ObjectState {
 		object := v.(ObjectState)
 
 		// Skip deleted
-		if object.Manifest().State().IsDeleted() {
+		if !object.HasLocalState() && !object.HasRemoteState() {
 			continue
 		}
 
