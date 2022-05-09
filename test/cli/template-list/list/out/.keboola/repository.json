@@ -1,0 +1,45 @@
+{
+  "version": 2,
+  "author": {
+    "name": "Example Author",
+    "url": "https://example.com"
+  },
+  "templates": [
+    {
+      "id": "my-template",
+      "icon": "common:settings",
+      "name": "My Template",
+      "description": "Full workflow to ...",
+      "path": "my-template",
+      "versions": [
+        {
+          "version": "0.0.1",
+          "description": "notes",
+          "stable": false,
+          "path": "v0"
+        },
+        {
+          "version": "1.0.0",
+          "description": "notes",
+          "stable": true,
+          "path": "v1"
+        }
+      ]
+    },
+    {
+      "id": "second-template",
+      "icon": "common:settings",
+      "name": "Second Template",
+      "description": "Full workflow to ...",
+      "path": "second-template",
+      "versions": [
+        {
+          "version": "1.0.2",
+          "description": "notes",
+          "stable": true,
+          "path": "v1"
+        }
+      ]
+    }
+  ]
+}
