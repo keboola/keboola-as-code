@@ -46,6 +46,7 @@
       "id": "%s",
       "path": "extractor/ex-generic-v2/shopify",
       "metadata": {
+        "KBC.KAC.templates.configId": "{\"idInTemplate\":\"shopify\"}",
         "KBC.KAC.templates.instanceId": "%s",
         "KBC.KAC.templates.repository": "keboola",
         "KBC.KAC.templates.templateId": "my-template-id"
@@ -58,6 +59,7 @@
       "id": "%s",
       "path": "extractor/ex-generic-v2/shoptet",
       "metadata": {
+        "KBC.KAC.templates.configId": "{\"idInTemplate\":\"shoptet\"}",
         "KBC.KAC.templates.instanceId": "%s",
         "KBC.KAC.templates.repository": "keboola",
         "KBC.KAC.templates.templateId": "my-template-id"
@@ -70,6 +72,7 @@
       "id": "%s",
       "path": "extractor/keboola.ex-aws-s3/om-default-bucket",
       "metadata": {
+        "KBC.KAC.templates.configId": "{\"idInTemplate\":\"om-default-bucket\"}",
         "KBC.KAC.templates.instanceId": "%s",
         "KBC.KAC.templates.repository": "keboola",
         "KBC.KAC.templates.templateId": "my-template-id"
@@ -82,6 +85,7 @@
       "id": "%s",
       "path": "transformation/keboola.python-transformation-v2/python-transformation",
       "metadata": {
+        "KBC.KAC.templates.configId": "{\"idInTemplate\":\"python-transformation\"}",
         "KBC.KAC.templates.instanceId": "%s",
         "KBC.KAC.templates.repository": "keboola",
         "KBC.KAC.templates.templateId": "my-template-id"
@@ -94,6 +98,7 @@
       "id": "%s",
       "path": "transformation/keboola.snowflake-transformation/snowflake-transformation",
       "metadata": {
+        "KBC.KAC.templates.configId": "{\"idInTemplate\":\"snowflake-transformation\"}",
         "KBC.KAC.templates.instanceId": "%s",
         "KBC.KAC.templates.repository": "keboola",
         "KBC.KAC.templates.templateId": "my-template-id"
@@ -106,6 +111,7 @@
       "id": "%s",
       "path": "writer/keboola.wr-db-mysql/im-default-bucket",
       "metadata": {
+        "KBC.KAC.templates.configId": "{\"idInTemplate\":\"im-default-bucket\"}",
         "KBC.KAC.templates.instanceId": "%s",
         "KBC.KAC.templates.repository": "keboola",
         "KBC.KAC.templates.templateId": "my-template-id"

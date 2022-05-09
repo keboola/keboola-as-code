@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/metadata"
 )
 
 func TestStateSearchForBranches(t *testing.T) {
@@ -99,13 +98,13 @@ func TestStateSearchForConfigsInTemplate(t *testing.T) {
 	t.Parallel()
 	all := []*model.ConfigWithRows{
 		{
-			Config: &model.Config{Name: "Config 1", Metadata: metadata.ConfigMetadata{"KBC.KAC.templates.instanceId": "inst1"}},
+			Config: &model.Config{Name: "Config 1", Metadata: model.ConfigMetadata{"KBC.KAC.templates.instanceId": "inst1"}},
 		},
 		{
 			Config: &model.Config{Name: "Config 2"},
 		},
 		{
-			Config: &model.Config{Name: "Config 3", Metadata: metadata.ConfigMetadata{"KBC.KAC.templates.instanceId": "inst2"}},
+			Config: &model.Config{Name: "Config 3", Metadata: model.ConfigMetadata{"KBC.KAC.templates.instanceId": "inst2"}},
 		},
 	}
 

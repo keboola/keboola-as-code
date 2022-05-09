@@ -11,6 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet/fsimporter"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/metadata"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacevalues"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
@@ -50,8 +51,12 @@ type UseContext struct {
 	ticketsResolved bool
 
 	lock         *sync.Mutex
-	placeholders map[interface{}]string
+	placeholders PlaceholdersMap
+	objectIds    metadata.ObjectIdsMap
 }
+
+// PlaceholdersMap -  original template value -> placeholder.
+type PlaceholdersMap map[interface{}]string
 
 const (
 	placeholderStart      = "<<~~"
@@ -70,7 +75,8 @@ func NewUseContext(ctx context.Context, templateRef model.TemplateRef, objectsRo
 		inputs:          make(map[string]InputValue),
 		tickets:         tickets,
 		lock:            &sync.Mutex{},
-		placeholders:    make(map[interface{}]string),
+		placeholders:    make(PlaceholdersMap),
+		objectIds:       make(metadata.ObjectIdsMap),
 	}
 
 	// Convert inputs to map
@@ -116,6 +122,10 @@ func (c *UseContext) RemoteObjectsFilter() model.ObjectsFilter {
 
 func (c *UseContext) LocalObjectsFilter() model.ObjectsFilter {
 	return model.NoFilter()
+}
+
+func (c *UseContext) ObjectIds() metadata.ObjectIdsMap {
+	return c.objectIds
 }
 
 func (c *UseContext) registerJsonNetFunctions() {
@@ -205,19 +215,19 @@ func (c *UseContext) registerJsonNetFunctions() {
 
 // ConfigId/ConfigRowId in JsonNet files is replaced by a <<~~ticket:123~~>> placeholder.
 // When all JsonNet files are processed, new IDs are generated in parallel.
-func (c *UseContext) idPlaceholder(old interface{}) string {
+func (c *UseContext) idPlaceholder(oldId interface{}) string {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	if _, found := c.placeholders[old]; !found {
+	if _, found := c.placeholders[oldId]; !found {
 		// Generate placeholder, it will be later replaced by a new ID
 		c.ticketId++
 		placeholderStr := fmt.Sprintf("%sticket:%d%s", placeholderStart, c.ticketId, placeholderEnd)
-		c.placeholders[old] = placeholderStr
+		c.placeholders[oldId] = placeholderStr
 
-		// Old -> placeholder
+		// Store old -> placeholder
 		var placeholder interface{}
-		switch old.(type) {
+		switch oldId.(type) {
 		case model.ConfigId:
 			placeholder = model.ConfigId(placeholderStr)
 		case model.RowId:
@@ -227,17 +237,20 @@ func (c *UseContext) idPlaceholder(old interface{}) string {
 		}
 
 		// Placeholder -> new ID
+		var newId interface{}
 		c.tickets.Request(func(ticket *model.Ticket) {
 			switch placeholder.(type) {
 			case model.ConfigId:
-				c.replacements.AddId(placeholder, model.ConfigId(ticket.Id))
+				newId = model.ConfigId(ticket.Id)
 			case model.RowId:
-				c.replacements.AddId(placeholder, model.RowId(ticket.Id))
+				newId = model.RowId(ticket.Id)
 			default:
 				panic(fmt.Errorf("unexpected ID type"))
 			}
+			c.replacements.AddId(placeholder, newId)
+			c.objectIds[newId] = oldId
 		})
 	}
 
-	return c.placeholders[old]
+	return c.placeholders[oldId]
 }
