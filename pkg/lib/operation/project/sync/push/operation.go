@@ -15,6 +15,7 @@ import (
 type Options struct {
 	Encrypt           bool
 	DryRun            bool
+	SkipValidation    bool
 	AllowRemoteDelete bool
 	LogUntrackedPaths bool
 	ChangeDescription string
@@ -46,12 +47,14 @@ func Run(projectState *project.State, o Options, d dependencies) error {
 	}
 
 	// Validate
-	validateOptions := validate.Options{
-		ValidateSecrets:    !o.Encrypt || !o.DryRun,
-		ValidateJsonSchema: true,
-	}
-	if err := validate.Run(projectState, validateOptions, d); err != nil {
-		return err
+	if !o.SkipValidation {
+		validateOptions := validate.Options{
+			ValidateSecrets:    !o.Encrypt || !o.DryRun,
+			ValidateJsonSchema: true,
+		}
+		if err := validate.Run(projectState, validateOptions, d); err != nil {
+			return err
+		}
 	}
 
 	// Diff

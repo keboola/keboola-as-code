@@ -20,7 +20,7 @@ type planBuilder struct {
 
 func (b *planBuilder) build(branchKey model.BranchKey, instanceId string) []DeleteAction {
 	for _, config := range search.ConfigsForTemplateInstance(b.State.LocalObjects().ConfigsWithRowsFrom(branchKey), instanceId) {
-		configState, _ := b.Get(config.Key())
+		configState := b.MustGet(config.Key())
 		action := DeleteAction{
 			State:    configState,
 			Manifest: configState.Manifest(),

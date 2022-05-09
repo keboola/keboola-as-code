@@ -4,22 +4,20 @@ import (
 	"context"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 type executor struct {
 	*Plan
-	*local.Manager
 	ctx context.Context
 }
 
-func newExecutor(ctx context.Context, localManager *local.Manager, plan *Plan) *executor {
-	return &executor{Plan: plan, Manager: localManager, ctx: ctx}
+func newExecutor(ctx context.Context, plan *Plan) *executor {
+	return &executor{Plan: plan, ctx: ctx}
 }
 
 func (e *executor) invoke() error {
-	uow := e.NewUnitOfWork(e.ctx)
+	uow := e.projectState.LocalManager().NewUnitOfWork(e.ctx)
 	for _, action := range e.actions {
 		uow.DeleteObject(action.State, action.Manifest)
 	}
