@@ -1,3 +1,4 @@
 {
-  "name": "om-default-bucket"
+  "name": "om-default-bucket",
+  "isDisabled": false
 }

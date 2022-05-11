@@ -1,3 +1,4 @@
 {
-  "name": "my config"
+  "name": "my config",
+  "isDisabled": false
 }

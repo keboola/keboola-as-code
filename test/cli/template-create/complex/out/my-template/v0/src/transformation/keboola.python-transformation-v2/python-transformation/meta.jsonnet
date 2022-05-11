@@ -1,3 +1,4 @@
 {
   name: "python-transformation",
+  isDisabled: false,
 }

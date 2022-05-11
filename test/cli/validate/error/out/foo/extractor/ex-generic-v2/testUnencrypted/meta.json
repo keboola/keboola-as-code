@@ -1,3 +1,4 @@
 {
-  "name": "testUnencrypted"
+  "name": "testUnencrypted",
+  "isDisabled": false
 }

@@ -1,3 +1,4 @@
 {
-  "name": "shopify"
+  "name": "shopify",
+  "isDisabled": false
 }

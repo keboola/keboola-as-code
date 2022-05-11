@@ -1,3 +1,4 @@
 {
-  "name": "om-config"
+  "name": "om-config",
+  "isDisabled": false
 }

@@ -1,3 +1,4 @@
 {
-  "name": "empty-transformation"
+  "name": "empty-transformation",
+  "isDisabled": false
 }

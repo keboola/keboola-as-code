@@ -1,3 +1,4 @@
 {
-  "name": "with-schema"
+  "name": "with-schema",
+  "isDisabled": false
 }

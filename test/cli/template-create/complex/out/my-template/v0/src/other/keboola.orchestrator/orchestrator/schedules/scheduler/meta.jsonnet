@@ -1,3 +1,4 @@
 {
   name: "Scheduler",
+  isDisabled: false,
 }

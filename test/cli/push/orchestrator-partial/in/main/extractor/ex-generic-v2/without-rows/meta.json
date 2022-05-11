@@ -1,3 +1,4 @@
 {
-  "name": "without-rows"
+  "name": "without-rows",
+  "isDisabled": false
 }
