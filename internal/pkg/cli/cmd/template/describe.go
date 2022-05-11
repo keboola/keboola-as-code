@@ -13,7 +13,7 @@ import (
 
 func DescribeCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "describe <template> <version>",
+		Use:   "describe <template> [version]",
 		Short: helpmsg.Read(`template/describe/short`),
 		Long:  helpmsg.Read(`template/describe/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -29,6 +29,7 @@ func DescribeCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			var versionArg string
 			if len(args) == 1 {
 				templateRec, found := repo.GetTemplateById(args[0])
 				if !found {
@@ -38,11 +39,13 @@ func DescribeCommand(p dependencies.Provider) *cobra.Command {
 				if !found {
 					return fmt.Errorf(`default version for template "%s" was not found in the repository`, args[0])
 				}
-				args = append(args, version.Version.String())
+				versionArg = version.Version.String()
+			} else {
+				versionArg = args[1]
 			}
 
 			// Template definition
-			templateDef, err := model.NewTemplateRefFromString(repo.Ref(), args[0], args[1])
+			templateDef, err := model.NewTemplateRefFromString(repo.Ref(), args[0], versionArg)
 			if err != nil {
 				return err
 			}
