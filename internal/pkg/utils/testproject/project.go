@@ -289,7 +289,7 @@ func (p *Project) createBranches(branches []*fixtures.BranchState) {
 			}
 			p.setEnv(fmt.Sprintf("TEST_BRANCH_%s_ID", branch.Name), branch.Id.String())
 		} else {
-			p.storageApi.
+			err := p.storageApi.
 				CreateBranchRequest(branch).
 				OnSuccess(func(response *client.Response) {
 					p.logf(`crated branch "%s", id: "%d"`, branch.Name, branch.Id)
@@ -297,7 +297,11 @@ func (p *Project) createBranches(branches []*fixtures.BranchState) {
 					p.branchesById[branch.Id] = branch
 					p.branchesByName[branch.Name] = branch
 				}).
-				Send()
+				Send().
+				Err()
+			if err != nil {
+				assert.FailNow(p.t, fmt.Sprintf(`cannot create branch: %s`, err))
+			}
 		}
 	}
 }
