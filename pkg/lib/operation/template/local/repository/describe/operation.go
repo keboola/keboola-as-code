@@ -10,52 +10,52 @@ type dependencies interface {
 }
 
 func Run(tmpl *template.Template, d dependencies) (err error) {
-	logger := d.Logger().InfoWriter()
+	w := d.Logger().InfoWriter()
 
-	logger.Writef("Template ID:          %s", tmpl.TemplateRecord().Id)
-	logger.Writef("Name:                 %s", tmpl.TemplateRecord().Name)
-	logger.Writef("Description:          %s", tmpl.TemplateRecord().Description)
-	logger.Writef("")
+	w.Writef("Template ID:          %s", tmpl.TemplateRecord().Id)
+	w.Writef("Name:                 %s", tmpl.TemplateRecord().Name)
+	w.Writef("Description:          %s", tmpl.TemplateRecord().Description)
+	w.Writef("")
 
 	v := tmpl.VersionRecord()
-	logger.Writef("Version:              %s", v.Version.String())
-	logger.Writef("Stable:               %t", v.Stable)
-	logger.Writef("Description:          %s", v.Description)
-	logger.Writef("")
+	w.Writef("Version:              %s", v.Version.String())
+	w.Writef("Stable:               %t", v.Stable)
+	w.Writef("Description:          %s", v.Description)
+	w.Writef("")
 
 	// Groups
 	for _, group := range tmpl.Inputs().ToExtended() {
-		logger.Writef("Group ID:             %s", group.Id)
-		logger.Writef("Description:          %s", group.Description)
-		logger.Writef("Required:             %s", string(group.Required))
-		logger.Writef("")
+		w.Writef("Group ID:             %s", group.Id)
+		w.Writef("Description:          %s", group.Description)
+		w.Writef("Required:             %s", string(group.Required))
+		w.Writef("")
 
 		// Steps
 		for _, step := range group.Steps {
-			logger.Writef("  Step ID:            %s", step.Id)
-			logger.Writef("  Name:               %s", step.Name)
-			logger.Writef("  Description:        %s", step.Description)
-			logger.Writef("  Dialog Name:        %s", step.NameFoDialog())
-			logger.Writef("  Dialog Description: %s", step.DescriptionForDialog())
-			logger.Writef("")
+			w.Writef("  Step ID:            %s", step.Id)
+			w.Writef("  Name:               %s", step.Name)
+			w.Writef("  Description:        %s", step.Description)
+			w.Writef("  Dialog Name:        %s", step.NameFoDialog())
+			w.Writef("  Dialog Description: %s", step.DescriptionForDialog())
+			w.Writef("")
 
 			// Inputs
 			for _, in := range step.Inputs {
-				logger.Writef("    Input ID:         %s", in.Id)
-				logger.Writef("    Name:             %s", in.Name)
-				logger.Writef("    Description:      %s", in.Description)
-				logger.Writef("    Type:             %s", in.Type)
-				logger.Writef("    Kind:             %s", string(in.Kind))
+				w.Writef("    Input ID:         %s", in.Id)
+				w.Writef("    Name:             %s", in.Name)
+				w.Writef("    Description:      %s", in.Description)
+				w.Writef("    Type:             %s", in.Type)
+				w.Writef("    Kind:             %s", string(in.Kind))
 				if in.Default != nil {
-					logger.Writef("    Default:          %#v", in.DefaultOrEmpty())
+					w.Writef("    Default:          %#v", in.DefaultOrEmpty())
 				}
 				if len(in.Options) > 0 {
-					logger.Writef("    Options:")
+					w.Writef("    Options:")
 					for _, opt := range in.Options {
-						logger.Writef("      %s:  %s", opt.Value, opt.Label)
+						w.Writef("      %s:  %s", opt.Value, opt.Label)
 					}
 				}
-				logger.Writef("")
+				w.Writef("")
 			}
 		}
 	}
