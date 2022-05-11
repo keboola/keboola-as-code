@@ -15,6 +15,7 @@ func Commands(d dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`template/long`),
 	}
 	cmd.AddCommand(
+		ListCommand(d),
 		DescribeCommand(d),
 		CreateCommand(d),
 		repository.Commands(d),
