@@ -420,3 +420,12 @@ func (k TaskKey) ConfigKey() ConfigKey {
 func (k TaskKey) ParentKey() (Key, error) {
 	return k.PhaseKey, nil
 }
+
+type ConfigIdMetadata struct {
+	IdInTemplate ConfigId `json:"idInTemplate"`
+}
+
+type RowIdMetadata struct {
+	IdInProject  RowId `json:"idInProject"`
+	IdInTemplate RowId `json:"idInTemplate"`
+}

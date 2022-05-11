@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/metadata"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
@@ -32,7 +31,12 @@ const (
 	SchedulerTargetConfigurationIdKey = `configurationId`
 	OrchestratorPhasesContentKey      = `phases`
 	OrchestratorTasksContentKey       = `tasks`
-	TemplatesInstancesMetaKey         = `KBC.KAC.templates.instances`
+	templatesInstancesMetaKey         = `KBC.KAC.templates.instances`
+	configIdMetadataKey               = "KBC.KAC.templates.configId"
+	rowsIdsMetadataKey                = "KBC.KAC.templates.rowsIds"
+	repositoryMetadataKey             = "KBC.KAC.templates.repository"
+	templateIdMetadataKey             = "KBC.KAC.templates.templateId"
+	instanceIdMetadataKey             = "KBC.KAC.templates.instanceId" // attach config to a template instance
 )
 
 type Object interface {
@@ -145,9 +149,9 @@ type TemplateMainConfig struct {
 func (m BranchMetadata) saveTemplateUsages(instances TemplateUsageRecords) error {
 	encoded, err := json.EncodeString(instances, false)
 	if err != nil {
-		return fmt.Errorf(`metadata "%s" are not in valid format: %w`, TemplatesInstancesMetaKey, err)
+		return fmt.Errorf(`metadata "%s" are not in valid format: %w`, templatesInstancesMetaKey, err)
 	}
-	m[TemplatesInstancesMetaKey] = encoded
+	m[templatesInstancesMetaKey] = encoded
 	return nil
 }
 
@@ -197,13 +201,13 @@ func (m BranchMetadata) DeleteTemplateUsage(instanceId string) error {
 
 func (m BranchMetadata) TemplatesUsages() (TemplateUsageRecords, error) {
 	instances := &TemplateUsageRecords{}
-	instancesEncoded, found := m[TemplatesInstancesMetaKey]
+	instancesEncoded, found := m[templatesInstancesMetaKey]
 	if !found {
 		return *instances, nil
 	}
 	err := json.DecodeString(instancesEncoded, instances)
 	if err != nil {
-		return nil, fmt.Errorf(`metadata "%s" are not in valid format: %w`, TemplatesInstancesMetaKey, err)
+		return nil, fmt.Errorf(`metadata "%s" are not in valid format: %w`, templatesInstancesMetaKey, err)
 	}
 	return *instances, nil
 }
@@ -238,18 +242,70 @@ type Branch struct {
 	Metadata    BranchMetadata `json:"-" validate:"dive" diff:"true"`
 }
 
+// ConfigMetadata stores config template metadata to config metadata.
+type ConfigMetadata map[string]string
+
+func (m ConfigMetadata) SetConfigTemplateId(templateObjectId ConfigId) {
+	m[configIdMetadataKey] = json.MustEncodeString(ConfigIdMetadata{
+		IdInTemplate: templateObjectId,
+	}, false)
+}
+
+func (m ConfigMetadata) ConfigTemplateId() *ConfigIdMetadata {
+	out := ConfigIdMetadata{}
+	_ = json.DecodeString(m[configIdMetadataKey], &out) // ignore empty string or other errors
+	if len(out.IdInTemplate) == 0 {
+		return nil
+	}
+	return &out
+}
+
+func (m ConfigMetadata) AddRowTemplateId(projectObjectId, templateObjectId RowId) {
+	items := append(m.RowsTemplateIds(), RowIdMetadata{
+		IdInProject:  projectObjectId,
+		IdInTemplate: templateObjectId,
+	})
+	sort.SliceStable(items, func(i, j int) bool {
+		return items[i].IdInTemplate < items[j].IdInTemplate
+	})
+	m[rowsIdsMetadataKey] = json.MustEncodeString(items, false)
+}
+
+func (m ConfigMetadata) RowsTemplateIds() (out []RowIdMetadata) {
+	_ = json.DecodeString(m[rowsIdsMetadataKey], &out) // ignore empty string or other errors
+	return out
+}
+
+func (m ConfigMetadata) SetTemplateInstance(repo string, tmpl string, inst string) {
+	m[repositoryMetadataKey] = repo
+	m[templateIdMetadataKey] = tmpl
+	m[instanceIdMetadataKey] = inst
+}
+
+func (m ConfigMetadata) Repository() string {
+	return m[repositoryMetadataKey]
+}
+
+func (m ConfigMetadata) TemplateId() string {
+	return m[templateIdMetadataKey]
+}
+
+func (m ConfigMetadata) InstanceId() string {
+	return m[instanceIdMetadataKey]
+}
+
 // Config https://keboola.docs.apiary.io/#reference/components-and-configurations/component-configurations/list-configurations
 type Config struct {
 	ConfigKey
-	Name              string                  `json:"name" validate:"required" diff:"true" metaFile:"true"`
-	Description       string                  `json:"description" diff:"true" descriptionFile:"true"`
-	ChangeDescription string                  `json:"changeDescription"`
-	Content           *orderedmap.OrderedMap  `json:"configuration" validate:"required" diff:"true" configFile:"true"`
-	Transformation    *Transformation         `json:"-" validate:"omitempty,dive" diff:"true"`
-	SharedCode        *SharedCodeConfig       `json:"-" validate:"omitempty,dive" diff:"true"`
-	Orchestration     *Orchestration          `json:"-" validate:"omitempty,dive" diff:"true"`
-	Relations         Relations               `json:"-" validate:"dive" diff:"true"`
-	Metadata          metadata.ConfigMetadata `json:"-" validate:"dive" diff:"true"`
+	Name              string                 `json:"name" validate:"required" diff:"true" metaFile:"true"`
+	Description       string                 `json:"description" diff:"true" descriptionFile:"true"`
+	ChangeDescription string                 `json:"changeDescription"`
+	Content           *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
+	Transformation    *Transformation        `json:"-" validate:"omitempty,dive" diff:"true"`
+	SharedCode        *SharedCodeConfig      `json:"-" validate:"omitempty,dive" diff:"true"`
+	Orchestration     *Orchestration         `json:"-" validate:"omitempty,dive" diff:"true"`
+	Relations         Relations              `json:"-" validate:"dive" diff:"true"`
+	Metadata          ConfigMetadata         `json:"-" validate:"dive" diff:"true"`
 }
 
 type ConfigWithRows struct {

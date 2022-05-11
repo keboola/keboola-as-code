@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/metadata"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
@@ -13,12 +14,21 @@ func TestMetadataMapper_AfterLocalOperation(t *testing.T) {
 	t.Parallel()
 	templateRef := model.NewTemplateRef(model.TemplateRepository{Name: "my-repository"}, "my-template", model.ZeroSemVersion())
 	instanceId := "my-instance"
-	mockedState, d := createStateWithMapper(t, templateRef, instanceId)
+	objectIds := metadata.ObjectIdsMap{}
+	objectIds[model.ConfigId("456")] = model.ConfigId("my-config")
+	objectIds[model.RowId("789")] = model.RowId("my-row")
+	mockedState, _ := createStateWithMapper(t, templateRef, instanceId, objectIds)
 
 	configKey := model.ConfigKey{
 		BranchId:    123,
 		ComponentId: model.ComponentId("keboola.foo-bar"),
 		Id:          `456`,
+	}
+	configRowKey := model.ConfigRowKey{
+		BranchId:    123,
+		ComponentId: model.ComponentId("keboola.foo-bar"),
+		ConfigId:    `456`,
+		Id:          `789`,
 	}
 	configState := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{
@@ -31,13 +41,29 @@ func TestMetadataMapper_AfterLocalOperation(t *testing.T) {
 			Metadata:  map[string]string{},
 		},
 	}
+	assert.NoError(t, mockedState.Set(configState))
+	rowState := &model.ConfigRowState{
+		ConfigRowManifest: &model.ConfigRowManifest{
+			ConfigRowKey: configRowKey,
+		},
+		Local: &model.ConfigRow{
+			ConfigRowKey: configRowKey,
+			Name:         "My Row",
+			Content:      orderedmap.New(),
+		},
+	}
+	assert.NoError(t, mockedState.Set(rowState))
 
-	recipe := model.NewLocalLoadRecipe(d.FileLoader(), configState.Manifest(), configState.Local)
-	assert.NoError(t, mockedState.Mapper().MapAfterLocalLoad(recipe))
+	changes := model.NewLocalChanges()
+	changes.AddLoaded(configState)
+	changes.AddLoaded(rowState)
+	assert.NoError(t, mockedState.Mapper().AfterLocalOperation(changes))
 
-	config := recipe.Object.(*model.Config)
+	config := configState.Local
 	assert.NotEmpty(t, config.Metadata)
 	assert.Equal(t, "my-repository", config.Metadata.Repository())
 	assert.Equal(t, "my-template", config.Metadata.TemplateId())
 	assert.Equal(t, "my-instance", config.Metadata.InstanceId())
+	assert.Equal(t, &model.ConfigIdMetadata{IdInTemplate: "my-config"}, config.Metadata.ConfigTemplateId())
+	assert.Equal(t, []model.RowIdMetadata{{IdInProject: "789", IdInTemplate: "my-row"}}, config.Metadata.RowsTemplateIds())
 }
