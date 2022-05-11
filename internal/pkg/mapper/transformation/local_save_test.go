@@ -193,7 +193,7 @@ func TestTransformationMapper_MapBeforeLocalSave(t *testing.T) {
 		filesystem.NewRawFile(blocksDir+`/002-block-2/001-code-3/code.sql`, "\n").
 			AddTag(model.FileKindNativeCode).
 			AddTag(model.FileTypeOther),
-		filesystem.NewRawFile(configDir+`/meta.json`, `{"name":"My Config"}`).
+		filesystem.NewRawFile(configDir+`/meta.json`, `{"name":"My Config","isDisabled":false}`).
 			AddTag(model.FileKindObjectMeta).
 			AddTag(model.FileTypeJson),
 		filesystem.NewRawFile(configDir+`/config.json`, `{"foo":"bar"}`).

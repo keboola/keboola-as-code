@@ -300,6 +300,7 @@ type Config struct {
 	Name              string                 `json:"name" validate:"required" diff:"true" metaFile:"true"`
 	Description       string                 `json:"description" diff:"true" descriptionFile:"true"`
 	ChangeDescription string                 `json:"changeDescription"`
+	IsDisabled        bool                   `json:"isDisabled" diff:"true" metaFile:"true"`
 	Content           *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
 	Transformation    *Transformation        `json:"-" validate:"omitempty,dive" diff:"true"`
 	SharedCode        *SharedCodeConfig      `json:"-" validate:"omitempty,dive" diff:"true"`

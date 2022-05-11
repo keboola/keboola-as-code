@@ -135,6 +135,7 @@ func expectedComponentsConfigRowTest() string {
         "name": "Test",
         "description": "Test description",
         "changeDescription": "Row %s deleted",
+        "isDisabled": false,
         "configuration": {
           "foo": {
             "bar": "baz"
