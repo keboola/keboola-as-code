@@ -13,7 +13,7 @@ func newBackoff() *backoff.ExponentialBackOff {
 	b.InitialInterval = 50 * time.Millisecond
 	b.Multiplier = 2
 	b.MaxInterval = 3 * time.Second
-	b.MaxElapsedTime = 30 * time.Second
+	b.MaxElapsedTime = 60 * time.Second
 	b.Reset()
 	return b
 }

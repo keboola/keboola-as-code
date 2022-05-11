@@ -1,0 +1,24 @@
+Template ID:          my-template
+Name:                 My Template
+Description:          Full workflow to ...
+
+Version:              1.0.0
+Stable:               true
+Description:          notes
+
+Group ID:             g01
+Description:          Default Group
+Required:             all
+
+  Step ID:            g01-s01
+  Name:               Default Step
+  Description:        Default Step
+  Dialog Name:        Default Step
+  Dialog Description: Default Step
+
+    Input ID:         input-1
+    Name:             Api BaseUrl
+    Description:      a
+    Type:             string
+    Kind:             input
+    Default:          "another"

@@ -47,6 +47,10 @@ func (w *LevelWriter) WriteStringIndent(indent int, s string) {
 	w.WriteString(strings.Repeat("  ", indent) + s)
 }
 
+func (w *LevelWriter) Writef(format string, a ...interface{}) {
+	w.WriteNoErr([]byte(fmt.Sprintf(format, a...)))
+}
+
 func (w *LevelWriter) Close() error {
 	return w.logger.Sync()
 }

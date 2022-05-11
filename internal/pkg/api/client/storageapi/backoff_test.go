@@ -52,5 +52,15 @@ func TestBackoff(t *testing.T) {
 		3000 * time.Millisecond,
 		3000 * time.Millisecond,
 		3000 * time.Millisecond,
+		3000 * time.Millisecond,
+		3000 * time.Millisecond,
+		3000 * time.Millisecond,
+		3000 * time.Millisecond,
+		3000 * time.Millisecond,
+		3000 * time.Millisecond,
+		3000 * time.Millisecond,
+		3000 * time.Millisecond,
+		3000 * time.Millisecond,
+		3000 * time.Millisecond,
 	}, delays)
 }

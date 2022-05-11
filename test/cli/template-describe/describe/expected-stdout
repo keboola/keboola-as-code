@@ -1,0 +1,70 @@
+Template ID:          my-template
+Name:                 My Template
+Description:          Full workflow to ...
+
+Version:              0.0.1
+Stable:               false
+Description:          notes
+
+Group ID:             g01
+Description:          Default Group
+Required:             all
+
+  Step ID:            g01-s01
+  Name:               Default Step
+  Description:        Default Step
+  Dialog Name:        Default Step
+  Dialog Description: Default Step
+
+    Input ID:         ex-generic-v2-api-base-url
+    Name:             Api BaseUrl
+    Description:      a
+    Type:             string
+    Kind:             input
+    Default:          "https://jsonplaceholder.typicode.com"
+
+    Input ID:         ex-db-mysql-db-host
+    Name:             Db Host
+    Description:      b
+    Type:             string
+    Kind:             input
+    Default:          "mysql.example.com"
+
+    Input ID:         ex-db-mysql-incremental
+    Name:             Incremental
+    Description:      c
+    Type:             bool
+    Kind:             confirm
+    Default:          false
+
+Group ID:             g02
+Description:          Group 2
+Required:             all
+
+  Step ID:            g02-s01
+  Name:               Step 2-1
+  Description:        Step 2-1
+  Dialog Name:        Step 2-1
+  Dialog Description: Step 2-1
+
+    Input ID:         ex-generic-v2-api-base-url-2
+    Name:             Api BaseUrl
+    Description:      a
+    Type:             string
+    Kind:             input
+    Default:          "https://jsonplaceholder.typicode.com"
+
+  Step ID:            g02-s02
+  Name:               Step 2-2
+  Description:        Step 2-2
+  Dialog Name:        Step 2-2
+  Dialog Description: Step 2-2
+
+    Input ID:         input-3
+    Name:             A select
+    Description:      a
+    Type:             string
+    Kind:             select
+    Options:
+      a:  A
+      b:  B
