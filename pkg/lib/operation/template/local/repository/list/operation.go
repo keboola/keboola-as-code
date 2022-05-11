@@ -10,26 +10,26 @@ type dependencies interface {
 }
 
 func Run(repo *repository.Repository, d dependencies) (err error) {
-	logger := d.Logger()
+	logger := d.Logger().InfoWriter()
 
 	for _, tmpl := range repo.Templates() {
-		logger.Infof("Template ID:          %s", tmpl.Id)
-		logger.Infof("Name:                 %s", tmpl.Name)
-		logger.Infof("Description:          %s", tmpl.Description)
+		logger.Writef("Template ID:          %s", tmpl.Id)
+		logger.Writef("Name:                 %s", tmpl.Name)
+		logger.Writef("Description:          %s", tmpl.Description)
 		v, found := tmpl.DefaultVersion()
 		if found {
-			logger.Infof("Default version:      %s", v.Version.String())
+			logger.Writef("Default version:      %s", v.Version.String())
 		}
-		logger.Infof("")
+		logger.Writef("")
 
 		for _, v := range tmpl.AllVersions() {
-			logger.Infof("  Version:            %s", v.Version.String())
-			logger.Infof("  Stable:             %t", v.Stable)
-			logger.Infof("  Description:        %s", v.Description)
-			logger.Infof("")
+			logger.Writef("  Version:            %s", v.Version.String())
+			logger.Writef("  Stable:             %t", v.Stable)
+			logger.Writef("  Description:        %s", v.Description)
+			logger.Writef("")
 		}
 
-		logger.Infof("")
+		logger.Writef("")
 	}
 
 	return nil
