@@ -22,8 +22,8 @@ func TestComponentDefaultBucket(t *testing.T) {
   "category": "files",
   "hasUI": false,
   "hasRun": false,
-  "ico32": "https://assets-cdn.keboola.com/developer-portal/icons/keboola.ex-aws-s3/32/1576250595503.png",
-  "ico64": "https://assets-cdn.keboola.com/developer-portal/icons/keboola.ex-aws-s3/64/1576250595503.png",
+  "ico32": "https://ui.keboola-assets.com/developer-portal/icons/keboola.ex-aws-s3/32/1576250595503.png",
+  "ico64": "https://ui.keboola-assets.com/developer-portal/icons/keboola.ex-aws-s3/64/1576250595503.png",
   "data": {
     "definition": {
       "type": "aws-ecr",
