@@ -389,6 +389,7 @@ func (c *Config) ToApiValues() (map[string]string, error) {
 		"name":              c.Name,
 		"description":       c.Description,
 		"changeDescription": c.ChangeDescription,
+		"isDisabled":        strconv.FormatBool(c.IsDisabled),
 		"configuration":     configJson,
 	}, nil
 }

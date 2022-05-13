@@ -17,7 +17,8 @@
               "books": []
             }
           },
-          "rows": []
+          "rows": [],
+          "isDisabled": false
         },
         {
           "componentId": "keboola.scheduler",
@@ -36,7 +37,8 @@
               "mode": "run"
             }
           },
-          "rows": []
+          "rows": [],
+          "isDisabled": false
         }
       ]
     }

@@ -33,7 +33,8 @@
                 ]
               }
             }
-          ]
+          ],
+          "isDisabled": false
         },
         {
           "componentId": "ex-generic-v2",
@@ -41,7 +42,8 @@
           "description": "test fixture",
           "changeDescription": "Updated from #KeboolaCLI",
           "configuration": {},
-          "rows": []
+          "rows": [],
+          "isDisabled": false
         }
       ]
     }

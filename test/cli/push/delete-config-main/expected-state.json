@@ -49,7 +49,8 @@
                 }
               }
             }
-          ]
+          ],
+          "isDisabled": false
         }
       ]
     }

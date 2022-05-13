@@ -12,7 +12,8 @@
           "name": "empty",
           "description": "test fixture",
           "configuration": {},
-          "rows": []
+          "rows": [],
+          "isDisabled": false
         }
       ]
     },
@@ -28,7 +29,8 @@
           "name": "empty",
           "description": "test fixture",
           "configuration": {},
-          "rows": []
+          "rows": [],
+          "isDisabled": false
         }
       ]
     }

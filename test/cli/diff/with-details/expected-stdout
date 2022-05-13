@@ -30,6 +30,9 @@ Diff:
     - print('Hello, world!')
     + print('Changed text!')
 * C bar/extractor/ex-generic-v2/empty
+  isDisabled:
+    - false
+    + true
   metadata:
   + KBC.KaC.meta1:
   +   val1

@@ -37,7 +37,8 @@
               }
             }
           },
-          "rows": []
+          "rows": [],
+          "isDisabled": false
         },
         {
           "componentId": "keboola.ex-aws-s3",
@@ -45,7 +46,8 @@
           "description": "test fixture",
           "changeDescription": "Updated from #KeboolaCLI",
           "configuration": {},
-          "rows": []
+          "rows": [],
+          "isDisabled": false
         }
       ]
     }
