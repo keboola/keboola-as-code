@@ -4,7 +4,7 @@ DEBUG	Change description: "my change description"
 DEBUG	Validation done.
 INFO	Plan for "push" operation:
 INFO	  * B bar | changed: description
-INFO	  * C bar/extractor/ex-generic-v2/empty | changed: name
+INFO	  * C bar/extractor/ex-generic-v2/empty | changed: isDisabled, name
 INFO	  × C main/extractor/ex-generic-v2/empty
 DEBUG	Execution plan is valid.
 %A

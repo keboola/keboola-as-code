@@ -1,3 +1,4 @@
 {
   name: "empty",
+  isDisabled: false,
 }

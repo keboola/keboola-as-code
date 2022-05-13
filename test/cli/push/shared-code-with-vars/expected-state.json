@@ -24,7 +24,8 @@
               }
             ]
           },
-          "rows": []
+          "rows": [],
+          "isDisabled": false
         },
         {
           "componentId": "keboola.shared-code",
@@ -69,7 +70,8 @@
                 ]
               }
             }
-          ]
+          ],
+          "isDisabled": false
         },
         {
           "componentId": "keboola.python-transformation-v2",
@@ -97,7 +99,8 @@
               "%%TEST_NEW_TICKET_2%%"
             ]
           },
-          "rows": []
+          "rows": [],
+          "isDisabled": false
         }
       ]
     }

@@ -12,7 +12,8 @@
           "name": "empty",
           "description": "test fixture",
           "configuration": {},
-          "rows": []
+          "rows": [],
+          "isDisabled": false
         },
         {
           "componentId": "keboola.orchestrator",
@@ -92,7 +93,8 @@
               }
             ]
           },
-          "rows": []
+          "rows": [],
+          "isDisabled": false
         },
         {
           "componentId": "ex-generic-v2",
@@ -105,7 +107,8 @@
               }
             }
           },
-          "rows": []
+          "rows": [],
+          "isDisabled": false
         }
       ]
     }

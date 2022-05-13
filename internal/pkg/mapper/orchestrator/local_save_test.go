@@ -84,7 +84,7 @@ func TestOrchestratorMapper_MapBeforeLocalSave(t *testing.T) {
 			).
 			AddTag(model.FileKindTaskConfig).
 			AddTag(model.FileTypeJson),
-		filesystem.NewRawFile(configDir+`/meta.json`, `{"name":"My Orchestration"}`).
+		filesystem.NewRawFile(configDir+`/meta.json`, `{"name":"My Orchestration","isDisabled":false}`).
 			AddTag(model.FileKindObjectMeta).
 			AddTag(model.FileTypeJson),
 		filesystem.NewRawFile(configDir+`/config.json`, `{}`).

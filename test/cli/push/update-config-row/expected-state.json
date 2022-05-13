@@ -51,7 +51,8 @@
                 }
               }
             }
-          ]
+          ],
+          "isDisabled": false
         }
       ]
     },
@@ -107,7 +108,8 @@
                 }
               }
             }
-          ]
+          ],
+          "isDisabled": false
         }
       ]
     }

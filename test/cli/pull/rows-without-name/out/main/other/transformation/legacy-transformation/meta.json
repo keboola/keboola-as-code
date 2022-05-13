@@ -1,3 +1,4 @@
 {
-  "name": "legacy transformation"
+  "name": "legacy transformation",
+  "isDisabled": false
 }

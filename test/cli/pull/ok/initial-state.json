@@ -31,7 +31,8 @@
         "shared-codes-variables",
         "transformation-with-shared-code",
         "transformation-with-shared-code-variables",
-        "snowflake-transformation"
+        "snowflake-transformation",
+        "disabled"
       ]
     }
   ],

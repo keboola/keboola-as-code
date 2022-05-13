@@ -81,6 +81,13 @@
     {
       "branchId": %%TEST_BRANCH_BAR_ID%%,
       "componentId": "ex-generic-v2",
+      "id": "%%TEST_BRANCH_BAR_CONFIG_DISABLED_ID%%",
+      "path": "extractor/ex-generic-v2/disabled",
+      "rows": []
+    },
+    {
+      "branchId": %%TEST_BRANCH_BAR_ID%%,
+      "componentId": "ex-generic-v2",
       "id": "%%TEST_BRANCH_ALL_CONFIG_EMPTY_ID%%",
       "path": "extractor/ex-generic-v2/empty",
       "rows": []

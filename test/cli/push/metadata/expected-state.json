@@ -23,7 +23,8 @@
           "name": "empty",
           "description": "test fixture",
           "configuration": {},
-          "rows": []
+          "rows": [],
+          "isDisabled": false
         },
         {
           "componentId": "ex-generic-v2",
@@ -40,7 +41,8 @@
           "metadata": {
             "KBC.KaC.meta1": "val1",
             "KBC.KaC.meta2": "val2"
-          }
+          },
+          "isDisabled": false
         }
       ]
     }

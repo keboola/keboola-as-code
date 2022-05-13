@@ -1,3 +1,4 @@
 {
-  "name": "orchestrator"
+  "name": "orchestrator",
+  "isDisabled": false
 }

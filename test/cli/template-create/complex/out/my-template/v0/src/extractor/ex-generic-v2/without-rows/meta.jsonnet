@@ -1,3 +1,4 @@
 {
   name: "without-rows",
+  isDisabled: false,
 }

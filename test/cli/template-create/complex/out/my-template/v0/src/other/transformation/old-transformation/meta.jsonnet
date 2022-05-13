@@ -1,3 +1,4 @@
 {
   name: "old-transformation",
+  isDisabled: false,
 }

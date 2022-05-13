@@ -1,4 +1,5 @@
 {
   "name": "with-schema",
-  "description": "test fixture"
+  "description": "test fixture",
+  "isDisabled": false
 }

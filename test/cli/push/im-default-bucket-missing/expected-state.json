@@ -37,7 +37,8 @@
               }
             }
           },
-          "rows": []
+          "rows": [],
+          "isDisabled": false
         }
       ]
     }

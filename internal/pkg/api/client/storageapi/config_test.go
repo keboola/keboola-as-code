@@ -162,6 +162,7 @@ func expectedComponentsConfigTest() string {
         "name": "Test modified +++úěš!@#",
         "description": "Test description modified",
         "changeDescription": "updated",
+        "isDisabled": false,
         "configuration": {
           "foo": {
             "bar": "modified"

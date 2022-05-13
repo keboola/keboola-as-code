@@ -17,7 +17,8 @@
               "new": "value"
             }
           },
-          "rows": []
+          "rows": [],
+          "isDisabled": false
         }
       ]
     },
@@ -36,7 +37,8 @@
           "configuration": {
             "new": "value"
           },
-          "rows": []
+          "rows": [],
+          "isDisabled": false
         }
       ]
     }

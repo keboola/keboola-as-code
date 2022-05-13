@@ -1,3 +1,4 @@
 {
-  "name": "invalid"
+  "name": "invalid",
+  "isDisabled": false
 }

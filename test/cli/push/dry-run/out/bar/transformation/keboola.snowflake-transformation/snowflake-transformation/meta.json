@@ -1,3 +1,4 @@
 {
-  "name": "snowflake-transformation"
+  "name": "snowflake-transformation",
+  "isDisabled": false
 }

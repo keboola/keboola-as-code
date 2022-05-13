@@ -1,0 +1,13 @@
+{
+  "componentId": "ex-generic-v2",
+  "name": "disabled",
+  "isDisabled": true,
+  "configuration": {
+    "parameters": {
+      "api": {
+        "baseUrl": "https://jsonplaceholder.typicode.com"
+      }
+    }
+  },
+  "rows": null
+}

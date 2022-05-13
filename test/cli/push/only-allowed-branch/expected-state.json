@@ -20,7 +20,8 @@
           "name": "empty",
           "description": "test fixture",
           "configuration": {},
-          "rows": []
+          "rows": [],
+          "isDisabled": false
         },
         {
           "componentId": "keboola.python-transformation-v2",
@@ -63,7 +64,8 @@
               ]
             }
           },
-          "rows": []
+          "rows": [],
+          "isDisabled": false
         },
         {
           "componentId": "keboola.snowflake-transformation",
@@ -106,7 +108,8 @@
               ]
             }
           },
-          "rows": []
+          "rows": [],
+          "isDisabled": false
         },
         {
           "componentId": "keboola.ex-db-mysql",
@@ -150,7 +153,8 @@
                 }
               }
             }
-          ]
+          ],
+          "isDisabled": false
         }
       ]
     },
@@ -166,7 +170,8 @@
           "name": "empty",
           "description": "test fixture",
           "configuration": {},
-          "rows": []
+          "rows": [],
+          "isDisabled": false
         },
         {
           "componentId": "transformation",
@@ -194,7 +199,8 @@
                 "type": "simple"
               }
             }
-          ]
+          ],
+          "isDisabled": false
         },
         {
           "componentId": "ex-generic-v2",
@@ -207,7 +213,8 @@
               }
             }
           },
-          "rows": []
+          "rows": [],
+          "isDisabled": false
         }
       ]
     }

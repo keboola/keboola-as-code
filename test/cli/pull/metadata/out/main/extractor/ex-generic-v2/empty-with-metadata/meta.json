@@ -1,3 +1,4 @@
 {
-  "name": "empty-with-metadata"
+  "name": "empty-with-metadata",
+  "isDisabled": false
 }

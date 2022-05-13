@@ -1,3 +1,4 @@
 {
-  "name": "todos"
+  "name": "todos",
+  "isDisabled": false
 }
