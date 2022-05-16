@@ -12,7 +12,7 @@ const (
 
 func DefaultRepository() model.TemplateRepository {
 	return model.TemplateRepository{
-		Type: "git",
+		Type: model.RepositoryTypeGit,
 		Name: DefaultTemplateRepositoryName,
 		Url:  DefaultTemplateRepositoryUrl,
 		Ref:  DefaultTemplateRepositoryRef,

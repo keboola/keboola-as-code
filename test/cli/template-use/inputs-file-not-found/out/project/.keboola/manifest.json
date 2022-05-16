@@ -24,7 +24,7 @@
       {
         "type": "dir",
         "name": "keboola",
-        "path": "../repository"
+        "url": "../repository"
       }
     ]
   },
