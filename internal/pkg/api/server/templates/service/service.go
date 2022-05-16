@@ -25,10 +25,7 @@ import (
 type service struct{}
 
 func New(d dependencies.Container) (Service, error) {
-	defaultRepo, err := d.DefaultRepository()
-	if err != nil {
-		return nil, err
-	}
+	defaultRepo := d.DefaultRepository()
 	if defaultRepo.Type == model.RepositoryTypeGit {
 		if err := StartPullCron(d); err != nil {
 			return nil, err
@@ -55,11 +52,7 @@ func (s *service) HealthCheck(dependencies.Container) (res string, err error) {
 }
 
 func (s *service) RepositoriesIndex(d dependencies.Container, _ *RepositoriesIndexPayload) (res *Repositories, err error) {
-	repositories, err := repositories(d)
-	if err != nil {
-		return nil, err
-	}
-	return RepositoriesResponse(d, repositories)
+	return RepositoriesResponse(d, repositories(d))
 }
 
 func (s *service) RepositoryIndex(d dependencies.Container, payload *RepositoryIndexPayload) (res *Repository, err error) {
@@ -324,20 +317,13 @@ func (s *service) UpgradeInstanceValidateInputs(dependencies.Container, *Upgrade
 	return nil, NotImplementedError{}
 }
 
-func repositories(d dependencies.Container) ([]model.TemplateRepository, error) {
-	defaultRepo, err := d.DefaultRepository()
-	if err != nil {
-		return nil, err
-	}
-	return []model.TemplateRepository{defaultRepo}, nil
+func repositories(d dependencies.Container) []model.TemplateRepository {
+	defaultRepo := d.DefaultRepository()
+	return []model.TemplateRepository{defaultRepo}
 }
 
 func repositoryRef(d dependencies.Container, name string) (model.TemplateRepository, error) {
-	repositories, err := repositories(d)
-	if err != nil {
-		return model.TemplateRepository{}, err
-	}
-	for _, repo := range repositories {
+	for _, repo := range repositories(d) {
 		if repo.Name == name {
 			return repo, nil
 		}

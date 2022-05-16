@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	stdLog "log"
+	"net/url"
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
@@ -30,18 +31,23 @@ type Container interface {
 	WithCtx(ctx context.Context, cancelFn context.CancelFunc) Container
 	PrefixLogger() log.PrefixLogger
 	RepositoryManager() (*repository.Manager, error)
-	DefaultRepository() (model.TemplateRepository, error)
+	DefaultRepository() model.TemplateRepository
 	TemplateRepository(definition model.TemplateRepository, forTemplate model.TemplateRef) (*repository.Repository, error)
 	WithLoggerPrefix(prefix string) *container
 	WithStorageApi(api *storageapi.Api) (*container, error)
 }
 
 // NewContainer returns dependencies for API and add them to the context.
-func NewContainer(ctx context.Context, repoPath string, debug bool, logger *stdLog.Logger, envs *env.Map) Container {
+func NewContainer(ctx context.Context, repoPath string, debug bool, logger *stdLog.Logger, envs *env.Map) (Container, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	c := &container{ctx: ctx, ctxCancelFn: cancel, repositoryPath: repoPath, debug: debug, envs: envs, logger: log.NewApiLogger(logger, "", debug)}
 	c.commonDeps = dependencies.NewCommonContainer(c)
-	return c
+	repo, err := defaultRepository(repoPath)
+	if err != nil {
+		return c, err
+	}
+	c.defaultRepository = repo
+	return c, nil
 }
 
 type commonDeps = dependencies.CommonContainer
@@ -56,6 +62,7 @@ type container struct {
 	repositoryManager *repository.Manager
 	storageApi        *storageapi.Api
 	repositoryPath    string
+	defaultRepository model.TemplateRepository
 }
 
 func (v *container) Ctx() context.Context {
@@ -66,16 +73,26 @@ func (v *container) CtxCancelFn() context.CancelFunc {
 	return v.ctxCancelFn
 }
 
-func (v *container) DefaultRepository() (model.TemplateRepository, error) {
-	if strings.HasPrefix(v.repositoryPath, "file://") {
+func (v *container) DefaultRepository() model.TemplateRepository {
+	return v.defaultRepository
+}
+
+func defaultRepository(repositoryPath string) (model.TemplateRepository, error) {
+	_, err := url.ParseRequestURI(repositoryPath)
+	if err != nil {
+		return model.TemplateRepository{}, fmt.Errorf("cannot parse repository-path parameter: " + err.Error())
+	}
+
+	if strings.HasPrefix(repositoryPath, "file://") {
 		return model.TemplateRepository{
 			Type: model.RepositoryTypeDir,
 			Name: repository.DefaultTemplateRepositoryName,
-			Url:  strings.TrimPrefix(v.repositoryPath, "file://"),
+			Url:  strings.TrimPrefix(repositoryPath, "file://"),
 		}, nil
 	}
-	if strings.HasPrefix(v.repositoryPath, "https://") {
-		uri := strings.TrimPrefix(v.repositoryPath, "https://")
+
+	if strings.HasPrefix(repositoryPath, "https://") {
+		uri := strings.TrimPrefix(repositoryPath, "https://")
 		refDividerPos := strings.Index(uri, ":")
 		if refDividerPos < 0 {
 			return model.TemplateRepository{}, fmt.Errorf("invalid repository path url, no ref provided")
@@ -124,7 +141,7 @@ func (v *container) PrefixLogger() log.PrefixLogger {
 
 func (v *container) RepositoryManager() (*repository.Manager, error) {
 	if v.repositoryManager == nil {
-		if manager, err := repository.NewManager(v.Ctx(), v.Logger()); err != nil {
+		if manager, err := repository.NewManager(v.Ctx(), v.Logger(), v.defaultRepository); err != nil {
 			return nil, err
 		} else {
 			v.repositoryManager = manager

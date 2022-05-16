@@ -20,14 +20,14 @@ type Manager struct {
 	repositories map[string]*git.Repository
 }
 
-func NewManager(ctx context.Context, logger log.Logger) (*Manager, error) {
+func NewManager(ctx context.Context, logger log.Logger, defaultRepository model.TemplateRepository) (*Manager, error) {
 	m := &Manager{
 		ctx:          ctx,
 		logger:       logger,
 		lock:         &sync.Mutex{},
 		repositories: make(map[string]*git.Repository),
 	}
-	return m, m.AddRepository(DefaultRepository())
+	return m, m.AddRepository(defaultRepository)
 }
 
 func (m *Manager) Repository(ref model.TemplateRepository) (*git.Repository, error) {
