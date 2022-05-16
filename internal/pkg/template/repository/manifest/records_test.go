@@ -7,14 +7,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTemplateRecord_LatestVersion_NotFound(t *testing.T) {
+func TestTemplateRecord_DefaultVersion_NotFound(t *testing.T) {
 	t.Parallel()
 	template := TemplateRecord{}
 	_, found := template.DefaultVersion()
 	assert.False(t, found)
 }
 
-func TestTemplateRecord_LatestVersion_Found(t *testing.T) {
+func TestTemplateRecord_DefaultVersion_Found(t *testing.T) {
 	t.Parallel()
 	template := TemplateRecord{
 		Versions: []VersionRecord{
@@ -42,6 +42,27 @@ func TestTemplateRecord_LatestVersion_Found(t *testing.T) {
 		Version:     version(`1.2.3`),
 		Stable:      true,
 		Description: `Version 1`,
+	}, v)
+}
+
+func TestTemplateRecord_DefaultVersion_Found_Minimal(t *testing.T) {
+	t.Parallel()
+	template := TemplateRecord{
+		Versions: []VersionRecord{
+			{
+				Version:     version(`0.0.1`),
+				Stable:      false,
+				Description: `Version 0`,
+			},
+		},
+	}
+
+	v, found := template.DefaultVersion()
+	assert.True(t, found)
+	assert.Equal(t, VersionRecord{
+		Version:     version(`0.0.1`),
+		Stable:      false,
+		Description: `Version 0`,
 	}, v)
 }
 
