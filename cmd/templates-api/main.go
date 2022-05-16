@@ -34,11 +34,19 @@ func main() {
 	// Flags.
 	httpHostF := flag.String("http-host", "0.0.0.0", "HTTP host")
 	httpPortF := flag.String("http-port", "8000", "HTTP port")
+	repositoryPathF := flag.String("repository-path", "", "Alternative path to default repository")
 	debugF := flag.Bool("debug", false, "Log request and response bodies")
 	flag.Parse()
 
 	// Setup logger.
 	logger := log.New(os.Stderr, "[templatesApi]", 0)
+
+	if *repositoryPathF != "" {
+		_, err := url.ParseRequestURI(*repositoryPathF)
+		if err != nil {
+			logger.Println("cannot parse repository-path parameter: " + err.Error())
+		}
+	}
 
 	// Envs.
 	envs, err := env.FromOs()
@@ -59,15 +67,15 @@ func main() {
 	}
 
 	// Start server
-	if err := start(*httpHostF, *httpPortF, *debugF, logger, envs); err != nil {
+	if err := start(*httpHostF, *httpPortF, *repositoryPathF, *debugF, logger, envs); err != nil {
 		logger.Println(err.Error())
 		os.Exit(1)
 	}
 }
 
-func start(host, port string, debug bool, logger *log.Logger, envs *env.Map) error {
+func start(host, port string, repoPath string, debug bool, logger *log.Logger, envs *env.Map) error {
 	// Create dependencies.
-	d := dependencies.NewContainer(context.Background(), debug, logger, envs)
+	d := dependencies.NewContainer(context.Background(), repoPath, debug, logger, envs)
 
 	// Log options.
 	d.Logger().Infof("starting HTTP server, host=%s, port=%s, debug=%t", host, port, debug)
