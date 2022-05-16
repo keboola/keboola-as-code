@@ -103,7 +103,8 @@ func (v *TemplateRecord) DefaultVersion() (VersionRecord, bool) {
 	latest := VersionRecord{Version: model.ZeroSemVersion()}
 	latestStable := VersionRecord{Version: model.ZeroSemVersion()}
 	for _, item := range v.Versions {
-		if item.Version.GreaterThan(latest.Version.Value()) {
+		// GreaterThanOrEqual
+		if !item.Version.LessThan(latest.Version.Value()) {
 			found = true
 			latest = item
 			if item.Stable {
