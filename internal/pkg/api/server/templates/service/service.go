@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/spf13/cast"
 
@@ -50,7 +49,7 @@ func (s *service) HealthCheck(dependencies.Container) (res string, err error) {
 }
 
 func (s *service) RepositoriesIndex(d dependencies.Container, _ *RepositoriesIndexPayload) (res *Repositories, err error) {
-	repositories, err := repositories(d.RepositoryPath())
+	repositories, err := repositories(d)
 	if err != nil {
 		return nil, err
 	}
@@ -319,47 +318,16 @@ func (s *service) UpgradeInstanceValidateInputs(dependencies.Container, *Upgrade
 	return nil, NotImplementedError{}
 }
 
-func repositories(repoPath string) ([]model.TemplateRepository, error) {
-	if repoPath == "" {
-		return []model.TemplateRepository{
-			{
-				Type: "git",
-				Name: repository.DefaultTemplateRepositoryName,
-				Url:  repository.DefaultTemplateRepositoryUrl,
-				Ref:  "api-demo",
-			},
-		}, nil
+func repositories(d dependencies.Container) ([]model.TemplateRepository, error) {
+	defaultRepo, err := d.DefaultRepository()
+	if err != nil {
+		return nil, err
 	}
-
-	if strings.HasPrefix(repoPath, "file://") {
-		return []model.TemplateRepository{
-			{
-				Type: "dir",
-				Name: repository.DefaultTemplateRepositoryName,
-				Path: strings.TrimPrefix(repoPath, "file://"),
-			},
-		}, nil
-	}
-	if strings.HasPrefix(repoPath, "https://") {
-		uri := strings.TrimPrefix(repoPath, "https://")
-		refDividerPos := strings.Index(uri, ":")
-		if refDividerPos < 0 {
-			return nil, fmt.Errorf("invalid repository path url, no ref provided")
-		}
-		return []model.TemplateRepository{
-			{
-				Type: "git",
-				Name: repository.DefaultTemplateRepositoryName,
-				Url:  "https://" + uri[:refDividerPos],
-				Ref:  uri[refDividerPos+1:],
-			},
-		}, nil
-	}
-	return nil, fmt.Errorf("invalid repository path url provided")
+	return []model.TemplateRepository{defaultRepo}, nil
 }
 
-func repositoryRef(name string, repoPath string) (model.TemplateRepository, error) {
-	repositories, err := repositories(repoPath)
+func repositoryRef(d dependencies.Container, name string) (model.TemplateRepository, error) {
+	repositories, err := repositories(d)
 	if err != nil {
 		return model.TemplateRepository{}, err
 	}
@@ -376,7 +344,7 @@ func repositoryRef(name string, repoPath string) (model.TemplateRepository, erro
 
 func repositoryInst(d dependencies.Container, repoName string) (*repository.Repository, error) {
 	// Get repository ref
-	repoRef, err := repositoryRef(repoName, d.RepositoryPath())
+	repoRef, err := repositoryRef(d, repoName)
 	if err != nil {
 		return nil, err
 	}

@@ -34,7 +34,7 @@ func main() {
 	// Flags.
 	httpHostF := flag.String("http-host", "0.0.0.0", "HTTP host")
 	httpPortF := flag.String("http-port", "8000", "HTTP port")
-	repositoryPathF := flag.String("repository-path", "", "Alternative path to default repository")
+	repositoryPathF := flag.String("repository-path", "https://github.com/keboola/keboola-as-code-templates.git:api-demo", "Alternative path to default repository")
 	debugF := flag.Bool("debug", false, "Log request and response bodies")
 	flag.Parse()
 

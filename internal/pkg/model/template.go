@@ -16,14 +16,13 @@ const (
 type TemplateRepository struct {
 	Type       TemplateRepositoryType `json:"type" validate:"oneof=dir git"`
 	Name       string                 `json:"name" validate:"required,max=40"`
-	Path       string                 `json:"path,omitempty" validate:"required_if=Type path"`
-	Url        string                 `json:"url,omitempty" validate:"required_if=Type git"`
+	Url        string                 `json:"url" validate:"required"`
 	Ref        string                 `json:"ref,omitempty" validate:"required_if=Type git"`
 	WorkingDir string                 `json:"-"` // only for RepositoryTypeWorkingDir
 }
 
 func (r *TemplateRepository) Hash() string {
-	hash := fmt.Sprintf("%s:%s:%s:%s", r.Type, r.Path, r.Url, r.Ref)
+	hash := fmt.Sprintf("%s:%s:%s", r.Type, r.Url, r.Ref)
 	sha := sha256.Sum256([]byte(hash))
 	return string(sha[:])
 }

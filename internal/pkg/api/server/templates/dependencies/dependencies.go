@@ -2,7 +2,9 @@ package dependencies
 
 import (
 	"context"
+	"fmt"
 	stdLog "log"
+	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
@@ -28,7 +30,7 @@ type Container interface {
 	WithCtx(ctx context.Context, cancelFn context.CancelFunc) Container
 	PrefixLogger() log.PrefixLogger
 	RepositoryManager() (*repository.Manager, error)
-	RepositoryPath() string
+	DefaultRepository() (model.TemplateRepository, error)
 	TemplateRepository(definition model.TemplateRepository, forTemplate model.TemplateRef) (*repository.Repository, error)
 	WithLoggerPrefix(prefix string) *container
 	WithStorageApi(api *storageapi.Api) (*container, error)
@@ -64,8 +66,28 @@ func (v *container) CtxCancelFn() context.CancelFunc {
 	return v.ctxCancelFn
 }
 
-func (v *container) RepositoryPath() string {
-	return v.repositoryPath
+func (v *container) DefaultRepository() (model.TemplateRepository, error) {
+	if strings.HasPrefix(v.repositoryPath, "file://") {
+		return model.TemplateRepository{
+			Type: model.RepositoryTypeDir,
+			Name: repository.DefaultTemplateRepositoryName,
+			Url:  strings.TrimPrefix(v.repositoryPath, "file://"),
+		}, nil
+	}
+	if strings.HasPrefix(v.repositoryPath, "https://") {
+		uri := strings.TrimPrefix(v.repositoryPath, "https://")
+		refDividerPos := strings.Index(uri, ":")
+		if refDividerPos < 0 {
+			return model.TemplateRepository{}, fmt.Errorf("invalid repository path url, no ref provided")
+		}
+		return model.TemplateRepository{
+			Type: model.RepositoryTypeGit,
+			Name: repository.DefaultTemplateRepositoryName,
+			Url:  "https://" + uri[:refDividerPos],
+			Ref:  uri[refDividerPos+1:],
+		}, nil
+	}
+	return model.TemplateRepository{}, fmt.Errorf("invalid repository path url provided")
 }
 
 func (v *container) WithCtx(ctx context.Context, cancelFn context.CancelFunc) Container {
@@ -135,7 +157,7 @@ func (v *container) TemplateRepository(definition model.TemplateRepository, _ mo
 		}()
 		fs = gitRepository.Fs()
 	} else {
-		fs, err = aferofs.NewLocalFs(v.logger, definition.Path, ".")
+		fs, err = aferofs.NewLocalFs(v.logger, definition.Url, ".")
 		if err != nil {
 			return nil, err
 		}
