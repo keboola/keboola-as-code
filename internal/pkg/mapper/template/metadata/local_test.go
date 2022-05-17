@@ -17,7 +17,8 @@ func TestMetadataMapper_AfterLocalOperation(t *testing.T) {
 	objectIds := metadata.ObjectIdsMap{}
 	objectIds[model.ConfigId("456")] = model.ConfigId("my-config")
 	objectIds[model.RowId("789")] = model.RowId("my-row")
-	mockedState, _ := createStateWithMapper(t, templateRef, instanceId, objectIds)
+	inputsUsage := metadata.NewInputsUsage()
+	mockedState, _ := createStateWithMapper(t, templateRef, instanceId, objectIds, inputsUsage)
 
 	configKey := model.ConfigKey{
 		BranchId:    123,

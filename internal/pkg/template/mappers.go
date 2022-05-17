@@ -60,7 +60,7 @@ func MappersFor(s *state.State, d dependencies, ctx Context) (mapper.Mappers, er
 
 	// Add metadata on "template use" operation
 	if c, ok := ctx.(*UseContext); ok {
-		mappers = append(mappers, metadata.NewMapper(s, c.TemplateRef(), c.InstanceId(), c.ObjectIds()))
+		mappers = append(mappers, metadata.NewMapper(s, c.TemplateRef(), c.InstanceId(), c.ObjectIds(), c.InputsUsage()))
 	}
 
 	return mappers, nil
