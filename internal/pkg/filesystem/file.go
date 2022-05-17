@@ -25,8 +25,13 @@ const (
 	FileTypeJsonNet                 // JsonNetFile
 )
 
+const (
+	ObjectKeyMetadata = "objectKey"
+)
+
 type FileDef struct {
 	*FileTags
+	*FileMetadata
 	desc string
 	path string
 }
@@ -53,7 +58,7 @@ type File interface {
 }
 
 func NewFileDef(path string) *FileDef {
-	return &FileDef{FileTags: NewFileTags(), path: path}
+	return &FileDef{FileTags: NewFileTags(), FileMetadata: NewFileMetadata(), path: path}
 }
 
 func (f *FileDef) Path() string {
