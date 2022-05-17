@@ -102,7 +102,7 @@ func (g StepsGroups) Validate() error {
 
 			// Input ID
 			if submatch[3] != "" {
-				inputIndex := cast.ToInt(strings.Trim(s, "[]."))
+				inputIndex := cast.ToInt(strings.Trim(submatch[3], "[]."))
 				out.WriteString(`, input "`)
 				out.WriteString(g[groupIndex].Steps[stepIndex].Inputs.GetIndex(inputIndex).Id)
 				out.WriteString(`"`)

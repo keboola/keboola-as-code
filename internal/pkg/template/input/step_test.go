@@ -186,3 +186,47 @@ input "fb.extractor.username" is defined 4 times in:
 	assert.Error(t, err)
 	assert.Equal(t, strings.Trim(expectedErr, "\n"), err.Error())
 }
+
+func TestStepsGroups_Validate_InputsErrors(t *testing.T) {
+	t.Parallel()
+
+	groups := StepsGroups{
+		{
+			Description: "Group One",
+			Required:    "all",
+			Steps: []Step{
+				{
+					Icon:        "common:settings",
+					Name:        "Step 1",
+					Description: "Step One",
+					Inputs: Inputs{
+						{
+							Id:          "input1",
+							Name:        "Input",
+							Description: "Description",
+							Type:        "foo",
+							Kind:        "input",
+						},
+						{
+							Id:          "input2",
+							Name:        "Input",
+							Description: "Description",
+							Type:        "bar",
+							Kind:        "input",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Assert
+	expectedErr := `
+- group 1, step 1, input "input1": type foo is not allowed, allowed values: string, int, double, bool, string[]
+- group 1, step 1, input "input2": type bar is not allowed, allowed values: string, int, double, bool, string[]
+`
+
+	err := groups.Validate()
+	assert.Error(t, err)
+	assert.Equal(t, strings.Trim(expectedErr, "\n"), err.Error())
+}
