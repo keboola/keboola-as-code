@@ -47,6 +47,7 @@
       "path": "extractor/ex-generic-v2/myconfig",
       "metadata": {
         "KBC.KAC.templates.configId": "{\"idInTemplate\":\"myconfig\"}",
+        "KBC.KAC.templates.configInputs": "[{\"input\":\"confirm\",\"key\":\"parameters.inputsValues.confirm\"},{\"input\":\"confirm-default\",\"key\":\"parameters.inputsValues.confirmDefault\"},{\"input\":\"double\",\"key\":\"parameters.inputsValues.double\"},{\"input\":\"double-default\",\"key\":\"parameters.inputsValues.doubleDefault\"},{\"input\":\"string\",\"key\":\"parameters.inputsValues.int\"},{\"input\":\"int-default\",\"key\":\"parameters.inputsValues.intDefault\"},{\"input\":\"multiselect\",\"key\":\"parameters.inputsValues.multiselect\"},{\"input\":\"multiselect-default\",\"key\":\"parameters.inputsValues.multiselectDefault\"},{\"input\":\"password\",\"key\":\"parameters.inputsValues.password\"},{\"input\":\"password-default\",\"key\":\"parameters.inputsValues.passwordDefault\"},{\"input\":\"select\",\"key\":\"parameters.inputsValues.select\"},{\"input\":\"select-default\",\"key\":\"parameters.inputsValues.selectDefault\"},{\"input\":\"string\",\"key\":\"parameters.inputsValues.string\"},{\"input\":\"string-default\",\"key\":\"parameters.inputsValues.stringDefault\"},{\"input\":\"textarea\",\"key\":\"parameters.inputsValues.textarea\"},{\"input\":\"textarea-default\",\"key\":\"parameters.inputsValues.textareaDefault\"}]",
         "KBC.KAC.templates.instanceId": "%s",
         "KBC.KAC.templates.repository": "keboola",
         "KBC.KAC.templates.templateId": "my-template-id"

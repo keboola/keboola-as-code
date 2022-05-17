@@ -47,6 +47,7 @@
       "path": "extractor/ex-generic-v2/shopify",
       "metadata": {
         "KBC.KAC.templates.configId": "{\"idInTemplate\":\"shopify\"}",
+        "KBC.KAC.templates.configInputs": "[{\"input\":\"shopify-shop-name\",\"key\":\"parameters.shop\"},{\"input\":\"shopify-token\",\"key\":\"parameters.token\"}]",
         "KBC.KAC.templates.instanceId": "%s",
         "KBC.KAC.templates.repository": "keboola",
         "KBC.KAC.templates.templateId": "my-template-id"
@@ -60,6 +61,7 @@
       "path": "extractor/ex-generic-v2/shoptet",
       "metadata": {
         "KBC.KAC.templates.configId": "{\"idInTemplate\":\"shoptet\"}",
+        "KBC.KAC.templates.configInputs": "[{\"input\":\"shoptet-password\",\"key\":\"parameters.password\"},{\"input\":\"shoptet-username\",\"key\":\"parameters.username\"}]",
         "KBC.KAC.templates.instanceId": "%s",
         "KBC.KAC.templates.repository": "keboola",
         "KBC.KAC.templates.templateId": "my-template-id"
@@ -86,6 +88,7 @@
       "path": "transformation/keboola.python-transformation-v2/python-transformation",
       "metadata": {
         "KBC.KAC.templates.configId": "{\"idInTemplate\":\"python-transformation\"}",
+        "KBC.KAC.templates.configInputs": "[{\"input\":\"python-parameter\",\"key\":\"parameters.parameter\"}]",
         "KBC.KAC.templates.instanceId": "%s",
         "KBC.KAC.templates.repository": "keboola",
         "KBC.KAC.templates.templateId": "my-template-id"
@@ -99,6 +102,7 @@
       "path": "transformation/keboola.snowflake-transformation/snowflake-transformation",
       "metadata": {
         "KBC.KAC.templates.configId": "{\"idInTemplate\":\"snowflake-transformation\"}",
+        "KBC.KAC.templates.configInputs": "[{\"input\":\"snowflake-parameter\",\"key\":\"parameters.parameter\"}]",
         "KBC.KAC.templates.instanceId": "%s",
         "KBC.KAC.templates.repository": "keboola",
         "KBC.KAC.templates.templateId": "my-template-id"

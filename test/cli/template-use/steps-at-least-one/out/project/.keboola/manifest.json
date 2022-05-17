@@ -47,6 +47,7 @@
       "path": "extractor/ex-generic-v2/shoptet",
       "metadata": {
         "KBC.KAC.templates.configId": "{\"idInTemplate\":\"shoptet\"}",
+        "KBC.KAC.templates.configInputs": "[{\"input\":\"shoptet-password\",\"key\":\"parameters.password\"},{\"input\":\"shoptet-username\",\"key\":\"parameters.username\"}]",
         "KBC.KAC.templates.instanceId": "%s",
         "KBC.KAC.templates.repository": "keboola",
         "KBC.KAC.templates.templateId": "my-template-id"
