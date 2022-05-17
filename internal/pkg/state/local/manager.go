@@ -31,13 +31,14 @@ type Manager struct {
 type UnitOfWork struct {
 	*Manager
 	ctx             context.Context
-	workers         *orderedmap.OrderedMap // separated workers for changes in branches, configs and rows
 	errors          *utils.MultiError
-	lock            *sync.Mutex
 	skipNotFoundErr bool
 	localObjects    model.Objects
 	changes         *model.LocalChanges
 	invoked         bool
+
+	lock    *sync.Mutex
+	workers *orderedmap.OrderedMap // separated workers for changes in branches, configs and rows
 }
 
 func NewManager(logger log.Logger, fs filesystem.Fs, fileLoader filesystem.FileLoader, m manifest.Manifest, namingGenerator *naming.Generator, objects model.ObjectStates, mapper *mapper.Mapper) *Manager {
@@ -72,11 +73,11 @@ func (m *Manager) NewUnitOfWork(ctx context.Context) *UnitOfWork {
 	u := &UnitOfWork{
 		Manager:      m,
 		ctx:          ctx,
-		workers:      orderedmap.New(),
-		lock:         &sync.Mutex{},
 		errors:       utils.NewMultiError(),
 		localObjects: m.state.LocalObjects(),
 		changes:      model.NewLocalChanges(),
+		lock:         &sync.Mutex{},
+		workers:      orderedmap.New(),
 	}
 	return u
 }
@@ -272,6 +273,9 @@ func (u *UnitOfWork) Invoke() error {
 
 // workersFor each level (branches, configs, rows).
 func (u *UnitOfWork) workersFor(level int) *Workers {
+	u.lock.Lock()
+	defer u.lock.Unlock()
+
 	if u.invoked {
 		panic(fmt.Errorf(`invoked local.UnitOfWork cannot be reused`))
 	}
