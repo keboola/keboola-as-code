@@ -27,7 +27,10 @@ func NewManager(ctx context.Context, logger log.Logger, defaultRepository model.
 		lock:         &sync.Mutex{},
 		repositories: make(map[string]*git.Repository),
 	}
-	return m, m.AddRepository(defaultRepository)
+	if defaultRepository.Type == model.RepositoryTypeGit {
+		return m, m.AddRepository(defaultRepository)
+	}
+	return m, nil
 }
 
 func (m *Manager) Repository(ref model.TemplateRepository) (*git.Repository, error) {
@@ -41,6 +44,9 @@ func (m *Manager) Repository(ref model.TemplateRepository) (*git.Repository, err
 }
 
 func (m *Manager) AddRepository(repositoryDef model.TemplateRepository) error {
+	if repositoryDef.Type != model.RepositoryTypeGit {
+		panic("Cannot checkout dir repository")
+	}
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
