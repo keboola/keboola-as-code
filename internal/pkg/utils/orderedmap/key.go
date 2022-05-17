@@ -8,7 +8,7 @@ import (
 	"github.com/umisama/go-regexpcache"
 )
 
-// KeyPath - path to a value in the OrderedMap (JSON file).
+// Key - path to a value in the OrderedMap (JSON file).
 type Key []Step
 
 type Step interface {
@@ -16,6 +16,8 @@ type Step interface {
 }
 
 type MapStep string
+
+type MapKeyStep string
 
 type SliceStep int
 
@@ -95,6 +97,14 @@ func (v MapStep) Key() string {
 
 func (v MapStep) String() string {
 	return fmt.Sprintf("[%s]", string(v))
+}
+
+func (v MapKeyStep) Key() string {
+	return string(v)
+}
+
+func (v MapKeyStep) String() string {
+	return fmt.Sprintf("[%s].<key>", string(v))
 }
 
 func (v SliceStep) Index() int {

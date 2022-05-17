@@ -50,7 +50,7 @@ func TestCopyWithTranslate(t *testing.T) {
 	})
 	expected := `
 {
-  "foo": {
+  "foo_modified": {
     "Values": [
       {
         "Key1": "value1_modified",
@@ -64,13 +64,13 @@ func TestCopyWithTranslate(t *testing.T) {
       }
     ]
   },
-  "bar": {
+  "bar_modified": {
     "Key1": "value1_modified",
     "Key2": "value2_modified",
     "Key3": null
   },
-  "[]empty": null,
-  "[]bar": [
+  "[]empty_modified": null,
+  "[]bar_modified": [
     {
       "Key1": "value1_modified",
       "Key2": "value2_modified",
@@ -82,9 +82,12 @@ func TestCopyWithTranslate(t *testing.T) {
       "Key3": null
     }
   ],
-  "subMap": {
-    "key1": 123,
-    "key2": 456
+  "subMap_modified": {
+    "key1_modified": 123,
+    "key2_modified": 456
+  },
+  "nativeMap_modified": {
+    "foo_modified": 123
   }
 }
 `
@@ -96,7 +99,7 @@ func TestCopyWithTranslateSteps(t *testing.T) {
 	original := testValue()
 	clone := CopyTranslate(original, func(_, clone reflect.Value, steps Steps) {
 		// Modify all strings
-		if clone.Kind() == reflect.String {
+		if clone.Kind() == reflect.String && !strings.Contains(steps.String(), ".<key>") {
 			clone.Set(reflect.ValueOf(steps.String()))
 		}
 	})
@@ -137,6 +140,9 @@ func TestCopyWithTranslateSteps(t *testing.T) {
   "subMap": {
     "key1": 123,
     "key2": 456
+  },
+  "nativeMap": {
+    "foo": 123
   }
 }
 `
@@ -203,6 +209,10 @@ func testValue() interface{} {
 	subMap.Set(`key1`, 123)
 	subMap.Set(`key2`, 456)
 	m.Set(`subMap`, subMap)
+
+	m.Set(`nativeMap`, map[string]int{
+		"foo": 123,
+	})
 
 	return m
 }
