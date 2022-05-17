@@ -127,6 +127,7 @@ func (l *localLoader) addScripts(code *model.Code) {
 	// Load file content
 	file, err := l.Files.
 		Load(l.NamingGenerator().CodeFilePath(code)).
+		AddMetadata(filesystem.ObjectKeyMetadata, code.Key()).
 		SetDescription("code file").
 		AddTag(model.FileKindNativeCode).
 		ReadFile()
@@ -143,6 +144,7 @@ func (l *localLoader) addScripts(code *model.Code) {
 func (l *localLoader) loadBlockMetaFile(block *model.Block) {
 	_, _, err := l.Files.
 		Load(l.NamingGenerator().MetaFilePath(block.Path())).
+		AddMetadata(filesystem.ObjectKeyMetadata, block.Key()).
 		SetDescription("block metadata").
 		AddTag(model.FileTypeJson).
 		AddTag(model.FileKindBlockMeta).
@@ -155,6 +157,7 @@ func (l *localLoader) loadBlockMetaFile(block *model.Block) {
 func (l *localLoader) loadCodeMetaFile(code *model.Code) {
 	_, _, err := l.Files.
 		Load(l.NamingGenerator().MetaFilePath(code.Path())).
+		AddMetadata(filesystem.ObjectKeyMetadata, code.Key()).
 		SetDescription("code metadata").
 		AddTag(model.FileTypeJson).
 		AddTag(model.FileKindCodeMeta).

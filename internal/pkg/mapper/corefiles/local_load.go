@@ -1,6 +1,7 @@
 package corefiles
 
 import (
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -24,6 +25,7 @@ func (m *coreFilesMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error
 func (m *coreFilesMapper) loadMetaFile(recipe *model.LocalLoadRecipe) error {
 	_, _, err := recipe.Files.
 		Load(m.state.NamingGenerator().MetaFilePath(recipe.ObjectManifest.Path())).
+		AddMetadata(filesystem.ObjectKeyMetadata, recipe.Key()).
 		SetDescription(recipe.ObjectManifest.Kind().Name+" metadata").
 		AddTag(model.FileTypeJson).
 		AddTag(model.FileKindObjectMeta).
@@ -35,6 +37,7 @@ func (m *coreFilesMapper) loadMetaFile(recipe *model.LocalLoadRecipe) error {
 func (m *coreFilesMapper) loadConfigFile(recipe *model.LocalLoadRecipe) error {
 	_, _, err := recipe.Files.
 		Load(m.state.NamingGenerator().ConfigFilePath(recipe.ObjectManifest.Path())).
+		AddMetadata(filesystem.ObjectKeyMetadata, recipe.Key()).
 		SetDescription(recipe.ObjectManifest.Kind().Name).
 		AddTag(model.FileTypeJson).
 		AddTag(model.FileKindObjectConfig).
@@ -46,6 +49,7 @@ func (m *coreFilesMapper) loadConfigFile(recipe *model.LocalLoadRecipe) error {
 func (m *coreFilesMapper) loadDescriptionFile(recipe *model.LocalLoadRecipe) error {
 	_, _, err := recipe.Files.
 		Load(m.state.NamingGenerator().DescriptionFilePath(recipe.ObjectManifest.Path())).
+		AddMetadata(filesystem.ObjectKeyMetadata, recipe.Key()).
 		SetDescription(recipe.ObjectManifest.Kind().Name+" description").
 		AddTag(model.FileTypeMarkdown).
 		AddTag(model.FileKindObjectDescription).

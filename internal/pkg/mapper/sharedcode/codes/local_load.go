@@ -3,6 +3,7 @@ package codes
 import (
 	"fmt"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -69,6 +70,7 @@ func (m *mapper) onRowLocalLoad(config *model.Config, row *model.ConfigRow, reci
 	// Load file
 	codeFile, err := recipe.Files.
 		Load(m.state.NamingGenerator().SharedCodeFilePath(recipe.Path(), config.SharedCode.Target)).
+		AddMetadata(filesystem.ObjectKeyMetadata, recipe.Key()).
 		SetDescription("shared code").
 		AddTag(model.FileTypeOther).
 		AddTag(model.FileKindNativeSharedCode).
