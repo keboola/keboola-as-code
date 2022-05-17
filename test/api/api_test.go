@@ -97,14 +97,9 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	// Run API server
 	apiUrl := RunApiServer(t, binary, project.StorageApiHost())
 
-	// Query the API
-	client := resty.New()
-	// Just a static GET / request - will be run according to the tests config
-	resp, err := client.R().Get(apiUrl)
-
 	// Assert
 	assert.NoError(t, err)
-	AssertExpectations(t, envProvider, testDirFs, workingDirFs, resp.StatusCode(), resp.String(), project)
+	AssertExpectations(t, envProvider, testDirFs, workingDirFs, apiUrl, project)
 }
 
 // CompileBinary compiles api binary used in this test.
@@ -189,37 +184,81 @@ func RunApiServer(t *testing.T, binary string, storageApiHost string) string {
 	return apiUrl
 }
 
+type ApiRequest struct {
+	Path   string      `json:"path"`
+	Method string      `json:"method"`
+	Body   interface{} `json:"body"`
+}
+
 // AssertExpectations compares expectations with the actual state.
 func AssertExpectations(
 	t *testing.T,
 	envProvider testhelper.EnvProvider,
 	testDirFs filesystem.Fs,
 	workingDirFs filesystem.Fs,
-	respCode int,
-	respBody string,
+	apiUrl string,
 	project *testproject.Project,
 ) {
 	t.Helper()
 
-	// Compare stdout
-	expectedResponseFile, err := testDirFs.ReadFile(filesystem.NewFileDef("expected-response"))
-	assert.NoError(t, err)
-	expectedRespBody := testhelper.ReplaceEnvsString(expectedResponseFile.Content, envProvider)
+	client := resty.New()
+	client.SetHostURL(apiUrl)
 
-	// Compare response status code
-	expectedCodeFile, err := testDirFs.ReadFile(filesystem.NewFileDef("expected-http-code"))
+	// request folders should be named e.g. 001-request1, 002-request2
+	dirs, err := testDirFs.Glob("[0-9][0-9][0-9]-*")
 	assert.NoError(t, err)
-	expectedCode := cast.ToInt(strings.TrimSpace(expectedCodeFile.Content))
-	assert.Equal(
-		t,
-		expectedCode,
-		respCode,
-		"Unexpected status code.\nRESPONSE:\n%s\n\n",
-		respBody,
-	)
+	for _, dir := range dirs {
+		// Read the request file
+		requestFile, err := testDirFs.ReadFile(filesystem.NewFileDef(dir + "/request.json"))
+		assert.NoError(t, err)
 
-	// Assert response body
-	testhelper.AssertWildcards(t, expectedRespBody, respBody, "Unexpected response.")
+		request := &ApiRequest{}
+		err = json.DecodeString(requestFile.Content, request)
+		assert.NoError(t, err)
+
+		// Just a static GET / request - will be run according to the tests config
+		r := client.R()
+		if request.Body != nil {
+			r.SetBody(request.Body)
+		}
+		var resp *resty.Response
+		switch request.Method {
+		case "GET":
+			resp, err = r.Get(request.Path)
+		case "POST":
+			resp, err = r.Post(request.Path)
+		case "DELETE":
+			resp, err = r.Delete(request.Path)
+		case "PUT":
+			resp, err = r.Put(request.Path)
+		case "PATCH":
+			resp, err = r.Patch(request.Path)
+		default:
+			assert.FailNow(t, fmt.Sprintf("Unsupported method %s in request %s", request.Method, dir))
+		}
+		assert.NoError(t, err)
+
+		// Compare response body
+		expectedResponseFile, err := testDirFs.ReadFile(filesystem.NewFileDef(dir + "/expected-response"))
+		assert.NoError(t, err)
+		expectedRespBody := testhelper.ReplaceEnvsString(expectedResponseFile.Content, envProvider)
+
+		// Compare response status code
+		expectedCodeFile, err := testDirFs.ReadFile(filesystem.NewFileDef(dir + "/expected-http-code"))
+		assert.NoError(t, err)
+		expectedCode := cast.ToInt(strings.TrimSpace(expectedCodeFile.Content))
+		assert.Equal(
+			t,
+			expectedCode,
+			resp.StatusCode(),
+			"Unexpected status code for request %s.\nRESPONSE:\n%s\n\n",
+			dir,
+			resp.String(),
+		)
+
+		// Assert response body
+		testhelper.AssertWildcards(t, expectedRespBody, resp.String(), "Unexpected response.")
+	}
 
 	// Expected state dir
 	expectedDir := "out"
