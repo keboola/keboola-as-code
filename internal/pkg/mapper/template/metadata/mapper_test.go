@@ -9,10 +9,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 )
 
-func createStateWithMapper(t *testing.T, templateRef model.TemplateRef, instanceId string, objectIds metadata.ObjectIdsMap) (*state.State, *dependencies.TestContainer) {
+func createStateWithMapper(t *testing.T, templateRef model.TemplateRef, instanceId string, objectIds metadata.ObjectIdsMap, inputsUsage *metadata.InputsUsage) (*state.State, *dependencies.TestContainer) {
 	t.Helper()
 	d := dependencies.NewTestContainer()
 	mockedState := d.EmptyState()
-	mockedState.Mapper().AddMapper(metadata.NewMapper(mockedState, templateRef, instanceId, objectIds))
+	mockedState.Mapper().AddMapper(metadata.NewMapper(mockedState, templateRef, instanceId, objectIds, inputsUsage))
 	return mockedState, d
 }

@@ -5,6 +5,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 type metadataMapper struct {
@@ -12,19 +13,39 @@ type metadataMapper struct {
 	templateRef model.TemplateRef
 	instanceId  string
 	objectIds   ObjectIdsMap
+	inputsUsage *InputsUsage
 }
 
 // ObjectIdsMap - generated object id -> template object id.
 type ObjectIdsMap map[interface{}]interface{}
+
+// InputsUsage contains all uses of inputs per object.
+type InputsUsage struct {
+	Values InputsUsageMap
+}
+
+type InputsUsageMap map[model.Key][]InputUsage
+
+// InputUsage describes where the input is used in the output JSON.
+type InputUsage struct {
+	Name    string
+	JsonKey orderedmap.Key
+}
 
 func (v ObjectIdsMap) IdInTemplate(idInProject interface{}) (interface{}, bool) {
 	id, found := v[idInProject]
 	return id, found
 }
 
-func NewMapper(state *state.State, templateRef model.TemplateRef, instanceId string, objectIds ObjectIdsMap) *metadataMapper {
+func NewInputsUsage() *InputsUsage {
+	return &InputsUsage{
+		Values: make(map[model.Key][]InputUsage),
+	}
+}
+
+func NewMapper(state *state.State, templateRef model.TemplateRef, instanceId string, objectIds ObjectIdsMap, inputsUsage *InputsUsage) *metadataMapper {
 	if instanceId == "" {
 		panic(fmt.Errorf(`template "instanceId" cannot be empty`))
 	}
-	return &metadataMapper{state: state, templateRef: templateRef, instanceId: instanceId, objectIds: objectIds}
+	return &metadataMapper{state: state, templateRef: templateRef, instanceId: instanceId, objectIds: objectIds, inputsUsage: inputsUsage}
 }

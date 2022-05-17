@@ -90,6 +90,16 @@ func (f *fileToLoad) RemoveTag(tag string) *fileToLoad {
 	return f
 }
 
+func (f *fileToLoad) AddMetadata(key string, value interface{}) *fileToLoad {
+	f.FileDef.AddMetadata(key, value)
+	return f
+}
+
+func (f *fileToLoad) RemoveMetadata(key string) *fileToLoad {
+	f.FileDef.RemoveMetadata(key)
+	return f
+}
+
 func (f *fileToLoad) ReadFile() (*filesystem.RawFile, error) {
 	file, err := f.fsLoader.ReadRawFile(f.FileDef)
 	if err != nil {

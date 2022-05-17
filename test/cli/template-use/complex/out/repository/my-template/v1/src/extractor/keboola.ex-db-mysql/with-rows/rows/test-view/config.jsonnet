@@ -1,5 +1,5 @@
 {
   parameters: {
-    incremental: false,
+    incremental: Input("mysql-incremental"),
   },
 }

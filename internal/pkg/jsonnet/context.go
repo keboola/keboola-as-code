@@ -1,6 +1,7 @@
 package jsonnet
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/google/go-jsonnet"
@@ -9,11 +10,13 @@ import (
 )
 
 type Context struct {
+	ctx             context.Context
 	filePath        string
 	importer        jsonnet.Importer
 	extVariables    variablesValues
 	nativeFunctions nativeFunctions
 	globalBinding   globalBinding
+	notifierFactory NotifierFactory
 }
 
 type (
@@ -23,6 +26,8 @@ type (
 )
 
 type NativeFunction = jsonnet.NativeFunction
+
+type NotifierFactory func(ctx context.Context) jsonnet.Notifier
 
 // ValueToLiteral converts Go value to jsonnet.Ast literal.
 func ValueToLiteral(v interface{}) ast.Node {
@@ -50,9 +55,20 @@ func ValueToLiteral(v interface{}) ast.Node {
 
 func NewContext() *Context {
 	return &Context{
+		ctx:           context.Background(),
 		extVariables:  make(variablesValues),
 		globalBinding: make(globalBinding),
 	}
+}
+
+// WithCtx returns clone with the ctx set.
+func (c *Context) WithCtx(ctx context.Context) *Context {
+	var clone Context
+	if c != nil {
+		clone = *c
+	}
+	clone.ctx = ctx
+	return &clone
 }
 
 // WithFilePath returns clone of the context with the file name set.
@@ -75,6 +91,13 @@ func (c *Context) WithImporter(importer jsonnet.Importer) *Context {
 	return &clone
 }
 
+func (c *Context) Ctx() context.Context {
+	if c == nil {
+		return context.Background()
+	}
+	return c.ctx
+}
+
 func (c *Context) FilePath() string {
 	if c == nil {
 		return ""
@@ -92,6 +115,11 @@ func (c *Context) ExtVar(name string, value interface{}) {
 // Function can be called in the JsonNet code by: std.native("<NAME>").
 func (c *Context) NativeFunction(f *NativeFunction) {
 	c.nativeFunctions.add(f)
+}
+
+// NotifierFactory tracks events when executing Jsonnet code.
+func (c *Context) NotifierFactory(v NotifierFactory) {
+	c.notifierFactory = v
 }
 
 // NativeFunctionWithAlias registers native function to the JsonNet context and creates alias.
@@ -121,6 +149,10 @@ func (c *Context) registerTo(vm *jsonnet.VM) {
 
 	if c.importer != nil {
 		vm.Importer(c.importer)
+	}
+
+	if c.notifierFactory != nil {
+		vm.Notifier(c.notifierFactory(c.ctx))
 	}
 
 	c.extVariables.registerTo(vm)

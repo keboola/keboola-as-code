@@ -1,6 +1,7 @@
 package jsonnet
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -112,4 +113,85 @@ func TestVmContext_VariablesTypes(t *testing.T) {
 	output, err := Evaluate(code, ctx)
 	assert.NoError(t, err)
 	assert.Equal(t, strings.TrimLeft(expected, "\n"), output)
+}
+
+func TestVmContext_Notifier(t *testing.T) {
+	t.Parallel()
+	notifier := &testNotifier{}
+	ctx := NewContext()
+	ctx.NativeFunctionWithAlias(&NativeFunction{
+		Name:   `Decorate`,
+		Params: ast.Identifiers{"str"},
+		Func: func(params []interface{}) (interface{}, error) {
+			return fmt.Sprintf("~%s~", params[0].(string)), nil
+		},
+	})
+	ctx.NotifierFactory(func(context.Context) jsonnet.Notifier {
+		return notifier
+	})
+
+	// Jsonnet code
+	code := `
+local Person(name='Alice') = {
+  name: if true then Decorate(name) else null,
+};
+local Do() = {
+  person1: Person(),
+  person2: Person('Bob'),
+  other: [Person('Foo'), Person('Bar')],
+};
+Do()
+`
+
+	// Output Json
+	expected := `{
+  "other": [
+    {
+      "name": "~Foo~"
+    },
+    {
+      "name": "~Bar~"
+    }
+  ],
+  "person1": {
+    "name": "~Alice~"
+  },
+  "person2": {
+    "name": "~Bob~"
+  }
+}
+`
+
+	// Notified values
+	expectedNotifications := []generatedValue{
+		{fnName: "Decorate", args: []interface{}{"Foo"}, value: "~Foo~", steps: []interface{}{jsonnet.ObjectFieldStep{Field: "other"}, jsonnet.ArrayIndexStep{Index: 0}, jsonnet.ObjectFieldStep{Field: "name"}}},
+		{fnName: "Decorate", args: []interface{}{"Bar"}, value: "~Bar~", steps: []interface{}{jsonnet.ObjectFieldStep{Field: "other"}, jsonnet.ArrayIndexStep{Index: 1}, jsonnet.ObjectFieldStep{Field: "name"}}},
+		{fnName: "Decorate", args: []interface{}{"Alice"}, value: "~Alice~", steps: []interface{}{jsonnet.ObjectFieldStep{Field: "person1"}, jsonnet.ObjectFieldStep{Field: "name"}}},
+		{fnName: "Decorate", args: []interface{}{"Bob"}, value: "~Bob~", steps: []interface{}{jsonnet.ObjectFieldStep{Field: "person2"}, jsonnet.ObjectFieldStep{Field: "name"}}},
+	}
+
+	actual, err := Evaluate(code, ctx)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, actual)
+	assert.Equal(t, expectedNotifications, notifier.values)
+}
+
+type testNotifier struct {
+	values []generatedValue
+}
+
+type generatedValue struct {
+	fnName string
+	args   []interface{}
+	value  interface{}
+	steps  []interface{}
+}
+
+func (n *testNotifier) OnGeneratedValue(fnName string, args []interface{}, value interface{}, steps []interface{}) {
+	n.values = append(n.values, generatedValue{
+		fnName: fnName,
+		args:   args,
+		value:  value,
+		steps:  steps,
+	})
 }

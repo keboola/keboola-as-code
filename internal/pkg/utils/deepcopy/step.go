@@ -72,3 +72,11 @@ type MapKeyStep struct {
 func (v MapKeyStep) String() string {
 	return fmt.Sprintf("map[%v]", v.key)
 }
+
+type MapKeyValueStep struct {
+	key interface{}
+}
+
+func (v MapKeyValueStep) String() string {
+	return fmt.Sprintf("map[%v].<key>", v.key)
+}

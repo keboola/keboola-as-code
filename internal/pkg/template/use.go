@@ -5,15 +5,18 @@ import (
 	"fmt"
 	"sync"
 
+	jsonnetLib "github.com/google/go-jsonnet"
 	"github.com/google/go-jsonnet/ast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet/fsimporter"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/jsonnetfiles"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/metadata"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacevalues"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
@@ -53,10 +56,18 @@ type UseContext struct {
 	lock         *sync.Mutex
 	placeholders PlaceholdersMap
 	objectIds    metadata.ObjectIdsMap
+
+	inputsUsage *metadata.InputsUsage
 }
 
 // PlaceholdersMap -  original template value -> placeholder.
 type PlaceholdersMap map[interface{}]string
+
+type inputUsageNotifier struct {
+	ctx          context.Context
+	replacements *replacevalues.Values
+	inputsUsage  *metadata.InputsUsage
+}
 
 const (
 	placeholderStart      = "<<~~"
@@ -65,18 +76,20 @@ const (
 )
 
 func NewUseContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot filesystem.Fs, instanceId string, targetBranch model.BranchKey, inputs InputsValues, tickets *storageapi.TicketProvider) *UseContext {
+	ctx = baseContext(ctx)
 	c := &UseContext{
-		_context:        baseContext(ctx),
+		_context:        ctx,
 		templateRef:     templateRef,
 		instanceId:      instanceId,
 		instanceIdShort: strhelper.FirstN(instanceId, instanceIdShortLength),
-		jsonNetCtx:      jsonnet.NewContext().WithImporter(fsimporter.New(objectsRoot)),
+		jsonNetCtx:      jsonnet.NewContext().WithCtx(ctx).WithImporter(fsimporter.New(objectsRoot)),
 		replacements:    replacevalues.NewValues(),
 		inputs:          make(map[string]InputValue),
 		tickets:         tickets,
 		lock:            &sync.Mutex{},
 		placeholders:    make(PlaceholdersMap),
 		objectIds:       make(metadata.ObjectIdsMap),
+		inputsUsage:     metadata.NewInputsUsage(),
 	}
 
 	// Convert inputs to map
@@ -89,6 +102,9 @@ func NewUseContext(ctx context.Context, templateRef model.TemplateRef, objectsRo
 
 	// Register JsonNet functions: ConfigId, ConfigRowId, Input
 	c.registerJsonNetFunctions()
+
+	// Let's see where the inputs were used
+	c.registerInputsUsageNotifier()
 
 	return c
 }
@@ -126,6 +142,10 @@ func (c *UseContext) LocalObjectsFilter() model.ObjectsFilter {
 
 func (c *UseContext) ObjectIds() metadata.ObjectIdsMap {
 	return c.objectIds
+}
+
+func (c *UseContext) InputsUsage() *metadata.InputsUsage {
+	return c.inputsUsage
 }
 
 func (c *UseContext) registerJsonNetFunctions() {
@@ -253,4 +273,71 @@ func (c *UseContext) idPlaceholder(oldId interface{}) string {
 	}
 
 	return c.placeholders[oldId]
+}
+
+func (c *UseContext) registerInputsUsageNotifier() {
+	c.jsonNetCtx.NotifierFactory(func(ctx context.Context) jsonnetLib.Notifier {
+		return &inputUsageNotifier{ctx: ctx, replacements: c.replacements, inputsUsage: c.inputsUsage}
+	})
+}
+
+func (c *inputUsageNotifier) OnGeneratedValue(fnName string, args []interface{}, _ interface{}, steps []interface{}) {
+	// Only for Input function
+	if fnName != "Input" {
+		return
+	}
+
+	// One argument expected
+	if len(args) != 1 {
+		return
+	}
+
+	// Argument is input name
+	inputName, ok := args[0].(string)
+	if !ok {
+		return
+	}
+
+	// Convert steps to orderedmap format
+	var mappedSteps []orderedmap.Step
+	for _, step := range steps {
+		switch v := step.(type) {
+		case jsonnetLib.ObjectFieldStep:
+			mappedSteps = append(mappedSteps, orderedmap.MapStep(v.Field))
+		case jsonnetLib.ArrayIndexStep:
+			mappedSteps = append(mappedSteps, orderedmap.SliceStep(v.Index))
+		default:
+			panic(fmt.Errorf(`unexpected type "%T"`, v))
+		}
+	}
+
+	// Get file definition
+	fileDef, _ := c.ctx.Value(jsonnetfiles.FileDefCtxKey).(*filesystem.FileDef)
+	if fileDef == nil {
+		return
+	}
+
+	// Get key of the parent object
+	objectKey, ok := fileDef.MetadataOrNil(filesystem.ObjectKeyMetadata).(model.Key)
+	if !ok {
+		return
+	}
+
+	// We are only interested in the inputs used in the configuration.
+	if !fileDef.HasTag(model.FileKindObjectConfig) {
+		return
+	}
+
+	// Replace tickets in object key
+	objectKeyRaw, err := c.replacements.Replace(objectKey)
+	if err != nil {
+		panic(err)
+	}
+
+	// Store
+	objectKey = objectKeyRaw.(model.Key)
+	c.inputsUsage.Values[objectKey] = append(c.inputsUsage.Values[objectKey], metadata.InputUsage{
+		Name:    inputName,
+		JsonKey: mappedSteps,
+	})
 }

@@ -57,9 +57,10 @@ func (o *OrderedMap) DeepCopy(callback deepcopy.TranslateFunc, steps deepcopy.St
 	}
 	return New(), func(clone reflect.Value) {
 		m := clone.Interface().(*OrderedMap)
-		for _, k := range o.Keys() {
-			v, _ := o.Get(k)
-			m.Set(k, deepcopy.CopyTranslateSteps(v, callback, steps.Add(MapStep(k)), visited))
+		for _, key := range o.Keys() {
+			value, _ := o.Get(key)
+			keyClone := deepcopy.CopyTranslateSteps(key, callback, steps.Add(MapKeyStep(key)), visited).(string)
+			m.Set(keyClone, deepcopy.CopyTranslateSteps(value, callback, steps.Add(MapStep(key)), visited))
 		}
 	}
 }

@@ -146,9 +146,11 @@
       "path": "extractor/keboola.ex-db-mysql/with-rows",
       "metadata": {
         "KBC.KAC.templates.configId": "{\"idInTemplate\":\"with-rows\"}",
+        "KBC.KAC.templates.configInputs": "[{\"input\":\"mysql-password\",\"key\":\"parameters.db.#password\"}]",
         "KBC.KAC.templates.instanceId": "%s",
         "KBC.KAC.templates.repository": "keboola",
         "KBC.KAC.templates.rowsIds": "[{\"idInProject\":\"%s\",\"idInTemplate\":\"disabled\"},{\"idInProject\":\"%s\",\"idInTemplate\":\"test-view\"},{\"idInProject\":\"%s\",\"idInTemplate\":\"users\"}]",
+        "KBC.KAC.templates.rowsInputs": "[{\"rowId\":\"%s\",\"input\":\"mysql-incremental\",\"key\":\"parameters.incremental\"}]",
         "KBC.KAC.templates.templateId": "my-template-id"
       },
       "rows": [

@@ -133,6 +133,7 @@ func (l *localLoader) parsePhaseConfig(phase *model.Phase) ([]string, error) {
 	// Load phase config
 	file, err := l.files.
 		Load(l.NamingGenerator().PhaseFilePath(phase)).
+		AddMetadata(filesystem.ObjectKeyMetadata, phase.Key()).
 		SetDescription("phase config").
 		AddTag(model.FileTypeJson).
 		AddTag(model.FileKindPhaseConfig).
@@ -178,6 +179,7 @@ func (l *localLoader) parseTaskConfig(task *model.Task) error {
 	// Load task config
 	file, err := l.files.
 		Load(l.NamingGenerator().TaskFilePath(task)).
+		AddMetadata(filesystem.ObjectKeyMetadata, task.Key()).
 		SetDescription("task config").
 		AddTag(model.FileTypeJson).
 		AddTag(model.FileKindTaskConfig).

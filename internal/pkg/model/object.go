@@ -37,6 +37,8 @@ const (
 	repositoryMetadataKey             = "KBC.KAC.templates.repository"
 	templateIdMetadataKey             = "KBC.KAC.templates.templateId"
 	instanceIdMetadataKey             = "KBC.KAC.templates.instanceId" // attach config to a template instance
+	configInputsUsageMetadataKey      = "KBC.KAC.templates.configInputs"
+	rowsInputsUsageMetadataKey        = "KBC.KAC.templates.rowsInputs"
 )
 
 type Object interface {
@@ -245,6 +247,17 @@ type Branch struct {
 // ConfigMetadata stores config template metadata to config metadata.
 type ConfigMetadata map[string]string
 
+type ConfigInputUsage struct {
+	Input   string `json:"input"`
+	JsonKey string `json:"key"`
+}
+
+type RowInputUsage struct {
+	RowId   RowId  `json:"rowId"`
+	Input   string `json:"input"`
+	JsonKey string `json:"key"`
+}
+
 func (m ConfigMetadata) SetConfigTemplateId(templateObjectId ConfigId) {
 	m[configIdMetadataKey] = json.MustEncodeString(ConfigIdMetadata{
 		IdInTemplate: templateObjectId,
@@ -258,6 +271,19 @@ func (m ConfigMetadata) ConfigTemplateId() *ConfigIdMetadata {
 		return nil
 	}
 	return &out
+}
+
+func (m ConfigMetadata) InputsUsage() []ConfigInputUsage {
+	var out []ConfigInputUsage
+	_ = json.DecodeString(m[configInputsUsageMetadataKey], &out) // ignore empty string or other errors
+	return out
+}
+
+func (m ConfigMetadata) AddInputUsage(inputName string, jsonKey orderedmap.Key) {
+	m[configInputsUsageMetadataKey] = json.MustEncodeString(append(m.InputsUsage(), ConfigInputUsage{
+		Input:   inputName,
+		JsonKey: jsonKey.String(),
+	}), false)
 }
 
 func (m ConfigMetadata) AddRowTemplateId(projectObjectId, templateObjectId RowId) {
@@ -274,6 +300,24 @@ func (m ConfigMetadata) AddRowTemplateId(projectObjectId, templateObjectId RowId
 func (m ConfigMetadata) RowsTemplateIds() (out []RowIdMetadata) {
 	_ = json.DecodeString(m[rowsIdsMetadataKey], &out) // ignore empty string or other errors
 	return out
+}
+
+func (m ConfigMetadata) RowsInputsUsage() []RowInputUsage {
+	var out []RowInputUsage
+	_ = json.DecodeString(m[rowsInputsUsageMetadataKey], &out) // ignore empty string or other errors
+	return out
+}
+
+func (m ConfigMetadata) AddRowInputUsage(rowId RowId, inputName string, jsonKey orderedmap.Key) {
+	values := append(m.RowsInputsUsage(), RowInputUsage{
+		RowId:   rowId,
+		Input:   inputName,
+		JsonKey: jsonKey.String(),
+	})
+	sort.SliceStable(values, func(i, j int) bool {
+		return values[i].Input < values[j].Input
+	})
+	m[rowsInputsUsageMetadataKey] = json.MustEncodeString(values, false)
 }
 
 func (m ConfigMetadata) SetTemplateInstance(repo string, tmpl string, inst string) {
