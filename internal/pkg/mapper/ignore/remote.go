@@ -57,14 +57,36 @@ func (m *ignoreMapper) isIgnored(object model.Object) bool {
 // isIgnoredConfig ignores all variables configs which are not attached to a config.
 func (m *ignoreMapper) isIgnoredConfig(config *model.Config) bool {
 	// Variables config
-	if config.ComponentId != model.VariablesComponentId {
+	if config.ComponentId == model.VariablesComponentId {
+		// Without target config
+		if !config.Relations.Has(model.VariablesForRelType) && !config.Relations.Has(model.SharedCodeVariablesForRelType) {
+			m.logger.Debugf("Ignored unattached variables %s", config.Desc())
+			return true
+		}
 		return false
 	}
 
-	// Without target config
-	if !config.Relations.Has(model.VariablesForRelType) && !config.Relations.Has(model.SharedCodeVariablesForRelType) {
-		m.logger.Debugf("Ignored unattached variables %s", config.Desc())
-		return true
+	// Scheduler config
+	if config.ComponentId == model.SchedulerComponentId {
+		relationRaw, err := config.Relations.GetOneByType(model.SchedulerForRelType)
+		if err != nil || relationRaw == nil {
+			// Relation is missing or invalid, scheduler is ignored
+			return true
+		}
+
+		// Target config key
+		relation := relationRaw.(*model.SchedulerForRelation)
+		targetConfigKey := model.ConfigKey{
+			BranchId:    config.BranchId,
+			ComponentId: relation.ComponentId,
+			Id:          relation.ConfigId,
+		}
+
+		// Configuration must exists
+		if _, found := m.state.RemoteObjects().Get(targetConfigKey); !found {
+			m.logger.Debugf("Ignored scheduler %s, target %s not found", config.Desc(), targetConfigKey.Desc())
+			return true
+		}
 	}
 
 	return false
