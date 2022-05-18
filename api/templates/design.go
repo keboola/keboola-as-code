@@ -47,6 +47,7 @@ var _ = Service("templates", func() {
 	// CORS
 	cors.Origin("*", func() {
 		cors.Headers("Content-Type", "X-StorageApi-Token")
+		cors.Methods("GET", "POST", "PUT", "DELETE")
 	})
 
 	// Set authentication by token to all endpoints without NoSecurity()
