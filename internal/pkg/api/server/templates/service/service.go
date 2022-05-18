@@ -25,11 +25,8 @@ import (
 type service struct{}
 
 func New(d dependencies.Container) (Service, error) {
-	defaultRepo := d.DefaultRepository()
-	if defaultRepo.Type == model.RepositoryTypeGit {
-		if err := StartPullCron(d); err != nil {
-			return nil, err
-		}
+	if err := StartPullCron(d); err != nil {
+		return nil, err
 	}
 	return &service{}, nil
 }

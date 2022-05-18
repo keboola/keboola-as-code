@@ -13,7 +13,8 @@ import (
 func TestNewManager(t *testing.T) {
 	t.Parallel()
 
-	m, err := repository.NewManager(context.Background(), log.NewDebugLogger(), repository.DefaultRepository())
+	m := repository.NewManager(context.Background(), log.NewDebugLogger())
+	err := m.AddRepository(repository.DefaultRepository())
 	assert.NoError(t, err)
 
 	defaultRepo, err := m.Repository(repository.DefaultRepository())
@@ -24,7 +25,8 @@ func TestNewManager(t *testing.T) {
 func TestAddRepository_AlreadyExists(t *testing.T) {
 	t.Parallel()
 
-	m, err := repository.NewManager(context.Background(), log.NewDebugLogger(), repository.DefaultRepository())
+	m := repository.NewManager(context.Background(), log.NewDebugLogger())
+	err := m.AddRepository(repository.DefaultRepository())
 	assert.NoError(t, err)
 
 	err = m.AddRepository(repository.DefaultRepository())

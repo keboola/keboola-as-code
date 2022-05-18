@@ -141,10 +141,13 @@ func (v *container) PrefixLogger() log.PrefixLogger {
 
 func (v *container) RepositoryManager() (*repository.Manager, error) {
 	if v.repositoryManager == nil {
-		if manager, err := repository.NewManager(v.Ctx(), v.Logger(), v.defaultRepository); err != nil {
-			return nil, err
-		} else {
-			v.repositoryManager = manager
+		manager := repository.NewManager(v.Ctx(), v.Logger())
+		if v.defaultRepository.Type == model.RepositoryTypeGit {
+			if err := manager.AddRepository(v.defaultRepository); err != nil {
+				return nil, err
+			} else {
+				v.repositoryManager = manager
+			}
 		}
 	}
 	return v.repositoryManager, nil
