@@ -3,6 +3,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net"
@@ -25,6 +26,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/storageenv"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
+	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 // TestApiE2E runs one functional test per each sub-directory.
@@ -99,7 +101,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 
 	// Assert
 	assert.NoError(t, err)
-	AssertExpectations(t, envProvider, testDirFs, workingDirFs, apiUrl, project)
+	RunRequests(t, envProvider, testDirFs, workingDirFs, apiUrl, project)
 }
 
 // CompileBinary compiles api binary used in this test.
@@ -185,13 +187,13 @@ func RunApiServer(t *testing.T, binary string, storageApiHost string) string {
 }
 
 type ApiRequest struct {
-	Path   string      `json:"path"`
-	Method string      `json:"method"`
+	Path   string      `json:"path" validate:"required"`
+	Method string      `json:"method" validate:"required,oneof=DELETE GET PATCH POST PUT"`
 	Body   interface{} `json:"body"`
 }
 
-// AssertExpectations compares expectations with the actual state.
-func AssertExpectations(
+// RunRequests runs API requests and compares expectations with the actual state.
+func RunRequests(
 	t *testing.T,
 	envProvider testhelper.EnvProvider,
 	testDirFs filesystem.Fs,
@@ -209,42 +211,42 @@ func AssertExpectations(
 	assert.NoError(t, err)
 	for _, dir := range dirs {
 		// Read the request file
-		requestFile, err := testDirFs.ReadFile(filesystem.NewFileDef(dir + "/request.json"))
+		requestFile, err := testDirFs.ReadFile(filesystem.NewFileDef(filesystem.Join(dir, "request.json")))
 		assert.NoError(t, err)
 
 		request := &ApiRequest{}
 		err = json.DecodeString(requestFile.Content, request)
 		assert.NoError(t, err)
+		err = validator.Validate(context.Background(), request)
+		assert.NoError(t, err)
 
-		// Just a static GET / request - will be run according to the tests config
+		// Send the request
 		r := client.R()
 		if request.Body != nil {
 			r.SetBody(request.Body)
 		}
 		var resp *resty.Response
 		switch request.Method {
-		case "GET":
-			resp, err = r.Get(request.Path)
-		case "POST":
-			resp, err = r.Post(request.Path)
 		case "DELETE":
 			resp, err = r.Delete(request.Path)
-		case "PUT":
-			resp, err = r.Put(request.Path)
+		case "GET":
+			resp, err = r.Get(request.Path)
 		case "PATCH":
 			resp, err = r.Patch(request.Path)
-		default:
-			assert.FailNow(t, fmt.Sprintf("Unsupported method %s in request %s", request.Method, dir))
+		case "POST":
+			resp, err = r.Post(request.Path)
+		case "PUT":
+			resp, err = r.Put(request.Path)
 		}
 		assert.NoError(t, err)
 
 		// Compare response body
-		expectedResponseFile, err := testDirFs.ReadFile(filesystem.NewFileDef(dir + "/expected-response"))
+		expectedResponseFile, err := testDirFs.ReadFile(filesystem.NewFileDef(filesystem.Join(dir, "expected-response")))
 		assert.NoError(t, err)
 		expectedRespBody := testhelper.ReplaceEnvsString(expectedResponseFile.Content, envProvider)
 
 		// Compare response status code
-		expectedCodeFile, err := testDirFs.ReadFile(filesystem.NewFileDef(dir + "/expected-http-code"))
+		expectedCodeFile, err := testDirFs.ReadFile(filesystem.NewFileDef(filesystem.Join(dir, "expected-http-code")))
 		assert.NoError(t, err)
 		expectedCode := cast.ToInt(strings.TrimSpace(expectedCodeFile.Content))
 		assert.Equal(
