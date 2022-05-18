@@ -151,14 +151,15 @@ func (v *container) RepositoryManager() (*repository.Manager, error) {
 }
 
 func (v *container) TemplateRepository(definition model.TemplateRepository, _ model.TemplateRef) (*repository.Repository, error) {
-	// Get manager
-	manager, err := v.RepositoryManager()
-	if err != nil {
-		return nil, err
-	}
-
 	var fs filesystem.Fs
+	var err error
 	if definition.Type == model.RepositoryTypeGit {
+		// Get manager
+		manager, err := v.RepositoryManager()
+		if err != nil {
+			return nil, err
+		}
+
 		// Get git repository
 		gitRepository, err := manager.Repository(definition)
 		if err != nil {
@@ -181,7 +182,6 @@ func (v *container) TemplateRepository(definition model.TemplateRepository, _ mo
 	}
 
 	// Load manifest from FS
-
 	manifest, err := loadRepositoryManifest.Run(fs, v)
 	if err != nil {
 		return nil, err

@@ -27,10 +27,7 @@ func NewManager(ctx context.Context, logger log.Logger, defaultRepository model.
 		lock:         &sync.Mutex{},
 		repositories: make(map[string]*git.Repository),
 	}
-	if defaultRepository.Type == model.RepositoryTypeGit {
-		return m, m.AddRepository(defaultRepository)
-	}
-	return m, nil
+	return m, m.AddRepository(defaultRepository)
 }
 
 func (m *Manager) Repository(ref model.TemplateRepository) (*git.Repository, error) {
