@@ -34,29 +34,25 @@ func Run(projectState *project.State, o Options, d dependencies) error {
 	}
 
 	// Log plan
-	if !plan.Empty() {
-		plan.Log(logger)
+	plan.Log(logger)
+
+	// Dry run?
+	if o.DryRun {
+		logger.Info("Dry run, nothing changed.")
+		return nil
 	}
 
-	if !plan.Empty() {
-		// Dry run?
-		if o.DryRun {
-			logger.Info("Dry run, nothing changed.")
-			return nil
-		}
-
-		// Invoke
-		if err := plan.Invoke(projectState.Ctx()); err != nil {
-			return utils.PrefixError(`cannot delete template configs`, err)
-		}
-
-		// Save manifest
-		if _, err := saveManifest.Run(projectState.ProjectManifest(), projectState.Fs(), d); err != nil {
-			return err
-		}
-
-		logger.Info(`Delete done.`)
+	// Invoke
+	if err := plan.Invoke(projectState.Ctx()); err != nil {
+		return utils.PrefixError(`cannot delete template configs`, err)
 	}
+
+	// Save manifest
+	if _, err := saveManifest.Run(projectState.ProjectManifest(), projectState.Fs(), d); err != nil {
+		return err
+	}
+
+	logger.Info(`Delete done.`)
 
 	return nil
 }

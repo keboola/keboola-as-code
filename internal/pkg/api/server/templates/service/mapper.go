@@ -218,9 +218,12 @@ func InstancesResponse(prjState *project.State, branchKey model.BranchKey) (out 
 		}
 
 		if instance.MainConfig != nil {
-			outInstance.MainConfig = &MainConfig{
-				ComponentID: string(instance.MainConfig.ComponentId),
-				ConfigID:    string(instance.MainConfig.ConfigId),
+			configKey := model.ConfigKey{BranchId: branchKey.Id, ComponentId: instance.MainConfig.ComponentId, Id: instance.MainConfig.ConfigId}
+			if _, found := prjState.Get(configKey); found {
+				outInstance.MainConfig = &MainConfig{
+					ComponentID: string(instance.MainConfig.ComponentId),
+					ConfigID:    string(instance.MainConfig.ConfigId),
+				}
 			}
 		}
 
