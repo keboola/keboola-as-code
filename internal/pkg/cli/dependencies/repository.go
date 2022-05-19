@@ -59,12 +59,12 @@ func (v *container) repositoryFs(definition model.TemplateRepository, template m
 		definition = model.TemplateRepository{
 			Type:       model.RepositoryTypeDir,
 			Name:       definition.Name,
-			Path:       fs.BasePath(),
+			Url:        fs.BasePath(),
 			WorkingDir: fs.WorkingDir(),
 		}
 		fallthrough // continue with RepositoryTypeDir
 	case model.RepositoryTypeDir:
-		path := definition.Path
+		path := definition.Url
 		// Convert relative path to absolute
 		if !filepath.IsAbs(path) && v.LocalProjectExists() { // nolint: forbidigo
 			// Relative to the project directory

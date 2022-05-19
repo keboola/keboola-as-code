@@ -66,11 +66,11 @@ func Checkout(ctx context.Context, url, ref string, sparse bool, logger log.Logg
 	// Clone repository
 	result, err := r.runGitCmd(ctx, params...)
 	if err != nil {
+		if strings.Contains(result.stdErr, fmt.Sprintf("Remote branch %s not found", r.ref)) {
+			return nil, fmt.Errorf(`reference "%s" not found in the git repository "%s"`, r.ref, r.url)
+		}
 		if result.exitCode == 128 {
-			if strings.Contains(result.stdErr, fmt.Sprintf("Remote branch %s not found", r.ref)) {
-				return nil, fmt.Errorf(`reference "%s" not found in the git repository "%s"`, r.ref, r.url)
-			}
-			return nil, fmt.Errorf(`git repository not found on url "%s"`, r.url)
+			return nil, fmt.Errorf(`git repository could not be checked out from "%s"`, r.url)
 		}
 		return nil, utils.PrefixError("cannot checkout git repository", fmt.Errorf(result.stdErr))
 	}

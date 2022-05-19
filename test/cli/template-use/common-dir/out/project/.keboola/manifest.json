@@ -24,8 +24,7 @@
       {
         "type": "dir",
         "name": "keboola",
-        "path": "../repository",
-        "url": "https://github.com/keboola/keboola-as-code-templates.git",
+        "url": "../repository",
         "ref": "main"
       }
     ]
