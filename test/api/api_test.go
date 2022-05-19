@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"net"
 	"os"
 	"os/exec"
@@ -167,7 +166,6 @@ func RunApiServer(t *testing.T, binary string, storageApiHost string, repoPath s
 		t.Fatalf("Could not receive a free port: %s", err)
 	}
 
-	var stdout, stderr bytes.Buffer
 	apiUrl := fmt.Sprintf("http://localhost:%d", port)
 	args := []string{fmt.Sprintf("--http-port=%d", port)}
 	if repoPath != "" {
@@ -175,8 +173,8 @@ func RunApiServer(t *testing.T, binary string, storageApiHost string, repoPath s
 	}
 	cmd := exec.Command(binary, args...)
 	cmd.Env = append(os.Environ(), "KBC_STORAGE_API_HOST="+storageApiHost)
-	cmd.Stdout = io.MultiWriter(&stdout, testhelper.VerboseStdout())
-	cmd.Stderr = io.MultiWriter(&stderr, testhelper.VerboseStderr())
+	cmd.Stdout = testhelper.VerboseStdout()
+	cmd.Stderr = testhelper.VerboseStderr()
 	if err := cmd.Start(); err != nil {
 		t.Fatalf("Server failed to start: %s", err)
 	}
@@ -184,6 +182,12 @@ func RunApiServer(t *testing.T, binary string, storageApiHost string, repoPath s
 	if err = waitForAPI(apiUrl); err != nil {
 		t.Fatalf("Unexpected error while waiting for API: %s", err)
 	}
+
+	t.Cleanup(func() {
+		if err := cmd.Process.Kill(); err != nil {
+			assert.NoError(t, err)
+		}
+	})
 
 	return apiUrl
 }
@@ -253,11 +257,12 @@ func RunRequests(
 		expectedRespFile, err := testDirFs.ReadFile(filesystem.NewFileDef(filesystem.Join(dir, "expected-response.json")))
 		assert.NoError(t, err)
 		expectedRespBody := testhelper.ReplaceEnvsString(expectedRespFile.Content, envProvider)
+
 		// Decode && encode json to remove indentation from the expected-response.json
-		expectedRespMap := orderedmap.New()
-		err = json.DecodeString(expectedRespBody, &expectedRespMap)
+		respMap := orderedmap.New()
+		err = json.DecodeString(resp.String(), &respMap)
 		assert.NoError(t, err)
-		expectedRespBody, err = json.EncodeString(expectedRespMap, false)
+		respBody, err := json.EncodeString(respMap, true)
 		assert.NoError(t, err)
 
 		// Compare response status code
@@ -274,7 +279,7 @@ func RunRequests(
 		)
 
 		// Assert response body
-		testhelper.AssertWildcards(t, expectedRespBody, resp.String(), "Unexpected response.")
+		testhelper.AssertWildcards(t, expectedRespBody, respBody, "Unexpected response.")
 	}
 
 	// Expected state dir
