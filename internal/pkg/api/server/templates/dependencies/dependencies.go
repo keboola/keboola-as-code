@@ -2,11 +2,16 @@ package dependencies
 
 import (
 	"context"
+	"fmt"
 	stdLog "log"
+	"net/url"
+	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
@@ -26,17 +31,23 @@ type Container interface {
 	WithCtx(ctx context.Context, cancelFn context.CancelFunc) Container
 	PrefixLogger() log.PrefixLogger
 	RepositoryManager() (*repository.Manager, error)
+	DefaultRepository() model.TemplateRepository
 	TemplateRepository(definition model.TemplateRepository, forTemplate model.TemplateRef) (*repository.Repository, error)
 	WithLoggerPrefix(prefix string) *container
 	WithStorageApi(api *storageapi.Api) (*container, error)
 }
 
 // NewContainer returns dependencies for API and add them to the context.
-func NewContainer(ctx context.Context, debug bool, logger *stdLog.Logger, envs *env.Map) Container {
+func NewContainer(ctx context.Context, repoPath string, debug bool, logger *stdLog.Logger, envs *env.Map) (Container, error) {
 	ctx, cancel := context.WithCancel(ctx)
-	c := &container{ctx: ctx, ctxCancelFn: cancel, debug: debug, envs: envs, logger: log.NewApiLogger(logger, "", debug)}
+	c := &container{ctx: ctx, ctxCancelFn: cancel, repositoryPath: repoPath, debug: debug, envs: envs, logger: log.NewApiLogger(logger, "", debug)}
 	c.commonDeps = dependencies.NewCommonContainer(c)
-	return c
+	repo, err := defaultRepository(repoPath)
+	if err != nil {
+		return c, err
+	}
+	c.defaultRepository = repo
+	return c, nil
 }
 
 type commonDeps = dependencies.CommonContainer
@@ -50,6 +61,8 @@ type container struct {
 	envs              *env.Map
 	repositoryManager *repository.Manager
 	storageApi        *storageapi.Api
+	repositoryPath    string
+	defaultRepository model.TemplateRepository
 }
 
 func (v *container) Ctx() context.Context {
@@ -58,6 +71,40 @@ func (v *container) Ctx() context.Context {
 
 func (v *container) CtxCancelFn() context.CancelFunc {
 	return v.ctxCancelFn
+}
+
+func (v *container) DefaultRepository() model.TemplateRepository {
+	return v.defaultRepository
+}
+
+func defaultRepository(repositoryPath string) (model.TemplateRepository, error) {
+	_, err := url.ParseRequestURI(repositoryPath)
+	if err != nil {
+		return model.TemplateRepository{}, fmt.Errorf("cannot parse repository-path parameter: " + err.Error())
+	}
+
+	if strings.HasPrefix(repositoryPath, "file://") {
+		return model.TemplateRepository{
+			Type: model.RepositoryTypeDir,
+			Name: repository.DefaultTemplateRepositoryName,
+			Url:  strings.TrimPrefix(repositoryPath, "file://"),
+		}, nil
+	}
+
+	if strings.HasPrefix(repositoryPath, "https://") {
+		uri := strings.TrimPrefix(repositoryPath, "https://")
+		refDividerPos := strings.Index(uri, ":")
+		if refDividerPos < 0 {
+			return model.TemplateRepository{}, fmt.Errorf("invalid repository path url, no ref provided")
+		}
+		return model.TemplateRepository{
+			Type: model.RepositoryTypeGit,
+			Name: repository.DefaultTemplateRepositoryName,
+			Url:  "https://" + uri[:refDividerPos],
+			Ref:  uri[refDividerPos+1:],
+		}, nil
+	}
+	return model.TemplateRepository{}, fmt.Errorf("invalid repository path url provided")
 }
 
 func (v *container) WithCtx(ctx context.Context, cancelFn context.CancelFunc) Container {
@@ -94,38 +141,48 @@ func (v *container) PrefixLogger() log.PrefixLogger {
 
 func (v *container) RepositoryManager() (*repository.Manager, error) {
 	if v.repositoryManager == nil {
-		if manager, err := repository.NewManager(v.Ctx(), v.Logger()); err != nil {
-			return nil, err
-		} else {
-			v.repositoryManager = manager
+		v.repositoryManager = repository.NewManager(v.Ctx(), v.Logger())
+		if v.defaultRepository.Type == model.RepositoryTypeGit {
+			if err := v.repositoryManager.AddRepository(v.defaultRepository); err != nil {
+				return nil, err
+			}
 		}
 	}
 	return v.repositoryManager, nil
 }
 
 func (v *container) TemplateRepository(definition model.TemplateRepository, _ model.TemplateRef) (*repository.Repository, error) {
-	// Get manager
-	manager, err := v.RepositoryManager()
-	if err != nil {
-		return nil, err
-	}
+	var fs filesystem.Fs
+	var err error
+	if definition.Type == model.RepositoryTypeGit {
+		// Get manager
+		manager, err := v.RepositoryManager()
+		if err != nil {
+			return nil, err
+		}
 
-	// Get git repository
-	gitRepository, err := manager.Repository(definition)
-	if err != nil {
-		return nil, err
-	}
+		// Get git repository
+		gitRepository, err := manager.Repository(definition)
+		if err != nil {
+			return nil, err
+		}
 
-	// Acquire read lock and release it after request,
-	// so pull cannot occur in the middle of the request.
-	gitRepository.RLock()
-	go func() {
-		<-v.ctx.Done()
-		gitRepository.RUnlock()
-	}()
+		// Acquire read lock and release it after request,
+		// so pull cannot occur in the middle of the request.
+		gitRepository.RLock()
+		go func() {
+			<-v.ctx.Done()
+			gitRepository.RUnlock()
+		}()
+		fs = gitRepository.Fs()
+	} else {
+		fs, err = aferofs.NewLocalFs(v.logger, definition.Url, ".")
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	// Load manifest from FS
-	fs := gitRepository.Fs()
 	manifest, err := loadRepositoryManifest.Run(fs, v)
 	if err != nil {
 		return nil, err

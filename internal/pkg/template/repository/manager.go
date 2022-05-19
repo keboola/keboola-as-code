@@ -20,14 +20,13 @@ type Manager struct {
 	repositories map[string]*git.Repository
 }
 
-func NewManager(ctx context.Context, logger log.Logger) (*Manager, error) {
-	m := &Manager{
+func NewManager(ctx context.Context, logger log.Logger) *Manager {
+	return &Manager{
 		ctx:          ctx,
 		logger:       logger,
 		lock:         &sync.Mutex{},
 		repositories: make(map[string]*git.Repository),
 	}
-	return m, m.AddRepository(DefaultRepository())
 }
 
 func (m *Manager) Repository(ref model.TemplateRepository) (*git.Repository, error) {
@@ -41,6 +40,9 @@ func (m *Manager) Repository(ref model.TemplateRepository) (*git.Repository, err
 }
 
 func (m *Manager) AddRepository(repositoryDef model.TemplateRepository) error {
+	if repositoryDef.Type != model.RepositoryTypeGit {
+		panic("Cannot checkout dir repository")
+	}
 	m.lock.Lock()
 	defer m.lock.Unlock()
 

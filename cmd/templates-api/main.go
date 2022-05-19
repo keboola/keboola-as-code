@@ -34,6 +34,7 @@ func main() {
 	// Flags.
 	httpHostF := flag.String("http-host", "0.0.0.0", "HTTP host")
 	httpPortF := flag.String("http-port", "8000", "HTTP port")
+	repositoryPathF := flag.String("repository-path", "https://github.com/keboola/keboola-as-code-templates.git:api-demo", "Path to default repository")
 	debugF := flag.Bool("debug", false, "Log request and response bodies")
 	flag.Parse()
 
@@ -59,15 +60,18 @@ func main() {
 	}
 
 	// Start server
-	if err := start(*httpHostF, *httpPortF, *debugF, logger, envs); err != nil {
+	if err := start(*httpHostF, *httpPortF, *repositoryPathF, *debugF, logger, envs); err != nil {
 		logger.Println(err.Error())
 		os.Exit(1)
 	}
 }
 
-func start(host, port string, debug bool, logger *log.Logger, envs *env.Map) error {
+func start(host, port string, repoPath string, debug bool, logger *log.Logger, envs *env.Map) error {
 	// Create dependencies.
-	d := dependencies.NewContainer(context.Background(), debug, logger, envs)
+	d, err := dependencies.NewContainer(context.Background(), repoPath, debug, logger, envs)
+	if err != nil {
+		return err
+	}
 
 	// Log options.
 	d.Logger().Infof("starting HTTP server, host=%s, port=%s, debug=%t", host, port, debug)

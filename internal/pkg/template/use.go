@@ -56,17 +56,15 @@ type UseContext struct {
 	lock         *sync.Mutex
 	placeholders PlaceholdersMap
 	objectIds    metadata.ObjectIdsMap
-
-	inputsUsage *metadata.InputsUsage
+	inputsUsage  *metadata.InputsUsage
 }
 
 // PlaceholdersMap -  original template value -> placeholder.
 type PlaceholdersMap map[interface{}]string
 
 type inputUsageNotifier struct {
-	ctx          context.Context
-	replacements *replacevalues.Values
-	inputsUsage  *metadata.InputsUsage
+	*UseContext
+	ctx context.Context
 }
 
 const (
@@ -277,7 +275,7 @@ func (c *UseContext) idPlaceholder(oldId interface{}) string {
 
 func (c *UseContext) registerInputsUsageNotifier() {
 	c.jsonNetCtx.NotifierFactory(func(ctx context.Context) jsonnetLib.Notifier {
-		return &inputUsageNotifier{ctx: ctx, replacements: c.replacements, inputsUsage: c.inputsUsage}
+		return &inputUsageNotifier{UseContext: c, ctx: ctx}
 	})
 }
 
@@ -336,6 +334,8 @@ func (c *inputUsageNotifier) OnGeneratedValue(fnName string, args []interface{},
 
 	// Store
 	objectKey = objectKeyRaw.(model.Key)
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	c.inputsUsage.Values[objectKey] = append(c.inputsUsage.Values[objectKey], metadata.InputUsage{
 		Name:    inputName,
 		JsonKey: mappedSteps,
