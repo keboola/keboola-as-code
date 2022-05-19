@@ -22,6 +22,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/storageenv"
@@ -242,9 +243,15 @@ func RunRequests(
 		assert.NoError(t, err)
 
 		// Compare response body
-		expectedResponseFile, err := testDirFs.ReadFile(filesystem.NewFileDef(filesystem.Join(dir, "expected-response")))
+		expectedRespFile, err := testDirFs.ReadFile(filesystem.NewFileDef(filesystem.Join(dir, "expected-response.json")))
 		assert.NoError(t, err)
-		expectedRespBody := testhelper.ReplaceEnvsString(expectedResponseFile.Content, envProvider)
+		expectedRespBody := testhelper.ReplaceEnvsString(expectedRespFile.Content, envProvider)
+		// Decode && encode json to remove indentation from the expected-response.json
+		expectedRespMap := orderedmap.New()
+		err = json.DecodeString(expectedRespBody, &expectedRespMap)
+		assert.NoError(t, err)
+		expectedRespBody, err = json.EncodeString(expectedRespMap, false)
+		assert.NoError(t, err)
 
 		// Compare response status code
 		expectedCodeFile, err := testDirFs.ReadFile(filesystem.NewFileDef(filesystem.Join(dir, "expected-http-code")))
