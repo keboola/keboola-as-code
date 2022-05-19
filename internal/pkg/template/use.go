@@ -43,25 +43,34 @@ import (
 // UseContext.Replacements() returns placeholders for new IDs.
 type UseContext struct {
 	_context
-	templateRef     model.TemplateRef
-	instanceId      string
-	instanceIdShort string
-	jsonNetCtx      *jsonnet.Context
-	replacements    *replacevalues.Values
-	inputs          map[string]InputValue
-	tickets         *storageapi.TicketProvider
-	ticketId        int
-	ticketsResolved bool
+	templateRef       model.TemplateRef
+	instanceId        string
+	instanceIdShort   string
+	jsonNetCtx        *jsonnet.Context
+	replacements      *replacevalues.Values
+	inputs            map[string]InputValue
+	tickets           *storageapi.TicketProvider
+	placeholdersCount int
+	ticketsResolved   bool
 
 	lock         *sync.Mutex
-	placeholders PlaceholdersMap
+	placeholders placeholdersMap
 	objectIds    metadata.ObjectIdsMap
 
 	inputsUsage *metadata.InputsUsage
 }
 
-// PlaceholdersMap -  original template value -> placeholder.
-type PlaceholdersMap map[interface{}]string
+// placeholdersMap -  original template value -> placeholder.
+type placeholdersMap map[interface{}]placeholder
+
+type placeholder struct {
+	asString string      // placeholder as string for use in Json file, eg. string("<<~~placeholder:1~~>>)
+	asValue  interface{} // eg. ConfigId, RowId, eg. ConfigId("<<~~placeholder:1~~>>)
+}
+
+type placeholderResolver func(p placeholder, cb resolveCallback)
+
+type resolveCallback func(newId interface{})
 
 type inputUsageNotifier struct {
 	ctx          context.Context
@@ -87,7 +96,7 @@ func NewUseContext(ctx context.Context, templateRef model.TemplateRef, objectsRo
 		inputs:          make(map[string]InputValue),
 		tickets:         tickets,
 		lock:            &sync.Mutex{},
-		placeholders:    make(PlaceholdersMap),
+		placeholders:    make(placeholdersMap),
 		objectIds:       make(metadata.ObjectIdsMap),
 		inputsUsage:     metadata.NewInputsUsage(),
 	}
@@ -236,30 +245,11 @@ func (c *UseContext) registerJsonNetFunctions() {
 // ConfigId/ConfigRowId in JsonNet files is replaced by a <<~~ticket:123~~>> placeholder.
 // When all JsonNet files are processed, new IDs are generated in parallel.
 func (c *UseContext) idPlaceholder(oldId interface{}) string {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-
-	if _, found := c.placeholders[oldId]; !found {
-		// Generate placeholder, it will be later replaced by a new ID
-		c.ticketId++
-		placeholderStr := fmt.Sprintf("%sticket:%d%s", placeholderStart, c.ticketId, placeholderEnd)
-		c.placeholders[oldId] = placeholderStr
-
-		// Store old -> placeholder
-		var placeholder interface{}
-		switch oldId.(type) {
-		case model.ConfigId:
-			placeholder = model.ConfigId(placeholderStr)
-		case model.RowId:
-			placeholder = model.RowId(placeholderStr)
-		default:
-			panic(fmt.Errorf("unexpected ID type"))
-		}
-
+	p := c.registerPlaceholder(oldId, func(p placeholder, cb resolveCallback) {
 		// Placeholder -> new ID
 		var newId interface{}
 		c.tickets.Request(func(ticket *model.Ticket) {
-			switch placeholder.(type) {
+			switch p.asValue.(type) {
 			case model.ConfigId:
 				newId = model.ConfigId(ticket.Id)
 			case model.RowId:
@@ -267,11 +257,40 @@ func (c *UseContext) idPlaceholder(oldId interface{}) string {
 			default:
 				panic(fmt.Errorf("unexpected ID type"))
 			}
-			c.replacements.AddId(placeholder, newId)
+			cb(newId)
+		})
+	})
+	return p.asString
+}
+
+// registerPlaceholder for an object oldId, it can be resolved later/async.
+func (c *UseContext) registerPlaceholder(oldId interface{}, fn placeholderResolver) placeholder {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	if _, found := c.placeholders[oldId]; !found {
+		// Generate placeholder, it will be later replaced by a new ID
+		c.placeholdersCount++
+		p := placeholder{asString: fmt.Sprintf("%splaceholder:%d%s", placeholderStart, c.placeholdersCount, placeholderEnd)}
+
+		// Convert string to an ID value
+		switch oldId.(type) {
+		case model.ConfigId:
+			p.asValue = model.ConfigId(p.asString)
+		case model.RowId:
+			p.asValue = model.RowId(p.asString)
+		default:
+			panic(fmt.Errorf("unexpected ID type"))
+		}
+
+		// Store oldId -> placeholder
+		c.placeholders[oldId] = p
+
+		// Resolve newId async by provider function
+		fn(p, func(newId interface{}) {
+			c.replacements.AddId(p.asValue, newId)
 			c.objectIds[newId] = oldId
 		})
 	}
-
 	return c.placeholders[oldId]
 }
 
