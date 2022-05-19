@@ -1,3 +1,6 @@
+//go:build !windows
+// +build !windows
+
 // nolint: forbidigo
 package git_test
 
