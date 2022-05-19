@@ -97,12 +97,9 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	// Replace all %%ENV_VAR%% in all files in the working directory
 	testhelper.ReplaceEnvsDir(workingDirFs, `/`, envProvider)
 
-	// Run API server
-	apiUrl := RunApiServer(t, binary, project.StorageApiHost())
-
 	// Assert
 	assert.NoError(t, err)
-	RunRequests(t, envProvider, testDirFs, workingDirFs, apiUrl, project)
+	RunRequests(t, envProvider, testDirFs, workingDirFs, binary, project)
 }
 
 // CompileBinary compiles api binary used in this test.
@@ -162,7 +159,7 @@ func waitForAPI(apiUrl string) error {
 }
 
 // RunApiServer runs the compiled api binary on the background.
-func RunApiServer(t *testing.T, binary string, storageApiHost string) string {
+func RunApiServer(t *testing.T, binary string, storageApiHost string, repoPath string) string {
 	t.Helper()
 
 	port, err := getFreePort()
@@ -172,7 +169,11 @@ func RunApiServer(t *testing.T, binary string, storageApiHost string) string {
 
 	var stdout, stderr bytes.Buffer
 	apiUrl := fmt.Sprintf("http://localhost:%d", port)
-	cmd := exec.Command(binary, fmt.Sprintf("--http-port=%d", port))
+	args := []string{fmt.Sprintf("--http-port=%d", port)}
+	if repoPath != "" {
+		args = append(args, fmt.Sprintf("--repository-path=file://%s", repoPath))
+	}
+	cmd := exec.Command(binary, args...)
 	cmd.Env = append(os.Environ(), "KBC_STORAGE_API_HOST="+storageApiHost)
 	cmd.Stdout = io.MultiWriter(&stdout, testhelper.VerboseStdout())
 	cmd.Stderr = io.MultiWriter(&stderr, testhelper.VerboseStderr())
@@ -199,11 +200,17 @@ func RunRequests(
 	envProvider testhelper.EnvProvider,
 	testDirFs filesystem.Fs,
 	workingDirFs filesystem.Fs,
-	apiUrl string,
+	binary string,
 	project *testproject.Project,
 ) {
 	t.Helper()
 
+	// Run API server
+	repoPath := ""
+	if testDirFs.Exists(filepath.Join("in", "repository")) {
+		repoPath = filepath.Join(testDirFs.BasePath(), "in", "repository")
+	}
+	apiUrl := RunApiServer(t, binary, project.StorageApiHost(), repoPath)
 	client := resty.New()
 	client.SetHostURL(apiUrl)
 
