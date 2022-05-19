@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 
+	dependenciesPkg "github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -20,7 +21,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 )
 
-func TestUseContext(t *testing.T) {
+func TestUpgradeContext(t *testing.T) {
 	t.Parallel()
 
 	// Mocked ticket provider
@@ -57,11 +58,36 @@ func TestUseContext(t *testing.T) {
 		},
 	}
 
-	// Create context
+	// Template
 	templateRef := model.NewTemplateRef(model.TemplateRepository{Name: "my-repository"}, "my-template", model.ZeroSemVersion())
 	instanceId := "my-instance"
+
+	// Current project state
+	d := dependenciesPkg.NewTestContainer()
+	projectState := d.EmptyState()
+	configKey := model.ConfigKey{BranchId: targetBranch.Id, ComponentId: "foo.bar", Id: "12345"}
+	rowKey := model.ConfigRowKey{BranchId: targetBranch.Id, ComponentId: "foo.bar", ConfigId: "12345", Id: "67890"}
+	configMetadata := make(model.ConfigMetadata)
+	configMetadata.SetTemplateInstance(templateRef.Repository().Name, templateRef.TemplateId(), instanceId)
+	configMetadata.SetConfigTemplateId("my-config")
+	configMetadata.AddRowTemplateId("67890", "my-row")
+	assert.NoError(t, projectState.Set(&model.ConfigState{
+		ConfigManifest: &model.ConfigManifest{ConfigKey: configKey},
+		Remote: &model.Config{
+			ConfigKey: configKey,
+			Metadata:  configMetadata,
+		},
+	}))
+	assert.NoError(t, projectState.Set(&model.ConfigRowState{
+		ConfigRowManifest: &model.ConfigRowManifest{ConfigRowKey: rowKey},
+		Remote: &model.ConfigRow{
+			ConfigRowKey: rowKey,
+		},
+	}))
+
+	// Create context
 	fs := testfs.NewMemoryFs()
-	ctx := NewUseContext(context.Background(), templateRef, fs, instanceId, targetBranch, inputsValues, tickets)
+	ctx := NewUpgradeContext(context.Background(), templateRef, fs, instanceId, targetBranch, inputsValues, tickets, projectState)
 
 	// Check JsonNet functions
 	code := `
@@ -73,8 +99,10 @@ func TestUseContext(t *testing.T) {
     Objects: {
       Config1: ConfigId("my-config"),
       Config2: ConfigId("my-config"),
+      Config3: ConfigId("new-config"),
       Row1: ConfigRowId("my-row"),
       Row2: ConfigRowId("my-row"),
+      Row3: ConfigRowId("new-row"),
     },
 }
 `
@@ -87,8 +115,10 @@ func TestUseContext(t *testing.T) {
   "Objects": {
     "Config1": "<<~~placeholder:1~~>>",
     "Config2": "<<~~placeholder:1~~>>",
+    "Config3": "<<~~placeholder:3~~>>",
     "Row1": "<<~~placeholder:2~~>>",
-    "Row2": "<<~~placeholder:2~~>>"
+    "Row2": "<<~~placeholder:2~~>>",
+    "Row3": "<<~~placeholder:4~~>>"
   }
 }
 `
@@ -112,10 +142,12 @@ func TestUseContext(t *testing.T) {
   "Input3": 3.5,
   "Input4": false,
   "Objects": {
-    "Config1": "1001",
-    "Config2": "1001",
-    "Row1": "1002",
-    "Row2": "1002"
+    "Config1": "12345",
+    "Config2": "12345",
+    "Config3": "1001",
+    "Row1": "67890",
+    "Row2": "67890",
+    "Row3": "1002"
   }
 }
 `
