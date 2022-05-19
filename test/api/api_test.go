@@ -225,6 +225,7 @@ func RunRequests(
 		if request.Body != nil {
 			r.SetBody(request.Body)
 		}
+		r.SetHeader("X-StorageApi-Token", envProvider.MustGet("TEST_KBC_STORAGE_API_TOKEN"))
 		var resp *resty.Response
 		switch request.Method {
 		case "DELETE":
