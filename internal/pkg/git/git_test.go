@@ -34,14 +34,14 @@ func TestGit_Checkout(t *testing.T) {
 	ref := "main"
 	_, err := Checkout(ctx, url, ref, false, logger)
 	assert.Error(t, err)
-	assert.Equal(t, `git repository not found on url "https://non-existing-url"`, err.Error())
+	assert.Equal(t, `git repository could not be checked out from "https://non-existing-url"`, err.Error())
 
 	// Checkout fail from a non-existing GitHub repository
 	url = "https://github.com/keboola/non-existing-repo.git"
 	ref = "main"
 	_, err = Checkout(ctx, url, ref, false, logger)
 	assert.Error(t, err)
-	assert.Equal(t, `git repository not found on url "https://github.com/keboola/non-existing-repo.git"`, err.Error())
+	assert.Equal(t, `git repository could not be checked out from "https://github.com/keboola/non-existing-repo.git"`, err.Error())
 
 	// Checkout fail from a non-existing branch
 	url = "https://github.com/keboola/keboola-as-code-templates.git"
@@ -102,16 +102,18 @@ func TestGit_Checkout_Sparse(t *testing.T) {
 	ref := "main"
 	_, err := Checkout(ctx, url, ref, true, logger)
 	assert.Error(t, err)
-	assert.Equal(t, `git repository not found on url "https://non-existing-url"`, err.Error())
+	assert.Equal(t, `git repository could not be checked out from "https://non-existing-url"`, err.Error())
 
 	// Checkout fail from a non-existing GitHub repository
+	time.Sleep(200 * time.Millisecond)
 	url = "https://github.com/keboola/non-existing-repo.git"
 	ref = "main"
 	_, err = Checkout(ctx, url, ref, true, logger)
 	assert.Error(t, err)
-	assert.Equal(t, `git repository not found on url "https://github.com/keboola/non-existing-repo.git"`, err.Error())
+	assert.Equal(t, `git repository could not be checked out from "https://github.com/keboola/non-existing-repo.git"`, err.Error())
 
 	// Checkout fail from a non-existing branch
+	time.Sleep(200 * time.Millisecond)
 	url = "https://github.com/keboola/keboola-as-code-templates.git"
 	ref = "non-existing-ref"
 	_, err = Checkout(ctx, url, ref, true, logger)
@@ -119,6 +121,7 @@ func TestGit_Checkout_Sparse(t *testing.T) {
 	assert.Equal(t, `reference "non-existing-ref" not found in the git repository "https://github.com/keboola/keboola-as-code-templates.git"`, err.Error())
 
 	// Success
+	time.Sleep(200 * time.Millisecond)
 	url = "https://github.com/keboola/keboola-as-code-templates.git"
 	ref = "main"
 	r, err := Checkout(ctx, url, ref, true, logger)
