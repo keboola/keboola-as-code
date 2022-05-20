@@ -1,0 +1,31 @@
+{
+  "repository": {
+    "name": "keboola",
+    "url": "%s/test/api/repositories/list-templates/in/repository",
+    "ref": "",
+    "author": {
+      "name": "Example Author",
+      "url": "https://example.com"
+    }
+  },
+  "templates": [
+    {
+      "id": "my-template-id",
+      "icon": "common:settings",
+      "name": "My Template",
+      "author": {
+        "name": "Example Author",
+        "url": "https://example.com"
+      },
+      "description": "Full workflow to ...",
+      "defaultVersion": "1.2.3",
+      "versions": [
+        {
+          "version": "1.2.3",
+          "stable": false,
+          "description": ""
+        }
+      ]
+    }
+  ]
+}
