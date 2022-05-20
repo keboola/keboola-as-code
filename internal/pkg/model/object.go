@@ -126,7 +126,7 @@ type TokenOwner struct {
 
 type BranchMetadata map[string]string
 
-type TemplateUsageRecord struct {
+type TemplateInstance struct {
 	InstanceId     string              `json:"instanceId"`
 	InstanceName   string              `json:"instanceName"`
 	TemplateId     string              `json:"templateId"`
@@ -136,7 +136,7 @@ type TemplateUsageRecord struct {
 	Updated        ChangedByRecord     `json:"updated"`
 	MainConfig     *TemplateMainConfig `json:"mainConfig,omitempty"`
 }
-type TemplateUsageRecords []TemplateUsageRecord
+type TemplatesInstances []TemplateInstance
 
 type ChangedByRecord struct {
 	Date    time.Time `json:"date"`
@@ -148,7 +148,7 @@ type TemplateMainConfig struct {
 	ComponentId ComponentId `json:"componentId"`
 }
 
-func (m BranchMetadata) saveTemplateUsages(instances TemplateUsageRecords) error {
+func (m BranchMetadata) saveTemplateUsages(instances TemplatesInstances) error {
 	encoded, err := json.EncodeString(instances, false)
 	if err != nil {
 		return fmt.Errorf(`metadata "%s" are not in valid format: %w`, templatesInstancesMetaKey, err)
@@ -159,7 +159,7 @@ func (m BranchMetadata) saveTemplateUsages(instances TemplateUsageRecords) error
 
 func (m BranchMetadata) AddTemplateUsage(instanceId, instanceName, templateId, repositoryName, version, tokenId string, mainConfig *ConfigKey) error {
 	now := time.Now().Truncate(time.Second).UTC()
-	r := TemplateUsageRecord{
+	r := TemplateInstance{
 		InstanceId:     instanceId,
 		InstanceName:   instanceName,
 		TemplateId:     templateId,
@@ -201,8 +201,8 @@ func (m BranchMetadata) DeleteTemplateUsage(instanceId string) error {
 	return fmt.Errorf(`instance "%s" not found`, instanceId)
 }
 
-func (m BranchMetadata) TemplatesUsages() (TemplateUsageRecords, error) {
-	instances := &TemplateUsageRecords{}
+func (m BranchMetadata) TemplatesUsages() (TemplatesInstances, error) {
+	instances := &TemplatesInstances{}
 	instancesEncoded, found := m[templatesInstancesMetaKey]
 	if !found {
 		return *instances, nil
@@ -214,17 +214,17 @@ func (m BranchMetadata) TemplatesUsages() (TemplateUsageRecords, error) {
 	return *instances, nil
 }
 
-func (m BranchMetadata) TemplateUsage(instance string) (*TemplateUsageRecord, bool, error) {
+func (m BranchMetadata) TemplateUsage(instance string) (*TemplateInstance, bool, error) {
 	usages, err := m.TemplatesUsages()
 	if err != nil {
-		return &TemplateUsageRecord{}, false, err
+		return &TemplateInstance{}, false, err
 	}
 	for _, usage := range usages {
 		if usage.InstanceId == instance {
 			return &usage, true, nil
 		}
 	}
-	return &TemplateUsageRecord{}, false, nil
+	return &TemplateInstance{}, false, nil
 }
 
 func (m BranchMetadata) ToOrderedMap() *orderedmap.OrderedMap {

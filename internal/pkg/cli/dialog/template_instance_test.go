@@ -15,7 +15,7 @@ import (
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
-func TestAskDeleteTemplate_Interactive(t *testing.T) {
+func TestAskTemplateInstance_Interactive(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
@@ -61,17 +61,17 @@ func TestAskDeleteTemplate_Interactive(t *testing.T) {
 	}()
 
 	// Run
-	opts, err := dialog.AskDeleteTemplateOptions(projectState, d.Options())
+	branchKey, instance, err := dialog.AskTemplateInstance(projectState, d.Options())
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
 	assert.NoError(t, console.Close())
 
-	assert.Equal(t, model.BranchKey{Id: 123}, opts.Branch)
-	assert.Equal(t, instanceId, opts.Instance)
+	assert.Equal(t, model.BranchKey{Id: 123}, branchKey)
+	assert.Equal(t, instanceId, instance.InstanceId)
 }
 
-func TestAskDeleteTemplate_Noninteractive_InvalidInstance(t *testing.T) {
+func TestAskTemplateInstance_Noninteractive_InvalidInstance(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
@@ -95,12 +95,12 @@ func TestAskDeleteTemplate_Noninteractive_InvalidInstance(t *testing.T) {
 	options := d.Options()
 	options.Set("branch", 123)
 	options.Set("instance", "inst2")
-	_, err = dialog.AskDeleteTemplateOptions(projectState, options)
+	_, _, err = dialog.AskTemplateInstance(projectState, options)
 	assert.Error(t, err)
 	assert.Equal(t, `template instance "inst2" was not found in branch "Main"`, err.Error())
 }
 
-func TestAskDeleteTemplate_Noninteractive(t *testing.T) {
+func TestAskTemplateInstance_Noninteractive(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
@@ -124,6 +124,6 @@ func TestAskDeleteTemplate_Noninteractive(t *testing.T) {
 	options := d.Options()
 	options.Set("branch", 123)
 	options.Set("instance", "inst1")
-	_, err = dialog.AskDeleteTemplateOptions(projectState, options)
+	_, _, err = dialog.AskTemplateInstance(projectState, options)
 	assert.NoError(t, err)
 }

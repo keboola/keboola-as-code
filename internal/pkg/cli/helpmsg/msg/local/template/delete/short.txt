@@ -1,1 +1,1 @@
-Delete template instance.
+Delete template instance locally.

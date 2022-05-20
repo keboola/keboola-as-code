@@ -18,9 +18,9 @@ type inputsDialogDeps interface {
 	Components() (*model.ComponentsMap, error)
 }
 
-// askTemplateInputs - dialog to define user inputs for a new template.
+// askNewTemplateInputs - dialog to define user inputs for a new template.
 // Used in AskCreateTemplateOpts.
-func (p *Dialogs) askTemplateInputs(deps inputsDialogDeps, branch *model.Branch, configs []*model.ConfigWithRows) (objectInputsMap, template.StepsGroups, error) {
+func (p *Dialogs) askNewTemplateInputs(deps inputsDialogDeps, branch *model.Branch, configs []*model.ConfigWithRows) (objectInputsMap, template.StepsGroups, error) {
 	// Create empty inputs map
 	inputs := input.NewInputsMap()
 

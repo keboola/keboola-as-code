@@ -29,19 +29,20 @@ func DeleteCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			// Options
-			options, err := d.Dialogs().AskDeleteTemplateOptions(projectState, d.Options())
+			// Select instance
+			branchKey, instance, err := d.Dialogs().AskTemplateInstance(projectState, d.Options())
 			if err != nil {
 				return err
 			}
 
 			// Delete template
+			options := deleteOp.Options{Branch: branchKey, Instance: instance.InstanceId, DryRun: d.Options().GetBool("dry-run")}
 			return deleteOp.Run(projectState, options, d)
 		},
 	}
 
 	cmd.Flags().StringP(`branch`, "b", ``, "branch ID or name")
-	cmd.Flags().StringP(`instance`, "i", ``, "instance of the template to delete")
+	cmd.Flags().StringP(`instance`, "i", ``, "instance ID of the template to delete")
 	cmd.Flags().Bool("dry-run", false, "print what needs to be done")
 	return cmd
 }

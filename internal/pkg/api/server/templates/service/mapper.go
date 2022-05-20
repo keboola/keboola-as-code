@@ -317,7 +317,7 @@ func InstanceResponse(d dependencies.Container, prjState *project.State, branchK
 	return out, nil
 }
 
-func instanceVersionDetail(d dependencies.Container, instance *model.TemplateUsageRecord) *VersionDetail {
+func instanceVersionDetail(d dependencies.Container, instance *model.TemplateInstance) *VersionDetail {
 	repo, tmplRecord, err := templateRecord(d, instance.RepositoryName, instance.TemplateId)
 	if err != nil {
 		return nil

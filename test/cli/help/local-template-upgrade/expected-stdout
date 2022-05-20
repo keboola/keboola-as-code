@@ -1,0 +1,21 @@
+Command "local template upgrade"
+
+This command re-generates the template instance using the specified version.
+Same, higher or lower version can be used.
+Default values of the template inputs are set to current values in the project.
+If you do not enter version of the template, the latest stable version will be used.
+
+No changes are made to the remote state of the project.
+
+Usage:
+  kbc local template upgrade [flags]
+
+Flags:
+  -b, --branch string        branch ID or name
+      --dry-run              print what needs to be done
+  -f, --inputs-file string   JSON file with inputs values
+  -i, --instance string      instance ID of the template to upgrade
+  -V, --version string       target version, default latest stable version
+
+Global Flags:
+%A
