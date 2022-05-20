@@ -1,0 +1,37 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true,
+        "metadata": {
+          "KBC.KAC.templates.instances": "[{\"instanceId\":\"%s\",\"instanceName\":\"inst-001\",\"templateId\":\"my-template-id\",\"repositoryName\":\"keboola\",\"version\":\"1.2.3\",\"created\":{\"date\":\"%s\",\"tokenId\":\"%s\"},\"updated\":{\"date\":\"%s\",\"tokenId\":\"%s\"}}]"
+        }
+      },
+      "configs": [
+        {
+          "componentId": "ex-generic-v2",
+          "name": "shopify",
+          "description": "test fixture",
+          "changeDescription": "From template keboola/my-template-id/1.2.3",
+          "configuration": {
+            "parameters": {
+              "shop": "shop",
+              "token": "token"
+            }
+          },
+          "rows": [],
+          "metadata": {
+            "KBC.KAC.templates.configId": "{\"idInTemplate\":\"shopify\"}",
+            "KBC.KAC.templates.configInputs": "[{\"input\":\"shopify-token\",\"key\":\"parameters.token\"}]",
+            "KBC.KAC.templates.instanceId": "%s",
+            "KBC.KAC.templates.repository": "keboola",
+            "KBC.KAC.templates.templateId": "my-template-id"
+          },
+          "isDisabled": false
+        }
+      ]
+    }
+  ]
+}
