@@ -1,0 +1,6 @@
+Command "local template use"
+
+This command uses a template in the local project directory.
+If you do not enter version of the template, the latest stable version will be used.
+
+No changes are made to the remote state of the project.

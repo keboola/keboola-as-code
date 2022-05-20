@@ -1,1 +1,1 @@
-Apply template.
+Use template locally.

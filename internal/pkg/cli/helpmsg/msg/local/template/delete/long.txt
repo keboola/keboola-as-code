@@ -1,0 +1,6 @@
+Command "local template delete"
+
+This command deletes template instance.
+You can select an instance interactively or by flags.
+
+No changes are made to the remote state of the project.

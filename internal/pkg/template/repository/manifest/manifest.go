@@ -99,17 +99,17 @@ func (m *Manifest) AllTemplates() []TemplateRecord {
 	return out
 }
 
-func (m *Manifest) GetVersion(templateId string, version model.SemVersion) (TemplateRecord, VersionRecord, error) {
+func (m *Manifest) GetVersion(templateId, version string) (TemplateRecord, VersionRecord, error) {
 	// Get template
-	templateRecord, found := m.GetById(templateId)
-	if !found {
-		return templateRecord, VersionRecord{}, TemplateNotFoundError{fmt.Errorf(`template "%s" not found`, templateId)}
+	templateRecord, err := m.GetByIdOrErr(templateId)
+	if err != nil {
+		return templateRecord, VersionRecord{}, err
 	}
 
 	// Get version
-	versionRecord, found := templateRecord.GetVersion(version)
-	if !found {
-		return templateRecord, VersionRecord{}, VersionNotFoundError{fmt.Errorf(`template "%s" found but version "%s" is missing`, templateId, version.Original())}
+	versionRecord, err := templateRecord.GetVersionOrErr(version)
+	if err != nil {
+		return templateRecord, versionRecord, err
 	}
 
 	return templateRecord, versionRecord, nil
@@ -118,6 +118,14 @@ func (m *Manifest) GetVersion(templateId string, version model.SemVersion) (Temp
 func (m *Manifest) GetById(id string) (TemplateRecord, bool) {
 	v, ok := m.records[id]
 	return v, ok
+}
+
+func (m *Manifest) GetByIdOrErr(id string) (TemplateRecord, error) {
+	v, found := m.GetById(id)
+	if !found {
+		return v, TemplateNotFoundError{fmt.Errorf(`template "%s" not found`, id)}
+	}
+	return v, nil
 }
 
 func (m *Manifest) GetByPath(path string) (TemplateRecord, bool) {

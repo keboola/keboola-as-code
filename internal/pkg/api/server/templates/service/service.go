@@ -65,7 +65,7 @@ func (s *service) TemplatesIndex(d dependencies.Container, payload *TemplatesInd
 	if err != nil {
 		return nil, err
 	}
-	return TemplatesResponse(repo, repo.Templates()), nil
+	return TemplatesResponse(repo, repo.Templates())
 }
 
 func (s *service) TemplateIndex(d dependencies.Container, payload *TemplateIndexPayload) (res *TemplateDetail, err error) {
@@ -73,7 +73,7 @@ func (s *service) TemplateIndex(d dependencies.Container, payload *TemplateIndex
 	if err != nil {
 		return nil, err
 	}
-	return TemplateDetailResponse(repo, tmplRecord), nil
+	return TemplateDetailResponse(repo, tmplRecord)
 }
 
 func (s *service) VersionIndex(d dependencies.Container, payload *VersionIndexPayload) (res *VersionDetailExtended, err error) {
@@ -81,7 +81,7 @@ func (s *service) VersionIndex(d dependencies.Container, payload *VersionIndexPa
 	if err != nil {
 		return nil, err
 	}
-	return VersionDetailExtendedResponse(repo, tmpl), nil
+	return VersionDetailExtendedResponse(repo, tmpl)
 }
 
 func (s *service) InputsIndex(d dependencies.Container, payload *InputsIndexPayload) (res *Inputs, err error) {
@@ -382,10 +382,10 @@ func getTemplateVersion(d dependencies.Container, repoName, templateId, versionS
 				Message: fmt.Sprintf(`Template "%s" not found.`, templateId),
 			}
 		}
-		if versionRecord, found := tmplRecord.DefaultVersion(); !found {
+		if versionRecord, err := tmplRecord.DefaultVersionOrErr(); err != nil {
 			return nil, nil, &GenericError{
 				Name:    "templates.templateNotFound",
-				Message: `No version found.`,
+				Message: err.Error(),
 			}
 		} else {
 			semVersion = versionRecord.Version
@@ -401,7 +401,7 @@ func getTemplateVersion(d dependencies.Container, repoName, templateId, versionS
 	}
 
 	// Get template version
-	tmpl, err := d.Template(model.NewTemplateRef(repo.Ref(), templateId, semVersion))
+	tmpl, err := d.Template(model.NewTemplateRef(repo.Ref(), templateId, semVersion.String()))
 	if err != nil {
 		if errors.As(err, &manifest.TemplateNotFoundError{}) {
 			return nil, nil, &GenericError{

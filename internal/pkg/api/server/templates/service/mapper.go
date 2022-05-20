@@ -42,17 +42,26 @@ func RepositoryResponse(v *repository.Repository) *Repository {
 	}
 }
 
-func TemplatesResponse(repo *repository.Repository, templates []repository.TemplateRecord) *Templates {
+func TemplatesResponse(repo *repository.Repository, templates []repository.TemplateRecord) (*Templates, error) {
 	out := &Templates{Repository: RepositoryResponse(repo), Templates: make([]*Template, 0)}
 	for _, tmpl := range templates {
 		tmpl := tmpl
-		out.Templates = append(out.Templates, TemplateResponse(&tmpl, out.Repository.Author))
+		tmplResponse, err := TemplateResponse(&tmpl, out.Repository.Author)
+		if err != nil {
+			return nil, err
+		}
+
+		out.Templates = append(out.Templates, tmplResponse)
 	}
-	return out
+	return out, nil
 }
 
-func TemplateResponse(tmpl *repository.TemplateRecord, author *Author) *Template {
-	defaultVersion, _ := tmpl.DefaultVersion()
+func TemplateResponse(tmpl *repository.TemplateRecord, author *Author) (*Template, error) {
+	defaultVersion, err := tmpl.DefaultVersionOrErr()
+	if err != nil {
+		return nil, err
+	}
+
 	out := &Template{
 		ID:             tmpl.Id,
 		Icon:           tmpl.Icon,
@@ -67,11 +76,15 @@ func TemplateResponse(tmpl *repository.TemplateRecord, author *Author) *Template
 		version := version
 		out.Versions = append(out.Versions, VersionResponse(&version))
 	}
-	return out
+	return out, nil
 }
 
-func TemplateDetailResponse(repo *repository.Repository, tmpl *repository.TemplateRecord) *TemplateDetail {
-	defaultVersion, _ := tmpl.DefaultVersion()
+func TemplateDetailResponse(repo *repository.Repository, tmpl *repository.TemplateRecord) (*TemplateDetail, error) {
+	defaultVersion, err := tmpl.DefaultVersionOrErr()
+	if err != nil {
+		return nil, err
+	}
+
 	repoResponse := RepositoryResponse(repo)
 	out := &TemplateDetail{
 		Repository:     repoResponse,
@@ -87,7 +100,7 @@ func TemplateDetailResponse(repo *repository.Repository, tmpl *repository.Templa
 		version := version
 		out.Versions = append(out.Versions, VersionResponse(&version))
 	}
-	return out
+	return out, nil
 }
 
 func VersionResponse(v *repository.VersionRecord) *Version {
@@ -109,19 +122,24 @@ func VersionDetailResponse(template *template.Template) *VersionDetail {
 	}
 }
 
-func VersionDetailExtendedResponse(repo *repository.Repository, template *template.Template) *VersionDetailExtended {
+func VersionDetailExtendedResponse(repo *repository.Repository, template *template.Template) (*VersionDetailExtended, error) {
 	repoResponse := RepositoryResponse(repo)
 	tmplRec := template.TemplateRecord()
 	versionRec := template.VersionRecord()
+	tmplResponse, err := TemplateResponse(&tmplRec, repoResponse.Author)
+	if err != nil {
+		return nil, err
+	}
+
 	return &VersionDetailExtended{
 		Repository:  repoResponse,
-		Template:    TemplateResponse(&tmplRec, repoResponse.Author),
+		Template:    tmplResponse,
 		Version:     versionRec.Version.String(),
 		Stable:      versionRec.Stable,
 		Description: versionRec.Description,
 		Components:  template.Components(),
 		Readme:      template.Readme(),
-	}
+	}, nil
 }
 
 func InputsResponse(template *template.Template) (out *Inputs) {
@@ -312,7 +330,7 @@ func instanceVersionDetail(d dependencies.Container, instance *model.TemplateUsa
 	if !found {
 		return nil
 	}
-	tmpl, err := d.Template(model.NewTemplateRef(repo.Ref(), instance.TemplateId, versionRecord.Version))
+	tmpl, err := d.Template(model.NewTemplateRef(repo.Ref(), instance.TemplateId, versionRecord.Version.String()))
 	if err != nil {
 		return nil
 	}

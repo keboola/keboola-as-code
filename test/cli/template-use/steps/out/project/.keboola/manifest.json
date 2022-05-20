@@ -34,7 +34,7 @@
       "id": 12345,
       "path": "main",
       "metadata": {
-        "KBC.KAC.templates.instances": "[{\"instanceId\":\"%s\",\"instanceName\":\"My Instance\",\"templateId\":\"my-template-id\",\"repositoryName\":\"keboola\",\"version\":\"1.0.0\",\"created\":{\"date\":\"%s\",\"tokenId\":\"%s\"},\"updated\":{\"date\":\"%s\",\"tokenId\":\"%s\"}}]"
+        "KBC.KAC.templates.instances": "[{\"instanceId\":\"%s\",\"instanceName\":\"My Instance\",\"templateId\":\"my-template-id\",\"repositoryName\":\"keboola\",\"version\":\"1.2.3\",\"created\":{\"date\":\"%s\",\"tokenId\":\"%s\"},\"updated\":{\"date\":\"%s\",\"tokenId\":\"%s\"}}]"
       }
     }
   ],

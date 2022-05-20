@@ -68,7 +68,7 @@ func Run(o Options, d dependencies) (err error) {
 	}
 
 	// Template definition
-	templateDef := model.NewTemplateRef(model.TemplateRepositoryWorkingDir(), o.Id, versionRecord.Version)
+	templateDef := model.NewTemplateRef(model.TemplateRepositoryWorkingDir(), o.Id, versionRecord.Version.String())
 
 	// Template context
 	templateCtx := template.NewCreateContext(d.Ctx(), o.SourceBranch, o.Configs)

@@ -74,5 +74,5 @@ func (v *container) LocalTemplate() (*template.Template, error) {
 		return nil, ErrTemplateManifestNotFound
 	}
 
-	return v.Template(model.NewTemplateRef(localTemplateRepository(), templateRecord.Id, versionRecord.Version))
+	return v.Template(model.NewTemplateRef(localTemplateRepository(), templateRecord.Id, versionRecord.Version.String()))
 }
