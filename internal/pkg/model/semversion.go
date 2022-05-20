@@ -12,7 +12,7 @@ type value = semver.Version
 
 // SemVersion is wrapper around semver.Version - for better error message in UnmarshalJSON.
 type SemVersion struct {
-	value
+	*value
 }
 
 func NewSemVersion(str string) (SemVersion, error) {
@@ -20,7 +20,7 @@ func NewSemVersion(str string) (SemVersion, error) {
 	if err != nil {
 		return SemVersion{}, err
 	}
-	return SemVersion{value: *v}, nil
+	return SemVersion{value: v}, nil
 }
 
 func ZeroSemVersion() SemVersion {
@@ -36,13 +36,14 @@ func (v SemVersion) Original() string {
 }
 
 func (v SemVersion) Value() *semver.Version {
-	value := v.value
+	value := *v.value
 	return &value
 }
 
 // IncMajor increments major version, for example 1.2.3 -> 2.0.0.
 func (v SemVersion) IncMajor() SemVersion {
-	return SemVersion{value: v.Value().IncMajor()}
+	newVersion := v.Value().IncMajor()
+	return SemVersion{value: &newVersion}
 }
 
 func (v SemVersion) ToMinor() SemVersion {
@@ -72,6 +73,6 @@ func (v *SemVersion) UnmarshalJSON(b []byte) (err error) {
 	if err != nil {
 		return fmt.Errorf(`invalid semantic version "%s"`, versionStr)
 	}
-	v.value = *value
+	v.value = value
 	return nil
 }

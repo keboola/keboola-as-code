@@ -15,7 +15,7 @@ import (
 
 func UseCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   `use <repository>/<template>/<version>`,
+		Use:   `use <repository>/<template>[/<version>]`,
 		Short: helpmsg.Read(`local/template/use/short`),
 		Long:  helpmsg.Read(`local/template/use/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -34,7 +34,7 @@ func UseCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Parse template argument
-			repositoryName, templateId, versionStr, err := parseTemplateArg(args)
+			repositoryName, templateId, version, err := parseTemplateArg(args)
 			if err != nil {
 				return err
 			}
@@ -46,14 +46,8 @@ func UseCommand(p dependencies.Provider) *cobra.Command {
 				return fmt.Errorf(`template repository "%s" not found in the "%s"`, repositoryName, manifest.Path())
 			}
 
-			// Template definition
-			templateDef, err := model.NewTemplateRefFromString(repositoryDef, templateId, versionStr)
-			if err != nil {
-				return err
-			}
-
 			// Load template
-			template, err := d.Template(templateDef)
+			template, err := d.Template(model.NewTemplateRef(repositoryDef, templateId, version))
 			if err != nil {
 				return err
 			}
@@ -82,11 +76,16 @@ func parseTemplateArg(args []string) (repository string, template string, versio
 		return "", "", "", fmt.Errorf(`please enter one argument - the template you want to use, for example "keboola/my-template/v1"`)
 	}
 	parts := strings.Split(args[0], "/")
-	if len(parts) != 3 {
-		return "", "", "", fmt.Errorf(`the argument must consist of 3 parts "{repository}/{template}/{version}", found "%s"`, args[0])
+	if len(parts) < 2 || len(parts) > 3 {
+		return "", "", "", fmt.Errorf(`the argument must consist of 2 or 3 parts "{repository}/{template}[/{version}]", found "%s"`, args[0])
 	}
 	repository = parts[0]
 	template = parts[1]
-	version = parts[2]
+
+	// Version is optional, if it is missing, then default version will be used
+	if len(parts) > 2 {
+		version = parts[2]
+	}
+
 	return
 }

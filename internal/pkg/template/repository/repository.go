@@ -79,10 +79,14 @@ func (r *Repository) GetTemplateById(templateId string) (TemplateRecord, bool) {
 	return r.manifest.GetById(templateId)
 }
 
+func (r *Repository) GetTemplateByIdOrErr(templateId string) (TemplateRecord, error) {
+	return r.manifest.GetByIdOrErr(templateId)
+}
+
 func (r *Repository) GetTemplateByPath(templatePath string) (TemplateRecord, bool) {
 	return r.manifest.GetByPath(templatePath)
 }
 
-func (r *Repository) GetTemplateVersion(templateId string, version model.SemVersion) (TemplateRecord, VersionRecord, error) {
+func (r *Repository) GetTemplateVersion(templateId string, version string) (TemplateRecord, VersionRecord, error) {
 	return r.manifest.GetVersion(templateId, version)
 }

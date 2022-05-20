@@ -37,8 +37,7 @@ func TestGitRepositoryFs_SparseCheckout(t *testing.T) {
 
 	// Checkout fail due to non-existing template in the branch
 	repo := model.TemplateRepository{Type: "git", Name: "keboola", Url: fmt.Sprintf("file://%s", tmpDir), Ref: "main"}
-	template, err := model.NewTemplateRefFromString(repo, "template2", "1.0.0")
-	assert.NoError(t, err)
+	template := model.NewTemplateRef(repo, "template2", "1.0.0")
 	_, err = gitRepositoryFs(ctx, repo, template, log.NewDebugLogger())
 	assert.Error(t, err)
 	assert.Equal(t, fmt.Sprintf(`template "template2" not found:
@@ -47,8 +46,7 @@ func TestGitRepositoryFs_SparseCheckout(t *testing.T) {
 
 	// Checkout fail due to non-existing version of existing template
 	repo = model.TemplateRepository{Type: "git", Name: "keboola", Url: fmt.Sprintf("file://%s", tmpDir), Ref: "b1"}
-	template, err = model.NewTemplateRefFromString(repo, "template2", "1.0.8")
-	assert.NoError(t, err)
+	template = model.NewTemplateRef(repo, "template2", "1.0.8")
 	_, err = gitRepositoryFs(ctx, repo, template, log.NewDebugLogger())
 	assert.Error(t, err)
 	assert.Equal(t, fmt.Sprintf(`template "template2" found but version "1.0.8" is missing:
@@ -57,8 +55,7 @@ func TestGitRepositoryFs_SparseCheckout(t *testing.T) {
 
 	// Checkout fail due to non-existing src folder of existing template
 	repo = model.TemplateRepository{Type: "git", Name: "keboola", Url: fmt.Sprintf("file://%s", tmpDir), Ref: "b1"}
-	template, err = model.NewTemplateRefFromString(repo, "template2", "1.0.0")
-	assert.NoError(t, err)
+	template = model.NewTemplateRef(repo, "template2", "1.0.0")
 	_, err = gitRepositoryFs(ctx, repo, template, log.NewDebugLogger())
 	assert.Error(t, err)
 	assert.Equal(t, fmt.Sprintf(`folder "template2/v1/src" not found:
@@ -67,8 +64,7 @@ func TestGitRepositoryFs_SparseCheckout(t *testing.T) {
 
 	// Checkout success in main branch
 	repo = model.TemplateRepository{Type: "git", Name: "keboola", Url: fmt.Sprintf("file://%s", tmpDir), Ref: "main"}
-	template, err = model.NewTemplateRefFromString(repo, "template1", "1.0")
-	assert.NoError(t, err)
+	template = model.NewTemplateRef(repo, "template1", "1.0")
 	fs, err := gitRepositoryFs(ctx, repo, template, log.NewDebugLogger())
 	assert.NoError(t, err)
 	assert.True(t, fs.Exists("template1/v1/src/manifest.jsonnet"))
@@ -77,8 +73,7 @@ func TestGitRepositoryFs_SparseCheckout(t *testing.T) {
 
 	// Checkout success because template2 exists only in branch b1
 	repo = model.TemplateRepository{Type: "git", Name: "keboola", Url: fmt.Sprintf("file://%s", tmpDir), Ref: "b1"}
-	template, err = model.NewTemplateRefFromString(repo, "template2", "2.1.0")
-	assert.NoError(t, err)
+	template = model.NewTemplateRef(repo, "template2", "2.1.0")
 	fs, err = gitRepositoryFs(ctx, repo, template, log.NewDebugLogger())
 	assert.NoError(t, err)
 	assert.True(t, fs.Exists("template2/v2/src/manifest.jsonnet"))

@@ -29,29 +29,14 @@ func DescribeCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			// Optional version argument
 			var versionArg string
-			if len(args) == 1 {
-				templateRec, found := repo.GetTemplateById(args[0])
-				if !found {
-					return fmt.Errorf(`template "%s" was not found in the repository`, args[0])
-				}
-				version, found := templateRec.DefaultVersion()
-				if !found {
-					return fmt.Errorf(`default version for template "%s" was not found in the repository`, args[0])
-				}
-				versionArg = version.Version.String()
-			} else {
+			if len(args) > 1 {
 				versionArg = args[1]
 			}
 
-			// Template definition
-			templateDef, err := model.NewTemplateRefFromString(repo.Ref(), args[0], versionArg)
-			if err != nil {
-				return err
-			}
-
 			// Load template
-			template, err := d.Template(templateDef)
+			template, err := d.Template(model.NewTemplateRef(repo.Ref(), args[0], versionArg))
 			if err != nil {
 				return err
 			}

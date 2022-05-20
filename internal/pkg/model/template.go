@@ -34,26 +34,18 @@ func TemplateRepositoryWorkingDir() TemplateRepository {
 type TemplateRef interface {
 	Repository() TemplateRepository
 	TemplateId() string
-	Version() SemVersion
+	Version() string
 	FullName() string
 }
 
 type templateRef struct {
 	repository TemplateRepository
-	templateId string     // for example "my-template"
-	version    SemVersion // for example "v1"
+	templateId string // for example "my-template"
+	version    string // for example "v1"
 
 }
 
-func NewTemplateRefFromString(repository TemplateRepository, templateId string, versionStr string) (TemplateRef, error) {
-	version, err := NewSemVersion(versionStr)
-	if err != nil {
-		return nil, err
-	}
-	return NewTemplateRef(repository, templateId, version), nil
-}
-
-func NewTemplateRef(repository TemplateRepository, templateId string, version SemVersion) TemplateRef {
+func NewTemplateRef(repository TemplateRepository, templateId string, version string) TemplateRef {
 	return templateRef{
 		repository: repository,
 		templateId: templateId,
@@ -69,11 +61,11 @@ func (r templateRef) TemplateId() string {
 	return r.templateId
 }
 
-func (r templateRef) Version() SemVersion {
+func (r templateRef) Version() string {
 	return r.version
 }
 
 // FullName - for example "keboola/my-template/v1.
 func (r templateRef) FullName() string {
-	return fmt.Sprintf("%s/%s/%s", r.repository.Name, r.templateId, r.version.Original())
+	return fmt.Sprintf("%s/%s/%s", r.repository.Name, r.templateId, r.version)
 }

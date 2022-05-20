@@ -1,0 +1,17 @@
+Command "local template use"
+
+This command uses a template in the local project directory.
+If you do not enter version of the template, the latest stable version will be used.
+
+No changes are made to the remote state of the project.
+
+Usage:
+  %s local template use <repository>/<template>[/<version>] [flags]
+
+Flags:
+  -b, --branch string          target branch ID or name
+  -f, --inputs-file string     JSON file with inputs values
+  -n, --instance-name string   name of new template instance
+
+Global Flags:
+%A

@@ -59,7 +59,7 @@ func TestUpgradeContext(t *testing.T) {
 	}
 
 	// Template
-	templateRef := model.NewTemplateRef(model.TemplateRepository{Name: "my-repository"}, "my-template", model.ZeroSemVersion())
+	templateRef := model.NewTemplateRef(model.TemplateRepository{Name: "my-repository"}, "my-template", "v0.0.1")
 	instanceId := "my-instance"
 
 	// Current project state

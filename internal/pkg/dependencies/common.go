@@ -184,8 +184,14 @@ func (v *CommonContainer) Template(reference model.TemplateRef) (*template.Templ
 		return nil, err
 	}
 
+	// Get template
+	templateRecord, found := repo.GetTemplateById(reference.TemplateId())
+	if !found {
+		return nil, err
+	}
+
 	// Get template version
-	templateRecord, versionRecord, err := repo.GetTemplateVersion(reference.TemplateId(), reference.Version())
+	versionRecord, err := templateRecord.GetVersionOrErr(reference.Version())
 	if err != nil {
 		return nil, err
 	}
@@ -201,6 +207,9 @@ func (v *CommonContainer) Template(reference model.TemplateRef) (*template.Templ
 	if err != nil {
 		return nil, err
 	}
+
+	// Update sem version in reference
+	reference = model.NewTemplateRef(reference.Repository(), reference.TemplateId(), versionRecord.Version.String())
 
 	return template.New(reference, templateRecord, versionRecord, templateDir, repo.CommonDir(), v)
 }

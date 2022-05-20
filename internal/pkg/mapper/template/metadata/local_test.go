@@ -12,7 +12,7 @@ import (
 
 func TestMetadataMapper_AfterLocalOperation(t *testing.T) {
 	t.Parallel()
-	templateRef := model.NewTemplateRef(model.TemplateRepository{Name: "my-repository"}, "my-template", model.ZeroSemVersion())
+	templateRef := model.NewTemplateRef(model.TemplateRepository{Name: "my-repository"}, "my-template", "v0.0.1")
 	instanceId := "my-instance"
 	objectIds := metadata.ObjectIdsMap{}
 	objectIds[model.ConfigId("456")] = model.ConfigId("my-config")

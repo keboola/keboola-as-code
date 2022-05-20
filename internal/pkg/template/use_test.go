@@ -58,7 +58,7 @@ func TestUseContext(t *testing.T) {
 	}
 
 	// Create context
-	templateRef := model.NewTemplateRef(model.TemplateRepository{Name: "my-repository"}, "my-template", model.ZeroSemVersion())
+	templateRef := model.NewTemplateRef(model.TemplateRepository{Name: "my-repository"}, "my-template", "v0.0.1")
 	instanceId := "my-instance"
 	fs := testfs.NewMemoryFs()
 	ctx := NewUseContext(context.Background(), templateRef, fs, instanceId, targetBranch, inputsValues, tickets)

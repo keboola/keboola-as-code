@@ -75,6 +75,31 @@ func (v *TemplateRecord) GetVersion(wanted model.SemVersion) (VersionRecord, boo
 	return VersionRecord{}, false
 }
 
+func (v *TemplateRecord) GetVersionOrErr(wantedStr string) (VersionRecord, error) {
+	// Parse version
+	var wanted model.SemVersion
+	if wantedStr == "" {
+		if v, err := v.DefaultVersionOrErr(); err != nil {
+			return VersionRecord{}, err
+		} else {
+			wanted = v.Version
+		}
+	} else {
+		if v, err := model.NewSemVersion(wantedStr); err != nil {
+			return VersionRecord{}, err
+		} else {
+			wanted = v
+		}
+	}
+
+	// Get version
+	version, found := v.GetVersion(wanted)
+	if !found {
+		return version, VersionNotFoundError{fmt.Errorf(`template "%s" found but version "%s" is missing`, v.Id, wanted.Original())}
+	}
+	return version, nil
+}
+
 func (v *TemplateRecord) GetClosestVersion(wanted model.SemVersion) (VersionRecord, bool) {
 	if version, found := v.GetVersion(wanted); found {
 		return version, true
@@ -120,4 +145,12 @@ func (v *TemplateRecord) DefaultVersion() (VersionRecord, bool) {
 
 	// No stable version found
 	return latest, found
+}
+
+func (v *TemplateRecord) DefaultVersionOrErr() (VersionRecord, error) {
+	version, found := v.DefaultVersion()
+	if !found {
+		return version, VersionNotFoundError{fmt.Errorf(`default version for template "%s" was not found`, v.Id)}
+	}
+	return version, nil
 }

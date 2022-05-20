@@ -2,7 +2,7 @@ Plan for "encrypt" operation:
   C main/extractor/keboola.ex-db-mysql/with-rows
     parameters.db.#password
 Encrypt done.
-New objects from "keboola/my-template-id/v1" template:
+New objects from "keboola/my-template-id/1.2.3" template:
   + C main/_shared/keboola.python-transformation-v2
   + R main/_shared/keboola.python-transformation-v2/codes/code-with-variables
   + C main/_shared/keboola.python-transformation-v2/codes/code-with-variables/variables
@@ -28,4 +28,4 @@ New objects from "keboola/my-template-id/v1" template:
   + R main/transformation/keboola.snowflake-transformation/im-transformation/rows/test
   + C main/transformation/keboola.snowflake-transformation/snowflake-transformation
   + C main/writer/keboola.wr-db-mysql/im-default-bucket
-Template "keboola/my-template-id/v1" has been applied, instance ID: %s
+Template "keboola/my-template-id/1.2.3" has been applied, instance ID: %s
