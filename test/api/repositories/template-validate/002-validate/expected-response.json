@@ -1,0 +1,22 @@
+{
+  "valid": true,
+  "stepGroups": [
+    {
+      "id": "g01",
+      "valid": true,
+      "steps": [
+        {
+          "id": "g01-s01",
+          "configured": true,
+          "valid": true,
+          "inputs": [
+            {
+              "id": "shopify-token",
+              "visible": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
