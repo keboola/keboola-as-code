@@ -8,7 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func (p *Dialogs) SelectTemplateInstance(options *options.Options, branch *model.Branch, label string) (*model.TemplateUsageRecord, error) {
+func (p *Dialogs) selectTemplateInstance(options *options.Options, branch *model.Branch, label string) (*model.TemplateInstance, error) {
 	if options.IsSet(`instance`) {
 		usage, found, err := branch.Metadata.TemplateUsage(options.GetString(`instance`))
 		if err != nil {

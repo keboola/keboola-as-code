@@ -11,7 +11,7 @@ Usage:
 Flags:
   -b, --branch string     branch ID or name
       --dry-run           print what needs to be done
-  -i, --instance string   instance of the template to delete
+  -i, --instance string   instance ID of the template to delete
 
 Global Flags:
 %A

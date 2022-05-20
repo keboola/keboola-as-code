@@ -27,13 +27,10 @@ const (
 
 type useTmplDialog struct {
 	*Dialogs
-	projectState  *project.State
-	options       *options.Options
-	inputsFile    map[string]interface{} // inputs values loaded from a file specified by inputsFileFlag
-	useInputsFile bool
-	out           useTemplate.Options
-	context       context.Context        // for input.ValidateUserInput
-	inputsValues  map[string]interface{} // for input.Available
+	projectState *project.State
+	inputs       template.StepsGroups
+	options      *options.Options
+	out          useTemplate.Options
 }
 
 // AskUseTemplateOptions - dialog for using the template in the project.
@@ -41,27 +38,13 @@ func (p *Dialogs) AskUseTemplateOptions(projectState *project.State, inputs temp
 	dialog := &useTmplDialog{
 		Dialogs:      p,
 		projectState: projectState,
+		inputs:       inputs,
 		options:      opts,
-		context:      context.Background(),
-		inputsValues: make(map[string]interface{}),
 	}
-	return dialog.ask(inputs)
+	return dialog.ask()
 }
 
-func (d *useTmplDialog) ask(stepsGroups input.StepsGroups) (useTemplate.Options, error) {
-	// Load inputs file
-	if d.options.IsSet(inputsFileFlag) {
-		d.useInputsFile = true
-		path := d.options.GetString(inputsFileFlag)
-		content, err := os.ReadFile(path) // nolint:forbidigo // file may be outside the project, so the OS package is used
-		if err != nil {
-			return d.out, fmt.Errorf(`cannot read inputs file "%s": %w`, path, err)
-		}
-		if err := json.Decode(content, &d.inputsFile); err != nil {
-			return d.out, fmt.Errorf(`cannot decode inputs file "%s": %w`, path, err)
-		}
-	}
-
+func (d *useTmplDialog) ask() (useTemplate.Options, error) {
 	// Target branch
 	targetBranch, err := d.SelectBranch(d.options, d.projectState.LocalObjects().Branches(), `Select the target branch`)
 	if err != nil {
@@ -77,8 +60,10 @@ func (d *useTmplDialog) ask(stepsGroups input.StepsGroups) (useTemplate.Options,
 	}
 
 	// User inputs
-	if err := d.askInputs(stepsGroups.ToExtended()); err != nil {
+	if v, err := d.askUseTemplateInputs(d.inputs, d.options); err != nil {
 		return d.out, err
+	} else {
+		d.out.Inputs = v
 	}
 
 	return d.out, nil
@@ -105,8 +90,42 @@ func (d *useTmplDialog) askInstanceName() (string, error) {
 	return v, nil
 }
 
-func (d *useTmplDialog) askInputs(stepsGroups input.StepsGroupsExt) error {
-	return stepsGroups.VisitInputs(func(group *input.StepsGroupExt, step *input.StepExt, inputDef *input.Input) error {
+type useTmplInputsDialog struct {
+	*Dialogs
+	options       *options.Options
+	inputsFile    map[string]interface{} // inputs values loaded from a file specified by inputsFileFlag
+	useInputsFile bool
+	out           template.InputsValues
+	context       context.Context        // for input.ValidateUserInput
+	inputsValues  map[string]interface{} // for input.Available
+}
+
+// askUseTemplateInputs - dialog to enter template inputs.
+func (p *Dialogs) askUseTemplateInputs(groups template.StepsGroups, opts *options.Options) (template.InputsValues, error) {
+	dialog := &useTmplInputsDialog{
+		Dialogs:      p,
+		options:      opts,
+		context:      context.Background(),
+		inputsValues: make(map[string]interface{}),
+	}
+	return dialog.ask(groups.ToExtended())
+}
+
+func (d *useTmplInputsDialog) ask(stepsGroups input.StepsGroupsExt) (template.InputsValues, error) {
+	// Load inputs file
+	if d.options.IsSet(inputsFileFlag) {
+		d.useInputsFile = true
+		path := d.options.GetString(inputsFileFlag)
+		content, err := os.ReadFile(path) // nolint:forbidigo // file may be outside the project, so the OS package is used
+		if err != nil {
+			return d.out, fmt.Errorf(`cannot read inputs file "%s": %w`, path, err)
+		}
+		if err := json.Decode(content, &d.inputsFile); err != nil {
+			return d.out, fmt.Errorf(`cannot decode inputs file "%s": %w`, path, err)
+		}
+	}
+
+	err := stepsGroups.VisitInputs(func(group *input.StepsGroupExt, step *input.StepExt, inputDef *input.Input) error {
 		// Print info about group and select steps
 		if !group.Announced {
 			if err := d.announceGroup(group); err != nil {
@@ -153,9 +172,11 @@ func (d *useTmplDialog) askInputs(stepsGroups input.StepsGroupsExt) error {
 		// Ask for the input
 		return d.askInput(inputDef)
 	})
+
+	return d.out, err
 }
 
-func (d *useTmplDialog) announceGroup(group *input.StepsGroupExt) error {
+func (d *useTmplInputsDialog) announceGroup(group *input.StepsGroupExt) error {
 	// Only once
 	if group.Announced {
 		return nil
@@ -245,7 +266,7 @@ func (d *useTmplDialog) announceGroup(group *input.StepsGroupExt) error {
 	return nil
 }
 
-func (d *useTmplDialog) announceStep(step *input.StepExt) error {
+func (d *useTmplInputsDialog) announceStep(step *input.StepExt) error {
 	// Only once
 	if step.Announced {
 		return nil
@@ -257,7 +278,7 @@ func (d *useTmplDialog) announceStep(step *input.StepExt) error {
 	return nil
 }
 
-func (d *useTmplDialog) askInput(inputDef *input.Input) error {
+func (d *useTmplInputsDialog) askInput(inputDef *input.Input) error {
 	// Ask for input
 	switch inputDef.Kind {
 	case input.KindInput, input.KindHidden, input.KindTextarea:
@@ -349,7 +370,7 @@ func (d *useTmplDialog) askInput(inputDef *input.Input) error {
 }
 
 // addInputValue from CLI dialog or inputs file.
-func (d *useTmplDialog) addInputValue(value interface{}, inputDef *input.Input, isFiled bool) error {
+func (d *useTmplInputsDialog) addInputValue(value interface{}, inputDef *input.Input, isFiled bool) error {
 	// Convert
 	value, err := inputDef.Type.ParseValue(value)
 	if err != nil {
@@ -366,6 +387,6 @@ func (d *useTmplDialog) addInputValue(value interface{}, inputDef *input.Input, 
 	// Add
 	inputValue := template.InputValue{Id: inputDef.Id, Value: value, Skipped: !isFiled}
 	d.inputsValues[inputDef.Id] = value
-	d.out.Inputs = append(d.out.Inputs, inputValue)
+	d.out = append(d.out, inputValue)
 	return nil
 }

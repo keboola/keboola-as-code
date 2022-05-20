@@ -22,7 +22,7 @@ func (e *executor) invoke() error {
 		uow.DeleteObject(action.State, action.Manifest)
 	}
 
-	branchState := e.Plan.projectState.GetOrNil(e.Plan.branchKey).(*model.BranchState)
+	branchState := e.Plan.projectState.MustGet(e.Plan.branchKey).(*model.BranchState)
 	if err := branchState.Local.Metadata.DeleteTemplateUsage(e.Plan.instanceId); err != nil {
 		return utils.PrefixError(`cannot remove template instance metadata`, err)
 	}

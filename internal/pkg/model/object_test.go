@@ -25,7 +25,7 @@ func TestBranchMetadata_AddTemplateUsage(t *testing.T) {
 
 	usages, err := b.TemplatesUsages()
 	assert.NoError(t, err)
-	assert.Equal(t, TemplateUsageRecords{
+	assert.Equal(t, TemplatesInstances{
 		{
 			InstanceId:     "inst1",
 			InstanceName:   "Instance 1",
@@ -43,7 +43,7 @@ func TestBranchMetadata_AddTemplateUsage(t *testing.T) {
 
 	usages, err = b.TemplatesUsages()
 	assert.NoError(t, err)
-	assert.Equal(t, TemplateUsageRecords{
+	assert.Equal(t, TemplatesInstances{
 		{
 			InstanceId:     "inst1",
 			InstanceName:   "Instance 1",
@@ -70,7 +70,7 @@ func TestBranchMetadata_DeleteTemplateUsage(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now().Truncate(time.Second).UTC()
-	usage1 := TemplateUsageRecord{
+	usage1 := TemplateInstance{
 		InstanceId:     "inst1",
 		InstanceName:   "Instance 1",
 		TemplateId:     "tmpl1",
@@ -80,7 +80,7 @@ func TestBranchMetadata_DeleteTemplateUsage(t *testing.T) {
 		Updated:        ChangedByRecord{Date: now, TokenId: "12345"},
 		MainConfig:     &TemplateMainConfig{ConfigId: "1234", ComponentId: "foo.bar"},
 	}
-	usage2 := TemplateUsageRecord{
+	usage2 := TemplateInstance{
 		InstanceId:     "inst2",
 		InstanceName:   "Instance 2",
 		TemplateId:     "tmpl1",
@@ -90,7 +90,7 @@ func TestBranchMetadata_DeleteTemplateUsage(t *testing.T) {
 		Updated:        ChangedByRecord{Date: now, TokenId: "12345"},
 		MainConfig:     &TemplateMainConfig{ConfigId: "1234", ComponentId: "foo.bar"},
 	}
-	encUsages, err := json.EncodeString(TemplateUsageRecords{usage1, usage2}, false)
+	encUsages, err := json.EncodeString(TemplatesInstances{usage1, usage2}, false)
 	assert.NoError(t, err)
 
 	b := BranchMetadata{}
