@@ -9,7 +9,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/template"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/create"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
@@ -22,11 +22,11 @@ type templateIdsDialog struct {
 
 // askTemplateObjectsIds - dialog to define human-readable ID for each config and config row.
 // Used in AskCreateTemplateOpts.
-func (p *Dialogs) askTemplateObjectsIds(branch *model.Branch, configs []*model.ConfigWithRows) ([]template.ConfigDef, error) {
+func (p *Dialogs) askTemplateObjectsIds(branch *model.Branch, configs []*model.ConfigWithRows) ([]create.ConfigDef, error) {
 	return (&templateIdsDialog{prompt: p.Prompt, branch: branch, configs: configs}).ask()
 }
 
-func (d *templateIdsDialog) ask() ([]template.ConfigDef, error) {
+func (d *templateIdsDialog) ask() ([]create.ConfigDef, error) {
 	result, _ := d.prompt.Editor("md", &prompt.Question{
 		Description: `Please enter a human readable ID for each config and config row.`,
 		Default:     d.defaultValue(),
@@ -41,7 +41,7 @@ func (d *templateIdsDialog) ask() ([]template.ConfigDef, error) {
 	return d.parse(result)
 }
 
-func (d *templateIdsDialog) parse(result string) ([]template.ConfigDef, error) {
+func (d *templateIdsDialog) parse(result string) ([]create.ConfigDef, error) {
 	idByKey := make(map[string]string)
 	ids := make(map[string]bool)
 	result = strhelper.StripHtmlComments(result)
@@ -109,7 +109,7 @@ func (d *templateIdsDialog) parse(result string) ([]template.ConfigDef, error) {
 		return nil, errors.ErrorOrNil()
 	}
 
-	var defs []template.ConfigDef
+	var defs []create.ConfigDef
 	for _, c := range d.configs {
 		// Config definition
 		id := idByKey[c.Key().String()]
@@ -117,7 +117,7 @@ func (d *templateIdsDialog) parse(result string) ([]template.ConfigDef, error) {
 			errors.Append(fmt.Errorf(`missing ID for %s`, c.Desc()))
 			continue
 		}
-		configDef := template.ConfigDef{Key: c.ConfigKey, TemplateId: id}
+		configDef := create.ConfigDef{Key: c.ConfigKey, TemplateId: id}
 
 		for _, r := range c.Rows {
 			// Row definition
@@ -126,7 +126,7 @@ func (d *templateIdsDialog) parse(result string) ([]template.ConfigDef, error) {
 				errors.Append(fmt.Errorf(`missing ID for %s`, r.Desc()))
 				continue
 			}
-			rowDef := template.ConfigRowDef{Key: r.ConfigRowKey, TemplateId: id}
+			rowDef := create.ConfigRowDef{Key: r.ConfigRowKey, TemplateId: id}
 			configDef.Rows = append(configDef.Rows, rowDef)
 		}
 

@@ -1,4 +1,4 @@
-package template
+package use
 
 import (
 	"context"
@@ -16,11 +16,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/metadata"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacevalues"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
-// UseContext represents the process of replacing values when applying a template to a remote project.
+// Context represents the process of replacing values when applying a template to a remote project.
 //
 // Process description:
 //   1. There is some template.
@@ -30,49 +31,51 @@ import (
 //      - For example, each ConfigId("my-config-id") is replaced by "<<~~func:ticket:1~~>>".
 //      - This is because we do not know in advance how many new IDs will need to be generated.
 //      - Function call can contain an expression, for example ConfigId("my-config-" + tableName), and this prevents forward analysis.
-//      - Functions are defined in UseContext.registerJsonNetFunctions().
+//      - Functions are defined in Context.registerJsonNetFunctions().
 //   3. When the entire template is loaded, the placeholders are replaced with new IDs.
 //      - For example, each "<<~~func:ticket:1~~>>" is replaced by "3496482342".
-//      - Replacements are defined by UseContext.Replacements().
+//      - Replacements are defined by Context.Replacements().
 //      - Values are replaced by "internal/pkg/mapper/template/replacevalues".
 //    4. Then the objects are copied to the project,
 //      - See "pkg/lib/operation/project/local/template/use/operation.go".
 //      - A new path is generated for each new object, according to the project naming.
 //
-// UseContext.JsonNetContext() returns JsonNet functions.
-// UseContext.Replacements() returns placeholders for new IDs.
-type UseContext struct {
+// Context.JsonNetContext() returns JsonNet functions.
+// Context.Replacements() returns placeholders for new IDs.
+type Context struct {
 	_context
 	templateRef       model.TemplateRef
 	instanceId        string
 	instanceIdShort   string
 	jsonNetCtx        *jsonnet.Context
 	replacements      *replacevalues.Values
-	inputs            map[string]InputValue
+	inputs            map[string]template.InputValue
 	tickets           *storageapi.TicketProvider
 	placeholdersCount int
 	ticketsResolved   bool
 
 	lock         *sync.Mutex
-	placeholders placeholdersMap
+	placeholders PlaceholdersMap
 	objectIds    metadata.ObjectIdsMap
 	inputsUsage  *metadata.InputsUsage
 }
 
-// placeholdersMap -  original template value -> placeholder.
-type placeholdersMap map[interface{}]placeholder
+type _context context.Context
 
-type placeholder struct {
+// PlaceholdersMap -  original template value -> placeholder.
+type PlaceholdersMap map[interface{}]Placeholder
+
+type Placeholder struct {
 	asString string      // placeholder as string for use in Json file, eg. string("<<~~placeholder:1~~>>)
 	asValue  interface{} // eg. ConfigId, RowId, eg. ConfigId("<<~~placeholder:1~~>>)
 }
 
-type placeholderResolver func(p placeholder, cb resolveCallback)
+type PlaceholderResolver func(p Placeholder, cb ResolveCallback)
 
-type resolveCallback func(newId interface{})
+type ResolveCallback func(newId interface{})
 
 type inputUsageNotifier struct {
-	*UseContext
+	*Context
 	ctx context.Context
 }
 
@@ -82,19 +85,19 @@ const (
 	instanceIdShortLength = 8
 )
 
-func NewUseContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot filesystem.Fs, instanceId string, targetBranch model.BranchKey, inputs InputsValues, tickets *storageapi.TicketProvider) *UseContext {
-	ctx = baseContext(ctx)
-	c := &UseContext{
+func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot filesystem.Fs, instanceId string, targetBranch model.BranchKey, inputs template.InputsValues, tickets *storageapi.TicketProvider) *Context {
+	ctx = template.NewContext(ctx)
+	c := &Context{
 		_context:        ctx,
 		templateRef:     templateRef,
 		instanceId:      instanceId,
 		instanceIdShort: strhelper.FirstN(instanceId, instanceIdShortLength),
 		jsonNetCtx:      jsonnet.NewContext().WithCtx(ctx).WithImporter(fsimporter.New(objectsRoot)),
 		replacements:    replacevalues.NewValues(),
-		inputs:          make(map[string]InputValue),
+		inputs:          make(map[string]template.InputValue),
 		tickets:         tickets,
 		lock:            &sync.Mutex{},
-		placeholders:    make(placeholdersMap),
+		placeholders:    make(PlaceholdersMap),
 		objectIds:       make(metadata.ObjectIdsMap),
 		inputsUsage:     metadata.NewInputsUsage(),
 	}
@@ -116,19 +119,19 @@ func NewUseContext(ctx context.Context, templateRef model.TemplateRef, objectsRo
 	return c
 }
 
-func (c *UseContext) TemplateRef() model.TemplateRef {
+func (c *Context) TemplateRef() model.TemplateRef {
 	return c.templateRef
 }
 
-func (c *UseContext) InstanceId() string {
+func (c *Context) InstanceId() string {
 	return c.instanceId
 }
 
-func (c *UseContext) JsonNetContext() *jsonnet.Context {
+func (c *Context) JsonNetContext() *jsonnet.Context {
 	return c.jsonNetCtx
 }
 
-func (c *UseContext) Replacements() (*replacevalues.Values, error) {
+func (c *Context) Replacements() (*replacevalues.Values, error) {
 	// Generate new IDs
 	if !c.ticketsResolved {
 		if err := c.tickets.Resolve(); err != nil {
@@ -139,23 +142,54 @@ func (c *UseContext) Replacements() (*replacevalues.Values, error) {
 	return c.replacements, nil
 }
 
-func (c *UseContext) RemoteObjectsFilter() model.ObjectsFilter {
+func (c *Context) RemoteObjectsFilter() model.ObjectsFilter {
 	return model.NoFilter()
 }
 
-func (c *UseContext) LocalObjectsFilter() model.ObjectsFilter {
+func (c *Context) LocalObjectsFilter() model.ObjectsFilter {
 	return model.NoFilter()
 }
 
-func (c *UseContext) ObjectIds() metadata.ObjectIdsMap {
+func (c *Context) ObjectIds() metadata.ObjectIdsMap {
 	return c.objectIds
 }
 
-func (c *UseContext) InputsUsage() *metadata.InputsUsage {
+func (c *Context) InputsUsage() *metadata.InputsUsage {
 	return c.inputsUsage
 }
 
-func (c *UseContext) registerJsonNetFunctions() {
+// RegisterPlaceholder for an object oldId, it can be resolved later/async.
+func (c *Context) RegisterPlaceholder(oldId interface{}, fn PlaceholderResolver) Placeholder {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	if _, found := c.placeholders[oldId]; !found {
+		// Generate placeholder, it will be later replaced by a new ID
+		c.placeholdersCount++
+		p := Placeholder{asString: fmt.Sprintf("%splaceholder:%d%s", placeholderStart, c.placeholdersCount, placeholderEnd)}
+
+		// Convert string to an ID value
+		switch oldId.(type) {
+		case model.ConfigId:
+			p.asValue = model.ConfigId(p.asString)
+		case model.RowId:
+			p.asValue = model.RowId(p.asString)
+		default:
+			panic(fmt.Errorf("unexpected ID type"))
+		}
+
+		// Store oldId -> placeholder
+		c.placeholders[oldId] = p
+
+		// Resolve newId async by provider function
+		fn(p, func(newId interface{}) {
+			c.replacements.AddId(p.asValue, newId)
+			c.objectIds[newId] = oldId
+		})
+	}
+	return c.placeholders[oldId]
+}
+
+func (c *Context) registerJsonNetFunctions() {
 	// ConfigId
 	c.jsonNetCtx.NativeFunctionWithAlias(&jsonnet.NativeFunction{
 		Name:   `ConfigId`,
@@ -242,8 +276,8 @@ func (c *UseContext) registerJsonNetFunctions() {
 
 // ConfigId/ConfigRowId in JsonNet files is replaced by a <<~~ticket:123~~>> placeholder.
 // When all JsonNet files are processed, new IDs are generated in parallel.
-func (c *UseContext) idPlaceholder(oldId interface{}) string {
-	p := c.registerPlaceholder(oldId, func(p placeholder, cb resolveCallback) {
+func (c *Context) idPlaceholder(oldId interface{}) string {
+	p := c.RegisterPlaceholder(oldId, func(p Placeholder, cb ResolveCallback) {
 		// Placeholder -> new ID
 		var newId interface{}
 		c.tickets.Request(func(ticket *model.Ticket) {
@@ -261,40 +295,9 @@ func (c *UseContext) idPlaceholder(oldId interface{}) string {
 	return p.asString
 }
 
-// registerPlaceholder for an object oldId, it can be resolved later/async.
-func (c *UseContext) registerPlaceholder(oldId interface{}, fn placeholderResolver) placeholder {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-	if _, found := c.placeholders[oldId]; !found {
-		// Generate placeholder, it will be later replaced by a new ID
-		c.placeholdersCount++
-		p := placeholder{asString: fmt.Sprintf("%splaceholder:%d%s", placeholderStart, c.placeholdersCount, placeholderEnd)}
-
-		// Convert string to an ID value
-		switch oldId.(type) {
-		case model.ConfigId:
-			p.asValue = model.ConfigId(p.asString)
-		case model.RowId:
-			p.asValue = model.RowId(p.asString)
-		default:
-			panic(fmt.Errorf("unexpected ID type"))
-		}
-
-		// Store oldId -> placeholder
-		c.placeholders[oldId] = p
-
-		// Resolve newId async by provider function
-		fn(p, func(newId interface{}) {
-			c.replacements.AddId(p.asValue, newId)
-			c.objectIds[newId] = oldId
-		})
-	}
-	return c.placeholders[oldId]
-}
-
-func (c *UseContext) registerInputsUsageNotifier() {
+func (c *Context) registerInputsUsageNotifier() {
 	c.jsonNetCtx.NotifierFactory(func(ctx context.Context) jsonnetLib.Notifier {
-		return &inputUsageNotifier{UseContext: c, ctx: ctx}
+		return &inputUsageNotifier{Context: c, ctx: ctx}
 	})
 }
 

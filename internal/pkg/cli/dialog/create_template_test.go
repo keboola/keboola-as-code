@@ -12,7 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/template"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/create"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
@@ -168,7 +168,7 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 		Name:         `My Super Template`,
 		Description:  `Full workflow to ...`,
 		SourceBranch: model.BranchKey{Id: 123},
-		Configs: []template.ConfigDef{
+		Configs: []create.ConfigDef{
 			{
 				Key: model.ConfigKey{
 					BranchId:    123,
@@ -176,13 +176,13 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 					Id:          `1`,
 				},
 				TemplateId: `config-1`,
-				Inputs: []template.InputDef{
+				Inputs: []create.InputDef{
 					{
 						InputId: "my-component-password",
 						Path:    orderedmap.KeyFromStr("parameters.#password"),
 					},
 				},
-				Rows: []template.ConfigRowDef{
+				Rows: []create.ConfigRowDef{
 					{
 						Key: model.ConfigRowKey{
 							BranchId:    123,
@@ -255,7 +255,7 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 		Name:         `My Super Template`,
 		Description:  `Full workflow to ...`,
 		SourceBranch: model.BranchKey{Id: 123},
-		Configs: []template.ConfigDef{
+		Configs: []create.ConfigDef{
 			{
 				Key: model.ConfigKey{
 					BranchId:    123,
@@ -263,7 +263,7 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 					Id:          `1`,
 				},
 				TemplateId: `config-1`,
-				Inputs: []template.InputDef{
+				Inputs: []create.InputDef{
 					{
 						InputId: "my-component-password",
 						Path:    orderedmap.KeyFromStr("parameters.#password"),
@@ -277,7 +277,7 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 						Path:    orderedmap.KeyFromStr("parameters.string"),
 					},
 				},
-				Rows: []template.ConfigRowDef{
+				Rows: []create.ConfigRowDef{
 					{
 						Key: model.ConfigRowKey{
 							BranchId:    123,
@@ -363,7 +363,7 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 		Name:         `My Super Template`,
 		Description:  `Full workflow to ...`,
 		SourceBranch: model.BranchKey{Id: 123},
-		Configs: []template.ConfigDef{
+		Configs: []create.ConfigDef{
 			{
 				Key: model.ConfigKey{
 					BranchId:    123,
@@ -371,13 +371,13 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 					Id:          `1`,
 				},
 				TemplateId: `config-1`,
-				Inputs: []template.InputDef{
+				Inputs: []create.InputDef{
 					{
 						InputId: "my-component-password",
 						Path:    orderedmap.KeyFromStr("parameters.#password"),
 					},
 				},
-				Rows: []template.ConfigRowDef{
+				Rows: []create.ConfigRowDef{
 					{
 						Key: model.ConfigRowKey{
 							BranchId:    123,

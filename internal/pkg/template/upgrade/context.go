@@ -1,4 +1,4 @@
-package template
+package upgrade
 
 import (
 	"context"
@@ -8,18 +8,20 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/search"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/template"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/use"
 )
 
-// UpgradeContext is similar to UseContext.
+// Context is similar to Context.
 // Differences:
 //   - If there is already a config / row that was generated from the template, its ID will be reused.
-type UpgradeContext struct {
-	*UseContext
+type Context struct {
+	*use.Context
 }
 
-func NewUpgradeContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot filesystem.Fs, instanceId string, targetBranch model.BranchKey, inputs InputsValues, tickets *storageapi.TicketProvider, projectState *state.State) *UpgradeContext {
-	c := &UpgradeContext{
-		UseContext: NewUseContext(ctx, templateRef, objectsRoot, instanceId, targetBranch, inputs, tickets),
+func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot filesystem.Fs, instanceId string, targetBranch model.BranchKey, inputs template.InputsValues, tickets *storageapi.TicketProvider, projectState *state.State) *Context {
+	c := &Context{
+		Context: use.NewContext(ctx, templateRef, objectsRoot, instanceId, targetBranch, inputs, tickets),
 	}
 
 	// Register existing IDs, so they will be reused
@@ -27,7 +29,7 @@ func NewUpgradeContext(ctx context.Context, templateRef model.TemplateRef, objec
 	for _, config := range configs {
 		// Config must exist and corresponding ID in template must be defined
 		if v := config.Metadata.ConfigTemplateId(); v != nil {
-			c.registerPlaceholder(v.IdInTemplate, func(_ placeholder, cb resolveCallback) { cb(config.Id) })
+			c.RegisterPlaceholder(v.IdInTemplate, func(_ use.Placeholder, cb use.ResolveCallback) { cb(config.Id) })
 		} else {
 			continue
 		}
@@ -42,7 +44,7 @@ func NewUpgradeContext(ctx context.Context, templateRef model.TemplateRef, objec
 		for _, row := range config.Rows {
 			// Row must exist and corresponding ID in template must be defined
 			if v, found := rowsIdsMap[row.Id]; found {
-				c.registerPlaceholder(v.IdInTemplate, func(_ placeholder, cb resolveCallback) { cb(row.Id) })
+				c.RegisterPlaceholder(v.IdInTemplate, func(_ use.Placeholder, cb use.ResolveCallback) { cb(row.Id) })
 			}
 		}
 	}

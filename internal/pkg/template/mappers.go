@@ -17,8 +17,17 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacevalues"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/variables"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 )
+
+// useContext is common interface for *use.Context and *upgrade.Context.
+type useContext interface {
+	TemplateRef() model.TemplateRef
+	InstanceId() string
+	ObjectIds() metadata.ObjectIdsMap
+	InputsUsage() *metadata.InputsUsage
+}
 
 func MappersFor(s *state.State, d dependencies, ctx Context) (mapper.Mappers, error) {
 	jsonNetCtx := ctx.JsonNetContext()
@@ -59,7 +68,7 @@ func MappersFor(s *state.State, d dependencies, ctx Context) (mapper.Mappers, er
 	}
 
 	// Add metadata on "template use" operation
-	if c, ok := ctx.(*UseContext); ok {
+	if c, ok := ctx.(useContext); ok {
 		mappers = append(mappers, metadata.NewMapper(s, c.TemplateRef(), c.InstanceId(), c.ObjectIds(), c.InputsUsage()))
 	}
 

@@ -1,4 +1,4 @@
-package template_test
+package use_test
 
 import (
 	"context"
@@ -14,13 +14,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	. "github.com/keboola/keboola-as-code/internal/pkg/template"
+	"github.com/keboola/keboola-as-code/internal/pkg/template"
+	. "github.com/keboola/keboola-as-code/internal/pkg/template/use"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 )
 
-func TestUseContext(t *testing.T) {
+func TestContext(t *testing.T) {
 	t.Parallel()
 
 	// Mocked ticket provider
@@ -38,7 +39,7 @@ func TestUseContext(t *testing.T) {
 
 	// Inputs
 	targetBranch := model.BranchKey{Id: 123}
-	inputsValues := InputsValues{
+	inputsValues := template.InputsValues{
 		{
 			Id:    "input-1",
 			Value: "my-value-1",
@@ -61,7 +62,7 @@ func TestUseContext(t *testing.T) {
 	templateRef := model.NewTemplateRef(model.TemplateRepository{Name: "my-repository"}, "my-template", "v0.0.1")
 	instanceId := "my-instance"
 	fs := testfs.NewMemoryFs()
-	ctx := NewUseContext(context.Background(), templateRef, fs, instanceId, targetBranch, inputsValues, tickets)
+	ctx := NewContext(context.Background(), templateRef, fs, instanceId, targetBranch, inputsValues, tickets)
 
 	// Check JsonNet functions
 	code := `

@@ -21,6 +21,10 @@ type TemplateRepository struct {
 	WorkingDir string                 `json:"-"` // only for RepositoryTypeWorkingDir
 }
 
+func (r *TemplateRepository) String() string {
+	return fmt.Sprintf("%s:%s", r.Url, r.Ref)
+}
+
 func (r *TemplateRepository) Hash() string {
 	hash := fmt.Sprintf("%s:%s:%s", r.Type, r.Url, r.Ref)
 	sha := sha256.Sum256([]byte(hash))
