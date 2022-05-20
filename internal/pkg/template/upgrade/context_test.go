@@ -1,4 +1,4 @@
-package template_test
+package upgrade_test
 
 import (
 	"context"
@@ -15,13 +15,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	. "github.com/keboola/keboola-as-code/internal/pkg/template"
+	"github.com/keboola/keboola-as-code/internal/pkg/template"
+	. "github.com/keboola/keboola-as-code/internal/pkg/template/upgrade"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 )
 
-func TestUpgradeContext(t *testing.T) {
+func TestContext(t *testing.T) {
 	t.Parallel()
 
 	// Mocked ticket provider
@@ -39,7 +40,7 @@ func TestUpgradeContext(t *testing.T) {
 
 	// Inputs
 	targetBranch := model.BranchKey{Id: 123}
-	inputsValues := InputsValues{
+	inputsValues := template.InputsValues{
 		{
 			Id:    "input-1",
 			Value: "my-value-1",
@@ -87,7 +88,7 @@ func TestUpgradeContext(t *testing.T) {
 
 	// Create context
 	fs := testfs.NewMemoryFs()
-	ctx := NewUpgradeContext(context.Background(), templateRef, fs, instanceId, targetBranch, inputsValues, tickets, projectState)
+	ctx := NewContext(context.Background(), templateRef, fs, instanceId, targetBranch, inputsValues, tickets, projectState)
 
 	// Check JsonNet functions
 	code := `

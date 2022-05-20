@@ -59,7 +59,7 @@ func (m *Manager) AddRepository(repositoryDef model.TemplateRepository) error {
 	defer cancel()
 	repo, err := git.Checkout(ctx, repositoryDef.Url, repositoryDef.Ref, false, m.logger)
 	if err != nil {
-		return fmt.Errorf(`cannot checkout out repository "%s": %w`, repo, err)
+		return fmt.Errorf(`cannot checkout out repository "%s": %w`, repositoryDef, err)
 	}
 	m.logger.Infof(`repository checked out "%s"`, repo)
 	m.repositories[hash] = repo

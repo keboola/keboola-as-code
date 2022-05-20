@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/create"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 )
 
@@ -119,13 +120,13 @@ type inputFieldLine struct {
 }
 
 // objectInputsMap - map of inputs used in an object.
-type objectInputsMap map[model.Key][]template.InputDef
+type objectInputsMap map[model.Key][]create.InputDef
 
-func (v objectInputsMap) add(objectKey model.Key, inputDef template.InputDef) {
+func (v objectInputsMap) add(objectKey model.Key, inputDef create.InputDef) {
 	v[objectKey] = append(v[objectKey], inputDef)
 }
 
-func (v objectInputsMap) setTo(configs []template.ConfigDef) {
+func (v objectInputsMap) setTo(configs []create.ConfigDef) {
 	for i := range configs {
 		c := &configs[i]
 		c.Inputs = v[c.Key]

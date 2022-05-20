@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/create"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 	createTemplateDir "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/dir/create"
@@ -23,7 +24,7 @@ type Options struct {
 	Name         string
 	Description  string
 	SourceBranch model.BranchKey
-	Configs      []template.ConfigDef
+	Configs      []create.ConfigDef
 	StepsGroups  template.StepsGroups
 }
 
@@ -71,7 +72,7 @@ func Run(o Options, d dependencies) (err error) {
 	templateDef := model.NewTemplateRef(model.TemplateRepositoryWorkingDir(), o.Id, versionRecord.Version.String())
 
 	// Template context
-	templateCtx := template.NewCreateContext(d.Ctx(), o.SourceBranch, o.Configs)
+	templateCtx := create.NewContext(d.Ctx(), o.SourceBranch, o.Configs)
 
 	// Get template instance
 	tmpl, err := d.Template(templateDef)

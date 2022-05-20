@@ -1,4 +1,4 @@
-package template
+package create
 
 import (
 	"context"
@@ -43,7 +43,7 @@ func TestCreateContext(t *testing.T) {
 			},
 		},
 	}
-	ctx := NewCreateContext(context.Background(), sourceBranch, configs)
+	ctx := NewContext(context.Background(), sourceBranch, configs)
 
 	// Check remote filter
 	expectedFilter := model.NoFilter()

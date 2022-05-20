@@ -13,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/use"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/encrypt"
 	saveProjectManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/save"
@@ -73,7 +74,7 @@ func Run(projectState *project.State, tmpl *template.Template, o Options, d depe
 	instanceId := idgenerator.TemplateInstanceId()
 
 	// Load template
-	ctx := template.NewUseContext(d.Ctx(), tmpl.Reference(), tmpl.ObjectsRoot(), instanceId, o.TargetBranch, o.Inputs, tickets)
+	ctx := use.NewContext(d.Ctx(), tmpl.Reference(), tmpl.ObjectsRoot(), instanceId, o.TargetBranch, o.Inputs, tickets)
 	templateState, err := tmpl.LoadState(ctx, LoadTemplateOptions())
 	if err != nil {
 		return "", err

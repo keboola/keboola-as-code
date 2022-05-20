@@ -9,7 +9,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/template"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/create"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
@@ -160,7 +160,7 @@ func (d *inputsSelectDialog) parseInputLine(objectKey model.Key, line string, li
 		}
 
 		// Save definitions
-		d.objectInputs.add(objectKey, template.InputDef{Path: field.Path, InputId: field.Input.Id})
+		d.objectInputs.add(objectKey, create.InputDef{Path: field.Path, InputId: field.Input.Id})
 		if _, found := d.inputs.Get(field.Input.Id); !found {
 			value := field.Input
 			d.inputs.Add(&value)
