@@ -225,9 +225,10 @@ func RunRequests(
 		// Read the request file
 		requestFile, err := testDirFs.ReadFile(filesystem.NewFileDef(filesystem.Join(dir, "request.json")))
 		assert.NoError(t, err)
+		requestFileStr := testhelper.ReplaceEnvsString(requestFile.Content, envProvider)
 
 		request := &ApiRequest{}
-		err = json.DecodeString(requestFile.Content, request)
+		err = json.DecodeString(requestFileStr, request)
 		assert.NoError(t, err)
 		err = validator.Validate(context.Background(), request)
 		assert.NoError(t, err)
@@ -258,7 +259,7 @@ func RunRequests(
 		assert.NoError(t, err)
 		expectedRespBody := testhelper.ReplaceEnvsString(expectedRespFile.Content, envProvider)
 
-		// Decode && encode json to remove indentation from the expected-response.json
+		// Decode && encode json to unite indentation of the response with expected-response.json
 		respMap := orderedmap.New()
 		err = json.DecodeString(resp.String(), &respMap)
 		assert.NoError(t, err)
