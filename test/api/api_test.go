@@ -211,8 +211,8 @@ func RunRequests(
 
 	// Run API server
 	repoPath := ""
-	if testDirFs.Exists(filepath.Join("in", "repository")) {
-		repoPath = filepath.Join(testDirFs.BasePath(), "in", "repository")
+	if testDirFs.Exists("repository") {
+		repoPath = filepath.Join(testDirFs.BasePath(), "repository")
 	}
 	apiUrl := RunApiServer(t, binary, project.StorageApiHost(), repoPath)
 	client := resty.New()
@@ -282,19 +282,6 @@ func RunRequests(
 		// Assert response body
 		testhelper.AssertWildcards(t, expectedRespBody, respBody, "Unexpected response.")
 	}
-
-	// Expected state dir
-	expectedDir := "out"
-	if !testDirFs.IsDir(expectedDir) {
-		t.Fatalf(`Missing directory "%s" in "%s".`, expectedDir, testDirFs.BasePath())
-	}
-
-	// Copy expected state and replace ENVs
-	expectedDirFs := testfs.NewMemoryFsFrom(filesystem.Join(testDirFs.BasePath(), expectedDir))
-	testhelper.ReplaceEnvsDir(expectedDirFs, `/`, envProvider)
-
-	// Compare actual and expected dirs
-	testhelper.AssertDirectoryContentsSame(t, expectedDirFs, `/`, workingDirFs, `/`)
 
 	// Check project state
 	expectedStatePath := "expected-state.json"
