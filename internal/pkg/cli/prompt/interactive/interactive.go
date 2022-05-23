@@ -96,15 +96,31 @@ func (p *Prompt) Ask(q *prompt.Question) (result string, ok bool) {
 		p.Printf("\n")
 	}
 
+	if q.Hidden {
+		p.Printf("Leave blank for default value.\n")
+	}
+
 	// Validator
 	opts := p.getOpts()
 	if q.Validator != nil {
+		if q.Hidden && q.Default != "" {
+			original := q.Validator
+			q.Validator = func(val interface{}) error {
+				if val == "" {
+					val = q.Default
+				}
+				return original(val)
+			}
+		}
 		opts = append(opts, survey.WithValidator(q.Validator))
 	}
 
 	// Ask
 	if q.Hidden {
 		err = survey.AskOne(&survey.Password{Message: formatLabel(q.Label), Help: q.Help}, &result, opts...)
+		if result == "" && q.Default != "" {
+			result = q.Default
+		}
 	} else {
 		err = survey.AskOne(&survey.Input{Message: formatLabel(q.Label), Default: q.Default, Help: q.Help}, &result, opts...)
 	}

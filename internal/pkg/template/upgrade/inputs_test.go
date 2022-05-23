@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
@@ -401,15 +402,15 @@ func (tc testCase) run(t *testing.T) {
 	// Set objects to state
 	assert.NoError(t, state.Set(&model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{ConfigKey: configKey},
-		Remote:         &model.Config{ConfigKey: configKey, Metadata: configMetadata, Content: configContent},
+		Local:          &model.Config{ConfigKey: configKey, Metadata: configMetadata, Content: configContent},
 	}))
 	assert.NoError(t, state.Set(&model.ConfigRowState{
 		ConfigRowManifest: &model.ConfigRowManifest{ConfigRowKey: configRowKey},
-		Remote:            &model.ConfigRow{ConfigRowKey: configRowKey, Content: rowContent},
+		Local:             &model.ConfigRow{ConfigRowKey: configRowKey, Content: rowContent},
 	}))
 
 	// Assert inputs
-	actual := ExportInputsValues(state, branchKey, instanceId, tc.templateInputs)
+	actual := ExportInputsValues(log.NewNopLogger(), state, branchKey, instanceId, tc.templateInputs)
 	assert.Equal(t, tc.expected, actual.ToValue())
 
 	// Assert steps state
