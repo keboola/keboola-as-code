@@ -4,7 +4,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/upgrade"
@@ -24,8 +24,8 @@ type upgradeTmplDeps interface {
 }
 
 // AskUpgradeTemplateOptions - dialog for deleting a template from the project.
-func (p *Dialogs) AskUpgradeTemplateOptions(d upgradeTmplDeps, projectState *project.State, branchKey model.BranchKey, instance model.TemplateInstance, groups template.StepsGroups) (upgradeTemplate.Options, error) {
-	groupsExt := upgrade.ExportInputsValues(d.Logger(), projectState.State(), branchKey, instance.InstanceId, groups)
+func (p *Dialogs) AskUpgradeTemplateOptions(d upgradeTmplDeps, projectState *state.State, branchKey model.BranchKey, instance model.TemplateInstance, groups template.StepsGroups) (upgradeTemplate.Options, error) {
+	groupsExt := upgrade.ExportInputsValues(d.Logger(), projectState, branchKey, instance.InstanceId, groups)
 	dialog := &upgradeTmplDialog{Dialogs: p, groups: groupsExt, options: d.Options()}
 	dialog.out.Branch = branchKey
 	dialog.out.Instance = instance
