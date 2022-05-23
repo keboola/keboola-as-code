@@ -1,0 +1,23 @@
+Template ID:          my-template-id
+Instance ID:          inst123
+RepositoryName:       keboola
+Version:              1.0.0
+Name:                 My Instance
+Created:
+  Date:               2022-01-01T01:00:00Z
+  TokenID:            123
+Updated:
+  Date:               2022-01-01T01:00:00Z
+  TokenID:            123
+
+Template ID:          my-template-id
+Instance ID:          inst456
+RepositoryName:       keboola
+Version:              1.0.0
+Name:                 My Instance
+Created:
+  Date:               2022-01-01T01:00:00Z
+  TokenID:            123
+Updated:
+  Date:               2022-01-01T01:00:00Z
+  TokenID:            123
