@@ -35,7 +35,7 @@ func Run(tmpl *template.Template, d dependencies) (err error) {
 			w.Writef("  Step ID:            %s", step.Id)
 			w.Writef("  Name:               %s", step.Name)
 			w.Writef("  Description:        %s", step.Description)
-			w.Writef("  Dialog Name:        %s", step.NameFoDialog())
+			w.Writef("  Dialog Name:        %s", step.NameForDialog())
 			w.Writef("  Dialog Description: %s", step.DescriptionForDialog())
 			w.Writef("")
 

@@ -164,7 +164,7 @@ func InputsResponse(template *template.Template) (out *Inputs) {
 				Icon:              step.Icon,
 				Name:              step.Name,
 				Description:       step.Description,
-				DialogName:        step.NameFoDialog(),
+				DialogName:        step.NameForDialog(),
 				DialogDescription: step.DescriptionForDialog(),
 				Inputs:            make([]*Input, 0),
 			}
